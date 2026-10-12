@@ -5892,5 +5892,15 @@
   "Giữ dữ liệu đã đọc; tự nối lại luồng cập nhật.": {"vi": "Giữ dữ liệu đã đọc; tự nối lại luồng cập nhật.", "en": "Keep loaded data and reconnect the update stream automatically."},
   "Giữ dữ liệu đã đọc; chờ có mạng để kiểm tra lại.": {"vi": "Giữ dữ liệu đã đọc; chờ có mạng để kiểm tra lại.", "en": "Keep loaded data and check again when the network returns."},
   "Nguồn tải chưa sẵn sàng": {"vi": "Nguồn tải chưa sẵn sàng", "en": "Download source unavailable"},
-  "Giữ dữ liệu cũ; tự thử lại các lượt đọc lỗi tạm thời.": {"vi": "Giữ dữ liệu cũ; tự thử lại các lượt đọc lỗi tạm thời.", "en": "Keep existing data and retry transient read failures automatically."}
+  "Giữ dữ liệu cũ; tự thử lại các lượt đọc lỗi tạm thời.": {"vi": "Giữ dữ liệu cũ; tự thử lại các lượt đọc lỗi tạm thời.", "en": "Keep existing data and retry transient read failures automatically."},
+  "Đang cập nhật {resource}…": {"vi": "Đang cập nhật {resource}…", "en": "Updating {resource}…"},
+  "Chưa cập nhật được {resource}. Đang giữ bản đã đọc trước đó.": {"vi": "Chưa cập nhật được {resource}. Đang giữ bản đã đọc trước đó.", "en": "Could not update {resource}. Showing the previously loaded data."},
+  "{resource}: chỉ tính trên phần dữ liệu đã đọc được.": {"vi": "{resource}: chỉ tính trên phần dữ liệu đã đọc được.", "en": "{resource}: calculated only from the data successfully loaded."},
+  "danh mục phiên": {"vi": "danh mục phiên", "en": "the session catalog"},
+  "kết quả phiên": {"vi": "kết quả phiên", "en": "session results"},
+  "kho dữ liệu": {"vi": "kho dữ liệu", "en": "the data library"},
+  "bảng giao dịch": {"vi": "bảng giao dịch", "en": "the trades table"},
+  "báo cáo phân tích": {"vi": "báo cáo phân tích", "en": "the analytics report"},
+  "kết quả phân tích": {"vi": "kết quả phân tích", "en": "analytics results"},
+  "ghi chú và nhãn giao dịch": {"vi": "ghi chú và nhãn giao dịch", "en": "trade notes and tags"}
 }

@@ -1,6 +1,6 @@
 import { displayDate } from './dateFormat.js'
 import TestingReadState, { TestingSkeleton } from './TestingReadState.jsx'
-import { TestingEmptyState, TestingPageSkeleton } from './TestingPageState.jsx'
+import { TestingEmptyState, TestingPageSkeleton, TestingResourceStatus } from './TestingPageState.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './analytics-story.css'
@@ -232,7 +232,7 @@ export function ProvenanceInspector({ model, selectedTrade, journalCount, links 
   )
 }
 
-function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearchParams(), ledgerOnly = false, summaryOnly = false, embedded = false, sessionName = '', propReport = null, sessionControl = null }) {
+function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearchParams(), ledgerOnly = false, summaryOnly = false, embedded = false, sessionName = '', propReport = null, sessionControl = null, catalogStatus = null }) {
   const formatNumber = (value, digits = 2, suffix = '') => fmt(value, suffix, digits)
 
   const { t, fmt } = useTestingLocale()
@@ -251,6 +251,7 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
   const [state, setState] = useState({ status: resourceId ? 'loading' : 'idle', payload: null, error: null })
   const [journalContext, setJournalContext] = useState(null)
   const [journalStatus, setJournalStatus] = useState('idle')
+  const journalCache = useRef(null)
   const [journalRead, setJournalRead] = useState({ error: null, pending: false, scope: '' })
   const [journalReload, setJournalReload] = useState(0)
   const [localTradeId, setLocalTradeId] = useState(tradeId)
@@ -369,11 +370,11 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
     if (!sessionId || jobId || summaryOnly) { setJournalContext(null); setJournalStatus('idle'); return }
     const controller = new AbortController()
     setJournalRead(current => current.scope === journalScope ? { ...current, pending: true } : { scope: journalScope, error: null, pending: true })
-    setJournalStatus(current => journalRead.scope === journalScope && current === 'error' ? 'error' : 'loading')
+    setJournalStatus(current => journalCache.current?.workspace === workspace && journalCache.current?.session === sessionId ? current : journalRead.scope === journalScope && current === 'error' ? 'error' : 'loading')
     scopedRead(`/api/v2/journal/context?session_id=${encodeURIComponent(sessionId)}`, workspace, controller.signal)
       .then(readJson).then(payload => {
-        if (!controller.signal.aborted) { setJournalContext(readJournalContext(payload, workspace, sessionId)); setJournalStatus('ready'); setJournalRead({ scope: journalScope, error: null, pending: false }) }
-      }).catch(error => { if (!controller.signal.aborted) { setJournalContext(null); setJournalStatus('error'); setJournalRead({ scope: journalScope, error, pending: false }) } })
+        if (!controller.signal.aborted) { journalCache.current = readJournalContext(payload, workspace, sessionId); setJournalContext(journalCache.current); setJournalStatus('ready'); setJournalRead({ scope: journalScope, error: null, pending: false }) }
+      }).catch(error => { if (!controller.signal.aborted) { if (![401, 403].includes(error.status) && journalCache.current?.workspace === workspace && journalCache.current?.session === sessionId) setJournalStatus('stale'); else { journalCache.current = null; setJournalContext(null); setJournalStatus('error') }; setJournalRead({ scope: journalScope, error, pending: false }) } })
     return () => controller.abort()
   }, [sessionId, jobId, workspace, summaryOnly, journalReload])
 
@@ -444,22 +445,23 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
   const experimentScopeMatches = experiments.payload && result && ['session_id', 'dataset_id', 'dataset_sha256', 'revision', 'cursor_index', 'execution_event_sequence'].every(key => experiments.payload.provenance?.[key] === result[key])
 
   const Inspector = ledgerOnly ? TradeInspector : 'section'
-  const journalFilterPending = Boolean(sessionId && !jobId && !summaryOnly && journalStatus !== 'ready' && (extra.tag !== 'all' || extra.tagInclude || extra.tagExclude))
-  const renderFilters = columnControl => <FxAnalyticsFilters sourceType={propReport ? 'Prop firm' : jobId ? 'Research' : 'Backtesting'} sessionControl={sessionControl} filters={filters} onChange={updateFilters} extra={extra} onExtra={updateExtra} rows={model.ledger} onExport={exportCsv} pending={exportPending || journalFilterPending || !result || !['ready', 'partial', 'stale', 'empty'].includes(state.status)} columnControl={columnControl} ledgerOnly={ledgerOnly} />
+  const journalFilterPending = Boolean(sessionId && !jobId && !summaryOnly && !['ready', 'stale'].includes(journalStatus) && (extra.tag !== 'all' || extra.tagInclude || extra.tagExclude))
+  const primaryStatus = state.refreshing ? 'refreshing' : ['stale', 'partial'].includes(state.status) ? state.status : undefined
+  const journalBackground = scopedJournal && (journalRead.pending ? 'refreshing' : journalStatus === 'stale' ? 'stale' : undefined)
+  const statusControl = <TestingResourceStatus state={primaryStatus || journalBackground || catalogStatus?.state} resource={primaryStatus ? 'kết quả phân tích' : journalBackground ? 'ghi chú và nhãn giao dịch' : 'danh mục phiên'} recovery={primaryStatus ? recovery : journalBackground ? journalRecovery : catalogStatus?.recovery} />
+  const readNotice = <>{journalStatus === 'error' && <TestingReadState error message="Chưa đọc được ghi chú và nhãn giao dịch. Số ghi chú hiện chưa xác minh." recovery={journalRecovery} />}{state.status === 'error' && !state.denied && <TestingReadState error message={t('Không đọc được kết quả:') + ' ' + t(state.error)} recovery={recovery} />}</>
+  const renderFilters = columnControl => <FxAnalyticsFilters statusControl={statusControl} sourceType={propReport ? 'Prop firm' : jobId ? 'Research' : 'Backtesting'} sessionControl={sessionControl} filters={filters} onChange={updateFilters} extra={extra} onExtra={updateExtra} rows={model.ledger} onExport={exportCsv} pending={exportPending || journalFilterPending || !result || !['ready', 'partial', 'stale', 'empty'].includes(state.status)} columnControl={columnControl} ledgerOnly={ledgerOnly} />
   return <section className={`as-page fxa-page ${embedded ? 'as-embedded' : 'wm-page'}`} aria-label={ledgerOnly ? t("Trades") : t("Analytics")} data-testid="analytics-workspace">
     {!embedded && <h1 className="sr-only">{ledgerOnly ? t("Trades") : t("Analytics")}</h1>}
-    {(resourceId || sessionControl) && !summaryOnly && (ledgerOnly ? <FxTradeLedger model={model} extra={extra} selected={selectedTradeId} onSelect={setSelectedTradeId} sessionName={sessionName} hidden={journalFilterPending || !result || !['ready', 'stale', 'partial', 'empty'].includes(state.status)} renderFilters={renderFilters} /> : renderFilters())}
-    {journalStatus === 'error' && <TestingReadState error message="Chưa đọc được ghi chú và nhãn giao dịch. Số ghi chú hiện chưa xác minh." recovery={journalRecovery} />}
+    {(resourceId || sessionControl) && !summaryOnly && (ledgerOnly ? <FxTradeLedger model={model} extra={extra} selected={selectedTradeId} onSelect={setSelectedTradeId} sessionName={sessionName} hidden={journalFilterPending || !result || !['ready', 'stale', 'partial', 'empty'].includes(state.status)} renderFilters={renderFilters} readNotice={readNotice} /> : <>{renderFilters()}{readNotice}</>)}
+    {summaryOnly && readNotice}
     {journalFilterPending && journalStatus === 'loading' && <TestingReadState message="Đang đọc nhãn giao dịch…" />}
     {exportError && <p role="alert" className="fxa-error">{t(exportError)}</p>}
     {result?.historical_view && <p className="as-message" data-testid="analytics-historical-scope">{t("Kết quả tới nến #")}{result.cursor_index}{t(". Phiên hiện ở nến #")}{result.canonical_cursor_index}{t("; báo cáo không gồm giao dịch sau mốc đang xem.")}</p>}
     {!resourceId && <p className="fxa-empty">{t("Chọn một phiên replay hoặc research job để xem kết quả.")}</p>}
     {state.status === 'loading' && <TestingPageSkeleton view={ledgerOnly ? 'trade' : 'analytics'} label="Đang tải kết quả…" />}
-    {state.refreshing && <TestingReadState message="Đang cập nhật…" />}
-    {state.denied && <TestingEmptyState kind="denied" />}{state.status === 'error' && !state.denied && <TestingReadState error message={t('Không đọc được kết quả:') + ' ' + t(state.error)} recovery={recovery} />}
+    {state.denied && <TestingEmptyState kind="denied" />}
     {state.status === 'blocked_by_data' && <section className="as-empty-state" data-testid="analytics-blocked"><h2>{t("Chưa đủ dữ liệu để tính analytics")}</h2><p>{state.payload?.blocked_by_data?.map(reason => t(reason)).join(' · ') || t(state.error) || t("Nguồn chưa có kết quả đã phát hành.")}</p></section>}
-    {state.status === 'stale' && !state.refreshing && <TestingReadState message="Dữ liệu chưa cập nhật. Kết quả đã đọc vẫn được giữ trên màn hình." recovery={recovery} />}
-    {!ledgerOnly && state.status === 'partial' && <p className="as-stale-banner" role="status">{t("Dữ liệu một phần. Chỉ tính trên các giao dịch có trong nguồn đã đọc.")}</p>}
     {result && !journalFilterPending && ['ready', 'stale', 'partial', 'empty'].includes(state.status) && <>
       {summaryOnly ? <section className="as-metric-strip" aria-label={t("Metrics chính")}><StoryMetric label={t("Net P/L")} value={formatNumber(model.netPnl)} detail={result.account_currency} /><StoryMetric label={t("Win rate")} value={formatNumber(model.winRate, 1, '%')} /><StoryMetric label={t("Trades")} value={formatNumber(model.tradeCount, 0)} /><StoryMetric label={t("Max DD")} value={formatNumber(model.maxDrawdown)} detail={t("Closed balance")} /></section> : ledgerOnly ? null : <FxAnalyticsReport model={model} extra={extra} experiments={experimentScopeMatches ? experiments.payload : null} experimentStatus={experimentScopeMatches ? experiments.status : experiments.status === 'ready' ? 'error' : experiments.status} experimentError={experiments.error || (experiments.status === 'ready' && !experimentScopeMatches ? 'Đường giá chưa khớp revision/cutoff của báo cáo.' : '')} config={experimentConfig} onConfig={setExperimentConfig} onTabChange={setActiveReportTab} selected={selectedTradeId} onSelect={setSelectedTradeId} />}
       {!summaryOnly && !ledgerOnly && <details className="as-scope-details"><summary>{t("Phạm vi và nguồn dữ liệu")}</summary><dl className="as-scope-strip"><ContextValue label={t("Session")} value={sessionId || jobId} code /><ContextValue label={t("Revision")} value={result.revision} /><ContextValue label={t("Cutoff")} value={result.cursor_index} /><ContextValue label={t("Dataset SHA")} value={result.dataset_sha256} code /><ContextValue label={t("Balance basis")} value={result.scope?.balance_curve_scope} /><ContextValue label={t("Mode")} value={sourceLabel + ' / simulation'} /></dl><p>{t("Chỉ dùng ledger đóng tại cutoff đã chọn. Các bộ lọc tạo lại đường số dư từ vốn ban đầu. — là dữ liệu chưa được nguồn cung cấp.")}</p></details>}

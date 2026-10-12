@@ -1,7 +1,7 @@
 import { previewReadRecovery } from './demoMode.js'
 import useReadRefresh from './useReadRefresh.js'
 import TestingReadState from './TestingReadState.jsx'
-import { TestingEmptyState, TestingPageSkeleton, TestingResourceNotice } from './TestingPageState.jsx'
+import { TestingEmptyState, TestingPageSkeleton, TestingResourceStatus } from './TestingPageState.jsx'
 import ProjectDateInput from './ProjectDateInput.jsx'
 import { displayDate } from './dateFormat.js'
 import { displayTimeframe, formatDataSize as formatDatasetSize } from './dataDisplay.js'
@@ -616,11 +616,11 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
           <button type="button" className="fxa-clear-filters" disabled={!filtersApplied} onClick={clearFilters}><TestingIcon kind="delete" />{t('Clear filters')}</button>
           {state.catalog && <button type="button" className="data-library-catalog-trigger" onClick={() => setCatalogOpen(true)} aria-haspopup="dialog" aria-expanded={catalogOpen}>{t('Danh mục tài sản')}</button>}
           <button type="button" className="fxa-button is-primary data-library-import" disabled={Boolean(preview)} onClick={() => openCsv()}><TestingIcon kind="upload" />{t('Nhập CSV')}</button>
+          <TestingResourceStatus state={preview ? ['refreshing','stale','partial'].includes(preview.state) ? preview.state : undefined : state.stale ? 'stale' : state.status === 'ready' && state.refreshing ? 'refreshing' : undefined} resource="kho dữ liệu" recovery={preview ? previewReadRecovery(preview.state) : recovery} />
         </div>
       </div>
 
       {state.status === 'loading' && <TestingPageSkeleton view="market-data" label="Đang đọc dữ liệu đã lưu…" />}
-      <TestingResourceNotice state={preview ? preview.state === 'error' ? undefined : preview.state : state.status === 'error' ? undefined : state.stale ? 'stale' : state.refreshing ? 'refreshing' : undefined} resource="kho dữ liệu" recovery={preview ? previewReadRecovery(preview.state) : state.stale ? recovery : undefined} />
       {state.status === 'ready' && catalogMessage && <p className="data-library-catalog-status" role="status">{t(catalogMessage)}{state.catalog?.status === 'cached' && ` ${t('Đang dùng bản đã lưu.')}`}</p>}
       {state.status === 'ready' && requestedDataset && !selected && <p className="data-library-catalog-status" role="status">{t('Dataset trong đường dẫn chưa có trong kho này. Hãy chọn dữ liệu khác.')}</p>}
       {state.status === 'error' && <TestingReadState error message={t('Không đọc được kho dữ liệu:') + ' ' + state.error} recovery={preview ? previewReadRecovery(preview.state) : recovery} />}

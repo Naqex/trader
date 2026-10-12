@@ -1,7 +1,7 @@
 import { navigate } from './clientNavigation.js'
 import { useTestingLocale } from './testingLocale.jsx'
 import TestingReadState from './TestingReadState.jsx'
-import { TestingEmptyState, TestingPageSkeleton, TestingResourceNotice } from './TestingPageState.jsx'
+import { TestingEmptyState, TestingPageSkeleton, TestingResourceStatus } from './TestingPageState.jsx'
 import { useEffect, useMemo, useState } from 'react'
 import AnalyticsWorkspace, { analyticsQuery, buildAnalyticsModel, ProvenanceInspector, readAnalyticsFilters } from './AnalyticsWorkspace.jsx'
 import { FxAnalyticsFilters } from './FxAnalytics.jsx'
@@ -13,7 +13,7 @@ import useReadRefresh from './useReadRefresh.js'
 import { scopedRead } from './scopedRead.js'
 import { readJson } from './researchDataApi.js'
 
-function AggregateTrades({ workspace, ids, query, sessionControl, onClearSessions }) {
+function AggregateTrades({ workspace, ids, query, sessionControl, onClearSessions, catalogStatus }) {
   const { t } = useTestingLocale()
 
   const filters = useMemo(() => readAnalyticsFilters(query), [query])
@@ -73,12 +73,12 @@ function AggregateTrades({ workspace, ids, query, sessionControl, onClearSession
     if (view === 'replay') { params.set('surface', 'workspace'); params.set('cursor', row.close_cursor_index); params.set('event_sequence', row.close_event_sequence); if (row.source_provenance.dataset_id) params.set('dataset', row.source_provenance.dataset_id) }
     return `/?${params}`
   }
+  const backgroundStatus = state.refreshing ? 'refreshing' : state.status === 'stale' ? 'stale' : state.payload?.status === 'partial' ? 'partial' : catalogStatus?.state
+  const statusControl = <TestingResourceStatus state={backgroundStatus} resource={state.refreshing || state.status === 'stale' || state.payload?.status === 'partial' ? 'bảng giao dịch' : 'danh mục phiên'} recovery={state.readError ? recovery : catalogStatus?.recovery} />
+  const readNotice = state.status === 'error' ? <TestingReadState error message={t('Không đọc được giao dịch: {error}', { error: state.error })} recovery={recovery} /> : null
   if (state.denied) return <TestingEmptyState kind="denied" viewport />
   return <section className="as-page fxa-page wm-page" aria-label={t("Trades")} data-testid="aggregate-trades">
-    <FxTradeLedger hidden={state.status === 'error' && !state.payload} emptyScopeKnown={state.payload?.pagination.filtered_count === 0 && state.payload.status !== 'partial' && !Object.values(filters).some(value => value && value !== 'all') && Object.entries(extra).every(([key, value]) => value === DEFAULT_EXTRA_FILTERS[key])} model={model} extra={extra} selected={selected} onSelect={setSelected} remotePage={{ page: state.payload?.pagination.page || paging.page, pageSize: paging.pageSize, sort: paging.sort, totalCount: state.payload?.pagination.filtered_count ?? null, pending: state.status === 'loading', onChange: patch => setPaging(current => ({ ...current, ...patch })) }} renderFilters={columnControl => <FxAnalyticsFilters filters={filters} onChange={changeFilters} extra={extra} onExtra={changeExtra} rows={model.ledger} facets={state.payload?.facets || state.facets} sessionControl={sessionControl} onClearSessions={onClearSessions} pending={!state.payload} columnControl={columnControl} ledgerOnly />} />
-    <TestingResourceNotice state={state.refreshing ? 'refreshing' : state.status === 'stale' ? 'stale' : undefined} resource="bảng giao dịch" recovery={recovery} />
-    {state.status === 'error' && <TestingReadState error message={t('Không đọc được giao dịch: {error}', { error: state.error })} recovery={recovery} />}
-    {state.payload?.status === 'partial' && <TestingReadState message={t('Một số phiên chưa đủ dữ liệu; bảng chỉ gồm các giao dịch đã đọc được.')} />}
+    <FxTradeLedger readNotice={readNotice} hidden={state.status === 'error' && !state.payload} emptyScopeKnown={state.payload?.pagination.filtered_count === 0 && state.payload.status !== 'partial' && !Object.values(filters).some(value => value && value !== 'all') && Object.entries(extra).every(([key, value]) => value === DEFAULT_EXTRA_FILTERS[key])} model={model} extra={extra} selected={selected} onSelect={setSelected} remotePage={{ page: state.payload?.pagination.page || paging.page, pageSize: paging.pageSize, sort: paging.sort, totalCount: state.payload?.pagination.filtered_count ?? null, pending: state.status === 'loading', onChange: patch => setPaging(current => ({ ...current, ...patch })) }} renderFilters={columnControl => <FxAnalyticsFilters statusControl={statusControl} filters={filters} onChange={changeFilters} extra={extra} onExtra={changeExtra} rows={model.ledger} facets={state.payload?.facets || state.facets} sessionControl={sessionControl} onClearSessions={onClearSessions} pending={!state.payload} columnControl={columnControl} ledgerOnly />} />
     {state.payload && <>
       {row && <TradeInspector onClose={() => setSelected('')} className="fxa-trade-inspector" aria-label={t("Chi tiết giao dịch")}><div className="fxa-section-heading"><h2>{t("Trade detail ·")} {row.session_name}</h2><button className="fxa-button" type="button" onClick={() => setSelected('')}>{t("Đóng chi tiết")}</button></div><ProvenanceInspector model={detailModel} selectedTrade={{ ...row, tradeId: row.trade_id }} journalCount={null} links={{ replay: link('replay'), journal: link('journal') }} /></TradeInspector>}
     </>}
@@ -116,10 +116,10 @@ export default function SessionReports({ workspace, query, ledgerOnly = false })
   }, [scope, ledgerOnly])
   if (catalog.status === 'loading') return <TestingPageSkeleton view={ledgerOnly ? 'trade' : 'analytics'} label="Đang tải danh mục phiên…" />
   if (catalog.denied) return <TestingEmptyState kind="denied" viewport />
-  if (catalog.status === 'error') return <TestingReadState error message={t('Không tải được danh mục phiên:') + ' ' + t(catalog.error)} recovery={recovery} />
+  if (catalog.status === 'error') return <section className="as-page fxa-page wm-page" aria-label={ledgerOnly ? t('Trades') : t('Analytics')} data-testid="session-catalog-error"><FxAnalyticsFilters ledgerOnly={ledgerOnly} sourceType="Backtesting" disabled pending filters={readAnalyticsFilters(query)} extra={readAnalyticsExtraFilters(query)} rows={[]} onChange={() => {}} onExtra={() => {}} sessionControl={control} statusControl={<TestingResourceStatus />} /><TestingReadState error message={t('Không tải được danh mục phiên:') + ' ' + t(catalog.error)} recovery={recovery} /></section>
   if (!catalog.items.length && !query.get('session') && !query.get('replay_session')) return <TestingEmptyState viewport />
+  const catalogStatus = { state: catalog.refreshing ? 'refreshing' : catalog.status === 'stale' ? 'stale' : undefined, recovery }
   return <>
-    {catalog.status === 'stale' && <TestingReadState message="Dữ liệu danh mục phiên chưa cập nhật." recovery={recovery} />}
-    {ledgerOnly && !(sessionId && ['cursor', 'cursor_index', 'cutoff', 'decision_cutoff', 'event_sequence', 'trade', 'trade_id'].some(key => new URLSearchParams(window.location.search).has(key))) ? <AggregateTrades workspace={workspace} ids={scope} query={query} sessionControl={control} onClearSessions={() => change(null)} /> : <AnalyticsWorkspace key={`${workspace}:${sessionId}`} workspace={workspace} query={scopedQuery} ledgerOnly={ledgerOnly} sessionName={item?.name || ''} sessionControl={control} />}
+    {ledgerOnly && !(sessionId && ['cursor', 'cursor_index', 'cutoff', 'decision_cutoff', 'event_sequence', 'trade', 'trade_id'].some(key => new URLSearchParams(window.location.search).has(key))) ? <AggregateTrades catalogStatus={catalogStatus} workspace={workspace} ids={scope} query={query} sessionControl={control} onClearSessions={() => change(null)} /> : <AnalyticsWorkspace catalogStatus={catalogStatus} key={`${workspace}:${sessionId}`} workspace={workspace} query={scopedQuery} ledgerOnly={ledgerOnly} sessionName={item?.name || ''} sessionControl={control} />}
   </>
 }

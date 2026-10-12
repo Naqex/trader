@@ -39,12 +39,12 @@ try {
   let requested = false
   await page.route('**/api/v2/replay/sessions/*/analytics*', async route => { requested = true; await pending; await route.fulfill({status:503,json:{detail:'fixture_refresh_failed'}}) })
   await page.evaluate(() => window.dispatchEvent(new Event('focus')))
-  await page.waitForFunction(() => document.querySelector('.fxr-session-report')?.textContent.includes('Đang cập nhật kết quả phiên'))
+  await page.locator('.fxr-session-toolbar [data-resource-state=refreshing]').waitFor()
   assert.ok(requested)
   assert.equal(await page.locator('.fxr-session-report .wm-skeleton').count(),0)
   assert.ok((await page.locator('.fxr-session-report').textContent()).includes(previous.trim()))
   release()
-  await page.waitForFunction(() => document.querySelector('.fxr-session-report')?.textContent.includes('Chưa cập nhật được kết quả phiên'))
+  await page.locator('.fxr-session-toolbar [data-resource-state=stale]').waitFor()
   assert.ok((await page.locator('.fxr-session-report').textContent()).includes(previous.trim()))
   await page.screenshot({path:`${output}/actual-session-stale.png`,animations:'disabled'})
   await page.unroute('**/api/v2/replay/sessions/*/analytics*')
@@ -61,7 +61,7 @@ try {
   await page.locator('.fxr-session-cards').waitFor()
   await page.route('**/api/v2/replay/sessions', route => route.fulfill({status:503,json:{detail:'fixture_catalog_refresh_failed'}}))
   await page.evaluate(() => window.dispatchEvent(new Event('focus')))
-  await page.locator('.fx-session-picker > .wm-read-state').waitFor()
+  await page.locator('.fxr-session-toolbar [data-resource-state=stale]').waitFor()
   assert.equal(await page.locator('.fxr-session-cards').count(),1)
   await page.unroute('**/api/v2/replay/sessions')
   let releaseCatalog
@@ -70,7 +70,7 @@ try {
   await page.waitForFunction(() => document.querySelector('.fx-session-picker')?.querySelector('.fxr-session-toolbar select:disabled,.fx-select-trigger:disabled') || document.querySelector('.fx-session-picker > .wm-read-state [data-retry-at]') == null)
   assert.equal(await page.locator('.fxr-session-cards').count(),1,'Retrying a stale catalog preserves the selected session')
   releaseCatalog()
-  await page.waitForFunction(() => !document.querySelector('.fx-session-picker > .wm-read-state'))
+  await page.waitForFunction(() => !document.querySelector('.fxr-session-toolbar [data-resource-state=stale]'))
   await page.unroute('**/api/v2/replay/sessions')
   report.cases.push({interceptedFixture:true,case:'Stale catalog retry preserves session content while pending'})
 

@@ -1,4 +1,6 @@
-import TestingReadState, { ReadRecoveryStatus, TestingSkeleton } from './TestingReadState.jsx'
+import TestingReadState, { TestingSkeleton } from './TestingReadState.jsx'
+import { TestingResourceStatus } from './TestingPageState.jsx'
+import { previewReadRecovery } from './demoMode.js'
 import TestingIcon from './TestingIcon.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import { useEffect, useState } from 'react'
@@ -106,12 +108,11 @@ export default function DashboardPerformance({ workspace, filters, reload, contr
   const noSessions = performance?.scope?.session_count === 0
   const noTrades = !blocked && !noSessions && metrics?.closed_trade_count === 0
   const groupMessage = filterError || (denied ? 'Bạn không có quyền xem Performance.' : unavailable ? 'Nguồn Performance chưa khả dụng.' : failed ? 'Chưa tải được Performance.' : blocked ? 'Chưa đủ dữ liệu thực thi để tính Performance.' : noSessions ? 'Chưa có phiên backtest trong phạm vi này. Tạo phiên đầu tiên để xem kết quả.' : '')
-  const notice = state.key === key && state.refreshing ? 'Đang cập nhật Performance…' : state.key === key && state.status === 'stale' ? 'Dữ liệu chưa cập nhật.' : ''
+  const readStatus = state.key === key && state.status === 'stale' ? 'stale' : state.key === key && state.refreshing ? 'refreshing' : partialNotice ? 'partial' : undefined
   const groupState = filterError ? 'invalid' : loading ? 'loading' : denied ? 'denied' : unavailable || blocked ? 'unavailable' : failed ? 'error' : noSessions ? 'empty' : noTrades ? 'no-trades' : 'ready'
   return <section className="fx-dashboard-results" aria-label={t("Performance")} aria-busy={loading || (!filterError && state.key === key && Boolean(state.refreshing))} aria-description={partialNotice || undefined}>
-    <div className="fx-dashboard-section-head"><h2 className="fx-dashboard-performance-heading">{t("Performance")}</h2><div className="fx-dashboard-performance-filters">{controls}{dateControls}</div></div>
+    <div className="fx-dashboard-section-head"><div className="wm-resource-heading"><h2 className="fx-dashboard-performance-heading">{t("Performance")}</h2><TestingResourceStatus state={!groupMessage ? readStatus : undefined} resource="Performance" detail={readStatus === 'partial' ? partialNotice : undefined} recovery={previewPayload ? previewReadRecovery(previewState) : recovery} /></div><div className="fx-dashboard-performance-filters">{controls}{dateControls}</div></div>
     {sourceHeading && <h3 className="fx-dashboard-source-heading">{sourceHeading}</h3>}
-    {(notice || partialNotice) && !groupMessage && <div className={`fx-dashboard-data-state${partial || state.status === 'stale' ? ' is-warning' : ''}`} data-testid="dashboard-data-state" role="status"><span>{t(notice)}{notice && partialNotice ? ' ' : ''}{partialNotice}</span>{state.status === 'stale' && !previewPayload && <ReadRecoveryStatus recovery={recovery} />}</div>}
     <div data-testid="dashboard-result-group" data-state={groupState}>
     {loading ? <TestingSkeleton label="Đang tải Performance…" /> : groupMessage ? <TestingReadState message={groupMessage} error={Boolean(filterError || failed)} recovery={!previewPayload && failed && !denied ? recovery : undefined} /> : <><div className={`fx-dashboard-performance-layout${noTrades ? ' has-no-trades' : ''}`} data-testid="dashboard-performance"><div className="fx-dashboard-performance">
       <Metric title={t("Time invested")} value={<Duration seconds={performance?.time_invested_seconds} />} detail={dashboardDurationParts(performance?.time_invested_seconds) ? previewPayload ? t("Thời gian luyện tập mẫu") : timingDetail(performance, 'practice', t) : t("Chưa có dữ liệu thời gian luyện tập")} icon="clock" />

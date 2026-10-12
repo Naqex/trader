@@ -58,6 +58,10 @@
 .fxs-table-scroll td small { display: block; color: var(--wm-content-muted); font-size: 11px; margin-top: 4px; }
 .fxs-table-scroll td:last-child, .fxs-table-scroll th:last-child { text-align: right; font-variant-numeric: tabular-nums; }
 .fxs-table-scroll tr:hover { background: var(--fx-shell-nav-hover); }
+.fxs-recent .fxs-table-scroll td { border-top-color:color-mix(in srgb, var(--wm-content) 8%, var(--wm-canvas)); }
+.fxs-recent .wm-pagination { padding-inline:0; background:transparent; border-top-color:color-mix(in srgb, var(--wm-content) 8%, var(--wm-canvas)); }
+.fx-app .fxr-integrated-sessions .fxr-session-toolbar { position:relative; padding-bottom:20px; }
+.fx-app .fxr-integrated-sessions .fxr-session-toolbar::after { content:''; position:absolute; bottom:0; left:calc(-1 * var(--wm-page-gutter)); right:calc(-1 * var(--wm-page-gutter)); height:1px; background:var(--wm-border); }
 .fxs-performance .is-positive { color: var(--wm-positive); }
 .fxs-performance .is-negative { color: var(--wm-negative); }
 @media (max-width: 1200px) { .fxs-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

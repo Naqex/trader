@@ -53,7 +53,7 @@ function display(row, key, model, sessionName, { fmt, locale, t }) {
   if (key === 'tags') return Array.isArray(value) && value.length ? value.join(', ') : '—'
   return key === 'side' ? t(String(value).toLowerCase() === 'buy' ? 'Buy' : String(value).toLowerCase() === 'sell' ? 'Sell' : 'Chưa rõ') : ['status', 'source'].includes(key) ? t(value ?? '—') : value ?? '—'
 }
-export default function FxTradeLedger({ model, extra, selected, onSelect, sessionName, renderFilters, hidden = false, remotePage, emptyScopeKnown = false }) {
+export default function FxTradeLedger({ model, extra, selected, onSelect, sessionName, renderFilters, hidden = false, remotePage, emptyScopeKnown = false, readNotice }) {
   const { t, locale, fmt } = useTestingLocale()
 
   const data = useMemo(() => ({ rows: remotePage ? model.ledger : filterAnalyticsRows(model.ledger, extra) }), [model, extra, Boolean(remotePage)])
@@ -89,6 +89,7 @@ export default function FxTradeLedger({ model, extra, selected, onSelect, sessio
   const columnControl = <><button type="button" className="fxa-button fxa-icon-button" aria-label={t("Reset table columns")} title={t("Reset table columns")} onClick={() => setColumns([...DEFAULT_COLUMNS])}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M4 11a8 8 0 1 1 2 7M4 4v7h7" /></svg></button><FxSelect label={t("Cột hiển thị")} value={columns} onChange={setColumns} options={COLUMNS.map(([value, label]) => ({ value, label }))} multiple searchable icon="edit" iconOnly className="fxa-columns-control" /></>
   return <>
     {renderFilters?.(columnControl)}
+    {readNotice}
     <section aria-busy={remotePage?.pending || undefined} hidden={hidden} className="fxa-trades" aria-label={t("Trade ledger")} data-testid="fx-trade-ledger">
     {!renderFilters && <div className="fxa-ledger-tools">{columnControl}</div>}
     {checked.size > 0 && <span className="sr-only" role="status">{checked.size} {t("đã chọn")}</span>}

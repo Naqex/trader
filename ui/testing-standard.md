@@ -196,7 +196,9 @@ text in the revealed report remains selectable. Hover colors the entire card,
 including the revealed report, using the record-row hover token rather than the
 brighter control hover. The expanded surface also spans the whole card. Chart
 groups inside this card use spacing without nested panel borders; standalone
-report charts keep their existing surfaces.
+report charts keep their existing surfaces. A horizontal divider spans the full
+card width above expanded charts. Two dividers run from it to the bottom between
+the three chart columns; stacked charts use horizontal dividers instead.
 Empty expanded reports use a single left-aligned message; known balance curves
 remain visible even if no full ledger is available. The peach list count uses
 prose (e.g. "3 phiên trong tổng số 6") for displayed records against the entire
@@ -280,5 +282,14 @@ Dataset gutters match Testing even though its availability is independent of
 sessions. Explicit source/download mutations remain separate from read retries;
 the existing configured-empty catalog bootstrap is attempted once per workspace
 mount and is never replayed by retry.
+
+Refreshing, stale and partial readers use a reserved 24px status slot beside the
+section title or within its filter actions. Ready state reserves the same space;
+no background status row changes content position. The indicator opens a
+viewport-clamped detail popup with recovery countdown, dismissible with Escape or
+an outside click. Initial errors sit below the relevant filters and their divider.
+Market Data table/header/pager separators span the content viewport while cell
+text retains the page gutter. Recent Trades inside a session report keeps its
+quieter separators within the report width rather than bleeding to page edges.
 
 Acceptance evidence: `foundation_v2/evidence/testing-realtime-20261012/README.md`.

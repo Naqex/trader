@@ -14,16 +14,16 @@ export function SelectField({ label, value, onChange, options, disabled }) {
 
   return <label className="fxa-field"><span>{t(label)}</span><FxSelect label={label} value={value} onChange={onChange} disabled={disabled} options={options.map(([value, label]) => ({ value, label }))} /></label>
 }
-export function FxAnalyticsFilters({ filters, onChange, extra, onExtra, rows, onExport, pending, ledgerOnly, sessionControl, onClearSessions, columnControl, facets, persistInUrl, sourceType }) {
-  if (!ledgerOnly) return <AnalyticsFilterBar {...{ filters, onChange, extra, onExtra, rows, onExport, pending, sessionControl, persistInUrl, sourceType }} />
-  return <LedgerFilters {...{ filters, onChange, extra, onExtra, rows, onExport, pending, sessionControl, onClearSessions, columnControl, facets }} />
+export function FxAnalyticsFilters({ filters, onChange, extra, onExtra, rows, onExport, pending, ledgerOnly, sessionControl, onClearSessions, columnControl, facets, persistInUrl, sourceType, statusControl, disabled = false }) {
+  if (!ledgerOnly) return <AnalyticsFilterBar {...{ filters, onChange, extra, onExtra, rows, onExport, pending, sessionControl, persistInUrl, sourceType, statusControl, disabled }} />
+  return <LedgerFilters {...{ filters, onChange, extra, onExtra, rows, onExport, pending, sessionControl, onClearSessions, columnControl, facets, statusControl, disabled }} />
 }
-function LedgerFilters({ filters, onChange, extra, onExtra, rows, sessionControl, columnControl, facets }) {
+function LedgerFilters({ filters, onChange, extra, onExtra, rows, sessionControl, columnControl, facets, statusControl, disabled }) {
   const { t } = useTestingLocale()
 
   const [drawer, setDrawer] = useState('')
-  return <section className="fxa-filters" aria-label={t("Bộ lọc giao dịch")} data-testid="analytics-filters">
-    <div className="fxa-filter-toolbar is-ledger">{sessionControl}<div className="fxa-filter-actions">{columnControl}{columnControl && <span className="fxa-filter-divider" aria-hidden="true" />}<span className="fxa-filter-label">{t("Filter by")}</span>{['Basic', 'Tags'].map(tab => <button key={tab} className="fxa-button" type="button" aria-haspopup="dialog" aria-expanded={drawer === tab} onClick={() => setDrawer(tab)}>{t(tab)}</button>)}</div></div>
+  return <section className="fxa-filters" inert={disabled || undefined} aria-disabled={disabled || undefined} aria-label={t("Bộ lọc giao dịch")} data-testid="analytics-filters">
+    <div className="fxa-filter-toolbar is-ledger">{sessionControl}<div className="fxa-filter-actions">{statusControl}{columnControl}{columnControl && <span className="fxa-filter-divider" aria-hidden="true" />}<span className="fxa-filter-label">{t("Filter by")}</span>{['Basic', 'Tags'].map(tab => <button key={tab} className="fxa-button" type="button" aria-haspopup="dialog" aria-expanded={drawer === tab} onClick={() => setDrawer(tab)}>{t(tab)}</button>)}</div></div>
     {drawer && <LedgerFilterDrawer initialTab={drawer} {...{ filters, extra, rows, facets }} onApply={(next, nextExtra) => { onChange(next); onExtra(nextExtra) }} onClose={() => setDrawer('')} />}
   </section>
 }

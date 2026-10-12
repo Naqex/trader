@@ -38,11 +38,13 @@
 .fx-dashboard-card-disclosure { display:grid; grid-template-rows:0fr; opacity:0; transition:grid-template-rows var(--ds-motion-dialog) var(--ds-ease-standard), opacity var(--ds-motion-dialog) var(--ds-ease-standard); }
 .fx-dashboard-session-card.is-expanded .fx-dashboard-card-disclosure { grid-template-rows:1fr; opacity:1; }
 .fx-dashboard-card-disclosure-inner { min-height:0; overflow:hidden; }
-.fx-dashboard-card-charts { padding: 0 20px 20px; }
+.fx-dashboard-card-charts { padding: 20px; border-top:1px solid var(--wm-border); }
 .fx-dashboard-card-charts .fxs-performance { margin: 0; }
 .fx-dashboard-card-charts .fxs-no-analytics { min-height: 0; padding-block: 0; line-height: 1.5; }
 .fx-dashboard-card-charts .fxs-charts { gap: 16px; }
 .fx-dashboard-card-charts .fxs-chart-panel { background: transparent; border-color: transparent; border-radius: 0; }
+.fx-dashboard-card-charts .fxs-chart-panel { position:relative; }
+.fx-dashboard-card-charts .fxs-chart-panel + .fxs-chart-panel::before { content:''; position:absolute; left:-8px; top:-20px; bottom:-20px; width:1px; background:var(--wm-border); pointer-events:none; }
 .fx-dashboard-card-charts > p { margin: 12px 0 0; font-size: 13px; color: var(--wm-content-muted); }
 .fx-dashboard-dialog { width: min(1100px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); box-sizing: border-box; overflow: auto; margin: auto; padding: 24px; border: 1px solid var(--wm-border-strong); border-radius: 12px; color: var(--wm-content); background: var(--wm-surface); }
 .fx-dashboard-dialog::backdrop { background: #0009; }
@@ -66,11 +68,15 @@
   .fx-dashboard-card-progress { grid-column: 2; }
   .fx-dashboard-card-actions { grid-column: 1 / -1; grid-row: auto; justify-content: flex-end; flex-wrap: wrap; }
 }
+@media (max-width: 1000px) {
+  .fx-dashboard-card-charts .fxs-chart-panel + .fxs-chart-panel::before { left:-20px; right:-20px; top:-8px; bottom:auto; width:auto; height:1px; }
+}
 @media (max-width: 480px) {
   .fx-dashboard-session-card-head { padding: 14px; gap: 12px; }
   .fx-dashboard-card-actions { justify-content: flex-start; gap: 4px; }
   .fx-app .fx-dashboard .fx-dashboard-card-summary { padding-inline: 8px; }
-  .fx-dashboard-card-charts { padding: 0 14px 14px; }
+  .fx-dashboard-card-charts { padding:14px; }
+  .fx-dashboard-card-charts .fxs-chart-panel + .fxs-chart-panel::before { left:-14px; right:-14px; }
   .fx-dashboard-dialog { padding: 16px; }
 }
 @media (pointer: coarse) { .fx-app .fx-dashboard :is(.fx-dashboard-card-icon, .fx-dashboard-card-play, .fx-dashboard-card-summary) { min-height: 44px; min-width: 44px; } }

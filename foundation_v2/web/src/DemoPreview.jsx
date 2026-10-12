@@ -11,7 +11,7 @@ import SessionFilter from './SessionFilter.jsx'
 import SessionPerformance from './SessionPerformance.jsx'
 import DashboardSessions from './DashboardSessions.jsx'
 import TestingReadState from './TestingReadState.jsx'
-import { TestingEmptyState, TestingResourceNotice } from './TestingPageState.jsx'
+import { TestingEmptyState, TestingResourceNotice, TestingResourceStatus } from './TestingPageState.jsx'
 import { SessionActions, SessionActionDialog } from './SessionActions.jsx'
 import SessionSettingsDrawer from './SessionSettingsDrawer.jsx'
 import { SessionSummaryCard, SessionDescriptionCard } from './SessionDetails.jsx'
@@ -57,12 +57,13 @@ function DemoReports({ ledgerOnly, prop = false, query, state = 'demo' }) {
     anchor.href = url; anchor.download = 'demo-trades.csv'; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
   const Inspector = ledgerOnly ? TradeInspector : 'section'
-  const renderFilters = columnControl => <FxAnalyticsFilters persistInUrl={false} sourceType={prop ? 'Prop firm' : 'Backtesting'} columnControl={columnControl} ledgerOnly={ledgerOnly} filters={filters} onChange={patch => { setFilters(value => ({ ...value, ...patch })); setSelected('') }} extra={extra} onExtra={patch => setExtra(value => ({ ...value, ...patch }))} rows={model.ledger} onExport={exportCsv} sessionControl={<SessionFilter items={sessions} multiple={ledgerOnly} value={ids} onChange={value => { setIds(value); setSelected('') }} />} onClearSessions={() => setIds(ledgerOnly ? null : sessions[0].record_id)} />
+  const statusControl = <TestingResourceStatus state={state} resource={ledgerOnly ? 'bảng giao dịch' : 'báo cáo phân tích'} recovery={previewReadRecovery(state)} />
+  const readNotice = state === 'error' ? <TestingResourceNotice state="error" recovery={previewReadRecovery(state)} resource={ledgerOnly ? 'bảng giao dịch' : 'báo cáo phân tích'} /> : null
+  const renderFilters = columnControl => <FxAnalyticsFilters statusControl={statusControl} persistInUrl={false} sourceType={prop ? 'Prop firm' : 'Backtesting'} columnControl={columnControl} ledgerOnly={ledgerOnly} filters={filters} onChange={patch => { setFilters(value => ({ ...value, ...patch })); setSelected('') }} extra={extra} onExtra={patch => setExtra(value => ({ ...value, ...patch }))} rows={model.ledger} onExport={exportCsv} sessionControl={<SessionFilter items={sessions} multiple={ledgerOnly} value={ids} onChange={value => { setIds(value); setSelected('') }} />} onClearSessions={() => setIds(ledgerOnly ? null : sessions[0].record_id)} />
   return <section className="wm-page as-page" aria-label={ledgerOnly ? t("Trades") : t("Analytics")}>
     <h1 className="sr-only">{ledgerOnly ? t("Trades") : t("Analytics")}</h1>
-    <TestingResourceNotice state={state} recovery={previewReadRecovery(state)} resource={ledgerOnly ? 'bảng giao dịch' : 'báo cáo phân tích'} />
-    {ledgerOnly ? <FxTradeLedger hidden={state === 'error'} model={model} extra={extra} selected={selected} onSelect={setSelected} renderFilters={renderFilters} /> : renderFilters()}
-    {prop && <Objectives model={model} />}
+    {ledgerOnly ? <FxTradeLedger hidden={state === 'error'} model={model} extra={extra} selected={selected} onSelect={setSelected} renderFilters={renderFilters} readNotice={readNotice} /> : <>{renderFilters()}{readNotice}</>}
+    {prop && state !== 'error' && <Objectives model={model} />}
     {!ledgerOnly && state !== 'error' && <FxAnalyticsReport model={model} extra={extra} experimentStatus="unavailable" config={config} onConfig={setConfig} selected={selected} onSelect={setSelected} />}
     {row && <Inspector onClose={() => setSelected('')} className="fxa-trade-inspector" aria-label={t("Chi tiết giao dịch")}><div className="fxa-section-heading"><h2>{row.session_name} · {row.symbol}</h2><button className="fxa-button" type="button" onClick={() => setSelected('')}>{t("Đóng chi tiết")}</button></div><div className="fxa-metrics"><Metric label={t("Net P/L")} value={fmt(row.net_pnl, t(" USD"))} /><Metric label={t("Return (R)")} value={fmt(row.realized_r, t(" R"))} /><Metric label={t("Entry")} value={fmt(row.price_open, '', 6)} /><Metric label={t("Exit")} value={fmt(row.price_close, '', 6)} /></div></Inspector>}
   </section>
@@ -96,6 +97,7 @@ function DemoSessions({ workspace, query, state }) {
     <div className="fxr-session-toolbar">
       <SessionSelect selected={id} catalog={{ status: 'ready', items }} onSelect={select} balance={fmt(model?.endingBalance, t(" USD"))} />
       <div className="fxr-session-actions">
+        <TestingResourceStatus state={state} resource="kết quả phiên" recovery={previewReadRecovery(state)} />
         <button className="fxr-button fxr-button-primary fxs-new-session" disabled type="button"><TestingIcon kind="plus" size={16} />{t("＋ Phiên mới")}</button>
         {item && <><FxSelect className="fxs-analytics-button" label={t("Mở Analytics")} value="session" triggerContent={t("Analytics")} options={[{ value: 'session', label: 'Analytics phiên' }, { value: 'prop', label: 'Prop Firm' }]} onChange={value => navigate(href('analytics', { analytics_source: value === 'prop' ? 'prop' : 'sessions' }))} />
         <button className="fxr-button fxr-button-secondary fxs-settings" type="button" onClick={() => setEditing(true)}>{t("Cài đặt phiên")}</button>
@@ -106,7 +108,7 @@ function DemoSessions({ workspace, query, state }) {
       <SessionSummaryCard item={item} dataset={dataset} payload={state === 'error' ? null : payload} model={state === 'error' ? null : model} replayRecord={replayRecord} preview />
       <SessionDescriptionCard item={item} onSave={description => save({ description })} />
     </div>
-    <div className="fxr-session-report"><TestingResourceNotice state={state} recovery={previewReadRecovery(state)} resource="kết quả phiên" />{state !== 'error' && <SessionPerformance model={model} item={item} payload={payload} href={href} />}</div>
+    <div className="fxr-session-report">{state === 'error' && <TestingResourceNotice state="error" recovery={previewReadRecovery(state)} resource="kết quả phiên" />}{state !== 'error' && <SessionPerformance model={model} item={item} payload={payload} href={href} />}</div>
     </> : <div className="fxr-empty-state"><h2>{t("Chưa có phiên trong bản xem thử")}</h2><p>{t("Tải lại trang để xem lại các phiên demo.")}</p></div>}
     {actionDialog && item && <SessionActionDialog key={actionDialog + id} mode={actionDialog} item={item} preview onClose={() => setActionDialog(null)} onSubmit={mutate} />}
     {editing && item && <SessionSettingsDrawer item={item} dataset={dataset} payload={payload} model={model} replayRecord={replayRecord} workspace={workspace} preview onClose={() => setEditing(false)} onSubmit={save} />}

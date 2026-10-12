@@ -21,6 +21,20 @@
 .wm-trades-empty p { margin:0; max-width:480px; color:var(--wm-content-muted); font-size:var(--ds-font-body); line-height:1.6; }
 .wm-trades-empty > button { margin-top:20px; }
 .wm-read-recovery { display:block; color:var(--wm-content-muted); font-size:var(--ds-font-small); line-height:1.5; }
+.wm-resource-status-slot { display:inline-flex; width:24px; height:24px; flex:0 0 24px; align-items:center; justify-content:center; }
+.wm-resource-status { position:relative; color:var(--wm-content-muted); font-size:var(--ds-font-small); }
+.wm-resource-status.is-stale, .wm-resource-status.is-partial { color:var(--wm-warning); }
+.wm-resource-status > summary { display:flex; align-items:center; justify-content:center; width:24px; height:24px; cursor:pointer; list-style:none; border-radius:50%; }
+.wm-resource-status > summary::-webkit-details-marker { display:none; }
+.wm-resource-status > summary:hover { background:var(--wm-control-hover); }
+.wm-resource-status > summary:focus-visible { outline:2px solid var(--wm-focus); outline-offset:2px; }
+.wm-resource-status.is-refreshing > summary > svg { animation:wm-resource-spin 1.4s linear infinite; }
+.wm-resource-status-detail { position:fixed; z-index:100; box-sizing:border-box; width:min(280px,calc(100vw - 32px)); padding:12px; border:1px solid var(--wm-border); border-radius:8px; background:var(--wm-surface); color:var(--wm-content); line-height:1.5; }
+.wm-resource-status-detail p { margin:0; }
+.wm-resource-status-detail .wm-read-recovery { margin-top:6px; }
+.wm-resource-heading { display:flex; align-items:center; gap:8px; }
+@keyframes wm-resource-spin { to { transform:rotate(360deg); } }
+@media(prefers-reduced-motion:reduce) { .wm-resource-status.is-refreshing > summary > svg { animation:none; } }
 .wm-connection-note { color:var(--wm-content-muted); font-size:var(--ds-font-small); white-space:nowrap; }
 .fx-subnav-action:has(.wm-connection-note) { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:12px; }
 .fxa-trades:has(> .wm-trades-empty) { display:flex; flex-direction:column; }

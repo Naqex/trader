@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { chromium } from 'playwright'
 import { DEMO_SESSIONS, DEMO_LEDGER, demoOverview, demoDashboardAnalytics } from '../src/demoFixtures.js'
-const origin = 'http://127.0.0.1:5180', output = '../evidence/read-recovery-20261012/report-consumers'
+const origin = 'http://127.0.0.1:5180', output = process.env.TW_UI_EVIDENCE_DIR || '../evidence/read-status-layout-20261012/report-consumers'
 await mkdir(output, { recursive: true })
 const browser = await chromium.launch({ headless: true })
 const report = { scope: 'Actual report reader components with labeled GET-only HTTP/SSE fixtures; no owner writes', cases: [], errors: [] }
@@ -48,10 +48,15 @@ try {
   await page.waitForTimeout(2300)
   assert.equal(reads, 3, 'Session revision reloads visible current-scope report')
   report.cases.push('Current report reconciles matching sessions revision')
+  const reportTop = await page.locator('.fxa-report-tabs').evaluate(element => element.getBoundingClientRect().top)
   mode = 'stale'
   await page.evaluate(() => window.fixtureSnapshot('three'))
-  await page.getByTestId('analytics-workspace').getByText('Dữ liệu chưa cập nhật. Kết quả đã đọc vẫn được giữ trên màn hình.', { exact: true }).waitFor()
+  const staleStatus = page.getByTestId('analytics-workspace').locator('.wm-resource-status[data-resource-state=stale]')
+  await staleStatus.locator('summary').waitFor()
+  await staleStatus.locator('summary').click()
+  await staleStatus.getByText('Chưa cập nhật được kết quả phân tích. Đang giữ bản đã đọc trước đó.', { exact: true }).waitFor()
   assert.ok(await page.locator('.fxa-report').first().isVisible())
+  assert.equal(await page.locator('.fxa-report-tabs').evaluate(element => element.getBoundingClientRect().top), reportTop, 'Background stale status cannot shift report tabs')
   assert.equal(await page.getByTestId('analytics-workspace').locator('.wm-skeleton').count(), 0)
   await page.getByTestId('read-recovery').first().waitFor()
   await page.screenshot({ path: `${output}/analytics-stale-retained.png`, animations: 'disabled' })
@@ -94,6 +99,18 @@ try {
   assert.equal(overviewReads, 2)
   report.cases.push('Dashboard Performance auto-recovers initial GET failure without a refresh button')
   await page.screenshot({ path: `${output}/performance-recovered.png`, animations: 'disabled' })
+  let catalogReads = 0
+  await page.route('**/api/v2/replay/sessions', route => { catalogReads++; return catalogReads === 1 ? route.fulfill({ status: 503, headers: { 'Retry-After': '2' }, json: { detail: 'fixture_catalog_unavailable' } }) : route.fulfill({ json: { items: DEMO_SESSIONS } }) })
+  await go()
+  const catalogError = page.getByTestId('session-catalog-error')
+  await catalogError.getByRole('alert').waitFor()
+  assert.equal(await catalogError.getByTestId('analytics-filters').getAttribute('inert'), '')
+  const placement = await catalogError.evaluate(element => ({ filterBottom: element.querySelector('[data-testid=analytics-filters]').getBoundingClientRect().bottom, errorTop: element.querySelector('[role=alert]').getBoundingClientRect().top }))
+  assert.ok(placement.errorTop >= placement.filterBottom - 1, JSON.stringify(placement))
+  assert.equal(await page.getByTestId('testing-empty-state').count(), 0, 'Unavailable catalog cannot be mistaken for no sessions')
+  await page.locator('.fxa-report').first().waitFor()
+  assert.equal(catalogReads, 2)
+  report.cases.push('Catalog503 keeps disabled filter/session structure, error below divider, then automatic recovery')
   assert.deepEqual(report.errors, []); report.result = 'PASS'
 } catch (error) {
   report.result = 'FAIL'; report.failure = error.stack; await page.screenshot({ path: `${output}/failure.png`, animations: 'disabled' }); throw error
