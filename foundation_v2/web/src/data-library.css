@@ -52,8 +52,7 @@
 .data-library-column-size { width:8%; }
 .data-library-column-actions { width:308px; }
 .data-library .rd-table td { vertical-align:middle; }
-.fx-app.fx-shell-story[data-theme] .data-library .rd-table tbody tr + tr td { border-top-color:color-mix(in srgb, var(--wm-content) 8%, var(--wm-canvas)); }
-.data-library .rd-table tbody tr:last-child td { border-bottom:1px solid color-mix(in srgb, var(--wm-content) 8%, var(--wm-canvas)); }
+.data-library .rd-table tbody tr:last-child td { border-bottom:1px solid var(--wm-border); }
 .data-library .rd-table td:not(:last-child) { overflow-wrap:anywhere; }
 .data-library .rd-table :is(strong, small) { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .data-library .rd-table td > button { max-width:100%; }

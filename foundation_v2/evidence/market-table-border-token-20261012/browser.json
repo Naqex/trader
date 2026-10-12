@@ -1,0 +1,125 @@
+{
+  "cases": [
+    {
+      "width": 1710,
+      "theme": "dark",
+      "preview": true,
+      "rowColors": [
+        "rgb(61, 68, 76)"
+      ],
+      "lastColor": "rgb(61, 68, 76)",
+      "borderWidth": "1px",
+      "referenceMatch": true,
+      "singleToolbarLine": true
+    },
+    {
+      "width": 1710,
+      "theme": "dark",
+      "preview": false,
+      "rowColors": [
+        "rgb(61, 68, 76)"
+      ],
+      "lastColor": "rgb(61, 68, 76)",
+      "borderWidth": "1px",
+      "referenceMatch": true,
+      "singleToolbarLine": true
+    },
+    {
+      "width": 1710,
+      "theme": "light",
+      "preview": true,
+      "rowColors": [
+        "rgb(210, 213, 218)"
+      ],
+      "lastColor": "rgb(210, 213, 218)",
+      "borderWidth": "1px",
+      "referenceMatch": true,
+      "singleToolbarLine": true
+    },
+    {
+      "width": 1710,
+      "theme": "light",
+      "preview": false,
+      "rowColors": [
+        "rgb(210, 213, 218)"
+      ],
+      "lastColor": "rgb(210, 213, 218)",
+      "borderWidth": "1px",
+      "referenceMatch": true,
+      "singleToolbarLine": true
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "preview": true,
+      "rowColors": [
+        "rgb(61, 68, 76)"
+      ],
+      "lastColor": "rgb(61, 68, 76)",
+      "borderWidth": "1px",
+      "referenceMatch": true,
+      "singleToolbarLine": true
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "preview": false,
+      "rowColors": [
+        "rgb(61, 68, 76)"
+      ],
+      "lastColor": "rgb(61, 68, 76)",
+      "borderWidth": "1px",
+      "referenceMatch": true,
+      "singleToolbarLine": true
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "preview": true,
+      "rowColors": [
+        "rgb(210, 213, 218)"
+      ],
+      "lastColor": "rgb(210, 213, 218)",
+      "borderWidth": "1px",
+      "referenceMatch": true,
+      "singleToolbarLine": true
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "preview": false,
+      "rowColors": [
+        "rgb(210, 213, 218)"
+      ],
+      "lastColor": "rgb(210, 213, 218)",
+      "borderWidth": "1px",
+      "referenceMatch": true,
+      "singleToolbarLine": true
+    }
+  ],
+  "reference": [
+    {
+      "width": "1px",
+      "theme": "dark",
+      "color": "rgb(61, 68, 76)"
+    },
+    {
+      "width": "1px",
+      "theme": "light",
+      "color": "rgb(210, 213, 218)"
+    },
+    {
+      "width": "1px",
+      "theme": "dark",
+      "color": "rgb(61, 68, 76)"
+    },
+    {
+      "width": "1px",
+      "theme": "light",
+      "color": "rgb(210, 213, 218)"
+    }
+  ],
+  "errors": [],
+  "writes": [],
+  "result": "PASS"
+}
