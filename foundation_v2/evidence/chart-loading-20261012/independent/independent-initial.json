@@ -1,0 +1,103 @@
+{
+  "scope": "GET-only initial chart loading and Sessions picker",
+  "results": [
+    {
+      "case": "Initial GET pending center/full viewport and GET failure exits spinner",
+      "width": 1537,
+      "theme": "dark",
+      "metric": {
+        "box": {
+          "x": 0,
+          "y": 46,
+          "w": 1537,
+          "h": 941
+        },
+        "inner": {
+          "x": 674.390625,
+          "y": 461.75,
+          "w": 188.21875,
+          "h": 109.5
+        },
+        "bg": "rgb(8, 8, 8)",
+        "animation": "wm-chart-loading-spin",
+        "main": 1,
+        "theme": "dark"
+      }
+    },
+    {
+      "case": "Initial GET pending center/full viewport and GET failure exits spinner",
+      "width": 1537,
+      "theme": "light",
+      "metric": {
+        "box": {
+          "x": 0,
+          "y": 46,
+          "w": 1537,
+          "h": 941
+        },
+        "inner": {
+          "x": 674.390625,
+          "y": 461.75,
+          "w": 188.21875,
+          "h": 109.5
+        },
+        "bg": "rgb(255, 255, 255)",
+        "animation": "none",
+        "main": 1,
+        "theme": "light"
+      }
+    },
+    {
+      "case": "Initial GET pending center/full viewport and GET failure exits spinner",
+      "width": 390,
+      "theme": "dark",
+      "metric": {
+        "box": {
+          "x": 0,
+          "y": 99,
+          "w": 390,
+          "h": 888
+        },
+        "inner": {
+          "x": 100.890625,
+          "y": 488.25,
+          "w": 188.21875,
+          "h": 109.5
+        },
+        "bg": "rgb(8, 8, 8)",
+        "animation": "wm-chart-loading-spin",
+        "main": 1,
+        "theme": "dark"
+      }
+    },
+    {
+      "case": "Initial GET pending center/full viewport and GET failure exits spinner",
+      "width": 390,
+      "theme": "light",
+      "metric": {
+        "box": {
+          "x": 0,
+          "y": 46,
+          "w": 390,
+          "h": 941
+        },
+        "inner": {
+          "x": 100.890625,
+          "y": 461.75,
+          "w": 188.21875,
+          "h": 109.5
+        },
+        "bg": "rgb(255, 255, 255)",
+        "animation": "none",
+        "main": 1,
+        "theme": "light"
+      }
+    },
+    {
+      "case": "Sessions lazy picker remains page skeleton"
+    }
+  ],
+  "errors": [],
+  "writes": [],
+  "result": "PASS"
+}

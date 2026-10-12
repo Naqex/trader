@@ -305,7 +305,7 @@ or reconnecting details open in the existing status popup without growing the
 subheader. On mobile, section links scroll within their own row and the preview
 controls stay inside the viewport, including sections with nested navigation.
 
-A pending route module uses the page-shaped viewport skeleton. A failed module
+A pending report route module uses the page-shaped viewport skeleton. A failed module
 uses the shared page error while preserving shell navigation, with no reload
 button. Each resolved page has one main landmark; chart/order workspaces own their
 main element, while Testing report pages use the shell's main region.
@@ -324,3 +324,20 @@ automatically. Main and preview reuse these same components; fixture fields must
 follow the real API contract, including asset classes.
 
 Audit evidence: `foundation_v2/evidence/testing-overall-audit-20261012/README.md`.
+
+## Opening a replay chart
+
+The chart workspace uses `ChartLoadingState` across lazy module loading, the
+initial session read, and native chart initialization. Center a small spinner and
+localized caption in the chart viewport; use the existing canvas theme and honor
+reduced motion. Keep shell navigation mounted. Do not invent a percentage or show
+report skeletons in this workspace; the Sessions picker remains a report page.
+
+The native chart host stays inert and hidden from assistive technology until its
+data and theme are ready. Remove the overlay when ready. Session reads have the
+shared 15-second deadline, including body download; native initialization retains
+its 20-second deadline through data/theme readiness. Errors end loading and expose
+the existing error state; native failures retain the fallback-chart link. A
+same-session background read keeps the established chart and adds no loading row.
+
+Scoped QA: `foundation_v2/evidence/chart-loading-20261012/README.md`.

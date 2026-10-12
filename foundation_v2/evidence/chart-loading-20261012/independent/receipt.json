@@ -1,0 +1,64 @@
+{
+  "result": "PASS",
+  "approval": "Scoped approval for chart loading source, visual and interaction regression. Not full-product acceptance.",
+  "scope": "Cold lazy replay route, initial session GET and real local native chart init over labeled synthetic 61-bar prefix. Existing Sessions picker loading regression.",
+  "commands": [
+    "node foundation_v2/evidence/chart-loading-20261012/independent/review.mjs",
+    "node foundation_v2/evidence/chart-loading-20261012/independent/native-review.mjs"
+  ],
+  "evidence": {
+    "initial": "independent-initial.json",
+    "native": "browser.json",
+    "retainedFailure": "browser-attempt1.json",
+    "initialRecordedCases": 5,
+    "nativeRecordedStages": 22,
+    "pageErrors": 0,
+    "unexpectedRequestsInFinalRun": 0
+  },
+  "reviewedSource": [
+    "web/src/ChartLoadingState.jsx",
+    "web/src/chart-loading-state.css",
+    "web/src/main.jsx",
+    "web/src/ReplayWorkspace.jsx",
+    "web/src/TradingViewReplayChart.jsx",
+    "web/src/scopedRead.js"
+  ],
+  "verified": [
+    "Loading group centered within chart/content region to 1px at 1440/1537 and 390 wide, dark and light.",
+    "Initial viewport fills remaining screen; one main landmark, no overflow or duplicated skeleton.",
+    "Reduced motion disables spinner animation; default motion retains spinner.",
+    "Same shell DOM survives lazy module to GET to native ready; real local engine retains 61-bar synthetic prefix.",
+    "Pending native host is inert and aria-hidden; actual Tab traversal repeated 20 times cannot enter instantiated native iframe.",
+    "GET network failure and 15-second GET deadline exit loading.",
+    "Native library error and stalled native dataReady callback exit loading; 20-second deadline persists to data readiness.",
+    "Native error keeps visible accessible lightweight fallback link and inert host.",
+    "Sessions picker remains report page skeleton, not chart spinner."
+  ],
+  "visualReview": {
+    "viewed": [
+      "initial-get-1537-dark.png",
+      "initial-get-390-light.png",
+      "engine-pending-1440-dark.png",
+      "engine-pending-1440-light.png",
+      "engine-pending-390-dark.png",
+      "engine-pending-390-light.png",
+      "library-error-debug.png"
+    ],
+    "conclusion": "Spinner/caption placement and contrast are clean across tested widths/themes; existing chart controls remain outside the central loading indicator. No blocking visual defect in this scope."
+  },
+  "findingsResolved": [
+    "Early clearing of native deadline at onChartReady was found independently. Root moved it to completion/error. Stalled dataReady now verified to time out.",
+    "Initial GET reused scopedRead with existing 15-second deadline and localized timeout error."
+  ],
+  "harnessNotes": [
+    "Initial local harness used the wrong theme storage key; corrected to tw-theme and asserted actual data-theme before final PASS.",
+    "Native attempt 1 used raw source label Mở chart dự phòng. Localized accessible name is Mở biểu đồ dự phòng. Selector was corrected; failed report retained.",
+    "Final native run blocked one known synthetic-session activity POST before backend dispatch, classified separately. No owner/backend data mutation occurred; all other non-read or external requests remain rejected."
+  ],
+  "limitations": [
+    "Synthetic prefix has dataset_sha256 null; historical window paging and correctness are not covered by this loading review.",
+    "No owner replay session actions, orders, broker operations, source edits, commits or service restarts performed by reviewer.",
+    "Native ready geometry is asserted; reviewed screenshots focus on loading/error states, not all chart features.",
+    "Full-product acceptance and final integration remain owned by parent task."
+  ]
+}

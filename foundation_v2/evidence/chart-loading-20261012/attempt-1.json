@@ -1,0 +1,103 @@
+{
+  "scope": "Labeled synthetic replay prefix and real local chart engine; GET-only, no owner session or broker writes",
+  "cases": [
+    {
+      "width": 1440,
+      "theme": "dark",
+      "stage": "cold lazy route",
+      "motion": "no-preference"
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "stage": "initial session GET"
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "stage": "native library pending, host inert"
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "stage": "real engine ready, same shell, candle prefix retained"
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "stage": "cold lazy route",
+      "motion": "no-preference"
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "stage": "initial session GET"
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "stage": "native library pending, host inert"
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "stage": "real engine ready, same shell, candle prefix retained"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "stage": "cold lazy route",
+      "motion": "reduce"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "stage": "initial session GET"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "stage": "native library pending, host inert"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "stage": "real engine ready, same shell, candle prefix retained"
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "stage": "cold lazy route",
+      "motion": "reduce"
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "stage": "initial session GET"
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "stage": "native library pending, host inert"
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "stage": "real engine ready, same shell, candle prefix retained"
+    },
+    {
+      "stage": "initial network error exits loading"
+    },
+    {
+      "stage": "session deadline exits loading after 15 seconds"
+    }
+  ],
+  "errors": [],
+  "unexpected": [
+    "POST http://127.0.0.1:5180/api/v2/replay/sessions/fixture-chart-ui/activity",
+    "POST http://127.0.0.1:5180/api/v2/replay/sessions/fixture-chart-ui/activity",
+    "POST http://127.0.0.1:5180/api/v2/replay/sessions/fixture-chart-ui/activity"
+  ],
+  "result": "FAIL",
+  "failure": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('link', { name: 'Mở chart dự phòng' }) to be visible\u001b[22m\n\n    at D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\web\\tests\\chartLoading.browser.mjs:131:65"
+}

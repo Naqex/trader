@@ -34,6 +34,7 @@ import WorkspaceConnectionNote from './WorkspaceConnectionNote.jsx'
 import { startFrontendPerformance } from './frontendPerformance.js'
 import { TestingRouteBoundary } from './TestingReadState.jsx'
 import { TestingEmptyState, TestingPageSkeleton } from './TestingPageState.jsx'
+import ChartLoadingState from './ChartLoadingState.jsx'
 
 function WorkspaceOverview({ workspace, query }) {
   return <section className="fx-dashboard" aria-label="Dashboard"><div className="fx-dashboard-inner"><DashboardSessions key={workspace} workspace={workspace} query={query} /></div></section>
@@ -76,6 +77,7 @@ function App() {
   }, [scope])
   // Trading tabs open persisted reports. Order entry is an explicit chart action.
   const showSessionPicker = query.get('surface') !== 'workspace' && (query.get('select') === '1' || query.get('mode') === 'Practice')
+  const loadingFallback = activeView === 'replay' && !showSessionPicker ? <ChartLoadingState viewport /> : <TestingPageSkeleton view={activeView} />
   const showTradeLedger = query.get('intent') !== 'order'
   const showSessionAnalytics = query.get('surface') !== 'workspace' && !query.get('job') && !query.get('job_id')
   const isLearn = activeView === 'learn'
@@ -137,7 +139,7 @@ function App() {
   if (visualMode !== 'real') content = <ViewStatePreview key={`${activeView}:${query.get('analytics_source')}:${query.get('section')}:${visualMode}`} state={visualMode} view={activeView} workspace={workspace} query={query} onChange={changePreview} />
   if (query.get('ui_reference') === '1') content = <TestingComponentReference />
   const subnavAction = demoAvailable && query.get('ui_reference') !== '1' && <><WorkspaceConnectionNote key={workspace} workspace={workspace} enabled={visualMode === 'real'} previewState={visualMode} /><ViewStateSelect value={visualMode} view={activeView} onChange={changePreview} /></>
-  return <FxReplayShell workspace={workspace} query={query} activeView={activeView} mode={mode} subnavAction={subnavAction}><WorkspaceQueryProvider key={workspace} workspace={workspace} eventsEnabled={visualMode === 'real' && query.get('ui_reference') !== '1'}><TestingRouteBoundary key={scope} fallback={<TestingEmptyState kind="page-error" viewport />}><Suspense fallback={<TestingPageSkeleton view={activeView} />}>{content}</Suspense></TestingRouteBoundary></WorkspaceQueryProvider></FxReplayShell>
+  return <FxReplayShell workspace={workspace} query={query} activeView={activeView} mode={mode} subnavAction={subnavAction}><WorkspaceQueryProvider key={workspace} workspace={workspace} eventsEnabled={visualMode === 'real' && query.get('ui_reference') !== '1'}><TestingRouteBoundary key={scope} fallback={<TestingEmptyState kind="page-error" viewport />}><Suspense fallback={loadingFallback}>{content}</Suspense></TestingRouteBoundary></WorkspaceQueryProvider></FxReplayShell>
 }
 
 const rootElement = document.getElementById('root')

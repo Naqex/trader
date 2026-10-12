@@ -6,6 +6,7 @@ import { createAdvancedReplayDatafeed } from './advancedReplayDatafeed.js'
 import { createReplayChartWindowReader } from './replayChartWindow.js'
 import { readChartSnapshot, writeChartSnapshot } from './advancedChartStorage.js'
 import { createChartSave } from './advancedChartSave.js'
+import ChartLoadingState from './ChartLoadingState.jsx'
 
 let libraryPromise
 const volumeAppearance = theme => {
@@ -116,7 +117,6 @@ export default function TradingViewReplayChart(props) {
       })
       widget.onChartReady(() => {
         if (cancelled) return
-        clearTimeout(loadingTimer)
         const frame = host.current?.querySelector('iframe')
         if (frame) { frame.title = t('Biểu đồ replay {symbol}', { symbol }); if (frame.contentDocument) frame.contentDocument.title = `WMReplay · ${symbol}` }
         chart = widget.activeChart()
@@ -204,11 +204,12 @@ export default function TradingViewReplayChart(props) {
             widget.applyOverrides(paneAppearance(latest.current.theme))
             applyVolumeAppearance(widget, chart, latest.current.theme)
             refresh(); importAnnotations()
+            clearTimeout(loadingTimer)
             setStatus('ready')
             chartReady = true
             publishHeader()
             if (!saved) scheduleSave()
-          }).catch(error => { if (!cancelled) { setStatus('error'); setMessage(String(error.message || error)) } })
+          }).catch(error => { if (!cancelled) { clearTimeout(loadingTimer); setStatus('error'); setMessage(String(error.message || error)) } })
         }
         instance.current = { widget, adapter, historyReader, chart, refresh, importAnnotations, save, scheduleSave }
         if (!adapter.update(latest.current.rows, latest.current.cutoff)) { historyReader?.reset(); chart.resetData() }
@@ -308,9 +309,9 @@ export default function TradingViewReplayChart(props) {
           if (cancelled || !frame.isConnected) return
           const hash = JSON.stringify(source.hash).replaceAll('<', '\\u003c')
           frame.srcdoc = html.replace(/<head[^>]*>/i, head => `${head}<script>location.hash=${hash};</script>`)
-        }).catch(error => { if (!cancelled) { setStatus('error'); setMessage(String(error.message || error)) } })
+        }).catch(error => { if (!cancelled) { clearTimeout(loadingTimer); setStatus('error'); setMessage(String(error.message || error)) } })
       }
-    }).catch(error => { if (!cancelled) { setStatus('error'); setMessage(String(error.message || error)) } })
+    }).catch(error => { if (!cancelled) { clearTimeout(loadingTimer); setStatus('error'); setMessage(String(error.message || error)) } })
     return () => {
       cancelled = true; layoutSave?.dispose(); clearTimeout(loadingTimer); headerObserver?.disconnect(); nativeHeader?.removeEventListener('pointerdown', pauseNative, true); nativeHeader?.removeEventListener('keydown', pauseNative, true); nativeHeader?.ownerDocument.removeEventListener('keydown', saveShortcut, true); document.removeEventListener('keydown', saveShortcut, true); instance.current = null
       latest.current.onHeaderSlots?.(null)
@@ -354,8 +355,8 @@ export default function TradingViewReplayChart(props) {
   const fallbackUrl = new URL(window.location.href)
   fallbackUrl.searchParams.set('chart_engine', 'lightweight')
   return <div className="replay-chart advanced-replay-chart" data-testid="replay-chart" data-chart-engine="advanced" data-chart-status={status} data-visible-row-count={rows.length} data-cutoff={cutoff} role="group" aria-label={t('Advanced Charts · {symbol} · {count} nến đến cutoff {cutoff} UTC', { symbol, count: rows.length, cutoff })}>
-    <div ref={host} className="advanced-chart-host" />
-    {status === 'loading' && <div className="advanced-chart-message" role="status">{t("Đang mở Advanced Charts…")}</div>}
+    <div ref={host} className="advanced-chart-host" inert={status !== 'ready'} aria-hidden={status !== 'ready' ? true : undefined} />
+    {status === 'loading' && <ChartLoadingState />}
     {status === 'error' && <div className="advanced-chart-message" role="alert">{t(message)} <a href={fallbackUrl.href}>{t("Mở chart dự phòng")}</a></div>}
     {status === 'ready' && message && <span className="advanced-chart-save-status" role="status">{t(message)}</span>}
   </div>

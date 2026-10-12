@@ -1,0 +1,33 @@
+{
+  "scope": "Labeled synthetic replay prefix and real local chart engine; GET-only backend access, no owner session or broker writes",
+  "cases": [
+    {
+      "width": 1440,
+      "theme": "dark",
+      "stage": "cold lazy route",
+      "motion": "no-preference"
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "stage": "initial session GET"
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "stage": "native library pending, host inert"
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "stage": "real engine ready, same shell, candle prefix retained"
+    }
+  ],
+  "errors": [],
+  "unexpected": [],
+  "blockedSyntheticActivity": [
+    "POST http://127.0.0.1:5180/api/v2/replay/sessions/fixture-chart-ui/activity"
+  ],
+  "result": "FAIL",
+  "failure": "Error: Background session read did not start\n    at Timeout._onTimeout (file:///D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/web/tests/chartLoading.browser.mjs:97:104)\n    at listOnTimeout (node:internal/timers:635:17)\n    at process.processTimers (node:internal/timers:571:7)"
+}

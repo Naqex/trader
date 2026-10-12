@@ -1,5 +1,6 @@
 import { navigate } from './clientNavigation.js'
 import { scopedMutation } from './scopedMutation.js'
+import { scopedRead } from './scopedRead.js'
 import ProjectDateInput from './ProjectDateInput.jsx'
 import { displayDate } from './dateFormat.js'
 import { displayTimeframe } from './dataDisplay.js'
@@ -31,6 +32,7 @@ import { replayResolution, resolutionSeconds } from './advancedReplayDatafeed.js
 import { replayIntervalSteps, replayAdvance, replayRewind, replayRewindBucket, replaySelectionCursor, replayDelay } from './legacyReplayModel.js'
 import ChartOrderPanel, { useChartOrder } from './ChartOrderPanel.jsx'
 import TradingViewReplayChart from './TradingViewReplayChart.jsx'
+import ChartLoadingState from './ChartLoadingState.jsx'
 import useReplayActivity from './useReplayActivity.js'
 import ChartHeaderPreview from './ChartHeaderPreview.jsx'
 import LegacyChartHeader from './LegacyChartHeader.jsx'
@@ -420,10 +422,7 @@ export default function ReplayWorkspace({ workspace, query }) {
       if (options.advanceIntervalSeconds) params.set('advance_interval_seconds', String(options.advanceIntervalSeconds))
       if (options.cutoffTimestamp !== undefined) params.set('cutoff_timestamp', String(options.cutoffTimestamp))
       const suffix = params.size ? `?${params}` : ''
-      const response = await fetch(`/api/v2/replay/sessions/${encodeURIComponent(targetSessionId)}${suffix}`, {
-        signal: controller.signal,
-        headers: { 'X-Workspace-Id': workspace },
-      })
+      const response = await scopedRead(`/api/v2/replay/sessions/${encodeURIComponent(targetSessionId)}${suffix}`, workspace, controller.signal)
       const payload = await readJson(response)
       if (controller.signal.aborted) return
       const viewCursor = Number(payload.view_cursor_index ?? payload.payload.cursor_index)
@@ -432,7 +431,7 @@ export default function ReplayWorkspace({ workspace, query }) {
       setJumpDraft(Math.max(0, viewCursor))
       setState({ status: 'ready', payload, error: null })
     } catch (error) {
-      if (!controller.signal.aborted) setState({ status: 'error', payload: null, error: String(error.message || error) })
+      if (!controller.signal.aborted) setState({ status: 'error', payload: null, error: error.name === 'TimeoutError' ? 'Đọc phiên quá thời gian chờ. Hãy mở lại phiên.' : String(error.message || error) })
     } finally {
       if (sessionRequest.current === controller) sessionRequest.current = null
     }
@@ -874,6 +873,8 @@ export default function ReplayWorkspace({ workspace, query }) {
   const noDataset = datasetState.status === 'ready' && datasetState.items.length === 0
   const dataDeskHref = routeHref('data')
 
+  if (!replay && (state.status === 'loading' || requestedSession && state.status === 'idle')) return <ChartLoadingState viewport />
+
   return (
     <main style={advancedChart ? { '--legacy-header-height': `${(nativeHeaderSlots?.headerHeight || 38) + 4}px` } : undefined} className={`replay-shell wm-chart-page ${sideOpen ? 'is-panel-open' : ''} ${sideOpen && sidePanel === 'journal' ? 'is-journal-open' : ''} ${sideOpen && sidePanel === 'native-objects' ? 'is-native-tree-open' : ''} ${replay ? 'has-replay' : ''} ${advancedChart && replay ? 'is-legacy-chart' : ''}`}>
       {headerSlot && replay && !advancedChart && createPortal(<div className="chart-command-row" role="group" aria-label={t("Thanh công cụ chart")}>
@@ -934,7 +935,7 @@ export default function ReplayWorkspace({ workspace, query }) {
         </section>
       )}
 
-      {state.status === 'loading' && <div className="replay-message">{t("Đang tải trạng thái replay…")}</div>}
+      {state.status === 'loading' && !replay && <div className="replay-message">{t("Đang tải trạng thái replay…")}</div>}
       {state.status === 'error' && <div className="replay-message replay-error" role="alert">{t("Không đọc được replay:")} {state.error}</div>}
 
       {replay && (
