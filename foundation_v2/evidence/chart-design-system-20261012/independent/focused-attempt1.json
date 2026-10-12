@@ -1,0 +1,37 @@
+{
+  "cases": [
+    {
+      "width": 1440,
+      "theme": "dark",
+      "case": "Unknown cutoff uses local empty without table/pager, tabs keyboard navigate"
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "case": "Owned dropdown Escape hierarchy and focus, readonly hover, desktop36/touch44 sizing, no overflow"
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "case": "Unknown cutoff uses local empty without table/pager, tabs keyboard navigate"
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "case": "Owned dropdown Escape hierarchy and focus, readonly hover, desktop36/touch44 sizing, no overflow"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "case": "Unknown cutoff uses local empty without table/pager, tabs keyboard navigate"
+    }
+  ],
+  "errors": [],
+  "blocked": [
+    "POST /api/v2/replay/sessions/fixture-chart-ui/activity"
+  ],
+  "unexpected": [],
+  "scope": "Read-only labeled synthetic prefix, real local chart, app-owned UI and actual coarse-pointer mobile",
+  "result": "FAIL",
+  "failure": "locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.chart-utility-toggle')\u001b[22m\n\u001b[2m    - locator resolved to <button type=\"button\" aria-expanded=\"false\" class=\"chart-utility-toggle\" aria-label=\"Tiện ích phát lại\" aria-controls=\"chart-utility-actions\">…</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <iframe scrolling=\"no\" frameborder=\"0\" allowfullscreen=\"\" id=\"tradingview_c1577\" name=\"tradingview_c1577\" allowtransparency=\"true\" title=\"Biểu đồ replay EURUSD\" data-widget-options=\"symbol=EURUSD&interval=1&widgetbar=%7B%22details%22%3Afalse%2C%22watchlist%22%3Afalse%2C%22watchlist_settings%22%3A%7B%22default_symbols%22%3A%5B%5D%7D%7D&timeFrames=%5B%7B%22text%22%3A%225y%22%2C%22resolution%22%3A%221W%22%7D%2C%7B%22text%22%3A%221y%22%2C%22resolution%22%3A%221W%22%7D%2C%7B%22text%22%3A%226m%22%2C%22resol…>↵⇆⇆</iframe> from <div class=\"chart-canvas\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <iframe scrolling=\"no\" frameborder=\"0\" allowfullscreen=\"\" id=\"tradingview_c1577\" name=\"tradingview_c1577\" allowtransparency=\"true\" title=\"Biểu đồ replay EURUSD\" data-widget-options=\"symbol=EURUSD&interval=1&widgetbar=%7B%22details%22%3Afalse%2C%22watchlist%22%3Afalse%2C%22watchlist_settings%22%3A%7B%22default_symbols%22%3A%5B%5D%7D%7D&timeFrames=%5B%7B%22text%22%3A%225y%22%2C%22resolution%22%3A%221W%22%7D%2C%7B%22text%22%3A%221y%22%2C%22resolution%22%3A%221W%22%7D%2C%7B%22text%22%3A%226m%22%2C%22resol…>↵⇆⇆</iframe> from <div class=\"chart-canvas\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    19 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <iframe scrolling=\"no\" frameborder=\"0\" allowfullscreen=\"\" id=\"tradingview_c1577\" name=\"tradingview_c1577\" allowtransparency=\"true\" title=\"Biểu đồ replay EURUSD\" data-widget-options=\"symbol=EURUSD&interval=1&widgetbar=%7B%22details%22%3Afalse%2C%22watchlist%22%3Afalse%2C%22watchlist_settings%22%3A%7B%22default_symbols%22%3A%5B%5D%7D%7D&timeFrames=%5B%7B%22text%22%3A%225y%22%2C%22resolution%22%3A%221W%22%7D%2C%7B%22text%22%3A%221y%22%2C%22resolution%22%3A%221W%22%7D%2C%7B%22text%22%3A%226m%22%2C%22resol…>↵⇆⇆</iframe> from <div class=\"chart-canvas\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\n    at D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\evidence\\chart-design-system-20261012\\independent\\focused.mjs:30:68"
+}

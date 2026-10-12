@@ -2,14 +2,15 @@ import { useEffect, useRef, useState } from 'react'
 import ChartIcon from './ChartIcon.jsx'
 import LegacyPositions from './LegacyPositions.jsx'
 import LegacyPopover from './LegacyPopover.jsx'
+import FxSelect from './FxSelect.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import { finiteNumber } from './replayOrderModel.js'
 import { defaultScalperPreset, scalperProtection } from './legacyScalperPreset.js'
 import './LegacyTradingBar.css'
 
-export default function LegacyTradingBar({ order, quotes, onBeginOrder, analyticsHref, symbol, theme, sessionId, workspace }) {
+export default function LegacyTradingBar({ order, quotes, onBeginOrder, analyticsHref, symbol, theme, sessionId, workspace, readStatus }) {
   const { t, fmt, locale } = useTestingLocale()
-  const [positionsOpen, setPositionsOpen] = useState(false), [maximized, setMaximized] = useState(false), [height, setHeight] = useState(230)
+  const [positionsOpen, setPositionsOpen] = useState(false), [maximized, setMaximized] = useState(false), [height, setHeight] = useState(260)
   const [overflowReserve, setOverflowReserve] = useState(null)
   const [balanceHidden, setBalanceHidden] = useState(false), [balanceAnchor, setBalanceAnchor] = useState(null)
   const storageKey = `tw:legacy-scalper:v1:${workspace}:${sessionId}`
@@ -62,7 +63,7 @@ export default function LegacyTradingBar({ order, quotes, onBeginOrder, analytic
     // Keep the native chart at its minimum size while the table slides over it.
     setOverflowReserve(next > bounds.normal ? bounds.normal + bounds.barHeight : null)
     setMaximized(false)
-    setPositionsOpen(next > 48); if (next > 48) setHeight(Math.max(130, next))
+    setPositionsOpen(next > 48); if (next > 48) setHeight(Math.max(260, next))
   }
   const finishResize = commit => {
     cancelAnimationFrame(resizeFrame.current); resizeFrame.current = null
@@ -118,8 +119,9 @@ export default function LegacyTradingBar({ order, quotes, onBeginOrder, analytic
         }} onPointerUp={() => finishResize(true)} onPointerCancel={() => finishResize(false)} onLostPointerCapture={() => finishResize(false)}
         onKeyDown={event => { if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return; event.preventDefault(); event.stopPropagation(); resize(event.key === 'Home' ? 0 : event.key === 'End' ? 10000 : (maximized ? resizeBounds().full : positionsOpen ? height : 100) + (event.key === 'ArrowUp' ? 30 : -30)) }}><ChartIcon name="grip-horizontal" /></button>
       <div className="chart-trading-account">
+        {readStatus}
         <a className="legacy-analytics-link" href={analyticsHref}><ChartIcon name="analytics" />{t('Analytics')}</a>
-        <button type="button" className="legacy-balance-pill" aria-label={t('Thông tin tài khoản')} aria-expanded={Boolean(balanceAnchor)} onPointerEnter={event => showBalance(event.currentTarget)} onPointerLeave={dismissBalance} onFocus={event => showBalance(event.currentTarget)} onBlur={dismissBalance} onClick={event => balanceAnchor ? setBalanceAnchor(null) : showBalance(event.currentTarget)}><ChartIcon name="wallet" /><strong>{balanceHidden ? '••••••' : money(account?.balance ?? order.configuredBalance)}</strong></button>
+        <button type="button" className="legacy-balance-pill" aria-label={t('Thông tin tài khoản')} aria-expanded={Boolean(balanceAnchor)} onPointerEnter={event => { if (event.pointerType === 'mouse' && matchMedia('(hover:hover)').matches) showBalance(event.currentTarget) }} onPointerLeave={dismissBalance} onFocus={event => { if (event.currentTarget.matches(':focus-visible')) showBalance(event.currentTarget) }} onBlur={dismissBalance} onClick={event => balanceAnchor ? setBalanceAnchor(null) : showBalance(event.currentTarget)}><ChartIcon name="wallet" /><strong>{balanceHidden ? '••••••' : money(account?.balance ?? order.configuredBalance)}</strong></button>
         <button type="button" aria-label={t(balanceHidden ? 'Hiện số dư' : 'Ẩn số dư')} aria-pressed={balanceHidden} onClick={() => setBalanceHidden(value => !value)}><ChartIcon name={balanceHidden ? 'eye' : 'eye-off'} /></button>
         <button type="button" aria-label={t(positionsOpen ? 'Thu gọn danh sách lệnh' : 'Mở danh sách lệnh')} aria-expanded={positionsOpen} onClick={() => {
           if (positionsOpen) { setMaximized(false); setPositionsOpen(false); return }
@@ -142,7 +144,7 @@ export default function LegacyTradingBar({ order, quotes, onBeginOrder, analytic
     }}><h2>Scalper mode</h2>
       {[['stop', 'Stop loss'], ['target', 'Take profit']].map(([key, label]) => <fieldset key={key}><label className="legacy-scalper-toggle"><span>{t(label)}</span><input type="checkbox" role="switch" checked={draft[key].enabled} onChange={event => setDraft(current => ({ ...current, [key]: { ...current[key], enabled: event.target.checked } }))} /></label><div className={`legacy-scalper-distance ${!draft[key].enabled ? 'is-off' : ''}`}><input aria-label={t('Khoảng cách {name}', { name: label })} type="number" min="0.00000001" step="any" required disabled={!draft[key].enabled} value={draft[key].value} onChange={event => setDraft(current => ({ ...current, [key]: { ...current[key], value: event.target.value } }))} /><div className="legacy-scalper-units" role="group" aria-label={t('Đơn vị {name}', { name: label })}>{[['percent', '%'], ['pips', 'Pips'], ...(order.instrument?.asset_class && order.instrument.asset_class !== 'fx' && Number(order.instrument.tick_size) > 0 ? [['ticks', 'Ticks']] : [])].map(([unit, caption]) => <button key={unit} type="button" aria-pressed={draft[key].unit === unit} disabled={!draft[key].enabled || (unit === 'pips' && !(Number(order.instrument?.pip_size) > 0)) || (unit === 'ticks' && !(Number(order.instrument?.tick_size) > 0))} onClick={() => setDraft(current => ({ ...current, [key]: { ...current[key], unit } }))}>{caption}</button>)}</div></div></fieldset>)}
       <label className="legacy-scalper-toggle is-unavailable" title={t('Chưa hỗ trợ tự dời SL về hòa vốn')}><span>Auto Break-even</span><input type="checkbox" role="switch" disabled /></label>
-      <label>{t('Chiến lược')}<select disabled><option>{t('Mặc định của phiên')}</option></select></label>
+      <label>{t('Chiến lược')}<FxSelect className="is-field" label="Chiến lược" value="session" disabled options={[{ value:'session', label:'Mặc định của phiên' }]} /></label>
       <p>{t('Preset áp dụng vào lệnh nháp; bạn vẫn xác nhận trước khi đặt lệnh.')}</p>
       {error && <p role="alert">{t(error)}</p>}
       <footer><button type="button" onClick={() => { setScalperAnchor(null); setError('') }}>{t('Discard')}</button><button type="submit" className="legacy-scalper-save" disabled={order.disabled}>{t('Save')}</button></footer>

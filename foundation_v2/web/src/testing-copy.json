@@ -5908,5 +5908,15 @@
   "Chưa rõ đơn vị tiền tệ": {"vi": "Chưa rõ đơn vị tiền tệ", "en": "Account currency unknown"},
   "Không đọc được tiến độ tải. Hệ thống sẽ tự kết nối lại.": {"vi": "Không đọc được tiến độ tải. Hệ thống sẽ tự kết nối lại.", "en": "Could not read download progress. The system will reconnect automatically."},
   "Không mở được trang này": {"vi": "Không mở được trang này", "en": "Could not open this page"},
-  "Điều hướng vẫn hoạt động. Bạn có thể mở mục khác để tiếp tục.": {"vi": "Điều hướng vẫn hoạt động. Bạn có thể mở mục khác để tiếp tục.", "en": "Navigation is still available. Open another section to continue."}
+  "Điều hướng vẫn hoạt động. Bạn có thể mở mục khác để tiếp tục.": {"vi": "Điều hướng vẫn hoạt động. Bạn có thể mở mục khác để tiếp tục.", "en": "Navigation is still available. Open another section to continue."},
+  "Chưa có vị thế đang mở": {"vi":"Chưa có vị thế đang mở","en":"No open positions"},
+  "Vị thế mô phỏng đang mở tại cutoff này sẽ xuất hiện ở đây.": {"vi":"Vị thế mô phỏng đang mở tại cutoff này sẽ xuất hiện ở đây.","en":"Simulated positions open at this cutoff appear here."},
+  "Chưa có lệnh chờ": {"vi":"Chưa có lệnh chờ","en":"No pending orders"},
+  "Lệnh mô phỏng đang chờ khớp tại cutoff này sẽ xuất hiện ở đây.": {"vi":"Lệnh mô phỏng đang chờ khớp tại cutoff này sẽ xuất hiện ở đây.","en":"Simulated orders awaiting a fill at this cutoff appear here."},
+  "Chưa có vị thế đã đóng": {"vi":"Chưa có vị thế đã đóng","en":"No closed positions"},
+  "Vị thế mô phỏng đã đóng đến cutoff này sẽ xuất hiện ở đây.": {"vi":"Vị thế mô phỏng đã đóng đến cutoff này sẽ xuất hiện ở đây.","en":"Simulated positions closed by this cutoff appear here."},
+  "Khởi tạo simulator để theo dõi lệnh mô phỏng trong phiên.": {"vi":"Khởi tạo simulator để theo dõi lệnh mô phỏng trong phiên.","en":"Initialize the simulator to track simulated orders in this session."},
+  "phiên replay": {"vi":"phiên replay","en":"replay session"},
+  "Đang giữ cutoff {cutoff} UTC.": {"vi":"Đang giữ cutoff {cutoff} UTC.","en":"Retaining cutoff {cutoff} UTC."},
+  "Có thay đổi chart chưa lưu.": {"vi":"Có thay đổi chart chưa lưu.","en":"The chart has unsaved changes."}
 }

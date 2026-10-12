@@ -1,0 +1,23 @@
+{
+  "scope": "Isolated labeled synthetic replay; final Scalper DS adapter only; no backend dispatch",
+  "cases": [
+    {
+      "width": 1440,
+      "theme": "dark",
+      "case": "Final Scalper disabled strategy uses full-width DS FxSelect,8px/13px/36desktop44touch, no native arrow/menu or overflow; touch quantity focus and actual Scalper click pass"
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "case": "Final Scalper disabled strategy uses full-width DS FxSelect,8px/13px/36desktop44touch, no native arrow/menu or overflow; touch quantity focus and actual Scalper click pass"
+    }
+  ],
+  "errors": [],
+  "blocked": [
+    "POST /api/v2/replay/sessions/fixture-chart-ui/activity",
+    "POST /api/v2/replay/sessions/fixture-chart-ui/activity",
+    "POST /api/v2/replay/sessions/fixture-chart-ui/activity"
+  ],
+  "result": "FAIL",
+  "failure": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert.ok(style.height>=(width===390?44:36))\n\n    at file:///D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/evidence/chart-design-system-20261012/independent/scalper-final.mjs:22:108"
+}

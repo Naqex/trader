@@ -11,6 +11,7 @@ export default function LegacyOrderDialog({ order, blockedReason, theme, onClose
     const panel = ref.current
     panel.querySelector('button:not(:disabled),input:not(:disabled)')?.focus()
     const keyboard = event => {
+      if (event.key === 'Escape' && panel.querySelector('.fx-select-menu')) return
       if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); callbacks.current.onClose() }
       if (event.key !== 'Tab') return
       const nodes = [...panel.querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled),summary')].filter(e => e.getBoundingClientRect().width)

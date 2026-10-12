@@ -1,0 +1,96 @@
+{
+  "reviewer": "/root/testing_empty_review",
+  "result": "PASS",
+  "reviewedAt": "2026-10-12T11:37:22.645Z",
+  "scope": "Independent source, visual and runtime acceptance for chart app-owned design-system changes on labeled replay fixtures; native chart library runs locally",
+  "validation": {
+    "primaryCases": 18,
+    "focusedCases": 10,
+    "saveErrorCases": 4,
+    "finalScalperCases": 4,
+    "total": 36,
+    "viewports": [
+      1440,
+      390
+    ],
+    "themes": [
+      "dark",
+      "light"
+    ],
+    "actualCoarsePointerAt390": true,
+    "reducedMotion": true,
+    "pageErrors": [],
+    "unexpectedRequests": [],
+    "blockedSyntheticActivity": [
+      "/api/v2/replay/sessions/fixture-chart-ui/activity",
+      "/api/v2/replay/sessions/fixture-chart-ui/activity",
+      "/api/v2/replay/sessions/fixture-chart-ui/activity",
+      "/api/v2/replay/sessions/fixture-chart-ui/activity",
+      "/api/v2/replay/sessions/fixture-chart-ui/activity",
+      "/api/v2/replay/sessions/fixture-chart-ui/activity",
+      "POST /api/v2/replay/sessions/fixture-chart-ui/activity",
+      "POST /api/v2/replay/sessions/fixture-chart-ui/activity",
+      "POST /api/v2/replay/sessions/fixture-chart-ui/activity",
+      "POST /api/v2/replay/sessions/fixture-chart-ui/activity"
+    ],
+    "interceptedSyntheticOrders": [
+      {
+        "intercepted": true,
+        "side": "SELL",
+        "attempt": 1
+      },
+      {
+        "intercepted": true,
+        "side": "SELL",
+        "attempt": 2
+      }
+    ],
+    "backendMutationsDispatched": 0
+  },
+  "sourceReview": "Portal DS aliases inherit shared tokens, :is bridge retains existing selector specificity, known/unknown cutoff empties stay distinct, shared pager clamps/reset pages, same-session failed GET preserves proven chart while 403 removes protected payload/actions.",
+  "visualReview": "Modal full-width select and opaque12px menu, desktop36/touch44 fields, orange Save, switches, mobile utility/menu and pager popup and final Scalper disabled FxSelect36px/44px inspected. No clipped modal/menu or document horizontal overflow observed.",
+  "resolvedFindings": [
+    "Mobile utility rail button was blocked by iframe; specificity/width fix verified by actual click.",
+    "Order portal missing base DS select/menu styles; aliases and selector bridge verified.",
+    "Dropdown Escape used to close whole order dialog; closes menu first with focus return now.",
+    "Chart save status pointer-events disabled; quota-failure status opens and clamps its popup now."
+  ],
+  "limits": [
+    "Synthetic fixture with dataset_sha256:null does not exercise historical paging.",
+    "No broker/provider/live engine mutation; primary order503/success responses are intercepted before backend dispatch.",
+    "No full-product or whole-workspace acceptance.",
+    "Scalper strategy now uses DS FxSelect but remains disabled because custom strategy selection is unsupported.",
+    "Normal-motion benchmark/frame pacing not covered; functional checks run reduced-motion."
+  ],
+  "evidence": [
+    "final-primary/browser.json",
+    "focused.json",
+    "save-status.json",
+    "scalper-final.json"
+  ],
+  "discardedAcceptance": [
+    "focused-attempt1.json contains pre-fix real mobile pointer blocker.",
+    "focused-interim2.json crossed source HMR and is not final acceptance.",
+    "primary-reuse/browser.json samples transitioning border before settle; stable final-primary passes.",
+    "scalper-attempt1.json found shared base selector overriding coarse44px; explicit final adapter verified.",
+    "save-status-attempt1.json assumed mandatory15px bottom margin; popup remained inside viewport, final predicate uses containment."
+  ],
+  "sourceHashes": {
+    "src/ChartWorkbench.css": "ca07eebe3417c8265929b779f76e5f378be39bc154b08cd73f6cb31efcef7c31",
+    "src/LegacyPositions.jsx": "bae1aba692141effcec59e8844a99887eccc29823e2548ba690d6205c8e29158",
+    "src/LegacyJournal.jsx": "67dc20eb075e8d398cc0771e55a3b48455152f1c5b3edb034747aed796d67f42",
+    "src/LegacyOrderDialog.jsx": "203248e73b7b7d919a4f39b5f8b9d31af6365a1f32ffed049ec3bb7bb291caca",
+    "src/ChartOrderPanel.jsx": "5b2ec417a15a1440c2a1237c237988ce7b00b7a3b9e14504274b4053b962a98d",
+    "src/LegacyTradingBar.jsx": "2617ed742e7ca51c11935e0aae9c0edec48c79999b61ff78d9b005b250c25a2d",
+    "src/LegacyTradingBar.css": "0d36c5cc9f46d096a4fae0faf413f56853a07fc1224a616831a47fe2bb8e0f06",
+    "src/ReplayWorkspace.jsx": "1013932e68d66c284d2a83fac89326aa47942517d987833087512bbfcc61773d",
+    "src/TradingViewReplayChart.jsx": "a42c4a5aff1b8ef406015041039641bd6df3d4e962bd97cabd5f204fd6de9ef9",
+    "src/TestingPageState.jsx": "2e87d562ce37df0f842cf12414db23be3eef5b660664007c32b15bab7ab44cb3",
+    "src/component-interactions.css": "89ddc43a1f68f0da53ef03dd4db75626d678541679d2d2e125bff8aee6e3e5db",
+    "src/fx-select.css": "06efddbdfe277dfadaf6df2ee4ffc6e15190e3865c1c877c3a29a73ac00dabca",
+    "public/chart-controls.css": "8281be80c512bd56fcf66a67b7e2118b1724fdbb8de208e3901f9a5df219d65b",
+    "src/LegacyReplayToolbar.css": "04ddf8f813ece4d704a90f6948b2503ba60937fe2fe4528f436fa90bb141c68c",
+    "src/testing-copy.json": "061283ab9aa9701c3b5f2be941de71889d32a0b3ef8fb49120cec11de5fefa4b",
+    "tests/chartDesignSystem.browser.mjs": "6801691e6df515fd075e6a5b62262ca25dc6f4a02e79f88e20961ee38673f149"
+  }
+}

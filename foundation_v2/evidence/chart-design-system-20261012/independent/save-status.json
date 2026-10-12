@@ -1,0 +1,28 @@
+{
+  "scope": "Isolated browser storage failure only; labeled synthetic replay; no backend dispatch",
+  "cases": [
+    {
+      "width": 1440,
+      "theme": "dark",
+      "case": "Storage error status remains clickable, precise save failure copy, live alert, clamped popup, Escape/outside dismiss and settled open border blue"
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "case": "Storage error status remains clickable, precise save failure copy, live alert, clamped popup, Escape/outside dismiss and settled open border blue"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "case": "Storage error status remains clickable, precise save failure copy, live alert, clamped popup, Escape/outside dismiss and settled open border blue"
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "case": "Storage error status remains clickable, precise save failure copy, live alert, clamped popup, Escape/outside dismiss and settled open border blue"
+    }
+  ],
+  "errors": [],
+  "blocked": [],
+  "result": "PASS"
+}

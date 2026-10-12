@@ -1,0 +1,77 @@
+
+> trading-workspace-foundation-v2-web@0.1.0 build
+> vite build --outDir ../../.runtime/chart-design-system/dist
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 241 modules transformed.
+
+(!) outDir D:\ANNAM\TradingWorkspace\projects\mt5-tradingview-backtester\.runtime\chart-design-system\dist is not inside project root and will not be emptied.
+Use --emptyOutDir to override.
+
+rendering chunks...
+computing gzip size...
+../../.runtime/chart-design-system/dist/index.html                                       0.48 kB │ gzip:   0.31 kB
+../../.runtime/chart-design-system/dist/assets/ProjectDateInput-C2-0QwbD.css             0.87 kB │ gzip:   0.40 kB
+../../.runtime/chart-design-system/dist/assets/PaginationFooter-MUWvR_mg.css             2.35 kB │ gzip:   0.73 kB
+../../.runtime/chart-design-system/dist/assets/SessionFilter-BcGoz5e7.css                2.74 kB │ gzip:   0.91 kB
+../../.runtime/chart-design-system/dist/assets/AnalyticsFilterControls-CZaWVFmy.css      2.89 kB │ gzip:   0.92 kB
+../../.runtime/chart-design-system/dist/assets/dataDisplay-fjfP0f8W.css                  3.78 kB │ gzip:   1.06 kB
+../../.runtime/chart-design-system/dist/assets/SettingsWorkspace-DGs-V91j.css            4.64 kB │ gzip:   0.99 kB
+../../.runtime/chart-design-system/dist/assets/PropWorkspace-DwjQcrXd.css                5.38 kB │ gzip:   1.23 kB
+../../.runtime/chart-design-system/dist/assets/TestingComponentReference-BGDsRP_p.css    6.25 kB │ gzip:   1.68 kB
+../../.runtime/chart-design-system/dist/assets/LearnWorkspace-Bm-pTJzN.css               6.59 kB │ gzip:   1.18 kB
+../../.runtime/chart-design-system/dist/assets/PlaybookWorkspace-D274USmv.css            8.44 kB │ gzip:   2.11 kB
+../../.runtime/chart-design-system/dist/assets/RiskWorkspace-KPqYRzKt.css               13.39 kB │ gzip:   2.51 kB
+../../.runtime/chart-design-system/dist/assets/TradeWorkspace-DOe0KjCD.css              13.93 kB │ gzip:   2.60 kB
+../../.runtime/chart-design-system/dist/assets/LiveWorkspace-Dv4uxVSA.css               14.11 kB │ gzip:   3.00 kB
+../../.runtime/chart-design-system/dist/assets/FxAnalytics-Bh54Qstq.css                 15.21 kB │ gzip:   3.45 kB
+../../.runtime/chart-design-system/dist/assets/ResearchWorkspace-llijusaB.css           19.75 kB │ gzip:   3.64 kB
+../../.runtime/chart-design-system/dist/assets/JournalWorkspace-TXGcbyk3.css            22.48 kB │ gzip:   5.01 kB
+../../.runtime/chart-design-system/dist/assets/SessionPicker-DRkvKHPt.css               28.92 kB │ gzip:   5.64 kB
+../../.runtime/chart-design-system/dist/assets/AnalyticsWorkspace-BPaK2S9Z.css          30.08 kB │ gzip:   5.89 kB
+../../.runtime/chart-design-system/dist/assets/DataDeskWorkspace-DcHCZaSA.css           34.38 kB │ gzip:   6.16 kB
+../../.runtime/chart-design-system/dist/assets/quick-session-DoJKdzws.css               40.02 kB │ gzip:   6.04 kB
+../../.runtime/chart-design-system/dist/assets/ReplayWorkspace-DWY9eK0m.css            101.52 kB │ gzip:  16.25 kB
+../../.runtime/chart-design-system/dist/assets/index-46ieKEfO.css                      202.34 kB │ gzip:  30.90 kB
+../../.runtime/chart-design-system/dist/assets/index-CtpZbLvj.js                         0.07 kB │ gzip:   0.08 kB
+../../.runtime/chart-design-system/dist/assets/useContentReadyMetric-B7mcNTQe.js         0.51 kB │ gzip:   0.32 kB
+../../.runtime/chart-design-system/dist/assets/dataDisplay-uCbegaEq.js                   0.59 kB │ gzip:   0.44 kB
+../../.runtime/chart-design-system/dist/assets/playbookApi-LsNowdDb.js                   1.62 kB │ gzip:   0.86 kB
+../../.runtime/chart-design-system/dist/assets/analyticsSimulation-Cp076Pec.js           1.73 kB │ gzip:   1.09 kB
+../../.runtime/chart-design-system/dist/assets/ProjectDateInput-WD0q_SWK.js              1.85 kB │ gzip:   0.92 kB
+../../.runtime/chart-design-system/dist/assets/PaginationFooter-Bgadn1qt.js              2.09 kB │ gzip:   0.87 kB
+../../.runtime/chart-design-system/dist/assets/ChartIcon-Bt1py1ET.js                     3.46 kB │ gzip:   1.83 kB
+../../.runtime/chart-design-system/dist/assets/sessionCatalog-DPZ41Fzi.js                4.01 kB │ gzip:   1.75 kB
+../../.runtime/chart-design-system/dist/assets/useReadRefresh-DP2IEXfT.js                4.16 kB │ gzip:   1.88 kB
+../../.runtime/chart-design-system/dist/assets/SessionFilter-CNHzFalh.js                 4.79 kB │ gzip:   1.97 kB
+../../.runtime/chart-design-system/dist/assets/dataDeskApi-C9J3lytT.js                   5.04 kB │ gzip:   2.08 kB
+../../.runtime/chart-design-system/dist/assets/AnalyticsFilterControls-Ca-GfLjp.js       5.10 kB │ gzip:   2.25 kB
+../../.runtime/chart-design-system/dist/assets/PropAnalytics-CTYSDFhe.js                 6.83 kB │ gzip:   2.86 kB
+../../.runtime/chart-design-system/dist/assets/SessionReports-DNvqKUpS.js                9.07 kB │ gzip:   3.40 kB
+../../.runtime/chart-design-system/dist/assets/PlaybookWorkspace-BHwgF45K.js            10.29 kB │ gzip:   3.26 kB
+../../.runtime/chart-design-system/dist/assets/RiskWorkspace-D4yWE3-H.js                10.36 kB │ gzip:   3.23 kB
+../../.runtime/chart-design-system/dist/assets/SettingsWorkspace-8b8GsgEx.js            12.28 kB │ gzip:   3.86 kB
+../../.runtime/chart-design-system/dist/assets/SessionPicker-B4W4zYnq.js                13.32 kB │ gzip:   4.88 kB
+../../.runtime/chart-design-system/dist/assets/LearnWorkspace-DcH3czgu.js               13.52 kB │ gzip:   3.85 kB
+../../.runtime/chart-design-system/dist/assets/quick-session-C43BNHXT.js                14.90 kB │ gzip:   5.60 kB
+../../.runtime/chart-design-system/dist/assets/SessionSettingsDrawer-CG4qyJ1h.js        16.64 kB │ gzip:   6.22 kB
+../../.runtime/chart-design-system/dist/assets/DemoPreview-DLz4EbZm.js                  16.92 kB │ gzip:   6.44 kB
+../../.runtime/chart-design-system/dist/assets/JournalWorkspace-DiGmZEm3.js             20.19 kB │ gzip:   6.12 kB
+../../.runtime/chart-design-system/dist/assets/TestingComponentReference-zMYRyvGD.js    20.44 kB │ gzip:   6.87 kB
+../../.runtime/chart-design-system/dist/assets/TradeWorkspace-DAAKjxS1.js               21.29 kB │ gzip:   7.07 kB
+../../.runtime/chart-design-system/dist/assets/ResearchWorkspace-BFQyjDxM.js            26.84 kB │ gzip:   7.78 kB
+../../.runtime/chart-design-system/dist/assets/LiveWorkspace-D9CPX4G7.js                29.69 kB │ gzip:   9.20 kB
+../../.runtime/chart-design-system/dist/assets/AnalyticsWorkspace-kBvgdHpQ.js           35.35 kB │ gzip:  12.78 kB
+../../.runtime/chart-design-system/dist/assets/FxAnalytics-BriW0wSd.js                  47.93 kB │ gzip:  16.25 kB
+../../.runtime/chart-design-system/dist/assets/DataDeskWorkspace-0paEDllh.js            49.07 kB │ gzip:  15.25 kB
+../../.runtime/chart-design-system/dist/assets/DashboardSessions-BJ7UrGR1.js            51.99 kB │ gzip:  16.30 kB
+../../.runtime/chart-design-system/dist/assets/PropWorkspace-BAPvsE86.js                62.28 kB │ gzip:  16.55 kB
+../../.runtime/chart-design-system/dist/assets/ReplayWorkspace-DrAu__5Y.js             337.71 kB │ gzip: 107.60 kB
+../../.runtime/chart-design-system/dist/assets/index-DC2x69q9.js                       536.33 kB │ gzip: 156.55 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 3.06s

@@ -1,0 +1,17 @@
+{
+  "rootPosition": "relative",
+  "triggerBorder": "0px",
+  "menuPosition": "absolute",
+  "menuBg": "rgba(0, 0, 0, 0)",
+  "menuRect": {
+    "x": 425,
+    "y": 283,
+    "width": 283,
+    "height": 48,
+    "top": 283,
+    "right": 708,
+    "bottom": 331,
+    "left": 425
+  },
+  "radiusToken": ""
+}

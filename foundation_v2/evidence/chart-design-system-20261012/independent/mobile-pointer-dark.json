@@ -1,0 +1,52 @@
+{
+  "button": {
+    "x": 343,
+    "y": 49,
+    "width": 32,
+    "height": 46,
+    "top": 49,
+    "right": 375,
+    "bottom": 95,
+    "left": 343
+  },
+  "rail": {
+    "x": 336,
+    "y": 48,
+    "width": 46,
+    "height": 48,
+    "top": 48,
+    "right": 382,
+    "bottom": 96,
+    "left": 336
+  },
+  "style": {
+    "width": "46px",
+    "top": "48px",
+    "right": "8px",
+    "bottom": "799px",
+    "zIndex": "24",
+    "overflow": "auto"
+  },
+  "hit": [
+    {
+      "tag": "path",
+      "cls": {}
+    },
+    {
+      "tag": "svg",
+      "cls": {}
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "chart-utility-toggle"
+    },
+    {
+      "tag": "NAV",
+      "cls": "chart-utility-rail "
+    },
+    {
+      "tag": "IFRAME",
+      "cls": ""
+    }
+  ]
+}

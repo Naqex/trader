@@ -3,6 +3,7 @@ import { useTestingLocale } from './testingLocale.jsx'
 import { DEFAULT_COST_MODEL, RiskPreview, validateDraft } from './TradeWorkspace.jsx'
 import { finiteNumber, marketQuotes, orderDraft, protectionReference, replayAtCutoff } from './replayOrderModel.js'
 import { useReplayTickOptions } from './useReplayTickOptions.js'
+import FxSelect from './FxSelect.jsx'
 
 export function useChartOrder({ workspace, replay, dataset, ready, blocked, submit }) {
   const execution = replayAtCutoff(replay)?.payload?.execution
@@ -72,11 +73,11 @@ function LegacyOrderForm({ order, blockedReason, onClose, onJournal }) {
   const { draft, setDraft, execution, disabled, instrument, active } = order
   const change = (key, value) => setDraft(current => ({ ...current, [key]:value }))
   return <><form className="legacy-order-form" onSubmit={async event => { event.preventDefault(); if (await order.save()) { onClose(); if (journal) onJournal() } }}>
-    <div className="legacy-order-grid"><label>{t('Hướng')}<select value={draft.side} disabled={disabled || Boolean(active)} onChange={event => order.chooseSide(event.target.value)}><option value="BUY">Buy</option><option value="SELL">Sell</option></select></label><label>{t('Loại lệnh')}<select value="market" disabled><option value="market">Market</option></select></label>
+    <div className="legacy-order-grid"><label>{t('Hướng')}<FxSelect className="is-field" label="Hướng" value={draft.side} disabled={disabled || Boolean(active)} onChange={order.chooseSide} options={[{ value: 'BUY', label: t('Buy') }, { value: 'SELL', label: t('Sell') }]} /></label><label>{t('Loại lệnh')}<FxSelect className="is-field" label="Loại lệnh" value="market" disabled options={[{ value: 'market', label: 'Market' }]} /></label>
     <label>{t(instrument?.asset_class==='fx' ? 'Khối lượng (lot)' : 'Khối lượng (quantity)')}<input aria-label={t('Khối lượng lệnh')} type="number" min={instrument?.quantity_min || '0'} step={instrument?.quantity_step || 'any'} value={draft.quantity} disabled={disabled || Boolean(active) || !execution} onChange={event => change('quantity',event.target.value)} /></label><label>{t('Giá vào lệnh')}<input type="text" readOnly value={order.reference ?? '—'} /></label></div>
     {[['stopLoss','Stop loss'],['takeProfit','Take profit']].map(([key,label]) => <div className="legacy-protection-row" key={key} title={t('Simulator hiện yêu cầu cả SL và TP.')}><label><input type="checkbox" role="switch" checked={Boolean(execution)} disabled readOnly />{t(label)}</label>{execution && <input aria-label={t(label)} type="number" min="0" required step={instrument?.tick_size || 'any'} value={draft[key]} disabled={disabled} onChange={event => change(key,event.target.value)} />}</div>)}
     <div className="legacy-protection-row is-unavailable" title={t('Chưa hỗ trợ tự dời SL về hòa vốn')}><label><input type="checkbox" role="switch" disabled />Auto Break-even</label><small>{t('Sắp có')}</small></div>
-    <label>{t('Chiến lược')}<select disabled><option>{t('Mặc định của phiên')}</option></select></label><button type="button" className="legacy-strategy-create" disabled>{t('+ Tạo chiến lược mới')}</button>
+    <label>{t('Chiến lược')}<FxSelect className="is-field" label="Chiến lược" value="session" disabled options={[{ value: 'session', label: t('Mặc định của phiên') }]} /></label><button type="button" className="legacy-strategy-create" disabled>{t('+ Tạo chiến lược mới')}</button>
     {!execution && <p role="status">{t('Chưa có dữ liệu lệnh tại cutoff này.')}</p>}
     {blockedReason && <p role="status">{t(blockedReason)}</p>}
     {execution && <p className="legacy-order-hint">{t(active ? 'Thay đổi TP/SL áp dụng từ nến tiếp theo.' : 'Market được queue và khớp ở nến tiếp theo; giá trên là giá tham chiếu.')} · SIM</p>}

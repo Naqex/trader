@@ -1,0 +1,33 @@
+{
+  "scope": "Isolated browser storage failure only; labeled synthetic replay; no backend dispatch",
+  "cases": [],
+  "errors": [],
+  "blocked": [
+    "POST /api/v2/replay/sessions/fixture-chart-ui/activity"
+  ],
+  "bounds": {
+    "box": {
+      "x": 1088,
+      "y": 912,
+      "width": 280,
+      "height": 62,
+      "top": 912,
+      "right": 1368,
+      "bottom": 974,
+      "left": 1088
+    },
+    "style": "width: 280px; left: 1088px; top: 912px;",
+    "ancestor": {
+      "x": 0,
+      "y": 0,
+      "width": 1392,
+      "height": 901,
+      "top": 0,
+      "right": 1392,
+      "bottom": 901,
+      "left": 0
+    }
+  },
+  "result": "FAIL",
+  "failure": "page.waitForFunction: Timeout 5000ms exceeded.\n    at D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\evidence\\chart-design-system-20261012\\independent\\save-status.mjs:19:14"
+}

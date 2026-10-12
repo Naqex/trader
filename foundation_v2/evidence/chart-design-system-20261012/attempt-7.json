@@ -1,0 +1,51 @@
+{
+  "scope": "Synthetic replay and intercepted requests only; real native library, no owner/backend/broker writes",
+  "cases": [
+    {
+      "width": 1440,
+      "theme": "dark",
+      "case": "quantity, semantic actions, modal geometry, dropdown side update, Escape and close hover"
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "case": "known empty states no table/pager, keyboard tabs, 27-row pagination and size reset"
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "case": "journal filtered empty reuses shared state"
+    },
+    {
+      "case": "same-session failed GET keeps proven chart/cutoff, fixed status, disabled writes"
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "case": "quantity, semantic actions, modal geometry, dropdown side update, Escape and close hover"
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "case": "known empty states no table/pager, keyboard tabs, 27-row pagination and size reset"
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "case": "journal filtered empty reuses shared state"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "case": "collapsed mobile utilities, Escape and outside dismissal"
+    }
+  ],
+  "errors": [],
+  "unexpected": [],
+  "blockedActivity": [
+    "/api/v2/replay/sessions/fixture-chart-ui/activity"
+  ],
+  "simulatedOrders": [],
+  "result": "FAIL",
+  "failure": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ 'rgb(128, 144, 160)'\n- 'rgb(112, 181, 255)'\n        ^\n\n    at file:///D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/web/tests/chartDesignSystem.browser.mjs:62:12"
+}

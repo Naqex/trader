@@ -1,0 +1,12 @@
+import {readFile,writeFile} from 'node:fs/promises'
+const path=new URL('receipt.mjs',import.meta.url)
+let code=await readFile(path,'utf8')
+code=code.replace('const files=',"const scalper=JSON.parse(await readFile(new URL('scalper-final.json',base)))\nconst files=")
+code=code.replace('[primary,focused,save].every','[primary,focused,save,scalper].every')
+code=code.replace('saveErrorCases:save.cases.length,total:', 'saveErrorCases:save.cases.length,finalScalperCases:scalper.cases.length,total:')
+code=code.replace('primary.cases.length+focused.cases.length+save.cases.length','primary.cases.length+focused.cases.length+save.cases.length+scalper.cases.length')
+code=code.replace('...save.errors]', '...save.errors,...scalper.errors]')
+code=code.replace("'Unsupported Scalper strategy native select remains a disabled placeholder; no custom strategy flow exists.',", "'Scalper strategy now uses DS FxSelect but remains disabled because custom strategy selection is unsupported.',")
+code=code.replace("'save-status.json']", "'save-status.json','scalper-final.json']")
+code=code.replace("'save-status-attempt1.json assumed", "'scalper-attempt1.json found shared base selector overriding coarse44px; explicit final adapter verified.', 'save-status-attempt1.json assumed")
+await writeFile(path,code)

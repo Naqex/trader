@@ -1,0 +1,44 @@
+✔ manual save cancels debounce and a clean layout is disabled (55.6422ms)
+✔ autosave persists edits without manual action (46.9222ms)
+✔ an edit during save invalidates the older snapshot (0.4828ms)
+✔ replay cutoff and generation changes cannot publish a stale layout (0.2946ms)
+✔ storage errors remain retryable and never report success (0.3072ms)
+✔ timeouts and disposal discard late vendor callbacks (25.7408ms)
+✔ new and resumed replay routes use the chart workspace layout (16.1406ms)
+✔ FX preset distances create opposite protective levels on BUY and SELL (1.848ms)
+✔ percent and tick distances round away from entry without collapsing a level (1.0528ms)
+✔ disabled preset or disabled protection preserves the engine draft defaults (0.4941ms)
+✔ preset rejects missing price, missing unit metadata, zero or negative distances (0.6706ms)
+✔ preset never emits zero, negative, or infinite protective prices (0.2913ms)
+✔ M1 replay intervals batch every underlying candle and reject invented sub-minute data (2.0622ms)
+✔ second datasets replay seconds without exceeding the API batch limit (0.297ms)
+✔ historical forward is read-only, clamps to canonical and then resumes authoritative cursor (3.9414ms)
+✔ rewind respects replay interval and never reads a negative cursor (0.6942ms)
+✔ native interval actions ask the server to resolve boundaries without future timestamps (0.2547ms)
+✔ rewind selects the previous occupied UTC bucket using only the visible prefix (0.6935ms)
+✔ bar selection accepts only prior candles from visible prefix (0.2226ms)
+✔ speed schedules 1–16 events per second and caps catch-up to a single event (0.1665ms)
+✔ replay speed controls expose localized accessible names (14.8421ms)
+✔ historical UI never reads canonical future account or position state (1.3101ms)
+✔ quote reference includes the closeable side of the spread (5.3509ms)
+✔ tick quote and draft use pinned historical Bid/Ask without OHLC fallback (0.5104ms)
+✔ draft prices use declared pip and quantity assumptions without inventing missing values (24.027ms)
+✔ order projection changes with price scale and keeps unmappable anchors out (4.2306ms)
+✔ order primitive releases references and redraws through native engine lifecycle (0.9412ms)
+✔ Retry-After supports seconds and HTTP date; invalid headers do not schedule a retry (36.1061ms)
+✔ a stalled response body times out and frees its shared request for retry (5.2498ms)
+✔ simultaneous scoped readers share network work and receive independent bodies; no persistent cache (4.5144ms)
+✔ workspace and query isolate simultaneous reads (1.1391ms)
+✔ one unmounted consumer does not cancel another; last consumer cancels network (1.1447ms)
+✔ cancellation lasts through body download, and errors retain status without caching (0.9669ms)
+✔ an already cancelled reader does not issue network work (0.2082ms)
+✔ system copy provides both locales with matching interpolation contracts (9.9818ms)
+✔ status families have both locales and blocked execution has an explanation (0.9585ms)
+ℹ tests 36
+ℹ suites 0
+ℹ pass 36
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 690.1756

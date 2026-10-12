@@ -341,3 +341,34 @@ the existing error state; native failures retain the fallback-chart link. A
 same-session background read keeps the established chart and adds no loading row.
 
 Scoped QA: `foundation_v2/evidence/chart-loading-20261012/README.md`.
+
+## Chart workspace controls and data states
+
+App-owned order fields, dropdowns and popovers consume the Testing palette and
+Inter typography. Order dialog fields are 36px high with 8px corners; menus use
+12px corners, and touch controls have a 44px minimum. Portaled order dialogs share
+the existing control aliases and FxSelect rules rather than inheriting shell
+layout. Hover strengthens the neutral border; focus/open fields use one blue
+border. Save actions use the orange action token. Readonly prices and unavailable
+features retain explicit disabled semantics. Native TradingView candles, grid,
+tool density and drawing geometry remain native.
+
+Positions and Journal reuse the shared empty state. Missing execution data is
+unknown, not zero positions. Known empty tabs omit tables and pagination. Populated
+position tabs reuse the shared pager, reset to page one after changing size, and
+keep table scrolling separate from the popup layer. The open panel reserves at
+least 260px so its tabs, header, rows and pager remain usable.
+
+Same-session transient read failures keep the previously proven chart and cutoff,
+but lock order writes. 401/403 clear protected data and 404 clears the missing
+session. Background reads use a reserved account-bar status slot; initial failures
+replace the chart viewport. Layout save states use an absolute status slot with
+clickable details and an accessible failure alert. Dirty, saving, saved and storage
+failure are distinct; none adds a row to chart layout.
+
+On narrow screens the utility rail opens from one compact toggle and closes after
+an action, Escape or an outside interaction, including native iframe interactions.
+The account popup opens on mouse hover only on hover-capable devices; touch uses
+explicit taps and keyboard focus remains supported.
+
+Scoped acceptance: `foundation_v2/evidence/chart-design-system-20261012/README.md`.

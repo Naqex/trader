@@ -1,0 +1,10 @@
+{
+  "scope": "Synthetic replay and intercepted requests only; real native library, no owner/backend/broker writes",
+  "cases": [],
+  "errors": [],
+  "unexpected": [],
+  "blockedActivity": [],
+  "simulatedOrders": [],
+  "result": "FAIL",
+  "failure": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\nfalse !== true\n\n    at file:///D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/web/tests/chartDesignSystem.browser.mjs:60:12"
+}

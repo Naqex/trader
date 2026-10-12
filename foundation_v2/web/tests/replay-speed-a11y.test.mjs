@@ -7,12 +7,14 @@ import { dirname, resolve } from 'node:path'
 const testsDir = dirname(fileURLToPath(import.meta.url))
 const sourceDir = resolve(testsDir, '..', 'src')
 
-test('replay speed select exposes its accessible name on the native control', async () => {
+test('replay speed controls expose localized accessible names', async () => {
   const source = await readFile(resolve(sourceDir, 'ReplayWorkspace.jsx'), 'utf8')
 
   assert.match(
     source,
-    /<select aria-label="Tốc độ replay" value=\{speed\}/,
-    'the native replay speed select must expose its own accessible name',
+    /<FxSelect label=\{t\("Tốc độ replay"\)\} value=\{speed\}/,
+    'the fallback chart speed selector must retain its accessible label',
   )
+  const native = await readFile(resolve(sourceDir, 'LegacyReplayToolbar.jsx'), 'utf8')
+  assert.match(native, /type="range"[^>]*aria-label=\{t\('Điều chỉnh tốc độ replay'\)\}/)
 })

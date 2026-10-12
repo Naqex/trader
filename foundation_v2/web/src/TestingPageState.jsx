@@ -31,6 +31,10 @@ export function TestingEmptyState({ kind = 'sessions', viewport = false, onClear
     trades: ['ledger', 'Chưa có giao dịch đóng', 'Giao dịch đã đóng trong phạm vi đang chọn sẽ xuất hiện tại đây.'],
     'filtered-trades': ['search', 'Không có giao dịch khớp bộ lọc.', 'Thử đổi phiên hoặc điều chỉnh bộ lọc để xem giao dịch.'],
     incomplete: ['ledger', 'Chưa đủ dữ liệu giao dịch.', 'Nguồn mới đọc được một phần; chưa thể kết luận phạm vi này không có giao dịch.'],
+    'chart-open': ['ledger', 'Chưa có vị thế đang mở', 'Vị thế mô phỏng đang mở tại cutoff này sẽ xuất hiện ở đây.'],
+    'chart-pending': ['history', 'Chưa có lệnh chờ', 'Lệnh mô phỏng đang chờ khớp tại cutoff này sẽ xuất hiện ở đây.'],
+    'chart-closed': ['ledger', 'Chưa có vị thế đã đóng', 'Vị thế mô phỏng đã đóng đến cutoff này sẽ xuất hiện ở đây.'],
+    'chart-unknown': ['info', 'Chưa có dữ liệu lệnh tại cutoff này.', 'Khởi tạo simulator để theo dõi lệnh mô phỏng trong phiên.'],
   }
   const [icon, title, detail] = states[kind]
   return <section className={`wm-trades-empty${viewport ? ' wm-viewport-state' : ''}`} role={['denied', 'page-error'].includes(kind) ? 'alert' : 'status'} data-testid={['trades', 'filtered-trades', 'incomplete'].includes(kind) ? 'testing-trades-empty' : 'testing-empty-state'} data-empty-kind={kind}>

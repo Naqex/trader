@@ -7,6 +7,7 @@ import { createReplayChartWindowReader } from './replayChartWindow.js'
 import { readChartSnapshot, writeChartSnapshot } from './advancedChartStorage.js'
 import { createChartSave } from './advancedChartSave.js'
 import ChartLoadingState from './ChartLoadingState.jsx'
+import { TestingResourceStatus } from './TestingPageState.jsx'
 
 let libraryPromise
 const volumeAppearance = theme => {
@@ -55,6 +56,7 @@ export default function TradingViewReplayChart(props) {
   const host = useRef(null), instance = useRef(null), latest = useRef(props)
   latest.current = props
   const [status, setStatus] = useState('loading'), [message, setMessage] = useState('')
+  const [layoutStatus, setLayoutStatus] = useState('saved')
   const storageKey = `tw:advanced-chart:v1:${workspace}:${sessionId}:${datasetId}`
 
   useEffect(() => {
@@ -124,7 +126,7 @@ export default function TradingViewReplayChart(props) {
           snapshot: callback => widget.save(callback),
           persist: (at, layout) => writeChartSnapshot(localStorage, storageKey, at, layout),
           context: () => ({ generation: latest.current.orderGeneration, cutoff: Number(latest.current.cutoff) }),
-          onState: value => { saveState = value; publishHeader(); if (value === 'error') setMessage('Không lưu được chart: bộ nhớ trình duyệt không khả dụng hoặc đã đầy.'); else if (value === 'saved') setMessage('Đã lưu chart trên trình duyệt này.'); else setMessage('') },
+          onState: value => { saveState = value; setLayoutStatus(value); publishHeader(); if (value === 'error') setMessage('Không lưu được chart: bộ nhớ trình duyệt không khả dụng hoặc đã đầy.'); else if (value === 'saved') setMessage('Đã lưu chart trên trình duyệt này.'); else if (value === 'dirty') setMessage('Có thay đổi chart chưa lưu.'); else setMessage('') },
         })
         // Restoring a layout cannot change the authoritative dataset symbol.
         if (chart.symbol() !== symbol) chart.setSymbol(symbol)
@@ -358,6 +360,6 @@ export default function TradingViewReplayChart(props) {
     <div ref={host} className="advanced-chart-host" inert={status !== 'ready'} aria-hidden={status !== 'ready' ? true : undefined} />
     {status === 'loading' && <ChartLoadingState />}
     {status === 'error' && <div className="advanced-chart-message" role="alert">{t(message)} <a href={fallbackUrl.href}>{t("Mở chart dự phòng")}</a></div>}
-    {status === 'ready' && message && <span className="advanced-chart-save-status" role="status">{t(message)}</span>}
+    {status === 'ready' && <span className="advanced-chart-save-status"><TestingResourceStatus state={layoutStatus === 'error' ? 'stale' : layoutStatus === 'saving' ? 'refreshing' : layoutStatus === 'dirty' ? 'partial' : 'ready'} resource="chart" detail={message ? t(message) : undefined} />{layoutStatus === 'error' && <span className="sr-only" role="alert">{t(message)}</span>}</span>}
   </div>
 }

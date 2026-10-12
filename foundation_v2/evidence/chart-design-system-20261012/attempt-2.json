@@ -1,0 +1,14 @@
+{
+  "scope": "Synthetic replay and intercepted requests only; real native library, no owner/backend/broker writes",
+  "cases": [],
+  "errors": [],
+  "unexpected": [],
+  "blockedActivity": [
+    "/api/v2/replay/sessions/fixture-chart-ui/activity",
+    "/api/v2/replay/sessions/fixture-chart-ui/activity",
+    "/api/v2/replay/sessions/fixture-chart-ui/activity"
+  ],
+  "simulatedOrders": [],
+  "result": "FAIL",
+  "failure": "locator.inputValue: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.legacy-order-modal').getByRole('spinbutton', { name: 'Stop loss', exact: true })\u001b[22m\n\n    at D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\web\\tests\\chartDesignSystem.browser.mjs:76:95"
+}

@@ -1,6 +1,7 @@
 import { displayDate } from './dateFormat.js'
 import { useState } from 'react'
 import ChartIcon from './ChartIcon.jsx'
+import { TestingEmptyState } from './TestingPageState.jsx'
 import { sessionChartTrades } from './legacyChartTrades.js'
 import { useTestingLocale } from './testingLocale.jsx'
 
@@ -27,7 +28,7 @@ export default function LegacyJournal({ execution, assetStates, symbol, cutoff, 
     }}>{t(label)}</button>)}</div><a href={onOpenJournal} title={t('Mở trang nhật ký')} aria-label={t('Mở trang nhật ký')}><ChartIcon name="expand" /></a></header>
     <div role="tabpanel" id="legacy-journal-panel" aria-labelledby={`journal-tab-${tab}`}>
       {tab==='trades' ? <><label className="legacy-journal-search"><ChartIcon name="search" /><input type="search" aria-label={t('Tìm giao dịch')} placeholder={t('Tìm giao dịch')} value={search} onChange={event => setSearch(event.target.value)} /></label>{day && <button type="button" className="legacy-journal-day" onClick={() => setDay('')}>{displayDate(day)} ×</button>}<div className="legacy-journal-trades">
-        {(!execution && !assetStates) || !rows.length ? <div className="legacy-journal-empty"><ChartIcon name="journal" /><h3>{t(!execution && !assetStates ? 'Chưa có dữ liệu lệnh tại cutoff này.' : search || day ? 'Không tìm thấy giao dịch' : 'Chưa có giao dịch đã đóng')}</h3></div> : rows.map(row => <article key={row.key}><div><strong>{row.symbol}</strong><span>{row.side} · {fmt(row.quantity, '', 8)} {t(row.assetClass==='fx'?'lot':'quantity')}</span><time>{displayDate(new Date(row.closed_time_utc*1000), { timeStyle: 'short' })} UTC</time></div><strong className={Number(row.realized)>=0?'is-profit':'is-loss'}>{fmt(row.realized)} {row.currency || ''}</strong></article>)}
+        {!rows.length ? <TestingEmptyState kind={execution || Object.values(assetStates || {}).some(state => state.execution) ? search || day ? 'filtered-trades' : 'chart-closed' : 'chart-unknown'} /> : rows.map(row => <article key={row.key}><div><strong>{row.symbol}</strong><span>{row.side} · {fmt(row.quantity, '', 8)} {t(row.assetClass==='fx'?'lot':'quantity')}</span><time>{displayDate(new Date(row.closed_time_utc*1000), { timeStyle: 'short' })} UTC</time></div><strong className={Number(row.realized)>=0?'is-profit':'is-loss'}>{fmt(row.realized)} {row.currency || ''}</strong></article>)}
       </div></> : <><div className="legacy-calendar-toolbar"><button type="button" aria-label={t('Khoảng trước')} onClick={() => changeDate(-1)}>‹</button><strong>{new Intl.DateTimeFormat(locale,{year:'numeric',...(mode==='month'?{month:'long'}:{}),timeZone:'UTC'}).format(date)}</strong><button type="button" aria-label={t('Khoảng sau')} onClick={() => changeDate(1)}>›</button><div>{[['month','Tháng'],['year','Năm']].map(([key,label]) => <button type="button" key={key} aria-pressed={mode===key} onClick={() => setMode(key)}>{t(label)}</button>)}</div></div>{!execution && !assetStates && <p role="status">{t('Chưa có dữ liệu lệnh tại cutoff này.')}</p>}<div className={mode==='year'?'legacy-calendar-year':''}>{(mode==='year'?Array.from({length:12},(_,m) => new Date(Date.UTC(date.getUTCFullYear(),m,1))):[date]).map(item => <Month key={item.toISOString()} date={item} trades={closed} compact={mode==='year'} onDay={selectDay} locale={locale} t={t} fmt={fmt} />)}</div></>}
     </div>
   </section>

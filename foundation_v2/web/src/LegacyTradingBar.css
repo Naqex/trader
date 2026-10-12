@@ -3,8 +3,9 @@
 .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-trading-bar .chart-trading-actions :is(.buy,.sell) { color: #fff; padding-inline: 14px; font-size: 12px; font-weight: 500; }
 .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-trading-bar .chart-trading-actions :is(.buy,.sell):hover:not(:disabled) { filter: brightness(1.08); box-shadow: none; }
 .legacy-trading-bar .legacy-quantity-control { display: flex; align-items: stretch; flex:0 0 auto; height: 30px; width: 115px; border: 1px solid var(--chart-line); border-radius: 16px; overflow: hidden; box-sizing: border-box; background: transparent; transition:background-color var(--ds-motion-hover),border-color var(--ds-motion-hover); }
-.legacy-trading-bar .legacy-quantity-control:has(:focus-visible) { border-color:var(--chart-text); outline:2px solid var(--chart-text); outline-offset:-2px; }
-.fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-quantity-control input { flex: 1; min-width: 0; width: 75px; min-height: 0; height: 28px; margin: 0; padding: 0 8px 0 12px; border: 0; outline-offset: -2px; border-radius: 0; background: transparent; box-shadow: none; appearance: textfield; font: 12px Arial,sans-serif; color: var(--chart-text); }
+.legacy-trading-bar .legacy-quantity-control:hover:not(:has(:disabled)) { border-color:var(--project-border-strong); background:var(--project-hover); }
+.legacy-trading-bar .legacy-quantity-control:focus-within { border-color:var(--project-primary); outline:none; }
+.fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-quantity-control input { flex: 1; min-width: 0; width: 75px; min-height: 0; height: 28px; margin: 0; padding: 0 8px 0 12px; border: 0; outline-offset: -2px; border-radius: 0; background: transparent; box-shadow: none; appearance: textfield; font: 13px/20px Inter,ui-sans-serif,system-ui,sans-serif; color: var(--chart-text); }
 .legacy-quantity-control input::-webkit-inner-spin-button, .legacy-quantity-control input::-webkit-outer-spin-button { appearance: none; margin: 0; }
 .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-quantity-control input:is(:hover,:focus-visible) { background:transparent; outline:none; box-shadow:none; }
 .legacy-quantity-control > div { display: grid; grid-template-rows: repeat(2,minmax(0,1fr)); flex: 0 0 24px; }
@@ -13,7 +14,7 @@
 .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-quantity-control button:hover:not(:disabled) { color:var(--chart-text); background:var(--project-hover); box-shadow:none; }
 .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-quantity-control button:focus-visible { outline:none; box-shadow:none; }
 .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-trading-bar .legacy-scalper-button { border-radius: 6px; background: var(--chart-hover); width: 34px; padding: 0; }
-.fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-trading-bar .legacy-scalper-button.is-enabled { background: #2962ff; color: #fff; }
+.fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-trading-bar .legacy-scalper-button.is-enabled { background: var(--project-primary); color: var(--project-on-primary); }
 .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-trading-bar .legacy-positions-grip { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); width: 44px; height: 26px; display: grid; place-items: center; border: 0; border-radius: 3px; padding: 0; background: transparent; color: var(--chart-text); cursor: ns-resize; touch-action: none; }
 .legacy-positions-grip:disabled { opacity: .35; cursor: default; }
 .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-trading-bar .chart-trading-account { gap: 6px; }
@@ -21,8 +22,8 @@
 .legacy-balance-pill strong { font-size: 12px; font-weight: 500; }
 .legacy-trading-bar .legacy-analytics-link { gap: 5px; padding-inline: 10px; font-size: 12px; }
 .legacy-trading-bar .chart-trading-account button:hover { background: var(--chart-hover); color: var(--chart-text); }
-.legacy-resizable-positions { min-height: 0; overflow: auto; }
-.legacy-resizable-positions .legacy-positions { height: 100%; max-height: none; display: flex; flex-direction: column; overflow: hidden; }
+.legacy-resizable-positions { position:relative; z-index:19; min-height: 0; overflow: visible; }
+.legacy-resizable-positions .legacy-positions { height: 100%; max-height: none; display: flex; flex-direction: column; overflow: visible; }
 .legacy-resizable-positions .legacy-position-tabs { flex: 0 0 auto; }
 .legacy-resizable-positions [role=tabpanel] { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .legacy-resizable-positions .legacy-position-scroll { flex: 1; min-height: 0; overflow: auto; }
@@ -32,6 +33,7 @@
 .legacy-trading-workspace.is-expanded > .legacy-resizable-positions { position: absolute; left: 0; right: 0; z-index: 18; background: var(--chart-bg); }
 .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-trading-workspace.is-expanded > .legacy-trading-bar { position: absolute; bottom: var(--positions-height); }
 .legacy-trading-workspace.is-expanded > .legacy-resizable-positions { bottom: 0; }
+.legacy-trading-workspace.is-expanded > .legacy-resizable-positions { z-index:19; }
 .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .replay-main:has(.legacy-trading-workspace.is-maximized) { position: relative; }
 .legacy-trading-workspace.is-maximized { position: absolute; inset: 0; z-index: 18; display: flex; flex-direction: column; background: var(--chart-bg); }
 .legacy-trading-workspace.is-maximized .legacy-resizable-positions { flex: 1; }
@@ -48,9 +50,9 @@
 .legacy-scalper-settings h2 { font-size: 16px; margin: 0; font-weight: 500; }
 .legacy-scalper-settings fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 12px; min-width: 0; }
 .legacy-popover form .legacy-scalper-toggle { display: flex; align-items: center; justify-content: space-between; min-height: 20px; }
-.legacy-scalper-toggle input[type=checkbox] { appearance: none; width: 32px; height: 18px; border-radius: 10px; background: #444; margin: 0; cursor: pointer; }
-.legacy-scalper-toggle input[type=checkbox]::before { content: ''; display: block; width: 14px; height: 14px; margin: 2px; border-radius: 50%; background: #eee; transition: transform var(--ds-motion-hover) var(--ds-ease-standard); }
-.legacy-scalper-toggle input[type=checkbox]:checked { background: #2962ff; }
+.legacy-scalper-toggle input[type=checkbox] { appearance: none; width: 32px; height: 18px; border-radius: 10px; background: var(--project-control); margin: 0; cursor: pointer; }
+.legacy-scalper-toggle input[type=checkbox]::before { content: ''; display: block; width: 14px; height: 14px; margin: 2px; border-radius: 50%; background: var(--project-text); transition: transform var(--ds-motion-hover) var(--ds-ease-standard); }
+.legacy-scalper-toggle input[type=checkbox]:checked { background: var(--project-primary); }
 .legacy-scalper-toggle input[type=checkbox]:checked::before { transform: translateX(14px); }
 .legacy-scalper-toggle input:focus-visible { outline: 2px solid var(--project-primary); outline-offset: 2px; }
 .legacy-scalper-toggle.is-unavailable { opacity: .5; }
@@ -61,10 +63,12 @@
 .legacy-popover .legacy-scalper-units button[aria-pressed=true] { background: var(--menu-hover); color: var(--menu-text); }
 .legacy-popover .legacy-scalper-units button:disabled { opacity: .5; }
 .legacy-scalper-settings p { font-size: 11px; line-height: 1.5; margin: 0; color: var(--menu-muted); }
-.legacy-scalper-settings p[role=alert] { color: #ef5350; }
+.legacy-scalper-settings p[role=alert] { color: var(--project-negative); }
 .legacy-scalper-settings footer { display: flex; justify-content: flex-end; gap: 10px; }
 .legacy-popover .legacy-scalper-settings footer button { width: auto; min-width: 80px; }
-.legacy-popover .legacy-scalper-settings .legacy-scalper-save { background: #2962ff; color: #fff; border-color: #2962ff; }
+.legacy-popover .legacy-scalper-settings .legacy-scalper-save { background: var(--project-action); color: var(--project-on-action); border-color: var(--project-action); }
+.legacy-scalper-settings .fx-select.is-field .fx-select-trigger { border-radius:8px; }
+@media (pointer:coarse) { .legacy-scalper-settings .fx-select.is-field .fx-select-trigger { min-height:44px; } }
 @media (prefers-reduced-motion: reduce) { .legacy-scalper-toggle input[type=checkbox]::before, .legacy-trading-bar .legacy-quantity-control { transition: none; } }
 @media (max-width: 1000px) {
   .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-trading-bar .legacy-positions-grip { position: static; transform: none; flex: 1; }

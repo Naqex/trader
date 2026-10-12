@@ -1,0 +1,55 @@
+{
+  "scope": "Synthetic replay and intercepted requests only; real native library, no owner/backend/broker writes",
+  "cases": [
+    {
+      "width": 1440,
+      "theme": "dark",
+      "case": "quantity, semantic actions, modal geometry, dropdown side update, Escape and close hover"
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "case": "known empty states no table/pager, keyboard tabs, 27-row pagination and size reset"
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "case": "journal filtered empty reuses shared state"
+    },
+    {
+      "case": "same-session failed GET keeps proven chart/cutoff, fixed status, disabled writes"
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "case": "quantity, semantic actions, modal geometry, dropdown side update, Escape and close hover"
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "case": "known empty states no table/pager, keyboard tabs, 27-row pagination and size reset"
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "case": "journal filtered empty reuses shared state"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "case": "collapsed mobile utilities, Escape and outside dismissal"
+    }
+  ],
+  "errors": [],
+  "unexpected": [],
+  "blockedActivity": [
+    "/api/v2/replay/sessions/fixture-chart-ui/activity",
+    "/api/v2/replay/sessions/fixture-chart-ui/activity",
+    "/api/v2/replay/sessions/fixture-chart-ui/activity",
+    "/api/v2/replay/sessions/fixture-chart-ui/activity",
+    "/api/v2/replay/sessions/fixture-chart-ui/activity"
+  ],
+  "simulatedOrders": [],
+  "result": "FAIL",
+  "failure": "locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.legacy-scalper-button')\u001b[22m\n\u001b[2m    - locator resolved to <button type=\"button\" title=\"Scalper mode\" aria-pressed=\"false\" aria-expanded=\"false\" aria-label=\"Scalper mode\" class=\"legacy-scalper-button \">…</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <dl class=\"legacy-account-details\">…</dl> from <div role=\"group\" class=\"legacy-popover  \" aria-label=\"Thông tin tài khoản\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <dl class=\"legacy-account-details\">…</dl> from <div role=\"group\" class=\"legacy-popover  \" aria-label=\"Thông tin tài khoản\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    57 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <dl class=\"legacy-account-details\">…</dl> from <div role=\"group\" class=\"legacy-popover  \" aria-label=\"Thông tin tài khoản\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\n    at D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\web\\tests\\chartDesignSystem.browser.mjs:68:50"
+}

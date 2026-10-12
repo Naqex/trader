@@ -1,0 +1,106 @@
+{
+  "scope": "Synthetic replay and intercepted requests only; real native library, no owner/backend/broker writes",
+  "cases": [
+    {
+      "width": 768,
+      "theme": "dark",
+      "case": "quantity, semantic actions, modal geometry, dropdown side update, Escape and close hover"
+    },
+    {
+      "width": 768,
+      "theme": "dark",
+      "case": "known empty states no table/pager, keyboard tabs, 27-row pagination and size reset"
+    },
+    {
+      "width": 768,
+      "theme": "dark",
+      "case": "journal filtered empty reuses shared state"
+    },
+    {
+      "width": 768,
+      "theme": "light",
+      "case": "quantity, semantic actions, modal geometry, dropdown side update, Escape and close hover"
+    },
+    {
+      "width": 768,
+      "theme": "light",
+      "case": "known empty states no table/pager, keyboard tabs, 27-row pagination and size reset"
+    },
+    {
+      "width": 768,
+      "theme": "light",
+      "case": "journal filtered empty reuses shared state"
+    },
+    {
+      "width": 360,
+      "theme": "dark",
+      "case": "collapsed mobile utilities, Escape and outside dismissal"
+    },
+    {
+      "width": 360,
+      "theme": "dark",
+      "case": "quantity, semantic actions, modal geometry, dropdown side update, Escape and close hover"
+    },
+    {
+      "width": 360,
+      "theme": "dark",
+      "case": "known empty states no table/pager, keyboard tabs, 27-row pagination and size reset"
+    },
+    {
+      "width": 360,
+      "theme": "dark",
+      "case": "journal filtered empty reuses shared state"
+    },
+    {
+      "width": 360,
+      "theme": "light",
+      "case": "collapsed mobile utilities, Escape and outside dismissal"
+    },
+    {
+      "width": 360,
+      "theme": "light",
+      "case": "quantity, semantic actions, modal geometry, dropdown side update, Escape and close hover"
+    },
+    {
+      "width": 360,
+      "theme": "light",
+      "case": "known empty states no table/pager, keyboard tabs, 27-row pagination and size reset"
+    },
+    {
+      "width": 360,
+      "theme": "light",
+      "case": "journal filtered empty reuses shared state"
+    },
+    {
+      "case": "missing execution stays unknown rather than known empty"
+    },
+    {
+      "case": "intercepted order failure keeps dialog; explicit retry success closes and locks a queued order"
+    },
+    {
+      "case": "403 clears protected chart and action controls"
+    }
+  ],
+  "errors": [],
+  "unexpected": [],
+  "blockedActivity": [
+    "/api/v2/replay/sessions/fixture-chart-ui/activity",
+    "/api/v2/replay/sessions/fixture-chart-ui/activity",
+    "/api/v2/replay/sessions/fixture-chart-ui/activity",
+    "/api/v2/replay/sessions/fixture-chart-ui/activity",
+    "/api/v2/replay/sessions/fixture-chart-ui/activity"
+  ],
+  "simulatedOrders": [
+    {
+      "intercepted": true,
+      "side": "SELL",
+      "attempt": 1
+    },
+    {
+      "intercepted": true,
+      "side": "SELL",
+      "attempt": 2
+    }
+  ],
+  "result": "PASS"
+}

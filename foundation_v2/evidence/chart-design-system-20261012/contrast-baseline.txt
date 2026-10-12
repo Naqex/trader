@@ -1,0 +1,25 @@
+✖ project palette keeps small replay text and action foregrounds readable in both themes (5.3989ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 110.5992
+
+✖ failing tests:
+
+test at tests\replay-contrast.test.mjs:14:1
+✖ project palette keeps small replay text and action foregrounds readable in both themes (5.3989ms)
+  AssertionError [ERR_ASSERTION]: primary on hover in canvas #FFFFFF
+      at TestContext.<anonymous> (file:///D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/web/tests/replay-contrast.test.mjs:22:16)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

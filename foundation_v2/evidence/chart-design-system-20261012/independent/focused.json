@@ -1,0 +1,59 @@
+{
+  "cases": [
+    {
+      "width": 1440,
+      "theme": "dark",
+      "case": "Unknown cutoff uses local empty without table/pager, tabs keyboard navigate"
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "case": "Owned dropdown Escape hierarchy and focus, readonly hover, desktop36/touch44 sizing, no overflow"
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "case": "Unknown cutoff uses local empty without table/pager, tabs keyboard navigate"
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "case": "Owned dropdown Escape hierarchy and focus, readonly hover, desktop36/touch44 sizing, no overflow"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "case": "Unknown cutoff uses local empty without table/pager, tabs keyboard navigate"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "case": "Mobile utility menu Escape and outside dismissal"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "case": "Owned dropdown Escape hierarchy and focus, readonly hover, desktop36/touch44 sizing, no overflow"
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "case": "Unknown cutoff uses local empty without table/pager, tabs keyboard navigate"
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "case": "Mobile utility menu Escape and outside dismissal"
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "case": "Owned dropdown Escape hierarchy and focus, readonly hover, desktop36/touch44 sizing, no overflow"
+    }
+  ],
+  "errors": [],
+  "blocked": [],
+  "unexpected": [],
+  "scope": "Read-only labeled synthetic prefix, real local chart, app-owned UI and actual coarse-pointer mobile",
+  "result": "PASS"
+}
