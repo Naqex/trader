@@ -6,7 +6,8 @@ export function previewOptions(view) {
   return [
     { value: 'real', label: 'Dữ liệu thật', detail: 'Đọc dữ liệu hiện tại của workspace.' },
     { value: 'demo', label: 'Dữ liệu mẫu', detail: 'Có dữ liệu mẫu để xem bố cục và tương tác.' },
-    { value: 'no-trades', label: 'Chưa có giao dịch', detail: 'Có phiên đã lưu, chưa có giao dịch đóng.', disabled: !['overview', 'replay', 'trade', 'analytics'].includes(view) },
+    { value: 'no-trades', label: 'Chưa có giao dịch', detail: 'Tất cả phiên mẫu chưa có giao dịch đã đóng.', disabled: !['overview', 'replay', 'trade', 'analytics'].includes(view) },
+    { value: 'new-session', label: 'Phiên mới chưa giao dịch', detail: 'London Breakout chưa có giao dịch; hai phiên cũ vẫn có kết quả.', disabled: !['replay', 'trade', 'analytics'].includes(view) },
     ...DATA_STATES.filter(([state]) => state !== 'ready').map(([value, label, detail]) => ({ value, label: value === 'unavailable' && ['overview', 'replay', 'trade', 'analytics', 'market-data'].includes(view) ? 'Nguồn tải chưa kết nối' : label,
       detail: value === 'empty' && ['overview', 'replay', 'trade', 'analytics'].includes(view) ? 'Workspace chưa có phiên; hiển thị màn hình bắt đầu luyện tập.' : value === 'unavailable' ? (view === 'market-data' ? 'Nguồn tải chưa kết nối; dữ liệu đã lưu vẫn đọc được.' : 'Nguồn tải chưa kết nối; phiên và báo cáo đã lưu vẫn dùng được.') : detail,
       disabled: value === 'filtered' && view === 'replay' || value === 'unknown' && view !== 'overview' || value === 'partial' && !['overview', 'trade', 'analytics'].includes(view) })),
@@ -21,7 +22,7 @@ export function previewMode(query, view) {
 
 export function previewStateHref(href, state) {
   const url = demoToggleHref(href, state !== 'real')
-  if (state === 'no-trades' || DATA_STATES.some(([value]) => value === state && value !== 'ready')) url.searchParams.set('ui_state', state)
+  if (['no-trades', 'new-session'].includes(state) || DATA_STATES.some(([value]) => value === state && value !== 'ready')) url.searchParams.set('ui_state', state)
   else url.searchParams.delete('ui_state')
   return url
 }

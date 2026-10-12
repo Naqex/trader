@@ -1,0 +1,59 @@
+{
+  "scope": "Preview interactions and actual component GET smoke with labeled intercepted responses; no writes",
+  "cases": [
+    {
+      "actualGET": false,
+      "preview": true,
+      "case": "Repeated header/title clicks and keyboard toggle work; expanded hover stays on header without text selection"
+    },
+    {
+      "actualGET": true,
+      "preview": false,
+      "case": "Repeated header/title clicks and keyboard toggle work; expanded hover stays on header without text selection"
+    },
+    {
+      "case": "Page-size label and chevron are centered as a group; choosing size still works",
+      "padding": {
+        "left": 15.984375,
+        "right": 16
+      }
+    },
+    {
+      "case": "Recent trades uses Session label without slash"
+    },
+    {
+      "view": "trade",
+      "case": "All sample sessions have zero closed trades; shared empty fills remaining viewport, filters remain, no report/table/pager"
+    },
+    {
+      "view": "analytics",
+      "case": "All sample sessions have zero closed trades; shared empty fills remaining viewport, filters remain, no report/table/pager"
+    },
+    {
+      "case": "New empty session -> old Analytics session retains existing trades and renders report"
+    },
+    {
+      "case": "New empty session -> All Trades retains 40 closed trades from old sessions, excluding empty London"
+    },
+    {
+      "case": "Filtered zero differs from scope without closed trades"
+    },
+    {
+      "interceptedFixture": true,
+      "case": "Partial aggregate zero is uncertain, never presented as no trades or no filter matches"
+    },
+    {
+      "interceptedFixture": true,
+      "partial": false,
+      "case": "Actual Analytics shared empty hides reports and preserves explicit partial status"
+    },
+    {
+      "interceptedFixture": true,
+      "partial": true,
+      "case": "Actual Analytics shared empty hides reports and preserves explicit partial status"
+    }
+  ],
+  "errors": [],
+  "writes": [],
+  "result": "PASS"
+}

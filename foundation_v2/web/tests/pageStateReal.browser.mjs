@@ -3,7 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { chromium } from 'playwright'
 
 const origin = 'http://127.0.0.1:5180'
-const output = '../evidence/page-state-workflow-20261010'
+const output = process.env.TW_UI_EVIDENCE_DIR || '../evidence/page-state-workflow-20261010'
 await mkdir(output, { recursive:true })
 const browser = await chromium.launch({ headless:true, ignoreDefaultArgs:['--hide-scrollbars'] })
 const context = await browser.newContext({ viewport:{ width:1710,height:987 } })
@@ -101,7 +101,7 @@ try {
     await route.fulfill({json:{...payload,status:'ready',ledger:[],excluded:[],scope:{...payload.scope,readable_session_count:1},pagination:{...payload.pagination,filtered_count:0,returned_count:0,page:1,page_count:0}}})
   })
   await page.goto(href('trade','&sessions=all'))
-  await page.getByText('Chưa có giao dịch đóng trong phạm vi này.',{exact:true}).waitFor()
+  await page.getByText('Chưa có giao dịch đóng',{exact:true}).waitFor()
   await page.goto(href('trade','&sessions=all&side=buy'))
   await page.getByText('Không có giao dịch khớp bộ lọc.',{exact:true}).waitFor()
   await page.unroute('**/api/v2/replay/trades*')

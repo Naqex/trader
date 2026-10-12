@@ -42,8 +42,8 @@ export function demoOverview(rows = DEMO_LEDGER) {
     symbols: DEMO_SESSIONS.map(session => ({ symbol: session.instrument_id, closed_trade_count: rows.filter(row => row.symbol === session.instrument_id).length })), sessions: [], sources: [], excluded: [] } }
 }
 
-export function demoFilterRows(ids, filters = {}) {
-  return DEMO_LEDGER.filter(row => (ids === null || ids.includes(row.session_id)) && (!filters.side || filters.side === 'all' || row.side === filters.side)
+export function demoFilterRows(ids, filters = {}, sourceRows = DEMO_LEDGER) {
+  return sourceRows.filter(row => (ids === null || ids.includes(row.session_id)) && (!filters.side || filters.side === 'all' || row.side === filters.side)
     && (!filters.outcome || filters.outcome === 'all' || (row.net_pnl > 0 ? 'win' : row.net_pnl < 0 ? 'loss' : 'breakeven') === filters.outcome)
     && (!filters.from || row.close_time_utc.slice(0, 10) >= filters.from) && (!filters.to || row.close_time_utc.slice(0, 10) <= filters.to))
 }

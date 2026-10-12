@@ -10,7 +10,8 @@
 .wm-pagination-gap { width:20px; text-align:center; }
 .wm-pagination-size { flex:0 0 auto; }
 .fx-app .fx-content .wm-pagination .fx-select-trigger { box-sizing:border-box; width:auto; min-width:70px; height:36px; min-height:36px; padding:0 12px; gap:8px; border-radius:var(--wm-control-radius); line-height:20px; }
-.wm-pagination .fx-select-value { flex:0 0 auto; text-align:center; }
+.wm-pagination .fx-select-trigger { justify-content:center; }
+.wm-pagination .fx-select-value { flex:0 0 auto; text-align:center; font-variant-numeric:tabular-nums; }
 .wm-pagination .fx-select-chevron { margin-left:0; }
 .wm-pagination-meta { text-align:center; overflow-wrap:anywhere; }
 @media (max-width:480px) {

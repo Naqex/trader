@@ -127,6 +127,18 @@ read replaces numbers. Failed refresh becomes stale. Scope changes hide old resu
 not timers or live requests. Partial reports disclose the reduced readable scope;
 unknown durations stay `—`, while known zero trades stay `0`.
 
+The closed-trade ledger does not establish whether there are open positions.
+No-trades copy refers to the selected session(s)/cutoff, never to every session in
+the workspace unless all sessions were read completely. Preview `no-trades`
+zeros all three sample ledgers; `new-session` zeros London only and retains the
+other two sessions. Changing session filters can recover those existing results.
+
+Trades and Analytics reuse `TestingTradesEmpty`: centered icon/title/detail below
+the retained filters. Known zero hides the empty table/pager or report tabs/charts.
+A filter with no matches has different copy; partial zero stays uncertain and
+unknown remote counts do not become zero. Background failure keeps same-scope
+data, while permission denial clears it.
+
 Aggregate actual Trades uses opt-in `GET /api/v2/replay/trades?page=1&page_size=10`
 with `replay-trades-page-v1`. Existing unpaged consumers remain compatible.
 The server joins journal tags, applies full-scope filters, returns full facets and
@@ -179,6 +191,9 @@ not establish broker authorization or whole-product completion.
 Recent session headers expand on non-action clicks, with hover feedback and a
 darker expanded surface. The existing chevron supplies keyboard activation and
 `aria-expanded`/`aria-controls`; actions within the header do not expand it.
+Header text is not selectable because the header is a disclosure click target;
+text in the revealed report remains selectable. Hover colors the header only,
+including when expanded, rather than the whole revealed report.
 Empty expanded reports use a single left-aligned message; known balance curves
 remain visible even if no full ledger is available. The peach list count uses
 prose (e.g. "1 phiên trong tổng số 6") for filtered matches against the entire

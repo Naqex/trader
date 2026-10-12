@@ -18,6 +18,15 @@ export function TestingWelcome({ onBacktest, propHref, backtestHref, preview = f
   </section>
 }
 
+export function TestingTradesEmpty({ filtered = false, incomplete = false }) {
+  const { t } = useTestingLocale()
+  return <section className="wm-trades-empty" role="status" data-testid="testing-trades-empty">
+    <TestingIcon kind="ledger" size={32} />
+    <h2>{t(incomplete ? 'Chưa đủ dữ liệu giao dịch.' : filtered ? 'Không có giao dịch khớp bộ lọc.' : 'Chưa có giao dịch đóng')}</h2>
+    <p>{t(incomplete ? 'Nguồn mới đọc được một phần; chưa thể kết luận phạm vi này không có giao dịch.' : filtered ? 'Thử đổi phiên hoặc điều chỉnh bộ lọc để xem giao dịch.' : 'Giao dịch đã đóng trong phạm vi đang chọn sẽ xuất hiện tại đây.')}</p>
+  </section>
+}
+
 export function TestingPageSkeleton({ view = 'overview', label = 'Đang tải dữ liệu…' }) {
   const { t } = useTestingLocale()
   const table = ['trade', 'market-data'].includes(view)

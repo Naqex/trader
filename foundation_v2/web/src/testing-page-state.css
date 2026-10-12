@@ -15,6 +15,14 @@
 .wm-welcome-action:hover:not(:disabled) { background:var(--wm-control-hover); border-color:var(--wm-control-hover-border); }
 .wm-welcome-action:focus-visible { outline:2px solid var(--wm-focus); outline-offset:3px; }
 .wm-welcome-action:disabled { cursor:not-allowed; }
+.wm-trades-empty { box-sizing:border-box; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:260px; padding:40px 24px; text-align:center; }
+.wm-trades-empty > svg { color:var(--wm-content-muted); margin-bottom:20px; flex-shrink:0; }
+.wm-trades-empty h2 { margin:0 0 12px; font-size:var(--ds-font-section); font-weight:var(--ds-weight-control); line-height:1.4; }
+.wm-trades-empty p { margin:0; max-width:480px; color:var(--wm-content-muted); font-size:var(--ds-font-body); line-height:1.6; }
+.fxa-trades:has(> .wm-trades-empty) { display:flex; flex-direction:column; }
+.as-page:has(> .wm-trades-empty) { flex:1; display:flex; flex-direction:column; }
+.fx-app.fx-shell-story .fx-content:has(.as-page > .wm-trades-empty) { display:flex; flex-direction:column; padding-bottom:0; }
+.fx-app.fx-shell-story .fx-content .as-page:has(> .wm-trades-empty) { padding-bottom:0; }
 .wm-page-skeleton { display:flex; flex-direction:column; gap:24px; padding-block:24px; }
 .wm-skeleton-toolbar { display:flex; gap:16px; }
 .wm-skeleton-toolbar i { height:36px; width:140px; }

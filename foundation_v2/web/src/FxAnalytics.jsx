@@ -1,4 +1,5 @@
 import { navigate, navigationSnapshot, subscribeNavigation } from './clientNavigation.js'
+import { TestingTradesEmpty } from './TestingPageState.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import { useEffect, useId, useMemo, useState, useSyncExternalStore } from 'react'
 import { advancedAnalytics, known, number, outcomeOf } from './tradingAnalyticsModel.js'
@@ -186,5 +187,8 @@ export function FxAnalyticsReport({ model, extra, experiments, experimentStatus,
   const tab = model.result?.preview ? previewTab : ['performance', 'drawdown', 'simulation'].includes(requestedTab) ? requestedTab : 'performance'
   useEffect(() => { onTabChange?.(tab) }, [tab, onTabChange])
   const choose = value => { setPreviewTab(value); onTabChange?.(value); if (model.result?.preview) return; const url = new URL(window.location.href); url.searchParams.set('analytics_tab', value); navigate(url, { replace: true }) }
+  if (!data.count && (model.result?.partial || model.result?.status === 'partial')) return <TestingTradesEmpty incomplete />
+  if (!data.count && model.result?.scope?.total_trade_count === 0) return <TestingTradesEmpty />
+  if (!data.count && (model.ledger.length || model.result?.scope?.total_trade_count > 0)) return <TestingTradesEmpty filtered />
   return <><div className="fxa-report-tabs" role="tablist" aria-label={t("Phân tích")}><>{[['performance', 'Performance'], ['drawdown', 'Drawdown'], ['simulation', 'Simulation']].map(([value, label]) => <button className="fxa-tab" id={`fxa-tab-${value}`} role="tab" key={value} aria-selected={tab === value} aria-controls="fxa-report-panel" tabIndex={tab === value ? 0 : -1} onKeyDown={event => { const tabs = ['performance', 'drawdown', 'simulation']; if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) { event.preventDefault(); const index = event.key === 'Home' ? 0 : event.key === 'End' ? 2 : (tabs.indexOf(tab) + (event.key === 'ArrowRight' ? 1 : 2)) % 3; choose(tabs[index]); document.getElementById(`fxa-tab-${tabs[index]}`)?.focus() } }} onClick={() => choose(value)}>{t(label)}</button>)}</></div><div id="fxa-report-panel" role="tabpanel" aria-labelledby={`fxa-tab-${tab}`} tabIndex={0}>{tab === 'performance' ? <AnalyticsPerformance model={model} data={data} extra={extra} onSelect={onSelect} selected={selected} /> : tab === 'drawdown' ? <AnalyticsDrawdown model={model} data={data} experiments={experiments} experimentStatus={experimentStatus} /> : <AnalyticsSimulation key={JSON.stringify([model.result?.session_id, model.result?.revision, model.result?.cursor_index, model.result?.execution_event_sequence, model.result?.filters, extra])} model={model} data={data} experiments={experiments} experimentStatus={experimentStatus} experimentError={experimentError} config={config} onConfig={onConfig} />}</div></>
 }

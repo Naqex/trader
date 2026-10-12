@@ -38,15 +38,16 @@ function DemoReports({ ledgerOnly, prop = false, query, state = 'demo' }) {
   const { t, fmt } = useTestingLocale()
 
   const sessions = demoSessionItems(query)
-  const [ids, setIds] = useState(ledgerOnly ? null : sessions.find(item => item.record_id === query?.get('demo_session'))?.record_id || sessions[0].record_id)
+  const [ids, setIds] = useState(ledgerOnly ? state === 'new-session' ? [sessions[0].record_id] : null : sessions.find(item => item.record_id === query?.get('demo_session'))?.record_id || sessions[0].record_id)
   const [filters, setFilters] = useState({ side: 'all', outcome: 'all', from: state === 'filtered' ? '2099-01-01' : '', to: '' })
   const [extra, setExtra] = useState({ ...DEFAULT_EXTRA_FILTERS })
   const [selected, setSelected] = useState(''), [config, setConfig] = useState({ stop_distance_ticks: 10, stop_multiplier: 1, target_r: 2 })
   const model = useMemo(() => {
-    const allRows = state === 'no-trades' ? [] : demoFilterRows(ledgerOnly ? ids : [ids])
-    const filteredRows = state === 'no-trades' ? [] : demoFilterRows(ledgerOnly ? ids : [ids], filters)
+    const source = state === 'no-trades' ? [] : demoFilterRows(ledgerOnly ? ids : [ids]).filter(row => state !== 'new-session' || row.session_id !== sessions[0].record_id)
+    const allRows = source
+    const filteredRows = demoFilterRows(null, filters, source)
     const rows = state === 'partial' ? filteredRows.slice(0, Math.ceil(filteredRows.length / 2)) : filteredRows
-    return buildAnalyticsModel({ ...demoResult(rows, sessions.find(item => item.record_id === ids) || sessions[0]), scope: { total_trade_count: allRows.length, selected_trade_count: rows.length }, multi_session: ledgerOnly }, prop ? 'prop' : 'app')
+    return buildAnalyticsModel({ ...demoResult(rows, sessions.find(item => item.record_id === ids) || sessions[0]), scope: { total_trade_count: allRows.length, selected_trade_count: rows.length }, partial: state === 'partial', multi_session: ledgerOnly }, prop ? 'prop' : 'app')
   }, [ids, filters, ledgerOnly, prop, sessions, state])
   const row = model.ledger.find(item => item.tradeId === selected)
   const exportCsv = () => {
@@ -76,10 +77,10 @@ function DemoSessions({ workspace, query, state }) {
   useEffect(() => { setId(items.find(item => item.record_id === query.get('demo_session'))?.record_id || items[0]?.record_id || '') }, [query, items])
   const [editing, setEditing] = useState(false), [actionDialog, setActionDialog] = useState(null)
   const item = items.find(item => item.record_id === id)
-  const payload = useMemo(() => item ? demoDashboardAnalytics(item, workspace, state === 'no-trades' ? [] : undefined) : null, [item, workspace, state])
+  const payload = useMemo(() => item ? demoDashboardAnalytics(item, workspace, state === 'no-trades' || state === 'new-session' && item.record_id === DEMO_SESSIONS[0].record_id ? [] : undefined) : null, [item, workspace, state])
   const model = useMemo(() => item ? buildAnalyticsModel(demoResult(payload.ledger, item)) : null, [payload, item])
   const dataset = DEMO_DATASETS.find(entry => entry.dataset_id === item?.dataset_id), replayRecord = item ? demoReplayContext(item) : null
-  if (state === 'no-trades' && replayRecord) replayRecord.payload.execution.balance = 10000
+  if ((state === 'no-trades' || state === 'new-session' && item?.record_id === DEMO_SESSIONS[0].record_id) && replayRecord) replayRecord.payload.execution.balance = 10000
   const href = (view, overrides = {}) => buildWorkspaceHref(view, workspace, query, { demo_session: id, select: '1', analytics_source: 'sessions', ...overrides })
   const save = draft => { setItems(current => current.map(entry => entry.record_id === id ? { ...entry, ...draft, revision: entry.revision + 1 } : entry)); setEditing(false); return true }
   const select = value => { setId(value); const url = new URL(window.location.href); if (value) url.searchParams.set('demo_session', value); else url.searchParams.delete('demo_session'); navigate(url, { replace: true }) }

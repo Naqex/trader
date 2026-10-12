@@ -34,8 +34,7 @@ export default function DashboardSessionCard({ item, detail, dataset, href, onMa
   const disabledCopy = item.archived || item.dataset_available !== true
   return <article className={`fx-dashboard-session-card${expanded ? ' is-expanded' : ''}`} data-session-id={item.record_id}>
     <div className="fx-dashboard-session-card-head" onClick={event => {
-      const selection = window.getSelection()
-      if (event.target.closest('a, button, input, select, textarea') || (selection?.toString() && event.currentTarget.contains(selection.anchorNode))) return
+      if (event.target.closest('a, button, input, select, textarea')) return
       toggleExpanded()
     }}>
       {preview ? <button type="button" className="fx-dashboard-card-play" disabled aria-label={t("Tiếp tục {name}", { name: name })} title={t("Chart cần phiên thật")}><SessionIcon kind="play" /></button> : canResumeSession(item) ? <a className="fx-dashboard-card-play" href={href('replay', { select: null, surface: 'workspace' })} onClick={onRemember} aria-label={t("Tiếp tục {name}", { name: name })}><SessionIcon kind="play" /></a> : <span className="fx-dashboard-card-play is-unavailable" title={t("Phiên hoặc dataset chưa sẵn sàng")}><SessionIcon kind="play" /></span>}

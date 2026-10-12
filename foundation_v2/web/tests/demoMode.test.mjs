@@ -60,9 +60,21 @@ test('demo does not replace chart or order-entry surfaces', () => {
   assert.equal(canPreviewDemo('settings', new URLSearchParams()), false)
 })
 
+test('new-session preview preserves old session data and round-trips only supported pages', () => {
+  const oldRows = DEMO_LEDGER.filter(row => row.session_id !== DEMO_SESSIONS[0].record_id)
+  assert.equal(demoFilterRows([DEMO_SESSIONS[0].record_id], {}, oldRows).length, 0)
+  assert.equal(demoFilterRows([DEMO_SESSIONS[1].record_id], {}, oldRows).length, 20)
+  assert.equal(demoFilterRows(null, {}, oldRows).length, 40)
+  for (const view of ['replay', 'trade', 'analytics']) {
+    const url = previewStateHref(`http://127.0.0.1:5180/?view=${view}&select=1`, 'new-session')
+    assert.equal(previewMode(url.searchParams, view), 'new-session')
+  }
+  assert.equal(previewMode(new URLSearchParams('demo=1&ui_state=new-session'), 'overview'), 'demo')
+})
+
 test('state previews preserve real context, round-trip to real and fence unsupported surfaces', () => {
   const original = 'http://127.0.0.1:5180/?workspace=tenant-a&view=overview&session=owner&dashboard_from=2026-01-01'
-  for (const option of previewOptions('overview')) {
+  for (const option of previewOptions('overview').filter(option => !option.disabled)) {
     const href = previewStateHref(original, option.value)
     assert.equal(previewMode(href.searchParams, 'overview'), option.value)
     assert.equal(href.searchParams.get('session'), 'owner')

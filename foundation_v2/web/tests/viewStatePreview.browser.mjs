@@ -77,7 +77,7 @@ try {
             const layout = await content.evaluate(content => ({ bottom: content.querySelector('.fxa-trades').getBoundingClientRect().bottom, contentBottom: content.getBoundingClientRect().bottom, overflow: getComputedStyle(content).overflowY }))
             assert.equal(layout.overflow, 'hidden')
             assert.ok(Math.abs(layout.bottom - layout.contentBottom) <= 1, 'Ledger owns remaining viewport')
-            assert.equal(await content.locator('.fxa-trades tbody tr').count(), ['filtered', 'no-trades'].includes(state) ? 0 : 10)
+            assert.equal(await content.locator('.fxa-trades tbody tr').count(), ['filtered', 'no-trades', 'new-session'].includes(state) ? 0 : 10)
           }
         }
         if (state === 'error') assert.equal(await content.getByRole('button', { name: 'Thử lại', exact: true }).count(), 0, 'Preview has no redundant retry')
