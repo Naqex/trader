@@ -1,8 +1,8 @@
 .fx-dashboard-session-card { border: 1px solid var(--wm-border); border-radius: 16px; background: var(--wm-surface); min-width: 0; }
 .fx-dashboard-session-card { overflow: hidden; transition: background-color var(--ds-motion-hover) var(--ds-ease-standard); }
 .fx-dashboard-session-card-head { cursor: pointer; user-select: none; transition: background-color var(--ds-motion-hover) var(--ds-ease-standard); }
-.fx-dashboard-session-card.is-expanded { background: var(--wm-control-open); }
-.fx-dashboard-session-card:hover { background: var(--wm-hover); }
+.fx-dashboard-session-card.is-expanded { background: color-mix(in srgb, var(--wm-surface) 50%, var(--wm-row-hover)); }
+.fx-dashboard-session-card:hover { background: var(--wm-row-hover); }
 .fx-dashboard-session-count { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin: 12px 0; color: var(--project-highlight); font-size: 12px; font-variant-numeric: tabular-nums; }
 .fx-dashboard-session-count progress { appearance: none; width: clamp(80px, 14vw, 180px); height: 6px; border: 0; border-radius: 999px; overflow: hidden; background: var(--wm-control-open); }
 .fx-dashboard-session-count progress::-webkit-progress-bar { background: var(--wm-control-open); }
@@ -42,7 +42,7 @@
 .fx-dashboard-card-charts .fxs-performance { margin: 0; }
 .fx-dashboard-card-charts .fxs-no-analytics { min-height: 0; padding-block: 0; line-height: 1.5; }
 .fx-dashboard-card-charts .fxs-charts { gap: 16px; }
-.fx-dashboard-card-charts .fxs-chart-panel { background: transparent; }
+.fx-dashboard-card-charts .fxs-chart-panel { background: transparent; border-color: transparent; border-radius: 0; }
 .fx-dashboard-card-charts > p { margin: 12px 0 0; font-size: 13px; color: var(--wm-content-muted); }
 .fx-dashboard-dialog { width: min(1100px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); box-sizing: border-box; overflow: auto; margin: auto; padding: 24px; border: 1px solid var(--wm-border-strong); border-radius: 12px; color: var(--wm-content); background: var(--wm-surface); }
 .fx-dashboard-dialog::backdrop { background: #0009; }
@@ -74,4 +74,4 @@
   .fx-dashboard-dialog { padding: 16px; }
 }
 @media (pointer: coarse) { .fx-app .fx-dashboard :is(.fx-dashboard-card-icon, .fx-dashboard-card-play, .fx-dashboard-card-summary) { min-height: 44px; min-width: 44px; } }
-@media (prefers-reduced-motion: reduce) { .fx-dashboard-card-expand svg, .fx-dashboard-card-disclosure, .fx-dashboard-session-card-head { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .fx-dashboard-card-expand svg, .fx-dashboard-card-disclosure, .fx-dashboard-session-card, .fx-dashboard-session-card-head { transition: none; } }

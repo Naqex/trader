@@ -189,11 +189,14 @@ Independent acceptance evidence lives in
 not establish broker authorization or whole-product completion.
 
 Recent session headers expand on non-action clicks, with hover feedback and a
-darker expanded surface. The existing chevron supplies keyboard activation and
+subtle expanded surface. The existing chevron supplies keyboard activation and
 `aria-expanded`/`aria-controls`; actions within the header do not expand it.
 Header text is not selectable because the header is a disclosure click target;
 text in the revealed report remains selectable. Hover colors the entire card,
-including the revealed report; the expanded surface also spans the whole card.
+including the revealed report, using the record-row hover token rather than the
+brighter control hover. The expanded surface also spans the whole card. Chart
+groups inside this card use spacing without nested panel borders; standalone
+report charts keep their existing surfaces.
 Empty expanded reports use a single left-aligned message; known balance curves
 remain visible even if no full ledger is available. The peach list count uses
 prose (e.g. "3 phiên trong tổng số 6") for displayed records against the entire

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { chromium } from 'playwright'
 const origin = 'http://127.0.0.1:5180'
-const output = '../evidence/testing-realtime-20261012/live'
+const output = process.env.TW_UI_EVIDENCE_DIR || '../evidence/testing-realtime-20261012/live'
 await mkdir(output, { recursive: true })
 const abort = new AbortController()
 const timer = setTimeout(() => abort.abort(), 10000)
@@ -53,7 +53,7 @@ try {
       await page.waitForTimeout(350)
       await card.locator('.fx-dashboard-card-disclosure-inner').hover()
       await page.waitForTimeout(200)
-      assert.equal(await card.evaluate(node => getComputedStyle(node).backgroundColor), await card.evaluate(node => getComputedStyle(node).getPropertyValue('--wm-hover').trim()).then(async token => await page.evaluate(token => { const node=document.createElement('div');node.style.backgroundColor=token;document.body.append(node);const result=getComputedStyle(node).backgroundColor;node.remove();return result }, token)))
+      assert.equal(await card.evaluate(node => getComputedStyle(node).backgroundColor), await card.evaluate(node => getComputedStyle(node).getPropertyValue('--wm-row-hover').trim()).then(async token => await page.evaluate(token => { const node=document.createElement('div');node.style.backgroundColor=token;document.body.append(node);const result=getComputedStyle(node).backgroundColor;node.remove();return result }, token)))
     }
     if (state === 'filtered') { assert.equal(await page.locator('[data-empty-kind="filtered-datasets"]').count(), 1); assert.equal(await page.locator('nav.wm-pagination').count(), 0) }
     if (state === 'reconnecting') await page.getByTestId('workspace-connection').filter({ hasText: 'Reconnecting updates' }).waitFor()

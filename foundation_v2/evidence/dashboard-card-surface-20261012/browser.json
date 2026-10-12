@@ -1,0 +1,42 @@
+{
+  "scope": "Shared Dashboard card surfaces, preview with writes blocked",
+  "cases": [
+    {
+      "theme": "dark",
+      "width": 1563,
+      "rest": "color(srgb 0.0843137 0.0882353 0.0960784)",
+      "hover": "rgb(23, 25, 29)",
+      "nestedBorders": "transparent",
+      "geometryStable": true,
+      "keyboardCollapse": true
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "rest": "color(srgb 0.0843137 0.0882353 0.0960784)",
+      "hover": "rgb(23, 25, 29)",
+      "nestedBorders": "transparent",
+      "geometryStable": true,
+      "keyboardCollapse": true
+    },
+    {
+      "theme": "light",
+      "width": 1563,
+      "rest": "color(srgb 0.976471 0.980392 0.984314)",
+      "hover": "rgb(243, 245, 247)",
+      "nestedBorders": "transparent",
+      "geometryStable": true,
+      "keyboardCollapse": true
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "rest": "color(srgb 0.976471 0.980392 0.984314)",
+      "hover": "rgb(243, 245, 247)",
+      "nestedBorders": "transparent",
+      "geometryStable": true,
+      "keyboardCollapse": true
+    }
+  ],
+  "errors": []
+}
