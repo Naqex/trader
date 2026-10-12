@@ -38,11 +38,11 @@ try {
         assert.equal(await content.locator('[role=alert]').count(), 1)
         assert.equal(await content.locator('.fx-dashboard-session-card,.fxa-trades,.fxr-session-cards,.rd-table').count(), 0)
       } else if (state === 'empty' && view !== 'market-data') {
-        const welcome = page.locator('[data-testid=testing-welcome]')
+        const welcome = page.locator(view === 'overview' ? '[data-testid=testing-welcome]' : '[data-empty-kind=sessions]')
         await welcome.waitFor()
-        assert.equal(await welcome.locator('.wm-welcome-action').count(), 2)
+        assert.equal(await welcome.locator('.wm-welcome-action').count(), view === 'overview' ? 2 : 0)
         assert.equal(await content.locator('.fx-dashboard-session-card,.fxa-report').count(), 0)
-        const [c, w] = await Promise.all([content.boundingBox(), welcome.locator(':scope > div').boundingBox()])
+        const [c, w] = await Promise.all([content.boundingBox(), (view === 'overview' ? welcome.locator(':scope > div') : welcome).boundingBox()])
         assert.ok(Math.abs(c.x + c.width / 2 - w.x - w.width / 2) <= 1, 'Welcome centered horizontally')
         if (width > 600) assert.ok(Math.abs(c.y + c.height / 2 - w.y - w.height / 2) <= 1, 'Welcome centered vertically')
       } else {

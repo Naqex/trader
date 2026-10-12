@@ -67,7 +67,7 @@ try {
   for (state of ['partial', 'stale', 'blocked', 'empty', 'unknown', 'denied', 'malformed']) {
     await page.goto(`${origin}/?workspace=tenant-a&view=analytics&session=${id}`)
     if (state === 'blocked') await page.getByTestId('analytics-blocked').waitFor()
-    else if (['denied', 'malformed'].includes(state)) { await page.getByRole('alert').filter({ hasText: 'Không đọc được kết quả' }).waitFor(); assert.equal(await page.getByTestId('analytics-performance').count(), 0) }
+    else if (['denied', 'malformed'].includes(state)) { await page.getByRole('alert').filter({ hasText: state === 'denied' ? 'Không có quyền truy cập' : 'Không đọc được kết quả' }).waitFor(); assert.equal(await page.getByTestId('analytics-performance').count(), 0) }
     else { await page.getByTestId('analytics-performance').waitFor(); if (state === 'unknown') assert.match(await page.locator('.fxa-metrics').first().innerText(), /Total P\/L\n—/); if (state === 'empty') assert.match(await page.locator('.fxa-metrics').first().innerText(), /Total trades\n0/); if (state === 'partial') await page.getByRole('status').filter({ hasText: 'Dữ liệu một phần.' }).waitFor(); if (state === 'stale') await page.getByRole('status').filter({ hasText: 'Dữ liệu có thể đã cũ.' }).waitFor() }
     assert.equal(await page.getByRole('button', { name: /^(Tải lại|Làm mới)/ }).count(), 0)
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false)

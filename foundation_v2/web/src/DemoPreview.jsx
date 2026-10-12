@@ -10,7 +10,7 @@ import SessionFilter from './SessionFilter.jsx'
 import SessionPerformance from './SessionPerformance.jsx'
 import DashboardSessions from './DashboardSessions.jsx'
 import TestingReadState from './TestingReadState.jsx'
-import { TestingWelcome, TestingResourceNotice } from './TestingPageState.jsx'
+import { TestingEmptyState, TestingResourceNotice } from './TestingPageState.jsx'
 import { SessionActions, SessionActionDialog } from './SessionActions.jsx'
 import SessionSettingsDrawer from './SessionSettingsDrawer.jsx'
 import { SessionSummaryCard, SessionDescriptionCard } from './SessionDetails.jsx'
@@ -147,7 +147,7 @@ function DemoJournal() {
 export default function DemoPreview({ view, workspace, query, state = 'demo' }) {
   const { t } = useTestingLocale()
 
-  if (state === 'empty' && ['replay', 'trade', 'analytics'].includes(view)) return <TestingWelcome preview />
+  if (state === 'empty' && ['replay', 'trade', 'analytics'].includes(view)) return <TestingEmptyState viewport />
   if (view === 'overview') return <DemoDashboard workspace={workspace} query={query} state={state} />
   if (view === 'replay') return <DemoSessions workspace={workspace} query={query} state={state} />
   if (view === 'trade') return <DemoReports ledgerOnly query={query} state={state} />

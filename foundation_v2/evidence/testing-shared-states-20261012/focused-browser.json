@@ -1,0 +1,181 @@
+{
+  "cases": [
+    {
+      "view": "overview",
+      "width": 1710,
+      "theme": "dark",
+      "case": "Shared denied preview; no refresh; no protected content"
+    },
+    {
+      "view": "replay",
+      "width": 1710,
+      "theme": "dark",
+      "case": "Shared denied preview; no refresh; no protected content"
+    },
+    {
+      "view": "trade",
+      "width": 1710,
+      "theme": "dark",
+      "case": "Shared denied preview; no refresh; no protected content"
+    },
+    {
+      "view": "analytics",
+      "width": 1710,
+      "theme": "dark",
+      "case": "Shared denied preview; no refresh; no protected content"
+    },
+    {
+      "view": "market-data",
+      "width": 1710,
+      "theme": "dark",
+      "case": "Shared denied preview; no refresh; no protected content"
+    },
+    {
+      "width": 1710,
+      "theme": "dark",
+      "case": "Clear filters restores three sessions and preserves Performance"
+    },
+    {
+      "view": "overview",
+      "width": 1710,
+      "theme": "light",
+      "case": "Shared denied preview; no refresh; no protected content"
+    },
+    {
+      "view": "replay",
+      "width": 1710,
+      "theme": "light",
+      "case": "Shared denied preview; no refresh; no protected content"
+    },
+    {
+      "view": "trade",
+      "width": 1710,
+      "theme": "light",
+      "case": "Shared denied preview; no refresh; no protected content"
+    },
+    {
+      "view": "analytics",
+      "width": 1710,
+      "theme": "light",
+      "case": "Shared denied preview; no refresh; no protected content"
+    },
+    {
+      "view": "market-data",
+      "width": 1710,
+      "theme": "light",
+      "case": "Shared denied preview; no refresh; no protected content"
+    },
+    {
+      "width": 1710,
+      "theme": "light",
+      "case": "Clear filters restores three sessions and preserves Performance"
+    },
+    {
+      "view": "overview",
+      "width": 390,
+      "theme": "dark",
+      "case": "Shared denied preview; no refresh; no protected content"
+    },
+    {
+      "view": "replay",
+      "width": 390,
+      "theme": "dark",
+      "case": "Shared denied preview; no refresh; no protected content"
+    },
+    {
+      "view": "trade",
+      "width": 390,
+      "theme": "dark",
+      "case": "Shared denied preview; no refresh; no protected content"
+    },
+    {
+      "view": "analytics",
+      "width": 390,
+      "theme": "dark",
+      "case": "Shared denied preview; no refresh; no protected content"
+    },
+    {
+      "view": "market-data",
+      "width": 390,
+      "theme": "dark",
+      "case": "Shared denied preview; no refresh; no protected content"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "case": "Clear filters restores three sessions and preserves Performance"
+    },
+    {
+      "view": "overview",
+      "width": 390,
+      "theme": "light",
+      "case": "Shared denied preview; no refresh; no protected content"
+    },
+    {
+      "view": "replay",
+      "width": 390,
+      "theme": "light",
+      "case": "Shared denied preview; no refresh; no protected content"
+    },
+    {
+      "view": "trade",
+      "width": 390,
+      "theme": "light",
+      "case": "Shared denied preview; no refresh; no protected content"
+    },
+    {
+      "view": "analytics",
+      "width": 390,
+      "theme": "light",
+      "case": "Shared denied preview; no refresh; no protected content"
+    },
+    {
+      "view": "market-data",
+      "width": 390,
+      "theme": "light",
+      "case": "Shared denied preview; no refresh; no protected content"
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "case": "Clear filters restores three sessions and preserves Performance"
+    },
+    {
+      "view": "overview",
+      "interceptedFixture": true,
+      "case": "Actual catalog 403 uses shared denial; no retry or dependent report"
+    },
+    {
+      "view": "replay",
+      "interceptedFixture": true,
+      "case": "Actual catalog 403 uses shared denial; no retry or dependent report"
+    },
+    {
+      "view": "trade",
+      "interceptedFixture": true,
+      "case": "Actual catalog 403 uses shared denial; no retry or dependent report"
+    },
+    {
+      "view": "analytics",
+      "interceptedFixture": true,
+      "case": "Actual catalog 403 uses shared denial; no retry or dependent report"
+    }
+  ],
+  "errors": [],
+  "writes": [],
+  "scope": "Shared real components with labeled GET fixtures; preview and live SSE read-only smoke",
+  "liveSSE": {
+    "httpStatus": 200,
+    "schema": "workspace-events-v1",
+    "workspace": "tenant-a",
+    "keys": [
+      "commands",
+      "downloads",
+      "research",
+      "revision",
+      "schema_version",
+      "workspace_id"
+    ],
+    "snapshotOnly": true
+  }
+}

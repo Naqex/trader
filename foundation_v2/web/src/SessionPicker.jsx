@@ -11,7 +11,7 @@ import SessionSettingsDrawer from './SessionSettingsDrawer.jsx'
 import { SessionSummaryCard, SessionDescriptionCard } from './SessionDetails.jsx'
 import FxSelect from './FxSelect.jsx'
 import TestingIcon from './TestingIcon.jsx'
-import { TestingWelcome, TestingPageSkeleton } from './TestingPageState.jsx'
+import { TestingEmptyState, TestingPageSkeleton } from './TestingPageState.jsx'
 import QuickSessionDialog from './QuickSessionDialog.jsx'
 import useReadRefresh from './useReadRefresh.js'
 import { readDashboardAnalytics, readDashboardDatasets, readDashboardReplayContext } from './dashboardModel.js'
@@ -116,7 +116,7 @@ export default function SessionPicker({ kind = 'replay', workspace = 'tenant-a',
       uncertainDelete.current = null
       setNeedsRefresh(false)
     }).catch((error) => {
-      if (!controller.signal.aborted) setCatalog(current => [401, 403].includes(error.status) ? { status: 'error', items: [], refreshing: false, error: error.message } : { ...current, status: current.items.length ? 'stale' : 'error', refreshing: false, error: error.message })
+      if (!controller.signal.aborted) setCatalog(current => [401, 403].includes(error.status) ? { status: 'error', items: [], refreshing: false, error: error.message, denied: true } : { ...current, status: current.items.length ? 'stale' : 'error', refreshing: false, error: error.message })
     })
     return () => controller.abort()
   }, [workspace, reloadToken])
@@ -136,7 +136,7 @@ export default function SessionPicker({ kind = 'replay', workspace = 'tenant-a',
     readDashboardAnalytics(workspace, item.record_id, controller.signal).then(payload => {
       if (!controller.signal.aborted) setPerformance({ scope: performanceScope, status: payload.analytics_available && !payload.blocked_by_data?.length ? 'ready' : 'blocked', payload, error: null })
     }).catch(error => {
-      if (!controller.signal.aborted) setPerformance(current => current.scope === performanceScope && current.payload && ![401, 403].includes(error.status) ? { ...current, status: 'stale', refreshing: false, error: error.message } : { scope: performanceScope, status: 'error', payload: null, error: error.message })
+      if (!controller.signal.aborted) setPerformance(current => current.scope === performanceScope && current.payload && ![401, 403].includes(error.status) ? { ...current, status: 'stale', refreshing: false, error: error.message } : { scope: performanceScope, status: 'error', payload: null, error: error.message, denied: [401,403].includes(error.status) })
     })
     return () => controller.abort()
   }, [workspace, kind, item?.record_id, item?.revision, reloadToken])
@@ -195,10 +195,8 @@ export default function SessionPicker({ kind = 'replay', workspace = 'tenant-a',
   const available = ['ready', 'stale'].includes(catalog.status) && Boolean(item)
   const actionDisabled = Boolean(pending) || needsRefresh || !available || catalog.status !== 'ready' || Boolean(catalog.refreshing)
 
-  if (catalog.status === 'ready' && catalog.items.length === 0 && !explicit && kind === 'replay') return <>
-    <TestingWelcome onBacktest={() => setCreating(true)} propHref={buildWorkspaceHref('testing', workspace, query)} />
-    {creating && <QuickSessionDialog workspace={workspace} query={query} sessions={[]} onClose={() => setCreating(false)} />}
-  </>
+  if (catalog.denied) return <TestingEmptyState kind="denied" viewport />
+  if (catalog.status === 'ready' && catalog.items.length === 0 && !explicit) return <TestingEmptyState viewport />
 
   return <section className={`wm-page fx-session-picker fxr-integrated-sessions fxr-${kind}-picker ${kind === 'replay' ? 'fxs-page' : ''}`} aria-label={kind === 'trade' ? t("Trades theo phiên") : kind === 'analytics' ? t("Analytics theo phiên") : t("Sessions")} data-testid={`${kind}-session-picker`}>
     <h1 className="sr-only">{kind === 'trade' ? t("Trades") : kind === 'analytics' ? t("Analytics") : t("Sessions")}</h1>
@@ -221,7 +219,7 @@ export default function SessionPicker({ kind = 'replay', workspace = 'tenant-a',
         </SessionDescriptionCard>
       </div>}
       {kind !== 'replay' && <div className="fxr-session-links fxr-ledger-context"><span>{item.name || item.record_id} · {unknownValue(item.instrument_id)} · {timeframeLabel(item)}</span><a href={routeHref('replay')}>{t("Thông tin phiên")}</a>{!item.archived && item.dataset_available && <a href={routeHref('replay', { select: null, surface: 'workspace' })}>{t("Mở chart")}</a>}</div>}
-      <div className="fxr-session-report">{kind === 'replay' ? <>{performance.refreshing && <TestingReadState message="Đang cập nhật kết quả phiên…" />}{performance.status === 'stale' && <TestingReadState message="Chưa cập nhật được kết quả phiên. Đang giữ bản đã đọc trước đó." onRetry={() => setReloadToken(value => value + 1)} />}{performance.status === 'loading' && <TestingSkeleton label="Đang tải kết quả phiên…" />}{performance.status === 'error' && <TestingReadState error message={t('Không tải được kết quả:') + ' ' + t(performance.error)} onRetry={() => setReloadToken(value => value + 1)} />}{performance.status === 'blocked' && performance.payload?.blocked_by_data?.some(reason => reason !== 'replay_execution_not_initialized') && <p role="status" data-testid="session-performance-blocked">{t("Kết quả chưa đủ dữ liệu để hiển thị.")}</p>}{['ready', 'blocked', 'stale'].includes(performance.status) && <SessionPerformance key={`${workspace}:${item.record_id}:${item.revision}`} model={performanceModel} payload={performance.payload} item={item} href={routeHref} />}</> : <AnalyticsWorkspace key={`${workspace}:${item.record_id}:${item.revision}`} workspace={workspace} query={selectedQuery} ledgerOnly={kind === 'trade'} sessionName={item.name || item.record_id} embedded />}</div>
+      <div className="fxr-session-report">{kind === 'replay' ? <>{performance.refreshing && <TestingReadState message="Đang cập nhật kết quả phiên…" />}{performance.status === 'stale' && <TestingReadState message="Chưa cập nhật được kết quả phiên. Đang giữ bản đã đọc trước đó." onRetry={() => setReloadToken(value => value + 1)} />}{performance.status === 'loading' && <TestingSkeleton label="Đang tải kết quả phiên…" />}{performance.denied && <TestingEmptyState kind="denied" />}{performance.status === 'error' && !performance.denied && <TestingReadState error message={t('Không tải được kết quả:') + ' ' + t(performance.error)} onRetry={() => setReloadToken(value => value + 1)} />}{performance.status === 'blocked' && performance.payload?.blocked_by_data?.some(reason => reason !== 'replay_execution_not_initialized') && <p role="status" data-testid="session-performance-blocked">{t("Kết quả chưa đủ dữ liệu để hiển thị.")}</p>}{['ready', 'blocked', 'stale'].includes(performance.status) && <SessionPerformance key={`${workspace}:${item.record_id}:${item.revision}`} model={performanceModel} payload={performance.payload} item={item} href={routeHref} />}</> : <AnalyticsWorkspace key={`${workspace}:${item.record_id}:${item.revision}`} workspace={workspace} query={selectedQuery} ledgerOnly={kind === 'trade'} sessionName={item.name || item.record_id} embedded />}</div>
     </>}
     {actionDialog && item && <SessionActionDialog key={actionDialog.mode + ':' + item.record_id} mode={actionDialog.mode} item={item} pending={Boolean(pending)} blocked={actionDisabled || Boolean(catalog.refreshing)} error={notice?.error ? notice.text : null} onClose={() => setActionDialog(null)} onSubmit={(action, entry, confirmation) => mutate(action, confirmation)} />}
     {editing && item && <SessionSettingsDrawer item={item} dataset={dataset} payload={performance.payload} model={performanceModel} replayRecord={replayRecord} workspace={workspace} pending={Boolean(pending)} blocked={actionDisabled} onClose={() => setEditing(false)} onSubmit={draft => mutate('save', draft)} error={notice?.error ? notice.text : null} />}

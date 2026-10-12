@@ -1,7 +1,7 @@
 import { Suspense, lazy } from 'react'
 import FxSelect from './FxSelect.jsx'
 import TestingReadState from './TestingReadState.jsx'
-import { TestingPageSkeleton } from './TestingPageState.jsx'
+import { TestingEmptyState, TestingPageSkeleton } from './TestingPageState.jsx'
 import { previewOptions } from './demoMode.js'
 import { useTestingLocale } from './testingLocale.jsx'
 import './view-state-preview.css'
@@ -24,6 +24,6 @@ export default function ViewStatePreview({ state, view, workspace, query, onChan
   const { t } = useTestingLocale()
   if (state === 'loading') return <TestingPageSkeleton view={view} />
   if (!['overview', 'replay', 'trade', 'analytics', 'market-data'].includes(view) && ['empty', 'error', 'unavailable', 'filtered'].includes(state)) return <section className="wm-viewport-state wm-testing-welcome"><TestingReadState error={state === 'error'} message={state === 'empty' ? 'Chưa có bản ghi.' : state === 'filtered' ? 'Không có kết quả khớp bộ lọc.' : state === 'error' ? 'Không tải được dữ liệu.' : 'Tính năng chưa khả dụng.'} /></section>
-  if (state === 'denied') return <section className="wm-viewport-state wm-testing-welcome"><TestingReadState error message="Không có quyền xem dữ liệu của workspace này." /></section>
+  if (state === 'denied') return <TestingEmptyState kind="denied" viewport />
   return <Suspense fallback={<TestingPageSkeleton view={view} />}><DemoPreview key={`${view}:${state}`} view={view} workspace={workspace} query={query} state={state} onChange={onChange} /></Suspense>
 }

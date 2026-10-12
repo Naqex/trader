@@ -9,7 +9,7 @@ export function previewOptions(view) {
     { value: 'no-trades', label: 'Chưa có giao dịch', detail: 'Tất cả phiên mẫu chưa có giao dịch đã đóng.', disabled: !['overview', 'replay', 'trade', 'analytics'].includes(view) },
     { value: 'new-session', label: 'Phiên mới chưa giao dịch', detail: 'London Breakout chưa có giao dịch; hai phiên cũ vẫn có kết quả.', disabled: !['replay', 'trade', 'analytics'].includes(view) },
     ...DATA_STATES.filter(([state]) => state !== 'ready').map(([value, label, detail]) => ({ value, label: value === 'unavailable' && ['overview', 'replay', 'trade', 'analytics', 'market-data'].includes(view) ? 'Nguồn tải chưa kết nối' : label,
-      detail: value === 'empty' && ['overview', 'replay', 'trade', 'analytics'].includes(view) ? 'Workspace chưa có phiên; hiển thị màn hình bắt đầu luyện tập.' : value === 'unavailable' ? (view === 'market-data' ? 'Nguồn tải chưa kết nối; dữ liệu đã lưu vẫn đọc được.' : 'Nguồn tải chưa kết nối; phiên và báo cáo đã lưu vẫn dùng được.') : detail,
+      detail: value === 'empty' && ['overview', 'replay', 'trade', 'analytics'].includes(view) ? 'Workspace chưa có phiên; Tổng quan hiển thị màn chào, các trang phụ thuộc phiên dùng trạng thái trống chung.' : value === 'unavailable' ? (view === 'market-data' ? 'Nguồn tải chưa kết nối; dữ liệu đã lưu vẫn đọc được.' : 'Nguồn tải chưa kết nối; phiên và báo cáo đã lưu vẫn dùng được.') : detail,
       disabled: value === 'filtered' && view === 'replay' || value === 'unknown' && view !== 'overview' || value === 'partial' && !['overview', 'trade', 'analytics'].includes(view) })),
   ]
 }

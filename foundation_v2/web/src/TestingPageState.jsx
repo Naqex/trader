@@ -18,13 +18,27 @@ export function TestingWelcome({ onBacktest, propHref, backtestHref, preview = f
   </section>
 }
 
-export function TestingTradesEmpty({ filtered = false, incomplete = false }) {
+export function TestingEmptyState({ kind = 'sessions', viewport = false, onClear }) {
   const { t } = useTestingLocale()
-  return <section className="wm-trades-empty" role="status" data-testid="testing-trades-empty">
-    <TestingIcon kind="ledger" size={32} />
-    <h2>{t(incomplete ? 'Chưa đủ dữ liệu giao dịch.' : filtered ? 'Không có giao dịch khớp bộ lọc.' : 'Chưa có giao dịch đóng')}</h2>
-    <p>{t(incomplete ? 'Nguồn mới đọc được một phần; chưa thể kết luận phạm vi này không có giao dịch.' : filtered ? 'Thử đổi phiên hoặc điều chỉnh bộ lọc để xem giao dịch.' : 'Giao dịch đã đóng trong phạm vi đang chọn sẽ xuất hiện tại đây.')}</p>
+  const states = {
+    sessions: ['ledger', 'Chưa có phiên', 'Tạo phiên đầu tiên tại Tổng quan để bắt đầu luyện tập.'],
+    denied: ['lock', 'Không có quyền truy cập', 'Bạn chưa có quyền xem dữ liệu trong workspace này. Hãy kiểm tra tài khoản và quyền được cấp.'],
+    'filtered-sessions': ['search', 'Không có phiên khớp bộ lọc', 'Thử đổi từ khóa hoặc điều chỉnh bộ lọc để xem phiên.'],
+    trades: ['ledger', 'Chưa có giao dịch đóng', 'Giao dịch đã đóng trong phạm vi đang chọn sẽ xuất hiện tại đây.'],
+    'filtered-trades': ['search', 'Không có giao dịch khớp bộ lọc.', 'Thử đổi phiên hoặc điều chỉnh bộ lọc để xem giao dịch.'],
+    incomplete: ['ledger', 'Chưa đủ dữ liệu giao dịch.', 'Nguồn mới đọc được một phần; chưa thể kết luận phạm vi này không có giao dịch.'],
+  }
+  const [icon, title, detail] = states[kind]
+  return <section className={`wm-trades-empty${viewport ? ' wm-viewport-state' : ''}`} role={kind === 'denied' ? 'alert' : 'status'} data-testid={['trades', 'filtered-trades', 'incomplete'].includes(kind) ? 'testing-trades-empty' : 'testing-empty-state'} data-empty-kind={kind}>
+    <TestingIcon kind={icon} size={32} />
+    <h2>{t(title)}</h2>
+    <p>{t(detail)}</p>
+    {onClear && <button className="fxa-button" type="button" onClick={onClear}>{t('Xóa bộ lọc')}</button>}
   </section>
+}
+
+export function TestingTradesEmpty({ filtered = false, incomplete = false }) {
+  return <TestingEmptyState kind={incomplete ? 'incomplete' : filtered ? 'filtered-trades' : 'trades'} />
 }
 
 export function TestingPageSkeleton({ view = 'overview', label = 'Đang tải dữ liệu…' }) {

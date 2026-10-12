@@ -5871,5 +5871,11 @@
   "London Breakout chưa có giao dịch; hai phiên cũ vẫn có kết quả.": {"vi": "London Breakout chưa có giao dịch; hai phiên cũ vẫn có kết quả.", "en": "London Breakout has no trades; the other two sessions still have results."},
   "Giao dịch đã đóng trong phạm vi đang chọn sẽ xuất hiện tại đây.": {"vi": "Giao dịch đã đóng trong phạm vi đang chọn sẽ xuất hiện tại đây.", "en": "Closed trades in the selected scope will appear here."},
   "Thử đổi phiên hoặc điều chỉnh bộ lọc để xem giao dịch.": {"vi": "Thử đổi phiên hoặc điều chỉnh bộ lọc để xem giao dịch.", "en": "Try another session or adjust the filters to see trades."},
-  "Nguồn mới đọc được một phần; chưa thể kết luận phạm vi này không có giao dịch.": {"vi": "Nguồn mới đọc được một phần; chưa thể kết luận phạm vi này không có giao dịch.", "en": "Only part of the source was read; this does not establish that the selected scope has no trades."}
+  "Nguồn mới đọc được một phần; chưa thể kết luận phạm vi này không có giao dịch.": {"vi": "Nguồn mới đọc được một phần; chưa thể kết luận phạm vi này không có giao dịch.", "en": "Only part of the source was read; this does not establish that the selected scope has no trades."},
+  "Chưa có phiên": {"vi": "Chưa có phiên", "en": "No sessions yet"},
+  "Tạo phiên đầu tiên tại Tổng quan để bắt đầu luyện tập.": {"vi": "Tạo phiên đầu tiên tại Tổng quan để bắt đầu luyện tập.", "en": "Create your first session on Overview to start testing."},
+  "Không có quyền truy cập": {"vi": "Không có quyền truy cập", "en": "Access denied"},
+  "Bạn chưa có quyền xem dữ liệu trong workspace này. Hãy kiểm tra tài khoản và quyền được cấp.": {"vi": "Bạn chưa có quyền xem dữ liệu trong workspace này. Hãy kiểm tra tài khoản và quyền được cấp.", "en": "You do not have permission to view this workspace. Check your account and assigned access."},
+  "Không có phiên khớp bộ lọc": {"vi": "Không có phiên khớp bộ lọc", "en": "No sessions match your filters"},
+  "Thử đổi từ khóa hoặc điều chỉnh bộ lọc để xem phiên.": {"vi": "Thử đổi từ khóa hoặc điều chỉnh bộ lọc để xem phiên.", "en": "Try another search or adjust your filters to find sessions."}
 }

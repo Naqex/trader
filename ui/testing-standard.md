@@ -35,7 +35,7 @@ Financial colors, chart cutoffs, navigation context and dataset source are uncha
 | `TimeFilter`, `DateFilter` | Native typed input plus calendar; ISO values and IANA timezone IDs |
 | `SessionSettingsDrawer`, `SessionActionDialog` | Focus management, cancel, immutable facts, duplicate/delete confirmation |
 | `TestingSkeleton`, `TestingReadState` | Initial read, unavailable/error/retry and route load failure |
-| `TestingWelcome`, `TestingPageSkeleton`, `TestingResourceNotice` | Shared viewport onboarding/loading and resource-scoped refresh/stale/error |
+| `TestingWelcome`, `TestingEmptyState`, `TestingPageSkeleton`, `TestingResourceNotice` | Shared viewport onboarding/loading and resource-scoped refresh/stale/error |
 | `TestingIcon`, `ChartIcon` | SVG icons; do not replace them with font glyphs |
 | `TestingComponentReference` | Internal reference at `?area=testing&ui_reference=1` |
 
@@ -110,13 +110,13 @@ reads/writes the real API. Real mode never falls back to fixtures.
 | Page | Empty | Error preview | Provider unavailable | Filtered / no trades |
 | --- | --- | --- | --- | --- |
 | Overview | No sessions: centered Testing welcome with two start actions | Performance fails; saved Recent Sessions remain | Saved sessions and Performance remain | Search has no matches, Performance unchanged / sessions with 0 closed trades |
-| Sessions | No sessions: same welcome | Selected session results fail; selector, description and metadata remain | Saved session and report remain | Search inside session dropdown / selected session has 0 closed trades |
-| Trades | No sessions: same welcome | Ledger fails; session and trade filters remain | Saved ledger remains | Date filter gives 0 matches / sessions exist with no closed trades |
-| Analytics | No sessions: same welcome | Report fails; session and report filters remain | Persisted report remains; experiments are a separate capability | Date filter gives 0 matches / no closed trades to analyze |
+| Sessions | No sessions: centered shared icon/title/detail, pointing to Overview | Selected session results fail; selector, description and metadata remain | Saved session and report remain | Search inside session dropdown / selected session has 0 closed trades |
+| Trades | No sessions: centered shared icon/title/detail, pointing to Overview | Ledger fails; session and trade filters remain | Saved ledger remains | Date filter gives 0 matches / sessions exist with no closed trades |
+| Analytics | No sessions: centered shared icon/title/detail, pointing to Overview | Report fails; session and report filters remain | Persisted report remains; experiments are a separate capability | Date filter gives 0 matches / no closed trades to analyze |
 | Market Data | No downloaded datasets; import/source guidance in library | Local library read fails; toolbar remains | Provider catalog update/download unavailable, saved datasets remain | Asset search gives 0 matches; clearing search restores data |
 
 Loading fills the remaining content viewport with a page-shaped skeleton. Loading
-and welcome components are reused by the real resource readers. A missing catalog
+and empty-state components are reused by the real resource readers. A missing catalog
 must not mount dependent Trades/Analytics or imply a known zero. Overview catalog
 and Performance errors remain independent. Preview errors have no redundant retry;
 actual resource retry stays where it can recover a read.
@@ -196,8 +196,8 @@ text in the revealed report remains selectable. Hover colors the header only,
 including when expanded, rather than the whole revealed report.
 Empty expanded reports use a single left-aligned message; known balance curves
 remain visible even if no full ledger is available. The peach list count uses
-prose (e.g. "1 phiên trong tổng số 6") for filtered matches against the entire
-catalog, independent of the three displayed records. Actual Dashboard requests
+prose (e.g. "3 phiên trong tổng số 6") for displayed records against the entire
+catalog; the displayed set is capped at three after filtering. Actual Dashboard requests
 the first three matches from the full server catalog; preview filters its complete
 fixture catalog locally. A cold profit sort can still require summaries for many
 sessions before selecting three; the small response does not guarantee constant
@@ -239,3 +239,12 @@ on mobile/coarse pointers. Download/progress stay text controls, never oval icon
 Row and control tokens are separate so a nested hovered action cannot merge into
 its row, including selected rows. Popup option hover uses the control surface;
 menus retain their panel border even though their individual items do not.
+
+
+Denied workspace reads use the shared lock/title/detail state with no retry action;
+resource-only denial stays inside the affected report. Discard cached protected
+results on 401/403 instead of presenting them as stale. Preview uses the same
+component. Overview filtered-empty uses the shared search/title/detail pattern
+inside Recent Sessions, retaining the Performance section; Clear filters changes
+the query and is not a refresh action. Overview alone keeps the first-session
+welcome. Saved market data is independent of whether any sessions exist.

@@ -86,9 +86,9 @@ try {
   await page.route('**/api/v2/replay/sessions', route => route.fulfill({json:{items:[]}}))
   for (const view of ['replay','trade','analytics']) {
     await page.goto(href(view))
-    await page.locator('[data-testid=testing-welcome]').waitFor()
-    assert.equal(await page.locator('.wm-welcome-action').count(),2)
-    report.cases.push({interceptedFixture:true,view,case:'No sessions renders shared centered welcome'})
+    await page.locator('[data-empty-kind=sessions]').waitFor()
+    assert.equal(await page.locator('.wm-welcome-action').count(),0)
+    report.cases.push({interceptedFixture:true,view,case:'No sessions uses shared empty pattern; Overview alone owns welcome'})
   }
   await page.goto(href('replay','&session=00000000000000000000000000000000'))
   await page.getByRole('heading',{name:'Không tìm thấy phiên trong không gian làm việc này',exact:true}).waitFor()

@@ -1,6 +1,6 @@
 import { displayDate } from './dateFormat.js'
 import TestingReadState, { TestingSkeleton } from './TestingReadState.jsx'
-import { TestingPageSkeleton } from './TestingPageState.jsx'
+import { TestingEmptyState, TestingPageSkeleton } from './TestingPageState.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './analytics-story.css'
@@ -342,7 +342,7 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
     } catch (error) {
       if (controller.signal.aborted || error?.name === 'AbortError' || requestId !== requestSequence.current) return
       const status = error?.status === 409 || error?.status === 503 ? 'blocked_by_data' : 'error'
-      setState(current => background && ![401, 403].includes(error?.status) && current.payload && ['ready', 'partial', 'stale', 'empty'].includes(current.status) ? { ...current, status: 'stale', refreshing: false, error: String(error.message || error) } : { status, payload: [401, 403].includes(error?.status) ? null : error?.payload || null, error: String(error.message || error) })
+      setState(current => background && ![401, 403].includes(error?.status) && current.payload && ['ready', 'partial', 'stale', 'empty'].includes(current.status) ? { ...current, status: 'stale', refreshing: false, error: String(error.message || error) } : { status, payload: [401, 403].includes(error?.status) ? null : error?.payload || null, error: String(error.message || error), denied: [401,403].includes(error?.status) })
     } finally {
       signal?.removeEventListener('abort', abort)
       if (readController.current === controller) readController.current = null
@@ -460,7 +460,7 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
     {!resourceId && <p className="fxa-empty">{t("Chọn một phiên replay hoặc research job để xem kết quả.")}</p>}
     {state.status === 'loading' && <TestingPageSkeleton view={ledgerOnly ? 'trade' : 'analytics'} label="Đang tải kết quả…" />}
     {state.refreshing && <TestingReadState message="Đang cập nhật…" />}
-    {state.status === 'error' && <TestingReadState error message={t('Không đọc được kết quả:') + ' ' + t(state.error)} onRetry={() => load()} />}
+    {state.denied && <TestingEmptyState kind="denied" />}{state.status === 'error' && !state.denied && <TestingReadState error message={t('Không đọc được kết quả:') + ' ' + t(state.error)} onRetry={() => load()} />}
     {state.status === 'blocked_by_data' && <section className="as-empty-state" data-testid="analytics-blocked"><h2>{t("Chưa đủ dữ liệu để tính analytics")}</h2><p>{state.payload?.blocked_by_data?.map(reason => t(reason)).join(' · ') || t(state.error) || t("Nguồn chưa có kết quả đã phát hành.")}</p></section>}
     {state.status === 'stale' && <p className="as-stale-banner" role="status">{t("Dữ liệu có thể đã cũ. Giữ nguyên nguồn và kiểm tra lại khi quay về ứng dụng.")}</p>}
     {!ledgerOnly && state.status === 'partial' && <p className="as-stale-banner" role="status">{t("Dữ liệu một phần. Chỉ tính trên các giao dịch có trong nguồn đã đọc.")}</p>}

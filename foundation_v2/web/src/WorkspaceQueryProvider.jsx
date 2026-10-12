@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useStat
 import { QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { createWorkspaceQueryScope, metadataOptions, registerWorkspaceQueryScope, catalogEventRevision, invalidateScopeMetadata } from './workspaceQuery.js'
 import { subscribeWorkspaceEvents } from './workspaceEvents.js'
-import TestingReadState from './TestingReadState.jsx'
+import { TestingEmptyState } from './TestingPageState.jsx'
 
 const ScopeContext = createContext(null)
 
@@ -27,7 +27,7 @@ function QueryScope({ workspace, authorityKey, eventsEnabled, children }) {
     return () => { off(); document.removeEventListener('visibilitychange', refocus) }
   }, [scope, workspace, denied, eventsEnabled])
   return <ScopeContext.Provider value={scope}><QueryClientProvider client={scope.client}>{denied
-    ? <TestingReadState error message="Không có quyền đọc dữ liệu trong workspace này." /> : children}</QueryClientProvider></ScopeContext.Provider>
+    ? <TestingEmptyState kind="denied" viewport /> : children}</QueryClientProvider></ScopeContext.Provider>
 }
 
 export default function WorkspaceQueryProvider({ workspace, authorityKey = 'local-workspace-v1', eventsEnabled = true, children }) {
