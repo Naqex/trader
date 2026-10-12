@@ -13,9 +13,9 @@ const COLUMNS = [
   ['session_id', 'Session'], ['status', 'Type'], ['source', 'Source'], ['recorded_at_utc', 'Entry Date (Realtime)'], ['open_time_utc', 'Entry Date (Chart UTC)'],
   ['symbol', 'Asset'], ['side', 'Side'], ['entry_type', 'Entry type'], ['net_pnl', 'Return'], ['return_pct', 'Return (%)'], ['realized_r', 'Return (R)'],
   ['rating', 'Trade Rating'], ['price_open', 'Entry price'], ['quantity', 'Size'], ['stop_loss', 'Stop loss'], ['take_profit', 'Take profit'],
-  ['close_time_utc', 'Exit date (UTC)'], ['price_close', 'Exit price'], ['gross_pnl', 'Gross PnL'], ['fees', 'Fees'], ['tags', 'Tags'],
+  ['close_time_utc', 'Exit date (UTC)'], ['price_close', 'Exit price'], ['gross_pnl', 'Gross PnL'], ['fees', 'Fees'],
 ]
-const DEFAULT_COLUMNS = COLUMNS.filter(([key]) => key !== 'tags').map(([key]) => key)
+const DEFAULT_COLUMNS = COLUMNS.map(([key]) => key)
 const NUMERIC_COLUMNS = new Set(['net_pnl', 'return_pct', 'realized_r', 'rating', 'price_open', 'quantity', 'stop_loss', 'take_profit', 'price_close', 'gross_pnl', 'fees'])
 export function TradeInspector({ children, onClose }) {
   const { t } = useTestingLocale()
@@ -83,7 +83,7 @@ export default function FxTradeLedger({ model, extra, selected, onSelect, sessio
   const mixedChecked = !allChecked && visible.some(row => checked.has(row.tradeId))
   const selectPage = useRef(null)
   useEffect(() => { if (selectPage.current) selectPage.current.indeterminate = mixedChecked }, [mixedChecked])
-  const empty = !remotePage?.pending && total === 0 && !rows.length
+  const empty = !remotePage?.pending && (total === 0 || total === null) && !rows.length
   const incomplete = Boolean(model.result?.partial || model.result?.status === 'partial')
   const noTrades = !incomplete && (emptyScopeKnown || model.result?.scope?.total_trade_count === 0)
   const columnControl = <><button type="button" className="fxa-button fxa-icon-button" aria-label={t("Reset table columns")} title={t("Reset table columns")} onClick={() => setColumns([...DEFAULT_COLUMNS])}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M4 11a8 8 0 1 1 2 7M4 4v7h7" /></svg></button><FxSelect label={t("Cột hiển thị")} value={columns} onChange={setColumns} options={COLUMNS.map(([value, label]) => ({ value, label }))} multiple searchable icon="edit" iconOnly className="fxa-columns-control" /></>

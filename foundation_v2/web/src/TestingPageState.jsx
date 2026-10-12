@@ -71,7 +71,7 @@ export function TestingResourceNotice({ state, resource, onRetry, recovery }) {
   return messages[state] ? <div data-resource-state={state} aria-busy={state === 'refreshing'}><TestingReadState error={state === 'error'} message={messages[state]} onRetry={onRetry} recovery={recovery} /></div> : null
 }
 
-export function TestingResourceStatus({ state, resource, recovery, detail }) {
+export function TestingResourceStatus({ state, resource, recovery, detail, textSummary = false }) {
   const { t } = useTestingLocale()
   const element = useRef(null)
   const [open, setOpen] = useState(false)
@@ -100,9 +100,10 @@ export function TestingResourceStatus({ state, resource, recovery, detail }) {
     partial: t('{resource}: chỉ tính trên phần dữ liệu đã đọc được.', { resource: t(resource) }),
   }
   const message = detail || messages[state]
-  return <span className="wm-resource-status-slot">
+  if (textSummary && (!message || state === 'refreshing')) return null
+  return <span className={`wm-resource-status-slot${textSummary ? ' is-text' : ''}`}>
     {message && <details ref={element} className={`wm-resource-status is-${state}`} data-resource-state={state} aria-busy={state === 'refreshing'} onToggle={event => setOpen(event.currentTarget.open)} onKeyDown={event => { if (event.key === 'Escape') event.currentTarget.open = false }}>
-      <summary aria-label={t(message)} title={t(message)}><TestingIcon kind={state === 'refreshing' ? 'history' : 'info'} size={16} /></summary>
+      <summary aria-label={t(message)} title={t(message)}>{textSummary ? t(state === 'partial' ? 'Dữ liệu một phần.' : 'Dữ liệu chưa cập nhật.') : <TestingIcon kind={state === 'refreshing' ? 'history' : 'info'} size={16} />}</summary>
       <div className="wm-resource-status-detail" style={position} role="status"><p>{t(message)}</p><ReadRecoveryStatus recovery={recovery} /></div>
     </details>}
   </span>

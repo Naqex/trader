@@ -372,3 +372,30 @@ The account popup opens on mouse hover only on hover-capable devices; touch uses
 explicit taps and keyboard focus remains supported.
 
 Scoped acceptance: `foundation_v2/evidence/chart-design-system-20261012/README.md`.
+
+## Trade filters and session links
+
+Basic filters use draft state until Apply. Notes has With/Without checkboxes;
+the projection joins note presence from scoped journal annotations without sending
+their text. Unknown presence cannot match either selection. Year, Month and Hour
+reuse FxSelect multi-select; date controls reuse ProjectDateInput with clear and
+native picker actions. Dates mean inclusive close dates in UTC; calendar groups
+use the selected timezone. Weekday is no longer a ledger control, and legacy
+weekday, entry-type and note-search URL filters do not silently filter this view.
+Analytics retains its existing filter contract.
+
+Asset choices combine ledger symbols with the selected sessions' catalog assets,
+including sessions without execution. Trade-derived years and date bounds remain
+empty when no trade dates exist. Server facets use the full selected scope before
+filters and pagination; an unfiltered report reuses the bounded revision cache.
+Lifecycle is separate from entry type: only Closed is currently supported by the
+closed-fill read model. Pending, Canceled and Open remain visibly disabled.
+
+Recent Trades links to the Trades page with the selected session in real and demo
+modes. Button anchors use control hover, without underlining. The ledger toolbar
+has no standalone info icon; stale/partial information uses a compact text summary
+beside the session selector with accessible details, and initial errors stay below
+the filters. Healthy/refreshing reads do not add a status row. An unknown count
+with no readable rows uses the incomplete state instead of an empty table.
+
+Scoped acceptance: `foundation_v2/evidence/ledger-design-system-20261012/README.md`.

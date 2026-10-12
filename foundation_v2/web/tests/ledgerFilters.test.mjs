@@ -44,3 +44,12 @@ test('filter URL roundtrip preserves tag commas, unknown fields and mode', () =>
   assert.deepEqual(filterValues('bad'), [])
   assert.deepEqual(filterValues('{"not":"array"}'), [])
 })
+test('note presence uses compact provenance and OR within the presence group', () => {
+  const ledger = [...rows, { tradeId: 'journal', has_notes: true }, { tradeId: 'blank', notes: '  ' }, { tradeId: 'unknown', has_notes: null }]
+  const select = notesPresence => filterAnalyticsRows(ledger, { notesPresence: JSON.stringify(notesPresence) }).map(row => row.tradeId)
+  assert.deepEqual(select(['with']), ['a', 'b', 'journal'])
+  assert.deepEqual(select(['without']), ['c', 'd', 'blank'])
+  assert.deepEqual(select(['with', 'without']), ledger.filter(row => row.has_notes !== null).map(row => row.tradeId))
+  assert.deepEqual(matching({ statuses: '["closed"]' }), ['a', 'b', 'c', 'd'])
+  assert.deepEqual(matching({ statuses: '["open"]' }), [])
+})

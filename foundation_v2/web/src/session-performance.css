@@ -19,7 +19,7 @@
 .fxs-scope, .fxs-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
 .fxs-scope { font-size: 12px; color: var(--wm-content-muted); }
 .fxs-performance a { color: var(--wm-primary); text-decoration: none; }
-.fxs-performance a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.fxs-performance a:not(.fxr-button):hover { text-decoration: underline; text-underline-offset: 3px; }
 .fxs-charts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
 .fxs-chart-panel { min-width: 0; padding: 20px; background: var(--wm-surface); border: 1px solid var(--wm-border); border-radius: 10px; }
 .fxs-chart-panel h3 { margin: 0 0 8px; font-size: 14px; font-weight: 600; }

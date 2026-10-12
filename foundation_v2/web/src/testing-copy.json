@@ -5918,5 +5918,15 @@
   "Khởi tạo simulator để theo dõi lệnh mô phỏng trong phiên.": {"vi":"Khởi tạo simulator để theo dõi lệnh mô phỏng trong phiên.","en":"Initialize the simulator to track simulated orders in this session."},
   "phiên replay": {"vi":"phiên replay","en":"replay session"},
   "Đang giữ cutoff {cutoff} UTC.": {"vi":"Đang giữ cutoff {cutoff} UTC.","en":"Retaining cutoff {cutoff} UTC."},
-  "Có thay đổi chart chưa lưu.": {"vi":"Có thay đổi chart chưa lưu.","en":"The chart has unsaved changes."}
+  "Có thay đổi chart chưa lưu.": {"vi":"Có thay đổi chart chưa lưu.","en":"The chart has unsaved changes."},
+  "Có ghi chú": {"vi":"Có ghi chú","en":"With notes"},
+  "Không có ghi chú": {"vi":"Không có ghi chú","en":"Without notes"},
+  "Xóa ngày": {"vi":"Xóa ngày","en":"Clear date"},
+  "Chọn {label}": {"vi":"Chọn {label}","en":"Select {label}"},
+  "Tháng {month}": {"vi":"Tháng {month}","en":"Month {month}"},
+  "Năm, tháng và giờ theo": {"vi":"Năm, tháng và giờ theo","en":"Year, month and hour use"},
+  "Lệnh chờ": {"vi":"Lệnh chờ","en":"Pending"},
+  "Đã hủy": {"vi":"Đã hủy","en":"Canceled"},
+  "Đang mở": {"vi":"Đang mở","en":"Open"},
+  "Bảng giao dịch hiện chỉ hỗ trợ lệnh đã đóng.": {"vi":"Bảng giao dịch hiện chỉ hỗ trợ lệnh đã đóng.","en":"The trade table currently supports closed trades only."}
 }

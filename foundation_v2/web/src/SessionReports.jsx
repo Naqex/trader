@@ -13,11 +13,11 @@ import useReadRefresh from './useReadRefresh.js'
 import { scopedRead } from './scopedRead.js'
 import { readJson } from './researchDataApi.js'
 
-function AggregateTrades({ workspace, ids, query, sessionControl, onClearSessions, catalogStatus }) {
+function AggregateTrades({ workspace, ids, query, sessionControl, onClearSessions, catalogStatus, sessionAssets }) {
   const { t } = useTestingLocale()
 
   const filters = useMemo(() => readAnalyticsFilters(query), [query])
-  const extra = useMemo(() => readAnalyticsExtraFilters(query), [query])
+  const extra = useMemo(() => ({ ...readAnalyticsExtraFilters(query), days: '', weekday: 'all', types: '', notes: '' }), [query])
   const [readState, setState] = useState({ status: 'loading', payload: null })
   const [reload, setReload] = useState(0), [selected, setSelected] = useState(''), [paging, setPaging] = useState({ page: 1, pageSize: 10, sort: { key: 'close_time_utc', direction: 'desc' } })
   const params = useMemo(() => {
@@ -74,11 +74,11 @@ function AggregateTrades({ workspace, ids, query, sessionControl, onClearSession
     return `/?${params}`
   }
   const backgroundStatus = state.refreshing ? 'refreshing' : state.status === 'stale' ? 'stale' : state.payload?.status === 'partial' ? 'partial' : catalogStatus?.state
-  const statusControl = <TestingResourceStatus state={backgroundStatus} resource={state.refreshing || state.status === 'stale' || state.payload?.status === 'partial' ? 'bảng giao dịch' : 'danh mục phiên'} recovery={state.readError ? recovery : catalogStatus?.recovery} />
+  const statusControl = <TestingResourceStatus textSummary state={backgroundStatus} resource={state.refreshing || state.status === 'stale' || state.payload?.status === 'partial' ? 'bảng giao dịch' : 'danh mục phiên'} recovery={state.readError ? recovery : catalogStatus?.recovery} />
   const readNotice = state.status === 'error' ? <TestingReadState error message={t('Không đọc được giao dịch: {error}', { error: state.error })} recovery={recovery} /> : null
   if (state.denied) return <TestingEmptyState kind="denied" viewport />
   return <section className="as-page fxa-page wm-page" aria-label={t("Trades")} data-testid="aggregate-trades">
-    <FxTradeLedger readNotice={readNotice} hidden={state.status === 'error' && !state.payload} emptyScopeKnown={state.payload?.pagination.filtered_count === 0 && state.payload.status !== 'partial' && !Object.values(filters).some(value => value && value !== 'all') && Object.entries(extra).every(([key, value]) => value === DEFAULT_EXTRA_FILTERS[key])} model={model} extra={extra} selected={selected} onSelect={setSelected} remotePage={{ page: state.payload?.pagination.page || paging.page, pageSize: paging.pageSize, sort: paging.sort, totalCount: state.payload?.pagination.filtered_count ?? null, pending: state.status === 'loading', onChange: patch => setPaging(current => ({ ...current, ...patch })) }} renderFilters={columnControl => <FxAnalyticsFilters statusControl={statusControl} filters={filters} onChange={changeFilters} extra={extra} onExtra={changeExtra} rows={model.ledger} facets={state.payload?.facets || state.facets} sessionControl={sessionControl} onClearSessions={onClearSessions} pending={!state.payload} columnControl={columnControl} ledgerOnly />} />
+    <FxTradeLedger readNotice={readNotice} hidden={state.status === 'error' && !state.payload} emptyScopeKnown={state.payload?.pagination.filtered_count === 0 && state.payload.status !== 'partial' && !Object.values(filters).some(value => value && value !== 'all') && Object.entries(extra).every(([key, value]) => value === DEFAULT_EXTRA_FILTERS[key])} model={model} extra={extra} selected={selected} onSelect={setSelected} remotePage={{ page: state.payload?.pagination.page || paging.page, pageSize: paging.pageSize, sort: paging.sort, totalCount: state.payload?.pagination.filtered_count ?? null, pending: state.status === 'loading', onChange: patch => setPaging(current => ({ ...current, ...patch })) }} renderFilters={columnControl => <FxAnalyticsFilters statusControl={statusControl} filters={filters} onChange={changeFilters} extra={extra} onExtra={changeExtra} rows={model.ledger} facets={{ ...(state.payload?.facets || state.facets), assets: [...new Set([...(state.payload?.facets?.assets || state.facets?.assets || []), ...sessionAssets])] }} sessionControl={sessionControl} onClearSessions={onClearSessions} pending={!state.payload} columnControl={columnControl} ledgerOnly />} />
     {state.payload && <>
       {row && <TradeInspector onClose={() => setSelected('')} className="fxa-trade-inspector" aria-label={t("Chi tiết giao dịch")}><div className="fxa-section-heading"><h2>{t("Trade detail ·")} {row.session_name}</h2><button className="fxa-button" type="button" onClick={() => setSelected('')}>{t("Đóng chi tiết")}</button></div><ProvenanceInspector model={detailModel} selectedTrade={{ ...row, tradeId: row.trade_id }} journalCount={null} links={{ replay: link('replay'), journal: link('journal') }} /></TradeInspector>}
     </>}
@@ -120,8 +120,9 @@ export default function SessionReports({ workspace, query, ledgerOnly = false })
   if (catalog.denied) return <TestingEmptyState kind="denied" viewport />
   if (catalog.status === 'error') return <section className="as-page fxa-page wm-page" aria-label={ledgerOnly ? t('Trades') : t('Analytics')} data-testid="session-catalog-error"><FxAnalyticsFilters ledgerOnly={ledgerOnly} sourceType="Backtesting" disabled pending filters={readAnalyticsFilters(query)} extra={readAnalyticsExtraFilters(query)} rows={[]} onChange={() => {}} onExtra={() => {}} sessionControl={control} statusControl={<TestingResourceStatus />} /><TestingReadState error message={t('Không tải được danh mục phiên:') + ' ' + t(catalog.error)} recovery={recovery} /></section>
   if (!catalog.items.length && !query.get('session') && !query.get('replay_session')) return <TestingEmptyState viewport />
+  const sessionAssets = [...new Set(catalog.items.filter(entry => scope === null || (Array.isArray(scope) ? scope : [scope]).includes(entry.record_id)).flatMap(entry => entry.instrument_ids || (entry.instrument_id ? [entry.instrument_id] : [])))]
   const catalogStatus = { state: catalog.refreshing ? 'refreshing' : catalog.status === 'stale' ? 'stale' : undefined, recovery }
   return <>
-    {ledgerOnly && !(sessionId && ['cursor', 'cursor_index', 'cutoff', 'decision_cutoff', 'event_sequence', 'trade', 'trade_id'].some(key => new URLSearchParams(window.location.search).has(key))) ? <AggregateTrades catalogStatus={catalogStatus} workspace={workspace} ids={scope} query={query} sessionControl={control} onClearSessions={() => change(null)} /> : <AnalyticsWorkspace catalogStatus={catalogStatus} key={`${workspace}:${sessionId}`} workspace={workspace} query={scopedQuery} ledgerOnly={ledgerOnly} sessionName={item?.name || ''} sessionControl={control} />}
+    {ledgerOnly && !(sessionId && ['cursor', 'cursor_index', 'cutoff', 'decision_cutoff', 'event_sequence', 'trade', 'trade_id'].some(key => new URLSearchParams(window.location.search).has(key))) ? <AggregateTrades sessionAssets={sessionAssets} catalogStatus={catalogStatus} workspace={workspace} ids={scope} query={query} sessionControl={control} onClearSessions={() => change(null)} /> : <AnalyticsWorkspace sessionAssets={sessionAssets} catalogStatus={catalogStatus} key={`${workspace}:${sessionId}`} workspace={workspace} query={scopedQuery} ledgerOnly={ledgerOnly} sessionName={item?.name || ''} sessionControl={control} />}
   </>
 }

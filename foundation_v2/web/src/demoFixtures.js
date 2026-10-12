@@ -16,7 +16,7 @@ export const DEMO_LEDGER = Array.from({ length: 60 }, (_, i) => {
   return { trade_id: `demo-trade-${String(i + 1).padStart(3, '0')}`, session_id: session.record_id, session_name: session.name, source: 'UI demo', symbol, side,
     open_time_utc: new Date(time).toISOString(), close_time_utc: new Date(time + (20 + i % 8 * 15) * 60000).toISOString(), recorded_at_utc: '2026-10-05T08:00:00Z',
     entry_type: 'market', price_open: price, price_close: price + direction * (net + 3) / (quantity * multiplier), quantity, stop_loss: price - direction * 100 / (quantity * multiplier), take_profit: price + direction * 200 / (quantity * multiplier),
-    net_pnl: net, gross_pnl: net + 3, fees: 3, planned_risk_budget: 100, realized_r: net / 100, account_currency: 'USD', starting_balance: 10000, rating: 1 + i % 5, tags: [i % 2 ? 'reversal' : 'breakout', i % 3 ? 'planned' : 'review'] }
+    has_notes: i % 3 === 0, net_pnl: net, gross_pnl: net + 3, fees: 3, planned_risk_budget: 100, realized_r: net / 100, account_currency: 'USD', starting_balance: 10000, rating: 1 + i % 5, tags: [i % 2 ? 'reversal' : 'breakout', i % 3 ? 'planned' : 'review'] }
 })
 
 export function demoResult(rows = DEMO_LEDGER, session = DEMO_SESSIONS[0]) {

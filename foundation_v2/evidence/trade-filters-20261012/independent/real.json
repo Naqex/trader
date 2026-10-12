@@ -1,0 +1,15 @@
+{
+  "cases": [
+    "unknown legacy note excludes With and Without",
+    "real session link excludes inherited sessions=all/cursor",
+    "real aggregate ready2rows, legacy weekday/days normalized",
+    "real empty scope renders grouped empty without ledger rows",
+    "real error remains visibly explained after toolbar removal",
+    "real session RecentTrades row→selectedTrade route + chart hover no underline",
+    "Live unavailable404 has no yellow status banner/retry, retains empty surfaces"
+  ],
+  "blocked": [],
+  "errors": [],
+  "scope": "Real components over isolated backend read-model fixtures; no backend dispatch",
+  "result": "PASS"
+}

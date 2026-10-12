@@ -66,9 +66,9 @@ export default function LiveWorkspace({ workspace = 'tenant-a', query = new URLS
   }, [reloadToken, workspace, preview])
   const copy = statusCopy(state)
   return <section className="live-workspace wm-page" data-testid="live-workspace" aria-label={t('Live')}>
-    {!preview && copy.tone !== 'ready' && <div className={`live-status live-status-${copy.tone}`} data-testid="live-status" role={copy.tone === 'error' ? 'alert' : 'status'}>
+    {!preview && copy.tone !== 'ready' && state.status !== 'unavailable' && <div className={`live-status live-status-${copy.tone}`} data-testid="live-status" role={copy.tone === 'error' ? 'alert' : 'status'}>
       <span className="live-status-dot" aria-hidden="true" /><span>{t(copy.title)}</span>
-      {!preview && ['error', 'denied', 'unavailable'].includes(state.status) && <button type="button" className="fxa-button live-retry" onClick={() => setReloadToken(value => value + 1)}>{t('Thử lại')}</button>}
+      {!preview && ['error', 'denied'].includes(state.status) && <button type="button" className="fxa-button live-retry" onClick={() => setReloadToken(value => value + 1)}>{t('Thử lại')}</button>}
     </div>}
     {state.status === 'loading' ? <TestingSkeleton label="Reading account data…" /> : <LiveSurfaces key={`${workspace}:${section}:${Boolean(preview)}`} section={section} payload={state.payload} query={query} preview={Boolean(preview)} onRefresh={() => setReloadToken(value => value + 1)} />}
     <details className="live-source-details"><summary>{t('Data source and access')}</summary><dl>

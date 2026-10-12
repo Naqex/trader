@@ -18,8 +18,9 @@ def build_journal_context(records, workspace_id, session_id):
         tags = payload.get("tags")
         tags = tags if isinstance(tags, list) else []
         for trade_id in aliases:
-            item = trades.setdefault(trade_id, {"trade_id": trade_id, "tags": [], "record_count": 0})
+            item = trades.setdefault(trade_id, {"trade_id": trade_id, "tags": [], "record_count": 0, "has_notes": False})
             item["record_count"] += 1
+            item["has_notes"] = item["has_notes"] or bool(str(payload.get('note') or payload.get('notes') or '').strip())
             for tag in tags:
                 if isinstance(tag, str) and tag not in item["tags"]:
                     item["tags"].append(tag)

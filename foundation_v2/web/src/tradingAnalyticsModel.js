@@ -3,7 +3,11 @@ import { closeTime } from './sessionPerformanceModel.js'
 export const known = value => value !== null && value !== undefined && value !== '' && typeof value !== 'boolean' && Number.isFinite(Number(value))
 export const number = value => known(value) ? Number(value) : null
 export const outcomeOf = value => !known(value) ? 'unknown' : Number(value) > 1e-12 ? 'win' : Number(value) < -1e-12 ? 'loss' : 'breakeven'
-export const DEFAULT_EXTRA_FILTERS = { asset: 'all', tag: 'all', strategy: 'all', source: 'all', weekday: 'all', hour: 'all', timeStart: '', timeEnd: '', reportKinds: '', timezone: 'UTC', search: '', notes: '', assets: '', sides: '', outcomes: '', types: '', years: '', months: '', days: '', hours: '', tagInclude: '', tagExclude: '', tagIncludeMode: 'AND', tagExcludeMode: 'AND' }
+export const DEFAULT_EXTRA_FILTERS = { asset: 'all', tag: 'all', strategy: 'all', source: 'all', weekday: 'all', hour: 'all', timeStart: '', timeEnd: '', reportKinds: '', timezone: 'UTC', search: '', notes: '', notesPresence: '', statuses: '', assets: '', sides: '', outcomes: '', types: '', years: '', months: '', days: '', hours: '', tagInclude: '', tagExclude: '', tagIncludeMode: 'AND', tagExcludeMode: 'AND' }
+export function hasTradeNotes(row) {
+  if (row.has_notes === null) return null
+  return typeof row.has_notes === 'boolean' ? row.has_notes : Boolean(row.notes?.trim?.() || row.note?.trim?.())
+}
 // JSON preserves commas in journal tags and survives the existing string URL contract.
 export function filterValues(value) {
   if (Array.isArray(value)) return value.map(String)
@@ -64,7 +68,7 @@ export function filterAnalyticsRows(rows, filters = DEFAULT_EXTRA_FILTERS) {
   filters = { ...DEFAULT_EXTRA_FILTERS, ...filters }
   const search = filters.search.trim().toLowerCase()
   const notes = filters.notes.trim().toLowerCase()
-  const lists = Object.fromEntries(['assets', 'sides', 'outcomes', 'types', 'years', 'months', 'days', 'hours', 'tagInclude', 'tagExclude'].map(key => [key, filterValues(filters[key])]))
+  const lists = Object.fromEntries(['assets', 'sides', 'outcomes', 'types', 'notesPresence', 'statuses', 'years', 'months', 'days', 'hours', 'tagInclude', 'tagExclude'].map(key => [key, filterValues(filters[key])]))
   const matches = (key, value) => !lists[key].length || value !== null && value !== undefined && lists[key].includes(String(value))
   const reportKinds = filterValues(filters.reportKinds)
   const minuteOf = value => /^([01]\d|2[0-3]):[0-5]\d$/.test(value || '') ? Number(value.slice(0, 2)) * 60 + Number(value.slice(3)) : null
@@ -91,6 +95,8 @@ export function filterAnalyticsRows(rows, filters = DEFAULT_EXTRA_FILTERS) {
       && matches('sides', row.side?.toLowerCase())
       && matches('outcomes', outcomeOf(row.net_pnl))
       && matches('types', row.entry_type)
+      && matches('statuses', 'closed')
+      && matches('notesPresence', hasTradeNotes(row) === null ? null : hasTradeNotes(row) ? 'with' : 'without')
       && matches('years', time?.key.slice(0, 4))
       && matches('months', time ? Number(time.key.slice(5, 7)) : null)
       && matches('days', time?.weekday)

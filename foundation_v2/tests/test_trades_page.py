@@ -64,6 +64,32 @@ def test_large_scope_sorted_before_slice_full_count_and_clamp():
     assert page(rows, page=999, page_size=100)['pagination']['page'] == 2
 
 
+def test_notes_presence_reads_scoped_journals_before_paging_without_exposing_text():
+    rows = [row(i) for i in range(137)]
+    annotations = [journal(1, ['tag-only']), journal(120, [])]
+    annotations[1]['record_id'] = 'note-a'
+    annotations[1]['payload']['note'] = 'private annotation'
+    with_notes = page(rows, journals=annotations, filters={'notesPresence': '["with"]'}, page_size=1)
+    assert ids(with_notes) == ['trade-120']
+    assert with_notes['pagination']['filtered_count'] == 1
+    assert with_notes['ledger'][0]['has_notes'] is True
+    assert 'private annotation' not in str(with_notes)
+    without = page(rows, journals=annotations, filters={'notesPresence': '["without"]'})
+    assert without['pagination']['filtered_count'] == 136
+    assert page(rows, journals=annotations, filters={'notesPresence': '["with","without"]'})['pagination']['filtered_count'] == 137
+    for invalid in [{'notesPresence': '["unknown"]'}, {'statuses': '["open"]'}]:
+        with pytest.raises(AnalyticsValidationError):
+            page(rows, filters=invalid)
+
+
+def test_asset_facets_include_selected_session_without_trades_and_full_date_bounds():
+    full = report([row(1), row(120)])
+    full['sessions'] = [{'session_id': 'session-a', 'instrument_id': 'XAUUSD'}, {'session_id': 'unselected', 'instrument_id': 'GBPUSD'}]
+    result = build_trades_page(full, [], page=1, page_size=1, sort_key='net_pnl', sort_direction='asc', extra_filters='{"statuses":["closed"]}')
+    assert result['facets']['assets'] == ['EURUSD', 'XAUUSD']
+    assert result['facets']['date_range'] == {'from': '2023-11-14', 'to': '2023-11-15'}
+
+
 def test_journal_comma_tag_filters_before_slice_and_unfiltered_facets():
     rows = [row(i) for i in range(137)]
     journals = [journal(1, ['review, later', 'planned'])]

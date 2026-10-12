@@ -1,0 +1,15 @@
+{
+  "passed": 8,
+  "checks": [
+    "Trades toolbar has no redundant status icon; Tags column option removed",
+    "Notes staged draft/discard/apply filters fixture provenance before local pagination",
+    "Closed-only lifecycle, scoped assets, year/month/hour multi-select, date min/max and clear",
+    "Drawer keyboard focus trap, nested Escape, 390/1710 dropdown bounds",
+    "Recent Trades navigation selects same demo session and scopes asset facets",
+    "Real session heading link scopes Trades, chart CTA hover has no underline, empty session asset is available",
+    "Running Axum/Python API accepts typed filters, keeps selected scope and unknown trade count",
+    "Live unavailable has no redundant banner"
+  ],
+  "errors": [],
+  "writes": []
+}

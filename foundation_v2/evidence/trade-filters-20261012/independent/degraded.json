@@ -1,0 +1,128 @@
+{
+  "cases": [
+    {
+      "width": 1440,
+      "theme": "dark",
+      "partialBox": {
+        "x": 474.6875,
+        "y": 137,
+        "width": 122.828125,
+        "height": 44
+      }
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "cases": [
+        "partial2rows warning text + popup/Escape",
+        "unknowncount grouped incomplete without table + scoped catalogasset",
+        "ready→focus503 retains2rows + stale warning/detail",
+        "no yellow info icon/no document overflow"
+      ]
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "partialBox": {
+        "x": 474.6875,
+        "y": 137,
+        "width": 122.828125,
+        "height": 44
+      }
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "cases": [
+        "partial2rows warning text + popup/Escape",
+        "unknowncount grouped incomplete without table + scoped catalogasset",
+        "ready→focus503 retains2rows + stale warning/detail",
+        "no yellow info icon/no document overflow"
+      ]
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "partialBox": {
+        "x": 278,
+        "y": 201,
+        "width": 96,
+        "height": 44
+      }
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "cases": [
+        "partial2rows warning text + popup/Escape",
+        "unknowncount grouped incomplete without table + scoped catalogasset",
+        "ready→focus503 retains2rows + stale warning/detail",
+        "no yellow info icon/no document overflow"
+      ]
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "partialBox": {
+        "x": 278,
+        "y": 201,
+        "width": 96,
+        "height": 44
+      }
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "cases": [
+        "partial2rows warning text + popup/Escape",
+        "unknowncount grouped incomplete without table + scoped catalogasset",
+        "ready→focus503 retains2rows + stale warning/detail",
+        "no yellow info icon/no document overflow"
+      ]
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "partialBox": {
+        "x": 217.953125,
+        "y": 201,
+        "width": 86.046875,
+        "height": 44
+      }
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "cases": [
+        "partial2rows warning text + popup/Escape",
+        "unknowncount grouped incomplete without table + scoped catalogasset",
+        "ready→focus503 retains2rows + stale warning/detail",
+        "no yellow info icon/no document overflow"
+      ]
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "partialBox": {
+        "x": 217.953125,
+        "y": 201,
+        "width": 86.046875,
+        "height": 44
+      }
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "cases": [
+        "partial2rows warning text + popup/Escape",
+        "unknowncount grouped incomplete without table + scoped catalogasset",
+        "ready→focus503 retains2rows + stale warning/detail",
+        "no yellow info icon/no document overflow"
+      ]
+    }
+  ],
+  "blocked": [],
+  "errors": [],
+  "scope": "Real components with isolated scoped read fixtures; no backend dispatch",
+  "result": "PASS"
+}

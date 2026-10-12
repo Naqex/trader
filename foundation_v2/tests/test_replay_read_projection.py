@@ -91,6 +91,17 @@ def test_workspace_scope_missing_deleted_and_empty_selection():
     assert service.trades('tenant-a', page=1)['pagination']['filtered_count'] == 0
 
 
+def test_base_filters_leave_scoped_facets_available_and_reuse_unfiltered_cache():
+    store = MemoryStore()
+    service = ReplayReadProjectionService(store)
+    full = service.trades('tenant-a', page=1)
+    filtered = service.trades('tenant-a', page=1, from_close_utc='2099-01-01T00:00:00Z')
+    assert filtered['pagination']['filtered_count'] == 0
+    assert filtered['facets'] == full['facets']
+    assert filtered['facets']['date_range']['from'] is not None
+    assert sum(kind == 'replay' for _, kind, _ in store.reads) == 2
+
+
 def test_activity_reconciles_without_recomputing_financial_projection():
     from datetime import datetime, timezone, timedelta
     store = MemoryStore(); service = ReplayReadProjectionService(store)

@@ -1,0 +1,23 @@
+{
+  "result": "PASS",
+  "review": "Independent read-only review of trade filters, session routes and Live unavailable UI",
+  "evidence": ["browser.json", "real.json", "degraded.json", "contracts.py", "fixtures.json"],
+  "browser_scope": "Local demo plus real components over isolated backend read-model fixtures; API fixtures intercepted before backend dispatch, every external and non-GET request aborted",
+  "responsive": {"demo": [1440, 390], "degraded_real_components": [1440, 390, 320], "themes": ["dark", "light"], "touch": "mobile widths", "motion": "reduced"},
+  "verified": [
+    "notes presence two choices; missing legacy note metadata stays unknown and matches neither With nor Without",
+    "assets scoped to selected session catalog and ledger; missing execution uses catalog metadata without fake rows",
+    "closed lifecycle only; unsupported Pending/Canceled/Open disabled",
+    "month and hour multiple selection; Escape closes FxSelect menu without closing filter drawer",
+    "date clear; unfiltered selected-scope date/year facets preserved under base date filters",
+    "removed Days legacy URL normalized in aggregate route; no Tags column option",
+    "real session Recent Trades row navigates to single-session Trade with selected trade; does not inherit sessions=all/cursor",
+    "chart-link hover has no underline",
+    "empty/error/degraded/unknown-count behavior remains explained; stale refresh retains rows",
+    "partial/stale compact text status, accessible popup and Escape; mobile status bounded inside viewport",
+    "Live unavailable 404 has no redundant banner/retry and retains surfaces",
+    "no page errors or horizontal document overflow in tested cases"
+  ],
+  "resolved_findings": ["unselected session asset leakage", "date facets narrowed irreversibly by base filter", "legacy journal annotation count misclassified as note", "hidden legacy weekday filter", "degraded status lost with toolbar icon removal", "mobile status clipped"],
+  "limits": ["No mutation of owner sessions or source files", "No commit/restart", "No normal-motion performance benchmark", "No broker/live connection", "Not whole-product acceptance"]
+}

@@ -16,9 +16,9 @@ KEYS = {
     'asset', 'tag', 'strategy', 'source', 'weekday', 'hour', 'timeStart', 'timeEnd',
     'reportKinds', 'timezone', 'search', 'notes', 'assets', 'sides', 'outcomes',
     'types', 'years', 'months', 'days', 'hours', 'tagInclude', 'tagExclude',
-    'tagIncludeMode', 'tagExcludeMode',
+    'tagIncludeMode', 'tagExcludeMode', 'notesPresence', 'statuses',
 }
-LISTS = {'reportKinds', 'assets', 'sides', 'outcomes', 'types', 'years', 'months', 'days', 'hours', 'tagInclude', 'tagExclude'}
+LISTS = {'reportKinds', 'assets', 'sides', 'outcomes', 'types', 'years', 'months', 'days', 'hours', 'tagInclude', 'tagExclude', 'notesPresence', 'statuses'}
 SORT_KEYS = {'session_id', 'status', 'source', 'recorded_at_utc', 'open_time_utc', 'symbol', 'side', 'entry_type', 'net_pnl', 'return_pct', 'realized_r', 'rating', 'price_open', 'quantity', 'stop_loss', 'take_profit', 'close_time_utc', 'price_close', 'gross_pnl', 'fees', 'tags'}
 
 
@@ -61,17 +61,21 @@ def parse_filters(raw):
             if set(filters.get(key) or []) - valid:
                 raise ValueError()
         zone = ZoneInfo(filters.get('timezone') or 'UTC')
+        if set(filters.get('notesPresence') or []) - {'with', 'without'} or set(filters.get('statuses') or []) - {'closed'}:
+            raise ValueError()
         return filters, zone
     except (ValueError, TypeError, ZoneInfoNotFoundError) as exc:
         raise AnalyticsValidationError('trade_page_filters_invalid') from exc
 
 
-def prepare_trades_projection(report, journals, *, sort_key, sort_direction, extra_filters='{}'):
+def prepare_trades_projection(report, journals, *, sort_key, sort_direction, extra_filters='{}', facet_report=None):
     if sort_key not in SORT_KEYS or sort_direction not in ('asc', 'desc'):
         raise AnalyticsValidationError('trade_page_parameters_invalid')
     filters, zone = parse_filters(extra_filters)
     journal_tags = {}
-    wanted = {(row['session_id'], row['trade_id']) for row in report['ledger']}
+    journal_notes = set()
+    facet_report = facet_report if facet_report is not None else report
+    wanted = {(row['session_id'], row['trade_id']) for row in facet_report['ledger']}
     for record in journals:
         payload = record.get('payload') or {}
         source = payload.get('source') or {}
@@ -83,24 +87,32 @@ def prepare_trades_projection(report, journals, *, sort_key, sort_direction, ext
             for trade in trades:
                 if (session, trade) in wanted:
                     journal_tags.setdefault((session, trade), []).extend(payload.get('tags') or [])
-    rows = []
-    for index, raw in enumerate(report['ledger']):
+                    if str(payload.get('note') or payload.get('notes') or '').strip():
+                        journal_notes.add((session, trade))
+    def decorate(raw, index):
         row = {**raw, 'report_kind': 'app', '_index': index}
         tags = list(row.get('tags') or [])
         tags.extend(journal_tags.get((row['session_id'], row['trade_id']), []))
         row['tags'] = list(dict.fromkeys(tags))
-        rows.append(row)
+        row['has_notes'] = bool(str(row.get('note') or row.get('notes') or '').strip() or (row['session_id'], row['trade_id']) in journal_notes)
+        return row
+    rows = [decorate(raw, index) for index, raw in enumerate(report['ledger'])]
+    facet_rows = rows if facet_report is report else [decorate(raw, index) for index, raw in enumerate(facet_report['ledger'])]
 
     close_dates = {row['_index']: timestamp(row.get('close_time_utc')) for row in rows}
     local_dates = {index: date.astimezone(zone) if date else None for index, date in close_dates.items()}
     start, end = [int(filters[key][:2]) * 60 + int(filters[key][3:]) if filters.get(key) else None for key in ('timeStart', 'timeEnd')]
     explicit_no_kinds = 'reportKinds' in filters and not filters['reportKinds'] and json.loads(extra_filters).get('reportKinds') != ''
-    facets = {'assets': sorted({row['symbol'] for row in rows if row.get('symbol')}),
-              'tags': sorted({tag for row in rows for tag in row['tags']}),
-              'strategies': sorted({row['playbook_id'] for row in rows if row.get('playbook_id')}),
-              'years': sorted({str(date.year) for date in local_dates.values() if date}),
-              'types': sorted({row['entry_type'] for row in rows if row.get('entry_type')}),
-              'has_notes': any(row.get('notes') or row.get('note') for row in rows)}
+    facet_dates = [timestamp(row.get('close_time_utc')) for row in facet_rows]
+    utc_dates = sorted(date.date().isoformat() for date in facet_dates if date)
+    scope = set(facet_report['scope']['session_ids'])
+    facets = {'assets': sorted({row['symbol'] for row in facet_rows if row.get('symbol')} | {session['instrument_id'] for session in facet_report.get('sessions', []) if session.get('instrument_id') and session.get('session_id') in scope}),
+              'tags': sorted({tag for row in facet_rows for tag in row['tags']}),
+              'strategies': sorted({row['playbook_id'] for row in facet_rows if row.get('playbook_id')}),
+              'years': sorted({str(date.astimezone(zone).year) for date in facet_dates if date}),
+              'types': sorted({row['entry_type'] for row in facet_rows if row.get('entry_type')}),
+              'has_notes': any(row['has_notes'] for row in facet_rows),
+              'date_range': {'from': utc_dates[0] if utc_dates else None, 'to': utc_dates[-1] if utc_dates else None}}
     def matches(row):
         local = local_dates[row['_index']]
         weekday = (local.weekday() + 1) % 7 if local else None
@@ -109,7 +121,7 @@ def prepare_trades_projection(report, journals, *, sort_key, sort_direction, ext
             if minute is None or not (minute >= start or minute <= end if start is not None and end is not None and start > end else (start is None or minute >= start) and (end is None or minute <= end)):
                 return False
         net = float(row['net_pnl'])
-        values = {'reportKinds': 'app', 'assets': row.get('symbol'), 'sides': str(row.get('side', '')).lower(), 'outcomes': 'win' if net > 1e-12 else 'loss' if net < -1e-12 else 'breakeven', 'types': row.get('entry_type'), 'years': local.year if local else None, 'months': local.month if local else None, 'days': weekday, 'hours': local.hour if local else None}
+        values = {'notesPresence': 'with' if row['has_notes'] else 'without', 'statuses': 'closed', 'reportKinds': 'app', 'assets': row.get('symbol'), 'sides': str(row.get('side', '')).lower(), 'outcomes': 'win' if net > 1e-12 else 'loss' if net < -1e-12 else 'breakeven', 'types': row.get('entry_type'), 'years': local.year if local else None, 'months': local.month if local else None, 'days': weekday, 'hours': local.hour if local else None}
         if explicit_no_kinds:
             return False
         for key, value in values.items():

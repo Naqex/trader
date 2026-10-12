@@ -19,8 +19,8 @@ def test_context_aliases_counts_tags_and_scope_without_journal_text():
     ], 'a', 's')
     assert result['record_count'] == 2
     assert result['trades'] == [
-        {'trade_id': 't', 'tags': ['risk', 'entry'], 'record_count': 2},
-        {'trade_id': 'alias', 'tags': ['entry'], 'record_count': 1},
+        {'trade_id': 't', 'tags': ['risk', 'entry'], 'record_count': 2, 'has_notes': True},
+        {'trade_id': 'alias', 'tags': ['entry'], 'record_count': 1, 'has_notes': True},
     ]
     assert 'private text' not in str(result)
 

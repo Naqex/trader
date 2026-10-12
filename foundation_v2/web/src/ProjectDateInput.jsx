@@ -4,7 +4,7 @@ import { useTestingLocale } from './testingLocale.jsx'
 import './project-date-input.css'
 
 // Keep ISO at the form boundary while the editable text is independent of OS locale.
-export default function ProjectDateInput({ value = '', onChange, type = 'date', min, max, step, utc = false, ...props }) {
+export default function ProjectDateInput({ value = '', onChange, type = 'date', min, max, step, utc = false, clearable = false, ...props }) {
   const { t } = useTestingLocale()
   const [draft, setDraft] = useState(() => dateFieldDisplay(value, type))
   const emitted = useRef(value), picker = useRef(null), text = useRef(null)
@@ -24,13 +24,14 @@ export default function ProjectDateInput({ value = '', onChange, type = 'date', 
     emitted.current = next
     onChange?.({ ...event, target: { name: props.name, value: next }, currentTarget: { name: props.name, value: next } })
   }
-  return <span className="project-date-input">
+  return <span className={`project-date-input${clearable ? ' is-clearable' : ''}`}>
     <input {...props} ref={text} type="text" inputMode="text" value={draft} placeholder={type === 'date' ? 'dd/mm/yyyy' : type === 'time' ? 'HH:mm' : 'dd/mm/yyyy HH:mm'} onChange={event => { setDraft(event.target.value); publish(event, event.target.value) }} onBlur={event => {
       if (!text.current.validity.valid && draft) { setDraft(''); publish(event, '') }
       else setDraft(dateFieldDisplay(value, type))
       props.onBlur?.(event)
     }} />
     <input ref={picker} className="project-date-native" aria-hidden="true" tabIndex={-1} type={type} value={value.replace(/Z$/, '')} min={min?.replace(/Z$/, '')} max={max?.replace(/Z$/, '')} step={step} disabled={props.disabled} onChange={event => { setDraft(dateFieldDisplay(event.target.value, type)); publish(event, dateFieldDisplay(event.target.value, type)) }} />
+    {clearable && <button type="button" className="project-date-clear" aria-label={`${t('Xóa ngày')} · ${props['aria-label'] || ''}`} disabled={props.disabled || !draft} onClick={event => { setDraft(''); publish(event, ''); text.current?.focus() }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button>}
     <button type="button" className="project-date-picker" aria-label={t('Chọn ngày')} disabled={props.disabled} onClick={() => picker.current?.showPicker?.()}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M8 3v4m8-4v4M4 10h16" /></svg></button>
   </span>
 }

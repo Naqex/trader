@@ -142,6 +142,19 @@ class ReplayReadProjectionService:
         if cached is not None:
             return deepcopy(slice_trades_projection(cached, page=page, page_size=page_size))
         report = self.cache.get_or_build(base_key, build_report)
+        facet_report = report
+        if any(filters.get(field) not in (None, '', 'all') for field in ('side', 'outcome', 'from_close_utc', 'to_close_utc')):
+            unfiltered = serialize_filters(normalize_filters({}))
+            facet_key = ('replay-performance-v1', workspace_id, _identity([revisions, selected, unfiltered]))
+            def build_facets():
+                records = self.store.records_at_heads(workspace_id, 'replay', heads)
+                if len(records) != len(heads):
+                    raise LookupError('replay snapshot unavailable')
+                return build_dashboard_performance(records, workspace_id, session_ids=selected,
+                                                   include_ledger=True, **unfiltered)
+            # Build before taking the ordered-projection stripe: two keys may
+            # share a non-reentrant cache lock.
+            facet_report = self.cache.get_or_build(facet_key, build_facets)
         def build_ordered():
             ids = report['scope']['session_ids']
             matching = self.store.records_at_heads(workspace_id, 'journal', journal_heads, session_ids=ids)
@@ -150,7 +163,7 @@ class ReplayReadProjectionService:
             # need their text/body transferred or retained for a tag join.
             journals = [by_id.get(head['record_id'], head) for head in journal_heads]
             return prepare_trades_projection(report, journals, sort_key=sort_key,
-                       sort_direction=sort_direction, extra_filters=extra_filters)
+                       sort_direction=sort_direction, extra_filters=extra_filters, facet_report=facet_report)
         projection = self.cache.get_or_build(key, build_ordered)
         result = slice_trades_projection(projection, page=page, page_size=page_size)
         if self.cache.get(key) is None:

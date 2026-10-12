@@ -39,9 +39,12 @@ function DemoReports({ ledgerOnly, prop = false, query, state = 'demo' }) {
   const { t, fmt } = useTestingLocale()
 
   const sessions = demoSessionItems(query)
-  const [ids, setIds] = useState(ledgerOnly ? state === 'new-session' ? [sessions[0].record_id] : null : sessions.find(item => item.record_id === query?.get('demo_session'))?.record_id || sessions[0].record_id)
+  const [ids, setIds] = useState(ledgerOnly ? query?.get('demo_session') ? [query.get('demo_session')] : state === 'new-session' ? [sessions[0].record_id] : null : sessions.find(item => item.record_id === query?.get('demo_session'))?.record_id || sessions[0].record_id)
   const [filters, setFilters] = useState({ side: 'all', outcome: 'all', from: state === 'filtered' ? '2099-01-01' : '', to: '' })
   const [extra, setExtra] = useState({ ...DEFAULT_EXTRA_FILTERS })
+  const scopedRows = state === 'no-trades' ? [] : demoFilterRows(ledgerOnly ? ids : [ids]).filter(row => state !== 'new-session' || row.session_id !== sessions[0].record_id)
+  const dates = scopedRows.map(row => row.close_time_utc.slice(0, 10)).sort()
+  const facets = { assets: [...new Set(sessions.filter(item => ids === null || (Array.isArray(ids) ? ids : [ids]).includes(item.record_id)).map(item => item.instrument_id))], tags: [...new Set(scopedRows.flatMap(row => row.tags || []))], years: [...new Set(dates.map(date => date.slice(0, 4)))], date_range: { from: dates[0], to: dates.at(-1) } }
   const [selected, setSelected] = useState(''), [config, setConfig] = useState({ stop_distance_ticks: 10, stop_multiplier: 1, target_r: 2 })
   const model = useMemo(() => {
     const source = state === 'no-trades' ? [] : demoFilterRows(ledgerOnly ? ids : [ids]).filter(row => state !== 'new-session' || row.session_id !== sessions[0].record_id)
@@ -57,9 +60,9 @@ function DemoReports({ ledgerOnly, prop = false, query, state = 'demo' }) {
     anchor.href = url; anchor.download = 'demo-trades.csv'; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
   const Inspector = ledgerOnly ? TradeInspector : 'section'
-  const statusControl = <TestingResourceStatus state={state} resource={ledgerOnly ? 'bảng giao dịch' : 'báo cáo phân tích'} recovery={previewReadRecovery(state)} />
+  const statusControl = <TestingResourceStatus textSummary={ledgerOnly} state={state} resource={ledgerOnly ? 'bảng giao dịch' : 'báo cáo phân tích'} recovery={previewReadRecovery(state)} />
   const readNotice = state === 'error' ? <TestingResourceNotice state="error" recovery={previewReadRecovery(state)} resource={ledgerOnly ? 'bảng giao dịch' : 'báo cáo phân tích'} /> : null
-  const renderFilters = columnControl => <FxAnalyticsFilters statusControl={statusControl} persistInUrl={false} sourceType={prop ? 'Prop firm' : 'Backtesting'} columnControl={columnControl} ledgerOnly={ledgerOnly} filters={filters} onChange={patch => { setFilters(value => ({ ...value, ...patch })); setSelected('') }} extra={extra} onExtra={patch => setExtra(value => ({ ...value, ...patch }))} rows={model.ledger} onExport={exportCsv} sessionControl={<SessionFilter items={sessions} multiple={ledgerOnly} value={ids} onChange={value => { setIds(value); setSelected('') }} />} onClearSessions={() => setIds(ledgerOnly ? null : sessions[0].record_id)} />
+  const renderFilters = columnControl => <FxAnalyticsFilters statusControl={statusControl} persistInUrl={false} sourceType={prop ? 'Prop firm' : 'Backtesting'} columnControl={columnControl} ledgerOnly={ledgerOnly} filters={filters} onChange={patch => { setFilters(value => ({ ...value, ...patch })); setSelected('') }} extra={extra} onExtra={patch => setExtra(value => ({ ...value, ...patch }))} rows={model.ledger} facets={facets} onExport={exportCsv} sessionControl={<SessionFilter items={sessions} multiple={ledgerOnly} value={ids} onChange={value => { setIds(value); setSelected('') }} />} onClearSessions={() => setIds(ledgerOnly ? null : sessions[0].record_id)} />
   return <section className="wm-page as-page" aria-label={ledgerOnly ? t("Trades") : t("Analytics")}>
     <h1 className="sr-only">{ledgerOnly ? t("Trades") : t("Analytics")}</h1>
     {ledgerOnly ? <FxTradeLedger hidden={state === 'error'} model={model} extra={extra} selected={selected} onSelect={setSelected} renderFilters={renderFilters} readNotice={readNotice} /> : <>{renderFilters()}{readNotice}</>}

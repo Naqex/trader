@@ -1,0 +1,28 @@
+{
+  "cases": [
+    {
+      "width": 1440,
+      "theme": "dark",
+      "case": "Scoped demo route, notes checkboxes, real scoped assets, lifecycle3disabled, month/hour2select, date clear, no weekday/status/tags option, keyboard/menu/no overflow"
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "case": "Scoped demo route, notes checkboxes, real scoped assets, lifecycle3disabled, month/hour2select, date clear, no weekday/status/tags option, keyboard/menu/no overflow"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "case": "Scoped demo route, notes checkboxes, real scoped assets, lifecycle3disabled, month/hour2select, date clear, no weekday/status/tags option, keyboard/menu/no overflow"
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "case": "Scoped demo route, notes checkboxes, real scoped assets, lifecycle3disabled, month/hour2select, date clear, no weekday/status/tags option, keyboard/menu/no overflow"
+    }
+  ],
+  "errors": [],
+  "blocked": [],
+  "scope": "Local demo only; external and every non-GET request aborted before dispatch",
+  "result": "PASS"
+}

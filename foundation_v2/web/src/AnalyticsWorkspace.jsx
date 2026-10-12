@@ -232,7 +232,7 @@ export function ProvenanceInspector({ model, selectedTrade, journalCount, links 
   )
 }
 
-function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearchParams(), ledgerOnly = false, summaryOnly = false, embedded = false, sessionName = '', propReport = null, sessionControl = null, catalogStatus = null }) {
+function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearchParams(), ledgerOnly = false, summaryOnly = false, embedded = false, sessionName = '', propReport = null, sessionControl = null, catalogStatus = null, sessionAssets = [] }) {
   const formatNumber = (value, digits = 2, suffix = '') => fmt(value, suffix, digits)
 
   const { t, fmt } = useTestingLocale()
@@ -267,7 +267,7 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
   const [exportPending, setExportPending] = useState(false)
   const [exportError, setExportError] = useState('')
   const [localExtra, setLocalExtra] = useState(() => readAnalyticsExtraFilters(query))
-  const extra = useMemo(() => summaryOnly ? localExtra : readAnalyticsExtraFilters(query), [summaryOnly, localExtra, query])
+  const extra = useMemo(() => ({ ...(summaryOnly ? localExtra : readAnalyticsExtraFilters(query)), ...(ledgerOnly ? { days: '', weekday: 'all', types: '', notes: '' } : {}) }), [summaryOnly, localExtra, query, ledgerOnly])
   const updateExtra = useCallback(patch => {
     if (summaryOnly) { setLocalExtra(current => ({ ...current, ...patch })); return }
     const next = new URL(window.location.href)
@@ -445,12 +445,12 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
   const experimentScopeMatches = experiments.payload && result && ['session_id', 'dataset_id', 'dataset_sha256', 'revision', 'cursor_index', 'execution_event_sequence'].every(key => experiments.payload.provenance?.[key] === result[key])
 
   const Inspector = ledgerOnly ? TradeInspector : 'section'
-  const journalFilterPending = Boolean(sessionId && !jobId && !summaryOnly && !['ready', 'stale'].includes(journalStatus) && (extra.tag !== 'all' || extra.tagInclude || extra.tagExclude))
+  const journalFilterPending = Boolean(sessionId && !jobId && !summaryOnly && !['ready', 'stale'].includes(journalStatus) && (extra.tag !== 'all' || extra.tagInclude || extra.tagExclude || extra.notesPresence))
   const primaryStatus = state.refreshing ? 'refreshing' : ['stale', 'partial'].includes(state.status) ? state.status : undefined
   const journalBackground = scopedJournal && (journalRead.pending ? 'refreshing' : journalStatus === 'stale' ? 'stale' : undefined)
-  const statusControl = <TestingResourceStatus state={primaryStatus || journalBackground || catalogStatus?.state} resource={primaryStatus ? 'kết quả phân tích' : journalBackground ? 'ghi chú và nhãn giao dịch' : 'danh mục phiên'} recovery={primaryStatus ? recovery : journalBackground ? journalRecovery : catalogStatus?.recovery} />
+  const statusControl = <TestingResourceStatus textSummary={ledgerOnly} state={primaryStatus || journalBackground || catalogStatus?.state} resource={primaryStatus ? 'kết quả phân tích' : journalBackground ? 'ghi chú và nhãn giao dịch' : 'danh mục phiên'} recovery={primaryStatus ? recovery : journalBackground ? journalRecovery : catalogStatus?.recovery} />
   const readNotice = <>{journalStatus === 'error' && <TestingReadState error message="Chưa đọc được ghi chú và nhãn giao dịch. Số ghi chú hiện chưa xác minh." recovery={journalRecovery} />}{state.status === 'error' && !state.denied && <TestingReadState error message={t('Không đọc được kết quả:') + ' ' + t(state.error)} recovery={recovery} />}</>
-  const renderFilters = columnControl => <FxAnalyticsFilters statusControl={statusControl} sourceType={propReport ? 'Prop firm' : jobId ? 'Research' : 'Backtesting'} sessionControl={sessionControl} filters={filters} onChange={updateFilters} extra={extra} onExtra={updateExtra} rows={model.ledger} onExport={exportCsv} pending={exportPending || journalFilterPending || !result || !['ready', 'partial', 'stale', 'empty'].includes(state.status)} columnControl={columnControl} ledgerOnly={ledgerOnly} />
+  const renderFilters = columnControl => <FxAnalyticsFilters statusControl={statusControl} sourceType={propReport ? 'Prop firm' : jobId ? 'Research' : 'Backtesting'} sessionControl={sessionControl} filters={filters} onChange={updateFilters} extra={extra} onExtra={updateExtra} rows={model.ledger} facets={ledgerOnly ? { assets: [...new Set([...model.ledger.map(row => row.symbol).filter(Boolean), ...sessionAssets])] } : undefined} onExport={exportCsv} pending={exportPending || journalFilterPending || !result || !['ready', 'partial', 'stale', 'empty'].includes(state.status)} columnControl={columnControl} ledgerOnly={ledgerOnly} />
   return <section className={`as-page fxa-page ${embedded ? 'as-embedded' : 'wm-page'}`} aria-label={ledgerOnly ? t("Trades") : t("Analytics")} data-testid="analytics-workspace">
     {!embedded && <h1 className="sr-only">{ledgerOnly ? t("Trades") : t("Analytics")}</h1>}
     {(resourceId || sessionControl) && !summaryOnly && (ledgerOnly ? <FxTradeLedger model={model} extra={extra} selected={selectedTradeId} onSelect={setSelectedTradeId} sessionName={sessionName} hidden={journalFilterPending || !result || !['ready', 'stale', 'partial', 'empty'].includes(state.status)} renderFilters={renderFilters} readNotice={readNotice} /> : <>{renderFilters()}{readNotice}</>)}

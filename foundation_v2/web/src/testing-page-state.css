@@ -69,3 +69,6 @@
   .wm-page-skeleton.is-overview .wm-skeleton-panels { grid-template-columns:1fr; grid-template-rows:repeat(3,48px) repeat(3,56px) repeat(3,minmax(50px,1fr)); }
   .wm-page-skeleton.is-analytics .wm-skeleton-panels { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
+
+.wm-resource-status-slot.is-text{width:auto;flex:0 1 auto;min-width:0}
+.wm-resource-status-slot.is-text .wm-resource-status > summary{width:auto;max-width:180px;padding:0 6px;border-radius:var(--ds-radius-field);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;line-height:24px}
