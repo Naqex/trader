@@ -1,0 +1,27 @@
+{
+  "cases": [
+    {
+      "width": 1537,
+      "preview": true,
+      "toolbarDivider": false
+    },
+    {
+      "width": 1537,
+      "preview": false,
+      "toolbarDivider": false
+    },
+    {
+      "width": 390,
+      "preview": true,
+      "toolbarDivider": false
+    },
+    {
+      "width": 390,
+      "preview": false,
+      "toolbarDivider": false
+    }
+  ],
+  "errors": [],
+  "writes": [],
+  "result": "PASS"
+}

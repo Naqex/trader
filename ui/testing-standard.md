@@ -291,5 +291,7 @@ an outside click. Initial errors sit below the relevant filters and their divide
 Market Data table/header/pager separators span the content viewport while cell
 text retains the page gutter. Recent Trades inside a session report keeps its
 quieter separators within the report width rather than bleeding to page edges.
+The session selector/action toolbar uses spacing to separate it from session
+details; it does not add a page-wide divider beneath the selector.
 
 Acceptance evidence: `foundation_v2/evidence/testing-realtime-20261012/README.md`.
