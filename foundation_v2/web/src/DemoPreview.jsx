@@ -1,3 +1,4 @@
+import { previewReadRecovery } from './demoMode.js'
 import { navigate } from './clientNavigation.js'
 import { useTestingLocale } from './testingLocale.jsx'
 import { useEffect, useMemo, useState } from 'react'
@@ -59,7 +60,7 @@ function DemoReports({ ledgerOnly, prop = false, query, state = 'demo' }) {
   const renderFilters = columnControl => <FxAnalyticsFilters persistInUrl={false} sourceType={prop ? 'Prop firm' : 'Backtesting'} columnControl={columnControl} ledgerOnly={ledgerOnly} filters={filters} onChange={patch => { setFilters(value => ({ ...value, ...patch })); setSelected('') }} extra={extra} onExtra={patch => setExtra(value => ({ ...value, ...patch }))} rows={model.ledger} onExport={exportCsv} sessionControl={<SessionFilter items={sessions} multiple={ledgerOnly} value={ids} onChange={value => { setIds(value); setSelected('') }} />} onClearSessions={() => setIds(ledgerOnly ? null : sessions[0].record_id)} />
   return <section className="wm-page as-page" aria-label={ledgerOnly ? t("Trades") : t("Analytics")}>
     <h1 className="sr-only">{ledgerOnly ? t("Trades") : t("Analytics")}</h1>
-    <TestingResourceNotice state={state} resource={ledgerOnly ? 'bảng giao dịch' : 'báo cáo phân tích'} />
+    <TestingResourceNotice state={state} recovery={previewReadRecovery(state)} resource={ledgerOnly ? 'bảng giao dịch' : 'báo cáo phân tích'} />
     {ledgerOnly ? <FxTradeLedger hidden={state === 'error'} model={model} extra={extra} selected={selected} onSelect={setSelected} renderFilters={renderFilters} /> : renderFilters()}
     {prop && <Objectives model={model} />}
     {!ledgerOnly && state !== 'error' && <FxAnalyticsReport model={model} extra={extra} experimentStatus="unavailable" config={config} onConfig={setConfig} selected={selected} onSelect={setSelected} />}
@@ -105,7 +106,7 @@ function DemoSessions({ workspace, query, state }) {
       <SessionSummaryCard item={item} dataset={dataset} payload={state === 'error' ? null : payload} model={state === 'error' ? null : model} replayRecord={replayRecord} preview />
       <SessionDescriptionCard item={item} onSave={description => save({ description })} />
     </div>
-    <div className="fxr-session-report"><TestingResourceNotice state={state} resource="kết quả phiên" />{state !== 'error' && <SessionPerformance model={model} item={item} payload={payload} href={href} />}</div>
+    <div className="fxr-session-report"><TestingResourceNotice state={state} recovery={previewReadRecovery(state)} resource="kết quả phiên" />{state !== 'error' && <SessionPerformance model={model} item={item} payload={payload} href={href} />}</div>
     </> : <div className="fxr-empty-state"><h2>{t("Chưa có phiên trong bản xem thử")}</h2><p>{t("Tải lại trang để xem lại các phiên demo.")}</p></div>}
     {actionDialog && item && <SessionActionDialog key={actionDialog + id} mode={actionDialog} item={item} preview onClose={() => setActionDialog(null)} onSubmit={mutate} />}
     {editing && item && <SessionSettingsDrawer item={item} dataset={dataset} payload={payload} model={model} replayRecord={replayRecord} workspace={workspace} preview onClose={() => setEditing(false)} onSubmit={save} />}

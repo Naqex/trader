@@ -1,0 +1,104 @@
+{
+  "scope": "Shared Market Data empty states: preview and labeled intercepted GET fixtures of real component; no mutation",
+  "cases": [
+    {
+      "width": 1563,
+      "theme": "dark",
+      "mode": "preview",
+      "state": "empty"
+    },
+    {
+      "width": 1563,
+      "theme": "dark",
+      "mode": "preview",
+      "state": "filtered"
+    },
+    {
+      "width": 1563,
+      "theme": "dark",
+      "mode": "real-component GET fixture",
+      "state": "empty"
+    },
+    {
+      "width": 1563,
+      "theme": "dark",
+      "mode": "real-component GET fixture",
+      "state": "filtered; clearing restores independently saved datasets"
+    },
+    {
+      "width": 1563,
+      "theme": "light",
+      "mode": "preview",
+      "state": "empty"
+    },
+    {
+      "width": 1563,
+      "theme": "light",
+      "mode": "preview",
+      "state": "filtered"
+    },
+    {
+      "width": 1563,
+      "theme": "light",
+      "mode": "real-component GET fixture",
+      "state": "empty"
+    },
+    {
+      "width": 1563,
+      "theme": "light",
+      "mode": "real-component GET fixture",
+      "state": "filtered; clearing restores independently saved datasets"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "mode": "preview",
+      "state": "empty"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "mode": "preview",
+      "state": "filtered"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "mode": "real-component GET fixture",
+      "state": "empty"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "mode": "real-component GET fixture",
+      "state": "filtered; clearing restores independently saved datasets"
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "mode": "preview",
+      "state": "empty"
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "mode": "preview",
+      "state": "filtered"
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "mode": "real-component GET fixture",
+      "state": "empty"
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "mode": "real-component GET fixture",
+      "state": "filtered; clearing restores independently saved datasets"
+    }
+  ],
+  "errors": [],
+  "writes": [],
+  "passed": true
+}

@@ -25,5 +25,6 @@ export default function ViewStatePreview({ state, view, workspace, query, onChan
   if (state === 'loading') return <TestingPageSkeleton view={view} />
   if (!['overview', 'replay', 'trade', 'analytics', 'market-data'].includes(view) && ['empty', 'error', 'unavailable', 'filtered'].includes(state)) return <section className="wm-viewport-state wm-testing-welcome"><TestingReadState error={state === 'error'} message={state === 'empty' ? 'Chưa có bản ghi.' : state === 'filtered' ? 'Không có kết quả khớp bộ lọc.' : state === 'error' ? 'Không tải được dữ liệu.' : 'Tính năng chưa khả dụng.'} /></section>
   if (state === 'denied') return <TestingEmptyState kind="denied" viewport />
-  return <Suspense fallback={<TestingPageSkeleton view={view} />}><DemoPreview key={`${view}:${state}`} view={view} workspace={workspace} query={query} state={state} onChange={onChange} /></Suspense>
+  const resourceState = ['offline', 'reconnecting'].includes(state) ? 'demo' : state
+  return <Suspense fallback={<TestingPageSkeleton view={view} />}><DemoPreview key={`${view}:${state}`} view={view} workspace={workspace} query={query} state={resourceState} onChange={onChange} /></Suspense>
 }

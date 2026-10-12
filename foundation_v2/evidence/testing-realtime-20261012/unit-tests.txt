@@ -1,0 +1,40 @@
+✔ only transient reads retry; denied, missing, conflict, validation and aborted reads do not (1.6193ms)
+✔ five bounded retries preserve budget through pending, then success starts a fresh episode (1.6375ms)
+✔ Retry-After countdown is honored; hidden and offline pause and resume without spending attempts (0.5329ms)
+✔ exhaustion waits for focus, online or relevant revision instead of endlessly retrying or remaining stuck (2.9973ms)
+✔ first snapshot avoids duplicate GET; matching changes coalesce and unrelated changes are ignored (0.3099ms)
+✔ reconnect reconciles even same revision; healthy stream suppresses fallback and no overlap during a read (0.2538ms)
+✔ terminal read errors and denied stream have no automatic fallback requests (0.3896ms)
+✔ fixed historical scope skips stream and fallback, retains return-to-app reconciliation and retry (0.2297ms)
+✔ scope/unmount disposal cancels scheduled retries, event reconciliation, fallback and subscription (0.2265ms)
+✔ Retry-After supports seconds and HTTP date; invalid headers do not schedule a retry (27.2219ms)
+✔ a stalled response body times out and frees its shared request for retry (4.5646ms)
+✔ simultaneous scoped readers share network work and receive independent bodies; no persistent cache (1.6182ms)
+✔ workspace and query isolate simultaneous reads (0.9364ms)
+✔ one unmounted consumer does not cancel another; last consumer cancels network (1.0073ms)
+✔ cancellation lasts through body download, and errors retain status without caching (0.9488ms)
+✔ an already cancelled reader does not issue network work (0.1765ms)
+✔ system copy provides both locales with matching interpolation contracts (8.1637ms)
+✔ status families have both locales and blocked execution has an explanation (0.41ms)
+✔ one authorized stream per workspace, scoped snapshots and teardown (73.0306ms)
+✔ disconnected stream reconnects once even when another consumer subscribes during backoff (91.4411ms)
+✔ hidden tabs pause, visible tabs reconcile a new snapshot and remove visibility listeners on teardown (107.0761ms)
+✔ 401/403 are terminal: no infinite reconnect, late subscribers see denied state (93.6327ms)
+✔ oversized partial frames fail boundedly and heartbeat timeouts recover (78.8824ms)
+✔ cancel during retry prevents resurrection and retry delay spreads tab reconnects (31.0832ms)
+✔ aborted subscriber never opens a stream (0.2982ms)
+✔ catalog cache deduplicates reads, keeps scopes/revisions separate, and invalidates exact resources (36.1174ms)
+✔ denial purges retained catalogs and stops retry/read until authority is replaced (2.0299ms)
+✔ query cancellation aborts the last shared consumer; retained revisions are bounded (9.1398ms)
+✔ known-success invalidation is workspace-scoped; progress ticks do not create catalog/read feedback (0.6617ms)
+✔ only bounded metadata resources and transient GET errors enter the pilot (1.9468ms)
+✔ real datasets/providers helpers use bounded scope cache and preserve independent abort ownership (3.1888ms)
+✔ last imperative consumer cancels its metadata transport, and refresh denial never returns cached data (1.332ms)
+ℹ tests 32
+ℹ suites 0
+ℹ pass 32
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 705.1036

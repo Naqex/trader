@@ -10,6 +10,8 @@ export function scopedRead(path, workspace, signal) {
   let entry = pending.get(key)
   if (!entry) {
     const controller = new AbortController()
+    let timedOut = false
+    const timeout = setTimeout(() => { timedOut = true; controller.abort() }, 15000)
     const measured = frontendPerformance().beginDomain('api-read')
     entry = { controller, consumers: 0 }
     entry.promise = fetch(path, { headers: { 'X-Workspace-Id': workspace }, signal: controller.signal }).then(async response => {
@@ -17,9 +19,11 @@ export function scopedRead(path, workspace, signal) {
       measured(response.ok ? 'ready' : 'error', body.byteLength)
       return { body, status: response.status, statusText: response.statusText, headers: response.headers }
     }).catch(error => {
+      if (timedOut) error = Object.assign(new Error('read_timeout'), { name: 'TimeoutError', status: 408 })
       measured(controller.signal.aborted || error?.name === 'AbortError' ? 'aborted' : 'error')
       throw error
     }).finally(() => {
+      clearTimeout(timeout)
       if (pending.get(key) === entry) pending.delete(key)
     })
     pending.set(key, entry)

@@ -1,6 +1,32 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { scopedRead } from '../src/scopedRead.js'
+import { retryAfterMs } from '../src/researchDataApi.js'
+
+test('Retry-After supports seconds and HTTP date; invalid headers do not schedule a retry', () => {
+  const now = Date.parse('2026-10-12T00:00:00Z')
+  const response = value => new Response('', { headers: { 'Retry-After': value } })
+  assert.equal(retryAfterMs(response('7'), now), 7000)
+  assert.equal(retryAfterMs(response('Mon, 12 Oct 2026 00:00:20 GMT'), now), 20000)
+  assert.equal(retryAfterMs(response('Mon, 12 Oct 2026 00:00:00 GMT'), now + 1000), 0)
+  assert.equal(retryAfterMs(response('invalid'), now), undefined)
+})
+
+test('a stalled response body times out and frees its shared request for retry', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  let calls = 0
+  t.mock.method(globalThis, 'fetch', async (path, { signal }) => {
+    if (++calls > 1) return new Response('{}')
+    return { arrayBuffer: () => new Promise((resolve, reject) => signal.addEventListener('abort', () => reject(signal.reason), { once: true })) }
+  })
+  const pending = scopedRead('/fixture/timeout', 'a')
+  const rejected = assert.rejects(pending, { name: 'TimeoutError', status: 408 })
+  await Promise.resolve()
+  t.mock.timers.tick(15000)
+  await rejected
+  assert.deepEqual(await (await scopedRead('/fixture/timeout', 'a')).json(), {})
+  assert.equal(calls, 2)
+})
 
 test('simultaneous scoped readers share network work and receive independent bodies; no persistent cache', async t => {
   let finish, calls = 0

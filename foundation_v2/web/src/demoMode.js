@@ -2,13 +2,17 @@ import { DATA_STATES } from './dataStates.js'
 
 export const DEMO_VIEWS = ['overview', 'replay', 'trade', 'analytics', 'market-data', 'live', 'testing', 'prop', 'playbook', 'journal']
 
+// A fixed presentation sample; previews never start network requests or retry timers.
+export const previewReadRecovery = state => ['error', 'stale'].includes(state)
+  ? { retryAt: 1, seconds: 5, offline: false, exhausted: false } : undefined
+
 export function previewOptions(view) {
   return [
     { value: 'real', label: 'Dữ liệu thật', detail: 'Đọc dữ liệu hiện tại của workspace.' },
     { value: 'demo', label: 'Dữ liệu mẫu', detail: 'Có dữ liệu mẫu để xem bố cục và tương tác.' },
     { value: 'no-trades', label: 'Chưa có giao dịch', detail: 'Tất cả phiên mẫu chưa có giao dịch đã đóng.', disabled: !['overview', 'replay', 'trade', 'analytics'].includes(view) },
     { value: 'new-session', label: 'Phiên mới chưa giao dịch', detail: 'London Breakout chưa có giao dịch; hai phiên cũ vẫn có kết quả.', disabled: !['replay', 'trade', 'analytics'].includes(view) },
-    ...DATA_STATES.filter(([state]) => state !== 'ready').map(([value, label, detail]) => ({ value, label: value === 'unavailable' && ['overview', 'replay', 'trade', 'analytics', 'market-data'].includes(view) ? 'Nguồn tải chưa kết nối' : label,
+    ...DATA_STATES.filter(([state]) => state !== 'ready').map(([value, label, detail]) => ({ value, label: value === 'unavailable' && ['overview', 'replay', 'trade', 'analytics', 'market-data'].includes(view) ? 'Nguồn tải chưa sẵn sàng' : label,
       detail: value === 'empty' && ['overview', 'replay', 'trade', 'analytics'].includes(view) ? 'Workspace chưa có phiên; Tổng quan hiển thị màn chào, các trang phụ thuộc phiên dùng trạng thái trống chung.' : value === 'unavailable' ? (view === 'market-data' ? 'Nguồn tải chưa kết nối; dữ liệu đã lưu vẫn đọc được.' : 'Nguồn tải chưa kết nối; phiên và báo cáo đã lưu vẫn dùng được.') : detail,
       disabled: value === 'filtered' && view === 'replay' || value === 'unknown' && view !== 'overview' || value === 'partial' && !['overview', 'trade', 'analytics'].includes(view) })),
   ]

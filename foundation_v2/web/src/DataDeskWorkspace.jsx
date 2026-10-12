@@ -1,4 +1,7 @@
-import { TestingPageSkeleton, TestingResourceNotice } from './TestingPageState.jsx'
+import { previewReadRecovery } from './demoMode.js'
+import useReadRefresh from './useReadRefresh.js'
+import TestingReadState from './TestingReadState.jsx'
+import { TestingEmptyState, TestingPageSkeleton, TestingResourceNotice } from './TestingPageState.jsx'
 import ProjectDateInput from './ProjectDateInput.jsx'
 import { displayDate } from './dateFormat.js'
 import { displayTimeframe, formatDataSize as formatDatasetSize } from './dataDisplay.js'
@@ -27,7 +30,6 @@ import './data-library.css'
 import './session-settings.css'
 
 const CSV_LIMIT_BYTES = 10 * 1024 * 1024
-const MAX_GET_RETRIES = 3
 
 const DEFAULT_IMPORT_FORM = {
   sourceId: 'local-csv-upload',
@@ -364,7 +366,6 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
   const [search, setSearch] = useState(preview?.state === 'filtered' ? 'no-matching-asset' : ''), [page, setPage] = useState(1), [pageSize, setPageSize] = useState(25)
   const [detailsOpen, setDetailsOpen] = useState(Boolean(requestedDataset)), [importAsset, setImportAsset] = useState(null)
   const [catalogRevision, setCatalogRevision] = useState(0)
-  const [catalogRetryCount, setCatalogRetryCount] = useState(0)
   const [csvOpen, setCsvOpen] = useState(false), [csvBusy, setCsvBusy] = useState(false)
   const [catalogBusy, setCatalogBusy] = useState(false), [catalogRefreshError, setCatalogRefreshError] = useState(false)
   const [catalogOpen, setCatalogOpen] = useState(false), [catalogElapsed, setCatalogElapsed] = useState(0), [catalogUpdated, setCatalogUpdated] = useState(false)
@@ -377,14 +378,14 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
   const completedJobs = useRef(new Set())
   const downloadSamples = useRef(new Map())
   const catalogRequestSeq = useRef(0)
-  const catalogRetryCountRef = useRef(0)
+  const catalogBootstrapWorkspace = useRef(null)
+  const recovery = useReadRefresh(() => setCatalogRevision(value => value + 1), !preview, {
+    workspace, resources: ['datasets'], scopeKey: workspace,
+    error: state.workspace === workspace ? state.readError : null,
+    pending: state.workspace !== workspace || state.status === 'loading' || Boolean(state.refreshing),
+  })
 
   useEffect(() => setCatalogProvider(providerFilter), [providerFilter, workspace])
-
-  useEffect(() => {
-    catalogRetryCountRef.current = 0
-    setCatalogRetryCount(0)
-  }, [workspace])
 
   useEffect(() => {
     setCatalogOpen(false); setCatalogUpdated(false); setCatalogBusy(false)
@@ -486,38 +487,28 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
     const controller = new AbortController()
     const requestSeq = ++catalogRequestSeq.current
     setCatalogRefreshError(false)
-    setState(current => current.workspace === workspace && current.status === 'ready' ? { ...current, refreshing:true, stale:false, error:null } : { workspace, status:'loading', datasets:[], instruments:[], error:null })
+    setState(current => current.workspace === workspace && (current.status === 'ready' || current.readError) ? { ...current, refreshing:true } : { workspace, status:'loading', datasets:[], instruments:[], error:null })
     fetchOfflineLibrary(workspace, controller.signal)
       .then(async payload => {
         if (requestSeq !== catalogRequestSeq.current || controller.signal.aborted) return
         // Only bootstrap an empty configured catalog. Cached/stale reads never poll the provider.
-        if (payload.catalog?.status === 'empty' && payload.catalog.configured && !payload.catalog.error) {
+        if (catalogBootstrapWorkspace.current !== workspace && payload.catalog?.status === 'empty' && payload.catalog.configured && !payload.catalog.error) {
+          catalogBootstrapWorkspace.current = workspace
           try { payload = { ...payload, ...await refreshInstrumentCatalog(workspace, controller.signal) } }
           catch (error) { if (error.name === 'AbortError') return; setCatalogRefreshError(true) }
         }
         const { datasets, instruments, catalog, download } = payload
         if (requestSeq !== catalogRequestSeq.current) return
         setState({ workspace, status: 'ready', datasets, instruments, catalog, download, error: null })
-        catalogRetryCountRef.current = 0
-        setCatalogRetryCount(0)
         setSelectedId((current) => current || datasets[0]?.dataset_id || '')
       })
       .catch((error) => {
         if (error.name !== 'AbortError' && requestSeq === catalogRequestSeq.current) {
-          setState(current => current.workspace === workspace && current.status === 'ready' && ![401,403].includes(error.status) ? { ...current, refreshing:false, stale:true, error:String(error.message || error) } : { workspace, status:'error', datasets:[], instruments:[], error:String(error.message || error) })
+          setState(current => current.workspace === workspace && current.status === 'ready' && ![401,403].includes(error.status) ? { ...current, refreshing:false, stale:true, error:String(error.message || error), readError:error } : { workspace, status:'error', datasets:[], instruments:[], error:String(error.message || error), readError:error })
         }
       })
     return () => controller.abort()
   }, [catalogRevision, workspace, preview])
-
-  const retryCatalog = () => {
-    if (catalogRetryCountRef.current >= MAX_GET_RETRIES || state.status === 'loading') return
-    catalogRetryCountRef.current += 1
-    setCatalogRetryCount(catalogRetryCountRef.current)
-    setCatalogRevision((current) => current + 1)
-  }
-
-  const catalogRetryExhausted = catalogRetryCount >= MAX_GET_RETRIES
 
   useEffect(() => {
     const catalog = state.catalog
@@ -629,10 +620,10 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
       </div>
 
       {state.status === 'loading' && <TestingPageSkeleton view="market-data" label="Đang đọc dữ liệu đã lưu…" />}
-      <TestingResourceNotice state={preview ? preview.state === 'error' ? undefined : preview.state : state.refreshing ? 'refreshing' : state.stale ? 'stale' : undefined} resource="kho dữ liệu" onRetry={!preview && state.stale ? retryCatalog : undefined} />
+      <TestingResourceNotice state={preview ? preview.state === 'error' ? undefined : preview.state : state.status === 'error' ? undefined : state.stale ? 'stale' : state.refreshing ? 'refreshing' : undefined} resource="kho dữ liệu" recovery={preview ? previewReadRecovery(preview.state) : state.stale ? recovery : undefined} />
       {state.status === 'ready' && catalogMessage && <p className="data-library-catalog-status" role="status">{t(catalogMessage)}{state.catalog?.status === 'cached' && ` ${t('Đang dùng bản đã lưu.')}`}</p>}
       {state.status === 'ready' && requestedDataset && !selected && <p className="data-library-catalog-status" role="status">{t('Dataset trong đường dẫn chưa có trong kho này. Hãy chọn dữ liệu khác.')}</p>}
-      {state.status === 'error' && <div className="rd-message is-error" role="alert">{t('Không đọc được kho dữ liệu:')} {state.error} {!preview && <button type="button" className="rd-inline-button" data-testid="data-desk-retry" onClick={retryCatalog} disabled={catalogRetryExhausted} aria-describedby={catalogRetryExhausted ? 'data-desk-retry-note' : undefined}>{t(catalogRetryExhausted ? 'Đã hết lượt thử' : 'Thử lại')}</button>}{catalogRetryExhausted && <small id="data-desk-retry-note">{t('Kiểm tra nguồn dữ liệu trước khi thử lại.')}</small>}</div>}
+      {state.status === 'error' && <TestingReadState error message={t('Không đọc được kho dữ liệu:') + ' ' + state.error} recovery={preview ? previewReadRecovery(preview.state) : recovery} />}
 
       {(downloadError || pollError) && <p className="data-library-download-error" role="alert">{t(downloadError || pollError)} <button type="button" className="rd-inline-button" onClick={() => {setDownloadError(''); setDownloadRevision(current => current + 1)}}>{t('Thử lại')}</button></p>}
       {downloadProgressOpen && <DataLibraryDialog compact title="Tiến độ tải dữ liệu" onClose={() => setDownloadProgressOpen(false)}><section className="data-library-download-jobs" aria-label={t('Tiến độ tải dữ liệu')}>
@@ -655,8 +646,9 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
       </section></DataLibraryDialog>}
 
       {state.status === 'ready' && (
-        <div className="data-library-grid">
+        <div className={`data-library-grid${!filteredDatasets.length ? ' is-empty' : ''}`}>
           <section className="rd-panel" aria-label="Dataset catalog">
+            {!filteredDatasets.length ? <TestingEmptyState kind={rows.length ? 'filtered-datasets' : 'datasets'} onClear={filtersApplied ? clearFilters : undefined} /> : <>
               <div className="rd-table-wrap" tabIndex={0} role="region" aria-label={t('Dữ liệu đã có')}>
                 <table className="rd-table" data-testid="data-desk-dataset-table">
                   <colgroup>{['asset','category','source','data','from','to','count','size','actions'].map(name => <col key={name} className={`data-library-column-${name}`} />)}</colgroup>
@@ -693,10 +685,9 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
                     })}
                   </tbody>
                 </table>
-                {!rows.length && <p className="data-library-empty" role="status" data-testid="data-desk-empty">{t('Chưa có dữ liệu đã tải. Nhập CSV hoặc kết nối nguồn để tải dữ liệu.')}</p>}
-                {!filteredDatasets.length && rows.length > 0 && <p className="data-library-empty" role="status" data-testid="data-desk-empty">{t('Không có dữ liệu phù hợp bộ lọc.')}</p>}
               </div>
             <PaginationFooter label="Phân trang kho dữ liệu" page={currentPage} pages={pages} onPageChange={setPage} pageSize={pageSize} onPageSizeChange={value => { setPageSize(value); setPage(1) }} sizes={[10,25,50,100]} />
+            </>}
           </section>
 
         </div>

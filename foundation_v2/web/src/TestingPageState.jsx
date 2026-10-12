@@ -21,6 +21,8 @@ export function TestingWelcome({ onBacktest, propHref, backtestHref, preview = f
 export function TestingEmptyState({ kind = 'sessions', viewport = false, onClear }) {
   const { t } = useTestingLocale()
   const states = {
+    datasets: ['ledger', 'Chưa có dữ liệu đã tải', 'Nhập CSV hoặc chọn nguồn dữ liệu để bắt đầu tải lịch sử.'],
+    'filtered-datasets': ['search', 'Không có dữ liệu khớp bộ lọc', 'Thử đổi từ khóa hoặc điều chỉnh bộ lọc để xem dữ liệu đã tải.'],
     sessions: ['ledger', 'Chưa có phiên', 'Tạo phiên đầu tiên tại Tổng quan để bắt đầu luyện tập.'],
     denied: ['lock', 'Không có quyền truy cập', 'Bạn chưa có quyền xem dữ liệu trong workspace này. Hãy kiểm tra tài khoản và quyền được cấp.'],
     'filtered-sessions': ['search', 'Không có phiên khớp bộ lọc', 'Thử đổi từ khóa hoặc điều chỉnh bộ lọc để xem phiên.'],
@@ -53,12 +55,12 @@ export function TestingPageSkeleton({ view = 'overview', label = 'Đang tải d�
   </section>
 }
 
-export function TestingResourceNotice({ state, resource, onRetry }) {
+export function TestingResourceNotice({ state, resource, onRetry, recovery }) {
   const messages = {
     error: `Không tải được ${resource}.`,
     refreshing: `Đang cập nhật ${resource}…`,
     stale: `Chưa cập nhật được ${resource}. Đang giữ bản đã đọc trước đó.`,
     partial: `${resource}: chỉ tính trên phần dữ liệu đã đọc được.`,
   }
-  return messages[state] ? <div data-resource-state={state} aria-busy={state === 'refreshing'}><TestingReadState error={state === 'error'} message={messages[state]} onRetry={onRetry} /></div> : null
+  return messages[state] ? <div data-resource-state={state} aria-busy={state === 'refreshing'}><TestingReadState error={state === 'error'} message={messages[state]} onRetry={onRetry} recovery={recovery} /></div> : null
 }

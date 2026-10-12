@@ -45,7 +45,7 @@ export function createWorkspaceQueryScope(workspace, authority = 'local-workspac
     }),
     defaultOptions: { queries: {
       staleTime: 15000, gcTime: 120000, retry: retryMetadataRead,
-      retryDelay: attempt => Math.min(1000 * 2 ** attempt, 10000),
+      retryDelay: (attempt, error) => Math.max(Number(error?.retryAfterMs) || 0, Math.min(1000 * 2 ** attempt, 10000)),
       refetchOnWindowFocus: false, refetchOnReconnect: false,
     } },
   })
@@ -117,6 +117,6 @@ export function invalidateWorkspaceMetadata(workspace, resourcesToInvalidate) {
 
 export function catalogEventRevision(snapshot) {
   // Command counts include read commands; using them would create a refresh feedback loop.
-  return JSON.stringify(['qdm', 'dukascopy'].map(provider => (snapshot?.downloads?.[provider]?.jobs || [])
-    .map(job => [job.job_id, job.status])))
+  return JSON.stringify([snapshot?.resources?.datasets?.revision, ...['qdm', 'dukascopy'].map(provider => (snapshot?.downloads?.[provider]?.jobs || [])
+    .map(job => [job.job_id, job.status]))])
 }

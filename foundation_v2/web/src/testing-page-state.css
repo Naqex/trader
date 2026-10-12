@@ -20,6 +20,9 @@
 .wm-trades-empty h2 { margin:0 0 12px; font-size:var(--ds-font-section); font-weight:var(--ds-weight-control); line-height:1.4; }
 .wm-trades-empty p { margin:0; max-width:480px; color:var(--wm-content-muted); font-size:var(--ds-font-body); line-height:1.6; }
 .wm-trades-empty > button { margin-top:20px; }
+.wm-read-recovery { display:block; color:var(--wm-content-muted); font-size:var(--ds-font-small); line-height:1.5; }
+.wm-connection-note { color:var(--wm-content-muted); font-size:var(--ds-font-small); white-space:nowrap; }
+.fx-subnav-action:has(.wm-connection-note) { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:12px; }
 .fxa-trades:has(> .wm-trades-empty) { display:flex; flex-direction:column; }
 .as-page:has(> .wm-trades-empty) { flex:1; display:flex; flex-direction:column; }
 .fx-app.fx-shell-story .fx-content:has(.as-page > .wm-trades-empty) { display:flex; flex-direction:column; padding-bottom:0; }

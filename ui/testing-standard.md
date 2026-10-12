@@ -192,8 +192,8 @@ Recent session headers expand on non-action clicks, with hover feedback and a
 darker expanded surface. The existing chevron supplies keyboard activation and
 `aria-expanded`/`aria-controls`; actions within the header do not expand it.
 Header text is not selectable because the header is a disclosure click target;
-text in the revealed report remains selectable. Hover colors the header only,
-including when expanded, rather than the whole revealed report.
+text in the revealed report remains selectable. Hover colors the entire card,
+including the revealed report; the expanded surface also spans the whole card.
 Empty expanded reports use a single left-aligned message; known balance curves
 remain visible even if no full ledger is available. The peach list count uses
 prose (e.g. "3 phiên trong tổng số 6") for displayed records against the entire
@@ -248,3 +248,34 @@ component. Overview filtered-empty uses the shared search/title/detail pattern
 inside Recent Sessions, retaining the Performance section; Clear filters changes
 the query and is not a refresh action. Overview alone keeps the first-session
 welcome. Saved market data is independent of whether any sessions exist.
+
+## Read recovery and workspace updates
+
+HTTP JSON supplies scoped read results; the shared workspace SSE stream carries
+opaque session/dataset revision tokens. Tokens invalidate relevant readers, not
+all routes, and exclude read-command counters to prevent refresh feedback.
+The server samples metadata every two seconds; this is eventual refresh, not
+tick streaming or a cross-request transaction. Fixed historical report scopes
+ignore current-session revision changes.
+
+Initial pending reads use skeletons. A same-scope background refresh preserves
+existing content. Transient failure preserves the last successful result and
+shows a local retry countdown; a failed initial read remains an error during
+retry. GETs time out after 15 seconds, including body download. Automatic retries
+use bounded 2/5/10/30/30-second delays with jitter and honor Retry-After. Offline
+or hidden pages pause recovery. Permanent errors do not loop; 401/403 discard
+protected content. No refresh/retry button is added to the main reader notices.
+After five failed attempts, a new focus/online/resource-change opportunity can
+start another bounded recovery episode. An unhealthy SSE connection permits a
+15-second fallback read only for active, online, error-free consumers.
+
+The shared subnav shows reconnecting/offline without replacing existing reports.
+Preview uses the same components and fixed visual recovery samples without
+network calls or timers. Market Data empty/filtered results use the shared
+icon/title/detail state, retain filters, and omit an empty table and pager.
+Dataset gutters match Testing even though its availability is independent of
+sessions. Explicit source/download mutations remain separate from read retries;
+the existing configured-empty catalog bootstrap is attempted once per workspace
+mount and is never replayed by retry.
+
+Acceptance evidence: `foundation_v2/evidence/testing-realtime-20261012/README.md`.

@@ -1,3 +1,4 @@
+import { retryAfterMs } from './researchDataApi.js'
 import { recentSessions } from './sessionCatalog.js'
 import { scopedRead } from './scopedRead.js'
 import { navigate } from './clientNavigation.js'
@@ -100,7 +101,7 @@ export function updateDashboardQuery(values) {
 export async function readDashboardOverview(workspace, filters, signal) {
   const response = await scopedRead(dashboardRequestUrl(filters), workspace, signal)
   const payload = await response.json().catch(() => ({}))
-  if (!response.ok) throw Object.assign(new Error(String(payload?.detail || `HTTP ${response.status}`)), { status: response.status })
+  if (!response.ok) throw Object.assign(new Error(String(payload?.detail || `HTTP ${response.status}`)), { status: response.status, retryAfterMs: retryAfterMs(response) })
   const performance = payload?.performance
   if (performance?.schema_version !== 'dashboard-replay-performance-v1'
       || !performance.scope || !performance.metrics
@@ -113,7 +114,7 @@ export async function readDashboardOverview(workspace, filters, signal) {
 export async function readDashboardAnalytics(workspace, session, signal) {
   const response = await scopedRead(`/api/v2/replay/sessions/${encodeURIComponent(session)}/analytics`, workspace, signal)
   const payload = await response.json().catch(() => ({}))
-  if (!response.ok) throw Object.assign(new Error(typeof payload.detail === 'string' ? payload.detail : `HTTP ${response.status}`), { status: response.status })
+  if (!response.ok) throw Object.assign(new Error(typeof payload.detail === 'string' ? payload.detail : `HTTP ${response.status}`), { status: response.status, retryAfterMs: retryAfterMs(response) })
   const count = payload.scope?.selected_trade_count
   const total = payload.scope?.total_trade_count
   const readyShape = payload.analytics_available === false || (payload.provenance?.session_id === session && payload.provenance?.workspace_id === workspace
@@ -126,14 +127,14 @@ export async function readDashboardAnalytics(workspace, session, signal) {
 export async function readDashboardDatasets(workspace, signal) {
   const response = await scopedRead('/api/v2/data/datasets', workspace, signal)
   const payload = await response.json().catch(() => ({}))
-  if (!response.ok) throw Object.assign(new Error('dashboard_dataset_catalog_unavailable'), { status: response.status })
+  if (!response.ok) throw Object.assign(new Error('dashboard_dataset_catalog_unavailable'), { status: response.status, retryAfterMs: retryAfterMs(response) })
   if (!Array.isArray(payload.items) || payload.items.some(item => !item || typeof item !== 'object' || Array.isArray(item) || typeof item.dataset_id !== 'string' || !item.dataset_id.trim())) throw new Error('dashboard_dataset_catalog_unavailable')
   return payload.items
 }
 
 export async function readDashboardReplayContext(workspace, item, signal) {
   const response = await scopedRead(`/api/v2/replay/sessions/${encodeURIComponent(item.record_id)}/metadata`, workspace, signal)
-  if (!response.ok) throw Object.assign(new Error(`HTTP ${response.status}`), { status: response.status })
+  if (!response.ok) throw Object.assign(new Error(`HTTP ${response.status}`), { status: response.status, retryAfterMs: retryAfterMs(response) })
   const record = await response.json()
   if (record.record_id !== item.record_id || record.revision !== item.revision) throw new Error('replay_context_revision_mismatch')
   const { visible_rows, ...metadata } = record
@@ -186,7 +187,7 @@ export async function readDashboardSessionList(workspace, filters, signal) {
   if (response.status === 409 && payload.detail === 'dashboard_revision_changed' && filters.revision) {
     return readDashboardSessionList(workspace, { ...filters, revision: '' }, signal)
   }
-  if (!response.ok) throw Object.assign(new Error(String(payload.detail || `HTTP ${response.status}`)), { status: response.status })
+  if (!response.ok) throw Object.assign(new Error(String(payload.detail || `HTTP ${response.status}`)), { status: response.status, retryAfterMs: retryAfterMs(response) })
   if (payload.schema_version !== 'dashboard-session-list-v1' || payload.workspace_id !== workspace
       || typeof payload.revision !== 'string' || !payload.revision || !Array.isArray(payload.items)
       || payload.items.length > DASHBOARD_PAGE_SIZE || !Array.isArray(payload.facets?.assets) || !Array.isArray(payload.facets?.strategies)

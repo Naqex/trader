@@ -5877,5 +5877,20 @@
   "Không có quyền truy cập": {"vi": "Không có quyền truy cập", "en": "Access denied"},
   "Bạn chưa có quyền xem dữ liệu trong workspace này. Hãy kiểm tra tài khoản và quyền được cấp.": {"vi": "Bạn chưa có quyền xem dữ liệu trong workspace này. Hãy kiểm tra tài khoản và quyền được cấp.", "en": "You do not have permission to view this workspace. Check your account and assigned access."},
   "Không có phiên khớp bộ lọc": {"vi": "Không có phiên khớp bộ lọc", "en": "No sessions match your filters"},
-  "Thử đổi từ khóa hoặc điều chỉnh bộ lọc để xem phiên.": {"vi": "Thử đổi từ khóa hoặc điều chỉnh bộ lọc để xem phiên.", "en": "Try another search or adjust your filters to find sessions."}
+  "Thử đổi từ khóa hoặc điều chỉnh bộ lọc để xem phiên.": {"vi": "Thử đổi từ khóa hoặc điều chỉnh bộ lọc để xem phiên.", "en": "Try another search or adjust your filters to find sessions."},
+  "Chưa có dữ liệu đã tải": {"vi": "Chưa có dữ liệu đã tải", "en": "No downloaded data yet"},
+  "Nhập CSV hoặc chọn nguồn dữ liệu để bắt đầu tải lịch sử.": {"vi": "Nhập CSV hoặc chọn nguồn dữ liệu để bắt đầu tải lịch sử.", "en": "Import a CSV or choose a data source to download history."},
+  "Không có dữ liệu khớp bộ lọc": {"vi": "Không có dữ liệu khớp bộ lọc", "en": "No data matches your filters"},
+  "Thử đổi từ khóa hoặc điều chỉnh bộ lọc để xem dữ liệu đã tải.": {"vi": "Thử đổi từ khóa hoặc điều chỉnh bộ lọc để xem dữ liệu đã tải.", "en": "Try another search or adjust your filters to see downloaded data."},
+  "Đang ngoại tuyến. Sẽ cập nhật khi có mạng.": {"vi": "Đang ngoại tuyến. Sẽ cập nhật khi có mạng.", "en": "Offline. Updates will resume when you reconnect."},
+  "Tự thử lại sau {seconds} giây.": {"vi": "Tự thử lại sau {seconds} giây.", "en": "Retrying automatically in {seconds} seconds."},
+  "Chưa kết nối được. Sẽ kiểm tra lại khi bạn quay về ứng dụng.": {"vi": "Chưa kết nối được. Sẽ kiểm tra lại khi bạn quay về ứng dụng.", "en": "Still unable to connect. We will check again when you return to the app."},
+  "Đang ngoại tuyến": {"vi": "Đang ngoại tuyến", "en": "Offline"},
+  "Đang nối lại cập nhật": {"vi": "Đang nối lại cập nhật", "en": "Reconnecting updates"},
+  "Dữ liệu đã đọc vẫn được giữ trên màn hình.": {"vi": "Dữ liệu đã đọc vẫn được giữ trên màn hình.", "en": "Previously loaded data remains on screen."},
+  "Mất kết nối cập nhật": {"vi": "Mất kết nối cập nhật", "en": "Update connection lost"},
+  "Giữ dữ liệu đã đọc; tự nối lại luồng cập nhật.": {"vi": "Giữ dữ liệu đã đọc; tự nối lại luồng cập nhật.", "en": "Keep loaded data and reconnect the update stream automatically."},
+  "Giữ dữ liệu đã đọc; chờ có mạng để kiểm tra lại.": {"vi": "Giữ dữ liệu đã đọc; chờ có mạng để kiểm tra lại.", "en": "Keep loaded data and check again when the network returns."},
+  "Nguồn tải chưa sẵn sàng": {"vi": "Nguồn tải chưa sẵn sàng", "en": "Download source unavailable"},
+  "Giữ dữ liệu cũ; tự thử lại các lượt đọc lỗi tạm thời.": {"vi": "Giữ dữ liệu cũ; tự thử lại các lượt đọc lỗi tạm thời.", "en": "Keep existing data and retry transient read failures automatically."}
 }

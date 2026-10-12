@@ -2,12 +2,21 @@ import { scopedMutation } from './scopedMutation.js'
 import { displayDate } from './dateFormat.js'
 import { scopedRead } from './scopedRead.js'
 import { readWorkspaceMetadata } from './workspaceQuery.js'
+export function retryAfterMs(response, now = Date.now()) {
+  const raw = response.headers.get('Retry-After')
+  if (!raw) return undefined
+  const seconds = Number(raw)
+  const delay = Number.isFinite(seconds) && seconds >= 0 ? seconds * 1000 : Date.parse(raw) - now
+  return Number.isFinite(delay) ? Math.max(0, delay) : undefined
+}
+
 export async function readJson(response) {
   const payload = await response.json().catch(() => ({}))
   if (!response.ok) {
     const detail = payload?.detail || `HTTP ${response.status}`
     const error = new Error(String(detail))
     error.status = response.status
+    error.retryAfterMs = retryAfterMs(response)
     error.payload = payload
     throw error
   }

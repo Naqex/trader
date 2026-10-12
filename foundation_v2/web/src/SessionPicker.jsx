@@ -74,6 +74,7 @@ export default function SessionPicker({ kind = 'replay', workspace = 'tenant-a',
   const [pending, setPending] = useState('')
   const [notice, setNotice] = useState(null)
   const [needsRefresh, setNeedsRefresh] = useState(false)
+  const [performanceRetry, setPerformanceRetry] = useState(0)
   const [performanceState, setPerformance] = useState({ status: 'loading', payload: null, error: null })
   const selected = defaultSession(catalog.items, explicit, readLastSession(workspace))
   const item = catalog.items.find((entry) => entry.record_id === selected)
@@ -85,7 +86,14 @@ export default function SessionPicker({ kind = 'replay', workspace = 'tenant-a',
   const performanceModel = useMemo(() => performance.payload?.analytics_available === true ? buildAnalyticsModel(analyticsViewResult(performance.payload)) : null, [performance.payload])
   const selectedQuery = useMemo(() => item ? sessionAnalyticsQuery(new URLSearchParams(window.location.search), item, { summary: kind === 'replay' }) : query, [item, kind, query])
   const newHref = buildWorkspaceHref('replay', workspace, query, { surface: 'workspace', fresh: '1', session: null, dataset: null, cursor: null, cutoff: null, playbook: null, playbook_revision: null })
-  useReadRefresh(() => setReloadToken(value => value + 1), !pending)
+  const catalogRecovery = useReadRefresh(() => setReloadToken(value => value + 1), !pending, {
+    workspace, resources: ['sessions', 'datasets'], scopeKey: workspace,
+    error: catalog.readError, pending: catalog.status === 'loading' || Boolean(catalog.refreshing),
+  })
+  const performanceRecovery = useReadRefresh(() => setPerformanceRetry(value => value + 1), !pending && Boolean(item) && kind === 'replay', {
+    workspace, resources: [], scopeKey: performanceScope,
+    error: performance.readError, pending: performance.status === 'loading' || Boolean(performance.refreshing),
+  })
 
   useEffect(() => {
     if (kind !== 'replay') return
@@ -105,7 +113,7 @@ export default function SessionPicker({ kind = 'replay', workspace = 'tenant-a',
 
   useEffect(() => {
     const controller = new AbortController()
-    setCatalog(current => ['ready', 'stale'].includes(current.status) ? { ...current, refreshing: true, error: null } : { status: 'loading', items: [], error: null })
+    setCatalog(current => ['ready', 'stale'].includes(current.status) || current.readError ? { ...current, refreshing: true } : { status: 'loading', items: [], error: null })
     fetchReplaySessions(workspace, controller.signal).then((items) => {
       if (controller.signal.aborted) return
       setCatalog({ status: 'ready', items, error: null })
@@ -116,7 +124,7 @@ export default function SessionPicker({ kind = 'replay', workspace = 'tenant-a',
       uncertainDelete.current = null
       setNeedsRefresh(false)
     }).catch((error) => {
-      if (!controller.signal.aborted) setCatalog(current => [401, 403].includes(error.status) ? { status: 'error', items: [], refreshing: false, error: error.message, denied: true } : { ...current, status: current.items.length ? 'stale' : 'error', refreshing: false, error: error.message })
+      if (!controller.signal.aborted) setCatalog(current => [401, 403].includes(error.status) ? { status: 'error', items: [], refreshing: false, error: error.message, readError: error, denied: true } : { ...current, status: current.items.length ? 'stale' : 'error', refreshing: false, error: error.message, readError: error })
     })
     return () => controller.abort()
   }, [workspace, reloadToken])
@@ -132,14 +140,14 @@ export default function SessionPicker({ kind = 'replay', workspace = 'tenant-a',
   useEffect(() => {
     if (kind !== 'replay' || !item) return
     const controller = new AbortController()
-    setPerformance(current => current.scope === performanceScope && current.payload ? { ...current, refreshing: true, error: null } : { scope: performanceScope, status: 'loading', payload: null, error: null })
+    setPerformance(current => current.scope === performanceScope && (current.payload || current.readError) ? { ...current, refreshing: true } : { scope: performanceScope, status: 'loading', payload: null, error: null })
     readDashboardAnalytics(workspace, item.record_id, controller.signal).then(payload => {
       if (!controller.signal.aborted) setPerformance({ scope: performanceScope, status: payload.analytics_available && !payload.blocked_by_data?.length ? 'ready' : 'blocked', payload, error: null })
     }).catch(error => {
-      if (!controller.signal.aborted) setPerformance(current => current.scope === performanceScope && current.payload && ![401, 403].includes(error.status) ? { ...current, status: 'stale', refreshing: false, error: error.message } : { scope: performanceScope, status: 'error', payload: null, error: error.message, denied: [401,403].includes(error.status) })
+      if (!controller.signal.aborted) setPerformance(current => current.scope === performanceScope && current.payload && ![401, 403].includes(error.status) ? { ...current, status: 'stale', refreshing: false, error: error.message, readError: error } : { scope: performanceScope, status: 'error', payload: null, error: error.message, readError: error, denied: [401,403].includes(error.status) })
     })
     return () => controller.abort()
-  }, [workspace, kind, item?.record_id, item?.revision, reloadToken])
+  }, [workspace, kind, item?.record_id, item?.revision, reloadToken, performanceRetry])
 
   useEffect(() => {
     if (!item || !managementIntent || kind !== 'replay') return
@@ -207,7 +215,7 @@ export default function SessionPicker({ kind = 'replay', workspace = 'tenant-a',
       </div>
     </div>
     {catalog.status === 'loading' && <TestingPageSkeleton view="replay" label="Đang tải danh mục phiên…" />}
-    {['error', 'stale'].includes(catalog.status) && <TestingReadState error={catalog.status === 'error'} message={t('Không tải được danh mục: {error}. Sẽ kiểm tra lại khi quay về ứng dụng.', { error: t(catalog.error) })} onRetry={() => setReloadToken(value => value + 1)} />}
+    {['error', 'stale'].includes(catalog.status) && <TestingReadState error={catalog.status === 'error'} message={t('Không tải được danh mục: {error}. Sẽ kiểm tra lại khi quay về ứng dụng.', { error: t(catalog.error) })} recovery={catalogRecovery} />}
     {notice && <p className={`fxr-session-notice ${notice.error ? 'is-error' : ''}`} role={notice.error ? 'alert' : 'status'}>{t(notice.text)}</p>}
     {available && <>
       {managementIntent && !(managementIntent === 'duplicate' && item.archived) && kind === 'replay' && <p className="fxr-session-notice" role="status">{managementIntent === 'rename' ? t("Sửa tên hoặc mô tả rồi lưu thay đổi.") : t("Kiểm tra phiên và cutoff trước khi bấm Tạo bản sao tại cutoff.")}</p>}
@@ -219,7 +227,7 @@ export default function SessionPicker({ kind = 'replay', workspace = 'tenant-a',
         </SessionDescriptionCard>
       </div>}
       {kind !== 'replay' && <div className="fxr-session-links fxr-ledger-context"><span>{item.name || item.record_id} · {unknownValue(item.instrument_id)} · {timeframeLabel(item)}</span><a href={routeHref('replay')}>{t("Thông tin phiên")}</a>{!item.archived && item.dataset_available && <a href={routeHref('replay', { select: null, surface: 'workspace' })}>{t("Mở chart")}</a>}</div>}
-      <div className="fxr-session-report">{kind === 'replay' ? <>{performance.refreshing && <TestingReadState message="Đang cập nhật kết quả phiên…" />}{performance.status === 'stale' && <TestingReadState message="Chưa cập nhật được kết quả phiên. Đang giữ bản đã đọc trước đó." onRetry={() => setReloadToken(value => value + 1)} />}{performance.status === 'loading' && <TestingSkeleton label="Đang tải kết quả phiên…" />}{performance.denied && <TestingEmptyState kind="denied" />}{performance.status === 'error' && !performance.denied && <TestingReadState error message={t('Không tải được kết quả:') + ' ' + t(performance.error)} onRetry={() => setReloadToken(value => value + 1)} />}{performance.status === 'blocked' && performance.payload?.blocked_by_data?.some(reason => reason !== 'replay_execution_not_initialized') && <p role="status" data-testid="session-performance-blocked">{t("Kết quả chưa đủ dữ liệu để hiển thị.")}</p>}{['ready', 'blocked', 'stale'].includes(performance.status) && <SessionPerformance key={`${workspace}:${item.record_id}:${item.revision}`} model={performanceModel} payload={performance.payload} item={item} href={routeHref} />}</> : <AnalyticsWorkspace key={`${workspace}:${item.record_id}:${item.revision}`} workspace={workspace} query={selectedQuery} ledgerOnly={kind === 'trade'} sessionName={item.name || item.record_id} embedded />}</div>
+      <div className="fxr-session-report">{kind === 'replay' ? <>{performance.refreshing && <TestingReadState message="Đang cập nhật kết quả phiên…" />}{performance.status === 'stale' && <TestingReadState message="Chưa cập nhật được kết quả phiên. Đang giữ bản đã đọc trước đó." recovery={performanceRecovery} />}{performance.status === 'loading' && <TestingSkeleton label="Đang tải kết quả phiên…" />}{performance.denied && <TestingEmptyState kind="denied" />}{performance.status === 'error' && !performance.denied && <TestingReadState error message={t('Không tải được kết quả:') + ' ' + t(performance.error)} recovery={performanceRecovery} />}{performance.status === 'blocked' && performance.payload?.blocked_by_data?.some(reason => reason !== 'replay_execution_not_initialized') && <p role="status" data-testid="session-performance-blocked">{t("Kết quả chưa đủ dữ liệu để hiển thị.")}</p>}{['ready', 'blocked', 'stale'].includes(performance.status) && <SessionPerformance key={`${workspace}:${item.record_id}:${item.revision}`} model={performanceModel} payload={performance.payload} item={item} href={routeHref} />}</> : <AnalyticsWorkspace key={`${workspace}:${item.record_id}:${item.revision}`} workspace={workspace} query={selectedQuery} ledgerOnly={kind === 'trade'} sessionName={item.name || item.record_id} embedded />}</div>
     </>}
     {actionDialog && item && <SessionActionDialog key={actionDialog.mode + ':' + item.record_id} mode={actionDialog.mode} item={item} pending={Boolean(pending)} blocked={actionDisabled || Boolean(catalog.refreshing)} error={notice?.error ? notice.text : null} onClose={() => setActionDialog(null)} onSubmit={(action, entry, confirmation) => mutate(action, confirmation)} />}
     {editing && item && <SessionSettingsDrawer item={item} dataset={dataset} payload={performance.payload} model={performanceModel} replayRecord={replayRecord} workspace={workspace} pending={Boolean(pending)} blocked={actionDisabled} onClose={() => setEditing(false)} onSubmit={draft => mutate('save', draft)} error={notice?.error ? notice.text : null} />}

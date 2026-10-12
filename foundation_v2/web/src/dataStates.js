@@ -7,7 +7,9 @@ export const DATA_STATES = [
   ['denied', 'Không có quyền xem', 'Giải thích quyền cần có; không lặp nút thử lại vô ích.'],
   ['filtered', 'Không có kết quả khớp bộ lọc', 'Có dữ liệu gốc; cho xoá hoặc sửa bộ lọc.'],
   ['refreshing', 'Đang cập nhật', 'Giữ dữ liệu cùng phạm vi; báo làm mới nhỏ ở tiêu đề.'],
-  ['stale', 'Dữ liệu chưa cập nhật', 'Giữ dữ liệu cũ, ghi rõ cũ và cho làm mới.'],
+  ['stale', 'Dữ liệu chưa cập nhật', 'Giữ dữ liệu cũ; tự thử lại các lượt đọc lỗi tạm thời.'],
+  ['reconnecting', 'Mất kết nối cập nhật', 'Giữ dữ liệu đã đọc; tự nối lại luồng cập nhật.'],
+  ['offline', 'Đang ngoại tuyến', 'Giữ dữ liệu đã đọc; chờ có mạng để kiểm tra lại.'],
   ['partial', 'Dữ liệu chưa đầy đủ', 'Hiện phần đã biết; đánh dấu phần thiếu.'],
   ['unknown', 'Chưa đủ dữ liệu để tính', 'Hiện — cho số chưa biết; không đổi thành 0.'],
 ]

@@ -11,6 +11,7 @@ import useReadRefresh from './useReadRefresh.js'
 import { buildPropAnalyticsView } from './propAnalyticsModel.js'
 import { navigate } from './clientNavigation.js'
 import { scopedRead } from './scopedRead.js'
+import { readJson } from './researchDataApi.js'
 import { enrichJournalTags, readJournalContext } from './journalContext.js'
 import { frontendPerformance } from './frontendPerformance.js'
 import { useContentReadyMetric } from './useContentReadyMetric.js'
@@ -128,17 +129,6 @@ export function buildAnalyticsModel(result, reportKind = 'app') {
     derivedExpectancy: !finite(providedExpectancy) && finite(expectancy),
     takeaway,
   }
-}
-
-async function readJson(response) {
-  const payload = await response.json().catch(() => ({}))
-  if (!response.ok) {
-    const error = new Error(String(payload?.detail || `HTTP ${response.status}`))
-    error.status = response.status
-    error.payload = payload
-    throw error
-  }
-  return payload
 }
 
 const DEFAULT_ANALYTICS_FILTERS = { side: 'all', outcome: 'all', from: '', to: '' }
@@ -261,6 +251,7 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
   const [state, setState] = useState({ status: resourceId ? 'loading' : 'idle', payload: null, error: null })
   const [journalContext, setJournalContext] = useState(null)
   const [journalStatus, setJournalStatus] = useState('idle')
+  const [journalRead, setJournalRead] = useState({ error: null, pending: false, scope: '' })
   const [journalReload, setJournalReload] = useState(0)
   const [localTradeId, setLocalTradeId] = useState(tradeId)
   const selectedTradeId = summaryOnly ? localTradeId : tradeId
@@ -320,7 +311,7 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
     const abort = () => controller.abort()
     signal?.addEventListener('abort', abort, { once: true })
     if (signal?.aborted) controller.abort()
-    setState((current) => ({ ...current, status: background && ['ready', 'partial', 'stale', 'empty'].includes(current.status) ? current.status : 'loading', refreshing: background, error: null }))
+    setState(current => current.readPath === analyticsPath && current.workspace === workspace && (current.payload || current.readError) ? { ...current, pending: true, refreshing: Boolean(current.payload) } : { status: 'loading', payload: null, error: null, pending: true, readPath: analyticsPath, workspace })
     try {
       const requestSignal = controller.signal
       const response = await scopedRead(analyticsPath, workspace, requestSignal)
@@ -338,11 +329,12 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
         throw schemaError
       }
       if (propReport) payload = buildPropAnalyticsView(payload, propReport)
-      setState({ status: analyticsViewStatus(payload), payload, error: null, readPath: analyticsPath, workspace })
+      setState({ status: analyticsViewStatus(payload), payload, error: null, readError: null, pending: false, readPath: analyticsPath, workspace })
     } catch (error) {
       if (controller.signal.aborted || error?.name === 'AbortError' || requestId !== requestSequence.current) return
-      const status = error?.status === 409 || error?.status === 503 ? 'blocked_by_data' : 'error'
-      setState(current => background && ![401, 403].includes(error?.status) && current.payload && ['ready', 'partial', 'stale', 'empty'].includes(current.status) ? { ...current, status: 'stale', refreshing: false, error: String(error.message || error) } : { status, payload: [401, 403].includes(error?.status) ? null : error?.payload || null, error: String(error.message || error), denied: [401,403].includes(error?.status) })
+      const blocked = error?.payload?.analytics_available === false || error?.payload?.blocked_by_data?.length > 0
+      const status = blocked ? 'blocked_by_data' : 'error'
+      setState(current => current.readPath === analyticsPath && current.workspace === workspace && ![401, 403].includes(error?.status) && current.payload && ['ready', 'partial', 'stale', 'empty'].includes(current.status) ? { ...current, status: 'stale', refreshing: false, pending: false, readError: blocked ? null : error, error: String(error.message || error) } : { status, pending: false, readPath: analyticsPath, workspace, readError: blocked ? null : error, payload: blocked && ![401, 403].includes(error?.status) ? error.payload : null, error: String(error.message || error), denied: [401,403].includes(error?.status) })
     } finally {
       signal?.removeEventListener('abort', abort)
       if (readController.current === controller) readController.current = null
@@ -354,7 +346,8 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
     load({ signal: controller.signal })
     return () => { controller.abort(); readController.current?.abort(); requestSequence.current += 1 }
   }, [load])
-  useReadRefresh(() => { load({ background: true }); setExperimentReload(value => value + 1); setJournalReload(value => value + 1) }, Boolean(resourceId))
+  const fixedHistoricalScope = !jobId && [replayCursor, replayCutoff, eventSequence].some(value => value !== null && value !== undefined)
+  const recovery = useReadRefresh(() => { load({ background: true }); setExperimentReload(value => value + 1); setJournalReload(value => value + 1) }, Boolean(resourceId), { workspace, resources: fixedHistoricalScope ? [] : [jobId ? 'research' : 'sessions'], scopeKey: analyticsPath, error: state.readPath === analyticsPath && state.workspace === workspace ? state.readError : null, pending: state.readPath !== analyticsPath || state.workspace !== workspace || state.status === 'loading' || state.pending })
   const experimentHasTrades = state.readPath === analyticsPath && state.workspace === workspace && ['ready', 'partial', 'stale'].includes(state.status) && state.payload?.ledger?.length > 0
   useEffect(() => {
     if (jobId || !sessionId || summaryOnly || ledgerOnly || !experimentHasTrades || !['drawdown', 'simulation'].includes(activeReportTab)) return
@@ -369,15 +362,18 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
       }
     }).catch(error => { if (!controller.signal.aborted) setExperiments({ status: 'error', payload: null, error: `Chưa đọc được đường giá: ${error.message}` }) })
     return () => controller.abort()
-  }, [workspace, sessionId, jobId, filterParams, experimentConfig, experimentReload, summaryOnly, ledgerOnly, activeReportTab, experimentHasTrades])
+  }, [workspace, sessionId, jobId, filterParams.toString(), experimentConfig, experimentReload, summaryOnly, ledgerOnly, activeReportTab, experimentHasTrades])
+  const journalScope = `${workspace}:${sessionId}`
+  const journalRecovery = useReadRefresh(() => setJournalReload(value => value + 1), Boolean(sessionId && !jobId && !summaryOnly), { workspace, resources: [], scopeKey: journalScope, error: journalRead.scope === journalScope ? journalRead.error : null, pending: journalRead.scope !== journalScope || journalRead.pending })
   useEffect(() => {
     if (!sessionId || jobId || summaryOnly) { setJournalContext(null); setJournalStatus('idle'); return }
     const controller = new AbortController()
-    setJournalStatus('loading')
+    setJournalRead(current => current.scope === journalScope ? { ...current, pending: true } : { scope: journalScope, error: null, pending: true })
+    setJournalStatus(current => journalRead.scope === journalScope && current === 'error' ? 'error' : 'loading')
     scopedRead(`/api/v2/journal/context?session_id=${encodeURIComponent(sessionId)}`, workspace, controller.signal)
       .then(readJson).then(payload => {
-        if (!controller.signal.aborted) { setJournalContext(readJournalContext(payload, workspace, sessionId)); setJournalStatus('ready') }
-      }).catch(() => { if (!controller.signal.aborted) { setJournalContext(null); setJournalStatus('error') } })
+        if (!controller.signal.aborted) { setJournalContext(readJournalContext(payload, workspace, sessionId)); setJournalStatus('ready'); setJournalRead({ scope: journalScope, error: null, pending: false }) }
+      }).catch(error => { if (!controller.signal.aborted) { setJournalContext(null); setJournalStatus('error'); setJournalRead({ scope: journalScope, error, pending: false }) } })
     return () => controller.abort()
   }, [sessionId, jobId, workspace, summaryOnly, journalReload])
 
@@ -453,16 +449,16 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
   return <section className={`as-page fxa-page ${embedded ? 'as-embedded' : 'wm-page'}`} aria-label={ledgerOnly ? t("Trades") : t("Analytics")} data-testid="analytics-workspace">
     {!embedded && <h1 className="sr-only">{ledgerOnly ? t("Trades") : t("Analytics")}</h1>}
     {(resourceId || sessionControl) && !summaryOnly && (ledgerOnly ? <FxTradeLedger model={model} extra={extra} selected={selectedTradeId} onSelect={setSelectedTradeId} sessionName={sessionName} hidden={journalFilterPending || !result || !['ready', 'stale', 'partial', 'empty'].includes(state.status)} renderFilters={renderFilters} /> : renderFilters())}
-    {journalStatus === 'error' && <TestingReadState error message="Chưa đọc được ghi chú và nhãn giao dịch. Số ghi chú hiện chưa xác minh." onRetry={() => setJournalReload(value => value + 1)} />}
+    {journalStatus === 'error' && <TestingReadState error message="Chưa đọc được ghi chú và nhãn giao dịch. Số ghi chú hiện chưa xác minh." recovery={journalRecovery} />}
     {journalFilterPending && journalStatus === 'loading' && <TestingReadState message="Đang đọc nhãn giao dịch…" />}
     {exportError && <p role="alert" className="fxa-error">{t(exportError)}</p>}
     {result?.historical_view && <p className="as-message" data-testid="analytics-historical-scope">{t("Kết quả tới nến #")}{result.cursor_index}{t(". Phiên hiện ở nến #")}{result.canonical_cursor_index}{t("; báo cáo không gồm giao dịch sau mốc đang xem.")}</p>}
     {!resourceId && <p className="fxa-empty">{t("Chọn một phiên replay hoặc research job để xem kết quả.")}</p>}
     {state.status === 'loading' && <TestingPageSkeleton view={ledgerOnly ? 'trade' : 'analytics'} label="Đang tải kết quả…" />}
     {state.refreshing && <TestingReadState message="Đang cập nhật…" />}
-    {state.denied && <TestingEmptyState kind="denied" />}{state.status === 'error' && !state.denied && <TestingReadState error message={t('Không đọc được kết quả:') + ' ' + t(state.error)} onRetry={() => load()} />}
+    {state.denied && <TestingEmptyState kind="denied" />}{state.status === 'error' && !state.denied && <TestingReadState error message={t('Không đọc được kết quả:') + ' ' + t(state.error)} recovery={recovery} />}
     {state.status === 'blocked_by_data' && <section className="as-empty-state" data-testid="analytics-blocked"><h2>{t("Chưa đủ dữ liệu để tính analytics")}</h2><p>{state.payload?.blocked_by_data?.map(reason => t(reason)).join(' · ') || t(state.error) || t("Nguồn chưa có kết quả đã phát hành.")}</p></section>}
-    {state.status === 'stale' && <p className="as-stale-banner" role="status">{t("Dữ liệu có thể đã cũ. Giữ nguyên nguồn và kiểm tra lại khi quay về ứng dụng.")}</p>}
+    {state.status === 'stale' && !state.refreshing && <TestingReadState message="Dữ liệu chưa cập nhật. Kết quả đã đọc vẫn được giữ trên màn hình." recovery={recovery} />}
     {!ledgerOnly && state.status === 'partial' && <p className="as-stale-banner" role="status">{t("Dữ liệu một phần. Chỉ tính trên các giao dịch có trong nguồn đã đọc.")}</p>}
     {result && !journalFilterPending && ['ready', 'stale', 'partial', 'empty'].includes(state.status) && <>
       {summaryOnly ? <section className="as-metric-strip" aria-label={t("Metrics chính")}><StoryMetric label={t("Net P/L")} value={formatNumber(model.netPnl)} detail={result.account_currency} /><StoryMetric label={t("Win rate")} value={formatNumber(model.winRate, 1, '%')} /><StoryMetric label={t("Trades")} value={formatNumber(model.tradeCount, 0)} /><StoryMetric label={t("Max DD")} value={formatNumber(model.maxDrawdown)} detail={t("Closed balance")} /></section> : ledgerOnly ? null : <FxAnalyticsReport model={model} extra={extra} experiments={experimentScopeMatches ? experiments.payload : null} experimentStatus={experimentScopeMatches ? experiments.status : experiments.status === 'ready' ? 'error' : experiments.status} experimentError={experiments.error || (experiments.status === 'ready' && !experimentScopeMatches ? 'Đường giá chưa khớp revision/cutoff của báo cáo.' : '')} config={experimentConfig} onConfig={setExperimentConfig} onTabChange={setActiveReportTab} selected={selectedTradeId} onSelect={setSelectedTradeId} />}

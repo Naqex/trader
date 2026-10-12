@@ -1,3 +1,4 @@
+import { retryAfterMs } from './researchDataApi.js'
 import { scopedMutation } from './scopedMutation.js'
 import { buildWorkspaceHref } from './workspaceContext.js'
 import { scopedRead } from './scopedRead.js'
@@ -57,6 +58,7 @@ async function request(path, workspace, options = {}) {
   if (!response.ok) {
     const error = new Error(typeof payload?.detail === 'string' ? payload.detail : `HTTP ${response.status}`)
     error.status = response.status
+    error.retryAfterMs = retryAfterMs(response)
     throw error
   }
   if (!payload || typeof payload !== 'object') throw new Error('Phản hồi phiên không đúng định dạng.')

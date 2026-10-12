@@ -30,6 +30,7 @@ import './component-interactions.css'
 import './testing-standard.css'
 import './compact-system.css'
 import WorkspaceQueryProvider from './WorkspaceQueryProvider.jsx'
+import WorkspaceConnectionNote from './WorkspaceConnectionNote.jsx'
 import { startFrontendPerformance } from './frontendPerformance.js'
 import { TestingSkeleton, TestingRouteBoundary } from './TestingReadState.jsx'
 
@@ -134,7 +135,7 @@ function App() {
   // Unmount real data readers during preview; fixtures never reach mutation handlers.
   if (visualMode !== 'real') content = <ViewStatePreview key={`${activeView}:${query.get('analytics_source')}:${query.get('section')}:${visualMode}`} state={visualMode} view={activeView} workspace={workspace} query={query} onChange={changePreview} />
   if (query.get('ui_reference') === '1') content = <TestingComponentReference />
-  const subnavAction = demoAvailable && query.get('ui_reference') !== '1' && <ViewStateSelect value={visualMode} view={activeView} onChange={changePreview} />
+  const subnavAction = demoAvailable && query.get('ui_reference') !== '1' && <><WorkspaceConnectionNote key={workspace} workspace={workspace} enabled={visualMode === 'real'} previewState={visualMode} /><ViewStateSelect value={visualMode} view={activeView} onChange={changePreview} /></>
   return <FxReplayShell workspace={workspace} query={query} activeView={activeView} mode={mode} subnavAction={subnavAction}><WorkspaceQueryProvider key={workspace} workspace={workspace} eventsEnabled={visualMode === 'real' && query.get('ui_reference') !== '1'}><TestingRouteBoundary key={scope}><Suspense fallback={<TestingSkeleton />}>{content}</Suspense></TestingRouteBoundary></WorkspaceQueryProvider></FxReplayShell>
 }
 

@@ -51,7 +51,7 @@ try {
   report.cases.push({ actualGET:true, interceptedFixture:true, case:'Same session refresh retains prior results while pending and after503' })
 
   await page.route('**/api/v2/replay/sessions/*/analytics*', route => route.fulfill({status:403,json:{detail:'fixture_denied'}}))
-  await page.locator('.fxr-session-report .wm-read-state').getByRole('button',{name:'Thử lại'}).click()
+  assert.equal(await page.locator('.fxr-session-report').getByRole('button',{name:'Thử lại'}).count(),0)
   await page.waitForFunction(() => document.querySelector('.fxr-session-report [role=alert]'))
   assert.equal(await page.locator('[data-testid=session-performance]').count(),0,'Denial clears cached results instead of presenting stale data')
   await page.unroute('**/api/v2/replay/sessions/*/analytics*')
@@ -67,7 +67,7 @@ try {
   let releaseCatalog
   const catalogPending = new Promise(resolve => { releaseCatalog = resolve })
   await page.route('**/api/v2/replay/sessions', async route => { await catalogPending; await route.continue() })
-  await page.locator('.fx-session-picker > .wm-read-state').getByRole('button',{name:'Thử lại'}).click()
+  await page.waitForFunction(() => document.querySelector('.fx-session-picker')?.querySelector('.fxr-session-toolbar select:disabled,.fx-select-trigger:disabled') || document.querySelector('.fx-session-picker > .wm-read-state [data-retry-at]') == null)
   assert.equal(await page.locator('.fxr-session-cards').count(),1,'Retrying a stale catalog preserves the selected session')
   releaseCatalog()
   await page.waitForFunction(() => !document.querySelector('.fx-session-picker > .wm-read-state'))
@@ -114,7 +114,7 @@ try {
   await page.getByText('Không có giao dịch khớp bộ lọc.',{exact:true}).waitFor()
   await page.unroute('**/api/v2/replay/trades*')
   await page.route('**/api/v2/replay/trades*', route => route.fulfill({status:403,json:{detail:'fixture_ledger_denied'}}))
-  await page.locator('[data-resource-state=stale]').getByRole('button',{name:'Thử lại'}).click()
+  assert.equal(await page.locator('[data-resource-state=stale]').getByRole('button',{name:'Thử lại'}).count(),0)
   await page.locator('.fx-content [role=alert]').waitFor()
   assert.equal(await page.getByText('Không có giao dịch khớp bộ lọc.',{exact:true}).count(),0)
   await page.unroute('**/api/v2/replay/trades*')

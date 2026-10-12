@@ -65,8 +65,13 @@ try {
           await content.locator('[data-testid=data-desk-root]').waitFor()
           if (state === 'error') await content.locator('[role=alert]').waitFor()
           else {
-            await content.locator('.rd-table').waitFor()
-            await page.waitForFunction(count => document.querySelectorAll('.rd-table tbody tr').length === count, ['empty', 'filtered'].includes(state) ? 0 : 3)
+            if (['empty', 'filtered'].includes(state)) {
+              await content.locator(`[data-empty-kind="${state === 'empty' ? 'datasets' : 'filtered-datasets'}"]`).waitFor()
+              assert.equal(await content.locator('.rd-table,.wm-pagination').count(), 0)
+            } else {
+              await content.locator('.rd-table').waitFor()
+              await page.waitForFunction(() => document.querySelectorAll('.rd-table tbody tr').length === 3)
+            }
             if (state === 'unavailable') await content.locator('.data-library-catalog-status').waitFor()
           }
         } else {

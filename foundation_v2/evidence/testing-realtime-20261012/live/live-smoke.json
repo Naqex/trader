@@ -1,0 +1,56 @@
+{
+  "liveApi": {
+    "schema": "workspace-events-v1",
+    "resourceFields": [
+      "datasets",
+      "sessions"
+    ],
+    "bytes": 203
+  },
+  "cases": [
+    {
+      "view": "overview",
+      "state": "ready",
+      "width": 1563,
+      "locale": "vi"
+    },
+    {
+      "view": "market-data",
+      "state": "filtered",
+      "width": 1563,
+      "locale": "vi"
+    },
+    {
+      "view": "market-data",
+      "state": "filtered",
+      "width": 390,
+      "locale": "vi"
+    },
+    {
+      "view": "overview",
+      "state": "reconnecting",
+      "width": 1563,
+      "locale": "en"
+    },
+    {
+      "view": "overview",
+      "state": "offline",
+      "width": 390,
+      "locale": "en"
+    },
+    {
+      "view": "analytics",
+      "state": "error",
+      "width": 1563,
+      "locale": "en"
+    },
+    {
+      "view": "overview",
+      "state": "live",
+      "width": 1563,
+      "locale": "vi"
+    }
+  ],
+  "pageErrors": [],
+  "writes": []
+}

@@ -1,7 +1,8 @@
-import TestingReadState, { TestingSkeleton } from './TestingReadState.jsx'
+import TestingReadState, { ReadRecoveryStatus, TestingSkeleton } from './TestingReadState.jsx'
 import TestingIcon from './TestingIcon.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import { useEffect, useState } from 'react'
+import useReadRefresh from './useReadRefresh.js'
 import { dashboardDurationParts, dashboardFilterError, readDashboardOverview } from './dashboardModel.js'
 
 function Duration({ seconds }) {
@@ -79,15 +80,16 @@ export default function DashboardPerformance({ workspace, filters, reload, contr
   const [state, setState] = useState({ status: 'loading', payload: null, error: '', key: '' })
   const key = JSON.stringify([workspace, filters.session, filters.from, filters.to])
   const filterError = dashboardFilterError(filters)
+  const recovery = useReadRefresh(() => setRetry(value => value + 1), !previewPayload && !filterError, { workspace, resources: ['sessions'], scopeKey: key, error: state.key === key ? state.readError : null, pending: state.key !== key || state.status === 'loading' || state.pending })
   useEffect(() => {
     if (filterError) return
     if (previewPayload) { setState({ status: previewState === 'error' ? 'error' : previewState === 'stale' ? 'stale' : 'ready', refreshing: previewState === 'refreshing', payload: previewState === 'error' ? null : previewPayload, error: '', key }); return }
     const controller = new AbortController()
-    setState(current => current.key === key && current.payload ? { ...current, refreshing: true, error: '' } : { status: 'loading', payload: null, error: '', key })
+    setState(current => current.key === key && (current.payload || current.readError) ? { ...current, pending: true, refreshing: Boolean(current.payload) } : { status: 'loading', payload: null, error: '', pending: true, key })
     readDashboardOverview(workspace, filters, controller.signal).then(payload => {
-      if (!controller.signal.aborted) setState({ status: 'ready', payload, error: '', key })
+      if (!controller.signal.aborted) setState({ status: 'ready', payload, error: '', pending: false, readError: null, key })
     }).catch(error => {
-      if (!controller.signal.aborted) setState(current => current.key === key && current.payload && ![401, 403].includes(error.status) ? { ...current, status: 'stale', refreshing: false, error: error.message } : { status: 'error', payload: null, error: error.message, httpStatus: error.status, key })
+      if (!controller.signal.aborted) setState(current => current.key === key && current.payload && ![401, 403].includes(error.status) ? { ...current, status: 'stale', refreshing: false, pending: false, error: error.message, readError: error } : { status: 'error', payload: null, pending: false, error: error.message, readError: error, httpStatus: error.status, key })
     })
     return () => controller.abort()
   }, [key, reload, retry, filterError, previewPayload, previewState])
@@ -104,14 +106,14 @@ export default function DashboardPerformance({ workspace, filters, reload, contr
   const noSessions = performance?.scope?.session_count === 0
   const noTrades = !blocked && !noSessions && metrics?.closed_trade_count === 0
   const groupMessage = filterError || (denied ? 'Bạn không có quyền xem Performance.' : unavailable ? 'Nguồn Performance chưa khả dụng.' : failed ? 'Chưa tải được Performance.' : blocked ? 'Chưa đủ dữ liệu thực thi để tính Performance.' : noSessions ? 'Chưa có phiên backtest trong phạm vi này. Tạo phiên đầu tiên để xem kết quả.' : '')
-  const notice = state.key === key && state.status === 'stale' ? 'Dữ liệu chưa cập nhật.' : state.key === key && state.refreshing ? 'Đang cập nhật Performance…' : ''
+  const notice = state.key === key && state.refreshing ? 'Đang cập nhật Performance…' : state.key === key && state.status === 'stale' ? 'Dữ liệu chưa cập nhật.' : ''
   const groupState = filterError ? 'invalid' : loading ? 'loading' : denied ? 'denied' : unavailable || blocked ? 'unavailable' : failed ? 'error' : noSessions ? 'empty' : noTrades ? 'no-trades' : 'ready'
   return <section className="fx-dashboard-results" aria-label={t("Performance")} aria-busy={loading || (!filterError && state.key === key && Boolean(state.refreshing))} aria-description={partialNotice || undefined}>
     <div className="fx-dashboard-section-head"><h2 className="fx-dashboard-performance-heading">{t("Performance")}</h2><div className="fx-dashboard-performance-filters">{controls}{dateControls}</div></div>
     {sourceHeading && <h3 className="fx-dashboard-source-heading">{sourceHeading}</h3>}
-    {(notice || partialNotice) && !groupMessage && <div className={`fx-dashboard-data-state${partial || state.status === 'stale' ? ' is-warning' : ''}`} data-testid="dashboard-data-state" role="status"><span>{t(notice)}{notice && partialNotice ? ' ' : ''}{partialNotice}</span>{state.status === 'stale' && !previewPayload && <button type="button" className="fxa-button" onClick={() => setRetry(value => value + 1)}>{t('Thử lại')}</button>}</div>}
+    {(notice || partialNotice) && !groupMessage && <div className={`fx-dashboard-data-state${partial || state.status === 'stale' ? ' is-warning' : ''}`} data-testid="dashboard-data-state" role="status"><span>{t(notice)}{notice && partialNotice ? ' ' : ''}{partialNotice}</span>{state.status === 'stale' && !previewPayload && <ReadRecoveryStatus recovery={recovery} />}</div>}
     <div data-testid="dashboard-result-group" data-state={groupState}>
-    {loading ? <TestingSkeleton label="Đang tải Performance…" /> : groupMessage ? <TestingReadState message={groupMessage} error={Boolean(filterError || failed)} onRetry={!previewPayload && failed && !denied ? () => setRetry(value => value + 1) : undefined} /> : <><div className={`fx-dashboard-performance-layout${noTrades ? ' has-no-trades' : ''}`} data-testid="dashboard-performance"><div className="fx-dashboard-performance">
+    {loading ? <TestingSkeleton label="Đang tải Performance…" /> : groupMessage ? <TestingReadState message={groupMessage} error={Boolean(filterError || failed)} recovery={!previewPayload && failed && !denied ? recovery : undefined} /> : <><div className={`fx-dashboard-performance-layout${noTrades ? ' has-no-trades' : ''}`} data-testid="dashboard-performance"><div className="fx-dashboard-performance">
       <Metric title={t("Time invested")} value={<Duration seconds={performance?.time_invested_seconds} />} detail={dashboardDurationParts(performance?.time_invested_seconds) ? previewPayload ? t("Thời gian luyện tập mẫu") : timingDetail(performance, 'practice', t) : t("Chưa có dữ liệu thời gian luyện tập")} icon="clock" />
       <Metric title={t("Historical time replayed")} value={<Duration seconds={performance?.historical_time_replayed_seconds} />} detail={dashboardDurationParts(performance?.historical_time_replayed_seconds) ? previewPayload ? t("Thời gian replay mẫu") : timingDetail(performance, 'historical', t) : t("Chưa có dữ liệu thời gian replay")} icon="history" />
       <Metric title={t("Trades taken")} value={dashboardNumber(metrics?.closed_trade_count)} icon="trades">

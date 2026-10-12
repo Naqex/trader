@@ -3,7 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { chromium } from 'playwright'
 
 const origin = 'http://127.0.0.1:5180'
-const output = '../evidence/testing-empty-trades-20261012'
+const output = process.env.TW_UI_EVIDENCE_DIR || '../evidence/testing-empty-trades-20261012'
 await mkdir(output, { recursive:true })
 const browser = await chromium.launch({ headless:true, ignoreDefaultArgs:['--hide-scrollbars'] })
 const context = await browser.newContext({ viewport:{ width:1710, height:987 } })
@@ -39,14 +39,15 @@ try {
     assert.equal(await toggle.getAttribute('aria-expanded'), 'true')
     await page.mouse.move(250,120)
     await page.waitForTimeout(250)
-    const rest = await head.evaluate(e => getComputedStyle(e).backgroundColor)
+    const rest = await card.evaluate(e => getComputedStyle(e).backgroundColor)
     await title.hover()
     await page.waitForTimeout(250)
-    assert.notEqual(await head.evaluate(e => getComputedStyle(e).backgroundColor), rest)
-    assert.notEqual(await head.evaluate(e => getComputedStyle(e).backgroundColor), await card.evaluate(e => getComputedStyle(e).backgroundColor))
+    assert.notEqual(await card.evaluate(e => getComputedStyle(e).backgroundColor), rest)
+    await card.locator('.fx-dashboard-card-charts').hover()
+    assert.notEqual(await card.evaluate(e => getComputedStyle(e).backgroundColor), rest)
     await toggle.press('Space')
     assert.equal(await toggle.getAttribute('aria-expanded'), 'false')
-    report.cases.push({ actualGET:!mode, preview:Boolean(mode), case:'Repeated header/title clicks and keyboard toggle work; expanded hover stays on header without text selection' })
+    report.cases.push({ actualGET:!mode, preview:Boolean(mode), case:'Repeated header/title clicks and keyboard toggle work; expanded hover covers the whole card without text selection' })
   }
   await page.goto(href('market-data'))
   const size = page.getByRole('button',{name:'Số dòng mỗi trang'})
