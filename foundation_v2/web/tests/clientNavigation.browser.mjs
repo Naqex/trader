@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { chromium } from 'playwright'
+import { DEMO_SESSIONS } from '../src/demoFixtures.js'
 
 const origin = process.env.TW_UI_ORIGIN || 'http://127.0.0.1:5180'
 assert.equal(new URL(origin).hostname, '127.0.0.1')
 const output = process.env.TW_NAVIGATION_OUTPUT ? new URL(`file:///${process.env.TW_NAVIGATION_OUTPUT.replaceAll('\\', '/').replace(/\/$/, '')}/`) : new URL('../../evidence/frontend-system-design-implementation-20261009/navigation/', import.meta.url)
 await mkdir(output, { recursive: true })
 const browser = await chromium.launch({ headless: true })
-const report = { scope: 'Actual local React UI with labeled API empty/error fixtures; no user DB/provider/broker requests', cases: [], pageErrors: [] }
+const report = { scope: 'Actual local React UI with labeled API catalog/empty/error fixtures; no user DB/provider/broker requests', cases: [], pageErrors: [] }
 try {
   for (const width of [1710, 1440, 768]) {
     for (const theme of ['dark', 'light']) {
@@ -25,7 +26,7 @@ try {
         assert.equal(request.method(), 'GET', 'Navigation cannot perform mutations')
         apiCalls.push({ path: url.pathname, query: url.search, workspace: request.headers()['x-workspace-id'] })
         const payload = url.pathname === '/api/v2/replay/trades' ? { schema_version: 'replay-trades-page-v1', status: 'ready', snapshot_key: 'labeled-empty-ledger-v1', ledger: [], sources: [], excluded: [], scope: { session_ids: [] }, facets: { assets: [], tags: [], strategies: [], years: [], types: [] }, pagination: { page: 1, page_size: 10, returned_count: 0, filtered_count: 0, page_count: 0 } }
-          : url.pathname === '/api/v2/replay/sessions' ? { items: [] }
+          : url.pathname === '/api/v2/replay/sessions' ? { items: DEMO_SESSIONS }
           : url.pathname === '/api/v2/data/datasets' ? { items: [], catalog_items: [], catalog_state: null }
           : url.pathname === '/api/v2/data/downloads' ? { items: [], available: false }
           : { detail: 'labeled_navigation_fixture_unavailable' }

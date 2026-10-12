@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { subscribeWorkspaceEvents } from './workspaceEvents.js'
 import { useTestingLocale } from './testingLocale.jsx'
+import { TestingResourceStatus } from './TestingPageState.jsx'
 
 export default function WorkspaceConnectionNote({ workspace, enabled, previewState }) {
   const { t } = useTestingLocale()
@@ -24,5 +25,8 @@ export default function WorkspaceConnectionNote({ workspace, enabled, previewSta
   }, [workspace, enabled])
   const shown = enabled ? status : previewState
   const text = shown === 'offline' ? 'Đang ngoại tuyến' : shown === 'reconnecting' ? 'Đang nối lại cập nhật' : ''
-  return text ? <span className="wm-connection-note" role="status" data-testid="workspace-connection" title={t('Dữ liệu đã đọc vẫn được giữ trên màn hình.')}>{t(text)}</span> : null
+  return <span className="wm-connection-note" data-testid="workspace-connection" data-connection-state={shown}>
+    <TestingResourceStatus state={text ? 'stale' : undefined} detail={text ? `${t(text)}. ${t('Dữ liệu đã đọc vẫn được giữ trên màn hình.')}` : undefined} />
+    <span className="sr-only" role="status">{t(text)}</span>
+  </span>
 }

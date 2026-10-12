@@ -23,5 +23,5 @@ export default function TestingReadState({ message, error = false, onRetry, reco
 export class TestingRouteBoundary extends React.Component {
   state = { error: false }
   static getDerivedStateFromError() { return { error: true } }
-  render() { return this.state.error ? <TestingReadState error message="Không tải được trang." onRetry={() => window.location.reload()} /> : this.props.children }
+  render() { return this.state.error ? this.props.fallback || <TestingReadState error message="Không tải được trang." /> : this.props.children }
 }

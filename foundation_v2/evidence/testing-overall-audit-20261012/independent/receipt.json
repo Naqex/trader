@@ -1,0 +1,133 @@
+{
+  "scope": "Read-only focused review of current shell blockers and Dashboard statuses, retry UI, currency guard; ephemeral GET fixtures only.",
+  "cases": [
+    {
+      "width": 1537,
+      "theme": "dark",
+      "case": "Analytics nested-subnav preview control reachable and changes no-trades workflow",
+      "geometry": {
+        "x": 1307,
+        "right": 1507,
+        "y": 72,
+        "w": 200,
+        "viewport": 1537,
+        "subnav": "nowrap"
+      }
+    },
+    {
+      "width": 1537,
+      "theme": "dark",
+      "case": "Order form has one main; outer shell no duplicate landmark"
+    },
+    {
+      "width": 1537,
+      "theme": "dark",
+      "case": "Partial summary status occupies heading slot without layout shift; card shared alert has no retry",
+      "cardTop": 385
+    },
+    {
+      "width": 1537,
+      "theme": "dark",
+      "case": "Incomparable-profit guard in heading popup; no inline warning or manual retry"
+    },
+    {
+      "width": 1537,
+      "theme": "light",
+      "case": "Analytics nested-subnav preview control reachable and changes no-trades workflow",
+      "geometry": {
+        "x": 1307,
+        "right": 1507,
+        "y": 72,
+        "w": 200,
+        "viewport": 1537,
+        "subnav": "nowrap"
+      }
+    },
+    {
+      "width": 1537,
+      "theme": "light",
+      "case": "Order form has one main; outer shell no duplicate landmark"
+    },
+    {
+      "width": 1537,
+      "theme": "light",
+      "case": "Partial summary status occupies heading slot without layout shift; card shared alert has no retry",
+      "cardTop": 385
+    },
+    {
+      "width": 1537,
+      "theme": "light",
+      "case": "Incomparable-profit guard in heading popup; no inline warning or manual retry"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "case": "Analytics nested-subnav preview control reachable and changes no-trades workflow",
+      "geometry": {
+        "x": 232,
+        "right": 372,
+        "y": 124,
+        "w": 140,
+        "viewport": 390,
+        "subnav": "wrap"
+      }
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "case": "Order form has one main; outer shell no duplicate landmark"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "case": "Partial summary status occupies heading slot without layout shift; card shared alert has no retry",
+      "cardTop": 687
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "case": "Incomparable-profit guard in heading popup; no inline warning or manual retry"
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "case": "Analytics nested-subnav preview control reachable and changes no-trades workflow",
+      "geometry": {
+        "x": 232,
+        "right": 372,
+        "y": 124,
+        "w": 140,
+        "viewport": 390,
+        "subnav": "wrap"
+      }
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "case": "Order form has one main; outer shell no duplicate landmark"
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "case": "Partial summary status occupies heading slot without layout shift; card shared alert has no retry",
+      "cardTop": 687
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "case": "Incomparable-profit guard in heading popup; no inline warning or manual retry"
+    }
+  ],
+  "errors": [],
+  "writes": [],
+  "limitations": [
+    "Focused regression approval; parent finalmatrix owns remaining pages and states.",
+    "Earlier timer-only152case sweep excluded; lazy content could remain loading."
+  ],
+  "harnessNotes": [
+    "Option accessible name includes description; text filtering used.",
+    "Currency warning is localized; case-insensitive semantic text check used."
+  ],
+  "result": "PASS",
+  "conclusion": "Scoped approval: shell blockers fixed; Dashboard UI statuses and no-manual-retry semantics preserve shared patterns. No full-product claim."
+}

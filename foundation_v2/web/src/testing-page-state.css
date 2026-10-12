@@ -35,8 +35,9 @@
 .wm-resource-heading { display:flex; align-items:center; gap:8px; }
 @keyframes wm-resource-spin { to { transform:rotate(360deg); } }
 @media(prefers-reduced-motion:reduce) { .wm-resource-status.is-refreshing > summary > svg { animation:none; } }
-.wm-connection-note { color:var(--wm-content-muted); font-size:var(--ds-font-small); white-space:nowrap; }
-.fx-subnav-action:has(.wm-connection-note) { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:12px; }
+.wm-connection-note { display:inline-flex; flex:0 0 24px; }
+.fx-subnav-action:has(.wm-connection-note) { display:flex; align-items:center; justify-content:flex-end; gap:12px; }
+@media(max-width:600px) { .fx-app .wm-read-state { flex-direction:column; align-items:flex-start; gap:4px; } }
 .fxa-trades:has(> .wm-trades-empty) { display:flex; flex-direction:column; }
 .as-page:has(> .wm-trades-empty) { flex:1; display:flex; flex-direction:column; }
 .fx-app.fx-shell-story .fx-content:has(.as-page > .wm-trades-empty) { display:flex; flex-direction:column; padding-bottom:0; }

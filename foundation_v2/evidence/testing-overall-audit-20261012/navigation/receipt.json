@@ -1,0 +1,7 @@
+{
+  "scope": "Actual local React UI with labeled API empty/error fixtures; no user DB/provider/broker requests",
+  "cases": [],
+  "pageErrors": [],
+  "status": "fail",
+  "error": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.fx-content .wm-page').first() to be visible\u001b[22m\n\n    at clickView (D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\web\\tests\\clientNavigation.browser.mjs:46:58)\n    at async file:///D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/web/tests/clientNavigation.browser.mjs:54:5"
+}

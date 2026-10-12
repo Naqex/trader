@@ -57,7 +57,7 @@ export function demoDashboardAnalytics(item, workspace, sourceRows = demoFilterR
       playbook_id: item.source_record_id || item.record_id, cutoff_timestamp: rows.length ? Date.parse(rows.at(-1).close_time_utc) / 1000 : null } }
 }
 
-export const DEMO_DATASETS = DEMO_SESSIONS.map(item => ({ dataset_id: item.dataset_id, instrument_id: item.instrument_id, timeframe_seconds:item.timeframe_seconds, row_count:item.row_count, provider:'Dukascopy', category:item.instrument_id === 'XAUUSD' ? 'metals' : 'forex', first_timestamp: Date.UTC(2026, 6, 6) / 1000, last_timestamp: Date.UTC(2026, 9, 5) / 1000 }))
+export const DEMO_DATASETS = DEMO_SESSIONS.map(item => ({ dataset_id: item.dataset_id, instrument_id: item.instrument_id, timeframe_seconds:item.timeframe_seconds, row_count:item.row_count, provider:'Dukascopy', asset_class:item.instrument_id === 'XAUUSD' ? 'metals' : 'forex', first_timestamp: Date.UTC(2026, 6, 6) / 1000, last_timestamp: Date.UTC(2026, 9, 5) / 1000 }))
 
 export function demoReplayContext(item) {
   const source = item.source_record_id || item.record_id

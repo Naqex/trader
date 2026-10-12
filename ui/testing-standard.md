@@ -295,3 +295,32 @@ The session selector/action toolbar uses spacing to separate it from session
 details; it does not add a page-wide divider beneath the selector.
 
 Acceptance evidence: `foundation_v2/evidence/testing-realtime-20261012/README.md`.
+
+## Shell and route template
+
+Header, aside and section navigation are static UI and stay mounted during client
+navigation. Do not replace them with skeletons while a report loads. Reserve a
+24px connection indicator beside the preview control even when connected; offline
+or reconnecting details open in the existing status popup without growing the
+subheader. On mobile, section links scroll within their own row and the preview
+controls stay inside the viewport, including sections with nested navigation.
+
+A pending route module uses the page-shaped viewport skeleton. A failed module
+uses the shared page error while preserving shell navigation, with no reload
+button. Each resolved page has one main landmark; chart/order workspaces own their
+main element, while Testing report pages use the shell's main region.
+
+Scope data by workspace and reconcile report selection from the URL on navigation
+and Back/Forward. A failed same-scope report read may keep proven session metadata
+and its account currency; never invent a unit or turn unknown values into zero.
+Catalog-level 401/403 clears protected results and hides action controls. Dataset
+availability remains independent of session availability; the default saved-data
+filter with no saved datasets is a true empty state, not a failed user filter.
+
+Dashboard detail warnings and download progress read failures use the reserved
+resource status. A malformed session summary uses a local error without a retry
+countdown. Mutation failures remain explicit action errors and are never retried
+automatically. Main and preview reuse these same components; fixture fields must
+follow the real API contract, including asset classes.
+
+Audit evidence: `foundation_v2/evidence/testing-overall-audit-20261012/README.md`.

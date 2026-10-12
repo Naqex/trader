@@ -6,7 +6,8 @@
 .wm-view-state-note > span { flex-shrink:0; }
 .wm-view-state-note strong { min-width:0; overflow:hidden; text-overflow:ellipsis; color:var(--project-highlight); font-weight:500; }
 @media(max-width:600px) {
-  .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-subnav:has(.wm-view-state-select) { flex-wrap:wrap; row-gap:0; }
+  .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-subnav:has(.wm-view-state-select),
+  .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-subnav:has(.fx-subsubnav):has(.wm-view-state-select) { flex-wrap:wrap; row-gap:0; }
   .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-subnav:has(.wm-view-state-select) .fx-subnav-primary { flex:1 0 100%; min-width:0; }
   .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-subnav:has(.wm-view-state-select) .fx-subnav-action { flex-basis:100%; display:flex; justify-content:flex-end; padding-block:8px; }
   .fx-subnav-action .wm-demo-action { max-width:100%; }

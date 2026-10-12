@@ -1,0 +1,380 @@
+{
+  "scope": "Testing shell and Market Data: labeled GET fixtures, preview parity, no owner mutations",
+  "cases": [
+    {
+      "view": "overview",
+      "width": 1440,
+      "theme": "dark",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "view": "replay",
+      "width": 1440,
+      "theme": "dark",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "view": "trade",
+      "width": 1440,
+      "theme": "dark",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "view": "analytics",
+      "width": 1440,
+      "theme": "dark",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "view": "market-data",
+      "width": 1440,
+      "theme": "dark",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "case": "Preview uses real asset-class contract"
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "case": "Unsaved catalog is empty library, not unmatched filters"
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "case": "Denied GET purges table and actions, uses shared lock state"
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "case": "Localized failure with readable mobile countdown"
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "case": "Progress read failure uses reserved status and preserves dataset layout"
+    },
+    {
+      "view": "overview",
+      "width": 1440,
+      "theme": "light",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "view": "replay",
+      "width": 1440,
+      "theme": "light",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "view": "trade",
+      "width": 1440,
+      "theme": "light",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "view": "analytics",
+      "width": 1440,
+      "theme": "light",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "view": "market-data",
+      "width": 1440,
+      "theme": "light",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "case": "Preview uses real asset-class contract"
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "case": "Unsaved catalog is empty library, not unmatched filters"
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "case": "Denied GET purges table and actions, uses shared lock state"
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "case": "Localized failure with readable mobile countdown"
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "case": "Progress read failure uses reserved status and preserves dataset layout"
+    },
+    {
+      "view": "overview",
+      "width": 768,
+      "theme": "dark",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "view": "replay",
+      "width": 768,
+      "theme": "dark",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "view": "trade",
+      "width": 768,
+      "theme": "dark",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "view": "analytics",
+      "width": 768,
+      "theme": "dark",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "view": "market-data",
+      "width": 768,
+      "theme": "dark",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "width": 768,
+      "theme": "dark",
+      "case": "Preview uses real asset-class contract"
+    },
+    {
+      "width": 768,
+      "theme": "dark",
+      "case": "Unsaved catalog is empty library, not unmatched filters"
+    },
+    {
+      "width": 768,
+      "theme": "dark",
+      "case": "Denied GET purges table and actions, uses shared lock state"
+    },
+    {
+      "width": 768,
+      "theme": "dark",
+      "case": "Localized failure with readable mobile countdown"
+    },
+    {
+      "width": 768,
+      "theme": "dark",
+      "case": "Progress read failure uses reserved status and preserves dataset layout"
+    },
+    {
+      "view": "overview",
+      "width": 768,
+      "theme": "light",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "view": "replay",
+      "width": 768,
+      "theme": "light",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "view": "trade",
+      "width": 768,
+      "theme": "light",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "view": "analytics",
+      "width": 768,
+      "theme": "light",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "view": "market-data",
+      "width": 768,
+      "theme": "light",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "width": 768,
+      "theme": "light",
+      "case": "Preview uses real asset-class contract"
+    },
+    {
+      "width": 768,
+      "theme": "light",
+      "case": "Unsaved catalog is empty library, not unmatched filters"
+    },
+    {
+      "width": 768,
+      "theme": "light",
+      "case": "Denied GET purges table and actions, uses shared lock state"
+    },
+    {
+      "width": 768,
+      "theme": "light",
+      "case": "Localized failure with readable mobile countdown"
+    },
+    {
+      "width": 768,
+      "theme": "light",
+      "case": "Progress read failure uses reserved status and preserves dataset layout"
+    },
+    {
+      "view": "overview",
+      "width": 360,
+      "theme": "dark",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "view": "replay",
+      "width": 360,
+      "theme": "dark",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "view": "trade",
+      "width": 360,
+      "theme": "dark",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "view": "analytics",
+      "width": 360,
+      "theme": "dark",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "view": "market-data",
+      "width": 360,
+      "theme": "dark",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "width": 360,
+      "theme": "dark",
+      "case": "Preview uses real asset-class contract"
+    },
+    {
+      "width": 360,
+      "theme": "dark",
+      "case": "Unsaved catalog is empty library, not unmatched filters"
+    },
+    {
+      "width": 360,
+      "theme": "dark",
+      "case": "Denied GET purges table and actions, uses shared lock state"
+    },
+    {
+      "width": 360,
+      "theme": "dark",
+      "case": "Localized failure with readable mobile countdown"
+    },
+    {
+      "width": 360,
+      "theme": "dark",
+      "case": "Progress read failure uses reserved status and preserves dataset layout"
+    },
+    {
+      "view": "overview",
+      "width": 360,
+      "theme": "light",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "view": "replay",
+      "width": 360,
+      "theme": "light",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "view": "trade",
+      "width": 360,
+      "theme": "light",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "view": "analytics",
+      "width": 360,
+      "theme": "light",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "view": "market-data",
+      "width": 360,
+      "theme": "light",
+      "mainLandmark": true,
+      "stableConnectionSlot": true
+    },
+    {
+      "width": 360,
+      "theme": "light",
+      "case": "Preview uses real asset-class contract"
+    },
+    {
+      "width": 360,
+      "theme": "light",
+      "case": "Unsaved catalog is empty library, not unmatched filters"
+    },
+    {
+      "width": 360,
+      "theme": "light",
+      "case": "Denied GET purges table and actions, uses shared lock state"
+    },
+    {
+      "width": 360,
+      "theme": "light",
+      "case": "Localized failure with readable mobile countdown"
+    },
+    {
+      "width": 360,
+      "theme": "light",
+      "case": "Progress read failure uses reserved status and preserves dataset layout"
+    },
+    {
+      "case": "Real initial loading has one toolbar skeleton and fills content viewport"
+    },
+    {
+      "case": "Cold lazy chunk success preserves shell"
+    },
+    {
+      "case": "Cold lazy chunk failure preserves shell and navigation"
+    },
+    {
+      "case": "Order form does not nest main landmarks"
+    }
+  ],
+  "errors": [],
+  "writes": [],
+  "result": "PASS"
+}

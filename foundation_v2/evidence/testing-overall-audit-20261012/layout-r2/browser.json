@@ -1,0 +1,235 @@
+{
+  "scope": "Preview shared layouts, GET-only; geometry and status interaction",
+  "cases": [
+    {
+      "view": "overview",
+      "state": "demo",
+      "width": 1563,
+      "stable": true
+    },
+    {
+      "view": "overview",
+      "state": "refreshing",
+      "width": 1563,
+      "stable": true
+    },
+    {
+      "view": "overview",
+      "state": "stale",
+      "width": 1563,
+      "stable": true
+    },
+    {
+      "view": "replay",
+      "state": "demo",
+      "width": 1563,
+      "stable": true
+    },
+    {
+      "view": "replay",
+      "state": "refreshing",
+      "width": 1563,
+      "stable": true
+    },
+    {
+      "view": "replay",
+      "state": "stale",
+      "width": 1563,
+      "stable": true
+    },
+    {
+      "view": "trade",
+      "state": "demo",
+      "width": 1563,
+      "stable": true
+    },
+    {
+      "view": "trade",
+      "state": "refreshing",
+      "width": 1563,
+      "stable": true
+    },
+    {
+      "view": "trade",
+      "state": "stale",
+      "width": 1563,
+      "stable": true
+    },
+    {
+      "view": "trade",
+      "state": "error",
+      "width": 1563,
+      "belowFilters": true
+    },
+    {
+      "view": "analytics",
+      "state": "demo",
+      "width": 1563,
+      "stable": true
+    },
+    {
+      "view": "analytics",
+      "state": "refreshing",
+      "width": 1563,
+      "stable": true
+    },
+    {
+      "view": "analytics",
+      "state": "stale",
+      "width": 1563,
+      "stable": true
+    },
+    {
+      "view": "analytics",
+      "state": "error",
+      "width": 1563,
+      "belowFilters": true
+    },
+    {
+      "view": "market-data",
+      "state": "demo",
+      "width": 1563,
+      "stable": true
+    },
+    {
+      "view": "market-data",
+      "state": "refreshing",
+      "width": 1563,
+      "stable": true
+    },
+    {
+      "view": "market-data",
+      "state": "stale",
+      "width": 1563,
+      "stable": true
+    },
+    {
+      "view": "market-data",
+      "state": "error",
+      "width": 1563,
+      "belowFilters": true
+    },
+    {
+      "view": "overview",
+      "state": "expanded",
+      "width": 1563,
+      "separatorAxis": "vertical"
+    },
+    {
+      "view": "overview",
+      "state": "demo",
+      "width": 390,
+      "stable": true
+    },
+    {
+      "view": "overview",
+      "state": "refreshing",
+      "width": 390,
+      "stable": true
+    },
+    {
+      "view": "overview",
+      "state": "stale",
+      "width": 390,
+      "stable": true
+    },
+    {
+      "view": "replay",
+      "state": "demo",
+      "width": 390,
+      "stable": true
+    },
+    {
+      "view": "replay",
+      "state": "refreshing",
+      "width": 390,
+      "stable": true
+    },
+    {
+      "view": "replay",
+      "state": "stale",
+      "width": 390,
+      "stable": true
+    },
+    {
+      "view": "trade",
+      "state": "demo",
+      "width": 390,
+      "stable": true
+    },
+    {
+      "view": "trade",
+      "state": "refreshing",
+      "width": 390,
+      "stable": true
+    },
+    {
+      "view": "trade",
+      "state": "stale",
+      "width": 390,
+      "stable": true
+    },
+    {
+      "view": "trade",
+      "state": "error",
+      "width": 390,
+      "belowFilters": true
+    },
+    {
+      "view": "analytics",
+      "state": "demo",
+      "width": 390,
+      "stable": true
+    },
+    {
+      "view": "analytics",
+      "state": "refreshing",
+      "width": 390,
+      "stable": true
+    },
+    {
+      "view": "analytics",
+      "state": "stale",
+      "width": 390,
+      "stable": true
+    },
+    {
+      "view": "analytics",
+      "state": "error",
+      "width": 390,
+      "belowFilters": true
+    },
+    {
+      "view": "market-data",
+      "state": "demo",
+      "width": 390,
+      "stable": true
+    },
+    {
+      "view": "market-data",
+      "state": "refreshing",
+      "width": 390,
+      "stable": true
+    },
+    {
+      "view": "market-data",
+      "state": "stale",
+      "width": 390,
+      "stable": true
+    },
+    {
+      "view": "market-data",
+      "state": "error",
+      "width": 390,
+      "belowFilters": true
+    },
+    {
+      "view": "overview",
+      "state": "expanded",
+      "width": 390,
+      "separatorAxis": "horizontal"
+    }
+  ],
+  "errors": [],
+  "apiRequests": []
+}

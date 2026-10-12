@@ -32,7 +32,8 @@ import './compact-system.css'
 import WorkspaceQueryProvider from './WorkspaceQueryProvider.jsx'
 import WorkspaceConnectionNote from './WorkspaceConnectionNote.jsx'
 import { startFrontendPerformance } from './frontendPerformance.js'
-import { TestingSkeleton, TestingRouteBoundary } from './TestingReadState.jsx'
+import { TestingRouteBoundary } from './TestingReadState.jsx'
+import { TestingEmptyState, TestingPageSkeleton } from './TestingPageState.jsx'
 
 function WorkspaceOverview({ workspace, query }) {
   return <section className="fx-dashboard" aria-label="Dashboard"><div className="fx-dashboard-inner"><DashboardSessions key={workspace} workspace={workspace} query={query} /></div></section>
@@ -136,7 +137,7 @@ function App() {
   if (visualMode !== 'real') content = <ViewStatePreview key={`${activeView}:${query.get('analytics_source')}:${query.get('section')}:${visualMode}`} state={visualMode} view={activeView} workspace={workspace} query={query} onChange={changePreview} />
   if (query.get('ui_reference') === '1') content = <TestingComponentReference />
   const subnavAction = demoAvailable && query.get('ui_reference') !== '1' && <><WorkspaceConnectionNote key={workspace} workspace={workspace} enabled={visualMode === 'real'} previewState={visualMode} /><ViewStateSelect value={visualMode} view={activeView} onChange={changePreview} /></>
-  return <FxReplayShell workspace={workspace} query={query} activeView={activeView} mode={mode} subnavAction={subnavAction}><WorkspaceQueryProvider key={workspace} workspace={workspace} eventsEnabled={visualMode === 'real' && query.get('ui_reference') !== '1'}><TestingRouteBoundary key={scope}><Suspense fallback={<TestingSkeleton />}>{content}</Suspense></TestingRouteBoundary></WorkspaceQueryProvider></FxReplayShell>
+  return <FxReplayShell workspace={workspace} query={query} activeView={activeView} mode={mode} subnavAction={subnavAction}><WorkspaceQueryProvider key={workspace} workspace={workspace} eventsEnabled={visualMode === 'real' && query.get('ui_reference') !== '1'}><TestingRouteBoundary key={scope} fallback={<TestingEmptyState kind="page-error" viewport />}><Suspense fallback={<TestingPageSkeleton view={activeView} />}>{content}</Suspense></TestingRouteBoundary></WorkspaceQueryProvider></FxReplayShell>
 }
 
 const rootElement = document.getElementById('root')

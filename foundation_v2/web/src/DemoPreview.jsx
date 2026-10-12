@@ -82,6 +82,7 @@ function DemoSessions({ workspace, query, state }) {
   const payload = useMemo(() => item ? demoDashboardAnalytics(item, workspace, state === 'no-trades' || state === 'new-session' && item.record_id === DEMO_SESSIONS[0].record_id ? [] : undefined) : null, [item, workspace, state])
   const model = useMemo(() => item ? buildAnalyticsModel(demoResult(payload.ledger, item)) : null, [payload, item])
   const dataset = DEMO_DATASETS.find(entry => entry.dataset_id === item?.dataset_id), replayRecord = item ? demoReplayContext(item) : null
+  if (replayRecord) replayRecord.payload.execution.cost_model = { account_ccy: payload.provenance.account_currency }
   if ((state === 'no-trades' || state === 'new-session' && item?.record_id === DEMO_SESSIONS[0].record_id) && replayRecord) replayRecord.payload.execution.balance = 10000
   const href = (view, overrides = {}) => buildWorkspaceHref(view, workspace, query, { demo_session: id, select: '1', analytics_source: 'sessions', ...overrides })
   const save = draft => { setItems(current => current.map(entry => entry.record_id === id ? { ...entry, ...draft, revision: entry.revision + 1 } : entry)); setEditing(false); return true }

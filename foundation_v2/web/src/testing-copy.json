@@ -5902,5 +5902,9 @@
   "bảng giao dịch": {"vi": "bảng giao dịch", "en": "the trades table"},
   "báo cáo phân tích": {"vi": "báo cáo phân tích", "en": "the analytics report"},
   "kết quả phân tích": {"vi": "kết quả phân tích", "en": "analytics results"},
-  "ghi chú và nhãn giao dịch": {"vi": "ghi chú và nhãn giao dịch", "en": "trade notes and tags"}
+  "ghi chú và nhãn giao dịch": {"vi": "ghi chú và nhãn giao dịch", "en": "trade notes and tags"},
+  "Chưa rõ đơn vị tiền tệ": {"vi": "Chưa rõ đơn vị tiền tệ", "en": "Account currency unknown"},
+  "Không đọc được tiến độ tải. Hệ thống sẽ tự kết nối lại.": {"vi": "Không đọc được tiến độ tải. Hệ thống sẽ tự kết nối lại.", "en": "Could not read download progress. The system will reconnect automatically."},
+  "Không mở được trang này": {"vi": "Không mở được trang này", "en": "Could not open this page"},
+  "Điều hướng vẫn hoạt động. Bạn có thể mở mục khác để tiếp tục.": {"vi": "Điều hướng vẫn hoạt động. Bạn có thể mở mục khác để tiếp tục.", "en": "Navigation is still available. Open another section to continue."}
 }

@@ -26,13 +26,14 @@ export function TestingEmptyState({ kind = 'sessions', viewport = false, onClear
     'filtered-datasets': ['search', 'Không có dữ liệu khớp bộ lọc', 'Thử đổi từ khóa hoặc điều chỉnh bộ lọc để xem dữ liệu đã tải.'],
     sessions: ['ledger', 'Chưa có phiên', 'Tạo phiên đầu tiên tại Tổng quan để bắt đầu luyện tập.'],
     denied: ['lock', 'Không có quyền truy cập', 'Bạn chưa có quyền xem dữ liệu trong workspace này. Hãy kiểm tra tài khoản và quyền được cấp.'],
+    'page-error': ['info', 'Không mở được trang này', 'Điều hướng vẫn hoạt động. Bạn có thể mở mục khác để tiếp tục.'],
     'filtered-sessions': ['search', 'Không có phiên khớp bộ lọc', 'Thử đổi từ khóa hoặc điều chỉnh bộ lọc để xem phiên.'],
     trades: ['ledger', 'Chưa có giao dịch đóng', 'Giao dịch đã đóng trong phạm vi đang chọn sẽ xuất hiện tại đây.'],
     'filtered-trades': ['search', 'Không có giao dịch khớp bộ lọc.', 'Thử đổi phiên hoặc điều chỉnh bộ lọc để xem giao dịch.'],
     incomplete: ['ledger', 'Chưa đủ dữ liệu giao dịch.', 'Nguồn mới đọc được một phần; chưa thể kết luận phạm vi này không có giao dịch.'],
   }
   const [icon, title, detail] = states[kind]
-  return <section className={`wm-trades-empty${viewport ? ' wm-viewport-state' : ''}`} role={kind === 'denied' ? 'alert' : 'status'} data-testid={['trades', 'filtered-trades', 'incomplete'].includes(kind) ? 'testing-trades-empty' : 'testing-empty-state'} data-empty-kind={kind}>
+  return <section className={`wm-trades-empty${viewport ? ' wm-viewport-state' : ''}`} role={['denied', 'page-error'].includes(kind) ? 'alert' : 'status'} data-testid={['trades', 'filtered-trades', 'incomplete'].includes(kind) ? 'testing-trades-empty' : 'testing-empty-state'} data-empty-kind={kind}>
     <TestingIcon kind={icon} size={32} />
     <h2>{t(title)}</h2>
     <p>{t(detail)}</p>

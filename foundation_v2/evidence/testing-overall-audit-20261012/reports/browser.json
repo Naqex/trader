@@ -1,0 +1,325 @@
+{
+  "scope": "Testing Sessions/Trades/Analytics preview QA and GET-only real-component fixtures; persisted owner data untouched",
+  "cases": [
+    {
+      "view": "replay",
+      "width": 1563,
+      "theme": "dark",
+      "state": "demo"
+    },
+    {
+      "view": "replay",
+      "width": 1563,
+      "theme": "dark",
+      "state": "refreshing"
+    },
+    {
+      "view": "replay",
+      "width": 1563,
+      "theme": "dark",
+      "state": "stale"
+    },
+    {
+      "view": "replay",
+      "width": 1563,
+      "theme": "dark",
+      "state": "error"
+    },
+    {
+      "view": "trade",
+      "width": 1563,
+      "theme": "dark",
+      "state": "demo"
+    },
+    {
+      "view": "trade",
+      "width": 1563,
+      "theme": "dark",
+      "state": "refreshing"
+    },
+    {
+      "view": "trade",
+      "width": 1563,
+      "theme": "dark",
+      "state": "stale"
+    },
+    {
+      "view": "trade",
+      "width": 1563,
+      "theme": "dark",
+      "state": "error"
+    },
+    {
+      "view": "analytics",
+      "width": 1563,
+      "theme": "dark",
+      "state": "demo"
+    },
+    {
+      "view": "analytics",
+      "width": 1563,
+      "theme": "dark",
+      "state": "refreshing"
+    },
+    {
+      "view": "analytics",
+      "width": 1563,
+      "theme": "dark",
+      "state": "stale"
+    },
+    {
+      "view": "analytics",
+      "width": 1563,
+      "theme": "dark",
+      "state": "error"
+    },
+    {
+      "view": "replay",
+      "width": 1563,
+      "theme": "light",
+      "state": "demo"
+    },
+    {
+      "view": "replay",
+      "width": 1563,
+      "theme": "light",
+      "state": "refreshing"
+    },
+    {
+      "view": "replay",
+      "width": 1563,
+      "theme": "light",
+      "state": "stale"
+    },
+    {
+      "view": "replay",
+      "width": 1563,
+      "theme": "light",
+      "state": "error"
+    },
+    {
+      "view": "trade",
+      "width": 1563,
+      "theme": "light",
+      "state": "demo"
+    },
+    {
+      "view": "trade",
+      "width": 1563,
+      "theme": "light",
+      "state": "refreshing"
+    },
+    {
+      "view": "trade",
+      "width": 1563,
+      "theme": "light",
+      "state": "stale"
+    },
+    {
+      "view": "trade",
+      "width": 1563,
+      "theme": "light",
+      "state": "error"
+    },
+    {
+      "view": "analytics",
+      "width": 1563,
+      "theme": "light",
+      "state": "demo"
+    },
+    {
+      "view": "analytics",
+      "width": 1563,
+      "theme": "light",
+      "state": "refreshing"
+    },
+    {
+      "view": "analytics",
+      "width": 1563,
+      "theme": "light",
+      "state": "stale"
+    },
+    {
+      "view": "analytics",
+      "width": 1563,
+      "theme": "light",
+      "state": "error"
+    },
+    {
+      "view": "replay",
+      "width": 390,
+      "theme": "dark",
+      "state": "demo"
+    },
+    {
+      "view": "replay",
+      "width": 390,
+      "theme": "dark",
+      "state": "refreshing"
+    },
+    {
+      "view": "replay",
+      "width": 390,
+      "theme": "dark",
+      "state": "stale"
+    },
+    {
+      "view": "replay",
+      "width": 390,
+      "theme": "dark",
+      "state": "error"
+    },
+    {
+      "view": "trade",
+      "width": 390,
+      "theme": "dark",
+      "state": "demo"
+    },
+    {
+      "view": "trade",
+      "width": 390,
+      "theme": "dark",
+      "state": "refreshing"
+    },
+    {
+      "view": "trade",
+      "width": 390,
+      "theme": "dark",
+      "state": "stale"
+    },
+    {
+      "view": "trade",
+      "width": 390,
+      "theme": "dark",
+      "state": "error"
+    },
+    {
+      "view": "analytics",
+      "width": 390,
+      "theme": "dark",
+      "state": "demo"
+    },
+    {
+      "view": "analytics",
+      "width": 390,
+      "theme": "dark",
+      "state": "refreshing"
+    },
+    {
+      "view": "analytics",
+      "width": 390,
+      "theme": "dark",
+      "state": "stale"
+    },
+    {
+      "view": "analytics",
+      "width": 390,
+      "theme": "dark",
+      "state": "error"
+    },
+    {
+      "view": "replay",
+      "width": 390,
+      "theme": "light",
+      "state": "demo"
+    },
+    {
+      "view": "replay",
+      "width": 390,
+      "theme": "light",
+      "state": "refreshing"
+    },
+    {
+      "view": "replay",
+      "width": 390,
+      "theme": "light",
+      "state": "stale"
+    },
+    {
+      "view": "replay",
+      "width": 390,
+      "theme": "light",
+      "state": "error"
+    },
+    {
+      "view": "trade",
+      "width": 390,
+      "theme": "light",
+      "state": "demo"
+    },
+    {
+      "view": "trade",
+      "width": 390,
+      "theme": "light",
+      "state": "refreshing"
+    },
+    {
+      "view": "trade",
+      "width": 390,
+      "theme": "light",
+      "state": "stale"
+    },
+    {
+      "view": "trade",
+      "width": 390,
+      "theme": "light",
+      "state": "error"
+    },
+    {
+      "view": "analytics",
+      "width": 390,
+      "theme": "light",
+      "state": "demo"
+    },
+    {
+      "view": "analytics",
+      "width": 390,
+      "theme": "light",
+      "state": "refreshing"
+    },
+    {
+      "view": "analytics",
+      "width": 390,
+      "theme": "light",
+      "state": "stale"
+    },
+    {
+      "view": "analytics",
+      "width": 390,
+      "theme": "light",
+      "state": "error"
+    },
+    {
+      "fixture": true,
+      "case": "Client navigation and browser Back reconcile report session control with URL scope"
+    },
+    {
+      "actualGET": true,
+      "view": "replay",
+      "facts": {
+        "errors": [],
+        "sourceBlocked": false,
+        "currency": "Số dư tài khoản100.000 USD"
+      }
+    },
+    {
+      "actualGET": true,
+      "view": "trade",
+      "facts": {
+        "errors": [],
+        "sourceBlocked": false
+      }
+    },
+    {
+      "actualGET": true,
+      "view": "analytics",
+      "facts": {
+        "errors": [],
+        "sourceBlocked": true
+      }
+    }
+  ],
+  "errors": [],
+  "writes": [],
+  "result": "PASS"
+}

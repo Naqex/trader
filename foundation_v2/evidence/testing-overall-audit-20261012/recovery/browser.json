@@ -1,0 +1,16 @@
+{
+  "scope": "Actual report reader components with labeled GET-only HTTP/SSE fixtures; no owner writes",
+  "cases": [
+    "503 + Retry-After automatically recovers, no refresh button and no skeleton on pending retry",
+    "Current report reconciles matching sessions revision",
+    "Failed background refresh preserves charts/data and retries without skeleton or refresh button",
+    "Pinned cursor/event sequence ignores unrelated current-session revision",
+    "Invalid read model fails without retry storm",
+    "403 clears report and has no automatic retry or button",
+    "Aggregate ledger recovers automatically and does not fabricate empty data on failure",
+    "Dashboard Performance auto-recovers initial GET failure without a refresh button",
+    "Catalog503 keeps disabled filter/session structure, error below divider, then automatic recovery"
+  ],
+  "errors": [],
+  "result": "PASS"
+}

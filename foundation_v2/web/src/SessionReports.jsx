@@ -92,6 +92,8 @@ export default function SessionReports({ workspace, query, ledgerOnly = false })
   const catalog = catalogState.workspace === workspace ? catalogState : { status: 'loading', items: [] }
   const [scope, setScope] = useState(() => ledgerOnly ? reportSessions(query) : query.get('session') || query.get('replay_session') || '')
   const [reload, setReload] = useState(0)
+  const queryScope = ledgerOnly ? JSON.stringify(reportSessions(query)) : query.get('session') || query.get('replay_session') || ''
+  useEffect(() => { setScope(ledgerOnly ? JSON.parse(queryScope) : queryScope || defaultSession(catalog.items, '', readLastSession(workspace))) }, [workspace, ledgerOnly, queryScope])
   const recovery = useReadRefresh(() => setReload(value => value + 1), true, { workspace, resources: ['sessions'], scopeKey: 'session-catalog', error: catalog.readError, pending: catalog.status === 'loading' || catalog.pending })
   useEffect(() => {
     const controller = new AbortController()
