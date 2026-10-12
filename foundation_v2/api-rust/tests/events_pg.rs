@@ -228,6 +228,84 @@ async fn native_jobs_and_sse_durable_http_contract() {
     let mut b = Wire::connect(address, Some("tenant-b"));
     let other = b.snapshot();
     assert_eq!(other["downloads"]["qdm"]["jobs"], json!([]));
+    assert_eq!(initial["resources"]["sessions"]["count"], 0);
+    assert_eq!(initial["resources"]["datasets"]["count"], 1);
+    // More than a recent-ID window, with deliberately large secret payloads:
+    // only current metadata contributes to the bounded invalidation projection.
+    conn.batch_execute("INSERT INTO workspace_records(workspace_id,kind,record_id,current_revision,created_at_utc,updated_at_utc) SELECT 'tenant-a','replay','signal-'||n,1,'2026-10-01T00:00:00Z','2026-10-01T00:00:00Z' FROM generate_series(1,30) n; INSERT INTO workspace_record_revisions(workspace_id,kind,record_id,revision,payload_json,created_at_utc) SELECT 'tenant-a','replay','signal-'||n,1,jsonb_build_object('secret',repeat('private-secret',10000)),'2026-10-01T00:00:00Z' FROM generate_series(1,30) n").await.unwrap();
+    let inserted = a.snapshot();
+    assert_eq!(inserted["resources"]["sessions"]["count"], 30);
+    assert_ne!(
+        inserted["resources"]["sessions"],
+        initial["resources"]["sessions"]
+    );
+    assert_eq!(
+        inserted["resources"]["datasets"],
+        initial["resources"]["datasets"]
+    );
+    assert!(!inserted.to_string().contains("private-secret"));
+    assert!(!inserted.to_string().contains("signal-"));
+    assert!(inserted.to_string().len() < 16 * 1024);
+    conn.batch_execute("INSERT INTO workspace_record_revisions(workspace_id,kind,record_id,revision,payload_json,created_at_utc) VALUES('tenant-a','replay','signal-1',2,'{\"closed_trade\":true}','2026-10-01T00:00:00Z'); UPDATE workspace_records SET current_revision=2 WHERE workspace_id='tenant-a' AND kind='replay' AND record_id='signal-1'").await.unwrap();
+    let revised = a.snapshot();
+    assert_ne!(
+        revised["resources"]["sessions"],
+        inserted["resources"]["sessions"]
+    );
+    conn.batch_execute("INSERT INTO workspace_record_revisions(workspace_id,kind,record_id,revision,payload_json,deleted,created_at_utc) VALUES('tenant-a','replay','signal-2',2,'{}',true,'2026-10-01T00:00:00Z'); UPDATE workspace_records SET current_revision=2 WHERE workspace_id='tenant-a' AND kind='replay' AND record_id='signal-2'").await.unwrap();
+    let deleted = a.snapshot();
+    assert_eq!(deleted["resources"]["sessions"]["count"], 29);
+    assert_ne!(
+        deleted["resources"]["sessions"],
+        revised["resources"]["sessions"]
+    );
+    conn.batch_execute("INSERT INTO replay_activity_intervals(workspace_id,session_id,event_id,started_at_utc,ended_at_utc) VALUES('tenant-a','signal-3','00000000-0000-4000-8000-000000000001','2026-10-01T00:00:00Z','2026-10-01T00:00:20Z')").await.unwrap();
+    let activity = a.snapshot();
+    assert_eq!(activity["resources"]["sessions"]["count"], 29);
+    assert_ne!(
+        activity["resources"]["sessions"],
+        deleted["resources"]["sessions"]
+    );
+    conn.batch_execute("UPDATE datasets SET manifest_json=jsonb_set(manifest_json,'{row_count}','3') WHERE workspace_id='tenant-a' AND dataset_id='data'").await.unwrap();
+    let metadata = a.snapshot();
+    assert_ne!(
+        metadata["resources"]["datasets"],
+        activity["resources"]["datasets"]
+    );
+    assert_eq!(
+        metadata["resources"]["sessions"],
+        activity["resources"]["sessions"]
+    );
+    conn.batch_execute("INSERT INTO datasets(workspace_id,dataset_id,manifest_json,artifact_sha256,created_at_utc) VALUES('tenant-a','signal-data','{}',repeat('1',64),'2026-10-01T00:00:00Z')").await.unwrap();
+    let dataset_added = a.snapshot();
+    assert_eq!(dataset_added["resources"]["datasets"]["count"], 2);
+    conn.batch_execute(
+        "DELETE FROM datasets WHERE workspace_id='tenant-a' AND dataset_id='signal-data'",
+    )
+    .await
+    .unwrap();
+    let dataset_deleted = a.snapshot();
+    assert_eq!(
+        dataset_deleted["resources"]["datasets"],
+        metadata["resources"]["datasets"]
+    );
+    conn.batch_execute("INSERT INTO api_commands(command_id,contract_version,workspace_id,identity_id,method,path,request_hash,deadline_at_utc,expires_at_utc) VALUES('00000000-0000-4000-8000-000000000002','api-command-v1','tenant-a','fixture','GET','/api/v2/replay/sessions',repeat('0',64),CURRENT_TIMESTAMP+interval '1 hour',CURRENT_TIMESTAMP+interval '2 hours')").await.unwrap();
+    let read_command = a.snapshot();
+    assert_eq!(read_command["resources"], dataset_deleted["resources"]);
+    assert_ne!(read_command["commands"], dataset_deleted["commands"]);
+    conn.batch_execute("INSERT INTO workspace_records(workspace_id,kind,record_id,current_revision,created_at_utc,updated_at_utc) VALUES('tenant-b','replay','other-workspace',1,'2026-10-01T00:00:00Z','2026-10-01T00:00:00Z'); INSERT INTO workspace_record_revisions(workspace_id,kind,record_id,revision,payload_json,created_at_utc) VALUES('tenant-b','replay','other-workspace',1,'{}','2026-10-01T00:00:00Z')").await.unwrap();
+    let isolated = b.snapshot();
+    assert_eq!(isolated["resources"]["sessions"]["count"], 1);
+    assert_ne!(
+        isolated["resources"]["sessions"],
+        read_command["resources"]["sessions"]
+    );
+    let mut same_workspace = Wire::connect(address, Some("tenant-a"));
+    assert_eq!(
+        same_workspace.snapshot()["resources"],
+        read_command["resources"]
+    );
+    drop(same_workspace);
     let job = golden["active_id"].as_str().unwrap();
     conn.execute("WITH research AS (UPDATE research_jobs SET status='failed',updated_at_utc='2026-10-09T20:01:00Z' WHERE workspace_id='tenant-a' AND job_id=$1 RETURNING job_id) UPDATE download_jobs SET payload=jsonb_set(payload,'{status}','\"completed\"'),public_snapshot=jsonb_set(public_snapshot,'{status}','\"completed\"'),revision=revision+1 WHERE workspace_id='tenant-a'",&[&job]).await.unwrap();
     let updated = a.snapshot();
@@ -271,7 +349,7 @@ async fn native_jobs_and_sse_durable_http_contract() {
     server.abort();
     state.pool.close();
     println!(
-        "{} job/checkpoint parity cases + startup migration missing/mismatch/future/absent fail-closed + SSE HTTP scope, durable updates, reconnect, checksum, 8/64 limits and disconnect release passed",
+        "{} job/checkpoint parity cases + startup migration fail-closed + SSE session create/off-page revision/tombstone/activity, dataset metadata/create/delete, read-command exclusion, tenant isolation, bounded payload, durable job updates, reconnect, 8/64 limits and disconnect release passed",
         golden["cases"].as_array().unwrap().len()
     );
 }

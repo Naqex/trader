@@ -92,9 +92,19 @@ def main():
             env={**os.environ,'TW_V2_DATABASE_URL':dsn,'TW_V2_ARTIFACT_ROOT':str(runtime/'artifacts'),'TW_V2_LOCAL_IDENTITY':'local-owner','TW_V2_LOCAL_WORKSPACES':','.join(['tenant-a','tenant-b',*(f'limit-{n}' for n in range(9))]),'TW_V2_RUST_REQUESTS_PER_MINUTE':'2000','TW_EVENTS_GOLDEN':str(golden)}
             result=subprocess.run(['cargo','test','--test','events_pg','--','--ignored','--nocapture'],cwd=API_RUST,env=env,text=True,capture_output=True,timeout=240)
             print(result.stdout);print(result.stderr,file=sys.stderr)
+            benchmark = None
+            if result.returncode == 0:
+                benchmark=subprocess.run(['cargo','test','--lib','events::tests::postgres_resource_metadata_scan_measurement','--','--ignored','--nocapture'],cwd=API_RUST,env=env,text=True,capture_output=True,timeout=120)
+                print(benchmark.stdout);print(benchmark.stderr,file=sys.stderr)
             if args.output:
-                args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(json.dumps({'cases':len(cases),'exit_code':result.returncode,'output':result.stdout+result.stderr,'user_database_touched':False,'real_socket_http':True},indent=2),encoding='utf-8')
+                measurements=[]
+                if benchmark:
+                    for line in benchmark.stdout.splitlines():
+                        if line.startswith('RESOURCE_SCAN_MEASUREMENTS='):
+                            measurements=json.loads(line.removeprefix('RESOURCE_SCAN_MEASUREMENTS='))
+                args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(json.dumps({'cases':len(cases),'exit_code':result.returncode,'output':result.stdout+result.stderr,'user_database_touched':False,'real_socket_http':True,'metadata_scan_exit_code':benchmark.returncode if benchmark else None,'metadata_scan_measurements':measurements},indent=2),encoding='utf-8')
             if result.returncode:raise SystemExit(result.returncode)
+            if benchmark and benchmark.returncode:raise SystemExit(benchmark.returncode)
         finally:
             subprocess.run([str(args.pg_bin/'pg_ctl.exe'),'-D',str(pgdata),'-m','fast','stop'],capture_output=True,timeout=20);postgres.wait(timeout=20);log.close()
 

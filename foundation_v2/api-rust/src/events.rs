@@ -157,6 +157,7 @@ async fn snapshot(state: &AppState, workspace: &str) -> Result<Value, ApiError> 
     let downloads=conn.query("(SELECT provider,CASE WHEN octet_length(snapshot::text)<=6144 THEN snapshot ELSE NULL END AS snapshot FROM download_job_snapshots WHERE workspace_id=$1 AND provider='QuantDataManager' ORDER BY created_at_utc DESC,job_id DESC LIMIT 20) UNION ALL (SELECT provider,CASE WHEN octet_length(snapshot::text)<=6144 THEN snapshot ELSE NULL END AS snapshot FROM download_job_snapshots WHERE workspace_id=$1 AND provider='Dukascopy' ORDER BY created_at_utc DESC,job_id DESC LIMIT 20)",&[&workspace]).await.map_err(|_|ApiError::database())?;
     let commands=conn.query("SELECT status,count(*)::bigint AS n,max(updated_at_utc)::text AS updated FROM api_commands WHERE workspace_id=$1 AND expires_at_utc>CURRENT_TIMESTAMP GROUP BY status",&[&workspace]).await.map_err(|_|ApiError::database())?;
     let mut value = empty_snapshot(workspace);
+    value["resources"] = resource_revisions(&conn, workspace).await?;
     for row in research {
         let status = row.get::<_, String>("status");
         value["research"]["status_counts"][&status] = json!(row.get::<_, i64>("n"));
@@ -186,10 +187,89 @@ async fn snapshot(state: &AppState, workspace: &str) -> Result<Value, ApiError> 
     seal_snapshot(value)
 }
 
+// Fixed-size results across the complete workspace, rather than a recent-ID window:
+// revisions outside the visible page and tombstones must invalidate reports too.
+// The scan is O(metadata rows), not constant work, and never reads replay payloads.
+const RESOURCE_REVISIONS_SQL: &str = r#"
+WITH session_marks AS (
+    SELECT jsonb_build_array('session',r.record_id,r.current_revision,v.deleted)::text AS token,
+           NOT v.deleted AS visible
+    FROM workspace_records r
+    JOIN LATERAL (
+        SELECT deleted FROM workspace_record_revisions
+        WHERE workspace_id=r.workspace_id AND kind=r.kind
+          AND record_id=r.record_id AND revision=r.current_revision
+        LIMIT 1
+    ) v ON true
+    WHERE r.workspace_id=$1 AND r.kind='replay'
+    UNION ALL
+    SELECT jsonb_build_array('activity',session_id,event_id,started_at_utc,ended_at_utc)::text,
+           false
+    FROM replay_activity_intervals WHERE workspace_id=$1
+)
+SELECT 'sessions' AS resource,count(*) FILTER (WHERE visible)::bigint AS n,count(*)::bigint AS marks,
+       COALESCE(sum(hashtextextended(token,0)::numeric),0)::text AS checksum_a,
+       COALESCE(sum(hashtextextended(token,1)::numeric),0)::text AS checksum_b
+FROM session_marks
+UNION ALL
+SELECT 'datasets',count(*)::bigint,count(*)::bigint,
+       COALESCE(sum(hashtextextended(token,0)::numeric),0)::text,
+       COALESCE(sum(hashtextextended(token,1)::numeric),0)::text
+FROM (
+    SELECT jsonb_build_array(dataset_id,artifact_sha256,md5(manifest_json::text))::text AS token
+    FROM datasets WHERE workspace_id=$1
+) dataset_marks
+"#;
+
+async fn resource_revisions(
+    conn: &tokio_postgres::Client,
+    workspace: &str,
+) -> Result<Value, ApiError> {
+    let rows = conn
+        .query(RESOURCE_REVISIONS_SQL, &[&workspace])
+        .await
+        .map_err(|_| ApiError::database())?;
+    let mut resources = empty_resources(workspace);
+    for row in rows {
+        let resource: String = row.get("resource");
+        resources[&resource] = resource_revision(
+            workspace,
+            &resource,
+            row.get("n"),
+            row.get("marks"),
+            &row.get::<_, String>("checksum_a"),
+            &row.get::<_, String>("checksum_b"),
+        );
+    }
+    Ok(resources)
+}
+
+fn resource_revision(
+    workspace: &str,
+    resource: &str,
+    count: i64,
+    marks: i64,
+    checksum_a: &str,
+    checksum_b: &str,
+) -> Value {
+    // Opaque equality token, never an ordered event ID or an authorization proof.
+    let stamp = serde_json::to_vec(&(workspace, resource, count, marks, checksum_a, checksum_b))
+        .expect("scalar resource fingerprint");
+    json!({"count":count,"revision":format!("{:x}",Sha256::digest(stamp))})
+}
+
+fn empty_resources(workspace: &str) -> Value {
+    json!({
+        "sessions":resource_revision(workspace,"sessions",0,0,"0","0"),
+        "datasets":resource_revision(workspace,"datasets",0,0,"0","0")
+    })
+}
+
 fn empty_snapshot(workspace: &str) -> Value {
     json!({"schema_version":"workspace-events-v1","workspace_id":workspace,
         "downloads":{"qdm":{"jobs":[]},"dukascopy":{"jobs":[]}},
-        "research":{"status_counts":{},"updated_by_status":{},"recent_jobs":[]},"commands":{"status_counts":{},"updated_by_status":{}}})
+        "research":{"status_counts":{},"updated_by_status":{},"recent_jobs":[]},"commands":{"status_counts":{},"updated_by_status":{}},
+        "resources":empty_resources(workspace)})
 }
 fn provider_key(provider: &str) -> Option<&'static str> {
     match provider {
@@ -221,12 +301,95 @@ mod tests {
         let b = seal_snapshot(empty_snapshot("b")).unwrap();
         assert_eq!(a["downloads"]["qdm"]["jobs"], json!([]));
         assert_eq!(a["research"]["recent_jobs"], json!([]));
+        assert_eq!(a["resources"]["sessions"]["count"], 0);
+        assert_eq!(a["resources"]["datasets"]["count"], 0);
+        assert_ne!(
+            a["resources"]["sessions"]["revision"],
+            b["resources"]["sessions"]["revision"]
+        );
         assert_ne!(a["revision"], b["revision"]);
         assert!(a.get("downloaded_bytes").is_none());
         assert_eq!(
             seal_snapshot(empty_snapshot("a")).unwrap()["revision"],
             a["revision"]
         );
+    }
+    #[test]
+    fn resource_tokens_are_scoped_and_include_all_aggregate_marks() {
+        let base = resource_revision("a", "sessions", 2, 3, "100", "200");
+        for changed in [
+            resource_revision("b", "sessions", 2, 3, "100", "200"),
+            resource_revision("a", "datasets", 2, 3, "100", "200"),
+            resource_revision("a", "sessions", 1, 3, "100", "200"),
+            resource_revision("a", "sessions", 2, 4, "100", "200"),
+            resource_revision("a", "sessions", 2, 3, "101", "200"),
+            resource_revision("a", "sessions", 2, 3, "100", "201"),
+        ] {
+            assert_ne!(base["revision"], changed["revision"]);
+        }
+        assert_eq!(base.as_object().unwrap().len(), 2);
+        assert_eq!(base["revision"].as_str().unwrap().len(), 64);
+    }
+    #[tokio::test]
+    #[ignore = "owned disposable database from run_events_parity.py only"]
+    async fn postgres_resource_metadata_scan_measurement() {
+        fn assert_metadata_plan(value: &Value) {
+            match value {
+                Value::Object(node) => {
+                    assert_ne!(node.get("Node Type"), Some(&json!("Sort")));
+                    if node.get("Relation Name") == Some(&json!("workspace_record_revisions")) {
+                        let condition = node["Index Cond"].as_str().unwrap();
+                        assert!(condition.contains("record_id"));
+                        assert!(condition.contains("revision"));
+                    }
+                    for child in node.values() {
+                        assert_metadata_plan(child);
+                    }
+                }
+                Value::Array(children) => {
+                    for child in children {
+                        assert_metadata_plan(child);
+                    }
+                }
+                _ => {}
+            }
+        }
+        let dsn = std::env::var("TW_V2_DATABASE_URL").unwrap();
+        let (conn, connection) = tokio_postgres::connect(&dsn, tokio_postgres::NoTls)
+            .await
+            .unwrap();
+        let connection = tokio::spawn(connection);
+        let database: String = conn
+            .query_one("SELECT current_database()", &[])
+            .await
+            .unwrap()
+            .get(0);
+        assert!(database.starts_with("events_parity_"), "refuse owner DB");
+        conn.batch_execute("BEGIN; INSERT INTO workspaces(workspace_id,created_at_utc) VALUES('signal-benchmark','2026-10-01T00:00:00Z')").await.unwrap();
+        let mut measurements = Vec::new();
+        let mut inserted = 0_i32;
+        for target in [1000_i32, 10000] {
+            conn.execute("INSERT INTO workspace_records(workspace_id,kind,record_id,current_revision,created_at_utc,updated_at_utc) SELECT 'signal-benchmark','replay',n::text,1,'2026-10-01T00:00:00Z','2026-10-01T00:00:00Z' FROM generate_series($1::int,$2::int) n",&[&(inserted+1),&target]).await.unwrap();
+            conn.execute("INSERT INTO workspace_record_revisions(workspace_id,kind,record_id,revision,payload_json,created_at_utc) SELECT 'signal-benchmark','replay',n::text,1,'{}','2026-10-01T00:00:00Z' FROM generate_series($1::int,$2::int) n",&[&(inserted+1),&target]).await.unwrap();
+            inserted = target;
+            let resources = resource_revisions(&conn, "signal-benchmark").await.unwrap();
+            assert_eq!(resources["sessions"]["count"], target);
+            assert!(resources.to_string().len() < 256);
+            let plan: Value = conn
+                .query_one(
+                    &format!("EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) {RESOURCE_REVISIONS_SQL}"),
+                    &[&"signal-benchmark"],
+                )
+                .await
+                .unwrap()
+                .get(0);
+            assert_metadata_plan(&plan);
+            measurements.push(json!({"metadata_rows":target,"resource_bytes":resources.to_string().len(),"plan":plan}));
+        }
+        conn.batch_execute("ROLLBACK").await.unwrap();
+        println!("RESOURCE_SCAN_MEASUREMENTS={}", json!(measurements));
+        drop(conn);
+        connection.await.unwrap().unwrap();
     }
     #[tokio::test]
     async fn latest_value_is_bounded_and_disconnect_releases_permit() {
