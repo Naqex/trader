@@ -525,6 +525,9 @@ export default function PropWorkspace({ workspace }) {
         method: 'POST',
         body: JSON.stringify({ attempt, phase, resume_state: { cursor: { bar_index: 0, timestamp_utc: startUtc }, open_positions: [], pending_orders: [] } }),
       })
+      if (payload.session) {
+        setSessions(current => ({ ...current, items: current.items.map(item => item.session_id === payload.session.session_id ? payload.session : item) }))
+      }
       await loadBundle(payload.session || session, [...(selected.attempts || []), payload.attempt])
     } catch (error) {
       setConflict(t("Không tạo được attempt mới: {error}", { error: error.message }))
