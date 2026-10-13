@@ -112,6 +112,45 @@
 .replay-status > div + div { padding-left: 20px; }
 .replay-status .replay-state { min-width: 145px; }
 
+/* Prop mode keeps the challenge contract visible next to the replay clock.
+ * It is a flat status surface so the chart remains the primary workspace. */
+.prop-rule-bar {
+  margin: 10px 0 0;
+  border-top: 1px solid var(--fx-shell-line-strong);
+  border-bottom: 1px solid var(--fx-shell-line-strong);
+  padding: 10px 0 9px;
+}
+.prop-rule-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.prop-rule-head > div:first-child { display: grid; gap: 3px; }
+.prop-rule-head span { color: var(--fx-shell-subtle); font-size: 9px; letter-spacing: .12em; }
+.prop-rule-head strong { color: var(--fx-shell-text); font-size: 12px; }
+.prop-rule-actions { display: flex; align-items: center; gap: 7px; }
+.prop-rule-actions button,
+.prop-rule-actions a { min-height: 28px; border: 1px solid var(--fx-shell-line-strong); border-radius: 3px; background: transparent; color: var(--fx-shell-muted); padding: 0 9px; font: inherit; font-size: 10px; text-decoration: none; cursor: pointer; }
+.prop-rule-actions button:hover:not(:disabled), .prop-rule-actions a:hover { border-color: var(--fx-shell-accent); color: var(--fx-shell-text); }
+.prop-rule-actions button:disabled { cursor: wait; opacity: .55; }
+.prop-rule-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; margin-top: 9px; background: var(--fx-shell-line); }
+.prop-rule-grid > div { display: grid; gap: 3px; min-width: 0; background: var(--fx-shell-bg); padding: 7px 9px; }
+.prop-rule-grid span { color: var(--fx-shell-subtle); font-size: 9px; }
+.prop-rule-grid strong { overflow: hidden; color: var(--fx-shell-text); font-size: 12px; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+.prop-rule-grid small, .prop-rule-grid em { color: var(--fx-shell-muted); font-size: 9px; font-style: normal; font-weight: 500; }
+.prop-rule-grid em.is-good { color: var(--fx-shell-safe); }
+.prop-rule-grid em.is-breach { color: var(--fx-shell-danger); }
+.prop-rule-error { margin: 8px 0 0; color: var(--fx-shell-danger); font-size: 10px; }
+.prop-rule-terminal { display: flex; align-items: center; flex-wrap: wrap; gap: 5px 12px; margin-top: 9px; border-left: 2px solid var(--fx-shell-accent); padding-left: 9px; color: var(--fx-shell-muted); font-size: 10px; }
+.prop-rule-terminal strong { color: var(--fx-shell-text); }
+.prop-rule-terminal a { color: var(--fx-shell-accent); text-decoration: none; }
+.prop-rule-terminal a:hover { color: var(--fx-shell-text); }
+
+@media (max-width: 900px) {
+  .prop-rule-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 620px) {
+  .prop-rule-head { align-items: flex-start; flex-direction: column; }
+  .prop-rule-actions { width: 100%; overflow-x: auto; }
+  .prop-rule-grid { grid-template-columns: 1fr 1fr; }
+}
+
 .replay-workspace {
   grid-template-columns: minmax(0, 1fr) 340px;
   min-height: 0;

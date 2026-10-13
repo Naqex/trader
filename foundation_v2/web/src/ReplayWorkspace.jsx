@@ -31,6 +31,7 @@ import LegacyReplayToolbar from './LegacyReplayToolbar.jsx'
 import { replayResolution, resolutionSeconds } from './advancedReplayDatafeed.js'
 import { replayIntervalSteps, replayAdvance, replayRewind, replayRewindBucket, replaySelectionCursor, replayDelay } from './legacyReplayModel.js'
 import ChartOrderPanel, { useChartOrder } from './ChartOrderPanel.jsx'
+import { DEFAULT_COST_MODEL } from './TradeWorkspace.jsx'
 import TradingViewReplayChart from './TradingViewReplayChart.jsx'
 import ChartLoadingState from './ChartLoadingState.jsx'
 import { TestingEmptyState, TestingResourceStatus } from './TestingPageState.jsx'
@@ -49,6 +50,7 @@ import { orderLevels, marketQuotes } from './replayOrderModel.js'
 import { ReplayOrderPrimitive } from './replayOrderPrimitive.js'
 import './ReplayWorkspace.css'
 import './ChartWorkbench.css'
+import { isPropTerminal, propPriceMarkEvents, propReplayRuleView } from './propReplayModel.js'
 
 function formatTimestamp(timestamp, locale = 'vi-VN') {
   if (timestamp === null || timestamp === undefined || !Number.isFinite(Number(timestamp))) return 'Chưa có dữ liệu'
@@ -318,7 +320,7 @@ function isEditableTarget(target) {
 }
 
 export default function ReplayWorkspace({ workspace, query }) {
-  const { t, locale, fmt } = useTestingLocale()
+  const { t, locale, fmt, statusLabel: localeStatusLabel } = useTestingLocale()
   const formatTimestamp = value => value === null || value === undefined || !Number.isFinite(Number(value)) ? '—' : displayDate(new Date(Number(value) * 1000), { timeStyle: 'medium' })
   const formatPrice = value => fmt(value, '', 8)
   const money = (value, currency) => fmt(value, ' ' + (currency || t('Đơn vị tài khoản')))
@@ -328,13 +330,22 @@ export default function ReplayWorkspace({ workspace, query }) {
   const storageKey = `tw:replay:last:${workspace}`
   const requestedSession = query.get('session') || ''
   const requestedDataset = query.get('dataset') || ''
+  const propSessionId = query.get('prop_session') || ''
+  const propAttemptId = query.get('prop_attempt') || ''
+  const propMode = Boolean(propSessionId && propAttemptId)
   const freshStart = query.get('fresh') === '1'
   const requestedStart = Number(query.get('start') || 0)
-  const requestedCursorParam = query.get('cursor')
+  // A Prop Firm chart has one authoritative forward-only clock. Ignore copied
+  // cursor params so a deep link cannot silently reopen an earlier checkpoint.
+  const requestedCursorParam = propMode ? null : query.get('cursor')
   const requestedCursor = requestedCursorParam === null ? null : Number(requestedCursorParam)
   const requestedCursorValid = requestedCursor === null || (Number.isInteger(requestedCursor) && requestedCursor >= 0)
   const [sessionId, setSessionId] = useState(requestedSession)
   const [state, setState] = useState({ status: 'idle', payload: null, error: null })
+  const [propState, setPropState] = useState({ status: propMode ? 'loading' : 'disabled', session: null, attempt: null, phase: null, resumeState: null, objectives: null, error: null })
+  const propRules = propReplayRuleView(propState)
+  const propTerminal = propMode && isPropTerminal(propState.attempt?.status)
+  const propReadyToAdvance = !propMode || (propState.status === 'ready' && propState.attempt?.status === 'running' && !isPropTerminal(propState.attempt?.status))
   const replayScopeResolved = state.payload?.record_id === requestedSession && (requestedCursor === null || Number(state.payload?.view_cursor_index) === requestedCursor)
   useContentReadyMetric('replay', replayScopeResolved || !requestedSession ? state.status : 'loading', `${workspace}:${requestedSession}:${requestedCursorParam ?? ''}`)
   const advancedChart = state.payload?.payload?.chart_engine ? state.payload.payload.chart_engine === 'legacy' : query.get('chart_engine') !== 'lightweight'
@@ -377,14 +388,39 @@ export default function ReplayWorkspace({ workspace, query }) {
   const actionLock = useRef(false)
   const sessionRequest = useRef(null)
   const lastResolvedLocation = useRef(`${requestedSession}:${requestedCursorParam ?? ''}`)
+  const propAutoInit = useRef(false)
   const datasetRequest = useRef(null)
   const sideToggleRef = useRef(null)
   const sideRef = useRef(null)
   const sideTriggerRef = useRef(null)
   const restoreSideFocus = useRef(false)
   const indicatorsRef = useRef(null)
+  const propRequest = useRef(null)
   const requestViewport = (kind, extras = {}) => setViewportRequest({ kind, ...extras, id: Date.now() })
   useEffect(() => { setHeaderSlot(document.getElementById('replay-command-slot')) }, [])
+
+  const loadPropAttempt = useCallback(async () => {
+    if (!propMode) return
+    propRequest.current?.abort()
+    const controller = new AbortController()
+    propRequest.current = controller
+    setPropState(current => ({ ...current, status: 'loading', error: null }))
+    try {
+      const response = await scopedRead(`/api/v2/prop/sessions/${encodeURIComponent(propSessionId)}/attempts/${encodeURIComponent(propAttemptId)}`, workspace, controller.signal)
+      const payload = await readJson(response)
+      if (controller.signal.aborted) return
+      setPropState({ status: 'ready', session: payload.session, attempt: payload.attempt, phase: payload.phase, resumeState: payload.resume_state, objectives: payload.resume_state?.prop_lifecycle?.last_objectives || null, error: null })
+    } catch (error) {
+      if (!controller.signal.aborted) setPropState({ status: error.status === 403 ? 'denied' : 'error', session: null, attempt: null, phase: null, resumeState: null, objectives: null, error: String(error.message || error) })
+    } finally {
+      if (propRequest.current === controller) propRequest.current = null
+    }
+  }, [propAttemptId, propMode, propSessionId, workspace])
+
+  useEffect(() => {
+    if (propMode) loadPropAttempt()
+    return () => propRequest.current?.abort()
+  }, [loadPropAttempt, propMode])
   useEffect(() => {
     if (!indicatorsOpen) return
     const dismiss = event => { if (!indicatorsRef.current?.contains(event.target)) setIndicatorsOpen(false) }
@@ -397,7 +433,11 @@ export default function ReplayWorkspace({ workspace, query }) {
     const focused = document.activeElement
     const trigger = source || (focused?.tagName === 'IFRAME' ? focused.contentDocument?.activeElement : focused)
     if (trigger?.focus && trigger !== trigger.ownerDocument?.body && !sideRef.current?.contains(trigger)) sideTriggerRef.current = trigger
-    if (advancedChart && panel === 'goto') { setIsPlaying(false); setGoToCustom(false); setGoToPopup(current => current ? null : trigger); return }
+    if (advancedChart && panel === 'goto') {
+      setIsPlaying(false)
+      if (propMode) { setChartNotice('Prop Firm challenge chỉ cho phép tiến theo replay clock.'); return }
+      setGoToCustom(false); setGoToPopup(current => current ? null : trigger); return
+    }
     setGoToPopup(null)
     if (panel === 'order') setIsPlaying(false)
     setSidePanel(panel); setSideOpen(true)
@@ -544,7 +584,7 @@ export default function ReplayWorkspace({ workspace, query }) {
   useEffect(() => () => { sessionRequest.current?.abort(); datasetRequest.current?.abort() }, [])
 
   const mutate = useCallback(async (kind, body) => {
-    if (!sessionId || !state.payload || state.status !== 'ready' || actionLock.current || sessionRequest.current) return
+    if (!sessionId || !state.payload || state.status !== 'ready' || actionLock.current || sessionRequest.current || (propMode && kind === 'step' && !propReadyToAdvance)) return
     actionLock.current = true
     const commandLocation = window.location.search
     setPendingAction(kind)
@@ -557,12 +597,36 @@ export default function ReplayWorkspace({ workspace, query }) {
         body: JSON.stringify(body),
       })
       const payload = await readJson(response)
+      let nextPropState = propState
+      let propSyncError = null
+      if (propMode && kind === 'step' && propState.status === 'ready' && propState.attempt && propState.phase) {
+        const boundSequence = Number(nextPropState.resumeState?.replay_binding?.last_replay_event_sequence || 0)
+        for (const event of propPriceMarkEvents(payload.execution_events, boundSequence)) {
+          try {
+            const feedResponse = await scopedMutation(`/api/v2/replay/sessions/${encodeURIComponent(sessionId)}/prop/sessions/${encodeURIComponent(propSessionId)}/attempts/${encodeURIComponent(propAttemptId)}/feed`, workspace, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-Workspace-Id': workspace },
+              body: JSON.stringify({ replay_event_sequence: Number(event.sequence), expected_prop_revision: nextPropState.attempt.revision, prop_event_sequence: Number(nextPropState.phase.last_event_sequence) + 1 }),
+            })
+            const fed = await readJson(feedResponse)
+            nextPropState = { ...nextPropState, status: 'ready', attempt: fed.attempt || nextPropState.attempt, phase: fed.phase || nextPropState.phase, resumeState: fed.resume_state || nextPropState.resumeState, objectives: fed.objectives || fed.resume_state?.prop_lifecycle?.last_objectives || nextPropState.objectives, error: null }
+          } catch (error) {
+            propSyncError = String(error.message || error)
+            break
+          }
+        }
+      }
       const nextCursor = Number(payload.view_cursor_index ?? payload.payload.cursor_index)
       const payloadDataset = payload.payload?.dataset_id || state.payload?.payload?.dataset_id
       if (window.location.search === commandLocation) rememberSession(payload.record_id, false, nextCursor, payloadDataset)
       setBranchCursor(Math.max(0, nextCursor - 1))
       setJumpDraft(Math.max(0, nextCursor))
       setState({ status: 'ready', payload, error: null })
+      if (propMode) {
+        setPropState(propSyncError ? { ...nextPropState, status: 'error', error: propSyncError } : nextPropState)
+        if (propSyncError) setConflict(true)
+        else if (isPropTerminal(nextPropState.attempt?.status)) setChartNotice(nextPropState.attempt.status === 'completed_pass' ? 'Challenge đã đạt mục tiêu. Các lệnh mới đã khóa.' : 'Challenge đã kết thúc do vi phạm hoặc hết hạn.')
+      }
     } catch (error) {
       if (error.code === 'revision_conflict') {
         setConflict(true)
@@ -573,7 +637,36 @@ export default function ReplayWorkspace({ workspace, query }) {
       actionLock.current = false
       setPendingAction('')
     }
-  }, [rememberSession, sessionId, state.payload, state.status, workspace])
+  }, [propAttemptId, propMode, propReadyToAdvance, propSessionId, propState, rememberSession, sessionId, state.payload, state.status, workspace])
+
+  const transitionPropAttempt = useCallback(async action => {
+    if (!propMode || !propState.attempt || !propState.phase || pendingAction) return false
+    setPendingAction(`prop:${action}`)
+    try {
+      const response = await scopedMutation(`/api/v2/prop/sessions/${encodeURIComponent(propSessionId)}/attempts/${encodeURIComponent(propAttemptId)}/transitions`, workspace, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Workspace-Id': workspace },
+        body: JSON.stringify({
+          workspace_id: workspace,
+          session_id: propSessionId,
+          attempt_id: propAttemptId,
+          profile_hash: propState.attempt.profile_hash,
+          intent_id: `chart-${action}-${propAttemptId}-${propState.attempt.revision}`,
+          expected_revision: propState.attempt.revision,
+          event_sequence: propState.phase.last_event_sequence,
+          action,
+        }),
+      })
+      const payload = await readJson(response)
+      setPropState(current => ({ ...current, status: 'ready', session: payload.session || current.session, attempt: payload.attempt || current.attempt, phase: payload.phase || current.phase, resumeState: payload.resume_state || current.resumeState, objectives: payload.resume_state?.prop_lifecycle?.last_objectives || current.objectives, error: null }))
+      setPendingAction('')
+      return true
+    } catch (error) {
+      setPropState(current => ({ ...current, status: error.status === 403 ? 'denied' : 'error', error: String(error.message || error) }))
+      setPendingAction('')
+      return false
+    }
+  }, [pendingAction, propAttemptId, propMode, propSessionId, propState.attempt, propState.phase, workspace])
 
   const replay = state.payload
   const cursor = Number(replay?.view_cursor_index ?? replay?.payload?.cursor_index ?? 0)
@@ -729,7 +822,46 @@ export default function ReplayWorkspace({ workspace, query }) {
   }, [replayContext, updateMarketContext])
 
   const completed = replay?.payload?.status === 'completed' || replay?.has_future_rows === false
-  const canOpenOrder = Boolean(replay) && state.status === 'ready' && !historicalView && !conflict && !pendingAction
+  const canOpenOrder = Boolean(replay) && state.status === 'ready' && !historicalView && !conflict && !pendingAction && (!propMode || propReadyToAdvance)
+  const persistPropReplayBinding = async nextReplay => {
+    if (!propMode || !propState.attempt || !propState.phase || !nextReplay?.payload?.execution) return
+    const replayPayload = nextReplay.payload
+    const replayBinding = {
+      replay_session_id: nextReplay.record_id || sessionId,
+      branch_id: replayPayload.branch_id,
+      dataset_id: replayPayload.dataset_id,
+      dataset_sha256: nextReplay.dataset_sha256,
+      last_replay_event_sequence: Number(replayPayload.execution.event_sequence || 0),
+    }
+    if (!replayBinding.branch_id || !replayBinding.dataset_id || !replayBinding.dataset_sha256 || !Number.isSafeInteger(replayBinding.last_replay_event_sequence)) return
+    const cursorIndex = Number(nextReplay.view_cursor_index ?? replayPayload.cursor_index)
+    const cutoffTimestamp = Number(nextReplay.cutoff_timestamp)
+    if (!Number.isSafeInteger(cursorIndex) || !Number.isFinite(cutoffTimestamp)) return
+    const nextAttempt = { ...propState.attempt, revision: propState.attempt.revision + 1 }
+    const nextPhase = {
+      ...propState.phase,
+      balance: String(replayPayload.execution.balance),
+      floating_pl: String(replayPayload.execution.floating_pl),
+      equity: String(replayPayload.execution.equity),
+      virtual_time_utc: new Date(cutoffTimestamp * 1000).toISOString(),
+      open_positions: replayPayload.execution.position ? 1 : 0,
+      pending_orders: replayPayload.execution.pending_market_order ? 1 : 0,
+    }
+    const nextResume = {
+      ...propState.resumeState,
+      cursor: { bar_index: cursorIndex, timestamp_utc: new Date(cutoffTimestamp * 1000).toISOString() },
+      replay_binding: replayBinding,
+      open_positions: replayPayload.execution.position ? [replayPayload.execution.position] : [],
+      pending_orders: replayPayload.execution.pending_market_order ? [replayPayload.execution.pending_market_order] : [],
+    }
+    const response = await scopedMutation(`/api/v2/prop/sessions/${encodeURIComponent(propSessionId)}/attempts/${encodeURIComponent(propAttemptId)}/resume`, workspace, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Workspace-Id': workspace },
+      body: JSON.stringify({ attempt: nextAttempt, phase: nextPhase, expected_revision: propState.attempt.revision, operation_id: `bind-${sessionId}-${replayBinding.last_replay_event_sequence}`, resume_state: nextResume }),
+    })
+    const saved = await readJson(response)
+    setPropState(current => ({ ...current, status: 'ready', attempt: saved.attempt || nextAttempt, phase: saved.phase || nextPhase, resumeState: saved.resume_state || nextResume, error: null }))
+  }
   const submitOrder = async (endpoint, body) => {
     if (!canOpenOrder || completed || actionLock.current) return false
     actionLock.current = true
@@ -742,6 +874,7 @@ export default function ReplayWorkspace({ workspace, query }) {
       })
       const next = await readJson(response)
       setState({ status: 'ready', payload: next, error: null })
+      if (endpoint === 'execution' && propMode) await persistPropReplayBinding(next)
       return true
     } catch (error) {
       if (error.code === 'revision_conflict') { setConflict(true); throw new Error('Phiên đã đổi ở nơi khác. Nạp trạng thái mới trước khi sửa lệnh.') }
@@ -749,48 +882,63 @@ export default function ReplayWorkspace({ workspace, query }) {
     } finally { actionLock.current = false; setPendingAction('') }
   }
   const assetClockStale = Boolean(replay?.payload?.asset_states && currentBar && Number(currentBar.timestamp) + Number(activeDataset?.timeframe_seconds) < replay.payload.replay_clock_utc)
-  const order = useChartOrder({ workspace, replay, dataset: activeDataset, ready: state.status === 'ready', blocked: historicalView || completed || conflict || assetClockStale || Boolean(pendingAction), submit: submitOrder })
+  const propExecutionConfig = propMode && propState.attempt
+    ? {
+        costModel: { ...DEFAULT_COST_MODEL, version: propState.attempt.cost_version || DEFAULT_COST_MODEL.version, account_ccy: activeDataset?.instrument_spec?.account_ccy || DEFAULT_COST_MODEL.account_ccy },
+        forceBar: propState.attempt.engine_version === 'replay-v1',
+      }
+    : null
+  const order = useChartOrder({ workspace, replay, dataset: activeDataset, ready: state.status === 'ready', blocked: historicalView || completed || conflict || assetClockStale || Boolean(pendingAction) || (propMode && propState.status !== 'ready') || (propMode && propState.attempt?.status !== 'running'), submit: submitOrder, executionConfig: propExecutionConfig })
   const priceLevels = order.active || (!historicalView && sideOpen && sidePanel === 'order') ? orderLevels(replay, order.draft) : null
   const quotes = marketQuotes(replay)
-  const orderBlockedReason = historicalView ? 'Cutoff lịch sử chỉ đọc. Về cursor mới nhất hoặc tạo nhánh để đặt lệnh.' : completed ? 'Dataset đã kết thúc; không còn nến để fill hoặc sửa lệnh.' : conflict ? 'Đang khóa vì revision đã thay đổi.' : assetClockStale ? 'Chờ nến mới của tài sản tại thời gian replay chung để đặt lệnh.' : ''
+  const orderBlockedReason = propMode && propState.status !== 'ready' ? 'Chưa đồng bộ được trạng thái challenge; thao tác đang khóa.' : propMode && propState.attempt?.status !== 'running' ? 'Bắt đầu challenge trong bảng Prop Firm Rules trước khi đặt lệnh.' : historicalView ? 'Cutoff lịch sử chỉ đọc. Về cursor mới nhất hoặc tạo nhánh để đặt lệnh.' : completed ? 'Dataset đã kết thúc; không còn nến để fill hoặc sửa lệnh.' : conflict ? 'Đang khóa vì revision đã thay đổi.' : assetClockStale ? 'Chờ nến mới của tài sản tại thời gian replay chung để đặt lệnh.' : ''
+
+  useEffect(() => {
+    if (!propMode || propState.status !== 'ready' || propState.attempt?.status !== 'running' || !replay || replay.payload?.execution || !activeDataset?.instrument_spec || !order.canInitialize || order.tick?.options === null || propAutoInit.current) return
+    propAutoInit.current = true
+    Promise.resolve(order.initialize()).then(success => {
+      if (!success) propAutoInit.current = false
+    }).catch(() => { propAutoInit.current = false })
+  }, [activeDataset?.instrument_spec, order, propMode, propState.attempt?.status, propState.status, replay])
   const beginOrder = side => { setIsPlaying(false); order.chooseSide(side); openPanel('order') }
   const lineage = replay?.payload?.parent_session_id
-  const canBranch = Boolean(replay) && !conflict && (
+  const canBranch = Boolean(replay) && !propMode && !conflict && (
     historicalView ? cursor < canonicalCursor : cursor > 0 && branchCursor < cursor
   )
 
   const jumpToCursor = useCallback(() => {
-    if (!sessionId || !replay) return
+    if (propMode || !sessionId || !replay) return
     const target = Math.max(0, Math.min(Number(jumpDraft) || 0, canonicalCursor))
     setIsPlaying(false)
     loadSession(sessionId, target)
-  }, [canonicalCursor, jumpDraft, loadSession, replay, sessionId])
+  }, [canonicalCursor, jumpDraft, loadSession, propMode, replay, sessionId])
 
-  const canReplayForward = Boolean(replayAdvance({ cursor, canonicalCursor, historical: historicalView, completed, steps: intervalSteps }))
+  const canReplayForward = propReadyToAdvance && !propTerminal && Boolean(replayAdvance({ cursor, canonicalCursor, historical: historicalView, completed, steps: intervalSteps }))
   const advanceReplay = useCallback((keepPlaying = false, multiplier = 1) => {
-    if (!replay || state.status !== 'ready' || conflict || pendingAction || actionLock.current) return
-    const steps = intervalSteps == null ? null : Math.min(1000, intervalSteps * multiplier)
+    if (!replay || state.status !== 'ready' || conflict || pendingAction || actionLock.current || (propMode && !propReadyToAdvance)) return
+    const steps = propMode ? 1 : (intervalSteps == null ? null : Math.min(1000, intervalSteps * multiplier))
     const action = replayAdvance({ cursor, canonicalCursor, historical: historicalView, completed, steps, intervalSeconds: replayIntervalSeconds })
     if (!action) { setIsPlaying(false); return }
     lastReplayDispatch.current = performance.now()
     if (!keepPlaying) setIsPlaying(false)
     if (action.kind === 'read') loadSession(sessionId, action.cursor, { keepPlaying, advanceIntervalSeconds: action.advanceIntervalSeconds })
     else mutate('step', { expected_revision: revision, steps: action.steps, ...(action.replayIntervalSeconds ? { replay_interval_seconds: action.replayIntervalSeconds } : {}) })
-  }, [canonicalCursor, completed, conflict, cursor, historicalView, intervalSteps, loadSession, mutate, pendingAction, replay, replayIntervalSeconds, revision, sessionId, state.status])
+  }, [canonicalCursor, completed, conflict, cursor, historicalView, intervalSteps, loadSession, mutate, pendingAction, propMode, propReadyToAdvance, replay, replayIntervalSeconds, revision, sessionId, state.status])
   const rewindReplay = useCallback(() => {
-    if (state.status !== 'ready' || conflict || pendingAction || actionLock.current) return
+    if (propMode || state.status !== 'ready' || conflict || pendingAction || actionLock.current) return
     const target = advancedChart ? replayRewindBucket(visibleRows, cursor, replayIntervalSeconds) : replayRewind(cursor, intervalSteps)
     if (target !== null) loadSession(sessionId, target)
-  }, [advancedChart, conflict, cursor, intervalSteps, loadSession, pendingAction, replayIntervalSeconds, sessionId, state.status, visibleRows])
+  }, [advancedChart, conflict, cursor, intervalSteps, loadSession, pendingAction, propMode, replayIntervalSeconds, sessionId, state.status, visibleRows])
   const selectReplayBar = useCallback(timestamp => {
-    if (!selectingReplayBar || state.status !== 'ready' || conflict || pendingAction || actionLock.current) return
+    if (propMode || !selectingReplayBar || state.status !== 'ready' || conflict || pendingAction || actionLock.current) return
     const target = replaySelectionCursor(visibleRows, Number(timestamp), cursor)
     if (target === null && (!Number.isSafeInteger(Number(timestamp)) || Number(timestamp) >= Number(state.payload?.cutoff_timestamp))) return
     setSelectingReplayBar(false)
     setChartNotice('')
     loadSession(sessionId, target, target === null ? { cutoffTimestamp: Number(timestamp) } : {})
-  }, [conflict, cursor, loadSession, pendingAction, selectingReplayBar, sessionId, state.status, visibleRows])
+  }, [conflict, cursor, loadSession, pendingAction, propMode, selectingReplayBar, sessionId, state.status, visibleRows])
   const toggleReplay = () => {
+    if (propMode && !propReadyToAdvance) return
     if (!isPlaying) { lastReplayDispatch.current = performance.now(); setSelectingReplayBar(false); setChartNotice('') }
     setIsPlaying(current => !current)
   }
@@ -804,8 +952,8 @@ export default function ReplayWorkspace({ workspace, query }) {
   }, [advanceReplay, advancedChart, canReplayForward, conflict, isPlaying, pendingAction, replay, speed, state.status])
 
   useEffect(() => {
-    if ((completed && !historicalView) || conflict || intervalSteps === null || state.status === 'error') setIsPlaying(false)
-  }, [completed, conflict, historicalView, intervalSteps, state.status])
+    if ((completed && !historicalView) || conflict || intervalSteps === null || state.status === 'error' || (propMode && !propReadyToAdvance)) setIsPlaying(false)
+  }, [completed, conflict, historicalView, intervalSteps, propMode, propReadyToAdvance, propTerminal, state.status])
 
   useEffect(() => {
     const handleKeyDown = event => {
@@ -849,6 +997,10 @@ export default function ReplayWorkspace({ workspace, query }) {
     return () => docs.forEach(doc => { doc.removeEventListener('pointerdown', dismiss); doc.removeEventListener('focusin', dismiss); doc.removeEventListener('keydown', dismiss) })
   }, [utilityOpen, nativeHeaderSlots?.market])
   const goToDate = () => {
+    if (propMode) {
+      setChartNotice('Prop Firm challenge chỉ cho phép tiến theo replay clock.')
+      return
+    }
     const timestamp = Date.parse(goToDateDraft + 'Z') / 1000
     if (!Number.isFinite(timestamp) || timestamp > Number(replay?.cutoff_timestamp)) {
       setChartNotice('Chọn thời điểm UTC không vượt quá cutoff đang xem.')
@@ -888,6 +1040,7 @@ export default function ReplayWorkspace({ workspace, query }) {
   }, [completed, conflict, cursor, historicalView, visibleRowCount])
   const noDataset = datasetState.status === 'ready' && datasetState.items.length === 0
   const dataDeskHref = routeHref('data')
+  const propAnalyticsHref = propMode ? routeHref('analytics', { analytics_source: 'prop', prop_session: propSessionId, attempt: propAttemptId, cursor: null, cutoff: null }) : null
 
   if (!replay && (state.status === 'loading' || requestedSession && state.status === 'idle')) return <ChartLoadingState viewport />
   if (!replay && state.status === 'error') return <main className="chart-read-failure replay-error">{[401, 403].includes(state.errorStatus) ? <TestingEmptyState kind="denied" /> : <TestingReadState error message={`${t('Không đọc được replay:')} ${t(state.error)}`} />}</main>
@@ -969,6 +1122,32 @@ export default function ReplayWorkspace({ workspace, query }) {
             </div>
           </section>
 
+          {propMode && propRules && (
+            <section className={`prop-rule-bar ${propRules.terminal ? 'is-terminal' : ''}`} aria-label={t("Prop Firm Rules")} data-testid="prop-rule-bar">
+              <header className="prop-rule-head">
+                <div>
+                  <span>{t("PROP FIRM RULES")}</span>
+                  <strong>{t("Phase")} {propRules.phaseIndex} · {localeStatusLabel('prop_attempt', propRules.status)}</strong>
+                </div>
+                <div className="prop-rule-actions">
+                  {propRules.status === 'ready' && <button type="button" onClick={() => transitionPropAttempt('start')} disabled={Boolean(pendingAction)}>{pendingAction === 'prop:start' ? t("Đang bắt đầu…") : t("Bắt đầu")}</button>}
+                  {propRules.status === 'running' && <button type="button" onClick={() => transitionPropAttempt('pause')} disabled={Boolean(pendingAction)}>{pendingAction === 'prop:pause' ? t("Đang tạm dừng…") : t("Tạm dừng")}</button>}
+                  {propRules.status === 'paused' && <button type="button" onClick={() => transitionPropAttempt('resume')} disabled={Boolean(pendingAction)}>{pendingAction === 'prop:resume' ? t("Đang tiếp tục…") : t("Tiếp tục")}</button>}
+                  {propAnalyticsHref && <a href={propAnalyticsHref}>{t("Mở analytics")}</a>}
+                </div>
+              </header>
+              <div className="prop-rule-grid">
+                <div><span>{t("Balance / Equity")}</span><strong>{money(propRules.balance, propRules.currency)} <small>/ {money(propRules.equity, propRules.currency)}</small></strong></div>
+                <div><span>{t("Profit target")}</span><strong>{money(propRules.profitTarget.current, propRules.currency)} <small>/ {money(propRules.profitTarget.target, propRules.currency)}</small></strong><em className={propRules.profitTarget.hit ? 'is-good' : ''}>{propRules.profitTarget.hit ? t("Đạt") : t("Đang theo dõi")}</em></div>
+                <div><span>{t("Daily loss")}</span><strong>{money(propRules.dailyLoss.used, propRules.currency)} <small>/ {money(propRules.dailyLoss.limit, propRules.currency)}</small></strong><em className={propRules.dailyLoss.breached ? 'is-breach' : ''}>{propRules.dailyLoss.breached ? t("Vi phạm") : t("Trong giới hạn")}</em></div>
+                <div><span>{t("Overall drawdown")}{propRules.overallDrawdown.kind === 'trailing' ? ` · ${t("trailing")}` : ''}</span><strong>{money(propRules.overallDrawdown.used, propRules.currency)} <small>/ {money(propRules.overallDrawdown.limit, propRules.currency)}</small></strong><em className={propRules.overallDrawdown.breached ? 'is-breach' : ''}>{propRules.overallDrawdown.breached ? t("Vi phạm") : t("Trong giới hạn")}</em></div>
+                <div><span>{t("Qualifying days")}</span><strong>{propRules.qualifyingDays} <small>/ {propRules.minimumDays || '—'}</small></strong><em>{propRules.elapsedDays ?? '—'}{propRules.maxDays ? ` / ${propRules.maxDays} ${t("ngày")}` : ''}</em></div>
+              </div>
+              {propState.error && <p className="prop-rule-error" role="alert">{t("Không đồng bộ được rule state:")} {propState.error}</p>}
+              {propRules.terminal && <div className="prop-rule-terminal" role="alert"><strong>{propRules.status === 'completed_pass' ? t("Challenge đã đạt mục tiêu.") : t("Challenge đã kết thúc.")}</strong><span>{propRules.status === 'failed_breach' ? t("Một giới hạn rủi ro đã bị vi phạm; replay forward đã khóa.") : t("Giữ lại report và provenance để xem lại quyết định.")}</span>{propAnalyticsHref && <a href={propAnalyticsHref}>{t("Xem kết quả chi tiết →")}</a>}</div>}
+            </section>
+          )}
+
           {conflict && (
             <section className="conflict-banner" role="alert" data-testid="revision-conflict">
               <div>
@@ -1016,11 +1195,11 @@ export default function ReplayWorkspace({ workspace, query }) {
                   {advancedChart ? <LegacyReplayToolbar workspace={workspace} theme={theme} speed={speed} onSpeed={setSpeed}
                     interval={effectiveReplayInterval} datasetSeconds={datasetSeconds} sync={replaySync} syncAvailable={Boolean(nativeHeaderSlots)}
                     onSync={value => { setIsPlaying(false); setReplaySync(value) }} onInterval={value => { setIsPlaying(false); setReplaySync(false); setReplayInterval(value) }}
-                    busy={Boolean(pendingAction)} available={!conflict && state.status === 'ready'} canBack={cursor > 0} canForward={canReplayForward}
+                    busy={Boolean(pendingAction)} available={!conflict && state.status === 'ready'} canBack={cursor > 0 && !propMode} canForward={canReplayForward}
                     playing={isPlaying} onPlay={toggleReplay} onBack={rewindReplay} onForward={() => advanceReplay()} selecting={selectingReplayBar}
                     onSelect={() => { setIsPlaying(false); setSelectingReplayBar(current => !current); setChartNotice(selectingReplayBar ? '' : 'Bấm một nến trước cutoff hiện tại để bắt đầu replay; Escape để hủy.') }} />
                     : <ChartFloatingToolbar name="Replay" compactRow={1} storageKey={`tw:chart:replay-toolbar:${workspace}`} initialPosition={{ x: 330, y: 46 }}>
-                    <button type="button" aria-label={t("Lùi một nến")} title={t("Lùi một nến (chỉ đọc)")} onClick={rewindReplay} disabled={conflict || Boolean(pendingAction) || state.status !== 'ready' || cursor <= 0}><ChartIcon name="back" /></button>
+                    <button type="button" aria-label={t("Lùi một nến")} title={t("Lùi một nến (chỉ đọc)")} onClick={rewindReplay} disabled={propMode || conflict || Boolean(pendingAction) || state.status !== 'ready' || cursor <= 0}><ChartIcon name="back" /></button>
                     <button type="button" className="chart-play" data-testid="play-toggle" aria-label={isPlaying ? t("Tạm dừng") : t("Phát replay")} title={t("Phát / tạm dừng replay")} onClick={toggleReplay} disabled={!isPlaying && (!canReplayForward || conflict || Boolean(pendingAction) || state.status !== 'ready')}><ChartIcon name={isPlaying ? 'pause' : 'play'} /></button>
                     <button type="button" data-testid="step-1" aria-label={t("Tiến một nến")} title={t("→ Tiến một nến")} aria-keyshortcuts="ArrowRight" onClick={() => advanceReplay()} disabled={!canReplayForward || conflict || Boolean(pendingAction) || state.status !== 'ready'}><ChartIcon name="step" /></button>
                     <button type="button" data-testid="step-10" aria-label={t("Tiến mười nến")} title={t("Shift + → Tiến mười nến")} aria-keyshortcuts="Shift+ArrowRight" onClick={() => advanceReplay(false, 10)} disabled={!canReplayForward || conflict || Boolean(pendingAction) || state.status !== 'ready'}>10</button>
@@ -1054,9 +1233,9 @@ export default function ReplayWorkspace({ workspace, query }) {
                   <a className="context-link" href={learnHref}>{t("Học & thuật ngữ")}</a>
                 </div>
                 <div className="chart-bottom-replay">
-                  <button type="button" className="chart-bottom-step" aria-label={t("Về nến đầu tiên")} onClick={() => loadSession(sessionId, 0)} disabled={conflict || Boolean(pendingAction) || state.status !== 'ready' || cursor <= 0}>|‹</button>
-                  <button type="button" className="chart-bottom-step" aria-label={t("Mở cutoff trước")} onClick={() => loadSession(sessionId, Math.max(0, cursor - 1))} disabled={conflict || Boolean(pendingAction) || state.status !== 'ready' || cursor <= 0}>‹</button>
-                  {historicalView && <button type="button" onClick={() => loadSession(sessionId)} disabled={state.status !== 'ready'}>{t("Về cursor mới nhất")}</button>}
+                  <button type="button" className="chart-bottom-step" aria-label={t("Về nến đầu tiên")} onClick={() => loadSession(sessionId, 0)} disabled={propMode || conflict || Boolean(pendingAction) || state.status !== 'ready' || cursor <= 0}>|‹</button>
+                  <button type="button" className="chart-bottom-step" aria-label={t("Mở cutoff trước")} onClick={() => loadSession(sessionId, Math.max(0, cursor - 1))} disabled={propMode || conflict || Boolean(pendingAction) || state.status !== 'ready' || cursor <= 0}>‹</button>
+                  {historicalView && !propMode && <button type="button" onClick={() => loadSession(sessionId)} disabled={state.status !== 'ready'}>{t("Về cursor mới nhất")}</button>}
                   <span className="chart-bottom-cursor">#{cursor} / #{canonicalCursor} {t("· UTC")}</span>
                 </div>
                 <div className="chart-bottom-status"><span className="status-dot" /> {t("Paper replay")} <strong>{replayContext.instrument}</strong></div>
@@ -1101,10 +1280,10 @@ export default function ReplayWorkspace({ workspace, query }) {
                   max={Math.max(0, canonicalCursor)}
                   value={Math.min(jumpDraft, Math.max(0, canonicalCursor))}
                   onChange={(event) => setJumpDraft(Number(event.target.value))}
-                  disabled={conflict || Boolean(pendingAction) || state.status !== 'ready' || canonicalCursor <= 0}
+                  disabled={propMode || conflict || Boolean(pendingAction) || state.status !== 'ready' || canonicalCursor <= 0}
                   aria-label={t("Chọn nến replay")}
                 />
-                <button type="button" onClick={jumpToCursor} disabled={conflict || Boolean(pendingAction) || state.status !== 'ready' || Number(jumpDraft) === cursor}>{t("Mở cutoff này")}</button>
+                <button type="button" onClick={jumpToCursor} disabled={propMode || conflict || Boolean(pendingAction) || state.status !== 'ready' || Number(jumpDraft) === cursor}>{t("Mở cutoff này")}</button>
               </div>
             </div>
 
@@ -1114,7 +1293,7 @@ export default function ReplayWorkspace({ workspace, query }) {
               {!['goto', 'news', 'compare', 'layout', 'mentor', 'search', 'scalper', 'editor'].includes(sidePanel) && <nav className="chart-dock-tabs" aria-label={t("Panel replay")}>{[['order', 'Lệnh'], ['objects', 'Đối tượng'], ['data', 'Dữ liệu'], ['context', 'Chi tiết']].map(([panel, label]) => <button key={panel} type="button" aria-pressed={sidePanel === panel} onClick={() => { if (panel === 'order') setIsPlaying(false); setSidePanel(panel) }}>{t(label)}</button>)}</nav>}
               {['compare', 'layout', 'mentor', 'search', 'scalper', 'editor'].includes(sidePanel) && <ChartHeaderPreview key={`${sessionId}:${sidePanel}`} tool={sidePanel} symbol={replayContext.instrument} onOpenTool={panel => setSidePanel(panel)} />}
               {sidePanel === 'news' && <section className="legacy-news-empty"><ChartIcon name="news" /><h2>{t("Chưa có lịch tin cho dataset này")}</h2><p>{t("Phiên hiện tại có dữ liệu OHLC, chưa có nguồn tin lịch sử gắn với cutoff.")}</p><button type="button" onClick={() => setSidePanel('data')}>{t("Xem dữ liệu phiên")}</button></section>}
-              {sidePanel === 'goto' && <div className="legacy-goto"><p>{t("Chọn một nến đã mở trong phiên. Các nến sau cutoff vẫn được ẩn.")}</p><form className="replay-date-jump" onSubmit={event => { event.preventDefault(); jumpToCursor() }}><label>{t("Nến đã mở")}<input type="number" aria-label={t("Số nến cutoff")} min="0" max={canonicalCursor} step="1" value={jumpDraft} onChange={event => setJumpDraft(event.target.value)} /></label><button type="submit" disabled={conflict || Boolean(pendingAction) || state.status !== 'ready' || !Number.isInteger(Number(jumpDraft)) || Number(jumpDraft) < 0 || Number(jumpDraft) > canonicalCursor || Number(jumpDraft) === cursor}>{t("Mở cutoff này")}</button></form></div>}
+              {sidePanel === 'goto' && <div className="legacy-goto">{propMode ? <p>{t("Prop Firm challenge chỉ cho phép tiến theo replay clock; Go To và cutoff lịch sử đã khóa.")}</p> : <><p>{t("Chọn một nến đã mở trong phiên. Các nến sau cutoff vẫn được ẩn.")}</p><form className="replay-date-jump" onSubmit={event => { event.preventDefault(); jumpToCursor() }}><label>{t("Nến đã mở")}<input type="number" aria-label={t("Số nến cutoff")} min="0" max={canonicalCursor} step="1" value={jumpDraft} onChange={event => setJumpDraft(event.target.value)} /></label><button type="submit" disabled={conflict || Boolean(pendingAction) || state.status !== 'ready' || !Number.isInteger(Number(jumpDraft)) || Number(jumpDraft) < 0 || Number(jumpDraft) > canonicalCursor || Number(jumpDraft) === cursor}>{t("Mở cutoff này")}</button></form></>}</div>}
               {sidePanel === 'order' && <ChartOrderPanel order={order} blockedReason={orderBlockedReason} />}
               {sidePanel === 'context' && <div className="chart-context-content">
               <section className="decision-panel">
@@ -1163,7 +1342,7 @@ export default function ReplayWorkspace({ workspace, query }) {
               {['context', 'goto'].includes(sidePanel) && <>
               <form className="replay-date-jump" onSubmit={(event) => { event.preventDefault(); goToDate() }}>
                 <label>{t("Đi tới thời điểm UTC đã mở")}<ProjectDateInput type="datetime-local" aria-label={t("Thời điểm replay UTC")} value={goToDateDraft} onChange={(event) => setGoToDateDraft(event.target.value)} /></label>
-                <button type="submit" disabled={!goToDateDraft || Boolean(pendingAction) || state.status !== 'ready'}>{t("Mở cutoff theo thời điểm")}</button>
+                <button type="submit" disabled={propMode || !goToDateDraft || Boolean(pendingAction) || state.status !== 'ready'}>{t("Mở cutoff theo thời điểm")}</button>
               </form>
               </>}
               {sidePanel === 'context' && <>
@@ -1204,7 +1383,7 @@ export default function ReplayWorkspace({ workspace, query }) {
                   max={historicalView ? cursor : Math.max(0, cursor - 1)}
                   value={historicalView ? cursor : Math.min(branchCursor, Math.max(0, cursor - 1))}
                   onChange={(event) => setBranchCursor(Number(event.target.value))}
-                  disabled={historicalView || cursor <= 0 || conflict || Boolean(pendingAction) || state.status !== 'ready'}
+                  disabled={propMode || historicalView || cursor <= 0 || conflict || Boolean(pendingAction) || state.status !== 'ready'}
                   aria-label={t("Nến bắt đầu branch")}
                 />
                 <button
@@ -1214,7 +1393,7 @@ export default function ReplayWorkspace({ workspace, query }) {
                   disabled={!canBranch || Boolean(pendingAction) || state.status !== 'ready'}
                   onClick={() => mutate('branch', { expected_revision: revision, cursor_index: branchCursor })}
                 >
-                  {historicalView ? `Tạo branch từ report #${cursor}` : `Tạo branch từ nến #${branchCursor}`}
+                  {propMode ? t('Prop Firm không cho tạo branch trong challenge') : historicalView ? `Tạo branch từ report #${cursor}` : `Tạo branch từ nến #${branchCursor}`}
                 </button>
               </section>
 

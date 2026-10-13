@@ -5,7 +5,7 @@ import { finiteNumber, marketQuotes, orderDraft, protectionReference, replayAtCu
 import { useReplayTickOptions } from './useReplayTickOptions.js'
 import FxSelect from './FxSelect.jsx'
 
-export function useChartOrder({ workspace, replay, dataset, ready, blocked, submit }) {
+export function useChartOrder({ workspace, replay, dataset, ready, blocked, submit, executionConfig = null }) {
   const execution = replayAtCutoff(replay)?.payload?.execution
   const account = replay?.portfolio_account || execution
   const assetStates = replay?.payload?.asset_states
@@ -19,7 +19,7 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, subm
   const tick = useReplayTickOptions(workspace, replay)
   useEffect(() => { setDraft(orderDraft(replay, instrument)); setNotice(null) }, [replay?.record_id, replay?.revision, instrument])
   const active = execution?.position || execution?.pending_market_order
-  const costs = execution?.cost_model || (dataset ? { ...DEFAULT_COST_MODEL, account_ccy: dataset.instrument_spec?.account_ccy || DEFAULT_COST_MODEL.account_ccy } : null)
+  const costs = execution?.cost_model || (dataset ? { ...DEFAULT_COST_MODEL, ...(executionConfig?.costModel || {}), account_ccy: executionConfig?.costModel?.account_ccy || dataset.instrument_spec?.account_ccy || DEFAULT_COST_MODEL.account_ccy } : null)
   const quotes = marketQuotes(replay)
   const reference = active ? protectionReference(replay) : execution ? (draft.side === 'BUY' ? quotes.ask : quotes.bid) : protectionReference(replay)
   const disabled = !ready || blocked || pending
@@ -55,14 +55,15 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, subm
   }
   const initialize = () => {
     if (!canInitialize || tick.options === null) return
-    const balance = finiteNumber(startingBalance), spreadValue = tick.useTicks ? 0 : finiteNumber(spread)
+    const useTicks = !executionConfig?.forceBar && tick.useTicks
+    const balance = finiteNumber(startingBalance), spreadValue = useTicks ? 0 : finiteNumber(spread)
     if (!(balance > 0) || spreadValue === null || spreadValue < 0) { setNotice({ kind: 'error', text: 'Nhập vốn dương và spread không âm.' }); return }
     const leverage = finiteNumber(tick.leverage)
-    if (tick.useTicks && (!tick.options?.available || !tick.options.snapshot_id || !Number.isInteger(leverage) || leverage < 1 || leverage > 1000)) {
+    if (useTicks && (!tick.options?.available || !tick.options.snapshot_id || !Number.isInteger(leverage) || leverage < 1 || leverage > 1000)) {
       setNotice({ kind: 'error', text: 'Cần tick tại phút đang chọn và đòn bẩy nguyên từ 1 đến 1000.' }); return
     }
     return run('execution', { instrument_spec: instrument, cost_model: costs, spread_price: String(spreadValue), timeframe_seconds: Number(dataset.timeframe_seconds), starting_balance: String(balance),
-      ...(tick.useTicks ? { tick_snapshot_id: tick.options.snapshot_id, research_margin: { version: 'fixed-starting-balance-leverage-v1', leverage: String(leverage) } } : {}) })
+      ...(useTicks ? { tick_snapshot_id: tick.options.snapshot_id, research_margin: { version: 'fixed-starting-balance-leverage-v1', leverage: String(leverage) } } : {}) })
   }
   return { draft, setDraft, execution, account, assetStates, instrument, costs, active, reference, disabled, pending, notice, startingBalance, configuredBalance: replay?.payload?.starting_balance, configuredCurrency: replay?.payload?.starting_balance_ccy, setStartingBalance, spread, setSpread, tick, canInitialize, initialize, save, changePrice, chooseSide }
 }

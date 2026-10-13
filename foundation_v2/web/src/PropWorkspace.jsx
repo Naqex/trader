@@ -96,7 +96,9 @@ function initialDraft() {
     datasetVersion: 'dataset-practice-v1',
     startUtc: '2026-09-01T08:00',
     durationDays: '30',
-    costVersion: 'cost-v1',
+    // The chart execution snapshot currently exposes this immutable bar-cost model.
+    // Keep the Prop contract pinned to it so replay binding cannot drift after creation.
+    costVersion: 'replay-fixture-cost-v1',
     engineVersion: 'replay-v1',
   }
 }
@@ -192,6 +194,7 @@ export default function PropWorkspace({ workspace }) {
 
   const [draft, setDraft] = useState(initialDraft)
   const [sessions, setSessions] = useState({ status: 'loading', items: [], error: null })
+  const [datasets, setDatasets] = useState({ status: 'loading', items: [], error: null })
   const [selected, setSelected] = useState({ status: 'idle', session: null, attempts: [], bundle: null, report: null, reportError: null, error: null })
   const [activeTab, setActiveTab] = useState('sessions')
   const [reports, setReports] = useState({ status: 'idle', items: [], error: null })
@@ -260,6 +263,22 @@ export default function PropWorkspace({ workspace }) {
     loadSessions()
   }, [workspace]) // Re-discover sessions and attempts from the backend on every page load/workspace change.
 
+  useEffect(() => {
+    let cancelled = false
+    propJson('/api/v2/data/datasets', workspace)
+      .then(payload => {
+        if (cancelled) return
+        const items = Array.isArray(payload.items) ? payload.items : []
+        setDatasets({ status: 'ready', items, error: null })
+        setDraft(current => {
+          if (!items.length || items.some(item => item.dataset_id === current.datasetVersion)) return current
+          return { ...current, datasetVersion: String(items[0].dataset_id) }
+        })
+      })
+      .catch(error => { if (!cancelled) setDatasets({ status: error.kind || 'error', items: [], error: error.message }) })
+    return () => { cancelled = true }
+  }, [workspace])
+
   const loadReports = useCallback(async () => {
     setReports((current) => ({ status: 'loading', items: current.items, error: null }))
     const params = new URLSearchParams()
@@ -301,6 +320,8 @@ export default function PropWorkspace({ workspace }) {
     const overallLoss = Number(draft.overallLoss)
     const base = slugify(draft.name)
 
+    const datasetItem = datasets.items.find(item => item.dataset_id === draft.datasetVersion.trim())
+    const datasetPin = datasetItem?.artifact_sha256 || datasetItem?.dataset_sha256 || draft.datasetVersion.trim()
     if (!start || !base || !draft.datasetVersion.trim()) {
       setConflict('Cần tên session, dataset version và thời điểm bắt đầu hợp lệ.')
       return
@@ -365,9 +386,11 @@ export default function PropWorkspace({ workspace }) {
         profile_id: profile.profile_id,
         terms_version: profile.terms_version,
         profile_hash: profile.profile_hash,
-        data_version: draft.datasetVersion.trim(),
-        cost_version: draft.costVersion,
-        engine_version: draft.engineVersion,
+        // Prop/Replay binding is checked against the immutable artifact hash.
+        // Keep the dataset id in the form, but persist its hash as the pin.
+        data_version: datasetPin,
+        cost_version: 'replay-fixture-cost-v1',
+        engine_version: 'replay-v1',
         status: 'ready',
         revision: 1,
         parent_attempt_id: null,
@@ -415,7 +438,7 @@ export default function PropWorkspace({ workspace }) {
     } finally {
       setPendingAction('')
     }
-  }, [draft, loadBundle, loadSessions, workspace])
+  }, [datasets.items, draft, loadBundle, loadSessions, workspace])
 
   const transitionAttempt = useCallback(async (action) => {
     const session = selected.session
@@ -459,6 +482,57 @@ export default function PropWorkspace({ workspace }) {
     }
   }, [loadBundle, selected.bundle, selected.session, workspace])
 
+  const retryAttempt = useCallback(async () => {
+    const session = selected.session
+    const parent = selected.bundle?.attempt
+    const previousPhase = selected.bundle?.phase
+    if (!session || !parent || !previousPhase || !TERMINAL_STATUSES.has(parent.status) || pendingAction) return
+    const profilePhase = session.profile?.phases?.find(item => item.phase_index === 1) || session.profile?.phases?.[0]
+    if (!profilePhase) return
+    const suffix = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
+    const attemptId = `attempt-${suffix}`
+    const startUtc = parent.virtual_start_utc
+    const initial = String(profilePhase.initial_capital)
+    const phase = {
+      ...previousPhase,
+      attempt_id: attemptId,
+      phase_index: 1,
+      initial_balance: initial,
+      balance: initial,
+      floating_pl: '0',
+      equity: initial,
+      high_water_mark: initial,
+      daily_anchor: initial,
+      qualifying_days: 0,
+      virtual_time_utc: startUtc,
+      last_event_sequence: 0,
+      open_positions: 0,
+      pending_orders: 0,
+    }
+    const attempt = {
+      ...parent,
+      attempt_id: attemptId,
+      revision: 1,
+      status: 'ready',
+      parent_attempt_id: parent.attempt_id,
+      branch_kind: 'clean',
+      virtual_start_utc: startUtc,
+    }
+    setPendingAction('retry')
+    setConflict(null)
+    try {
+      const payload = await propJson(`/api/v2/prop/sessions/${encodeURIComponent(session.session_id)}/attempts`, workspace, {
+        method: 'POST',
+        body: JSON.stringify({ attempt, phase, resume_state: { cursor: { bar_index: 0, timestamp_utc: startUtc }, open_positions: [], pending_orders: [] } }),
+      })
+      await loadBundle(payload.session || session, [...(selected.attempts || []), payload.attempt])
+    } catch (error) {
+      setConflict(t("Không tạo được attempt mới: {error}", { error: error.message }))
+    } finally {
+      setPendingAction('')
+    }
+  }, [loadBundle, pendingAction, selected.attempts, selected.bundle, selected.session, workspace])
+
   const exportReport = useCallback(async (report) => {
     const sessionId = report?.session?.session_id
     const attemptId = report?.attempt?.attempt_id
@@ -490,6 +564,45 @@ export default function PropWorkspace({ workspace }) {
       setPendingAction('')
     }
   }, [workspace])
+
+  const openChallengeChart = useCallback(async () => {
+    const session = selected.session
+    const attempt = selected.bundle?.attempt
+    const phase = selected.bundle?.phase
+    if (!session || !attempt || !phase) return
+    setPendingAction('open-chart')
+    setConflict(null)
+    try {
+      const binding = selected.bundle?.resume_state?.replay_binding || selected.report?.provenance?.replay_binding
+      let replaySessionId = binding?.replay_session_id
+      if (!replaySessionId) {
+        const startTimestamp = Date.parse(attempt.virtual_start_utc)
+      const datasetItem = datasets.items.find(item => item.dataset_id === attempt.data_version || item.artifact_sha256 === attempt.data_version || item.dataset_sha256 === attempt.data_version || `sha256:${item.artifact_sha256}` === attempt.data_version || `sha256:${item.dataset_sha256}` === attempt.data_version)
+      const replayDatasetId = datasetItem?.dataset_id || selected.session?.dataset_id || attempt.data_version
+      const body = {
+          dataset_id: replayDatasetId,
+          ...(Number.isFinite(startTimestamp) ? { start_timestamp: Math.floor(startTimestamp / 1000) } : { start_index: 0 }),
+          name: `${sessionLabel(session)} · ${session.session_id}`,
+          description: 'Prop firm challenge replay · simulation only',
+          starting_balance: phase.initial_balance,
+        }
+        let response = await scopedMutation('/api/v2/replay/sessions', workspace, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Workspace-Id': workspace }, body: JSON.stringify(body) })
+        let payload = await response.json().catch(() => ({}))
+        if (!response.ok && response.status === 422 && body.start_timestamp !== undefined) {
+          response = await scopedMutation('/api/v2/replay/sessions', workspace, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Workspace-Id': workspace }, body: JSON.stringify({ ...body, start_timestamp: undefined, start_index: 0 }) })
+          payload = await response.json().catch(() => ({}))
+        }
+        if (!response.ok) throw new Error(String(payload.detail || `HTTP ${response.status}`))
+        replaySessionId = payload.record_id
+      }
+      if (!replaySessionId) throw new Error('Không xác định được replay session cho challenge.')
+      const params = new URLSearchParams({ view: 'replay', surface: 'workspace', workspace, session: replaySessionId, prop_session: session.session_id, prop_attempt: attempt.attempt_id, mode: 'Practice', from: 'prop' })
+      window.location.assign(`/?${params.toString()}`)
+    } catch (error) {
+      setConflict(`Không mở được chart challenge: ${error.message}`)
+      setPendingAction('')
+    }
+  }, [datasets.items, selected.bundle, selected.report, selected.session, workspace])
 
   const bundle = selected.bundle
   const phase = bundle?.phase
@@ -616,8 +729,10 @@ export default function PropWorkspace({ workspace }) {
                 <input aria-label={t("Overall loss")} type="number" min="1" value={draft.overallLoss} onChange={(event) => updateDraft('overallLoss', event.target.value)} />
               </label>
               <label className="prop-field prop-field-wide">
-                <span>{t("Dataset version")}</span>
-                <input aria-label={t("Dataset version")} value={draft.datasetVersion} onChange={(event) => updateDraft('datasetVersion', event.target.value)} />
+                <span>{t("Dataset cho chart")}</span>
+                {datasets.items.length ? <FxSelect label={t("Dataset cho chart")} value={draft.datasetVersion} onChange={value => updateDraft('datasetVersion', value)} localizeOptions={false} options={datasets.items.map(item => ({ value: item.dataset_id, label: `${item.instrument_id || item.dataset_id} · ${item.timeframe || 'dataset'} · ${item.dataset_id}`, localize: false }))} /> : <input aria-label={t("Dataset cho chart")} value={draft.datasetVersion} onChange={(event) => updateDraft('datasetVersion', event.target.value)} />}
+                {datasets.status === 'loading' && <small>{t("Đang đọc dataset local…")}</small>}
+                {datasets.status === 'error' && <small>{t("Không đọc được catalog dataset:")} {datasets.error}</small>}
               </label>
               <label className="prop-field">
                 <span>{t("Bắt đầu (UTC)")}</span>
@@ -629,9 +744,9 @@ export default function PropWorkspace({ workspace }) {
               </label>
               <label className="prop-field">
                 <span>{t("Cost model")}</span>
-                <FxSelect label={t("Cost model")} value={draft.costVersion} onChange={value => updateDraft('costVersion', value)} localizeOptions={false} options={[({ value: "cost-v1", label: t("cost-v1"), localize: false }), ({ value: "cost-zero-fixture", label: t("cost-zero-fixture"), localize: false })]} />
+                <FxSelect label={t("Cost model")} value="replay-fixture-cost-v1" disabled localizeOptions={false} options={[({ value: "replay-fixture-cost-v1", label: t("Replay fixture · immutable"), localize: false })]} />
               </label>
-              <label className="prop-field"><span>{t("Engine khớp lệnh")}</span><FxSelect label={t("Engine khớp lệnh")} value={draft.engineVersion} onChange={value => updateDraft('engineVersion', value)} localizeOptions={false} options={[({ value: "replay-v1", label: t("OHLC"), localize: false }), ({ value: "replay-v2", label: t("OHLC + margin mô phỏng"), localize: false }), ({ value: "replay-tick-v1", label: t("Tick Bid/Ask + margin mô phỏng"), localize: false })]} /></label>
+              <label className="prop-field"><span>{t("Engine khớp lệnh")}</span><FxSelect label={t("Engine khớp lệnh")} value="replay-v1" disabled localizeOptions={false} options={[({ value: "replay-v1", label: t("OHLC bar · immutable"), localize: false })]} /></label>
               <div className="prop-review prop-field-wide">
                 <strong>{t("Review")}</strong>
                 <span>{t("Equity-based daily/overall loss, balance target, reset UTC 00:00. Đây là profile luyện tập, không đại diện điều khoản của hãng prop cụ thể.")}</span>
@@ -708,6 +823,8 @@ export default function PropWorkspace({ workspace }) {
                   {attempt.status === 'paused' && <button type="button" className="ui-button ui-button--neutral prop-refresh" data-testid="prop-transition-resume" disabled={pendingAction === 'transition:resume'} onClick={() => transitionAttempt('resume')}>{pendingAction === 'transition:resume' ? t("Đang tiếp tục…") : t("Tiếp tục mô phỏng")}</button>}
                   {canOpenNextPhase && <button type="button" className="ui-button ui-button--neutral prop-refresh" data-testid="prop-transition-next-phase" disabled={pendingAction === 'transition:next_phase'} onClick={() => transitionAttempt('next_phase')}>{pendingAction === 'transition:next_phase' ? t("Đang mở phase…") : t("Mở phase tiếp theo")}</button>}
                   {['ready', 'running', 'paused', 'phase_passed', 'next_phase_ready'].includes(attempt.status) && <button type="button" className="prop-refresh" data-testid="prop-transition-abandon" disabled={pendingAction === 'transition:abandon'} onClick={() => transitionAttempt('abandon')}>{pendingAction === 'transition:abandon' ? t("Đang bỏ…") : t("Bỏ attempt")}</button>}
+                  {selectedTerminal && <button type="button" className="ui-button ui-button--primary" data-testid="prop-retry" disabled={pendingAction === 'retry'} onClick={retryAttempt}>{pendingAction === 'retry' ? t("Đang tạo lại…") : t("Thử lại challenge")}</button>}
+                  {['ready', 'running', 'paused'].includes(attempt.status) && <button type="button" className="primary-action prop-create" data-testid="prop-open-chart" disabled={pendingAction === 'open-chart'} onClick={openChallengeChart}>{pendingAction === 'open-chart' ? t("Đang mở chart…") : t("Mở chart challenge")}</button>}
                 </div>
 
                 {selected.reportError && (
