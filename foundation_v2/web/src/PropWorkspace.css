@@ -41,6 +41,10 @@
 .fx-app .prop-shell.wm-page .prop-session-list button { padding: 16px 12px; }
 .fx-app .prop-shell.wm-page .prop-session-list button:is(:hover, .is-active) { background: var(--wm-surface); box-shadow: none; }
 .fx-app .prop-shell.wm-page :is(.prop-field input, .prop-field select) { min-height: 44px; border-color: var(--wm-border); color: var(--wm-content); background: var(--wm-surface); }
+.fx-app .prop-shell.wm-page .prop-rule-input { display:flex; align-items:center; min-height:44px; border:1px solid var(--wm-border); border-radius:var(--ds-radius-field, 6px); overflow:hidden; background:var(--wm-surface); }
+.fx-app .prop-shell.wm-page .prop-rule-input:focus-within { border-color:var(--wm-focus); }
+.fx-app .prop-shell.wm-page .prop-rule-input input { min-width:0; flex:1; min-height:42px; border:0; border-radius:0; }
+.fx-app .prop-shell.wm-page .prop-rule-input span { padding:0 12px; color:var(--wm-content-muted); font-size:12px; }
 .fx-app .prop-shell.wm-page :is(.prop-refresh, .context-link, .prop-create) { min-height: 44px; }
 .fx-app .prop-shell.wm-page .context-link { display: inline-flex; align-items: center; }
 .fx-app .prop-shell.wm-page :is(.prop-refresh, .prop-tabs button) { color: var(--wm-content); background: transparent; }

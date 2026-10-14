@@ -38,6 +38,14 @@ create session bundle
   -> clean retry with parent_attempt_id
 ```
 
+The shared session dialog now follows the public FXReplay setup shape: profit target
+is entered as a percentage of initial capital, while daily and total loss limits show
+the account currency. The selected dataset list, strategy revision and optional end
+of-period are carried into the persisted setup metadata used to open the replay chart.
+After the Prop handoff is submitted, the challenge bundle is created once and the
+forward-only chart opens automatically; the Prop workspace remains the authoritative
+owner of the challenge contract and lifecycle.
+
 - A Prop attempt is simulation-only and carries an immutable profile hash, dataset artifact hash, cost-model version and execution-engine version.
 - Replay is the only clock. The Prop evaluator consumes canonical replay `price_mark` events; it does not manufacture prices or fills.
 - The chart ignores copied cursor/cutoff parameters in Prop mode and only permits forward progression. Multi-step controls are reduced to one bar so a breach cannot be crossed by a batch.

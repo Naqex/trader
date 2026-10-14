@@ -3,7 +3,7 @@ import ProjectDateInput from './ProjectDateInput.jsx'
 import { displayDate } from './dateFormat.js'
 import FxSelect from './FxSelect.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import NotionConnector from './NotionConnector.jsx'
 import './PropWorkspace.css'
 
@@ -90,7 +90,7 @@ function initialDraft() {
     profileKind: 'generic',
     initialCapital: '100000',
     currency: 'USD',
-    target: '10000',
+    targetPercent: '10',
     dailyLoss: '5000',
     overallLoss: '10000',
     datasetVersion: 'dataset-practice-v1',
@@ -109,7 +109,7 @@ function readInitialDraft(workspace, query) {
     const encoded = query?.get?.('prop_draft')
     if (encoded) {
       const incoming = JSON.parse(encoded)
-      if (incoming && typeof incoming === 'object') return { ...fallback, ...incoming }
+      if (incoming && typeof incoming === 'object') return normalizeDraft({ ...fallback, ...incoming })
     }
     const key = `wmreplay:prop-draft:${workspace}`
     const raw = window.sessionStorage.getItem(key)
@@ -117,10 +117,18 @@ function readInitialDraft(workspace, query) {
     window.sessionStorage.removeItem(key)
     const incoming = JSON.parse(raw)
     if (!incoming || typeof incoming !== 'object') return fallback
-    return { ...fallback, ...incoming }
+    return normalizeDraft({ ...fallback, ...incoming })
   } catch {
     return fallback
   }
+}
+
+function normalizeDraft(value) {
+  if (value.targetPercent == null && value.target != null && Number(value.initialCapital) > 0) {
+    value.targetPercent = String(Number(value.target) / Number(value.initialCapital) * 100)
+  }
+  if (!Array.isArray(value.datasetVersions) && value.datasetVersion) value.datasetVersions = [value.datasetVersion]
+  return value
 }
 
 function StateMessage({ kind, children, testId }) {
@@ -221,6 +229,7 @@ export default function PropWorkspace({ workspace, query }) {
   const [reportFilters, setReportFilters] = useState({ status: '', branchKind: '' })
   const [pendingAction, setPendingAction] = useState('')
   const [conflict, setConflict] = useState(null)
+  const autoCreateRef = useRef(false)
 
   const loadBundle = useCallback(async (session, attempts) => {
     const latest = attempts.length ? attempts[attempts.length - 1] : null
@@ -335,7 +344,7 @@ export default function PropWorkspace({ workspace, query }) {
     const start = utcIsoFromInput(draft.startUtc)
     const durationDays = Math.max(1, Number(draft.durationDays) || 1)
     const initialCapital = Number(draft.initialCapital)
-    const target = Number(draft.target)
+    const targetPercent = Number(draft.targetPercent)
     const dailyLoss = Number(draft.dailyLoss)
     const overallLoss = Number(draft.overallLoss)
     const base = slugify(draft.name)
@@ -346,7 +355,7 @@ export default function PropWorkspace({ workspace, query }) {
       setConflict('Cần tên session, dataset version và thời điểm bắt đầu hợp lệ.')
       return
     }
-    if (![initialCapital, target, dailyLoss, overallLoss].every((value) => Number.isFinite(value) && value > 0)) {
+    if (![initialCapital, targetPercent, dailyLoss, overallLoss].every((value) => Number.isFinite(value) && value > 0)) {
       setConflict('Vốn và các ngưỡng phải là số dương.')
       return
     }
@@ -366,7 +375,7 @@ export default function PropWorkspace({ workspace, query }) {
           phase_index: 1,
           initial_capital: String(initialCapital),
           currency: draft.currency.toUpperCase(),
-          profit_target: { threshold: { amount: String(target), percent: null, percent_base: 'initial_capital' }, basis: 'balance', comparator: 'gte' },
+          profit_target: { threshold: { amount: null, percent: String(targetPercent), percent_base: 'initial_capital' }, basis: 'balance', comparator: 'gte' },
           daily_loss: { threshold: { amount: String(dailyLoss), percent: null, percent_base: 'initial_capital' }, basis: 'equity', comparator: 'lt' },
           overall_drawdown: {
             threshold: { amount: String(overallLoss), percent: null, percent_base: 'initial_capital' },
@@ -386,7 +395,7 @@ export default function PropWorkspace({ workspace, query }) {
       const suffix = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
       const sessionId = `${base}-${suffix}`.slice(0, 96)
       const attemptId = `attempt-${suffix}`
-      const cutoff = new Date(new Date(start).getTime() + durationDays * 86400000).toISOString()
+      const cutoff = draft.endUtc ? utcIsoFromInput(draft.endUtc) : new Date(new Date(start).getTime() + durationDays * 86400000).toISOString()
       const session = {
         contract_version: 'prop-session-v1',
         workspace_id: workspace,
@@ -441,6 +450,12 @@ export default function PropWorkspace({ workspace, query }) {
         cursor: { bar_index: 0, timestamp_utc: start },
         open_positions: [],
         pending_orders: [],
+        setup_metadata: {
+          dataset_ids: Array.isArray(draft.datasetVersions) && draft.datasetVersions.length ? draft.datasetVersions : [draft.datasetVersion],
+          strategy_id: draft.strategyId || '',
+          strategy_revision: Number.isInteger(draft.strategyRevision) ? draft.strategyRevision : null,
+          period_end_utc: draft.endUtc ? utcIsoFromInput(draft.endUtc) : null,
+        },
       }
 
       const bundle = await propJson('/api/v2/prop/session-bundles', workspace, {
@@ -449,7 +464,7 @@ export default function PropWorkspace({ workspace, query }) {
       })
       const created = bundle.session
       setSessions((current) => ({ status: 'ready', items: [...current.items, created], error: null }))
-      await loadBundle(created, [bundle.attempt])
+      await openChallengeChart({ session: created, bundle })
     } catch (error) {
       if (error.kind === 'conflict') setConflict(error.message)
       else if (error.kind === 'denied') setSessions({ status: 'denied', items: [], error: error.message })
@@ -459,6 +474,12 @@ export default function PropWorkspace({ workspace, query }) {
       setPendingAction('')
     }
   }, [datasets.items, draft, loadBundle, loadSessions, workspace])
+
+  useEffect(() => {
+    if (query?.get?.('prop_setup') !== '1' || autoCreateRef.current || datasets.status !== 'ready' || pendingAction) return
+    autoCreateRef.current = true
+    createSession({ preventDefault() {} })
+  }, [createSession, datasets.status, pendingAction, query])
 
   const transitionAttempt = useCallback(async (action) => {
     const session = selected.session
@@ -588,26 +609,33 @@ export default function PropWorkspace({ workspace, query }) {
     }
   }, [workspace])
 
-  const openChallengeChart = useCallback(async () => {
-    const session = selected.session
-    const attempt = selected.bundle?.attempt
-    const phase = selected.bundle?.phase
+  const openChallengeChart = useCallback(async (source = null) => {
+    const session = source?.session || selected.session
+    const bundle = source?.bundle || selected.bundle
+    const attempt = bundle?.attempt
+    const phase = bundle?.phase
     if (!session || !attempt || !phase) return
     setPendingAction('open-chart')
     setConflict(null)
     try {
-      const binding = selected.bundle?.resume_state?.replay_binding || selected.report?.provenance?.replay_binding
+      const binding = bundle?.resume_state?.replay_binding || selected.report?.provenance?.replay_binding
       let replaySessionId = binding?.replay_session_id
       if (!replaySessionId) {
         const startTimestamp = Date.parse(attempt.virtual_start_utc)
+      const metadata = bundle?.resume_state?.setup_metadata || {}
+      const datasetIds = Array.isArray(metadata.dataset_ids) && metadata.dataset_ids.length ? metadata.dataset_ids : []
       const datasetItem = datasets.items.find(item => item.dataset_id === attempt.data_version || item.artifact_sha256 === attempt.data_version || item.dataset_sha256 === attempt.data_version || `sha256:${item.artifact_sha256}` === attempt.data_version || `sha256:${item.dataset_sha256}` === attempt.data_version)
-      const replayDatasetId = datasetItem?.dataset_id || selected.session?.dataset_id || attempt.data_version
+      const replayDatasetId = datasetIds[0] || datasetItem?.dataset_id || attempt.data_version
+      const periodEnd = metadata.period_end_utc ? Date.parse(metadata.period_end_utc) : NaN
       const body = {
           dataset_id: replayDatasetId,
+          ...(datasetIds.length ? { dataset_ids: datasetIds } : {}),
           ...(Number.isFinite(startTimestamp) ? { start_timestamp: Math.floor(startTimestamp / 1000) } : { start_index: 0 }),
+          ...(Number.isFinite(periodEnd) && periodEnd > startTimestamp ? { end_timestamp: Math.floor(periodEnd / 1000) } : {}),
           name: `${sessionLabel(session)} · ${session.session_id}`,
           description: 'Prop firm challenge replay · simulation only',
           starting_balance: phase.initial_balance,
+          ...(metadata.strategy_id && Number.isInteger(metadata.strategy_revision) ? { playbook_id: metadata.strategy_id, playbook_revision: metadata.strategy_revision } : {}),
         }
         let response = await scopedMutation('/api/v2/replay/sessions', workspace, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Workspace-Id': workspace }, body: JSON.stringify(body) })
         let payload = await response.json().catch(() => ({}))
@@ -741,15 +769,15 @@ export default function PropWorkspace({ workspace, query }) {
               </label>
               <label className="prop-field">
                 <span>{t("Profit target")}</span>
-                <input aria-label={t("Profit target")} type="number" min="1" value={draft.target} onChange={(event) => updateDraft('target', event.target.value)} />
+                <div className="prop-rule-input"><input aria-label={t("Profit target") + " %"} type="number" min="0.1" step="0.1" value={draft.targetPercent} onChange={(event) => updateDraft('targetPercent', event.target.value)} /><span>%</span></div>
               </label>
               <label className="prop-field">
-                <span>{t("Daily loss")}</span>
-                <input aria-label={t("Daily loss")} type="number" min="1" value={draft.dailyLoss} onChange={(event) => updateDraft('dailyLoss', event.target.value)} />
+                <span>{t("Max daily loss")}</span>
+                <div className="prop-rule-input"><input aria-label={t("Max daily loss") + " " + draft.currency} type="number" min="1" step="0.01" value={draft.dailyLoss} onChange={(event) => updateDraft('dailyLoss', event.target.value)} /><span>{draft.currency}</span></div>
               </label>
               <label className="prop-field">
-                <span>{t("Overall loss")}</span>
-                <input aria-label={t("Overall loss")} type="number" min="1" value={draft.overallLoss} onChange={(event) => updateDraft('overallLoss', event.target.value)} />
+                <span>{t("Max total loss")}</span>
+                <div className="prop-rule-input"><input aria-label={t("Max total loss") + " " + draft.currency} type="number" min="1" step="0.01" value={draft.overallLoss} onChange={(event) => updateDraft('overallLoss', event.target.value)} /><span>{draft.currency}</span></div>
               </label>
               <label className="prop-field prop-field-wide">
                 <span>{t("Dataset cho chart")}</span>
