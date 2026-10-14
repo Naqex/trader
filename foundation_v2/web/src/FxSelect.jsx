@@ -11,7 +11,7 @@ export function SelectChevron() {
   return <svg className="fx-select-chevron" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 8 5 5 5-5" /></svg>
 }
 
-export default function FxSelect({ label, value, options: inputOptions, onChange, icon, searchable = false, placeholder = 'Tìm…', emptyLabel = 'Không có lựa chọn phù hợp.', disabled = false, triggerContent, className = '', multiple = false, multipleStyle = 'checkbox', selectedTags, iconOnly = false, selectAllLabel = 'Chọn tất cả', menuTitle, menuHeader, renderOption, filterOption, selectionField = false, clearValue, localizeOptions = true, ...triggerProps }) {
+export default function FxSelect({ label, value, options: inputOptions, onChange, icon, searchable = false, placeholder = 'Tìm…', emptyLabel = 'Không có lựa chọn phù hợp.', disabled = false, triggerContent, className = '', multiple = false, multipleStyle = 'checkbox', closeOnSelect = false, selectedTags, iconOnly = false, selectAllLabel = 'Chọn tất cả', menuTitle, menuHeader, renderOption, filterOption, selectionField = false, clearValue, localizeOptions = true, ...triggerProps }) {
   const { t } = useTestingLocale()
   const options = inputOptions.map(option => ({ ...option, label: option.localize === false || !localizeOptions ? option.label : t(option.label), detail: option.localize === false || !localizeOptions ? option.detail : t(option.detail) }))
 
@@ -97,7 +97,7 @@ export default function FxSelect({ label, value, options: inputOptions, onChange
       }}><span className={`fx-select-checkbox${allSelected ? ' is-checked' : selectedCount > 0 ? ' is-mixed' : ''}`} aria-hidden="true" /><span className="fx-select-option-label">{t(selectAllLabel)}</span></button>}
       <div role="listbox" tabIndex={-1} aria-label={t(label)} aria-multiselectable={multiple || undefined}>{[...groups].map(([group, entries]) => {
         const content = entries.map(option => <button type="button" role="option" key={option.value} aria-selected={isSelected(option)} disabled={option.disabled} title={renderOption || option.disabled ? option.detail : undefined} onClick={() => {
-        if (multiple) onChange(isSelected(option) ? value.filter(item => item !== option.value) : [...value, option.value])
+        if (multiple) { onChange(isSelected(option) ? value.filter(item => item !== option.value) : [...value, option.value]); if (closeOnSelect) close() }
         else { onChange(option.value); close() }
       }}>{multiple && multipleStyle === 'checkbox' && <span className={`fx-select-checkbox${isSelected(option) ? ' is-checked' : ''}`} aria-hidden="true" />}{renderOption ? renderOption(option) : <span className="fx-select-option-label">{option.label}{option.detail && <small>{option.detail}</small>}</span>}{(multiple && multipleStyle === 'check' || !multiple && isSelected(option)) && <span className="fx-select-check" aria-hidden="true">{isSelected(option) ? '✓' : ''}</span>}</button>)
         return group ? <div key={group} role="group" aria-label={t(group)}><div className="fx-select-group-title" aria-hidden="true">{t(group)}</div>{content}</div> : <Fragment key={group}>{content}</Fragment>

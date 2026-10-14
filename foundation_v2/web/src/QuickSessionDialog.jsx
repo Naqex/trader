@@ -180,19 +180,13 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
             <div className="quick-session-field"><div className="quick-session-field-title"><span>{t('Assets')} <span className="quick-session-required" aria-hidden="true">*</span></span><a aria-disabled={busy || undefined} onClick={event => { if (busy) event.preventDefault() }} href={buildWorkspaceHref('data',workspace,query)}>{t('Kho dữ liệu')}</a></div><DatasetAssetSelect datasets={data.items} instruments={data.instruments} sessions={sessions} value={draft.datasets} disabled={busy || data.status !== 'ready'} onChange={value => change('datasets',value)} />{data.status === 'loading' ? <small role="status">{t('Đang đọc danh mục dữ liệu…')}</small> : data.status === 'error' ? <div role="alert">{t('Không đọc được danh mục:')} {data.error}<button type="button" onClick={() => setReload(value => value + 1)}>{t('Thử lại')}</button></div> : !data.items.length && <small>{t('Chưa có dataset local trong workspace này.')}</small>}</div>
             {selectedAssets.length > 0 && <SessionPeriodFields range={range} value={draft.period} onChange={value => change('period', value)} disabled={busy || data.status !== 'ready'} />}
             {mode === 'prop' ? <section className="quick-session-prop-rules" aria-label={t('Prop Firm rules')}>
-              <div className="quick-session-prop-heading"><div><strong>{t('Prop Firm rules')}</strong><small>{t('Giới hạn được kiểm tra trực tiếp trong chart replay.')}</small></div><span>{t('Simulation only')}</span></div>
-              <div className="quick-session-prop-grid">
+              <div className="quick-session-prop-rule-group">
+                <div className="quick-session-prop-grid">
                 <label className="quick-session-rule-target"><span>{t('Profit target')}</span><div className="quick-session-rule-input"><input type="number" min="0.1" step="0.1" value={propDraft.targetPercent} disabled={busy} onChange={event => changeProp('targetPercent', event.target.value)} /><span>%</span></div></label>
                 <label><span>{t('Max daily loss')}</span><div className="quick-session-rule-input"><input type="number" min="1" step="0.01" value={propDraft.dailyLoss} disabled={busy} onChange={event => changeProp('dailyLoss', event.target.value)} /><span>{currency}</span></div></label>
                 <label><span>{t('Max total loss')}</span><div className="quick-session-rule-input"><input type="number" min="1" step="0.01" value={propDraft.overallLoss} disabled={busy} onChange={event => changeProp('overallLoss', event.target.value)} /><span>{currency}</span></div></label>
-              </div>
-              <details className="quick-session-prop-advanced">
-                <summary>{t('Điều kiện nâng cao')}</summary>
-                <div className="quick-session-prop-advanced-grid">
-                  <label><span>{t('Profile')}</span><FxSelect label={t('Profile')} value={propDraft.profileKind} onChange={value => changeProp('profileKind', value)} localizeOptions={false} options={[{ value: 'generic', label: t('Generic practice'), localize: false }, { value: 'custom', label: t('Custom practice'), localize: false }]} /></label>
-                  <label><span>{t('Maximum days')}</span><div className="quick-session-rule-input"><input type="number" min="1" max="365" value={propDraft.durationDays} disabled={busy} onChange={event => changeProp('durationDays', event.target.value)} /><span>{t('days')}</span></div></label>
                 </div>
-              </details>
+              </div>
             </section> : <>
               <div className="quick-session-field"><span>{t('Select Chart Layout (Optional)')}</span><FxSelect className="is-field" label={t('Chart Layout')} value="default" disabled options={[{value:'default',label:'Bố cục mặc định'}]} onChange={() => {}} /></div>
               {advanced && <label>{t('Description')}<textarea rows={3} maxLength={2000} disabled={busy} value={draft.description} onChange={event => change('description',event.target.value)} /></label>}
@@ -202,7 +196,7 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
         </div>
       </div>
       </div>
-      <footer className="quick-session-footer"><button type="button" disabled={busy} onClick={close}>{t('Cancel')}</button>{mode === 'prop' ? <button type="submit" className="quick-session-submit" disabled={!propValid || busy || data.status !== 'ready' || problem?.uncertain}>{t('Tạo challenge và mở chart')}</button> : <button type="submit" className="quick-session-submit" disabled={!valid || busy || addingStrategy || data.status !== 'ready' || problem?.uncertain}>{t(pending ? 'Đang tạo…' : 'Create session')}</button>}</footer>
+      <footer className="quick-session-footer"><button type="button" disabled={busy} onClick={close}>{t('Cancel')}</button><button type="submit" className="quick-session-submit" disabled={mode === 'prop' ? !propValid || busy || data.status !== 'ready' || problem?.uncertain : !valid || busy || addingStrategy || data.status !== 'ready' || problem?.uncertain}>{t(pending ? 'Đang tạo…' : 'Create session')}</button></footer>
     </form>
   </dialog>
 }
