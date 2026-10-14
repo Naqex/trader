@@ -285,6 +285,20 @@
     "vi": "Xóa",
     "en": "Clear"
   },
+  "Tên phiên là bắt buộc.": {"vi": "Tên phiên là bắt buộc.", "en": "Session name is required."},
+  "Số dư phải lớn hơn 0.": {"vi": "Số dư phải lớn hơn 0.", "en": "Balance must be greater than 0."},
+  "Chọn ít nhất một tài sản.": {"vi": "Chọn ít nhất một tài sản.", "en": "Choose at least one asset."},
+  "Tài sản đã chọn không còn khả dụng.": {"vi": "Tài sản đã chọn không còn khả dụng.", "en": "A selected asset is no longer available."},
+  "Chọn ngày bắt đầu và khoảng thời gian hợp lệ.": {"vi": "Chọn ngày bắt đầu và khoảng thời gian hợp lệ.", "en": "Choose a valid start date and session range."},
+  "Kiểm tra lại thông tin phiên": {"vi": "Kiểm tra lại thông tin phiên", "en": "Check the session details"},
+  "Tên chiến lược là bắt buộc.": {"vi": "Tên chiến lược là bắt buộc.", "en": "Strategy name is required."},
+  "Danh mục tài sản chưa sẵn sàng. Chờ tải xong hoặc thử lại nguồn dữ liệu.": {"vi": "Danh mục tài sản chưa sẵn sàng. Chờ tải xong hoặc thử lại nguồn dữ liệu.", "en": "The asset catalog is not ready. Wait for loading or retry the data source."},
+  "Chọn tối đa 12 tài sản.": {"vi": "Chọn tối đa 12 tài sản.", "en": "Choose at most 12 assets."},
+  "Các tài sản phải dùng cùng tiền tệ tài khoản.": {"vi": "Các tài sản phải dùng cùng tiền tệ tài khoản.", "en": "Assets must use the same account currency."},
+  "Hoàn tất hoặc hủy tạo chiến lược trước khi tạo phiên.": {"vi": "Hoàn tất hoặc hủy tạo chiến lược trước khi tạo phiên.", "en": "Finish or cancel strategy creation before creating the session."},
+  "Mục tiêu lợi nhuận phải từ 0,1%.": {"vi": "Mục tiêu lợi nhuận phải từ 0,1%.", "en": "Profit target must be at least 0.1%."},
+  "Giới hạn lỗ ngày phải từ 1 đơn vị tiền tệ.": {"vi": "Giới hạn lỗ ngày phải từ 1 đơn vị tiền tệ.", "en": "Daily loss limit must be at least 1 unit of account currency."},
+  "Giới hạn lỗ tổng phải từ 1 đơn vị tiền tệ.": {"vi": "Giới hạn lỗ tổng phải từ 1 đơn vị tiền tệ.", "en": "Total loss limit must be at least 1 unit of account currency."},
   "Hôm nay": {
     "vi": "Hôm nay",
     "en": "Today"

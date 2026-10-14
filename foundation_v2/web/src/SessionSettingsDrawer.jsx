@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { readDashboardReplayContext } from './dashboardModel.js'
 import { sessionDate as formatSessionDate, sessionSettingsFacts } from './sessionSettingsModel.js'
 import './session-settings.css'
+import { FieldError, fieldValidationProps, focusFirstInvalid } from './FormValidation.jsx'
 
 const tabs = [{ key: 'info', name: 'Session Info' }, { key: 'balance', name: 'Balance & Assets' }, { key: 'costs', name: 'Costs' }, { key: 'range', name: 'Date Range' }]
 function ReadField({ label, value }) {
@@ -17,6 +18,8 @@ export default function SessionSettingsDrawer({ item, dataset, payload, model, w
 
   const dialog = useRef(null), opener = useRef(document.activeElement), id = useId()
   const [tab, setTab] = useState('info'), [draft, setDraft] = useState({ name: item.name || '', description: item.description || '' })
+  const [submitted, setSubmitted] = useState(false)
+  const nameError = submitted && !draft.name.trim() ? 'Tên phiên là bắt buộc.' : ''
   const [recordState, setRecord] = useState({ status: 'idle', record: replayRecord || null })
   const facts = sessionSettingsFacts(item, dataset, payload, model, replayRecord || recordState.record)
   const dirty = draft.name !== (item.name || '') || draft.description !== (item.description || '')
@@ -58,14 +61,14 @@ export default function SessionSettingsDrawer({ item, dataset, payload, model, w
       setTab(tabs[next].key); document.getElementById(`${id}-${tabs[next].key}`)?.focus()
     }}>{t(entry.name)}</button>)}</div>
     <section className="fxs-settings-panel" id={`${id}-panel`} role="tabpanel" aria-labelledby={`${id}-${tab}`}>
-      {tab === 'info' ? <form onSubmit={event => { event.preventDefault(); if (dirty && draft.name.trim()) onSubmit(draft) }}>
-        <label>{t("Name")}<input autoFocus required maxLength={160} value={draft.name} onChange={event => setDraft(current => ({ ...current, name: event.target.value }))} disabled={pending} /></label>
+      {tab === 'info' ? <form noValidate onSubmit={event => { event.preventDefault(); if (pending || blocked || !dirty) return; setSubmitted(true); if (!draft.name.trim()) { focusFirstInvalid(event.currentTarget); return } onSubmit(draft) }}>
+        <label>{t("Name")}<input autoFocus required maxLength={160} {...fieldValidationProps(nameError, `${id}-name-error`)} value={draft.name} onChange={event => setDraft(current => ({ ...current, name: event.target.value }))} disabled={pending} /><FieldError id={`${id}-name-error`} error={nameError} /></label>
         <ReadField label={t("Strategy")} value={facts.strategy === 'Chưa gắn strategy' ? t(facts.strategy) : facts.strategy} />
         <ReadField label={t("Chart Layout")} value={t('Chưa gắn chart layout')} />
         <label>{t("Description")}<textarea rows={4} maxLength={2000} placeholder={t("Add notes to your session")} value={draft.description} onChange={event => setDraft(current => ({ ...current, description: event.target.value }))} disabled={pending} /></label>
         {preview && <small>{t("Bản xem thử · thay đổi chỉ ở chế độ demo")}</small>}
         {error && <p role="alert">{t(error)}</p>}
-        <button className="fxs-settings-save" type="submit" disabled={pending || blocked || !dirty || !draft.name.trim()}>{pending ? t("Đang lưu…") : t("Save Changes")}</button>
+        <button className="fxs-settings-save" type="submit" disabled={pending || blocked || !dirty}>{pending ? t("Đang lưu…") : t("Save Changes")}</button>
       </form> : tab === 'balance' ? <div className="fxs-settings-fields"><ReadField label={t("Account Balance")} value={dashboardMoney(facts.balance, facts.currency)} /><label>{t("Select Assets")}<div className="fxs-settings-asset">{facts.asset}</div></label><p className="fxs-settings-note">{t("Balance và assets được giữ theo phiên hiện tại. Tạo phiên mới để đổi cấu hình.")}</p></div> : tab === 'costs' ? <div className="fxs-settings-fields">
         {recordState.status === 'loading' && <p role="status">{t("Đang đọc cấu hình chi phí…")}</p>}
         {recordState.status === 'error' && <p role="alert">{recordState.error}</p>}

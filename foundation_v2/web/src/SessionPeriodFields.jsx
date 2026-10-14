@@ -3,13 +3,17 @@ import ProjectDateInput from './ProjectDateInput.jsx'
 import { displayDate } from './dateFormat.js'
 import { useTestingLocale } from './testingLocale.jsx'
 import { randomSessionDate, sessionDateValue, sessionEndShortcut, sessionPeriodState } from './sessionPeriod.js'
+import { FieldError, fieldValidationProps } from './FormValidation.jsx'
 
-export default function SessionPeriodFields({ range, value, onChange, disabled }) {
+export default function SessionPeriodFields({ range, value, onChange, disabled, error }) {
   const { t } = useTestingLocale(), id = useId()
   const state = sessionPeriodState(value, range)
   const update = patch => onChange({ ...value, ...patch })
   if (!range?.valid) return <div className="quick-session-period-error" role="alert">{t('Các tài sản không có khoảng thời gian chung để replay.')}</div>
   const min = sessionDateValue(range.min), max = sessionDateValue(range.max)
+  const invalidStart = !value.start || state.start === null || state.start < range.min || state.start >= range.max
+  const periodError = error || (value.start && !state.valid ? 'Chọn ngày bắt đầu và kết thúc trong khoảng dữ liệu; ngày kết thúc phải sau ngày bắt đầu.' : '')
+  const errorId = `${id}-error`
   const randomDate = () => { const start = randomSessionDate(range, value); if (start) update({ start }) }
   return <div className="quick-session-field quick-session-period">
     <span id={`${id}-title`}>{t('Thời gian phiên')} <span className="quick-session-required" aria-hidden="true">*</span></span>
@@ -18,7 +22,7 @@ export default function SessionPeriodFields({ range, value, onChange, disabled }
         <div className="quick-session-period-field">
           <label htmlFor={`${id}-start`}>{t('Ngày bắt đầu')}</label>
           <div className="quick-session-period-start">
-            <ProjectDateInput id={`${id}-start`} type="datetime-local" required step="60" min={min} max={max} value={value.start} disabled={disabled} aria-label={t('Ngày bắt đầu phiên (UTC)')} aria-describedby={`${id}-hint`} onChange={event => update({ start: event.target.value })} />
+            <ProjectDateInput id={`${id}-start`} type="datetime-local" required step="60" min={min} max={max} value={value.start} disabled={disabled} aria-label={t('Ngày bắt đầu phiên (UTC)')} {...fieldValidationProps(periodError && invalidStart, errorId)} aria-describedby={`${id}-hint${periodError && invalidStart ? ` ${errorId}` : ''}`} onChange={event => update({ start: event.target.value })} />
             <button className="quick-session-period-random" type="button" aria-label={t('Chọn ngày bắt đầu ngẫu nhiên')} title={t('Chọn ngày bắt đầu ngẫu nhiên')} disabled={disabled || randomSessionDate(range, value, () => 0) === null} onClick={randomDate}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-1l2 3M18 17a7 7 0 0 1-12 1l-2-3" /></svg>
             </button>
@@ -33,14 +37,14 @@ export default function SessionPeriodFields({ range, value, onChange, disabled }
               })}
             </div>
           </div>
-          {value.endMode === 'custom' ? <ProjectDateInput id={`${id}-end`} type="datetime-local" required step="60" min={value.start || min} max={max} value={value.end} disabled={disabled} aria-label={t('Ngày kết thúc phiên (UTC)')} aria-describedby={`${id}-hint`} onChange={event => update({ end: event.target.value })} /> : <input id={`${id}-end`} value={t('Tự động')} readOnly disabled aria-label={t('Ngày kết thúc phiên (UTC)')} />}
+          {value.endMode === 'custom' ? <ProjectDateInput id={`${id}-end`} type="datetime-local" required step="60" min={value.start || min} max={max} value={value.end} disabled={disabled} aria-label={t('Ngày kết thúc phiên (UTC)')} {...fieldValidationProps(periodError && !invalidStart, errorId)} aria-describedby={`${id}-hint${periodError && !invalidStart ? ` ${errorId}` : ''}`} onChange={event => update({ end: event.target.value })} /> : <input id={`${id}-end`} value={t('Tự động')} readOnly disabled aria-label={t('Ngày kết thúc phiên (UTC)')} />}
         </div>
       </div>
       <p id={`${id}-hint`} className="quick-session-period-hint">{t(value.endMode === 'custom' ? 'Phiên dừng ở ngày bạn chọn.' : 'Replay tiếp tục đến hết dữ liệu đã tải.')} <span>{t('Khoảng dữ liệu: {from} – {to} · UTC', { from: displayDate(range.min, { timeStyle: 'short' }), to: displayDate(range.max, { timeStyle: 'short' }) })}</span></p>
       <div className="quick-session-period-modes" role="group" aria-label={t('Cách kết thúc phiên')}>
         {[['auto', 'Tự động'], ['custom', 'Tùy chọn']].map(([mode, label]) => <button type="button" key={mode} aria-pressed={value.endMode === mode} disabled={disabled} onClick={() => update({ endMode: mode, ...(mode === 'custom' && !value.end ? { end: max } : {}) })}>{t(label)}</button>)}
       </div>
-      {value.start && !state.valid && <small className="quick-session-period-error" role="alert">{t('Chọn ngày bắt đầu và kết thúc trong khoảng dữ liệu; ngày kết thúc phải sau ngày bắt đầu.')}</small>}
+      <FieldError id={errorId} error={periodError} />
     </section>
   </div>
 }
