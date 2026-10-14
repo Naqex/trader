@@ -1,0 +1,83 @@
+import { chromium } from 'playwright'
+import assert from 'node:assert/strict'
+import { mkdir, writeFile } from 'node:fs/promises'
+
+const base = process.env.TW_UI_BASE || 'http://127.0.0.1:5180'
+const out = process.env.TW_CONTROLS_EVIDENCE || '../evidence/session-controls-20261014'
+const datasets = ['EUR/USD', 'XAU/USD'].map((instrument_id, i) => ({dataset_id:`controls-fixture-${i}`, instrument_id, asset_class:'fx', timeframe:'60s', timeframe_seconds:60, row_count:100, first_timestamp:1704067200, last_timestamp:1735689600, instrument_spec:{account_ccy:'USD'}, source:{provider:'Fixture'}}))
+await mkdir(out, {recursive:true})
+const browser = await chromium.launch({headless:true})
+const results = [], errors = [], writes = []
+try {
+  for (const theme of ['dark', 'light']) for (const width of [1440, 768, 360]) {
+    const page = await browser.newPage({viewport:{width, height:987}})
+    page.setDefaultTimeout(7000)
+    page.on('pageerror', e => errors.push(e.message))
+    await page.addInitScript(theme => {localStorage.setItem('tw-theme', theme); localStorage.setItem('tw-language', 'vi')}, theme)
+    await page.route('**/api/**', route => {
+      if (route.request().method() === 'GET') return route.continue()
+      writes.push(route.request().url())
+      return route.abort()
+    })
+    await page.route('**/api/v2/data/datasets', route => route.fulfill({json:{items:datasets, catalog_items:[]}}))
+    await page.goto(`${base}/?workspace=tenant-a&view=overview&area=testing&section=dashboard`)
+    await page.locator('.fx-dashboard-quick-action').first().click()
+    await page.getByRole('tab', {name:'Phiên prop firm', exact:true}).click()
+    const dialog = page.locator('.quick-session-dialog')
+    const assets = dialog.locator('.dataset-asset-select'), trigger = assets.locator('.fx-select-trigger')
+    await trigger.click()
+    await assets.getByRole('checkbox', {name:'Chọn tất cả', exact:true}).click()
+    assert.equal(await trigger.getAttribute('aria-expanded'), 'false')
+    assert.equal(await assets.locator('.fx-select-tag').count(), 2)
+    const chips = await assets.locator('.fx-select-tag').evaluateAll(tags => tags.map(e => e.getBoundingClientRect().height))
+    assert.ok(chips.every(h => h <= 25), `compact chips: ${chips}`)
+    assert.equal(await assets.evaluate(e => e.scrollWidth > e.clientWidth), false)
+    await assets.getByRole('button', {name:'Bỏ tài sản EUR/USD', exact:true}).click()
+    assert.equal(await assets.locator('.fx-select-tag').count(), 1)
+    await trigger.click()
+    await assets.getByRole('option').filter({hasText:'EUR/USD'}).click()
+    assert.equal(await trigger.getAttribute('aria-expanded'), 'false')
+    const start = dialog.getByLabel('Ngày bắt đầu phiên (UTC)', {exact:true})
+    await start.fill('01/06/2024 12:30')
+    const dateTrigger = dialog.getByRole('button', {name:'Chọn ngày', exact:true})
+    await dateTrigger.click()
+    const calendar = page.locator('.project-date-popover')
+    const checkBounds = async () => {
+      const bounds = await calendar.boundingBox()
+      assert.ok(bounds.x >= 0 && bounds.y >= 0 && bounds.x + bounds.width <= width + 1 && bounds.y + bounds.height <= 988, JSON.stringify(bounds))
+      assert.equal(await calendar.evaluate(e => e.matches(':popover-open')), true)
+      assert.equal(await calendar.getByRole('button', {name:'Xong', exact:true}).evaluate(e => {const r=e.getBoundingClientRect(); return e.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))}), true, 'footer remains clickable above sticky dialog footer')
+    }
+    await checkBounds()
+    await calendar.getByRole('button', {name:'Tháng sau', exact:true}).click()
+    await calendar.getByRole('button', {name:'Tháng trước', exact:true}).click()
+    await calendar.getByRole('gridcell', {name:'15/06/2024', exact:true}).click()
+    await calendar.getByLabel('Giờ', {exact:true}).fill('13:45')
+    await calendar.getByRole('button', {name:'Xong', exact:true}).click()
+    assert.equal(await start.inputValue(), '15/06/2024 13:45')
+    await dateTrigger.click()
+    await page.keyboard.press('Escape')
+    assert.equal(await calendar.count(), 0)
+    assert.equal(await dialog.isVisible(), true)
+    assert.equal(await dateTrigger.evaluate(e => document.activeElement === e), true)
+    await dateTrigger.click()
+    await dialog.locator('.quick-session-body').evaluate(e => {e.scrollTop += 100})
+    await checkBounds()
+    await page.screenshot({path:`${out}/${theme}-${width}.png`})
+    await calendar.getByRole('button', {name:'Xong', exact:true}).click()
+    await start.fill('31/12/2024 00:00')
+    await dateTrigger.click()
+    assert.equal(await calendar.getByRole('button', {name:'Tháng sau', exact:true}).isEnabled(), true)
+    await calendar.getByRole('button', {name:'Tháng sau', exact:true}).click()
+    assert.equal(await calendar.getByRole('gridcell', {name:'02/01/2025', exact:true}).isEnabled(), false)
+    assert.equal(await calendar.getByRole('button', {name:'Tháng sau', exact:true}).isEnabled(), false)
+    results.push({theme, width, chips, pass:true, scope:'labeled local fixture; no mutations'})
+    await page.close()
+  }
+  assert.deepEqual(errors, [])
+  assert.deepEqual(writes, [])
+} finally {
+  await browser.close()
+  await writeFile(`${out}/report.json`, JSON.stringify({results, errors, writes}, null, 2))
+}
+console.log(JSON.stringify({cases:results.length, errors, writes}))

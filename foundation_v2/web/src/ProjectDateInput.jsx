@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { dateFieldDisplay, parseDateField } from './dateFormat.js'
 import { useTestingLocale } from './testingLocale.jsx'
 import './project-date-input.css'
@@ -53,11 +53,37 @@ export default function ProjectDateInput({ value = '', onChange, type = 'date', 
   useEffect(() => {
     if (!open) return undefined
     const closeOnOutside = event => { if (!root.current?.contains(event.target)) { setOpen(false); trigger.current?.focus() } }
-    const closeOnEscape = event => { if (event.key === 'Escape') { event.preventDefault(); setOpen(false); trigger.current?.focus() } }
+    const closeOnEscape = event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setOpen(false); trigger.current?.focus() } }
     document.addEventListener('pointerdown', closeOnOutside)
     document.addEventListener('keydown', closeOnEscape)
     popover.current?.querySelector('button:not(:disabled), input:not(:disabled)')?.focus({ preventScroll: true })
     return () => { document.removeEventListener('pointerdown', closeOnOutside); document.removeEventListener('keydown', closeOnEscape) }
+  }, [open])
+
+  useLayoutEffect(() => {
+    if (!open) return undefined
+    const panel = popover.current
+    // The top layer keeps the calendar out of scrolling forms and sticky footers.
+    panel.showPopover()
+    const position = () => {
+      const anchor = root.current.getBoundingClientRect()
+      const boundary = root.current.closest('dialog')?.getBoundingClientRect() || {left:0, top:0, right:window.innerWidth, bottom:window.innerHeight}
+      const left = Math.max(8, boundary.left + 8), right = Math.min(window.innerWidth - 8, boundary.right - 8)
+      const top = Math.max(8, boundary.top + 8), bottom = Math.min(window.innerHeight - 8, boundary.bottom - 8)
+      panel.style.maxWidth = `${right - left}px`
+      panel.style.maxHeight = `${bottom - top}px`
+      const bounds = panel.getBoundingClientRect()
+      const below = anchor.bottom + 8
+      const y = below + bounds.height <= bottom ? below : anchor.top - 8 - bounds.height
+      panel.style.left = `${Math.max(left, Math.min(anchor.left, right - bounds.width))}px`
+      panel.style.top = `${Math.max(top, Math.min(y, bottom - bounds.height))}px`
+    }
+    position()
+    const observer = new ResizeObserver(position)
+    observer.observe(panel)
+    window.addEventListener('resize', position)
+    document.addEventListener('scroll', position, true)
+    return () => { observer.disconnect(); window.removeEventListener('resize', position); document.removeEventListener('scroll', position, true); if (panel.matches(':popover-open')) panel.hidePopover() }
   }, [open])
 
   const publish = (event, raw) => {
@@ -72,9 +98,11 @@ export default function ProjectDateInput({ value = '', onChange, type = 'date', 
 
   const openPicker = () => {
     const selected = datePart(value) || datePart(parseDateField(draft, type)) || todayIso()
-    setPickerDate(selected)
+    const lowerBounded = datePart(min) && selected < datePart(min) ? datePart(min) : selected
+    const bounded = datePart(max) && lowerBounded > datePart(max) ? datePart(max) : lowerBounded
+    setPickerDate(bounded)
     setPickerTime(timePart(value) || (type === 'datetime-local' ? '00:00' : ''))
-    setViewMonth(selected.slice(0, 7))
+    setViewMonth(bounded.slice(0, 7))
     setOpen(current => !current)
   }
 
@@ -114,11 +142,11 @@ export default function ProjectDateInput({ value = '', onChange, type = 'date', 
     }} />
     {clearable && <button type="button" className="project-date-clear" aria-label={`${t('Xóa ngày')} · ${props['aria-label'] || ''}`} disabled={props.disabled || !draft} onClick={event => { setDraft(''); publish(event, ''); text.current?.focus() }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button>}
     <button ref={trigger} type="button" className="project-date-picker" aria-label={pickerLabel} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? popoverId : undefined} disabled={props.disabled} onClick={openPicker}><CalendarIcon /></button>
-    {open && <div ref={popover} id={popoverId} className="project-date-popover" role="dialog" aria-label={pickerLabel}>
+    {open && <div ref={popover} id={popoverId} className="project-date-popover" popover="manual" role="dialog" aria-label={pickerLabel}>
       {type === 'time' ? <div className="project-date-time-panel"><label>{t('Giờ')}<input type="time" step={step || '60'} value={draft || ''} onInput={chooseTime} onChange={chooseTime} /></label></div> : <>
         <div className="project-date-popover-heading"><button type="button" aria-label={t('Previous month')} disabled={prevDisabled} onClick={() => setViewMonth(shiftMonth(viewMonth, -1))}><Chevron direction="prev" /></button><strong aria-live="polite">{parsedMonth.toLocaleDateString(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' })}</strong><button type="button" aria-label={t('Next month')} disabled={nextDisabled} onClick={() => setViewMonth(shiftMonth(viewMonth, 1))}><Chevron direction="next" /></button></div>
         <div className="project-date-calendar" role="grid" aria-label={pickerLabel}>{WEEKDAYS.map(day => <span key={day} role="columnheader">{t(day)}</span>)}{Array.from({ length: firstWeekday }, (_, index) => <span key={`empty-${index}`} aria-hidden="true" />)}{Array.from({ length: monthDays }, (_, index) => {
-          const date = `${viewMonth}-${String(index + 1).padStart(2, '0')}`, disabled = !isDateAllowed(date, min, max), selected = date === datePart(value) || (date === pickerDate && !disabled), current = date === todayIso()
+          const date = `${viewMonth}-${String(index + 1).padStart(2, '0')}`, disabled = !isDateAllowed(date, min, max), selected = date === datePart(value), current = date === todayIso()
           return <button key={date} type="button" role="gridcell" aria-label={dateFieldDisplay(date, 'date')} aria-pressed={selected} aria-current={current ? 'date' : undefined} disabled={disabled} className={`${selected ? 'is-selected' : ''}${current ? ' is-today' : ''}`} onClick={() => chooseDate(date)}>{index + 1}</button>
         })}</div>
         {type === 'datetime-local' && <label className="project-date-time-field">{t('Giờ')}<input type="time" step={step || '60'} value={selectedTime} onInput={chooseTime} onChange={chooseTime} /></label>}
