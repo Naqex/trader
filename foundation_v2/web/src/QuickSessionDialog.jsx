@@ -14,11 +14,12 @@ import './quick-session.css'
 
 const formatBalance = value => value.replace(/^(\d+)/, digits => digits.replace(/\B(?=(\d{3})+(?!\d))/g, ','))
 
-export default function QuickSessionDialog({ workspace, query, onClose, initialDataset = '', sessions = [] }) {
+export default function QuickSessionDialog({ workspace, query, onClose, initialDataset = '', initialMode = 'backtest', sessions = [] }) {
   const { t } = useTestingLocale(), id = useId()
   const dialog = useRef(null), nameInput = useRef(null), opener = useRef(document.activeElement), submitLock = useRef(false)
-  const [mode, setMode] = useState('backtest'), [advanced, setAdvanced] = useState(false)
+  const [mode, setMode] = useState(initialMode === 'prop' ? 'prop' : 'backtest'), [advanced, setAdvanced] = useState(false)
   const [draft, setDraft] = useState({ name: '', balance: '100000', datasets: initialDataset ? [initialDataset] : [], strategy: '', description: '', period: { start: '', end: '', endMode: 'auto' } })
+  const [propDraft, setPropDraft] = useState({ profileKind: 'generic', target: '10000', dailyLoss: '5000', overallLoss: '10000', durationDays: '30' })
   const balanceInput = useRef(null), balanceCaret = useRef(null)
   const balanceDisplay = formatBalance(draft.balance)
   const [data, setData] = useState({ status: 'loading', items: [], error: '' })
@@ -35,7 +36,9 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
   const range = commonSessionRange(selectedAssets)
   const period = sessionPeriodState(draft.period, range)
   const valid = draft.name.trim() && Number(draft.balance) > 0 && Number.isFinite(Number(draft.balance)) && selected && selectedAssets.length === draft.datasets.length && draft.datasets.length <= 12 && selectedAssets.every(item => (item.instrument_spec?.account_ccy || 'USD') === currency) && period.valid
+  const propValid = valid && [propDraft.target, propDraft.dailyLoss, propDraft.overallLoss, propDraft.durationDays].every(value => Number.isFinite(Number(value)) && Number(value) > 0)
   const change = (key, value) => setDraft(current => ({ ...current, [key]: value }))
+  const changeProp = (key, value) => setPropDraft(current => ({ ...current, [key]: value }))
   useLayoutEffect(() => {
     if (balanceCaret.current === null) return
     balanceInput.current?.setSelectionRange(balanceCaret.current, balanceCaret.current)
@@ -77,7 +80,38 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
   }
   const create = async event => {
     event.preventDefault()
-    if (!valid || busy || addingStrategy || problem?.uncertain || submitLock.current || mode !== 'backtest') return
+    if (mode === 'prop') {
+      if (!propValid || busy || problem?.uncertain || submitLock.current) return
+      // The full Prop workspace owns challenge creation and lifecycle state.
+      // Handoff the shared setup draft so this entry point remains one dialog
+      // without duplicating the prop API contract in the dashboard.
+      const propStart = Number.isFinite(period.start)
+        ? new Date(period.start * 1000).toISOString().slice(0, 16)
+        : period.start instanceof Date
+          ? period.start.toISOString().slice(0, 16)
+          : String(period.start || '').replace('Z', '').slice(0, 16)
+      const propHandoff = {
+          name: draft.name.trim(),
+          profileKind: propDraft.profileKind,
+          initialCapital: draft.balance,
+          currency,
+          target: propDraft.target,
+          dailyLoss: propDraft.dailyLoss,
+          overallLoss: propDraft.overallLoss,
+          datasetVersion: selected.dataset_id,
+          startUtc: propStart,
+          durationDays: propDraft.durationDays,
+      }
+      try {
+        sessionStorage.setItem(`wmreplay:prop-draft:${workspace}`, JSON.stringify(propHandoff))
+      } catch {
+        // A blocked sessionStorage should not prevent opening the canonical
+        // Prop workspace; it simply falls back to its defaults.
+      }
+      navigate(buildWorkspaceHref('testing', workspace, query, { prop_setup: '1', prop_draft: JSON.stringify(propHandoff) }))
+      return
+    }
+    if (!valid || busy || addingStrategy || problem?.uncertain || submitLock.current) return
     submitLock.current = true; setPending(true); setProblem(null)
     try {
       const record = await createReplaySession(workspace, {
@@ -110,16 +144,15 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
     <form onSubmit={create} className="quick-session-form">
       <div className="quick-session-layout">
         <nav className="quick-session-sections" aria-label={t('Thiết lập phiên')}>
-          <button type="button" aria-pressed={!advanced} aria-controls={`${id}-panel`} disabled={busy || mode === 'prop'} onClick={() => setAdvanced(false)}>
+          <button type="button" aria-pressed={!advanced} aria-controls={`${id}-panel`} disabled={busy} onClick={() => setAdvanced(false)}>
             <strong>{t('Cơ bản')}</strong><span>{t('Tên, số dư, chiến lược và tài sản')}</span>
           </button>
-          <button type="button" aria-pressed={advanced} aria-controls={`${id}-panel`} disabled={busy || mode === 'prop'} onClick={() => setAdvanced(true)}>
+          <button type="button" aria-pressed={advanced} aria-controls={`${id}-panel`} disabled={busy} onClick={() => setAdvanced(true)}>
             <strong>{t('Phiên nâng cao')}</strong><span>{t('Thêm mô tả cho phiên')}</span>
           </button>
         </nav>
         <div className="quick-session-body">
         <div role="tabpanel" id={`${id}-panel`} aria-labelledby={`${id}-${mode}`} className="quick-session-fields">
-          {mode === 'prop' ? <p>{t('Thiết lập thử thách với quy tắc, mục tiêu và giới hạn rủi ro ở trang Prop Firm.')}</p> : <>
             <label><span>{t('Name')} <span className="quick-session-required" aria-hidden="true">*</span></span><input ref={nameInput} required maxLength={160} placeholder={t('Đặt tên phiên của bạn')} value={draft.name} disabled={busy} onChange={event => change('name', event.target.value)} /></label>
             <label><span>{t('Account Balance')} <span className="quick-session-required" aria-hidden="true">*</span></span><div className="quick-session-balance" onClick={() => balanceInput.current?.focus()}><span className="quick-session-money-icon" aria-hidden="true"><ChartIcon name="wallet" /></span><input ref={balanceInput} required type="text" inputMode="decimal" style={{ width: `${Math.max(1, balanceDisplay.length) + 0.5}ch` }} aria-label={t('Account Balance')} aria-describedby={`${id}-currency`} value={balanceDisplay} disabled={busy} onKeyDown={event => {
               const input = event.currentTarget, caret = input.selectionStart
@@ -142,15 +175,26 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
             <div className="quick-session-field quick-session-strategy"><span>{t('Strategy')}</span><FxSelect searchable={strategies.items.length > 0} label={t('Strategy')} value={draft.strategy} disabled={busy || strategies.status === 'loading'} onChange={value => change('strategy',value)} className={draft.strategy ? 'is-field' : 'is-field is-placeholder'} triggerContent={selectedStrategy?.payload?.name || t('Chọn chiến lược hoặc tạo mới')} localizeOptions={false} placeholder={t('Tìm chiến lược…')} emptyLabel={t('Không tìm thấy kết quả')} options={strategies.items.map(item => ({ value:item.record_id, label:item.payload?.name || item.record_id, localize:false }))} />{draft.strategy && <button type="button" className="quick-session-text-action" disabled={busy} onClick={() => change('strategy','')}>{t('Bỏ chọn chiến lược')}</button>}{!addingStrategy ? <button type="button" ref={strategyOpener} className="quick-session-text-action quick-session-new-strategy" disabled={busy || strategies.status === 'loading'} onClick={() => setAddingStrategy(true)}>{t('+ Tạo chiến lược mới')}</button> : <div className="quick-session-strategy-create"><label>{t('Tên chiến lược')}<input ref={strategyInput} maxLength={160} value={strategyName} disabled={strategyPending} onChange={event => setStrategyName(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addStrategy() } }} /></label><div><button type="button" disabled={!strategyName.trim() || strategyPending || strategyProblem?.uncertain} onClick={addStrategy}>{t(strategyPending ? 'Đang tạo…' : 'Tạo chiến lược')}</button><button type="button" disabled={strategyPending} onClick={() => setAddingStrategy(false)}>{t('Cancel')}</button></div>{strategyProblem && <small role="alert">{strategyProblem.uncertain ? t('Chưa xác định chiến lược đã tạo hay chưa. Kiểm tra danh sách chiến lược trước khi thử lại.') : strategyProblem.text}{strategyProblem.uncertain && <a aria-disabled={busy || undefined} onClick={event => { if (busy) event.preventDefault() }} href={buildWorkspaceHref('playbook',workspace,query)}>{t('Quản lý chiến lược')}</a>}</small>}</div>}{strategies.error && <small>{t('Chưa đọc được chiến lược. Bạn vẫn có thể tạo phiên không gắn chiến lược.')}</small>}</div>
             <div className="quick-session-field"><div className="quick-session-field-title"><span>{t('Assets')} <span className="quick-session-required" aria-hidden="true">*</span></span><a aria-disabled={busy || undefined} onClick={event => { if (busy) event.preventDefault() }} href={buildWorkspaceHref('data',workspace,query)}>{t('Kho dữ liệu')}</a></div><DatasetAssetSelect datasets={data.items} instruments={data.instruments} sessions={sessions} value={draft.datasets} disabled={busy || data.status !== 'ready'} onChange={value => change('datasets',value)} />{data.status === 'loading' ? <small role="status">{t('Đang đọc danh mục dữ liệu…')}</small> : data.status === 'error' ? <div role="alert">{t('Không đọc được danh mục:')} {data.error}<button type="button" onClick={() => setReload(value => value + 1)}>{t('Thử lại')}</button></div> : !data.items.length && <small>{t('Chưa có dataset local trong workspace này.')}</small>}</div>
             {selectedAssets.length > 0 && <SessionPeriodFields range={range} value={draft.period} onChange={value => change('period', value)} disabled={busy || data.status !== 'ready'} />}
-            <div className="quick-session-field"><span>{t('Select Chart Layout (Optional)')}</span><FxSelect className="is-field" label={t('Chart Layout')} value="default" disabled options={[{value:'default',label:'Bố cục mặc định'}]} onChange={() => {}} /></div>
-            {advanced && <label>{t('Description')}<textarea rows={3} maxLength={2000} disabled={busy} value={draft.description} onChange={event => change('description',event.target.value)} /></label>}
-            <section className="quick-session-engine" aria-label={t('Charting engine')}><h3>{t('Charting engine')}</h3><p>{t('Chọn một lần cho phiên này.')}</p><div role="radiogroup" aria-label={t('Charting engine')}><button type="button" role="radio" aria-checked="false" disabled>New Chart <small>{t('Chưa khả dụng')}</small></button><button type="button" role="radio" aria-checked="true" disabled={busy}>Legacy Chart</button></div></section>
-          </>}
+            {mode === 'prop' ? <section className="quick-session-prop-rules" aria-label={t('Prop Firm rules')}>
+              <div className="quick-session-prop-heading"><div><strong>{t('Prop Firm rules')}</strong><small>{t('Giới hạn được kiểm tra trực tiếp trong chart replay.')}</small></div><span>{t('Simulation only')}</span></div>
+              <div className="quick-session-prop-grid">
+                <label><span>{t('Profile')}</span><FxSelect label={t('Profile')} value={propDraft.profileKind} onChange={value => changeProp('profileKind', value)} localizeOptions={false} options={[{ value: 'generic', label: t('Generic practice'), localize: false }, { value: 'custom', label: t('Custom practice'), localize: false }]} /></label>
+                <label><span>{t('Profit target')}</span><input type="number" min="1" value={propDraft.target} disabled={busy} onChange={event => changeProp('target', event.target.value)} /></label>
+                <label><span>{t('Daily loss')}</span><input type="number" min="1" value={propDraft.dailyLoss} disabled={busy} onChange={event => changeProp('dailyLoss', event.target.value)} /></label>
+                <label><span>{t('Overall loss')}</span><input type="number" min="1" value={propDraft.overallLoss} disabled={busy} onChange={event => changeProp('overallLoss', event.target.value)} /></label>
+                <label><span>{t('Max days')}</span><input type="number" min="1" max="365" value={propDraft.durationDays} disabled={busy} onChange={event => changeProp('durationDays', event.target.value)} /></label>
+              </div>
+              <p className="quick-session-prop-note">{t('Bạn sẽ tiếp tục ở Prop Firm để tạo challenge, sau đó mở chart theo đúng replay và các rule này.')}</p>
+            </section> : <>
+              <div className="quick-session-field"><span>{t('Select Chart Layout (Optional)')}</span><FxSelect className="is-field" label={t('Chart Layout')} value="default" disabled options={[{value:'default',label:'Bố cục mặc định'}]} onChange={() => {}} /></div>
+              {advanced && <label>{t('Description')}<textarea rows={3} maxLength={2000} disabled={busy} value={draft.description} onChange={event => change('description',event.target.value)} /></label>}
+              <section className="quick-session-engine" aria-label={t('Charting engine')}><h3>{t('Charting engine')}</h3><p>{t('Chọn một lần cho phiên này.')}</p><div role="radiogroup" aria-label={t('Charting engine')}><button type="button" role="radio" aria-checked="false" disabled>New Chart <small>{t('Chưa khả dụng')}</small></button><button type="button" role="radio" aria-checked="true" disabled={busy}>Legacy Chart</button></div></section>
+            </>}
           {problem && <div role="alert" className="quick-session-error">{problem.uncertain ? t('Chưa xác định phiên đã tạo hay chưa. Kiểm tra danh sách phiên trước khi tạo lại.') : t('Không tạo được phiên: {error}', {error:problem.text})}{problem.uncertain && <a aria-disabled={busy || undefined} onClick={event => { if (busy) event.preventDefault() }} href={buildWorkspaceHref('replay',workspace,query,{select:'1',surface:null,fresh:null})}>{t('Xem danh sách phiên')}</a>}</div>}
         </div>
       </div>
       </div>
-      <footer className="quick-session-footer"><button type="button" disabled={busy} onClick={close}>{t('Cancel')}</button>{mode === 'prop' ? <a className="quick-session-submit" aria-disabled={busy || undefined} onClick={event => { if (busy) event.preventDefault() }} href={buildWorkspaceHref('testing',workspace,query)}>{t('Thiết lập Prop Firm')}</a> : <button type="submit" className="quick-session-submit" disabled={!valid || busy || addingStrategy || data.status !== 'ready' || problem?.uncertain}>{t(pending ? 'Đang tạo…' : 'Create session')}</button>}</footer>
+      <footer className="quick-session-footer"><button type="button" disabled={busy} onClick={close}>{t('Cancel')}</button>{mode === 'prop' ? <button type="submit" className="quick-session-submit" disabled={!propValid || busy || data.status !== 'ready' || problem?.uncertain}>{t('Tiếp tục thiết lập challenge')}</button> : <button type="submit" className="quick-session-submit" disabled={!valid || busy || addingStrategy || data.status !== 'ready' || problem?.uncertain}>{t(pending ? 'Đang tạo…' : 'Create session')}</button>}</footer>
     </form>
   </dialog>
 }

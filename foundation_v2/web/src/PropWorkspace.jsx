@@ -103,6 +103,26 @@ function initialDraft() {
   }
 }
 
+function readInitialDraft(workspace, query) {
+  const fallback = initialDraft()
+  try {
+    const encoded = query?.get?.('prop_draft')
+    if (encoded) {
+      const incoming = JSON.parse(encoded)
+      if (incoming && typeof incoming === 'object') return { ...fallback, ...incoming }
+    }
+    const key = `wmreplay:prop-draft:${workspace}`
+    const raw = window.sessionStorage.getItem(key)
+    if (!raw) return fallback
+    window.sessionStorage.removeItem(key)
+    const incoming = JSON.parse(raw)
+    if (!incoming || typeof incoming !== 'object') return fallback
+    return { ...fallback, ...incoming }
+  } catch {
+    return fallback
+  }
+}
+
 function StateMessage({ kind, children, testId }) {
   const role = kind === 'error' || kind === 'denied' || kind === 'conflict' ? 'alert' : 'status'
   return <div className={`prop-message prop-message-${kind}`} role={role} data-testid={testId}>{children}</div>
@@ -186,13 +206,13 @@ function objectiveSummary(objectives, phase, currency, locale = 'vi-VN') {
   }
 }
 
-export default function PropWorkspace({ workspace }) {
+export default function PropWorkspace({ workspace, query }) {
   const { t, locale, statusLabel } = useTestingLocale()
   const formatMoney = (value, currency) => formatPropMoney(value, currency, locale)
   const formatUtc = value => formatPropUtc(value, locale)
   const reportReasonLabel = code => t(propReasonLabel(code))
 
-  const [draft, setDraft] = useState(initialDraft)
+  const [draft, setDraft] = useState(() => readInitialDraft(workspace, query))
   const [sessions, setSessions] = useState({ status: 'loading', items: [], error: null })
   const [datasets, setDatasets] = useState({ status: 'loading', items: [], error: null })
   const [selected, setSelected] = useState({ status: 'idle', session: null, attempts: [], bundle: null, report: null, reportError: null, error: null })

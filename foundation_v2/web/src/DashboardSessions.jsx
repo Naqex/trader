@@ -42,7 +42,10 @@ export default function DashboardSessions({ workspace, query, preview = null }) 
   const page = 1
   const [dialog, setDialog] = useState(null), [pending, setPending] = useState(false), [mutationError, setMutationError] = useState(''), [notice, setNotice] = useState('')
   const [needsRefresh, setNeedsRefresh] = useState(false)
-  const [creating, setCreating] = useState(false)
+  // Keep the creation surface in one dialog, while remembering which tab the
+  // quick action should open. This lets Prop Firm reuse the backtest setup
+  // shell instead of sending the user to a separate wizard immediately.
+  const [creating, setCreating] = useState(null)
   const uncertainDelete = useRef(null)
   const cleanDeletedScope = item => {
     if (readLastSession(workspace) === item.record_id) rememberSession(workspace, '')
@@ -106,7 +109,7 @@ export default function DashboardSessions({ workspace, query, preview = null }) 
     }).catch(error => {
       if (controller.signal.aborted) return
       const denied = [401, 403].includes(error.status)
-      if (denied) { setDialog(null); setCreating(false); setDetailState({ workspace, items: {} }) }
+      if (denied) { setDialog(null); setCreating(null); setDetailState({ workspace, items: {} }) }
       setCatalog(current => denied || current.key !== listKey ? { status: 'error', loaded: false, items: [], refreshing: false, error: error.message, readError: error, denied, key: listKey } : { ...current, status: current.loaded ? 'stale' : 'error', refreshing: false, error: error.message, readError: error })
     }), search ? 150 : 0)
     return () => { clearTimeout(timer); controller.abort() }
@@ -180,14 +183,14 @@ export default function DashboardSessions({ workspace, query, preview = null }) 
   if (catalog.denied) return <TestingEmptyState kind="denied" viewport />
   if (!catalog.loaded && catalog.status === 'loading') return <TestingPageSkeleton view="overview" />
   if (source === 'backtest' && catalog.loaded && (preview ? catalog.items.length === 0 : catalog.total === 0)) return <>
-    <TestingWelcome preview={Boolean(preview)} onBacktest={() => setCreating(true)} propHref={buildWorkspaceHref('testing', workspace, query)} />
-    {creating && !preview && <QuickSessionDialog workspace={workspace} query={query} sessions={[]} onClose={() => setCreating(false)} />}
+    <TestingWelcome preview={Boolean(preview)} onBacktest={() => setCreating('backtest')} propHref={buildWorkspaceHref('testing', workspace, query)} />
+    {creating && !preview && <QuickSessionDialog workspace={workspace} query={query} initialMode={creating} sessions={[]} onClose={() => setCreating(null)} />}
   </>
 
   return <>
     <h1 className="sr-only">{t("Dashboard")}</h1>
     <nav className="fx-dashboard-quick-actions" aria-label={t("Bắt đầu luyện tập")}>
-      {preview ? <><button type="button" className="fx-dashboard-quick-action is-primary" disabled><ActionIcon kind="backtest" /><span><strong>{t("Backtesting session")}</strong><small>{t("Tạo phiên backtest")}</small></span></button><button type="button" className="fx-dashboard-quick-action" disabled><ActionIcon kind="prop" /><span><strong>{t("Prop firm session")}</strong><small>{t("Bắt đầu challenge mô phỏng")}</small></span></button></> : <><button type="button" className="fx-dashboard-quick-action is-primary" onClick={() => setCreating(true)}><ActionIcon kind="backtest" /><span><strong>{t("Backtesting session")}</strong><small>{t("Tạo phiên backtest")}</small></span></button><a className="fx-dashboard-quick-action" href={buildWorkspaceHref('testing', workspace, query)}><ActionIcon kind="prop" /><span><strong>{t("Prop firm session")}</strong><small>{t("Bắt đầu challenge mô phỏng")}</small></span></a></>}
+      {preview ? <><button type="button" className="fx-dashboard-quick-action is-primary" disabled><ActionIcon kind="backtest" /><span><strong>{t("Backtesting session")}</strong><small>{t("Tạo phiên backtest")}</small></span></button><button type="button" className="fx-dashboard-quick-action" disabled><ActionIcon kind="prop" /><span><strong>{t("Prop firm session")}</strong><small>{t("Bắt đầu challenge mô phỏng")}</small></span></button></> : <><button type="button" className="fx-dashboard-quick-action is-primary" onClick={() => setCreating('backtest')}><ActionIcon kind="backtest" /><span><strong>{t("Backtesting session")}</strong><small>{t("Tạo phiên backtest")}</small></span></button><button type="button" className="fx-dashboard-quick-action" onClick={() => setCreating('prop')}><ActionIcon kind="prop" /><span><strong>{t("Prop firm session")}</strong><small>{t("Bắt đầu challenge mô phỏng")}</small></span></button></>}
       <a className="fx-dashboard-quick-action" href={buildWorkspaceHref('learn', workspace, query)}><ActionIcon kind="learn" /><span><strong>{t("Tutorials")}</strong><small>{t("Học và luyện tập")}</small></span></a>
     </nav>
     <section className="fx-dashboard-recent" data-testid="dashboard-recent" data-state={catalog.status} aria-busy={catalog.status === 'loading' || Boolean(catalog.refreshing)} aria-label={t("Recent Sessions")}>
@@ -204,6 +207,6 @@ export default function DashboardSessions({ workspace, query, preview = null }) 
     {source !== 'prop' ? <DashboardPerformance workspace={workspace} filters={filters} reload={reload} previewPayload={previewPayload} previewState={preview?.state} controls={performanceControls} sourceHeading={source === 'all' ? t("Backtesting") : null} dateControls={<>{filters.session && <div className="fx-dashboard-selected-session"><span>{catalog.items.find(item => item.record_id === filters.session)?.name || t("Phiên đang chọn")}</span><button type="button" aria-label={t("Bỏ chọn phiên Performance")} onClick={() => setPerformanceFilters({ ...filters, session: '' })}>×</button></div>}{period === 'custom' && <div className="fx-dashboard-date-controls"><label><span>{t("Từ ngày (UTC)")}</span><ProjectDateInput type="date" value={filters.from} onChange={event => setPerformanceFilters({ ...filters, from: event.target.value })} /></label><label><span>{t("Đến ngày (UTC)")}</span><ProjectDateInput type="date" value={filters.to} onChange={event => setPerformanceFilters({ ...filters, to: event.target.value })} /></label></div>}</>} /> : <section className="fx-dashboard-results"><div className="fx-dashboard-section-head"><h2>{t("Performance")}</h2><div className="fx-dashboard-performance-filters">{performanceControls}</div></div>{propReport}</section>}
     {source === 'all' && <section className="fx-dashboard-prop-section" aria-label={t("Prop Firm Performance")}><h3>{t("Prop Firm")}</h3>{propReport}</section>}
     {selectedDialog && (dialog.mode === 'rename' ? <SessionSettingsDrawer key={dialog.id} item={selectedDialog} dataset={datasets.find(entry => entry.dataset_id === selectedDialog.dataset_id)} payload={details[selectedDialog.record_id]?.payload} model={details[selectedDialog.record_id]?.model} replayRecord={details[selectedDialog.record_id]?.replayRecord} workspace={workspace} preview={Boolean(preview)} pending={pending} blocked={needsRefresh || catalogBlocked} error={mutationError} onClose={() => setDialog(null)} onSubmit={draft => mutate('rename', selectedDialog, draft)} /> : <SessionActionDialog key={dialog.mode + ':' + dialog.id} mode={dialog.mode} item={selectedDialog} preview={Boolean(preview)} pending={pending} blocked={needsRefresh || catalogBlocked} error={mutationError} onClose={() => setDialog(null)} onSubmit={mutate} />)}
-    {creating && !preview && <QuickSessionDialog workspace={workspace} query={query} sessions={catalog.items} onClose={() => setCreating(false)} />}
+    {creating && !preview && <QuickSessionDialog workspace={workspace} query={query} initialMode={creating} sessions={catalog.items} onClose={() => setCreating(null)} />}
   </>
 }
