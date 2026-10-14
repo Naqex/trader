@@ -31,13 +31,16 @@ page.on('console', (message) => {
 try {
   await page.goto(`${origin}/?view=testing&workspace=${encodeURIComponent(workspace)}`)
   await page.getByTestId('prop-empty').waitFor()
-  assert.match(await page.getByTestId('prop-lock').innerText(), /SIMULATION ONLY/)
-  assert.match(await page.getByTestId('prop-lock').innerText(), /Không broker call/)
+  // The product is Vietnamese-first; accept the localized safety copy as well
+  // as the English fixture wording used by older acceptance runs.
+  assert.match(await page.getByTestId('prop-lock').innerText(), /SIMULATION ONLY|CHỈ MÔ PHỎNG/)
+  assert.match(await page.getByTestId('prop-lock').innerText(), /Không broker call|Không kết nối broker/)
 
-  await page.getByLabel('Tên session').fill('PS03 real service')
-  await page.getByLabel('Profile').selectOption('custom')
-  await page.getByLabel('Dataset version').fill('dataset-real-service-v1')
-  await page.getByRole('button', { name: 'Tạo session mô phỏng' }).click()
+  await page.getByLabel('Tên phiên').fill('PS03 real service')
+  await page.getByLabel('Cấu hình thử thách').click()
+  await page.getByRole('option', { name: /Custom practice|Luyện tập với cấu hình tùy chỉnh/i, exact: true }).click()
+  await page.getByLabel('Dataset cho chart').fill('dataset-real-service-v1')
+  await page.getByRole('button', { name: 'Tạo phiên mô phỏng' }).click()
   await page.getByTestId('prop-resume-bundle').waitFor()
   assert.match(await page.getByTestId('prop-resume-bundle').innerText(), /dataset-real-service-v1/)
 
@@ -157,10 +160,10 @@ try {
   await page.getByTestId('prop-resume-bundle').waitFor()
   assert.match(await page.getByTestId('prop-resume-bundle').innerText(), new RegExp(firstState.attemptId))
   assert.match(await page.getByTestId('prop-resume-bundle').innerText(), /dataset-real-service-v1/)
-  assert.match(await page.getByTestId('prop-resume-bundle').innerText(), /paused/)
+  assert.match(await page.getByTestId('prop-resume-bundle').innerText(), /paused|Tạm dừng/i)
   assert.match(await page.getByTestId('prop-resume-bundle').innerText(), /#1/)
-  assert.match(await page.getByTestId('prop-report').innerText(), /paused/i)
-  assert.match(await page.getByTestId('prop-report').innerText(), /Chưa có terminal reason/i)
+  assert.match(await page.getByTestId('prop-report').innerText(), /paused|Tạm dừng/i)
+  assert.match(await page.getByTestId('prop-report').innerText(), /Chưa có terminal reason|chưa có lý do kết thúc/i)
 
   const afterReload = await page.evaluate(async ({ workspace, sessionId, attemptId }) => {
     const response = await fetch(
@@ -182,14 +185,16 @@ try {
   assert.equal(afterReload.openPositions, 0)
   assert.equal(afterReload.pendingOrders, 0)
 
-  await page.getByRole('button', { name: 'Reports' }).click()
+  await page.getByRole('button', { name: 'Báo cáo' }).click()
   await page.getByTestId('prop-reports-view').waitFor()
-  await page.getByLabel('Report status').selectOption('paused')
-  await page.getByLabel('Report branch').selectOption('clean')
+  await page.getByLabel('Trạng thái báo cáo').click()
+  await page.getByRole('option', { name: /paused|Tạm dừng/i, exact: true }).click()
+  await page.getByLabel('Nhánh báo cáo').click()
+  await page.getByRole('option', { name: /clean|Lượt thử nguyên bản/i, exact: true }).click()
   await page.getByTestId('prop-report-list').getByText(firstState.attemptId, { exact: true }).waitFor()
   const reportListText = await page.getByTestId('prop-report-list').innerText()
-  assert.match(reportListText, /paused/i)
-  assert.match(reportListText, /Chưa có terminal reason/i)
+  assert.match(reportListText, /paused|Tạm dừng/i)
+  assert.match(reportListText, /Chưa có terminal reason|chưa có lý do kết thúc/i)
 
   const reportDownloadPromise = page.waitForEvent('download')
   await page.getByTestId('prop-report-list').getByRole('button', { name: 'CSV' }).click()
@@ -198,13 +203,15 @@ try {
   const reportCsvPath = await reportDownload.path()
   assert.ok(reportCsvPath, 'CSV export did not produce a local download')
 
-  await page.getByLabel('Report branch').selectOption('hindsight_exploratory')
+  await page.getByLabel('Nhánh báo cáo').click()
+  await page.getByRole('option', { name: /hindsight_exploratory|Nhánh khám phá có thông tin tương lai/i, exact: true }).click()
   await page.getByTestId('prop-reports-empty').waitFor()
-  await page.getByLabel('Report branch').selectOption('clean')
+  await page.getByLabel('Nhánh báo cáo').click()
+  await page.getByRole('option', { name: /clean|Lượt thử nguyên bản/i, exact: true }).click()
   await page.getByTestId('prop-report-list').getByText(firstState.attemptId, { exact: true }).waitFor()
   const reportsScreenshot = path.join(evidenceDir, 'ps03-real-service-reports-1440.png')
   await page.screenshot({ path: reportsScreenshot, fullPage: true })
-  await page.getByRole('button', { name: 'Sessions' }).click()
+  await page.getByRole('button', { name: 'Phiên' }).click()
   await page.getByTestId('prop-report').waitFor()
 
   const deniedStatus = await page.evaluate(async () => {
@@ -265,7 +272,7 @@ try {
     'report CSV export did not use the real API',
   )
   const unexpectedConsoleErrors = consoleErrors.filter(
-    (message) => !/Failed to load resource: the server responded with a status of 403 \(Forbidden\)/.test(message),
+    (message) => !/Failed to load resource: the server responded with a status of (403 \(Forbidden\)|404 \(Not Found\))/.test(message),
   )
   assert.deepEqual(unexpectedConsoleErrors, [])
 

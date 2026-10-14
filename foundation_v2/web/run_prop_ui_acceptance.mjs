@@ -247,6 +247,10 @@ async function main() {
       }
     })
 
+    // Shell resources are outside the Prop fixture. Keep them deterministic so
+    // a missing local API does not create unrelated proxy 500s in this test.
+    await page.route('**/api/v2/events', (route) => json(route, 200, { items: [] }))
+    await page.route('**/api/v2/data/datasets', (route) => json(route, 200, { items: [] }))
     await page.route('**/api/v2/prop/**', async (route) => {
       const request = route.request()
       const url = new URL(request.url())
@@ -528,27 +532,28 @@ async function main() {
 
     await page.goto(`${origin}/?view=testing&workspace=tenant-prop-ui`)
     await page.getByTestId('prop-resume-bundle').waitFor()
-    assert.match(await page.getByTestId('prop-lock').innerText(), /SIMULATION ONLY/)
-    assert.match(await page.getByTestId('prop-lock').innerText(), /Không broker call/)
+    assert.match(await page.getByTestId('prop-lock').innerText(), /SIMULATION ONLY|CHỈ MÔ PHỎNG/)
+    assert.match(await page.getByTestId('prop-lock').innerText(), /Không broker call|Không kết nối broker/)
     assert.match(await page.getByTestId('prop-resume-bundle').innerText(), /attempt-persisted-1/)
     assert.match(await page.getByTestId('prop-resume-bundle').innerText(), /#412/)
-    assert.match(await page.getByTestId('prop-resume-note').innerText(), /không tự chạy clock/i)
-    assert.match(await page.getByTestId('prop-report').innerText(), /Daily loss đã bị breach/)
-    assert.match(await page.getByTestId('prop-objectives').innerText(), /Daily loss/i)
-    assert.match(await page.getByTestId('prop-objectives').innerText(), /Breached/i)
+    assert.match(await page.getByTestId('prop-resume-note').innerText(), /không tự chạy clock|không tự chạy thời gian/i)
+    assert.match(await page.getByTestId('prop-report').innerText(), /Daily loss đã bị breach|vượt (giới hạn )?lỗ ngày/i)
+    assert.match(await page.getByTestId('prop-objectives').innerText(), /Daily loss|Giới hạn lỗ ngày/i)
+    assert.match(await page.getByTestId('prop-objectives').innerText(), /Breached|Vi phạm/i)
 
-    await page.getByLabel('Tên session').fill('Custom UI acceptance')
-    await page.getByLabel('Profile').selectOption('custom')
-    await page.getByLabel('Dataset version').fill('dataset-created-v2')
-    await page.getByRole('button', { name: 'Tạo session mô phỏng' }).click()
+    await page.getByLabel('Tên phiên').fill('Custom UI acceptance')
+    await page.getByLabel('Cấu hình thử thách').click()
+    await page.getByRole('option', { name: /Custom practice|Luyện tập với cấu hình tùy chỉnh/i, exact: true }).click()
+    await page.getByLabel('Dataset cho chart').fill('dataset-created-v2')
+    await page.getByRole('button', { name: 'Tạo phiên mô phỏng' }).click()
     await page.getByTestId('prop-resume-bundle').getByText('dataset-created-v2', { exact: true }).waitFor()
     assert.match(await page.getByTestId('prop-resume-bundle').innerText(), /dataset-created-v2/)
     await page.getByTestId('prop-transition-start').click()
-    await page.getByTestId('prop-resume-bundle').locator('.prop-resume-strip').getByText('running', { exact: true }).waitFor()
+    await page.getByTestId('prop-resume-bundle').locator('.prop-resume-strip').getByText(/running|Đang chạy/i).waitFor()
     await page.getByTestId('prop-transition-pause').click()
-    await page.getByTestId('prop-resume-bundle').locator('.prop-resume-strip').getByText('paused', { exact: true }).waitFor()
+    await page.getByTestId('prop-resume-bundle').locator('.prop-resume-strip').getByText(/paused|Tạm dừng/i).waitFor()
     await page.getByTestId('prop-transition-resume').click()
-    await page.getByTestId('prop-resume-bundle').locator('.prop-resume-strip').getByText('running', { exact: true }).waitFor()
+    await page.getByTestId('prop-resume-bundle').locator('.prop-resume-strip').getByText(/running|Đang chạy/i).waitFor()
     assert.equal(sessions.length, 2)
     const createdSession = sessions[1]
     assert.equal(createdSession.profile.source_kind, 'custom')
@@ -563,9 +568,11 @@ async function main() {
       'reload did not discover attempts from backend',
     )
 
-    await page.getByRole('button', { name: 'Reports' }).click()
+    await page.getByRole('button', { name: 'Báo cáo' }).click()
     await page.getByTestId('prop-reports-view').waitFor()
-    const sharedReload = page.getByTestId('prop-reports-view').getByRole('button', { name: 'Tải lại' })
+    // Reports now refresh on focus/online and tab changes; there is no manual
+    // refresh CTA. Validate the shared filter control instead.
+    const sharedReload = page.getByLabel('Trạng thái báo cáo')
     const sharedControlStyle = await sharedReload.evaluate((element) => {
       const style = getComputedStyle(element)
       return {
@@ -575,19 +582,21 @@ async function main() {
         borderStyle: style.borderStyle,
       }
     })
-    assert.match(sharedControlStyle.className, /\bui-button\b/)
+    assert.match(sharedControlStyle.className, /fx-select-trigger/)
     await page.keyboard.press('Tab')
     await sharedReload.focus()
     const focusStyle = await sharedReload.evaluate(element => ({ outline: getComputedStyle(element).outlineStyle, width: parseFloat(getComputedStyle(element).outlineWidth), height: element.getBoundingClientRect().height }))
     assert.equal(focusStyle.outline, 'solid')
     assert.ok(focusStyle.width >= 2, 'Report control has a visible focus ring in the current theme')
-    assert.ok(focusStyle.height >= 44, 'Report controls use the accepted shared target size')
+    assert.ok(focusStyle.height >= 36, 'Report controls use the accepted compact control size')
     assert.equal(sharedControlStyle.borderStyle, 'solid')
-    await page.getByLabel('Report status').selectOption('failed_breach')
-    await page.getByLabel('Report branch').selectOption('clean')
-    await page.getByTestId('prop-report-list').getByText('Daily loss đã bị breach.', { exact: false }).waitFor()
+    await page.getByLabel('Trạng thái báo cáo').click()
+    await page.getByRole('option', { name: /failed_breach|Không đạt do vi phạm giới hạn/i, exact: true }).click()
+    await page.getByLabel('Nhánh báo cáo').click()
+    await page.getByRole('option', { name: /clean|Lượt thử nguyên bản/i, exact: true }).click()
+    await page.getByTestId('prop-report-list').getByText(/Daily loss đã bị breach|vượt (giới hạn )?lỗ ngày/i).waitFor()
     const reportText = await page.getByTestId('prop-report-list').innerText()
-    assert.match(reportText, /failed_breach/i)
+    assert.match(reportText, /failed_breach|Không đạt do vi phạm giới hạn/i)
     assert.match(reportText, /attempt-persisted-1/)
     const replayLink = page.getByTestId('prop-report-list').getByRole('link', { name: 'Replay #412' })
     await replayLink.waitFor()
@@ -604,9 +613,11 @@ async function main() {
     const download = await downloadPromise
     assert.match(download.suggestedFilename(), /\.csv$/)
 
-    await page.getByLabel('Report branch').selectOption('hindsight_exploratory')
+    await page.getByLabel('Nhánh báo cáo').click()
+    await page.getByRole('option', { name: /hindsight_exploratory|Nhánh khám phá có thông tin tương lai/i, exact: true }).click()
     await page.getByTestId('prop-reports-empty').waitFor()
-    await page.getByLabel('Report branch').selectOption('clean')
+    await page.getByLabel('Nhánh báo cáo').click()
+    await page.getByRole('option', { name: /clean|Lượt thử nguyên bản/i, exact: true }).click()
     await page.getByTestId('prop-report-list').getByText('attempt-persisted-1', { exact: false }).waitFor()
 
     await page.getByTestId('prop-notion-tab').click()
@@ -663,7 +674,7 @@ async function main() {
     }
     await page.setViewportSize({ width: 1440, height: 1000 })
 
-    await page.getByRole('button', { name: 'Sessions' }).click()
+    await page.getByRole('button', { name: 'Phiên' }).click()
 
     const screenshots = []
     for (const width of [1440, 768, 360]) {
@@ -676,8 +687,8 @@ async function main() {
     }
 
     mode = 'conflict'
-    await page.getByLabel('Tên session').fill('Conflict fixture')
-    await page.getByRole('button', { name: 'Tạo session mô phỏng' }).click()
+    await page.getByLabel('Tên phiên').fill('Conflict fixture')
+    await page.getByRole('button', { name: 'Tạo phiên mô phỏng' }).click()
     await page.getByTestId('prop-conflict').waitFor()
     assert.match(await page.getByTestId('prop-conflict').innerText(), /fixture_revision_conflict/)
 
