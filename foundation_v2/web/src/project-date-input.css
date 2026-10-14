@@ -7,3 +7,24 @@
 .fx-app .project-date-input > .project-date-picker { position:absolute; right:2px; top:2px; bottom:2px; width:32px; min-height:0; display:grid; place-items:center; padding:0; border:0; background:transparent; color:var(--wm-content-muted); border-radius:var(--wm-control-radius); cursor:pointer; }
 .fx-app .project-date-input > .project-date-picker:hover:not(:disabled) { color:var(--wm-content); background:transparent; }
 .project-date-picker:focus-visible { outline:2px solid var(--wm-focus); outline-offset:-2px; }
+.project-date-input.is-open { border-color:var(--wm-focus, var(--project-primary)); }
+.project-date-popover { position:absolute; top:calc(100% + 8px); left:0; z-index:80; width:min(304px, calc(100vw - 24px)); box-sizing:border-box; padding:12px; border:1px solid var(--wm-control-border); border-radius:var(--wm-popup-radius, 12px); background:var(--wm-surface); color:var(--wm-content); box-shadow:0 12px 28px #0004; }
+.project-date-popover-heading { display:grid; grid-template-columns:32px minmax(0, 1fr) 32px; align-items:center; gap:6px; margin-bottom:8px; }
+.project-date-popover-heading strong { min-width:0; overflow:hidden; text-align:center; text-overflow:ellipsis; text-transform:capitalize; font-size:13px; font-weight:600; }
+.fx-app .project-date-popover button { min-height:32px; padding:0; border:0; border-radius:var(--ds-radius-small, 6px); background:transparent; color:var(--wm-content); font:inherit; cursor:pointer; }
+.fx-app .project-date-popover button:hover:not(:disabled) { background:var(--wm-hover); }
+.fx-app .project-date-popover button:disabled { opacity:.35; cursor:not-allowed; }
+.project-date-calendar { display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); gap:2px; }
+.project-date-calendar > span { display:grid; min-height:28px; place-items:center; color:var(--wm-content-muted); font-size:11px; font-weight:600; }
+.fx-app .project-date-calendar button { min-height:34px; border-radius:50%; font-size:12px; font-variant-numeric:tabular-nums; }
+.fx-app .project-date-calendar button.is-selected { background:var(--project-action, var(--wm-action-bg)); color:var(--project-on-action, var(--wm-on-primary)); font-weight:600; }
+.fx-app .project-date-calendar button.is-today:not(.is-selected) { box-shadow:inset 0 0 0 1px var(--project-primary, var(--wm-focus)); color:var(--project-primary, var(--wm-focus)); }
+.project-date-time-panel, .project-date-time-field { display:grid; gap:6px; color:var(--wm-content-muted); font-size:12px; }
+.project-date-time-panel input, .project-date-time-field input { width:100%; min-height:var(--wm-control-height); box-sizing:border-box; padding:7px 10px; border:1px solid var(--wm-control-border); border-radius:var(--ds-radius-field); background:transparent; color:var(--wm-content); font:inherit; color-scheme:dark; }
+.fx-app[data-theme='light'] .project-date-time-panel input, .fx-app[data-theme='light'] .project-date-time-field input { color-scheme:light; }
+.project-date-time-field { margin-top:10px; }
+.project-date-popover-footer { display:flex; align-items:center; gap:6px; margin-top:12px; padding-top:10px; border-top:1px solid var(--wm-border); }
+.project-date-popover-footer span { flex:1; }
+.project-date-popover-footer button { min-height:30px; padding-inline:9px !important; color:var(--wm-content-muted) !important; font-size:12px; }
+.project-date-popover-footer button.is-primary { background:var(--project-control, var(--wm-control-open)); color:var(--wm-content) !important; }
+.project-date-popover-footer button.is-primary:hover:not(:disabled) { background:var(--wm-hover); }

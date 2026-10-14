@@ -285,6 +285,18 @@
     "vi": "Xóa",
     "en": "Clear"
   },
+  "Hôm nay": {
+    "vi": "Hôm nay",
+    "en": "Today"
+  },
+  "Xong": {
+    "vi": "Xong",
+    "en": "Done"
+  },
+  "Chọn giờ": {
+    "vi": "Chọn giờ",
+    "en": "Choose time"
+  },
   "Clear filters": {
     "vi": "Xóa bộ lọc",
     "en": "Clear filters"
