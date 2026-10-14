@@ -182,13 +182,17 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
             {mode === 'prop' ? <section className="quick-session-prop-rules" aria-label={t('Prop Firm rules')}>
               <div className="quick-session-prop-heading"><div><strong>{t('Prop Firm rules')}</strong><small>{t('Giới hạn được kiểm tra trực tiếp trong chart replay.')}</small></div><span>{t('Simulation only')}</span></div>
               <div className="quick-session-prop-grid">
-                <label><span>{t('Profile')}</span><FxSelect label={t('Profile')} value={propDraft.profileKind} onChange={value => changeProp('profileKind', value)} localizeOptions={false} options={[{ value: 'generic', label: t('Generic practice'), localize: false }, { value: 'custom', label: t('Custom practice'), localize: false }]} /></label>
-                <label><span>{t('Profit target')}</span><div className="quick-session-rule-input"><input type="number" min="0.1" step="0.1" value={propDraft.targetPercent} disabled={busy} onChange={event => changeProp('targetPercent', event.target.value)} /><span>%</span></div></label>
+                <label className="quick-session-rule-target"><span>{t('Profit target')}</span><div className="quick-session-rule-input"><input type="number" min="0.1" step="0.1" value={propDraft.targetPercent} disabled={busy} onChange={event => changeProp('targetPercent', event.target.value)} /><span>%</span></div></label>
                 <label><span>{t('Max daily loss')}</span><div className="quick-session-rule-input"><input type="number" min="1" step="0.01" value={propDraft.dailyLoss} disabled={busy} onChange={event => changeProp('dailyLoss', event.target.value)} /><span>{currency}</span></div></label>
                 <label><span>{t('Max total loss')}</span><div className="quick-session-rule-input"><input type="number" min="1" step="0.01" value={propDraft.overallLoss} disabled={busy} onChange={event => changeProp('overallLoss', event.target.value)} /><span>{currency}</span></div></label>
-                <label><span>{t('Maximum days')}</span><div className="quick-session-rule-input"><input type="number" min="1" max="365" value={propDraft.durationDays} disabled={busy} onChange={event => changeProp('durationDays', event.target.value)} /><span>{t('days')}</span></div></label>
               </div>
-              <p className="quick-session-prop-note">{t('Rule được lưu cùng challenge mô phỏng; sau khi tạo, chart replay sẽ mở theo đúng tài sản, chiến lược và khoảng thời gian này.')}</p>
+              <details className="quick-session-prop-advanced">
+                <summary>{t('Điều kiện nâng cao')}</summary>
+                <div className="quick-session-prop-advanced-grid">
+                  <label><span>{t('Profile')}</span><FxSelect label={t('Profile')} value={propDraft.profileKind} onChange={value => changeProp('profileKind', value)} localizeOptions={false} options={[{ value: 'generic', label: t('Generic practice'), localize: false }, { value: 'custom', label: t('Custom practice'), localize: false }]} /></label>
+                  <label><span>{t('Maximum days')}</span><div className="quick-session-rule-input"><input type="number" min="1" max="365" value={propDraft.durationDays} disabled={busy} onChange={event => changeProp('durationDays', event.target.value)} /><span>{t('days')}</span></div></label>
+                </div>
+              </details>
             </section> : <>
               <div className="quick-session-field"><span>{t('Select Chart Layout (Optional)')}</span><FxSelect className="is-field" label={t('Chart Layout')} value="default" disabled options={[{value:'default',label:'Bố cục mặc định'}]} onChange={() => {}} /></div>
               {advanced && <label>{t('Description')}<textarea rows={3} maxLength={2000} disabled={busy} value={draft.description} onChange={event => change('description',event.target.value)} /></label>}
