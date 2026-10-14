@@ -18,15 +18,15 @@
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-tabs button[aria-selected=true] { background:var(--wm-hover); }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-fields { display:grid; gap:24px; }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-fields label, .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-field { display:grid; gap:8px; font-size:14px; }
-.fx-app.fx-shell-story[data-theme] .fx-content .quick-session-fields :is(input,textarea):not(:where(.quick-session-balance > input)) { width:100%; box-sizing:border-box; min-height:var(--wm-control-height); padding:7px 12px; border:1px solid var(--wm-control-border); border-radius:var(--ds-radius-field); color:var(--wm-content); background:transparent; font:inherit; }
-.fx-app.fx-shell-story[data-theme] .fx-content .quick-session-fields input:hover:not(:disabled):not(:focus), .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-fields textarea:hover:not(:disabled):not(:focus) { border-color:var(--wm-control-hover-border); }
+.fx-app.fx-shell-story[data-theme] .fx-content .quick-session-fields :is(input,textarea):not(:where(.quick-session-balance > input, .quick-session-rule-input > input, .project-date-input > input[type=text])) { width:100%; box-sizing:border-box; min-height:var(--wm-control-height); padding:7px 12px; border:1px solid var(--wm-control-border); border-radius:var(--ds-radius-field); color:var(--wm-content); background:transparent; font:inherit; }
+.fx-app.fx-shell-story[data-theme] .fx-content .quick-session-fields :is(input,textarea):not(:where(.quick-session-balance > input, .quick-session-rule-input > input, .project-date-input > input[type=text])):hover:not(:disabled):not(:focus) { border-color:var(--wm-control-hover-border); }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-fields input:focus, .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-fields textarea:focus { outline:none; border-color:var(--wm-focus); }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-fields small { color:var(--wm-content-muted); font-size:12px; line-height:1.5; }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-fields a { color:var(--wm-accent,var(--wm-content)); width:fit-content; text-decoration:none; font-size:12px; }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-field-title { display:flex; align-items:center; gap:16px; }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-required { color:var(--wm-negative); }
-.fx-app.fx-shell-story[data-theme] .fx-content .quick-session-balance-picker { display:flex; flex-wrap:wrap; gap:8px; padding:4px; border:1px solid var(--wm-control-border); border-radius:var(--ds-radius-field); }
-.fx-app.fx-shell-story[data-theme] .fx-content .quick-session-balance-picker button { min-height:var(--wm-control-height); padding:6px 14px; border:1px solid transparent; border-radius:var(--ds-radius-field); background:var(--project-control); color:var(--wm-content); font-variant-numeric:tabular-nums; }
+.fx-app.fx-shell-story[data-theme] .fx-content .quick-session-balance-picker { display:flex; flex-wrap:wrap; gap:4px; padding:3px; border:1px solid var(--wm-control-border); border-radius:var(--ds-radius-field); }
+.fx-app.fx-shell-story[data-theme] .fx-content .quick-session-balance-picker button { min-height:var(--ds-tab); padding:3px 12px; border:1px solid transparent; border-radius:var(--ds-radius-small); background:var(--project-control); color:var(--wm-content); font-variant-numeric:tabular-nums; }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-balance-picker button:hover:not(:disabled) { border-color:var(--wm-control-hover-border); }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-balance-picker button[aria-checked=true] { border-color:var(--project-primary); background:color-mix(in srgb, var(--project-primary) 12%, var(--project-control)); color:var(--project-primary); }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-balance { display:flex; align-items:center; margin-top:8px; border:1px solid var(--wm-control-border); border-radius:var(--ds-radius-field); overflow:hidden; cursor:text; }
@@ -54,8 +54,12 @@
 .fx-app.fx-shell-story[data-theme] .fx-content .prop-rule-input:focus-within { border-color:var(--wm-focus); }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-rule-input input,
 .fx-app.fx-shell-story[data-theme] .fx-content .prop-rule-input input { min-width:0; flex:1; min-height:calc(var(--wm-control-height) - 2px); border:0; border-radius:0; }
+.fx-app.fx-shell-story[data-theme] .fx-content .quick-session-rule-input input { padding:7px 12px 7px 6px; background:transparent; appearance:textfield; }
+.fx-app.fx-shell-story[data-theme] .fx-content .quick-session-rule-input input::-webkit-inner-spin-button,
+.fx-app.fx-shell-story[data-theme] .fx-content .quick-session-rule-input input::-webkit-outer-spin-button { appearance:none; margin:0; }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-rule-input > span,
 .fx-app.fx-shell-story[data-theme] .fx-content .prop-rule-input > span { padding:0 12px; color:var(--wm-content-muted); font-size:12px; font-variant-numeric:tabular-nums; }
+.fx-app.fx-shell-story[data-theme] .fx-content .quick-session-rule-input > .quick-session-currency-prefix { padding:0 0 0 12px; }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-footer { display:flex; justify-content:flex-end; gap:12px; padding:16px 20px; border-top:1px solid var(--wm-border); flex-shrink:0; }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-footer :is(button,a) { display:inline-flex; align-items:center; justify-content:center; padding:7px 16px; min-height:var(--wm-control-height); box-sizing:border-box; border:1px solid var(--wm-control-border); border-radius:999px; text-decoration:none; background:transparent; }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-footer .quick-session-submit { background:var(--wm-action-bg); color:var(--wm-on-primary); border-color:var(--wm-action-bg); }

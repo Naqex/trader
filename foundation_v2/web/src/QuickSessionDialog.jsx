@@ -185,9 +185,9 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
             {mode === 'prop' ? <section className="quick-session-prop-rules" aria-label={t('Prop Firm rules')}>
               <div className="quick-session-prop-rule-group">
                 <div className="quick-session-prop-grid">
-                <label className="quick-session-rule-target"><span>{t('Profit target')}</span><div className="quick-session-rule-input"><input type="number" min="0.1" step="0.1" value={propDraft.targetPercent} disabled={busy} onChange={event => changeProp('targetPercent', event.target.value)} /><span>%</span></div></label>
-                <label><span>{t('Max daily loss')}</span><div className="quick-session-rule-input"><input type="number" min="1" step="0.01" value={propDraft.dailyLoss} disabled={busy} onChange={event => changeProp('dailyLoss', event.target.value)} /><span>{currency}</span></div></label>
-                <label><span>{t('Max total loss')}</span><div className="quick-session-rule-input"><input type="number" min="1" step="0.01" value={propDraft.overallLoss} disabled={busy} onChange={event => changeProp('overallLoss', event.target.value)} /><span>{currency}</span></div></label>
+                <label className="quick-session-rule-target"><span>{t('Profit target')}</span><div className="quick-session-rule-input"><input aria-label={`${t('Profit target')} %`} type="number" min="0.1" step="0.1" value={propDraft.targetPercent} disabled={busy} onChange={event => changeProp('targetPercent', event.target.value)} /><span aria-hidden="true">%</span></div></label>
+                <label><span>{t('Max daily loss')}</span><div className="quick-session-rule-input"><span className="quick-session-currency-prefix" aria-hidden="true">{currency === 'USD' ? '$' : currency}</span><input aria-label={`${t('Max daily loss')} ${currency}`} type="number" min="1" step="0.01" value={propDraft.dailyLoss} disabled={busy} onChange={event => changeProp('dailyLoss', event.target.value)} /></div></label>
+                <label><span>{t('Max total loss')}</span><div className="quick-session-rule-input"><span className="quick-session-currency-prefix" aria-hidden="true">{currency === 'USD' ? '$' : currency}</span><input aria-label={`${t('Max total loss')} ${currency}`} type="number" min="1" step="0.01" value={propDraft.overallLoss} disabled={busy} onChange={event => changeProp('overallLoss', event.target.value)} /></div></label>
                 </div>
               </div>
             </section> : <>

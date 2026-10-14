@@ -94,6 +94,7 @@ export default function FxSelect({ label, value, options: inputOptions, onChange
       {multiple && multipleStyle === 'checkbox' && <button type="button" role="checkbox" disabled={!available.length} aria-checked={allSelected ? true : selectedCount > 0 ? 'mixed' : false} className="fx-select-all" onClick={() => {
         const locked = value.filter(item => !available.some(option => option.value === item))
         onChange(allSelected ? locked : [...locked, ...available.map(option => option.value)])
+        if (closeOnSelect) close()
       }}><span className={`fx-select-checkbox${allSelected ? ' is-checked' : selectedCount > 0 ? ' is-mixed' : ''}`} aria-hidden="true" /><span className="fx-select-option-label">{t(selectAllLabel)}</span></button>}
       <div role="listbox" tabIndex={-1} aria-label={t(label)} aria-multiselectable={multiple || undefined}>{[...groups].map(([group, entries]) => {
         const content = entries.map(option => <button type="button" role="option" key={option.value} aria-selected={isSelected(option)} disabled={option.disabled} title={renderOption || option.disabled ? option.detail : undefined} onClick={() => {

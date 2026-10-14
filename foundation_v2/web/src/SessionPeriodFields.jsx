@@ -26,12 +26,12 @@ export default function SessionPeriodFields({ range, value, onChange, disabled }
         </div>
         <div className="quick-session-period-field">
           <div className="quick-session-period-end-label"><label htmlFor={`${id}-end`}>{t('Ngày kết thúc')}</label>
-            {value.endMode === 'custom' && <div className="quick-session-period-shortcuts" aria-label={t('Thời lượng phiên')}>
+            <div className="quick-session-period-shortcuts" aria-label={t('Thời lượng phiên')}>
               {[[ 'day', '+1D'], ['week', '+1W'], ['month', '+1M']].map(([unit, label]) => {
                 const timestamp = sessionEndShortcut(state.start, unit)
-                return <button key={unit} type="button" disabled={disabled || state.start === null || timestamp > range.max} aria-label={t(unit === 'day' ? 'Kết thúc sau 1 ngày' : unit === 'week' ? 'Kết thúc sau 1 tuần' : 'Kết thúc sau 1 tháng')} onClick={() => update({ end: sessionDateValue(timestamp) })}>{label}</button>
+                return <button key={unit} type="button" disabled={disabled || state.start === null || timestamp > range.max} aria-label={t(unit === 'day' ? 'Kết thúc sau 1 ngày' : unit === 'week' ? 'Kết thúc sau 1 tuần' : 'Kết thúc sau 1 tháng')} onClick={() => update({ endMode: 'custom', end: sessionDateValue(timestamp) })}>{label}</button>
               })}
-            </div>}
+            </div>
           </div>
           {value.endMode === 'custom' ? <ProjectDateInput id={`${id}-end`} type="datetime-local" required step="60" min={value.start || min} max={max} value={value.end} disabled={disabled} aria-label={t('Ngày kết thúc phiên (UTC)')} aria-describedby={`${id}-hint`} onChange={event => update({ end: event.target.value })} /> : <input id={`${id}-end`} value={t('Tự động')} readOnly disabled aria-label={t('Ngày kết thúc phiên (UTC)')} />}
         </div>

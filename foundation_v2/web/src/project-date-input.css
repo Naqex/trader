@@ -1,6 +1,9 @@
-.project-date-input { position:relative; display:flex; min-width:0; width:100%; align-items:center; }
-.project-date-input > input[type=text] { box-sizing:border-box; width:100%; min-width:0; padding-right:36px; font-variant-numeric:tabular-nums; }
+.project-date-input { position:relative; display:flex; min-width:0; width:100%; min-height:var(--wm-control-height, 36px); align-items:center; box-sizing:border-box; border:1px solid var(--wm-control-border, var(--project-border)); border-radius:var(--ds-radius-field, 8px); background:transparent; transition:background-color var(--ds-motion-hover, 120ms) var(--ds-ease-standard, ease), border-color var(--ds-motion-hover, 120ms) var(--ds-ease-standard, ease); }
+.project-date-input:hover:not(:has(input:disabled)) { background:var(--wm-hover, var(--project-hover)); border-color:var(--wm-control-hover-border, var(--project-border-strong)); }
+.project-date-input:focus-within { border-color:var(--wm-focus, var(--project-primary)); background:transparent; }
+.project-date-input > input[type=text] { box-sizing:border-box; width:100%; min-width:0; min-height:calc(var(--wm-control-height, 36px) - 2px); padding:7px 36px 7px 12px; border:0; border-radius:0; outline:none; background:transparent; color:inherit; font-variant-numeric:tabular-nums; }
+.project-date-input > input[type=text]:hover, .project-date-input > input[type=text]:focus { border-color:transparent; background:transparent; }
 .fx-app .project-date-input > .project-date-native { position:absolute; width:1px; height:1px; min-height:0; opacity:0; padding:0; border:0; pointer-events:none; }
 .fx-app .project-date-input > .project-date-picker { position:absolute; right:2px; top:2px; bottom:2px; width:32px; min-height:0; display:grid; place-items:center; padding:0; border:0; background:transparent; color:var(--wm-content-muted); border-radius:var(--wm-control-radius); cursor:pointer; }
-.fx-app .project-date-input > .project-date-picker:hover:not(:disabled) { color:var(--wm-content); background:var(--wm-hover); }
+.fx-app .project-date-input > .project-date-picker:hover:not(:disabled) { color:var(--wm-content); background:transparent; }
 .project-date-picker:focus-visible { outline:2px solid var(--wm-focus); outline-offset:-2px; }
