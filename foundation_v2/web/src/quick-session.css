@@ -43,7 +43,7 @@
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-engine [role=radio] { flex:1; padding:10px 8px; border:1px solid var(--wm-border); border-radius:9px; background:transparent; font-size:14px; }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-engine [aria-checked=true] { background:var(--wm-action-bg); color:var(--wm-on-primary); border-color:var(--wm-action-bg); }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-prop-rules { display:block; }
-.fx-app.fx-shell-story[data-theme] .fx-content .quick-session-prop-rule-group { padding:16px; border:1px solid var(--project-highlight); border-radius:var(--ds-radius-field); background:color-mix(in srgb, var(--project-highlight) 8%, var(--wm-canvas)); }
+.fx-app.fx-shell-story[data-theme] .fx-content .quick-session-prop-rule-group { padding:16px; border:1px solid var(--project-highlight); border-radius:var(--ds-radius-field); background:var(--project-raised); }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-prop-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-prop-grid label { gap:8px; }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-rule-target { grid-column:1 / -1; }
