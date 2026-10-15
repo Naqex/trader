@@ -60,7 +60,9 @@ function DemoReports({ ledgerOnly, prop = false, query, state = 'demo' }) {
     anchor.href = url; anchor.download = 'demo-trades.csv'; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
   const Inspector = ledgerOnly ? TradeInspector : 'section'
-  const statusControl = <TestingResourceStatus textSummary={ledgerOnly} state={state} resource={ledgerOnly ? 'bảng giao dịch' : 'báo cáo phân tích'} recovery={previewReadRecovery(state)} />
+  // Keep partial semantics in the preview model and table empty state, but
+  // avoid adding a persistent partial badge to the trade toolbar.
+  const statusControl = <TestingResourceStatus textSummary={ledgerOnly} state={ledgerOnly && state === 'partial' ? undefined : state} resource={ledgerOnly ? 'bảng giao dịch' : 'báo cáo phân tích'} recovery={previewReadRecovery(state)} />
   const readNotice = state === 'error' ? <TestingResourceNotice state="error" recovery={previewReadRecovery(state)} resource={ledgerOnly ? 'bảng giao dịch' : 'báo cáo phân tích'} /> : null
   const renderFilters = columnControl => <FxAnalyticsFilters statusControl={statusControl} persistInUrl={false} sourceType={prop ? 'Prop firm' : 'Backtesting'} columnControl={columnControl} ledgerOnly={ledgerOnly} filters={filters} onChange={patch => { setFilters(value => ({ ...value, ...patch })); setSelected('') }} extra={extra} onExtra={patch => setExtra(value => ({ ...value, ...patch }))} rows={model.ledger} facets={facets} onExport={exportCsv} sessionControl={<SessionFilter items={sessions} multiple={ledgerOnly} value={ids} onChange={value => { setIds(value); setSelected('') }} />} onClearSessions={() => setIds(ledgerOnly ? null : sessions[0].record_id)} />
   return <section className="wm-page as-page" aria-label={ledgerOnly ? t("Trades") : t("Analytics")}>

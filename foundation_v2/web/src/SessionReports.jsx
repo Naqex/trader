@@ -73,8 +73,11 @@ function AggregateTrades({ workspace, ids, query, sessionControl, onClearSession
     if (view === 'replay') { params.set('surface', 'workspace'); params.set('cursor', row.close_cursor_index); params.set('event_sequence', row.close_event_sequence); if (row.source_provenance.dataset_id) params.set('dataset', row.source_provenance.dataset_id) }
     return `/?${params}`
   }
-  const backgroundStatus = state.refreshing ? 'refreshing' : state.status === 'stale' ? 'stale' : state.payload?.status === 'partial' ? 'partial' : catalogStatus?.state
-  const statusControl = <TestingResourceStatus textSummary state={backgroundStatus} resource={state.refreshing || state.status === 'stale' || state.payload?.status === 'partial' ? 'bảng giao dịch' : 'danh mục phiên'} recovery={state.readError ? recovery : catalogStatus?.recovery} />
+  // Partial payloads still affect filtering and empty-state semantics, but do
+  // not need a persistent toolbar label. The table itself already reflects
+  // the rows that were read successfully.
+  const backgroundStatus = state.refreshing ? 'refreshing' : state.status === 'stale' ? 'stale' : catalogStatus?.state
+  const statusControl = <TestingResourceStatus textSummary state={backgroundStatus} resource={state.refreshing || state.status === 'stale' ? 'bảng giao dịch' : 'danh mục phiên'} recovery={state.readError ? recovery : catalogStatus?.recovery} />
   const readNotice = state.status === 'error' ? <TestingReadState error message={t('Không đọc được giao dịch: {error}', { error: state.error })} recovery={recovery} /> : null
   if (state.denied) return <TestingEmptyState kind="denied" viewport />
   return <section className="as-page fxa-page wm-page" aria-label={t("Trades")} data-testid="aggregate-trades">

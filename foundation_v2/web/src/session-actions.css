@@ -8,10 +8,7 @@
 .fxs-action-dialog label strong { font-weight: 500; overflow-wrap: anywhere; }
 .fx-app .fxs-action-dialog .fxs-delete-confirm { color: var(--wm-negative); border: 1px solid var(--wm-negative); background: transparent; }
 .fx-app .fxs-action-dialog .fxs-delete-confirm:hover:not(:disabled) { background: var(--wm-hover); }
-.fxs-action-dialog input { min-height: 42px; padding: 10px 12px; border: 1px solid var(--wm-control-border); border-radius: 8px; background: transparent; color: var(--wm-content); font: inherit; }
-.fxs-action-dialog input:focus-visible { outline: 1px solid var(--wm-focus); outline-offset: -1px; }
 @media (pointer: coarse) { .fx-app .fxs-actions .fxs-action-button { width: 44px; height: 44px; min-height: 44px; } }
 
 .fx-app.fx-shell-story[data-theme] .fx-content .fxs-actions :is(button):focus-visible { outline: 2px solid var(--wm-focus); outline-offset: -2px; }
-.fx-app.fx-shell-story[data-theme] .fx-content .fxs-action-dialog input:focus-visible { outline: none; box-shadow: none; border-color: var(--wm-focus); }
 .fx-app.fx-shell-story .fxs-action-dialog > header button { color: var(--wm-content); border: 0; border-radius: 50%; background: transparent; padding: 0; }

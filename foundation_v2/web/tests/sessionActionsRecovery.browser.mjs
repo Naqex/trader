@@ -44,7 +44,7 @@ try {
     await page.evaluate(id => localStorage.setItem('tw:replay:last:tenant-a', id), original.record_id)
     await page.getByRole('button', { name: view === 'replay' ? 'Xóa phiên' : 'Xóa phiên ' + original.name, exact: true }).click()
     const dialog = page.getByRole('dialog', { name: 'Xóa phiên', exact: true })
-    await dialog.getByLabel('Tên phiên xác nhận xóa').fill(original.name)
+    assert.equal(await dialog.locator('input').count(), 0)
     await dialog.getByRole('button', { name: 'Xóa phiên', exact: true }).click()
     if (mode === 'success' || mode === 'lost') {
       await page.waitForURL(url => !url.searchParams.has('session'))
@@ -56,7 +56,7 @@ try {
       }
     } else {
       await dialog.getByRole('alert').waitFor()
-      assert.equal(await dialog.getByLabel('Tên phiên xác nhận xóa').inputValue(), original.name)
+      assert.equal(await dialog.locator('input').count(), 0)
       assert.equal(new URL(page.url()).searchParams.get('session'), original.record_id)
       if (mode === 'linked') assert.match(await dialog.getByRole('alert').textContent(), /Không thể xóa.*thử thách cấp vốn/i)
       if (mode === 'conflict') { await page.waitForLoadState('networkidle'); await page.waitForFunction(() => document.querySelector('.fxs-action-dialog .fxs-delete-confirm')?.disabled === false); assert.ok(await dialog.getByRole('button', { name: 'Xóa phiên', exact: true }).isEnabled()); assert.ok(reads > 1) }

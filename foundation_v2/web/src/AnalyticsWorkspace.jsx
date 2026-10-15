@@ -446,7 +446,11 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
 
   const Inspector = ledgerOnly ? TradeInspector : 'section'
   const journalFilterPending = Boolean(sessionId && !jobId && !summaryOnly && !['ready', 'stale'].includes(journalStatus) && (extra.tag !== 'all' || extra.tagInclude || extra.tagExclude || extra.notesPresence))
-  const primaryStatus = state.refreshing ? 'refreshing' : ['stale', 'partial'].includes(state.status) ? state.status : undefined
+  // The trade ledger keeps the partial state in its model and empty-state
+  // logic, but does not add a persistent toolbar badge for it. Analytics
+  // views retain the partial indicator because their summary needs that
+  // provenance signal.
+  const primaryStatus = state.refreshing ? 'refreshing' : state.status === 'stale' ? 'stale' : !ledgerOnly && state.status === 'partial' ? 'partial' : undefined
   const journalBackground = scopedJournal && (journalRead.pending ? 'refreshing' : journalStatus === 'stale' ? 'stale' : undefined)
   const statusControl = <TestingResourceStatus textSummary={ledgerOnly} state={primaryStatus || journalBackground || catalogStatus?.state} resource={primaryStatus ? 'kết quả phân tích' : journalBackground ? 'ghi chú và nhãn giao dịch' : 'danh mục phiên'} recovery={primaryStatus ? recovery : journalBackground ? journalRecovery : catalogStatus?.recovery} />
   const readNotice = <>{journalStatus === 'error' && <TestingReadState error message="Chưa đọc được ghi chú và nhãn giao dịch. Số ghi chú hiện chưa xác minh." recovery={journalRecovery} />}{state.status === 'error' && !state.denied && <TestingReadState error message={t('Không đọc được kết quả:') + ' ' + t(state.error)} recovery={recovery} />}</>
