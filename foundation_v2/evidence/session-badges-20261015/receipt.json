@@ -1,0 +1,335 @@
+{
+  "result": "PASS",
+  "scope": "read-only local browser; both session types, short/long names, desktop/mobile",
+  "checks": [
+    {
+      "label": "dashboard-1710",
+      "rows": [
+        {
+          "text": "Prop Firm",
+          "centerDelta": 0,
+          "overlap": 0,
+          "inside": true,
+          "style": [
+            "rgb(184, 192, 201)",
+            "rgb(61, 68, 76)",
+            "4px",
+            "11px",
+            "16px",
+            "2px 6px",
+            "22px"
+          ],
+          "title": "TEST02"
+        },
+        {
+          "text": "Prop Firm",
+          "centerDelta": 0,
+          "overlap": 0,
+          "inside": true,
+          "style": [
+            "rgb(184, 192, 201)",
+            "rgb(61, 68, 76)",
+            "4px",
+            "11px",
+            "16px",
+            "2px 6px",
+            "22px"
+          ],
+          "title": "Generic practice · test-mv91rgt3-gk516"
+        },
+        {
+          "text": "Prop Firm",
+          "centerDelta": 0,
+          "overlap": 0,
+          "inside": true,
+          "style": [
+            "rgb(184, 192, 201)",
+            "rgb(61, 68, 76)",
+            "4px",
+            "11px",
+            "16px",
+            "2px 6px",
+            "22px"
+          ],
+          "title": "Generic practice · test-mv91r8v3-heonr"
+        }
+      ]
+    },
+    {
+      "label": "prop-1710",
+      "rows": [
+        {
+          "text": "Prop Firm",
+          "centerDelta": 0,
+          "overlap": 0,
+          "inside": true,
+          "style": [
+            "rgb(184, 192, 201)",
+            "rgb(61, 68, 76)",
+            "4px",
+            "11px",
+            "16px",
+            "2px 6px",
+            "22px"
+          ],
+          "title": "TEST02"
+        },
+        {
+          "text": "Prop Firm",
+          "centerDelta": 0,
+          "overlap": 0,
+          "inside": true,
+          "style": [
+            "rgb(184, 192, 201)",
+            "rgb(61, 68, 76)",
+            "4px",
+            "11px",
+            "16px",
+            "2px 6px",
+            "22px"
+          ],
+          "title": "TEST02"
+        }
+      ]
+    },
+    {
+      "label": "backtest-1710",
+      "rows": [
+        {
+          "text": "Backtest",
+          "centerDelta": 0,
+          "overlap": 0,
+          "inside": true,
+          "style": [
+            "rgb(184, 192, 201)",
+            "rgb(61, 68, 76)",
+            "4px",
+            "11px",
+            "16px",
+            "2px 6px",
+            "22px"
+          ],
+          "title": "1"
+        },
+        {
+          "text": "Backtest",
+          "centerDelta": 0,
+          "overlap": 0,
+          "inside": true,
+          "style": [
+            "rgb(184, 192, 201)",
+            "rgb(61, 68, 76)",
+            "4px",
+            "11px",
+            "16px",
+            "2px 6px",
+            "22px"
+          ],
+          "title": "1"
+        }
+      ]
+    },
+    {
+      "label": "long-name-1710",
+      "rows": [
+        {
+          "text": "Prop Firm",
+          "centerDelta": 0,
+          "overlap": 0,
+          "inside": true,
+          "style": [
+            "rgb(184, 192, 201)",
+            "rgb(61, 68, 76)",
+            "4px",
+            "11px",
+            "16px",
+            "2px 6px",
+            "22px"
+          ],
+          "title": "Generic practice · test-mv91rgt3-gk516"
+        },
+        {
+          "text": "Prop Firm",
+          "centerDelta": 0,
+          "overlap": 0,
+          "inside": true,
+          "style": [
+            "rgb(184, 192, 201)",
+            "rgb(61, 68, 76)",
+            "4px",
+            "11px",
+            "16px",
+            "2px 6px",
+            "22px"
+          ],
+          "title": "Generic practice · test-mv91rgt3-gk516"
+        }
+      ]
+    },
+    {
+      "label": "dashboard-390",
+      "rows": [
+        {
+          "text": "Prop Firm",
+          "centerDelta": 0,
+          "overlap": 0,
+          "inside": true,
+          "style": [
+            "rgb(184, 192, 201)",
+            "rgb(61, 68, 76)",
+            "4px",
+            "11px",
+            "16px",
+            "2px 6px",
+            "22px"
+          ],
+          "title": "TEST02"
+        },
+        {
+          "text": "Prop Firm",
+          "centerDelta": null,
+          "overlap": 0,
+          "inside": true,
+          "style": [
+            "rgb(184, 192, 201)",
+            "rgb(61, 68, 76)",
+            "4px",
+            "11px",
+            "16px",
+            "2px 6px",
+            "22px"
+          ],
+          "title": "Generic practice · test-mv91rgt3-gk516"
+        },
+        {
+          "text": "Prop Firm",
+          "centerDelta": null,
+          "overlap": 0,
+          "inside": true,
+          "style": [
+            "rgb(184, 192, 201)",
+            "rgb(61, 68, 76)",
+            "4px",
+            "11px",
+            "16px",
+            "2px 6px",
+            "22px"
+          ],
+          "title": "Generic practice · test-mv91r8v3-heonr"
+        }
+      ]
+    },
+    {
+      "label": "prop-390",
+      "rows": [
+        {
+          "text": "Prop Firm",
+          "centerDelta": 0,
+          "overlap": 0,
+          "inside": true,
+          "style": [
+            "rgb(184, 192, 201)",
+            "rgb(61, 68, 76)",
+            "4px",
+            "11px",
+            "16px",
+            "2px 6px",
+            "22px"
+          ],
+          "title": "TEST02"
+        },
+        {
+          "text": "Prop Firm",
+          "centerDelta": 0,
+          "overlap": 0,
+          "inside": true,
+          "style": [
+            "rgb(184, 192, 201)",
+            "rgb(61, 68, 76)",
+            "4px",
+            "11px",
+            "16px",
+            "2px 6px",
+            "22px"
+          ],
+          "title": "TEST02"
+        }
+      ]
+    },
+    {
+      "label": "backtest-390",
+      "rows": [
+        {
+          "text": "Backtest",
+          "centerDelta": 0,
+          "overlap": 0,
+          "inside": true,
+          "style": [
+            "rgb(184, 192, 201)",
+            "rgb(61, 68, 76)",
+            "4px",
+            "11px",
+            "16px",
+            "2px 6px",
+            "22px"
+          ],
+          "title": "1"
+        },
+        {
+          "text": "Backtest",
+          "centerDelta": 0,
+          "overlap": 0,
+          "inside": true,
+          "style": [
+            "rgb(184, 192, 201)",
+            "rgb(61, 68, 76)",
+            "4px",
+            "11px",
+            "16px",
+            "2px 6px",
+            "22px"
+          ],
+          "title": "1"
+        }
+      ]
+    },
+    {
+      "label": "long-name-390",
+      "rows": [
+        {
+          "text": "Prop Firm",
+          "centerDelta": null,
+          "overlap": 0,
+          "inside": true,
+          "style": [
+            "rgb(184, 192, 201)",
+            "rgb(61, 68, 76)",
+            "4px",
+            "11px",
+            "16px",
+            "2px 6px",
+            "22px"
+          ],
+          "title": "Generic practice · test-mv91rgt3-gk516"
+        },
+        {
+          "text": "Prop Firm",
+          "centerDelta": null,
+          "overlap": 0,
+          "inside": true,
+          "style": [
+            "rgb(184, 192, 201)",
+            "rgb(61, 68, 76)",
+            "4px",
+            "11px",
+            "16px",
+            "2px 6px",
+            "22px"
+          ],
+          "title": "Generic practice · test-mv91rgt3-gk516"
+        }
+      ]
+    }
+  ],
+  "errors": []
+}
