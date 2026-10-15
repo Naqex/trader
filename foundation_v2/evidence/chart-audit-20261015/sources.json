@@ -1,0 +1,13 @@
+{
+  "baseline": "2818199",
+  "node": "v24.19.0",
+  "sources": {
+    "src/ChartFloatingToolbar.jsx": "b68f562375aebec200d22415df2feb223a3ac62c9a91a6de98bd738983f96465",
+    "src/LegacyModal.jsx": "023caa220fdd628368916231e2dd810fe3f052ee256db1d25e332990e7afa166",
+    "src/LegacyReplayToolbar.jsx": "d0b71d275e3d1337a3a8c59902fcc52794ec3ff04f5419e7b24a2c6ea7de780a",
+    "src/LegacyTradingBar.css": "c51a8aeb42902def14d9752ba0b2f89c034f061ca8efa17066e02dc48ed87b4b",
+    "src/LegacyTradingBar.jsx": "6c48d8647d9674ea55606ce942ec8d37c18fb194b7130a434329201bbc364eae",
+    "src/ReplayWorkspace.jsx": "124b3c16baf7edc8455b25766303490495b6d4ce3e37e1d4c5eed98a3f4b9e64",
+    "src/TradingViewReplayChart.jsx": "7dffd929c6a7eb678bc18f76abf638a3b3b0032de732eac1deee8d7a3570e2b7"
+  }
+}

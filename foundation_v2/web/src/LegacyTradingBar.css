@@ -57,7 +57,7 @@
 .legacy-modal > header .wm-dialog-close { display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box; flex:0 0 32px; width:32px; min-width:32px; height:32px; min-height:32px; padding:0; border:0; border-radius:var(--ds-radius-small,6px); background:transparent; color:var(--project-muted); cursor:pointer; }
 .legacy-modal > header .wm-dialog-close:hover:not(:disabled) { background:var(--project-hover); color:var(--project-text); }
 .legacy-modal > header .wm-dialog-close:focus-visible { outline:2px solid var(--project-primary); outline-offset:2px; }
-.legacy-scalper-modal form.legacy-scalper-settings { gap: 24px; padding: 24px; }
+.legacy-scalper-modal form.legacy-scalper-settings { display: grid; gap: 24px; padding: 24px; }
 .legacy-scalper-settings fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 12px; min-width: 0; }
 .legacy-scalper-modal form .legacy-scalper-toggle { display: flex; align-items: center; justify-content: space-between; min-height: var(--ds-control,36px); color:var(--project-text); }
 .legacy-scalper-toggle input[type=checkbox] { appearance: none; width: var(--ds-switch-width,28px); height: var(--ds-switch-height,16px); border:0; border-radius:var(--ds-radius-pill,999px); background: var(--project-control); margin: 0; cursor: pointer; }
@@ -70,7 +70,7 @@
 .legacy-scalper-distance { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; align-items: center; }
 .legacy-scalper-modal :is(input:not([type=checkbox]),select) { box-sizing:border-box; width:100%; min-width:0; height:var(--ds-control,36px); padding:7px 12px; border:1px solid var(--project-border); border-radius:var(--ds-radius-field,8px); background:var(--project-canvas); color:var(--project-text); font:inherit; }
 .legacy-scalper-modal :is(input:not([type=checkbox]),select):hover:not(:disabled) { background:var(--project-hover); border-color:var(--project-border-strong); }
-.legacy-scalper-modal :is(input:not([type=checkbox]),select):focus-visible { border-color:var(--project-primary); outline:2px solid var(--project-primary); outline-offset:2px; }
+.legacy-scalper-modal :is(input:not([type=checkbox]),select):focus-visible { border-color:var(--project-primary); outline:none; box-shadow:none; }
 .legacy-scalper-modal label:not(.legacy-scalper-toggle) { display:grid; gap:8px; color:var(--project-muted); font-size:var(--ds-font-control,13px); }
 .legacy-scalper-units { display: inline-flex; align-items: center; border: 1px solid var(--project-border); border-radius:var(--ds-radius-pill,999px); padding: 2px; gap: 2px; background:var(--project-control); }
 .legacy-scalper-modal .legacy-scalper-units button { min-width: 40px; width: auto; min-height: 28px; padding: 4px 10px; border: 0; border-radius: 16px; justify-content: center; font-size: 12px; }
@@ -84,7 +84,7 @@
 .legacy-scalper-modal .legacy-scalper-settings .legacy-scalper-save { background: var(--project-action); color: var(--project-on-action); border-color: var(--project-action); }
 .legacy-scalper-settings .fx-select.is-field .fx-select-trigger { border-radius:8px; }
 @media (pointer:coarse) { .legacy-scalper-settings .fx-select.is-field .fx-select-trigger { min-height:44px; } }
-@media (prefers-reduced-motion: reduce) { .legacy-scalper-toggle input[type=checkbox]::before, .legacy-trading-bar .legacy-quantity-control { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .legacy-modal { animation: none; } .legacy-scalper-toggle input[type=checkbox]::before, .legacy-trading-bar .legacy-quantity-control { transition: none; } }
 @media (prefers-reduced-motion: no-preference) {
   .legacy-trading-bar .chart-trading-account > button[aria-label*='danh sách lệnh'] svg { transition: transform var(--ds-motion-hover) var(--ds-ease-standard), opacity var(--ds-motion-hover) var(--ds-ease-standard); }
   .legacy-trading-bar .chart-trading-account > button[aria-expanded='true'] svg { transform: scale(.92); }

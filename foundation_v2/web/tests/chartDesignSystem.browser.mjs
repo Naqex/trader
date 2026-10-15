@@ -38,7 +38,6 @@ async function setup(width, theme, payload = replay) {
   return { context, page }
 }
 async function utility(page, width, name) {
-  if (width <= 600) await page.locator('.chart-utility-toggle').click()
   await page.locator('.chart-utility-actions').getByRole('button', { name: vi(name), exact: true }).click()
 }
 try {
@@ -46,17 +45,15 @@ try {
     const { context, page } = await setup(width, theme)
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false)
     if (width <= 600) {
-      assert.equal(await page.locator('.chart-utility-actions').isVisible(), false)
-      await page.locator('.chart-utility-toggle').click()
+      assert.equal(await page.locator('.chart-utility-toggle').count(), 0)
       assert.equal(await page.locator('.chart-utility-actions').isVisible(), true)
-      await page.keyboard.press('Escape')
-      assert.equal(await page.locator('.chart-utility-actions').isVisible(), false)
-      await page.locator('.chart-utility-toggle').click()
-      await page.locator('.legacy-quantity-control input').click()
-      assert.equal(await page.locator('.chart-utility-actions').isVisible(), false)
-      report.cases.push({ width, theme, case: 'collapsed mobile utilities, Escape and outside dismissal' })
+      report.cases.push({ width, theme, case: 'mobile utility rail remains directly accessible without a redundant toggle' })
     }
     await page.screenshot({ path: `${output}/chart-${width}-${theme}.png` })
+    assert.ok(await page.locator('.legacy-replay-toolbar button,.legacy-replay-toolbar .legacy-sync-toggle').evaluateAll(nodes => nodes.every(node => {
+      const box = node.getBoundingClientRect(), hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)
+      return hit && node.contains(hit)
+    })), 'replay controls are not covered by the utility rail')
     const quantity = page.locator('.legacy-quantity-control input')
     await quantity.focus()
     assert.equal(await quantity.evaluate(node => getComputedStyle(node).fontSize), '13px')
@@ -69,6 +66,8 @@ try {
     await page.locator('.legacy-scalper-button').click()
     const scalper = page.locator('.legacy-scalper-settings')
     await scalper.waitFor()
+    assert.equal(await scalper.evaluate(node => getComputedStyle(node).display), 'grid', 'scalper groups use the intended spacing')
+    assert.equal(await page.locator('.legacy-scalper-modal').evaluate(node => getComputedStyle(node).animationName), 'none', 'portal modal respects reduced motion')
     const strategy = scalper.getByRole('button', { name: 'Chiến lược', exact: true })
     assert.equal(await strategy.isDisabled(), true)
     assert.equal(await strategy.evaluate(node => getComputedStyle(node).borderRadius), '8px')
@@ -76,6 +75,7 @@ try {
     assert.equal(await scalper.locator('.legacy-scalper-save').evaluate(node => getComputedStyle(node).backgroundColor), theme === 'dark' ? 'rgb(255, 173, 124)' : 'rgb(184, 80, 24)')
     await page.screenshot({ path: `${output}/scalper-${width}-${theme}.png` })
     await page.keyboard.press('Escape')
+    assert.equal(await page.locator('.legacy-scalper-button').evaluate(node => node === document.activeElement), true, 'closing scalper settings restores keyboard focus')
     await page.getByRole('button', { name: 'Mua', exact: true }).click()
     const dialog = page.locator('.legacy-order-modal')
     await dialog.waitFor()

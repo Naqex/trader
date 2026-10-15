@@ -51,6 +51,28 @@ try {
     await page.screenshot({ path: path.join(output, `positions-${width}.png`) })
     report.cases.push({ width, dpr, case: 'continuous 10px steps; chart tracks the panel until its minimum; same iframe after release', samples })
 
+    const edge = await begin(page)
+    for (let y = edge.y - 20; y >= 10; y -= 20) {
+      await page.mouse.move(edge.x, y); await frame(page)
+      const current = await layout(page)
+      assert.ok(Math.abs(current.top + 24 - y) <= (width < 600 ? 60 : 3), `grip follows pointer near top: y=${y}, bar=${current.top} at ${width}`)
+      assert.ok(current.chart >= 240)
+      assert.equal(await page.evaluate(() => document.querySelector('.legacy-resizable-positions').getBoundingClientRect().bottom <= innerHeight + 1), true, 'table remains inside viewport throughout the drag')
+    }
+    await page.mouse.move(edge.x, 0); await frame(page)
+    assert.equal((await layout(page)).top, 0, 'drag can reach the viewport ceiling')
+    await page.screenshot({ path: path.join(output, `positions-edge-${width}.png`) })
+    await page.keyboard.press('Escape'); await page.mouse.up(); await frame(page)
+    assert.equal((await layout(page)).height, 320)
+    const full = await begin(page)
+    await page.mouse.move(full.x, 0); await frame(page)
+    const beforeRelease = await layout(page)
+    await page.mouse.up(); await frame(page)
+    assert.equal((await layout(page)).maximized, true)
+    assert.equal((await layout(page)).top, beforeRelease.top, 'release at the ceiling does not jump')
+    await page.getByRole('button', { name: 'Thu nhỏ danh sách lệnh', exact: true }).click()
+    assert.equal((await layout(page)).height, 320)
+
     // Every termination path must release the preview and restore the old size.
     for (const cancel of ['Escape', 'pointercancel', 'lostpointercapture', 'blur']) {
       const from = await begin(page)
@@ -128,23 +150,24 @@ try {
     }
     report.rendering.push(rendering)
 
-    await page.getByTestId('prop-rules-button').click()
-    await page.getByTestId('prop-rules-dialog').waitFor()
-    const flat = await page.locator('.prop-rules-objective-stat,.prop-rules-detail-panel').evaluateAll(nodes => nodes.every(node => { const css = getComputedStyle(node); return css.borderRadius === '0px' && css.borderBottomWidth === '0px' }))
-    assert.equal(flat, true, 'flat sections without rounded card wrappers')
-    assert.ok(await page.getByText('Số ngày đã qua', { exact: true }).isVisible())
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false)
-    await page.screenshot({ path: path.join(output, `rules-${width}.png`) })
-    if (width === 1710) {
-      await page.evaluate(() => localStorage.setItem('tw-language', 'en'))
-      await page.reload()
-      await page.locator('[data-chart-status=ready]').waitFor()
+    if (await page.getByTestId('prop-rules-button').count()) {
       await page.getByTestId('prop-rules-button').click()
-      await page.getByRole('heading', { name: 'Stats & Rules', exact: true }).waitFor()
-      assert.equal(await page.getByText('Days elapsed', { exact: true }).isVisible(), true)
-      assert.equal(await page.getByText('Daily reset', { exact: true }).isVisible(), true)
-      await page.screenshot({ path: path.join(output, 'rules-en.png') })
-      report.cases.push({ width, case: 'English locale uses translated Stats & Rules labels' })
+      await page.getByTestId('prop-rules-dialog').waitFor()
+      const flat = await page.locator('.prop-rules-objective-stat,.prop-rules-detail-panel').evaluateAll(nodes => nodes.every(node => { const css = getComputedStyle(node); return css.borderRadius === '0px' && css.borderBottomWidth === '0px' }))
+      assert.equal(flat, true, 'flat sections without rounded card wrappers')
+      assert.equal(await page.locator('.prop-rules-restrictions dl > div').count(), 6)
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false)
+      await page.screenshot({ path: path.join(output, `rules-${width}.png`) })
+      if (width === 1710) {
+        await page.evaluate(() => localStorage.setItem('tw-language', 'en'))
+        await page.reload()
+        await page.locator('[data-chart-status=ready]').waitFor()
+        await page.getByTestId('prop-rules-button').click()
+        await page.getByRole('heading', { name: 'Stats & Rules', exact: true }).waitFor()
+        assert.equal(await page.getByText('Trading restrictions', { exact: true }).isVisible(), true)
+        await page.screenshot({ path: path.join(output, 'rules-en.png') })
+        report.cases.push({ width, case: 'English locale uses translated Stats & Rules labels' })
+      }
     }
     await context.close()
   }

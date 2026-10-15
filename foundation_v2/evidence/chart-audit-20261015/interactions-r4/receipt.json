@@ -1,0 +1,45 @@
+{
+  "scope": "Real local datasets/native chart; isolated browser storage; all API writes blocked; no playback or orders",
+  "cases": [
+    {
+      "mode": "prop",
+      "checks": "correct mode, dashboard back link, volume off, account popup, Buy/Sell/rail order modal, repeated scalper focus, date jump, news, same iframe"
+    },
+    {
+      "mode": "backtest",
+      "checks": "correct mode, dashboard back link, volume off, account popup, Buy/Sell/rail order modal, repeated scalper focus, date jump, news, same iframe"
+    }
+  ],
+  "errors": [],
+  "measurements": [
+    {
+      "mode": "prop",
+      "environment": "Headless Chromium, Vite dev, native chart, 1710x987 DPR1, 90 paced pointer steps; diagnostic sample, not production FPS",
+      "samples": 359,
+      "medianMs": 16.69999999999891,
+      "sampleP95Ms": 16.799999999999272,
+      "over50ms": 0,
+      "resizeEvents": 0,
+      "range": {
+        "from": 1441847100,
+        "to": 1441862520
+      },
+      "cutoff": "Advanced Charts · EUR/USD · 2000 nến đến cutoff 1441863600 UTC"
+    },
+    {
+      "mode": "backtest",
+      "environment": "Headless Chromium, Vite dev, native chart, 1710x987 DPR1, 90 paced pointer steps; diagnostic sample, not production FPS",
+      "samples": 276,
+      "medianMs": 16.69999999999891,
+      "sampleP95Ms": 16.799999999999272,
+      "over50ms": 0,
+      "resizeEvents": 0,
+      "range": {
+        "from": 1052092800,
+        "to": 1052092860
+      },
+      "cutoff": "Advanced Charts · EUR/USD · 16 nến đến cutoff 1052093700 UTC"
+    }
+  ],
+  "result": "PASS"
+}

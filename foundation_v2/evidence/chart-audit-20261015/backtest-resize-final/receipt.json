@@ -1,0 +1,1101 @@
+{
+  "scope": "Real local chart and native canvas, UI-only; API writes blocked; no playback or trading",
+  "cases": [
+    {
+      "width": 1710,
+      "dpr": 1,
+      "case": "continuous 10px steps; chart tracks the panel until its minimum; same iframe after release",
+      "samples": [
+        {
+          "height": 10,
+          "chart": 926,
+          "toolbar": "visible",
+          "top": 926,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 20,
+          "chart": 916,
+          "toolbar": "visible",
+          "top": 916,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 30,
+          "chart": 906,
+          "toolbar": "visible",
+          "top": 906,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 40,
+          "chart": 896,
+          "toolbar": "visible",
+          "top": 896,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 50,
+          "chart": 886,
+          "toolbar": "visible",
+          "top": 886,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 60,
+          "chart": 876,
+          "toolbar": "visible",
+          "top": 876,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 70,
+          "chart": 866,
+          "toolbar": "visible",
+          "top": 866,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 80,
+          "chart": 856,
+          "toolbar": "visible",
+          "top": 856,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 90,
+          "chart": 846,
+          "toolbar": "visible",
+          "top": 846,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 100,
+          "chart": 836,
+          "toolbar": "visible",
+          "top": 836,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 110,
+          "chart": 826,
+          "toolbar": "visible",
+          "top": 826,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 120,
+          "chart": 816,
+          "toolbar": "visible",
+          "top": 816,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 130,
+          "chart": 806,
+          "toolbar": "visible",
+          "top": 806,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 140,
+          "chart": 796,
+          "toolbar": "visible",
+          "top": 796,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 150,
+          "chart": 786,
+          "toolbar": "visible",
+          "top": 786,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 160,
+          "chart": 776,
+          "toolbar": "visible",
+          "top": 776,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 170,
+          "chart": 766,
+          "toolbar": "visible",
+          "top": 766,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 180,
+          "chart": 756,
+          "toolbar": "visible",
+          "top": 756,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 190,
+          "chart": 746,
+          "toolbar": "visible",
+          "top": 746,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 200,
+          "chart": 736,
+          "toolbar": "visible",
+          "top": 736,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 210,
+          "chart": 726,
+          "toolbar": "visible",
+          "top": 726,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 220,
+          "chart": 716,
+          "toolbar": "visible",
+          "top": 716,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 230,
+          "chart": 706,
+          "toolbar": "visible",
+          "top": 706,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 240,
+          "chart": 696,
+          "toolbar": "visible",
+          "top": 696,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 250,
+          "chart": 686,
+          "toolbar": "visible",
+          "top": 686,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 260,
+          "chart": 676,
+          "toolbar": "visible",
+          "top": 676,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 270,
+          "chart": 666,
+          "toolbar": "visible",
+          "top": 666,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 280,
+          "chart": 656,
+          "toolbar": "visible",
+          "top": 656,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 290,
+          "chart": 646,
+          "toolbar": "visible",
+          "top": 646,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 300,
+          "chart": 636,
+          "toolbar": "visible",
+          "top": 636,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 310,
+          "chart": 626,
+          "toolbar": "visible",
+          "top": 626,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 320,
+          "chart": 616,
+          "toolbar": "visible",
+          "top": 616,
+          "resizing": true,
+          "maximized": false
+        }
+      ]
+    },
+    {
+      "width": 1710,
+      "case": "cancel/lost capture/Escape/blur/viewport change, reversal, collapse/reopen retaining tab, maximize/restore, keyboard, touch and drag from maximized"
+    },
+    {
+      "width": 1440,
+      "dpr": 1.25,
+      "case": "continuous 10px steps; chart tracks the panel until its minimum; same iframe after release",
+      "samples": [
+        {
+          "height": 10,
+          "chart": 926,
+          "toolbar": "visible",
+          "top": 926,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 20,
+          "chart": 916,
+          "toolbar": "visible",
+          "top": 916,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 30,
+          "chart": 906,
+          "toolbar": "visible",
+          "top": 906,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 40,
+          "chart": 896,
+          "toolbar": "visible",
+          "top": 896,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 50,
+          "chart": 886,
+          "toolbar": "visible",
+          "top": 886,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 60,
+          "chart": 876,
+          "toolbar": "visible",
+          "top": 876,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 70,
+          "chart": 866,
+          "toolbar": "visible",
+          "top": 866,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 80,
+          "chart": 856,
+          "toolbar": "visible",
+          "top": 856,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 90,
+          "chart": 846,
+          "toolbar": "visible",
+          "top": 846,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 100,
+          "chart": 836,
+          "toolbar": "visible",
+          "top": 836,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 110,
+          "chart": 826,
+          "toolbar": "visible",
+          "top": 826,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 120,
+          "chart": 816,
+          "toolbar": "visible",
+          "top": 816,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 130,
+          "chart": 806,
+          "toolbar": "visible",
+          "top": 806,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 140,
+          "chart": 796,
+          "toolbar": "visible",
+          "top": 796,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 150,
+          "chart": 786,
+          "toolbar": "visible",
+          "top": 786,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 160,
+          "chart": 776,
+          "toolbar": "visible",
+          "top": 776,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 170,
+          "chart": 766,
+          "toolbar": "visible",
+          "top": 766,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 180,
+          "chart": 756,
+          "toolbar": "visible",
+          "top": 756,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 190,
+          "chart": 746,
+          "toolbar": "visible",
+          "top": 746,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 200,
+          "chart": 736,
+          "toolbar": "visible",
+          "top": 736,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 210,
+          "chart": 726,
+          "toolbar": "visible",
+          "top": 726,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 220,
+          "chart": 716,
+          "toolbar": "visible",
+          "top": 716,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 230,
+          "chart": 706,
+          "toolbar": "visible",
+          "top": 706,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 240,
+          "chart": 696,
+          "toolbar": "visible",
+          "top": 696,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 250,
+          "chart": 686,
+          "toolbar": "visible",
+          "top": 686,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 260,
+          "chart": 676,
+          "toolbar": "visible",
+          "top": 676,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 270,
+          "chart": 666,
+          "toolbar": "visible",
+          "top": 666,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 280,
+          "chart": 656,
+          "toolbar": "visible",
+          "top": 656,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 290,
+          "chart": 646,
+          "toolbar": "visible",
+          "top": 646,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 300,
+          "chart": 636,
+          "toolbar": "visible",
+          "top": 636,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 310,
+          "chart": 626,
+          "toolbar": "visible",
+          "top": 626,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 320,
+          "chart": 616,
+          "toolbar": "visible",
+          "top": 616,
+          "resizing": true,
+          "maximized": false
+        }
+      ]
+    },
+    {
+      "width": 1440,
+      "case": "cancel/lost capture/Escape/blur/viewport change, reversal, collapse/reopen retaining tab, maximize/restore, keyboard, touch and drag from maximized"
+    },
+    {
+      "width": 390,
+      "dpr": 2,
+      "case": "continuous 10px steps; chart tracks the panel until its minimum; same iframe after release",
+      "samples": [
+        {
+          "height": 10,
+          "chart": 885,
+          "toolbar": "visible",
+          "top": 885,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 20,
+          "chart": 875,
+          "toolbar": "visible",
+          "top": 875,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 30,
+          "chart": 865,
+          "toolbar": "visible",
+          "top": 865,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 40,
+          "chart": 855,
+          "toolbar": "visible",
+          "top": 855,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 50,
+          "chart": 845,
+          "toolbar": "visible",
+          "top": 845,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 60,
+          "chart": 835,
+          "toolbar": "visible",
+          "top": 835,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 70,
+          "chart": 825,
+          "toolbar": "visible",
+          "top": 825,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 80,
+          "chart": 815,
+          "toolbar": "visible",
+          "top": 815,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 90,
+          "chart": 805,
+          "toolbar": "visible",
+          "top": 805,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 100,
+          "chart": 795,
+          "toolbar": "visible",
+          "top": 795,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 110,
+          "chart": 785,
+          "toolbar": "visible",
+          "top": 785,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 120,
+          "chart": 775,
+          "toolbar": "visible",
+          "top": 775,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 130,
+          "chart": 765,
+          "toolbar": "visible",
+          "top": 765,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 140,
+          "chart": 755,
+          "toolbar": "visible",
+          "top": 755,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 150,
+          "chart": 745,
+          "toolbar": "visible",
+          "top": 745,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 160,
+          "chart": 735,
+          "toolbar": "visible",
+          "top": 735,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 170,
+          "chart": 725,
+          "toolbar": "visible",
+          "top": 725,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 180,
+          "chart": 715,
+          "toolbar": "visible",
+          "top": 715,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 190,
+          "chart": 705,
+          "toolbar": "visible",
+          "top": 705,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 200,
+          "chart": 695,
+          "toolbar": "visible",
+          "top": 695,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 210,
+          "chart": 685,
+          "toolbar": "visible",
+          "top": 685,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 220,
+          "chart": 675,
+          "toolbar": "visible",
+          "top": 675,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 230,
+          "chart": 665,
+          "toolbar": "visible",
+          "top": 665,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 240,
+          "chart": 655,
+          "toolbar": "visible",
+          "top": 655,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 250,
+          "chart": 645,
+          "toolbar": "visible",
+          "top": 645,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 260,
+          "chart": 635,
+          "toolbar": "visible",
+          "top": 635,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 270,
+          "chart": 625,
+          "toolbar": "visible",
+          "top": 625,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 280,
+          "chart": 615,
+          "toolbar": "visible",
+          "top": 615,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 290,
+          "chart": 605,
+          "toolbar": "visible",
+          "top": 605,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 300,
+          "chart": 595,
+          "toolbar": "visible",
+          "top": 595,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 310,
+          "chart": 585,
+          "toolbar": "visible",
+          "top": 585,
+          "resizing": true,
+          "maximized": false
+        },
+        {
+          "height": 320,
+          "chart": 575,
+          "toolbar": "visible",
+          "top": 575,
+          "resizing": true,
+          "maximized": false
+        }
+      ]
+    },
+    {
+      "width": 390,
+      "case": "cancel/lost capture/Escape/blur/viewport change, reversal, collapse/reopen retaining tab, maximize/restore, keyboard, touch and drag from maximized"
+    }
+  ],
+  "rendering": [
+    {
+      "dpr": 1,
+      "scale": 1,
+      "ancestors": [
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        }
+      ],
+      "canvases": [
+        {
+          "width": 1542,
+          "height": 792,
+          "cssWidth": 1542,
+          "cssHeight": 792
+        },
+        {
+          "width": 1542,
+          "height": 792,
+          "cssWidth": 1542,
+          "cssHeight": 792
+        },
+        {
+          "width": 1542,
+          "height": 28,
+          "cssWidth": 1542,
+          "cssHeight": 28
+        },
+        {
+          "width": 1542,
+          "height": 28,
+          "cssWidth": 1542,
+          "cssHeight": 28
+        }
+      ]
+    },
+    {
+      "dpr": 1.25,
+      "scale": 1,
+      "ancestors": [
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        }
+      ],
+      "canvases": [
+        {
+          "width": 1590,
+          "height": 990,
+          "cssWidth": 1272,
+          "cssHeight": 792
+        },
+        {
+          "width": 1590,
+          "height": 990,
+          "cssWidth": 1272,
+          "cssHeight": 792
+        },
+        {
+          "width": 1590,
+          "height": 35,
+          "cssWidth": 1272,
+          "cssHeight": 28
+        },
+        {
+          "width": 1590,
+          "height": 35,
+          "cssWidth": 1272,
+          "cssHeight": 28
+        }
+      ]
+    },
+    {
+      "dpr": 2,
+      "scale": 1,
+      "ancestors": [
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        },
+        {
+          "transform": "none",
+          "zoom": "1",
+          "filter": "none"
+        }
+      ],
+      "canvases": [
+        {
+          "width": 540,
+          "height": 1502,
+          "cssWidth": 270,
+          "cssHeight": 751
+        },
+        {
+          "width": 540,
+          "height": 1502,
+          "cssWidth": 270,
+          "cssHeight": 751
+        },
+        {
+          "width": 540,
+          "height": 56,
+          "cssWidth": 270,
+          "cssHeight": 28
+        },
+        {
+          "width": 540,
+          "height": 56,
+          "cssWidth": 270,
+          "cssHeight": 28
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "result": "PASS"
+}

@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import ChartIcon from './ChartIcon.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 
-export function clampToolbar(position, width, height, parentWidth, parentHeight, minimumY = 36) {
-  return { x: Math.max(0, Math.min(position.x, Math.max(0, parentWidth - width))), y: Math.max(minimumY, Math.min(position.y, Math.max(minimumY, parentHeight - height - 28))) }
+export function clampToolbar(position, width, height, parentWidth, parentHeight, minimumY = 36, insetLeft = 0, insetRight = 0) {
+  const maximumX = Math.max(0, parentWidth - insetRight - width)
+  return { x: Math.max(Math.min(insetLeft, maximumX), Math.min(position.x, maximumX)), y: Math.max(minimumY, Math.min(position.y, Math.max(minimumY, parentHeight - height - 28))) }
 }
 
-export default function ChartFloatingToolbar({ name, storageKey, initialPosition, compactRow = 0, compactMinimumY = 36 + compactRow * 64, insetLeft = 0, minimal = false, className = '', children }) {
+export default function ChartFloatingToolbar({ name, storageKey, initialPosition, compactRow = 0, compactMinimumY = 36 + compactRow * 64, insetLeft = 0, insetRight = 0, minimal = false, className = '', children }) {
   const { t } = useTestingLocale()
 
   const [layout, setLayout] = useState(() => {
@@ -22,23 +23,23 @@ export default function ChartFloatingToolbar({ name, storageKey, initialPosition
     const node = ref.current
     if (!node) return
     const constrain = () => setLayout(current => {
-      const next = clampToolbar(current, node.offsetWidth, node.offsetHeight, node.parentElement.clientWidth, node.parentElement.clientHeight, node.parentElement.clientWidth < 760 ? compactMinimumY : 36)
-      return { ...current, ...next, x: Math.max(insetLeft, next.x) }
+      const next = clampToolbar(current, node.offsetWidth, node.offsetHeight, node.parentElement.clientWidth, node.parentElement.clientHeight, node.parentElement.clientWidth < 760 ? compactMinimumY : 36, insetLeft, insetRight)
+      return current.x === next.x && current.y === next.y ? current : { ...current, ...next }
     })
     const observer = new ResizeObserver(constrain)
     observer.observe(node.parentElement)
     observer.observe(node)
     return () => observer.disconnect()
-  }, [compactMinimumY, insetLeft])
+  }, [compactMinimumY, insetLeft, insetRight])
   useEffect(() => { try { localStorage.setItem(storageKey, JSON.stringify(layout)) } catch { /* Optional preferences. */ } }, [layout, storageKey])
   const move = (x, y) => {
     const node = ref.current
     setLayout(current => {
-      const next = clampToolbar({ x, y }, node.offsetWidth, node.offsetHeight, node.parentElement.clientWidth, node.parentElement.clientHeight, node.parentElement.clientWidth < 760 ? compactMinimumY : 36)
-      return { ...current, ...next, x: Math.max(insetLeft, next.x) }
+      const next = clampToolbar({ x, y }, node.offsetWidth, node.offsetHeight, node.parentElement.clientWidth, node.parentElement.clientHeight, node.parentElement.clientWidth < 760 ? compactMinimumY : 36, insetLeft, insetRight)
+      return current.x === next.x && current.y === next.y ? current : { ...current, ...next }
     })
   }
-  return <div ref={ref} className={`chart-floating-toolbar ${className} ${!minimal && layout.collapsed ? 'is-collapsed' : ''}`} role="group" aria-label={t(name)} style={{ left: layout.x, top: layout.y, maxWidth: `calc(100% - ${insetLeft}px)` }}>
+  return <div ref={ref} className={`chart-floating-toolbar ${className} ${!minimal && layout.collapsed ? 'is-collapsed' : ''}`} role="group" aria-label={t(name)} style={{ left: layout.x, top: layout.y, maxWidth: `calc(100% - ${insetRight}px)` }}>
     <button type="button" className="chart-float-grip" aria-label={t('Di chuyển {name}', { name: t(name) })} title={t("Kéo để di chuyển · phím mũi tên để chỉnh vị trí")} disabled={layout.pinned}
       onPointerDown={event => { if (event.button !== 0) return; event.currentTarget.setPointerCapture(event.pointerId); drag.current = { x: event.clientX - layout.x, y: event.clientY - layout.y }; event.preventDefault() }}
       onPointerMove={event => { if (drag.current) move(event.clientX - drag.current.x, event.clientY - drag.current.y) }}

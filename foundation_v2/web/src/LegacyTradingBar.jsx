@@ -105,15 +105,16 @@ export default function LegacyTradingBar({ order, quotes, onBeginOrder, analytic
   }, [])
   const dismissBalance = () => { hideBalance.current = setTimeout(() => setBalanceAnchor(null), 160) }
   const showBalance = anchor => { clearTimeout(hideBalance.current); setBalanceAnchor(anchor) }
-  // Keep the panel in normal flow while dragging so the chart's native resize
-  // observer receives every frame. Only overflow the chart after release.
-  const overlay = !resizing && (!maximized && positionsOpen && overflowReserve !== null)
+  // Once the chart reaches its minimum height, slide the table over it during
+  // the gesture too. Keeping it in flow would push the table below the viewport
+  // and then jump back when the pointer is released.
+  const overlay = !maximized && positionsOpen && overflowReserve !== null
   // This control changes panel height, so it needs a vertical affordance. The
   // generic expand/collapse paths are horizontal chevrons and read as broken
   // icons in the bottom trading bar.
   const positionsIcon = 'down'
   const maximizeIcon = maximized ? 'contract-corners' : 'expand-corners'
-  return <div ref={workspaceRef} className={`legacy-trading-workspace ${resizing ? 'is-resizing' : ''} ${!resizing && (overlay ? 'is-expanded' : maximized ? 'is-maximized' : '')}`} style={overlay ? { height: overflowReserve, '--positions-height': `${positionsOpen ? height : 0}px` } : undefined}>
+  return <div ref={workspaceRef} className={`legacy-trading-workspace ${resizing ? 'is-resizing' : ''} ${overlay ? 'is-expanded' : maximized ? 'is-maximized' : ''}`} style={overlay ? { height: overflowReserve, '--positions-height': `${positionsOpen ? height : 0}px` } : undefined}>
     <div className="chart-trading-bar legacy-trading-bar" role="group" aria-label={t('Giao dịch mô phỏng')}>
       <div className="chart-trading-actions">
         {['BUY', 'SELL'].map(side => <button key={side} type="button" className={side.toLowerCase()} disabled={disabled} onClick={() => openOrder(side)} title={t('Mở lệnh mô phỏng để xác nhận')}>{t(side === 'BUY' ? 'Buy' : 'Sell')}</button>)}
@@ -134,7 +135,7 @@ export default function LegacyTradingBar({ order, quotes, onBeginOrder, analytic
           event.currentTarget.focus({ preventScroll: true })
           const bounds = resizeBounds()
           drag.current = { y: event.clientY, height: maximized ? bounds.full : positionsOpen ? height : 0, bounds, layout: { ...positionsLayout.current } }
-          if (maximized) { setHeight(bounds.full); setMaximized(false) }
+          if (maximized) resize(bounds.full, bounds, true)
           setResizing(true)
           event.preventDefault()
         }}
