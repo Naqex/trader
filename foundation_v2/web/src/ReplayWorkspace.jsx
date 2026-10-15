@@ -326,7 +326,7 @@ function isEditableTarget(target) {
 }
 
 export default function ReplayWorkspace({ workspace, query }) {
-  const { t, locale, fmt, statusLabel: localeStatusLabel } = useTestingLocale()
+  const { t, locale, fmt } = useTestingLocale()
   const formatTimestamp = value => value === null || value === undefined || !Number.isFinite(Number(value)) ? '—' : displayDate(new Date(Number(value) * 1000), { timeStyle: 'medium' })
   const formatPrice = value => fmt(value, '', 8)
   const money = (value, currency) => {
@@ -1406,7 +1406,7 @@ export default function ReplayWorkspace({ workspace, query }) {
         </>
       )}
       {sessionSettings && <SessionSettingsDrawer item={sessionSettings.item} dataset={activeDataset} replayRecord={replay} workspace={workspace} pending={sessionSettings.pending} blocked={sessionSettings.blocked} error={sessionSettings.error} onClose={closeSessionSettings} onSubmit={saveSessionSettings} />}
-      {propMode && propRules && <PropRulesDialog open={propRulesOpen} rules={propRules} error={propState.error} pendingAction={pendingAction} analyticsHref={propAnalyticsHref} retryHref={propRetryHref} onClose={() => setPropRulesOpen(false)} onTransition={transitionPropAttempt} onRetry={loadPropAttempt} formatMoney={money} statusLabel={localeStatusLabel} t={t} />}
+      {propMode && propRules && <PropRulesDialog open={propRulesOpen} rules={propRules} error={propState.error} pendingAction={pendingAction} analyticsHref={propAnalyticsHref} retryHref={propRetryHref} onClose={() => setPropRulesOpen(false)} onTransition={transitionPropAttempt} onRetry={loadPropAttempt} formatMoney={money} t={t} />}
     </main>
   )
 }

@@ -1,0 +1,106 @@
+{
+  "result": "PASS",
+  "scope": "Local UI only; API writes blocked; full-height column separators and phase subtitle removed",
+  "cases": [
+    {
+      "width": 1710,
+      "geometry": [
+        {
+          "padding": "0px",
+          "children": [
+            {
+              "top": 0,
+              "left": 0,
+              "bottom": 1,
+              "border": "0px",
+              "borderTop": "0px"
+            },
+            {
+              "top": 0,
+              "left": 226,
+              "bottom": 1,
+              "border": "1px",
+              "borderTop": "0px"
+            },
+            {
+              "top": 0,
+              "left": 452,
+              "bottom": 1,
+              "border": "1px",
+              "borderTop": "0px"
+            }
+          ]
+        },
+        {
+          "padding": "0px",
+          "children": [
+            {
+              "top": 1,
+              "left": 0,
+              "bottom": 0,
+              "border": "0px",
+              "borderTop": "0px"
+            },
+            {
+              "top": 1,
+              "left": 339,
+              "bottom": 0,
+              "border": "1px",
+              "borderTop": "0px"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "width": 390,
+      "geometry": [
+        {
+          "padding": "0px",
+          "children": [
+            {
+              "top": 0,
+              "left": 0,
+              "bottom": 283,
+              "border": "0px",
+              "borderTop": "0px"
+            },
+            {
+              "top": 140,
+              "left": 0,
+              "bottom": 142,
+              "border": "0px",
+              "borderTop": "1px"
+            },
+            {
+              "top": 281,
+              "left": 0,
+              "bottom": 1,
+              "border": "0px",
+              "borderTop": "1px"
+            }
+          ]
+        },
+        {
+          "padding": "0px",
+          "children": [
+            {
+              "top": 1,
+              "left": 0,
+              "bottom": 229,
+              "border": "0px",
+              "borderTop": "0px"
+            },
+            {
+              "top": 177,
+              "left": 0,
+              "bottom": 0,
+              "border": "0px",
+              "borderTop": "1px"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

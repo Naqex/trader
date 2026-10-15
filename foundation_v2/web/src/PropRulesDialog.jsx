@@ -11,7 +11,7 @@ function percentLabel(value) {
   return value == null ? '—' : `${Math.round(value * 100) / 100}%`
 }
 
-export default function PropRulesDialog({ open, rules, error, pendingAction, analyticsHref, retryHref, onClose, onTransition, onRetry, formatMoney, statusLabel, t }) {
+export default function PropRulesDialog({ open, rules, error, pendingAction, analyticsHref, retryHref, onClose, onTransition, onRetry, formatMoney, t }) {
   const dialog = useRef(null), opener = useRef(null), titleId = useId()
   useEffect(() => {
     if (!open) return
@@ -57,7 +57,7 @@ export default function PropRulesDialog({ open, rules, error, pendingAction, ana
           </article>
         })}
       </section>
-      <div className="prop-rules-challenge-heading"><h3>{t('Prop Firm Challenge')}</h3><span>{t('Phase')} {rules.phaseIndex} · {statusLabel('prop_attempt', rules.status)}</span></div>
+      <div className="prop-rules-challenge-heading"><h3>{t('Prop Firm Challenge')}</h3></div>
       <div className="prop-rules-detail-grid">
         <section className="prop-rules-detail-panel" aria-label={t('Profit and Drawdown')}>
           <h4>{t('Profit and Drawdown')}</h4>
