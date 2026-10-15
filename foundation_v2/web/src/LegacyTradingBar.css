@@ -65,7 +65,7 @@
 .legacy-scalper-toggle input[type=checkbox]:checked { background: var(--project-primary); }
 .legacy-scalper-toggle input[type=checkbox]:checked::before { transform: translateX(12px); }
 .legacy-scalper-toggle input:focus-visible { outline: 2px solid var(--project-primary); outline-offset: 2px; }
-.legacy-scalper-toggle.is-unavailable { opacity: .5; }
+.legacy-scalper-toggle.is-unavailable { opacity: var(--ds-disabled-opacity,.5); }
 .legacy-scalper-toggle input:disabled { cursor: default; }
 .legacy-scalper-distance { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; align-items: center; }
 .legacy-scalper-modal :is(input:not([type=checkbox]),select) { box-sizing:border-box; width:100%; min-width:0; height:var(--ds-control,36px); padding:7px 12px; border:1px solid var(--project-border); border-radius:var(--ds-radius-field,8px); background:var(--project-canvas); color:var(--project-text); font:inherit; }
@@ -83,8 +83,12 @@
 .legacy-scalper-modal .legacy-scalper-settings footer button:hover:not(:disabled) { background:var(--project-control); border-color:var(--project-border-strong); }
 .legacy-scalper-modal .legacy-scalper-settings .legacy-scalper-save { background: var(--project-action); color: var(--project-on-action); border-color: var(--project-action); }
 .legacy-scalper-modal .legacy-scalper-settings footer .legacy-scalper-save:hover:not(:disabled) { background:var(--project-action-hover); border-color:var(--project-action-hover); color:var(--project-on-action); }
+.legacy-scalper-modal .legacy-scalper-settings footer button:disabled { opacity:1; background:var(--project-control); border-color:var(--project-border); color:var(--project-muted); }
 .legacy-scalper-settings .fx-select.is-field .fx-select-trigger { border-radius:8px; }
-@media (pointer:coarse) { .legacy-scalper-settings .fx-select.is-field .fx-select-trigger { min-height:44px; } }
+@media (pointer:coarse) {
+  .legacy-scalper-settings :is(input:not([type=checkbox]),select), .legacy-scalper-settings footer button { min-height:44px; height:44px; }
+  .legacy-scalper-settings .fx-select.is-field .fx-select-trigger { min-height:44px; }
+}
 @media (prefers-reduced-motion: reduce) { .legacy-modal { animation: none; } .legacy-scalper-toggle input[type=checkbox]::before, .legacy-trading-bar .legacy-quantity-control { transition: none; } }
 @media (prefers-reduced-motion: no-preference) {
   .legacy-trading-bar .chart-trading-account > button[aria-label*='danh sách lệnh'] svg { transition: transform var(--ds-motion-hover) var(--ds-ease-standard), opacity var(--ds-motion-hover) var(--ds-ease-standard); }
