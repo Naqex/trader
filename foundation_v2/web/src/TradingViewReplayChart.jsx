@@ -74,17 +74,23 @@ export default function TradingViewReplayChart(props) {
 
   useEffect(() => {
     let cancelled = false, layoutSave, historyReader, saveState = 'saved', restoringImports = false, importedShapes = [], lines = []
-    let widget, adapter, chart, headerSlots, headerObserver, nativeHeader, chartReady = false, fittedLevels = '', reservedWidth = -1
+    let widget, adapter, chart, headerSlots, headerObserver, nativeHeader, chartReady = false, fittedLevels = '', reservedWidth = -1, chromeWidth = -1, chromeHeight = -1, resizeFrame = 0, publishFrame = 0
     const resizeChrome = () => {
       const frame = host.current?.querySelector('iframe'), canvas = host.current?.closest('.chart-canvas')
       if (!frame?.contentDocument || !canvas) return
       canvas.closest('.replay-shell')?.style.setProperty('--legacy-frame-height', `${canvas.closest('.chart-frame').clientHeight}px`)
+      const width = Math.round(host.current.clientWidth), height = Math.round(host.current.clientHeight)
       const reserved = Math.max(0, Math.round(host.current.clientWidth - canvas.clientWidth))
-      if (reserved === reservedWidth) return
-      reservedWidth = reserved
+      if (width === chromeWidth && height === chromeHeight && reserved === reservedWidth) return
+      chromeWidth = width; chromeHeight = height; reservedWidth = reserved
       frame.contentDocument.documentElement.style.setProperty('--legacy-reserved-width', `${reserved}px`)
-      // v23 measures body on resize. Resizing the canvas alone clips the native price scale.
-      frame.contentWindow.dispatchEvent(new Event('resize'))
+      // v23 measures body on resize. Coalesce chart-frame changes to one native
+      // resize per animation frame so a grip drag cannot queue layout work.
+      if (resizeFrame === 0) resizeFrame = requestAnimationFrame(() => {
+        resizeFrame = 0
+        const current = host.current?.querySelector('iframe')
+        if (current?.isConnected) current.contentWindow?.dispatchEvent(new Event('resize'))
+      })
     }
     const pauseNative = () => latest.current.onOrderDragStart()
     const publishHeader = interval => {
@@ -301,7 +307,10 @@ export default function TradingViewReplayChart(props) {
           nativeHeader.addEventListener('keydown', pauseNative, true)
           nativeHeader.ownerDocument.addEventListener('keydown', saveShortcut, true)
           document.addEventListener('keydown', saveShortcut, true)
-          headerObserver = new ResizeObserver(() => { resizeChrome(); publishHeader() })
+          headerObserver = new ResizeObserver(() => {
+            resizeChrome()
+            if (publishFrame === 0) publishFrame = requestAnimationFrame(() => { publishFrame = 0; publishHeader() })
+          })
           headerObserver.observe(host.current)
           headerObserver.observe(host.current.closest('.chart-canvas'))
           resizeChrome()
@@ -329,7 +338,7 @@ export default function TradingViewReplayChart(props) {
       }
     }).catch(error => { if (!cancelled) { clearTimeout(loadingTimer); setStatus('error'); setMessage(String(error.message || error)) } })
     return () => {
-      cancelled = true; layoutSave?.dispose(); clearTimeout(loadingTimer); headerObserver?.disconnect(); nativeHeader?.removeEventListener('pointerdown', pauseNative, true); nativeHeader?.removeEventListener('keydown', pauseNative, true); nativeHeader?.ownerDocument.removeEventListener('keydown', saveShortcut, true); document.removeEventListener('keydown', saveShortcut, true); instance.current = null
+      cancelled = true; layoutSave?.dispose(); clearTimeout(loadingTimer); headerObserver?.disconnect(); cancelAnimationFrame(resizeFrame); cancelAnimationFrame(publishFrame); resizeFrame = 0; publishFrame = 0; nativeHeader?.removeEventListener('pointerdown', pauseNative, true); nativeHeader?.removeEventListener('keydown', pauseNative, true); nativeHeader?.ownerDocument.removeEventListener('keydown', saveShortcut, true); document.removeEventListener('keydown', saveShortcut, true); instance.current = null
       latest.current.onHeaderSlots?.(null)
       adapter?.dispose(); historyReader?.dispose(); widget?.remove()
     }

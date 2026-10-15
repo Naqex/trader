@@ -180,11 +180,22 @@ function ReplayChart({ rows, sessionId, chartType, showVolume, showAverage, view
     host.addEventListener('pointerup', pointerUp)
     host.addEventListener('pointercancel', cancelPointer)
     chartRef.current = { chart, series, volume, average, drawingPrimitive, orderPrimitive }
-    const resize = new ResizeObserver(() => chart.applyOptions({ width: host.clientWidth, height: host.clientHeight }))
+    let resizeFrame = 0, lastWidth = -1, lastHeight = -1
+    const resize = new ResizeObserver(() => {
+      if (resizeFrame !== 0) return
+      resizeFrame = requestAnimationFrame(() => {
+        resizeFrame = 0
+        const width = host.clientWidth, height = host.clientHeight
+        if (width === lastWidth && height === lastHeight) return
+        lastWidth = width; lastHeight = height
+        chart.applyOptions({ width, height })
+      })
+    })
     resize.observe(host)
     return () => {
       rangeRef.current = chart.timeScale().getVisibleLogicalRange()
       resize.disconnect()
+      cancelAnimationFrame(resizeFrame)
       cancelAnimationFrame(paintFrame.current)
       chart.unsubscribeCrosshairMove(crosshair)
       host.removeEventListener('pointerdown', pointerDown)

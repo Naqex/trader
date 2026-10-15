@@ -58,16 +58,19 @@ export default function LegacyTradingBar({ order, quotes, onBeginOrder, analytic
     const barHeight = workspaceRef.current?.querySelector('.legacy-trading-bar')?.offsetHeight || 48
     const chart = main?.querySelector('.chart-frame')
     const chartMinimum = chart ? parseFloat(getComputedStyle(chart).minHeight) || 240 : 240
-    return { normal: Math.max(0, Math.floor(available - barHeight - chartMinimum)), full: Math.max(0, Math.floor(available - barHeight)), barHeight, width: main?.clientWidth, reserve: available - (chart?.offsetHeight || available) }
+    return { normal: Math.max(0, Math.floor(available - barHeight - chartMinimum)), full: Math.max(0, Math.floor(available - barHeight)), barHeight, width: main?.clientWidth, viewportHeight: window.innerHeight, reserve: available - (chart?.offsetHeight || available) }
   }
   const resize = (value, bounds = resizeBounds(), preview = false) => {
     const clamped = Math.round(Math.max(0, Math.min(value, bounds.full)))
     const next = !preview && clamped < 48 ? 0 : clamped
     if (!preview && next > 0 && next >= bounds.full) { setPositionsOpen(true); setMaximized(true); return }
     // Keep the native chart at its minimum size while the table slides over it.
-    setOverflowReserve(next > bounds.normal ? bounds.normal + bounds.barHeight : null)
-    setMaximized(false)
-    setPositionsOpen(next > 0); if (next > 0) setHeight(next)
+    const reserve = next > bounds.normal ? bounds.normal + bounds.barHeight : null
+    setOverflowReserve(current => current === reserve ? current : reserve)
+    setMaximized(current => current ? false : current)
+    const open = next > 0
+    setPositionsOpen(current => current === open ? current : open)
+    if (open) setHeight(current => current === next ? current : next)
     if (!preview && next > 0) restoredHeight.current = next
   }
   const finishResize = commit => {
@@ -87,7 +90,11 @@ export default function LegacyTradingBar({ order, quotes, onBeginOrder, analytic
     if (!main) return
     const observer = new ResizeObserver(() => {
       const layout = positionsLayout.current
-      if (drag.current) { if (main.clientWidth !== drag.current.bounds.width || Math.round(main.clientHeight) !== drag.current.bounds.full + drag.current.bounds.barHeight) finishResize(false); return }
+      // The main column is expected to change height while the grip is moving.
+      // Cancelling on that change made the gesture fight the chart's own resize
+      // observer near the minimum-height boundary. Only a real horizontal or
+      // viewport resize invalidates the cached drag bounds.
+      if (drag.current) { if (main.clientWidth !== drag.current.bounds.width || window.innerHeight !== drag.current.bounds.viewportHeight) finishResize(false); return }
       if (!layout.open || layout.maximized) return
       resize(layout.height)
     })
@@ -101,7 +108,11 @@ export default function LegacyTradingBar({ order, quotes, onBeginOrder, analytic
   // Keep the panel in normal flow while dragging so the chart's native resize
   // observer receives every frame. Only overflow the chart after release.
   const overlay = !resizing && (!maximized && positionsOpen && overflowReserve !== null)
-  const positionsIcon = maximized ? 'contract-corners' : positionsOpen ? 'collapse' : 'expand'
+  // This control changes panel height, so it needs a vertical affordance. The
+  // generic expand/collapse paths are horizontal chevrons and read as broken
+  // icons in the bottom trading bar.
+  const positionsIcon = 'down'
+  const maximizeIcon = maximized ? 'contract-corners' : 'expand-corners'
   return <div ref={workspaceRef} className={`legacy-trading-workspace ${resizing ? 'is-resizing' : ''} ${!resizing && (overlay ? 'is-expanded' : maximized ? 'is-maximized' : '')}`} style={overlay ? { height: overflowReserve, '--positions-height': `${positionsOpen ? height : 0}px` } : undefined}>
     <div className="chart-trading-bar legacy-trading-bar" role="group" aria-label={t('Giao dịch mô phỏng')}>
       <div className="chart-trading-actions">
@@ -156,8 +167,8 @@ export default function LegacyTradingBar({ order, quotes, onBeginOrder, analytic
           if (positionsOpen) { setMaximized(false); setPositionsOpen(false); return }
           const bounds = resizeBounds()
           resize(Math.min(bounds.normal, restoredHeight.current), bounds)
-        }}><ChartIcon name={positionsIcon} /></button>
-        <button type="button" aria-label={t(maximized ? 'Thu nhỏ danh sách lệnh' : 'Mở rộng danh sách lệnh')} aria-pressed={maximized} onClick={() => { if (maximized) resize(Math.min(resizeBounds().normal, restoredHeight.current)); else { setPositionsOpen(true); setMaximized(true) } }}><ChartIcon name={positionsIcon} /></button>
+        }}><ChartIcon name={positionsIcon} style={{ transform: positionsOpen ? 'rotate(180deg)' : undefined }} /></button>
+        <button type="button" aria-label={t(maximized ? 'Thu nhỏ danh sách lệnh' : 'Mở rộng danh sách lệnh')} aria-pressed={maximized} onClick={() => { if (maximized) resize(Math.min(resizeBounds().normal, restoredHeight.current)); else { setPositionsOpen(true); setMaximized(true) } }}><ChartIcon name={maximizeIcon} /></button>
       </div>
     </div>
     <div className="legacy-resizable-positions" hidden={!positionsOpen} style={maximized && !resizing ? undefined : { height: positionsOpen ? height : 0 }}><LegacyPositions execution={execution} assetStates={order.assetStates} symbol={symbol} /></div>

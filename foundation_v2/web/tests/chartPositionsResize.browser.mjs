@@ -41,7 +41,7 @@ try {
       await page.mouse.move(point.x, point.y - distance); await frame(page)
       const current = await layout(page)
       assert.ok(Math.abs(current.height - distance) <= 1, `drag ${distance}px -> ${current.height}px at ${width}`)
-      assert.equal(current.chart, initial.chart, 'native chart stays at its original height while dragging')
+      assert.ok(current.chart <= initial.chart && current.chart >= 240, `native chart follows the drag without crossing its minimum height at ${width}`)
       assert.equal(current.toolbar, 'visible', 'floating controls do not flash hidden/visible during a drag')
       samples.push(current)
     }
@@ -49,7 +49,7 @@ try {
     assert.equal((await layout(page)).height, 320)
     assert.ok(await iframe.evaluate(node => node.isConnected), 'native iframe is preserved')
     await page.screenshot({ path: path.join(output, `positions-${width}.png`) })
-    report.cases.push({ width, dpr, case: 'continuous 10px steps; chart geometry frozen during drag; same iframe after release', samples })
+    report.cases.push({ width, dpr, case: 'continuous 10px steps; chart tracks the panel until its minimum; same iframe after release', samples })
 
     // Every termination path must release the preview and restore the old size.
     for (const cancel of ['Escape', 'pointercancel', 'lostpointercapture', 'blur']) {
