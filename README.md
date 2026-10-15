@@ -94,6 +94,13 @@ commit hoặc copy vendor vào build. Khi phục vụ `dist/` bằng server khá
 distribution được cấp quyền tại cùng URL. Thiếu asset sẽ hiện lỗi và link rollback;
 `chart_engine=lightweight` chọn engine cũ rõ ràng.
 
+Với v23.040, app yêu cầu loader `?iframe=srcdoc` để chạy được trong IAB/webview
+không tải iframe `blob:`. Vite dev/preview dùng
+`foundation_v2/web/advancedChartCompatibility.mjs` chuyển riêng phần iframe khi
+phục vụ; không sửa file vendor. Adapter kiểm tra SHA-256 của distribution trước
+khi chuyển. Server khác phục vụ `dist/` cũng cần áp adapter cho request loader
+này. Khi nâng vendor, cập nhật tích hợp và kiểm thử iframe; không bỏ kiểm tra hash.
+
 Chart dùng `visible_rows` của API, không tải giá từ TradingView. Timeframe lớn hơn
 được gộp từ prefix này; không tạo nến ở timeframe nhỏ hơn dataset. Layout, indicator
 và hình vẽ native lưu trên trình duyệt theo workspace/session/dataset/cutoff;

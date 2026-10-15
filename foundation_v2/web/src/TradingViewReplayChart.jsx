@@ -54,9 +54,9 @@ function loadLibrary() {
   if (window.TradingView?.widget) return Promise.resolve()
   if (!libraryPromise) libraryPromise = new Promise((resolve, reject) => {
     const script = document.createElement('script')
-    script.src = '/charting_library/charting_library.standalone.js'
+    script.src = '/charting_library/charting_library.standalone.js?iframe=srcdoc'
     script.onload = () => window.TradingView?.widget ? resolve() : reject(new Error('Advanced Charts bundle không hợp lệ.'))
-    script.onerror = () => { script.remove(); libraryPromise = null; reject(new Error('Thiếu bộ Advanced Charts local tại /charting_library/.')) }
+    script.onerror = () => { script.remove(); libraryPromise = null; reject(new Error('Không tải được bộ Advanced Charts local tại /charting_library/.')) }
     document.head.append(script)
   })
   return libraryPromise

@@ -14,6 +14,11 @@ try {
   for (const [mode, href] of [['prop', propHref], ['backtest', backtestHref]]) {
     const context = await browser.newContext({ viewport: { width: 1710, height: 987 }, reducedMotion: 'reduce' })
     await context.addInitScript(() => {
+      const createObjectURL = URL.createObjectURL.bind(URL)
+      URL.createObjectURL = blob => {
+        if (blob.type === 'text/html') throw new Error('QA: blob iframe transport unavailable')
+        return createObjectURL(blob)
+      }
       // Test-only native API observation, never exposed by product code.
       document.addEventListener('load', event => {
         if (!event.target.src?.includes('charting_library.standalone.js')) return
@@ -36,6 +41,11 @@ try {
     page.on('pageerror', error => report.errors.push({ mode, message: error.message }))
     await page.goto(href)
     await page.locator('[data-chart-status=ready]').waitFor({ timeout: 30000 })
+    const transport = await page.locator('.advanced-chart-host iframe').evaluate(frame => ({ url: frame.contentWindow.location.href, src: frame.getAttribute('src'), srcdoc: frame.hasAttribute('srcdoc'), canvases: frame.contentDocument.querySelectorAll('canvas').length }))
+    assert.equal(transport.url, 'about:srcdoc')
+    assert.equal(transport.src, null)
+    assert.ok(transport.srcdoc && transport.canvases > 0)
+    report.cases.push({ mode, transport })
     const iframe = await page.locator('.advanced-chart-host iframe').elementHandle()
     const native = page.frameLocator('.advanced-chart-host iframe')
     assert.equal(await page.getByTestId('prop-rules-button').count(), mode === 'prop' ? 1 : 0)
@@ -101,6 +111,11 @@ try {
     assert.ok(await iframe.evaluate(node => node.isConnected))
     report.measurements.push({ mode, environment: 'Headless Chromium, Vite dev, native chart, 1710x987 DPR1, 90 paced pointer steps; diagnostic sample, not production FPS', ...timing })
     await page.screenshot({ path: path.join(output, `${mode}-chart.png`) })
+    await page.reload()
+    await page.locator('[data-chart-status=ready]').waitFor({ timeout: 30000 })
+    assert.equal(await page.locator('[data-chart-status=ready]').getAttribute('aria-label'), before.cutoff, 'reload preserves the causal prefix')
+    assert.equal(await page.locator('.advanced-chart-host iframe').evaluate(frame => frame.contentWindow.location.href), 'about:srcdoc')
+    report.cases.push({ mode, checks: 'reload restores the same session/cutoff with blob HTML creation blocked' })
     assert.deepEqual(writes.filter(url => !url.endsWith('/activity')), [], 'no data mutations from UI checks')
     await context.close()
   }

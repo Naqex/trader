@@ -1,7 +1,8 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { createReadStream } from 'node:fs'
-import { realpath, stat } from 'node:fs/promises'
+import { readFile, realpath, stat } from 'node:fs/promises'
+import { compatibleAdvancedCharts } from './advancedChartCompatibility.mjs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -20,6 +21,12 @@ function localAdvancedCharts() {
       const mime = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff': 'font/woff', '.woff2': 'font/woff2', '.ttf': 'font/ttf' }
       res.setHeader('Content-Type', mime[path.extname(file)] || 'application/octet-stream')
       res.setHeader('X-Content-Type-Options', 'nosniff')
+      if (requestPath === 'charting_library.standalone.js' && new URL(req.url, 'http://localhost').searchParams.get('iframe') === 'srcdoc') {
+        const source = compatibleAdvancedCharts(await readFile(file, 'utf8'))
+        res.setHeader('Cache-Control', 'no-store')
+        res.end(req.method === 'HEAD' ? undefined : source)
+        return
+      }
       if (req.method === 'HEAD') res.end()
       else createReadStream(file).on('error', () => res.destroy()).pipe(res)
     } catch { res.statusCode = 404; res.end('Advanced Charts asset unavailable') }
