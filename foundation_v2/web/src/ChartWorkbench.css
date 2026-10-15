@@ -434,8 +434,6 @@ button.chart-order-level { cursor: ns-resize; touch-action: none; }
 .legacy-order-form footer .legacy-order-save { color:var(--project-on-action); background:var(--project-action); border-radius:var(--wm-control-radius); padding:8px 16px; }
 .legacy-order-form p { margin:0; font-size:12px; line-height:1.5; color:var(--chart-muted); }
 .legacy-order-form [role=alert] { color:var(--project-negative); }
-.legacy-init-details { padding:0 24px 20px; }
-.legacy-init-details .chart-order-panel { color:var(--chart-text); background:var(--chart-bg); padding-top:12px; }
 @media(max-width:1100px) {
  .legacy-calendar-year { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
@@ -485,10 +483,10 @@ button.chart-order-level { cursor: ns-resize; touch-action: none; }
 .legacy-order-modal .fx-select-menu { border-radius:var(--ds-radius-menu); }
 .legacy-order-modal button { min-height:36px; border-radius:var(--wm-control-radius); }
 .legacy-order-modal button.legacy-order-save:hover:not(:disabled) { background:var(--project-action-hover); }
-.legacy-order-form footer { flex-wrap:wrap; gap:12px; margin-top:0; }
-.legacy-order-form footer label { flex:1 0 100%; font-size:13px; }
+.legacy-order-form footer { flex-wrap:nowrap; gap:12px; margin-top:0; }
+.legacy-order-form footer label { flex:1 1 auto; min-width:0; font-size:13px; }
 .legacy-order-form footer input[type=checkbox] { width:16px; height:16px; accent-color:var(--project-primary); }
-.legacy-order-form footer button:first-of-type { margin-left:auto; }
+.legacy-order-form footer button:disabled { opacity:1; background:var(--project-control); border-color:var(--project-border); color:var(--project-muted); }
 .legacy-protection-row > input { max-width:240px; }
 .legacy-order-form input[role=switch] { width:32px; height:18px; flex:0 0 32px; background:var(--project-control); }
 .legacy-order-form input[role=switch]::before { width:14px; height:14px; background:var(--project-text); }
