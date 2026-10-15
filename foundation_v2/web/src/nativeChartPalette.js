@@ -10,6 +10,10 @@ export function nativeChartPalette(theme) {
     text: theme === 'light' ? '#15181C' : '#FFFFFF',
     positive: theme === 'light' ? '#24724B' : '#72CFA1',
     negative: theme === 'light' ? '#B5373C' : '#FF828B',
+    // Candles need a higher-saturation pair than UI status colors so thin
+    // bodies and wicks remain crisp against the chart canvas.
+    candlePositive: '#26A69A',
+    candleNegative: '#EF5350',
     primary: theme === 'light' ? '#2466AC' : '#70B5FF',
     highlight: theme === 'light' ? '#A44715' : '#FFAD7C',
     warning: theme === 'light' ? '#80590B' : '#EAC369',

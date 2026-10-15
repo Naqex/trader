@@ -12,8 +12,8 @@ let libraryPromise
 const volumeAppearance = theme => {
   const p = nativeChartPalette(theme)
   return {
-    'volume.color.0': p.negative,
-    'volume.color.1': p.positive,
+    'volume.color.0': p.candleNegative,
+    'volume.color.1': p.candlePositive,
     'volume ma.color': p.highlight,
     // Volume and its SMA are opt-in in the replay workspace. Keep restored
     // layouts from reviving the default SMA 9 line on a fresh chart.
@@ -41,9 +41,9 @@ const paneAppearance = theme => {
     'scalesProperties.textColor': p.text, 'scalesProperties.lineColor': p.border,
     ...Object.fromEntries(['candleStyle', 'hollowCandleStyle', 'haStyle'].flatMap(style =>
       ['upColor', 'borderUpColor', 'wickUpColor', 'downColor', 'borderDownColor', 'wickDownColor'].map(key =>
-        [`mainSeriesProperties.${style}.${key}`, key.includes('Up') || key === 'upColor' ? p.positive : p.negative]))),
-    'mainSeriesProperties.barStyle.upColor': p.positive,
-    'mainSeriesProperties.barStyle.downColor': p.negative,
+        [`mainSeriesProperties.${style}.${key}`, key.includes('Up') || key === 'upColor' ? p.candlePositive : p.candleNegative]))),
+    'mainSeriesProperties.barStyle.upColor': p.candlePositive,
+    'mainSeriesProperties.barStyle.downColor': p.candleNegative,
     'mainSeriesProperties.lineStyle.color': p.primary,
     'mainSeriesProperties.areaStyle.linecolor': p.primary,
     'mainSeriesProperties.areaStyle.color1': `${p.primary}33`,
