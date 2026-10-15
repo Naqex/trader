@@ -175,6 +175,32 @@ session or dataset tree is recursively deleted. Reimport and deletion serialize
 publication of the same dataset ID. Long imports stream data and store at most
 1,000 gap details alongside the exact gap count.
 
+Updates never retarget existing sessions: each Backtest/Prop session keeps its
+original version. Prop setup `dataset_ids` arrays and hash-only attempts also
+pin that version before chart creation; dataset row locks serialize those pins
+with deletion. Archived/historical references remain protected.
+
+Asset names are plain text; details are available in the row's three-dot menu.
+**Kiểm tra & khôi phục** calls `POST /api/v2/data/datasets/{dataset_id}/repair`.
+It checks the Parquet checksum and rebuilds missing/corrupt files from the saved
+CSV only when its hash and transform version match. The rebuilt file must match
+the session's original artifact hash before publication. Corrupt files are
+retained in workspace quarantine; session IDs, revisions, trades and cursor do
+not change. Missing files return a recoverable 503; the chart links to the data
+library. Catalog availability is a cheap file-presence check, not a full hash
+scan of every asset on every page load.
+
+If raw source or database metadata is also lost, use a verified backup of both
+PostgreSQL and artifacts. `scripts/backup_api_platform.py` and
+`scripts/f7_restore_rehearsal.py` provide the existing checked backup/restore
+workflow; stop writers before snapshotting. A backup on the same disk cannot
+protect against loss of that disk. This repair action does not configure a
+scheduled or off-device backup, and never substitutes newer market history.
+
+Run `.venv/Scripts/python.exe -B scripts/dataset_resilience_acceptance.py` here
+for disposable PostgreSQL concurrency tests and real HTTP/browser loss/corruption
+recovery, including preservation of Backtest and Prop state.
+
 These are price-only datasets (`instrument_spec=null`): public quotes do not
 establish broker contract/lot sizes. Replay chart viewing works; execution needs
 a separately configured instrument spec and cost model. Bid candles do not prove

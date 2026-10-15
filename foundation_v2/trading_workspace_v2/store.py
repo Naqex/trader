@@ -753,7 +753,12 @@ class PostgresStore:
             if row:
                 research = conn.execute('SELECT 1 FROM research_jobs WHERE workspace_id=%s AND dataset_id=%s LIMIT 1', (workspace_id, dataset_id)).fetchone()
                 replay = conn.execute("SELECT 1 FROM workspace_record_revisions WHERE workspace_id=%s AND kind='replay' AND (payload_json->>'dataset_id'=%s OR payload_json->'dataset_ids' ? %s) LIMIT 1", (workspace_id, dataset_id, dataset_id)).fetchone()
-                prop = conn.execute("SELECT 1 FROM prop_attempt_revisions WHERE workspace_id=%s AND jsonb_path_exists(resume_json, '$.**.dataset_id ? (@ == $id)', %s::jsonb) LIMIT 1", (workspace_id, json.dumps({'id': dataset_id}))).fetchone()
+                prop = conn.execute("""SELECT 1 FROM prop_attempt_revisions WHERE workspace_id=%s AND (
+                    jsonb_path_exists(resume_json, '$.**.dataset_id ? (@ == $id)', %s::jsonb)
+                    OR jsonb_path_exists(resume_json, '$.**.dataset_ids[*] ? (@ == $id)', %s::jsonb)
+                    OR snapshot_json->>'data_version' IN (%s, %s, %s)) LIMIT 1""",
+                    (workspace_id, json.dumps({'id': dataset_id}), json.dumps({'id': dataset_id}),
+                     dataset_id, row['manifest_json']['artifact_sha256'], 'sha256:' + row['manifest_json']['artifact_sha256'])).fetchone()
                 if research or replay or prop:
                     raise DatasetInUse('dataset_in_use')
             yield DatasetManifest.model_validate(row['manifest_json']) if row else None
@@ -777,11 +782,22 @@ class PostgresStore:
             if isinstance(value, dict):
                 if isinstance(value.get('dataset_id'), str):
                     identifiers.add(value['dataset_id'])
+                if isinstance(value.get('dataset_ids'), list):
+                    identifiers.update(item for item in value['dataset_ids'] if isinstance(item, str))
                 pending.extend(value.values())
             elif isinstance(value, list):
                 pending.extend(value)
         for dataset_id in sorted(identifiers):
             PostgresStore._lock_replay_dataset(conn, workspace_id, 'replay', {'dataset_id': dataset_id})
+
+    @staticmethod
+    def _lock_prop_data_version(conn, workspace_id, data_version):
+        # Hash-only attempts also pin a local version before their replay exists.
+        checksum = data_version.removeprefix('sha256:')
+        rows = conn.execute('SELECT dataset_id FROM datasets WHERE workspace_id=%s AND (dataset_id=%s OR artifact_sha256=%s) ORDER BY dataset_id FOR KEY SHARE',
+                            (workspace_id, data_version, checksum)).fetchall()
+        if not rows and len(checksum) == 64 and all(c in '0123456789abcdef' for c in checksum):
+            raise LookupError('dataset_not_found')
 
     def put_dataset(self, manifest: DatasetManifest, *, conn=None) -> None:
         if conn is None:
@@ -2389,6 +2405,7 @@ class PostgresStore:
         resume = dict(resume_state or {})
         now = utc_now_iso()
         with self.connect() as conn:
+            self._lock_prop_data_version(conn, attempt.workspace_id, attempt.data_version)
             self._lock_resume_replay(conn, attempt.workspace_id, resume)
             session_row = conn.execute(
                 "SELECT snapshot_json FROM prop_sessions WHERE workspace_id=%s AND session_id=%s FOR UPDATE",
@@ -2523,6 +2540,7 @@ class PostgresStore:
         resume_json = json.dumps(resume, sort_keys=True)
 
         with self.connect() as conn:
+            self._lock_prop_data_version(conn, session.workspace_id, attempt.data_version)
             self._lock_resume_replay(conn, session.workspace_id, resume)
             inserted_session = conn.execute(
                 """

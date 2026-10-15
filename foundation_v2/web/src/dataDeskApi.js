@@ -59,6 +59,11 @@ export async function deleteLocalDataset(workspace, datasetId, signal) {
   return readJson(response)
 }
 
+export async function repairLocalDataset(workspace, datasetId, signal) {
+  const response = await scopedMutation(`/api/v2/data/datasets/${encodeURIComponent(datasetId)}/repair`, workspace, { method:'POST', headers:workspaceHeaders(workspace), signal }, { timeoutMs:15 * 60_000, pollMs:1000 })
+  return readJson(response)
+}
+
 export async function updateDownload(workspace, jobId, action, signal) {
   if (!['resume','pause','cancel'].includes(action)) throw new Error('Invalid download action')
   const response = await scopedMutation(`/api/v2/data/downloads/${encodeURIComponent(jobId)}/${action}`, workspace, { method:'POST', headers:workspaceHeaders(workspace), signal })

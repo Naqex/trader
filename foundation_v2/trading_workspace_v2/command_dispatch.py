@@ -152,6 +152,9 @@ class DomainCommandDispatcher:
         except HTTPException as exc:
             headers.update(exc.headers or {})
             return CommandResult(exc.status_code, jsonable_encoder({"detail": exc.detail}), headers=headers)
+        except FileNotFoundError:
+            detail = "stored_artifact_unavailable" if method == "GET" and "/oauth/" not in path else "command_outcome_unknown"
+            return CommandResult(503, {"detail": detail}, headers=headers)
         except (ValidationError, StoredContractUntrusted, ArtifactConflict):
             detail = "stored_contract_untrusted" if method == "GET" and "/oauth/" not in path else "command_outcome_unknown"
             return CommandResult(503, {"detail": detail}, headers=headers)

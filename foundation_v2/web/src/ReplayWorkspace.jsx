@@ -1052,7 +1052,7 @@ export default function ReplayWorkspace({ workspace, query }) {
   const propRetryHref = propMode ? routeHref('overview', { session: null, cursor: null, cutoff: null, prop_session: null, prop_attempt: null, attempt: null, create: 'prop' }) : null
 
   if (!replay && (state.status === 'loading' || requestedSession && state.status === 'idle')) return <ChartLoadingState viewport />
-  if (!replay && state.status === 'error') return <main className="chart-read-failure replay-error">{[401, 403].includes(state.errorStatus) ? <TestingEmptyState kind="denied" /> : <TestingReadState error message={`${t('Không đọc được replay:')} ${t(state.error)}`} />}</main>
+  if (!replay && state.status === 'error') return <main className="chart-read-failure replay-error">{[401, 403].includes(state.errorStatus) ? <TestingEmptyState kind="denied" /> : <><TestingReadState error message={state.errorStatus === 503 ? t('Dữ liệu phiên chưa sẵn sàng. Kiểm tra và khôi phục trong kho dữ liệu rồi mở lại phiên.') : `${t('Không đọc được replay:')} ${t(state.error)}`} /><a href={dataDeskHref}>{t('Mở kho dữ liệu')}</a></>}</main>
 
   return (
     <main style={advancedChart ? { '--legacy-header-height': `${(nativeHeaderSlots?.headerHeight || 38) + 4}px` } : undefined} className={`replay-shell wm-chart-page ${sideOpen ? 'is-panel-open' : ''} ${sideOpen && sidePanel === 'journal' ? 'is-journal-open' : ''} ${sideOpen && sidePanel === 'native-objects' ? 'is-native-tree-open' : ''} ${replay ? 'has-replay' : ''} ${advancedChart && replay ? 'is-legacy-chart' : ''}`}>

@@ -178,6 +178,50 @@ class LocalDatasetRemovalTests(unittest.TestCase):
         self.assertIsNone(self.store.get_dataset(self.workspace,self.manifest.dataset_id));self.assertTrue(self.paths[1].exists())
         self.assertTrue(self.service.delete_dataset(self.workspace,self.manifest.dataset_id)['deleted']);self.assertFalse(self.paths[1].exists())
 
+    def test_prop_setup_arrays_and_hash_only_attempts_pin_before_chart_creation(self):
+        for resume, snapshot in [
+            ({'setup_metadata': {'dataset_ids': [self.manifest.dataset_id]}}, {}),
+            ({}, {'data_version': 'sha256:' + self.manifest.artifact_sha256}),
+        ]:
+            with self.subTest(resume=resume, snapshot=snapshot):
+                import json
+                sid = uuid4().hex
+                with self.store.connect() as conn:
+                    conn.execute("INSERT INTO prop_sessions VALUES(%s,%s,1,'{}','t','t')",(self.workspace,sid))
+                    conn.execute("INSERT INTO prop_attempts VALUES(%s,%s,'a',1,'{}','{}','{}','t','t')",(self.workspace,sid))
+                    conn.execute("INSERT INTO prop_attempt_revisions VALUES(%s,%s,'a',1,%s::jsonb,'{}',%s::jsonb,'t')",(self.workspace,sid,json.dumps(snapshot),json.dumps(resume)))
+                    conn.commit()
+                try:
+                    with self.assertRaises(DatasetInUse): self.service.delete_dataset(self.workspace,self.manifest.dataset_id)
+                    self.assertTrue(all(path.exists() for path in self.paths))
+                finally:
+                    with self.store.connect() as conn:
+                        conn.execute('DELETE FROM prop_attempt_revisions WHERE workspace_id=%s AND session_id=%s',(self.workspace,sid))
+                        conn.execute('DELETE FROM prop_attempts WHERE workspace_id=%s AND session_id=%s',(self.workspace,sid))
+                        conn.execute('DELETE FROM prop_sessions WHERE workspace_id=%s AND session_id=%s',(self.workspace,sid))
+                        conn.commit()
+
+    def test_concurrent_setup_array_and_hash_pin_wait_for_dataset_removal(self):
+        for mode in ['array', 'hash']:
+            started, finished = threading.Event(), threading.Event()
+            result=[]
+            def pin():
+                started.set()
+                try:
+                    with self.store.connect() as conn:
+                        if mode == 'array': self.store._lock_resume_datasets(conn,self.workspace,{'setup_metadata':{'dataset_ids':[self.manifest.dataset_id]}})
+                        else: self.store._lock_prop_data_version(conn,self.workspace,'sha256:'+self.manifest.artifact_sha256)
+                except LookupError as error: result.append(str(error))
+                finally: finished.set()
+            # Array pin resumes after rollback; hash pin must fail after deletion.
+            try:
+                with self.store.dataset_removal(self.workspace,self.manifest.dataset_id):
+                    thread=threading.Thread(target=pin);thread.start()
+                    self.assertTrue(started.wait(2));self.assertFalse(finished.wait(.2))
+                    if mode == 'array': raise RuntimeError('rollback fixture')
+            except RuntimeError: pass
+            thread.join(5);self.assertTrue(finished.is_set());self.assertEqual(result,[] if mode == 'array' else ['dataset_not_found'])
+
     def test_invalid_manifest_path_rolls_back_database(self):
         with self.store.connect() as conn:
             conn.execute("UPDATE datasets SET manifest_json=jsonb_set(manifest_json,'{artifact_path}',%s::jsonb) WHERE workspace_id=%s AND dataset_id=%s", ('"../victim"',self.workspace,self.manifest.dataset_id));conn.commit()

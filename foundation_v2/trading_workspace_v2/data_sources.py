@@ -118,10 +118,12 @@ class LocalCatalogProvider:
     def list_datasets(self, workspace_id: str) -> list[dict]:
         items = []
         for manifest in self.store.list_datasets(workspace_id):
+            size = self.artifacts.dataset_size_bytes(manifest) if self.artifacts else None
             items.append(
                 {
                     **manifest.model_dump(mode="json"),
-                    "size_bytes": self.artifacts.dataset_size_bytes(manifest) if self.artifacts else None,
+                    "size_bytes": size,
+                    "artifact_available": size is not None and size > 0 if self.artifacts else None,
                     "quality_status": "fixture-only" if manifest.source.license_use == "qa-only" else "unverified",
                     "holdout_access": False,
                 }

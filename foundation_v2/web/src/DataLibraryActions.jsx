@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { useTestingLocale } from './testingLocale.jsx'
 import TestingIcon from './TestingIcon.jsx'
 
-export default function DataLibraryActions({ asset, onDetails, onUpdate, onDelete, canUpdate = false, disabled }) {
+export default function DataLibraryActions({ asset, onDetails, onUpdate, onDelete, onRepair, canUpdate = false, disabled }) {
   const { t } = useTestingLocale()
   const [open, setOpen] = useState(false), [position, setPosition] = useState({left:0,top:0})
   const trigger = useRef(null), menu = useRef(null), id = useId()
@@ -37,6 +37,7 @@ export default function DataLibraryActions({ asset, onDetails, onUpdate, onDelet
     }}>
       <button type="button" role="menuitem" disabled={!asset.downloaded} onClick={() => { close(); onDetails(asset) }}><TestingIcon kind="info" />{t('Xem chi tiết')}</button>
       <button type="button" role="menuitem" disabled={!canUpdate} onClick={() => { close(); onUpdate(asset) }}><TestingIcon kind="history" />{t('Cập nhật')}</button>
+      {onRepair && <button type="button" role="menuitem" disabled={!asset.downloaded} onClick={() => { close(); onRepair(asset) }}><TestingIcon kind="history" />{t('Kiểm tra & khôi phục')}</button>}
       <button type="button" role="menuitem" className="is-destructive" disabled={!asset.downloaded} onClick={() => { close(); onDelete(asset) }}><TestingIcon kind="delete" />{t('Xoá')}</button>
     </div>, trigger.current.closest('.fx-app') || document.body)}
   </>

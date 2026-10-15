@@ -14,7 +14,7 @@ import {
   qualityLabel,
   datasetWarnings,
 } from './researchDataApi.js'
-import { fetchOfflineLibrary, refreshInstrumentCatalog, importLocalCsv, previewLocalCsv, fetchDownloads, startDownload, updateDownload, deleteLocalDataset, mergeDownloadEvent } from './dataDeskApi.js'
+import { fetchOfflineLibrary, refreshInstrumentCatalog, importLocalCsv, previewLocalCsv, fetchDownloads, startDownload, updateDownload, deleteLocalDataset, repairLocalDataset, mergeDownloadEvent } from './dataDeskApi.js'
 import { subscribeWorkspaceEvents } from './workspaceEvents.js'
 import './research-data.css'
 import { useTestingLocale } from './testingLocale.jsx'
@@ -371,6 +371,7 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
   const [catalogOpen, setCatalogOpen] = useState(false), [catalogElapsed, setCatalogElapsed] = useState(0), [catalogUpdated, setCatalogUpdated] = useState(false)
   const [startingAsset, setStartingAsset] = useState(''), [downloadProgressOpen, setDownloadProgressOpen] = useState(false)
   const [deleteAsset, setDeleteAsset] = useState(null), [deleteBusy, setDeleteBusy] = useState(false), [deleteError, setDeleteError] = useState('')
+  const [repairBusy, setRepairBusy] = useState(''), [repairNotice, setRepairNotice] = useState(null)
   const [downloads, setDownloads] = useState({items:[],available:false,receivedAt:0})
   const [downloadRevision, setDownloadRevision] = useState(0), [downloadError, setDownloadError] = useState(''), [pollError,setPollError] = useState('')
   const [jobAction, setJobAction] = useState(''), [clockNow, setClockNow] = useState(Date.now)
@@ -394,6 +395,7 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
     completedJobs.current = new Set()
     downloadSamples.current = new Map()
     setDeleteAsset(null); setDeleteBusy(false); setDeleteError('')
+    setRepairBusy(''); setRepairNotice(null)
     return () => downloadController.abort()
   }, [downloadController])
 
@@ -585,9 +587,25 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
   }
   const visibleDownloads = downloads.items.filter(job => ['queued', 'running', 'pausing', 'paused', 'failed'].includes(job.status))
   useEffect(() => { if (!visibleDownloads.length) setDownloadProgressOpen(false) }, [downloads.items])
-  const eligibleDownload = asset => state.download?.supports_full === true && canDownloadAsset(asset,state.download,preview) && !activeDownload && !jobAction && !deleteBusy && !startingAsset
+  const eligibleDownload = asset => state.download?.supports_full === true && canDownloadAsset(asset,state.download,preview) && !activeDownload && !jobAction && !deleteBusy && !startingAsset && !repairBusy
   const jobForAsset = asset => asset.downloadJob
   const openDelete = asset => { setDetailsOpen(false); setDeleteError(''); setDeleteAsset(asset) }
+  const repairDataset = async asset => {
+    if (repairBusy || preview) return
+    const signal = downloadController.signal
+    setRepairBusy(asset.dataset_id); setRepairNotice(null)
+    try {
+      const result = await repairLocalDataset(workspace, asset.dataset_id, signal)
+      if (!signal.aborted) {
+        setRepairNotice({ text: result.status === 'restored' ? 'Đã khôi phục dữ liệu gốc. Bạn có thể tiếp tục phiên.' : 'Dữ liệu nguyên vẹn, không cần khôi phục.' })
+        setCatalogRevision(value => value + 1)
+      }
+    } catch (error) {
+      if (!signal.aborted) setRepairNotice({ error: true, text: ['dataset_source_unavailable','dataset_source_corrupt','dataset_transform_unavailable','dataset_recovery_mismatch'].includes(error.payload?.detail)
+        ? 'Chưa thể khôi phục đúng phiên bản từ bản nguồn. Cần dùng bản sao lưu; các phiên vẫn được giữ nguyên.'
+        : 'Không kiểm tra được dữ liệu. Hãy thử lại.' })
+    } finally { if (!signal.aborted) setRepairBusy('') }
+  }
   const removeDataset = async () => {
     if (!deleteAsset?.dataset_id || deleteBusy || preview) return
     const signal = downloadController.signal
@@ -628,6 +646,7 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
       {state.status === 'error' && <TestingReadState error message={t('Không đọc được kho dữ liệu:') + ' ' + state.error} recovery={preview ? previewReadRecovery(preview.state) : recovery} />}
 
       {downloadError && <p className="data-library-download-error" role="alert">{t(downloadError)}</p>}
+      {(repairBusy || repairNotice) && <p className={repairNotice?.error ? 'data-library-download-error' : 'data-library-catalog-status'} role={repairNotice?.error ? 'alert' : 'status'}>{t(repairBusy ? 'Đang kiểm tra và khôi phục dữ liệu…' : repairNotice.text)}</p>}
       {downloadProgressOpen && <DataLibraryDialog compact title="Tiến độ tải dữ liệu" onClose={() => setDownloadProgressOpen(false)}><section className="data-library-download-jobs" aria-label={t('Tiến độ tải dữ liệu')}>
         {visibleDownloads.map(job => {
           const retrySeconds = downloadRetrySeconds(job,downloads.receivedAt,clockNow)
@@ -669,7 +688,7 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
                       const dateTitle = value => dataset.downloaded ? value == null ? undefined : displayDate(value, { timeStyle: 'medium' }) : availableStart ? t('Phạm vi có thể tải theo metadata M1; chưa kiểm chứng độ phủ.') : undefined
                       return (
                         <tr key={dataset.key} className={active ? 'is-selected' : ''}>
-                          <td>{dataset.downloaded ? <button type="button" data-testid={`dataset-row-${dataset.dataset_id}`} aria-pressed={active} onClick={() => openDetails(dataset)}><strong>{dataset.instrument_id || '—'}</strong></button> : <><strong>{dataset.instrument_id}</strong>{dataset.name && <small>{dataset.name}</small>}</>}</td>
+                          <td><strong data-testid={dataset.downloaded ? `dataset-row-${dataset.dataset_id}` : undefined}>{dataset.instrument_id || '—'}</strong>{dataset.artifact_available === false && <small>{t('Cần khôi phục')}</small>}{!dataset.downloaded && dataset.name && <small>{dataset.name}</small>}</td>
                           <td>{t(categoryLabel(categoryOf(dataset)))}</td>
                           <td title={downloadEngineOf(dataset) === 'QuantDataManager' ? `${sourceOf(dataset)} · ${t('Công cụ tải')}: QuantDataManager (QDM) · CLI` : sourceOf(dataset)}>{sourceOf(dataset)}</td>
                           <td><span title={dataType.timeframe === 'M1' ? t('M1: mỗi nến tổng hợp giá trong 1 phút.') : undefined}>{dataType.timeframe}</span>{dataType.price && <small title={dataType.price === 'Bid' ? t('Bid: giá bên mua chào, chưa bao gồm giá Ask và spread thực tế.') : undefined}>{dataType.price}</small>}</td>
@@ -681,7 +700,7 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
                             <DataLibraryProgress job={job} fmt={fmt} retrySeconds={retrySeconds} onClick={() => setDownloadProgressOpen(true)} />
                             <button type="button" className="fxa-button fxa-icon-button data-library-job-control" aria-label={t(downloading ? 'Tạm dừng' : 'Tiếp tục tải')} title={retrySeconds > 0 ? t(downloadErrorMessage(job.error || 'download_cooldown')) : t(downloading ? 'Tạm dừng' : 'Tiếp tục tải')} disabled={Boolean(jobAction) || (downloading ? !downloads.supportsPause || job.status === 'pausing' : activeDownload || !downloads.available || retrySeconds > 0)} onClick={() => changeDownload(job,downloading ? 'pause' : 'resume')}><TestingIcon kind={downloading ? 'pause' : 'play'} /></button>
                             <button type="button" className="fxa-button fxa-icon-button data-library-job-control" aria-label={t('Huỷ tải')} title={t(job.supports_cancel === false ? QDM_ERRORS.qdm_control_unsupported : 'Huỷ tải')} disabled={Boolean(jobAction) || job.supports_cancel === false} onClick={() => changeDownload(job,'cancel')}><TestingIcon kind="close" /></button>
-                          </> : <DataLibraryActions asset={dataset} onDetails={openDetails} onUpdate={openDownload} onDelete={openDelete} canUpdate={dataset.downloaded && dataset.update_available === true && eligibleDownload(dataset)} disabled={Boolean(preview) || state.status !== 'ready' || activeDownload || Boolean(startingAsset)} />}</div></td>
+                          </> : <DataLibraryActions asset={dataset} onDetails={openDetails} onUpdate={openDownload} onDelete={openDelete} onRepair={repairDataset} canUpdate={dataset.downloaded && dataset.update_available === true && eligibleDownload(dataset)} disabled={Boolean(preview) || state.status !== 'ready' || activeDownload || Boolean(startingAsset) || Boolean(repairBusy)} />}</div></td>
                         </tr>
                       )
                     })}

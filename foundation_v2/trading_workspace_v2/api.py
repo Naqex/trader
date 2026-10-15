@@ -47,7 +47,7 @@ from .contracts import (
 )
 from .data_sources import DataProviderRegistry, LocalCatalogProvider
 from .data_ingest import DataImportError, DataIngestService, preview_csv
-from .local_datasets import LocalDatasetService, DatasetInUse
+from .local_datasets import LocalDatasetService, DatasetInUse, DatasetRecoveryError
 from .learn import LearnCatalog, LearnCatalogError, LearnResourceNotFound, LearnWorkspaceNotConfigured
 from .product import JournalSourceImmutableError, PlaybookFrozenError, PlaybookLineageError, ProductService
 from .dashboard_read_model import build_dashboard_performance
@@ -259,6 +259,11 @@ def create_app(
             store.close()
 
     app = FastAPI(title="Trading Workspace Foundation v2", version=CONTRACT_VERSION, lifespan=lifespan)
+
+    @app.exception_handler(FileNotFoundError)
+    async def missing_stored_artifact(request: Request, exc: FileNotFoundError):
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=503, content={"detail": "stored_artifact_unavailable"})
 
     @app.exception_handler(StoredContractUntrusted)
     @app.exception_handler(ValidationError)
@@ -643,6 +648,20 @@ def create_app(
             raise HTTPException(status_code=422, detail='invalid_dataset_artifact_path') from exc
         except OSError as exc:
             raise HTTPException(status_code=503, detail='dataset_cleanup_failed') from exc
+        except RuntimeError as exc:
+            raise HTTPException(status_code=409, detail='download_busy') from exc
+
+    @app.post('/api/v2/data/datasets/{dataset_id}/repair')
+    def repair_local_dataset(dataset_id: str, workspace: str = Depends(workspace_id)):
+        try:
+            with downloads.dataset_mutation_guard() if downloads else nullcontext():
+                return local_datasets.repair_dataset(workspace, dataset_id)
+        except DatasetRecoveryError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except LookupError as exc:
+            raise HTTPException(status_code=404, detail='dataset_not_found') from exc
+        except (OSError, ValueError, ArtifactConflict) as exc:
+            raise HTTPException(status_code=503, detail='dataset_recovery_failed') from exc
         except RuntimeError as exc:
             raise HTTPException(status_code=409, detail='download_busy') from exc
 

@@ -38,7 +38,7 @@ class DirectDomainCommandTests(unittest.TestCase):
 
     def test_manifest_freezes_all_reviewed_routes_and_actual_validation_schema(self):
         manifest = self.dispatcher.manifest()
-        self.assertEqual(len(manifest), 102)
+        self.assertEqual(len(manifest), 103)
         current = json.loads((ROOT / "foundation_v2/trading_workspace_v2/command_contracts.json").read_text(encoding="utf-8"))
         self.assertEqual(current, manifest)
         replay = next(item for item in manifest if item["path"] == "/api/v2/replay/sessions/{session_id}" and item["method"] == "GET")
@@ -144,6 +144,11 @@ class DirectDomainCommandTests(unittest.TestCase):
         self.app.state.replay.view = Mock(side_effect=StoredContractUntrusted())
         result = self.dispatcher.dispatch(self.command("GET", "/api/v2/replay/sessions/test"))
         self.assertEqual((result.status, result.body), (503, {"detail": "stored_contract_untrusted"}))
+
+    def test_missing_artifact_is_recoverable_and_does_not_leak_local_paths(self):
+        self.app.state.replay.view = Mock(side_effect=FileNotFoundError('private/local/path'))
+        result = self.dispatcher.dispatch(self.command('GET', '/api/v2/replay/sessions/test'))
+        self.assertEqual((result.status, result.body), (503, {'detail': 'stored_artifact_unavailable'}))
 
     def test_mutation_stored_contract_error_preserves_unknown_outcome(self):
         from trading_workspace_v2.store import StoredContractUntrusted

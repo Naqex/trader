@@ -1,0 +1,11 @@
+{
+  "result": "PASS",
+  "scope": "Owned disposable PostgreSQL + real Axum/Python HTTP + browser; synthetic file-loss/corruption only",
+  "cases": [
+    "updated history creates a new version; linked backtest and Prop data cannot be deleted",
+    "asset name has no hover/click dialog; details remain in the action menu",
+    "missing file returns recoverable 503; UI restores byte-identical data without changing replay state",
+    "corrupted file is quarantined and restored; Prop attempt identity and name remain intact"
+  ],
+  "errors": []
+}

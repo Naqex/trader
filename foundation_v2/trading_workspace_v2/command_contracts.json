@@ -931,6 +931,26 @@
   },
   {
     "method": "POST",
+    "path": "/api/v2/data/datasets/{dataset_id}/repair",
+    "handler": "repair_local_dataset",
+    "status_code": 200,
+    "safe_retry": false,
+    "parameters": {
+      "path": [
+        {
+          "name": "dataset_id",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "query": [],
+      "body": []
+    }
+  },
+  {
+    "method": "POST",
     "path": "/api/v2/data/catalog/refresh",
     "handler": "refresh_instrument_catalog",
     "status_code": 200,
