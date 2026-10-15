@@ -160,6 +160,24 @@ try {
   assert.equal(closed.body.target_id, 'fixture-position')
   assert.equal(replay.payload.execution.position, null)
   report.cases.push('Scalper target-only percent conversion, restored native position shows actual PnL and entry X sends close against position ID')
+  replay = { ...replay, revision: replay.revision + 1, payload: { ...replay.payload, execution: null } }
+  await page.reload(); await ready()
+  const orderRequestsBefore = report.requests.length
+  await page.locator('.chart-utility-actions').getByRole('button', { name: 'Lệnh mô phỏng', exact: true }).click()
+  const orderDialog = page.locator('.legacy-order-modal')
+  await orderDialog.waitFor()
+  const orderQuantity = orderDialog.getByRole('spinbutton', { name: 'Khối lượng lệnh', exact: true })
+  await orderQuantity.fill('0.12')
+  const orderSave = orderDialog.getByRole('button', { name: 'Lưu', exact: true })
+  assert.equal(await orderSave.isDisabled(), false, 'order can be submitted before an execution exists')
+  await orderSave.click()
+  await orderDialog.waitFor({ state: 'detached' })
+  assert.equal(report.requests.length, orderRequestsBefore + 2)
+  assert.equal(report.requests.at(-2).path.endsWith('/execution'), true)
+  assert.equal(report.requests.at(-1).path.endsWith('/orders/market'), true)
+  assert.equal(report.requests.at(-1).body.expected_revision, report.requests.at(-2).body.expected_revision + 1)
+  assert.equal(await orderDialog.count(), 0)
+  report.cases.push('Legacy order initializes the simulator on submit, then queues the market order with the returned revision')
   assert.deepEqual(report.errors, []); assert.deepEqual(report.unexpected, [])
   report.result = 'PASS'
 } catch (error) { report.result = 'FAIL'; report.failure = error.stack; throw error }

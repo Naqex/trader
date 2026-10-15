@@ -483,7 +483,7 @@ button.chart-order-level { cursor: ns-resize; touch-action: none; }
 .legacy-order-modal .fx-select-menu { border-radius:var(--ds-radius-menu); }
 .legacy-order-modal button { min-height:36px; border-radius:var(--wm-control-radius); }
 .legacy-order-form footer button:not(.legacy-order-save) { min-width:80px; border:1px solid transparent; background:var(--project-control); color:var(--project-text); padding:8px 16px; }
-.legacy-order-form footer button:not(.legacy-order-save):hover:not(:disabled) { background:var(--project-control); border-color:var(--project-border-strong); }
+.legacy-order-form footer button:not(.legacy-order-save):hover:not(:disabled) { background:var(--project-control); border-color:transparent; }
 .legacy-order-modal button.legacy-order-save:hover:not(:disabled) { background:var(--project-action-hover); }
 .legacy-order-form footer { flex-wrap:nowrap; gap:12px; margin-top:0; }
 .legacy-order-form footer label { flex:1 1 auto; min-width:0; font-size:13px; }

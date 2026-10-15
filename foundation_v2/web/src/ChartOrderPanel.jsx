@@ -41,15 +41,43 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
     } catch (error) { setNotice({ kind: 'error', text: error.message }) }
     finally { busy.current = false; setPending(false) }
   }
-  const save = (nextDraft = draft) => {
-    if (disabled || !execution || reference === null) return
-    const nextReference = active ? reference : nextDraft.side === 'BUY' ? quotes.ask : quotes.bid
-    const validation = validateDraft(nextDraft, nextReference, { optionalProtection: true })
-    if (validation) { setNotice({ kind: 'error', text: validation }); return }
-    const operation_id = `chart-${crypto.randomUUID()}`
-    return run(active ? 'orders/protection' : 'orders/market', active
-      ? { operation_id, target_id: execution.position?.position_id || execution.pending_market_order.operation_id, stop_loss: nextDraft.stopLoss || null, take_profit: nextDraft.takeProfit || null }
-      : { operation_id, side: nextDraft.side, quantity: nextDraft.quantity, stop_loss: nextDraft.stopLoss || null, take_profit: nextDraft.takeProfit || null })
+  const save = async (nextDraft = draft) => {
+    if (disabled || busy.current) return false
+    const origin = currentContext.current
+    busy.current = true
+    setPending(true)
+    setNotice(null)
+    try {
+      let nextReplay = replay
+      let nextExecution = execution
+      if (!nextExecution) {
+        const body = initializationBody()
+        if (!body) return false
+        nextReplay = await submit('execution', body)
+        if (!nextReplay) return false
+        nextExecution = nextReplay.payload?.execution
+        if (!nextExecution) throw new Error('Không khởi tạo được simulator cho phiên này.')
+      }
+      if (currentContext.current !== origin) throw new Error('Phiên hoặc cutoff đã thay đổi; lệnh chưa được gửi.')
+      const nextActive = nextExecution.position || nextExecution.pending_market_order
+      const nextQuotes = marketQuotes(nextReplay)
+      const nextReference = nextActive ? protectionReference(nextReplay) : nextDraft.side === 'BUY' ? nextQuotes.ask : nextQuotes.bid
+      if (nextReference === null || nextReference === undefined) throw new Error('Chưa có giá tham chiếu tại cutoff này.')
+      const validation = validateDraft(nextDraft, nextReference, { optionalProtection: true })
+      if (validation) { setNotice({ kind: 'error', text: validation }); return false }
+      const operation_id = `chart-${crypto.randomUUID()}`
+      const result = await submit(nextActive ? 'orders/protection' : 'orders/market', nextActive
+        ? { operation_id, target_id: nextExecution.position?.position_id || nextExecution.pending_market_order.operation_id, stop_loss: nextDraft.stopLoss || null, take_profit: nextDraft.takeProfit || null }
+        : { operation_id, side: nextDraft.side, quantity: nextDraft.quantity, stop_loss: nextDraft.stopLoss || null, take_profit: nextDraft.takeProfit || null }, nextReplay.revision)
+      if (result) setNotice({ kind: 'ok', text: nextActive ? 'TP/SL đã lưu; áp dụng từ nến tiếp theo.' : nextExecution.quote_source === 'broker_bid_ask' ? 'Đã queue; fill ở tick đầu tiên của nến kế tiếp.' : 'Đã queue; fill ở giá mở nến kế tiếp.' })
+      return Boolean(result)
+    } catch (error) {
+      setNotice({ kind: 'error', text: error.message })
+      return false
+    } finally {
+      busy.current = false
+      setPending(false)
+    }
   }
   const changePrice = (kind, price) => {
     if (disabled || (price !== null && !(price > 0))) return
@@ -119,7 +147,7 @@ function LegacyOrderForm({ order, blockedReason, onClose, onJournal }) {
   const change = (key, value) => setDraft(current => ({ ...current, [key]:value }))
   return <><form className="legacy-order-form" onSubmit={async event => { event.preventDefault(); if (await order.save()) { onClose(); if (journal) onJournal() } }}>
     <div className="legacy-order-grid"><label>{t('Hướng')}<FxSelect className="is-field" label="Hướng" value={draft.side} disabled={disabled || Boolean(active)} onChange={order.chooseSide} options={[{ value: 'BUY', label: t('Buy') }, { value: 'SELL', label: t('Sell') }]} /></label><label>{t('Loại lệnh')}<FxSelect className="is-field" label="Loại lệnh" value="market" disabled options={[{ value: 'market', label: 'Market' }]} /></label>
-    <label>{t(instrument?.asset_class==='fx' ? 'Khối lượng (lot)' : 'Khối lượng (quantity)')}<input aria-label={t('Khối lượng lệnh')} type="number" min={instrument?.quantity_min || '0'} step={instrument?.quantity_step || 'any'} value={draft.quantity} disabled={disabled || Boolean(active) || !execution} onChange={event => change('quantity',event.target.value)} /></label><label>{t('Giá vào lệnh')}<input type="text" readOnly value={order.reference ?? '—'} /></label></div>
+    <label>{t(instrument?.asset_class==='fx' ? 'Khối lượng (lot)' : 'Khối lượng (quantity)')}<input aria-label={t('Khối lượng lệnh')} type="number" min={instrument?.quantity_min || '0'} step={instrument?.quantity_step || 'any'} value={draft.quantity} disabled={disabled || Boolean(active)} onChange={event => change('quantity',event.target.value)} /></label><label>{t('Giá vào lệnh')}<input type="text" readOnly value={order.reference ?? '—'} /></label></div>
     {[['stopLoss','Stop loss'],['takeProfit','Take profit']].map(([key,label]) => <div className="legacy-protection-row" key={key}><label><input type="checkbox" role="switch" checked={draft[key] !== ''} disabled={disabled || !execution} onChange={event => {
       if (!event.target.checked) { change(key, ''); return }
       const unit = Number(instrument?.pip_size) || Number(instrument?.tick_size)
@@ -132,7 +160,7 @@ function LegacyOrderForm({ order, blockedReason, onClose, onJournal }) {
     {blockedReason && <p role="status">{t(blockedReason)}</p>}
     {execution && <p className="legacy-order-hint">{t(active ? 'Thay đổi TP/SL áp dụng từ nến tiếp theo.' : 'Market được queue và khớp ở nến tiếp theo; giá trên là giá tham chiếu.')} · SIM</p>}
     {order.notice && <p role={order.notice.kind === 'error' ? 'alert' : 'status'}>{t(order.notice.text)}</p>}
-    <footer><label><input type="checkbox" checked={journal} onChange={event => setJournal(event.target.checked)} />{t('Mở nhật ký sau khi đặt lệnh')}</label><button type="button" onClick={onClose}>{t('Hủy')}</button><button type="submit" className="legacy-order-save" disabled={disabled || !execution || order.reference === null}>{t(order.pending ? 'Đang lưu…' : 'Save')}</button></footer>
+    <footer><label><input type="checkbox" checked={journal} onChange={event => setJournal(event.target.checked)} />{t('Mở nhật ký sau khi đặt lệnh')}</label><button type="button" onClick={onClose}>{t('Hủy')}</button><button type="submit" className="legacy-order-save" disabled={disabled}>{t(order.pending ? 'Đang lưu…' : 'Save')}</button></footer>
   </form></>
 }
 
