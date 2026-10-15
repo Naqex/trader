@@ -73,6 +73,10 @@ try {
     assert.equal(await strategy.evaluate(node => getComputedStyle(node).borderRadius), '8px')
     assert.equal(await strategy.evaluate(node => getComputedStyle(node).height), width <= 600 ? '44px' : '36px')
     const scalperSaveBackground = await scalper.locator('.legacy-scalper-save').evaluate(node => getComputedStyle(node).backgroundColor)
+    const scalperSaveContract = await scalper.locator('.legacy-scalper-save').evaluate(node => {
+      const css = getComputedStyle(node)
+      return { border: css.border, radius: css.borderRadius, height: css.height, minHeight: css.minHeight, box: css.boxSizing, padding: css.padding, weight: css.fontWeight, line: css.lineHeight }
+    })
     assert.equal(scalperSaveBackground, theme === 'dark' ? 'rgb(255, 173, 124)' : 'rgb(184, 80, 24)')
     const scalperField = scalper.locator('input[type=number]').first()
     assert.equal(await scalperField.evaluate(node => getComputedStyle(node).height), width <= 600 ? '44px' : '36px')
@@ -125,6 +129,10 @@ try {
     assert.deepEqual(await orderSwitch.evaluate(node => ({ width: getComputedStyle(node).width, height: getComputedStyle(node).height })), scalperSwitchSize, 'order and scalper switches share geometry')
     assert.equal(await dialog.locator('footer input[type=checkbox]').evaluate(node => getComputedStyle(node).appearance), 'none', 'journal checkbox uses the shared control drawing')
     assert.equal(await dialog.locator('.legacy-order-save').evaluate(node => getComputedStyle(node).backgroundColor), scalperSaveBackground, 'order and scalper save actions share the action surface')
+    assert.deepEqual(await dialog.locator('.legacy-order-save').evaluate(node => {
+      const css = getComputedStyle(node)
+      return { border: css.border, radius: css.borderRadius, height: css.height, minHeight: css.minHeight, box: css.boxSizing, padding: css.padding, weight: css.fontWeight, line: css.lineHeight }
+    }), scalperSaveContract, 'order and scalper save actions use the same reference button contract')
     if (width > 600) assert.equal(await dialog.locator('footer').evaluate(node => {
       const label = node.querySelector('label')?.getBoundingClientRect()
       const buttons = [...node.querySelectorAll('button')].map(item => item.getBoundingClientRect())

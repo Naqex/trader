@@ -81,12 +81,13 @@
 .legacy-scalper-settings footer { display: flex; justify-content: flex-end; gap: 8px; padding-top: 4px; }
 .legacy-scalper-modal .legacy-scalper-settings footer button { width: auto; min-width: 80px; min-height:var(--ds-control,36px); padding:8px 16px; border:1px solid transparent; border-radius:var(--wm-control-radius,var(--ds-radius-pill,999px)); background:var(--project-control); color:var(--project-text); font:inherit; cursor:pointer; }
 .legacy-scalper-modal .legacy-scalper-settings footer button:hover:not(:disabled) { background:var(--project-control); border-color:transparent; }
-.legacy-scalper-modal .legacy-scalper-settings .legacy-scalper-save { background: var(--project-action); color: var(--project-on-action); border-color: var(--project-action); }
-.legacy-scalper-modal .legacy-scalper-settings footer .legacy-scalper-save:hover:not(:disabled) { background:var(--project-action-hover); border-color:var(--project-action-hover); color:var(--project-on-action); }
+.legacy-scalper-modal .legacy-scalper-settings .legacy-scalper-save { display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box; width:auto; min-width:80px; height:var(--ds-control,36px); min-height:var(--ds-control,36px); padding:7px 12px; border:1px solid transparent; border-radius:var(--wm-control-radius); background:var(--wm-action-bg); color:var(--wm-on-primary); font-weight:var(--ds-weight-control); line-height:var(--ds-line-control,20px); }
+.legacy-scalper-modal .legacy-scalper-settings footer .legacy-scalper-save:hover:not(:disabled) { background:var(--wm-action-hover); border-color:transparent; color:var(--wm-on-primary); }
 .legacy-scalper-modal .legacy-scalper-settings footer button:disabled { opacity:1; background:var(--project-control); border-color:var(--project-border); color:var(--project-muted); }
 .legacy-scalper-settings .fx-select.is-field .fx-select-trigger { border-radius:8px; }
 @media (pointer:coarse) {
   .legacy-scalper-settings :is(input:not([type=checkbox]),select), .legacy-scalper-settings footer button { min-height:44px; height:44px; }
+  .legacy-scalper-modal .legacy-scalper-settings .legacy-scalper-save { min-height:44px; height:44px; }
   .legacy-scalper-settings .fx-select.is-field .fx-select-trigger { min-height:44px; }
 }
 @media (prefers-reduced-motion: reduce) { .legacy-modal { animation: none; } .legacy-scalper-toggle input[type=checkbox]::before, .legacy-trading-bar .legacy-quantity-control { transition: none; } }
