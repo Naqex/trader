@@ -1,0 +1,56 @@
+{
+  "result": "PASS",
+  "scope": "CSS separators only; local replay, API writes blocked",
+  "cases": [
+    {
+      "width": 1710,
+      "overflow": false,
+      "lines": [
+        {
+          "left": 0,
+          "right": 0,
+          "top": "0px",
+          "bottom": "1px"
+        },
+        {
+          "left": 0,
+          "right": 0,
+          "top": "1px",
+          "bottom": "0px"
+        }
+      ],
+      "vertical": [
+        "0px",
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ]
+    },
+    {
+      "width": 390,
+      "overflow": false,
+      "lines": [
+        {
+          "left": 0,
+          "right": 0,
+          "top": "0px",
+          "bottom": "1px"
+        },
+        {
+          "left": 0,
+          "right": 0,
+          "top": "1px",
+          "bottom": "0px"
+        }
+      ],
+      "vertical": [
+        "0px",
+        "0px",
+        "0px",
+        "0px",
+        "0px"
+      ]
+    }
+  ]
+}
