@@ -49,10 +49,13 @@
 .legacy-account-details dd { margin: 0; font-variant-numeric: tabular-nums; }
 .legacy-preset-error { display: flex; align-items: center; justify-content: space-between; margin: 0; padding: 8px 14px; color: var(--chart-text); font-size: 12px; background: var(--chart-bg); }
 .legacy-preset-error button { border: 0; background: transparent; color: inherit; cursor: pointer; }
-.legacy-popover form.legacy-scalper-settings { gap: 20px; padding: 12px 20px; }
+.legacy-modal-overlay { --chart-bg:var(--project-canvas); --chart-text:var(--project-text); --chart-muted:var(--project-muted); --chart-line:var(--project-border); --chart-hover:var(--project-hover); position:fixed; inset:0; z-index:11000; display:grid; place-items:center; padding:16px; box-sizing:border-box; background:#0005; color:var(--chart-text); font:13px/20px Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
+.legacy-modal-overlay.is-light { color-scheme:light; }
+.legacy-modal { box-sizing:border-box; width:min(400px,100%); max-height:calc(100dvh - 32px); overflow:auto; border:1px solid var(--chart-line); border-radius:12px; background:var(--chart-bg); color:var(--chart-text); box-shadow:0 16px 48px #0005; }
+.legacy-scalper-modal form.legacy-scalper-settings { gap: 20px; padding: 20px; }
 .legacy-scalper-settings h2 { font-size: 16px; margin: 0; font-weight: 500; }
 .legacy-scalper-settings fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 12px; min-width: 0; }
-.legacy-popover form .legacy-scalper-toggle { display: flex; align-items: center; justify-content: space-between; min-height: 20px; }
+.legacy-scalper-modal form .legacy-scalper-toggle { display: flex; align-items: center; justify-content: space-between; min-height: 20px; }
 .legacy-scalper-toggle input[type=checkbox] { appearance: none; width: 32px; height: 18px; border-radius: 10px; background: var(--project-control); margin: 0; cursor: pointer; }
 .legacy-scalper-toggle input[type=checkbox]::before { content: ''; display: block; width: 14px; height: 14px; margin: 2px; border-radius: 50%; background: var(--project-text); transition: transform var(--ds-motion-hover) var(--ds-ease-standard); }
 .legacy-scalper-toggle input[type=checkbox]:checked { background: var(--project-primary); }
@@ -62,17 +65,22 @@
 .legacy-scalper-toggle input:disabled { cursor: default; }
 .legacy-scalper-distance { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; align-items: center; }
 .legacy-scalper-units { display: inline-flex; align-items: center; border: 1px solid var(--menu-line); border-radius: 18px; padding: 2px; gap: 2px; }
-.legacy-popover .legacy-scalper-units button { min-width: 40px; width: auto; min-height: 28px; padding: 4px 10px; border: 0; border-radius: 16px; justify-content: center; font-size: 12px; }
-.legacy-popover .legacy-scalper-units button[aria-pressed=true] { background: var(--menu-hover); color: var(--menu-text); }
-.legacy-popover .legacy-scalper-units button:disabled { opacity: .5; }
+.legacy-scalper-modal .legacy-scalper-units button { min-width: 40px; width: auto; min-height: 28px; padding: 4px 10px; border: 0; border-radius: 16px; justify-content: center; font-size: 12px; }
+.legacy-scalper-modal .legacy-scalper-units button[aria-pressed=true] { background: var(--chart-hover); color: var(--chart-text); }
+.legacy-scalper-modal .legacy-scalper-units button:disabled { opacity: .5; }
 .legacy-scalper-settings p { font-size: 11px; line-height: 1.5; margin: 0; color: var(--menu-muted); }
 .legacy-scalper-settings p[role=alert] { color: var(--project-negative); }
 .legacy-scalper-settings footer { display: flex; justify-content: flex-end; gap: 10px; }
-.legacy-popover .legacy-scalper-settings footer button { width: auto; min-width: 80px; }
-.legacy-popover .legacy-scalper-settings .legacy-scalper-save { background: var(--project-action); color: var(--project-on-action); border-color: var(--project-action); }
+.legacy-scalper-modal .legacy-scalper-settings footer button { width: auto; min-width: 80px; }
+.legacy-scalper-modal .legacy-scalper-settings footer button:hover:not(:disabled) { background:var(--chart-hover); }
+.legacy-scalper-modal .legacy-scalper-settings .legacy-scalper-save { background: var(--project-action); color: var(--project-on-action); border-color: var(--project-action); }
 .legacy-scalper-settings .fx-select.is-field .fx-select-trigger { border-radius:8px; }
 @media (pointer:coarse) { .legacy-scalper-settings .fx-select.is-field .fx-select-trigger { min-height:44px; } }
 @media (prefers-reduced-motion: reduce) { .legacy-scalper-toggle input[type=checkbox]::before, .legacy-trading-bar .legacy-quantity-control { transition: none; } }
+@media (prefers-reduced-motion: no-preference) {
+  .legacy-trading-bar .chart-trading-account > button[aria-label*='danh sách lệnh'] svg { transition: transform var(--ds-motion-hover) var(--ds-ease-standard), opacity var(--ds-motion-hover) var(--ds-ease-standard); }
+  .legacy-trading-bar .chart-trading-account > button[aria-expanded='true'] svg { transform: scale(.92); }
+}
 @media (max-width: 1000px) {
   .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-trading-bar .legacy-positions-grip { position: static; transform: none; flex: 1; }
   .legacy-trading-bar .legacy-analytics-link { padding-inline: 7px; }
@@ -87,4 +95,6 @@
   .legacy-trading-bar .legacy-analytics-link span { display:none; }
   .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-trading-bar .legacy-prop-rules-link { padding-inline:6px; gap:4px; font-size:12px; }
   .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-trading-bar .legacy-balance-pill { padding-inline:6px; gap:6px; }
+  .legacy-modal-overlay { padding:8px; }
+  .legacy-scalper-modal form.legacy-scalper-settings { padding:16px; }
 }

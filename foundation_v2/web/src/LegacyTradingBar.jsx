@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import ChartIcon from './ChartIcon.jsx'
 import LegacyPositions from './LegacyPositions.jsx'
 import LegacyPopover from './LegacyPopover.jsx'
+import LegacyModal from './LegacyModal.jsx'
 import FxSelect from './FxSelect.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import { finiteNumber } from './replayOrderModel.js'
@@ -97,10 +98,11 @@ export default function LegacyTradingBar({ order, quotes, onBeginOrder, analytic
   }, [])
   const dismissBalance = () => { hideBalance.current = setTimeout(() => setBalanceAnchor(null), 160) }
   const showBalance = anchor => { clearTimeout(hideBalance.current); setBalanceAnchor(anchor) }
-  // During a gesture only the table moves over the chart. Resize the native
-  // canvas once on release instead of redrawing it on every pointer frame.
-  const overlay = resizing || (!maximized && positionsOpen && overflowReserve !== null)
-  return <div ref={workspaceRef} className={`legacy-trading-workspace ${resizing ? 'is-resizing' : ''} ${overlay ? 'is-expanded' : maximized ? 'is-maximized' : ''}`} style={overlay ? { height: resizing ? drag.current?.bounds.reserve : overflowReserve, '--positions-height': `${positionsOpen ? height : 0}px` } : undefined}>
+  // Keep the panel in normal flow while dragging so the chart's native resize
+  // observer receives every frame. Only overflow the chart after release.
+  const overlay = !resizing && (!maximized && positionsOpen && overflowReserve !== null)
+  const positionsIcon = maximized ? 'contract-corners' : positionsOpen ? 'collapse' : 'expand'
+  return <div ref={workspaceRef} className={`legacy-trading-workspace ${resizing ? 'is-resizing' : ''} ${!resizing && (overlay ? 'is-expanded' : maximized ? 'is-maximized' : '')}`} style={overlay ? { height: overflowReserve, '--positions-height': `${positionsOpen ? height : 0}px` } : undefined}>
     <div className="chart-trading-bar legacy-trading-bar" role="group" aria-label={t('Giao dịch mô phỏng')}>
       <div className="chart-trading-actions">
         {['BUY', 'SELL'].map(side => <button key={side} type="button" className={side.toLowerCase()} disabled={disabled} onClick={() => openOrder(side)} title={t('Mở lệnh mô phỏng để xác nhận')}>{t(side === 'BUY' ? 'Buy' : 'Sell')}</button>)}
@@ -121,7 +123,7 @@ export default function LegacyTradingBar({ order, quotes, onBeginOrder, analytic
           event.currentTarget.focus({ preventScroll: true })
           const bounds = resizeBounds()
           drag.current = { y: event.clientY, height: maximized ? bounds.full : positionsOpen ? height : 0, bounds, layout: { ...positionsLayout.current } }
-          if (maximized) setHeight(bounds.full)
+          if (maximized) { setHeight(bounds.full); setMaximized(false) }
           setResizing(true)
           event.preventDefault()
         }}
@@ -154,14 +156,14 @@ export default function LegacyTradingBar({ order, quotes, onBeginOrder, analytic
           if (positionsOpen) { setMaximized(false); setPositionsOpen(false); return }
           const bounds = resizeBounds()
           resize(Math.min(bounds.normal, restoredHeight.current), bounds)
-        }}><ChartIcon name="down" style={{ transform: positionsOpen ? '' : 'rotate(180deg)' }} /></button>
-        <button type="button" aria-label={t(maximized ? 'Thu nhỏ danh sách lệnh' : 'Mở rộng danh sách lệnh')} aria-pressed={maximized} onClick={() => { if (maximized) resize(Math.min(resizeBounds().normal, restoredHeight.current)); else { setPositionsOpen(true); setMaximized(true) } }}><ChartIcon name={maximized ? 'contract-corners' : 'fit'} /></button>
+        }}><ChartIcon name={positionsIcon} /></button>
+        <button type="button" aria-label={t(maximized ? 'Thu nhỏ danh sách lệnh' : 'Mở rộng danh sách lệnh')} aria-pressed={maximized} onClick={() => { if (maximized) resize(Math.min(resizeBounds().normal, restoredHeight.current)); else { setPositionsOpen(true); setMaximized(true) } }}><ChartIcon name={positionsIcon} /></button>
       </div>
     </div>
     <div className="legacy-resizable-positions" hidden={!positionsOpen} style={maximized && !resizing ? undefined : { height: positionsOpen ? height : 0 }}><LegacyPositions execution={execution} assetStates={order.assetStates} symbol={symbol} /></div>
     {error && !scalperAnchor && <p className="legacy-preset-error" role="alert">{t(error)}<button type="button" onClick={() => setError('')} aria-label={t('Đóng thông báo')}>×</button></p>}
     {balanceAnchor && <LegacyPopover anchor={balanceAnchor} theme={theme} label={t('Thông tin tài khoản')} onClose={() => { clearTimeout(hideBalance.current); setBalanceAnchor(null) }}><dl className="legacy-account-details" onPointerEnter={() => clearTimeout(hideBalance.current)} onPointerLeave={dismissBalance}>{(account ? [['Equity', account.equity], ['Realized PnL', realized], ['Unrealized PnL', account.floating_pl]] : [['Account Balance', order.configuredBalance]]).map(([label, value]) => <div key={label}><dt>{t(label)}</dt><dd>{money(value)}</dd></div>)}</dl></LegacyPopover>}
-    {scalperAnchor && <LegacyPopover anchor={scalperAnchor} theme={theme} label="Scalper mode" wide onClose={() => { setScalperAnchor(null); setError('') }}><form className="legacy-scalper-settings" onSubmit={event => {
+    {scalperAnchor && <LegacyModal theme={theme} label="Scalper mode" className="legacy-scalper-modal" onClose={() => { setScalperAnchor(null); setError('') }}><form className="legacy-scalper-settings" onSubmit={event => {
       event.preventDefault()
       try {
         const next = { ...draft, enabled: draft.stop.enabled || draft.target.enabled }
@@ -175,6 +177,6 @@ export default function LegacyTradingBar({ order, quotes, onBeginOrder, analytic
       <p>{t('Preset áp dụng vào lệnh nháp; bạn vẫn xác nhận trước khi đặt lệnh.')}</p>
       {error && <p role="alert">{t(error)}</p>}
       <footer><button type="button" onClick={() => { setScalperAnchor(null); setError('') }}>{t('Discard')}</button><button type="submit" className="legacy-scalper-save" disabled={order.disabled}>{t('Save')}</button></footer>
-    </form></LegacyPopover>}
+    </form></LegacyModal>}
   </div>
 }
