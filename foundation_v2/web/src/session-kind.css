@@ -4,13 +4,13 @@
   justify-content: center;
   flex-shrink: 0;
   vertical-align: middle;
-  padding: 2px 6px;
+  padding: 3px 8px;
   border: 1px solid var(--wm-border-strong);
-  border-radius: 4px;
+  border-radius: var(--ds-radius-pill);
   color: var(--wm-content-muted);
-  font-size: 11px;
+  font-size: var(--ds-font-meta);
   font-weight: 500;
-  line-height: 16px;
+  line-height: 18px;
   white-space: nowrap;
 }
 .session-title-line,

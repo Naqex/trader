@@ -1,0 +1,238 @@
+{
+  "result": "PASS",
+  "checks": [
+    {
+      "view": "dashboard",
+      "width": 1710,
+      "result": [
+        {
+          "style": [
+            "999px",
+            "1px",
+            "solid",
+            "rgb(61, 68, 76)",
+            "12px",
+            "18px",
+            "3px 8px"
+          ],
+          "centerDelta": 0,
+          "inside": true,
+          "text": "Prop Firm"
+        },
+        {
+          "style": [
+            "999px",
+            "1px",
+            "solid",
+            "rgb(61, 68, 76)",
+            "12px",
+            "18px",
+            "3px 8px"
+          ],
+          "centerDelta": 0,
+          "inside": true,
+          "text": "Prop Firm"
+        },
+        {
+          "style": [
+            "999px",
+            "1px",
+            "solid",
+            "rgb(61, 68, 76)",
+            "12px",
+            "18px",
+            "3px 8px"
+          ],
+          "centerDelta": 0,
+          "inside": true,
+          "text": "Prop Firm"
+        }
+      ]
+    },
+    {
+      "view": "prop",
+      "width": 1710,
+      "result": [
+        {
+          "style": [
+            "999px",
+            "1px",
+            "solid",
+            "rgb(61, 68, 76)",
+            "12px",
+            "18px",
+            "3px 8px"
+          ],
+          "centerDelta": 0,
+          "inside": true,
+          "text": "Prop Firm"
+        },
+        {
+          "style": [
+            "999px",
+            "1px",
+            "solid",
+            "rgb(61, 68, 76)",
+            "12px",
+            "18px",
+            "3px 8px"
+          ],
+          "centerDelta": 0,
+          "inside": true,
+          "text": "Prop Firm"
+        }
+      ]
+    },
+    {
+      "view": "backtest",
+      "width": 1710,
+      "result": [
+        {
+          "style": [
+            "999px",
+            "1px",
+            "solid",
+            "rgb(61, 68, 76)",
+            "12px",
+            "18px",
+            "3px 8px"
+          ],
+          "centerDelta": 0,
+          "inside": true,
+          "text": "Backtest"
+        },
+        {
+          "style": [
+            "999px",
+            "1px",
+            "solid",
+            "rgb(61, 68, 76)",
+            "12px",
+            "18px",
+            "3px 8px"
+          ],
+          "centerDelta": 0,
+          "inside": true,
+          "text": "Backtest"
+        }
+      ]
+    },
+    {
+      "view": "dashboard",
+      "width": 390,
+      "result": [
+        {
+          "style": [
+            "999px",
+            "1px",
+            "solid",
+            "rgb(61, 68, 76)",
+            "12px",
+            "18px",
+            "3px 8px"
+          ],
+          "centerDelta": null,
+          "inside": true,
+          "text": "Prop Firm"
+        },
+        {
+          "style": [
+            "999px",
+            "1px",
+            "solid",
+            "rgb(61, 68, 76)",
+            "12px",
+            "18px",
+            "3px 8px"
+          ],
+          "centerDelta": null,
+          "inside": true,
+          "text": "Prop Firm"
+        },
+        {
+          "style": [
+            "999px",
+            "1px",
+            "solid",
+            "rgb(61, 68, 76)",
+            "12px",
+            "18px",
+            "3px 8px"
+          ],
+          "centerDelta": null,
+          "inside": true,
+          "text": "Prop Firm"
+        }
+      ]
+    },
+    {
+      "view": "prop",
+      "width": 390,
+      "result": [
+        {
+          "style": [
+            "999px",
+            "1px",
+            "solid",
+            "rgb(61, 68, 76)",
+            "12px",
+            "18px",
+            "3px 8px"
+          ],
+          "centerDelta": 0,
+          "inside": true,
+          "text": "Prop Firm"
+        },
+        {
+          "style": [
+            "999px",
+            "1px",
+            "solid",
+            "rgb(61, 68, 76)",
+            "12px",
+            "18px",
+            "3px 8px"
+          ],
+          "centerDelta": 0,
+          "inside": true,
+          "text": "Prop Firm"
+        }
+      ]
+    },
+    {
+      "view": "backtest",
+      "width": 390,
+      "result": [
+        {
+          "style": [
+            "999px",
+            "1px",
+            "solid",
+            "rgb(61, 68, 76)",
+            "12px",
+            "18px",
+            "3px 8px"
+          ],
+          "centerDelta": 0,
+          "inside": true,
+          "text": "Backtest"
+        },
+        {
+          "style": [
+            "999px",
+            "1px",
+            "solid",
+            "rgb(61, 68, 76)",
+            "12px",
+            "18px",
+            "3px 8px"
+          ],
+          "centerDelta": 0,
+          "inside": true,
+          "text": "Backtest"
+        }
+      ]
+    }
+  ],
+  "errors": []
+}
