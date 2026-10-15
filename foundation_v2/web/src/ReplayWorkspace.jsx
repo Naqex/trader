@@ -45,6 +45,7 @@ import LegacyOrderDialog from './LegacyOrderDialog.jsx'
 import LegacyJournal from './LegacyJournal.jsx'
 import LegacyObjectTree from './LegacyObjectTree.jsx'
 import SessionSettingsDrawer from './SessionSettingsDrawer.jsx'
+import PropRulesDialog from './PropRulesDialog.jsx'
 import { updateSessionMetadata } from './sessionCatalog.js'
 import { orderLevels, marketQuotes } from './replayOrderModel.js'
 import { ReplayOrderPrimitive } from './replayOrderPrimitive.js'
@@ -99,7 +100,10 @@ function ReplayChart({ rows, sessionId, chartType, showVolume, showAverage, view
   const { t, locale, fmt } = useTestingLocale()
   const formatTimestamp = value => value === null || value === undefined || !Number.isFinite(Number(value)) ? '—' : displayDate(new Date(Number(value) * 1000), { timeStyle: 'medium' })
   const formatPrice = value => fmt(value, '', 8)
-  const money = (value, currency) => fmt(value, ' ' + (currency || t('Đơn vị tài khoản')))
+  const money = (value, currency) => {
+    if (value === null || value === undefined || !Number.isFinite(Number(value))) return '—'
+    try { return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'USD', maximumFractionDigits: 2 }).format(Number(value)) } catch { return fmt(value, ' ' + (currency || t('Đơn vị tài khoản'))) }
+  }
 
   const hostRef = useRef(null)
   const chartRef = useRef(null)
@@ -323,7 +327,10 @@ export default function ReplayWorkspace({ workspace, query }) {
   const { t, locale, fmt, statusLabel: localeStatusLabel } = useTestingLocale()
   const formatTimestamp = value => value === null || value === undefined || !Number.isFinite(Number(value)) ? '—' : displayDate(new Date(Number(value) * 1000), { timeStyle: 'medium' })
   const formatPrice = value => fmt(value, '', 8)
-  const money = (value, currency) => fmt(value, ' ' + (currency || t('Đơn vị tài khoản')))
+  const money = (value, currency) => {
+    if (value === null || value === undefined || !Number.isFinite(Number(value))) return '—'
+    try { return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'USD', maximumFractionDigits: 2 }).format(Number(value)) } catch { return fmt(value, ' ' + (currency || t('Đơn vị tài khoản'))) }
+  }
 
   const { updateMarketContext, appearance, applyAppearance } = useFxReplayContext()
   const theme = appearance?.theme || 'dark'
@@ -343,6 +350,7 @@ export default function ReplayWorkspace({ workspace, query }) {
   const [sessionId, setSessionId] = useState(requestedSession)
   const [state, setState] = useState({ status: 'idle', payload: null, error: null })
   const [propState, setPropState] = useState({ status: propMode ? 'loading' : 'disabled', session: null, attempt: null, phase: null, resumeState: null, objectives: null, error: null })
+  const [propRulesOpen, setPropRulesOpen] = useState(false)
   const propRules = propReplayRuleView(propState)
   const propTerminal = propMode && isPropTerminal(propState.attempt?.status)
   const propReadyToAdvance = !propMode || (propState.status === 'ready' && propState.attempt?.status === 'running' && !isPropTerminal(propState.attempt?.status))
@@ -958,6 +966,11 @@ export default function ReplayWorkspace({ workspace, query }) {
   useEffect(() => {
     const handleKeyDown = event => {
       if (event.key === 'Escape' && selectingReplayBar) { setSelectingReplayBar(false); setChartNotice(''); return }
+      if (event.key === 'Tab' && propMode && !isEditableTarget(event.target)) {
+        event.preventDefault()
+        setPropRulesOpen(true)
+        return
+      }
       // Native text, range and menu controls retain their own keyboard behavior.
       if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey || isEditableTarget(event.target) || !replay || conflict || pendingAction || state.status !== 'ready') return
       if (!['ArrowRight', 'ArrowLeft', ' '].includes(event.key)) return
@@ -971,7 +984,7 @@ export default function ReplayWorkspace({ workspace, query }) {
     const docs = [...new Set([document, nativeHeaderSlots?.market?.ownerDocument].filter(Boolean))]
     docs.forEach(doc => doc.addEventListener('keydown', handleKeyDown, true))
     return () => docs.forEach(doc => doc.removeEventListener('keydown', handleKeyDown, true))
-  }, [advanceReplay, advancedChart, canReplayForward, conflict, isPlaying, nativeHeaderSlots, pendingAction, replay, rewindReplay, selectingReplayBar, state.status])
+  }, [advanceReplay, advancedChart, canReplayForward, conflict, isPlaying, nativeHeaderSlots, pendingAction, propMode, replay, rewindReplay, selectingReplayBar, state.status])
 
   useEffect(() => {
     if (sideOpen) sideRef.current?.focus()
@@ -1041,6 +1054,7 @@ export default function ReplayWorkspace({ workspace, query }) {
   const noDataset = datasetState.status === 'ready' && datasetState.items.length === 0
   const dataDeskHref = routeHref('data')
   const propAnalyticsHref = propMode ? routeHref('analytics', { analytics_source: 'prop', prop_session: propSessionId, attempt: propAttemptId, cursor: null, cutoff: null }) : null
+  const propRetryHref = propMode ? routeHref('testing', { session: null, cursor: null, cutoff: null, prop_session: null, prop_attempt: null, attempt: null, prop_setup: '1' }) : null
 
   if (!replay && (state.status === 'loading' || requestedSession && state.status === 'idle')) return <ChartLoadingState viewport />
   if (!replay && state.status === 'error') return <main className="chart-read-failure replay-error">{[401, 403].includes(state.errorStatus) ? <TestingEmptyState kind="denied" /> : <TestingReadState error message={`${t('Không đọc được replay:')} ${t(state.error)}`} />}</main>
@@ -1121,32 +1135,6 @@ export default function ReplayWorkspace({ workspace, query }) {
               {statusLabel}
             </div>
           </section>
-
-          {propMode && propRules && (
-            <section className={`prop-rule-bar ${propRules.terminal ? 'is-terminal' : ''}`} aria-label={t("Prop Firm Rules")} data-testid="prop-rule-bar">
-              <header className="prop-rule-head">
-                <div>
-                  <span>{t("PROP FIRM RULES")}</span>
-                  <strong>{t("Phase")} {propRules.phaseIndex} · {localeStatusLabel('prop_attempt', propRules.status)}</strong>
-                </div>
-                <div className="prop-rule-actions">
-                  {propRules.status === 'ready' && <button type="button" onClick={() => transitionPropAttempt('start')} disabled={Boolean(pendingAction)}>{pendingAction === 'prop:start' ? t("Đang bắt đầu…") : t("Bắt đầu")}</button>}
-                  {propRules.status === 'running' && <button type="button" onClick={() => transitionPropAttempt('pause')} disabled={Boolean(pendingAction)}>{pendingAction === 'prop:pause' ? t("Đang tạm dừng…") : t("Tạm dừng")}</button>}
-                  {propRules.status === 'paused' && <button type="button" onClick={() => transitionPropAttempt('resume')} disabled={Boolean(pendingAction)}>{pendingAction === 'prop:resume' ? t("Đang tiếp tục…") : t("Tiếp tục")}</button>}
-                  {propAnalyticsHref && <a href={propAnalyticsHref}>{t("Mở analytics")}</a>}
-                </div>
-              </header>
-              <div className="prop-rule-grid">
-                <div><span>{t("Balance / Equity")}</span><strong>{money(propRules.balance, propRules.currency)} <small>/ {money(propRules.equity, propRules.currency)}</small></strong></div>
-                <div><span>{t("Profit target")}</span><strong>{money(propRules.profitTarget.current, propRules.currency)} <small>/ {money(propRules.profitTarget.target, propRules.currency)}</small></strong><em className={propRules.profitTarget.hit ? 'is-good' : ''}>{propRules.profitTarget.hit ? t("Đạt") : t("Đang theo dõi")}</em></div>
-                <div><span>{t("Daily loss")}</span><strong>{money(propRules.dailyLoss.used, propRules.currency)} <small>/ {money(propRules.dailyLoss.limit, propRules.currency)}</small></strong><em className={propRules.dailyLoss.breached ? 'is-breach' : ''}>{propRules.dailyLoss.breached ? t("Vi phạm") : t("Trong giới hạn")}</em></div>
-                <div><span>{t("Overall drawdown")}{propRules.overallDrawdown.kind === 'trailing' ? ` · ${t("trailing")}` : ''}</span><strong>{money(propRules.overallDrawdown.used, propRules.currency)} <small>/ {money(propRules.overallDrawdown.limit, propRules.currency)}</small></strong><em className={propRules.overallDrawdown.breached ? 'is-breach' : ''}>{propRules.overallDrawdown.breached ? t("Vi phạm") : t("Trong giới hạn")}</em></div>
-                <div><span>{t("Qualifying days")}</span><strong>{propRules.qualifyingDays} <small>/ {propRules.minimumDays || '—'}</small></strong><em>{propRules.elapsedDays ?? '—'}{propRules.maxDays ? ` / ${propRules.maxDays} ${t("ngày")}` : ''}</em></div>
-              </div>
-              {propState.error && <p className="prop-rule-error" role="alert">{t("Không đồng bộ được rule state:")} {propState.error}</p>}
-              {propRules.terminal && <div className="prop-rule-terminal" role="alert"><strong>{propRules.status === 'completed_pass' ? t("Challenge đã đạt mục tiêu.") : t("Challenge đã kết thúc.")}</strong><span>{propRules.status === 'failed_breach' ? t("Một giới hạn rủi ro đã bị vi phạm; replay forward đã khóa.") : t("Giữ lại report và provenance để xem lại quyết định.")}</span>{propAnalyticsHref && <a href={propAnalyticsHref}>{t("Xem kết quả chi tiết →")}</a>}</div>}
-            </section>
-          )}
 
           {conflict && (
             <section className="conflict-banner" role="alert" data-testid="revision-conflict">
@@ -1241,13 +1229,13 @@ export default function ReplayWorkspace({ workspace, query }) {
                 <div className="chart-bottom-status"><span className="status-dot" /> {t("Paper replay")} <strong>{replayContext.instrument}</strong></div>
               </div>
 
-              {advancedChart ? <LegacyTradingBar key={`${workspace}:${sessionId}`} workspace={workspace} sessionId={sessionId} order={order} quotes={quotes} onBeginOrder={beginOrder} analyticsHref={routeHref('analytics', { surface: 'workspace' })} symbol={replayContext.instrument} theme={theme} readStatus={<TestingResourceStatus state={state.status === 'loading' ? 'refreshing' : state.status === 'error' ? 'stale' : 'ready'} resource="phiên replay" detail={state.status === 'error' ? `${t('Không đọc được replay:')} ${t(state.error)} · ${t('Đang giữ cutoff {cutoff} UTC.', { cutoff: replay.cutoff_timestamp })}` : undefined} />} /> : <div className="chart-trading-bar" role="group" aria-label={t("Giao dịch mô phỏng")}>
+              {advancedChart ? <LegacyTradingBar key={`${workspace}:${sessionId}`} workspace={workspace} sessionId={sessionId} order={order} quotes={quotes} onBeginOrder={beginOrder} analyticsHref={routeHref('analytics', { surface: 'workspace' })} propRulesAction={propMode ? { label: t('Prop Firm Rules'), onClick: () => setPropRulesOpen(true) } : null} symbol={replayContext.instrument} theme={theme} readStatus={<TestingResourceStatus state={state.status === 'loading' ? 'refreshing' : state.status === 'error' ? 'stale' : 'ready'} resource="phiên replay" detail={state.status === 'error' ? `${t('Không đọc được replay:')} ${t(state.error)} · ${t('Đang giữ cutoff {cutoff} UTC.', { cutoff: replay.cutoff_timestamp })}` : undefined} />} /> : <div className="chart-trading-bar" role="group" aria-label={t("Giao dịch mô phỏng")}>
                 <div className="chart-trading-actions">
                   {['BUY', 'SELL'].map(side => <button key={side} type="button" className={side.toLowerCase()} disabled={order.disabled || Boolean(order.active)} onClick={() => beginOrder(side)} title={`${side === 'BUY' ? 'Ask' : 'Bid'} mô phỏng tại cutoff; fill ở nến kế tiếp`}>{side === 'BUY' ? t("Buy") : t("Sell")} <strong>{formatPrice(side === 'BUY' ? quotes.ask : quotes.bid)}</strong></button>)}
                   <label>{t("Size")}<input aria-label={t("Khối lượng nhanh")} type="number" min={order.instrument?.quantity_min || '0'} step={order.instrument?.quantity_step || 'any'} value={order.draft.quantity} disabled={order.disabled || Boolean(order.active)} onChange={event => order.setDraft(current => ({ ...current, quantity: event.target.value }))} /></label>
                   <span className="chart-sim-tag">{t("SIM")}</span><button type="button" aria-expanded={sideOpen && sidePanel === 'order'} onClick={() => openPanel('order')}>{t("Lệnh")}{order.active ? '· 1' : ''}</button>
                 </div>
-                <div className="chart-trading-account"><span>{t('Balance')}<strong>{money(order.account?.balance, order.costs?.account_ccy)}</strong></span><span>{t('Equity')}<strong>{money(order.account?.equity, order.costs?.account_ccy)}</strong></span><span>{t('P/L')}<strong>{money(order.account?.floating_pl, order.costs?.account_ccy)}</strong></span></div>
+                <div className="chart-trading-account">{propMode && <button type="button" className="prop-rules-bottom-button" data-testid="prop-rules-button" onClick={() => setPropRulesOpen(true)}><ChartIcon name="shield" />{t('Prop Firm Rules')}</button>}<span>{t('Balance')}<strong>{money(order.account?.balance, order.costs?.account_ccy)}</strong></span><span>{t('Equity')}<strong>{money(order.account?.equity, order.costs?.account_ccy)}</strong></span><span>{t('P/L')}<strong>{money(order.account?.floating_pl, order.costs?.account_ccy)}</strong></span></div>
               </div>}
               {activityWaiting && <div className="chart-notice" role="status">{t('Chưa lưu được thời gian luyện tập. Đang thử lại…')}</div>}
               {chartNotice && <div className="chart-notice" role="status">{t(chartNotice)}<button type="button" aria-label={t("Đóng thông báo")} onClick={() => setChartNotice('')}>×</button></div>}
@@ -1420,6 +1408,7 @@ export default function ReplayWorkspace({ workspace, query }) {
         </>
       )}
       {sessionSettings && <SessionSettingsDrawer item={sessionSettings.item} dataset={activeDataset} replayRecord={replay} workspace={workspace} pending={sessionSettings.pending} blocked={sessionSettings.blocked} error={sessionSettings.error} onClose={closeSessionSettings} onSubmit={saveSessionSettings} />}
+      {propMode && propRules && <PropRulesDialog open={propRulesOpen} rules={propRules} error={propState.error} pendingAction={pendingAction} analyticsHref={propAnalyticsHref} retryHref={propRetryHref} onClose={() => setPropRulesOpen(false)} onTransition={transitionPropAttempt} formatMoney={money} statusLabel={localeStatusLabel} t={t} />}
     </main>
   )
 }

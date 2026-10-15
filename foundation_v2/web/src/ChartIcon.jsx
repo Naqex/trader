@@ -42,6 +42,7 @@ const paths = {
   compare: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M12 8v8M8 12h8',
   layout: 'M3 4h18v16H3zM11 4v16M11 12h10',
   alert: 'M13 3a8 8 0 1 0 8 9M13 7v5l-3 3M19 2v6M16 5h6',
+  shield: 'M12 3 20 6v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z',
   editor: 'm8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16',
   save: 'M5 3h12l4 4v14H3V3zM7 3v6h10V3M7 21v-8h10v8',
   more: 'M5 12h.01M12 12h.01M19 12h.01',

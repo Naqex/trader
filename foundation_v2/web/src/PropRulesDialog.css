@@ -1,0 +1,38 @@
+.fx-app.fx-shell-story[data-theme] .prop-rules-dialog { width:min(620px,calc(100vw - 32px)); max-height:calc(100dvh - 48px); margin:auto; padding:0; border:1px solid var(--wm-border-strong); border-radius:var(--ds-radius-dialog); background:var(--wm-canvas); color:var(--wm-content); font:inherit; overflow:hidden; }
+.prop-rules-dialog::backdrop { background:#0009; }
+.prop-rules-dialog[open] { display:flex; flex-direction:column; }
+.prop-rules-dialog-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:20px 22px 16px; border-bottom:1px solid var(--wm-border); }
+.prop-rules-dialog-header h2 { margin:3px 0 4px; font-size:20px; }
+.prop-rules-dialog-header p { margin:0; color:var(--wm-content-muted); font-size:12px; }
+.prop-rules-eyebrow { color:var(--project-primary); font-size:10px; font-weight:700; letter-spacing:.12em; }
+.prop-rules-dialog-body { min-height:0; overflow:auto; padding:18px 22px 20px; }
+.prop-rules-outcome { display:grid; gap:4px; margin-bottom:18px; border-left:3px solid var(--project-primary); padding:10px 12px; background:var(--wm-surface); }
+.prop-rules-outcome.is-pass { border-left-color:var(--project-positive); }
+.prop-rules-outcome.is-fail { border-left-color:var(--project-negative); }
+.prop-rules-outcome strong { font-size:14px; }
+.prop-rules-outcome span { color:var(--wm-content-muted); font-size:12px; }
+.prop-rules-balance { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1px; margin-bottom:18px; background:var(--wm-border); }
+.prop-rules-balance > div { display:grid; gap:5px; padding:12px; background:var(--wm-canvas); }
+.prop-rules-balance span, .prop-rules-objectives span, .prop-rules-facts dt { color:var(--wm-content-muted); font-size:11px; }
+.prop-rules-balance strong { font-size:18px; font-variant-numeric:tabular-nums; }
+.prop-rules-objectives { display:grid; gap:14px; }
+.prop-rules-objectives article { display:grid; gap:8px; }
+.prop-rules-objectives article > div { display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
+.prop-rules-objectives strong { font-size:13px; font-variant-numeric:tabular-nums; }
+.prop-rules-objectives small { color:var(--wm-content-muted); font-size:11px; font-weight:400; }
+.prop-rules-objectives progress { width:100%; height:6px; accent-color:var(--project-primary); }
+.prop-rules-objectives em { color:var(--wm-content-muted); font-size:11px; font-style:normal; }
+.prop-rules-objectives em.is-good { color:var(--project-positive); }
+.prop-rules-objectives em.is-breach { color:var(--project-negative); }
+.prop-rules-facts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:20px 0 0; padding-top:16px; border-top:1px solid var(--wm-border); }
+.prop-rules-facts div { display:flex; justify-content:space-between; gap:10px; }
+.prop-rules-facts dd { margin:0; font-variant-numeric:tabular-nums; }
+.prop-rules-facts small { color:var(--wm-content-muted); }
+.prop-rules-error { margin:16px 0 0; color:var(--project-negative); font-size:12px; }
+.prop-rules-dialog-footer { display:flex; justify-content:flex-end; flex-wrap:wrap; gap:8px; padding:16px 22px 20px; border-top:1px solid var(--wm-border); }
+.prop-rules-dialog-footer .wm-button { min-height:34px; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--wm-border-strong); border-radius:var(--ds-radius-control); padding:0 12px; color:var(--wm-content); background:transparent; font:inherit; font-size:12px; text-decoration:none; cursor:pointer; }
+.prop-rules-dialog-footer .wm-button:hover:not(:disabled) { border-color:var(--project-primary); background:var(--wm-hover); }
+.prop-rules-dialog-footer .wm-button.is-primary { border-color:var(--project-action); color:var(--project-on-action); background:var(--project-action); }
+.prop-rules-dialog-footer .wm-button.is-primary:hover:not(:disabled) { background:var(--project-action-hover); }
+.prop-rules-dialog-footer .wm-button:disabled { cursor:wait; opacity:.6; }
+@media (max-width:600px) { .prop-rules-dialog-header, .prop-rules-dialog-body, .prop-rules-dialog-footer { padding-inline:16px; } .prop-rules-facts { grid-template-columns:1fr; } .prop-rules-dialog-footer .wm-button { flex:1 1 45%; } }

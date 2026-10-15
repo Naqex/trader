@@ -8,8 +8,8 @@ import { finiteNumber } from './replayOrderModel.js'
 import { defaultScalperPreset, scalperProtection } from './legacyScalperPreset.js'
 import './LegacyTradingBar.css'
 
-export default function LegacyTradingBar({ order, quotes, onBeginOrder, analyticsHref, symbol, theme, sessionId, workspace, readStatus }) {
-  const { t, fmt, locale } = useTestingLocale()
+export default function LegacyTradingBar({ order, quotes, onBeginOrder, analyticsHref, propRulesAction, symbol, theme, sessionId, workspace, readStatus }) {
+  const { t, fmt } = useTestingLocale()
   const [positionsOpen, setPositionsOpen] = useState(false), [maximized, setMaximized] = useState(false), [height, setHeight] = useState(260)
   const [overflowReserve, setOverflowReserve] = useState(null)
   const [balanceHidden, setBalanceHidden] = useState(false), [balanceAnchor, setBalanceAnchor] = useState(null)
@@ -32,7 +32,7 @@ export default function LegacyTradingBar({ order, quotes, onBeginOrder, analytic
     const amount = finiteNumber(value)
     if (amount === null) return '—'
     if (!currency) return fmt(amount)
-    try { return new Intl.NumberFormat(locale, { style: 'currency', currency, maximumFractionDigits: 2 }).format(amount) } catch { return fmt(amount, ' ' + currency) }
+    try { return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 2 }).format(amount) } catch { return fmt(amount, ' ' + currency) }
   }
   const realized = finiteNumber(account?.balance) !== null && finiteNumber(account?.starting_balance) !== null ? Number(account.balance) - Number(account.starting_balance) : null
   const openOrder = side => {
@@ -121,6 +121,7 @@ export default function LegacyTradingBar({ order, quotes, onBeginOrder, analytic
       <div className="chart-trading-account">
         {readStatus}
         <a className="legacy-analytics-link" href={analyticsHref}><ChartIcon name="analytics" />{t('Analytics')}</a>
+        {propRulesAction && <button type="button" className="legacy-prop-rules-link" data-testid="prop-rules-button" onClick={propRulesAction.onClick}><ChartIcon name="shield" />{propRulesAction.label}</button>}
         <button type="button" className="legacy-balance-pill" aria-label={t('Thông tin tài khoản')} aria-expanded={Boolean(balanceAnchor)} onPointerEnter={event => { if (event.pointerType === 'mouse' && matchMedia('(hover:hover)').matches) showBalance(event.currentTarget) }} onPointerLeave={dismissBalance} onFocus={event => { if (event.currentTarget.matches(':focus-visible')) showBalance(event.currentTarget) }} onBlur={dismissBalance} onClick={event => balanceAnchor ? setBalanceAnchor(null) : showBalance(event.currentTarget)}><ChartIcon name="wallet" /><strong>{balanceHidden ? '••••••' : money(account?.balance ?? order.configuredBalance)}</strong></button>
         <button type="button" aria-label={t(balanceHidden ? 'Hiện số dư' : 'Ẩn số dư')} aria-pressed={balanceHidden} onClick={() => setBalanceHidden(value => !value)}><ChartIcon name={balanceHidden ? 'eye' : 'eye-off'} /></button>
         <button type="button" aria-label={t(positionsOpen ? 'Thu gọn danh sách lệnh' : 'Mở danh sách lệnh')} aria-expanded={positionsOpen} onClick={() => {

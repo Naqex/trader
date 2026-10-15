@@ -114,6 +114,8 @@ button.chart-order-level { cursor: ns-resize; touch-action: none; }
 .chart-trading-actions, .chart-trading-account { display: flex; align-items: center; gap: 12px; }
 .chart-trading-account { color: var(--chart-muted); font-variant-numeric: tabular-nums; }
 .chart-trading-account strong { margin-left: 6px; font-weight: 500; color: var(--chart-text); }
+.prop-rules-bottom-button { display:inline-flex; align-items:center; gap:5px; padding-inline:8px; color:var(--project-highlight); }
+.prop-rules-bottom-button:hover:not(:disabled) { color:var(--chart-text); background:var(--chart-hover); }
 .chart-trading-actions button { display: flex; gap: 12px; min-height: 32px; padding: 6px 12px; border: 0; border-radius: 4px; background: var(--chart-hover); color: var(--chart-text); font: inherit; cursor: pointer; }
 .chart-trading-actions button.sell { background: var(--project-negative); color: var(--wm-on-primary); }
 .chart-trading-actions button.buy { background: var(--project-positive); color: var(--wm-on-primary); }
