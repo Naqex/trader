@@ -128,6 +128,9 @@ def validate_tick_execution_event(
             raise ReplayExecutionError("tick protection must use the observed closeable quote")
         return event
     if event.kind in {"manual_close", "order_cancel"}:
+        prior = next((raw for raw in reversed(snapshot.ledger) if raw["sequence"] < event.sequence and "bid" in raw.get("details", {})), None)
+        if prior is None or any(d.get(key) != prior["details"].get(key) for key in ("time_msc", "sequence", "bid", "ask")):
+            raise ReplayExecutionError("close must retain the preceding canonical broker quote")
         if event.kind == "manual_close" and (Decimal(d["bid_close"]) != tick.bid or Decimal(d["ask_close"]) != tick.ask):
             raise ReplayExecutionError("manual close differs from the observed broker quote")
         return event

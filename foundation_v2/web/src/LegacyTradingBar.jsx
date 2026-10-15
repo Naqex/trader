@@ -7,7 +7,7 @@ import FxSelect from './FxSelect.jsx'
 import { useNotifications } from './Notifications.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import { finiteNumber } from './replayOrderModel.js'
-import { defaultScalperPreset } from './legacyScalperPreset.js'
+import { defaultScalperPreset, scalperProtection } from './legacyScalperPreset.js'
 import './LegacyTradingBar.css'
 
 export default function LegacyTradingBar({ order, analyticsHref, propRulesAction, symbol, theme, sessionId, workspace, readStatus }) {
@@ -22,7 +22,7 @@ export default function LegacyTradingBar({ order, analyticsHref, propRulesAction
   const [preset, setPreset] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(storageKey))
-      if (typeof saved?.enabled === 'boolean' && ['stop', 'target'].every(key => typeof saved[key]?.enabled === 'boolean' && ['pips', 'percent', 'ticks'].includes(saved[key].unit) && finiteNumber(saved[key].value) > 0)) return saved
+      if (typeof saved?.enabled === 'boolean' && ['stop', 'target'].every(key => typeof saved[key]?.enabled === 'boolean' && ['pips', 'percent', 'ticks'].includes(saved[key].unit) && (!saved[key].enabled || finiteNumber(saved[key].value) > 0))) return saved
     } catch { /* Optional local preset. */ }
     return defaultScalperPreset()
   }), [draft, setDraft] = useState(defaultScalperPreset), [scalperAnchor, setScalperAnchor] = useState(null), [error, setError] = useState('')
@@ -33,7 +33,7 @@ export default function LegacyTradingBar({ order, analyticsHref, propRulesAction
   positionsLayout.current = { open: positionsOpen, maximized, height, overflowReserve }
   useEffect(() => () => { clearTimeout(hideBalance.current); cancelAnimationFrame(resizeFrame.current) }, [])
   useEffect(() => { try { localStorage.setItem(storageKey, JSON.stringify(preset)) } catch { /* The confirmation flow works without browser storage. */ } }, [storageKey, preset])
-  const execution = order.execution, account = order.account, disabled = order.disabled || Boolean(order.active), currency = execution?.cost_model?.account_ccy || order.configuredCurrency || order.costs?.account_ccy
+  const execution = order.execution, account = order.account, disabled = order.disabled || Boolean(order.active) || (!execution && (!order.canInitialize || order.tick.options === null)), currency = execution?.cost_model?.account_ccy || order.configuredCurrency || order.costs?.account_ccy
   const money = value => {
     const amount = finiteNumber(value)
     if (amount === null) return '—'

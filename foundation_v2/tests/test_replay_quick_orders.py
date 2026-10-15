@@ -122,3 +122,40 @@ def test_prop_consumes_manual_close_in_order_and_retries_exactly():
     assert fed['phase']['balance'] == closed['payload']['execution']['balance']
     assert fed['phase']['open_positions'] == 0
     assert fixture.service.feed_prop_lifecycle('tenant-a', sid, **params)['duplicate']
+
+@pytest.mark.parametrize('side', ['BUY', 'SELL'])
+@pytest.mark.parametrize('leg', ['stop', 'target'])
+@pytest.mark.parametrize('tick_mode', [False, True])
+def test_single_protection_leg_actually_exits(side, leg, tick_mode):
+    rising = (side == 'BUY') == (leg == 'target')
+    level = '1.104' if rising else '1.096'
+    queued = queue_market_order(initial() if tick_mode else initial_state(), operation_id='single', side=side,
+        quantity='.1', stop_loss=level if leg == 'stop' else None, take_profit=level if leg == 'target' else None)
+    if tick_mode:
+        hit = tick('1.105', '1.1052', offset=1) if rising else tick('1.095', '1.0952', offset=1)
+        closed = advance_tick_execution(queued, ticks=[tick(), hit], bar=bar(), cursor_index=1).snapshot
+    else:
+        row = {'timestamp': 60, 'open': 1.1, 'high': 1.105 if rising else 1.101, 'low': 1.099 if rising else 1.095, 'close': 1.102 if rising else 1.098}
+        closed = advance_replay_execution(queued, bar=row, cursor_index=1).snapshot
+    assert closed.position is None
+    fill = next(raw for raw in closed.ledger if raw['kind'] == 'protective_fill')
+    assert fill['details']['reason'] == ('stop_loss' if leg == 'stop' else 'take_profit')
+    assert parse_replay_execution_snapshot(closed.model_dump(mode='json')) == closed
+
+
+def test_close_rejects_new_mid_and_tampered_tick_provenance_and_can_fork():
+    from trading_workspace_v2.replay_execution import fork_replay_execution_checkpoint
+    queued = queue_market_order(initial_state(), operation_id='open', side='BUY', quantity='.1', stop_loss=None, take_profit=None)
+    opened = advance_replay_execution(queued, bar={'timestamp': 60, 'open': 1.1, 'high': 1.105, 'low': 1.099, 'close': 1.102}, cursor_index=1).snapshot
+    with pytest.raises(ValueError, match='canonical checkpoint mid'):
+        close_replay_order(opened, target_id=opened.position.position_id, operation_id='close', mid_close='9', virtual_time_utc=120)
+    closed = close_replay_order(opened, target_id=opened.position.position_id, operation_id='close', mid_close='1.102', virtual_time_utc=120)
+    forked = fork_replay_execution_checkpoint(closed, replay_session_id='fork', branch_id='fork-branch')
+    assert parse_replay_execution_snapshot(forked.model_dump(mode='json')).position is None
+    queued_tick = queue_market_order(initial(), operation_id='open', side='BUY', quantity='.1', stop_loss=None, take_profit=None)
+    opened_tick = advance_tick_execution(queued_tick, ticks=[tick()], bar=bar(), cursor_index=1).snapshot
+    closed_tick = close_tick_order(opened_tick, target_id=opened_tick.position.position_id, operation_id='close', mid_close='1.101', virtual_time_utc=1060)
+    raw = closed_tick.model_dump(mode='json')
+    raw['ledger'][-1]['details']['time_msc'] += 1
+    with pytest.raises(ValueError, match='canonical broker quote'):
+        parse_replay_execution_snapshot(raw)

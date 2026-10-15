@@ -167,6 +167,10 @@ export default function TradingViewReplayChart(props) {
             const label = kind === 'entry' ? `${state.levels.side} · ${t(state.levels.state === 'queued' ? 'Chờ khớp' : state.levels.state === 'draft' ? 'Lệnh nháp' : 'Vị thế')} ${pnl}` : `${kind === 'stop' ? 'SL' : 'TP'}${ghost ? ` · ${t('Kéo để đặt')}` : ''}`
             line.setPrice(value).setText(label).setQuantity(kind === 'entry' ? String(state.levels.quantity) : ghost ? '+' : 'SIM')
               .setLineColor(color).setBodyBorderColor(color).setQuantityBorderColor(color)
+              .setBodyBackgroundColor(palette.surface).setBodyTextColor(palette.text)
+              .setQuantityBackgroundColor(palette.surface).setQuantityTextColor(palette.text)
+              .setCancelButtonBackgroundColor(palette.surface).setCancelButtonBorderColor(ghost ? palette.surface : color).setCancelButtonIconColor(ghost ? palette.surface : palette.text)
+              .setBodyFont('12px Inter, sans-serif').setQuantityFont('12px Inter, sans-serif')
               .setLineStyle(ghost ? 2 : 0).setEditable(kind !== 'entry' && state.orderEditable)
               .setCancellable(kind === 'entry' ? state.orderCloseable : !ghost && state.orderEditable && state.levels.state !== 'draft')
             const generation = state.orderGeneration

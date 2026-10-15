@@ -689,6 +689,8 @@ def _validate_manual_close(snapshot, event):
     bid, ask = (_decimal(d.get(key), key, positive=True) for key in ("bid_close", "ask_close"))
     if snapshot.schema_version != "replay-execution-tick-v1":
         instrument = InstrumentSpec.from_mapping(snapshot.instrument_spec)
+        if _decimal(d.get("mid_close"), "mid close", positive=True) != _decimal(prior["details"].get("mid_close"), "checkpoint mid", positive=True):
+            raise ReplayExecutionError("manual close must use the canonical checkpoint mid")
         expected = quote_from_mid(d.get("mid_close"), spread_price=snapshot.spread_price, tick_size=instrument.tick_size)
         if (bid, ask) != expected:
             raise ReplayExecutionError("manual close quote differs from the declared mid/spread")
