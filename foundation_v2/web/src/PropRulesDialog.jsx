@@ -65,9 +65,6 @@ export default function PropRulesDialog({ open, rules, error, pendingAction, ana
             <div><dt>{t('Profit target')}</dt><dd><span className="prop-rules-value-pill">{percentLabel(percentage(rules.profitTarget.target, rules.initialBalance))}</span></dd></div>
             <div><dt>{t('Max loss limit')}</dt><dd><span className="prop-rules-value-pill">{percentLabel(percentage(rules.overallDrawdown.limit, rules.initialBalance))}</span><span className="prop-rules-value-pill">{t(rules.overallDrawdown.kind === 'trailing' ? 'Trailing' : 'Static')}</span></dd></div>
             <div><dt>{t('Max daily loss limit')}</dt><dd><span className="prop-rules-value-pill">{percentLabel(percentage(rules.dailyLoss.limit, rules.initialBalance))}</span></dd></div>
-            <div><dt>{t('Ngày đủ điều kiện')}</dt><dd>{rules.qualifyingDays} / {rules.minimumDays}</dd></div>
-            <div><dt>{t('Giới hạn thời gian')}</dt><dd>{rules.maxDays == null ? t('Không giới hạn') : `${rules.maxDays} ${t('ngày')}`}</dd></div>
-            <div><dt>{t('Đặt lại giới hạn ngày')}</dt><dd>{rules.dailyReset?.time?.slice(0, 5) || '—'} {rules.dailyReset?.timezone}</dd></div>
           </dl>
         </section>
         <section className="prop-rules-detail-panel prop-rules-restrictions" aria-label={t('Hạn chế giao dịch')}>
