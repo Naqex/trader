@@ -47,6 +47,7 @@ import LegacyJournal from './LegacyJournal.jsx'
 import LegacyObjectTree from './LegacyObjectTree.jsx'
 import SessionSettingsDrawer from './SessionSettingsDrawer.jsx'
 import PropRulesDialog from './PropRulesDialog.jsx'
+import { startReadyPropAttempt } from './propSessionCreation.js'
 import { updateSessionMetadata } from './sessionCatalog.js'
 import { orderLevels, marketQuotes } from './replayOrderModel.js'
 import { ReplayOrderPrimitive } from './replayOrderPrimitive.js'
@@ -413,13 +414,16 @@ export default function ReplayWorkspace({ workspace, query }) {
     const controller = new AbortController()
     propRequest.current = controller
     setPropState(current => ({ ...current, status: 'loading', error: null }))
+    let payload
     try {
       const response = await scopedRead(`/api/v2/prop/sessions/${encodeURIComponent(propSessionId)}/attempts/${encodeURIComponent(propAttemptId)}`, workspace, controller.signal)
-      const payload = await readJson(response)
+      payload = await readJson(response)
+      if (controller.signal.aborted) return
+      payload = await startReadyPropAttempt(workspace, payload, controller.signal)
       if (controller.signal.aborted) return
       setPropState({ status: 'ready', session: payload.session, attempt: payload.attempt, phase: payload.phase, resumeState: payload.resume_state, objectives: payload.resume_state?.prop_lifecycle?.last_objectives || null, error: null })
     } catch (error) {
-      if (!controller.signal.aborted) setPropState({ status: error.status === 403 ? 'denied' : 'error', session: null, attempt: null, phase: null, resumeState: null, objectives: null, error: String(error.message || error) })
+      if (!controller.signal.aborted) setPropState({ status: error.status === 403 ? 'denied' : 'error', session: payload?.session || null, attempt: payload?.attempt || null, phase: payload?.phase || null, resumeState: payload?.resume_state || null, objectives: payload?.resume_state?.prop_lifecycle?.last_objectives || null, error: String(error.message || error) })
     } finally {
       if (propRequest.current === controller) propRequest.current = null
     }
@@ -907,7 +911,7 @@ export default function ReplayWorkspace({ workspace, query }) {
   const order = useChartOrder({ workspace, replay, dataset: activeDataset, ready: state.status === 'ready', blocked: historicalView || completed || conflict || assetClockStale || Boolean(pendingAction) || (propMode && propState.status !== 'ready') || (propMode && propState.attempt?.status !== 'running'), submit: submitOrder, executionConfig: propExecutionConfig })
   const priceLevels = order.active || (!historicalView && sideOpen && sidePanel === 'order') ? orderLevels(replay, order.draft) : null
   const quotes = marketQuotes(replay)
-  const orderBlockedReason = propMode && propState.status !== 'ready' ? 'Chưa đồng bộ được trạng thái challenge; thao tác đang khóa.' : propMode && propState.attempt?.status !== 'running' ? 'Bắt đầu challenge trong bảng Prop Firm Rules trước khi đặt lệnh.' : historicalView ? 'Cutoff lịch sử chỉ đọc. Về cursor mới nhất hoặc tạo nhánh để đặt lệnh.' : completed ? 'Dataset đã kết thúc; không còn nến để fill hoặc sửa lệnh.' : conflict ? 'Đang khóa vì revision đã thay đổi.' : assetClockStale ? 'Chờ nến mới của tài sản tại thời gian replay chung để đặt lệnh.' : ''
+  const orderBlockedReason = propMode && propState.status !== 'ready' ? 'Chưa đồng bộ được trạng thái challenge; thao tác đang khóa.' : propMode && propState.attempt?.status !== 'running' ? 'Đang đồng bộ trạng thái challenge; hãy thử tải lại phiên.' : historicalView ? 'Cutoff lịch sử chỉ đọc. Về cursor mới nhất hoặc tạo nhánh để đặt lệnh.' : completed ? 'Dataset đã kết thúc; không còn nến để fill hoặc sửa lệnh.' : conflict ? 'Đang khóa vì revision đã thay đổi.' : assetClockStale ? 'Chờ nến mới của tài sản tại thời gian replay chung để đặt lệnh.' : ''
 
   useEffect(() => {
     if (!propMode || propState.status !== 'ready' || propState.attempt?.status !== 'running' || !replay || replay.payload?.execution || !activeDataset?.instrument_spec || !order.canInitialize || order.tick?.options === null || propAutoInit.current) return
@@ -1402,7 +1406,7 @@ export default function ReplayWorkspace({ workspace, query }) {
         </>
       )}
       {sessionSettings && <SessionSettingsDrawer item={sessionSettings.item} dataset={activeDataset} replayRecord={replay} workspace={workspace} pending={sessionSettings.pending} blocked={sessionSettings.blocked} error={sessionSettings.error} onClose={closeSessionSettings} onSubmit={saveSessionSettings} />}
-      {propMode && propRules && <PropRulesDialog open={propRulesOpen} rules={propRules} error={propState.error} pendingAction={pendingAction} analyticsHref={propAnalyticsHref} retryHref={propRetryHref} onClose={() => setPropRulesOpen(false)} onTransition={transitionPropAttempt} formatMoney={money} statusLabel={localeStatusLabel} t={t} />}
+      {propMode && propRules && <PropRulesDialog open={propRulesOpen} rules={propRules} error={propState.error} pendingAction={pendingAction} analyticsHref={propAnalyticsHref} retryHref={propRetryHref} onClose={() => setPropRulesOpen(false)} onTransition={transitionPropAttempt} onRetry={loadPropAttempt} formatMoney={money} statusLabel={localeStatusLabel} t={t} />}
     </main>
   )
 }

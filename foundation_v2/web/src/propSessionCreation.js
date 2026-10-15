@@ -83,7 +83,7 @@ export async function createPropChartSession(workspace, draft, datasets) {
     mode: 'simulation',
     session_type: 'challenge',
     profile,
-    status: 'ready',
+    status: 'running',
     revision: 1,
   }
   const attempt = {
@@ -100,7 +100,7 @@ export async function createPropChartSession(workspace, draft, datasets) {
     data_version: datasetPin,
     cost_version: 'replay-fixture-cost-v1',
     engine_version: 'replay-v1',
-    status: 'ready',
+    status: 'running',
     revision: 1,
     parent_attempt_id: null,
     branch_kind: 'clean',
@@ -146,6 +146,17 @@ export async function createPropChartSession(workspace, draft, datasets) {
 
   const replay = await openPropReplay(workspace, bundle, datasets)
   return { bundle, replay }
+}
+
+export async function startReadyPropAttempt(workspace, bundle, signal) {
+  if (bundle.attempt?.status !== 'ready') return bundle
+  const { attempt, phase } = bundle
+  return propJson(`/api/v2/prop/sessions/${encodeURIComponent(attempt.session_id)}/attempts/${encodeURIComponent(attempt.attempt_id)}/transitions`, workspace, {
+    method: 'POST', signal,
+    body: JSON.stringify({ workspace_id: workspace, session_id: attempt.session_id, attempt_id: attempt.attempt_id,
+      profile_hash: attempt.profile_hash, intent_id: `chart-start-${attempt.attempt_id}-${attempt.revision}`,
+      expected_revision: attempt.revision, event_sequence: phase.last_event_sequence, action: 'start' }),
+  })
 }
 
 export async function openPropReplay(workspace, bundle, datasets) {

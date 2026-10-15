@@ -7,6 +7,10 @@ const [origin, out] = process.argv.slice(2)
 const browser = await chromium.launch()
 const page = await browser.newPage({ viewport: { width: 1710, height: 987 } })
 const errors = [], cases = []
+let legacyStarts = 0
+page.on('request', request => {
+  if (request.url().endsWith('/prop/sessions/legacy-ready/attempts/legacy-ready-a/transitions') && request.postDataJSON()?.action === 'start') legacyStarts++
+})
 page.on('pageerror', error => errors.push(error.message))
 const headers = { 'X-Workspace-Id': 'tenant-a' }
 try {
@@ -43,17 +47,35 @@ try {
   assert.ok(prop.searchParams.get('prop_session'))
   assert.ok(prop.searchParams.get('prop_attempt'))
   await page.getByTestId('prop-rules-button').waitFor()
+  const attemptPath = `${origin}/api/v2/prop/sessions/${prop.searchParams.get('prop_session')}/attempts/${prop.searchParams.get('prop_attempt')}`
+  const startedBundle = await (await page.request.get(attemptPath, { headers })).json()
+  assert.equal(startedBundle.session.status, 'running')
+  assert.equal(startedBundle.attempt.status, 'running')
+  await page.getByTestId('step-1').waitFor({ state: 'visible' })
+  assert.equal(await page.getByTestId('step-1').isEnabled(), true)
   assert.ok(await page.getByTestId('prop-rules-button').evaluate(button => {
     const rect = button.getBoundingClientRect()
     return rect.width > 100 && rect.height <= 34 && rect.bottom <= innerHeight && button.scrollWidth <= button.clientWidth
   }), 'Prop rules button remains on one line inside the chart account bar')
+  assert.ok(await page.getByTestId('prop-rules-button').evaluate(button => {
+    const style = getComputedStyle(button)
+    return style.borderTopWidth === '1px' && style.borderTopStyle === 'solid' && style.borderRadius === '999px'
+  }), 'Rules action has the design-system pill border')
   assert.equal(await page.locator('.legacy-replay-reset, .legacy-replay-previous').count(), 0)
   await page.getByTestId('prop-rules-button').click()
   await page.getByTestId('prop-rules-dialog').waitFor()
+  assert.equal(await page.locator('.prop-rules-objectives article').count(), 3)
+  assert.equal(await page.locator('.prop-rules-detail-panel').count(), 2)
+  assert.equal(await page.getByRole('button', { name: 'Bắt đầu challenge', exact: true }).count(), 0)
   await page.screenshot({ path: path.join(out, 'prop-chart-rules.png') })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.screenshot({ path: path.join(out, 'prop-rules-mobile.png') })
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+  await page.setViewportSize({ width: 1710, height: 987 })
   await page.getByRole('button', { name: 'Đóng Prop Firm Rules' }).click()
   assert.equal(await page.locator('.advanced-chart-save-status').count(), 0)
   cases.push('real dialog creation keeps TEST02; directly opens advanced Prop chart and rules')
+  cases.push('creation starts the attempt atomically; no extra Start action; Stats & Rules and pill border render on desktop/mobile')
 
   const catalog = await (await page.request.get(`${origin}/api/v2/replay/sessions`, { headers })).json()
   const record = catalog.items.find(item => item.record_id === prop.searchParams.get('session'))
@@ -92,6 +114,61 @@ try {
   await page.locator('.fxr-session-summary-card .fxs-go-chart').click()
   await page.getByTestId('prop-rules-button').waitFor()
   cases.push('Sessions summary badge and Go to chart retain Prop context')
+
+  // Exercise one real price mark without pressing a second Start action.
+  const fed = page.waitForResponse(response => response.url().endsWith('/feed') && response.request().method() === 'POST')
+  await page.getByTestId('step-1').click()
+  assert.equal((await fed).status(), 200)
+  const progressed = await (await page.request.get(attemptPath, { headers })).json()
+  assert.equal(progressed.attempt.status, 'running')
+  assert.equal(progressed.phase.last_event_sequence, 1)
+  cases.push('new challenge can step immediately and persist real lifecycle progress')
+
+  const legacyReady = await page.evaluate(async bundle => {
+    const { scopedMutation } = await import('/src/scopedMutation.js')
+    const { openPropReplay } = await import('/src/propSessionCreation.js')
+    const body = { ...bundle, session: { ...bundle.session, session_id: 'legacy-ready', status: 'ready', revision: 1 },
+      attempt: { ...bundle.attempt, session_id: 'legacy-ready', attempt_id: 'legacy-ready-a', status: 'ready', revision: 1 },
+      phase: { ...bundle.phase, session_id: 'legacy-ready', attempt_id: 'legacy-ready-a' },
+      resume_state: { cursor: bundle.resume_state.cursor, open_positions: [], pending_orders: [], setup_metadata: { ...bundle.resume_state.setup_metadata, session_name: 'LEGACY READY' } } }
+    delete body.duplicate
+    const response = await scopedMutation('/api/v2/prop/session-bundles', 'tenant-a', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    const created = await response.json()
+    if (!response.ok) throw Error(JSON.stringify(created))
+    const datasets = await (await fetch('/api/v2/data/datasets', { headers: { 'X-Workspace-Id': 'tenant-a' } })).json()
+    return openPropReplay('tenant-a', created, datasets.items)
+  }, startedBundle)
+  const legacyPath = `${origin}/api/v2/prop/sessions/legacy-ready/attempts/legacy-ready-a`
+  const legacyView = await page.request.get(`${origin}/api/v2/replay/sessions/${legacyReady.record_id}`, { headers })
+  assert.equal(legacyView.status(), 200, `legacy view: ${await legacyView.text()}`)
+  await page.goto(`${origin}/?workspace=tenant-a&view=replay&surface=workspace&session=${legacyReady.record_id}`)
+  await page.getByTestId('step-1').waitFor()
+  await page.waitForFunction(() => !document.querySelector('[data-testid="step-1"]')?.disabled)
+  const activated = await (await page.request.get(legacyPath, { headers })).json()
+  assert.equal(activated.attempt.status, 'running')
+  assert.ok(activated.attempt.revision >= 2)
+  assert.equal(activated.phase.virtual_time_utc, startedBundle.phase.virtual_time_utc)
+  await page.reload()
+  await page.getByTestId('prop-rules-button').waitFor()
+  const reloaded = await (await page.request.get(legacyPath, { headers })).json()
+  assert.equal(reloaded.attempt.status, 'running')
+  assert.equal(legacyStarts, 1)
+  const paused = await page.evaluate(async bundle => {
+    const { scopedMutation } = await import('/src/scopedMutation.js')
+    const response = await scopedMutation('/api/v2/prop/sessions/legacy-ready/attempts/legacy-ready-a/transitions', 'tenant-a', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ workspace_id: 'tenant-a', session_id: 'legacy-ready', attempt_id: 'legacy-ready-a', profile_hash: bundle.attempt.profile_hash, intent_id: 'fixture-pause', expected_revision: bundle.attempt.revision, event_sequence: bundle.phase.last_event_sequence, action: 'pause' }) })
+    if (!response.ok) throw Error(await response.text())
+    return response.json()
+  }, reloaded)
+  assert.equal(paused.attempt.status, 'paused')
+  await page.reload()
+  await page.getByTestId('prop-rules-button').click()
+  await page.getByTestId('prop-rules-dialog').getByRole('button', { name: 'Tiếp tục', exact: true }).waitFor()
+  assert.equal((await (await page.request.get(legacyPath, { headers })).json()).attempt.status, 'paused')
+  await page.getByRole('button', { name: 'Tiếp tục', exact: true }).click()
+  await page.waitForFunction(() => !document.querySelector('[data-testid="step-1"]')?.disabled)
+  assert.equal((await (await page.request.get(legacyPath, { headers })).json()).attempt.status, 'running')
+  await page.getByRole('button', { name: 'Đóng Prop Firm Rules' }).click()
+  cases.push('legacy Ready auto-starts once without moving virtual time; reload preserves Paused and Resume works')
 
   const backtest = await create('backtest', '1')
   assert.equal(backtest.searchParams.has('prop_session'), false)

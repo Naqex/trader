@@ -3,17 +3,16 @@ import ChartIcon from './ChartIcon.jsx'
 import './PropRulesDialog.css'
 
 function percentage(current, target) {
-  const value = Number(current)
-  const limit = Number(target)
-  if (!Number.isFinite(value) || !Number.isFinite(limit) || limit <= 0) return 0
-  return Math.max(0, Math.min(100, value / limit * 100))
+  if (current == null || target == null || Number(target) <= 0) return null
+  return Number(current) / Number(target) * 100
 }
 
-export default function PropRulesDialog({ open, rules, error, pendingAction, analyticsHref, retryHref, onClose, onTransition, formatMoney, statusLabel, t }) {
-  const dialog = useRef(null)
-  const opener = useRef(null)
-  const titleId = useId()
+function percentLabel(value) {
+  return value == null ? '—' : `${Math.round(value * 100) / 100}%`
+}
 
+export default function PropRulesDialog({ open, rules, error, pendingAction, analyticsHref, retryHref, onClose, onTransition, onRetry, formatMoney, statusLabel, t }) {
+  const dialog = useRef(null), opener = useRef(null), titleId = useId()
   useEffect(() => {
     if (!open) return
     opener.current = document.activeElement
@@ -26,66 +25,65 @@ export default function PropRulesDialog({ open, rules, error, pendingAction, ana
   }, [open])
 
   if (!open || !rules) return null
-  const terminalPass = rules.status === 'completed_pass'
-  const terminalCopy = terminalPass ? t('Challenge đã đạt mục tiêu.') : t('Challenge đã kết thúc.')
-  const profitPercent = percentage(rules.profitTarget.current, rules.profitTarget.target)
-  const dailyPercent = percentage(rules.dailyLoss.used, rules.dailyLoss.limit)
-  const overallPercent = percentage(rules.overallDrawdown.used, rules.overallDrawdown.limit)
-  const actionBusy = Boolean(pendingAction)
+  const terminalPass = rules.status === 'completed_pass', actionBusy = Boolean(pendingAction)
+  const objectives = [
+    { label: 'Profit target', current: rules.profitTarget.current, limit: rules.profitTarget.target, hit: rules.profitTarget.hit },
+    { label: 'Max loss limit', current: rules.overallDrawdown.used, limit: rules.overallDrawdown.limit, breached: rules.overallDrawdown.breached },
+    { label: 'Max daily loss limit', current: rules.dailyLoss.used, limit: rules.dailyLoss.limit, breached: rules.dailyLoss.breached },
+  ]
+  const policy = { must_be_flat: 'Đóng hết lệnh', carry: 'Giữ lệnh', close_by_simulator: 'Simulator đóng lệnh' }[rules.positionPolicy] || '—'
 
   return <dialog ref={dialog} className="prop-rules-dialog" data-testid="prop-rules-dialog" aria-labelledby={titleId} onCancel={event => { event.preventDefault(); if (!actionBusy) onClose() }} onClick={event => { if (event.target === dialog.current && !actionBusy) onClose() }}>
     <header className="prop-rules-dialog-header">
-      <div>
-        <span className="prop-rules-eyebrow">{t('PROP FIRM')}</span>
-        <h2 id={titleId}>{t('Prop Firm Rules')}</h2>
-        <p>{t('Phase')} {rules.phaseIndex} · {statusLabel('prop_attempt', rules.status)}</p>
-      </div>
+      <h2 id={titleId}>{t('Stats & Rules')}</h2>
       <button type="button" className="wm-dialog-close" aria-label={t('Đóng Prop Firm Rules')} disabled={actionBusy} onClick={onClose}><ChartIcon name="close" /></button>
     </header>
-
     <div className="prop-rules-dialog-body">
       {rules.terminal && <section className={`prop-rules-outcome ${terminalPass ? 'is-pass' : 'is-fail'}`} role="status">
-        <strong>{terminalCopy}</strong>
-        <span>{terminalPass ? t('Bạn có thể xem analytics của attempt này.') : t('Một giới hạn đã bị vi phạm hoặc challenge đã hết hạn.')}</span>
+        <strong>{t(terminalPass ? 'Challenge đã đạt mục tiêu.' : 'Challenge đã kết thúc.')}</strong>
+        <span>{t(terminalPass ? 'Bạn có thể xem analytics của attempt này.' : 'Một giới hạn đã bị vi phạm hoặc challenge đã hết hạn.')}</span>
       </section>}
-
-      <section className="prop-rules-balance" aria-label={t('Balance và Equity')}>
-        <div><span>{t('Balance')}</span><strong>{formatMoney(rules.balance, rules.currency)}</strong></div>
-        <div><span>{t('Equity')}</span><strong>{formatMoney(rules.equity, rules.currency)}</strong></div>
-      </section>
-
       <section className="prop-rules-objectives" aria-label={t('Challenge rules')}>
-        <article>
-          <div><span>{t('Profit target')}</span><strong>{formatMoney(rules.profitTarget.current, rules.currency)} <small>/ {formatMoney(rules.profitTarget.target, rules.currency)}</small></strong></div>
-          <progress max="100" value={profitPercent} aria-label={t('Tiến độ profit target')} />
-          <em className={rules.profitTarget.hit ? 'is-good' : ''}>{rules.profitTarget.hit ? t('Đạt') : t('Đang theo dõi')}</em>
-        </article>
-        <article>
-          <div><span>{t('Daily loss')}</span><strong>{formatMoney(rules.dailyLoss.used, rules.currency)} <small>/ {formatMoney(rules.dailyLoss.limit, rules.currency)}</small></strong></div>
-          <progress max="100" value={dailyPercent} aria-label={t('Mức daily loss đã dùng')} />
-          <em className={rules.dailyLoss.breached ? 'is-breach' : ''}>{rules.dailyLoss.breached ? t('Vi phạm') : t('Trong giới hạn')}</em>
-        </article>
-        <article>
-          <div><span>{t('Overall drawdown')}{rules.overallDrawdown.kind === 'trailing' ? ` · ${t('trailing')}` : ''}</span><strong>{formatMoney(rules.overallDrawdown.used, rules.currency)} <small>/ {formatMoney(rules.overallDrawdown.limit, rules.currency)}</small></strong></div>
-          <progress max="100" value={overallPercent} aria-label={t('Mức overall drawdown đã dùng')} />
-          <em className={rules.overallDrawdown.breached ? 'is-breach' : ''}>{rules.overallDrawdown.breached ? t('Vi phạm') : t('Trong giới hạn')}</em>
-        </article>
+        {objectives.map((objective, index) => {
+          const progress = percentage(objective.current, objective.limit)
+          const remaining = objective.current == null || objective.limit == null ? null : Math.max(0, objective.limit - objective.current)
+          return <article key={objective.label} className={objective.breached ? 'is-breach' : objective.hit ? 'is-good' : ''}>
+            <h3>{t(objective.label)}</h3>
+            <div className="prop-rules-objective-stat">
+              <div><strong>{formatMoney(objective.current, rules.currency)}</strong><small>({percentLabel(percentage(objective.current, rules.initialBalance))})</small></div>
+              <progress max="100" value={progress == null ? undefined : Math.max(0, Math.min(100, progress))} aria-label={t(objective.label)} />
+              <div><span>{formatMoney(remaining, rules.currency)} {t('còn lại')}</span><span className="prop-rules-objective-state" aria-label={t(objective.breached ? 'Vi phạm' : objective.hit ? 'Đạt' : index === 0 ? 'Đang theo dõi' : 'Trong giới hạn')}>{objective.breached ? '!' : objective.hit ? '✓' : '—'}</span></div>
+            </div>
+          </article>
+        })}
       </section>
-
-      <dl className="prop-rules-facts">
-        <div><dt>{t('Qualifying days')}</dt><dd>{rules.qualifyingDays} <small>/ {rules.minimumDays || '—'}</small></dd></div>
-        <div><dt>{t('Elapsed')}</dt><dd>{rules.elapsedDays ?? '—'}{rules.maxDays ? ` / ${rules.maxDays} ${t('ngày')}` : ''}</dd></div>
-      </dl>
-
-      {error && <p className="prop-rules-error" role="alert">{t('Không đồng bộ được rule state:')} {error}</p>}
+      <div className="prop-rules-challenge-heading"><h3>{t('Prop Firm Challenge')}</h3><span>{t('Phase')} {rules.phaseIndex} · {statusLabel('prop_attempt', rules.status)}</span></div>
+      <div className="prop-rules-detail-grid">
+        <section className="prop-rules-detail-panel" aria-label={t('Profit and Drawdown')}>
+          <h4>{t('Profit and Drawdown')}</h4>
+          <dl>
+            <div><dt>{t('Profit target')}</dt><dd><span className="prop-rules-value-pill">{percentLabel(percentage(rules.profitTarget.target, rules.initialBalance))}</span></dd></div>
+            <div><dt>{t('Max loss limit')}</dt><dd><span className="prop-rules-value-pill">{percentLabel(percentage(rules.overallDrawdown.limit, rules.initialBalance))}</span><span className="prop-rules-value-pill">{t(rules.overallDrawdown.kind === 'trailing' ? 'Trailing' : 'Static')}</span></dd></div>
+            <div><dt>{t('Max daily loss limit')}</dt><dd><span className="prop-rules-value-pill">{percentLabel(percentage(rules.dailyLoss.limit, rules.initialBalance))}</span></dd></div>
+          </dl>
+        </section>
+        <section className="prop-rules-detail-panel" aria-label={t('Điều kiện')}>
+          <h4>{t('Điều kiện')}</h4>
+          <dl>
+            <div><dt>{t('Qualifying days')}</dt><dd>{rules.qualifyingDays} / {rules.minimumDays}</dd></div>
+            <div><dt>{t('Elapsed')}</dt><dd>{rules.elapsedDays ?? '—'} / {rules.maxDays ?? '—'} {t('ngày')}</dd></div>
+            <div><dt>{t('Reset lỗ ngày')}</dt><dd>{rules.dailyReset?.time?.slice(0, 5) || '—'} {rules.dailyReset?.timezone}</dd></div>
+            <div><dt>{t('Khi đạt mục tiêu')}</dt><dd>{t(policy)}</dd></div>
+            <div><dt>{t('Replay')}</dt><dd>{t('Chỉ tiến về trước')}</dd></div>
+          </dl>
+        </section>
+      </div>
+      {error && <p className="prop-rules-error" role="alert">{t('Không đồng bộ được rule state:')} {error} {onRetry && <button type="button" className="wm-button" disabled={actionBusy} onClick={onRetry}>{t('Thử lại')}</button>}</p>}
     </div>
-
-    <footer className="prop-rules-dialog-footer">
-      {rules.status === 'ready' && <button type="button" className="wm-button is-primary" disabled={actionBusy} onClick={() => onTransition('start')}>{pendingAction === 'prop:start' ? t('Đang bắt đầu…') : t('Bắt đầu challenge')}</button>}
-      {rules.status === 'running' && <button type="button" className="wm-button" disabled={actionBusy} onClick={() => onTransition('pause')}>{pendingAction === 'prop:pause' ? t('Đang tạm dừng…') : t('Tạm dừng')}</button>}
+    {(rules.status === 'paused' || rules.terminal) && <footer className="prop-rules-dialog-footer">
       {rules.status === 'paused' && <button type="button" className="wm-button is-primary" disabled={actionBusy} onClick={() => onTransition('resume')}>{pendingAction === 'prop:resume' ? t('Đang tiếp tục…') : t('Tiếp tục')}</button>}
       {rules.terminal && retryHref && <a className="wm-button" href={retryHref}>{t('Thử challenge khác')}</a>}
-      {analyticsHref && <a className="wm-button" href={analyticsHref}>{terminalPass ? t('Xem analytics / report') : t('Mở analytics')}</a>}
-    </footer>
+      {analyticsHref && <a className="wm-button" href={analyticsHref}>{t(terminalPass ? 'Xem analytics / report' : 'Mở analytics')}</a>}
+    </footer>}
   </dialog>
 }

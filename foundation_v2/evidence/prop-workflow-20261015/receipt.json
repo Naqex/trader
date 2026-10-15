@@ -4,9 +4,12 @@
   "dataset": "dataset-65e96c68430730c2f530323734918bf7e38f0b33d47427419e64d75bc9e49c6a",
   "cases": [
     "real dialog creation keeps TEST02; directly opens advanced Prop chart and rules",
+    "creation starts the attempt atomically; no extra Start action; Stats & Rules and pill border render on desktop/mobile",
     "Dashboard Play and reload keep exact attempt before execution initialization",
     "bare old replay link resolves durable Prop identity",
     "Sessions summary badge and Go to chart retain Prop context",
+    "new challenge can step immediately and persist real lifecycle progress",
+    "legacy Ready auto-starts once without moving virtual time; reload preserves Paused and Resume works",
     "backtest keeps name 1 and ordinary replay without Prop rules",
     "legacy generated names recover Prop identity and retain it after rename",
     "old setup links open shared dialog instead of technical workspace"

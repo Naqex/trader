@@ -460,7 +460,7 @@ button.chart-order-level { cursor: ns-resize; touch-action: none; }
 .legacy-order-modal :is(input:not([type=checkbox]):not([readonly]),select):hover:not(:disabled) { background:var(--project-hover); border-color:var(--project-border-strong); }
 .legacy-order-modal :is(input,select):disabled { opacity:.5; cursor:default; }
 .is-legacy-chart .chart-floating-toolbar button.chart-float-grip { color:var(--chart-text); }
-.fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart :is(.chart-floating-toolbar,.chart-utility-rail,.chart-trading-account) :is(button,a):not(.legacy-balance-pill):not(.legacy-analytics-link) { border-radius:6px; }
+.fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart :is(.chart-floating-toolbar,.chart-utility-rail,.chart-trading-account) :is(button,a):not(.legacy-balance-pill):not(.legacy-analytics-link):not(.legacy-prop-rules-link) { border-radius:6px; }
 .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart :is(.chart-float-grip,.legacy-positions-grip):hover:not(:disabled) { background:transparent; color:var(--chart-text); box-shadow:none; filter:none; }
 @media (prefers-reduced-motion:reduce) {
  .legacy-native-menu button, .legacy-order-modal :is(button,input,select), .is-legacy-chart :is(.chart-floating-toolbar,.chart-utility-rail,.chart-trading-bar,.replay-side) :is(button,a,input,select) { transition:none; }

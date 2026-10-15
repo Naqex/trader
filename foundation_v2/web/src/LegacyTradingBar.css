@@ -21,7 +21,7 @@
 .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-trading-bar .legacy-balance-pill { display: inline-flex; align-items: center; gap: 8px; width: auto; height: 32px; padding: 0 12px; background: var(--chart-hover); border-radius: 18px; color: var(--chart-text); white-space: nowrap; }
 .legacy-balance-pill strong { font-size: 12px; font-weight: 500; }
 .legacy-trading-bar .legacy-analytics-link { gap: 5px; padding-inline: 10px; font-size: 12px; }
-.is-legacy-chart .chart-trading-account .legacy-prop-rules-link { display: inline-flex; align-items: center; flex: 0 0 auto; gap: 5px; width: auto; height: 32px; min-height: 32px; padding-inline: 10px; white-space: nowrap; font-size: 12px; color: var(--project-highlight); }
+.is-legacy-chart .chart-trading-account .legacy-prop-rules-link { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; gap: 6px; width: auto; height: 32px; min-height: 32px; padding-inline: 10px; border: 1px solid var(--chart-line); border-radius: var(--ds-radius-pill); white-space: nowrap; font-size: var(--ds-font-meta); color: var(--chart-text); }
 .legacy-trading-bar .legacy-prop-rules-link:hover:not(:disabled) { color: var(--chart-text); background: var(--chart-hover); }
 .legacy-trading-bar .chart-trading-account button:hover { background: var(--chart-hover); color: var(--chart-text); }
 .legacy-resizable-positions { position:relative; z-index:19; min-height: 0; overflow: visible; }

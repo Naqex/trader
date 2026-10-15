@@ -76,6 +76,13 @@ their persisted replay binding, with an exact legacy generated-name match only
 for unbound first attempts. Renaming those records preserves the identity.
 Old `view=testing`/`view=prop` setup links open the shared dialog.
 
+Creating a Prop session persists the session and attempt as `running` together;
+there is no second Start action in the chart. Opening an older `ready` attempt
+uses an idempotent Start intent without moving its virtual clock. Paused and
+terminal attempts are preserved. The bottom pill opens Stats & Rules: three
+objective progress cards and the frozen phase's loss, reset and day conditions.
+Playback still waits for Play/Step and never rewinds a Prop attempt.
+
 From `foundation_v2/web`, `npm run test:prop-ui` checks creation, catalog badges,
 Play, reload, bare links and backtest separation against disposable PostgreSQL,
 the real Axum/Python runtime and a browser. It replaces the previous technical
