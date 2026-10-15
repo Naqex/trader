@@ -1,4 +1,5 @@
 import { previewReadRecovery } from './demoMode.js'
+import { useNotifications } from './Notifications.jsx'
 import useReadRefresh from './useReadRefresh.js'
 import TestingReadState from './TestingReadState.jsx'
 import { TestingEmptyState, TestingPageSkeleton, TestingResourceStatus } from './TestingPageState.jsx'
@@ -371,7 +372,8 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
   const [catalogOpen, setCatalogOpen] = useState(false), [catalogElapsed, setCatalogElapsed] = useState(0), [catalogUpdated, setCatalogUpdated] = useState(false)
   const [startingAsset, setStartingAsset] = useState(''), [downloadProgressOpen, setDownloadProgressOpen] = useState(false)
   const [deleteAsset, setDeleteAsset] = useState(null), [deleteBusy, setDeleteBusy] = useState(false), [deleteError, setDeleteError] = useState('')
-  const [repairBusy, setRepairBusy] = useState(''), [repairNotice, setRepairNotice] = useState(null)
+  const [repairBusy, setRepairBusy] = useState('')
+  const notify = useNotifications() || (() => {})
   const [downloads, setDownloads] = useState({items:[],available:false,receivedAt:0})
   const [downloadRevision, setDownloadRevision] = useState(0), [downloadError, setDownloadError] = useState(''), [pollError,setPollError] = useState('')
   const [jobAction, setJobAction] = useState(''), [clockNow, setClockNow] = useState(Date.now)
@@ -395,7 +397,7 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
     completedJobs.current = new Set()
     downloadSamples.current = new Map()
     setDeleteAsset(null); setDeleteBusy(false); setDeleteError('')
-    setRepairBusy(''); setRepairNotice(null)
+    setRepairBusy('')
     return () => downloadController.abort()
   }, [downloadController])
 
@@ -593,17 +595,17 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
   const repairDataset = async asset => {
     if (repairBusy || preview) return
     const signal = downloadController.signal
-    setRepairBusy(asset.dataset_id); setRepairNotice(null)
+    setRepairBusy(asset.dataset_id)
     try {
       const result = await repairLocalDataset(workspace, asset.dataset_id, signal)
       if (!signal.aborted) {
-        setRepairNotice({ text: result.status === 'restored' ? 'Đã khôi phục dữ liệu gốc. Bạn có thể tiếp tục phiên.' : 'Dữ liệu nguyên vẹn, không cần khôi phục.' })
+        notify(result.status === 'restored' ? 'Đã khôi phục dữ liệu gốc.' : 'Đã kiểm tra dữ liệu.')
         setCatalogRevision(value => value + 1)
       }
     } catch (error) {
-      if (!signal.aborted) setRepairNotice({ error: true, text: ['dataset_source_unavailable','dataset_source_corrupt','dataset_transform_unavailable','dataset_recovery_mismatch'].includes(error.payload?.detail)
+      if (!signal.aborted) notify(['dataset_source_unavailable','dataset_source_corrupt','dataset_transform_unavailable','dataset_recovery_mismatch'].includes(error.payload?.detail)
         ? 'Chưa thể khôi phục đúng phiên bản từ bản nguồn. Cần dùng bản sao lưu; các phiên vẫn được giữ nguyên.'
-        : 'Không kiểm tra được dữ liệu. Hãy thử lại.' })
+        : 'Không kiểm tra được dữ liệu. Hãy thử lại.', 'error')
     } finally { if (!signal.aborted) setRepairBusy('') }
   }
   const removeDataset = async () => {
@@ -616,6 +618,7 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
         setState(current => ({...current,datasets:current.datasets.filter(item => item.dataset_id !== deleteAsset.dataset_id)}))
         setSelectedId(current => current === deleteAsset.dataset_id ? '' : current)
         setDeleteAsset(null)
+        notify('Đã xoá phiên bản dữ liệu.')
         setCatalogRevision(current => current + 1)
       }
     } catch (error) {
@@ -646,7 +649,7 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
       {state.status === 'error' && <TestingReadState error message={t('Không đọc được kho dữ liệu:') + ' ' + state.error} recovery={preview ? previewReadRecovery(preview.state) : recovery} />}
 
       {downloadError && <p className="data-library-download-error" role="alert">{t(downloadError)}</p>}
-      {(repairBusy || repairNotice) && <p className={repairNotice?.error ? 'data-library-download-error' : 'data-library-catalog-status'} role={repairNotice?.error ? 'alert' : 'status'}>{t(repairBusy ? 'Đang kiểm tra và khôi phục dữ liệu…' : repairNotice.text)}</p>}
+      {repairBusy && <p className="data-library-catalog-status" role="status">{t('Đang kiểm tra và khôi phục dữ liệu…')}</p>}
       {downloadProgressOpen && <DataLibraryDialog compact title="Tiến độ tải dữ liệu" onClose={() => setDownloadProgressOpen(false)}><section className="data-library-download-jobs" aria-label={t('Tiến độ tải dữ liệu')}>
         {visibleDownloads.map(job => {
           const retrySeconds = downloadRetrySeconds(job,downloads.receivedAt,clockNow)
@@ -731,6 +734,7 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
         asset={importAsset}
         onBusyChange={setCsvBusy}
         onImported={(dataset) => {
+          notify('Đã nhập dữ liệu CSV.')
           setCsvOpen(false)
           setSelectedId(dataset?.dataset_id || '')
           setSearch('')

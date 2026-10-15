@@ -1,6 +1,7 @@
 import { createReplaySession } from './sessionCatalog.js'
 import { scopedRead } from './scopedRead.js'
 import { scopedMutation } from './scopedMutation.js'
+import { commonSessionRange } from './sessionPeriod.js'
 
 async function propJson(url, workspace, options = {}) {
   const response = options.method ? await scopedMutation(url, workspace, { ...options, headers: { 'Content-Type': 'application/json', 'X-Workspace-Id': workspace } }) : await scopedRead(url, workspace)
@@ -35,7 +36,7 @@ async function sha256Text(value) {
 
 export async function createPropChartSession(workspace, draft, datasets) {
   const start = utcIsoFromInput(draft.startUtc)
-  const durationDays = Math.max(1, Number(draft.durationDays) || 1)
+  const durationDays = Number(draft.durationDays) > 0 ? Math.max(1, Number(draft.durationDays)) : null
   const initialCapital = Number(draft.initialCapital), targetPercent = Number(draft.targetPercent)
   const dailyLoss = Number(draft.dailyLoss), overallLoss = Number(draft.overallLoss)
   const base = slugify(draft.name) || 'prop'
@@ -75,7 +76,10 @@ export async function createPropChartSession(workspace, draft, datasets) {
   const suffix = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
   const sessionId = `${base}-${suffix}`.slice(0, 96)
   const attemptId = `attempt-${suffix}`
-  const cutoff = draft.endUtc ? utcIsoFromInput(draft.endUtc) : new Date(new Date(start).getTime() + durationDays * 86400000).toISOString()
+  const selectedIds = draft.datasetVersions?.length ? draft.datasetVersions : [draft.datasetVersion]
+  const range = commonSessionRange(selectedIds.map(id => datasets.find(item => item.dataset_id === id)).filter(Boolean))
+  const cutoff = draft.endUtc ? utcIsoFromInput(draft.endUtc) : range?.valid ? new Date(range.max * 1000).toISOString() : null
+  if (!range?.valid || !cutoff || Date.parse(start) < range.min * 1000 || Date.parse(cutoff) <= Date.parse(start) || Date.parse(cutoff) > range.max * 1000 || selectedIds.some(id => !datasets.some(item => item.dataset_id === id))) throw new Error('Khoảng dữ liệu không hợp lệ.')
   const session = {
     contract_version: 'prop-session-v1',
     workspace_id: workspace,

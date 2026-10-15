@@ -1,12 +1,26 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { categoryOf, categoryLabel, filterLibrary, libraryRows, canDownloadAsset, defaultDownloadDates, downloadRangeError, sourceOf, downloadEngineOf, libraryDataType } from '../src/dataLibraryModel.js'
+import { categoryOf, categoryLabel, currentDatasetVersions, filterLibrary, libraryRows, canDownloadAsset, defaultDownloadDates, downloadRangeError, sourceOf, downloadEngineOf, libraryDataType } from '../src/dataLibraryModel.js'
 
 const saved = [
   { dataset_id:'old',instrument_id:'EURUSD',timeframe:'1m',source:{provider:'CSV'},instrument_spec:{asset_class:'fx'},created_at_utc:'2026-01-01Z' },
   { dataset_id:'new',instrument_id:'EURUSD',timeframe:'1m',source:{provider:'CSV'},instrument_spec:{asset_class:'fx'},created_at_utc:'2026-02-01Z' },
   { dataset_id:'gold',instrument_id:'XAUUSD',source:{provider:'CSV'},instrument_spec:{asset_class:'metal'} },
 ]
+
+test('explicit compatible updates collapse their ancestors without mutating any dataset', () => {
+  const version = (id, parent, end) => ({ ...saved[0], dataset_id:id, timeframe_seconds:60, first_timestamp:100, last_timestamp:end,
+    source:{ provider:'QuantDataManager', export_settings:JSON.stringify({parent_dataset_id:parent, price:'provider_default'}) } })
+  const old = version('a', null, 200), update = version('b', 'a', 300), latest = version('c', 'b', 400)
+  const items = [latest, old, update, saved[2]], before = JSON.stringify(items)
+  assert.deepEqual(libraryRows(items).map(row => row.key), ['c', 'gold'])
+  assert.equal(JSON.stringify(items), before)
+  assert.deepEqual(currentDatasetVersions([old, {...update, first_timestamp:150}]).map(item => item.dataset_id), ['a','b'], 'partial ranges must not hide the full history')
+  for (const change of [{timeframe_seconds:300}, {source:{provider:'CSV'}}, {source:{provider:'QuantDataManager',export_settings:JSON.stringify({parent_dataset_id:'a',price:'ask'})}}]) {
+    assert.equal(currentDatasetVersions([old,{...update,...change}]).length,2)
+  }
+  assert.equal(currentDatasetVersions([version('a','b',400),version('b','a',400)]).length,2, 'corrupt cycles never hide all rows')
+})
 test('loaded versions remain distinct; matching catalog asset does not duplicate them', () => {
   const rows = libraryRows(saved,[{instrument_id:'EURUSD',provider:'CSV',provider_id:'csv'},{instrument_id:'EURUSD',provider:'Other source',provider_id:'other'}])
   assert.deepEqual(rows.map(row => row.key),['old','new','gold','other:EURUSD'])

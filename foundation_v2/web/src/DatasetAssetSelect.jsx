@@ -8,7 +8,7 @@ import './dataset-asset-select.css'
 export default function DatasetAssetSelect({ datasets, instruments, sessions, value, onChange, disabled, ...triggerProps }) {
   const { t } = useTestingLocale()
   const [category, setCategory] = useState('all')
-  const rawOptions = datasetAssetOptions(datasets, instruments, sessions)
+  const rawOptions = datasetAssetOptions(datasets, instruments, sessions, value)
   const currency = datasets.find(item => item.dataset_id === value[0])?.instrument_spec?.account_ccy || 'USD'
   const selectedSymbols = new Set(datasets.filter(item => value.includes(item.dataset_id)).map(item => item.instrument_id))
   const options = rawOptions.map(option => {

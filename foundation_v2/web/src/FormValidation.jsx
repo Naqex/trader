@@ -15,8 +15,7 @@ export function FieldError({ id, error }) {
   return error ? <small id={id} className="wm-field-error">{t(error)}</small> : null
 }
 
-export function ValidationSummary({ errors, title = 'Kiểm tra lại thông tin phiên' }) {
+export function FormFeedback({ errors }) {
   const { t } = useTestingLocale()
-  const messages = [...new Set(Object.values(errors).filter(Boolean))]
-  return messages.length ? <div role="alert" className="wm-validation-summary"><strong>{t(title)}</strong><ul>{messages.map(message => <li key={message}>{t(message)}</li>)}</ul></div> : null
+  return <p role="alert" className="wm-form-feedback">{Object.values(errors).some(Boolean) ? t('Vui lòng kiểm tra các trường được đánh dấu.') : ''}</p>
 }

@@ -1,7 +1,10 @@
 .fx-app.fx-shell-story[data-theme] .fx-content .wm-field-error { display:block; margin:0; color:var(--wm-negative); font-size:12px; line-height:1.5; }
-.fx-app.fx-shell-story[data-theme] .fx-content .wm-validation-summary { display:grid; gap:8px; padding:12px; border:1px solid var(--wm-negative); border-radius:var(--ds-radius-field); background:color-mix(in srgb, var(--wm-negative) 8%, transparent); color:var(--wm-content); font-size:12px; }
-.fx-app.fx-shell-story[data-theme] .fx-content .wm-validation-summary strong { font-weight:600; }
-.fx-app.fx-shell-story[data-theme] .fx-content .wm-validation-summary ul { display:grid; gap:4px; margin:0; padding-left:16px; }
+.fx-app.fx-shell-story[data-theme] .fx-content .wm-form-feedback { flex:1; margin:0 auto 0 0; align-self:center; color:var(--wm-negative); font-size:12px; line-height:1.5; }
+.fx-app.fx-shell-story[data-theme] .fx-content .wm-field-error.wm-field-error { color:var(--wm-negative); }
 .fx-app.fx-shell-story[data-theme] .fx-content :is(input,textarea,.fx-select-trigger)[aria-invalid=true],
 .fx-app.fx-shell-story[data-theme] .fx-content :is(.quick-session-balance,.quick-session-rule-input,.fx-select-tag-field,.project-date-input):has([aria-invalid=true]) { border-color:var(--wm-negative); }
-.fx-app.fx-shell-story[data-theme] .fx-content :is(input,textarea,.fx-select-trigger)[aria-invalid=true]:focus-visible { outline:2px solid var(--wm-focus); outline-offset:2px; }
+/* The field owns a single border. Composite inputs delegate it to their wrapper. */
+.fx-app.fx-shell-story[data-theme] .fx-content :is(input,textarea,.fx-select-trigger)[aria-invalid=true]:focus-visible { border-color:var(--wm-focus); outline:none; box-shadow:none; }
+.fx-app.fx-shell-story[data-theme] .fx-content :is(.quick-session-balance,.quick-session-rule-input,.fx-select-tag-field,.project-date-input):has([aria-invalid=true]):focus-within { border-color:var(--wm-focus); }
+.fx-app.fx-shell-story[data-theme] .fx-content :is(.quick-session-balance,.quick-session-rule-input,.fx-select-tag-field,.project-date-input) input[aria-invalid=true]:focus-visible { border:0; outline:none; box-shadow:none; }
+@media(max-width:480px) { .fx-app.fx-shell-story[data-theme] .fx-content .wm-form-feedback:not(:empty) { flex-basis:100%; } }

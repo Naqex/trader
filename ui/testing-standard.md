@@ -27,6 +27,32 @@ Financial colors, chart cutoffs, navigation context and dataset source are uncha
 
 ## Components and language boundaries
 
+`FormFeedback` provides one short footer message after invalid submission;
+`FieldError` remains next to the affected control. Use one focus border per
+control, delegated to the outer element for composite inputs. Invalid state
+also has text and `aria-invalid`/`aria-describedby`; never add a second outline.
+
+`NotificationProvider` in the shell and `useNotifications()` own transient action
+feedback across routes. Reuse the pinned spacing, surface, border, type and focus
+tokens. Success/info notices dismiss after six seconds, pausing on hover/focus;
+errors stay until dismissed. At most three distinct messages are shown, without
+moving focus. Workspace changes clear them. Validation stays inline; pending
+actions, uncertain writes and errors requiring retry keep their local controls.
+Market Data repair, import and deletion use the shared notices; existing domain
+error/retry flows remain local. Other consumers can migrate without another host.
+
+Market Data and new-session asset selection collapse only explicit compatible
+`parent_dataset_id` update chains to their current version. Unrelated imports,
+sources, timeframes and price types remain separate. All immutable versions
+remain available through the API and saved session pins; no update rewrites a
+session's candles. Explicitly selected older versions remain visible in the picker.
+
+Quick Prop sessions have no hidden calendar expiry. Auto end uses the common
+loaded data boundary for both replay and the attempt cutoff; custom end pins
+the requested UTC boundary. Existing profiles retain their saved time limits.
+Trading restrictions describe the current simulator: no news/overnight/weekend
+gates, and no same-instrument hedging. Do not display unsupported green checks.
+
 | Owner | Use |
 | --- | --- |
 | `FxSelect` | Single/multiple, search, disabled choices, select all/mixed, keyboard and native scrollbar |

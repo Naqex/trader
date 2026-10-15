@@ -10,7 +10,7 @@ import { fetchOfflineLibrary } from './dataDeskApi.js'
 import { createPlaybookDraft, fetchPlaybooks } from './playbookApi.js'
 import { createReplaySession, rememberSession, sessionNavigationHref } from './sessionCatalog.js'
 import { buildWorkspaceHref } from './workspaceContext.js'
-import { FieldError, ValidationSummary, fieldValidationProps, focusFirstInvalid } from './FormValidation.jsx'
+import { FieldError, FormFeedback, fieldValidationProps, focusFirstInvalid } from './FormValidation.jsx'
 import { quickSessionErrors } from './quickSessionValidation.js'
 import './quick-session.css'
 
@@ -22,7 +22,7 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
   const [mode, setMode] = useState(initialMode === 'prop' ? 'prop' : 'backtest'), [advanced, setAdvanced] = useState(false)
   const [draft, setDraft] = useState({ name: '', balance: '10000', datasets: initialDataset ? [initialDataset] : [], strategy: '', description: '', period: { start: '', end: '', endMode: 'auto' } })
   const [balanceMode, setBalanceMode] = useState('10000')
-  const [propDraft, setPropDraft] = useState({ profileKind: 'generic', targetPercent: '10', dailyLoss: '5000', overallLoss: '10000', durationDays: '30' })
+  const [propDraft, setPropDraft] = useState({ profileKind: 'generic', targetPercent: '10', dailyLoss: '500', overallLoss: '1000', durationDays: '' })
   const balanceInput = useRef(null), balanceCaret = useRef(null)
   const balanceDisplay = formatBalance(draft.balance)
   const [data, setData] = useState({ status: 'loading', items: [], error: '' })
@@ -193,7 +193,7 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
             {mode === 'prop' ? <section className="quick-session-prop-rules" aria-label={t('Prop Firm rules')}>
               <div className="quick-session-prop-rule-group">
                 <div className="quick-session-prop-grid">
-                <label className="quick-session-rule-target"><span>{t('Profit target')}</span><div className="quick-session-rule-input"><input aria-label={`${t('Profit target')} %`} {...fieldProps('targetPercent')} type="number" min="0.1" step="0.1" value={propDraft.targetPercent} disabled={busy} onChange={event => changeProp('targetPercent', event.target.value)} /><span aria-hidden="true">%</span></div><FieldError id={`${id}-targetPercent-error`} error={errors.targetPercent} /></label>
+                <label className="quick-session-rule-target"><span>{t('Profit target')}</span><div className="quick-session-rule-input"><span className="quick-session-currency-prefix" aria-hidden="true">%</span><input aria-label={`${t('Profit target')} %`} {...fieldProps('targetPercent')} type="number" min="0.1" step="0.1" value={propDraft.targetPercent} disabled={busy} onChange={event => changeProp('targetPercent', event.target.value)} /></div><FieldError id={`${id}-targetPercent-error`} error={errors.targetPercent} /></label>
                 <label><span>{t('Max daily loss')}</span><div className="quick-session-rule-input"><span className="quick-session-currency-prefix" aria-hidden="true">{currency === 'USD' ? '$' : currency}</span><input aria-label={`${t('Max daily loss')} ${currency}`} {...fieldProps('dailyLoss')} type="number" min="1" step="0.01" value={propDraft.dailyLoss} disabled={busy} onChange={event => changeProp('dailyLoss', event.target.value)} /></div><FieldError id={`${id}-dailyLoss-error`} error={errors.dailyLoss} /></label>
                 <label><span>{t('Max total loss')}</span><div className="quick-session-rule-input"><span className="quick-session-currency-prefix" aria-hidden="true">{currency === 'USD' ? '$' : currency}</span><input aria-label={`${t('Max total loss')} ${currency}`} {...fieldProps('overallLoss')} type="number" min="1" step="0.01" value={propDraft.overallLoss} disabled={busy} onChange={event => changeProp('overallLoss', event.target.value)} /></div><FieldError id={`${id}-overallLoss-error`} error={errors.overallLoss} /></label>
                 </div>
@@ -203,11 +203,11 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
               {advanced && <label>{t('Description')}<textarea rows={3} maxLength={2000} disabled={busy} value={draft.description} onChange={event => change('description',event.target.value)} /></label>}
               <section className="quick-session-engine" aria-label={t('Charting engine')}><h3>{t('Charting engine')}</h3><p>{t('Chọn một lần cho phiên này.')}</p><div role="radiogroup" aria-label={t('Charting engine')}><button type="button" role="radio" aria-checked="false" disabled>New Chart <small>{t('Chưa khả dụng')}</small></button><button type="button" role="radio" aria-checked="true" disabled={busy}>Legacy Chart</button></div></section>
             </>}
-          <ValidationSummary errors={errors} />{problem && <div role="alert" className="quick-session-error">{problem.uncertain ? t('Chưa xác định phiên đã tạo hay chưa. Kiểm tra danh sách phiên trước khi tạo lại.') : t('Không tạo được phiên: {error}', {error:problem.text})}{problem.uncertain && <a aria-disabled={busy || undefined} onClick={event => { if (busy) event.preventDefault() }} href={buildWorkspaceHref('replay',workspace,query,{select:'1',surface:null,fresh:null})}>{t('Xem danh sách phiên')}</a>}</div>}
+          {problem && <div role="alert" className="quick-session-error">{problem.uncertain ? t('Chưa xác định phiên đã tạo hay chưa. Kiểm tra danh sách phiên trước khi tạo lại.') : t('Không tạo được phiên: {error}', {error:problem.text})}{problem.uncertain && <a aria-disabled={busy || undefined} onClick={event => { if (busy) event.preventDefault() }} href={buildWorkspaceHref('replay',workspace,query,{select:'1',surface:null,fresh:null})}>{t('Xem danh sách phiên')}</a>}</div>}
         </div>
       </div>
       </div>
-      <footer className="quick-session-footer"><button type="button" disabled={busy} onClick={close}>{t('Cancel')}</button><button type="submit" className="quick-session-submit" disabled={busy || problem?.uncertain}>{t(pending ? 'Đang tạo…' : 'Create session')}</button></footer>
+      <footer className="quick-session-footer"><FormFeedback errors={errors} /><button type="button" disabled={busy} onClick={close}>{t('Cancel')}</button><button type="submit" className="quick-session-submit" disabled={busy || problem?.uncertain}>{t(pending ? 'Đang tạo…' : 'Create session')}</button></footer>
     </form>
   </dialog>
 }

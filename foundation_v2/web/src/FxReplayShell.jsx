@@ -3,6 +3,7 @@ import './fx-shell-story.css'
 import './fx-shell-preferences.css'
 import { buildWorkspaceHref, readWorkspaceContext } from './workspaceContext.js'
 import { TestingLocaleProvider, useTestingLocale } from './testingLocale.jsx'
+import { NotificationProvider } from './Notifications.jsx'
 
 export { buildWorkspaceHref, readWorkspaceContext }
 
@@ -623,7 +624,7 @@ export default function FxReplayShell({ children, workspace, query = currentQuer
         <section className="fx-main" role={['overview', 'live', 'market-data', 'analytics'].includes(activeView) || (activeView === 'trade' && query.get('intent') !== 'order') || (activeView === 'replay' && query.get('surface') !== 'workspace' && (query.get('select') === '1' || query.get('mode') === 'Practice')) ? 'main' : undefined} aria-label={copy.contentAria} inert={drawerOpen}>
           <ShellSubnav activeView={activeView} workspace={workspace} query={query} copy={copy} action={subnavAction} />
           {helpOpen && <ShellHelp copy={copy} helpCloseRef={helpCloseRef} onClose={() => setHelpOpen(false)} />}
-          <div className="fx-content" tabIndex={0}>{children}</div>
+          <NotificationProvider key={workspace}><div className="fx-content" tabIndex={0}>{children}</div></NotificationProvider>
         </section>
       </div>
     </FxReplayContext.Provider></TestingLocaleProvider>

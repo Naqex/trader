@@ -1,7 +1,9 @@
-import { categoryOf, categoryLabel, downloadEngineOf, sourceOf } from './dataLibraryModel.js'
+import { categoryOf, categoryLabel, currentDatasetVersions, downloadEngineOf, sourceOf } from './dataLibraryModel.js'
 import { displayTimeframe } from './dataDisplay.js'
 
-export function datasetAssetOptions(datasets, instruments = [], sessions = []) {
+export function datasetAssetOptions(datasets, instruments = [], sessions = [], selectedIds = []) {
+  const currentIds = new Set(currentDatasetVersions(datasets).map(item => item.dataset_id))
+  datasets = datasets.filter(item => currentIds.has(item.dataset_id) || selectedIds.includes(item.dataset_id))
   const recentIds = [...new Set([...sessions].filter(item => !item.archived)
     .sort((a, b) => (Date.parse(b.updated_at_utc || b.created_at_utc) || 0) - (Date.parse(a.updated_at_utc || a.created_at_utc) || 0))
     .map(item => item.dataset_id))].slice(0, 5)

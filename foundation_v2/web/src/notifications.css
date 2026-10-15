@@ -1,0 +1,8 @@
+.wm-notifications { position:fixed; inset:auto auto 24px 24px; display:grid; gap:8px; width:min(380px,calc(100vw - 32px)); z-index:120; pointer-events:none; }
+.fx-app .wm-notification { display:flex; align-items:center; gap:16px; padding:12px 16px; border:1px solid var(--wm-border-strong); border-radius:var(--ds-radius-field); background:var(--wm-popup); color:var(--wm-content); pointer-events:auto; }
+.wm-notification p { margin:0; flex:1; font-size:13px; line-height:20px; overflow-wrap:anywhere; }
+.wm-notification.is-error { border-color:var(--wm-negative); }
+.fx-app .wm-notification button { display:grid; place-items:center; flex:0 0 28px; width:28px; height:28px; min-height:28px; padding:0; border:0; border-radius:var(--ds-radius-small); background:transparent; color:var(--wm-content-muted); font:inherit; font-size:20px; cursor:pointer; }
+.fx-app .wm-notification button:hover { color:var(--wm-content); background:var(--wm-hover); }
+.fx-app .wm-notification button:focus-visible { outline:2px solid var(--wm-focus); outline-offset:-2px; }
+@media(max-width:700px) { .wm-notifications { inset:auto auto 16px 16px; } .fx-app .wm-notification button { flex-basis:44px; width:44px; height:44px; } }

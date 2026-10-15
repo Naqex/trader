@@ -1155,7 +1155,7 @@ export default function ReplayWorkspace({ workspace, query }) {
             </section>
           )}
 
-          {advancedChart && <LegacyChartHeader controls={nativeHeaderSlots} symbol={replayContext.instrument} name={replay.payload.name || t('Replay')} backHref={routeHref('replay', { surface: null, select: '1' })} theme={theme} onTheme={() => applyAppearance({ ...appearance, theme: theme === 'dark' ? 'light' : 'dark' })} onOpenTool={openPanel} onFullscreen={fullscreenChart} />}
+          {advancedChart && <LegacyChartHeader controls={nativeHeaderSlots} symbol={replayContext.instrument} name={replay.payload.name || t('Replay')} backHref={routeHref('overview', { session: null, dataset: null, cursor: null, cutoff: null, mode: null, surface: null, select: null })} theme={theme} onTheme={() => applyAppearance({ ...appearance, theme: theme === 'dark' ? 'light' : 'dark' })} onOpenTool={openPanel} onFullscreen={fullscreenChart} />}
           <section className="replay-workspace">
             <div className="replay-main">
               <div className={`chart-frame ${advancedChart ? 'has-advanced-chart' : ''}`}>

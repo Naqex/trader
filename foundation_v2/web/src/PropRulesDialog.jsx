@@ -44,7 +44,7 @@ export default function PropRulesDialog({ open, rules, error, pendingAction, ana
         <span>{t(terminalPass ? 'Bạn có thể xem báo cáo của lần thử này.' : 'Một giới hạn đã bị vi phạm hoặc thử thách đã hết hạn.')}</span>
       </section>}
       <section className="prop-rules-objectives" aria-label={t('Challenge rules')}>
-        {objectives.map((objective, index) => {
+        {objectives.map(objective => {
           const progress = percentage(objective.current, objective.limit)
           const remaining = objective.current == null || objective.limit == null ? null : Math.max(0, objective.limit - objective.current)
           return <article key={objective.label} className={objective.breached ? 'is-breach' : objective.hit ? 'is-good' : ''}>
@@ -52,7 +52,7 @@ export default function PropRulesDialog({ open, rules, error, pendingAction, ana
             <div className="prop-rules-objective-stat">
               <div><strong>{formatMoney(objective.current, rules.currency)}</strong><small>({percentLabel(percentage(objective.current, rules.initialBalance))})</small></div>
               <progress max="100" value={progress == null ? undefined : Math.max(0, Math.min(100, progress))} aria-label={t(objective.label)} />
-              <div><span>{formatMoney(remaining, rules.currency)} {t('còn lại')}</span><span className="prop-rules-objective-state" aria-label={t(objective.breached ? 'Vi phạm' : objective.hit ? 'Đạt' : index === 0 ? 'Đang theo dõi' : 'Trong giới hạn')}>{objective.breached ? '!' : objective.hit ? '✓' : '—'}</span></div>
+              <div><span>{formatMoney(remaining, rules.currency)} {t('còn lại')}</span>{(objective.breached || objective.hit) && <span className="prop-rules-objective-state" aria-label={t(objective.breached ? 'Vi phạm' : 'Đạt')}>{objective.breached ? '!' : '✓'}</span>}</div>
             </div>
           </article>
         })}
@@ -65,16 +65,17 @@ export default function PropRulesDialog({ open, rules, error, pendingAction, ana
             <div><dt>{t('Profit target')}</dt><dd><span className="prop-rules-value-pill">{percentLabel(percentage(rules.profitTarget.target, rules.initialBalance))}</span></dd></div>
             <div><dt>{t('Max loss limit')}</dt><dd><span className="prop-rules-value-pill">{percentLabel(percentage(rules.overallDrawdown.limit, rules.initialBalance))}</span><span className="prop-rules-value-pill">{t(rules.overallDrawdown.kind === 'trailing' ? 'Trailing' : 'Static')}</span></dd></div>
             <div><dt>{t('Max daily loss limit')}</dt><dd><span className="prop-rules-value-pill">{percentLabel(percentage(rules.dailyLoss.limit, rules.initialBalance))}</span></dd></div>
+            <div><dt>{t('Ngày đủ điều kiện')}</dt><dd>{rules.qualifyingDays} / {rules.minimumDays}</dd></div>
+            <div><dt>{t('Giới hạn thời gian')}</dt><dd>{rules.maxDays == null ? t('Không giới hạn') : `${rules.maxDays} ${t('ngày')}`}</dd></div>
+            <div><dt>{t('Đặt lại giới hạn ngày')}</dt><dd>{rules.dailyReset?.time?.slice(0, 5) || '—'} {rules.dailyReset?.timezone}</dd></div>
           </dl>
         </section>
-        <section className="prop-rules-detail-panel" aria-label={t('Điều kiện')}>
-          <h4>{t('Điều kiện')}</h4>
+        <section className="prop-rules-detail-panel prop-rules-restrictions" aria-label={t('Hạn chế giao dịch')}>
+          <h4>{t('Hạn chế giao dịch')}</h4>
           <dl>
-            <div><dt>{t('Ngày đủ điều kiện')}</dt><dd>{rules.qualifyingDays} / {rules.minimumDays}</dd></div>
-            <div><dt>{t('Số ngày đã qua')}</dt><dd>{rules.elapsedDays ?? '—'} / {rules.maxDays ?? '—'} {t('ngày')}</dd></div>
-            <div><dt>{t('Đặt lại giới hạn ngày')}</dt><dd>{rules.dailyReset?.time?.slice(0, 5) || '—'} {rules.dailyReset?.timezone}</dd></div>
+            {['Giao dịch khi có tin tức', 'Giữ lệnh qua đêm', 'Giữ lệnh qua giờ đóng cửa', 'Giữ lệnh qua cuối tuần'].map(label => <div key={label}><dt>{t(label)}</dt><dd>{t('Không giới hạn')}</dd></div>)}
+            <div><dt>{t('Hedging (lệnh đối ứng)')}</dt><dd>{t('Không hỗ trợ')}</dd></div>
             <div><dt>{t('Khi đạt mục tiêu')}</dt><dd>{t(policy)}</dd></div>
-            <div><dt>{t('Replay')}</dt><dd>{t('Chỉ tiến về trước')}</dd></div>
           </dl>
         </section>
       </div>

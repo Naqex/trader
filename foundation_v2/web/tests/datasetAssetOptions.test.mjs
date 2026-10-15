@@ -3,6 +3,13 @@ import assert from 'node:assert/strict'
 import { datasetAssetOptions } from '../src/datasetAssetOptions.js'
 
 const dataset = (id, provider = 'QuantDataManager') => ({ dataset_id:id, instrument_id:'EUR/USD', timeframe:'60s', source:{ provider } })
+test('new sessions choose the current update while an explicitly pinned older selection remains visible', () => {
+  const old = {...dataset('old'),first_timestamp:100,last_timestamp:200}
+  const current = {...dataset('current'),first_timestamp:100,last_timestamp:300,source:{provider:'QuantDataManager',export_settings:'{"parent_dataset_id":"old"}'}}
+  const items = [old,current]
+  assert.deepEqual(datasetAssetOptions(items,[],[{dataset_id:'old'}]).map(item => item.value),['current'])
+  assert.deepEqual(datasetAssetOptions(items,[],[],['old']).map(item => item.value).sort(),['current','old'])
+})
 test('catalog enriches only saved versions with the same source and engine', () => {
   const options = datasetAssetOptions([dataset('saved-qdm'), dataset('saved-csv', 'CSV')], [
     { instrument_id:'EUR/USD', provider:'CSV', name:'CSV pair', asset_class:'stock' },

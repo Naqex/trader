@@ -53,8 +53,7 @@ export function downloadRangeError(from, to, now = new Date()) {
 }
 
 export function libraryRows(datasets, instruments = [], jobs = []) {
-  // Keep dataset versions separate: a saved session pins one immutable version.
-  const rows = datasets.map(item => ({ ...item, key:item.dataset_id, downloaded:true }))
+  const rows = currentDatasetVersions(datasets).map(item => ({ ...item, key:item.dataset_id, downloaded:true }))
   for (const item of instruments) {
     if (!datasets.some(dataset => dataset.instrument_id === item.instrument_id && downloadEngineOf(dataset) === downloadEngineOf(item))) {
       rows.push({ ...item, key:`${item.provider_id}:${item.instrument_id}`, downloaded:false })
@@ -62,6 +61,31 @@ export function libraryRows(datasets, instruments = [], jobs = []) {
   }
   return rows.map(item => ({ ...item, downloadJob: jobs.find(job => (job.download_engine || job.provider || 'Dukascopy') === downloadEngineOf(item)
     && job.instrument_id === item.instrument_id && ['queued','running','pausing','paused','failed'].includes(job.status)) }))
+}
+
+export function currentDatasetVersions(datasets) {
+  const byId = new Map(datasets.map(item => [item.dataset_id, item]))
+  const superseded = new Set()
+  for (const item of datasets) {
+    let child = item
+    const visited = new Set([child.dataset_id])
+    const ancestors = []
+    while (child) {
+      const parent = byId.get(exportSettingsOf(child).parent_dataset_id)
+      if (parent && visited.has(parent.dataset_id)) { ancestors.length = 0; break }
+      if (!parent || parent.instrument_id !== child.instrument_id
+        || downloadEngineOf(parent) !== downloadEngineOf(child) || sourceOf(parent) !== sourceOf(child)
+        || parent.timeframe_seconds !== child.timeframe_seconds
+        || exportSettingsOf(parent).price !== exportSettingsOf(child).price
+        || !(child.first_timestamp <= parent.first_timestamp && child.last_timestamp >= parent.last_timestamp)) break
+      visited.add(parent.dataset_id)
+      ancestors.push(parent.dataset_id)
+      child = parent
+    }
+    for (const id of ancestors) superseded.add(id)
+  }
+  // Only explicit, compatible update ancestry is collapsed; unrelated CSV imports remain distinct.
+  return datasets.filter(item => !superseded.has(item.dataset_id))
 }
 
 export function filterLibrary(rows, { category = 'all', provider = 'all', downloadStatus = 'all', search = '', sort = 'asset-asc' } = {}) {
