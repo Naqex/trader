@@ -49,29 +49,37 @@
 .legacy-account-details dd { margin: 0; font-variant-numeric: tabular-nums; }
 .legacy-preset-error { display: flex; align-items: center; justify-content: space-between; margin: 0; padding: 8px 14px; color: var(--chart-text); font-size: 12px; background: var(--chart-bg); }
 .legacy-preset-error button { border: 0; background: transparent; color: inherit; cursor: pointer; }
-.legacy-modal-overlay { --chart-bg:var(--project-canvas); --chart-text:var(--project-text); --chart-muted:var(--project-muted); --chart-line:var(--project-border); --chart-hover:var(--project-hover); position:fixed; inset:0; z-index:11000; display:grid; place-items:center; padding:16px; box-sizing:border-box; background:#0005; color:var(--chart-text); font:13px/20px Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
+.legacy-modal-overlay { --chart-bg:var(--project-surface); --chart-text:var(--project-text); --chart-muted:var(--project-muted); --chart-line:var(--project-border); --chart-hover:var(--project-hover); position:fixed; inset:0; z-index:var(--ds-z-dialog,50); display:grid; place-items:center; padding:16px; box-sizing:border-box; background:#0008; color:var(--chart-text); font:13px/20px Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
 .legacy-modal-overlay.is-light { color-scheme:light; }
-.legacy-modal { box-sizing:border-box; width:min(400px,100%); max-height:calc(100dvh - 32px); overflow:auto; border:1px solid var(--chart-line); border-radius:12px; background:var(--chart-bg); color:var(--chart-text); box-shadow:0 16px 48px #0005; }
-.legacy-scalper-modal form.legacy-scalper-settings { gap: 20px; padding: 20px; }
-.legacy-scalper-settings h2 { font-size: 16px; margin: 0; font-weight: 500; }
+.legacy-modal { box-sizing:border-box; width:min(var(--ds-dialog-small,440px),calc(100vw - 32px)); max-height:calc(100dvh - 32px); overflow:auto; border:1px solid var(--chart-line); border-radius:var(--ds-radius-dialog,12px); background:var(--chart-bg); color:var(--chart-text); box-shadow:0 16px 48px #0008; animation:wm-overlay-enter var(--ds-motion-dialog,220ms) var(--ds-ease-enter, cubic-bezier(.16,1,.3,1)); }
+.legacy-modal > header { display:flex; align-items:center; gap:16px; padding:20px 24px; border-bottom:1px solid var(--chart-line); }
+.legacy-modal > header h2 { margin:0 auto 0 0; font-size:var(--ds-font-dialog,20px); line-height:1.3; font-weight:var(--ds-weight-heading,600); }
+.legacy-modal > header .wm-dialog-close { display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box; flex:0 0 32px; width:32px; min-width:32px; height:32px; min-height:32px; padding:0; border:0; border-radius:var(--ds-radius-small,6px); background:transparent; color:var(--project-muted); cursor:pointer; }
+.legacy-modal > header .wm-dialog-close:hover:not(:disabled) { background:var(--project-hover); color:var(--project-text); }
+.legacy-modal > header .wm-dialog-close:focus-visible { outline:2px solid var(--project-primary); outline-offset:2px; }
+.legacy-scalper-modal form.legacy-scalper-settings { gap: 24px; padding: 24px; }
 .legacy-scalper-settings fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 12px; min-width: 0; }
-.legacy-scalper-modal form .legacy-scalper-toggle { display: flex; align-items: center; justify-content: space-between; min-height: 20px; }
-.legacy-scalper-toggle input[type=checkbox] { appearance: none; width: 32px; height: 18px; border-radius: 10px; background: var(--project-control); margin: 0; cursor: pointer; }
-.legacy-scalper-toggle input[type=checkbox]::before { content: ''; display: block; width: 14px; height: 14px; margin: 2px; border-radius: 50%; background: var(--project-text); transition: transform var(--ds-motion-hover) var(--ds-ease-standard); }
+.legacy-scalper-modal form .legacy-scalper-toggle { display: flex; align-items: center; justify-content: space-between; min-height: var(--ds-control,36px); color:var(--project-text); }
+.legacy-scalper-toggle input[type=checkbox] { appearance: none; width: var(--ds-switch-width,28px); height: var(--ds-switch-height,16px); border:0; border-radius:var(--ds-radius-pill,999px); background: var(--project-control); margin: 0; cursor: pointer; }
+.legacy-scalper-toggle input[type=checkbox]::before { content: ''; display: block; width: 12px; height: 12px; margin: 2px; border-radius: 50%; background: var(--project-text); transition: transform var(--ds-motion-hover) var(--ds-ease-standard); }
 .legacy-scalper-toggle input[type=checkbox]:checked { background: var(--project-primary); }
-.legacy-scalper-toggle input[type=checkbox]:checked::before { transform: translateX(14px); }
+.legacy-scalper-toggle input[type=checkbox]:checked::before { transform: translateX(12px); }
 .legacy-scalper-toggle input:focus-visible { outline: 2px solid var(--project-primary); outline-offset: 2px; }
 .legacy-scalper-toggle.is-unavailable { opacity: .5; }
 .legacy-scalper-toggle input:disabled { cursor: default; }
 .legacy-scalper-distance { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; align-items: center; }
-.legacy-scalper-units { display: inline-flex; align-items: center; border: 1px solid var(--menu-line); border-radius: 18px; padding: 2px; gap: 2px; }
+.legacy-scalper-modal :is(input:not([type=checkbox]),select) { box-sizing:border-box; width:100%; min-width:0; height:var(--ds-control,36px); padding:7px 12px; border:1px solid var(--project-border); border-radius:var(--ds-radius-field,8px); background:var(--project-canvas); color:var(--project-text); font:inherit; }
+.legacy-scalper-modal :is(input:not([type=checkbox]),select):hover:not(:disabled) { background:var(--project-hover); border-color:var(--project-border-strong); }
+.legacy-scalper-modal :is(input:not([type=checkbox]),select):focus-visible { border-color:var(--project-primary); outline:2px solid var(--project-primary); outline-offset:2px; }
+.legacy-scalper-modal label:not(.legacy-scalper-toggle) { display:grid; gap:8px; color:var(--project-muted); font-size:var(--ds-font-control,13px); }
+.legacy-scalper-units { display: inline-flex; align-items: center; border: 1px solid var(--project-border); border-radius:var(--ds-radius-pill,999px); padding: 2px; gap: 2px; background:var(--project-control); }
 .legacy-scalper-modal .legacy-scalper-units button { min-width: 40px; width: auto; min-height: 28px; padding: 4px 10px; border: 0; border-radius: 16px; justify-content: center; font-size: 12px; }
-.legacy-scalper-modal .legacy-scalper-units button[aria-pressed=true] { background: var(--chart-hover); color: var(--chart-text); }
+.legacy-scalper-modal .legacy-scalper-units button[aria-pressed=true] { background: var(--project-surface); color: var(--chart-text); box-shadow:0 1px 2px #0003; }
 .legacy-scalper-modal .legacy-scalper-units button:disabled { opacity: .5; }
-.legacy-scalper-settings p { font-size: 11px; line-height: 1.5; margin: 0; color: var(--menu-muted); }
+.legacy-scalper-settings p { font-size: 12px; line-height: 1.5; margin: 0; color: var(--project-muted); }
 .legacy-scalper-settings p[role=alert] { color: var(--project-negative); }
-.legacy-scalper-settings footer { display: flex; justify-content: flex-end; gap: 10px; }
-.legacy-scalper-modal .legacy-scalper-settings footer button { width: auto; min-width: 80px; }
+.legacy-scalper-settings footer { display: flex; justify-content: flex-end; gap: 8px; padding-top: 4px; }
+.legacy-scalper-modal .legacy-scalper-settings footer button { width: auto; min-width: 80px; min-height:var(--ds-control,36px); padding:8px 16px; border:1px solid transparent; border-radius:var(--wm-control-radius,var(--ds-radius-pill,999px)); background:var(--project-control); color:var(--project-text); font:inherit; cursor:pointer; }
 .legacy-scalper-modal .legacy-scalper-settings footer button:hover:not(:disabled) { background:var(--chart-hover); }
 .legacy-scalper-modal .legacy-scalper-settings .legacy-scalper-save { background: var(--project-action); color: var(--project-on-action); border-color: var(--project-action); }
 .legacy-scalper-settings .fx-select.is-field .fx-select-trigger { border-radius:8px; }
