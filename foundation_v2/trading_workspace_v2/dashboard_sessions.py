@@ -122,6 +122,7 @@ def build_dashboard_sessions(records, datasets, workspace, *, page=1, page_size=
         manifest = manifests.get(dataset_id)
         linked = [manifests.get(key) for key in ids]
         item = ReplaySessionCatalogItem(record_id=record['record_id'], revision=record['revision'],
+            **{key: payload[key] for key in ('session_kind', 'prop_session_id', 'prop_attempt_id') if key in payload},
             name=payload.get('name', ''), description=payload.get('description', ''), archived=payload.get('archived', False),
             dataset_id=dataset_id, dataset_ids=ids, instrument_ids=[m.instrument_id for m in linked if m],
             instrument_id=manifest.instrument_id if manifest else None, timeframe=manifest.timeframe if manifest else None,
@@ -172,7 +173,10 @@ def build_dashboard_sessions(records, datasets, workspace, *, page=1, page_size=
 
 
 def read_dashboard_sessions(store, workspace, **filters):
-    return build_dashboard_sessions(store.list_records(workspace, 'replay'), store.list_datasets(workspace), workspace, **filters)
+    records = store.list_records(workspace, 'replay')
+    identities = store.replay_prop_identities(workspace) if hasattr(store, 'replay_prop_identities') else {}
+    records = [{**record, 'payload': {**record['payload'], **identities.get(record['record_id'], {})}} for record in records]
+    return build_dashboard_sessions(records, store.list_datasets(workspace), workspace, **filters)
 
 
 def read_replay_metadata(store, workspace, session_id):

@@ -1,0 +1,15 @@
+{
+  "result": "PASS",
+  "scope": "Disposable PostgreSQL, actual Axum + Python worker + browser; synthetic data only",
+  "dataset": "dataset-65e96c68430730c2f530323734918bf7e38f0b33d47427419e64d75bc9e49c6a",
+  "cases": [
+    "real dialog creation keeps TEST02; directly opens advanced Prop chart and rules",
+    "Dashboard Play and reload keep exact attempt before execution initialization",
+    "bare old replay link resolves durable Prop identity",
+    "Sessions summary badge and Go to chart retain Prop context",
+    "backtest keeps name 1 and ordinary replay without Prop rules",
+    "legacy generated names recover Prop identity and retain it after rename",
+    "old setup links open shared dialog instead of technical workspace"
+  ],
+  "errors": []
+}

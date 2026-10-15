@@ -341,6 +341,8 @@ class ReplayCreate(BaseModel):
     playbook_id: str | None = Field(default=None, min_length=1, max_length=128)
     playbook_revision: int | None = Field(default=None, ge=1, strict=True)
     chart_engine: Literal["legacy"] = "legacy"
+    prop_session_id: str | None = Field(default=None, min_length=1, max_length=128)
+    prop_attempt_id: str | None = Field(default=None, min_length=1, max_length=128)
 
     @field_validator("name")
     @classmethod
@@ -381,6 +383,9 @@ class ReplaySessionCatalogItem(BaseModel):
 
     record_id: str = Field(min_length=1, max_length=128)
     name: str = Field(default="", max_length=160)
+    session_kind: Literal["backtest", "prop"] = "backtest"
+    prop_session_id: str | None = None
+    prop_attempt_id: str | None = None
     description: str = Field(default="", max_length=2000)
     archived: bool = False
     revision: int = Field(ge=1, strict=True)

@@ -533,6 +533,9 @@ fn replay_catalog_item(
     }
     for (name, default) in [
         ("name", json!("")),
+        ("session_kind", json!("backtest")),
+        ("prop_session_id", Value::Null),
+        ("prop_attempt_id", Value::Null),
         ("description", json!("")),
         ("archived", json!(false)),
         ("cursor_index", json!(0)),
@@ -639,6 +642,19 @@ async fn replay_sessions(
     if !ids.is_empty() {
         for row in client.query("SELECT dataset_id,manifest_json FROM datasets WHERE workspace_id=$1 AND dataset_id=ANY($2)",&[&scope.workspace_id,&ids]).await.map_err(|_|ApiError::database())?{manifests.insert(row.get::<_,String>(0),row.get::<_,Value>(1));}
     }
+    let identities = client.query("SELECT r.record_id,a.session_id,a.attempt_id FROM workspace_records r JOIN workspace_record_revisions v ON v.workspace_id=r.workspace_id AND v.kind=r.kind AND v.record_id=r.record_id AND v.revision=r.current_revision JOIN prop_attempts a ON a.workspace_id=r.workspace_id AND ((v.payload_json->>'prop_session_id'=a.session_id AND v.payload_json->>'prop_attempt_id'=a.attempt_id) OR a.resume_json->'replay_binding'->>'replay_session_id'=r.record_id OR (v.payload_json->>'prop_session_id' IS NULL AND a.snapshot_json->>'parent_attempt_id' IS NULL AND v.payload_json->>'name' IN ('Generic practice · ' || a.session_id,'Custom practice · ' || a.session_id) AND NOT EXISTS (SELECT 1 FROM prop_attempts b WHERE b.workspace_id=r.workspace_id AND b.resume_json->'replay_binding'->>'replay_session_id'=r.record_id))) WHERE r.workspace_id=$1 AND r.kind='replay' AND NOT v.deleted", &[&scope.workspace_id]).await.map_err(|_|ApiError::database())?;
+    let mut bindings = HashMap::new();
+    for row in identities {
+        let id: String = row.get("record_id");
+        let identity = json!({"session_kind":"prop","prop_session_id":row.get::<_,String>("session_id"),"prop_attempt_id":row.get::<_,String>("attempt_id")});
+        if bindings.get(&id).is_some_and(|previous| previous != &identity) { return Err(untrusted()); }
+        bindings.insert(id, identity);
+    }
+    for record in &mut records {
+        if let Some(identity) = bindings.get(record["record_id"].as_str().unwrap_or("")) {
+            record["payload"].as_object_mut().ok_or_else(untrusted)?.extend(identity.as_object().unwrap().clone());
+        }
+    }
     let items = records
         .iter()
         .map(|r| replay_catalog_item(r, &manifests))
@@ -721,8 +737,22 @@ mod tests {
         assert_eq!(item["dataset_available"], false);
         assert_eq!(item["instrument_id"], Value::Null);
         assert_eq!(item["dataset_ids"], json!(["a", "b"]));
-        assert_eq!(item.as_object().unwrap().len(), 21);
+        assert_eq!(item.as_object().unwrap().len(), 24);
+        assert_eq!(item["session_kind"], "backtest");
+        assert_eq!(item["prop_session_id"], Value::Null);
+        assert_eq!(item["prop_attempt_id"], Value::Null);
         assert!(item.get("execution").is_none());
+    }
+    #[test]
+    fn prop_identity_is_preserved_in_catalog() {
+        let mut raw = record();
+        raw["payload"]["session_kind"] = json!("prop");
+        raw["payload"]["prop_session_id"] = json!("prop-1");
+        raw["payload"]["prop_attempt_id"] = json!("attempt-1");
+        let item = replay_catalog_item(&raw, &HashMap::new()).unwrap();
+        assert_eq!(item["session_kind"], "prop");
+        assert_eq!(item["prop_session_id"], "prop-1");
+        assert_eq!(item["prop_attempt_id"], "attempt-1");
     }
     #[test]
     fn multi_asset_metadata_preserves_order_and_duplicates() {

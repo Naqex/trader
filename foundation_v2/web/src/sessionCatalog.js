@@ -102,6 +102,8 @@ export function sessionMutationError(error) {
 export function sessionNavigationHref(kind, workspace, query, item, overrides = {}) {
   return buildWorkspaceHref(kind, workspace, query, {
     select: '1', session: item?.record_id || null, dataset: item?.dataset_id || null,
+    prop_session: item?.prop_session_id || null, prop_attempt: item?.prop_attempt_id || null,
+    ...(kind === 'analytics' && item?.session_kind === 'prop' ? { analytics_source: 'prop', attempt: item.prop_attempt_id } : {}),
     cursor: null, cutoff: null, playbook: null, playbook_revision: null, mode: 'Practice', ...overrides,
   })
 }

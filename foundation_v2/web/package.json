@@ -8,7 +8,7 @@
     "test:notion-connector": "node --test tests/notionConnector.test.mjs",
     "test:learn-ui": "node run_learn_ui_acceptance.mjs",
     "test:settings-ui": "node run_settings_ui_acceptance.mjs",
-    "test:prop-ui": "node run_prop_ui_acceptance.mjs",
+    "test:prop-ui": "..\\.venv\\Scripts\\python.exe -B ..\\scripts\\prop_workflow_acceptance.py",
     "test:session-validation": "node --test tests/quick-session-validation.test.mjs",
     "test:trade-risk": "node --test tests/trade-risk-components.test.mjs"
   },

@@ -1,3 +1,4 @@
+import { createPropChartSession } from './propSessionCreation.js'
 import { navigate } from './clientNavigation.js'
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { useTestingLocale } from './testingLocale.jsx'
@@ -91,9 +92,6 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
     setSubmitted(true)
     if (Object.keys(validation).length) { focusFirstInvalid(event.currentTarget); return }
     if (mode === 'prop') {
-      // The full Prop workspace owns challenge creation and lifecycle state.
-      // Handoff the shared setup draft so this entry point remains one dialog
-      // without duplicating the prop API contract in the dashboard.
       const propStart = Number.isFinite(period.start)
         ? new Date(period.start * 1000).toISOString().slice(0, 16)
         : period.start instanceof Date
@@ -115,13 +113,15 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
           endUtc: period.end !== null ? new Date(period.end * 1000).toISOString().slice(0, 16) : '',
           durationDays: propDraft.durationDays,
       }
+      submitLock.current = true; setPending(true); setProblem(null)
       try {
-        sessionStorage.setItem(`wmreplay:prop-draft:${workspace}`, JSON.stringify(propHandoff))
-      } catch {
-        // A blocked sessionStorage should not prevent opening the canonical
-        // Prop workspace; it simply falls back to its defaults.
+        const { replay } = await createPropChartSession(workspace, propHandoff, data.items)
+        rememberSession(workspace, replay.record_id)
+        navigate(sessionNavigationHref('replay', workspace, query, replay, { select: null, surface: 'workspace' }))
+      } catch (error) {
+        setProblem({ text: error.message, uncertain: !error.status || error.status >= 500 })
+        submitLock.current = false; setPending(false)
       }
-      navigate(buildWorkspaceHref('testing', workspace, query, { prop_setup: '1', prop_draft: JSON.stringify(propHandoff) }))
       return
     }
     submitLock.current = true; setPending(true); setProblem(null)

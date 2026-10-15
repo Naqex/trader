@@ -144,7 +144,14 @@ class ReplayService:
 
     def create(self, workspace_id: str, dataset_id: str, start_index: int = 0, *, name=None,
                description="", starting_balance=None, playbook_id=None, playbook_revision=None,
-               chart_engine="legacy", dataset_ids=None, start_timestamp=None, end_timestamp=None) -> dict:
+               chart_engine="legacy", dataset_ids=None, start_timestamp=None, end_timestamp=None,
+               prop_session_id=None, prop_attempt_id=None) -> dict:
+        if bool(prop_session_id) != bool(prop_attempt_id):
+            raise ValueError('prop session and attempt must be supplied together')
+        if prop_session_id:
+            bundle = self.store.get_prop_resume_state(workspace_id, prop_session_id, prop_attempt_id)
+            if bundle is None:
+                raise ValueError('prop attempt not found in workspace')
         for value in (start_timestamp, end_timestamp):
             if value is not None and (isinstance(value, bool) or not isinstance(value, int) or value < 0):
                 raise ValueError('replay period requires nonnegative integer UTC timestamps')
@@ -153,6 +160,13 @@ class ReplayService:
         if start_timestamp is not None and end_timestamp is not None and end_timestamp <= start_timestamp:
             raise ValueError('end_timestamp must be after start_timestamp')
         manifest, timing = self._dataset_timing(workspace_id, dataset_id, index=start_index)
+        if prop_session_id:
+            if bundle['attempt'].data_version.removeprefix('sha256:') != manifest.artifact_sha256.removeprefix('sha256:'):
+                raise ValueError('prop replay dataset does not match the attempt')
+            if starting_balance is None:
+                starting_balance = bundle['phase'].initial_balance
+            elif Decimal(str(starting_balance)) != bundle['phase'].initial_balance:
+                raise ValueError('prop replay balance does not match the attempt')
         if chart_engine != "legacy":
             raise ValueError("chart engine is unavailable")
         if (playbook_id is None) != (playbook_revision is None):
@@ -180,6 +194,8 @@ class ReplayService:
             "chart_engine": chart_engine,
         }
         period_requested = start_timestamp is not None or end_timestamp is not None
+        if prop_session_id:
+            payload.update(session_kind='prop', prop_session_id=prop_session_id, prop_attempt_id=prop_attempt_id)
         if period_requested and (dataset_ids is None or len(dataset_ids) <= 1):
             cursor, period = self._single_period(workspace_id, dataset_id, timing, start_index, start_timestamp, end_timestamp)
             payload.update(cursor_index=cursor, session_period=period)
@@ -222,6 +238,7 @@ class ReplayService:
         """
 
         items: list[dict] = []
+        identities = self.store.replay_prop_identities(workspace_id) if hasattr(self.store, 'replay_prop_identities') else {}
         for record in self.store.list_records(workspace_id, "replay"):
             if not isinstance(record, dict):
                 raise RuntimeError("replay catalog record is invalid")
@@ -243,6 +260,7 @@ class ReplayService:
                 item = ReplaySessionCatalogItem(
                     record_id=record["record_id"],
                     name=payload.get("name", ""),
+                    **identities.get(record['record_id'], {key: payload[key] for key in ('session_kind', 'prop_session_id', 'prop_attempt_id') if key in payload}),
                     description=payload.get("description", ""),
                     archived=payload.get("archived", False),
                     revision=record["revision"],
@@ -278,6 +296,8 @@ class ReplayService:
             raise ValueError("only replay metadata can be updated")
         payload = dict(record["payload"])
         payload.update(changes)
+        if hasattr(self.store, 'replay_prop_identities'):
+            payload.update(self.store.replay_prop_identities(workspace_id, session_id).get(session_id, {}))
         return self._update_payload(workspace_id, session_id, expected_revision, payload)
 
     @staticmethod
@@ -569,6 +589,7 @@ class ReplayService:
             portfolio = {'portfolio_account': account(record['payload'])}
         return {
             **record,
+            **(self.store.replay_prop_identities(workspace_id, session_id).get(session_id, {}) if hasattr(self.store, 'replay_prop_identities') else {}),
             "dataset_sha256": manifest.artifact_sha256,
             "cutoff_timestamp": int(visible[-1]["timestamp"]),
             "visible_rows": visible,

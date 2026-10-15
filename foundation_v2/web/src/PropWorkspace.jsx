@@ -1,3 +1,5 @@
+import { createPropChartSession, openPropReplay } from './propSessionCreation.js'
+import { sessionNavigationHref } from './sessionCatalog.js'
 import { scopedMutation } from './scopedMutation.js'
 import ProjectDateInput from './ProjectDateInput.jsx'
 import { displayDate } from './dateFormat.js'
@@ -8,12 +10,6 @@ import NotionConnector from './NotionConnector.jsx'
 import './PropWorkspace.css'
 
 const TERMINAL_STATUSES = new Set(['completed_pass', 'failed_breach', 'expired', 'abandoned'])
-
-function utcIsoFromInput(value) {
-  const parsed = new Date(`${value}:00Z`)
-  if (Number.isNaN(parsed.getTime())) return null
-  return parsed.toISOString()
-}
 
 function formatPropMoney(value, currency = 'USD', locale = 'vi-VN') {
   if (value === null || value === undefined || value === '' || typeof value === 'boolean') return '—'
@@ -35,24 +31,6 @@ function formatPropUtc(value, locale = 'vi-VN') {
   const parsed = new Date(value)
   if (Number.isNaN(parsed.getTime())) return 'N/A'
   return displayDate(parsed, { timeStyle: 'short' })
-}
-
-function slugify(value) {
-  return String(value || '')
-    .trim()
-    .toLocaleLowerCase('vi')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 54)
-}
-
-async function sha256Text(value) {
-  const bytes = new TextEncoder().encode(value)
-  const digest = await window.crypto.subtle.digest('SHA-256', bytes)
-  return `sha256:${Array.from(new Uint8Array(digest), (item) => item.toString(16).padStart(2, '0')).join('')}`
 }
 
 function apiError(response, payload) {
@@ -341,130 +319,10 @@ export default function PropWorkspace({ workspace, query }) {
   const createSession = useCallback(async (event) => {
     event.preventDefault()
     setConflict(null)
-    const start = utcIsoFromInput(draft.startUtc)
-    const durationDays = Math.max(1, Number(draft.durationDays) || 1)
-    const initialCapital = Number(draft.initialCapital)
-    const targetPercent = Number(draft.targetPercent)
-    const dailyLoss = Number(draft.dailyLoss)
-    const overallLoss = Number(draft.overallLoss)
-    const base = slugify(draft.name)
-
-    const datasetItem = datasets.items.find(item => item.dataset_id === draft.datasetVersion.trim())
-    const datasetPin = datasetItem?.artifact_sha256 || datasetItem?.dataset_sha256 || draft.datasetVersion.trim()
-    if (!start || !base || !draft.datasetVersion.trim()) {
-      setConflict('Cần tên session, dataset version và thời điểm bắt đầu hợp lệ.')
-      return
-    }
-    if (![initialCapital, targetPercent, dailyLoss, overallLoss].every((value) => Number.isFinite(value) && value > 0)) {
-      setConflict('Vốn và các ngưỡng phải là số dương.')
-      return
-    }
-
     setPendingAction('create')
     try {
-      const profileId = `${draft.profileKind}-practice-v1`
-      const profileCore = {
-        contract_version: 'prop-session-v1',
-        profile_id: profileId,
-        terms_version: 'ui-practice-v1',
-        effective_from: start.slice(0, 10),
-        source_kind: draft.profileKind,
-        source_url: null,
-        supported_rule_flags: ['daily_loss', 'overall_drawdown', 'profit_target'],
-        phases: [{
-          phase_index: 1,
-          initial_capital: String(initialCapital),
-          currency: draft.currency.toUpperCase(),
-          profit_target: { threshold: { amount: null, percent: String(targetPercent), percent_base: 'initial_capital' }, basis: 'balance', comparator: 'gte' },
-          daily_loss: { threshold: { amount: String(dailyLoss), percent: null, percent_base: 'initial_capital' }, basis: 'equity', comparator: 'lt' },
-          overall_drawdown: {
-            threshold: { amount: String(overallLoss), percent: null, percent_base: 'initial_capital' },
-            basis: 'equity', comparator: 'lt', kind: 'static', trailing_granularity: null, lock_floor_at_initial: false,
-          },
-          reset_timezone: 'UTC',
-          reset_local_time: '00:00:00',
-          reset_order: 'fees_then_reset',
-          min_qualifying_days: 1,
-          max_calendar_days: durationDays,
-          carry_policy: 'reset',
-          position_policy: 'must_be_flat',
-        }],
-      }
-      const profileHash = await sha256Text(JSON.stringify(profileCore))
-      const profile = { ...profileCore, profile_hash: profileHash }
-      const suffix = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
-      const sessionId = `${base}-${suffix}`.slice(0, 96)
-      const attemptId = `attempt-${suffix}`
-      const cutoff = draft.endUtc ? utcIsoFromInput(draft.endUtc) : new Date(new Date(start).getTime() + durationDays * 86400000).toISOString()
-      const session = {
-        contract_version: 'prop-session-v1',
-        workspace_id: workspace,
-        session_id: sessionId,
-        mode: 'simulation',
-        session_type: 'challenge',
-        profile,
-        status: 'ready',
-        revision: 1,
-      }
-      const attempt = {
-        contract_version: 'prop-session-v1',
-        workspace_id: workspace,
-        session_id: sessionId,
-        attempt_id: attemptId,
-        mode: 'simulation',
-        profile_id: profile.profile_id,
-        terms_version: profile.terms_version,
-        profile_hash: profile.profile_hash,
-        // Prop/Replay binding is checked against the immutable artifact hash.
-        // Keep the dataset id in the form, but persist its hash as the pin.
-        data_version: datasetPin,
-        cost_version: 'replay-fixture-cost-v1',
-        engine_version: 'replay-v1',
-        status: 'ready',
-        revision: 1,
-        parent_attempt_id: null,
-        branch_kind: 'clean',
-        virtual_start_utc: start,
-        virtual_cutoff_utc: cutoff,
-      }
-      const phase = {
-        workspace_id: workspace,
-        session_id: sessionId,
-        attempt_id: attemptId,
-        profile_hash: profile.profile_hash,
-        phase_index: 1,
-        initial_balance: String(initialCapital),
-        balance: String(initialCapital),
-        floating_pl: '0',
-        equity: String(initialCapital),
-        high_water_mark: String(initialCapital),
-        daily_anchor: String(initialCapital),
-        qualifying_days: 0,
-        virtual_time_utc: start,
-        last_event_sequence: 0,
-        open_positions: 0,
-        pending_orders: 0,
-        evaluation_quality: 'full_for_declared_model',
-      }
-      const resumeState = {
-        cursor: { bar_index: 0, timestamp_utc: start },
-        open_positions: [],
-        pending_orders: [],
-        setup_metadata: {
-          dataset_ids: Array.isArray(draft.datasetVersions) && draft.datasetVersions.length ? draft.datasetVersions : [draft.datasetVersion],
-          strategy_id: draft.strategyId || '',
-          strategy_revision: Number.isInteger(draft.strategyRevision) ? draft.strategyRevision : null,
-          period_end_utc: draft.endUtc ? utcIsoFromInput(draft.endUtc) : null,
-        },
-      }
-
-      const bundle = await propJson('/api/v2/prop/session-bundles', workspace, {
-        method: 'POST',
-        body: JSON.stringify({ session, attempt, phase, resume_state: resumeState }),
-      })
-      const created = bundle.session
-      setSessions((current) => ({ status: 'ready', items: [...current.items, created], error: null }))
-      await openChallengeChart({ session: created, bundle })
+      const { replay } = await createPropChartSession(workspace, draft, datasets.items)
+      window.location.assign(sessionNavigationHref('replay', workspace, query, replay, { select: null, surface: 'workspace' }))
     } catch (error) {
       if (error.kind === 'conflict') setConflict(error.message)
       else if (error.kind === 'denied') setSessions({ status: 'denied', items: [], error: error.message })
@@ -618,37 +476,8 @@ export default function PropWorkspace({ workspace, query }) {
     setPendingAction('open-chart')
     setConflict(null)
     try {
-      const binding = bundle?.resume_state?.replay_binding || selected.report?.provenance?.replay_binding
-      let replaySessionId = binding?.replay_session_id
-      if (!replaySessionId) {
-        const startTimestamp = Date.parse(attempt.virtual_start_utc)
-      const metadata = bundle?.resume_state?.setup_metadata || {}
-      const datasetIds = Array.isArray(metadata.dataset_ids) && metadata.dataset_ids.length ? metadata.dataset_ids : []
-      const datasetItem = datasets.items.find(item => item.dataset_id === attempt.data_version || item.artifact_sha256 === attempt.data_version || item.dataset_sha256 === attempt.data_version || `sha256:${item.artifact_sha256}` === attempt.data_version || `sha256:${item.dataset_sha256}` === attempt.data_version)
-      const replayDatasetId = datasetIds[0] || datasetItem?.dataset_id || attempt.data_version
-      const periodEnd = metadata.period_end_utc ? Date.parse(metadata.period_end_utc) : NaN
-      const body = {
-          dataset_id: replayDatasetId,
-          ...(datasetIds.length ? { dataset_ids: datasetIds } : {}),
-          ...(Number.isFinite(startTimestamp) ? { start_timestamp: Math.floor(startTimestamp / 1000) } : { start_index: 0 }),
-          ...(Number.isFinite(periodEnd) && periodEnd > startTimestamp ? { end_timestamp: Math.floor(periodEnd / 1000) } : {}),
-          name: `${sessionLabel(session)} · ${session.session_id}`,
-          description: 'Prop firm challenge replay · simulation only',
-          starting_balance: phase.initial_balance,
-          ...(metadata.strategy_id && Number.isInteger(metadata.strategy_revision) ? { playbook_id: metadata.strategy_id, playbook_revision: metadata.strategy_revision } : {}),
-        }
-        let response = await scopedMutation('/api/v2/replay/sessions', workspace, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Workspace-Id': workspace }, body: JSON.stringify(body) })
-        let payload = await response.json().catch(() => ({}))
-        if (!response.ok && response.status === 422 && body.start_timestamp !== undefined) {
-          response = await scopedMutation('/api/v2/replay/sessions', workspace, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Workspace-Id': workspace }, body: JSON.stringify({ ...body, start_timestamp: undefined, start_index: 0 }) })
-          payload = await response.json().catch(() => ({}))
-        }
-        if (!response.ok) throw new Error(String(payload.detail || `HTTP ${response.status}`))
-        replaySessionId = payload.record_id
-      }
-      if (!replaySessionId) throw new Error('Không xác định được replay session cho challenge.')
-      const params = new URLSearchParams({ view: 'replay', surface: 'workspace', workspace, session: replaySessionId, prop_session: session.session_id, prop_attempt: attempt.attempt_id, mode: 'Practice', from: 'prop' })
-      window.location.assign(`/?${params.toString()}`)
+      const replay = await openPropReplay(workspace, { ...bundle, session }, datasets.items)
+      window.location.assign(sessionNavigationHref('replay', workspace, query, replay, { select: null, surface: 'workspace' }))
     } catch (error) {
       setConflict(`Không mở được chart challenge: ${error.message}`)
       setPendingAction('')

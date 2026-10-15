@@ -1,3 +1,4 @@
+import { sessionNavigationHref } from './sessionCatalog.js'
 import { navigate } from './clientNavigation.js'
 import { scopedMutation } from './scopedMutation.js'
 import { scopedRead } from './scopedRead.js'
@@ -475,6 +476,14 @@ export default function ReplayWorkspace({ workspace, query }) {
       const response = await scopedRead(`/api/v2/replay/sessions/${encodeURIComponent(targetSessionId)}${suffix}`, workspace, controller.signal)
       const payload = await readJson(response)
       if (controller.signal.aborted) return
+      const identity = { ...payload, ...payload.payload, record_id: payload.record_id, dataset_id: payload.payload.dataset_id }
+      const currentQuery = new URLSearchParams(window.location.search)
+      if ((payload.prop_session_id || payload.payload.prop_session_id || '') !== (currentQuery.get('prop_session') || '') || (payload.prop_attempt_id || payload.payload.prop_attempt_id || '') !== (currentQuery.get('prop_attempt') || '')) {
+        identity.prop_session_id = payload.prop_session_id || payload.payload.prop_session_id
+        identity.prop_attempt_id = payload.prop_attempt_id || payload.payload.prop_attempt_id
+        navigate(sessionNavigationHref('replay', workspace, currentQuery, identity, { select: null, surface: 'workspace' }), { replace: true })
+        return
+      }
       const viewCursor = Number(payload.view_cursor_index ?? payload.payload.cursor_index)
       rememberSession(payload.record_id, true, viewCursor, payload.payload?.dataset_id)
       setBranchCursor(payload.historical_view ? Math.max(0, viewCursor) : Math.max(0, viewCursor - 1))
@@ -1040,7 +1049,7 @@ export default function ReplayWorkspace({ workspace, query }) {
   const noDataset = datasetState.status === 'ready' && datasetState.items.length === 0
   const dataDeskHref = routeHref('data')
   const propAnalyticsHref = propMode ? routeHref('analytics', { analytics_source: 'prop', prop_session: propSessionId, attempt: propAttemptId, cursor: null, cutoff: null }) : null
-  const propRetryHref = propMode ? routeHref('testing', { session: null, cursor: null, cutoff: null, prop_session: null, prop_attempt: null, attempt: null, prop_setup: '1' }) : null
+  const propRetryHref = propMode ? routeHref('overview', { session: null, cursor: null, cutoff: null, prop_session: null, prop_attempt: null, attempt: null, create: 'prop' }) : null
 
   if (!replay && (state.status === 'loading' || requestedSession && state.status === 'idle')) return <ChartLoadingState viewport />
   if (!replay && state.status === 'error') return <main className="chart-read-failure replay-error">{[401, 403].includes(state.errorStatus) ? <TestingEmptyState kind="denied" /> : <TestingReadState error message={`${t('Không đọc được replay:')} ${t(state.error)}`} />}</main>
@@ -1053,7 +1062,7 @@ export default function ReplayWorkspace({ workspace, query }) {
         <div className="chart-indicators-command" ref={indicatorsRef}><button type="button" aria-expanded={indicatorsOpen} aria-controls={indicatorsOpen ? 'chart-indicators' : undefined} onClick={() => setIndicatorsOpen(current => !current)}>{t("Indicators")}</button>
           {indicatorsOpen && <div id="chart-indicators" className="chart-indicators-menu" onKeyDown={event => { if (event.key === 'Escape') { setIndicatorsOpen(false); event.currentTarget.previousElementSibling.focus() } }}><label><input type="checkbox" checked={showVolume} onChange={event => setShowVolume(event.target.checked)} />{t("Volume")}</label><label><input type="checkbox" checked={showAverage} onChange={event => setShowAverage(event.target.checked)} /> {t("SMA 20")}</label></div>}
         </div></>}
-        <a href={routeHref('analytics', { surface: 'workspace' })}><ChartIcon name="analytics" /><span>{t("Analytics")}</span></a>
+        <a href={propAnalyticsHref || routeHref('analytics', { surface: 'workspace' })}><ChartIcon name="analytics" /><span>{t("Analytics")}</span></a>
         <button type="button" ref={sideToggleRef} aria-expanded={sideOpen && sidePanel === 'context'} aria-controls="replay-context-panel" onClick={() => sideOpen && sidePanel === 'context' ? closeSide() : openPanel('context')}><ChartIcon name="info" /><span>{t("Chi tiết & nhánh")}</span></button>
         <span className="chart-session-name" title={replay.payload.name || sessionId}>{replay.payload.name || `${replayContext.instrument} · Replay`}</span>
         <span className={`chart-session-state ${historicalView || conflict ? 'is-warning' : ''}`} data-testid="replay-status">{statusLabel}</span>
@@ -1169,7 +1178,7 @@ export default function ReplayWorkspace({ workspace, query }) {
                   {advancedChart ? <LegacyReplayToolbar workspace={workspace} theme={theme} speed={speed} onSpeed={setSpeed}
                     interval={effectiveReplayInterval} datasetSeconds={datasetSeconds} sync={replaySync} syncAvailable={Boolean(nativeHeaderSlots)}
                     onSync={value => { setIsPlaying(false); setReplaySync(value) }} onInterval={value => { setIsPlaying(false); setReplaySync(false); setReplayInterval(value) }}
-                    busy={Boolean(pendingAction)} available={!conflict && state.status === 'ready'} canBack={cursor > 0 && !propMode} canForward={canReplayForward}
+                    busy={Boolean(pendingAction)} available={!conflict && state.status === 'ready'} forwardOnly={propMode} canBack={cursor > 0 && !propMode} canForward={canReplayForward}
                     playing={isPlaying} onPlay={toggleReplay} onBack={rewindReplay} onForward={() => advanceReplay()} selecting={selectingReplayBar}
                     onSelect={() => { setIsPlaying(false); setSelectingReplayBar(current => !current); setChartNotice(selectingReplayBar ? '' : 'Bấm một nến trước cutoff hiện tại để bắt đầu replay; Escape để hủy.') }} />
                     : <ChartFloatingToolbar name="Replay" compactRow={1} storageKey={`tw:chart:replay-toolbar:${workspace}`} initialPosition={{ x: 330, y: 46 }}>
@@ -1214,7 +1223,7 @@ export default function ReplayWorkspace({ workspace, query }) {
                 <div className="chart-bottom-status"><span className="status-dot" /> {t("Paper replay")} <strong>{replayContext.instrument}</strong></div>
               </div>
 
-              {advancedChart ? <LegacyTradingBar key={`${workspace}:${sessionId}`} workspace={workspace} sessionId={sessionId} order={order} quotes={quotes} onBeginOrder={beginOrder} analyticsHref={routeHref('analytics', { surface: 'workspace' })} propRulesAction={propMode ? { label: t('Prop Firm Rules'), onClick: () => setPropRulesOpen(true) } : null} symbol={replayContext.instrument} theme={theme} readStatus={<TestingResourceStatus state={state.status === 'loading' ? 'refreshing' : state.status === 'error' ? 'stale' : 'ready'} resource="phiên replay" detail={state.status === 'error' ? `${t('Không đọc được replay:')} ${t(state.error)} · ${t('Đang giữ cutoff {cutoff} UTC.', { cutoff: replay.cutoff_timestamp })}` : undefined} />} /> : <div className="chart-trading-bar" role="group" aria-label={t("Giao dịch mô phỏng")}>
+              {advancedChart ? <LegacyTradingBar key={`${workspace}:${sessionId}`} workspace={workspace} sessionId={sessionId} order={order} quotes={quotes} onBeginOrder={beginOrder} analyticsHref={propAnalyticsHref || routeHref('analytics', { surface: 'workspace' })} propRulesAction={propMode ? { label: t('Prop Firm Rules'), onClick: () => setPropRulesOpen(true) } : null} symbol={replayContext.instrument} theme={theme} readStatus={<TestingResourceStatus state={state.status === 'loading' ? 'refreshing' : state.status === 'error' ? 'stale' : 'ready'} resource="phiên replay" detail={state.status === 'error' ? `${t('Không đọc được replay:')} ${t(state.error)} · ${t('Đang giữ cutoff {cutoff} UTC.', { cutoff: replay.cutoff_timestamp })}` : undefined} />} /> : <div className="chart-trading-bar" role="group" aria-label={t("Giao dịch mô phỏng")}>
                 <div className="chart-trading-actions">
                   {['BUY', 'SELL'].map(side => <button key={side} type="button" className={side.toLowerCase()} disabled={order.disabled || Boolean(order.active)} onClick={() => beginOrder(side)} title={`${side === 'BUY' ? 'Ask' : 'Bid'} mô phỏng tại cutoff; fill ở nến kế tiếp`}>{side === 'BUY' ? t("Buy") : t("Sell")} <strong>{formatPrice(side === 'BUY' ? quotes.ask : quotes.bid)}</strong></button>)}
                   <label>{t("Size")}<input aria-label={t("Khối lượng nhanh")} type="number" min={order.instrument?.quantity_min || '0'} step={order.instrument?.quantity_step || 'any'} value={order.draft.quantity} disabled={order.disabled || Boolean(order.active)} onChange={event => order.setDraft(current => ({ ...current, quantity: event.target.value }))} /></label>
@@ -1297,7 +1306,7 @@ export default function ReplayWorkspace({ workspace, query }) {
                   {annotationDraft?.status !== 'ready' && annotationDraft?.message && <span>{annotationDraft.message}</span>}
                 </div>}
                 <a className="next-action-link" href={journalHref}>{t("Mở Journal cho cutoff này →")}</a>
-                <a className="next-action-link" href={routeHref('analytics', { surface: 'workspace' })}>{t("Analytics của session →")}</a>
+                <a className="next-action-link" href={propAnalyticsHref || routeHref('analytics', { surface: 'workspace' })}>{t("Analytics của session →")}</a>
               </section>
               </div>}
               {sidePanel === 'objects' && <>{advancedChart && <p className="chart-native-objects-hint">{t("Ghi chú workspace được giữ ở đây. Hình vẽ mới nằm trong cây đối tượng của chart.")}</p>}<ReplayObjects drawings={drawings} /></>}

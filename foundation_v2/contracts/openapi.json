@@ -8162,6 +8162,32 @@
             "const": "legacy",
             "title": "Chart Engine",
             "default": "legacy"
+          },
+          "prop_session_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prop Session Id"
+          },
+          "prop_attempt_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prop Attempt Id"
           }
         },
         "additionalProperties": false,
@@ -8560,6 +8586,37 @@
             "maxLength": 160,
             "title": "Name",
             "default": ""
+          },
+          "session_kind": {
+            "type": "string",
+            "enum": [
+              "backtest",
+              "prop"
+            ],
+            "title": "Session Kind",
+            "default": "backtest"
+          },
+          "prop_session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prop Session Id"
+          },
+          "prop_attempt_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prop Attempt Id"
           },
           "description": {
             "type": "string",

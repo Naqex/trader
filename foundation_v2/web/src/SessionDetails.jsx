@@ -1,6 +1,7 @@
 import { useTestingLocale } from './testingLocale.jsx'
 import { useEffect, useState } from 'react'
 import { FilterIcon } from './FxSelect.jsx'
+import SessionKindBadge from './SessionKindBadge.jsx'
 
 import { sessionDate as formatSessionDate, sessionRemainingDays, sessionSettingsFacts } from './sessionSettingsModel.js'
 import './session-performance.css'
@@ -22,7 +23,7 @@ export function SessionSummaryCard({ item, dataset, payload, model, replayRecord
   const days = sessionRemainingDays(dataset, payload, replayRecord)
   const remaining = Number.isInteger(item.row_count) && Number.isInteger(item.cursor_index) ? Math.max(0, item.row_count - item.cursor_index - 1) : null
   return <article className="fxr-session-card fxr-session-summary-card">
-    <div className="fxs-summary-heading"><h2>{item.name || item.record_id}</h2><div className="fxs-balance"><span>{t("Account balance")}</span><strong title={!facts.currency ? t('Chưa rõ đơn vị tiền tệ') : undefined}>{dashboardMoney(facts.balance, facts.currency)}</strong></div></div>
+    <div className="fxs-summary-heading"><h2>{item.name || item.record_id}<SessionKindBadge item={item} /></h2><div className="fxs-balance"><span>{t("Account balance")}</span><strong title={!facts.currency ? t('Chưa rõ đơn vị tiền tệ') : undefined}>{dashboardMoney(facts.balance, facts.currency)}</strong></div></div>
     <p>{facts.strategy === 'Chưa gắn strategy' ? t(facts.strategy) : facts.strategy} · {facts.asset}</p>
     <p className="fxs-session-range">{sessionDate(facts.first)} – {sessionDate(facts.last)} <span className="fxs-remaining">{days !== null ? t("{count} ngày còn lại", { count: days.toLocaleString(locale) }) : remaining !== null ? t("{count} nến còn lại", { count: remaining.toLocaleString(locale) }) : t("Chưa rõ thời gian còn lại")}</span></p>
     <div className="fxr-session-links">{(preview || !item.archived && item.dataset_available === true) && <SessionChartLink href={chartHref} preview={preview} />}</div>

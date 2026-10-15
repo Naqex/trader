@@ -12,6 +12,7 @@ import SessionSettingsDrawer from './SessionSettingsDrawer.jsx'
 import { SessionSummaryCard, SessionDescriptionCard } from './SessionDetails.jsx'
 import FxSelect from './FxSelect.jsx'
 import TestingIcon from './TestingIcon.jsx'
+import SessionKindBadge from './SessionKindBadge.jsx'
 import { TestingEmptyState, TestingPageSkeleton, TestingResourceStatus } from './TestingPageState.jsx'
 import QuickSessionDialog from './QuickSessionDialog.jsx'
 import useReadRefresh from './useReadRefresh.js'
@@ -50,9 +51,9 @@ export function SessionSelect({ selected, catalog, onSelect, disabled, balance }
   const item = catalog.items.find((entry) => entry.record_id === selected)
   return <div className="fxr-session-control">
     <span className="fxs-select-label">{t("Chọn phiên")}</span>
-    <FxSelect className="is-rich" label={t("Chọn phiên replay")} value={selected} onChange={onSelect} disabled={disabled || catalog.status !== 'ready'} searchable placeholder={t("Tìm phiên, asset…")} triggerContent={item ? <><strong>{item.name || item.record_id}</strong><small>{unknownValue(item.instrument_id)} · {timeframeLabel(item)}</small><small>{t("Account balance")}: {balance}</small><small>{t("Ngày tạo")}: {createdLabel(item)} {t("· UTC")}</small></> : null} options={[
+    <FxSelect className="is-rich" label={t("Chọn phiên replay")} value={selected} onChange={onSelect} disabled={disabled || catalog.status !== 'ready'} searchable placeholder={t("Tìm phiên, asset…")} triggerContent={item ? <><strong>{item.name || item.record_id}<SessionKindBadge item={item} /></strong><small>{unknownValue(item.instrument_id)} · {timeframeLabel(item)}</small><small>{t("Account balance")}: {balance}</small><small>{t("Ngày tạo")}: {createdLabel(item)} {t("· UTC")}</small></> : null} options={[
       ...(selected && !item ? [{ value: selected, label: selected, disabled: true, detail: 'Không có trong danh mục' }] : []),
-      ...options.map(entry => ({ value: entry.record_id, label: entry.name || entry.record_id, localize: false, detail: `${unknownValue(entry.instrument_id)} · ${timeframeLabel(entry)}${entry.archived ? ` · ${t('Đã lưu trữ')}` : ''}` })),
+      ...options.map(entry => ({ value: entry.record_id, label: entry.name || entry.record_id, localize: false, detail: `${entry.session_kind === 'prop' ? 'Prop Firm' : 'Backtest'} · ${unknownValue(entry.instrument_id)} · ${timeframeLabel(entry)}${entry.archived ? ` · ${t('Đã lưu trữ')}` : ''}` })),
     ]} />
   </div>
 }
@@ -88,7 +89,7 @@ export default function SessionPicker({ kind = 'replay', workspace = 'tenant-a',
   const performanceModel = useMemo(() => performance.payload?.analytics_available === true ? buildAnalyticsModel(analyticsViewResult(performance.payload)) : null, [performance.payload])
   const balanceFacts = item ? sessionSettingsFacts(item, dataset, performance.payload, performanceModel, replayRecord) : null
   const selectedQuery = useMemo(() => item ? sessionAnalyticsQuery(new URLSearchParams(window.location.search), item, { summary: kind === 'replay' }) : query, [item, kind, query])
-  const newHref = buildWorkspaceHref('replay', workspace, query, { surface: 'workspace', fresh: '1', session: null, dataset: null, cursor: null, cutoff: null, playbook: null, playbook_revision: null })
+  const newHref = buildWorkspaceHref('overview', workspace, query, { create: 'backtest', session: null, dataset: null, cursor: null, cutoff: null })
   const catalogRecovery = useReadRefresh(() => setReloadToken(value => value + 1), !pending, {
     workspace, resources: ['sessions', 'datasets'], scopeKey: workspace,
     error: catalog.readError, pending: catalog.status === 'loading' || Boolean(catalog.refreshing),

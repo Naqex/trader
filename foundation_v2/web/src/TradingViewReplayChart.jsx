@@ -7,7 +7,6 @@ import { createReplayChartWindowReader } from './replayChartWindow.js'
 import { readChartSnapshot, writeChartSnapshot } from './advancedChartStorage.js'
 import { createChartSave } from './advancedChartSave.js'
 import ChartLoadingState from './ChartLoadingState.jsx'
-import { TestingResourceStatus } from './TestingPageState.jsx'
 
 let libraryPromise
 const volumeAppearance = theme => {
@@ -127,7 +126,7 @@ export default function TradingViewReplayChart(props) {
         auto_save_delay: 1,
         enabled_features: ['seconds_resolution', 'items_favoriting'],
         // v23's sampled analytics assumes an http document URL and fails on srcdoc.
-        disabled_features: ['14851', 'create_volume_indicator_by_default', 'header_symbol_search', 'symbol_search_hot_key', 'compare_symbol', 'header_compare', 'header_saveload', 'use_localstorage_for_settings', 'header_screenshot', 'header_fullscreen_button', 'widget_logo'],
+        disabled_features: ['14851', 'create_volume_indicator_by_default', 'main_series_scale_menu', 'header_symbol_search', 'symbol_search_hot_key', 'compare_symbol', 'header_compare', 'header_saveload', 'use_localstorage_for_settings', 'header_screenshot', 'header_fullscreen_button', 'widget_logo'],
         overrides: paneAppearance(theme),
         studies_overrides: Object.fromEntries(Object.entries(volumeAppearance(theme)).map(([key, value]) => [`volume.${key}`, value])),
       })
@@ -375,6 +374,6 @@ export default function TradingViewReplayChart(props) {
     <div ref={host} className="advanced-chart-host" inert={status !== 'ready'} aria-hidden={status !== 'ready' ? true : undefined} />
     {status === 'loading' && <ChartLoadingState />}
     {status === 'error' && <div className="advanced-chart-message" role="alert">{t(message)} <a href={fallbackUrl.href}>{t("Mở chart dự phòng")}</a></div>}
-    {status === 'ready' && <span className="advanced-chart-save-status"><TestingResourceStatus state={layoutStatus === 'error' ? 'stale' : layoutStatus === 'saving' ? 'refreshing' : layoutStatus === 'dirty' ? 'partial' : 'ready'} resource="chart" detail={message ? t(message) : undefined} />{layoutStatus === 'error' && <span className="sr-only" role="alert">{t(message)}</span>}</span>}
+    {status === 'ready' && layoutStatus === 'error' && <div className="advanced-chart-message" role="alert">{t(message)}</div>}
   </div>
 }

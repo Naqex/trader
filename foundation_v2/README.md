@@ -66,6 +66,21 @@ This foundation does not enable live execution, read holdout data or deploy to
 cloud. Existing root launch scripts still start Flask legacy; they do not launch
 PATH-2. Follow the root README when developing this foundation.
 
+Prop Firm and backtest sessions share the quick-session dialog and chart shell.
+The dialog's name is stored verbatim (apart from surrounding whitespace); IDs
+and profile names are not display names. Prop replay records persist
+`session_kind`, `prop_session_id` and `prop_attempt_id` before chart execution
+starts. Catalog, Dashboard and replay reads expose this identity, so resuming
+or opening a bare replay URL restores the same attempt. Existing records use
+their persisted replay binding, with an exact legacy generated-name match only
+for unbound first attempts. Renaming those records preserves the identity.
+Old `view=testing`/`view=prop` setup links open the shared dialog.
+
+From `foundation_v2/web`, `npm run test:prop-ui` checks creation, catalog badges,
+Play, reload, bare links and backtest separation against disposable PostgreSQL,
+the real Axum/Python runtime and a browser. It replaces the previous technical
+workspace fixture as the creation-flow acceptance entrypoint.
+
 ## Offline instrument catalog
 
 The local imported-history launcher configures the public, keyless Dukascopy

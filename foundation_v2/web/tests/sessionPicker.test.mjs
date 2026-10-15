@@ -4,6 +4,21 @@ import { defaultSession, deleteSession, duplicateSession, fetchReplaySessions, n
 
 const item = { record_id: 'session-2', revision: 7, dataset_id: 'dataset-2', cursor_index: 12 }
 
+test('Prop session links retain exact attempt and backtest links clear previous Prop context', () => {
+  const prop = { ...item, name: 'TEST02', session_kind: 'prop', prop_session_id: 'challenge-2', prop_attempt_id: 'attempt-2' }
+  const source = new URLSearchParams('prop_session=old&prop_attempt=old&attempt=old&cursor=400&cutoff=100&create=prop')
+  for (const view of ['replay', 'analytics', 'trade']) {
+    const target = new URL(sessionNavigationHref(view, 'tenant-a', source, prop), 'http://localhost')
+    assert.equal(target.searchParams.get('session'), item.record_id)
+    assert.equal(target.searchParams.get('prop_session'), 'challenge-2')
+    assert.equal(target.searchParams.get('prop_attempt'), 'attempt-2')
+    assert.equal(target.searchParams.has('cursor'), false)
+    if (view === 'analytics') assert.equal(target.searchParams.get('attempt'), 'attempt-2')
+    const backtest = new URL(sessionNavigationHref(view, 'tenant-a', target.searchParams, item), 'http://localhost')
+    for (const key of ['prop_session', 'prop_attempt', 'attempt', 'analytics_source', 'create']) assert.equal(backtest.searchParams.has(key), false)
+  }
+})
+
 test('Sessions prefer explicit deep link, valid recently run session, then newest creation', () => {
   const items = [{ record_id: 'old', created_at_utc: '2024-01-01', updated_at_utc: '2026-01-01' }, { record_id: 'new', created_at_utc: '2025-01-01' }, { record_id: 'archived', archived: true, created_at_utc: '2026-01-01' }]
   assert.equal(defaultSession(items, '', 'old'), 'old')

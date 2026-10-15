@@ -2644,6 +2644,33 @@ class PostgresStore:
             "duplicate": duplicate,
         }
 
+    def replay_prop_identities(self, workspace_id: str, replay_id: str | None = None) -> dict:
+        # Old UI sessions only wrote the generated name until execution began.
+        # Match that exact legacy format, never infer kind from a user's name prefix.
+        with self.connect() as conn:
+            rows = conn.execute("""
+                SELECT r.record_id, a.session_id, a.attempt_id
+                FROM workspace_records r
+                JOIN workspace_record_revisions v ON v.workspace_id=r.workspace_id
+                  AND v.kind=r.kind AND v.record_id=r.record_id AND v.revision=r.current_revision
+                JOIN prop_attempts a ON a.workspace_id=r.workspace_id AND (
+                  (v.payload_json->>'prop_session_id'=a.session_id AND v.payload_json->>'prop_attempt_id'=a.attempt_id)
+                  OR a.resume_json->'replay_binding'->>'replay_session_id'=r.record_id
+                  OR (v.payload_json->>'prop_session_id' IS NULL AND a.snapshot_json->>'parent_attempt_id' IS NULL
+                    AND v.payload_json->>'name' IN ('Generic practice · ' || a.session_id, 'Custom practice · ' || a.session_id)
+                    AND NOT EXISTS (SELECT 1 FROM prop_attempts b WHERE b.workspace_id=r.workspace_id
+                      AND b.resume_json->'replay_binding'->>'replay_session_id'=r.record_id)))
+                WHERE r.workspace_id=%s AND r.kind='replay' AND NOT v.deleted
+                  AND (%s::text IS NULL OR r.record_id=%s)
+                """, (workspace_id, replay_id, replay_id)).fetchall()
+        result = {}
+        for row in rows:
+            identity = {'session_kind': 'prop', 'prop_session_id': row['session_id'], 'prop_attempt_id': row['attempt_id']}
+            if row['record_id'] in result and result[row['record_id']] != identity:
+                raise RuntimeError('ambiguous prop replay identity')
+            result[row['record_id']] = identity
+        return result
+
     def get_prop_attempt(
         self,
         workspace_id: str,

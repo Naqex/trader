@@ -45,7 +45,7 @@ export default function DashboardSessions({ workspace, query, preview = null }) 
   // Keep the creation surface in one dialog, while remembering which tab the
   // quick action should open. This lets Prop Firm reuse the backtest setup
   // shell instead of sending the user to a separate wizard immediately.
-  const [creating, setCreating] = useState(null)
+  const [creating, setCreating] = useState(() => ['prop', 'backtest'].includes(query.get('create')) ? query.get('create') : null)
   const uncertainDelete = useRef(null)
   const cleanDeletedScope = item => {
     if (readLastSession(workspace) === item.record_id) rememberSession(workspace, '')

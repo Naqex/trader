@@ -1,7 +1,6 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useSyncExternalStore } from 'react'
 import { createRoot } from 'react-dom/client'
 const LearnWorkspace = lazy(() => import('./LearnWorkspace.jsx'))
-const PropWorkspace = lazy(() => import('./PropWorkspace.jsx'))
 const PropAnalytics = lazy(() => import('./PropAnalytics.jsx'))
 const ReplayWorkspace = lazy(() => import('./ReplayWorkspace.jsx'))
 import FxReplayShell from './FxReplayShell.jsx'
@@ -64,6 +63,9 @@ function App() {
   }, [performanceEnabled])
   const workspace = query.get('workspace') || 'tenant-a'
   const requestedView = query.get('view')
+  useLayoutEffect(() => {
+    if (requestedView === 'testing' || requestedView === 'prop') navigate(buildWorkspaceHref('overview', workspace, query, { create: 'prop', session: null, dataset: null, cursor: null, cutoff: null }), { replace: true })
+  }, [requestedView, workspace])
   // Preserve deep links emitted by the research/learn flows while keeping a bare root on the overview.
   const activeView = requestedView === 'data' ? 'market-data' : requestedView || (query.has('job') ? 'research' : query.has('session') || query.has('dataset') ? 'replay' : 'overview')
   if (activeView === 'market-data') {
@@ -89,7 +91,7 @@ function App() {
     content = <LearnWorkspace workspace={workspace} query={query} />
     mode = 'Read only'
   } else if (isProp) {
-    content = <PropWorkspace workspace={workspace} query={query} />
+    content = <TestingPageSkeleton view="overview" />
     mode = 'Practice'
   } else if (activeView === 'replay') {
     content = showSessionPicker ? <SessionPicker kind="replay" workspace={workspace} query={query} /> : <ReplayWorkspace workspace={workspace} query={query} />
