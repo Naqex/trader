@@ -104,6 +104,8 @@ try {
     const field = dialog.getByRole('spinbutton', { name: 'Khối lượng lệnh', exact: true })
     assert.equal(await field.evaluate(node => getComputedStyle(node).borderRadius), '8px')
     assert.equal(await field.evaluate(node => getComputedStyle(node).height), width <= 600 ? '44px' : '36px')
+    const orderCancel = dialog.getByRole('button', { name: 'Hủy', exact: true })
+    assert.equal(await orderCancel.evaluate(node => getComputedStyle(node).backgroundColor), cancelBase, 'order and scalper cancel actions share the control surface')
     assert.equal(await dialog.locator('.legacy-order-save').evaluate(node => getComputedStyle(node).backgroundColor), scalperSaveBackground, 'order and scalper save actions share the action surface')
     if (width > 600) assert.equal(await dialog.locator('footer').evaluate(node => {
       const label = node.querySelector('label')?.getBoundingClientRect()
