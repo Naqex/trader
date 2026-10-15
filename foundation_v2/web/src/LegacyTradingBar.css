@@ -24,24 +24,25 @@
 .is-legacy-chart .chart-trading-account .legacy-prop-rules-link { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; gap: 6px; width: auto; height: 32px; min-height: 32px; padding-inline: 10px; border: 1px solid var(--chart-line); border-radius: var(--ds-radius-pill); white-space: nowrap; font-size: var(--ds-font-meta); color: var(--chart-text); }
 .legacy-trading-bar .legacy-prop-rules-link:hover:not(:disabled) { color: var(--chart-text); background: var(--chart-hover); }
 .legacy-trading-bar .chart-trading-account button:hover { background: var(--chart-hover); color: var(--chart-text); }
-.legacy-resizable-positions { position:relative; z-index:19; min-height: 0; overflow: visible; }
+.legacy-resizable-positions { position:relative; z-index:19; min-height: 0; overflow: clip; }
+.legacy-resizable-positions[hidden] { display:none; }
+.legacy-trading-workspace.is-resizing { user-select:none; cursor:ns-resize; }
+.replay-main:has(.legacy-trading-workspace.is-resizing) .chart-frame { pointer-events:none; }
 .legacy-resizable-positions .legacy-positions { height: 100%; max-height: none; display: flex; flex-direction: column; overflow: visible; }
 .legacy-resizable-positions .legacy-position-tabs { flex: 0 0 auto; }
 .legacy-resizable-positions [role=tabpanel] { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .legacy-resizable-positions .legacy-position-scroll { flex: 1; min-height: 0; overflow: auto; }
 .legacy-resizable-positions .legacy-position-paging { flex: 0 0 auto; }
-.legacy-trading-workspace.is-expanded { position: relative; }
+.legacy-trading-workspace.is-expanded { position: relative; z-index:26; }
 .legacy-trading-workspace.is-expanded > .legacy-trading-bar,
 .legacy-trading-workspace.is-expanded > .legacy-resizable-positions { position: absolute; left: 0; right: 0; z-index: 18; background: var(--chart-bg); }
 .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-trading-workspace.is-expanded > .legacy-trading-bar { position: absolute; bottom: var(--positions-height); }
 .legacy-trading-workspace.is-expanded > .legacy-resizable-positions { bottom: 0; }
 .legacy-trading-workspace.is-expanded > .legacy-resizable-positions { z-index:19; }
 .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .replay-main:has(.legacy-trading-workspace.is-maximized) { position: relative; }
-.legacy-trading-workspace.is-maximized { position: absolute; inset: 0; z-index: 18; display: flex; flex-direction: column; background: var(--chart-bg); }
+.legacy-trading-workspace.is-maximized { position: absolute; inset: 0; z-index: 26; display: flex; flex-direction: column; background: var(--chart-bg); }
 .legacy-trading-workspace.is-maximized .legacy-resizable-positions { flex: 1; }
 .legacy-trading-workspace.is-maximized .legacy-trading-bar { flex: 0 0 auto; }
-/* The floating chart controls must not cover tabs or rows in the expanded table. */
-.is-legacy-chart .replay-main:has(.legacy-trading-workspace:is(.is-maximized,.is-expanded)) .legacy-replay-toolbar { visibility:hidden; }
 .legacy-account-details { display: grid; gap: 16px; margin: 0; padding: 14px 16px; font-size: 12px; }
 .legacy-account-details > div { display: flex; justify-content: space-between; gap: 20px; }
 .legacy-account-details dt { color: var(--menu-muted); }
@@ -80,8 +81,10 @@
   .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-trading-bar { gap: 5px; padding-inline: 8px; }
   .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-trading-bar .chart-trading-actions { width: auto; flex: 1; justify-content: flex-start; gap: 6px; }
   .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-trading-bar .legacy-positions-grip { flex: 0 0 32px; }
-  .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-trading-bar .chart-trading-account { width: 100%; flex: 0 0 100%; flex-wrap: nowrap; justify-content: flex-end; gap: 3px; }
+  .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-trading-bar .chart-trading-account { width: 100%; flex: 0 0 100%; flex-wrap: wrap; justify-content: flex-end; gap: 3px; }
   .legacy-trading-bar .legacy-quantity-control { width: 105px; }
-  .legacy-trading-bar .legacy-analytics-link { margin-right: auto; }
-  .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-trading-bar .legacy-balance-pill { padding-inline: 8px; }
+  .legacy-trading-bar .legacy-analytics-link { margin-right:auto; width:32px; padding:0; flex:0 0 32px; }
+  .legacy-trading-bar .legacy-analytics-link span { display:none; }
+  .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-trading-bar .legacy-prop-rules-link { padding-inline:6px; gap:4px; font-size:12px; }
+  .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-trading-bar .legacy-balance-pill { padding-inline:6px; gap:6px; }
 }

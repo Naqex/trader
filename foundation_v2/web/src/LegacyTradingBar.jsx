@@ -12,6 +12,7 @@ export default function LegacyTradingBar({ order, quotes, onBeginOrder, analytic
   const { t, fmt } = useTestingLocale()
   const [positionsOpen, setPositionsOpen] = useState(false), [maximized, setMaximized] = useState(false), [height, setHeight] = useState(260)
   const [overflowReserve, setOverflowReserve] = useState(null)
+  const [resizing, setResizing] = useState(false)
   const [balanceAnchor, setBalanceAnchor] = useState(null)
   const storageKey = `tw:legacy-scalper:v1:${workspace}:${sessionId}`
   const [preset, setPreset] = useState(() => {
@@ -23,8 +24,9 @@ export default function LegacyTradingBar({ order, quotes, onBeginOrder, analytic
   }), [draft, setDraft] = useState(defaultScalperPreset), [scalperAnchor, setScalperAnchor] = useState(null), [error, setError] = useState('')
   const workspaceRef = useRef(null), drag = useRef(null), hideBalance = useRef(null)
   const resizeFrame = useRef(null), pendingResize = useRef(null)
+  const restoredHeight = useRef(260)
   const positionsLayout = useRef(null)
-  positionsLayout.current = { open: positionsOpen, maximized, height }
+  positionsLayout.current = { open: positionsOpen, maximized, height, overflowReserve }
   useEffect(() => () => { clearTimeout(hideBalance.current); cancelAnimationFrame(resizeFrame.current) }, [])
   useEffect(() => { try { localStorage.setItem(storageKey, JSON.stringify(preset)) } catch { /* The confirmation flow works without browser storage. */ } }, [storageKey, preset])
   const execution = order.execution, account = order.account, disabled = order.disabled || Boolean(order.active), currency = execution?.cost_model?.account_ccy || order.configuredCurrency || order.costs?.account_ccy
@@ -55,20 +57,28 @@ export default function LegacyTradingBar({ order, quotes, onBeginOrder, analytic
     const barHeight = workspaceRef.current?.querySelector('.legacy-trading-bar')?.offsetHeight || 48
     const chart = main?.querySelector('.chart-frame')
     const chartMinimum = chart ? parseFloat(getComputedStyle(chart).minHeight) || 240 : 240
-    return { normal: Math.max(0, available - barHeight - chartMinimum - 2), full: available - barHeight, barHeight }
+    return { normal: Math.max(0, Math.floor(available - barHeight - chartMinimum)), full: Math.max(0, Math.floor(available - barHeight)), barHeight, width: main?.clientWidth, reserve: available - (chart?.offsetHeight || available) }
   }
-  const resize = (value, bounds = resizeBounds()) => {
-    if (value >= bounds.full) { setPositionsOpen(true); setMaximized(true); return }
-    const next = Math.max(0, value)
+  const resize = (value, bounds = resizeBounds(), preview = false) => {
+    const clamped = Math.round(Math.max(0, Math.min(value, bounds.full)))
+    const next = !preview && clamped < 48 ? 0 : clamped
+    if (!preview && next > 0 && next >= bounds.full) { setPositionsOpen(true); setMaximized(true); return }
     // Keep the native chart at its minimum size while the table slides over it.
     setOverflowReserve(next > bounds.normal ? bounds.normal + bounds.barHeight : null)
     setMaximized(false)
-    setPositionsOpen(next > 48); if (next > 48) setHeight(Math.max(260, next))
+    setPositionsOpen(next > 0); if (next > 0) setHeight(next)
+    if (!preview && next > 0) restoredHeight.current = next
   }
   const finishResize = commit => {
+    const gesture = drag.current
+    if (!gesture) return
     cancelAnimationFrame(resizeFrame.current); resizeFrame.current = null
-    if (commit && drag.current?.value !== undefined) resize(drag.current.value)
-    else if (drag.current && positionsLayout.current.open && !positionsLayout.current.maximized) resize(positionsLayout.current.height)
+    if (commit && gesture.value !== undefined) resize(gesture.value)
+    else {
+      const layout = gesture.layout
+      setPositionsOpen(layout.open); setHeight(layout.height); setMaximized(layout.maximized); setOverflowReserve(layout.overflowReserve)
+    }
+    setResizing(false)
     pendingResize.current = null; drag.current = null
   }
   useEffect(() => {
@@ -76,15 +86,21 @@ export default function LegacyTradingBar({ order, quotes, onBeginOrder, analytic
     if (!main) return
     const observer = new ResizeObserver(() => {
       const layout = positionsLayout.current
-      if (drag.current || !layout.open || layout.maximized) return
+      if (drag.current) { if (main.clientWidth !== drag.current.bounds.width || Math.round(main.clientHeight) !== drag.current.bounds.full + drag.current.bounds.barHeight) finishResize(false); return }
+      if (!layout.open || layout.maximized) return
       resize(layout.height)
     })
     observer.observe(main)
-    return () => observer.disconnect()
+    const cancel = () => finishResize(false)
+    window.addEventListener('blur', cancel)
+    return () => { observer.disconnect(); window.removeEventListener('blur', cancel) }
   }, [])
   const dismissBalance = () => { hideBalance.current = setTimeout(() => setBalanceAnchor(null), 160) }
   const showBalance = anchor => { clearTimeout(hideBalance.current); setBalanceAnchor(anchor) }
-  return <div ref={workspaceRef} className={`legacy-trading-workspace ${maximized ? 'is-maximized' : positionsOpen && overflowReserve !== null ? 'is-expanded' : ''}`} style={!maximized && positionsOpen && overflowReserve !== null ? { height: overflowReserve, '--positions-height': `${height}px` } : undefined}>
+  // During a gesture only the table moves over the chart. Resize the native
+  // canvas once on release instead of redrawing it on every pointer frame.
+  const overlay = resizing || (!maximized && positionsOpen && overflowReserve !== null)
+  return <div ref={workspaceRef} className={`legacy-trading-workspace ${resizing ? 'is-resizing' : ''} ${overlay ? 'is-expanded' : maximized ? 'is-maximized' : ''}`} style={overlay ? { height: resizing ? drag.current?.bounds.reserve : overflowReserve, '--positions-height': `${positionsOpen ? height : 0}px` } : undefined}>
     <div className="chart-trading-bar legacy-trading-bar" role="group" aria-label={t('Giao dịch mô phỏng')}>
       <div className="chart-trading-actions">
         {['BUY', 'SELL'].map(side => <button key={side} type="button" className={side.toLowerCase()} disabled={disabled} onClick={() => openOrder(side)} title={t('Mở lệnh mô phỏng để xác nhận')}>{t(side === 'BUY' ? 'Buy' : 'Sell')}</button>)}
@@ -100,38 +116,49 @@ export default function LegacyTradingBar({ order, quotes, onBeginOrder, analytic
       </div>
       <button type="button" className="legacy-positions-grip" aria-label={t('Kéo để chỉnh chiều cao danh sách lệnh')} title={t('Kéo để chỉnh chiều cao danh sách lệnh')} aria-expanded={positionsOpen}
         onPointerDown={event => {
-          if (event.button !== 0) return
+          if (event.button !== 0 || !event.isPrimary || drag.current) return
           event.currentTarget.setPointerCapture(event.pointerId)
+          event.currentTarget.focus({ preventScroll: true })
           const bounds = resizeBounds()
-          drag.current = { y: event.clientY, height: maximized ? bounds.full : positionsOpen ? height : 0, bounds }
+          drag.current = { y: event.clientY, height: maximized ? bounds.full : positionsOpen ? height : 0, bounds, layout: { ...positionsLayout.current } }
+          if (maximized) setHeight(bounds.full)
+          setResizing(true)
           event.preventDefault()
         }}
         onPointerMove={event => {
-          if (!drag.current || Math.abs(drag.current.y - event.clientY) <= 3) return
+          if (!drag.current || (drag.current.value === undefined && Math.abs(drag.current.y - event.clientY) <= 3)) return
           drag.current.value = drag.current.height + drag.current.y - event.clientY
           pendingResize.current = { value: drag.current.value }
           if (resizeFrame.current !== null) return
           resizeFrame.current = requestAnimationFrame(() => {
             resizeFrame.current = null
-            if (pendingResize.current && drag.current) resize(pendingResize.current.value, drag.current.bounds)
+            if (pendingResize.current && drag.current) resize(pendingResize.current.value, drag.current.bounds, true)
             pendingResize.current = null
           })
         }} onPointerUp={() => finishResize(true)} onPointerCancel={() => finishResize(false)} onLostPointerCapture={() => finishResize(false)}
-        onKeyDown={event => { if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return; event.preventDefault(); event.stopPropagation(); resize(event.key === 'Home' ? 0 : event.key === 'End' ? 10000 : (maximized ? resizeBounds().full : positionsOpen ? height : 100) + (event.key === 'ArrowUp' ? 30 : -30)) }}><ChartIcon name="grip-horizontal" /></button>
+        onKeyDown={event => {
+          if (event.key === 'Escape' && drag.current) { event.preventDefault(); event.stopPropagation(); finishResize(false); return }
+          if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key) || drag.current) return
+          event.preventDefault(); event.stopPropagation()
+          if (event.key === 'Home') resize(0)
+          else if (event.key === 'End') resize(resizeBounds().full)
+          else if (!positionsOpen) resize(event.key === 'ArrowUp' ? restoredHeight.current : 0)
+          else resize((maximized ? resizeBounds().full : height) + (event.key === 'ArrowUp' ? 30 : -30))
+        }}><ChartIcon name="grip-horizontal" /></button>
       <div className="chart-trading-account">
         {readStatus}
-        <a className="legacy-analytics-link" href={analyticsHref}><ChartIcon name="analytics" />{t('Analytics')}</a>
+        <a className="legacy-analytics-link" href={analyticsHref} aria-label={t('Analytics')} title={t('Analytics')}><ChartIcon name="analytics" /><span>{t('Analytics')}</span></a>
         {propRulesAction && <button type="button" className="legacy-prop-rules-link" data-testid="prop-rules-button" onClick={propRulesAction.onClick}><ChartIcon name="shield" />{propRulesAction.label}</button>}
         <button type="button" className="legacy-balance-pill" aria-label={t('Thông tin tài khoản')} aria-expanded={Boolean(balanceAnchor)} onPointerEnter={event => { if (event.pointerType === 'mouse' && matchMedia('(hover:hover)').matches) showBalance(event.currentTarget) }} onPointerLeave={dismissBalance} onFocus={event => { if (event.currentTarget.matches(':focus-visible')) showBalance(event.currentTarget) }} onBlur={dismissBalance} onClick={event => balanceAnchor ? setBalanceAnchor(null) : showBalance(event.currentTarget)}><ChartIcon name="wallet" /><strong>{money(account?.balance ?? order.configuredBalance)}</strong></button>
         <button type="button" aria-label={t(positionsOpen ? 'Thu gọn danh sách lệnh' : 'Mở danh sách lệnh')} aria-expanded={positionsOpen} onClick={() => {
           if (positionsOpen) { setMaximized(false); setPositionsOpen(false); return }
           const bounds = resizeBounds()
-          resize(Math.min(bounds.normal, Math.max(height, 260, Math.round(bounds.full * 0.4))), bounds)
+          resize(Math.min(bounds.normal, restoredHeight.current), bounds)
         }}><ChartIcon name="down" style={{ transform: positionsOpen ? '' : 'rotate(180deg)' }} /></button>
-        <button type="button" aria-label={t(maximized ? 'Thu nhỏ danh sách lệnh' : 'Mở rộng danh sách lệnh')} aria-pressed={maximized} onClick={() => { setPositionsOpen(true); setMaximized(value => !value) }}><ChartIcon name={maximized ? 'contract-corners' : 'fit'} /></button>
+        <button type="button" aria-label={t(maximized ? 'Thu nhỏ danh sách lệnh' : 'Mở rộng danh sách lệnh')} aria-pressed={maximized} onClick={() => { if (maximized) resize(Math.min(resizeBounds().normal, restoredHeight.current)); else { setPositionsOpen(true); setMaximized(true) } }}><ChartIcon name={maximized ? 'contract-corners' : 'fit'} /></button>
       </div>
     </div>
-    {positionsOpen && <div className="legacy-resizable-positions" style={maximized ? undefined : { height }}><LegacyPositions execution={execution} assetStates={order.assetStates} symbol={symbol} /></div>}
+    <div className="legacy-resizable-positions" hidden={!positionsOpen} style={maximized && !resizing ? undefined : { height: positionsOpen ? height : 0 }}><LegacyPositions execution={execution} assetStates={order.assetStates} symbol={symbol} /></div>
     {error && !scalperAnchor && <p className="legacy-preset-error" role="alert">{t(error)}<button type="button" onClick={() => setError('')} aria-label={t('Đóng thông báo')}>×</button></p>}
     {balanceAnchor && <LegacyPopover anchor={balanceAnchor} theme={theme} label={t('Thông tin tài khoản')} onClose={() => { clearTimeout(hideBalance.current); setBalanceAnchor(null) }}><dl className="legacy-account-details" onPointerEnter={() => clearTimeout(hideBalance.current)} onPointerLeave={dismissBalance}>{(account ? [['Equity', account.equity], ['Realized PnL', realized], ['Unrealized PnL', account.floating_pl]] : [['Account Balance', order.configuredBalance]]).map(([label, value]) => <div key={label}><dt>{t(label)}</dt><dd>{money(value)}</dd></div>)}</dl></LegacyPopover>}
     {scalperAnchor && <LegacyPopover anchor={scalperAnchor} theme={theme} label="Scalper mode" wide onClose={() => { setScalperAnchor(null); setError('') }}><form className="legacy-scalper-settings" onSubmit={event => {

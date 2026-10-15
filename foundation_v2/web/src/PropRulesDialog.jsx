@@ -31,7 +31,7 @@ export default function PropRulesDialog({ open, rules, error, pendingAction, ana
     { label: 'Max loss limit', current: rules.overallDrawdown.used, limit: rules.overallDrawdown.limit, breached: rules.overallDrawdown.breached },
     { label: 'Max daily loss limit', current: rules.dailyLoss.used, limit: rules.dailyLoss.limit, breached: rules.dailyLoss.breached },
   ]
-  const policy = { must_be_flat: 'Đóng hết lệnh', carry: 'Giữ lệnh', close_by_simulator: 'Simulator đóng lệnh' }[rules.positionPolicy] || '—'
+  const policy = { must_be_flat: 'Cần đóng hết lệnh', carry: 'Giữ lệnh', close_by_simulator: 'Tự động đóng lệnh' }[rules.positionPolicy] || '—'
 
   return <dialog ref={dialog} className="prop-rules-dialog" data-testid="prop-rules-dialog" aria-labelledby={titleId} onCancel={event => { event.preventDefault(); if (!actionBusy) onClose() }} onClick={event => { if (event.target === dialog.current && !actionBusy) onClose() }}>
     <header className="prop-rules-dialog-header">
@@ -40,8 +40,8 @@ export default function PropRulesDialog({ open, rules, error, pendingAction, ana
     </header>
     <div className="prop-rules-dialog-body">
       {rules.terminal && <section className={`prop-rules-outcome ${terminalPass ? 'is-pass' : 'is-fail'}`} role="status">
-        <strong>{t(terminalPass ? 'Challenge đã đạt mục tiêu.' : 'Challenge đã kết thúc.')}</strong>
-        <span>{t(terminalPass ? 'Bạn có thể xem analytics của attempt này.' : 'Một giới hạn đã bị vi phạm hoặc challenge đã hết hạn.')}</span>
+        <strong>{t(terminalPass ? 'Thử thách đã đạt mục tiêu.' : 'Thử thách đã kết thúc.')}</strong>
+        <span>{t(terminalPass ? 'Bạn có thể xem báo cáo của lần thử này.' : 'Một giới hạn đã bị vi phạm hoặc thử thách đã hết hạn.')}</span>
       </section>}
       <section className="prop-rules-objectives" aria-label={t('Challenge rules')}>
         {objectives.map((objective, index) => {
@@ -70,20 +70,20 @@ export default function PropRulesDialog({ open, rules, error, pendingAction, ana
         <section className="prop-rules-detail-panel" aria-label={t('Điều kiện')}>
           <h4>{t('Điều kiện')}</h4>
           <dl>
-            <div><dt>{t('Qualifying days')}</dt><dd>{rules.qualifyingDays} / {rules.minimumDays}</dd></div>
-            <div><dt>{t('Elapsed')}</dt><dd>{rules.elapsedDays ?? '—'} / {rules.maxDays ?? '—'} {t('ngày')}</dd></div>
-            <div><dt>{t('Reset lỗ ngày')}</dt><dd>{rules.dailyReset?.time?.slice(0, 5) || '—'} {rules.dailyReset?.timezone}</dd></div>
+            <div><dt>{t('Ngày đủ điều kiện')}</dt><dd>{rules.qualifyingDays} / {rules.minimumDays}</dd></div>
+            <div><dt>{t('Số ngày đã qua')}</dt><dd>{rules.elapsedDays ?? '—'} / {rules.maxDays ?? '—'} {t('ngày')}</dd></div>
+            <div><dt>{t('Đặt lại giới hạn ngày')}</dt><dd>{rules.dailyReset?.time?.slice(0, 5) || '—'} {rules.dailyReset?.timezone}</dd></div>
             <div><dt>{t('Khi đạt mục tiêu')}</dt><dd>{t(policy)}</dd></div>
             <div><dt>{t('Replay')}</dt><dd>{t('Chỉ tiến về trước')}</dd></div>
           </dl>
         </section>
       </div>
-      {error && <p className="prop-rules-error" role="alert">{t('Không đồng bộ được rule state:')} {error} {onRetry && <button type="button" className="wm-button" disabled={actionBusy} onClick={onRetry}>{t('Thử lại')}</button>}</p>}
+      {error && <p className="prop-rules-error" role="alert">{t('Không đồng bộ được quy tắc:')} {error} {onRetry && <button type="button" className="wm-button" disabled={actionBusy} onClick={onRetry}>{t('Thử lại')}</button>}</p>}
     </div>
     {(rules.status === 'paused' || rules.terminal) && <footer className="prop-rules-dialog-footer">
       {rules.status === 'paused' && <button type="button" className="wm-button is-primary" disabled={actionBusy} onClick={() => onTransition('resume')}>{pendingAction === 'prop:resume' ? t('Đang tiếp tục…') : t('Tiếp tục')}</button>}
-      {rules.terminal && retryHref && <a className="wm-button" href={retryHref}>{t('Thử challenge khác')}</a>}
-      {analyticsHref && <a className="wm-button" href={analyticsHref}>{t(terminalPass ? 'Xem analytics / report' : 'Mở analytics')}</a>}
+      {rules.terminal && retryHref && <a className="wm-button" href={retryHref}>{t('Thử thách mới')}</a>}
+      {analyticsHref && <a className="wm-button" href={analyticsHref}>{t('Xem báo cáo')}</a>}
     </footer>}
   </dialog>
 }

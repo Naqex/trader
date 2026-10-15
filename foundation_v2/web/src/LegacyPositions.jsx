@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import { useTestingLocale } from './testingLocale.jsx'
 import { sessionChartTrades } from './legacyChartTrades.js'
 import PaginationFooter from './PaginationFooter.jsx'
 import { TestingEmptyState } from './TestingPageState.jsx'
 
-export default function LegacyPositions({ execution, assetStates, symbol }) {
+export default memo(function LegacyPositions({ execution, assetStates, symbol }) {
   const { t, fmt } = useTestingLocale()
   const [tab, setTab] = useState('open'), [page, setPage] = useState(0), [size, setSize] = useState(10)
   const executions = assetStates ? Object.entries(assetStates).filter(([, state]) => state.execution).map(([id, state]) => ({ id, execution:state.execution, symbol:state.execution.instrument_spec.instrument_id })) : [{ id:'active', execution, symbol }]
@@ -32,4 +32,4 @@ export default function LegacyPositions({ execution, assetStates, symbol }) {
         : <TestingEmptyState kind={known ? `chart-${tab}` : 'chart-unknown'} />}
     </div>
   </section>
-}
+})
