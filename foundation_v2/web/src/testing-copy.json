@@ -4949,6 +4949,22 @@
     "vi": "Năm sau",
     "en": "Next year"
   },
+  "Previous decade": {
+    "vi": "Thập kỷ trước",
+    "en": "Previous decade"
+  },
+  "Next decade": {
+    "vi": "Thập kỷ sau",
+    "en": "Next decade"
+  },
+  "Chọn tháng": {
+    "vi": "Chọn tháng",
+    "en": "Choose month"
+  },
+  "Chọn năm": {
+    "vi": "Chọn năm",
+    "en": "Choose year"
+  },
   "Percentage requires opening capital.": {
     "vi": "Cần vốn đầu kỳ để tính phần trăm.",
     "en": "Percentage requires opening capital."

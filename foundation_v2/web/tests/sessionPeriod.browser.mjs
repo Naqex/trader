@@ -28,8 +28,10 @@ try {
     await options.first().waitFor()
     assert.equal(await dialog.locator('.dataset-asset-select .fx-select-group-title').count(), 0)
     await options.first().click()
-    await options.nth(1).click()
-    await page.keyboard.press('Escape')
+    // The shared select closes after each choice; reopen it before adding the second asset.
+    await dialog.locator('.dataset-asset-select .fx-select-trigger').click()
+    const reopenedOptions = dialog.locator('.dataset-asset-select [role="option"]:not(:disabled)')
+    await reopenedOptions.nth(1).click()
     await period.waitFor()
     const start = period.getByRole('textbox', { name: 'Ngày bắt đầu phiên (UTC)' })
     const end = period.getByRole('textbox', { name: 'Ngày kết thúc phiên (UTC)' })
@@ -38,7 +40,8 @@ try {
       assert.equal(await end.inputValue(), value)
     }
     const submit = dialog.locator('.quick-session-submit')
-    assert.equal(await submit.isDisabled(), true)
+    // Submission stays visually available; form validation explains and blocks invalid drafts.
+    assert.equal(await submit.isEnabled(), true)
     await start.fill('31/01/2025 08:22')
     await period.getByRole('button', { name: 'Tự động', exact: true }).focus()
     assert.equal(await submit.isEnabled(), true)
@@ -54,7 +57,7 @@ try {
     await period.getByRole('button', { name: 'Kết thúc sau 1 ngày' }).click()
     await endValue('01/02/2025 08:22')
     await end.fill('30/01/2025 08:22')
-    assert.equal(await submit.isDisabled(), true)
+    assert.equal(await submit.isEnabled(), true)
     await period.getByRole('button', { name: 'Kết thúc sau 1 tháng' }).click()
     assert.equal(await submit.isEnabled(), true)
     const layout = await period.evaluate(element => {

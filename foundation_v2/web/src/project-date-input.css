@@ -10,7 +10,10 @@
 .project-date-input.is-open { border-color:var(--wm-focus, var(--project-primary)); }
 .project-date-popover { position:fixed; inset:auto; margin:0; width:min(304px, calc(100vw - 24px)); box-sizing:border-box; padding:12px; overflow:auto; border:1px solid var(--wm-control-border); border-radius:var(--wm-popup-radius, 12px); background:var(--wm-popup); color:var(--wm-content); box-shadow:0 12px 28px #0004; }
 .project-date-popover-heading { display:grid; grid-template-columns:32px minmax(0, 1fr) 32px; align-items:center; gap:6px; margin-bottom:8px; }
-.project-date-popover-heading strong { min-width:0; overflow:hidden; text-align:center; text-overflow:ellipsis; text-transform:capitalize; font-size:13px; font-weight:600; }
+.project-date-heading-content { display:flex; min-width:0; align-items:center; justify-content:center; gap:4px; }
+.project-date-popover-heading strong, .project-date-heading-button { min-width:0; overflow:hidden; text-align:center; text-overflow:ellipsis; text-transform:capitalize; font-size:13px; font-weight:600; }
+.project-date-heading-button { min-height:28px !important; padding:0 6px !important; border-radius:var(--ds-radius-small, 6px) !important; }
+.project-date-heading-button:hover:not(:disabled) { background:var(--wm-hover) !important; }
 .fx-app .project-date-popover button { min-height:32px; padding:0; border:0; border-radius:var(--ds-radius-small, 6px); background:transparent; color:var(--wm-content); font:inherit; cursor:pointer; }
 .fx-app .project-date-popover button:hover:not(:disabled) { background:var(--wm-hover); }
 .fx-app .project-date-popover button:disabled { opacity:.35; cursor:not-allowed; }
@@ -19,10 +22,16 @@
 .fx-app .project-date-calendar button { justify-self:center; width:32px; height:32px; min-height:32px; border-radius:var(--ds-radius-small); font-size:12px; font-variant-numeric:tabular-nums; }
 .fx-app.fx-shell-story[data-theme] .fx-content .project-date-popover .project-date-calendar button.is-selected { background:var(--project-action, var(--wm-action-bg)); color:var(--project-on-action, var(--wm-on-primary)); font-weight:600; }
 .fx-app .project-date-calendar button.is-today:not(.is-selected) { box-shadow:inset 0 0 0 1px var(--project-primary, var(--wm-focus)); color:var(--project-primary, var(--wm-focus)); }
+.project-date-month-grid { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:4px; }
+.project-date-month-grid button { min-height:42px !important; }
+.project-date-year-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:4px; }
+.project-date-year-grid button { min-height:42px !important; }
+.fx-app.fx-shell-story[data-theme] .fx-content .project-date-popover :is(.project-date-month-grid, .project-date-year-grid) button.is-selected { background:var(--project-action, var(--wm-action-bg)); color:var(--project-on-action, var(--wm-on-primary)); font-weight:600; }
 .project-date-time-panel, .project-date-time-field { display:grid; gap:6px; color:var(--wm-content-muted); font-size:12px; }
 .project-date-time-panel input, .project-date-time-field input { width:100%; min-height:var(--wm-control-height); box-sizing:border-box; padding:7px 10px; border:1px solid var(--wm-control-border); border-radius:var(--ds-radius-field); background:transparent; color:var(--wm-content); font:inherit; color-scheme:dark; }
 .fx-app[data-theme='light'] .project-date-time-panel input, .fx-app[data-theme='light'] .project-date-time-field input { color-scheme:light; }
-.project-date-time-field { margin-top:10px; }
+.project-date-time-panel, .project-date-time-field { margin-top:10px; padding-top:10px; border-top:1px solid var(--wm-border); }
+.project-date-visually-hidden { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; clip-path:inset(50%); }
 .project-date-popover-footer { display:flex; align-items:center; gap:6px; margin-top:12px; padding-top:10px; border-top:1px solid var(--wm-border); }
 .project-date-popover-footer span { flex:1; }
 .project-date-popover-footer button { min-height:30px; padding-inline:9px !important; color:var(--wm-content-muted) !important; font-size:12px; }

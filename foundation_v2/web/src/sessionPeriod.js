@@ -33,6 +33,19 @@ export function sessionEndShortcut(start, unit) {
   return date.getTime() / 1000
 }
 
+export function sessionDefaultEnd(range, start, now = new Date()) {
+  if (!range?.valid) return null
+  const previousDay = new Date(now)
+  previousDay.setUTCHours(23, 59, 0, 0)
+  previousDay.setUTCDate(previousDay.getUTCDate() - 1)
+  let target = Math.min(previousDay.getTime() / 1000, range.max)
+  if (target < range.min) target = range.max
+  if (start === null) return sessionDateValue(target)
+  const minimum = start + range.step
+  if (target >= minimum) return sessionDateValue(target)
+  return range.max >= minimum ? sessionDateValue(range.max) : null
+}
+
 export function randomSessionDate(range, period, random = Math.random) {
   const customEnd = period.endMode === 'custom' ? sessionDateTimestamp(period.end) : null
   const upper = Math.floor((Math.min(range.max, customEnd ?? range.max) - range.step) / 60) * 60

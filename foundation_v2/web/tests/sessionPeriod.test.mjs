@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { commonSessionRange, randomSessionDate, sessionDateTimestamp, sessionDateValue, sessionEndShortcut, sessionPeriodState } from '../src/sessionPeriod.js'
+import { commonSessionRange, randomSessionDate, sessionDateTimestamp, sessionDateValue, sessionDefaultEnd, sessionEndShortcut, sessionPeriodState } from '../src/sessionPeriod.js'
 
 const epoch = value => Date.parse(value) / 1000
 const range = { min: epoch('2025-01-01T00:00Z'), max: epoch('2026-10-09T23:59Z'), step: 60, valid: true }
@@ -30,6 +30,12 @@ test('duration shortcuts preserve UTC clock and clamp calendar months at month e
   assert.equal(sessionEndShortcut(start, 'week'), epoch('2025-02-07T08:22Z'))
   assert.equal(sessionEndShortcut(start, 'month'), epoch('2025-02-28T08:22Z'))
   assert.equal(sessionEndShortcut(epoch('2024-01-31T08:22Z'), 'month'), epoch('2024-02-29T08:22Z'))
+})
+test('custom end defaults to yesterday at 23:59 and stays inside the loaded range', () => {
+  const wideRange = { ...range, max: epoch('2026-10-20T23:59Z') }
+  assert.equal(sessionDefaultEnd(wideRange, null, new Date('2026-10-15T12:00:00Z')), '2026-10-14T23:59')
+  assert.equal(sessionDefaultEnd(wideRange, epoch('2026-02-03T08:11Z'), new Date('2026-10-15T12:00:00Z')), '2026-10-14T23:59')
+  assert.equal(sessionDefaultEnd(range, epoch('2026-02-03T08:11Z'), new Date('2026-10-15T12:00:00Z')), '2026-10-09T23:59')
 })
 test('random initial date stays within range and leaves at least one future interval before custom end', () => {
   const period = { endMode: 'custom', end: '2025-01-01T00:10' }
