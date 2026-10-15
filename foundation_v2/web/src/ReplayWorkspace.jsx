@@ -378,7 +378,6 @@ export default function ReplayWorkspace({ workspace, query }) {
   const [showAverage, setShowAverage] = useState(false)
   const [sideOpen, setSideOpen] = useState(false)
   const [sidePanel, setSidePanel] = useState('context')
-  const [utilityOpen, setUtilityOpen] = useState(false)
   const [headerSlot, setHeaderSlot] = useState(null)
   const [nativeHeaderSlots, setNativeHeaderSlots] = useState(null)
   const nativeIntervalRef = useRef(null)
@@ -996,19 +995,6 @@ export default function ReplayWorkspace({ workspace, query }) {
     restoreSideFocus.current = false
   }, [sideOpen, nativeHeaderSlots])
   const closeSide = () => { restoreSideFocus.current = true; setSideOpen(false) }
-  useEffect(() => {
-    if (!utilityOpen) return
-    const rail = document.querySelector('.chart-utility-rail')
-    const dismiss = event => {
-      if (event.type === 'keydown') {
-        if (event.key !== 'Escape') return
-        setUtilityOpen(false); rail?.querySelector('.chart-utility-toggle')?.focus()
-      } else if (!rail?.contains(event.target)) setUtilityOpen(false)
-    }
-    const docs = [...new Set([document, nativeHeaderSlots?.market?.ownerDocument].filter(Boolean))]
-    docs.forEach(doc => { doc.addEventListener('pointerdown', dismiss); doc.addEventListener('focusin', dismiss); doc.addEventListener('keydown', dismiss) })
-    return () => docs.forEach(doc => { doc.removeEventListener('pointerdown', dismiss); doc.removeEventListener('focusin', dismiss); doc.removeEventListener('keydown', dismiss) })
-  }, [utilityOpen, nativeHeaderSlots?.market])
   const goToDate = () => {
     if (propMode) {
       setChartNotice('Prop Firm challenge chỉ cho phép tiến theo replay clock.')
@@ -1202,9 +1188,8 @@ export default function ReplayWorkspace({ workspace, query }) {
                   <div className="chart-badge chart-badge-left">{replay.payload.dataset_id}</div>
                   <div className="chart-badge chart-badge-right">{replay.historical_view ? t("HISTORICAL CUTOFF") : t("LIVE REPLAY CURSOR")}</div>
                 </div>
-                <nav className={`chart-utility-rail ${utilityOpen ? 'is-open' : ''}`} aria-label={t("Tiện ích replay")} onKeyDown={event => { if (event.key === 'Escape') { setUtilityOpen(false); event.currentTarget.querySelector('.chart-utility-toggle')?.focus() } }}>
-                  {advancedChart && <button type="button" className="chart-utility-toggle" aria-label={t('Tiện ích replay')} aria-expanded={utilityOpen} aria-controls="chart-utility-actions" onClick={() => setUtilityOpen(value => !value)}><ChartIcon name="more" /></button>}
-                  <div id="chart-utility-actions" className="chart-utility-actions" onClick={event => { if (event.target.closest('button,a')) setUtilityOpen(false) }}>
+                <nav className="chart-utility-rail" aria-label={t("Tiện ích replay")}>
+                  <div id="chart-utility-actions" className="chart-utility-actions">
                   {advancedChart && <div className="legacy-rail-tools"><button type="button" aria-label={t('Cây đối tượng chart')} title={t('Cây đối tượng chart')} disabled={!nativeHeaderSlots} aria-pressed={sideOpen && sidePanel==='native-objects'} onClick={() => sideOpen && sidePanel==='native-objects' ? closeSide() : openPanel('native-objects')}><ChartIcon name="layers" /></button></div>}
                   {(advancedChart ? [['order', 'Lệnh mô phỏng', 'place-order', 'Order'], ['goto', 'Đi tới cutoff', 'goto', 'Go To'], ['news', 'Tin tức', 'news', 'News']] : [['order', 'Lệnh mô phỏng', 'order'], ['objects', 'Danh sách đối tượng', 'objects'], ['data', 'Danh sách dữ liệu', 'data'], ['context', 'Chi tiết replay', 'info']]).map(([panel, label, icon, caption]) => <button key={panel} type="button" aria-label={t(label)} title={t(label)} aria-pressed={sideOpen && sidePanel === panel} onClick={() => sideOpen && sidePanel === panel ? closeSide() : openPanel(panel)}><ChartIcon name={icon} />{caption && <span>{t(caption)}</span>}</button>)}
                   {advancedChart ? <button type="button" aria-label={t('Journal tại cutoff này')} title={t('Journal tại cutoff này')} aria-pressed={sideOpen && sidePanel==='journal'} onClick={() => sideOpen && sidePanel==='journal' ? closeSide() : openPanel('journal')}><ChartIcon name="journal" /><span>{t('Journal')}</span></button> : <a aria-label={t('Journal tại cutoff này')} href={journalHref}><ChartIcon name="journal" /></a>}

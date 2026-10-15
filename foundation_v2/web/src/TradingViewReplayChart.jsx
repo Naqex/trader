@@ -12,7 +12,21 @@ import { TestingResourceStatus } from './TestingPageState.jsx'
 let libraryPromise
 const volumeAppearance = theme => {
   const p = nativeChartPalette(theme)
-  return { 'volume.color.0': p.negative, 'volume.color.1': p.positive, 'volume ma.color': p.highlight }
+  return {
+    'volume.color.0': p.negative,
+    'volume.color.1': p.positive,
+    'volume ma.color': p.highlight,
+    // Volume and its SMA are opt-in in the replay workspace. Keep restored
+    // layouts from reviving the default SMA 9 line on a fresh chart.
+    'volume ma.visible': false,
+    'smoothedMA.visible': false,
+  }
+}
+function hideDefaultVolumeStudies(chart) {
+  for (const study of chart.getAllStudies()) {
+    if (study.name !== 'Volume') continue
+    chart.setEntityVisibility(study.id, false)
+  }
 }
 function applyVolumeAppearance(widget, chart, theme) {
   const overrides = volumeAppearance(theme)
@@ -113,7 +127,7 @@ export default function TradingViewReplayChart(props) {
         auto_save_delay: 1,
         enabled_features: ['seconds_resolution', 'items_favoriting'],
         // v23's sampled analytics assumes an http document URL and fails on srcdoc.
-        disabled_features: ['14851', 'header_symbol_search', 'symbol_search_hot_key', 'compare_symbol', 'header_compare', 'header_saveload', 'use_localstorage_for_settings', 'header_screenshot', 'header_fullscreen_button', 'widget_logo'],
+        disabled_features: ['14851', 'create_volume_indicator_by_default', 'header_symbol_search', 'symbol_search_hot_key', 'compare_symbol', 'header_compare', 'header_saveload', 'use_localstorage_for_settings', 'header_screenshot', 'header_fullscreen_button', 'widget_logo'],
         overrides: paneAppearance(theme),
         studies_overrides: Object.fromEntries(Object.entries(volumeAppearance(theme)).map(([key, value]) => [`volume.${key}`, value])),
       })
@@ -205,6 +219,7 @@ export default function TradingViewReplayChart(props) {
             if (cancelled) return
             widget.applyOverrides(paneAppearance(latest.current.theme))
             applyVolumeAppearance(widget, chart, latest.current.theme)
+            hideDefaultVolumeStudies(chart)
             refresh(); importAnnotations()
             clearTimeout(loadingTimer)
             setStatus('ready')

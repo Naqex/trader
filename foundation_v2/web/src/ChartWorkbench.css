@@ -469,7 +469,6 @@ button.chart-order-level { cursor: ns-resize; touch-action: none; }
 .chart-read-failure { width:100%; height:100%; display:grid; place-items:center; padding:24px; box-sizing:border-box; background:var(--project-canvas); color:var(--project-text); }
 .chart-read-failure .wm-read-state { max-width:520px; text-align:center; }
 .chart-utility-actions { display:flex; flex-direction:column; align-items:center; gap:4px; flex:1; min-height:0; width:100%; }
-.fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .chart-utility-toggle { display:none; }
 .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .chart-utility-actions > :is(button,a) { gap:4px; height:46px; min-height:46px; }
 .legacy-positions .wm-trades-empty, .legacy-journal .wm-trades-empty { min-height:160px; padding:24px 16px; }
 .legacy-positions .wm-trades-empty > svg, .legacy-journal .wm-trades-empty > svg { margin-bottom:12px; }
@@ -505,10 +504,7 @@ button.chart-order-level { cursor: ns-resize; touch-action: none; }
 @media (max-width:600px) {
  .replay-shell.is-legacy-chart { --legacy-rail-width:0px; }
  .fx-app.fx-shell-story.is-chart-workspace .fx-content > .replay-shell.is-legacy-chart .chart-utility-rail { position:absolute; top:48px; bottom:auto; right:8px; z-index:24; padding:0; border:1px solid var(--chart-line); border-radius:12px; max-height:calc(100% - 64px); width:46px; }
- .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .chart-utility-toggle { display:flex; width:44px; height:44px; min-height:44px; }
- .is-legacy-chart .chart-utility-rail:not(.is-open) .chart-utility-actions { display:none; }
  .is-legacy-chart .chart-utility-actions { flex:0 0 auto; }
- .fx-app.fx-shell-story.is-chart-workspace .fx-content > .replay-shell.is-legacy-chart .chart-utility-rail.is-open { width:160px; }
  .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .chart-utility-actions > :is(button,a) { width:100%; flex-direction:row; justify-content:flex-start; gap:12px; padding-inline:12px; }
  .fx-app.fx-shell-story .fx-content > .is-legacy-chart .chart-utility-actions :is(button,a) span { font-size:12px; line-height:18px; }
  .is-legacy-chart .chart-utility-actions .legacy-rail-tools { margin-bottom:0; }
