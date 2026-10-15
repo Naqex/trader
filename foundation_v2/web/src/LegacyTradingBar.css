@@ -80,7 +80,7 @@
 .legacy-scalper-settings p[role=alert] { color: var(--project-negative); }
 .legacy-scalper-settings footer { display: flex; justify-content: flex-end; gap: 8px; padding-top: 4px; }
 .legacy-scalper-modal .legacy-scalper-settings footer button { width: auto; min-width: 80px; min-height:var(--ds-control,36px); padding:8px 16px; border:1px solid transparent; border-radius:var(--wm-control-radius,var(--ds-radius-pill,999px)); background:var(--project-control); color:var(--project-text); font:inherit; cursor:pointer; }
-.legacy-scalper-modal .legacy-scalper-settings footer button:hover:not(:disabled) { background:var(--project-control); border-color:transparent; }
+.legacy-scalper-modal .legacy-scalper-settings footer button:hover:not(:disabled) { background:var(--project-hover); border-color:transparent; }
 .legacy-scalper-modal .legacy-scalper-settings .legacy-scalper-save { display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box; width:auto; min-width:80px; height:var(--ds-control,36px); min-height:var(--ds-control,36px); padding:7px 12px; border:1px solid transparent; border-radius:var(--wm-control-radius); background:var(--wm-action-bg); color:var(--wm-on-primary); font-weight:var(--ds-weight-control); line-height:var(--ds-line-control,20px); }
 .legacy-scalper-modal .legacy-scalper-settings footer .legacy-scalper-save:hover:not(:disabled) { background:var(--wm-action-hover); border-color:transparent; color:var(--wm-on-primary); }
 .legacy-scalper-modal .legacy-scalper-settings footer button:disabled { opacity:1; background:var(--project-control); border-color:var(--project-border); color:var(--project-muted); }

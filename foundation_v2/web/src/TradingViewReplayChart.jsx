@@ -162,7 +162,7 @@ export default function TradingViewReplayChart(props) {
             const line = chart.createOrderLine()
             if (!line) continue
             const palette = nativeChartPalette(state.theme)
-            const color = kind === 'stop' ? '#e69a35' : kind === 'target' ? palette.positive : palette.primary
+            const color = kind === 'stop' ? palette.warning : kind === 'target' ? palette.positive : palette.primary
             const pnl = state.levels.floating == null ? '' : new Intl.NumberFormat(locale, { style: 'currency', currency: state.levels.currency || 'USD', maximumFractionDigits: 2 }).format(Number(state.levels.floating))
             const label = kind === 'entry' ? `${state.levels.side} · ${t(state.levels.state === 'queued' ? 'Chờ khớp' : state.levels.state === 'draft' ? 'Lệnh nháp' : 'Vị thế')} ${pnl}` : `${kind === 'stop' ? 'SL' : 'TP'}${ghost ? ` · ${t('Kéo để đặt')}` : ''}`
             line.setPrice(value).setText(label).setQuantity(kind === 'entry' ? String(state.levels.quantity) : ghost ? '+' : 'SIM')

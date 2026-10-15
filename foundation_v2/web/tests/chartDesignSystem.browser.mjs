@@ -98,8 +98,18 @@ try {
     const cancelRadius = await cancel.evaluate(node => getComputedStyle(node).borderRadius)
     const cancelHeight = await cancel.evaluate(node => getComputedStyle(node).height)
     const saveBase = await save.evaluate(node => getComputedStyle(node).backgroundColor)
+    const cancelHoverReference = await cancel.evaluate(node => {
+      const probe = document.createElement('span')
+      probe.style.background = 'var(--project-hover)'
+      node.parentElement.append(probe)
+      const value = getComputedStyle(probe).backgroundColor
+      probe.remove()
+      return value
+    })
     await cancel.hover()
     assert.equal(await cancel.evaluate(node => getComputedStyle(node).borderColor), cancelBaseBorder, 'cancel hover does not add a bright border')
+    assert.equal(await cancel.evaluate(node => getComputedStyle(node).backgroundColor), cancelHoverReference, 'cancel hover uses the shared hover surface')
+    assert.notEqual(cancelBase, cancelHoverReference, 'cancel hover remains visibly distinct from its base surface')
     await save.hover()
     assert.notEqual(await save.evaluate(node => getComputedStyle(node).backgroundColor), saveBase, 'save hover uses its action state instead of the generic modal hover')
     assert.notEqual(cancelBase, '', 'cancel baseline is measurable')
@@ -124,6 +134,7 @@ try {
     const orderCancelBorder = await orderCancel.evaluate(node => getComputedStyle(node).borderColor)
     await orderCancel.hover()
     assert.equal(await orderCancel.evaluate(node => getComputedStyle(node).borderColor), orderCancelBorder, 'order cancel hover does not add a bright border')
+    assert.equal(await orderCancel.evaluate(node => getComputedStyle(node).backgroundColor), cancelHoverReference, 'order cancel uses the same hover surface as scalper cancel')
     assert.equal(await field.evaluate(node => getComputedStyle(node).backgroundColor), scalperFieldBackground, 'order and scalper fields share their base surface')
     const orderSwitch = dialog.locator('input[role=switch]').first()
     assert.deepEqual(await orderSwitch.evaluate(node => ({ width: getComputedStyle(node).width, height: getComputedStyle(node).height })), scalperSwitchSize, 'order and scalper switches share geometry')

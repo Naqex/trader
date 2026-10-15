@@ -1,4 +1,4 @@
-.is-legacy-chart .legacy-replay-toolbar.legacy-fx-playback { min-height: 40px; padding: 0 5px 0 1px; border: 1px solid var(--chart-line); border-radius: 4px; }
+.is-legacy-chart .legacy-replay-toolbar.legacy-fx-playback { min-height: 40px; padding: 0 5px 0 1px; border: 1px solid var(--project-border); border-radius: var(--ds-radius-field, 8px); background: var(--project-surface); color: var(--project-muted); }
 .is-legacy-chart .legacy-fx-playback .chart-float-content { gap: 3px; }
 .is-legacy-chart .legacy-fx-playback .chart-float-grip { width: 22px; padding: 2px; }
 .is-legacy-chart .legacy-fx-playback .legacy-speed-control { margin: 0 5px; }
