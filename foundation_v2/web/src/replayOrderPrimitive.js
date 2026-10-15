@@ -2,8 +2,9 @@ export function projectOrder(levels, chart, series) {
   if (!levels || !chart || !series) return null
   const result = { width: chart.timeScale().width(), height: chart.panes()[0].getHeight() }
   for (const key of ['entry', 'stop', 'target']) {
-    if (!Number.isFinite(levels[key])) return null
-    result[key] = series.priceToCoordinate(levels[key])
+    const price = levels[key] ?? (key === 'stop' ? levels.ghostStop : levels.ghostTarget)
+    if (!Number.isFinite(price)) return null
+    result[key] = series.priceToCoordinate(price)
     if (!Number.isFinite(result[key])) return null
   }
   const anchor = chart.timeScale().timeToCoordinate(Number(levels.timestamp))
@@ -24,8 +25,12 @@ export class ReplayOrderPrimitive {
   paneViews() { return this.views }
   setPalette(palette) { this.palette = palette; this.attachment?.requestUpdate() }
   autoscaleInfo() {
-    if (!this.levels || !['entry', 'stop', 'target'].every(key => Number.isFinite(this.levels[key]) && this.levels[key] > 0)) return null
-    return { priceRange: { minValue: Math.min(this.levels.entry, this.levels.stop, this.levels.target), maxValue: Math.max(this.levels.entry, this.levels.stop, this.levels.target) } }
+    if (!this.levels || !['entry', 'stop', 'target'].every(key => {
+      const price = this.levels[key] ?? (key === 'stop' ? this.levels.ghostStop : this.levels.ghostTarget)
+      return Number.isFinite(price) && price > 0
+    })) return null
+    const prices = ['entry', 'stop', 'target'].map(key => this.levels[key] ?? (key === 'stop' ? this.levels.ghostStop : this.levels.ghostTarget))
+    return { priceRange: { minValue: Math.min(...prices), maxValue: Math.max(...prices) } }
   }
   setLevels(levels) { this.levels = levels; this.attachment?.requestUpdate() }
   draw(target) {
@@ -40,8 +45,8 @@ export class ReplayOrderPrimitive {
       context.fillRect(left, Math.min(profit, entry), width - left, Math.abs(profit - entry))
       context.fillStyle = `${this.palette.negative}1F`
       context.fillRect(left, Math.min(stop, entry), width - left, Math.abs(stop - entry))
-      for (const [y, color] of [[entry, this.palette.primary], [stop, this.palette.negative], [profit, this.palette.positive]]) {
-        context.strokeStyle = color; context.lineWidth = 1; context.setLineDash(['draft', 'edit'].includes(this.levels.state) ? [4, 4] : [])
+      for (const [y, color, ghost] of [[entry, this.palette.primary, false], [stop, this.palette.negative, this.levels.stop == null], [profit, this.palette.positive, this.levels.target == null]]) {
+        context.strokeStyle = color; context.lineWidth = 1; context.setLineDash(ghost || ['draft', 'edit'].includes(this.levels.state) ? [4, 4] : [])
         context.beginPath(); context.moveTo(left, y); context.lineTo(width, y); context.stroke()
       }
       context.restore()

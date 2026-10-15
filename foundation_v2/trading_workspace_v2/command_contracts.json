@@ -5922,8 +5922,12 @@
                   {
                     "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
                     "type": "string"
+                  },
+                  {
+                    "type": "null"
                   }
                 ],
+                "default": null,
                 "title": "Stop Loss"
               },
               "take_profit": {
@@ -5935,8 +5939,12 @@
                   {
                     "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
                     "type": "string"
+                  },
+                  {
+                    "type": "null"
                   }
                 ],
+                "default": null,
                 "title": "Take Profit"
               }
             },
@@ -5944,9 +5952,7 @@
               "expected_revision",
               "operation_id",
               "side",
-              "quantity",
-              "stop_loss",
-              "take_profit"
+              "quantity"
             ],
             "title": "ReplayMarketOrderRequest",
             "type": "object"
@@ -6005,6 +6011,9 @@
                   {
                     "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
                     "type": "string"
+                  },
+                  {
+                    "type": "null"
                   }
                 ],
                 "title": "Stop Loss"
@@ -6018,6 +6027,9 @@
                   {
                     "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
                     "type": "string"
+                  },
+                  {
+                    "type": "null"
                   }
                 ],
                 "title": "Take Profit"
@@ -6031,6 +6043,60 @@
               "take_profit"
             ],
             "title": "ReplayProtectionRequest",
+            "type": "object"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/v2/replay/sessions/{session_id}/orders/close",
+    "handler": "close_replay_order_route",
+    "status_code": 200,
+    "safe_retry": false,
+    "parameters": {
+      "path": [
+        {
+          "name": "session_id",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "query": [],
+      "body": [
+        {
+          "name": "body",
+          "required": true,
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "expected_revision": {
+                "minimum": 1,
+                "title": "Expected Revision",
+                "type": "integer"
+              },
+              "target_id": {
+                "maxLength": 128,
+                "minLength": 1,
+                "title": "Target Id",
+                "type": "string"
+              },
+              "operation_id": {
+                "maxLength": 128,
+                "minLength": 1,
+                "title": "Operation Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "expected_revision",
+              "target_id",
+              "operation_id"
+            ],
+            "title": "ReplayCloseOrderRequest",
             "type": "object"
           }
         }

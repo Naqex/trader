@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from .execution_semantics import (
     IntrabarAmbiguityError,
     protective_exit_for_bar,
+    protection_brackets,
     quote_from_mid,
     validate_ohlc_bar,
 )
@@ -54,8 +55,8 @@ class ReplayQueuedMarketOrder(BaseModel):
     operation_id: str = Field(min_length=1, max_length=128)
     side: Literal["BUY", "SELL"]
     quantity: Decimal = Field(gt=0)
-    stop_loss: Decimal = Field(gt=0)
-    take_profit: Decimal = Field(gt=0)
+    stop_loss: Decimal | None = Field(default=None, gt=0)
+    take_profit: Decimal | None = Field(default=None, gt=0)
     submitted_cursor_index: int = Field(ge=0, strict=True)
 
 
@@ -69,8 +70,8 @@ class ReplayOpenPosition(BaseModel):
     entry_bid: Decimal = Field(gt=0)
     entry_ask: Decimal = Field(gt=0)
     entry_fill: Decimal = Field(gt=0)
-    stop_loss: Decimal = Field(gt=0)
-    take_profit: Decimal = Field(gt=0)
+    stop_loss: Decimal | None = Field(default=None, gt=0)
+    take_profit: Decimal | None = Field(default=None, gt=0)
     opened_cursor_index: int = Field(ge=0, strict=True)
     opened_time_utc: int = Field(ge=0, strict=True)
 
@@ -111,7 +112,7 @@ class ReplayExecutionEvent(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     sequence: int = Field(ge=1, strict=True)
-    kind: Literal["market_fill", "protective_fill", "price_mark", "phase_transition", "protection_change"]
+    kind: Literal["market_fill", "protective_fill", "price_mark", "phase_transition", "protection_change", "manual_close", "order_cancel"]
     replay_session_id: str = Field(min_length=1, max_length=128)
     branch_id: str = Field(min_length=1, max_length=128)
     dataset_id: str = Field(min_length=1, max_length=128)
@@ -144,18 +145,36 @@ class ReplayExecutionEvent(BaseModel):
                     or self.pending_orders != int(raw_pending is not None)):
                 raise ValueError("protection checkpoint target is inconsistent")
             for key in ("previous_stop_loss", "previous_take_profit", "mid_close", "closeable_quote"):
-                _decimal(self.details.get(key), key, positive=True)
+                if key not in self.details:
+                    raise ValueError("protection checkpoint lacks previous levels/quote")
+                if self.details[key] is not None:
+                    _decimal(self.details[key], key, positive=True)
             reference = _decimal(self.details["closeable_quote"], "closeable_quote", positive=True)
-            if not (active.stop_loss < reference < active.take_profit if active.side == "BUY"
-                    else active.take_profit < reference < active.stop_loss):
+            if not protection_brackets(active.side, reference, active.stop_loss, active.take_profit):
                 raise ValueError("protection checkpoint must bracket its current quote")
+        if self.kind in {"manual_close", "order_cancel"}:
+            d = self.details
+            closed = ReplayOpenPosition.model_validate(d.get("closed_position")) if self.kind == "manual_close" else ReplayQueuedMarketOrder.model_validate(d.get("cancelled_order"))
+            target = closed.position_id if self.kind == "manual_close" else closed.operation_id
+            if (d.get("target_id") != target or not isinstance(d.get("command_operation_id"), str)
+                    or not d["command_operation_id"].strip() or self.open_positions or self.pending_orders
+                    or self.floating_pl != 0 or d.get("open_position") is not None or d.get("pending_market_order") is not None):
+                raise ValueError("close/cancel checkpoint is inconsistent")
+            previous = _decimal(d.get("previous_balance"), "previous balance")
+            realized = _decimal(d.get("net_pnl"), "realized pnl")
+            if self.balance != previous + realized or (self.kind == "order_cancel" and realized != 0):
+                raise ValueError("close/cancel balance is inconsistent")
+            if self.kind == "manual_close" and (d.get("position_id") != target
+                    or d.get("operation_id") != closed.source_operation_id or d.get("side") != closed.side
+                    or _decimal(d.get("quantity"), "quantity") != closed.quantity or d.get("reason") != "manual_close"):
+                raise ValueError("closing fill does not match its position")
         return self
 
 
 class ReplayExecutionEventV2(ReplayExecutionEvent):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
     schema_version: Literal["replay-execution-event-v2"] = "replay-execution-event-v2"
-    kind: Literal["market_fill", "order_rejected", "protective_fill", "price_mark", "phase_transition", "protection_change"]
+    kind: Literal["market_fill", "order_rejected", "protective_fill", "price_mark", "phase_transition", "protection_change", "manual_close", "order_cancel"]
 
     @model_validator(mode="after")
     def margin_outcome_is_consistent(self):
@@ -217,6 +236,8 @@ def replay_event_for_snapshot(snapshot: ReplayExecutionSnapshot, raw: dict) -> R
         if raw.get("schema_version") != "replay-execution-event-v2":
             raise ReplayExecutionError("v2 replay requires explicitly versioned v2 events")
         event = ReplayExecutionEventV2.model_validate(raw)
+        if event.kind == "manual_close":
+            _validate_manual_close(snapshot, event)
         if event.kind in {"market_fill", "order_rejected"}:
             admission = ReplayMarginAdmission.model_validate(event.details["margin_admission"])
             instrument = InstrumentSpec.from_mapping(snapshot.instrument_spec)
@@ -235,7 +256,10 @@ def replay_event_for_snapshot(snapshot: ReplayExecutionSnapshot, raw: dict) -> R
             from .replay_tick_execution import validate_tick_execution_event
             validate_tick_execution_event(snapshot, raw)
         return event
-    return ReplayExecutionEvent.model_validate(raw)
+    event = ReplayExecutionEvent.model_validate(raw)
+    if event.kind == "manual_close":
+        _validate_manual_close(snapshot, event)
+    return event
 
 
 def _event_type(snapshot: ReplayExecutionSnapshot):
@@ -312,7 +336,7 @@ def reconstruct_replay_execution_checkpoint(
             )
         # A phase transition can follow the bar's price mark without advancing
         # the cursor. Preserve that entire checkpoint before the next bar.
-        if (event.kind in {"price_mark", "phase_transition", "protection_change"} and event.cursor_index == cursor_index
+        if (event.kind in {"price_mark", "phase_transition", "protection_change", "manual_close", "order_cancel"} and event.cursor_index == cursor_index
                 and (event_sequence is None or event.sequence == event_sequence)):
             selected = event
 
@@ -478,7 +502,7 @@ def queue_market_order(
 ) -> ReplayExecutionSnapshot:
     if snapshot.position is not None or snapshot.pending_market_order is not None:
         raise ReplayExecutionError("initial replay execution core supports one active or queued position")
-    if any((item.get("details") or {}).get("operation_id") == operation_id for item in snapshot.ledger):
+    if any(operation_id in ((item.get("details") or {}).get("operation_id"), (item.get("details") or {}).get("command_operation_id")) for item in snapshot.ledger):
         raise ReplayExecutionError("operation_id was already consumed")
     instrument = InstrumentSpec.from_mapping(snapshot.instrument_spec)
     qty = _decimal(quantity, "quantity", positive=True)
@@ -487,8 +511,8 @@ def queue_market_order(
         operation_id=operation_id,
         side=side,
         quantity=qty,
-        stop_loss=_decimal(stop_loss, "stop_loss", positive=True),
-        take_profit=_decimal(take_profit, "take_profit", positive=True),
+        stop_loss=_decimal(stop_loss, "stop_loss", positive=True) if stop_loss is not None else None,
+        take_profit=_decimal(take_profit, "take_profit", positive=True) if take_profit is not None else None,
         submitted_cursor_index=snapshot.cursor_index,
     )
     return snapshot.model_copy(update={"pending_market_order": order})
@@ -508,16 +532,16 @@ def change_replay_protection(
     source_operation_id = active.source_operation_id if snapshot.position else active.operation_id
     if (not isinstance(operation_id, str) or not operation_id.strip() or len(operation_id) > 128):
         raise ReplayExecutionError("operation_id must be a bounded nonempty identifier")
-    if operation_id == source_operation_id or any((raw.get("details") or {}).get("operation_id") == operation_id for raw in snapshot.ledger):
+    if operation_id == source_operation_id or any(operation_id in ((raw.get("details") or {}).get("operation_id"), (raw.get("details") or {}).get("command_operation_id")) for raw in snapshot.ledger):
         raise ReplayExecutionError("operation_id was already consumed")
-    stop = _decimal(stop_loss, "stop_loss", positive=True)
-    target = _decimal(take_profit, "take_profit", positive=True)
+    stop = _decimal(stop_loss, "stop_loss", positive=True) if stop_loss is not None else None
+    target = _decimal(take_profit, "take_profit", positive=True) if take_profit is not None else None
     reference = _decimal(mid_close, "mid_close", positive=True)
     if snapshot.position:
         instrument = InstrumentSpec.from_mapping(snapshot.instrument_spec)
         bid, ask = quote_from_mid(reference, spread_price=snapshot.spread_price, tick_size=instrument.tick_size)
         reference = bid if active.side == "BUY" else ask
-    if not (stop < reference < target if active.side == "BUY" else target < reference < stop):
+    if not protection_brackets(active.side, reference, stop, target):
         raise ReplayExecutionError("protection must bracket the current closeable quote")
     updated = active.model_copy(update={"stop_loss": stop, "take_profit": target})
     position = updated if snapshot.position else None
@@ -530,7 +554,7 @@ def change_replay_protection(
         balance=snapshot.balance, floating_pl=snapshot.floating_pl, equity=snapshot.equity,
         open_positions=int(position is not None), pending_orders=int(pending is not None),
         details={"operation_id": operation_id, "target_id": target_id,
-                 "previous_stop_loss": str(active.stop_loss), "previous_take_profit": str(active.take_profit),
+                 "previous_stop_loss": str(active.stop_loss) if active.stop_loss is not None else None, "previous_take_profit": str(active.take_profit) if active.take_profit is not None else None,
                  "mid_close": str(mid_close), "closeable_quote": str(reference),
                  "open_position": position.model_dump(mode="json") if position else None,
                  "pending_market_order": pending.model_dump(mode="json") if pending else None},
@@ -653,6 +677,78 @@ def _liquidation_pnl(
     return Decimal(str(cost["net_account"])), cost
 
 
+def _validate_manual_close(snapshot, event):
+    d = event.details
+    prior = next((raw for raw in reversed(snapshot.ledger) if raw["sequence"] == event.sequence - 1), None)
+    if (prior is None or prior["cursor_index"] != event.cursor_index
+            or prior["virtual_time_utc"] != event.virtual_time_utc
+            or prior["details"].get("open_position") != d.get("closed_position")
+            or Decimal(str(prior["balance"])) != Decimal(str(d.get("previous_balance")))):
+        raise ReplayExecutionError("manual close differs from its canonical position checkpoint")
+    closed = ReplayOpenPosition.model_validate(d["closed_position"])
+    bid, ask = (_decimal(d.get(key), key, positive=True) for key in ("bid_close", "ask_close"))
+    if snapshot.schema_version != "replay-execution-tick-v1":
+        instrument = InstrumentSpec.from_mapping(snapshot.instrument_spec)
+        expected = quote_from_mid(d.get("mid_close"), spread_price=snapshot.spread_price, tick_size=instrument.tick_size)
+        if (bid, ask) != expected:
+            raise ReplayExecutionError("manual close quote differs from the declared mid/spread")
+    realized, cost = _liquidation_pnl(closed, exit_bid=bid, exit_ask=ask,
+        instrument=InstrumentSpec.from_mapping(snapshot.instrument_spec), cost_model=CostModel.from_mapping(snapshot.cost_model))
+    if (_decimal(d.get("net_pnl"), "realized pnl") != realized or d.get("cost_breakdown") != cost
+            or d.get("cost_model_version") != cost["cost_model_version"]
+            or _decimal(d.get("fill_price"), "fill price") != (bid if closed.side == "BUY" else ask)):
+        raise ReplayExecutionError("manual close differs from frozen quote/cost accounting")
+
+
+def close_replay_order(snapshot, *, target_id, operation_id, mid_close, virtual_time_utc):
+    """Close at the observed checkpoint quote, or cancel an unfilled order."""
+    active = snapshot.position or snapshot.pending_market_order
+    if active is None:
+        raise ReplayExecutionError("there is no active replay order or position")
+    actual_id = active.position_id if snapshot.position else active.operation_id
+    source_id = active.source_operation_id if snapshot.position else active.operation_id
+    if target_id != actual_id:
+        raise ReplayExecutionError("close target no longer matches the active replay order")
+    if not isinstance(operation_id, str) or not operation_id.strip() or len(operation_id) > 128:
+        raise ReplayExecutionError("operation_id must be a bounded nonempty identifier")
+    if operation_id == source_id or any(operation_id in (d.get("operation_id"), d.get("command_operation_id")) for raw in snapshot.ledger for d in [raw.get("details") or {}]):
+        raise ReplayExecutionError("operation_id was already consumed")
+    if snapshot.ledger and virtual_time_utc != snapshot.ledger[-1]["virtual_time_utc"]:
+        raise ReplayExecutionError("close must stay at the current canonical checkpoint")
+    details = {"command_operation_id": operation_id, "target_id": target_id, "operation_id": source_id,
+        "previous_balance": str(snapshot.balance), "net_pnl": "0", "mid_close": str(mid_close),
+        "open_position": None, "pending_market_order": None, "intrabar_equity_coverage": next((raw["details"].get("intrabar_equity_coverage", "insufficient") for raw in reversed(snapshot.ledger) if raw.get("kind") == "price_mark"), "insufficient" if snapshot.position else "complete")}
+    realized = Decimal(0)
+    if snapshot.position:
+        instrument = InstrumentSpec.from_mapping(snapshot.instrument_spec)
+        if snapshot.schema_version == "replay-execution-tick-v1":
+            bid, ask = snapshot.last_bid, snapshot.last_ask
+            if bid is None or ask is None:
+                raise ReplayExecutionError("manual close requires a canonical broker quote")
+        else:
+            bid, ask = quote_from_mid(mid_close, spread_price=snapshot.spread_price, tick_size=instrument.tick_size)
+        realized, cost = _liquidation_pnl(active, exit_bid=bid, exit_ask=ask, instrument=instrument,
+            cost_model=CostModel.from_mapping(snapshot.cost_model))
+        details.update(operation_id=source_id, position_id=actual_id, side=active.side, quantity=str(active.quantity),
+            reason="manual_close", fill_price=str(bid if active.side == "BUY" else ask),
+            bid_close=str(bid), ask_close=str(ask), net_pnl=str(realized), cost_model_version=cost["cost_model_version"],
+            cost_breakdown=cost, closed_position=active.model_dump(mode="json"))
+    else:
+        details["cancelled_order"] = active.model_dump(mode="json")
+    event = _event_type(snapshot)(sequence=snapshot.event_sequence + 1,
+        kind="manual_close" if snapshot.position else "order_cancel",
+        replay_session_id=snapshot.replay_session_id, branch_id=snapshot.branch_id,
+        dataset_id=snapshot.dataset_id, dataset_sha256=snapshot.dataset_sha256,
+        cursor_index=snapshot.cursor_index, virtual_time_utc=virtual_time_utc,
+        balance=snapshot.balance + realized, floating_pl=0, equity=snapshot.balance + realized,
+        open_positions=0, pending_orders=0, details=details)
+    if snapshot.position:
+        _validate_manual_close(snapshot, event)
+    return snapshot.model_copy(update={"position": None, "pending_market_order": None,
+        "balance": event.balance, "floating_pl": Decimal(0), "equity": event.equity,
+        "event_sequence": event.sequence, "ledger": [*snapshot.ledger, event.model_dump(mode="json")]})
+
+
 def advance_replay_execution(
     snapshot: ReplayExecutionSnapshot,
     *,
@@ -723,9 +819,9 @@ def advance_replay_execution(
             bar["open"], spread_price=spread, tick_size=instrument.tick_size
         )
         entry_fill = entry_ask if pending.side == "BUY" else entry_bid
-        if pending.side == "BUY" and not pending.stop_loss < entry_fill < pending.take_profit:
+        if pending.side == "BUY" and not protection_brackets(pending.side, entry_fill, pending.stop_loss, pending.take_profit):
             raise ReplayExecutionError("BUY bracket must satisfy stop < fill < take-profit")
-        if pending.side == "SELL" and not pending.take_profit < entry_fill < pending.stop_loss:
+        if pending.side == "SELL" and not protection_brackets(pending.side, entry_fill, pending.stop_loss, pending.take_profit):
             raise ReplayExecutionError("SELL bracket must satisfy take-profit < fill < stop")
         order = pending
         margin_details = {}

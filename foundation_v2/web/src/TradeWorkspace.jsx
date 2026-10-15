@@ -84,17 +84,19 @@ function initialDraft(replay) {
   }
 }
 
-function validateDraft(draft, entry) {
+function validateDraft(draft, entry, { optionalProtection = false } = {}) {
   const quantity = optionalNumber(draft.quantity)
   const stopLoss = optionalNumber(draft.stopLoss)
   const takeProfit = optionalNumber(draft.takeProfit)
-  if (![quantity, stopLoss, takeProfit].every(Number.isFinite) || quantity <= 0 || stopLoss <= 0 || takeProfit <= 0) {
+  const absent = value => value === '' || value === null || value === undefined
+  const noStop = optionalProtection && absent(draft.stopLoss), noTarget = optionalProtection && absent(draft.takeProfit)
+  if (!Number.isFinite(entry) || !(entry > 0) || !Number.isFinite(quantity) || quantity <= 0 || (!noStop && (!Number.isFinite(stopLoss) || stopLoss <= 0)) || (!noTarget && (!Number.isFinite(takeProfit) || takeProfit <= 0))) {
     return 'Khối lượng, SL và TP phải là số dương.'
   }
-  if (draft.side === 'BUY' && !(stopLoss < entry && takeProfit > entry)) {
+  if (draft.side === 'BUY' && !((noStop || stopLoss < entry) && (noTarget || takeProfit > entry))) {
     return 'Lệnh BUY cần SL dưới giá tham chiếu và TP trên giá tham chiếu.'
   }
-  if (draft.side === 'SELL' && !(stopLoss > entry && takeProfit < entry)) {
+  if (draft.side === 'SELL' && !((noStop || stopLoss > entry) && (noTarget || takeProfit < entry))) {
     return 'Lệnh SELL cần SL trên giá tham chiếu và TP dưới giá tham chiếu.'
   }
   return ''

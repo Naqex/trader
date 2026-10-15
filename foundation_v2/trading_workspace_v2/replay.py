@@ -531,6 +531,36 @@ class ReplayService:
         self._update_payload(workspace_id, session_id, expected_revision, payload)
         return self.view(workspace_id, session_id)
 
+    def close_order(self, workspace_id: str, session_id: str, expected_revision: int,
+                    *, target_id: str, operation_id: str) -> dict:
+        record = self.store.get_record(workspace_id, "replay", session_id)
+        if record is None:
+            raise LookupError("replay session not found")
+        if record["revision"] != expected_revision:
+            raise RuntimeError("record revision conflict")
+        payload = dict(record["payload"])
+        snapshot = self._execution_snapshot(payload)
+        if snapshot is None:
+            raise ValueError("replay execution is not initialized")
+        if snapshot.cursor_index != int(payload["cursor_index"]):
+            raise RuntimeError("replay execution cursor is inconsistent with replay state")
+        manifest, rows = self._dataset_slice(workspace_id, payload["dataset_id"], snapshot.cursor_index, snapshot.cursor_index + 1)
+        bar = rows[0]
+        if payload.get('asset_states'):
+            from .replay_portfolio import closed_time
+            if closed_time(manifest, bar) < payload['replay_clock_utc']:
+                raise ValueError('asset has no newly closed bar at the shared replay clock')
+        from .replay_execution import close_replay_order
+        close = close_replay_order
+        if snapshot.schema_version == 'replay-execution-tick-v1':
+            from .replay_tick_execution import close_tick_order
+            close = close_tick_order
+        changed = close(snapshot, target_id=target_id, operation_id=operation_id,
+            mid_close=bar["close"], virtual_time_utc=int(bar["timestamp"]) + snapshot.timeframe_seconds)
+        payload["execution"] = changed.model_dump(mode="json")
+        self._update_payload(workspace_id, session_id, expected_revision, payload)
+        return self.view(workspace_id, session_id)
+
     def view(self, workspace_id: str, session_id: str, cursor_index: int | None = None,
              advance_interval_seconds: int | None = None, cutoff_timestamp: int | None = None) -> dict:
         record = self.store.get_record(workspace_id, "replay", session_id)
@@ -957,7 +987,7 @@ class ReplayService:
         marks = [
             replay_event_for_snapshot(snapshot, item)
             for item in snapshot.ledger
-            if item.get("kind") == "price_mark"
+            if item.get("kind") in {"price_mark", "manual_close", "order_cancel"}
         ]
         selected = next((item for item in marks if item.sequence == replay_event_sequence), None)
         if selected is None:

@@ -156,13 +156,26 @@ export default function TradingViewReplayChart(props) {
           lines = []
           const state = latest.current
           if (state.levels) for (const kind of ['entry', 'stop', 'target']) {
+            const value = state.levels[kind] ?? (kind === 'stop' ? state.levels.ghostStop : state.levels.ghostTarget)
+            if (!(value > 0)) continue
+            const ghost = state.levels[kind] === null
             const line = chart.createOrderLine()
             if (!line) continue
-            const value = state.levels[kind]
             const palette = nativeChartPalette(state.theme)
-            const color = kind === 'stop' ? palette.negative : kind === 'target' ? palette.positive : palette.primary
-            line.setPrice(value).setText(kind === 'entry' ? `${state.levels.side} · ${state.levels.state}${state.levels.floating == null ? '' : ` · P/L ${state.levels.floating} ${state.levels.currency}`}` : kind === 'stop' ? 'SL · SIM' : 'TP · SIM')
-              .setQuantity('SIM').setLineColor(color).setBodyBorderColor(color).setQuantityBorderColor(color).setEditable(kind !== 'entry' && state.orderEditable).setCancellable(false)
+            const color = kind === 'stop' ? '#e69a35' : kind === 'target' ? palette.positive : palette.primary
+            const pnl = state.levels.floating == null ? '' : new Intl.NumberFormat(locale, { style: 'currency', currency: state.levels.currency || 'USD', maximumFractionDigits: 2 }).format(Number(state.levels.floating))
+            const label = kind === 'entry' ? `${state.levels.side} · ${t(state.levels.state === 'queued' ? 'Chờ khớp' : state.levels.state === 'draft' ? 'Lệnh nháp' : 'Vị thế')} ${pnl}` : `${kind === 'stop' ? 'SL' : 'TP'}${ghost ? ` · ${t('Kéo để đặt')}` : ''}`
+            line.setPrice(value).setText(label).setQuantity(kind === 'entry' ? String(state.levels.quantity) : ghost ? '+' : 'SIM')
+              .setLineColor(color).setBodyBorderColor(color).setQuantityBorderColor(color)
+              .setLineStyle(ghost ? 2 : 0).setEditable(kind !== 'entry' && state.orderEditable)
+              .setCancellable(kind === 'entry' ? state.orderCloseable : !ghost && state.orderEditable && state.levels.state !== 'draft')
+            const generation = state.orderGeneration
+            line.onCancel(() => {
+              const now = latest.current
+              if (cancelled || now.orderGeneration !== generation) return
+              if (kind === 'entry') { if (now.orderCloseable) { now.onOrderDragStart(); now.onOrderClose() } }
+              else if (now.orderEditable && !ghost) { now.onOrderDragStart(); now.onOrderPriceChange(kind, null) }
+            })
             if (kind !== 'entry') {
               const generation = state.orderGeneration
               line.onMove(() => {
@@ -189,8 +202,9 @@ export default function TradingViewReplayChart(props) {
           const levels = latest.current.levels
           if (!levels) return
           const range = chart.getVisiblePriceRange()
-          const from = Math.min(range.from, levels.entry, levels.stop, levels.target)
-          const to = Math.max(range.to, levels.entry, levels.stop, levels.target)
+          const prices = [levels.entry, levels.stop, levels.target, levels.ghostStop, levels.ghostTarget].filter(value => Number.isFinite(value) && value > 0)
+          const from = Math.min(range.from, ...prices)
+          const to = Math.max(range.to, ...prices)
           const padding = (to - from) * .06
           chart.getPanes()[0]?.getMainSourcePriceScale()?.setVisiblePriceRange({ from: from - padding, to: to + padding })
         }
@@ -350,7 +364,7 @@ export default function TradingViewReplayChart(props) {
     if (!item.adapter.update(rows, cutoff)) { item.historyReader?.reset(); item.chart.resetData() }
     const refresh = () => item === instance.current && item.refresh()
     item.chart.dataReady(refresh)
-  }, [rows, cutoff, levels, orderEditable, orderGeneration])
+  }, [rows, cutoff, levels, orderEditable, props.orderCloseable, orderGeneration])
   useEffect(() => { instance.current?.importAnnotations() }, [drawings])
   useEffect(() => {
     if (!message || status !== 'ready' || !message.startsWith('Đã lưu')) return undefined

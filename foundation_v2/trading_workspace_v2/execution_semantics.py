@@ -48,6 +48,14 @@ def validate_ohlc_bar(bar: dict) -> None:
         raise ExecutionSemanticsError("invalid OHLC bar")
 
 
+def protection_brackets(side, reference, stop, take) -> bool:
+    if side == "BUY":
+        return (stop is None or stop < reference) and (take is None or reference < take)
+    if side == "SELL":
+        return (stop is None or reference < stop) and (take is None or take < reference)
+    return False
+
+
 def protective_exit_for_bar(
     *,
     side: str,
@@ -68,24 +76,24 @@ def protective_exit_for_bar(
     side = str(side).upper()
     if side not in {"BUY", "SELL"}:
         raise ExecutionSemanticsError("side must be BUY or SELL")
-    stop = _decimal(stop_loss, "stop_loss", positive=True)
-    take = _decimal(take_profit, "take_profit", positive=True)
-    if side == "BUY" and not stop < take:
+    stop = _decimal(stop_loss, "stop_loss", positive=True) if stop_loss is not None else None
+    take = _decimal(take_profit, "take_profit", positive=True) if take_profit is not None else None
+    if stop is not None and take is not None and side == "BUY" and not stop < take:
         raise ExecutionSemanticsError("BUY protective stop must be below take-profit")
-    if side == "SELL" and not take < stop:
+    if stop is not None and take is not None and side == "SELL" and not take < stop:
         raise ExecutionSemanticsError("SELL protective take-profit must be below stop")
 
     open_bid, open_ask = quote_from_mid(
         bar["open"], spread_price=spread_price, tick_size=tick_size
     )
     if allow_open_gap:
-        if side == "BUY" and open_bid <= stop:
+        if side == "BUY" and stop is not None and open_bid <= stop:
             return {"exit_price": open_bid, "reason": "stop_loss_gap", "at_open": True}
-        if side == "BUY" and open_bid >= take:
+        if side == "BUY" and take is not None and open_bid >= take:
             return {"exit_price": take, "reason": "take_profit_gap", "at_open": True}
-        if side == "SELL" and open_ask >= stop:
+        if side == "SELL" and stop is not None and open_ask >= stop:
             return {"exit_price": open_ask, "reason": "stop_loss_gap", "at_open": True}
-        if side == "SELL" and open_ask <= take:
+        if side == "SELL" and take is not None and open_ask <= take:
             return {"exit_price": take, "reason": "take_profit_gap", "at_open": True}
 
     low_bid, low_ask = quote_from_mid(
@@ -95,11 +103,11 @@ def protective_exit_for_bar(
         bar["high"], spread_price=spread_price, tick_size=tick_size
     )
     if side == "BUY":
-        stop_hit = low_bid <= stop
-        take_hit = high_bid >= take
+        stop_hit = stop is not None and low_bid <= stop
+        take_hit = take is not None and high_bid >= take
     else:
-        stop_hit = high_ask >= stop
-        take_hit = low_ask <= take
+        stop_hit = stop is not None and high_ask >= stop
+        take_hit = take is not None and low_ask <= take
     if stop_hit and take_hit:
         raise IntrabarAmbiguityError(
             "protective exit is intrabar ambiguous; lower-timeframe ordering required"

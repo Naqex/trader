@@ -300,7 +300,7 @@ def replay_mark_to_prop_event(
     phase_spec: PropPhaseSpec,
     replay_event: ReplayExecutionEvent,
 ) -> PropLifecycleEvent:
-    if replay_event.kind != "price_mark":
+    if replay_event.kind not in {"price_mark", "manual_close", "order_cancel"}:
         raise ReplayPropConnectionError("only canonical replay price_mark events can feed prop lifecycle")
 
     quality = replay_event.evaluation_quality

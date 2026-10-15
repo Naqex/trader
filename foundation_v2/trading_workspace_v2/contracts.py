@@ -479,8 +479,8 @@ class ReplayMarketOrderRequest(BaseModel):
     operation_id: str = Field(min_length=1, max_length=128)
     side: Literal["BUY", "SELL"]
     quantity: Decimal = Field(gt=0)
-    stop_loss: Decimal = Field(gt=0)
-    take_profit: Decimal = Field(gt=0)
+    stop_loss: Decimal | None = Field(default=None, gt=0)
+    take_profit: Decimal | None = Field(default=None, gt=0)
 
 
 class ReplayProtectionRequest(BaseModel):
@@ -488,8 +488,15 @@ class ReplayProtectionRequest(BaseModel):
     expected_revision: int = Field(ge=1, strict=True)
     target_id: str = Field(min_length=1, max_length=128)
     operation_id: str = Field(min_length=1, max_length=128)
-    stop_loss: Decimal = Field(gt=0)
-    take_profit: Decimal = Field(gt=0)
+    stop_loss: Decimal | None = Field(gt=0)
+    take_profit: Decimal | None = Field(gt=0)
+
+
+class ReplayCloseOrderRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+    expected_revision: int = Field(ge=1, strict=True)
+    target_id: str = Field(min_length=1, max_length=128)
+    operation_id: str = Field(min_length=1, max_length=128)
 
 
 class ReplayPropFeedRequest(BaseModel):

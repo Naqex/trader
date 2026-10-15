@@ -41,7 +41,7 @@ test('draft prices use declared pip and quantity assumptions without inventing m
   const plain = { visible_rows: [{ close: 1.1 }], payload: {} }
   assert.deepEqual(orderDraft(plain, { pip_size: '.0001', quantity_min: '.01' }), { side: 'BUY', quantity: '.01', stopLoss: '1.098', takeProfit: '1.104' })
   assert.equal(orderDraft(plain, {}, 'SELL').stopLoss, '')
-  assert.equal(orderLevels(replay, { stopLoss: '', takeProfit: '1.12' }), null)
+  assert.equal(orderLevels(replay, { stopLoss: '', takeProfit: '1.12' }).stop, null)
   assert.equal(money(null, 'USD'), 'N/A')
   assert.equal(money(0, null), 'N/A')
   assert.notEqual(money(0, 'USD'), 'N/A')

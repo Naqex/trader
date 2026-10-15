@@ -1413,6 +1413,53 @@
         }
       }
     },
+    "/api/v2/data/datasets/{dataset_id}/repair": {
+      "post": {
+        "summary": "Repair Local Dataset",
+        "operationId": "repair_local_dataset_api_v2_data_datasets__dataset_id__repair_post",
+        "parameters": [
+          {
+            "name": "dataset_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Dataset Id"
+            }
+          },
+          {
+            "name": "x-workspace-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "title": "X-Workspace-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/data/catalog/refresh": {
       "post": {
         "summary": "Refresh Instrument Catalog",
@@ -4477,6 +4524,63 @@
         }
       }
     },
+    "/api/v2/replay/sessions/{session_id}/orders/close": {
+      "post": {
+        "summary": "Close Replay Order Route",
+        "operationId": "close_replay_order_route_api_v2_replay_sessions__session_id__orders_close_post",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "x-workspace-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "title": "X-Workspace-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplayCloseOrderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/replay/sessions/{session_id}/step": {
       "post": {
         "summary": "Step Replay",
@@ -5989,53 +6093,6 @@
             "description": "Bearer configured metrics token"
           }
         ]
-      }
-    },
-    "/api/v2/data/datasets/{dataset_id}/repair": {
-      "post": {
-        "summary": "Repair Local Dataset",
-        "operationId": "repair_local_dataset_api_v2_data_datasets__dataset_id__repair_post",
-        "parameters": [
-          {
-            "name": "dataset_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Dataset Id"
-            }
-          },
-          {
-            "name": "x-workspace-id",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "title": "X-Workspace-Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
       }
     }
   },
@@ -8091,6 +8148,35 @@
         ],
         "title": "ReplayBranch"
       },
+      "ReplayCloseOrderRequest": {
+        "properties": {
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Revision"
+          },
+          "target_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Target Id"
+          },
+          "operation_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Operation Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_revision",
+          "target_id",
+          "operation_id"
+        ],
+        "title": "ReplayCloseOrderRequest"
+      },
       "ReplayCreate": {
         "properties": {
           "dataset_id": {
@@ -8392,6 +8478,9 @@
               {
                 "type": "string",
                 "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
               }
             ],
             "title": "Stop Loss"
@@ -8405,6 +8494,9 @@
               {
                 "type": "string",
                 "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
               }
             ],
             "title": "Take Profit"
@@ -8416,9 +8508,7 @@
           "expected_revision",
           "operation_id",
           "side",
-          "quantity",
-          "stop_loss",
-          "take_profit"
+          "quantity"
         ],
         "title": "ReplayMarketOrderRequest"
       },
@@ -8561,6 +8651,9 @@
               {
                 "type": "string",
                 "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
               }
             ],
             "title": "Stop Loss"
@@ -8574,6 +8667,9 @@
               {
                 "type": "string",
                 "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
               }
             ],
             "title": "Take Profit"

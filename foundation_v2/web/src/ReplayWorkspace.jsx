@@ -303,12 +303,12 @@ function ReplayChart({ rows, sessionId, chartType, showVolume, showAverage, view
   return <div ref={hostRef} className="replay-chart" role="group" data-testid="replay-chart" data-visible-row-count={rows.length} data-visible-object-count={drawings.filter(record => !record.hidden).length} aria-label={`Biểu đồ replay với ${rows.length} nến đã mở. Nến cuối: ${formatTimestamp(lastBar?.timestamp)} UTC, mở ${formatPrice(lastBar?.open)}, cao ${formatPrice(lastBar?.high)}, thấp ${formatPrice(lastBar?.low)}, đóng ${formatPrice(lastBar?.close)}. Cuộn để zoom, kéo để pan; bấm nến để chọn mốc giá.`}>
     {levels && ['entry', 'stop', 'target'].map(kind => kind === 'entry'
       ? <span key={kind} className="chart-order-level is-entry" data-order-level={kind}>{levels.side} · {levels.state === 'draft' ? t("Nháp entry") : levels.state === 'queued' ? t("Chờ fill") : t("Entry")} {formatPrice(levels.entry)}{levels.floating !== null && <> {t("· P/L")} {money(levels.floating, levels.currency)}</>}</span>
-      : <button key={kind} type="button" className={`chart-order-level is-${kind}`} data-order-level={kind} aria-label={`${kind === 'stop' ? 'Kéo Stop loss' : 'Kéo Take profit'}`} title={t("Kéo đổi giá · phím ↑ ↓ chỉnh một tick")} disabled={!orderEditable}
+      : <button key={kind} type="button" className={`chart-order-level is-${kind} ${levels[kind] == null ? 'is-ghost' : ''}`} data-order-level={kind} aria-label={`${kind === 'stop' ? 'Kéo Stop loss' : 'Kéo Take profit'}`} title={t("Kéo để đặt hoặc đổi giá · phím ↑ ↓ chỉnh một tick")} disabled={!orderEditable}
         onPointerDown={event => { if (!latestRef.current.orderEditable || event.button !== 0) return; event.preventDefault(); event.stopPropagation(); onOrderDragStart(); event.currentTarget.setPointerCapture(event.pointerId); orderDrag.current = { kind, generation: latestRef.current.orderGeneration } }}
         onPointerMove={event => { if (!orderDrag.current) return; const value = dragPrice(event); if (value) chartRef.current?.orderPrimitive.setLevels({ ...latestRef.current.levels, [kind]: value }) }}
         onPointerUp={event => endDrag(event, true)} onPointerCancel={event => endDrag(event, false)}
         onKeyDown={event => { if (!['ArrowUp', 'ArrowDown'].includes(event.key)) return; event.preventDefault(); event.stopPropagation(); const tick = Number(tickSize); if (tick > 0) onOrderPriceChange(kind, Number((levels[kind] + (event.key === 'ArrowUp' ? tick : -tick)).toFixed(8))) }}>
-        <ChartIcon name="grip" />{kind === 'stop' ? t("SL") : t("TP")}{levels.state === 'edit' ? t(" nháp") : ''} {formatPrice(levels[kind])}
+        <ChartIcon name="grip" />{kind === 'stop' ? t("SL") : t("TP")}{levels[kind] == null ? ` · ${t('Kéo để đặt')}` : levels.state === 'edit' ? t(" nháp") : ''} {formatPrice(levels[kind] ?? (kind === 'stop' ? levels.ghostStop : levels.ghostTarget))}
       </button>)}
   </div>
 }
@@ -893,20 +893,42 @@ export default function ReplayWorkspace({ workspace, query }) {
     const saved = await readJson(response)
     setPropState(current => ({ ...current, status: 'ready', attempt: saved.attempt || nextAttempt, phase: saved.phase || nextPhase, resumeState: saved.resume_state || nextResume, error: null }))
   }
-  const submitOrder = async (endpoint, body) => {
-    if (!canOpenOrder || completed || actionLock.current) return false
+  const orderContext = useRef('')
+  orderContext.current = `${workspace}:${sessionId}:${cursor}`
+  const submitOrder = async (endpoint, body, expectedRevision = revision) => {
+    if (!canOpenOrder || (completed && endpoint !== 'orders/close') || actionLock.current) return false
+    const origin = orderContext.current
+    const location = window.location.search
     actionLock.current = true
     setPendingAction('order')
     setIsPlaying(false)
     try {
       const response = await scopedMutation(`/api/v2/replay/sessions/${encodeURIComponent(sessionId)}/${endpoint}`, workspace, {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Workspace-Id': workspace },
-        body: JSON.stringify({ ...body, expected_revision: revision }),
+        body: JSON.stringify({ ...body, expected_revision: expectedRevision }),
       })
       const next = await readJson(response)
+      if (orderContext.current !== origin || window.location.search !== location) return false
       setState({ status: 'ready', payload: next, error: null })
       if (endpoint === 'execution' && propMode) await persistPropReplayBinding(next)
-      return true
+      if (endpoint === 'orders/close' && propMode) {
+        let current = propState
+        try {
+          for (const event of propPriceMarkEvents(next.payload.execution.ledger, Number(current.resumeState?.replay_binding?.last_replay_event_sequence || 0))) {
+            const response = await scopedMutation(`/api/v2/replay/sessions/${encodeURIComponent(sessionId)}/prop/sessions/${encodeURIComponent(propSessionId)}/attempts/${encodeURIComponent(propAttemptId)}/feed`, workspace, {
+              method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Workspace-Id': workspace },
+              body: JSON.stringify({ replay_event_sequence: Number(event.sequence), expected_prop_revision: current.attempt.revision, prop_event_sequence: Number(current.phase.last_event_sequence) + 1 }),
+            })
+            const fed = await readJson(response)
+            current = { ...current, attempt: fed.attempt, phase: fed.phase, resumeState: fed.resume_state, objectives: fed.objectives || fed.resume_state?.prop_lifecycle?.last_objectives || current.objectives }
+          }
+          setPropState(current)
+        } catch (error) {
+          setPropState({ ...current, status: 'error', error: error.message }); setConflict(true)
+          throw new Error('Lệnh đã đóng/hủy; chưa đồng bộ được challenge. Nạp lại trạng thái trước khi tiếp tục.')
+        }
+      }
+      return next
     } catch (error) {
       if (error.code === 'revision_conflict') { setConflict(true); throw new Error('Phiên đã đổi ở nơi khác. Nạp trạng thái mới trước khi sửa lệnh.') }
       throw error
@@ -919,7 +941,7 @@ export default function ReplayWorkspace({ workspace, query }) {
         forceBar: propState.attempt.engine_version === 'replay-v1',
       }
     : null
-  const order = useChartOrder({ workspace, replay, dataset: activeDataset, ready: state.status === 'ready', blocked: historicalView || completed || conflict || assetClockStale || Boolean(pendingAction) || (propMode && propState.status !== 'ready') || (propMode && propState.attempt?.status !== 'running'), submit: submitOrder, executionConfig: propExecutionConfig })
+  const order = useChartOrder({ workspace, replay, dataset: activeDataset, ready: state.status === 'ready', closeBlocked: historicalView || conflict || assetClockStale || Boolean(pendingAction) || (propMode && !propReadyToAdvance), blocked: historicalView || completed || conflict || assetClockStale || Boolean(pendingAction) || (propMode && propState.status !== 'ready') || (propMode && propState.attempt?.status !== 'running'), submit: submitOrder, executionConfig: propExecutionConfig })
   const priceLevels = order.active || (!historicalView && sideOpen && sidePanel === 'order') ? orderLevels(replay, order.draft) : null
   const quotes = marketQuotes(replay)
   const orderBlockedReason = propMode && propState.status !== 'ready' ? 'Chưa đồng bộ được trạng thái challenge; thao tác đang khóa.' : propMode && propState.attempt?.status !== 'running' ? 'Đang đồng bộ trạng thái challenge; hãy thử tải lại phiên.' : historicalView ? 'Cutoff lịch sử chỉ đọc. Về cursor mới nhất hoặc tạo nhánh để đặt lệnh.' : completed ? 'Dataset đã kết thúc; không còn nến để fill hoặc sửa lệnh.' : conflict ? 'Đang khóa vì revision đã thay đổi.' : assetClockStale ? 'Chờ nến mới của tài sản tại thời gian replay chung để đặt lệnh.' : ''
@@ -1208,10 +1230,10 @@ export default function ReplayWorkspace({ workspace, query }) {
                   </ChartFloatingToolbar>}
                   {advancedChart ? <TradingViewReplayChart key={`${sessionId}:${replay.payload.dataset_id}:${historicalView ? cursor : 'canonical'}`}
                     workspace={workspace} datasetId={replay.payload.dataset_id} datasetSha256={replay.dataset_sha256} viewCursorIndex={replay.view_cursor_index} symbol={replayContext.instrument} assetClass={order.instrument?.asset_class} seconds={activeDataset?.timeframe_seconds || replay.payload.execution?.timeframe_seconds}
-                    cutoff={Number(replay.cutoff_timestamp)} theme={theme} levels={priceLevels} orderEditable={!order.disabled} orderGeneration={`${sessionId}:${revision}:${cursor}`}
+                    cutoff={Number(replay.cutoff_timestamp)} theme={theme} levels={priceLevels} orderEditable={!order.disabled} orderCloseable={order.canClose && Boolean(order.active)} onOrderClose={order.close} orderGeneration={`${sessionId}:${revision}:${cursor}`}
                     onOrderDragStart={() => setIsPlaying(false)} tickSize={order.instrument?.tick_size} onOrderPriceChange={order.changePrice} rows={visibleRows} sessionId={sessionId}
                     viewportRequest={viewportRequest} drawings={drawings.objects} onCrosshair={setCrosshair} preferredInterval={nativeIntervalRef.current?.sessionId === sessionId ? nativeIntervalRef.current.interval : undefined} onHeaderSlots={slots => { if (slots?.interval) nativeIntervalRef.current = { sessionId, interval: slots.interval }; setNativeHeaderSlots(slots) }} selectingReplayBar={selectingReplayBar} onReplayBarSelect={selectReplayBar} />
-                    : <ReplayChart theme={theme} levels={priceLevels} orderEditable={!order.disabled} orderGeneration={`${sessionId}:${revision}:${cursor}`} onOrderDragStart={() => setIsPlaying(false)} tickSize={order.instrument?.tick_size} onOrderPriceChange={order.changePrice} rows={visibleRows} sessionId={sessionId} chartType={chartType} showVolume={showVolume} showAverage={showAverage} viewportRequest={viewportRequest} drawings={drawings.objects} onCrosshair={setCrosshair} onAnchorSelect={handleChartAnchor} />}
+                    : <ReplayChart theme={theme} levels={priceLevels} orderEditable={!order.disabled} orderCloseable={order.canClose && Boolean(order.active)} onOrderClose={order.close} orderGeneration={`${sessionId}:${revision}:${cursor}`} onOrderDragStart={() => setIsPlaying(false)} tickSize={order.instrument?.tick_size} onOrderPriceChange={order.changePrice} rows={visibleRows} sessionId={sessionId} chartType={chartType} showVolume={showVolume} showAverage={showAverage} viewportRequest={viewportRequest} drawings={drawings.objects} onCrosshair={setCrosshair} onAnchorSelect={handleChartAnchor} />}
                   <div className="chart-badge chart-badge-left">{replay.payload.dataset_id}</div>
                   <div className="chart-badge chart-badge-right">{replay.historical_view ? t("HISTORICAL CUTOFF") : t("LIVE REPLAY CURSOR")}</div>
                 </div>
@@ -1241,7 +1263,7 @@ export default function ReplayWorkspace({ workspace, query }) {
                 <div className="chart-bottom-status"><span className="status-dot" /> {t("Paper replay")} <strong>{replayContext.instrument}</strong></div>
               </div>
 
-              {advancedChart ? <LegacyTradingBar key={`${workspace}:${sessionId}`} workspace={workspace} sessionId={sessionId} order={order} quotes={quotes} onBeginOrder={beginOrder} analyticsHref={propAnalyticsHref || routeHref('analytics', { surface: 'workspace' })} propRulesAction={propMode ? { label: t('Prop Firm Rules'), onClick: () => setPropRulesOpen(true) } : null} symbol={replayContext.instrument} theme={theme} readStatus={<TestingResourceStatus state={state.status === 'loading' ? 'refreshing' : state.status === 'error' ? 'stale' : 'ready'} resource="phiên replay" detail={state.status === 'error' ? `${t('Không đọc được replay:')} ${t(state.error)} · ${t('Đang giữ cutoff {cutoff} UTC.', { cutoff: replay.cutoff_timestamp })}` : undefined} />} /> : <div className="chart-trading-bar" role="group" aria-label={t("Giao dịch mô phỏng")}>
+              {advancedChart ? <LegacyTradingBar key={`${workspace}:${sessionId}`} workspace={workspace} sessionId={sessionId} order={order} quotes={quotes}  analyticsHref={propAnalyticsHref || routeHref('analytics', { surface: 'workspace' })} propRulesAction={propMode ? { label: t('Prop Firm Rules'), onClick: () => setPropRulesOpen(true) } : null} symbol={replayContext.instrument} theme={theme} readStatus={<TestingResourceStatus state={state.status === 'loading' ? 'refreshing' : state.status === 'error' ? 'stale' : 'ready'} resource="phiên replay" detail={state.status === 'error' ? `${t('Không đọc được replay:')} ${t(state.error)} · ${t('Đang giữ cutoff {cutoff} UTC.', { cutoff: replay.cutoff_timestamp })}` : undefined} />} /> : <div className="chart-trading-bar" role="group" aria-label={t("Giao dịch mô phỏng")}>
                 <div className="chart-trading-actions">
                   {['BUY', 'SELL'].map(side => <button key={side} type="button" className={side.toLowerCase()} disabled={order.disabled || Boolean(order.active)} onClick={() => beginOrder(side)} title={`${side === 'BUY' ? 'Ask' : 'Bid'} mô phỏng tại cutoff; fill ở nến kế tiếp`}>{side === 'BUY' ? t("Buy") : t("Sell")} <strong>{formatPrice(side === 'BUY' ? quotes.ask : quotes.bid)}</strong></button>)}
                   <label>{t("Size")}<input aria-label={t("Khối lượng nhanh")} type="number" min={order.instrument?.quantity_min || '0'} step={order.instrument?.quantity_step || 'any'} value={order.draft.quantity} disabled={order.disabled || Boolean(order.active)} onChange={event => order.setDraft(current => ({ ...current, quantity: event.target.value }))} /></label>

@@ -63,7 +63,7 @@ try {
     await page.keyboard.press('Escape')
     await page.locator('.legacy-account-details').waitFor({ state: 'detached' })
     const chartBox = await page.locator('.chart-frame').boundingBox()
-    for (const action of [page.getByRole('button', { name: 'Mua', exact: true }), page.getByRole('button', { name: 'Bán', exact: true }), page.locator('.chart-utility-actions').getByRole('button', { name: 'Lệnh mô phỏng', exact: true })]) {
+    for (const action of [page.locator('.chart-utility-actions').getByRole('button', { name: 'Lệnh mô phỏng', exact: true })]) {
       await action.click()
       await page.locator('.legacy-order-modal').waitFor()
       assert.deepEqual(await page.locator('.chart-frame').boundingBox(), chartBox, 'order modal does not expand the right dock')
@@ -85,7 +85,7 @@ try {
     await page.getByRole('heading', { name: 'Bộ dữ liệu này chưa có lịch tin', exact: true }).waitFor()
     await page.keyboard.press('Escape')
     assert.ok(await iframe.evaluate(node => node.isConnected), 'dialog journeys preserve the chart iframe')
-    report.cases.push({ mode, checks: 'correct mode, dashboard back link, volume off, account popup, Buy/Sell/rail order modal, repeated scalper focus, date jump, news, same iframe' })
+    report.cases.push({ mode, checks: 'correct mode, dashboard back link, volume off, account popup, rail order modal (quick orders tested on disposable fixtures), repeated scalper focus, date jump, news, same iframe' })
 
     const before = await page.evaluate(() => ({ range: window.__qaWidget.activeChart().getVisibleRange(), cutoff: document.querySelector('.advanced-replay-chart').getAttribute('aria-label') }))
     await page.evaluate(() => {

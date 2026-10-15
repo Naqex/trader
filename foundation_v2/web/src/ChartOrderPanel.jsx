@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTestingLocale } from './testingLocale.jsx'
 import { DEFAULT_COST_MODEL, RiskPreview, validateDraft } from './TradeWorkspace.jsx'
 import { finiteNumber, marketQuotes, orderDraft, protectionReference, replayAtCutoff } from './replayOrderModel.js'
 import { useReplayTickOptions } from './useReplayTickOptions.js'
 import FxSelect from './FxSelect.jsx'
+import { scalperProtection } from './legacyScalperPreset.js'
 
-export function useChartOrder({ workspace, replay, dataset, ready, blocked, submit, executionConfig = null }) {
+export function useChartOrder({ workspace, replay, dataset, ready, blocked, closeBlocked = blocked, submit, executionConfig = null }) {
   const execution = replayAtCutoff(replay)?.payload?.execution
   const account = replay?.portfolio_account || execution
   const assetStates = replay?.payload?.asset_states
@@ -16,6 +17,10 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, subm
   useEffect(() => { setStartingBalance(String(replay?.payload?.starting_balance ?? '10000')) }, [replay?.record_id])
   const [spread, setSpread] = useState('0.0002')
   const [pending, setPending] = useState(false)
+  const busy = useRef(false)
+  const context = `${workspace}:${replay?.record_id}:${replay?.payload?.dataset_id}:${replay?.view_cursor_index ?? replay?.payload?.cursor_index}`
+  const currentContext = useRef(context)
+  currentContext.current = context
   const tick = useReplayTickOptions(workspace, replay)
   useEffect(() => { setDraft(orderDraft(replay, instrument)); setNotice(null) }, [replay?.record_id, replay?.revision, instrument])
   const active = execution?.position || execution?.pending_market_order
@@ -25,35 +30,37 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, subm
   const disabled = !ready || blocked || pending
   const canInitialize = Boolean(instrument && dataset?.timeframe_seconds && costs)
   const run = async (endpoint, body) => {
-    if (disabled) return
+    if ((endpoint === 'orders/close' ? !ready || closeBlocked || pending : disabled) || busy.current) return
+    busy.current = true
     setPending(true)
     setNotice(null)
     try {
       const success = await submit(endpoint, body)
-      if (success) setNotice({ kind: 'ok', text: endpoint === 'execution' ? 'Simulator sẵn sàng.' : endpoint.endsWith('protection') ? 'TP/SL đã lưu; áp dụng từ nến tiếp theo.' : execution?.quote_source === 'broker_bid_ask' ? 'Đã queue; fill ở tick đầu tiên của nến kế tiếp.' : 'Đã queue; fill ở giá mở nến kế tiếp.' })
+      if (success) setNotice({ kind: 'ok', text: endpoint === 'execution' ? 'Simulator sẵn sàng.' : endpoint.endsWith('close') ? 'Đã đóng/hủy lệnh mô phỏng.' : endpoint.endsWith('protection') ? 'TP/SL đã lưu; áp dụng từ nến tiếp theo.' : execution?.quote_source === 'broker_bid_ask' ? 'Đã queue; fill ở tick đầu tiên của nến kế tiếp.' : 'Đã queue; fill ở giá mở nến kế tiếp.' })
       return success
     } catch (error) { setNotice({ kind: 'error', text: error.message }) }
-    finally { setPending(false) }
+    finally { busy.current = false; setPending(false) }
   }
   const save = (nextDraft = draft) => {
     if (disabled || !execution || reference === null) return
-    const validation = validateDraft(nextDraft, reference)
+    const nextReference = active ? reference : nextDraft.side === 'BUY' ? quotes.ask : quotes.bid
+    const validation = validateDraft(nextDraft, nextReference, { optionalProtection: true })
     if (validation) { setNotice({ kind: 'error', text: validation }); return }
     const operation_id = `chart-${crypto.randomUUID()}`
     return run(active ? 'orders/protection' : 'orders/market', active
-      ? { operation_id, target_id: execution.position?.position_id || execution.pending_market_order.operation_id, stop_loss: nextDraft.stopLoss, take_profit: nextDraft.takeProfit }
-      : { operation_id, side: nextDraft.side, quantity: nextDraft.quantity, stop_loss: nextDraft.stopLoss, take_profit: nextDraft.takeProfit })
+      ? { operation_id, target_id: execution.position?.position_id || execution.pending_market_order.operation_id, stop_loss: nextDraft.stopLoss || null, take_profit: nextDraft.takeProfit || null }
+      : { operation_id, side: nextDraft.side, quantity: nextDraft.quantity, stop_loss: nextDraft.stopLoss || null, take_profit: nextDraft.takeProfit || null })
   }
   const changePrice = (kind, price) => {
-    if (disabled || !(price > 0)) return
-    const next = { ...draft, [kind === 'stop' ? 'stopLoss' : 'takeProfit']: String(price) }
+    if (disabled || (price !== null && !(price > 0))) return
+    const next = { ...draft, [kind === 'stop' ? 'stopLoss' : 'takeProfit']: price === null ? '' : String(price) }
     if (active) save(next)
     else setDraft(next)
   }
   const chooseSide = side => {
     if (!active && !disabled) { setDraft(current => ({ ...orderDraft(replay, instrument, side), quantity: current.quantity })); setNotice(null) }
   }
-  const initialize = () => {
+  const initializationBody = () => {
     if (!canInitialize || tick.options === null) return
     const useTicks = !executionConfig?.forceBar && tick.useTicks
     const balance = finiteNumber(startingBalance), spreadValue = useTicks ? 0 : finiteNumber(spread)
@@ -62,10 +69,47 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, subm
     if (useTicks && (!tick.options?.available || !tick.options.snapshot_id || !Number.isInteger(leverage) || leverage < 1 || leverage > 1000)) {
       setNotice({ kind: 'error', text: 'Cần tick tại phút đang chọn và đòn bẩy nguyên từ 1 đến 1000.' }); return
     }
-    return run('execution', { instrument_spec: instrument, cost_model: costs, spread_price: String(spreadValue), timeframe_seconds: Number(dataset.timeframe_seconds), starting_balance: String(balance),
-      ...(useTicks ? { tick_snapshot_id: tick.options.snapshot_id, research_margin: { version: 'fixed-starting-balance-leverage-v1', leverage: String(leverage) } } : {}) })
+    return { instrument_spec: instrument, cost_model: costs, spread_price: String(spreadValue), timeframe_seconds: Number(dataset.timeframe_seconds), starting_balance: String(balance),
+      ...(useTicks ? { tick_snapshot_id: tick.options.snapshot_id, research_margin: { version: 'fixed-starting-balance-leverage-v1', leverage: String(leverage) } } : {}) }
   }
-  return { draft, setDraft, execution, account, assetStates, instrument, costs, active, reference, disabled, pending, notice, startingBalance, configuredBalance: replay?.payload?.starting_balance, configuredCurrency: replay?.payload?.starting_balance_ccy, setStartingBalance, spread, setSpread, tick, canInitialize, initialize, save, changePrice, chooseSide }
+  const initialize = () => {
+    const body = initializationBody()
+    return body ? run('execution', body) : undefined
+  }
+  const quickTrade = async (side, quantity, preset) => {
+    if (disabled || active || busy.current) return false
+    busy.current = true; setPending(true); setNotice(null)
+    const origin = context
+    try {
+      let nextReplay = replay
+      if (!execution) {
+        const body = initializationBody()
+        if (!body) throw new Error('Chưa đủ cấu hình simulator để vào lệnh nhanh.')
+        nextReplay = await submit('execution', body)
+        if (!nextReplay) return false
+      }
+      if (currentContext.current !== origin) throw new Error('Phiên hoặc cutoff đã thay đổi; lệnh nhanh chưa được gửi.')
+      const nextExecution = nextReplay.payload.execution
+      if (nextExecution.position || nextExecution.pending_market_order) throw new Error('Tài sản đã có lệnh đang hoạt động.')
+      const quote = marketQuotes(nextReplay)
+      const protection = scalperProtection(preset, side === 'BUY' ? quote.ask : quote.bid, side, nextExecution.instrument_spec)
+      const nextDraft = { side, quantity, ...protection }
+      const invalid = validateDraft(nextDraft, side === 'BUY' ? quote.ask : quote.bid, { optionalProtection: true })
+      if (invalid) throw new Error(invalid)
+      const result = await submit('orders/market', {
+        operation_id: `quick-${crypto.randomUUID()}`, side, quantity,
+        stop_loss: protection.stopLoss || null, take_profit: protection.takeProfit || null,
+      }, nextReplay.revision)
+      if (result) setNotice({ kind: 'ok', text: nextExecution.quote_source === 'broker_bid_ask' ? 'Đã queue; fill ở tick đầu tiên của nến kế tiếp.' : 'Đã queue; fill ở giá mở nến kế tiếp.' })
+      return Boolean(result)
+    } catch (error) { setNotice({ kind: 'error', text: error.message }); return false }
+    finally { busy.current = false; setPending(false) }
+  }
+  const close = () => active && run('orders/close', {
+    operation_id: `close-${crypto.randomUUID()}`,
+    target_id: execution.position?.position_id || execution.pending_market_order.operation_id,
+  })
+  return { draft, setDraft, execution, account, assetStates, instrument, costs, active, reference, disabled, pending, notice, quickTrade, close, canClose: ready && !closeBlocked && !pending, startingBalance, configuredBalance: replay?.payload?.starting_balance, configuredCurrency: replay?.payload?.starting_balance_ccy, setStartingBalance, spread, setSpread, tick, canInitialize, initialize, save, changePrice, chooseSide }
 }
 
 function LegacyOrderForm({ order, blockedReason, onClose, onJournal }) {
@@ -76,7 +120,7 @@ function LegacyOrderForm({ order, blockedReason, onClose, onJournal }) {
   return <><form className="legacy-order-form" onSubmit={async event => { event.preventDefault(); if (await order.save()) { onClose(); if (journal) onJournal() } }}>
     <div className="legacy-order-grid"><label>{t('Hướng')}<FxSelect className="is-field" label="Hướng" value={draft.side} disabled={disabled || Boolean(active)} onChange={order.chooseSide} options={[{ value: 'BUY', label: t('Buy') }, { value: 'SELL', label: t('Sell') }]} /></label><label>{t('Loại lệnh')}<FxSelect className="is-field" label="Loại lệnh" value="market" disabled options={[{ value: 'market', label: 'Market' }]} /></label>
     <label>{t(instrument?.asset_class==='fx' ? 'Khối lượng (lot)' : 'Khối lượng (quantity)')}<input aria-label={t('Khối lượng lệnh')} type="number" min={instrument?.quantity_min || '0'} step={instrument?.quantity_step || 'any'} value={draft.quantity} disabled={disabled || Boolean(active) || !execution} onChange={event => change('quantity',event.target.value)} /></label><label>{t('Giá vào lệnh')}<input type="text" readOnly value={order.reference ?? '—'} /></label></div>
-    {[['stopLoss','Stop loss'],['takeProfit','Take profit']].map(([key,label]) => <div className="legacy-protection-row" key={key} title={t('Simulator hiện yêu cầu cả SL và TP.')}><label><input type="checkbox" role="switch" checked={Boolean(execution)} disabled readOnly />{t(label)}</label>{execution && <input aria-label={t(label)} type="number" min="0" required step={instrument?.tick_size || 'any'} value={draft[key]} disabled={disabled} onChange={event => change(key,event.target.value)} />}</div>)}
+    {[['stopLoss','Stop loss'],['takeProfit','Take profit']].map(([key,label]) => <div className="legacy-protection-row" key={key}><label><input type="checkbox" role="switch" checked={draft[key] !== ''} disabled={disabled || !execution} onChange={event => change(key, event.target.checked ? String(Number((order.reference + (key === 'stopLoss' ? -1 : 1) * (draft.side === 'BUY' ? 1 : -1) * (Number(instrument?.pip_size) || Number(instrument?.tick_size)) * (key === 'stopLoss' ? 20 : 40)).toFixed(8))) : '')} />{t(label)}</label>{draft[key] !== '' && <input aria-label={t(label)} type="number" min="0" required step={instrument?.tick_size || 'any'} value={draft[key]} disabled={disabled} onChange={event => change(key,event.target.value)} />}</div>)}
     <div className="legacy-protection-row is-unavailable" title={t('Chưa hỗ trợ tự dời SL về hòa vốn')}><label><input type="checkbox" role="switch" disabled />Auto Break-even</label><small>{t('Sắp có')}</small></div>
     <label>{t('Chiến lược')}<FxSelect className="is-field" label="Chiến lược" value="session" disabled options={[{ value: 'session', label: t('Mặc định của phiên') }]} /></label><button type="button" className="legacy-strategy-create" disabled>{t('+ Tạo chiến lược mới')}</button>
     {!execution && <p role="status">{t('Chưa có dữ liệu lệnh tại cutoff này.')}</p>}

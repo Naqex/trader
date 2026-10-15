@@ -3,10 +3,10 @@ import { finiteNumber } from './replayOrderModel.js'
 export const defaultScalperPreset = () => ({ enabled: false, stop: { enabled: true, value: '20', unit: 'pips' }, target: { enabled: true, value: '40', unit: 'pips' } })
 
 export function scalperProtection(preset, entryValue, side, instrument) {
-  if (!preset.enabled) return {}
+  if (!preset.enabled) return { stopLoss: '', takeProfit: '' }
   const entry = finiteNumber(entryValue), tick = finiteNumber(instrument?.tick_size)
   if (!(entry > 0) || !(tick > 0) || !['BUY', 'SELL'].includes(side)) throw new Error('Chưa có giá hoặc bước giá để áp dụng preset.')
-  const result = {}
+  const result = { stopLoss: '', takeProfit: '' }
   for (const [kind, key] of [['stop', 'stopLoss'], ['target', 'takeProfit']]) {
     const setting = preset[kind]
     if (!setting.enabled) continue

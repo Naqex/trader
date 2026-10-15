@@ -23,7 +23,7 @@ export function isPropTerminal(status) {
 }
 
 export function propPriceMarkEvents(events, afterSequence = 0) {
-  return Array.isArray(events) ? events.filter(event => event?.kind === 'price_mark' && Number.isSafeInteger(Number(event.sequence)) && Number(event.sequence) > afterSequence).sort((a,b) => Number(a.sequence)-Number(b.sequence)) : []
+  return Array.isArray(events) ? events.filter(event => ['price_mark', 'manual_close', 'order_cancel'].includes(event?.kind) && Number.isSafeInteger(Number(event.sequence)) && Number(event.sequence) > afterSequence).sort((a,b) => Number(a.sequence)-Number(b.sequence)) : []
 }
 
 export function propReplayRuleView(propState) {

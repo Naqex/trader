@@ -255,7 +255,7 @@ def checkpoint_portfolio(service, workspace, record, cursor=None, cutoff=None, e
     for key, state in payload['asset_states'].items():
         if state.get('execution'):
             m = service.store.get_dataset(workspace, key)
-            events = [event for event in state['execution']['ledger'] if event['kind'] == 'protective_fill']
+            events = [event for event in state['execution']['ledger'] if event['kind'] in {'protective_fill', 'manual_close'}]
             if events:
                 timings = service._dataset_timings(workspace, key, [{'index': event['cursor_index']} for event in events])
                 for event, timing in zip(events, timings):

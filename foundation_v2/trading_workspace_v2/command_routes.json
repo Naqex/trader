@@ -391,6 +391,11 @@
   },
   {
     "method": "POST",
+    "path": "/api/v2/replay/sessions/{session_id}/orders/close",
+    "handler": "close_replay_order_route"
+  },
+  {
+    "method": "POST",
     "path": "/api/v2/replay/sessions/{session_id}/step",
     "handler": "step_replay"
   },

@@ -10,7 +10,7 @@ export function replayAtCutoff(replay) {
 export function orderDraft(replay, instrument, side = 'BUY') {
   replay = replayAtCutoff(replay)
   const active = replay?.payload?.execution?.position || replay?.payload?.execution?.pending_market_order
-  if (active) return { side: active.side, quantity: String(active.quantity), stopLoss: String(active.stop_loss), takeProfit: String(active.take_profit) }
+  if (active) return { side: active.side, quantity: String(active.quantity), stopLoss: active.stop_loss == null ? '' : String(active.stop_loss), takeProfit: active.take_profit == null ? '' : String(active.take_profit) }
   const quotes = marketQuotes(replay)
   const entry = replay?.payload?.execution ? (side === 'BUY' ? quotes.ask : quotes.bid) : finiteNumber(replay?.visible_rows?.at(-1)?.close)
   const pip = finiteNumber(instrument?.pip_size)
@@ -39,9 +39,13 @@ export function orderLevels(replay, draft) {
   const entry = finiteNumber(execution?.position?.entry_fill ?? (execution ? (draft.side === 'BUY' ? quotes.ask : quotes.bid) : replay?.visible_rows?.at(-1)?.close))
   const stop = finiteNumber(draft.stopLoss)
   const target = finiteNumber(draft.takeProfit)
-  if (![entry, stop, target].every(value => value !== null && value > 0)) return null
-  const modified = active && (stop !== Number(active.stop_loss) || target !== Number(active.take_profit))
-  return { entry, stop, target, side: active?.side || draft.side, state: modified ? 'edit' : execution?.position ? 'position' : active ? 'queued' : 'draft',
+  if (!(entry > 0) || (!active && !['BUY', 'SELL'].includes(draft.side))) return null
+  const modified = active && (stop !== finiteNumber(active.stop_loss) || target !== finiteNumber(active.take_profit))
+  const spread = quotes.ask !== null && quotes.bid !== null ? Math.abs(quotes.ask - quotes.bid) : 0
+  const distance = Math.max(Number(execution?.instrument_spec?.pip_size || execution?.instrument_spec?.tick_size || entry * .0001) * 20, spread * 2)
+  const reference = protectionReference(replay) || entry
+  const direction = (active?.side || draft.side) === 'BUY' ? 1 : -1
+  return { entry, stop, target, ghostStop: stop === null && active ? Number((reference - direction * distance).toFixed(8)) : null, ghostTarget: target === null && active ? Number((reference + direction * distance * 2).toFixed(8)) : null, quantity: active?.quantity || draft.quantity, side: active?.side || draft.side, state: modified ? 'edit' : execution?.position ? 'position' : active ? 'queued' : 'draft',
     floating: execution?.position ? execution.floating_pl : null, currency: execution?.cost_model?.account_ccy,
     timestamp: execution?.position?.opened_time_utc ?? replay?.visible_rows?.at(-1)?.timestamp }
 }

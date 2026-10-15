@@ -107,7 +107,7 @@ def build_replay_analytics_view(view: dict, filters: dict | None = None) -> dict
                 _number(detail.get("fill_price"), "entry price", positive=True)
                 position_ids.add(position_id)
                 opened[position_id] = event
-            elif event.kind == "protective_fill":
+            elif event.kind in {"protective_fill", "manual_close"}:
                 if not isinstance(position_id, str):
                     raise AnalyticsValidationError("replay closing fill position is invalid")
                 entry = opened.pop(position_id, None)

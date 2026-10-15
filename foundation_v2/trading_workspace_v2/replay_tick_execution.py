@@ -7,7 +7,7 @@ from typing import Iterable, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from .execution_semantics import validate_ohlc_bar
+from .execution_semantics import validate_ohlc_bar, protection_brackets
 from .replay_execution import (
     ReplayExecutionAdvance,
     ReplayExecutionError,
@@ -127,6 +127,10 @@ def validate_tick_execution_event(
         if _decimal(d["closeable_quote"], "closeable quote") != reference:
             raise ReplayExecutionError("tick protection must use the observed closeable quote")
         return event
+    if event.kind in {"manual_close", "order_cancel"}:
+        if event.kind == "manual_close" and (Decimal(d["bid_close"]) != tick.bid or Decimal(d["ask_close"]) != tick.ask):
+            raise ReplayExecutionError("manual close differs from the observed broker quote")
+        return event
     start = d.get("window_start_msc")
     end = d.get("window_end_msc")
     if (type(start) is not int or type(end) is not int or start < 0
@@ -146,8 +150,8 @@ def validate_tick_execution_event(
             raise ReplayExecutionError("tick fill differs from its observed broker side")
         if event.kind == "protective_fill":
             closed = ReplayOpenPosition.model_validate(d.get("closed_position"))
-            stop_hit = quote <= closed.stop_loss if side == "BUY" else quote >= closed.stop_loss
-            target_hit = quote >= closed.take_profit if side == "BUY" else quote <= closed.take_profit
+            stop_hit = closed.stop_loss is not None and (quote <= closed.stop_loss if side == "BUY" else quote >= closed.stop_loss)
+            target_hit = closed.take_profit is not None and (quote >= closed.take_profit if side == "BUY" else quote <= closed.take_profit)
             reason = "stop_loss" if stop_hit else "take_profit" if target_hit else None
             if (closed.side != side or closed.position_id != d.get("position_id")
                     or closed.source_operation_id != d.get("operation_id") or d.get("reason") != reason
@@ -238,8 +242,7 @@ def advance_tick_execution(
             entry_fill = tick.ask if order.side == "BUY" else tick.bid
             if order.submitted_cursor_index != snapshot.cursor_index:
                 raise ReplayExecutionError("tick order must be submitted at the previous closed bar")
-            if not (order.stop_loss < entry_fill < order.take_profit if order.side == "BUY"
-                    else order.take_profit < entry_fill < order.stop_loss):
+            if not protection_brackets(order.side, entry_fill, order.stop_loss, order.take_profit):
                 raise ReplayExecutionError("tick market gap invalidates the submitted protection bracket")
             required = (entry_fill * order.quantity * instrument.contract_size
                         * costs.quote_to_account_rate / snapshot.research_margin.leverage)
@@ -262,8 +265,8 @@ def advance_tick_execution(
                 record("market_fill", tick, {**detail, "position_id": position.position_id})
         if position is not None:
             quote = tick.bid if position.side == "BUY" else tick.ask
-            stop_hit = quote <= position.stop_loss if position.side == "BUY" else quote >= position.stop_loss
-            target_hit = quote >= position.take_profit if position.side == "BUY" else quote <= position.take_profit
+            stop_hit = position.stop_loss is not None and (quote <= position.stop_loss if position.side == "BUY" else quote >= position.stop_loss)
+            target_hit = position.take_profit is not None and (quote >= position.take_profit if position.side == "BUY" else quote <= position.take_profit)
             if stop_hit or target_hit:
                 closed = position
                 realized, cost = _liquidation_pnl(closed, exit_bid=tick.bid, exit_ask=tick.ask,
@@ -329,6 +332,21 @@ def change_tick_protection(snapshot: ReplayTickExecutionSnapshot, *, target_id: 
     d.update({key: quote_event["details"][key] for key in (
         "tick_snapshot_id", "tick_snapshot_sha256", "quote_source", "time_msc", "sequence", "bid", "ask")})
     d["mid_close"] = str(_decimal(mid_close, "mid close", positive=True))
+    raw = {**raw, "details": d}
+    validate_tick_execution_event(snapshot, raw)
+    return updated.model_copy(update={"ledger": [*updated.ledger[:-1], raw]})
+
+
+def close_tick_order(snapshot, *, target_id, operation_id, mid_close, virtual_time_utc):
+    from .replay_execution import close_replay_order
+    quote_event = next((raw for raw in reversed(snapshot.ledger) if "bid" in raw.get("details", {})), None)
+    if quote_event is None or virtual_time_utc != snapshot.ledger[-1]["virtual_time_utc"]:
+        raise ReplayExecutionError("close requires the current canonical broker checkpoint")
+    updated = close_replay_order(snapshot, target_id=target_id, operation_id=operation_id,
+        mid_close=mid_close, virtual_time_utc=virtual_time_utc)
+    raw = updated.ledger[-1]
+    d = {**raw["details"], **{key: quote_event["details"][key] for key in (
+        "tick_snapshot_id", "tick_snapshot_sha256", "quote_source", "time_msc", "sequence", "bid", "ask")}}
     raw = {**raw, "details": d}
     validate_tick_execution_event(snapshot, raw)
     return updated.model_copy(update={"ledger": [*updated.ledger[:-1], raw]})

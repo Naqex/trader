@@ -4,13 +4,16 @@ import LegacyPositions from './LegacyPositions.jsx'
 import LegacyPopover from './LegacyPopover.jsx'
 import LegacyModal from './LegacyModal.jsx'
 import FxSelect from './FxSelect.jsx'
+import { useNotifications } from './Notifications.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import { finiteNumber } from './replayOrderModel.js'
-import { defaultScalperPreset, scalperProtection } from './legacyScalperPreset.js'
+import { defaultScalperPreset } from './legacyScalperPreset.js'
 import './LegacyTradingBar.css'
 
-export default function LegacyTradingBar({ order, quotes, onBeginOrder, analyticsHref, propRulesAction, symbol, theme, sessionId, workspace, readStatus }) {
+export default function LegacyTradingBar({ order, analyticsHref, propRulesAction, symbol, theme, sessionId, workspace, readStatus }) {
   const { t, fmt } = useTestingLocale()
+  const notify = useNotifications()
+  useEffect(() => { if (order.notice && notify) notify(order.notice.text, order.notice.kind === 'error' ? 'error' : 'success') }, [order.notice, notify])
   const [positionsOpen, setPositionsOpen] = useState(false), [maximized, setMaximized] = useState(false), [height, setHeight] = useState(260)
   const [overflowReserve, setOverflowReserve] = useState(null)
   const [resizing, setResizing] = useState(false)
@@ -38,19 +41,15 @@ export default function LegacyTradingBar({ order, quotes, onBeginOrder, analytic
     try { return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 2 }).format(amount) } catch { return fmt(amount, ' ' + currency) }
   }
   const realized = finiteNumber(account?.balance) !== null && finiteNumber(account?.starting_balance) !== null ? Number(account.balance) - Number(account.starting_balance) : null
-  const openOrder = side => {
-    try {
-      const protection = scalperProtection(preset, side === 'BUY' ? quotes.ask : quotes.bid, side, order.instrument)
-      setError(''); onBeginOrder(side)
-      if (preset.enabled) order.setDraft(current => ({ ...current, ...protection }))
-    } catch (failure) { setError(failure.message) }
-  }
+  const [quantity, setQuantity] = useState(() => String(order.instrument?.quantity_min || '0.01'))
+  useEffect(() => { setQuantity(String(order.instrument?.quantity_min || '0.01')) }, [workspace, sessionId, order.instrument?.instrument_id])
+  const openOrder = side => { setError(''); order.quickTrade(side, quantity, preset) }
   const quantityStep = direction => {
-    const current = finiteNumber(order.draft.quantity), step = finiteNumber(order.instrument?.quantity_step), minimum = finiteNumber(order.instrument?.quantity_min), maximum = finiteNumber(order.instrument?.quantity_max)
+    const current = finiteNumber(quantity), step = finiteNumber(order.instrument?.quantity_step), minimum = finiteNumber(order.instrument?.quantity_min), maximum = finiteNumber(order.instrument?.quantity_max)
     if (disabled || current === null || !(step > 0)) return
     const next = Number((current + direction * step).toFixed(8))
     if ((minimum !== null && next < minimum) || (maximum !== null && next > maximum)) return
-    order.setDraft(value => ({ ...value, quantity: String(next) }))
+    setQuantity(String(next))
   }
   const resizeBounds = () => {
     const main = workspaceRef.current?.closest('.replay-main')
@@ -117,8 +116,8 @@ export default function LegacyTradingBar({ order, quotes, onBeginOrder, analytic
   return <div ref={workspaceRef} className={`legacy-trading-workspace ${resizing ? 'is-resizing' : ''} ${overlay ? 'is-expanded' : maximized ? 'is-maximized' : ''}`} style={overlay ? { height: overflowReserve, '--positions-height': `${positionsOpen ? height : 0}px` } : undefined}>
     <div className="chart-trading-bar legacy-trading-bar" role="group" aria-label={t('Giao dịch mô phỏng')}>
       <div className="chart-trading-actions">
-        {['BUY', 'SELL'].map(side => <button key={side} type="button" className={side.toLowerCase()} disabled={disabled} onClick={() => openOrder(side)} title={t('Mở lệnh mô phỏng để xác nhận')}>{t(side === 'BUY' ? 'Buy' : 'Sell')}</button>)}
-        <div className="legacy-quantity-control"><input aria-label={t('Khối lượng nhanh')} type="number" min={order.instrument?.quantity_min || '0'} max={order.instrument?.quantity_max || undefined} step={order.instrument?.quantity_step || 'any'} value={order.draft.quantity} disabled={disabled} onChange={event => order.setDraft(current => ({ ...current, quantity: event.target.value }))} /><div><button type="button" aria-label={t('Tăng khối lượng')} disabled={disabled || !(Number(order.instrument?.quantity_step) > 0)} onClick={() => quantityStep(1)}><ChartIcon name="down" style={{ transform: 'rotate(180deg)' }} /></button><button type="button" aria-label={t('Giảm khối lượng')} disabled={disabled || !(Number(order.instrument?.quantity_step) > 0)} onClick={() => quantityStep(-1)}><ChartIcon name="down" /></button></div></div>
+        {['BUY', 'SELL'].map(side => <button key={side} type="button" className={side.toLowerCase()} disabled={disabled} onClick={() => openOrder(side)} title={t('Đặt lệnh nhanh theo khối lượng đã chọn')}>{t(side === 'BUY' ? 'Buy' : 'Sell')}</button>)}
+        <div className="legacy-quantity-control"><input aria-label={t('Khối lượng nhanh')} type="number" min={order.instrument?.quantity_min || '0'} max={order.instrument?.quantity_max || undefined} step={order.instrument?.quantity_step || 'any'} value={quantity} disabled={disabled} onChange={event => setQuantity(event.target.value)} /><div><button type="button" aria-label={t('Tăng khối lượng')} disabled={disabled || !(Number(order.instrument?.quantity_step) > 0)} onClick={() => quantityStep(1)}><ChartIcon name="down" style={{ transform: 'rotate(180deg)' }} /></button><button type="button" aria-label={t('Giảm khối lượng')} disabled={disabled || !(Number(order.instrument?.quantity_step) > 0)} onClick={() => quantityStep(-1)}><ChartIcon name="down" /></button></div></div>
         <button type="button" className={`legacy-scalper-button ${preset.enabled ? 'is-enabled' : ''}`} aria-label="Scalper mode" title="Scalper mode" aria-expanded={Boolean(scalperAnchor)} aria-pressed={preset.enabled} onClick={event => {
           const next = structuredClone(preset)
           for (const key of ['stop', 'target']) {
@@ -179,14 +178,14 @@ export default function LegacyTradingBar({ order, quotes, onBeginOrder, analytic
       event.preventDefault()
       try {
         const next = { ...draft, enabled: draft.stop.enabled || draft.target.enabled }
-        if (next.enabled) scalperProtection(next, quotes.ask, 'BUY', order.instrument)
+        if (next.enabled) scalperProtection(next, order.reference, 'BUY', order.instrument)
         setPreset(next); setScalperAnchor(null); setError('')
       } catch (failure) { setError(failure.message) }
     }}>
       {[['stop', 'Stop loss'], ['target', 'Take profit']].map(([key, label]) => <fieldset key={key}><label className="legacy-scalper-toggle"><span>{t(label)}</span><input type="checkbox" role="switch" checked={draft[key].enabled} onChange={event => setDraft(current => ({ ...current, [key]: { ...current[key], enabled: event.target.checked } }))} /></label><div className={`legacy-scalper-distance ${!draft[key].enabled ? 'is-off' : ''}`}><input aria-label={t('Khoảng cách {name}', { name: label })} type="number" min="0.00000001" step="any" required disabled={!draft[key].enabled} value={draft[key].value} onChange={event => setDraft(current => ({ ...current, [key]: { ...current[key], value: event.target.value } }))} /><div className="legacy-scalper-units" role="group" aria-label={t('Đơn vị {name}', { name: label })}>{[['percent', '%'], ['pips', 'Pips'], ...(order.instrument?.asset_class && order.instrument.asset_class !== 'fx' && Number(order.instrument.tick_size) > 0 ? [['ticks', 'Ticks']] : [])].map(([unit, caption]) => <button key={unit} type="button" aria-pressed={draft[key].unit === unit} disabled={!draft[key].enabled || (unit === 'pips' && !(Number(order.instrument?.pip_size) > 0)) || (unit === 'ticks' && !(Number(order.instrument?.tick_size) > 0))} onClick={() => setDraft(current => ({ ...current, [key]: { ...current[key], unit } }))}>{caption}</button>)}</div></div></fieldset>)}
       <label className="legacy-scalper-toggle is-unavailable" title={t('Chưa hỗ trợ tự dời SL về hòa vốn')}><span>Auto Break-even</span><input type="checkbox" role="switch" disabled /></label>
       <label>{t('Chiến lược')}<FxSelect className="is-field" label="Chiến lược" value="session" disabled options={[{ value:'session', label:'Mặc định của phiên' }]} /></label>
-      <p>{t('Preset áp dụng vào lệnh nháp; bạn vẫn xác nhận trước khi đặt lệnh.')}</p>
+      <p>{t('Preset tự áp dụng SL/TP cho các lệnh Mua/Bán nhanh tiếp theo.')}</p>
       {error && <p role="alert">{t(error)}</p>}
       <footer><button type="button" onClick={() => { setScalperAnchor(null); setError('') }}>{t('Discard')}</button><button type="submit" className="legacy-scalper-save" disabled={order.disabled}>{t('Save')}</button></footer>
     </form></LegacyModal>}

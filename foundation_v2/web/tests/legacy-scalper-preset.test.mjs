@@ -16,10 +16,10 @@ test('percent and tick distances round away from entry without collapsing a leve
   assert.deepEqual(scalperProtection(config, 1.1, 'BUY', instrument), { stopLoss: '1.09998', takeProfit: '1.10001' })
   assert.deepEqual(scalperProtection(config, 1.1, 'SELL', instrument), { stopLoss: '1.10002', takeProfit: '1.09999' })
 })
-test('disabled preset or disabled protection preserves the engine draft defaults', () => {
-  assert.deepEqual(scalperProtection(defaultScalperPreset(), null, 'BUY', null), {})
+test('disabled preset and disabled protection explicitly omit each protective leg', () => {
+  assert.deepEqual(scalperProtection(defaultScalperPreset(), null, 'BUY', null), { stopLoss: '', takeProfit: '' })
   const config = preset(); config.stop.enabled = false
-  assert.deepEqual(scalperProtection(config, 1.1, 'BUY', instrument), { takeProfit: '1.104' })
+  assert.deepEqual(scalperProtection(config, 1.1, 'BUY', instrument), { stopLoss: '', takeProfit: '1.104' })
 })
 test('preset rejects missing price, missing unit metadata, zero or negative distances', () => {
   for (const entry of [null, '', 0, NaN]) assert.throws(() => scalperProtection(preset(), entry, 'BUY', instrument))
