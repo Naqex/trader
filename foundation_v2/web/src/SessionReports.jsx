@@ -77,7 +77,9 @@ function AggregateTrades({ workspace, ids, query, sessionControl, onClearSession
   // not need a persistent toolbar label. The table itself already reflects
   // the rows that were read successfully.
   const backgroundStatus = state.refreshing ? 'refreshing' : state.status === 'stale' ? 'stale' : catalogStatus?.state
-  const statusControl = <TestingResourceStatus textSummary state={backgroundStatus} resource={state.refreshing || state.status === 'stale' ? 'bảng giao dịch' : 'danh mục phiên'} recovery={state.readError ? recovery : catalogStatus?.recovery} />
+  // Partial reads still scope the ledger data; the toolbar does not need a
+  // persistent status label. Keep actionable stale/refreshing states visible.
+  const statusControl = <TestingResourceStatus textSummary state={backgroundStatus === 'partial' ? undefined : backgroundStatus} resource={state.refreshing || state.status === 'stale' ? 'bảng giao dịch' : 'danh mục phiên'} recovery={state.readError ? recovery : catalogStatus?.recovery} />
   const readNotice = state.status === 'error' ? <TestingReadState error message={t('Không đọc được giao dịch: {error}', { error: state.error })} recovery={recovery} /> : null
   if (state.denied) return <TestingEmptyState kind="denied" viewport />
   return <section className="as-page fxa-page wm-page" aria-label={t("Trades")} data-testid="aggregate-trades">
