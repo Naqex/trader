@@ -74,7 +74,8 @@ export default function TradingViewReplayChart(props) {
 
   useEffect(() => {
     let cancelled = false, layoutSave, historyReader, saveState = 'saved', restoringImports = false, importedShapes = [], lines = []
-    let widget, adapter, chart, headerSlots, headerObserver, nativeHeader, chartReady = false, fittedLevels = '', reservedWidth = -1, chromeWidth = -1, chromeHeight = -1, resizeFrame = 0, publishFrame = 0
+    let widget, adapter, chart, headerSlots, headerObserver, nativeHeader, chartReady = false, renderingOverlays = false, fittedLevels = '', reservedWidth = -1, chromeWidth = -1, chromeHeight = -1, resizeFrame = 0, publishFrame = 0
+    let orderHandleHost = null, orderHandles = new Map(), orderHandleCleanups = new Map(), lineByKind = new Map(), activeOrderDrag = null
     const resizeChrome = () => {
       const frame = host.current?.querySelector('iframe'), canvas = host.current?.closest('.chart-canvas')
       if (!frame?.contentDocument || !canvas) return
@@ -103,7 +104,110 @@ export default function TradingViewReplayChart(props) {
     }, 20000)
     setStatus('loading'); setMessage('')
     const save = () => layoutSave?.save()
-    const scheduleSave = () => { if (chartReady && !restoringImports) layoutSave?.dirty() }
+    const scheduleSave = () => { if (chartReady && !restoringImports && !renderingOverlays) layoutSave?.dirty() }
+    const clearOrderHandles = () => {
+      activeOrderDrag = null
+      for (const cleanup of orderHandleCleanups.values()) cleanup()
+      orderHandleCleanups.clear()
+      for (const handle of orderHandles.values()) handle.remove()
+      orderHandles.clear()
+      orderHandleHost?.remove()
+      orderHandleHost = null
+    }
+    const orderPane = () => {
+      const frame = host.current?.querySelector('iframe'), doc = frame?.contentDocument
+      const scale = chart?.getPanes?.()[0]?.getMainSourcePriceScale?.()
+      const paneApi = chart?.getPanes?.()[0]
+      if (!doc || !scale || !paneApi) return null
+      const pane = doc.querySelector('td.chart-markup-table.pane div.chart-gui-wrapper') || doc.querySelector('td.chart-markup-table.pane')
+      const rect = pane?.getBoundingClientRect?.()
+      const frameRect = frame?.getBoundingClientRect?.(), canvas = host.current?.closest('.chart-canvas')
+      if (!rect || !Number.isFinite(rect.top) || !frameRect || !canvas) return null
+      const range = scale.getVisiblePriceRange?.() || chart.getVisiblePriceRange?.()
+      const height = Number(paneApi.getHeight?.() || rect.height)
+      if (!range || !(height > 0) || !(range.to > range.from)) return null
+      return { doc, scale, rect, range, height, frameRect, canvas }
+    }
+    const priceToPaneCoordinate = (info, price) => typeof info.scale.priceToCoordinate === 'function'
+      ? info.scale.priceToCoordinate(price)
+      : (info.range.to - price) / (info.range.to - info.range.from) * info.height
+    const paneCoordinateToPrice = (info, coordinate) => typeof info.scale.coordinateToPrice === 'function'
+      ? info.scale.coordinateToPrice(coordinate)
+      : info.range.to - coordinate / info.height * (info.range.to - info.range.from)
+    const syncOrderHandles = () => {
+      if (cancelled || !latest.current.levels || !latest.current.orderEditable) { clearOrderHandles(); return }
+      const info = orderPane()
+      if (!info) return
+      if (!orderHandleHost) {
+        orderHandleHost = info.canvas.ownerDocument.createElement('div')
+        orderHandleHost.dataset.wmOrderHandles = 'true'
+        // The chart is an iframe. Keep the transparent hit surface in the
+        // parent document's top layer so the browser compositor cannot route
+        // pointer input to the iframe underneath it.
+        Object.assign(orderHandleHost.style, { position: 'fixed', inset: '0', pointerEvents: 'none', zIndex: '2147483000' })
+        info.canvas.ownerDocument.body.append(orderHandleHost)
+      }
+      const levels = latest.current.levels
+      const overlap = levels.stop === null && levels.target === null && levels.ghostStop === levels.ghostTarget
+      for (const kind of ['stop', 'target']) {
+        const value = levels[kind] ?? (kind === 'stop' ? levels.ghostStop : levels.ghostTarget)
+        if (!(value > 0) || (overlap && kind === 'stop')) {
+          orderHandleCleanups.get(kind)?.(); orderHandleCleanups.delete(kind)
+          orderHandles.get(kind)?.remove(); orderHandles.delete(kind); continue
+        }
+        let handle = orderHandles.get(kind)
+        if (!handle) {
+          handle = info.canvas.ownerDocument.createElement('button')
+          handle.type = 'button'
+          handle.tabIndex = -1
+          handle.setAttribute('aria-label', kind === 'stop' ? 'Kéo Stop loss' : 'Kéo Take profit')
+          Object.assign(handle.style, { position: 'fixed', left: '0', right: '0', height: '24px', transform: 'translateY(-50%)', padding: '0', border: '0', background: 'transparent', pointerEvents: 'auto', cursor: 'ns-resize' })
+          const begin = event => {
+            if (event.button !== 0 || !latest.current.orderEditable || activeOrderDrag) return
+            event.preventDefault(); event.stopPropagation()
+            latest.current.onOrderDragStart()
+            activeOrderDrag = { kind, pointerId: event.pointerId, price: value }
+            info.canvas.ownerDocument.addEventListener('pointermove', move, true)
+            info.canvas.ownerDocument.addEventListener('pointerup', finish, true)
+            info.canvas.ownerDocument.addEventListener('pointercancel', finish, true)
+          }
+          const move = event => {
+            const drag = activeOrderDrag
+            if (!drag || drag.kind !== kind || drag.pointerId !== event.pointerId) return
+            event.preventDefault(); event.stopPropagation()
+            const current = orderPane(), raw = current ? paneCoordinateToPrice(current, event.clientY - current.frameRect.top - current.rect.top) : null, tick = Number(latest.current.tickSize)
+            if (!(raw > 0)) return
+            const rounded = tick > 0 ? Number((Math.round(raw / tick) * tick).toFixed(8)) : raw
+            if (!(rounded > 0)) return
+            drag.price = rounded
+            const line = lineByKind.get(kind)
+            if (line) { renderingOverlays = true; try { line.setPrice(rounded) } finally { renderingOverlays = false } }
+          }
+          const finish = event => {
+            const drag = activeOrderDrag
+            if (!drag || drag.kind !== kind || drag.pointerId !== event.pointerId) return
+            event.preventDefault(); event.stopPropagation(); activeOrderDrag = null
+            info.canvas.ownerDocument.removeEventListener('pointermove', move, true)
+            info.canvas.ownerDocument.removeEventListener('pointerup', finish, true)
+            info.canvas.ownerDocument.removeEventListener('pointercancel', finish, true)
+            orderHandleCleanups.delete(kind)
+            if (drag.price > 0) latest.current.onOrderPriceChange(kind, drag.price)
+          }
+          handle.addEventListener('pointerdown', begin)
+          handle.addEventListener('pointermove', move)
+          handle.addEventListener('pointerup', finish)
+          handle.addEventListener('pointercancel', finish)
+          orderHandleCleanups.set(kind, () => {
+            info.canvas.ownerDocument.removeEventListener('pointermove', move, true)
+            info.canvas.ownerDocument.removeEventListener('pointerup', finish, true)
+            info.canvas.ownerDocument.removeEventListener('pointercancel', finish, true)
+          })
+          orderHandleHost.append(handle); orderHandles.set(kind, handle)
+        }
+        const coordinate = priceToPaneCoordinate(info, value)
+        if (Number.isFinite(coordinate)) handle.style.top = `${info.frameRect.top + info.rect.top + coordinate}px`
+      }
+    }
     const saveShortcut = event => {
       if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 's') { event.preventDefault(); save() }
     }
@@ -152,10 +256,14 @@ export default function TradingViewReplayChart(props) {
         if (!adapter.supported.includes(chart.resolution())) chart.setResolution(adapter.interval)
         const refresh = () => {
           if (cancelled || !chart || !latest.current.rows.length) return
-          for (const line of lines) line.remove()
-          lines = []
-          const state = latest.current
-          if (state.levels) for (const kind of ['entry', 'stop', 'target']) {
+          renderingOverlays = true
+          try {
+            for (const line of lines) line.remove()
+            lines = []
+            lineByKind.clear()
+            clearOrderHandles()
+            const state = latest.current
+            if (state.levels) for (const kind of ['entry', 'stop', 'target']) {
             const value = state.levels[kind] ?? (kind === 'stop' ? state.levels.ghostStop : state.levels.ghostTarget)
             if (!(value > 0)) continue
             const ghost = state.levels[kind] === null
@@ -165,14 +273,16 @@ export default function TradingViewReplayChart(props) {
             const color = kind === 'stop' ? palette.warning : kind === 'target' ? palette.positive : palette.primary
             const pnl = state.levels.floating == null ? '' : new Intl.NumberFormat(locale, { style: 'currency', currency: state.levels.currency || 'USD', maximumFractionDigits: 2 }).format(Number(state.levels.floating))
             const label = kind === 'entry' ? `${state.levels.side} · ${t(state.levels.state === 'queued' ? 'Chờ khớp' : state.levels.state === 'draft' ? 'Lệnh nháp' : 'Vị thế')} ${pnl}` : `${kind === 'stop' ? 'SL' : 'TP'}${ghost ? ` · ${t('Kéo để đặt')}` : ''}`
-            line.setPrice(value).setText(label).setQuantity(kind === 'entry' ? String(state.levels.quantity) : ghost ? '+' : 'SIM')
+            const editable = kind !== 'entry' && state.orderEditable
+            line.setPrice(value).setDirection(state.levels.side === 'SELL' ? 'sell' : 'buy').setMode(kind === 'stop' ? 'stop' : kind === 'target' ? 'limit' : '').setText(label).setQuantity(kind === 'entry' ? String(state.levels.quantity) : ghost ? '+' : 'SIM')
               .setLineColor(color).setBodyBorderColor(color).setQuantityBorderColor(color)
               .setBodyBackgroundColor(palette.surface).setBodyTextColor(palette.text)
               .setQuantityBackgroundColor(palette.surface).setQuantityTextColor(palette.text)
               .setCancelButtonBackgroundColor(palette.surface).setCancelButtonBorderColor(ghost ? palette.surface : color).setCancelButtonIconColor(ghost ? palette.surface : palette.text)
               .setBodyFont('12px Inter, sans-serif').setQuantityFont('12px Inter, sans-serif')
-              .setLineStyle(ghost ? 2 : 0).setEditable(kind !== 'entry' && state.orderEditable)
+              .setLineStyle(ghost ? 2 : 0).setEditable(editable)
               .setCancellable(kind === 'entry' ? state.orderCloseable : !ghost && state.orderEditable && state.levels.state !== 'draft')
+            line.setEditable(editable)
             const generation = state.orderGeneration
             line.onCancel(() => {
               const now = latest.current
@@ -198,14 +308,18 @@ export default function TradingViewReplayChart(props) {
                 }
               })
             }
-            lines.push(line)
+              lines.push(line); lineByKind.set(kind, line)
+            }
+            const signature = state.levels ? [state.levels.entry, state.levels.stop, state.levels.target].join(':') : ''
+            if (signature !== fittedLevels) {
+              fittedLevels = signature
+              if (state.levels) fitOrder()
+              else chart.getPanes()[0]?.getMainSourcePriceScale()?.setAutoScale(true)
+            }
+          } finally {
+            renderingOverlays = false
           }
-          const signature = state.levels ? [state.levels.entry, state.levels.stop, state.levels.target].join(':') : ''
-          if (signature !== fittedLevels) {
-            fittedLevels = signature
-            if (state.levels) fitOrder()
-            else chart.getPanes()[0]?.getMainSourcePriceScale()?.setAutoScale(true)
-          }
+          syncOrderHandles()
         }
         const fitOrder = () => {
           const levels = latest.current.levels
@@ -270,7 +384,7 @@ export default function TradingViewReplayChart(props) {
         widget.subscribe('onAutoSaveNeeded', scheduleSave)
         widget.subscribe('study_event', scheduleSave)
         widget.subscribe('drawing_event', (id, event) => {
-          if (restoringImports) return
+          if (restoringImports || renderingOverlays) return
           if (importedShapes.includes(id)) { if (event === 'remove') setTimeout(importAnnotations, 0); return }
           if (['create', 'move', 'remove', 'hide', 'show', 'properties_changed', 'points_changed'].includes(event)) scheduleSave()
         })
@@ -340,6 +454,7 @@ export default function TradingViewReplayChart(props) {
           publishHeader()
         })
         chart.onIntervalChanged().subscribe(null, value => { publishHeader(value); scheduleSave() })
+        chart.onVisibleRangeChanged?.().subscribe(null, () => syncOrderHandles())
         chart.onChartTypeChanged().subscribe(null, () => { publishHeader(); scheduleSave() })
         publishHeader()
         chart.dataReady(ready)
@@ -361,7 +476,7 @@ export default function TradingViewReplayChart(props) {
       }
     }).catch(error => { if (!cancelled) { clearTimeout(loadingTimer); setStatus('error'); setMessage(String(error.message || error)) } })
     return () => {
-      cancelled = true; layoutSave?.dispose(); clearTimeout(loadingTimer); headerObserver?.disconnect(); cancelAnimationFrame(resizeFrame); cancelAnimationFrame(publishFrame); resizeFrame = 0; publishFrame = 0; nativeHeader?.removeEventListener('pointerdown', pauseNative, true); nativeHeader?.removeEventListener('keydown', pauseNative, true); nativeHeader?.ownerDocument.removeEventListener('keydown', saveShortcut, true); document.removeEventListener('keydown', saveShortcut, true); instance.current = null
+      cancelled = true; clearOrderHandles(); layoutSave?.dispose(); clearTimeout(loadingTimer); headerObserver?.disconnect(); cancelAnimationFrame(resizeFrame); cancelAnimationFrame(publishFrame); resizeFrame = 0; publishFrame = 0; nativeHeader?.removeEventListener('pointerdown', pauseNative, true); nativeHeader?.removeEventListener('keydown', pauseNative, true); nativeHeader?.ownerDocument.removeEventListener('keydown', saveShortcut, true); document.removeEventListener('keydown', saveShortcut, true); instance.current = null
       latest.current.onHeaderSlots?.(null)
       adapter?.dispose(); historyReader?.dispose(); widget?.remove()
     }
