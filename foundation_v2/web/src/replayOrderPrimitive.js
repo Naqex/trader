@@ -46,7 +46,7 @@ export class ReplayOrderPrimitive {
       context.fillStyle = `${this.palette.negative}1F`
       context.fillRect(left, Math.min(stop, entry), width - left, Math.abs(stop - entry))
       context.setLineDash([4, 4])
-      for (const [y, color] of [[entry, this.palette.primary], [stop, this.palette.negative], [profit, this.palette.positive]]) {
+      for (const [y, color] of [[entry, this.levels.side === 'SELL' ? this.palette.negative : this.palette.positive], [stop, this.palette.warning], [profit, this.palette.positive]]) {
         context.strokeStyle = color; context.lineWidth = 1
         context.beginPath(); context.moveTo(left, y); context.lineTo(width, y); context.stroke()
       }
