@@ -39,8 +39,9 @@ body.chart-page { width: calc(100% - var(--legacy-reserved-width, 0px)); overflo
 .legacy-native-extension { display: flex; align-items: center; color: var(--tv-color-toolbar-button-text); font: 14px -apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, sans-serif; }
 .legacy-native-extension :is(button, a) { display: inline-flex; align-items: center; justify-content: center; gap: 5px; height: 38px; min-width: 32px; padding: 0 8px; box-sizing: border-box; border: 0; border-radius: 6px; background: transparent; color: inherit; font: inherit; white-space: nowrap; text-decoration: none; cursor: pointer; transition:background-color var(--ds-motion-hover),color var(--ds-motion-hover); }
 .layout__area--top :is(.button-9pA37sIi, .button-khcLBZEz) { border-radius:6px; }
-#header-toolbar-intervals > [data-value][class*='isActive-'] { color: var(--tv-color-toolbar-button-text-active); background: var(--tv-color-toolbar-button-background-active); font-weight: 600; box-shadow: inset 0 -2px var(--tv-color-toolbar-button-text-active); }
-#header-toolbar-intervals > [data-value] { align-self: center; height: 30px; min-height: 30px; margin-block: 4px; padding-inline: 6px; border-radius: 5px; }
+#header-toolbar-intervals > [data-value][class*='isActive-'] { color: var(--tv-color-toolbar-button-text-active); background: var(--tv-color-toolbar-button-background-active); font-weight: 600; box-shadow: none; }
+#header-toolbar-intervals > [data-value] { align-self: center; height: 30px; min-height: 30px; margin-block: 4px; padding-inline: 6px; border: 0; border-radius: 5px; }
+#header-toolbar-intervals > [data-value]:hover { background: var(--tv-color-toolbar-button-background-hover); }
 .layout__area--left .button-G7o5fBfa { border-radius:6px; }
 /* The app's right rail owns the object tree entry point. */
 .layout__area--left [data-name='showObjectsTree'] { display:none; }
