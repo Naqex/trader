@@ -16,6 +16,8 @@ export function nativeChartPalette(theme) {
     candleNegative: '#EF5350',
     primary: theme === 'light' ? '#2466AC' : '#70B5FF',
     highlight: theme === 'light' ? '#A44715' : '#FFAD7C',
-    warning: theme === 'light' ? '#80590B' : '#EAC369',
+    // Protection lines follow FXReplay's orange SL / green TP convention;
+    // keep this chart-only token distinct from the muted app warning copy.
+    warning: theme === 'light' ? '#B45309' : '#F59E0B',
   }
 }

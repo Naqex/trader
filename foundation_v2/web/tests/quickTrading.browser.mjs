@@ -31,6 +31,7 @@ await context.addInitScript(() => {
             return (...values) => {
               if (key === 'onMove' || key === 'onCancel') record[key] = values.at(-1)
               if (['setText', 'setPrice', 'setQuantity', 'setCancellable', 'setEditable'].includes(key)) record[key] = values[0]
+              if (key === 'setPrice') record.setPriceCalls = (record.setPriceCalls || 0) + 1
               if (key === 'remove') record.removed = true
               const result = target[key](...values)
               return result === target ? proxy : result
@@ -87,10 +88,14 @@ async function dragOrderHandle(label, deltaY) {
   assert.ok(frameBox && localBox?.width > 0, `${label} hit target is visible`)
   const x = frameBox.x + localBox.x + localBox.width / 2
   const y = frameBox.y + localBox.y + localBox.height / 2
+  const before = await page.evaluate(() => ({ at: performance.now(), updates: window.__qaLines.reduce((sum, item) => sum + (item.setPriceCalls || 0), 0) }))
   await page.mouse.move(x, y)
   await page.mouse.down()
   await page.mouse.move(x, y + deltaY, { steps: 8 })
   await page.mouse.up()
+  const after = await page.evaluate(() => ({ at: performance.now(), updates: window.__qaLines.reduce((sum, item) => sum + (item.setPriceCalls || 0), 0) }))
+  report.performance ??= []
+  report.performance.push({ label, durationMs: Number((after.at - before.at).toFixed(2)), previewUpdates: after.updates - before.updates })
 }
 async function fireNative(kind, action, price) {
   const before = report.requests.length
@@ -162,7 +167,7 @@ try {
   const close = fixture.latest.visible_rows.at(-1).close
   assert.ok(Math.abs(Number(sell.stop_loss) - (close - .0001 + .0015)) < .000011)
   assert.equal(sell.take_profit, null)
-  const presetLinePrice = await page.evaluate(() => window.__qaLines.find(item => !item.removed && item.setText === 'SL')?.setPrice)
+  const presetLinePrice = await page.evaluate(() => window.__qaLines.find(item => !item.removed && item.setText?.startsWith('SL'))?.setPrice)
   assert.equal(String(presetLinePrice), String(sell.stop_loss), 'Scalper preset stop is reflected on the native chart line')
   const protectionBeforeDrag = report.requests.length
   const protectionRequest = page.waitForRequest(request => request.url().endsWith('/orders/protection')).catch(() => null)
@@ -192,6 +197,12 @@ try {
   await page.reload(); await ready(); await waitRequests(3)
   const entry = await page.evaluate(() => window.__qaLines.find(line => !line.removed && !/^SL|^TP/.test(line.setText)).setText)
   assert.ok(entry.includes('12,34') || entry.includes('12.34'))
+  const targetLabel = await page.evaluate(() => {
+    const line = window.__qaLines.find(item => !item.removed && item.setText?.startsWith('TP'))
+    return { text: line?.setText, quantity: line?.setQuantity }
+  })
+  assert.match(targetLabel.text, /^TP · 56 pips · /)
+  assert.equal(targetLabel.quantity, '0.12')
   await page.screenshot({ path: `${output}/position.png` })
   const closed = await fireNative('entry', 'cancel')
   assert.equal(closed.body.target_id, 'fixture-position')
