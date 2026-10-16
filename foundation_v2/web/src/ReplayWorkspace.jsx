@@ -910,7 +910,7 @@ export default function ReplayWorkspace({ workspace, query }) {
       const next = await readJson(response)
       if (orderContext.current !== origin || window.location.search !== location) return false
       setState({ status: 'ready', payload: next, error: null })
-      if (endpoint === 'execution' && propMode) await persistPropReplayBinding(next)
+      if (['execution', 'orders/quick'].includes(endpoint) && propMode) await persistPropReplayBinding(next)
       if (endpoint === 'orders/close' && propMode) {
         let current = propState
         try {

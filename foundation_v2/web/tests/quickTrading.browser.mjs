@@ -43,9 +43,6 @@ await context.addInitScript(() => {
     }
   }, true)
 })
-let releaseInit, requestedInit
-const initStarted = new Promise(resolve => { requestedInit = resolve })
-const initGate = new Promise(resolve => { releaseInit = resolve })
 await context.route('**/*', async route => {
   const request = route.request(), url = new URL(request.url())
   if (url.origin !== origin) { report.unexpected.push(request.url()); return route.abort() }
@@ -60,14 +57,15 @@ await context.route('**/*', async route => {
   assert.equal(body.expected_revision, replay.revision)
   const suffix = url.pathname.split('/').at(-1)
   let execution = replay.payload.execution
-  if (suffix === 'execution') { requestedInit(); await initGate; execution = structuredClone(initialExecution) }
+  if (suffix === 'execution') execution = structuredClone(initialExecution)
+  else if (suffix === 'quick') execution = { ...structuredClone(initialExecution), pending_market_order: body }
   else if (suffix === 'market') execution = { ...execution, pending_market_order: body }
   else if (suffix === 'protection') {
     const key = execution.position ? 'position' : 'pending_market_order'
     execution = { ...execution, [key]: { ...execution[key], stop_loss: body.stop_loss, take_profit: body.take_profit } }
   } else if (suffix === 'close') execution = { ...execution, position: null, pending_market_order: null, floating_pl: '0' }
   else { report.unexpected.push(`${request.method()} ${url.pathname}`); return route.abort() }
-  replay = { ...replay, revision: replay.revision + 1, payload: { ...replay.payload, execution } }
+  replay = { ...replay, revision: replay.revision + (suffix === 'quick' ? 2 : 1), payload: { ...replay.payload, execution } }
   return route.fulfill({ json: replay })
 })
 const page = await context.newPage()
@@ -115,18 +113,17 @@ try {
   report.cases.push('Enabled Scalper preset saves without errors and restores independent legs after reload; disabling both clears the preset')
   await page.locator('.legacy-quantity-control input').fill('0.12')
   await page.getByRole('button', { name: 'Mua', exact: true }).dblclick()
-  await initStarted
   assert.equal(report.requests.length, 1)
-  releaseInit()
   await waitRequests(3)
-  assert.equal(report.requests.length, 2)
-  assert.equal(report.requests[1].body.expected_revision, fixture.latest.revision + 1)
-  assert.equal(report.requests[1].body.quantity, '0.12')
-  assert.equal(report.requests[1].body.stop_loss, null)
-  assert.equal(report.requests[1].body.take_profit, null)
+  assert.equal(report.requests[0].path.endsWith('/orders/quick'), true)
+  assert.equal(report.requests[0].body.expected_revision, fixture.latest.revision)
+  assert.equal(report.requests[0].body.quantity, '0.12')
+  assert.equal(report.requests[0].body.stop_loss, null)
+  assert.equal(report.requests[0].body.take_profit, null)
   assert.equal(await page.locator('.legacy-order-modal').count(), 0)
   assert.equal(await page.locator('.legacy-quantity-control input').inputValue(), '0.12')
-  report.cases.push('First quick Buy initializes once then queues once using the returned revision, preserving quantity; double click cannot duplicate, no dialog or implicit protections')
+  assert.equal(replay.revision, fixture.latest.revision + 2)
+  report.cases.push('First quick Buy initializes and queues in one browser request, preserving the two committed revisions; double click cannot duplicate, no dialog or implicit protections')
   const stop = Number((fixture.latest.visible_rows.at(-1).close - .002).toFixed(5))
   assert.equal((await fireNative('stop', 'move', stop)).body.stop_loss, String(stop))
   assert.equal(replay.payload.execution.pending_market_order.take_profit, null)

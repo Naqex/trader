@@ -392,7 +392,7 @@ mod tests {
     fn frozen_manifest_unique_and_native_routes_do_not_collide() {
         let manifest: Vec<Route> = serde_json::from_str(FROZEN).unwrap();
         let mut seen = HashSet::new();
-        assert_eq!(manifest.len(), 98);
+        assert_eq!(manifest.len(), 105);
         for item in manifest {
             assert!(seen.insert((item.method, item.path)));
         }

@@ -386,6 +386,11 @@
   },
   {
     "method": "POST",
+    "path": "/api/v2/replay/sessions/{session_id}/orders/quick",
+    "handler": "quick_replay_market_order"
+  },
+  {
+    "method": "POST",
     "path": "/api/v2/replay/sessions/{session_id}/orders/protection",
     "handler": "change_replay_protection_route"
   },

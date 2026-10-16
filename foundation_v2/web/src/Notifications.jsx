@@ -13,8 +13,17 @@ function Notification({ notice, onDismiss }) {
     const timer = setTimeout(() => onDismiss(notice.id), 6000)
     return () => clearTimeout(timer)
   }, [notice, paused, onDismiss])
-  return <div className={`wm-notification is-${notice.tone}`} onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onFocus={() => setPaused(true)} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setPaused(false) }}>
-    <p role={notice.tone === 'error' ? 'alert' : 'status'}>{t(notice.message)}</p>
+  const order = notice.order
+  const role = notice.tone === 'error' ? 'alert' : 'status'
+  return <div className={`wm-notification is-${notice.tone}${order ? ' is-order' : ''}`} onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onFocus={() => setPaused(true)} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setPaused(false) }}>
+    {order ? <>
+      <span className={`wm-notification-mark is-${order.side === 'BUY' ? 'buy' : 'sell'}`} aria-hidden="true">✓</span>
+      <div className="wm-notification-content" role={role}>
+        <strong>{t(order.status === 'executed' ? 'Market order executed on' : 'Market order queued on')}</strong>
+        <span className="wm-notification-symbol">{order.symbol}</span>
+        <span className={`wm-notification-order-line is-${order.side === 'BUY' ? 'buy' : 'sell'}`}><b>{t(order.side === 'BUY' ? 'Buy' : 'Sell')}</b> {order.quantity} {t('at')} {order.price}</span>
+      </div>
+    </> : <p role={role}>{t(notice.message || notice.text)}</p>}
     <button type="button" aria-label={t('Đóng thông báo')} onClick={() => onDismiss(notice.id)}>×</button>
   </div>
 }
@@ -24,9 +33,11 @@ export function NotificationProvider({ children }) {
   const [notices, setNotices] = useState([])
   const sequence = useRef(0)
   const dismiss = useCallback(id => setNotices(items => items.filter(item => item.id !== id)), [])
-  const notify = useCallback((message, tone = 'success') => {
-    const notice = { id: ++sequence.current, message, tone }
-    setNotices(items => [...items.filter(item => item.message !== message), notice].slice(-3))
+  const notify = useCallback((messageOrNotice, tone = 'success') => {
+    const input = typeof messageOrNotice === 'string' ? { message: messageOrNotice, tone } : { tone, ...messageOrNotice }
+    const key = input.order ? `order:${input.order.status}:${input.order.side}:${input.order.symbol}:${input.order.quantity}:${input.order.price}` : `message:${input.message}`
+    const notice = { id: ++sequence.current, ...input, key }
+    setNotices(items => [...items.filter(item => item.key !== key), notice].slice(-3))
   }, [])
   return <NotificationContext.Provider value={notify}>{children}<aside className="wm-notifications" aria-label={t('Thông báo thao tác')}>{notices.map(notice => <Notification key={notice.id} notice={notice} onDismiss={dismiss} />)}</aside></NotificationContext.Provider>
 }

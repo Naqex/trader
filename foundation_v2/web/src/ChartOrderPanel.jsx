@@ -110,25 +110,46 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
     const origin = context
     try {
       let nextReplay = replay
+      let endpoint = 'orders/market'
+      let initialization = null
       if (!execution) {
-        const body = initializationBody()
-        if (!body) throw new Error('Chưa đủ cấu hình simulator để vào lệnh nhanh.')
-        nextReplay = await submit('execution', body)
-        if (!nextReplay) return false
+        initialization = initializationBody()
+        if (!initialization) throw new Error('Chưa đủ cấu hình simulator để vào lệnh nhanh.')
+        endpoint = 'orders/quick'
       }
+      const quoteSeed = initialization ? marketQuotes({ ...nextReplay, payload: { ...nextReplay.payload, execution: { spread_price: initialization.spread_price, instrument_spec: initialization.instrument_spec } } }) : marketQuotes(nextReplay)
+      const seedPrice = side === 'BUY' ? quoteSeed.ask : quoteSeed.bid
+      const seededProtection = seedPrice === null ? null : scalperProtection(preset, seedPrice, side, initialization?.instrument_spec || execution?.instrument_spec)
+      if (endpoint === 'orders/quick' && preset.enabled && (initialization?.tick_snapshot_id || !seededProtection)) {
+        endpoint = 'execution'
+      }
+      if (endpoint === 'orders/quick') {
+        nextReplay = await submit(endpoint, { ...initialization, operation_id: `quick-${crypto.randomUUID()}`, side, quantity, stop_loss: seededProtection?.stopLoss || null, take_profit: seededProtection?.takeProfit || null })
+      } else if (!execution) {
+        nextReplay = await submit('execution', initialization)
+      }
+      if (!nextReplay) return false
       if (currentContext.current !== origin) throw new Error('Phiên hoặc cutoff đã thay đổi; lệnh nhanh chưa được gửi.')
       const nextExecution = nextReplay.payload.execution
+      if (endpoint === 'orders/quick') {
+        const queued = nextExecution?.pending_market_order
+        if (!queued) throw new Error('Không queue được lệnh nhanh.')
+        setNotice({ kind: 'ok', text: nextExecution.quote_source === 'broker_bid_ask' ? 'Đã queue; fill ở tick đầu tiên của nến kế tiếp.' : 'Đã queue; fill ở giá mở nến kế tiếp.', order: { status: 'queued', side, symbol: nextExecution.instrument_spec?.instrument_id || instrument?.instrument_id || '—', quantity: String(quantity), price: String(side === 'BUY' ? quoteSeed.ask : quoteSeed.bid) } })
+        return true
+      }
       if (nextExecution.position || nextExecution.pending_market_order) throw new Error('Tài sản đã có lệnh đang hoạt động.')
       const quote = marketQuotes(nextReplay)
       const protection = scalperProtection(preset, side === 'BUY' ? quote.ask : quote.bid, side, nextExecution.instrument_spec)
       const nextDraft = { side, quantity, ...protection }
       const invalid = validateDraft(nextDraft, side === 'BUY' ? quote.ask : quote.bid, { optionalProtection: true })
       if (invalid) throw new Error(invalid)
-      const result = await submit('orders/market', {
-        operation_id: `quick-${crypto.randomUUID()}`, side, quantity,
-        stop_loss: protection.stopLoss || null, take_profit: protection.takeProfit || null,
-      }, nextReplay.revision)
-      if (result) setNotice({ kind: 'ok', text: nextExecution.quote_source === 'broker_bid_ask' ? 'Đã queue; fill ở tick đầu tiên của nến kế tiếp.' : 'Đã queue; fill ở giá mở nến kế tiếp.' })
+      const result = endpoint === 'orders/quick'
+        ? nextReplay
+        : await submit('orders/market', {
+            operation_id: `quick-${crypto.randomUUID()}`, side, quantity,
+            stop_loss: protection.stopLoss || null, take_profit: protection.takeProfit || null,
+          }, nextReplay.revision)
+      if (result) setNotice({ kind: 'ok', text: nextExecution.quote_source === 'broker_bid_ask' ? 'Đã queue; fill ở tick đầu tiên của nến kế tiếp.' : 'Đã queue; fill ở giá mở nến kế tiếp.', order: { status: 'queued', side, symbol: nextExecution.instrument_spec?.instrument_id || instrument?.instrument_id || '—', quantity: String(quantity), price: String(side === 'BUY' ? quote.ask : quote.bid) } })
       return Boolean(result)
     } catch (error) { setNotice({ kind: 'error', text: error.message }); return false }
     finally { busy.current = false; setPending(false) }

@@ -27,8 +27,8 @@ try {
   await dialog.locator('input[maxlength="160"]').first().fill('Browser multiasset acceptance')
   await dialog.locator('.dataset-asset-select .fx-select-trigger').click()
   await page.getByRole('option').filter({ hasText: 'EURUSD' }).first().click()
+  await dialog.locator('.dataset-asset-select .fx-select-trigger').click()
   await page.getByRole('option').filter({ hasText: 'XAUUSD' }).first().click()
-  await page.keyboard.press('Escape')
   await dialog.getByRole('textbox', { name: 'Ngày bắt đầu phiên (UTC)' }).fill('01/01/2026 00:10')
   const firstChartWindow = page.waitForResponse(response => new URL(response.url()).pathname.endsWith('/chart-window') && response.status() === 200, { timeout: 20000 })
   await dialog.locator('.quick-session-submit').click()
@@ -63,6 +63,35 @@ try {
   assert.ok(advanced.payload.replay_clock_utc > server.body.payload.replay_clock_utc)
   await page.waitForURL(url => Number(url.searchParams.get('cursor')) === advanced.view_cursor_index)
   report.replayStep = { cursor: advanced.view_cursor_index, revision: advanced.revision }
+  if (process.env.TW_QUICK_TRADING === '1') {
+    const queuedResponse = page.waitForResponse(response => new URL(response.url()).pathname.endsWith('/orders/quick') && response.status() === 200)
+    await page.locator('.legacy-quantity-control input').fill('0.12')
+    await page.locator('.legacy-trading-bar button.buy').click()
+    const queued = await (await queuedResponse).json()
+    assert.equal(await page.locator('.legacy-order-modal').count(), 0)
+    assert.equal(queued.payload.execution.pending_market_order.quantity, '0.12')
+    assert.equal(queued.payload.execution.pending_market_order.stop_loss, null)
+    assert.equal(queued.payload.execution.pending_market_order.take_profit, null)
+    assert.equal(queued.revision, advanced.revision + 2, 'first quick action initializes and queues in one command')
+    const filledResponse = page.waitForResponse(response => new URL(response.url()).pathname.endsWith('/step') && response.status() === 200)
+    await page.getByTestId('step-1').click()
+    const filled = await (await filledResponse).json()
+    const position = filled.payload.execution.position
+    assert.equal(position.quantity, '0.12')
+    assert.equal(position.stop_loss, null)
+    assert.equal(position.take_profit, null)
+    await page.screenshot({ path: path.join(output, 'quick-trading-position.png') })
+    // Native X callbacks are covered by quickTrading.browser; this boundary
+    // check verifies the actual close route against the newly opened position.
+    const closed = await page.evaluate(async ({ id, revision, positionId }) => {
+      const response = await fetch(`/api/v2/replay/sessions/${id}/orders/close`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Workspace-Id': 'tenant-a' }, body: JSON.stringify({ expected_revision: revision, operation_id: 'browser-quick-close', target_id: positionId }) })
+      return { status: response.status, body: await response.json() }
+    }, { id: report.createdSession, revision: filled.revision, positionId: position.position_id })
+    assert.equal(closed.status, 200)
+    assert.equal(closed.body.payload.execution.position, null)
+    assert.equal(closed.body.payload.execution.balance, filled.payload.execution.equity)
+    report.quickTrading = { queuedRevision: queued.revision, openedRevision: filled.revision, closedRevision: closed.body.revision, quantity: position.quantity, balance: closed.body.payload.execution.balance, scope: 'real UI quick Buy -> atomic initialize+queue -> next-bar fill -> actual API close; native line callbacks covered separately' }
+  }
   const navigate = async view => {
     await page.evaluate(view => { const link = document.createElement('a'); link.href = `/?workspace=tenant-a&view=${view}&area=testing&section=${view === 'overview' ? 'dashboard' : view}`; document.body.append(link); link.click(); link.remove() }, view)
     await page.waitForURL(url => url.searchParams.get('view') === view)
@@ -74,8 +103,8 @@ try {
   await dialog.locator('input[maxlength="160"]').first().fill('Browser bounded period acceptance')
   await dialog.locator('.dataset-asset-select .fx-select-trigger').click()
   await page.getByRole('option').filter({ hasText: 'EURUSD' }).first().click()
+  await dialog.locator('.dataset-asset-select .fx-select-trigger').click()
   await page.getByRole('option').filter({ hasText: 'XAUUSD' }).first().click()
-  await page.keyboard.press('Escape')
   await dialog.getByRole('textbox', { name: 'Ngày bắt đầu phiên (UTC)' }).fill('01/01/2026 00:10')
   await dialog.getByRole('button', { name: 'Tùy chọn', exact: true }).click()
   await dialog.getByRole('textbox', { name: 'Ngày kết thúc phiên (UTC)' }).fill('01/01/2026 00:12')
@@ -135,6 +164,14 @@ try {
   report.documentNavigations = documents
   report.result = 'PASS'
   await page.screenshot({ path: path.join(output, 'browser-dashboard.png') })
+} catch (error) {
+  report.result = 'FAIL'; report.failure = error.stack
+  const page = browser.contexts()[0]?.pages()[0]
+  if (page) {
+    await page.screenshot({ path: path.join(output, 'browser-failure.png') }).catch(() => {})
+    report.visibleAlerts = await page.locator('[role=alert],.wm-notification').allTextContents()
+  }
+  throw error
 } finally {
   await writeFile(path.join(output, 'browser.json'), JSON.stringify(report, null, 2))
   await browser.close()

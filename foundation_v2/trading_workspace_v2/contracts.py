@@ -483,6 +483,23 @@ class ReplayMarketOrderRequest(BaseModel):
     take_profit: Decimal | None = Field(default=None, gt=0)
 
 
+class ReplayQuickMarketOrderRequest(ReplayMarketOrderRequest):
+    """A quick order may carry simulator initialization in the same round trip.
+
+    The service still commits initialization before queueing, preserving the
+    existing revision and validation semantics while avoiding a second browser
+    request for the common first quick order.
+    """
+
+    instrument_spec: dict | None = None
+    cost_model: dict | None = None
+    spread_price: Decimal | None = Field(default=None, ge=0)
+    timeframe_seconds: int | None = Field(default=None, gt=0, strict=True)
+    starting_balance: Decimal | None = Field(default=None, gt=0)
+    research_margin: ReplayResearchMargin | None = None
+    tick_snapshot_id: str | None = Field(default=None, pattern=r'^ticks-[0-9a-f]{64}$')
+
+
 class ReplayProtectionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
     expected_revision: int = Field(ge=1, strict=True)

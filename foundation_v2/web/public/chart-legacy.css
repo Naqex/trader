@@ -7,8 +7,8 @@ body.chart-page { width: calc(100% - var(--legacy-reserved-width, 0px)); overflo
 :root {
   --tv-color-platform-background: #D2D5DA;
   --tv-color-pane-background: #FFFFFF;
-  --tv-color-toolbar-button-background-hover: #DDE1E7;
-  --tv-color-toolbar-button-background-active: #F3F4F6;
+  --tv-color-toolbar-button-background-hover: #F3F5F7;
+  --tv-color-toolbar-button-background-active: #E5EFFB;
   --tv-color-toolbar-button-text: #15181C;
   --tv-color-toolbar-button-text-hover: #15181C;
   --tv-color-toolbar-button-text-active: #15181C;
@@ -17,7 +17,7 @@ body.chart-page { width: calc(100% - var(--legacy-reserved-width, 0px)); overflo
   --tv-color-platform-background: #3D444C;
   --tv-color-pane-background: #080808;
   --tv-color-toolbar-button-background-hover: #3D4148;
-  --tv-color-toolbar-button-background-active: #23262A;
+  --tv-color-toolbar-button-background-active: #232D38;
   --tv-color-toolbar-button-text: #FFFFFF;
   --tv-color-toolbar-button-text-hover: #FFFFFF;
   --tv-color-toolbar-button-text-active: #FFFFFF;
@@ -39,7 +39,7 @@ body.chart-page { width: calc(100% - var(--legacy-reserved-width, 0px)); overflo
 .legacy-native-extension { display: flex; align-items: center; color: var(--tv-color-toolbar-button-text); font: 14px -apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, sans-serif; }
 .legacy-native-extension :is(button, a) { display: inline-flex; align-items: center; justify-content: center; gap: 5px; height: 38px; min-width: 32px; padding: 0 8px; box-sizing: border-box; border: 0; border-radius: 6px; background: transparent; color: inherit; font: inherit; white-space: nowrap; text-decoration: none; cursor: pointer; transition:background-color var(--ds-motion-hover),color var(--ds-motion-hover); }
 .layout__area--top :is(.button-9pA37sIi, .button-khcLBZEz) { border-radius:6px; }
-#header-toolbar-intervals > [data-value][class*='isActive-'] { color: var(--tv-color-toolbar-button-text-active); background: var(--tv-color-toolbar-button-background-active); font-weight: 600; }
+#header-toolbar-intervals > [data-value][class*='isActive-'] { color: var(--tv-color-toolbar-button-text-active); background: var(--tv-color-toolbar-button-background-active); font-weight: 600; box-shadow: inset 0 -2px var(--tv-color-toolbar-button-text-active); }
 #header-toolbar-intervals > [data-value] { align-self: center; height: 30px; min-height: 30px; margin-block: 4px; padding-inline: 6px; border-radius: 5px; }
 .layout__area--left .button-G7o5fBfa { border-radius:6px; }
 /* The app's right rail owns the object tree entry point. */
@@ -47,6 +47,8 @@ body.chart-page { width: calc(100% - var(--legacy-reserved-width, 0px)); overflo
 .layout__area--left .group-3e32hIe9 + .group-3e32hIe9 { margin-top:0; position:relative; }
 .layout__area--left .group-3e32hIe9 + .group-3e32hIe9::before { content:''; position:absolute; left:8px; right:8px; top:0; height:1px; background:var(--tv-color-platform-background); pointer-events:none; }
 .legacy-native-extension :is(button, a):hover { background: var(--tv-color-toolbar-button-background-hover); color: var(--tv-color-toolbar-button-text-hover); }
+.legacy-native-extension :is(button, a)[aria-pressed='true'], .legacy-native-extension :is(button, a)[aria-selected='true'] { background: var(--tv-color-toolbar-button-background-active); color: var(--tv-color-toolbar-button-text-active); }
+.legacy-native-extension :is(button, a)[aria-pressed='true']:hover, .legacy-native-extension :is(button, a)[aria-selected='true']:hover { background: var(--tv-color-toolbar-button-background-active); }
 .legacy-native-extension :is(button, a):focus-visible { outline: 2px solid var(--project-primary); outline-offset: -2px; }
 .legacy-native-extension svg { width: 20px; height: 20px; display: block; flex-shrink: 0; }
 .legacy-native-market strong { font-weight: 600; }

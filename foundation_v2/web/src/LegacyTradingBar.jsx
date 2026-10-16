@@ -13,7 +13,7 @@ import './LegacyTradingBar.css'
 export default function LegacyTradingBar({ order, analyticsHref, propRulesAction, symbol, theme, sessionId, workspace, readStatus }) {
   const { t, fmt } = useTestingLocale()
   const notify = useNotifications()
-  useEffect(() => { if (order.notice && notify) notify(order.notice.text, order.notice.kind === 'error' ? 'error' : 'success') }, [order.notice, notify])
+  useEffect(() => { if (order.notice && notify) notify(order.notice, order.notice.kind === 'error' ? 'error' : 'success') }, [order.notice, notify])
   const [positionsOpen, setPositionsOpen] = useState(false), [maximized, setMaximized] = useState(false), [height, setHeight] = useState(260)
   const [overflowReserve, setOverflowReserve] = useState(null)
   const [resizing, setResizing] = useState(false)

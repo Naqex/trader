@@ -5963,6 +5963,240 @@
   },
   {
     "method": "POST",
+    "path": "/api/v2/replay/sessions/{session_id}/orders/quick",
+    "handler": "quick_replay_market_order",
+    "status_code": 200,
+    "safe_retry": false,
+    "parameters": {
+      "path": [
+        {
+          "name": "session_id",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "query": [],
+      "body": [
+        {
+          "name": "body",
+          "required": true,
+          "schema": {
+            "$defs": {
+              "ReplayResearchMargin": {
+                "additionalProperties": false,
+                "properties": {
+                  "version": {
+                    "const": "fixed-starting-balance-leverage-v1",
+                    "title": "Version",
+                    "type": "string"
+                  },
+                  "leverage": {
+                    "anyOf": [
+                      {
+                        "maximum": 1000.0,
+                        "minimum": 1.0,
+                        "type": "number"
+                      },
+                      {
+                        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                        "type": "string"
+                      }
+                    ],
+                    "title": "Leverage"
+                  }
+                },
+                "required": [
+                  "version",
+                  "leverage"
+                ],
+                "title": "ReplayResearchMargin",
+                "type": "object"
+              }
+            },
+            "additionalProperties": false,
+            "description": "A quick order may carry simulator initialization in the same round trip.\n\nThe service still commits initialization before queueing, preserving the\nexisting revision and validation semantics while avoiding a second browser\nrequest for the common first quick order.",
+            "properties": {
+              "expected_revision": {
+                "minimum": 1,
+                "title": "Expected Revision",
+                "type": "integer"
+              },
+              "operation_id": {
+                "maxLength": 128,
+                "minLength": 1,
+                "title": "Operation Id",
+                "type": "string"
+              },
+              "side": {
+                "enum": [
+                  "BUY",
+                  "SELL"
+                ],
+                "title": "Side",
+                "type": "string"
+              },
+              "quantity": {
+                "anyOf": [
+                  {
+                    "exclusiveMinimum": 0.0,
+                    "type": "number"
+                  },
+                  {
+                    "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                    "type": "string"
+                  }
+                ],
+                "title": "Quantity"
+              },
+              "stop_loss": {
+                "anyOf": [
+                  {
+                    "exclusiveMinimum": 0.0,
+                    "type": "number"
+                  },
+                  {
+                    "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Stop Loss"
+              },
+              "take_profit": {
+                "anyOf": [
+                  {
+                    "exclusiveMinimum": 0.0,
+                    "type": "number"
+                  },
+                  {
+                    "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Take Profit"
+              },
+              "instrument_spec": {
+                "anyOf": [
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Instrument Spec"
+              },
+              "cost_model": {
+                "anyOf": [
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Cost Model"
+              },
+              "spread_price": {
+                "anyOf": [
+                  {
+                    "minimum": 0.0,
+                    "type": "number"
+                  },
+                  {
+                    "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Spread Price"
+              },
+              "timeframe_seconds": {
+                "anyOf": [
+                  {
+                    "exclusiveMinimum": 0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Timeframe Seconds"
+              },
+              "starting_balance": {
+                "anyOf": [
+                  {
+                    "exclusiveMinimum": 0.0,
+                    "type": "number"
+                  },
+                  {
+                    "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Starting Balance"
+              },
+              "research_margin": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/ReplayResearchMargin"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "tick_snapshot_id": {
+                "anyOf": [
+                  {
+                    "pattern": "^ticks-[0-9a-f]{64}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Tick Snapshot Id"
+              }
+            },
+            "required": [
+              "expected_revision",
+              "operation_id",
+              "side",
+              "quantity"
+            ],
+            "title": "ReplayQuickMarketOrderRequest",
+            "type": "object"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "method": "POST",
     "path": "/api/v2/replay/sessions/{session_id}/orders/protection",
     "handler": "change_replay_protection_route",
     "status_code": 200,

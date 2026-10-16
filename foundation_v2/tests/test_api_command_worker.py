@@ -38,7 +38,7 @@ class DirectDomainCommandTests(unittest.TestCase):
 
     def test_manifest_freezes_all_reviewed_routes_and_actual_validation_schema(self):
         manifest = self.dispatcher.manifest()
-        self.assertEqual(len(manifest), 103)
+        self.assertEqual(len(manifest), 105)
         current = json.loads((ROOT / "foundation_v2/trading_workspace_v2/command_contracts.json").read_text(encoding="utf-8"))
         self.assertEqual(current, manifest)
         replay = next(item for item in manifest if item["path"] == "/api/v2/replay/sessions/{session_id}" and item["method"] == "GET")

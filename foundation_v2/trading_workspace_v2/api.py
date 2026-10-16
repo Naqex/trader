@@ -37,6 +37,7 @@ from .contracts import (
     ReplayCreate,
     ReplayExecutionInitialize,
     ReplayMarketOrderRequest,
+    ReplayQuickMarketOrderRequest,
     ReplayProtectionRequest,
     ReplayCloseOrderRequest,
     ReplayMetadataUpdate,
@@ -1394,6 +1395,37 @@ def create_app(
                 quantity=body.quantity,
                 stop_loss=body.stop_loss,
                 take_profit=body.take_profit,
+            )
+        except LookupError:
+            raise HTTPException(status_code=404, detail="replay_not_found")
+        except RuntimeError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    @app.post("/api/v2/replay/sessions/{session_id}/orders/quick")
+    def quick_replay_market_order(
+        session_id: str,
+        body: ReplayQuickMarketOrderRequest,
+        workspace: str = Depends(workspace_id),
+    ):
+        try:
+            return replay.quick_market_order(
+                workspace,
+                session_id,
+                body.expected_revision,
+                operation_id=body.operation_id,
+                side=body.side,
+                quantity=body.quantity,
+                stop_loss=body.stop_loss,
+                take_profit=body.take_profit,
+                instrument_spec=body.instrument_spec,
+                cost_model=body.cost_model,
+                spread_price=body.spread_price,
+                timeframe_seconds=body.timeframe_seconds,
+                starting_balance=body.starting_balance,
+                research_margin=body.research_margin,
+                tick_snapshot_id=body.tick_snapshot_id,
             )
         except LookupError:
             raise HTTPException(status_code=404, detail="replay_not_found")

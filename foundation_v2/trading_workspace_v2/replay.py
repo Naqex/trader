@@ -496,6 +496,65 @@ class ReplayService:
         self._update_payload(workspace_id, session_id, expected_revision, payload)
         return self.view(workspace_id, session_id)
 
+    def quick_market_order(
+        self,
+        workspace_id: str,
+        session_id: str,
+        expected_revision: int,
+        *,
+        operation_id: str,
+        side: str,
+        quantity,
+        stop_loss,
+        take_profit,
+        instrument_spec: dict | None = None,
+        cost_model: dict | None = None,
+        spread_price=None,
+        timeframe_seconds: int | None = None,
+        starting_balance=None,
+        research_margin=None,
+        tick_snapshot_id=None,
+    ) -> dict:
+        """Queue a quick order with optional first-use simulator setup.
+
+        Initialization and queueing retain their existing revision checks and
+        validation. Keeping the two domain operations here only removes the
+        extra browser round trip that made the first quick action feel slow.
+        """
+        record = self.store.get_record(workspace_id, "replay", session_id)
+        if record is None:
+            raise LookupError("replay session not found")
+        if record["revision"] != expected_revision:
+            raise RuntimeError("record revision conflict")
+        current_revision = expected_revision
+        if self._execution_snapshot(record["payload"]) is None:
+            required = (instrument_spec, cost_model, spread_price, timeframe_seconds, starting_balance)
+            if any(value is None for value in required):
+                raise ValueError("quick order initialization is incomplete")
+            initialized = self.initialize_execution(
+                workspace_id,
+                session_id,
+                current_revision,
+                instrument_spec=instrument_spec,
+                cost_model=cost_model,
+                spread_price=spread_price,
+                timeframe_seconds=timeframe_seconds,
+                starting_balance=starting_balance,
+                research_margin=research_margin,
+                tick_snapshot_id=tick_snapshot_id,
+            )
+            current_revision = initialized["revision"]
+        return self.queue_market_order(
+            workspace_id,
+            session_id,
+            current_revision,
+            operation_id=operation_id,
+            side=side,
+            quantity=quantity,
+            stop_loss=stop_loss,
+            take_profit=take_profit,
+        )
+
     def change_protection(self, workspace_id: str, session_id: str, expected_revision: int,
                           *, target_id: str, operation_id: str, stop_loss, take_profit) -> dict:
         record = self.store.get_record(workspace_id, "replay", session_id)
