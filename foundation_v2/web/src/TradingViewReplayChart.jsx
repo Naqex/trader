@@ -210,11 +210,11 @@ export default function TradingViewReplayChart(props) {
         const coordinate = priceToPaneCoordinate(info, value)
         if (Number.isFinite(coordinate)) {
           // FX Replay keeps both ghost markers at the entry price. Give each
-          // marker its own narrow hit band so SL and TP remain independently
-          // draggable even while their rendered lines overlap.
-          const offset = overlap ? (kind === 'stop' ? -10 : 10) : 0
+          // marker a stacked, overlapping hit band so the visible entry line
+          // never has a dead gap between the SL and TP targets.
+          const offset = overlap ? (kind === 'stop' ? -8 : 8) : 0
           handle.style.top = `${info.rect.top + coordinate + offset}px`
-          handle.style.height = overlap ? '18px' : '24px'
+          handle.style.height = overlap ? '28px' : '24px'
         }
       }
     }
