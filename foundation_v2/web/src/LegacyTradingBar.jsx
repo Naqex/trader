@@ -10,7 +10,7 @@ import { finiteNumber } from './replayOrderModel.js'
 import { defaultScalperPreset, scalperProtection } from './legacyScalperPreset.js'
 import './LegacyTradingBar.css'
 
-export default function LegacyTradingBar({ order, analyticsHref, propRulesAction, symbol, theme, sessionId, workspace, readStatus }) {
+export default function LegacyTradingBar({ order, analyticsHref, propRulesAction, symbol, theme, sessionId, workspace, readStatus, onPresetChange }) {
   const { t, fmt } = useTestingLocale()
   const notify = useNotifications()
   useEffect(() => { if (order.notice && notify) notify(order.notice, order.notice.kind === 'error' ? 'error' : 'success') }, [order.notice, notify])
@@ -33,6 +33,7 @@ export default function LegacyTradingBar({ order, analyticsHref, propRulesAction
   positionsLayout.current = { open: positionsOpen, maximized, height, overflowReserve }
   useEffect(() => () => { clearTimeout(hideBalance.current); cancelAnimationFrame(resizeFrame.current) }, [])
   useEffect(() => { try { localStorage.setItem(storageKey, JSON.stringify(preset)) } catch { /* The confirmation flow works without browser storage. */ } }, [storageKey, preset])
+  useEffect(() => { onPresetChange?.(preset) }, [onPresetChange, preset])
   const execution = order.execution, account = order.account, tickPending = order.tick.options === null && !order.executionConfig?.forceBar, disabled = order.disabled || Boolean(order.active) || (!execution && (!order.canInitialize || tickPending)), currency = execution?.cost_model?.account_ccy || order.configuredCurrency || order.costs?.account_ccy
   const money = value => {
     const amount = finiteNumber(value)

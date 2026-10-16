@@ -31,7 +31,7 @@ export function protectionReference(replay) {
   return active.side === 'BUY' ? quote.bid : quote.ask
 }
 
-export function orderLevels(replay, draft) {
+export function orderLevels(replay, draft, scalperPreview = null) {
   replay = replayAtCutoff(replay)
   const execution = replay?.payload?.execution
   const active = execution?.position || execution?.pending_market_order
@@ -41,11 +41,12 @@ export function orderLevels(replay, draft) {
   const target = finiteNumber(draft.takeProfit)
   if (!(entry > 0) || (!active && !['BUY', 'SELL'].includes(draft.side))) return null
   const modified = active && (stop !== finiteNumber(active.stop_loss) || target !== finiteNumber(active.take_profit))
-  const spread = quotes.ask !== null && quotes.bid !== null ? Math.abs(quotes.ask - quotes.bid) : 0
-  const distance = Math.max(Number(execution?.instrument_spec?.pip_size || execution?.instrument_spec?.tick_size || entry * .0001) * 20, spread * 2)
-  const reference = protectionReference(replay) || entry
-  const direction = (active?.side || draft.side) === 'BUY' ? 1 : -1
-  return { entry, stop, target, ghostStop: stop === null && active ? Number((reference - direction * distance).toFixed(8)) : null, ghostTarget: target === null && active ? Number((reference + direction * distance * 2).toFixed(8)) : null, quantity: active?.quantity || draft.quantity, side: active?.side || draft.side, state: modified ? 'edit' : execution?.position ? 'position' : active ? 'queued' : 'draft',
+  // FXReplay keeps unset protection handles on the entry level. Once a
+  // Scalper preset exists, its enabled legs become the preview positions until
+  // the user drags them or the queued order receives real protection values.
+  const ghostStop = stop === null && active ? Number(scalperPreview?.stopLoss || entry) : null
+  const ghostTarget = target === null && active ? Number(scalperPreview?.takeProfit || entry) : null
+  return { entry, stop, target, ghostStop, ghostTarget, quantity: active?.quantity || draft.quantity, side: active?.side || draft.side, state: modified ? 'edit' : execution?.position ? 'position' : active ? 'queued' : 'draft',
     floating: execution?.position ? execution.floating_pl : null, currency: execution?.cost_model?.account_ccy,
     timestamp: execution?.position?.opened_time_utc ?? replay?.visible_rows?.at(-1)?.timestamp }
 }

@@ -116,6 +116,8 @@ try {
   await page.getByRole('button', { name: 'Mua', exact: true }).dblclick()
   assert.equal(report.requests.length, 1)
   await waitRequests(3)
+  const defaultLinePrices = await page.evaluate(() => window.__qaLines.filter(item => !item.removed && item.setPrice !== undefined).map(item => item.setPrice))
+  assert.equal(new Set(defaultLinePrices.map(String)).size, 1, 'Unset SL/TP preview lines stay on the entry level by default')
   assert.equal(report.requests[0].path.endsWith('/orders/quick'), true)
   assert.equal(report.requests[0].body.expected_revision, fixture.latest.revision)
   assert.equal(report.requests[0].body.quantity, '0.12')
@@ -141,6 +143,8 @@ try {
   const close = fixture.latest.visible_rows.at(-1).close
   assert.ok(Math.abs(Number(sell.stop_loss) - (close - .0001 + .0015)) < .000011)
   assert.equal(sell.take_profit, null)
+  const presetLinePrice = await page.evaluate(() => window.__qaLines.find(item => !item.removed && item.setText === 'SL')?.setPrice)
+  assert.equal(String(presetLinePrice), String(sell.stop_loss), 'Scalper preset stop is reflected on the native chart line')
   report.cases.push('Native ghost SL move adds only SL, X removes only SL, entry X cancels queued order; Scalper stop-only Sell uses saved 15 pip distance')
   await fireNative('entry', 'cancel')
   await preset({ stop: false, target: true, unit: 'percent', value: '0.5' })
