@@ -152,7 +152,7 @@ export default function TradingViewReplayChart(props) {
       const overlap = levels.stop === null && levels.target === null && levels.ghostStop === levels.ghostTarget
       for (const kind of ['stop', 'target']) {
         const value = levels[kind] ?? (kind === 'stop' ? levels.ghostStop : levels.ghostTarget)
-        if (!(value > 0) || (overlap && kind === 'stop')) {
+        if (!(value > 0)) {
           orderHandleCleanups.get(kind)?.(); orderHandleCleanups.delete(kind)
           orderHandles.get(kind)?.remove(); orderHandles.delete(kind); continue
         }
@@ -206,7 +206,14 @@ export default function TradingViewReplayChart(props) {
           orderHandleHost.append(handle); orderHandles.set(kind, handle)
         }
         const coordinate = priceToPaneCoordinate(info, value)
-        if (Number.isFinite(coordinate)) handle.style.top = `${info.rect.top + coordinate}px`
+        if (Number.isFinite(coordinate)) {
+          // FX Replay keeps both ghost markers at the entry price. Give each
+          // marker its own narrow hit band so SL and TP remain independently
+          // draggable even while their rendered lines overlap.
+          const offset = overlap ? (kind === 'stop' ? -10 : 10) : 0
+          handle.style.top = `${info.rect.top + coordinate + offset}px`
+          handle.style.height = overlap ? '18px' : '24px'
+        }
       }
     }
     const saveShortcut = event => {
