@@ -36,6 +36,7 @@ import { DEFAULT_COST_MODEL } from './TradeWorkspace.jsx'
 import TradingViewReplayChart from './TradingViewReplayChart.jsx'
 import ChartLoadingState from './ChartLoadingState.jsx'
 import { TestingEmptyState, TestingResourceStatus } from './TestingPageState.jsx'
+import TestingIcon from './TestingIcon.jsx'
 import TestingReadState from './TestingReadState.jsx'
 import useReplayActivity from './useReplayActivity.js'
 import ChartHeaderPreview from './ChartHeaderPreview.jsx'
@@ -1110,7 +1111,13 @@ export default function ReplayWorkspace({ workspace, query }) {
   const propRetryHref = propMode ? routeHref('overview', { session: null, cursor: null, cutoff: null, prop_session: null, prop_attempt: null, attempt: null, create: 'prop' }) : null
 
   if (!replay && (state.status === 'loading' || requestedSession && state.status === 'idle')) return <ChartLoadingState viewport />
-  if (!replay && state.status === 'error') return <main className="chart-read-failure replay-error">{[401, 403].includes(state.errorStatus) ? <TestingEmptyState kind="denied" /> : <><TestingReadState error message={state.errorStatus === 503 ? t('Dữ liệu phiên chưa sẵn sàng. Kiểm tra và khôi phục trong kho dữ liệu rồi mở lại phiên.') : `${t('Không đọc được replay:')} ${t(state.error)}`} /><a href={dataDeskHref}>{t('Mở kho dữ liệu')}</a></>}</main>
+  if (!replay && state.status === 'error') return <main className="chart-read-failure replay-error">{[401, 403].includes(state.errorStatus) ? <TestingEmptyState kind="denied" viewport /> : <section className="replay-error-panel" role="alert">
+    <div className="replay-error-icon" aria-hidden="true"><TestingIcon kind="info" size={24} /></div>
+    <p className="replay-error-kicker">{t('PRACTICE · REPLAY')}</p>
+    <h1>{t('Không mở được phiên replay')}</h1>
+    <TestingReadState error message={state.errorStatus === 503 ? t('Dữ liệu phiên chưa sẵn sàng. Kiểm tra và khôi phục trong kho dữ liệu rồi mở lại phiên.') : `${t('Không đọc được replay:')} ${t(state.error)}`} />
+    <div className="replay-error-actions"><a className="replay-error-primary" href={dataDeskHref}>{t('Mở kho dữ liệu')}</a></div>
+  </section>}</main>
 
   const orderModalOpen = advancedChart && sideOpen && sidePanel === 'order'
   const dockOpen = sideOpen && !orderModalOpen
