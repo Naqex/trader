@@ -318,7 +318,7 @@ button.chart-order-level { cursor: ns-resize; touch-action: none; }
   .legacy-replay-toolbar .legacy-sync-toggle, .legacy-replay-toolbar .legacy-sync-toggle span { width: 32px; }
   .legacy-replay-toolbar .legacy-sync-toggle { margin-right: 0; }
 }
-.is-legacy-chart .chart-trading-actions button:hover:not(:disabled) { filter: none; box-shadow: inset 0 0 0 1px currentColor; }
+.is-legacy-chart .chart-trading-actions button:hover:not(:disabled) { filter: brightness(1.08); box-shadow: none; }
 .is-legacy-chart .chart-trading-actions label { border: 1px solid var(--chart-line); border-radius: 20px; padding-left: 12px; }
 .is-legacy-chart .chart-trading-actions input { border: 0; background: transparent; border-radius: 20px; width: 100px; }
 .is-legacy-chart .chart-sim-tag { color: var(--chart-muted); }
