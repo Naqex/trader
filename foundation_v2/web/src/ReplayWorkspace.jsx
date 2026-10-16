@@ -294,11 +294,18 @@ function ReplayChart({ rows, sessionId, chartType, showVolume, showAverage, view
   const endDrag = (event, commit) => {
     const drag = orderDrag.current
     orderDrag.current = null
-    chartRef.current?.orderPrimitive.setLevels(latestRef.current.levels)
-    if (drag && commit && latestRef.current.orderEditable && drag.generation === latestRef.current.orderGeneration) {
+    const current = latestRef.current
+    if (drag && commit && current.orderEditable && drag.generation === current.orderGeneration) {
       const value = dragPrice(event)
-      if (value) latestRef.current.onOrderPriceChange(drag.kind, value)
+      if (value) {
+        chartRef.current?.orderPrimitive.setLevels({ ...current.levels, [drag.kind]: value })
+        current.onOrderPriceChange(drag.kind, value)
+        return
+      }
     }
+    // A cancelled/invalid drag returns to the last authoritative levels. A
+    // committed drag stays optimistic until the server revision arrives.
+    chartRef.current?.orderPrimitive.setLevels(current.levels)
   }
   return <div ref={hostRef} className="replay-chart" role="group" data-testid="replay-chart" data-visible-row-count={rows.length} data-visible-object-count={drawings.filter(record => !record.hidden).length} aria-label={`Biểu đồ replay với ${rows.length} nến đã mở. Nến cuối: ${formatTimestamp(lastBar?.timestamp)} UTC, mở ${formatPrice(lastBar?.open)}, cao ${formatPrice(lastBar?.high)}, thấp ${formatPrice(lastBar?.low)}, đóng ${formatPrice(lastBar?.close)}. Cuộn để zoom, kéo để pan; bấm nến để chọn mốc giá.`}>
     {levels && ['entry', 'stop', 'target'].map(kind => kind === 'entry'

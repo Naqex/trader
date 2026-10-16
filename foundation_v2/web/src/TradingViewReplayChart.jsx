@@ -189,8 +189,13 @@ export default function TradingViewReplayChart(props) {
                 const tick = Number(now.tickSize)
                 const price = line.getPrice()
                 const rounded = tick > 0 ? Number((Math.round(price / tick) * tick).toFixed(8)) : price
-                line.setPrice(now.levels?.[kind] ?? value)
-                if (Number.isFinite(rounded) && rounded > 0) now.onOrderPriceChange(kind, rounded)
+                // Keep the native line at the snapped pointer position while the
+                // revisioned protection request is in flight. Resetting it to the
+                // last server value here makes a drag visibly jump on every move.
+                if (Number.isFinite(rounded) && rounded > 0) {
+                  line.setPrice(rounded)
+                  now.onOrderPriceChange(kind, rounded)
+                }
               })
             }
             lines.push(line)

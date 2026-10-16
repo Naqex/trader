@@ -76,12 +76,13 @@ const waitRequests = count => page.waitForFunction(count => window.__qaLines?.fi
 async function fireNative(kind, action, price) {
   const before = report.requests.length
   const removedBefore = await page.evaluate(() => window.__qaLines.filter(item => item.removed).length)
-  await page.evaluate(({ kind, action, price }) => {
+  const optimisticPrice = await page.evaluate(({ kind, action, price }) => {
     const line = window.__qaLines.find(item => !item.removed && (kind === 'entry' ? !/^SL|^TP/.test(item.setText) : item.setText.startsWith(kind === 'stop' ? 'SL' : 'TP')))
     if (!line) throw Error(`Missing ${kind} line`)
-    if (action === 'move') { if (!line.setEditable) throw Error('Line is not editable'); line.native.setPrice(price); line.onMove() }
+    if (action === 'move') { if (!line.setEditable) throw Error('Line is not editable'); line.native.setPrice(price); line.onMove(); return line.setPrice }
     else { if (!line.setCancellable) throw Error('Line is not cancellable'); line.onCancel() }
   }, { kind, action, price })
+  if (action === 'move') assert.equal(optimisticPrice, price, `${kind} line stays at the snapped drag price before the server revision`)
   await page.waitForFunction(before => window.__qaLines.filter(item => item.removed).length > before, removedBefore)
   await page.waitForFunction(closing => {
     const lines = window.__qaLines.filter(item => !item.removed)
