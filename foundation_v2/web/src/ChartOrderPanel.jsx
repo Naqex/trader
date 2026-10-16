@@ -82,9 +82,18 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
   const changePrice = (kind, price) => {
     if (disabled || (price !== null && !(price > 0))) return
     const next = { ...draft, [kind === 'stop' ? 'stopLoss' : 'takeProfit']: price === null ? '' : String(price) }
-    if (active) save(next)
-    else setDraft(next)
+    // Validate the direction before an interactive chart drag reaches the API.
+    // This keeps the line from briefly accepting a crossed bracket and gives
+    // the same immediate feedback as the order form.
+    if (active) {
+      const validation = validateDraft(next, reference, { optionalProtection: true })
+      if (validation) { setNotice({ kind: 'error', text: validation }); return false }
+      return save(next)
+    }
+    setDraft(next)
+    return true
   }
+  const reportError = text => setNotice({ kind: 'error', text: String(text || 'Không thể cập nhật TP/SL.') })
   const chooseSide = side => {
     if (!active && !disabled) { setDraft(current => ({ ...orderDraft(replay, instrument, side), quantity: current.quantity })); setNotice(null) }
   }
@@ -158,7 +167,7 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
     operation_id: `close-${crypto.randomUUID()}`,
     target_id: execution.position?.position_id || execution.pending_market_order.operation_id,
   })
-  return { draft, setDraft, execution, account, assetStates, instrument, costs, active, reference, disabled, pending, notice, quickTrade, close, canClose: ready && !closeBlocked && !pending, startingBalance, configuredBalance: replay?.payload?.starting_balance, configuredCurrency: replay?.payload?.starting_balance_ccy, setStartingBalance, spread, setSpread, tick, canInitialize, initialize, save, changePrice, chooseSide, executionConfig }
+  return { draft, setDraft, execution, account, assetStates, instrument, costs, active, reference, disabled, pending, notice, quickTrade, close, canClose: ready && !closeBlocked && !pending, startingBalance, configuredBalance: replay?.payload?.starting_balance, configuredCurrency: replay?.payload?.starting_balance_ccy, setStartingBalance, spread, setSpread, tick, canInitialize, initialize, save, changePrice, reportError, chooseSide, executionConfig }
 }
 
 function LegacyOrderForm({ order, blockedReason, onClose, onJournal }) {

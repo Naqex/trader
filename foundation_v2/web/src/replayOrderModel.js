@@ -31,7 +31,7 @@ export function protectionReference(replay) {
   return active.side === 'BUY' ? quote.bid : quote.ask
 }
 
-export function orderLevels(replay, draft, scalperPreview = null) {
+export function orderLevels(replay, draft, scalperPreview = null, closeableReference = null) {
   replay = replayAtCutoff(replay)
   const execution = replay?.payload?.execution
   const active = execution?.position || execution?.pending_market_order
@@ -50,7 +50,7 @@ export function orderLevels(replay, draft, scalperPreview = null) {
   // the user drags them or the queued order receives real protection values.
   const ghostStop = stop === null && active ? Number(scalperPreview?.stopLoss || entry) : null
   const ghostTarget = target === null && active ? Number(scalperPreview?.takeProfit || entry) : null
-  return { entry, stop, target, ghostStop, ghostTarget, quantity: active?.quantity || draft.quantity, side: active?.side || draft.side, state: modified ? 'edit' : execution?.position ? 'position' : active ? 'queued' : 'draft',
+  return { entry, reference: finiteNumber(closeableReference) ?? entry, stop, target, ghostStop, ghostTarget, quantity: active?.quantity || draft.quantity, side: active?.side || draft.side, state: modified ? 'edit' : execution?.position ? 'position' : active ? 'queued' : 'draft',
     floating: execution?.position ? execution.floating_pl : null, currency: execution?.cost_model?.account_ccy,
     timestamp: execution?.position?.opened_time_utc ?? replay?.visible_rows?.at(-1)?.timestamp }
 }

@@ -136,6 +136,18 @@ export default function TradingViewReplayChart(props) {
       const native = typeof info.scale.coordinateToPrice === 'function' ? info.scale.coordinateToPrice(coordinate) : null
       return Number.isFinite(native) ? native : info.range.to - coordinate / info.height * (info.range.to - info.range.from)
     }
+    const protectionError = (state, kind, price) => {
+      const reference = Number(state?.levels?.reference ?? state?.levels?.entry)
+      if (!(reference > 0) || !(price > 0)) return 'Giá TP/SL không hợp lệ.'
+      const side = state?.levels?.side
+      const valid = kind === 'stop'
+        ? (side === 'BUY' ? price < reference : side === 'SELL' ? price > reference : false)
+        : (side === 'BUY' ? price > reference : side === 'SELL' ? price < reference : false)
+      if (valid) return ''
+      return side === 'SELL'
+        ? (kind === 'stop' ? 'Lệnh SELL cần SL trên giá tham chiếu.' : 'Lệnh SELL cần TP dưới giá tham chiếu.')
+        : (kind === 'stop' ? 'Lệnh BUY cần SL dưới giá tham chiếu.' : 'Lệnh BUY cần TP trên giá tham chiếu.')
+    }
     const syncOrderHandles = () => {
       if (cancelled || !latest.current.levels || !latest.current.orderEditable) { clearOrderHandles(); return }
       const info = orderPane()
@@ -164,21 +176,32 @@ export default function TradingViewReplayChart(props) {
           handle.type = 'button'
           handle.tabIndex = -1
           handle.setAttribute('aria-label', kind === 'stop' ? 'Kéo Stop loss' : 'Kéo Take profit')
-          Object.assign(handle.style, { position: 'fixed', left: '0', right: '0', height: '24px', transform: 'translateY(-50%)', padding: '0', border: '0', background: 'transparent', pointerEvents: 'auto', cursor: 'ns-resize' })
+          // Native order-line text is painted on canvas, so it has no DOM hit
+          // target. Keep a compact invisible button over the right-side label
+          // instead of covering the whole chart; chart pan remains available
+          // everywhere else and the pointer communicates the drag affordance.
+          Object.assign(handle.style, { position: 'fixed', width: '210px', height: '24px', transform: 'translateY(-50%)', padding: '0', border: '0', background: 'transparent', pointerEvents: 'auto', cursor: 'grab', touchAction: 'none' })
           const begin = event => {
             if (event.button !== 0 || !latest.current.orderEditable || activeOrderDrag) return
-            event.preventDefault(); event.stopPropagation()
-            latest.current.onOrderDragStart()
-            activeOrderDrag = { kind, pointerId: event.pointerId, price: value }
+            event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation?.()
+            handle.style.cursor = 'grabbing'
+            latest.current.onOrderDragStart?.()
+            activeOrderDrag = { kind, pointerId: Number.isFinite(event.pointerId) ? event.pointerId : null, price: value }
             info.doc.addEventListener('pointermove', move, true)
             info.doc.addEventListener('pointerup', finish, true)
             info.doc.addEventListener('pointercancel', finish, true)
+            info.doc.addEventListener('mousemove', move, true)
+            info.doc.addEventListener('mouseup', finish, true)
           }
           const move = event => {
             const drag = activeOrderDrag
-            if (!drag || drag.kind !== kind || drag.pointerId !== event.pointerId) return
-            event.preventDefault(); event.stopPropagation()
-            const current = orderPane(), raw = current ? paneCoordinateToPrice(current, event.clientY - current.rect.top) : null, tick = Number(latest.current.tickSize)
+            if (!drag || drag.kind !== kind || (drag.pointerId !== null && drag.pointerId !== event.pointerId)) return
+            event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation?.()
+            // Keep the drag alive while Advanced Charts is recalculating its
+            // visible range. During that short window its price-scale API can
+            // return no range even though the pane is still on screen.
+            const current = orderPane() || info
+            const raw = paneCoordinateToPrice(current, event.clientY - current.rect.top), tick = Number(latest.current.tickSize)
             if (!(raw > 0)) return
             const rounded = tick > 0 ? Number((Math.round(raw / tick) * tick).toFixed(8)) : raw
             if (!(rounded > 0)) return
@@ -188,22 +211,45 @@ export default function TradingViewReplayChart(props) {
           }
           const finish = event => {
             const drag = activeOrderDrag
-            if (!drag || drag.kind !== kind || drag.pointerId !== event.pointerId) return
-            event.preventDefault(); event.stopPropagation(); activeOrderDrag = null
+            if (!drag || drag.kind !== kind || (drag.pointerId !== null && drag.pointerId !== event.pointerId)) return
+            event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation?.(); activeOrderDrag = null
             info.doc.removeEventListener('pointermove', move, true)
             info.doc.removeEventListener('pointerup', finish, true)
             info.doc.removeEventListener('pointercancel', finish, true)
+            info.doc.removeEventListener('mousemove', move, true)
+            info.doc.removeEventListener('mouseup', finish, true)
             orderHandleCleanups.delete(kind)
-            if (drag.price > 0) latest.current.onOrderPriceChange(kind, drag.price)
+            handle.style.cursor = 'grab'
+            if (drag.price > 0) {
+              const error = protectionError(latest.current, kind, drag.price)
+              if (error) {
+                const authoritative = latest.current.levels?.[kind] ?? (kind === 'stop' ? latest.current.levels?.ghostStop : latest.current.levels?.ghostTarget)
+                const line = lineByKind.get(kind)
+                if (line && authoritative > 0) { renderingOverlays = true; try { line.setPrice(authoritative) } finally { renderingOverlays = false } }
+                latest.current.onOrderValidationError?.(error)
+                // Keep the order hook as the final guard as well. It owns the
+                // notification lifecycle and re-checks the live closeable
+                // reference before any request can be created.
+                latest.current.onOrderPriceChange?.(kind, drag.price)
+              } else latest.current.onOrderPriceChange(kind, drag.price)
+            }
           }
           handle.addEventListener('pointerdown', begin)
           handle.addEventListener('pointermove', move)
           handle.addEventListener('pointerup', finish)
           handle.addEventListener('pointercancel', finish)
+          // Chromium's srcdoc iframe can expose native mouse events without
+          // synthesizing PointerEvents in a few embedded hosts. Keep the
+          // fallback on the same handlers so the chart remains draggable there.
+          handle.addEventListener('mousedown', begin)
+          handle.addEventListener('mousemove', move)
+          handle.addEventListener('mouseup', finish)
           orderHandleCleanups.set(kind, () => {
             info.doc.removeEventListener('pointermove', move, true)
             info.doc.removeEventListener('pointerup', finish, true)
             info.doc.removeEventListener('pointercancel', finish, true)
+            info.doc.removeEventListener('mousemove', move, true)
+            info.doc.removeEventListener('mouseup', finish, true)
           })
           orderHandleHost.append(handle); orderHandles.set(kind, handle)
         }
@@ -213,6 +259,7 @@ export default function TradingViewReplayChart(props) {
           // marker a stacked, overlapping hit band so the visible entry line
           // never has a dead gap between the SL and TP targets.
           const offset = overlap ? (kind === 'stop' ? -8 : 8) : 0
+          handle.style.left = `${Math.max(info.rect.left, info.rect.right - Math.min(210, info.rect.width))}px`
           handle.style.top = `${info.rect.top + coordinate + offset}px`
           handle.style.height = overlap ? '28px' : '24px'
         }
@@ -304,6 +351,11 @@ export default function TradingViewReplayChart(props) {
               const generation = state.orderGeneration
               line.onMove(() => {
                 const now = latest.current
+                // setPrice() is also used for the optimistic preview while a
+                // custom SL/TP handle is being dragged. Do not turn that
+                // preview repaint into a second request or a React refresh;
+                // the handle commits once on pointerup.
+                if (renderingOverlays || activeOrderDrag) return
                 if (cancelled || !now.orderEditable || now.orderGeneration !== generation) { line.setPrice(now.levels?.[kind] ?? value); return }
                 now.onOrderDragStart()
                 const tick = Number(now.tickSize)
@@ -313,6 +365,12 @@ export default function TradingViewReplayChart(props) {
                 // revisioned protection request is in flight. Resetting it to the
                 // last server value here makes a drag visibly jump on every move.
                 if (Number.isFinite(rounded) && rounded > 0) {
+                  const error = protectionError(now, kind, rounded)
+                  if (error) {
+                    line.setPrice(now.levels?.[kind] ?? value)
+                    now.onOrderValidationError?.(error)
+                    return
+                  }
                   line.setPrice(rounded)
                   now.onOrderPriceChange(kind, rounded)
                 }
