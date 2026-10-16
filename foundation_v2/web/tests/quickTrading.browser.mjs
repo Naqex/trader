@@ -3,12 +3,19 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { chromium } from 'playwright'
 
 const origin = 'http://127.0.0.1:5180'
-const output = process.env.QUICK_TRADING_OUTPUT || '../evidence/quick-trading-20261015/workflow'
+const output = process.env.QUICK_TRADING_OUTPUT || '../evidence/quick-trading-20261016/redesign'
 const fixture = JSON.parse(await readFile(new URL('./visual/chart-fixture.json', import.meta.url)))
 const spec = fixture.datasets.items[0].instrument_spec
 const initialExecution = { cursor_index: 60, instrument_spec: spec, cost_model: { account_ccy: 'USD' }, spread_price: '0.0002', balance: '10000', equity: '10000', floating_pl: '0', position: null, pending_market_order: null, ledger: [] }
 let replay = { ...fixture.latest, dataset_sha256: null, has_future_rows: true, payload: { ...fixture.latest.payload, execution: null, starting_balance: '10000', starting_balance_ccy: 'USD' } }
-const report = { scope: 'Synthetic API intercepts only; real native chart and controls. Native order-line move/cancel callbacks observed via test-only proxy. No owner, provider or broker writes.', cases: [], requests: [], errors: [], unexpected: [] }
+const report = { scope: 'Synthetic API intercepts only; real native chart and controls. Real iframe DOM drag controls; native line state observed via test-only proxy. No owner, provider or broker writes.', cases: [], requests: [], errors: [], unexpected: [] }
+let nextMutation
+function holdMutation(fail = false) {
+  let release
+  const wait = new Promise(resolve => { release = resolve })
+  nextMutation = { wait, fail }
+  return release
+}
 const browser = await chromium.launch()
 await mkdir(output, { recursive: true })
 const context = await browser.newContext({ viewport: { width: 1440, height: 987 }, reducedMotion: 'reduce' })
@@ -22,6 +29,7 @@ await context.addInitScript(() => {
       window.__qaLines = []
       widget.onChartReady(() => {
         const chart = widget.activeChart(), create = chart.createOrderLine.bind(chart)
+        window.__qaChart = chart
         chart.createOrderLine = (...args) => {
           const native = create(...args)
           const record = { native, removed: false }
@@ -30,7 +38,7 @@ await context.addInitScript(() => {
             if (typeof target[key] !== 'function') return target[key]
             return (...values) => {
               if (key === 'onMove' || key === 'onCancel') record[key] = values.at(-1)
-              if (['setText', 'setPrice', 'setQuantity', 'setCancellable', 'setEditable'].includes(key)) record[key] = values[0]
+              if (['setTooltip', 'setLineColor', 'setText', 'setPrice', 'setQuantity', 'setCancellable', 'setEditable'].includes(key)) record[key] = values[0]
               if (key === 'setPrice') record.setPriceCalls = (record.setPriceCalls || 0) + 1
               if (key === 'remove') record.removed = true
               const result = target[key](...values)
@@ -55,6 +63,11 @@ await context.route('**/*', async route => {
   }
   const body = request.postDataJSON()
   report.requests.push({ path: url.pathname, body })
+  const held = nextMutation; nextMutation = null
+  if (held) {
+    await held.wait
+    if (held.fail) return route.fulfill({ status: 422, json: { detail: 'Fixture rejected protection' } })
+  }
   assert.equal(body.expected_revision, replay.revision)
   const suffix = url.pathname.split('/').at(-1)
   let execution = replay.payload.execution
@@ -71,49 +84,58 @@ await context.route('**/*', async route => {
 })
 const page = await context.newPage()
 page.on('pageerror', error => report.errors.push(error.message))
+page.on('console', message => { if (message.type() === 'error') (report.consoleErrors ??= []).push(message.text()) })
 const href = `${origin}/?workspace=${fixture.workspace}&view=replay&surface=workspace&session=${fixture.session}`
 const ready = () => page.locator('[data-chart-status=ready]').waitFor({ timeout: 30000 })
-const waitRequests = count => page.waitForFunction(count => window.__qaLines?.filter(item => !item.removed).length >= count && window.__qaLines.some(item => !item.removed && !/^SL|^TP/.test(item.setText) && item.setCancellable), count)
-async function dragOrderHandle(label, deltaY) {
-  const iframe = await page.locator('.advanced-chart-host iframe').elementHandle()
-  const frame = await iframe?.contentFrame()
-  assert.ok(frame, 'Advanced Charts iframe is available for protection drag')
-  const handle = frame.getByRole('button', { name: label, exact: true })
+let chartFrame
+const marker = kind => chartFrame.locator(`[data-order-kind=${kind}]`)
+const waitRequests = async count => {
+  chartFrame = await (await page.locator('.advanced-chart-host iframe').elementHandle()).contentFrame()
+  await marker('entry').waitFor({ state: 'visible' })
+  await page.waitForFunction(count => window.__qaLines?.filter(item => !item.removed).length === count && !document.querySelector('.legacy-trading-bar button.buy').disabled === false, count)
+  await chartFrame.waitForFunction(() => !document.querySelector('[data-order-drag=stop]').disabled)
+}
+
+async function dragOrderHandle(label, deltaY, cancel = false) {
+  const handle = chartFrame.getByRole('button', { name: label, exact: true })
   await handle.waitFor({ state: 'visible' })
-  const boxes = await frame.evaluate(label => {
-    const element = [...document.querySelectorAll('[data-wm-order-handles] button')].find(node => node.getAttribute('aria-label') === label)
-    return { frame: frameElement.getBoundingClientRect().toJSON(), handle: element?.getBoundingClientRect().toJSON() }
-  }, label)
-  const frameBox = boxes.frame, localBox = boxes.handle
-  assert.ok(frameBox && localBox?.width > 0, `${label} hit target is visible`)
-  const x = frameBox.x + localBox.x + localBox.width / 2
-  const y = frameBox.y + localBox.y + localBox.height / 2
-  const before = await page.evaluate(() => ({ at: performance.now(), updates: window.__qaLines.reduce((sum, item) => sum + (item.setPriceCalls || 0), 0) }))
-  await page.mouse.move(x, y)
-  await page.mouse.down()
+  const box = await handle.boundingBox()
+  const x = box.x + box.width / 2, y = box.y + box.height / 2
+  const before = await page.evaluate(() => ({ at: performance.now(), lines: window.__qaLines.length, updates: window.__qaLines.reduce((sum, item) => sum + (item.setPriceCalls || 0), 0) }))
+  await page.mouse.move(x, y); await page.mouse.down()
   await page.mouse.move(x, y + deltaY, { steps: 8 })
+  if (cancel) await page.keyboard.press('Escape')
   await page.mouse.up()
-  const after = await page.evaluate(() => ({ at: performance.now(), updates: window.__qaLines.reduce((sum, item) => sum + (item.setPriceCalls || 0), 0) }))
+  const after = await page.evaluate(() => ({ at: performance.now(), lines: window.__qaLines.length, updates: window.__qaLines.reduce((sum, item) => sum + (item.setPriceCalls || 0), 0) }))
+  assert.equal(after.lines, before.lines, 'Drag reuses native lines instead of recreating them')
   report.performance ??= []
   report.performance.push({ label, durationMs: Number((after.at - before.at).toFixed(2)), previewUpdates: after.updates - before.updates })
 }
-async function fireNative(kind, action, price) {
+async function closeEntry({ dismiss = false } = {}) {
+  chartFrame = await (await page.locator('.advanced-chart-host iframe').elementHandle()).contentFrame()
   const before = report.requests.length
-  const removedBefore = await page.evaluate(() => window.__qaLines.filter(item => item.removed).length)
-  const optimisticPrice = await page.evaluate(({ kind, action, price }) => {
-    const line = window.__qaLines.find(item => !item.removed && (kind === 'entry' ? !/^SL|^TP/.test(item.setText) : item.setText.startsWith(kind === 'stop' ? 'SL' : 'TP')))
-    if (!line) throw Error(`Missing ${kind} line`)
-    if (action === 'move') { if (!line.setEditable) throw Error('Line is not editable'); line.native.setPrice(price); line.onMove(); return line.setPrice }
-    else { if (!line.setCancellable) throw Error('Line is not cancellable'); line.onCancel() }
-  }, { kind, action, price })
-  if (action === 'move') assert.equal(optimisticPrice, price, `${kind} line stays at the snapped drag price before the server revision`)
-  await page.waitForFunction(before => window.__qaLines.filter(item => item.removed).length > before, removedBefore)
-  await page.waitForFunction(closing => {
-    const lines = window.__qaLines.filter(item => !item.removed)
-    return closing ? lines.length === 0 && !document.querySelector('.legacy-trading-bar button.buy').disabled : lines.length === 3 && lines.some(item => !/^SL|^TP/.test(item.setText) && item.setCancellable) && lines.filter(item => /^SL|^TP/.test(item.setText)).every(item => item.setEditable)
-  }, kind === 'entry')
+  await marker('entry').locator('.wm-order-marker-close').click()
+  const dialog = page.locator('.chart-order-close-dialog')
+  await dialog.waitFor({ state: 'visible' })
+  assert.equal(report.requests.length, before, 'X opens a confirmation without sending a close')
+  if (dismiss) {
+    await page.screenshot({ path: `${output}/close-confirmation.png` })
+    await dialog.getByRole('button', { name: 'Hủy', exact: true }).click()
+    await dialog.waitFor({ state: 'detached' })
+    assert.equal(report.requests.length, before)
+    return
+  }
+  await dialog.locator('button.is-destructive').click()
+  await dialog.waitFor({ state: 'detached' })
+  await marker('entry').waitFor({ state: 'hidden' })
   assert.equal(report.requests.length, before + 1)
   return report.requests.at(-1)
+}
+async function markerState() {
+  return chartFrame.locator('[data-order-kind]').evaluateAll(nodes => Object.fromEntries(nodes.map(node => {
+    const body = node.querySelector('.wm-order-marker-body'), rect = node.getBoundingClientRect()
+    return [node.dataset.orderKind, { text: node.querySelector('.wm-order-marker-text').textContent, quantity: node.querySelector('.wm-order-marker-quantity').textContent, ghost: node.dataset.ghost === 'true', color: node.style.getPropertyValue('--order-color'), y: rect.y, left: rect.left, right: rect.right, cursor: getComputedStyle(body).cursor }]
+  })))
 }
 async function preset({ stop, target, unit = 'pips', value = '15' }) {
   await page.locator('.legacy-scalper-button').click()
@@ -137,7 +159,26 @@ try {
   await preset({ stop: false, target: false })
   report.cases.push('Enabled Scalper preset saves without errors and restores independent legs after reload; disabling both clears the preset')
   await page.locator('.legacy-quantity-control input').fill('0.12')
+  chartFrame = await (await page.locator('.advanced-chart-host iframe').elementHandle()).contentFrame()
+  await page.evaluate(() => document.addEventListener('click', event => {
+    if (event.target.closest('button.buy')) window.__qaClick = performance.now()
+  }, { capture: true }))
+  await chartFrame.evaluate(() => {
+    const observer = new MutationObserver(() => {
+      if (document.querySelector('[data-order-kind=entry]')?.textContent.includes('Đang gửi')) requestAnimationFrame(() => {
+        if (!parent.__qaPendingPaint) parent.__qaPendingPaint = parent.performance.now()
+      })
+    })
+    observer.observe(document.body, { subtree: true, childList: true, characterData: true })
+  })
+  const releaseBuy = holdMutation()
   await page.getByRole('button', { name: 'Mua', exact: true }).dblclick()
+  await marker('entry').filter({ hasText: 'Đang gửi' }).waitFor()
+  assert.equal(await marker('target').locator('button').isDisabled(), true)
+  assert.equal(await marker('entry').locator('.wm-order-marker-close').isVisible(), false)
+  await page.waitForFunction(() => window.__qaPendingPaint > 0)
+  report.clickToPendingPaintMs = await page.evaluate(() => Number((window.__qaPendingPaint - window.__qaClick).toFixed(2)))
+  releaseBuy()
   assert.equal(report.requests.length, 1)
   await waitRequests(3)
   const defaultLinePrices = await page.evaluate(() => window.__qaLines.filter(item => !item.removed && item.setPrice !== undefined).map(item => item.setPrice))
@@ -152,11 +193,49 @@ try {
   assert.equal(replay.revision, fixture.latest.revision + 2)
   report.cases.push('First quick Buy initializes and queues in one browser request, preserving the two committed revisions; double click cannot duplicate, no dialog or implicit protections')
   const stop = Number((fixture.latest.visible_rows.at(-1).close - .002).toFixed(5))
-  assert.equal((await fireNative('stop', 'move', stop)).body.stop_loss, String(stop))
+  let initial = await markerState()
+  assert.equal(initial.stop.text, 'SL'); assert.equal(initial.target.text, 'TP')
+  assert.equal(initial.stop.y, initial.entry.y); assert.equal(initial.target.y, initial.entry.y)
+  assert.ok(initial.target.right < initial.stop.left && initial.stop.right < initial.entry.left, 'Default TP, SL and Entry do not overlap')
+  assert.equal(initial.entry.color, '#70B5FF')
+  assert.equal(initial.stop.cursor, 'grab')
+  assert.equal(await marker('entry').locator('[data-order-drag]').count(), 0, 'Entry is read-only')
+  const cancelledBefore = report.requests.length
+  await dragOrderHandle('Kéo Stop loss', 30, true)
+  assert.equal(report.requests.length, cancelledBefore)
+  assert.equal((await markerState()).stop.text, 'SL')
+  assert.equal(await page.evaluate(() => window.__qaLines.find(item => !item.removed && item.setTooltip === 'Stop loss').setLineColor), 'rgba(0, 0, 0, 0)')
+  await dragOrderHandle('Kéo Stop loss', -50)
+  assert.equal(report.requests.length, cancelledBefore, 'Invalid BUY SL is local only')
+  assert.equal(await page.evaluate(() => window.__qaLines.find(item => !item.removed && item.setTooltip === 'Stop loss').setLineColor), 'rgba(0, 0, 0, 0)')
+  const releaseFailure = holdMutation(true)
+  await dragOrderHandle('Kéo Stop loss', 35)
+  await chartFrame.waitForFunction(() => document.querySelector('[data-order-drag=stop]').disabled)
+  releaseFailure()
+  await chartFrame.waitForFunction(() => !document.querySelector('[data-order-drag=stop]').disabled)
+  assert.equal((await markerState()).stop.text, 'SL', 'Rejected change restores the ghost')
+  assert.equal(await page.evaluate(() => window.__qaLines.find(item => !item.removed && item.setTooltip === 'Stop loss').setLineColor), 'rgba(0, 0, 0, 0)')
+  const beforeMove = report.requests.length
+  const releaseStop = holdMutation()
+  await dragOrderHandle('Kéo Stop loss', 40)
+  await chartFrame.waitForFunction(() => document.querySelector('[data-order-drag=stop]').disabled)
+  const waiting = await markerState()
+  assert.ok(waiting.stop.y > waiting.entry.y && !waiting.stop.ghost)
+  await page.waitForTimeout(220)
+  assert.equal((await markerState()).stop.y, waiting.stop.y, 'Preview remains while response is withheld')
+  assert.equal(await page.evaluate(() => window.__qaLines.find(item => !item.removed && item.setTooltip === 'Stop loss').setPrice), Number(report.requests.at(-1).body.stop_loss))
+  releaseStop()
+  await chartFrame.waitForFunction(() => !document.querySelector('[data-order-drag=stop]').disabled)
+  assert.equal(report.requests.length, beforeMove + 1)
+  assert.ok(Number(report.requests.at(-1).body.stop_loss) < replay.visible_rows.at(-1).close)
   assert.equal(replay.payload.execution.pending_market_order.take_profit, null)
-  assert.equal((await fireNative('stop', 'cancel')).body.stop_loss, null)
+  await marker('stop').locator('[data-order-drag]').focus()
+  await page.keyboard.press('Delete')
+  await chartFrame.waitForFunction(() => document.querySelector('[data-order-kind=stop]').dataset.ghost === 'true' && !document.querySelector('[data-order-drag=stop]').disabled)
+  assert.equal(report.requests.at(-1).body.stop_loss, null)
+  await closeEntry({ dismiss: true })
   await page.screenshot({ path: `${output}/queued-ghosts.png` })
-  await fireNative('entry', 'cancel')
+  await closeEntry()
   await page.getByRole('button', { name: 'Bán', exact: true }).waitFor({ state: 'visible' })
   await preset({ stop: true, target: false })
   await page.getByRole('button', { name: 'Bán', exact: true }).click()
@@ -167,7 +246,7 @@ try {
   const close = fixture.latest.visible_rows.at(-1).close
   assert.ok(Math.abs(Number(sell.stop_loss) - (close - .0001 + .0015)) < .000011)
   assert.equal(sell.take_profit, null)
-  const presetLinePrice = await page.evaluate(() => window.__qaLines.find(item => !item.removed && item.setText?.startsWith('SL'))?.setPrice)
+  const presetLinePrice = await page.evaluate(() => window.__qaLines.find(item => !item.removed && item.setTooltip === 'Stop loss')?.setPrice)
   assert.equal(String(presetLinePrice), String(sell.stop_loss), 'Scalper preset stop is reflected on the native chart line')
   const protectionBeforeDrag = report.requests.length
   const protectionRequest = page.waitForRequest(request => request.url().endsWith('/orders/protection')).catch(() => null)
@@ -183,13 +262,16 @@ try {
   await protectionToast.waitFor({ state: 'visible' })
   assert.match(await protectionToast.textContent(), /(?:Take profit moved to|Đã dời Take profit đến) [0-9.]+!/i)
   const invalidBeforeDrag = report.requests.length
-  await dragOrderHandle('Kéo Take profit', -48)
-  await new Promise(resolve => setTimeout(resolve, 250))
+  await dragOrderHandle('Kéo Take profit', -160)
+  await page.waitForFunction(() => document.querySelector('[role=alert]')?.textContent.includes('SELL'))
   assert.equal(report.requests.length, invalidBeforeDrag, 'SELL TP drag above the reference is rejected locally')
   assert.match(await page.locator('[role=alert]').last().textContent(), /SELL|bán/i)
   report.cases.push('Iframe SL/TP hit-target drag survives the pause refresh; valid SELL TP commits once and crossed TP is rejected without a request')
-  report.cases.push('Native ghost SL move adds only SL, X removes only SL, entry X cancels queued order; Scalper stop-only Sell uses saved 15 pip distance')
-  await fireNative('entry', 'cancel')
+  const sellMarkers = await markerState()
+  assert.equal(sellMarkers.entry.color, '#F59E0B')
+  assert.ok(sellMarkers.stop.y < sellMarkers.entry.y && sellMarkers.entry.y < sellMarkers.target.y)
+  report.cases.push('Visible TP/SL handles and keyboard deletion work; read-only Buy/Sell Entry uses side color and X opens confirmation; Scalper stop-only Sell uses saved 15 pip distance')
+  await closeEntry()
   await preset({ stop: false, target: true, unit: 'percent', value: '0.5' })
   await page.getByRole('button', { name: 'Mua', exact: true }).click()
   await waitRequests(3)
@@ -198,17 +280,75 @@ try {
   const pending = replay.payload.execution.pending_market_order
   replay = { ...replay, revision: replay.revision + 1, payload: { ...replay.payload, execution: { ...replay.payload.execution, pending_market_order: null, position: { ...pending, position_id: 'fixture-position', entry_fill: String(close + .0001), opened_time_utc: fixture.latest.cutoff_timestamp }, floating_pl: '12.34' } } }
   await page.reload(); await ready(); await waitRequests(3)
-  const entry = await page.evaluate(() => window.__qaLines.find(line => !line.removed && !/^SL|^TP/.test(line.setText)).setText)
-  assert.ok(entry.includes('12,34') || entry.includes('12.34'))
-  const targetLabel = await page.evaluate(() => {
-    const line = window.__qaLines.find(item => !item.removed && item.setText?.startsWith('TP'))
-    return { text: line?.setText, quantity: line?.setQuantity }
-  })
-  assert.match(targetLabel.text, /^TP · \+?[0-9.-]+ USD$/)
-  assert.doesNotMatch(targetLabel.text, /pips|ticks/i)
-  assert.equal(targetLabel.quantity, '0.12')
+  const positionMarkers = await markerState()
+  assert.match(positionMarkers.entry.text, /BUY → \+12.34 USD/)
+  assert.match(positionMarkers.target.text, /^TP → \+?[0-9.-]+ USD$/)
+  assert.doesNotMatch(positionMarkers.target.text, /pips|ticks/i)
+  assert.equal(positionMarkers.target.quantity, '0.12')
+  assert.equal(positionMarkers.target.color, '#089981')
+  assert.ok(positionMarkers.target.y < positionMarkers.entry.y)
   await page.screenshot({ path: `${output}/position.png` })
-  const closed = await fireNative('entry', 'cancel')
+  for (const [mode, inverted] of [[0, true], [1, false], [1, true], [2, false], [3, false], [0, false]]) {
+    await page.evaluate(({ mode, inverted }) => {
+      const scale = window.__qaChart.getPanes()[0].getMainSourcePriceScale()
+      scale.setMode(mode); scale.setInverted(inverted)
+    }, { mode, inverted })
+    await page.mouse.move(600, 350); await page.mouse.wheel(0, 1)
+    await page.waitForTimeout(100)
+    const scaled = await markerState()
+    const anchors = await chartFrame.locator('td.chart-markup-table.pane div.chart-gui-wrapper').evaluate(pane => {
+      const markers = [...document.querySelectorAll('[data-order-kind]')].filter(node => node.dataset.ghost === 'false')
+      return markers.map(node => {
+        const rgb = node.style.getPropertyValue('--order-color').slice(1).match(/../g).map(value => parseInt(value, 16))
+        const ys = []
+        for (const canvas of pane.querySelectorAll('canvas')) {
+          const rect = canvas.getBoundingClientRect(), ctx = canvas.getContext('2d')
+          if (!ctx || !rect.width || !rect.height) continue
+          const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data
+          for (let y = 0; y < canvas.height; y++) {
+            let hits = 0
+            for (let x = 30; x < Math.min(230, canvas.width); x++) {
+              const i = (y * canvas.width + x) * 4
+              if (pixels[i + 3] > 240 && rgb.every((c, j) => Math.abs(c - pixels[i + j]) < 3)) hits++
+            }
+            if (hits > 12) ys.push(rect.top + (y + .5) * rect.height / canvas.height)
+          }
+        }
+        const box = node.getBoundingClientRect(), center = box.y + box.height / 2
+        return { kind: node.dataset.orderKind, center, inPane: center >= pane.getBoundingClientRect().top && center <= pane.getBoundingClientRect().bottom, nearestNative: ys.length ? ys.reduce((a, b) => Math.abs(a - center) < Math.abs(b - center) ? a : b) : null }
+      })
+    })
+    report.anchorChecks ??= []; report.anchorChecks.push({ mode, inverted, anchors, range: await page.evaluate(() => window.__qaChart.getPanes()[0].getMainSourcePriceScale().getVisiblePriceRange()) })
+    for (const anchor of anchors.filter(anchor => anchor.inPane)) assert.ok(anchor.nearestNative !== null && Math.abs(anchor.center - anchor.nearestNative) < 2, `Native line alignment ${mode}/${inverted}: ${JSON.stringify(anchor)}`)
+    report.scales ??= []
+    report.scales.push({ mode, inverted, markers: scaled, scale: await page.evaluate(() => { const s = window.__qaChart.getPanes()[0].getMainSourcePriceScale(); return { mode: s.getMode(), inverted: s.isInverted(), range: s.getVisiblePriceRange() } }) })
+    assert.ok(inverted ? scaled.target.y > scaled.entry.y : scaled.target.y < scaled.entry.y)
+    // Both coordinate conversions must agree with the native price primitive.
+    await marker('target').locator('button').focus()
+    await page.keyboard.press('ArrowUp')
+    await chartFrame.waitForFunction(() => !document.querySelector('[data-order-drag=target]').disabled)
+    assert.equal(String(await page.evaluate(() => window.__qaLines.find(item => !item.removed && item.setTooltip === 'Take profit').setPrice)), replay.payload.execution.position.take_profit)
+  }
+  for (const width of [1064, 1368, 1440]) {
+    await page.setViewportSize({ width, height: 790 })
+    await page.waitForTimeout(160)
+    const bounds = await chartFrame.locator('[data-wm-order-handles]').evaluate(node => {
+      const rect = node.getBoundingClientRect(), pane = document.querySelector('td.chart-markup-table.pane div.chart-gui-wrapper').getBoundingClientRect()
+      return { width: rect.width, y: rect.y, paneWidth: pane.width, paneY: pane.y }
+    })
+    assert.ok(Math.abs(bounds.width - bounds.paneWidth) < 2 && Math.abs(bounds.y - bounds.paneY) < 2, `Marker bounds follow resized chart: ${JSON.stringify(bounds)}`)
+    await page.locator('.wm-notification > button').evaluateAll(nodes => nodes.forEach(node => node.click()))
+    await page.screenshot({ path: `${output}/position-${width}-dark.png` })
+  }
+  const themeToggle = chartFrame.getByTestId('theme-toggle')
+  await themeToggle.click()
+  await page.locator('.fx-app[data-theme=light]').waitFor()
+  await chartFrame.waitForFunction(() => document.querySelector('[data-order-kind=entry]')?.style.getPropertyValue('--order-color') === '#2466AC')
+  await page.screenshot({ path: `${output}/position-1440-light.png` })
+  await themeToggle.click()
+  await page.locator('.fx-app[data-theme=dark]').waitFor()
+  report.cases.push('Delayed mutation keeps preview/native line together; Escape, invalid and rejected ghost reset; Log/Invert/percent/indexed modes and viewport resize retain controls')
+  const closed = await closeEntry()
   assert.equal(closed.body.target_id, 'fixture-position')
   assert.equal(replay.payload.execution.position, null)
   report.cases.push('Scalper target-only percent conversion, restored native position shows actual PnL and entry X sends close against position ID')
@@ -230,8 +370,17 @@ try {
   assert.equal(report.requests.at(-1).body.expected_revision, report.requests.at(-2).body.expected_revision + 1)
   assert.equal(await orderDialog.count(), 0)
   report.cases.push('Legacy order initializes the simulator on submit, then queues the market order with the returned revision')
+  await closeEntry()
+  const beforeRejectedBuy = replay.revision
+  const releaseRejectedBuy = holdMutation(true)
+  await page.getByRole('button', { name: 'Mua', exact: true }).click()
+  await marker('entry').filter({ hasText: 'Đang gửi' }).waitFor()
+  releaseRejectedBuy()
+  await marker('entry').waitFor({ state: 'hidden' })
+  assert.equal(replay.revision, beforeRejectedBuy, 'Rejected quick order does not invent a saved position')
+  report.cases.push('Rejected quick entry removes pending preview; light/dark palette switches retain chart controls')
   assert.deepEqual(report.errors, []); assert.deepEqual(report.unexpected, [])
   report.result = 'PASS'
-} catch (error) { report.result = 'FAIL'; report.failure = error.stack; throw error }
+} catch (error) { report.result = 'FAIL'; report.failure = error.stack; report.alerts = await page.locator('[role=alert]').allTextContents(); await page.screenshot({ path: `${output}/failure.png` }); throw error }
 finally { await writeFile(`${output}/receipt.json`, JSON.stringify(report, null, 2)); await browser.close() }
 console.log(JSON.stringify({ result: report.result, cases: report.cases.length, requests: report.requests.length, errors: report.errors }))

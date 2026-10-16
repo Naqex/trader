@@ -1,0 +1,10 @@
+.chart-order-close-summary { display:flex; flex-direction:column; gap:8px; padding:24px; }
+.chart-order-close-summary span { color:var(--project-muted); }
+.chart-order-close-dialog footer { display:flex; justify-content:flex-end; gap:8px; padding:0 24px 24px; }
+.chart-order-close-dialog footer .wm-button { display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box; min-height:var(--ds-control,36px); padding:7px 12px; border:1px solid transparent; border-radius:var(--ds-radius-pill,999px); background:var(--project-control); color:var(--project-text); font:inherit; cursor:pointer; }
+.chart-order-close-dialog footer .wm-button:hover:not(:disabled) { background:var(--project-hover); }
+.chart-order-close-dialog footer .wm-button.is-destructive { background:var(--project-danger-action); color:var(--project-on-danger); }
+.chart-order-close-dialog footer .wm-button.is-destructive:hover:not(:disabled) { background:var(--project-danger-hover); }
+.chart-order-close-dialog footer .wm-button:focus-visible { outline:2px solid var(--project-primary); outline-offset:2px; }
+.chart-order-close-dialog footer .wm-button:disabled { opacity:.5; cursor:wait; }
+@media (pointer:coarse) { .chart-order-close-dialog footer .wm-button { min-height:44px; } }

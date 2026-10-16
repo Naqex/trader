@@ -17,6 +17,7 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
   useEffect(() => { setStartingBalance(String(replay?.payload?.starting_balance ?? '10000')) }, [replay?.record_id])
   const [spread, setSpread] = useState('0.0002')
   const [pending, setPending] = useState(false)
+  const [pendingOrder, setPendingOrder] = useState(null)
   const busy = useRef(false)
   const context = `${workspace}:${replay?.record_id}:${replay?.payload?.dataset_id}:${replay?.view_cursor_index ?? replay?.payload?.cursor_index}`
   const currentContext = useRef(context)
@@ -133,9 +134,12 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
         if (!initialization) throw new Error('Chưa đủ cấu hình simulator để vào lệnh nhanh.')
         endpoint = 'orders/quick'
       }
-      const quoteSeed = initialization ? marketQuotes({ ...nextReplay, payload: { ...nextReplay.payload, execution: { spread_price: initialization.spread_price, instrument_spec: initialization.instrument_spec } } }) : marketQuotes(nextReplay)
+      const quoteSeed = initialization ? marketQuotes({ ...nextReplay, payload: { ...nextReplay.payload, execution: { cursor_index: nextReplay.view_cursor_index ?? nextReplay.payload.cursor_index, spread_price: initialization.spread_price, instrument_spec: initialization.instrument_spec } } }) : marketQuotes(nextReplay)
       const seedPrice = side === 'BUY' ? quoteSeed.ask : quoteSeed.bid
       const seededProtection = seedPrice === null ? null : scalperProtection(preset, seedPrice, side, initialization?.instrument_spec || execution?.instrument_spec)
+      const invalidSeed = validateDraft({ side, quantity, ...seededProtection }, seedPrice, { optionalProtection: true })
+      if (invalidSeed) throw new Error(invalidSeed)
+      setPendingOrder({ context: origin, side, quantity, entry: seedPrice, stop_loss: seededProtection?.stopLoss || null, take_profit: seededProtection?.takeProfit || null })
       if (endpoint === 'orders/quick' && preset.enabled && (initialization?.tick_snapshot_id || !seededProtection)) {
         endpoint = 'execution'
       }
@@ -168,13 +172,13 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
       if (result) setNotice({ kind: 'ok', text: nextExecution.quote_source === 'broker_bid_ask' ? 'Đã queue; fill ở tick đầu tiên của nến kế tiếp.' : 'Đã queue; fill ở giá mở nến kế tiếp.', order: { status: 'queued', side, symbol: nextExecution.instrument_spec?.instrument_id || instrument?.instrument_id || '—', quantity: String(quantity), price: String(side === 'BUY' ? quote.ask : quote.bid) } })
       return Boolean(result)
     } catch (error) { setNotice({ kind: 'error', text: error.message }); return false }
-    finally { busy.current = false; setPending(false) }
+    finally { busy.current = false; setPending(false); setPendingOrder(null) }
   }
   const close = () => active && run('orders/close', {
     operation_id: `close-${crypto.randomUUID()}`,
     target_id: execution.position?.position_id || execution.pending_market_order.operation_id,
   })
-  return { draft, setDraft, execution, account, assetStates, instrument, costs, active, reference, disabled, pending, notice, quickTrade, close, canClose: ready && !closeBlocked && !pending, startingBalance, configuredBalance: replay?.payload?.starting_balance, configuredCurrency: replay?.payload?.starting_balance_ccy, setStartingBalance, spread, setSpread, tick, canInitialize, initialize, save, changePrice, reportError, chooseSide, executionConfig }
+  return { draft, setDraft, execution, account, assetStates, instrument, costs, active, reference, disabled, pending, pendingOrder: pendingOrder?.context === context ? pendingOrder : null, notice, quickTrade, close, canClose: ready && !closeBlocked && !pending, startingBalance, configuredBalance: replay?.payload?.starting_balance, configuredCurrency: replay?.payload?.starting_balance_ccy, setStartingBalance, spread, setSpread, tick, canInitialize, initialize, save, changePrice, reportError, chooseSide, executionConfig }
 }
 
 function LegacyOrderForm({ order, blockedReason, onClose, onJournal }) {

@@ -47,6 +47,15 @@ and foreign keys are scoped by `workspace_id`; the internal worker scheduler
 claims queued jobs across workspaces and carries the claimed `workspace_id`
 through execution. The worker has no MT5 or broker capability.
 
+Dataset reads retain up to 32 in-process SHA-256 verification receipts keyed by
+the expected digest and the open file's identity/change stamp. First access, file
+replacement or modification requires full verification; Windows uses native
+ChangeTime, so restoring a file's size/mtime cannot reuse the old receipt. Reads
+also check identity after decoding. If a reliable change stamp is unavailable,
+verification stays uncached. This avoids hashing a large immutable dataset on
+every small replay command without caching decoded rows or bypassing integrity
+checks. See the [quick-trading performance receipt](evidence/quick-trading-20261016/RECEIPT.md).
+
 The Data Desk now has a bounded local CSV seam in addition to the read-only
 catalog: `POST /api/v2/data/csv/preview` returns the deterministic quality,
 range, normalized hash, dataset identity and holdout report without writing an

@@ -6025,5 +6025,12 @@
   "Lệnh chờ": {"vi":"Lệnh chờ","en":"Pending"},
   "Đã hủy": {"vi":"Đã hủy","en":"Canceled"},
   "Đang mở": {"vi":"Đang mở","en":"Open"},
-  "Bảng giao dịch hiện chỉ hỗ trợ lệnh đã đóng.": {"vi":"Bảng giao dịch hiện chỉ hỗ trợ lệnh đã đóng.","en":"The trade table currently supports closed trades only."}
+  "Bảng giao dịch hiện chỉ hỗ trợ lệnh đã đóng.": {"vi":"Bảng giao dịch hiện chỉ hỗ trợ lệnh đã đóng.","en":"The trade table currently supports closed trades only."},
+  "Đang gửi…": {"vi":"Đang gửi…","en":"Submitting…"},
+  "Kéo để dời · ↑ ↓ chỉnh giá · Delete để bỏ": {"vi":"Kéo để dời · ↑ ↓ chỉnh giá · Delete để bỏ","en":"Drag to move · ↑ ↓ adjust price · Delete to remove"},
+  "Đóng/hủy lệnh": {"vi":"Đóng/hủy lệnh","en":"Close/cancel order"},
+  "Hủy lệnh chờ?": {"vi":"Hủy lệnh chờ?","en":"Cancel pending order?"},
+  "Đóng vị thế?": {"vi":"Đóng vị thế?","en":"Close position?"},
+  "Hủy lệnh chờ": {"vi":"Hủy lệnh chờ","en":"Cancel pending order"},
+  "Đóng vị thế": {"vi":"Đóng vị thế","en":"Close position"}
 }

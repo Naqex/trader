@@ -964,7 +964,7 @@ export default function ReplayWorkspace({ workspace, query }) {
     if (!(reference > 0)) return null
     try { return scalperProtection(scalperPreset, reference, side, order.instrument) } catch { return null }
   }, [order.active?.entry_fill, order.active?.side, order.draft.side, order.instrument, order.reference, replay?.visible_rows, scalperPreset])
-  const priceLevels = order.active || (!historicalView && sideOpen && sidePanel === 'order') ? orderLevels(replay, order.draft, scalperPreview, order.reference, order.instrument) : null
+  const priceLevels = order.active || order.pendingOrder || (!historicalView && sideOpen && sidePanel === 'order') ? orderLevels(replay, order.draft, scalperPreview, order.reference, order.instrument, order.pendingOrder) : null
   const quotes = marketQuotes(replay)
   const orderBlockedReason = propMode && propState.status !== 'ready' ? 'Chưa đồng bộ được trạng thái challenge; thao tác đang khóa.' : propMode && propState.attempt?.status !== 'running' ? 'Đang đồng bộ trạng thái challenge; hãy thử tải lại phiên.' : historicalView ? 'Cutoff lịch sử chỉ đọc. Về cursor mới nhất hoặc tạo nhánh để đặt lệnh.' : completed ? 'Dataset đã kết thúc; không còn nến để fill hoặc sửa lệnh.' : conflict ? 'Đang khóa vì revision đã thay đổi.' : assetClockStale ? 'Chờ nến mới của tài sản tại thời gian replay chung để đặt lệnh.' : ''
 

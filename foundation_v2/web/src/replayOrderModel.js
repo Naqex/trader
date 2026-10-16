@@ -31,12 +31,13 @@ export function protectionReference(replay) {
   return active.side === 'BUY' ? quote.bid : quote.ask
 }
 
-export function orderLevels(replay, draft, scalperPreview = null, closeableReference = null, instrument = null) {
+export function orderLevels(replay, draft, scalperPreview = null, closeableReference = null, instrument = null, pendingOrder = null) {
   replay = replayAtCutoff(replay)
   const execution = replay?.payload?.execution
-  const active = execution?.position || execution?.pending_market_order
+  const active = execution?.position || execution?.pending_market_order || pendingOrder
   const quotes = marketQuotes(replay)
-  const entry = finiteNumber(execution?.position?.entry_fill ?? (execution ? (draft.side === 'BUY' ? quotes.ask : quotes.bid) : replay?.visible_rows?.at(-1)?.close))
+  const side = active?.side || draft.side
+  const entry = finiteNumber(execution?.position?.entry_fill ?? pendingOrder?.entry ?? (execution ? (side === 'BUY' ? quotes.ask : quotes.bid) : replay?.visible_rows?.at(-1)?.close))
   // Once an order exists, the simulator's protection values are authoritative.
   // The draft can still contain the previous order's values for one render while
   // the execution response is being applied; letting it win makes the native
@@ -52,7 +53,7 @@ export function orderLevels(replay, draft, scalperPreview = null, closeableRefer
   const ghostTarget = target === null && active ? Number(scalperPreview?.takeProfit || entry) : null
   const spec = execution?.instrument_spec || instrument || null
   const costs = execution?.cost_model || null
-  return { entry, reference: finiteNumber(closeableReference) ?? entry, stop, target, ghostStop, ghostTarget, quantity: active?.quantity || draft.quantity, side: active?.side || draft.side, state: modified ? 'edit' : execution?.position ? 'position' : active ? 'queued' : 'draft',
+  return { entry, reference: finiteNumber(closeableReference) ?? entry, stop, target, ghostStop, ghostTarget, quantity: active?.quantity || draft.quantity, side, state: pendingOrder && !execution?.position && !execution?.pending_market_order ? 'submitting' : modified ? 'edit' : execution?.position ? 'position' : active ? 'queued' : 'draft',
     floating: execution?.position ? execution.floating_pl : null, currency: costs?.account_ccy || spec?.account_ccy,
     pipSize: finiteNumber(spec?.pip_size), tickSize: finiteNumber(spec?.tick_size), contractSize: finiteNumber(spec?.contract_size), quoteToAccountRate: finiteNumber(costs?.quote_to_account_rate), quoteCurrency: spec?.quote_ccy,
     timestamp: execution?.position?.opened_time_utc ?? replay?.visible_rows?.at(-1)?.timestamp }
