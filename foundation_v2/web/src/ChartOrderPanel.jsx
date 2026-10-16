@@ -41,7 +41,7 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
     } catch (error) { setNotice({ kind: 'error', text: error.message }) }
     finally { busy.current = false; setPending(false) }
   }
-  const save = async (nextDraft = draft) => {
+  const save = async (nextDraft = draft, options = {}) => {
     if (disabled || busy.current) return false
     const origin = currentContext.current
     busy.current = true
@@ -69,7 +69,14 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
       const result = await submit(nextActive ? 'orders/protection' : 'orders/market', nextActive
         ? { operation_id, target_id: nextExecution.position?.position_id || nextExecution.pending_market_order.operation_id, stop_loss: nextDraft.stopLoss || null, take_profit: nextDraft.takeProfit || null }
         : { operation_id, side: nextDraft.side, quantity: nextDraft.quantity, stop_loss: nextDraft.stopLoss || null, take_profit: nextDraft.takeProfit || null }, nextReplay.revision)
-      if (result) setNotice({ kind: 'ok', text: nextActive ? 'TP/SL đã lưu; áp dụng từ nến tiếp theo.' : nextExecution.quote_source === 'broker_bid_ask' ? 'Đã queue; fill ở tick đầu tiên của nến kế tiếp.' : 'Đã queue; fill ở giá mở nến kế tiếp.' })
+      if (result) {
+        if (nextActive && options.movedKind && options.movedPrice > 0) {
+          const tick = finiteNumber(instrument?.tick_size)
+          const digits = tick ? Math.max(0, Math.min(8, String(tick).split('.')[1]?.length || 0)) : 5
+          const price = new Intl.NumberFormat('en-US', { useGrouping: false, minimumFractionDigits: digits, maximumFractionDigits: digits }).format(Number(options.movedPrice))
+          setNotice({ kind: 'ok', title: 'Position Updated', message: options.movedKind === 'target' ? 'Take profit moved to {price}!' : 'Stop loss moved to {price}!', values: { price } })
+        } else setNotice({ kind: 'ok', text: nextActive ? 'TP/SL đã lưu; áp dụng từ nến tiếp theo.' : nextExecution.quote_source === 'broker_bid_ask' ? 'Đã queue; fill ở tick đầu tiên của nến kế tiếp.' : 'Đã queue; fill ở giá mở nến kế tiếp.' })
+      }
       return Boolean(result)
     } catch (error) {
       setNotice({ kind: 'error', text: error.message })
@@ -88,7 +95,7 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
     if (active) {
       const validation = validateDraft(next, reference, { optionalProtection: true })
       if (validation) { setNotice({ kind: 'error', text: validation }); return false }
-      return save(next)
+      return save(next, { movedKind: kind === 'stop' ? 'stop' : 'target', movedPrice: price })
     }
     setDraft(next)
     return true
@@ -189,7 +196,7 @@ function LegacyOrderForm({ order, blockedReason, onClose, onJournal }) {
     <label>{t('Chiến lược')}<FxSelect className="is-field" label="Chiến lược" value="session" disabled options={[{ value: 'session', label: t('Mặc định của phiên') }]} /></label><button type="button" className="legacy-strategy-create" disabled>{t('+ Tạo chiến lược mới')}</button>
     {blockedReason && <p role="status">{t(blockedReason)}</p>}
     {execution && <p className="legacy-order-hint">{t(active ? 'Thay đổi TP/SL áp dụng từ nến tiếp theo.' : 'Market được queue và khớp ở nến tiếp theo; giá trên là giá tham chiếu.')} · SIM</p>}
-    {order.notice && <p role={order.notice.kind === 'error' ? 'alert' : 'status'}>{t(order.notice.text)}</p>}
+    {order.notice && <p role={order.notice.kind === 'error' ? 'alert' : 'status'}>{order.notice.title ? <><strong>{t(order.notice.title)}</strong> {t(order.notice.message, order.notice.values)}</> : t(order.notice.text)}</p>}
     <footer><label><input type="checkbox" checked={journal} onChange={event => setJournal(event.target.checked)} />{t('Mở nhật ký sau khi đặt lệnh')}</label><button type="button" onClick={onClose}>{t('Hủy')}</button><button type="submit" className="legacy-order-save" disabled={disabled}>{t(order.pending ? 'Đang lưu…' : 'Save')}</button></footer>
   </form></>
 }
@@ -224,6 +231,6 @@ export default function ChartOrderPanel({ order, blockedReason, legacy = false, 
         <p>{active ? t("Kéo TP/SL trên chart hoặc nhập giá rồi lưu. Thay đổi áp dụng từ nến kế tiếp.") : execution.quote_source === 'broker_bid_ask' ? t("Entry là Bid/Ask tại cutoff. Market fill ở tick đầu tiên của nến kế tiếp; phí theo model.") : t("Entry là giá tham chiếu. Market fill ở giá mở nến kế tiếp, có spread và phí.")}</p>
       </form>
     </>}
-    {notice && <p className={`chart-order-notice is-${notice.kind}`} role={notice.kind === 'error' ? 'alert' : 'status'}>{t(notice.text)}</p>}
+    {notice && <p className={`chart-order-notice is-${notice.kind}`} role={notice.kind === 'error' ? 'alert' : 'status'}>{notice.title ? <><strong>{t(notice.title)}</strong> {t(notice.message, notice.values)}</> : t(notice.text)}</p>}
   </section>
 }

@@ -3,6 +3,7 @@
 .wm-notification p { margin:0; flex:1; font-size:13px; line-height:20px; overflow-wrap:anywhere; }
 .wm-notification-content { display:grid; min-width:0; flex:1; gap:2px; font-size:13px; line-height:18px; }
 .wm-notification-content strong { font-weight:600; }
+.wm-notification-detail { color:var(--wm-content-muted); font-size:13px; line-height:18px; }
 .wm-notification-symbol { width:max-content; padding:0 8px; border-radius:999px; background:var(--wm-hover); color:var(--wm-content); font-size:12px; line-height:20px; }
 .wm-notification-order-line { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .wm-notification-order-line.is-buy b { color:var(--wm-positive); }
@@ -10,6 +11,7 @@
 .wm-notification-mark { display:grid; place-items:center; flex:0 0 22px; width:22px; height:22px; border-radius:50%; font-size:14px; font-weight:700; }
 .wm-notification-mark.is-buy { background:color-mix(in srgb,var(--wm-positive) 22%,transparent); color:var(--wm-positive); }
 .wm-notification-mark.is-sell { background:color-mix(in srgb,var(--wm-negative) 22%,transparent); color:var(--wm-negative); }
+.wm-notification-mark.is-neutral { background:color-mix(in srgb,var(--wm-content-muted) 18%,transparent); color:var(--wm-content-muted); }
 .wm-notification.is-error { border-color:var(--wm-negative); }
 .fx-app .wm-notification button { display:grid; place-items:center; flex:0 0 28px; width:28px; height:28px; min-height:28px; padding:0; border:0; border-radius:var(--ds-radius-small); background:transparent; color:var(--wm-content-muted); font:inherit; font-size:20px; cursor:pointer; }
 .fx-app .wm-notification button:hover { color:var(--wm-content); background:var(--wm-hover); }

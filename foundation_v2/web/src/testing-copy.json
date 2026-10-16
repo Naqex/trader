@@ -1,5 +1,8 @@
 {
   "Đặt lệnh nhanh theo khối lượng đã chọn": {"vi":"Đặt lệnh nhanh theo khối lượng đã chọn","en":"Quick order at the selected quantity"},
+  "Position Updated": {"vi":"Đã cập nhật vị thế","en":"Position Updated"},
+  "Take profit moved to {price}!": {"vi":"Đã dời Take profit đến {price}!","en":"Take profit moved to {price}!"},
+  "Stop loss moved to {price}!": {"vi":"Đã dời Stop loss đến {price}!","en":"Stop loss moved to {price}!"},
   "Preset tự áp dụng SL/TP cho các lệnh Mua/Bán nhanh tiếp theo.": {"vi":"Preset tự áp dụng SL/TP cho các lệnh Mua/Bán nhanh tiếp theo.","en":"The preset applies SL/TP to subsequent quick Buy/Sell orders."},
   "Đã đóng/hủy lệnh mô phỏng.": {"vi":"Đã đóng/hủy lệnh mô phỏng.","en":"Simulated order closed or cancelled."},
   "Chưa đủ cấu hình simulator để vào lệnh nhanh.": {"vi":"Chưa đủ cấu hình mô phỏng để vào lệnh nhanh.","en":"Simulator configuration is incomplete for quick trading."},

@@ -153,10 +153,6 @@ export default function TradingViewReplayChart(props) {
       const levels = state?.levels || {}
       const name = kind === 'stop' ? 'SL' : 'TP'
       if (ghost) return `${name} · ${t('Kéo để đặt')}`
-      const distanceUnit = Number(levels.pipSize) > 0 ? 'pips' : Number(levels.tickSize) > 0 ? 'ticks' : ''
-      const distance = Number(levels.pipSize || levels.tickSize) > 0
-        ? Math.abs(Number(price) - Number(levels.entry)) / Number(levels.pipSize || levels.tickSize)
-        : null
       const quantity = Number(levels.quantity), contract = Number(levels.contractSize)
       const declaredRate = Number(levels.quoteToAccountRate)
       // A missing conversion rate is safe to treat as 1 only when the quote
@@ -169,9 +165,12 @@ export default function TradingViewReplayChart(props) {
         ? (Number(price) - Number(levels.entry)) * (levels.side === 'SELL' ? -1 : 1) * quantity * contract * rate
         : null
       const details = []
-      if (Number.isFinite(distance)) details.push(`${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(distance)} ${distanceUnit}`)
       if (Number.isFinite(signed)) {
-        try { details.push(new Intl.NumberFormat(locale, { style: 'currency', currency: levels.currency || 'USD', maximumFractionDigits: 2 }).format(signed)) } catch { /* unsupported account currency */ }
+        const currency = levels.currency || 'USD'
+        try {
+          const amount = new Intl.NumberFormat('en-US', { useGrouping: false, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(signed))
+          details.push(`${signed >= 0 ? '+' : '-'}${amount} ${currency}`)
+        } catch { /* unsupported account currency */ }
       }
       return details.length ? `${name} · ${details.join(' · ')}` : name
     }
@@ -390,10 +389,12 @@ export default function TradingViewReplayChart(props) {
             const label = kind === 'entry' ? `${state.levels.side} · ${t(state.levels.state === 'queued' ? 'Chờ khớp' : state.levels.state === 'draft' ? 'Lệnh nháp' : 'Vị thế')}${pnl ? ` · ${pnl}` : ''}` : protectionLabel(state, kind, value, ghost)
             const quantity = state.levels.quantity == null || state.levels.quantity === '' ? '—' : String(state.levels.quantity)
             const editable = kind !== 'entry' && state.orderEditable
+            const lineTint = hex => /^#[\da-f]{6}$/i.test(hex) ? `${hex}${Math.round(0.18 * 255).toString(16).padStart(2, '0')}` : palette.surface
+            const labelBackground = ghost ? palette.surface : lineTint(color)
             line.setPrice(value).setDirection(state.levels.side === 'SELL' ? 'sell' : 'buy').setMode(kind === 'stop' ? 'stop' : kind === 'target' ? 'limit' : '').setText(label).setQuantity(quantity)
               .setLineColor(color).setBodyBorderColor(color).setQuantityBorderColor(color)
-              .setBodyBackgroundColor(palette.surface).setBodyTextColor(palette.text)
-              .setQuantityBackgroundColor(palette.surface).setQuantityTextColor(palette.text)
+              .setBodyBackgroundColor(labelBackground).setBodyTextColor(ghost ? palette.text : color)
+              .setQuantityBackgroundColor(ghost ? palette.surface : color).setQuantityTextColor(ghost ? palette.text : palette.canvas)
               .setCancelButtonBackgroundColor(palette.surface).setCancelButtonBorderColor(ghost ? palette.surface : color).setCancelButtonIconColor(ghost ? palette.surface : palette.text)
               .setBodyFont('12px Inter, sans-serif').setQuantityFont('12px Inter, sans-serif')
               .setLineStyle(ghost ? 2 : 0).setEditable(editable)

@@ -179,6 +179,9 @@ try {
   assert.ok(Number(draggedBody.take_profit) < close, 'SELL TP drag moves below the reference')
   await page.waitForFunction(count => window.__qaLines?.length >= count, protectionBeforeDrag)
   assert.equal(report.requests.length, protectionBeforeDrag + 1)
+  const protectionToast = page.locator('.wm-notification.is-structured').filter({ hasText: /(?:Take profit moved to|Đã dời Take profit đến)/i })
+  await protectionToast.waitFor({ state: 'visible' })
+  assert.match(await protectionToast.textContent(), /(?:Take profit moved to|Đã dời Take profit đến) [0-9.]+!/i)
   const invalidBeforeDrag = report.requests.length
   await dragOrderHandle('Kéo Take profit', -48)
   await new Promise(resolve => setTimeout(resolve, 250))
@@ -201,7 +204,8 @@ try {
     const line = window.__qaLines.find(item => !item.removed && item.setText?.startsWith('TP'))
     return { text: line?.setText, quantity: line?.setQuantity }
   })
-  assert.match(targetLabel.text, /^TP · 56 pips · /)
+  assert.match(targetLabel.text, /^TP · \+?[0-9.-]+ USD$/)
+  assert.doesNotMatch(targetLabel.text, /pips|ticks/i)
   assert.equal(targetLabel.quantity, '0.12')
   await page.screenshot({ path: `${output}/position.png` })
   const closed = await fireNative('entry', 'cancel')
