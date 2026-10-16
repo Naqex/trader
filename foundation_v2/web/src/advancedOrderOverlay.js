@@ -17,6 +17,22 @@ export function orderScale(info) {
   }
 }
 
+// Move colliding boxes sideways, never away from their true price. Entry stays
+// in the right-hand column; equal-price protection boxes read TP, SL, Entry.
+export function orderMarkerColumns(markers, inset = 64, gap = 8) {
+  const placed = []
+  return markers.map(marker => {
+    let right = Math.max(inset, marker.minRight || inset)
+    for (const other of placed) {
+      if (Math.abs(marker.y - other.y) < (marker.height + other.height) / 2 + 4) {
+        right = Math.max(right, other.right + other.width + gap)
+      }
+    }
+    placed.push({ ...marker, right })
+    return { kind: marker.kind, right }
+  })
+}
+
 // The vendor paints order labels on canvas. These small DOM controls live in
 // that same iframe so the visible handle and the pointer target cannot diverge.
 export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
@@ -36,6 +52,18 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     setPrice(kind, price)
     getLine(kind)?.setLineColor(label.ghost ? 'rgba(0, 0, 0, 0)' : label.color)
   }
+  const placeRows = () => {
+    const markers = [...rows.values()].filter(row => !row.element.hidden).map(row => ({
+      kind: row.kind, y: Number.parseFloat(row.element.style.top), width: row.element.offsetWidth, height: row.element.offsetHeight,
+      minRight: drag?.kind === row.kind ? drag.right : 64,
+    }))
+    for (const { kind, right } of orderMarkerColumns(markers)) {
+      rows.get(kind).element.style.right = `${right}px`
+      // Keep a captured handle from oscillating between columns at the overlap
+      // threshold. Return to its normal column once the gesture ends.
+      if (drag?.kind === kind) drag.right = right
+    }
+  }
   const paintRow = (row, state, price, preview = false) => {
     const levels = preview ? { ...state.levels, [row.kind]: price } : state.levels
     const label = orderLabel(levels, row.kind, price, state.theme, t)
@@ -47,7 +75,10 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     row.quantity.hidden = label.ghost
     row.body.disabled = row.kind !== 'entry' && !state.orderEditable
     row.element.dataset.pending = String(levels.state === 'submitting' || !state.orderEditable)
-    if (row.close) row.close.hidden = !state.orderCloseable
+    if (row.close) {
+      row.close.disabled = !state.orderCloseable
+      row.close.style.visibility = state.orderCloseable ? 'visible' : 'hidden'
+    }
   }
   const paintDrag = () => {
     frame = 0
@@ -65,6 +96,7 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     paintRow(row, state, price, true)
     row.element.style.top = `${toY(drag.info, price)}px`
     row.element.dataset.invalid = String(Boolean(protectionError(state.levels, drag.kind, price)))
+    placeRows()
   }
   const move = event => {
     if (!drag || event.pointerId !== drag.pointerId) return
@@ -123,7 +155,7 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     if (!info || !(value > 0)) return
     claim(event)
     body.focus({ preventScroll: true })
-    drag = { kind, info, pointerId: event.pointerId, generation: state.orderGeneration, startY: toY(info, value), clientStartY: event.clientY, clientY: event.clientY, price: value, moved: false }
+    drag = { kind, info, pointerId: event.pointerId, generation: state.orderGeneration, startY: toY(info, value), clientStartY: event.clientY, clientY: event.clientY, price: value, moved: false, right: Number.parseFloat(rows.get(kind).element.style.right) }
     rows.get(kind).element.dataset.dragging = 'true'
     body.setPointerCapture(event.pointerId)
     state.onOrderDragStart?.()
@@ -212,17 +244,7 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
       row.element.style.right = '64px'
       row.element.style.top = `${toY(info, price)}px`
     }
-    // Unset markers share Entry's PRICE, but occupy distinct horizontal hit
-    // targets. Never offset their prices or stack invisible hit areas.
-    const entry = rows.get('entry')
-    let right = 64 + entry.element.offsetWidth + 20
-    for (const kind of ['stop', 'target']) {
-      const row = rows.get(kind), price = priceOf(state.levels, kind)
-      if (!pendingPrices.has(kind) && state.levels[kind] == null && price === state.levels.entry) {
-        row.element.style.right = `${right}px`
-        right += row.element.offsetWidth + 8
-      }
-    }
+    placeRows()
   }
   return { sync, isDragging: () => Boolean(drag), destroy() {
     if (frame) cancelAnimationFrame(frame)

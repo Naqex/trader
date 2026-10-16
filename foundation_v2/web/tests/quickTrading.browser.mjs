@@ -19,8 +19,10 @@ function holdMutation(fail = false) {
 const browser = await chromium.launch()
 await mkdir(output, { recursive: true })
 const context = await browser.newContext({ viewport: { width: 1440, height: 987 }, reducedMotion: 'reduce' })
-await context.addInitScript(() => {
+await context.addInitScript(workspace => {
   localStorage.setItem('tw-language', 'vi')
+  // Keep the movable replay toolbar clear of the fixture's equal-price labels.
+  localStorage.setItem(`tw:chart:replay-toolbar:native-refined:${workspace}`, JSON.stringify({ x: 70, y: 60 }))
   document.addEventListener('load', event => {
     if (!event.target.src?.includes('charting_library.standalone.js')) return
     const Original = window.TradingView.widget
@@ -51,7 +53,7 @@ await context.addInitScript(() => {
       return widget
     }
   }, true)
-})
+}, fixture.workspace)
 await context.route('**/*', async route => {
   const request = route.request(), url = new URL(request.url())
   if (url.origin !== origin) { report.unexpected.push(request.url()); return route.abort() }
@@ -288,6 +290,37 @@ try {
   assert.equal(positionMarkers.target.color, '#089981')
   assert.ok(positionMarkers.target.y < positionMarkers.entry.y)
   await page.screenshot({ path: `${output}/position.png` })
+  const savedReplay = structuredClone(replay)
+  const noOverlap = async () => {
+    const boxes = await markerState(), list = Object.values(boxes)
+    for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
+      const a = list[i], b = list[j]
+      assert.ok(Math.abs(a.y - b.y) >= 26 || a.right + 7 <= b.left || b.right + 7 <= a.left, `Order boxes overlap: ${JSON.stringify(boxes)}`)
+    }
+    return boxes
+  }
+  for (const side of ['BUY', 'SELL']) {
+    replay = { ...savedReplay, revision: replay.revision + 1, payload: { ...savedReplay.payload, execution: { ...savedReplay.payload.execution, position: { ...savedReplay.payload.execution.position, side, stop_loss: null, take_profit: savedReplay.payload.execution.position.entry_fill } } } }
+    await page.reload(); await ready(); await waitRequests(3)
+    for (const width of [1064, 1368]) {
+      await page.setViewportSize({ width, height: 790 })
+      await page.waitForTimeout(120)
+      await noOverlap()
+      await page.locator('.wm-notification > button').evaluateAll(nodes => nodes.forEach(node => node.click()))
+      await page.screenshot({ path: `${output}/equal-price-${side}-${width}.png` })
+    }
+    const box = await marker('target').locator('button').boundingBox()
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down()
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + (side === 'BUY' ? -5 : 5), { steps: 3 })
+    await chartFrame.waitForFunction(() => document.querySelector('[data-order-kind=target]').dataset.dragging === 'true')
+    await noOverlap()
+    await page.keyboard.press('Escape'); await page.mouse.up()
+    await noOverlap()
+  }
+  replay = { ...savedReplay, revision: replay.revision + 1 }
+  await page.reload(); await ready(); await waitRequests(3)
+  await page.setViewportSize({ width: 1440, height: 987 })
+  report.cases.push('Equal-price set TP, unset SL and Entry never overlap for Buy/Sell at1064/1368px, during drag preview or Escape rollback')
   for (const [mode, inverted] of [[0, true], [1, false], [1, true], [2, false], [3, false], [0, false]]) {
     await page.evaluate(({ mode, inverted }) => {
       const scale = window.__qaChart.getPanes()[0].getMainSourcePriceScale()

@@ -1,10 +1,19 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { orderScale } from '../src/advancedOrderOverlay.js'
+import { orderScale, orderMarkerColumns } from '../src/advancedOrderOverlay.js'
 import { orderLabel, protectionError, protectionProfit } from '../src/replayOrderLabels.js'
 import { orderLevels } from '../src/replayOrderModel.js'
 
 const levels = { entry: 1.1, reference: 1.101, side: 'BUY', quantity: '.12', contractSize: 100000, quoteCurrency: 'USD', currency: 'USD', state: 'position', floating: '-3.12', stop: 1.09, target: 1.12 }
+test('equal and nearby prices separate horizontally while distant levels share the right column', () => {
+  const marker = (kind, y, width = 160) => ({ kind, y, width, height: 22 })
+  assert.deepEqual(orderMarkerColumns([marker('entry', 100), marker('stop', 103), marker('target', 98)]), [
+    { kind: 'entry', right: 64 }, { kind: 'stop', right: 232 }, { kind: 'target', right: 400 },
+  ])
+  assert.deepEqual(orderMarkerColumns([marker('entry', 100), marker('stop', 150), marker('target', 50)]), [
+    { kind: 'entry', right: 64 }, { kind: 'stop', right: 64 }, { kind: 'target', right: 64 },
+  ])
+})
 test('protection labels use account currency, direction and actual quantity; unknown FX conversion stays unknown', () => {
   assert.equal(orderLabel(levels, 'target', 1.12, 'dark', s => s).text, 'TP → +240.00 USD')
   assert.equal(orderLabel(levels, 'entry', 1.1, 'dark', s => s).text, 'BUY → -3.12 USD')
