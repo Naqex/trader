@@ -5,8 +5,10 @@ import json
 import os
 import stat
 from bisect import bisect_right
+from collections import OrderedDict
 from collections.abc import Iterable
 from pathlib import Path
+from threading import Lock
 from uuid import uuid4
 
 import pyarrow as pa
@@ -93,11 +95,41 @@ def _file_identity(value: os.stat_result) -> tuple:
     return (value.st_dev, value.st_ino, value.st_size, value.st_mtime_ns, value.st_ctime_ns)
 
 
+def _descriptor_change_time(handle) -> int | None:
+    if os.name != 'nt':
+        return os.fstat(handle.fileno()).st_ctime_ns
+    # Python's Windows st_ctime is creation time. Native ChangeTime also detects
+    # an in-place edit followed by restoring the original modification time.
+    import ctypes
+    import msvcrt
+    from ctypes import wintypes
+
+    class FileBasicInfo(ctypes.Structure):
+        _fields_ = [(name, ctypes.c_longlong) for name in ('created', 'accessed', 'written', 'changed')] + [('attributes', wintypes.DWORD)]
+
+    try:
+        query = ctypes.WinDLL('kernel32', use_last_error=True).GetFileInformationByHandleEx
+        query.argtypes = (wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD)
+        query.restype = wintypes.BOOL
+        info = FileBasicInfo()
+        if query(msvcrt.get_osfhandle(handle.fileno()), 0, ctypes.byref(info), ctypes.sizeof(info)):
+            return info.changed if info.changed > 0 else None
+    except (OSError, ValueError, AttributeError):
+        pass
+    return None
+
+
+def _descriptor_identity(handle) -> tuple:
+    return (*_file_identity(os.fstat(handle.fileno())), _descriptor_change_time(handle))
+
+
 class ArtifactStore:
     def __init__(self, root: str | Path):
         self.root = Path(root).resolve()
         self.root.mkdir(parents=True, exist_ok=True)
         _sync_directory(self.root.parent)
+        self._verified_datasets = OrderedDict()
+        self._verification_lock = Lock()
 
     def _mkdir(self, path: Path) -> None:
         path.mkdir(parents=True, exist_ok=True)
@@ -253,27 +285,41 @@ class ArtifactStore:
             self._verify_unchanged(path, handle, identity)
             return rows
 
-    @staticmethod
-    def _verify_dataset(handle, expected_sha256, continue_check=None):
+    def _verify_dataset(self, handle, expected_sha256, continue_check=None):
         before = os.fstat(handle.fileno())
         if not stat.S_ISREG(before.st_mode):
             raise ValueError("artifact must be a regular file")
-        digest = hashlib.sha256()
-        for block in iter(lambda: handle.read(1024 * 1024), b""):
+        with self._verification_lock:
             if continue_check is not None:
                 continue_check()
-            digest.update(block)
-        identity = _file_identity(before)
-        if digest.hexdigest() != expected_sha256 or _file_identity(os.fstat(handle.fileno())) != identity:
-            raise ArtifactConflict("dataset checksum mismatch")
-        handle.seek(0)
-        return identity
+            identity = _descriptor_identity(handle)
+            key = (expected_sha256, identity)
+            # Retain only verification receipts, never data. A missing reliable
+            # change stamp disables reuse; every read still checks its open file.
+            if identity[-1] is not None and key in self._verified_datasets:
+                self._verified_datasets.move_to_end(key)
+                handle.seek(0)
+                return identity
+            digest = hashlib.sha256()
+            handle.seek(0)
+            for block in iter(lambda: handle.read(1024 * 1024), b""):
+                if continue_check is not None:
+                    continue_check()
+                digest.update(block)
+            if digest.hexdigest() != expected_sha256 or _descriptor_identity(handle) != identity:
+                raise ArtifactConflict("dataset checksum mismatch")
+            if identity[-1] is not None:
+                self._verified_datasets[key] = None
+                while len(self._verified_datasets) > 32:
+                    self._verified_datasets.popitem(last=False)
+            handle.seek(0)
+            return identity
 
     def _verify_unchanged(self, path, handle, identity):
         # Windows 3.12 path.stat and fstat expose different ctime semantics.
         # Compare ctime only descriptor-to-descriptor, and retain inode/size/mtime
         # on the pathname check to detect replacement while this handle is open.
-        if self._path(path.relative_to(self.root)) != path or _file_identity(os.fstat(handle.fileno())) != identity or _file_identity(path.stat())[:4] != identity[:4]:
+        if self._path(path.relative_to(self.root)) != path or _descriptor_identity(handle) != identity or _file_identity(path.stat())[:4] != identity[:4]:
             raise ArtifactConflict("dataset changed during read")
 
     def read_dataset_range(
