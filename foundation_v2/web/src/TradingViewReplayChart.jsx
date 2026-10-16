@@ -128,12 +128,14 @@ export default function TradingViewReplayChart(props) {
       if (!range || !(height > 0) || !(range.to > range.from)) return null
       return { doc, scale, rect, range, height, canvas }
     }
-    const priceToPaneCoordinate = (info, price) => typeof info.scale.priceToCoordinate === 'function'
-      ? info.scale.priceToCoordinate(price)
-      : (info.range.to - price) / (info.range.to - info.range.from) * info.height
-    const paneCoordinateToPrice = (info, coordinate) => typeof info.scale.coordinateToPrice === 'function'
-      ? info.scale.coordinateToPrice(coordinate)
-      : info.range.to - coordinate / info.height * (info.range.to - info.range.from)
+    const priceToPaneCoordinate = (info, price) => {
+      const native = typeof info.scale.priceToCoordinate === 'function' ? info.scale.priceToCoordinate(price) : null
+      return Number.isFinite(native) ? native : (info.range.to - price) / (info.range.to - info.range.from) * info.height
+    }
+    const paneCoordinateToPrice = (info, coordinate) => {
+      const native = typeof info.scale.coordinateToPrice === 'function' ? info.scale.coordinateToPrice(coordinate) : null
+      return Number.isFinite(native) ? native : info.range.to - coordinate / info.height * (info.range.to - info.range.from)
+    }
     const syncOrderHandles = () => {
       if (cancelled || !latest.current.levels || !latest.current.orderEditable) { clearOrderHandles(); return }
       const info = orderPane()
