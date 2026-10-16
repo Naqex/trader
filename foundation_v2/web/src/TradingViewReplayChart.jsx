@@ -121,12 +121,12 @@ export default function TradingViewReplayChart(props) {
       if (!doc || !scale || !paneApi) return null
       const pane = doc.querySelector('td.chart-markup-table.pane div.chart-gui-wrapper') || doc.querySelector('td.chart-markup-table.pane')
       const rect = pane?.getBoundingClientRect?.()
-      const frameRect = frame?.getBoundingClientRect?.(), canvas = host.current?.closest('.chart-canvas')
-      if (!rect || !Number.isFinite(rect.top) || !frameRect || !canvas) return null
+      const canvas = host.current?.closest('.chart-canvas')
+      if (!rect || !Number.isFinite(rect.top) || !canvas) return null
       const range = scale.getVisiblePriceRange?.() || chart.getVisiblePriceRange?.()
       const height = Number(paneApi.getHeight?.() || rect.height)
       if (!range || !(height > 0) || !(range.to > range.from)) return null
-      return { doc, scale, rect, range, height, frameRect, canvas }
+      return { doc, scale, rect, range, height, canvas }
     }
     const priceToPaneCoordinate = (info, price) => typeof info.scale.priceToCoordinate === 'function'
       ? info.scale.priceToCoordinate(price)
@@ -139,13 +139,14 @@ export default function TradingViewReplayChart(props) {
       const info = orderPane()
       if (!info) return
       if (!orderHandleHost) {
-        orderHandleHost = info.canvas.ownerDocument.createElement('div')
+        orderHandleHost = info.doc.createElement('div')
         orderHandleHost.dataset.wmOrderHandles = 'true'
-        // The chart is an iframe. Keep the transparent hit surface in the
-        // parent document's top layer so the browser compositor cannot route
-        // pointer input to the iframe underneath it.
+        // Keep the hit surface in the same document as Advanced Charts. The
+        // native order line is rendered inside this iframe, so pointer capture
+        // must stay in that browsing context instead of crossing the iframe
+        // boundary through the parent page.
         Object.assign(orderHandleHost.style, { position: 'fixed', inset: '0', pointerEvents: 'none', zIndex: '2147483000' })
-        info.canvas.ownerDocument.body.append(orderHandleHost)
+        info.doc.body.append(orderHandleHost)
       }
       const levels = latest.current.levels
       const overlap = levels.stop === null && levels.target === null && levels.ghostStop === levels.ghostTarget
@@ -157,7 +158,7 @@ export default function TradingViewReplayChart(props) {
         }
         let handle = orderHandles.get(kind)
         if (!handle) {
-          handle = info.canvas.ownerDocument.createElement('button')
+          handle = info.doc.createElement('button')
           handle.type = 'button'
           handle.tabIndex = -1
           handle.setAttribute('aria-label', kind === 'stop' ? 'Kéo Stop loss' : 'Kéo Take profit')
@@ -167,15 +168,15 @@ export default function TradingViewReplayChart(props) {
             event.preventDefault(); event.stopPropagation()
             latest.current.onOrderDragStart()
             activeOrderDrag = { kind, pointerId: event.pointerId, price: value }
-            info.canvas.ownerDocument.addEventListener('pointermove', move, true)
-            info.canvas.ownerDocument.addEventListener('pointerup', finish, true)
-            info.canvas.ownerDocument.addEventListener('pointercancel', finish, true)
+            info.doc.addEventListener('pointermove', move, true)
+            info.doc.addEventListener('pointerup', finish, true)
+            info.doc.addEventListener('pointercancel', finish, true)
           }
           const move = event => {
             const drag = activeOrderDrag
             if (!drag || drag.kind !== kind || drag.pointerId !== event.pointerId) return
             event.preventDefault(); event.stopPropagation()
-            const current = orderPane(), raw = current ? paneCoordinateToPrice(current, event.clientY - current.frameRect.top - current.rect.top) : null, tick = Number(latest.current.tickSize)
+            const current = orderPane(), raw = current ? paneCoordinateToPrice(current, event.clientY - current.rect.top) : null, tick = Number(latest.current.tickSize)
             if (!(raw > 0)) return
             const rounded = tick > 0 ? Number((Math.round(raw / tick) * tick).toFixed(8)) : raw
             if (!(rounded > 0)) return
@@ -187,9 +188,9 @@ export default function TradingViewReplayChart(props) {
             const drag = activeOrderDrag
             if (!drag || drag.kind !== kind || drag.pointerId !== event.pointerId) return
             event.preventDefault(); event.stopPropagation(); activeOrderDrag = null
-            info.canvas.ownerDocument.removeEventListener('pointermove', move, true)
-            info.canvas.ownerDocument.removeEventListener('pointerup', finish, true)
-            info.canvas.ownerDocument.removeEventListener('pointercancel', finish, true)
+            info.doc.removeEventListener('pointermove', move, true)
+            info.doc.removeEventListener('pointerup', finish, true)
+            info.doc.removeEventListener('pointercancel', finish, true)
             orderHandleCleanups.delete(kind)
             if (drag.price > 0) latest.current.onOrderPriceChange(kind, drag.price)
           }
@@ -198,14 +199,14 @@ export default function TradingViewReplayChart(props) {
           handle.addEventListener('pointerup', finish)
           handle.addEventListener('pointercancel', finish)
           orderHandleCleanups.set(kind, () => {
-            info.canvas.ownerDocument.removeEventListener('pointermove', move, true)
-            info.canvas.ownerDocument.removeEventListener('pointerup', finish, true)
-            info.canvas.ownerDocument.removeEventListener('pointercancel', finish, true)
+            info.doc.removeEventListener('pointermove', move, true)
+            info.doc.removeEventListener('pointerup', finish, true)
+            info.doc.removeEventListener('pointercancel', finish, true)
           })
           orderHandleHost.append(handle); orderHandles.set(kind, handle)
         }
         const coordinate = priceToPaneCoordinate(info, value)
-        if (Number.isFinite(coordinate)) handle.style.top = `${info.frameRect.top + info.rect.top + coordinate}px`
+        if (Number.isFinite(coordinate)) handle.style.top = `${info.rect.top + coordinate}px`
       }
     }
     const saveShortcut = event => {
