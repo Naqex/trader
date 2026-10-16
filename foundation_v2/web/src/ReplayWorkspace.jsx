@@ -937,7 +937,7 @@ export default function ReplayWorkspace({ workspace, query }) {
   const assetClockStale = Boolean(replay?.payload?.asset_states && currentBar && Number(currentBar.timestamp) + Number(activeDataset?.timeframe_seconds) < replay.payload.replay_clock_utc)
   const propExecutionConfig = propMode && propState.attempt
     ? {
-        costModel: { ...DEFAULT_COST_MODEL, version: propState.attempt.cost_version || DEFAULT_COST_MODEL.version, account_ccy: activeDataset?.instrument_spec?.account_ccy || DEFAULT_COST_MODEL.account_ccy },
+        costModel: { ...DEFAULT_COST_MODEL, version: propState.attempt.cost_version || DEFAULT_COST_MODEL.version, account_ccy: (activeDataset?.instrument_spec || activeDataset?.replay_instrument_spec)?.account_ccy || DEFAULT_COST_MODEL.account_ccy },
         forceBar: propState.attempt.engine_version === 'replay-v1',
       }
     : null
@@ -947,12 +947,12 @@ export default function ReplayWorkspace({ workspace, query }) {
   const orderBlockedReason = propMode && propState.status !== 'ready' ? 'Chưa đồng bộ được trạng thái challenge; thao tác đang khóa.' : propMode && propState.attempt?.status !== 'running' ? 'Đang đồng bộ trạng thái challenge; hãy thử tải lại phiên.' : historicalView ? 'Cutoff lịch sử chỉ đọc. Về cursor mới nhất hoặc tạo nhánh để đặt lệnh.' : completed ? 'Dataset đã kết thúc; không còn nến để fill hoặc sửa lệnh.' : conflict ? 'Đang khóa vì revision đã thay đổi.' : assetClockStale ? 'Chờ nến mới của tài sản tại thời gian replay chung để đặt lệnh.' : ''
 
   useEffect(() => {
-    if (!propMode || propState.status !== 'ready' || propState.attempt?.status !== 'running' || !replay || replay.payload?.execution || !activeDataset?.instrument_spec || !order.canInitialize || order.tick?.options === null || propAutoInit.current) return
+    if (!propMode || propState.status !== 'ready' || propState.attempt?.status !== 'running' || !replay || replay.payload?.execution || !order.instrument || !order.canInitialize || (order.tick?.options === null && !propExecutionConfig?.forceBar) || propAutoInit.current) return
     propAutoInit.current = true
     Promise.resolve(order.initialize()).then(success => {
       if (!success) propAutoInit.current = false
     }).catch(() => { propAutoInit.current = false })
-  }, [activeDataset?.instrument_spec, order, propMode, propState.attempt?.status, propState.status, replay])
+  }, [activeDataset?.instrument_spec, activeDataset?.replay_instrument_spec, order, propExecutionConfig?.forceBar, propMode, propState.attempt?.status, propState.status, replay])
   const beginOrder = side => { setIsPlaying(false); order.chooseSide(side); openPanel('order') }
   const lineage = replay?.payload?.parent_session_id
   const canBranch = Boolean(replay) && !propMode && !conflict && (

@@ -78,6 +78,7 @@ from .connector_ledger import ConnectorIdempotencyConflict, ConnectorLedgerError
 from .notion_oauth import NotionOAuthConfig, NotionOAuthError, NotionOAuthService, is_loopback_host
 from .project_session import build_local_demo_session_status
 from .store import PostgresStore, PropIdempotencyConflict, PropPersistenceConflict, StoredContractUntrusted
+from .replay_instrument import replay_instrument_spec
 
 
 class ConnectorConnectionCreateRequest(BaseModel):
@@ -631,6 +632,12 @@ def create_app(
             category = classes.get((item.get('source', {}).get('provider'), item['instrument_id']))
             if category is not None:
                 item['asset_class'] = category
+            if item.get('instrument_spec') is None:
+                # Keep the immutable catalog honest: this is a replay-only
+                # default, not broker metadata attached to the dataset.
+                inferred = replay_instrument_spec(item)
+                if inferred is not None:
+                    item['replay_instrument_spec'] = inferred
             item.update(downloads.dataset_update_state(workspace, item) if downloads else {'update_available': False})
         return {"items": datasets, "catalog_items": instruments, "holdout_access": False,
                 "catalog_state": instrument_catalog.status() if instrument_catalog else None,

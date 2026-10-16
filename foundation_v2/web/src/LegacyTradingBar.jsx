@@ -33,7 +33,7 @@ export default function LegacyTradingBar({ order, analyticsHref, propRulesAction
   positionsLayout.current = { open: positionsOpen, maximized, height, overflowReserve }
   useEffect(() => () => { clearTimeout(hideBalance.current); cancelAnimationFrame(resizeFrame.current) }, [])
   useEffect(() => { try { localStorage.setItem(storageKey, JSON.stringify(preset)) } catch { /* The confirmation flow works without browser storage. */ } }, [storageKey, preset])
-  const execution = order.execution, account = order.account, disabled = order.disabled || Boolean(order.active) || (!execution && (!order.canInitialize || order.tick.options === null)), currency = execution?.cost_model?.account_ccy || order.configuredCurrency || order.costs?.account_ccy
+  const execution = order.execution, account = order.account, tickPending = order.tick.options === null && !order.executionConfig?.forceBar, disabled = order.disabled || Boolean(order.active) || (!execution && (!order.canInitialize || tickPending)), currency = execution?.cost_model?.account_ccy || order.configuredCurrency || order.costs?.account_ccy
   const money = value => {
     const amount = finiteNumber(value)
     if (amount === null) return '—'

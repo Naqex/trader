@@ -10,7 +10,7 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
   const execution = replayAtCutoff(replay)?.payload?.execution
   const account = replay?.portfolio_account || execution
   const assetStates = replay?.payload?.asset_states
-  const instrument = execution?.instrument_spec || dataset?.instrument_spec
+  const instrument = execution?.instrument_spec || dataset?.instrument_spec || dataset?.replay_instrument_spec
   const [draft, setDraft] = useState(() => orderDraft(replay, instrument))
   const [notice, setNotice] = useState(null)
   const [startingBalance, setStartingBalance] = useState('10000')
@@ -24,7 +24,7 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
   const tick = useReplayTickOptions(workspace, replay)
   useEffect(() => { setDraft(orderDraft(replay, instrument)); setNotice(null) }, [replay?.record_id, replay?.revision, instrument])
   const active = execution?.position || execution?.pending_market_order
-  const costs = execution?.cost_model || (dataset ? { ...DEFAULT_COST_MODEL, ...(executionConfig?.costModel || {}), account_ccy: executionConfig?.costModel?.account_ccy || dataset.instrument_spec?.account_ccy || DEFAULT_COST_MODEL.account_ccy } : null)
+  const costs = execution?.cost_model || (dataset ? { ...DEFAULT_COST_MODEL, ...(executionConfig?.costModel || {}), account_ccy: executionConfig?.costModel?.account_ccy || instrument?.account_ccy || DEFAULT_COST_MODEL.account_ccy } : null)
   const quotes = marketQuotes(replay)
   const reference = active ? protectionReference(replay) : execution ? (draft.side === 'BUY' ? quotes.ask : quotes.bid) : protectionReference(replay)
   const disabled = !ready || blocked || pending
@@ -89,7 +89,7 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
     if (!active && !disabled) { setDraft(current => ({ ...orderDraft(replay, instrument, side), quantity: current.quantity })); setNotice(null) }
   }
   const initializationBody = () => {
-    if (!canInitialize || tick.options === null) return
+    if (!canInitialize || (tick.options === null && !executionConfig?.forceBar)) return
     const useTicks = !executionConfig?.forceBar && tick.useTicks
     const balance = finiteNumber(startingBalance), spreadValue = useTicks ? 0 : finiteNumber(spread)
     if (!(balance > 0) || spreadValue === null || spreadValue < 0) { setNotice({ kind: 'error', text: 'Nhập vốn dương và spread không âm.' }); return }
@@ -137,7 +137,7 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
     operation_id: `close-${crypto.randomUUID()}`,
     target_id: execution.position?.position_id || execution.pending_market_order.operation_id,
   })
-  return { draft, setDraft, execution, account, assetStates, instrument, costs, active, reference, disabled, pending, notice, quickTrade, close, canClose: ready && !closeBlocked && !pending, startingBalance, configuredBalance: replay?.payload?.starting_balance, configuredCurrency: replay?.payload?.starting_balance_ccy, setStartingBalance, spread, setSpread, tick, canInitialize, initialize, save, changePrice, chooseSide }
+  return { draft, setDraft, execution, account, assetStates, instrument, costs, active, reference, disabled, pending, notice, quickTrade, close, canClose: ready && !closeBlocked && !pending, startingBalance, configuredBalance: replay?.payload?.starting_balance, configuredCurrency: replay?.payload?.starting_balance_ccy, setStartingBalance, spread, setSpread, tick, canInitialize, initialize, save, changePrice, chooseSide, executionConfig }
 }
 
 function LegacyOrderForm({ order, blockedReason, onClose, onJournal }) {
@@ -179,7 +179,7 @@ export default function ChartOrderPanel({ order, blockedReason, legacy = false, 
       <label className="replay-tick-toggle"><input type="checkbox" checked={order.tick.useTicks} disabled={disabled || !order.tick.options?.available} onChange={event => order.tick.setMode(event.target.checked ? 'tick' : 'bar')} />{t("Khớp lệnh bằng tick Bid/Ask")}</label>
       <p role="status">{t(order.tick.options?.reason || 'Đang kiểm tra lịch sử tick…')}</p>
       {order.tick.useTicks ? <label>{t("Đòn bẩy mô phỏng")}<input type="number" min="1" max="1000" step="1" value={order.tick.leverage} onChange={event => order.tick.setLeverage(event.target.value)} disabled={disabled} /></label> : <label>{t("Spread (đơn vị giá)")}<input type="number" min="0" step={instrument?.tick_size || 'any'} value={order.spread} onChange={event => order.setSpread(event.target.value)} disabled={disabled} /></label>}
-      <button type="submit" disabled={disabled || !order.canInitialize || order.tick.options === null}>{t("Khởi tạo simulator")}</button>
+      <button type="submit" disabled={disabled || !order.canInitialize || (order.tick.options === null && !order.executionConfig?.forceBar)}>{t("Khởi tạo simulator")}</button>
       {!order.canInitialize && <p>{t("Đang thiếu instrument hoặc timeframe trong dataset.")}</p>}
     </form> : <>
       <dl className="chart-account"><div><dt>{t("Balance")}</dt><dd>{money(execution.balance, costs?.account_ccy)}</dd></div><div><dt>{t("Equity")}</dt><dd>{money(execution.equity, costs?.account_ccy)}</dd></div><div><dt>{t("Floating P/L")}</dt><dd>{money(execution.floating_pl, costs?.account_ccy)}</dd></div></dl>
