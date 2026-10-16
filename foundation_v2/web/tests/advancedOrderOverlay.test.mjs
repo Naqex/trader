@@ -13,6 +13,9 @@ test('equal and nearby prices separate horizontally while distant levels share t
   assert.deepEqual(orderMarkerColumns([marker('entry', 100), marker('stop', 150), marker('target', 50)]), [
     { kind: 'entry', right: 64 }, { kind: 'stop', right: 64 }, { kind: 'target', right: 64 },
   ])
+  assert.deepEqual(orderMarkerColumns([marker('entry', 100), marker('stop', 100, 30), marker('target', 100, 30)]), [
+    { kind: 'entry', right: 64 }, { kind: 'stop', right: 232 }, { kind: 'target', right: 262 },
+  ], 'TP and SL at the same price touch; Entry keeps its separate gap')
 })
 test('protection labels use account currency, direction and actual quantity; unknown FX conversion stays unknown', () => {
   assert.equal(orderLabel(levels, 'target', 1.12, 'dark', s => s).text, 'TP → +240.00 USD')

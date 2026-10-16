@@ -86,9 +86,9 @@ body.chart-page { width: calc(100% - var(--legacy-reserved-width, 0px)); overflo
 [data-wm-order-handles] button.wm-order-marker-body { cursor:grab; }
 [data-wm-order-handles] .wm-order-marker-text { padding:0 6px; overflow:hidden; text-overflow:ellipsis; }
 [data-wm-order-handles] .wm-order-marker-quantity { align-self:stretch; padding:0 6px; border-left:1px solid var(--order-color); background:color-mix(in srgb,var(--order-color) 28%,var(--order-bg)); color:var(--order-ink); }
-[data-wm-order-handles] .wm-order-marker-grip { flex:0 0 4px; height:12px; margin-left:3px; background-image:radial-gradient(currentColor .65px,transparent .8px); background-size:2px 3px; }
+[data-wm-order-handles] .wm-order-marker-grip { flex:0 0 2px; height:12px; margin-left:3px; background-image:radial-gradient(currentColor .65px,transparent .8px); background-size:2px 3px; }
 [data-wm-order-handles] .wm-order-marker[data-ghost=true] .wm-order-marker-body { border-style:dashed; }
-[data-wm-order-handles] .wm-order-marker[data-ghost=true] .wm-order-marker-text { padding-inline:4px; }
+[data-wm-order-handles] .wm-order-marker[data-compact=true] .wm-order-marker-text { padding-inline:4px; }
 [data-wm-order-handles] button.wm-order-marker-body:hover:not(:disabled) { background:color-mix(in srgb,var(--order-color) 16%,var(--order-bg)); }
 [data-wm-order-handles] button.wm-order-marker-body:focus-visible { outline:2px solid var(--order-color); outline-offset:2px; }
 [data-wm-order-handles] .wm-order-marker[data-dragging=true] .wm-order-marker-body { cursor:grabbing; background:color-mix(in srgb,var(--order-color) 16%,var(--order-bg)); }

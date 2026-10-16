@@ -1,0 +1,758 @@
+{
+  "scope": "Synthetic API intercepts only; real native chart and controls. Real iframe DOM drag controls; native line state observed via test-only proxy. No owner, provider or broker writes.",
+  "cases": [
+    "Enabled Scalper preset saves without errors and restores independent legs after reload; disabling both clears the preset",
+    "First quick Buy initializes and queues in one browser request, preserving the two committed revisions; double click cannot duplicate, no dialog or implicit protections",
+    "Iframe SL/TP hit-target drag survives the pause refresh; valid SELL TP commits once and crossed TP is rejected without a request",
+    "Visible TP/SL handles and keyboard deletion work; read-only Buy/Sell Entry uses side color and X opens confirmation; Scalper stop-only Sell uses saved 15 pip distance",
+    "Equal-price set TP, unset SL and Entry never overlap for Buy/Sell at1064/1368px, during drag preview or Escape rollback",
+    "Delayed mutation keeps preview/native line together; Escape, invalid and rejected ghost reset; Log/Invert/percent/indexed modes and viewport resize retain controls",
+    "Scalper target-only percent conversion, restored native position shows actual PnL and entry X sends close against position ID",
+    "Legacy order initializes the simulator on submit, then queues the market order with the returned revision",
+    "Rejected quick entry removes pending preview; light/dark palette switches retain chart controls"
+  ],
+  "requests": [
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/quick",
+      "body": {
+        "instrument_spec": {
+          "base_ccy": "EUR",
+          "pip_size": "0.0001",
+          "quote_ccy": "USD",
+          "tick_size": "0.0001",
+          "account_ccy": "USD",
+          "asset_class": "fx",
+          "quantity_min": "0.01",
+          "contract_size": "100000",
+          "instrument_id": "EURUSD",
+          "quantity_step": "0.01",
+          "effective_to_utc": "",
+          "effective_from_utc": "2026-01-01T00:00:00Z"
+        },
+        "cost_model": {
+          "version": "replay-fixture-cost-v1",
+          "spread_basis": "bid_ask_embedded",
+          "commission_per_side_account": "1",
+          "minimum_fee_account": "0",
+          "slippage_price_per_side": "0",
+          "financing_account": "0",
+          "quote_to_account_rate": "1",
+          "account_ccy": "USD",
+          "rounding_decimals": 2
+        },
+        "spread_price": "0.0002",
+        "timeframe_seconds": 60,
+        "starting_balance": "10000",
+        "operation_id": "quick-6dfaa56d-0ba3-48d7-bd2a-244e49917a4e",
+        "side": "BUY",
+        "quantity": "0.12",
+        "stop_loss": null,
+        "take_profit": null,
+        "expected_revision": 123
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-802407ac-26d8-491a-8568-9c3a40dca0ee",
+        "target_id": "quick-6dfaa56d-0ba3-48d7-bd2a-244e49917a4e",
+        "stop_loss": "1.1031",
+        "take_profit": null,
+        "expected_revision": 125
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-6730b3c2-ea76-4bea-b72e-f43b6bb6c6ee",
+        "target_id": "quick-6dfaa56d-0ba3-48d7-bd2a-244e49917a4e",
+        "stop_loss": "1.103",
+        "take_profit": null,
+        "expected_revision": 125
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-973eb11c-061b-4a32-a45f-93488b13c084",
+        "target_id": "quick-6dfaa56d-0ba3-48d7-bd2a-244e49917a4e",
+        "stop_loss": null,
+        "take_profit": null,
+        "expected_revision": 126
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "body": {
+        "operation_id": "close-83a276c7-7acc-4fb5-bcb9-f03a55d947c3",
+        "target_id": "quick-6dfaa56d-0ba3-48d7-bd2a-244e49917a4e",
+        "expected_revision": 127
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/market",
+      "body": {
+        "operation_id": "quick-d8235973-36a2-4721-a759-fa1005b0251c",
+        "side": "SELL",
+        "quantity": "0.12",
+        "stop_loss": "1.1046",
+        "take_profit": null,
+        "expected_revision": 128
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-d0d8e415-0216-434e-8721-285ad1210702",
+        "target_id": "quick-d8235973-36a2-4721-a759-fa1005b0251c",
+        "stop_loss": "1.1046",
+        "take_profit": "1.1027",
+        "expected_revision": 129
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "body": {
+        "operation_id": "close-415a9595-303b-4243-9d53-94529b50ca8d",
+        "target_id": "quick-d8235973-36a2-4721-a759-fa1005b0251c",
+        "expected_revision": 130
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/market",
+      "body": {
+        "operation_id": "quick-b9006551-41ec-47ff-9bbb-d7e2a4143c99",
+        "side": "BUY",
+        "quantity": "0.12",
+        "stop_loss": null,
+        "take_profit": "1.1089",
+        "expected_revision": 131
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-10058d2e-c9fe-439e-b47a-899cb9f2c281",
+        "target_id": "fixture-position",
+        "stop_loss": null,
+        "take_profit": "1.109",
+        "expected_revision": 136
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-d40d23f0-0907-4d59-a042-757ed0de99ad",
+        "target_id": "fixture-position",
+        "stop_loss": null,
+        "take_profit": "1.1091",
+        "expected_revision": 137
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-744bf6ee-dde3-4a54-9216-da79fffacfb0",
+        "target_id": "fixture-position",
+        "stop_loss": null,
+        "take_profit": "1.1092",
+        "expected_revision": 138
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-004747c9-8b45-44a3-8ed3-86c035c36f4d",
+        "target_id": "fixture-position",
+        "stop_loss": null,
+        "take_profit": "1.1093",
+        "expected_revision": 139
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-9404e90f-ef90-4ce0-92cb-e8e8bf00268b",
+        "target_id": "fixture-position",
+        "stop_loss": null,
+        "take_profit": "1.1094",
+        "expected_revision": 140
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-dd3162ef-62e9-4176-8c8a-98019ac03223",
+        "target_id": "fixture-position",
+        "stop_loss": null,
+        "take_profit": "1.1095",
+        "expected_revision": 141
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "body": {
+        "operation_id": "close-1fc28ece-bb72-45cf-9529-4cd18b326b4c",
+        "target_id": "fixture-position",
+        "expected_revision": 142
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/execution",
+      "body": {
+        "instrument_spec": {
+          "base_ccy": "EUR",
+          "pip_size": "0.0001",
+          "quote_ccy": "USD",
+          "tick_size": "0.0001",
+          "account_ccy": "USD",
+          "asset_class": "fx",
+          "quantity_min": "0.01",
+          "contract_size": "100000",
+          "instrument_id": "EURUSD",
+          "quantity_step": "0.01",
+          "effective_to_utc": "",
+          "effective_from_utc": "2026-01-01T00:00:00Z"
+        },
+        "cost_model": {
+          "version": "replay-fixture-cost-v1",
+          "spread_basis": "bid_ask_embedded",
+          "commission_per_side_account": "1",
+          "minimum_fee_account": "0",
+          "slippage_price_per_side": "0",
+          "financing_account": "0",
+          "quote_to_account_rate": "1",
+          "account_ccy": "USD",
+          "rounding_decimals": 2
+        },
+        "spread_price": "0.0002",
+        "timeframe_seconds": 60,
+        "starting_balance": "10000",
+        "expected_revision": 144
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/market",
+      "body": {
+        "operation_id": "chart-63234004-f180-4251-868d-cabe8ba351d1",
+        "side": "BUY",
+        "quantity": "0.12",
+        "stop_loss": "1.1012",
+        "take_profit": "1.1072",
+        "expected_revision": 145
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "body": {
+        "operation_id": "close-b97473e0-066d-4c2b-b83a-bd062539ceb2",
+        "target_id": "chart-63234004-f180-4251-868d-cabe8ba351d1",
+        "expected_revision": 146
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/market",
+      "body": {
+        "operation_id": "quick-ce144268-a7d2-48ea-b3f1-0b31aec5abf9",
+        "side": "BUY",
+        "quantity": "0.01",
+        "stop_loss": null,
+        "take_profit": "1.1089",
+        "expected_revision": 147
+      }
+    }
+  ],
+  "errors": [],
+  "unexpected": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"
+  ],
+  "clickToPendingPaintMs": 65.6,
+  "performance": [
+    {
+      "label": "Kéo Stop loss",
+      "durationMs": 215.4,
+      "previewUpdates": 9
+    },
+    {
+      "label": "Kéo Stop loss",
+      "durationMs": 279.5,
+      "previewUpdates": 10
+    },
+    {
+      "label": "Kéo Stop loss",
+      "durationMs": 278.9,
+      "previewUpdates": 9
+    },
+    {
+      "label": "Kéo Stop loss",
+      "durationMs": 406.7,
+      "previewUpdates": 9
+    },
+    {
+      "label": "Kéo Take profit",
+      "durationMs": 286.6,
+      "previewUpdates": 9
+    },
+    {
+      "label": "Kéo Take profit",
+      "durationMs": 321.9,
+      "previewUpdates": 10
+    }
+  ],
+  "anchorChecks": [
+    {
+      "mode": 0,
+      "inverted": true,
+      "anchors": [
+        {
+          "kind": "entry",
+          "center": 394.96875,
+          "inPane": true,
+          "nearestNative": 395.5
+        },
+        {
+          "kind": "target",
+          "center": 807.3125,
+          "inPane": true,
+          "nearestNative": 806.5
+        }
+      ],
+      "range": {
+        "from": 1.1092623175095089,
+        "to": 1.09850641250724
+      }
+    },
+    {
+      "mode": 1,
+      "inverted": false,
+      "anchors": [
+        {
+          "kind": "entry",
+          "center": 491.53125,
+          "inPane": true,
+          "nearestNative": 491.5
+        },
+        {
+          "kind": "target",
+          "center": 117.625,
+          "inPane": true,
+          "nearestNative": 118.5
+        }
+      ],
+      "range": {
+        "from": 1.0981052355389782,
+        "to": 1.1101565296179228
+      }
+    },
+    {
+      "mode": 1,
+      "inverted": true,
+      "anchors": [
+        {
+          "kind": "entry",
+          "center": 406.296875,
+          "inPane": true,
+          "nearestNative": 406.5
+        },
+        {
+          "kind": "target",
+          "center": 745.890625,
+          "inPane": true,
+          "nearestNative": 745.5
+        }
+      ],
+      "range": {
+        "from": 1.1106097132548045,
+        "to": 1.097111819883289
+      }
+    },
+    {
+      "mode": 2,
+      "inverted": false,
+      "anchors": [
+        {
+          "kind": "entry",
+          "center": 200.46875,
+          "inPane": true,
+          "nearestNative": 200.5
+        },
+        {
+          "kind": "target",
+          "center": -733.8125,
+          "inPane": false,
+          "nearestNative": 216.5
+        }
+      ],
+      "range": {
+        "from": 1.0992993831349083,
+        "to": 1.1043007710813644
+      }
+    },
+    {
+      "mode": 3,
+      "inverted": false,
+      "anchors": [
+        {
+          "kind": "entry",
+          "center": 200.46875,
+          "inPane": true,
+          "nearestNative": 200.5
+        },
+        {
+          "kind": "target",
+          "center": -749.65625,
+          "inPane": false,
+          "nearestNative": 216.5
+        }
+      ],
+      "range": {
+        "from": 1.0992993831349083,
+        "to": 1.1043007710813644
+      }
+    },
+    {
+      "mode": 0,
+      "inverted": false,
+      "anchors": [
+        {
+          "kind": "entry",
+          "center": 200.46875,
+          "inPane": true,
+          "nearestNative": 200.5
+        },
+        {
+          "kind": "target",
+          "center": -765.484375,
+          "inPane": false,
+          "nearestNative": 216.5
+        }
+      ],
+      "range": {
+        "from": 1.0992993831349083,
+        "to": 1.1043007710813644
+      }
+    }
+  ],
+  "scales": [
+    {
+      "mode": 0,
+      "inverted": true,
+      "markers": {
+        "entry": {
+          "text": "BUY → +12.34 USD",
+          "quantity": "0.12",
+          "quantityHidden": false,
+          "title": "",
+          "ghost": false,
+          "color": "#70B5FF",
+          "y": 383.96875,
+          "left": 1090.140625,
+          "right": 1272,
+          "cursor": "auto"
+        },
+        "stop": {
+          "text": "SL",
+          "quantity": "0.12",
+          "quantityHidden": true,
+          "title": "Kéo để dời · ↑ ↓ chỉnh giá · Delete để bỏ",
+          "ghost": true,
+          "color": "#F59E0B",
+          "y": 383.96875,
+          "left": 1051.796875,
+          "right": 1082.140625,
+          "cursor": "grab"
+        },
+        "target": {
+          "text": "TP → +67.20 USD",
+          "quantity": "0.12",
+          "quantityHidden": false,
+          "title": "TP → +67.20 USD · 1.1089 · Kéo để dời · ↑ ↓ chỉnh giá · Delete để bỏ",
+          "ghost": false,
+          "color": "#089981",
+          "y": 796.3125,
+          "left": 1117.140625,
+          "right": 1272,
+          "cursor": "grab"
+        }
+      },
+      "scale": {
+        "mode": 0,
+        "inverted": true,
+        "range": {
+          "from": 1.1092623175095089,
+          "to": 1.09850641250724
+        }
+      }
+    },
+    {
+      "mode": 1,
+      "inverted": false,
+      "markers": {
+        "entry": {
+          "text": "BUY → +12.34 USD",
+          "quantity": "0.12",
+          "quantityHidden": false,
+          "title": "",
+          "ghost": false,
+          "color": "#70B5FF",
+          "y": 480.53125,
+          "left": 1090.140625,
+          "right": 1272,
+          "cursor": "auto"
+        },
+        "stop": {
+          "text": "SL",
+          "quantity": "0.12",
+          "quantityHidden": true,
+          "title": "Kéo để dời · ↑ ↓ chỉnh giá · Delete để bỏ",
+          "ghost": true,
+          "color": "#F59E0B",
+          "y": 480.53125,
+          "left": 1051.796875,
+          "right": 1082.140625,
+          "cursor": "grab"
+        },
+        "target": {
+          "text": "TP → +68.40 USD",
+          "quantity": "0.12",
+          "quantityHidden": false,
+          "title": "TP → +68.40 USD · 1.109 · Kéo để dời · ↑ ↓ chỉnh giá · Delete để bỏ",
+          "ghost": false,
+          "color": "#089981",
+          "y": 106.625,
+          "left": 1117.140625,
+          "right": 1272,
+          "cursor": "grab"
+        }
+      },
+      "scale": {
+        "mode": 1,
+        "inverted": false,
+        "range": {
+          "from": 1.0981052355389782,
+          "to": 1.1101565296179228
+        }
+      }
+    },
+    {
+      "mode": 1,
+      "inverted": true,
+      "markers": {
+        "entry": {
+          "text": "BUY → +12.34 USD",
+          "quantity": "0.12",
+          "quantityHidden": false,
+          "title": "",
+          "ghost": false,
+          "color": "#70B5FF",
+          "y": 395.296875,
+          "left": 1090.140625,
+          "right": 1272,
+          "cursor": "auto"
+        },
+        "stop": {
+          "text": "SL",
+          "quantity": "0.12",
+          "quantityHidden": true,
+          "title": "Kéo để dời · ↑ ↓ chỉnh giá · Delete để bỏ",
+          "ghost": true,
+          "color": "#F59E0B",
+          "y": 395.296875,
+          "left": 1051.796875,
+          "right": 1082.140625,
+          "cursor": "grab"
+        },
+        "target": {
+          "text": "TP → +69.60 USD",
+          "quantity": "0.12",
+          "quantityHidden": false,
+          "title": "TP → +69.60 USD · 1.1091 · Kéo để dời · ↑ ↓ chỉnh giá · Delete để bỏ",
+          "ghost": false,
+          "color": "#089981",
+          "y": 734.890625,
+          "left": 1117.140625,
+          "right": 1272,
+          "cursor": "grab"
+        }
+      },
+      "scale": {
+        "mode": 1,
+        "inverted": true,
+        "range": {
+          "from": 1.1106097132548045,
+          "to": 1.097111819883289
+        }
+      }
+    },
+    {
+      "mode": 2,
+      "inverted": false,
+      "markers": {
+        "entry": {
+          "text": "BUY → +12.34 USD",
+          "quantity": "0.12",
+          "quantityHidden": false,
+          "title": "",
+          "ghost": false,
+          "color": "#70B5FF",
+          "y": 189.46875,
+          "left": 1090.140625,
+          "right": 1272,
+          "cursor": "auto"
+        },
+        "stop": {
+          "text": "SL",
+          "quantity": "0.12",
+          "quantityHidden": true,
+          "title": "Kéo để dời · ↑ ↓ chỉnh giá · Delete để bỏ",
+          "ghost": true,
+          "color": "#F59E0B",
+          "y": 189.46875,
+          "left": 1051.796875,
+          "right": 1082.140625,
+          "cursor": "grab"
+        },
+        "target": {
+          "text": "TP → +70.80 USD",
+          "quantity": "0.12",
+          "quantityHidden": false,
+          "title": "TP → +70.80 USD · 1.1092 · Kéo để dời · ↑ ↓ chỉnh giá · Delete để bỏ",
+          "ghost": false,
+          "color": "#089981",
+          "y": -744.8125,
+          "left": 1117.140625,
+          "right": 1272,
+          "cursor": "grab"
+        }
+      },
+      "scale": {
+        "mode": 2,
+        "inverted": false,
+        "range": {
+          "from": 1.0992993831349083,
+          "to": 1.1043007710813644
+        }
+      }
+    },
+    {
+      "mode": 3,
+      "inverted": false,
+      "markers": {
+        "entry": {
+          "text": "BUY → +12.34 USD",
+          "quantity": "0.12",
+          "quantityHidden": false,
+          "title": "",
+          "ghost": false,
+          "color": "#70B5FF",
+          "y": 189.46875,
+          "left": 1088.140625,
+          "right": 1270,
+          "cursor": "auto"
+        },
+        "stop": {
+          "text": "SL",
+          "quantity": "0.12",
+          "quantityHidden": true,
+          "title": "Kéo để dời · ↑ ↓ chỉnh giá · Delete để bỏ",
+          "ghost": true,
+          "color": "#F59E0B",
+          "y": 189.46875,
+          "left": 1049.796875,
+          "right": 1080.140625,
+          "cursor": "grab"
+        },
+        "target": {
+          "text": "TP → +72.00 USD",
+          "quantity": "0.12",
+          "quantityHidden": false,
+          "title": "TP → +72.00 USD · 1.1093 · Kéo để dời · ↑ ↓ chỉnh giá · Delete để bỏ",
+          "ghost": false,
+          "color": "#089981",
+          "y": -760.65625,
+          "left": 1115.140625,
+          "right": 1270,
+          "cursor": "grab"
+        }
+      },
+      "scale": {
+        "mode": 3,
+        "inverted": false,
+        "range": {
+          "from": 1.0992993831349083,
+          "to": 1.1043007710813644
+        }
+      }
+    },
+    {
+      "mode": 0,
+      "inverted": false,
+      "markers": {
+        "entry": {
+          "text": "BUY → +12.34 USD",
+          "quantity": "0.12",
+          "quantityHidden": false,
+          "title": "",
+          "ghost": false,
+          "color": "#70B5FF",
+          "y": 189.46875,
+          "left": 1090.140625,
+          "right": 1272,
+          "cursor": "auto"
+        },
+        "stop": {
+          "text": "SL",
+          "quantity": "0.12",
+          "quantityHidden": true,
+          "title": "Kéo để dời · ↑ ↓ chỉnh giá · Delete để bỏ",
+          "ghost": true,
+          "color": "#F59E0B",
+          "y": 189.46875,
+          "left": 1051.796875,
+          "right": 1082.140625,
+          "cursor": "grab"
+        },
+        "target": {
+          "text": "TP → +73.20 USD",
+          "quantity": "0.12",
+          "quantityHidden": false,
+          "title": "TP → +73.20 USD · 1.1094 · Kéo để dời · ↑ ↓ chỉnh giá · Delete để bỏ",
+          "ghost": false,
+          "color": "#089981",
+          "y": -776.484375,
+          "left": 1117.140625,
+          "right": 1272,
+          "cursor": "grab"
+        }
+      },
+      "scale": {
+        "mode": 0,
+        "inverted": false,
+        "range": {
+          "from": 1.0992993831349083,
+          "to": 1.1043007710813644
+        }
+      }
+    }
+  ],
+  "result": "PASS"
+}

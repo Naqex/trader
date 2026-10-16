@@ -25,7 +25,8 @@ export function orderMarkerColumns(markers, inset = 64, gap = 8) {
     let right = Math.max(inset, marker.minRight || inset)
     for (const other of placed) {
       if (Math.abs(marker.y - other.y) < (marker.height + other.height) / 2 + 4) {
-        right = Math.max(right, other.right + other.width + gap)
+        const joinedProtections = marker.kind !== 'entry' && other.kind !== 'entry' && marker.y === other.y
+        right = Math.max(right, other.right + other.width + (joinedProtections ? 0 : gap))
       }
     }
     placed.push({ ...marker, right })
@@ -53,10 +54,11 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     getLine(kind)?.setLineColor(label.ghost ? 'rgba(0, 0, 0, 0)' : label.color)
   }
   const placeRows = () => {
-    const markers = [...rows.values()].filter(row => !row.element.hidden).map(row => ({
-      kind: row.kind, y: Number.parseFloat(row.element.style.top), width: row.element.offsetWidth, height: row.element.offsetHeight,
-      minRight: drag?.kind === row.kind ? drag.right : 64,
-    }))
+    const markers = [...rows.values()].filter(row => !row.element.hidden).map(row => {
+      const rect = row.element.getBoundingClientRect()
+      return { kind: row.kind, y: Number.parseFloat(row.element.style.top), width: rect.width, height: rect.height,
+        minRight: drag?.kind === row.kind ? drag.right : 64 }
+    })
     for (const { kind, right } of orderMarkerColumns(markers)) {
       rows.get(kind).element.style.right = `${right}px`
       // Keep a captured handle from oscillating between columns at the overlap
@@ -68,6 +70,7 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     const levels = preview ? { ...state.levels, [row.kind]: price } : state.levels
     const label = orderLabel(levels, row.kind, price, state.theme, t)
     row.element.dataset.ghost = String(label.ghost)
+    row.element.dataset.compact = String(label.compact)
     row.element.style.setProperty('--order-color', label.color)
     row.body.style.color = label.textColor
     row.text.textContent = label.text

@@ -198,7 +198,7 @@ try {
   let initial = await markerState()
   assert.equal(initial.stop.text, 'SL'); assert.equal(initial.target.text, 'TP')
   assert.equal(initial.stop.y, initial.entry.y); assert.equal(initial.target.y, initial.entry.y)
-  assert.ok(initial.target.right < initial.stop.left && initial.stop.right < initial.entry.left, 'Default TP, SL and Entry do not overlap')
+  assert.ok(initial.target.right <= initial.stop.left && initial.stop.right < initial.entry.left, 'Default TP/SL touch without overlapping; Entry stays separate')
   assert.equal(initial.entry.color, '#70B5FF')
   assert.equal(initial.stop.cursor, 'grab')
   assert.equal(await marker('entry').locator('[data-order-drag]').count(), 0, 'Entry is read-only')
@@ -293,10 +293,11 @@ try {
   await page.screenshot({ path: `${output}/position.png` })
   const savedReplay = structuredClone(replay)
   const noOverlap = async () => {
-    const boxes = await markerState(), list = Object.values(boxes)
+    const boxes = await markerState(), list = Object.entries(boxes)
     for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
-      const a = list[i], b = list[j]
-      assert.ok(Math.abs(a.y - b.y) >= 26 || a.right + 7 <= b.left || b.right + 7 <= a.left, `Order boxes overlap: ${JSON.stringify(boxes)}`)
+      const [kindA, a] = list[i], [kindB, b] = list[j]
+      const gap = kindA !== 'entry' && kindB !== 'entry' && a.y === b.y ? 0 : 7
+      assert.ok(Math.abs(a.y - b.y) >= 26 || a.right + gap <= b.left || b.right + gap <= a.left, `Order boxes overlap: ${JSON.stringify(boxes)}`)
     }
     return boxes
   }
@@ -311,6 +312,9 @@ try {
       assert.equal(compact.target.quantityHidden, true)
       assert.equal(compact.target.ghost, false, 'Compact display must preserve a configured TP')
       assert.match(compact.target.title, /TP → 0.00 USD/)
+      assert.ok(Math.abs(compact.target.right - compact.stop.left) < 1, 'TP and SL share an edge at the same price')
+      const grips = await chartFrame.locator('.wm-order-marker-grip').evaluateAll(nodes => nodes.map(node => ({ width: node.getBoundingClientRect().width, repeatWidth: getComputedStyle(node).backgroundSize.split(' ')[0] })))
+      assert.ok(grips.length === 2 && grips.every(grip => grip.width === 2 && grip.repeatWidth === '2px'), 'Each drag grip has one dot column')
       await page.locator('.wm-notification > button').evaluateAll(nodes => nodes.forEach(node => node.click()))
       await page.screenshot({ path: `${output}/equal-price-${side}-${width}.png` })
     }
