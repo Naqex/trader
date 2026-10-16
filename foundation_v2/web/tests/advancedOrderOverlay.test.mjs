@@ -25,6 +25,25 @@ test('protection labels use account currency, direction and actual quantity; unk
   assert.notEqual(protectionError(levels, 'target', 1.1005), '')
 })
 
+test('Entry-price protections use compact handles without losing saved state or hiding real nonzero distances', () => {
+  for (const state of ['queued', 'position']) for (const side of ['BUY', 'SELL']) for (const kind of ['stop', 'target']) {
+    const atEntry = { ...levels, state, side, [kind]: levels.entry }
+    const label = orderLabel(atEntry, kind, levels.entry, 'dark', s => s)
+    assert.equal(label.text, kind === 'stop' ? 'SL' : 'TP')
+    assert.equal(label.compact, true)
+    assert.equal(label.ghost, false)
+    assert.match(label.detail, / → 0.00 USD$/)
+    const moved = orderLabel(atEntry, kind, levels.entry + .00001, 'dark', s => s)
+    assert.equal(moved.compact, false)
+    assert.match(moved.text, / → [-+]0.12 USD$/)
+    const tiny = orderLabel(atEntry, kind, levels.entry + .00000001, 'dark', s => s)
+    assert.equal(tiny.compact, false, 'Rounding to 0.00 must not turn a distinct price into a compact handle')
+  }
+  const entry = orderLabel({ ...levels, floating: '0' }, 'entry', levels.entry, 'dark', s => s)
+  assert.equal(entry.text, 'BUY → 0.00 USD')
+  assert.equal(entry.compact, false)
+})
+
 test('scale projection supports log, invert and tiny price ranges with reversible drag coordinates', () => {
   for (const mode of [0, 1, 2, 3]) for (const inverted of [false, true]) {
     for (const range of [{ from: 1.08, to: 1.13 }, { from: .000001, to: .000009 }, { from: 100, to: 100000 }]) {

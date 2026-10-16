@@ -40,7 +40,7 @@ await context.addInitScript(workspace => {
             if (typeof target[key] !== 'function') return target[key]
             return (...values) => {
               if (key === 'onMove' || key === 'onCancel') record[key] = values.at(-1)
-              if (['setTooltip', 'setLineColor', 'setText', 'setPrice', 'setQuantity', 'setCancellable', 'setEditable'].includes(key)) record[key] = values[0]
+              if (['setTooltip', 'setLineColor', 'setLineStyle', 'setText', 'setPrice', 'setQuantity', 'setCancellable', 'setEditable'].includes(key)) record[key] = values[0]
               if (key === 'setPrice') record.setPriceCalls = (record.setPriceCalls || 0) + 1
               if (key === 'remove') record.removed = true
               const result = target[key](...values)
@@ -136,7 +136,7 @@ async function closeEntry({ dismiss = false } = {}) {
 async function markerState() {
   return chartFrame.locator('[data-order-kind]').evaluateAll(nodes => Object.fromEntries(nodes.map(node => {
     const body = node.querySelector('.wm-order-marker-body'), rect = node.getBoundingClientRect()
-    return [node.dataset.orderKind, { text: node.querySelector('.wm-order-marker-text').textContent, quantity: node.querySelector('.wm-order-marker-quantity').textContent, ghost: node.dataset.ghost === 'true', color: node.style.getPropertyValue('--order-color'), y: rect.y, left: rect.left, right: rect.right, cursor: getComputedStyle(body).cursor }]
+    return [node.dataset.orderKind, { text: node.querySelector('.wm-order-marker-text').textContent, quantity: node.querySelector('.wm-order-marker-quantity').textContent, quantityHidden: node.querySelector('.wm-order-marker-quantity').hidden, title: body.title, ghost: node.dataset.ghost === 'true', color: node.style.getPropertyValue('--order-color'), y: rect.y, left: rect.left, right: rect.right, cursor: getComputedStyle(body).cursor }]
   })))
 }
 async function preset({ stop, target, unit = 'pips', value = '15' }) {
@@ -289,6 +289,7 @@ try {
   assert.equal(positionMarkers.target.quantity, '0.12')
   assert.equal(positionMarkers.target.color, '#089981')
   assert.ok(positionMarkers.target.y < positionMarkers.entry.y)
+  assert.deepEqual(await page.evaluate(() => window.__qaLines.filter(line => !line.removed).map(line => line.setLineStyle)), [2, 2, 2], 'Entry, SL and TP all use native dashed lines')
   await page.screenshot({ path: `${output}/position.png` })
   const savedReplay = structuredClone(replay)
   const noOverlap = async () => {
@@ -305,17 +306,23 @@ try {
     for (const width of [1064, 1368]) {
       await page.setViewportSize({ width, height: 790 })
       await page.waitForTimeout(120)
-      await noOverlap()
+      const compact = await noOverlap()
+      assert.equal(compact.target.text, 'TP')
+      assert.equal(compact.target.quantityHidden, true)
+      assert.equal(compact.target.ghost, false, 'Compact display must preserve a configured TP')
+      assert.match(compact.target.title, /TP → 0.00 USD/)
       await page.locator('.wm-notification > button').evaluateAll(nodes => nodes.forEach(node => node.click()))
       await page.screenshot({ path: `${output}/equal-price-${side}-${width}.png` })
     }
     const box = await marker('target').locator('button').boundingBox()
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down()
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + (side === 'BUY' ? -5 : 5), { steps: 3 })
-    await chartFrame.waitForFunction(() => document.querySelector('[data-order-kind=target]').dataset.dragging === 'true')
-    await noOverlap()
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + (side === 'BUY' ? -15 : 15), { steps: 3 })
+    await chartFrame.waitForFunction(() => document.querySelector('[data-order-kind=target]').dataset.dragging === 'true' && document.querySelector('[data-order-kind=target] .wm-order-marker-text').textContent.includes('→'))
+    const preview = await noOverlap()
+    assert.match(preview.target.text, /^TP → /, 'Moving off Entry restores projected PnL')
+    assert.equal(preview.target.quantityHidden, false)
     await page.keyboard.press('Escape'); await page.mouse.up()
-    await noOverlap()
+    assert.equal((await noOverlap()).target.text, 'TP', 'Escape restores the compact label')
   }
   replay = { ...savedReplay, revision: replay.revision + 1 }
   await page.reload(); await ready(); await waitRequests(3)

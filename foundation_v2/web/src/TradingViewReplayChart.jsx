@@ -216,7 +216,7 @@ export default function TradingViewReplayChart(props) {
               if (lineSignatures.get(kind) !== signature) {
                 line.setPrice(value).setDirection(state.levels.side === 'SELL' ? 'sell' : 'buy')
                   .setMode(kind === 'stop' ? 'stop' : kind === 'target' ? 'limit' : '')
-                  .setLineColor(label.ghost ? 'rgba(0, 0, 0, 0)' : label.color).setLineStyle(kind === 'entry' ? 0 : 2)
+                  .setLineColor(label.ghost ? 'rgba(0, 0, 0, 0)' : label.color).setLineStyle(2)
                 lineSignatures.set(kind, signature)
               }
             }

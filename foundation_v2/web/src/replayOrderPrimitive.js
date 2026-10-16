@@ -45,8 +45,9 @@ export class ReplayOrderPrimitive {
       context.fillRect(left, Math.min(profit, entry), width - left, Math.abs(profit - entry))
       context.fillStyle = `${this.palette.negative}1F`
       context.fillRect(left, Math.min(stop, entry), width - left, Math.abs(stop - entry))
-      for (const [y, color, ghost] of [[entry, this.palette.primary, false], [stop, this.palette.negative, this.levels.stop == null], [profit, this.palette.positive, this.levels.target == null]]) {
-        context.strokeStyle = color; context.lineWidth = 1; context.setLineDash(ghost || ['draft', 'edit'].includes(this.levels.state) ? [4, 4] : [])
+      context.setLineDash([4, 4])
+      for (const [y, color] of [[entry, this.palette.primary], [stop, this.palette.negative], [profit, this.palette.positive]]) {
+        context.strokeStyle = color; context.lineWidth = 1
         context.beginPath(); context.moveTo(left, y); context.lineTo(width, y); context.stroke()
       }
       context.restore()

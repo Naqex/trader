@@ -72,7 +72,11 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     row.body.style.color = label.textColor
     row.text.textContent = label.text
     row.quantity.textContent = String(levels.quantity ?? '—')
-    row.quantity.hidden = label.ghost
+    row.quantity.hidden = label.compact
+    if (row.kind !== 'entry') {
+      const hint = t('Kéo để dời · ↑ ↓ chỉnh giá · Delete để bỏ')
+      row.body.title = label.ghost ? hint : `${label.detail} · ${price} · ${hint}`
+    }
     row.body.disabled = row.kind !== 'entry' && !state.orderEditable
     row.element.dataset.pending = String(levels.state === 'submitting' || !state.orderEditable)
     if (row.close) {
