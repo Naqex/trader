@@ -37,8 +37,12 @@ export function orderLevels(replay, draft, scalperPreview = null) {
   const active = execution?.position || execution?.pending_market_order
   const quotes = marketQuotes(replay)
   const entry = finiteNumber(execution?.position?.entry_fill ?? (execution ? (draft.side === 'BUY' ? quotes.ask : quotes.bid) : replay?.visible_rows?.at(-1)?.close))
-  const stop = finiteNumber(draft.stopLoss)
-  const target = finiteNumber(draft.takeProfit)
+  // Once an order exists, the simulator's protection values are authoritative.
+  // The draft can still contain the previous order's values for one render while
+  // the execution response is being applied; letting it win makes the native
+  // chart briefly show a stale SL/TP line.
+  const stop = active ? finiteNumber(active.stop_loss) : finiteNumber(draft.stopLoss)
+  const target = active ? finiteNumber(active.take_profit) : finiteNumber(draft.takeProfit)
   if (!(entry > 0) || (!active && !['BUY', 'SELL'].includes(draft.side))) return null
   const modified = active && (stop !== finiteNumber(active.stop_loss) || target !== finiteNumber(active.take_profit))
   // FXReplay keeps unset protection handles on the entry level. Once a

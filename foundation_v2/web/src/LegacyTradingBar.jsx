@@ -7,7 +7,7 @@ import FxSelect from './FxSelect.jsx'
 import { useNotifications } from './Notifications.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import { finiteNumber } from './replayOrderModel.js'
-import { defaultScalperPreset, scalperProtection } from './legacyScalperPreset.js'
+import { defaultScalperPreset, readScalperPreset, scalperPresetStorageKey, scalperProtection } from './legacyScalperPreset.js'
 import './LegacyTradingBar.css'
 
 export default function LegacyTradingBar({ order, analyticsHref, propRulesAction, symbol, theme, sessionId, workspace, readStatus, onPresetChange }) {
@@ -18,14 +18,8 @@ export default function LegacyTradingBar({ order, analyticsHref, propRulesAction
   const [overflowReserve, setOverflowReserve] = useState(null)
   const [resizing, setResizing] = useState(false)
   const [balanceAnchor, setBalanceAnchor] = useState(null)
-  const storageKey = `tw:legacy-scalper:v1:${workspace}:${sessionId}`
-  const [preset, setPreset] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(storageKey))
-      if (typeof saved?.enabled === 'boolean' && ['stop', 'target'].every(key => typeof saved[key]?.enabled === 'boolean' && ['pips', 'percent', 'ticks'].includes(saved[key].unit) && (!saved[key].enabled || finiteNumber(saved[key].value) > 0))) return saved
-    } catch { /* Optional local preset. */ }
-    return defaultScalperPreset()
-  }), [draft, setDraft] = useState(defaultScalperPreset), [scalperAnchor, setScalperAnchor] = useState(null), [error, setError] = useState('')
+  const storageKey = scalperPresetStorageKey(workspace, sessionId)
+  const [preset, setPreset] = useState(() => readScalperPreset(workspace, sessionId)), [draft, setDraft] = useState(defaultScalperPreset), [scalperAnchor, setScalperAnchor] = useState(null), [error, setError] = useState('')
   const workspaceRef = useRef(null), drag = useRef(null), hideBalance = useRef(null)
   const resizeFrame = useRef(null), pendingResize = useRef(null)
   const restoredHeight = useRef(260)
@@ -33,7 +27,6 @@ export default function LegacyTradingBar({ order, analyticsHref, propRulesAction
   positionsLayout.current = { open: positionsOpen, maximized, height, overflowReserve }
   useEffect(() => () => { clearTimeout(hideBalance.current); cancelAnimationFrame(resizeFrame.current) }, [])
   useEffect(() => { try { localStorage.setItem(storageKey, JSON.stringify(preset)) } catch { /* The confirmation flow works without browser storage. */ } }, [storageKey, preset])
-  useEffect(() => { onPresetChange?.(preset) }, [onPresetChange, preset])
   const execution = order.execution, account = order.account, tickPending = order.tick.options === null && !order.executionConfig?.forceBar, disabled = order.disabled || Boolean(order.active) || (!execution && (!order.canInitialize || tickPending)), currency = execution?.cost_model?.account_ccy || order.configuredCurrency || order.costs?.account_ccy
   const money = value => {
     const amount = finiteNumber(value)
@@ -180,7 +173,7 @@ export default function LegacyTradingBar({ order, analyticsHref, propRulesAction
       try {
         const next = { ...draft, enabled: draft.stop.enabled || draft.target.enabled }
         if (next.enabled) scalperProtection(next, order.reference, 'BUY', order.instrument)
-        setPreset(next); setScalperAnchor(null); setError('')
+        setPreset(next); onPresetChange?.(next); setScalperAnchor(null); setError('')
       } catch (failure) { setError(failure.message) }
     }}>
       {[['stop', 'Stop loss'], ['target', 'Take profit']].map(([key, label]) => <fieldset key={key}><label className="legacy-scalper-toggle"><span>{t(label)}</span><input type="checkbox" role="switch" checked={draft[key].enabled} onChange={event => setDraft(current => ({ ...current, [key]: { ...current[key], enabled: event.target.checked } }))} /></label><div className={`legacy-scalper-distance ${!draft[key].enabled ? 'is-off' : ''}`}><input aria-label={t('Khoảng cách {name}', { name: label })} type="number" min="0.00000001" step="any" required disabled={!draft[key].enabled} value={draft[key].value} onChange={event => setDraft(current => ({ ...current, [key]: { ...current[key], value: event.target.value } }))} /><div className="legacy-scalper-units" role="group" aria-label={t('Đơn vị {name}', { name: label })}>{[['percent', '%'], ['pips', 'Pips'], ...(order.instrument?.asset_class && order.instrument.asset_class !== 'fx' && Number(order.instrument.tick_size) > 0 ? [['ticks', 'Ticks']] : [])].map(([unit, caption]) => <button key={unit} type="button" aria-pressed={draft[key].unit === unit} disabled={!draft[key].enabled || (unit === 'pips' && !(Number(order.instrument?.pip_size) > 0)) || (unit === 'ticks' && !(Number(order.instrument?.tick_size) > 0))} onClick={() => setDraft(current => ({ ...current, [key]: { ...current[key], unit } }))}>{caption}</button>)}</div></div></fieldset>)}

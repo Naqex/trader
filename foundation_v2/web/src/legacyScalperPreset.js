@@ -2,6 +2,18 @@ import { finiteNumber } from './replayOrderModel.js'
 
 export const defaultScalperPreset = () => ({ enabled: false, stop: { enabled: true, value: '20', unit: 'pips' }, target: { enabled: true, value: '40', unit: 'pips' } })
 
+export function scalperPresetStorageKey(workspace, sessionId) {
+  return `tw:legacy-scalper:v1:${workspace}:${sessionId}`
+}
+
+export function readScalperPreset(workspace, sessionId) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(scalperPresetStorageKey(workspace, sessionId)))
+    if (typeof saved?.enabled === 'boolean' && ['stop', 'target'].every(key => typeof saved[key]?.enabled === 'boolean' && ['pips', 'percent', 'ticks'].includes(saved[key].unit) && (!saved[key].enabled || finiteNumber(saved[key].value) > 0))) return saved
+  } catch { /* Optional local preset. */ }
+  return defaultScalperPreset()
+}
+
 export function scalperProtection(preset, entryValue, side, instrument) {
   if (!preset.enabled) return { stopLoss: '', takeProfit: '' }
   const entry = finiteNumber(entryValue), tick = finiteNumber(instrument?.tick_size)
