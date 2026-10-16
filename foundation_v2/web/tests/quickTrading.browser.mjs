@@ -73,6 +73,25 @@ page.on('pageerror', error => report.errors.push(error.message))
 const href = `${origin}/?workspace=${fixture.workspace}&view=replay&surface=workspace&session=${fixture.session}`
 const ready = () => page.locator('[data-chart-status=ready]').waitFor({ timeout: 30000 })
 const waitRequests = count => page.waitForFunction(count => window.__qaLines?.filter(item => !item.removed).length >= count && window.__qaLines.some(item => !item.removed && !/^SL|^TP/.test(item.setText) && item.setCancellable), count)
+async function dragOrderHandle(label, deltaY) {
+  const iframe = await page.locator('.advanced-chart-host iframe').elementHandle()
+  const frame = await iframe?.contentFrame()
+  assert.ok(frame, 'Advanced Charts iframe is available for protection drag')
+  const handle = frame.getByRole('button', { name: label, exact: true })
+  await handle.waitFor({ state: 'visible' })
+  const boxes = await frame.evaluate(label => {
+    const element = [...document.querySelectorAll('[data-wm-order-handles] button')].find(node => node.getAttribute('aria-label') === label)
+    return { frame: frameElement.getBoundingClientRect().toJSON(), handle: element?.getBoundingClientRect().toJSON() }
+  }, label)
+  const frameBox = boxes.frame, localBox = boxes.handle
+  assert.ok(frameBox && localBox?.width > 0, `${label} hit target is visible`)
+  const x = frameBox.x + localBox.x + localBox.width / 2
+  const y = frameBox.y + localBox.y + localBox.height / 2
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await page.mouse.move(x, y + deltaY, { steps: 8 })
+  await page.mouse.up()
+}
 async function fireNative(kind, action, price) {
   const before = report.requests.length
   const removedBefore = await page.evaluate(() => window.__qaLines.filter(item => item.removed).length)
@@ -145,6 +164,22 @@ try {
   assert.equal(sell.take_profit, null)
   const presetLinePrice = await page.evaluate(() => window.__qaLines.find(item => !item.removed && item.setText === 'SL')?.setPrice)
   assert.equal(String(presetLinePrice), String(sell.stop_loss), 'Scalper preset stop is reflected on the native chart line')
+  const protectionBeforeDrag = report.requests.length
+  const protectionRequest = page.waitForRequest(request => request.url().endsWith('/orders/protection')).catch(() => null)
+  await dragOrderHandle('Kéo Take profit', 48)
+  const draggedRequest = await protectionRequest
+  assert.ok(draggedRequest, 'Valid iframe TP drag sends a protection request')
+  const draggedBody = draggedRequest.postDataJSON()
+  assert.equal(draggedBody.stop_loss, sell.stop_loss)
+  assert.ok(Number(draggedBody.take_profit) < close, 'SELL TP drag moves below the reference')
+  await page.waitForFunction(count => window.__qaLines?.length >= count, protectionBeforeDrag)
+  assert.equal(report.requests.length, protectionBeforeDrag + 1)
+  const invalidBeforeDrag = report.requests.length
+  await dragOrderHandle('Kéo Take profit', -48)
+  await new Promise(resolve => setTimeout(resolve, 250))
+  assert.equal(report.requests.length, invalidBeforeDrag, 'SELL TP drag above the reference is rejected locally')
+  assert.match(await page.locator('[role=alert]').last().textContent(), /SELL|bán/i)
+  report.cases.push('Iframe SL/TP hit-target drag survives the pause refresh; valid SELL TP commits once and crossed TP is rejected without a request')
   report.cases.push('Native ghost SL move adds only SL, X removes only SL, entry X cancels queued order; Scalper stop-only Sell uses saved 15 pip distance')
   await fireNative('entry', 'cancel')
   await preset({ stop: false, target: true, unit: 'percent', value: '0.5' })

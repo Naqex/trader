@@ -185,8 +185,15 @@ export default function TradingViewReplayChart(props) {
             if (event.button !== 0 || !latest.current.orderEditable || activeOrderDrag) return
             event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation?.()
             handle.style.cursor = 'grabbing'
+            activeOrderDrag = {
+              kind,
+              pointerId: Number.isFinite(event.pointerId) ? event.pointerId : null,
+              price: Number(latest.current.levels?.[kind] ?? value),
+            }
+            // Mark the gesture before pausing replay. Pausing updates the
+            // parent state and may request a chart refresh; the refresh must
+            // see the active drag and defer rebuilding the native overlays.
             latest.current.onOrderDragStart?.()
-            activeOrderDrag = { kind, pointerId: Number.isFinite(event.pointerId) ? event.pointerId : null, price: value }
             info.doc.addEventListener('pointermove', move, true)
             info.doc.addEventListener('pointerup', finish, true)
             info.doc.addEventListener('pointercancel', finish, true)
@@ -234,6 +241,16 @@ export default function TradingViewReplayChart(props) {
               } else latest.current.onOrderPriceChange(kind, drag.price)
             }
           }
+          // Advanced Charts listens for pointerdown on an ancestor of the
+          // label layer and can stop propagation before a DOM button reaches
+          // its target phase. Delegate the start from the iframe document so
+          // the native chart cannot swallow the drag gesture. The document
+          // listener is intentionally capture-phase and only claims events
+          // whose hit target is one of our compact SL/TP handles.
+          const delegatedBegin = event => {
+            if (event.target === handle || handle.contains(event.target)) begin(event)
+          }
+          info.doc.addEventListener('pointerdown', delegatedBegin, true)
           handle.addEventListener('pointerdown', begin)
           handle.addEventListener('pointermove', move)
           handle.addEventListener('pointerup', finish)
@@ -245,6 +262,7 @@ export default function TradingViewReplayChart(props) {
           handle.addEventListener('mousemove', move)
           handle.addEventListener('mouseup', finish)
           orderHandleCleanups.set(kind, () => {
+            info.doc.removeEventListener('pointerdown', delegatedBegin, true)
             info.doc.removeEventListener('pointermove', move, true)
             info.doc.removeEventListener('pointerup', finish, true)
             info.doc.removeEventListener('pointercancel', finish, true)
@@ -313,6 +331,13 @@ export default function TradingViewReplayChart(props) {
         if (!adapter.supported.includes(chart.resolution())) chart.setResolution(adapter.interval)
         const refresh = () => {
           if (cancelled || !chart || !latest.current.rows.length) return
+          // Parent state changes (for example pausing replay on pointerdown)
+          // can arrive while the pointer is between the SL/TP label and the
+          // chart. Rebuilding the overlay layer here would remove the
+          // document-level move/up listeners and make the drag appear dead.
+          // The committed pointerup performs the authoritative update and the
+          // next render then refreshes the overlay normally.
+          if (activeOrderDrag) return
           renderingOverlays = true
           try {
             for (const line of lines) line.remove()
