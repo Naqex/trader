@@ -132,16 +132,16 @@ async fn invoke(
             .map_err(|_| error(StatusCode::SERVICE_UNAVAILABLE, "stored_contract_untrusted"))?
     } else if path.starts_with("/api/v2/research/") {
         let id = path.split('/').nth(5).unwrap_or("");
-        let row=tx.query_opt("SELECT status,result_path,result_sha256 FROM research_jobs WHERE workspace_id=$1 AND job_id=$2",&[&scope.workspace_id,&id]).await.map_err(|_|ApiError::database())?.ok_or_else(||error(StatusCode::NOT_FOUND,"job_not_found"))?;
-        if row.get::<_, String>(0) != "completed" {
+        let row=tx.query_opt(crate::jobs::JOB_QUERY,&[&scope.workspace_id,&id]).await.map_err(|_|ApiError::database())?.ok_or_else(||error(StatusCode::NOT_FOUND,"job_not_found"))?;
+        if row.get::<_, String>("status") != "completed" {
             return Err(error(
                 StatusCode::CONFLICT,
                 "analytics_requires_completed_job",
             ));
         }
         let (Some(relative), Some(hash)) = (
-            row.get::<_, Option<String>>(1),
-            row.get::<_, Option<String>>(2),
+            row.get::<_, Option<String>>("result_path"),
+            row.get::<_, Option<String>>("result_sha256"),
         ) else {
             return Err(error(
                 StatusCode::SERVICE_UNAVAILABLE,
@@ -149,6 +149,7 @@ async fn invoke(
             ));
         };
         let root = state.config.artifact_root.clone();
+        let identity = crate::jobs::StoredResultIdentity::from_row(&row);
         let permit = state
             .artifact_reads
             .clone()
@@ -162,7 +163,7 @@ async fn invoke(
         let f = filters(&q);
         let view = tokio::task::spawn_blocking(move || {
             let _permit = permit;
-            let result = crate::jobs::read_result(root, &relative, &hash).map_err(|e| {
+            let result = crate::jobs::read_job_result(root, &relative, &hash, &identity).map_err(|e| {
                 if e.1["detail"] == "stored_artifact_unavailable" {
                     e
                 } else {

@@ -22,7 +22,7 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/api/v2/research/jobs/{job_id}/checkpoint", get(checkpoint))
 }
 
-const JOB_QUERY: &str = "SELECT job_id,workspace_id,dataset_id,strategy_version,starting_balance,protocol_sha256,protocol_json,status,cancel_requested,result_path,result_sha256,error_code,created_at_utc,updated_at_utc FROM research_jobs WHERE workspace_id=$1 AND job_id=$2";
+pub(crate) const JOB_QUERY: &str = "SELECT j.*,d.artifact_sha256 AS dataset_sha256 FROM research_jobs j JOIN datasets d ON d.workspace_id=j.workspace_id AND d.dataset_id=j.dataset_id WHERE j.workspace_id=$1 AND j.job_id=$2";
 
 async fn job(
     State(state): State<Arc<AppState>>,
@@ -52,6 +52,7 @@ async fn job(
     }
     let result_path: Option<String> = row.get("result_path");
     let result_sha256: Option<String> = row.get("result_sha256");
+    let identity = StoredResultIdentity::from_row(&row);
     let mut result = json!({
         "contract_version":crate::CONTRACT_VERSION,"job_id":row.get::<_,String>("job_id"),"workspace_id":scope.workspace_id,
         "dataset_id":row.get::<_,String>("dataset_id"),"strategy_version":row.get::<_,String>("strategy_version"),
@@ -77,7 +78,7 @@ async fn job(
                     })?;
                 tokio::task::spawn_blocking(move || {
                     let _permit = permit;
-                    read_result(root, &path, &hash).map_err(|_| {
+                    read_job_result(root, &path, &hash, &identity).map_err(|_| {
                         ApiError::detail(StatusCode::SERVICE_UNAVAILABLE,"result_untrusted")
                     })
                 })
@@ -86,10 +87,83 @@ async fn job(
                     ApiError::detail(StatusCode::SERVICE_UNAVAILABLE, "result_unavailable")
                 })??
             }
-            _ => Value::Null,
+            _ => return Err(ApiError::detail(StatusCode::SERVICE_UNAVAILABLE,"result_untrusted")),
         };
     }
     Ok(Json(result))
+}
+
+pub(crate) struct StoredResultIdentity {
+    workspace: String,
+    job: String,
+    dataset: String,
+    dataset_sha256: String,
+    strategy: String,
+    starting_balance: f64,
+    protocol: Option<Value>,
+    protocol_sha256: Option<String>,
+}
+impl StoredResultIdentity {
+    pub(crate) fn from_row(row: &tokio_postgres::Row) -> Self {
+        Self {
+            workspace: row.get("workspace_id"), job: row.get("job_id"),
+            dataset: row.get("dataset_id"), dataset_sha256: row.get("dataset_sha256"),
+            strategy: row.get("strategy_version"), starting_balance: row.get("starting_balance"),
+            protocol: row.get("protocol_json"), protocol_sha256: row.get("protocol_sha256"),
+        }
+    }
+}
+
+// A checksum proves bytes, not ownership. Bind both legacy and leased candidate
+// artifacts to the selected job before returning their data or projections.
+pub(crate) fn read_job_result(root: PathBuf, relative: &str, expected: &str, identity: &StoredResultIdentity) -> Result<Value,ApiError> {
+    let invalid=||ApiError::detail(StatusCode::SERVICE_UNAVAILABLE,"result_untrusted");
+    let normalized=relative.replace('\\',"/");
+    let legacy=format!("{}/results/{}.json",identity.workspace,identity.job);
+    let prefix=format!("{}/results/{}/",identity.workspace,identity.job);
+    let candidate=normalized.strip_prefix(&prefix).is_some_and(|name| {
+        name.strip_prefix("attempt-").and_then(|s|s.strip_suffix(".json")).and_then(|s|s.split_once('-')).is_some_and(|(attempt,token)| {
+            attempt.parse::<u32>().is_ok_and(|n|n>0) && token.len()==16 && token.bytes().all(|b|b.is_ascii_hexdigit())
+        })
+    });
+    if normalized!=legacy && !candidate {return Err(invalid());}
+    let result=read_result(root,relative,expected)?;
+    if !result.is_object() || result["contract_version"]!=crate::CONTRACT_VERSION
+        || result["workspace_id"]!=identity.workspace || result["job_id"]!=identity.job
+        || result["dataset_id"]!=identity.dataset || result["dataset_sha256"]!=identity.dataset_sha256
+        || identity.dataset_sha256.len()!=64 || !identity.dataset_sha256.bytes().all(|b|b.is_ascii_hexdigit())
+        || result["created_at_utc"].as_str().is_none_or(|s|s.is_empty())
+        || !identity.starting_balance.is_finite() || identity.starting_balance<=0.0 {
+        return Err(invalid());
+    }
+    if let Some(protocol)=&identity.protocol {
+        let bytes=crate::research_jobs::canonical_py_json(protocol).map_err(|_|invalid())?;
+        let hash=format!("{:x}",Sha256::digest(&bytes));
+        let schema=result["artifact_schema_version"].as_str().ok_or_else(invalid)?;
+        if identity.strategy!="bar-breakout-v1" || !matches!(schema,"research-engine-result-v1"|"research-oos-result-v1")
+            || identity.protocol_sha256.as_deref()!=Some(hash.as_str()) || result["protocol_sha256"]!=hash
+            || crate::research_jobs::canonical_py_json(&result["protocol"]).map_err(|_|invalid())?!=bytes
+            || protocol["starting_balance"].as_f64()!=Some(identity.starting_balance)
+            || protocol["dataset"]["dataset_id"]!=identity.dataset || protocol["dataset"]["artifact_sha256"]!=identity.dataset_sha256
+            || result["engine_version"]!="bar-breakout-v1" || result["engine_code_sha256"]!=protocol["engine"]["code_sha256"]
+            || result["playbook_id"]!=protocol["playbook"]["record_id"] || result["playbook_revision"]!=protocol["playbook"]["revision"] {
+            return Err(invalid());
+        }
+        if schema=="research-engine-result-v1" {
+            if result["split"]!=protocol["split"] || !result["ledger"].is_array() || !result["metrics"].is_object()
+                || !result["signals"].is_object() || !result["assumptions"].is_object() || !result["observed_range"].is_object() {return Err(invalid());}
+        } else if result["split"]!="validation" || result["validation_schema"]!="research-oos-validation-v1"
+            || !result["trials"].is_array() || ["selection","walk_forward","sweep","outcome_summary","source_range"].iter().any(|k|!result[*k].is_object()) {
+            return Err(invalid());
+        }
+    } else if identity.strategy!="close-delta-v1" || identity.protocol_sha256.is_some()
+        || !result["artifact_schema_version"].is_null() || !result["protocol"].is_null() || !result["protocol_sha256"].is_null()
+        || result["strategy_version"]!=identity.strategy || !result["metrics"].is_object()
+        || result["metrics_schema_version"]!="metrics-v2" || result["trade_count"].as_u64().is_none()
+        || result["metrics"]["starting_balance"].as_f64()!=Some(identity.starting_balance) {
+        return Err(invalid());
+    }
+    Ok(result)
 }
 
 // Completed result reads preserve the immutable worker checksum and never accept a DB path outside artifact_root.

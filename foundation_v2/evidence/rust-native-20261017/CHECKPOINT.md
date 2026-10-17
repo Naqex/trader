@@ -436,3 +436,18 @@ scientific compiled/transitive identity. Owner8010/5180 unchanged. Goal ACTIVE.
 - This attempt pins binary/source hashes before subsequent stored-result binding
   and scientific hash-cache work; it does not establish those later changes.
   Final integrated rebuild/recheck remains required. Owner runtime untouched.
+
+## Root continuation: bind stored results to their requested owner
+
+- GET research job and research analytics/CSV now use one stored-result guard.
+  A valid artifact checksum alone is insufficient: canonical path, workspace,
+  job, dataset/hash, supported result family, starting balance and protocol/hash
+  must agree with the workspace-scoped database row. Completed jobs without
+  result identity fail503 instead of presenting an empty successful result.
+- `metadata/research-result-binding-review.json` PASS48metadata cases and the
+  persisted endpoint regression across legacy/candidate paths and close-delta,
+  engine and OOS results. Deliberately corrupted owner/protocol/hash/path bindings
+  fail closed. No evidence of a normal-path cross-tenant exploit is claimed.
+- Independent reviewer found no new blocker in the scientific cache/startup
+  changes after inspecting reliable identity, pathname rechecks, bounds and
+  cancellation. Final compiled runtime/performance acceptance remains separate.

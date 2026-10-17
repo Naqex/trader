@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "cases": 48,
+  "results": [
+    {
+      "target": "rust_metadata_parity",
+      "passed": true,
+      "stdout": "\nrunning 1 test\nMETADATA_PARITY_CASES=48\ntest python_reference_mutation_parity ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.35s\n\n",
+      "stderr": "   Compiling trading-workspace-api v0.1.0 (D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 10.28s\n     Running tests\\rust_metadata_parity.rs (target\\debug\\deps\\rust_metadata_parity-6e94759bc7bd3230.exe)\n"
+    },
+    {
+      "target": "rust_research_result_pg",
+      "passed": true,
+      "stdout": "\nrunning 1 test\nresearch result binding: legacy/candidate, engine/OOS, all identity fields, protocol/hash, path ownership and missing result passed\ntest completed_results_are_bound_to_the_selected_job ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.32s\n\n",
+      "stderr": "   Compiling trading-workspace-api v0.1.0 (D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.44s\n     Running tests\\rust_research_result_pg.rs (target\\debug\\deps\\rust_research_result_pg-b5e284016afcae82.exe)\n"
+    }
+  ]
+}
