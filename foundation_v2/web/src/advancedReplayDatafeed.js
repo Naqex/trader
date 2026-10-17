@@ -114,6 +114,13 @@ export function createAdvancedReplayDatafeed({ symbol, seconds, tickSize, rows, 
     datafeed, interval, supported,
     update(nextRows, nextCutoff) {
       if (nextRows === visible && Number(nextCutoff) === Number(limit)) return true
+      // Order mutations return a new JSON window with the same immutable bars.
+      // They must not republish candles or fetch history at an unchanged cutoff.
+      if (Number(nextCutoff) === Number(limit) && nextRows.length === visible.length
+          && nextRows.every((row, i) => ['timestamp', 'open', 'high', 'low', 'close', 'volume', 'tick_volume'].every(key => row[key] === visible[i][key]))) {
+        visible = nextRows
+        return true
+      }
       const rewind = Number(nextCutoff) < Number(limit) || nextRows.length < visible.length
       const previousCutoff = Number(limit)
       visible = nextRows; limit = nextCutoff

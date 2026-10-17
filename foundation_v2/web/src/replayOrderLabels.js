@@ -16,7 +16,7 @@ export function orderLabel(levels, kind, price, theme, t) {
   const name = entry ? levels.side : kind === 'stop' ? 'SL' : 'TP'
   const ghost = !entry && levels[kind] == null
   const compact = !entry && (ghost || Number(price) === Number(levels.entry))
-  const color = kind === 'stop' ? palette.warning : kind === 'target' ? palette.positive : levels.side === 'SELL' ? palette.negative : palette.positive
+  const color = kind === 'stop' ? palette.warning : kind === 'target' ? palette.positive : levels.side === 'SELL' ? palette.orderSell : palette.positive
   const profit = entry ? levels.floating : protectionProfit(levels, price)
   let text = name
   if (entry && levels.state === 'submitting') text += ` · ${t('Đang gửi…')}`
@@ -27,7 +27,7 @@ export function orderLabel(levels, kind, price, theme, t) {
   }
   // A protection at Entry shares the small handle layout, but remains a real
   // saved protection. Keep its full details available without marking it unset.
-  return { text: compact ? name : text, detail: text, compact, ghost, color, textColor: color }
+  return { text: compact ? name : text, detail: text, compact, ghost, color, borderColor: entry && levels.side === 'SELL' ? palette.orderSellBorder : color, textColor: color }
 }
 
 export function protectionError(levels, kind, price) {

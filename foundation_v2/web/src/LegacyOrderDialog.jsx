@@ -7,6 +7,7 @@ import { useTestingLocale } from './testingLocale.jsx'
 export default function LegacyOrderDialog({ order, blockedReason, theme, onClose, onJournal, chartDocument }) {
   const { t } = useTestingLocale(), ref = useRef(null), callbacks = useRef({onClose,onJournal})
   callbacks.current = {onClose,onJournal}
+  useEffect(() => { order.resetDraft() }, [])
   useEffect(() => {
     const panel = ref.current
     panel.querySelector('button:not(:disabled),input:not(:disabled)')?.focus()
@@ -25,5 +26,5 @@ export default function LegacyOrderDialog({ order, blockedReason, theme, onClose
     if (app) app.inert = true
     return () => { if (app) app.inert = wasInert; docs.forEach(doc => doc.removeEventListener('keydown', keyboard, true)) }
   }, [chartDocument])
-  return createPortal(<div className={`legacy-modal-overlay legacy-order-overlay ${theme === 'light' ? 'is-light' : ''}`} onPointerDown={event => { if (event.target === event.currentTarget) onClose() }}><section ref={ref} className="legacy-modal legacy-order-modal" role="dialog" aria-modal="true" aria-labelledby="legacy-order-title"><header><h2 id="legacy-order-title">{t('Đặt lệnh')}</h2><button type="button" disabled title={t('Chưa hỗ trợ preset')}>{t('Preset')}</button><button type="button" className="wm-dialog-close" aria-label={t('Đóng panel')} onClick={onClose}><ChartIcon name="close" /></button></header><ChartOrderPanel order={order} blockedReason={blockedReason} legacy onClose={onClose} onJournal={onJournal} /></section></div>, document.body)
+  return createPortal(<div className={`legacy-modal-overlay legacy-order-overlay ${theme === 'light' ? 'is-light' : ''}`} onPointerDown={event => { if (event.target === event.currentTarget) onClose() }}><section ref={ref} className="legacy-modal legacy-order-modal" role="dialog" aria-modal="true" aria-labelledby="legacy-order-title"><header><h2 id="legacy-order-title">{t(order.active ? 'Chỉnh sửa vị thế' : 'Đặt lệnh')}</h2><button type="button" disabled title={t('Chưa hỗ trợ preset')}>{t('Preset')}</button><button type="button" className="wm-dialog-close" aria-label={t('Đóng panel')} onClick={onClose}><ChartIcon name="close" /></button></header><ChartOrderPanel order={order} blockedReason={blockedReason} legacy onClose={onClose} onJournal={onJournal} /></section></div>, document.body)
 }

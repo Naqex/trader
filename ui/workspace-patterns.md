@@ -279,13 +279,31 @@ is distinct from an empty list; unknown per-trade commission stays a dash.
 Pagination is local over the snapshot, not a claim of server paging.
 
 Order opens a focus-trapped modal using the existing simulator submission and risk
-validation. Current simulator contracts require both SL/TP; their switches are
-display-only, and unsupported order types, break-even and strategy creation stay
-disabled. A separate local Scalper preset converts positive distances in percent,
-pips or supported ticks to protective draft prices. It persists by workspace and
-session in browser storage and still opens the existing confirmation dialog;
-it does not claim FX's instant order execution. Successful Save can open Journal;
-errors leave the draft visible.
+validation. Market orders and Quick Buy/Sell explicitly request `current_quote`:
+they open a simulated position at the visible cutoff's ask/bid without stepping
+replay or reading the next candle. Existing API clients retain `next_bar` by
+default. Spread and model costs remain reflected in actual floating P/L, so a new
+position can start below zero. SL/TP are optional; unsupported order types,
+Auto-BE, multiple active positions per asset and strategy creation stay disabled.
+A separate local Scalper preset converts positive distances in percent, pips or
+supported ticks to protective prices. It persists by workspace/session in browser
+storage; enabled legs are applied to the next quick entry.
+
+The fixed Entry marker reads `BUY/SELL → {actual P/L} {account currency}`. Its
+quantity opens the centered position editor (SL/TP only); X opens the close
+confirmation. Unset TP and SL are adjacent compact drag handles at Entry, each
+with one vertical grip column. Once moved they show projected account-currency
+P/L and quantity, with no pips. Entry and both protections use native dashed lines
+and native price-scale badges; together with the current-price badge there are
+four labels when all levels are visible, stacked by the library when they coincide.
+Pointer drag has one border; keyboard focus keeps its visible focus ring. SELL
+TP must be below the current closeable ask and SL above it (BUY reverses the
+directions around the bid). Existing profitable stops are allowed. Invalid moves
+restore the authoritative level without sending a request. A valid release sends
+one revisioned mutation; its preview remains until response/rollback. The initial
+entry may fit the view once; protection updates never re-fit the price range,
+remount the iframe or republish unchanged candles. Successful new-order Save can
+open Journal; errors leave the draft visible.
 Go To is anchored to the invoking rail or quick-bar button; custom cursor/date
 navigation preserves existing cutoff checks. Future/news/session jumps stay disabled.
 The layout selector displays reference rows 1–8 and sync controls; only one chart is
@@ -300,13 +318,19 @@ cutoff-safe execution ledger; its rows are not journal-note records. Unknown exe
 stays unavailable, commission stays unknown and quantities preserve eight digits.
 Menus and Journal tabs support keyboard navigation and resize focus restoration.
 
-Dark chart: #0F0F0F pane, #000000 chrome, #202020 grid, #DBDBDB scale text;
-light: #FFFFFF. Up/down candles and Buy/Sell use #26A69A / #EF5350.
+Chart-only values are owned by `nativeChartPalette.js`: dark pane #080808, grid
+#22282E and scale text #FFFFFF; light pane #FFFFFF. Saturated dark candles remain
+#089981 / #F23645 (light #087F6A / #C52F45). Dark SELL marker text/line is #FF603B
+with #D87813 border (light #B54718 / #B35A0A); BUY and TP use the positive token,
+SL the dedicated orange warning token. X uses #F5F8FF background, #398EF0 icon and
+#70B5FF edge in both themes. These trading semantics are separate from page status
+colors and shared button variants; the editor reuses the project dialog controls.
 Project pages use the stronger semantic palette in [project-palette.md](project-palette.md).
 Testing state/language/paging contract remains [testing-standard.md](testing-standard.md).
 Initial receipt: foundation_v2/evidence/legacy-match-20261007/CHECKPOINT.md.
 Native header correction: foundation_v2/evidence/native-refinement-20261007/CHECKPOINT.md.
 FX controls and Save mechanism: foundation_v2/evidence/fx-chart-controls-20261007/CHECKPOINT.md.
+Quick current-quote fill, SELL controls and drag latency: foundation_v2/evidence/quick-order-smooth-20261017/RECEIPT.md.
 Header/rail/footer and replay polish: foundation_v2/evidence/fx-chart-polish-20261007/CHECKPOINT.md.
 
 Owner follow-up: remove the floating quick-action toolbar and its visibility setting.

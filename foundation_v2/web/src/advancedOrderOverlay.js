@@ -51,7 +51,7 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     if (!(price > 0)) return
     const label = orderLabel(state.levels, kind, price, state.theme, t)
     setPrice(kind, price)
-    getLine(kind)?.setLineColor(label.ghost ? 'rgba(0, 0, 0, 0)' : label.color)
+    getLine(kind)?.setLineColor(label.color)
   }
   const placeRows = () => {
     const markers = [...rows.values()].filter(row => !row.element.hidden).map(row => {
@@ -72,10 +72,12 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     row.element.dataset.ghost = String(label.ghost)
     row.element.dataset.compact = String(label.compact)
     row.element.style.setProperty('--order-color', label.color)
+    row.element.style.setProperty('--order-border', label.borderColor)
     row.body.style.color = label.textColor
     row.text.textContent = label.text
     row.quantity.textContent = String(levels.quantity ?? '—')
     row.quantity.hidden = label.compact
+    if (row.kind === 'entry') row.quantity.disabled = !state.orderEditable || !state.onOrderEdit
     if (row.kind !== 'entry') {
       const hint = t('Kéo để dời · ↑ ↓ chỉnh giá · Delete để bỏ')
       row.body.title = label.ghost ? hint : `${label.detail} · ${price} · ${hint}`
@@ -147,12 +149,16 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     // Keep the preview until the revisioned request resolves. The caller returns
     // false on rejection; no success toast or persisted state is invented here.
     pendingPrices.set(gesture.kind, { price: gesture.price, generation: gesture.generation })
-    Promise.resolve(state.onOrderPriceChange(gesture.kind, gesture.price)).finally(() => {
-      pendingPrices.delete(gesture.kind)
-      if (!root) return
-      restoreLine(gesture.kind)
-      sync()
-    })
+    Promise.resolve(state.onOrderPriceChange(gesture.kind, gesture.price)).then(() => {
+      // React may not have published the server response yet. Keep the accepted
+      // preview through that commit instead of restoring an obsolete price.
+      requestAnimationFrame(() => {
+        pendingPrices.delete(gesture.kind)
+        if (!root) return
+        restoreLine(gesture.kind)
+        sync()
+      })
+    }, () => { pendingPrices.delete(gesture.kind); restoreLine(gesture.kind); sync() })
   }
   const begin = event => {
     const body = event.target.closest?.('[data-order-drag]')
@@ -161,6 +167,7 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     const kind = body.dataset.orderDrag, info = getPane(), value = priceOf(state.levels, kind)
     if (!info || !(value > 0)) return
     claim(event)
+    body.dataset.pointerFocus = 'true'
     body.focus({ preventScroll: true })
     drag = { kind, info, pointerId: event.pointerId, generation: state.orderGeneration, startY: toY(info, value), clientStartY: event.clientY, clientY: event.clientY, price: value, moved: false, right: Number.parseFloat(rows.get(kind).element.style.right) }
     rows.get(kind).element.dataset.dragging = 'true'
@@ -175,6 +182,7 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     if (event.key === 'Escape' && drag) { claim(event); cancel(); return }
     const body = event.target.closest?.('[data-order-drag]'), state = getState(), tick = Number(state.tickSize)
     if (!body || !root?.contains(body) || !state.orderEditable || !(tick > 0)) return
+    delete body.dataset.pointerFocus
     if (!['ArrowUp', 'ArrowDown', 'Delete', 'Backspace'].includes(event.key)) return
     claim(event)
     const kind = body.dataset.orderDrag
@@ -192,16 +200,25 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     element.dataset.orderKind = kind
     const body = owner.createElement(kind === 'entry' ? 'span' : 'button')
     body.className = 'wm-order-marker-body'
-    const text = owner.createElement('span'), quantity = owner.createElement('span')
+    const text = owner.createElement('span'), quantity = owner.createElement(kind === 'entry' ? 'button' : 'span')
     text.className = 'wm-order-marker-text'; quantity.className = 'wm-order-marker-quantity'
     if (kind !== 'entry') {
       body.type = 'button'; body.dataset.orderDrag = kind
+      body.addEventListener('blur', () => { delete body.dataset.pointerFocus })
       body.setAttribute('aria-label', kind === 'stop' ? 'Kéo Stop loss' : 'Kéo Take profit')
       body.title = t('Kéo để dời · ↑ ↓ chỉnh giá · Delete để bỏ')
       const grip = owner.createElement('span')
       grip.className = 'wm-order-marker-grip'; grip.setAttribute('aria-hidden', 'true')
       body.append(grip)
-    } else element.setAttribute('aria-label', t('Giá vào lệnh'))
+    } else {
+      element.setAttribute('aria-label', t('Giá vào lệnh'))
+      quantity.type = 'button'; quantity.setAttribute('aria-label', t('Chỉnh sửa vị thế'))
+      quantity.addEventListener('click', event => {
+        claim(event)
+        const state = getState()
+        if (state.orderEditable) { state.onOrderDragStart?.(); state.onOrderEdit?.() }
+      })
+    }
     body.append(text, quantity); element.append(body)
     const row = { kind, element, body, text, quantity }
     if (kind === 'entry') {
@@ -240,8 +257,12 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     }
     root.hidden = false
     Object.assign(root.style, { left: `${info.rect.left}px`, top: `${info.rect.top}px`, width: `${info.rect.width}px`, height: `${info.height}px` })
-    root.style.setProperty('--order-bg', nativeChartPalette(state.theme).canvas)
-    root.style.setProperty('--order-ink', nativeChartPalette(state.theme).text)
+    const palette = nativeChartPalette(state.theme)
+    root.style.setProperty('--order-bg', palette.canvas)
+    root.style.setProperty('--order-ink', palette.text)
+    root.style.setProperty('--order-close-bg', palette.orderCloseBackground)
+    root.style.setProperty('--order-close-icon', palette.orderCloseIcon)
+    root.style.setProperty('--order-close-border', palette.orderCloseBorder)
     for (const kind of ['entry', 'stop', 'target']) {
       const row = rows.get(kind) || createRow(kind), pending = pendingPrices.get(kind)
       const price = pending?.generation === state.orderGeneration ? pending.price : priceOf(state.levels, kind)

@@ -1,0 +1,136 @@
+{
+  "scope": "Real local Axum/PostgreSQL/Python and native Advanced Charts; new disposable replay on existing 134 MiB dataset, no owner-session mutations or broker access.",
+  "samples": [
+    {
+      "side": "Mua",
+      "pendingPaintMs": 44.9,
+      "confirmedUiMs": 408.4,
+      "responseStatus": 200
+    },
+    {
+      "side": "Bán",
+      "pendingPaintMs": 36.4,
+      "confirmedUiMs": 311.3,
+      "responseStatus": 200
+    },
+    {
+      "side": "Mua",
+      "pendingPaintMs": 22.9,
+      "confirmedUiMs": 261.2,
+      "responseStatus": 200
+    },
+    {
+      "side": "Bán",
+      "pendingPaintMs": 22,
+      "confirmedUiMs": 251.2,
+      "responseStatus": 200
+    }
+  ],
+  "errors": [],
+  "session": "335006441e634a30a44315f3867c1f99",
+  "requests": [
+    {
+      "endpoint": "quick",
+      "responseMs": 261,
+      "totalMs": 267
+    },
+    {
+      "endpoint": "close",
+      "responseMs": 254,
+      "totalMs": 257
+    },
+    {
+      "endpoint": "market",
+      "responseMs": 187,
+      "totalMs": 191
+    },
+    {
+      "endpoint": "close",
+      "responseMs": 184,
+      "totalMs": 187
+    },
+    {
+      "endpoint": "market",
+      "responseMs": 173,
+      "totalMs": 176
+    },
+    {
+      "endpoint": "close",
+      "responseMs": 183,
+      "totalMs": 186
+    },
+    {
+      "endpoint": "market",
+      "responseMs": 179,
+      "totalMs": 182
+    },
+    {
+      "endpoint": "close",
+      "responseMs": 190,
+      "totalMs": 193
+    },
+    {
+      "endpoint": "market",
+      "responseMs": 195,
+      "totalMs": 198
+    },
+    {
+      "endpoint": "close",
+      "responseMs": 180,
+      "totalMs": 183
+    },
+    {
+      "endpoint": "market",
+      "responseMs": 189,
+      "totalMs": 191
+    },
+    {
+      "endpoint": "protection",
+      "responseMs": 176,
+      "totalMs": 180
+    },
+    {
+      "endpoint": "close",
+      "responseMs": 114,
+      "totalMs": 116
+    }
+  ],
+  "orderDialog": {
+    "saved": true,
+    "quantity": 0.08,
+    "stop": 1.11994,
+    "target": 1.12594,
+    "closed": true
+  },
+  "protectionAttempt": {
+    "currentPrice": 1.12184,
+    "entry": "1.12194",
+    "wanted": 1.1214848043894585,
+    "y": 453.65625,
+    "destinationY": 577.5000000000242,
+    "visible": {
+      "from": 1.1212661061944955,
+      "to": 1.1234530881441265
+    }
+  },
+  "scaleAfterProtection": {
+    "from": 1.1212661061944955,
+    "to": 1.1234530881441265
+  },
+  "protection": {
+    "persistedAfterReload": true,
+    "stop": "1.12148",
+    "revision": 15
+  },
+  "positionClose": {
+    "confirmed": true,
+    "balance": "99974.4",
+    "ledgerEvents": 19
+  },
+  "result": "PASS",
+  "cleanup": {
+    "deleted": true,
+    "record_id": "335006441e634a30a44315f3867c1f99",
+    "revision": 17
+  }
+}

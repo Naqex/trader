@@ -74,8 +74,12 @@ await context.route('**/*', async route => {
   const suffix = url.pathname.split('/').at(-1)
   let execution = replay.payload.execution
   if (suffix === 'execution') execution = structuredClone(initialExecution)
-  else if (suffix === 'quick') execution = { ...structuredClone(initialExecution), pending_market_order: body }
-  else if (suffix === 'market') execution = { ...execution, pending_market_order: body }
+  else if (suffix === 'quick' || suffix === 'market') {
+    assert.equal(body.execution_timing, 'current_quote')
+    const quote = replay.visible_rows.at(-1).close + (body.side === 'BUY' ? .0001 : -.0001)
+    execution = { ...(execution || structuredClone(initialExecution)), pending_market_order: null,
+      position: { ...body, position_id: 'fixture-position', entry_fill: String(quote), opened_time_utc: fixture.latest.cutoff_timestamp } }
+  }
   else if (suffix === 'protection') {
     const key = execution.position ? 'position' : 'pending_market_order'
     execution = { ...execution, [key]: { ...execution[key], stop_loss: body.stop_loss, take_profit: body.take_profit } }
@@ -193,7 +197,7 @@ try {
   assert.equal(await page.locator('.legacy-order-modal').count(), 0)
   assert.equal(await page.locator('.legacy-quantity-control input').inputValue(), '0.12')
   assert.equal(replay.revision, fixture.latest.revision + 2)
-  report.cases.push('First quick Buy initializes and queues in one browser request, preserving the two committed revisions; double click cannot duplicate, no dialog or implicit protections')
+  report.cases.push('First quick Buy initializes and fills at current quote in one browser request, preserving revisions; double click cannot duplicate, no dialog or implicit protections')
   const stop = Number((fixture.latest.visible_rows.at(-1).close - .002).toFixed(5))
   let initial = await markerState()
   assert.equal(initial.stop.text, 'SL'); assert.equal(initial.target.text, 'TP')
@@ -206,20 +210,20 @@ try {
   await dragOrderHandle('Kéo Stop loss', 30, true)
   assert.equal(report.requests.length, cancelledBefore)
   assert.equal((await markerState()).stop.text, 'SL')
-  assert.equal(await page.evaluate(() => window.__qaLines.find(item => !item.removed && item.setTooltip === 'Stop loss').setLineColor), 'rgba(0, 0, 0, 0)')
+  assert.equal(await page.evaluate(() => window.__qaLines.find(item => !item.removed && item.setTooltip === 'Stop loss').setLineColor), '#F59E0B')
   await dragOrderHandle('Kéo Stop loss', -50)
   assert.equal(report.requests.length, cancelledBefore, 'Invalid BUY SL is local only')
-  assert.equal(await page.evaluate(() => window.__qaLines.find(item => !item.removed && item.setTooltip === 'Stop loss').setLineColor), 'rgba(0, 0, 0, 0)')
+  assert.equal(await page.evaluate(() => window.__qaLines.find(item => !item.removed && item.setTooltip === 'Stop loss').setLineColor), '#F59E0B')
   const releaseFailure = holdMutation(true)
-  await dragOrderHandle('Kéo Stop loss', 35)
+  await dragOrderHandle('Kéo Stop loss', 80)
   await chartFrame.waitForFunction(() => document.querySelector('[data-order-drag=stop]').disabled)
   releaseFailure()
   await chartFrame.waitForFunction(() => !document.querySelector('[data-order-drag=stop]').disabled)
   assert.equal((await markerState()).stop.text, 'SL', 'Rejected change restores the ghost')
-  assert.equal(await page.evaluate(() => window.__qaLines.find(item => !item.removed && item.setTooltip === 'Stop loss').setLineColor), 'rgba(0, 0, 0, 0)')
+  assert.equal(await page.evaluate(() => window.__qaLines.find(item => !item.removed && item.setTooltip === 'Stop loss').setLineColor), '#F59E0B')
   const beforeMove = report.requests.length
   const releaseStop = holdMutation()
-  await dragOrderHandle('Kéo Stop loss', 40)
+  await dragOrderHandle('Kéo Stop loss', 90)
   await chartFrame.waitForFunction(() => document.querySelector('[data-order-drag=stop]').disabled)
   const waiting = await markerState()
   assert.ok(waiting.stop.y > waiting.entry.y && !waiting.stop.ghost)
@@ -230,7 +234,7 @@ try {
   await chartFrame.waitForFunction(() => !document.querySelector('[data-order-drag=stop]').disabled)
   assert.equal(report.requests.length, beforeMove + 1)
   assert.ok(Number(report.requests.at(-1).body.stop_loss) < replay.visible_rows.at(-1).close)
-  assert.equal(replay.payload.execution.pending_market_order.take_profit, null)
+  assert.equal(replay.payload.execution.position.take_profit, null)
   await marker('stop').locator('[data-order-drag]').focus()
   await page.keyboard.press('Delete')
   await chartFrame.waitForFunction(() => document.querySelector('[data-order-kind=stop]').dataset.ghost === 'true' && !document.querySelector('[data-order-drag=stop]').disabled)
@@ -252,7 +256,7 @@ try {
   assert.equal(String(presetLinePrice), String(sell.stop_loss), 'Scalper preset stop is reflected on the native chart line')
   const protectionBeforeDrag = report.requests.length
   const protectionRequest = page.waitForRequest(request => request.url().endsWith('/orders/protection')).catch(() => null)
-  await dragOrderHandle('Kéo Take profit', 48)
+  await dragOrderHandle('Kéo Take profit', 90)
   const draggedRequest = await protectionRequest
   assert.ok(draggedRequest, 'Valid iframe TP drag sends a protection request')
   const draggedBody = draggedRequest.postDataJSON()
@@ -270,7 +274,7 @@ try {
   assert.match(await page.locator('[role=alert]').last().textContent(), /SELL|bán/i)
   report.cases.push('Iframe SL/TP hit-target drag survives the pause refresh; valid SELL TP commits once and crossed TP is rejected without a request')
   const sellMarkers = await markerState()
-  assert.equal(sellMarkers.entry.color, '#F23645')
+  assert.equal(sellMarkers.entry.color, '#FF603B')
   assert.ok(sellMarkers.stop.y < sellMarkers.entry.y && sellMarkers.entry.y < sellMarkers.target.y)
   report.cases.push('Visible TP/SL handles and keyboard deletion work; read-only Buy/Sell Entry uses side color and X opens confirmation; Scalper stop-only Sell uses saved 15 pip distance')
   await closeEntry()
@@ -279,7 +283,7 @@ try {
   await waitRequests(3)
   assert.equal(report.requests.at(-1).body.stop_loss, null)
   assert.ok(Math.abs(Number(report.requests.at(-1).body.take_profit) - (close + .0001) * 1.005) <= Number(spec.tick_size) + 1e-10)
-  const pending = replay.payload.execution.pending_market_order
+  const pending = replay.payload.execution.position
   replay = { ...replay, revision: replay.revision + 1, payload: { ...replay.payload, execution: { ...replay.payload.execution, pending_market_order: null, position: { ...pending, position_id: 'fixture-position', entry_fill: String(close + .0001), opened_time_utc: fixture.latest.cutoff_timestamp }, floating_pl: '12.34' } } }
   await page.reload(); await ready(); await waitRequests(3)
   const positionMarkers = await markerState()
@@ -312,7 +316,7 @@ try {
       assert.equal(compact.target.quantityHidden, true)
       assert.equal(compact.target.ghost, false, 'Compact display must preserve a configured TP')
       assert.match(compact.target.title, /TP → 0.00 USD/)
-      assert.equal(compact.entry.color, side === 'BUY' ? '#089981' : '#F23645', 'Entry color identifies direction even when PnL is positive')
+      assert.equal(compact.entry.color, side === 'BUY' ? '#089981' : '#FF603B', 'Entry color identifies direction even when PnL is positive')
       assert.ok(Math.abs(compact.target.right - compact.stop.left) < 1, 'TP and SL share an edge at the same price')
       const grips = await chartFrame.locator('.wm-order-marker-grip').evaluateAll(nodes => nodes.map(node => ({ width: node.getBoundingClientRect().width, repeatWidth: getComputedStyle(node).backgroundSize.split(' ')[0] })))
       assert.ok(grips.length === 2 && grips.every(grip => grip.width === 2 && grip.repeatWidth === '2px'), 'Each drag grip has one dot column')
@@ -344,7 +348,11 @@ try {
     const anchors = await chartFrame.locator('td.chart-markup-table.pane div.chart-gui-wrapper').evaluate(pane => {
       const markers = [...document.querySelectorAll('[data-order-kind]')].filter(node => node.dataset.ghost === 'false')
       return markers.map(node => {
-        const rgb = node.style.getPropertyValue('--order-color').slice(1).match(/../g).map(value => parseInt(value, 16))
+        // Coincident native lines share one pixel row; the last line may cover
+        // Entry with the SL color while all three price badges remain visible.
+        const rgbs = [...document.querySelectorAll('[data-order-kind]')]
+          .filter(other => Math.abs(parseFloat(other.style.top) - parseFloat(node.style.top)) < 1)
+          .map(other => other.style.getPropertyValue('--order-color').slice(1).match(/../g).map(value => parseInt(value, 16)))
         const ys = []
         for (const canvas of pane.querySelectorAll('canvas')) {
           const rect = canvas.getBoundingClientRect(), ctx = canvas.getContext('2d')
@@ -354,7 +362,7 @@ try {
             let hits = 0
             for (let x = 30; x < Math.min(230, canvas.width); x++) {
               const i = (y * canvas.width + x) * 4
-              if (pixels[i + 3] > 240 && rgb.every((c, j) => Math.abs(c - pixels[i + j]) < 3)) hits++
+              if (pixels[i + 3] > 240 && rgbs.some(rgb => rgb.every((c, j) => Math.abs(c - pixels[i + j]) < 3))) hits++
             }
             if (hits > 12) ys.push(rect.top + (y + .5) * rect.height / canvas.height)
           }
@@ -414,7 +422,7 @@ try {
   assert.equal(report.requests.at(-1).path.endsWith('/orders/market'), true)
   assert.equal(report.requests.at(-1).body.expected_revision, report.requests.at(-2).body.expected_revision + 1)
   assert.equal(await orderDialog.count(), 0)
-  report.cases.push('Legacy order initializes the simulator on submit, then queues the market order with the returned revision')
+  report.cases.push('Legacy order initializes the simulator on submit, then fills the market order at the current quote using the returned revision')
   await closeEntry()
   const beforeRejectedBuy = replay.revision
   const releaseRejectedBuy = holdMutation(true)

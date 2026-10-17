@@ -919,8 +919,8 @@ export default function ReplayWorkspace({ workspace, query }) {
       const next = await readJson(response)
       if (orderContext.current !== origin || window.location.search !== location) return false
       setState({ status: 'ready', payload: next, error: null })
-      if (['execution', 'orders/quick'].includes(endpoint) && propMode) await persistPropReplayBinding(next)
-      if (endpoint === 'orders/close' && propMode) {
+      if (endpoint === 'execution' && propMode) await persistPropReplayBinding(next)
+      if (['orders/close', 'orders/quick', 'orders/market'].includes(endpoint) && propMode) {
         let current = propState
         try {
           for (const event of propPriceMarkEvents(next.payload.execution.ledger, Number(current.resumeState?.replay_binding?.last_replay_event_sequence || 0))) {
@@ -934,7 +934,7 @@ export default function ReplayWorkspace({ workspace, query }) {
           setPropState(current)
         } catch (error) {
           setPropState({ ...current, status: 'error', error: error.message }); setConflict(true)
-          throw new Error('Lệnh đã đóng/hủy; chưa đồng bộ được challenge. Nạp lại trạng thái trước khi tiếp tục.')
+          throw new Error('Lệnh đã xử lý; chưa đồng bộ được challenge. Nạp lại trạng thái trước khi tiếp tục.')
         }
       }
       return next
@@ -1258,7 +1258,7 @@ export default function ReplayWorkspace({ workspace, query }) {
                   </ChartFloatingToolbar>}
                   {advancedChart ? <TradingViewReplayChart key={`${sessionId}:${replay.payload.dataset_id}:${historicalView ? cursor : 'canonical'}`}
                     workspace={workspace} datasetId={replay.payload.dataset_id} datasetSha256={replay.dataset_sha256} viewCursorIndex={replay.view_cursor_index} symbol={replayContext.instrument} assetClass={order.instrument?.asset_class} seconds={activeDataset?.timeframe_seconds || replay.payload.execution?.timeframe_seconds}
-                    cutoff={Number(replay.cutoff_timestamp)} theme={theme} levels={priceLevels} orderEditable={!order.disabled} orderCloseable={order.canClose && Boolean(order.active)} onOrderClose={order.close} orderGeneration={`${sessionId}:${revision}:${cursor}`}
+                    cutoff={Number(replay.cutoff_timestamp)} theme={theme} levels={priceLevels} orderEditable={!order.disabled} orderCloseable={order.canClose && Boolean(order.active)} onOrderClose={order.close} onOrderEdit={() => { setIsPlaying(false); openPanel('order') }} orderGeneration={`${sessionId}:${revision}:${cursor}`}
                     onOrderDragStart={() => setIsPlaying(false)} tickSize={order.instrument?.tick_size} onOrderPriceChange={order.changePrice} onOrderValidationError={order.reportError} rows={visibleRows} sessionId={sessionId}
                     viewportRequest={viewportRequest} drawings={drawings.objects} onCrosshair={setCrosshair} preferredInterval={nativeIntervalRef.current?.sessionId === sessionId ? nativeIntervalRef.current.interval : undefined} onHeaderSlots={slots => { if (slots?.interval) nativeIntervalRef.current = { sessionId, interval: slots.interval }; setNativeHeaderSlots(slots) }} selectingReplayBar={selectingReplayBar} onReplayBarSelect={selectReplayBar} />
                     : <ReplayChart theme={theme} levels={priceLevels} orderEditable={!order.disabled} orderCloseable={order.canClose && Boolean(order.active)} onOrderClose={order.close} orderGeneration={`${sessionId}:${revision}:${cursor}`} onOrderDragStart={() => setIsPlaying(false)} tickSize={order.instrument?.tick_size} onOrderPriceChange={order.changePrice} rows={visibleRows} sessionId={sessionId} chartType={chartType} showVolume={showVolume} showAverage={showAverage} viewportRequest={viewportRequest} drawings={drawings.objects} onCrosshair={setCrosshair} onAnchorSelect={handleChartAnchor} />}
@@ -1293,7 +1293,7 @@ export default function ReplayWorkspace({ workspace, query }) {
 
               {advancedChart ? <LegacyTradingBar key={`${workspace}:${sessionId}`} workspace={workspace} sessionId={sessionId} order={order} onPresetChange={publishScalperPreset} analyticsHref={propAnalyticsHref || routeHref('analytics', { surface: 'workspace' })} propRulesAction={propMode ? { label: t('Prop Firm Rules'), onClick: () => setPropRulesOpen(true) } : null} symbol={replayContext.instrument} theme={theme} readStatus={<TestingResourceStatus state={state.status === 'loading' ? 'refreshing' : state.status === 'error' ? 'stale' : 'ready'} resource="phiên replay" detail={state.status === 'error' ? `${t('Không đọc được replay:')} ${t(state.error)} · ${t('Đang giữ cutoff {cutoff} UTC.', { cutoff: replay.cutoff_timestamp })}` : undefined} />} /> : <div className="chart-trading-bar" role="group" aria-label={t("Giao dịch mô phỏng")}>
                 <div className="chart-trading-actions">
-                  {['BUY', 'SELL'].map(side => <button key={side} type="button" className={side.toLowerCase()} disabled={order.disabled || Boolean(order.active)} onClick={() => beginOrder(side)} title={`${side === 'BUY' ? 'Ask' : 'Bid'} mô phỏng tại cutoff; fill ở nến kế tiếp`}>{side === 'BUY' ? t("Buy") : t("Sell")} <strong>{formatPrice(side === 'BUY' ? quotes.ask : quotes.bid)}</strong></button>)}
+                  {['BUY', 'SELL'].map(side => <button key={side} type="button" className={side.toLowerCase()} disabled={order.disabled || Boolean(order.active)} onClick={() => beginOrder(side)} title={`${side === 'BUY' ? 'Ask' : 'Bid'} mô phỏng tại cutoff; khớp tại giá hiện tại`}>{side === 'BUY' ? t("Buy") : t("Sell")} <strong>{formatPrice(side === 'BUY' ? quotes.ask : quotes.bid)}</strong></button>)}
                   <label>{t("Size")}<input aria-label={t("Khối lượng nhanh")} type="number" min={order.instrument?.quantity_min || '0'} step={order.instrument?.quantity_step || 'any'} value={order.draft.quantity} disabled={order.disabled || Boolean(order.active)} onChange={event => order.setDraft(current => ({ ...current, quantity: event.target.value }))} /></label>
                   <span className="chart-sim-tag">{t("SIM")}</span><button type="button" aria-expanded={sideOpen && sidePanel === 'order'} onClick={() => openPanel('order')}>{t("Lệnh")}{order.active ? '· 1' : ''}</button>
                 </div>

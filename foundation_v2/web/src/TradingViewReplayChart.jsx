@@ -216,15 +216,14 @@ export default function TradingViewReplayChart(props) {
               if (lineSignatures.get(kind) !== signature) {
                 line.setPrice(value).setDirection(state.levels.side === 'SELL' ? 'sell' : 'buy')
                   .setMode(kind === 'stop' ? 'stop' : kind === 'target' ? 'limit' : '')
-                  .setLineColor(label.ghost ? 'rgba(0, 0, 0, 0)' : label.color).setLineStyle(2)
+                  .setLineColor(label.color).setLineStyle(2)
                 lineSignatures.set(kind, signature)
               }
             }
-            const signature = state.levels ? [state.levels.entry, state.levels.stop, state.levels.target].join(':') : ''
+            const signature = state.levels ? [state.levels.side, state.levels.entry, state.levels.timestamp].join(':') : ''
             if (signature !== fittedLevels) {
               fittedLevels = signature
               if (state.levels) fitOrder()
-              else chart.getPanes()[0]?.getMainSourcePriceScale()?.setAutoScale(true)
             }
           } finally {
             renderingOverlays = false

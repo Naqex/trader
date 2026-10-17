@@ -56,6 +56,25 @@ test('metadata precision and resolutions reflect dataset; unsupported intervals 
   await assert.rejects(getBars(item.datafeed, { from: 0, to: Infinity, countBack: 50 }, '10S'))
   item.dispose()
 })
+
+test('order-only JSON refresh at the same cutoff does not refetch history or republish candles', async () => {
+  let reads = 0, resets = 0, emitted = 0
+  const prefix = rows.slice(0, 6)
+  const item = createAdvancedReplayDatafeed({ symbol: 'EURUSD', seconds: 60, rows: prefix,
+    cutoff: prefix.at(-1).timestamp, readHistory: async () => { reads++; return [] } })
+  item.datafeed.subscribeBars({ ticker: 'EURUSD' }, '1', () => emitted++, 'one', () => resets++)
+  await new Promise(resolve => setTimeout(resolve, 0))
+  assert.equal(reads, 1)
+  item.update(structuredClone(prefix), prefix.at(-1).timestamp)
+  await new Promise(resolve => setTimeout(resolve, 0))
+  assert.deepEqual([reads, emitted, resets], [1, 0, 0])
+  const changed = structuredClone(prefix)
+  changed.at(-1).close += .001
+  item.update(changed, prefix.at(-1).timestamp)
+  await new Promise(resolve => setTimeout(resolve, 0))
+  assert.equal(reads, 2, 'A real data change still refreshes the source')
+  item.dispose()
+})
 test('calendar candles use UTC day, Monday week and real month boundaries without future OHLC', async () => {
   const dates = ['2024-01-28T23:59:00Z', '2024-01-29T00:00:00Z', '2024-01-31T23:59:00Z', '2024-02-01T00:00:00Z', '2024-02-29T23:59:00Z', '2024-03-01T00:00:00Z']
   const history = dates.map((date, i) => ({ ...rows[i], timestamp: Date.parse(date) / 1000 }))
