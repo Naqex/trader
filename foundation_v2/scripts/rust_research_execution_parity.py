@@ -88,14 +88,22 @@ def main():
     global OUT
     parser=argparse.ArgumentParser();parser.add_argument('--output',type=Path,default=OUT)
     parser.add_argument('--scientific-oracle',type=Path);parser.add_argument('--scientific-capability',type=Path)
+    parser.add_argument('--release',action='store_true')
     args=parser.parse_args();OUT=args.output.resolve()
+    paths=[*sorted((F/'api-rust/src/research_execution').rglob('*.rs')),
+           *sorted((F/'api-rust/src/research_jobs').rglob('*.rs')),
+           F/'api-rust/src/research_execution.rs',F/'api-rust/src/artifact_data.rs',
+           F/'trading_workspace_v2/nautilus_worker.py',Path(__file__).resolve()]
+    def fingerprints():
+        return {str(p.relative_to(F)):hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
+    source_hashes=fingerprints()
     path=oracle();env=dict(os.environ,TW_RUST_RESEARCH_EXECUTION_ORACLE=str(path))
     if args.scientific_capability:env['TW_V2_SCIENTIFIC_ADAPTER_CAPABILITY']=str(args.scientific_capability.resolve())
     env.pop('TW_V2_DATABASE_URL',None)
     pure_code=None
     if os.environ.get('TW_RUST_EXECUTION_PG_ONLY')!='1':
         with (OUT/'pure.log').open('w',encoding='utf-8') as log:
-            pure=subprocess.run(['cargo','test','--locked','--manifest-path',str(F/'api-rust/Cargo.toml'),'--lib','research_execution::tests::python_baseline_oracle','--','--ignored','--nocapture'],env=env,stdout=log,stderr=subprocess.STDOUT,timeout=600)
+            pure=subprocess.run(['cargo','test','--locked',*(['--release'] if args.release else []),'--manifest-path',str(F/'api-rust/Cargo.toml'),'--lib','research_execution::tests::python_baseline_oracle','--','--ignored','--nocapture'],env=env,stdout=log,stderr=subprocess.STDOUT,timeout=600)
         pure_code=pure.returncode
         if pure_code:
             (OUT/'receipt.json').write_text(json.dumps(dict(passed=False,phase='pure',pure_exit_code=pure_code)),encoding='utf-8')
@@ -122,13 +130,13 @@ def main():
             pgoracle=OUT/'pg-oracle.json';pgoracle.write_text(json.dumps(fixture),encoding='utf-8')
             env.update(TW_V2_DATABASE_URL=dsn,TW_V2_ARTIFACT_ROOT=str(artifacts),TW_V2_LOCAL_WORKSPACES='tenant-a,tenant-b',TW_RUST_EXECUTION_DISPOSABLE='1',TW_RUST_EXECUTION_PG_ORACLE=str(pgoracle))
             with (OUT/'postgres.log').open('w',encoding='utf-8') as log:
-                run=subprocess.run(['cargo','test','--locked','--manifest-path',str(F/'api-rust/Cargo.toml'),'--lib','research_execution::tests::postgres_execution_fences','--','--ignored','--nocapture'],env=env,stdout=log,stderr=subprocess.STDOUT,timeout=600)
-            paths=[*sorted((F/'api-rust/src/research_execution').rglob('*.rs')),F/'api-rust/src/research_execution.rs',F/'api-rust/src/research_jobs/lifecycle.rs']
-            receipt={'schema':'rust-research-execution-acceptance-v1','passed':run.returncode==0 and pure_code in (None,0),'disposable':True,'python_oracle_cases':86,'engine_cases':len(fixture['engine_cases']),'scientific_cases':sum(c['protocol']['engine']['backend']=='nautilus' for c in fixture['engine_cases']),'pure_exit_code':pure_code,'postgres_exit_code':run.returncode,'owner_runtime_touched':False,'source_hashes':{str(p.relative_to(F)):hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}}
+                run=subprocess.run(['cargo','test','--locked',*(['--release'] if args.release else []),'--manifest-path',str(F/'api-rust/Cargo.toml'),'--lib','research_execution::tests::postgres_execution_fences','--','--ignored','--nocapture'],env=env,stdout=log,stderr=subprocess.STDOUT,timeout=600)
+            source_unchanged=source_hashes==fingerprints()
+            receipt={'schema':'rust-research-execution-acceptance-v1','passed':run.returncode==0 and pure_code in (None,0) and source_unchanged,'source_unchanged':source_unchanged,'disposable':True,'python_oracle_cases':86,'engine_cases':len(fixture['engine_cases']),'scientific_cases':sum(c['protocol']['engine']['backend']=='nautilus' for c in fixture['engine_cases']),'pure_exit_code':pure_code,'postgres_exit_code':run.returncode,'owner_runtime_touched':False,'source_hashes':source_hashes}
             (OUT/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n',encoding='utf-8')
             print(json.dumps(receipt))
             if run.returncode:print((OUT/'postgres.log').read_text(encoding='utf-8')[-10000:])
-            return run.returncode
+            return run.returncode or (0 if source_unchanged else 1)
         finally:
             if started:pg('pg_ctl.exe','-D',str(data),'-m','fast','-w','stop')
 if __name__=='__main__':raise SystemExit(main())

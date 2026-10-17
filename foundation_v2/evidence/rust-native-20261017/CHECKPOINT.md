@@ -451,3 +451,44 @@ scientific compiled/transitive identity. Owner8010/5180 unchanged. Goal ACTIVE.
 - Independent reviewer found no new blocker in the scientific cache/startup
   changes after inspecting reliable identity, pathname rechecks, bounds and
   cancellation. Final compiled runtime/performance acceptance remains separate.
+
+
+## Root continuation: complete scientific installed identity and bounded verification
+
+- Descriptor v2 pins all installed engine/base-Python files, including compiled,
+  transitive and bytecode inputs. Native protocols add `engine.dependency_sha256`;
+  this is an additive native extension, not an unchanged historical Python
+  protocol. Old queued scientific jobs without this pin fail closed and must be
+  recreated; completed historical artifacts are not rewritten.
+- A bounded 32,768-file process cache trusts only object ID/change stamp/size/mtime,
+  reopens the named object, rejects Windows reparse points, and fully enumerates
+  both dependency trees on every check. Unknown identity never gets cached and
+  uses two byte hashes. Worker preparation verifies bytes before readiness; each
+  whole job still verifies before/after, with lease cancellation/deadline checks.
+- `runtime/scientific-cached-persisted-root/receipt.json` retains a failed attempt:
+  engine-5 exceeded its unchanged 20s budget. A fresh-process diagnostic found
+  20.803s cold /16.544s warm verification. Redundant pathname metadata and handle
+  queries, rather than engine arithmetic, dominated warm verification.
+- `runtime/scientific-cache-optimized-root/receipt.json` passes a fresh-process
+  release diagnostic:9.982s first/5.229s warm/5.175s production warm. Cold reads
+  893,203,167 bytes across15,552files; warm reads0bytes and verifies all15,552cached
+  identities. Same aggregate dependency digest as bootstrap. This is one local
+  pair with uncontrolled OS cache, not stable tail/capacity evidence. Eight
+  focused dependency tests pass, including restoredmtime, replacement, added
+  files, reparse substitution, fallback, cancellation and cache bounds.
+- `runtime/scientific-optimized-persisted-root/receipt.json` PASS with frozen
+  source:86pure oracle cases,12persisted engine cases including7scientific/OOS.
+  Exact financial/artifact parity, result hash, lease/heartbeat/recovery/cancel,
+  duplicate worker and holdout-before-read checks pass. The scientific jobs keep
+  their20s budget (OOS60s). Six actual adapter cases from the preceding combined
+  run also pass; its first timing is warm despite the historical cold fieldname.
+- Independent backend_review inspected the final scanner/identity/measurement
+  implementation and found no blocking issue. This is a scoped review, not
+  whole-product acceptance. Lifecycle/data/research receipts on the predecessor
+  release remain useful but must not be relabeled as the next binary build.
+
+Next: remove duplicate optional scientific startup verification and fail closed
+for an explicitly missing descriptor; rebuild, verify startup/rollback and
+bounded mixed resources. Long replay snapshots still scale with history; mutation
+view and compact execution storage remain work. Owner8010/5180 unchanged.
+Goal ACTIVE.

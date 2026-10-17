@@ -375,6 +375,9 @@ fn validate_protocol(job:&ClaimedJob,manifest:&Value,engine_hash:&str)->Result<(
 fn engine_result(job:&ClaimedJob,rows:&[Value],manifest:&Value,engine_hash:&str,owned:&AtomicBool,started:Instant,deadline:Instant,scientific_descriptor:&Path,checkpoint:impl FnMut(&[Value])->Result<(),String>)->Result<Value,String>{
     validate_protocol(job,manifest,engine_hash)?;let protocol=job.protocol.as_ref().unwrap();
     let check=||{checked(owned)?;if Instant::now()>=deadline{Err("run exceeded budget.max_runtime_ms".into())}else{Ok(())}};
+    let scientific_root=research_jobs::adapter::foundation_root();
+    let scientific=protocol["engine"]["backend"]=="nautilus";
+    if scientific{scientific::verify_installation(&scientific_root,scientific_descriptor,protocol,&check)?;}
     let mut result=json!({"artifact_schema_version":"research-engine-result-v1","contract_version":crate::CONTRACT_VERSION,"job_id":job.job_id,"workspace_id":job.workspace_id,"dataset_id":job.dataset_id,"dataset_sha256":manifest["artifact_sha256"],"protocol_sha256":job.protocol_sha256,"protocol":protocol,"playbook_id":protocol["playbook"]["record_id"],"playbook_revision":protocol["playbook"]["revision"],"engine_version":"bar-breakout-v1","engine_code_sha256":engine_hash,"split":protocol["split"],"created_at_utc":now(),"regime_partition":null});
     let partition=oos_runner::materialize_regime(protocol,rows,manifest)?;
     result["regime_partition"]=partition.clone().unwrap_or(Value::Null);
@@ -396,6 +399,7 @@ fn engine_result(job:&ClaimedJob,rows:&[Value],manifest:&Value,engine_hash:&str,
         if let Some(mut partition)=partition{partition["engine_metrics"]=oos_runner::regime_metrics(&partition,result["ledger"].as_array().ok_or("research_ledger_invalid")?,&json!(job.starting_balance))?;result["regime_partition"]=partition;}
         result["observed_range"]["elapsed_ms"]=json!(round_milliseconds(started.elapsed().as_secs_f64()*1000.0)?);
     }
+    if scientific{scientific::verify_installation(&scientific_root,scientific_descriptor,protocol,&check)?;}
     check()?;Ok(result)
 }
 fn round_milliseconds(value:f64)->Result<f64,String>{BigDecimal::from_f64(value).ok_or("invalid_elapsed")?.with_scale_round(3,RoundingMode::HalfEven).to_f64().ok_or("invalid_elapsed".into())}
@@ -662,6 +666,20 @@ async fn execute(
 fn scientific_descriptor(state:&AppState)->PathBuf{
     std::env::var_os("TW_V2_SCIENTIFIC_ADAPTER_CAPABILITY").map(PathBuf::from).unwrap_or_else(||state.config.artifact_root.join(".runtime/scientific-adapter-capability.json"))
 }
+/// Verify optional installed code before advertising worker readiness or taking
+/// a lease. Subsequent job checks reuse only reliable per-file hash receipts.
+pub async fn prepare_scientific(state:&AppState,options:&WorkerOptions)->Result<(),String>{
+    let descriptor=scientific_descriptor(state);
+    if !descriptor.is_file(){return Ok(());}
+    let shutdown=options.shutdown_file.clone();
+    tokio::task::spawn_blocking(move||{
+        let check=||if shutdown.as_ref().is_some_and(|p|p.exists()){Err("research_execution_interrupted".into())}else{Ok(())};
+        let root=research_jobs::adapter::foundation_root();
+        let hash=research_jobs::adapter::engine_code_hash(&root)?;
+        research_jobs::adapter::verify_installation_checked(&root,&descriptor,&hash,&check)?;
+        check()
+    }).await.map_err(|_|"research_compute_task_failed")?
+}
 pub async fn run_one(state: Arc<AppState>, options: &WorkerOptions) -> Result<RunOutcome, String> {
     options.validate()?;
     if options.shutdown_file.as_ref().is_some_and(|p| p.exists()) {
@@ -880,6 +898,7 @@ mod tests {
             max_active_jobs: 1,
             shutdown_file: None,
         };
+        prepare_scientific(&state,&options).await.unwrap();
         let candidates = ResultCandidates::new(&state.config.artifact_root).unwrap();
         async fn insert(state: &AppState, id: &str, protocol: Option<Value>) {
             let client = state.pool.get().await.unwrap();

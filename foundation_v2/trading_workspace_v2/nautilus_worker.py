@@ -102,19 +102,20 @@ def runtime_ready():
 def runtime_identity():
     if not runtime_ready():
         raise ResearchEngineValidationError("isolated Nautilus runtime is unavailable")
-    completed = subprocess.run(
-        [
-            str(RUNTIME / ".venv/Scripts/python.exe"),
-            "-I",
-            "-c",
-            "import json,platform,pyarrow,nautilus_trader; print(json.dumps({'python':platform.python_version(),'pyarrow':pyarrow.__version__,'nautilus_trader':nautilus_trader.__version__},sort_keys=True))",
-        ],
-        stdin=subprocess.DEVNULL,
-        capture_output=True,
-        text=True,
-        timeout=10,
-        creationflags=subprocess.CREATE_NO_WINDOW,
-    )
+    with tempfile.TemporaryDirectory(prefix="tw-nautilus-identity-") as scratch:
+        completed = subprocess.run(
+            [
+                str(RUNTIME / ".venv/Scripts/python.exe"),
+                "-I", "-B", "-X", f"pycache_prefix={Path(scratch) / 'pycache'}",
+                "-c",
+                "import json,platform,pyarrow,nautilus_trader; print(json.dumps({'python':platform.python_version(),'pyarrow':pyarrow.__version__,'nautilus_trader':nautilus_trader.__version__},sort_keys=True))",
+            ],
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            timeout=10,
+            creationflags=subprocess.CREATE_NO_WINDOW,
+        )
     if completed.returncode:
         raise ResearchEngineValidationError(f"isolated Nautilus runtime identity probe failed: {completed.stderr[-1000:]}")
     try:
@@ -143,7 +144,7 @@ def execute_native_process(rows, protocol, *, continue_check, deadline):
         source.write_text(json.dumps({"rows": rows, "protocol": protocol}, allow_nan=False), encoding="utf-8")
         job = _WorkerOwnedJob()
         process = subprocess.Popen(
-            [str(RUNTIME / ".venv/Scripts/python.exe"), "-I", str(RUNTIME / "run.py"),
+            [str(RUNTIME / ".venv/Scripts/python.exe"), "-I", "-B", "-X", f"pycache_prefix={directory / 'pycache'}", str(RUNTIME / "run.py"),
              "--input", str(source), "--output", str(result_path), "--source-hash", expected_hash,
              "--memory-mb", str(protocol["budget"]["max_memory_mb"])],
             stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,

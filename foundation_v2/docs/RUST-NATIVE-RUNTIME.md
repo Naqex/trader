@@ -119,3 +119,26 @@ establish a stable tail latency or production capacity.
 Independent integration review, broader native data/research UI journeys and
 resource/long-duration acceptance remain open. This candidate is not whole-product
 acceptance and does not change broker, holdout, authorization or deployment gates.
+
+Scientific capability descriptors use `research-scientific-adapter-capability-v2`.
+They pin all files under `engine_runtime` (including its isolated environment)
+and the installed base Python prefix. DLL/PYD, transitive packages, bytecode and
+additional importable modules are included. Bootstrap rejects import paths outside
+those roots; adapter processes use isolated mode and a fresh private bytecode
+cache prefix. No install or provider request occurs during this inspection.
+
+Native scientific protocols additionally retain `engine.dependency_sha256`.
+Admission compares small pinned metadata without spawning Python or hashing the
+whole installation. The optional worker verifies installed bytes before publishing
+readiness, then verifies identity before and after each complete job. OOS slices
+reuse that boundary rather than hashing the installation for every slice. Those
+checks honor cancellation and job deadlines. Existing queued scientific protocols
+without this field fail closed and must be recreated under the new descriptor;
+completed historical results are not rewritten.
+
+A bounded in-process file-hash cache can reuse verified hashes only when the
+filesystem supplies a reliable object identity and change stamp. Every check
+still enumerates all files and rejects changed, added, missing or linked entries.
+On Windows, restoring size/mtime cannot preserve the cached ChangeTime identity.
+Unsupported filesystems hash exact bytes without caching. This avoids repeatedly
+reading unchanged dependency bytes; it does not bypass installed-file validation.

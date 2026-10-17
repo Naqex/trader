@@ -1,0 +1,10 @@
+{
+  "disposable": true,
+  "cases": 350,
+  "successful": 213,
+  "rejected": 137,
+  "exit_code": 0,
+  "native_protocol_extension": {
+    "engine.dependency_sha256": "a64a4e2a8003fb510e2f54ae201ddf71f5ecea94f8f70c737332b29b283772e2"
+  }
+}

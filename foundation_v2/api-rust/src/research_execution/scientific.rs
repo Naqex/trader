@@ -46,10 +46,18 @@ pub(super) fn capability(root: &Path, descriptor: &Path, protocol: &Value) -> R<
         || engine["adapter_version"] != "nautilus-breakout-v1"
         || engine["adapter_sha256"] != pinned["adapter_sha256"]
         || engine["runtime_identity"] != pinned["runtime_identity"]
+        || engine["dependency_sha256"] != pinned["dependency_sha256"]
     {
         return Err("scientific adapter capability differs from queued protocol".into());
     }
     Ok(pinned)
+}
+
+pub(super) fn verify_installation(root: &Path, descriptor: &Path, protocol: &Value, check: &impl Fn() -> R<()>) -> R<()> {
+    check()?;
+    capability(root, descriptor, protocol)?;
+    research_jobs::adapter::verify_installation_checked(root, descriptor, protocol["engine"]["code_sha256"].as_str().ok_or("invalid scientific engine identity")?, check)?;
+    check()
 }
 
 async fn run_adapter(
@@ -122,6 +130,10 @@ async fn execute_async(
         return Err("run exceeded budget.max_runtime_ms".into());
     }
     capability(root, descriptor, protocol)?;
+    check()?;
+    if Instant::now() >= deadline {
+        return Err("run exceeded budget.max_runtime_ms".into());
+    }
     let memory = protocol["budget"]["max_memory_mb"]
         .as_u64()
         .filter(|v| (256..=4096).contains(v))
@@ -150,6 +162,9 @@ async fn execute_async(
     let runtime = root.join("engine_runtime");
     let args = [
         "-I".into(),
+        "-B".into(),
+        "-X".into(),
+        format!("pycache_prefix={}", scratch.0.join("pycache").display()),
         runtime.join("run.py").to_string_lossy().into_owned(),
         "--input".into(),
         input.to_string_lossy().into_owned(),
@@ -320,6 +335,7 @@ mod tests {
         for case in fixture.as_array().unwrap() {
             let rows = case["rows"].as_array().unwrap();
             let protocol = &case["protocol"];
+            verify_installation(&root, &descriptor, protocol, &|| Ok(())).unwrap();
             let result = execute_async(
                 rows,
                 protocol,
@@ -330,6 +346,7 @@ mod tests {
             )
             .await;
             let mut result = result.unwrap_or_else(|error| panic!("{}: {error}", case["name"]));
+            verify_installation(&root, &descriptor, protocol, &|| Ok(())).unwrap();
             let mut expected = case["expected"]["value"].clone();
             // Engine elapsed time and generated native IDs are deliberately
             // independent between actual engine executions. Money/source fields
@@ -354,6 +371,11 @@ mod tests {
         }
         assert!(count >= 2);
         let case = &fixture[0];
+        for wrong in [Value::Null,json!("f".repeat(64))] {
+            let mut stale=case["protocol"].clone();
+            stale["engine"]["dependency_sha256"]=wrong;
+            assert_eq!(capability(&root,&descriptor,&stale).unwrap_err(),"scientific adapter capability differs from queued protocol");
+        }
         let error = execute_async(
             case["rows"].as_array().unwrap(),
             &case["protocol"],

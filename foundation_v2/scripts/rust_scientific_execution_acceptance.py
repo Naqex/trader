@@ -19,6 +19,7 @@ from trading_workspace_v2.nautilus_worker import execute_native_process, normali
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--release', action='store_true')
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
     descriptor = inspect_adapter()
@@ -42,23 +43,28 @@ def main():
         protocol['split'] = 'train'
         protocol['dataset']['artifact_sha256'] = hashlib.sha256(json.dumps(rows, sort_keys=True).encode()).hexdigest()
         protocol['engine'].update(backend='nautilus', native_version='1.231.0', adapter_version='nautilus-breakout-v1',
-                                  adapter_sha256=descriptor['adapter_sha256'], runtime_identity=descriptor['runtime_identity'], code_sha256=descriptor['engine_code_sha256'])
+                                  adapter_sha256=descriptor['adapter_sha256'], runtime_identity=descriptor['runtime_identity'], code_sha256=descriptor['engine_code_sha256'], dependency_sha256=descriptor['dependency_sha256'])
         protocol['budget'].update(max_memory_mb=512, max_runtime_ms=20000)
         native = execute_native_process(rows, protocol, continue_check=lambda: True, deadline=time.perf_counter()+20)
         cases.append(dict(name=name, rows=rows, protocol=protocol, expected=dict(value=normalize_native_result(native, protocol))))
     fixture = args.output / 'oracle.json'
     fixture.write_text(json.dumps(cases, allow_nan=False), encoding='utf-8')
-    command = ['cargo', 'test', '--locked', '--lib', 'research_execution::scientific::tests::actual_native_adapter_oracle', '--', '--ignored', '--nocapture']
-    result = subprocess.run(command, cwd=V2/'api-rust', capture_output=True, text=True, encoding='utf-8', timeout=240,
+    paths = [V2/'api-rust/src/research_execution.rs', V2/'api-rust/src/artifact_data.rs',
+             *sorted((V2/'api-rust/src/research_execution').rglob('*.rs')),
+             *sorted((V2/'api-rust/src/research_jobs').rglob('*.rs')),
+             *sorted((V2/'api-rust/src/owned_process').rglob('*.rs'))]
+    source_hashes = {str(p.relative_to(V2)):hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
+    command = ['cargo', 'test', '--locked', *(['--release'] if args.release else []), '--lib', 'research_execution::scientific::tests::actual_native_adapter_oracle', '--', '--ignored', '--nocapture']
+    result = subprocess.run(command, cwd=V2/'api-rust', capture_output=True, text=True, encoding='utf-8', timeout=900,
                             env={**os.environ, 'TW_NATIVE_SCIENTIFIC_ORACLE':str(fixture.resolve()), 'TW_V2_SCIENTIFIC_ADAPTER_CAPABILITY':str(path.resolve())})
     (args.output/'test.log').write_text(result.stdout+result.stderr, encoding='utf-8')
-    paths = [V2/'api-rust/src/research_execution/scientific.rs', V2/'api-rust/src/research_execution/scientific_normalize.rs', V2/'api-rust/src/research_execution/independent.rs', *sorted((V2/'api-rust/src/owned_process').rglob('*.rs'))]
-    receipt = dict(passed=result.returncode==0, actual_offline_cases=len(cases), scope='actual pinned adapter orchestration, normalization and independent source validation; synthetic data; persisted dispatch not established',
-                   source_hashes={str(p.relative_to(V2)):hashlib.sha256(p.read_bytes()).hexdigest() for p in paths})
+    source_unchanged = source_hashes == {str(p.relative_to(V2)):hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
+    receipt = dict(passed=result.returncode==0 and source_unchanged, source_unchanged=source_unchanged, actual_offline_cases=len(cases), build_profile='release' if args.release else 'debug', scope='actual pinned adapter orchestration, normalization and independent source validation; synthetic data; persisted dispatch not established',
+                   source_hashes=source_hashes)
     (args.output/'receipt.json').write_text(json.dumps(receipt, indent=2), encoding='utf-8')
     print(json.dumps(receipt))
     if result.returncode: print((result.stdout+result.stderr)[-7000:])
-    raise SystemExit(result.returncode)
+    raise SystemExit(result.returncode or (0 if source_unchanged else 1))
 
 
 if __name__ == '__main__':

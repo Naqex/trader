@@ -1,0 +1,30 @@
+{
+  "passed": true,
+  "observations": [
+    {
+      "cold_verification_ms": 20802.9997,
+      "dependency_sha256": "a64a4e2a8003fb510e2f54ae201ddf71f5ecea94f8f70c737332b29b283772e2",
+      "dependency_trees": {
+        "base_python": {
+          "file_count": 9313,
+          "path": "C:\\Users\\MIIKEY\\AppData\\Local\\Programs\\Python\\Python312",
+          "sha256": "2153f3a300e82bba8979808dc7d6bd564515372f4b291bdca38efc8eb72ea6c6",
+          "total_bytes": 376746367
+        },
+        "engine_runtime": {
+          "file_count": 6239,
+          "path": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\engine_runtime",
+          "sha256": "a3f36bc94a1aca01b937ac47279736bd2c3d97f3be0a1ba8f1965af93b1a65d5",
+          "total_bytes": 516456800
+        }
+      },
+      "metadata_mean_ms": 7.60246,
+      "verification_ms": 20802.9997,
+      "warm_verification_ms": 16544.3477
+    }
+  ],
+  "interpretation": "Fresh process: first verification is cold process cache, second warm. OS filesystem cache is uncontrolled; no other agent heavy test overlapped this standalone check.",
+  "profile": "release",
+  "test_binary_sha256": "50f45a7d0cea4d81431d58e14c34e79bfc09adcd6d5b7bb032f04777ecc4923a",
+  "scope": "installed identity diagnostic; not job deadline acceptance"
+}

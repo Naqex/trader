@@ -109,12 +109,24 @@ pub(crate) fn same_file(left: &Path, right: &Path) -> bool {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-struct FileIdentity {
+pub(crate) struct FileIdentity {
     size: u64,
     modified: Option<SystemTime>,
     device: u64,
     object: [u8; 16],
     change: i64,
+}
+
+impl FileIdentity {
+    pub(crate) fn len(&self) -> u64 {
+        self.size
+    }
+}
+
+/// Content caches must opt out when the filesystem cannot supply a reliable
+/// change stamp and object identity; size/mtime alone are insufficient.
+pub(crate) fn reliable_file_identity(file: &File) -> Option<FileIdentity> {
+    identity(file).ok()
 }
 
 #[cfg(windows)]
@@ -173,7 +185,7 @@ fn identity(file: &File) -> DataResult<FileIdentity> {
         return Err("cannot establish reliable artifact file identity".into());
     }
     let metadata = file.metadata().map_err(|e| e.to_string())?;
-    if !metadata.is_file() {
+    if !metadata.is_file() || basic.attributes & 0x400 != 0 {
         return Err("artifact must be a regular file".into());
     }
     Ok(FileIdentity {

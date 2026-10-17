@@ -43,7 +43,7 @@ def main():
             if env.get("TW_RUST_ENGINE_PG_ORACLE"):
                 from rust_engine_admission_parity import refresh_postgres_oracle
                 refresh_postgres_oracle(env["TW_RUST_RUNTIME_TEST_DSN"], env["TW_RUST_ENGINE_PG_ORACLE"])
-            completed = subprocess.run(["cargo", "test", "--locked", "--manifest-path", str(FOUNDATION / "api-rust/Cargo.toml"),
+            completed = subprocess.run(["cargo", "test", "--locked", *(["--release"] if env.get("TW_RUST_RUNTIME_TEST_RELEASE") == "1" else []), "--manifest-path", str(FOUNDATION / "api-rust/Cargo.toml"),
                                         "--lib", os.environ.get("TW_RUST_RUNTIME_TEST_FILTER", "research_jobs::tests::postgres_admission_cancel_and_schema"), "--", "--ignored", "--nocapture"],
                                        env=env, check=False, timeout=900)
             print(json.dumps({"test": "native-research-schema-parity", "disposable": True, "exit_code": completed.returncode}))

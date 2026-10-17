@@ -1,0 +1,20 @@
+{
+  "schema": "rust-research-execution-acceptance-v1",
+  "passed": false,
+  "disposable": true,
+  "python_oracle_cases": 86,
+  "engine_cases": 12,
+  "scientific_cases": 7,
+  "pure_exit_code": 0,
+  "postgres_exit_code": 101,
+  "owner_runtime_touched": false,
+  "source_hashes": {
+    "api-rust\\src\\research_execution\\independent.rs": "6bc99a5f143ecccbf09704f2846f4bded772779ad49e2a75b8fb728db91cf959",
+    "api-rust\\src\\research_execution\\oos_runner.rs": "f8f9038cbb7bd2f3dab68e5d1e71ee0333b917d82e83dbd0ea84ed31823c7e6f",
+    "api-rust\\src\\research_execution\\reference.rs": "5663d115be1ddec753c8e5ebda3988f5fab427b5fd922805e8dbbc15393696e3",
+    "api-rust\\src\\research_execution\\scientific.rs": "078076eeabc339447d9cf5a352711dca297a9323eb3bef9ff1bf0e268ecc53e1",
+    "api-rust\\src\\research_execution\\scientific_normalize.rs": "5d65dd88fec7c2a9323ab02badee25f56a70d81efa64fe0364f6a237f1806cc6",
+    "api-rust\\src\\research_execution.rs": "1ad592bf5ef90e7d8a6f2dfb65b6ec360845b635f5bfadf8d9cb8930865ebf76",
+    "api-rust\\src\\research_jobs\\lifecycle.rs": "c55de421eaad638f4b4f0661f218af13162f3811828e24c67e584ff125ca6807"
+  }
+}

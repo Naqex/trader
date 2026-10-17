@@ -14,8 +14,8 @@ async fn main()->Result<(),Box<dyn std::error::Error>> {
     if args.len()==2 && args[0]=="scientific-capability" {
         let root=trading_workspace_api::research_jobs::adapter::foundation_root();
         let hash=trading_workspace_api::research_jobs::adapter::engine_code_hash(&root)?;
-        let descriptor=trading_workspace_api::research_jobs::adapter::descriptor(&root,std::path::Path::new(&args[1]),&hash)?;
-        println!("{}",serde_json::json!({"valid":true,"runtime_identity":descriptor["runtime_identity"]}));
+        let descriptor=trading_workspace_api::research_jobs::adapter::verify_installation(&root,std::path::Path::new(&args[1]),&hash)?;
+        println!("{}",serde_json::json!({"valid":true,"runtime_identity":descriptor["runtime_identity"],"dependency_sha256":descriptor["dependency_sha256"],"dependency_trees":descriptor["dependency_trees"]}));
         return Ok(());
     }
     if args.as_slice()==["routes"] {

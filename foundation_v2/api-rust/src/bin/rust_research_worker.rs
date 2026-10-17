@@ -48,6 +48,7 @@ async fn run() -> Result<(), String> {
     }
     options.validate()?;
     let state = AppState::connect(Config::from_environment()?).await?;
+    research_execution::prepare_scientific(&state,&options).await?;
     publish_ready(&options.worker_id)?;
     loop {
         if options.shutdown_file.as_ref().is_some_and(|p| p.exists()) {

@@ -1,0 +1,89 @@
+{
+  "passed": true,
+  "profile": "release",
+  "observations": {
+    "dependency_sha256": "a64a4e2a8003fb510e2f54ae201ddf71f5ecea94f8f70c737332b29b283772e2",
+    "dependency_trees": {
+      "base_python": {
+        "file_count": 9313,
+        "path": "C:\\Users\\MIIKEY\\AppData\\Local\\Programs\\Python\\Python312",
+        "sha256": "2153f3a300e82bba8979808dc7d6bd564515372f4b291bdca38efc8eb72ea6c6",
+        "total_bytes": 376746367
+      },
+      "engine_runtime": {
+        "file_count": 6239,
+        "path": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\engine_runtime",
+        "sha256": "a3f36bc94a1aca01b937ac47279736bd2c3d97f3be0a1ba8f1965af93b1a65d5",
+        "total_bytes": 516456800
+      }
+    },
+    "first_stats": {
+      "base_python": {
+        "cache_hits": 0,
+        "cache_misses": 9313,
+        "enumeration_ms": 455.1121,
+        "file_verification_ms": 6052.3037,
+        "read_bytes": 376746367
+      },
+      "engine_runtime": {
+        "cache_hits": 0,
+        "cache_misses": 6239,
+        "enumeration_ms": 97.6284,
+        "file_verification_ms": 3366.0801,
+        "read_bytes": 516456800
+      }
+    },
+    "first_verification_ms": 9981.5088,
+    "metadata_mean_ms": 7.480829999999999,
+    "production_warm_verification_ms": 5175.1597,
+    "warm_stats": {
+      "base_python": {
+        "cache_hits": 9313,
+        "cache_misses": 0,
+        "enumeration_ms": 477.5082,
+        "file_verification_ms": 3828.1977,
+        "read_bytes": 0
+      },
+      "engine_runtime": {
+        "cache_hits": 6239,
+        "cache_misses": 0,
+        "enumeration_ms": 68.2979,
+        "file_verification_ms": 845.225,
+        "read_bytes": 0
+      }
+    },
+    "warm_verification_ms": 5229.3021
+  },
+  "baseline": {
+    "cold_verification_ms": 20802.9997,
+    "dependency_sha256": "a64a4e2a8003fb510e2f54ae201ddf71f5ecea94f8f70c737332b29b283772e2",
+    "dependency_trees": {
+      "base_python": {
+        "file_count": 9313,
+        "path": "C:\\Users\\MIIKEY\\AppData\\Local\\Programs\\Python\\Python312",
+        "sha256": "2153f3a300e82bba8979808dc7d6bd564515372f4b291bdca38efc8eb72ea6c6",
+        "total_bytes": 376746367
+      },
+      "engine_runtime": {
+        "file_count": 6239,
+        "path": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\engine_runtime",
+        "sha256": "a3f36bc94a1aca01b937ac47279736bd2c3d97f3be0a1ba8f1965af93b1a65d5",
+        "total_bytes": 516456800
+      }
+    },
+    "metadata_mean_ms": 7.60246,
+    "verification_ms": 20802.9997,
+    "warm_verification_ms": 16544.3477
+  },
+  "scope": "fresh process hash-cache diagnostic; OS cache uncontrolled; single pair not stable latency or capacity",
+  "warm_latency_reduction_percent": 68.39221349295022,
+  "source_hashes": {
+    "api-rust\\src\\research_jobs\\adapter.rs": "d6e293d97d955d228aac119ba8f704abaf519600cf5a3946f8b7eec9c758da03",
+    "api-rust\\src\\research_jobs\\engine.rs": "58d88d5558eab314497e7d418306550a8942da88bb9a5645ac6ca5ddff708916",
+    "api-rust\\src\\research_jobs\\lifecycle.rs": "c55de421eaad638f4b4f0661f218af13162f3811828e24c67e584ff125ca6807",
+    "api-rust\\src\\research_jobs\\oos.rs": "ae88252a8149d69431eae8d59524b9c8cbb76a961b0e8f7fae48ac59d8d9403b",
+    "api-rust\\src\\research_jobs\\adapter\\dependencies.rs": "1d05137f10005dca3697807de9bb34ecb8bf256394ff69e498c4f8a7c8f19298",
+    "api-rust\\src\\artifact_data.rs": "334cff95596cbc41fcb05105d20a2316d91eff097777044ad7020906ab3c414c"
+  },
+  "test_binary_sha256": "5587069d468cfa819e88836df22ab28c6e8ffa84ca437c4786f14714bda17020"
+}
