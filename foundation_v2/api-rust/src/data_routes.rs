@@ -303,8 +303,8 @@ async fn remove(
         if !pending{
             // Success may have committed just before process termination or a
             // journal sharing violation. Only remove that completed tombstone
-            // when no catalog row has been republished under this dataset ID.
-            let finished:bool=conn.query_one("SELECT EXISTS(SELECT 1 FROM api_commands WHERE command_id=$1 AND status='completed' AND result_status=200 AND result_body->>'dataset_id'=$2 AND result_body->>'deleted'='true') AND NOT EXISTS(SELECT 1 FROM datasets WHERE workspace_id=$3 AND dataset_id=$2)",&[&id,&dataset,&scope.workspace_id]).await.map_err(|_|ApiError::database())?.get(0);
+            // when no catalog row or newer pending removal owns this dataset ID.
+            let finished:bool=conn.query_one("SELECT EXISTS(SELECT 1 FROM api_commands WHERE command_id=$1 AND status='completed' AND result_status=200 AND result_body->>'dataset_id'=$2 AND result_body->>'deleted'='true') AND NOT EXISTS(SELECT 1 FROM datasets WHERE workspace_id=$3 AND dataset_id=$2) AND NOT EXISTS(SELECT 1 FROM api_commands WHERE workspace_id=$3 AND method='DELETE' AND result_status=503 AND result_body->>'dataset_id'=$2 AND result_body->>'detail'='dataset_cleanup_pending')",&[&id,&dataset,&scope.workspace_id]).await.map_err(|_|ApiError::database())?.get(0);
             if finished{let _=lifecycle::clear_delete_journal(&state,&scope.workspace_id,&dataset).await;}
             return Ok(response);
         }

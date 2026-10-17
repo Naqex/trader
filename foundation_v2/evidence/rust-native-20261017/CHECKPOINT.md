@@ -392,3 +392,16 @@ Goal ACTIVE.
 
 Parallel continuation: Data/Research production UI journeys and installed
 scientific compiled/transitive identity. Owner8010/5180 unchanged. Goal ACTIVE.
+
+## Root continuation: deletion generation isolation
+
+- Completed DELETE receipt retries no longer clear a dataset removal journal
+  while another pending cleanup receipt owns the same workspace/dataset. This
+  preserves recovery after reimporting identical bytes under the same dataset ID.
+- `metadata/delete-generation-review.json` PASS48metadata cases plus the actual
+  Windows PostgreSQL workflow: deleteA, reimport, deny-delete handle, deleteB503,
+  retryA preserves B journal exact bytes, unlock and retryB completes cleanup.
+- Only disposable fixtures were changed. Owner runtime/data were untouched.
+  Data/Research production UI functional acceptance is recorded separately; final
+  integrated candidate rebuild/recheck and scientific identity remain in progress.
+  Goal ACTIVE.

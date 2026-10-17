@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "cases": 48,
+  "results": [
+    {
+      "target": "rust_metadata_parity",
+      "passed": true,
+      "stdout": "\nrunning 1 test\nMETADATA_PARITY_CASES=48\ntest python_reference_mutation_parity ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.35s\n\n",
+      "stderr": "   Compiling trading-workspace-api v0.1.0 (D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 25.13s\n     Running tests\\rust_metadata_parity.rs (target\\debug\\deps\\rust_metadata_parity-6e94759bc7bd3230.exe)\n"
+    },
+    {
+      "target": "rust_data_pg",
+      "passed": true,
+      "stdout": "\nrunning 1 test\ntest import_recovery_and_removal_workflow ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.45s\n\n",
+      "stderr": "   Compiling trading-workspace-api v0.1.0 (D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 11.64s\n     Running tests\\rust_data_pg.rs (target\\debug\\deps\\rust_data_pg-d10f074a1a206059.exe)\nNative local data import/retry/adoption/corruption/repair/workspace/pin/delete workflows passed\n"
+    }
+  ]
+}
