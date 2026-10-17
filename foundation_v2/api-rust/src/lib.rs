@@ -5,6 +5,7 @@ pub mod config;
 pub mod events;
 pub mod jobs;
 pub mod middleware;
+pub mod owned_process;
 pub mod state;
 pub mod telemetry;
 
