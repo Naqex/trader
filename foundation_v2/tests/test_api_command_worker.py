@@ -18,7 +18,7 @@ from starlette.responses import Response
 from trading_workspace_v2.api import create_app
 from trading_workspace_v2.auth import LocalWorkspaceAuthorization, LocalTrustedIdentityAdapter, ServerWorkspaceMemberships
 from trading_workspace_v2.command_dispatch import CONTRACT_VERSION, CommandResult, DomainCommandDispatcher
-from trading_workspace_v2.api_command_worker import ApiCommandWorker, CommandQueue
+from trading_workspace_v2.api_command_worker import ApiCommandWorker, CommandQueue, CommandWakeup
 
 
 class DirectDomainCommandTests(unittest.TestCase):
@@ -208,6 +208,35 @@ class DurableCommandWorkerTests(unittest.TestCase):
         self.assertTrue(worker.run_once())
         queue.finish.assert_called_once_with(queue.claim.return_value, dispatcher.dispatch.return_value)
         self.assertIsNone(worker._command)
+
+    def test_recovery_is_bounded_while_empty_queue_can_still_be_claimed(self):
+        worker, queue, _ = self.worker()
+        queue.claim.return_value = None
+        with patch('trading_workspace_v2.api_command_worker.time.monotonic', side_effect=[0, .01, .9, 1.01]):
+            for _ in range(4):
+                self.assertFalse(worker.run_once())
+        self.assertEqual(queue.recover.call_count, 2)
+        self.assertEqual(queue.claim.call_count, 4)
+
+    def test_notification_between_claim_and_wait_is_not_lost(self):
+        wakeup = CommandWakeup()
+        generation = wakeup.generation
+        wakeup.signal()
+        # Condition.wait_for must observe the changed generation before sleeping.
+        with patch.object(wakeup.condition, 'wait', side_effect=AssertionError('missed notification')):
+            wakeup.wait(generation)
+
+    def test_lost_notification_has_bounded_fallback_and_stop_wakes_waiters(self):
+        wakeup = CommandWakeup()
+        with patch.object(wakeup.condition, 'wait_for') as wait:
+            wakeup.wait(wakeup.generation)
+        self.assertEqual(wait.call_args.kwargs['timeout'], .5)
+        self.assertFalse(wait.call_args.args[0]())
+        worker, _, _ = self.worker()
+        worker.wakeup = wakeup
+        worker.stop()
+        self.assertTrue(worker.stop_event.is_set())
+        self.assertTrue(wait.call_args.args[0]())
 
     def test_failed_publication_is_not_reexecuted(self):
         worker, queue, dispatcher = self.worker()

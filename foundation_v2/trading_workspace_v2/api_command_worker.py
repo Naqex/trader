@@ -8,6 +8,8 @@ import logging
 import os
 import signal
 import threading
+import time
+import psycopg
 from pathlib import Path
 from uuid import uuid4
 from contextlib import contextmanager
@@ -131,7 +133,7 @@ class CommandQueue:
 
 class ApiCommandWorker:
     def __init__(self, queue: CommandQueue, dispatcher: DomainCommandDispatcher, *, worker_id: str | None = None,
-                 max_request_bytes: int = 32 * 1024 * 1024, max_result_bytes: int = 16 * 1024 * 1024):
+                 max_request_bytes: int = 32 * 1024 * 1024, max_result_bytes: int = 16 * 1024 * 1024, wakeup=None):
         self.queue, self.dispatcher = queue, dispatcher
         self.worker_id = worker_id or f"api-command-{uuid4()}"
         self.max_request_bytes, self.max_result_bytes = max_request_bytes, max_result_bytes
@@ -139,11 +141,15 @@ class ApiCommandWorker:
         self._command = None
         self._lock = threading.Lock()
         self._manifest = dispatcher.manifest()
+        self.wakeup = wakeup
+        self._recovered_at = float('-inf')
 
     def stop(self, *_):
         # Stop claiming; the current domain operation drains. A disconnected caller
         # cannot safely cancel an already committed replay mutation or provider job.
         self.stop_event.set()
+        if self.wakeup:
+            self.wakeup.signal()
 
     def _maintain(self, stopped: threading.Event):
         while not stopped.wait(self.queue.lease_seconds / 3):
@@ -158,7 +164,10 @@ class ApiCommandWorker:
                 LOG.error("command_worker_heartbeat_failed worker_id=%s", self.worker_id)
 
     def run_once(self) -> bool:
-        self.queue.recover()
+        now = time.monotonic()
+        if now - self._recovered_at >= 1:
+            self.queue.recover()
+            self._recovered_at = now
         command = self.queue.claim(self.worker_id)
         if command is None:
             return False
@@ -196,8 +205,14 @@ class ApiCommandWorker:
         try:
             while not self.stop_event.is_set():
                 try:
+                    generation = self.wakeup.generation if self.wakeup else None
                     if not self.run_once():
-                        self.stop_event.wait(0.1)
+                        if self.wakeup:
+                            self.wakeup.wait(generation)
+                        else:
+                            self.stop_event.wait(0.1)
+                    elif self.wakeup:
+                        self.wakeup.signal()
                 except Exception:
                     LOG.error("command_worker_queue_unavailable worker_id=%s", self.worker_id)
                     self.stop_event.wait(1)
@@ -205,6 +220,40 @@ class ApiCommandWorker:
             stopped.set()
             maintenance.join(timeout=5)
             self.queue.retire(self.worker_id)
+
+
+class CommandWakeup:
+    """One listener wakes the worker pool; the durable queue remains authoritative.
+
+    A bounded timeout still recovers work after a lost notification/reconnect.
+    Generation checks avoid losing a notification between claim and wait.
+    """
+    def __init__(self):
+        self.condition = threading.Condition()
+        self.generation = 0
+
+    def signal(self):
+        with self.condition:
+            self.generation += 1
+            self.condition.notify_all()
+
+    def wait(self, generation):
+        with self.condition:
+            self.condition.wait_for(lambda: self.generation != generation, timeout=0.5)
+
+    def listen(self, dsn, stopped):
+        while not stopped.is_set():
+            try:
+                # A single dedicated autocommit session, outside transaction pools.
+                with psycopg.connect(dsn, autocommit=True, connect_timeout=5) as conn:
+                    conn.execute('LISTEN tw_api_commands')
+                    self.signal()
+                    while not stopped.is_set():
+                        for _ in conn.notifies(timeout=0.5, stop_after=1):
+                            self.signal()
+            except Exception:
+                LOG.error('command_notification_listener_unavailable')
+                stopped.wait(1)
 
 
 def main():
@@ -259,7 +308,9 @@ def main():
     prefix = os.environ.get("TW_V2_COMMAND_WORKER_PREFIX", f"api-command-{uuid4()}")
     if not prefix or len(prefix) > 160 or any(ord(char) < 32 for char in prefix):
         parser.error("TW_V2_COMMAND_WORKER_PREFIX must be a nonempty bounded identifier")
-    workers = [ApiCommandWorker(queue, dispatcher, worker_id=f"{prefix}-{index}") for index in range(args.concurrency)]
+    wakeup, listener_stop = CommandWakeup(), threading.Event()
+    listener = threading.Thread(target=wakeup.listen, args=(app.state.store.dsn, listener_stop), daemon=True)
+    workers = [ApiCommandWorker(queue, dispatcher, worker_id=f"{prefix}-{index}", wakeup=wakeup) for index in range(args.concurrency)]
     def stop_all(*_):
         for worker in workers:
             worker.stop()
@@ -267,6 +318,7 @@ def main():
     signal.signal(signal.SIGTERM, stop_all)
     threads = [threading.Thread(target=worker.run, name=worker.worker_id) for worker in workers]
     try:
+        listener.start()
         for thread in threads:
             thread.start()
         while any(thread.is_alive() for thread in threads):
@@ -276,6 +328,8 @@ def main():
                 thread.join(timeout=0.25)
     finally:
         stop_all()
+        listener_stop.set()
+        listener.join(timeout=6)
         for thread in threads:
             thread.join()
         if app.state.downloads:

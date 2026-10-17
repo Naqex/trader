@@ -189,6 +189,7 @@ async fn invoke(
     )
     .await?;
     let deadline = tokio::time::Instant::now() + state.config.command_wait_timeout;
+    let mut result_wait_ms = 10;
     loop {
         let read =
             tokio::time::timeout(state.config.pool_timeout, read_result(&state, &scope, id)).await;
@@ -208,7 +209,8 @@ async fn invoke(
             );
             return Ok(response);
         }
-        tokio::time::sleep(Duration::from_millis(75)).await;
+        tokio::time::sleep(Duration::from_millis(result_wait_ms)).await;
+        result_wait_ms = (result_wait_ms * 2).min(75);
     }
 }
 
@@ -282,6 +284,8 @@ async fn enqueue(
         1
     };
     tx.execute("INSERT INTO api_commands(command_id,contract_version,workspace_id,identity_id,method,path,query,body,origin,request_hash,idempotency_key,max_attempts,deadline_at_utc,expires_at_utc) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,CURRENT_TIMESTAMP+make_interval(secs=>$13::integer),CURRENT_TIMESTAMP+interval '24 hours')",&[&id,&CONTRACT,&scope.workspace_id,&scope.subject,&method,&path,&query,&body,&origin,&hash,&key,&attempts,&deadline_seconds]).await.map_err(|_|ApiError::database())?;
+    tx.execute("SELECT pg_notify('tw_api_commands', '')", &[])
+        .await.map_err(|_| ApiError::database())?;
     tx.commit().await.map_err(|_| ApiError(StatusCode::SERVICE_UNAVAILABLE,json!({"detail":"command_commit_outcome_unknown","command_id":id,"status_url":format!("/api/v2/commands/{id}"),"outcome_known":false})))?;
     tracing::info!(command_id=%id,method,route=template,"domain command admitted");
     Ok(id)
