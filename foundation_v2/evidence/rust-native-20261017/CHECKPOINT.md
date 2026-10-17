@@ -405,3 +405,16 @@ scientific compiled/transitive identity. Owner8010/5180 unchanged. Goal ACTIVE.
   Data/Research production UI functional acceptance is recorded separately; final
   integrated candidate rebuild/recheck and scientific identity remain in progress.
   Goal ACTIVE.
+
+## Root continuation: scoped native research recovery
+
+- Native lease recovery now shares the workspace/backend eligibility predicate
+  with claim. It cannot mutate expired jobs outside the worker's authorization
+  or jobs that require an unsupported engine. Explicit compatibility/admin
+  recovery retains its global behavior.
+- `metadata/research-recovery-scope-review.json` PASS48metadata cases and the new
+  persisted regression. Exact foreign/unsupported rows, including lease fields
+  and timestamps, remain unchanged; native reference/scientific eligibility,
+  empty scope, cancellation and retry exhaustion are covered.
+- The explicit worker recovery and recovery inside claim both use this scope.
+  This is a bounded review finding closed, not whole integration sign-off.

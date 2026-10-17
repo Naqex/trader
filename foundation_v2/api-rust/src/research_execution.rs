@@ -687,7 +687,7 @@ pub async fn run_one(state: Arc<AppState>, options: &WorkerOptions) -> Result<Ru
             .transaction()
             .await
             .map_err(|_| "research_database_unavailable")?;
-        lifecycle::recover(&tx).await?;
+        lifecycle::recover_native_scoped(&tx,&workspaces,scientific_available).await?;
         tx.commit()
             .await
             .map_err(|_| "research_database_unavailable")?;

@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "cases": 48,
+  "results": [
+    {
+      "target": "rust_metadata_parity",
+      "passed": true,
+      "stdout": "\nrunning 1 test\nMETADATA_PARITY_CASES=48\ntest python_reference_mutation_parity ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.37s\n\n",
+      "stderr": "   Compiling trading-workspace-api v0.1.0 (D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 23.30s\n     Running tests\\rust_metadata_parity.rs (target\\debug\\deps\\rust_metadata_parity-6e94759bc7bd3230.exe)\n"
+    },
+    {
+      "target": "rust_research_recovery_pg",
+      "passed": true,
+      "stdout": "\nrunning 1 test\nscoped lease recovery: workspace, engine, scientific, empty scope, cancellation, retry exhaustion and admission paths passed\ntest native_recovery_preserves_foreign_workspaces_and_unsupported_engines ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s\n\n",
+      "stderr": "   Compiling trading-workspace-api v0.1.0 (D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.29s\n     Running tests\\rust_research_recovery_pg.rs (target\\debug\\deps\\rust_research_recovery_pg-355b21bcb81defcb.exe)\n"
+    }
+  ]
+}
