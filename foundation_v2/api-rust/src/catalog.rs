@@ -261,7 +261,7 @@ async fn prop_attempt(
 }
 
 #[derive(Clone, Copy)]
-enum PropKind {
+pub(crate) enum PropKind {
     Session,
     Attempt,
     Phase,
@@ -322,7 +322,14 @@ fn money(value: &Value) -> Result<BigDecimal, ApiError> {
         Value::Number(n) => n.to_string(),
         _ => return Err(prop_untrusted()),
     };
-    BigDecimal::from_str(&raw).map_err(|_| prop_untrusted())
+    if raw.len() > 512 {
+        return Err(prop_untrusted());
+    }
+    let value = BigDecimal::from_str(&raw).map_err(|_| prop_untrusted())?;
+    if value.as_bigint_and_exponent().1.unsigned_abs() > 512 {
+        return Err(prop_untrusted());
+    }
+    Ok(value)
 }
 fn prop_defaults(value: &mut Value, node: &Value, root: &Value) -> Result<(), ApiError> {
     if let Some(reference) = node["$ref"].as_str() {
@@ -386,7 +393,7 @@ fn prop_defaults(value: &mut Value, node: &Value, root: &Value) -> Result<(), Ap
     }
     Ok(())
 }
-fn validated_prop(
+pub(crate) fn validated_prop(
     mut value: Value,
     kind: PropKind,
     workspace: &str,
@@ -504,7 +511,7 @@ fn optional_text(value: &Value, max: usize) -> Result<(), ApiError> {
     }
 }
 
-fn replay_catalog_item(
+pub(crate) fn replay_catalog_item(
     record: &Value,
     manifests: &HashMap<String, Value>,
 ) -> Result<Value, ApiError> {
@@ -662,7 +669,7 @@ async fn replay_sessions(
     Ok(Json(json!({"items":items})))
 }
 
-fn capabilities() -> Value {
+pub(crate) fn capabilities() -> Value {
     json!({"mode":"locked","preview":false,"place":false,"modify":false,"cancel":false,"close":false,"broker_execution_capability":false,"reason":"F7 foundation software slice has no broker execution authority"})
 }
 async fn execution_capabilities(_scope: Workspace) -> Json<Value> {

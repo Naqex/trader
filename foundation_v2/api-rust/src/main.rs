@@ -8,11 +8,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let state = AppState::connect(config)
         .await
         .map_err(std::io::Error::other)?;
-    let app = trading_workspace_api::router(state.clone(), trading_workspace_api::domain_routes());
+    let domain = trading_workspace_api::runtime_domain_routes(&state).map_err(std::io::Error::other)?;
     let listener = tokio::net::TcpListener::bind(state.config.bind).await?;
+    let provider = if state.native_runtime {
+        let adapter = trading_workspace_api::provider_routes::execution::Adapter::from_environment(&state.providers)
+            .map_err(std::io::Error::other)?;
+        adapter.map(|adapter| trading_workspace_api::provider_routes::execution::start(state.clone(),state.providers.clone(),adapter))
+            .transpose().map_err(std::io::Error::other)?
+    } else { None };
+    let app = trading_workspace_api::router(state.clone(), domain);
     tracing::info!(bind=%state.config.bind,contract_version=trading_workspace_api::CONTRACT_VERSION,"API listening");
     let (stop_tx, stop_rx) = tokio::sync::oneshot::channel::<()>();
-    let server = axum::serve(listener, app)
+    let server = axum::serve(listener, app.into_make_service_with_connect_info::<std::net::SocketAddr>())
         .with_graceful_shutdown(async move {
             let _ = stop_rx.await;
         })
@@ -23,12 +30,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         result=shutdown_signal() => {
             result?;
             state.draining.store(true,Ordering::Release);
+            if let Some(provider)=&provider { provider.request_stop(); }
             let _=stop_tx.send(());
             tracing::info!("API draining");
             match tokio::time::timeout(state.config.drain_timeout,&mut server).await {
                 Ok(result)=>result?,
                 Err(_)=>tracing::warn!("drain deadline reached; unfinished requests will be disconnected"),
             }
+        }
+    }
+    if let Some(provider)=provider {
+        if tokio::time::timeout(state.config.drain_timeout,provider.finish()).await.is_err() {
+            tracing::warn!("provider drain deadline reached; owned process tree stopped, interrupted job recovers paused");
         }
     }
     state.pool.close();

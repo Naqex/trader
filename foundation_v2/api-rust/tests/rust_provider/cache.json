@@ -1,0 +1,38 @@
+{
+  "version": 2,
+  "source": "https://jetta.dukascopy.com/v1/instruments",
+  "retrieved_at_utc": "2026-01-01T00:00:00+00:00",
+  "raw_catalog": {
+    "groups": [
+      {
+        "id": 1,
+        "code": "FX",
+        "parentId": null
+      },
+      {
+        "id": 2,
+        "code": "FX_METALS",
+        "parentId": 1
+      }
+    ],
+    "instruments": [
+      {
+        "name": "xau/usd",
+        "code": "xauusd",
+        "description": "Gold",
+        "groupId": 2,
+        "pipValue": 0.01,
+        "priceScale": 3
+      },
+      {
+        "name": "EUR/USD",
+        "code": "eurusd",
+        "description": "Euro €",
+        "groupId": 1,
+        "pipValue": 0.0001,
+        "priceScale": 5
+      }
+    ]
+  },
+  "sha256": "2f202f5a6c70eee026f566a06e2f422fba0a79dde8b7064910c8bcc0a75d768b"
+}

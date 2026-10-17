@@ -1,6 +1,5 @@
 use crate::{auth::LocalAuthorization, config::Config, telemetry::Telemetry};
 use deadpool_postgres::{Manager, ManagerConfig, Pool, RecyclingMethod, Runtime, Timeouts};
-use sha2::{Digest, Sha256};
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex, atomic::AtomicBool},
@@ -16,13 +15,23 @@ pub struct AppState {
     pub telemetry: Telemetry,
     pub admission: Arc<Semaphore>,
     pub artifact_reads: Arc<Semaphore>,
+    pub artifact_data: Arc<crate::artifact_data::ArtifactData>,
+    pub analytics_cache: crate::analytics::ProjectionCache,
+    pub notion_oauth: Arc<crate::notion_oauth::NotionOAuthService>,
+    pub providers: Arc<crate::provider_routes::ProviderRuntime>,
     pub event_hub: crate::events::EventHub,
     pub draining: AtomicBool,
     pub rate_windows: Mutex<HashMap<String, (Instant, u32)>>,
     pub openapi_schema: Option<serde_json::Value>,
+    pub native_runtime: bool,
 }
 impl AppState {
     pub async fn connect(config: Config) -> Result<Arc<Self>, String> {
+        let native_runtime = match std::env::var("TW_V2_RUNTIME_PROFILE").as_deref() {
+            Err(std::env::VarError::NotPresent) | Ok("compatibility") => false,
+            Ok("native") => true,
+            _ => return Err("unsupported TW_V2_RUNTIME_PROFILE".into()),
+        };
         let mut database: tokio_postgres::Config = config
             .database_url
             .parse()
@@ -73,6 +82,10 @@ impl AppState {
             .ok()
             .and_then(|bytes| serde_json::from_slice(&bytes).ok());
         Ok(Arc::new(Self {
+            providers: crate::provider_routes::ProviderRuntime::from_environment(&config.artifact_root)?,
+            notion_oauth: Arc::new(crate::notion_oauth::NotionOAuthService::from_environment()?),
+            artifact_data: Arc::new(crate::artifact_data::ArtifactData::new(&config.artifact_root)?),
+            analytics_cache: Default::default(),
             authorization: LocalAuthorization::new(config.local_identity.clone(), workspaces),
             admission: Arc::new(Semaphore::new(config.max_concurrency)),
             artifact_reads: Arc::new(Semaphore::new(2)),
@@ -81,54 +94,11 @@ impl AppState {
             draining: AtomicBool::new(false),
             rate_windows: Mutex::new(HashMap::new()),
             openapi_schema,
+            native_runtime,
             pool,
             config,
         }))
     }
-}
-
-// Migration DDL remains Python-owned. A standalone Rust binary may serve only the exact schema compiled with it.
-const MIGRATIONS: &[(&str, &[u8])] = &[
-    (
-        "0001_baseline.sql",
-        include_bytes!("../../migrations/0001_baseline.sql"),
-    ),
-    (
-        "0002_job_retry.sql",
-        include_bytes!("../../migrations/0002_job_retry.sql"),
-    ),
-    (
-        "0003_api_commands.sql",
-        include_bytes!("../../migrations/0003_api_commands.sql"),
-    ),
-    (
-        "0004_download_jobs.sql",
-        include_bytes!("../../migrations/0004_download_jobs.sql"),
-    ),
-];
-
-fn validate_migration_ledger(recorded: &HashMap<String, String>) -> Result<(), String> {
-    if recorded
-        .keys()
-        .any(|version| !MIGRATIONS.iter().any(|(expected, _)| version == expected))
-    {
-        return Err("database schema is newer than this Rust migration authority".into());
-    }
-    for (version, bytes) in MIGRATIONS {
-        let expected = format!("{:x}", Sha256::digest(bytes));
-        match recorded.get(*version) {
-            None => {
-                return Err(format!(
-                    "database schema migration missing: {version}; initialize schema before startup"
-                ));
-            }
-            Some(actual) if actual != &expected => {
-                return Err(format!("SQL migration checksum mismatch: {version}"));
-            }
-            Some(_) => {}
-        }
-    }
-    Ok(())
 }
 
 async fn verify_migrations(pool: &Pool) -> Result<(), String> {
@@ -155,7 +125,7 @@ async fn verify_migrations(pool: &Pool) -> Result<(), String> {
             .map_err(|_| "database migration ledger invalid")?;
         recorded.insert(version, digest);
     }
-    validate_migration_ledger(&recorded)
+    crate::rust_runtime::validate_recorded(&recorded, true).map(|_| ())
 }
 
 fn local_database(database: &tokio_postgres::Config) -> bool {
@@ -167,36 +137,6 @@ fn local_database(database: &tokio_postgres::Config) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[test]
-    fn schema_hashes_fail_closed() {
-        let ledger: HashMap<String, String> = MIGRATIONS
-            .iter()
-            .map(|(version, bytes)| ((*version).into(), format!("{:x}", Sha256::digest(bytes))))
-            .collect();
-        assert!(validate_migration_ledger(&ledger).is_ok());
-        let mut corrupt = ledger.clone();
-        corrupt.insert("0001_baseline.sql".into(), "0".repeat(64));
-        assert!(
-            validate_migration_ledger(&corrupt)
-                .unwrap_err()
-                .contains("checksum mismatch")
-        );
-        let mut missing = ledger.clone();
-        missing.remove("0004_download_jobs.sql");
-        assert!(
-            validate_migration_ledger(&missing)
-                .unwrap_err()
-                .contains("migration missing")
-        );
-        let mut future = ledger;
-        future.insert("9999_future.sql".into(), "0".repeat(64));
-        assert!(
-            validate_migration_ledger(&future)
-                .unwrap_err()
-                .contains("newer")
-        );
-        assert!(validate_migration_ledger(&HashMap::new()).is_err());
-    }
     #[test]
     fn no_tls_cannot_connect_to_remote_hostaddr() {
         for dsn in [

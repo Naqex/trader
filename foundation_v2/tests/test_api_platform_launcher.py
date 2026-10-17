@@ -13,6 +13,26 @@ SPEC.loader.exec_module(launcher)
 
 
 class LauncherTests(unittest.TestCase):
+    def test_native_provider_selection_and_pins_are_explicit(self):
+        with tempfile.TemporaryDirectory() as folder:
+            home=Path(folder);exe=home/'qdmcli.exe';exe.write_bytes(b'fixture-only-never-executed')
+            args=launcher.parser().parse_args(['--runtime-profile','native','--download-engine','qdm','--qdm-home',str(home)])
+            with patch.dict('os.environ',{'TW_V2_DATABASE_URL':'host=localhost user=fixture'}):
+                env=launcher.configuration(args)
+            self.assertEqual(env['TW_V2_DOWNLOAD_ENGINE'],'qdm')
+            self.assertEqual(env['TW_V2_QDM_HOME'],str(home.resolve()))
+            launcher.native_provider_preflight(args,env)
+            self.assertEqual(env['TW_V2_QDM_SHA256'],launcher.binary_digest(exe))
+            args.download_engine='dukascopy'
+            with self.assertRaises(launcher.PreflightError):launcher.native_provider_preflight(args,{})
+            metadata=home/'metadata.json';metadata.write_text('{}')
+            pins=dict(TW_V2_DUKASCOPY_METADATA_PATH=str(metadata),TW_V2_DUKASCOPY_NODE=str(exe),
+                      TW_V2_DUKASCOPY_NODE_SHA256=launcher.binary_digest(exe),TW_V2_DUKASCOPY_WORKER=str(exe),
+                      TW_V2_DUKASCOPY_WORKER_SHA256=launcher.binary_digest(exe))
+            launcher.native_provider_preflight(args,pins)
+            exe.write_bytes(b'changed')
+            with self.assertRaises(launcher.PreflightError):launcher.native_provider_preflight(args,pins)
+
     def test_child_import_paths_and_remote_hostaddr_guard(self):
         args = launcher.parser().parse_args(["--download-engine", "none"])
         with patch.dict("os.environ", {"TW_V2_DATABASE_URL": "host=localhost user=fixture"}):
@@ -87,6 +107,108 @@ class LauncherTests(unittest.TestCase):
     def test_pending_versions_cannot_be_allowed_on_launch(self):
         with self.assertRaises(launcher.PreflightError):
             launcher.main(["--allow-pending-migrations"])
+
+    def test_native_profile_is_explicit_and_separate_from_compatibility_rollback(self):
+        compatibility = launcher.resolve_profile_paths(launcher.parser().parse_args([]))
+        native = launcher.resolve_profile_paths(launcher.parser().parse_args(["--runtime-profile", "native"]))
+        self.assertEqual(compatibility.runtime_profile, "compatibility")
+        self.assertEqual(compatibility.manifest.name, "owner.json")
+        self.assertEqual(native.manifest.name, "native-owner.json")
+        self.assertNotEqual(native.rust_binary, compatibility.rust_binary)
+        self.assertIn("native-candidate", str(native.rust_binary))
+        self.assertEqual(native.rust_admin_binary.parent, native.rust_binary.parent)
+        commands = launcher.child_commands(native, {})
+        self.assertEqual(set(commands), {"research", "api"})
+        self.assertEqual(commands["research"][0], str(native.rust_research_binary))
+        self.assertNotIn("api_command_worker", json.dumps(commands))
+        self.assertNotIn("trading_workspace_v2.worker", json.dumps(commands))
+
+    def test_native_admin_owns_schema_check_and_migration_not_python_domain(self):
+        args = launcher.resolve_profile_paths(launcher.parser().parse_args(["--runtime-profile", "native"]))
+        complete = MagicMock(returncode=0, stdout=json.dumps({"schema_current": True, "pending": [], "migration_count": 1}))
+        with patch.object(launcher.subprocess, "run", return_value=complete) as run, \
+             patch("trading_workspace_v2.migrations.apply_migrations") as python_migrate:
+            self.assertTrue(launcher.native_database_preflight(args, {"TW_V2_DATABASE_URL":"fixture"})["schema_current"])
+            self.assertEqual(run.call_args.args[0], [str(args.rust_admin_binary), "check"])
+            python_migrate.assert_not_called()
+        args.migrate = args.backup_confirmed = True
+        complete.stdout = json.dumps({"applied": ["0001_fixture.sql"]})
+        with patch.object(launcher.subprocess, "run", return_value=complete) as run, patch.object(launcher, "active_jobs_preflight") as idle:
+            self.assertTrue(launcher.native_database_preflight(args, {})["schema_current"])
+            idle.assert_called_once()
+            self.assertEqual(run.call_args.args[0], [str(args.rust_admin_binary), "migrate", "--backup-confirmed"])
+
+    def test_native_admin_pending_corrupt_failed_receipts_never_start(self):
+        args = launcher.resolve_profile_paths(launcher.parser().parse_args(["--runtime-profile", "native"]))
+        for code, output in [(0, "{}"), (0, "[]"), (0, "not json"), (1, "fixture-sensitive-driver-output"),
+                             (0, json.dumps({"schema_current":False,"pending":["0002.sql"]}))]:
+            with self.subTest(output=output), patch.object(launcher.subprocess,"run",return_value=MagicMock(returncode=code,stdout=output)):
+                with self.assertRaises(launcher.PreflightError) as error:
+                    launcher.native_database_preflight(args,{})
+                self.assertNotIn("fixture-sensitive", str(error.exception))
+
+    def test_native_check_only_uses_native_schema_and_never_launches(self):
+        with patch.object(launcher,"configuration",return_value={}), patch.object(launcher,"validate_paths"), \
+             patch.object(launcher,"native_database_preflight",return_value={"schema_current":True}) as native, \
+             patch.object(launcher,"database_preflight") as compatibility, patch.object(launcher,"supervise") as start:
+            self.assertEqual(launcher.main(["--runtime-profile","native","--check-only"]),0)
+            native.assert_called_once()
+            compatibility.assert_not_called()
+            start.assert_not_called()
+
+    def test_native_disallows_implicit_legacy_adoption_and_stop_actions(self):
+        for arguments in [["--runtime-profile","native","--adopt-legacy-downloads"], ["--stop","--build"], ["--stop","--migrate"]]:
+            with self.subTest(arguments=arguments), patch.object(launcher,"configuration") as config:
+                with self.assertRaises(launcher.PreflightError): launcher.main(arguments)
+                config.assert_not_called()
+
+    def test_worker_readiness_requires_nonce_pid_identity_and_liveness(self):
+        with tempfile.TemporaryDirectory() as folder:
+            ready = Path(folder)/"owned.ready.json"
+            child = MagicMock(pid=42)
+            child.poll.return_value = None
+            identity = {"pid":42,"created":111,"executable":"fixture.exe"}
+            value = {"schema":"research-worker-ready-v1","worker_id":"fixture-worker","pid":42,"startup_token":"fixture-token"}
+            ready.write_text(json.dumps(value),encoding="utf-8")
+            with patch.object(launcher,"process_identity",return_value=identity):
+                self.assertTrue(launcher.native_worker_ready(ready,"fixture-token","fixture-worker",child,identity))
+                self.assertFalse(launcher.native_worker_ready(ready,"wrong-token","fixture-worker",child,identity))
+                self.assertFalse(launcher.native_worker_ready(ready,"fixture-token","other-worker",child,identity))
+                child.poll.return_value = 0
+                self.assertFalse(launcher.native_worker_ready(ready,"fixture-token","fixture-worker",child,identity))
+            child.poll.return_value = None
+            with patch.object(launcher,"process_identity",return_value={**identity,"created":222}):
+                self.assertFalse(launcher.native_worker_ready(ready,"fixture-token","fixture-worker",child,identity))
+
+    def test_native_manifest_requires_exact_profile_roles_binary_and_hash(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            for name in ("api.exe","research.exe"):
+                (root/name).write_bytes(name.encode())
+            args = launcher.resolve_profile_paths(launcher.parser().parse_args(["--runtime-profile","native","--manifest",str(root/"owner.json"),
+                "--rust-binary",str(root/"api.exe"),"--rust-research-binary",str(root/"research.exe")]))
+            roles = {"supervisor":str(Path(sys.executable).resolve()),"api":str((root/"api.exe").resolve()),"research":str((root/"research.exe").resolve())}
+            identities = {role:{"pid":index,"created":index*100,"executable":path} for index,(role,path) in enumerate(roles.items(),start=100)}
+            value = {"schema":"api-platform-runtime-v2","runtime_profile":"native","project":str(launcher.PROJECT.resolve()),"port":args.port,
+                "run_id":"a"*32,"stop_file":str((root/f"platform-{'a'*32}.stop").resolve()),"processes":identities,
+                "executable_sha256":{role:launcher.binary_digest(Path(path)) for role,path in roles.items()}}
+            args.manifest.write_text(json.dumps(value),encoding="utf-8")
+            with patch.object(launcher,"process_identity",side_effect=lambda pid: next(v for v in identities.values() if v["pid"]==pid)):
+                self.assertEqual(launcher.owned_manifest(args)[0],value)
+                (root/"research.exe").write_bytes(b"changed")
+                with self.assertRaises(launcher.PreflightError): launcher.owned_manifest(args)
+            args.runtime_profile = "compatibility"
+            with self.assertRaises(launcher.PreflightError): launcher.owned_manifest(args)
+
+    def test_build_refuses_overwriting_live_owned_binary(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            args = launcher.resolve_profile_paths(launcher.parser().parse_args(["--manifest",str(root/"owner.json"),"--rust-binary",str(root/"release/api.exe")]))
+            identity = {"pid":42,"created":123,"executable":str(args.rust_binary.resolve())}
+            args.manifest.write_text(json.dumps({"processes":{"api":identity}}),encoding="utf-8")
+            with patch.object(launcher,"process_identity",return_value=identity), patch.object(launcher.subprocess,"run") as run:
+                with self.assertRaises(launcher.PreflightError): launcher.build_candidate(args)
+                run.assert_not_called()
 
     def test_legacy_active_job_is_found_in_both_provider_directories(self):
         with tempfile.TemporaryDirectory() as folder:

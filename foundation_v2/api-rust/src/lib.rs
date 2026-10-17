@@ -5,6 +5,23 @@ pub mod config;
 pub mod events;
 pub mod jobs;
 pub mod middleware;
+pub mod native_mutation;
+pub mod native_contracts;
+pub mod metadata_mutations;
+pub mod replay_core;
+pub mod replay_service;
+pub mod prop_core;
+pub mod prop_service;
+pub mod artifact_data;
+pub mod data_routes;
+pub mod analytics;
+pub mod control_routes;
+pub mod context_routes;
+pub mod provider_routes;
+pub mod notion_oauth;
+pub mod research_jobs;
+pub mod research_execution;
+pub mod rust_runtime;
 pub mod owned_process;
 pub mod state;
 pub mod telemetry;
@@ -24,10 +41,32 @@ use std::sync::{Arc, atomic::Ordering};
 pub const CONTRACT_VERSION: &str = "foundation-v2.1";
 
 pub fn domain_routes() -> Router<Arc<AppState>> {
+    domain_routes_for(false)
+}
+fn domain_routes_for(native_runtime: bool) -> Router<Arc<AppState>> {
     catalog::routes()
         .merge(jobs::routes())
         .merge(events::routes())
-        .merge(commands::routes())
+        .merge(commands::routes_for(native_runtime))
+        .merge(metadata_mutations::routes())
+        .merge(replay_service::routes())
+        .merge(prop_service::routes())
+        .merge(analytics::routes())
+        .merge(context_routes::routes())
+        .merge(notion_oauth::routes())
+        .merge(control_routes::routes())
+        .merge(research_jobs::routes())
+        .merge(data_routes::routes())
+        .merge(provider_routes::routes())
+}
+
+pub fn runtime_domain_routes(state: &Arc<AppState>) -> Result<Router<Arc<AppState>>, String> {
+    let routes = domain_routes_for(state.native_runtime);
+    if state.native_runtime {
+        Ok(routes.merge(provider_routes::runtime_routes(state.providers.clone())?))
+    } else {
+        Ok(routes)
+    }
 }
 
 pub fn router(state: Arc<AppState>, domain: Router<Arc<AppState>>) -> Router {
@@ -62,7 +101,16 @@ async fn readiness(
     }
     let probe = async {
         let conn = state.pool.get().await.map_err(|_| ApiError::database())?;
-        let worker=conn.query_one("SELECT EXISTS(SELECT 1 FROM api_command_workers WHERE contract_version='api-command-v1' AND heartbeat_at_utc>CURRENT_TIMESTAMP-interval '20 seconds' AND route_manifest @> $1::jsonb)", &[&commands::required_worker_manifest()])
+        let required = commands::required_worker_manifest_for(state.native_runtime);
+        let needs_worker = required.as_array().is_none_or(|routes| !routes.is_empty());
+        if state.native_runtime && !state.providers.worker_ready() {
+            return Err(ApiError::detail(StatusCode::SERVICE_UNAVAILABLE, "native_provider_worker_unavailable"));
+        }
+        if needs_worker && state.native_runtime {
+            return Err(ApiError::detail(StatusCode::SERVICE_UNAVAILABLE, "native_route_coverage_incomplete"));
+        }
+        if needs_worker {
+        let worker=conn.query_one("SELECT EXISTS(SELECT 1 FROM api_command_workers WHERE contract_version='api-command-v1' AND heartbeat_at_utc>CURRENT_TIMESTAMP-interval '20 seconds' AND route_manifest @> $1::jsonb)", &[&required])
             .await
             .map_err(|_| ApiError::database())?;
         if !worker.get::<_, bool>(0) {
@@ -71,6 +119,7 @@ async fn readiness(
                 "command_worker_unavailable",
             ));
         }
+        }
         if state.openapi_schema.is_none() {
             return Err(ApiError::detail(
                 StatusCode::SERVICE_UNAVAILABLE,
@@ -78,7 +127,7 @@ async fn readiness(
             ));
         }
         Ok::<_, ApiError>(Json(
-            json!({"ok":true,"database":"ready","command_worker":"ready","contract_version":CONTRACT_VERSION}),
+            json!({"ok":true,"database":"ready","command_worker":if needs_worker {"ready"} else {"not_required"},"contract_version":CONTRACT_VERSION}),
         ))
     };
     tokio::time::timeout(state.config.pool_timeout, probe)
@@ -164,10 +213,15 @@ pub(crate) mod tests {
             telemetry: telemetry::Telemetry::default(),
             admission: Arc::new(tokio::sync::Semaphore::new(1)),
             artifact_reads: Arc::new(tokio::sync::Semaphore::new(2)),
+            artifact_data: Arc::new(crate::artifact_data::ArtifactData::new(".").unwrap()),
+            analytics_cache: Default::default(),
+            notion_oauth: Arc::new(crate::notion_oauth::NotionOAuthService::new(None).unwrap()),
+            providers: crate::provider_routes::ProviderRuntime::load(std::path::PathBuf::from("."), crate::provider_routes::DownloadEngine::None).unwrap(),
             event_hub: crate::events::EventHub::default(),
             draining: AtomicBool::new(false),
             rate_windows: Mutex::new(HashMap::new()),
             openapi_schema: None,
+            native_runtime: false,
         })
     }
     fn request(path: &str, workspace: Option<&str>) -> Request<Body> {
@@ -299,9 +353,9 @@ pub(crate) mod tests {
         );
     }
     #[tokio::test]
-    async fn oauth_callback_is_exact_single_workspace_and_header_cannot_choose_scope() {
-        async fn callback(scope: auth::Workspace) -> Json<serde_json::Value> {
-            Json(json!({"workspace":scope.workspace_id}))
+    async fn oauth_callback_is_exact_and_only_the_nonce_handler_selects_scope() {
+        async fn callback(scope: Option<axum::extract::Extension<auth::Workspace>>) -> Json<serde_json::Value> {
+            Json(json!({"injected_workspace":scope.map(|s| s.0.workspace_id)}))
         }
         let app = router(
             fixture(10),
@@ -323,7 +377,7 @@ pub(crate) mod tests {
                 .unwrap(),
         )
         .unwrap();
-        assert_eq!(value["workspace"], "a");
+        assert_eq!(value["injected_workspace"], serde_json::Value::Null);
         assert_eq!(
             app.oneshot(request(
                 "/api/v2/connectors/notion/oauth/callback/extra",
@@ -344,7 +398,7 @@ pub(crate) mod tests {
         .oneshot(request("/api/v2/connectors/notion/oauth/callback", None))
         .await
         .unwrap();
-        assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
+        assert_eq!(response.status(), StatusCode::OK);
     }
     #[tokio::test]
     async fn unreviewed_head_has_no_domain_or_worker_side_effect() {

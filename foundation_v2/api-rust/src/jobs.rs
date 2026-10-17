@@ -77,7 +77,9 @@ async fn job(
                     })?;
                 tokio::task::spawn_blocking(move || {
                     let _permit = permit;
-                    read_result(root, &path, &hash)
+                    read_result(root, &path, &hash).map_err(|_| {
+                        ApiError::detail(StatusCode::SERVICE_UNAVAILABLE,"result_untrusted")
+                    })
                 })
                 .await
                 .map_err(|_| {
@@ -91,8 +93,11 @@ async fn job(
 }
 
 // Completed result reads preserve the immutable worker checksum and never accept a DB path outside artifact_root.
-fn read_result(root: PathBuf, relative: &str, expected: &str) -> Result<Value, ApiError> {
+pub(crate) fn read_result(root: PathBuf, relative: &str, expected: &str) -> Result<Value, ApiError> {
     let invalid = || ApiError::detail(StatusCode::SERVICE_UNAVAILABLE, "result_untrusted");
+    let io_error=|e:std::io::Error|if e.kind()==std::io::ErrorKind::NotFound{
+        ApiError::detail(StatusCode::SERVICE_UNAVAILABLE,"stored_artifact_unavailable")
+    }else{invalid()};
     let path = std::path::Path::new(relative);
     if path.is_absolute()
         || path
@@ -101,7 +106,7 @@ fn read_result(root: PathBuf, relative: &str, expected: &str) -> Result<Value, A
     {
         return Err(invalid());
     }
-    let root = root.canonicalize().map_err(|_| invalid())?;
+    let root = root.canonicalize().map_err(io_error)?;
     let mut current = root.clone();
     for component in path.components() {
         let component_text = component.as_os_str().to_string_lossy();
@@ -121,7 +126,7 @@ fn read_result(root: PathBuf, relative: &str, expected: &str) -> Result<Value, A
             return Err(invalid());
         }
         current.push(component);
-        let metadata = std::fs::symlink_metadata(&current).map_err(|_| invalid())?;
+        let metadata = std::fs::symlink_metadata(&current).map_err(io_error)?;
         if metadata.file_type().is_symlink() {
             return Err(invalid());
         }
@@ -133,17 +138,17 @@ fn read_result(root: PathBuf, relative: &str, expected: &str) -> Result<Value, A
             }
         }
     }
-    let resolved = current.canonicalize().map_err(|_| invalid())?;
+    let resolved = current.canonicalize().map_err(io_error)?;
     if !resolved.starts_with(&root) || resolved == root {
         return Err(invalid());
     }
-    let metadata = std::fs::metadata(&resolved).map_err(|_| invalid())?;
+    let metadata = std::fs::metadata(&resolved).map_err(io_error)?;
     if !metadata.is_file() || metadata.len() > 64 * 1024 * 1024 {
         return Err(invalid());
     }
     let mut bytes = Vec::new();
     std::fs::File::open(resolved)
-        .map_err(|_| invalid())?
+        .map_err(io_error)?
         .take(64 * 1024 * 1024 + 1)
         .read_to_end(&mut bytes)
         .map_err(|_| invalid())?;
@@ -195,7 +200,7 @@ fn forbidden(value: &Value) -> bool {
     }
 }
 
-fn validate_checkpoint(
+pub(crate) fn validate_checkpoint(
     checkpoint: Value,
     progress: Option<Value>,
 ) -> Result<(Value, Option<Value>), ()> {
@@ -354,6 +359,8 @@ mod tests {
         );
         assert!(read_result(root.clone(), "../result.json", &hash).is_err());
         assert!(read_result(root.clone(), "result.json", "wrong").is_err());
+        assert_eq!(read_result(root.clone(), "missing.json", &hash).unwrap_err().1["detail"],"stored_artifact_unavailable");
+        assert_eq!(read_result(root.clone(), "result.json", "wrong").unwrap_err().1["detail"],"result_untrusted");
         std::fs::remove_dir_all(root).unwrap();
     }
 }

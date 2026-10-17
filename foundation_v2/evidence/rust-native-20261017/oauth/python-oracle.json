@@ -1,0 +1,511 @@
+{
+  "config": [
+    {
+      "url": "http://127.0.0.1:8010/api/v2/connectors/notion/oauth/callback",
+      "error": null
+    },
+    {
+      "url": "http://localhost:8010/api/v2/connectors/notion/oauth/callback",
+      "error": null
+    },
+    {
+      "url": "http://LOCALHOST:8010/api/v2/connectors/notion/oauth/callback",
+      "error": null
+    },
+    {
+      "url": "HTTP://127.0.0.1:8010/api/v2/connectors/notion/oauth/callback",
+      "error": null
+    },
+    {
+      "url": "http://127.0.0.1:0/api/v2/connectors/notion/oauth/callback",
+      "error": null
+    },
+    {
+      "url": "http://127.0.0.1:80/api/v2/connectors/notion/oauth/callback",
+      "error": null
+    },
+    {
+      "url": "http://127.0.0.1:8010/api/v2/connectors/notion/oauth/callback?",
+      "error": null
+    },
+    {
+      "url": "http://127.0.0.1:8010/api/v2/connectors/notion/oauth/callback#",
+      "error": null
+    },
+    {
+      "url": "http://127.0.0.1:8010/api/v2/connectors/notion/oauth/callback?x=1",
+      "error": "notion_oauth_redirect_path_invalid"
+    },
+    {
+      "url": "http://127.0.0.1:8010/api/v2/connectors/notion/oauth/callback#x",
+      "error": "notion_oauth_redirect_path_invalid"
+    },
+    {
+      "url": "https://127.0.0.1:8010/api/v2/connectors/notion/oauth/callback",
+      "error": "notion_oauth_redirect_must_be_loopback"
+    },
+    {
+      "url": "http://example.com:8010/api/v2/connectors/notion/oauth/callback",
+      "error": "notion_oauth_redirect_must_be_loopback"
+    },
+    {
+      "url": "http://127.0.0.1/api/v2/connectors/notion/oauth/callback",
+      "error": "notion_oauth_redirect_port_invalid"
+    },
+    {
+      "url": "http://127.0.0.1:/api/v2/connectors/notion/oauth/callback",
+      "error": "notion_oauth_redirect_port_invalid"
+    },
+    {
+      "url": "http://127.0.0.1:bad/api/v2/connectors/notion/oauth/callback",
+      "error": "notion_oauth_redirect_port_invalid"
+    },
+    {
+      "url": "http://127.0.0.1:99999/api/v2/connectors/notion/oauth/callback",
+      "error": "notion_oauth_redirect_port_invalid"
+    },
+    {
+      "url": "http://127.0.0.1:-1/api/v2/connectors/notion/oauth/callback",
+      "error": "notion_oauth_redirect_port_invalid"
+    },
+    {
+      "url": "http://[::1]:8010/api/v2/connectors/notion/oauth/callback",
+      "error": "notion_oauth_redirect_must_be_loopback"
+    },
+    {
+      "url": "http://user@127.0.0.1:8010/api/v2/connectors/notion/oauth/callback",
+      "error": "notion_oauth_redirect_must_be_loopback"
+    },
+    {
+      "url": "http://:pass@127.0.0.1:8010/api/v2/connectors/notion/oauth/callback",
+      "error": "notion_oauth_redirect_must_be_loopback"
+    },
+    {
+      "url": "http://127.0.0.1:8010/other",
+      "error": "notion_oauth_redirect_path_invalid"
+    },
+    {
+      "url": "http://127.0.0.1:8010/x/../api/v2/connectors/notion/oauth/callback",
+      "error": "notion_oauth_redirect_path_invalid"
+    }
+  ],
+  "exchange": [
+    {
+      "payload": null,
+      "error": "notion_oauth_token_missing",
+      "status": {
+        "provider": "notion",
+        "oauth_available": true,
+        "status": "disconnected",
+        "connection_id": null,
+        "token_persistence": "process_memory_only",
+        "provider_identity_verified": false,
+        "provider_permission_verified": false,
+        "export_mode": "PREP_ONLY",
+        "cloud_write": false
+      }
+    },
+    {
+      "payload": [],
+      "error": "notion_oauth_token_missing",
+      "status": {
+        "provider": "notion",
+        "oauth_available": true,
+        "status": "disconnected",
+        "connection_id": null,
+        "token_persistence": "process_memory_only",
+        "provider_identity_verified": false,
+        "provider_permission_verified": false,
+        "export_mode": "PREP_ONLY",
+        "cloud_write": false
+      }
+    },
+    {
+      "payload": {},
+      "error": "notion_oauth_token_missing",
+      "status": {
+        "provider": "notion",
+        "oauth_available": true,
+        "status": "disconnected",
+        "connection_id": null,
+        "token_persistence": "process_memory_only",
+        "provider_identity_verified": false,
+        "provider_permission_verified": false,
+        "export_mode": "PREP_ONLY",
+        "cloud_write": false
+      }
+    },
+    {
+      "payload": {
+        "access_token": ""
+      },
+      "error": "notion_oauth_token_missing",
+      "status": {
+        "provider": "notion",
+        "oauth_available": true,
+        "status": "disconnected",
+        "connection_id": null,
+        "token_persistence": "process_memory_only",
+        "provider_identity_verified": false,
+        "provider_permission_verified": false,
+        "export_mode": "PREP_ONLY",
+        "cloud_write": false
+      }
+    },
+    {
+      "payload": {
+        "access_token": 1
+      },
+      "error": "notion_oauth_token_missing",
+      "status": {
+        "provider": "notion",
+        "oauth_available": true,
+        "status": "disconnected",
+        "connection_id": null,
+        "token_persistence": "process_memory_only",
+        "provider_identity_verified": false,
+        "provider_permission_verified": false,
+        "export_mode": "PREP_ONLY",
+        "cloud_write": false
+      }
+    },
+    {
+      "payload": {
+        "access_token": true
+      },
+      "error": "notion_oauth_token_missing",
+      "status": {
+        "provider": "notion",
+        "oauth_available": true,
+        "status": "disconnected",
+        "connection_id": null,
+        "token_persistence": "process_memory_only",
+        "provider_identity_verified": false,
+        "provider_permission_verified": false,
+        "export_mode": "PREP_ONLY",
+        "cloud_write": false
+      }
+    },
+    {
+      "payload": {
+        "access_token": "bad token"
+      },
+      "error": "notion_oauth_token_missing",
+      "status": {
+        "provider": "notion",
+        "oauth_available": true,
+        "status": "disconnected",
+        "connection_id": null,
+        "token_persistence": "process_memory_only",
+        "provider_identity_verified": false,
+        "provider_permission_verified": false,
+        "export_mode": "PREP_ONLY",
+        "cloud_write": false
+      }
+    },
+    {
+      "payload": {
+        "access_token": "bad\n"
+      },
+      "error": "notion_oauth_token_missing",
+      "status": {
+        "provider": "notion",
+        "oauth_available": true,
+        "status": "disconnected",
+        "connection_id": null,
+        "token_persistence": "process_memory_only",
+        "provider_identity_verified": false,
+        "provider_permission_verified": false,
+        "export_mode": "PREP_ONLY",
+        "cloud_write": false
+      }
+    },
+    {
+      "payload": {
+        "access_token": "é"
+      },
+      "error": "notion_oauth_token_missing",
+      "status": {
+        "provider": "notion",
+        "oauth_available": true,
+        "status": "disconnected",
+        "connection_id": null,
+        "token_persistence": "process_memory_only",
+        "provider_identity_verified": false,
+        "provider_permission_verified": false,
+        "export_mode": "PREP_ONLY",
+        "cloud_write": false
+      }
+    },
+    {
+      "payload": {
+        "access_token": "valid"
+      },
+      "error": null,
+      "status": {
+        "provider": "notion",
+        "oauth_available": true,
+        "status": "connected",
+        "connection_id": "<connection>",
+        "token_persistence": "process_memory_only",
+        "provider_identity_verified": false,
+        "provider_permission_verified": false,
+        "export_mode": "PREP_ONLY",
+        "cloud_write": false
+      }
+    },
+    {
+      "payload": {
+        "access_token": "valid",
+        "refresh_token": null
+      },
+      "error": null,
+      "status": {
+        "provider": "notion",
+        "oauth_available": true,
+        "status": "connected",
+        "connection_id": "<connection>",
+        "token_persistence": "process_memory_only",
+        "provider_identity_verified": false,
+        "provider_permission_verified": false,
+        "export_mode": "PREP_ONLY",
+        "cloud_write": false
+      }
+    },
+    {
+      "payload": {
+        "access_token": "valid",
+        "refresh_token": ""
+      },
+      "error": "notion_oauth_token_invalid",
+      "status": {
+        "provider": "notion",
+        "oauth_available": true,
+        "status": "disconnected",
+        "connection_id": null,
+        "token_persistence": "process_memory_only",
+        "provider_identity_verified": false,
+        "provider_permission_verified": false,
+        "export_mode": "PREP_ONLY",
+        "cloud_write": false
+      }
+    },
+    {
+      "payload": {
+        "access_token": "valid",
+        "refresh_token": 42
+      },
+      "error": "notion_oauth_token_invalid",
+      "status": {
+        "provider": "notion",
+        "oauth_available": true,
+        "status": "disconnected",
+        "connection_id": null,
+        "token_persistence": "process_memory_only",
+        "provider_identity_verified": false,
+        "provider_permission_verified": false,
+        "export_mode": "PREP_ONLY",
+        "cloud_write": false
+      }
+    },
+    {
+      "payload": {
+        "access_token": "valid",
+        "refresh_token": "fixture-refresh",
+        "expires_in": 30
+      },
+      "error": null,
+      "status": {
+        "provider": "notion",
+        "oauth_available": true,
+        "status": "reconnect_required",
+        "connection_id": "<connection>",
+        "token_persistence": "process_memory_only",
+        "provider_identity_verified": false,
+        "provider_permission_verified": false,
+        "export_mode": "PREP_ONLY",
+        "cloud_write": false
+      }
+    },
+    {
+      "payload": {
+        "access_token": "valid",
+        "expires_in": null
+      },
+      "error": null,
+      "status": {
+        "provider": "notion",
+        "oauth_available": true,
+        "status": "connected",
+        "connection_id": "<connection>",
+        "token_persistence": "process_memory_only",
+        "provider_identity_verified": false,
+        "provider_permission_verified": false,
+        "export_mode": "PREP_ONLY",
+        "cloud_write": false
+      }
+    },
+    {
+      "payload": {
+        "access_token": "valid",
+        "expires_in": 30
+      },
+      "error": null,
+      "status": {
+        "provider": "notion",
+        "oauth_available": true,
+        "status": "expired",
+        "connection_id": "<connection>",
+        "token_persistence": "process_memory_only",
+        "provider_identity_verified": false,
+        "provider_permission_verified": false,
+        "export_mode": "PREP_ONLY",
+        "cloud_write": false
+      }
+    },
+    {
+      "payload": {
+        "access_token": "valid",
+        "expires_in": 0
+      },
+      "error": "notion_oauth_token_invalid",
+      "status": {
+        "provider": "notion",
+        "oauth_available": true,
+        "status": "disconnected",
+        "connection_id": null,
+        "token_persistence": "process_memory_only",
+        "provider_identity_verified": false,
+        "provider_permission_verified": false,
+        "export_mode": "PREP_ONLY",
+        "cloud_write": false
+      }
+    },
+    {
+      "payload": {
+        "access_token": "valid",
+        "expires_in": -1
+      },
+      "error": "notion_oauth_token_invalid",
+      "status": {
+        "provider": "notion",
+        "oauth_available": true,
+        "status": "disconnected",
+        "connection_id": null,
+        "token_persistence": "process_memory_only",
+        "provider_identity_verified": false,
+        "provider_permission_verified": false,
+        "export_mode": "PREP_ONLY",
+        "cloud_write": false
+      }
+    },
+    {
+      "payload": {
+        "access_token": "valid",
+        "expires_in": true
+      },
+      "error": "notion_oauth_token_invalid",
+      "status": {
+        "provider": "notion",
+        "oauth_available": true,
+        "status": "disconnected",
+        "connection_id": null,
+        "token_persistence": "process_memory_only",
+        "provider_identity_verified": false,
+        "provider_permission_verified": false,
+        "export_mode": "PREP_ONLY",
+        "cloud_write": false
+      }
+    },
+    {
+      "payload": {
+        "access_token": "valid",
+        "expires_in": 1.0
+      },
+      "error": "notion_oauth_token_invalid",
+      "status": {
+        "provider": "notion",
+        "oauth_available": true,
+        "status": "disconnected",
+        "connection_id": null,
+        "token_persistence": "process_memory_only",
+        "provider_identity_verified": false,
+        "provider_permission_verified": false,
+        "export_mode": "PREP_ONLY",
+        "cloud_write": false
+      }
+    },
+    {
+      "payload": {
+        "access_token": "valid",
+        "expires_in": "30"
+      },
+      "error": "notion_oauth_token_invalid",
+      "status": {
+        "provider": "notion",
+        "oauth_available": true,
+        "status": "disconnected",
+        "connection_id": null,
+        "token_persistence": "process_memory_only",
+        "provider_identity_verified": false,
+        "provider_permission_verified": false,
+        "export_mode": "PREP_ONLY",
+        "cloud_write": false
+      }
+    },
+    {
+      "payload": {
+        "access_token": "valid",
+        "expires_in": 31536000
+      },
+      "error": null,
+      "status": {
+        "provider": "notion",
+        "oauth_available": true,
+        "status": "connected",
+        "connection_id": "<connection>",
+        "token_persistence": "process_memory_only",
+        "provider_identity_verified": false,
+        "provider_permission_verified": false,
+        "export_mode": "PREP_ONLY",
+        "cloud_write": false
+      }
+    },
+    {
+      "payload": {
+        "access_token": "valid",
+        "expires_in": 31536001
+      },
+      "error": "notion_oauth_token_invalid",
+      "status": {
+        "provider": "notion",
+        "oauth_available": true,
+        "status": "disconnected",
+        "connection_id": null,
+        "token_persistence": "process_memory_only",
+        "provider_identity_verified": false,
+        "provider_permission_verified": false,
+        "export_mode": "PREP_ONLY",
+        "cloud_write": false
+      }
+    },
+    {
+      "payload": {
+        "access_token": "valid",
+        "expires_in": 100000000000000000000000000000000000000000000000000000000000000000000000000000000
+      },
+      "error": "notion_oauth_token_invalid",
+      "status": {
+        "provider": "notion",
+        "oauth_available": true,
+        "status": "disconnected",
+        "connection_id": null,
+        "token_persistence": "process_memory_only",
+        "provider_identity_verified": false,
+        "provider_permission_verified": false,
+        "export_mode": "PREP_ONLY",
+        "cloud_write": false
+      }
+    }
+  ]
+}

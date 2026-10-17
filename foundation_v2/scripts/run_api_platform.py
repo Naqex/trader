@@ -1,4 +1,4 @@
-"""Own and supervise the loopback Rust API and its Python domain/research workers."""
+"""Supervise explicit loopback compatibility or native-candidate runtime profiles."""
 from __future__ import annotations
 
 import argparse
@@ -42,7 +42,69 @@ def configuration(args):
                PYTHONPATH=os.pathsep.join((str(FOUNDATION), str(PROJECT))),
                TW_V2_LEARN_WORKSPACE_ID="tenant-a",
                TW_V2_EDUCATION_ROOT=str(PROJECT.parents[1] / "education"))
+    env["TW_V2_RUNTIME_PROFILE"] = args.runtime_profile
+    if args.runtime_profile == "native":
+        env["TW_V2_DOWNLOAD_ENGINE"] = args.download_engine
+        if args.download_engine == "qdm":
+            env["TW_V2_QDM_HOME"] = str(args.qdm_home.resolve())
     return env
+
+
+def resolve_profile_paths(args):
+    profile_root = FOUNDATION / "api-rust/target"
+    if args.runtime_profile == "native":
+        profile_root /= "native-candidate"
+    if args.rust_binary is None:
+        args.rust_binary = profile_root / "release/trading-workspace-api.exe"
+    if args.rust_admin_binary is None:
+        args.rust_admin_binary = args.rust_binary.parent / "rust_runtime_admin.exe"
+    if args.rust_research_binary is None:
+        args.rust_research_binary = args.rust_binary.parent / "rust_research_worker.exe"
+    if args.manifest is None:
+        owner = "native-owner.json" if args.runtime_profile == "native" else "owner.json"
+        args.manifest = FOUNDATION / ".runtime/api-platform" / owner
+    return args
+
+
+def active_jobs_preflight(env):
+    """Startup guard only; native schema authority belongs to the Rust admin."""
+    import psycopg
+    with psycopg.connect(env["TW_V2_DATABASE_URL"], connect_timeout=5) as conn:
+        for table in ("research_jobs", "api_commands"):
+            if conn.execute("SELECT to_regclass(%s)", (f"public.{table}",)).fetchone()[0] and conn.execute(
+                f"SELECT count(*) FROM {table} WHERE status IN ('queued','running')").fetchone()[0]:
+                raise PreflightError("A research/API job is active. Finish or cancel it before restart/migration.")
+        if conn.execute("SELECT to_regclass('public.download_job_snapshots')").fetchone()[0] and conn.execute(
+            "SELECT count(*) FROM download_job_snapshots WHERE snapshot->>'status' IN ('queued','running','pausing')").fetchone()[0]:
+            raise PreflightError("A download is active. Pause it and wait until paused before restart/migration.")
+
+
+def native_database_preflight(args, env):
+    if args.stop or args.require_idle or args.migrate:
+        active_jobs_preflight(env)
+    command = [str(args.rust_admin_binary), "migrate" if args.migrate else "check"]
+    if args.migrate and args.backup_confirmed:
+        command.append("--backup-confirmed")
+    result = subprocess.run(command, env=env, cwd=FOUNDATION, capture_output=True,
+                            text=True, timeout=60, creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
+    if result.returncode:
+        raise PreflightError("Native schema administration failed; inspect the matching schema and backup/idle gates. No configuration values were printed.")
+    try:
+        summary = json.loads(result.stdout)
+        if not isinstance(summary, dict):
+            raise ValueError()
+    except (ValueError, TypeError):
+        raise PreflightError("Native schema administration returned an invalid receipt.") from None
+    if args.migrate:
+        applied = summary.get("applied")
+        if not isinstance(applied, list) or not all(isinstance(v, str) for v in applied):
+            raise PreflightError("Native schema migration returned an invalid receipt.")
+        return {"schema_current": True, "pending": [], "applied": applied}
+    if not isinstance(summary.get("schema_current"), bool) or not isinstance(summary.get("pending"), list):
+        raise PreflightError("Native schema check returned an invalid receipt.")
+    if not summary["schema_current"] and not args.allow_pending_migrations:
+        raise PreflightError("Schema migrations pending. Back up DB AND artifacts, then explicitly migrate before native startup.")
+    return summary
 
 
 def database_preflight(env, *, migrate=False, backup_confirmed=False, require_idle=False, allow_pending=False):
@@ -97,6 +159,66 @@ def validate_paths(args, *, need_binary=True):
         raise PreflightError("Licensed local qdmcli.exe is missing; set --qdm-home or explicitly use --download-engine none.")
     if need_binary and not args.rust_binary.is_file():
         raise PreflightError("Rust release binary is missing. Run --build before launching.")
+    if need_binary and args.runtime_profile == "native" and not all(path.is_file() for path in (args.rust_admin_binary, args.rust_research_binary)):
+        raise PreflightError("Native admin/research candidate binaries are missing. Build the complete candidate before launching.")
+
+
+def binary_digest(path):
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def native_provider_preflight(args, env):
+    """Pin existing adapters only; no download or vendor process is started."""
+    if args.runtime_profile != "native":
+        return
+    if args.download_engine == "qdm":
+        env["TW_V2_QDM_SHA256"] = binary_digest(args.qdm_home / "qdmcli.exe")
+    elif args.download_engine == "dukascopy":
+        required = ("TW_V2_DUKASCOPY_METADATA_PATH", "TW_V2_DUKASCOPY_NODE", "TW_V2_DUKASCOPY_NODE_SHA256",
+                    "TW_V2_DUKASCOPY_WORKER", "TW_V2_DUKASCOPY_WORKER_SHA256")
+        if not all(env.get(key) for key in required):
+            raise PreflightError("Native Dukascopy requires an explicitly pinned metadata/Node/worker capability before startup.")
+        for path_key, hash_key in ((required[1], required[2]), (required[3], required[4])):
+            path = Path(env[path_key])
+            if not path.is_absolute() or not path.is_file() or binary_digest(path) != env[hash_key]:
+                raise PreflightError("Native Dukascopy adapter identity changed; nothing was started.")
+        metadata = Path(env[required[0]])
+        if not metadata.is_absolute() or not metadata.is_file() or metadata.stat().st_size > 4 * 1024 * 1024:
+            raise PreflightError("Native Dukascopy metadata capability is missing or exceeds its bound.")
+
+
+def process_roles(args):
+    python_paths = {Path(sys.executable).resolve(), Path(getattr(sys, "_base_executable", sys.executable)).resolve()}
+    roles = {"supervisor": python_paths, "api": {args.rust_binary.resolve()}}
+    if args.runtime_profile == "native":
+        roles["research"] = {args.rust_research_binary.resolve()}
+    else:
+        roles.update(domain=python_paths, research=python_paths)
+    return roles
+
+
+def build_candidate(args):
+    if args.manifest.exists():
+        try:
+            value = json.loads(args.manifest.read_text(encoding="utf-8"))
+            targets = {args.rust_binary.resolve(), args.rust_admin_binary.resolve(), args.rust_research_binary.resolve()}
+            for entry in value.get("processes", {}).values():
+                if Path(entry["executable"]).resolve() in targets and process_identity(entry["pid"]) == entry:
+                    raise PreflightError("A build target belongs to a running managed process. Build a separate candidate path before guarded cutover.")
+        except (ValueError, KeyError, TypeError):
+            raise PreflightError("Existing manifest cannot establish build target ownership.") from None
+    cargo = shutil.which("cargo") or str(Path.home() / ".cargo/bin/cargo.exe")
+    target = args.rust_binary.parent.parent
+    if args.rust_binary.parent.name != "release":
+        raise PreflightError("--build requires candidate binaries in a release directory.")
+    subprocess.run([cargo, "build", "--release", "--locked", "--bins", "--manifest-path",
+                    str(FOUNDATION / "api-rust/Cargo.toml"), "--target-dir", str(target)],
+                   check=True, timeout=900, cwd=FOUNDATION,
+                   creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
 
 
 def port_is_free(port):
@@ -193,6 +315,7 @@ def copy_log(stream, output, env):
 
 
 def owned_manifest(args):
+    resolve_profile_paths(args)
     value = json.loads(args.manifest.read_text(encoding="utf-8"))
     if value.get("project") != str(PROJECT.resolve()) or value.get("port") != args.port:
         raise PreflightError("Runtime ownership manifest belongs to another project/port.")
@@ -202,17 +325,51 @@ def owned_manifest(args):
     marker = args.manifest.parent / f"platform-{run_id}.stop"
     if value.get("stop_file") != str(marker.resolve()):
         raise PreflightError("Runtime shutdown marker is outside its expected owner scope.")
-    python_paths = {Path(sys.executable).resolve(), Path(getattr(sys, "_base_executable", sys.executable)).resolve()}
-    expected = {"supervisor": python_paths, "api": {args.rust_binary.resolve()},
-                "domain": python_paths, "research": python_paths}
+    schema = value.get("schema", "api-platform-runtime-v1")
+    if schema not in {"api-platform-runtime-v1", "api-platform-runtime-v2"}:
+        raise PreflightError("Unknown runtime ownership manifest version.")
+    if value.get("runtime_profile", "compatibility") != args.runtime_profile:
+        raise PreflightError("Runtime profile differs. Stop with its exact recorded profile before compatibility rollback.")
+    if schema == "api-platform-runtime-v1" and args.runtime_profile != "compatibility":
+        raise PreflightError("Legacy manifest cannot own a native candidate.")
+    expected = process_roles(args)
     for role, entry in value.get("processes", {}).items():
         if role not in expected or Path(entry["executable"]).resolve() not in expected[role]:
             raise PreflightError("Runtime executable ownership mismatch.")
         if process_identity(entry["pid"]) != entry:
             raise PreflightError("Runtime process changed or exited; stale manifest cannot stop it.")
+        if schema == "api-platform-runtime-v2" and value.get("executable_sha256", {}).get(role) != binary_digest(Path(entry["executable"])):
+            raise PreflightError("Runtime executable contents differ from its startup identity.")
     if set(value.get("processes", {})) != set(expected):
         raise PreflightError("Runtime ownership manifest is incomplete.")
     return value, marker
+
+
+def child_commands(args, env):
+    if args.runtime_profile == "native":
+        return {"research": [str(args.rust_research_binary), "--max-active-jobs", "1", "--poll-ms", "100"],
+                "api": [str(args.rust_binary)]}
+    commands = {
+        "domain": [sys.executable, "-B", "-m", "trading_workspace_v2.api_command_worker",
+                   "--server-origin", f"http://127.0.0.1:{args.port}", "--download-engine", args.download_engine,
+                   "--concurrency", "4", "--qdm-home", str(args.qdm_home)],
+        "research": [sys.executable, "-B", "-m", "trading_workspace_v2.worker", "--max-active-jobs", "1"],
+        "api": [str(args.rust_binary)],
+    }
+    if args.adopt_legacy_downloads:
+        commands["domain"].append("--adopt-legacy-downloads")
+    return commands
+
+
+def native_worker_ready(path, token, worker_id, child, identity):
+    if child.poll() is not None or process_identity(child.pid) != identity or not path.is_file():
+        return False
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return value == {"schema": "research-worker-ready-v1", "worker_id": worker_id,
+                     "pid": child.pid, "startup_token": token}
 
 
 def stop_owned(args):
@@ -250,32 +407,41 @@ def supervise(args, env):
     stop_file = args.manifest.parent / f"platform-{run_id}.stop"
     env["TW_V2_SHUTDOWN_FILE"] = str(stop_file.resolve())
     env["TW_V2_COMMAND_WORKER_PREFIX"] = f"platform-{run_id}"
-    state = {"run_id": run_id, "project": str(PROJECT.resolve()), "port": args.port,
+    worker_ready_file = args.manifest.parent / f"platform-{run_id}-research.ready.json"
+    startup_token = uuid4().hex + uuid4().hex
+    worker_id = f"platform-{run_id}-research"
+    if args.runtime_profile == "native":
+        env.update(TW_V2_WORKER_READY_FILE=str(worker_ready_file.resolve()),
+                   TW_V2_WORKER_STARTUP_TOKEN=startup_token, TW_V2_WORKER_ID=worker_id)
+    state = {"schema": "api-platform-runtime-v2", "runtime_profile": args.runtime_profile,
+             "run_id": run_id, "project": str(PROJECT.resolve()), "port": args.port,
              "stop_file": str(stop_file.resolve()), "ready": False,
-             "processes": {"supervisor": process_identity(os.getpid())}}
-    commands = {
-        "domain": [sys.executable, "-B", "-m", "trading_workspace_v2.api_command_worker",
-                   "--server-origin", f"http://127.0.0.1:{args.port}", "--download-engine", args.download_engine,
-                   "--concurrency", "4", "--qdm-home", str(args.qdm_home)],
-        "research": [sys.executable, "-B", "-m", "trading_workspace_v2.worker", "--max-active-jobs", "1"],
-        "api": [str(args.rust_binary)],
-    }
-    if args.adopt_legacy_downloads:
-        commands["domain"].append("--adopt-legacy-downloads")
+             "processes": {"supervisor": process_identity(os.getpid())}, "executable_sha256": {}}
+    state["executable_sha256"]["supervisor"] = binary_digest(Path(state["processes"]["supervisor"]["executable"]))
+    commands = child_commands(args, env)
     children, logs, log_threads = {}, [], []
     env["PYTHONUNBUFFERED"] = "1"
     try:
-        for role in ("domain", "research", "api"):
+        for role in commands:
             if role == "api":
                 deadline = time.monotonic() + 30
-                while not worker_ready(env):
+                def ready():
+                    if args.runtime_profile == "native":
+                        child = children["research"]
+                        return native_worker_ready(worker_ready_file, startup_token, worker_id, child, state["processes"]["research"])
+                    return worker_ready(env)
+                while not ready():
                     if any(p.poll() is not None for p in children.values()) or time.monotonic() > deadline:
-                        raise PreflightError("Domain worker did not advertise readiness; API was not started.")
+                        raise PreflightError("Runtime worker did not advertise owned readiness; API was not started.")
                     time.sleep(0.25)
             output = (args.manifest.parent / f"platform-{run_id}-{role}.out.log").open("ab")
             error = (args.manifest.parent / f"platform-{run_id}-{role}.err.log").open("ab")
             logs.extend((output, error))
-            child = subprocess.Popen(commands[role], cwd=FOUNDATION, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            child_env = dict(env)
+            if role != "research":
+                for key in ("TW_V2_WORKER_READY_FILE", "TW_V2_WORKER_STARTUP_TOKEN", "TW_V2_WORKER_ID"):
+                    child_env.pop(key, None)
+            child = subprocess.Popen(commands[role], cwd=FOUNDATION, env=child_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                      creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
             children[role] = child
             for stream, destination in ((child.stdout, output), (child.stderr, error)):
@@ -283,6 +449,9 @@ def supervise(args, env):
                 thread.start()
                 log_threads.append(thread)
             state["processes"][role] = process_identity(child.pid)
+            if state["processes"][role] is None:
+                raise PreflightError("Runtime child exited before executable identity was established.")
+            state["executable_sha256"][role] = binary_digest(Path(state["processes"][role]["executable"]))
             manifest_write(args.manifest, state)
         deadline = time.monotonic() + 30
         while time.monotonic() < deadline:
@@ -290,7 +459,8 @@ def supervise(args, env):
                 raise PreflightError("A runtime child exited during startup; inspect sanitized role logs.")
             try:
                 with urllib.request.urlopen(f"http://127.0.0.1:{args.port}/health/ready", timeout=2) as response:
-                    if json.load(response).get("ok"):
+                    health = json.load(response)
+                    if health.get("ok") and (args.runtime_profile != "native" or health.get("command_worker") == "not_required"):
                         state["ready"] = True
                         manifest_write(args.manifest, state)
                         break
@@ -299,7 +469,7 @@ def supervise(args, env):
             time.sleep(0.25)
         if not state["ready"]:
             raise PreflightError("Rust API readiness deadline exceeded.")
-        print(f"Rust offline API ready on loopback port {args.port}; domain/research workers supervised.", flush=True)
+        print(f"Rust offline API ready on loopback port {args.port}; {args.runtime_profile} profile supervised.", flush=True)
         while not stop_file.exists():
             if any(p.poll() is not None for p in children.values()):
                 raise PreflightError("A runtime child exited; stopping only this owned runtime.")
@@ -322,6 +492,7 @@ def supervise(args, env):
         state["ready"] = False
         state["stopped"] = True
         manifest_write(args.manifest, state)
+        worker_ready_file.unlink(missing_ok=True)
 
 
 def parser():
@@ -331,8 +502,12 @@ def parser():
     result.add_argument("--artifact-root", type=Path, default=FOUNDATION / ".runtime/exness-market-data")
     result.add_argument("--qdm-home", type=Path, default=FOUNDATION / ".runtime/quantdatamanager")
     result.add_argument("--download-engine", choices=("qdm", "dukascopy", "none"), default="qdm")
-    result.add_argument("--rust-binary", type=Path, default=FOUNDATION / "api-rust/target/release/trading-workspace-api.exe")
-    result.add_argument("--manifest", type=Path, default=FOUNDATION / ".runtime/api-platform/owner.json")
+    result.add_argument("--runtime-profile", choices=("compatibility", "native"), default="compatibility",
+                        help="Compatibility remains rollback/default; native uses separate candidate binaries and no Python domain/research service.")
+    result.add_argument("--rust-binary", type=Path)
+    result.add_argument("--rust-admin-binary", type=Path)
+    result.add_argument("--rust-research-binary", type=Path)
+    result.add_argument("--manifest", type=Path)
     result.add_argument("--check-only", action="store_true")
     result.add_argument("--allow-pending-migrations", action="store_true", help="Read-only preflight reports pending versions; cannot start workers with these.")
     result.add_argument("--require-idle", action="store_true", help="Fail if queued/running jobs or legacy downloads exist.")
@@ -346,28 +521,37 @@ def parser():
 
 
 def main(argv=None):
-    args = parser().parse_args(argv)
+    args = resolve_profile_paths(parser().parse_args(argv))
     if not 1024 <= args.port <= 65535:
         raise PreflightError("Port must be between 1024 and 65535.")
     if args.check_only and (args.build or args.migrate or args.stop or args.adopt_legacy_downloads):
         raise PreflightError("--check-only cannot be combined with actions.")
     if args.allow_pending_migrations and not (args.check_only or args.stop):
         raise PreflightError("--allow-pending-migrations requires --check-only or guarded --stop.")
+    if args.runtime_profile == "native" and args.adopt_legacy_downloads:
+        raise PreflightError("Native profile cannot silently adopt legacy checkpoints; perform explicit provider adoption before native cutover.")
+    if args.stop and (args.build or args.migrate or args.setup_only):
+        raise PreflightError("Stop cannot be combined with build/migration/setup actions.")
     env = configuration(args)
     validate_paths(args, need_binary=not args.build)
+    native_provider_preflight(args, env)
     assert_no_legacy_download(args.artifact_root) if (args.stop or args.migrate or args.require_idle) else None
-    summary = database_preflight(env, migrate=args.migrate, backup_confirmed=args.backup_confirmed,
-                                 require_idle=args.stop or args.require_idle, allow_pending=args.allow_pending_migrations)
+    if args.build and args.runtime_profile == "native":
+        build_candidate(args)
+        validate_paths(args)
+    if args.runtime_profile == "native":
+        summary = native_database_preflight(args, env)
+    else:
+        summary = database_preflight(env, migrate=args.migrate, backup_confirmed=args.backup_confirmed,
+                                     require_idle=args.stop or args.require_idle, allow_pending=args.allow_pending_migrations)
     if args.check_only:
-        print(json.dumps({"check_only": True, "port_free": port_is_free(args.port), **summary}))
+        print(json.dumps({"check_only": True, "runtime_profile": args.runtime_profile, "port_free": port_is_free(args.port), **summary}))
         return 0
     if args.stop:
         stop_owned(args)
         return 0
-    if args.build:
-        cargo = shutil.which("cargo") or str(Path.home() / ".cargo/bin/cargo.exe")
-        subprocess.run([cargo, "build", "--release", "--locked", "--manifest-path", str(FOUNDATION / "api-rust/Cargo.toml")],
-                       check=True, timeout=600, cwd=FOUNDATION)
+    if args.build and args.runtime_profile != "native":
+        build_candidate(args)
     if args.setup_only:
         print(json.dumps({"setup_only": True, **summary}))
         return 0

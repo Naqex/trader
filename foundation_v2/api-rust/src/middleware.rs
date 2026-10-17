@@ -57,18 +57,14 @@ pub async fn boundary(
             return ApiError::detail(StatusCode::SERVICE_UNAVAILABLE, "server_draining")
                 .into_response();
         }
-        let scope = if request.uri().path().starts_with("/api/v2/") {
-            // A browser OAuth redirect has no workspace header. The nonce is still checked
-            // by the worker; only the configured local single-workspace context is admitted.
-            let authorization = if request.method() == axum::http::Method::GET
-                && request.uri().path() == "/api/v2/connectors/notion/oauth/callback"
-            {
-                state
-                    .authorization
-                    .callback_scope(state.config.local_workspaces.as_deref())
-            } else {
-                state.authorization.authorize(request.headers())
-            };
+        let oauth_callback = request.method() == axum::http::Method::GET
+            && request.uri().path() == "/api/v2/connectors/notion/oauth/callback";
+        let scope = if oauth_callback {
+            // A redirect has no workspace header. The native OAuth handler consumes
+            // the nonce and reauthorizes its stored workspace against current membership.
+            Some("oauth-callback".to_owned())
+        } else if request.uri().path().starts_with("/api/v2/") {
+            let authorization = state.authorization.authorize(request.headers());
             match authorization {
                 Ok(workspace) => {
                     request.extensions_mut().insert(workspace.clone());
@@ -135,7 +131,7 @@ pub async fn boundary(
             response.headers_mut().insert("allow", allow);
         }
     }
-    if path == "/api/v2/connectors/notion/oauth/callback" {
+    if path.starts_with("/api/v2/connectors/notion/oauth/") {
         response.headers_mut().insert(
             "content-security-policy",
             HeaderValue::from_static("default-src 'none'; frame-ancestors 'none'; base-uri 'none'"),

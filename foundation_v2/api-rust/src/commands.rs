@@ -20,11 +20,14 @@ use uuid::Uuid;
 const CONTRACT: &str = "api-command-v1";
 const FROZEN: &str = include_str!("../../trading_workspace_v2/command_routes.json");
 pub fn required_worker_manifest() -> Value {
+    required_worker_manifest_for(false)
+}
+pub fn required_worker_manifest_for(native_runtime: bool) -> Value {
     json!(
         serde_json::from_str::<Vec<Route>>(FROZEN)
             .expect("reviewed route manifest")
             .into_iter()
-            .filter(|r| !native(&r.method, &r.path))
+            .filter(|r| !native(&r.method, &r.path) && !(native_runtime && crate::provider_routes::native_profile(&r.method, &r.path)))
             .map(|r| json!({"method":r.method,"path":r.path}))
             .collect::<Vec<_>>()
     )
@@ -43,6 +46,19 @@ struct Route {
     path: String,
 }
 fn native(method: &str, path: &str) -> bool {
+    if crate::metadata_mutations::native(method, path)
+        || crate::replay_service::native(method, path)
+        || crate::prop_service::native(method, path)
+        || crate::analytics::native(method, path)
+        || crate::context_routes::native(method, path)
+        || crate::notion_oauth::native(method, path)
+        || crate::control_routes::native(method, path)
+        || crate::research_jobs::native(method, path)
+        || crate::data_routes::native(method, path)
+        || crate::provider_routes::native(method, path)
+    {
+        return true;
+    }
     if method == "POST" && path == "/api/v2/execution/intents" {
         return true;
     }
@@ -69,9 +85,12 @@ fn native(method: &str, path: &str) -> bool {
         )
 }
 pub fn routes() -> Router<Arc<AppState>> {
+    routes_for(false)
+}
+pub fn routes_for(native_runtime: bool) -> Router<Arc<AppState>> {
     let mut router = Router::new().route("/api/v2/commands/{command_id}", get(command_status));
     for route in serde_json::from_str::<Vec<Route>>(FROZEN).expect("reviewed route manifest") {
-        if native(&route.method, &route.path) {
+        if native(&route.method, &route.path) || (native_runtime && crate::provider_routes::native_profile(&route.method, &route.path)) {
             continue;
         }
         let filter = match route.method.as_str() {
@@ -87,7 +106,7 @@ pub fn routes() -> Router<Arc<AppState>> {
     router
 }
 
-fn query_pairs(query: Option<&str>) -> Value {
+pub(crate) fn query_pairs(query: Option<&str>) -> Value {
     json!(
         form_urlencoded::parse(query.unwrap_or_default().as_bytes())
             .map(|(a, b)| vec![a.into_owned(), b.into_owned()])
@@ -120,7 +139,7 @@ fn parse_body(bytes: &[u8]) -> Result<Option<Value>, ApiError> {
         ApiError(StatusCode::UNPROCESSABLE_ENTITY,json!({"detail":[{"type":"json_invalid","loc":["body",position],"msg":"JSON decode error","input":{},"ctx":{"error":error.to_string()}}]}))
     })
 }
-fn idempotency(headers: &HeaderMap) -> Result<Option<String>, ApiError> {
+pub(crate) fn idempotency(headers: &HeaderMap) -> Result<Option<String>, ApiError> {
     let Some(value) = headers.get("idempotency-key") else {
         return Ok(None);
     };
@@ -135,7 +154,7 @@ fn idempotency(headers: &HeaderMap) -> Result<Option<String>, ApiError> {
     }
     Ok(Some(value.into()))
 }
-fn fingerprint(
+pub(crate) fn fingerprint(
     method: &str,
     path: &str,
     query: &Value,
@@ -214,7 +233,7 @@ async fn invoke(
     }
 }
 
-fn parse_body_for_content_type(
+pub(crate) fn parse_body_for_content_type(
     bytes: &[u8],
     content_type: Option<&str>,
 ) -> Result<Option<Value>, ApiError> {
@@ -249,6 +268,10 @@ async fn enqueue(
 ) -> Result<Uuid, ApiError> {
     let mut conn = state.pool.get().await.map_err(|_| ApiError::database())?;
     let tx = conn.transaction().await.map_err(|_| ApiError::database())?;
+    if let Some(key) = key {
+        tx.query_one("SELECT pg_advisory_xact_lock($1)", &[&crate::native_mutation::idempotency_lock(scope, key)])
+            .await.map_err(|_| ApiError::database())?;
+    }
     let lock: i64 = 0x54574143;
     tx.query_one("SELECT pg_advisory_xact_lock($1)", &[&lock])
         .await
@@ -300,7 +323,7 @@ struct ResultRow {
     created: DateTime<Utc>,
     updated: DateTime<Utc>,
 }
-fn reviewed_headers(headers: Option<Value>) -> serde_json::Map<String, Value> {
+pub(crate) fn reviewed_headers(headers: Option<Value>) -> serde_json::Map<String, Value> {
     let mut reviewed = serde_json::Map::new();
     if let Some(headers) = headers.and_then(|v| v.as_object().cloned()) {
         for (name, value) in headers {
@@ -400,10 +423,16 @@ mod tests {
         for item in manifest {
             assert!(seen.insert((item.method, item.path)));
         }
-        let _ = routes()
-            .merge(crate::catalog::routes())
-            .merge(crate::jobs::routes())
-            .merge(crate::events::routes());
+        let _ = crate::domain_routes();
+        let mut state = crate::tests::fixture(10);
+        Arc::get_mut(&mut state).unwrap().native_runtime = true;
+        let _ = crate::runtime_domain_routes(&state).unwrap();
+        assert_eq!(required_worker_manifest_for(true),json!([]),"native readiness must not depend on a compatibility worker");
+        let delegated = required_worker_manifest();
+        for route in delegated.as_array().unwrap() {
+            assert!(!crate::replay_service::native(route["method"].as_str().unwrap(), route["path"].as_str().unwrap()));
+            assert!(!crate::prop_service::native(route["method"].as_str().unwrap(), route["path"].as_str().unwrap()));
+        }
     }
     #[test]
     fn command_framing_preserves_duplicates_and_rejects_malformed() {
@@ -452,12 +481,12 @@ mod tests {
     async fn malformed_body_rejected_before_queue_io() {
         use axum::{body::Body, http::Request};
         use tower::ServiceExt;
-        let app = crate::router(crate::tests::fixture(10), routes());
+        let app = crate::router(crate::tests::fixture(10), Router::new().route("/api/v2/probe-queued-body", axum::routing::post(invoke)));
         let response = app
             .oneshot(
                 Request::builder()
                     .method("POST")
-                    .uri("/api/v2/replay/sessions")
+                    .uri("/api/v2/probe-queued-body")
                     .header("x-workspace-id", "a")
                     .header("content-type", "application/json")
                     .body(Body::from("{broken"))
