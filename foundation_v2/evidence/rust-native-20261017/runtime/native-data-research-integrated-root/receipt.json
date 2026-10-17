@@ -1,0 +1,222 @@
+{
+  "passed": true,
+  "scope": "production React + native HTTP + native reference worker; disposable synthetic PostgreSQL/artifacts",
+  "owner_runtime_touched": false,
+  "provider_network": false,
+  "broker": false,
+  "checks": [
+    {
+      "name": "empty native Data Library loads",
+      "passed": true
+    },
+    {
+      "name": "empty/bad CSV blocked with actual 422 error UI",
+      "passed": true
+    },
+    {
+      "name": "CSV UI preview/import/quality + exact HTTP idempotency",
+      "passed": true,
+      "dataset": {
+        "artifact_path": "tenant-a/datasets/dataset-3c531fe018cf3ea97d032cf33dcf870f7f5415d8f9b1778ae921c06adaa0dc37.parquet",
+        "artifact_sha256": "c24ae8b9465a6004319bfdc03a199d2ef079cfa068f9b39947a0626685b12de5",
+        "available_range": {
+          "from_utc": 1577923200,
+          "to_utc": 1577925540
+        },
+        "contract_version": "foundation-v2.1",
+        "created_at_utc": "2026-10-17T16:21:17.851493Z",
+        "dataset_id": "dataset-3c531fe018cf3ea97d032cf33dcf870f7f5415d8f9b1778ae921c06adaa0dc37",
+        "first_timestamp": 1577923200,
+        "holdout_policy": {
+          "mode": "none"
+        },
+        "instrument_id": "OWNEDQA",
+        "instrument_spec": {
+          "account_ccy": "USD",
+          "asset_class": "fx",
+          "base_ccy": "EUR",
+          "contract_size": "100000",
+          "effective_from_utc": "1970-01-01T00:00:00Z",
+          "effective_to_utc": "",
+          "instrument_id": "OWNEDQA",
+          "pip_size": "0.0001",
+          "quantity_min": "0.01",
+          "quantity_step": "0.01",
+          "quote_ccy": "USD",
+          "tick_size": "0.00001"
+        },
+        "last_timestamp": 1577925540,
+        "normalized_sha256": "387963045d30120016076f9e0d4b116f9ce65fd63ddbe67e260b79c88d505d13",
+        "quality": {
+          "disposition": "pass",
+          "duplicates": 0,
+          "gap_count": 0,
+          "gap_details_truncated": false,
+          "gaps": [],
+          "out_of_order": 0,
+          "overlapping_intervals": 0
+        },
+        "raw_artifact_path": "tenant-a/raw/dataset-3c531fe018cf3ea97d032cf33dcf870f7f5415d8f9b1778ae921c06adaa0dc37/source.csv",
+        "raw_sha256": "5f6ecd07acc291bbacb0e71fd99cb107e5da6a7009e194a9280c8e4a5ed3eb53",
+        "row_count": 40,
+        "source": {
+          "export_settings": "browser-file-text-v1",
+          "instrument_mapping": {
+            "OWNEDQA": "OWNEDQA"
+          },
+          "license_use": "user-supplied-local",
+          "provider": "local-csv",
+          "retrieved_at_utc": "2026-10-17T16:21:17.652Z",
+          "source_id": "local-csv-upload"
+        },
+        "timeframe": "60s",
+        "timeframe_seconds": 60,
+        "transform_version": "u2-normalize-v3",
+        "workspace_id": "tenant-a"
+      },
+      "preview": {
+        "available_range": {
+          "from_utc": 1577923200,
+          "to_utc": 1577925540
+        },
+        "dataset_id": "dataset-3c531fe018cf3ea97d032cf33dcf870f7f5415d8f9b1778ae921c06adaa0dc37",
+        "holdout_policy": {
+          "mode": "none"
+        },
+        "instrument": {
+          "account_ccy": "USD",
+          "asset_class": "fx",
+          "base_ccy": "EUR",
+          "contract_size": "100000",
+          "effective_from_utc": "1970-01-01T00:00:00Z",
+          "effective_to_utc": "",
+          "instrument_id": "OWNEDQA",
+          "pip_size": "0.0001",
+          "quantity_min": "0.01",
+          "quantity_step": "0.01",
+          "quote_ccy": "USD",
+          "tick_size": "0.00001"
+        },
+        "normalized_sha256": "387963045d30120016076f9e0d4b116f9ce65fd63ddbe67e260b79c88d505d13",
+        "preview_id": "bc782f74d30c3e519b8c1f108df4d962e9c7dfa9ce6f23cdf64c00acc4564146",
+        "quality": {
+          "disposition": "pass",
+          "duplicates": 0,
+          "gap_count": 0,
+          "gap_details_truncated": false,
+          "gaps": [],
+          "out_of_order": 0,
+          "overlapping_intervals": 0
+        },
+        "raw_partition": {
+          "byte_count": 1511,
+          "schema": [
+            "time",
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume"
+          ],
+          "timezone_policy": "unix-seconds-or-explicit-offset"
+        },
+        "raw_sha256": "5f6ecd07acc291bbacb0e71fd99cb107e5da6a7009e194a9280c8e4a5ed3eb53",
+        "row_count": 40,
+        "schema_version": "u2-import-preview-v2",
+        "source": {
+          "export_settings": "browser-file-text-v1",
+          "instrument_mapping": {
+            "OWNEDQA": "OWNEDQA"
+          },
+          "license_use": "user-supplied-local",
+          "provider": "local-csv",
+          "retrieved_at_utc": "2026-10-17T16:21:17.652Z",
+          "source_id": "local-csv-upload"
+        },
+        "timeframe_seconds": 60,
+        "transform_version": "u2-normalize-v3",
+        "unique_row_count": 40
+      }
+    },
+    {
+      "name": "catalog survives production page reload",
+      "passed": true
+    },
+    {
+      "name": "UI native repair quarantines corruption/restores pinned bytes",
+      "passed": true
+    },
+    {
+      "name": "research invalid balance stays local/blocked",
+      "passed": true
+    },
+    {
+      "name": "queued research cancel yields honest terminal UI/no metrics",
+      "passed": true
+    },
+    {
+      "name": "native worker completes actual UI job; result/provenance survives reload",
+      "passed": true,
+      "job": "04169e007b2840d7b168b5aa767645a9",
+      "tradeCount": 39
+    },
+    {
+      "name": "cross-workspace research read denied",
+      "passed": true
+    },
+    {
+      "name": "research-linked dataset delete protected with visible 409",
+      "passed": true
+    },
+    {
+      "name": "unreferenced dataset UI delete + exact HTTP retry",
+      "passed": true,
+      "dataset": "dataset-570e004ffebded46fa57d896c47eb38878489d038ca3640ae322d896185a33d1"
+    },
+    {
+      "name": "Data Library mobile no document overflow",
+      "passed": true
+    },
+    {
+      "name": "native result exact Python metrics oracle/persisted JSON; no Python command workers",
+      "passed": true
+    }
+  ],
+  "source_hashes": {
+    "api-rust\\src\\main.rs": "7d932cc5028ffb805dcbe173a04533524f5e6a52e0f8a8d211e0a1fb36b3be4b",
+    "api-rust\\src\\research_execution.rs": "27bf0122dc16c0e8c91160720b0ce88d3dd0b0659b58ac3f5a1acac7f12098db",
+    "api-rust\\src\\research_jobs.rs": "dffacaf504dee66810225ddb8065385a2d8205ada8ec8d877b8c969c5cfdfe7e",
+    "api-rust\\src\\data_routes.rs": "30c502eac5b5e0bd3863e1ec92a9c10303cf807b9a051ea5840624a3430dd950",
+    "scripts\\rust_native_data_research_ui.py": "0d8101aeb24672461995e702eb71e43e3b2008f9e7e969b21d2ed3f0837dfa4a",
+    "web\\scripts\\native_data_research_probe.mjs": "14be1130c4080942c6df34a53624cff8c9261bb48168d857a624b38596268327",
+    "web\\src\\ResearchWorkspace.jsx": "82cd1bd043a81d8107ab4b8f21f340c254aac9afefa77816a412c1fc312e57f6",
+    "api-rust\\src\\data_routes\\ingest.rs": "532058513ebc35f8d145b5d7850202e35cbae1bbc1897884ffd502bbd88869aa",
+    "api-rust\\src\\data_routes\\legacy_codec.rs": "989f9b93c098af7b6a933b0d1a5810a0977e9e088cae627f5499b54dee424609",
+    "api-rust\\src\\data_routes\\lifecycle.rs": "398a4ea7f2a3853a53d026dfa320f1dd9d15e6becfd61c377ed21e6d9d3ba25c",
+    "api-rust\\src\\research_execution\\independent.rs": "6bc99a5f143ecccbf09704f2846f4bded772779ad49e2a75b8fb728db91cf959",
+    "api-rust\\src\\research_execution\\oos_runner.rs": "f8f9038cbb7bd2f3dab68e5d1e71ee0333b917d82e83dbd0ea84ed31823c7e6f",
+    "api-rust\\src\\research_execution\\reference.rs": "5663d115be1ddec753c8e5ebda3988f5fab427b5fd922805e8dbbc15393696e3",
+    "api-rust\\src\\research_execution\\scientific.rs": "078076eeabc339447d9cf5a352711dca297a9323eb3bef9ff1bf0e268ecc53e1",
+    "api-rust\\src\\research_execution\\scientific_normalize.rs": "5d65dd88fec7c2a9323ab02badee25f56a70d81efa64fe0364f6a237f1806cc6",
+    "api-rust\\src\\research_jobs\\adapter\\dependencies.rs": "e139bb9a45ed17af1a027710cdf2e808740b1fed6ed9c71231421e0ef645d8d7",
+    "api-rust\\src\\research_jobs\\adapter.rs": "66ca10fa874e3915e961943d971f3abe5f00d765f355337db1bb6c7c0cdcad4c",
+    "api-rust\\src\\research_jobs\\engine.rs": "58d88d5558eab314497e7d418306550a8942da88bb9a5645ac6ca5ddff708916",
+    "api-rust\\src\\research_jobs\\lifecycle.rs": "c55de421eaad638f4b4f0661f218af13162f3811828e24c67e584ff125ca6807",
+    "api-rust\\src\\research_jobs\\oos.rs": "ae88252a8149d69431eae8d59524b9c8cbb76a961b0e8f7fae48ac59d8d9403b"
+  },
+  "binary_hashes": {
+    "trading-workspace-api.exe": "6a9b7cdf542d9d92d7e91a5461a4d2ce16ac9c2ac4fc183163249c9dd06ba612",
+    "rust_runtime_admin.exe": "d9e641915eaa300fe94fcd07b6ec09c0e9cb2e586044aed93f001d546e2a2632",
+    "rust_research_worker.exe": "c7c4e4efda083aa7e63aad3bd7b34178d170092f6109c4ffd65574e1ac0446b8"
+  },
+  "database_jobs": [
+    {
+      "job_id": "04169e007b2840d7b168b5aa767645a9",
+      "status": "completed"
+    },
+    {
+      "job_id": "f0ddb99711064fa0b1842af5c5c72221",
+      "status": "canceled"
+    }
+  ]
+}

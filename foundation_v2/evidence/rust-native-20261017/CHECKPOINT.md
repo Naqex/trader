@@ -418,3 +418,21 @@ scientific compiled/transitive identity. Owner8010/5180 unchanged. Goal ACTIVE.
   empty scope, cancellation and retry exhaustion are covered.
 - The explicit worker recovery and recovery inside claim both use this scope.
   This is a bounded review finding closed, not whole integration sign-off.
+
+## Root continuation: production Data/Research journeys and persisted provenance
+
+- `runtime/native-data-research-integrated-root/receipt.json` PASS13checks on the
+  rebuilt release API/admin/research worker and production React. Disposable PG
+  and synthetic CSV only: validation, preview/import/exact retry, reload, corrupt
+  artifact repair, queued cancel, native completion, cross-workspace404, linked
+  delete409, unreferenced delete/retry and mobile overflow. The39trade result's
+  full metrics equal the Python oracle, persisted result bytes/hash agree, and
+  no Python command worker or queued/running command remains.
+- Reopened Research quality now reads the job's persisted dataset/hash/snapshot,
+  never current mutable catalog claims. Missing quality snapshot stays explicitly
+  unknown instead of reporting no dataset. Three focused research-story tests
+  PASS; root inspected the completed screenshot. Existing chart styling outside
+  this bounded provenance fix is not claimed as newly accepted.
+- This attempt pins binary/source hashes before subsequent stored-result binding
+  and scientific hash-cache work; it does not establish those later changes.
+  Final integrated rebuild/recheck remains required. Owner runtime untouched.

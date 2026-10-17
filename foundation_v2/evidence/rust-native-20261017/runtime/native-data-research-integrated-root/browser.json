@@ -1,0 +1,1158 @@
+{
+  "passed": true,
+  "scope": "Production React + native Rust HTTP + disposable PG; owned synthetic only",
+  "checks": [
+    {
+      "name": "empty native Data Library loads",
+      "passed": true
+    },
+    {
+      "name": "empty/bad CSV blocked with actual 422 error UI",
+      "passed": true
+    },
+    {
+      "name": "CSV UI preview/import/quality + exact HTTP idempotency",
+      "passed": true,
+      "dataset": {
+        "artifact_path": "tenant-a/datasets/dataset-3c531fe018cf3ea97d032cf33dcf870f7f5415d8f9b1778ae921c06adaa0dc37.parquet",
+        "artifact_sha256": "c24ae8b9465a6004319bfdc03a199d2ef079cfa068f9b39947a0626685b12de5",
+        "available_range": {
+          "from_utc": 1577923200,
+          "to_utc": 1577925540
+        },
+        "contract_version": "foundation-v2.1",
+        "created_at_utc": "2026-10-17T16:21:17.851493Z",
+        "dataset_id": "dataset-3c531fe018cf3ea97d032cf33dcf870f7f5415d8f9b1778ae921c06adaa0dc37",
+        "first_timestamp": 1577923200,
+        "holdout_policy": {
+          "mode": "none"
+        },
+        "instrument_id": "OWNEDQA",
+        "instrument_spec": {
+          "account_ccy": "USD",
+          "asset_class": "fx",
+          "base_ccy": "EUR",
+          "contract_size": "100000",
+          "effective_from_utc": "1970-01-01T00:00:00Z",
+          "effective_to_utc": "",
+          "instrument_id": "OWNEDQA",
+          "pip_size": "0.0001",
+          "quantity_min": "0.01",
+          "quantity_step": "0.01",
+          "quote_ccy": "USD",
+          "tick_size": "0.00001"
+        },
+        "last_timestamp": 1577925540,
+        "normalized_sha256": "387963045d30120016076f9e0d4b116f9ce65fd63ddbe67e260b79c88d505d13",
+        "quality": {
+          "disposition": "pass",
+          "duplicates": 0,
+          "gap_count": 0,
+          "gap_details_truncated": false,
+          "gaps": [],
+          "out_of_order": 0,
+          "overlapping_intervals": 0
+        },
+        "raw_artifact_path": "tenant-a/raw/dataset-3c531fe018cf3ea97d032cf33dcf870f7f5415d8f9b1778ae921c06adaa0dc37/source.csv",
+        "raw_sha256": "5f6ecd07acc291bbacb0e71fd99cb107e5da6a7009e194a9280c8e4a5ed3eb53",
+        "row_count": 40,
+        "source": {
+          "export_settings": "browser-file-text-v1",
+          "instrument_mapping": {
+            "OWNEDQA": "OWNEDQA"
+          },
+          "license_use": "user-supplied-local",
+          "provider": "local-csv",
+          "retrieved_at_utc": "2026-10-17T16:21:17.652Z",
+          "source_id": "local-csv-upload"
+        },
+        "timeframe": "60s",
+        "timeframe_seconds": 60,
+        "transform_version": "u2-normalize-v3",
+        "workspace_id": "tenant-a"
+      },
+      "preview": {
+        "available_range": {
+          "from_utc": 1577923200,
+          "to_utc": 1577925540
+        },
+        "dataset_id": "dataset-3c531fe018cf3ea97d032cf33dcf870f7f5415d8f9b1778ae921c06adaa0dc37",
+        "holdout_policy": {
+          "mode": "none"
+        },
+        "instrument": {
+          "account_ccy": "USD",
+          "asset_class": "fx",
+          "base_ccy": "EUR",
+          "contract_size": "100000",
+          "effective_from_utc": "1970-01-01T00:00:00Z",
+          "effective_to_utc": "",
+          "instrument_id": "OWNEDQA",
+          "pip_size": "0.0001",
+          "quantity_min": "0.01",
+          "quantity_step": "0.01",
+          "quote_ccy": "USD",
+          "tick_size": "0.00001"
+        },
+        "normalized_sha256": "387963045d30120016076f9e0d4b116f9ce65fd63ddbe67e260b79c88d505d13",
+        "preview_id": "bc782f74d30c3e519b8c1f108df4d962e9c7dfa9ce6f23cdf64c00acc4564146",
+        "quality": {
+          "disposition": "pass",
+          "duplicates": 0,
+          "gap_count": 0,
+          "gap_details_truncated": false,
+          "gaps": [],
+          "out_of_order": 0,
+          "overlapping_intervals": 0
+        },
+        "raw_partition": {
+          "byte_count": 1511,
+          "schema": [
+            "time",
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume"
+          ],
+          "timezone_policy": "unix-seconds-or-explicit-offset"
+        },
+        "raw_sha256": "5f6ecd07acc291bbacb0e71fd99cb107e5da6a7009e194a9280c8e4a5ed3eb53",
+        "row_count": 40,
+        "schema_version": "u2-import-preview-v2",
+        "source": {
+          "export_settings": "browser-file-text-v1",
+          "instrument_mapping": {
+            "OWNEDQA": "OWNEDQA"
+          },
+          "license_use": "user-supplied-local",
+          "provider": "local-csv",
+          "retrieved_at_utc": "2026-10-17T16:21:17.652Z",
+          "source_id": "local-csv-upload"
+        },
+        "timeframe_seconds": 60,
+        "transform_version": "u2-normalize-v3",
+        "unique_row_count": 40
+      }
+    },
+    {
+      "name": "catalog survives production page reload",
+      "passed": true
+    },
+    {
+      "name": "UI native repair quarantines corruption/restores pinned bytes",
+      "passed": true
+    },
+    {
+      "name": "research invalid balance stays local/blocked",
+      "passed": true
+    },
+    {
+      "name": "queued research cancel yields honest terminal UI/no metrics",
+      "passed": true
+    },
+    {
+      "name": "native worker completes actual UI job; result/provenance survives reload",
+      "passed": true,
+      "job": "04169e007b2840d7b168b5aa767645a9",
+      "tradeCount": 39
+    },
+    {
+      "name": "cross-workspace research read denied",
+      "passed": true
+    },
+    {
+      "name": "research-linked dataset delete protected with visible 409",
+      "passed": true
+    },
+    {
+      "name": "unreferenced dataset UI delete + exact HTTP retry",
+      "passed": true,
+      "dataset": "dataset-570e004ffebded46fa57d896c47eb38878489d038ca3640ae322d896185a33d1"
+    },
+    {
+      "name": "Data Library mobile no document overflow",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/api/v2/events",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/data/downloads",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/data/datasets",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/data/csv/preview",
+      "status": 422
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/events",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/data/downloads",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/data/datasets",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/data/csv/preview",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/data/csv/import",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/data/datasets",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/events",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/data/downloads",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/data/datasets",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/data/datasets/dataset-3c531fe018cf3ea97d032cf33dcf870f7f5415d8f9b1778ae921c06adaa0dc37/repair",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/events",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/research/engines",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/data/datasets",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/research/jobs",
+      "status": 202
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/research/jobs/f0ddb99711064fa0b1842af5c5c72221",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/research/jobs/f0ddb99711064fa0b1842af5c5c72221/checkpoint",
+      "status": 404
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/research/jobs/f0ddb99711064fa0b1842af5c5c72221/cancel",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/events",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/data/datasets",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/research/engines",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/research/jobs",
+      "status": 202
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/research/jobs/04169e007b2840d7b168b5aa767645a9",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/events",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/research/jobs/04169e007b2840d7b168b5aa767645a9",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/events",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/data/downloads",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/data/datasets",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v2/data/datasets/dataset-3c531fe018cf3ea97d032cf33dcf870f7f5415d8f9b1778ae921c06adaa0dc37",
+      "status": 409
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/events",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/data/downloads",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/data/datasets",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/data/csv/preview",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/data/csv/import",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/data/datasets",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v2/data/datasets/dataset-570e004ffebded46fa57d896c47eb38878489d038ca3640ae322d896185a33d1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/data/datasets",
+      "status": 200
+    }
+  ],
+  "sourceHashes": {
+    "src/DataDeskWorkspace.jsx": "501bf99089efaaccadc2cc2e902061e5007daa0d7559b5641264604b2f85d63c",
+    "src/ResearchWorkspace.jsx": "82cd1bd043a81d8107ab4b8f21f340c254aac9afefa77816a412c1fc312e57f6",
+    "scripts/native_data_research_probe.mjs": "14be1130c4080942c6df34a53624cff8c9261bb48168d857a624b38596268327"
+  },
+  "ownerRuntimeTouched": false,
+  "imported": {
+    "artifact_path": "tenant-a/datasets/dataset-3c531fe018cf3ea97d032cf33dcf870f7f5415d8f9b1778ae921c06adaa0dc37.parquet",
+    "artifact_sha256": "c24ae8b9465a6004319bfdc03a199d2ef079cfa068f9b39947a0626685b12de5",
+    "available_range": {
+      "from_utc": 1577923200,
+      "to_utc": 1577925540
+    },
+    "contract_version": "foundation-v2.1",
+    "created_at_utc": "2026-10-17T16:21:17.851493Z",
+    "dataset_id": "dataset-3c531fe018cf3ea97d032cf33dcf870f7f5415d8f9b1778ae921c06adaa0dc37",
+    "first_timestamp": 1577923200,
+    "holdout_policy": {
+      "mode": "none"
+    },
+    "instrument_id": "OWNEDQA",
+    "instrument_spec": {
+      "account_ccy": "USD",
+      "asset_class": "fx",
+      "base_ccy": "EUR",
+      "contract_size": "100000",
+      "effective_from_utc": "1970-01-01T00:00:00Z",
+      "effective_to_utc": "",
+      "instrument_id": "OWNEDQA",
+      "pip_size": "0.0001",
+      "quantity_min": "0.01",
+      "quantity_step": "0.01",
+      "quote_ccy": "USD",
+      "tick_size": "0.00001"
+    },
+    "last_timestamp": 1577925540,
+    "normalized_sha256": "387963045d30120016076f9e0d4b116f9ce65fd63ddbe67e260b79c88d505d13",
+    "quality": {
+      "disposition": "pass",
+      "duplicates": 0,
+      "gap_count": 0,
+      "gap_details_truncated": false,
+      "gaps": [],
+      "out_of_order": 0,
+      "overlapping_intervals": 0
+    },
+    "raw_artifact_path": "tenant-a/raw/dataset-3c531fe018cf3ea97d032cf33dcf870f7f5415d8f9b1778ae921c06adaa0dc37/source.csv",
+    "raw_sha256": "5f6ecd07acc291bbacb0e71fd99cb107e5da6a7009e194a9280c8e4a5ed3eb53",
+    "row_count": 40,
+    "source": {
+      "export_settings": "browser-file-text-v1",
+      "instrument_mapping": {
+        "OWNEDQA": "OWNEDQA"
+      },
+      "license_use": "user-supplied-local",
+      "provider": "local-csv",
+      "retrieved_at_utc": "2026-10-17T16:21:17.652Z",
+      "source_id": "local-csv-upload"
+    },
+    "timeframe": "60s",
+    "timeframe_seconds": 60,
+    "transform_version": "u2-normalize-v3",
+    "workspace_id": "tenant-a"
+  },
+  "canceledJob": "f0ddb99711064fa0b1842af5c5c72221",
+  "job": "04169e007b2840d7b168b5aa767645a9",
+  "result": {
+    "cancel_requested": false,
+    "contract_version": "foundation-v2.1",
+    "created_at_utc": "2026-10-17T16:21:20.441922Z",
+    "dataset_id": "dataset-3c531fe018cf3ea97d032cf33dcf870f7f5415d8f9b1778ae921c06adaa0dc37",
+    "error_code": null,
+    "job_id": "04169e007b2840d7b168b5aa767645a9",
+    "protocol": null,
+    "protocol_sha256": null,
+    "result": {
+      "contract_version": "foundation-v2.1",
+      "created_at_utc": "2026-10-17T16:21:20.547470Z",
+      "dataset_id": "dataset-3c531fe018cf3ea97d032cf33dcf870f7f5415d8f9b1778ae921c06adaa0dc37",
+      "dataset_sha256": "c24ae8b9465a6004319bfdc03a199d2ef079cfa068f9b39947a0626685b12de5",
+      "job_id": "04169e007b2840d7b168b5aa767645a9",
+      "metrics": {
+        "average_realized_r": 0.000017948717948717944,
+        "basis": {
+          "cashflow": "not_available",
+          "costs": "complete",
+          "drawdown": "closed_trade_balance_only",
+          "floating_pnl": "not_available",
+          "pnl": "net_pnl from normalized closed-trade ledger",
+          "realized_r": "complete"
+        },
+        "breakeven": 0,
+        "closed_trade_balance_curve": [
+          {
+            "closed_trade_balance": 10000,
+            "sequence": 0,
+            "trade_id": null
+          },
+          {
+            "closed_trade_balance": 10000.01,
+            "sequence": 1,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-1"
+          },
+          {
+            "closed_trade_balance": 10000.02,
+            "sequence": 2,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-2"
+          },
+          {
+            "closed_trade_balance": 10000.03,
+            "sequence": 3,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-3"
+          },
+          {
+            "closed_trade_balance": 10000.04,
+            "sequence": 4,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-4"
+          },
+          {
+            "closed_trade_balance": 10000.050000000001,
+            "sequence": 5,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-5"
+          },
+          {
+            "closed_trade_balance": 10000.060000000001,
+            "sequence": 6,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-6"
+          },
+          {
+            "closed_trade_balance": 10000.070000000002,
+            "sequence": 7,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-7"
+          },
+          {
+            "closed_trade_balance": 10000.000000000002,
+            "sequence": 8,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-8"
+          },
+          {
+            "closed_trade_balance": 10000.010000000002,
+            "sequence": 9,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-9"
+          },
+          {
+            "closed_trade_balance": 10000.020000000002,
+            "sequence": 10,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-10"
+          },
+          {
+            "closed_trade_balance": 10000.030000000002,
+            "sequence": 11,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-11"
+          },
+          {
+            "closed_trade_balance": 10000.040000000003,
+            "sequence": 12,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-12"
+          },
+          {
+            "closed_trade_balance": 10000.050000000003,
+            "sequence": 13,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-13"
+          },
+          {
+            "closed_trade_balance": 10000.060000000003,
+            "sequence": 14,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-14"
+          },
+          {
+            "closed_trade_balance": 10000.070000000003,
+            "sequence": 15,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-15"
+          },
+          {
+            "closed_trade_balance": 10000.000000000004,
+            "sequence": 16,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-16"
+          },
+          {
+            "closed_trade_balance": 10000.010000000004,
+            "sequence": 17,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-17"
+          },
+          {
+            "closed_trade_balance": 10000.020000000004,
+            "sequence": 18,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-18"
+          },
+          {
+            "closed_trade_balance": 10000.030000000004,
+            "sequence": 19,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-19"
+          },
+          {
+            "closed_trade_balance": 10000.040000000005,
+            "sequence": 20,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-20"
+          },
+          {
+            "closed_trade_balance": 10000.050000000005,
+            "sequence": 21,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-21"
+          },
+          {
+            "closed_trade_balance": 10000.060000000005,
+            "sequence": 22,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-22"
+          },
+          {
+            "closed_trade_balance": 10000.070000000005,
+            "sequence": 23,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-23"
+          },
+          {
+            "closed_trade_balance": 10000.000000000005,
+            "sequence": 24,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-24"
+          },
+          {
+            "closed_trade_balance": 10000.010000000006,
+            "sequence": 25,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-25"
+          },
+          {
+            "closed_trade_balance": 10000.020000000006,
+            "sequence": 26,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-26"
+          },
+          {
+            "closed_trade_balance": 10000.030000000006,
+            "sequence": 27,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-27"
+          },
+          {
+            "closed_trade_balance": 10000.040000000006,
+            "sequence": 28,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-28"
+          },
+          {
+            "closed_trade_balance": 10000.050000000007,
+            "sequence": 29,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-29"
+          },
+          {
+            "closed_trade_balance": 10000.060000000007,
+            "sequence": 30,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-30"
+          },
+          {
+            "closed_trade_balance": 10000.070000000007,
+            "sequence": 31,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-31"
+          },
+          {
+            "closed_trade_balance": 10000.000000000007,
+            "sequence": 32,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-32"
+          },
+          {
+            "closed_trade_balance": 10000.010000000007,
+            "sequence": 33,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-33"
+          },
+          {
+            "closed_trade_balance": 10000.020000000008,
+            "sequence": 34,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-34"
+          },
+          {
+            "closed_trade_balance": 10000.030000000008,
+            "sequence": 35,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-35"
+          },
+          {
+            "closed_trade_balance": 10000.040000000008,
+            "sequence": 36,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-36"
+          },
+          {
+            "closed_trade_balance": 10000.050000000008,
+            "sequence": 37,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-37"
+          },
+          {
+            "closed_trade_balance": 10000.060000000009,
+            "sequence": 38,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-38"
+          },
+          {
+            "closed_trade_balance": 10000.070000000009,
+            "sequence": 39,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-39"
+          }
+        ],
+        "closed_trade_balance_drawdown_curve": [
+          {
+            "closed_trade_balance": 10000,
+            "drawdown": 0,
+            "drawdown_pct": 0,
+            "peak_closed_trade_balance": 10000,
+            "sequence": 0,
+            "trade_id": null
+          },
+          {
+            "closed_trade_balance": 10000.01,
+            "drawdown": 0,
+            "drawdown_pct": 0,
+            "peak_closed_trade_balance": 10000.01,
+            "sequence": 1,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-1"
+          },
+          {
+            "closed_trade_balance": 10000.02,
+            "drawdown": 0,
+            "drawdown_pct": 0,
+            "peak_closed_trade_balance": 10000.02,
+            "sequence": 2,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-2"
+          },
+          {
+            "closed_trade_balance": 10000.03,
+            "drawdown": 0,
+            "drawdown_pct": 0,
+            "peak_closed_trade_balance": 10000.03,
+            "sequence": 3,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-3"
+          },
+          {
+            "closed_trade_balance": 10000.04,
+            "drawdown": 0,
+            "drawdown_pct": 0,
+            "peak_closed_trade_balance": 10000.04,
+            "sequence": 4,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-4"
+          },
+          {
+            "closed_trade_balance": 10000.050000000001,
+            "drawdown": 0,
+            "drawdown_pct": 0,
+            "peak_closed_trade_balance": 10000.050000000001,
+            "sequence": 5,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-5"
+          },
+          {
+            "closed_trade_balance": 10000.060000000001,
+            "drawdown": 0,
+            "drawdown_pct": 0,
+            "peak_closed_trade_balance": 10000.060000000001,
+            "sequence": 6,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-6"
+          },
+          {
+            "closed_trade_balance": 10000.070000000002,
+            "drawdown": 0,
+            "drawdown_pct": 0,
+            "peak_closed_trade_balance": 10000.070000000002,
+            "sequence": 7,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-7"
+          },
+          {
+            "closed_trade_balance": 10000.000000000002,
+            "drawdown": 0.06999999999970896,
+            "drawdown_pct": 0.0006999951000313892,
+            "peak_closed_trade_balance": 10000.070000000002,
+            "sequence": 8,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-8"
+          },
+          {
+            "closed_trade_balance": 10000.010000000002,
+            "drawdown": 0.05999999999949068,
+            "drawdown_pct": 0.0005999958000243065,
+            "peak_closed_trade_balance": 10000.070000000002,
+            "sequence": 9,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-9"
+          },
+          {
+            "closed_trade_balance": 10000.020000000002,
+            "drawdown": 0.049999999999272404,
+            "drawdown_pct": 0.0004999965000172239,
+            "peak_closed_trade_balance": 10000.070000000002,
+            "sequence": 10,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-10"
+          },
+          {
+            "closed_trade_balance": 10000.030000000002,
+            "drawdown": 0.039999999999054126,
+            "drawdown_pct": 0.00039999720001014107,
+            "peak_closed_trade_balance": 10000.070000000002,
+            "sequence": 11,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-11"
+          },
+          {
+            "closed_trade_balance": 10000.040000000003,
+            "drawdown": 0.029999999998835847,
+            "drawdown_pct": 0.0002999979000030584,
+            "peak_closed_trade_balance": 10000.070000000002,
+            "sequence": 12,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-12"
+          },
+          {
+            "closed_trade_balance": 10000.050000000003,
+            "drawdown": 0.019999999998617568,
+            "drawdown_pct": 0.0001999985999959757,
+            "peak_closed_trade_balance": 10000.070000000002,
+            "sequence": 13,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-13"
+          },
+          {
+            "closed_trade_balance": 10000.060000000003,
+            "drawdown": 0.00999999999839929,
+            "drawdown_pct": 0.00009999929998889296,
+            "peak_closed_trade_balance": 10000.070000000002,
+            "sequence": 14,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-14"
+          },
+          {
+            "closed_trade_balance": 10000.070000000003,
+            "drawdown": 0,
+            "drawdown_pct": 0,
+            "peak_closed_trade_balance": 10000.070000000003,
+            "sequence": 15,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-15"
+          },
+          {
+            "closed_trade_balance": 10000.000000000004,
+            "drawdown": 0.06999999999970896,
+            "drawdown_pct": 0.0006999951000313892,
+            "peak_closed_trade_balance": 10000.070000000003,
+            "sequence": 16,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-16"
+          },
+          {
+            "closed_trade_balance": 10000.010000000004,
+            "drawdown": 0.05999999999949068,
+            "drawdown_pct": 0.0005999958000243064,
+            "peak_closed_trade_balance": 10000.070000000003,
+            "sequence": 17,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-17"
+          },
+          {
+            "closed_trade_balance": 10000.020000000004,
+            "drawdown": 0.049999999999272404,
+            "drawdown_pct": 0.0004999965000172238,
+            "peak_closed_trade_balance": 10000.070000000003,
+            "sequence": 18,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-18"
+          },
+          {
+            "closed_trade_balance": 10000.030000000004,
+            "drawdown": 0.039999999999054126,
+            "drawdown_pct": 0.00039999720001014107,
+            "peak_closed_trade_balance": 10000.070000000003,
+            "sequence": 19,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-19"
+          },
+          {
+            "closed_trade_balance": 10000.040000000005,
+            "drawdown": 0.029999999998835847,
+            "drawdown_pct": 0.00029999790000305833,
+            "peak_closed_trade_balance": 10000.070000000003,
+            "sequence": 20,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-20"
+          },
+          {
+            "closed_trade_balance": 10000.050000000005,
+            "drawdown": 0.019999999998617568,
+            "drawdown_pct": 0.00019999859999597565,
+            "peak_closed_trade_balance": 10000.070000000003,
+            "sequence": 21,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-21"
+          },
+          {
+            "closed_trade_balance": 10000.060000000005,
+            "drawdown": 0.00999999999839929,
+            "drawdown_pct": 0.00009999929998889294,
+            "peak_closed_trade_balance": 10000.070000000003,
+            "sequence": 22,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-22"
+          },
+          {
+            "closed_trade_balance": 10000.070000000005,
+            "drawdown": 0,
+            "drawdown_pct": 0,
+            "peak_closed_trade_balance": 10000.070000000005,
+            "sequence": 23,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-23"
+          },
+          {
+            "closed_trade_balance": 10000.000000000005,
+            "drawdown": 0.06999999999970896,
+            "drawdown_pct": 0.000699995100031389,
+            "peak_closed_trade_balance": 10000.070000000005,
+            "sequence": 24,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-24"
+          },
+          {
+            "closed_trade_balance": 10000.010000000006,
+            "drawdown": 0.05999999999949068,
+            "drawdown_pct": 0.0005999958000243063,
+            "peak_closed_trade_balance": 10000.070000000005,
+            "sequence": 25,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-25"
+          },
+          {
+            "closed_trade_balance": 10000.020000000006,
+            "drawdown": 0.049999999999272404,
+            "drawdown_pct": 0.0004999965000172238,
+            "peak_closed_trade_balance": 10000.070000000005,
+            "sequence": 26,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-26"
+          },
+          {
+            "closed_trade_balance": 10000.030000000006,
+            "drawdown": 0.039999999999054126,
+            "drawdown_pct": 0.000399997200010141,
+            "peak_closed_trade_balance": 10000.070000000005,
+            "sequence": 27,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-27"
+          },
+          {
+            "closed_trade_balance": 10000.040000000006,
+            "drawdown": 0.029999999998835847,
+            "drawdown_pct": 0.00029999790000305833,
+            "peak_closed_trade_balance": 10000.070000000005,
+            "sequence": 28,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-28"
+          },
+          {
+            "closed_trade_balance": 10000.050000000007,
+            "drawdown": 0.019999999998617568,
+            "drawdown_pct": 0.00019999859999597562,
+            "peak_closed_trade_balance": 10000.070000000005,
+            "sequence": 29,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-29"
+          },
+          {
+            "closed_trade_balance": 10000.060000000007,
+            "drawdown": 0.00999999999839929,
+            "drawdown_pct": 0.00009999929998889291,
+            "peak_closed_trade_balance": 10000.070000000005,
+            "sequence": 30,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-30"
+          },
+          {
+            "closed_trade_balance": 10000.070000000007,
+            "drawdown": 0,
+            "drawdown_pct": 0,
+            "peak_closed_trade_balance": 10000.070000000007,
+            "sequence": 31,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-31"
+          },
+          {
+            "closed_trade_balance": 10000.000000000007,
+            "drawdown": 0.06999999999970896,
+            "drawdown_pct": 0.0006999951000313889,
+            "peak_closed_trade_balance": 10000.070000000007,
+            "sequence": 32,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-32"
+          },
+          {
+            "closed_trade_balance": 10000.010000000007,
+            "drawdown": 0.05999999999949068,
+            "drawdown_pct": 0.0005999958000243062,
+            "peak_closed_trade_balance": 10000.070000000007,
+            "sequence": 33,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-33"
+          },
+          {
+            "closed_trade_balance": 10000.020000000008,
+            "drawdown": 0.049999999999272404,
+            "drawdown_pct": 0.0004999965000172235,
+            "peak_closed_trade_balance": 10000.070000000007,
+            "sequence": 34,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-34"
+          },
+          {
+            "closed_trade_balance": 10000.030000000008,
+            "drawdown": 0.039999999999054126,
+            "drawdown_pct": 0.0003999972000101409,
+            "peak_closed_trade_balance": 10000.070000000007,
+            "sequence": 35,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-35"
+          },
+          {
+            "closed_trade_balance": 10000.040000000008,
+            "drawdown": 0.029999999998835847,
+            "drawdown_pct": 0.0002999979000030582,
+            "peak_closed_trade_balance": 10000.070000000007,
+            "sequence": 36,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-36"
+          },
+          {
+            "closed_trade_balance": 10000.050000000008,
+            "drawdown": 0.019999999998617568,
+            "drawdown_pct": 0.00019999859999597557,
+            "peak_closed_trade_balance": 10000.070000000007,
+            "sequence": 37,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-37"
+          },
+          {
+            "closed_trade_balance": 10000.060000000009,
+            "drawdown": 0.00999999999839929,
+            "drawdown_pct": 0.0000999992999888929,
+            "peak_closed_trade_balance": 10000.070000000007,
+            "sequence": 38,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-38"
+          },
+          {
+            "closed_trade_balance": 10000.070000000009,
+            "drawdown": 0,
+            "drawdown_pct": 0,
+            "peak_closed_trade_balance": 10000.070000000009,
+            "sequence": 39,
+            "trade_id": "04169e007b2840d7b168b5aa767645a9-39"
+          }
+        ],
+        "closed_trade_balance_max_drawdown": 0.06999999999970896,
+        "closed_trade_balance_max_drawdown_pct": 0.0006999951000313892,
+        "closed_trade_count": 39,
+        "definitions": {
+          "average_realized_r": {
+            "formula": "mean(net_pnl_i / planned_risk_budget_i)",
+            "question": "What was average realized R when every selected trade has planned risk?",
+            "source": "normalized closed-trade ledger",
+            "unit": "R",
+            "version": "metrics-v2"
+          },
+          "closed_trade_balance_max_drawdown": {
+            "formula": "max_t(peak_closed_balance_t - closed_balance_t)",
+            "question": "What was the largest peak-to-trough drop in the closed-trade balance path?",
+            "source": "closed-trade balance path; no floating P/L or cashflow",
+            "unit": "account_currency",
+            "version": "metrics-v2"
+          },
+          "closed_trade_balance_max_drawdown_pct": {
+            "formula": "max_t(drawdown_t / peak_closed_balance_t * 100)",
+            "question": "What was the largest closed-trade balance drawdown as a percent of its prior peak?",
+            "source": "closed-trade balance path; no floating P/L or cashflow",
+            "unit": "percent",
+            "version": "metrics-v2"
+          },
+          "closed_trade_count": {
+            "formula": "count(selected closed trades)",
+            "question": "How many selected closed trades are in the denominator?",
+            "source": "normalized closed-trade ledger",
+            "unit": "trades",
+            "version": "metrics-v2"
+          },
+          "ending_closed_trade_balance": {
+            "formula": "starting_balance + sum(selected net_pnl_i)",
+            "question": "What is starting balance plus selected closed-trade net P/L?",
+            "source": "run artifact + normalized closed-trade ledger",
+            "unit": "account_currency",
+            "version": "metrics-v2"
+          },
+          "expectancy_net_per_trade": {
+            "formula": "sum(net_pnl_i) / closed_trade_count",
+            "question": "What was average net P/L per selected closed trade?",
+            "source": "normalized closed-trade ledger",
+            "unit": "account_currency_per_trade",
+            "version": "metrics-v2"
+          },
+          "max_loss_streak": {
+            "formula": "max consecutive net_pnl_i < 0; breakeven resets streak",
+            "question": "What was the longest consecutive net-loss streak in sequence order?",
+            "source": "normalized closed-trade ledger",
+            "unit": "trades",
+            "version": "metrics-v2"
+          },
+          "net_pnl": {
+            "formula": "sum(net_pnl_i)",
+            "question": "What did the selected closed trades make or lose after recorded costs?",
+            "source": "normalized closed-trade ledger",
+            "unit": "account_currency",
+            "version": "metrics-v2"
+          },
+          "payoff_ratio_after_cost": {
+            "formula": "mean(net winners) / abs(mean(net losers))",
+            "question": "How large was the mean net winner relative to the mean net loser?",
+            "source": "normalized closed-trade ledger",
+            "unit": "ratio",
+            "version": "metrics-v2"
+          },
+          "profit_factor_after_cost": {
+            "formula": "sum(net positive) / abs(sum(net negative))",
+            "question": "How much net-positive P/L was observed per unit of net-negative P/L?",
+            "source": "normalized closed-trade ledger",
+            "unit": "ratio",
+            "version": "metrics-v2"
+          },
+          "starting_balance": {
+            "formula": "persisted run starting_balance",
+            "question": "What run starting balance anchors this closed-trade balance path?",
+            "source": "run artifact",
+            "unit": "account_currency",
+            "version": "metrics-v2"
+          },
+          "win_rate_pct": {
+            "formula": "wins / closed_trade_count * 100",
+            "question": "What share of selected closed trades finished net positive?",
+            "source": "normalized closed-trade ledger",
+            "unit": "percent",
+            "version": "metrics-v2"
+          }
+        },
+        "ending_closed_trade_balance": 10000.070000000009,
+        "expectancy_net_per_trade": 0.0017948717948717944,
+        "fees": 0,
+        "fees_known_count": 39,
+        "gross_pnl": 0.06999999999999998,
+        "gross_pnl_known_count": 39,
+        "loss_rate_pct": 10.256410256410255,
+        "losses": 4,
+        "max_loss_streak": 1,
+        "metric_schema_version": "metrics-v2",
+        "net_pnl": 0.06999999999999998,
+        "payoff_ratio_after_cost": 0.14285714285714285,
+        "profit_factor_after_cost": 1.25,
+        "realized_r_known_count": 39,
+        "realized_r_values": [
+          0.0001,
+          0.0001,
+          0.0001,
+          0.0001,
+          0.0001,
+          0.0001,
+          0.0001,
+          -0.0007000000000000001,
+          0.0001,
+          0.0001,
+          0.0001,
+          0.0001,
+          0.0001,
+          0.0001,
+          0.0001,
+          -0.0007000000000000001,
+          0.0001,
+          0.0001,
+          0.0001,
+          0.0001,
+          0.0001,
+          0.0001,
+          0.0001,
+          -0.0007000000000000001,
+          0.0001,
+          0.0001,
+          0.0001,
+          0.0001,
+          0.0001,
+          0.0001,
+          0.0001,
+          -0.0007000000000000001,
+          0.0001,
+          0.0001,
+          0.0001,
+          0.0001,
+          0.0001,
+          0.0001,
+          0.0001
+        ],
+        "starting_balance": 10000,
+        "win_rate_pct": 89.74358974358975,
+        "wins": 35
+      },
+      "metrics_schema_version": "metrics-v2",
+      "strategy_version": "close-delta-v1",
+      "trade_count": 39,
+      "workspace_id": "tenant-a"
+    },
+    "result_path": "tenant-a/results/04169e007b2840d7b168b5aa767645a9/attempt-000001-936c91405dc2a316.json",
+    "result_sha256": "50daeceb31bb1de811032fd9e5cd595c60043fca559bbea180b5334e43a2e210",
+    "starting_balance": 10000,
+    "status": "completed",
+    "strategy_version": "close-delta-v1",
+    "updated_at_utc": "2026-10-17T16:21:20.556346Z",
+    "workspace_id": "tenant-a"
+  }
+}

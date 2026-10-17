@@ -3,6 +3,9 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import React from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { createServer } from 'vite'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const sourcePath = path.join(here, '..', 'src', 'ResearchWorkspace.jsx')
@@ -42,4 +45,35 @@ test('research story styles provide stable geometry and responsive states', asyn
   assert.match(css, /@media \(max-width: 1080px\)/)
   assert.match(css, /@media \(max-width: 520px\)/)
   assert.match(css, /prefers-reduced-motion: reduce/)
+})
+
+test('reopened research quality uses persisted job provenance without borrowing current catalog claims', async () => {
+  const server = await createServer({ root: path.join(here, '..'), server: { middlewareMode: true }, appType: 'custom' })
+  try {
+    const { QualityTakeaway } = await server.ssrLoadModule('/src/ResearchWorkspace.jsx')
+    const render = props => renderToStaticMarkup(React.createElement(QualityTakeaway, props))
+    const currentCatalog = { dataset_id: 'mutable-catalog', artifact_sha256: 'current-sha', quality_status: 'verified', holdout_access: true, instrument_spec: {} }
+    const job = { dataset_id: 'pinned-dataset', status: 'completed', result: { dataset_sha256: 'pinned-sha' } }
+    const completed = render({ dataset: currentCatalog, job })
+    assert.match(completed, /Chất lượng dữ liệu đã khóa theo run/)
+    assert.match(completed, /pinned-dataset/)
+    assert.match(completed, /pinned-sha/)
+    assert.match(completed, /Chưa có quality snapshot/)
+    assert.match(completed, /Không thể suy ra chất lượng hoặc quyền holdout/)
+    assert.doesNotMatch(completed, /Chưa có dataset để ra quyết định|Chưa chọn dataset|mutable-catalog|current-sha|Dataset đủ điều kiện|Không có cảnh báo/)
+
+    const queued = render({ job: { dataset_id: 'queued-dataset', status: 'queued' } })
+    assert.match(queued, /Theo dõi trạng thái và checkpoint/)
+    assert.match(queued, /Job chưa cung cấp hash dữ liệu/)
+    assert.doesNotMatch(queued, /Chưa chọn dataset|Đọc result provenance/)
+
+    const snapshot = render({ dataset: currentCatalog, job: { ...job, protocol: { dataset: { dataset_id: 'pinned-dataset', artifact_sha256: 'protocol-sha', quality: { status: 'unverified' }, holdout_policy: { mode: 'locked' } } } } })
+    assert.match(snapshot, /snapshot lưu trong research job/)
+    assert.match(snapshot, /protocol-sha/)
+    assert.match(snapshot, /Dataset chưa được xác minh cho production/)
+    assert.match(snapshot, /Holdout đang bị khóa/)
+    assert.doesNotMatch(snapshot, /current-sha|Chưa có quality snapshot/)
+
+    assert.match(render({}), /Chưa có dataset để ra quyết định/)
+  } finally { await server.close() }
 })
