@@ -1,0 +1,360 @@
+{
+  "scope": "Production build; cold isolated Chromium contexts, loopback static assets, frozen local read-only API snapshots, no artificial latency. Timing includes Playwright ready observation, not field INP. Baseline/candidate use identical payload fixtures.",
+  "runtime": {
+    "node": "v24.19.0"
+  },
+  "samples": [
+    {
+      "sample": 0,
+      "cold": {
+        "readyMs": 508,
+        "scripts": [
+          {
+            "path": "/assets/index-CAymIb4g.js",
+            "bytes": 548474
+          },
+          {
+            "path": "/assets/DashboardSessions-DSTPmLgq.js",
+            "bytes": 33702
+          },
+          {
+            "path": "/assets/useReadRefresh-B9QHyjcy.js",
+            "bytes": 4164
+          },
+          {
+            "path": "/assets/ProjectDateInput-qFFupFx6.js",
+            "bytes": 10359
+          },
+          {
+            "path": "/assets/sessionCatalog-BUy5dZO7.js",
+            "bytes": 4187
+          },
+          {
+            "path": "/assets/SessionSettingsDrawer-BnBMhgrQ.js",
+            "bytes": 17389
+          },
+          {
+            "path": "/assets/analyticsViewModel-CtbVcBHX.js",
+            "bytes": 5983
+          },
+          {
+            "path": "/assets/sessionPerformanceModel-BCCWb4Fb.js",
+            "bytes": 1227
+          },
+          {
+            "path": "/assets/SessionActions-Bd_kjLNO.js",
+            "bytes": 14788
+          },
+          {
+            "path": "/assets/PaginationFooter-M5hPxf42.js",
+            "bytes": 2092
+          }
+        ],
+        "longTasks": []
+      },
+      "dialogOpened": true
+    },
+    {
+      "sample": 1,
+      "cold": {
+        "readyMs": 481.29999999981374,
+        "scripts": [
+          {
+            "path": "/assets/index-CAymIb4g.js",
+            "bytes": 548474
+          },
+          {
+            "path": "/assets/DashboardSessions-DSTPmLgq.js",
+            "bytes": 33702
+          },
+          {
+            "path": "/assets/useReadRefresh-B9QHyjcy.js",
+            "bytes": 4164
+          },
+          {
+            "path": "/assets/ProjectDateInput-qFFupFx6.js",
+            "bytes": 10359
+          },
+          {
+            "path": "/assets/sessionCatalog-BUy5dZO7.js",
+            "bytes": 4187
+          },
+          {
+            "path": "/assets/SessionSettingsDrawer-BnBMhgrQ.js",
+            "bytes": 17389
+          },
+          {
+            "path": "/assets/analyticsViewModel-CtbVcBHX.js",
+            "bytes": 5983
+          },
+          {
+            "path": "/assets/sessionPerformanceModel-BCCWb4Fb.js",
+            "bytes": 1227
+          },
+          {
+            "path": "/assets/SessionActions-Bd_kjLNO.js",
+            "bytes": 14788
+          },
+          {
+            "path": "/assets/PaginationFooter-M5hPxf42.js",
+            "bytes": 2092
+          }
+        ],
+        "longTasks": []
+      },
+      "dialogOpened": true
+    },
+    {
+      "sample": 2,
+      "cold": {
+        "readyMs": 482.5,
+        "scripts": [
+          {
+            "path": "/assets/index-CAymIb4g.js",
+            "bytes": 548474
+          },
+          {
+            "path": "/assets/DashboardSessions-DSTPmLgq.js",
+            "bytes": 33702
+          },
+          {
+            "path": "/assets/useReadRefresh-B9QHyjcy.js",
+            "bytes": 4164
+          },
+          {
+            "path": "/assets/ProjectDateInput-qFFupFx6.js",
+            "bytes": 10359
+          },
+          {
+            "path": "/assets/sessionCatalog-BUy5dZO7.js",
+            "bytes": 4187
+          },
+          {
+            "path": "/assets/SessionSettingsDrawer-BnBMhgrQ.js",
+            "bytes": 17389
+          },
+          {
+            "path": "/assets/analyticsViewModel-CtbVcBHX.js",
+            "bytes": 5983
+          },
+          {
+            "path": "/assets/sessionPerformanceModel-BCCWb4Fb.js",
+            "bytes": 1227
+          },
+          {
+            "path": "/assets/SessionActions-Bd_kjLNO.js",
+            "bytes": 14788
+          },
+          {
+            "path": "/assets/PaginationFooter-M5hPxf42.js",
+            "bytes": 2092
+          }
+        ],
+        "longTasks": []
+      },
+      "dialogOpened": true
+    },
+    {
+      "sample": 3,
+      "cold": {
+        "readyMs": 462.70000000018626,
+        "scripts": [
+          {
+            "path": "/assets/index-CAymIb4g.js",
+            "bytes": 548474
+          },
+          {
+            "path": "/assets/DashboardSessions-DSTPmLgq.js",
+            "bytes": 33702
+          },
+          {
+            "path": "/assets/useReadRefresh-B9QHyjcy.js",
+            "bytes": 4164
+          },
+          {
+            "path": "/assets/ProjectDateInput-qFFupFx6.js",
+            "bytes": 10359
+          },
+          {
+            "path": "/assets/sessionCatalog-BUy5dZO7.js",
+            "bytes": 4187
+          },
+          {
+            "path": "/assets/SessionSettingsDrawer-BnBMhgrQ.js",
+            "bytes": 17389
+          },
+          {
+            "path": "/assets/analyticsViewModel-CtbVcBHX.js",
+            "bytes": 5983
+          },
+          {
+            "path": "/assets/sessionPerformanceModel-BCCWb4Fb.js",
+            "bytes": 1227
+          },
+          {
+            "path": "/assets/SessionActions-Bd_kjLNO.js",
+            "bytes": 14788
+          },
+          {
+            "path": "/assets/PaginationFooter-M5hPxf42.js",
+            "bytes": 2092
+          }
+        ],
+        "longTasks": []
+      },
+      "dialogOpened": true
+    },
+    {
+      "sample": 4,
+      "cold": {
+        "readyMs": 497.79999999981374,
+        "scripts": [
+          {
+            "path": "/assets/index-CAymIb4g.js",
+            "bytes": 548474
+          },
+          {
+            "path": "/assets/DashboardSessions-DSTPmLgq.js",
+            "bytes": 33702
+          },
+          {
+            "path": "/assets/useReadRefresh-B9QHyjcy.js",
+            "bytes": 4164
+          },
+          {
+            "path": "/assets/ProjectDateInput-qFFupFx6.js",
+            "bytes": 10359
+          },
+          {
+            "path": "/assets/sessionCatalog-BUy5dZO7.js",
+            "bytes": 4187
+          },
+          {
+            "path": "/assets/SessionSettingsDrawer-BnBMhgrQ.js",
+            "bytes": 17389
+          },
+          {
+            "path": "/assets/analyticsViewModel-CtbVcBHX.js",
+            "bytes": 5983
+          },
+          {
+            "path": "/assets/sessionPerformanceModel-BCCWb4Fb.js",
+            "bytes": 1227
+          },
+          {
+            "path": "/assets/SessionActions-Bd_kjLNO.js",
+            "bytes": 14788
+          },
+          {
+            "path": "/assets/PaginationFooter-M5hPxf42.js",
+            "bytes": 2092
+          }
+        ],
+        "longTasks": []
+      },
+      "dialogOpened": true
+    },
+    {
+      "sample": 5,
+      "cold": {
+        "readyMs": 504.29999999981374,
+        "scripts": [
+          {
+            "path": "/assets/index-CAymIb4g.js",
+            "bytes": 548474
+          },
+          {
+            "path": "/assets/DashboardSessions-DSTPmLgq.js",
+            "bytes": 33702
+          },
+          {
+            "path": "/assets/useReadRefresh-B9QHyjcy.js",
+            "bytes": 4164
+          },
+          {
+            "path": "/assets/ProjectDateInput-qFFupFx6.js",
+            "bytes": 10359
+          },
+          {
+            "path": "/assets/sessionCatalog-BUy5dZO7.js",
+            "bytes": 4187
+          },
+          {
+            "path": "/assets/SessionSettingsDrawer-BnBMhgrQ.js",
+            "bytes": 17389
+          },
+          {
+            "path": "/assets/analyticsViewModel-CtbVcBHX.js",
+            "bytes": 5983
+          },
+          {
+            "path": "/assets/sessionPerformanceModel-BCCWb4Fb.js",
+            "bytes": 1227
+          },
+          {
+            "path": "/assets/SessionActions-Bd_kjLNO.js",
+            "bytes": 14788
+          },
+          {
+            "path": "/assets/PaginationFooter-M5hPxf42.js",
+            "bytes": 2092
+          }
+        ],
+        "longTasks": []
+      },
+      "dialogOpened": true
+    },
+    {
+      "sample": 6,
+      "cold": {
+        "readyMs": 465.69999999925494,
+        "scripts": [
+          {
+            "path": "/assets/index-CAymIb4g.js",
+            "bytes": 548474
+          },
+          {
+            "path": "/assets/DashboardSessions-DSTPmLgq.js",
+            "bytes": 33702
+          },
+          {
+            "path": "/assets/useReadRefresh-B9QHyjcy.js",
+            "bytes": 4164
+          },
+          {
+            "path": "/assets/ProjectDateInput-qFFupFx6.js",
+            "bytes": 10359
+          },
+          {
+            "path": "/assets/sessionCatalog-BUy5dZO7.js",
+            "bytes": 4187
+          },
+          {
+            "path": "/assets/SessionSettingsDrawer-BnBMhgrQ.js",
+            "bytes": 17389
+          },
+          {
+            "path": "/assets/analyticsViewModel-CtbVcBHX.js",
+            "bytes": 5983
+          },
+          {
+            "path": "/assets/sessionPerformanceModel-BCCWb4Fb.js",
+            "bytes": 1227
+          },
+          {
+            "path": "/assets/SessionActions-Bd_kjLNO.js",
+            "bytes": 14788
+          },
+          {
+            "path": "/assets/PaginationFooter-M5hPxf42.js",
+            "bytes": 2092
+          }
+        ],
+        "longTasks": []
+      },
+      "dialogOpened": true
+    }
+  ],
+  "errors": [],
+  "blocked": []
+}

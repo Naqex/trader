@@ -1,0 +1,530 @@
+✔ aggregation includes only the causal prefix, including incomplete buckets (2.8569ms)
+✔ history countBack fills from older visible bars and never leaks future rows (31.7735ms)
+✔ forward updates emit every missed bar, cloned; rewind invalidates callbacks and resets cache (12.0348ms)
+✔ metadata precision and resolutions reflect dataset; unsupported intervals rejected (4.8108ms)
+✔ order-only JSON refresh at the same cutoff does not refetch history or republish candles (46.8567ms)
+✔ calendar candles use UTC day, Monday week and real month boundaries without future OHLC (15.3434ms)
+✔ calendar realtime updates partial months and rewind invalidates pending history (17.9908ms)
+✔ saved drawings/layouts stay scoped and snapshots from later cutoffs cannot restore in history (0.5841ms)
+✔ unknown or changed vendor distribution is never rewritten (1.7169ms)
+✔ vi: iframe preserves original HTML and options without allocating a blob (9.2189ms)
+✔ en: iframe preserves original HTML and options without allocating a blob (2.2254ms)
+✔ manual save cancels debounce and a clean layout is disabled (51.6649ms)
+✔ autosave persists edits without manual action (61.2055ms)
+✔ an edit during save invalidates the older snapshot (0.6125ms)
+✔ replay cutoff and generation changes cannot publish a stale layout (0.3128ms)
+✔ storage errors remain retryable and never report success (0.3318ms)
+✔ timeouts and disposal discard late vendor callbacks (26.0592ms)
+✔ equal and nearby prices separate horizontally while distant levels share the right column (3.5984ms)
+✔ protection labels use account currency, direction and actual quantity; unknown FX conversion stays unknown (1.4916ms)
+✔ Entry-price protections use compact handles without losing saved state or hiding real nonzero distances (0.8218ms)
+✔ scale projection supports log, invert and tiny price ranges with reversible drag coordinates (1.1268ms)
+✔ pending entry is explicitly submitting and authoritative execution wins when it arrives (0.628ms)
+✔ Analytics reads remain workspace scoped and have no execution capability (1.4565ms)
+✔ drilldown and export retain resource identity and financial provenance (2.9585ms)
+✔ price experiments are read-only and fenced to the visible result provenance (0.2909ms)
+✔ model preserves unknown values, original financial metrics and immutable ledger (51.443ms)
+✔ read projection retains scope, partial and cutoff provenance without React dependencies (0.7247ms)
+✔ new and resumed replay routes use the chart workspace layout (29.6112ms)
+✔ normalizes chart annotations to safe time/price anchors (12.1228ms)
+✔ builds one local horizontal-line draft from a chart anchor (5.7361ms)
+✔ rejects future anchors, malformed numbers, unknown fields and oversized payloads (1.0863ms)
+✔ create/list/revise use workspace-scoped annotation endpoints and revision guards (64.996ms)
+✔ surfaces API errors without turning them into successful drafts (2.6721ms)
+✔ drawing visibility requires matching replay scope, known candle anchors and causal creation cutoff (0.5173ms)
+✔ annotation delete preserves workspace and revision and exposes conflict or missing record errors (6.5869ms)
+✔ native gestures, external resources and hash-only links remain native (4.1393ms)
+✔ navigation preserves URL/context, replace semantics, history events and subscription cleanup (2.3255ms)
+✔ reader identity ignores filters/tab/cursor while isolating workspace, page and resources (0.9124ms)
+✔ replace preserves existing history state; native hash movement neither remounts nor notifies (1.0065ms)
+✔ duration retains unknown, measured zero and whole elapsed days without calendar-month guesses (4.9249ms)
+✔ dashboard keeps unknown distinct from measured zero (0.5642ms)
+✔ recent period ranges use inclusive UTC calendar days across month boundaries (1.7899ms)
+✔ last week and month cover completed UTC calendar periods, preserving saved rolling scopes (0.2802ms)
+✔ Dashboard combines search/status/sort without mixing archived and active status (0.6392ms)
+✔ dashboard filters encode the selected session and complete UTC close dates (0.5896ms)
+✔ overview request sends workspace and abort signal; rejects old inventory-only payload (64.0176ms)
+✔ malformed performance payload becomes a recoverable load error (0.9284ms)
+✔ dashboard chart uses original balance and preserves every loss and recovery (1.0843ms)
+✔ session result API fences workspace, provenance and ledger count (10.5794ms)
+✔ Assets and strategy intersect; unavailable strategy is not unassigned (2.3571ms)
+✔ profit sorting keeps unknown last and refuses mixed or missing currencies (0.3775ms)
+✔ replay context uses metadata-only route and verifies catalog revision (1.4517ms)
+✔ session analytics preserves HTTP denial for readers that must clear cached data (5.6895ms)
+✔ bounded dashboard list validates workspace, revision, summary and request page (8.9052ms)
+✔ sampled card curve keeps original sequences and rejects incorrect endpoint or coverage (0.4583ms)
+✔ recent sessions filters archived, searches domain fields and sorts without changing catalog (34.1178ms)
+✔ resume eligibility requires an active session with confirmed dataset availability (0.2215ms)
+✔ last session storage remains workspace-scoped and tolerates inaccessible storage (0.4252ms)
+✔ bounded SSE jobs preserve older history and reject foreign or malformed scope (1.723ms)
+✔ library reads optional catalog metadata through the existing scoped endpoint (51.7587ms)
+✔ download operations preserve workspace, dates and abort scope (78.5576ms)
+✔ Data Desk CSV helpers send browser text and workspace scope (5.5913ms)
+✔ decimal data sizes respect unit boundaries and unknown vs zero (28.2896ms)
+✔ saved seconds and catalog timeframes use the same trading labels without mutating metadata (2.3494ms)
+✔ cooldown uses receipt time, unlocks exactly at expiry and resists clock rollback (0.9912ms)
+✔ rolling throughput estimates remaining days without using cached bytes or inventing total size (0.375ms)
+✔ warmup and a measured zero speed remain distinct (1.0427ms)
+✔ resume never treats reading cached history as network throughput (0.8135ms)
+✔ pause, resume, processing, rollback and long polling gaps reset the baseline (0.3729ms)
+✔ ETA expires when day throughput stalls and never predicts the saving stage (0.2329ms)
+✔ ETA uses rounded durations and unknown states have no invented time (1.0647ms)
+✔ explicit compatible updates collapse their ancestors without mutating any dataset (2.5848ms)
+✔ loaded versions remain distinct; matching catalog asset does not duplicate them (1.5367ms)
+✔ downloads require supported Dukascopy metadata and are never available in preview (2.3715ms)
+✔ date validation uses inclusive completed UTC days without local timezone drift (2.0339ms)
+✔ QDM downloads and jobs are scoped to their provider, including saved updates (14.4382ms)
+✔ source and download engine remain distinct for explicit metadata and older immutable QDM datasets (0.3692ms)
+✔ catalog category uses declared metadata, never guesses from the symbol (0.1847ms)
+✔ search and category/source compose without changing the source list (0.3378ms)
+✔ download status filters saved and catalog rows independently of sorting (0.646ms)
+✔ sorting keeps missing dates deterministic and puts downloaded assets first (15.4691ms)
+✔ active jobs filter both new downloads and saved updates without mislabelling other sources (0.6545ms)
+✔ new sessions choose the current update while an explicitly pinned older selection remains visible (43.0698ms)
+✔ catalog enriches only saved versions with the same source and engine (1.8578ms)
+✔ recent history prioritizes exact saved versions without duplicating them (1.1058ms)
+✔ archived or unavailable history does not create a recent section (0.3858ms)
+✔ dates pad day/month and keep four-digit year for ISO, epoch seconds/ms and Date (54.6121ms)
+✔ 24-hour time includes seconds when requested; formatting preserves timezone semantics (16.8943ms)
+✔ unknown/invalid values are explicit and cannot become epoch zero (0.2496ms)
+✔ date fields round-trip ISO without timezone conversion, including midnight and seconds (0.7847ms)
+✔ fields reject impossible dates, incomplete input and invalid hours (0.5744ms)
+✔ price type comes from saved provenance, never guessed from provider name (1.8928ms)
+✔ demo curve, money, fee and R values reconcile to the same ledger (2.4559ms)
+✔ demo selection and UTC date filters have an independent numeric oracle (0.4964ms)
+✔ preview keeps exactly three fixture sessions and rejects the retired many mode (0.7571ms)
+✔ demo toggle roundtrip retains every real context/filter query value (7.2838ms)
+✔ demo does not replace chart or order-entry surfaces (0.2195ms)
+✔ new-session preview preserves old session data and round-trips only supported pages (4.3217ms)
+✔ state previews preserve real context, round-trip to real and fence unsupported surfaces (5.7701ms)
+✔ disabled diagnostics collect nothing and install no observers (6.2453ms)
+✔ allowlisted labels, bounded records and aggregate-only entries preserve privacy (2.1926ms)
+✔ stop disconnects, clears timers, freezes records and does not alter task outcomes (1.0651ms)
+✔ pending timers are bounded and malformed performance values cannot poison totals (0.3488ms)
+✔ unapproved labels collapse to other and error text is never recorded (0.6745ms)
+✔ native entry diagnostics do not masquerade as field INP or session-window CLS (0.497ms)
+✔ static startup graph excludes dynamic imports and preload filename references (1.8815ms)
+✔ chart header delegates commands to the replay workspace (41.9812ms)
+✔ journal UI stays linked to replay/trade context and uses revision endpoint (1.2916ms)
+✔ analytics UI preserves unknown values and exposes result provenance (0.2257ms)
+✔ journal and analytics responsive rules are scoped to the dedicated stylesheet (0.3987ms)
+✔ compact journal context preserves counts and unions tags without changing finance (2.8429ms)
+✔ scope, duplicate and invalid schema fail closed; empty is known zero (0.6655ms)
+✔ compact note presence distinguishes tag-only annotation from a note (0.3266ms)
+✔ empty/default filter leaves unknown source fields and all trades visible (29.7967ms)
+✔ AND inside include group requires every tag; OR requires one (0.6111ms)
+✔ exclude matches are negated and intersect inclusion scope (0.5652ms)
+✔ multi values OR within a category and AND across different categories (0.4041ms)
+✔ missing notes/type/date do not become invented matching values (0.8947ms)
+✔ filter URL roundtrip preserves tag commas, unknown fields and mode (1.7073ms)
+✔ note presence uses compact provenance and OR within the presence group (0.6455ms)
+✔ FX preset distances create opposite protective levels on BUY and SELL (2.5108ms)
+✔ percent and tick distances round away from entry without collapsing a level (1.4454ms)
+✔ disabled preset and disabled protection explicitly omit each protective leg (0.2627ms)
+✔ preset rejects missing price, missing unit metadata, zero or negative distances (1.087ms)
+✔ preset never emits zero, negative, or infinite protective prices (0.2745ms)
+✔ M1 replay intervals batch every underlying candle and reject invented sub-minute data (10.5692ms)
+✔ second datasets replay seconds without exceeding the API batch limit (0.2541ms)
+✔ historical forward is read-only, clamps to canonical and then resumes authoritative cursor (1.4255ms)
+✔ rewind respects replay interval and never reads a negative cursor (0.2305ms)
+✔ native interval actions ask the server to resolve boundaries without future timestamps (0.188ms)
+✔ rewind selects the previous occupied UTC bucket using only the visible prefix (0.331ms)
+✔ bar selection accepts only prior candles from visible prefix (0.2425ms)
+✔ speed schedules 1–16 events per second and caps catch-up to a single event (0.1633ms)
+✔ Live reads workspace-local snapshots and preview does not call the reader (4.165ms)
+✔ Live retains stale snapshots but clears data when access is denied (0.3055ms)
+✔ Live shares every reference surface with labeled local previews and responsive layouts (0.7657ms)
+✔ net includes every cost and excludes non-trading cashflows (32.1395ms)
+✔ filters use selected timezone and date bounds without mutating the source (6.1474ms)
+✔ calendar distinguishes missing feed, fully covered empty day and partial cutoff (5.2423ms)
+✔ unknown costs stop cumulative totals instead of bridging a misleading curve (2.2257ms)
+✔ builds an allowlisted preview and keeps owner notes separate (6.2086ms)
+✔ accepts only the Notion OAuth authorization endpoint (2.5891ms)
+✔ builds a pending local receipt only after explicit destination selection (36.4154ms)
+✔ fails closed on sensitive fields, malformed metrics and implicit destinations (0.9902ms)
+✔ flow state names cover login, OAuth, destination, preview and receipt (0.1986ms)
+✔ translates the UI mirror to the authoritative durable ledger schema (2.7618ms)
+✔ rehydrates a persisted ledger row without exposing account identifiers (2.5002ms)
+✔ page windows retain the current page and reach both boundaries without duplicate or invalid pages (25.3149ms)
+✔ playbook UI is an explicit read-only version and lineage surface (4.6681ms)
+✔ playbook view preserves backend authority and exposes safe metadata (0.2388ms)
+✔ playbook diff is deterministic and responsive (0.2247ms)
+✔ playbook GET recovery is bounded and fences stale responses (0.7109ms)
+✔ rules distinguish realized profit from equity loss and the daily anchor (29.6998ms)
+✔ trailing drawdown follows its high water mark rather than starting capital (0.2374ms)
+✔ missing money remains unknown instead of appearing as zero profit or loss (0.1826ms)
+✔ auto cutoff is the common immutable data end; custom cutoff and explicit calendar limits stay independent (174.9986ms)
+✔ dialog name survives Prop bundle and replay creation without technical suffix (15.8758ms)
+✔ legacy ready sessions start with a stable intent without changing virtual time (17.9812ms)
+✔ opening running, paused or terminal sessions does not change their lifecycle (4.6635ms)
+✔ opening a ready attempt reuses its persisted replay before execution initializes (1.1961ms)
+✔ a valid draft has no client errors; whitespace, NaN and unavailable selections are blocked (1.8949ms)
+✔ loaded selection must have a shared currency and a valid replay range (0.2099ms)
+✔ prop-only errors do not leak into backtest after switching tabs (0.9511ms)
+✔ positive values below the displayed field minimum are blocked (0.2712ms)
+✔ catalog loading/error and unfinished strategy creation explain why submission is blocked (0.2342ms)
+✔ asset cap is enforced separately from availability (0.3307ms)
+✔ only transient reads retry; denied, missing, conflict, validation and aborted reads do not (4.6724ms)
+✔ five bounded retries preserve budget through pending, then success starts a fresh episode (2.0893ms)
+✔ Retry-After countdown is honored; hidden and offline pause and resume without spending attempts (0.7102ms)
+✔ exhaustion waits for focus, online or relevant revision instead of endlessly retrying or remaining stuck (3.533ms)
+✔ first snapshot avoids duplicate GET; matching changes coalesce and unrelated changes are ignored (0.4508ms)
+✔ reconnect reconciles even same revision; healthy stream suppresses fallback and no overlap during a read (0.2704ms)
+✔ terminal read errors and denied stream have no automatic fallback requests (0.8613ms)
+✔ fixed historical scope skips stream and fallback, retains return-to-app reconciliation and retry (2.1636ms)
+✔ scope/unmount disposal cancels scheduled retries, event reconciliation, fallback and subscription (1.2621ms)
+✖ project palette keeps small replay text and action foregrounds readable in both themes (84.269ms)
+✔ replay speed controls expose localized accessible names (39.2232ms)
+✔ elapsed activity uses monotonic time and counts analysis while replay is paused (4.6911ms)
+✔ hidden or unfocused periods do not become practice time on return (0.4644ms)
+✔ idle cutoff clips the last segment and new activity never fills the idle gap (0.3811ms)
+✔ suspension and wall-clock jumps cannot inflate measured time (1.6295ms)
+✔ segments merge only across continuous activity and never exceed the endpoint limit (0.3116ms)
+✔ window cache deduplicates, returns independent candles, binds query and stays bounded (2.9788ms)
+✔ reader rejects scope, future, duplicate and unbounded data (1.3356ms)
+✔ rewind/dispose aborts old requests and does not cache late bodies (8.4854ms)
+✔ datafeed backfills remote candles beyond the local window, keeps monthly buckets whole, cancels rewind (44.1304ms)
+✔ remote realtime starts at last visible candle and never replays older bars during initial request race (10.1062ms)
+✔ history timings are opt-in and deduplicated; cache hit records no request or business context (2.0395ms)
+✔ domain anchors are projected again after pan, price drag and zoom (3.7864ms)
+✔ hidden, unsupported, incomplete and unmappable drawings are skipped (0.3969ms)
+✔ zero coordinates remain valid and labels remain bounded literal canvas text (0.4565ms)
+✔ native renderer redraws using current scales and pane dimensions (1.1304ms)
+✔ renderer covers five tools, clips to pane and distinguishes local and selected state (0.9726ms)
+✔ measure reports signed price change without dividing a zero starting price (34.2236ms)
+✔ updates request a native repaint and detachment releases chart references (0.6757ms)
+✔ off-screen labels do not become floating visible labels after panning (0.3712ms)
+✔ changing the palette repaints labels and handles without changing drawing anchors (0.7433ms)
+✔ historical UI never reads canonical future account or position state (1.2696ms)
+✔ quote reference includes the closeable side of the spread (4.1863ms)
+✔ tick quote and draft use pinned historical Bid/Ask without OHLC fallback (0.4642ms)
+✔ draft prices use declared pip and quantity assumptions without inventing missing values (72.698ms)
+✔ order projection changes with price scale and keeps unmappable anchors out (0.6538ms)
+✔ order primitive releases references and redraws through native engine lifecycle (0.4364ms)
+✔ research story keeps the evidence-first flow and truthful safety boundary (45.5256ms)
+✔ research story styles provide stable geometry and responsive states (3.1982ms)
+✔ research data helpers preserve unknown values and provenance warnings (2.0702ms)
+✔ research data helpers distinguish verified and explicit holdout access (0.2665ms)
+✖ Data Desk catalog has explicit retry and stale-response fencing (9.1914ms)
+✔ Research catalog and job reads expose retry and reject stale responses (0.9634ms)
+✔ Research bounded GET retry recovers from one transient 503 and does not retry 404 (11.9948ms)
+✔ duplicate inflight mutations submit once; known completed intentions get a new key (232.9955ms)
+✔ pending reconciles only GET and restores CSV status, text and headers (29.1515ms)
+✔ foreign receipts and ambiguous terminal writes stay unresolved without another POST (26.456ms)
+✔ lost response is not retried automatically; manual retry preserves its idempotency key (1.7207ms)
+✔ receipt timeout does not repeat POST; pre-aborted caller performs no request (21.2299ms)
+✔ storage retains bounded hashed receipts without payloads and restores them after module reload (28.0513ms)
+✔ Retry-After supports seconds and HTTP date; invalid headers do not schedule a retry (31.7533ms)
+✔ a stalled response body times out and frees its shared request for retry (24.4548ms)
+✔ simultaneous scoped readers share network work and receive independent bodies; no persistent cache (4.2477ms)
+✔ workspace and query isolate simultaneous reads (9.2988ms)
+✔ one unmounted consumer does not cancel another; last consumer cancels network (4.6086ms)
+✔ cancellation lasts through body download, and errors retain status without caching (1.2119ms)
+✔ an already cancelled reader does not issue network work (0.2705ms)
+✔ historical period P/L uses UTC close times, a Monday week and the last close rather than wall clock (21.6641ms)
+✔ missing dates/PnL do not become a zero period or a fabricated daily chart (0.3362ms)
+✔ numeric epoch seconds and milliseconds normalize to the same historical UTC instant (0.2212ms)
+✔ period uses the common immutable UTC range and never interprets the local timezone (3.2579ms)
+✔ missing, out of range, reversed dates cannot enable submission; auto does not submit a custom end (0.405ms)
+✔ duration shortcuts preserve UTC clock and clamp calendar months at month end (0.2683ms)
+✔ custom end defaults to yesterday at 23:59 and stays inside the loaded range (0.3488ms)
+✔ random initial date stays within range and leaves at least one future interval before custom end (0.2737ms)
+✔ Prop session links retain exact attempt and backtest links clear previous Prop context (2.8248ms)
+✔ Sessions prefer explicit deep link, valid recently run session, then newest creation (0.4708ms)
+✔ Trades scope distinguishes all, empty, multi selection and explicit session deep links (1.1101ms)
+✔ switching report session clears exact execution checkpoint; same session retains it (0.3578ms)
+✔ session selection clears stale research and historical context while keeping workspace (0.4163ms)
+✔ session analytics receives the selected session rather than a stale job; summary clears filters (0.2226ms)
+✔ malformed catalog never turns into a trustworthy empty session list (0.4587ms)
+✔ catalog and mutations use workspace scope and exact revision/cursor without automatic retries (67.647ms)
+✔ revision conflicts and authorization failures keep HTTP status for recovery UI (1.9186ms)
+✔ an explicit same-session trade and historical cutoff survive analytics composition (0.3406ms)
+✔ delete requires scoped exact name/revision and validates immutable tombstone receipt (2.3953ms)
+✔ remaining range uses canonical cutoff, preserving weekends and ignoring trade close times (1.7653ms)
+✔ unknown balances and range stay unknown, numeric zero remains visible (0.3877ms)
+✔ shell exposes truthful EN/VI and theme controls with persisted preference contracts (12.2734ms)
+✔ system copy provides both locales with matching interpolation contracts (9.6088ms)
+✔ status families have both locales and blocked execution has an explanation (0.3944ms)
+✔ trade workspace keeps draft on replay context and simulator boundary (7.1312ms)
+✔ trade workspace exposes fail-closed side and risk calculations (0.7428ms)
+✔ trade workspace exposes recoverable read-only loading states and selected side semantics (0.7077ms)
+✔ async replay hydration derives risk defaults from the loaded cutoff (0.7756ms)
+✔ risk workspace uses the existing prop evaluator and surfaces blocked data (0.5171ms)
+✔ page contract keeps the full count/facets and known zero independent of visible rows (2.7833ms)
+✔ unknown count requires partial unavailable sources; it is distinct from empty (0.7349ms)
+✔ page contract rejects count, page, provenance and facet corruption (0.5743ms)
+✔ a visible page cannot be mistaken for complete analytics (0.5462ms)
+✔ minute range is inclusive, supports overnight and uses selected IANA timezone (69.2638ms)
+✔ Type belongs to report source and never substitutes the trade entry type (21.5066ms)
+✔ URL accepts supported cities and clears malformed HH:mm values (3.3428ms)
+✔ known numeric oracle: metrics, partial risk, closed DD, durations and calendar (12.1389ms)
+✔ all winning or losing distributions keep undefined denominators unknown (2.3014ms)
+✔ local filter recomputes every metric and hypothetical balance from original capital (5.045ms)
+✔ strategy filter excludes unknown ownership and intersects assets without retaining an unfiltered curve (3.413ms)
+✔ timezone and calendar zero periods use actual dates rather than local machine date (0.7972ms)
+✔ Monte Carlo deterministic bootstrap with a one-value oracle and bounded configuration (1.2869ms)
+✔ CSV retains unknown blanks, exports exact filtered rows, escapes spreadsheet formulas (1.1932ms)
+✔ Prop adapter takes report replay cutoff and clears unrelated route context (0.374ms)
+✔ CSV prefix protection rejects formulas including negative expressions but retains numeric negatives (0.2329ms)
+✔ Prop same-cursor event and phase fence; subset uses report phase initial balance (3.1681ms)
+✔ report filter URL preserves source navigation and validates timezone (0.6681ms)
+✔ multi-session CSV keeps each currency and source checkpoint without summing money (0.3576ms)
+✔ aggregate ledger rejects malformed or mismatched source instead of fabricating rows (0.379ms)
+✔ visual polish stays scoped to the mounted trading app (22.0717ms)
+✔ legacy Data Desk links use the unified library while preserving workspace and dataset (10.4406ms)
+✔ readWorkspaceContext normalizes canonical values and legacy aliases (15.0964ms)
+✔ buildWorkspaceHref carries shared replay context and explicit route values (7.4763ms)
+✔ buildWorkspaceHref can clear stale session context without losing workspace (1.232ms)
+✔ invalid cursor values are never emitted into a deep link (0.2834ms)
+✔ unsafe cutoff values are omitted from a deep link (1.6443ms)
+✔ playbook context survives the journal deep link and rejects unsafe revisions (0.3617ms)
+✔ one authorized stream per workspace, scoped snapshots and teardown (87.5105ms)
+✔ disconnected stream reconnects once even when another consumer subscribes during backoff (111.8197ms)
+✔ hidden tabs pause, visible tabs reconcile a new snapshot and remove visibility listeners on teardown (108.1562ms)
+✔ 401/403 are terminal: no infinite reconnect, late subscribers see denied state (93.0015ms)
+✖ oversized partial frames fail boundedly and heartbeat timeouts recover (79.9443ms)
+✔ cancel during retry prevents resurrection and retry delay spreads tab reconnects (28.8059ms)
+✔ aborted subscriber never opens a stream (0.2647ms)
+✔ catalog cache deduplicates reads, keeps scopes/revisions separate, and invalidates exact resources (71.9105ms)
+✔ denial purges retained catalogs and stops retry/read until authority is replaced (8.9357ms)
+✔ query cancellation aborts the last shared consumer; retained revisions are bounded (30.3674ms)
+✔ known-success invalidation is workspace-scoped; progress ticks do not create catalog/read feedback (0.9235ms)
+✔ only bounded metadata resources and transient GET errors enter the pilot (4.6492ms)
+✔ real datasets/providers helpers use bounded scope cache and preserve independent abort ownership (5.4369ms)
+✔ last imperative consumer cancels its metadata transport, and refresh denial never returns cached data (2.6005ms)
+ℹ tests 294
+ℹ suites 0
+ℹ pass 291
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4908.6187
+
+✖ failing tests:
+
+test at tests\replay-contrast.test.mjs:14:1
+✖ project palette keeps small replay text and action foregrounds readable in both themes (84.269ms)
+  AssertionError [ERR_ASSERTION]: primary on hover in canvas #FFFFFF
+      at TestContext.<anonymous> (file:///D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/web/tests/replay-contrast.test.mjs:22:16)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests\retry-boundaries.test.mjs:9:1
+✖ Data Desk catalog has explicit retry and stale-response fencing (9.1914ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /MAX_GET_RETRIES\s*=\s*3/. Input:
+  
+  "import { previewReadRecovery } from './demoMode.js'\r\n" +
+    "import { useNotifications } from './Notifications.jsx'\r\n" +
+    "import useReadRefresh from './useReadRefresh.js'\r\n" +
+    "import TestingReadState from './TestingReadState.jsx'\r\n" +
+    "import { TestingEmptyState, TestingPageSkeleton, TestingResourceStatus } from './TestingPageState.jsx'\r\n" +
+    "import ProjectDateInput from './ProjectDateInput.jsx'\r\n" +
+    "import { displayDate } from './dateFormat.js'\r\n" +
+    "import { displayTimeframe, formatDataSize as formatDatasetSize } from './dataDisplay.js'\r\n" +
+    "import React, { useEffect, useId, useMemo, useRef, useState } from 'react'\r\n" +
+    'import {\r\n' +
+    '  datasetRange,\r\n' +
+    '  formatNumber,\r\n' +
+    '  formatUtc,\r\n' +
+    '  holdoutLabel,\r\n' +
+    '  qualityLabel,\r\n' +
+    '  datasetWarnings,\r\n' +
+    "} from './researchDataApi.js'\r\n" +
+    "import { fetchOfflineLibrary, refreshInstrumentCatalog, importLocalCsv, previewLocalCsv, fetchDownloads, startDownload, updateDownload, deleteLocalDataset, repairLocalDataset, mergeDownloadEvent } from './dataDeskApi.js'\r\n" +
+    "import { subscribeWorkspaceEvents } from './workspaceEvents.js'\r\n" +
+    "import './research-data.css'\r\n" +
+    "import { useTestingLocale } from './testingLocale.jsx'\r\n" +
+    "import { buildWorkspaceHref } from './workspaceContext.js'\r\n" +
+    "import FxSelect from './FxSelect.jsx'\r\n" +
+    "import TestingIcon from './TestingIcon.jsx'\r\n" +
+    "import DataLibraryActions from './DataLibraryActions.jsx'\r\n" +
+    "import DataLibraryProgress from './DataLibraryProgress.jsx'\r\n" +
+    "import { sampleDownloadMetrics, downloadRetrySeconds } from './dataLibraryDownloadMetrics.js'\r\n" +
+    "import PaginationFooter from './PaginationFooter.jsx'\r\n" +
+    "import { CATEGORIES, libraryDataType, categoryOf, categoryLabel, filterLibrary, libraryRows, sourceOf, downloadEngineOf, canDownloadAsset, defaultDownloadDates } from './dataLibraryModel.js'\r\n" +
+    "import './data-library.css'\r\n" +
+    "import './session-settings.css'\r\n" +
+    '\r\n' +
+    'const CSV_LIMIT_BYTES = 10 * 1024 * 1024\r\n' +
+    '\r\n' +
+    'const DEFAULT_IMPORT_FORM = {\r\n' +
+    "  sourceId: 'local-csv-upload',\r\n" +
+    "  provider: 'local-csv',\r\n" +
+    "  licenseUse: 'user-supplied-local',\r\n" +
+    "  instrumentId: 'EURUSDm',\r\n" +
+    "  assetClass: 'fx',\r\n" +
+    "  baseCcy: 'EUR',\r\n" +
+    "  quoteCcy: 'USD',\r\n" +
+    "  accountCcy: 'USD',\r\n" +
+    "  tickSize: '0.00001',\r\n" +
+    "  pipSize: '0.0001',\r\n" +
+    "  contractSize: '100000',\r\n" +
+    "  quantityMin: '0.01',\r\n" +
+    "  quantityStep: '0.01',\r\n" +
+    "  effectiveFromUtc: '1970-01-01T00:00:00Z',\r\n" +
+    "  timeframeSeconds: '3600',\r\n" +
+    '}\r\n' +
+    '\r\n' +
+    'function QualityBadge({ dataset }) {\r\n' +
+    '  const { t } = useTestingLocale()\r\n' +
+    '  const disposition = dataset?.quality?.disposition\r\n' +
+    "  const quality = disposition === 'pass' ? 'Đạt kiểm tra cơ bản' : disposition === 'review' ? 'Cần kiểm tra chất lượng' : qualityLabel(dataset)\r\n" +
+    "  const tone = disposition === 'pass' || quality === 'Đã xác minh' ? 'is-good' : quality === 'Fixture / QA only' ? 'is-muted' : 'is-warn'\r\n" +
+    '  return <span className={`rd-badge ${tone}`}>{t(quality)}</span>\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    'function DatasetDetails({ dataset, workspace, query }) {\r\n' +
+    '  const { t, fmt, locale } = useTestingLocale()\r\n' +
+    '  if (!dataset) {\r\n' +
+    '    return (\r\n' +
+    '      <div className="rd-empty-callout" data-testid="data-desk-empty-selection">\r\n' +
+    '        Chọn một dataset để xem provenance, range và các cảnh báo trước khi mở Research.\r\n' +
+    '      </div>\r\n' +
+    '    )\r\n' +
+    '  }\r\n' +
+    '  const range = datasetRange(dataset)\r\n' +
+    '  const warnings = datasetWarnings(dataset)\r\n' +
+    '  const source = dataset.source || {}\r\n' +
+    '  return (\r\n' +
+    '    <section className="rd-detail" aria-label="Chi tiết dataset" data-testid="dataset-details">\r\n' +
+    '      <div className="rd-panel-head">\r\n' +
+    '        <div>\r\n' +
+    '          <h2>Provenance và QA</h2>\r\n' +
+    '        </div>\r\n' +
+    `        <a className="rd-context-link" href={buildWorkspaceHref('research', workspace, query, { dataset: dataset.dataset_id, session:null, cursor:null, cutoff:null })}>{t('Mở trong Research')} →</a>\r\n` +
+    '      </div>\r\n' +
+    '      <dl className="rd-detail-grid">\r\n' +
+    '        <div><dt>Dataset</dt><dd><strong>{dataset.dataset_id}</strong></dd></div>\r\n' +
+    "        <div><dt>{t('Nguồn dữ liệu')}</dt><dd>{sourceOf(dataset)}</dd></div>\r\n" +
+    "        {downloadEngineOf(dataset) === 'QuantDataManager' && <div><dt>{t('Công cụ tải')}</dt><dd>QuantDataManager (QDM) · CLI</dd></div>}\r\n" +
+    "        <div><dt>Instrument / TF</dt><dd>{dataset.instrument_id || 'N/A'} · {displayTimeframe(dataset, 'N/A')}</dd></div>\r\n" +
+    "        <div><dt>{t('Số nến')}</dt><dd>{fmt(dataset.row_count, '', 0)}</dd></div>\r\n" +
+    '        <div><dt>Range UTC</dt><dd>{t(formatUtc(range.start, locale))} → {t(formatUtc(range.end, locale))}</dd></div>\r\n' +
+    "        <div><dt>License</dt><dd>{source.license_use || 'Chưa xác minh'}</dd></div>\r\n" +
+    '        <div><dt>Quality</dt><dd><QualityBadge dataset={dataset} /></dd></div>\r\n' +
+    "        {Array.isArray(dataset.quality?.gaps) && <div><dt>{t('Khoảng trống dữ liệu')}</dt><dd>{fmt(dataset.quality.gap_count ?? dataset.quality.gaps.length,'',0)}</dd></div>}\r\n" +
+    "        <div><dt>{t('Dung lượng')}</dt><dd>{formatDatasetSize(dataset.size_bytes, fmt)}</dd></div>\r\n" +
+    "        {dataset.quality?.coverage && <div><dt>{t('Nến chưa có ở đầu/cuối khoảng chọn')}</dt><dd>{fmt(dataset.quality.coverage.leading_missing_intervals + dataset.quality.coverage.trailing_missing_intervals,'',0)}</dd></div>}\r\n" +
+    "        {dataset.quality?.duplicates != null && <div><dt>{t('Nến trùng')}</dt><dd>{fmt(dataset.quality.duplicates,'',0)}</dd></div>}\r\n" +
+    "        <div><dt>Holdout</dt><dd><span className={`rd-badge ${dataset.holdout_access ? 'is-good' : 'is-warn'}`}>{holdoutLabel(dataset)}</span></dd></div>\r\n" +
+    "        <div><dt>Artifact hash</dt><dd><code>{dataset.artifact_sha256 || 'Chưa có hash'}</code></dd></div>\r\n" +
+    '        <div><dt>Retrieved</dt><dd>{formatUtc(source.retrieved_at_utc)}</dd></div>\r\n' +
+    "        <div><dt>Transform</dt><dd>{dataset.transform_version || 'Chưa xác định'}</dd></div>\r\n" +
+    "        <div><dt>Instrument spec</dt><dd>{dataset.instrument_spec ? 'Có' : 'Chưa có'}</dd></div>\r\n" +
+    '      </dl>\r\n' +
+    '      {warnings.length > 0 && (\r\n' +
+    '        <div className="rd-warning-block" role="note" data-testid="dataset-warnings">\r\n' +
+    '          <strong>Cần biết trước khi chạy</strong>\r\n' +
+    '          <ul>{warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>\r\n' +
+    '        </div>\r\n' +
+    '      )}\r\n' +
+    '    </section>\r\n' +
+    '  )\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    'function importQualityTone(disposition) {\r\n' +
+    "  if (disposition === 'pass') return 'is-good'\r\n" +
+    "  if (disposition === 'missing_data') return 'is-muted'\r\n" +
+    "  return 'is-warn'\r\n" +
+    '}\r\n' +
+    '\r\n' +
+    'function LocalCsvQualityReport({ preview }) {\r\n' +
+    '  const quality = preview?.quality || {}\r\n' +
+    '  const range = preview?.available_range || {}\r\n' +
+    '  const gaps = Array.isArray(quality.gaps) ? quality.gaps : []\r\n' +
+    "  const disposition = quality.disposition || 'unknown'\r\n" +
+    "  const label = disposition === 'pass' ? 'Đạt kiểm tra cơ bản' : disposition === 'review' ? 'Cần review trước khi research' : disposition === 'missing_data' ? 'Không có dữ liệu' : 'Chưa xác định'\r\n" +
+    '  return (\r\n' +
+    '    <section className="rd-import-report" aria-label="Báo cáo chất lượng CSV" data-testid="data-desk-quality-report">\r\n' +
+    '      <div className="rd-import-report-head">\r\n' +
+    '        <div><h3>Chất lượng CSV</h3></div>\r\n' +
+    '        <span className={`rd-badge ${importQualityTone(disposition)}`}>{label}</span>\r\n' +
+    '      </div>\r\n' +
+    '      <dl className="rd-import-facts">\r\n' +
+    '        <div><dt>Rows</dt><dd>{formatNumber(preview?.row_count, 0)}</dd></div>\r\n' +
+    '        <div><dt>Unique timestamps</dt><dd>{formatNumber(preview?.unique_row_count, 0)}</dd></div>\r\n' +
+    '        <div><dt>Range UTC</dt><dd>{formatUtc(range.from_utc)} → {formatUtc(range.to_utc)}</dd></div>\r\n' +
+    '        <div><dt>Duplicates</dt><dd>{formatNumber(quality.duplicates, 0)}</dd></div>\r\n' +
+    '        <div><dt>Out of order</dt><dd>{formatNumber(quality.out_of_order, 0)}</dd></div>\r\n' +
+    '        <div><dt>Gaps / overlap</dt><dd>{formatNumber(gaps.length, 0)} / {formatNumber(quality.overlapping_intervals, 0)}</dd></div>\r\n' +
+    '      </dl>\r\n' +
+    '      <div className="rd-import-hashes">\r\n' +
+    "        <div><span>Dataset ID</span><code>{preview?.dataset_id || 'Chưa có'}</code></div>\r\n" +
+    "        <div><span>Raw SHA-256</span><code>{preview?.raw_sha256 || 'Chưa có'}</code></div>\r\n" +
+    "        <div><span>Normalized SHA-256</span><code>{preview?.normalized_sha256 || 'Chưa có'}</code></div>\r\n" +
+    '      </div>\r\n' +
+    "      {disposition !== 'pass' && (\r\n" +
+    '        <p className="rd-import-inline-warning" role="note">\r\n' +
+    '          Dataset có thể được lưu để điều tra, nhưng Research sẽ giữ trạng thái blocked/review cho tới khi quality được xử lý.\r\n' +
+    '        </p>\r\n' +
+    '      )}\r\n' +
+    '    </section>\r\n' +
+    '  )\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    'function DataLibraryDialog({ title, busy = false, onClose, compact = false, drawer = false, blockingStatus, children }) {\r\n' +
+    '  const { t } = useTestingLocale()\r\n' +
+    '  const id = useId(), dialog = useRef(null), opener = useRef(document.activeElement)\r\n' +
+    '  useEffect(() => {\r\n' +
+    '    const element = dialog.current\r\n' +
+    '    element.showModal()\r\n' +
+    "    element.querySelector('input')?.focus()\r\n" +
+    '    return () => {\r\n' +
+    '      element.close()\r\n' +
+    '      if (opener.current?.isConnected) opener.current.focus({ preventScroll:true })\r\n' +
+    '    }\r\n' +
+    '  }, [])\r\n' +
+    '  useEffect(() => {\r\n' +
+    '    if (drawer && busy) dialog.current?.focus()\r\n' +
+    "    else if (drawer && document.activeElement === dialog.current) dialog.current?.querySelector('button:not(:disabled)')?.focus()\r\n" +
+    '  },[drawer,busy])\r\n' +
+    '  const close = () => { if (!busy) onClose() }\r\n' +
+    "  return <dialog ref={dialog} tabIndex={drawer ? -1 : undefined} className={drawer ? 'fxs-settings-drawer data-library-catalog-drawer' : `data-library-dialog${compact ? ' is-compact' : ''}`} aria-labelledby={id} aria-busy={busy} onCancel={event => { event.preventDefault(); close() }} onKeyDown={event => {\r\n" +
+    "    if (!drawer || event.key !== 'Tab') return\r\n" +
+    "    const elements = [...event.currentTarget.querySelectorAll('button, input, [href], [tabindex]')].filter(element => !element.disabled && !element.closest('[inert]') && element.tabIndex >= 0 && element.getClientRects().length)\r\n" +
+    '    const first = elements[0], last = elements[elements.length - 1]\r\n' +
+    '    if (!first || (event.shiftKey && document.activeElement === first) || (!event.shiftKey && document.activeElement === last)) { event.preventDefault(); (event.shiftKey ? last : first)?.focus() }\r\n' +
+    '  }} onClick={event => {\r\n' +
+    '    if (event.target !== dialog.current) return\r\n' +
+    '    const bounds = dialog.current.getBoundingClientRect()\r\n' +
+    '    if (event.clientX < bounds.left || event.clientX > bou'... 50213 more characters
+  
+      at TestContext.<anonymous> (file:///D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/web/tests/retry-boundaries.test.mjs:12:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.start (node:internal/test_runner/test:1242:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'import { previewReadRecovery } from \'./demoMode.js\'\r\nimport { useNotifications } from \'./Notifications.jsx\'\r\nimport useReadRefresh from \'./useReadRefresh.js\'\r\nimport TestingReadState from \'./TestingReadState.jsx\'\r\nimport { TestingEmptyState, TestingPageSkeleton, TestingResourceStatus } from \'./TestingPageState.jsx\'\r\nimport ProjectDateInput from \'./ProjectDateInput.jsx\'\r\nimport { displayDate } from \'./dateFormat.js\'\r\nimport { displayTimeframe, formatDataSize as formatDatasetSize } from \'./dataDisplay.js\'\r\nimport React, { useEffect, useId, useMemo, useRef, useState } from \'react\'\r\nimport {\r\n  datasetRange,\r\n  formatNumber,\r\n  formatUtc,\r\n  holdoutLabel,\r\n  qualityLabel,\r\n  datasetWarnings,\r\n} from \'./researchDataApi.js\'\r\nimport { fetchOfflineLibrary, refreshInstrumentCatalog, importLocalCsv, previewLocalCsv, fetchDownloads, startDownload, updateDownload, deleteLocalDataset, repairLocalDataset, mergeDownloadEvent } from \'./dataDeskApi.js\'\r\nimport { subscribeWorkspaceEvents } from \'./workspaceEvents.js\'\r\nimport \'./research-data.css\'\r\nimport { useTestingLocale } from \'./testingLocale.jsx\'\r\nimport { buildWorkspaceHref } from \'./workspaceContext.js\'\r\nimport FxSelect from \'./FxSelect.jsx\'\r\nimport TestingIcon from \'./TestingIcon.jsx\'\r\nimport DataLibraryActions from \'./DataLibraryActions.jsx\'\r\nimport DataLibraryProgress from \'./DataLibraryProgress.jsx\'\r\nimport { sampleDownloadMetrics, downloadRetrySeconds } from \'./dataLibraryDownloadMetrics.js\'\r\nimport PaginationFooter from \'./PaginationFooter.jsx\'\r\nimport { CATEGORIES, libraryDataType, categoryOf, categoryLabel, filterLibrary, libraryRows, sourceOf, downloadEngineOf, canDownloadAsset, defaultDownloadDates } from \'./dataLibraryModel.js\'\r\nimport \'./data-library.css\'\r\nimport \'./session-settings.css\'\r\n\r\nconst CSV_LIMIT_BYTES = 10 * 1024 * 1024\r\n\r\nconst DEFAULT_IMPORT_FORM = {\r\n  sourceId: \'local-csv-upload\',\r\n  provider: \'local-csv\',\r\n  licenseUse: \'user-supplied-local\',\r\n  instrumentId: \'EURUSDm\',\r\n  assetClass: \'fx\',\r\n  baseCcy: \'EUR\',\r\n  quoteCcy: \'USD\',\r\n  accountCcy: \'USD\',\r\n  tickSize: \'0.00001\',\r\n  pipSize: \'0.0001\',\r\n  contractSize: \'100000\',\r\n  quantityMin: \'0.01\',\r\n  quantityStep: \'0.01\',\r\n  effectiveFromUtc: \'1970-01-01T00:00:00Z\',\r\n  timeframeSeconds: \'3600\',\r\n}\r\n\r\nfunction QualityBadge({ dataset }) {\r\n  const { t } = useTestingLocale()\r\n  const disposition = dataset?.quality?.disposition\r\n  const quality = disposition === \'pass\' ? \'Đạt kiểm tra cơ bản\' : disposition === \'review\' ? \'Cần kiểm tra chất lượng\' : qualityLabel(dataset)\r\n  const tone = disposition === \'pass\' || quality === \'Đã xác minh\' ? \'is-good\' : quality === \'Fixture / QA only\' ? \'is-muted\' : \'is-warn\'\r\n  return <span className={`rd-badge ${tone}`}>{t(quality)}</span>\r\n}\r\n\r\nfunction DatasetDetails({ dataset, workspace, query }) {\r\n  const { t, fmt, locale } = useTestingLocale()\r\n  if (!dataset) {\r\n    return (\r\n      <div className="rd-empty-callout" data-testid="data-desk-empty-selection">\r\n        Chọn một dataset để xem provenance, range và các cảnh báo trước khi mở Research.\r\n      </div>\r\n    )\r\n  }\r\n  const range = datasetRange(dataset)\r\n  const warnings = datasetWarnings(dataset)\r\n  const source = dataset.source || {}\r\n  return (\r\n    <section className="rd-detail" aria-label="Chi tiết dataset" data-testid="dataset-details">\r\n      <div className="rd-panel-head">\r\n        <div>\r\n          <h2>Provenance và QA</h2>\r\n        </div>\r\n        <a className="rd-context-link" href={buildWorkspaceHref(\'research\', workspace, query, { dataset: dataset.dataset_id, session:null, cursor:null, cutoff:null })}>{t(\'Mở trong Research\')} →</a>\r\n      </div>\r\n      <dl className="rd-detail-grid">\r\n        <div><dt>Dataset</dt><dd><strong>{dataset.dataset_id}</strong></dd></div>\r\n        <div><dt>{t(\'Nguồn dữ liệu\')}</dt><dd>{sourceOf(dataset)}</dd></div>\r\n        {downloadEngineOf(dataset) === \'QuantDataManager\' && <div><dt>{t(\'Công cụ tải\')}</dt><dd>QuantDataManager (QDM) · CLI</dd></div>}\r\n        <div><dt>Instrument / TF</dt><dd>{dataset.instrument_id || \'N/A\'} · {displayTimeframe(dataset, \'N/A\')}</dd></div>\r\n        <div><dt>{t(\'Số nến\')}</dt><dd>{fmt(dataset.row_count, \'\', 0)}</dd></div>\r\n        <div><dt>Range UTC</dt><dd>{t(formatUtc(range.start, locale))} → {t(formatUtc(range.end, locale))}</dd></div>\r\n        <div><dt>License</dt><dd>{source.license_use || \'Chưa xác minh\'}</dd></div>\r\n        <div><dt>Quality</dt><dd><QualityBadge dataset={dataset} /></dd></div>\r\n        {Array.isArray(dataset.quality?.gaps) && <div><dt>{t(\'Khoảng trống dữ liệu\')}</dt><dd>{fmt(dataset.quality.gap_count ?? dataset.quality.gaps.length,\'\',0)}</dd></div>}\r\n        <div><dt>{t(\'Dung lượng\')}</dt><dd>{formatDatasetSize(dataset.size_bytes, fmt)}</dd></div>\r\n        {dataset.quality?.coverage && <div><dt>{t(\'Nến chưa có ở đầu/cuối khoảng chọn\')}</dt><dd>{fmt(dataset.quality.coverage.leading_missing_intervals + dataset.quality.coverage.trailing_missing_intervals,\'\',0)}</dd></div>}\r\n        {dataset.quality?.duplicates != null && <div><dt>{t(\'Nến trùng\')}</dt><dd>{fmt(dataset.quality.duplicates,\'\',0)}</dd></div>}\r\n        <div><dt>Holdout</dt><dd><span className={`rd-badge ${dataset.holdout_access ? \'is-good\' : \'is-warn\'}`}>{holdoutLabel(dataset)}</span></dd></div>\r\n        <div><dt>Artifact hash</dt><dd><code>{dataset.artifact_sha256 || \'Chưa có hash\'}</code></dd></div>\r\n        <div><dt>Retrieved</dt><dd>{formatUtc(source.retrieved_at_utc)}</dd></div>\r\n        <div><dt>Transform</dt><dd>{dataset.transform_version || \'Chưa xác định\'}</dd></div>\r\n        <div><dt>Instrument spec</dt><dd>{dataset.instrument_spec ? \'Có\' : \'Chưa có\'}</dd></div>\r\n      </dl>\r\n      {warnings.length > 0 && (\r\n        <div className="rd-warning-block" role="note" data-testid="dataset-warnings">\r\n          <strong>Cần biết trước khi chạy</strong>\r\n          <ul>{warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>\r\n        </div>\r\n      )}\r\n    </section>\r\n  )\r\n}\r\n\r\nfunction importQualityTone(disposition) {\r\n  if (disposition === \'pass\') return \'is-good\'\r\n  if (disposition === \'missing_data\') return \'is-muted\'\r\n  return \'is-warn\'\r\n}\r\n\r\nfunction LocalCsvQualityReport({ preview }) {\r\n  const quality = preview?.quality || {}\r\n  const range = preview?.available_range || {}\r\n  const gaps = Array.isArray(quality.gaps) ? quality.gaps : []\r\n  const disposition = quality.disposition || \'unknown\'\r\n  const label = disposition === \'pass\' ? \'Đạt kiểm tra cơ bản\' : disposition === \'review\' ? \'Cần review trước khi research\' : disposition === \'missing_data\' ? \'Không có dữ liệu\' : \'Chưa xác định\'\r\n  return (\r\n    <section className="rd-import-report" aria-label="Báo cáo chất lượng CSV" data-testid="data-desk-quality-report">\r\n      <div className="rd-import-report-head">\r\n        <div><h3>Chất lượng CSV</h3></div>\r\n        <span className={`rd-badge ${importQualityTone(disposition)}`}>{label}</span>\r\n      </div>\r\n      <dl className="rd-import-facts">\r\n        <div><dt>Rows</dt><dd>{formatNumber(preview?.row_count, 0)}</dd></div>\r\n        <div><dt>Unique timestamps</dt><dd>{formatNumber(preview?.unique_row_count, 0)}</dd></div>\r\n        <div><dt>Range UTC</dt><dd>{formatUtc(range.from_utc)} → {formatUtc(range.to_utc)}</dd></div>\r\n        <div><dt>Duplicates</dt><dd>{formatNumber(quality.duplicates, 0)}</dd></div>\r\n        <div><dt>Out of order</dt><dd>{formatNumber(quality.out_of_order, 0)}</dd></div>\r\n        <div><dt>Gaps / overlap</dt><dd>{formatNumber(gaps.length, 0)} / {formatNumber(quality.overlapping_intervals, 0)}</dd></div>\r\n      </dl>\r\n      <div className="rd-import-hashes">\r\n        <div><span>Dataset ID</span><code>{preview?.dataset_id || \'Chưa có\'}</code></div>\r\n        <div><span>Raw SHA-256</span><code>{preview?.raw_sha256 || \'Chưa có\'}</code></div>\r\n        <div><span>Normalized SHA-256</span><code>{preview?.normalized_sha256 || \'Chưa có\'}</code></div>\r\n      </div>\r\n      {disposition !== \'pass\' && (\r\n        <p className="rd-import-inline-warning" role="note">\r\n          Dataset có thể được lưu để điều tra, nhưng Research sẽ giữ trạng thái blocked/review cho tới khi quality được xử lý.\r\n        </p>\r\n      )}\r\n    </section>\r\n  )\r\n}\r\n\r\nfunction DataLibraryDialog({ title, busy = false, onClose, compact = false, drawer = false, blockingStatus, children }) {\r\n  const { t } = useTestingLocale()\r\n  const id = useId(), dialog = useRef(null), opener = useRef(document.activeElement)\r\n  useEffect(() => {\r\n    const element = dialog.current\r\n    element.showModal()\r\n    element.querySelector(\'input\')?.focus()\r\n    return () => {\r\n      element.close()\r\n      if (opener.current?.isConnected) opener.current.focus({ preventScroll:true })\r\n    }\r\n  }, [])\r\n  useEffect(() => {\r\n    if (drawer && busy) dialog.current?.focus()\r\n    else if (drawer && document.activeElement === dialog.current) dialog.current?.querySelector(\'button:not(:disabled)\')?.focus()\r\n  },[drawer,busy])\r\n  const close = () => { if (!busy) onClose() }\r\n  return <dialog ref={dialog} tabIndex={drawer ? -1 : undefined} className={drawer ? \'fxs-settings-drawer data-library-catalog-drawer\' : `data-library-dialog${compact ? \' is-compact\' : \'\'}`} aria-labelledby={id} aria-busy={busy} onCancel={event => { event.preventDefault(); close() }} onKeyDown={event => {\r\n    if (!drawer || event.key !== \'Tab\') return\r\n    const elements = [...event.currentTarget.querySelectorAll(\'button, input, [href], [tabindex]\')].filter(element => !element.disabled && !element.closest(\'[inert]\') && element.tabIndex >= 0 && element.getClientRects().length)\r\n    const first = elements[0], last = elements[elements.length - 1]\r\n    if (!first || (event.shiftKey && document.activeElement === first) || (!event.shiftKey && document.activeElement === last)) { event.preventDefault(); (event.shiftKey ? last : first)?.focus() }\r\n  }} onClick={event => {\r\n    if (event.target !== dialog.current) return\r\n    const bounds = dialog.current.getBoundingClientRect()\r\n    if (event.clientX < bounds.left || event.clientX > bou'... 50213 more characters,
+    expected: /MAX_GET_RETRIES\s*=\s*3/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at tests\workspaceEvents.test.mjs:112:1
+✖ oversized partial frames fail boundedly and heartbeat timeouts recover (79.9443ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file:///D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/web/tests/workspaceEvents.test.mjs:124:12)
+      at runNextTicks (node:internal/process/task_queues:65:5)
+      at process.processTimers (node:internal/timers:568:9)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

@@ -1,0 +1,8 @@
+{
+  "scope": "Exact original model functions versus extracted candidate; financial fixture equality, report kinds, null and immutable-input semantics",
+  "revision": "22c91a0a02777396b3f8ccf96239dba2a4ee270f",
+  "modelCases": 27,
+  "projectionCases": 3,
+  "filterCases": 3,
+  "status": "PASS"
+}

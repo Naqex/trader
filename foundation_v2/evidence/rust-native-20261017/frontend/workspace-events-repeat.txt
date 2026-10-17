@@ -1,0 +1,15 @@
+✔ one authorized stream per workspace, scoped snapshots and teardown (76.9062ms)
+✔ disconnected stream reconnects once even when another consumer subscribes during backoff (95.0846ms)
+✔ hidden tabs pause, visible tabs reconcile a new snapshot and remove visibility listeners on teardown (156.354ms)
+✔ 401/403 are terminal: no infinite reconnect, late subscribers see denied state (136.4329ms)
+✔ oversized partial frames fail boundedly and heartbeat timeouts recover (97.727ms)
+✔ cancel during retry prevents resurrection and retry delay spreads tab reconnects (45.3932ms)
+✔ aborted subscriber never opens a stream (0.487ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1124.2421

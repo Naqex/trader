@@ -5,18 +5,19 @@ import ProjectDateInput from './ProjectDateInput.jsx'
 import TestingReadState, { TestingSkeleton } from './TestingReadState.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import { TestingWelcome, TestingEmptyState, TestingPageSkeleton, TestingResourceStatus } from './TestingPageState.jsx'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { buildWorkspaceHref } from './workspaceContext.js'
 import { deleteSession, readLastSession, sessionMutationError, duplicateSession, rememberSession, sessionNavigationHref, updateSessionMetadata } from './sessionCatalog.js'
 import { DASHBOARD_PAGE_SIZE, dashboardFilters, dashboardRecentSessions, dashboardPeriod, dashboardPeriodRange, dashboardNumber, readDashboardAnalytics, readDashboardReplayContext, readDashboardSessionList, dashboardSummaryDetail, updateDashboardQuery } from './dashboardModel.js'
-import { analyticsViewResult, buildAnalyticsModel } from './AnalyticsWorkspace.jsx'
+import { analyticsViewResult, buildAnalyticsModel } from './analyticsViewModel.js'
 import DashboardPerformance from './DashboardPerformance.jsx'
 import DashboardSessionCard from './DashboardSessionCard.jsx'
 import { SessionActionDialog } from './SessionActions.jsx'
 import SessionSettingsDrawer from './SessionSettingsDrawer.jsx'
-import QuickSessionDialog from './QuickSessionDialog.jsx'
 import FxSelect, { FilterIcon } from './FxSelect.jsx'
-import PropAnalytics from './PropAnalytics.jsx'
+
+const QuickSessionDialog = lazy(() => import('./QuickSessionDialog.jsx'))
+const PropAnalytics = lazy(() => import('./PropAnalytics.jsx'))
 
 function ActionIcon({ kind }) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{kind === 'backtest' ? <path d="M12 4v16M4 12h16" /> : kind === 'prop' ? <><path d="M8 3h8v7a4 4 0 0 1-8 0ZM8 5H4v3a4 4 0 0 0 4 4M16 5h4v3a4 4 0 0 1-4 4M12 14v6M8 21h8" /></> : <><path d="m2 9 10-5 10 5-10 5ZM6 11v6c4 3 8 3 12 0v-6M22 9v7" /></>}</svg>
@@ -178,13 +179,13 @@ export default function DashboardSessions({ workspace, query, preview = null }) 
   const detailNotice = incomparableProfit ? 'Tiền tệ khác nhau hoặc chưa rõ; giữ thứ tự tạo phiên để tránh so sánh lợi nhuận sai.'
     : (filtersOpen || sort === 'profit') && detailFailed ? (preview ? 'Một số phiên chưa đọc được kết quả; bộ lọc Strategy và lợi nhuận chưa đầy đủ.' : 'Một số phiên chưa đọc được kết quả; lợi nhuận chưa đầy đủ.')
     : sort === 'profit' && detailsLoading ? 'Đang đọc lợi nhuận phiên…' : undefined
-  const propReport = preview ? preview.propReport : <PropAnalytics workspace={workspace} query={query} embedded />
+  const propReport = preview ? preview.propReport : <Suspense fallback={<TestingSkeleton label="Đang tải báo cáo Prop firm…" />}><PropAnalytics workspace={workspace} query={query} embedded /></Suspense>
 
   if (catalog.denied) return <TestingEmptyState kind="denied" viewport />
   if (!catalog.loaded && catalog.status === 'loading') return <TestingPageSkeleton view="overview" />
   if (source === 'backtest' && catalog.loaded && (preview ? catalog.items.length === 0 : catalog.total === 0)) return <>
     <TestingWelcome preview={Boolean(preview)} onBacktest={() => setCreating('backtest')} propHref={buildWorkspaceHref('testing', workspace, query)} />
-    {creating && !preview && <QuickSessionDialog workspace={workspace} query={query} initialMode={creating} sessions={[]} onClose={() => setCreating(null)} />}
+    {creating && !preview && <Suspense fallback={null}><QuickSessionDialog workspace={workspace} query={query} initialMode={creating} sessions={[]} onClose={() => setCreating(null)} /></Suspense>}
   </>
 
   return <>
@@ -207,6 +208,6 @@ export default function DashboardSessions({ workspace, query, preview = null }) 
     {source !== 'prop' ? <DashboardPerformance workspace={workspace} filters={filters} reload={reload} previewPayload={previewPayload} previewState={preview?.state} controls={performanceControls} sourceHeading={source === 'all' ? t("Backtesting") : null} dateControls={<>{filters.session && <div className="fx-dashboard-selected-session"><span>{catalog.items.find(item => item.record_id === filters.session)?.name || t("Phiên đang chọn")}</span><button type="button" aria-label={t("Bỏ chọn phiên Performance")} onClick={() => setPerformanceFilters({ ...filters, session: '' })}>×</button></div>}{period === 'custom' && <div className="fx-dashboard-date-controls"><label><span>{t("Từ ngày (UTC)")}</span><ProjectDateInput type="date" value={filters.from} onChange={event => setPerformanceFilters({ ...filters, from: event.target.value })} /></label><label><span>{t("Đến ngày (UTC)")}</span><ProjectDateInput type="date" value={filters.to} onChange={event => setPerformanceFilters({ ...filters, to: event.target.value })} /></label></div>}</>} /> : <section className="fx-dashboard-results"><div className="fx-dashboard-section-head"><h2>{t("Performance")}</h2><div className="fx-dashboard-performance-filters">{performanceControls}</div></div>{propReport}</section>}
     {source === 'all' && <section className="fx-dashboard-prop-section" aria-label={t("Prop Firm Performance")}><h3>{t("Prop Firm")}</h3>{propReport}</section>}
     {selectedDialog && (dialog.mode === 'rename' ? <SessionSettingsDrawer key={dialog.id} item={selectedDialog} dataset={datasets.find(entry => entry.dataset_id === selectedDialog.dataset_id)} payload={details[selectedDialog.record_id]?.payload} model={details[selectedDialog.record_id]?.model} replayRecord={details[selectedDialog.record_id]?.replayRecord} workspace={workspace} preview={Boolean(preview)} pending={pending} blocked={needsRefresh || catalogBlocked} error={mutationError} onClose={() => setDialog(null)} onSubmit={draft => mutate('rename', selectedDialog, draft)} /> : <SessionActionDialog key={dialog.mode + ':' + dialog.id} mode={dialog.mode} item={selectedDialog} preview={Boolean(preview)} pending={pending} blocked={needsRefresh || catalogBlocked} error={mutationError} onClose={() => setDialog(null)} onSubmit={mutate} />)}
-    {creating && !preview && <QuickSessionDialog workspace={workspace} query={query} initialMode={creating} sessions={catalog.items} onClose={() => setCreating(null)} />}
+    {creating && !preview && <Suspense fallback={null}><QuickSessionDialog workspace={workspace} query={query} initialMode={creating} sessions={catalog.items} onClose={() => setCreating(null)} /></Suspense>}
   </>
 }

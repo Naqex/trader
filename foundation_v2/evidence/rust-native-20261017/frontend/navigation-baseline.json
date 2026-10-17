@@ -1,0 +1,570 @@
+{
+  "scope": "Production build; cold isolated Chromium contexts, loopback static assets, frozen local read-only API snapshots, no artificial latency. Timing includes Playwright ready observation, not field INP. Baseline/candidate use identical payload fixtures.",
+  "runtime": {
+    "node": "v24.19.0"
+  },
+  "samples": [
+    {
+      "sample": 0,
+      "cold": {
+        "readyMs": 644.8999999994412,
+        "scripts": [
+          {
+            "path": "/assets/index-BLKZSPGu.js",
+            "bytes": 548336
+          },
+          {
+            "path": "/assets/DashboardSessions-C_B4ZjoO.js",
+            "bytes": 56395
+          },
+          {
+            "path": "/assets/useReadRefresh-BYiKqZWx.js",
+            "bytes": 4164
+          },
+          {
+            "path": "/assets/ProjectDateInput-BP3jPr2R.js",
+            "bytes": 10359
+          },
+          {
+            "path": "/assets/sessionCatalog-BgyrH1gU.js",
+            "bytes": 4187
+          },
+          {
+            "path": "/assets/SessionSettingsDrawer-JoYjtXLw.js",
+            "bytes": 17384
+          },
+          {
+            "path": "/assets/dataDisplay-uCbegaEq.js",
+            "bytes": 586
+          },
+          {
+            "path": "/assets/AnalyticsWorkspace-SLH1misa.js",
+            "bytes": 35766
+          },
+          {
+            "path": "/assets/FxAnalytics-B5uVSUri.js",
+            "bytes": 48727
+          },
+          {
+            "path": "/assets/AnalyticsFilterControls-IEMpUHSB.js",
+            "bytes": 5104
+          },
+          {
+            "path": "/assets/PaginationFooter-D5jQKfnm.js",
+            "bytes": 2092
+          },
+          {
+            "path": "/assets/useContentReadyMetric-kcHeJcOv.js",
+            "bytes": 508
+          },
+          {
+            "path": "/assets/quick-session-BCtFHkM_.js",
+            "bytes": 14776
+          },
+          {
+            "path": "/assets/propSessionCreation-CXgmZpKk.js",
+            "bytes": 7492
+          },
+          {
+            "path": "/assets/playbookApi--iVI7yT_.js",
+            "bytes": 1620
+          },
+          {
+            "path": "/assets/dataDeskApi-Crzp8bi5.js",
+            "bytes": 5783
+          },
+          {
+            "path": "/assets/PropAnalytics-BUmcq-oC.js",
+            "bytes": 6829
+          }
+        ],
+        "longTasks": [
+          67
+        ]
+      },
+      "dialogOpened": true
+    },
+    {
+      "sample": 1,
+      "cold": {
+        "readyMs": 492.1000000005588,
+        "scripts": [
+          {
+            "path": "/assets/index-BLKZSPGu.js",
+            "bytes": 548336
+          },
+          {
+            "path": "/assets/DashboardSessions-C_B4ZjoO.js",
+            "bytes": 56395
+          },
+          {
+            "path": "/assets/useReadRefresh-BYiKqZWx.js",
+            "bytes": 4164
+          },
+          {
+            "path": "/assets/ProjectDateInput-BP3jPr2R.js",
+            "bytes": 10359
+          },
+          {
+            "path": "/assets/sessionCatalog-BgyrH1gU.js",
+            "bytes": 4187
+          },
+          {
+            "path": "/assets/SessionSettingsDrawer-JoYjtXLw.js",
+            "bytes": 17384
+          },
+          {
+            "path": "/assets/dataDisplay-uCbegaEq.js",
+            "bytes": 586
+          },
+          {
+            "path": "/assets/AnalyticsWorkspace-SLH1misa.js",
+            "bytes": 35766
+          },
+          {
+            "path": "/assets/FxAnalytics-B5uVSUri.js",
+            "bytes": 48727
+          },
+          {
+            "path": "/assets/AnalyticsFilterControls-IEMpUHSB.js",
+            "bytes": 5104
+          },
+          {
+            "path": "/assets/PaginationFooter-D5jQKfnm.js",
+            "bytes": 2092
+          },
+          {
+            "path": "/assets/useContentReadyMetric-kcHeJcOv.js",
+            "bytes": 508
+          },
+          {
+            "path": "/assets/quick-session-BCtFHkM_.js",
+            "bytes": 14776
+          },
+          {
+            "path": "/assets/propSessionCreation-CXgmZpKk.js",
+            "bytes": 7492
+          },
+          {
+            "path": "/assets/playbookApi--iVI7yT_.js",
+            "bytes": 1620
+          },
+          {
+            "path": "/assets/dataDeskApi-Crzp8bi5.js",
+            "bytes": 5783
+          },
+          {
+            "path": "/assets/PropAnalytics-BUmcq-oC.js",
+            "bytes": 6829
+          }
+        ],
+        "longTasks": [
+          93
+        ]
+      },
+      "dialogOpened": true
+    },
+    {
+      "sample": 2,
+      "cold": {
+        "readyMs": 476.40000000037253,
+        "scripts": [
+          {
+            "path": "/assets/index-BLKZSPGu.js",
+            "bytes": 548336
+          },
+          {
+            "path": "/assets/DashboardSessions-C_B4ZjoO.js",
+            "bytes": 56395
+          },
+          {
+            "path": "/assets/useReadRefresh-BYiKqZWx.js",
+            "bytes": 4164
+          },
+          {
+            "path": "/assets/ProjectDateInput-BP3jPr2R.js",
+            "bytes": 10359
+          },
+          {
+            "path": "/assets/sessionCatalog-BgyrH1gU.js",
+            "bytes": 4187
+          },
+          {
+            "path": "/assets/SessionSettingsDrawer-JoYjtXLw.js",
+            "bytes": 17384
+          },
+          {
+            "path": "/assets/dataDisplay-uCbegaEq.js",
+            "bytes": 586
+          },
+          {
+            "path": "/assets/AnalyticsWorkspace-SLH1misa.js",
+            "bytes": 35766
+          },
+          {
+            "path": "/assets/FxAnalytics-B5uVSUri.js",
+            "bytes": 48727
+          },
+          {
+            "path": "/assets/AnalyticsFilterControls-IEMpUHSB.js",
+            "bytes": 5104
+          },
+          {
+            "path": "/assets/PaginationFooter-D5jQKfnm.js",
+            "bytes": 2092
+          },
+          {
+            "path": "/assets/useContentReadyMetric-kcHeJcOv.js",
+            "bytes": 508
+          },
+          {
+            "path": "/assets/quick-session-BCtFHkM_.js",
+            "bytes": 14776
+          },
+          {
+            "path": "/assets/propSessionCreation-CXgmZpKk.js",
+            "bytes": 7492
+          },
+          {
+            "path": "/assets/dataDeskApi-Crzp8bi5.js",
+            "bytes": 5783
+          },
+          {
+            "path": "/assets/playbookApi--iVI7yT_.js",
+            "bytes": 1620
+          },
+          {
+            "path": "/assets/PropAnalytics-BUmcq-oC.js",
+            "bytes": 6829
+          }
+        ],
+        "longTasks": [
+          69
+        ]
+      },
+      "dialogOpened": true
+    },
+    {
+      "sample": 3,
+      "cold": {
+        "readyMs": 453.79999999981374,
+        "scripts": [
+          {
+            "path": "/assets/index-BLKZSPGu.js",
+            "bytes": 548336
+          },
+          {
+            "path": "/assets/DashboardSessions-C_B4ZjoO.js",
+            "bytes": 56395
+          },
+          {
+            "path": "/assets/useReadRefresh-BYiKqZWx.js",
+            "bytes": 4164
+          },
+          {
+            "path": "/assets/ProjectDateInput-BP3jPr2R.js",
+            "bytes": 10359
+          },
+          {
+            "path": "/assets/sessionCatalog-BgyrH1gU.js",
+            "bytes": 4187
+          },
+          {
+            "path": "/assets/SessionSettingsDrawer-JoYjtXLw.js",
+            "bytes": 17384
+          },
+          {
+            "path": "/assets/dataDisplay-uCbegaEq.js",
+            "bytes": 586
+          },
+          {
+            "path": "/assets/AnalyticsWorkspace-SLH1misa.js",
+            "bytes": 35766
+          },
+          {
+            "path": "/assets/FxAnalytics-B5uVSUri.js",
+            "bytes": 48727
+          },
+          {
+            "path": "/assets/AnalyticsFilterControls-IEMpUHSB.js",
+            "bytes": 5104
+          },
+          {
+            "path": "/assets/PaginationFooter-D5jQKfnm.js",
+            "bytes": 2092
+          },
+          {
+            "path": "/assets/useContentReadyMetric-kcHeJcOv.js",
+            "bytes": 508
+          },
+          {
+            "path": "/assets/quick-session-BCtFHkM_.js",
+            "bytes": 14776
+          },
+          {
+            "path": "/assets/propSessionCreation-CXgmZpKk.js",
+            "bytes": 7492
+          },
+          {
+            "path": "/assets/dataDeskApi-Crzp8bi5.js",
+            "bytes": 5783
+          },
+          {
+            "path": "/assets/playbookApi--iVI7yT_.js",
+            "bytes": 1620
+          },
+          {
+            "path": "/assets/PropAnalytics-BUmcq-oC.js",
+            "bytes": 6829
+          }
+        ],
+        "longTasks": [
+          71
+        ]
+      },
+      "dialogOpened": true
+    },
+    {
+      "sample": 4,
+      "cold": {
+        "readyMs": 510.79999999981374,
+        "scripts": [
+          {
+            "path": "/assets/index-BLKZSPGu.js",
+            "bytes": 548336
+          },
+          {
+            "path": "/assets/DashboardSessions-C_B4ZjoO.js",
+            "bytes": 56395
+          },
+          {
+            "path": "/assets/useReadRefresh-BYiKqZWx.js",
+            "bytes": 4164
+          },
+          {
+            "path": "/assets/ProjectDateInput-BP3jPr2R.js",
+            "bytes": 10359
+          },
+          {
+            "path": "/assets/sessionCatalog-BgyrH1gU.js",
+            "bytes": 4187
+          },
+          {
+            "path": "/assets/SessionSettingsDrawer-JoYjtXLw.js",
+            "bytes": 17384
+          },
+          {
+            "path": "/assets/dataDisplay-uCbegaEq.js",
+            "bytes": 586
+          },
+          {
+            "path": "/assets/AnalyticsWorkspace-SLH1misa.js",
+            "bytes": 35766
+          },
+          {
+            "path": "/assets/AnalyticsFilterControls-IEMpUHSB.js",
+            "bytes": 5104
+          },
+          {
+            "path": "/assets/FxAnalytics-B5uVSUri.js",
+            "bytes": 48727
+          },
+          {
+            "path": "/assets/PaginationFooter-D5jQKfnm.js",
+            "bytes": 2092
+          },
+          {
+            "path": "/assets/useContentReadyMetric-kcHeJcOv.js",
+            "bytes": 508
+          },
+          {
+            "path": "/assets/quick-session-BCtFHkM_.js",
+            "bytes": 14776
+          },
+          {
+            "path": "/assets/propSessionCreation-CXgmZpKk.js",
+            "bytes": 7492
+          },
+          {
+            "path": "/assets/dataDeskApi-Crzp8bi5.js",
+            "bytes": 5783
+          },
+          {
+            "path": "/assets/playbookApi--iVI7yT_.js",
+            "bytes": 1620
+          },
+          {
+            "path": "/assets/PropAnalytics-BUmcq-oC.js",
+            "bytes": 6829
+          }
+        ],
+        "longTasks": [
+          63
+        ]
+      },
+      "dialogOpened": true
+    },
+    {
+      "sample": 5,
+      "cold": {
+        "readyMs": 503.19999999925494,
+        "scripts": [
+          {
+            "path": "/assets/index-BLKZSPGu.js",
+            "bytes": 548336
+          },
+          {
+            "path": "/assets/DashboardSessions-C_B4ZjoO.js",
+            "bytes": 56395
+          },
+          {
+            "path": "/assets/useReadRefresh-BYiKqZWx.js",
+            "bytes": 4164
+          },
+          {
+            "path": "/assets/ProjectDateInput-BP3jPr2R.js",
+            "bytes": 10359
+          },
+          {
+            "path": "/assets/sessionCatalog-BgyrH1gU.js",
+            "bytes": 4187
+          },
+          {
+            "path": "/assets/SessionSettingsDrawer-JoYjtXLw.js",
+            "bytes": 17384
+          },
+          {
+            "path": "/assets/dataDisplay-uCbegaEq.js",
+            "bytes": 586
+          },
+          {
+            "path": "/assets/AnalyticsWorkspace-SLH1misa.js",
+            "bytes": 35766
+          },
+          {
+            "path": "/assets/FxAnalytics-B5uVSUri.js",
+            "bytes": 48727
+          },
+          {
+            "path": "/assets/AnalyticsFilterControls-IEMpUHSB.js",
+            "bytes": 5104
+          },
+          {
+            "path": "/assets/PaginationFooter-D5jQKfnm.js",
+            "bytes": 2092
+          },
+          {
+            "path": "/assets/useContentReadyMetric-kcHeJcOv.js",
+            "bytes": 508
+          },
+          {
+            "path": "/assets/quick-session-BCtFHkM_.js",
+            "bytes": 14776
+          },
+          {
+            "path": "/assets/propSessionCreation-CXgmZpKk.js",
+            "bytes": 7492
+          },
+          {
+            "path": "/assets/dataDeskApi-Crzp8bi5.js",
+            "bytes": 5783
+          },
+          {
+            "path": "/assets/playbookApi--iVI7yT_.js",
+            "bytes": 1620
+          },
+          {
+            "path": "/assets/PropAnalytics-BUmcq-oC.js",
+            "bytes": 6829
+          }
+        ],
+        "longTasks": [
+          65
+        ]
+      },
+      "dialogOpened": true
+    },
+    {
+      "sample": 6,
+      "cold": {
+        "readyMs": 465.20000000018626,
+        "scripts": [
+          {
+            "path": "/assets/index-BLKZSPGu.js",
+            "bytes": 548336
+          },
+          {
+            "path": "/assets/DashboardSessions-C_B4ZjoO.js",
+            "bytes": 56395
+          },
+          {
+            "path": "/assets/useReadRefresh-BYiKqZWx.js",
+            "bytes": 4164
+          },
+          {
+            "path": "/assets/ProjectDateInput-BP3jPr2R.js",
+            "bytes": 10359
+          },
+          {
+            "path": "/assets/sessionCatalog-BgyrH1gU.js",
+            "bytes": 4187
+          },
+          {
+            "path": "/assets/SessionSettingsDrawer-JoYjtXLw.js",
+            "bytes": 17384
+          },
+          {
+            "path": "/assets/dataDisplay-uCbegaEq.js",
+            "bytes": 586
+          },
+          {
+            "path": "/assets/AnalyticsWorkspace-SLH1misa.js",
+            "bytes": 35766
+          },
+          {
+            "path": "/assets/AnalyticsFilterControls-IEMpUHSB.js",
+            "bytes": 5104
+          },
+          {
+            "path": "/assets/FxAnalytics-B5uVSUri.js",
+            "bytes": 48727
+          },
+          {
+            "path": "/assets/PaginationFooter-D5jQKfnm.js",
+            "bytes": 2092
+          },
+          {
+            "path": "/assets/useContentReadyMetric-kcHeJcOv.js",
+            "bytes": 508
+          },
+          {
+            "path": "/assets/quick-session-BCtFHkM_.js",
+            "bytes": 14776
+          },
+          {
+            "path": "/assets/propSessionCreation-CXgmZpKk.js",
+            "bytes": 7492
+          },
+          {
+            "path": "/assets/dataDeskApi-Crzp8bi5.js",
+            "bytes": 5783
+          },
+          {
+            "path": "/assets/playbookApi--iVI7yT_.js",
+            "bytes": 1620
+          },
+          {
+            "path": "/assets/PropAnalytics-BUmcq-oC.js",
+            "bytes": 6829
+          }
+        ],
+        "longTasks": [
+          102
+        ]
+      },
+      "dialogOpened": true
+    }
+  ],
+  "errors": [],
+  "blocked": []
+}

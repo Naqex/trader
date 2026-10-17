@@ -6,6 +6,7 @@ import path from 'node:path'
 const root = path.resolve(process.cwd(), 'src')
 const journalSource = fs.readFileSync(path.join(root, 'JournalWorkspace.jsx'), 'utf8')
 const analyticsSource = fs.readFileSync(path.join(root, 'AnalyticsWorkspace.jsx'), 'utf8')
+const analyticsModelSource = fs.readFileSync(path.join(root, 'analyticsViewModel.js'), 'utf8')
 const cssSource = fs.readFileSync(path.join(root, 'journal-analytics.css'), 'utf8')
 
 test('journal UI stays linked to replay/trade context and uses revision endpoint', () => {
@@ -23,9 +24,9 @@ test('journal UI stays linked to replay/trade context and uses revision endpoint
 
 test('analytics UI preserves unknown values and exposes result provenance', () => {
   assert.match(analyticsSource, /resourceKind = jobId \? 'research\/jobs' : 'replay\/sessions'/)
-  assert.match(analyticsSource, /return 'N\/A'/)
-  assert.match(analyticsSource, /profit_factor_after_cost/)
-  assert.match(analyticsSource, /expectancy_net_per_trade/)
+  assert.match(analyticsModelSource, /return 'N\/A'/)
+  assert.match(analyticsModelSource, /profit_factor_after_cost/)
+  assert.match(analyticsModelSource, /expectancy_net_per_trade/)
   assert.match(analyticsSource, /FxTradeLedger/)
   assert.match(analyticsSource, /data-testid="analytics-workspace"/)
 })

@@ -1,0 +1,417 @@
+{
+  "scope": "Production build; cold isolated Chromium contexts, loopback static assets, frozen local read-only API snapshots, no artificial latency. Timing includes Playwright ready observation, not field INP. Baseline/candidate use identical payload fixtures.",
+  "runtime": {
+    "node": "v24.19.0"
+  },
+  "baseline": false,
+  "revision": "22c91a0a02777396b3f8ccf96239dba2a4ee270f",
+  "sourceHashes": {
+    "DashboardSessions.jsx": "41b20f0f7297e0b2f0520c4a80fbf1d657a3950cb1e6a9b8435c23bda763a7de",
+    "AnalyticsWorkspace.jsx": "eecef1d5a7e5bdc243237234babea6081117d1051361d2105cf4bf91baa28b56"
+  },
+  "samples": [
+    {
+      "sample": 0,
+      "cold": {
+        "readyMs": 545.5,
+        "scripts": [
+          {
+            "path": "/assets/index-CAymIb4g.js",
+            "bytes": 548474
+          },
+          {
+            "path": "/assets/DashboardSessions-DSTPmLgq.js",
+            "bytes": 33702
+          },
+          {
+            "path": "/assets/useReadRefresh-B9QHyjcy.js",
+            "bytes": 4164
+          },
+          {
+            "path": "/assets/ProjectDateInput-qFFupFx6.js",
+            "bytes": 10359
+          },
+          {
+            "path": "/assets/sessionCatalog-BUy5dZO7.js",
+            "bytes": 4187
+          },
+          {
+            "path": "/assets/SessionSettingsDrawer-BnBMhgrQ.js",
+            "bytes": 17389
+          },
+          {
+            "path": "/assets/analyticsViewModel-CtbVcBHX.js",
+            "bytes": 5983
+          },
+          {
+            "path": "/assets/sessionPerformanceModel-BCCWb4Fb.js",
+            "bytes": 1227
+          },
+          {
+            "path": "/assets/SessionActions-Bd_kjLNO.js",
+            "bytes": 14788
+          },
+          {
+            "path": "/assets/PaginationFooter-M5hPxf42.js",
+            "bytes": 2092
+          }
+        ],
+        "longTasks": []
+      },
+      "dialogOpened": true,
+      "dialogStyles": {
+        "background": "rgb(8, 8, 8)",
+        "color": "rgb(255, 255, 255)",
+        "border": "1px solid rgb(61, 68, 76)",
+        "width": 960,
+        "height": 850
+      }
+    },
+    {
+      "sample": 1,
+      "cold": {
+        "readyMs": 520.2999999998137,
+        "scripts": [
+          {
+            "path": "/assets/index-CAymIb4g.js",
+            "bytes": 548474
+          },
+          {
+            "path": "/assets/DashboardSessions-DSTPmLgq.js",
+            "bytes": 33702
+          },
+          {
+            "path": "/assets/useReadRefresh-B9QHyjcy.js",
+            "bytes": 4164
+          },
+          {
+            "path": "/assets/ProjectDateInput-qFFupFx6.js",
+            "bytes": 10359
+          },
+          {
+            "path": "/assets/sessionCatalog-BUy5dZO7.js",
+            "bytes": 4187
+          },
+          {
+            "path": "/assets/SessionSettingsDrawer-BnBMhgrQ.js",
+            "bytes": 17389
+          },
+          {
+            "path": "/assets/analyticsViewModel-CtbVcBHX.js",
+            "bytes": 5983
+          },
+          {
+            "path": "/assets/sessionPerformanceModel-BCCWb4Fb.js",
+            "bytes": 1227
+          },
+          {
+            "path": "/assets/SessionActions-Bd_kjLNO.js",
+            "bytes": 14788
+          },
+          {
+            "path": "/assets/PaginationFooter-M5hPxf42.js",
+            "bytes": 2092
+          }
+        ],
+        "longTasks": []
+      },
+      "dialogOpened": true,
+      "dialogStyles": {
+        "background": "rgb(8, 8, 8)",
+        "color": "rgb(255, 255, 255)",
+        "border": "1px solid rgb(61, 68, 76)",
+        "width": 960,
+        "height": 850
+      }
+    },
+    {
+      "sample": 2,
+      "cold": {
+        "readyMs": 495.29999999981374,
+        "scripts": [
+          {
+            "path": "/assets/index-CAymIb4g.js",
+            "bytes": 548474
+          },
+          {
+            "path": "/assets/DashboardSessions-DSTPmLgq.js",
+            "bytes": 33702
+          },
+          {
+            "path": "/assets/useReadRefresh-B9QHyjcy.js",
+            "bytes": 4164
+          },
+          {
+            "path": "/assets/ProjectDateInput-qFFupFx6.js",
+            "bytes": 10359
+          },
+          {
+            "path": "/assets/sessionCatalog-BUy5dZO7.js",
+            "bytes": 4187
+          },
+          {
+            "path": "/assets/SessionSettingsDrawer-BnBMhgrQ.js",
+            "bytes": 17389
+          },
+          {
+            "path": "/assets/analyticsViewModel-CtbVcBHX.js",
+            "bytes": 5983
+          },
+          {
+            "path": "/assets/sessionPerformanceModel-BCCWb4Fb.js",
+            "bytes": 1227
+          },
+          {
+            "path": "/assets/SessionActions-Bd_kjLNO.js",
+            "bytes": 14788
+          },
+          {
+            "path": "/assets/PaginationFooter-M5hPxf42.js",
+            "bytes": 2092
+          }
+        ],
+        "longTasks": []
+      },
+      "dialogOpened": true,
+      "dialogStyles": {
+        "background": "rgb(8, 8, 8)",
+        "color": "rgb(255, 255, 255)",
+        "border": "1px solid rgb(61, 68, 76)",
+        "width": 960,
+        "height": 850
+      }
+    },
+    {
+      "sample": 3,
+      "cold": {
+        "readyMs": 503.09999999962747,
+        "scripts": [
+          {
+            "path": "/assets/index-CAymIb4g.js",
+            "bytes": 548474
+          },
+          {
+            "path": "/assets/DashboardSessions-DSTPmLgq.js",
+            "bytes": 33702
+          },
+          {
+            "path": "/assets/useReadRefresh-B9QHyjcy.js",
+            "bytes": 4164
+          },
+          {
+            "path": "/assets/ProjectDateInput-qFFupFx6.js",
+            "bytes": 10359
+          },
+          {
+            "path": "/assets/sessionCatalog-BUy5dZO7.js",
+            "bytes": 4187
+          },
+          {
+            "path": "/assets/SessionSettingsDrawer-BnBMhgrQ.js",
+            "bytes": 17389
+          },
+          {
+            "path": "/assets/analyticsViewModel-CtbVcBHX.js",
+            "bytes": 5983
+          },
+          {
+            "path": "/assets/sessionPerformanceModel-BCCWb4Fb.js",
+            "bytes": 1227
+          },
+          {
+            "path": "/assets/SessionActions-Bd_kjLNO.js",
+            "bytes": 14788
+          },
+          {
+            "path": "/assets/PaginationFooter-M5hPxf42.js",
+            "bytes": 2092
+          }
+        ],
+        "longTasks": []
+      },
+      "dialogOpened": true,
+      "dialogStyles": {
+        "background": "rgb(8, 8, 8)",
+        "color": "rgb(255, 255, 255)",
+        "border": "1px solid rgb(61, 68, 76)",
+        "width": 960,
+        "height": 850
+      }
+    },
+    {
+      "sample": 4,
+      "cold": {
+        "readyMs": 588.8999999994412,
+        "scripts": [
+          {
+            "path": "/assets/index-CAymIb4g.js",
+            "bytes": 548474
+          },
+          {
+            "path": "/assets/DashboardSessions-DSTPmLgq.js",
+            "bytes": 33702
+          },
+          {
+            "path": "/assets/useReadRefresh-B9QHyjcy.js",
+            "bytes": 4164
+          },
+          {
+            "path": "/assets/ProjectDateInput-qFFupFx6.js",
+            "bytes": 10359
+          },
+          {
+            "path": "/assets/sessionCatalog-BUy5dZO7.js",
+            "bytes": 4187
+          },
+          {
+            "path": "/assets/SessionSettingsDrawer-BnBMhgrQ.js",
+            "bytes": 17389
+          },
+          {
+            "path": "/assets/analyticsViewModel-CtbVcBHX.js",
+            "bytes": 5983
+          },
+          {
+            "path": "/assets/sessionPerformanceModel-BCCWb4Fb.js",
+            "bytes": 1227
+          },
+          {
+            "path": "/assets/SessionActions-Bd_kjLNO.js",
+            "bytes": 14788
+          },
+          {
+            "path": "/assets/PaginationFooter-M5hPxf42.js",
+            "bytes": 2092
+          }
+        ],
+        "longTasks": []
+      },
+      "dialogOpened": true,
+      "dialogStyles": {
+        "background": "rgb(8, 8, 8)",
+        "color": "rgb(255, 255, 255)",
+        "border": "1px solid rgb(61, 68, 76)",
+        "width": 960,
+        "height": 850
+      }
+    },
+    {
+      "sample": 5,
+      "cold": {
+        "readyMs": 677.4000000003725,
+        "scripts": [
+          {
+            "path": "/assets/index-CAymIb4g.js",
+            "bytes": 548474
+          },
+          {
+            "path": "/assets/DashboardSessions-DSTPmLgq.js",
+            "bytes": 33702
+          },
+          {
+            "path": "/assets/useReadRefresh-B9QHyjcy.js",
+            "bytes": 4164
+          },
+          {
+            "path": "/assets/ProjectDateInput-qFFupFx6.js",
+            "bytes": 10359
+          },
+          {
+            "path": "/assets/sessionCatalog-BUy5dZO7.js",
+            "bytes": 4187
+          },
+          {
+            "path": "/assets/SessionSettingsDrawer-BnBMhgrQ.js",
+            "bytes": 17389
+          },
+          {
+            "path": "/assets/analyticsViewModel-CtbVcBHX.js",
+            "bytes": 5983
+          },
+          {
+            "path": "/assets/sessionPerformanceModel-BCCWb4Fb.js",
+            "bytes": 1227
+          },
+          {
+            "path": "/assets/SessionActions-Bd_kjLNO.js",
+            "bytes": 14788
+          },
+          {
+            "path": "/assets/PaginationFooter-M5hPxf42.js",
+            "bytes": 2092
+          }
+        ],
+        "longTasks": []
+      },
+      "dialogOpened": true,
+      "dialogStyles": {
+        "background": "rgb(8, 8, 8)",
+        "color": "rgb(255, 255, 255)",
+        "border": "1px solid rgb(61, 68, 76)",
+        "width": 960,
+        "height": 850
+      }
+    },
+    {
+      "sample": 6,
+      "cold": {
+        "readyMs": 565.7999999998137,
+        "scripts": [
+          {
+            "path": "/assets/index-CAymIb4g.js",
+            "bytes": 548474
+          },
+          {
+            "path": "/assets/DashboardSessions-DSTPmLgq.js",
+            "bytes": 33702
+          },
+          {
+            "path": "/assets/useReadRefresh-B9QHyjcy.js",
+            "bytes": 4164
+          },
+          {
+            "path": "/assets/ProjectDateInput-qFFupFx6.js",
+            "bytes": 10359
+          },
+          {
+            "path": "/assets/sessionCatalog-BUy5dZO7.js",
+            "bytes": 4187
+          },
+          {
+            "path": "/assets/SessionSettingsDrawer-BnBMhgrQ.js",
+            "bytes": 17389
+          },
+          {
+            "path": "/assets/analyticsViewModel-CtbVcBHX.js",
+            "bytes": 5983
+          },
+          {
+            "path": "/assets/sessionPerformanceModel-BCCWb4Fb.js",
+            "bytes": 1227
+          },
+          {
+            "path": "/assets/SessionActions-Bd_kjLNO.js",
+            "bytes": 14788
+          },
+          {
+            "path": "/assets/PaginationFooter-M5hPxf42.js",
+            "bytes": 2092
+          }
+        ],
+        "longTasks": [
+          50
+        ]
+      },
+      "dialogOpened": true,
+      "dialogStyles": {
+        "background": "rgb(8, 8, 8)",
+        "color": "rgb(255, 255, 255)",
+        "border": "1px solid rgb(61, 68, 76)",
+        "width": 960,
+        "height": 850
+      }
+    }
+  ],
+  "errors": [],
+  "blocked": []
+}
