@@ -1,0 +1,74 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "name": "production-native-chart-http",
+      "passed": true,
+      "summary": {
+        "clickToConfirmedPaintMs": {
+          "p50": 62.29999999701977,
+          "sampleP95": 63.899999998509884
+        },
+        "drag.layoutCount": {
+          "p50": 17,
+          "sampleP95": 17
+        },
+        "drag.priceWrites": {
+          "p50": 8,
+          "sampleP95": 9
+        }
+      },
+      "seconds": 10.384708300000057,
+      "api_before": {
+        "rss_bytes": 11726848,
+        "peak_rss_bytes": 11726848,
+        "private_commit_bytes": 4050944,
+        "cpu_kernel_ns": 0,
+        "cpu_user_ns": 0,
+        "page_fault_count": 2995
+      },
+      "api_after": {
+        "rss_bytes": 19853312,
+        "peak_rss_bytes": 24989696,
+        "private_commit_bytes": 7880704,
+        "cpu_kernel_ns": 93750000,
+        "cpu_user_ns": 484375000,
+        "page_fault_count": 36663
+      }
+    },
+    {
+      "name": "native-http-history-concurrency",
+      "passed": true,
+      "summary": [
+        {
+          "stage": 5000,
+          "concurrency": 1,
+          "samples": 5,
+          "p50_ms": 502.2269,
+          "sample_p95_ms": 525.0644,
+          "max_ms": 525.0644,
+          "response_bytes": 4572893
+        },
+        {
+          "stage": 5000,
+          "concurrency": 4,
+          "samples": 20,
+          "p50_ms": 639.1898,
+          "sample_p95_ms": 730.0911,
+          "max_ms": 742.7354,
+          "response_bytes": 4578003
+        }
+      ]
+    }
+  ],
+  "owner_runtime_touched": false,
+  "disposable": true,
+  "build": "release",
+  "broker": false,
+  "source_hashes": {
+    "api-rust\\src\\main.rs": "7d932cc5028ffb805dcbe173a04533524f5e6a52e0f8a8d211e0a1fb36b3be4b",
+    "web\\src\\advancedOrderOverlay.js": "387f581bd3e8d315f1684b6a4dbb4018a98c8972458e0729dd588e4ea0efb7b8",
+    "web\\scripts\\quick_trading_latency_probe.mjs": "e6f548071e2cd972ffb261fe008d8c468a8a52feac2862637abf4f4d2f14c029"
+  },
+  "binary_sha256": "0cc910fa64c1d1cb793dd2689be44b3f14c7c4b39c13f6cb761e5e2f95ad2cd0"
+}

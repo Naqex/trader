@@ -23,6 +23,31 @@ use std::{
 use tokio_postgres::Transaction;
 use uuid::Uuid;
 
+struct ReplayTimings {
+    operation: String,
+    last: Option<std::time::Instant>,
+    phases: Vec<Value>,
+}
+impl ReplayTimings {
+    fn new() -> Self {
+        Self { operation: String::new(), last: std::env::var("TW_V2_REPLAY_TIMINGS")
+            .is_ok_and(|v|v=="1").then(std::time::Instant::now), phases: Vec::new() }
+    }
+    fn mark(&mut self, phase: &'static str) {
+        if let Some(last) = self.last.as_mut() {
+            self.phases.push(json!({"phase":phase,"us":last.elapsed().as_micros() as u64}));
+            *last=std::time::Instant::now();
+        }
+    }
+}
+impl Drop for ReplayTimings {
+    fn drop(&mut self) {
+        if self.last.is_some() {
+            tracing::info!(operation=%self.operation, phases=%json!(self.phases), "native_replay_phases");
+        }
+    }
+}
+
 pub fn native(method: &str, path: &str) -> bool {
     match method {
         "GET" => matches!(
@@ -336,6 +361,7 @@ async fn invoke(
     scope: Workspace,
     request: Request,
 ) -> Result<Response, ApiError> {
+    let mut timings=ReplayTimings::new();
     let method = request.method().as_str().to_owned();
     let path = request.uri().path().to_owned();
     let query = request.uri().query().map(str::to_owned);
@@ -351,6 +377,7 @@ async fn invoke(
     let parts: Vec<_> = path.split('/').collect();
     let id = parts.get(5).copied().unwrap_or("");
     let tail = parts.get(6..).unwrap_or(&[]).join("/");
+    timings.operation=if tail.is_empty(){method.clone()}else{tail.clone()};
     let q = pairs(query.as_deref());
     let handler = if tail.starts_with("prop/") {
         if tail.ends_with("/feed") {
@@ -375,11 +402,14 @@ async fn invoke(
             _ => "",
         }
     };
+    timings.mark("request_decode");
     let mut client = state.pool.get().await.map_err(|_| ApiError::database())?;
+    timings.mark("pool_checkout");
     let tx = client
         .transaction()
         .await
         .map_err(|_| ApiError::database())?;
+    timings.mark("transaction_begin");
     if method == "GET" {
         let record = load_record(&tx, &scope.workspace_id, id, false).await?;
         let result = match tail.as_str() {
@@ -411,12 +441,13 @@ async fn invoke(
     tx.batch_execute("SAVEPOINT native_replay_domain")
         .await
         .map_err(|_| ApiError::database())?;
+    timings.mark("receipt_admission");
     let result = match crate::native_contracts::validate_body(handler, raw) {
         Ok(body) => {
             if id.is_empty() {
                 create(&tx, &state, &scope.workspace_id, &body).await
             } else {
-                mutate(&tx, &state, &scope.workspace_id, id, &tail, &method, &body).await
+                mutate(&tx, &state, &scope.workspace_id, id, &tail, &method, &body, &mut timings).await
             }
         }
         Err(error) => Err(error),
@@ -437,8 +468,16 @@ async fn invoke(
             (e.0, e.1)
         }
     };
-    let response = crate::native_mutation::finish(&tx, mutation, status, value).await?;
-    crate::native_mutation::commit(tx, response).await
+    timings.mark("result_status");
+    let response = if status.is_success() {
+        crate::native_mutation::finish_json_text(&tx, mutation, status, value).await?
+    } else {
+        crate::native_mutation::finish(&tx, mutation, status, value).await?
+    };
+    timings.mark("receipt_save_and_response_serialize");
+    let response=crate::native_mutation::commit(tx, response).await;
+    timings.mark("commit");
+    response
 }
 
 async fn identities(
@@ -1432,6 +1471,7 @@ async fn mutate(
     tail: &str,
     method: &str,
     b: &Value,
+    timings: &mut ReplayTimings,
 ) -> Result<Value, ApiError> {
     if tail.starts_with("prop/") && tail.ends_with("/branch") {
         let parts: Vec<_> = tail.split('/').collect();
@@ -1440,6 +1480,7 @@ async fn mutate(
         }
     }
     let mut record = load_record(tx, workspace, id, true).await?;
+    timings.mark("load_record");
     if tail == "activity" {
         return activity(tx, workspace, id, b).await;
     }
@@ -1455,6 +1496,7 @@ async fn mutate(
     }
     let mut p = record["payload"].take();
     let m = manifest(tx, workspace, text(&p, "dataset_id")?).await?;
+    timings.mark("load_manifest");
     let current = integer(&p, "cursor_index")?;
     let total = integer(&m, "row_count")?;
     let period = bounds(&p)?;
@@ -1641,8 +1683,12 @@ async fn mutate(
             ));
         }
     }
+    timings.mark("domain_transition");
     let saved = save_record(tx, workspace, &record, p, false).await?;
-    view(tx, state, workspace, saved, &HashMap::new()).await
+    timings.mark("revision_save");
+    let response=view(tx, state, workspace, saved, &HashMap::new()).await;
+    timings.mark("view_projection");
+    response
 }
 fn asset_ready(p: &Value, m: &Value, bar: &Value) -> Result<(), ApiError> {
     if p["asset_states"].is_object()

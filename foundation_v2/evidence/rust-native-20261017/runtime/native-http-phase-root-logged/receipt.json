@@ -1,0 +1,74 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "name": "production-native-chart-http",
+      "passed": true,
+      "summary": {
+        "clickToConfirmedPaintMs": {
+          "p50": 60.5,
+          "sampleP95": 62.100000001490116
+        },
+        "drag.layoutCount": {
+          "p50": 14,
+          "sampleP95": 15
+        },
+        "drag.priceWrites": {
+          "p50": 8,
+          "sampleP95": 9
+        }
+      },
+      "seconds": 10.25232180000603,
+      "api_before": {
+        "rss_bytes": 11710464,
+        "peak_rss_bytes": 11710464,
+        "private_commit_bytes": 4071424,
+        "cpu_kernel_ns": 0,
+        "cpu_user_ns": 15625000,
+        "page_fault_count": 2991
+      },
+      "api_after": {
+        "rss_bytes": 20246528,
+        "peak_rss_bytes": 25178112,
+        "private_commit_bytes": 8564736,
+        "cpu_kernel_ns": 109375000,
+        "cpu_user_ns": 328125000,
+        "page_fault_count": 37100
+      }
+    },
+    {
+      "name": "native-http-history-concurrency",
+      "passed": true,
+      "summary": [
+        {
+          "stage": 5000,
+          "concurrency": 1,
+          "samples": 5,
+          "p50_ms": 585.9865,
+          "sample_p95_ms": 606.5857,
+          "max_ms": 606.5857,
+          "response_bytes": 4572893
+        },
+        {
+          "stage": 5000,
+          "concurrency": 4,
+          "samples": 20,
+          "p50_ms": 707.0322,
+          "sample_p95_ms": 870.2564,
+          "max_ms": 884.1094,
+          "response_bytes": 4578003
+        }
+      ]
+    }
+  ],
+  "owner_runtime_touched": false,
+  "disposable": true,
+  "build": "release",
+  "broker": false,
+  "source_hashes": {
+    "api-rust\\src\\main.rs": "7d932cc5028ffb805dcbe173a04533524f5e6a52e0f8a8d211e0a1fb36b3be4b",
+    "web\\src\\advancedOrderOverlay.js": "387f581bd3e8d315f1684b6a4dbb4018a98c8972458e0729dd588e4ea0efb7b8",
+    "web\\scripts\\quick_trading_latency_probe.mjs": "e6f548071e2cd972ffb261fe008d8c468a8a52feac2862637abf4f4d2f14c029"
+  },
+  "binary_sha256": "fefdc72c3460e130e7076859ed1b5e6f2cb2c31021fdb4b4c59fcef070709a39"
+}

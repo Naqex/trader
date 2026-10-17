@@ -100,6 +100,16 @@ latency still grows substantially. Snapshot/retry persistence, financial
 validation and response costs must be attributed before transport/storage changes.
 Full-ledger persistence and report projections remain scaling limitations.
 
+Successful replay receipts now retain the exact serialized HTTP JSON in the
+existing `result_text` column. Initial response, retry and command recovery use
+the same result without another PostgreSQL JSONB parse. Failed replay receipts
+and other domain receipts retain their existing storage. Transaction, revision
+and idempotency semantics are unchanged; no schema migration is required.
+The 5,000-event diagnostic comparison measured serial median 586→502 ms and
+four-aggregate median 707→639 ms, with the same full financial response. These
+are separate short runs, not an alternating capacity benchmark. Long-history
+snapshot reads, domain validation and revision writes still dominate.
+
 Independent integration review, broader native data/research UI journeys and
 resource/long-duration acceptance remain open. This candidate is not whole-product
 acceptance and does not change broker, holdout, authorization or deployment gates.

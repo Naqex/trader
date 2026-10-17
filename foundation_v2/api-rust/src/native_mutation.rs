@@ -77,6 +77,23 @@ pub async fn finish(tx:&Transaction<'_>, mutation:NativeMutation,status:StatusCo
     Ok(response)
 }
 
+/// Replay snapshots are opaque HTTP results, not SQL-queryable job metadata.
+/// Persist their wire JSON once instead of parsing a multi-MB snapshot into a
+/// second JSONB tree and serializing it again for the initial response/retry.
+pub async fn finish_json_text(tx:&Transaction<'_>, mutation:NativeMutation,status:StatusCode,body:Value)->Result<Response,ApiError> {
+    let text=serde_json::to_string(&body).map_err(|_|ApiError::detail(StatusCode::SERVICE_UNAVAILABLE,"native_response_serialization_failed"))?;
+    drop(body);
+    let state=if status.is_success(){"completed"}else{"failed"};
+    let code=i32::from(status.as_u16());
+    let headers=json!({"content-type":"application/json"});
+    let count=tx.execute("UPDATE api_commands SET status=$2,result_status=$3,result_headers=$4,result_text=$5,result_body=NULL,updated_at_utc=CURRENT_TIMESTAMP WHERE command_id=$1 AND status='queued'",&[&mutation.id,&state,&code,&headers,&text]).await.map_err(|_|ApiError::database())?;
+    if count!=1 {return Err(ApiError::detail(StatusCode::SERVICE_UNAVAILABLE,"native_receipt_conflict"));}
+    let mut response=(status,text).into_response();
+    response.headers_mut().insert("content-type",HeaderValue::from_static("application/json"));
+    response.headers_mut().insert("x-command-id",HeaderValue::from_str(&mutation.id.to_string()).unwrap());
+    Ok(response)
+}
+
 #[cfg(test)] mod tests {
     use super::*;
     #[test] fn keys_are_framed_and_scoped(){

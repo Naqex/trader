@@ -21,9 +21,36 @@ async fn apply(state:Arc<AppState>,scope:Workspace,key:&str,body:Value,abort:boo
     };
     let id=uuid::Uuid::new_v4().simple().to_string();
     tx.execute("INSERT INTO workspace_records(workspace_id,kind,record_id,current_revision,created_at_utc,updated_at_utc) VALUES($1,'journal',$2,1,'fixture','fixture')",&[&scope.workspace_id,&id]).await.map_err(|_|ApiError::database())?;
-    let response=native_mutation::finish(&tx,receipt,StatusCode::CREATED,json!({"record_id":id,"value":body})).await?;
+    let value=json!({"record_id":id,"value":body});
+    let response=if body["wire_json"]==true {
+        native_mutation::finish_json_text(&tx,receipt,StatusCode::CREATED,value).await?
+    } else {native_mutation::finish(&tx,receipt,StatusCode::CREATED,value).await?};
     if abort {tx.rollback().await.map_err(|_|ApiError::database())?;return Ok(response)}
     native_mutation::commit(tx,response).await
+}
+
+#[tokio::test]
+#[ignore="requires explicitly owned disposable PostgreSQL"]
+async fn serialized_json_receipt_preserves_wire_bytes_and_rollback() {
+    let state=state().await;
+    let scope=Workspace{workspace_id:format!("receipt-{}",uuid::Uuid::new_v4()),subject:"local-owner".into()};
+    let body=json!({"wire_json":true,"data":"đúng giá 📈".repeat(20000),"amount":"0.1200","null":null});
+    let aborted=apply(state.clone(),scope.clone(),"wire",body.clone(),true).await.unwrap();
+    let response=apply(state.clone(),scope.clone(),"wire",body.clone(),false).await.unwrap();
+    assert_ne!(aborted.headers()["x-command-id"],response.headers()["x-command-id"]);
+    assert_eq!(response.headers()["content-type"],"application/json");
+    let command=response.headers()["x-command-id"].clone();
+    let bytes=axum::body::to_bytes(response.into_body(),1024*1024).await.unwrap();
+    let parsed:Value=serde_json::from_slice(&bytes).unwrap();assert_eq!(parsed["value"],body);
+    let retry=apply(state.clone(),scope.clone(),"wire",body,false).await.unwrap();
+    assert_eq!(retry.headers()["x-command-id"],command);
+    assert_eq!(axum::body::to_bytes(retry.into_body(),1024*1024).await.unwrap(),bytes);
+    let conn=state.pool.get().await.unwrap();
+    let row=conn.query_one("SELECT result_body,result_text,result_headers FROM api_commands WHERE workspace_id=$1 AND idempotency_key='wire'",&[&scope.workspace_id]).await.unwrap();
+    assert!(row.get::<_,Option<Value>>(0).is_none());
+    assert_eq!(row.get::<_,String>(1).as_bytes(),bytes.as_ref());
+    assert_eq!(row.get::<_,Value>(2)["content-type"],"application/json");
+    state.pool.close();
 }
 
 #[tokio::test]

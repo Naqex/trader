@@ -327,3 +327,37 @@ Next: attribute long-ledger read/transition/revision/receipt/serialization cost;
 remove the measured repeated work with financial/revision/retry parity. Broader
 data/research UI, resource/long-duration and independent integration review remain
 open. Owner8010/5180 unchanged. Goal ACTIVE.
+
+## Root continuation: phase attribution and serialized replay receipts
+
+- `runtime/native-http-phase-root-logged/receipt.json` PASS with actual phase
+  logs enabled. A long-ledger close spent about124ms loading,102ms transitioning,
+  161ms saving the revision and151ms saving/serializing the receipt. The API
+  still returns the full canonical ledger; changing HTTP to WebSocket alone
+  would not remove this repeated work.
+- Successful replay results now serialize once to the existing `result_text`
+  receipt column and return those exact bytes. Retry and command recovery keep
+  the same JSON body and content type; errors retain existing JSONB receipts.
+  No schema/financial contract change or ledger truncation.
+- `runtime/serialized-receipt-pg-root` PASS:48metadata oracle cases and4persisted
+  receipt tests, including large Unicode JSON, exact-byte retry and rollback.
+  `runtime/serialized-replay-parity-root/receipt.json` PASS132persisted native
+  Router vs Python cases across replay/quick/Prop/analytics/context. All-target
+  check and separate release candidate build PASS.
+- `runtime/native-http-serialized-root/receipt.json` PASS actual release
+  HTTP/production chart, persisted quick/drag/close and25long-ledger protection
+  mutations with exact retries plus command-result recovery. At5000steps serial
+  median502.23ms/sample-p95525.06ms; four independent aggregates639.19ms/730.09ms.
+  Previous phase-logged run:585.99ms/707.03ms median respectively. Full response
+  remains4.57MB; peak API RSS289.3MiB (PostgreSQL excluded). Runs were sequential
+  diagnostics, not alternating/stable-tail/capacity acceptance. Small UI sample
+  median62.3ms on6000synthetic rows, not comparable to the earlier300-row run.
+- Harness completion now requires the entire requested run to finish; partial
+  UI success cannot mask a subsequent HTTP benchmark failure. Failed predecessor
+  attempts remain preserved and excluded from acceptance.
+
+Next: remove remaining measured long-snapshot costs with equivalent persistence
+and financial checks; close scientific compiled/transitive identity and broader
+data/research/resource acceptance. Children remain quota-errored; root review
+does not count as independent integration sign-off. Owner8010/5180 unchanged.
+Goal ACTIVE.
