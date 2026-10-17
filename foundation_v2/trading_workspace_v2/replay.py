@@ -462,6 +462,7 @@ class ReplayService:
         quantity,
         stop_loss,
         take_profit,
+        execution_timing="next_bar",
     ) -> dict:
         record = self.store.get_record(workspace_id, "replay", session_id)
         if record is None:
@@ -492,6 +493,13 @@ class ReplayService:
             stop_loss=stop_loss,
             take_profit=take_profit,
         )
+        if execution_timing == 'current_quote':
+            from .replay_immediate_execution import fill_current_quote
+            _, rows = self._dataset_slice(workspace_id, payload['dataset_id'], snapshot.cursor_index, snapshot.cursor_index + 1)
+            queued = fill_current_quote(queued, mid_close=rows[0]['close'],
+                virtual_time_utc=int(rows[0]['timestamp']) + snapshot.timeframe_seconds)
+        elif execution_timing != 'next_bar':
+            raise ValueError('unsupported market execution timing')
         payload["execution"] = queued.model_dump(mode="json")
         self._update_payload(workspace_id, session_id, expected_revision, payload)
         return self.view(workspace_id, session_id)
@@ -507,6 +515,7 @@ class ReplayService:
         quantity,
         stop_loss,
         take_profit,
+        execution_timing="next_bar",
         instrument_spec: dict | None = None,
         cost_model: dict | None = None,
         spread_price=None,
@@ -553,6 +562,7 @@ class ReplayService:
             quantity=quantity,
             stop_loss=stop_loss,
             take_profit=take_profit,
+            execution_timing=execution_timing,
         )
 
     def change_protection(self, workspace_id: str, session_id: str, expected_revision: int,

@@ -183,7 +183,7 @@ class ReplayExecutionEventV2(ReplayExecutionEvent):
         admission = ReplayMarginAdmission.model_validate(self.details.get("margin_admission"))
         if (not isinstance(self.details.get("operation_id"), str) or not self.details["operation_id"].strip()
                 or self.details.get("side") not in {"BUY", "SELL"}
-                or admission.submitted_cursor_index != self.cursor_index - 1):
+                or admission.submitted_cursor_index != self.cursor_index - (0 if self.details.get('execution_timing') == 'current_quote' else 1)):
             raise ValueError("margin outcome lacks a prior closed-bar order")
         _decimal(self.details.get("quantity"), "margin quantity", positive=True)
         _decimal(self.details.get("fill_price"), "margin fill", positive=True)
@@ -232,6 +232,9 @@ def parse_replay_execution_snapshot(raw: dict) -> ReplayExecutionSnapshot | Repl
 
 
 def replay_event_for_snapshot(snapshot: ReplayExecutionSnapshot, raw: dict) -> ReplayExecutionEvent:
+    if raw.get('details', {}).get('execution_timing') == 'current_quote':
+        from .replay_immediate_execution import validate_current_quote_fill
+        validate_current_quote_fill(snapshot, _event_type(snapshot).model_validate(raw))
     if isinstance(snapshot, ReplayExecutionSnapshotV2):
         if raw.get("schema_version") != "replay-execution-event-v2":
             raise ReplayExecutionError("v2 replay requires explicitly versioned v2 events")

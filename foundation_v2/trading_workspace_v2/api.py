@@ -1395,6 +1395,7 @@ def create_app(
                 quantity=body.quantity,
                 stop_loss=body.stop_loss,
                 take_profit=body.take_profit,
+                execution_timing=body.execution_timing,
             )
         except LookupError:
             raise HTTPException(status_code=404, detail="replay_not_found")
@@ -1419,6 +1420,7 @@ def create_app(
                 quantity=body.quantity,
                 stop_loss=body.stop_loss,
                 take_profit=body.take_profit,
+                execution_timing=body.execution_timing,
                 instrument_spec=body.instrument_spec,
                 cost_model=body.cost_model,
                 spread_price=body.spread_price,

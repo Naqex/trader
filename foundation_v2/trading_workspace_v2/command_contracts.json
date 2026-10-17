@@ -5946,6 +5946,15 @@
                 ],
                 "default": null,
                 "title": "Take Profit"
+              },
+              "execution_timing": {
+                "default": "next_bar",
+                "enum": [
+                  "next_bar",
+                  "current_quote"
+                ],
+                "title": "Execution Timing",
+                "type": "string"
               }
             },
             "required": [
@@ -6083,6 +6092,15 @@
                 ],
                 "default": null,
                 "title": "Take Profit"
+              },
+              "execution_timing": {
+                "default": "next_bar",
+                "enum": [
+                  "next_bar",
+                  "current_quote"
+                ],
+                "title": "Execution Timing",
+                "type": "string"
               },
               "instrument_spec": {
                 "anyOf": [

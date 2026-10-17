@@ -134,6 +134,15 @@ def validate_tick_execution_event(
         if event.kind == "manual_close" and (Decimal(d["bid_close"]) != tick.bid or Decimal(d["ask_close"]) != tick.ask):
             raise ReplayExecutionError("manual close differs from the observed broker quote")
         return event
+    if d.get('execution_timing') == 'current_quote':
+        prior = next((raw for raw in reversed(snapshot.ledger) if raw['sequence'] < event.sequence and 'bid' in raw.get('details', {})), None)
+        if (prior is None or event.virtual_time_utc != prior['virtual_time_utc']
+                or event.cursor_index != prior['cursor_index']
+                or any(d.get(key) != prior['details'].get(key) for key in ('time_msc', 'sequence', 'bid', 'ask', 'window_start_msc', 'window_end_msc'))):
+            raise ReplayExecutionError('current fill must retain the preceding canonical broker quote')
+        from .replay_immediate_execution import validate_current_quote_fill
+        validate_current_quote_fill(snapshot, event)
+        return event
     start = d.get("window_start_msc")
     end = d.get("window_end_msc")
     if (type(start) is not int or type(end) is not int or start < 0

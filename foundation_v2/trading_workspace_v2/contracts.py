@@ -481,6 +481,7 @@ class ReplayMarketOrderRequest(BaseModel):
     quantity: Decimal = Field(gt=0)
     stop_loss: Decimal | None = Field(default=None, gt=0)
     take_profit: Decimal | None = Field(default=None, gt=0)
+    execution_timing: Literal["next_bar", "current_quote"] = "next_bar"
 
 
 class ReplayQuickMarketOrderRequest(ReplayMarketOrderRequest):
