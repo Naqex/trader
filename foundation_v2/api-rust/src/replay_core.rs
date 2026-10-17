@@ -1483,5 +1483,7 @@ pub fn transform_owned(mut request: Value) -> R<Value> {
     } else {
         ledger[old_len.min(ledger.len())..].to_vec()
     };
-    Ok(json!({"snapshot":s,"events":events}))
+    let mut result = json!({"events":events});
+    result["snapshot"] = s;
+    Ok(result)
 }

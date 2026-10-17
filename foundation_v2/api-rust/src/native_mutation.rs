@@ -81,8 +81,9 @@ pub async fn finish(tx:&Transaction<'_>, mutation:NativeMutation,status:StatusCo
 /// Persist their wire JSON once instead of parsing a multi-MB snapshot into a
 /// second JSONB tree and serializing it again for the initial response/retry.
 pub async fn finish_json_text(tx:&Transaction<'_>, mutation:NativeMutation,status:StatusCode,body:Value)->Result<Response,ApiError> {
-    let text=serde_json::to_string(&body).map_err(|_|ApiError::detail(StatusCode::SERVICE_UNAVAILABLE,"native_response_serialization_failed"))?;
-    drop(body);
+    let text=tokio::task::spawn_blocking(move || serde_json::to_string(&body)).await
+        .map_err(|_|ApiError::detail(StatusCode::SERVICE_UNAVAILABLE,"native_response_serialization_failed"))?
+        .map_err(|_|ApiError::detail(StatusCode::SERVICE_UNAVAILABLE,"native_response_serialization_failed"))?;
     let state=if status.is_success(){"completed"}else{"failed"};
     let code=i32::from(status.as_u16());
     let headers=json!({"content-type":"application/json"});

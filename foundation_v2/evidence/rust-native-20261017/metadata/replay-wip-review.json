@@ -1,0 +1,24 @@
+{
+  "passed": true,
+  "cases": 48,
+  "results": [
+    {
+      "target": "rust_metadata_parity",
+      "passed": true,
+      "stdout": "\nrunning 1 test\nMETADATA_PARITY_CASES=48\ntest python_reference_mutation_parity ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.35s\n\n",
+      "stderr": "   Compiling trading-workspace-api v0.1.0 (D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 9.89s\n     Running tests\\rust_metadata_parity.rs (target\\debug\\deps\\rust_metadata_parity-6e94759bc7bd3230.exe)\n"
+    },
+    {
+      "target": "rust_native_receipts",
+      "passed": true,
+      "stdout": "\nrunning 4 tests\ntest expired_legacy_pending_receipt_cannot_execute_again ... ok\ntest rollback_removes_effect_and_receipt_before_retry ... ok\ntest concurrent_retry_is_one_atomic_effect_and_receipt ... ok\ntest serialized_json_receipt_preserves_wire_bytes_and_rollback ... ok\n\ntest result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.29s\n\n",
+      "stderr": "   Compiling trading-workspace-api v0.1.0 (D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.48s\n     Running tests\\rust_native_receipts.rs (target\\debug\\deps\\rust_native_receipts-caf99d18f8c33ddb.exe)\n"
+    },
+    {
+      "target": "rust_prop_pg",
+      "passed": true,
+      "stdout": "\nrunning 1 test\ntest canonical_prop_session_workflow ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.27s\n\n",
+      "stderr": "   Compiling trading-workspace-api v0.1.0 (D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.09s\n     Running tests\\rust_prop_pg.rs (target\\debug\\deps\\rust_prop_pg-ba01a1a3bb6675c1.exe)\n"
+    }
+  ]
+}

@@ -217,9 +217,12 @@ pub async fn load_record(
     if version.get::<_, bool>("deleted") {
         return Err(ApiError::detail(StatusCode::NOT_FOUND, "replay_not_found"));
     }
-    Ok(
-        json!({"record_id":id,"source_key":head.get::<_,Option<String>>("source_key"),"revision":rev,"payload":version.get::<_,Value>("payload_json"),"deleted":false,"created_at_utc":head.get::<_,String>("created_at_utc"),"updated_at_utc":head.get::<_,String>("updated_at_utc")}),
-    )
+    let payload = tokio::task::spawn_blocking(move || version.try_get::<_, Value>("payload_json"))
+        .await.map_err(|_| internal("replay_decode_failed"))?
+        .map_err(|_| internal("replay_revision_invalid"))?;
+    let mut record = json!({"record_id":id,"source_key":head.get::<_,Option<String>>("source_key"),"revision":rev,"deleted":false,"created_at_utc":head.get::<_,String>("created_at_utc"),"updated_at_utc":head.get::<_,String>("updated_at_utc")});
+    record["payload"] = payload;
+    Ok(record)
 }
 async fn manifest(tx: &Transaction<'_>, workspace: &str, id: &str) -> Result<Value, ApiError> {
     tx.query_opt(
@@ -337,9 +340,9 @@ pub async fn save_record(
         return Err(conflict("record revision conflict"));
     }
     tx.execute("INSERT INTO workspace_record_revisions(workspace_id,kind,record_id,revision,payload_json,deleted,created_at_utc) VALUES($1,'replay',$2,$3,$4,$5,$6)",&[&workspace,&id,&rev,&payload,&deleted,&stamp]).await.map_err(|_|ApiError::database())?;
-    Ok(
-        json!({"record_id":id,"source_key":record["source_key"],"revision":rev,"payload":payload,"deleted":deleted,"created_at_utc":record["created_at_utc"],"updated_at_utc":stamp}),
-    )
+    let mut saved = json!({"record_id":id,"source_key":record["source_key"],"revision":rev,"deleted":deleted,"created_at_utc":record["created_at_utc"],"updated_at_utc":stamp});
+    saved["payload"] = payload;
+    Ok(saved)
 }
 async fn create_record(
     tx: &Transaction<'_>,
@@ -351,9 +354,9 @@ async fn create_record(
     let stamp = now();
     tx.execute("INSERT INTO workspace_records(workspace_id,kind,record_id,current_revision,created_at_utc,updated_at_utc) VALUES($1,'replay',$2,1,$3,$3)",&[&workspace,&id,&stamp]).await.map_err(|_|ApiError::database())?;
     tx.execute("INSERT INTO workspace_record_revisions(workspace_id,kind,record_id,revision,payload_json,deleted,created_at_utc) VALUES($1,'replay',$2,1,$3,false,$4)",&[&workspace,&id,&p,&stamp]).await.map_err(|_|ApiError::database())?;
-    Ok(
-        json!({"record_id":id,"source_key":null,"revision":1,"payload":p,"deleted":false,"created_at_utc":stamp,"updated_at_utc":stamp}),
-    )
+    let mut record = json!({"record_id":id,"source_key":null,"revision":1,"deleted":false,"created_at_utc":stamp,"updated_at_utc":stamp});
+    record["payload"] = p;
+    Ok(record)
 }
 
 async fn invoke(

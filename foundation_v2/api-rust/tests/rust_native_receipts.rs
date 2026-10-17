@@ -75,6 +75,37 @@ async fn concurrent_retry_is_one_atomic_effect_and_receipt() {
 
 #[tokio::test]
 #[ignore="requires explicitly owned disposable PostgreSQL"]
+async fn concurrent_serialized_retry_preserves_one_effect_and_identical_bytes() {
+    let state=state().await;
+    let scope=Workspace{workspace_id:format!("receipt-{}",uuid::Uuid::new_v4()),subject:"local-owner".into()};
+    let barrier=Arc::new(tokio::sync::Barrier::new(8));
+    let body=json!({"wire_json":true,"data":"dời SL/TP 📈".repeat(20000),"quantity":"0.0100"});
+    let mut tasks=Vec::new();
+    for _ in 0..8 {
+        let (state,scope,barrier,body)=(state.clone(),scope.clone(),barrier.clone(),body.clone());
+        tasks.push(tokio::spawn(async move {
+            barrier.wait().await;
+            let response=apply(state,scope,"wire-concurrent",body,false).await.unwrap();
+            assert_eq!(response.status(),StatusCode::CREATED);
+            assert_eq!(response.headers()["content-type"],"application/json");
+            let id=response.headers()["x-command-id"].clone();
+            (id,axum::body::to_bytes(response.into_body(),1024*1024).await.unwrap())
+        }));
+    }
+    let mut responses=Vec::new();
+    for task in tasks {responses.push(task.await.unwrap());}
+    assert!(responses.iter().all(|response|response==&responses[0]));
+    assert_eq!(serde_json::from_slice::<Value>(&responses[0].1).unwrap()["value"],body);
+    let client=state.pool.get().await.unwrap();
+    let row=client.query_one("SELECT (SELECT count(*) FROM workspace_records WHERE workspace_id=$1) AS effects,(SELECT count(*) FROM api_commands WHERE workspace_id=$1 AND status='completed' AND result_body IS NULL AND result_text IS NOT NULL) AS receipts",&[&scope.workspace_id]).await.unwrap();
+    assert_eq!(row.get::<_,i64>("effects"),1);
+    assert_eq!(row.get::<_,i64>("receipts"),1);
+    drop(client);
+    state.pool.close();
+}
+
+#[tokio::test]
+#[ignore="requires explicitly owned disposable PostgreSQL"]
 async fn rollback_removes_effect_and_receipt_before_retry() {
     let state=state().await;
     let scope=Workspace{workspace_id:format!("receipt-{}",uuid::Uuid::new_v4()),subject:"local-owner".into()};

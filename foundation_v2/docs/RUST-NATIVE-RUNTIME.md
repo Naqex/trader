@@ -110,6 +110,12 @@ four-aggregate median 707→639 ms, with the same full financial response. These
 are separate short runs, not an alternating capacity benchmark. Long-history
 snapshot reads, domain validation and revision writes still dominate.
 
+Moving snapshots instead of cloning them and isolating JSON CPU work reduced
+the subsequent 5,000-event diagnostic medians to 370 ms serial / 440 ms with
+four independent aggregates. Financial validation and the full ledger remain
+intact. This is still an O(history) snapshot path; the short measurements do not
+establish a stable tail latency or production capacity.
+
 Independent integration review, broader native data/research UI journeys and
 resource/long-duration acceptance remain open. This candidate is not whole-product
 acceptance and does not change broker, holdout, authorization or deployment gates.

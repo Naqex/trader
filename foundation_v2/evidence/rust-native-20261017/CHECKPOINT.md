@@ -361,3 +361,34 @@ and financial checks; close scientific compiled/transitive identity and broader
 data/research/resource acceptance. Children remain quota-errored; root review
 does not count as independent integration sign-off. Owner8010/5180 unchanged.
 Goal ACTIVE.
+
+## Root continuation: move long snapshots and isolate JSON CPU work
+
+- Record load/save/create and the pure core response now move owned JSON values
+  instead of cloning the full financial ledger through `json!`. Parsing large
+  persisted snapshots and serializing successful replay receipts run on the
+  blocking CPU pool. Database ownership, row locks, full financial validation,
+  response fields and transaction commit remain unchanged.
+- `runtime/native-http-owned-snapshots-root/receipt.json` PASS actual release
+  HTTP/production chart.75protection mutations across0/500/5000step histories,
+  exact retries, command-result recovery and4browser quick/drag/close journeys.
+  At5000steps serial median370.16ms/sample-p95379.81ms; four independent aggregates
+  440.22ms/525.22ms. Response remains4.57MB. Peak API RSS233.5MiB; PG excluded.
+  Prior serialized-only diagnostic median502.23ms/639.19ms respectively. These
+  separate short runs are not alternating tail/capacity acceptance. At500steps
+  medians92.68ms/89.92ms; browser click-to-confirmed-paint median61.1ms on6000rows.
+  Iframe/history/scale assertions PASS. Full snapshot persistence still scales
+  with ledger length and remains a limitation, not a completed optimization.
+- `runtime/owned-snapshot-parity-root/receipt.json` PASS132persisted differential
+  cases. `runtime/owned-snapshot-receipts-root.json` PASS48metadata cases and5PG
+  receipt tests; new8-way simultaneous same-key serialized-JSON test proves one
+  durable effect/receipt and byte-identical responses. All-target check/release
+  API/debug probe builds PASS.
+- Independent READ-ONLY backend_review reported no blocking finding in the3source
+  files. Its `metadata/replay-wip-review.json` passes48metadata/4receipt tests plus
+  Prop workflow/corrupt-phase guards; the additional5threceipt test above closes
+  its advisory concurrency coverage gap. This review is scoped to these changes,
+  not whole native integration approval.
+
+Parallel continuation: Data/Research production UI journeys and installed
+scientific compiled/transitive identity. Owner8010/5180 unchanged. Goal ACTIVE.

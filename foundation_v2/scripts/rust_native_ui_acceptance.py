@@ -98,7 +98,7 @@ def main():
                 subprocess.run([str(args.pg_bin/'pg_ctl.exe'),'-D',str(data),'-m','fast','stop'],capture_output=True,timeout=20,creationflags=flags)
                 pg.wait(timeout=20)
                 receipt=dict(passed=completed,checks=checks,owner_runtime_touched=False,disposable=True,build='release',broker=False,
-                    source_hashes={str(path.relative_to(V2)):hashlib.sha256(path.read_bytes()).hexdigest() for path in [V2/'api-rust/src/main.rs',V2/'web/src/advancedOrderOverlay.js',V2/'web/scripts/quick_trading_latency_probe.mjs']},
+                    source_hashes={str(path.relative_to(V2)):hashlib.sha256(path.read_bytes()).hexdigest() for path in [V2/'api-rust/src/main.rs',V2/'api-rust/src/replay_service.rs',V2/'api-rust/src/replay_core.rs',V2/'api-rust/src/native_mutation.rs',V2/'web/src/advancedOrderOverlay.js',V2/'web/scripts/quick_trading_latency_probe.mjs']},
                     binary_sha256=hashlib.sha256((binary/'trading-workspace-api.exe').read_bytes()).hexdigest())
                 (out/'receipt.json').write_text(json.dumps(receipt,indent=2),encoding='utf-8')
     print(json.dumps({k:v for k,v in receipt.items() if k not in {'source_hashes','binary_sha256'}}))
