@@ -37,7 +37,7 @@ export function orderMarkerColumns(markers, inset = 64, gap = 8) {
 // The vendor paints order labels on canvas. These small DOM controls live in
 // that same iframe so the visible handle and the pointer target cannot diverge.
 export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
-  let root, owner, drag, frame = 0, syncFrame = 0
+  let root, owner, drag, resizeObserver, frame = 0, syncFrame = 0
   const rows = new Map()
   const pendingPrices = new Map()
   const toY = (info, price) => orderScale(info).toY(price)
@@ -55,7 +55,7 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
   }
   const placeRows = () => {
     const markers = [...rows.values()].filter(row => !row.element.hidden).map(row => {
-      const rect = row.element.getBoundingClientRect()
+      const rect = row.size || (row.size = row.element.getBoundingClientRect())
       return { kind: row.kind, y: Number.parseFloat(row.element.style.top), width: rect.width, height: rect.height,
         minRight: drag?.kind === row.kind ? drag.right : 64 }
     })
@@ -88,6 +88,7 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
       row.close.disabled = !state.orderCloseable
       row.close.style.visibility = state.orderCloseable ? 'visible' : 'hidden'
     }
+    return label
   }
   const paintDrag = () => {
     frame = 0
@@ -98,11 +99,16 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     if (!(price > 0)) return
     drag.price = price
     drag.moved ||= Math.abs(drag.clientY - drag.clientStartY) >= 2
-    if (!drag.moved) return
+    if (!drag.moved || price === drag.paintedPrice) return
+    drag.paintedPrice = price
     const row = rows.get(drag.kind)
+    const label = paintRow(row, state, price, true)
     setPrice(drag.kind, price)
-    getLine(drag.kind)?.setLineColor(orderLabel(state.levels, drag.kind, price, state.theme, t).color)
-    paintRow(row, state, price, true)
+    const line = getLine(drag.kind)
+    if (drag.line !== line || drag.color !== label.color) {
+      line?.setLineColor(label.color)
+      drag.line = line; drag.color = label.color
+    }
     row.element.style.top = `${toY(drag.info, price)}px`
     row.element.dataset.invalid = String(Boolean(protectionError(state.levels, drag.kind, price)))
     placeRows()
@@ -138,7 +144,7 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     if (!drag) return
     const gesture = drag, state = getState()
     endCapture(gesture)
-    if (!gesture.moved) { sync(); return }
+    if (!gesture.moved || gesture.price === gesture.initialPrice) { sync(); return }
     const error = protectionError(state.levels, gesture.kind, gesture.price)
     if (error) {
       restoreLine(gesture.kind)
@@ -169,7 +175,7 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     claim(event)
     body.dataset.pointerFocus = 'true'
     body.focus({ preventScroll: true })
-    drag = { kind, info, pointerId: event.pointerId, generation: state.orderGeneration, startY: toY(info, value), clientStartY: event.clientY, clientY: event.clientY, price: value, moved: false, right: Number.parseFloat(rows.get(kind).element.style.right) }
+    drag = { kind, info, pointerId: event.pointerId, generation: state.orderGeneration, startY: toY(info, value), clientStartY: event.clientY, clientY: event.clientY, price: value, initialPrice: value, paintedPrice: value, moved: false, right: Number.parseFloat(rows.get(kind).element.style.right) }
     rows.get(kind).element.dataset.dragging = 'true'
     body.setPointerCapture(event.pointerId)
     state.onOrderDragStart?.()
@@ -233,6 +239,7 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
       element.append(close); row.close = close
     }
     root.append(element); rows.set(kind, row)
+    resizeObserver?.observe(element)
     return row
   }
   function sync() {
@@ -241,6 +248,15 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     if (!state.levels || !info) { if (root) root.hidden = true; return }
     if (!root) {
       owner = info.doc
+      // The observer delivers real border-box sizes after layout. Reading each
+      // marker after every drag write would force layout on the pointer path.
+      resizeObserver = new owner.defaultView.ResizeObserver(entries => {
+        for (const entry of entries) {
+          const row = rows.get(entry.target.dataset.orderKind), size = entry.borderBoxSize[0]
+          if (row && size?.inlineSize > 0) row.size = { width: size.inlineSize, height: size.blockSize }
+        }
+        placeRows()
+      })
       root = owner.createElement('div'); root.dataset.wmOrderHandles = 'true'
       Object.assign(root.style, { position: 'fixed', pointerEvents: 'none', zIndex: '8', overflow: 'hidden' })
       owner.body.append(root)
@@ -278,6 +294,7 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     if (frame) cancelAnimationFrame(frame)
     if (syncFrame) cancelAnimationFrame(syncFrame)
     drag = null
+    resizeObserver?.disconnect()
     if (owner) {
       owner.removeEventListener('pointerdown', begin, true)
       owner.removeEventListener('pointermove', move, true)

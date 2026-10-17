@@ -206,6 +206,14 @@ try {
   assert.equal(initial.entry.color, '#089981')
   assert.equal(initial.stop.cursor, 'grab')
   assert.equal(await marker('entry').locator('[data-order-drag]').count(), 0, 'Entry is read-only')
+  const unchangedBefore = report.requests.length
+  const unchangedBox = await marker('target').locator('[data-order-drag]').boundingBox()
+  const unchangedX = unchangedBox.x + unchangedBox.width / 2, unchangedY = unchangedBox.y + unchangedBox.height / 2
+  await page.mouse.move(unchangedX, unchangedY); await page.mouse.down()
+  await page.mouse.move(unchangedX, unchangedY - 40, { steps: 8 })
+  await page.mouse.move(unchangedX, unchangedY, { steps: 8 }); await page.mouse.up()
+  assert.equal(report.requests.length, unchangedBefore, 'Returning to the original tick does not persist an unchanged protection')
+  assert.equal((await markerState()).target.text, 'TP')
   const cancelledBefore = report.requests.length
   await dragOrderHandle('Kéo Stop loss', 30, true)
   assert.equal(report.requests.length, cancelledBefore)

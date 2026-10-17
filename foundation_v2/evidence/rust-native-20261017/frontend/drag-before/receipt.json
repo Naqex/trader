@@ -1,0 +1,1350 @@
+{
+  "scope": "Production React/native Advanced Charts + identical in-memory synthetic API; no owner/provider/broker calls. Diagnostic rendering cost, not deployed API speed.",
+  "revision": "c5ede21c12e1dc4546c4d4ef5c5f392e90c957ba",
+  "baseline": true,
+  "sourceSha256": "b9613463977c85e1cd712fa4ce7ea7396380a7662a7bef185300dfd4754b79ec",
+  "runtime": {
+    "node": "v24.19.0"
+  },
+  "api": null,
+  "dataset": null,
+  "samples": [
+    {
+      "sample": 0,
+      "side": "BUY",
+      "clickToConfirmedPaintMs": 28.600000001490116,
+      "drag": {
+        "durationMs": 1261.6999999955297,
+        "priceWrites": 74,
+        "frames": [
+          16.59999999999991,
+          16.700000000000273,
+          16.699999999999818,
+          16.699999999999818,
+          16.600000000000364,
+          16.699999999999818,
+          16.699999999999818,
+          16.600000000000364,
+          16.699999999999818,
+          16.59999999999991,
+          16.800000000000182,
+          16.59999999999991,
+          16.699999999999818,
+          16.600000000000364,
+          16.59999999999991,
+          16.699999999999818,
+          16.800000000000182,
+          16.5,
+          16.799999999999727,
+          16.600000000000364,
+          16.699999999999818,
+          16.699999999999818,
+          16.700000000000273,
+          16.59999999999991,
+          16.699999999999818,
+          16.600000000000364,
+          16.699999999999818,
+          16.59999999999991,
+          16.700000000000273,
+          16.699999999999818,
+          16.699999999999818,
+          16.600000000000364,
+          16.59999999999991,
+          16.699999999999818,
+          16.700000000000273,
+          16.699999999999818,
+          16.59999999999991,
+          16.700000000000273,
+          16.59999999999991,
+          16.699999999999818,
+          16.700000000000273,
+          16.699999999999818,
+          16.59999999999991,
+          16.700000000000273,
+          16.59999999999991,
+          16.699999999999818,
+          16.700000000000273,
+          16.59999999999991,
+          16.699999999999818,
+          16.700000000000273,
+          16.699999999999818,
+          16.699999999999818,
+          16.600000000000364,
+          16.59999999999991,
+          16.699999999999818,
+          16.700000000000273,
+          16.59999999999991,
+          16.699999999999818,
+          16.700000000000273,
+          16.59999999999991,
+          16.699999999999818,
+          16.700000000000273,
+          16.59999999999991,
+          16.699999999999818,
+          16.700000000000273,
+          16.59999999999991,
+          16.699999999999818,
+          16.700000000000273,
+          16.699999999999818,
+          16.59999999999991,
+          16.59999999999991,
+          16.800000000000182,
+          16.59999999999991,
+          16.700000000000273,
+          16.59999999999991,
+          16.699999999999818
+        ],
+        "layoutCount": 91,
+        "layoutSeconds": 0.007102999999999998,
+        "scriptSeconds": 0.089531
+      },
+      "journeyLayoutCount": 107,
+      "historyReads": 0,
+      "iframeRetained": true,
+      "scaleRetained": true,
+      "scaleMovementPixels": 0,
+      "range": {
+        "from": 1.098660926225952,
+        "to": 1.1049397556449685
+      },
+      "afterRange": {
+        "from": 1.098660926225952,
+        "to": 1.1049397556449685
+      }
+    },
+    {
+      "sample": 1,
+      "side": "SELL",
+      "clickToConfirmedPaintMs": 29.200000002980232,
+      "drag": {
+        "durationMs": 1294.2000000029802,
+        "priceWrites": 74,
+        "frames": [
+          16.700000000000728,
+          16.600000000000364,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.69999999999891,
+          16.600000000000364,
+          16.600000000000364,
+          16.799999999999272,
+          16.700000000000728,
+          16.600000000000364,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.69999999999891,
+          16.600000000000364,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.69999999999891,
+          16.600000000000364,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.600000000000364,
+          16.799999999999272,
+          16.600000000000364,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.600000000000364,
+          16.700000000000728,
+          16.69999999999891,
+          16.700000000000728,
+          16.69999999999891,
+          16.600000000000364,
+          16.600000000000364,
+          16.700000000000728,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.599999999998545,
+          16.80000000000109,
+          16.600000000000364,
+          16.69999999999891,
+          16.600000000000364,
+          16.700000000000728,
+          16.69999999999891,
+          16.600000000000364,
+          16.700000000000728,
+          16.69999999999891,
+          16.600000000000364,
+          16.700000000000728,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.600000000000364,
+          16.799999999999272,
+          16.5,
+          16.700000000000728,
+          16.700000000000728
+        ],
+        "layoutCount": 91,
+        "layoutSeconds": 0.006829000000000002,
+        "scriptSeconds": 0.08371099999999998
+      },
+      "journeyLayoutCount": 108,
+      "historyReads": 0,
+      "iframeRetained": true,
+      "scaleRetained": true,
+      "scaleMovementPixels": 0,
+      "range": {
+        "from": 1.0982830410220845,
+        "to": 1.1053179297085176
+      },
+      "afterRange": {
+        "from": 1.0982830410220845,
+        "to": 1.1053179297085176
+      }
+    },
+    {
+      "sample": 2,
+      "side": "BUY",
+      "clickToConfirmedPaintMs": 30.299999997019768,
+      "drag": {
+        "durationMs": 1246.8999999985099,
+        "priceWrites": 74,
+        "frames": [
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.600000000000364,
+          16.700000000000728,
+          16.69999999999891,
+          16.600000000000364,
+          16.700000000000728,
+          16.69999999999891,
+          16.600000000000364,
+          16.600000000000364,
+          16.799999999999272,
+          16.600000000000364,
+          16.700000000000728,
+          16.69999999999891,
+          16.600000000000364,
+          16.700000000000728,
+          16.69999999999891,
+          16.600000000000364,
+          16.600000000000364,
+          16.799999999999272,
+          16.600000000000364,
+          16.700000000000728,
+          16.599999999998545,
+          16.700000000000728,
+          16.700000000000728,
+          16.599999999998545,
+          16.700000000000728,
+          16.700000000000728,
+          16.69999999999891,
+          16.600000000000364,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.799999999999272,
+          16.600000000000364,
+          16.700000000000728,
+          16.69999999999891,
+          16.600000000000364,
+          16.700000000000728,
+          16.599999999998545,
+          16.700000000000728,
+          16.700000000000728,
+          16.69999999999891,
+          16.600000000000364,
+          16.700000000000728,
+          16.599999999998545,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.700000000000728,
+          16.599999999998545,
+          16.700000000000728,
+          16.700000000000728,
+          16.599999999998545,
+          16.700000000000728,
+          16.700000000000728,
+          16.599999999998545,
+          16.700000000000728,
+          16.700000000000728,
+          16.69999999999891,
+          16.600000000000364,
+          16.700000000000728,
+          16.599999999998545,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.700000000000728
+        ],
+        "layoutCount": 91,
+        "layoutSeconds": 0.007654999999999995,
+        "scriptSeconds": 0.077909
+      },
+      "journeyLayoutCount": 107,
+      "historyReads": 0,
+      "iframeRetained": true,
+      "scaleRetained": true,
+      "scaleMovementPixels": 0,
+      "range": {
+        "from": 1.0978596531311176,
+        "to": 1.1057416412419299
+      },
+      "afterRange": {
+        "from": 1.0978596531311176,
+        "to": 1.1057416412419299
+      }
+    },
+    {
+      "sample": 3,
+      "side": "SELL",
+      "clickToConfirmedPaintMs": 30.200000002980232,
+      "drag": {
+        "durationMs": 1262.7000000029802,
+        "priceWrites": 74,
+        "frames": [
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.600000000000364,
+          16.700000000000728,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.600000000000364,
+          16.700000000000728,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.600000000000364,
+          16.700000000000728,
+          16.69999999999891,
+          16.600000000000364,
+          16.700000000000728,
+          16.69999999999891,
+          16.600000000000364,
+          16.80000000000109,
+          16.5,
+          16.799999999999272,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.700000000000728,
+          16.599999999998545,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.600000000000364,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.799999999999272,
+          16.600000000000364,
+          16.600000000000364,
+          16.799999999999272,
+          16.600000000000364,
+          16.69999999999891,
+          16.600000000000364,
+          16.700000000000728,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.600000000000364,
+          16.799999999999272,
+          16.600000000000364,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.69999999999891,
+          16.600000000000364,
+          16.600000000000364,
+          16.700000000000728
+        ],
+        "layoutCount": 91,
+        "layoutSeconds": 0.007147000000000001,
+        "scriptSeconds": 0.07883799999999996
+      },
+      "journeyLayoutCount": 107,
+      "historyReads": 0,
+      "iframeRetained": true,
+      "scaleRetained": true,
+      "scaleMovementPixels": 0,
+      "range": {
+        "from": 1.0973852833903002,
+        "to": 1.1062163735962895
+      },
+      "afterRange": {
+        "from": 1.0973852833903002,
+        "to": 1.1062163735962895
+      }
+    },
+    {
+      "sample": 4,
+      "side": "BUY",
+      "clickToConfirmedPaintMs": 30,
+      "drag": {
+        "durationMs": 1246.0999999940395,
+        "priceWrites": 74,
+        "frames": [
+          16.69999999999891,
+          16.700000000000728,
+          16.69999999999891,
+          16.600000000000364,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.69999999999891,
+          16.600000000000364,
+          16.600000000000364,
+          16.700000000000728,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.600000000000364,
+          16.799999999999272,
+          16.600000000000364,
+          16.600000000000364,
+          16.700000000000728,
+          16.69999999999891,
+          16.600000000000364,
+          16.799999999999272,
+          16.600000000000364,
+          16.600000000000364,
+          16.700000000000728,
+          16.69999999999891,
+          16.600000000000364,
+          16.700000000000728,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.600000000000364,
+          16.700000000000728,
+          16.599999999998545,
+          16.80000000000109,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.600000000000364,
+          16.700000000000728,
+          16.69999999999891,
+          16.600000000000364,
+          16.700000000000728,
+          16.69999999999891,
+          16.600000000000364,
+          16.700000000000728,
+          16.69999999999891,
+          16.600000000000364,
+          16.700000000000728,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.599999999998545,
+          16.700000000000728,
+          16.700000000000728,
+          16.69999999999891,
+          16.600000000000364,
+          16.700000000000728,
+          16.69999999999891,
+          16.600000000000364,
+          16.700000000000728,
+          16.599999999998545,
+          16.80000000000109,
+          16.600000000000364
+        ],
+        "layoutCount": 91,
+        "layoutSeconds": 0.007237000000000007,
+        "scriptSeconds": 0.07626599999999994
+      },
+      "journeyLayoutCount": 108,
+      "historyReads": 0,
+      "iframeRetained": true,
+      "scaleRetained": true,
+      "scaleMovementPixels": 0,
+      "range": {
+        "from": 1.0968537928687143,
+        "to": 1.106748270395182
+      },
+      "afterRange": {
+        "from": 1.0968537928687143,
+        "to": 1.106748270395182
+      }
+    },
+    {
+      "sample": 5,
+      "side": "SELL",
+      "clickToConfirmedPaintMs": 46.5,
+      "drag": {
+        "durationMs": 1256.1000000014901,
+        "priceWrites": 74,
+        "frames": [
+          16.69999999999891,
+          16.80000000000109,
+          16.600000000000364,
+          16.69999999999891,
+          16.600000000000364,
+          16.700000000000728,
+          16.599999999998545,
+          16.700000000000728,
+          16.700000000000728,
+          16.599999999998545,
+          16.80000000000109,
+          16.600000000000364,
+          16.599999999998545,
+          16.80000000000109,
+          16.5,
+          16.69999999999891,
+          16.700000000000728,
+          16.700000000000728,
+          16.69999999999891,
+          16.600000000000364,
+          16.600000000000364,
+          16.799999999999272,
+          16.600000000000364,
+          16.700000000000728,
+          16.599999999998545,
+          16.700000000000728,
+          16.700000000000728,
+          16.599999999998545,
+          16.700000000000728,
+          16.700000000000728,
+          16.599999999998545,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.700000000000728,
+          16.599999999998545,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.799999999999272,
+          16.600000000000364,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.700000000000728,
+          16.599999999998545,
+          16.700000000000728,
+          16.600000000000364,
+          16.799999999999272,
+          16.600000000000364,
+          16.600000000000364,
+          16.69999999999891,
+          16.600000000000364,
+          16.80000000000109,
+          16.599999999998545,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.600000000000364,
+          16.69999999999891,
+          16.700000000000728,
+          16.700000000000728
+        ],
+        "layoutCount": 90,
+        "layoutSeconds": 0.006874999999999992,
+        "scriptSeconds": 0.07273799999999997
+      },
+      "journeyLayoutCount": 107,
+      "historyReads": 0,
+      "iframeRetained": true,
+      "scaleRetained": true,
+      "scaleMovementPixels": 0,
+      "range": {
+        "from": 1.096258303421919,
+        "to": 1.1073442150407793
+      },
+      "afterRange": {
+        "from": 1.096258303421919,
+        "to": 1.1073442150407793
+      }
+    }
+  ],
+  "errors": [],
+  "resources": [
+    {
+      "path": "/project-palette.css",
+      "bytes": 6045,
+      "durationMs": 14.5
+    },
+    {
+      "path": "/assets/index-DijBquOn.js",
+      "bytes": 548487,
+      "durationMs": 12.799999997019768
+    },
+    {
+      "path": "/assets/index-DbSgDkPh.css",
+      "bytes": 204918,
+      "durationMs": 14
+    },
+    {
+      "path": "/assets/ReplayWorkspace-DFvUrZGw.js",
+      "bytes": 188162,
+      "durationMs": 27.399999998509884
+    },
+    {
+      "path": "/assets/sessionCatalog-BjHCcAsw.js",
+      "bytes": 4187,
+      "durationMs": 20.600000001490116
+    },
+    {
+      "path": "/assets/ProjectDateInput-DQnQe6HE.js",
+      "bytes": 10359,
+      "durationMs": 21.399999998509884
+    },
+    {
+      "path": "/assets/ProjectDateInput-CmD7iX9S.css",
+      "bytes": 5913,
+      "durationMs": 22.600000001490116
+    },
+    {
+      "path": "/assets/dataDisplay-xGcOFX4A.js",
+      "bytes": 586,
+      "durationMs": 23.19999999552965
+    },
+    {
+      "path": "/assets/useContentReadyMetric-5A0jj7vQ.js",
+      "bytes": 508,
+      "durationMs": 24.30000000447035
+    },
+    {
+      "path": "/assets/index-D5RemLOE.js",
+      "bytes": 66,
+      "durationMs": 28.5
+    },
+    {
+      "path": "/assets/TradeWorkspace-BqYLeun3.js",
+      "bytes": 22026,
+      "durationMs": 29.899999998509884
+    },
+    {
+      "path": "/assets/TradeWorkspace-DOe0KjCD.css",
+      "bytes": 13931,
+      "durationMs": 25.100000001490116
+    },
+    {
+      "path": "/assets/PaginationFooter-Bsii_y5n.js",
+      "bytes": 2092,
+      "durationMs": 29.80000000447035
+    },
+    {
+      "path": "/assets/PaginationFooter-MUWvR_mg.css",
+      "bytes": 2354,
+      "durationMs": 22.799999997019768
+    },
+    {
+      "path": "/assets/SessionSettingsDrawer-C-Omr_Xp.js",
+      "bytes": 17389,
+      "durationMs": 30.19999999552965
+    },
+    {
+      "path": "/assets/SessionSettingsDrawer-CSw0Xp5L.css",
+      "bytes": 1437,
+      "durationMs": 26
+    },
+    {
+      "path": "/assets/session-settings-fjfP0f8W.css",
+      "bytes": 3782,
+      "durationMs": 26.399999998509884
+    },
+    {
+      "path": "/assets/propSessionCreation-DUUCfeYc.js",
+      "bytes": 7492,
+      "durationMs": 29.799999997019768
+    },
+    {
+      "path": "/assets/ReplayWorkspace-17ZIH2B8.css",
+      "bytes": 118173,
+      "durationMs": 26.700000002980232
+    },
+    {
+      "path": "/api/v2/events",
+      "bytes": 11,
+      "durationMs": 5.299999997019768
+    },
+    {
+      "path": "/api/v2/data/datasets",
+      "bytes": 1711,
+      "durationMs": 5.299999997019768
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui",
+      "bytes": 6509,
+      "durationMs": 4.899999998509884
+    },
+    {
+      "path": "/api/v2/chart/annotations",
+      "bytes": 30,
+      "durationMs": 4
+    },
+    {
+      "path": "/api/v2/data/datasets",
+      "bytes": 1711,
+      "durationMs": 4.800000004470348
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui",
+      "bytes": 6509,
+      "durationMs": 5
+    },
+    {
+      "path": "/api/v2/chart/annotations",
+      "bytes": 30,
+      "durationMs": 4.899999998509884
+    },
+    {
+      "path": "/charting_library/charting_library.standalone.js",
+      "bytes": 21860,
+      "durationMs": 10.100000001490116
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/tick-data",
+      "bytes": 30,
+      "durationMs": 5.899999998509884
+    },
+    {
+      "path": "/api/v2/events",
+      "bytes": 11,
+      "durationMs": 1.3000000044703484
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/quick",
+      "bytes": 7894,
+      "durationMs": 3.2999999970197678
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/activity",
+      "bytes": 0,
+      "durationMs": 2.2999999970197678
+    },
+    {
+      "path": "/api/v2/events",
+      "bytes": 11,
+      "durationMs": 1.6000000014901161
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "bytes": 7898,
+      "durationMs": 3.1999999955296516
+    },
+    {
+      "path": "/api/v2/data/datasets",
+      "bytes": 1711,
+      "durationMs": 5.899999998509884
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "bytes": 6988,
+      "durationMs": 2
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/activity",
+      "bytes": 0,
+      "durationMs": 1.6000000014901161
+    },
+    {
+      "path": "/api/v2/data/datasets",
+      "bytes": 1711,
+      "durationMs": 3.2000000029802322
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/market",
+      "bytes": 7255,
+      "durationMs": 2.2000000029802322
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/activity",
+      "bytes": 0,
+      "durationMs": 2
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "bytes": 7259,
+      "durationMs": 2.1999999955296516
+    },
+    {
+      "path": "/api/v2/events",
+      "bytes": 11,
+      "durationMs": 1.3999999985098839
+    },
+    {
+      "path": "/api/v2/data/datasets",
+      "bytes": 1711,
+      "durationMs": 5
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "bytes": 6988,
+      "durationMs": 2.1999999955296516
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/activity",
+      "bytes": 0,
+      "durationMs": 1.4000000059604645
+    },
+    {
+      "path": "/api/v2/data/datasets",
+      "bytes": 1711,
+      "durationMs": 6.899999998509884
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/market",
+      "bytes": 7256,
+      "durationMs": 2.1999999955296516
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/activity",
+      "bytes": 0,
+      "durationMs": 1.8999999985098839
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/activity",
+      "bytes": 0,
+      "durationMs": 2.5
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "bytes": 7260,
+      "durationMs": 2.3000000044703484
+    },
+    {
+      "path": "/api/v2/data/datasets",
+      "bytes": 1711,
+      "durationMs": 4.5999999940395355
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "bytes": 6988,
+      "durationMs": 2.2999999970197678
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/activity",
+      "bytes": 0,
+      "durationMs": 1.7000000029802322
+    },
+    {
+      "path": "/api/v2/data/datasets",
+      "bytes": 1711,
+      "durationMs": 6.299999997019768
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/market",
+      "bytes": 7255,
+      "durationMs": 2.899999998509884
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/activity",
+      "bytes": 0,
+      "durationMs": 2.3000000044703484
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "bytes": 7259,
+      "durationMs": 2.399999998509884
+    },
+    {
+      "path": "/api/v2/data/datasets",
+      "bytes": 1711,
+      "durationMs": 4.700000002980232
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "bytes": 6988,
+      "durationMs": 2.600000001490116
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/activity",
+      "bytes": 0,
+      "durationMs": 1.5
+    },
+    {
+      "path": "/api/v2/data/datasets",
+      "bytes": 1711,
+      "durationMs": 2.899999998509884
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/market",
+      "bytes": 7256,
+      "durationMs": 2.5
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/activity",
+      "bytes": 0,
+      "durationMs": 2.399999998509884
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "bytes": 7259,
+      "durationMs": 2.2999999970197678
+    },
+    {
+      "path": "/api/v2/data/datasets",
+      "bytes": 1711,
+      "durationMs": 4.399999998509884
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "bytes": 6988,
+      "durationMs": 2.3000000044703484
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/activity",
+      "bytes": 0,
+      "durationMs": 1.3999999985098839
+    },
+    {
+      "path": "/api/v2/data/datasets",
+      "bytes": 1711,
+      "durationMs": 6.200000002980232
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/market",
+      "bytes": 7255,
+      "durationMs": 2.5
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/activity",
+      "bytes": 0,
+      "durationMs": 2.100000001490116
+    },
+    {
+      "path": "/api/v2/events",
+      "bytes": 11,
+      "durationMs": 1.7000000029802322
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "bytes": 7259,
+      "durationMs": 2.100000001490116
+    },
+    {
+      "path": "/api/v2/data/datasets",
+      "bytes": 1711,
+      "durationMs": 4.200000002980232
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "bytes": 6988,
+      "durationMs": 1.9000000059604645
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/activity",
+      "bytes": 0,
+      "durationMs": 1.3999999985098839
+    },
+    {
+      "path": "/api/v2/data/datasets",
+      "bytes": 1711,
+      "durationMs": 5.700000002980232
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/market",
+      "bytes": 7256,
+      "durationMs": 2
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/activity",
+      "bytes": 0,
+      "durationMs": 1.8000000044703484
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "bytes": 7260,
+      "durationMs": 2.100000001490116
+    },
+    {
+      "path": "/api/v2/data/datasets",
+      "bytes": 1711,
+      "durationMs": 4.199999995529652
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "bytes": 6988,
+      "durationMs": 2
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/activity",
+      "bytes": 0,
+      "durationMs": 1.5
+    }
+  ],
+  "session": "fixture-chart-ui",
+  "requests": [
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/quick",
+      "timing": {
+        "startTime": 1792247430172.1492,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": 2.867,
+        "responseEnd": 3.366
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "timing": {
+        "startTime": 1792247431522.0852,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": 2.949,
+        "responseEnd": 3.302
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "timing": {
+        "startTime": 1792247431653.698,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": 1.711,
+        "responseEnd": 2.061
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/market",
+      "timing": {
+        "startTime": 1792247431725.4648,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": 1.877,
+        "responseEnd": 2.251
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "timing": {
+        "startTime": 1792247432988.1648,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": 1.909,
+        "responseEnd": 2.271
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "timing": {
+        "startTime": 1792247437752.073,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": 1.844,
+        "responseEnd": 2.221
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/market",
+      "timing": {
+        "startTime": 1792247437824.0571,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": 1.828,
+        "responseEnd": 2.169
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "timing": {
+        "startTime": 1792247439120.222,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": 2.053,
+        "responseEnd": 2.401
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "timing": {
+        "startTime": 1792247439254.023,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": 1.935,
+        "responseEnd": 2.289
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/market",
+      "timing": {
+        "startTime": 1792247439323.122,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": 2.6,
+        "responseEnd": 2.945
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "timing": {
+        "startTime": 1792247440571.125,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": 2.06,
+        "responseEnd": 2.423
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "timing": {
+        "startTime": 1792247440702.9797,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": 2.259,
+        "responseEnd": 2.618
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/market",
+      "timing": {
+        "startTime": 1792247440773.808,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": 2.213,
+        "responseEnd": 2.565
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "timing": {
+        "startTime": 1792247442037.142,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": 2.039,
+        "responseEnd": 2.431
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "timing": {
+        "startTime": 1792247442169.2048,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": 2.03,
+        "responseEnd": 2.376
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/market",
+      "timing": {
+        "startTime": 1792247442240.174,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": 2.154,
+        "responseEnd": 2.504
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "timing": {
+        "startTime": 1792247443486.837,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": 1.843,
+        "responseEnd": 2.203
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "timing": {
+        "startTime": 1792247443619.7698,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": 1.631,
+        "responseEnd": 1.983
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/market",
+      "timing": {
+        "startTime": 1792247443706.297,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": 1.736,
+        "responseEnd": 2.105
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "timing": {
+        "startTime": 1792247444986.258,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": 1.771,
+        "responseEnd": 2.138
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "timing": {
+        "startTime": 1792247445118.824,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": 1.641,
+        "responseEnd": 2
+      }
+    }
+  ],
+  "status": "PASS",
+  "summary": {
+    "clickToConfirmedPaintMs": {
+      "p50": 30,
+      "sampleP95": 46.5
+    },
+    "drag.layoutCount": {
+      "p50": 91,
+      "sampleP95": 91
+    },
+    "drag.priceWrites": {
+      "p50": 74,
+      "sampleP95": 74
+    }
+  }
+}
