@@ -1,0 +1,910 @@
+{
+  "scope": "Vite production build; uncompressed and independent gzip chunk sizes, not network or latency measurements",
+  "runtime": {
+    "node": "v24.19.0"
+  },
+  "chunks": [
+    {
+      "file": "assets/index-CAymIb4g.js",
+      "entry": true,
+      "bytes": 548474,
+      "gzipBytes": 159864,
+      "imports": [],
+      "dynamicImports": [
+        "assets/DemoPreview-BVk0HKHE.js",
+        "assets/LearnWorkspace-DaIAcjgQ.js",
+        "assets/PropAnalytics-DebG6ohv.js",
+        "assets/ReplayWorkspace-CkMuetT4.js",
+        "assets/AnalyticsWorkspace-DY9nXIqD.js",
+        "assets/JournalWorkspace-B1gdd8WE.js",
+        "assets/SettingsWorkspace-D1iWqKuB.js",
+        "assets/DataDeskWorkspace-DW7sTwpT.js",
+        "assets/ResearchWorkspace-CsTvMN7e.js",
+        "assets/TradeWorkspace-DibibbTl.js",
+        "assets/RiskWorkspace-Bfc1Vouu.js",
+        "assets/PlaybookWorkspace-BwtjSjKU.js",
+        "assets/LiveWorkspace-DVpcgS1M.js",
+        "assets/SessionPicker-CkXTEx4m.js",
+        "assets/SessionReports-Cil0Chpm.js",
+        "assets/DashboardSessions-DSTPmLgq.js",
+        "assets/TestingComponentReference-CkQAEiBI.js"
+      ],
+      "modules": [
+        "\u0000vite/modulepreload-polyfill.js",
+        "\u0000vite/preload-helper.js",
+        "\u0000commonjsHelpers.js",
+        "\u0000D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/web/node_modules/react/jsx-runtime.js?commonjs-module",
+        "\u0000D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/web/node_modules/react/cjs/react-jsx-runtime.production.js?commonjs-exports",
+        "node_modules/react/cjs/react-jsx-runtime.production.js",
+        "node_modules/react/jsx-runtime.js",
+        "\u0000D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/web/node_modules/react/jsx-runtime.js?commonjs-es-import",
+        "\u0000D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/web/node_modules/react/index.js?commonjs-module",
+        "\u0000D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/web/node_modules/react/cjs/react.production.js?commonjs-exports",
+        "node_modules/react/cjs/react.production.js",
+        "node_modules/react/index.js",
+        "\u0000D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/web/node_modules/react/index.js?commonjs-es-import",
+        "\u0000D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/web/node_modules/react-dom/client.js?commonjs-module",
+        "\u0000D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/web/node_modules/react-dom/cjs/react-dom-client.production.js?commonjs-exports",
+        "\u0000D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/web/node_modules/scheduler/index.js?commonjs-module",
+        "\u0000D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/web/node_modules/scheduler/cjs/scheduler.production.js?commonjs-exports",
+        "node_modules/scheduler/cjs/scheduler.production.js",
+        "node_modules/scheduler/index.js",
+        "\u0000D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/web/node_modules/react-dom/index.js?commonjs-module",
+        "\u0000D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/web/node_modules/react-dom/cjs/react-dom.production.js?commonjs-exports",
+        "node_modules/react-dom/cjs/react-dom.production.js",
+        "node_modules/react-dom/index.js",
+        "node_modules/react-dom/cjs/react-dom-client.production.js",
+        "node_modules/react-dom/client.js",
+        "\u0000D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/web/node_modules/react-dom/client.js?commonjs-es-import",
+        "src/fx-shell-story.css",
+        "src/fx-shell-preferences.css",
+        "src/workspaceContext.js",
+        "src/testing-copy.json",
+        "src/testing-enums.json",
+        "src/testingLocale.jsx",
+        "src/notifications.css",
+        "src/Notifications.jsx",
+        "src/FxReplayShell.jsx",
+        "src/dataStates.js",
+        "src/demoMode.js",
+        "src/fx-select.css",
+        "src/TestingIcon.jsx",
+        "src/FxSelect.jsx",
+        "src/TestingReadState.jsx",
+        "src/testing-page-state.css",
+        "src/TestingPageState.jsx",
+        "src/view-state-preview.css",
+        "src/ViewStatePreview.jsx",
+        "src/clientNavigation.js",
+        "src/styles.css",
+        "src/dashboard.css",
+        "src/workspace-pattern.css",
+        "src/page-layout.css",
+        "src/component-interactions.css",
+        "src/testing-standard.css",
+        "src/compact-system.css",
+        "node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js",
+        "node_modules/@tanstack/query-core/build/modern/timeoutManager.js",
+        "node_modules/@tanstack/query-core/build/modern/utils.js",
+        "node_modules/@tanstack/query-core/build/modern/environmentManager.js",
+        "node_modules/@tanstack/query-core/build/modern/subscribable.js",
+        "node_modules/@tanstack/query-core/build/modern/focusManager.js",
+        "node_modules/@tanstack/query-core/build/modern/notifyManager.js",
+        "node_modules/@tanstack/query-core/build/modern/onlineManager.js",
+        "node_modules/@tanstack/query-core/build/modern/retryer.js",
+        "node_modules/@tanstack/query-core/build/modern/removable.js",
+        "node_modules/@tanstack/query-core/build/modern/infiniteQueryBehavior.js",
+        "node_modules/@tanstack/query-core/build/modern/query.js",
+        "node_modules/@tanstack/query-core/build/modern/queryObserver.js",
+        "node_modules/@tanstack/query-core/build/modern/mutation.js",
+        "node_modules/@tanstack/query-core/build/modern/mutationCache.js",
+        "node_modules/@tanstack/query-core/build/modern/queryCache.js",
+        "node_modules/@tanstack/query-core/build/modern/queryClient.js",
+        "src/frontendPerformance.js",
+        "src/scopedRead.js",
+        "src/scopedMutation.js",
+        "src/dateFormat.js",
+        "src/researchDataApi.js",
+        "src/workspaceQuery.js",
+        "src/workspaceEvents.js",
+        "src/WorkspaceQueryProvider.jsx",
+        "src/WorkspaceConnectionNote.jsx",
+        "src/chart-loading-state.css",
+        "src/ChartLoadingState.jsx",
+        "src/main.jsx",
+        "index.html"
+      ]
+    },
+    {
+      "file": "assets/LearnWorkspace-DaIAcjgQ.js",
+      "entry": false,
+      "bytes": 13518,
+      "gzipBytes": 3842,
+      "imports": [
+        "assets/index-CAymIb4g.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/learnIntegration.css",
+        "src/LearnWorkspace.jsx"
+      ]
+    },
+    {
+      "file": "assets/PropAnalytics-DebG6ohv.js",
+      "entry": false,
+      "bytes": 6916,
+      "gzipBytes": 2899,
+      "imports": [
+        "assets/index-CAymIb4g.js",
+        "assets/AnalyticsWorkspace-DY9nXIqD.js",
+        "assets/FxAnalytics-DtP-A1g_.js",
+        "assets/useReadRefresh-B9QHyjcy.js",
+        "assets/sessionPerformanceModel-BCCWb4Fb.js",
+        "assets/PaginationFooter-M5hPxf42.js",
+        "assets/useContentReadyMetric-C4dXueSy.js",
+        "assets/analyticsViewModel-CtbVcBHX.js",
+        "assets/AnalyticsFilterControls-D2gnlHyr.js",
+        "assets/ProjectDateInput-qFFupFx6.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/PropAnalytics.jsx"
+      ]
+    },
+    {
+      "file": "assets/ReplayWorkspace-CkMuetT4.js",
+      "entry": false,
+      "bytes": 380220,
+      "gzipBytes": 121662,
+      "imports": [
+        "assets/index-CAymIb4g.js",
+        "assets/sessionCatalog-BUy5dZO7.js",
+        "assets/ProjectDateInput-qFFupFx6.js",
+        "assets/dataDisplay-xGcOFX4A.js",
+        "assets/useContentReadyMetric-C4dXueSy.js",
+        "assets/index-BqefTXGq.js",
+        "assets/TradeWorkspace-DibibbTl.js",
+        "assets/PaginationFooter-M5hPxf42.js",
+        "assets/SessionSettingsDrawer-BnBMhgrQ.js",
+        "assets/propSessionCreation-BjNBFUYC.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/projectPalette.js",
+        "src/nativeChartPalette.js",
+        "node_modules/fancy-canvas/size.mjs",
+        "node_modules/fancy-canvas/device-pixel-ratio.mjs",
+        "node_modules/fancy-canvas/canvas-element-bitmap-size.mjs",
+        "node_modules/fancy-canvas/canvas-rendering-target.mjs",
+        "node_modules/lightweight-charts/dist/lightweight-charts.production.mjs",
+        "src/replayDrawingPrimitive.js",
+        "src/chartAnnotations.js",
+        "src/useReplayDrawings.js",
+        "src/ReplayObjects.jsx",
+        "src/ChartIcon.jsx",
+        "src/ChartFloatingToolbar.jsx",
+        "src/LegacyPopover.jsx",
+        "src/LegacyLayoutMenu.jsx",
+        "src/LegacyChartHeader.jsx",
+        "src/advancedReplayDatafeed.js",
+        "src/legacyReplayModel.js",
+        "src/LegacyReplayToolbar.css",
+        "src/LegacyReplayToolbar.jsx",
+        "src/legacyScalperPreset.js",
+        "src/ChartOrderPanel.jsx",
+        "src/replayChartWindow.js",
+        "src/advancedChartStorage.js",
+        "src/advancedChartSave.js",
+        "src/replayOrderLabels.js",
+        "src/advancedOrderOverlay.js",
+        "src/LegacyModal.jsx",
+        "src/chart-order-close.css",
+        "src/TradingViewReplayChart.jsx",
+        "src/replayActivityClock.js",
+        "src/useReplayActivity.js",
+        "src/ChartHeaderPreview.jsx",
+        "src/legacyChartTrades.js",
+        "src/LegacyPositions.jsx",
+        "src/LegacyTradingBar.css",
+        "src/LegacyTradingBar.jsx",
+        "src/LegacyOrderDialog.jsx",
+        "src/LegacyJournal.jsx",
+        "src/LegacyObjectTree.jsx",
+        "src/PropRulesDialog.css",
+        "src/PropRulesDialog.jsx",
+        "src/replayOrderPrimitive.js",
+        "src/ReplayWorkspace.css",
+        "src/ChartWorkbench.css",
+        "src/propReplayModel.js",
+        "src/ReplayWorkspace.jsx"
+      ]
+    },
+    {
+      "file": "assets/SettingsWorkspace-D1iWqKuB.js",
+      "entry": false,
+      "bytes": 12279,
+      "gzipBytes": 3854,
+      "imports": [
+        "assets/index-CAymIb4g.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/settings.css",
+        "src/SettingsWorkspace.jsx"
+      ]
+    },
+    {
+      "file": "assets/ResearchWorkspace-CsTvMN7e.js",
+      "entry": false,
+      "bytes": 26842,
+      "gzipBytes": 7780,
+      "imports": [
+        "assets/index-CAymIb4g.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/research-story.css",
+        "src/ResearchWorkspace.jsx"
+      ]
+    },
+    {
+      "file": "assets/TradeWorkspace-DibibbTl.js",
+      "entry": false,
+      "bytes": 22026,
+      "gzipBytes": 7341,
+      "imports": [
+        "assets/index-CAymIb4g.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/TradeWorkspace.css",
+        "src/replayOrderModel.js",
+        "src/useReplayTickOptions.js",
+        "src/TradeWorkspace.jsx"
+      ]
+    },
+    {
+      "file": "assets/RiskWorkspace-Bfc1Vouu.js",
+      "entry": false,
+      "bytes": 10356,
+      "gzipBytes": 3227,
+      "imports": [
+        "assets/index-CAymIb4g.js",
+        "assets/ProjectDateInput-qFFupFx6.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/RiskWorkspace.css",
+        "src/RiskWorkspace.jsx"
+      ]
+    },
+    {
+      "file": "assets/SessionReports-Cil0Chpm.js",
+      "entry": false,
+      "bytes": 9470,
+      "gzipBytes": 3591,
+      "imports": [
+        "assets/index-CAymIb4g.js",
+        "assets/AnalyticsWorkspace-DY9nXIqD.js",
+        "assets/FxAnalytics-DtP-A1g_.js",
+        "assets/SessionFilter-CGKqCq9j.js",
+        "assets/sessionCatalog-BUy5dZO7.js",
+        "assets/useReadRefresh-B9QHyjcy.js",
+        "assets/analyticsViewModel-CtbVcBHX.js",
+        "assets/sessionPerformanceModel-BCCWb4Fb.js",
+        "assets/PaginationFooter-M5hPxf42.js",
+        "assets/useContentReadyMetric-C4dXueSy.js",
+        "assets/AnalyticsFilterControls-D2gnlHyr.js",
+        "assets/ProjectDateInput-qFFupFx6.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/SessionReports.jsx"
+      ]
+    },
+    {
+      "file": "assets/TestingComponentReference-CkQAEiBI.js",
+      "entry": false,
+      "bytes": 20481,
+      "gzipBytes": 6892,
+      "imports": [
+        "assets/index-CAymIb4g.js",
+        "assets/FxAnalytics-DtP-A1g_.js",
+        "assets/sessionPerformanceModel-BCCWb4Fb.js",
+        "assets/AnalyticsFilterControls-D2gnlHyr.js",
+        "assets/ProjectDateInput-qFFupFx6.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/component-reference.css",
+        "src/TestingComponentReference.jsx"
+      ]
+    },
+    {
+      "file": "assets/DemoPreview-BVk0HKHE.js",
+      "entry": false,
+      "bytes": 17516,
+      "gzipBytes": 6644,
+      "imports": [
+        "assets/index-CAymIb4g.js",
+        "assets/AnalyticsWorkspace-DY9nXIqD.js",
+        "assets/FxAnalytics-DtP-A1g_.js",
+        "assets/analyticsViewModel-CtbVcBHX.js",
+        "assets/SessionFilter-CGKqCq9j.js",
+        "assets/SessionActions-Bd_kjLNO.js",
+        "assets/DashboardSessions-DSTPmLgq.js",
+        "assets/SessionSettingsDrawer-BnBMhgrQ.js",
+        "assets/SessionPicker-CkXTEx4m.js",
+        "assets/DataDeskWorkspace-DW7sTwpT.js",
+        "assets/LiveWorkspace-DVpcgS1M.js",
+        "assets/PlaybookWorkspace-BwtjSjKU.js",
+        "assets/JournalWorkspace-B1gdd8WE.js",
+        "assets/sessionPerformanceModel-BCCWb4Fb.js",
+        "assets/PaginationFooter-M5hPxf42.js",
+        "assets/useReadRefresh-B9QHyjcy.js",
+        "assets/useContentReadyMetric-C4dXueSy.js",
+        "assets/AnalyticsFilterControls-D2gnlHyr.js",
+        "assets/ProjectDateInput-qFFupFx6.js",
+        "assets/sessionCatalog-BUy5dZO7.js",
+        "assets/dataDisplay-xGcOFX4A.js",
+        "assets/dataDeskApi-CP9jgKhY.js",
+        "assets/index-BqefTXGq.js",
+        "assets/playbookApi-CAhMJt85.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/demoFixtures.js",
+        "src/DemoPreview.jsx"
+      ]
+    },
+    {
+      "file": "assets/JournalWorkspace-B1gdd8WE.js",
+      "entry": false,
+      "bytes": 20189,
+      "gzipBytes": 6116,
+      "imports": [
+        "assets/index-CAymIb4g.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/journal-analytics.css",
+        "src/journal-story.css",
+        "src/JournalWorkspace.jsx"
+      ]
+    },
+    {
+      "file": "assets/DataDeskWorkspace-DW7sTwpT.js",
+      "entry": false,
+      "bytes": 50158,
+      "gzipBytes": 15551,
+      "imports": [
+        "assets/index-CAymIb4g.js",
+        "assets/useReadRefresh-B9QHyjcy.js",
+        "assets/ProjectDateInput-qFFupFx6.js",
+        "assets/dataDisplay-xGcOFX4A.js",
+        "assets/dataDeskApi-CP9jgKhY.js",
+        "assets/index-BqefTXGq.js",
+        "assets/PaginationFooter-M5hPxf42.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/research-data.css",
+        "src/DataLibraryActions.jsx",
+        "src/dataLibraryDownloadMetrics.js",
+        "src/DataLibraryProgress.jsx",
+        "src/data-library.css",
+        "src/DataDeskWorkspace.jsx"
+      ]
+    },
+    {
+      "file": "assets/index-BqefTXGq.js",
+      "entry": false,
+      "bytes": 66,
+      "gzipBytes": 79,
+      "imports": [
+        "assets/index-CAymIb4g.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "\u0000D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/web/node_modules/react-dom/index.js?commonjs-es-import"
+      ]
+    },
+    {
+      "file": "assets/PlaybookWorkspace-BwtjSjKU.js",
+      "entry": false,
+      "bytes": 10286,
+      "gzipBytes": 3257,
+      "imports": [
+        "assets/index-CAymIb4g.js",
+        "assets/playbookApi-CAhMJt85.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/playbook-story.css",
+        "src/PlaybookWorkspace.jsx"
+      ]
+    },
+    {
+      "file": "assets/LiveWorkspace-DVpcgS1M.js",
+      "entry": false,
+      "bytes": 29693,
+      "gzipBytes": 9208,
+      "imports": [
+        "assets/index-CAymIb4g.js",
+        "assets/AnalyticsFilterControls-D2gnlHyr.js",
+        "assets/PaginationFooter-M5hPxf42.js",
+        "assets/ProjectDateInput-qFFupFx6.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/liveWorkspaceModel.js",
+        "src/LiveBrokerSnapshot.jsx",
+        "src/LiveSurfaces.jsx",
+        "src/live-workspace.css",
+        "src/LiveWorkspace.jsx"
+      ]
+    },
+    {
+      "file": "assets/SessionPicker-CkXTEx4m.js",
+      "entry": false,
+      "bytes": 13607,
+      "gzipBytes": 4990,
+      "imports": [
+        "assets/index-CAymIb4g.js",
+        "assets/dataDisplay-xGcOFX4A.js",
+        "assets/SessionSettingsDrawer-BnBMhgrQ.js",
+        "assets/AnalyticsWorkspace-DY9nXIqD.js",
+        "assets/SessionActions-Bd_kjLNO.js",
+        "assets/sessionCatalog-BUy5dZO7.js",
+        "assets/ProjectDateInput-qFFupFx6.js",
+        "assets/useReadRefresh-B9QHyjcy.js",
+        "assets/analyticsViewModel-CtbVcBHX.js",
+        "assets/FxAnalytics-DtP-A1g_.js",
+        "assets/sessionPerformanceModel-BCCWb4Fb.js",
+        "assets/AnalyticsFilterControls-D2gnlHyr.js",
+        "assets/PaginationFooter-M5hPxf42.js",
+        "assets/useContentReadyMetric-C4dXueSy.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/session-picker.css",
+        "src/SessionPicker.jsx"
+      ]
+    },
+    {
+      "file": "assets/SessionFilter-CGKqCq9j.js",
+      "entry": false,
+      "bytes": 4788,
+      "gzipBytes": 1973,
+      "imports": [
+        "assets/index-CAymIb4g.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/session-filter.css",
+        "src/SessionFilter.jsx"
+      ]
+    },
+    {
+      "file": "assets/AnalyticsWorkspace-DY9nXIqD.js",
+      "entry": false,
+      "bytes": 29914,
+      "gzipBytes": 10984,
+      "imports": [
+        "assets/index-CAymIb4g.js",
+        "assets/FxAnalytics-DtP-A1g_.js",
+        "assets/sessionPerformanceModel-BCCWb4Fb.js",
+        "assets/PaginationFooter-M5hPxf42.js",
+        "assets/useReadRefresh-B9QHyjcy.js",
+        "assets/useContentReadyMetric-C4dXueSy.js",
+        "assets/analyticsViewModel-CtbVcBHX.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/analytics-story.css",
+        "src/FxTradeLedger.jsx",
+        "src/propAnalyticsModel.js",
+        "src/journalContext.js",
+        "src/AnalyticsWorkspace.jsx"
+      ]
+    },
+    {
+      "file": "assets/useContentReadyMetric-C4dXueSy.js",
+      "entry": false,
+      "bytes": 508,
+      "gzipBytes": 315,
+      "imports": [
+        "assets/index-CAymIb4g.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/useContentReadyMetric.js"
+      ]
+    },
+    {
+      "file": "assets/DashboardSessions-DSTPmLgq.js",
+      "entry": false,
+      "bytes": 33702,
+      "gzipBytes": 10956,
+      "imports": [
+        "assets/index-CAymIb4g.js",
+        "assets/useReadRefresh-B9QHyjcy.js",
+        "assets/ProjectDateInput-qFFupFx6.js",
+        "assets/sessionCatalog-BUy5dZO7.js",
+        "assets/SessionSettingsDrawer-BnBMhgrQ.js",
+        "assets/analyticsViewModel-CtbVcBHX.js",
+        "assets/sessionPerformanceModel-BCCWb4Fb.js",
+        "assets/SessionActions-Bd_kjLNO.js",
+        "assets/PaginationFooter-M5hPxf42.js"
+      ],
+      "dynamicImports": [
+        "assets/QuickSessionDialog-BulzUbj5.js",
+        "assets/PropAnalytics-DebG6ohv.js"
+      ],
+      "modules": [
+        "src/DashboardPerformance.jsx",
+        "src/DashboardSessionCard.jsx",
+        "src/DashboardSessions.jsx"
+      ]
+    },
+    {
+      "file": "assets/SessionActions-Bd_kjLNO.js",
+      "entry": false,
+      "bytes": 14788,
+      "gzipBytes": 5549,
+      "imports": [
+        "assets/index-CAymIb4g.js",
+        "assets/SessionSettingsDrawer-BnBMhgrQ.js",
+        "assets/sessionPerformanceModel-BCCWb4Fb.js",
+        "assets/PaginationFooter-M5hPxf42.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/session-kind.css",
+        "src/SessionKindBadge.jsx",
+        "src/session-performance.css",
+        "src/SessionDetails.jsx",
+        "src/SessionPerformance.jsx",
+        "src/session-actions.css",
+        "src/dashboard-session.css",
+        "src/SessionActions.jsx"
+      ]
+    },
+    {
+      "file": "assets/SessionSettingsDrawer-BnBMhgrQ.js",
+      "entry": false,
+      "bytes": 17389,
+      "gzipBytes": 6520,
+      "imports": [
+        "assets/index-CAymIb4g.js",
+        "assets/sessionCatalog-BUy5dZO7.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/dashboardModel.js",
+        "src/sessionSettingsModel.js",
+        "src/form-validation.css",
+        "src/FormValidation.jsx",
+        "src/SessionSettingsDrawer.jsx"
+      ]
+    },
+    {
+      "file": "assets/sessionCatalog-BUy5dZO7.js",
+      "entry": false,
+      "bytes": 4187,
+      "gzipBytes": 1806,
+      "imports": [
+        "assets/index-CAymIb4g.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/sessionCatalog.js"
+      ]
+    },
+    {
+      "file": "assets/analyticsViewModel-CtbVcBHX.js",
+      "entry": false,
+      "bytes": 5983,
+      "gzipBytes": 2467,
+      "imports": [
+        "assets/index-CAymIb4g.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/analyticsViewModel.js"
+      ]
+    },
+    {
+      "file": "assets/useReadRefresh-B9QHyjcy.js",
+      "entry": false,
+      "bytes": 4164,
+      "gzipBytes": 1875,
+      "imports": [
+        "assets/index-CAymIb4g.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/readRecovery.js",
+        "src/useReadRefresh.js"
+      ]
+    },
+    {
+      "file": "assets/PaginationFooter-M5hPxf42.js",
+      "entry": false,
+      "bytes": 2092,
+      "gzipBytes": 866,
+      "imports": [
+        "assets/index-CAymIb4g.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/paginationModel.js",
+        "src/pagination-footer.css",
+        "src/PaginationFooter.jsx"
+      ]
+    },
+    {
+      "file": "assets/FxAnalytics-DtP-A1g_.js",
+      "entry": false,
+      "bytes": 47617,
+      "gzipBytes": 16212,
+      "imports": [
+        "assets/index-CAymIb4g.js",
+        "assets/sessionPerformanceModel-BCCWb4Fb.js",
+        "assets/AnalyticsFilterControls-D2gnlHyr.js",
+        "assets/ProjectDateInput-qFFupFx6.js"
+      ],
+      "dynamicImports": [
+        "assets/analyticsSimulation-CDmhg32S.js"
+      ],
+      "modules": [
+        "src/tradingAnalyticsModel.js",
+        "src/fx-analytics.css",
+        "src/AnalyticsFilterBar.jsx",
+        "src/ledger-controls.css",
+        "src/LedgerFilterDrawer.jsx",
+        "src/FxAnalytics.jsx"
+      ]
+    },
+    {
+      "file": "assets/AnalyticsFilterControls-D2gnlHyr.js",
+      "entry": false,
+      "bytes": 5104,
+      "gzipBytes": 2246,
+      "imports": [
+        "assets/index-CAymIb4g.js",
+        "assets/ProjectDateInput-qFFupFx6.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/analytics-filter-controls.css",
+        "src/AnalyticsFilterControls.jsx"
+      ]
+    },
+    {
+      "file": "assets/sessionPerformanceModel-BCCWb4Fb.js",
+      "entry": false,
+      "bytes": 1227,
+      "gzipBytes": 630,
+      "imports": [],
+      "dynamicImports": [],
+      "modules": [
+        "src/sessionPerformanceModel.js"
+      ]
+    },
+    {
+      "file": "assets/ProjectDateInput-qFFupFx6.js",
+      "entry": false,
+      "bytes": 10359,
+      "gzipBytes": 3538,
+      "imports": [
+        "assets/index-CAymIb4g.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/project-date-input.css",
+        "src/ProjectDateInput.jsx"
+      ]
+    },
+    {
+      "file": "assets/analyticsSimulation-CDmhg32S.js",
+      "entry": false,
+      "bytes": 1779,
+      "gzipBytes": 1111,
+      "imports": [
+        "assets/FxAnalytics-DtP-A1g_.js",
+        "assets/index-CAymIb4g.js",
+        "assets/sessionPerformanceModel-BCCWb4Fb.js",
+        "assets/AnalyticsFilterControls-D2gnlHyr.js",
+        "assets/ProjectDateInput-qFFupFx6.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/analyticsSimulation.js"
+      ]
+    },
+    {
+      "file": "assets/QuickSessionDialog-BulzUbj5.js",
+      "entry": false,
+      "bytes": 24409,
+      "gzipBytes": 7841,
+      "imports": [
+        "assets/index-CAymIb4g.js",
+        "assets/propSessionCreation-BjNBFUYC.js",
+        "assets/dataDeskApi-CP9jgKhY.js",
+        "assets/dataDisplay-xGcOFX4A.js",
+        "assets/ProjectDateInput-qFFupFx6.js",
+        "assets/SessionSettingsDrawer-BnBMhgrQ.js",
+        "assets/playbookApi-CAhMJt85.js",
+        "assets/sessionCatalog-BUy5dZO7.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/datasetAssetOptions.js",
+        "src/DatasetAssetSelect.jsx",
+        "src/SessionPeriodFields.jsx",
+        "src/quickSessionValidation.js",
+        "src/QuickSessionDialog.jsx"
+      ]
+    },
+    {
+      "file": "assets/propSessionCreation-BjNBFUYC.js",
+      "entry": false,
+      "bytes": 7492,
+      "gzipBytes": 3076,
+      "imports": [
+        "assets/sessionCatalog-BUy5dZO7.js",
+        "assets/index-CAymIb4g.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/sessionPeriod.js",
+        "src/propSessionCreation.js"
+      ]
+    },
+    {
+      "file": "assets/dataDeskApi-CP9jgKhY.js",
+      "entry": false,
+      "bytes": 5788,
+      "gzipBytes": 2340,
+      "imports": [
+        "assets/dataDisplay-xGcOFX4A.js",
+        "assets/index-CAymIb4g.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/dataLibraryModel.js",
+        "src/dataDeskApi.js"
+      ]
+    },
+    {
+      "file": "assets/playbookApi-CAhMJt85.js",
+      "entry": false,
+      "bytes": 1620,
+      "gzipBytes": 858,
+      "imports": [
+        "assets/index-CAymIb4g.js"
+      ],
+      "dynamicImports": [],
+      "modules": [
+        "src/playbookApi.js"
+      ]
+    },
+    {
+      "file": "assets/dataDisplay-xGcOFX4A.js",
+      "entry": false,
+      "bytes": 586,
+      "gzipBytes": 443,
+      "imports": [],
+      "dynamicImports": [],
+      "modules": [
+        "src/dataDisplay.js"
+      ]
+    }
+  ],
+  "routes": {
+    "DashboardSessions": {
+      "files": [
+        "assets/DashboardSessions-DSTPmLgq.js",
+        "assets/index-CAymIb4g.js",
+        "assets/useReadRefresh-B9QHyjcy.js",
+        "assets/ProjectDateInput-qFFupFx6.js",
+        "assets/sessionCatalog-BUy5dZO7.js",
+        "assets/SessionSettingsDrawer-BnBMhgrQ.js",
+        "assets/analyticsViewModel-CtbVcBHX.js",
+        "assets/sessionPerformanceModel-BCCWb4Fb.js",
+        "assets/SessionActions-Bd_kjLNO.js",
+        "assets/PaginationFooter-M5hPxf42.js"
+      ],
+      "bytes": 642365,
+      "gzipBytes": 194071
+    },
+    "SessionPicker": {
+      "files": [
+        "assets/SessionPicker-CkXTEx4m.js",
+        "assets/index-CAymIb4g.js",
+        "assets/dataDisplay-xGcOFX4A.js",
+        "assets/SessionSettingsDrawer-BnBMhgrQ.js",
+        "assets/sessionCatalog-BUy5dZO7.js",
+        "assets/AnalyticsWorkspace-DY9nXIqD.js",
+        "assets/FxAnalytics-DtP-A1g_.js",
+        "assets/sessionPerformanceModel-BCCWb4Fb.js",
+        "assets/AnalyticsFilterControls-D2gnlHyr.js",
+        "assets/ProjectDateInput-qFFupFx6.js",
+        "assets/PaginationFooter-M5hPxf42.js",
+        "assets/useReadRefresh-B9QHyjcy.js",
+        "assets/useContentReadyMetric-C4dXueSy.js",
+        "assets/analyticsViewModel-CtbVcBHX.js",
+        "assets/SessionActions-Bd_kjLNO.js"
+      ],
+      "bytes": 705999,
+      "gzipBytes": 218305
+    },
+    "SessionReports": {
+      "files": [
+        "assets/SessionReports-Cil0Chpm.js",
+        "assets/index-CAymIb4g.js",
+        "assets/AnalyticsWorkspace-DY9nXIqD.js",
+        "assets/FxAnalytics-DtP-A1g_.js",
+        "assets/sessionPerformanceModel-BCCWb4Fb.js",
+        "assets/AnalyticsFilterControls-D2gnlHyr.js",
+        "assets/ProjectDateInput-qFFupFx6.js",
+        "assets/PaginationFooter-M5hPxf42.js",
+        "assets/useReadRefresh-B9QHyjcy.js",
+        "assets/useContentReadyMetric-C4dXueSy.js",
+        "assets/analyticsViewModel-CtbVcBHX.js",
+        "assets/SessionFilter-CGKqCq9j.js",
+        "assets/sessionCatalog-BUy5dZO7.js"
+      ],
+      "bytes": 673887,
+      "gzipBytes": 206367
+    },
+    "AnalyticsWorkspace": {
+      "files": [
+        "assets/AnalyticsWorkspace-DY9nXIqD.js",
+        "assets/index-CAymIb4g.js",
+        "assets/FxAnalytics-DtP-A1g_.js",
+        "assets/sessionPerformanceModel-BCCWb4Fb.js",
+        "assets/AnalyticsFilterControls-D2gnlHyr.js",
+        "assets/ProjectDateInput-qFFupFx6.js",
+        "assets/PaginationFooter-M5hPxf42.js",
+        "assets/useReadRefresh-B9QHyjcy.js",
+        "assets/useContentReadyMetric-C4dXueSy.js",
+        "assets/analyticsViewModel-CtbVcBHX.js"
+      ],
+      "bytes": 655442,
+      "gzipBytes": 198997
+    },
+    "ReplayWorkspace": {
+      "files": [
+        "assets/ReplayWorkspace-CkMuetT4.js",
+        "assets/index-CAymIb4g.js",
+        "assets/sessionCatalog-BUy5dZO7.js",
+        "assets/ProjectDateInput-qFFupFx6.js",
+        "assets/dataDisplay-xGcOFX4A.js",
+        "assets/useContentReadyMetric-C4dXueSy.js",
+        "assets/index-BqefTXGq.js",
+        "assets/TradeWorkspace-DibibbTl.js",
+        "assets/PaginationFooter-M5hPxf42.js",
+        "assets/SessionSettingsDrawer-BnBMhgrQ.js",
+        "assets/propSessionCreation-BjNBFUYC.js"
+      ],
+      "bytes": 993399,
+      "gzipBytes": 305510
+    },
+    "DataDeskWorkspace": {
+      "files": [
+        "assets/DataDeskWorkspace-DW7sTwpT.js",
+        "assets/index-CAymIb4g.js",
+        "assets/useReadRefresh-B9QHyjcy.js",
+        "assets/ProjectDateInput-qFFupFx6.js",
+        "assets/dataDisplay-xGcOFX4A.js",
+        "assets/dataDeskApi-CP9jgKhY.js",
+        "assets/index-BqefTXGq.js",
+        "assets/PaginationFooter-M5hPxf42.js"
+      ],
+      "bytes": 621687,
+      "gzipBytes": 184556
+    }
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "scope": "Production React build, explicit synthetic intercepted APIs; no database/provider/broker calls",
+  "cases": [],
+  "errors": [],
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/api/v2/events",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/replay/sessions/lifecycle-session/analytics",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/journal/context",
+      "query": "?session_id=lifecycle-session"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/events",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/journal/context",
+      "query": "?session_id=lifecycle-session"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/events",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/events",
+      "query": ""
+    }
+  ],
+  "status": "fail",
+  "error": "locator.click: Timeout 12000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: /Thử lại|Retry/ })\u001b[22m\n\n    at D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\web\\tests\\frontendReadLifecycle.browser.mjs:81:61"
+}

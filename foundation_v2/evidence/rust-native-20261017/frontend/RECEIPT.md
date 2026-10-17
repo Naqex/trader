@@ -72,3 +72,39 @@ node scripts/analytics_model_parity.mjs 22c91a0a02777396b3f8ccf96239dba2a4ee270f
 Frozen GET payloads and screenshots stay local rather than entering the commit.
 The bundle and navigation JSON files preserve raw diagnostic samples; they do not
 replace the canonical product plan/acceptance owner.
+
+## Chart engine dependency split
+
+The default Advanced Charts route previously imported the complete second chart
+engine (`lightweight-charts`) through an inline React renderer. The renderer body
+is extracted unchanged into `LightweightReplayChart.jsx`, loaded only by the
+explicit lightweight branch. A local Suspense boundary retains the workspace
+and uses its existing chart loading state. Advanced iframe creation is unchanged.
+
+Static replay JavaScript closure including shell, excluding vendor Advanced Charts
+files that remain unchanged:
+
+| Metric | Before engine split | After |
+| --- | ---: | ---: |
+| Raw JS | 993,399 B | 801,354 B |
+| Independent gzip sum | 305,510 B | 244,017 B |
+
+This removes 192,045 raw bytes from the default route and does not claim a latency
+percentage. The explicit lightweight route downloads its separate engine chunk.
+Build metadata verifies the default closure has no lightweight package modules.
+
+- Exact renderer-body comparison against `d4a00ed` passes; only its component
+  export/name and imports move. Order drag/cancel, pointer capture, range retention,
+  resize cleanup and data cutoff effects retain their previous code.
+- 43 focused chart/datafeed/order Node tests pass.
+- Real Advanced Charts engine with synthetic HTTP fixtures:
+  `quickTrading.browser.mjs` passes 9 cases / 20 intercepted mutations, zero errors.
+  These mutations reach only test memory; no owner data changes.
+- New `chartEngineSplit.browser.mjs` passes 4 cases: actual canvas and 61 visible
+  rows, crosshair updates preserve canvas identity, native pan, all five chart
+  types retain logical range/cutoff, explicit-engine reload. Screenshot reviewed.
+- Historical `frontendReadLifecycle.browser.mjs` fails before reaching replay:
+  its Analytics step expects a removed manual Retry button. Failure retained in
+  `lightweight-lifecycle/receipt.json`; it is not represented as chart regression
+  acceptance. The new test exercises the assigned chart split directly.
+- Pre-existing dirty Prop auto-init dependency hunk remains unstaged/uncommitted.

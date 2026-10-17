@@ -1,0 +1,18 @@
+{
+  "scope": "Actual lightweight chart package and React components with isolated synthetic GET-only intercepted API fixtures. No owner, provider, broker writes. Advanced native engine separately covered by quickTrading.browser.",
+  "cases": [
+    "Lazy engine paints real canvas with exactly the visible 61-row prefix; crosshair keeps canvas mounted",
+    "Native drag pans the chart without remounting the canvas",
+    "All five chart types retain the selected logical range and visible cutoff",
+    "Explicit lightweight mode reloads its own renderer chunk and real chart package successfully"
+  ],
+  "errors": [],
+  "blocked": [],
+  "modules": [
+    "/src/LightweightReplayChart.jsx",
+    "/node_modules/.vite/deps/lightweight-charts.js",
+    "/src/LightweightReplayChart.jsx",
+    "/node_modules/.vite/deps/lightweight-charts.js"
+  ],
+  "status": "PASS"
+}
