@@ -8,7 +8,7 @@ Flask/EA cũ được giữ để đối chiếu và tái sử dụng logic, xem
 
 | Phần | Nơi làm việc hiện tại |
 | --- | --- |
-| Backend | [`foundation_v2/trading_workspace_v2/`](foundation_v2/trading_workspace_v2/): FastAPI, PostgreSQL, API theo workspace, dataset/result bất biến |
+| Backend | [`foundation_v2/api-rust/`](foundation_v2/api-rust/): Axum/PostgreSQL; compatibility dùng Python domain workers, [native candidate](foundation_v2/docs/RUST-NATIVE-RUNTIME.md) chạy domain bằng Rust |
 | UI | [`foundation_v2/web/`](foundation_v2/web/): React, Vite, TradingView Advanced Charts và shell WMReplay; Lightweight Charts giữ làm rollback |
 | Engine research | [`foundation_v2/engine_runtime/`](foundation_v2/engine_runtime/pyproject.toml): runtime Nautilus tách riêng |
 | Test và bằng chứng | [`foundation_v2/tests/`](foundation_v2/tests/), [`foundation_v2/evidence/`](foundation_v2/evidence/) |

@@ -1,0 +1,110 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "name": "production-native-chart-http",
+      "passed": true,
+      "summary": {
+        "clickToConfirmedPaintMs": {
+          "p50": 62.29999999701977,
+          "sampleP95": 64
+        },
+        "drag.layoutCount": {
+          "p50": 19,
+          "sampleP95": 28
+        },
+        "drag.priceWrites": {
+          "p50": 11,
+          "sampleP95": 20
+        }
+      },
+      "seconds": 16.699142800003756,
+      "api_before": {
+        "rss_bytes": 11497472,
+        "peak_rss_bytes": 11497472,
+        "private_commit_bytes": 4100096,
+        "cpu_kernel_ns": 0,
+        "cpu_user_ns": 0,
+        "page_fault_count": 2939
+      },
+      "api_after": {
+        "rss_bytes": 20590592,
+        "peak_rss_bytes": 25604096,
+        "private_commit_bytes": 10436608,
+        "cpu_kernel_ns": 265625000,
+        "cpu_user_ns": 656250000,
+        "page_fault_count": 70797
+      }
+    },
+    {
+      "name": "native-http-history-concurrency",
+      "passed": true,
+      "summary": [
+        {
+          "stage": 0,
+          "concurrency": 1,
+          "samples": 5,
+          "p50_ms": 47.8594,
+          "sample_p95_ms": 57.4521,
+          "max_ms": 57.4521,
+          "response_bytes": 9784
+        },
+        {
+          "stage": 0,
+          "concurrency": 4,
+          "samples": 20,
+          "p50_ms": 59.2755,
+          "sample_p95_ms": 75.2945,
+          "max_ms": 84.8086,
+          "response_bytes": 14869
+        },
+        {
+          "stage": 500,
+          "concurrency": 1,
+          "samples": 5,
+          "p50_ms": 108.9612,
+          "sample_p95_ms": 126.5913,
+          "max_ms": 126.5913,
+          "response_bytes": 495558
+        },
+        {
+          "stage": 500,
+          "concurrency": 4,
+          "samples": 20,
+          "p50_ms": 111.4716,
+          "sample_p95_ms": 127.9767,
+          "max_ms": 128.153,
+          "response_bytes": 500659
+        },
+        {
+          "stage": 5000,
+          "concurrency": 1,
+          "samples": 5,
+          "p50_ms": 581.3626,
+          "sample_p95_ms": 602.4608,
+          "max_ms": 602.4608,
+          "response_bytes": 4572893
+        },
+        {
+          "stage": 5000,
+          "concurrency": 4,
+          "samples": 20,
+          "p50_ms": 689.2821,
+          "sample_p95_ms": 864.0208,
+          "max_ms": 865.1694,
+          "response_bytes": 4578003
+        }
+      ]
+    }
+  ],
+  "owner_runtime_touched": false,
+  "disposable": true,
+  "build": "release",
+  "broker": false,
+  "source_hashes": {
+    "api-rust\\src\\main.rs": "7d932cc5028ffb805dcbe173a04533524f5e6a52e0f8a8d211e0a1fb36b3be4b",
+    "web\\src\\advancedOrderOverlay.js": "387f581bd3e8d315f1684b6a4dbb4018a98c8972458e0729dd588e4ea0efb7b8",
+    "web\\scripts\\quick_trading_latency_probe.mjs": "e6f548071e2cd972ffb261fe008d8c468a8a52feac2862637abf4f4d2f14c029"
+  },
+  "binary_sha256": "8d08dc14cdea347f0ab9ce9eae2198849131439e20cd70cd113d41c513a995ae"
+}

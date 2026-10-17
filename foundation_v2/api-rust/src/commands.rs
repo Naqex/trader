@@ -46,23 +46,29 @@ struct Route {
     path: String,
 }
 fn native(method: &str, path: &str) -> bool {
-    if crate::metadata_mutations::native(method, path)
-        || crate::replay_service::native(method, path)
-        || crate::prop_service::native(method, path)
-        || crate::analytics::native(method, path)
-        || crate::context_routes::native(method, path)
-        || crate::notion_oauth::native(method, path)
-        || crate::control_routes::native(method, path)
-        || crate::research_jobs::native(method, path)
-        || crate::data_routes::native(method, path)
-        || crate::provider_routes::native(method, path)
-    {
-        return true;
+    native_owner(method, path).is_some()
+}
+
+fn native_owner(method: &str, path: &str) -> Option<&'static str> {
+    let owners: [(&str, fn(&str, &str) -> bool); 10] = [
+        ("metadata_mutations", crate::metadata_mutations::native),
+        ("replay_service", crate::replay_service::native),
+        ("prop_service", crate::prop_service::native),
+        ("analytics", crate::analytics::native),
+        ("context_routes", crate::context_routes::native),
+        ("notion_oauth", crate::notion_oauth::native),
+        ("control_routes", crate::control_routes::native),
+        ("research_jobs", crate::research_jobs::native),
+        ("data_routes", crate::data_routes::native),
+        ("provider_routes", crate::provider_routes::native),
+    ];
+    for (owner, owns) in owners {
+        if owns(method, path) { return Some(owner); }
     }
     if method == "POST" && path == "/api/v2/execution/intents" {
-        return true;
+        return Some("execution");
     }
-    method == "GET"
+    (method == "GET"
         && matches!(
             path,
             "/health"
@@ -82,7 +88,21 @@ fn native(method: &str, path: &str) -> bool {
                 | "/api/v2/session/status"
                 | "/api/v2/research/jobs/{job_id}"
                 | "/api/v2/research/jobs/{job_id}/checkpoint"
-        )
+        )).then_some("catalog")
+}
+
+/// Uses the dispatch predicates so the admin inventory cannot silently retain an
+/// obsolete queue/native split after a module is migrated.
+pub fn route_inventory_for(native_runtime: bool) -> Value {
+    json!(serde_json::from_str::<Vec<Route>>(FROZEN)
+        .expect("reviewed route manifest").into_iter().map(|route| {
+            let owner = native_owner(&route.method, &route.path).or_else(||
+                (native_runtime && crate::provider_routes::native_profile(&route.method, &route.path))
+                    .then_some("provider_routes"));
+            json!({"method":route.method,"path":route.path,
+                "dispatch":if owner.is_some(){"rust_native"}else{"python_command_queue"},
+                "owner":owner.unwrap_or("commands")})
+        }).collect::<Vec<_>>())
 }
 pub fn routes() -> Router<Arc<AppState>> {
     routes_for(false)
@@ -428,6 +448,14 @@ mod tests {
         Arc::get_mut(&mut state).unwrap().native_runtime = true;
         let _ = crate::runtime_domain_routes(&state).unwrap();
         assert_eq!(required_worker_manifest_for(true),json!([]),"native readiness must not depend on a compatibility worker");
+        for native_runtime in [false, true] {
+            let inventory = route_inventory_for(native_runtime);
+            assert_eq!(inventory.as_array().unwrap().len(), 105);
+            let queued: Vec<Value> = inventory.as_array().unwrap().iter()
+                .filter(|r| r["dispatch"] == "python_command_queue")
+                .map(|r| json!({"method":r["method"],"path":r["path"]})).collect();
+            assert_eq!(json!(queued), required_worker_manifest_for(native_runtime));
+        }
         let delegated = required_worker_manifest();
         for route in delegated.as_array().unwrap() {
             assert!(!crate::replay_service::native(route["method"].as_str().unwrap(), route["path"].as_str().unwrap()));

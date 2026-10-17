@@ -20,6 +20,7 @@ use std::{
 pub mod catalog;
 mod catalog_refresh;
 pub mod execution;
+pub mod dependencies;
 pub mod lifecycle;
 
 #[derive(Clone, Debug)]

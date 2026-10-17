@@ -11,7 +11,7 @@ use tokio_postgres::Client;
 #[derive(Clone)]
 pub enum Adapter {
     Qdm{executable:PathBuf,sha256:String},
-    Dukascopy{node:PathBuf,node_sha256:String,worker:PathBuf,worker_sha256:String},
+    Dukascopy{node:PathBuf,node_sha256:String,worker:PathBuf,worker_sha256:String,dependencies_sha256:String},
 }
 
 impl Adapter {
@@ -20,11 +20,17 @@ impl Adapter {
         let adapter=match &runtime.engine {
             DownloadEngine::None=>return Ok(None),
             DownloadEngine::Qdm{home}=>Self::Qdm{executable:home.join("qdmcli.exe"),sha256:required("TW_V2_QDM_SHA256")?},
-            DownloadEngine::Dukascopy{..}=>Self::Dukascopy{node:PathBuf::from(required("TW_V2_DUKASCOPY_NODE")?),node_sha256:required("TW_V2_DUKASCOPY_NODE_SHA256")?,worker:PathBuf::from(required("TW_V2_DUKASCOPY_WORKER")?),worker_sha256:required("TW_V2_DUKASCOPY_WORKER_SHA256")?},
+            DownloadEngine::Dukascopy{..}=>Self::Dukascopy{node:PathBuf::from(required("TW_V2_DUKASCOPY_NODE")?),node_sha256:required("TW_V2_DUKASCOPY_NODE_SHA256")?,worker:PathBuf::from(required("TW_V2_DUKASCOPY_WORKER")?),worker_sha256:required("TW_V2_DUKASCOPY_WORKER_SHA256")?,dependencies_sha256:required("TW_V2_DUKASCOPY_DEPENDENCIES_SHA256")?},
         };adapter.verify()?;Ok(Some(adapter))
     }
     fn verify(&self)->Result<(),String>{
-        match self{Self::Qdm{executable,sha256}=>verify(executable,sha256),Self::Dukascopy{node,node_sha256,worker,worker_sha256}=>{verify(node,node_sha256)?;verify(worker,worker_sha256)}}
+        match self{Self::Qdm{executable,sha256}=>verify(executable,sha256),Self::Dukascopy{node,node_sha256,worker,worker_sha256,dependencies_sha256}=>{
+            verify(node,node_sha256)?;verify(worker,worker_sha256)?;
+            if super::dependencies::digest(worker.parent().ok_or("provider_dependencies_missing")?)? != *dependencies_sha256 {
+                return Err("provider_dependencies_identity_changed".into());
+            }
+            Ok(())
+        }}
     }
 }
 
@@ -430,7 +436,7 @@ mod tests {
         let mut stale=new_job("tenant-a","running","2026-01-01","2026-01-01");
         let tx=conn.transaction().await.unwrap();
         for job in [&mut foreign,&mut stale]{lifecycle::save(&tx,&runtime,job).await.unwrap();}tx.commit().await.unwrap();
-        let adapter=Adapter::Dukascopy{node:root.join("absent.exe"),node_sha256:"1".repeat(64),worker:root.join("absent.js"),worker_sha256:"1".repeat(64)};
+        let adapter=Adapter::Dukascopy{node:root.join("absent.exe"),node_sha256:"1".repeat(64),worker:root.join("absent.js"),worker_sha256:"1".repeat(64),dependencies_sha256:"1".repeat(64)};
         let stop=AtomicBool::new(false);
         assert!(run_one(&state,&runtime,&adapter,&stop).await.unwrap());
         assert!(!run_one(&state,&runtime,&adapter,&stop).await.unwrap(),"foreign queued job must not starve or execute");

@@ -6,9 +6,21 @@ use trading_workspace_api::rust_runtime;
 #[tokio::main]
 async fn main()->Result<(),Box<dyn std::error::Error>> {
     let args=std::env::args().skip(1).collect::<Vec<_>>();
+    if args.len()==2 && args[0]=="provider-dependency-hash" {
+        let hash=trading_workspace_api::provider_routes::dependencies::digest(std::path::Path::new(&args[1]))?;
+        println!("{}",serde_json::json!({"sha256":hash}));
+        return Ok(());
+    }
+    if args.len()==2 && args[0]=="scientific-capability" {
+        let root=trading_workspace_api::research_jobs::adapter::foundation_root();
+        let hash=trading_workspace_api::research_jobs::adapter::engine_code_hash(&root)?;
+        let descriptor=trading_workspace_api::research_jobs::adapter::descriptor(&root,std::path::Path::new(&args[1]),&hash)?;
+        println!("{}",serde_json::json!({"valid":true,"runtime_identity":descriptor["runtime_identity"]}));
+        return Ok(());
+    }
     if args.as_slice()==["routes"] {
         let native = std::env::var("TW_V2_RUNTIME_PROFILE").is_ok_and(|v|v=="native");
-        println!("{}",serde_json::json!({"contract_version":trading_workspace_api::CONTRACT_VERSION,"runtime_profile":if native{"native"}else{"compatibility"},"required_command_routes":trading_workspace_api::commands::required_worker_manifest_for(native)}));
+        println!("{}",serde_json::json!({"contract_version":trading_workspace_api::CONTRACT_VERSION,"runtime_profile":if native{"native"}else{"compatibility"},"required_command_routes":trading_workspace_api::commands::required_worker_manifest_for(native),"routes":trading_workspace_api::commands::route_inventory_for(native)}));
         return Ok(());
     }
     if args.as_slice()!=["check"] && args.as_slice()!=["migrate"] && args.as_slice()!=["migrate","--backup-confirmed"] {

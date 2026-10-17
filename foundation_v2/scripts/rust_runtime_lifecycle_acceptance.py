@@ -144,12 +144,16 @@ print(json.dumps({'event':'progress','completed_days':1,'transferred_bytes':100,
 print(json.dumps({'event':'complete','buckets_sha256':'1'*64,'transferred_bytes':100,'cached_bytes':0}),flush=True)
 ''',encoding='utf-8')
             metadata = root/'metadata.json'
+            from rust_provider_adapter_bootstrap import dependency_digest
+            (root/'package.json').write_text('{}');(root/'package-lock.json').write_text('{}')
+            (root/'node_modules').mkdir();(root/'node_modules/dependency.js').write_text('owned synthetic fixture')
             metadata.write_text(json.dumps({'version':'1.50.0','items':[{'name':'EUR/USD','code':'eurusd','startDayForMinuteCandles':'2003-01-01'}]}))
             (artifacts/'catalog').mkdir()
             (artifacts/'catalog/dukascopy-instruments.json').write_bytes((V2/'api-rust/tests/rust_provider/cache.json').read_bytes())
             env.update(TW_V2_DUKASCOPY_METADATA_PATH=str(metadata),TW_V2_DUKASCOPY_NODE=str(Path(sys.executable).resolve()),
                        TW_V2_DUKASCOPY_NODE_SHA256=hashlib.sha256(Path(sys.executable).read_bytes()).hexdigest(),
-                       TW_V2_DUKASCOPY_WORKER=str(fixture),TW_V2_DUKASCOPY_WORKER_SHA256=hashlib.sha256(fixture.read_bytes()).hexdigest())
+                       TW_V2_DUKASCOPY_WORKER=str(fixture),TW_V2_DUKASCOPY_WORKER_SHA256=hashlib.sha256(fixture.read_bytes()).hexdigest(),
+                       TW_V2_DUKASCOPY_DEPENDENCIES_SHA256=dependency_digest(root))
             engine='dukascopy'
             child,manifest,state=launch('native','native-configured-fixture')
             def wait_job(identifier, expected):

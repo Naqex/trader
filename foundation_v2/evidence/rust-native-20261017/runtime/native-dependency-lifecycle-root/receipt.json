@@ -1,0 +1,172 @@
+{
+  "schema": "native-runtime-lifecycle-acceptance-v1",
+  "passed": true,
+  "disposable": true,
+  "owner_runtime_touched": false,
+  "build": "debug",
+  "provider": "none plus owned synthetic process protocol",
+  "scientific_adapter": false,
+  "samples": [
+    {
+      "name": "native-route-manifest",
+      "passed": true,
+      "delegated": 0
+    },
+    {
+      "name": "native-first",
+      "passed": true,
+      "startup_ms": 1461.3816999990377,
+      "roles": [
+        "supervisor",
+        "research",
+        "api"
+      ],
+      "health": {
+        "command_worker": "not_required",
+        "contract_version": "foundation-v2.1",
+        "database": "ready",
+        "ok": true
+      }
+    },
+    {
+      "name": "native-http-write-retry",
+      "passed": true,
+      "first_ms": 52.75740000070073,
+      "retry_ms": 3.2282000029226765,
+      "python_command_workers": 0
+    },
+    {
+      "name": "native-drain",
+      "passed": true
+    },
+    {
+      "name": "native-restart",
+      "passed": true,
+      "startup_ms": 1015.3075000052922,
+      "roles": [
+        "supervisor",
+        "research",
+        "api"
+      ],
+      "health": {
+        "command_worker": "not_required",
+        "contract_version": "foundation-v2.1",
+        "database": "ready",
+        "ok": true
+      }
+    },
+    {
+      "name": "native-persisted-restart",
+      "passed": true
+    },
+    {
+      "name": "native-api-crash-stops-owned-worker",
+      "passed": true
+    },
+    {
+      "name": "compatibility-rollback",
+      "passed": true,
+      "startup_ms": 2445.4661999989185,
+      "roles": [
+        "supervisor",
+        "domain",
+        "research",
+        "api"
+      ],
+      "health": {
+        "command_worker": "ready",
+        "contract_version": "foundation-v2.1",
+        "database": "ready",
+        "ok": true
+      }
+    },
+    {
+      "name": "compatibility-rollback-http",
+      "passed": true
+    },
+    {
+      "name": "compatibility-drain",
+      "passed": true
+    },
+    {
+      "name": "native-return",
+      "passed": true,
+      "startup_ms": 1547.8606000033324,
+      "roles": [
+        "supervisor",
+        "research",
+        "api"
+      ],
+      "health": {
+        "command_worker": "not_required",
+        "contract_version": "foundation-v2.1",
+        "database": "ready",
+        "ok": true
+      }
+    },
+    {
+      "name": "native-final-drain",
+      "passed": true
+    },
+    {
+      "name": "native-configured-fixture",
+      "passed": true,
+      "startup_ms": 1666.935100001865,
+      "roles": [
+        "supervisor",
+        "research",
+        "api"
+      ],
+      "health": {
+        "command_worker": "not_required",
+        "contract_version": "foundation-v2.1",
+        "database": "ready",
+        "ok": true
+      }
+    },
+    {
+      "name": "native-configured-fixture-publication",
+      "passed": true,
+      "rows": 2,
+      "vendor_network": false
+    },
+    {
+      "name": "native-configured-fixture-pause-resume-cancel",
+      "passed": true
+    },
+    {
+      "name": "native-configured-drain",
+      "passed": true
+    },
+    {
+      "name": "native-configured-restart",
+      "passed": true,
+      "startup_ms": 2095.991700000013,
+      "roles": [
+        "supervisor",
+        "research",
+        "api"
+      ],
+      "health": {
+        "command_worker": "not_required",
+        "contract_version": "foundation-v2.1",
+        "database": "ready",
+        "ok": true
+      }
+    },
+    {
+      "name": "native-configured-fixture-durable-cooldown",
+      "passed": true
+    },
+    {
+      "name": "native-configured-final-drain",
+      "passed": true
+    }
+  ],
+  "source_hashes": {
+    "scripts\\run_api_platform.py": "1ccad9d32266e992dd88a1c420efb952318dbb3a4e6678fa9e572a018f9d3684",
+    "api-rust\\src\\main.rs": "7d932cc5028ffb805dcbe173a04533524f5e6a52e0f8a8d211e0a1fb36b3be4b",
+    "api-rust\\src\\lib.rs": "6ce39abb190b7e5f69278f9b4e9774235a76916e63a81cdc5f6ec012cbb256e9",
+    "api-rust\\src\\commands.rs": "b3c6cd09391df282d8ed88b2b27e2d0e915aa19805f843c834c44adec6b77247"
+  }
+}

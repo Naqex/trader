@@ -1,0 +1,50 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "name": "production-native-chart-http",
+      "passed": true,
+      "summary": {
+        "clickToConfirmedPaintMs": {
+          "p50": 45.600000001490116,
+          "sampleP95": 46.900000005960464
+        },
+        "drag.layoutCount": {
+          "p50": 28,
+          "sampleP95": 78
+        },
+        "drag.priceWrites": {
+          "p50": 20,
+          "sampleP95": 71
+        }
+      },
+      "seconds": 25.310592399997404,
+      "api_before": {
+        "rss_bytes": 11968512,
+        "peak_rss_bytes": 11968512,
+        "private_commit_bytes": 4124672,
+        "cpu_kernel_ns": 0,
+        "cpu_user_ns": 15625000,
+        "page_fault_count": 3084
+      },
+      "api_after": {
+        "rss_bytes": 20369408,
+        "peak_rss_bytes": 21393408,
+        "private_commit_bytes": 8151040,
+        "cpu_kernel_ns": 328125000,
+        "cpu_user_ns": 343750000,
+        "page_fault_count": 10012
+      }
+    }
+  ],
+  "owner_runtime_touched": false,
+  "disposable": true,
+  "build": "release",
+  "broker": false,
+  "source_hashes": {
+    "api-rust\\src\\main.rs": "7d932cc5028ffb805dcbe173a04533524f5e6a52e0f8a8d211e0a1fb36b3be4b",
+    "web\\src\\advancedOrderOverlay.js": "387f581bd3e8d315f1684b6a4dbb4018a98c8972458e0729dd588e4ea0efb7b8",
+    "web\\scripts\\quick_trading_latency_probe.mjs": "e6f548071e2cd972ffb261fe008d8c468a8a52feac2862637abf4f4d2f14c029"
+  },
+  "binary_sha256": "8d08dc14cdea347f0ab9ce9eae2198849131439e20cd70cd113d41c513a995ae"
+}

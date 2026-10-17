@@ -45,6 +45,10 @@ def configuration(args):
     env["TW_V2_RUNTIME_PROFILE"] = args.runtime_profile
     if args.runtime_profile == "native":
         env["TW_V2_DOWNLOAD_ENGINE"] = args.download_engine
+        if args.scientific_capability:
+            env["TW_V2_SCIENTIFIC_ADAPTER_CAPABILITY"] = str(args.scientific_capability.resolve())
+        if args.legacy_codec_capability:
+            env["TW_V2_LEGACY_PARQUET_CODEC_CAPABILITY"] = str(args.legacy_codec_capability.resolve())
         if args.download_engine == "qdm":
             env["TW_V2_QDM_HOME"] = str(args.qdm_home.resolve())
     return env
@@ -179,7 +183,7 @@ def native_provider_preflight(args, env):
         env["TW_V2_QDM_SHA256"] = binary_digest(args.qdm_home / "qdmcli.exe")
     elif args.download_engine == "dukascopy":
         required = ("TW_V2_DUKASCOPY_METADATA_PATH", "TW_V2_DUKASCOPY_NODE", "TW_V2_DUKASCOPY_NODE_SHA256",
-                    "TW_V2_DUKASCOPY_WORKER", "TW_V2_DUKASCOPY_WORKER_SHA256")
+                    "TW_V2_DUKASCOPY_WORKER", "TW_V2_DUKASCOPY_WORKER_SHA256", "TW_V2_DUKASCOPY_DEPENDENCIES_SHA256")
         if not all(env.get(key) for key in required):
             raise PreflightError("Native Dukascopy requires an explicitly pinned metadata/Node/worker capability before startup.")
         for path_key, hash_key in ((required[1], required[2]), (required[3], required[4])):
@@ -189,6 +193,29 @@ def native_provider_preflight(args, env):
         metadata = Path(env[required[0]])
         if not metadata.is_absolute() or not metadata.is_file() or metadata.stat().st_size > 4 * 1024 * 1024:
             raise PreflightError("Native Dukascopy metadata capability is missing or exceeds its bound.")
+        from rust_provider_adapter_bootstrap import dependency_digest
+        try:
+            if dependency_digest(Path(env[required[3]]).parent) != env[required[5]]:
+                raise ValueError()
+        except (OSError, ValueError):
+            raise PreflightError("Native Dukascopy installed dependencies changed; nothing was started.") from None
+
+
+def native_scientific_preflight(args, env):
+    if args.runtime_profile != "native" or not env.get("TW_V2_SCIENTIFIC_ADAPTER_CAPABILITY"):
+        return
+    path = Path(env["TW_V2_SCIENTIFIC_ADAPTER_CAPABILITY"])
+    if not path.is_absolute() or not path.is_file() or path.stat().st_size > 1024*1024:
+        raise PreflightError("Scientific adapter capability is missing or invalid; prepare the installed adapter before startup.")
+    result = subprocess.run([str(args.rust_admin_binary), "scientific-capability", str(path)],
+        env=env, cwd=FOUNDATION, capture_output=True, text=True, timeout=30,
+        creationflags=getattr(subprocess,"CREATE_NO_WINDOW",0))
+    try:
+        valid = result.returncode == 0 and json.loads(result.stdout).get("valid") is True
+    except (ValueError, AttributeError):
+        valid = False
+    if not valid:
+        raise PreflightError("Scientific adapter identity is stale or invalid; nothing was started.")
 
 
 def process_roles(args):
@@ -504,6 +531,8 @@ def parser():
     result.add_argument("--download-engine", choices=("qdm", "dukascopy", "none"), default="qdm")
     result.add_argument("--runtime-profile", choices=("compatibility", "native"), default="compatibility",
                         help="Compatibility remains rollback/default; native uses separate candidate binaries and no Python domain/research service.")
+    result.add_argument("--scientific-capability", type=Path, help="Existing installed Nautilus capability; validated by native admin before startup.")
+    result.add_argument("--legacy-codec-capability", type=Path, help="Existing PyArrow 21 capability for exact legacy artifact restoration only.")
     result.add_argument("--rust-binary", type=Path)
     result.add_argument("--rust-admin-binary", type=Path)
     result.add_argument("--rust-research-binary", type=Path)
@@ -539,6 +568,7 @@ def main(argv=None):
     if args.build and args.runtime_profile == "native":
         build_candidate(args)
         validate_paths(args)
+    native_scientific_preflight(args, env)
     if args.runtime_profile == "native":
         summary = native_database_preflight(args, env)
     else:

@@ -13,6 +13,23 @@ SPEC.loader.exec_module(launcher)
 
 
 class LauncherTests(unittest.TestCase):
+    def test_native_scientific_descriptor_is_explicit_and_verified_before_start(self):
+        with tempfile.TemporaryDirectory() as folder:
+            capability=Path(folder)/'scientific.json';capability.write_text('{}')
+            args=launcher.resolve_profile_paths(launcher.parser().parse_args(['--runtime-profile','native',
+                '--scientific-capability',str(capability),'--legacy-codec-capability',str(capability)]))
+            with patch.dict('os.environ',{'TW_V2_DATABASE_URL':'host=localhost user=fixture'}):
+                env=launcher.configuration(args)
+            self.assertEqual(env['TW_V2_SCIENTIFIC_ADAPTER_CAPABILITY'],str(capability.resolve()))
+            self.assertEqual(env['TW_V2_LEGACY_PARQUET_CODEC_CAPABILITY'],str(capability.resolve()))
+            for result in [MagicMock(returncode=1,stdout=''),MagicMock(returncode=0,stdout='{}'),
+                           MagicMock(returncode=0,stdout='not json')]:
+                with patch.object(launcher.subprocess,'run',return_value=result):
+                    with self.assertRaises(launcher.PreflightError):launcher.native_scientific_preflight(args,env)
+            with patch.object(launcher.subprocess,'run',return_value=MagicMock(returncode=0,stdout='{"valid":true}')) as run:
+                launcher.native_scientific_preflight(args,env)
+                self.assertEqual(run.call_args.args[0],[str(args.rust_admin_binary),'scientific-capability',str(capability)])
+
     def test_native_provider_selection_and_pins_are_explicit(self):
         with tempfile.TemporaryDirectory() as folder:
             home=Path(folder);exe=home/'qdmcli.exe';exe.write_bytes(b'fixture-only-never-executed')
@@ -26,10 +43,18 @@ class LauncherTests(unittest.TestCase):
             args.download_engine='dukascopy'
             with self.assertRaises(launcher.PreflightError):launcher.native_provider_preflight(args,{})
             metadata=home/'metadata.json';metadata.write_text('{}')
+            (home/'package.json').write_text('{}');(home/'package-lock.json').write_text('{}')
+            (home/'node_modules').mkdir();(home/'node_modules/dependency.js').write_text('fixture')
+            sys.path.insert(0,str(launcher.FOUNDATION/'scripts'))
+            from rust_provider_adapter_bootstrap import dependency_digest
             pins=dict(TW_V2_DUKASCOPY_METADATA_PATH=str(metadata),TW_V2_DUKASCOPY_NODE=str(exe),
                       TW_V2_DUKASCOPY_NODE_SHA256=launcher.binary_digest(exe),TW_V2_DUKASCOPY_WORKER=str(exe),
-                      TW_V2_DUKASCOPY_WORKER_SHA256=launcher.binary_digest(exe))
+                      TW_V2_DUKASCOPY_WORKER_SHA256=launcher.binary_digest(exe),
+                      TW_V2_DUKASCOPY_DEPENDENCIES_SHA256=dependency_digest(home))
             launcher.native_provider_preflight(args,pins)
+            (home/'node_modules/dependency.js').write_text('changed')
+            with self.assertRaises(launcher.PreflightError):launcher.native_provider_preflight(args,pins)
+            (home/'node_modules/dependency.js').write_text('fixture')
             exe.write_bytes(b'changed')
             with self.assertRaises(launcher.PreflightError):launcher.native_provider_preflight(args,pins)
 

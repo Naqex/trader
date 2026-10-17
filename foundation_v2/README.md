@@ -16,6 +16,14 @@ FastAPI metadata internally at worker bootstrap, without an HTTP/ASGI proxy.
 See [runtime and guarded cutover](docs/API-PLATFORM-RUNTIME.md) and
 [integration evidence](evidence/api-platform-implementation-20261009/RECEIPT.md).
 
+The owner expanded this to a full native-domain migration on 17/10/2026.
+The separate [Rust-native candidate](docs/RUST-NATIVE-RUNTIME.md) runs interactive
+domain logic directly, with no Python command/research service. Compatibility
+remains the launcher default/rollback profile; building a candidate does not
+switch the running owner API. The flow and Python-domain notes below describe
+that compatibility profile. Current candidate scope, retained adapters, setup
+and remaining acceptance are in the linked native-runtime document.
+
 The implemented flow is `React -> Axum -> scoped PostgreSQL reads / durable
 commands -> Python domain worker -> PostgreSQL + immutable Parquet/results`.
 Research runs in a separate bounded worker. Workspace SSE supplies current
