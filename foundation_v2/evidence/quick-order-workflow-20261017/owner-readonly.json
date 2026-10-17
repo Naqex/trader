@@ -1,0 +1,13 @@
+{
+  "scope": "Read-only owner UI; all non-GET requests blocked",
+  "chart": "ready",
+  "buyDisabled": true,
+  "sellDisabled": true,
+  "markers": [
+    "BUY · Chờ khớp0.01×",
+    "SL → -1.04 USD0.01",
+    "TP0.01"
+  ],
+  "alerts": [],
+  "errors": []
+}

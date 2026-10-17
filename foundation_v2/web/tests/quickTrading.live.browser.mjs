@@ -5,7 +5,7 @@ import { chromium } from 'playwright'
 // Real local transport/domain/UI. Only this newly-created fixture can mutate.
 const api = 'http://127.0.0.1:8010', ui = 'http://127.0.0.1:5180', workspace = 'tenant-a'
 const dataset = 'dataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c'
-const output = '../evidence/quick-trading-20261016/live'
+const output = process.env.QUICK_TRADING_OUTPUT || '../evidence/quick-trading-20261016/live'
 await mkdir(output, { recursive: true })
 const report = { scope: 'Real local Axum/PostgreSQL/Python and native Advanced Charts; new disposable replay on existing 134 MiB dataset, no owner-session mutations or broker access.', samples: [], errors: [] }
 const request = async (path, body) => {
@@ -69,6 +69,26 @@ try {
     await dialog.locator('button.is-destructive').click()
     await frame.locator('[data-order-kind=entry]').waitFor({ state: 'hidden' })
   }
+  // The full order form must submit through the real service as well.
+  await page.locator('.chart-utility-actions').getByRole('button', { name: 'Lệnh mô phỏng', exact: true }).click()
+  const orderDialog = page.locator('.legacy-order-modal')
+  await orderDialog.waitFor()
+  await orderDialog.getByRole('spinbutton', { name: 'Khối lượng lệnh', exact: true }).fill('0.08')
+  const formProtections = await orderDialog.locator('.legacy-protection-row input[type=number]').evaluateAll(nodes => nodes.map(node => Number(node.value)))
+  assert.equal(formProtections.length, 2)
+  const formSave = page.waitForResponse(r => r.url().endsWith(path + '/orders/market') && r.request().method() === 'POST')
+  await orderDialog.getByRole('button', { name: 'Lưu', exact: true }).click()
+  assert.equal((await formSave).status(), 200)
+  await orderDialog.waitFor({ state: 'detached' })
+  const fromForm = await request(path)
+  assert.equal(Number(fromForm.payload.execution.pending_market_order.quantity), .08)
+  assert.equal(Number(fromForm.payload.execution.pending_market_order.stop_loss), formProtections[0])
+  assert.equal(Number(fromForm.payload.execution.pending_market_order.take_profit), formProtections[1])
+  await frame.locator('.wm-order-marker-close').click()
+  await page.locator('.chart-order-close-dialog button.is-destructive').click()
+  await frame.locator('[data-order-kind=entry]').waitFor({ state: 'hidden' })
+  assert.equal((await request(path)).payload.execution.pending_market_order, null)
+  report.orderDialog = { saved: true, quantity: .08, stop: formProtections[0], target: formProtections[1], cancelled: true }
   // Fill one order, then amend its protection through the actual iframe handle.
   await page.getByRole('button', { name: 'Mua', exact: true }).click()
   await frame.locator('[data-order-kind=entry]').filter({ hasText: 'Chờ khớp' }).waitFor()
@@ -97,6 +117,13 @@ try {
   await restoredFrame.locator('[data-order-kind=stop][data-ghost=false]').waitFor()
   await page.screenshot({ path: `${output}/real-position.png` })
   report.protection = { persistedAfterReload: true, stop: amended.payload.execution.position.stop_loss, revision: amended.revision }
+  await restoredFrame.locator('.wm-order-marker-close').click()
+  await page.locator('.chart-order-close-dialog button.is-destructive').click()
+  await restoredFrame.locator('[data-order-kind=entry]').waitFor({ state: 'hidden' })
+  const closed = await request(path)
+  assert.equal(closed.payload.execution.position, null)
+  assert.ok(closed.payload.execution.ledger.some(event => event.kind === 'manual_close' || event.type === 'manual_close'), 'Manual close is recorded in the actual ledger')
+  report.positionClose = { confirmed: true, balance: closed.payload.execution.balance, ledgerEvents: closed.payload.execution.ledger.length }
   assert.deepEqual(report.errors, [])
   report.result = 'PASS'
 } catch (error) {
