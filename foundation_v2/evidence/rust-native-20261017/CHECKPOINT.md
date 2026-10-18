@@ -1008,3 +1008,32 @@ Goal ACTIVE.
   and local runtime cutover require authorization under the canonical entrypoint
   and project safety gate. Goal stays ACTIVE while that integration remains.
   Do not rerun accepted suites or open new optimization lanes while waiting.
+
+## Root continuation 18/10: clean committed frontend setup/build
+
+- Previous goal turn made concrete progress (restart commit3216ae7 and verified
+  owner backup). Owner migration/cutover approval remains pending; automated
+  continuation is not that approval. Closed a separate explicit setup-evidence
+  gap without touching owner runtime/data or adding agents.
+- Extended the existing `rust_clean_source_acceptance.py` with
+  `--component frontend`; default backend behavior is retained. Frontend archives
+  only committed `foundation_v2/web`, performs fresh `npm ci --offline
+  --ignore-scripts --no-audit --no-fund` in its temporary tree, then production
+  build. It uses the installed Node/npm and cache, not existing node_modules,
+  dirty web files or network access. Receipts pin harness/source/output hashes.
+- `../rust-native-20261018/runtime/frontend-clean-source-final-root/receipt.json`
+  PASS:466 archived inputs from3216ae7 remain unchanged,71 locked packages
+  installed in4s,65 production outputs built in3.01s using Node24.19.0/npm11.17.0.
+  Root verified current harness hash, receipt success and temporary cleanup.
+  Output hashes equal the first successful `frontend-clean-source-root` run;
+  its earlier harness differs only by clarified scope/doc and external-network
+  receipt naming. Both receipts keep their actual source hashes.
+- This is cached frontend setup/build reproducibility, not a cold dependency
+  fetch, byte-reproducible cross-platform build, browser/render acceptance or
+  inclusion of the separate authorized Advanced Charts assets. Existing runtime
+  chart/Data/Research receipts retain their own exact source scope. Build warns
+  about a548.49kB minified entry chunk; no measured interaction regression was
+  established, so no speculative chunk rewrite or warning-limit change was made.
+- Updated existing native runtime docs and setup row in acceptance audit. Owner
+  migration/cutover remains the actionable gate; goal ACTIVE and no scope/gates
+  changed. Do not repeat this build to manufacture progress while approval waits.

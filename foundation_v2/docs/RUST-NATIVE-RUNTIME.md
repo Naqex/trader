@@ -127,6 +127,11 @@ The execution checkpoint is
 - `scripts/rust_clean_source_acceptance.py`: archive tracked backend sources,
   build release offline, then run lifecycle and tick/portfolio journeys. Reuses
   installed Python/dependency caches; excludes frontend and fresh installation.
+  `--component frontend` instead archives only committed web sources, installs
+  locked npm dependencies offline with install scripts disabled into the clean
+  temporary tree, then builds production assets. This checks cached setup/build
+  independently of dirty source; it does not start a browser or package the
+  separately authorized Advanced Charts distribution.
 - `scripts/rust_native_ui_acceptance.py`: release native HTTP + production
   React/Advanced Charts, quick BUY/SELL, TP drag, close and persisted checks.
   `--http-benchmark` adds bounded independent concurrent aggregates at increasing

@@ -1,7 +1,8 @@
-"""Build and exercise tracked backend sources in a disposable Git archive.
+"""Build tracked sources in a disposable Git archive.
 
-Uses the installed Python/toolchain and existing Cargo cache; no dependency
-installation, owner service access, external provider or broker connection.
+Uses installed toolchains and dependency caches. Backend runs disposable
+lifecycle/financial journeys; frontend installs the locked npm dependencies
+offline into the archive and builds. No owner/provider/broker access.
 """
 from __future__ import annotations
 
@@ -10,6 +11,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -25,12 +27,16 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--pg-bin', type=Path, default=PG_DEFAULT)
+    parser.add_argument('--component', choices=('backend', 'frontend'), default='backend')
     args = parser.parse_args()
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
+    frontend = args.component == 'frontend'
     receipt = dict(passed=False, owner_runtime_touched=False,
-        scope='Tracked backend source build and disposable lifecycle/financial journeys; existing dependency cache and Python environment',
-        frontend=False, fresh_dependency_install=False, commands=[])
+        scope=('Tracked frontend source with fresh locked offline npm install and production build; existing npm cache, no browser/runtime acceptance'
+               if frontend else 'Tracked backend source build and disposable lifecycle/financial journeys; existing dependency cache and Python environment'),
+        frontend=frontend, fresh_dependency_install=frontend, external_network=False,
+        harness_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(), commands=[])
     env = {key: value for key, value in os.environ.items()
            if not key.startswith('TW_V2_') and key not in ('PYTHONPATH', 'PYTHONHOME')}
     flags = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
@@ -46,11 +52,14 @@ def main():
     try:
         revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=PROJECT, text=True).strip()
         receipt['revision'] = revision
-        roots = subprocess.check_output(['git', 'ls-tree', '--name-only', revision], cwd=PROJECT, text=True).splitlines()
-        paths = [name for name in roots if name.endswith('.py')]
-        paths += ['foundation_v2/' + name for name in (
-            'api-rust', 'contracts', 'engine_runtime', 'migrations', 'scripts',
-            'tests', 'trading_workspace_v2', 'pyproject.toml', 'uv.lock')]
+        if frontend:
+            paths = ['foundation_v2/web']
+        else:
+            roots = subprocess.check_output(['git', 'ls-tree', '--name-only', revision], cwd=PROJECT, text=True).splitlines()
+            paths = [name for name in roots if name.endswith('.py')]
+            paths += ['foundation_v2/' + name for name in (
+                'api-rust', 'contracts', 'engine_runtime', 'migrations', 'scripts',
+                'tests', 'trading_workspace_v2', 'pyproject.toml', 'uv.lock')]
         receipt['archive_paths'] = paths
         with tempfile.TemporaryDirectory(prefix='tw-native-clean-') as temporary:
             root = Path(temporary)
@@ -64,6 +73,22 @@ def main():
             clean_v2 = source / 'foundation_v2'
             receipt['source_sha256'] = {str(path.relative_to(source)): hashlib.sha256(path.read_bytes()).hexdigest()
                 for path in source.rglob('*') if path.is_file()}
+            if frontend:
+                npm = shutil.which('npm.cmd' if os.name == 'nt' else 'npm')
+                node = shutil.which('node')
+                assert npm and node, 'Installed Node/npm are required'
+                receipt['node_version'] = subprocess.check_output([node, '--version'], text=True).strip()
+                receipt['npm_version'] = subprocess.check_output([npm, '--version'], text=True).strip()
+                web = clean_v2 / 'web'
+                run('npm-ci', [npm, 'ci', '--offline', '--ignore-scripts', '--no-audit', '--no-fund'], web)
+                run('frontend-build', [npm, 'run', 'build'], web)
+                receipt['output_sha256'] = {str(path.relative_to(web / 'dist')): hashlib.sha256(path.read_bytes()).hexdigest()
+                    for path in (web / 'dist').rglob('*') if path.is_file()}
+                assert 'index.html' in receipt['output_sha256']
+                for relative, digest in receipt['source_sha256'].items():
+                    assert hashlib.sha256((source / relative).read_bytes()).hexdigest() == digest
+                receipt.update(tracked_source_unchanged=True, passed=True)
+                return
             target = V2 / 'api-rust/target/native-clean-source'
             run('build', ['cargo', 'build', '--offline', '--locked', '--release', '--bins',
                 '--example', 'rust_replay_mutation_probe', '--target-dir', target], clean_v2 / 'api-rust')
