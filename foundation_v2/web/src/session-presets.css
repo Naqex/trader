@@ -20,7 +20,8 @@
 .fx-app.fx-shell-story[data-theme] .fx-content .session-preset-more > h3 { margin:8px 0 20px; font-size:18px; }
 .fx-app.fx-shell-story[data-theme] .fx-content .session-chart-options { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
 .fx-app.fx-shell-story[data-theme] .fx-content .session-smooth-candles { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:8px 12px; border:1px solid var(--wm-control-border); border-radius:var(--ds-radius-field); }
-.fx-app.fx-shell-story[data-theme] .fx-content .session-smooth-candles > span { display:grid; gap:4px; }
+.fx-app.fx-shell-story[data-theme] .fx-content .session-smooth-candles:has(button:disabled) { opacity:var(--ds-disabled-opacity); }
+.fx-app.fx-shell-story[data-theme] .fx-content .session-smooth-candles button:disabled { opacity:1; }
 .fx-app.fx-shell-story[data-theme] .fx-content .session-smooth-candles button { width:36px; height:22px; min-height:22px; border:1px solid var(--wm-control-border); border-radius:999px; background:var(--project-control); padding:2px; }
 .fx-app.fx-shell-story[data-theme] .fx-content .session-smooth-candles button span { display:block; width:16px; height:16px; border-radius:50%; background:var(--wm-content); }
 .fx-app.fx-shell-story[data-theme] .fx-content .session-preset-confirm { width:min(400px,calc(100vw - 32px)); padding:24px; }
