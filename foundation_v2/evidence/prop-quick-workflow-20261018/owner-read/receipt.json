@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "scope": "read-only owner page; all browser mutations denied",
+  "revision": 2,
+  "datasetCount": 2,
+  "unchanged": true,
+  "blockedActivityRequests": 0,
+  "financialWriteAttempts": 0,
+  "pageErrors": []
+}

@@ -1,0 +1,20 @@
+{
+  "scope": "Synthetic API intercepts only; real native chart and controls. Real iframe DOM drag controls; native line state observed via test-only proxy. No owner, provider or broker writes.",
+  "result": "PASS",
+  "cases": [
+    "Enabled Scalper preset saves without errors and restores independent legs after reload; disabling both clears the preset",
+    "First quick Buy initializes and fills at current quote in one browser request, preserving revisions; double click cannot duplicate, no dialog or implicit protections",
+    "Iframe SL/TP hit-target drag survives the pause refresh; valid SELL TP commits once and crossed TP is rejected without a request",
+    "Visible TP/SL handles and keyboard deletion work; read-only Buy/Sell Entry uses side color and X opens confirmation; Scalper stop-only Sell uses saved 15 pip distance",
+    "Equal-price set TP, unset SL and Entry never overlap for Buy/Sell at1064/1368px, during drag preview or Escape rollback",
+    "Delayed mutation keeps preview/native line together; Escape, invalid and rejected ghost reset; Log/Invert/percent/indexed modes and viewport resize retain controls",
+    "Scalper target-only percent conversion, restored native position shows actual PnL and entry X sends close against position ID",
+    "Legacy order initializes the simulator on submit, then fills the market order at the current quote using the returned revision",
+    "Rejected quick entry removes pending preview; light/dark palette switches retain chart controls",
+    "409 retains domain rejection detail; only actual revision conflicts show the stale-session lock"
+  ],
+  "errors": [],
+  "unexpected": [],
+  "request_count": 22,
+  "local_full_receipt_sha256": "a9c89c0a69b47c7495c4297fb21f4c3f9544df4d293335c47a4af216be1abcf5"
+}

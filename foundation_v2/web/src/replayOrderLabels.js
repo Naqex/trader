@@ -27,7 +27,7 @@ export function orderLabel(levels, kind, price, theme, t) {
   }
   // A protection at Entry shares the small handle layout, but remains a real
   // saved protection. Keep its full details available without marking it unset.
-  return { text: compact ? name : text, detail: text, compact, ghost, color, borderColor: entry && levels.side === 'SELL' ? palette.orderSellBorder : color, textColor: color }
+  return { text: compact ? name : text, detail: text, compact, ghost, color, borderColor: entry && levels.side === 'SELL' ? palette.orderSellBorder : color, textColor: entry ? levels.side === 'SELL' ? palette.orderSellText : palette.orderBuyText : color }
 }
 
 export function protectionError(levels, kind, price) {

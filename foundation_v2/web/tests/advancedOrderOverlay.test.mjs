@@ -20,8 +20,8 @@ test('equal and nearby prices separate horizontally while distant levels share t
 test('protection labels use account currency, direction and actual quantity; unknown FX conversion stays unknown', () => {
   assert.equal(orderLabel(levels, 'target', 1.12, 'dark', s => s).text, 'TP → +240.00 USD')
   assert.equal(orderLabel(levels, 'entry', 1.1, 'dark', s => s).text, 'BUY → -3.12 USD')
-  assert.equal(orderLabel(levels, 'entry', 1.1, 'dark', s => s).textColor, '#089981', 'A losing Buy keeps its side color')
-  assert.equal(orderLabel({ ...levels, side: 'SELL', floating: '3.12' }, 'entry', 1.1, 'dark', s => s).textColor, '#FF603B', 'A winning Sell keeps its side color')
+  assert.equal(orderLabel(levels, 'entry', 1.1, 'dark', s => s).textColor, '#FF603B', 'Buy uses the reference orange text independently of its green line')
+  assert.equal(orderLabel({ ...levels, side: 'SELL', floating: '3.12' }, 'entry', 1.1, 'dark', s => s).textColor, '#00B26F', 'Sell uses the reference green text independently of its orange line')
   assert.equal(orderLabel(levels, 'entry', 1.1, 'light', s => s).color, '#087F6A')
   assert.equal(orderLabel({ ...levels, side: 'SELL' }, 'entry', 1.1, 'light', s => s).color, '#B54718')
   assert.equal(orderLabel({ ...levels, side: 'SELL' }, 'stop', 1.11, 'dark', s => s).text, 'SL → -120.00 USD')

@@ -1,0 +1,11 @@
+{
+  "scope": "Real local catalog reads; creator selection and validation only. All mutations blocked.",
+  "cases": [
+    "Prop selects one asset; other symbols disabled; explicit removal reenables them",
+    "two-asset Backtest switches to Prop without data loss; submit reports one-asset limit before any request",
+    "mobile layout fits and removing the extra asset clears validation"
+  ],
+  "errors": [],
+  "unexpectedWrites": [],
+  "result": "PASS"
+}

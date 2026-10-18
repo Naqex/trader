@@ -74,7 +74,12 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     row.element.style.setProperty('--order-color', label.color)
     row.element.style.setProperty('--order-border', label.borderColor)
     row.body.style.color = label.textColor
-    row.text.textContent = label.text
+    const parts = label.text.split(' → ')
+    row.name.textContent = parts[0]
+    row.arrow.hidden = parts.length < 2
+    row.arrow.textContent = parts.length > 1 ? ' → ' : ''
+    row.amount.hidden = parts.length < 2
+    row.amount.textContent = parts[1] || ''
     row.quantity.textContent = String(levels.quantity ?? '—')
     row.quantity.hidden = label.compact
     if (row.kind === 'entry') row.quantity.disabled = !state.orderEditable || !state.onOrderEdit
@@ -208,6 +213,9 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     body.className = 'wm-order-marker-body'
     const text = owner.createElement('span'), quantity = owner.createElement(kind === 'entry' ? 'button' : 'span')
     text.className = 'wm-order-marker-text'; quantity.className = 'wm-order-marker-quantity'
+    const name = owner.createElement('span'), arrow = owner.createElement('span'), amount = owner.createElement('span')
+    arrow.className = 'wm-order-marker-arrow'; arrow.textContent = ' → '
+    text.append(name, arrow, amount)
     if (kind !== 'entry') {
       body.type = 'button'; body.dataset.orderDrag = kind
       body.addEventListener('blur', () => { delete body.dataset.pointerFocus })
@@ -226,7 +234,7 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
       })
     }
     body.append(text, quantity); element.append(body)
-    const row = { kind, element, body, text, quantity }
+    const row = { kind, element, body, text, name, arrow, amount, quantity }
     if (kind === 'entry') {
       const close = owner.createElement('button')
       close.type = 'button'; close.className = 'wm-order-marker-close'; close.textContent = '×'

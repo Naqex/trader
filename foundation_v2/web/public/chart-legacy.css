@@ -84,8 +84,9 @@ body.chart-page { width: calc(100% - var(--legacy-reserved-width, 0px)); overflo
 [data-wm-order-handles] [hidden] { display:none !important; }
 [data-wm-order-handles] .wm-order-marker-body { display:flex; align-items:center; box-sizing:border-box; height:22px; min-width:0; margin:0; padding:0; border:1px solid var(--order-border); border-radius:0; outline:0; background:var(--order-bg); color:inherit; font:inherit; line-height:20px; touch-action:none; }
 [data-wm-order-handles] button.wm-order-marker-body { cursor:grab; }
-[data-wm-order-handles] .wm-order-marker-text { padding:0 6px; overflow:hidden; text-overflow:ellipsis; }
-[data-wm-order-handles] .wm-order-marker-quantity { align-self:stretch; margin:0; padding:0 6px; border:0; border-left:1px solid var(--order-border); border-radius:0; background:color-mix(in srgb,var(--order-border) 38%,var(--order-bg)); color:var(--order-ink); font:inherit; line-height:inherit; }
+[data-wm-order-handles] .wm-order-marker-text { display:inline-flex; align-items:center; gap:4px; padding:0 6px; overflow:hidden; text-overflow:ellipsis; }
+[data-wm-order-handles] .wm-order-marker-arrow { flex:0 0 12px; width:12px; height:12px; font-size:0; background:currentColor; mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2 8h11M9 4l4 4-4 4' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat; }
+[data-wm-order-handles] .wm-order-marker-quantity { display:inline-flex; align-items:center; justify-content:center; align-self:stretch; margin:0; padding:0 6px; border:0; border-left:1px solid var(--order-border); border-radius:0; background:color-mix(in srgb,var(--order-border) 38%,var(--order-bg)); color:var(--order-ink); font:inherit; line-height:inherit; }
 [data-wm-order-handles] button.wm-order-marker-quantity { cursor:pointer; }
 [data-wm-order-handles] button.wm-order-marker-quantity:hover { background:color-mix(in srgb,var(--order-border) 55%,var(--order-bg)); }
 [data-wm-order-handles] button.wm-order-marker-quantity:focus-visible { outline:2px solid var(--order-color); outline-offset:2px; }

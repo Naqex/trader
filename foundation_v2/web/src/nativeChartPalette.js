@@ -21,6 +21,8 @@ export function nativeChartPalette(theme) {
     warning: theme === 'light' ? '#B56800' : '#F59E0B',
     orderSell: theme === 'light' ? '#B54718' : '#FF603B',
     orderSellBorder: theme === 'light' ? '#B35A0A' : '#D87813',
+    orderBuyText: theme === 'light' ? '#B54718' : '#FF603B',
+    orderSellText: theme === 'light' ? '#087F6A' : '#00B26F',
     orderCloseBackground: '#F5F8FF',
     orderCloseIcon: '#398EF0',
     orderCloseBorder: '#70B5FF',

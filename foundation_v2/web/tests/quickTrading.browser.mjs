@@ -10,10 +10,10 @@ const initialExecution = { cursor_index: 60, instrument_spec: spec, cost_model: 
 let replay = { ...fixture.latest, dataset_sha256: null, has_future_rows: true, payload: { ...fixture.latest.payload, execution: null, starting_balance: '10000', starting_balance_ccy: 'USD' } }
 const report = { scope: 'Synthetic API intercepts only; real native chart and controls. Real iframe DOM drag controls; native line state observed via test-only proxy. No owner, provider or broker writes.', cases: [], requests: [], errors: [], unexpected: [] }
 let nextMutation
-function holdMutation(fail = false) {
+function holdMutation(fail = false, status = 422, detail = 'Fixture rejected protection') {
   let release
   const wait = new Promise(resolve => { release = resolve })
-  nextMutation = { wait, fail }
+  nextMutation = { wait, fail, status, detail }
   return release
 }
 const browser = await chromium.launch()
@@ -68,7 +68,7 @@ await context.route('**/*', async route => {
   const held = nextMutation; nextMutation = null
   if (held) {
     await held.wait
-    if (held.fail) return route.fulfill({ status: 422, json: { detail: 'Fixture rejected protection' } })
+    if (held.fail) return route.fulfill({ status: held.status, json: { detail: held.detail } })
   }
   assert.equal(body.expected_revision, replay.revision)
   const suffix = url.pathname.split('/').at(-1)
@@ -296,6 +296,18 @@ try {
   await page.reload(); await ready(); await waitRequests(3)
   const positionMarkers = await markerState()
   assert.match(positionMarkers.entry.text, /BUY → \+12.34 USD/)
+  const entryStyle = await marker('entry').evaluate(node => {
+    const body = node.querySelector('.wm-order-marker-body'), close = node.querySelector('.wm-order-marker-close')
+    const center = element => { const rect = element.getBoundingClientRect(); return rect.y + rect.height / 2 }
+    return { text: getComputedStyle(body).color, border: getComputedStyle(body).borderTopColor,
+      closeBackground: getComputedStyle(close).backgroundColor, closeColor: getComputedStyle(close).color,
+      centers: [...node.querySelectorAll('.wm-order-marker-text, .wm-order-marker-arrow, .wm-order-marker-quantity, .wm-order-marker-close')].map(center) }
+  })
+  assert.equal(entryStyle.text, 'rgb(255, 96, 59)')
+  assert.equal(entryStyle.border, 'rgb(8, 153, 129)')
+  assert.equal(entryStyle.closeBackground, 'rgb(245, 248, 255)')
+  assert.equal(entryStyle.closeColor, 'rgb(57, 142, 240)')
+  assert.ok(Math.max(...entryStyle.centers) - Math.min(...entryStyle.centers) <= 1, 'Entry text, arrow, quantity and X share their vertical center')
   assert.match(positionMarkers.target.text, /^TP → \+?[0-9.-]+ USD$/)
   assert.doesNotMatch(positionMarkers.target.text, /pips|ticks/i)
   assert.equal(positionMarkers.target.quantity, '0.12')
@@ -440,6 +452,21 @@ try {
   await marker('entry').waitFor({ state: 'hidden' })
   assert.equal(replay.revision, beforeRejectedBuy, 'Rejected quick order does not invent a saved position')
   report.cases.push('Rejected quick entry removes pending preview; light/dark palette switches retain chart controls')
+  for (const [detail, conflict] of [['fixture_execution_unavailable', false], ['record revision conflict', true]]) {
+    const release = holdMutation(true, 409, detail)
+    await page.getByRole('button', { name: 'Mua', exact: true }).click()
+    await marker('entry').filter({ hasText: 'Đang gửi' }).waitFor()
+    release()
+    await marker('entry').waitFor({ state: 'hidden' })
+    if (conflict) await page.getByTestId('revision-conflict').waitFor()
+    else {
+      await page.locator('.wm-notification').filter({ hasText: detail }).waitFor()
+      assert.equal(await page.getByTestId('revision-conflict').count(), 0)
+      assert.equal(await page.getByRole('button', { name: 'Mua', exact: true }).isEnabled(), true)
+    }
+    assert.equal(replay.revision, beforeRejectedBuy)
+  }
+  report.cases.push('409 retains domain rejection detail; only actual revision conflicts show the stale-session lock')
   assert.deepEqual(report.errors, []); assert.deepEqual(report.unexpected, [])
   report.result = 'PASS'
 } catch (error) { report.result = 'FAIL'; report.failure = error.stack; report.alerts = await page.locator('[role=alert]').allTextContents(); await page.screenshot({ path: `${output}/failure.png` }); throw error }
