@@ -1,0 +1,138 @@
+{
+  "schema": "session-presets-owner-cutover-v1",
+  "passed": true,
+  "owner_trade_or_step": false,
+  "owner_preset_mutations": false,
+  "backup": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\.runtime\\api-platform-backups\\session-presets-db-20261018-20261018T154611Z",
+  "stages": [
+    {
+      "stage": "scientific-refresh-full-verification-passed",
+      "utc": "2026-10-18T15:42:48.193592+00:00",
+      "old_engine_code_sha256": "a91f6e00ec4f3e5395b6f57e9f118a64ce650bea3d9b1398687f573c0eb66898",
+      "current_engine_code_sha256": "05563bff3b3b90ccd0a6eb6f9982ca18824bbbeb5a2cd16ac5d8b9ec5604ddb5",
+      "current_contracts_sha256": "43fe40de327ffe44ef81419933e810bf0f4ec4c662c96f50779fd7b82320ffd6",
+      "preserved_fields": [
+        "adapter_sha256",
+        "runtime_identity",
+        "files",
+        "dependency_trees",
+        "dependency_sha256",
+        "bytecode_policy",
+        "foundation_root",
+        "schema"
+      ],
+      "refreshed_descriptor": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\evidence\\session-presets-db-20261018\\runtime\\native-scientific-capability-current.json"
+    },
+    {
+      "stage": "preflight-passed",
+      "utc": "2026-10-18T15:42:48.544842+00:00",
+      "run_id": "8a786d1068d04d2f9515c49b8d681839",
+      "qdm_sha256": "b58052d516422e3cf8e0d42a0883f6811807ecd730d867f8838efbcf6883f4a6"
+    },
+    {
+      "stage": "owned-stopped",
+      "utc": "2026-10-18T15:43:03.845532+00:00",
+      "owner_tables": 22
+    },
+    {
+      "stage": "stopped-baseline-reverified",
+      "utc": "2026-10-18T15:46:23.182175+00:00",
+      "pg_bin": "D:\\Program Files\\PostgreSQL\\18\\bin",
+      "active_capability": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\.runtime\\api-platform\\native-scientific-capability-session-presets-db-20261018.json"
+    },
+    {
+      "stage": "verified-backup-complete",
+      "utc": "2026-10-18T15:48:10.316492+00:00",
+      "result": "PASS",
+      "bundle": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\.runtime\\api-platform-backups\\session-presets-db-20261018-20261018T154611Z",
+      "snapshot_id": "20261018T154623Z-97acdddfdf70",
+      "manifest_sha256": "9cbec468014e52434c9f6d96518473e1ed842efe7b7eea9e53a04c3e61e2b4f3",
+      "artifact_files": 4142,
+      "backup_bytes": 4259406348
+    },
+    {
+      "stage": "build-complete",
+      "utc": "2026-10-18T15:49:46.047625+00:00",
+      "binary_sha256": {
+        "trading-workspace-api.exe": "8a5b70fcba24d0ad5fe4a8594e80f0857b6da341c4a88b472b6a9f7bfd8a406a",
+        "rust_runtime_admin.exe": "72912faf5d8c961a85b465f013551d75d11bb83f95560887cf26ad1aecb24b44",
+        "rust_research_worker.exe": "da94a5872bba3d9135e9be0bb6bea646191b207dcfae66e476d55703cbaed893"
+      }
+    },
+    {
+      "stage": "migration-and-preservation-passed",
+      "utc": "2026-10-18T15:50:10.721781+00:00",
+      "applied": [
+        "0007_session_presets.sql"
+      ],
+      "preserved_tables": 21,
+      "existing_replay_records": 25
+    },
+    {
+      "stage": "native-compact-ready",
+      "utc": "2026-10-18T15:50:57.219831+00:00",
+      "health": {
+        "command_worker": "not_required",
+        "contract_version": "foundation-v2.1",
+        "database": "ready",
+        "ok": true
+      },
+      "artifact_files_preserved": 4142,
+      "owner_trade_or_step": false
+    }
+  ],
+  "scientific_refresh": {
+    "old_engine_code_sha256": "a91f6e00ec4f3e5395b6f57e9f118a64ce650bea3d9b1398687f573c0eb66898",
+    "current_engine_code_sha256": "05563bff3b3b90ccd0a6eb6f9982ca18824bbbeb5a2cd16ac5d8b9ec5604ddb5",
+    "current_contracts_sha256": "43fe40de327ffe44ef81419933e810bf0f4ec4c662c96f50779fd7b82320ffd6",
+    "preserved_fields": [
+      "adapter_sha256",
+      "runtime_identity",
+      "files",
+      "dependency_trees",
+      "dependency_sha256",
+      "bytecode_policy",
+      "foundation_root",
+      "schema"
+    ],
+    "refreshed_descriptor": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\evidence\\session-presets-db-20261018\\runtime\\native-scientific-capability-current.json",
+    "active_descriptor": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\.runtime\\api-platform\\native-scientific-capability-session-presets-db-20261018.json",
+    "active_descriptor_sha256": "0392f280a7fc360af8b420a29d9ca549a26c41f4ad3fdb453ec67cc9f2963b2f"
+  },
+  "old_binary_directory": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust\\target\\session-slippage-20261018\\release",
+  "new_binary_directory": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust\\target\\native-candidate\\release",
+  "descriptor_sha256": {
+    "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\.runtime\\api-platform\\native-scientific-capability.json": "cfb2051871cbfde59b1621accce07c9285129f4e3f2acc8b4b93d5f49df5b32c",
+    "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\.runtime\\api-platform\\native-legacy-codec-capability.json": "f9527848be0c6090cc5f9ca8150116dff647e099dd3d9d747c439198f774a239"
+  },
+  "postgres_client": {
+    "directory": "D:\\Program Files\\PostgreSQL\\18\\bin",
+    "version": "18.6",
+    "server_version": "18.6",
+    "archived_client_rejected": "pg_dump17.11 does not support server18.6"
+  },
+  "health": {
+    "command_worker": "not_required",
+    "contract_version": "foundation-v2.1",
+    "database": "ready",
+    "ok": true
+  },
+  "preset_lists": {
+    "backtest": {
+      "items": [],
+      "version": "session-presets-v1"
+    },
+    "prop": {
+      "items": [],
+      "version": "session-presets-v1"
+    }
+  },
+  "artifact_files_preserved": 4142,
+  "owner_tables_preserved": true,
+  "descriptors_unchanged": true,
+  "qdm_unchanged": true,
+  "migrations_applied": [
+    "0007_session_presets.sql"
+  ],
+  "new_run_id": "e89af3729de64c8aae72455b59579c3e"
+}

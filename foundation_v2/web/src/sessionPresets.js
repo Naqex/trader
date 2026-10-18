@@ -16,7 +16,7 @@ function validConfig(config) {
     })
 }
 
-export function readSessionPresets(storage, workspace, mode) {
+export function readLegacySessionPresets(storage, workspace, mode) {
   const raw = storage.getItem(sessionPresetKey(workspace, mode))
   if (!raw) return []
   const saved = JSON.parse(raw)
@@ -27,19 +27,9 @@ export function readSessionPresets(storage, workspace, mode) {
   return saved.items
 }
 
-export function saveSessionPreset(storage, workspace, mode, preset) {
-  const items = readSessionPresets(storage, workspace, mode), name = preset.name.trim()
+export function validateSessionPreset(preset) {
+  const name = preset.name.trim()
   if (!name || name.length > 160) throw new Error('Nhập tên preset, tối đa 160 ký tự.')
   if (!validConfig(preset.config)) throw new Error('Cấu hình preset không hợp lệ.')
-  if (items.some(item => item.id !== preset.id && item.name.toLocaleLowerCase() === name.toLocaleLowerCase())) throw new Error('Tên preset đã tồn tại.')
-  if (preset.id && !items.some(item => item.id === preset.id)) throw new Error('Preset đã thay đổi. Mở lại danh sách trước khi sửa.')
-  if (!preset.id && items.length >= 50) throw new Error('Lưu tối đa 50 preset cho mỗi loại phiên.')
-  const next = { id:preset.id || crypto.randomUUID(), name, config:structuredClone(preset.config) }
-  storage.setItem(sessionPresetKey(workspace, mode), JSON.stringify({version:VERSION,items:preset.id ? items.map(item => item.id === preset.id ? next : item) : [...items,next]}))
-  return next
-}
-
-export function deleteSessionPreset(storage, workspace, mode, id) {
-  const items = readSessionPresets(storage, workspace, mode)
-  storage.setItem(sessionPresetKey(workspace, mode), JSON.stringify({version:VERSION,items:items.filter(item => item.id !== id)}))
+  return {name,config:structuredClone(preset.config)}
 }

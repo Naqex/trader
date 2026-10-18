@@ -1,0 +1,28 @@
+✔ legacy presets remain scoped and malformed storage is never overwritten (4.3092ms)
+✔ preset validation trims names and clones configuration without mutating the draft (0.4289ms)
+✔ server save/edit/delete carry workspace, mode and expected revision; conflicts stay visible (41.4929ms)
+✔ legacy import verifies server reads before removing its browser backup (3.2366ms)
+✔ partial or conflicting imports retain local backups and preserve server settings (1.1195ms)
+✔ a stale or altered save response is an unknown outcome, not successful persistence (3.8068ms)
+✔ import never erases local changes made by another tab while requests are pending (3.3939ms)
+✔ slippage categories combine aliases and apply a shared mode without changing other assets or fees (2.7134ms)
+✔ mixed preset assumptions remain explicit; incomplete group specs cannot enable slippage (0.319ms)
+✔ default costs are explicitly off for every selected asset, with no inherited fixture fees (0.1987ms)
+✔ options preserve independent assets, fee units and charge convention; deselected drafts are not persisted (0.2685ms)
+✔ empty, negative, nonfinite, overprecise and excessive active fees are rejected without treating them as zero (0.4681ms)
+✔ zero-cost market quotes exactly equal chart close, including sub-tick input; spread-on keeps modeled quotes (0.3633ms)
+✔ creation response must retain the chosen costs, allowing server decimal normalization (0.3303ms)
+✔ Prop freezes the same options and cost pin through bundle and replay creation (44.5182ms)
+✔ four slippage modes preserve units and reject invalid fixed amounts before submission (0.8122ms)
+✔ legacy frozen slippage costs remain separate from new adverse-fill modes (0.8213ms)
+✔ pre-initialization risk previews include market and stop bounds but keep limit TP protected (0.5338ms)
+✔ system copy provides both locales with matching interpolation contracts (8.9248ms)
+✔ status families have both locales and blocked execution has an explanation (0.9109ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 285.5746

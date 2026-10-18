@@ -14,7 +14,7 @@ import { FieldError, FormFeedback, fieldValidationProps, focusFirstInvalid } fro
 import { quickSessionErrors } from './quickSessionValidation.js'
 import SessionTradingOptions from './SessionTradingOptions.jsx'
 import { buildTradingOptions, tradingOptionsError, tradingOptionsMatch } from './sessionTradingOptions.js'
-import { deleteSessionPreset, readSessionPresets, saveSessionPreset, sessionPresetKey } from './sessionPresets.js'
+import { deleteSessionPreset, fetchSessionPresets, saveSessionPreset } from './sessionPresetApi.js'
 import SessionPresetMenu from './SessionPresetMenu.jsx'
 import TestingIcon from './TestingIcon.jsx'
 import './quick-session.css'
@@ -33,6 +33,7 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
   const [propDraft, setPropDraft] = useState({ profileKind: 'generic', targetPercent: '10', dailyLoss: '500', overallLoss: '1000', durationDays: '' })
   const [presets,setPresets] = useState([]), [activePreset,setActivePreset] = useState(''), [presetProblem,setPresetProblem] = useState('')
   const [presetEditor,setPresetEditor] = useState(null)
+  const [presetLoading,setPresetLoading] = useState(true), [presetPending,setPresetPending] = useState(false), [presetUncertain,setPresetUncertain] = useState(false)
   const balanceInput = useRef(null), balanceCaret = useRef(null)
   const balanceDisplay = formatBalance(draft.balance)
   const [data, setData] = useState({ status: 'loading', items: [], error: '' })
@@ -60,15 +61,20 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
   const change = (key, value) => { if (!['name','period'].includes(key)) setActivePreset(''); setDraft(current => ({ ...current, [key]: value })) }
   const changeProp = (key, value) => {setActivePreset('');setPropDraft(current => ({ ...current, [key]: value }))}
   const changeTradingOptions = value => {setActivePreset('');setTradingOptions(value)}
-  const loadPresets = () => {
-    try {setPresets(readSessionPresets(window.localStorage,workspace,mode));setPresetProblem('')}
-    catch {setPresetProblem('Không đọc được preset đã lưu.');setPresets([])}
+  const loadPresets = async signal => {
+    setPresetLoading(true)
+    try {
+      let storage
+      try {storage=window.localStorage} catch { /* Database presets do not require browser storage. */ }
+      const result=await fetchSessionPresets(workspace,mode,{storage,signal})
+      if(!signal?.aborted) {setPresets(result.items);setPresetProblem(result.warning)}
+    } catch(error) {if(!signal?.aborted) {setPresetProblem(error.message);setPresets([])}}
+    finally {if(!signal?.aborted) setPresetLoading(false)}
   }
   useEffect(() => {
-    loadPresets();setActivePreset('')
-    const refresh = event => {if(event.key === null || event.key === sessionPresetKey(workspace,mode)) loadPresets()}
-    window.addEventListener('storage',refresh)
-    return () => window.removeEventListener('storage',refresh)
+    const controller=new AbortController()
+    setPresets([]);setActivePreset('');loadPresets(controller.signal)
+    return () => controller.abort()
   },[workspace,mode])
   useLayoutEffect(() => {if(presetEditor) {panelBody.current?.scrollTo(0,0);nameInput.current?.focus()} else dialog.current?.querySelector('.session-preset-trigger')?.focus()},[Boolean(presetEditor)])
   const applyPreset = item => {
@@ -81,7 +87,7 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
   const editPreset = item => {
     const before = structuredClone({draft,propDraft,tradingOptions,balanceMode,activePreset,advanced})
     if(item) applyPreset(item)
-    setPresetEditor({id:item?.id || null,name:item?.name || '',before});setSubmitted(false);setPresetProblem('')
+    setPresetEditor({id:item?.id || null,revision:item?.revision,name:item?.name || '',before});setSubmitted(false);setPresetProblem('')
   }
   const leavePreset = () => {
     const before = presetEditor.before
@@ -89,11 +95,13 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
     setBalanceMode(before.balanceMode);setActivePreset(before.activePreset);setAdvanced(before.advanced)
     setPresetEditor(null);setPresetProblem('');setSubmitted(false)
   }
-  const removePreset = item => {
+  const removePreset = async item => {
+    setPresetPending(true)
     try {
-      deleteSessionPreset(window.localStorage,workspace,mode,item.id)
-      loadPresets();if(activePreset === item.id) setActivePreset('')
-    } catch {throw new Error('Không lưu được preset trên trình duyệt này.')}
+      await deleteSessionPreset(workspace,mode,item)
+      setPresets(current=>current.filter(preset=>preset.id!==item.id));if(activePreset === item.id) setActivePreset('')
+    } catch(error) {throw error}
+    finally {setPresetPending(false)}
   }
   useLayoutEffect(() => {
     if (balanceCaret.current === null) return
@@ -121,7 +129,7 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
     }).catch(error => { if (!controller.signal.aborted) setStrategies({ items: [], status: 'error', error: error.message }) })
     return () => controller.abort()
   }, [workspace, reload])
-  const busy = pending || strategyPending
+  const busy = pending || strategyPending || presetPending || presetUncertain
   const close = () => { if (!submitLock.current && !strategyLock.current) {if(presetEditor) leavePreset(); else onClose()} }
   const addStrategy = async () => {
     if (busy || strategyLock.current || strategyProblem?.uncertain) return
@@ -148,13 +156,18 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
     }
     const savedTradingOptions = buildTradingOptions(tradingOptions, selectedAssets)
     if(presetEditor) {
+      setPresetPending(true);submitLock.current=true
       try {
-        const saved = saveSessionPreset(window.localStorage,workspace,mode,{id:presetEditor.id,name:presetEditor.name,config:{balance:draft.balance,datasets:draft.datasets,strategy:draft.strategy,propDraft,tradingOptions:savedTradingOptions}})
+        const saved = await saveSessionPreset(workspace,mode,{id:presetEditor.id,revision:presetEditor.revision,name:presetEditor.name,config:{balance:draft.balance,datasets:draft.datasets,strategy:draft.strategy,propDraft,tradingOptions:savedTradingOptions}})
         const original = presetEditor.before
         setDraft(current => ({...current,name:original.draft.name,period:original.draft.period}))
-        setPresets(readSessionPresets(window.localStorage,workspace,mode));setActivePreset(saved.id)
+        setPresets(current=>[...current.filter(item=>item.id!==saved.id),saved]);setActivePreset(saved.id)
         setAdvanced(original.advanced);setPresetEditor(null);setPresetProblem('');setSubmitted(false)
-      } catch(error) {setPresetProblem(error.name === 'QuotaExceededError' || error.name === 'SecurityError' ? 'Không lưu được preset trên trình duyệt này.' : error.message)}
+      } catch(error) {
+        const uncertain=error.outcomeKnown === false
+        setPresetUncertain(uncertain)
+        setPresetProblem(uncertain ? 'Chưa xác nhận preset đã lưu. Tải lại trang để kiểm tra trước khi lưu tiếp.' : error.message)
+      } finally {setPresetPending(false);submitLock.current=false}
       return
     }
     if (mode === 'prop') {
@@ -221,7 +234,7 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
           if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return
           event.preventDefault(); const next = event.key === 'Home' ? 'backtest' : event.key === 'End' ? 'prop' : mode === 'backtest' ? 'prop' : 'backtest'; setMode(next); document.getElementById(`${id}-${next}`).focus()
         }}>{label}</button>)}</div>}
-      {!presetEditor && <SessionPresetMenu items={presets} selected={activePreset} disabled={busy || problem?.uncertain || data.status !== 'ready'} onApply={applyPreset} onCreate={() => editPreset(null)} onEdit={editPreset} onDelete={removePreset} />}
+      {!presetEditor && <SessionPresetMenu items={presets} selected={activePreset} disabled={busy || presetLoading || problem?.uncertain || data.status !== 'ready'} onApply={applyPreset} onCreate={() => editPreset(null)} onEdit={editPreset} onDelete={removePreset} />}
       <button type="button" className="quick-session-close wm-dialog-close" aria-label={t('Đóng tạo phiên')} disabled={busy} onClick={close}>×</button>
     </header>
     <form noValidate onSubmit={create} className="quick-session-form">

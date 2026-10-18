@@ -18,6 +18,17 @@ owner session into a trading test fixture. For future owner restarts retain
 and legacy codec descriptors. The generic wrapper default remains compatibility;
 it refuses replacing an active native listener under the wrong profile.
 
+The later 18 October session-preset cutover applied additive migration0007 and
+kept all21 existing data-table projections and4,142 artifact hashes unchanged.
+See [the scoped checkpoint](../evidence/session-presets-db-20261018/CHECKPOINT.md).
+The active scientific descriptor is now
+`.runtime/api-platform/native-scientific-capability-session-presets-db-20261018.json`;
+the installed bootstrap refreshed its engine-code commitment after the slippage
+contract change, with dependency/runtime identities unchanged. Retain that explicit
+path and the existing legacy descriptor on restart. Local backups use the installed
+PostgreSQL18 client matching server18; the archived17 client cannot dump it.
+Rollback to a pre0007 binary requires its matching pre0007 database backup.
+
 The native flow is `React → Axum → native domain → PostgreSQL transaction and
 revision/receipt → HTTP response`. Research and downloads use bounded background
 execution. A successful quick market order is already filled at the current

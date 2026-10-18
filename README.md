@@ -19,6 +19,11 @@ Luồng dữ liệu chính: dataset đã kiểm tra → manifest bất biến �
 có giới hạn → result bất biến → API theo workspace → UI. Replay chỉ được thấy dữ liệu
 đến vị trí hiện tại; màn hình và kết quả mô phỏng không cấp quyền gửi lệnh broker.
 
+Preset tạo phiên được lưu trong PostgreSQL, tách theo workspace và Backtesting/Prop Firm.
+Các trình duyệt cùng kết nối server/workspace sẽ đọc chung preset. Preset cũ trên trình
+duyệt được chuyển vào database khi mở hộp tạo phiên; chỉ xóa bản local sau khi xác minh
+đã lưu đúng. Sửa hoặc xóa preset không thay đổi các phiên đã tạo.
+
 ## Trạng thái hiện tại
 
 Đợt tối ưu Rust/hiệu năng đã được nghiệm thu theo phạm vi ngày **18/10/2026**;

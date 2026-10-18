@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "scope": "owned disposable PostgreSQL; real native Router, auth, idempotency and concurrent revision/count admission",
+  "owner_runtime_touched": false,
+  "source_unchanged": true,
+  "source_sha256": {
+    "api-rust\\src\\session_presets.rs": "86b380ab16d8a1fb871737929889d15f8943de5fc37da7e402e0c9d8f6a131c1",
+    "api-rust\\tests\\session_presets_pg.rs": "61d8f2afd32602c9e3b06f458037c67e369ad67c01dea3b90c34d1ce9dc535c3",
+    "api-rust\\tests\\session_presets_pg.py": "7830c53708d82b6f59829e998ce58114c4816e7646fbdb4bb7056e3272f86c4a",
+    "api-rust\\src\\lib.rs": "09f73ad48157e623e9ed87358299347d7b06e3c44642c0b035146c26b66536e6",
+    "api-rust\\src\\commands.rs": "706a58efabd0f94164c7e890da1bffbab23c5a6d297dba070addb5fcb00e13c4",
+    "api-rust\\src\\rust_runtime.rs": "6c8b1aa91e29c797e35c8c7242bfdfcb213406afdf05600d76f3063944d9cf51",
+    "api-rust\\src\\native_mutation.rs": "3370b2b9ceec6dcb778fabda2469261fbd94a4489a0494411d55b19a05241283",
+    "api-rust\\src\\session_trading_options.rs": "ed23834b290502af0f57921d3a8edeabbeeaa6c75ff5760e545c4e1eb78484bb",
+    "migrations\\0007_session_presets.sql": "db1f41bd89395833648574f7db8944a4190c2f42c73d4c06ad81a4ed5ccd281e"
+  },
+  "stdout": "\nrunning 1 test\ntest workspace_presets_are_persisted_atomic_scoped_and_revision_checked ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.79s\n\n",
+  "stderr": "   Compiling trading-workspace-api v0.1.0 (D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 19.66s\n     Running tests\\session_presets_pg.rs (target\\debug\\deps\\session_presets_pg-dbe7cb8dd8756358.exe)\n"
+}

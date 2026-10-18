@@ -6112,15 +6112,18 @@
   "Đặt tên preset": {"vi":"Đặt tên preset","en":"Name this preset"},
   "Tên preset là bắt buộc.": {"vi":"Tên preset là bắt buộc.","en":"Preset name is required."},
   "Quay lại tạo phiên": {"vi":"Quay lại tạo phiên","en":"Back to session setup"},
-  "Lưu trên trình duyệt này.": {"vi":"Lưu trên trình duyệt này.","en":"Saved in this browser."},
   "Không đọc được preset đã lưu.": {"vi":"Không đọc được preset đã lưu.","en":"Saved presets could not be read."},
-  "Không lưu được preset trên trình duyệt này.": {"vi":"Không lưu được preset trên trình duyệt này.","en":"This browser could not save the preset."},
   "Cấu hình preset không hợp lệ.": {"vi":"Cấu hình preset không hợp lệ.","en":"Invalid preset settings."},
   "Nhập tên preset, tối đa 160 ký tự.": {"vi":"Nhập tên preset, tối đa 160 ký tự.","en":"Enter a preset name, up to 160 characters."},
   "Tên preset đã tồn tại.": {"vi":"Tên preset đã tồn tại.","en":"A preset with this name already exists."},
-  "Preset đã thay đổi. Mở lại danh sách trước khi sửa.": {"vi":"Preset đã thay đổi. Mở lại danh sách trước khi sửa.","en":"This preset has changed. Reopen the list before editing."},
+  "Preset đã thay đổi. Tải lại trang trước khi sửa.": {"vi":"Preset đã thay đổi. Tải lại trang trước khi sửa.","en":"This preset has changed. Reload the page before editing."},
   "Lưu tối đa 50 preset cho mỗi loại phiên.": {"vi":"Lưu tối đa 50 preset cho mỗi loại phiên.","en":"Save up to 50 presets per session type."},
   "Chiến lược đã lưu không còn khả dụng. Chọn lại hoặc bỏ chọn.": {"vi":"Chiến lược đã lưu không còn khả dụng. Chọn lại hoặc bỏ chọn.","en":"The saved strategy is unavailable. Select another or clear it."},
   "Smooth candles": {"vi":"Làm mượt nến","en":"Smooth candles"},
-  "Thiết lập khác nhau. Chọn để áp dụng cho cả nhóm.": {"vi":"Thiết lập khác nhau. Chọn để áp dụng cho cả nhóm.","en":"Mixed settings. Choose a mode for the whole group."}
+  "Thiết lập khác nhau. Chọn để áp dụng cho cả nhóm.": {"vi":"Thiết lập khác nhau. Chọn để áp dụng cho cả nhóm.","en":"Mixed settings. Choose a mode for the whole group."},
+  "Không lưu hoặc đọc được preset. Thử lại sau.": {"vi":"Không lưu hoặc đọc được preset. Thử lại sau.","en":"Could not save or load presets. Try again later."},
+  "Không đọc được preset cũ trên trình duyệt. Bản cũ được giữ nguyên.": {"vi":"Không đọc được preset cũ trên trình duyệt. Bản cũ được giữ nguyên.","en":"Could not read old browser presets. The originals are unchanged."},
+  "Chưa chuyển hết preset cũ vào workspace. Bản trên trình duyệt được giữ nguyên.": {"vi":"Chưa chuyển hết preset cũ vào workspace. Bản trên trình duyệt được giữ nguyên.","en":"Some browser presets could not be imported. The originals are unchanged."},
+  "Chưa xác nhận preset đã lưu. Tải lại trang để kiểm tra trước khi lưu tiếp.": {"vi":"Chưa xác nhận preset đã lưu. Tải lại trang để kiểm tra trước khi lưu tiếp.","en":"Preset save is unconfirmed. Reload to check before saving again."},
+  "Chưa xác nhận preset đã xóa. Tải lại trang để kiểm tra.": {"vi":"Chưa xác nhận preset đã xóa. Tải lại trang để kiểm tra.","en":"Preset deletion is unconfirmed. Reload to check."}
 }

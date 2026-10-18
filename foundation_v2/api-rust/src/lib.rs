@@ -11,6 +11,7 @@ pub mod metadata_mutations;
 pub mod replay_core;
 pub mod replay_service;
 pub mod session_trading_options;
+pub mod session_presets;
 pub mod replay_portfolio;
 pub mod replay_storage;
 pub mod prop_core;
@@ -52,6 +53,7 @@ fn domain_routes_for(native_runtime: bool) -> Router<Arc<AppState>> {
         .merge(events::routes())
         .merge(commands::routes_for(native_runtime))
         .merge(metadata_mutations::routes())
+        .merge(session_presets::routes())
         .merge(replay_service::routes())
         .merge(prop_service::routes())
         .merge(analytics::routes())

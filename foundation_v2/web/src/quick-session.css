@@ -26,11 +26,11 @@
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-fields a { color:var(--wm-accent,var(--wm-content)); width:fit-content; text-decoration:none; font-size:12px; }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-field-title { display:flex; align-items:center; gap:16px; }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-required { color:var(--wm-negative); }
-.fx-app.fx-shell-story[data-theme] .fx-content .quick-session-balance-picker { display:flex; flex-wrap:wrap; gap:4px; padding:3px; border:1px solid var(--wm-control-border); border-radius:var(--ds-radius-field); }
+.fx-app.fx-shell-story[data-theme] .fx-content .quick-session-balance-picker { display:flex; flex-wrap:wrap; gap:4px; padding:3px; border:1px solid var(--wm-control-border); border-radius:var(--ds-radius-field); --wm-focus:var(--project-action); }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-balance-picker button { min-height:var(--ds-tab); padding:3px 12px; border:1px solid transparent; border-radius:var(--ds-radius-small); background:var(--project-control); color:var(--wm-content); font-variant-numeric:tabular-nums; }
 /* Presets communicate state through selected/focus only; neutralize the global button hover here. */
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-balance-picker button:hover:not(:disabled) { border-color:transparent; background:var(--project-control); color:var(--wm-content); }
-.fx-app.fx-shell-story[data-theme] .fx-content .quick-session-balance-picker button:is([aria-checked=true], [aria-checked=true]:hover:not(:disabled)) { border-color:var(--project-primary); background:color-mix(in srgb, var(--project-primary) 12%, var(--project-control)); color:var(--project-primary); }
+.fx-app.fx-shell-story[data-theme] .fx-content .quick-session-balance-picker button:is([aria-checked=true], [aria-checked=true]:hover:not(:disabled)) { border-color:var(--project-action); background:color-mix(in srgb, var(--project-action) 12%, var(--project-control)); color:var(--project-action); }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-balance { display:flex; align-items:center; margin-top:8px; border:1px solid var(--wm-control-border); border-radius:var(--ds-radius-field); overflow:hidden; cursor:text; }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-balance:focus-within { border-color:var(--wm-focus); }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-balance { transition:border-color var(--ds-motion-hover) var(--ds-ease-standard); }

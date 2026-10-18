@@ -5,18 +5,25 @@ import {assetTradingDefaults} from '../src/sessionTradingOptions.js'
 import {sessionPresetKey} from '../src/sessionPresets.js'
 
 const origin=process.env.TESTING_UI_ORIGIN || 'http://127.0.0.1:5180'
-const out=process.env.TW_UI_EVIDENCE_DIR || '../evidence/slippage-groups-20261018'
+const out=process.env.TW_UI_EVIDENCE_DIR || '../evidence/session-presets-db-20261018/groups'
 await mkdir(out,{recursive:true})
 const browser=await chromium.launch()
-const report={scope:'Production UI with isolated browser storage and a labeled catalog fixture: real local EUR/USD cloned as a second Forex asset. No backend writes.',cases:[],errors:[],writes:[]}
+const report={scope:'Production UI with isolated browser storage, in-memory preset HTTP fixture and a labeled catalog fixture: real local EUR/USD cloned as a second Forex asset. No owner backend writes.',cases:[],errors:[],writes:[]}
 try {
  for(const mode of ['backtest','prop']) for(const language of ['vi','en']) {
   const en=language==='en',context=await browser.newContext({viewport:{width:1368,height:790}})
   await context.addInitScript(language=>{localStorage.setItem('tw-language',language);localStorage.setItem('tw-theme','dark')},language)
-  let selected
+  let selected,presetItems=[]
   await context.route('**/*',async route=>{
    const request=route.request(),url=new URL(request.url())
    if(url.origin!==origin) return route.abort()
+   if(url.pathname.startsWith('/api/v2/session-presets')) {
+    if(request.method()==='GET') return route.fulfill({json:{version:'session-presets-v1',items:presetItems}})
+    const body=request.postDataJSON(),id=url.pathname.split('/')[4]
+    const item={...body,id:id||crypto.randomUUID(),revision:1}
+    presetItems=[...presetItems.filter(value=>value.id!==item.id),item]
+    return route.fulfill({status:201,json:item})
+   }
    if(!['GET','HEAD','OPTIONS'].includes(request.method())) {report.writes.push(url.pathname);return route.abort()}
    if(url.pathname==='/api/v2/data/datasets') {
     const response=await route.fetch(),payload=await response.json()
@@ -63,7 +70,8 @@ try {
   await trigger.click();await dialog.locator('.session-preset-create').click()
   await dialog.locator('input[maxlength="160"]').first().fill('GROUP SAVED')
   await dialog.locator('.quick-session-submit').click()
-  const saved=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).items.find(item=>item.name==='GROUP SAVED'),key)
+  const saved=presetItems.find(item=>item.name==='GROUP SAVED')
+  assert.equal(await page.evaluate(key=>localStorage.getItem(key),key),null,'legacy browser presets are removed only after verified server import')
   for(const asset of selected.slice(0,2)) assert.deepEqual(saved.config.tradingOptions.assets[asset.dataset_id].slippage,{mode:'fixed',fixed_steps:3})
   assert.deepEqual(saved.config.tradingOptions.assets[selected[2].dataset_id].slippage,{mode:'off'})
   await page.reload();await trigger.click();await dialog.locator('.session-preset-apply').filter({hasText:'GROUP SAVED'}).click()

@@ -2,18 +2,34 @@ import assert from 'node:assert/strict'
 import {mkdir,writeFile} from 'node:fs/promises'
 import {chromium} from 'playwright'
 const origin=process.env.TESTING_UI_ORIGIN || 'http://127.0.0.1:5180'
-const out=process.env.TW_UI_EVIDENCE_DIR || '../evidence/session-presets-20261018'
+const out=process.env.TW_UI_EVIDENCE_DIR || '../evidence/session-presets-db-20261018/ui'
 await mkdir(out,{recursive:true})
 const browser=await chromium.launch()
-const report={scope:'Production UI; isolated browser storage. Real catalog GETs, all backend writes blocked except one intercepted 503 failure test. No owner sessions modified.',cases:[],errors:[],writes:[]}
+const report={scope:'Production UI with an in-memory preset HTTP fixture and isolated browser storage. Real catalog GETs, all owner writes blocked; one intercepted session-creation 503 test. Database acceptance is separate.',cases:[],errors:[],writes:[],presetRequests:0}
 try {
  for(const mode of ['backtest','prop']) for(const language of ['vi','en']) {
   const en=language==='en',context=await browser.newContext({viewport:{width:1368,height:790}})
   await context.addInitScript(language=>{localStorage.setItem('tw-language',language);localStorage.setItem('tw-theme','dark')},language)
-  let failCreate=false
+  let failCreate=false,failDelete=false
+  const savedPresets=new Map()
   await context.route('**/*',route=>{
    const request=route.request(),url=new URL(request.url())
    if(url.origin!==origin) return route.abort()
+   if(url.pathname.startsWith('/api/v2/session-presets')) {
+    report.presetRequests++
+    if(request.method()==='GET') return route.fulfill({json:{version:'session-presets-v1',items:[...savedPresets.values()].filter(item=>item.mode===url.searchParams.get('mode'))}})
+    const body=request.postDataJSON(),id=url.pathname.split('/')[4]
+    if(url.pathname.endsWith('/delete')) {
+     if(failDelete) return route.fulfill({status:409,json:{detail:'session_preset_revision_conflict'}})
+     const current=savedPresets.get(id);assert.equal(body.expected_revision,current.revision)
+     savedPresets.delete(id);return route.fulfill({json:{id,mode:body.mode,revision:current.revision+1,deleted:true}})
+    }
+    const current=id?savedPresets.get(id):null
+    if(current) assert.equal(body.expected_revision,current.revision)
+    const next={...body,id:id||crypto.randomUUID(),revision:(current?.revision||0)+1}
+    savedPresets.set(next.id,next)
+    return route.fulfill({status:current?200:201,json:next})
+   }
    if(!['GET','HEAD','OPTIONS'].includes(request.method())) {
     if(failCreate && url.pathname==='/api/v2/replay/sessions') {
      const body=request.postDataJSON()
@@ -30,12 +46,15 @@ try {
   await page.goto(`${origin}/?workspace=tenant-a&view=overview&create=${mode}`)
   const dialog=page.locator('.quick-session-dialog'),trigger=dialog.locator('.session-preset-trigger'),menu=dialog.locator('.session-preset-menu')
   await dialog.waitFor();await trigger.waitFor({state:'visible'})
+  assert.equal(await trigger.evaluate(el=>getComputedStyle(el).borderTopColor),'rgba(0, 0, 0, 0)','unselected preset has no colored border')
   await page.addStyleTag({content:'*,*::before,*::after{animation:none !important;transition:none !important}'})
   await dialog.locator('input[maxlength="160"]').first().fill('OWNER DRAFT')
   const assets=dialog.locator('.dataset-asset-select .fx-select-trigger:not(:disabled)')
   for(let i=0;i<2;i++) {await assets.click();await dialog.locator('.dataset-asset-select [role=option][aria-selected=false]:not([disabled])').first().click()}
   await dialog.getByRole('radio',{name:'$50K',exact:true}).click()
   await trigger.click()
+  assert.equal(await menu.locator('small').count(),0,'no browser-only storage caption')
+  assert.equal(await menu.locator('.session-preset-create').evaluate(el=>getComputedStyle(el).borderTopWidth),'0px','empty menu has no stray separator')
   if(mode==='backtest' && !en) await dialog.screenshot({animations:'disabled',path:`${out}/empty-menu.png`})
   await menu.locator('.session-preset-create').click()
   assert.equal(await dialog.locator('.quick-session-sections').count(),0)
@@ -56,6 +75,8 @@ try {
   await dialog.locator('.quick-session-submit').click()
   await dialog.locator('.quick-session-sections').waitFor()
   assert.ok((await trigger.textContent()).includes('TEST'))
+  assert.equal(await trigger.evaluate(el=>getComputedStyle(el).borderTopColor),'rgb(255, 173, 124)','selected preset uses orange action token')
+  assert.equal(await dialog.getByRole('radio',{name:'$50K',exact:true}).evaluate(el=>getComputedStyle(el).borderTopColor),'rgb(255, 173, 124)','selected balance uses orange action token')
   assert.equal(await dialog.locator('input[maxlength="160"]').first().inputValue(),'OWNER DRAFT')
   await dialog.getByRole('radio',{name:'$10K',exact:true}).click()
   assert.ok(!(await trigger.textContent()).includes('TEST'),'manual config change detaches selected preset')
@@ -72,6 +93,7 @@ try {
   await dialog.locator('input[maxlength="160"]').first().fill('RENAMED')
   await dialog.locator('.quick-session-submit').click()
   await trigger.waitFor();assert.ok((await trigger.textContent()).includes('RENAMED'))
+  await page.evaluate(language=>{localStorage.clear();localStorage.setItem('tw-language',language);localStorage.setItem('tw-theme','dark')},language)
   await page.reload();await trigger.waitFor()
   await trigger.click();await menu.locator('.session-preset-apply').click()
   assert.equal(await dialog.getByRole('radio',{name:'$50K',exact:true}).getAttribute('aria-checked'),'true','saved configuration survives reload')
@@ -84,10 +106,16 @@ try {
   const confirmation=page.locator('.session-preset-confirm')
   await confirmation.waitFor()
   if(mode==='backtest' && !en) await page.screenshot({animations:'disabled',path:`${out}/delete-confirm.png`})
+  failDelete=true
+  await confirmation.getByRole('button',{name:en?'Delete preset':'Xóa preset',exact:true}).click()
+  await confirmation.getByRole('alert').waitFor()
+  assert.equal(savedPresets.size,1,'failed server deletion cannot remove a preset')
+  failDelete=false
   await confirmation.getByRole('button',{name:en?"Don't delete":'Không xóa',exact:true}).click()
   assert.equal(await menu.locator('.session-preset-row').count(),1)
   await menu.getByRole('button',{name:en?'Delete preset RENAMED':'Xóa preset RENAMED',exact:true}).click()
   await confirmation.getByRole('button',{name:en?'Delete preset':'Xóa preset',exact:true}).click()
+  await confirmation.waitFor({state:'detached'})
   assert.equal(await menu.locator('.session-preset-row').count(),0)
   await page.keyboard.press('Escape');assert.equal(await dialog.count(),1,'menu Escape does not close session setup')
   await dialog.locator('.quick-session-sections button').nth(0).click()
@@ -111,7 +139,7 @@ try {
    assert.ok(await dialog.evaluate(el=>el.scrollWidth<=el.clientWidth+1))
    await trigger.click();await dialog.screenshot({animations:'disabled',path:`${out}/mobile-menu.png`})
   }
-  report.cases.push(`${mode}/${language}: create/apply/edit/cancel/reload/delete; independent asset costs; mode scoping; no preset backend writes`)
+  report.cases.push(`${mode}/${language}: server CRUD fixture, apply/edit/cancel/reload after clearing localStorage, delete failure, independent asset costs, orange states and mode scoping`)
   await context.close()
  }
  assert.deepEqual(report.errors,[]);assert.deepEqual(report.writes,[]);report.result='PASS'

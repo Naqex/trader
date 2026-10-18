@@ -1,0 +1,21 @@
+{
+  "scope": "Production UI and real local PostgreSQL through Rust API. Fresh browser contexts, no preset HTTP mocks. Only test-owned presets may be written.",
+  "cases": [
+    "backtest: create, fresh-browser read/apply, edit, second fresh-browser read/apply, delete; original presets preserved",
+    "prop: create, fresh-browser read/apply, edit, second fresh-browser read/apply, delete; original presets preserved"
+  ],
+  "errors": [],
+  "blockedWrites": [],
+  "owned": [
+    {
+      "id": "f7e4f467-ff03-42ec-9a32-c7a4a9b36603",
+      "mode": "backtest"
+    },
+    {
+      "id": "3f46b53b-c9e2-4826-b1fc-d7c36396640d",
+      "mode": "prop"
+    }
+  ],
+  "result": "PASS",
+  "cleanupComplete": true
+}
