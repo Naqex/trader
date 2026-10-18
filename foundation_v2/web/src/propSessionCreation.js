@@ -36,7 +36,10 @@ async function sha256Text(value) {
 
 export async function createPropChartSession(workspace, draft, datasets) {
   const selectedIds = draft.datasetVersions?.length ? draft.datasetVersions : [draft.datasetVersion]
-  if (selectedIds.length !== 1 || selectedIds[0] !== draft.datasetVersion) throw Object.assign(new Error('Phiên Prop Firm chỉ hỗ trợ 1 tài sản. Bỏ bớt tài sản trước khi tạo phiên.'), { status: 422 })
+  if (selectedIds.length > 12 || new Set(selectedIds).size !== selectedIds.length || selectedIds[0] !== draft.datasetVersion) throw Object.assign(new Error('Chọn tối đa 12 tài sản khác nhau, bắt đầu bằng tài sản chính.'), { status: 422 })
+  const selectedAssets = selectedIds.map(id => datasets.find(item => item.dataset_id === id))
+  if (selectedAssets.some(item => !item)) throw new Error('Tài sản đã chọn không còn khả dụng.')
+  if (selectedAssets.some(item => (item.instrument_spec?.account_ccy || 'USD') !== draft.currency.toUpperCase())) throw new Error('Các tài sản phải dùng cùng tiền tệ tài khoản.')
   const start = utcIsoFromInput(draft.startUtc)
   const durationDays = Number(draft.durationDays) > 0 ? Math.max(1, Number(draft.durationDays)) : null
   const initialCapital = Number(draft.initialCapital), targetPercent = Number(draft.targetPercent)
@@ -137,7 +140,7 @@ export async function createPropChartSession(workspace, draft, datasets) {
     pending_orders: [],
     setup_metadata: {
       session_name: draft.name.trim(),
-      dataset_ids: Array.isArray(draft.datasetVersions) && draft.datasetVersions.length ? draft.datasetVersions : [draft.datasetVersion],
+      dataset_ids: selectedIds,
       strategy_id: draft.strategyId || '',
       strategy_revision: Number.isInteger(draft.strategyRevision) ? draft.strategyRevision : null,
       period_end_utc: draft.endUtc ? utcIsoFromInput(draft.endUtc) : null,
@@ -175,9 +178,9 @@ export async function openPropReplay(workspace, bundle, datasets) {
   if (existing) return existing
   const dataset = datasets.find(item => item.dataset_id === attempt.data_version || item.artifact_sha256 === attempt.data_version || item.dataset_sha256 === attempt.data_version || `sha256:${item.artifact_sha256}` === attempt.data_version)
   const ids = metadata.dataset_ids?.length ? metadata.dataset_ids : [dataset?.dataset_id || attempt.data_version]
-  if (ids.length !== 1) throw Object.assign(new Error('Phiên Prop Firm này có nhiều tài sản và chưa thể mở chart. Tạo phiên mới với 1 tài sản.'), { status: 422 })
+  if (!dataset || !ids.includes(dataset.dataset_id) || ids.length > 12 || new Set(ids).size !== ids.length || ids.some(id => !datasets.some(item => item.dataset_id === id))) throw new Error('Tài sản của phiên không còn khả dụng hoặc không khớp dữ liệu đã khóa.')
   const record = await createReplaySession(workspace, {
-    dataset_id: ids[0], dataset_ids: ids,
+    dataset_id: dataset.dataset_id, dataset_ids: [dataset.dataset_id, ...ids.filter(id => id !== dataset.dataset_id)],
     name: metadata.session_name || 'Prop Firm',
     starting_balance: phase.initial_balance,
     start_timestamp: Math.floor(Date.parse(attempt.virtual_start_utc) / 1000),

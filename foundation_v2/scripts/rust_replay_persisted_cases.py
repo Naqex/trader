@@ -146,39 +146,9 @@ def prop_cases(native, service, store, compare, init, output):
     attempt=attempt.model_copy(update={"cost_version":init["cost_model"]["version"]})
     store.create_prop_session_bundle(session,attempt,phase,resume_state=resume)
     scope={"dataset_id":"dataset-a","prop_session_id":psid,"prop_attempt_id":aid,"starting_balance":"100000"}
-    unsupported={"detail":"multi-asset replay is not supported by Prop lifecycle"}
-    with store.connect() as conn:
-        records_before=conn.execute("SELECT count(*) AS n FROM workspace_records WHERE kind='replay'").fetchone()["n"]
-    compare("reject new multiasset Prop before persistence",
-            native("POST","/api/v2/replay/sessions",{**scope,"dataset_ids":["dataset-a","dataset-b"]},422),unsupported)
-    with store.connect() as conn:
-        assert conn.execute("SELECT count(*) AS n FROM workspace_records WHERE kind='replay'").fetchone()["n"]==records_before
-
-    # Compatibility creation reproduces the previously accepted invalid record.
-    # Keep its history readable, but never save a trade that Prop cannot ingest.
-    invalid=service.create("tenant-a",**scope,dataset_ids=["dataset-a","dataset-b"])
-    invalid_id=invalid["record_id"];invalid_path=f"/api/v2/replay/sessions/{invalid_id}"
-    invalid_before=store.get_record("tenant-a","replay",invalid_id)
-    quick={**init,"operation_id":"invalid-prop-order","side":"SELL","quantity":"0.12","stop_loss":None,"take_profit":None,"execution_timing":"current_quote"}
-    market={k:v for k,v in quick.items() if k not in init}
-    for tail,args in [("execution",init),("orders/quick",quick),("orders/market",market),
-                      ("orders/protection",{"target_id":"unreachable","operation_id":"invalid-protection","stop_loss":None,"take_profit":None}),
-                      ("orders/close",{"target_id":"unreachable","operation_id":"invalid-close"}),
-                      ("step",{"steps":1})]:
-        compare("reject existing multiasset Prop "+tail,
-                native("POST",invalid_path+"/"+tail,{"expected_revision":invalid["revision"],**args},422),unsupported)
-        compare("preserve invalid Prop history after "+tail,store.get_record("tenant-a","replay",invalid_id),invalid_before)
-    compare("invalid Prop remains readable",native("GET",invalid_path),invalid)
-    invalid=service.quick_market_order("tenant-a",invalid_id,invalid["revision"],**quick)
-    invalid_before=store.get_record("tenant-a","replay",invalid_id)
-    position_id=invalid["payload"]["execution"]["position"]["position_id"]
-    for tail,args in [("orders/quick",quick),("orders/market",market),("step",{"steps":1}),
-                      ("orders/protection",{"target_id":position_id,"operation_id":"existing-invalid-protection","stop_loss":None,"take_profit":None}),
-                      ("orders/close",{"target_id":position_id,"operation_id":"existing-invalid-close"})]:
-        compare("reject initialized multiasset Prop "+tail,
-                native("POST",invalid_path+"/"+tail,{"expected_revision":invalid["revision"],**args},422),unsupported)
-        compare("preserve initialized Prop position after "+tail,store.get_record("tenant-a","replay",invalid_id),invalid_before)
-    compare("invalid Prop order history remains readable",native("GET",invalid_path),invalid)
+    # Portfolio Prop is covered by native_multiasset_acceptance.py. The retained
+    # Python implementation remains an oracle for the single-asset contract only.
+    quick={**init,"operation_id":"single-prop-order","side":"SELL","quantity":"0.12","stop_loss":None,"take_profit":None,"execution_timing":"current_quote"}
     valid=native("POST","/api/v2/replay/sessions",{**scope,"dataset_ids":["dataset-a"]},201)
     valid=native("POST",f'/api/v2/replay/sessions/{valid["record_id"]}/orders/quick',
                  {"expected_revision":valid["revision"],**quick,"operation_id":"valid-prop-quick"})

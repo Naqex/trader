@@ -44,16 +44,16 @@ test('asset cap is enforced separately from availability', () => {
   assert.match(quickSessionErrors(input).assets, /12/)
 })
 
-test('switching a multiasset Backtest draft to Prop requires explicit deselection', () => {
+test('both modes preserve and accept a multiasset draft with a shared currency', () => {
   const input = fixture()
   input.draft.datasets.push('other')
   input.selectedAssets.push({ dataset_id:'other', instrument_spec:{ account_ccy:'USD' } })
   input.mode = 'backtest'
   assert.deepEqual(quickSessionErrors(input), {})
   input.mode = 'prop'
-  assert.match(quickSessionErrors(input).assets, /chỉ hỗ trợ 1 tài sản/)
-  assert.deepEqual(input.draft.datasets, ['local', 'other'], 'validation never silently discards a selection')
-  input.draft.datasets.pop()
-  input.selectedAssets.pop()
   assert.deepEqual(quickSessionErrors(input), {})
+  assert.deepEqual(input.draft.datasets, ['local', 'other'], 'validation never silently discards a selection')
+  input.draft.datasets.push('other')
+  input.selectedAssets.push(input.selectedAssets[1])
+  assert.match(quickSessionErrors(input).assets, /một lần/)
 })

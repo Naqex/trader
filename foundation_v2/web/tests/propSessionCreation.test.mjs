@@ -24,27 +24,52 @@ test('auto cutoff is the selected immutable data end; custom cutoff and explicit
   assert.equal(bundles[1].session.profile.phases[0].max_calendar_days,30)
   assert.equal(replays[1].end_timestamp,epoch('2020-02-01T23:59Z'))
   await assert.rejects(createPropChartSession('tenant-a',{...draft,endUtc:'2020-05-01T00:00'},datasets),/Khoảng dữ liệu/)
-  await assert.rejects(createPropChartSession('tenant-a',{...draft,datasetVersion:'missing',datasetVersions:['missing']},datasets),/tài sản chưa hợp lệ/)
+  await assert.rejects(createPropChartSession('tenant-a',{...draft,datasetVersion:'missing',datasetVersions:['missing']},datasets),/không còn khả dụng/)
   assert.equal(bundles.length,2,'invalid boundaries are rejected before persistence')
 })
 
-test('multiasset and mismatched Prop selections are rejected before any persistence', async t => {
+test('duplicate, mismatched, unavailable and mixed-currency selections fail before persistence', async t => {
   t.mock.method(globalThis, 'fetch', () => { throw Error('unexpected request') })
-  for (const datasetVersions of [['a', 'b'], ['a', 'a'], ['b']]) {
-    await assert.rejects(createPropChartSession('tenant-a', { datasetVersion:'a', datasetVersions }, []), error => error.status === 422 && /chỉ hỗ trợ 1 tài sản/.test(error.message))
+  for (const datasetVersions of [['a', 'a'], ['b'], Array.from({ length: 13 }, (_, i) => String(i))]) {
+    await assert.rejects(createPropChartSession('tenant-a', { datasetVersion:'a', datasetVersions }, []), error => error.status === 422)
   }
+  await assert.rejects(createPropChartSession('tenant-a', { datasetVersion:'a', datasetVersions:['a', 'missing'] }, [{ dataset_id:'a' }]), /không còn khả dụng/)
+  await assert.rejects(createPropChartSession('tenant-a', { datasetVersion:'a', datasetVersions:['a','b'], currency:'USD' }, [{ dataset_id:'a' }, { dataset_id:'b', instrument_spec:{ account_ccy:'EUR' } }]), /cùng tiền tệ/)
 })
 
-test('opening an unbound legacy multiasset Prop bundle never creates an incompatible replay', async t => {
-  let requests = 0
-  t.mock.method(globalThis, 'fetch', async (_url, options) => {
-    assert.ok(!options.method || options.method === 'GET', 'must not create a replay')
-    requests++
-    return Response.json({ items: [] })
+test('multiasset Prop creation uses common range and preserves all assets with the primary immutable pin', async t => {
+  let savedBundle, savedReplay
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    if (url.endsWith('/prop/session-bundles')) {
+      savedBundle = JSON.parse(options.body)
+      return Response.json(savedBundle)
+    }
+    if (options.method === 'POST') {
+      savedReplay = JSON.parse(options.body)
+      return Response.json({ record_id:'multi', payload:savedReplay })
+    }
+    return Response.json({ items:[] })
   })
-  const bundle = { session:{ session_id:'legacy' }, attempt:{ attempt_id:'a', data_version:'hash-a' }, phase:{}, resume_state:{ setup_metadata:{ dataset_ids:['a','b'] } } }
-  await assert.rejects(openPropReplay('tenant-a', bundle, []), error => error.status === 422 && /nhiều tài sản/.test(error.message))
-  assert.equal(requests, 1, 'only reads the existing replay catalog')
+  const datasets = [{dataset_id:'a',artifact_sha256:'hash-a',first_timestamp:1577836800,last_timestamp:1583020800}, {dataset_id:'b',artifact_sha256:'hash-b',first_timestamp:1577923200,last_timestamp:1580515200}]
+  await createPropChartSession('tenant-a',{name:'Portfolio',profileKind:'generic',initialCapital:'10000',currency:'USD',targetPercent:'10',dailyLoss:'500',overallLoss:'1000',startUtc:'2020-01-02T00:00',datasetVersion:'a',datasetVersions:['a','b']},datasets)
+  assert.equal(savedBundle.attempt.data_version,'hash-a')
+  assert.equal(savedBundle.attempt.virtual_cutoff_utc,'2020-02-01T00:00:00.000Z')
+  assert.deepEqual(savedBundle.resume_state.setup_metadata.dataset_ids,['a','b'])
+  assert.deepEqual(savedReplay.dataset_ids,['a','b'])
+  assert.equal(savedReplay.dataset_id,'a')
+})
+
+test('opening an unbound portfolio preserves its primary pin even if metadata was reordered', async t => {
+  let savedReplay
+  t.mock.method(globalThis, 'fetch', async (_url, options) => {
+    if (options.method !== 'POST') return Response.json({ items:[] })
+    savedReplay = JSON.parse(options.body)
+    return Response.json({ record_id:'legacy',payload:savedReplay })
+  })
+  const bundle = {session:{session_id:'prop'},attempt:{attempt_id:'a',data_version:'hash-a',virtual_start_utc:'2020-01-02T00:00:00Z'},phase:{initial_balance:'10000'},resume_state:{setup_metadata:{dataset_ids:['b','a']}}}
+  await openPropReplay('tenant-a',bundle,[{dataset_id:'a',artifact_sha256:'hash-a'},{dataset_id:'b',artifact_sha256:'hash-b'}])
+  assert.equal(savedReplay.dataset_id,'a')
+  assert.deepEqual(savedReplay.dataset_ids,['a','b'])
 })
 
 test('dialog name survives Prop bundle and replay creation without technical suffix', async t => {

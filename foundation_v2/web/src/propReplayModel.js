@@ -22,10 +22,10 @@ export function isPropTerminal(status) {
   return TERMINAL_PROP_STATUSES.has(status)
 }
 
-export function isUnsupportedPropReplay(replay) {
+export function propReplayLedger(replay) {
   const payload = replay?.payload
-  return (Array.isArray(payload?.dataset_ids) && payload.dataset_ids.length > 1)
-    || Object.keys(payload?.asset_states || {}).length > 0
+  // Asset ledgers have independent sequences; only the portfolio ledger can drive a shared challenge.
+  return payload?.asset_states ? payload.portfolio_execution?.ledger : payload?.execution?.ledger
 }
 
 export function propPriceMarkEvents(events, afterSequence = 0) {
@@ -57,6 +57,8 @@ export function propReplayRuleView(propState) {
   const overallUsed = overallCurrent === null ? null : Math.max(0, overallReference - overallCurrent)
   const objectives = propState.objectives?.money
   const calendar = propState.objectives?.calendar
+  const evaluationBlocked = propState.objectives?.technical_status === 'blocked_by_data'
+    || (phase.evaluation_quality != null && phase.evaluation_quality !== 'full_for_declared_model')
   return {
     status: propState.attempt?.status || 'unknown',
     phaseIndex: phase.phase_index,
@@ -66,9 +68,10 @@ export function propReplayRuleView(propState) {
     positionPolicy: profilePhase.position_policy,
     balance,
     equity,
-    profitTarget: { current: objectives?.profit_target?.current != null && initial != null ? Number(objectives.profit_target.current) - initial : targetCurrent, target: objectives?.profit_target?.target != null && initial != null ? Number(objectives.profit_target.target) - initial : profitTarget, hit: objectives?.profit_target?.hit === true },
-    dailyLoss: { used: objectives?.daily_loss?.current != null ? Math.max(0, Number(objectives.daily_loss.reference) - Number(objectives.daily_loss.current)) : dailyUsed, limit: objectives?.daily_loss?.floor != null ? Number(objectives.daily_loss.reference) - Number(objectives.daily_loss.floor) : dailyLimit, breached: objectives?.daily_loss?.breached === true },
-    overallDrawdown: { used: objectives?.overall_drawdown?.current != null ? Math.max(0, Number(objectives.overall_drawdown.reference) - Number(objectives.overall_drawdown.current)) : overallUsed, limit: objectives?.overall_drawdown?.floor != null ? Number(objectives.overall_drawdown.reference) - Number(objectives.overall_drawdown.floor) : overallLimit, breached: objectives?.overall_drawdown?.breached === true, kind: profilePhase.overall_drawdown?.kind || 'static' },
+    evaluationBlocked,
+    profitTarget: { current: evaluationBlocked ? null : objectives?.profit_target?.current != null && initial != null ? Number(objectives.profit_target.current) - initial : targetCurrent, target: objectives?.profit_target?.target != null && initial != null ? Number(objectives.profit_target.target) - initial : profitTarget, hit: !evaluationBlocked && objectives?.profit_target?.hit === true },
+    dailyLoss: { used: evaluationBlocked ? null : objectives?.daily_loss?.current != null ? Math.max(0, Number(objectives.daily_loss.reference) - Number(objectives.daily_loss.current)) : dailyUsed, limit: objectives?.daily_loss?.floor != null ? Number(objectives.daily_loss.reference) - Number(objectives.daily_loss.floor) : dailyLimit, breached: !evaluationBlocked && objectives?.daily_loss?.breached === true },
+    overallDrawdown: { used: evaluationBlocked ? null : objectives?.overall_drawdown?.current != null ? Math.max(0, Number(objectives.overall_drawdown.reference) - Number(objectives.overall_drawdown.current)) : overallUsed, limit: objectives?.overall_drawdown?.floor != null ? Number(objectives.overall_drawdown.reference) - Number(objectives.overall_drawdown.floor) : overallLimit, breached: !evaluationBlocked && objectives?.overall_drawdown?.breached === true, kind: profilePhase.overall_drawdown?.kind || 'static' },
     qualifyingDays: calendar?.qualifying_days ?? number(phase.qualifying_days) ?? 0,
     minimumDays: profilePhase.min_qualifying_days ?? 0,
     elapsedDays: calendar?.elapsed_calendar_days ?? null,

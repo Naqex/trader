@@ -345,6 +345,8 @@ pub async fn save_record(
 ) -> Result<Value, ApiError> {
     sync(&mut payload)?;
     lock_datasets(tx, workspace, &payload).await?;
+    ensure_portfolio(tx, workspace, text(record, "record_id")?, &mut payload).await?;
+    crate::replay_portfolio::update(&mut payload).map_err(bad)?;
     let id = text(record, "record_id")?;
     let expected = integer(record, "revision")?;
     let rev = i32::try_from(expected + 1).map_err(|_| bad("record revision overflow"))?;
@@ -362,9 +364,10 @@ async fn create_record(
     tx: &Transaction<'_>,
     workspace: &str,
     id: &str,
-    p: Value,
+    mut p: Value,
 ) -> Result<Value, ApiError> {
     lock_datasets(tx, workspace, &p).await?;
+    ensure_portfolio(tx, workspace, id, &mut p).await?;
     let stamp = now();
     tx.execute("INSERT INTO workspace_records(workspace_id,kind,record_id,current_revision,created_at_utc,updated_at_utc) VALUES($1,'replay',$2,1,$3,$3)",&[&workspace,&id,&stamp]).await.map_err(|_|ApiError::database())?;
     tx.execute("INSERT INTO workspace_record_revisions(workspace_id,kind,record_id,revision,payload_json,deleted,created_at_utc) VALUES($1,'replay',$2,1,$3,false,$4)",&[&workspace,&id,&p,&stamp]).await.map_err(|_|ApiError::database())?;
@@ -588,6 +591,13 @@ async fn metadata(
 }
 
 fn account(p: &Value) -> Result<Value, ApiError> {
+    if p["portfolio_execution"]["schema_version"] == "replay-portfolio-v1" {
+        let a = &p["portfolio_execution"];
+        return Ok(json!({"starting_balance":a["phase_initial_balance"],"balance":a["balance"],
+            "floating_pl":a["floating_pl"],"equity":a["equity"],"account_ccy":a["account_ccy"],
+            "open_position_count":a["positions"].as_array().map(Vec::len).unwrap_or(0),
+            "pending_order_count":a["pending_orders"].as_array().map(Vec::len).unwrap_or(0)}));
+    }
     let initial = dec(p.get("starting_balance").unwrap_or(&json!("10000")))?;
     let mut balance = initial.clone();
     let mut floating = BigDecimal::from(0);
@@ -694,6 +704,9 @@ pub async fn checkpoint_record(
                 p["asset_states"][&key] = json!({"cursor_index":target,"execution":restored});
             }
             p["replay_clock_utc"] = json!(clock);
+            if p["portfolio_execution"].is_object() && p["portfolio_execution"]["event_sequence"].as_i64().unwrap_or(0) > 0 {
+                p["portfolio_execution"] = crate::replay_portfolio::checkpoint(&p["portfolio_execution"], &p, clock).map_err(bad)?;
+            }
         }
         let active = text(&p, "dataset_id")?.to_owned();
         p["execution"] = p["asset_states"][&active]["execution"].clone();
@@ -855,6 +868,9 @@ pub async fn view(
     mut record: Value,
     q: &HashMap<String, String>,
 ) -> Result<Value, ApiError> {
+    let record_id = text(&record,"record_id")?.to_owned();
+    ensure_portfolio(tx, workspace, &record_id, &mut record["payload"]).await?;
+    crate::replay_portfolio::update(&mut record["payload"]).map_err(bad)?;
     let original = &record["payload"];
     let m = manifest(tx, workspace, text(&original, "dataset_id")?).await?;
     let canonical = integer(&original, "cursor_index")?;
@@ -1096,7 +1112,6 @@ async fn create(
     workspace: &str,
     b: &Value,
 ) -> Result<Value, ApiError> {
-    validate_prop_asset_scope(b)?;
     let dataset = text(b, "dataset_id")?;
     let start = b["start_index"].as_i64().unwrap_or(0);
     let m = manifest(tx, workspace, dataset).await?;
@@ -1213,17 +1228,48 @@ async fn create(
     view(tx, state, workspace, record, &HashMap::new()).await
 }
 
-fn validate_prop_asset_scope(payload: &Value) -> Result<(), ApiError> {
-    let prop = payload["session_kind"] == "prop" || !payload["prop_session_id"].is_null();
-    let portfolio = payload["dataset_ids"].as_array().is_some_and(|ids| ids.len() > 1)
-        || payload["asset_states"].as_object().is_some_and(|assets| !assets.is_empty())
-        || payload["asset_states"].as_array().is_some_and(|assets| !assets.is_empty());
-    if prop && portfolio {
-        // The Prop lifecycle binds one immutable dataset; accepting a portfolio here
-        // would save trades that its subsequent lifecycle feed cannot acknowledge.
-        return Err(bad("multi-asset replay is not supported by Prop lifecycle"));
+async fn ensure_portfolio(
+    tx: &Transaction<'_>,
+    workspace: &str,
+    id: &str,
+    p: &mut Value,
+) -> Result<(), ApiError> {
+    if !p["asset_states"].is_object() || p["portfolio_execution"].is_object() {
+        return Ok(());
     }
-    Ok(())
+    if (p["session_kind"] == "prop" || !p["prop_session_id"].is_null())
+        && p["asset_states"]
+            .as_object()
+            .unwrap()
+            .values()
+            .any(|asset| {
+                asset["execution"]["ledger"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .any(|event| {
+                        matches!(
+                            event["kind"].as_str(),
+                            Some(
+                                "market_fill"
+                                    | "manual_close"
+                                    | "protective_fill"
+                                    | "phase_transition"
+                            )
+                        )
+                    })
+            })
+    {
+        return Err(conflict(
+            "Legacy portfolio trades lack a canonical account ledger; create a new session. Existing history is preserved.",
+        ));
+    }
+    let mut pins = Vec::new();
+    for key in p["asset_states"].as_object().unwrap().keys() {
+        let m = manifest(tx, workspace, key).await?;
+        pins.push(json!({"dataset_id":key,"dataset_sha256":m["artifact_sha256"]}));
+    }
+    crate::replay_portfolio::initialize(p, id, pins).map_err(bad)
 }
 
 async fn single_period(
@@ -1522,6 +1568,20 @@ async fn initialize(
         snapshot["ledger"] = json!([mark]);
         crate::replay_core::validate(&snapshot).map_err(bad)?;
     }
+    if portfolio {
+        for details in p["portfolio_execution"]["phase_transitions"].as_array().into_iter().flatten() {
+            let mut args = details.clone();
+            args["virtual_time_utc"] = details["virtual_time_utc"].clone();
+            snapshot = engine_snapshot("transition", &snapshot, args)?;
+        }
+        if snapshot["event_sequence"].as_i64().unwrap_or(0) > 0 {
+            let dataset = text(p,"dataset_id")?.to_owned();
+            p["portfolio_execution"]["asset_marks"][&dataset] = json!({"sequence":snapshot["event_sequence"],
+                "balance_base":snapshot["balance"],"balance":snapshot["balance"],"floating_pl":"0","position":null,
+                "pending_market_order":null,"evaluation_quality":"full_for_declared_model","intrabar_equity_coverage":"complete",
+                "cursor_index":snapshot["cursor_index"]});
+        }
+    }
     p["execution"] = snapshot;
     Ok(())
 }
@@ -1564,8 +1624,21 @@ async fn mutate(
     }
     let base_revision = integer(&record, "revision")?;
     let mut p = record["payload"].take();
-    if tail == "execution" || tail.starts_with("orders/") || tail == "step" {
-        validate_prop_asset_scope(&p)?;
+    ensure_portfolio(tx,workspace,id,&mut p).await?;
+    crate::replay_portfolio::update(&mut p).map_err(bad)?;
+    if p["asset_states"].is_object() && (tail == "execution" || tail == "step" || tail.starts_with("orders/")) {
+        let identity = identities(tx,workspace,id,&p).await?;
+        if identity["session_kind"] == "prop" {
+            let current = crate::prop_service::load_attempt(tx,workspace,text(&identity,"prop_session_id")?,
+                text(&identity,"prop_attempt_id")?,true).await?;
+            if current["attempt"]["status"] != "running" {
+                return Err(conflict("Prop replay financial actions require a running attempt"));
+            }
+            let sequence = p["portfolio_execution"]["event_sequence"].as_i64().unwrap_or(0);
+            if sequence > current["resume_state"]["replay_binding"]["last_replay_event_sequence"].as_i64().unwrap_or(0) {
+                return Err(conflict("Prop replay has unacknowledged account events; synchronize the challenge first"));
+            }
+        }
     }
     if compact && p["asset_states"].is_object() {
         return Err(bad("mutation_view_multi_asset_unsupported"));
@@ -1573,7 +1646,7 @@ async fn mutate(
     if step_view && (!state.native_runtime || p["asset_states"].is_object() || !bar_execution(&p["execution"])) {
         return Err(bad("step_view_requires_native_single_asset_bar_replay"));
     }
-    let bar_storage = bounded_storage && b["tick_snapshot_id"].is_null()
+    let bar_storage = bounded_storage && !p["asset_states"].is_object() && b["tick_snapshot_id"].is_null()
         && (p["execution"].is_null() || matches!(p["execution"]["schema_version"].as_str(),
             Some("replay-execution-v1" | "replay-execution-v2")));
     if bounded_storage && !bar_storage {
@@ -2377,6 +2450,10 @@ async fn branch(
             }
         }
         p["parent_asset_checkpoint_sequences"] = Value::Object(sequences);
+        if p["portfolio_execution"].is_object() {
+            p["parent_checkpoint_event_sequence"] = p["portfolio_execution"]["event_sequence"].clone();
+            crate::replay_portfolio::fork(&mut p["portfolio_execution"],&child,&branch).map_err(bad)?;
+        }
         let active = text(&p, "dataset_id")?.to_owned();
         p["execution"] = p["asset_states"][&active]["execution"].clone();
     } else {
@@ -2565,17 +2642,24 @@ fn prop_resume(prior: &Value, snapshot: &Value, event: &Value) -> Result<Value, 
         .ok_or_else(|| bad("invalid Prop resume state"))?
         .remove("prop_lifecycle");
     r["cursor"] = json!({"bar_index":event["cursor_index"],"timestamp_utc":utc(integer(event,"virtual_time_utc")?)?});
-    r["open_positions"] = if event["details"]["open_position"].is_null() {
+    r["open_positions"] = if snapshot["schema_version"] == "replay-portfolio-v1" {
+        event["details"]["open_positions"].clone()
+    } else if event["details"]["open_position"].is_null() {
         json!([])
     } else {
         json!([event["details"]["open_position"]])
     };
-    r["pending_orders"] = if event["details"]["pending_market_order"].is_null() {
+    r["pending_orders"] = if snapshot["schema_version"] == "replay-portfolio-v1" {
+        event["details"]["pending_orders"].clone()
+    } else if event["details"]["pending_market_order"].is_null() {
         json!([])
     } else {
         json!([event["details"]["pending_market_order"]])
     };
-    r["replay_binding"] = json!({"replay_session_id":snapshot["replay_session_id"],"branch_id":snapshot["branch_id"],"dataset_id":snapshot["dataset_id"],"dataset_sha256":snapshot["dataset_sha256"],"last_replay_event_sequence":event["sequence"]});
+    r["replay_binding"] = crate::replay_portfolio::binding(snapshot, &event["sequence"]);
+    if snapshot["schema_version"] == "replay-portfolio-v1" {
+        r["asset_cursor_indices"] = event["details"]["asset_cursor_indices"].clone();
+    }
     Ok(r)
 }
 async fn feed_prop(
@@ -2587,11 +2671,12 @@ async fn feed_prop(
     b: &Value,
     bounded_storage: bool,
 ) -> Result<Value, ApiError> {
-    let p = &record["payload"];
-    if p["asset_states"].is_object() {
-        return Err(bad("multi-asset replay is not supported by Prop lifecycle"));
-    }
-    let s = &p["execution"];
+    let mut payload = record["payload"].clone();
+    ensure_portfolio(tx, workspace, text(record,"record_id")?, &mut payload).await?;
+    crate::replay_portfolio::update(&mut payload).map_err(bad)?;
+    let p = &payload;
+    let portfolio = p["asset_states"].is_object();
+    let s = if portfolio { &p["portfolio_execution"] } else { &p["execution"] };
     if s.is_null() {
         return Err(bad("replay execution is not initialized"));
     }
@@ -2602,17 +2687,25 @@ async fn feed_prop(
         if !binding.is_object() {
             return Err(bad("prop replay binding is invalid"));
         }
+        let upgrade_initial_binding = portfolio && binding["schema_version"] != "replay-portfolio-binding-v1"
+            && binding["last_replay_event_sequence"].as_i64() == Some(0)
+            && binding["dataset_sha256"] == s["primary_dataset_sha256"]
+            && p["asset_states"].as_object().unwrap().values().all(|asset|asset["execution"]["ledger"]
+                .as_array().into_iter().flatten().all(|event|!matches!(event["kind"].as_str(),Some("market_fill"|"manual_close"|"protective_fill"|"phase_transition"))));
         for key in [
             "replay_session_id",
             "branch_id",
             "dataset_id",
             "dataset_sha256",
         ] {
-            if binding[key] != s[key] {
+            if binding[key] != s[key] && !(upgrade_initial_binding && key == "dataset_sha256") {
                 return Err(bad(
                     "prop attempt is already bound to a different replay lineage",
                 ));
             }
+        }
+        if portfolio && !upgrade_initial_binding && binding["dataset_pins"] != s["dataset_pins"] {
+            return Err(bad("prop attempt portfolio dataset pins changed"));
         }
         last = binding["last_replay_event_sequence"].as_i64().unwrap_or(0);
     }
@@ -2629,7 +2722,7 @@ async fn feed_prop(
         }
         (selected.requested_event, selected.next_sequence)
     } else {
-        crate::replay_core::validate(s).map_err(bad)?;
+        if !portfolio { crate::replay_core::validate(s).map_err(bad)?; }
         let marks = s["ledger"].as_array().ok_or_else(|| bad("invalid execution ledger"))?
             .iter().filter(|event| matches!(event["kind"].as_str(),
                 Some("price_mark" | "manual_close" | "order_cancel")));
@@ -2641,7 +2734,7 @@ async fn feed_prop(
     let event = event.ok_or_else(|| ApiError::detail(StatusCode::NOT_FOUND, "replay price_mark event not found"))?;
     let operation = crate::prop_core::replay_event_operation_id(
         text(s, "replay_session_id")?, text(s, "branch_id")?, sequence, session, attempt);
-    let prior=tx.query_opt("SELECT v.phase_json,v.resume_json FROM prop_mutation_receipts r JOIN prop_attempt_revisions v ON v.workspace_id=r.workspace_id AND v.session_id=r.session_id AND v.attempt_id=r.attempt_id AND v.revision=r.entity_revision WHERE r.workspace_id=$1 AND r.session_id=$2 AND r.attempt_id=$3 AND r.operation_id=$4",&[&workspace,&session,&attempt,&operation]).await.map_err(|_|ApiError::database())?;
+    let prior=tx.query_opt("SELECT v.phase_json,v.resume_json,v.snapshot_json FROM prop_mutation_receipts r JOIN prop_attempt_revisions v ON v.workspace_id=r.workspace_id AND v.session_id=r.session_id AND v.attempt_id=r.attempt_id AND v.revision=r.entity_revision WHERE r.workspace_id=$1 AND r.session_id=$2 AND r.attempt_id=$3 AND r.operation_id=$4",&[&workspace,&session,&attempt,&operation]).await.map_err(|_|ApiError::database())?;
     if prior.is_none() {
         if sequence < last {
             return Err(bad("replay lifecycle events cannot move backwards"));
@@ -2659,6 +2752,24 @@ async fn feed_prop(
                 "prop event sequence is not the next event or an exact retry",
             ));
         }
+    }
+    if portfolio {
+        if let Some(row) = prior {
+            let phase: Value = row.get(0);
+            let resume: Value = row.get(1);
+            return Ok(json!({"replay_event":event,"attempt":row.get::<_,Value>(2),"phase":phase,
+                "resume_state":resume,"objectives":resume["prop_lifecycle"]["last_objectives"],"duplicate":true}));
+        }
+        if current["attempt"]["status"] == "expired" && current["resume_state"]["prop_lifecycle"]["last_event_kind"] == "calendar_boundary" {
+            return Ok(json!({"replay_event":event,"attempt":current["attempt"],"phase":current["phase"],
+                "resume_state":current["resume_state"],"objectives":current["resume_state"]["prop_lifecycle"]["last_objectives"],"duplicate":true,
+                "terminal_boundary":{"virtual_time_utc":current["phase"]["virtual_time_utc"],"requested_replay_event_sequence":event["sequence"],
+                "acknowledged_replay_event_sequence":current["resume_state"]["replay_binding"]["last_replay_event_sequence"]}}));
+        }
+        if current["attempt"]["revision"] != b["expected_prop_revision"] {
+            return Err(conflict("prop attempt revision conflict"));
+        }
+        return feed_portfolio_prop(tx,workspace,s,&event,session,attempt,current).await;
     }
     let (phase, resume) = if let Some(row) = prior {
         (row.get::<_, Value>(0), row.get::<_, Value>(1))
@@ -2682,6 +2793,106 @@ async fn feed_prop(
     )
 }
 
+async fn feed_portfolio_prop(
+    tx: &Transaction<'_>,
+    workspace: &str,
+    snapshot: &Value,
+    event: &Value,
+    session: &str,
+    attempt: &str,
+    mut current: Value,
+) -> Result<Value, ApiError> {
+    let phase_index = integer(&current["phase"], "phase_index")?;
+    let spec = current["session"]["profile"]["phases"]
+        .as_array()
+        .and_then(|phases| phases.get((phase_index - 1) as usize))
+        .ok_or_else(|| bad("unknown frozen phase"))?
+        .clone();
+    let calendar = crate::prop_core::calendar_oracle(&spec,&json!({
+        "virtual_start_utc":current["attempt"]["virtual_start_utc"],
+        "previous_virtual_utc":current["phase"]["virtual_time_utc"],
+        "current_virtual_utc":utc(integer(event,"virtual_time_utc")?)?,"qualifying_local_dates":[]
+    })).map_err(bad)?;
+    for boundary in calendar["reset_boundaries"].as_array().unwrap() {
+        let at = DateTime::parse_from_rfc3339(text(boundary, "boundary_utc")?)
+            .map_err(|_| bad("invalid reset boundary"))?
+            .timestamp();
+        let source = snapshot["ledger"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .rev()
+            .find(|mark| {
+                mark["virtual_time_utc"]
+                    .as_i64()
+                    .is_some_and(|time| time <= at)
+                    && mark["sequence"]
+                        .as_i64()
+                        .is_some_and(|sequence| sequence <= event["sequence"].as_i64().unwrap_or(0))
+            });
+        let mut mark = source.cloned().unwrap_or_else(|| event.clone());
+        if source.is_none() {
+            for key in [
+                "balance",
+                "floating_pl",
+                "equity",
+                "open_positions",
+                "pending_orders",
+            ] {
+                mark[key] = current["phase"][key].clone();
+            }
+        }
+        let args = json!({"workspace_id":workspace,"prop_session_id":session,"prop_attempt_id":attempt,
+            "profile_hash":current["attempt"]["profile_hash"],"expected_prop_revision":current["attempt"]["revision"],
+            "prop_event_sequence":integer(&current["phase"],"last_event_sequence")?+1});
+        let mut prop_event =
+            crate::prop_core::replay_mark_to_prop_event(&args, &spec, &mark).map_err(bad)?;
+        prop_event["kind"] = json!("calendar_boundary");
+        prop_event["qualifying_day"] = json!(false);
+        prop_event["virtual_time_utc"] = boundary["boundary_utc"].clone();
+        prop_event["operation_id"] = json!(format!(
+            "{}-reset-{at}",
+            crate::prop_core::replay_event_operation_id(
+                text(snapshot, "replay_session_id")?,
+                text(snapshot, "branch_id")?,
+                integer(event, "sequence")?,
+                session,
+                attempt
+            )
+        ));
+        let mut resume = current["resume_state"].clone();
+        resume["cursor"]["timestamp_utc"] = boundary["boundary_utc"].clone();
+        if let Some(source) = source {
+            resume["open_positions"] = source["details"]["open_positions"].clone();
+            resume["pending_orders"] = source["details"]["pending_orders"].clone();
+        }
+        current =
+            crate::prop_service::apply_lifecycle_event(tx, workspace, &prop_event, Some(&resume))
+                .await?;
+        if current["attempt"]["status"] != "running" {
+            return Ok(
+                json!({"replay_event":event,"prop_event":prop_event,"attempt":current["attempt"],
+                "phase":current["phase"],"resume_state":current["resume_state"],"objectives":current["objectives"],"duplicate":false,
+                "terminal_boundary":{"virtual_time_utc":prop_event["virtual_time_utc"],"requested_replay_event_sequence":event["sequence"],
+                "acknowledged_replay_event_sequence":current["resume_state"]["replay_binding"]["last_replay_event_sequence"]}}),
+            );
+        }
+    }
+    let args = json!({"workspace_id":workspace,"prop_session_id":session,"prop_attempt_id":attempt,
+        "profile_hash":current["attempt"]["profile_hash"],"expected_prop_revision":current["attempt"]["revision"],
+        "prop_event_sequence":integer(&current["phase"],"last_event_sequence")?+1});
+    let prop_event =
+        crate::prop_core::replay_mark_to_prop_event(&args, &spec, event).map_err(bad)?;
+    let resume = prop_resume(&current["resume_state"], snapshot, event)?;
+    let result =
+        crate::prop_service::apply_lifecycle_event(tx, workspace, &prop_event, Some(&resume))
+            .await?;
+    Ok(
+        json!({"replay_event":event,"prop_event":prop_event,"attempt":result["attempt"],"phase":result["phase"],
+        "resume_state":result["resume_state"],"objectives":result["objectives"],"duplicate":result["duplicate"]}),
+    )
+}
+
 pub async fn handle_bound_next_phase(
     tx: &Transaction<'_>,
     workspace: &str,
@@ -2694,9 +2905,11 @@ pub async fn handle_bound_next_phase(
     )?;
     let record = load_record(tx, workspace, id, true).await?;
     let mut p = record["payload"].clone();
-    let s = &p["execution"];
-    crate::replay_core::validate(s)
-        .map_err(|_| conflict("canonical replay execution snapshot is invalid"))?;
+    let portfolio = p["asset_states"].is_object();
+    let snapshot = if portfolio { p["portfolio_execution"].clone() } else { p["execution"].clone() };
+    let s = &snapshot;
+    if !portfolio { crate::replay_core::validate(s)
+        .map_err(|_| conflict("canonical replay execution snapshot is invalid"))?; }
     let fingerprint = crate::prop_core::intent_fingerprint(intent).map_err(bad)?;
     let operation = text(intent, "intent_id")?;
     let session = text(intent, "session_id")?;
@@ -2739,7 +2952,7 @@ pub async fn handle_bound_next_phase(
         ));
     }
     let m = manifest(tx, workspace, text(s, "dataset_id")?).await?;
-    if m["artifact_sha256"] != s["dataset_sha256"] {
+    if m["artifact_sha256"] != if portfolio {s["primary_dataset_sha256"].clone()}else{s["dataset_sha256"].clone()} {
         return Err(conflict("canonical replay dataset sha256 changed"));
     }
     let ix = integer(&current["phase"], "phase_index")?;
@@ -2769,11 +2982,22 @@ pub async fn handle_bound_next_phase(
     let time = DateTime::parse_from_rfc3339(text(&current["phase"], "virtual_time_utc")?)
         .map_err(|_| bad("invalid phase time"))?
         .timestamp();
-    let next = engine_snapshot(
+    let transition_args = json!({"intent_id":operation,"intent_fingerprint":result["intent_fingerprint"],"from_phase_index":ix,"to_phase_index":result["phase"]["phase_index"],"carry_policy":spec["carry_policy"],"position_policy":spec["position_policy"],"next_phase_initial_balance":result["phase"]["initial_balance"],"virtual_time_utc":time});
+    let next = if portfolio {
+        for asset in p["asset_states"].as_object_mut().unwrap().values_mut() {
+            if !asset["execution"].is_null() {
+                asset["execution"] = engine_snapshot("transition",&asset["execution"],transition_args.clone())?;
+            }
+        }
+        let active = text(&p,"dataset_id")?.to_owned();
+        p["execution"] = p["asset_states"][&active]["execution"].clone();
+        crate::replay_portfolio::update(&mut p).map_err(conflict)?;
+        p["portfolio_execution"].clone()
+    } else { engine_snapshot(
         "transition",
         s,
-        json!({"intent_id":operation,"intent_fingerprint":result["intent_fingerprint"],"from_phase_index":ix,"to_phase_index":result["phase"]["phase_index"],"carry_policy":spec["carry_policy"],"position_policy":spec["position_policy"],"next_phase_initial_balance":result["phase"]["initial_balance"],"virtual_time_utc":time}),
-    )?;
+        transition_args,
+    )? };
     for key in [
         "replay_session_id",
         "branch_id",
@@ -2786,6 +3010,9 @@ pub async fn handle_bound_next_phase(
         next["event_sequence"].clone();
     result["resume_state"]["replay_binding"]["phase_index"] =
         result["phase"]["phase_index"].clone();
+    if portfolio {
+        result["resume_state"]["replay_binding"]["dataset_pins"] = next["dataset_pins"].clone();
+    }
     crate::prop_core::validate_replay_prop_transition_result(
         &next,
         &result["attempt"],
@@ -2793,7 +3020,7 @@ pub async fn handle_bound_next_phase(
         &result["resume_state"],
     )
     .map_err(conflict)?;
-    p["execution"] = next;
+    if !portfolio { p["execution"] = next; }
     let saved = save_record(tx, workspace, &record, p, false).await?;
     let mut persisted =
         crate::prop_service::persist_result(tx, current, &result, operation, &fingerprint).await?;
@@ -2884,9 +3111,6 @@ async fn branch_prop(
     }
     let child = load_record(tx, workspace, id, true).await?;
     let cp = &child["payload"];
-    if cp["asset_states"].is_object() {
-        return Err(bad("multi-asset replay is not supported by Prop lifecycle"));
-    }
     if child["revision"] != b["expected_replay_revision"] {
         return Err(conflict("replay branch revision conflict"));
     }
@@ -2916,10 +3140,13 @@ async fn branch_prop(
             "nested hindsight Prop attempt branching is not supported",
         ));
     }
-    let cs = &cp["execution"];
-    let ps = &parent["payload"]["execution"];
-    crate::replay_core::validate(cs).map_err(bad)?;
-    crate::replay_core::validate(ps).map_err(bad)?;
+    let portfolio = cp["asset_states"].is_object();
+    let cs = if portfolio { &cp["portfolio_execution"] } else { &cp["execution"] };
+    let ps = if portfolio { &parent["payload"]["portfolio_execution"] } else { &parent["payload"]["execution"] };
+    if !portfolio {
+        crate::replay_core::validate(cs).map_err(bad)?;
+        crate::replay_core::validate(ps).map_err(bad)?;
+    }
     if cs["replay_session_id"] != id {
         return Err(bad("Replay branch execution lineage is inconsistent"));
     }
@@ -2990,7 +3217,7 @@ async fn branch_prop(
     attempt["parent_attempt_id"] = json!(parent_attempt);
     attempt["branch_kind"] = json!("hindsight_exploratory");
     phase["attempt_id"] = json!(child_attempt);
-    resume["replay_binding"] = json!({"replay_session_id":id,"branch_id":cs["branch_id"],"dataset_id":cs["dataset_id"],"dataset_sha256":cs["dataset_sha256"],"last_replay_event_sequence":cs["event_sequence"]});
+    resume["replay_binding"] = crate::replay_portfolio::binding(cs,&cs["event_sequence"]);
     resume["branch_provenance"] = json!({"kind":"replay_prop_hindsight_branch_v1","parent_attempt_id":parent_attempt,"parent_attempt_revision":rev,"parent_replay_session_id":parent_id,"parent_replay_revision":b["expected_parent_replay_revision"],"parent_checkpoint_event_sequence":cs["event_sequence"]});
     crate::prop_core::validate_attempt_snapshot(&attempt).map_err(bad)?;
     crate::prop_core::validate_phase_snapshot(&phase).map_err(bad)?;

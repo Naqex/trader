@@ -46,7 +46,7 @@ import { orderLevels, marketQuotes } from './replayOrderModel.js'
 import { readScalperPreset, scalperProtection } from './legacyScalperPreset.js'
 import './ReplayWorkspace.css'
 import './ChartWorkbench.css'
-import { isPropTerminal, isUnsupportedPropReplay, propReplayRuleView } from './propReplayModel.js'
+import { isPropTerminal, propReplayLedger, propReplayRuleView } from './propReplayModel.js'
 
 const ReplayChart = lazy(() => import('./LightweightReplayChart.jsx'))
 
@@ -149,8 +149,7 @@ export default function ReplayWorkspace({ workspace, query }) {
   const [pendingAction, setPendingAction] = useState('')
   const propSyncPending = propMode && hasPendingPropReplayEvents(state.payload, propState)
   const propSyncFailed = propMode && Boolean(propState.syncError)
-  const propUnsupported = propMode && isUnsupportedPropReplay(state.payload)
-  const propReadyToAdvance = !propMode || (!propUnsupported && propState.status === 'ready' && propState.attempt?.status === 'running' && (Boolean(pendingAction) || !propSyncPending))
+  const propReadyToAdvance = !propMode || (propState.status === 'ready' && propState.attempt?.status === 'running' && (Boolean(pendingAction) || !propSyncPending))
   const [conflict, setConflict] = useState(false)
   const [branchCursor, setBranchCursor] = useState(0)
   const [datasetDraft, setDatasetDraft] = useState(requestedDataset)
@@ -187,7 +186,7 @@ export default function ReplayWorkspace({ workspace, query }) {
   const actionLock = useRef(false)
   const sessionRequest = useRef(null)
   const lastResolvedLocation = useRef(`${requestedSession}:${requestedCursorParam ?? ''}`)
-  const propAutoInit = useRef(false)
+  const propAutoInit = useRef('')
   const datasetRequest = useRef(null)
   const sideToggleRef = useRef(null)
   const sideRef = useRef(null)
@@ -426,7 +425,7 @@ export default function ReplayWorkspace({ workspace, query }) {
       let propSyncError = null
       if (propMode && kind === 'step' && propState.status === 'ready' && propState.attempt && propState.phase) {
         const boundSequence = Number(nextPropState.resumeState?.replay_binding?.last_replay_event_sequence || 0)
-        const events = merged ? replayMutationEventsAfter(merged, boundSequence) : payload.payload.execution?.ledger || payload.execution_events
+        const events = merged ? replayMutationEventsAfter(merged, boundSequence) : propReplayLedger(payload) ?? (payload.payload.asset_states ? undefined : payload.execution_events)
         try {
           nextPropState = await syncPropReplayEvents({ workspace, sessionId, propSessionId, propAttemptId, propState: nextPropState, events })
         } catch (error) {
@@ -636,7 +635,7 @@ export default function ReplayWorkspace({ workspace, query }) {
   const completed = replay?.payload?.status === 'completed' || replay?.has_future_rows === false
   const canOpenOrder = Boolean(replay) && state.status === 'ready' && !historicalView && !conflict && !pendingAction && (!propMode || propReadyToAdvance)
   const persistPropReplayBinding = async nextReplay => {
-    if (!propMode || !propState.attempt || !propState.phase || !nextReplay?.payload?.execution) return
+    if (!propMode || !propState.attempt || !propState.phase || !nextReplay?.payload?.execution || nextReplay.payload.asset_states) return
     const replayPayload = nextReplay.payload
     const replayBinding = {
       replay_session_id: nextReplay.record_id || sessionId,
@@ -677,7 +676,7 @@ export default function ReplayWorkspace({ workspace, query }) {
   const orderContext = useRef('')
   const orderReplay = useRef(replay)
   orderReplay.current = replay
-  orderContext.current = `${workspace}:${sessionId}:${cursor}`
+  orderContext.current = `${workspace}:${sessionId}:${replay?.payload?.dataset_id}:${cursor}`
   const submitOrder = async (endpoint, body, expectedRevision = revision) => {
     if (!canOpenOrder || (completed && endpoint !== 'orders/close') || actionLock.current) return false
     const origin = orderContext.current
@@ -700,11 +699,11 @@ export default function ReplayWorkspace({ workspace, query }) {
       orderReplay.current = next
       setState({ status: 'ready', payload: next, error: null })
       if (endpoint === 'execution' && propMode) await persistPropReplayBinding(next)
-      if (['orders/close', 'orders/quick', 'orders/market'].includes(endpoint) && propMode) {
+      if (propMode && (next.payload.asset_states || ['orders/close', 'orders/quick', 'orders/market'].includes(endpoint))) {
         let current = propState
         try {
           const boundSequence = Number(current.resumeState?.replay_binding?.last_replay_event_sequence || 0)
-          current = await syncPropReplayEvents({ workspace, sessionId, propSessionId, propAttemptId, propState: current, events: replayMutationEventsAfter(merged, boundSequence) })
+          current = await syncPropReplayEvents({ workspace, sessionId, propSessionId, propAttemptId, propState: current, events: next.payload.asset_states ? propReplayLedger(next) : replayMutationEventsAfter(merged, boundSequence) })
           setPropState(current)
         } catch (error) {
           setPropState({ ...(error.propState || current), status: 'error', syncError: true, error: error.message })
@@ -734,7 +733,7 @@ export default function ReplayWorkspace({ workspace, query }) {
         || (nextReplay.prop_attempt_id || nextReplay.payload.prop_attempt_id) !== propAttemptId
         || saved.attempt?.attempt_id !== propAttemptId || saved.attempt?.session_id !== propSessionId) throw new Error('Liên kết thử thách đã thay đổi. Tải lại trang trước khi tiếp tục.')
       const current = { ...propState, status: 'ready', syncError: false, session: saved.session, attempt: saved.attempt, phase: saved.phase, resumeState: saved.resume_state, objectives: saved.resume_state?.prop_lifecycle?.last_objectives || null, error: null }
-      const synced = await syncPropReplayEvents({ workspace, sessionId, propSessionId, propAttemptId, propState: current, events: nextReplay.payload.execution?.ledger })
+      const synced = await syncPropReplayEvents({ workspace, sessionId, propSessionId, propAttemptId, propState: current, events: propReplayLedger(nextReplay) })
       if (window.location.search !== location) return
       orderReplay.current = nextReplay
       setState({ status: 'ready', payload: nextReplay, error: null })
@@ -758,7 +757,7 @@ export default function ReplayWorkspace({ workspace, query }) {
     if (current && JSON.stringify(current) === JSON.stringify(next)) return current
     return next
   }), [])
-  const order = useChartOrder({ workspace, replay, dataset: activeDataset, ready: state.status === 'ready', closeBlocked: historicalView || conflict || assetClockStale || Boolean(pendingAction) || (propMode && !propReadyToAdvance), blocked: propUnsupported || historicalView || completed || conflict || propSyncPending || assetClockStale || Boolean(pendingAction) || (propMode && propState.status !== 'ready') || (propMode && propState.attempt?.status !== 'running'), submit: submitOrder, executionConfig: propExecutionConfig })
+  const order = useChartOrder({ workspace, replay, dataset: activeDataset, ready: state.status === 'ready', closeBlocked: historicalView || conflict || assetClockStale || Boolean(pendingAction) || (propMode && !propReadyToAdvance), blocked: historicalView || completed || conflict || propSyncPending || assetClockStale || Boolean(pendingAction) || (propMode && propState.status !== 'ready') || (propMode && propState.attempt?.status !== 'running'), submit: submitOrder, executionConfig: propExecutionConfig })
   const scalperPreview = useMemo(() => {
     if (!scalperPreset?.enabled) return null
     const side = order.active?.side || order.draft.side
@@ -771,12 +770,13 @@ export default function ReplayWorkspace({ workspace, query }) {
   const orderBlockedReason = propMode && propState.status !== 'ready' ? 'Chưa đồng bộ được trạng thái challenge; thao tác đang khóa.' : propMode && propState.attempt?.status !== 'running' ? 'Đang đồng bộ trạng thái challenge; hãy thử tải lại phiên.' : historicalView ? 'Cutoff lịch sử chỉ đọc. Về cursor mới nhất hoặc tạo nhánh để đặt lệnh.' : completed ? 'Dataset đã kết thúc; không còn nến để fill hoặc sửa lệnh.' : conflict ? 'Đang khóa vì revision đã thay đổi.' : assetClockStale ? 'Chờ nến mới của tài sản tại thời gian replay chung để đặt lệnh.' : ''
 
   useEffect(() => {
-    if (!propMode || propUnsupported || propState.status !== 'ready' || propState.attempt?.status !== 'running' || !replay || replay.payload?.execution || !order.instrument || !order.canInitialize || (order.tick?.options === null && !propExecutionConfig?.forceBar) || propAutoInit.current) return
-    propAutoInit.current = true
+    const initScope = `${workspace}:${replay?.record_id}:${replay?.payload?.dataset_id}`
+    if (!propMode || propState.status !== 'ready' || propState.attempt?.status !== 'running' || !replay || replay.payload?.execution || order.disabled || !order.instrument || !order.canInitialize || (order.tick?.options === null && !propExecutionConfig?.forceBar) || propAutoInit.current === initScope) return
+    propAutoInit.current = initScope
     Promise.resolve(order.initialize()).then(success => {
-      if (!success) propAutoInit.current = false
-    }).catch(() => { propAutoInit.current = false })
-  }, [activeDataset?.instrument_spec, activeDataset?.replay_instrument_spec, order, propExecutionConfig?.forceBar, propMode, propUnsupported, propState.attempt?.status, propState.status, replay])
+      if (!success && propAutoInit.current === initScope) propAutoInit.current = ''
+    }).catch(() => { if (propAutoInit.current === initScope) propAutoInit.current = '' })
+  }, [activeDataset?.instrument_spec, activeDataset?.replay_instrument_spec, order, propExecutionConfig?.forceBar, propMode, propState.attempt?.status, propState.status, workspace, replay?.payload?.dataset_id, replay])
   const beginOrder = side => { setIsPlaying(false); order.chooseSide(side); openPanel('order') }
   const lineage = replay?.payload?.parent_session_id
   const canBranch = Boolean(replay) && !propMode && !conflict && (
@@ -1001,16 +1001,7 @@ export default function ReplayWorkspace({ workspace, query }) {
             </div>
           </section>
 
-          {propUnsupported && (
-            <NotificationSlot><section className="wm-notification is-error is-blocking" role="alert" data-testid="prop-unsupported-assets">
-              <div className="wm-notification-content">
-                <strong>{t('Phiên Prop có nhiều tài sản.')}</strong>
-                <span className="wm-notification-detail">{t('Challenge hiện chỉ hỗ trợ một tài sản. Tạo phiên Prop mới và chọn một tài sản để giao dịch; lịch sử phiên này vẫn được giữ nguyên.')}</span>
-              </div>
-              <a className="wm-notification-action" href={propRetryHref}>{t('Tạo phiên Prop mới')}</a>
-            </section></NotificationSlot>
-          )}
-          {!propUnsupported && (conflict || propSyncFailed || (propSyncPending && !pendingAction)) && (
+          {(conflict || propSyncFailed || (propSyncPending && !pendingAction)) && (
             <NotificationSlot><section className="wm-notification is-error is-blocking" role="alert" data-testid="revision-conflict">
               <div className="wm-notification-content">
                 <strong>{t(propSyncFailed || propSyncPending ? 'Chưa đồng bộ được thử thách.' : 'Session đã thay đổi ở nơi khác.')}</strong>

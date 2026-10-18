@@ -1,0 +1,71 @@
+{
+  "scope": "Native multiasset Backtest and Prop Firm",
+  "date": "2026-10-18",
+  "release": {
+    "runtime_profile": "native",
+    "storage_profile": "compact",
+    "binaries": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust\\target\\prop-fix-20261018\\release",
+    "owner_runtime_touched": false,
+    "disposable": true,
+    "before_sha256": {
+      "trading-workspace-api": "23d5ac9632ac920c454e3e7296413f3c0fda89a624b8451618355c1fafc125f2",
+      "rust_runtime_admin": "53fb1bb68b66a65e95b9e78861ec0dd334de7515c0142586fd7475c2bd0a456d",
+      "rust_research_worker": "36a012b7157b4a8fa18bd6976b18fadffecdc8fce6441b065e15dc02fa4f8d3a"
+    },
+    "passed": true,
+    "after_sha256": {
+      "trading-workspace-api": "23d5ac9632ac920c454e3e7296413f3c0fda89a624b8451618355c1fafc125f2",
+      "rust_runtime_admin": "53fb1bb68b66a65e95b9e78861ec0dd334de7515c0142586fd7475c2bd0a456d",
+      "rust_research_worker": "36a012b7157b4a8fa18bd6976b18fadffecdc8fce6441b065e15dc02fa4f8d3a"
+    },
+    "binary_unchanged": true
+  },
+  "browser": {
+    "passed": true,
+    "cases": [
+      "Backtest multiasset historical read and new branch retain both datasets without mutating parent",
+      "backtest: real multi-select creation, instant BUY/SELL on separate assets, aggregate account, shared clock, TP/SL drag, both closes, switch and reload",
+      "prop: real multi-select creation, instant BUY/SELL on separate assets, aggregate account, shared clock, TP/SL drag, both closes, switch and reload",
+      "native multiasset phase reset funds 20000 USD once, freezes both assets and retries without double funding",
+      "native target: independent 2 USD per-leg oracle; 4 USD aggregate result crosses 3 USD rule, ordered/idempotent feeds, stale/foreign rejection and persisted resume",
+      "native loss: independent 2 USD per-leg oracle; 4 USD aggregate result crosses 3 USD rule, ordered/idempotent feeds, stale/foreign rejection and persisted resume",
+      "native blocked-equity-reset: sparse shared clock processes midnight, canonical account acknowledgement and persisted phase",
+      "native calendar-expiry: sparse shared clock processes midnight, canonical account acknowledgement and persisted phase"
+    ],
+    "page_errors": []
+  },
+  "focused_node_tests": {
+    "passed": 56,
+    "failed": 0
+  },
+  "rust_tests": {
+    "portfolio": 3,
+    "prop_portfolio": 2,
+    "prop_differential": 1
+  },
+  "vite_build": "PASS",
+  "owner_readonly_smoke": {
+    "scope": "Real local catalog reads; creator selection and validation only. All mutations blocked.",
+    "cases": [
+      "Prop permits two assets and removing them reenables all available symbols",
+      "two-asset Backtest switches to Prop without data loss or one-asset restriction",
+      "mobile layout fits and asset removal preserves the remaining selection"
+    ],
+    "errors": [],
+    "unexpectedWrites": [],
+    "result": "PASS"
+  },
+  "owner_runtime": {
+    "ready": true,
+    "runtime_profile": "native",
+    "replay_storage_profile": "compact",
+    "run_id": "04e1ef54f26040cb826f70028929ca15",
+    "executable_sha256": {
+      "supervisor": "4d6f5f81a4bca11191c4c7c6b43632694d0a4ce74e068619d8fdc161d469859a",
+      "research": "36a012b7157b4a8fa18bd6976b18fadffecdc8fce6441b065e15dc02fa4f8d3a",
+      "api": "23d5ac9632ac920c454e3e7296413f3c0fda89a624b8451618355c1fafc125f2"
+    }
+  },
+  "new_migrations": 0,
+  "owner_trades_or_steps": false
+}

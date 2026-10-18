@@ -353,17 +353,31 @@ pub async fn lock_dependencies(
         if row.get::<_, bool>(0) {
             return Err(not_found("replay_not_found"));
         }
-        let payload: Value = row.get(1);
-        if payload["asset_states"]
-            .as_array()
-            .is_some_and(|v| !v.is_empty())
-            || payload["asset_states"]
-                .as_object()
-                .is_some_and(|v| !v.is_empty())
-        {
-            return Err(conflict(
-                "multi-asset replay is not supported by Prop lifecycle",
-            ));
+        let mut payload: Value = row.get(1);
+        if payload["asset_states"].is_object() {
+            if payload["portfolio_execution"].is_null() {
+                if payload["asset_states"].as_object().unwrap().values().any(|asset| asset["execution"]["ledger"].as_array()
+                    .into_iter().flatten().any(|event|matches!(event["kind"].as_str(),Some("market_fill"|"manual_close"|"protective_fill"|"phase_transition")))) {
+                    return Err(conflict("Legacy Prop portfolio lacks a canonical account ledger; create a new session. Existing history is preserved."));
+                }
+                let mut pins = Vec::new();
+                for dataset in payload["asset_states"].as_object().unwrap().keys() {
+                    let row=tx.query_opt("SELECT artifact_sha256 FROM datasets WHERE workspace_id=$1 AND dataset_id=$2 FOR KEY SHARE",&[&workspace,&dataset]).await.map_err(|_|ApiError::database())?.ok_or_else(||not_found("dataset_not_found"))?;
+                    pins.push(json!({"dataset_id":dataset,"dataset_sha256":row.get::<_,String>(0)}));
+                }
+                crate::replay_portfolio::initialize(&mut payload,id,pins).map_err(|e|conflict(&e))?;
+                crate::replay_portfolio::update(&mut payload).map_err(|e|conflict(&e))?;
+            }
+            let portfolio = &payload["portfolio_execution"];
+            if binding["dataset_pins"] != portfolio["dataset_pins"]
+                || binding["dataset_sha256"] != portfolio["dataset_sha256"] {
+                return Err(conflict("Prop portfolio binding does not match immutable replay pins"));
+            }
+            for pin in portfolio["dataset_pins"].as_array().ok_or_else(||conflict("portfolio dataset pins are missing"))? {
+                let dataset = s(pin,"dataset_id");
+                let row=tx.query_opt("SELECT artifact_sha256 FROM datasets WHERE workspace_id=$1 AND dataset_id=$2 FOR KEY SHARE",&[&workspace,&dataset]).await.map_err(|_|ApiError::database())?.ok_or_else(||not_found("dataset_not_found"))?;
+                if json!(row.get::<_,String>(0)) != pin["dataset_sha256"] { return Err(conflict("portfolio dataset sha256 changed")); }
+            }
         }
     }
     Ok(())
@@ -486,7 +500,8 @@ pub async fn apply_lifecycle_event(
             "prop session and attempt lifecycle status diverged",
         ));
     }
-    let mut resume = if event["evaluation_quality"] == "full_for_declared_model" {
+    let mut resume = if event["evaluation_quality"] == "full_for_declared_model"
+        || supplied.is_some_and(|resume|resume["replay_binding"]["schema_version"] == "replay-portfolio-binding-v1") {
         supplied.unwrap_or(&current["resume_state"]).clone()
     } else {
         current["resume_state"].clone()

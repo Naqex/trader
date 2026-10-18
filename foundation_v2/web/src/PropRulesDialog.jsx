@@ -39,6 +39,7 @@ export default function PropRulesDialog({ open, rules, error, pendingAction, ana
       <button type="button" className="wm-dialog-close" aria-label={t('Đóng Prop Firm Rules')} disabled={actionBusy} onClick={onClose}><ChartIcon name="close" /></button>
     </header>
     <div className="prop-rules-dialog-body">
+      {rules.evaluationBlocked && <p role="status">{t('Chưa đủ dữ liệu trong nến để đánh giá giới hạn equity. Số dư và vị thế vẫn được lưu; tiến độ challenge tạm chưa xác định.')}</p>}
       {rules.terminal && <section className={`prop-rules-outcome ${terminalPass ? 'is-pass' : 'is-fail'}`} role="status">
         <strong>{t(terminalPass ? 'Thử thách đã đạt mục tiêu.' : 'Thử thách đã kết thúc.')}</strong>
         <span>{t(terminalPass ? 'Bạn có thể xem báo cáo của lần thử này.' : 'Một giới hạn đã bị vi phạm hoặc thử thách đã hết hạn.')}</span>

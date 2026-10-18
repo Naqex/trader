@@ -1,12 +1,14 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { isUnsupportedPropReplay, propReplayRuleView } from '../src/propReplayModel.js'
+import { propReplayLedger, propReplayRuleView } from '../src/propReplayModel.js'
 
-test('Prop rejects portfolio snapshots before initialization while single-asset snapshots remain usable', () => {
-  assert.equal(isUnsupportedPropReplay(null), false)
-  assert.equal(isUnsupportedPropReplay({ payload: { dataset_ids: ['eurusd'], asset_states: {} } }), false)
-  assert.equal(isUnsupportedPropReplay({ payload: { dataset_ids: ['eurusd', 'gbpusd'] } }), true)
-  assert.equal(isUnsupportedPropReplay({ payload: { asset_states: { eurusd: {} } } }), true)
+test('portfolio synchronization uses its shared ledger, never the active asset ledger', () => {
+  const asset = [{ sequence: 7, kind: 'price_mark' }]
+  const portfolio = [{ sequence: 2, kind: 'price_mark' }]
+  assert.equal(propReplayLedger(null), undefined)
+  assert.equal(propReplayLedger({ payload: { execution: { ledger: asset } } }), asset)
+  assert.equal(propReplayLedger({ payload: { asset_states: {}, execution: { ledger: asset }, portfolio_execution: { ledger: portfolio } } }), portfolio)
+  assert.equal(propReplayLedger({ payload: { asset_states: {}, execution: { ledger: asset } } }), undefined)
 })
 
 const state = () => ({
@@ -40,4 +42,16 @@ test('missing money remains unknown instead of appearing as zero profit or loss'
   assert.equal(rules.profitTarget.current, null)
   assert.equal(rules.dailyLoss.used, null)
   assert.equal(rules.overallDrawdown.used, null)
+})
+
+test('insufficient intrabar coverage never presents the last evaluated money as current progress', () => {
+  const input = state()
+  input.objectives = { technical_status:'blocked_by_data', money:null }
+  const rules = propReplayRuleView(input)
+  assert.equal(rules.evaluationBlocked, true)
+  assert.equal(rules.profitTarget.current, null)
+  assert.equal(rules.dailyLoss.used, null)
+  assert.equal(rules.overallDrawdown.used, null)
+  assert.equal(rules.profitTarget.hit, false)
+  assert.equal(rules.dailyLoss.limit, 500)
 })

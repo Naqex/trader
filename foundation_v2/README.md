@@ -274,7 +274,20 @@ branches reconstruct every member; chart responses carry the latest 2,000
 visible bars with an absolute `visible_row_start` offset. Session dataset locks
 and removal references cover all members.
 
-This scope has no multi-asset tick execution, broker margin model, Prop binding,
+Both Backtest and Prop Firm accept up to 12 assets with a common data period
+and account currency. In the native runtime, Prop consumes a separate canonical
+portfolio ledger, with immutable dataset pins and a sequence independent of
+the selected chart. Resume restores all positions and pending orders. The
+attempt retains its primary dataset pin; its replay binding locks the entire
+portfolio. Asset switching never adds capital or creates a financial event.
+Prop targets and loss limits use the shared account, not each asset separately.
+OHLC data without sufficient intrabar equity coverage keeps affected rule
+evaluation explicitly unknown; it does not establish a challenge pass or breach.
+Closing positions does not erase that historical uncertainty. Legacy Prop
+portfolios with trades but no canonical account ledger require a new session;
+their stored history is preserved. See the [native multiasset acceptance](evidence/prop-multiasset-20261018/CHECKPOINT.md).
+
+This scope has no multi-asset tick execution, broker margin model,
 or portfolio price experiments. Historical portfolio reads use cursor/time,
 not an instrument-local `event_sequence`. Orders/protection changes on a stale
 instrument are rejected until it has a newly closed bar at the shared clock.

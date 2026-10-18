@@ -561,7 +561,12 @@ pub fn evaluate_prop_lifecycle_event(
     let mut next_attempt = attempt.clone();
     next_attempt["revision"] = json!(integer(attempt, "revision")? + 1);
     let mut next_phase = phase.clone();
-    if text(event, "evaluation_quality") != "full_for_declared_model" {
+    let portfolio = resume["replay_binding"]["schema_version"] == "replay-portfolio-binding-v1";
+    if portfolio && text(event,"evaluation_quality") != "full_for_declared_model" {
+        lifecycle["unresolved_equity_coverage"] = json!(true);
+    }
+    let portfolio_blocked = portfolio && lifecycle["unresolved_equity_coverage"] == true;
+    if text(event, "evaluation_quality") != "full_for_declared_model" && !portfolio_blocked {
         let objectives = json!({"schema":"prop-objectives-v1","phase_index":index,"money":null,"calendar":null,"positions_ready":false,"pass_ready":false,"technical_status":"blocked_by_data","terminal_action":null});
         lifecycle["last_operation_id"] = event["operation_id"].clone();
         lifecycle["last_event_kind"] = event["kind"].clone();
@@ -631,7 +636,7 @@ pub fn evaluate_prop_lifecycle_event(
     let mut money = evaluation.clone();
     if boundary
         && text(spec, "reset_order") != "reset_then_fees"
-        && evaluation["terminal_precedence"].is_null()
+        && (evaluation["terminal_precedence"].is_null() || portfolio_blocked)
     {
         anchor = num(
             &evaluation,
@@ -664,10 +669,12 @@ pub fn evaluate_prop_lifecycle_event(
             || (!last
                 && text(spec, "position_policy") == "carry"
                 && text(spec, "carry_policy") == "carry_all"));
-    let pass = money["profit_target"]["hit"] == true
+    let pass = !portfolio_blocked && money["profit_target"]["hit"] == true
         && calendar["min_qualifying_days_satisfied"] == true
         && positions;
-    let terminal = if money["terminal_precedence"] == "failed_breach" {
+    let terminal = if portfolio_blocked && calendar["expired"] == true {
+        Some(("expire", "expired"))
+    } else if portfolio_blocked { None } else if money["terminal_precedence"] == "failed_breach" {
         Some(("breach", "failed_breach"))
     } else if calendar["expired"] == true {
         Some(("expire", "expired"))
@@ -694,7 +701,8 @@ pub fn evaluate_prop_lifecycle_event(
     for k in ["open_positions", "pending_orders", "evaluation_quality"] {
         next_phase[k] = event[k].clone();
     }
-    let objectives = json!({"schema":"prop-objectives-v1","phase_index":index,"money":money,"calendar":calendar,"positions_ready":positions,"pass_ready":pass,"technical_status":"ready","terminal_action":terminal.map(|t|t.0)});
+    if portfolio_blocked { next_phase["evaluation_quality"] = json!("insufficient"); }
+    let objectives = json!({"schema":"prop-objectives-v1","phase_index":index,"money":money,"calendar":calendar,"positions_ready":positions,"pass_ready":pass,"technical_status":if portfolio_blocked {"blocked_by_data"}else{"ready"},"terminal_action":terminal.map(|t|t.0)});
     // Python persists datetime via str(datetime), which uses a space, unlike model JSON.
     let mut persisted = objectives.clone();
     if let Some(c) = persisted["calendar"].as_object_mut() {
@@ -728,13 +736,16 @@ pub fn validate_replay_prop_binding(
     let engine = match text(snapshot, "schema_version") {
         "replay-execution-tick-v1" => "replay-tick-v1",
         "replay-execution-v2" => "replay-v2",
+        "replay-portfolio-v1" => text(snapshot,"engine_version"),
         _ => "replay-v1",
     };
     if text(attempt, "engine_version") != engine {
         return Err(format!("prop attempt engine_version must be {engine}"));
     }
     let version = text(attempt, "data_version").trim().to_lowercase();
-    let sha = text(snapshot, "dataset_sha256").trim().to_lowercase();
+    let sha = text(snapshot, if snapshot["schema_version"] == "replay-portfolio-v1" {
+        "primary_dataset_sha256"
+    } else { "dataset_sha256" }).trim().to_lowercase();
     if version != sha && version != format!("sha256:{sha}") {
         return Err("prop attempt data_version must pin the replay dataset sha256".into());
     }
@@ -796,11 +807,14 @@ pub fn replay_mark_to_prop_event(
       "operation_id":replay_event_operation_id(text(replay_event,"replay_session_id"),text(replay_event,"branch_id"),integer(replay_event,"sequence")?,text(args,"prop_session_id"),text(args,"prop_attempt_id")),
       "expected_revision":args["expected_prop_revision"],"event_sequence":args["prop_event_sequence"],"kind":"simulation_snapshot","virtual_time_utc":dt.to_rfc3339_opts(SecondsFormat::Secs, true),
       "balance_before_separate_costs":replay_event["balance"],"floating_pl":replay_event["floating_pl"],"fees":"0","swap":"0","conversion_adjustment":"0","accounting":"costs_included",
-      "open_positions":replay_event["open_positions"],"pending_orders":replay_event["pending_orders"],"evaluation_quality":quality,"qualifying_day":false}),
+      "open_positions":replay_event["open_positions"],"pending_orders":replay_event["pending_orders"],"evaluation_quality":quality,
+      "qualifying_day":replay_event["schema_version"] == "replay-portfolio-event-v1" && replay_event["details"]["source_events"].as_array().into_iter().flatten().any(|event|event["kind"]=="market_fill")}),
     )
 }
 fn position_list(snapshot: &Value) -> Value {
-    if snapshot["position"].is_null() {
+    if snapshot["schema_version"] == "replay-portfolio-v1" {
+        snapshot["positions"].clone()
+    } else if snapshot["position"].is_null() {
         json!([])
     } else {
         json!([snapshot["position"]])
@@ -847,6 +861,7 @@ pub fn validate_replay_prop_transition_boundary(
     spec: &Value,
 ) -> Result<(), String> {
     validate_replay_prop_binding(snapshot, attempt, phase)?;
+    let portfolio = snapshot["schema_version"] == "replay-portfolio-v1";
     for (k, msg) in [
         (
             "dataset_id",
@@ -861,11 +876,13 @@ pub fn validate_replay_prop_transition_boundary(
             "replay payload cursor does not match canonical execution",
         ),
     ] {
-        if payload[k] != snapshot[k] {
+        if (!portfolio || k == "branch_id") && payload[k] != snapshot[k] {
             return Err(msg.into());
         }
     }
-    if payload["status"] == "completed" || integer(snapshot, "cursor_index")? >= row_count - 1 {
+    if payload["status"] == "completed" || if portfolio {
+        integer(payload,"replay_clock_utc")? >= integer(payload,"replay_end_utc")?
+    } else { integer(snapshot, "cursor_index")? >= row_count - 1 } {
         return Err("next phase requires a future replay bar".into());
     }
     let binding = &resume["replay_binding"];
@@ -881,6 +898,9 @@ pub fn validate_replay_prop_transition_boundary(
         if binding[k] != snapshot[k] {
             return Err("prop replay binding lineage does not match canonical replay".into());
         }
+    }
+    if portfolio && binding["dataset_pins"] != snapshot["dataset_pins"] {
+        return Err("prop portfolio dataset pins changed at phase boundary".into());
     }
     if integer(binding, "last_replay_event_sequence")
         .map_err(|_| "prop replay binding event sequence is invalid")?
@@ -929,7 +949,7 @@ pub fn validate_replay_prop_transition_boundary(
     if resume["open_positions"] != positions {
         return Err("prop open position state does not match canonical replay boundary".into());
     }
-    if !snapshot["position"].is_null() {
+    if !positions.as_array().unwrap().is_empty() {
         if spec["position_policy"] == "close_by_simulator" {
             return Err(
                 "close_by_simulator with an open replay position is not supported yet".into(),
@@ -954,6 +974,7 @@ pub fn validate_replay_prop_branch_checkpoint(
     resume: &Value,
 ) -> Result<(), String> {
     validate_replay_prop_binding(child, attempt, phase)?;
+    let portfolio = child["schema_version"] == "replay-portfolio-v1";
     if child["replay_session_id"] == parent["replay_session_id"] {
         return Err("replay branch must use a distinct child session".into());
     }
@@ -963,7 +984,7 @@ pub fn validate_replay_prop_branch_checkpoint(
     if payload["branch_id"] != child["branch_id"] {
         return Err("replay branch payload does not match child execution lineage".into());
     }
-    if payload["cursor_index"] != child["cursor_index"] {
+    if !portfolio && payload["cursor_index"] != child["cursor_index"] {
         return Err("replay branch payload cursor does not match child execution".into());
     }
     if integer(payload, "parent_checkpoint_event_sequence")
@@ -984,6 +1005,8 @@ pub fn validate_replay_prop_branch_checkpoint(
         "tick_snapshot_id",
         "tick_snapshot_sha256",
         "research_margin",
+        "dataset_pins",
+        "primary_dataset_sha256",
     ] {
         if child[key] != parent[key] {
             return Err("replay branch immutable execution pins diverged from its parent".into());
@@ -1042,7 +1065,7 @@ pub fn validate_replay_prop_branch_checkpoint(
                 .into(),
         );
     }
-    let pending = if child["pending_market_order"].is_null() {
+    let pending = if portfolio { child["pending_orders"].clone() } else if child["pending_market_order"].is_null() {
         json!([])
     } else {
         json!([child["pending_market_order"]])
@@ -1055,4 +1078,127 @@ pub fn validate_replay_prop_branch_checkpoint(
         );
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod portfolio_tests {
+    use super::*;
+    #[test]
+    fn unknown_intrabar_equity_advances_bookkeeping_without_a_money_verdict() {
+        let cases: Value = serde_json::from_str(include_str!(
+            "../../evidence/rust-native-20261017/prop/fixtures.json"
+        ))
+        .unwrap();
+        let case = cases
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|case| case["name"] == "event-static-fees_then_reset-89900-insufficient")
+            .unwrap();
+        let args = case["args"].as_array().unwrap();
+        let mut resume = args[4].clone();
+        resume["replay_binding"] = json!({"schema_version":"replay-portfolio-binding-v1"});
+        let result =
+            evaluate_prop_lifecycle_event(&args[0], &args[1], &args[2], &args[3], &resume).unwrap();
+        assert_eq!(result["attempt"]["status"], "running");
+        assert_eq!(result["phase"]["balance"], "89900");
+        assert_eq!(
+            result["phase"]["last_event_sequence"],
+            args[3]["event_sequence"]
+        );
+        assert_eq!(result["objectives"]["technical_status"], "blocked_by_data");
+        assert!(result["objectives"]["terminal_action"].is_null());
+        let mut event = args[3].clone();
+        event["evaluation_quality"] = json!("full_for_declared_model");
+        event["balance_before_separate_costs"] = json!("120000");
+        event["event_sequence"] =
+            json!(integer(&result["phase"], "last_event_sequence").unwrap() + 1);
+        event["expected_revision"] = result["attempt"]["revision"].clone();
+        event["operation_id"] = json!("later-flat");
+        let later = evaluate_prop_lifecycle_event(
+            &args[0],
+            &result["attempt"],
+            &result["phase"],
+            &event,
+            &result["resume_state"],
+        )
+        .unwrap();
+        assert_eq!(later["phase"]["balance"], "120000");
+        assert_eq!(later["attempt"]["status"], "running");
+        assert_eq!(later["objectives"]["technical_status"], "blocked_by_data");
+        assert_eq!(later["objectives"]["pass_ready"], false);
+        assert_eq!(
+            later["resume_state"]["prop_lifecycle"]["unresolved_equity_coverage"],
+            true
+        );
+    }
+    #[test]
+    fn portfolio_filled_entries_qualify_once_per_local_day() {
+        let cases: Value = serde_json::from_str(include_str!(
+            "../../evidence/rust-native-20261017/prop/fixtures.json"
+        ))
+        .unwrap();
+        let args = cases
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|case| case["name"] == "event-static-fees_then_reset-89900-insufficient")
+            .unwrap()["args"]
+            .as_array()
+            .unwrap()
+            .clone();
+        let mut current = json!({"attempt":args[1],"phase":args[2],"resume_state":args[4]});
+        current["resume_state"]["replay_binding"] =
+            json!({"schema_version":"replay-portfolio-binding-v1"});
+        let mut event = args[3].clone();
+        event["evaluation_quality"] = json!("full_for_declared_model");
+        event["balance_before_separate_costs"] = json!("100000");
+        let mark = json!({"schema_version":"replay-portfolio-event-v1","kind":"price_mark","sequence":1,
+            "replay_session_id":"r","branch_id":"b","virtual_time_utc":1767272400i64,
+            "balance":"100000","floating_pl":"0","open_positions":0,"pending_orders":0,"evaluation_quality":"full_for_declared_model",
+            "details":{"source_events":[{"kind":"market_fill"}],"intrabar_equity_coverage":"complete"}});
+        let translated =
+            replay_mark_to_prop_event(&json!({}), &args[0]["profile"]["phases"][0], &mark).unwrap();
+        assert_eq!(translated["qualifying_day"], true);
+        let mut plain = mark;
+        plain["details"]["source_events"] = json!([{"kind":"protection_change"}]);
+        assert_eq!(
+            replay_mark_to_prop_event(&json!({}), &args[0]["profile"]["phases"][0], &plain)
+                .unwrap()["qualifying_day"],
+            false
+        );
+        for (index, (time, boundary, qualifying)) in [
+            ("2026-01-01T13:00:00Z", false, true),
+            ("2026-01-01T14:00:00Z", false, true),
+            ("2026-01-02T00:00:00Z", true, false),
+            ("2026-01-02T01:00:00Z", false, true),
+        ]
+        .iter()
+        .enumerate()
+        {
+            event["expected_revision"] = current["attempt"]["revision"].clone();
+            event["event_sequence"] =
+                json!(integer(&current["phase"], "last_event_sequence").unwrap() + 1);
+            event["virtual_time_utc"] = json!(time);
+            event["qualifying_day"] = json!(qualifying);
+            event["kind"] = json!(if *boundary {
+                "calendar_boundary"
+            } else {
+                "simulation_snapshot"
+            });
+            event["operation_id"] = json!(format!("day-{index}"));
+            current = evaluate_prop_lifecycle_event(
+                &args[0],
+                &current["attempt"],
+                &current["phase"],
+                &event,
+                &current["resume_state"],
+            )
+            .unwrap();
+            assert_eq!(
+                current["phase"]["qualifying_days"],
+                if index < 3 { 1 } else { 2 }
+            );
+        }
+    }
 }

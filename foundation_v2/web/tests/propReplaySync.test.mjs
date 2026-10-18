@@ -45,9 +45,34 @@ test('missing history or mismatched acknowledgement cannot unlock synchronizatio
   await assert.rejects(syncPropReplayEvents(args(initial())), /không khớp/)
 })
 
+test('calendar expiry can stop before a requested price mark without claiming it was consumed', async t => {
+  const requests = []
+  t.mock.method(globalThis, 'fetch', async (_url, options) => {
+    requests.push(JSON.parse(options.body).replay_event_sequence)
+    return Response.json({ ...fed(3, 5, 'expired'), terminal_boundary:{ requested_replay_event_sequence:5, acknowledged_replay_event_sequence:3 } })
+  })
+  const result = await syncPropReplayEvents(args(initial()))
+  assert.equal(result.attempt.status, 'expired')
+  assert.equal(result.resumeState.replay_binding.last_replay_event_sequence, 3)
+  assert.deepEqual(requests, [5])
+  t.mock.method(globalThis, 'fetch', async () => Response.json(fed(2, 5, 'expired')))
+  await assert.rejects(syncPropReplayEvents(args(initial())), /không khớp/)
+  t.mock.method(globalThis, 'fetch', async () => Response.json(fed(3, 5, 'expired')))
+  await assert.rejects(syncPropReplayEvents(args(initial())), /không khớp/)
+})
+
 test('reopening with saved replay events but no challenge acknowledgement stays blocked', () => {
   const replay = { payload: { execution: { ledger: Array.from({ length: 6 }, (_, i) => ({ sequence: i + 1, kind: i === 5 ? 'price_mark' : 'protection_change' })) } } }
   assert.equal(hasPendingPropReplayEvents(replay, initial()), true)
   const synchronized = initial(); synchronized.resumeState.replay_binding.last_replay_event_sequence = 6
+  assert.equal(hasPendingPropReplayEvents(replay, synchronized), false)
+})
+
+test('portfolio recovery compares the aggregate sequence even after switching to a shorter asset ledger', () => {
+  const replay = { payload: { asset_states: { a: {}, b: {} }, execution: { ledger: [] }, portfolio_execution: { ledger: Array.from({ length: 6 }, (_, i) => ({ sequence: i + 1, kind: 'price_mark' })) } } }
+  assert.equal(hasPendingPropReplayEvents(replay, initial()), true)
+  const synchronized = initial(); synchronized.resumeState.replay_binding.last_replay_event_sequence = 6
+  assert.equal(hasPendingPropReplayEvents(replay, synchronized), false)
+  replay.payload.execution.ledger.push({ sequence: 10, kind: 'price_mark' })
   assert.equal(hasPendingPropReplayEvents(replay, synchronized), false)
 })

@@ -1,8 +1,8 @@
 import { scopedMutation } from './scopedMutation.js'
-import { propPriceMarkEvents } from './propReplayModel.js'
+import { isPropTerminal, propPriceMarkEvents, propReplayLedger } from './propReplayModel.js'
 
 export function hasPendingPropReplayEvents(replay, propState) {
-  const ledger = replay?.payload?.execution?.ledger
+  const ledger = propReplayLedger(replay)
   const afterSequence = Number(propState.resumeState?.replay_binding?.last_replay_event_sequence || 0)
   return propState.status === 'ready' && propState.attempt?.status === 'running'
     && Array.isArray(ledger) && Number.isSafeInteger(afterSequence) && afterSequence >= 0
@@ -23,7 +23,14 @@ export async function syncPropReplayEvents({ workspace, sessionId, propSessionId
       })
       const fed = await response.json().catch(() => ({}))
       if (!response.ok) throw Object.assign(new Error(String(fed.detail || `HTTP ${response.status}`)), { status: response.status })
-      if (!fed.attempt || !fed.phase || !fed.resume_state || Number(fed.resume_state.replay_binding?.last_replay_event_sequence) !== Number(event.sequence)) throw new Error('Phản hồi đồng bộ thử thách không khớp sự kiện.')
+      const acknowledged = Number(fed.resume_state?.replay_binding?.last_replay_event_sequence)
+      const previous = Number(current.resumeState?.replay_binding?.last_replay_event_sequence || 0)
+      // A calendar boundary can end the challenge before the requested price mark is consumed.
+      const terminalBeforeMark = isPropTerminal(fed.attempt?.status) && Number.isSafeInteger(acknowledged)
+        && acknowledged >= previous && acknowledged < Number(event.sequence)
+        && fed.terminal_boundary?.requested_replay_event_sequence === Number(event.sequence)
+        && fed.terminal_boundary?.acknowledged_replay_event_sequence === acknowledged
+      if (!fed.attempt || !fed.phase || !fed.resume_state || (acknowledged !== Number(event.sequence) && !terminalBeforeMark)) throw new Error('Phản hồi đồng bộ thử thách không khớp sự kiện.')
       current = { ...current, status: 'ready', attempt: fed.attempt, phase: fed.phase, resumeState: fed.resume_state, objectives: fed.objectives || fed.resume_state?.prop_lifecycle?.last_objectives || current.objectives, error: null }
     }
     return { ...current, status: 'ready', error: null }
