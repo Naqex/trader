@@ -8,7 +8,7 @@ Flask/EA cũ được giữ để đối chiếu và tái sử dụng logic, xem
 
 | Phần | Nơi làm việc hiện tại |
 | --- | --- |
-| Backend | [`foundation_v2/api-rust/`](foundation_v2/api-rust/): Axum/PostgreSQL; compatibility dùng Python domain workers, [native candidate](foundation_v2/docs/RUST-NATIVE-RUNTIME.md) chạy domain bằng Rust |
+| Backend | [`foundation_v2/api-rust/`](foundation_v2/api-rust/): Axum/PostgreSQL; runtime local hiện chạy [Rust native/compact](foundation_v2/docs/RUST-NATIVE-RUNTIME.md), compatibility giữ cho đối chiếu và quy trình rollback |
 | UI | [`foundation_v2/web/`](foundation_v2/web/): React, Vite, TradingView Advanced Charts và shell WMReplay; Lightweight Charts giữ làm rollback |
 | Engine research | [`foundation_v2/engine_runtime/`](foundation_v2/engine_runtime/pyproject.toml): runtime Nautilus tách riêng |
 | Test và bằng chứng | [`foundation_v2/tests/`](foundation_v2/tests/), [`foundation_v2/evidence/`](foundation_v2/evidence/) |
@@ -21,12 +21,12 @@ có giới hạn → result bất biến → API theo workspace → UI. Replay c
 
 ## Trạng thái hiện tại
 
-Tại ngày **02/10/2026**, các lát chức năng và UI local đã có kiểm chứng, nhưng
-**sản phẩm chưa hoàn tất** (`SAFE_SLICES_EXECUTED / FULL_PRODUCT_NOT_COMPLETE`).
-
-- Shell mở chart workspace khi chọn session/dataset hoặc `surface=workspace`; scaffold `SHELL_SKELETON_MODE` đã được bỏ. Chart full-bleed có scoped visual evidence, còn các workflow/performance gates trước khi nhận toàn U4/W8.
-- Native zoom, automated axe/reflow, ảnh chuẩn Dashboard/Sessions/Trades/Analytics/chart và lượt đo heap Analytics một giờ đã có bằng chứng theo scope. Manual WCAG, các chart states còn thiếu và hiệu năng chart chạy dài vẫn mở; xem [checkpoint UI](foundation_v2/evidence/wm-all-plan-20261002/ui/CHECKPOINT.md).
-- Nghiệm thu dữ liệu thực, provider/AI, broker demo/live, holdout và deploy là các phạm vi riêng. UI local không phải bằng chứng sẵn sàng giao dịch thật.
+Đợt tối ưu Rust/hiệu năng đã được nghiệm thu theo phạm vi ngày **18/10/2026**;
+API local chạy native/compact và UI dùng production preview. Xem
+[bằng chứng và giới hạn kiểm chứng](foundation_v2/evidence/rust-native-20261018/ACCEPTANCE-AUDIT.md).
+Đây chưa phải nghiệm thu toàn bộ sản phẩm. Các gate UI lịch sử, broker demo/live,
+holdout, provider và deploy vẫn thuộc plan tương ứng; các receipt cũ giữ nguyên
+ngày, source và phạm vi của lần chạy đó.
 
 Dùng các tài liệu trong repo **TradingWorkspace** làm nguồn tiến độ; README này
 chỉ là điểm vào, không tạo thêm PLAN:
@@ -47,6 +47,13 @@ Dùng PowerShell tại **gốc repo này**. Cần `uv`, Python 3.12 và Node.js 
 Vite trong lockfile; môi trường local hiện dùng Node 24. Không cần cài MT5 hoặc
 TradingView Advanced Charts để build UI PATH-2. Để chạy chart mặc định, cần bộ Advanced
 Charts được cấp quyền; xem cấu hình asset ở dưới.
+
+Với môi trường local đã chuẩn bị, cách restart native/compact và các descriptor
+cần giữ được mô tả trong [hướng dẫn runtime](foundation_v2/docs/RUST-NATIVE-RUNTIME.md).
+Wrapper không truyền profile vẫn mặc định compatibility/full; không dùng mặc định
+đó để thay runtime native đang chạy. Không xóa `.runtime/exness-market-data` hoặc
+`.runtime/api-platform-backups` bên trong `foundation_v2/`: đây là dữ liệu và backup,
+không phải cache build.
 
 ```powershell
 uv sync --locked --project foundation_v2 --python 3.12

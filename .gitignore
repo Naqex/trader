@@ -173,3 +173,9 @@ Thumbs.db
 /foundation_v2/runtime/
 /foundation_v2/web/tmp-*.cjs
 /foundation_v2/web/.wmgeom.mjs
+
+# Disposable Rust build output from local acceptance runs; keep patches visible.
+/.runtime/**/rust-target/
+/.runtime/**/release/
+/.runtime/**/.rustc_info.json
+/.runtime/**/CACHEDIR.TAG
