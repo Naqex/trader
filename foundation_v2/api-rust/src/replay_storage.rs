@@ -163,6 +163,130 @@ pub async fn load_prefix<C: GenericClient + Sync>(
     Ok(Some(prefix))
 }
 
+pub struct PropMarkSelection {
+    pub prefix: ValidatedBarPrefix,
+    pub requested_event: Option<Value>,
+    pub next_sequence: Option<i64>,
+}
+
+/// Bounded Prop source selection under the caller's replay-head lock. Full
+/// revisions return None; no import or lineage fallback occurs in this reader.
+/// Receipt/binding checks decide whether next_sequence is required for a retry.
+pub async fn load_prop_marks<C: GenericClient + Sync>(
+    client: &C,
+    workspace: &str,
+    id: &str,
+    rev: i64,
+    dataset: &str,
+    requested_sequence: i64,
+    after_sequence: i64,
+) -> Result<Option<PropMarkSelection>> {
+    let Some(prefix) = load_prefix(client, workspace, id, rev, dataset).await? else {
+        return Ok(None);
+    };
+    let cutoff = prefix.event_sequence();
+    let requested_event = if requested_sequence < 1 || requested_sequence > cutoff {
+        None
+    } else {
+        let row = client.query_opt(
+            "SELECT e.sequence,e.event_json,e.prefix_sha256,p.sequence AS previous_sequence,p.event_json AS previous_event,p.prefix_sha256 AS previous_sha256 FROM replay_execution_events e LEFT JOIN replay_execution_events p ON p.workspace_id=e.workspace_id AND p.record_id=e.record_id AND p.dataset_id=e.dataset_id AND p.sequence=e.sequence-1 WHERE e.workspace_id=$1 AND e.record_id=$2 AND e.dataset_id=$3 AND e.sequence=$4 AND e.sequence<=$5 AND e.event_json->>'kind' IN ('price_mark','manual_close','order_cancel')",
+            &[&workspace,&id,&dataset,&requested_sequence,&cutoff],
+        ).await.map_err(|_| "cannot read canonical Prop mark")?;
+        row.map(|row| {
+            let event: Value = row.get("event_json");
+            let previous: Option<Value> = row.get("previous_event");
+            let previous_sequence: Option<i64> = row.get("previous_sequence");
+            let previous_hash: Option<String> = row.get("previous_sha256");
+            validate_prop_mark(
+                &prefix,
+                requested_sequence,
+                &event,
+                row.get::<_, String>("prefix_sha256").as_str(),
+                previous_sequence,
+                previous.as_ref(),
+                previous_hash.as_deref(),
+            )?;
+            Ok::<Value, String>(event)
+        })
+        .transpose()?
+    };
+    let next_sequence = client.query_opt(
+        "SELECT sequence FROM replay_execution_events WHERE workspace_id=$1 AND record_id=$2 AND dataset_id=$3 AND sequence>$4 AND sequence<=$5 AND event_json->>'kind' IN ('price_mark','manual_close','order_cancel') ORDER BY sequence LIMIT 1",
+        &[&workspace,&id,&dataset,&after_sequence,&cutoff],
+    ).await.map_err(|_| "cannot read next canonical Prop mark")?
+        .map(|row| row.get::<_,i64>("sequence"));
+    Ok(Some(PropMarkSelection {
+        prefix,
+        requested_event,
+        next_sequence,
+    }))
+}
+
+fn validate_prop_mark(
+    prefix: &ValidatedBarPrefix,
+    sequence: i64,
+    event: &Value,
+    event_hash: &str,
+    previous_sequence: Option<i64>,
+    previous: Option<&Value>,
+    previous_hash: Option<&str>,
+) -> Result<()> {
+    let head = prefix.head();
+    if sequence < 1
+        || sequence > prefix.event_sequence()
+        || !matches!(
+            event["kind"].as_str(),
+            Some("price_mark" | "manual_close" | "order_cancel")
+        )
+    {
+        return Err("Prop mark is outside its canonical prefix".into());
+    }
+    let check_scope = |value: &Value, expected: i64| -> Result<()> {
+        if value["sequence"].as_i64() != Some(expected)
+            || [
+                "replay_session_id",
+                "branch_id",
+                "dataset_id",
+                "dataset_sha256",
+            ]
+            .iter()
+            .any(|key| value[*key] != head[*key])
+            || !value["cursor_index"].as_i64().is_some_and(|cursor| {
+                cursor >= 0
+                    && head["cursor_index"]
+                        .as_i64()
+                        .is_some_and(|end| cursor <= end)
+            })
+        {
+            return Err("Prop mark lineage/sequence differs from its canonical prefix".into());
+        }
+        Ok(())
+    };
+    check_scope(event, sequence)?;
+    let base_hash = if sequence == 1 {
+        if previous.is_some() || previous_sequence.is_some() || previous_hash.is_some() {
+            return Err("first Prop mark has unexpected predecessor".into());
+        }
+        empty_prefix_sha256()
+    } else {
+        let prior = previous.ok_or("Prop mark predecessor is missing")?;
+        if previous_sequence != Some(sequence - 1) {
+            return Err("Prop mark predecessor sequence is invalid".into());
+        }
+        check_scope(prior, sequence - 1)?;
+        previous_hash
+            .ok_or("Prop mark predecessor hash is missing")?
+            .to_owned()
+    };
+    if extend_prefix_sha256(&base_hash, event)? != event_hash {
+        return Err("Prop mark hash differs from immutable prefix".into());
+    }
+    if sequence == prefix.event_sequence() && event_hash != prefix.prefix_sha256() {
+        return Err("Prop mark tip hash differs from its canonical prefix".into());
+    }
+    crate::replay_core::validate_event_with_previous(head, event, previous)
+}
+
 /// Exact historical hydration. Queue-only revisions may share an event cutoff
 /// while carrying different pending commands, so the revision is mandatory.
 pub async fn hydrate_payload<C: GenericClient + Sync>(
@@ -552,6 +676,167 @@ pub async fn materialize_revision(
 #[cfg(test)]
 mod tests {
     use super::*;
+    fn prop_fixture() -> (ValidatedBarPrefix, Vec<Value>, Vec<String>) {
+        let args = json!({"replay_session_id":"session","branch_id":"branch","dataset_id":"dataset",
+            "dataset_sha256":"d".repeat(64),"instrument_spec":{"instrument_id":"EURUSD","asset_class":"fx",
+            "base_ccy":"EUR","quote_ccy":"USD","account_ccy":"USD","tick_size":"0.0001","pip_size":"0.0001",
+            "contract_size":"100000","quantity_min":"0.01","quantity_step":"0.01","effective_from_utc":"2026-01-01"},
+            "cost_model":{"version":"cost-v1","spread_basis":"bid_ask_embedded","account_ccy":"USD",
+            "commission_per_side_account":"1","rounding_decimals":2},"spread_price":"0.0002",
+            "timeframe_seconds":60,"starting_balance":"1000","cursor_index":0});
+        let mut snapshot = crate::replay_core::transform(
+            &json!({"action":"initialize","args":args}),
+        )
+        .unwrap()["snapshot"]
+            .clone();
+        for (action, args) in [
+            (
+                "advance",
+                json!({"cursor_index":1,"bar":{"timestamp":1000,"open":"1.1","high":"1.1005","low":"1.0995","close":"1.1"}}),
+            ),
+            (
+                "queue_current_quote",
+                json!({"operation_id":"open","side":"SELL","quantity":"0.01","stop_loss":null,"take_profit":null,"mid_close":"1.1","virtual_time_utc":1060}),
+            ),
+            (
+                "close",
+                json!({"operation_id":"close","target_id":"replay-pos-2","mid_close":"1.1","virtual_time_utc":1060}),
+            ),
+        ] {
+            snapshot = crate::replay_core::transform(
+                &json!({"action":action,"snapshot":snapshot,"args":args}),
+            )
+            .unwrap()["snapshot"]
+                .clone();
+        }
+        let events = snapshot["ledger"].as_array().unwrap().clone();
+        let mut hash = empty_prefix_sha256();
+        let mut hashes = vec![];
+        for event in &events {
+            hash = extend_prefix_sha256(&hash, event).unwrap();
+            hashes.push(hash.clone());
+        }
+        (
+            ValidatedBarPrefix::import(snapshot).unwrap(),
+            events,
+            hashes,
+        )
+    }
+    #[test]
+    fn selected_prop_marks_validate_without_materializing_history() {
+        let (prefix, events, hashes) = prop_fixture();
+        for index in [0, 2, 3] {
+            validate_prop_mark(
+                &prefix,
+                index as i64 + 1,
+                &events[index],
+                &hashes[index],
+                (index > 0).then_some(index as i64),
+                index.checked_sub(1).map(|p| &events[p]),
+                index.checked_sub(1).map(|p| hashes[p].as_str()),
+            )
+            .unwrap();
+        }
+        assert!(
+            validate_prop_mark(
+                &prefix,
+                2,
+                &events[1],
+                &hashes[1],
+                Some(1),
+                Some(&events[0]),
+                Some(&hashes[0])
+            )
+            .is_err()
+        );
+        assert!(
+            validate_prop_mark(
+                &prefix,
+                5,
+                &events[3],
+                &hashes[3],
+                Some(3),
+                Some(&events[2]),
+                Some(&hashes[2])
+            )
+            .is_err()
+        );
+    }
+    #[test]
+    fn prop_mark_predecessor_scope_hash_and_financial_corruption_fail_closed() {
+        let (prefix, events, hashes) = prop_fixture();
+        assert!(validate_prop_mark(&prefix, 3, &events[2], &hashes[2], None, None, None).is_err());
+        assert!(
+            validate_prop_mark(
+                &prefix,
+                3,
+                &events[2],
+                &hashes[2],
+                Some(1),
+                Some(&events[1]),
+                Some(&hashes[1])
+            )
+            .is_err()
+        );
+        let mut other = events[1].clone();
+        other["branch_id"] = json!("other");
+        assert!(
+            validate_prop_mark(
+                &prefix,
+                3,
+                &events[2],
+                &hashes[2],
+                Some(2),
+                Some(&other),
+                Some(&hashes[1])
+            )
+            .is_err()
+        );
+        for field in ["branch_id", "equity"] {
+            let mut corrupt = events[2].clone();
+            corrupt[field] = json!("999");
+            let hash = extend_prefix_sha256(&hashes[1], &corrupt).unwrap();
+            assert!(
+                validate_prop_mark(
+                    &prefix,
+                    3,
+                    &corrupt,
+                    &hash,
+                    Some(2),
+                    Some(&events[1]),
+                    Some(&hashes[1])
+                )
+                .is_err()
+            );
+        }
+        let mut corrupt = events[2].clone();
+        corrupt["details"]["fill_price"] = json!("2");
+        let hash = extend_prefix_sha256(&hashes[1], &corrupt).unwrap();
+        assert!(
+            validate_prop_mark(
+                &prefix,
+                3,
+                &corrupt,
+                &hash,
+                Some(2),
+                Some(&events[1]),
+                Some(&hashes[1])
+            )
+            .is_err()
+        );
+        assert!(
+            validate_prop_mark(
+                &prefix,
+                3,
+                &events[2],
+                &hashes[0],
+                Some(2),
+                Some(&events[1]),
+                Some(&hashes[1])
+            )
+            .is_err()
+        );
+    }
     #[test]
     fn admission_never_accepts_unrequested_or_cross_scope_ids() {
         let permit = OperationAdmission {

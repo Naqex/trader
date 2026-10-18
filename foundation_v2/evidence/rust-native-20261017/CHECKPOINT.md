@@ -693,3 +693,79 @@ Goal ACTIVE.
   Sampled CPU is a lower bound. This is not capacity, stable-tail or long soak
   acceptance. Owned fixture processes stopped; owner8010/5180 and data unchanged.
   Next slice remains BAR step/chart-tail plus indexed Prop feed. Goal ACTIVE.
+
+## Root continuation 18/10: bounded BAR step, chart tail and Prop marks
+
+- Added advertised native single-asset BAR/null `replay-step-v1` capability and
+  explicit `/step?response_view=step-v1`. Its own revision/cursor/cutoff/sequence
+  envelope carries at most1,000 new rows and3,000 contiguous events. Existing
+  interval/gap/session-period semantics and financial `advance_many` remain the
+  authority; order `mutation-v1` retains its separate same-cursor16-event guard.
+  Compact persistence validates the admitted prefix and atomically appends events,
+  head/revision and retry receipt. Null execution remains null; the rare final
+  no-advance step keeps the fully validated full-storage path.
+- Compact Prop feed selects the requested eligible event+predecessor and next
+  unacknowledged eligible sequence, rather than hydrating the whole ledger.
+  Migration0006 adds the partial index; migration0005 is unchanged. Scope,
+  identity/hash/cost/phase, replay-before-attempt lock order, ordered backlog,
+  exact retries and shared financial event validation remain enforced. The trust
+  boundary remains application-owned immutable PostgreSQL, not arbitrary admin
+  tamper resistance over unread history.
+- `../rust-native-20261018/runtime/replay-step-r3-root/receipt.json` PASS11checks,
+  36samples including6cold/warmup observations. Three-way full-wire/full-storage,
+  step-wire/full-storage and step-wire/compact-storage parity covers null/init,
+  1/10/1000steps, rolling2000rows, interval/gap/period/end, queue/protective/margin,
+  historical/fresh-process reads, invalid/stale/tenant denial and exact retries.
+  Alternating warmed Router-only timings (5samples/profile/stage):
+
+  | Base events | Full storage median / sample p95 | Compact median / sample p95 |
+  |---|---:|---:|
+  |0|20.569 /20.776ms|27.057 /27.469ms|
+  |500|37.666 /38.850ms|28.201 /28.482ms|
+  |5,000|184.309 /187.867ms|36.059 /36.597ms|
+
+  Both timed profiles use the same step wire (about2.8KB). This isolates storage
+  work; it is not a comparison of old full-wire versus new end-to-end UI. First
+  compact imports cost28.628/128.203/1,147.630ms respectively and remain separate.
+  Exact helper SQL naturally uses partial/primary indexes at506/5006events,
+  returning one next mark and one requested/predecessor pair. At5006events,
+  next-mark access has4shared-hit blocks, pair8. Coherent acknowledged bindings
+  seeded from canonical marks are explicitly not historical API-feed receipts.
+  Immutable UPDATE/DELETE denial and selected/predecessor/certificate corruption
+  hot/cold fail closed without mutation; trigger bypass is disposable-fixture only.
+- Frontend reconciles exact advertised scope/base and retains a2000-row window.
+  The committed replay publishes before Prop feed so chart can paint; all further
+  writes stay locked until feed finishes. Invalid/late merges require recovery,
+  never replaying a committed request. Advanced Charts folds verified tails into
+  exact-cutoff authoritative aggregates, including complete day/week/month OHLC
+  and volume. Unseeded subscriptions use history; rewind still resets. Review
+  exposed superseded-history requests skipping undelivered bars after fast steps:
+  fallback now starts from each subscription's last delivered bucket and dedupes
+  by resolution+required range. Deferred three-step/minute/month/multiple-reader
+  regressions pass. Full client ledger concat remains O(history).
+- `../rust-native-20261018/runtime/step-chart-root/receipt.json` PASS release
+  HTTP+production React+real Advanced Charts at5,003initial events, source/binary
+  unchanged. Fourteen measured step samples (1m/5m, single and10base bars) have
+  click-to-subscribed-callback/first-following-rAF median63.5ms/sample-p9565.4ms.
+  This is a rendering proxy, not pixel-paint proof. Play executes3real HTTPsteps
+  per resolution;21outside-timing canonical OHLC/volume comparisons pass. Ready
+  forwards have zero history reads/resets and retain iframe/drawing/fixed scale.
+  Eighty-eight measured frame intervals median/p9516.7ms, max16.8ms; too short
+  for a long-session smoothness claim. Null-init and injected stale409 preserve
+  expected execution/cutoff/revision. Four settling samples60.5–96.1ms remain
+  separate. Aggregate cold quick+GET+close+GET setup1,886.26ms is not an isolated
+  import request. Practice only; no Prop browser end-to-end/capacity/soak verdict.
+  Receipt fingerprints pin the tested working tree, including preserved existing
+  UI edits; this is not a clean-checkout-only build/reproducibility verdict.
+- Root viewed the final screenshot (deliberate stale/conflict state). Focused web
+  tests46PASS; production build PASS. Locked Rust lib112PASS/16fixture-dependent
+  ignored and admin1PASS. Independent source review found no further blocker. Failed
+  API attempts `replay-step-root`/`replay-step-r2-root` remain: old full step
+  persists an explicit null execution; new step initially omitted it. Product
+  now preserves that shape, without fixture normalization. Fixture TP hit/spread
+  and post-Prop identity expectations were corrected separately.
+- Owner8010/5180 and data remain untouched; isolated processes cleaned up.
+  Next: hidden/visible trade-history projection, retained-ledger growth,
+  broader native/setup and long-duration acceptance. Phase/tick/portfolio retain
+  fully validated full-history paths; optimize only where measurements justify
+  the additional persistence/contract complexity. Goal remains ACTIVE.

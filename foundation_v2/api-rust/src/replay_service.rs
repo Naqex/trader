@@ -462,7 +462,7 @@ async fn invoke(
     let result = match crate::native_contracts::validate_body(handler, raw) {
         Ok(body) => match mutation_response(&q, &tail) {
             Ok(_) if id.is_empty() => create(&tx, &state, &scope.workspace_id, &body).await,
-            Ok(compact) => mutate(&tx, &state, &scope.workspace_id, id, &tail, &method, &body, compact, &mut timings).await,
+            Ok(response_view) => mutate(&tx, &state, &scope.workspace_id, id, &tail, &method, &body, response_view, &mut timings).await,
             Err(error) => Err(error),
         },
         Err(error) => Err(error),
@@ -495,10 +495,14 @@ async fn invoke(
     response
 }
 
-fn mutation_response(q: &HashMap<String, String>, tail: &str) -> Result<bool, ApiError> {
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ResponseView { Full, Mutation, Step }
+
+fn mutation_response(q: &HashMap<String, String>, tail: &str) -> Result<ResponseView, ApiError> {
     match q.get("response_view").map(String::as_str) {
-        None => Ok(false),
-        Some("mutation-v1") if matches!(tail, "execution" | "orders/market" | "orders/quick" | "orders/protection" | "orders/close") => Ok(true),
+        None => Ok(ResponseView::Full),
+        Some("mutation-v1") if matches!(tail, "execution" | "orders/market" | "orders/quick" | "orders/protection" | "orders/close") => Ok(ResponseView::Mutation),
+        Some("step-v1") if tail == "step" => Ok(ResponseView::Step),
         Some(_) => Err(bad("unsupported replay mutation response view")),
     }
 }
@@ -945,6 +949,11 @@ pub async fn view(
     out.insert("canonical_cursor_index".into(), json!(canonical));
     out.insert("historical_view".into(), json!(cursor != canonical));
     out.insert("execution_view_status".into(), json!(status));
+    if state.native_runtime && !multi && cursor == canonical
+        && bar_execution(&out["payload"]["execution"])
+    {
+        out.insert("step_view_version".into(), json!("replay-step-v1"));
+    }
     if let Some(a) = portfolio {
         out.insert("portfolio_account".into(), a);
     }
@@ -1495,7 +1504,7 @@ async fn mutate(
     tail: &str,
     method: &str,
     b: &Value,
-    compact: bool,
+    response_view: ResponseView,
     timings: &mut ReplayTimings,
 ) -> Result<Value, ApiError> {
     if tail.starts_with("prop/") && tail.ends_with("/branch") {
@@ -1507,14 +1516,16 @@ async fn mutate(
     if tail == "activity" {
         return activity(tx, workspace, id, b).await;
     }
-    let bounded_storage = compact && state.native_runtime
+    let compact = response_view == ResponseView::Mutation;
+    let step_view = response_view == ResponseView::Step;
+    let bounded_storage = (response_view != ResponseView::Full || tail.starts_with("prop/") && tail.ends_with("/feed")) && state.native_runtime
         && std::env::var("TW_V2_REPLAY_STORAGE_PROFILE").is_ok_and(|profile| profile == "compact");
     let mut record = load_record_inner(tx, workspace, id, true, !bounded_storage).await?;
     timings.mark("load_record");
     if tail.starts_with("prop/") {
         let parts: Vec<_> = tail.split('/').collect();
         if parts.len() == 6 && parts[5] == "feed" {
-            return feed_prop(tx, workspace, &record, parts[2], parts[4], b).await;
+            return feed_prop(tx, workspace, &record, parts[2], parts[4], b, bounded_storage).await;
         }
         return Err(bad("native Prop branch route is not implemented"));
     }
@@ -1526,6 +1537,9 @@ async fn mutate(
     if compact && p["asset_states"].is_object() {
         return Err(bad("mutation_view_multi_asset_unsupported"));
     }
+    if step_view && (!state.native_runtime || p["asset_states"].is_object() || !bar_execution(&p["execution"])) {
+        return Err(bad("step_view_requires_native_single_asset_bar_replay"));
+    }
     let bar_storage = bounded_storage && b["tick_snapshot_id"].is_null()
         && (p["execution"].is_null() || matches!(p["execution"]["schema_version"].as_str(),
             Some("replay-execution-v1" | "replay-execution-v2")));
@@ -1533,7 +1547,7 @@ async fn mutate(
         p = crate::replay_storage::hydrate_payload(tx, workspace, id, base_revision, p)
             .await.map_err(internal)?;
     }
-    let base_event_sequence = if compact && !p["execution"].is_null() {
+    let base_event_sequence = if response_view != ResponseView::Full && !p["execution"].is_null() {
         integer(&p["execution"], "event_sequence")?
     } else {
         0
@@ -1571,6 +1585,10 @@ async fn mutate(
             .unwrap()
             .extend(ident.as_object().unwrap().clone());
         return save_record(tx, workspace, &record, p, false).await;
+    }
+    if step_view {
+        return mutate_step_view(tx, state, workspace, id, b, record, p, &m,
+            base_revision, base_event_sequence, limit, bar_storage, timings).await;
     }
     if bar_storage {
         return mutate_compact_bar(tx, state, workspace, id, tail, b, record, p, &m,
@@ -1740,6 +1758,182 @@ async fn mutate(
     };
     timings.mark("view_projection");
     response
+}
+
+fn bar_execution(execution: &Value) -> bool {
+    execution.is_null() || matches!(execution["schema_version"].as_str(),
+        Some("replay-execution-v1" | "replay-execution-v2"))
+}
+
+async fn mutate_step_view(
+    tx: &Transaction<'_>, state: &AppState, workspace: &str, id: &str,
+    b: &Value, record: Value, mut p: Value, manifest: &Value,
+    base_revision: i64, base_event_sequence: i64, limit: i64,
+    bounded_storage: bool, timings: &mut ReplayTimings,
+) -> Result<Value, ApiError> {
+    let current = integer(&p, "cursor_index")?;
+    let total = integer(manifest, "row_count")?;
+    if current < 0 || current >= total {
+        return Err(internal("replay cursor exceeds immutable dataset"));
+    }
+    if let Some(period) = bounds(&p)? {
+        if current < integer(&period, "start_cursor_index")? || current > limit || limit >= total {
+            return Err(internal("stored replay cursor exceeds its session period"));
+        }
+        if current >= limit { return Err(bad("selected replay period is completed")); }
+    }
+    let (rows, cursor) = step_window(state, manifest, current,
+        b["steps"].as_i64().unwrap_or(1), b["replay_interval_seconds"].as_i64(), limit).await?;
+    let base_cutoff = rows.first().ok_or_else(|| internal("visible replay window is empty"))?["timestamp"].clone();
+    let elapsed = integer(rows.last().unwrap(), "timestamp")? - integer(&rows[0], "timestamp")?;
+    let mut events = Vec::new();
+    let mut checked_transition = None;
+    if p["execution"].is_null() {
+        p["execution"] = Value::Null;
+    }
+    if !p["execution"].is_null() {
+        if p["execution"]["cursor_index"] != current {
+            return Err(conflict("replay execution cursor is inconsistent with replay state"));
+        }
+        if bounded_storage && rows.len() > 1 {
+            let dataset = text(&p, "dataset_id")?.to_owned();
+            let prefix = match crate::replay_storage::load_prefix(tx, workspace, id, base_revision, &dataset)
+                .await.map_err(internal)? {
+                Some(prefix) => prefix,
+                None => {
+                    p = crate::replay_storage::import_revision(tx, workspace, id, base_revision, &p)
+                        .await.map_err(internal)?;
+                    crate::replay_storage::load_prefix(tx, workspace, id, base_revision, &dataset)
+                        .await.map_err(internal)?.ok_or_else(|| internal("imported replay prefix is unavailable"))?
+                }
+            };
+            if !crate::replay_core::history::equivalent_json(&p["execution"], prefix.head()) {
+                return Err(internal("compact replay payload differs from its validated head"));
+            }
+            let admission = crate::replay_storage::OperationAdmission::prepare(tx, workspace, id,
+                base_revision, &prefix, &[]).await.map_err(internal)?;
+            let steps: Vec<Value> = rows.iter().skip(1).enumerate()
+                .map(|(index, bar)| json!({"bar":bar,"cursor_index":current + index as i64 + 1})).collect();
+            timings.mark("storage_prefix_admission");
+            let (prefix, transition) = tokio::task::spawn_blocking(move || {
+                let transition = prefix.transition("advance_many", json!({"steps":steps}), &admission)?;
+                Ok::<_, String>((prefix, transition))
+            }).await.map_err(|_| internal("execution_task_failed"))?.map_err(bad)?;
+            p["execution"] = transition.next.head().clone();
+            events = transition.events.clone();
+            checked_transition = Some((prefix, transition));
+        } else {
+            // A no-advance final step still saves a real revision. Keep this rare
+            // edge on the fully validated cold path instead of fabricating a transition.
+            if bounded_storage {
+                p = crate::replay_storage::hydrate_payload(tx, workspace, id, base_revision, p)
+                    .await.map_err(internal)?;
+            }
+            let mut snapshot = p["execution"].take();
+            if rows.len() > 1 {
+                let mut advanced = advance_many(state, workspace, snapshot, &rows[1..], current + 1).await?;
+                snapshot = advanced["snapshot"].take();
+                events = advanced["events"].as_array_mut().ok_or_else(|| internal("invalid execution result"))?
+                    .drain(..).collect();
+            }
+            p["execution"] = snapshot;
+        }
+    }
+    add_elapsed(&mut p, elapsed.max(0))?;
+    p["cursor_index"] = json!(cursor);
+    p["status"] = json!(if cursor == limit { "completed" } else { "paused" });
+    if let Some((_, transition)) = &checked_transition {
+        p = crate::replay_storage::compact_payload(p, &transition.next).map_err(internal)?;
+    }
+    timings.mark("domain_transition");
+    let mut saved = save_record(tx, workspace, &record, p, false).await?;
+    if let Some((prefix, transition)) = &checked_transition {
+        saved["payload"] = crate::replay_storage::persist_transition(tx, workspace, id,
+            base_revision, integer(&saved, "revision")?, prefix, transition, &saved["payload"])
+            .await.map_err(internal)?;
+    }
+    timings.mark("revision_save");
+    let response = step_view_response(tx, workspace, saved, manifest, base_revision,
+        base_event_sequence, current, base_cutoff, rows.into_iter().skip(1).collect(), events, limit).await;
+    timings.mark("view_projection");
+    response
+}
+
+async fn step_view_response(
+    tx: &Transaction<'_>, workspace: &str, mut saved: Value, manifest: &Value,
+    base_revision: i64, base_event_sequence: i64, base_cursor: i64,
+    base_cutoff: Value, rows: Vec<Value>, events: Vec<Value>, limit: i64,
+) -> Result<Value, ApiError> {
+    let p = &saved["payload"];
+    let cursor = integer(p, "cursor_index")?;
+    let identity = identities(tx, workspace, text(&saved, "record_id")?, p).await?;
+    let mut execution = saved["payload"]["execution"].take();
+    let sequence = if execution.is_null() { 0 } else {
+        execution.as_object_mut().ok_or_else(|| internal("invalid step execution head"))?.remove("ledger");
+        integer(&execution, "event_sequence")?
+    };
+    if saved["revision"].as_i64() != base_revision.checked_add(1)
+        || cursor < base_cursor || cursor - base_cursor != rows.len() as i64
+        || rows.len() > 1000 || events.len() > 3000
+        || sequence.checked_sub(base_event_sequence) != Some(events.len() as i64)
+        || events.iter().enumerate().any(|(index, event)|
+            event["sequence"].as_i64() != Some(base_event_sequence + index as i64 + 1)
+            || event["cursor_index"].as_i64().is_none_or(|event_cursor| event_cursor <= base_cursor || event_cursor > cursor))
+    {
+        return Err(internal("step response suffix is inconsistent or exceeds its bound"));
+    }
+    let cutoff = rows.last().map(|row| row["timestamp"].clone()).unwrap_or_else(|| base_cutoff.clone());
+    let start = (cursor - 1999).max(0);
+    let p = &saved["payload"];
+    let mut result = json!({
+        "schema_version":"replay-step-v1", "workspace_id":workspace,
+        "record_id":saved["record_id"], "dataset_id":p["dataset_id"],
+        "dataset_sha256":manifest["artifact_sha256"], "branch_id":p["branch_id"],
+        "base_revision":base_revision, "revision":saved["revision"],
+        "base_event_sequence":base_event_sequence, "execution_event_sequence":sequence,
+        "base_cursor_index":base_cursor, "base_cutoff_timestamp":base_cutoff,
+        "cursor_index":cursor,"view_cursor_index":cursor,"canonical_cursor_index":cursor,
+        "cutoff_timestamp":cutoff,"appended_rows":rows,"appended_events":events,
+        "historical_view":false,"has_future_rows":cursor < limit,
+        "execution_view_status":if execution.is_null(){"not_initialized"}else{"current"},
+        "updated_at_utc":saved["updated_at_utc"],"visible_row_start":start,
+        "visible_row_count":cursor-start+1,"total_row_count":manifest["row_count"],
+        "payload_patch":{"execution":execution,"cursor_index":cursor,"status":p["status"],"timing":p["timing"]}
+    });
+    result.as_object_mut().unwrap().extend(identity.as_object().unwrap().clone());
+    Ok(result)
+}
+
+#[cfg(test)]
+mod response_view_tests {
+    use super::*;
+
+    #[test]
+    fn response_views_are_explicit_and_route_scoped() {
+        assert!(matches!(mutation_response(&HashMap::new(), "step"), Ok(ResponseView::Full)));
+        for tail in ["execution", "orders/quick", "orders/market", "orders/protection", "orders/close"] {
+            assert!(matches!(mutation_response(&pairs(Some("response_view=mutation-v1")), tail), Ok(ResponseView::Mutation)));
+            assert!(mutation_response(&pairs(Some("response_view=step-v1")), tail).is_err());
+        }
+        assert!(matches!(mutation_response(&pairs(Some("response_view=step-v1")), "step"), Ok(ResponseView::Step)));
+        for tail in ["", "step", "branch", "asset"] {
+            assert!(mutation_response(&pairs(Some("response_view=mutation-v1")), tail).is_err());
+        }
+        for value in ["", "unknown", "full"] {
+            assert!(mutation_response(&pairs(Some(&format!("response_view={value}"))), "step").is_err());
+        }
+    }
+
+    #[test]
+    fn step_capability_excludes_tick_and_unknown_execution_schemas() {
+        assert!(bar_execution(&Value::Null));
+        for version in ["replay-execution-v1", "replay-execution-v2"] {
+            assert!(bar_execution(&json!({"schema_version":version})));
+        }
+        for version in ["replay-execution-tick-v1", "future-schema"] {
+            assert!(!bar_execution(&json!({"schema_version":version})));
+        }
+    }
 }
 
 async fn mutate_compact_bar(
@@ -2358,6 +2552,7 @@ async fn feed_prop(
     session: &str,
     attempt: &str,
     b: &Value,
+    bounded_storage: bool,
 ) -> Result<Value, ApiError> {
     let p = &record["payload"];
     if p["asset_states"].is_object() {
@@ -2367,37 +2562,7 @@ async fn feed_prop(
     if s.is_null() {
         return Err(bad("replay execution is not initialized"));
     }
-    crate::replay_core::validate(s).map_err(bad)?;
     let current = crate::prop_service::load_attempt(tx, workspace, session, attempt, true).await?;
-    crate::prop_core::validate_replay_prop_binding(s, &current["attempt"], &current["phase"])
-        .map_err(bad)?;
-    let marks: Vec<&Value> = s["ledger"]
-        .as_array()
-        .ok_or_else(|| bad("invalid execution ledger"))?
-        .iter()
-        .filter(|e| {
-            matches!(
-                e["kind"].as_str(),
-                Some("price_mark" | "manual_close" | "order_cancel")
-            )
-        })
-        .collect();
-    let sequence = integer(b, "replay_event_sequence")?;
-    let event = marks
-        .iter()
-        .copied()
-        .find(|e| e["sequence"] == sequence)
-        .ok_or_else(|| {
-            ApiError::detail(StatusCode::NOT_FOUND, "replay price_mark event not found")
-        })?;
-    let operation = crate::prop_core::replay_event_operation_id(
-        text(s, "replay_session_id")?,
-        text(s, "branch_id")?,
-        sequence,
-        session,
-        attempt,
-    );
-    let prior=tx.query_opt("SELECT v.phase_json,v.resume_json FROM prop_mutation_receipts r JOIN prop_attempt_revisions v ON v.workspace_id=r.workspace_id AND v.session_id=r.session_id AND v.attempt_id=r.attempt_id AND v.revision=r.entity_revision WHERE r.workspace_id=$1 AND r.session_id=$2 AND r.attempt_id=$3 AND r.operation_id=$4",&[&workspace,&session,&attempt,&operation]).await.map_err(|_|ApiError::database())?;
     let binding = &current["resume_state"]["replay_binding"];
     let mut last = 0;
     if !binding.is_null() {
@@ -2418,17 +2583,37 @@ async fn feed_prop(
         }
         last = binding["last_replay_event_sequence"].as_i64().unwrap_or(0);
     }
+    let sequence = integer(b, "replay_event_sequence")?;
+    let selected = if bounded_storage && bar_execution(s) {
+        crate::replay_storage::load_prop_marks(tx, workspace, text(record, "record_id")?,
+            integer(record, "revision")?, text(p, "dataset_id")?, sequence, last)
+            .await.map_err(internal)?
+    } else { None };
+    let (event, next_sequence) = if let Some(selected) = selected {
+        if !crate::replay_core::history::equivalent_json(s, selected.prefix.head())
+            || p["cursor_index"] != s["cursor_index"] || p["branch_id"] != s["branch_id"] {
+            return Err(internal("compact Prop source differs from its validated head"));
+        }
+        (selected.requested_event, selected.next_sequence)
+    } else {
+        crate::replay_core::validate(s).map_err(bad)?;
+        let marks = s["ledger"].as_array().ok_or_else(|| bad("invalid execution ledger"))?
+            .iter().filter(|event| matches!(event["kind"].as_str(),
+                Some("price_mark" | "manual_close" | "order_cancel")));
+        (marks.clone().find(|event| event["sequence"] == sequence).cloned(),
+            marks.filter_map(|event| event["sequence"].as_i64()).filter(|value| *value > last).min())
+    };
+    crate::prop_core::validate_replay_prop_binding(s, &current["attempt"], &current["phase"])
+        .map_err(bad)?;
+    let event = event.ok_or_else(|| ApiError::detail(StatusCode::NOT_FOUND, "replay price_mark event not found"))?;
+    let operation = crate::prop_core::replay_event_operation_id(
+        text(s, "replay_session_id")?, text(s, "branch_id")?, sequence, session, attempt);
+    let prior=tx.query_opt("SELECT v.phase_json,v.resume_json FROM prop_mutation_receipts r JOIN prop_attempt_revisions v ON v.workspace_id=r.workspace_id AND v.session_id=r.session_id AND v.attempt_id=r.attempt_id AND v.revision=r.entity_revision WHERE r.workspace_id=$1 AND r.session_id=$2 AND r.attempt_id=$3 AND r.operation_id=$4",&[&workspace,&session,&attempt,&operation]).await.map_err(|_|ApiError::database())?;
     if prior.is_none() {
         if sequence < last {
             return Err(bad("replay lifecycle events cannot move backwards"));
         }
-        if sequence > last
-            && marks
-                .iter()
-                .filter_map(|e| e["sequence"].as_i64())
-                .filter(|v| *v > last)
-                .min()
-                != Some(sequence)
+        if sequence > last && next_sequence != Some(sequence)
         {
             return Err(bad(
                 "replay price_mark events must feed prop lifecycle in order",
@@ -2454,8 +2639,8 @@ async fn feed_prop(
         .ok_or_else(|| bad("prop phase index is outside the frozen profile"))?;
     let args = json!({"workspace_id":workspace,"prop_session_id":session,"prop_attempt_id":attempt,"profile_hash":current["attempt"]["profile_hash"],"expected_prop_revision":b["expected_prop_revision"],"prop_event_sequence":b["prop_event_sequence"]});
     let prop_event =
-        crate::prop_core::replay_mark_to_prop_event(&args, spec, event).map_err(bad)?;
-    let resume = prop_resume(&resume, s, event)?;
+        crate::prop_core::replay_mark_to_prop_event(&args, spec, &event).map_err(bad)?;
+    let resume = prop_resume(&resume, s, &event)?;
     let result =
         crate::prop_service::apply_lifecycle_event(tx, workspace, &prop_event, Some(&resume))
             .await?;

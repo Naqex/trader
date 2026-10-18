@@ -189,8 +189,9 @@ The native candidate can opt into `TW_V2_REPLAY_STORAGE_PROFILE=compact` for
 `mutation-v1` initialization/quick/market/protection/close requests. Migration
 `0005_replay_execution_storage.sql` adds per-revision execution certificates,
 append-only events and indexed operation reservations. Snapshot storage remains
-the default; tick, portfolio, step, phase and branch mutations retain the full
-path in this first slice. The owner database/runtime has not been migrated.
+the default; tick, portfolio, phase and branch mutations retain the full path.
+The forward BAR step extension is described below. The owner database/runtime
+has not been migrated.
 
 The bounded transition uses the existing financial arithmetic and event validator.
 It checks only the new events against the previously validated canonical context.
@@ -205,7 +206,7 @@ its canonical ledger. Full writes after a compatibility restore remain authorita
 the next compact mutation imports that full revision again instead of trusting an
 older sidecar. Disposable persisted, production-chart and rollback rehearsals are
 recorded in the execution checkpoint. Broader resource acceptance and owner cutover
-remain separate gates. Cold import/hydration and step remain history-dependent;
+remain separate gates. Cold import/hydration and default full steps remain history-dependent;
 the whole product is not thereby constant-time. Importing a large existing full
 revision is a one-time cost on its first compact mutation and is reported apart
 from warm interaction samples.
@@ -236,3 +237,45 @@ committed receipt bytes. Do not remove migration entries to force a downgrade.
 Returning to native after compatibility writes must revalidate/import the new full
 revision instead of reusing stale sidecars. The original native source stays intact
 throughout this recovery rehearsal; owner switching remains a separate gate.
+
+## Forward BAR step and chart tail
+
+Native canonical full views advertise `step_view_version: "replay-step-v1"` for
+single-asset BAR or uninitialized execution. A client can then opt into
+`POST .../step?response_view=step-v1`; it must not probe an older runtime by
+resending a committed step after an unsupported response. Tick, portfolio and
+historical views retain the full contract.
+
+This response has its own base/result revision, cursor, cutoff and event sequence,
+up to1,000 appended native bars and3,000 contiguous execution events, and the new
+execution head. It does not relax the same-cursor16-event order response contract.
+The existing timestamp/interval/gap/session-period rules and shared financial core
+remain authoritative. Compact storage advances the validated prefix and persists
+only its new events in the same transaction as revision and retry receipt. An
+uninitialized replay advances with a null execution; a final no-advance step uses
+the fully hydrated compatibility path to preserve its existing revision behavior.
+
+React validates the exact scope/base and every appended row/event before merging
+its2,000-bar window. A mismatch locks writes and requires a read; it never repeats
+the committed command. A committed step can paint while Prop consumes its marks,
+but further commands remain locked until that feed settles. Retained client ledger
+concatenation still depends on history length.
+
+Advanced Charts receives the verified native tail directly. Each ready subscription
+folds it into an authoritative aggregate seeded at the exact previous cutoff; this
+preserves complete day/week/month OHLC and volume even when the bucket begins
+before the local window. New subscriptions, stale seeds and incompatible updates
+use the existing scoped history reader. Rewinds still reset the datafeed. Ready
+forward updates do not require a chart-window fetch or recreate the chart iframe.
+
+Compact Prop feeds select the requested canonical mark and its immediate predecessor
+by primary key, then the next unacknowledged eligible mark using migration0006's
+partial index. Exact revision certificates, scope, dataset hash, phase/cost binding,
+ordering and retry receipts remain enforced. This reader shares the trusted
+immutable PostgreSQL prefix boundary described above; cold reads continue full
+hydration and validation. It does not authenticate an unread historical prefix
+against an administrator who disables its immutability triggers.
+
+Source review/unit tests are separate from persisted and production-chart acceptance;
+the execution checkpoint records the measured scope and failed attempts. The owner
+runtime has not been switched to this candidate.

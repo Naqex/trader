@@ -1,0 +1,497 @@
+[
+  {
+    "message": "native_replay_phases",
+    "operation": "POST",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":95},{\"phase\":\"pool_checkout\",\"us\":368},{\"phase\":\"transaction_begin\",\"us\":172},{\"phase\":\"receipt_admission\",\"us\":3999},{\"phase\":\"result_status\",\"us\":31827},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":1746},{\"phase\":\"commit\",\"us\":642}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "execution",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":21},{\"phase\":\"pool_checkout\",\"us\":158},{\"phase\":\"transaction_begin\",\"us\":101},{\"phase\":\"receipt_admission\",\"us\":954},{\"phase\":\"load_record\",\"us\":1868},{\"phase\":\"load_manifest\",\"us\":346},{\"phase\":\"domain_transition\",\"us\":255},{\"phase\":\"revision_save\",\"us\":1143},{\"phase\":\"view_projection\",\"us\":16285},{\"phase\":\"result_status\",\"us\":8},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":1370},{\"phase\":\"commit\",\"us\":307}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":14},{\"phase\":\"pool_checkout\",\"us\":162},{\"phase\":\"transaction_begin\",\"us\":102},{\"phase\":\"receipt_admission\",\"us\":907},{\"phase\":\"load_record\",\"us\":1103},{\"phase\":\"load_manifest\",\"us\":332},{\"phase\":\"result_status\",\"us\":90812},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":20224},{\"phase\":\"commit\",\"us\":631}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":15},{\"phase\":\"pool_checkout\",\"us\":182},{\"phase\":\"transaction_begin\",\"us\":124},{\"phase\":\"receipt_admission\",\"us\":908},{\"phase\":\"load_record\",\"us\":10121},{\"phase\":\"load_manifest\",\"us\":415},{\"phase\":\"result_status\",\"us\":110912},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":29764},{\"phase\":\"commit\",\"us\":698}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":15},{\"phase\":\"pool_checkout\",\"us\":185},{\"phase\":\"transaction_begin\",\"us\":131},{\"phase\":\"receipt_admission\",\"us\":926},{\"phase\":\"load_record\",\"us\":20158},{\"phase\":\"load_manifest\",\"us\":646},{\"phase\":\"result_status\",\"us\":135492},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":36360},{\"phase\":\"commit\",\"us\":987}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":15},{\"phase\":\"pool_checkout\",\"us\":146},{\"phase\":\"transaction_begin\",\"us\":115},{\"phase\":\"receipt_admission\",\"us\":733},{\"phase\":\"load_record\",\"us\":29698},{\"phase\":\"load_manifest\",\"us\":318},{\"phase\":\"result_status\",\"us\":152678},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":43213},{\"phase\":\"commit\",\"us\":856}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":15},{\"phase\":\"pool_checkout\",\"us\":172},{\"phase\":\"transaction_begin\",\"us\":134},{\"phase\":\"receipt_admission\",\"us\":898},{\"phase\":\"load_record\",\"us\":38812},{\"phase\":\"load_manifest\",\"us\":458},{\"phase\":\"result_status\",\"us\":172192},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":53054},{\"phase\":\"commit\",\"us\":1017}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/quick",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":34},{\"phase\":\"pool_checkout\",\"us\":237},{\"phase\":\"transaction_begin\",\"us\":105},{\"phase\":\"receipt_admission\",\"us\":958},{\"phase\":\"load_record\",\"us\":47465},{\"phase\":\"load_manifest\",\"us\":528},{\"phase\":\"storage_prefix_admission\",\"us\":964602},{\"phase\":\"domain_transition\",\"us\":660},{\"phase\":\"revision_save\",\"us\":16839},{\"phase\":\"view_projection\",\"us\":14605},{\"phase\":\"result_status\",\"us\":131},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":931},{\"phase\":\"commit\",\"us\":314}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":13},{\"phase\":\"pool_checkout\",\"us\":179},{\"phase\":\"transaction_begin\",\"us\":139}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/close",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":16},{\"phase\":\"pool_checkout\",\"us\":173},{\"phase\":\"transaction_begin\",\"us\":142},{\"phase\":\"receipt_admission\",\"us\":966},{\"phase\":\"load_record\",\"us\":905},{\"phase\":\"load_manifest\",\"us\":324},{\"phase\":\"storage_prefix_admission\",\"us\":18024},{\"phase\":\"domain_transition\",\"us\":555},{\"phase\":\"revision_save\",\"us\":15632},{\"phase\":\"view_projection\",\"us\":15432},{\"phase\":\"result_status\",\"us\":22},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":903},{\"phase\":\"commit\",\"us\":397}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":11},{\"phase\":\"pool_checkout\",\"us\":175},{\"phase\":\"transaction_begin\",\"us\":105}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":10},{\"phase\":\"pool_checkout\",\"us\":37834},{\"phase\":\"transaction_begin\",\"us\":116}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":11},{\"phase\":\"pool_checkout\",\"us\":118},{\"phase\":\"transaction_begin\",\"us\":67}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":13},{\"phase\":\"pool_checkout\",\"us\":137},{\"phase\":\"transaction_begin\",\"us\":80}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":15},{\"phase\":\"pool_checkout\",\"us\":205},{\"phase\":\"transaction_begin\",\"us\":85}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":22},{\"phase\":\"pool_checkout\",\"us\":158},{\"phase\":\"transaction_begin\",\"us\":121},{\"phase\":\"receipt_admission\",\"us\":2188},{\"phase\":\"load_record\",\"us\":796},{\"phase\":\"load_manifest\",\"us\":321},{\"phase\":\"storage_prefix_admission\",\"us\":17156},{\"phase\":\"domain_transition\",\"us\":291},{\"phase\":\"revision_save\",\"us\":14529},{\"phase\":\"view_projection\",\"us\":450},{\"phase\":\"result_status\",\"us\":24},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":2073},{\"phase\":\"commit\",\"us\":306}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":143},{\"phase\":\"transaction_begin\",\"us\":94}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":13},{\"phase\":\"pool_checkout\",\"us\":172},{\"phase\":\"transaction_begin\",\"us\":137}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":21},{\"phase\":\"pool_checkout\",\"us\":125},{\"phase\":\"transaction_begin\",\"us\":70},{\"phase\":\"receipt_admission\",\"us\":1688},{\"phase\":\"load_record\",\"us\":3091},{\"phase\":\"load_manifest\",\"us\":376},{\"phase\":\"storage_prefix_admission\",\"us\":19181},{\"phase\":\"domain_transition\",\"us\":320},{\"phase\":\"revision_save\",\"us\":14137},{\"phase\":\"view_projection\",\"us\":382},{\"phase\":\"result_status\",\"us\":14},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":637},{\"phase\":\"commit\",\"us\":348}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":141},{\"phase\":\"transaction_begin\",\"us\":115}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":13},{\"phase\":\"pool_checkout\",\"us\":195},{\"phase\":\"transaction_begin\",\"us\":144}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":17},{\"phase\":\"pool_checkout\",\"us\":176},{\"phase\":\"transaction_begin\",\"us\":215},{\"phase\":\"receipt_admission\",\"us\":3280},{\"phase\":\"load_record\",\"us\":756},{\"phase\":\"load_manifest\",\"us\":339},{\"phase\":\"storage_prefix_admission\",\"us\":16673},{\"phase\":\"domain_transition\",\"us\":278},{\"phase\":\"revision_save\",\"us\":16121},{\"phase\":\"view_projection\",\"us\":403},{\"phase\":\"result_status\",\"us\":17},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":763},{\"phase\":\"commit\",\"us\":378}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":156},{\"phase\":\"transaction_begin\",\"us\":114}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":13},{\"phase\":\"pool_checkout\",\"us\":170},{\"phase\":\"transaction_begin\",\"us\":122}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":18},{\"phase\":\"pool_checkout\",\"us\":161},{\"phase\":\"transaction_begin\",\"us\":120},{\"phase\":\"receipt_admission\",\"us\":2055},{\"phase\":\"load_record\",\"us\":776},{\"phase\":\"load_manifest\",\"us\":289},{\"phase\":\"storage_prefix_admission\",\"us\":17002},{\"phase\":\"domain_transition\",\"us\":284},{\"phase\":\"revision_save\",\"us\":15738},{\"phase\":\"view_projection\",\"us\":392},{\"phase\":\"result_status\",\"us\":18},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":801},{\"phase\":\"commit\",\"us\":354}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":153},{\"phase\":\"transaction_begin\",\"us\":115}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":13},{\"phase\":\"pool_checkout\",\"us\":178},{\"phase\":\"transaction_begin\",\"us\":138}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":17},{\"phase\":\"pool_checkout\",\"us\":115},{\"phase\":\"transaction_begin\",\"us\":112},{\"phase\":\"receipt_admission\",\"us\":2579},{\"phase\":\"load_record\",\"us\":715},{\"phase\":\"load_manifest\",\"us\":358},{\"phase\":\"storage_prefix_admission\",\"us\":17022},{\"phase\":\"domain_transition\",\"us\":445},{\"phase\":\"revision_save\",\"us\":16024},{\"phase\":\"view_projection\",\"us\":489},{\"phase\":\"result_status\",\"us\":20},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":743},{\"phase\":\"commit\",\"us\":371}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":148},{\"phase\":\"transaction_begin\",\"us\":98}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":12},{\"phase\":\"pool_checkout\",\"us\":182},{\"phase\":\"transaction_begin\",\"us\":142}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":18},{\"phase\":\"pool_checkout\",\"us\":152},{\"phase\":\"transaction_begin\",\"us\":84},{\"phase\":\"receipt_admission\",\"us\":1625},{\"phase\":\"load_record\",\"us\":605},{\"phase\":\"load_manifest\",\"us\":285},{\"phase\":\"storage_prefix_admission\",\"us\":17597},{\"phase\":\"domain_transition\",\"us\":266},{\"phase\":\"revision_save\",\"us\":14573},{\"phase\":\"view_projection\",\"us\":486},{\"phase\":\"result_status\",\"us\":20},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":603},{\"phase\":\"commit\",\"us\":300}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":120},{\"phase\":\"transaction_begin\",\"us\":78}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":12},{\"phase\":\"pool_checkout\",\"us\":174},{\"phase\":\"transaction_begin\",\"us\":103}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":18},{\"phase\":\"pool_checkout\",\"us\":154},{\"phase\":\"transaction_begin\",\"us\":102},{\"phase\":\"receipt_admission\",\"us\":1945},{\"phase\":\"load_record\",\"us\":748},{\"phase\":\"load_manifest\",\"us\":315},{\"phase\":\"storage_prefix_admission\",\"us\":17466},{\"phase\":\"domain_transition\",\"us\":287},{\"phase\":\"revision_save\",\"us\":14751},{\"phase\":\"view_projection\",\"us\":519},{\"phase\":\"result_status\",\"us\":19},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":765},{\"phase\":\"commit\",\"us\":317}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":147},{\"phase\":\"transaction_begin\",\"us\":105}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":14},{\"phase\":\"pool_checkout\",\"us\":134},{\"phase\":\"transaction_begin\",\"us\":77}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":41},{\"phase\":\"pool_checkout\",\"us\":161},{\"phase\":\"transaction_begin\",\"us\":173},{\"phase\":\"receipt_admission\",\"us\":2126},{\"phase\":\"load_record\",\"us\":763},{\"phase\":\"load_manifest\",\"us\":293},{\"phase\":\"storage_prefix_admission\",\"us\":17432},{\"phase\":\"domain_transition\",\"us\":387},{\"phase\":\"revision_save\",\"us\":14667},{\"phase\":\"view_projection\",\"us\":579},{\"phase\":\"result_status\",\"us\":20},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":665},{\"phase\":\"commit\",\"us\":342}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":157},{\"phase\":\"transaction_begin\",\"us\":94}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":13},{\"phase\":\"pool_checkout\",\"us\":173},{\"phase\":\"transaction_begin\",\"us\":138}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":133},{\"phase\":\"transaction_begin\",\"us\":71}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":21},{\"phase\":\"pool_checkout\",\"us\":148},{\"phase\":\"transaction_begin\",\"us\":126},{\"phase\":\"receipt_admission\",\"us\":1957},{\"phase\":\"load_record\",\"us\":722},{\"phase\":\"load_manifest\",\"us\":352},{\"phase\":\"storage_prefix_admission\",\"us\":16905},{\"phase\":\"domain_transition\",\"us\":634},{\"phase\":\"revision_save\",\"us\":15623},{\"phase\":\"view_projection\",\"us\":630},{\"phase\":\"result_status\",\"us\":26},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":1429},{\"phase\":\"commit\",\"us\":442}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":8},{\"phase\":\"pool_checkout\",\"us\":152},{\"phase\":\"transaction_begin\",\"us\":97}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":14},{\"phase\":\"pool_checkout\",\"us\":144},{\"phase\":\"transaction_begin\",\"us\":71}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":16},{\"phase\":\"pool_checkout\",\"us\":151},{\"phase\":\"transaction_begin\",\"us\":109},{\"phase\":\"receipt_admission\",\"us\":1871},{\"phase\":\"result_status\",\"us\":1650},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":629},{\"phase\":\"commit\",\"us\":368}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":18},{\"phase\":\"pool_checkout\",\"us\":167},{\"phase\":\"transaction_begin\",\"us\":105},{\"phase\":\"receipt_admission\",\"us\":1885},{\"phase\":\"load_record\",\"us\":741},{\"phase\":\"load_manifest\",\"us\":326},{\"phase\":\"storage_prefix_admission\",\"us\":16380},{\"phase\":\"domain_transition\",\"us\":285},{\"phase\":\"revision_save\",\"us\":15086},{\"phase\":\"view_projection\",\"us\":689},{\"phase\":\"result_status\",\"us\":25},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":646},{\"phase\":\"commit\",\"us\":291}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":20},{\"phase\":\"pool_checkout\",\"us\":144},{\"phase\":\"transaction_begin\",\"us\":88},{\"phase\":\"receipt_admission\",\"us\":1911},{\"phase\":\"load_record\",\"us\":704},{\"phase\":\"load_manifest\",\"us\":319},{\"phase\":\"storage_prefix_admission\",\"us\":17183},{\"phase\":\"domain_transition\",\"us\":282},{\"phase\":\"revision_save\",\"us\":15186},{\"phase\":\"view_projection\",\"us\":714},{\"phase\":\"result_status\",\"us\":25},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":676},{\"phase\":\"commit\",\"us\":301}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":19},{\"phase\":\"pool_checkout\",\"us\":176},{\"phase\":\"transaction_begin\",\"us\":100},{\"phase\":\"receipt_admission\",\"us\":1990},{\"phase\":\"load_record\",\"us\":752},{\"phase\":\"load_manifest\",\"us\":327},{\"phase\":\"storage_prefix_admission\",\"us\":17195},{\"phase\":\"domain_transition\",\"us\":287},{\"phase\":\"revision_save\",\"us\":14740},{\"phase\":\"view_projection\",\"us\":474},{\"phase\":\"result_status\",\"us\":23},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":694},{\"phase\":\"commit\",\"us\":386}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":8},{\"phase\":\"pool_checkout\",\"us\":162},{\"phase\":\"transaction_begin\",\"us\":98}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":23},{\"phase\":\"pool_checkout\",\"us\":169},{\"phase\":\"transaction_begin\",\"us\":102}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":13},{\"phase\":\"pool_checkout\",\"us\":150},{\"phase\":\"transaction_begin\",\"us\":123}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":13},{\"phase\":\"pool_checkout\",\"us\":160},{\"phase\":\"transaction_begin\",\"us\":106}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":16},{\"phase\":\"pool_checkout\",\"us\":199},{\"phase\":\"transaction_begin\",\"us\":164},{\"phase\":\"receipt_admission\",\"us\":1823},{\"phase\":\"load_record\",\"us\":718},{\"phase\":\"load_manifest\",\"us\":346},{\"phase\":\"storage_prefix_admission\",\"us\":19395},{\"phase\":\"domain_transition\",\"us\":325},{\"phase\":\"revision_save\",\"us\":14974},{\"phase\":\"view_projection\",\"us\":428},{\"phase\":\"result_status\",\"us\":19},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":698},{\"phase\":\"commit\",\"us\":323}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":174},{\"phase\":\"transaction_begin\",\"us\":91}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":14},{\"phase\":\"pool_checkout\",\"us\":197},{\"phase\":\"transaction_begin\",\"us\":133}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":17},{\"phase\":\"pool_checkout\",\"us\":126},{\"phase\":\"transaction_begin\",\"us\":119},{\"phase\":\"receipt_admission\",\"us\":1786},{\"phase\":\"load_record\",\"us\":640},{\"phase\":\"load_manifest\",\"us\":283},{\"phase\":\"storage_prefix_admission\",\"us\":19281},{\"phase\":\"domain_transition\",\"us\":280},{\"phase\":\"revision_save\",\"us\":14108},{\"phase\":\"view_projection\",\"us\":424},{\"phase\":\"result_status\",\"us\":19},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":610},{\"phase\":\"commit\",\"us\":312}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":156},{\"phase\":\"transaction_begin\",\"us\":97}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":14},{\"phase\":\"pool_checkout\",\"us\":183},{\"phase\":\"transaction_begin\",\"us\":124}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":18},{\"phase\":\"pool_checkout\",\"us\":190},{\"phase\":\"transaction_begin\",\"us\":127},{\"phase\":\"receipt_admission\",\"us\":1862},{\"phase\":\"load_record\",\"us\":856},{\"phase\":\"load_manifest\",\"us\":317},{\"phase\":\"storage_prefix_admission\",\"us\":18557},{\"phase\":\"domain_transition\",\"us\":276},{\"phase\":\"revision_save\",\"us\":13903},{\"phase\":\"view_projection\",\"us\":553},{\"phase\":\"result_status\",\"us\":18},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":573},{\"phase\":\"commit\",\"us\":322}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":160},{\"phase\":\"transaction_begin\",\"us\":102}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":12},{\"phase\":\"pool_checkout\",\"us\":124},{\"phase\":\"transaction_begin\",\"us\":76}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":23},{\"phase\":\"pool_checkout\",\"us\":176},{\"phase\":\"transaction_begin\",\"us\":80},{\"phase\":\"receipt_admission\",\"us\":2220},{\"phase\":\"load_record\",\"us\":715},{\"phase\":\"load_manifest\",\"us\":302},{\"phase\":\"storage_prefix_admission\",\"us\":18858},{\"phase\":\"domain_transition\",\"us\":298},{\"phase\":\"revision_save\",\"us\":13648},{\"phase\":\"view_projection\",\"us\":362},{\"phase\":\"result_status\",\"us\":20},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":547},{\"phase\":\"commit\",\"us\":285}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":124},{\"phase\":\"transaction_begin\",\"us\":76}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":13},{\"phase\":\"pool_checkout\",\"us\":133},{\"phase\":\"transaction_begin\",\"us\":67}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":17},{\"phase\":\"pool_checkout\",\"us\":173},{\"phase\":\"transaction_begin\",\"us\":138},{\"phase\":\"receipt_admission\",\"us\":2034},{\"phase\":\"load_record\",\"us\":775},{\"phase\":\"load_manifest\",\"us\":344},{\"phase\":\"storage_prefix_admission\",\"us\":19385},{\"phase\":\"domain_transition\",\"us\":309},{\"phase\":\"revision_save\",\"us\":15792},{\"phase\":\"view_projection\",\"us\":464},{\"phase\":\"result_status\",\"us\":19},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":686},{\"phase\":\"commit\",\"us\":295}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":124},{\"phase\":\"transaction_begin\",\"us\":83}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":14},{\"phase\":\"pool_checkout\",\"us\":126},{\"phase\":\"transaction_begin\",\"us\":74}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":19},{\"phase\":\"pool_checkout\",\"us\":159},{\"phase\":\"transaction_begin\",\"us\":127},{\"phase\":\"receipt_admission\",\"us\":1914},{\"phase\":\"load_record\",\"us\":721},{\"phase\":\"load_manifest\",\"us\":347},{\"phase\":\"storage_prefix_admission\",\"us\":18462},{\"phase\":\"domain_transition\",\"us\":278},{\"phase\":\"revision_save\",\"us\":14288},{\"phase\":\"view_projection\",\"us\":410},{\"phase\":\"result_status\",\"us\":16},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":670},{\"phase\":\"commit\",\"us\":398}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":161},{\"phase\":\"transaction_begin\",\"us\":103}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":12},{\"phase\":\"pool_checkout\",\"us\":198},{\"phase\":\"transaction_begin\",\"us\":84}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":19},{\"phase\":\"pool_checkout\",\"us\":143},{\"phase\":\"transaction_begin\",\"us\":100},{\"phase\":\"receipt_admission\",\"us\":2001},{\"phase\":\"load_record\",\"us\":879},{\"phase\":\"load_manifest\",\"us\":403},{\"phase\":\"storage_prefix_admission\",\"us\":18298},{\"phase\":\"domain_transition\",\"us\":278},{\"phase\":\"revision_save\",\"us\":14144},{\"phase\":\"view_projection\",\"us\":429},{\"phase\":\"result_status\",\"us\":20},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":690},{\"phase\":\"commit\",\"us\":316}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":156},{\"phase\":\"transaction_begin\",\"us\":97}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":13},{\"phase\":\"pool_checkout\",\"us\":139},{\"phase\":\"transaction_begin\",\"us\":72}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":18},{\"phase\":\"pool_checkout\",\"us\":162},{\"phase\":\"transaction_begin\",\"us\":126},{\"phase\":\"receipt_admission\",\"us\":1956},{\"phase\":\"load_record\",\"us\":954},{\"phase\":\"load_manifest\",\"us\":448},{\"phase\":\"storage_prefix_admission\",\"us\":18885},{\"phase\":\"domain_transition\",\"us\":604},{\"phase\":\"revision_save\",\"us\":15762},{\"phase\":\"view_projection\",\"us\":532},{\"phase\":\"result_status\",\"us\":29},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":1063},{\"phase\":\"commit\",\"us\":273}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":14},{\"phase\":\"pool_checkout\",\"us\":154},{\"phase\":\"transaction_begin\",\"us\":96},{\"phase\":\"receipt_admission\",\"us\":1900},{\"phase\":\"result_status\",\"us\":8789},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":1091},{\"phase\":\"commit\",\"us\":417}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":156},{\"phase\":\"transaction_begin\",\"us\":98}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":21},{\"phase\":\"pool_checkout\",\"us\":308},{\"phase\":\"transaction_begin\",\"us\":139}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":8},{\"phase\":\"pool_checkout\",\"us\":126},{\"phase\":\"transaction_begin\",\"us\":79}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":18},{\"phase\":\"pool_checkout\",\"us\":144},{\"phase\":\"transaction_begin\",\"us\":90},{\"phase\":\"receipt_admission\",\"us\":1883},{\"phase\":\"load_record\",\"us\":665},{\"phase\":\"load_manifest\",\"us\":286},{\"phase\":\"storage_prefix_admission\",\"us\":16756},{\"phase\":\"domain_transition\",\"us\":662},{\"phase\":\"revision_save\",\"us\":15131},{\"phase\":\"view_projection\",\"us\":491},{\"phase\":\"result_status\",\"us\":29},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":700},{\"phase\":\"commit\",\"us\":316}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":161},{\"phase\":\"transaction_begin\",\"us\":99}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":19},{\"phase\":\"pool_checkout\",\"us\":169},{\"phase\":\"transaction_begin\",\"us\":105}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":17},{\"phase\":\"pool_checkout\",\"us\":162},{\"phase\":\"transaction_begin\",\"us\":97},{\"phase\":\"receipt_admission\",\"us\":1851},{\"phase\":\"load_record\",\"us\":737},{\"phase\":\"load_manifest\",\"us\":330},{\"phase\":\"storage_prefix_admission\",\"us\":17510},{\"phase\":\"domain_transition\",\"us\":292},{\"phase\":\"revision_save\",\"us\":15593},{\"phase\":\"view_projection\",\"us\":422},{\"phase\":\"result_status\",\"us\":20},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":651},{\"phase\":\"commit\",\"us\":343}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":18},{\"phase\":\"pool_checkout\",\"us\":137},{\"phase\":\"transaction_begin\",\"us\":78},{\"phase\":\"receipt_admission\",\"us\":1916},{\"phase\":\"load_record\",\"us\":672},{\"phase\":\"load_manifest\",\"us\":505},{\"phase\":\"storage_prefix_admission\",\"us\":18152},{\"phase\":\"domain_transition\",\"us\":381},{\"phase\":\"revision_save\",\"us\":15683},{\"phase\":\"view_projection\",\"us\":380},{\"phase\":\"result_status\",\"us\":23},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":2369},{\"phase\":\"commit\",\"us\":307}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":20},{\"phase\":\"pool_checkout\",\"us\":149},{\"phase\":\"transaction_begin\",\"us\":81},{\"phase\":\"receipt_admission\",\"us\":1981},{\"phase\":\"load_record\",\"us\":751},{\"phase\":\"load_manifest\",\"us\":335},{\"phase\":\"storage_prefix_admission\",\"us\":16291},{\"phase\":\"domain_transition\",\"us\":288},{\"phase\":\"revision_save\",\"us\":14507},{\"phase\":\"view_projection\",\"us\":421},{\"phase\":\"result_status\",\"us\":20},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":653},{\"phase\":\"commit\",\"us\":384}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":8},{\"phase\":\"pool_checkout\",\"us\":159},{\"phase\":\"transaction_begin\",\"us\":96}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":14},{\"phase\":\"pool_checkout\",\"us\":169},{\"phase\":\"transaction_begin\",\"us\":149}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "POST",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":14},{\"phase\":\"pool_checkout\",\"us\":174},{\"phase\":\"transaction_begin\",\"us\":136},{\"phase\":\"receipt_admission\",\"us\":928},{\"phase\":\"result_status\",\"us\":18432},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":614},{\"phase\":\"commit\",\"us\":316}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":17},{\"phase\":\"pool_checkout\",\"us\":129},{\"phase\":\"transaction_begin\",\"us\":69},{\"phase\":\"receipt_admission\",\"us\":1958},{\"phase\":\"result_status\",\"us\":1077},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":667},{\"phase\":\"commit\",\"us\":351}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":120},{\"phase\":\"transaction_begin\",\"us\":114}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":11},{\"phase\":\"pool_checkout\",\"us\":85},{\"phase\":\"transaction_begin\",\"us\":97}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "tick-data",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":171},{\"phase\":\"transaction_begin\",\"us\":118}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":14},{\"phase\":\"pool_checkout\",\"us\":131},{\"phase\":\"transaction_begin\",\"us\":79}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":13},{\"phase\":\"pool_checkout\",\"us\":159},{\"phase\":\"transaction_begin\",\"us\":102}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":12},{\"phase\":\"pool_checkout\",\"us\":152},{\"phase\":\"transaction_begin\",\"us\":94}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":20},{\"phase\":\"pool_checkout\",\"us\":134},{\"phase\":\"transaction_begin\",\"us\":122},{\"phase\":\"receipt_admission\",\"us\":1982},{\"phase\":\"load_record\",\"us\":722},{\"phase\":\"load_manifest\",\"us\":352},{\"phase\":\"domain_transition\",\"us\":15591},{\"phase\":\"revision_save\",\"us\":1139},{\"phase\":\"view_projection\",\"us\":351},{\"phase\":\"result_status\",\"us\":5},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":583},{\"phase\":\"commit\",\"us\":358}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "tick-data",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":10},{\"phase\":\"pool_checkout\",\"us\":176},{\"phase\":\"transaction_begin\",\"us\":96}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":11},{\"phase\":\"pool_checkout\",\"us\":171},{\"phase\":\"transaction_begin\",\"us\":94}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":12},{\"phase\":\"pool_checkout\",\"us\":176},{\"phase\":\"transaction_begin\",\"us\":113}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":17},{\"phase\":\"pool_checkout\",\"us\":162},{\"phase\":\"transaction_begin\",\"us\":127},{\"phase\":\"receipt_admission\",\"us\":1985},{\"phase\":\"load_record\",\"us\":853},{\"phase\":\"result_status\",\"us\":157},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":581},{\"phase\":\"commit\",\"us\":324}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":153},{\"phase\":\"transaction_begin\",\"us\":105}]"
+  }
+]

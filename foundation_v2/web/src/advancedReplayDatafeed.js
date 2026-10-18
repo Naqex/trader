@@ -24,6 +24,34 @@ function bucketTime(timestamp, period) {
   return Math.floor(timestamp / seconds) * seconds * 1000
 }
 
+const periodOf = resolution => resolution.endsWith('S') || /^\d+$/.test(resolution) ? resolutionSeconds(resolution) : resolution
+const sameRow = (left, right) => left === right || ['timestamp', 'open', 'high', 'low', 'close', 'volume', 'tick_volume'].every(key => left?.[key] === right?.[key])
+
+function verifiedTail(tail, previousCutoff, nextCutoff, rows) {
+  if (!tail || tail.baseCutoff !== previousCutoff || tail.cutoff !== Number(nextCutoff)
+      || !Array.isArray(tail.rows) || !tail.rows.length || tail.rows.length > 1000 || tail.rows.length > rows.length) return null
+  let timestamp = previousCutoff
+  for (let index = 0; index < tail.rows.length; index += 1) {
+    const row = tail.rows[index]
+    if (!Number.isSafeInteger(row.timestamp) || row.timestamp <= timestamp
+        || !['open', 'high', 'low', 'close'].every(key => Number.isFinite(row[key]))
+        || !sameRow(row, rows[rows.length - tail.rows.length + index])) return null
+    timestamp = row.timestamp
+  }
+  return timestamp === Number(nextCutoff) ? tail.rows : null
+}
+
+function tailBars(last, rows, cutoff, resolution) {
+  const bars = replayBars(rows, cutoff, periodOf(resolution))
+  if (last && bars[0]?.time === last.time) {
+    const first = bars[0]
+    bars[0] = { ...first, open: last.open, high: Math.max(last.high, first.high), low: Math.min(last.low, first.low) }
+    if (last.volume != null && first.volume != null) bars[0].volume = last.volume + first.volume
+    else delete bars[0].volume
+  }
+  return bars
+}
+
 export function replayBars(rows, cutoff, period) {
   const buckets = new Map()
   for (const row of rows) {
@@ -100,39 +128,59 @@ export function createAdvancedReplayDatafeed({ symbol, seconds, tickSize, rows, 
     },
     subscribeBars(info, resolution, callback, id, reset) {
       if (info.ticker !== symbol || !supported.includes(resolution)) return
-      subscriptions.set(id, { resolution, callback, reset, last: history(resolution).at(-1) })
+      subscriptions.set(id, { resolution, callback, reset, last: history(resolution).at(-1), seedCutoff: readHistory ? null : Number(limit) })
       if (readHistory) {
-        const item = subscriptions.get(id), requestedGeneration = generation, requestedUpdate = updateGeneration
+        const item = subscriptions.get(id), requestedGeneration = generation, requestedUpdate = updateGeneration, requestedCutoff = Number(limit)
         Promise.resolve().then(() => readHistory(resolution, { countBack: 1 })).then(bars => {
-          if (alive && requestedGeneration === generation && requestedUpdate === updateGeneration && subscriptions.get(id) === item) item.last = bars.at(-1)
-        }).catch(() => { if (alive && subscriptions.get(id) === item) reset() })
+          if (alive && requestedGeneration === generation && requestedUpdate === updateGeneration && subscriptions.get(id) === item) {
+            item.last = bars.at(-1)
+            item.seedCutoff = item.last?.time === bucketTime(requestedCutoff, periodOf(resolution)) ? requestedCutoff : null
+          }
+        }).catch(() => { if (alive && requestedGeneration === generation && requestedUpdate === updateGeneration && subscriptions.get(id) === item) reset() })
       }
     },
     unsubscribeBars(id) { subscriptions.delete(id) },
   }
   return {
     datafeed, interval, supported,
-    update(nextRows, nextCutoff) {
+    update(nextRows, nextCutoff, stepTail) {
       if (nextRows === visible && Number(nextCutoff) === Number(limit)) return true
       // Order mutations return a new JSON window with the same immutable bars.
       // They must not republish candles or fetch history at an unchanged cutoff.
       if (Number(nextCutoff) === Number(limit) && nextRows.length === visible.length
-          && nextRows.every((row, i) => ['timestamp', 'open', 'high', 'low', 'close', 'volume', 'tick_volume'].every(key => row[key] === visible[i][key]))) {
+          && nextRows.every((row, i) => sameRow(row, visible[i]))) {
         visible = nextRows
         return true
       }
       const rewind = Number(nextCutoff) < Number(limit) || nextRows.length < visible.length
       const previousCutoff = Number(limit)
+      const appended = verifiedTail(stepTail, previousCutoff, nextCutoff, nextRows)
       visible = nextRows; limit = nextCutoff
       historyCache.clear()
-      if (rewind) { generation += 1; subscriptions.forEach(item => { item.last = history(item.resolution).at(-1); item.reset() }); return false }
+      if (rewind) { generation += 1; subscriptions.forEach(item => { item.last = history(item.resolution).at(-1); item.seedCutoff = null; item.reset() }); return false }
+      updateGeneration += 1
+      const advanced = new Set()
+      if (appended) {
+        subscriptions.forEach(item => {
+          // Calendar candles may begin before the 2000-row local window. Only
+          // an authoritative aggregate at the exact base cutoff can seed them.
+          if (item.seedCutoff !== previousCutoff || item.last?.time !== bucketTime(previousCutoff, periodOf(item.resolution))) return
+          const bars = tailBars(item.last, appended, Number(nextCutoff), item.resolution)
+          for (const bar of bars) { item.last = { ...bar }; item.callback({ ...bar }) }
+          item.seedCutoff = Number(nextCutoff)
+          advanced.add(item)
+        })
+      }
       if (readHistory) {
-        updateGeneration += 1
         const requestedGeneration = generation, requestedUpdate = updateGeneration
         const pending = new Map()
         subscriptions.forEach(item => {
-          const period = item.resolution.endsWith('S') || /^\d+$/.test(item.resolution) ? resolutionSeconds(item.resolution) : item.resolution
-          const oldBucket = bucketTime(previousCutoff, period), newBucket = bucketTime(Number(nextCutoff), period)
+          if (advanced.has(item)) return
+          const period = periodOf(item.resolution)
+          // Superseded history requests never publish their bars. Catch up from
+          // this subscription's delivered candle, even after several fast steps.
+          const oldBucket = Math.min(item.last?.time ?? Infinity, bucketTime(previousCutoff, period))
+          const newBucket = bucketTime(Number(nextCutoff), period)
           let countBack = 1
           if (newBucket > oldBucket) {
             if (period === '1M') {
@@ -140,26 +188,30 @@ export function createAdvancedReplayDatafeed({ symbol, seconds, tickSize, rows, 
               countBack += (to.getUTCFullYear() - from.getUTCFullYear()) * 12 + to.getUTCMonth() - from.getUTCMonth()
             } else countBack += Math.ceil((newBucket - oldBucket) / (resolutionSeconds(item.resolution) * 1000))
           }
-          if (countBack > 2000) { item.last = history(item.resolution).at(-1); item.reset(); return }
-          if (!pending.has(item.resolution)) pending.set(item.resolution, Promise.resolve().then(() => readHistory(item.resolution, { countBack })))
-          pending.get(item.resolution).then(bars => {
+          if (countBack > 2000) { item.last = history(item.resolution).at(-1); item.seedCutoff = null; item.reset(); return }
+          const requestKey = `${item.resolution}:${countBack}`
+          if (!pending.has(requestKey)) pending.set(requestKey, Promise.resolve().then(() => readHistory(item.resolution, { countBack })))
+          pending.get(requestKey).then(bars => {
             if (!alive || requestedGeneration !== generation || requestedUpdate !== updateGeneration || ![...subscriptions.values()].includes(item)) return
             for (const bar of bars) {
               if (!item.last || bar.time > item.last.time || (bar.time === item.last.time && JSON.stringify(bar) !== JSON.stringify(item.last))) {
                 item.last = { ...bar }; item.callback({ ...bar })
               }
             }
-          }).catch(() => { if (alive && requestedGeneration === generation) item.reset() })
+            item.seedCutoff = item.last?.time === newBucket ? Number(nextCutoff) : null
+          }).catch(() => { if (alive && requestedGeneration === generation && requestedUpdate === updateGeneration && [...subscriptions.values()].includes(item)) item.reset() })
         })
         return true
       }
       subscriptions.forEach(item => {
+        if (advanced.has(item)) return
         const bars = history(item.resolution)
         for (const bar of bars) {
           if (!item.last || bar.time > item.last.time || (bar.time === item.last.time && JSON.stringify(bar) !== JSON.stringify(item.last))) {
             item.last = { ...bar }; item.callback({ ...bar })
           }
         }
+        item.seedCutoff = Number(nextCutoff)
       })
       return true
     },

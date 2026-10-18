@@ -1,0 +1,3166 @@
+{
+  "status": "PASS",
+  "checks": [
+    "null execution steps1/10/1000 and rolling2000 row reconciliation versus full GET/full wire",
+    "initialized contiguous events and rolling2000 step parity",
+    "timestamp interval crosses gap using canonical dataset rows",
+    "end-period clipping and atomic completed rejection; legacy zero-row end preserves cutoff",
+    "queued market fill/protective fill and v2 insufficient research margin rejection events",
+    "step exact-byte wire retry, idempotency mismatch, stale revision and tenant denial remain atomic",
+    "invalid step bounds and unsupported response view fail without persistent side effects",
+    "historical checkpoint and fresh-process full reload match step reconciliation",
+    "alternating full/compact step-v1 at bounded ledger prefixes; cold import separated",
+    "Prop indexed backlog, no skipping, old exact domain retry, wrong lineage, manual close and cancel parity",
+    "near-tail Prop selectors at stages[500, 5000] use naturally planned indexes; requested/predecessor/certificate corruption fails hot/cold and restores exactly"
+  ],
+  "samples": [
+    {
+      "stage_steps": 0,
+      "cold_import": true,
+      "warmup": true,
+      "profile": "compact",
+      "order": [
+        "compact",
+        "full",
+        "oracle"
+      ],
+      "base_events": 0,
+      "base_revision": 2,
+      "base_cursor": 0,
+      "router_elapsed_us": 28628,
+      "stdio_elapsed_ns": 28928600,
+      "response_bytes": 2770,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 20
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 149
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 125
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 966
+        },
+        {
+          "phase": "load_record",
+          "us": 1000
+        },
+        {
+          "phase": "load_manifest",
+          "us": 375
+        },
+        {
+          "phase": "storage_prefix_admission",
+          "us": 18950
+        },
+        {
+          "phase": "domain_transition",
+          "us": 229
+        },
+        {
+          "phase": "revision_save",
+          "us": 5419
+        },
+        {
+          "phase": "view_projection",
+          "us": 332
+        },
+        {
+          "phase": "result_status",
+          "us": 11
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 644
+        },
+        {
+          "phase": "commit",
+          "us": 280
+        }
+      ]
+    },
+    {
+      "stage_steps": 0,
+      "cold_import": true,
+      "warmup": true,
+      "profile": "full",
+      "order": [
+        "compact",
+        "full",
+        "oracle"
+      ],
+      "base_events": 0,
+      "base_revision": 2,
+      "base_cursor": 0,
+      "router_elapsed_us": 20720,
+      "stdio_elapsed_ns": 20999900,
+      "response_bytes": 2770,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 13
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 177
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 144
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1073
+        },
+        {
+          "phase": "load_record",
+          "us": 1309
+        },
+        {
+          "phase": "load_manifest",
+          "us": 396
+        },
+        {
+          "phase": "domain_transition",
+          "us": 14338
+        },
+        {
+          "phase": "revision_save",
+          "us": 1528
+        },
+        {
+          "phase": "view_projection",
+          "us": 499
+        },
+        {
+          "phase": "result_status",
+          "us": 4
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 780
+        },
+        {
+          "phase": "commit",
+          "us": 324
+        }
+      ]
+    },
+    {
+      "stage_steps": 0,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "full",
+      "order": [
+        "full",
+        "compact",
+        "oracle"
+      ],
+      "base_events": 1,
+      "base_revision": 3,
+      "base_cursor": 1,
+      "router_elapsed_us": 20505,
+      "stdio_elapsed_ns": 20851000,
+      "response_bytes": 2771,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 13
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 169
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 133
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1074
+        },
+        {
+          "phase": "load_record",
+          "us": 1220
+        },
+        {
+          "phase": "load_manifest",
+          "us": 338
+        },
+        {
+          "phase": "domain_transition",
+          "us": 14243
+        },
+        {
+          "phase": "revision_save",
+          "us": 1684
+        },
+        {
+          "phase": "view_projection",
+          "us": 467
+        },
+        {
+          "phase": "result_status",
+          "us": 4
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 734
+        },
+        {
+          "phase": "commit",
+          "us": 291
+        }
+      ]
+    },
+    {
+      "stage_steps": 0,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "compact",
+      "order": [
+        "full",
+        "compact",
+        "oracle"
+      ],
+      "base_events": 1,
+      "base_revision": 3,
+      "base_cursor": 1,
+      "router_elapsed_us": 26836,
+      "stdio_elapsed_ns": 27113400,
+      "response_bytes": 2771,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 12
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 204
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 131
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1002
+        },
+        {
+          "phase": "load_record",
+          "us": 848
+        },
+        {
+          "phase": "load_manifest",
+          "us": 386
+        },
+        {
+          "phase": "storage_prefix_admission",
+          "us": 17210
+        },
+        {
+          "phase": "domain_transition",
+          "us": 272
+        },
+        {
+          "phase": "revision_save",
+          "us": 5417
+        },
+        {
+          "phase": "view_projection",
+          "us": 368
+        },
+        {
+          "phase": "result_status",
+          "us": 12
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 590
+        },
+        {
+          "phase": "commit",
+          "us": 258
+        }
+      ]
+    },
+    {
+      "stage_steps": 0,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "compact",
+      "order": [
+        "compact",
+        "full",
+        "oracle"
+      ],
+      "base_events": 2,
+      "base_revision": 4,
+      "base_cursor": 2,
+      "router_elapsed_us": 27469,
+      "stdio_elapsed_ns": 27795300,
+      "response_bytes": 2771,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 14
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 164
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 117
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 930
+        },
+        {
+          "phase": "load_record",
+          "us": 803
+        },
+        {
+          "phase": "load_manifest",
+          "us": 371
+        },
+        {
+          "phase": "storage_prefix_admission",
+          "us": 17003
+        },
+        {
+          "phase": "domain_transition",
+          "us": 253
+        },
+        {
+          "phase": "revision_save",
+          "us": 6186
+        },
+        {
+          "phase": "view_projection",
+          "us": 405
+        },
+        {
+          "phase": "result_status",
+          "us": 17
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 745
+        },
+        {
+          "phase": "commit",
+          "us": 330
+        }
+      ]
+    },
+    {
+      "stage_steps": 0,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "full",
+      "order": [
+        "compact",
+        "full",
+        "oracle"
+      ],
+      "base_events": 2,
+      "base_revision": 4,
+      "base_cursor": 2,
+      "router_elapsed_us": 20566,
+      "stdio_elapsed_ns": 20850100,
+      "response_bytes": 2771,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 12
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 256
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 119
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1293
+        },
+        {
+          "phase": "load_record",
+          "us": 1192
+        },
+        {
+          "phase": "load_manifest",
+          "us": 361
+        },
+        {
+          "phase": "domain_transition",
+          "us": 14353
+        },
+        {
+          "phase": "revision_save",
+          "us": 1509
+        },
+        {
+          "phase": "view_projection",
+          "us": 415
+        },
+        {
+          "phase": "result_status",
+          "us": 4
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 688
+        },
+        {
+          "phase": "commit",
+          "us": 234
+        }
+      ]
+    },
+    {
+      "stage_steps": 0,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "full",
+      "order": [
+        "full",
+        "compact",
+        "oracle"
+      ],
+      "base_events": 3,
+      "base_revision": 5,
+      "base_cursor": 3,
+      "router_elapsed_us": 20573,
+      "stdio_elapsed_ns": 20862300,
+      "response_bytes": 2771,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 15
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 179
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 133
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 994
+        },
+        {
+          "phase": "load_record",
+          "us": 1095
+        },
+        {
+          "phase": "load_manifest",
+          "us": 333
+        },
+        {
+          "phase": "domain_transition",
+          "us": 14751
+        },
+        {
+          "phase": "revision_save",
+          "us": 1491
+        },
+        {
+          "phase": "view_projection",
+          "us": 453
+        },
+        {
+          "phase": "result_status",
+          "us": 4
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 694
+        },
+        {
+          "phase": "commit",
+          "us": 290
+        }
+      ]
+    },
+    {
+      "stage_steps": 0,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "compact",
+      "order": [
+        "full",
+        "compact",
+        "oracle"
+      ],
+      "base_events": 3,
+      "base_revision": 5,
+      "base_cursor": 3,
+      "router_elapsed_us": 27128,
+      "stdio_elapsed_ns": 27414500,
+      "response_bytes": 2771,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 14
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 213
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 115
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 974
+        },
+        {
+          "phase": "load_record",
+          "us": 880
+        },
+        {
+          "phase": "load_manifest",
+          "us": 323
+        },
+        {
+          "phase": "storage_prefix_admission",
+          "us": 16688
+        },
+        {
+          "phase": "domain_transition",
+          "us": 248
+        },
+        {
+          "phase": "revision_save",
+          "us": 5377
+        },
+        {
+          "phase": "view_projection",
+          "us": 1054
+        },
+        {
+          "phase": "result_status",
+          "us": 19
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 765
+        },
+        {
+          "phase": "commit",
+          "us": 305
+        }
+      ]
+    },
+    {
+      "stage_steps": 0,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "compact",
+      "order": [
+        "compact",
+        "full",
+        "oracle"
+      ],
+      "base_events": 4,
+      "base_revision": 6,
+      "base_cursor": 4,
+      "router_elapsed_us": 26843,
+      "stdio_elapsed_ns": 27211400,
+      "response_bytes": 2771,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 24
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 219
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 137
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1031
+        },
+        {
+          "phase": "load_record",
+          "us": 940
+        },
+        {
+          "phase": "load_manifest",
+          "us": 347
+        },
+        {
+          "phase": "storage_prefix_admission",
+          "us": 16959
+        },
+        {
+          "phase": "domain_transition",
+          "us": 238
+        },
+        {
+          "phase": "revision_save",
+          "us": 5421
+        },
+        {
+          "phase": "view_projection",
+          "us": 366
+        },
+        {
+          "phase": "result_status",
+          "us": 12
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 666
+        },
+        {
+          "phase": "commit",
+          "us": 303
+        }
+      ]
+    },
+    {
+      "stage_steps": 0,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "full",
+      "order": [
+        "compact",
+        "full",
+        "oracle"
+      ],
+      "base_events": 4,
+      "base_revision": 6,
+      "base_cursor": 4,
+      "router_elapsed_us": 20776,
+      "stdio_elapsed_ns": 21081400,
+      "response_bytes": 2771,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 12
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 172
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 136
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1026
+        },
+        {
+          "phase": "load_record",
+          "us": 1276
+        },
+        {
+          "phase": "load_manifest",
+          "us": 359
+        },
+        {
+          "phase": "domain_transition",
+          "us": 14448
+        },
+        {
+          "phase": "revision_save",
+          "us": 1567
+        },
+        {
+          "phase": "view_projection",
+          "us": 557
+        },
+        {
+          "phase": "result_status",
+          "us": 4
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 764
+        },
+        {
+          "phase": "commit",
+          "us": 322
+        }
+      ]
+    },
+    {
+      "stage_steps": 0,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "full",
+      "order": [
+        "full",
+        "compact",
+        "oracle"
+      ],
+      "base_events": 5,
+      "base_revision": 7,
+      "base_cursor": 5,
+      "router_elapsed_us": 20569,
+      "stdio_elapsed_ns": 20914500,
+      "response_bytes": 2771,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 12
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 180
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 110
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1197
+        },
+        {
+          "phase": "load_record",
+          "us": 1462
+        },
+        {
+          "phase": "load_manifest",
+          "us": 365
+        },
+        {
+          "phase": "domain_transition",
+          "us": 14314
+        },
+        {
+          "phase": "revision_save",
+          "us": 1403
+        },
+        {
+          "phase": "view_projection",
+          "us": 393
+        },
+        {
+          "phase": "result_status",
+          "us": 3
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 681
+        },
+        {
+          "phase": "commit",
+          "us": 285
+        }
+      ]
+    },
+    {
+      "stage_steps": 0,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "compact",
+      "order": [
+        "full",
+        "compact",
+        "oracle"
+      ],
+      "base_events": 5,
+      "base_revision": 7,
+      "base_cursor": 5,
+      "router_elapsed_us": 27057,
+      "stdio_elapsed_ns": 27473100,
+      "response_bytes": 2771,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 13
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 164
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 113
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1092
+        },
+        {
+          "phase": "load_record",
+          "us": 1028
+        },
+        {
+          "phase": "load_manifest",
+          "us": 406
+        },
+        {
+          "phase": "storage_prefix_admission",
+          "us": 17186
+        },
+        {
+          "phase": "domain_transition",
+          "us": 235
+        },
+        {
+          "phase": "revision_save",
+          "us": 5323
+        },
+        {
+          "phase": "view_projection",
+          "us": 368
+        },
+        {
+          "phase": "result_status",
+          "us": 13
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 673
+        },
+        {
+          "phase": "commit",
+          "us": 276
+        }
+      ]
+    },
+    {
+      "stage_steps": 500,
+      "cold_import": true,
+      "warmup": true,
+      "profile": "compact",
+      "order": [
+        "compact",
+        "full",
+        "oracle"
+      ],
+      "base_events": 500,
+      "base_revision": 3,
+      "base_cursor": 500,
+      "router_elapsed_us": 128203,
+      "stdio_elapsed_ns": 128618200,
+      "response_bytes": 2797,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 24
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 189
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 132
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1003
+        },
+        {
+          "phase": "load_record",
+          "us": 5739
+        },
+        {
+          "phase": "load_manifest",
+          "us": 475
+        },
+        {
+          "phase": "storage_prefix_admission",
+          "us": 111828
+        },
+        {
+          "phase": "domain_transition",
+          "us": 395
+        },
+        {
+          "phase": "revision_save",
+          "us": 6414
+        },
+        {
+          "phase": "view_projection",
+          "us": 351
+        },
+        {
+          "phase": "result_status",
+          "us": 30
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 692
+        },
+        {
+          "phase": "commit",
+          "us": 666
+        }
+      ]
+    },
+    {
+      "stage_steps": 500,
+      "cold_import": true,
+      "warmup": true,
+      "profile": "full",
+      "order": [
+        "compact",
+        "full",
+        "oracle"
+      ],
+      "base_events": 500,
+      "base_revision": 3,
+      "base_cursor": 500,
+      "router_elapsed_us": 37579,
+      "stdio_elapsed_ns": 37966100,
+      "response_bytes": 2797,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 12
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 220
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 118
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1031
+        },
+        {
+          "phase": "load_record",
+          "us": 5969
+        },
+        {
+          "phase": "load_manifest",
+          "us": 348
+        },
+        {
+          "phase": "domain_transition",
+          "us": 18317
+        },
+        {
+          "phase": "revision_save",
+          "us": 8082
+        },
+        {
+          "phase": "view_projection",
+          "us": 1862
+        },
+        {
+          "phase": "result_status",
+          "us": 5
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 976
+        },
+        {
+          "phase": "commit",
+          "us": 341
+        }
+      ]
+    },
+    {
+      "stage_steps": 500,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "full",
+      "order": [
+        "full",
+        "compact",
+        "oracle"
+      ],
+      "base_events": 501,
+      "base_revision": 4,
+      "base_cursor": 501,
+      "router_elapsed_us": 37666,
+      "stdio_elapsed_ns": 38041700,
+      "response_bytes": 2797,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 13
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 231
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 136
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1012
+        },
+        {
+          "phase": "load_record",
+          "us": 6430
+        },
+        {
+          "phase": "load_manifest",
+          "us": 368
+        },
+        {
+          "phase": "domain_transition",
+          "us": 18030
+        },
+        {
+          "phase": "revision_save",
+          "us": 8123
+        },
+        {
+          "phase": "view_projection",
+          "us": 1980
+        },
+        {
+          "phase": "result_status",
+          "us": 4
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 786
+        },
+        {
+          "phase": "commit",
+          "us": 287
+        }
+      ]
+    },
+    {
+      "stage_steps": 500,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "compact",
+      "order": [
+        "full",
+        "compact",
+        "oracle"
+      ],
+      "base_events": 501,
+      "base_revision": 4,
+      "base_cursor": 501,
+      "router_elapsed_us": 28475,
+      "stdio_elapsed_ns": 29029100,
+      "response_bytes": 2797,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 28
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 224
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 140
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1001
+        },
+        {
+          "phase": "load_record",
+          "us": 927
+        },
+        {
+          "phase": "load_manifest",
+          "us": 341
+        },
+        {
+          "phase": "storage_prefix_admission",
+          "us": 17185
+        },
+        {
+          "phase": "domain_transition",
+          "us": 232
+        },
+        {
+          "phase": "revision_save",
+          "us": 6922
+        },
+        {
+          "phase": "view_projection",
+          "us": 400
+        },
+        {
+          "phase": "result_status",
+          "us": 31
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 632
+        },
+        {
+          "phase": "commit",
+          "us": 268
+        }
+      ]
+    },
+    {
+      "stage_steps": 500,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "compact",
+      "order": [
+        "compact",
+        "full",
+        "oracle"
+      ],
+      "base_events": 502,
+      "base_revision": 5,
+      "base_cursor": 502,
+      "router_elapsed_us": 27684,
+      "stdio_elapsed_ns": 28043100,
+      "response_bytes": 2797,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 13
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 210
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 127
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1037
+        },
+        {
+          "phase": "load_record",
+          "us": 854
+        },
+        {
+          "phase": "load_manifest",
+          "us": 389
+        },
+        {
+          "phase": "storage_prefix_admission",
+          "us": 16666
+        },
+        {
+          "phase": "domain_transition",
+          "us": 259
+        },
+        {
+          "phase": "revision_save",
+          "us": 6646
+        },
+        {
+          "phase": "view_projection",
+          "us": 385
+        },
+        {
+          "phase": "result_status",
+          "us": 29
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 645
+        },
+        {
+          "phase": "commit",
+          "us": 283
+        }
+      ]
+    },
+    {
+      "stage_steps": 500,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "full",
+      "order": [
+        "compact",
+        "full",
+        "oracle"
+      ],
+      "base_events": 502,
+      "base_revision": 5,
+      "base_cursor": 502,
+      "router_elapsed_us": 37754,
+      "stdio_elapsed_ns": 38326100,
+      "response_bytes": 2797,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 13
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 204
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 112
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 971
+        },
+        {
+          "phase": "load_record",
+          "us": 5925
+        },
+        {
+          "phase": "load_manifest",
+          "us": 401
+        },
+        {
+          "phase": "domain_transition",
+          "us": 18175
+        },
+        {
+          "phase": "revision_save",
+          "us": 8129
+        },
+        {
+          "phase": "view_projection",
+          "us": 2372
+        },
+        {
+          "phase": "result_status",
+          "us": 9
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 849
+        },
+        {
+          "phase": "commit",
+          "us": 357
+        }
+      ]
+    },
+    {
+      "stage_steps": 500,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "full",
+      "order": [
+        "full",
+        "compact",
+        "oracle"
+      ],
+      "base_events": 503,
+      "base_revision": 6,
+      "base_cursor": 503,
+      "router_elapsed_us": 37047,
+      "stdio_elapsed_ns": 37423500,
+      "response_bytes": 2797,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 12
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 207
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 113
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 995
+        },
+        {
+          "phase": "load_record",
+          "us": 6064
+        },
+        {
+          "phase": "load_manifest",
+          "us": 365
+        },
+        {
+          "phase": "domain_transition",
+          "us": 17978
+        },
+        {
+          "phase": "revision_save",
+          "us": 8198
+        },
+        {
+          "phase": "view_projection",
+          "us": 1708
+        },
+        {
+          "phase": "result_status",
+          "us": 4
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 796
+        },
+        {
+          "phase": "commit",
+          "us": 393
+        }
+      ]
+    },
+    {
+      "stage_steps": 500,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "compact",
+      "order": [
+        "full",
+        "compact",
+        "oracle"
+      ],
+      "base_events": 503,
+      "base_revision": 6,
+      "base_cursor": 503,
+      "router_elapsed_us": 28201,
+      "stdio_elapsed_ns": 28787000,
+      "response_bytes": 2797,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 13
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 225
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 128
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1010
+        },
+        {
+          "phase": "load_record",
+          "us": 853
+        },
+        {
+          "phase": "load_manifest",
+          "us": 357
+        },
+        {
+          "phase": "storage_prefix_admission",
+          "us": 16680
+        },
+        {
+          "phase": "domain_transition",
+          "us": 278
+        },
+        {
+          "phase": "revision_save",
+          "us": 6894
+        },
+        {
+          "phase": "view_projection",
+          "us": 425
+        },
+        {
+          "phase": "result_status",
+          "us": 13
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 762
+        },
+        {
+          "phase": "commit",
+          "us": 414
+        }
+      ]
+    },
+    {
+      "stage_steps": 500,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "compact",
+      "order": [
+        "compact",
+        "full",
+        "oracle"
+      ],
+      "base_events": 504,
+      "base_revision": 7,
+      "base_cursor": 504,
+      "router_elapsed_us": 28482,
+      "stdio_elapsed_ns": 28859500,
+      "response_bytes": 2797,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 13
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 225
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 133
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1043
+        },
+        {
+          "phase": "load_record",
+          "us": 910
+        },
+        {
+          "phase": "load_manifest",
+          "us": 367
+        },
+        {
+          "phase": "storage_prefix_admission",
+          "us": 16694
+        },
+        {
+          "phase": "domain_transition",
+          "us": 271
+        },
+        {
+          "phase": "revision_save",
+          "us": 7103
+        },
+        {
+          "phase": "view_projection",
+          "us": 412
+        },
+        {
+          "phase": "result_status",
+          "us": 16
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 691
+        },
+        {
+          "phase": "commit",
+          "us": 401
+        }
+      ]
+    },
+    {
+      "stage_steps": 500,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "full",
+      "order": [
+        "compact",
+        "full",
+        "oracle"
+      ],
+      "base_events": 504,
+      "base_revision": 7,
+      "base_cursor": 504,
+      "router_elapsed_us": 37047,
+      "stdio_elapsed_ns": 37473100,
+      "response_bytes": 2797,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 13
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 229
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 134
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1041
+        },
+        {
+          "phase": "load_record",
+          "us": 5941
+        },
+        {
+          "phase": "load_manifest",
+          "us": 395
+        },
+        {
+          "phase": "domain_transition",
+          "us": 17774
+        },
+        {
+          "phase": "revision_save",
+          "us": 8184
+        },
+        {
+          "phase": "view_projection",
+          "us": 1800
+        },
+        {
+          "phase": "result_status",
+          "us": 4
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 856
+        },
+        {
+          "phase": "commit",
+          "us": 402
+        }
+      ]
+    },
+    {
+      "stage_steps": 500,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "full",
+      "order": [
+        "full",
+        "compact",
+        "oracle"
+      ],
+      "base_events": 505,
+      "base_revision": 8,
+      "base_cursor": 505,
+      "router_elapsed_us": 38850,
+      "stdio_elapsed_ns": 39241400,
+      "response_bytes": 2797,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 13
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 202
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 122
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 982
+        },
+        {
+          "phase": "load_record",
+          "us": 6363
+        },
+        {
+          "phase": "load_manifest",
+          "us": 338
+        },
+        {
+          "phase": "domain_transition",
+          "us": 18560
+        },
+        {
+          "phase": "revision_save",
+          "us": 9208
+        },
+        {
+          "phase": "view_projection",
+          "us": 1670
+        },
+        {
+          "phase": "result_status",
+          "us": 8
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 800
+        },
+        {
+          "phase": "commit",
+          "us": 361
+        }
+      ]
+    },
+    {
+      "stage_steps": 500,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "compact",
+      "order": [
+        "full",
+        "compact",
+        "oracle"
+      ],
+      "base_events": 505,
+      "base_revision": 8,
+      "base_cursor": 505,
+      "router_elapsed_us": 26755,
+      "stdio_elapsed_ns": 27082200,
+      "response_bytes": 2797,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 13
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 179
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 117
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 946
+        },
+        {
+          "phase": "load_record",
+          "us": 841
+        },
+        {
+          "phase": "load_manifest",
+          "us": 361
+        },
+        {
+          "phase": "storage_prefix_admission",
+          "us": 16592
+        },
+        {
+          "phase": "domain_transition",
+          "us": 276
+        },
+        {
+          "phase": "revision_save",
+          "us": 6033
+        },
+        {
+          "phase": "view_projection",
+          "us": 349
+        },
+        {
+          "phase": "result_status",
+          "us": 17
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 590
+        },
+        {
+          "phase": "commit",
+          "us": 289
+        }
+      ]
+    },
+    {
+      "stage_steps": 5000,
+      "cold_import": true,
+      "warmup": true,
+      "profile": "compact",
+      "order": [
+        "compact",
+        "full",
+        "oracle"
+      ],
+      "base_events": 5000,
+      "base_revision": 7,
+      "base_cursor": 5000,
+      "router_elapsed_us": 1147630,
+      "stdio_elapsed_ns": 1148157000,
+      "response_bytes": 2813,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 13
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 204
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 128
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 999
+        },
+        {
+          "phase": "load_record",
+          "us": 47465
+        },
+        {
+          "phase": "load_manifest",
+          "us": 444
+        },
+        {
+          "phase": "storage_prefix_admission",
+          "us": 1080561
+        },
+        {
+          "phase": "domain_transition",
+          "us": 308
+        },
+        {
+          "phase": "revision_save",
+          "us": 14763
+        },
+        {
+          "phase": "view_projection",
+          "us": 400
+        },
+        {
+          "phase": "result_status",
+          "us": 148
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 774
+        },
+        {
+          "phase": "commit",
+          "us": 1076
+        }
+      ]
+    },
+    {
+      "stage_steps": 5000,
+      "cold_import": true,
+      "warmup": true,
+      "profile": "full",
+      "order": [
+        "compact",
+        "full",
+        "oracle"
+      ],
+      "base_events": 5000,
+      "base_revision": 7,
+      "base_cursor": 5000,
+      "router_elapsed_us": 185092,
+      "stdio_elapsed_ns": 185675000,
+      "response_bytes": 2813,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 14
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 223
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 127
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1022
+        },
+        {
+          "phase": "load_record",
+          "us": 47369
+        },
+        {
+          "phase": "load_manifest",
+          "us": 407
+        },
+        {
+          "phase": "domain_transition",
+          "us": 51960
+        },
+        {
+          "phase": "revision_save",
+          "us": 69165
+        },
+        {
+          "phase": "view_projection",
+          "us": 12333
+        },
+        {
+          "phase": "result_status",
+          "us": 6
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 1282
+        },
+        {
+          "phase": "commit",
+          "us": 974
+        }
+      ]
+    },
+    {
+      "stage_steps": 5000,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "full",
+      "order": [
+        "full",
+        "compact",
+        "oracle"
+      ],
+      "base_events": 5001,
+      "base_revision": 8,
+      "base_cursor": 5001,
+      "router_elapsed_us": 186692,
+      "stdio_elapsed_ns": 187199000,
+      "response_bytes": 2813,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 14
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 183
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 109
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 990
+        },
+        {
+          "phase": "load_record",
+          "us": 48626
+        },
+        {
+          "phase": "load_manifest",
+          "us": 359
+        },
+        {
+          "phase": "domain_transition",
+          "us": 54495
+        },
+        {
+          "phase": "revision_save",
+          "us": 67423
+        },
+        {
+          "phase": "view_projection",
+          "us": 12732
+        },
+        {
+          "phase": "result_status",
+          "us": 5
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 924
+        },
+        {
+          "phase": "commit",
+          "us": 409
+        }
+      ]
+    },
+    {
+      "stage_steps": 5000,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "compact",
+      "order": [
+        "full",
+        "compact",
+        "oracle"
+      ],
+      "base_events": 5001,
+      "base_revision": 8,
+      "base_cursor": 5001,
+      "router_elapsed_us": 36059,
+      "stdio_elapsed_ns": 36606400,
+      "response_bytes": 2813,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 13
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 253
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 130
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 976
+        },
+        {
+          "phase": "load_record",
+          "us": 931
+        },
+        {
+          "phase": "load_manifest",
+          "us": 370
+        },
+        {
+          "phase": "storage_prefix_admission",
+          "us": 16473
+        },
+        {
+          "phase": "domain_transition",
+          "us": 273
+        },
+        {
+          "phase": "revision_save",
+          "us": 14832
+        },
+        {
+          "phase": "view_projection",
+          "us": 402
+        },
+        {
+          "phase": "result_status",
+          "us": 16
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 668
+        },
+        {
+          "phase": "commit",
+          "us": 375
+        }
+      ]
+    },
+    {
+      "stage_steps": 5000,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "compact",
+      "order": [
+        "compact",
+        "full",
+        "oracle"
+      ],
+      "base_events": 5002,
+      "base_revision": 9,
+      "base_cursor": 5002,
+      "router_elapsed_us": 35994,
+      "stdio_elapsed_ns": 36502500,
+      "response_bytes": 2814,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 14
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 231
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 130
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1005
+        },
+        {
+          "phase": "load_record",
+          "us": 893
+        },
+        {
+          "phase": "load_manifest",
+          "us": 383
+        },
+        {
+          "phase": "storage_prefix_admission",
+          "us": 16609
+        },
+        {
+          "phase": "domain_transition",
+          "us": 438
+        },
+        {
+          "phase": "revision_save",
+          "us": 14621
+        },
+        {
+          "phase": "view_projection",
+          "us": 404
+        },
+        {
+          "phase": "result_status",
+          "us": 16
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 660
+        },
+        {
+          "phase": "commit",
+          "us": 340
+        }
+      ]
+    },
+    {
+      "stage_steps": 5000,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "full",
+      "order": [
+        "compact",
+        "full",
+        "oracle"
+      ],
+      "base_events": 5002,
+      "base_revision": 9,
+      "base_cursor": 5002,
+      "router_elapsed_us": 184309,
+      "stdio_elapsed_ns": 184898500,
+      "response_bytes": 2814,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 13
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 247
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 169
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1056
+        },
+        {
+          "phase": "load_record",
+          "us": 47544
+        },
+        {
+          "phase": "load_manifest",
+          "us": 431
+        },
+        {
+          "phase": "domain_transition",
+          "us": 52339
+        },
+        {
+          "phase": "revision_save",
+          "us": 67556
+        },
+        {
+          "phase": "view_projection",
+          "us": 13121
+        },
+        {
+          "phase": "result_status",
+          "us": 6
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 1084
+        },
+        {
+          "phase": "commit",
+          "us": 433
+        }
+      ]
+    },
+    {
+      "stage_steps": 5000,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "full",
+      "order": [
+        "full",
+        "compact",
+        "oracle"
+      ],
+      "base_events": 5003,
+      "base_revision": 10,
+      "base_cursor": 5003,
+      "router_elapsed_us": 187867,
+      "stdio_elapsed_ns": 188586600,
+      "response_bytes": 2815,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 15
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 202
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 140
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1135
+        },
+        {
+          "phase": "load_record",
+          "us": 47930
+        },
+        {
+          "phase": "load_manifest",
+          "us": 425
+        },
+        {
+          "phase": "domain_transition",
+          "us": 54554
+        },
+        {
+          "phase": "revision_save",
+          "us": 68605
+        },
+        {
+          "phase": "view_projection",
+          "us": 13243
+        },
+        {
+          "phase": "result_status",
+          "us": 5
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 907
+        },
+        {
+          "phase": "commit",
+          "us": 339
+        }
+      ]
+    },
+    {
+      "stage_steps": 5000,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "compact",
+      "order": [
+        "full",
+        "compact",
+        "oracle"
+      ],
+      "base_events": 5003,
+      "base_revision": 10,
+      "base_cursor": 5003,
+      "router_elapsed_us": 36597,
+      "stdio_elapsed_ns": 37185800,
+      "response_bytes": 2815,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 13
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 244
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 171
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 988
+        },
+        {
+          "phase": "load_record",
+          "us": 907
+        },
+        {
+          "phase": "load_manifest",
+          "us": 393
+        },
+        {
+          "phase": "storage_prefix_admission",
+          "us": 16841
+        },
+        {
+          "phase": "domain_transition",
+          "us": 265
+        },
+        {
+          "phase": "revision_save",
+          "us": 14928
+        },
+        {
+          "phase": "view_projection",
+          "us": 400
+        },
+        {
+          "phase": "result_status",
+          "us": 16
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 765
+        },
+        {
+          "phase": "commit",
+          "us": 400
+        }
+      ]
+    },
+    {
+      "stage_steps": 5000,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "compact",
+      "order": [
+        "compact",
+        "full",
+        "oracle"
+      ],
+      "base_events": 5004,
+      "base_revision": 11,
+      "base_cursor": 5004,
+      "router_elapsed_us": 36540,
+      "stdio_elapsed_ns": 37120400,
+      "response_bytes": 2815,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 13
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 263
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 162
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1051
+        },
+        {
+          "phase": "load_record",
+          "us": 895
+        },
+        {
+          "phase": "load_manifest",
+          "us": 372
+        },
+        {
+          "phase": "storage_prefix_admission",
+          "us": 17157
+        },
+        {
+          "phase": "domain_transition",
+          "us": 256
+        },
+        {
+          "phase": "revision_save",
+          "us": 14830
+        },
+        {
+          "phase": "view_projection",
+          "us": 368
+        },
+        {
+          "phase": "result_status",
+          "us": 14
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 703
+        },
+        {
+          "phase": "commit",
+          "us": 307
+        }
+      ]
+    },
+    {
+      "stage_steps": 5000,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "full",
+      "order": [
+        "compact",
+        "full",
+        "oracle"
+      ],
+      "base_events": 5004,
+      "base_revision": 11,
+      "base_cursor": 5004,
+      "router_elapsed_us": 183615,
+      "stdio_elapsed_ns": 184168700,
+      "response_bytes": 2815,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 14
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 254
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 149
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1037
+        },
+        {
+          "phase": "load_record",
+          "us": 47317
+        },
+        {
+          "phase": "load_manifest",
+          "us": 466
+        },
+        {
+          "phase": "domain_transition",
+          "us": 51693
+        },
+        {
+          "phase": "revision_save",
+          "us": 68112
+        },
+        {
+          "phase": "view_projection",
+          "us": 12792
+        },
+        {
+          "phase": "result_status",
+          "us": 5
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 930
+        },
+        {
+          "phase": "commit",
+          "us": 494
+        }
+      ]
+    },
+    {
+      "stage_steps": 5000,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "full",
+      "order": [
+        "full",
+        "compact",
+        "oracle"
+      ],
+      "base_events": 5005,
+      "base_revision": 12,
+      "base_cursor": 5005,
+      "router_elapsed_us": 184084,
+      "stdio_elapsed_ns": 184729000,
+      "response_bytes": 2815,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 12
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 242
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 168
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1490
+        },
+        {
+          "phase": "load_record",
+          "us": 47383
+        },
+        {
+          "phase": "load_manifest",
+          "us": 433
+        },
+        {
+          "phase": "domain_transition",
+          "us": 52389
+        },
+        {
+          "phase": "revision_save",
+          "us": 67255
+        },
+        {
+          "phase": "view_projection",
+          "us": 12796
+        },
+        {
+          "phase": "result_status",
+          "us": 5
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 1129
+        },
+        {
+          "phase": "commit",
+          "us": 537
+        }
+      ]
+    },
+    {
+      "stage_steps": 5000,
+      "cold_import": false,
+      "warmup": false,
+      "profile": "compact",
+      "order": [
+        "full",
+        "compact",
+        "oracle"
+      ],
+      "base_events": 5005,
+      "base_revision": 12,
+      "base_cursor": 5005,
+      "router_elapsed_us": 35575,
+      "stdio_elapsed_ns": 36132600,
+      "response_bytes": 2815,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 13
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 210
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 145
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1076
+        },
+        {
+          "phase": "load_record",
+          "us": 869
+        },
+        {
+          "phase": "load_manifest",
+          "us": 323
+        },
+        {
+          "phase": "storage_prefix_admission",
+          "us": 16758
+        },
+        {
+          "phase": "domain_transition",
+          "us": 255
+        },
+        {
+          "phase": "revision_save",
+          "us": 14325
+        },
+        {
+          "phase": "view_projection",
+          "us": 398
+        },
+        {
+          "phase": "result_status",
+          "us": 18
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 699
+        },
+        {
+          "phase": "commit",
+          "us": 326
+        }
+      ]
+    }
+  ],
+  "source_sha256": {
+    "api-rust\\src\\analytics\\prop_profile.rs": "853172436c86856edd4def504383c767ad33f1e072bc8bce00634516473bc4e2",
+    "api-rust\\src\\analytics\\routes.rs": "ed167996e667faf7c318db5d4cc6518d3dde865f0450cfb79b3f2a8fdb05aa2f",
+    "api-rust\\src\\analytics\\trades.rs": "69b39ec1d99fb8db34c945d06064de849215b623d2dab95bcc1547f704c5f7c8",
+    "api-rust\\src\\analytics.rs": "f768d47bc1d9290a08cafad6885ac4052c18ee97123c85bbc9065a4d8e7e6173",
+    "api-rust\\src\\artifact_data.rs": "334cff95596cbc41fcb05105d20a2316d91eff097777044ad7020906ab3c414c",
+    "api-rust\\src\\auth.rs": "aeb69e8eb4bc60db381cabd9aac3e0e3ee0dbb76a468a88530f419978b715918",
+    "api-rust\\src\\bin\\rust_research_worker.rs": "564e53260587b90b3414892c9413ee9059263e7b65b6692460d17f6e93ba389c",
+    "api-rust\\src\\bin\\rust_runtime_admin.rs": "6759f6a5044b7871e74f019594eb5e5f62f38071ae578267d2864861016b1322",
+    "api-rust\\src\\catalog.rs": "b6d17c7bdbeea8015349e3c1bd5fb9a8c81dacbcffbe57ad0bd3c55cae2b74a3",
+    "api-rust\\src\\commands.rs": "b3c6cd09391df282d8ed88b2b27e2d0e915aa19805f843c834c44adec6b77247",
+    "api-rust\\src\\config.rs": "3cb808dd04494db5baccddbed0357386eadb13bb971a305f253272035900fedd",
+    "api-rust\\src\\context_routes.rs": "63d2ca7c1b102ba89be1e8670128f726243bc9991e19cb06ae0a1bc00a4a1002",
+    "api-rust\\src\\control_routes\\learn.rs": "d57a9760ae9d17b471a5e0225f84dd41efda422f7be450ca25f1c2dd7fabb4f1",
+    "api-rust\\src\\control_routes\\notion.rs": "d18645db203f0b7477f48d5207ca17a49af2e0680f167f04badc04d2c30a76a2",
+    "api-rust\\src\\control_routes.rs": "8b36c6b111782369b1999eaefa19481428b4057bbb555087f85f421fbee2f7b0",
+    "api-rust\\src\\data_routes\\ingest.rs": "532058513ebc35f8d145b5d7850202e35cbae1bbc1897884ffd502bbd88869aa",
+    "api-rust\\src\\data_routes\\legacy_codec.rs": "989f9b93c098af7b6a933b0d1a5810a0977e9e088cae627f5499b54dee424609",
+    "api-rust\\src\\data_routes\\lifecycle.rs": "398a4ea7f2a3853a53d026dfa320f1dd9d15e6becfd61c377ed21e6d9d3ba25c",
+    "api-rust\\src\\data_routes.rs": "30c502eac5b5e0bd3863e1ec92a9c10303cf807b9a051ea5840624a3430dd950",
+    "api-rust\\src\\events.rs": "3fc4a1254730e16b6746c7f19d6101118b593edc637ea0beb13afc1b8699721a",
+    "api-rust\\src\\jobs.rs": "4e793ba532d5b141d689fc1164424ecc0d76dac6d9ad5ddcafa790afaecc8d0e",
+    "api-rust\\src\\lib.rs": "bc080b24db3ae516d142af5296d30dcf20b64d44db84758fd1745333df5c3914",
+    "api-rust\\src\\main.rs": "21bdb44510b001f44d1fd61de140f6582fc44aa10bcf498dca0c59bb6b0a92da",
+    "api-rust\\src\\metadata_mutations.rs": "0e222647fa95e13cb9a653bf5bc06ba14adb261784be74150615fd4c8e718ed2",
+    "api-rust\\src\\middleware.rs": "27a299aabca5d9236a4998df79a11dcdc3db099c91c582276ed121bbdb089f83",
+    "api-rust\\src\\native_contracts.rs": "99a18bb92e81cfa651f4e2d65c545755eea5b9b4a604eb2eac345460eec68944",
+    "api-rust\\src\\native_mutation.rs": "3370b2b9ceec6dcb778fabda2469261fbd94a4489a0494411d55b19a05241283",
+    "api-rust\\src\\notion_oauth.rs": "17c1361c23dafc5904958f3d1c3a061873276a5a5e5c4154bc3d99c24cf1d1c3",
+    "api-rust\\src\\owned_process\\windows\\tests.rs": "e7cdf40d17655cce9757b7bcb1e6f3fe5935b050c020e2606b6a6d16e40e191c",
+    "api-rust\\src\\owned_process\\windows.rs": "1c07881f78cfe31381178b347faf6582dc7d508f960047973d88e6273683ef6d",
+    "api-rust\\src\\owned_process.rs": "913401072d229f250a6c4a37d075713623538870faebb6710fd28d806555166d",
+    "api-rust\\src\\prop_core\\paper.rs": "737e46f16ff6aff3e353a6ad1c8910b50e70b7ce4c6035f941dc2f482c96ebbd",
+    "api-rust\\src\\prop_core\\report.rs": "ef641744d4aa457258b42fb61e7916e58177c16bbd4e9989684f4dd424fc2e6d",
+    "api-rust\\src\\prop_core.rs": "2ded66c5e4889f9ac4cc9dd6387796f2c1a05d018fc600f8328931da23d49d56",
+    "api-rust\\src\\prop_service.rs": "cf4f5779b6150e36ebdef0ba2208c5b4576aee64f72c89fbcd0fc20d9d828030",
+    "api-rust\\src\\provider_routes\\catalog.rs": "395b9cc0e4826edd9875be28dcba6271834971b81d5cdbdafc45c51ffa465244",
+    "api-rust\\src\\provider_routes\\catalog_refresh\\tests.rs": "ac1c3a6cdcf55929ffe60db02a776c2000192fae2d8afd5abcc93198c0968046",
+    "api-rust\\src\\provider_routes\\catalog_refresh.rs": "1f154b1f9adf22336deb5d0646a3ef4c8235783a26c97206fdf258f106c21378",
+    "api-rust\\src\\provider_routes\\dependencies.rs": "cf5f769124920c43c65102454387e4190350c18f602ff2d520574390ebb676bf",
+    "api-rust\\src\\provider_routes\\execution.rs": "2fcfdc478da932573bff578d7067c6885b6f30554c035689ae0c32430ea37612",
+    "api-rust\\src\\provider_routes\\lifecycle\\tests.rs": "04970c082b7f64a56a7b4483cf56e01682de4e28f6d40607362b95709386bbce",
+    "api-rust\\src\\provider_routes\\lifecycle.rs": "0a51ecaf4c8647acecbea90172c5542ae4e650b7ec36efc047191c84875de0c3",
+    "api-rust\\src\\provider_routes\\publication.rs": "1e66084fd3013a32e740d34ea3d6c4e562c669fc2b08f571ceb68f3c05d8a490",
+    "api-rust\\src\\provider_routes.rs": "ae74ba387d0b646fe7b4595f339d739c93c49a99dadff3299ea7c51d90c384ae",
+    "api-rust\\src\\replay_core\\history.rs": "fece5d4b6a14de5532d49cd50d7c73300ad3e33fa69d135482663ca85c965eef",
+    "api-rust\\src\\replay_core\\tick.rs": "45586f8b08cfe9e9b01c25f5420fdeab6826d709968fec2a49db1c5cb95075a5",
+    "api-rust\\src\\replay_core.rs": "cdd02f94897734ffe4f3291ef2eba5201f31f2dbfc022d2c4514ab898290f7c4",
+    "api-rust\\src\\replay_service.rs": "69d1f5e55faba683697fa36e05b435bd8552336c40b593aae9cf184446fcac14",
+    "api-rust\\src\\replay_storage.rs": "f1e0ef05394e6499fb74024fc00532f11f0c43f3f568f7b177bfdbd2b149cea4",
+    "api-rust\\src\\research_execution\\independent.rs": "6bc99a5f143ecccbf09704f2846f4bded772779ad49e2a75b8fb728db91cf959",
+    "api-rust\\src\\research_execution\\oos_runner.rs": "f8f9038cbb7bd2f3dab68e5d1e71ee0333b917d82e83dbd0ea84ed31823c7e6f",
+    "api-rust\\src\\research_execution\\reference.rs": "5663d115be1ddec753c8e5ebda3988f5fab427b5fd922805e8dbbc15393696e3",
+    "api-rust\\src\\research_execution\\scientific.rs": "078076eeabc339447d9cf5a352711dca297a9323eb3bef9ff1bf0e268ecc53e1",
+    "api-rust\\src\\research_execution\\scientific_normalize.rs": "5d65dd88fec7c2a9323ab02badee25f56a70d81efa64fe0364f6a237f1806cc6",
+    "api-rust\\src\\research_execution.rs": "fa66fd4f376527b64535290d75707e37b3721da2b8705c71df7873505690ab78",
+    "api-rust\\src\\research_jobs\\adapter\\dependencies.rs": "1d05137f10005dca3697807de9bb34ecb8bf256394ff69e498c4f8a7c8f19298",
+    "api-rust\\src\\research_jobs\\adapter.rs": "d6e293d97d955d228aac119ba8f704abaf519600cf5a3946f8b7eec9c758da03",
+    "api-rust\\src\\research_jobs\\engine.rs": "58d88d5558eab314497e7d418306550a8942da88bb9a5645ac6ca5ddff708916",
+    "api-rust\\src\\research_jobs\\lifecycle.rs": "c55de421eaad638f4b4f0661f218af13162f3811828e24c67e584ff125ca6807",
+    "api-rust\\src\\research_jobs\\oos.rs": "ae88252a8149d69431eae8d59524b9c8cbb76a961b0e8f7fae48ac59d8d9403b",
+    "api-rust\\src\\research_jobs.rs": "dffacaf504dee66810225ddb8065385a2d8205ada8ec8d877b8c969c5cfdfe7e",
+    "api-rust\\src\\rust_runtime.rs": "f7cd9c2fe1d069fdb2871f05b08be720e745fcc80e7e271fb24a8d8bc4088d4c",
+    "api-rust\\src\\state.rs": "a8e2faf5a91e948d603b388801749a4ae5192da40aa0fb1942282d248a9e42a7",
+    "api-rust\\src\\telemetry.rs": "e7c6b4a66c306d82e7d9dc7d2955fec44a5352e2348cfe0e13f7ab79e6171d71",
+    "migrations\\0001_baseline.sql": "3edf5541b7c2ac6d4049e77f158a84ca8341fc77b39f491e8ddbfd11e87ac000",
+    "migrations\\0002_job_retry.sql": "0d37055d8106d9bd41601a30eb4ac44db0b2db2c7c4a08787e4a3ecd98cede9c",
+    "migrations\\0003_api_commands.sql": "54dcc1e293552fb6b4ef9a4c7ea22d7f845e86985954ee62bd8e6c7264d8a9e3",
+    "migrations\\0004_download_jobs.sql": "1ef3fe872675c82a5aeba0d3d7f7d2cacfcb17ec54d55098ebbff493be706d2f",
+    "migrations\\0005_replay_execution_storage.sql": "def0823209bea0e42d20dd1d4f88d08fbd8d210993b3fba1bfca8803c1c406b1",
+    "migrations\\0006_replay_prop_mark_index.sql": "9fea9cf7d0399db61dac6b897f411bfc6a9725c62212fb081405f97e7ed2228b",
+    "scripts\\rust_replay_storage_acceptance.py": "9a469089d50bf9fd7e92dd6c8d2afa580accf6cfe603ab1bea3dcbf27962bde4",
+    "api-rust\\examples\\rust_replay_mutation_probe.rs": "a0bd62268b967ad6430deaa92c70bb9951eb3d00ed3cf4ea857cad28a13b5bab",
+    "api-rust\\Cargo.toml": "84a0526cf0ddc7a9059c7fb163f5a5046243bfffdfdd41cc9e9b32bce3ef87cb",
+    "api-rust\\Cargo.lock": "0d345959c96d809973c3c337b637afae9e19ecd375fdeea874b74c5bf5397caf",
+    "scripts\\rust_replay_service_acceptance.py": "f95519f2b01934e0e881dfa161b71c928e5de93876f6effa779420548819fe0f",
+    "tests\\test_replay_execution_core.py": "eda6a2c696b494608bec53a693ed0c5f28384a30568376abade4adb91b364436",
+    "tests\\test_ps02_replay_prop_connection.py": "1cfcc484130408aaf134bb588f2b46fa9b0f4b186b336bded79e03009a93c484",
+    "scripts\\rust_replay_step_acceptance.py": "4f384d7b1284ca5850986e65d6b9e9a2b4bce20103310dd07318341a24495c1f"
+  },
+  "probe_sha256": "fb3b41c18dcfa5e88f3e658ed23cca22e5a49b91b8b34b6a1179278e6ca1f458",
+  "prop_skipped": false,
+  "scope": "owned disposable PostgreSQL/Router; full storage/full wire oracle versus step-v1 full and compact storage twins",
+  "limitations": [
+    "Synthetic BAR fixture and serial Router timing exclude TCP/browser paint.",
+    "Cold import labeled separately from warmed incremental requests.",
+    "Small samples are diagnostic; sample p95 is not a capacity or stable tail verdict."
+  ],
+  "prop_selector_evidence": [
+    {
+      "stage_steps": 500,
+      "actual_prefix_events": 506,
+      "acknowledged_sequence": 504,
+      "requested_sequence": 505,
+      "binding_fixture": "Persisted coherent acknowledged resume from the real canonical old mark; prior historical API feeds/receipts are deliberately not claimed.",
+      "next_eligible": {
+        "plan": [
+          {
+            "Plan": {
+              "Node Type": "Limit",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 0.41,
+              "Total Cost": 8.44,
+              "Plan Rows": 1,
+              "Plan Width": 8,
+              "Actual Startup Time": 0.131,
+              "Actual Total Time": 0.131,
+              "Actual Rows": 1,
+              "Actual Loops": 1,
+              "Shared Hit Blocks": 7,
+              "Shared Read Blocks": 0,
+              "Shared Dirtied Blocks": 0,
+              "Shared Written Blocks": 0,
+              "Local Hit Blocks": 0,
+              "Local Read Blocks": 0,
+              "Local Dirtied Blocks": 0,
+              "Local Written Blocks": 0,
+              "Temp Read Blocks": 0,
+              "Temp Written Blocks": 0,
+              "Plans": [
+                {
+                  "Node Type": "Index Only Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Scan Direction": "Forward",
+                  "Index Name": "replay_execution_prop_marks",
+                  "Relation Name": "replay_execution_events",
+                  "Alias": "replay_execution_events",
+                  "Startup Cost": 0.41,
+                  "Total Cost": 8.44,
+                  "Plan Rows": 1,
+                  "Plan Width": 8,
+                  "Actual Startup Time": 0.13,
+                  "Actual Total Time": 0.13,
+                  "Actual Rows": 1,
+                  "Actual Loops": 1,
+                  "Index Cond": "((workspace_id = 'tenant-a'::text) AND (record_id = '9d1d7097d95b4fe992fc1eb87b21c94a'::text) AND (dataset_id = 'dataset-step'::text) AND (sequence > '504'::smallint) AND (sequence <= '506'::smallint))",
+                  "Rows Removed by Index Recheck": 0,
+                  "Heap Fetches": 1,
+                  "Shared Hit Blocks": 7,
+                  "Shared Read Blocks": 0,
+                  "Shared Dirtied Blocks": 0,
+                  "Shared Written Blocks": 0,
+                  "Local Hit Blocks": 0,
+                  "Local Read Blocks": 0,
+                  "Local Dirtied Blocks": 0,
+                  "Local Written Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0
+                }
+              ]
+            },
+            "Planning": {
+              "Shared Hit Blocks": 42,
+              "Shared Read Blocks": 0,
+              "Shared Dirtied Blocks": 0,
+              "Shared Written Blocks": 0,
+              "Local Hit Blocks": 0,
+              "Local Read Blocks": 0,
+              "Local Dirtied Blocks": 0,
+              "Local Written Blocks": 0,
+              "Temp Read Blocks": 0,
+              "Temp Written Blocks": 0
+            },
+            "Planning Time": 0.514,
+            "Triggers": [],
+            "Execution Time": 0.145
+          }
+        ],
+        "indexes": [
+          "replay_execution_prop_marks"
+        ],
+        "nodes": [
+          {
+            "Node Type": "Limit",
+            "Actual Rows": 1,
+            "Actual Loops": 1,
+            "Shared Hit Blocks": 7,
+            "Shared Read Blocks": 0
+          },
+          {
+            "Node Type": "Index Only Scan",
+            "Relation Name": "replay_execution_events",
+            "Index Name": "replay_execution_prop_marks",
+            "Actual Rows": 1,
+            "Actual Loops": 1,
+            "Shared Hit Blocks": 7,
+            "Shared Read Blocks": 0
+          }
+        ]
+      },
+      "requested_and_predecessor": {
+        "plan": [
+          {
+            "Plan": {
+              "Node Type": "Nested Loop",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Join Type": "Left",
+              "Startup Cost": 0.82,
+              "Total Cost": 16.88,
+              "Plan Rows": 1,
+              "Plan Width": 1480,
+              "Actual Startup Time": 0.037,
+              "Actual Total Time": 0.038,
+              "Actual Rows": 1,
+              "Actual Loops": 1,
+              "Inner Unique": true,
+              "Shared Hit Blocks": 14,
+              "Shared Read Blocks": 0,
+              "Shared Dirtied Blocks": 0,
+              "Shared Written Blocks": 0,
+              "Local Hit Blocks": 0,
+              "Local Read Blocks": 0,
+              "Local Dirtied Blocks": 0,
+              "Local Written Blocks": 0,
+              "Temp Read Blocks": 0,
+              "Temp Written Blocks": 0,
+              "Plans": [
+                {
+                  "Node Type": "Index Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Scan Direction": "Forward",
+                  "Index Name": "replay_execution_prop_marks",
+                  "Relation Name": "replay_execution_events",
+                  "Alias": "e",
+                  "Startup Cost": 0.41,
+                  "Total Cost": 8.44,
+                  "Plan Rows": 1,
+                  "Plan Width": 794,
+                  "Actual Startup Time": 0.019,
+                  "Actual Total Time": 0.019,
+                  "Actual Rows": 1,
+                  "Actual Loops": 1,
+                  "Index Cond": "((workspace_id = 'tenant-a'::text) AND (record_id = '9d1d7097d95b4fe992fc1eb87b21c94a'::text) AND (dataset_id = 'dataset-step'::text) AND (sequence <= '506'::smallint) AND (sequence = '505'::smallint))",
+                  "Rows Removed by Index Recheck": 0,
+                  "Shared Hit Blocks": 10,
+                  "Shared Read Blocks": 0,
+                  "Shared Dirtied Blocks": 0,
+                  "Shared Written Blocks": 0,
+                  "Local Hit Blocks": 0,
+                  "Local Read Blocks": 0,
+                  "Local Dirtied Blocks": 0,
+                  "Local Written Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0
+                },
+                {
+                  "Node Type": "Index Scan",
+                  "Parent Relationship": "Inner",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Scan Direction": "Forward",
+                  "Index Name": "replay_execution_events_pkey",
+                  "Relation Name": "replay_execution_events",
+                  "Alias": "p",
+                  "Startup Cost": 0.41,
+                  "Total Cost": 8.44,
+                  "Plan Rows": 1,
+                  "Plan Width": 794,
+                  "Actual Startup Time": 0.016,
+                  "Actual Total Time": 0.016,
+                  "Actual Rows": 1,
+                  "Actual Loops": 1,
+                  "Index Cond": "((workspace_id = 'tenant-a'::text) AND (record_id = '9d1d7097d95b4fe992fc1eb87b21c94a'::text) AND (dataset_id = 'dataset-step'::text) AND (sequence = (e.sequence - 1)))",
+                  "Rows Removed by Index Recheck": 0,
+                  "Shared Hit Blocks": 4,
+                  "Shared Read Blocks": 0,
+                  "Shared Dirtied Blocks": 0,
+                  "Shared Written Blocks": 0,
+                  "Local Hit Blocks": 0,
+                  "Local Read Blocks": 0,
+                  "Local Dirtied Blocks": 0,
+                  "Local Written Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0
+                }
+              ]
+            },
+            "Planning": {
+              "Shared Hit Blocks": 24,
+              "Shared Read Blocks": 0,
+              "Shared Dirtied Blocks": 0,
+              "Shared Written Blocks": 0,
+              "Local Hit Blocks": 0,
+              "Local Read Blocks": 0,
+              "Local Dirtied Blocks": 0,
+              "Local Written Blocks": 0,
+              "Temp Read Blocks": 0,
+              "Temp Written Blocks": 0
+            },
+            "Planning Time": 0.285,
+            "Triggers": [],
+            "Execution Time": 0.054
+          }
+        ],
+        "indexes": [
+          "replay_execution_events_pkey",
+          "replay_execution_prop_marks"
+        ],
+        "nodes": [
+          {
+            "Node Type": "Nested Loop",
+            "Actual Rows": 1,
+            "Actual Loops": 1,
+            "Shared Hit Blocks": 14,
+            "Shared Read Blocks": 0
+          },
+          {
+            "Node Type": "Index Scan",
+            "Relation Name": "replay_execution_events",
+            "Index Name": "replay_execution_prop_marks",
+            "Actual Rows": 1,
+            "Actual Loops": 1,
+            "Shared Hit Blocks": 10,
+            "Shared Read Blocks": 0
+          },
+          {
+            "Node Type": "Index Scan",
+            "Relation Name": "replay_execution_events",
+            "Index Name": "replay_execution_events_pkey",
+            "Actual Rows": 1,
+            "Actual Loops": 1,
+            "Shared Hit Blocks": 4,
+            "Shared Read Blocks": 0
+          }
+        ]
+      }
+    },
+    {
+      "stage_steps": 5000,
+      "actual_prefix_events": 5006,
+      "acknowledged_sequence": 5004,
+      "requested_sequence": 5005,
+      "binding_fixture": "Persisted coherent acknowledged resume from the real canonical old mark; prior historical API feeds/receipts are deliberately not claimed.",
+      "next_eligible": {
+        "plan": [
+          {
+            "Plan": {
+              "Node Type": "Limit",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 0.41,
+              "Total Cost": 8.44,
+              "Plan Rows": 1,
+              "Plan Width": 8,
+              "Actual Startup Time": 0.026,
+              "Actual Total Time": 0.026,
+              "Actual Rows": 1,
+              "Actual Loops": 1,
+              "Shared Hit Blocks": 4,
+              "Shared Read Blocks": 0,
+              "Shared Dirtied Blocks": 0,
+              "Shared Written Blocks": 0,
+              "Local Hit Blocks": 0,
+              "Local Read Blocks": 0,
+              "Local Dirtied Blocks": 0,
+              "Local Written Blocks": 0,
+              "Temp Read Blocks": 0,
+              "Temp Written Blocks": 0,
+              "Plans": [
+                {
+                  "Node Type": "Index Only Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Scan Direction": "Forward",
+                  "Index Name": "replay_execution_prop_marks",
+                  "Relation Name": "replay_execution_events",
+                  "Alias": "replay_execution_events",
+                  "Startup Cost": 0.41,
+                  "Total Cost": 8.44,
+                  "Plan Rows": 1,
+                  "Plan Width": 8,
+                  "Actual Startup Time": 0.025,
+                  "Actual Total Time": 0.025,
+                  "Actual Rows": 1,
+                  "Actual Loops": 1,
+                  "Index Cond": "((workspace_id = 'tenant-a'::text) AND (record_id = '2af89da758774270a85192f81c532474'::text) AND (dataset_id = 'dataset-step'::text) AND (sequence > '5004'::smallint) AND (sequence <= '5006'::smallint))",
+                  "Rows Removed by Index Recheck": 0,
+                  "Heap Fetches": 1,
+                  "Shared Hit Blocks": 4,
+                  "Shared Read Blocks": 0,
+                  "Shared Dirtied Blocks": 0,
+                  "Shared Written Blocks": 0,
+                  "Local Hit Blocks": 0,
+                  "Local Read Blocks": 0,
+                  "Local Dirtied Blocks": 0,
+                  "Local Written Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0
+                }
+              ]
+            },
+            "Planning": {
+              "Shared Hit Blocks": 16,
+              "Shared Read Blocks": 0,
+              "Shared Dirtied Blocks": 0,
+              "Shared Written Blocks": 0,
+              "Local Hit Blocks": 0,
+              "Local Read Blocks": 0,
+              "Local Dirtied Blocks": 0,
+              "Local Written Blocks": 0,
+              "Temp Read Blocks": 0,
+              "Temp Written Blocks": 0
+            },
+            "Planning Time": 0.177,
+            "Triggers": [],
+            "Execution Time": 0.036
+          }
+        ],
+        "indexes": [
+          "replay_execution_prop_marks"
+        ],
+        "nodes": [
+          {
+            "Node Type": "Limit",
+            "Actual Rows": 1,
+            "Actual Loops": 1,
+            "Shared Hit Blocks": 4,
+            "Shared Read Blocks": 0
+          },
+          {
+            "Node Type": "Index Only Scan",
+            "Relation Name": "replay_execution_events",
+            "Index Name": "replay_execution_prop_marks",
+            "Actual Rows": 1,
+            "Actual Loops": 1,
+            "Shared Hit Blocks": 4,
+            "Shared Read Blocks": 0
+          }
+        ]
+      },
+      "requested_and_predecessor": {
+        "plan": [
+          {
+            "Plan": {
+              "Node Type": "Nested Loop",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Join Type": "Left",
+              "Startup Cost": 0.82,
+              "Total Cost": 16.88,
+              "Plan Rows": 1,
+              "Plan Width": 1480,
+              "Actual Startup Time": 0.042,
+              "Actual Total Time": 0.043,
+              "Actual Rows": 1,
+              "Actual Loops": 1,
+              "Inner Unique": true,
+              "Shared Hit Blocks": 8,
+              "Shared Read Blocks": 0,
+              "Shared Dirtied Blocks": 0,
+              "Shared Written Blocks": 0,
+              "Local Hit Blocks": 0,
+              "Local Read Blocks": 0,
+              "Local Dirtied Blocks": 0,
+              "Local Written Blocks": 0,
+              "Temp Read Blocks": 0,
+              "Temp Written Blocks": 0,
+              "Plans": [
+                {
+                  "Node Type": "Index Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Scan Direction": "Forward",
+                  "Index Name": "replay_execution_prop_marks",
+                  "Relation Name": "replay_execution_events",
+                  "Alias": "e",
+                  "Startup Cost": 0.41,
+                  "Total Cost": 8.44,
+                  "Plan Rows": 1,
+                  "Plan Width": 794,
+                  "Actual Startup Time": 0.011,
+                  "Actual Total Time": 0.012,
+                  "Actual Rows": 1,
+                  "Actual Loops": 1,
+                  "Index Cond": "((workspace_id = 'tenant-a'::text) AND (record_id = '2af89da758774270a85192f81c532474'::text) AND (dataset_id = 'dataset-step'::text) AND (sequence <= '5006'::smallint) AND (sequence = '5005'::smallint))",
+                  "Rows Removed by Index Recheck": 0,
+                  "Shared Hit Blocks": 4,
+                  "Shared Read Blocks": 0,
+                  "Shared Dirtied Blocks": 0,
+                  "Shared Written Blocks": 0,
+                  "Local Hit Blocks": 0,
+                  "Local Read Blocks": 0,
+                  "Local Dirtied Blocks": 0,
+                  "Local Written Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0
+                },
+                {
+                  "Node Type": "Index Scan",
+                  "Parent Relationship": "Inner",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Scan Direction": "Forward",
+                  "Index Name": "replay_execution_events_pkey",
+                  "Relation Name": "replay_execution_events",
+                  "Alias": "p",
+                  "Startup Cost": 0.41,
+                  "Total Cost": 8.44,
+                  "Plan Rows": 1,
+                  "Plan Width": 794,
+                  "Actual Startup Time": 0.029,
+                  "Actual Total Time": 0.029,
+                  "Actual Rows": 1,
+                  "Actual Loops": 1,
+                  "Index Cond": "((workspace_id = 'tenant-a'::text) AND (record_id = '2af89da758774270a85192f81c532474'::text) AND (dataset_id = 'dataset-step'::text) AND (sequence = (e.sequence - 1)))",
+                  "Rows Removed by Index Recheck": 0,
+                  "Shared Hit Blocks": 4,
+                  "Shared Read Blocks": 0,
+                  "Shared Dirtied Blocks": 0,
+                  "Shared Written Blocks": 0,
+                  "Local Hit Blocks": 0,
+                  "Local Read Blocks": 0,
+                  "Local Dirtied Blocks": 0,
+                  "Local Written Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0
+                }
+              ]
+            },
+            "Planning": {
+              "Shared Hit Blocks": 14,
+              "Shared Read Blocks": 0,
+              "Shared Dirtied Blocks": 0,
+              "Shared Written Blocks": 0,
+              "Local Hit Blocks": 0,
+              "Local Read Blocks": 0,
+              "Local Dirtied Blocks": 0,
+              "Local Written Blocks": 0,
+              "Temp Read Blocks": 0,
+              "Temp Written Blocks": 0
+            },
+            "Planning Time": 0.259,
+            "Triggers": [],
+            "Execution Time": 0.06
+          }
+        ],
+        "indexes": [
+          "replay_execution_events_pkey",
+          "replay_execution_prop_marks"
+        ],
+        "nodes": [
+          {
+            "Node Type": "Nested Loop",
+            "Actual Rows": 1,
+            "Actual Loops": 1,
+            "Shared Hit Blocks": 8,
+            "Shared Read Blocks": 0
+          },
+          {
+            "Node Type": "Index Scan",
+            "Relation Name": "replay_execution_events",
+            "Index Name": "replay_execution_prop_marks",
+            "Actual Rows": 1,
+            "Actual Loops": 1,
+            "Shared Hit Blocks": 4,
+            "Shared Read Blocks": 0
+          },
+          {
+            "Node Type": "Index Scan",
+            "Relation Name": "replay_execution_events",
+            "Index Name": "replay_execution_events_pkey",
+            "Actual Rows": 1,
+            "Actual Loops": 1,
+            "Shared Hit Blocks": 4,
+            "Shared Read Blocks": 0
+          }
+        ]
+      }
+    }
+  ],
+  "summary": [
+    {
+      "stage_steps": 0,
+      "profile": "full",
+      "samples": 5,
+      "p50_ms": 20.569,
+      "sample_p95_ms": 20.776,
+      "response_bytes": [
+        2771,
+        2771,
+        2771,
+        2771,
+        2771
+      ]
+    },
+    {
+      "stage_steps": 0,
+      "profile": "compact",
+      "samples": 5,
+      "p50_ms": 27.057,
+      "sample_p95_ms": 27.469,
+      "response_bytes": [
+        2771,
+        2771,
+        2771,
+        2771,
+        2771
+      ]
+    },
+    {
+      "stage_steps": 500,
+      "profile": "full",
+      "samples": 5,
+      "p50_ms": 37.666,
+      "sample_p95_ms": 38.85,
+      "response_bytes": [
+        2797,
+        2797,
+        2797,
+        2797,
+        2797
+      ]
+    },
+    {
+      "stage_steps": 500,
+      "profile": "compact",
+      "samples": 5,
+      "p50_ms": 28.201,
+      "sample_p95_ms": 28.482,
+      "response_bytes": [
+        2797,
+        2797,
+        2797,
+        2797,
+        2797
+      ]
+    },
+    {
+      "stage_steps": 5000,
+      "profile": "full",
+      "samples": 5,
+      "p50_ms": 184.309,
+      "sample_p95_ms": 187.867,
+      "response_bytes": [
+        2813,
+        2814,
+        2815,
+        2815,
+        2815
+      ]
+    },
+    {
+      "stage_steps": 5000,
+      "profile": "compact",
+      "samples": 5,
+      "p50_ms": 36.059,
+      "sample_p95_ms": 36.597,
+      "response_bytes": [
+        2813,
+        2814,
+        2815,
+        2815,
+        2815
+      ]
+    }
+  ]
+}

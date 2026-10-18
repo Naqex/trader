@@ -2,6 +2,7 @@ import { sessionNavigationHref } from './sessionCatalog.js'
 import { navigate } from './clientNavigation.js'
 import { scopedMutation } from './scopedMutation.js'
 import { canUseReplayMutationView, mergeReplayMutationView, replayMutationEventsAfter } from './replayMutationView.js'
+import { canUseReplayStepView, mergeReplayStepView } from './replayStepView.js'
 import { scopedRead } from './scopedRead.js'
 import ProjectDateInput from './ProjectDateInput.jsx'
 import { displayDate } from './dateFormat.js'
@@ -398,18 +399,31 @@ export default function ReplayWorkspace({ workspace, query }) {
     setPendingAction(kind)
     setConflict(false)
     const suffix = kind === 'branch' ? 'branch' : kind === 'asset' ? 'asset' : 'step'
+    const compactStep = kind === 'step' && canUseReplayStepView(state.payload)
     try {
-      const response = await scopedMutation(`/api/v2/replay/sessions/${encodeURIComponent(sessionId)}/${suffix}`, workspace, {
+      const response = await scopedMutation(`/api/v2/replay/sessions/${encodeURIComponent(sessionId)}/${suffix}${compactStep ? '?response_view=step-v1' : ''}`, workspace, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Workspace-Id': workspace },
         body: JSON.stringify(body),
       })
-      const payload = await readJson(response)
+      const result = await readJson(response)
+      const merged = compactStep ? mergeReplayStepView(state.payload, result, {
+        workspace, sessionId, expectedRevision: body.expected_revision,
+      }) : null
+      const payload = merged?.replay || result
+      const nextCursor = Number(payload.view_cursor_index ?? payload.payload.cursor_index)
+      const payloadDataset = payload.payload?.dataset_id || state.payload?.payload?.dataset_id
+      if (window.location.search === commandLocation) rememberSession(payload.record_id, false, nextCursor, payloadDataset)
+      setBranchCursor(Math.max(0, nextCursor - 1))
+      setJumpDraft(Math.max(0, nextCursor))
+      // The replay commit can paint while Prop consumes its marks; writes stay locked until that feed settles.
+      setState({ status: 'ready', payload, stepTail: merged?.stepTail, error: null })
       let nextPropState = propState
       let propSyncError = null
       if (propMode && kind === 'step' && propState.status === 'ready' && propState.attempt && propState.phase) {
         const boundSequence = Number(nextPropState.resumeState?.replay_binding?.last_replay_event_sequence || 0)
-        for (const event of propPriceMarkEvents(payload.payload.execution?.ledger || payload.execution_events, boundSequence)) {
+        const events = merged ? replayMutationEventsAfter(merged, boundSequence) : payload.payload.execution?.ledger || payload.execution_events
+        for (const event of propPriceMarkEvents(events, boundSequence)) {
           try {
             const feedResponse = await scopedMutation(`/api/v2/replay/sessions/${encodeURIComponent(sessionId)}/prop/sessions/${encodeURIComponent(propSessionId)}/attempts/${encodeURIComponent(propAttemptId)}/feed`, workspace, {
               method: 'POST',
@@ -424,20 +438,15 @@ export default function ReplayWorkspace({ workspace, query }) {
           }
         }
       }
-      const nextCursor = Number(payload.view_cursor_index ?? payload.payload.cursor_index)
-      const payloadDataset = payload.payload?.dataset_id || state.payload?.payload?.dataset_id
-      if (window.location.search === commandLocation) rememberSession(payload.record_id, false, nextCursor, payloadDataset)
-      setBranchCursor(Math.max(0, nextCursor - 1))
-      setJumpDraft(Math.max(0, nextCursor))
-      setState({ status: 'ready', payload, error: null })
       if (propMode) {
         setPropState(propSyncError ? { ...nextPropState, status: 'error', error: propSyncError } : nextPropState)
         if (propSyncError) setConflict(true)
         else if (isPropTerminal(nextPropState.attempt?.status)) setChartNotice(nextPropState.attempt.status === 'completed_pass' ? 'Challenge đã đạt mục tiêu. Các lệnh mới đã khóa.' : 'Challenge đã kết thúc do vi phạm hoặc hết hạn.')
       }
     } catch (error) {
-      if (error.code === 'revision_conflict') {
+      if (error.code === 'revision_conflict' || error.code === 'replay_step_invalid') {
         setConflict(true)
+        if (error.code === 'replay_step_invalid') setState(current => ({ ...current, status: 'error', error: String(error.message || error) }))
       } else {
         setState((current) => ({ ...current, status: 'error', error: String(error.message || error) }))
       }
@@ -1036,7 +1045,7 @@ export default function ReplayWorkspace({ workspace, query }) {
                   </ChartFloatingToolbar>}
                   {advancedChart ? <TradingViewReplayChart key={`${sessionId}:${replay.payload.dataset_id}:${historicalView ? cursor : 'canonical'}`}
                     workspace={workspace} datasetId={replay.payload.dataset_id} datasetSha256={replay.dataset_sha256} viewCursorIndex={replay.view_cursor_index} symbol={replayContext.instrument} assetClass={order.instrument?.asset_class} seconds={activeDataset?.timeframe_seconds || replay.payload.execution?.timeframe_seconds}
-                    cutoff={Number(replay.cutoff_timestamp)} theme={theme} levels={priceLevels} orderEditable={!order.disabled} orderCloseable={order.canClose && Boolean(order.active)} onOrderClose={order.close} onOrderEdit={() => { setIsPlaying(false); openPanel('order') }} orderGeneration={`${sessionId}:${revision}:${cursor}`}
+                    cutoff={Number(replay.cutoff_timestamp)} stepTail={state.stepTail} theme={theme} levels={priceLevels} orderEditable={!order.disabled} orderCloseable={order.canClose && Boolean(order.active)} onOrderClose={order.close} onOrderEdit={() => { setIsPlaying(false); openPanel('order') }} orderGeneration={`${sessionId}:${revision}:${cursor}`}
                     onOrderDragStart={() => setIsPlaying(false)} tickSize={order.instrument?.tick_size} onOrderPriceChange={order.changePrice} onOrderValidationError={order.reportError} rows={visibleRows} sessionId={sessionId}
                     viewportRequest={viewportRequest} drawings={drawings.objects} onCrosshair={setCrosshair} preferredInterval={nativeIntervalRef.current?.sessionId === sessionId ? nativeIntervalRef.current.interval : undefined} onHeaderSlots={slots => { if (slots?.interval) nativeIntervalRef.current = { sessionId, interval: slots.interval }; setNativeHeaderSlots(slots) }} selectingReplayBar={selectingReplayBar} onReplayBarSelect={selectReplayBar} />
                     : <Suspense fallback={<ChartLoadingState />}><ReplayChart theme={theme} levels={priceLevels} orderEditable={!order.disabled} orderCloseable={order.canClose && Boolean(order.active)} onOrderClose={order.close} orderGeneration={`${sessionId}:${revision}:${cursor}`} onOrderDragStart={() => setIsPlaying(false)} tickSize={order.instrument?.tick_size} onOrderPriceChange={order.changePrice} rows={visibleRows} sessionId={sessionId} chartType={chartType} showVolume={showVolume} showAverage={showAverage} viewportRequest={viewportRequest} drawings={drawings.objects} onCrosshair={setCrosshair} onAnchorSelect={handleChartAnchor} /></Suspense>}

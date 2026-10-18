@@ -1168,7 +1168,7 @@ pub fn validate(s: &Value) -> R<()> {
 pub fn validate_event(s: &Value, e: &Value) -> R<()> {
     validate_event_with_previous(s, e, preceding_event(s, e))
 }
-fn validate_event_with_previous(s: &Value, e: &Value, previous: Option<&Value>) -> R<()> {
+pub(crate) fn validate_event_with_previous(s: &Value, e: &Value, previous: Option<&Value>) -> R<()> {
     let mut fields = vec![
         "sequence",
         "kind",

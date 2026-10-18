@@ -280,7 +280,7 @@ export default function TradingViewReplayChart(props) {
           }).catch(error => { if (!cancelled) { clearTimeout(loadingTimer); setStatus('error'); setMessage(String(error.message || error)) } })
         }
         instance.current = { widget, adapter, historyReader, chart, refresh, importAnnotations, save, scheduleSave }
-        if (!adapter.update(latest.current.rows, latest.current.cutoff)) { historyReader?.reset(); chart.resetData() }
+        if (!adapter.update(latest.current.rows, latest.current.cutoff, latest.current.stepTail)) { historyReader?.reset(); chart.resetData() }
         // Pause before native drawing/pan/order gestures, not after a drag ends.
         let replayHoverTimestamp = null
         widget.subscribe('mouse_down', () => {
@@ -394,9 +394,9 @@ export default function TradingViewReplayChart(props) {
   useEffect(() => {
     const item = instance.current
     if (!item) return
-    if (!item.adapter.update(rows, cutoff)) { item.historyReader?.reset(); item.chart.resetData() }
+    if (!item.adapter.update(rows, cutoff, props.stepTail)) { item.historyReader?.reset(); item.chart.resetData() }
     item.chart.dataReady(() => { if (item === instance.current) item.refresh() })
-  }, [rows, cutoff])
+  }, [rows, cutoff, props.stepTail])
   useEffect(() => { instance.current?.refresh() }, [levels, orderEditable, props.orderCloseable, orderGeneration])
   useEffect(() => { if (closeTarget && closeTarget.generation !== orderGeneration && !closing) setCloseTarget(null) }, [orderGeneration, closeTarget, closing])
   useEffect(() => { instance.current?.importAnnotations() }, [drawings])
