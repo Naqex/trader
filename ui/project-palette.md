@@ -38,3 +38,5 @@ individual Monte Carlo paths. Labels and position remain necessary alongside col
 ## Legacy trading chart
 
 Native chart pane is #0F0F0F, chrome #000000, grid #202020, scale labels #DBDBDB. Light chart uses #FFFFFF. Candles use #26A69A / #EF5350, independent of report colors. Header and rails use these same neutral roles. Saved layouts cannot restore obsolete faded colors. Mentor/Editor use readable blue accents, with darker blue on white.
+
+Entry marker frames and text have separate color roles: BUY uses the primary blue frame (#70B5FF dark / #2466AC light) with orange text; SELL uses an orange frame with green text. The quantity cell follows the frame tint, and the close button keeps its pale surface and blue icon. The dashed BUY price line remains green; it does not determine the marker frame.
