@@ -558,3 +558,36 @@ Goal ACTIVE.
   Full history decode/validation/revision persistence and frontend ledger concat
   remain O(history). Next storage boundary is documented in the existing native
   runtime document; no owner storage migration/cutover has occurred. Goal ACTIVE.
+
+## Root continuation 18/10: bounded foreground/background resources
+
+- `../rust-native-20261018/runtime/mixed-resources-final-root/receipt.json` PASS
+  with frozen source/release binaries on a disposable cluster. Nine30s blocks
+  (quiet/loaded/loaded/loaded/quiet/loaded/loaded/loaded/quiet),286.42s including
+  setup/drain;6,000 foreground bars/500 initial steps,50,000 research rows,
+  at most2 active research jobs and8 admitted per loaded block.
+-270 protection changes,270 exact-byte retries and270 canonical GETs retain
+  account/position fields and equal quiet/loaded closing financial state. HTTP
+  payloads equal PostgreSQL; stale writes fail409.48 native reference jobs:
+  47completed,1queued-canceled. A worker killed while running recovers the job on
+  attempt2 and publishes its identity/hash/count-validated artifact. Zero Python
+  command workers or pending/running commands remain.
+- Protection median77.82ms quiet(n90)/77.73ms loaded(n180), sample-p9593.30/90.17ms;
+  no meaningful load regression established by this bounded workload. Every loaded
+  block has11–13 running-worker resource samples and14–16 request-sequence boundary
+  observations. Running research appears in73/174 loaded resource samples, not
+  continuous saturation. Status brackets protection/retry/GET together; it does
+  not prove overlap of every individual request.
+- Sampled peak RSS: API39.2MiB quiet/38.0MiB loaded, research250.2MiB loaded,
+  PostgreSQL descendants190.8MiB loaded (shared pages can be counted repeatedly).
+  Observed CPU is a sampled lower bound. Research financial equality here is not
+  an independent metric oracle; previous dedicated financial suites supply that.
+  This is a short native-reference resource diagnostic, not long-duration soak,
+  capacity, scientific-engine saturation or production promotion.
+- Independent read-only review's source-drift and insufficient-load gates were
+  fixed before the run. The harness re-enumerates/fingerprints all Rust sources
+  and binaries at both boundaries, and requires running-worker evidence per loaded
+  block. Owner8010/5180, provider/broker and owner data remain untouched.
+  Next implementation: validated execution head + append-only events/indexed
+  operation IDs, with cold-path full hydration and a verified rollback target.
+  Goal remains ACTIVE.
