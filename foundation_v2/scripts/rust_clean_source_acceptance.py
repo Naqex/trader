@@ -64,7 +64,7 @@ def main():
             clean_v2 = source / 'foundation_v2'
             receipt['source_sha256'] = {str(path.relative_to(source)): hashlib.sha256(path.read_bytes()).hexdigest()
                 for path in source.rglob('*') if path.is_file()}
-            target = V2 / 'api-rust/target/native-candidate'
+            target = V2 / 'api-rust/target/native-clean-source'
             run('build', ['cargo', 'build', '--offline', '--locked', '--release', '--bins',
                 '--example', 'rust_replay_mutation_probe', '--target-dir', target], clean_v2 / 'api-rust')
             receipt['binary_sha256'] = {name: hashlib.sha256((target / 'release' / name).read_bytes()).hexdigest()

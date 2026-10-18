@@ -1,0 +1,241 @@
+{
+  "schema": "native-runtime-lifecycle-acceptance-v1",
+  "passed": true,
+  "source_unchanged": true,
+  "binaries_unchanged": true,
+  "disposable": true,
+  "owner_runtime_touched": false,
+  "build": "release",
+  "provider": "none plus owned synthetic process protocol",
+  "scientific_adapter": false,
+  "samples": [
+    {
+      "name": "native-route-manifest",
+      "passed": true,
+      "delegated": 0
+    },
+    {
+      "name": "native-first",
+      "passed": true,
+      "startup_ms": 1062.1704999975918,
+      "roles": [
+        "supervisor",
+        "research",
+        "api"
+      ],
+      "health": {
+        "command_worker": "not_required",
+        "contract_version": "foundation-v2.1",
+        "database": "ready",
+        "ok": true
+      }
+    },
+    {
+      "name": "native-http-write-retry",
+      "passed": true,
+      "first_ms": 17.397700001311023,
+      "retry_ms": 2.1831000012753066,
+      "python_command_workers": 0
+    },
+    {
+      "name": "native-drain",
+      "passed": true
+    },
+    {
+      "name": "native-restart",
+      "passed": true,
+      "startup_ms": 1036.1909000021114,
+      "roles": [
+        "supervisor",
+        "research",
+        "api"
+      ],
+      "health": {
+        "command_worker": "not_required",
+        "contract_version": "foundation-v2.1",
+        "database": "ready",
+        "ok": true
+      }
+    },
+    {
+      "name": "native-persisted-restart",
+      "passed": true
+    },
+    {
+      "name": "native-api-crash-stops-owned-worker",
+      "passed": true
+    },
+    {
+      "name": "compatibility-rollback",
+      "passed": true,
+      "startup_ms": 2849.2416000008234,
+      "roles": [
+        "supervisor",
+        "domain",
+        "research",
+        "api"
+      ],
+      "health": {
+        "command_worker": "ready",
+        "contract_version": "foundation-v2.1",
+        "database": "ready",
+        "ok": true
+      }
+    },
+    {
+      "name": "compatibility-rollback-http",
+      "passed": true
+    },
+    {
+      "name": "compatibility-drain",
+      "passed": true
+    },
+    {
+      "name": "native-return",
+      "passed": true,
+      "startup_ms": 1038.3836000000883,
+      "roles": [
+        "supervisor",
+        "research",
+        "api"
+      ],
+      "health": {
+        "command_worker": "not_required",
+        "contract_version": "foundation-v2.1",
+        "database": "ready",
+        "ok": true
+      }
+    },
+    {
+      "name": "native-final-drain",
+      "passed": true
+    },
+    {
+      "name": "native-configured-fixture",
+      "passed": true,
+      "startup_ms": 1038.5145000000193,
+      "roles": [
+        "supervisor",
+        "research",
+        "api"
+      ],
+      "health": {
+        "command_worker": "not_required",
+        "contract_version": "foundation-v2.1",
+        "database": "ready",
+        "ok": true
+      }
+    },
+    {
+      "name": "native-configured-fixture-publication",
+      "passed": true,
+      "rows": 2,
+      "vendor_network": false
+    },
+    {
+      "name": "native-configured-fixture-pause-resume-cancel",
+      "passed": true
+    },
+    {
+      "name": "native-configured-drain",
+      "passed": true
+    },
+    {
+      "name": "native-configured-restart",
+      "passed": true,
+      "startup_ms": 1529.4785000005504,
+      "roles": [
+        "supervisor",
+        "research",
+        "api"
+      ],
+      "health": {
+        "command_worker": "not_required",
+        "contract_version": "foundation-v2.1",
+        "database": "ready",
+        "ok": true
+      }
+    },
+    {
+      "name": "native-configured-fixture-durable-cooldown",
+      "passed": true
+    },
+    {
+      "name": "native-configured-final-drain",
+      "passed": true
+    }
+  ],
+  "source_hashes": {
+    "api-rust\\src\\analytics\\prop_profile.rs": "93dbf35e45c7ef1527dfc9308ca722c13ac76d2c865db633f2623e359a67739e",
+    "api-rust\\src\\analytics\\routes.rs": "bf2539ef999f58efa3bcf7973000f27c93b826fe8898528af973c07428c7d74d",
+    "api-rust\\src\\analytics\\trades.rs": "69b39ec1d99fb8db34c945d06064de849215b623d2dab95bcc1547f704c5f7c8",
+    "api-rust\\src\\analytics.rs": "41977df678b04c0d37adc8823801700628174250789555d924cbb2156292c9c6",
+    "api-rust\\src\\artifact_data.rs": "6df16b1ab57fa9605d0a4ce499d724694601469ab1a37472ab912482c8fae9c2",
+    "api-rust\\src\\auth.rs": "0d760e2a69b1e3d3545da47447ff99d3e6464e21bac2b21a735ef7a1acdce327",
+    "api-rust\\src\\bin\\rust_research_worker.rs": "ba80b6ee57300a648b4dc79d6e889e3ef70df4f3ee222c4b76f08999da240c7b",
+    "api-rust\\src\\bin\\rust_runtime_admin.rs": "e709f3d40060894e4200f87f51cdeb4300828ee2bfacf755f0ad28bb974352a9",
+    "api-rust\\src\\catalog.rs": "b6d17c7bdbeea8015349e3c1bd5fb9a8c81dacbcffbe57ad0bd3c55cae2b74a3",
+    "api-rust\\src\\commands.rs": "b3c6cd09391df282d8ed88b2b27e2d0e915aa19805f843c834c44adec6b77247",
+    "api-rust\\src\\config.rs": "d402a39b53c7b4c48847f83a7f2441664dcf6513d62e36c2c20d5cb1100cb084",
+    "api-rust\\src\\context_routes.rs": "5689cca1a10769a47aa73ac049e08feaf7050a2b73023dd8b2dac1ccadc83e92",
+    "api-rust\\src\\control_routes\\learn.rs": "7ac91b0e16ac1bae4d429191abb5cf656f3c12a6ba0a8b683f7b8c9c1ecaf18b",
+    "api-rust\\src\\control_routes\\notion.rs": "0cc5dd5a1dfa037a9cf8d82add1fb55d69478f639c98ad814dc1923794c56cf6",
+    "api-rust\\src\\control_routes.rs": "8b36c6b111782369b1999eaefa19481428b4057bbb555087f85f421fbee2f7b0",
+    "api-rust\\src\\data_routes\\ingest.rs": "23ffce9ff0034a48d45050bb442ac84b8884eb1fae250f7c7d9db2ed397b2ba4",
+    "api-rust\\src\\data_routes\\legacy_codec.rs": "974511e746d982902f18f5eae0eff0285edfdfc341502aa70b2723fb831a9ca2",
+    "api-rust\\src\\data_routes\\lifecycle.rs": "f8f674c91154417cd7feeec92fad5da157e058d20164fc99e8c91b6b23d08436",
+    "api-rust\\src\\data_routes.rs": "03252957a4b6c8ae7f57a198badf0e3268d925c9f362ab4ce02edb028140d89b",
+    "api-rust\\src\\events.rs": "a4b4a046b9d94da08597f6878593476bfefb8c2f7ca36354428071b9d8af6f9e",
+    "api-rust\\src\\jobs.rs": "e27ff1494dd88a7bda5d8a440717e3082df6b57ba55e1feb322a8891e2d82e3b",
+    "api-rust\\src\\lib.rs": "bc080b24db3ae516d142af5296d30dcf20b64d44db84758fd1745333df5c3914",
+    "api-rust\\src\\main.rs": "51435eb4dae35d0d020a6963347ba1bd8697a46c61546d89b03701501475b48f",
+    "api-rust\\src\\metadata_mutations.rs": "077387d8265652432c15f100619b0bca08a3fadbd207af95361a9732bcf6f518",
+    "api-rust\\src\\middleware.rs": "2bc27643d6404de2704f04cb501b0847186ef1c1761afa7aef080d2a0241c803",
+    "api-rust\\src\\native_contracts.rs": "68ff517ee1c80e11bffefd872fcf883d2da6bf9621a5255e898b0e6750c1a4a5",
+    "api-rust\\src\\native_mutation.rs": "39335e85c5663abb912c00f262a205a458975bf30316bae0a1b22c015d1eb0b8",
+    "api-rust\\src\\notion_oauth.rs": "e6b2bf4328499bb8422022e09c19859da1dd784b57b7d4e346cf17dafd54a7af",
+    "api-rust\\src\\owned_process\\windows\\tests.rs": "96a0fb92ce2a8a4bc9e11aa523e09cec832e8e186e309b0376cb979890b8490d",
+    "api-rust\\src\\owned_process\\windows.rs": "f3f1c2945a6a9fb152cf619ec09cec1431e319294618722dca8b66d3a1f39ca0",
+    "api-rust\\src\\owned_process.rs": "938a76f980a3a1ba9aab233c06c45baa664c0cf509683aa3af14ba9a73d5106e",
+    "api-rust\\src\\prop_core\\paper.rs": "e0185a803fb35312c093d6f12d33eb069b7e5983fa12b33931bccec68fda8b0c",
+    "api-rust\\src\\prop_core\\report.rs": "6abfe7ee2080e2c499f6e51b1caaa23d03bc37f579e07fb14e391cce665e2f1a",
+    "api-rust\\src\\prop_core.rs": "07666f51a455b245ab30db10854838d6136be182e09fde93d39a657e372a3413",
+    "api-rust\\src\\prop_service.rs": "cf4f5779b6150e36ebdef0ba2208c5b4576aee64f72c89fbcd0fc20d9d828030",
+    "api-rust\\src\\provider_routes\\catalog.rs": "6b5033a6e21a8f26ddaeb740c6852870eca53d2d8e792ed75fc2deb65dabd4d6",
+    "api-rust\\src\\provider_routes\\catalog_refresh\\tests.rs": "6e00fd6a49850ddcc929ff793d0ef29791d55e580848ac6a066d957bffe4cd0e",
+    "api-rust\\src\\provider_routes\\catalog_refresh.rs": "d3810e1242bf5896c20dc88b40f7fcec48e371adeb4ec2a4b40b198a33a7f10c",
+    "api-rust\\src\\provider_routes\\dependencies.rs": "aa4d2ddd08234fcfd2c2e2c2ec07989c6590b33e12f7dde87feebcac2a6949b4",
+    "api-rust\\src\\provider_routes\\execution.rs": "2fcfdc478da932573bff578d7067c6885b6f30554c035689ae0c32430ea37612",
+    "api-rust\\src\\provider_routes\\lifecycle\\tests.rs": "d7dbabae99e7ffca53533ef9197b503feb6f856fe8f4131ae52b3bed594350a6",
+    "api-rust\\src\\provider_routes\\lifecycle.rs": "33b4ee538f6d0b12ab63aa32af4adb9cb43ff99a92bb9811adef840d1f5a9f4d",
+    "api-rust\\src\\provider_routes\\publication.rs": "1e66084fd3013a32e740d34ea3d6c4e562c669fc2b08f571ceb68f3c05d8a490",
+    "api-rust\\src\\provider_routes.rs": "fe4774d00255de238cac900a58d110347f4105e3764b00127a554b98ffefe6a3",
+    "api-rust\\src\\replay_core\\history.rs": "2430ffb6b7ebe0aa896e4783b2e028ac39796e50f9df10fdb1b0a01813007af6",
+    "api-rust\\src\\replay_core\\tick.rs": "c5f966245d7c15d663db066fc3b8582770e4141893572fc62f7adba945737904",
+    "api-rust\\src\\replay_core.rs": "4dffa63b2f816b1a0ff6a60f921d152f9b77001939853d7783eda61d0b04a6e8",
+    "api-rust\\src\\replay_service.rs": "2931dc31b0c076bdb990617465387e2cfee85a472f0c99e23db20cd202e7b8cd",
+    "api-rust\\src\\replay_storage.rs": "a49fbcf21a8a9a38fe636aceb95d25bb2a9d6610174725c99ef4ac2cbabfe7de",
+    "api-rust\\src\\research_execution\\independent.rs": "6bc99a5f143ecccbf09704f2846f4bded772779ad49e2a75b8fb728db91cf959",
+    "api-rust\\src\\research_execution\\oos_runner.rs": "efe7c0a757818d4a6de80c501c9638577640f42c47f9f6a51834ca59ac5ab853",
+    "api-rust\\src\\research_execution\\reference.rs": "5663d115be1ddec753c8e5ebda3988f5fab427b5fd922805e8dbbc15393696e3",
+    "api-rust\\src\\research_execution\\scientific.rs": "4e6fea9e1ab7857029aa9545ded8584756af6709bee2648bc846913012adcc16",
+    "api-rust\\src\\research_execution\\scientific_normalize.rs": "a1a6b4d69a1ada44cbf36898ab0db59b4288185328d4f05cc9b54653b9365ce1",
+    "api-rust\\src\\research_execution.rs": "fa66fd4f376527b64535290d75707e37b3721da2b8705c71df7873505690ab78",
+    "api-rust\\src\\research_jobs\\adapter\\dependencies.rs": "1a1970a09aec620b9eabd65050411029942230f2beb8f0fcb9f5d0ca22cfe6a9",
+    "api-rust\\src\\research_jobs\\adapter.rs": "baa091bc759a47071f5f41ae6fae4590fde1fdedaabee4815aa41cb7078f5ea4",
+    "api-rust\\src\\research_jobs\\engine.rs": "f4b0b14c50bc1b9e66079ea270f6bd67d5240cbcc9776e5e3663210c4da36d1a",
+    "api-rust\\src\\research_jobs\\lifecycle.rs": "58348c4e049762dc4f9aa4299fd044b09c6af245bf2809d778cadf5dcf3a9e4c",
+    "api-rust\\src\\research_jobs\\oos.rs": "9d7a948e685329571390f7c466f2d4c72355f2a6c284ac72ccc40dee079d950d",
+    "api-rust\\src\\research_jobs.rs": "dffacaf504dee66810225ddb8065385a2d8205ada8ec8d877b8c969c5cfdfe7e",
+    "api-rust\\src\\rust_runtime.rs": "fe2ed9d9458f71669761c34833e5f37464c7a555dae0edaf441eb72d44e101a1",
+    "api-rust\\src\\state.rs": "f0f67c8a00ec59246c61a013f4931d70be74a5e92304227c36d1cd895e2fed42",
+    "api-rust\\src\\telemetry.rs": "a4306bfacca037174ade5ffe932ff2ad67a1bef89e41b337a95944dad936699d",
+    "scripts\\run_api_platform.py": "b7f67500b9ae884c3e88669994afcae6930922debc4e2e998ba9d654fceae1b4",
+    "scripts\\rust_runtime_lifecycle_acceptance.py": "5a21513c0cca4d4c545ca4db23522765a7aa52cfead6cc6e56b42e951ce7f212"
+  },
+  "binary_hashes": {
+    "trading-workspace-api.exe": "dd0f7db1da4b38adcaca137994c0053324fbc4f433c7f95606e7eca27187728b",
+    "rust_runtime_admin.exe": "8e76dc19f4540b703ff614f5209caacda9578f81e0ba3cfaeb690c67e2e60ebb",
+    "rust_research_worker.exe": "1ef7dfda46093ad54e71acaffe4ad5993d6fe16ad971c98892dcaaf4a9ff5c4f"
+  }
+}

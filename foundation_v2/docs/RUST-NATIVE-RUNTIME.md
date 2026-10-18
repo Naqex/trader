@@ -91,6 +91,9 @@ The execution checkpoint is
 
 - `scripts/rust_runtime_lifecycle_acceptance.py`: disposable PostgreSQL,
   start/drain/restart/crash, configured synthetic adapter and rollback HTTP.
+- `scripts/rust_clean_source_acceptance.py`: archive tracked backend sources,
+  build release offline, then run lifecycle and tick/portfolio journeys. Reuses
+  installed Python/dependency caches; excludes frontend and fresh installation.
 - `scripts/rust_native_ui_acceptance.py`: release native HTTP + production
   React/Advanced Charts, quick BUY/SELL, TP drag, close and persisted checks.
   `--http-benchmark` adds bounded independent concurrent aggregates at increasing

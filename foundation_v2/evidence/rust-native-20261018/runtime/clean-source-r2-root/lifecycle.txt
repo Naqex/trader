@@ -1,0 +1,19 @@
+{"name": "native-route-manifest", "passed": true, "delegated": 0}
+{"name": "native-first", "passed": true, "startup_ms": 1062.1704999975918, "roles": ["supervisor", "research", "api"], "health": {"command_worker": "not_required", "contract_version": "foundation-v2.1", "database": "ready", "ok": true}}
+{"name": "native-http-write-retry", "passed": true, "first_ms": 17.397700001311023, "retry_ms": 2.1831000012753066, "python_command_workers": 0}
+{"name": "native-drain", "passed": true}
+{"name": "native-restart", "passed": true, "startup_ms": 1036.1909000021114, "roles": ["supervisor", "research", "api"], "health": {"command_worker": "not_required", "contract_version": "foundation-v2.1", "database": "ready", "ok": true}}
+{"name": "native-persisted-restart", "passed": true}
+{"name": "native-api-crash-stops-owned-worker", "passed": true}
+{"name": "compatibility-rollback", "passed": true, "startup_ms": 2849.2416000008234, "roles": ["supervisor", "domain", "research", "api"], "health": {"command_worker": "ready", "contract_version": "foundation-v2.1", "database": "ready", "ok": true}}
+{"name": "compatibility-rollback-http", "passed": true}
+{"name": "compatibility-drain", "passed": true}
+{"name": "native-return", "passed": true, "startup_ms": 1038.3836000000883, "roles": ["supervisor", "research", "api"], "health": {"command_worker": "not_required", "contract_version": "foundation-v2.1", "database": "ready", "ok": true}}
+{"name": "native-final-drain", "passed": true}
+{"name": "native-configured-fixture", "passed": true, "startup_ms": 1038.5145000000193, "roles": ["supervisor", "research", "api"], "health": {"command_worker": "not_required", "contract_version": "foundation-v2.1", "database": "ready", "ok": true}}
+{"name": "native-configured-fixture-publication", "passed": true, "rows": 2, "vendor_network": false}
+{"name": "native-configured-fixture-pause-resume-cancel", "passed": true}
+{"name": "native-configured-drain", "passed": true}
+{"name": "native-configured-restart", "passed": true, "startup_ms": 1529.4785000005504, "roles": ["supervisor", "research", "api"], "health": {"command_worker": "not_required", "contract_version": "foundation-v2.1", "database": "ready", "ok": true}}
+{"name": "native-configured-fixture-durable-cooldown", "passed": true}
+{"name": "native-configured-final-drain", "passed": true}

@@ -870,3 +870,36 @@ Goal ACTIVE.
   current-release lifecycle/setup/clean-source reproducibility and broader/longer
   integrated resource acceptance; prior scoped receipts remain reusable. Goal
   remains ACTIVE, not complete from these41financial cases.
+
+## Root continuation 18/10: current lifecycle and tracked backend setup
+
+- `../rust-native-20261018/runtime/final-lifecycle-root/receipt.json` PASS19
+  current release checks: native start/write/exact retry/drain/restart, API crash
+  stopping its worker, compatibility HTTP rollback and native return, synthetic
+  provider publication/pause/resume/cancel and durable cooldown. Source and binary
+  fingerprints remain unchanged during the run. Native launches only supervisor,
+  research and API; no Python command worker. No vendor network or owner runtime.
+- `../rust-native-20261018/runtime/clean-source-r2-root/receipt.json` PASS from
+  tracked commit73c1043: selected backend sources archived with Git, release bins
+  and probe built using `--offline --locked`, then archived lifecycle19checks and
+  independent tick/portfolio41cases pass. All436 archived input files remain
+  unchanged. Source/command/archive/binary hashes and child receipts are retained.
+  This verifies cached-toolchain backend reproducibility, not a fresh dependency
+  installation, scientific descriptor setup, frontend build or whole-product QA.
+- Initial clean-source attempt built successfully but fixture startup could not
+  find the workspace-relative PostgreSQL distribution. Failed receipt/logs remain.
+  Lifecycle and financial runners now receive its explicit installed `--pg-bin`;
+  no database or dependency installation was added. The archive initially reused
+  the candidate target cache; the normal checkout candidate is rebuilt afterward
+  to retain its own compile-time file pins. Future clean-source runs use a separate
+  `native-clean-source` scratch target; that path-only guard passed CLI smoke.
+- Restored checkout release probe bytes differ from the earlier r7 executable;
+  no bit-for-bit reproducible-build claim is made. Fresh
+  `../rust-native-20261018/runtime/tick-portfolio-r8-checkout-root/receipt.json`
+  PASS41 verifies the actual restored binary with frozen source/probe hashes.
+- Native product changes from6675877 are unchanged. Existing unrelated UI/source
+  modifications remain unstaged. No owner migration/cutover/restart or broker,
+  provider, OAuth or holdout authorization was expanded. Goal remains ACTIVE:
+  broader/longer integrated UI/resource acceptance and final independent review
+  remain distinct from these scoped backend results. Reuse prior valid receipts;
+  do not restart quota-failed agents or rewrite unmeasured rare paths.
