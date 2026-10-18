@@ -48,6 +48,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--probe', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--pg-bin', type=Path, default=PG)
     args = parser.parse_args()
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
@@ -79,7 +80,7 @@ def main():
                 sock.bind(('127.0.0.1', 0))
                 port = sock.getsockname()[1]
             def pg(command, *values):
-                subprocess.run([str(PG / (command + '.exe')), *map(str, values)], check=True,
+                subprocess.run([str(args.pg_bin / (command + '.exe')), *map(str, values)], check=True,
                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                timeout=60, creationflags=subprocess.CREATE_NO_WINDOW)
             pg('initdb', '-D', data, '-U', 'fixture', '-A', 'trust', '--locale=C', '--encoding=UTF8')

@@ -1,0 +1,2 @@
+   Compiling trading-workspace-api v0.1.0 (C:\Users\MIIKEY\AppData\Local\Temp\tw-native-clean-6vej5n__\source\foundation_v2\api-rust)
+    Finished `release` profile [optimized] target(s) in 1m 28s
