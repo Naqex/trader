@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import {mkdir,writeFile} from 'node:fs/promises'
 import {chromium} from 'playwright'
 const origin=process.env.TESTING_UI_ORIGIN || 'http://127.0.0.1:5180'
-const out=process.env.TW_UI_EVIDENCE_DIR || '../evidence/session-presets-db-20261018/ui'
+const out=process.env.TW_UI_EVIDENCE_DIR || '../evidence/session-options-design-20261018/ui'
 await mkdir(out,{recursive:true})
 const browser=await chromium.launch()
 const report={scope:'Production UI with an in-memory preset HTTP fixture and isolated browser storage. Real catalog GETs, all owner writes blocked; one intercepted session-creation 503 test. Database acceptance is separate.',cases:[],errors:[],writes:[],presetRequests:0}
@@ -46,6 +46,27 @@ try {
   await page.goto(`${origin}/?workspace=tenant-a&view=overview&create=${mode}`)
   const dialog=page.locator('.quick-session-dialog'),trigger=dialog.locator('.session-preset-trigger'),menu=dialog.locator('.session-preset-menu')
   await dialog.waitFor();await trigger.waitFor({state:'visible'})
+  assert.equal(await dialog.locator('.quick-session-sections strong').nth(1).textContent(),en?'Options':'Tùy chọn')
+  if(mode==='backtest') {
+   for(const width of [1368,360]) for(const theme of ['dark','light']) {
+    await page.setViewportSize({width,height:790})
+    await page.evaluate(theme=>{document.querySelector('.fx-app').dataset.theme=theme},theme)
+    const smooth=dialog.locator('.session-smooth-candles')
+    await smooth.scrollIntoViewIfNeeded()
+    const geometry=await dialog.locator('.session-chart-options').evaluate(root=>{
+     const select=root.querySelector('.fx-select-trigger'),smooth=root.querySelector('.session-smooth-candles'),toggle=smooth.querySelector('button'),style=getComputedStyle(smooth),toggleStyle=getComputedStyle(toggle)
+     return {selectHeight:select.getBoundingClientRect().height,smoothHeight:smooth.getBoundingClientRect().height,selectFont:getComputedStyle(select).fontSize,smoothFont:style.fontSize,line:style.lineHeight,controlLine:style.getPropertyValue('--ds-line-control').trim(),width:toggle.getBoundingClientRect().width,height:toggle.getBoundingClientRect().height,switchWidth:parseFloat(style.getPropertyValue('--ds-switch-width')),switchHeight:parseFloat(style.getPropertyValue('--ds-switch-height')),opacity:style.opacity,disabledOpacity:style.getPropertyValue('--ds-disabled-opacity').trim(),childOpacity:toggleStyle.opacity}
+    })
+    assert.equal(geometry.smoothHeight,geometry.selectHeight,'adjacent chart controls align')
+    assert.equal(geometry.smoothFont,geometry.selectFont,'chart control labels use the same typography')
+    assert.equal(geometry.line,geometry.controlLine)
+    assert.equal(geometry.width,geometry.switchWidth);assert.equal(geometry.height,geometry.switchHeight)
+    assert.equal(Number(geometry.opacity),Number(geometry.disabledOpacity));assert.equal(geometry.childOpacity,'1','disabled opacity applies once')
+    assert.ok(await dialog.evaluate(el=>el.scrollWidth<=el.clientWidth+1),'no horizontal overflow')
+    if(!en) await dialog.screenshot({animations:'disabled',path:`${out}/chart-options-${theme}-${width}.png`})
+   }
+   await page.setViewportSize({width:1368,height:790});await page.evaluate(()=>{document.querySelector('.fx-app').dataset.theme='dark'})
+  }
   assert.equal(await trigger.evaluate(el=>getComputedStyle(el).borderTopColor),'rgba(0, 0, 0, 0)','unselected preset has no colored border')
   await page.addStyleTag({content:'*,*::before,*::after{animation:none !important;transition:none !important}'})
   await dialog.locator('input[maxlength="160"]').first().fill('OWNER DRAFT')
@@ -63,6 +84,9 @@ try {
   assert.ok(await dialog.locator('.wm-field-error').count(),'empty preset name blocks saving')
   await dialog.locator('input[maxlength="160"]').first().fill('TEST')
   await dialog.locator('[data-option=costs] [role=switch]').click()
+  assert.ok(await dialog.locator('[data-option=costs] [role=switch]').evaluate(el=>{
+   const c=getComputedStyle(el),r=el.getBoundingClientRect(),probe=document.createElement('span');probe.style.color='var(--project-primary)';el.append(probe);const primary=getComputedStyle(probe).color;probe.remove();return r.width===parseFloat(c.getPropertyValue('--ds-switch-width')) && r.height===parseFloat(c.getPropertyValue('--ds-switch-height')) && c.backgroundColor===primary
+  }),'cost switch uses shared geometry and its selected color')
   const costs=dialog.locator('.session-cost-grid')
   await costs.first().locator('input').first().fill('0.0002')
   await costs.first().locator('input').nth(1).fill('5')

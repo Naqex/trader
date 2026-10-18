@@ -19,13 +19,11 @@
 .fx-app.fx-shell-story[data-theme] .fx-content .session-preset-back { display:grid; place-items:center; flex-shrink:0; width:32px; height:32px; padding:0; border:1px solid var(--wm-border); border-radius:50%; background:transparent; }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-layout.is-preset-editor { display:flex; }
 .fx-app.fx-shell-story[data-theme] .fx-content .is-preset-editor > .quick-session-body { flex:1; }
-.fx-app.fx-shell-story[data-theme] .fx-content .session-preset-more > h3 { margin:8px 0 20px; font-size:18px; }
+.fx-app.fx-shell-story[data-theme] .fx-content .session-preset-more > h3 { margin:var(--ds-space-2) 0 var(--ds-space-5); font-size:var(--ds-font-section); }
 .fx-app.fx-shell-story[data-theme] .fx-content .session-chart-options { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-.fx-app.fx-shell-story[data-theme] .fx-content .session-smooth-candles { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:8px 12px; border:1px solid var(--wm-control-border); border-radius:var(--ds-radius-field); }
+.fx-app.fx-shell-story[data-theme] .fx-content .session-smooth-candles { display:flex; justify-content:space-between; align-items:center; min-height:var(--wm-control-height); box-sizing:border-box; gap:var(--ds-space-3); padding:7px 12px; border:1px solid var(--wm-control-border); border-radius:var(--ds-radius-field); font-size:var(--wm-text-control); line-height:var(--ds-line-control); }
 .fx-app.fx-shell-story[data-theme] .fx-content .session-smooth-candles:has(button:disabled) { opacity:var(--ds-disabled-opacity); }
-.fx-app.fx-shell-story[data-theme] .fx-content .session-smooth-candles button:disabled { opacity:1; }
-.fx-app.fx-shell-story[data-theme] .fx-content .session-smooth-candles button { width:36px; height:22px; min-height:22px; border:1px solid var(--wm-control-border); border-radius:999px; background:var(--project-control); padding:2px; }
-.fx-app.fx-shell-story[data-theme] .fx-content .session-smooth-candles button span { display:block; width:16px; height:16px; border-radius:50%; background:var(--wm-content); }
+.fx-app.fx-shell-story[data-theme] .fx-content .quick-session-dialog .session-smooth-candles button:disabled { opacity:1; }
 .fx-app.fx-shell-story[data-theme] .fx-content .session-preset-confirm { width:min(400px,calc(100vw - 32px)); padding:24px; }
 .fx-app.fx-shell-story[data-theme] .fx-content .session-preset-confirm h2 { margin:0 0 16px; font-size:18px; overflow-wrap:anywhere; }
 .fx-app.fx-shell-story[data-theme] .fx-content .session-preset-confirm p { color:var(--wm-content-muted); font-size:13px; line-height:1.6; }

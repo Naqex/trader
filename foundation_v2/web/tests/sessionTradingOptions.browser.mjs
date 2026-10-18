@@ -10,8 +10,8 @@ const report = { scope:'Real local catalog reads and production UI. Creation wri
 try {
   for (const mode of ['backtest','prop']) for (const language of ['vi','en']) {
     const labels = language === 'vi'
-      ? {more:'Tùy chọn thêm',basic:'Cơ bản',costs:'Spread và hoa hồng',empty:'Chọn tài sản trước',light:'Nhẹ',medium:'Vừa',fixed:'Cố định',off:'Tắt',charge:['Mỗi chiều','Cả lượt mở + đóng']}
-      : {more:'More options',basic:'Basic',costs:'Spreads & commission',empty:'Pick your assets first',light:'Light',medium:'Medium',fixed:'Fixed',off:'Off',charge:['Per side','Round trip']}
+      ? {more:'Tùy chọn',basic:'Cơ bản',costs:'Spread và hoa hồng',empty:'Chọn tài sản trước',light:'Nhẹ',medium:'Vừa',fixed:'Cố định',off:'Tắt',charge:['Mỗi chiều','Cả lượt mở + đóng']}
+      : {more:'Options',basic:'Basic',costs:'Spreads & commission',empty:'Pick your assets first',light:'Light',medium:'Medium',fixed:'Fixed',off:'Off',charge:['Per side','Round trip']}
     let submitted, bundle, catalog
     const context = await browser.newContext({ viewport:{width:1440,height:900} })
     await context.addInitScript(language => { localStorage.setItem('tw-theme','dark'); localStorage.setItem('tw-language',language) },language)

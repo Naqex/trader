@@ -1,0 +1,13 @@
+{
+  "scope": "Production UI with an in-memory preset HTTP fixture and isolated browser storage. Real catalog GETs, all owner writes blocked; one intercepted session-creation 503 test. Database acceptance is separate.",
+  "cases": [
+    "backtest/vi: server CRUD fixture, apply/edit/cancel/reload after clearing localStorage, delete failure, independent asset costs, orange states and mode scoping",
+    "backtest/en: server CRUD fixture, apply/edit/cancel/reload after clearing localStorage, delete failure, independent asset costs, orange states and mode scoping",
+    "prop/vi: server CRUD fixture, apply/edit/cancel/reload after clearing localStorage, delete failure, independent asset costs, orange states and mode scoping",
+    "prop/en: server CRUD fixture, apply/edit/cancel/reload after clearing localStorage, delete failure, independent asset costs, orange states and mode scoping"
+  ],
+  "errors": [],
+  "writes": [],
+  "presetRequests": 26,
+  "result": "PASS"
+}

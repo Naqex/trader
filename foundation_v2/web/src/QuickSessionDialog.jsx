@@ -244,7 +244,7 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
             <strong>{t('Cơ bản')}</strong><span>{t('Tên, số dư, chiến lược và tài sản')}</span>
           </button>
           <button type="button" aria-pressed={advanced} aria-controls={`${id}-panel`} disabled={busy} onClick={() => setAdvanced(true)}>
-            <strong>{t('Tùy chọn thêm')}</strong><span>{t('Chi phí và cách khớp lệnh')}</span>
+            <strong>{t('Session options')}</strong><span>{t('Chi phí và cách khớp lệnh')}</span>
           </button>
         </nav>}
         <div className="quick-session-body" ref={panelBody}>
@@ -284,10 +284,10 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
                 </div>
               </div>
             </section> : <>
-              <div className="quick-session-field"><span>{t('Select Chart Layout (Optional)')}</span><div className="session-chart-options"><FxSelect className="is-field" label={t('Chart Layout')} value="default" disabled options={[{value:'default',label:'Bố cục mặc định'}]} onChange={() => {}} /><div className="session-smooth-candles"><span>{t('Smooth candles')}</span><button type="button" role="switch" aria-label={t('Smooth candles')} aria-checked="false" disabled><span /></button></div></div></div>
+              <div className="quick-session-field"><span>{t('Select Chart Layout (Optional)')}</span><div className="session-chart-options"><FxSelect className="is-field" label={t('Chart Layout')} value="default" disabled options={[{value:'default',label:'Bố cục mặc định'}]} onChange={() => {}} /><div className="session-smooth-candles"><span>{t('Smooth candles')}</span><button type="button" className="session-option-switch" role="switch" aria-label={t('Smooth candles')} aria-checked="false" disabled><span /></button></div></div></div>
               {!presetEditor && <section className="quick-session-engine" aria-label={t('Charting engine')}><h3>{t('Charting engine')}</h3><p>{t('Chọn một lần cho phiên này.')}</p><div role="radiogroup" aria-label={t('Charting engine')}><button type="button" role="radio" aria-checked="false" disabled>New Chart <small>{t('Chưa khả dụng')}</small></button><button type="button" role="radio" aria-checked="true" disabled={busy}>Legacy Chart</button></div></section>}
             </>}
-            {presetEditor && <section className="session-preset-more"><h3>{t('Tùy chọn thêm')}</h3><SessionTradingOptions assets={selectedAssets} value={tradingOptions} onChange={changeTradingOptions} disabled={busy} error={errors.tradingOptions} id={id} /></section>}
+            {presetEditor && <section className="session-preset-more"><h3>{t('Session options')}</h3><SessionTradingOptions assets={selectedAssets} value={tradingOptions} onChange={changeTradingOptions} disabled={busy} error={errors.tradingOptions} id={id} /></section>}
           </>}
           {presetProblem && <p className="wm-field-error" role="alert">{t(presetProblem)}</p>}
           {problem && <div role="alert" className="quick-session-error">{problem.uncertain ? t('Chưa xác định phiên đã tạo hay chưa. Kiểm tra danh sách phiên trước khi tạo lại.') : t('Không tạo được phiên: {error}', {error:problem.text})}{problem.uncertain && <a aria-disabled={busy || undefined} onClick={event => { if (busy) event.preventDefault() }} href={buildWorkspaceHref('replay',workspace,query,{select:'1',surface:null,fresh:null})}>{t('Xem danh sách phiên')}</a>}</div>}
