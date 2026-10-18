@@ -14,6 +14,9 @@ import { FieldError, FormFeedback, fieldValidationProps, focusFirstInvalid } fro
 import { quickSessionErrors } from './quickSessionValidation.js'
 import SessionTradingOptions from './SessionTradingOptions.jsx'
 import { buildTradingOptions, tradingOptionsError, tradingOptionsMatch } from './sessionTradingOptions.js'
+import { deleteSessionPreset, readSessionPresets, saveSessionPreset, sessionPresetKey } from './sessionPresets.js'
+import SessionPresetMenu from './SessionPresetMenu.jsx'
+import TestingIcon from './TestingIcon.jsx'
 import './quick-session.css'
 
 const formatBalance = value => value.replace(/^(\d+)/, digits => digits.replace(/\B(?=(\d{3})+(?!\d))/g, ','))
@@ -28,6 +31,8 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
   const [balanceMode, setBalanceMode] = useState('10000')
   const [tradingOptions, setTradingOptions] = useState({ costs_enabled: false, assets: {} })
   const [propDraft, setPropDraft] = useState({ profileKind: 'generic', targetPercent: '10', dailyLoss: '500', overallLoss: '1000', durationDays: '' })
+  const [presets,setPresets] = useState([]), [activePreset,setActivePreset] = useState(''), [presetProblem,setPresetProblem] = useState('')
+  const [presetEditor,setPresetEditor] = useState(null)
   const balanceInput = useRef(null), balanceCaret = useRef(null)
   const balanceDisplay = formatBalance(draft.balance)
   const [data, setData] = useState({ status: 'loading', items: [], error: '' })
@@ -44,14 +49,52 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
   const selectedStrategy = strategies.items.find(item => item.record_id === draft.strategy)
   const range = commonSessionRange(selectedAssets)
   const period = sessionPeriodState(draft.period, range)
-  const validation = quickSessionErrors({ draft, mode, propDraft, selectedAssets, period, dataStatus: data.status, addingStrategy })
+  const validation = quickSessionErrors({ draft:presetEditor ? {...draft,name:presetEditor.name} : draft, mode, propDraft, selectedAssets, period:presetEditor ? {valid:true} : period, dataStatus: data.status, addingStrategy })
+  if (presetEditor && !presetEditor.name.trim()) validation.name = 'Tên preset là bắt buộc.'
+  if (draft.strategy && strategies.status === 'ready' && !selectedStrategy) validation.strategy = 'Chiến lược đã lưu không còn khả dụng. Chọn lại hoặc bỏ chọn.'
   const optionsError = tradingOptionsError(tradingOptions, selectedAssets)
   if (optionsError) validation.tradingOptions = optionsError
   const errors = submitted ? validation : {}
   const strategyError = strategySubmitted && !strategyName.trim() ? 'Tên chiến lược là bắt buộc.' : errors.strategy
   const fieldProps = key => fieldValidationProps(errors[key], `${id}-${key}-error`)
-  const change = (key, value) => setDraft(current => ({ ...current, [key]: value }))
-  const changeProp = (key, value) => setPropDraft(current => ({ ...current, [key]: value }))
+  const change = (key, value) => { if (!['name','period'].includes(key)) setActivePreset(''); setDraft(current => ({ ...current, [key]: value })) }
+  const changeProp = (key, value) => {setActivePreset('');setPropDraft(current => ({ ...current, [key]: value }))}
+  const changeTradingOptions = value => {setActivePreset('');setTradingOptions(value)}
+  const loadPresets = () => {
+    try {setPresets(readSessionPresets(window.localStorage,workspace,mode));setPresetProblem('')}
+    catch {setPresetProblem('Không đọc được preset đã lưu.');setPresets([])}
+  }
+  useEffect(() => {
+    loadPresets();setActivePreset('')
+    const refresh = event => {if(event.key === null || event.key === sessionPresetKey(workspace,mode)) loadPresets()}
+    window.addEventListener('storage',refresh)
+    return () => window.removeEventListener('storage',refresh)
+  },[workspace,mode])
+  useLayoutEffect(() => {if(presetEditor) {panelBody.current?.scrollTo(0,0);nameInput.current?.focus()} else dialog.current?.querySelector('.session-preset-trigger')?.focus()},[Boolean(presetEditor)])
+  const applyPreset = item => {
+    const config = structuredClone(item.config)
+    setDraft(current => ({...current,balance:config.balance,datasets:config.datasets,strategy:config.strategy}))
+    setBalanceMode(['10000','50000','100000','250000'].includes(config.balance) ? config.balance : 'custom')
+    setPropDraft(config.propDraft);setTradingOptions(config.tradingOptions);setActivePreset(item.id)
+    setSubmitted(false);setPresetProblem('');setAddingStrategy(false)
+  }
+  const editPreset = item => {
+    const before = structuredClone({draft,propDraft,tradingOptions,balanceMode,activePreset,advanced})
+    if(item) applyPreset(item)
+    setPresetEditor({id:item?.id || null,name:item?.name || '',before});setSubmitted(false);setPresetProblem('')
+  }
+  const leavePreset = () => {
+    const before = presetEditor.before
+    setDraft(before.draft);setPropDraft(before.propDraft);setTradingOptions(before.tradingOptions)
+    setBalanceMode(before.balanceMode);setActivePreset(before.activePreset);setAdvanced(before.advanced)
+    setPresetEditor(null);setPresetProblem('');setSubmitted(false)
+  }
+  const removePreset = item => {
+    try {
+      deleteSessionPreset(window.localStorage,workspace,mode,item.id)
+      loadPresets();if(activePreset === item.id) setActivePreset('')
+    } catch {throw new Error('Không lưu được preset trên trình duyệt này.')}
+  }
   useLayoutEffect(() => {
     if (balanceCaret.current === null) return
     balanceInput.current?.setSelectionRange(balanceCaret.current, balanceCaret.current)
@@ -79,7 +122,7 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
     return () => controller.abort()
   }, [workspace, reload])
   const busy = pending || strategyPending
-  const close = () => { if (!submitLock.current && !strategyLock.current) onClose() }
+  const close = () => { if (!submitLock.current && !strategyLock.current) {if(presetEditor) leavePreset(); else onClose()} }
   const addStrategy = async () => {
     if (busy || strategyLock.current || strategyProblem?.uncertain) return
     setStrategySubmitted(true)
@@ -104,6 +147,16 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
       return
     }
     const savedTradingOptions = buildTradingOptions(tradingOptions, selectedAssets)
+    if(presetEditor) {
+      try {
+        const saved = saveSessionPreset(window.localStorage,workspace,mode,{id:presetEditor.id,name:presetEditor.name,config:{balance:draft.balance,datasets:draft.datasets,strategy:draft.strategy,propDraft,tradingOptions:savedTradingOptions}})
+        const original = presetEditor.before
+        setDraft(current => ({...current,name:original.draft.name,period:original.draft.period}))
+        setPresets(readSessionPresets(window.localStorage,workspace,mode));setActivePreset(saved.id)
+        setAdvanced(original.advanced);setPresetEditor(null);setPresetProblem('');setSubmitted(false)
+      } catch(error) {setPresetProblem(error.name === 'QuotaExceededError' || error.name === 'SecurityError' ? 'Không lưu được preset trên trình duyệt này.' : error.message)}
+      return
+    }
     if (mode === 'prop') {
       const propStart = Number.isFinite(period.start)
         ? new Date(period.start * 1000).toISOString().slice(0, 16)
@@ -162,27 +215,29 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
     if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) close()
   }}>
     <header className="quick-session-header">
-      <h2 id={`${id}-title`}>{t('Create session')}</h2>
-        <div className="quick-session-tabs" role="tablist" aria-label={t('Loại phiên')}>{[['backtest','Backtesting'],['prop','Prop Firm']].map(([key,label]) => <button key={key} id={`${id}-${key}`} role="tab" type="button" aria-selected={mode === key} aria-controls={`${id}-panel`} tabIndex={mode === key ? 0 : -1} disabled={busy} onClick={() => setMode(key)} onKeyDown={event => {
+      {presetEditor && <button type="button" className="session-preset-back" aria-label={t('Quay lại tạo phiên')} onClick={close} disabled={busy}><TestingIcon kind="chevron-left" size={18} /></button>}
+      <h2 id={`${id}-title`}>{t(presetEditor ? presetEditor.id ? 'Sửa preset' : 'Tạo preset' : 'Create session')}</h2>
+        {!presetEditor && <div className="quick-session-tabs" role="tablist" aria-label={t('Loại phiên')}>{[['backtest','Backtesting'],['prop','Prop Firm']].map(([key,label]) => <button key={key} id={`${id}-${key}`} role="tab" type="button" aria-selected={mode === key} aria-controls={`${id}-panel`} tabIndex={mode === key ? 0 : -1} disabled={busy} onClick={() => setMode(key)} onKeyDown={event => {
           if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return
           event.preventDefault(); const next = event.key === 'Home' ? 'backtest' : event.key === 'End' ? 'prop' : mode === 'backtest' ? 'prop' : 'backtest'; setMode(next); document.getElementById(`${id}-${next}`).focus()
-        }}>{label}</button>)}</div>
+        }}>{label}</button>)}</div>}
+      {!presetEditor && <SessionPresetMenu items={presets} selected={activePreset} disabled={busy || problem?.uncertain || data.status !== 'ready'} onApply={applyPreset} onCreate={() => editPreset(null)} onEdit={editPreset} onDelete={removePreset} />}
       <button type="button" className="quick-session-close wm-dialog-close" aria-label={t('Đóng tạo phiên')} disabled={busy} onClick={close}>×</button>
     </header>
     <form noValidate onSubmit={create} className="quick-session-form">
-      <div className="quick-session-layout">
-        <nav className="quick-session-sections" aria-label={t('Thiết lập phiên')}>
+      <div className={`quick-session-layout${presetEditor ? ' is-preset-editor' : ''}`}>
+        {!presetEditor && <nav className="quick-session-sections" aria-label={t('Thiết lập phiên')}>
           <button type="button" aria-pressed={!advanced} aria-controls={`${id}-panel`} disabled={busy} onClick={() => setAdvanced(false)}>
             <strong>{t('Cơ bản')}</strong><span>{t('Tên, số dư, chiến lược và tài sản')}</span>
           </button>
           <button type="button" aria-pressed={advanced} aria-controls={`${id}-panel`} disabled={busy} onClick={() => setAdvanced(true)}>
             <strong>{t('Tùy chọn thêm')}</strong><span>{t('Chi phí và cách khớp lệnh')}</span>
           </button>
-        </nav>
+        </nav>}
         <div className="quick-session-body" ref={panelBody}>
-        <div role="tabpanel" id={`${id}-panel`} aria-labelledby={`${id}-${mode}`} className="quick-session-fields">
-          {advanced ? <SessionTradingOptions assets={selectedAssets} value={tradingOptions} onChange={setTradingOptions} disabled={busy} error={errors.tradingOptions} id={id} /> : <>
-            <label className={errors.name ? 'quick-session-invalid-field' : ''}><span>{t('Name')} <span className="quick-session-required" aria-hidden="true">*</span></span><input ref={nameInput} required maxLength={160} placeholder={t('Đặt tên phiên của bạn')} value={draft.name} disabled={busy} {...fieldProps('name')} onChange={event => change('name', event.target.value)} /><FieldError id={`${id}-name-error`} error={errors.name} /></label>
+        <div role={presetEditor ? undefined : 'tabpanel'} id={`${id}-panel`} aria-labelledby={presetEditor ? undefined : `${id}-${mode}`} className="quick-session-fields">
+          {advanced && !presetEditor ? <SessionTradingOptions assets={selectedAssets} value={tradingOptions} onChange={changeTradingOptions} disabled={busy} error={errors.tradingOptions} id={id} /> : <>
+            <label className={errors.name ? 'quick-session-invalid-field' : ''}><span>{t(presetEditor ? 'Tên preset' : 'Name')} <span className="quick-session-required" aria-hidden="true">*</span></span><input ref={nameInput} required maxLength={160} placeholder={t(presetEditor ? 'Đặt tên preset' : 'Đặt tên phiên của bạn')} value={presetEditor ? presetEditor.name : draft.name} disabled={busy} {...fieldProps('name')} onChange={event => presetEditor ? setPresetEditor(current => ({...current,name:event.target.value})) : change('name', event.target.value)} /><FieldError id={`${id}-name-error`} error={errors.name} /></label>
             <label className={errors.balance ? 'quick-session-invalid-field' : ''}><span>{t('Account Balance')} <span className="quick-session-required" aria-hidden="true">*</span></span><div className="quick-session-balance-picker" role="radiogroup" aria-label={t('Account Balance')}>
               {[['10000', '$10K'], ['50000', '$50K'], ['100000', '$100K'], ['250000', '$250K']].map(([value, label]) => <button key={value} type="button" role="radio" aria-label={label} aria-checked={balanceMode === value} disabled={busy} onClick={() => { setBalanceMode(value); change('balance', value) }}>{label}</button>)}
               <button type="button" role="radio" aria-label="Custom" aria-checked={balanceMode === 'custom'} disabled={busy} onClick={() => setBalanceMode('custom')}>Custom</button>
@@ -206,7 +261,7 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
             }} /></div>}<FieldError id={`${id}-balance-error`} error={errors.balance} /></label>
             <div className="quick-session-field quick-session-strategy"><span>{t('Strategy')}</span><FxSelect searchable={strategies.items.length > 0} label={t('Strategy')} value={draft.strategy} disabled={busy || strategies.status === 'loading'} onChange={value => change('strategy',value)} className={draft.strategy ? 'is-field' : 'is-field is-placeholder'} triggerContent={selectedStrategy?.payload?.name || t('Chọn chiến lược hoặc tạo mới')} localizeOptions={false} placeholder={t('Tìm chiến lược…')} emptyLabel={t('Không tìm thấy kết quả')} options={strategies.items.map(item => ({ value:item.record_id, label:item.payload?.name || item.record_id, localize:false }))} />{draft.strategy && <button type="button" className="quick-session-text-action" disabled={busy} onClick={() => change('strategy','')}>{t('Bỏ chọn chiến lược')}</button>}{!addingStrategy ? <button type="button" ref={strategyOpener} className="quick-session-text-action quick-session-new-strategy" disabled={busy || strategies.status === 'loading'} onClick={() => { setStrategySubmitted(false); setAddingStrategy(true) }}>{t('+ Tạo chiến lược mới')}</button> : <div className="quick-session-strategy-create"><input ref={strategyInput} maxLength={160} placeholder={t('Tên chiến lược')} aria-label={t('Tên chiến lược')} {...fieldValidationProps(strategyError, `${id}-strategy-error`)} value={strategyName} disabled={strategyPending} onChange={event => setStrategyName(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addStrategy() } }} /><button type="button" disabled={busy || strategyProblem?.uncertain} onClick={addStrategy}>{t(strategyPending ? 'Đang tạo…' : 'Tạo chiến lược')}</button><button type="button" disabled={strategyPending} onClick={() => setAddingStrategy(false)}>{t('Cancel')}</button><FieldError id={`${id}-strategy-error`} error={strategyError} />{strategyProblem && <small role="alert">{strategyProblem.uncertain ? t('Chưa xác định chiến lược đã tạo hay chưa. Kiểm tra danh sách chiến lược trước khi thử lại.') : strategyProblem.text}{strategyProblem.uncertain && <a aria-disabled={busy || undefined} onClick={event => { if (busy) event.preventDefault() }} href={buildWorkspaceHref('playbook',workspace,query)}>{t('Quản lý chiến lược')}</a>}</small>}</div>}{strategies.error && <small>{t('Chưa đọc được chiến lược. Bạn vẫn có thể tạo phiên không gắn chiến lược.')}</small>}</div>
             <div className="quick-session-field"><div className="quick-session-field-title"><span>{t('Assets')} <span className="quick-session-required" aria-hidden="true">*</span></span><a aria-disabled={busy || undefined} onClick={event => { if (busy) event.preventDefault() }} href={buildWorkspaceHref('data',workspace,query)}>{t('Kho dữ liệu')}</a></div><DatasetAssetSelect maxAssets={12} datasets={data.items} instruments={data.instruments} sessions={sessions} {...fieldProps('assets')} value={draft.datasets} disabled={busy || data.status !== 'ready'} onChange={value => change('datasets',value)} /><FieldError id={`${id}-assets-error`} error={errors.assets} />{data.status === 'loading' ? <small role="status">{t('Đang đọc danh mục dữ liệu…')}</small> : data.status === 'error' ? <div role="alert">{t('Không đọc được danh mục:')} {data.error}<button type="button" onClick={() => setReload(value => value + 1)}>{t('Thử lại')}</button></div> : !data.items.length && <small>{t('Chưa có dataset local trong workspace này.')}</small>}</div>
-            {selectedAssets.length > 0 && <SessionPeriodFields error={errors.period} range={range} value={draft.period} onChange={value => change('period', value)} disabled={busy || data.status !== 'ready'} />}
+            {!presetEditor && selectedAssets.length > 0 && <SessionPeriodFields error={errors.period} range={range} value={draft.period} onChange={value => change('period', value)} disabled={busy || data.status !== 'ready'} />}
             {mode === 'prop' ? <section className="quick-session-prop-rules" aria-label={t('Prop Firm rules')}>
               <div className="quick-session-prop-rule-group">
                 <div className="quick-session-prop-grid">
@@ -216,15 +271,17 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
                 </div>
               </div>
             </section> : <>
-              <div className="quick-session-field"><span>{t('Select Chart Layout (Optional)')}</span><FxSelect className="is-field" label={t('Chart Layout')} value="default" disabled options={[{value:'default',label:'Bố cục mặc định'}]} onChange={() => {}} /></div>
-              <section className="quick-session-engine" aria-label={t('Charting engine')}><h3>{t('Charting engine')}</h3><p>{t('Chọn một lần cho phiên này.')}</p><div role="radiogroup" aria-label={t('Charting engine')}><button type="button" role="radio" aria-checked="false" disabled>New Chart <small>{t('Chưa khả dụng')}</small></button><button type="button" role="radio" aria-checked="true" disabled={busy}>Legacy Chart</button></div></section>
+              <div className="quick-session-field"><span>{t('Select Chart Layout (Optional)')}</span><div className="session-chart-options"><FxSelect className="is-field" label={t('Chart Layout')} value="default" disabled options={[{value:'default',label:'Bố cục mặc định'}]} onChange={() => {}} /><div className="session-smooth-candles"><span>{t('Smooth candles')}<small>{t('Chưa hỗ trợ')}</small></span><button type="button" role="switch" aria-label={t('Smooth candles')} aria-checked="false" title={t('Chưa hỗ trợ')} disabled><span /></button></div></div></div>
+              {!presetEditor && <section className="quick-session-engine" aria-label={t('Charting engine')}><h3>{t('Charting engine')}</h3><p>{t('Chọn một lần cho phiên này.')}</p><div role="radiogroup" aria-label={t('Charting engine')}><button type="button" role="radio" aria-checked="false" disabled>New Chart <small>{t('Chưa khả dụng')}</small></button><button type="button" role="radio" aria-checked="true" disabled={busy}>Legacy Chart</button></div></section>}
             </>}
+            {presetEditor && <section className="session-preset-more"><h3>{t('Tùy chọn thêm')}</h3><SessionTradingOptions assets={selectedAssets} value={tradingOptions} onChange={changeTradingOptions} disabled={busy} error={errors.tradingOptions} id={id} /></section>}
           </>}
+          {presetProblem && <p className="wm-field-error" role="alert">{t(presetProblem)}</p>}
           {problem && <div role="alert" className="quick-session-error">{problem.uncertain ? t('Chưa xác định phiên đã tạo hay chưa. Kiểm tra danh sách phiên trước khi tạo lại.') : t('Không tạo được phiên: {error}', {error:problem.text})}{problem.uncertain && <a aria-disabled={busy || undefined} onClick={event => { if (busy) event.preventDefault() }} href={buildWorkspaceHref('replay',workspace,query,{select:'1',surface:null,fresh:null})}>{t('Xem danh sách phiên')}</a>}</div>}
         </div>
       </div>
       </div>
-      <footer className="quick-session-footer"><FormFeedback errors={errors} /><button type="button" disabled={busy} onClick={close}>{t('Cancel')}</button><button type="submit" className="quick-session-submit" disabled={busy || problem?.uncertain}>{t(pending ? 'Đang tạo…' : 'Create session')}</button></footer>
+      <footer className="quick-session-footer"><FormFeedback errors={errors} /><button type="button" disabled={busy} onClick={close}>{t('Cancel')}</button><button type="submit" className="quick-session-submit" disabled={busy || problem?.uncertain}>{t(presetEditor ? 'Lưu preset' : pending ? 'Đang tạo…' : 'Create session')}</button></footer>
     </form>
   </dialog>
 }

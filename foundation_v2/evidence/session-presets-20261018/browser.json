@@ -1,0 +1,12 @@
+{
+  "scope": "Production UI; isolated browser storage. Real catalog GETs, all backend writes blocked except one intercepted 503 failure test. No owner sessions modified.",
+  "cases": [
+    "backtest/vi: create/apply/edit/cancel/reload/delete; independent asset costs; mode scoping; no preset backend writes",
+    "backtest/en: create/apply/edit/cancel/reload/delete; independent asset costs; mode scoping; no preset backend writes",
+    "prop/vi: create/apply/edit/cancel/reload/delete; independent asset costs; mode scoping; no preset backend writes",
+    "prop/en: create/apply/edit/cancel/reload/delete; independent asset costs; mode scoping; no preset backend writes"
+  ],
+  "errors": [],
+  "writes": [],
+  "result": "PASS"
+}
