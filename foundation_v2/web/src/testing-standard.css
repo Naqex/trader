@@ -36,6 +36,7 @@
   background:var(--wm-control-hover); border-color:transparent;
 }
 /* Semantic actions supply local control roles, including shared hover rules. */
+.fx-app.fx-shell-story[data-theme] .fx-content .fx-dashboard .fx-dashboard-card-actions .fx-dashboard-card-expand[aria-expanded='true']:not(:hover) { background:transparent; }
 .fx-app.fx-shell-story[data-theme] .fx-content :is(button, a):is(.is-danger, .fxr-button-danger, .fxs-delete-confirm),
 .fx-app.fx-shell-story[data-theme] .fx-content :is(button, a):is(.is-danger, .fxr-button-danger, .fxs-delete-confirm):hover:not(:disabled) { --wm-control-open: var(--project-danger-action); --wm-hover: var(--project-danger-hover); --wm-control-text: var(--project-on-danger); color: var(--project-on-danger); border-color: transparent; background: var(--project-danger-action); }
 .fx-app.fx-shell-story[data-theme] .fx-content :is(button, a):is(.is-danger, .fxr-button-danger, .fxs-delete-confirm):hover:not(:disabled) { background: var(--project-danger-hover); }

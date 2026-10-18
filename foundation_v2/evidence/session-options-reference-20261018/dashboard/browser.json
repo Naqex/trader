@@ -1,0 +1,19 @@
+{
+  "scope": "Actual local dashboard reads; all writes blocked",
+  "cases": [
+    {
+      "theme": "dark",
+      "idle": "rgba(0, 0, 0, 0)",
+      "hover": "rgb(61, 65, 72)",
+      "result": "PASS"
+    },
+    {
+      "theme": "light",
+      "idle": "rgba(0, 0, 0, 0)",
+      "hover": "rgb(221, 225, 231)",
+      "result": "PASS"
+    }
+  ],
+  "errors": [],
+  "result": "PASS"
+}

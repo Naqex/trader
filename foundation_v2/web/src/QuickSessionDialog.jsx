@@ -22,6 +22,8 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
   const { t } = useTestingLocale(), id = useId()
   const dialog = useRef(null), nameInput = useRef(null), opener = useRef(document.activeElement), submitLock = useRef(false)
   const [mode, setMode] = useState(initialMode === 'prop' ? 'prop' : 'backtest'), [advanced, setAdvanced] = useState(false)
+  const panelBody = useRef(null)
+  useLayoutEffect(() => { panelBody.current?.scrollTo(0, 0) }, [advanced, mode])
   const [draft, setDraft] = useState({ name: '', balance: '10000', datasets: initialDataset ? [initialDataset] : [], strategy: '', description: '', period: { start: '', end: '', endMode: 'auto' } })
   const [balanceMode, setBalanceMode] = useState('10000')
   const [tradingOptions, setTradingOptions] = useState({ costs_enabled: false, assets: {} })
@@ -160,7 +162,7 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
     if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) close()
   }}>
     <header className="quick-session-header">
-      <h2 id={`${id}-title`}>{t('Tạo phiên nhanh')}</h2>
+      <h2 id={`${id}-title`}>{t('Create session')}</h2>
         <div className="quick-session-tabs" role="tablist" aria-label={t('Loại phiên')}>{[['backtest','Backtesting Session'],['prop','Prop Firm Session']].map(([key,label]) => <button key={key} id={`${id}-${key}`} role="tab" type="button" aria-selected={mode === key} aria-controls={`${id}-panel`} tabIndex={mode === key ? 0 : -1} disabled={busy} onClick={() => setMode(key)} onKeyDown={event => {
           if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return
           event.preventDefault(); const next = event.key === 'Home' ? 'backtest' : event.key === 'End' ? 'prop' : mode === 'backtest' ? 'prop' : 'backtest'; setMode(next); document.getElementById(`${id}-${next}`).focus()
@@ -174,10 +176,10 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
             <strong>{t('Cơ bản')}</strong><span>{t('Tên, số dư, chiến lược và tài sản')}</span>
           </button>
           <button type="button" aria-pressed={advanced} aria-controls={`${id}-panel`} disabled={busy} onClick={() => setAdvanced(true)}>
-            <strong>{t('Tùy chọn thêm')}</strong><span>{t('Spread, commission và trượt giá')}</span>
+            <strong>{t('Tùy chọn thêm')}</strong><span>{t('Spread, commission, đòn bẩy, hedging và trượt giá')}</span>
           </button>
         </nav>
-        <div className="quick-session-body">
+        <div className="quick-session-body" ref={panelBody}>
         <div role="tabpanel" id={`${id}-panel`} aria-labelledby={`${id}-${mode}`} className="quick-session-fields">
           {advanced ? <SessionTradingOptions assets={selectedAssets} value={tradingOptions} onChange={setTradingOptions} disabled={busy} error={errors.tradingOptions} id={id} /> : <>
             <label className={errors.name ? 'quick-session-invalid-field' : ''}><span>{t('Name')} <span className="quick-session-required" aria-hidden="true">*</span></span><input ref={nameInput} required maxLength={160} placeholder={t('Đặt tên phiên của bạn')} value={draft.name} disabled={busy} {...fieldProps('name')} onChange={event => change('name', event.target.value)} /><FieldError id={`${id}-name-error`} error={errors.name} /></label>

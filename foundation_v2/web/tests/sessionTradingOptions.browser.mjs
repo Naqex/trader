@@ -60,8 +60,21 @@ try {
     await fields.first().locator('input').nth(1).fill('7')
     await fields.nth(1).locator('input').nth(0).fill('0.20')
     await fields.nth(1).locator('input').nth(1).fill('3')
-    await dialog.locator('.session-asset-options').nth(1).locator('input').first().fill('0.00001')
+    const lastCharge = fields.last().locator('.session-option-charge')
+    for (const label of ['Mỗi chiều','Cả lượt mở + đóng']) {
+      await lastCharge.locator('.fx-select-trigger').click()
+      const option = lastCharge.getByRole('option',{name:label,exact:true})
+      assert.ok(await option.evaluate(el => {
+        const rect = el.getBoundingClientRect()
+        return el.contains(document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2))
+      }), 'last asset charge option is visible and not clipped by its surface')
+      await option.click()
+    }
+    const slippage = dialog.locator('[data-option=slippage] .session-slippage-asset').first()
+    await slippage.getByRole('button',{name:'Cố định',exact:true}).click()
+    await slippage.locator('input').fill('0.00001')
     await basics.click(); await more.click()
+    assert.equal(await dialog.locator('.quick-session-body').evaluate(el=>el.scrollTop),0,'switching sections starts at the section heading')
     assert.equal(await fields.first().locator('input').first().inputValue(),'0.00010','switching panels preserves cost inputs')
     assert.equal(await dialog.locator('.session-options-empty').count(),0)
     if(mode==='backtest') {
@@ -71,6 +84,11 @@ try {
         assert.ok(await dialog.evaluate(el=>el.scrollWidth<=el.clientWidth+1),'dialog has no horizontal overflow')
         assert.ok(await dialog.locator('.quick-session-body').evaluate(el=>el.scrollWidth<=el.clientWidth+1),'panel has no horizontal overflow')
         await dialog.screenshot({path:`${out}/more-${theme}-${width}.png`})
+        if(width !== 768) {
+          await dialog.locator('.quick-session-body').evaluate(el=>{el.scrollTop=el.scrollHeight})
+          await dialog.screenshot({path:`${out}/more-${theme}-${width}-lower.png`})
+          await dialog.locator('.quick-session-body').evaluate(el=>{el.scrollTop=0})
+        }
       }
       await page.setViewportSize({width:1440,height:900})
     }
