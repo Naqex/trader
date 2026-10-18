@@ -446,13 +446,11 @@ async fn invoke(
         .map_err(|_| ApiError::database())?;
     timings.mark("receipt_admission");
     let result = match crate::native_contracts::validate_body(handler, raw) {
-        Ok(body) => {
-            if id.is_empty() {
-                create(&tx, &state, &scope.workspace_id, &body).await
-            } else {
-                mutate(&tx, &state, &scope.workspace_id, id, &tail, &method, &body, &mut timings).await
-            }
-        }
+        Ok(body) => match mutation_response(&q, &tail) {
+            Ok(_) if id.is_empty() => create(&tx, &state, &scope.workspace_id, &body).await,
+            Ok(compact) => mutate(&tx, &state, &scope.workspace_id, id, &tail, &method, &body, compact, &mut timings).await,
+            Err(error) => Err(error),
+        },
         Err(error) => Err(error),
     };
     let (status, value) = match result {
@@ -481,6 +479,14 @@ async fn invoke(
     let response=crate::native_mutation::commit(tx, response).await;
     timings.mark("commit");
     response
+}
+
+fn mutation_response(q: &HashMap<String, String>, tail: &str) -> Result<bool, ApiError> {
+    match q.get("response_view").map(String::as_str) {
+        None => Ok(false),
+        Some("mutation-v1") if matches!(tail, "execution" | "orders/market" | "orders/quick" | "orders/protection" | "orders/close") => Ok(true),
+        Some(_) => Err(bad("unsupported replay mutation response view")),
+    }
 }
 
 async fn identities(
@@ -1474,6 +1480,7 @@ async fn mutate(
     tail: &str,
     method: &str,
     b: &Value,
+    compact: bool,
     timings: &mut ReplayTimings,
 ) -> Result<Value, ApiError> {
     if tail.starts_with("prop/") && tail.ends_with("/branch") {
@@ -1497,7 +1504,16 @@ async fn mutate(
     if integer(&record, "revision")? != integer(b, "expected_revision")? {
         return Err(conflict("record revision conflict"));
     }
+    let base_revision = integer(&record, "revision")?;
     let mut p = record["payload"].take();
+    if compact && p["asset_states"].is_object() {
+        return Err(bad("mutation_view_multi_asset_unsupported"));
+    }
+    let base_event_sequence = if compact && !p["execution"].is_null() {
+        integer(&p["execution"], "event_sequence")?
+    } else {
+        0
+    };
     let m = manifest(tx, workspace, text(&p, "dataset_id")?).await?;
     timings.mark("load_manifest");
     let current = integer(&p, "cursor_index")?;
@@ -1689,9 +1705,78 @@ async fn mutate(
     timings.mark("domain_transition");
     let saved = save_record(tx, workspace, &record, p, false).await?;
     timings.mark("revision_save");
-    let response=view(tx, state, workspace, saved, &HashMap::new()).await;
+    let response = if compact {
+        mutation_view(tx, state, workspace, saved, &m, base_revision, base_event_sequence).await
+    } else {
+        view(tx, state, workspace, saved, &HashMap::new()).await
+    };
     timings.mark("view_projection");
     response
+}
+
+async fn mutation_view(
+    tx: &Transaction<'_>,
+    state: &AppState,
+    workspace: &str,
+    mut saved: Value,
+    manifest: &Value,
+    base_revision: i64,
+    base_event_sequence: i64,
+) -> Result<Value, ApiError> {
+    let p = &saved["payload"];
+    let cursor = integer(p, "cursor_index")?;
+    let total = integer(manifest, "row_count")?;
+    if cursor < 0 || cursor >= total {
+        return Err(internal("replay cursor exceeds immutable dataset"));
+    }
+    let period = bounds(p)?;
+    if let Some(bound) = &period {
+        if cursor < integer(bound, "start_cursor_index")?
+            || cursor > integer(bound, "end_cursor_index")?
+            || integer(bound, "end_cursor_index")? >= total
+        {
+            return Err(internal("stored replay cursor exceeds its session period"));
+        }
+    }
+    let future = cursor < period.as_ref().map(|bound| integer(bound, "end_cursor_index"))
+        .transpose()?.unwrap_or(total - 1);
+    let cutoff = slice(state, manifest, cursor, cursor + 1).await?
+        .pop().ok_or_else(|| internal("visible replay window is empty"))?["timestamp"].clone();
+    let identity = identities(tx, workspace, text(&saved, "record_id")?, p).await?;
+    let mut execution = saved["payload"]["execution"].take();
+    // Persistence and domain validation still retain the full canonical ledger.
+    // Only this opt-in wire projection moves out its bounded appended suffix.
+    let ledger = execution.as_object_mut()
+        .and_then(|head| head.remove("ledger"))
+        .and_then(|ledger| match ledger { Value::Array(events) => Some(events), _ => None })
+        .ok_or_else(|| internal("invalid execution ledger in mutation response"))?;
+    let sequence = integer(&execution, "event_sequence")?;
+    let base = usize::try_from(base_event_sequence)
+        .map_err(|_| internal("invalid mutation base event sequence"))?;
+    if usize::try_from(sequence).ok() != Some(ledger.len()) || base > ledger.len()
+        || ledger.len() - base > 16
+    {
+        return Err(internal("mutation event suffix is inconsistent or exceeds its bound"));
+    }
+    let events: Vec<Value> = ledger.into_iter().skip(base).collect();
+    if events.iter().enumerate().any(|(index, event)| event["sequence"].as_i64() != Some(base_event_sequence + index as i64 + 1)) {
+        return Err(internal("mutation event suffix is not contiguous"));
+    }
+    let p = &saved["payload"];
+    let mut result = json!({
+        "schema_version":"replay-mutation-v1", "workspace_id":workspace,
+        "record_id":saved["record_id"], "dataset_id":p["dataset_id"],
+        "dataset_sha256":manifest["artifact_sha256"], "branch_id":p["branch_id"],
+        "base_revision":base_revision, "revision":saved["revision"],
+        "base_event_sequence":base_event_sequence, "execution_event_sequence":sequence,
+        "appended_events":events, "updated_at_utc":saved["updated_at_utc"],
+        "cursor_index":cursor, "view_cursor_index":cursor, "canonical_cursor_index":cursor,
+        "cutoff_timestamp":cutoff, "historical_view":false, "has_future_rows":future,
+        "execution_view_status":"current",
+        "payload_patch":{"execution":execution, "cursor_index":cursor, "status":p["status"], "timing":p["timing"]}
+    });
+    result.as_object_mut().unwrap().extend(identity.as_object().unwrap().clone());
+    Ok(result)
 }
 fn asset_ready(p: &Value, m: &Value, bar: &Value) -> Result<(), ApiError> {
     if p["asset_states"].is_object()

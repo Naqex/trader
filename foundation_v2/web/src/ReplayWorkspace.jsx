@@ -1,6 +1,7 @@
 import { sessionNavigationHref } from './sessionCatalog.js'
 import { navigate } from './clientNavigation.js'
 import { scopedMutation } from './scopedMutation.js'
+import { canUseReplayMutationView, mergeReplayMutationView, replayMutationEventsAfter } from './replayMutationView.js'
 import { scopedRead } from './scopedRead.js'
 import ProjectDateInput from './ProjectDateInput.jsx'
 import { displayDate } from './dateFormat.js'
@@ -670,6 +671,8 @@ export default function ReplayWorkspace({ workspace, query }) {
     setPropState(current => ({ ...current, status: 'ready', attempt: saved.attempt || nextAttempt, phase: saved.phase || nextPhase, resumeState: saved.resume_state || nextResume, error: null }))
   }
   const orderContext = useRef('')
+  const orderReplay = useRef(replay)
+  orderReplay.current = replay
   orderContext.current = `${workspace}:${sessionId}:${cursor}`
   const submitOrder = async (endpoint, body, expectedRevision = revision) => {
     if (!canOpenOrder || (completed && endpoint !== 'orders/close') || actionLock.current) return false
@@ -679,18 +682,25 @@ export default function ReplayWorkspace({ workspace, query }) {
     setPendingAction('order')
     setIsPlaying(false)
     try {
-      const response = await scopedMutation(`/api/v2/replay/sessions/${encodeURIComponent(sessionId)}/${endpoint}`, workspace, {
+      const base = orderReplay.current
+      if (base?.revision !== expectedRevision) throw Object.assign(new Error('revision_conflict'), { code: 'revision_conflict' })
+      const responseView = canUseReplayMutationView(base) ? '?response_view=mutation-v1' : ''
+      const response = await scopedMutation(`/api/v2/replay/sessions/${encodeURIComponent(sessionId)}/${endpoint}${responseView}`, workspace, {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Workspace-Id': workspace },
         body: JSON.stringify({ ...body, expected_revision: expectedRevision }),
       })
-      const next = await readJson(response)
+      const result = await readJson(response)
       if (orderContext.current !== origin || window.location.search !== location) return false
+      const merged = mergeReplayMutationView(orderReplay.current, result, { workspace, sessionId, expectedRevision })
+      const next = merged.replay
+      orderReplay.current = next
       setState({ status: 'ready', payload: next, error: null })
       if (endpoint === 'execution' && propMode) await persistPropReplayBinding(next)
       if (['orders/close', 'orders/quick', 'orders/market'].includes(endpoint) && propMode) {
         let current = propState
         try {
-          for (const event of propPriceMarkEvents(next.payload.execution.ledger, Number(current.resumeState?.replay_binding?.last_replay_event_sequence || 0))) {
+          const boundSequence = Number(current.resumeState?.replay_binding?.last_replay_event_sequence || 0)
+          for (const event of propPriceMarkEvents(replayMutationEventsAfter(merged, boundSequence), boundSequence)) {
             const response = await scopedMutation(`/api/v2/replay/sessions/${encodeURIComponent(sessionId)}/prop/sessions/${encodeURIComponent(propSessionId)}/attempts/${encodeURIComponent(propAttemptId)}/feed`, workspace, {
               method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Workspace-Id': workspace },
               body: JSON.stringify({ replay_event_sequence: Number(event.sequence), expected_prop_revision: current.attempt.revision, prop_event_sequence: Number(current.phase.last_event_sequence) + 1 }),
@@ -707,6 +717,7 @@ export default function ReplayWorkspace({ workspace, query }) {
       return next
     } catch (error) {
       if (error.code === 'revision_conflict') { setConflict(true); throw new Error('Phiên đã đổi ở nơi khác. Nạp trạng thái mới trước khi sửa lệnh.') }
+      if (error.code === 'replay_mutation_invalid') setConflict(true)
       throw error
     } finally { actionLock.current = false; setPendingAction('') }
   }

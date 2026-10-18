@@ -513,3 +513,48 @@ for an explicitly missing descriptor; rebuild, verify startup/rollback and
 bounded mixed resources. Long replay snapshots still scale with history; mutation
 view and compact execution storage remain work. Owner8010/5180 unchanged.
 Goal ACTIVE.
+
+## Root continuation 18/10: compact mutation wire contract and chart reconciliation
+
+- Single-asset execution/quick/market/protection/close POSTs now support opt-in
+  `response_view=mutation-v1`; full default remains unchanged. The bounded delta
+  contains the execution head, at most16 appended events and exact base/result
+  revision, sequence, workspace/session/branch/dataset/hash/cursor/cutoff identities.
+  Unknown/unsupported views, including create/portfolio, fail422 without replay
+  effects. Query representation remains part of the native receipt fingerprint.
+- React merges only into the exact base, keeps visible bars and unchanged
+  instrument/cost references, and fails closed on mismatched responses without
+  retrying a committed command. Initialization-to-market works before React
+  renders. Independent review caught a Prop recovery regression in the first
+  implementation: suffix-only feeding skipped older unacknowledged marks. The
+  final helper recovers those marks from the retained ledger before new ones;
+  reviewer confirmed closure.23 focused web tests PASS.
+- `../rust-native-20261018/runtime/mutation-view-final-root/receipt.json` PASS29
+  checks/30 alternating samples on the final release probe with frozen source and
+  binary hashes: all5 mutation routes, quick's two real revisions, exact wire
+  retry, full/compact fingerprint conflict, stale/tenant rejection, invalid
+  initialization rollback, portfolio/default compatibility and same-state
+  persisted/full financial parity. Router-only diagnostic,5 pairs per stage:
+
+  | Base events | Full median | Compact median | Full bytes | Compact bytes |
+  |---|---:|---:|---:|---:|
+  |2|31.41ms|31.15ms|5,550|3,174|
+  |502|54.41ms|48.59ms|341,386|3,208|
+  |5,002|233.41ms|193.65ms|3,109,328|3,224|
+
+  These are small local samples, not stable tail/capacity evidence. The first
+  attempt failed because its portfolio fixture used two EURUSD datasets; retained
+  `mutation-view-root/receipt.json` records that fixture error. The corrected
+  predecessor r2 passed28 checks before strict create-query rejection was added.
+- `../rust-native-20261018/runtime/mutation-chart-final-root/receipt.json` PASS
+  against release native HTTP plus production React/Advanced Charts,6,000bars and
+  a seeded5,000-event ledger.12 measured alternating BUY/SELL→TP-drag→close journeys
+  (plus warmup), actual compact schema/query asserted. Click-to-confirmed-paint
+  median230.6ms/sample-p95263ms;1,148 sampled drag frame intervals have median16.7ms,
+  sample-p9516.8ms. Iframe and price scale retained; zero chart history reloads
+  during dragging. Headless diagnostic, not manual visual or long-duration verdict.
+- Locked release bins/probe build, all-target check and96 Rust lib tests PASS;
+ 16 fixture-dependent tests are ignored in that lib run and have separate evidence.
+  Full history decode/validation/revision persistence and frontend ledger concat
+  remain O(history). Next storage boundary is documented in the existing native
+  runtime document; no owner storage migration/cutover has occurred. Goal ACTIVE.

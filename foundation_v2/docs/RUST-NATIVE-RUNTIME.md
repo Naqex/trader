@@ -146,3 +146,64 @@ still enumerates all files and rejects changed, added, missing or linked entries
 On Windows, restoring size/mtime cannot preserve the cached ChangeTime identity.
 Unsupported filesystems hash exact bytes without caching. This avoids repeatedly
 reading unchanged dependency bytes; it does not bypass installed-file validation.
+
+## Compact replay mutation responses
+
+Single-asset POST requests to `execution`, `orders/quick`, `orders/market`,
+`orders/protection` and `orders/close` can opt into
+`?response_view=mutation-v1`. The default response is unchanged. Unsupported
+views/routes and portfolio compact requests return 422 without changing the replay.
+The query is part of the idempotency fingerprint; changing it is a different
+representation and cannot reuse the same key with a different fingerprint.
+
+The `replay-mutation-v1` response contains the execution head without its ledger,
+at most 16 contiguous appended events, base/result revisions and event sequences,
+workspace/session/branch/dataset/hash identity, unchanged cursor/cutoff, Prop
+identity and bounded payload changes. First quick execution can advance two real
+revisions; a queued order can advance a revision without appending an event.
+Neither revision nor event sequence can substitute for the other.
+
+React accepts a delta only against that exact base. It retains visible bars and
+unchanged instrument/cost configuration references, appends events to its local
+ledger and locks further writes if reconciliation fails. It never resends a
+committed mutation to repair a response mismatch. Prop recovery also includes
+older unacknowledged marks from the retained ledger, in order, after a failed feed
+or reload. Portfolio and legacy snapshots retain the full-response path.
+
+This removes historical bars/ledger from the mutation wire response and receipt.
+It does not remove full snapshot reads, domain validation, JSONB revision writes,
+or frontend ledger concatenation. Browser evidence and Router-only comparisons
+are recorded separately in the execution checkpoint.
+
+## Next storage boundary
+
+The remaining history-dependent mutation path requires an execution head plus
+immutable append-only events and an indexed operation-ID set in the same
+PostgreSQL transaction. It must use the same financial transition/validation code,
+with a validated-prefix context rather than a second engine or skip-validation
+flag. Migration/import/restore must fully validate the prefix before admitting
+incremental transitions; validator changes must invalidate that admission.
+
+Every revision needs its own head and event cutoff, including queued orders that
+emit no event. Full/history/analytics/Prop reads must hydrate the requested
+revision, and catalog/deletion checks must understand compact metadata. Initially
+copy a validated branch prefix on the cold path; do not inherit parent operations
+after the chosen revision. Portfolio legacy storage remains explicit until each
+asset and the shared account clock have equivalent coverage.
+
+A stored prefix hash alone cannot prove an unread prefix is unchanged. The trust
+boundary must include immutable committed PostgreSQL event rows and controlled
+restore/import. This design remains implementation work; no storage migration or
+owner cutover is implied by the compact response slice.
+
+Compact storage must also preserve a verified rollback route. Python compatibility
+readers consume revision JSONB directly, and both migration ledgers reject unknown
+schema versions. A profile toggle alone cannot make historical binaries understand
+a new storage format. Before promotion, rehearse quiesced DB/artifact backup and
+restore into a new owned target, materialize every compact revision into validated
+full payloads there, and require zero compact rows before a pinned same-schema
+compatibility build starts. Preserve revision IDs/timestamps, Prop bindings and
+committed receipt bytes. Do not remove migration entries to force a downgrade.
+Returning to native after compatibility writes must revalidate/import the new full
+revision instead of reusing stale sidecars. The original native source stays intact
+throughout this recovery rehearsal; owner switching remains a separate gate.

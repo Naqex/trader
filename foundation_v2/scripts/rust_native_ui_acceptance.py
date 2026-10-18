@@ -18,11 +18,20 @@ def main():
     parser.add_argument('--pg-bin',type=Path,default=PG_DEFAULT)
     parser.add_argument('--bin-dir',type=Path,default=V2/'api-rust/target/native-candidate/release')
     parser.add_argument('--samples',type=int,default=12)
+    parser.add_argument('--ledger-steps',type=int,default=0)
     parser.add_argument('--http-benchmark',action='store_true')
     parser.add_argument('--phase-timings',action='store_true')
     parser.add_argument('--benchmark-stages',default='0,500,5000')
-    args=parser.parse_args();out=args.output.resolve();out.mkdir(parents=True,exist_ok=True)
+    args=parser.parse_args();assert 0<=args.ledger_steps<=5000
+    out=args.output.resolve();out.mkdir(parents=True,exist_ok=True)
     flags=getattr(subprocess,'CREATE_NO_WINDOW',0);binary=args.bin_dir.resolve();checks=[];api=None;completed=False
+    def fingerprints():
+        paths=[*sorted((V2/'api-rust/src').rglob('*.rs')),
+               *sorted((V2/'web/src').rglob('*.js')),*sorted((V2/'web/src').rglob('*.jsx')),
+               V2/'web/scripts/quick_trading_latency_probe.mjs',Path(__file__).resolve()]
+        return {str(path.relative_to(V2)):hashlib.sha256(path.read_bytes()).hexdigest() for path in paths}
+    source_hashes=fingerprints()
+    binary_sha256=hashlib.sha256((binary/'trading-workspace-api.exe').read_bytes()).hexdigest()
     def run(command,env,name,cwd=V2):
         with (out/f'{name}.log').open('w',encoding='utf-8') as log:
             result=subprocess.run(command,cwd=cwd,env=env,stdout=log,stderr=subprocess.STDOUT,timeout=600,creationflags=flags)
@@ -49,7 +58,7 @@ def main():
                 store=PostgresStore(dsn);store.ensure_workspace('tenant-a')
                 fixture=json.loads((V2/'web/tests/visual/chart-fixture.json').read_text(encoding='utf-8'))
                 spec=fixture['datasets']['items'][0]['instrument_spec'];dataset='native-ui-synthetic'
-                rows=[dict(timestamp=1767225600+i*60,open=1.1+(i%20)*.00005,high=1.1015,low=1.0990,close=1.1001+(i%20)*.00005,volume=100+i) for i in range(6000 if args.http_benchmark else 300)]
+                rows=[dict(timestamp=1767225600+i*60,open=1.1+(i%20)*.00005,high=1.1015,low=1.0990,close=1.1001+(i%20)*.00005,volume=100+i) for i in range(6000 if args.http_benchmark or args.ledger_steps else 300)]
                 artifact,sha=ArtifactStore(artifacts).write_dataset('tenant-a',dataset,rows)
                 source=DatasetSource(source_id='owned-native-ui-fixture',provider='synthetic',instrument_mapping={'EURUSD':'EURUSD'},license_use='owned synthetic only',retrieved_at_utc='2026-01-01T00:00:00Z',export_settings='native HTTP/UI validation')
                 store.put_dataset(DatasetManifest(dataset_id=dataset,workspace_id='tenant-a',source=source,instrument_id='EURUSD',timeframe='M1',timeframe_seconds=60,instrument_spec=spec,row_count=len(rows),first_timestamp=rows[0]['timestamp'],last_timestamp=rows[-1]['timestamp'],artifact_path=artifact,artifact_sha256=sha,quality={'disposition':'pass'},created_at_utc='2026-01-01T00:00:00Z'))
@@ -66,8 +75,15 @@ def main():
                     else:raise AssertionError('native API readiness timeout')
                     before=process_resources(int(api._handle));started=time.perf_counter()
                     node=__import__('shutil').which('node');assert node
-                    run([node,'scripts/quick_trading_latency_probe.mjs','--output',str(out/'browser.json'),
-                         '--api-base',origin,'--workspace','tenant-a','--dataset-id',dataset,'--samples',str(args.samples)],env,'browser',V2/'web')
+                    browser_args=[node,'scripts/quick_trading_latency_probe.mjs','--output',str(out/'browser.json'),
+                         '--api-base',origin,'--workspace','tenant-a','--dataset-id',dataset,'--samples',str(args.samples)]
+                    if args.ledger_steps:
+                        sys.path.insert(0,str(V2/'tests'))
+                        from test_replay_execution_core import initial_state
+                        seed=root/'seed-execution.json'
+                        seed.write_text(json.dumps(dict(instrument_spec=spec,cost_model=initial_state().cost_model,spread_price='0.0002',timeframe_seconds=60,starting_balance='10000')),encoding='utf-8')
+                        browser_args+=['--seed-ledger-steps',str(args.ledger_steps),'--execution-config',str(seed)]
+                    run(browser_args,env,'browser',V2/'web')
                     elapsed=time.perf_counter()-started;after=process_resources(int(api._handle))
                     report=json.loads((out/'browser.json').read_text());assert report['status']=='PASS'
                     with psycopg.connect(dsn) as conn:
@@ -97,10 +113,12 @@ def main():
                     except subprocess.TimeoutExpired:api.kill();api.wait(timeout=5)
                 subprocess.run([str(args.pg_bin/'pg_ctl.exe'),'-D',str(data),'-m','fast','stop'],capture_output=True,timeout=20,creationflags=flags)
                 pg.wait(timeout=20)
-                receipt=dict(passed=completed,checks=checks,owner_runtime_touched=False,disposable=True,build='release',broker=False,
-                    source_hashes={str(path.relative_to(V2)):hashlib.sha256(path.read_bytes()).hexdigest() for path in [V2/'api-rust/src/main.rs',V2/'api-rust/src/replay_service.rs',V2/'api-rust/src/replay_core.rs',V2/'api-rust/src/native_mutation.rs',V2/'web/src/advancedOrderOverlay.js',V2/'web/scripts/quick_trading_latency_probe.mjs']},
-                    binary_sha256=hashlib.sha256((binary/'trading-workspace-api.exe').read_bytes()).hexdigest())
+                source_unchanged=source_hashes==fingerprints()
+                binary_unchanged=binary_sha256==hashlib.sha256((binary/'trading-workspace-api.exe').read_bytes()).hexdigest()
+                receipt=dict(passed=completed and source_unchanged and binary_unchanged,checks=checks,owner_runtime_touched=False,disposable=True,build='release',broker=False,
+                    source_unchanged=source_unchanged,binary_unchanged=binary_unchanged,source_hashes=source_hashes,binary_sha256=binary_sha256)
                 (out/'receipt.json').write_text(json.dumps(receipt,indent=2),encoding='utf-8')
     print(json.dumps({k:v for k,v in receipt.items() if k not in {'source_hashes','binary_sha256'}}))
+    assert receipt['passed'],'incomplete journey or source/binary changed during acceptance'
 
 if __name__=='__main__':main()

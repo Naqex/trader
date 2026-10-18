@@ -19,6 +19,9 @@ assert.ok(Number.isSafeInteger(samples) && samples >= 2 && samples <= 40)
 const api = value('--api-base', null)
 const workspace = value('--workspace', 'visual-chart-fixture')
 const dataset = value('--dataset-id', null)
+const seedSteps = Number(value('--seed-ledger-steps', 0))
+assert.ok(Number.isSafeInteger(seedSteps) && seedSteps >= 0 && seedSteps <= 5000)
+assert.ok(!seedSteps || (api && args.includes('--execution-config')), 'Ledger seeding needs an explicit disposable API and execution config')
 if (api) {
   const url = new URL(api)
   assert.ok(url.protocol === 'http:' && ['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname), 'Only an explicitly selected local candidate API is allowed')
@@ -43,10 +46,20 @@ const apiRequest = async (suffix, body) => {
 }
 if (api) {
   replay = await apiRequest('/api/v2/replay/sessions', { dataset_id: dataset, name: `Disposable quick latency ${Date.now()}`, starting_balance: '10000' })
-  replay = await apiRequest(`/api/v2/replay/sessions/${replay.record_id}/step`, { expected_revision: replay.revision, steps: 60 })
+  if (seedSteps) {
+    const configuration = JSON.parse(await readFile(path.resolve(value('--execution-config')), 'utf8'))
+    replay = await apiRequest(`/api/v2/replay/sessions/${replay.record_id}/execution`, { ...configuration, expected_revision: replay.revision })
+  }
+  for (let remaining = seedSteps || 60; remaining > 0;) {
+    const steps = Math.min(1000, remaining)
+    replay = await apiRequest(`/api/v2/replay/sessions/${replay.record_id}/step`, { expected_revision: replay.revision, steps })
+    remaining -= steps
+  }
 }
 const sessionPath = `/api/v2/replay/sessions/${replay.record_id}`
 report.session = replay.record_id
+report.seedLedgerSteps = seedSteps
+report.initialLedgerEvents = replay.payload.execution?.ledger?.length || 0
 const built = await build({ root, configFile: path.join(root, 'vite.config.js'), logLevel: 'error', build: { write: false }, plugins: baseline ? [{ name: 'baseline-overlay', enforce: 'pre', load(id) { return id.replaceAll('\\', '/') === overlayPath.replaceAll('\\', '/') ? overlaySource : null } }] : [] })
 const files = new Map(built.output.map(item => ['/' + item.fileName, item.type === 'chunk' ? item.code : item.source]))
 const vendorRoot = await realpath(process.env.TW_V2_CHARTING_LIBRARY_DIR || path.join(root, '../../static/charting_library'))
@@ -129,7 +142,7 @@ try {
   let historyReads = 0
   page.on('request', req => { if (req.method() === 'GET' && /chart-window|\/bars/.test(req.url())) historyReads++ })
   const responses = []
-  page.on('requestfinished', req => { if (req.method() === 'POST' && req.url().includes('/orders/')) responses.push({ path: new URL(req.url()).pathname, timing: req.timing() }) })
+  page.on('requestfinished', req => { if (req.method() === 'POST' && req.url().includes('/orders/')) responses.push({ path: new URL(req.url()).pathname, responseView: new URL(req.url()).searchParams.get('response_view'), timing: req.timing() }) })
   await page.goto(`${origin}/?workspace=${api ? workspace : fixture.workspace}&view=replay&surface=workspace&session=${replay.record_id}`)
   await page.locator('[data-chart-status=ready]').waitFor({ timeout: 30000 })
   const iframe = await page.locator('.advanced-chart-host iframe').elementHandle(), frame = await iframe.contentFrame()
@@ -150,12 +163,17 @@ try {
   for (let i = -1; i < samples; i++) {
     const side = i % 2 === 0 ? 'BUY' : 'SELL'
     const start = await metrics()
-    const response = page.waitForResponse(res => /\/orders\/(quick|market)$/.test(res.url()) && res.request().method() === 'POST')
+    const response = page.waitForResponse(res => /\/orders\/(quick|market)$/.test(new URL(res.url()).pathname) && res.request().method() === 'POST')
     await page.locator(side === 'BUY' ? 'button.buy' : 'button.sell').click()
-    assert.equal((await response).status(), 200)
+    const confirmedResponse = await response
+    assert.equal(confirmedResponse.status(), 200)
     await frame.waitForFunction(() => document.querySelector('[data-order-kind=entry]')?.textContent.includes('USD') && !document.querySelector('[data-order-drag=stop]')?.disabled)
     await frame.waitForFunction(() => window.__qaPaints.some(item => item.click === parent.__qaClick))
     const paint = await frame.evaluate(() => window.__qaPaints.at(-1))
+    if (api) {
+      assert.equal(new URL(confirmedResponse.url()).searchParams.get('response_view'), 'mutation-v1')
+      assert.equal((await confirmedResponse.json()).schema_version, 'replay-mutation-v1')
+    }
     const range = await page.evaluate(() => window.__qaChart.getPanes()[0].getMainSourcePriceScale().getVisiblePriceRange())
     const beforeDrag = await page.evaluate(() => ({ writes: window.__qaPriceWrites, at: performance.now() }))
     const beforeFrames = await frame.evaluate(() => window.__qaFrames.length)
@@ -164,10 +182,16 @@ try {
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down()
     // Deliberately include sub-tick moves to measure duplicate native writes.
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + (side === 'BUY' ? -75 : 75), { steps: 72 })
-    const saving = page.waitForResponse(res => res.url().endsWith('/orders/protection') && res.request().method() === 'POST')
-    await page.mouse.up(); assert.equal((await saving).status(), 200)
+    const saving = page.waitForResponse(res => new URL(res.url()).pathname.endsWith('/orders/protection') && res.request().method() === 'POST')
+    await page.mouse.up()
+    const protectionResponse = await saving
+    assert.equal(protectionResponse.status(), 200)
     await frame.waitForFunction(() => !document.querySelector('[data-order-drag=target]').disabled)
     const after = await metrics(), afterDrag = await page.evaluate(() => ({ writes: window.__qaPriceWrites, at: performance.now() }))
+    if (api) {
+      assert.equal(new URL(protectionResponse.url()).searchParams.get('response_view'), 'mutation-v1')
+      assert.equal((await protectionResponse.json()).schema_version, 'replay-mutation-v1')
+    }
     const afterRange = await page.evaluate(() => window.__qaChart.getPanes()[0].getMainSourcePriceScale().getVisiblePriceRange())
     const pane = await frame.locator('td.chart-markup-table.pane div.chart-gui-wrapper').boundingBox()
     const scaleMovementPixels = Math.max(Math.abs(afterRange.from - range.from), Math.abs(afterRange.to - range.to)) / (range.to - range.from) * pane.height
