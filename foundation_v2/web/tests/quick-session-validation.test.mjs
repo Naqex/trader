@@ -38,7 +38,22 @@ test('catalog loading/error and unfinished strategy creation explain why submiss
 })
 test('asset cap is enforced separately from availability', () => {
   const input = fixture()
+  input.mode = 'backtest'
   input.draft.datasets = Array.from({length:13}, (_, i) => `local-${i}`)
   input.selectedAssets = input.draft.datasets.map(dataset_id => ({ dataset_id }))
   assert.match(quickSessionErrors(input).assets, /12/)
+})
+
+test('switching a multiasset Backtest draft to Prop requires explicit deselection', () => {
+  const input = fixture()
+  input.draft.datasets.push('other')
+  input.selectedAssets.push({ dataset_id:'other', instrument_spec:{ account_ccy:'USD' } })
+  input.mode = 'backtest'
+  assert.deepEqual(quickSessionErrors(input), {})
+  input.mode = 'prop'
+  assert.match(quickSessionErrors(input).assets, /chỉ hỗ trợ 1 tài sản/)
+  assert.deepEqual(input.draft.datasets, ['local', 'other'], 'validation never silently discards a selection')
+  input.draft.datasets.pop()
+  input.selectedAssets.pop()
+  assert.deepEqual(quickSessionErrors(input), {})
 })

@@ -20,3 +20,4 @@
 .fx-app.is-chart-workspace .wm-notifications { inset:auto auto calc(72px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px)); width:min(340px,calc(100vw - 32px)); max-height:calc(100dvh - 160px); overflow-y:auto; }
 .fx-app .wm-notification.is-blocking { align-items:flex-start; flex-wrap:wrap; }
 .fx-app .wm-notification .wm-notification-action { flex:0 0 auto; width:auto; height:auto; min-height:32px; padding:4px 8px; font-size:13px; background:var(--wm-hover); color:var(--wm-content); }
+.fx-app .wm-notification a.wm-notification-action { display:inline-flex; align-items:center; border-radius:var(--ds-radius-small); text-decoration:none; }

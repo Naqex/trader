@@ -22,6 +22,12 @@ export function isPropTerminal(status) {
   return TERMINAL_PROP_STATUSES.has(status)
 }
 
+export function isUnsupportedPropReplay(replay) {
+  const payload = replay?.payload
+  return (Array.isArray(payload?.dataset_ids) && payload.dataset_ids.length > 1)
+    || Object.keys(payload?.asset_states || {}).length > 0
+}
+
 export function propPriceMarkEvents(events, afterSequence = 0) {
   return Array.isArray(events) ? events.filter(event => ['price_mark', 'manual_close', 'order_cancel'].includes(event?.kind) && Number.isSafeInteger(Number(event.sequence)) && Number(event.sequence) > afterSequence).sort((a,b) => Number(a.sequence)-Number(b.sequence)) : []
 }

@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { propReplayRuleView } from '../src/propReplayModel.js'
+import { isUnsupportedPropReplay, propReplayRuleView } from '../src/propReplayModel.js'
+
+test('Prop rejects portfolio snapshots before initialization while single-asset snapshots remain usable', () => {
+  assert.equal(isUnsupportedPropReplay(null), false)
+  assert.equal(isUnsupportedPropReplay({ payload: { dataset_ids: ['eurusd'], asset_states: {} } }), false)
+  assert.equal(isUnsupportedPropReplay({ payload: { dataset_ids: ['eurusd', 'gbpusd'] } }), true)
+  assert.equal(isUnsupportedPropReplay({ payload: { asset_states: { eurusd: {} } } }), true)
+})
 
 const state = () => ({
   session: { profile: { phases: [{ phase_index: 1, currency: 'USD', profit_target: { threshold: { percent: '10' }, basis: 'balance' }, daily_loss: { threshold: { amount: '500' }, basis: 'equity' }, overall_drawdown: { threshold: { percent: '10' }, basis: 'equity', kind: 'static' }, reset_local_time: '00:00:00', reset_timezone: 'UTC', position_policy: 'must_be_flat', min_qualifying_days: 1, max_calendar_days: 30 }] } },

@@ -5,7 +5,7 @@ import { datasetAssetOptions } from './datasetAssetOptions.js'
 import { useTestingLocale } from './testingLocale.jsx'
 import './dataset-asset-select.css'
 
-export default function DatasetAssetSelect({ datasets, instruments, sessions, value, onChange, disabled, ...triggerProps }) {
+export default function DatasetAssetSelect({ datasets, instruments, sessions, value, onChange, disabled, maxAssets = 12, ...triggerProps }) {
   const { t } = useTestingLocale()
   const [category, setCategory] = useState('all')
   const rawOptions = datasetAssetOptions(datasets, instruments, sessions, value)
@@ -14,7 +14,7 @@ export default function DatasetAssetSelect({ datasets, instruments, sessions, va
   const options = rawOptions.map(option => {
     const dataset = datasets.find(item => item.dataset_id === option.value)
     return { ...option, disabled:!value.includes(option.value) && (
-      value.length >= 12 && !selectedSymbols.has(dataset?.instrument_id)
+      value.length >= maxAssets && !selectedSymbols.has(dataset?.instrument_id)
       || value.length > 0 && (dataset?.instrument_spec?.account_ccy || 'USD') !== currency) }
   })
   const choose = next => {

@@ -13,7 +13,7 @@ from trading_workspace_v2.store import PostgresStore
 import httpx
 
 
-def run_acceptance(evidence_name, browser_script, *, pytest_paths=(), runtime_profile='compatibility', replay_storage_profile='full'):
+def run_acceptance(evidence_name, browser_script, *, pytest_paths=(), runtime_profile='compatibility', replay_storage_profile='full', binary_directory=None):
     out = V2 / 'evidence' / evidence_name
     out.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='tw-browser-qa-') as temporary:
@@ -36,7 +36,7 @@ def run_acceptance(evidence_name, browser_script, *, pytest_paths=(), runtime_pr
                 '--manifest', str(work / 'runtime/owner.json'), '--runtime-profile', runtime_profile,
                 '--replay-storage-profile', replay_storage_profile]
         if runtime_profile == 'native':
-            binaries = V2 / 'api-rust/target/native-candidate/release'
+            binaries = Path(binary_directory).resolve() if binary_directory else V2 / 'api-rust/target/native-candidate/release'
             for option, name in [('rust-binary', 'trading-workspace-api'), ('rust-admin-binary', 'rust_runtime_admin'), ('rust-research-binary', 'rust_research_worker')]:
                 base.extend([f'--{option}', str(binaries / f'{name}.exe')])
         children, logs = [], []

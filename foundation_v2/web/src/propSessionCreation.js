@@ -35,6 +35,8 @@ async function sha256Text(value) {
 
 
 export async function createPropChartSession(workspace, draft, datasets) {
+  const selectedIds = draft.datasetVersions?.length ? draft.datasetVersions : [draft.datasetVersion]
+  if (selectedIds.length !== 1 || selectedIds[0] !== draft.datasetVersion) throw Object.assign(new Error('Phiên Prop Firm chỉ hỗ trợ 1 tài sản. Bỏ bớt tài sản trước khi tạo phiên.'), { status: 422 })
   const start = utcIsoFromInput(draft.startUtc)
   const durationDays = Number(draft.durationDays) > 0 ? Math.max(1, Number(draft.durationDays)) : null
   const initialCapital = Number(draft.initialCapital), targetPercent = Number(draft.targetPercent)
@@ -76,7 +78,6 @@ export async function createPropChartSession(workspace, draft, datasets) {
   const suffix = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
   const sessionId = `${base}-${suffix}`.slice(0, 96)
   const attemptId = `attempt-${suffix}`
-  const selectedIds = draft.datasetVersions?.length ? draft.datasetVersions : [draft.datasetVersion]
   const range = commonSessionRange(selectedIds.map(id => datasets.find(item => item.dataset_id === id)).filter(Boolean))
   const cutoff = draft.endUtc ? utcIsoFromInput(draft.endUtc) : range?.valid ? new Date(range.max * 1000).toISOString() : null
   if (!range?.valid || !cutoff || Date.parse(start) < range.min * 1000 || Date.parse(cutoff) <= Date.parse(start) || Date.parse(cutoff) > range.max * 1000 || selectedIds.some(id => !datasets.some(item => item.dataset_id === id))) throw new Error('Khoảng dữ liệu không hợp lệ.')
@@ -174,6 +175,7 @@ export async function openPropReplay(workspace, bundle, datasets) {
   if (existing) return existing
   const dataset = datasets.find(item => item.dataset_id === attempt.data_version || item.artifact_sha256 === attempt.data_version || item.dataset_sha256 === attempt.data_version || `sha256:${item.artifact_sha256}` === attempt.data_version)
   const ids = metadata.dataset_ids?.length ? metadata.dataset_ids : [dataset?.dataset_id || attempt.data_version]
+  if (ids.length !== 1) throw Object.assign(new Error('Phiên Prop Firm này có nhiều tài sản và chưa thể mở chart. Tạo phiên mới với 1 tài sản.'), { status: 422 })
   const record = await createReplaySession(workspace, {
     dataset_id: ids[0], dataset_ids: ids,
     name: metadata.session_name || 'Prop Firm',

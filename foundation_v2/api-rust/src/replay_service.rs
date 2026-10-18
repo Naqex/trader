@@ -1096,6 +1096,7 @@ async fn create(
     workspace: &str,
     b: &Value,
 ) -> Result<Value, ApiError> {
+    validate_prop_asset_scope(b)?;
     let dataset = text(b, "dataset_id")?;
     let start = b["start_index"].as_i64().unwrap_or(0);
     let m = manifest(tx, workspace, dataset).await?;
@@ -1211,6 +1212,20 @@ async fn create(
     let record = create_record(tx, workspace, &uid(), p).await?;
     view(tx, state, workspace, record, &HashMap::new()).await
 }
+
+fn validate_prop_asset_scope(payload: &Value) -> Result<(), ApiError> {
+    let prop = payload["session_kind"] == "prop" || !payload["prop_session_id"].is_null();
+    let portfolio = payload["dataset_ids"].as_array().is_some_and(|ids| ids.len() > 1)
+        || payload["asset_states"].as_object().is_some_and(|assets| !assets.is_empty())
+        || payload["asset_states"].as_array().is_some_and(|assets| !assets.is_empty());
+    if prop && portfolio {
+        // The Prop lifecycle binds one immutable dataset; accepting a portfolio here
+        // would save trades that its subsequent lifecycle feed cannot acknowledge.
+        return Err(bad("multi-asset replay is not supported by Prop lifecycle"));
+    }
+    Ok(())
+}
+
 async fn single_period(
     state: &AppState,
     m: &Value,
@@ -1549,6 +1564,9 @@ async fn mutate(
     }
     let base_revision = integer(&record, "revision")?;
     let mut p = record["payload"].take();
+    if tail == "execution" || tail.starts_with("orders/") || tail == "step" {
+        validate_prop_asset_scope(&p)?;
+    }
     if compact && p["asset_states"].is_object() {
         return Err(bad("mutation_view_multi_asset_unsupported"));
     }
