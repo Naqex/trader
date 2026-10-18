@@ -1,10 +1,38 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { assetTradingDefaults, assetSlippageUnit, buildTradingOptions, sessionExecutionConfig, slippageAllowance, tradingOptionsError, tradingOptionsMatch } from '../src/sessionTradingOptions.js'
+import { assetTradingDefaults, assetSlippageUnit, buildTradingOptions, sessionExecutionConfig, slippageAllowance, tradingOptionsError, tradingOptionsMatch, slippageGroups, updateGroupSlippage } from '../src/sessionTradingOptions.js'
 import { marketQuotes } from '../src/replayOrderModel.js'
 import { createPropChartSession } from '../src/propSessionCreation.js'
 
 const assets = [{ dataset_id:'eur', instrument_id:'EUR/USD',instrument_spec:{asset_class:'fx',pip_size:'0.0001',tick_size:'0.00001'} }, { dataset_id:'gold', instrument_id:'XAU/USD',instrument_spec:{asset_class:'metal',pip_size:'0.1',tick_size:'0.01'} }]
+
+test('slippage categories combine aliases and apply a shared mode without changing other assets or fees', () => {
+  const yen = {dataset_id:'yen',instrument_id:'USD/JPY',replay_instrument_spec:{asset_class:'forex',pip_size:'0.01'}}
+  const selected = [assets[0],yen,assets[1]]
+  const before = {costs_enabled:true,assets:{eur:{...assetTradingDefaults(),spread_price:'0.0002'},gold:{...assetTradingDefaults(),slippage:{mode:'light'}}}}
+  const groups = slippageGroups(selected,before)
+  assert.deepEqual(groups.map(group => [group.category,group.assets.length]),[['fx',2],['metal',1]])
+  const after = updateGroupSlippage(before,groups[0].assets,{mode:'fixed',fixed_steps:'3'})
+  const saved = buildTradingOptions(after,selected)
+  assert.deepEqual(saved.assets.eur.slippage,{mode:'fixed',fixed_steps:3})
+  assert.deepEqual(saved.assets.yen.slippage,{mode:'fixed',fixed_steps:3})
+  assert.equal(saved.assets.eur.spread_price,'0.0002')
+  assert.deepEqual(saved.assets.gold.slippage,{mode:'light'})
+  assert.equal(sessionExecutionConfig({payload:{trading_options:saved,dataset_id:'yen'}},yen.replay_instrument_spec).costModel.slippage_model.unit_price,'0.01')
+  assert.equal(before.assets.yen,undefined,'editing a group must not mutate the original draft')
+})
+
+test('mixed preset assumptions remain explicit; incomplete group specs cannot enable slippage', () => {
+  const other = {...assets[0],dataset_id:'other',instrument_id:'GBP/USD'}
+  const options = {costs_enabled:false,assets:{eur:{...assetTradingDefaults(),slippage:{mode:'fixed',fixed_steps:2}},other:{...assetTradingDefaults(),slippage:{mode:'fixed',fixed_steps:'3'}}}}
+  const snapshot = structuredClone(options)
+  assert.equal(slippageGroups([assets[0],other],options)[0].mixed,true)
+  options.assets.other.slippage.fixed_steps='2'
+  assert.equal(slippageGroups([assets[0],other],options)[0].mixed,false,'numeric and form-string values agree')
+  const incomplete = {...other,instrument_spec:{asset_class:'fx'}}
+  assert.equal(slippageGroups([assets[0],incomplete],options)[0].available,false)
+  assert.equal(snapshot.assets.other.slippage.fixed_steps,'3')
+})
 test('default costs are explicitly off for every selected asset, with no inherited fixture fees', () => {
   const options = buildTradingOptions({ costs_enabled:false, assets:{} }, assets)
   const config = sessionExecutionConfig({ payload:{ trading_options:options, dataset_id:'eur' } }, { account_ccy:'USD' })

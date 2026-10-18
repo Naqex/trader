@@ -6121,5 +6121,6 @@
   "Preset đã thay đổi. Mở lại danh sách trước khi sửa.": {"vi":"Preset đã thay đổi. Mở lại danh sách trước khi sửa.","en":"This preset has changed. Reopen the list before editing."},
   "Lưu tối đa 50 preset cho mỗi loại phiên.": {"vi":"Lưu tối đa 50 preset cho mỗi loại phiên.","en":"Save up to 50 presets per session type."},
   "Chiến lược đã lưu không còn khả dụng. Chọn lại hoặc bỏ chọn.": {"vi":"Chiến lược đã lưu không còn khả dụng. Chọn lại hoặc bỏ chọn.","en":"The saved strategy is unavailable. Select another or clear it."},
-  "Smooth candles": {"vi":"Làm mượt nến","en":"Smooth candles"}
+  "Smooth candles": {"vi":"Làm mượt nến","en":"Smooth candles"},
+  "Thiết lập khác nhau. Chọn để áp dụng cho cả nhóm.": {"vi":"Thiết lập khác nhau. Chọn để áp dụng cho cả nhóm.","en":"Mixed settings. Choose a mode for the whole group."}
 }

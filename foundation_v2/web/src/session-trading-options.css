@@ -31,6 +31,8 @@
 .fx-app.fx-shell-story[data-theme] .fx-content .session-assumption-row + .session-assumption-row, .fx-app.fx-shell-story[data-theme] .fx-content .session-slippage-asset + .session-slippage-asset { border-top:1px solid var(--wm-border); }
 .fx-app.fx-shell-story[data-theme] .fx-content .session-option-unavailable { display:grid; justify-items:end; gap:5px; flex-shrink:0; }
 .fx-app.fx-shell-story[data-theme] .fx-content .session-slippage-modes { display:flex; flex:0 0 auto; padding:3px; border:1px solid var(--wm-border); border-radius:999px; background:var(--project-control); }
+.fx-app.fx-shell-story[data-theme] .fx-content .session-slippage-asset .session-assumption-row > div:first-child { min-width:0; }
+.fx-app.fx-shell-story[data-theme] .fx-content .session-slippage-group small { font-size:12px; overflow-wrap:anywhere; }
 .fx-app.fx-shell-story[data-theme] .fx-content .session-slippage-modes button { min-height:30px; padding:3px 14px; border:0; border-radius:999px; background:transparent; color:var(--wm-content-muted); }
 .fx-app.fx-shell-story[data-theme] .fx-content .session-slippage-modes button[aria-pressed=true] { background:var(--wm-control-hover); color:var(--wm-content); }
 .fx-app.fx-shell-story[data-theme] .fx-content .session-slippage-value { padding:0 20px 20px; }

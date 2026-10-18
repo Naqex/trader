@@ -1,0 +1,12 @@
+{
+  "scope": "Production UI with isolated browser storage and a labeled catalog fixture: real local EUR/USD cloned as a second Forex asset. No backend writes.",
+  "cases": [
+    "backtest/vi: category grouping, mixed preset, shared mode/fixed amount, other category unchanged, persisted per-asset values and reload",
+    "backtest/en: category grouping, mixed preset, shared mode/fixed amount, other category unchanged, persisted per-asset values and reload",
+    "prop/vi: category grouping, mixed preset, shared mode/fixed amount, other category unchanged, persisted per-asset values and reload",
+    "prop/en: category grouping, mixed preset, shared mode/fixed amount, other category unchanged, persisted per-asset values and reload"
+  ],
+  "errors": [],
+  "writes": [],
+  "result": "PASS"
+}

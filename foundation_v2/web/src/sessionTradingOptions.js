@@ -1,3 +1,5 @@
+import { categoryOf } from './dataLibraryModel.js'
+
 export const SESSION_COST_VERSION = 'session-cost-v2'
 export const TRADING_OPTIONS_VERSION = 'session-trading-options-v2'
 export const LEGACY_TRADING_OPTIONS_VERSION = 'session-trading-options-v1'
@@ -11,6 +13,31 @@ export function assetSlippageUnit(asset) {
   const unit = ['fx', 'forex'].includes(spec?.asset_class) ? 'pip' : 'tick'
   const price = unit === 'pip' ? spec?.pip_size : spec?.tick_size
   return { unit, price, available: typeof price === 'string' && validAmount(price) && Number(price) > 0 }
+}
+
+export function slippageGroups(assets, options) {
+  const groups = new Map()
+  for (const asset of assets) {
+    const category = categoryOf({ ...asset, instrument_spec:asset.instrument_spec || asset.replay_instrument_spec })
+    if (!groups.has(category)) groups.set(category, { category, assets:[] })
+    groups.get(category).assets.push(asset)
+  }
+  return [...groups.values()].map(group => {
+    const values = group.assets.map(asset => (options.assets[asset.dataset_id] || assetTradingDefaults()).slippage)
+    const first = values[0]
+    // Older presets can contain different assumptions within a category. Reading
+    // them must not silently replace those assumptions with the first asset's.
+    const mixed = values.some(value => value.mode !== first.mode || (value.mode === 'fixed' && String(value.fixed_steps) !== String(first.fixed_steps)))
+    return { ...group, mixed, slippage:mixed ? {mode:null} : first,
+      unit:assetSlippageUnit(group.assets[0]).unit,
+      available:group.assets.every(asset => assetSlippageUnit(asset).available) }
+  })
+}
+
+export function updateGroupSlippage(options, assets, slippage) {
+  return { ...options, assets:{ ...options.assets, ...Object.fromEntries(assets.map(asset => [asset.dataset_id,
+    { ...(options.assets[asset.dataset_id] || assetTradingDefaults()), slippage:{...slippage} }
+  ])) } }
 }
 
 const validAmount = value => typeof value === 'string' && value.length <= 32 && /^\d+(?:\.\d{1,12})?$/.test(value) && Number.isFinite(Number(value)) && Number(value) <= 1_000_000
