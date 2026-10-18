@@ -4866,6 +4866,77 @@
           "name": "body",
           "required": true,
           "schema": {
+            "$defs": {
+              "SessionAssetTradingOptions": {
+                "additionalProperties": false,
+                "properties": {
+                  "spread_price": {
+                    "maxLength": 32,
+                    "pattern": "^[0-9]+(?:\\.[0-9]+)?$",
+                    "title": "Spread Price",
+                    "type": "string"
+                  },
+                  "commission_per_lot": {
+                    "maxLength": 32,
+                    "pattern": "^[0-9]+(?:\\.[0-9]+)?$",
+                    "title": "Commission Per Lot",
+                    "type": "string"
+                  },
+                  "commission_charge": {
+                    "enum": [
+                      "round_trip",
+                      "per_side"
+                    ],
+                    "title": "Commission Charge",
+                    "type": "string"
+                  },
+                  "slippage_price": {
+                    "maxLength": 32,
+                    "pattern": "^[0-9]+(?:\\.[0-9]+)?$",
+                    "title": "Slippage Price",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "spread_price",
+                  "commission_per_lot",
+                  "commission_charge",
+                  "slippage_price"
+                ],
+                "title": "SessionAssetTradingOptions",
+                "type": "object"
+              },
+              "SessionTradingOptions": {
+                "additionalProperties": false,
+                "properties": {
+                  "version": {
+                    "const": "session-trading-options-v1",
+                    "title": "Version",
+                    "type": "string"
+                  },
+                  "costs_enabled": {
+                    "title": "Costs Enabled",
+                    "type": "boolean"
+                  },
+                  "assets": {
+                    "additionalProperties": {
+                      "$ref": "#/$defs/SessionAssetTradingOptions"
+                    },
+                    "maxProperties": 12,
+                    "minProperties": 1,
+                    "title": "Assets",
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "version",
+                  "costs_enabled",
+                  "assets"
+                ],
+                "title": "SessionTradingOptions",
+                "type": "object"
+              }
+            },
             "additionalProperties": false,
             "properties": {
               "dataset_id": {
@@ -5019,6 +5090,17 @@
                 ],
                 "default": null,
                 "title": "Prop Attempt Id"
+              },
+              "trading_options": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/SessionTradingOptions"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
               }
             },
             "required": [

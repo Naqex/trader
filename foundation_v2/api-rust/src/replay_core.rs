@@ -119,6 +119,9 @@ pub(super) fn quote(s: &Value, mid: &BigDecimal) -> R<(BigDecimal, BigDecimal)> 
     if mid <= &zero() || spread < zero() {
         return Err("mid must be positive and spread nonnegative".into());
     }
+    if spread == zero() && s["cost_model"]["version"] == "session-cost-v1" {
+        return Ok((mid.clone(), mid.clone()));
+    }
     let half = div(spread, BigDecimal::from(2));
     let bid = div(mid - &half, tick.clone()).with_scale_round(0, RoundingMode::Floor) * &tick;
     let ask = div(mid + half, tick.clone()).with_scale_round(0, RoundingMode::Ceiling) * tick;
@@ -164,10 +167,12 @@ pub(super) fn pnl(
     let rate = positive(c, "quote_to_account_rate")?;
     let account = py(&gross * &rate);
     let slip = py(py(py(dec(c, "slippage_price_per_side")? * BigDecimal::from(2)) * units) * &rate);
-    let comm = std::cmp::max(
-        py(dec(c, "commission_per_side_account")? * BigDecimal::from(2)),
-        dec(c, "minimum_fee_account")?,
-    );
+    let comm = if c["version"] == "session-cost-v1" {
+        let sides = if c["commission_charge"] == "per_side" { 2 } else { 1 };
+        py(py(dec(c, "commission_per_lot_account")? * positive(p, "quantity")?) * BigDecimal::from(sides))
+    } else {
+        std::cmp::max(py(dec(c, "commission_per_side_account")? * BigDecimal::from(2)), dec(c, "minimum_fee_account")?)
+    };
     let finance = dec(c, "financing_account")?;
     let net = py(account.clone() - py(py(&comm + &slip) + &finance));
     let places = int(c, "rounding_decimals")?;
@@ -318,6 +323,23 @@ fn provenance(s: &Value, window: bool) -> R<Value> {
     Ok(out)
 }
 
+fn validate_session_cost(c: &Value) -> R<()> {
+    if c["version"] != "session-cost-v1" {
+        if !c["commission_per_lot_account"].is_null() || !c["commission_charge"].is_null() {
+            return Err("per-lot commission requires session-cost-v1".into());
+        }
+        return Ok(());
+    }
+    if !["round_trip", "per_side"].contains(&c["commission_charge"].as_str().unwrap_or(""))
+        || dec(c, "commission_per_lot_account")? < zero()
+        || dec(c, "commission_per_side_account")? != zero()
+        || dec(c, "minimum_fee_account")? != zero()
+        || dec(c, "financing_account")? != zero() {
+        return Err("invalid session commission configuration; legacy fees cannot be combined".into());
+    }
+    Ok(())
+}
+
 fn initialize(a: &Value) -> R<Value> {
     let mut i = a["instrument_spec"].clone();
     let mut c = a["cost_model"].clone();
@@ -347,6 +369,8 @@ fn initialize(a: &Value) -> R<Value> {
                 "version",
                 "spread_basis",
                 "commission_per_side_account",
+                "commission_per_lot_account",
+                "commission_charge",
                 "minimum_fee_account",
                 "slippage_price_per_side",
                 "financing_account",
@@ -424,6 +448,7 @@ fn initialize(a: &Value) -> R<Value> {
     if i["account_ccy"] != c["account_ccy"] {
         return Err("instrument and cost model account currency mismatch".into());
     }
+    validate_session_cost(&c)?;
     let balance = positive(a, "starting_balance")?;
     let spread = dec(a, "spread_price")?;
     if spread < zero() {
@@ -1087,6 +1112,7 @@ fn validate_head(s: &Value) -> R<()> {
     if txt(c, "version")?.is_empty() {
         return Err("cost model version is required".into());
     }
+    validate_session_cost(c)?;
     positive(c, "quote_to_account_rate")?;
     dec(c, "financing_account")?;
     for k in [

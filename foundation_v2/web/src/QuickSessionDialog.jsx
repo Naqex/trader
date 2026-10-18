@@ -12,6 +12,8 @@ import { createReplaySession, rememberSession, sessionNavigationHref } from './s
 import { buildWorkspaceHref } from './workspaceContext.js'
 import { FieldError, FormFeedback, fieldValidationProps, focusFirstInvalid } from './FormValidation.jsx'
 import { quickSessionErrors } from './quickSessionValidation.js'
+import SessionTradingOptions from './SessionTradingOptions.jsx'
+import { buildTradingOptions, tradingOptionsError, tradingOptionsMatch } from './sessionTradingOptions.js'
 import './quick-session.css'
 
 const formatBalance = value => value.replace(/^(\d+)/, digits => digits.replace(/\B(?=(\d{3})+(?!\d))/g, ','))
@@ -22,6 +24,7 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
   const [mode, setMode] = useState(initialMode === 'prop' ? 'prop' : 'backtest'), [advanced, setAdvanced] = useState(false)
   const [draft, setDraft] = useState({ name: '', balance: '10000', datasets: initialDataset ? [initialDataset] : [], strategy: '', description: '', period: { start: '', end: '', endMode: 'auto' } })
   const [balanceMode, setBalanceMode] = useState('10000')
+  const [tradingOptions, setTradingOptions] = useState({ costs_enabled: false, assets: {} })
   const [propDraft, setPropDraft] = useState({ profileKind: 'generic', targetPercent: '10', dailyLoss: '500', overallLoss: '1000', durationDays: '' })
   const balanceInput = useRef(null), balanceCaret = useRef(null)
   const balanceDisplay = formatBalance(draft.balance)
@@ -40,6 +43,8 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
   const range = commonSessionRange(selectedAssets)
   const period = sessionPeriodState(draft.period, range)
   const validation = quickSessionErrors({ draft, mode, propDraft, selectedAssets, period, dataStatus: data.status, addingStrategy })
+  const optionsError = tradingOptionsError(tradingOptions, selectedAssets)
+  if (optionsError) validation.tradingOptions = optionsError
   const errors = submitted ? validation : {}
   const strategyError = strategySubmitted && !strategyName.trim() ? 'Tên chiến lược là bắt buộc.' : errors.strategy
   const fieldProps = key => fieldValidationProps(errors[key], `${id}-${key}-error`)
@@ -90,7 +95,13 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
     event.preventDefault()
     if (busy || problem?.uncertain || submitLock.current) return
     setSubmitted(true)
-    if (Object.keys(validation).length) { focusFirstInvalid(event.currentTarget); return }
+    if (Object.keys(validation).length) {
+      setAdvanced(Boolean(optionsError && Object.keys(validation).length === 1))
+      const form = event.currentTarget
+      requestAnimationFrame(() => focusFirstInvalid(form))
+      return
+    }
+    const savedTradingOptions = buildTradingOptions(tradingOptions, selectedAssets)
     if (mode === 'prop') {
       const propStart = Number.isFinite(period.start)
         ? new Date(period.start * 1000).toISOString().slice(0, 16)
@@ -112,6 +123,7 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
           startUtc: propStart,
           endUtc: period.end !== null ? new Date(period.end * 1000).toISOString().slice(0, 16) : '',
           durationDays: propDraft.durationDays,
+          tradingOptions: savedTradingOptions,
       }
       submitLock.current = true; setPending(true); setProblem(null)
       try {
@@ -128,11 +140,13 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
     try {
       const record = await createReplaySession(workspace, {
         name: draft.name.trim(), dataset_id: selected.dataset_id, dataset_ids: draft.datasets, starting_balance: draft.balance,
-        chart_engine: 'legacy', start_timestamp: period.start, end_timestamp: period.end, description: advanced ? draft.description : '',
+        chart_engine: 'legacy', start_timestamp: period.start, end_timestamp: period.end, description: draft.description,
+        trading_options: savedTradingOptions,
         ...(selectedStrategy ? { playbook_id: selectedStrategy.record_id, playbook_revision: selectedStrategy.revision } : {}),
       })
       if (!record.record_id || !record.payload || record.payload.dataset_id !== selected.dataset_id || JSON.stringify(record.payload.dataset_ids || [record.payload.dataset_id]) !== JSON.stringify(draft.datasets) || !Number.isInteger(record.revision)) throw new Error('Phản hồi tạo phiên không đúng định dạng.')
       if (record.session_period?.requested_start_timestamp !== period.start || record.session_period?.requested_end_timestamp !== period.end) throw new Error('Phản hồi tạo phiên không đúng khoảng thời gian đã chọn.')
+      if (!tradingOptionsMatch(record.payload.trading_options, savedTradingOptions)) throw new Error('Cấu hình chi phí đã lưu không khớp lựa chọn. Kiểm tra phiên trước khi giao dịch.')
       rememberSession(workspace, record.record_id)
       navigate(sessionNavigationHref('replay', workspace, query, { record_id: record.record_id, dataset_id: selected.dataset_id }, { select: null, surface: 'workspace', chart_iframe: query.get('chart_iframe') || 'srcdoc', chart_engine: null, fresh: null }))
     } catch (error) {
@@ -146,7 +160,7 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
     if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) close()
   }}>
     <header className="quick-session-header">
-      <h2 id={`${id}-title`}>{t(advanced ? 'Tạo phiên nâng cao' : 'Tạo phiên nhanh')}</h2>
+      <h2 id={`${id}-title`}>{t('Tạo phiên nhanh')}</h2>
         <div className="quick-session-tabs" role="tablist" aria-label={t('Loại phiên')}>{[['backtest','Backtesting Session'],['prop','Prop Firm Session']].map(([key,label]) => <button key={key} id={`${id}-${key}`} role="tab" type="button" aria-selected={mode === key} aria-controls={`${id}-panel`} tabIndex={mode === key ? 0 : -1} disabled={busy} onClick={() => setMode(key)} onKeyDown={event => {
           if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return
           event.preventDefault(); const next = event.key === 'Home' ? 'backtest' : event.key === 'End' ? 'prop' : mode === 'backtest' ? 'prop' : 'backtest'; setMode(next); document.getElementById(`${id}-${next}`).focus()
@@ -160,11 +174,12 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
             <strong>{t('Cơ bản')}</strong><span>{t('Tên, số dư, chiến lược và tài sản')}</span>
           </button>
           <button type="button" aria-pressed={advanced} aria-controls={`${id}-panel`} disabled={busy} onClick={() => setAdvanced(true)}>
-            <strong>{t('Phiên nâng cao')}</strong><span>{t('Thêm mô tả cho phiên')}</span>
+            <strong>{t('Tùy chọn thêm')}</strong><span>{t('Spread, commission và trượt giá')}</span>
           </button>
         </nav>
         <div className="quick-session-body">
         <div role="tabpanel" id={`${id}-panel`} aria-labelledby={`${id}-${mode}`} className="quick-session-fields">
+          {advanced ? <SessionTradingOptions assets={selectedAssets} value={tradingOptions} onChange={setTradingOptions} disabled={busy} error={errors.tradingOptions} id={id} /> : <>
             <label className={errors.name ? 'quick-session-invalid-field' : ''}><span>{t('Name')} <span className="quick-session-required" aria-hidden="true">*</span></span><input ref={nameInput} required maxLength={160} placeholder={t('Đặt tên phiên của bạn')} value={draft.name} disabled={busy} {...fieldProps('name')} onChange={event => change('name', event.target.value)} /><FieldError id={`${id}-name-error`} error={errors.name} /></label>
             <label className={errors.balance ? 'quick-session-invalid-field' : ''}><span>{t('Account Balance')} <span className="quick-session-required" aria-hidden="true">*</span></span><div className="quick-session-balance-picker" role="radiogroup" aria-label={t('Account Balance')}>
               {[['10000', '$10K'], ['50000', '$50K'], ['100000', '$100K'], ['250000', '$250K']].map(([value, label]) => <button key={value} type="button" role="radio" aria-label={label} aria-checked={balanceMode === value} disabled={busy} onClick={() => { setBalanceMode(value); change('balance', value) }}>{label}</button>)}
@@ -200,9 +215,10 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
               </div>
             </section> : <>
               <div className="quick-session-field"><span>{t('Select Chart Layout (Optional)')}</span><FxSelect className="is-field" label={t('Chart Layout')} value="default" disabled options={[{value:'default',label:'Bố cục mặc định'}]} onChange={() => {}} /></div>
-              {advanced && <label>{t('Description')}<textarea rows={3} maxLength={2000} disabled={busy} value={draft.description} onChange={event => change('description',event.target.value)} /></label>}
+              <label>{t('Description')}<textarea rows={3} maxLength={2000} disabled={busy} value={draft.description} onChange={event => change('description',event.target.value)} /></label>
               <section className="quick-session-engine" aria-label={t('Charting engine')}><h3>{t('Charting engine')}</h3><p>{t('Chọn một lần cho phiên này.')}</p><div role="radiogroup" aria-label={t('Charting engine')}><button type="button" role="radio" aria-checked="false" disabled>New Chart <small>{t('Chưa khả dụng')}</small></button><button type="button" role="radio" aria-checked="true" disabled={busy}>Legacy Chart</button></div></section>
             </>}
+          </>}
           {problem && <div role="alert" className="quick-session-error">{problem.uncertain ? t('Chưa xác định phiên đã tạo hay chưa. Kiểm tra danh sách phiên trước khi tạo lại.') : t('Không tạo được phiên: {error}', {error:problem.text})}{problem.uncertain && <a aria-disabled={busy || undefined} onClick={event => { if (busy) event.preventDefault() }} href={buildWorkspaceHref('replay',workspace,query,{select:'1',surface:null,fresh:null})}>{t('Xem danh sách phiên')}</a>}</div>}
         </div>
       </div>

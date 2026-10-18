@@ -22,3 +22,10 @@ test('unknown balances and range stay unknown, numeric zero remains visible', ()
   assert.equal(configured.startingBalance, '25000.75')
   assert.equal(configured.currency, 'EUR')
 })
+
+test('saved asset settings keep the correct symbol after server JSON key sorting', () => {
+  const item = {dataset_ids:['z-eur','a-gold'],instrument_ids:['EUR/USD','XAU/USD']}
+  const record = {payload:{trading_options:{assets:{'a-gold':{},'z-eur':{}}}}}
+  const facts = sessionSettingsFacts(item,{},null,null,record)
+  assert.deepEqual(facts.tradingAssets.map(asset=>[asset.dataset_id,asset.instrument_id]),[['a-gold','XAU/USD'],['z-eur','EUR/USD']])
+})

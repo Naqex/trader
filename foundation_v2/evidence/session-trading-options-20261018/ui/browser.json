@@ -1,0 +1,10 @@
+{
+  "scope": "Real local catalog reads and production UI. Creation writes intercepted, no owner sessions modified.",
+  "cases": [
+    "backtest: separate panel, default off, two independent assets, invalid blocked, draft preserved, options in creation request",
+    "prop: separate panel, default off, two independent assets, invalid blocked, draft preserved, options in creation request"
+  ],
+  "errors": [],
+  "unexpectedWrites": [],
+  "result": "PASS"
+}

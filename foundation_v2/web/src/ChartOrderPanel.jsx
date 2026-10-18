@@ -5,17 +5,22 @@ import { finiteNumber, marketQuotes, orderDraft, protectionReference, replayAtCu
 import { useReplayTickOptions } from './useReplayTickOptions.js'
 import FxSelect from './FxSelect.jsx'
 import { scalperProtection } from './legacyScalperPreset.js'
+import { sessionExecutionConfig } from './sessionTradingOptions.js'
 
 export function useChartOrder({ workspace, replay, dataset, ready, blocked, closeBlocked = blocked, submit, executionConfig = null }) {
   const execution = replayAtCutoff(replay)?.payload?.execution
   const account = replay?.portfolio_account || execution
   const assetStates = replay?.payload?.asset_states
   const instrument = execution?.instrument_spec || dataset?.instrument_spec || dataset?.replay_instrument_spec
+  const sessionConfig = sessionExecutionConfig(replay, instrument)
+  executionConfig = sessionConfig || executionConfig
   const [draft, setDraft] = useState(() => orderDraft(replay, instrument))
   const [notice, setNotice] = useState(null)
-  const [startingBalance, setStartingBalance] = useState('10000')
+  const [legacyStartingBalance, setStartingBalance] = useState('10000')
+  const startingBalance = sessionConfig ? String(replay.payload.starting_balance ?? '10000') : legacyStartingBalance
   useEffect(() => { setStartingBalance(String(replay?.payload?.starting_balance ?? '10000')) }, [replay?.record_id])
-  const [spread, setSpread] = useState('0.0002')
+  const [legacySpread, setSpread] = useState('0.0002')
+  const spread = sessionConfig?.spread ?? legacySpread
   const [pending, setPending] = useState(false)
   const [pendingOrder, setPendingOrder] = useState(null)
   const busy = useRef(false)
@@ -137,7 +142,7 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
         if (!initialization) throw new Error('Chưa đủ cấu hình simulator để vào lệnh nhanh.')
         endpoint = 'orders/quick'
       }
-      const quoteSeed = initialization ? marketQuotes({ ...nextReplay, payload: { ...nextReplay.payload, execution: { cursor_index: nextReplay.view_cursor_index ?? nextReplay.payload.cursor_index, spread_price: initialization.spread_price, instrument_spec: initialization.instrument_spec } } }) : marketQuotes(nextReplay)
+      const quoteSeed = initialization ? marketQuotes({ ...nextReplay, payload: { ...nextReplay.payload, execution: { cursor_index: nextReplay.view_cursor_index ?? nextReplay.payload.cursor_index, spread_price: initialization.spread_price, instrument_spec: initialization.instrument_spec, cost_model: initialization.cost_model } } }) : marketQuotes(nextReplay)
       const seedPrice = side === 'BUY' ? quoteSeed.ask : quoteSeed.bid
       const seededProtection = seedPrice === null ? null : scalperProtection(preset, seedPrice, side, initialization?.instrument_spec || execution?.instrument_spec)
       const invalidSeed = validateDraft({ side, quantity, ...seededProtection }, seedPrice, { optionalProtection: true })
@@ -222,10 +227,10 @@ export default function ChartOrderPanel({ order, blockedReason, legacy = false, 
     {blockedReason && <p role="status">{t(blockedReason)}</p>}
     {!execution ? <form onSubmit={event => { event.preventDefault(); order.initialize() }}>
       <h2>{t("Khởi tạo tài khoản")}</h2><p>{t("Chi phí mô phỏng, không phải báo giá broker.")}</p>
-      <label>{t("Vốn ban đầu (")}{costs?.account_ccy || t("Chưa rõ tiền tệ")})<input type="number" min="1" step="0.01" value={order.startingBalance} onChange={event => order.setStartingBalance(event.target.value)} disabled={disabled || Boolean(order.assetStates)} /></label>
-      <label className="replay-tick-toggle"><input type="checkbox" checked={order.tick.useTicks} disabled={disabled || !order.tick.options?.available} onChange={event => order.tick.setMode(event.target.checked ? 'tick' : 'bar')} />{t("Khớp lệnh bằng tick Bid/Ask")}</label>
-      <p role="status">{t(order.tick.options?.reason || 'Đang kiểm tra lịch sử tick…')}</p>
-      {order.tick.useTicks ? <label>{t("Đòn bẩy mô phỏng")}<input type="number" min="1" max="1000" step="1" value={order.tick.leverage} onChange={event => order.tick.setLeverage(event.target.value)} disabled={disabled} /></label> : <label>{t("Spread (đơn vị giá)")}<input type="number" min="0" step={instrument?.tick_size || 'any'} value={order.spread} onChange={event => order.setSpread(event.target.value)} disabled={disabled} /></label>}
+      <label>{t("Vốn ban đầu (")}{costs?.account_ccy || t("Chưa rõ tiền tệ")})<input type="number" min="1" step="0.01" value={order.startingBalance} onChange={event => order.setStartingBalance(event.target.value)} disabled={disabled || Boolean(order.assetStates) || Boolean(order.executionConfig?.forceBar)} /></label>
+      {!order.executionConfig?.forceBar && <label className="replay-tick-toggle"><input type="checkbox" checked={order.tick.useTicks} disabled={disabled || !order.tick.options?.available} onChange={event => order.tick.setMode(event.target.checked ? 'tick' : 'bar')} />{t("Khớp lệnh bằng tick Bid/Ask")}</label>}
+      {!order.executionConfig?.forceBar && <p role="status">{t(order.tick.options?.reason || 'Đang kiểm tra lịch sử tick…')}</p>}
+      {order.tick.useTicks && !order.executionConfig?.forceBar ? <label>{t("Đòn bẩy mô phỏng")}<input type="number" min="1" max="1000" step="1" value={order.tick.leverage} onChange={event => order.tick.setLeverage(event.target.value)} disabled={disabled} /></label> : <label>{t("Spread (đơn vị giá)")}<input type="number" min="0" step={instrument?.tick_size || 'any'} value={order.spread} onChange={event => order.setSpread(event.target.value)} disabled={disabled || Boolean(order.executionConfig?.forceBar)} /></label>}
       <button type="submit" disabled={disabled || !order.canInitialize || (order.tick.options === null && !order.executionConfig?.forceBar)}>{t("Khởi tạo simulator")}</button>
       {!order.canInitialize && <p>{t("Đang thiếu instrument hoặc timeframe trong dataset.")}</p>}
     </form> : <>

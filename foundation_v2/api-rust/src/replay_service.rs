@@ -551,6 +551,7 @@ async fn metadata(
     for key in [
         "dataset_id",
         "dataset_ids",
+        "trading_options",
         "name",
         "description",
         "playbook_id",
@@ -1224,6 +1225,12 @@ async fn create(
             .cloned()
             .unwrap_or(json!("USD"));
     }
+    if !b["trading_options"].is_null() {
+        let datasets = b["dataset_ids"].as_array()
+            .map(|ids| ids.iter().filter_map(Value::as_str).map(str::to_owned).collect())
+            .unwrap_or_else(|| vec![dataset.to_owned()]);
+        p["trading_options"] = crate::session_trading_options::normalize(&b["trading_options"], &datasets).map_err(bad)?;
+    }
     let record = create_record(tx, workspace, &uid(), p).await?;
     view(tx, state, workspace, record, &HashMap::new()).await
 }
@@ -1470,6 +1477,14 @@ async fn initialize(
     if !p["execution"].is_null() {
         return Err(conflict("replay execution is already initialized"));
     }
+    let mut configured = crate::session_trading_options::initialization(p, m, b).map_err(bad)?;
+    if !p["trading_options"].is_null() && !p["starting_balance"].is_null() {
+        if !b["starting_balance"].is_null() && dec(&b["starting_balance"])? != dec(&p["starting_balance"])? {
+            return Err(bad("execution must use the frozen session starting balance"));
+        }
+        configured["starting_balance"] = p["starting_balance"].clone();
+    }
+    let b = &configured;
     for key in [
         "instrument_spec",
         "cost_model",
@@ -2467,6 +2482,7 @@ async fn branch(
             "playbook_revision",
             "chart_engine",
             "session_period",
+            "trading_options",
         ] {
             if let Some(v) = old.get(key) {
                 p[key] = v.clone();

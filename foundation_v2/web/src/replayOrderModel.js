@@ -71,6 +71,7 @@ export function marketQuotes(replay) {
   const spread = finiteNumber(replay?.payload?.execution?.spread_price)
   const tick = finiteNumber(replay?.payload?.execution?.instrument_spec?.tick_size)
   if (close === null || spread === null || !(tick > 0)) return { bid: null, ask: null }
+  if (spread === 0 && execution?.cost_model?.version === 'session-cost-v1') return { bid: close, ask: close }
   const roundTick = (value, round) => {
     const units = value / tick
     const nearest = Math.round(units)

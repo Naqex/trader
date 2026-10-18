@@ -76,7 +76,7 @@ function initialDraft() {
     durationDays: '30',
     // The chart execution snapshot currently exposes this immutable bar-cost model.
     // Keep the Prop contract pinned to it so replay binding cannot drift after creation.
-    costVersion: 'replay-fixture-cost-v1',
+    costVersion: 'session-cost-v1',
     engineVersion: 'replay-v1',
   }
 }
@@ -624,7 +624,7 @@ export default function PropWorkspace({ workspace, query }) {
               </label>
               <label className="prop-field">
                 <span>{t("Cost model")}</span>
-                <FxSelect label={t("Cost model")} value="replay-fixture-cost-v1" disabled localizeOptions={false} options={[({ value: "replay-fixture-cost-v1", label: t("Replay fixture · immutable"), localize: false })]} />
+                <FxSelect label={t("Cost model")} value="session-cost-v1" disabled localizeOptions={false} options={[({ value: "session-cost-v1", label: t("Không tính chi phí · mặc định"), localize: false })]} />
               </label>
               <label className="prop-field"><span>{t("Engine khớp lệnh")}</span><FxSelect label={t("Engine khớp lệnh")} value="replay-v1" disabled localizeOptions={false} options={[({ value: "replay-v1", label: t("OHLC bar · immutable"), localize: false })]} /></label>
               <div className="prop-review prop-field-wide">

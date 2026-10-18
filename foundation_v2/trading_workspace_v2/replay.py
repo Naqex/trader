@@ -145,7 +145,9 @@ class ReplayService:
     def create(self, workspace_id: str, dataset_id: str, start_index: int = 0, *, name=None,
                description="", starting_balance=None, playbook_id=None, playbook_revision=None,
                chart_engine="legacy", dataset_ids=None, start_timestamp=None, end_timestamp=None,
-               prop_session_id=None, prop_attempt_id=None) -> dict:
+               prop_session_id=None, prop_attempt_id=None, trading_options=None) -> dict:
+        if trading_options is not None:
+            raise ValueError('session trading options require the Rust native runtime')
         if bool(prop_session_id) != bool(prop_attempt_id):
             raise ValueError('prop session and attempt must be supplied together')
         if prop_session_id:

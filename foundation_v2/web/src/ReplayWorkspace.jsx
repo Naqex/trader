@@ -39,6 +39,7 @@ import LegacyOrderDialog from './LegacyOrderDialog.jsx'
 import LegacyJournal from './LegacyJournal.jsx'
 import LegacyObjectTree from './LegacyObjectTree.jsx'
 import SessionSettingsDrawer from './SessionSettingsDrawer.jsx'
+import { buildTradingOptions } from './sessionTradingOptions.js'
 import PropRulesDialog from './PropRulesDialog.jsx'
 import { startReadyPropAttempt } from './propSessionCreation.js'
 import { updateSessionMetadata } from './sessionCatalog.js'
@@ -304,7 +305,7 @@ export default function ReplayWorkspace({ workspace, query }) {
       const response = await scopedMutation('/api/v2/replay/sessions', workspace, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Workspace-Id': workspace },
-        body: JSON.stringify({ dataset_id: datasetId, start_index: Number(startDraft) }),
+        body: JSON.stringify({ dataset_id: datasetId, start_index: Number(startDraft), starting_balance: '10000', trading_options: buildTradingOptions({ costs_enabled: false, assets: {} }, [{ dataset_id: datasetId }]) }),
       })
       const payload = await readJson(response)
       const viewCursor = Number(payload.view_cursor_index ?? payload.payload.cursor_index)

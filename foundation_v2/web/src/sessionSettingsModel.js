@@ -27,5 +27,8 @@ export function sessionSettingsFacts(item, dataset, payload, model, record) {
     last: dataset?.last_timestamp,
     costs,
     spread: execution?.spread_price,
+    quoteSource: execution?.quote_source,
+    tradingOptions: record?.payload?.trading_options,
+    tradingAssets: Object.keys(record?.payload?.trading_options?.assets || {}).map(dataset_id => ({ dataset_id, instrument_id: item?.instrument_ids?.[item?.dataset_ids?.indexOf(dataset_id)] || (dataset_id === dataset?.dataset_id ? dataset.instrument_id : dataset_id), instrument_spec: record?.payload?.asset_states?.[dataset_id]?.execution?.instrument_spec || (dataset_id === dataset?.dataset_id ? dataset.instrument_spec : null) })),
   }
 }

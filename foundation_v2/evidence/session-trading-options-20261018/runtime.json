@@ -1,0 +1,16 @@
+{
+  "scope": "Local native/compact runtime restart and owner read-only verification",
+  "ready": {
+    "command_worker": "not_required",
+    "contract_version": "foundation-v2.1",
+    "database": "ready",
+    "ok": true
+  },
+  "run_id": "52a5e5aba918429ead4ada614efbc728",
+  "api_sha256": "3ba8a99d178cbcbd6307ce7abc1e5493511082861f96ea3ebb38aabd1eec4d15",
+  "owner_session": "e2bee5a8094547779094630a794cff32",
+  "owner_revision": 7,
+  "owner_legacy_config_unchanged": true,
+  "migrations_applied": 0,
+  "owner_trading_writes": 0
+}

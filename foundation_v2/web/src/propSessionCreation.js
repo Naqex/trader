@@ -2,6 +2,7 @@ import { createReplaySession } from './sessionCatalog.js'
 import { scopedRead } from './scopedRead.js'
 import { scopedMutation } from './scopedMutation.js'
 import { commonSessionRange } from './sessionPeriod.js'
+import { SESSION_COST_VERSION, buildTradingOptions, tradingOptionsMatch } from './sessionTradingOptions.js'
 
 async function propJson(url, workspace, options = {}) {
   const response = options.method ? await scopedMutation(url, workspace, { ...options, headers: { 'Content-Type': 'application/json', 'X-Workspace-Id': workspace } }) : await scopedRead(url, workspace)
@@ -39,6 +40,7 @@ export async function createPropChartSession(workspace, draft, datasets) {
   if (selectedIds.length > 12 || new Set(selectedIds).size !== selectedIds.length || selectedIds[0] !== draft.datasetVersion) throw Object.assign(new Error('Chọn tối đa 12 tài sản khác nhau, bắt đầu bằng tài sản chính.'), { status: 422 })
   const selectedAssets = selectedIds.map(id => datasets.find(item => item.dataset_id === id))
   if (selectedAssets.some(item => !item)) throw new Error('Tài sản đã chọn không còn khả dụng.')
+  const tradingOptions = buildTradingOptions(draft.tradingOptions || { costs_enabled: false, assets: {} }, selectedAssets)
   if (selectedAssets.some(item => (item.instrument_spec?.account_ccy || 'USD') !== draft.currency.toUpperCase())) throw new Error('Các tài sản phải dùng cùng tiền tệ tài khoản.')
   const start = utcIsoFromInput(draft.startUtc)
   const durationDays = Number(draft.durationDays) > 0 ? Math.max(1, Number(draft.durationDays)) : null
@@ -106,7 +108,7 @@ export async function createPropChartSession(workspace, draft, datasets) {
     // Prop/Replay binding is checked against the immutable artifact hash.
     // Keep the dataset id in the form, but persist its hash as the pin.
     data_version: datasetPin,
-    cost_version: 'replay-fixture-cost-v1',
+    cost_version: SESSION_COST_VERSION,
     engine_version: 'replay-v1',
     status: 'running',
     revision: 1,
@@ -144,6 +146,7 @@ export async function createPropChartSession(workspace, draft, datasets) {
       strategy_id: draft.strategyId || '',
       strategy_revision: Number.isInteger(draft.strategyRevision) ? draft.strategyRevision : null,
       period_end_utc: draft.endUtc ? utcIsoFromInput(draft.endUtc) : null,
+      trading_options: tradingOptions,
     },
   }
 
@@ -183,10 +186,12 @@ export async function openPropReplay(workspace, bundle, datasets) {
     dataset_id: dataset.dataset_id, dataset_ids: [dataset.dataset_id, ...ids.filter(id => id !== dataset.dataset_id)],
     name: metadata.session_name || 'Prop Firm',
     starting_balance: phase.initial_balance,
+    ...(metadata.trading_options ? { trading_options: metadata.trading_options } : {}),
     start_timestamp: Math.floor(Date.parse(attempt.virtual_start_utc) / 1000),
     ...(metadata.period_end_utc ? { end_timestamp: Math.floor(Date.parse(metadata.period_end_utc) / 1000) } : {}),
     ...(metadata.strategy_id && metadata.strategy_revision ? { playbook_id: metadata.strategy_id, playbook_revision: metadata.strategy_revision } : {}),
     prop_session_id: session.session_id, prop_attempt_id: attempt.attempt_id,
   })
+  if (metadata.trading_options && !tradingOptionsMatch(record.payload?.trading_options, metadata.trading_options)) throw new Error('Cấu hình chi phí đã lưu không khớp lựa chọn. Kiểm tra phiên trước khi giao dịch.')
   return { ...record, dataset_id: record.payload.dataset_id, session_kind: 'prop', prop_session_id: session.session_id, prop_attempt_id: attempt.attempt_id }
 }

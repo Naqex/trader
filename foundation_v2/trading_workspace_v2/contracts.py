@@ -327,6 +327,31 @@ class AIRequest(BaseModel):
     state: dict
 
 
+class SessionAssetTradingOptions(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    spread_price: str = Field(pattern=r"^[0-9]+(?:\.[0-9]+)?$", max_length=32)
+    commission_per_lot: str = Field(pattern=r"^[0-9]+(?:\.[0-9]+)?$", max_length=32)
+    commission_charge: Literal["round_trip", "per_side"]
+    slippage_price: str = Field(pattern=r"^[0-9]+(?:\.[0-9]+)?$", max_length=32)
+
+    @field_validator("spread_price", "commission_per_lot", "slippage_price")
+    @classmethod
+    def bounded_amount(cls, value):
+        amount = Decimal(value)
+        if amount > 1_000_000 or amount.as_tuple().exponent < -12:
+            raise ValueError("amount must be at most 1000000 with 12 decimal places")
+        return value
+
+
+class SessionTradingOptions(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    version: Literal["session-trading-options-v1"]
+    costs_enabled: bool = Field(strict=True)
+    assets: dict[str, SessionAssetTradingOptions] = Field(min_length=1, max_length=12)
+
+
 class ReplayCreate(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
@@ -343,6 +368,7 @@ class ReplayCreate(BaseModel):
     chart_engine: Literal["legacy"] = "legacy"
     prop_session_id: str | None = Field(default=None, min_length=1, max_length=128)
     prop_attempt_id: str | None = Field(default=None, min_length=1, max_length=128)
+    trading_options: SessionTradingOptions | None = None
 
     @field_validator("name")
     @classmethod
@@ -353,6 +379,10 @@ class ReplayCreate(BaseModel):
 
     @model_validator(mode="after")
     def paired_playbook(self):
+        if self.trading_options is not None:
+            datasets = self.dataset_ids or [self.dataset_id]
+            if len(set(datasets)) != len(datasets) or set(self.trading_options.assets) != set(datasets):
+                raise ValueError("trading_options assets must exactly match selected datasets")
         if (self.playbook_id is None) != (self.playbook_revision is None):
             raise ValueError("playbook id and revision must be supplied together")
         if self.start_timestamp is not None and self.start_index != 0:

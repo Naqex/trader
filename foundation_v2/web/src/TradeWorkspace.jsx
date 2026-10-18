@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import './TradeWorkspace.css'
 import { marketQuotes } from './replayOrderModel.js'
 import { useReplayTickOptions } from './useReplayTickOptions.js'
+import { sessionExecutionConfig } from './sessionTradingOptions.js'
 
 const DEFAULT_INSTRUMENT = {
   instrument_id: 'EURUSD',
@@ -115,7 +116,10 @@ function RiskPreview({ draft, entry, instrument, costModel }) {
   const complete = [entry, quantity, stop, target, contract, rate, commission, minimumFee].every(Number.isFinite)
   const risk = complete ? Math.abs(entry - stop) * quantity * contract * rate : null
   const reward = complete ? Math.abs(target - entry) * quantity * contract * rate : null
-  const fees = complete ? (commission * 2) + minimumFee : null
+  const perLot = optionalNumber(costModel?.commission_per_lot_account)
+  const commissionTotal = perLot !== null ? perLot * quantity * (costModel.commission_charge === 'per_side' ? 2 : 1) : commission * 2
+  const slippage = optionalNumber(costModel?.slippage_price_per_side) ?? 0
+  const fees = complete ? Math.max(commissionTotal, minimumFee) + slippage * 2 * quantity * contract * rate : null
   const netRisk = risk !== null && fees !== null ? risk + fees : null
   const netReward = reward !== null && fees !== null ? reward - fees : null
   const rMultiple = risk > 0 && reward !== null ? reward / risk : NaN
@@ -151,14 +155,14 @@ export default function TradeWorkspace({ workspace, query, replay: controlledRep
   const [datasetRetryCount, setDatasetRetryCount] = useState(0)
   const [draft, setDraft] = useState(() => initialDraft(controlledReplay))
   const [startingBalance, setStartingBalance] = useState('10000')
-  const [spread, setSpread] = useState('0.0002')
+  const [legacySpread, setSpread] = useState('0.0002')
   const [pending, setPending] = useState('')
   const [notice, setNotice] = useState(null)
 
   const replay = controlledReplay || state.replay
   const payload = replay?.payload
   const execution = payload?.execution
-  useEffect(() => { if (payload?.asset_states) setStartingBalance(String(payload.starting_balance)) }, [replay?.record_id, payload?.starting_balance])
+  useEffect(() => { if (payload?.starting_balance) setStartingBalance(String(payload.starting_balance)) }, [replay?.record_id, payload?.starting_balance])
   const rows = replay?.visible_rows || []
   const currentBar = rows[rows.length - 1]
   const quote = marketQuotes(replay)
@@ -167,12 +171,15 @@ export default function TradeWorkspace({ workspace, query, replay: controlledRep
   const manifest = datasetState.items.find((item) => item.dataset_id === datasetId)
   const catalogManifest = datasetState.status === 'ready' ? manifest : null
   const instrument = execution?.instrument_spec || catalogManifest?.instrument_spec || null
-  const costModel = execution?.cost_model || (catalogManifest ? DEFAULT_COST_MODEL : null)
+  const sessionConfig = sessionExecutionConfig(replay, instrument)
+  const spread = sessionConfig?.spread ?? legacySpread
+  const costModel = execution?.cost_model || sessionConfig?.costModel || (catalogManifest ? DEFAULT_COST_MODEL : null)
   const timeframeSeconds = optionalNumber(catalogManifest?.timeframe_seconds)
   const assetClockStale = Boolean(payload?.asset_states && currentBar && Number(currentBar.timestamp) + Number(timeframeSeconds) < payload.replay_clock_utc)
   const revision = numberOr(replay?.revision, 0)
   const hasSession = Boolean(sessionId || replay?.record_id)
-  const { options: tickOptions, setMode: setTickMode, leverage: tickLeverage, setLeverage: setTickLeverage, useTicks } = useReplayTickOptions(workspace, replay)
+  const { options: tickOptions, setMode: setTickMode, leverage: tickLeverage, setLeverage: setTickLeverage, useTicks: tickMode } = useReplayTickOptions(workspace, replay)
+  const useTicks = !sessionConfig && tickMode
 
   const fetchReplay = useCallback(async () => {
     const id = sessionId
@@ -360,11 +367,11 @@ export default function TradeWorkspace({ workspace, query, replay: controlledRep
             <section className="trade-init-section" aria-labelledby="trade-init-title">
               <div><span className="trade-eyebrow">STEP 01</span><h2 id="trade-init-title">Khởi tạo simulator state</h2><p>Execution state được gắn vào session và giữ cùng provenance. Chi phí dưới đây là fixture/model, chưa phải báo giá broker.</p></div>
               {canInitialize ? <form className="trade-init-form" onSubmit={initialize}>
-                <label>Starting balance<input type="number" min="1" step="0.01" value={startingBalance} disabled={Boolean(payload?.asset_states)} onChange={(event) => setStartingBalance(event.target.value)} /></label>
-                <label className="replay-tick-toggle"><input type="checkbox" checked={Boolean(useTicks)} disabled={!tickOptions?.available} onChange={event => setTickMode(event.target.checked ? 'tick' : 'bar')} />Khớp lệnh bằng tick Bid/Ask</label>
-                <p className="replay-tick-status" role="status">{tickOptions?.reason || 'Đang kiểm tra lịch sử tick…'}</p>
-                {useTicks ? <label>Đòn bẩy mô phỏng<input type="number" min="1" max="1000" step="1" value={tickLeverage} onChange={event => setTickLeverage(event.target.value)} /></label> : <label>Spread (price)<input type="number" min="0" step="0.00001" value={spread} onChange={(event) => setSpread(event.target.value)} /></label>}
-                <button className="trade-primary" type="submit" disabled={Boolean(pending) || tickOptions === null}>{pending === 'initialize' ? 'Đang khởi tạo…' : 'Khởi tạo local simulator'}</button>
+                <label>Starting balance<input type="number" min="1" step="0.01" value={startingBalance} disabled={Boolean(payload?.asset_states) || Boolean(sessionConfig)} onChange={(event) => setStartingBalance(event.target.value)} /></label>
+                {!sessionConfig && <label className="replay-tick-toggle"><input type="checkbox" checked={Boolean(useTicks)} disabled={!tickOptions?.available} onChange={event => setTickMode(event.target.checked ? 'tick' : 'bar')} />Khớp lệnh bằng tick Bid/Ask</label>}
+                {!sessionConfig && <p className="replay-tick-status" role="status">{tickOptions?.reason || 'Đang kiểm tra lịch sử tick…'}</p>}
+                {useTicks ? <label>Đòn bẩy mô phỏng<input type="number" min="1" max="1000" step="1" value={tickLeverage} onChange={event => setTickLeverage(event.target.value)} /></label> : <label>Spread (price)<input type="number" min="0" step="0.00001" value={spread} disabled={Boolean(sessionConfig)} onChange={(event) => setSpread(event.target.value)} /></label>}
+                <button className="trade-primary" type="submit" disabled={Boolean(pending) || (!sessionConfig && tickOptions === null)}>{pending === 'initialize' ? 'Đang khởi tạo…' : 'Khởi tạo local simulator'}</button>
               </form> : <div className="trade-message" role="status" data-testid="trade-context-unknown">{datasetState.status === 'loading' ? 'Đang chờ dataset context trước khi mở simulator…' : datasetState.status === 'error' ? 'Dataset context đang unavailable; hãy thử lại trước khi mở simulator.' : 'Dataset chưa có manifest/instrument assumptions đủ để mở simulator.'}</div>}
             </section>
           )}

@@ -8378,6 +8378,16 @@
               }
             ],
             "title": "Prop Attempt Id"
+          },
+          "trading_options": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionTradingOptions"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -9549,6 +9559,75 @@
         ],
         "title": "ReplayQuickMarketOrderRequest",
         "description": "A quick order may carry simulator initialization in the same round trip.\n\nThe service still commits initialization before queueing, preserving the\nexisting revision and validation semantics while avoiding a second browser\nrequest for the common first quick order."
+      },
+      "SessionTradingOptions": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "const": "session-trading-options-v1",
+            "title": "Version"
+          },
+          "costs_enabled": {
+            "type": "boolean",
+            "title": "Costs Enabled"
+          },
+          "assets": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/SessionAssetTradingOptions"
+            },
+            "type": "object",
+            "maxProperties": 12,
+            "minProperties": 1,
+            "title": "Assets"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "version",
+          "costs_enabled",
+          "assets"
+        ],
+        "title": "SessionTradingOptions"
+      },
+      "SessionAssetTradingOptions": {
+        "properties": {
+          "spread_price": {
+            "type": "string",
+            "maxLength": 32,
+            "pattern": "^[0-9]+(?:\\.[0-9]+)?$",
+            "title": "Spread Price"
+          },
+          "commission_per_lot": {
+            "type": "string",
+            "maxLength": 32,
+            "pattern": "^[0-9]+(?:\\.[0-9]+)?$",
+            "title": "Commission Per Lot"
+          },
+          "commission_charge": {
+            "type": "string",
+            "enum": [
+              "round_trip",
+              "per_side"
+            ],
+            "title": "Commission Charge"
+          },
+          "slippage_price": {
+            "type": "string",
+            "maxLength": 32,
+            "pattern": "^[0-9]+(?:\\.[0-9]+)?$",
+            "title": "Slippage Price"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "spread_price",
+          "commission_per_lot",
+          "commission_charge",
+          "slippage_price"
+        ],
+        "title": "SessionAssetTradingOptions"
       }
     }
   }
