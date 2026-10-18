@@ -42,6 +42,10 @@ def main():
     sources={str(path.relative_to(ROOT)).replace('\\','/'):hashlib.sha256(path.read_bytes()).hexdigest()
         for folder,pattern in [('api-rust/src','*.rs'),('trading_workspace_v2','*.py'),('engine_runtime','*.py')]
         for path in (ROOT/folder).glob('**/'+pattern) if '.venv' not in path.parts}
+    for path in [*sorted((ROOT/'migrations').glob('*.sql')),ROOT/'api-rust/Cargo.toml',ROOT/'api-rust/Cargo.lock',
+                 ROOT/'contracts/openapi.json',ROOT/'trading_workspace_v2/command_routes.json',
+                 ROOT/'scripts/run_api_platform.py',ROOT.parent/'scripts/restart_offline_api.ps1',Path(__file__).resolve()]:
+        sources[os.path.relpath(path,ROOT).replace('\\','/')]=hashlib.sha256(path.read_bytes()).hexdigest()
     modules=[]
     for path in sorted((ROOT/'trading_workspace_v2').glob('*.py')):
         role='compatibility_runtime_and_differential_oracle; not native HTTP dispatch'
@@ -64,9 +68,16 @@ def main():
         native=native,compatibility=compatibility,route_owners=dict(Counter(r['owner'] for r in native['routes'])),
         python_modules=modules,retained_adapters=exceptions,source_hashes=sources,
         admin_sha256=hashlib.sha256(args.admin.read_bytes()).hexdigest(),owner_runtime_touched=False,
-        pending=['Native market/live SDK connector remains explicitly unavailable; broker execution is gated.',
-                 'Independent integration review and wider data/research UI/runtime performance acceptance remain open.',
-                 'Long-history response and snapshot persistence still scale with full canonical ledger.'])
+        acceptance_evaluated=False,
+        route_count_scope='105 frozen command-route ownership entries, not a count of all endpoints or a percentage of business logic',
+        native_router_source='api-rust/src/lib.rs::domain_routes_for/runtime_domain_routes/router',
+        native_route_families=['catalog','jobs','events','commands','metadata','replay','prop','analytics',
+                               'context','oauth','control','research','data','provider'],
+        infrastructure_routes=['/health','/health/live','/health/ready','/internal/metrics','/openapi.json'],
+        acceptance_authority='evidence/rust-native-20261017/CHECKPOINT.md and the canonical Product Completion Plan execution extension',
+        pending=['Optional native market/live SDK connector remains explicitly unavailable; broker execution is gated.'],
+        scaling_limits=['Tick/portfolio and cold/full snapshot reads hydrate canonical history.',
+                        'Compact BAR mutations and ready forward steps use validated bounded events; this inventory does not benchmark them.'])
     args.output.parent.mkdir(parents=True,exist_ok=True)
     args.output.write_text(json.dumps(value,indent=2)+'\n',encoding='utf-8')
     print(json.dumps(dict(routes=len(native['routes']),delegated=len(native['required_command_routes']),owners=value['route_owners'],output=str(args.output.resolve()))))

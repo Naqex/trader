@@ -1,8 +1,10 @@
 # Local API platform runtime
 
-The offline launcher now selects Rust/Axum for the loopback HTTP listener. Python
-owns domain-command execution and research jobs, with no publicly listening
-FastAPI process. This guide describes the launcher; acceptance of the complete
+The offline launcher selects Rust/Axum for the loopback HTTP listener. In the
+default `compatibility` profile, Python owns domain-command execution and research
+jobs, with no publicly listening FastAPI process. The explicit `native` profile
+runs those domains in Rust; see [RUST-NATIVE-RUNTIME.md](RUST-NATIVE-RUNTIME.md).
+This guide describes the compatibility launcher; acceptance of the complete
 migration belongs to the product plan and its integration receipt.
 
 From the product repository in PowerShell:

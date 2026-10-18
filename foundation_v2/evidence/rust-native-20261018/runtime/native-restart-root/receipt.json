@@ -1,0 +1,18 @@
+{
+  "schema": "native-restart-wrapper-acceptance-v1",
+  "passed": false,
+  "disposable": true,
+  "owner_runtime_touched": false,
+  "checks": [
+    {
+      "name": "pending-check-refused",
+      "passed": true,
+      "returncode": 1
+    },
+    {
+      "name": "migration-backup-gate",
+      "passed": true,
+      "returncode": 1
+    }
+  ]
+}

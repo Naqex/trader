@@ -43,6 +43,9 @@ def configuration(args):
                TW_V2_LEARN_WORKSPACE_ID="tenant-a",
                TW_V2_EDUCATION_ROOT=str(PROJECT.parents[1] / "education"))
     env["TW_V2_RUNTIME_PROFILE"] = args.runtime_profile
+    if args.runtime_profile != "native" and args.replay_storage_profile != "full":
+        raise PreflightError("Compact replay storage requires the explicit native runtime profile.")
+    env["TW_V2_REPLAY_STORAGE_PROFILE"] = args.replay_storage_profile
     if args.runtime_profile == "native":
         env["TW_V2_DOWNLOAD_ENGINE"] = args.download_engine
         if args.scientific_capability:
@@ -458,6 +461,7 @@ def supervise(args, env):
         env.update(TW_V2_WORKER_READY_FILE=str(worker_ready_file.resolve()),
                    TW_V2_WORKER_STARTUP_TOKEN=startup_token, TW_V2_WORKER_ID=worker_id)
     state = {"schema": "api-platform-runtime-v2", "runtime_profile": args.runtime_profile,
+             "replay_storage_profile": args.replay_storage_profile,
              "run_id": run_id, "project": str(PROJECT.resolve()), "port": args.port,
              "stop_file": str(stop_file.resolve()), "ready": False,
              "processes": {"supervisor": process_identity(os.getpid())}, "executable_sha256": {}}
@@ -548,6 +552,8 @@ def parser():
     result.add_argument("--download-engine", choices=("qdm", "dukascopy", "none"), default="qdm")
     result.add_argument("--runtime-profile", choices=("compatibility", "native"), default="compatibility",
                         help="Compatibility remains rollback/default; native uses separate candidate binaries and no Python domain/research service.")
+    result.add_argument("--replay-storage-profile", choices=("full", "compact"), default="full",
+                        help="Explicit replay write format; compact requires native. Overrides any inherited storage environment setting.")
     result.add_argument("--scientific-capability", type=Path, help="Existing Nautilus capability; installed bytes verified before worker/API readiness.")
     result.add_argument("--legacy-codec-capability", type=Path, help="Existing PyArrow 21 capability for exact legacy artifact restoration only.")
     result.add_argument("--rust-binary", type=Path)
@@ -560,6 +566,7 @@ def parser():
     result.add_argument("--setup-only", action="store_true", help="Build/apply explicitly selected migrations and exit without starting services.")
     result.add_argument("--stop", action="store_true")
     result.add_argument("--build", action="store_true")
+    result.add_argument("--build-only", action="store_true", help="Build the selected candidate with ownership guards; no database or services are touched.")
     result.add_argument("--migrate", action="store_true")
     result.add_argument("--backup-confirmed", action="store_true")
     result.add_argument("--adopt-legacy-downloads", action="store_true")
@@ -570,6 +577,14 @@ def main(argv=None):
     args = resolve_profile_paths(parser().parse_args(argv))
     if not 1024 <= args.port <= 65535:
         raise PreflightError("Port must be between 1024 and 65535.")
+    if args.runtime_profile != "native" and args.replay_storage_profile != "full":
+        raise PreflightError("Compact replay storage requires the explicit native runtime profile.")
+    if args.build_only:
+        if any((args.check_only, args.setup_only, args.stop, args.build, args.migrate,
+                args.allow_pending_migrations, args.adopt_legacy_downloads)):
+            raise PreflightError("--build-only cannot be combined with runtime/database actions.")
+        build_candidate(args)
+        return 0
     if args.check_only and (args.build or args.migrate or args.stop or args.adopt_legacy_downloads):
         raise PreflightError("--check-only cannot be combined with actions.")
     if args.allow_pending_migrations and not (args.check_only or args.stop):

@@ -13,6 +13,42 @@ SPEC.loader.exec_module(launcher)
 
 
 class LauncherTests(unittest.TestCase):
+    def test_storage_profile_overrides_inherited_environment_and_rejects_compatibility_compact(self):
+        for profile, storage in [('compatibility', 'full'), ('native', 'full'), ('native', 'compact')]:
+            args = launcher.parser().parse_args(['--runtime-profile', profile, '--replay-storage-profile', storage])
+            with patch.dict('os.environ', {'TW_V2_DATABASE_URL': 'host=localhost user=fixture',
+                                           'TW_V2_REPLAY_STORAGE_PROFILE': 'compact'}):
+                self.assertEqual(launcher.configuration(args)['TW_V2_REPLAY_STORAGE_PROFILE'], storage)
+        with patch.object(launcher, 'configuration') as config, patch.object(launcher, 'build_candidate') as build:
+            with self.assertRaises(launcher.PreflightError):
+                launcher.main(['--replay-storage-profile', 'compact', '--build-only'])
+            config.assert_not_called()
+            build.assert_not_called()
+
+    def test_build_only_uses_selected_candidate_and_never_connects_or_starts(self):
+        with patch.object(launcher, 'configuration') as config, patch.object(launcher, 'supervise') as start, \
+             patch.object(launcher, 'build_candidate') as build:
+            self.assertEqual(launcher.main(['--runtime-profile', 'native', '--build-only']), 0)
+            self.assertIn('native-candidate', str(build.call_args.args[0].rust_binary))
+            config.assert_not_called()
+            start.assert_not_called()
+            for action in ['--check-only', '--migrate', '--stop', '--setup-only', '--build', '--allow-pending-migrations', '--adopt-legacy-downloads']:
+                with self.subTest(action=action), self.assertRaises(launcher.PreflightError):
+                    launcher.main(['--build-only', action])
+            self.assertEqual(build.call_count, 1)
+
+    def test_native_pending_schema_is_reported_only_for_explicit_check_or_stop(self):
+        args = launcher.resolve_profile_paths(launcher.parser().parse_args([
+            '--runtime-profile', 'native', '--check-only', '--allow-pending-migrations']))
+        receipt = {'schema_current': False, 'pending': ['0001_fixture.sql']}
+        with patch.object(launcher.subprocess, 'run', return_value=MagicMock(returncode=0, stdout=json.dumps(receipt))) as run:
+            self.assertEqual(launcher.native_database_preflight(args, {}), receipt)
+            self.assertEqual(run.call_args.args[0], [str(args.rust_admin_binary), 'check'])
+        with patch.object(launcher, 'configuration') as config:
+            with self.assertRaises(launcher.PreflightError):
+                launcher.main(['--runtime-profile', 'native', '--allow-pending-migrations'])
+            config.assert_not_called()
+
     def test_native_scientific_descriptor_is_explicit_and_verified_before_start(self):
         with tempfile.TemporaryDirectory() as folder:
             capability=Path(folder)/'scientific.json';capability.write_text('{}')

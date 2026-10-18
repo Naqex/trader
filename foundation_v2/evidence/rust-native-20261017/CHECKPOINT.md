@@ -954,3 +954,57 @@ Goal ACTIVE.
   reusing valid prior module/financial/setup/rollback evidence instead of another
   speculative rewrite or repeated benchmark. Historical product/broker/touch/
   dataset-switch gates are not closed by this same-cutoff workload.
+
+## Root continuation 18/10: restart integration and owner preparation
+
+- Newer owner steering requests a sweet spot between AI quota and performance.
+  Reused existing financial/storage/chart/resource evidence, retained the single
+  already assigned restart worker and did not restart quota-failed agents or
+  repeat the600s workload. The evidence reconciliation is
+  `../rust-native-20261018/ACCEPTANCE-AUDIT.md`; it is not a new acceptance ledger.
+- Closed an operational gap: the product restart wrapper previously hardcoded
+  compatibility binaries/manifest. It now forwards explicit runtime/storage and
+  local target/capability options through every phase. Defaults remain
+  compatibility/full; native has separate binaries and manifest. The supervisor
+  makes storage choice explicit (overriding inherited env), refuses compatibility
+  compact, records it in its manifest and reuses its guarded build path through
+  `--build-only`. No interactive Rust source or arithmetic changed in this slice.
+- Launcher focused tests PASS30+19subtests; actual Windows wrapper integration
+  `../rust-native-20261018/runtime/native-restart-root/verified-run/receipt.json`
+  PASS10: empty disposable PG native migration/start, native compact restart,
+  compatibility/full start and owned drains; pending schema, missing backup,
+  active download, stale creation identity, foreign/other-profile listener all
+  refuse. Source/binary hashes unchanged. Root reviewed the three-file diff and
+  harness. This wrapper suite checks storage forwarding/readiness, not a
+  financial write; dedicated persisted storage suites retain that coverage.
+  Parent attempt stays FAIL (Windows descendant retained capture pipe); harness
+  now uses log files, with the fixture drained before its authorized rerun.
+- `../rust-native-20261018/runtime/final-pure-domains-root/receipt.json` PASS14
+  Rust test functions (control, Prop, replay, context, provider),47.635s including
+ 44.67s debug compilation. Rust source/test/lock hashes unchanged; independent
+  frozen fixture files were not hashed in this receipt. No DB/owner operations.
+- `../rust-native-20261018/runtime/final-inventory-root.json` regenerated against
+  the candidate release admin.105 frozen command routes, zero Python delegation;
+  native GET families and infrastructure are separately identified. Inventory
+  pins source/migrations/contracts/launcher/wrapper and reports no acceptance
+  verdict. Optional MT5 SDK/live connector remains unavailable; compatibility
+  platform does not configure its legacy factory either. No terminal/SDK opened.
+- Read-only owner preflight reports API8010free, idle jobs, zero compact revisions,
+  pending migrations0005/0006. No API process was inferred from stale ready=true
+  manifest. Source artifacts were counted only for backup sizing, not test data.
+  The existing backup helper created and checksum-verified the full quiesced
+  bundle `.runtime/api-platform-backups/native-cutover-20261018-root`:
+  4,142artifact files,4,258,883,194total bytes. Installed PG18.6pg_dump matches
+  server18.6; pg_restore can read its directory. Initial use of fixture PG17dump
+  failed safely before any accepted bundle and was retried with installed PG18.
+  Receipt: `../rust-native-20261018/runtime/owner-cutover-preparation-root.json`.
+- Prepared ignored descriptors for the already installed scientific and legacy
+  codec adapters; no install/provider/broker/job/dataset execution. Recheck these
+  identities and idle/source state before cutover. Wrapper docs now distinguish
+  compatibility from native and warn that compact rollback requires validated
+  restored-target materialization, not merely a profile switch.
+- Owner database has NOT been migrated; owner API/UI were NOT started/stopped;
+  no owner trade/step/protection operation was used as QA. Actual owner migration
+  and local runtime cutover require authorization under the canonical entrypoint
+  and project safety gate. Goal stays ACTIVE while that integration remains.
+  Do not rerun accepted suites or open new optimization lanes while waiting.

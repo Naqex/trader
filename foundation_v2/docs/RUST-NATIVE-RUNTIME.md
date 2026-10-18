@@ -57,6 +57,39 @@ Use the existing DB/artifact backup and idle guards in
 migration. Candidate binaries and ownership manifests are separate from rollback
 binaries. Do not overwrite a running binary or stop a process by port/name alone.
 
+The product-root restart wrapper now forwards explicit profile, storage and local
+target options to this supervisor. Compatibility/full remains its default;
+native defaults to `api-rust/target/native-candidate/release` and the separate
+`.runtime/api-platform/native-owner.json`. From the product root, inspect an
+already prepared native target without changing its schema or processes:
+
+```powershell
+.\scripts\restart_offline_api.ps1 -RuntimeProfile native -ReplayStorageProfile compact -CheckOnly
+```
+
+`-ArtifactRoot`, `-DatabaseName`, `-Port`, `-ManifestPath` and `-BinaryDirectory`
+select an explicitly prepared local target. `-DownloadEngine none` disables
+provider transport for an isolated target. Existing installed capability files
+can be passed with `-ScientificCapability` and `-LegacyCodecCapability`. Omitted
+capabilities are not created or enabled by the wrapper. The direct Python
+supervisor accepts `--replay-storage-profile full|compact` as well; its explicit
+default overrides any inherited storage environment setting.
+
+For an authorized target, remove `-CheckOnly` to start/restart it. Pending schema
+versions require `-ApplyMigration -BackupConfirmed` after verifying both DB and
+artifact backups and quiescing all jobs. These flags acknowledge a backup; they
+do not create one. A check-only invocation refuses pending migrations. The
+supervisor's `--check-only --allow-pending-migrations --require-idle` can report
+pending versions without applying them. `-Build` uses the same guarded compiler
+path as `--build-only`; it refuses overwriting a managed running binary. Building
+does not authorize owner cutover. Foreign listeners, another runtime profile,
+active jobs/downloads and stale process identities refuse replacement.
+
+Compact revisions require the restored-target materialization procedure below
+before compatibility can read them. Switching `-RuntimeProfile` is not a rollback
+procedure. Restart-wrapper integration evidence is linked in the execution
+checkpoint, separate from prior backend lifecycle acceptance.
+
 For an already installed scientific runtime, prepare and verify its descriptor
 without opening a dataset or starting a job:
 

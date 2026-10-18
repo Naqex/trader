@@ -1,0 +1,47 @@
+{
+  "schema": "native-owner-cutover-preparation-v1",
+  "recorded_at": "2026-10-18T09:13:45.217940+00:00",
+  "owner_database_modified": false,
+  "owner_runtime_started_or_stopped": false,
+  "owner_data_used_as_test_fixture": false,
+  "preflight": {
+    "check_only": true,
+    "runtime_profile": "native",
+    "port_free": true,
+    "compact_revision_count": 0,
+    "compatibility_ready": false,
+    "migration_count": 6,
+    "pending": [
+      "0005_replay_execution_storage.sql",
+      "0006_replay_prop_mark_index.sql"
+    ],
+    "schema_current": false,
+    "active_jobs_guard_passed": true,
+    "scientific_installed_files_verified": true,
+    "qdm_identity_checked": true
+  },
+  "backup": {
+    "result": "PASS",
+    "bundle": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\.runtime\\api-platform-backups\\native-cutover-20261018-root",
+    "snapshot_id": "20261018T091118Z-5e1723b165b9",
+    "manifest_sha256": "831e4be1832117d6aea1f9444b00c416abcbb83cd1b89c31d6c36ffba9f83ccd",
+    "artifact_files": 4142,
+    "backup_bytes": 4258883194,
+    "full_bundle_checksum_verification": "completed by backup_api_platform.py before PASS",
+    "pg_restore_list_exit_code": 0,
+    "pg_tools": "D:/Program Files/PostgreSQL/18/bin",
+    "dump_tool_version": "18.6",
+    "server_version": 180006,
+    "initial_pg17_dump_attempt": "FAIL; no accepted bundle; retried with installed matching PostgreSQL 18 tools"
+  },
+  "cutover_authorized": false,
+  "limitations": [
+    "Backup is of the observed quiesced state; recheck state before applying migration.",
+    "Owner restore was not exercised as a test fixture; disposable rollback rehearsal is separate.",
+    "No guarantee that a backup on the same physical drive survives drive failure."
+  ],
+  "prepared_capabilities": {
+    "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\.runtime\\api-platform\\native-scientific-capability.json": "5f0197a480d7d55d0a6f093d2e38b6e191834496259ec9bb528d715fdbcc0fac",
+    "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\.runtime\\api-platform\\native-legacy-codec-capability.json": "f9527848be0c6090cc5f9ca8150116dff647e099dd3d9d747c439198f774a239"
+  }
+}

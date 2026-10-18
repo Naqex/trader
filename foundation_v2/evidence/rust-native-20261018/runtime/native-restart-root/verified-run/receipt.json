@@ -1,0 +1,66 @@
+{
+  "schema": "native-restart-wrapper-acceptance-v1",
+  "passed": true,
+  "disposable": true,
+  "owner_runtime_touched": false,
+  "checks": [
+    {
+      "name": "pending-check-refused",
+      "passed": true,
+      "returncode": 1
+    },
+    {
+      "name": "migration-backup-gate",
+      "passed": true,
+      "returncode": 1
+    },
+    {
+      "name": "native-migration-start",
+      "passed": true,
+      "returncode": 0
+    },
+    {
+      "name": "other-profile-refused",
+      "passed": true,
+      "returncode": 1
+    },
+    {
+      "name": "active-download-refused",
+      "passed": true,
+      "returncode": 1
+    },
+    {
+      "name": "stale-creation-refused",
+      "passed": true,
+      "returncode": 1
+    },
+    {
+      "name": "native-restart",
+      "passed": true,
+      "returncode": 0
+    },
+    {
+      "name": "foreign-listener-refused",
+      "passed": true,
+      "returncode": 1
+    },
+    {
+      "name": "compatibility-start",
+      "passed": true,
+      "returncode": 0
+    },
+    {
+      "name": "owned-drains-complete",
+      "passed": true
+    }
+  ],
+  "source_and_binaries_unchanged": true,
+  "fingerprints": {
+    "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\scripts\\restart_offline_api.ps1": "18c2bc33a303e5db15776673cc94a77e40cde655c9a2395727e37fce3a6d975a",
+    "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\scripts\\run_api_platform.py": "d9e45a1e875f2e7642b829d9ce4e5b72b615dee6528d2d944d471f40a1e8b0bf",
+    "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\scripts\\rust_native_restart_acceptance.py": "4a14398bb946aa65cf62758469eab55391bd77c03ac65701930054ebad333d29",
+    "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust\\target\\native-candidate\\release\\trading-workspace-api.exe": "f35a37bd86c821304f1e76df758dfb3b8f3d7fd9e84dbdf69ac617d270473040",
+    "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust\\target\\native-candidate\\release\\rust_runtime_admin.exe": "53fb1bb68b66a65e95b9e78861ec0dd334de7515c0142586fd7475c2bd0a456d",
+    "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust\\target\\native-candidate\\release\\rust_research_worker.exe": "36a012b7157b4a8fa18bd6976b18fadffecdc8fce6441b065e15dc02fa4f8d3a"
+  }
+}
