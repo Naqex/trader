@@ -101,6 +101,9 @@ The execution checkpoint is
 - `scripts/rust_replay_storage_rollback_acceptance.py`: quiesced synthetic bundle,
   separate restored target, atomic full materialization, supervised same-schema
   compatibility HTTP and return-to-native/Prop continuation.
+- `scripts/rust_replay_tick_portfolio_acceptance.py`: generated tick and two-asset
+  financial lifecycles versus an independent Python service state, exact-byte
+  retries, atomic rejects, historical views and fresh-process PostgreSQL reads.
 - Persisted domain and financial differential suites listed in the checkpoint.
 
 Measured native click-to-confirmed-paint is around 46 ms on the 300-row synthetic

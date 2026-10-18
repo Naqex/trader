@@ -826,3 +826,47 @@ Goal ACTIVE.
   longer integrated resource evidence remain unverified, not completed by this
   slice. No prepared tick/portfolio script landed. Owner runtime/data unchanged;
   all owned fixture processes stopped. Whole optimization goal remains ACTIVE.
+
+## Root continuation 18/10: persisted tick and portfolio financial parity
+
+- `../rust-native-20261018/runtime/tick-portfolio-r7-release-root/receipt.json`
+  PASS41 cases with frozen native release probe/source, disposable PostgreSQL
+  and generated immutable M1/ticks. Native creation supplies identical IDs once;
+  the Python service then maintains independent state throughout all mutations.
+  Only top-level record timestamps and Decimal/UTC spelling are normalized.
+- Tick BUY/SELL next-minute TP fills retain final100416 balance. Immediate
+  BUY/protect/close then SELL/protect/close at the same cutoff retain99991.20,
+  exact events/quotes/fees and raw response hashes on every successful retry.
+  Empty tick coverage and an unknown pin reject atomically. Current/history and
+  fresh-process reads, plus cross-workspace404, pass. No broker/MT5 SDK involved.
+- Two BAR assets share one wallet: both open, an inactive asset's SL executes,
+  the other closes manually, distinct foreign targets reject, and historical
+  cursors0/1/2 plus cold/current reads match the independent Python service.
+  Historical reads leave canonical state unchanged. Full-history fallback remains
+  intentional for tick/portfolio; these correctness cases do not establish a
+  latency/capacity/soak improvement or justify another storage rewrite.
+- Fixed three confirmed product gaps: tick initialization now validates the base
+  model before resolving the stored tick pin; same-cutoff reopening after a manual
+  action uses the most recent complete tick-window quote; historical portfolio
+  restoration returns null for an asset not yet initialized at the selected clock,
+  rather than falling back to current portfolio state. Missing later checkpoints
+  still fail closed. The reopening defect also existed in Python: its oracle and
+  validation were repaired alongside Rust, with explicit negative-window tests.
+- Python tick/portfolio30PASS; Rust lib112PASS/16fixture-dependent ignored and
+  differential4PASS during this slice. Focused final-source logs accompany the
+  release receipt. The new native and Python regressions reopen repeatedly without
+  advancing time and reject a changed quote window. Debug r6 also PASS41; release
+  was rebuilt only after that result. Current inventory reports105native frozen
+  routes and zero Python command-worker delegation; route counts are not full
+  acceptance. The retained adapters keep their documented technical reasons.
+- Failure evidence remains: initial Windows PG pipe inheritance stall is marked
+  INTERRUPTED; r2 exposes premature tick-hash validation; r3 exposes missing quote
+  windows; r4's foreign-target assertion used coincident asset-local position IDs
+  (fixture corrected by priming one asset); r5 exposes historical portfolio state
+  leakage. No failed receipt was relabeled. Owned clusters/processes were stopped;
+  owner8010/5180/data were untouched and no candidate promotion occurred.
+- Quota sweet spot: root-only, focused checks, no new dependencies/transport,
+  speculative phase rewrite or additional agents. Remaining whole-goal gates are
+  current-release lifecycle/setup/clean-source reproducibility and broader/longer
+  integrated resource acceptance; prior scoped receipts remain reusable. Goal
+  remains ACTIVE, not complete from these41financial cases.

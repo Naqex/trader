@@ -273,7 +273,18 @@ fn latest_quote(s: &Value) -> R<Value> {
         .ok_or("current broker quote is unavailable".into())
 }
 fn provenance(s: &Value, window: bool) -> R<Value> {
-    let prior = latest_quote(s)?;
+    // Manual actions retain the quote but omit its tick-window boundaries.
+    let prior = if window {
+        s["ledger"].as_array()
+            .and_then(|events| events.iter().rev().find(|event| {
+                event["details"].get("bid").is_some()
+                    && event["details"].get("window_start_msc").is_some()
+            }))
+            .map(|event| event["details"].clone())
+            .ok_or("current broker quote window is unavailable")?
+    } else {
+        latest_quote(s)?
+    };
     let keys = if window {
         vec![
             "tick_snapshot_id",

@@ -158,3 +158,37 @@ fn batched_advancement_matches_individual_transitions_and_fails_atomically() {
     assert!(transform(&bad).is_err());
     assert_eq!(request["snapshot"], original);
 }
+
+#[test]
+fn tick_current_quote_reopens_after_close_and_rejects_changed_window() {
+    let corpus: Value = serde_json::from_str(include_str!(
+        "../../evidence/rust-native-20261017/replay-core/oracle.json"
+    )).unwrap();
+    let seed = corpus.as_array().unwrap().iter().find(|case| {
+        case["request"]["action"] == "fill_current_quote"
+            && case["request"]["snapshot"]["schema_version"] == "replay-execution-tick-v1"
+            && case["expected"]["snapshot"]["position"].is_object()
+    }).expect("successful frozen tick current-quote fill");
+    let args = &seed["request"]["args"];
+    let mut state = transform(&seed["request"]).unwrap()["snapshot"].take();
+    let quantity = state["position"]["quantity"].clone();
+    for (index, side) in ["SELL", "BUY", "SELL"].iter().enumerate() {
+        state = transform(&serde_json::json!({"action":"close", "snapshot":state,
+            "args":{"operation_id":format!("reopen-close-{index}"),
+                "target_id":state["position"]["position_id"],
+                "mid_close":args["mid_close"], "virtual_time_utc":args["virtual_time_utc"]}}))
+            .unwrap()["snapshot"].take();
+        state = transform(&serde_json::json!({"action":"queue_current_quote", "snapshot":state,
+            "args":{"operation_id":format!("reopen-fill-{index}"), "side":side,
+                "quantity":quantity, "stop_loss":null, "take_profit":null,
+                "mid_close":args["mid_close"], "virtual_time_utc":args["virtual_time_utc"]}}))
+            .unwrap()["snapshot"].take();
+        assert_eq!(state["position"]["side"], *side);
+        let mut damaged = state.clone();
+        let event = damaged["ledger"].as_array_mut().unwrap().iter_mut().rev()
+            .find(|event| event["kind"] == "market_fill").unwrap();
+        event["details"]["window_end_msc"] = serde_json::json!(
+            event["details"]["window_end_msc"].as_i64().unwrap() + 1000);
+        assert!(transform(&serde_json::json!({"action":"validate", "snapshot":damaged, "args":{}})).is_err());
+    }
+}

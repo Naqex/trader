@@ -1,0 +1,2801 @@
+{
+  "schema": "native-runtime-source-inventory-v1",
+  "scope": "selected native profile; source/dispatch inventory is not whole-product acceptance",
+  "native": {
+    "contract_version": "foundation-v2.1",
+    "required_command_routes": [],
+    "routes": [
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/health",
+        "reference_handler": "health",
+        "reference_calls": [
+          "app.get",
+          "authorization.status"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/session/status",
+        "reference_handler": "get_project_session_status",
+        "reference_calls": [
+          "Depends",
+          "app.get",
+          "build_local_demo_session_status",
+          "request.app.state.authorization.identity.resolve"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "analytics",
+        "path": "/api/v2/overview",
+        "reference_handler": "get_overview",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.get",
+          "build_dashboard_performance",
+          "product.overview",
+          "store.list_records",
+          "store.list_replay_activity",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "analytics",
+        "path": "/api/v2/dashboard/sessions",
+        "reference_handler": "get_dashboard_sessions",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "Query",
+          "app.get",
+          "read_dashboard_sessions",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}/metadata",
+        "reference_handler": "get_replay_metadata",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.get",
+          "read_replay_metadata"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}/chart-window",
+        "reference_handler": "get_replay_chart_window",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "Query",
+          "app.get",
+          "replay.chart_window",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "analytics",
+        "path": "/api/v2/replay/trades",
+        "reference_handler": "get_replay_trades",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.get",
+          "replay_reads.trades",
+          "sessions.split",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "notion_oauth",
+        "path": "/api/v2/connectors/notion/oauth/status",
+        "reference_handler": "notion_oauth_status",
+        "reference_calls": [
+          "Depends",
+          "app.get",
+          "notion_oauth.status",
+          "request.app.state.authorization.identity.resolve",
+          "require_local_notion_request"
+        ],
+        "capability": "native_state_and_http_adapter; actual_authorization_not_run"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "notion_oauth",
+        "path": "/api/v2/connectors/notion/oauth/start",
+        "reference_handler": "notion_oauth_start",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "notion_oauth.begin",
+          "request.app.state.authorization.identity.resolve",
+          "require_local_notion_request",
+          "str"
+        ],
+        "capability": "native_state_and_http_adapter; actual_authorization_not_run"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "notion_oauth",
+        "path": "/api/v2/connectors/notion/oauth/callback",
+        "reference_handler": "notion_oauth_callback",
+        "reference_calls": [
+          "HTTPException",
+          "app.get",
+          "notion_oauth.complete",
+          "require_local_notion_request",
+          "str"
+        ],
+        "capability": "native_state_and_http_adapter; actual_authorization_not_run"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "notion_oauth",
+        "path": "/api/v2/connectors/notion/oauth/disconnect",
+        "reference_handler": "notion_oauth_disconnect",
+        "reference_calls": [
+          "Depends",
+          "app.post",
+          "notion_oauth.disconnect",
+          "notion_oauth.status",
+          "request.app.state.authorization.identity.resolve",
+          "require_local_notion_request"
+        ],
+        "capability": "native_state_and_http_adapter; actual_authorization_not_run"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "control_routes",
+        "path": "/api/v2/connectors/notion/connections",
+        "reference_handler": "create_notion_connection",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "store.create_connector_connection",
+          "store.ensure_workspace",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "control_routes",
+        "path": "/api/v2/connectors/notion/connections",
+        "reference_handler": "list_notion_connections",
+        "reference_calls": [
+          "Depends",
+          "app.get",
+          "store.list_connector_connections"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "control_routes",
+        "path": "/api/v2/connectors/notion/connections/{connection_id}",
+        "reference_handler": "get_notion_connection",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.get",
+          "store.get_connector_connection"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "PATCH",
+        "owner": "control_routes",
+        "path": "/api/v2/connectors/notion/connections/{connection_id}",
+        "reference_handler": "update_notion_connection",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.patch",
+          "store.update_connector_connection",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "control_routes",
+        "path": "/api/v2/connectors/notion/intents",
+        "reference_handler": "create_notion_intent",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "store.create_connector_intent",
+          "store.ensure_workspace",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "control_routes",
+        "path": "/api/v2/connectors/notion/intents",
+        "reference_handler": "list_notion_intents",
+        "reference_calls": [
+          "Depends",
+          "app.get",
+          "store.list_connector_intents"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "control_routes",
+        "path": "/api/v2/connectors/notion/intents/{intent_id}",
+        "reference_handler": "get_notion_intent",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.get",
+          "store.get_connector_intent"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "control_routes",
+        "path": "/api/v2/connectors/notion/intents/{intent_id}/receipt",
+        "reference_handler": "get_notion_receipt",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.get",
+          "store.get_connector_receipt"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "PATCH",
+        "owner": "control_routes",
+        "path": "/api/v2/connectors/notion/intents/{intent_id}/receipt",
+        "reference_handler": "update_notion_receipt",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.patch",
+          "store.record_connector_receipt",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "control_routes",
+        "path": "/api/v2/learn/overview",
+        "reference_handler": "get_learn_overview",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.get",
+          "learn.overview",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "control_routes",
+        "path": "/api/v2/learn/glossary",
+        "reference_handler": "get_learn_glossary",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.get",
+          "learn.glossary",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "control_routes",
+        "path": "/api/v2/learn/resources/{resource_id}",
+        "reference_handler": "get_learn_resource",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.get",
+          "learn.resource",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "provider_routes",
+        "path": "/api/v2/data/datasets",
+        "reference_handler": "list_datasets",
+        "reference_calls": [
+          "Depends",
+          "app.get",
+          "classes.get",
+          "data_registry.list_datasets",
+          "data_registry.list_instruments",
+          "downloads.availability",
+          "downloads.dataset_update_state",
+          "instrument_catalog.status",
+          "item.get",
+          "item.get('source', {}).get",
+          "item.update",
+          "replay_instrument_spec"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "DELETE",
+        "owner": "data_routes",
+        "path": "/api/v2/data/datasets/{dataset_id}",
+        "reference_handler": "delete_local_dataset",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.delete",
+          "downloads.dataset_mutation_guard",
+          "local_datasets.delete_dataset",
+          "nullcontext"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "data_routes",
+        "path": "/api/v2/data/datasets/{dataset_id}/repair",
+        "reference_handler": "repair_local_dataset",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "downloads.dataset_mutation_guard",
+          "local_datasets.repair_dataset",
+          "nullcontext",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "provider_routes",
+        "path": "/api/v2/data/catalog/refresh",
+        "reference_handler": "refresh_instrument_catalog",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "data_registry.list_instruments",
+          "downloads.availability",
+          "instrument_catalog.refresh",
+          "instrument_catalog.status"
+        ],
+        "capability": "native_state_and_scheduler_with_explicit_external_adapter"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "provider_routes",
+        "path": "/api/v2/data/downloads",
+        "reference_handler": "list_offline_downloads",
+        "reference_calls": [
+          "Depends",
+          "app.get",
+          "downloads.list_jobs"
+        ],
+        "capability": "native_state_and_scheduler_with_explicit_external_adapter"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "provider_routes",
+        "path": "/api/v2/data/downloads",
+        "reference_handler": "request_offline_download",
+        "reference_calls": [
+          "Depends",
+          "app.post",
+          "download_action"
+        ],
+        "capability": "native_state_and_scheduler_with_explicit_external_adapter"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "provider_routes",
+        "path": "/api/v2/data/downloads/full",
+        "reference_handler": "request_full_offline_download",
+        "reference_calls": [
+          "Depends",
+          "app.post",
+          "download_action"
+        ],
+        "capability": "native_state_and_scheduler_with_explicit_external_adapter"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "provider_routes",
+        "path": "/api/v2/data/downloads/{job_id}/resume",
+        "reference_handler": "resume_offline_download",
+        "reference_calls": [
+          "Depends",
+          "app.post",
+          "download_action"
+        ],
+        "capability": "native_state_and_scheduler_with_explicit_external_adapter"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "provider_routes",
+        "path": "/api/v2/data/downloads/{job_id}/pause",
+        "reference_handler": "pause_offline_download",
+        "reference_calls": [
+          "Depends",
+          "app.post",
+          "download_action"
+        ],
+        "capability": "native_state_and_scheduler_with_explicit_external_adapter"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "provider_routes",
+        "path": "/api/v2/data/downloads/{job_id}/cancel",
+        "reference_handler": "cancel_offline_download",
+        "reference_calls": [
+          "Depends",
+          "app.post",
+          "download_action"
+        ],
+        "capability": "native_state_and_scheduler_with_explicit_external_adapter"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "provider_routes",
+        "path": "/api/v2/data/market-assets",
+        "reference_handler": "market_assets",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.get",
+          "market_runtime.catalog",
+          "str"
+        ],
+        "capability": "explicit_unavailable_without_native_market_connector"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "provider_routes",
+        "path": "/api/v2/data/market-assets/update",
+        "reference_handler": "update_market_assets",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "market_runtime.request",
+          "str"
+        ],
+        "capability": "explicit_unavailable_without_native_market_connector"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "provider_routes",
+        "path": "/api/v2/live/status",
+        "reference_handler": "live_read_status",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.get",
+          "market_runtime.live_status",
+          "str"
+        ],
+        "capability": "explicit_unavailable_without_native_market_connector"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "provider_routes",
+        "path": "/api/v2/data/providers",
+        "reference_handler": "list_data_providers",
+        "reference_calls": [
+          "Depends",
+          "app.get",
+          "data_registry.capabilities"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "data_routes",
+        "path": "/api/v2/data/csv/preview",
+        "reference_handler": "preview_csv_payload",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "_materialize_csv_payload",
+          "app.post",
+          "preview_csv",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "data_routes",
+        "path": "/api/v2/data/csv/import",
+        "reference_handler": "import_csv_payload",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "_materialize_csv_payload",
+          "app.post",
+          "downloads.dataset_mutation_guard",
+          "ingest.import_csv",
+          "manifest.model_dump",
+          "nullcontext",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "control_routes",
+        "path": "/api/v2/data/instruments/validate",
+        "reference_handler": "validate_instrument",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "product.validate_instrument",
+          "store.ensure_workspace",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "control_routes",
+        "path": "/api/v2/data/cost-preview",
+        "reference_handler": "preview_cost",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "body.model_dump",
+          "product.preview_cost",
+          "store.ensure_workspace",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "control_routes",
+        "path": "/api/v2/data/news/visible",
+        "reference_handler": "get_visible_news",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "body.model_dump",
+          "product.visible_news",
+          "store.ensure_workspace",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "analytics",
+        "path": "/api/v2/analytics/prop/evaluate",
+        "reference_handler": "evaluate_prop",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "body.model_dump",
+          "product.evaluate_prop",
+          "store.ensure_workspace",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "prop_service",
+        "path": "/api/v2/prop/sessions",
+        "reference_handler": "create_prop_session",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "require_prop_scope",
+          "store.create_prop_session",
+          "store.create_prop_session(body).model_dump",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "prop_service",
+        "path": "/api/v2/prop/session-bundles",
+        "reference_handler": "create_prop_session_bundle",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "require_prop_scope",
+          "result['attempt'].model_dump",
+          "result['phase'].model_dump",
+          "result['session'].model_dump",
+          "store.create_prop_session_bundle",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/prop/sessions",
+        "reference_handler": "list_prop_sessions",
+        "reference_calls": [
+          "Depends",
+          "app.get",
+          "item.model_dump",
+          "store.list_prop_sessions"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/prop/sessions/{session_id}",
+        "reference_handler": "get_prop_session",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.get",
+          "session.model_dump",
+          "store.get_prop_session"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "PUT",
+        "owner": "prop_service",
+        "path": "/api/v2/prop/sessions/{session_id}",
+        "reference_handler": "update_prop_session",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.put",
+          "require_prop_scope",
+          "result['session'].model_dump",
+          "store.update_prop_session",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "prop_service",
+        "path": "/api/v2/prop/sessions/{session_id}/attempts",
+        "reference_handler": "create_prop_attempt",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "require_prop_scope",
+          "result['attempt'].model_dump",
+          "result['phase'].model_dump",
+          "result['session'].model_dump",
+          "store.create_prop_attempt",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/prop/sessions/{session_id}/attempts",
+        "reference_handler": "list_prop_attempts",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.get",
+          "item.model_dump",
+          "store.get_prop_session",
+          "store.list_prop_attempts"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/prop/sessions/{session_id}/attempts/{attempt_id}",
+        "reference_handler": "get_prop_attempt",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.get",
+          "result['attempt'].model_dump",
+          "result['phase'].model_dump",
+          "result['session'].model_dump",
+          "store.get_prop_resume_state"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "prop_service",
+        "path": "/api/v2/prop/sessions/{session_id}/attempts/{attempt_id}/report",
+        "reference_handler": "get_prop_attempt_report",
+        "reference_calls": [
+          "Depends",
+          "app.get",
+          "prop_report_or_404"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "prop_service",
+        "path": "/api/v2/prop/sessions/{session_id}/attempts/{attempt_id}/report.csv",
+        "reference_handler": "export_prop_attempt_report",
+        "reference_calls": [
+          "Depends",
+          "Response",
+          "app.get",
+          "prop_attempt_report_csv",
+          "prop_report_or_404"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "prop_service",
+        "path": "/api/v2/prop/reports",
+        "reference_handler": "list_prop_reports",
+        "reference_calls": [
+          "Depends",
+          "app.get",
+          "len",
+          "prop_report_or_404",
+          "reports.append",
+          "store.list_prop_attempts",
+          "store.list_prop_sessions"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "prop_service",
+        "path": "/api/v2/prop/sessions/{session_id}/attempts/{attempt_id}/transitions",
+        "reference_handler": "transition_prop_attempt",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "require_prop_scope",
+          "result['attempt'].model_dump",
+          "result['phase'].model_dump",
+          "result['session'].model_dump",
+          "store.apply_prop_transition_intent",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "PUT",
+        "owner": "prop_service",
+        "path": "/api/v2/prop/sessions/{session_id}/attempts/{attempt_id}/resume",
+        "reference_handler": "save_prop_resume",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.put",
+          "require_prop_scope",
+          "result['attempt'].model_dump",
+          "result['phase'].model_dump",
+          "store.save_prop_resume_state",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "research_jobs",
+        "path": "/api/v2/research/jobs",
+        "reference_handler": "create_research_job",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "job.model_dump",
+          "service.create_job"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "control_routes",
+        "path": "/api/v2/research/engines",
+        "reference_handler": "research_engines",
+        "reference_calls": [
+          "Depends",
+          "app.get",
+          "runtime_ready"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "research_jobs",
+        "path": "/api/v2/research/engine-jobs",
+        "reference_handler": "create_engine_research_job",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "job.model_dump",
+          "service.create_engine_job",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/research/jobs/{job_id}",
+        "reference_handler": "get_research_job",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.get",
+          "job.model_dump",
+          "service.get_result",
+          "store.get_job"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "context_routes",
+        "path": "/api/v2/research/jobs/{job_id}/analytics",
+        "reference_handler": "get_research_analytics",
+        "reference_calls": [
+          "Depends",
+          "analytics_view_or_404",
+          "app.get"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "context_routes",
+        "path": "/api/v2/research/jobs/{job_id}/analytics.csv",
+        "reference_handler": "export_research_analytics",
+        "reference_calls": [
+          "Depends",
+          "Response",
+          "analytics_csv",
+          "analytics_view_or_404",
+          "app.get"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/research/jobs/{job_id}/checkpoint",
+        "reference_handler": "get_research_checkpoint",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.get",
+          "store.get_job",
+          "store.get_job_checkpoint"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "research_jobs",
+        "path": "/api/v2/research/jobs/{job_id}/cancel",
+        "reference_handler": "cancel_research_job",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "job.model_dump",
+          "service.cancel_job"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions",
+        "reference_handler": "create_replay",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "body.model_dump",
+          "replay.create",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/replay/sessions",
+        "reference_handler": "list_replay_sessions",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.get",
+          "replay.list_sessions"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}",
+        "reference_handler": "get_replay",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "Query",
+          "app.get",
+          "replay.view",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}/activity",
+        "reference_handler": "record_replay_activity",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "replay.record_activity",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}/asset",
+        "reference_handler": "select_replay_asset",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "replay.select_asset",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "PATCH",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}",
+        "reference_handler": "update_replay_metadata",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.patch",
+          "body.model_dump",
+          "replay.update_metadata",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}/delete",
+        "reference_handler": "delete_replay_session",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "store.delete_replay_session",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "analytics",
+        "path": "/api/v2/replay/sessions/{session_id}/analytics",
+        "reference_handler": "get_replay_analytics",
+        "reference_calls": [
+          "Depends",
+          "app.get",
+          "replay_analytics_view"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "analytics",
+        "path": "/api/v2/replay/sessions/{session_id}/analytics.csv",
+        "reference_handler": "export_replay_analytics",
+        "reference_calls": [
+          "Depends",
+          "PlainTextResponse",
+          "analytics_csv",
+          "app.get",
+          "replay_analytics_view"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "context_routes",
+        "path": "/api/v2/replay/sessions/{session_id}/analytics/experiments",
+        "reference_handler": "get_replay_analytics_experiments",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.get",
+          "replay.analytics_experiments"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}/execution",
+        "reference_handler": "initialize_replay_execution",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "replay.initialize_execution",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}/tick-data",
+        "reference_handler": "replay_tick_options",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.get",
+          "replay.tick_options",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}/orders/market",
+        "reference_handler": "queue_replay_market_order",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "replay.queue_market_order",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}/orders/quick",
+        "reference_handler": "quick_replay_market_order",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "replay.quick_market_order",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}/orders/protection",
+        "reference_handler": "change_replay_protection_route",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "replay.change_protection",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}/orders/close",
+        "reference_handler": "close_replay_order_route",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "replay.close_order",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}/step",
+        "reference_handler": "step_replay",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "replay.step",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}/branch",
+        "reference_handler": "branch_replay",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "replay.branch",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{replay_session_id}/prop/sessions/{prop_session_id}/attempts/{parent_attempt_id}/branch",
+        "reference_handler": "branch_replay_prop_attempt",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "replay.branch_prop_attempt",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{replay_session_id}/prop/sessions/{prop_session_id}/attempts/{attempt_id}/feed",
+        "reference_handler": "feed_replay_prop_lifecycle",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "replay.feed_prop_lifecycle",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "metadata_mutations",
+        "path": "/api/v2/playbooks",
+        "reference_handler": "create_playbook",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "product.create_playbook",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/playbooks",
+        "reference_handler": "list_playbooks",
+        "reference_calls": [
+          "Depends",
+          "app.get",
+          "store.list_records"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/playbooks/{record_id}",
+        "reference_handler": "get_playbook",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.get",
+          "store.get_record"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "metadata_mutations",
+        "path": "/api/v2/playbooks/{record_id}/revisions",
+        "reference_handler": "revise_playbook",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "exc.errors",
+          "product.update_playbook",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/playbooks/{record_id}/revisions",
+        "reference_handler": "list_playbook_revisions",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.get",
+          "store.list_record_revisions"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "metadata_mutations",
+        "path": "/api/v2/playbooks/{record_id}/freeze",
+        "reference_handler": "freeze_playbook",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "product.freeze_playbook"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "metadata_mutations",
+        "path": "/api/v2/playbooks/{record_id}/fork",
+        "reference_handler": "fork_playbook",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "product.fork_playbook",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "metadata_mutations",
+        "path": "/api/v2/journal",
+        "reference_handler": "create_journal",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "product.create_journal"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/journal",
+        "reference_handler": "list_journal",
+        "reference_calls": [
+          "Depends",
+          "app.get",
+          "store.list_records"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "context_routes",
+        "path": "/api/v2/journal/context",
+        "reference_handler": "get_journal_context",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "Query",
+          "app.get",
+          "build_journal_context",
+          "store.get_record",
+          "store.list_journal_records"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/journal/{record_id}",
+        "reference_handler": "get_journal",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.get",
+          "store.get_record"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/journal/{record_id}/revisions",
+        "reference_handler": "list_journal_revisions",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.get",
+          "store.list_record_revisions"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "metadata_mutations",
+        "path": "/api/v2/journal/{record_id}/revisions",
+        "reference_handler": "revise_journal",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "exc.errors",
+          "product.update_journal",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "metadata_mutations",
+        "path": "/api/v2/chart/annotations",
+        "reference_handler": "create_annotation",
+        "reference_calls": [
+          "Depends",
+          "app.post",
+          "product.create_annotation"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/chart/annotations",
+        "reference_handler": "list_annotations",
+        "reference_calls": [
+          "Depends",
+          "app.get",
+          "store.list_records"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "metadata_mutations",
+        "path": "/api/v2/chart/annotations/{record_id}/revisions",
+        "reference_handler": "revise_annotation",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "exc.errors",
+          "product.update_annotation"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "metadata_mutations",
+        "path": "/api/v2/chart/annotations/{record_id}/delete",
+        "reference_handler": "delete_annotation",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "product.delete_annotation"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "control_routes",
+        "path": "/api/v2/ai/status",
+        "reference_handler": "ai_status",
+        "reference_calls": [
+          "Depends",
+          "app.get",
+          "product.ai.status",
+          "store.ensure_workspace"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "control_routes",
+        "path": "/api/v2/ai/request",
+        "reference_handler": "ai_request",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "body.model_dump",
+          "product.ai.request",
+          "store.ensure_workspace",
+          "str"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/execution/capabilities",
+        "reference_handler": "execution_capabilities",
+        "reference_calls": [
+          "Depends",
+          "app.get",
+          "product.execution_capabilities",
+          "store.ensure_workspace"
+        ],
+        "capability": "native_domain"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "execution",
+        "path": "/api/v2/execution/intents",
+        "reference_handler": "execution_intent",
+        "reference_calls": [
+          "Depends",
+          "HTTPException",
+          "app.post",
+          "store.ensure_workspace"
+        ],
+        "capability": "native_domain"
+      }
+    ],
+    "runtime_profile": "native"
+  },
+  "compatibility": {
+    "contract_version": "foundation-v2.1",
+    "required_command_routes": [
+      {
+        "method": "POST",
+        "path": "/api/v2/data/catalog/refresh"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v2/data/downloads"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v2/data/downloads/full"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v2/data/downloads/{job_id}/resume"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v2/data/downloads/{job_id}/pause"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v2/data/downloads/{job_id}/cancel"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v2/data/market-assets"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v2/data/market-assets/update"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v2/live/status"
+      }
+    ],
+    "routes": [
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/health"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/session/status"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "analytics",
+        "path": "/api/v2/overview"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "analytics",
+        "path": "/api/v2/dashboard/sessions"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}/metadata"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}/chart-window"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "analytics",
+        "path": "/api/v2/replay/trades"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "notion_oauth",
+        "path": "/api/v2/connectors/notion/oauth/status"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "notion_oauth",
+        "path": "/api/v2/connectors/notion/oauth/start"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "notion_oauth",
+        "path": "/api/v2/connectors/notion/oauth/callback"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "notion_oauth",
+        "path": "/api/v2/connectors/notion/oauth/disconnect"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "control_routes",
+        "path": "/api/v2/connectors/notion/connections"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "control_routes",
+        "path": "/api/v2/connectors/notion/connections"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "control_routes",
+        "path": "/api/v2/connectors/notion/connections/{connection_id}"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "PATCH",
+        "owner": "control_routes",
+        "path": "/api/v2/connectors/notion/connections/{connection_id}"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "control_routes",
+        "path": "/api/v2/connectors/notion/intents"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "control_routes",
+        "path": "/api/v2/connectors/notion/intents"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "control_routes",
+        "path": "/api/v2/connectors/notion/intents/{intent_id}"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "control_routes",
+        "path": "/api/v2/connectors/notion/intents/{intent_id}/receipt"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "PATCH",
+        "owner": "control_routes",
+        "path": "/api/v2/connectors/notion/intents/{intent_id}/receipt"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "control_routes",
+        "path": "/api/v2/learn/overview"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "control_routes",
+        "path": "/api/v2/learn/glossary"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "control_routes",
+        "path": "/api/v2/learn/resources/{resource_id}"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "provider_routes",
+        "path": "/api/v2/data/datasets"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "DELETE",
+        "owner": "data_routes",
+        "path": "/api/v2/data/datasets/{dataset_id}"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "data_routes",
+        "path": "/api/v2/data/datasets/{dataset_id}/repair"
+      },
+      {
+        "dispatch": "python_command_queue",
+        "method": "POST",
+        "owner": "commands",
+        "path": "/api/v2/data/catalog/refresh"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "provider_routes",
+        "path": "/api/v2/data/downloads"
+      },
+      {
+        "dispatch": "python_command_queue",
+        "method": "POST",
+        "owner": "commands",
+        "path": "/api/v2/data/downloads"
+      },
+      {
+        "dispatch": "python_command_queue",
+        "method": "POST",
+        "owner": "commands",
+        "path": "/api/v2/data/downloads/full"
+      },
+      {
+        "dispatch": "python_command_queue",
+        "method": "POST",
+        "owner": "commands",
+        "path": "/api/v2/data/downloads/{job_id}/resume"
+      },
+      {
+        "dispatch": "python_command_queue",
+        "method": "POST",
+        "owner": "commands",
+        "path": "/api/v2/data/downloads/{job_id}/pause"
+      },
+      {
+        "dispatch": "python_command_queue",
+        "method": "POST",
+        "owner": "commands",
+        "path": "/api/v2/data/downloads/{job_id}/cancel"
+      },
+      {
+        "dispatch": "python_command_queue",
+        "method": "GET",
+        "owner": "commands",
+        "path": "/api/v2/data/market-assets"
+      },
+      {
+        "dispatch": "python_command_queue",
+        "method": "POST",
+        "owner": "commands",
+        "path": "/api/v2/data/market-assets/update"
+      },
+      {
+        "dispatch": "python_command_queue",
+        "method": "GET",
+        "owner": "commands",
+        "path": "/api/v2/live/status"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "provider_routes",
+        "path": "/api/v2/data/providers"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "data_routes",
+        "path": "/api/v2/data/csv/preview"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "data_routes",
+        "path": "/api/v2/data/csv/import"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "control_routes",
+        "path": "/api/v2/data/instruments/validate"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "control_routes",
+        "path": "/api/v2/data/cost-preview"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "control_routes",
+        "path": "/api/v2/data/news/visible"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "analytics",
+        "path": "/api/v2/analytics/prop/evaluate"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "prop_service",
+        "path": "/api/v2/prop/sessions"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "prop_service",
+        "path": "/api/v2/prop/session-bundles"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/prop/sessions"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/prop/sessions/{session_id}"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "PUT",
+        "owner": "prop_service",
+        "path": "/api/v2/prop/sessions/{session_id}"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "prop_service",
+        "path": "/api/v2/prop/sessions/{session_id}/attempts"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/prop/sessions/{session_id}/attempts"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/prop/sessions/{session_id}/attempts/{attempt_id}"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "prop_service",
+        "path": "/api/v2/prop/sessions/{session_id}/attempts/{attempt_id}/report"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "prop_service",
+        "path": "/api/v2/prop/sessions/{session_id}/attempts/{attempt_id}/report.csv"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "prop_service",
+        "path": "/api/v2/prop/reports"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "prop_service",
+        "path": "/api/v2/prop/sessions/{session_id}/attempts/{attempt_id}/transitions"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "PUT",
+        "owner": "prop_service",
+        "path": "/api/v2/prop/sessions/{session_id}/attempts/{attempt_id}/resume"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "research_jobs",
+        "path": "/api/v2/research/jobs"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "control_routes",
+        "path": "/api/v2/research/engines"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "research_jobs",
+        "path": "/api/v2/research/engine-jobs"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/research/jobs/{job_id}"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "context_routes",
+        "path": "/api/v2/research/jobs/{job_id}/analytics"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "context_routes",
+        "path": "/api/v2/research/jobs/{job_id}/analytics.csv"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/research/jobs/{job_id}/checkpoint"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "research_jobs",
+        "path": "/api/v2/research/jobs/{job_id}/cancel"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/replay/sessions"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}/activity"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}/asset"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "PATCH",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}/delete"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "analytics",
+        "path": "/api/v2/replay/sessions/{session_id}/analytics"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "analytics",
+        "path": "/api/v2/replay/sessions/{session_id}/analytics.csv"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "context_routes",
+        "path": "/api/v2/replay/sessions/{session_id}/analytics/experiments"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}/execution"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}/tick-data"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}/orders/market"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}/orders/quick"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}/orders/protection"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}/orders/close"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}/step"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{session_id}/branch"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{replay_session_id}/prop/sessions/{prop_session_id}/attempts/{parent_attempt_id}/branch"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "replay_service",
+        "path": "/api/v2/replay/sessions/{replay_session_id}/prop/sessions/{prop_session_id}/attempts/{attempt_id}/feed"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "metadata_mutations",
+        "path": "/api/v2/playbooks"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/playbooks"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/playbooks/{record_id}"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "metadata_mutations",
+        "path": "/api/v2/playbooks/{record_id}/revisions"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/playbooks/{record_id}/revisions"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "metadata_mutations",
+        "path": "/api/v2/playbooks/{record_id}/freeze"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "metadata_mutations",
+        "path": "/api/v2/playbooks/{record_id}/fork"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "metadata_mutations",
+        "path": "/api/v2/journal"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/journal"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "context_routes",
+        "path": "/api/v2/journal/context"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/journal/{record_id}"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/journal/{record_id}/revisions"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "metadata_mutations",
+        "path": "/api/v2/journal/{record_id}/revisions"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "metadata_mutations",
+        "path": "/api/v2/chart/annotations"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/chart/annotations"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "metadata_mutations",
+        "path": "/api/v2/chart/annotations/{record_id}/revisions"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "metadata_mutations",
+        "path": "/api/v2/chart/annotations/{record_id}/delete"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "control_routes",
+        "path": "/api/v2/ai/status"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "control_routes",
+        "path": "/api/v2/ai/request"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "GET",
+        "owner": "catalog",
+        "path": "/api/v2/execution/capabilities"
+      },
+      {
+        "dispatch": "rust_native",
+        "method": "POST",
+        "owner": "execution",
+        "path": "/api/v2/execution/intents"
+      }
+    ],
+    "runtime_profile": "compatibility"
+  },
+  "route_owners": {
+    "catalog": 17,
+    "analytics": 6,
+    "replay_service": 18,
+    "notion_oauth": 4,
+    "control_routes": 18,
+    "provider_routes": 12,
+    "data_routes": 4,
+    "prop_service": 9,
+    "research_jobs": 3,
+    "context_routes": 4,
+    "metadata_mutations": 9,
+    "execution": 1
+  },
+  "python_modules": [
+    {
+      "path": "trading_workspace_v2/__init__.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/analytics_experiments.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/analytics_read_model.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/api.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/api_command_worker.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/artifact_backup.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/artifacts.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/auth.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/chart_ai_contract.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/chart_alert_contract.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/chart_explainability_contract.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/chart_intelligence.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/chart_overlay_contract.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/chart_renderer_contract.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/chart_ui_contract.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/chart_visible_range_adapter.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/command_dispatch.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/connector_ledger.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/contracts.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/dashboard_read_model.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/dashboard_sessions.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/data_ingest.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/data_sources.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/download_job_store.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/dukascopy_catalog.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/dukascopy_downloads.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/execution_intent_contract.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/execution_semantics.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/feature_timing_contract.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/journal_context.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/learn.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/local_datasets.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/market_sync.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/migrations.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/mql_parity.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/nautilus_worker.py",
+      "native_runtime_role": "installed-adapter setup identity/oracle; native domain does not import Python"
+    },
+    {
+      "path": "trading_workspace_v2/notion_oauth.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/notion_projection.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/owner_absence_alert_journal.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/owner_absence_alerts.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/owner_absence_host.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/owner_absence_host_cli.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/owner_absence_journal.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/owner_absence_lease.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/owner_absence_lease_binding.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/owner_absence_safety.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/owner_absence_supervisor.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/paper_accounting.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/paper_execution_bridge.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/product.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/project_session.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/prop_replay.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/prop_report.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/prop_session.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/qdm_cli.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/qdm_downloads.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/replay.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/replay_activity.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/replay_analytics.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/replay_chart_history.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/replay_execution.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/replay_immediate_execution.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/replay_instrument.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/replay_interval.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/replay_portfolio.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/replay_read_projection.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/replay_tick_execution.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/research.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/research_engine.py",
+      "native_runtime_role": "installed-adapter setup identity/oracle; native domain does not import Python"
+    },
+    {
+      "path": "trading_workspace_v2/research_oos.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/research_validation.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/retained.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/risk_promotion_contracts.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/store.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/strategy_contracts.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/tick_history.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/trades_page.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/worker.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    },
+    {
+      "path": "trading_workspace_v2/zone_lifecycle.py",
+      "native_runtime_role": "compatibility_runtime_and_differential_oracle; not native HTTP dispatch"
+    }
+  ],
+  "retained_adapters": [
+    {
+      "component": "engine_runtime/adapter.py + run.py + limits.py",
+      "language": "Python",
+      "role": "isolated installed Nautilus scientific adapter",
+      "reason": "preserve validated engine fill semantics and supported Python binding; Rust owns protocol, leases, accounting, normalization and publication",
+      "interactive": false
+    },
+    {
+      "component": "scripts/rust_legacy_parquet_codec.py",
+      "language": "Python",
+      "role": "explicit legacy PyArrow 21 byte-identity codec",
+      "reason": "preserve existing immutable content hashes; new Rust datasets use native codec",
+      "interactive": false
+    },
+    {
+      "component": "data_worker/index.mjs + pinned dukascopy-node dependencies",
+      "language": "Node",
+      "role": "explicit external data transport",
+      "reason": "reuse existing provider protocol; Rust owns lifecycle, validation, immutable publication and recovery",
+      "interactive": false
+    },
+    {
+      "component": "licensed qdmcli.exe",
+      "language": "vendor binary",
+      "role": "optional external data transport",
+      "reason": "vendor executable is not owned product source; explicit local capability and identity required",
+      "interactive": false
+    },
+    {
+      "component": "scripts/run_api_platform.py + bootstrap/acceptance scripts",
+      "language": "Python",
+      "role": "local setup, process supervisor and tests",
+      "reason": "outside HTTP/domain path; no Python command or research service in native profile",
+      "interactive": false
+    }
+  ],
+  "source_hashes": {
+    "api-rust/src/analytics.rs": "f768d47bc1d9290a08cafad6885ac4052c18ee97123c85bbc9065a4d8e7e6173",
+    "api-rust/src/artifact_data.rs": "334cff95596cbc41fcb05105d20a2316d91eff097777044ad7020906ab3c414c",
+    "api-rust/src/auth.rs": "aeb69e8eb4bc60db381cabd9aac3e0e3ee0dbb76a468a88530f419978b715918",
+    "api-rust/src/catalog.rs": "b6d17c7bdbeea8015349e3c1bd5fb9a8c81dacbcffbe57ad0bd3c55cae2b74a3",
+    "api-rust/src/commands.rs": "b3c6cd09391df282d8ed88b2b27e2d0e915aa19805f843c834c44adec6b77247",
+    "api-rust/src/config.rs": "3cb808dd04494db5baccddbed0357386eadb13bb971a305f253272035900fedd",
+    "api-rust/src/context_routes.rs": "63d2ca7c1b102ba89be1e8670128f726243bc9991e19cb06ae0a1bc00a4a1002",
+    "api-rust/src/control_routes.rs": "8b36c6b111782369b1999eaefa19481428b4057bbb555087f85f421fbee2f7b0",
+    "api-rust/src/data_routes.rs": "30c502eac5b5e0bd3863e1ec92a9c10303cf807b9a051ea5840624a3430dd950",
+    "api-rust/src/events.rs": "3fc4a1254730e16b6746c7f19d6101118b593edc637ea0beb13afc1b8699721a",
+    "api-rust/src/jobs.rs": "4e793ba532d5b141d689fc1164424ecc0d76dac6d9ad5ddcafa790afaecc8d0e",
+    "api-rust/src/lib.rs": "bc080b24db3ae516d142af5296d30dcf20b64d44db84758fd1745333df5c3914",
+    "api-rust/src/main.rs": "21bdb44510b001f44d1fd61de140f6582fc44aa10bcf498dca0c59bb6b0a92da",
+    "api-rust/src/metadata_mutations.rs": "0e222647fa95e13cb9a653bf5bc06ba14adb261784be74150615fd4c8e718ed2",
+    "api-rust/src/middleware.rs": "27a299aabca5d9236a4998df79a11dcdc3db099c91c582276ed121bbdb089f83",
+    "api-rust/src/native_contracts.rs": "99a18bb92e81cfa651f4e2d65c545755eea5b9b4a604eb2eac345460eec68944",
+    "api-rust/src/native_mutation.rs": "3370b2b9ceec6dcb778fabda2469261fbd94a4489a0494411d55b19a05241283",
+    "api-rust/src/notion_oauth.rs": "17c1361c23dafc5904958f3d1c3a061873276a5a5e5c4154bc3d99c24cf1d1c3",
+    "api-rust/src/owned_process.rs": "913401072d229f250a6c4a37d075713623538870faebb6710fd28d806555166d",
+    "api-rust/src/prop_core.rs": "2ded66c5e4889f9ac4cc9dd6387796f2c1a05d018fc600f8328931da23d49d56",
+    "api-rust/src/prop_service.rs": "cf4f5779b6150e36ebdef0ba2208c5b4576aee64f72c89fbcd0fc20d9d828030",
+    "api-rust/src/provider_routes.rs": "ae74ba387d0b646fe7b4595f339d739c93c49a99dadff3299ea7c51d90c384ae",
+    "api-rust/src/replay_core.rs": "4dffa63b2f816b1a0ff6a60f921d152f9b77001939853d7783eda61d0b04a6e8",
+    "api-rust/src/replay_service.rs": "2931dc31b0c076bdb990617465387e2cfee85a472f0c99e23db20cd202e7b8cd",
+    "api-rust/src/replay_storage.rs": "f1e0ef05394e6499fb74024fc00532f11f0c43f3f568f7b177bfdbd2b149cea4",
+    "api-rust/src/research_execution.rs": "fa66fd4f376527b64535290d75707e37b3721da2b8705c71df7873505690ab78",
+    "api-rust/src/research_jobs.rs": "dffacaf504dee66810225ddb8065385a2d8205ada8ec8d877b8c969c5cfdfe7e",
+    "api-rust/src/rust_runtime.rs": "f7cd9c2fe1d069fdb2871f05b08be720e745fcc80e7e271fb24a8d8bc4088d4c",
+    "api-rust/src/state.rs": "a8e2faf5a91e948d603b388801749a4ae5192da40aa0fb1942282d248a9e42a7",
+    "api-rust/src/telemetry.rs": "e7c6b4a66c306d82e7d9dc7d2955fec44a5352e2348cfe0e13f7ab79e6171d71",
+    "api-rust/src/analytics/prop_profile.rs": "853172436c86856edd4def504383c767ad33f1e072bc8bce00634516473bc4e2",
+    "api-rust/src/analytics/routes.rs": "ed167996e667faf7c318db5d4cc6518d3dde865f0450cfb79b3f2a8fdb05aa2f",
+    "api-rust/src/analytics/trades.rs": "69b39ec1d99fb8db34c945d06064de849215b623d2dab95bcc1547f704c5f7c8",
+    "api-rust/src/bin/rust_research_worker.rs": "564e53260587b90b3414892c9413ee9059263e7b65b6692460d17f6e93ba389c",
+    "api-rust/src/bin/rust_runtime_admin.rs": "6759f6a5044b7871e74f019594eb5e5f62f38071ae578267d2864861016b1322",
+    "api-rust/src/control_routes/learn.rs": "d57a9760ae9d17b471a5e0225f84dd41efda422f7be450ca25f1c2dd7fabb4f1",
+    "api-rust/src/control_routes/notion.rs": "d18645db203f0b7477f48d5207ca17a49af2e0680f167f04badc04d2c30a76a2",
+    "api-rust/src/data_routes/ingest.rs": "532058513ebc35f8d145b5d7850202e35cbae1bbc1897884ffd502bbd88869aa",
+    "api-rust/src/data_routes/legacy_codec.rs": "989f9b93c098af7b6a933b0d1a5810a0977e9e088cae627f5499b54dee424609",
+    "api-rust/src/data_routes/lifecycle.rs": "398a4ea7f2a3853a53d026dfa320f1dd9d15e6becfd61c377ed21e6d9d3ba25c",
+    "api-rust/src/owned_process/windows.rs": "1c07881f78cfe31381178b347faf6582dc7d508f960047973d88e6273683ef6d",
+    "api-rust/src/prop_core/paper.rs": "737e46f16ff6aff3e353a6ad1c8910b50e70b7ce4c6035f941dc2f482c96ebbd",
+    "api-rust/src/prop_core/report.rs": "ef641744d4aa457258b42fb61e7916e58177c16bbd4e9989684f4dd424fc2e6d",
+    "api-rust/src/provider_routes/catalog.rs": "395b9cc0e4826edd9875be28dcba6271834971b81d5cdbdafc45c51ffa465244",
+    "api-rust/src/provider_routes/catalog_refresh.rs": "1f154b1f9adf22336deb5d0646a3ef4c8235783a26c97206fdf258f106c21378",
+    "api-rust/src/provider_routes/dependencies.rs": "cf5f769124920c43c65102454387e4190350c18f602ff2d520574390ebb676bf",
+    "api-rust/src/provider_routes/execution.rs": "2fcfdc478da932573bff578d7067c6885b6f30554c035689ae0c32430ea37612",
+    "api-rust/src/provider_routes/lifecycle.rs": "0a51ecaf4c8647acecbea90172c5542ae4e650b7ec36efc047191c84875de0c3",
+    "api-rust/src/provider_routes/publication.rs": "1e66084fd3013a32e740d34ea3d6c4e562c669fc2b08f571ceb68f3c05d8a490",
+    "api-rust/src/replay_core/history.rs": "fece5d4b6a14de5532d49cd50d7c73300ad3e33fa69d135482663ca85c965eef",
+    "api-rust/src/replay_core/tick.rs": "837c69aca5924f62856ace2ab88bdbaa68efed648292f88e8a5540ba8d907135",
+    "api-rust/src/research_execution/independent.rs": "6bc99a5f143ecccbf09704f2846f4bded772779ad49e2a75b8fb728db91cf959",
+    "api-rust/src/research_execution/oos_runner.rs": "f8f9038cbb7bd2f3dab68e5d1e71ee0333b917d82e83dbd0ea84ed31823c7e6f",
+    "api-rust/src/research_execution/reference.rs": "5663d115be1ddec753c8e5ebda3988f5fab427b5fd922805e8dbbc15393696e3",
+    "api-rust/src/research_execution/scientific.rs": "078076eeabc339447d9cf5a352711dca297a9323eb3bef9ff1bf0e268ecc53e1",
+    "api-rust/src/research_execution/scientific_normalize.rs": "5d65dd88fec7c2a9323ab02badee25f56a70d81efa64fe0364f6a237f1806cc6",
+    "api-rust/src/research_jobs/adapter.rs": "d6e293d97d955d228aac119ba8f704abaf519600cf5a3946f8b7eec9c758da03",
+    "api-rust/src/research_jobs/engine.rs": "58d88d5558eab314497e7d418306550a8942da88bb9a5645ac6ca5ddff708916",
+    "api-rust/src/research_jobs/lifecycle.rs": "c55de421eaad638f4b4f0661f218af13162f3811828e24c67e584ff125ca6807",
+    "api-rust/src/research_jobs/oos.rs": "ae88252a8149d69431eae8d59524b9c8cbb76a961b0e8f7fae48ac59d8d9403b",
+    "api-rust/src/owned_process/windows/tests.rs": "e7cdf40d17655cce9757b7bcb1e6f3fe5935b050c020e2606b6a6d16e40e191c",
+    "api-rust/src/provider_routes/catalog_refresh/tests.rs": "ac1c3a6cdcf55929ffe60db02a776c2000192fae2d8afd5abcc93198c0968046",
+    "api-rust/src/provider_routes/lifecycle/tests.rs": "04970c082b7f64a56a7b4483cf56e01682de4e28f6d40607362b95709386bbce",
+    "api-rust/src/research_jobs/adapter/dependencies.rs": "1d05137f10005dca3697807de9bb34ecb8bf256394ff69e498c4f8a7c8f19298",
+    "trading_workspace_v2/analytics_experiments.py": "9e0922874ed279e14b809d03363cd5ce29eb46085cdfcc43b3f7004520f272d8",
+    "trading_workspace_v2/analytics_read_model.py": "d43b70e80682657871fc0735988c8426a4239a24eab69d9f3931a8c3df503477",
+    "trading_workspace_v2/api.py": "9f1ec01aa3187b30febd4e7bb9dce1363577bf26a70d17f8a7cfa41f61272bd1",
+    "trading_workspace_v2/api_command_worker.py": "114b537a3e25af36193efcf07341506e94e562dd52af2a9398eb4280cfff2f41",
+    "trading_workspace_v2/artifacts.py": "ead85a8e4abe3500a0bed2fd4ac0c721e3fe26786897b81d224f17b4b69c4443",
+    "trading_workspace_v2/artifact_backup.py": "5baaf5733e722f0015bf8b98ce0787156542c6c042f7112bb7b3b66f3fc10e1b",
+    "trading_workspace_v2/auth.py": "d8df4595c34c8fc5daf2dbb09e40ea836ef6603c74420b704257c62c4edc0dd1",
+    "trading_workspace_v2/chart_ai_contract.py": "5f4d310b0f86b0f10d42c3ecf520787e87f90b478cf1ac61122020e4c0712284",
+    "trading_workspace_v2/chart_alert_contract.py": "3a0bac56e3b932e06ec38be7d118916192aeec1f1b81e2b1b75cf60baaec2704",
+    "trading_workspace_v2/chart_explainability_contract.py": "ad9dab7a12fbe6dda9ebdf4e945f37f455e977b3e2ba7c4ce90072f9469ec8fd",
+    "trading_workspace_v2/chart_intelligence.py": "db6060df4189289ad0b4951a445e2e07a680db935c86d76f17c5e80fd43903b1",
+    "trading_workspace_v2/chart_overlay_contract.py": "f305aac8e4854358ca4943c39546418d709563a4e162a5cda7b87a8c90fabfd5",
+    "trading_workspace_v2/chart_renderer_contract.py": "2f06f96e6a76aae72bceaa11f31356d53ee7806c3a9a836c49ba1b2d9870b759",
+    "trading_workspace_v2/chart_ui_contract.py": "986da87cdca7a869fc19caa7f353eb126d0f186b407ae14e5b35b567e411f265",
+    "trading_workspace_v2/chart_visible_range_adapter.py": "375e61f4954db151485f2b99e232d39fe489b4464cc71d94ca35e270ae903372",
+    "trading_workspace_v2/command_dispatch.py": "e85137cbc4873b0c17304264c1adbea364d1b5f6abce43c6e637156178b27ac1",
+    "trading_workspace_v2/connector_ledger.py": "709de5487318040e601e21c1e02cf09af042a89c911c9405dc8e357da4eb95fc",
+    "trading_workspace_v2/contracts.py": "33aeda8fa783beb9c09fd1b4bfabec1b0762fce61db4128b1f7e6560094c4bbd",
+    "trading_workspace_v2/dashboard_read_model.py": "938813c18e5fd2def4ceadf4f02720fdcd6ae4e03d8607bb0d873ebdd18d7e17",
+    "trading_workspace_v2/dashboard_sessions.py": "646494bd9fbc5e1a9d5b885d779970ef04f5d64cb496042f4c91b93b9c751f54",
+    "trading_workspace_v2/data_ingest.py": "2409b0725fb254692a926abfa1dac984b425cc428c21d4d860305f3991d8369a",
+    "trading_workspace_v2/data_sources.py": "a59c809e4e1354acc814ecbb1ae39b606b9fe3900a44d5ca968fdd543bee5968",
+    "trading_workspace_v2/download_job_store.py": "4b755572dcd140b3881941e1e712337d6fa0c279b4cdf3c02a9f59f9c7894b35",
+    "trading_workspace_v2/dukascopy_catalog.py": "ef312be17b8379b74f4f2237afe7594b22f263fea657f14da4a943125c30f9cf",
+    "trading_workspace_v2/dukascopy_downloads.py": "ddbfca1cd3e15b982a15911bae36e2b6a944e3ec063451ad988c00adfcb3046b",
+    "trading_workspace_v2/execution_intent_contract.py": "e25f2bad0d7fe57477068b55de765cbfbaf3c0c13971c77d1eb3e3c75fd8db82",
+    "trading_workspace_v2/execution_semantics.py": "3db196c3cc0db86b5b43be775af7d0a33453236a72e670c21d3f05e8fabb142c",
+    "trading_workspace_v2/feature_timing_contract.py": "7c5e908f531a06a0b6ecc05d76ad1101239f8d0b1ccea7c2119d67b194fdd8f1",
+    "trading_workspace_v2/journal_context.py": "0407e6839edb81792db7f305baa30d2b136d941375d0fc62302dd5fcf33ce6a7",
+    "trading_workspace_v2/learn.py": "9e67abc4ec805f749894dad110b1dbb787eace566ce49b7ea9456927d90d5f33",
+    "trading_workspace_v2/local_datasets.py": "43478904c8007940003a71b740174703c7c0348f286dc04ca3c3add272a74a40",
+    "trading_workspace_v2/market_sync.py": "7ea3043842308df7771fbd2fa816e98931d7b7207383501c28697649716d8170",
+    "trading_workspace_v2/migrations.py": "d95107e6206aeae6361bacc455157117f61036a0ea25d1d6ebdfb9cc1897bafb",
+    "trading_workspace_v2/mql_parity.py": "e7945c0d649d876b970eb278e4dbca1c8438eaa972d676108ef337488208ea33",
+    "trading_workspace_v2/nautilus_worker.py": "4895e0adecfef267a2a3fe2e87da0d55598072e1f7a48ad64b63552d423f2d89",
+    "trading_workspace_v2/notion_oauth.py": "bc2de0f34b8ae61b43f52878446d4693443f0928c177092bdb3354643fb3c7d2",
+    "trading_workspace_v2/notion_projection.py": "110f149039574450ccc47abcad55ef7a4769d846bc6ad27bcd1f6f329435beaf",
+    "trading_workspace_v2/owner_absence_alerts.py": "b225a2c499f5f7e8eaf03fab2566b3c856a3b9edb3aab0b60ff57299a5740ea7",
+    "trading_workspace_v2/owner_absence_alert_journal.py": "46ae213342e87604bb66f00aa78a3a5fbde48d295cac4ba80d737e570f6e5dc6",
+    "trading_workspace_v2/owner_absence_host.py": "778573dc32cc7a352cc43bcd801f3df17b0c22c0be5c55ed5175f25223119f09",
+    "trading_workspace_v2/owner_absence_host_cli.py": "c9fad0c43dc925352774d196d8c0cc961d0742a6e48c3caaeb0b5e7dc897d93f",
+    "trading_workspace_v2/owner_absence_journal.py": "272b136cffcf2732c0b6599fa4d556109cb0d3e799bf5891bae369bc0100d843",
+    "trading_workspace_v2/owner_absence_lease.py": "adfe55d4216d86eb83cce3a114cb4f238ce64a8a387b4d3adfd383e3c4acc907",
+    "trading_workspace_v2/owner_absence_lease_binding.py": "877074a7aa7a600df0dd466ddc2fdd33084c3b16cbfe3324a9d5bcdc7dee0ef3",
+    "trading_workspace_v2/owner_absence_safety.py": "a491fc87f244380fad3f55185f98f4eb66b005261ec9253668ff00888539d10a",
+    "trading_workspace_v2/owner_absence_supervisor.py": "f34feacc0e22009548f6cdcec741c4f3424ee65ba2162262ebcb7b489b08f59f",
+    "trading_workspace_v2/paper_accounting.py": "86eaf211360fa059a1249f8d0a3420da711c11e4efb0508dfcc87136601d643f",
+    "trading_workspace_v2/paper_execution_bridge.py": "4cb04d7efada28df2130b89832d10a8e879e51c8544972c2ab99a014c06ba5e0",
+    "trading_workspace_v2/product.py": "09d33ed7ca1889d8a599b28a48b2357c9ea5072a158e595d175b10fe852a8953",
+    "trading_workspace_v2/project_session.py": "f1923b9dcf90a4beea1b04d3e0f3e508d916af1a696cd399f903f5c3b036260e",
+    "trading_workspace_v2/prop_replay.py": "26ccf8d3db2f6606203d3b8fb6e2ebc368facb67c0a6aacbb2bf9b828dc3de04",
+    "trading_workspace_v2/prop_report.py": "929a1cf5bdcd207ad1cd268c3cc32af838c93af29f57342c01f23cda2bcae136",
+    "trading_workspace_v2/prop_session.py": "c393c035994b055982f7aec2c63270a16819f43630f9e02fa841a11721b44bd9",
+    "trading_workspace_v2/qdm_cli.py": "7c9e86c774019a050c8648ab3ed6ccdf7ec975907c69aee35b30f84b3fae604a",
+    "trading_workspace_v2/qdm_downloads.py": "f6debeaf71517cb95f5b7f73f0cef7e089d7015c1f7b75ae426bc288a1708c35",
+    "trading_workspace_v2/replay.py": "3bb1d9938613cf0aea6a19125d94eff6221d11d2b3bb1396a1fd462022763fe9",
+    "trading_workspace_v2/replay_activity.py": "7dcf5520c868fb6017c8613a2d9fab5b6ef68dbe16ee1e2ecaa1269b4cbc9270",
+    "trading_workspace_v2/replay_analytics.py": "1fbeabdb57321f2d17dab8916d3bb93dd7a10ae56f629d50a4853402725b21b3",
+    "trading_workspace_v2/replay_chart_history.py": "d9c8bb1d055a3e7fad3e7abfae4a7fcc61224382ab1062132ebc77f57bf55f57",
+    "trading_workspace_v2/replay_execution.py": "56c161bf634e5b0e53e8aa9504b4aeffcb057b97602f681be17d6e5e838d9ed9",
+    "trading_workspace_v2/replay_immediate_execution.py": "70501ff88344f661b129f9cf3643d9d7ff705f4971669c8ffbae4b0c65bb0890",
+    "trading_workspace_v2/replay_instrument.py": "bbf1388b23cd69e7da19b6374c6a912dd5e165942cff7800b2613f92be681907",
+    "trading_workspace_v2/replay_interval.py": "47018b37e44ab4b2ace8d1394330d2042228eb50b35086020daa41b706c38dca",
+    "trading_workspace_v2/replay_portfolio.py": "9b1a42568d89ee4ec7bda58d52ddb06ea1217971df05ef4f190ef68b52495472",
+    "trading_workspace_v2/replay_read_projection.py": "a007ec9d4199b9a8efdb0e05ad84dcfddf689040acccbd6d5b57646b128ee413",
+    "trading_workspace_v2/replay_tick_execution.py": "1171077b0e10b6a3469fd13c80c4385462999e15aa26937fdd7a36df1672f513",
+    "trading_workspace_v2/research.py": "eceaf1ae83c72954579865d57bb8453758c7a85cfe5ec0e95279bcba2f150b15",
+    "trading_workspace_v2/research_engine.py": "8d4354f9d8042f36885c3976d69e5e7ebfaf20474fe459c0c234f38fdd118f05",
+    "trading_workspace_v2/research_oos.py": "92f857ae67803c2c6f6e8a2e021330b8b8edd85759467b242d135624db4c4c12",
+    "trading_workspace_v2/research_validation.py": "0b8c892c1d7175ba2508dffbee2714c19a04f32782cd4b6c275e001d032556b4",
+    "trading_workspace_v2/retained.py": "d3af6271a5dd337f20164dbc95970d050c86bbde954d94bd59b042aa51fb0bf6",
+    "trading_workspace_v2/risk_promotion_contracts.py": "1d1ab2e2d9a17674706d797b7746def0e919c721d1ce5c025966b3075879f34d",
+    "trading_workspace_v2/store.py": "f7434878076cd19b511dcec9f635bf865086853861f301faf4f609fc054dc0b6",
+    "trading_workspace_v2/strategy_contracts.py": "05e4f00317c7c1a0015cf533b49e7a28bf496ebdaa57ebb6a45c410fafc9a1de",
+    "trading_workspace_v2/tick_history.py": "45e03d896d12414fdc5821f6d48673aee507f5db5b7751ddbd0a6ca4f3a234b7",
+    "trading_workspace_v2/trades_page.py": "95412f3e0e15e463d0861689fe34f8203089c1fda63b4cf013469b635ab4bf31",
+    "trading_workspace_v2/worker.py": "e567b9b0818ee7a42c4f4b7928c9e21591545248cadf4280f74e862947497307",
+    "trading_workspace_v2/zone_lifecycle.py": "ad82bd37eb49854b129c9599155a6634a5f4e16580f30cfd3bd82bdc458537f6",
+    "trading_workspace_v2/__init__.py": "ac7f4e862a815b4e12675a191fad30ebda28894f3f7a45036fb4c12ee6db2858",
+    "engine_runtime/adapter.py": "fadd7d63f80e6736ce85c9d32a016cf41159844875a360c8e49c795c8945d386",
+    "engine_runtime/limits.py": "41fcc739bb01bdf3c28f3e5ce883b2a12654e140ffe775b25e79913225b363fb",
+    "engine_runtime/run.py": "902821f90b9f0b74b689e316ae0082b09be46e4bf65d74e676adc4f4a275fcf9",
+    "engine_runtime/test_adapter.py": "260b132ecad0f816c95da8d40ed16593ca029a556f3ea427839664076443424a",
+    "engine_runtime/test_limits.py": "d9dc410e287b06e980a0b1d4c512c7c760407cdc2eaceaf9a41d55878832ac92"
+  },
+  "admin_sha256": "91903192e47b89b0f218321630bc556db93e58fa368cc1dcfc1a7c06e07e59f8",
+  "owner_runtime_touched": false,
+  "pending": [
+    "Native market/live SDK connector remains explicitly unavailable; broker execution is gated.",
+    "Independent integration review and wider data/research UI/runtime performance acceptance remain open.",
+    "Long-history response and snapshot persistence still scale with full canonical ledger."
+  ]
+}

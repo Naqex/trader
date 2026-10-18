@@ -190,6 +190,29 @@ def test_init_is_closed_current_quote_and_order_fills_only_next_minute(product):
     assert result["execution_events"][1]["details"]["reason"] == "take_profit"
 
 
+def test_current_tick_quote_can_reopen_after_manual_close_without_step(product):
+    current = initialize(product)
+    for side in ('BUY', 'SELL', 'BUY'):
+        current = product.service.queue_market_order(WORKSPACE, current['record_id'], current['revision'],
+            operation_id='reopen-' + str(current['revision']), side=side, quantity='0.12',
+            stop_loss=None, take_profit=None, execution_timing='current_quote')
+        state = current['payload']['execution']
+        fill = next(e for e in reversed(state['ledger']) if e['kind'] == 'market_fill')
+        assert fill['details']['fill_price'] == ('1.1002' if side == 'BUY' else '1.1')
+        assert fill['details']['window_start_msc'] == BASE * 1000
+        assert fill['details']['window_end_msc'] == (BASE + 60) * 1000
+        tampered = copy.deepcopy(state)
+        damaged = next(e for e in reversed(tampered['ledger']) if e['kind'] == 'market_fill')
+        damaged['details']['window_end_msc'] += 1000
+        with pytest.raises(ValueError, match='preceding canonical broker quote'):
+            parse_replay_execution_snapshot(tampered)
+        current = product.service.close_order(WORKSPACE, current['record_id'], current['revision'],
+            operation_id='close-' + str(current['revision']), target_id=state['position']['position_id'])
+        assert current['payload']['cursor_index'] == 0
+        assert current['payload']['execution']['position'] is None
+    assert Decimal(current['payload']['execution']['balance']) == Decimal('99986.80')
+
+
 def test_buy_sell_tick_outcomes_feed_existing_trade_analytics(product):
     initialize(product)
     queue(product)

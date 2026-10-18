@@ -270,6 +270,7 @@ pub(super) fn validate(s: &Value) -> Result<(), String> {
     let ledger = s["ledger"].as_array().ok_or("ledger must be an array")?;
     let mut prior_key = None;
     let mut prior_quote: Option<&Value> = None;
+    let mut prior_window_quote: Option<&Value> = None;
     let mut last_cursor = -1;
     let mut last_time = -1;
     for (index, event) in ledger.iter().enumerate() {
@@ -332,7 +333,11 @@ pub(super) fn validate(s: &Value) -> Result<(), String> {
             || kind == "order_cancel"
             || details["execution_timing"] == "current_quote"
         {
-            let prior = prior_quote
+            let prior = if details["execution_timing"] == "current_quote" {
+                prior_window_quote
+            } else {
+                prior_quote
+            }
                 .ok_or("close/current fill requires a preceding canonical broker quote")?;
             let keys: &[&str] = if details["execution_timing"] == "current_quote" {
                 if event["cursor_index"] != prior["cursor_index"]
@@ -452,6 +457,9 @@ pub(super) fn validate(s: &Value) -> Result<(), String> {
             }
         }
         prior_quote = Some(event);
+        if details.get("window_start_msc").is_some() {
+            prior_window_quote = Some(event);
+        }
     }
     if number(s, "event_sequence")? != ledger.len() as i64 {
         return Err("tick execution ledger length differs from its event sequence".into());

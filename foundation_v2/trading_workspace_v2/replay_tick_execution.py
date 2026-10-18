@@ -135,7 +135,8 @@ def validate_tick_execution_event(
             raise ReplayExecutionError("manual close differs from the observed broker quote")
         return event
     if d.get('execution_timing') == 'current_quote':
-        prior = next((raw for raw in reversed(snapshot.ledger) if raw['sequence'] < event.sequence and 'bid' in raw.get('details', {})), None)
+        prior = next((raw for raw in reversed(snapshot.ledger) if raw['sequence'] < event.sequence
+            and 'bid' in raw.get('details', {}) and 'window_start_msc' in raw['details']), None)
         if (prior is None or event.virtual_time_utc != prior['virtual_time_utc']
                 or event.cursor_index != prior['cursor_index']
                 or any(d.get(key) != prior['details'].get(key) for key in ('time_msc', 'sequence', 'bid', 'ask', 'window_start_msc', 'window_end_msc'))):

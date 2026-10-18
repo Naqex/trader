@@ -823,7 +823,20 @@ async fn restore(
                     break;
                 }
             }
-            found.ok_or_else(|| bad("historical analytics checkpoint is unavailable"))?
+            match found {
+                Some(candidate) => candidate,
+                None if asset.is_some() => {
+                    let first_cursor = snapshot["ledger"].as_array()
+                        .and_then(|events| events.first())
+                        .and_then(|event| event["cursor_index"].as_i64());
+                    // An asset initialized after this clock has no historical execution yet.
+                    if first_cursor.is_none_or(|first| cursor < first) {
+                        return Ok(Value::Null);
+                    }
+                    return Err(bad("historical portfolio checkpoint is unavailable"));
+                }
+                None => return Err(bad("historical analytics checkpoint is unavailable")),
+            }
         }
     };
     lineage(&checkpoint, snapshot)?;
@@ -1438,6 +1451,8 @@ async fn initialize(
     args["dataset_id"] = p["dataset_id"].clone();
     args["dataset_sha256"] = m["artifact_sha256"].clone();
     args["cursor_index"] = p["cursor_index"].clone();
+    // Validate the base model first; the stored tick pin is resolved below.
+    args["tick_snapshot_id"] = Value::Null;
     let mut snapshot = engine_snapshot("initialize", &Value::Null, args.clone())?;
     if snapshot["instrument_spec"]["instrument_id"] != m["instrument_id"] {
         return Err(bad(

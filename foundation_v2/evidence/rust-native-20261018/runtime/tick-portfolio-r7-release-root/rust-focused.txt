@@ -1,0 +1,22 @@
+   Compiling trading-workspace-api v0.1.0 (D:\ANNAM\TradingWorkspace\projects\mt5-tradingview-backtester\foundation_v2\api-rust)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 15.95s
+     Running unittests src\lib.rs (target/native-candidate\debug\deps\trading_workspace_api-7195938e6d918196.exe)
+
+running 2 tests
+test replay_service::response_view_tests::step_capability_excludes_tick_and_unknown_execution_schemas ... ok
+test replay_service::response_view_tests::response_views_are_explicit_and_route_scoped ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 126 filtered out; finished in 0.00s
+
+   Compiling trading-workspace-api v0.1.0 (D:\ANNAM\TradingWorkspace\projects\mt5-tradingview-backtester\foundation_v2\api-rust)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.45s
+     Running tests\rust_replay_core_differential.rs (target/native-candidate\debug\deps\rust_replay_core_differential-f37983e3261c7889.exe)
+
+running 4 tests
+test tick_current_quote_reopens_after_close_and_rejects_changed_window ... ok
+test current_quote_batch_matches_two_transitions ... ok
+test batched_advancement_matches_individual_transitions_and_fails_atomically ... ok
+test python_oracle_differential ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.88s
+

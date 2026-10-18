@@ -22,7 +22,9 @@ def fill_current_quote(snapshot, *, mid_close, virtual_time_utc):
     tick_mode = snapshot.schema_version == 'replay-execution-tick-v1'
     provenance = {}
     if tick_mode:
-        prior = next((raw['details'] for raw in reversed(snapshot.ledger) if 'bid' in raw.get('details', {})), None)
+        # Manual actions retain the quote but omit its tick-window boundaries.
+        prior = next((raw['details'] for raw in reversed(snapshot.ledger)
+            if 'bid' in raw.get('details', {}) and 'window_start_msc' in raw['details']), None)
         if prior is None or snapshot.last_bid is None or snapshot.last_ask is None:
             raise ReplayExecutionError('current broker quote is unavailable')
         bid, ask = snapshot.last_bid, snapshot.last_ask
