@@ -111,7 +111,16 @@ def native_database_preflight(args, env):
     return summary
 
 
-def database_preflight(env, *, migrate=False, backup_confirmed=False, require_idle=False, allow_pending=False):
+def compatibility_storage_preflight(conn):
+    column = conn.execute("""SELECT EXISTS(SELECT 1 FROM information_schema.columns
+        WHERE table_schema='public' AND table_name='workspace_record_revisions'
+          AND column_name='storage_format') AS present""").fetchone()["present"]
+    if column and conn.execute("""SELECT EXISTS(SELECT 1 FROM workspace_record_revisions
+        WHERE storage_format <> 'full_snapshot') AS present""").fetchone()["present"]:
+        raise PreflightError("Compact replay revisions require materialization on an isolated restored target before compatibility startup. Historical and deleted revisions are included.")
+
+
+def database_preflight(env, *, migrate=False, backup_confirmed=False, require_idle=False, allow_pending=False, allow_compact=False):
     import psycopg
     from psycopg.rows import dict_row
     from trading_workspace_v2.migrations import MIGRATION_DIRECTORY, apply_migrations
@@ -125,6 +134,8 @@ def database_preflight(env, *, migrate=False, backup_confirmed=False, require_id
                     for p in sorted(MIGRATION_DIRECTORY.glob("[0-9][0-9][0-9][0-9]_*.sql"))}
         if not expected or any(name not in expected or expected[name] != digest for name, digest in versions.items()):
             raise PreflightError("Database migration authority/checksum mismatch; restore the matching code before launch.")
+        if not allow_compact:
+            compatibility_storage_preflight(conn)
         if require_idle or migrate:
             for table in ("research_jobs", "api_commands"):
                 present = conn.execute("SELECT to_regclass(%s) AS name", (f"public.{table}",)).fetchone()["name"]
@@ -579,7 +590,8 @@ def main(argv=None):
         summary = native_database_preflight(args, env)
     else:
         summary = database_preflight(env, migrate=args.migrate, backup_confirmed=args.backup_confirmed,
-                                     require_idle=args.stop or args.require_idle, allow_pending=args.allow_pending_migrations)
+                                     require_idle=args.stop or args.require_idle, allow_pending=args.allow_pending_migrations,
+                                     allow_compact=args.stop)
     if args.check_only:
         print(json.dumps({"check_only": True, "runtime_profile": args.runtime_profile, "port_free": port_is_free(args.port), **summary}))
         return 0

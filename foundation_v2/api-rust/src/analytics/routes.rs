@@ -34,7 +34,19 @@ fn source(s:impl AsRef<str>)->ApiError{ApiError::detail(StatusCode::SERVICE_UNAV
 fn qint(q:&HashMap<String,String>,key:&str)->Result<Option<i64>,ApiError>{q.get(key).map(|s|s.parse().map_err(|_|bad(format!("{key} must be integer")))).transpose()}
 fn filters(q:&HashMap<String,String>)->Value{let mut f=json!({});for k in ["side","outcome","from_close_utc","to_close_utc"]{if let Some(v)=q.get(k){f[k]=json!(v)}}f}
 async fn records(tx:&Transaction<'_>,workspace:&str,kind:&str)->Result<Vec<Value>,ApiError>{
-    tx.query("SELECT r.record_id,r.source_key,r.current_revision,r.created_at_utc,r.updated_at_utc,v.payload_json FROM workspace_records r JOIN workspace_record_revisions v ON v.workspace_id=r.workspace_id AND v.kind=r.kind AND v.record_id=r.record_id AND v.revision=r.current_revision WHERE r.workspace_id=$1 AND r.kind=$2 AND NOT v.deleted ORDER BY r.updated_at_utc DESC,r.record_id",&[&workspace,&kind]).await.map_err(|_|ApiError::database()).map(|rows|rows.iter().map(|r|json!({"record_id":r.get::<_,String>(0),"source_key":r.get::<_,Option<String>>(1),"revision":r.get::<_,i32>(2),"created_at_utc":r.get::<_,String>(3),"updated_at_utc":r.get::<_,String>(4),"payload":r.get::<_,Value>(5),"deleted":false})).collect())
+    let rows=tx.query("SELECT r.record_id,r.source_key,r.current_revision,r.created_at_utc,r.updated_at_utc,v.payload_json FROM workspace_records r JOIN workspace_record_revisions v ON v.workspace_id=r.workspace_id AND v.kind=r.kind AND v.record_id=r.record_id AND v.revision=r.current_revision WHERE r.workspace_id=$1 AND r.kind=$2 AND NOT v.deleted ORDER BY r.updated_at_utc DESC,r.record_id",&[&workspace,&kind]).await.map_err(|_|ApiError::database())?;
+    let mut records=Vec::with_capacity(rows.len());
+    for row in rows {
+        let id:String=row.get(0);
+        let revision:i32=row.get(2);
+        let payload:Value=row.get(5);
+        // Performance projections consume the complete ledger at this exact revision.
+        let payload=if kind=="replay"{
+            crate::replay_storage::hydrate_payload(tx,workspace,&id,i64::from(revision),payload).await.map_err(|_|source("trade_ledger_source_invalid"))?
+        }else{payload};
+        records.push(json!({"record_id":id,"source_key":row.get::<_,Option<String>>(1),"revision":revision,"created_at_utc":row.get::<_,String>(3),"updated_at_utc":row.get::<_,String>(4),"payload":payload,"deleted":false}));
+    }
+    Ok(records)
 }
 async fn activity(tx:&Transaction<'_>,workspace:&str)->Result<Vec<Value>,ApiError>{tx.query("SELECT session_id,started_at_utc,ended_at_utc FROM replay_activity_intervals WHERE workspace_id=$1 ORDER BY started_at_utc",&[&workspace]).await.map_err(|_|ApiError::database()).map(|rs|rs.iter().map(|r|json!({"session_id":r.get::<_,String>(0),"started_at_utc":iso(r.get::<_,DateTime<Utc>>(1)),"ended_at_utc":iso(r.get::<_,DateTime<Utc>>(2))})).collect())}
 async fn invoke(State(state):State<Arc<AppState>>,scope:Workspace,request:Request)->Result<Response,ApiError>{

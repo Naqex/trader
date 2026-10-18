@@ -5,6 +5,9 @@ use std::str::FromStr;
 
 #[path = "replay_core/tick.rs"]
 mod tick;
+#[path = "replay_core/history.rs"]
+pub mod history;
+use history::History;
 
 type R<T> = Result<T, String>;
 pub(super) fn zero() -> BigDecimal {
@@ -219,7 +222,13 @@ pub(super) fn position(
     )
 }
 pub(super) fn emit(
+    s: &mut Value, kind: &str, cursor: i64, time: i64, fp: BigDecimal, details: Value,
+) -> R<()> {
+    emit_history(s, &mut History::Full, kind, cursor, time, fp, details)
+}
+fn emit_history(
     s: &mut Value,
+    history: &mut History<'_>,
     kind: &str,
     cursor: i64,
     time: i64,
@@ -233,10 +242,7 @@ pub(super) fn emit(
     if v2(s) {
         e["schema_version"] = json!("replay-execution-event-v2");
     }
-    s["ledger"]
-        .as_array_mut()
-        .ok_or("ledger must be array")?
-        .push(e);
+    history.append(s, e)?;
     s["event_sequence"] = json!(seq);
     s["floating_pl"] = sval(fp);
     s["equity"] = sval(eq);
@@ -434,26 +440,31 @@ fn initialize(a: &Value) -> R<Value> {
     }
     Ok(s)
 }
+#[cfg(test)]
 fn queue(s: &mut Value, a: &Value) -> R<()> {
+    queue_history(s, a, &mut History::Full)
+}
+fn queue_history(s: &mut Value, a: &Value, history: &mut History<'_>) -> R<()> {
     if !s["position"].is_null() || !s["pending_market_order"].is_null() {
         return Err("initial replay execution core supports one active or queued position".into());
     }
     let id = txt(a, "operation_id")?;
-    fresh(s, id)?;
+    history.fresh(s, id)?;
     let q = positive(a, "quantity")?;
     qty(s, &q)?;
     s["pending_market_order"] = json!({"operation_id":id,"side":side(a)?,"quantity":sval(q),"stop_loss":opt_dec(a,"stop_loss")?.map(sval),"take_profit":opt_dec(a,"take_profit")?.map(sval),"submitted_cursor_index":s["cursor_index"]});
     Ok(())
 }
-fn fill(s: &mut Value, a: &Value) -> R<()> {
+fn fill(s: &mut Value, a: &Value, history: &mut History<'_>) -> R<()> {
     let o = s["pending_market_order"].clone();
     let cursor = int(s, "cursor_index")?;
     let time = int(a, "virtual_time_utc")?;
     if o.is_null() || !s["position"].is_null() || int(&o, "submitted_cursor_index")? != cursor {
         return Err("current-quote fill requires a newly submitted market order".into());
     }
-    canonical_time(
+    canonical_time_history(
         s,
+        history,
         time,
         "current quote must retain the canonical checkpoint time",
     )?;
@@ -486,9 +497,10 @@ fn fill(s: &mut Value, a: &Value) -> R<()> {
     }
     details["open_position"] = s["position"].clone();
     details["pending_market_order"] = Value::Null;
-    details["intrabar_equity_coverage"] = coverage(s, "complete");
-    emit(
+    details["intrabar_equity_coverage"] = history.coverage(s, "complete");
+    emit_history(
         s,
+        history,
         if rejected {
             "order_rejected"
         } else {
@@ -499,17 +511,17 @@ fn fill(s: &mut Value, a: &Value) -> R<()> {
         fp.clone(),
         details.clone(),
     )?;
-    emit(s, "price_mark", cursor, time, fp, details)
+    emit_history(s, history, "price_mark", cursor, time, fp, details)
 }
-fn canonical_time(s: &Value, time: i64, error: &str) -> R<()> {
-    if let Some(last) = s["ledger"].as_array().and_then(|l| l.last()) {
+fn canonical_time_history(s: &Value, history: &History<'_>, time: i64, error: &str) -> R<()> {
+    if let Some(last) = history.last_event(s) {
         if int(last, "virtual_time_utc")? != time {
             return Err(error.into());
         }
     }
     Ok(())
 }
-fn active(s: &Value, a: &Value) -> R<Value> {
+fn active(s: &Value, a: &Value, history: &History<'_>) -> R<Value> {
     let p = if !s["position"].is_null() {
         &s["position"]
     } else {
@@ -527,7 +539,7 @@ fn active(s: &Value, a: &Value) -> R<Value> {
         return Err("target no longer matches the active replay order".into());
     }
     let id = txt(a, "operation_id")?;
-    fresh(s, id)?;
+    history.fresh(s, id)?;
     let source = if key == "position_id" {
         "source_operation_id"
     } else {
@@ -538,14 +550,15 @@ fn active(s: &Value, a: &Value) -> R<Value> {
     }
     Ok(p.clone())
 }
-fn protect(s: &mut Value, a: &Value) -> R<()> {
-    let mut p = active(s, a)?;
+fn protect(s: &mut Value, a: &Value, history: &mut History<'_>) -> R<()> {
+    let mut p = active(s, a, history)?;
     let mid = positive(a, "mid_close")?;
     let time = int(a, "virtual_time_utc")?;
     let is_position = !s["position"].is_null();
     let reference = if tick_mode(s) {
-        canonical_time(
+        canonical_time_history(
             s,
+            history,
             time,
             "protection amendment must stay at the current canonical checkpoint",
         )?;
@@ -579,8 +592,9 @@ fn protect(s: &mut Value, a: &Value) -> R<()> {
     }] = p;
     details["open_position"] = s["position"].clone();
     details["pending_market_order"] = s["pending_market_order"].clone();
-    emit(
+    emit_history(
         s,
+        history,
         "protection_change",
         int(s, "cursor_index")?,
         time,
@@ -588,11 +602,12 @@ fn protect(s: &mut Value, a: &Value) -> R<()> {
         details,
     )
 }
-fn close(s: &mut Value, a: &Value) -> R<()> {
-    let p = active(s, a)?;
+fn close(s: &mut Value, a: &Value, history: &mut History<'_>) -> R<()> {
+    let p = active(s, a, history)?;
     let time = int(a, "virtual_time_utc")?;
-    canonical_time(
+    canonical_time_history(
         s,
+        history,
         time,
         "close must stay at the current canonical checkpoint",
     )?;
@@ -602,15 +617,13 @@ fn close(s: &mut Value, a: &Value) -> R<()> {
     } else {
         "operation_id"
     }];
-    let mut details = json!({"command_operation_id":a["operation_id"],"target_id":a["target_id"],"operation_id":source,"previous_balance":s["balance"],"net_pnl":"0","mid_close":sval(positive(a,"mid_close")?),"open_position":null,"pending_market_order":null,"intrabar_equity_coverage":coverage(s,if is_position{"insufficient"}else{"complete"})});
+    let mut details = json!({"command_operation_id":a["operation_id"],"target_id":a["target_id"],"operation_id":source,"previous_balance":s["balance"],"net_pnl":"0","mid_close":sval(positive(a,"mid_close")?),"open_position":null,"pending_market_order":null,"intrabar_equity_coverage":history.coverage(s,if is_position{"insufficient"}else{"complete"})});
     let mut realized = zero();
     if is_position {
         let (bid, ask) = if tick_mode(s) {
             (positive(s, "last_bid")?, positive(s, "last_ask")?)
         } else {
-            let prior = s["ledger"]
-                .as_array()
-                .and_then(|l| l.last())
+            let prior = history.last_event(s)
                 .ok_or("manual close requires a canonical checkpoint")?;
             if dec(a, "mid_close")? != dec(&prior["details"], "mid_close")? {
                 return Err("manual close must use the canonical checkpoint mid".into());
@@ -632,8 +645,9 @@ fn close(s: &mut Value, a: &Value) -> R<()> {
     s["balance"] = sval(py(dec(s, "balance")? + realized));
     s["position"] = Value::Null;
     s["pending_market_order"] = Value::Null;
-    emit(
+    emit_history(
         s,
+        history,
         if is_position {
             "manual_close"
         } else {
@@ -704,7 +718,7 @@ pub(crate) fn protective(
         None
     })
 }
-fn advance(s: &mut Value, a: &Value) -> R<()> {
+fn advance(s: &mut Value, a: &Value, history: &mut History<'_>) -> R<()> {
     let cursor = int(a, "cursor_index")?;
     if cursor != int(s, "cursor_index")? + 1 {
         return Err("execution cursor must advance exactly one bar".into());
@@ -744,8 +758,9 @@ fn advance(s: &mut Value, a: &Value) -> R<()> {
             exposure = true;
             pnl(s, &s["position"], &open_bid, &open_ask)?.0
         };
-        emit(
+        emit_history(
             s,
+            history,
             if rejected {
                 "order_rejected"
             } else {
@@ -763,8 +778,9 @@ fn advance(s: &mut Value, a: &Value) -> R<()> {
             let (net, cost) = pnl(s, &p, &exit, &exit)?;
             s["balance"] = sval(py(dec(s, "balance")? + &net));
             s["position"] = Value::Null;
-            emit(
+            emit_history(
                 s,
+                history,
                 "protective_fill",
                 cursor,
                 if at_open { time } else { end },
@@ -780,7 +796,7 @@ fn advance(s: &mut Value, a: &Value) -> R<()> {
         pnl(s, &s["position"], &bid, &ask)?.0
     };
     let details = json!({"mid_close":sval(positive(b,"close")?),"intrabar_equity_coverage":if exposure{"insufficient"}else{"complete"},"open_position":s["position"],"pending_market_order":s["pending_market_order"]});
-    emit(s, "price_mark", cursor, end, fp, details)?;
+    emit_history(s, history, "price_mark", cursor, end, fp, details)?;
     s["cursor_index"] = json!(cursor);
     s["evaluation_quality"] = json!("full_for_declared_model");
     Ok(())
@@ -977,7 +993,7 @@ fn order_valid(p: &Value, position: bool) -> R<()> {
     }
     Ok(())
 }
-pub fn validate(s: &Value) -> R<()> {
+fn validate_head(s: &Value) -> R<()> {
     let version = txt(s, "schema_version")?;
     if ![
         "replay-execution-v1",
@@ -1008,9 +1024,9 @@ pub fn validate(s: &Value) -> R<()> {
         "event_sequence",
         "pending_market_order",
         "position",
-        "ledger",
         "evaluation_quality",
     ];
+    if s.get("ledger").is_some() { fields.push("ledger"); }
     if v2(s) {
         fields.push("research_margin");
     }
@@ -1084,8 +1100,8 @@ pub fn validate(s: &Value) -> R<()> {
     if int(s, "timeframe_seconds")? == 0 || int(s, "phase_index")? == 0 {
         return Err("timeframe and phase index must be positive".into());
     }
-    let cursor = int(s, "cursor_index")?;
-    let sequence = int(s, "event_sequence")?;
+    int(s, "cursor_index")?;
+    int(s, "event_sequence")?;
     if dec(s, "equity")? != py(dec(s, "balance")? + dec(s, "floating_pl")?) {
         return Err("equity must equal balance plus floating_pl".into());
     }
@@ -1105,6 +1121,12 @@ pub fn validate(s: &Value) -> R<()> {
             return Err("research leverage must be between 1 and 1000".into());
         }
     }
+    Ok(())
+}
+pub fn validate(s: &Value) -> R<()> {
+    validate_head(s)?;
+    let cursor = int(s, "cursor_index")?;
+    let sequence = int(s, "event_sequence")?;
     let ledger = s["ledger"].as_array().ok_or("ledger must be array")?;
     if sequence as usize != ledger.len() {
         return Err("replay execution ledger length does not match event_sequence".into());
@@ -1144,6 +1166,9 @@ pub fn validate(s: &Value) -> R<()> {
     Ok(())
 }
 pub fn validate_event(s: &Value, e: &Value) -> R<()> {
+    validate_event_with_previous(s, e, preceding_event(s, e))
+}
+fn validate_event_with_previous(s: &Value, e: &Value, previous: Option<&Value>) -> R<()> {
     let mut fields = vec![
         "sequence",
         "kind",
@@ -1203,7 +1228,7 @@ pub fn validate_event(s: &Value, e: &Value) -> R<()> {
     let current = d["execution_timing"] == "current_quote";
     if current {
         if kind == "price_mark" {
-            let prev = preceding_event(s, e)
+            let prev = previous
                 .ok_or("current quote mark lacks immediate fill checkpoint")?;
             if !["market_fill", "order_rejected"].contains(&txt(prev, "kind")?)
                 || prev["details"] != *d
@@ -1381,7 +1406,7 @@ pub fn validate_event(s: &Value, e: &Value) -> R<()> {
                 return Err("closing fill does not match its position".into());
             }
             let prev =
-                preceding_event(s, e).ok_or("manual close lacks canonical position checkpoint")?;
+                previous.ok_or("manual close lacks canonical position checkpoint")?;
             if prev["cursor_index"] != e["cursor_index"]
                 || prev["virtual_time_utc"] != e["virtual_time_utc"]
                 || prev["details"]["open_position"] != *p
@@ -1440,22 +1465,23 @@ pub fn transform_owned(mut request: Value) -> R<Value> {
         validate(&s)?;
     }
     let old_len = s["ledger"].as_array().ok_or("ledger must be array")?.len();
+    let mut history = History::Full;
     match action.as_str() {
         "initialize" => {}
         "validate" => {}
-        "queue" => queue(&mut s, a)?,
+        "queue" => queue_history(&mut s, a, &mut history)?,
         "queue_current_quote" => {
-            queue(&mut s, a)?;
-            fill(&mut s, a)?;
+            queue_history(&mut s, a, &mut history)?;
+            fill(&mut s, a, &mut history)?;
         }
-        "fill_current_quote" => fill(&mut s, a)?,
-        "protection" => protect(&mut s, a)?,
-        "close" => close(&mut s, a)?,
+        "fill_current_quote" => fill(&mut s, a, &mut history)?,
+        "protection" => protect(&mut s, a, &mut history)?,
+        "close" => close(&mut s, a, &mut history)?,
         "advance" => {
             if tick_mode(&s) {
                 tick::advance_validated(&mut s, a)?
             } else {
-                advance(&mut s, a)?
+                advance(&mut s, a, &mut history)?
             }
         }
         "advance_many" => {
@@ -1467,7 +1493,7 @@ pub fn transform_owned(mut request: Value) -> R<Value> {
                 if tick_mode(&s) {
                     tick::advance_validated(&mut s, step)?;
                 } else {
-                    advance(&mut s, step)?;
+                    advance(&mut s, step, &mut history)?;
                 }
             }
         }

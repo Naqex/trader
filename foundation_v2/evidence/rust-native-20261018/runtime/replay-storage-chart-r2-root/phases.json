@@ -1,0 +1,457 @@
+[
+  {
+    "message": "native_replay_phases",
+    "operation": "POST",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":83},{\"phase\":\"pool_checkout\",\"us\":230},{\"phase\":\"transaction_begin\",\"us\":135},{\"phase\":\"receipt_admission\",\"us\":3746},{\"phase\":\"result_status\",\"us\":32521},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":1757},{\"phase\":\"commit\",\"us\":548}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "execution",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":23},{\"phase\":\"pool_checkout\",\"us\":148},{\"phase\":\"transaction_begin\",\"us\":116},{\"phase\":\"receipt_admission\",\"us\":1055},{\"phase\":\"load_record\",\"us\":1874},{\"phase\":\"load_manifest\",\"us\":312},{\"phase\":\"domain_transition\",\"us\":257},{\"phase\":\"revision_save\",\"us\":1021},{\"phase\":\"view_projection\",\"us\":15030},{\"phase\":\"result_status\",\"us\":21},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":1366},{\"phase\":\"commit\",\"us\":302}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":14},{\"phase\":\"pool_checkout\",\"us\":146},{\"phase\":\"transaction_begin\",\"us\":92},{\"phase\":\"receipt_admission\",\"us\":858},{\"phase\":\"load_record\",\"us\":1762},{\"phase\":\"load_manifest\",\"us\":386},{\"phase\":\"result_status\",\"us\":103222},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":21294},{\"phase\":\"commit\",\"us\":542}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":15},{\"phase\":\"pool_checkout\",\"us\":132},{\"phase\":\"transaction_begin\",\"us\":99},{\"phase\":\"receipt_admission\",\"us\":915},{\"phase\":\"load_record\",\"us\":11423},{\"phase\":\"load_manifest\",\"us\":297},{\"phase\":\"result_status\",\"us\":111881},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":30820},{\"phase\":\"commit\",\"us\":673}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":103},{\"phase\":\"pool_checkout\",\"us\":136},{\"phase\":\"transaction_begin\",\"us\":117},{\"phase\":\"receipt_admission\",\"us\":822},{\"phase\":\"load_record\",\"us\":20441},{\"phase\":\"load_manifest\",\"us\":380},{\"phase\":\"result_status\",\"us\":134698},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":37101},{\"phase\":\"commit\",\"us\":742}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":15},{\"phase\":\"pool_checkout\",\"us\":180},{\"phase\":\"transaction_begin\",\"us\":83},{\"phase\":\"receipt_admission\",\"us\":776},{\"phase\":\"load_record\",\"us\":49071},{\"phase\":\"load_manifest\",\"us\":297},{\"phase\":\"result_status\",\"us\":153387},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":44997},{\"phase\":\"commit\",\"us\":936}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "step",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":95},{\"phase\":\"pool_checkout\",\"us\":197},{\"phase\":\"transaction_begin\",\"us\":88},{\"phase\":\"receipt_admission\",\"us\":905},{\"phase\":\"load_record\",\"us\":39485},{\"phase\":\"load_manifest\",\"us\":379},{\"phase\":\"result_status\",\"us\":173712},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":54943},{\"phase\":\"commit\",\"us\":904}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":32421},{\"phase\":\"transaction_begin\",\"us\":156}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":26},{\"phase\":\"pool_checkout\",\"us\":200},{\"phase\":\"transaction_begin\",\"us\":53}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":13},{\"phase\":\"pool_checkout\",\"us\":127},{\"phase\":\"transaction_begin\",\"us\":83}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "chart-window",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":15},{\"phase\":\"pool_checkout\",\"us\":124},{\"phase\":\"transaction_begin\",\"us\":77}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/market",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":22},{\"phase\":\"pool_checkout\",\"us\":282},{\"phase\":\"transaction_begin\",\"us\":112},{\"phase\":\"receipt_admission\",\"us\":6170},{\"phase\":\"load_record\",\"us\":52695},{\"phase\":\"load_manifest\",\"us\":524},{\"phase\":\"storage_prefix_admission\",\"us\":962974},{\"phase\":\"domain_transition\",\"us\":556},{\"phase\":\"revision_save\",\"us\":16425},{\"phase\":\"view_projection\",\"us\":13998},{\"phase\":\"result_status\",\"us\":139},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":1511},{\"phase\":\"commit\",\"us\":631}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":14},{\"phase\":\"pool_checkout\",\"us\":260},{\"phase\":\"transaction_begin\",\"us\":80},{\"phase\":\"receipt_admission\",\"us\":3224},{\"phase\":\"result_status\",\"us\":1894},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":823},{\"phase\":\"commit\",\"us\":345}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/protection",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":19},{\"phase\":\"pool_checkout\",\"us\":129},{\"phase\":\"transaction_begin\",\"us\":149},{\"phase\":\"receipt_admission\",\"us\":2228},{\"phase\":\"load_record\",\"us\":1279},{\"phase\":\"load_manifest\",\"us\":278},{\"phase\":\"storage_prefix_admission\",\"us\":21367},{\"phase\":\"domain_transition\",\"us\":340},{\"phase\":\"revision_save\",\"us\":20391},{\"phase\":\"view_projection\",\"us\":15307},{\"phase\":\"result_status\",\"us\":37},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":599},{\"phase\":\"commit\",\"us\":247}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":8},{\"phase\":\"pool_checkout\",\"us\":109},{\"phase\":\"transaction_begin\",\"us\":68}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/close",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":17},{\"phase\":\"pool_checkout\",\"us\":123},{\"phase\":\"transaction_begin\",\"us\":82},{\"phase\":\"receipt_admission\",\"us\":1820},{\"phase\":\"load_record\",\"us\":772},{\"phase\":\"load_manifest\",\"us\":507},{\"phase\":\"storage_prefix_admission\",\"us\":21669},{\"phase\":\"domain_transition\",\"us\":923},{\"phase\":\"revision_save\",\"us\":19862},{\"phase\":\"view_projection\",\"us\":15667},{\"phase\":\"result_status\",\"us\":32},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":1110},{\"phase\":\"commit\",\"us\":267}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":15},{\"phase\":\"pool_checkout\",\"us\":125},{\"phase\":\"transaction_begin\",\"us\":78},{\"phase\":\"receipt_admission\",\"us\":1691},{\"phase\":\"result_status\",\"us\":1418},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":1516},{\"phase\":\"commit\",\"us\":412}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/market",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":21},{\"phase\":\"pool_checkout\",\"us\":126},{\"phase\":\"transaction_begin\",\"us\":86},{\"phase\":\"receipt_admission\",\"us\":1716},{\"phase\":\"load_record\",\"us\":589},{\"phase\":\"load_manifest\",\"us\":248},{\"phase\":\"storage_prefix_admission\",\"us\":19424},{\"phase\":\"domain_transition\",\"us\":462},{\"phase\":\"revision_save\",\"us\":15689},{\"phase\":\"view_projection\",\"us\":15887},{\"phase\":\"result_status\",\"us\":23},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":1051},{\"phase\":\"commit\",\"us\":278}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":17},{\"phase\":\"pool_checkout\",\"us\":212},{\"phase\":\"transaction_begin\",\"us\":133},{\"phase\":\"receipt_admission\",\"us\":1701},{\"phase\":\"result_status\",\"us\":767},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":540},{\"phase\":\"commit\",\"us\":231}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/protection",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":18},{\"phase\":\"pool_checkout\",\"us\":155},{\"phase\":\"transaction_begin\",\"us\":78},{\"phase\":\"receipt_admission\",\"us\":1514},{\"phase\":\"load_record\",\"us\":577},{\"phase\":\"load_manifest\",\"us\":258},{\"phase\":\"storage_prefix_admission\",\"us\":18512},{\"phase\":\"domain_transition\",\"us\":357},{\"phase\":\"revision_save\",\"us\":15682},{\"phase\":\"view_projection\",\"us\":15745},{\"phase\":\"result_status\",\"us\":33},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":862},{\"phase\":\"commit\",\"us\":287}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":140},{\"phase\":\"transaction_begin\",\"us\":76}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/close",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":18},{\"phase\":\"pool_checkout\",\"us\":119},{\"phase\":\"transaction_begin\",\"us\":73},{\"phase\":\"receipt_admission\",\"us\":2221},{\"phase\":\"load_record\",\"us\":607},{\"phase\":\"load_manifest\",\"us\":264},{\"phase\":\"storage_prefix_admission\",\"us\":19146},{\"phase\":\"domain_transition\",\"us\":415},{\"phase\":\"revision_save\",\"us\":15168},{\"phase\":\"view_projection\",\"us\":16216},{\"phase\":\"result_status\",\"us\":160},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":986},{\"phase\":\"commit\",\"us\":294}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":16},{\"phase\":\"pool_checkout\",\"us\":147},{\"phase\":\"transaction_begin\",\"us\":73},{\"phase\":\"receipt_admission\",\"us\":1693},{\"phase\":\"result_status\",\"us\":746},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":450},{\"phase\":\"commit\",\"us\":221}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/market",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":19},{\"phase\":\"pool_checkout\",\"us\":121},{\"phase\":\"transaction_begin\",\"us\":77},{\"phase\":\"receipt_admission\",\"us\":1520},{\"phase\":\"load_record\",\"us\":607},{\"phase\":\"load_manifest\",\"us\":274},{\"phase\":\"storage_prefix_admission\",\"us\":21464},{\"phase\":\"domain_transition\",\"us\":445},{\"phase\":\"revision_save\",\"us\":14898},{\"phase\":\"view_projection\",\"us\":16134},{\"phase\":\"result_status\",\"us\":133},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":552},{\"phase\":\"commit\",\"us\":262}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":14},{\"phase\":\"pool_checkout\",\"us\":121},{\"phase\":\"transaction_begin\",\"us\":78},{\"phase\":\"receipt_admission\",\"us\":1487},{\"phase\":\"result_status\",\"us\":739},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":458},{\"phase\":\"commit\",\"us\":232}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/protection",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":17},{\"phase\":\"pool_checkout\",\"us\":134},{\"phase\":\"transaction_begin\",\"us\":70},{\"phase\":\"receipt_admission\",\"us\":1481},{\"phase\":\"load_record\",\"us\":577},{\"phase\":\"load_manifest\",\"us\":266},{\"phase\":\"storage_prefix_admission\",\"us\":18752},{\"phase\":\"domain_transition\",\"us\":321},{\"phase\":\"revision_save\",\"us\":14431},{\"phase\":\"view_projection\",\"us\":15739},{\"phase\":\"result_status\",\"us\":110},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":601},{\"phase\":\"commit\",\"us\":252}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":10},{\"phase\":\"pool_checkout\",\"us\":137},{\"phase\":\"transaction_begin\",\"us\":71}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/close",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":17},{\"phase\":\"pool_checkout\",\"us\":118},{\"phase\":\"transaction_begin\",\"us\":74},{\"phase\":\"receipt_admission\",\"us\":1677},{\"phase\":\"load_record\",\"us\":612},{\"phase\":\"load_manifest\",\"us\":282},{\"phase\":\"storage_prefix_admission\",\"us\":18374},{\"phase\":\"domain_transition\",\"us\":414},{\"phase\":\"revision_save\",\"us\":15414},{\"phase\":\"view_projection\",\"us\":15725},{\"phase\":\"result_status\",\"us\":124},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":624},{\"phase\":\"commit\",\"us\":236}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":18},{\"phase\":\"pool_checkout\",\"us\":150},{\"phase\":\"transaction_begin\",\"us\":75},{\"phase\":\"receipt_admission\",\"us\":1460},{\"phase\":\"result_status\",\"us\":745},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":447},{\"phase\":\"commit\",\"us\":232}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/market",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":19},{\"phase\":\"pool_checkout\",\"us\":129},{\"phase\":\"transaction_begin\",\"us\":79},{\"phase\":\"receipt_admission\",\"us\":1656},{\"phase\":\"load_record\",\"us\":615},{\"phase\":\"load_manifest\",\"us\":313},{\"phase\":\"storage_prefix_admission\",\"us\":20559},{\"phase\":\"domain_transition\",\"us\":507},{\"phase\":\"revision_save\",\"us\":15112},{\"phase\":\"view_projection\",\"us\":15813},{\"phase\":\"result_status\",\"us\":124},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":607},{\"phase\":\"commit\",\"us\":226}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":15},{\"phase\":\"pool_checkout\",\"us\":118},{\"phase\":\"transaction_begin\",\"us\":81},{\"phase\":\"receipt_admission\",\"us\":1527},{\"phase\":\"result_status\",\"us\":756},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":434},{\"phase\":\"commit\",\"us\":227}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/protection",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":19},{\"phase\":\"pool_checkout\",\"us\":131},{\"phase\":\"transaction_begin\",\"us\":69},{\"phase\":\"receipt_admission\",\"us\":1598},{\"phase\":\"load_record\",\"us\":660},{\"phase\":\"load_manifest\",\"us\":270},{\"phase\":\"storage_prefix_admission\",\"us\":20696},{\"phase\":\"domain_transition\",\"us\":363},{\"phase\":\"revision_save\",\"us\":15691},{\"phase\":\"view_projection\",\"us\":17442},{\"phase\":\"result_status\",\"us\":146},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":684},{\"phase\":\"commit\",\"us\":288}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":8},{\"phase\":\"pool_checkout\",\"us\":131},{\"phase\":\"transaction_begin\",\"us\":74}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/close",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":17},{\"phase\":\"pool_checkout\",\"us\":124},{\"phase\":\"transaction_begin\",\"us\":84},{\"phase\":\"receipt_admission\",\"us\":1560},{\"phase\":\"load_record\",\"us\":582},{\"phase\":\"load_manifest\",\"us\":292},{\"phase\":\"storage_prefix_admission\",\"us\":18597},{\"phase\":\"domain_transition\",\"us\":429},{\"phase\":\"revision_save\",\"us\":14625},{\"phase\":\"view_projection\",\"us\":15992},{\"phase\":\"result_status\",\"us\":163},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":806},{\"phase\":\"commit\",\"us\":280}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":17},{\"phase\":\"pool_checkout\",\"us\":142},{\"phase\":\"transaction_begin\",\"us\":83},{\"phase\":\"receipt_admission\",\"us\":1715},{\"phase\":\"result_status\",\"us\":738},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":433},{\"phase\":\"commit\",\"us\":239}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/market",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":18},{\"phase\":\"pool_checkout\",\"us\":155},{\"phase\":\"transaction_begin\",\"us\":83},{\"phase\":\"receipt_admission\",\"us\":1671},{\"phase\":\"load_record\",\"us\":617},{\"phase\":\"load_manifest\",\"us\":256},{\"phase\":\"storage_prefix_admission\",\"us\":21190},{\"phase\":\"domain_transition\",\"us\":519},{\"phase\":\"revision_save\",\"us\":15480},{\"phase\":\"view_projection\",\"us\":15756},{\"phase\":\"result_status\",\"us\":30},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":629},{\"phase\":\"commit\",\"us\":270}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":14},{\"phase\":\"pool_checkout\",\"us\":95},{\"phase\":\"transaction_begin\",\"us\":76},{\"phase\":\"receipt_admission\",\"us\":1488},{\"phase\":\"result_status\",\"us\":29639},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":502},{\"phase\":\"commit\",\"us\":270}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":14},{\"phase\":\"pool_checkout\",\"us\":117},{\"phase\":\"transaction_begin\",\"us\":77},{\"phase\":\"receipt_admission\",\"us\":1524},{\"phase\":\"result_status\",\"us\":922},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":481},{\"phase\":\"commit\",\"us\":245}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/protection",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":17},{\"phase\":\"pool_checkout\",\"us\":126},{\"phase\":\"transaction_begin\",\"us\":76},{\"phase\":\"receipt_admission\",\"us\":1488},{\"phase\":\"load_record\",\"us\":586},{\"phase\":\"load_manifest\",\"us\":269},{\"phase\":\"storage_prefix_admission\",\"us\":18997},{\"phase\":\"domain_transition\",\"us\":337},{\"phase\":\"revision_save\",\"us\":14905},{\"phase\":\"view_projection\",\"us\":15278},{\"phase\":\"result_status\",\"us\":39},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":553},{\"phase\":\"commit\",\"us\":263}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":131},{\"phase\":\"transaction_begin\",\"us\":75}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/close",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":18},{\"phase\":\"pool_checkout\",\"us\":157},{\"phase\":\"transaction_begin\",\"us\":101},{\"phase\":\"receipt_admission\",\"us\":1705},{\"phase\":\"load_record\",\"us\":606},{\"phase\":\"load_manifest\",\"us\":268},{\"phase\":\"storage_prefix_admission\",\"us\":18740},{\"phase\":\"domain_transition\",\"us\":418},{\"phase\":\"revision_save\",\"us\":15689},{\"phase\":\"view_projection\",\"us\":15685},{\"phase\":\"result_status\",\"us\":31},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":595},{\"phase\":\"commit\",\"us\":276}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":15},{\"phase\":\"pool_checkout\",\"us\":120},{\"phase\":\"transaction_begin\",\"us\":74},{\"phase\":\"receipt_admission\",\"us\":1475},{\"phase\":\"result_status\",\"us\":757},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":486},{\"phase\":\"commit\",\"us\":240}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/market",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":18},{\"phase\":\"pool_checkout\",\"us\":118},{\"phase\":\"transaction_begin\",\"us\":86},{\"phase\":\"receipt_admission\",\"us\":1685},{\"phase\":\"load_record\",\"us\":650},{\"phase\":\"load_manifest\",\"us\":295},{\"phase\":\"storage_prefix_admission\",\"us\":19738},{\"phase\":\"domain_transition\",\"us\":450},{\"phase\":\"revision_save\",\"us\":14877},{\"phase\":\"view_projection\",\"us\":15775},{\"phase\":\"result_status\",\"us\":21},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":654},{\"phase\":\"commit\",\"us\":272}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":14},{\"phase\":\"pool_checkout\",\"us\":125},{\"phase\":\"transaction_begin\",\"us\":81},{\"phase\":\"receipt_admission\",\"us\":1665},{\"phase\":\"result_status\",\"us\":737},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":807},{\"phase\":\"commit\",\"us\":277}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/protection",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":20},{\"phase\":\"pool_checkout\",\"us\":139},{\"phase\":\"transaction_begin\",\"us\":83},{\"phase\":\"receipt_admission\",\"us\":2798},{\"phase\":\"load_record\",\"us\":653},{\"phase\":\"load_manifest\",\"us\":303},{\"phase\":\"storage_prefix_admission\",\"us\":19656},{\"phase\":\"domain_transition\",\"us\":417},{\"phase\":\"revision_save\",\"us\":15833},{\"phase\":\"view_projection\",\"us\":16692},{\"phase\":\"result_status\",\"us\":31},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":572},{\"phase\":\"commit\",\"us\":252}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":138},{\"phase\":\"transaction_begin\",\"us\":73}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/close",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":17},{\"phase\":\"pool_checkout\",\"us\":127},{\"phase\":\"transaction_begin\",\"us\":83},{\"phase\":\"receipt_admission\",\"us\":1733},{\"phase\":\"load_record\",\"us\":835},{\"phase\":\"load_manifest\",\"us\":393},{\"phase\":\"storage_prefix_admission\",\"us\":20095},{\"phase\":\"domain_transition\",\"us\":415},{\"phase\":\"revision_save\",\"us\":15395},{\"phase\":\"view_projection\",\"us\":15438},{\"phase\":\"result_status\",\"us\":22},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":579},{\"phase\":\"commit\",\"us\":318}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":14},{\"phase\":\"pool_checkout\",\"us\":119},{\"phase\":\"transaction_begin\",\"us\":76},{\"phase\":\"receipt_admission\",\"us\":1613},{\"phase\":\"result_status\",\"us\":1239},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":525},{\"phase\":\"commit\",\"us\":249}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/market",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":19},{\"phase\":\"pool_checkout\",\"us\":128},{\"phase\":\"transaction_begin\",\"us\":96},{\"phase\":\"receipt_admission\",\"us\":1797},{\"phase\":\"load_record\",\"us\":711},{\"phase\":\"load_manifest\",\"us\":265},{\"phase\":\"storage_prefix_admission\",\"us\":19196},{\"phase\":\"domain_transition\",\"us\":456},{\"phase\":\"revision_save\",\"us\":15419},{\"phase\":\"view_projection\",\"us\":15829},{\"phase\":\"result_status\",\"us\":26},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":680},{\"phase\":\"commit\",\"us\":243}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":14},{\"phase\":\"pool_checkout\",\"us\":125},{\"phase\":\"transaction_begin\",\"us\":81},{\"phase\":\"receipt_admission\",\"us\":1683},{\"phase\":\"result_status\",\"us\":873},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":495},{\"phase\":\"commit\",\"us\":262}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/protection",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":17},{\"phase\":\"pool_checkout\",\"us\":152},{\"phase\":\"transaction_begin\",\"us\":105},{\"phase\":\"receipt_admission\",\"us\":1858},{\"phase\":\"load_record\",\"us\":728},{\"phase\":\"load_manifest\",\"us\":351},{\"phase\":\"storage_prefix_admission\",\"us\":19366},{\"phase\":\"domain_transition\",\"us\":349},{\"phase\":\"revision_save\",\"us\":17011},{\"phase\":\"view_projection\",\"us\":15700},{\"phase\":\"result_status\",\"us\":32},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":676},{\"phase\":\"commit\",\"us\":294}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":8},{\"phase\":\"pool_checkout\",\"us\":150},{\"phase\":\"transaction_begin\",\"us\":104}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/close",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":17},{\"phase\":\"pool_checkout\",\"us\":129},{\"phase\":\"transaction_begin\",\"us\":85},{\"phase\":\"receipt_admission\",\"us\":1832},{\"phase\":\"load_record\",\"us\":668},{\"phase\":\"load_manifest\",\"us\":307},{\"phase\":\"storage_prefix_admission\",\"us\":18081},{\"phase\":\"domain_transition\",\"us\":421},{\"phase\":\"revision_save\",\"us\":15035},{\"phase\":\"view_projection\",\"us\":15475},{\"phase\":\"result_status\",\"us\":25},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":958},{\"phase\":\"commit\",\"us\":289}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":14},{\"phase\":\"pool_checkout\",\"us\":118},{\"phase\":\"transaction_begin\",\"us\":80},{\"phase\":\"receipt_admission\",\"us\":1614},{\"phase\":\"result_status\",\"us\":793},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":469},{\"phase\":\"commit\",\"us\":246}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/market",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":17},{\"phase\":\"pool_checkout\",\"us\":125},{\"phase\":\"transaction_begin\",\"us\":78},{\"phase\":\"receipt_admission\",\"us\":1661},{\"phase\":\"load_record\",\"us\":634},{\"phase\":\"load_manifest\",\"us\":352},{\"phase\":\"storage_prefix_admission\",\"us\":19901},{\"phase\":\"domain_transition\",\"us\":617},{\"phase\":\"revision_save\",\"us\":16026},{\"phase\":\"view_projection\",\"us\":15274},{\"phase\":\"result_status\",\"us\":36},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":654},{\"phase\":\"commit\",\"us\":259}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":14},{\"phase\":\"pool_checkout\",\"us\":124},{\"phase\":\"transaction_begin\",\"us\":83},{\"phase\":\"receipt_admission\",\"us\":1612},{\"phase\":\"result_status\",\"us\":806},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":479},{\"phase\":\"commit\",\"us\":239}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/protection",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":19},{\"phase\":\"pool_checkout\",\"us\":144},{\"phase\":\"transaction_begin\",\"us\":109},{\"phase\":\"receipt_admission\",\"us\":1870},{\"phase\":\"load_record\",\"us\":776},{\"phase\":\"load_manifest\",\"us\":301},{\"phase\":\"storage_prefix_admission\",\"us\":18591},{\"phase\":\"domain_transition\",\"us\":376},{\"phase\":\"revision_save\",\"us\":15093},{\"phase\":\"view_projection\",\"us\":15434},{\"phase\":\"result_status\",\"us\":34},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":733},{\"phase\":\"commit\",\"us\":259}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":139},{\"phase\":\"transaction_begin\",\"us\":71}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/close",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":17},{\"phase\":\"pool_checkout\",\"us\":125},{\"phase\":\"transaction_begin\",\"us\":81},{\"phase\":\"receipt_admission\",\"us\":1808},{\"phase\":\"load_record\",\"us\":782},{\"phase\":\"load_manifest\",\"us\":315},{\"phase\":\"storage_prefix_admission\",\"us\":19517},{\"phase\":\"domain_transition\",\"us\":419},{\"phase\":\"revision_save\",\"us\":16620},{\"phase\":\"view_projection\",\"us\":15224},{\"phase\":\"result_status\",\"us\":34},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":589},{\"phase\":\"commit\",\"us\":265}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":13},{\"phase\":\"pool_checkout\",\"us\":118},{\"phase\":\"transaction_begin\",\"us\":79},{\"phase\":\"receipt_admission\",\"us\":1597},{\"phase\":\"result_status\",\"us\":777},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":430},{\"phase\":\"commit\",\"us\":280}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/market",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":19},{\"phase\":\"pool_checkout\",\"us\":153},{\"phase\":\"transaction_begin\",\"us\":155},{\"phase\":\"receipt_admission\",\"us\":2228},{\"phase\":\"load_record\",\"us\":888},{\"phase\":\"load_manifest\",\"us\":345},{\"phase\":\"storage_prefix_admission\",\"us\":18809},{\"phase\":\"domain_transition\",\"us\":461},{\"phase\":\"revision_save\",\"us\":15418},{\"phase\":\"view_projection\",\"us\":15267},{\"phase\":\"result_status\",\"us\":40},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":799},{\"phase\":\"commit\",\"us\":299}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":14},{\"phase\":\"pool_checkout\",\"us\":191},{\"phase\":\"transaction_begin\",\"us\":94},{\"phase\":\"receipt_admission\",\"us\":2092},{\"phase\":\"result_status\",\"us\":903},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":520},{\"phase\":\"commit\",\"us\":274}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/protection",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":18},{\"phase\":\"pool_checkout\",\"us\":168},{\"phase\":\"transaction_begin\",\"us\":110},{\"phase\":\"receipt_admission\",\"us\":1844},{\"phase\":\"load_record\",\"us\":730},{\"phase\":\"load_manifest\",\"us\":273},{\"phase\":\"storage_prefix_admission\",\"us\":18996},{\"phase\":\"domain_transition\",\"us\":327},{\"phase\":\"revision_save\",\"us\":16446},{\"phase\":\"view_projection\",\"us\":15329},{\"phase\":\"result_status\",\"us\":35},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":610},{\"phase\":\"commit\",\"us\":257}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":155},{\"phase\":\"transaction_begin\",\"us\":85}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/close",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":16},{\"phase\":\"pool_checkout\",\"us\":132},{\"phase\":\"transaction_begin\",\"us\":98},{\"phase\":\"receipt_admission\",\"us\":1863},{\"phase\":\"load_record\",\"us\":718},{\"phase\":\"load_manifest\",\"us\":303},{\"phase\":\"storage_prefix_admission\",\"us\":18692},{\"phase\":\"domain_transition\",\"us\":457},{\"phase\":\"revision_save\",\"us\":15934},{\"phase\":\"view_projection\",\"us\":15954},{\"phase\":\"result_status\",\"us\":32},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":719},{\"phase\":\"commit\",\"us\":341}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":13},{\"phase\":\"pool_checkout\",\"us\":134},{\"phase\":\"transaction_begin\",\"us\":101},{\"phase\":\"receipt_admission\",\"us\":1694},{\"phase\":\"result_status\",\"us\":39580},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":588},{\"phase\":\"commit\",\"us\":309}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":14},{\"phase\":\"pool_checkout\",\"us\":139},{\"phase\":\"transaction_begin\",\"us\":103},{\"phase\":\"receipt_admission\",\"us\":1750},{\"phase\":\"result_status\",\"us\":744},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":537},{\"phase\":\"commit\",\"us\":265}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/market",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":17},{\"phase\":\"pool_checkout\",\"us\":144},{\"phase\":\"transaction_begin\",\"us\":105},{\"phase\":\"receipt_admission\",\"us\":1933},{\"phase\":\"load_record\",\"us\":842},{\"phase\":\"load_manifest\",\"us\":336},{\"phase\":\"storage_prefix_admission\",\"us\":20679},{\"phase\":\"domain_transition\",\"us\":463},{\"phase\":\"revision_save\",\"us\":15691},{\"phase\":\"view_projection\",\"us\":15322},{\"phase\":\"result_status\",\"us\":31},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":754},{\"phase\":\"commit\",\"us\":302}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":14},{\"phase\":\"pool_checkout\",\"us\":163},{\"phase\":\"transaction_begin\",\"us\":100},{\"phase\":\"receipt_admission\",\"us\":1992},{\"phase\":\"result_status\",\"us\":1241},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":608},{\"phase\":\"commit\",\"us\":320}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/protection",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":17},{\"phase\":\"pool_checkout\",\"us\":172},{\"phase\":\"transaction_begin\",\"us\":99},{\"phase\":\"receipt_admission\",\"us\":1894},{\"phase\":\"load_record\",\"us\":794},{\"phase\":\"load_manifest\",\"us\":297},{\"phase\":\"storage_prefix_admission\",\"us\":18162},{\"phase\":\"domain_transition\",\"us\":360},{\"phase\":\"revision_save\",\"us\":15630},{\"phase\":\"view_projection\",\"us\":15266},{\"phase\":\"result_status\",\"us\":21},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":743},{\"phase\":\"commit\",\"us\":337}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":8},{\"phase\":\"pool_checkout\",\"us\":147},{\"phase\":\"transaction_begin\",\"us\":101}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/close",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":17},{\"phase\":\"pool_checkout\",\"us\":169},{\"phase\":\"transaction_begin\",\"us\":135},{\"phase\":\"receipt_admission\",\"us\":2027},{\"phase\":\"load_record\",\"us\":833},{\"phase\":\"load_manifest\",\"us\":305},{\"phase\":\"storage_prefix_admission\",\"us\":18548},{\"phase\":\"domain_transition\",\"us\":444},{\"phase\":\"revision_save\",\"us\":15813},{\"phase\":\"view_projection\",\"us\":15525},{\"phase\":\"result_status\",\"us\":29},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":734},{\"phase\":\"commit\",\"us\":394}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":13},{\"phase\":\"pool_checkout\",\"us\":141},{\"phase\":\"transaction_begin\",\"us\":100},{\"phase\":\"receipt_admission\",\"us\":1913},{\"phase\":\"result_status\",\"us\":875},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":570},{\"phase\":\"commit\",\"us\":261}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/market",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":18},{\"phase\":\"pool_checkout\",\"us\":151},{\"phase\":\"transaction_begin\",\"us\":100},{\"phase\":\"receipt_admission\",\"us\":1909},{\"phase\":\"load_record\",\"us\":836},{\"phase\":\"load_manifest\",\"us\":346},{\"phase\":\"storage_prefix_admission\",\"us\":19011},{\"phase\":\"domain_transition\",\"us\":579},{\"phase\":\"revision_save\",\"us\":16614},{\"phase\":\"view_projection\",\"us\":14309},{\"phase\":\"result_status\",\"us\":25},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":719},{\"phase\":\"commit\",\"us\":357}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":15},{\"phase\":\"pool_checkout\",\"us\":150},{\"phase\":\"transaction_begin\",\"us\":88},{\"phase\":\"receipt_admission\",\"us\":1953},{\"phase\":\"result_status\",\"us\":921},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":498},{\"phase\":\"commit\",\"us\":291}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/protection",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":18},{\"phase\":\"pool_checkout\",\"us\":134},{\"phase\":\"transaction_begin\",\"us\":111},{\"phase\":\"receipt_admission\",\"us\":1708},{\"phase\":\"load_record\",\"us\":666},{\"phase\":\"load_manifest\",\"us\":297},{\"phase\":\"storage_prefix_admission\",\"us\":17520},{\"phase\":\"domain_transition\",\"us\":350},{\"phase\":\"revision_save\",\"us\":15568},{\"phase\":\"view_projection\",\"us\":15191},{\"phase\":\"result_status\",\"us\":22},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":695},{\"phase\":\"commit\",\"us\":273}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":127},{\"phase\":\"transaction_begin\",\"us\":69}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/close",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":18},{\"phase\":\"pool_checkout\",\"us\":145},{\"phase\":\"transaction_begin\",\"us\":123},{\"phase\":\"receipt_admission\",\"us\":2228},{\"phase\":\"load_record\",\"us\":677},{\"phase\":\"load_manifest\",\"us\":261},{\"phase\":\"storage_prefix_admission\",\"us\":18439},{\"phase\":\"domain_transition\",\"us\":445},{\"phase\":\"revision_save\",\"us\":15349},{\"phase\":\"view_projection\",\"us\":15667},{\"phase\":\"result_status\",\"us\":22},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":724},{\"phase\":\"commit\",\"us\":272}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":15},{\"phase\":\"pool_checkout\",\"us\":129},{\"phase\":\"transaction_begin\",\"us\":99},{\"phase\":\"receipt_admission\",\"us\":1765},{\"phase\":\"result_status\",\"us\":740},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":583},{\"phase\":\"commit\",\"us\":259}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/market",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":20},{\"phase\":\"pool_checkout\",\"us\":125},{\"phase\":\"transaction_begin\",\"us\":83},{\"phase\":\"receipt_admission\",\"us\":1998},{\"phase\":\"load_record\",\"us\":886},{\"phase\":\"load_manifest\",\"us\":307},{\"phase\":\"storage_prefix_admission\",\"us\":20295},{\"phase\":\"domain_transition\",\"us\":637},{\"phase\":\"revision_save\",\"us\":16110},{\"phase\":\"view_projection\",\"us\":15409},{\"phase\":\"result_status\",\"us\":23},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":698},{\"phase\":\"commit\",\"us\":274}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":14},{\"phase\":\"pool_checkout\",\"us\":132},{\"phase\":\"transaction_begin\",\"us\":81},{\"phase\":\"receipt_admission\",\"us\":1724},{\"phase\":\"result_status\",\"us\":749},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":507},{\"phase\":\"commit\",\"us\":274}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/protection",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":17},{\"phase\":\"pool_checkout\",\"us\":170},{\"phase\":\"transaction_begin\",\"us\":100},{\"phase\":\"receipt_admission\",\"us\":1938},{\"phase\":\"load_record\",\"us\":876},{\"phase\":\"load_manifest\",\"us\":378},{\"phase\":\"storage_prefix_admission\",\"us\":18541},{\"phase\":\"domain_transition\",\"us\":380},{\"phase\":\"revision_save\",\"us\":15222},{\"phase\":\"view_projection\",\"us\":13810},{\"phase\":\"result_status\",\"us\":27},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":706},{\"phase\":\"commit\",\"us\":387}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":144},{\"phase\":\"transaction_begin\",\"us\":74}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/close",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":17},{\"phase\":\"pool_checkout\",\"us\":159},{\"phase\":\"transaction_begin\",\"us\":104},{\"phase\":\"receipt_admission\",\"us\":1877},{\"phase\":\"load_record\",\"us\":793},{\"phase\":\"load_manifest\",\"us\":306},{\"phase\":\"storage_prefix_admission\",\"us\":18889},{\"phase\":\"domain_transition\",\"us\":543},{\"phase\":\"revision_save\",\"us\":16058},{\"phase\":\"view_projection\",\"us\":15569},{\"phase\":\"result_status\",\"us\":23},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":787},{\"phase\":\"commit\",\"us\":323}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":14},{\"phase\":\"pool_checkout\",\"us\":164},{\"phase\":\"transaction_begin\",\"us\":102},{\"phase\":\"receipt_admission\",\"us\":1880},{\"phase\":\"result_status\",\"us\":893},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":621},{\"phase\":\"commit\",\"us\":297}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/market",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":18},{\"phase\":\"pool_checkout\",\"us\":147},{\"phase\":\"transaction_begin\",\"us\":91},{\"phase\":\"receipt_admission\",\"us\":2082},{\"phase\":\"load_record\",\"us\":843},{\"phase\":\"load_manifest\",\"us\":325},{\"phase\":\"storage_prefix_admission\",\"us\":19465},{\"phase\":\"domain_transition\",\"us\":461},{\"phase\":\"revision_save\",\"us\":15819},{\"phase\":\"view_projection\",\"us\":15983},{\"phase\":\"result_status\",\"us\":129},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":763},{\"phase\":\"commit\",\"us\":330}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":14},{\"phase\":\"pool_checkout\",\"us\":140},{\"phase\":\"transaction_begin\",\"us\":112},{\"phase\":\"receipt_admission\",\"us\":1920},{\"phase\":\"result_status\",\"us\":867},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":551},{\"phase\":\"commit\",\"us\":270}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/protection",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":17},{\"phase\":\"pool_checkout\",\"us\":171},{\"phase\":\"transaction_begin\",\"us\":99},{\"phase\":\"receipt_admission\",\"us\":1957},{\"phase\":\"load_record\",\"us\":768},{\"phase\":\"load_manifest\",\"us\":306},{\"phase\":\"storage_prefix_admission\",\"us\":18398},{\"phase\":\"domain_transition\",\"us\":392},{\"phase\":\"revision_save\",\"us\":15497},{\"phase\":\"view_projection\",\"us\":14051},{\"phase\":\"result_status\",\"us\":22},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":715},{\"phase\":\"commit\",\"us\":348}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "GET",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":9},{\"phase\":\"pool_checkout\",\"us\":131},{\"phase\":\"transaction_begin\",\"us\":66}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "orders/close",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":17},{\"phase\":\"pool_checkout\",\"us\":162},{\"phase\":\"transaction_begin\",\"us\":99},{\"phase\":\"receipt_admission\",\"us\":1949},{\"phase\":\"load_record\",\"us\":808},{\"phase\":\"load_manifest\",\"us\":335},{\"phase\":\"storage_prefix_admission\",\"us\":18618},{\"phase\":\"domain_transition\",\"us\":544},{\"phase\":\"revision_save\",\"us\":15932},{\"phase\":\"view_projection\",\"us\":14934},{\"phase\":\"result_status\",\"us\":33},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":697},{\"phase\":\"commit\",\"us\":377}]"
+  },
+  {
+    "message": "native_replay_phases",
+    "operation": "activity",
+    "phases": "[{\"phase\":\"request_decode\",\"us\":16},{\"phase\":\"pool_checkout\",\"us\":184},{\"phase\":\"transaction_begin\",\"us\":108},{\"phase\":\"receipt_admission\",\"us\":1989},{\"phase\":\"result_status\",\"us\":840},{\"phase\":\"receipt_save_and_response_serialize\",\"us\":518},{\"phase\":\"commit\",\"us\":248}]"
+  }
+]

@@ -83,11 +83,57 @@ class LauncherTests(unittest.TestCase):
                 response.fetchone.return_value = {"name": "existing_table"}
             elif "FROM tw_schema_migrations" in query:
                 response.fetchall.return_value = []
+            elif "information_schema.columns" in query:
+                response.fetchone.return_value = {"present": False}
             else:
                 response.fetchone.return_value = {"count": 1 if "pg_tables" in query or active else 0}
             return response
         connection.execute.side_effect = execute
         return connection
+
+    def test_compatibility_guard_includes_all_compact_revisions_without_mutation(self):
+        for compact in (True, False):
+            conn = MagicMock()
+            conn.execute.return_value.fetchone.side_effect = [{"present": True}, {"present": compact}]
+            if compact:
+                with self.assertRaisesRegex(launcher.PreflightError, "Historical and deleted"):
+                    launcher.compatibility_storage_preflight(conn)
+            else:
+                launcher.compatibility_storage_preflight(conn)
+            query = conn.execute.call_args_list[-1].args[0]
+            self.assertIn("storage_format <> 'full_snapshot'", query)
+            self.assertNotIn("deleted", query)
+            self.assertNotIn("current_revision", query)
+            self.assertTrue(all(call.args[0].lstrip().startswith("SELECT") for call in conn.execute.call_args_list))
+
+    def test_pre_compact_schema_needs_no_storage_column_and_stop_remains_allowed(self):
+        conn = MagicMock()
+        conn.execute.return_value.fetchone.return_value = {"present": False}
+        launcher.compatibility_storage_preflight(conn)
+        conn.execute.assert_called_once()
+        with patch("psycopg.connect", return_value=self.fake_database()), \
+             patch.object(launcher, "compatibility_storage_preflight") as guard:
+            launcher.database_preflight({"TW_V2_DATABASE_URL": "fixture"}, allow_pending=True)
+            guard.assert_called_once()
+            guard.reset_mock()
+            launcher.database_preflight({"TW_V2_DATABASE_URL": "fixture"}, allow_pending=True, allow_compact=True)
+            guard.assert_not_called()
+
+    def test_compact_guard_blocks_compatibility_before_any_child_and_does_not_block_stop(self):
+        with patch.object(launcher, "configuration", return_value={"TW_V2_DATABASE_URL": "fixture"}), \
+             patch.object(launcher, "validate_paths"), patch("psycopg.connect", return_value=self.fake_database()), \
+             patch.object(launcher, "compatibility_storage_preflight", side_effect=launcher.PreflightError("compact fixture")), \
+             patch.object(launcher, "supervise") as start:
+            with self.assertRaisesRegex(launcher.PreflightError, "compact fixture"):
+                launcher.main(["--check-only", "--allow-pending-migrations"])
+            start.assert_not_called()
+        with patch.object(launcher, "configuration", return_value={}), patch.object(launcher, "validate_paths"), \
+             patch.object(launcher, "database_preflight", return_value={"schema_current": True}) as database, \
+             patch.object(launcher, "stop_owned") as stop, patch.object(launcher, "supervise") as start:
+            self.assertEqual(launcher.main(["--stop"]), 0)
+            self.assertTrue(database.call_args.kwargs["allow_compact"])
+            stop.assert_called_once()
+            start.assert_not_called()
 
     def test_pending_schema_requires_explicit_migrate(self):
         with patch("psycopg.connect", return_value=self.fake_database()), \

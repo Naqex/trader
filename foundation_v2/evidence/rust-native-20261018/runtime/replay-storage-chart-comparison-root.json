@@ -1,0 +1,43 @@
+{
+  "scope": "same final release/source; serial synthetic 5000-event production React/Advanced Charts diagnostics",
+  "limitations": [
+    "Twelve warm journeys per profile; not a stable tail/capacity/soak verdict.",
+    "Cold import of the existing full revision is reported separately.",
+    "No owner runtime/database cutover."
+  ],
+  "profiles": {
+    "compact": {
+      "receipt": "replay-storage-chart-r2-root/receipt.json",
+      "browser_sha256": "a3032af3c2d6b4c1263790d9e2c9439121e6ec86a9a542269aa92186499a3bdf",
+      "journeys": 12,
+      "click_confirmed_paint_ms": {
+        "p50": 79.5,
+        "sampleP95": 80.89999999990687
+      },
+      "drag_frame_intervals": 1236,
+      "frame_p50_ms": 16.69999999999891,
+      "frame_sample_p95_ms": 16.700000000000728,
+      "history_reads": 0,
+      "all_iframes_retained": true,
+      "all_scales_retained": true,
+      "first_order_response_ms": 1061.033
+    },
+    "full": {
+      "receipt": "replay-storage-chart-full-root/receipt.json",
+      "browser_sha256": "01279b50116a0a54eafafa94e01ceadddfb0542bc9c61966480e0ce991211647",
+      "journeys": 12,
+      "click_confirmed_paint_ms": {
+        "p50": 244.89999999990687,
+        "sampleP95": 262
+      },
+      "drag_frame_intervals": 1164,
+      "frame_p50_ms": 16.69999999999891,
+      "frame_sample_p95_ms": 16.700000000000728,
+      "history_reads": 0,
+      "all_iframes_retained": true,
+      "all_scales_retained": true,
+      "first_order_response_ms": 217.477
+    }
+  },
+  "source_and_binary_equal": true
+}

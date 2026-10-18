@@ -10,6 +10,7 @@ pub mod native_contracts;
 pub mod metadata_mutations;
 pub mod replay_core;
 pub mod replay_service;
+pub mod replay_storage;
 pub mod prop_core;
 pub mod prop_service;
 pub mod artifact_data;

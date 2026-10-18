@@ -19,6 +19,7 @@ def main():
     parser.add_argument('--bin-dir',type=Path,default=V2/'api-rust/target/native-candidate/release')
     parser.add_argument('--samples',type=int,default=12)
     parser.add_argument('--ledger-steps',type=int,default=0)
+    parser.add_argument('--storage-profile',choices=('full','compact'),default='full')
     parser.add_argument('--http-benchmark',action='store_true')
     parser.add_argument('--phase-timings',action='store_true')
     parser.add_argument('--benchmark-stages',default='0,500,5000')
@@ -47,6 +48,7 @@ def main():
                        TW_V2_LOCAL_IDENTITY='local-owner',TW_V2_RUNTIME_PROFILE='native',TW_V2_DOWNLOAD_ENGINE='none',
                        TW_V2_RUST_BIND=f'127.0.0.1:{apiport}',TW_V2_SHUTDOWN_FILE=str(root/'stop'),
                        TW_V2_OPENAPI_PATH=str(V2/'contracts/openapi.json'))
+            env['TW_V2_REPLAY_STORAGE_PROFILE']=args.storage_profile
             if args.phase_timings:env.update(TW_V2_REPLAY_TIMINGS='1',RUST_LOG='info')
             try:
                 for _ in range(100):
@@ -91,6 +93,10 @@ def main():
                         assert conn.execute('SELECT count(*) FROM api_commands WHERE status IN (\'queued\',\'running\')').fetchone()[0]==0
                         payload=conn.execute("SELECT v.payload_json FROM workspace_records r JOIN workspace_record_revisions v ON v.workspace_id=r.workspace_id AND v.kind=r.kind AND v.record_id=r.record_id AND v.revision=r.current_revision WHERE r.workspace_id=%s AND r.kind='replay' AND r.record_id=%s",('tenant-a',report['session'])).fetchone()[0]
                         assert payload['execution']['position'] is None
+                        if args.storage_profile=='compact':
+                            row=conn.execute("SELECT storage_format FROM workspace_record_revisions WHERE workspace_id=%s AND kind='replay' AND record_id=%s AND revision=(SELECT current_revision FROM workspace_records WHERE workspace_id=%s AND kind='replay' AND record_id=%s)",('tenant-a',report['session'],'tenant-a',report['session'])).fetchone()
+                            assert row[0]=='replay-execution-v1'
+                            assert 'ledger' not in payload['execution']
                     checks.append(dict(name='production-native-chart-http',passed=True,summary=report['summary'],seconds=elapsed,api_before=before,api_after=after))
                     if args.http_benchmark:
                         from rust_native_http_benchmark import benchmark
@@ -116,6 +122,7 @@ def main():
                 source_unchanged=source_hashes==fingerprints()
                 binary_unchanged=binary_sha256==hashlib.sha256((binary/'trading-workspace-api.exe').read_bytes()).hexdigest()
                 receipt=dict(passed=completed and source_unchanged and binary_unchanged,checks=checks,owner_runtime_touched=False,disposable=True,build='release',broker=False,
+                    storage_profile=args.storage_profile,
                     source_unchanged=source_unchanged,binary_unchanged=binary_unchanged,source_hashes=source_hashes,binary_sha256=binary_sha256)
                 (out/'receipt.json').write_text(json.dumps(receipt,indent=2),encoding='utf-8')
     print(json.dumps({k:v for k,v in receipt.items() if k not in {'source_hashes','binary_sha256'}}))

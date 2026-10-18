@@ -202,6 +202,16 @@ pub async fn load_record(
     id: &str,
     lock: bool,
 ) -> Result<Value, ApiError> {
+    load_record_inner(tx, workspace, id, lock, true).await
+}
+
+async fn load_record_inner(
+    tx: &Transaction<'_>,
+    workspace: &str,
+    id: &str,
+    lock: bool,
+    hydrate: bool,
+) -> Result<Value, ApiError> {
     // Lock the head first, then read its revision: a joined FOR UPDATE can retain a stale revision under contention.
     let sql = format!(
         "SELECT record_id,source_key,current_revision,created_at_utc,updated_at_utc FROM workspace_records WHERE workspace_id=$1 AND kind='replay' AND record_id=$2{}",
@@ -217,9 +227,13 @@ pub async fn load_record(
     if version.get::<_, bool>("deleted") {
         return Err(ApiError::detail(StatusCode::NOT_FOUND, "replay_not_found"));
     }
-    let payload = tokio::task::spawn_blocking(move || version.try_get::<_, Value>("payload_json"))
+    let mut payload = tokio::task::spawn_blocking(move || version.try_get::<_, Value>("payload_json"))
         .await.map_err(|_| internal("replay_decode_failed"))?
         .map_err(|_| internal("replay_revision_invalid"))?;
+    if hydrate {
+        payload = crate::replay_storage::hydrate_payload(tx, workspace, id, i64::from(rev), payload)
+            .await.map_err(internal)?;
+    }
     let mut record = json!({"record_id":id,"source_key":head.get::<_,Option<String>>("source_key"),"revision":rev,"deleted":false,"created_at_utc":head.get::<_,String>("created_at_utc"),"updated_at_utc":head.get::<_,String>("updated_at_utc")});
     record["payload"] = payload;
     Ok(record)
@@ -789,10 +803,11 @@ async fn restore(
                     "analytics event must select a bar-close or phase checkpoint",
                 ));
             }
-            let rows=tx.query("SELECT payload_json FROM workspace_record_revisions WHERE workspace_id=$1 AND kind='replay' AND record_id=$2 AND NOT deleted ORDER BY revision DESC",&[&workspace,&id]).await.map_err(|_|ApiError::database())?;
+            let rows=tx.query("SELECT revision,payload_json FROM workspace_record_revisions WHERE workspace_id=$1 AND kind='replay' AND record_id=$2 AND NOT deleted ORDER BY revision DESC",&[&workspace,&id]).await.map_err(|_|ApiError::database())?;
             let mut found = None;
             for row in rows {
-                let p: Value = row.get(0);
+                let p = crate::replay_storage::hydrate_payload(tx, workspace, id,
+                    i64::from(row.get::<_, i32>(0)), row.get(1)).await.map_err(internal)?;
                 let p = asset.map(|a| &p["asset_states"][a]).unwrap_or(&p);
                 let candidate = &p["execution"];
                 if p["cursor_index"] == cursor
@@ -1489,11 +1504,13 @@ async fn mutate(
             return branch_prop(tx, workspace, id, parts[2], parts[4], b).await;
         }
     }
-    let mut record = load_record(tx, workspace, id, true).await?;
-    timings.mark("load_record");
     if tail == "activity" {
         return activity(tx, workspace, id, b).await;
     }
+    let bounded_storage = compact && state.native_runtime
+        && std::env::var("TW_V2_REPLAY_STORAGE_PROFILE").is_ok_and(|profile| profile == "compact");
+    let mut record = load_record_inner(tx, workspace, id, true, !bounded_storage).await?;
+    timings.mark("load_record");
     if tail.starts_with("prop/") {
         let parts: Vec<_> = tail.split('/').collect();
         if parts.len() == 6 && parts[5] == "feed" {
@@ -1508,6 +1525,13 @@ async fn mutate(
     let mut p = record["payload"].take();
     if compact && p["asset_states"].is_object() {
         return Err(bad("mutation_view_multi_asset_unsupported"));
+    }
+    let bar_storage = bounded_storage && b["tick_snapshot_id"].is_null()
+        && (p["execution"].is_null() || matches!(p["execution"]["schema_version"].as_str(),
+            Some("replay-execution-v1" | "replay-execution-v2")));
+    if bounded_storage && !bar_storage {
+        p = crate::replay_storage::hydrate_payload(tx, workspace, id, base_revision, p)
+            .await.map_err(internal)?;
     }
     let base_event_sequence = if compact && !p["execution"].is_null() {
         integer(&p["execution"], "event_sequence")?
@@ -1547,6 +1571,10 @@ async fn mutate(
             .unwrap()
             .extend(ident.as_object().unwrap().clone());
         return save_record(tx, workspace, &record, p, false).await;
+    }
+    if bar_storage {
+        return mutate_compact_bar(tx, state, workspace, id, tail, b, record, p, &m,
+            base_revision, base_event_sequence, limit, timings).await;
     }
     match tail {
         "delete" => {
@@ -1706,10 +1734,123 @@ async fn mutate(
     let saved = save_record(tx, workspace, &record, p, false).await?;
     timings.mark("revision_save");
     let response = if compact {
-        mutation_view(tx, state, workspace, saved, &m, base_revision, base_event_sequence).await
+        mutation_view(tx, state, workspace, saved, &m, base_revision, base_event_sequence, None).await
     } else {
         view(tx, state, workspace, saved, &HashMap::new()).await
     };
+    timings.mark("view_projection");
+    response
+}
+
+async fn mutate_compact_bar(
+    tx: &Transaction<'_>,
+    state: &AppState,
+    workspace: &str,
+    id: &str,
+    tail: &str,
+    b: &Value,
+    mut record: Value,
+    mut p: Value,
+    manifest: &Value,
+    base_revision: i64,
+    base_event_sequence: i64,
+    limit: i64,
+    timings: &mut ReplayTimings,
+) -> Result<Value, ApiError> {
+    let mut initialized_events = Vec::new();
+    if tail == "execution" || (tail == "orders/quick" && p["execution"].is_null()) {
+        initialize(state, workspace, id, &mut p, manifest, b).await?;
+        let events = p["execution"]["ledger"].as_array()
+            .ok_or_else(|| internal("invalid initialized replay ledger"))?.clone();
+        record = save_record(tx, workspace, &record, p, false).await?;
+        let revision = integer(&record, "revision")?;
+        record["payload"] = crate::replay_storage::import_revision(tx, workspace, id,
+            revision, &record["payload"]).await.map_err(internal)?;
+        if tail == "execution" {
+            timings.mark("domain_transition");
+            timings.mark("revision_save");
+            let response = mutation_view(tx, state, workspace, record, manifest,
+                base_revision, base_event_sequence, Some(events)).await;
+            timings.mark("view_projection");
+            return response;
+        }
+        initialized_events = events;
+        p = record["payload"].take();
+    }
+    if p["execution"].is_null() {
+        return Err(bad("replay execution is not initialized"));
+    }
+    let revision = integer(&record, "revision")?;
+    let dataset = text(&p, "dataset_id")?.to_owned();
+    let prefix = match crate::replay_storage::load_prefix(tx, workspace, id, revision, &dataset)
+        .await.map_err(internal)? {
+        Some(prefix) => prefix,
+        None => {
+            p = crate::replay_storage::import_revision(tx, workspace, id, revision, &p)
+                .await.map_err(internal)?;
+            crate::replay_storage::load_prefix(tx, workspace, id, revision, &dataset)
+                .await.map_err(internal)?
+                .ok_or_else(|| internal("imported replay prefix is unavailable"))?
+        }
+    };
+    let head = prefix.head();
+    if p["execution"] != *head {
+        return Err(internal("compact replay payload differs from its validated head"));
+    }
+    let current = integer(&p, "cursor_index")?;
+    if head["cursor_index"] != current {
+        return Err(conflict("replay execution cursor is inconsistent with replay state"));
+    }
+    if matches!(tail, "orders/market" | "orders/quick")
+        && (p["status"] == "completed" || current >= limit)
+    {
+        return Err(bad("market order requires a future replay bar"));
+    }
+    if tail == "orders/protection" && (p["status"] == "completed" || current >= limit) {
+        return Err(bad("protection changes require a future replay bar"));
+    }
+    let bar = slice(state, manifest, current, current + 1).await?.remove(0);
+    asset_ready(&p, manifest, &bar)?;
+    let mut args = b.clone();
+    let action = match tail {
+        "orders/market" | "orders/quick" => match b["execution_timing"].as_str().unwrap_or("next_bar") {
+            "next_bar" => "queue",
+            "current_quote" => {
+                args["mid_close"] = bar["close"].clone();
+                args["virtual_time_utc"] = json!(integer(&bar, "timestamp")? + integer(head, "timeframe_seconds")?);
+                "queue_current_quote"
+            }
+            _ => return Err(bad("unsupported market execution timing")),
+        },
+        "orders/protection" | "orders/close" => {
+            args["mid_close"] = bar["close"].clone();
+            args["virtual_time_utc"] = json!(integer(&bar, "timestamp")? + integer(head, "timeframe_seconds")?);
+            if tail == "orders/close" { "close" } else { "protection" }
+        }
+        _ => return Err(bad("unsupported compact replay transition")),
+    };
+    let operation = text(b, "operation_id")?;
+    if operation.trim().is_empty() || operation.len() > 128 {
+        return Err(bad("operation_id must be a bounded nonempty identifier"));
+    }
+    let admission = crate::replay_storage::OperationAdmission::prepare(tx, workspace, id,
+        revision, &prefix, &[operation]).await.map_err(internal)?;
+    timings.mark("storage_prefix_admission");
+    let (prefix, transition) = tokio::task::spawn_blocking(move || {
+        let transition = prefix.transition(action, args, &admission)?;
+        Ok::<_, String>((prefix, transition))
+    }).await.map_err(|_| internal("execution_task_failed"))?.map_err(bad)?;
+    p["execution"] = transition.next.head().clone();
+    let payload = crate::replay_storage::compact_payload(p, &transition.next).map_err(internal)?;
+    timings.mark("domain_transition");
+    let mut saved = save_record(tx, workspace, &record, payload, false).await?;
+    saved["payload"] = crate::replay_storage::persist_transition(tx, workspace, id, revision,
+        integer(&saved, "revision")?, &prefix, &transition, &saved["payload"])
+        .await.map_err(internal)?;
+    timings.mark("revision_save");
+    initialized_events.extend(transition.events);
+    let response = mutation_view(tx, state, workspace, saved, manifest,
+        base_revision, base_event_sequence, Some(initialized_events)).await;
     timings.mark("view_projection");
     response
 }
@@ -1722,6 +1863,7 @@ async fn mutation_view(
     manifest: &Value,
     base_revision: i64,
     base_event_sequence: i64,
+    appended_events: Option<Vec<Value>>,
 ) -> Result<Value, ApiError> {
     let p = &saved["payload"];
     let cursor = integer(p, "cursor_index")?;
@@ -1744,21 +1886,28 @@ async fn mutation_view(
         .pop().ok_or_else(|| internal("visible replay window is empty"))?["timestamp"].clone();
     let identity = identities(tx, workspace, text(&saved, "record_id")?, p).await?;
     let mut execution = saved["payload"]["execution"].take();
-    // Persistence and domain validation still retain the full canonical ledger.
-    // Only this opt-in wire projection moves out its bounded appended suffix.
-    let ledger = execution.as_object_mut()
-        .and_then(|head| head.remove("ledger"))
-        .and_then(|ledger| match ledger { Value::Array(events) => Some(events), _ => None })
-        .ok_or_else(|| internal("invalid execution ledger in mutation response"))?;
     let sequence = integer(&execution, "event_sequence")?;
     let base = usize::try_from(base_event_sequence)
         .map_err(|_| internal("invalid mutation base event sequence"))?;
-    if usize::try_from(sequence).ok() != Some(ledger.len()) || base > ledger.len()
-        || ledger.len() - base > 16
-    {
+    let events = if let Some(events) = appended_events {
+        if execution.get("ledger").is_some() {
+            return Err(internal("compact mutation head unexpectedly contains a ledger"));
+        }
+        events
+    } else {
+        let ledger = execution.as_object_mut()
+            .and_then(|head| head.remove("ledger"))
+            .and_then(|ledger| match ledger { Value::Array(events) => Some(events), _ => None })
+            .ok_or_else(|| internal("invalid execution ledger in mutation response"))?;
+        if usize::try_from(sequence).ok() != Some(ledger.len()) || base > ledger.len() {
+            return Err(internal("mutation event suffix is inconsistent"));
+        }
+        ledger.into_iter().skip(base).collect()
+    };
+    if sequence.checked_sub(base_event_sequence).and_then(|count| usize::try_from(count).ok()) != Some(events.len())
+        || events.len() > 16 {
         return Err(internal("mutation event suffix is inconsistent or exceeds its bound"));
     }
-    let events: Vec<Value> = ledger.into_iter().skip(base).collect();
     if events.iter().enumerate().any(|(index, event)| event["sequence"].as_i64() != Some(base_event_sequence + index as i64 + 1)) {
         return Err(internal("mutation event suffix is not contiguous"));
     }
@@ -2023,7 +2172,8 @@ async fn branch(
             let rows=tx.query("SELECT revision,payload_json FROM workspace_record_revisions WHERE workspace_id=$1 AND kind='replay' AND record_id=$2 AND revision<=$3 AND NOT deleted ORDER BY revision DESC",&[&workspace,&parent,&(revision as i32)]).await.map_err(|_|ApiError::database())?;
             let mut found = None;
             for row in rows {
-                let prior: Value = row.get(1);
+                let prior = crate::replay_storage::hydrate_payload(tx, workspace, &parent,
+                    i64::from(row.get::<_, i32>(0)), row.get(1)).await.map_err(internal)?;
                 let s = &prior["execution"];
                 if prior["cursor_index"] == cursor && !s.is_null() {
                     if s["cursor_index"] != cursor {
@@ -2082,6 +2232,18 @@ async fn activity(
     id: &str,
     b: &Value,
 ) -> Result<Value, ApiError> {
+    // Activity changes no financial state. Keep the existing head lock/deletion
+    // check without hydrating history while an order waits for that same lock.
+    let head = tx.query_opt("SELECT current_revision FROM workspace_records WHERE workspace_id=$1 AND kind='replay' AND record_id=$2 FOR UPDATE", &[&workspace, &id])
+        .await.map_err(|_| ApiError::database())?
+        .ok_or_else(|| ApiError::detail(StatusCode::NOT_FOUND, "replay_not_found"))?;
+    let revision: i32 = head.get(0);
+    let version = tx.query_opt("SELECT deleted FROM workspace_record_revisions WHERE workspace_id=$1 AND kind='replay' AND record_id=$2 AND revision=$3", &[&workspace, &id, &revision])
+        .await.map_err(|_| ApiError::database())?
+        .ok_or_else(|| internal("replay_revision_missing"))?;
+    if version.get::<_, bool>(0) {
+        return Err(ApiError::detail(StatusCode::NOT_FOUND, "replay_not_found"));
+    }
     let event =
         Uuid::parse_str(text(b, "event_id")?).map_err(|_| bad("invalid activity event id"))?;
     let start = DateTime::parse_from_rfc3339(text(b, "started_at_utc")?)

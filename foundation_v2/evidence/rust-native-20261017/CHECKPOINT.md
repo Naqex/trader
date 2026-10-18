@@ -591,3 +591,80 @@ Goal ACTIVE.
   Next implementation: validated execution head + append-only events/indexed
   operation IDs, with cold-path full hydration and a verified rollback target.
   Goal remains ACTIVE.
+
+## Root continuation 18/10: bounded BAR execution persistence
+
+- Added opt-in native `TW_V2_REPLAY_STORAGE_PROFILE=compact`, restricted to
+  single-asset BAR `mutation-v1` execution/quick/market/protection/close. Default
+  snapshot storage, tick, portfolio, step and phase paths remain unchanged. The
+  owner database/listeners were not migrated, restarted or switched.
+- Migration0005 stores validated per-revision head/context certificates, shared
+  immutable events and indexed operation reservations. Core full/incremental
+  execution shares financial arithmetic and event validation. Each mutation checks
+  the new suffix against its exact admitted head/hash, then commits revision,
+  certificate, events, operation IDs and exact-byte receipt atomically. Queue
+  reservations survive zero-event revisions. Cold reads/analytics/Prop/history
+  hydrate and fully validate the exact revision. This trusts application-owned
+  immutable PostgreSQL rows, not protection against a database administrator.
+- `../rust-native-20261018/runtime/replay-storage-r5-root/receipt.json` PASS24
+  checks/36 alternating samples (6warmups,5measured pairs at each stage), frozen
+  source/release-probe hashes. Financial/metadata/Prop/analytics equality, restart,
+  history/branch cutoff, retry/stale/workspace denial, queued fill, operation-ID
+  scope, dataset pins, immutable SQL triggers and corrupt prefix/event denial all
+  pass. Activity additionally covers domain/exact-receipt duplicates, invalid
+  intervals, conflicting dates, missing/deleted/cross-workspace admission and no
+  financial head/history changes. Router-only diagnostic:
+
+  | Base steps | Full median | Compact median | Full payload | Compact payload + certificate |
+  |---|---:|---:|---:|---:|
+  |0|30.250ms|38.423ms|10,298B|1,969B +2,823B|
+  |500|47.766ms|39.785ms|320,178B|1,985B +2,843B|
+  |5,000|193.740ms|46.092ms|3,118,227B|1,992B +2,853B|
+
+  Same small mutation wire in both profiles; retained events are additional shared
+  storage, not included in head/certificate sizes. Compact is slower on the small
+  prefix, so these numbers do not justify claiming every request became faster.
+- The first production-chart candidate passed behavior but confirmed paint was
+  median329.7ms: activity interval admission hydrated/validated all history while
+  holding the same replay head lock as orders. That receipt remains at
+  `replay-storage-chart-root`. Activity now checks only the scoped head and exact
+  current revision/deletion state, keeping the existing lock and event/retry rules.
+  Observed activity phase median329.2→3.6ms; no financial-state validation is
+  needed for a timing interval. Reviewer confirmed the metadata boundary.
+- `replay-storage-chart-r2-root` (compact) and `replay-storage-chart-full-root`
+  PASS12 warm journeys each on the same final source/release binary, production
+  React/Advanced Charts,6,000bars and5,000seeded events. Confirmed paint median
+  79.5ms/sample-p9580.9ms compact vs244.9/262ms full. Compact1,236drag frame
+  intervals: median/sample-p9516.7ms; zero history reads, retained iframe/scale,
+  zero scale displacement during drag. Raw samples/requests/phases and derived
+  `replay-storage-chart-comparison-root.json` retain the distinction. First compact
+  mutation imports the old full history:1,061ms response vs217ms full; this cold
+  cost is excluded from the explicitly warm samples, not hidden as a fast import.
+  These serial headless checks are not stable-tail/capacity/soak or aesthetic QA.
+- `replay-storage-rollback-final-root` PASS guarded normal stop; final harness
+  `replay-storage-rollback-marker-root` PASS with injected guarded-stop rejection
+  exercising the exact private-manifest marker fallback. Quiesced DB/artifact
+  backup restores into a distinct target;9compact revisions including historical,
+  branch and deleted state materialize atomically. Corruption rejects without
+  partial conversion. Identity/timestamps/heads/sidecars/Prop/receipt bytes and
+  original source DB remain unchanged. Same-schema supervised compatibility reads
+  history/analytics and writes queue/step/current quote/protection/close/branch;
+  return-to-native reimports the new full head and continues Prop feed. Historical
+  older-schema binaries cannot be enabled by a profile toggle or ledger deletion.
+- Initial harness failures remain separate: `replay-storage-root` compared transient
+  step response events with GET; r2 sent quick-only init fields to market; r3
+  compared independently derived Prop operation IDs without verifying each own
+  canonical event. Those fixture issues were fixed without weakening financial
+  comparisons. Initial rollback pipe-handle hang is recorded in its own
+  `INTERRUPTED.md`; exact owned PG/harness processes were stopped.
+- Final locked release bins/probe build PASS; Rust lib108PASS/16fixture-dependent
+  ignored, admin1PASS; launcher27PASS +12subtests. Independent source reviews found
+  and closed cleanup-manifest path mismatch and activity admission concerns.
+  `replay-storage-inventory-root.json` reports105native frozen routes and zero
+  command-worker delegation; route count alone is not whole-product acceptance.
+- Remaining: compact resource/load/soak evidence, cold import/hydration cost,
+  BAR step/chart-tail and Prop-feed scaling, phase/tick/portfolio full-history paths,
+  frontend retained-ledger growth and broader native/setup acceptance. BAR step
+  should reuse incremental `advance_many` with a separate typed step/cursor/tail
+  contract; do not weaken the same-cursor16-event order mutation reducer. Goal
+  remains ACTIVE; no owner cutover or whole-project completion is claimed.

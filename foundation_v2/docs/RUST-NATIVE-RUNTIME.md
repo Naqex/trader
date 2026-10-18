@@ -95,6 +95,12 @@ The execution checkpoint is
   React/Advanced Charts, quick BUY/SELL, TP drag, close and persisted checks.
   `--http-benchmark` adds bounded independent concurrent aggregates at increasing
   ledger sizes. `--phase-timings` logs request phases without payloads/identities.
+- `scripts/rust_replay_storage_acceptance.py`: equivalent full/compact PostgreSQL
+  revisions, operation admission, historical hydration, Prop/analytics, immutable
+  rows, invalid-prefix denial and alternating history-size samples.
+- `scripts/rust_replay_storage_rollback_acceptance.py`: quiesced synthetic bundle,
+  separate restored target, atomic full materialization, supervised same-schema
+  compatibility HTTP and return-to-native/Prop continuation.
 - Persisted domain and financial differential suites listed in the checkpoint.
 
 Measured native click-to-confirmed-paint is around 46 ms on the 300-row synthetic
@@ -171,30 +177,53 @@ older unacknowledged marks from the retained ledger, in order, after a failed fe
 or reload. Portfolio and legacy snapshots retain the full-response path.
 
 This removes historical bars/ledger from the mutation wire response and receipt.
-It does not remove full snapshot reads, domain validation, JSONB revision writes,
-or frontend ledger concatenation. Browser evidence and Router-only comparisons
-are recorded separately in the execution checkpoint.
+With default snapshot storage, full reads, validation and JSONB revision writes
+still depend on history. The additional storage opt-in below changes those costs
+for selected BAR mutations. Frontend ledger concatenation remains history-dependent.
+Browser evidence and Router-only comparisons are recorded separately in the
+execution checkpoint.
 
-## Next storage boundary
+## Bounded BAR storage candidate
 
-The remaining history-dependent mutation path requires an execution head plus
-immutable append-only events and an indexed operation-ID set in the same
-PostgreSQL transaction. It must use the same financial transition/validation code,
-with a validated-prefix context rather than a second engine or skip-validation
-flag. Migration/import/restore must fully validate the prefix before admitting
-incremental transitions; validator changes must invalidate that admission.
+The native candidate can opt into `TW_V2_REPLAY_STORAGE_PROFILE=compact` for
+`mutation-v1` initialization/quick/market/protection/close requests. Migration
+`0005_replay_execution_storage.sql` adds per-revision execution certificates,
+append-only events and indexed operation reservations. Snapshot storage remains
+the default; tick, portfolio, step, phase and branch mutations retain the full
+path in this first slice. The owner database/runtime has not been migrated.
 
-Every revision needs its own head and event cutoff, including queued orders that
-emit no event. Full/history/analytics/Prop reads must hydrate the requested
-revision, and catalog/deletion checks must understand compact metadata. Initially
-copy a validated branch prefix on the cold path; do not inherit parent operations
-after the chosen revision. Portfolio legacy storage remains explicit until each
-asset and the shared account clock have equivalent coverage.
+The bounded transition uses the existing financial arithmetic and event validator.
+It checks only the new events against the previously validated canonical context.
+Operation admission binds the exact head and prefix hash as well as lineage and
+requested operation IDs. A queued order reserves its ID even if it emits no event.
+PostgreSQL commits the revision, certificate, events, operation IDs and exact retry
+receipt in the same transaction. Numeric commitments tolerate JSONB numeric
+normalization while preserving strings and financial decimal semantics.
+
+Full reads and analytics hydrate the exact requested revision and fully validate
+its canonical ledger. Full writes after a compatibility restore remain authoritative;
+the next compact mutation imports that full revision again instead of trusting an
+older sidecar. Disposable persisted, production-chart and rollback rehearsals are
+recorded in the execution checkpoint. Broader resource acceptance and owner cutover
+remain separate gates. Cold import/hydration and step remain history-dependent;
+the whole product is not thereby constant-time. Importing a large existing full
+revision is a one-time cost on its first compact mutation and is reported apart
+from warm interaction samples.
+
+Activity interval admission now checks the scoped current revision and deletion
+state without reading the financial payload. It retains the head lock and existing
+event/retry contract. This prevents a heartbeat from hydrating an entire compact
+history while an order waits for the same lock. On the 5,000-event production-chart
+fixture, 12 warm journeys measured confirmed paint at median79.5ms/sample-p9580.9ms
+with compact storage, versus244.9/262ms with full storage on the same final source.
+These serial headless diagnostics do not establish production capacity or stable
+tail latency. The default/owner runtime remains unchanged.
 
 A stored prefix hash alone cannot prove an unread prefix is unchanged. The trust
 boundary must include immutable committed PostgreSQL event rows and controlled
-restore/import. This design remains implementation work; no storage migration or
-owner cutover is implied by the compact response slice.
+restore/import. Validator changes must invalidate prefix admission. Branches import
+only the selected revision prefix under the child's lineage and exclude parent
+future operation IDs. No owner cutover is implied by this candidate.
 
 Compact storage must also preserve a verified rollback route. Python compatibility
 readers consume revision JSONB directly, and both migration ledgers reject unknown

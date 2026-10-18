@@ -8,6 +8,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let state = AppState::connect(config)
         .await
         .map_err(std::io::Error::other)?;
+    if !state.native_runtime {
+        let client = state.pool.get().await?;
+        let compact: bool = client.query_one("SELECT EXISTS(SELECT 1 FROM workspace_record_revisions WHERE storage_format <> 'full_snapshot')", &[]).await?.get(0);
+        if compact {
+            return Err("compatibility startup requires materializing every compact replay revision on an isolated restored target, including historical and deleted revisions".into());
+        }
+    }
     let domain = trading_workspace_api::runtime_domain_routes(&state).map_err(std::io::Error::other)?;
     let listener = tokio::net::TcpListener::bind(state.config.bind).await?;
     let provider = if state.native_runtime {
