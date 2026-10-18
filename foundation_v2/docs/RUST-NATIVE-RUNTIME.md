@@ -260,6 +260,9 @@ its2,000-bar window. A mismatch locks writes and requires a read; it never repea
 the committed command. A committed step can paint while Prop consumes its marks,
 but further commands remain locked until that feed settles. Retained client ledger
 concatenation still depends on history length.
+Prop navigation tracks the canonical session identity so each committed cursor
+does not trigger a session reload and stop Play. A failed Prop feed retains the
+committed replay; reload and the next step consume its unacknowledged marks in order.
 
 Advanced Charts receives the verified native tail directly. Each ready subscription
 folds it into an authoritative aggregate seeded at the exact previous cutoff; this

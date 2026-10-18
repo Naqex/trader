@@ -7,6 +7,7 @@ import { createHash } from 'node:crypto'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { compatibleAdvancedCharts } from '../advancedChartCompatibility.mjs'
+import { runPropStepJourney } from './replay_prop_step_journey.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const args = process.argv.slice(2)
@@ -51,7 +52,7 @@ const server = createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://127.0.0.1')
     if (url.pathname.startsWith('/api/')) {
-      assert.ok(req.method === 'GET' || (req.method === 'POST' && [sessionPath, report.nullSessionPath].filter(Boolean).some(base => url.pathname.startsWith(base + '/'))), 'Only owned replays may mutate')
+      assert.ok(req.method === 'GET' || (req.method === 'POST' && [sessionPath, report.nullSessionPath, report.propSessionPath].filter(Boolean).some(base => url.pathname.startsWith(base + '/'))), 'Only owned replays may mutate')
       const upstream = httpRequest(new URL(req.url, api), { method: req.method, headers: { ...req.headers, host: new URL(api).host } }, response => { res.writeHead(response.statusCode, response.headers); response.pipe(res) })
       upstream.on('error', error => { res.writeHead(502); res.end(error.message) }); req.pipe(upstream); res.on('close', () => upstream.destroy()); return
     }
@@ -214,10 +215,13 @@ try {
   assert.deepEqual(await page.evaluate(() => ({ bars: window.__qa.bars.length, cutoff: document.querySelector('[data-testid="replay-chart"]').dataset.cutoff })), staleBefore)
   assert.equal((await apiRequest(report.nullSessionPath)).revision, nullCurrent.revision)
   report.stale = { rejected409: true, retainedBarsAndCutoff: true, noFinancialRevision: true }
+  if (args.includes('--prop-config')) await runPropStepJourney({ page, context, api, workspace, dataset, origin,
+    configuration, fixture: JSON.parse(await readFile(path.resolve(value('--prop-config')), 'utf8')),
+    report, ready, browserHistoryReads: () => historyReads })
   assert.deepEqual(report.errors, [])
   const quantile = (values, q) => [...values].sort((a, b) => a - b)[Math.ceil(values.length * q) - 1]
   report.summary = { clickToConfirmedFrameMs: { p50: quantile(report.samples.map(item => item.clickToConfirmedFrameMs), .5), sampleP95: quantile(report.samples.map(item => item.clickToConfirmedFrameMs), .95) }, samples: report.samples.length }
   report.status = 'PASS'; await page.screenshot({ path: path.join(path.dirname(output), 'step-chart.png') })
-} catch (error) { report.status = 'FAIL'; report.failure = error.stack; throw error }
+} catch (error) { report.status = 'FAIL'; report.failure = error.stack; const diagnostic = browser.contexts().at(-1)?.pages().at(-1); if (diagnostic) { report.failureUi = await diagnostic.locator('body').innerText().catch(() => 'unavailable'); await diagnostic.screenshot({path:path.join(path.dirname(output), 'failure.png')}).catch(() => {}); } throw error }
 finally { await browser.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); await writeFile(output, JSON.stringify(report, null, 2) + '\n') }
 console.log(JSON.stringify({ output, status: report.status, summary: report.summary }))

@@ -1,0 +1,2895 @@
+{
+  "status": "PASS",
+  "scope": "Production React/Advanced Charts, owned native HTTP/PG, Practice only. Subscribed bar delivery followed by first rAF is a rendering proxy, not pixel-level paint proof.",
+  "samples": [
+    {
+      "resolution": "1",
+      "label": "single-0",
+      "clickToConfirmedFrameMs": 50.30000000074506,
+      "cursor": 102,
+      "responseBytes": 2869,
+      "frames": [
+        16.59999999999991,
+        16.699999999999818,
+        16.59999999999991,
+        16.800000000000182,
+        16.59999999999991
+      ],
+      "historyReads": 0,
+      "resets": 0,
+      "iframeRetained": true,
+      "shapeRetained": true,
+      "scaleRetained": true
+    },
+    {
+      "resolution": "1",
+      "label": "single-1",
+      "clickToConfirmedFrameMs": 48.099999997764826,
+      "cursor": 103,
+      "responseBytes": 2905,
+      "frames": [
+        16.59999999999991,
+        16.700000000000273,
+        16.59999999999991,
+        16.699999999999818,
+        16.700000000000273
+      ],
+      "historyReads": 0,
+      "resets": 0,
+      "iframeRetained": true,
+      "shapeRetained": true,
+      "scaleRetained": true
+    },
+    {
+      "resolution": "1",
+      "label": "ten-base-bars",
+      "clickToConfirmedFrameMs": 50.19999999925494,
+      "cursor": 120,
+      "responseBytes": 9311,
+      "frames": [
+        16.59999999999991,
+        16.700000000000273,
+        16.699999999999818,
+        16.59999999999991,
+        16.700000000000273
+      ],
+      "historyReads": 0,
+      "resets": 0,
+      "iframeRetained": true,
+      "shapeRetained": true,
+      "scaleRetained": true
+    }
+  ],
+  "coldSamples": [
+    {
+      "resolution": "1",
+      "label": "first-ready-forward",
+      "clickToConfirmedFrameMs": 57.5,
+      "cursor": 101,
+      "responseBytes": 2905,
+      "frames": [
+        16.600000000000136,
+        16.700000000000045,
+        16.699999999999818,
+        16.700000000000273,
+        16.59999999999991,
+        16.699999999999818
+      ],
+      "historyReads": 0,
+      "resets": 0,
+      "iframeRetained": true,
+      "shapeRetained": true,
+      "scaleRetained": true
+    },
+    {
+      "resolution": "1",
+      "label": "first-10m-boundary-alignment",
+      "clickToConfirmedFrameMs": 51.30000000074506,
+      "cursor": 110,
+      "responseBytes": 7213,
+      "frames": [
+        16.59999999999991,
+        16.700000000000273,
+        16.699999999999818,
+        16.700000000000273,
+        16.59999999999991
+      ],
+      "historyReads": 0,
+      "resets": 0,
+      "iframeRetained": true,
+      "shapeRetained": true,
+      "scaleRetained": true
+    }
+  ],
+  "play": [
+    {
+      "resolution": "1",
+      "actualStepRequests": 3,
+      "deliveredBars": 3,
+      "cursor": 123,
+      "historyReads": 0,
+      "iframeRetained": true,
+      "shapeRetained": true,
+      "scaleRetained": true,
+      "frames": [
+        16.800000000000182,
+        16.59999999999991,
+        16.699999999999818,
+        16.59999999999991,
+        16.700000000000273,
+        16.699999999999818,
+        16.700000000000273,
+        16.59999999999991,
+        16.699999999999818,
+        16.700000000000273,
+        16.59999999999991,
+        16.699999999999818,
+        16.700000000000273,
+        16.59999999999991,
+        16.59999999999991,
+        16.800000000000182,
+        16.59999999999991,
+        16.699999999999818,
+        16.700000000000273,
+        16.59999999999991,
+        16.59999999999991,
+        16.699999999999818,
+        16.600000000000364,
+        16.699999999999818,
+        16.699999999999818,
+        16.700000000000273,
+        16.699999999999818,
+        16.59999999999991,
+        16.700000000000273,
+        16.59999999999991,
+        16.699999999999818,
+        16.700000000000273,
+        16.59999999999991,
+        16.699999999999818,
+        16.700000000000273,
+        16.699999999999818,
+        16.59999999999991,
+        16.600000000000364,
+        16.799999999999727,
+        16.59999999999991,
+        16.600000000000364,
+        16.699999999999818,
+        16.699999999999818,
+        16.700000000000273,
+        16.59999999999991,
+        16.699999999999818,
+        16.600000000000364,
+        16.699999999999818,
+        16.699999999999818,
+        16.700000000000273,
+        16.59999999999991,
+        16.699999999999818,
+        16.700000000000273,
+        16.59999999999991,
+        16.699999999999818,
+        16.700000000000273,
+        16.59999999999991,
+        16.699999999999818,
+        16.700000000000273,
+        16.699999999999818,
+        16.59999999999991,
+        16.700000000000273,
+        16.59999999999991,
+        16.699999999999818,
+        16.600000000000364,
+        16.799999999999727,
+        16.59999999999991,
+        16.699999999999818,
+        16.700000000000728,
+        16.5,
+        16.799999999999272,
+        16.600000000000364,
+        16.699999999999818,
+        16.600000000000364,
+        16.699999999999818,
+        16.699999999999818,
+        16.699999999999818,
+        16.600000000000364,
+        16.699999999999818,
+        16.600000000000364,
+        16.699999999999818,
+        16.699999999999818,
+        16.699999999999818,
+        16.600000000000364,
+        16.699999999999818,
+        16.600000000000364,
+        16.800000000000182,
+        16.599999999999454,
+        16.600000000000364,
+        16.699999999999818,
+        16.699999999999818,
+        16.699999999999818,
+        16.600000000000364,
+        16.699999999999818,
+        16.699999999999818,
+        16.600000000000364,
+        16.699999999999818,
+        16.699999999999818,
+        16.600000000000364,
+        16.699999999999818,
+        16.600000000000364,
+        16.699999999999818,
+        16.600000000000364,
+        16.699999999999818,
+        16.699999999999818,
+        16.699999999999818,
+        16.600000000000364,
+        16.699999999999818,
+        16.699999999999818,
+        16.699999999999818,
+        16.600000000000364,
+        16.600000000000364,
+        16.799999999999272,
+        16.600000000000364,
+        16.600000000000364,
+        16.699999999999818,
+        16.699999999999818,
+        16.699999999999818,
+        16.600000000000364,
+        16.699999999999818,
+        16.699999999999818,
+        16.600000000000364,
+        16.699999999999818,
+        16.600000000000364,
+        16.699999999999818,
+        16.699999999999818,
+        16.699999999999818,
+        16.600000000000364,
+        16.699999999999818,
+        16.600000000000364,
+        16.699999999999818,
+        16.699999999999818,
+        16.699999999999818,
+        16.600000000000364,
+        16.599999999999454,
+        16.700000000000728,
+        16.699999999999818,
+        16.699999999999818,
+        16.699999999999818,
+        16.600000000000364,
+        16.699999999999818,
+        16.699999999999818,
+        16.600000000000364,
+        16.699999999999818,
+        16.699999999999818,
+        16.600000000000364,
+        16.699999999999818,
+        16.600000000000364,
+        16.699999999999818,
+        16.699999999999818,
+        16.699999999999818,
+        16.600000000000364,
+        16.599999999999454,
+        16.700000000000728,
+        16.699999999999818,
+        16.599999999999454,
+        16.800000000000182,
+        16.600000000000364,
+        16.599999999999454,
+        16.700000000000728,
+        16.699999999999818,
+        16.599999999999454,
+        16.700000000000728,
+        16.699999999999818,
+        16.699999999999818,
+        16.600000000000364,
+        16.699999999999818,
+        16.699999999999818,
+        16.600000000000364,
+        16.699999999999818,
+        16.599999999999454,
+        16.700000000000728,
+        16.699999999999818,
+        16.599999999999454,
+        16.800000000000182,
+        16.600000000000364,
+        16.699999999999818,
+        16.600000000000364,
+        16.599999999999454,
+        16.800000000000182,
+        16.699999999999818,
+        16.600000000000364,
+        16.699999999999818,
+        16.600000000000364,
+        16.699999999999818,
+        16.599999999999454,
+        16.700000000000728,
+        16.699999999999818
+      ]
+    }
+  ],
+  "oracle": [
+    {
+      "resolution": "1",
+      "cursor": 101,
+      "actual": {
+        "time": 1767231660000,
+        "open": 1.1000500000000002,
+        "high": 1.1015,
+        "low": 1.099,
+        "close": 1.1001500000000002,
+        "volume": 201
+      },
+      "expected": {
+        "close": 1.1001500000000002,
+        "high": 1.1015,
+        "low": 1.099,
+        "open": 1.1000500000000002,
+        "time": 1767231660000,
+        "volume": 201
+      },
+      "outsideTiming": true
+    },
+    {
+      "resolution": "1",
+      "cursor": 102,
+      "actual": {
+        "time": 1767231720000,
+        "open": 1.1001,
+        "high": 1.1015,
+        "low": 1.099,
+        "close": 1.1002,
+        "volume": 202
+      },
+      "expected": {
+        "close": 1.1002,
+        "high": 1.1015,
+        "low": 1.099,
+        "open": 1.1001,
+        "time": 1767231720000,
+        "volume": 202
+      },
+      "outsideTiming": true
+    },
+    {
+      "resolution": "1",
+      "cursor": 103,
+      "actual": {
+        "time": 1767231780000,
+        "open": 1.1001500000000002,
+        "high": 1.1015,
+        "low": 1.099,
+        "close": 1.1002500000000002,
+        "volume": 203
+      },
+      "expected": {
+        "close": 1.1002500000000002,
+        "high": 1.1015,
+        "low": 1.099,
+        "open": 1.1001500000000002,
+        "time": 1767231780000,
+        "volume": 203
+      },
+      "outsideTiming": true
+    },
+    {
+      "resolution": "1",
+      "cursor": 110,
+      "actual": {
+        "time": 1767232200000,
+        "open": 1.1005,
+        "high": 1.1015,
+        "low": 1.099,
+        "close": 1.1006,
+        "volume": 210
+      },
+      "expected": {
+        "close": 1.1006,
+        "high": 1.1015,
+        "low": 1.099,
+        "open": 1.1005,
+        "time": 1767232200000,
+        "volume": 210
+      },
+      "outsideTiming": true
+    },
+    {
+      "resolution": "1",
+      "cursor": 120,
+      "actual": {
+        "time": 1767232800000,
+        "open": 1.1,
+        "high": 1.1015,
+        "low": 1.099,
+        "close": 1.1001,
+        "volume": 220
+      },
+      "expected": {
+        "close": 1.1001,
+        "high": 1.1015,
+        "low": 1.099,
+        "open": 1.1,
+        "time": 1767232800000,
+        "volume": 220
+      },
+      "outsideTiming": true
+    },
+    {
+      "resolution": "1",
+      "cursor": 123,
+      "actual": {
+        "time": 1767232980000,
+        "open": 1.1001500000000002,
+        "high": 1.1015,
+        "low": 1.099,
+        "close": 1.1002500000000002,
+        "volume": 223
+      },
+      "expected": {
+        "close": 1.1002500000000002,
+        "high": 1.1015,
+        "low": 1.099,
+        "open": 1.1001500000000002,
+        "time": 1767232980000,
+        "volume": 223
+      },
+      "outsideTiming": true
+    },
+    {
+      "resolution": "1",
+      "cursor": 1,
+      "actual": {
+        "time": 1767225660000,
+        "open": 1.1000500000000002,
+        "high": 1.1015,
+        "low": 1.099,
+        "close": 1.1001500000000002,
+        "volume": 101
+      },
+      "expected": {
+        "close": 1.1001500000000002,
+        "high": 1.1015,
+        "low": 1.099,
+        "open": 1.1000500000000002,
+        "time": 1767225660000,
+        "volume": 101
+      },
+      "outsideTiming": true
+    }
+  ],
+  "errors": [],
+  "requests": [
+    {
+      "path": "/api/v2/replay/sessions/f74862cda610459ca308279ae9624784/step",
+      "responseView": "step-v1",
+      "timing": {
+        "startTime": 1792309809984.5437,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.279,
+        "responseStart": 33.436,
+        "responseEnd": 35.823
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/f74862cda610459ca308279ae9624784/step",
+      "responseView": "step-v1",
+      "timing": {
+        "startTime": 1792309810143.471,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.272,
+        "responseStart": 36.887,
+        "responseEnd": 39.162
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/f74862cda610459ca308279ae9624784/step",
+      "responseView": "step-v1",
+      "timing": {
+        "startTime": 1792309810308.584,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.375,
+        "responseStart": 31.968,
+        "responseEnd": 34.313
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/f74862cda610459ca308279ae9624784/step",
+      "responseView": "step-v1",
+      "timing": {
+        "startTime": 1792309810526.9739,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.262,
+        "responseStart": 34.197,
+        "responseEnd": 36.538
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/f74862cda610459ca308279ae9624784/step",
+      "responseView": "step-v1",
+      "timing": {
+        "startTime": 1792309810725.775,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.248,
+        "responseStart": 33.436,
+        "responseEnd": 35.797
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/f74862cda610459ca308279ae9624784/step",
+      "responseView": "step-v1",
+      "timing": {
+        "startTime": 1792309811973.8,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.273,
+        "responseStart": 31.897,
+        "responseEnd": 33.757
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/f74862cda610459ca308279ae9624784/step",
+      "responseView": "step-v1",
+      "timing": {
+        "startTime": 1792309812974.245,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.269,
+        "responseStart": 31.33,
+        "responseEnd": 33.135
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/f74862cda610459ca308279ae9624784/step",
+      "responseView": "step-v1",
+      "timing": {
+        "startTime": 1792309813974.2131,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.277,
+        "responseStart": 32.51,
+        "responseEnd": 34.404
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/9cce37137a0844ac8ba88d7e855a04b8/step",
+      "responseView": "step-v1",
+      "timing": {
+        "startTime": 1792309815576.582,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.266,
+        "responseStart": 24.039,
+        "responseEnd": 26.42
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/9cce37137a0844ac8ba88d7e855a04b8/step",
+      "responseView": "step-v1",
+      "timing": {
+        "startTime": 1792309815690.9978,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": 14.633,
+        "responseEnd": 15.013
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/029e724b22db4d09a0f565c3fe0fc90c/step",
+      "responseView": "step-v1",
+      "timing": {
+        "startTime": 1792309817294.997,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.269,
+        "responseStart": 29.561,
+        "responseEnd": 32.014
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/029e724b22db4d09a0f565c3fe0fc90c/step",
+      "responseView": "step-v1",
+      "timing": {
+        "startTime": 1792309818519.267,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.28,
+        "responseStart": 30.696,
+        "responseEnd": 32.671
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/029e724b22db4d09a0f565c3fe0fc90c/step",
+      "responseView": "step-v1",
+      "timing": {
+        "startTime": 1792309819519.4858,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.255,
+        "responseStart": 30.429,
+        "responseEnd": 32.212
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/029e724b22db4d09a0f565c3fe0fc90c/step",
+      "responseView": "step-v1",
+      "timing": {
+        "startTime": 1792309820520.3672,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.273,
+        "responseStart": 30.162,
+        "responseEnd": 32.085
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/029e724b22db4d09a0f565c3fe0fc90c/step",
+      "responseView": "step-v1",
+      "timing": {
+        "startTime": 1792309820792.1082,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.267,
+        "responseStart": 30.957,
+        "responseEnd": 33.225
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/029e724b22db4d09a0f565c3fe0fc90c/step",
+      "responseView": "step-v1",
+      "timing": {
+        "startTime": 1792309822077.9678,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.294,
+        "responseStart": 33.168,
+        "responseEnd": 35.7
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/029e724b22db4d09a0f565c3fe0fc90c/step",
+      "responseView": "step-v1",
+      "timing": {
+        "startTime": 1792309822376.894,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.348,
+        "responseStart": 31.912,
+        "responseEnd": 34.639
+      }
+    },
+    {
+      "path": "/api/v2/replay/sessions/029e724b22db4d09a0f565c3fe0fc90c/step",
+      "responseView": "step-v1",
+      "timing": {
+        "startTime": 1792309823677.162,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 0.305,
+        "responseStart": 30.316,
+        "responseEnd": 32.778
+      }
+    }
+  ],
+  "assetSha256": {
+    "/index.html": "b08fc412641a25ede2225cd8d7dbf6b43b8b3e043200e7561422e3d2ed9b0441",
+    "/assets/index-BkM6zbk-.js": "4be75b921e307854ebdc50dd43838632040f265d890571bc7ca327a2f2d8c727",
+    "/project-palette.css": "bca921b8e3a25342ba7cffab0858abdce373bb0fc3e34e20819eba7f5dbe81c2",
+    "/assets/index-DbSgDkPh.css": "8fc22560a95ec99402f3db62ff779e1da76eec0f9454ba1b836c555b41c5d5ec",
+    "/assets/ReplayWorkspace-Bpwpz7yq.js": "337cca264391337eb57aaefdeb4e42ca0e7c90874a9117ae5158b96642e5d2e3",
+    "/assets/sessionCatalog-Bx1BKc6r.js": "935e7b8ee498660fe80b0ea71638b53521c9e20935a6090c8b22d1e57dfd2f21",
+    "/assets/ProjectDateInput-CsCv4WOE.js": "723f64fd1b3c53c434e5f0ffaecc097b9c4691ec1061695d68984b06b1760e90",
+    "/assets/ProjectDateInput-CmD7iX9S.css": "4234c1b112d1f2d33facce0ae09013be973f5c585eaa7ded58ab3b84dc86c0c0",
+    "/assets/SessionSettingsDrawer-CSw0Xp5L.css": "22f651899b71e627848cf423f45a2cb93a42b58eb5484fc66c8ca6f31caf597e",
+    "/assets/session-settings-fjfP0f8W.css": "98ad886f4a63e111a508e7e91dbd224e60f55026903a47c96d8601d827d20c67",
+    "/assets/PaginationFooter-MUWvR_mg.css": "b2d491c0ddea7843c2595b7c2872467a12b8b2425d58420ed2ca3bf5a36de557",
+    "/assets/TradeWorkspace-DOe0KjCD.css": "b05dde4311380f8c0b981bc835d4bf4992c19628a4fed87484902a3d740f6013",
+    "/assets/ReplayWorkspace-17ZIH2B8.css": "2791da03dc5616320b7eec86f80e83a61849d2ac81bda31acd3896c9f3b63f1a",
+    "/assets/dataDisplay-xGcOFX4A.js": "7390375e21f4338725566813bb4aa990a6b68b0e19df84dd16a87f948808ac3c",
+    "/assets/useContentReadyMetric-DJRWWDyP.js": "9451914e75fd8b50be2d70136fcfcfc78d7bdef046c7998e470ca7d94235d4eb",
+    "/assets/index-C4zfna_w.js": "3ca8d81c352754528f1f71edf1d32bcf91548b6965d62b2d56542275752d6f85",
+    "/assets/TradeWorkspace-BuHB-Ola.js": "d13943ee8c9ee0c5afbef6cc98e54ad10b35248417589a2fb859a5c88729b323",
+    "/assets/PaginationFooter-BtKvXdFP.js": "d2cbf816d8783b3e6b88b834c8cef1a0d01fdbf90b786d96e04e60d7078c2f28",
+    "/assets/SessionSettingsDrawer-Zvna_0aN.js": "c6a4645b38337fa42ba9dc5950ebe798149428575b9ef8a112acb667229b03d0",
+    "/assets/propSessionCreation-5yP5ZH7i.js": "28482d6183dae871c0affbcbd9adc6167c6d405500a83f73d6c3ac1a4cee09ea",
+    "/charting_library/charting_library.standalone.js": "76ccb3141634f56e53bbb958faf59760218bdc36940d84ba3faa2d432fa52326",
+    "/charting_library/vi-tv-locale.689d7ee0.js": "d3351e9afd98f0e2d9eba33aeec1865772a0834b050aaa3be97a3c253e9d2cb8",
+    "/charting_library/bundles/b1a63a011fd92dfb93db6db243bb036c.woff2": "1aee44e827f8b55b70fdd14acd7f5b95751605423701df48f4a30d50a8ddb9ef",
+    "/charting_library/bundles/40f9a03d174178efb12303caa9bc7cd8.woff2": "8bdd6af687b02cfab840900230ea457b7b713a22def84f82cf47708f6e4cb425",
+    "/charting_library/bundles/3293616ec0c605c7c2db25829a0a509e.woff": "0fd28fece9ebd606b8b071460ebd3fc2ed7bc7a66ef91c8834f11dfacab4a849",
+    "/charting_library/bundles/5386.eb112967859403067d3d.css": "cfd1a25401213a4c55e9bf664a40238126070fe064e1d3e1cc7a75110b75b20f",
+    "/charting_library/bundles/runtime.1c5f2159678050219bc6.js": "1c901539ff5cc1cd75ce76e1f971ca9c22d82d7a64f88f1a5e8559a1e46c7902",
+    "/charting_library/bundles/1857.10c97feeb46d934b8a25.js": "a5858a16fbfbcf51fb18b080594aefe212860af9154b6baff4ee69c14d38cac0",
+    "/chart-legacy.css": "ab0c7d84e758c7441de4dd2379d0617de98db564f00b81cf65442732d5703a82",
+    "/charting_library/bundles/library.65801ad368023d78aaa8.js": "851fa73f0633ffb7ad0e768af823cee4c613ee6a2741dca6b6b9685d5c86c5f3",
+    "/chart-controls.css": "8281be80c512bd56fcf66a67b7e2118b1724fdbb8de208e3901f9a5df219d65b",
+    "/charting_library/bundles/react.0638a74f3ac515095b21.js": "6b0afdb3edbd2cc9ec32c1531bc0221f8d872c6ff395ee300c965f208909d792",
+    "/charting_library/bundles/2000.c053338877532ef25f8e.css": "fb0e92f34df6a427a1a4e44b3b2f1e4e5912bb973b6050c25517871a75dfbd3d",
+    "/charting_library/bundles/6363.455be323006da46e86ba.css": "1cb5f6f126d18885cb65ad999259ae7006ee0aca71542f2b38aedc2cdc51ad31",
+    "/charting_library/bundles/9129.fbb750fd312778403036.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "/charting_library/bundles/3466.6b309c19d1017468da1b.css": "92a4d5cd03c6b6106146b9209942bd94cf7f62da752990ce69fa830549acc1c9",
+    "/charting_library/bundles/7836.e76c27a228c01ba0f51a.css": "aec36e9eef4b5889f04c9d92994740aeaa3697b13df76a7ac782abf73ed2f64c",
+    "/charting_library/bundles/8463.eb12cff5d8de975762fb.css": "006f4c3ebc723155d4879fc7436dceb38445789cad383be6bfc0661698355a61",
+    "/charting_library/bundles/3921.d5182cf595ff23538303.css": "8ee094b4f2f331efd5cc066e5e6f843011980889558d44071c520c0ace05f638",
+    "/charting_library/bundles/1112.7d160fc0f45e3cce101b.css": "ea658a9d4172ade54a1fc08904d85be965f60465ddf2b43fffc889a2f28423c0",
+    "/charting_library/bundles/7427.3632e181ea85cc112694.css": "c617f0923b3017be0b629249911c8aaddf65104b84b1ea9a4452b5d2dd9dfa3b",
+    "/charting_library/bundles/5998.f7e5ad8f8bcc58c55639.css": "fad4406ff5c0e362752cf78fc78274572cefb8bfe018b1e155e677f4695ebbdc",
+    "/charting_library/bundles/6909.8cf1749a0435c38f0042.css": "26851d1e47f10ce1b6f7acbeee60f84617aee32029a1be72740482918012d63e",
+    "/charting_library/bundles/6416.a5a589cf5a0320e1d8ef.css": "0e297f8cd4a28d458260ecc625a104aa1a117960eedb3c6de7e59b88ff4df2ca",
+    "/charting_library/bundles/7419.fe8ff7c7e5d60ec6a2aa.css": "028c785cbed60be31ced1c1fa76e22d01b23772649d1117e140cb4449c15f18e",
+    "/charting_library/bundles/3520.ad35b3adb3b2a1ac9a36.css": "189042a85b3e113cd8609b5bcdcbcd050daf0842c19c915ab6946f526167dbec",
+    "/charting_library/bundles/9042.5e6d175178eb40bf9d3c.css": "d4acb93c2611d6165e43fd3139ca745df26b922b6196e5c33aacb22b410542b4",
+    "/charting_library/bundles/323.9be8a16e68975397a842.css": "657e96d8d97d5658b1fc5f3e0be561cb1bc878f3b5c963e77d6a57b1f7407604",
+    "/charting_library/bundles/2849.6cff163a36f6f60d1983.css": "182471447b84a65c0d5a0c7852ed0824b20eb20c3fb871d7f72038811bad3fa8",
+    "/charting_library/bundles/880.20be4b9bc2682d856330.css": "24bbf4cd3891ac6e83d643e7d1f85249e89692e3d8130f0af552dfba9cb7a501",
+    "/charting_library/bundles/7962.5dc755e884297017b802.css": "f8e3605f94be9936a4ab9a102c3ddca3fe1d57eeb3908a252fc6501fa8228f55",
+    "/charting_library/bundles/4763.574e022a146295a230c1.css": "1dff39c28daabf2fca09d6e4cd987e75a319a8284f7b29ba86eb3a0eae9b96af",
+    "/charting_library/bundles/9055.3b864f08d4f696c7bf5e.css": "715c7fb0f66c6313180f54425aedf2954e71d6ee0a517f5d7c1e8978503e402d",
+    "/charting_library/bundles/3944.23ad1935ea1ca536bbdb.css": "0679fb0d1445ad5d98dcc67e1dfa5ea2ad89e5071aee110a2c6c98df87df158f",
+    "/charting_library/bundles/1390.997773af9c033c657fec.css": "5caa094970926b775aed15cec037ae88fb0f3d3c7126008a77b2b8dfd97ae54f",
+    "/charting_library/bundles/3770.27c0356c69260f042e33.css": "47f4bd7688b576fc868d412fce94634f7c563af8c9ab4a28461e63d4299e6f8c",
+    "/charting_library/bundles/4474.73bf3a3dea54feb8ae44.css": "de9247fbd753f3fac0cdf3fc9c293208a3faa6940618c1c42e8cf336fc4d7ec5",
+    "/charting_library/bundles/6560.f01881003ac6fef45147.css": "bf33694f808e7c33fa86faa2a9836a55fb173a0b88f17904111c83f06da4ee29",
+    "/charting_library/bundles/1594.34c11d6cc8a67dec7867.css": "fcc51c3d96e96a4b1655c7d96df00f47ec2d9d7c53679b99e439811d7a2c60b1",
+    "/charting_library/bundles/5175.6da12b40a46c3dc1bec7.css": "26e8c1cb4233e81619e16d6475f5424e021e0a8146dd574d6d90af156192aaf6",
+    "/charting_library/bundles/3645.9bd37e14840a5d104112.css": "7b4676d938b434073698c48240d6e1873b3f018c724401378ef297fb686c46a9",
+    "/charting_library/bundles/8268.22931d534c7e1ef01eb1.css": "4873acdf1e438112a0fa9abb26e52bd347141ee9b4a080ac760daed632b3aa26",
+    "/charting_library/bundles/1320.5842d36462bf91f9bdee.css": "06519cbcb2922b54fd6372c9c3e1b27e89d750909a20c8aff92d69e08de50557",
+    "/charting_library/bundles/1075.2745aa8533e240f5a5aa.js": "658374db510a3dacb55fc9f0c34ed78e6b151503d50e3411f78374252ba367a2",
+    "/charting_library/bundles/9505.033a769154fc53ff7eca.js": "6257f4ce09cd9437717a7554d77ad0c4410577ec6519641edc703aa8efdec3a8",
+    "/charting_library/bundles/line-tools-icons.2ed2617cd536591d9620.js": "fe7ca2a112c41d7d950c3fbe43f29def1d6e8022a8274f214d4d89676ac15a31",
+    "/charting_library/bundles/1784.430d2965a945175c67b1.js": "37d67b87a32b4f506abc0e4b1dc02e068105eeca7c378f854472d331f34cc1f0",
+    "/charting_library/bundles/7210.9206636bbf39a902a0a9.js": "cfd3cc6f4bf8bd3f16df5a1c7137600b627d7073ab0292ab3f745d07b8a4e7ba",
+    "/charting_library/bundles/floating-toolbars.9319534e46a9e0511fbc.js": "08a26bb05b4153b8d8a5b2e6b0c8fa32abb00c0f2405390f4876d8eb66862dc0",
+    "/charting_library/bundles/chart-bottom-toolbar.398cd093b8aefc945d7a.js": "7d0ec830240e9a537254c7aeda0fbbbf5d329eb22bf1d814605930075d60fe0b",
+    "/charting_library/bundles/9837.80435cf54dcab1a9fa8e.js": "992379751b97dfa4cb48e8fac8bc09fd94e4189dd3689cb21d4672b2fa2b94fd",
+    "/charting_library/bundles/8879.79825d729c8f4d360834.css": "c8689762f5a11d201f61adf2a008fff10bdc366810abceab3aefe193f47da1a1",
+    "/charting_library/bundles/4194.f5256f014a8f2810c953.css": "f58bebf0fd57fcaae831bd06b70cc48111c31f7fa08dcbbf1d9e15c1629b2ee9",
+    "/charting_library/bundles/9289.5f9496920ea48da5931b.css": "f19294dc8deaba918d8b057363d682714e556de646359abceae1bcd9fed9e07b",
+    "/charting_library/bundles/4017.0d88d48dec4b694d4517.css": "684eed07729acc78b690144ebc9999ac671a78fb06497217df7b2e817a993e7a",
+    "/charting_library/bundles/7757.a33871177538e5af0eea.css": "9f9ca27aab11bbd52ad0072684403c345ca0a52537372d926b1f3f55e703e52b",
+    "/charting_library/bundles/9255.0018f47a90442dff7efa.js": "0fb31e1767d8ee7213452fa3a96047bad95a9525952517a9e951e2890308b9fd",
+    "/charting_library/bundles/chart-widget-gui.3f2a59a4ea5dd17c785c.js": "4b53eb25ea69c7691891390534ac5644dbcf81a1f767622d2f8802c66cf294e1",
+    "/charting_library/bundles/restricted-toolset.e7ec0040c08ca2374480.js": "377d9013af22fdb2879047a24af09506bf2b25b07df96339e0296fc57048eed7",
+    "/charting_library/bundles/header-toolbar.cfb40d569cc84fb5a999.js": "f27d9e6f83f05cbb9291cca83076058385ec2c0324546d41876505d24ce96e37",
+    "/charting_library/bundles/get-error-card.6704838b79e652cb9b7b.js": "bc87ca120030d6e24d95ada8d74572966d2d4c216b07cafa7407ebca27d3a363",
+    "/charting_library/bundles/3016.47e1775fafc08b9df6b1.js": "092d092a2456e600b4ff275518d75a4fca8d60c832efcf95df9a325921e6ad9c",
+    "/charting_library/bundles/change-interval-dialog.d42e666ed16322d7bc67.js": "81ff043ef8b06757de90291571f701340d0a6459b5b01b8b828310cd9207c4da",
+    "/charting_library/bundles/drawing-toolbar.5b28dda6a3b56e3f7110.js": "be40c5b0040d5713e652866a50a43a4d3c832b39fa000414d90a98ad8ae538e4",
+    "/charting_library/bundles/study-pane-views.0c3c1c23fc8d5c9a196d.js": "41abbd4fcf2af7555818bba854420a9441151b261042442f232614a49dbd13a7",
+    "/charting_library/bundles/lt-pane-views.0d4b5b1bbff664aa4bbd.js": "4377406d89a47125d5d257cbb225eec04a75435621e09a149a7644bf01647e21"
+  },
+  "session": "f74862cda610459ca308279ae9624784",
+  "importMs": 212.75240000000008,
+  "initialLedgerEvents": 103,
+  "nullSessionPath": "/api/v2/replay/sessions/9cce37137a0844ac8ba88d7e855a04b8",
+  "nullSession": "9cce37137a0844ac8ba88d7e855a04b8",
+  "nullInitialization": {
+    "cursor": 1,
+    "historyReads": 0,
+    "execution": null
+  },
+  "stale": {
+    "rejected409": true,
+    "retainedBarsAndCutoff": true,
+    "noFinancialRevision": true
+  },
+  "prop": {
+    "scope": "Real Prop HTTP/domain/SQL fixture; explicit gated feed, synthetic pre-upstream 503, and stale expected_prop_revision injection. Recovery uses page reload followed by one new step.",
+    "feeds": [
+      {
+        "body": {
+          "replay_event_sequence": 1,
+          "expected_prop_revision": 2,
+          "prop_event_sequence": 1
+        },
+        "mode": "delay",
+        "interceptedAt": 13566.1674,
+        "forwardedAfterRelease": true,
+        "status": 200,
+        "response": {
+          "attempt": {
+            "attempt_id": "a2d67ab64f4f40108f099706a0d28ca1",
+            "branch_kind": "clean",
+            "contract_version": "prop-session-v1",
+            "cost_version": "replay-fixture-cost-v1",
+            "data_version": "sha256:b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+            "engine_version": "replay-v1",
+            "mode": "simulation",
+            "parent_attempt_id": null,
+            "profile_hash": "sha256:ps02-replay",
+            "profile_id": "ps02-replay",
+            "revision": 3,
+            "session_id": "5c9d4e7d42db4f028a4b0c272d971744",
+            "status": "running",
+            "terms_version": "2026-09-25",
+            "virtual_cutoff_utc": "2026-01-01T01:00:00Z",
+            "virtual_start_utc": "2026-01-01T00:00:00Z",
+            "workspace_id": "tenant-a"
+          },
+          "duplicate": false,
+          "objectives": {
+            "calendar": {
+              "deadline_utc": null,
+              "elapsed_calendar_days": 1,
+              "expired": false,
+              "min_qualifying_days_satisfied": true,
+              "oracle_version": "prop-calendar-oracle-v1",
+              "qualifying_days": 0,
+              "reset_boundaries": [],
+              "reset_timezone": "UTC",
+              "virtual_time_utc": "2026-01-01 00:02:00+00:00"
+            },
+            "money": {
+              "balance": "100000",
+              "daily_loss": {
+                "breached": false,
+                "current": "100000",
+                "floor": "95000",
+                "reference": "100000"
+              },
+              "equity": "100000",
+              "oracle_version": "prop-money-oracle-v1",
+              "overall_drawdown": {
+                "breached": false,
+                "current": "100000",
+                "floor": "90000",
+                "kind": "static",
+                "reference": "100000"
+              },
+              "profit_target": {
+                "current": "100000",
+                "hit": false,
+                "target": "110000"
+              },
+              "terminal_precedence": null
+            },
+            "pass_ready": false,
+            "phase_index": 1,
+            "positions_ready": true,
+            "schema": "prop-objectives-v1",
+            "technical_status": "ready",
+            "terminal_action": null
+          },
+          "phase": {
+            "attempt_id": "a2d67ab64f4f40108f099706a0d28ca1",
+            "balance": "100000",
+            "daily_anchor": "100000",
+            "equity": "100000",
+            "evaluation_quality": "full_for_declared_model",
+            "floating_pl": "0",
+            "high_water_mark": "100000",
+            "initial_balance": "100000",
+            "last_event_sequence": 1,
+            "open_positions": 0,
+            "pending_orders": 0,
+            "phase_index": 1,
+            "profile_hash": "sha256:ps02-replay",
+            "qualifying_days": 0,
+            "session_id": "5c9d4e7d42db4f028a4b0c272d971744",
+            "virtual_time_utc": "2026-01-01T00:02:00+00:00",
+            "workspace_id": "tenant-a"
+          },
+          "prop_event": {
+            "accounting": "costs_included",
+            "attempt_id": "a2d67ab64f4f40108f099706a0d28ca1",
+            "balance_before_separate_costs": "100000",
+            "conversion_adjustment": "0",
+            "evaluation_quality": "full_for_declared_model",
+            "event_sequence": 1,
+            "expected_revision": 2,
+            "fees": "0",
+            "floating_pl": "0",
+            "kind": "simulation_snapshot",
+            "open_positions": 0,
+            "operation_id": "replay-prop-c0dee86244dc9c241455c3807a8fc8c40e5cc3b5",
+            "pending_orders": 0,
+            "profile_hash": "sha256:ps02-replay",
+            "qualifying_day": false,
+            "session_id": "5c9d4e7d42db4f028a4b0c272d971744",
+            "swap": "0",
+            "virtual_time_utc": "2026-01-01T00:02:00Z",
+            "workspace_id": "tenant-a"
+          },
+          "replay_event": {
+            "balance": "100000",
+            "branch_id": "eede8d00e546467689a3d8e4316b5a98",
+            "cursor_index": 1,
+            "dataset_id": "native-ui-synthetic",
+            "dataset_sha256": "b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+            "details": {
+              "intrabar_equity_coverage": "complete",
+              "mid_close": "1.1001500000000002",
+              "open_position": null,
+              "pending_market_order": null
+            },
+            "equity": "100000.0000000000000000000000",
+            "evaluation_quality": "full_for_declared_model",
+            "floating_pl": "0",
+            "kind": "price_mark",
+            "open_positions": 0,
+            "pending_orders": 0,
+            "replay_session_id": "029e724b22db4d09a0f565c3fe0fc90c",
+            "sequence": 1,
+            "virtual_time_utc": 1767225720
+          },
+          "resume_state": {
+            "cursor": {
+              "bar_index": 1,
+              "timestamp_utc": "2026-01-01T00:02:00Z"
+            },
+            "open_positions": [],
+            "pending_orders": [],
+            "prop_lifecycle": {
+              "last_event_kind": "simulation_snapshot",
+              "last_objectives": {
+                "calendar": {
+                  "deadline_utc": null,
+                  "elapsed_calendar_days": 1,
+                  "expired": false,
+                  "min_qualifying_days_satisfied": true,
+                  "oracle_version": "prop-calendar-oracle-v1",
+                  "qualifying_days": 0,
+                  "reset_boundaries": [],
+                  "reset_timezone": "UTC",
+                  "virtual_time_utc": "2026-01-01 00:02:00+00:00"
+                },
+                "money": {
+                  "balance": "100000",
+                  "daily_loss": {
+                    "breached": false,
+                    "current": "100000",
+                    "floor": "95000",
+                    "reference": "100000"
+                  },
+                  "equity": "100000",
+                  "oracle_version": "prop-money-oracle-v1",
+                  "overall_drawdown": {
+                    "breached": false,
+                    "current": "100000",
+                    "floor": "90000",
+                    "kind": "static",
+                    "reference": "100000"
+                  },
+                  "profit_target": {
+                    "current": "100000",
+                    "hit": false,
+                    "target": "110000"
+                  },
+                  "terminal_precedence": null
+                },
+                "pass_ready": false,
+                "phase_index": 1,
+                "positions_ready": true,
+                "schema": "prop-objectives-v1",
+                "technical_status": "ready",
+                "terminal_action": null
+              },
+              "last_operation_id": "replay-prop-c0dee86244dc9c241455c3807a8fc8c40e5cc3b5",
+              "qualifying_local_dates": []
+            },
+            "replay_binding": {
+              "branch_id": "eede8d00e546467689a3d8e4316b5a98",
+              "dataset_id": "native-ui-synthetic",
+              "dataset_sha256": "b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+              "last_replay_event_sequence": 1,
+              "replay_session_id": "029e724b22db4d09a0f565c3fe0fc90c"
+            }
+          }
+        },
+        "responseAt": 13673.7229
+      },
+      {
+        "body": {
+          "replay_event_sequence": 2,
+          "expected_prop_revision": 3,
+          "prop_event_sequence": 2
+        },
+        "mode": "normal",
+        "interceptedAt": 14791.1697,
+        "status": 200,
+        "response": {
+          "attempt": {
+            "attempt_id": "a2d67ab64f4f40108f099706a0d28ca1",
+            "branch_kind": "clean",
+            "contract_version": "prop-session-v1",
+            "cost_version": "replay-fixture-cost-v1",
+            "data_version": "sha256:b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+            "engine_version": "replay-v1",
+            "mode": "simulation",
+            "parent_attempt_id": null,
+            "profile_hash": "sha256:ps02-replay",
+            "profile_id": "ps02-replay",
+            "revision": 4,
+            "session_id": "5c9d4e7d42db4f028a4b0c272d971744",
+            "status": "running",
+            "terms_version": "2026-09-25",
+            "virtual_cutoff_utc": "2026-01-01T01:00:00Z",
+            "virtual_start_utc": "2026-01-01T00:00:00Z",
+            "workspace_id": "tenant-a"
+          },
+          "duplicate": false,
+          "objectives": {
+            "calendar": {
+              "deadline_utc": null,
+              "elapsed_calendar_days": 1,
+              "expired": false,
+              "min_qualifying_days_satisfied": true,
+              "oracle_version": "prop-calendar-oracle-v1",
+              "qualifying_days": 0,
+              "reset_boundaries": [],
+              "reset_timezone": "UTC",
+              "virtual_time_utc": "2026-01-01 00:03:00+00:00"
+            },
+            "money": {
+              "balance": "100000",
+              "daily_loss": {
+                "breached": false,
+                "current": "100000",
+                "floor": "95000",
+                "reference": "100000"
+              },
+              "equity": "100000",
+              "oracle_version": "prop-money-oracle-v1",
+              "overall_drawdown": {
+                "breached": false,
+                "current": "100000",
+                "floor": "90000",
+                "kind": "static",
+                "reference": "100000"
+              },
+              "profit_target": {
+                "current": "100000",
+                "hit": false,
+                "target": "110000"
+              },
+              "terminal_precedence": null
+            },
+            "pass_ready": false,
+            "phase_index": 1,
+            "positions_ready": true,
+            "schema": "prop-objectives-v1",
+            "technical_status": "ready",
+            "terminal_action": null
+          },
+          "phase": {
+            "attempt_id": "a2d67ab64f4f40108f099706a0d28ca1",
+            "balance": "100000",
+            "daily_anchor": "100000",
+            "equity": "100000",
+            "evaluation_quality": "full_for_declared_model",
+            "floating_pl": "0",
+            "high_water_mark": "100000",
+            "initial_balance": "100000",
+            "last_event_sequence": 2,
+            "open_positions": 0,
+            "pending_orders": 0,
+            "phase_index": 1,
+            "profile_hash": "sha256:ps02-replay",
+            "qualifying_days": 0,
+            "session_id": "5c9d4e7d42db4f028a4b0c272d971744",
+            "virtual_time_utc": "2026-01-01T00:03:00+00:00",
+            "workspace_id": "tenant-a"
+          },
+          "prop_event": {
+            "accounting": "costs_included",
+            "attempt_id": "a2d67ab64f4f40108f099706a0d28ca1",
+            "balance_before_separate_costs": "100000",
+            "conversion_adjustment": "0",
+            "evaluation_quality": "full_for_declared_model",
+            "event_sequence": 2,
+            "expected_revision": 3,
+            "fees": "0",
+            "floating_pl": "0",
+            "kind": "simulation_snapshot",
+            "open_positions": 0,
+            "operation_id": "replay-prop-94358235193ea08b86caa367d62b15922bd526c1",
+            "pending_orders": 0,
+            "profile_hash": "sha256:ps02-replay",
+            "qualifying_day": false,
+            "session_id": "5c9d4e7d42db4f028a4b0c272d971744",
+            "swap": "0",
+            "virtual_time_utc": "2026-01-01T00:03:00Z",
+            "workspace_id": "tenant-a"
+          },
+          "replay_event": {
+            "balance": "100000",
+            "branch_id": "eede8d00e546467689a3d8e4316b5a98",
+            "cursor_index": 2,
+            "dataset_id": "native-ui-synthetic",
+            "dataset_sha256": "b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+            "details": {
+              "intrabar_equity_coverage": "complete",
+              "mid_close": "1.1002",
+              "open_position": null,
+              "pending_market_order": null
+            },
+            "equity": "100000.0000000000000000000000",
+            "evaluation_quality": "full_for_declared_model",
+            "floating_pl": "0",
+            "kind": "price_mark",
+            "open_positions": 0,
+            "pending_orders": 0,
+            "replay_session_id": "029e724b22db4d09a0f565c3fe0fc90c",
+            "sequence": 2,
+            "virtual_time_utc": 1767225780
+          },
+          "resume_state": {
+            "cursor": {
+              "bar_index": 2,
+              "timestamp_utc": "2026-01-01T00:03:00Z"
+            },
+            "open_positions": [],
+            "pending_orders": [],
+            "prop_lifecycle": {
+              "last_event_kind": "simulation_snapshot",
+              "last_objectives": {
+                "calendar": {
+                  "deadline_utc": null,
+                  "elapsed_calendar_days": 1,
+                  "expired": false,
+                  "min_qualifying_days_satisfied": true,
+                  "oracle_version": "prop-calendar-oracle-v1",
+                  "qualifying_days": 0,
+                  "reset_boundaries": [],
+                  "reset_timezone": "UTC",
+                  "virtual_time_utc": "2026-01-01 00:03:00+00:00"
+                },
+                "money": {
+                  "balance": "100000",
+                  "daily_loss": {
+                    "breached": false,
+                    "current": "100000",
+                    "floor": "95000",
+                    "reference": "100000"
+                  },
+                  "equity": "100000",
+                  "oracle_version": "prop-money-oracle-v1",
+                  "overall_drawdown": {
+                    "breached": false,
+                    "current": "100000",
+                    "floor": "90000",
+                    "kind": "static",
+                    "reference": "100000"
+                  },
+                  "profit_target": {
+                    "current": "100000",
+                    "hit": false,
+                    "target": "110000"
+                  },
+                  "terminal_precedence": null
+                },
+                "pass_ready": false,
+                "phase_index": 1,
+                "positions_ready": true,
+                "schema": "prop-objectives-v1",
+                "technical_status": "ready",
+                "terminal_action": null
+              },
+              "last_operation_id": "replay-prop-94358235193ea08b86caa367d62b15922bd526c1",
+              "qualifying_local_dates": []
+            },
+            "replay_binding": {
+              "branch_id": "eede8d00e546467689a3d8e4316b5a98",
+              "dataset_id": "native-ui-synthetic",
+              "dataset_sha256": "b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+              "last_replay_event_sequence": 2,
+              "replay_session_id": "029e724b22db4d09a0f565c3fe0fc90c"
+            }
+          }
+        },
+        "responseAt": 14808.9681
+      },
+      {
+        "body": {
+          "replay_event_sequence": 3,
+          "expected_prop_revision": 4,
+          "prop_event_sequence": 3
+        },
+        "mode": "normal",
+        "interceptedAt": 15791.0778,
+        "status": 200,
+        "response": {
+          "attempt": {
+            "attempt_id": "a2d67ab64f4f40108f099706a0d28ca1",
+            "branch_kind": "clean",
+            "contract_version": "prop-session-v1",
+            "cost_version": "replay-fixture-cost-v1",
+            "data_version": "sha256:b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+            "engine_version": "replay-v1",
+            "mode": "simulation",
+            "parent_attempt_id": null,
+            "profile_hash": "sha256:ps02-replay",
+            "profile_id": "ps02-replay",
+            "revision": 5,
+            "session_id": "5c9d4e7d42db4f028a4b0c272d971744",
+            "status": "running",
+            "terms_version": "2026-09-25",
+            "virtual_cutoff_utc": "2026-01-01T01:00:00Z",
+            "virtual_start_utc": "2026-01-01T00:00:00Z",
+            "workspace_id": "tenant-a"
+          },
+          "duplicate": false,
+          "objectives": {
+            "calendar": {
+              "deadline_utc": null,
+              "elapsed_calendar_days": 1,
+              "expired": false,
+              "min_qualifying_days_satisfied": true,
+              "oracle_version": "prop-calendar-oracle-v1",
+              "qualifying_days": 0,
+              "reset_boundaries": [],
+              "reset_timezone": "UTC",
+              "virtual_time_utc": "2026-01-01 00:04:00+00:00"
+            },
+            "money": {
+              "balance": "100000",
+              "daily_loss": {
+                "breached": false,
+                "current": "100000",
+                "floor": "95000",
+                "reference": "100000"
+              },
+              "equity": "100000",
+              "oracle_version": "prop-money-oracle-v1",
+              "overall_drawdown": {
+                "breached": false,
+                "current": "100000",
+                "floor": "90000",
+                "kind": "static",
+                "reference": "100000"
+              },
+              "profit_target": {
+                "current": "100000",
+                "hit": false,
+                "target": "110000"
+              },
+              "terminal_precedence": null
+            },
+            "pass_ready": false,
+            "phase_index": 1,
+            "positions_ready": true,
+            "schema": "prop-objectives-v1",
+            "technical_status": "ready",
+            "terminal_action": null
+          },
+          "phase": {
+            "attempt_id": "a2d67ab64f4f40108f099706a0d28ca1",
+            "balance": "100000",
+            "daily_anchor": "100000",
+            "equity": "100000",
+            "evaluation_quality": "full_for_declared_model",
+            "floating_pl": "0",
+            "high_water_mark": "100000",
+            "initial_balance": "100000",
+            "last_event_sequence": 3,
+            "open_positions": 0,
+            "pending_orders": 0,
+            "phase_index": 1,
+            "profile_hash": "sha256:ps02-replay",
+            "qualifying_days": 0,
+            "session_id": "5c9d4e7d42db4f028a4b0c272d971744",
+            "virtual_time_utc": "2026-01-01T00:04:00+00:00",
+            "workspace_id": "tenant-a"
+          },
+          "prop_event": {
+            "accounting": "costs_included",
+            "attempt_id": "a2d67ab64f4f40108f099706a0d28ca1",
+            "balance_before_separate_costs": "100000",
+            "conversion_adjustment": "0",
+            "evaluation_quality": "full_for_declared_model",
+            "event_sequence": 3,
+            "expected_revision": 4,
+            "fees": "0",
+            "floating_pl": "0",
+            "kind": "simulation_snapshot",
+            "open_positions": 0,
+            "operation_id": "replay-prop-fcd5d457e74778602a81f5c60b38205bcb25268f",
+            "pending_orders": 0,
+            "profile_hash": "sha256:ps02-replay",
+            "qualifying_day": false,
+            "session_id": "5c9d4e7d42db4f028a4b0c272d971744",
+            "swap": "0",
+            "virtual_time_utc": "2026-01-01T00:04:00Z",
+            "workspace_id": "tenant-a"
+          },
+          "replay_event": {
+            "balance": "100000",
+            "branch_id": "eede8d00e546467689a3d8e4316b5a98",
+            "cursor_index": 3,
+            "dataset_id": "native-ui-synthetic",
+            "dataset_sha256": "b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+            "details": {
+              "intrabar_equity_coverage": "complete",
+              "mid_close": "1.1002500000000002",
+              "open_position": null,
+              "pending_market_order": null
+            },
+            "equity": "100000.0000000000000000000000",
+            "evaluation_quality": "full_for_declared_model",
+            "floating_pl": "0",
+            "kind": "price_mark",
+            "open_positions": 0,
+            "pending_orders": 0,
+            "replay_session_id": "029e724b22db4d09a0f565c3fe0fc90c",
+            "sequence": 3,
+            "virtual_time_utc": 1767225840
+          },
+          "resume_state": {
+            "cursor": {
+              "bar_index": 3,
+              "timestamp_utc": "2026-01-01T00:04:00Z"
+            },
+            "open_positions": [],
+            "pending_orders": [],
+            "prop_lifecycle": {
+              "last_event_kind": "simulation_snapshot",
+              "last_objectives": {
+                "calendar": {
+                  "deadline_utc": null,
+                  "elapsed_calendar_days": 1,
+                  "expired": false,
+                  "min_qualifying_days_satisfied": true,
+                  "oracle_version": "prop-calendar-oracle-v1",
+                  "qualifying_days": 0,
+                  "reset_boundaries": [],
+                  "reset_timezone": "UTC",
+                  "virtual_time_utc": "2026-01-01 00:04:00+00:00"
+                },
+                "money": {
+                  "balance": "100000",
+                  "daily_loss": {
+                    "breached": false,
+                    "current": "100000",
+                    "floor": "95000",
+                    "reference": "100000"
+                  },
+                  "equity": "100000",
+                  "oracle_version": "prop-money-oracle-v1",
+                  "overall_drawdown": {
+                    "breached": false,
+                    "current": "100000",
+                    "floor": "90000",
+                    "kind": "static",
+                    "reference": "100000"
+                  },
+                  "profit_target": {
+                    "current": "100000",
+                    "hit": false,
+                    "target": "110000"
+                  },
+                  "terminal_precedence": null
+                },
+                "pass_ready": false,
+                "phase_index": 1,
+                "positions_ready": true,
+                "schema": "prop-objectives-v1",
+                "technical_status": "ready",
+                "terminal_action": null
+              },
+              "last_operation_id": "replay-prop-fcd5d457e74778602a81f5c60b38205bcb25268f",
+              "qualifying_local_dates": []
+            },
+            "replay_binding": {
+              "branch_id": "eede8d00e546467689a3d8e4316b5a98",
+              "dataset_id": "native-ui-synthetic",
+              "dataset_sha256": "b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+              "last_replay_event_sequence": 3,
+              "replay_session_id": "029e724b22db4d09a0f565c3fe0fc90c"
+            }
+          }
+        },
+        "responseAt": 15804.8412
+      },
+      {
+        "body": {
+          "replay_event_sequence": 4,
+          "expected_prop_revision": 5,
+          "prop_event_sequence": 4
+        },
+        "mode": "normal",
+        "interceptedAt": 16792.1862,
+        "status": 200,
+        "response": {
+          "attempt": {
+            "attempt_id": "a2d67ab64f4f40108f099706a0d28ca1",
+            "branch_kind": "clean",
+            "contract_version": "prop-session-v1",
+            "cost_version": "replay-fixture-cost-v1",
+            "data_version": "sha256:b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+            "engine_version": "replay-v1",
+            "mode": "simulation",
+            "parent_attempt_id": null,
+            "profile_hash": "sha256:ps02-replay",
+            "profile_id": "ps02-replay",
+            "revision": 6,
+            "session_id": "5c9d4e7d42db4f028a4b0c272d971744",
+            "status": "running",
+            "terms_version": "2026-09-25",
+            "virtual_cutoff_utc": "2026-01-01T01:00:00Z",
+            "virtual_start_utc": "2026-01-01T00:00:00Z",
+            "workspace_id": "tenant-a"
+          },
+          "duplicate": false,
+          "objectives": {
+            "calendar": {
+              "deadline_utc": null,
+              "elapsed_calendar_days": 1,
+              "expired": false,
+              "min_qualifying_days_satisfied": true,
+              "oracle_version": "prop-calendar-oracle-v1",
+              "qualifying_days": 0,
+              "reset_boundaries": [],
+              "reset_timezone": "UTC",
+              "virtual_time_utc": "2026-01-01 00:05:00+00:00"
+            },
+            "money": {
+              "balance": "100000",
+              "daily_loss": {
+                "breached": false,
+                "current": "100000",
+                "floor": "95000",
+                "reference": "100000"
+              },
+              "equity": "100000",
+              "oracle_version": "prop-money-oracle-v1",
+              "overall_drawdown": {
+                "breached": false,
+                "current": "100000",
+                "floor": "90000",
+                "kind": "static",
+                "reference": "100000"
+              },
+              "profit_target": {
+                "current": "100000",
+                "hit": false,
+                "target": "110000"
+              },
+              "terminal_precedence": null
+            },
+            "pass_ready": false,
+            "phase_index": 1,
+            "positions_ready": true,
+            "schema": "prop-objectives-v1",
+            "technical_status": "ready",
+            "terminal_action": null
+          },
+          "phase": {
+            "attempt_id": "a2d67ab64f4f40108f099706a0d28ca1",
+            "balance": "100000",
+            "daily_anchor": "100000",
+            "equity": "100000",
+            "evaluation_quality": "full_for_declared_model",
+            "floating_pl": "0",
+            "high_water_mark": "100000",
+            "initial_balance": "100000",
+            "last_event_sequence": 4,
+            "open_positions": 0,
+            "pending_orders": 0,
+            "phase_index": 1,
+            "profile_hash": "sha256:ps02-replay",
+            "qualifying_days": 0,
+            "session_id": "5c9d4e7d42db4f028a4b0c272d971744",
+            "virtual_time_utc": "2026-01-01T00:05:00+00:00",
+            "workspace_id": "tenant-a"
+          },
+          "prop_event": {
+            "accounting": "costs_included",
+            "attempt_id": "a2d67ab64f4f40108f099706a0d28ca1",
+            "balance_before_separate_costs": "100000",
+            "conversion_adjustment": "0",
+            "evaluation_quality": "full_for_declared_model",
+            "event_sequence": 4,
+            "expected_revision": 5,
+            "fees": "0",
+            "floating_pl": "0",
+            "kind": "simulation_snapshot",
+            "open_positions": 0,
+            "operation_id": "replay-prop-06b2b950d6b92119d3e6a734746630887ac3ca37",
+            "pending_orders": 0,
+            "profile_hash": "sha256:ps02-replay",
+            "qualifying_day": false,
+            "session_id": "5c9d4e7d42db4f028a4b0c272d971744",
+            "swap": "0",
+            "virtual_time_utc": "2026-01-01T00:05:00Z",
+            "workspace_id": "tenant-a"
+          },
+          "replay_event": {
+            "balance": "100000",
+            "branch_id": "eede8d00e546467689a3d8e4316b5a98",
+            "cursor_index": 4,
+            "dataset_id": "native-ui-synthetic",
+            "dataset_sha256": "b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+            "details": {
+              "intrabar_equity_coverage": "complete",
+              "mid_close": "1.1003",
+              "open_position": null,
+              "pending_market_order": null
+            },
+            "equity": "100000.0000000000000000000000",
+            "evaluation_quality": "full_for_declared_model",
+            "floating_pl": "0",
+            "kind": "price_mark",
+            "open_positions": 0,
+            "pending_orders": 0,
+            "replay_session_id": "029e724b22db4d09a0f565c3fe0fc90c",
+            "sequence": 4,
+            "virtual_time_utc": 1767225900
+          },
+          "resume_state": {
+            "cursor": {
+              "bar_index": 4,
+              "timestamp_utc": "2026-01-01T00:05:00Z"
+            },
+            "open_positions": [],
+            "pending_orders": [],
+            "prop_lifecycle": {
+              "last_event_kind": "simulation_snapshot",
+              "last_objectives": {
+                "calendar": {
+                  "deadline_utc": null,
+                  "elapsed_calendar_days": 1,
+                  "expired": false,
+                  "min_qualifying_days_satisfied": true,
+                  "oracle_version": "prop-calendar-oracle-v1",
+                  "qualifying_days": 0,
+                  "reset_boundaries": [],
+                  "reset_timezone": "UTC",
+                  "virtual_time_utc": "2026-01-01 00:05:00+00:00"
+                },
+                "money": {
+                  "balance": "100000",
+                  "daily_loss": {
+                    "breached": false,
+                    "current": "100000",
+                    "floor": "95000",
+                    "reference": "100000"
+                  },
+                  "equity": "100000",
+                  "oracle_version": "prop-money-oracle-v1",
+                  "overall_drawdown": {
+                    "breached": false,
+                    "current": "100000",
+                    "floor": "90000",
+                    "kind": "static",
+                    "reference": "100000"
+                  },
+                  "profit_target": {
+                    "current": "100000",
+                    "hit": false,
+                    "target": "110000"
+                  },
+                  "terminal_precedence": null
+                },
+                "pass_ready": false,
+                "phase_index": 1,
+                "positions_ready": true,
+                "schema": "prop-objectives-v1",
+                "technical_status": "ready",
+                "terminal_action": null
+              },
+              "last_operation_id": "replay-prop-06b2b950d6b92119d3e6a734746630887ac3ca37",
+              "qualifying_local_dates": []
+            },
+            "replay_binding": {
+              "branch_id": "eede8d00e546467689a3d8e4316b5a98",
+              "dataset_id": "native-ui-synthetic",
+              "dataset_sha256": "b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+              "last_replay_event_sequence": 4,
+              "replay_session_id": "029e724b22db4d09a0f565c3fe0fc90c"
+            }
+          }
+        },
+        "responseAt": 16809.2039
+      },
+      {
+        "body": {
+          "replay_event_sequence": 5,
+          "expected_prop_revision": 6,
+          "prop_event_sequence": 5
+        },
+        "mode": "failure503",
+        "interceptedAt": 17063.3746,
+        "status": 503,
+        "artificialBeforeUpstream": true
+      },
+      {
+        "body": {
+          "replay_event_sequence": 5,
+          "expected_prop_revision": 6,
+          "prop_event_sequence": 5
+        },
+        "mode": "normal",
+        "interceptedAt": 18354.0911,
+        "status": 200,
+        "response": {
+          "attempt": {
+            "attempt_id": "a2d67ab64f4f40108f099706a0d28ca1",
+            "branch_kind": "clean",
+            "contract_version": "prop-session-v1",
+            "cost_version": "replay-fixture-cost-v1",
+            "data_version": "sha256:b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+            "engine_version": "replay-v1",
+            "mode": "simulation",
+            "parent_attempt_id": null,
+            "profile_hash": "sha256:ps02-replay",
+            "profile_id": "ps02-replay",
+            "revision": 7,
+            "session_id": "5c9d4e7d42db4f028a4b0c272d971744",
+            "status": "running",
+            "terms_version": "2026-09-25",
+            "virtual_cutoff_utc": "2026-01-01T01:00:00Z",
+            "virtual_start_utc": "2026-01-01T00:00:00Z",
+            "workspace_id": "tenant-a"
+          },
+          "duplicate": false,
+          "objectives": {
+            "calendar": {
+              "deadline_utc": null,
+              "elapsed_calendar_days": 1,
+              "expired": false,
+              "min_qualifying_days_satisfied": true,
+              "oracle_version": "prop-calendar-oracle-v1",
+              "qualifying_days": 0,
+              "reset_boundaries": [],
+              "reset_timezone": "UTC",
+              "virtual_time_utc": "2026-01-01 00:06:00+00:00"
+            },
+            "money": {
+              "balance": "100000",
+              "daily_loss": {
+                "breached": false,
+                "current": "100000",
+                "floor": "95000",
+                "reference": "100000"
+              },
+              "equity": "100000",
+              "oracle_version": "prop-money-oracle-v1",
+              "overall_drawdown": {
+                "breached": false,
+                "current": "100000",
+                "floor": "90000",
+                "kind": "static",
+                "reference": "100000"
+              },
+              "profit_target": {
+                "current": "100000",
+                "hit": false,
+                "target": "110000"
+              },
+              "terminal_precedence": null
+            },
+            "pass_ready": false,
+            "phase_index": 1,
+            "positions_ready": true,
+            "schema": "prop-objectives-v1",
+            "technical_status": "ready",
+            "terminal_action": null
+          },
+          "phase": {
+            "attempt_id": "a2d67ab64f4f40108f099706a0d28ca1",
+            "balance": "100000",
+            "daily_anchor": "100000",
+            "equity": "100000",
+            "evaluation_quality": "full_for_declared_model",
+            "floating_pl": "0",
+            "high_water_mark": "100000",
+            "initial_balance": "100000",
+            "last_event_sequence": 5,
+            "open_positions": 0,
+            "pending_orders": 0,
+            "phase_index": 1,
+            "profile_hash": "sha256:ps02-replay",
+            "qualifying_days": 0,
+            "session_id": "5c9d4e7d42db4f028a4b0c272d971744",
+            "virtual_time_utc": "2026-01-01T00:06:00+00:00",
+            "workspace_id": "tenant-a"
+          },
+          "prop_event": {
+            "accounting": "costs_included",
+            "attempt_id": "a2d67ab64f4f40108f099706a0d28ca1",
+            "balance_before_separate_costs": "100000",
+            "conversion_adjustment": "0",
+            "evaluation_quality": "full_for_declared_model",
+            "event_sequence": 5,
+            "expected_revision": 6,
+            "fees": "0",
+            "floating_pl": "0",
+            "kind": "simulation_snapshot",
+            "open_positions": 0,
+            "operation_id": "replay-prop-2b6de38990a7711512404d7e36627b33c9f4bb13",
+            "pending_orders": 0,
+            "profile_hash": "sha256:ps02-replay",
+            "qualifying_day": false,
+            "session_id": "5c9d4e7d42db4f028a4b0c272d971744",
+            "swap": "0",
+            "virtual_time_utc": "2026-01-01T00:06:00Z",
+            "workspace_id": "tenant-a"
+          },
+          "replay_event": {
+            "balance": "100000",
+            "branch_id": "eede8d00e546467689a3d8e4316b5a98",
+            "cursor_index": 5,
+            "dataset_id": "native-ui-synthetic",
+            "dataset_sha256": "b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+            "details": {
+              "intrabar_equity_coverage": "complete",
+              "mid_close": "1.1003500000000002",
+              "open_position": null,
+              "pending_market_order": null
+            },
+            "equity": "100000.0000000000000000000000",
+            "evaluation_quality": "full_for_declared_model",
+            "floating_pl": "0",
+            "kind": "price_mark",
+            "open_positions": 0,
+            "pending_orders": 0,
+            "replay_session_id": "029e724b22db4d09a0f565c3fe0fc90c",
+            "sequence": 5,
+            "virtual_time_utc": 1767225960
+          },
+          "resume_state": {
+            "cursor": {
+              "bar_index": 5,
+              "timestamp_utc": "2026-01-01T00:06:00Z"
+            },
+            "open_positions": [],
+            "pending_orders": [],
+            "prop_lifecycle": {
+              "last_event_kind": "simulation_snapshot",
+              "last_objectives": {
+                "calendar": {
+                  "deadline_utc": null,
+                  "elapsed_calendar_days": 1,
+                  "expired": false,
+                  "min_qualifying_days_satisfied": true,
+                  "oracle_version": "prop-calendar-oracle-v1",
+                  "qualifying_days": 0,
+                  "reset_boundaries": [],
+                  "reset_timezone": "UTC",
+                  "virtual_time_utc": "2026-01-01 00:06:00+00:00"
+                },
+                "money": {
+                  "balance": "100000",
+                  "daily_loss": {
+                    "breached": false,
+                    "current": "100000",
+                    "floor": "95000",
+                    "reference": "100000"
+                  },
+                  "equity": "100000",
+                  "oracle_version": "prop-money-oracle-v1",
+                  "overall_drawdown": {
+                    "breached": false,
+                    "current": "100000",
+                    "floor": "90000",
+                    "kind": "static",
+                    "reference": "100000"
+                  },
+                  "profit_target": {
+                    "current": "100000",
+                    "hit": false,
+                    "target": "110000"
+                  },
+                  "terminal_precedence": null
+                },
+                "pass_ready": false,
+                "phase_index": 1,
+                "positions_ready": true,
+                "schema": "prop-objectives-v1",
+                "technical_status": "ready",
+                "terminal_action": null
+              },
+              "last_operation_id": "replay-prop-2b6de38990a7711512404d7e36627b33c9f4bb13",
+              "qualifying_local_dates": []
+            },
+            "replay_binding": {
+              "branch_id": "eede8d00e546467689a3d8e4316b5a98",
+              "dataset_id": "native-ui-synthetic",
+              "dataset_sha256": "b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+              "last_replay_event_sequence": 5,
+              "replay_session_id": "029e724b22db4d09a0f565c3fe0fc90c"
+            }
+          }
+        },
+        "responseAt": 18401.2332
+      },
+      {
+        "body": {
+          "replay_event_sequence": 6,
+          "expected_prop_revision": 7,
+          "prop_event_sequence": 6
+        },
+        "mode": "normal",
+        "interceptedAt": 18414.1263,
+        "status": 200,
+        "response": {
+          "attempt": {
+            "attempt_id": "a2d67ab64f4f40108f099706a0d28ca1",
+            "branch_kind": "clean",
+            "contract_version": "prop-session-v1",
+            "cost_version": "replay-fixture-cost-v1",
+            "data_version": "sha256:b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+            "engine_version": "replay-v1",
+            "mode": "simulation",
+            "parent_attempt_id": null,
+            "profile_hash": "sha256:ps02-replay",
+            "profile_id": "ps02-replay",
+            "revision": 8,
+            "session_id": "5c9d4e7d42db4f028a4b0c272d971744",
+            "status": "running",
+            "terms_version": "2026-09-25",
+            "virtual_cutoff_utc": "2026-01-01T01:00:00Z",
+            "virtual_start_utc": "2026-01-01T00:00:00Z",
+            "workspace_id": "tenant-a"
+          },
+          "duplicate": false,
+          "objectives": {
+            "calendar": {
+              "deadline_utc": null,
+              "elapsed_calendar_days": 1,
+              "expired": false,
+              "min_qualifying_days_satisfied": true,
+              "oracle_version": "prop-calendar-oracle-v1",
+              "qualifying_days": 0,
+              "reset_boundaries": [],
+              "reset_timezone": "UTC",
+              "virtual_time_utc": "2026-01-01 00:07:00+00:00"
+            },
+            "money": {
+              "balance": "100000",
+              "daily_loss": {
+                "breached": false,
+                "current": "100000",
+                "floor": "95000",
+                "reference": "100000"
+              },
+              "equity": "100000",
+              "oracle_version": "prop-money-oracle-v1",
+              "overall_drawdown": {
+                "breached": false,
+                "current": "100000",
+                "floor": "90000",
+                "kind": "static",
+                "reference": "100000"
+              },
+              "profit_target": {
+                "current": "100000",
+                "hit": false,
+                "target": "110000"
+              },
+              "terminal_precedence": null
+            },
+            "pass_ready": false,
+            "phase_index": 1,
+            "positions_ready": true,
+            "schema": "prop-objectives-v1",
+            "technical_status": "ready",
+            "terminal_action": null
+          },
+          "phase": {
+            "attempt_id": "a2d67ab64f4f40108f099706a0d28ca1",
+            "balance": "100000",
+            "daily_anchor": "100000",
+            "equity": "100000",
+            "evaluation_quality": "full_for_declared_model",
+            "floating_pl": "0",
+            "high_water_mark": "100000",
+            "initial_balance": "100000",
+            "last_event_sequence": 6,
+            "open_positions": 0,
+            "pending_orders": 0,
+            "phase_index": 1,
+            "profile_hash": "sha256:ps02-replay",
+            "qualifying_days": 0,
+            "session_id": "5c9d4e7d42db4f028a4b0c272d971744",
+            "virtual_time_utc": "2026-01-01T00:07:00+00:00",
+            "workspace_id": "tenant-a"
+          },
+          "prop_event": {
+            "accounting": "costs_included",
+            "attempt_id": "a2d67ab64f4f40108f099706a0d28ca1",
+            "balance_before_separate_costs": "100000",
+            "conversion_adjustment": "0",
+            "evaluation_quality": "full_for_declared_model",
+            "event_sequence": 6,
+            "expected_revision": 7,
+            "fees": "0",
+            "floating_pl": "0",
+            "kind": "simulation_snapshot",
+            "open_positions": 0,
+            "operation_id": "replay-prop-006c6dbb9470b01566637ed626ba38c8c706617e",
+            "pending_orders": 0,
+            "profile_hash": "sha256:ps02-replay",
+            "qualifying_day": false,
+            "session_id": "5c9d4e7d42db4f028a4b0c272d971744",
+            "swap": "0",
+            "virtual_time_utc": "2026-01-01T00:07:00Z",
+            "workspace_id": "tenant-a"
+          },
+          "replay_event": {
+            "balance": "100000",
+            "branch_id": "eede8d00e546467689a3d8e4316b5a98",
+            "cursor_index": 6,
+            "dataset_id": "native-ui-synthetic",
+            "dataset_sha256": "b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+            "details": {
+              "intrabar_equity_coverage": "complete",
+              "mid_close": "1.1004",
+              "open_position": null,
+              "pending_market_order": null
+            },
+            "equity": "100000.0000000000000000000000",
+            "evaluation_quality": "full_for_declared_model",
+            "floating_pl": "0",
+            "kind": "price_mark",
+            "open_positions": 0,
+            "pending_orders": 0,
+            "replay_session_id": "029e724b22db4d09a0f565c3fe0fc90c",
+            "sequence": 6,
+            "virtual_time_utc": 1767226020
+          },
+          "resume_state": {
+            "cursor": {
+              "bar_index": 6,
+              "timestamp_utc": "2026-01-01T00:07:00Z"
+            },
+            "open_positions": [],
+            "pending_orders": [],
+            "prop_lifecycle": {
+              "last_event_kind": "simulation_snapshot",
+              "last_objectives": {
+                "calendar": {
+                  "deadline_utc": null,
+                  "elapsed_calendar_days": 1,
+                  "expired": false,
+                  "min_qualifying_days_satisfied": true,
+                  "oracle_version": "prop-calendar-oracle-v1",
+                  "qualifying_days": 0,
+                  "reset_boundaries": [],
+                  "reset_timezone": "UTC",
+                  "virtual_time_utc": "2026-01-01 00:07:00+00:00"
+                },
+                "money": {
+                  "balance": "100000",
+                  "daily_loss": {
+                    "breached": false,
+                    "current": "100000",
+                    "floor": "95000",
+                    "reference": "100000"
+                  },
+                  "equity": "100000",
+                  "oracle_version": "prop-money-oracle-v1",
+                  "overall_drawdown": {
+                    "breached": false,
+                    "current": "100000",
+                    "floor": "90000",
+                    "kind": "static",
+                    "reference": "100000"
+                  },
+                  "profit_target": {
+                    "current": "100000",
+                    "hit": false,
+                    "target": "110000"
+                  },
+                  "terminal_precedence": null
+                },
+                "pass_ready": false,
+                "phase_index": 1,
+                "positions_ready": true,
+                "schema": "prop-objectives-v1",
+                "technical_status": "ready",
+                "terminal_action": null
+              },
+              "last_operation_id": "replay-prop-006c6dbb9470b01566637ed626ba38c8c706617e",
+              "qualifying_local_dates": []
+            },
+            "replay_binding": {
+              "branch_id": "eede8d00e546467689a3d8e4316b5a98",
+              "dataset_id": "native-ui-synthetic",
+              "dataset_sha256": "b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+              "last_replay_event_sequence": 6,
+              "replay_session_id": "029e724b22db4d09a0f565c3fe0fc90c"
+            }
+          }
+        },
+        "responseAt": 18436.2933
+      },
+      {
+        "body": {
+          "replay_event_sequence": 7,
+          "expected_prop_revision": 8,
+          "prop_event_sequence": 7
+        },
+        "mode": "stale409",
+        "interceptedAt": 18649.7577,
+        "status": 409,
+        "response": {
+          "detail": "attempt revision conflict"
+        },
+        "responseAt": 18663.3922
+      },
+      {
+        "body": {
+          "replay_event_sequence": 7,
+          "expected_prop_revision": 8,
+          "prop_event_sequence": 7
+        },
+        "mode": "normal",
+        "interceptedAt": 19948.0223,
+        "status": 200,
+        "response": {
+          "attempt": {
+            "attempt_id": "a2d67ab64f4f40108f099706a0d28ca1",
+            "branch_kind": "clean",
+            "contract_version": "prop-session-v1",
+            "cost_version": "replay-fixture-cost-v1",
+            "data_version": "sha256:b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+            "engine_version": "replay-v1",
+            "mode": "simulation",
+            "parent_attempt_id": null,
+            "profile_hash": "sha256:ps02-replay",
+            "profile_id": "ps02-replay",
+            "revision": 9,
+            "session_id": "5c9d4e7d42db4f028a4b0c272d971744",
+            "status": "running",
+            "terms_version": "2026-09-25",
+            "virtual_cutoff_utc": "2026-01-01T01:00:00Z",
+            "virtual_start_utc": "2026-01-01T00:00:00Z",
+            "workspace_id": "tenant-a"
+          },
+          "duplicate": false,
+          "objectives": {
+            "calendar": {
+              "deadline_utc": null,
+              "elapsed_calendar_days": 1,
+              "expired": false,
+              "min_qualifying_days_satisfied": true,
+              "oracle_version": "prop-calendar-oracle-v1",
+              "qualifying_days": 0,
+              "reset_boundaries": [],
+              "reset_timezone": "UTC",
+              "virtual_time_utc": "2026-01-01 00:08:00+00:00"
+            },
+            "money": {
+              "balance": "100000",
+              "daily_loss": {
+                "breached": false,
+                "current": "100000",
+                "floor": "95000",
+                "reference": "100000"
+              },
+              "equity": "100000",
+              "oracle_version": "prop-money-oracle-v1",
+              "overall_drawdown": {
+                "breached": false,
+                "current": "100000",
+                "floor": "90000",
+                "kind": "static",
+                "reference": "100000"
+              },
+              "profit_target": {
+                "current": "100000",
+                "hit": false,
+                "target": "110000"
+              },
+              "terminal_precedence": null
+            },
+            "pass_ready": false,
+            "phase_index": 1,
+            "positions_ready": true,
+            "schema": "prop-objectives-v1",
+            "technical_status": "ready",
+            "terminal_action": null
+          },
+          "phase": {
+            "attempt_id": "a2d67ab64f4f40108f099706a0d28ca1",
+            "balance": "100000",
+            "daily_anchor": "100000",
+            "equity": "100000",
+            "evaluation_quality": "full_for_declared_model",
+            "floating_pl": "0",
+            "high_water_mark": "100000",
+            "initial_balance": "100000",
+            "last_event_sequence": 7,
+            "open_positions": 0,
+            "pending_orders": 0,
+            "phase_index": 1,
+            "profile_hash": "sha256:ps02-replay",
+            "qualifying_days": 0,
+            "session_id": "5c9d4e7d42db4f028a4b0c272d971744",
+            "virtual_time_utc": "2026-01-01T00:08:00+00:00",
+            "workspace_id": "tenant-a"
+          },
+          "prop_event": {
+            "accounting": "costs_included",
+            "attempt_id": "a2d67ab64f4f40108f099706a0d28ca1",
+            "balance_before_separate_costs": "100000",
+            "conversion_adjustment": "0",
+            "evaluation_quality": "full_for_declared_model",
+            "event_sequence": 7,
+            "expected_revision": 8,
+            "fees": "0",
+            "floating_pl": "0",
+            "kind": "simulation_snapshot",
+            "open_positions": 0,
+            "operation_id": "replay-prop-04e99a9ba384475316dad04384e90a35b412b3fb",
+            "pending_orders": 0,
+            "profile_hash": "sha256:ps02-replay",
+            "qualifying_day": false,
+            "session_id": "5c9d4e7d42db4f028a4b0c272d971744",
+            "swap": "0",
+            "virtual_time_utc": "2026-01-01T00:08:00Z",
+            "workspace_id": "tenant-a"
+          },
+          "replay_event": {
+            "balance": "100000",
+            "branch_id": "eede8d00e546467689a3d8e4316b5a98",
+            "cursor_index": 7,
+            "dataset_id": "native-ui-synthetic",
+            "dataset_sha256": "b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+            "details": {
+              "intrabar_equity_coverage": "complete",
+              "mid_close": "1.1004500000000002",
+              "open_position": null,
+              "pending_market_order": null
+            },
+            "equity": "100000.0000000000000000000000",
+            "evaluation_quality": "full_for_declared_model",
+            "floating_pl": "0",
+            "kind": "price_mark",
+            "open_positions": 0,
+            "pending_orders": 0,
+            "replay_session_id": "029e724b22db4d09a0f565c3fe0fc90c",
+            "sequence": 7,
+            "virtual_time_utc": 1767226080
+          },
+          "resume_state": {
+            "cursor": {
+              "bar_index": 7,
+              "timestamp_utc": "2026-01-01T00:08:00Z"
+            },
+            "open_positions": [],
+            "pending_orders": [],
+            "prop_lifecycle": {
+              "last_event_kind": "simulation_snapshot",
+              "last_objectives": {
+                "calendar": {
+                  "deadline_utc": null,
+                  "elapsed_calendar_days": 1,
+                  "expired": false,
+                  "min_qualifying_days_satisfied": true,
+                  "oracle_version": "prop-calendar-oracle-v1",
+                  "qualifying_days": 0,
+                  "reset_boundaries": [],
+                  "reset_timezone": "UTC",
+                  "virtual_time_utc": "2026-01-01 00:08:00+00:00"
+                },
+                "money": {
+                  "balance": "100000",
+                  "daily_loss": {
+                    "breached": false,
+                    "current": "100000",
+                    "floor": "95000",
+                    "reference": "100000"
+                  },
+                  "equity": "100000",
+                  "oracle_version": "prop-money-oracle-v1",
+                  "overall_drawdown": {
+                    "breached": false,
+                    "current": "100000",
+                    "floor": "90000",
+                    "kind": "static",
+                    "reference": "100000"
+                  },
+                  "profit_target": {
+                    "current": "100000",
+                    "hit": false,
+                    "target": "110000"
+                  },
+                  "terminal_precedence": null
+                },
+                "pass_ready": false,
+                "phase_index": 1,
+                "positions_ready": true,
+                "schema": "prop-objectives-v1",
+                "technical_status": "ready",
+                "terminal_action": null
+              },
+              "last_operation_id": "replay-prop-04e99a9ba384475316dad04384e90a35b412b3fb",
+              "qualifying_local_dates": []
+            },
+            "replay_binding": {
+              "branch_id": "eede8d00e546467689a3d8e4316b5a98",
+              "dataset_id": "native-ui-synthetic",
+              "dataset_sha256": "b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+              "last_replay_event_sequence": 7,
+              "replay_session_id": "029e724b22db4d09a0f565c3fe0fc90c"
+            }
+          }
+        },
+        "responseAt": 19963.7316
+      },
+      {
+        "body": {
+          "replay_event_sequence": 8,
+          "expected_prop_revision": 9,
+          "prop_event_sequence": 8
+        },
+        "mode": "normal",
+        "interceptedAt": 19967.7309,
+        "status": 200,
+        "response": {
+          "attempt": {
+            "attempt_id": "a2d67ab64f4f40108f099706a0d28ca1",
+            "branch_kind": "clean",
+            "contract_version": "prop-session-v1",
+            "cost_version": "replay-fixture-cost-v1",
+            "data_version": "sha256:b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+            "engine_version": "replay-v1",
+            "mode": "simulation",
+            "parent_attempt_id": null,
+            "profile_hash": "sha256:ps02-replay",
+            "profile_id": "ps02-replay",
+            "revision": 10,
+            "session_id": "5c9d4e7d42db4f028a4b0c272d971744",
+            "status": "running",
+            "terms_version": "2026-09-25",
+            "virtual_cutoff_utc": "2026-01-01T01:00:00Z",
+            "virtual_start_utc": "2026-01-01T00:00:00Z",
+            "workspace_id": "tenant-a"
+          },
+          "duplicate": false,
+          "objectives": {
+            "calendar": {
+              "deadline_utc": null,
+              "elapsed_calendar_days": 1,
+              "expired": false,
+              "min_qualifying_days_satisfied": true,
+              "oracle_version": "prop-calendar-oracle-v1",
+              "qualifying_days": 0,
+              "reset_boundaries": [],
+              "reset_timezone": "UTC",
+              "virtual_time_utc": "2026-01-01 00:09:00+00:00"
+            },
+            "money": {
+              "balance": "100000",
+              "daily_loss": {
+                "breached": false,
+                "current": "100000",
+                "floor": "95000",
+                "reference": "100000"
+              },
+              "equity": "100000",
+              "oracle_version": "prop-money-oracle-v1",
+              "overall_drawdown": {
+                "breached": false,
+                "current": "100000",
+                "floor": "90000",
+                "kind": "static",
+                "reference": "100000"
+              },
+              "profit_target": {
+                "current": "100000",
+                "hit": false,
+                "target": "110000"
+              },
+              "terminal_precedence": null
+            },
+            "pass_ready": false,
+            "phase_index": 1,
+            "positions_ready": true,
+            "schema": "prop-objectives-v1",
+            "technical_status": "ready",
+            "terminal_action": null
+          },
+          "phase": {
+            "attempt_id": "a2d67ab64f4f40108f099706a0d28ca1",
+            "balance": "100000",
+            "daily_anchor": "100000",
+            "equity": "100000",
+            "evaluation_quality": "full_for_declared_model",
+            "floating_pl": "0",
+            "high_water_mark": "100000",
+            "initial_balance": "100000",
+            "last_event_sequence": 8,
+            "open_positions": 0,
+            "pending_orders": 0,
+            "phase_index": 1,
+            "profile_hash": "sha256:ps02-replay",
+            "qualifying_days": 0,
+            "session_id": "5c9d4e7d42db4f028a4b0c272d971744",
+            "virtual_time_utc": "2026-01-01T00:09:00+00:00",
+            "workspace_id": "tenant-a"
+          },
+          "prop_event": {
+            "accounting": "costs_included",
+            "attempt_id": "a2d67ab64f4f40108f099706a0d28ca1",
+            "balance_before_separate_costs": "100000",
+            "conversion_adjustment": "0",
+            "evaluation_quality": "full_for_declared_model",
+            "event_sequence": 8,
+            "expected_revision": 9,
+            "fees": "0",
+            "floating_pl": "0",
+            "kind": "simulation_snapshot",
+            "open_positions": 0,
+            "operation_id": "replay-prop-0d15d0f94699ca585aa413141bcd1c6bbfb0bf8f",
+            "pending_orders": 0,
+            "profile_hash": "sha256:ps02-replay",
+            "qualifying_day": false,
+            "session_id": "5c9d4e7d42db4f028a4b0c272d971744",
+            "swap": "0",
+            "virtual_time_utc": "2026-01-01T00:09:00Z",
+            "workspace_id": "tenant-a"
+          },
+          "replay_event": {
+            "balance": "100000",
+            "branch_id": "eede8d00e546467689a3d8e4316b5a98",
+            "cursor_index": 8,
+            "dataset_id": "native-ui-synthetic",
+            "dataset_sha256": "b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+            "details": {
+              "intrabar_equity_coverage": "complete",
+              "mid_close": "1.1005",
+              "open_position": null,
+              "pending_market_order": null
+            },
+            "equity": "100000.0000000000000000000000",
+            "evaluation_quality": "full_for_declared_model",
+            "floating_pl": "0",
+            "kind": "price_mark",
+            "open_positions": 0,
+            "pending_orders": 0,
+            "replay_session_id": "029e724b22db4d09a0f565c3fe0fc90c",
+            "sequence": 8,
+            "virtual_time_utc": 1767226140
+          },
+          "resume_state": {
+            "cursor": {
+              "bar_index": 8,
+              "timestamp_utc": "2026-01-01T00:09:00Z"
+            },
+            "open_positions": [],
+            "pending_orders": [],
+            "prop_lifecycle": {
+              "last_event_kind": "simulation_snapshot",
+              "last_objectives": {
+                "calendar": {
+                  "deadline_utc": null,
+                  "elapsed_calendar_days": 1,
+                  "expired": false,
+                  "min_qualifying_days_satisfied": true,
+                  "oracle_version": "prop-calendar-oracle-v1",
+                  "qualifying_days": 0,
+                  "reset_boundaries": [],
+                  "reset_timezone": "UTC",
+                  "virtual_time_utc": "2026-01-01 00:09:00+00:00"
+                },
+                "money": {
+                  "balance": "100000",
+                  "daily_loss": {
+                    "breached": false,
+                    "current": "100000",
+                    "floor": "95000",
+                    "reference": "100000"
+                  },
+                  "equity": "100000",
+                  "oracle_version": "prop-money-oracle-v1",
+                  "overall_drawdown": {
+                    "breached": false,
+                    "current": "100000",
+                    "floor": "90000",
+                    "kind": "static",
+                    "reference": "100000"
+                  },
+                  "profit_target": {
+                    "current": "100000",
+                    "hit": false,
+                    "target": "110000"
+                  },
+                  "terminal_precedence": null
+                },
+                "pass_ready": false,
+                "phase_index": 1,
+                "positions_ready": true,
+                "schema": "prop-objectives-v1",
+                "technical_status": "ready",
+                "terminal_action": null
+              },
+              "last_operation_id": "replay-prop-0d15d0f94699ca585aa413141bcd1c6bbfb0bf8f",
+              "qualifying_local_dates": []
+            },
+            "replay_binding": {
+              "branch_id": "eede8d00e546467689a3d8e4316b5a98",
+              "dataset_id": "native-ui-synthetic",
+              "dataset_sha256": "b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+              "last_replay_event_sequence": 8,
+              "replay_session_id": "029e724b22db4d09a0f565c3fe0fc90c"
+            }
+          }
+        },
+        "responseAt": 19982.2342
+      }
+    ],
+    "steps": [
+      {
+        "label": "gated-feed",
+        "baseRevision": 2,
+        "revision": 3,
+        "cursor": 1,
+        "sequence": 1,
+        "deliveredBars": [
+          {
+            "bar": {
+              "time": 1767225660000,
+              "open": 1.1000500000000002,
+              "high": 1.1015,
+              "low": 1.099,
+              "close": 1.1001500000000002,
+              "volume": 101
+            },
+            "paint": 1420.699999999255,
+            "click": 1375.8999999985099
+          }
+        ]
+      },
+      {
+        "label": "failure503",
+        "baseRevision": 6,
+        "revision": 7,
+        "cursor": 5,
+        "sequence": 5,
+        "deliveredBars": [
+          {
+            "bar": {
+              "time": 1767225900000,
+              "open": 1.1002500000000002,
+              "high": 1.1015,
+              "low": 1.099,
+              "close": 1.1003500000000002,
+              "volume": 105
+            },
+            "paint": 4920.39999999851,
+            "click": 4873.599999997765
+          }
+        ]
+      },
+      {
+        "label": "recovery-failure503",
+        "baseRevision": 7,
+        "revision": 8,
+        "cursor": 6,
+        "sequence": 6,
+        "deliveredBars": [
+          {
+            "bar": {
+              "time": 1767225960000,
+              "open": 1.1003,
+              "high": 1.1015,
+              "low": 1.099,
+              "close": 1.1004,
+              "volume": 106
+            },
+            "paint": 1216.5,
+            "click": 1154.4000000022352
+          }
+        ]
+      },
+      {
+        "label": "stale409",
+        "baseRevision": 8,
+        "revision": 9,
+        "cursor": 7,
+        "sequence": 7,
+        "deliveredBars": [
+          {
+            "bar": {
+              "time": 1767226020000,
+              "open": 1.1003500000000002,
+              "high": 1.1015,
+              "low": 1.099,
+              "close": 1.1004500000000002,
+              "volume": 107
+            },
+            "paint": 1500.2000000029802,
+            "click": 1454.7000000029802
+          }
+        ]
+      },
+      {
+        "label": "recovery-stale409",
+        "baseRevision": 9,
+        "revision": 10,
+        "cursor": 8,
+        "sequence": 8,
+        "deliveredBars": [
+          {
+            "bar": {
+              "time": 1767226080000,
+              "open": 1.1004,
+              "high": 1.1015,
+              "low": 1.099,
+              "close": 1.1005,
+              "volume": 108
+            },
+            "paint": 1217.300000000745,
+            "click": 1172.3999999985099
+          }
+        ]
+      }
+    ],
+    "checks": [
+      "Committed replay chart publishes before gated Prop feed; subsequent step/trade writes remain locked until real feed settles",
+      "failure503: committed replay retained; reload has no POST; one new step feeds old backlog and new mark once in sequence",
+      "stale409: committed replay retained; reload has no POST; one new step feeds old backlog and new mark once in sequence"
+    ],
+    "session": "029e724b22db4d09a0f565c3fe0fc90c",
+    "propSession": "5c9d4e7d42db4f028a4b0c272d971744",
+    "propAttempt": "a2d67ab64f4f40108f099706a0d28ca1",
+    "initialAttemptRevision": 2,
+    "delay": {
+      "artificial": true,
+      "chartPublishedAtCursor": 1,
+      "replayCommittedRevision": 3,
+      "propStillAtRevision": 2,
+      "stepAndTradingDisabled": true,
+      "keyboardNoExtraWrite": true,
+      "releasedAfterPublication": true,
+      "previousCursor": 0
+    },
+    "play": {
+      "actualSteps": 3,
+      "successfulFeeds": 3,
+      "cursor": 4,
+      "historyReads": 0
+    },
+    "final": {
+      "replayRevision": 10,
+      "replaySequence": 8,
+      "cursor": 8,
+      "attemptRevision": 10,
+      "phaseSequence": 8,
+      "binding": {
+        "branch_id": "eede8d00e546467689a3d8e4316b5a98",
+        "dataset_id": "native-ui-synthetic",
+        "dataset_sha256": "b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+        "last_replay_event_sequence": 8,
+        "replay_session_id": "029e724b22db4d09a0f565c3fe0fc90c"
+      },
+      "ledgerMarks": [
+        {
+          "balance": "100000",
+          "branch_id": "eede8d00e546467689a3d8e4316b5a98",
+          "cursor_index": 1,
+          "dataset_id": "native-ui-synthetic",
+          "dataset_sha256": "b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+          "details": {
+            "intrabar_equity_coverage": "complete",
+            "mid_close": "1.1001500000000002",
+            "open_position": null,
+            "pending_market_order": null
+          },
+          "equity": "100000.0000000000000000000000",
+          "evaluation_quality": "full_for_declared_model",
+          "floating_pl": "0",
+          "kind": "price_mark",
+          "open_positions": 0,
+          "pending_orders": 0,
+          "replay_session_id": "029e724b22db4d09a0f565c3fe0fc90c",
+          "sequence": 1,
+          "virtual_time_utc": 1767225720
+        },
+        {
+          "balance": "100000",
+          "branch_id": "eede8d00e546467689a3d8e4316b5a98",
+          "cursor_index": 2,
+          "dataset_id": "native-ui-synthetic",
+          "dataset_sha256": "b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+          "details": {
+            "intrabar_equity_coverage": "complete",
+            "mid_close": "1.1002",
+            "open_position": null,
+            "pending_market_order": null
+          },
+          "equity": "100000.0000000000000000000000",
+          "evaluation_quality": "full_for_declared_model",
+          "floating_pl": "0",
+          "kind": "price_mark",
+          "open_positions": 0,
+          "pending_orders": 0,
+          "replay_session_id": "029e724b22db4d09a0f565c3fe0fc90c",
+          "sequence": 2,
+          "virtual_time_utc": 1767225780
+        },
+        {
+          "balance": "100000",
+          "branch_id": "eede8d00e546467689a3d8e4316b5a98",
+          "cursor_index": 3,
+          "dataset_id": "native-ui-synthetic",
+          "dataset_sha256": "b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+          "details": {
+            "intrabar_equity_coverage": "complete",
+            "mid_close": "1.1002500000000002",
+            "open_position": null,
+            "pending_market_order": null
+          },
+          "equity": "100000.0000000000000000000000",
+          "evaluation_quality": "full_for_declared_model",
+          "floating_pl": "0",
+          "kind": "price_mark",
+          "open_positions": 0,
+          "pending_orders": 0,
+          "replay_session_id": "029e724b22db4d09a0f565c3fe0fc90c",
+          "sequence": 3,
+          "virtual_time_utc": 1767225840
+        },
+        {
+          "balance": "100000",
+          "branch_id": "eede8d00e546467689a3d8e4316b5a98",
+          "cursor_index": 4,
+          "dataset_id": "native-ui-synthetic",
+          "dataset_sha256": "b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+          "details": {
+            "intrabar_equity_coverage": "complete",
+            "mid_close": "1.1003",
+            "open_position": null,
+            "pending_market_order": null
+          },
+          "equity": "100000.0000000000000000000000",
+          "evaluation_quality": "full_for_declared_model",
+          "floating_pl": "0",
+          "kind": "price_mark",
+          "open_positions": 0,
+          "pending_orders": 0,
+          "replay_session_id": "029e724b22db4d09a0f565c3fe0fc90c",
+          "sequence": 4,
+          "virtual_time_utc": 1767225900
+        },
+        {
+          "balance": "100000",
+          "branch_id": "eede8d00e546467689a3d8e4316b5a98",
+          "cursor_index": 5,
+          "dataset_id": "native-ui-synthetic",
+          "dataset_sha256": "b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+          "details": {
+            "intrabar_equity_coverage": "complete",
+            "mid_close": "1.1003500000000002",
+            "open_position": null,
+            "pending_market_order": null
+          },
+          "equity": "100000.0000000000000000000000",
+          "evaluation_quality": "full_for_declared_model",
+          "floating_pl": "0",
+          "kind": "price_mark",
+          "open_positions": 0,
+          "pending_orders": 0,
+          "replay_session_id": "029e724b22db4d09a0f565c3fe0fc90c",
+          "sequence": 5,
+          "virtual_time_utc": 1767225960
+        },
+        {
+          "balance": "100000",
+          "branch_id": "eede8d00e546467689a3d8e4316b5a98",
+          "cursor_index": 6,
+          "dataset_id": "native-ui-synthetic",
+          "dataset_sha256": "b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+          "details": {
+            "intrabar_equity_coverage": "complete",
+            "mid_close": "1.1004",
+            "open_position": null,
+            "pending_market_order": null
+          },
+          "equity": "100000.0000000000000000000000",
+          "evaluation_quality": "full_for_declared_model",
+          "floating_pl": "0",
+          "kind": "price_mark",
+          "open_positions": 0,
+          "pending_orders": 0,
+          "replay_session_id": "029e724b22db4d09a0f565c3fe0fc90c",
+          "sequence": 6,
+          "virtual_time_utc": 1767226020
+        },
+        {
+          "balance": "100000",
+          "branch_id": "eede8d00e546467689a3d8e4316b5a98",
+          "cursor_index": 7,
+          "dataset_id": "native-ui-synthetic",
+          "dataset_sha256": "b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+          "details": {
+            "intrabar_equity_coverage": "complete",
+            "mid_close": "1.1004500000000002",
+            "open_position": null,
+            "pending_market_order": null
+          },
+          "equity": "100000.0000000000000000000000",
+          "evaluation_quality": "full_for_declared_model",
+          "floating_pl": "0",
+          "kind": "price_mark",
+          "open_positions": 0,
+          "pending_orders": 0,
+          "replay_session_id": "029e724b22db4d09a0f565c3fe0fc90c",
+          "sequence": 7,
+          "virtual_time_utc": 1767226080
+        },
+        {
+          "balance": "100000",
+          "branch_id": "eede8d00e546467689a3d8e4316b5a98",
+          "cursor_index": 8,
+          "dataset_id": "native-ui-synthetic",
+          "dataset_sha256": "b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+          "details": {
+            "intrabar_equity_coverage": "complete",
+            "mid_close": "1.1005",
+            "open_position": null,
+            "pending_market_order": null
+          },
+          "equity": "100000.0000000000000000000000",
+          "evaluation_quality": "full_for_declared_model",
+          "floating_pl": "0",
+          "kind": "price_mark",
+          "open_positions": 0,
+          "pending_orders": 0,
+          "replay_session_id": "029e724b22db4d09a0f565c3fe0fc90c",
+          "sequence": 8,
+          "virtual_time_utc": 1767226140
+        }
+      ],
+      "successfulOperationIds": [
+        "replay-prop-c0dee86244dc9c241455c3807a8fc8c40e5cc3b5",
+        "replay-prop-94358235193ea08b86caa367d62b15922bd526c1",
+        "replay-prop-fcd5d457e74778602a81f5c60b38205bcb25268f",
+        "replay-prop-06b2b950d6b92119d3e6a734746630887ac3ca37",
+        "replay-prop-2b6de38990a7711512404d7e36627b33c9f4bb13",
+        "replay-prop-006c6dbb9470b01566637ed626ba38c8c706617e",
+        "replay-prop-04e99a9ba384475316dad04384e90a35b412b3fb",
+        "replay-prop-0d15d0f94699ca585aa413141bcd1c6bbfb0bf8f"
+      ],
+      "phase": {
+        "attempt_id": "a2d67ab64f4f40108f099706a0d28ca1",
+        "balance": "100000",
+        "daily_anchor": "100000",
+        "equity": "100000",
+        "evaluation_quality": "full_for_declared_model",
+        "floating_pl": "0",
+        "high_water_mark": "100000",
+        "initial_balance": "100000",
+        "last_event_sequence": 8,
+        "open_positions": 0,
+        "pending_orders": 0,
+        "phase_index": 1,
+        "profile_hash": "sha256:ps02-replay",
+        "qualifying_days": 0,
+        "session_id": "5c9d4e7d42db4f028a4b0c272d971744",
+        "virtual_time_utc": "2026-01-01T00:09:00+00:00",
+        "workspace_id": "tenant-a"
+      },
+      "resumeState": {
+        "cursor": {
+          "bar_index": 8,
+          "timestamp_utc": "2026-01-01T00:09:00Z"
+        },
+        "open_positions": [],
+        "pending_orders": [],
+        "prop_lifecycle": {
+          "last_event_kind": "simulation_snapshot",
+          "last_objectives": {
+            "calendar": {
+              "deadline_utc": null,
+              "elapsed_calendar_days": 1,
+              "expired": false,
+              "min_qualifying_days_satisfied": true,
+              "oracle_version": "prop-calendar-oracle-v1",
+              "qualifying_days": 0,
+              "reset_boundaries": [],
+              "reset_timezone": "UTC",
+              "virtual_time_utc": "2026-01-01 00:09:00+00:00"
+            },
+            "money": {
+              "balance": "100000",
+              "daily_loss": {
+                "breached": false,
+                "current": "100000",
+                "floor": "95000",
+                "reference": "100000"
+              },
+              "equity": "100000",
+              "oracle_version": "prop-money-oracle-v1",
+              "overall_drawdown": {
+                "breached": false,
+                "current": "100000",
+                "floor": "90000",
+                "kind": "static",
+                "reference": "100000"
+              },
+              "profit_target": {
+                "current": "100000",
+                "hit": false,
+                "target": "110000"
+              },
+              "terminal_precedence": null
+            },
+            "pass_ready": false,
+            "phase_index": 1,
+            "positions_ready": true,
+            "schema": "prop-objectives-v1",
+            "technical_status": "ready",
+            "terminal_action": null
+          },
+          "last_operation_id": "replay-prop-0d15d0f94699ca585aa413141bcd1c6bbfb0bf8f",
+          "qualifying_local_dates": []
+        },
+        "replay_binding": {
+          "branch_id": "eede8d00e546467689a3d8e4316b5a98",
+          "dataset_id": "native-ui-synthetic",
+          "dataset_sha256": "b2eeb684242942600a271dd22dbdd1998e84dcda45d87f71e50aa5dcf01c3944",
+          "last_replay_event_sequence": 8,
+          "replay_session_id": "029e724b22db4d09a0f565c3fe0fc90c"
+        }
+      }
+    },
+    "status": "PASS"
+  },
+  "propSessionPath": "/api/v2/replay/sessions/029e724b22db4d09a0f565c3fe0fc90c",
+  "summary": {
+    "clickToConfirmedFrameMs": {
+      "p50": 50.19999999925494,
+      "sampleP95": 50.30000000074506
+    },
+    "samples": 3
+  }
+}

@@ -246,11 +246,14 @@ export default function ReplayWorkspace({ workspace, query }) {
   const fullscreenChart = async () => { try { if (document.fullscreenElement) await document.exitFullscreen(); else await document.querySelector('.fx-app').requestFullscreen() } catch { setChartNotice('Không mở được chế độ toàn màn hình.') } }
 
   const rememberSession = useCallback((nextSessionId, preserveCursor = false, cursor = null, dataset = null) => {
-    lastResolvedLocation.current = `${nextSessionId}:${cursor ?? ''}`
+    // Prop always follows the canonical clock; a historical cursor makes the
+    // location effect reload the session and stop Play after each committed step.
+    const locationCursor = propMode ? null : cursor
+    lastResolvedLocation.current = `${nextSessionId}:${locationCursor ?? ''}`
     setSessionId(nextSessionId)
     window.localStorage.setItem(storageKey, nextSessionId)
-    replaceSessionInUrl(nextSessionId, preserveCursor, cursor, dataset)
-  }, [storageKey])
+    replaceSessionInUrl(nextSessionId, preserveCursor, locationCursor, dataset)
+  }, [propMode, storageKey])
 
   const loadSession = useCallback(async (targetSessionId, targetCursor = null, options = {}) => {
     if (!targetSessionId || actionLock.current) return

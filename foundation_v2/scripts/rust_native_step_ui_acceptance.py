@@ -21,6 +21,7 @@ def main():
     parser.add_argument('--ledger-steps',type=int,default=5000)
     parser.add_argument('--storage-profile',choices=('full','compact'),default='compact')
     parser.add_argument('--resolutions',default='1,5')
+    parser.add_argument('--prop-journey',action='store_true')
     args=parser.parse_args();assert 100<=args.ledger_steps<=5000;assert args.storage_profile=='compact'
     out=args.output.resolve();out.mkdir(parents=True,exist_ok=True)
     flags=getattr(subprocess,'CREATE_NO_WINDOW',0);binary=args.bin_dir.resolve();checks=[];api=None;completed=False
@@ -28,7 +29,8 @@ def main():
         paths=[*sorted((V2/'api-rust/src').rglob('*.rs')),
                *sorted((V2/'web/src').rglob('*.js')),*sorted((V2/'web/src').rglob('*.jsx')),
                *sorted((V2/'web/src').rglob('*.css')),*sorted((V2/'migrations').glob('*.sql')),
-               V2/'web/scripts/replay_step_latency_probe.mjs',Path(__file__).resolve()]
+               V2/'web/scripts/replay_step_latency_probe.mjs',V2/'web/scripts/replay_prop_step_journey.mjs',
+               V2/'tests/test_ps02_replay_prop_connection.py',V2/'tests/test_replay_execution_core.py',Path(__file__).resolve()]
         return {str(path.relative_to(V2)):hashlib.sha256(path.read_bytes()).hexdigest() for path in paths}
     source_hashes=fingerprints()
     binary_sha256={name:hashlib.sha256((binary/name).read_bytes()).hexdigest() for name in ('trading-workspace-api.exe','rust_runtime_admin.exe')}
@@ -63,6 +65,18 @@ def main():
                 artifact,sha=ArtifactStore(artifacts).write_dataset('tenant-a',dataset,rows)
                 source=DatasetSource(source_id='owned-native-ui-fixture',provider='synthetic',instrument_mapping={'EURUSD':'EURUSD'},license_use='owned synthetic only',retrieved_at_utc='2026-01-01T00:00:00Z',export_settings='native HTTP/UI validation')
                 store.put_dataset(DatasetManifest(dataset_id=dataset,workspace_id='tenant-a',source=source,instrument_id='EURUSD',timeframe='M1',timeframe_seconds=60,instrument_spec=spec,row_count=len(rows),first_timestamp=rows[0]['timestamp'],last_timestamp=rows[-1]['timestamp'],artifact_path=artifact,artifact_sha256=sha,quality={'disposition':'pass'},created_at_utc='2026-01-01T00:00:00Z'))
+                prop_config=None
+                if args.prop_journey:
+                    sys.path.insert(0,str(V2/'tests'))
+                    from test_ps02_replay_prop_connection import prop_state
+                    from test_replay_execution_core import initial_state
+                    from uuid import uuid4
+                    session,attempt,phase,resume=prop_state(session_id=uuid4().hex,attempt_id=uuid4().hex,dataset_sha256=sha)
+                    attempt=attempt.model_copy(update={'cost_version':initial_state().cost_model['version']})
+                    store.create_prop_session_bundle(session,attempt,phase,resume_state=resume)
+                    prop_config=root/'prop-fixture.json'
+                    prop_config.write_text(json.dumps(dict(sessionId=session.session_id,attemptId=attempt.attempt_id)),encoding='utf-8')
+                store.close()
                 with (out/'api.log').open('w',encoding='utf-8') as api_log:
                     api=subprocess.Popen([str(binary/'trading-workspace-api.exe')],env=env,cwd=V2,stdout=api_log,stderr=api_log,creationflags=flags)
                     origin=f'http://127.0.0.1:{apiport}'
@@ -84,6 +98,7 @@ def main():
                         seed=root/'seed-execution.json'
                         seed.write_text(json.dumps(dict(instrument_spec=spec,cost_model=initial_state().cost_model,spread_price='0.0002',timeframe_seconds=60,starting_balance='10000')),encoding='utf-8')
                         browser_args+=['--seed-ledger-steps',str(args.ledger_steps),'--execution-config',str(seed)]
+                    if prop_config:browser_args+=['--prop-config',str(prop_config)]
                     run(browser_args,env,'browser',V2/'web')
                     elapsed=time.perf_counter()-started;after=process_resources(int(api._handle))
                     report=json.loads((out/'browser.json').read_text());assert report['status']=='PASS'
@@ -96,6 +111,23 @@ def main():
                             row=conn.execute("SELECT storage_format FROM workspace_record_revisions WHERE workspace_id=%s AND kind='replay' AND record_id=%s AND revision=(SELECT current_revision FROM workspace_records WHERE workspace_id=%s AND kind='replay' AND record_id=%s)",('tenant-a',report['session'],'tenant-a',report['session'])).fetchone()
                             assert row[0]=='replay-execution-v1'
                             assert 'ledger' not in payload['execution']
+                        if args.prop_journey:
+                            prop=report['prop'];assert prop['status']=='PASS'
+                            row=conn.execute("SELECT current_revision,snapshot_json,phase_json,resume_json FROM prop_attempts WHERE workspace_id='tenant-a' AND session_id=%s AND attempt_id=%s",(prop['propSession'],prop['propAttempt'])).fetchone()
+                            assert row[0]==row[1]['revision']==prop['final']['attemptRevision']
+                            assert row[2]==prop['final']['phase'] and row[3]==prop['final']['resumeState']
+                            assert row[0]==prop['initialAttemptRevision']+len(prop['final']['ledgerMarks'])
+                            receipts=conn.execute("SELECT operation_id FROM prop_mutation_receipts WHERE workspace_id='tenant-a' AND session_id=%s AND attempt_id=%s AND operation_id LIKE 'replay-prop-%%' ORDER BY entity_revision",(prop['propSession'],prop['propAttempt'])).fetchall()
+                            assert [item[0] for item in receipts]==prop['final']['successfulOperationIds']
+                            events=conn.execute("SELECT sequence,event_json FROM replay_execution_events WHERE workspace_id='tenant-a' AND record_id=%s ORDER BY sequence",(prop['session'],)).fetchall()
+                            assert [item[0] for item in events]==list(range(1,prop['final']['replaySequence']+1))
+                            assert [item[1] for item in events if item[1]['kind']=='price_mark']==prop['final']['ledgerMarks']
+                            current=conn.execute("SELECT r.current_revision,v.storage_format,v.payload_json FROM workspace_records r JOIN workspace_record_revisions v ON v.workspace_id=r.workspace_id AND v.kind=r.kind AND v.record_id=r.record_id AND v.revision=r.current_revision WHERE r.workspace_id='tenant-a' AND r.kind='replay' AND r.record_id=%s",(prop['session'],)).fetchone()
+                            assert current[0]==prop['final']['replayRevision'] and current[1]=='replay-execution-v1'
+                            assert current[2]['execution']['event_sequence']==prop['final']['replaySequence']
+                            assert 'ledger' not in current[2]['execution']
+                            assert prop['final']['binding']['last_replay_event_sequence']==prop['final']['replaySequence']
+                            checks.append(dict(name='production-prop-step-publication-feed-lock-and-recovery',passed=True,fixture='validated Prop bundle seeded through PostgresStore; replay initialization/binding via real native HTTP APIs',marks=len(prop['final']['ledgerMarks']),attempt_revision=row[0],sql_receipt_count=len(receipts),artificial_faults=['gated transport before actual native feed','pre-upstream503','stale expected_prop_revision409'],recovery='reload then one new step; retained backlog consumed once'))
                     checks.append(dict(name='production-native-step-play-chart-http',passed=True,summary=report['summary'],seconds=elapsed,api_before=before,api_after=after))
                     phases=[json.loads(line)['fields'] for line in (out/'api.log').read_text(encoding='utf-8').splitlines() if 'native_replay_phases' in line]
                     assert phases

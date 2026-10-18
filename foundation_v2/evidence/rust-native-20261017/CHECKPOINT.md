@@ -795,3 +795,34 @@ Goal ACTIVE.
   phase/certificate rewrite or extra broad audit. Finish the already prepared
   Prop connection correctness check, then retain concrete remaining gates in this
   checkpoint rather than opening more parallel work. Goal remains ACTIVE.
+
+## Root continuation 18/10: Prop Play continuity and feed recovery
+
+- New real Prop browser check exposed an existing canonical-location mismatch:
+  Prop ignores historical cursor selection, but remembered navigation was keyed
+  by each newly committed cursor. The location effect reloaded the same session
+  after every successful feed and stopped Play. `rememberSession` now keys Prop
+  by canonical session identity; Practice historical navigation is unchanged.
+  This fixes actual reload work rather than adding a faster transport.
+- `../rust-native-20261018/runtime/step-prop-r3-root/receipt.json` PASS production
+  React+Advanced Charts/native HTTP+disposable PostgreSQL, frozen source/binaries.
+  Validated Prop bundle is seeded via PostgresStore; replay initialization and
+  resume binding use supported native HTTP. A deliberately gated feed proves
+  the committed chart publishes first, while step/trade buttons and keyboard
+  writes remain locked. Releasing it runs the real financial transaction.
+  Play performs3successive real steps/feeds with zero chart-history reads.
+- Explicit transport503-before-upstream and stale Prop revision409 retain the
+  already committed replay. Reload sends no duplicate step; one subsequent step
+  feeds old backlog then new mark exactly once. Final8ledger marks equal8unique
+  Prop receipts, phase/binding sequences8 and replay/attempt revisions10 in SQL.
+  No automatic retry or production capacity claim. The100-event browser fixture
+  run is correctness evidence; its small timings do not replace the5000-event
+  performance receipt. First two failed runs retain the Play timeout and released
+  successful feed responses; no failed attempt is relabeled PASS.
+- Quota steering: finish these coherent commits, avoid speculative phase prefix
+  versioning, and do not restart quota-failed agents. Rare phase/tick/portfolio
+  full-history paths remain an explicit simplicity/correctness tradeoff. Native
+  real-tick/portfolio order lifecycle expansion, final clean-checkout/setup and
+  longer integrated resource evidence remain unverified, not completed by this
+  slice. No prepared tick/portfolio script landed. Owner runtime/data unchanged;
+  all owned fixture processes stopped. Whole optimization goal remains ACTIVE.
