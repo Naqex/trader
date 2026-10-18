@@ -668,3 +668,28 @@ Goal ACTIVE.
   should reuse incremental `advance_many` with a separate typed step/cursor/tail
   contract; do not weaken the same-cursor16-event order mutation reducer. Goal
   remains ACTIVE; no owner cutover or whole-project completion is claimed.
+
+## Root continuation 18/10: compact storage under bounded mixed resources
+
+- `../rust-native-20261018/runtime/mixed-resources-compact-root/receipt.json`
+  PASS on the committed bounded-storage source (`19d78c2`), unchanged source and
+  release-binary hashes. Nine30s blocks complete in289.703s including setup/drain:
+  270protection changes,270 exact raw-wire retries and270 canonical GETs. Every
+  compact SQL head/certificate/contiguous immutable event stream equals the full
+  canonical state; final heads are1,703bytes with534events. Stale writes fail409.
+- Quiet protection median60.224ms/sample-p9570.046ms(n90); loaded58.307/66.568ms
+  (n180). No meaningful load regression is established in this bounded diagnostic.
+  Full canonical GET still hydrates history: quiet79.330/92.581ms and loaded
+  75.352/89.679ms. Nine cold imports outside timed blocks cost168.0–185.1ms and
+  add one event; this run is not an equivalent-workload speedup comparison against
+  the previous full-response resource run (534versus533final events, different wire).
+- Research47completed/1queued-canceled; killed running job recovers on attempt2
+  and publishes validated identity/hash/count. Running research appears in74/178
+  loaded resource samples; each loaded block has11–13running samples and14–15
+  sequence-boundary observations. Brackets cover protection/retry/GET together,
+  not proof every request overlaps active compute or continuous saturation.
+- Peak sampled RSS: API40.70MiB quiet/40.97MiB loaded, research251.20MiB,
+  PostgreSQL descendants201.03MiB loaded (shared pages may be double counted).
+  Sampled CPU is a lower bound. This is not capacity, stable-tail or long soak
+  acceptance. Owned fixture processes stopped; owner8010/5180 and data unchanged.
+  Next slice remains BAR step/chart-tail plus indexed Prop feed. Goal ACTIVE.

@@ -15,6 +15,7 @@ sys.path[:0]=[str(V2),str(V2.parent)]
 from trading_workspace_v2.artifacts import ArtifactStore
 from trading_workspace_v2.contracts import DatasetManifest, DatasetSource
 from trading_workspace_v2.store import PostgresStore
+from rust_replay_storage_acceptance import reconcile
 
 def windows_tree_resources(roots):
     class Entry(ctypes.Structure):
@@ -49,6 +50,7 @@ def main():
     parser.add_argument('--pg-bin',type=Path,default=PG_DEFAULT);parser.add_argument('--bin-dir',type=Path,default=V2/'api-rust/target/native-candidate/release')
     parser.add_argument('--block-seconds',type=int,default=30);parser.add_argument('--samples-per-block',type=int,default=30)
     parser.add_argument('--research-rows',type=int,default=50000);parser.add_argument('--max-jobs-per-block',type=int,default=8)
+    parser.add_argument('--storage-profile',choices=['full','compact'],default='full')
     args=parser.parse_args();assert 3<=args.block_seconds<=30 and 3<=args.samples_per_block<=30 and 5000<=args.research_rows<=50000 and 2<=args.max_jobs_per_block<=8
     out=args.output.resolve();out.mkdir(parents=True,exist_ok=True);binary=args.bin_dir.resolve();flags=getattr(subprocess,'CREATE_NO_WINDOW',0)
     report=dict(passed=False,scope='bounded native foreground/background HTTP diagnostic; synthetic disposable only',configuration=vars(args)|{'output':str(out),'pg_bin':str(args.pg_bin),'bin_dir':str(binary)},machine=dict(platform=platform.platform(),logical_cpus=os.cpu_count(),processor=platform.processor()),blocks=[],latencies=[],resources=[],jobs=[],checks=[],limitations=['Diagnostic samples, not stable tail, capacity, long-duration soak or production promotion.','Loopback HTTP, full canonical responses and exact retries included; browser/rendering excluded.','PostgreSQL RSS sums all descendant working sets; shared pages may be double-counted. CPU includes sampled live/exited processes but sub-second children can be missed.','Background admission is bounded; actual running overlap is recorded rather than assuming uninterrupted CPU load.','Orchestration Python is test tooling; no Python domain/command worker is started.'],owner_runtime_touched=False,broker=False,provider_network=False)
@@ -57,10 +59,14 @@ def main():
         'The 330s HTTP admission budget is not a hard wall deadline; database work and cleanup can exceed it.',
         'Quiet/loaded financial equality uses the same implementation; research artifacts are checked for identity/hash/count, not full independent metric parity.',
     ]
+    if args.storage_profile=='compact':
+        report['limitations'][1]='Loopback HTTP mutation-v1 responses, exact raw-wire retries and full canonical GETs included; browser/rendering excluded.'
+        report['limitations'].append('Each compact block cold-imports its 500-step full revision via one protection warmup outside timed blocks; that adds one event and its separate cost is recorded.')
+    report['storage_imports']=[]
     def binary_fingerprints():
         return {name:hashlib.sha256((binary/name).read_bytes()).hexdigest() for name in ['trading-workspace-api.exe','rust_runtime_admin.exe','rust_research_worker.exe']}
     def source_fingerprints():
-        paths=[Path(__file__),*sorted((V2/'api-rust/src').rglob('*.rs'))]
+        paths=[Path(__file__),V2/'scripts/rust_replay_storage_acceptance.py',*sorted((V2/'api-rust/src').rglob('*.rs')),*sorted((V2/'migrations').glob('*.sql'))]
         return {str(p.relative_to(V2)):hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
     report['binary_hashes']=binary_fingerprints()
     report['source_hashes']=source_fingerprints()
@@ -72,6 +78,7 @@ def main():
             pg=subprocess.Popen([str(args.pg_bin/'postgres.exe'),'-D',str(data),'-h','127.0.0.1','-p',str(pgport),'-c','shared_buffers=32MB','-c','max_connections=40'],stdout=pglog,stderr=pglog,creationflags=flags);owned_roots['postgres']=pg.pid
             env={k:v for k,v in os.environ.items() if not k.startswith('TW_V2_')};dsn=f'host=127.0.0.1 port={pgport} user=fixture dbname=postgres'
             env.update(TW_V2_DATABASE_URL=dsn,TW_V2_ARTIFACT_ROOT=str(artifacts),TW_V2_LOCAL_WORKSPACES='tenant-a',TW_V2_LOCAL_IDENTITY='local-owner',TW_V2_RUNTIME_PROFILE='native',TW_V2_DOWNLOAD_ENGINE='none',TW_V2_RUST_BIND=f'127.0.0.1:{apiport}',TW_V2_SHUTDOWN_FILE=str(root/'api-stop'),TW_V2_OPENAPI_PATH=str(V2/'contracts/openapi.json'))
+            env['TW_V2_REPLAY_STORAGE_PROFILE']=args.storage_profile
             origin=f'http://127.0.0.1:{apiport}'
             def http(path,body=None,key=None,expected=200):
                 assert time.monotonic()-started_all<330,'scheduled HTTP admission budget exceeded'
@@ -129,13 +136,25 @@ def main():
                 from tests.test_replay_execution_core import initial_state
                 initial=dict(instrument_spec=spec,cost_model=initial_state().cost_model,spread_price='0.0002',timeframe_seconds=60,starting_balance='100000')
                 recovery_job=None;financial_baseline=None
+                def order_path(path,tail):
+                    return path+tail+('?response_view=mutation-v1' if args.storage_profile=='compact' else '')
                 with psycopg.connect(dsn,autocommit=True) as conn:
                     for block,mode in enumerate(['quiet','loaded','loaded','loaded','quiet','loaded','loaded','loaded','quiet']):
                         phase.update(block=block,mode='prepare')
                         record,_=http('/api/v2/replay/sessions',dict(dataset_id='mixed-foreground',starting_balance='100000'),expected=201);path='/api/v2/replay/sessions/'+record['record_id']
-                        record,_=http(path+'/orders/quick',dict(expected_revision=record['revision'],operation_id=uuid4().hex,side='SELL',quantity='0.12',stop_loss=None,take_profit=None,execution_timing='current_quote',**initial))
+                        quick,_=http(order_path(path,'/orders/quick'),dict(expected_revision=record['revision'],operation_id=uuid4().hex,side='SELL',quantity='0.12',stop_loss=None,take_profit=None,execution_timing='current_quote',**initial))
+                        record=reconcile(record,quick) if args.storage_profile=='compact' else quick
                         record,_=http(path+'/step',dict(expected_revision=record['revision'],steps=500));assert len(record['payload']['execution']['ledger'])>=500
                         position=record['payload']['execution']['position']['position_id'];block_jobs=[];stop=None
+                        if args.storage_profile=='compact':
+                            record,_=http(path)
+                            before_events=len(record['payload']['execution']['ledger'])
+                            imported,import_timing=http(order_path(path,'/orders/protection'),dict(expected_revision=record['revision'],operation_id=uuid4().hex,target_id=position,stop_loss='1.12',take_profit='1.09'),uuid4().hex)
+                            record=reconcile(record,imported)
+                            reloaded,_=http(path);assert reloaded==record
+                            persisted=conn.execute("SELECT storage_format,octet_length(payload_json::text),payload_json FROM workspace_record_revisions WHERE workspace_id='tenant-a' AND kind='replay' AND record_id=%s AND revision=%s",(record['record_id'],record['revision'])).fetchone()
+                            assert persisted[0]=='replay-execution-v1' and 'ledger' not in persisted[2]['execution'] and persisted[1]<20000
+                            report['storage_imports'].append(dict(block=block,base_events=before_events,result_events=len(record['payload']['execution']['ledger']),persisted_payload_bytes=persisted[1],**import_timing))
                         preserved_account={key:record['payload']['execution'].get(key) for key in ['balance','equity','floating_pl','cost_model','instrument_spec']}
                         preserved_position={key:value for key,value in record['payload']['execution']['position'].items() if key not in ['stop_loss','take_profit']}
                         def submit():
@@ -162,16 +181,22 @@ def main():
                             active,running_count=conn.execute("SELECT count(*) FILTER (WHERE status IN ('queued','running')),count(*) FILTER (WHERE status='running') FROM research_jobs").fetchone()
                             if mode=='loaded' and active<2 and len(block_jobs)<args.max_jobs_per_block:submit()
                             body=dict(expected_revision=record['revision'],operation_id=uuid4().hex,target_id=position,stop_loss=str(1.13+iteration*.0001),take_profit=str(1.08-iteration*.0001));key=uuid4().hex
-                            changed,timing=http(path+'/orders/protection',body,key);execution=changed['payload']['execution'];assert changed['revision']==record['revision']+1 and execution['position']['stop_loss']==body['stop_loss'] and execution['position']['take_profit']==body['take_profit'] and execution['pending_market_order'] is None
+                            wire,timing=http(order_path(path,'/orders/protection'),body,key)
+                            changed=reconcile(record,wire) if args.storage_profile=='compact' else wire
+                            execution=changed['payload']['execution'];assert changed['revision']==record['revision']+1 and execution['position']['stop_loss']==body['stop_loss'] and execution['position']['take_profit']==body['take_profit'] and execution['pending_market_order'] is None
                             assert {key:execution.get(key) for key in preserved_account}==preserved_account
                             assert {key:value for key,value in execution['position'].items() if key not in ['stop_loss','take_profit']}==preserved_position
                             assert len(execution['ledger'])==len(record['payload']['execution']['ledger'])+1
-                            retried,retry=http(path+'/orders/protection',body,key);assert retried==changed and timing['sha256']==retry['sha256']
+                            retried,retry=http(order_path(path,'/orders/protection'),body,key);assert retried==wire and timing['sha256']==retry['sha256']
                             read,reading=http(path);assert read==changed
                             running_after=conn.execute("SELECT count(*) FROM research_jobs WHERE status='running'").fetchone()[0]
                             if iteration==0:
-                                receipt,_=http('/api/v2/commands/'+timing['command_id']);assert receipt['status']=='completed';assert json.loads(receipt['result_text'])==changed if receipt['result_text'] is not None else receipt['result_body']==changed
-                                _,conflict=http(path+'/orders/protection',body|{'operation_id':uuid4().hex},uuid4().hex,409);report['checks'].append(dict(name='stale revision rejected',block=block,status=conflict['status']))
+                                receipt,_=http('/api/v2/commands/'+timing['command_id']);assert receipt['status']=='completed'
+                                if receipt['result_text'] is not None:
+                                    assert json.loads(receipt['result_text'])==wire
+                                    assert hashlib.sha256(receipt['result_text'].encode()).hexdigest()==timing['sha256']
+                                else:assert receipt['result_body']==wire
+                                _,conflict=http(order_path(path,'/orders/protection'),body|{'operation_id':uuid4().hex},uuid4().hex,409);report['checks'].append(dict(name='stale revision rejected',block=block,status=conflict['status']))
                             for operation,measurement in [('protection',timing),('exact_retry',retry),('read',reading)]:report['latencies'].append(dict(block=block,mode=mode,iteration=iteration,operation=operation,ledger_events=len(execution['ledger']),research_active=active,research_running_before=running_count,research_running_after=running_after,scheduled_block_seconds=iteration*args.block_seconds/args.samples_per_block,completed_block_seconds=time.monotonic()-began,**measurement))
                             record=changed
                         remaining=began+args.block_seconds-time.monotonic()
@@ -182,13 +207,27 @@ def main():
                                 status=conn.execute('SELECT status FROM research_jobs WHERE job_id=%s',(job,)).fetchone()[0]
                                 if status in ('queued','running'):http(f'/api/v2/research/jobs/{job}/cancel',{},uuid4().hex)
                             stop_worker(stop)
-                        closed,_=http(path+'/orders/close',dict(expected_revision=record['revision'],target_id=position,operation_id=uuid4().hex));assert closed['payload']['execution']['position'] is None
+                        close_wire,_=http(order_path(path,'/orders/close'),dict(expected_revision=record['revision'],target_id=position,operation_id=uuid4().hex))
+                        closed=reconcile(record,close_wire) if args.storage_profile=='compact' else close_wire
+                        assert closed['payload']['execution']['position'] is None
                         final,_=http(path);assert final==closed
                         financial={key:closed['payload']['execution'].get(key) for key in ['balance','equity','floating_pl','cost_model','instrument_spec','pending_market_order']}
                         if financial_baseline is None:financial_baseline=financial
                         else:assert financial==financial_baseline,'quiet/loaded final financial state differs'
-                        persisted=conn.execute("SELECT r.current_revision,v.payload_json FROM workspace_records r JOIN workspace_record_revisions v ON v.workspace_id=r.workspace_id AND v.kind=r.kind AND v.record_id=r.record_id AND v.revision=r.current_revision WHERE r.workspace_id='tenant-a' AND r.kind='replay' AND r.record_id=%s",(closed['record_id'],)).fetchone();assert persisted[0]==closed['revision'] and persisted[1]==closed['payload']
-                        report['blocks'].append(dict(block=block,mode=mode,samples=args.samples_per_block,seconds=time.monotonic()-began,jobs=len(block_jobs),db_bytes_before=before_db,db_bytes_after=conn.execute('SELECT pg_database_size(current_database())').fetchone()[0],final_revision=closed['revision'],final_ledger_events=len(closed['payload']['execution']['ledger'])))
+                        persisted=conn.execute("SELECT r.current_revision,v.payload_json,v.storage_format,octet_length(v.payload_json::text) FROM workspace_records r JOIN workspace_record_revisions v ON v.workspace_id=r.workspace_id AND v.kind=r.kind AND v.record_id=r.record_id AND v.revision=r.current_revision WHERE r.workspace_id='tenant-a' AND r.kind='replay' AND r.record_id=%s",(closed['record_id'],)).fetchone()
+                        assert persisted[0]==closed['revision']
+                        if args.storage_profile=='compact':
+                            head={key:value for key,value in closed['payload']['execution'].items() if key!='ledger'}
+                            assert persisted[2]=='replay-execution-v1' and persisted[1]['execution']==head and persisted[3]<20000
+                            events=conn.execute("SELECT sequence,event_json FROM replay_execution_events WHERE workspace_id='tenant-a' AND record_id=%s AND dataset_id=%s ORDER BY sequence",(closed['record_id'],closed['payload']['dataset_id'])).fetchall()
+                            assert [row[0] for row in events]==list(range(1,head['event_sequence']+1))
+                            assert [row[1] for row in events]==closed['payload']['execution']['ledger']
+                            certificate=conn.execute("SELECT event_sequence,prefix_json FROM replay_execution_revisions WHERE workspace_id='tenant-a' AND record_id=%s AND revision=%s",(closed['record_id'],closed['revision'])).fetchone()
+                            assert certificate[0]==head['event_sequence'] and certificate[1]['body']['head']==head
+                            assert persisted[1]=={**closed['payload'],'execution':head}
+                            report['checks'].append(dict(name='compact SQL immutable events and bounded current head hydrate to canonical financial state',block=block))
+                        else:assert persisted[2]=='full_snapshot' and persisted[1]==closed['payload']
+                        report['blocks'].append(dict(block=block,mode=mode,samples=args.samples_per_block,seconds=time.monotonic()-began,jobs=len(block_jobs),db_bytes_before=before_db,db_bytes_after=conn.execute('SELECT pg_database_size(current_database())').fetchone()[0],final_revision=closed['revision'],final_ledger_events=len(closed['payload']['execution']['ledger']),storage_format=persisted[2],persisted_payload_bytes=persisted[3]))
                         (out/'progress.json').write_text(json.dumps(dict(block=block,mode=mode,completed_blocks=len(report['blocks']),elapsed_seconds=time.monotonic()-started_all)))
                         print(json.dumps(report['blocks'][-1]),flush=True)
                     rows=conn.execute('SELECT job_id,status,attempt_no,result_path,result_sha256 FROM research_jobs ORDER BY job_id').fetchall();assert rows
