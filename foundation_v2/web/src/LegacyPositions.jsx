@@ -1,17 +1,22 @@
-import { memo, useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import { useTestingLocale } from './testingLocale.jsx'
 import { sessionChartTrades } from './legacyChartTrades.js'
 import PaginationFooter from './PaginationFooter.jsx'
 import { TestingEmptyState } from './TestingPageState.jsx'
 
-export default memo(function LegacyPositions({ execution, assetStates, symbol }) {
+export default memo(function LegacyPositions({ execution, assetStates, symbol, active = true }) {
   const { t, fmt } = useTestingLocale()
   const [tab, setTab] = useState('open'), [page, setPage] = useState(0), [size, setSize] = useState(10)
-  const executions = assetStates ? Object.entries(assetStates).filter(([, state]) => state.execution).map(([id, state]) => ({ id, execution:state.execution, symbol:state.execution.instrument_spec.instrument_id })) : [{ id:'active', execution, symbol }]
-  const rows = tab === 'closed' ? sessionChartTrades(execution, assetStates, symbol) : executions.flatMap(asset => {
-    const item = tab === 'open' ? asset.execution?.position : asset.execution?.pending_market_order
-    return item ? [{ ...item, key:`${asset.id}:${item.position_id || item.operation_id}`, symbol:asset.symbol, unrealized:tab === 'open' ? asset.execution.floating_pl : undefined }] : []
-  })
+  const rows = useMemo(() => {
+    if (!active) return []
+    if (tab === 'closed') return sessionChartTrades(execution, assetStates, symbol)
+    const executions = assetStates ? Object.entries(assetStates).filter(([, state]) => state.execution).map(([id, state]) => ({ id, execution:state.execution, symbol:state.execution.instrument_spec.instrument_id })) : [{ id:'active', execution, symbol }]
+    return executions.flatMap(asset => {
+      const item = tab === 'open' ? asset.execution?.position : asset.execution?.pending_market_order
+      return item ? [{ ...item, key:`${asset.id}:${item.position_id || item.operation_id}`, symbol:asset.symbol, unrealized:tab === 'open' ? asset.execution.floating_pl : undefined }] : []
+    })
+  }, [active, tab, execution, assetStates, symbol])
+  if (!active) return null
   const pages = Math.max(1, Math.ceil(rows.length / size)), current = Math.min(page, pages - 1)
   const known = execution || Object.values(assetStates || {}).some(state => state.execution)
   return <section className="legacy-positions" aria-label={t('Lệnh trong phiên replay')}>

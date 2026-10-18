@@ -769,3 +769,29 @@ Goal ACTIVE.
   broader native/setup and long-duration acceptance. Phase/tick/portfolio retain
   fully validated full-history paths; optimize only where measurements justify
   the additional persistence/contract complexity. Goal remains ACTIVE.
+
+## Root continuation 18/10: bounded trade-history projection work
+
+- Replaced each closed trade's full-ledger entry search with one first-entry Map.
+  Existing fields, first matching fill, missing fees, lots and close ordering stay
+  exact. Positions retains its React tab/page state when hidden but skips ledger
+  projection; pagination and Journal search/calendar reuse the current projection.
+  The financial ledger and Prop backlog recovery remain complete and unchanged.
+- `../legacy-projection-20261018/benchmark.json`: six equal-input synthetic
+  cases, seven alternating samples/candidate after one warmup, exact old/new output
+  equality. Projection-only medians:10k events/100closes4.19→0.136ms;
+  100k/100closes46.16→1.59ms;100k/1kcloses603.47→2.55ms;
+  100k/10kcloses3503.38→5.75ms. Sparse10k/10closes0.585→0.397ms;
+  its small noisy tail is not a speedup guarantee. This is not API/click latency.
+- Root focused projection/mutation/step tests28PASS. Isolated React component
+  browser checks preserve closed tab/page/rows after hiding/replacement/reopen,
+  skip hidden projection and reuse Journal results during local changes. No API
+  request or owner state access. First browser test counter included React dev
+  performance logging's getter inspection; a stack diagnostic identified that
+  fixture issue. The probe getter is now nonenumerable, isolating real projection
+  calls; no product bypass was added. `../legacy-projection-20261018/browser.json`
+  retains final two-case PASS. This is component QA, not whole workspace acceptance.
+- Owner requested a stricter AI-quota/performance sweet spot: no speculative
+  phase/certificate rewrite or extra broad audit. Finish the already prepared
+  Prop connection correctness check, then retain concrete remaining gates in this
+  checkpoint rather than opening more parallel work. Goal remains ACTIVE.

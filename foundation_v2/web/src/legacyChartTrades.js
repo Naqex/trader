@@ -1,7 +1,11 @@
 export function closedChartTrades(execution) {
   const ledger = execution?.ledger || []
+  const entries = new Map()
+  for (const event of ledger) {
+    if (event.kind === 'market_fill' && !entries.has(event.details?.position_id)) entries.set(event.details?.position_id, event)
+  }
   return ledger.filter(event => ['protective_fill', 'manual_close'].includes(event.kind)).map(event => {
-    const details = event.details || {}, entry = ledger.find(item => item.kind === 'market_fill' && item.details?.position_id === details.position_id)
+    const details = event.details || {}, entry = entries.get(details.position_id)
     return { ...details.closed_position, key:event.sequence, position_id:details.position_id, side:details.side || entry?.details.side, quantity:details.quantity || entry?.details.quantity,
       opened_time_utc:entry?.virtual_time_utc, closed_time_utc:event.virtual_time_utc, entry:entry?.details.fill_price, exit:details.fill_price, realized:details.net_pnl, commission:details.cost_breakdown?.commission_account }
   })

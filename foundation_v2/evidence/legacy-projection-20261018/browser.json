@@ -1,0 +1,8 @@
+{
+  "scope": "Isolated real React components on existing local Vite; synthetic ledger only; no API/owner state access",
+  "cases": [
+    "Closed-tab projection cached during pagination; hidden replacement skipped; tab/page/rows preserved after reopen",
+    "Journal search/calendar changes reuse the closed projection"
+  ],
+  "errors": []
+}

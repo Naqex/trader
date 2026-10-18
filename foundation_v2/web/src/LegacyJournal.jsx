@@ -1,5 +1,5 @@
 import { displayDate } from './dateFormat.js'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import ChartIcon from './ChartIcon.jsx'
 import { TestingEmptyState } from './TestingPageState.jsx'
 import { sessionChartTrades } from './legacyChartTrades.js'
@@ -16,7 +16,8 @@ function Month({ date, trades, compact, onDay, locale, t, fmt }) {
 export default function LegacyJournal({ execution, assetStates, symbol, cutoff, onClose, onOpenJournal }) {
   const { t, fmt, locale } = useTestingLocale(), [tab,setTab] = useState('trades'), [mode,setMode] = useState('month'), [search,setSearch] = useState(''), [day,setDay] = useState('')
   const [date,setDate] = useState(() => new Date(Number(cutoff)*1000))
-  const closed = sessionChartTrades(execution, assetStates, symbol), rows = closed.filter(row => `${row.symbol} ${row.side} ${row.position_id}`.toLowerCase().includes(search.toLowerCase()) && (!day || new Date(row.closed_time_utc*1000).toISOString().slice(0,10) === day))
+  const closed = useMemo(() => sessionChartTrades(execution, assetStates, symbol), [execution, assetStates, symbol])
+  const rows = closed.filter(row => `${row.symbol} ${row.side} ${row.position_id}`.toLowerCase().includes(search.toLowerCase()) && (!day || new Date(row.closed_time_utc*1000).toISOString().slice(0,10) === day))
   const changeDate = delta => setDate(value => new Date(Date.UTC(value.getUTCFullYear()+(mode==='year'?delta:0),value.getUTCMonth()+(mode==='month'?delta:0),1)))
   const selectDay = value => { setDay(value); setTab('trades') }
   return <section className="legacy-journal" aria-label={t('Journal')}>
