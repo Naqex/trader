@@ -37,7 +37,7 @@ export function orderMarkerColumns(markers, inset = 64, gap = 8) {
 // The vendor paints order labels on canvas. These small DOM controls live in
 // that same iframe so the visible handle and the pointer target cannot diverge.
 export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
-  let root, owner, drag, resizeObserver, frame = 0, syncFrame = 0
+  let root, owner, ownerWindow, drag, resizeObserver, frame = 0, syncFrame = 0
   const rows = new Map()
   const pendingPrices = new Map()
   const toY = (info, price) => orderScale(info).toY(price)
@@ -256,9 +256,11 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     if (!state.levels || !info) { if (root) root.hidden = true; return }
     if (!root) {
       owner = info.doc
+      ownerWindow = owner.defaultView
+      if (!ownerWindow) return
       // The observer delivers real border-box sizes after layout. Reading each
       // marker after every drag write would force layout on the pointer path.
-      resizeObserver = new owner.defaultView.ResizeObserver(entries => {
+      resizeObserver = new ownerWindow.ResizeObserver(entries => {
         for (const entry of entries) {
           const row = rows.get(entry.target.dataset.orderKind), size = entry.borderBoxSize[0]
           if (row && size?.inlineSize > 0) row.size = { width: size.inlineSize, height: size.blockSize }
@@ -277,7 +279,7 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
       owner.addEventListener('pointermove', scheduleSync)
       owner.addEventListener('pointerup', scheduleSync)
       owner.addEventListener('wheel', scheduleSync, { passive: true })
-      owner.defaultView.addEventListener('blur', cancel)
+      ownerWindow.addEventListener('blur', cancel)
     }
     root.hidden = false
     Object.assign(root.style, { left: `${info.rect.left}px`, top: `${info.rect.top}px`, width: `${info.rect.width}px`, height: `${info.height}px` })
@@ -313,8 +315,9 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
       owner.removeEventListener('pointermove', scheduleSync)
       owner.removeEventListener('pointerup', scheduleSync)
       owner.removeEventListener('wheel', scheduleSync)
-      owner.defaultView.removeEventListener('blur', cancel)
+      // Removing the chart iframe clears Document.defaultView before React cleanup.
+      ownerWindow?.removeEventListener('blur', cancel)
     }
-    root?.remove(); root = null; rows.clear(); pendingPrices.clear()
+    root?.remove(); root = null; owner = null; ownerWindow = null; rows.clear(); pendingPrices.clear()
   } }
 }
