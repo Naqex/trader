@@ -1,0 +1,12 @@
+{
+  "scope": "Production UI with a synthetic four-asset catalog. All writes blocked; owner sessions unchanged.",
+  "cases": [
+    "backtest/vi: no description; hover/selected dark+light; four independent cost rows and grouped options",
+    "backtest/en: no description; hover/selected dark+light; four independent cost rows and grouped options",
+    "prop/vi: no description; hover/selected dark+light; four independent cost rows and grouped options",
+    "prop/en: no description; hover/selected dark+light; four independent cost rows and grouped options"
+  ],
+  "errors": [],
+  "writes": [],
+  "result": "PASS"
+}

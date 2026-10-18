@@ -24,7 +24,7 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
   const [mode, setMode] = useState(initialMode === 'prop' ? 'prop' : 'backtest'), [advanced, setAdvanced] = useState(false)
   const panelBody = useRef(null)
   useLayoutEffect(() => { panelBody.current?.scrollTo(0, 0) }, [advanced, mode])
-  const [draft, setDraft] = useState({ name: '', balance: '10000', datasets: initialDataset ? [initialDataset] : [], strategy: '', description: '', period: { start: '', end: '', endMode: 'auto' } })
+  const [draft, setDraft] = useState({ name: '', balance: '10000', datasets: initialDataset ? [initialDataset] : [], strategy: '', period: { start: '', end: '', endMode: 'auto' } })
   const [balanceMode, setBalanceMode] = useState('10000')
   const [tradingOptions, setTradingOptions] = useState({ costs_enabled: false, assets: {} })
   const [propDraft, setPropDraft] = useState({ profileKind: 'generic', targetPercent: '10', dailyLoss: '500', overallLoss: '1000', durationDays: '' })
@@ -142,7 +142,7 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
     try {
       const record = await createReplaySession(workspace, {
         name: draft.name.trim(), dataset_id: selected.dataset_id, dataset_ids: draft.datasets, starting_balance: draft.balance,
-        chart_engine: 'legacy', start_timestamp: period.start, end_timestamp: period.end, description: draft.description,
+        chart_engine: 'legacy', start_timestamp: period.start, end_timestamp: period.end,
         trading_options: savedTradingOptions,
         ...(selectedStrategy ? { playbook_id: selectedStrategy.record_id, playbook_revision: selectedStrategy.revision } : {}),
       })
@@ -217,7 +217,6 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
               </div>
             </section> : <>
               <div className="quick-session-field"><span>{t('Select Chart Layout (Optional)')}</span><FxSelect className="is-field" label={t('Chart Layout')} value="default" disabled options={[{value:'default',label:'Bố cục mặc định'}]} onChange={() => {}} /></div>
-              <label>{t('Description')}<textarea rows={3} maxLength={2000} disabled={busy} value={draft.description} onChange={event => change('description',event.target.value)} /></label>
               <section className="quick-session-engine" aria-label={t('Charting engine')}><h3>{t('Charting engine')}</h3><p>{t('Chọn một lần cho phiên này.')}</p><div role="radiogroup" aria-label={t('Charting engine')}><button type="button" role="radio" aria-checked="false" disabled>New Chart <small>{t('Chưa khả dụng')}</small></button><button type="button" role="radio" aria-checked="true" disabled={busy}>Legacy Chart</button></div></section>
             </>}
           </>}

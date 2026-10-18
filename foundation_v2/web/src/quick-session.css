@@ -12,7 +12,8 @@
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-sections button { display:grid; gap:6px; align-content:start; padding:14px 12px; border:0; border-radius:10px; background:transparent; text-align:left; }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-sections button strong { font-size:14px; font-weight:600; }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-sections button span { font-size:12px; line-height:1.5; color:var(--wm-content-muted); }
-.fx-app.fx-shell-story[data-theme] .fx-content .quick-session-sections button:is([aria-pressed=true],:hover:not(:disabled)) { background:var(--wm-hover); }
+.fx-app.fx-shell-story[data-theme] .fx-content .quick-session-sections button:not([aria-pressed=true]):hover:not(:disabled) { background:transparent; }
+.fx-app.fx-shell-story[data-theme] .fx-content .quick-session-sections button:is([aria-pressed=true],[aria-pressed=true]:hover:not(:disabled)) { background:var(--wm-hover); }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-tabs { display:flex; padding:3px; gap:3px; border:1px solid var(--wm-border); border-radius:999px; }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-tabs button { height:var(--ds-tab); min-height:var(--ds-tab); box-sizing:border-box; padding:4px 12px; line-height:20px; white-space:nowrap; border:0; border-radius:999px; background:transparent; font-size:13px; }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-tabs button[aria-selected=true] { background:var(--wm-hover); }
