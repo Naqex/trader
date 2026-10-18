@@ -18,24 +18,31 @@ def main():
     parser.add_argument('--pg-bin',type=Path,default=PG_DEFAULT)
     parser.add_argument('--bin-dir',type=Path,default=V2/'api-rust/target/native-candidate/release')
     parser.add_argument('--samples',type=int,default=12)
+    parser.add_argument('--soak-seconds',type=int,default=0)
+    parser.add_argument('--soak-period-ms',type=int,default=5000)
     parser.add_argument('--ledger-steps',type=int,default=0)
     parser.add_argument('--storage-profile',choices=('full','compact'),default='full')
     parser.add_argument('--http-benchmark',action='store_true')
     parser.add_argument('--phase-timings',action='store_true')
     parser.add_argument('--benchmark-stages',default='0,500,5000')
     args=parser.parse_args();assert 0<=args.ledger_steps<=5000
+    assert 0<=args.soak_seconds<=1800 and 1000<=args.soak_period_ms<=30000
     out=args.output.resolve();out.mkdir(parents=True,exist_ok=True)
     flags=getattr(subprocess,'CREATE_NO_WINDOW',0);binary=args.bin_dir.resolve();checks=[];api=None;completed=False
     def fingerprints():
         paths=[*sorted((V2/'api-rust/src').rglob('*.rs')),
                *sorted((V2/'web/src').rglob('*.js')),*sorted((V2/'web/src').rglob('*.jsx')),
+               *sorted((V2/'web/src').rglob('*.css')),*sorted((V2/'migrations').glob('*.sql')),
+               V2/'web/package.json',V2/'web/package-lock.json',V2/'web/vite.config.js',
+               V2/'web/advancedChartCompatibility.mjs',V2/'web/tests/visual/chart-fixture.json',
                V2/'web/scripts/quick_trading_latency_probe.mjs',Path(__file__).resolve()]
         return {str(path.relative_to(V2)):hashlib.sha256(path.read_bytes()).hexdigest() for path in paths}
     source_hashes=fingerprints()
     binary_sha256=hashlib.sha256((binary/'trading-workspace-api.exe').read_bytes()).hexdigest()
     def run(command,env,name,cwd=V2):
         with (out/f'{name}.log').open('w',encoding='utf-8') as log:
-            result=subprocess.run(command,cwd=cwd,env=env,stdout=log,stderr=subprocess.STDOUT,timeout=600,creationflags=flags)
+            result=subprocess.run(command,cwd=cwd,env=env,stdout=log,stderr=subprocess.STDOUT,
+                timeout=args.soak_seconds+180 if name=='browser' else 600,creationflags=flags)
         assert result.returncode==0,f'{name} failed; inspect log'
     with tempfile.TemporaryDirectory(prefix='native-ui-http-') as temp:
         root=Path(temp);data=root/'pgdata';artifacts=root/'artifacts';artifacts.mkdir();pgport=port();apiport=port()
@@ -79,6 +86,8 @@ def main():
                     node=__import__('shutil').which('node');assert node
                     browser_args=[node,'scripts/quick_trading_latency_probe.mjs','--output',str(out/'browser.json'),
                          '--api-base',origin,'--workspace','tenant-a','--dataset-id',dataset,'--samples',str(args.samples)]
+                    if args.soak_seconds:
+                        browser_args+=['--soak-seconds',str(args.soak_seconds),'--soak-period-ms',str(args.soak_period_ms)]
                     if args.ledger_steps:
                         sys.path.insert(0,str(V2/'tests'))
                         from test_replay_execution_core import initial_state
@@ -88,6 +97,8 @@ def main():
                     run(browser_args,env,'browser',V2/'web')
                     elapsed=time.perf_counter()-started;after=process_resources(int(api._handle))
                     report=json.loads((out/'browser.json').read_text());assert report['status']=='PASS'
+                    if args.soak_seconds:
+                        assert report['soak']['actualSeconds']>=args.soak_seconds
                     with psycopg.connect(dsn) as conn:
                         assert conn.execute('SELECT count(*) FROM api_command_workers').fetchone()[0]==0
                         assert conn.execute('SELECT count(*) FROM api_commands WHERE status IN (\'queued\',\'running\')').fetchone()[0]==0

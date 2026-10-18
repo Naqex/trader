@@ -903,3 +903,54 @@ Goal ACTIVE.
   broader/longer integrated UI/resource acceptance and final independent review
   remain distinct from these scoped backend results. Reuse prior valid receipts;
   do not restart quota-failed agents or rewrite unmeasured rare paths.
+
+## Root continuation 18/10: chart endurance and cumulative price-range defect
+
+- Reused `rust_native_ui_acceptance.py` and the production-chart latency probe,
+  with disposable PostgreSQL/native HTTP, a5,000-event BAR seed and compact
+  storage. Optional endurance has declared heap/DOM/frame/response budgets;
+  forced GC runs only after closed journeys, outside interaction timing.
+  The normal non-endurance probe remains available. Request and bounded pointer
+  diagnostics plus a screenshot survive failure; no automatic gesture retries.
+- `../rust-native-20261018/runtime/chart-endurance-smoke-root` PASS30.014s,
+  6endurance journeys, heap growth1,249,308bytes/DOM+2; drag-frame sample-p9516.7ms,
+  confirmed-marker/rAF proxy sample-p9595ms. This is not long-session acceptance.
+- `chart-endurance-600s-root` remains FAIL after45completed endurance journeys:
+  the next protection drag sent no save request. A shorter-period diagnostic
+  `chart-endurance-diagnostic-root` remains FAIL after49completed endurance
+  journeys at sample51. Its screenshot/pointer/marker evidence shows the TP
+  handle receives/captures the pointer, while the visible EURUSD price range has
+  grown to-259.677..262.066. The75px SELL TP drag then computes a negative price.
+- Root cause: `fitOrder` padded the current range by6% on both sides on each
+  new position, including already visible levels. Repeated BUY/SELL compounded
+  zoom-out. It now preserves an existing range containing all valid levels;
+  offscreen levels still expand the range. The probe asserts unchanged scale
+  across repeated same-cutoff openings as well as during each drag. Existing
+  five overlay unit cases PASS; independent scoped source review found no blocker.
+  This does not repair an already saved oversized layout or establish playback,
+  dataset-switch, touch or whole-product endurance.
+- `chart-endurance-fixed-root` PASS600.00167s/120endurance journeys, plus warmup
+  and6baseline samples. Same-cutoff scale is unchanged across all openings and
+  protection drags, iframe retained, zero drag history reads, each persisted TP
+  equals its requested value, final position closed. Endurance confirmed-marker/
+  rAF proxy sample-p9577.5ms; drag-frame sample-p9516.7ms. Baseline6samples median/
+  sample-p9577.5/78.1ms. Source and release-binary hashes unchanged during the run.
+  Post-GC page-target heap grows11,397,312bytes (10.87MiB), within the predeclared
+  16MiB allowance; DOMdelta0. This is bounded acceptance, not a no-leak claim:
+  canonical history grows and the page target excludes whole-browser RSS.
+  API RSS at boundaries is11.0/105.2MiB, peak136.2MiB (includes cold hydration);
+  no continuous API RSS/CPU or production-capacity verdict is inferred.
+- `data-research-current-root` PASS13 on the current release: production Data
+  Library CSV preview/import/reload, actual422 validation, immutable artifact
+  corruption repair, queued cancel, completed native reference research, persisted
+  result/provenance reload, workspace denial, linked-delete409 and mobile layout.
+  Native39-trade metrics equal the independent Python oracle and persisted JSON;
+  database contains one completed and one canceled job, no Python command worker.
+- Root viewed both failure/final chart screenshots. Same reviewer checked the
+  source fix and final endurance receipt; durable scoped review is in
+  `../rust-native-20261018/runtime/chart-endurance-review-root.md`.
+  No owner8010/5180/data changes or runtime promotion. Goal ACTIVE: reconcile
+  whole-extension acceptance and a concrete candidate/cutover handoff next,
+  reusing valid prior module/financial/setup/rollback evidence instead of another
+  speculative rewrite or repeated benchmark. Historical product/broker/touch/
+  dataset-switch gates are not closed by this same-cutoff workload.

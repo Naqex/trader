@@ -16,6 +16,10 @@ const output = path.resolve(value('--output', '../evidence/rust-native-20261017/
 const baseline = args.includes('--baseline-source')
 const samples = Number(value('--samples', 12))
 assert.ok(Number.isSafeInteger(samples) && samples >= 2 && samples <= 40)
+const soakSeconds = Number(value('--soak-seconds', 0))
+const soakPeriodMs = Number(value('--soak-period-ms', 5000))
+assert.ok(Number.isSafeInteger(soakSeconds) && soakSeconds >= 0 && soakSeconds <= 1800)
+assert.ok(Number.isSafeInteger(soakPeriodMs) && soakPeriodMs >= 1000 && soakPeriodMs <= 30000)
 const api = value('--api-base', null)
 const workspace = value('--workspace', 'visual-chart-fixture')
 const dataset = value('--dataset-id', null)
@@ -32,6 +36,12 @@ const overlayPath = path.join(root, 'src/advancedOrderOverlay.js')
 const overlaySource = baseline ? execFileSync('git', ['show', `${revision}:foundation_v2/web/src/advancedOrderOverlay.js`], { cwd: root, encoding: 'utf8' }) : await readFile(overlayPath, 'utf8')
 const sourceSha256 = createHash('sha256').update(overlaySource).digest('hex')
 const report = { scope: api ? 'Production React/native Advanced Charts + explicit local API HTTP; newly created disposable replay only, no owner session or broker. Transport includes loopback proxy.' : 'Production React/native Advanced Charts + identical in-memory synthetic API; no owner/provider/broker calls. Diagnostic rendering cost, not deployed API speed.', revision, baseline, sourceSha256, runtime: { node: process.version }, api, dataset, samples: [], errors: [], resources: [] }
+if (soakSeconds) {
+  assert.ok(api, 'Endurance needs the explicit disposable native API')
+  report.soak = { requestedSeconds: soakSeconds, periodMs: soakPeriodMs, samples: [], memory: [],
+    budgets: { postGcHeapGrowthBytes: 16 * 1024 * 1024, domGrowth: 50, dragFrameSampleP95Ms: 33.5, confirmedPaintSampleP95Ms: 200 },
+    limitations: ['Page-target CDP heap, not whole-browser RSS.', 'The retained canonical ledger grows during this workload.', 'Forced GC runs after closed journeys, outside measured interactions.', 'Headless desktop diagnostic; no manual, touch, capacity or whole-product verdict.'] }
+}
 const fixture = JSON.parse(await readFile(path.join(root, 'tests/visual/chart-fixture.json'), 'utf8'))
 let replay = structuredClone(fixture.latest)
 replay.payload.execution = null
@@ -91,13 +101,22 @@ await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
 const origin = `http://127.0.0.1:${server.address().port}`
 const browser = await chromium.launch({ headless: true })
 await mkdir(path.dirname(output), { recursive: true })
+let page, frame
+report.requests = []
+report.gesture = null
 try {
   const context = await browser.newContext({ viewport: { width: 1368, height: 790 }, reducedMotion: 'reduce' })
   await context.route('**/*', route => {
     const url = new URL(route.request().url())
     return url.origin === origin || ['blob:', 'data:', 'about:'].includes(url.protocol) ? route.continue() : route.abort()
   })
-  await context.addInitScript(() => {
+  await context.addInitScript(collectLongTasks => {
+    if (collectLongTasks) {
+      window.__qaLongTasks = []
+      new PerformanceObserver(list => {
+        for (const entry of list.getEntries()) if (window.__qaLongTasks.length < 5000) window.__qaLongTasks.push(entry.duration)
+      }).observe({ type: 'longtask' })
+    }
     localStorage.setItem('tw-language', 'vi'); localStorage.setItem('tw-theme', 'dark')
     document.addEventListener('load', event => {
       if (!event.target.src?.includes('charting_library.standalone.js')) return
@@ -117,7 +136,7 @@ try {
       }
     }, true)
     document.addEventListener('click', event => { if (event.target.closest('button.buy, button.sell')) window.__qaClick = performance.now() }, true)
-  })
+  }, Boolean(soakSeconds))
   if (!api) await context.route('**/api/**', async route => {
     const req = route.request(), url = new URL(req.url())
     if (req.method() === 'GET') {
@@ -137,16 +156,24 @@ try {
     replay = { ...replay, revision: replay.revision + (suffix === 'quick' ? 2 : 1), payload: { ...replay.payload, execution } }
     return route.fulfill({ json: replay })
   })
-  const page = await context.newPage()
+  page = await context.newPage()
   page.on('pageerror', error => report.errors.push(error.message))
   let historyReads = 0
   page.on('request', req => { if (req.method() === 'GET' && /chart-window|\/bars/.test(req.url())) historyReads++ })
-  const responses = []
-  page.on('requestfinished', req => { if (req.method() === 'POST' && req.url().includes('/orders/')) responses.push({ path: new URL(req.url()).pathname, responseView: new URL(req.url()).searchParams.get('response_view'), timing: req.timing() }) })
+  page.on('requestfinished', req => { if (req.method() === 'POST' && req.url().includes('/orders/')) report.requests.push({ path: new URL(req.url()).pathname, responseView: new URL(req.url()).searchParams.get('response_view'), timing: req.timing() }) })
   await page.goto(`${origin}/?workspace=${api ? workspace : fixture.workspace}&view=replay&surface=workspace&session=${replay.record_id}`)
   await page.locator('[data-chart-status=ready]').waitFor({ timeout: 30000 })
-  const iframe = await page.locator('.advanced-chart-host iframe').elementHandle(), frame = await iframe.contentFrame()
+  const iframe = await page.locator('.advanced-chart-host iframe').elementHandle()
+  frame = await iframe.contentFrame()
   await frame.evaluate(() => {
+    window.__qaPointers = []
+    for (const type of ['pointerdown', 'pointerup', 'pointercancel', 'lostpointercapture']) document.addEventListener(type, event => {
+      const target = event.target.closest?.('[data-order-drag]')
+      const item = { type, at: performance.now(), x: event.clientX, y: event.clientY, pointerId: event.pointerId, target: target?.dataset.orderDrag, tag: event.target.tagName, className: String(event.target.className).slice(0, 160), disabled: target?.disabled }
+      window.__qaPointers.push(item)
+      if (window.__qaPointers.length > 24) window.__qaPointers.shift()
+      queueMicrotask(() => { item.captured = target?.hasPointerCapture(event.pointerId); item.dragging = target?.closest('[data-order-kind]')?.dataset.dragging })
+    }, true)
     window.__qaFrames = []; window.__qaPaints = []
     let last
     const sample = now => { if (last) window.__qaFrames.push(now - last); last = now; requestAnimationFrame(sample) }; requestAnimationFrame(sample)
@@ -158,9 +185,18 @@ try {
     }).observe(document.body, { subtree: true, childList: true, characterData: true })
   })
   const cdp = await context.newCDPSession(page); await cdp.send('Performance.enable')
+  report.runtime.browser = browser.version()
   const metrics = async () => Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map(item => [item.name, item.value]))
+  const memory = async () => {
+    await cdp.send('HeapProfiler.collectGarbage')
+    const heap = await cdp.send('Runtime.getHeapUsage'), dom = await cdp.send('Memory.getDOMCounters')
+    return { elapsedMs: performance.now() - soakStarted, usedBytes: heap.usedSize, totalBytes: heap.totalSize, ...dom }
+  }
+  let soakStarted, soakDeadline = 0, nextSoakSample = 0
   await page.locator('.legacy-quantity-control input').fill('0.12')
-  for (let i = -1; i < samples; i++) {
+  for (let i = -1; i < samples || (soakSeconds && performance.now() < soakDeadline); i++) {
+    const endurance = i >= samples
+    const journeyStarted = performance.now()
     const side = i % 2 === 0 ? 'BUY' : 'SELL'
     const start = await metrics()
     const response = page.waitForResponse(res => /\/orders\/(quick|market)$/.test(new URL(res.url()).pathname) && res.request().method() === 'POST')
@@ -175,10 +211,13 @@ try {
       assert.equal((await confirmedResponse.json()).schema_version, 'replay-mutation-v1')
     }
     const range = await page.evaluate(() => window.__qaChart.getPanes()[0].getMainSourcePriceScale().getVisiblePriceRange())
+    if (i === -1) report.initialOrderRange = range
+    else assert.deepEqual(range, report.initialOrderRange, 'Repeated visible orders must retain the price scale')
     const beforeDrag = await page.evaluate(() => ({ writes: window.__qaPriceWrites, at: performance.now() }))
     const beforeFrames = await frame.evaluate(() => window.__qaFrames.length)
     const beforeReads = historyReads, dragMetrics = await metrics()
     const handle = frame.locator('[data-order-drag=target]'), box = await handle.boundingBox()
+    report.gesture = { sample: i, side, box, range, beforeDrag, markers: await frame.locator('.wm-order-marker').evaluateAll(nodes => nodes.map(node => ({ text: node.textContent, style: node.getAttribute('style'), data: { ...node.dataset } }))) }
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down()
     // Deliberately include sub-tick moves to measure duplicate native writes.
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + (side === 'BUY' ? -75 : 75), { steps: 72 })
@@ -198,12 +237,42 @@ try {
     assert.ok(scaleMovementPixels < .1, `Price scale moved ${scaleMovementPixels} px`)
     assert.equal(await iframe.evaluate(node => node.isConnected), true)
     assert.equal(historyReads, beforeReads)
-    if (api) { const stored = await apiRequest(sessionPath); assert.equal(stored.payload.execution.pending_market_order, null); assert.equal(stored.payload.execution.position.side, side) }
+    if (api) {
+      const stored = await apiRequest(sessionPath), requested = protectionResponse.request().postDataJSON()
+      assert.equal(stored.payload.execution.pending_market_order, null)
+      assert.equal(stored.payload.execution.position.side, side)
+      assert.equal(Number(stored.payload.execution.position.take_profit), Number(requested.take_profit))
+    }
     const frames = await frame.evaluate(from => window.__qaFrames.slice(from), beforeFrames)
-    if (i >= 0) report.samples.push({ sample: i, side, clickToConfirmedPaintMs: paint.paint - paint.click, drag: { durationMs: afterDrag.at - beforeDrag.at, priceWrites: afterDrag.writes - beforeDrag.writes, frames, layoutCount: after.LayoutCount - dragMetrics.LayoutCount, layoutSeconds: after.LayoutDuration - dragMetrics.LayoutDuration, scriptSeconds: after.ScriptDuration - dragMetrics.ScriptDuration }, journeyLayoutCount: after.LayoutCount - start.LayoutCount, historyReads: 0, iframeRetained: true, scaleRetained: true, scaleMovementPixels, range, afterRange })
+    if (i >= 0) (endurance ? report.soak.samples : report.samples).push({ sample: i, side, clickToConfirmedPaintMs: paint.paint - paint.click, drag: { durationMs: afterDrag.at - beforeDrag.at, priceWrites: afterDrag.writes - beforeDrag.writes, frames, layoutCount: after.LayoutCount - dragMetrics.LayoutCount, layoutSeconds: after.LayoutDuration - dragMetrics.LayoutDuration, scriptSeconds: after.ScriptDuration - dragMetrics.ScriptDuration }, journeyLayoutCount: after.LayoutCount - start.LayoutCount, historyReads: 0, iframeRetained: true, scaleRetained: true, scaleMovementPixels, range, afterRange })
     await frame.locator('.wm-order-marker-close').click(); await page.locator('.chart-order-close-dialog button.is-destructive').click(); await frame.locator('[data-order-kind=entry]').waitFor({ state: 'hidden' })
+    if (soakSeconds && i === samples - 1) {
+      soakStarted = performance.now(); soakDeadline = soakStarted + soakSeconds * 1000
+      report.soak.memory.push(await memory())
+      await page.evaluate(() => { window.__qaLongTasks = [] })
+      await frame.evaluate(() => { window.__qaLongTasks = [] })
+    } else if (endurance) {
+      report.soak.memory.push(await memory())
+      if (performance.now() >= nextSoakSample) {
+        nextSoakSample = performance.now() + 30000
+        await writeFile(path.join(path.dirname(output), 'soak-progress.json'), JSON.stringify({ elapsedMs: performance.now() - soakStarted, journeys: report.soak.samples.length, lastMemory: report.soak.memory.at(-1) }))
+      }
+      await page.waitForTimeout(Math.max(0, Math.min(soakDeadline - performance.now(), soakPeriodMs - (performance.now() - journeyStarted))))
+    }
+    await frame.evaluate(() => { window.__qaFrames = []; window.__qaPaints = [] })
   }
-  report.requests = responses
+  if (soakSeconds) {
+    report.soak.actualSeconds = (performance.now() - soakStarted) / 1000
+    report.soak.longTasks = { page: await page.evaluate(() => window.__qaLongTasks), chart: await frame.evaluate(() => window.__qaLongTasks) }
+    assert.ok(Object.values(report.soak.longTasks).every(tasks => tasks.length < 5000), 'Long-task observation buffer overflow')
+    const first = report.soak.memory[0], last = report.soak.memory.at(-1), budget = report.soak.budgets
+    report.soak.heapGrowthBytes = last.usedBytes - first.usedBytes
+    report.soak.domGrowth = last.nodes - first.nodes
+    assert.ok(report.soak.samples.length >= Math.floor(soakSeconds * 1000 / soakPeriodMs / 2), 'Too few completed endurance journeys')
+    assert.ok(report.soak.actualSeconds >= soakSeconds, 'Endurance duration was shortened')
+    assert.ok(report.soak.heapGrowthBytes <= budget.postGcHeapGrowthBytes, 'Post-GC heap exceeds the declared growth allowance')
+    assert.ok(report.soak.domGrowth <= budget.domGrowth, 'DOM exceeds the declared growth allowance')
+  }
   report.resources = await page.evaluate(() => performance.getEntriesByType('resource').map(item => ({ path: new URL(item.name).pathname, bytes: item.encodedBodySize, durationMs: item.duration })))
   assert.deepEqual(report.errors, [])
   report.status = 'PASS'
@@ -212,7 +281,24 @@ try {
     const values = report.samples.map(sample => key.split('.').reduce((value, part) => value[part], sample))
     return [key, { p50: quantile(values, .5), sampleP95: quantile(values, .95) }]
   }))
+  if (soakSeconds) {
+    const frames = report.soak.samples.flatMap(sample => sample.drag.frames)
+    report.soak.dragFrameSampleP95Ms = quantile(frames, .95)
+    report.soak.confirmedPaintSampleP95Ms = quantile(report.soak.samples.map(sample => sample.clickToConfirmedPaintMs), .95)
+    assert.ok(report.soak.dragFrameSampleP95Ms <= report.soak.budgets.dragFrameSampleP95Ms, 'Drag frames exceed the declared budget')
+    assert.ok(report.soak.confirmedPaintSampleP95Ms <= report.soak.budgets.confirmedPaintSampleP95Ms, 'Confirmed paint exceeds the declared budget')
+  }
   await page.screenshot({ path: path.join(path.dirname(output), path.basename(output, '.json') + '.png') })
-} catch (error) { report.status = 'FAIL'; report.failure = error.stack; throw error }
+} catch (error) {
+  report.status = 'FAIL'; report.failure = error.stack
+  if (page && !page.isClosed()) {
+    try {
+      await page.screenshot({ path: path.join(path.dirname(output), 'failure.png') })
+      report.failurePage = await page.evaluate(() => ({ text: document.body.innerText.slice(-6000), priceWrites: window.__qaPriceWrites }))
+      if (frame && !frame.isDetached()) report.failureChart = await frame.evaluate(() => ({ pointers: window.__qaPointers, markers: [...document.querySelectorAll('.wm-order-marker')].map(node => ({ html: node.outerHTML, box: node.getBoundingClientRect().toJSON() })) }))
+    } catch (diagnosticError) { report.diagnosticFailure = diagnosticError.message }
+  }
+  throw error
+}
 finally { await browser.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); await writeFile(output, JSON.stringify(report, null, 2) + '\n') }
 console.log(JSON.stringify({ output, status: report.status, summary: report.summary }))

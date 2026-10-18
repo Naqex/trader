@@ -235,6 +235,9 @@ export default function TradingViewReplayChart(props) {
           if (!levels) return
           const range = chart.getVisiblePriceRange()
           const prices = [levels.entry, levels.stop, levels.target, levels.ghostStop, levels.ghostTarget].filter(value => Number.isFinite(value) && value > 0)
+          // Reopening an already visible position must not compound padding and
+          // progressively zoom the chart out until protection drags cross zero.
+          if (prices.every(price => price >= range.from && price <= range.to)) return
           const from = Math.min(range.from, range.to, ...prices)
           const to = Math.max(range.from, range.to, ...prices)
           const padding = (to - from) * .06

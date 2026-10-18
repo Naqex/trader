@@ -98,6 +98,10 @@ The execution checkpoint is
   React/Advanced Charts, quick BUY/SELL, TP drag, close and persisted checks.
   `--http-benchmark` adds bounded independent concurrent aggregates at increasing
   ledger sizes. `--phase-timings` logs request phases without payloads/identities.
+  `--soak-seconds 600 --soak-period-ms 5000` repeats same-cutoff order/drag/close
+  journeys with post-GC page-heap, DOM, frame and confirmed-marker/rAF budgets.
+  Failure preserves pointer/marker/request diagnostics and a screenshot. This
+  is bounded desktop acceptance, not whole-product, touch, capacity or no-leak proof.
 - `scripts/rust_replay_storage_acceptance.py`: equivalent full/compact PostgreSQL
   revisions, operation admission, historical hydration, Prop/analytics, immutable
   rows, invalid-prefix denial and alternating history-size samples.
@@ -109,12 +113,13 @@ The execution checkpoint is
   retries, atomic rejects, historical views and fresh-process PostgreSQL reads.
 - Persisted domain and financial differential suites listed in the checkpoint.
 
-Measured native click-to-confirmed-paint is around 46 ms on the 300-row synthetic
-fixture (12 samples). This is local diagnostic evidence, not production capacity.
-At about 5,000 events the full mutation response is about 4.6 MB and protection
-latency still grows substantially. Snapshot/retry persistence, financial
-validation and response costs must be attributed before transport/storage changes.
-Full-ledger persistence and report projections remain scaling limitations.
+Current compact BAR interaction measurements are in **Bounded BAR storage
+candidate** below; exact commands and raw samples belong to the execution
+checkpoint. The earlier full-snapshot path measured around46ms on a300-row
+synthetic fixture (12samples), but its response grew to about4.6MB at5,000events.
+Those historical measurements explain the compact candidate; they are not its
+current latency or a production-capacity result. Tick/portfolio retain full
+hydration, with correctness evidence separate from scaling measurements.
 
 Successful replay receipts now retain the exact serialized HTTP JSON in the
 existing `result_text` column. Initial response, retry and command recovery use
@@ -132,9 +137,10 @@ four independent aggregates. Financial validation and the full ledger remain
 intact. This is still an O(history) snapshot path; the short measurements do not
 establish a stable tail latency or production capacity.
 
-Independent integration review, broader native data/research UI journeys and
-resource/long-duration acceptance remain open. This candidate is not whole-product
-acceptance and does not change broker, holdout, authorization or deployment gates.
+Scoped independent reviews, native Data/Research browser journeys and resource
+checks are recorded in the checkpoint. Their revision and workload limits apply;
+they do not replace the remaining integrated/long-duration acceptance. This
+candidate does not change broker, holdout, authorization or deployment gates.
 
 Scientific capability descriptors use `research-scientific-adapter-capability-v2`.
 They pin all files under `engine_runtime` (including its isolated environment)
@@ -225,6 +231,14 @@ fixture, 12 warm journeys measured confirmed paint at median79.5ms/sample-p9580.
 with compact storage, versus244.9/262ms with full storage on the same final source.
 These serial headless diagnostics do not establish production capacity or stable
 tail latency. The default/owner runtime remains unchanged.
+
+The later600s/120journey run on the5,000-event fixture passes at confirmed-marker/
+rAF proxy sample-p9577.5ms and drag-frame sample-p9516.7ms, with DOMdelta0 and
+10.87MiB post-GC page-heap growth within its declared16MiB allowance. Endurance
+exposed cumulative automatic price-range padding: already visible levels now
+preserve the range, while offscreen levels still expand it. Existing oversized
+saved layouts are not inferred/repaired by this change. Failed attempts and
+revision/fingerprint limits remain in the checkpoint.
 
 A stored prefix hash alone cannot prove an unread prefix is unchanged. The trust
 boundary must include immutable committed PostgreSQL event rows and controlled
