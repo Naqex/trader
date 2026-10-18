@@ -1,9 +1,16 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useTestingLocale } from './testingLocale.jsx'
 import './notifications.css'
 
 const NotificationContext = createContext(null)
+const NotificationViewportContext = createContext(null)
 export const useNotifications = () => useContext(NotificationContext)
+
+export function NotificationSlot({ children }) {
+  const viewport = useContext(NotificationViewportContext)
+  return viewport ? createPortal(children, viewport) : null
+}
 
 function Notification({ notice, onDismiss }) {
   const { t } = useTestingLocale()
@@ -38,6 +45,7 @@ function Notification({ notice, onDismiss }) {
 export function NotificationProvider({ children }) {
   const { t } = useTestingLocale()
   const [notices, setNotices] = useState([])
+  const [viewport, setViewport] = useState(null)
   const sequence = useRef(0)
   const dismiss = useCallback(id => setNotices(items => items.filter(item => item.id !== id)), [])
   const notify = useCallback((messageOrNotice, tone = 'success') => {
@@ -46,5 +54,5 @@ export function NotificationProvider({ children }) {
     const notice = { id: ++sequence.current, ...input, key }
     setNotices(items => [...items.filter(item => item.key !== key), notice].slice(-3))
   }, [])
-  return <NotificationContext.Provider value={notify}>{children}<aside className="wm-notifications" aria-label={t('Thông báo thao tác')}>{notices.map(notice => <Notification key={notice.id} notice={notice} onDismiss={dismiss} />)}</aside></NotificationContext.Provider>
+  return <NotificationContext.Provider value={notify}><NotificationViewportContext.Provider value={viewport}>{children}</NotificationViewportContext.Provider><aside ref={setViewport} className="wm-notifications" aria-label={t('Thông báo thao tác')}>{notices.map(notice => <Notification key={notice.id} notice={notice} onDismiss={dismiss} />)}</aside></NotificationContext.Provider>
 }

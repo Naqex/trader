@@ -4,6 +4,8 @@ import { scopedMutation } from './scopedMutation.js'
 import { canUseReplayMutationView, mergeReplayMutationView, replayMutationEventsAfter } from './replayMutationView.js'
 import { canUseReplayStepView, mergeReplayStepView } from './replayStepView.js'
 import { scopedRead } from './scopedRead.js'
+import { NotificationSlot } from './Notifications.jsx'
+import { hasPendingPropReplayEvents, syncPropReplayEvents } from './propReplaySync.js'
 import ProjectDateInput from './ProjectDateInput.jsx'
 import { displayDate } from './dateFormat.js'
 import { displayTimeframe } from './dataDisplay.js'
@@ -44,7 +46,7 @@ import { orderLevels, marketQuotes } from './replayOrderModel.js'
 import { readScalperPreset, scalperProtection } from './legacyScalperPreset.js'
 import './ReplayWorkspace.css'
 import './ChartWorkbench.css'
-import { isPropTerminal, propPriceMarkEvents, propReplayRuleView } from './propReplayModel.js'
+import { isPropTerminal, propReplayRuleView } from './propReplayModel.js'
 
 const ReplayChart = lazy(() => import('./LightweightReplayChart.jsx'))
 
@@ -144,12 +146,13 @@ export default function ReplayWorkspace({ workspace, query }) {
   const [propRulesOpen, setPropRulesOpen] = useState(false)
   const propRules = propReplayRuleView(propState)
   const propTerminal = propMode && isPropTerminal(propState.attempt?.status)
-  const propReadyToAdvance = !propMode || (propState.status === 'ready' && propState.attempt?.status === 'running' && !isPropTerminal(propState.attempt?.status))
   const replayScopeResolved = state.payload?.record_id === requestedSession && (requestedCursor === null || Number(state.payload?.view_cursor_index) === requestedCursor)
   useContentReadyMetric('replay', replayScopeResolved || !requestedSession ? state.status : 'loading', `${workspace}:${requestedSession}:${requestedCursorParam ?? ''}`)
   const advancedChart = state.payload?.payload?.chart_engine ? state.payload.payload.chart_engine === 'legacy' : query.get('chart_engine') !== 'lightweight'
   const [datasetState, setDatasetState] = useState({ status: 'loading', items: [], error: null })
   const [pendingAction, setPendingAction] = useState('')
+  const propSyncPending = propMode && hasPendingPropReplayEvents(state.payload, propState)
+  const propReadyToAdvance = !propMode || (propState.status === 'ready' && propState.attempt?.status === 'running' && (Boolean(pendingAction) || !propSyncPending))
   const [conflict, setConflict] = useState(false)
   const [branchCursor, setBranchCursor] = useState(0)
   const [datasetDraft, setDatasetDraft] = useState(requestedDataset)
@@ -426,19 +429,11 @@ export default function ReplayWorkspace({ workspace, query }) {
       if (propMode && kind === 'step' && propState.status === 'ready' && propState.attempt && propState.phase) {
         const boundSequence = Number(nextPropState.resumeState?.replay_binding?.last_replay_event_sequence || 0)
         const events = merged ? replayMutationEventsAfter(merged, boundSequence) : payload.payload.execution?.ledger || payload.execution_events
-        for (const event of propPriceMarkEvents(events, boundSequence)) {
-          try {
-            const feedResponse = await scopedMutation(`/api/v2/replay/sessions/${encodeURIComponent(sessionId)}/prop/sessions/${encodeURIComponent(propSessionId)}/attempts/${encodeURIComponent(propAttemptId)}/feed`, workspace, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'X-Workspace-Id': workspace },
-              body: JSON.stringify({ replay_event_sequence: Number(event.sequence), expected_prop_revision: nextPropState.attempt.revision, prop_event_sequence: Number(nextPropState.phase.last_event_sequence) + 1 }),
-            })
-            const fed = await readJson(feedResponse)
-            nextPropState = { ...nextPropState, status: 'ready', attempt: fed.attempt || nextPropState.attempt, phase: fed.phase || nextPropState.phase, resumeState: fed.resume_state || nextPropState.resumeState, objectives: fed.objectives || fed.resume_state?.prop_lifecycle?.last_objectives || nextPropState.objectives, error: null }
-          } catch (error) {
-            propSyncError = String(error.message || error)
-            break
-          }
+        try {
+          nextPropState = await syncPropReplayEvents({ workspace, sessionId, propSessionId, propAttemptId, propState: nextPropState, events })
+        } catch (error) {
+          nextPropState = error.propState || nextPropState
+          propSyncError = String(error.message || error)
         }
       }
       if (propMode) {
@@ -712,17 +707,10 @@ export default function ReplayWorkspace({ workspace, query }) {
         let current = propState
         try {
           const boundSequence = Number(current.resumeState?.replay_binding?.last_replay_event_sequence || 0)
-          for (const event of propPriceMarkEvents(replayMutationEventsAfter(merged, boundSequence), boundSequence)) {
-            const response = await scopedMutation(`/api/v2/replay/sessions/${encodeURIComponent(sessionId)}/prop/sessions/${encodeURIComponent(propSessionId)}/attempts/${encodeURIComponent(propAttemptId)}/feed`, workspace, {
-              method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Workspace-Id': workspace },
-              body: JSON.stringify({ replay_event_sequence: Number(event.sequence), expected_prop_revision: current.attempt.revision, prop_event_sequence: Number(current.phase.last_event_sequence) + 1 }),
-            })
-            const fed = await readJson(response)
-            current = { ...current, attempt: fed.attempt, phase: fed.phase, resumeState: fed.resume_state, objectives: fed.objectives || fed.resume_state?.prop_lifecycle?.last_objectives || current.objectives }
-          }
+          current = await syncPropReplayEvents({ workspace, sessionId, propSessionId, propAttemptId, propState: current, events: replayMutationEventsAfter(merged, boundSequence) })
           setPropState(current)
         } catch (error) {
-          setPropState({ ...current, status: 'error', error: error.message }); setConflict(true)
+          setPropState({ ...(error.propState || current), status: 'error', error: error.message }); setConflict(true)
           throw new Error('Lệnh đã xử lý; chưa đồng bộ được challenge. Nạp lại trạng thái trước khi tiếp tục.')
         }
       }
@@ -731,6 +719,34 @@ export default function ReplayWorkspace({ workspace, query }) {
       if (error.code === 'revision_conflict') { setConflict(true); throw new Error('Phiên đã đổi ở nơi khác. Nạp trạng thái mới trước khi sửa lệnh.') }
       if (error.code === 'replay_mutation_invalid') setConflict(true)
       throw error
+    } finally { actionLock.current = false; setPendingAction('') }
+  }
+  const recoverPropSync = async () => {
+    if (actionLock.current) return
+    const location = window.location.search
+    actionLock.current = true
+    setPendingAction('prop-sync')
+    setConflict(true)
+    setIsPlaying(false)
+    try {
+      const [nextReplay, saved] = await Promise.all([
+        scopedRead(`/api/v2/replay/sessions/${encodeURIComponent(sessionId)}`, workspace).then(readJson),
+        scopedRead(`/api/v2/prop/sessions/${encodeURIComponent(propSessionId)}/attempts/${encodeURIComponent(propAttemptId)}`, workspace).then(readJson),
+      ])
+      if (window.location.search !== location) return
+      if ((nextReplay.prop_session_id || nextReplay.payload.prop_session_id) !== propSessionId
+        || (nextReplay.prop_attempt_id || nextReplay.payload.prop_attempt_id) !== propAttemptId
+        || saved.attempt?.attempt_id !== propAttemptId || saved.attempt?.session_id !== propSessionId) throw new Error('Liên kết thử thách đã thay đổi. Tải lại trang trước khi tiếp tục.')
+      const current = { ...propState, status: 'ready', session: saved.session, attempt: saved.attempt, phase: saved.phase, resumeState: saved.resume_state, objectives: saved.resume_state?.prop_lifecycle?.last_objectives || null, error: null }
+      const synced = await syncPropReplayEvents({ workspace, sessionId, propSessionId, propAttemptId, propState: current, events: nextReplay.payload.execution?.ledger })
+      if (window.location.search !== location) return
+      orderReplay.current = nextReplay
+      setState({ status: 'ready', payload: nextReplay, error: null })
+      setPropState(synced)
+      setConflict(false)
+      rememberSession(sessionId, true, nextReplay.payload.cursor_index, nextReplay.payload.dataset_id)
+    } catch (error) {
+      if (window.location.search === location) setPropState(current => ({ ...(error.propState || current), status: 'error', error: String(error.message || error) }))
     } finally { actionLock.current = false; setPendingAction('') }
   }
   const assetClockStale = Boolean(replay?.payload?.asset_states && currentBar && Number(currentBar.timestamp) + Number(activeDataset?.timeframe_seconds) < replay.payload.replay_clock_utc)
@@ -746,7 +762,7 @@ export default function ReplayWorkspace({ workspace, query }) {
     if (current && JSON.stringify(current) === JSON.stringify(next)) return current
     return next
   }), [])
-  const order = useChartOrder({ workspace, replay, dataset: activeDataset, ready: state.status === 'ready', closeBlocked: historicalView || conflict || assetClockStale || Boolean(pendingAction) || (propMode && !propReadyToAdvance), blocked: historicalView || completed || conflict || assetClockStale || Boolean(pendingAction) || (propMode && propState.status !== 'ready') || (propMode && propState.attempt?.status !== 'running'), submit: submitOrder, executionConfig: propExecutionConfig })
+  const order = useChartOrder({ workspace, replay, dataset: activeDataset, ready: state.status === 'ready', closeBlocked: historicalView || conflict || assetClockStale || Boolean(pendingAction) || (propMode && !propReadyToAdvance), blocked: historicalView || completed || conflict || propSyncPending || assetClockStale || Boolean(pendingAction) || (propMode && propState.status !== 'ready') || (propMode && propState.attempt?.status !== 'running'), submit: submitOrder, executionConfig: propExecutionConfig })
   const scalperPreview = useMemo(() => {
     if (!scalperPreset?.enabled) return null
     const side = order.active?.side || order.draft.side
@@ -989,14 +1005,15 @@ export default function ReplayWorkspace({ workspace, query }) {
             </div>
           </section>
 
-          {conflict && (
-            <section className="conflict-banner" role="alert" data-testid="revision-conflict">
-              <div>
-                <strong>{t("Session đã thay đổi ở nơi khác.")}</strong>
-                <span>{t("Controls đang khóa để tránh ghi đè revision cũ.")}</span>
+          {(conflict || (propSyncPending && !pendingAction)) && (
+            <NotificationSlot><section className="wm-notification is-error is-blocking" role="alert" data-testid="revision-conflict">
+              <div className="wm-notification-content">
+                <strong>{t(propMode && (propState.status === 'error' || propSyncPending) ? 'Chưa đồng bộ được thử thách.' : 'Session đã thay đổi ở nơi khác.')}</strong>
+                <span className="wm-notification-detail">{t(propMode && (propState.status === 'error' || propSyncPending) ? 'Thao tác đã được lưu. Đồng bộ thử thách trước khi tiếp tục; không gửi lại thao tác.' : 'Controls đang khóa để tránh ghi đè revision cũ.')}</span>
+                {propMode && propState.error && <span className="wm-notification-detail">{t(propState.error)}</span>}
               </div>
-              <button type="button" onClick={() => loadSession(sessionId)}>{t("Tải trạng thái mới")}</button>
-            </section>
+              <button type="button" className="wm-notification-action" disabled={Boolean(pendingAction)} onClick={() => propMode ? recoverPropSync() : loadSession(sessionId)}>{t(propMode ? 'Đồng bộ thử thách' : 'Tải trạng thái mới')}</button>
+            </section></NotificationSlot>
           )}
 
           {historicalView && (
@@ -1089,8 +1106,10 @@ export default function ReplayWorkspace({ workspace, query }) {
                 </div>
                 <div className="chart-trading-account">{propMode && <button type="button" className="prop-rules-bottom-button" data-testid="prop-rules-button" onClick={() => setPropRulesOpen(true)}><ChartIcon name="shield" />{t('Prop Firm Rules')}</button>}<span>{t('Balance')}<strong>{money(order.account?.balance, order.costs?.account_ccy)}</strong></span><span>{t('Equity')}<strong>{money(order.account?.equity, order.costs?.account_ccy)}</strong></span><span>{t('P/L')}<strong>{money(order.account?.floating_pl, order.costs?.account_ccy)}</strong></span></div>
               </div>}
-              {activityWaiting && <div className="chart-notice" role="status">{t('Chưa lưu được thời gian luyện tập. Đang thử lại…')}</div>}
-              {chartNotice && <div className="chart-notice" role="status">{t(chartNotice)}<button type="button" aria-label={t("Đóng thông báo")} onClick={() => setChartNotice('')}>×</button></div>}
+              <NotificationSlot>
+                {activityWaiting && <div className="wm-notification" role="status"><p>{t('Chưa lưu được thời gian luyện tập. Đang thử lại…')}</p></div>}
+                {chartNotice && <div className="wm-notification" role="status"><p>{t(chartNotice)}</p><button type="button" aria-label={t("Đóng thông báo")} onClick={() => setChartNotice('')}>×</button></div>}
+              </NotificationSlot>
 
               <div className="replay-evidence-strip" role="group" aria-label={t("Bằng chứng chart")}>
                 <div><span className="story-label">{t("03 · EVIDENCE")}</span><strong>{crosshair?.row ? t("Nến đang chọn") : t("Nến tại cutoff")}</strong></div>

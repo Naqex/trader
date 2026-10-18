@@ -1,0 +1,17 @@
+[
+  {
+    "attempt": "r1",
+    "passed": false,
+    "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n0 !== 1\n\n    at file:///D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/web/tests/propSyncRecovery.browser.mjs:57:10"
+  },
+  {
+    "attempt": "r2",
+    "passed": false,
+    "error": "AssertionError [ERR_ASSERTION]: The input did not match the regular expression /sync_fixture_unavailable/. Input:\n\n'Ch\u01b0a \u0111\u1ed3ng b\u1ed9 \u0111\u01b0\u1ee3c th\u1eed th\u00e1ch.\\n' +\n  'L\u1ec7nh \u0111\u00e3 \u0111\u01b0\u1ee3c l\u01b0u. \u0110\u1ed3ng b\u1ed9 th\u1eed th\u00e1ch tr\u01b0\u1edbc khi ti\u1ebfp t\u1ee5c; kh\u00f4ng \u0111\u1eb7t l\u1ea1i l\u1ec7nh.\\n' +\n  '\u0110\u1ed3ng b\u1ed9 th\u1eed th\u00e1ch'\n\n    at file:///D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/web/tests/propSyncRecovery.browser.mjs:51:10"
+  },
+  {
+    "attempt": "r3",
+    "passed": false,
+    "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n'774px' !== 'auto'\n\n    at file:///D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/web/tests/propSyncRecovery.browser.mjs:93:86\n    at runNextTicks (node:internal/process/task_queues:65:5)\n    at process.processImmediate (node:internal/timers:502:9)"
+  }
+]

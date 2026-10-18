@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "cases": [
+    "saved order remains visible and locked; error text and bottom-left placement at 1368 and 390",
+    "409 recovery error retains action and blocks further trades",
+    "real native feed recovers exactly once with unchanged replay revision and financial state",
+    "non-chart pages retain their original top-right notification placement"
+  ],
+  "page_errors": []
+}

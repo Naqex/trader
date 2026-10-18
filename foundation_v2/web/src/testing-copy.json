@@ -1,4 +1,10 @@
 {
+  "Liên kết thử thách đã thay đổi. Tải lại trang trước khi tiếp tục.": {"vi":"Liên kết thử thách đã thay đổi. Tải lại trang trước khi tiếp tục.","en":"The challenge link has changed. Reload the page before continuing."},
+  "Chưa đồng bộ được thử thách.": {"vi":"Chưa đồng bộ được thử thách.","en":"Challenge synchronization failed."},
+  "Thao tác đã được lưu. Đồng bộ thử thách trước khi tiếp tục; không gửi lại thao tác.": {"vi":"Thao tác đã được lưu. Đồng bộ thử thách trước khi tiếp tục; không gửi lại thao tác.","en":"The action is saved. Sync the challenge before continuing; do not submit the action again."},
+  "Đồng bộ thử thách": {"vi":"Đồng bộ thử thách","en":"Sync challenge"},
+  "Chưa đọc đủ lịch sử để đồng bộ thử thách.": {"vi":"Chưa đọc đủ lịch sử để đồng bộ thử thách.","en":"The event history required for challenge synchronization is unavailable."},
+  "Phản hồi đồng bộ thử thách không khớp sự kiện.": {"vi":"Phản hồi đồng bộ thử thách không khớp sự kiện.","en":"The challenge synchronization response does not match the event."},
   "Đặt lệnh nhanh theo khối lượng đã chọn": {"vi":"Đặt lệnh nhanh theo khối lượng đã chọn","en":"Quick order at the selected quantity"},
   "Position Updated": {"vi":"Đã cập nhật vị thế","en":"Position Updated"},
   "Take profit moved to {price}!": {"vi":"Đã dời Take profit đến {price}!","en":"Take profit moved to {price}!"},

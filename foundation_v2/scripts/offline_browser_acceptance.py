@@ -13,7 +13,7 @@ from trading_workspace_v2.store import PostgresStore
 import httpx
 
 
-def run_acceptance(evidence_name, browser_script, *, pytest_paths=()):
+def run_acceptance(evidence_name, browser_script, *, pytest_paths=(), runtime_profile='compatibility', replay_storage_profile='full'):
     out = V2 / 'evidence' / evidence_name
     out.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='tw-browser-qa-') as temporary:
@@ -33,7 +33,12 @@ def run_acceptance(evidence_name, browser_script, *, pytest_paths=()):
                'TW_V2_API_TARGET': f'http://127.0.0.1:{apiport}', 'TW_V2_RUST_REQUESTS_PER_MINUTE': '10000'}
         base = [sys.executable, '-B', str(V2 / 'scripts/run_api_platform.py'), '--database-name', 'postgres',
                 '--port', str(apiport), '--artifact-root', str(work / 'artifacts'), '--download-engine', 'none',
-                '--manifest', str(work / 'runtime/owner.json')]
+                '--manifest', str(work / 'runtime/owner.json'), '--runtime-profile', runtime_profile,
+                '--replay-storage-profile', replay_storage_profile]
+        if runtime_profile == 'native':
+            binaries = V2 / 'api-rust/target/native-candidate/release'
+            for option, name in [('rust-binary', 'trading-workspace-api'), ('rust-admin-binary', 'rust_runtime_admin'), ('rust-research-binary', 'rust_research_worker')]:
+                base.extend([f'--{option}', str(binaries / f'{name}.exe')])
         children, logs = [], []
         try:
             subprocess.run([*base, '--setup-only', '--migrate'], env=env, cwd=V2, check=True, timeout=45)

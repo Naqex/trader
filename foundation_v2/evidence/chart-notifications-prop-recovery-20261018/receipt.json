@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "scope": "chart notifications and explicit Prop recovery; current working source",
+  "baseline": "c6f210c2c09415a61382172efab762c1f1ed2ca9",
+  "node_tests_passed": 32,
+  "native_browser_receipt": "r5/browser.json",
+  "production_build_passed": true,
+  "owner_read_only": "owner-read.json",
+  "original_owner_failure_cause": "not established; stale challenge confirmed",
+  "owner_trade_or_feed_sent": false,
+  "source_sha256": {
+    "foundation_v2/web/src/Notifications.jsx": "9aaeee3062f26c9df66a7c3201ecfba3885902b47bb7cfeea19131f24dad091f",
+    "foundation_v2/web/src/notifications.css": "1c995e4f0cc94f8917796040556891b55841a87c956698c4ab412830e481d2ed",
+    "foundation_v2/web/src/ReplayWorkspace.jsx": "4870abc71155c7ecb6e7f0eff7e20fed8eeaa33c8a1067e00d1638e1c88d9f98",
+    "foundation_v2/web/src/propReplaySync.js": "e73b8830f186d474e0782240b75204f5f95dfecf25db6c1b9edb8152140e3dbf",
+    "foundation_v2/web/src/testing-copy.json": "28b683b640455b976785b3985bb35766e89a36e5f09526bde5124628a1b89f82",
+    "foundation_v2/scripts/offline_browser_acceptance.py": "6e454933ae46e1a37e5f36e1af677fd196907173b547b022ea5d786b1b0f501f",
+    "foundation_v2/web/tests/propReplaySync.test.mjs": "60be3b444f3623e33c2698ec677f64b2a263056eceef74db245b10dd6272ff5b",
+    "foundation_v2/web/tests/propSyncRecovery.browser.mjs": "8247b357946563e7737312c4b9ee07784f08c0062d4207341bb43fe5914b2309"
+  },
+  "final_delta_after_browser": "only explanatory Vietnamese/English copy changed from saved order to saved action"
+}

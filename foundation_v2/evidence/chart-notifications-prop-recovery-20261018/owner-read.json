@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "production_preview": true,
+  "chart_visible": true,
+  "recovery_action_visible": true,
+  "bottom_left": {
+    "x": 16,
+    "y": 604,
+    "width": 340,
+    "height": 114
+  },
+  "blocked_mutations": 0,
+  "page_errors": []
+}

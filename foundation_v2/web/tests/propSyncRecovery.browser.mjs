@@ -1,0 +1,102 @@
+import assert from 'node:assert/strict'
+import { writeFile } from 'node:fs/promises'
+import path from 'node:path'
+import { chromium } from 'playwright'
+
+const [origin, out] = process.argv.slice(2)
+const browser = await chromium.launch()
+const page = await browser.newPage({ viewport: { width: 1368, height: 790 } })
+const errors = [], requests = [], cases = []
+page.on('pageerror', error => errors.push(error.message))
+page.on('request', request => { if (request.method() !== 'GET' && request.url().includes('/api/')) requests.push({ url: request.url(), body: request.postDataJSON() }) })
+const headers = { 'X-Workspace-Id': 'tenant-a' }
+try {
+  await page.goto(origin)
+  await page.evaluate(async () => {
+    const { scopedMutation } = await import('/src/scopedMutation.js')
+    const response = await scopedMutation('/api/v2/data/csv/import', 'tenant-a', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+      csv_text: 'time,open,high,low,close,volume\n' + Array.from({ length: 2880 }, (_, i) => `${1577923200 + i * 60},1.1,1.105,1.099,1.102,10`).join('\n'),
+      source: { source_id: 'prop-sync-recovery', provider: 'fixture', instrument_mapping: { EURUSD: 'EURUSD' }, license_use: 'qa-only', retrieved_at_utc: '2026-10-18T00:00:00Z', export_settings: 'synthetic' },
+      instrument: { instrument_id: 'EURUSD', asset_class: 'fx', base_ccy: 'EUR', quote_ccy: 'USD', account_ccy: 'USD', contract_size: '100000', tick_size: '0.00001', pip_size: '0.0001', quantity_min: '0.01', quantity_step: '0.01', effective_from_utc: '2020-01-01T00:00:00Z', effective_to_utc: '' },
+      timeframe_seconds: 60, holdout_policy: { mode: 'none' },
+    }) })
+    if (!response.ok) throw new Error(JSON.stringify(await response.json()))
+  })
+  await page.goto(`${origin}/?workspace=tenant-a&view=overview&create=prop`)
+  const dialog = page.locator('.quick-session-dialog')
+  await dialog.waitFor()
+  await dialog.locator('input[required]').first().fill('SYNC-RECOVERY')
+  await dialog.getByRole('button', { name: 'Chọn tài sản', exact: true }).click()
+  await page.getByRole('option', { name: /EURUSD/ }).click()
+  await dialog.locator('.quick-session-period-random').click()
+  await dialog.getByRole('button', { name: 'Tạo phiên', exact: true }).click()
+  await page.waitForURL(url => url.searchParams.get('surface') === 'workspace')
+  await page.locator('[data-chart-status="ready"]').waitFor({ timeout: 30000 })
+  const url = new URL(page.url())
+  const replayPath = `${origin}/api/v2/replay/sessions/${url.searchParams.get('session')}`
+  const attemptPath = `${origin}/api/v2/prop/sessions/${url.searchParams.get('prop_session')}/attempts/${url.searchParams.get('prop_attempt')}`
+  const buy = page.locator('.legacy-trading-bar button.buy')
+  await buy.waitFor()
+  await page.waitForFunction(() => !document.querySelector('.legacy-trading-bar button.buy')?.disabled)
+  let failures = 0
+  await page.route('**/attempts/*/feed', async route => {
+    failures++
+    if (failures <= 2) return route.fulfill({ status: failures === 1 ? 503 : 409, contentType: 'application/json', body: JSON.stringify({ detail: failures === 1 ? 'sync_fixture_unavailable' : 'attempt revision conflict' }) })
+    await route.continue()
+  })
+  await buy.click()
+  const banner = page.getByTestId('revision-conflict')
+  await banner.waitFor()
+  await banner.getByText('sync_fixture_unavailable', { exact: true }).waitFor()
+  assert.match(await banner.innerText(), /Chưa đồng bộ được thử thách/)
+  assert.match(await banner.innerText(), /sync_fixture_unavailable/)
+  assert.doesNotMatch(await banner.innerText(), /thay đổi ở nơi khác/)
+  assert.equal(await buy.isDisabled(), true)
+  const placed = await (await page.request.get(replayPath, { headers })).json()
+  assert.equal(placed.payload.execution.position.side, 'BUY')
+  const orderCount = requests.filter(r => /\/orders\/(quick|market)$/.test(new URL(r.url).pathname)).length
+  assert.equal(orderCount, 1)
+  const chartGeometry = await page.locator('iframe[id^="tradingview_"]').boundingBox()
+  const desktop = await banner.boundingBox()
+  assert.ok(desktop.x >= 0 && desktop.x <= 20 && desktop.y > 790 / 2)
+  assert.ok(desktop.y + desktop.height < 790 - 55)
+  await page.screenshot({ path: path.join(out, 'prop-sync-desktop.png') })
+  await page.setViewportSize({ width: 390, height: 844 })
+  const mobile = await banner.boundingBox()
+  assert.ok(mobile.x >= 0 && mobile.x + mobile.width <= 390 && mobile.y > 844 / 2)
+  await page.screenshot({ path: path.join(out, 'prop-sync-mobile.png') })
+  cases.push('saved order remains visible and locked; error text and bottom-left placement at 1368 and 390')
+  await page.setViewportSize({ width: 1368, height: 790 })
+  await page.reload()
+  await banner.waitFor()
+  assert.equal(await buy.isDisabled(), true, 'reload cannot unlock an unsynchronized challenge')
+  await banner.getByRole('button', { name: 'Đồng bộ thử thách' }).click()
+  await banner.getByText('attempt revision conflict', { exact: true }).waitFor()
+  assert.equal(await buy.isDisabled(), true)
+  cases.push('409 recovery error retains action and blocks further trades')
+  await banner.getByRole('button', { name: 'Đồng bộ thử thách' }).click()
+  await banner.waitFor({ state: 'detached' })
+  const after = await (await page.request.get(replayPath, { headers })).json()
+  const challenge = await (await page.request.get(attemptPath, { headers })).json()
+  assert.equal(after.revision, placed.revision, 'recovery does not mutate the replay')
+  assert.deepEqual(after.payload.execution, placed.payload.execution)
+  assert.equal(requests.filter(r => /\/orders\/(quick|market)$/.test(new URL(r.url).pathname)).length, orderCount)
+  assert.equal(challenge.resume_state.replay_binding.last_replay_event_sequence, after.payload.execution.event_sequence)
+  assert.equal(challenge.phase.open_positions, 1)
+  assert.equal(await page.getByTestId('step-1').isEnabled(), true)
+  const finalGeometry = await page.locator('iframe[id^="tradingview_"]').boundingBox()
+  assert.equal(finalGeometry.y, chartGeometry.y, 'persistent notice never pushes the chart')
+  await page.screenshot({ path: path.join(out, 'prop-synced.png') })
+  cases.push('real native feed recovers exactly once with unchanged replay revision and financial state')
+  await page.goto(`${origin}/?workspace=tenant-a&view=overview`)
+  const placement = await page.locator('.wm-notifications').evaluate(node => ({ top: getComputedStyle(node).top, bottom: getComputedStyle(node).bottom, right: getComputedStyle(node).right }))
+  assert.equal(placement.top, '16px'); assert.equal(placement.right, '16px'); assert.ok(parseFloat(placement.bottom) > 790 / 2)
+  cases.push('non-chart pages retain their original top-right notification placement')
+  assert.deepEqual(errors, [])
+  await writeFile(path.join(out, 'browser.json'), JSON.stringify({ passed: true, cases, page_errors: errors }, null, 2))
+  console.log(JSON.stringify({ passed: true, cases }))
+} catch (error) {
+  await page.screenshot({ path: path.join(out, 'failure.png') }).catch(() => {})
+  await writeFile(path.join(out, 'browser-failed.json'), JSON.stringify({ error: String(error.stack), page_errors: errors, requests }, null, 2))
+  throw error
+} finally { await browser.close() }
