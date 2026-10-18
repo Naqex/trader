@@ -8385,9 +8385,13 @@
                 "$ref": "#/components/schemas/SessionTradingOptions"
               },
               {
+                "$ref": "#/components/schemas/SessionTradingOptionsV2"
+              },
+              {
                 "type": "null"
               }
-            ]
+            ],
+            "title": "Trading Options"
           }
         },
         "additionalProperties": false,
@@ -9628,6 +9632,105 @@
           "slippage_price"
         ],
         "title": "SessionAssetTradingOptions"
+      },
+      "SessionTradingOptionsV2": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "const": "session-trading-options-v2",
+            "title": "Version"
+          },
+          "costs_enabled": {
+            "type": "boolean",
+            "title": "Costs Enabled"
+          },
+          "assets": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/SessionAssetTradingOptionsV2"
+            },
+            "type": "object",
+            "maxProperties": 12,
+            "minProperties": 1,
+            "title": "Assets"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "version",
+          "costs_enabled",
+          "assets"
+        ],
+        "title": "SessionTradingOptionsV2"
+      },
+      "SessionAssetTradingOptionsV2": {
+        "properties": {
+          "spread_price": {
+            "type": "string",
+            "maxLength": 32,
+            "pattern": "^[0-9]+(?:\\.[0-9]+)?$",
+            "title": "Spread Price"
+          },
+          "commission_per_lot": {
+            "type": "string",
+            "maxLength": 32,
+            "pattern": "^[0-9]+(?:\\.[0-9]+)?$",
+            "title": "Commission Per Lot"
+          },
+          "commission_charge": {
+            "type": "string",
+            "enum": [
+              "round_trip",
+              "per_side"
+            ],
+            "title": "Commission Charge"
+          },
+          "slippage": {
+            "$ref": "#/components/schemas/SessionSlippageOptions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "spread_price",
+          "commission_per_lot",
+          "commission_charge",
+          "slippage"
+        ],
+        "title": "SessionAssetTradingOptionsV2"
+      },
+      "SessionSlippageOptions": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "off",
+              "light",
+              "medium",
+              "fixed"
+            ],
+            "title": "Mode"
+          },
+          "fixed_steps": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 20.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fixed Steps"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mode"
+        ],
+        "title": "SessionSlippageOptions"
       }
     }
   }

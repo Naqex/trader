@@ -352,6 +352,45 @@ class SessionTradingOptions(BaseModel):
     assets: dict[str, SessionAssetTradingOptions] = Field(min_length=1, max_length=12)
 
 
+class SessionSlippageOptions(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    mode: Literal["off", "light", "medium", "fixed"]
+    fixed_steps: int | None = Field(default=None, ge=1, le=20, strict=True)
+
+    @model_validator(mode="after")
+    def fixed_amount(self):
+        if (self.mode == "fixed") != (self.fixed_steps is not None):
+            raise ValueError("fixed_steps is required only for fixed slippage")
+        return self
+
+    @model_serializer(mode="wrap")
+    def serialize(self, handler):
+        result = handler(self)
+        if self.mode != "fixed":
+            result.pop("fixed_steps", None)
+        return result
+
+
+class SessionAssetTradingOptionsV2(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    spread_price: str = Field(pattern=r"^[0-9]+(?:\.[0-9]+)?$", max_length=32)
+    commission_per_lot: str = Field(pattern=r"^[0-9]+(?:\.[0-9]+)?$", max_length=32)
+    commission_charge: Literal["round_trip", "per_side"]
+    slippage: SessionSlippageOptions
+
+    _bounded_amount = field_validator("spread_price", "commission_per_lot")(SessionAssetTradingOptions.bounded_amount.__func__)
+
+
+class SessionTradingOptionsV2(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    version: Literal["session-trading-options-v2"]
+    costs_enabled: bool = Field(strict=True)
+    assets: dict[str, SessionAssetTradingOptionsV2] = Field(min_length=1, max_length=12)
+
+
 class ReplayCreate(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
@@ -368,7 +407,7 @@ class ReplayCreate(BaseModel):
     chart_engine: Literal["legacy"] = "legacy"
     prop_session_id: str | None = Field(default=None, min_length=1, max_length=128)
     prop_attempt_id: str | None = Field(default=None, min_length=1, max_length=128)
-    trading_options: SessionTradingOptions | None = None
+    trading_options: SessionTradingOptions | SessionTradingOptionsV2 | None = None
 
     @field_validator("name")
     @classmethod

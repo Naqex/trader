@@ -2,9 +2,47 @@
 
 New Backtest and Propfirm Normal sessions use **Create session → More options**
 (`Tạo phiên nhanh → Tùy chọn thêm`). Spread and commission are off by default;
-slippage defaults to zero. FTMO presets are outside this feature.
+slippage defaults to Off. FTMO presets are outside this feature.
 
-The creation request stores `trading_options.version = session-trading-options-v1`,
+## V2: execution slippage
+
+New forms send `session-trading-options-v2`, with the same frozen per-dataset
+spread/commission fields and a `slippage` object instead of `slippage_price`:
+
+```json
+{"spread_price":"0","commission_per_lot":"0","commission_charge":"round_trip","slippage":{"mode":"fixed","fixed_steps":2}}
+```
+
+Modes are `off`, `light`, `medium`, or `fixed`. Only Fixed has `fixed_steps`,
+an integer from 1 to 20. FX (`asset_class` fx/forex) uses the dataset's positive
+`pip_size`; other assets use `tick_size`, including gold. No instrument-name pip
+heuristic is used. The declared unit must be a whole multiple of the tick.
+
+`session-cost-v2` moves actual execution fills adversely: BUY pays more, SELL
+receives less. Light samples 0–1 pip for market executions and 0–2 pips for
+stop executions; Medium samples 0–3 and 0–8. For non-FX these are ticks. Samples
+are whole ticks within the inclusive bounds. Fixed always uses the selected
+steps. Manual closes are market executions. Stop gaps apply the offset after
+the gap quote; take-profit/limit fills stay at their limit and never worsen.
+This is a bounded synthetic model, not historical liquidity reconstruction.
+
+The server creates a frozen `trading_options_seed`. SHA-256 of that seed,
+dataset pin, operation ID, execution side/kind, cursor and time selects the
+offset. Branches preserve the seed; retries/reloads preserve the fill. Price
+marks use the saved entry fill and never sample new slippage. Spread remains
+embedded in Bid/Ask, commission remains per quantity, and V2's legacy
+`slippage_price_per_side` is zero, so offsets are not also charged as fees.
+
+The cost model stores `slippage_model` with version
+`deterministic-adverse-fill-v1`, mode, fixed_steps (null outside Fixed), unit,
+unit_price and seed. Position `entry_slippage` and execution-event
+`fill_slippage` record base/fill price, offset/maximum ticks and seed digest.
+Snapshot validation recomputes these and the resulting P/L; changed provenance
+is rejected. Both full snapshots and native compact prefixes use this logic.
+
+## Preserved V1 behavior
+
+Existing V1 creation requests store `trading_options.version = session-trading-options-v1`,
 `costs_enabled`, and exactly one asset config for every selected dataset ID:
 
 ```json
@@ -67,3 +105,8 @@ This runner creates its own temporary PostgreSQL cluster, overrides the owner
 DSN/artifact root, and stops/removes the fixture afterward. The Rust test also
 refuses any database whose name does not start with `rust_metadata_`.
 Evidence for this slice is in `evidence/session-trading-options-20261018/`.
+V2 slippage backend evidence is in `evidence/session-slippage-20261018/`;
+the revised VI/EN creation UI and intercepted quick-order checks are in
+`evidence/session-options-polish-20261018/`. The separate legacy
+`/data/cost-preview` helper does not implement V2 execution slippage and is not
+used by these UI previews or the quick-order workflow.

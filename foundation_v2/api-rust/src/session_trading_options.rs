@@ -5,6 +5,8 @@ use std::{collections::HashSet, str::FromStr};
 
 pub const VERSION: &str = "session-trading-options-v1";
 pub const COST_VERSION: &str = "session-cost-v1";
+pub const VERSION_V2: &str = "session-trading-options-v2";
+pub const COST_VERSION_V2: &str = "session-cost-v2";
 
 fn decimal(value: &Value) -> Result<String, String> {
     let text = value.as_str().ok_or("trading option amounts must be decimal strings")?;
@@ -22,7 +24,8 @@ fn decimal(value: &Value) -> Result<String, String> {
 
 pub fn normalize(value: &Value, datasets: &[String]) -> Result<Value, String> {
     let fields = value.as_object().ok_or("trading_options must be an object")?;
-    if fields.len() != 3 || value["version"] != VERSION || !value["costs_enabled"].is_boolean() {
+    let v2 = value["version"] == VERSION_V2;
+    if fields.len() != 3 || (!v2 && value["version"] != VERSION) || !value["costs_enabled"].is_boolean() {
         return Err("invalid trading_options version or fields".into());
     }
     let assets = value["assets"].as_object().ok_or("trading_options assets must be an object")?;
@@ -37,8 +40,17 @@ pub fn normalize(value: &Value, datasets: &[String]) -> Result<Value, String> {
         if fields.len() != 4 || !["round_trip", "per_side"].contains(&asset["commission_charge"].as_str().unwrap_or("")) {
             return Err("invalid trading asset options or commission charge".into());
         }
-        for key in ["spread_price", "commission_per_lot", "slippage_price"] {
+        for key in if v2 { vec!["spread_price", "commission_per_lot"] } else { vec!["spread_price", "commission_per_lot", "slippage_price"] } {
             result["assets"][id][key] = json!(decimal(&asset[key])?);
+        }
+        if v2 {
+            let slippage = asset["slippage"].as_object().ok_or("slippage must be an object")?;
+            let mode = asset["slippage"]["mode"].as_str().ok_or("slippage mode is required")?;
+            if !["off", "light", "medium", "fixed"].contains(&mode)
+                || slippage.len() != if mode == "fixed" { 2 } else { 1 }
+                || (mode == "fixed" && !asset["slippage"]["fixed_steps"].as_u64().is_some_and(|n| (1..=20).contains(&n))) {
+                return Err("slippage must use off/light/medium or fixed with 1 to 20 steps".into());
+            }
         }
     }
     Ok(result)
@@ -61,12 +73,19 @@ pub fn initialization(payload: &Value, manifest: &Value, request: &Value) -> Res
     let mut args = request.clone();
     args["spread_price"] = if enabled { asset["spread_price"].clone() } else { json!("0") };
     args["cost_model"] = json!({
-        "version":COST_VERSION,"spread_basis":"bid_ask_embedded","account_ccy":currency,
+        "version":if options["version"] == VERSION_V2 { COST_VERSION_V2 } else { COST_VERSION },"spread_basis":"bid_ask_embedded","account_ccy":currency,
         "commission_per_side_account":"0","minimum_fee_account":"0","financing_account":"0",
         "commission_per_lot_account":if enabled { asset["commission_per_lot"].clone() } else { json!("0") },
-        "commission_charge":asset["commission_charge"],"slippage_price_per_side":asset["slippage_price"],
+        "commission_charge":asset["commission_charge"],"slippage_price_per_side":if options["version"] == VERSION_V2 { json!("0") } else { asset["slippage_price"].clone() },
         "quote_to_account_rate":"1","rounding_decimals":2
     });
+    if options["version"] == VERSION_V2 {
+        let seed = payload["trading_options_seed"].as_str().ok_or("frozen slippage seed is required")?;
+        let instrument = &manifest["instrument_spec"];
+        let forex = instrument["asset_class"].as_str().is_some_and(|class| class.eq_ignore_ascii_case("fx") || class.eq_ignore_ascii_case("forex"));
+        let (unit, amount) = if forex { ("pip", &instrument["pip_size"]) } else { ("tick", &instrument["tick_size"]) };
+        args["cost_model"]["slippage_model"] = json!({"version":"deterministic-adverse-fill-v1","mode":asset["slippage"]["mode"],"fixed_steps":asset["slippage"].get("fixed_steps").cloned().unwrap_or(Value::Null),"unit":unit,"unit_price":amount,"seed":seed});
+    }
     Ok(args)
 }
 
@@ -96,5 +115,21 @@ mod tests {
         let mut tick = request.clone(); tick["tick_snapshot_id"] = json!("ticks-test");
         assert!(initialization(&payload,&manifest,&tick).is_err());
         assert_eq!(initialization(&json!({}),&manifest,&request).unwrap(),request);
+    }
+    #[test]
+    fn v2_slippage_is_explicit_bounded_and_seeded_by_the_server() {
+        let mut value = options(); value["version"] = json!(VERSION_V2);
+        value["assets"]["one"].as_object_mut().unwrap().remove("slippage_price");
+        for mode in ["off","light","medium","fixed"] {
+            value["assets"]["one"]["slippage"] = json!({"mode":mode});
+            if mode == "fixed" { value["assets"]["one"]["slippage"]["fixed_steps"] = json!(20); }
+            assert!(normalize(&value,&["one".into()]).is_ok());
+        }
+        for bad in [json!({"mode":"fixed","fixed_steps":0}),json!({"mode":"fixed","fixed_steps":21}),json!({"mode":"fixed","fixed_steps":1.5}),json!({"mode":"light","fixed_steps":1}),json!({"mode":"random"})] {
+            value["assets"]["one"]["slippage"] = bad;
+            assert!(normalize(&value,&["one".into()]).is_err());
+        }
+        value["assets"]["one"]["slippage"] = json!({"mode":"off"});
+        assert!(initialization(&json!({"dataset_id":"one","trading_options":value}),&json!({"instrument_spec":{"account_ccy":"USD"}}),&json!({})).is_err());
     }
 }

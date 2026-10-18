@@ -163,10 +163,10 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
   }}>
     <header className="quick-session-header">
       <h2 id={`${id}-title`}>{t('Create session')}</h2>
-        <div className="quick-session-tabs" role="tablist" aria-label={t('Loại phiên')}>{[['backtest','Backtesting Session'],['prop','Prop Firm Session']].map(([key,label]) => <button key={key} id={`${id}-${key}`} role="tab" type="button" aria-selected={mode === key} aria-controls={`${id}-panel`} tabIndex={mode === key ? 0 : -1} disabled={busy} onClick={() => setMode(key)} onKeyDown={event => {
+        <div className="quick-session-tabs" role="tablist" aria-label={t('Loại phiên')}>{[['backtest','Backtesting'],['prop','Prop Firm']].map(([key,label]) => <button key={key} id={`${id}-${key}`} role="tab" type="button" aria-selected={mode === key} aria-controls={`${id}-panel`} tabIndex={mode === key ? 0 : -1} disabled={busy} onClick={() => setMode(key)} onKeyDown={event => {
           if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return
           event.preventDefault(); const next = event.key === 'Home' ? 'backtest' : event.key === 'End' ? 'prop' : mode === 'backtest' ? 'prop' : 'backtest'; setMode(next); document.getElementById(`${id}-${next}`).focus()
-        }}>{t(label)}</button>)}</div>
+        }}>{label}</button>)}</div>
       <button type="button" className="quick-session-close wm-dialog-close" aria-label={t('Đóng tạo phiên')} disabled={busy} onClick={close}>×</button>
     </header>
     <form noValidate onSubmit={create} className="quick-session-form">
@@ -176,7 +176,7 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
             <strong>{t('Cơ bản')}</strong><span>{t('Tên, số dư, chiến lược và tài sản')}</span>
           </button>
           <button type="button" aria-pressed={advanced} aria-controls={`${id}-panel`} disabled={busy} onClick={() => setAdvanced(true)}>
-            <strong>{t('Tùy chọn thêm')}</strong><span>{t('Spread, commission, đòn bẩy, hedging và trượt giá')}</span>
+            <strong>{t('Tùy chọn thêm')}</strong><span>{t('Chi phí và cách khớp lệnh')}</span>
           </button>
         </nav>
         <div className="quick-session-body" ref={panelBody}>

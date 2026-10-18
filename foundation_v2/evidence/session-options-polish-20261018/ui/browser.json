@@ -1,0 +1,12 @@
+{
+  "scope": "Real local catalog reads and production UI. Creation writes intercepted, no owner sessions modified.",
+  "cases": [
+    "backtest/vi: short tabs, off/on empty states, four modes, invalid fixed blocked, two independent assets, draft preserved, options in request",
+    "backtest/en: short tabs, off/on empty states, four modes, invalid fixed blocked, two independent assets, draft preserved, options in request",
+    "prop/vi: short tabs, off/on empty states, four modes, invalid fixed blocked, two independent assets, draft preserved, options in request",
+    "prop/en: short tabs, off/on empty states, four modes, invalid fixed blocked, two independent assets, draft preserved, options in request"
+  ],
+  "errors": [],
+  "unexpectedWrites": [],
+  "result": "PASS"
+}

@@ -3,8 +3,8 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { chromium } from 'playwright'
 import { assetTradingDefaults, buildTradingOptions, sessionExecutionConfig } from '../src/sessionTradingOptions.js'
 
-const origin = 'http://127.0.0.1:5180'
-const output = '../evidence/session-trading-options-20261018/quick'
+const origin = process.env.TESTING_UI_ORIGIN || 'http://127.0.0.1:5180'
+const output = process.env.TW_QUICK_EVIDENCE_DIR || '../evidence/session-options-polish-20261018/quick'
 const fixture = JSON.parse(await readFile(new URL('./visual/chart-fixture.json', import.meta.url)))
 const dataset = fixture.datasets.items[0]
 const report = { scope:'Synthetic API responses; production chart and real quick BUY/SELL clicks. All API requests intercepted. No owner writes.', cases:[], errors:[] }
@@ -15,7 +15,7 @@ try {
     const options = buildTradingOptions({costs_enabled:scenario.costs,assets:{[dataset.dataset_id]:{...assetTradingDefaults(),spread_price:'0.0002',commission_per_lot:'7',commission_charge:'per_side'}}},[dataset])
     let replay = structuredClone(fixture.latest)
     replay.dataset_sha256 = null
-    replay.payload = {...replay.payload,dataset_id:dataset.dataset_id,execution:null,starting_balance:'10000',starting_balance_ccy:'USD',trading_options:options}
+    replay.payload = {...replay.payload,dataset_id:dataset.dataset_id,execution:null,starting_balance:'10000',starting_balance_ccy:'USD',trading_options:options,trading_options_seed:'qa-frozen-seed'}
     replay.has_future_rows = true
     const calls = []
     const context = await browser.newContext({viewport:{width:1440,height:987}})

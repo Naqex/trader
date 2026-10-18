@@ -552,6 +552,7 @@ async fn metadata(
         "dataset_id",
         "dataset_ids",
         "trading_options",
+        "trading_options_seed",
         "name",
         "description",
         "playbook_id",
@@ -1230,6 +1231,9 @@ async fn create(
             .map(|ids| ids.iter().filter_map(Value::as_str).map(str::to_owned).collect())
             .unwrap_or_else(|| vec![dataset.to_owned()]);
         p["trading_options"] = crate::session_trading_options::normalize(&b["trading_options"], &datasets).map_err(bad)?;
+        if p["trading_options"]["version"] == crate::session_trading_options::VERSION_V2 {
+            p["trading_options_seed"] = json!(uid());
+        }
     }
     let record = create_record(tx, workspace, &uid(), p).await?;
     view(tx, state, workspace, record, &HashMap::new()).await
@@ -2483,6 +2487,7 @@ async fn branch(
             "chart_engine",
             "session_period",
             "trading_options",
+            "trading_options_seed",
         ] {
             if let Some(v) = old.get(key) {
                 p[key] = v.clone();

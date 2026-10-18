@@ -4906,6 +4906,76 @@
                 "title": "SessionAssetTradingOptions",
                 "type": "object"
               },
+              "SessionAssetTradingOptionsV2": {
+                "additionalProperties": false,
+                "properties": {
+                  "spread_price": {
+                    "maxLength": 32,
+                    "pattern": "^[0-9]+(?:\\.[0-9]+)?$",
+                    "title": "Spread Price",
+                    "type": "string"
+                  },
+                  "commission_per_lot": {
+                    "maxLength": 32,
+                    "pattern": "^[0-9]+(?:\\.[0-9]+)?$",
+                    "title": "Commission Per Lot",
+                    "type": "string"
+                  },
+                  "commission_charge": {
+                    "enum": [
+                      "round_trip",
+                      "per_side"
+                    ],
+                    "title": "Commission Charge",
+                    "type": "string"
+                  },
+                  "slippage": {
+                    "$ref": "#/$defs/SessionSlippageOptions"
+                  }
+                },
+                "required": [
+                  "spread_price",
+                  "commission_per_lot",
+                  "commission_charge",
+                  "slippage"
+                ],
+                "title": "SessionAssetTradingOptionsV2",
+                "type": "object"
+              },
+              "SessionSlippageOptions": {
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "enum": [
+                      "off",
+                      "light",
+                      "medium",
+                      "fixed"
+                    ],
+                    "title": "Mode",
+                    "type": "string"
+                  },
+                  "fixed_steps": {
+                    "anyOf": [
+                      {
+                        "maximum": 20,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "title": "Fixed Steps"
+                  }
+                },
+                "required": [
+                  "mode"
+                ],
+                "title": "SessionSlippageOptions",
+                "type": "object"
+              },
               "SessionTradingOptions": {
                 "additionalProperties": false,
                 "properties": {
@@ -4934,6 +5004,36 @@
                   "assets"
                 ],
                 "title": "SessionTradingOptions",
+                "type": "object"
+              },
+              "SessionTradingOptionsV2": {
+                "additionalProperties": false,
+                "properties": {
+                  "version": {
+                    "const": "session-trading-options-v2",
+                    "title": "Version",
+                    "type": "string"
+                  },
+                  "costs_enabled": {
+                    "title": "Costs Enabled",
+                    "type": "boolean"
+                  },
+                  "assets": {
+                    "additionalProperties": {
+                      "$ref": "#/$defs/SessionAssetTradingOptionsV2"
+                    },
+                    "maxProperties": 12,
+                    "minProperties": 1,
+                    "title": "Assets",
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "version",
+                  "costs_enabled",
+                  "assets"
+                ],
+                "title": "SessionTradingOptionsV2",
                 "type": "object"
               }
             },
@@ -5097,10 +5197,14 @@
                     "$ref": "#/$defs/SessionTradingOptions"
                   },
                   {
+                    "$ref": "#/$defs/SessionTradingOptionsV2"
+                  },
+                  {
                     "type": "null"
                   }
                 ],
-                "default": null
+                "default": null,
+                "title": "Trading Options"
               }
             },
             "required": [

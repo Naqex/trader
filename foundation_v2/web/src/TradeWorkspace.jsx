@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import './TradeWorkspace.css'
 import { marketQuotes } from './replayOrderModel.js'
 import { useReplayTickOptions } from './useReplayTickOptions.js'
-import { sessionExecutionConfig } from './sessionTradingOptions.js'
+import { sessionExecutionConfig, slippageAllowance } from './sessionTradingOptions.js'
 
 const DEFAULT_INSTRUMENT = {
   instrument_id: 'EURUSD',
@@ -118,15 +118,16 @@ function RiskPreview({ draft, entry, instrument, costModel }) {
   const reward = complete ? Math.abs(target - entry) * quantity * contract * rate : null
   const perLot = optionalNumber(costModel?.commission_per_lot_account)
   const commissionTotal = perLot !== null ? perLot * quantity * (costModel.commission_charge === 'per_side' ? 2 : 1) : commission * 2
-  const slippage = optionalNumber(costModel?.slippage_price_per_side) ?? 0
-  const fees = complete ? Math.max(commissionTotal, minimumFee) + slippage * 2 * quantity * contract * rate : null
+  const slippage = slippageAllowance(costModel)
+  const fees = complete && slippage ? Math.max(commissionTotal, minimumFee) + slippage.risk * quantity * contract * rate : null
+  const rewardFees = complete && slippage ? Math.max(commissionTotal, minimumFee) + slippage.reward * quantity * contract * rate : null
   const netRisk = risk !== null && fees !== null ? risk + fees : null
-  const netReward = reward !== null && fees !== null ? reward - fees : null
+  const netReward = reward !== null && rewardFees !== null ? reward - rewardFees : null
   const rMultiple = risk > 0 && reward !== null ? reward / risk : NaN
   return (
     <div className="trade-risk-preview" data-testid="trade-risk-preview">
       <div><span>{t('Risk tới SL')}</span><strong>{formatMoney(netRisk, costModel?.account_ccy || 'USD')}</strong><small>{t('Trước phí {risk} + phí {fees}', { risk: formatMoney(risk, costModel?.account_ccy), fees: formatMoney(fees, costModel?.account_ccy) })}</small></div>
-      <div><span>{t('Reward tới TP')}</span><strong>{formatMoney(netReward, costModel?.account_ccy || 'USD')}</strong><small>{t('Ước tính theo giá tham chiếu')}</small></div>
+      <div><span>{t('Reward tới TP')}</span><strong>{formatMoney(netReward, costModel?.account_ccy || 'USD')}</strong><small>{t(slippage?.variable ? 'Theo mức trượt tối đa đã chọn' : 'Ước tính theo giá tham chiếu')}</small></div>
       <div><span>{t('Planned R')}</span><strong>{Number.isFinite(rMultiple) ? fmt(rMultiple, ' R') : '—'}</strong><small>{t('Chưa phải kết quả thực tế')}</small></div>
     </div>
   )
