@@ -401,5 +401,8 @@ The Python environment is project-local and locked by `uv.lock`:
 uv sync --project foundation_v2 --python 3.12
 ```
 
-`foundation_v2/.runtime/` is disposable local acceptance state and is ignored by
-Git. Production/user data must not be placed there.
+Disposable acceptance state under `foundation_v2/.runtime/` is ignored by Git.
+The existing owner profile also stores its durable data in
+`.runtime/exness-market-data` and verified backups in `.runtime/api-platform-backups`.
+Those two directories contain user data: preserve and back them up regardless of
+Git ignore status. Do not treat the entire `.runtime/` tree as disposable.

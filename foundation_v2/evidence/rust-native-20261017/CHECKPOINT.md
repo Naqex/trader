@@ -1037,3 +1037,54 @@ Goal ACTIVE.
 - Updated existing native runtime docs and setup row in acceptance audit. Owner
   migration/cutover remains the actionable gate; goal ACTIVE and no scope/gates
   changed. Do not repeat this build to manufacture progress while approval waits.
+
+## Root continuation 18/10: authorized owner cutover and extension closure
+
+- Owner explicitly replied **có nha** to the exact request to apply two pending
+  migrations and start native/compact on the existing database. The earlier
+  pending-approval statuses above are historical and are superseded here.
+- Reverified the full accepted backup bundle and all4,142current artifact hashes;
+  current artifacts exactly match backup. Recorded row-count/column-list/SHA256
+  projections of every18preexisting table in a read-only repeatable-read snapshot
+  before migration. No row payloads were exported as QA fixtures.
+- Applied exactly0005/0006 through the native Rust admin under the existing
+  backup/idle guards. Immediately after migration all18old table projections
+  match; existing revisions retain `full_snapshot` storage. This is a format/
+  index migration, not a rewrite or simulated trade in the owner's history.
+- Started the owner native/compact profile at API8010 with the prepared installed
+  scientific/legacy descriptors and existing QDM transport. Manifest owns only
+  Python local supervisor, native Rust research and native Rust API; health
+  reports `command_worker=not_required`. No provider download, MT5 terminal,
+  broker, live execution, holdout or new external integration was opened.
+- Built the current web working source (preexisting unrelated WIP preserved)
+  and serve its production Vite preview on UI5180. A custom shell launch request
+  was rejected by automatic execution review without a detailed policy reason;
+  no action ran. The simpler direct Vite CLI launch succeeded, keeps tool
+  session60724live, and has PID/kernel identity recorded in the ignored
+  `.runtime/api-platform/native-owner-ui.json`. Native API manifest is separate.
+- Read-only browser reopens the actual existing `test02` Prop replay. All7API
+  GETs return200; chart iframe and7canvases render; no page errors or mutating
+  requests. Browser context blocked mutations/external requests and closed after
+  the check. Root viewed `owner-chart.png`. No owner Buy/Sell/step/protection was
+  sent. Rechecked all18old table hashes after startup/browser: still identical.
+- Durable receipt, before/after projections, browser result and image are in
+  `../rust-native-20261018/runtime/owner-cutover-root/`. The current API binary
+  hash matches accepted endurance binary; actual runtime/profile/PID/health were
+  checked, not inferred from the stale old compatibility manifest.
+- Reused one existing independent reviewer for bounded requirement/evidence
+  reconciliation (no builds/tests/browser/benchmarks/new children). Review in
+  `../rust-native-20261018/runtime/final-extension-review-root.md` supports
+  closing the17/10Rust-native extension; no implementation/verification blocker
+  remains in that scope. Its requested stale handoff text is reconciled in
+  `../rust-native-20261018/ACCEPTANCE-AUDIT.md` and runtime docs. README now
+  explicitly preserves owner data/backups inside ignored `.runtime` directories.
+- Root completion audit covers the extension's inventory, justified adapters,
+  contracts/financials, transactional scope/retries/crash, measured same-workload
+  latency/resources/UI/data/research, repeatable setup, rollback, independent
+  review and actual authorized integration. Original measured bounds and all
+  earlier failed receipts remain intact. No mathematical optimality, no-leak,
+  capacity, cold-machine/cross-platform or historical full-product/broker/UI
+  acceptance is inferred. Auto-BE/multi-position remain deferred. With these
+  scope limits, the requested optimization extension has no remaining required
+  work; mark the active goal complete after committing this final handoff and
+  confirming both existing service identities/readiness once more.

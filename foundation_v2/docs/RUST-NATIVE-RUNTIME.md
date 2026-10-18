@@ -5,6 +5,19 @@ expands the earlier API-only migration. The candidate runs interactive domain
 logic directly in Rust. `compatibility` remains the launcher default and rollback
 profile; the owner listener is not switched merely by building this candidate.
 
+On 18 October the owner explicitly authorized migrations0005/0006 and local
+cutover. The existing owner database was backed up, migrated and started with
+native/compact on API8010; UI5180 serves a production Vite preview. The native
+manifest owns supervisor/research/API and readiness reports Python command
+workers are not required. All18preexisting table projections remain unchanged
+after migration, startup and a read-only browser check of the existing Prop
+replay. See `evidence/rust-native-20261018/runtime/owner-cutover-root/receipt.json`.
+This deploys the optimized path; it does not enable broker execution or turn the
+owner session into a trading test fixture. For future owner restarts retain
+`-RuntimeProfile native -ReplayStorageProfile compact` and the prepared scientific
+and legacy codec descriptors. The generic wrapper default remains compatibility;
+it refuses replacing an active native listener under the wrong profile.
+
 The native flow is `React → Axum → native domain → PostgreSQL transaction and
 revision/receipt → HTTP response`. Research and downloads use bounded background
 execution. A successful quick market order is already filled at the current
@@ -241,7 +254,8 @@ The native candidate can opt into `TW_V2_REPLAY_STORAGE_PROFILE=compact` for
 append-only events and indexed operation reservations. Snapshot storage remains
 the default; tick, portfolio, phase and branch mutations retain the full path.
 The forward BAR step extension is described below. The owner database/runtime
-has not been migrated.
+was not migrated during those candidate measurements; the authorized cutover
+described at the top of this document occurred afterward.
 
 The bounded transition uses the existing financial arithmetic and event validator.
 It checks only the new events against the previously validated canonical context.
@@ -255,8 +269,8 @@ Full reads and analytics hydrate the exact requested revision and fully validate
 its canonical ledger. Full writes after a compatibility restore remain authoritative;
 the next compact mutation imports that full revision again instead of trusting an
 older sidecar. Disposable persisted, production-chart and rollback rehearsals are
-recorded in the execution checkpoint. Broader resource acceptance and owner cutover
-remain separate gates. Cold import/hydration and default full steps remain history-dependent;
+recorded in the execution checkpoint. Later resource and owner-cutover evidence
+is recorded separately in the final acceptance audit. Cold import/hydration and default full steps remain history-dependent;
 the whole product is not thereby constant-time. Importing a large existing full
 revision is a one-time cost on its first compact mutation and is reported apart
 from warm interaction samples.
@@ -268,7 +282,7 @@ history while an order waits for the same lock. On the 5,000-event production-ch
 fixture, 12 warm journeys measured confirmed paint at median79.5ms/sample-p9580.9ms
 with compact storage, versus244.9/262ms with full storage on the same final source.
 These serial headless diagnostics do not establish production capacity or stable
-tail latency. The default/owner runtime remains unchanged.
+tail latency. They preceded the owner cutover documented above.
 
 The later600s/120journey run on the5,000-event fixture passes at confirmed-marker/
 rAF proxy sample-p9577.5ms and drag-frame sample-p9516.7ms, with DOMdelta0 and
@@ -294,7 +308,8 @@ compatibility build starts. Preserve revision IDs/timestamps, Prop bindings and
 committed receipt bytes. Do not remove migration entries to force a downgrade.
 Returning to native after compatibility writes must revalidate/import the new full
 revision instead of reusing stale sidecars. The original native source stays intact
-throughout this recovery rehearsal; owner switching remains a separate gate.
+throughout this recovery rehearsal; subsequent owner switching is recorded at
+the top of this document and in the final acceptance audit.
 
 ## Forward BAR step and chart tail
 
@@ -339,4 +354,5 @@ against an administrator who disables its immutability triggers.
 
 Source review/unit tests are separate from persisted and production-chart acceptance;
 the execution checkpoint records the measured scope and failed attempts. The owner
-runtime has not been switched to this candidate.
+runtime was not switched during those fixture runs; the later owner cutover is
+documented above.

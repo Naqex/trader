@@ -1,0 +1,284 @@
+{
+  "api_command_workers": {
+    "columns": [
+      "worker_id",
+      "contract_version",
+      "heartbeat_at_utc",
+      "route_manifest"
+    ],
+    "rows": 4,
+    "sha256": "e767c21136626cf2de7f163854c0c3fd1a0c7484ce955efb61d22f57412b2443"
+  },
+  "api_commands": {
+    "columns": [
+      "command_id",
+      "contract_version",
+      "workspace_id",
+      "identity_id",
+      "method",
+      "path",
+      "query",
+      "body",
+      "origin",
+      "request_hash",
+      "idempotency_key",
+      "status",
+      "attempt_no",
+      "max_attempts",
+      "lease_owner",
+      "lease_token",
+      "lease_expires_at_utc",
+      "available_at_utc",
+      "deadline_at_utc",
+      "created_at_utc",
+      "updated_at_utc",
+      "result_status",
+      "result_headers",
+      "result_body",
+      "result_text",
+      "expires_at_utc"
+    ],
+    "rows": 682,
+    "sha256": "a1b2d12269dc6c60b2fddd3948bfefe9bed020adc3b23d3bf90721deff9ef1b8"
+  },
+  "connector_connections": {
+    "columns": [
+      "workspace_id",
+      "connector",
+      "connection_id",
+      "request_id",
+      "idempotency_key",
+      "fingerprint",
+      "account_ref",
+      "scopes_json",
+      "metadata_json",
+      "status",
+      "revision",
+      "error_code",
+      "created_at_utc",
+      "updated_at_utc"
+    ],
+    "rows": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "connector_intents": {
+    "columns": [
+      "workspace_id",
+      "connector",
+      "intent_id",
+      "request_id",
+      "idempotency_key",
+      "fingerprint",
+      "connection_id",
+      "source_revision_json",
+      "source_content_sha256",
+      "destination_ref",
+      "intent_json",
+      "status",
+      "mode",
+      "error_code",
+      "created_at_utc",
+      "updated_at_utc"
+    ],
+    "rows": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "connector_receipts": {
+    "columns": [
+      "workspace_id",
+      "connector",
+      "receipt_id",
+      "intent_id",
+      "status",
+      "revision",
+      "source_revision_json",
+      "source_content_sha256",
+      "external_id",
+      "remote_revision",
+      "response_json",
+      "error_code",
+      "created_at_utc",
+      "updated_at_utc"
+    ],
+    "rows": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "datasets": {
+    "columns": [
+      "workspace_id",
+      "dataset_id",
+      "manifest_json",
+      "artifact_sha256",
+      "created_at_utc"
+    ],
+    "rows": 3,
+    "sha256": "25892a4a429baa562be9cfe5070f16dea8c349d1e379bb47bb4dcf9e8f93466d"
+  },
+  "download_jobs": {
+    "columns": [
+      "workspace_id",
+      "provider",
+      "job_id",
+      "payload",
+      "public_snapshot",
+      "owner_lock_key",
+      "revision",
+      "created_at_utc",
+      "updated_at_utc"
+    ],
+    "rows": 3,
+    "sha256": "2a119e5d133262d4c1e8cf24c56c373388eb21471ebcc25b1013c6bba39c7c80"
+  },
+  "download_sources": {
+    "columns": [
+      "provider",
+      "snapshot",
+      "revision",
+      "updated_at_utc"
+    ],
+    "rows": 1,
+    "sha256": "f30310108e23b4eea0aac818d1f90e2fb3809622abc2e3f8904f5ef7f17d3470"
+  },
+  "prop_attempt_revisions": {
+    "columns": [
+      "workspace_id",
+      "session_id",
+      "attempt_id",
+      "revision",
+      "snapshot_json",
+      "phase_json",
+      "resume_json",
+      "created_at_utc"
+    ],
+    "rows": 10,
+    "sha256": "4ff88c141977f8d96c6a21558ce7dfe23e1f83509a66cfa56cd2cd670cbe7294"
+  },
+  "prop_attempts": {
+    "columns": [
+      "workspace_id",
+      "session_id",
+      "attempt_id",
+      "current_revision",
+      "snapshot_json",
+      "phase_json",
+      "resume_json",
+      "created_at_utc",
+      "updated_at_utc"
+    ],
+    "rows": 8,
+    "sha256": "73f742344fbc59992333e390bb370b6f5f371157f1a27e62cba806d65ead12e2"
+  },
+  "prop_mutation_receipts": {
+    "columns": [
+      "workspace_id",
+      "session_id",
+      "attempt_id",
+      "operation_id",
+      "fingerprint",
+      "entity_revision",
+      "created_at_utc"
+    ],
+    "rows": 2,
+    "sha256": "da9a7c592ed9d619ba93994299ca34baa3d63852c6cc66a37aec7184109d471e"
+  },
+  "prop_session_revisions": {
+    "columns": [
+      "workspace_id",
+      "session_id",
+      "revision",
+      "snapshot_json",
+      "created_at_utc"
+    ],
+    "rows": 10,
+    "sha256": "35b40ef735028f781d5e29c09a854d288a41561f5d852cb12e4412577ca7bc26"
+  },
+  "prop_sessions": {
+    "columns": [
+      "workspace_id",
+      "session_id",
+      "current_revision",
+      "snapshot_json",
+      "created_at_utc",
+      "updated_at_utc"
+    ],
+    "rows": 8,
+    "sha256": "4e5338ee162dbed047d5cdcdd875f2487a74b228ff9849a96aa2011a2cd61e91"
+  },
+  "replay_activity_intervals": {
+    "columns": [
+      "workspace_id",
+      "kind",
+      "session_id",
+      "event_id",
+      "started_at_utc",
+      "ended_at_utc"
+    ],
+    "rows": 3592,
+    "sha256": "c08d75b09dcd2cc078b14eadeb3953f8e8c4d144a02cd102de626eedf2223e9a"
+  },
+  "research_jobs": {
+    "columns": [
+      "workspace_id",
+      "job_id",
+      "dataset_id",
+      "strategy_version",
+      "starting_balance",
+      "status",
+      "cancel_requested",
+      "attempt_no",
+      "lease_owner",
+      "lease_token",
+      "lease_expires_at_utc",
+      "result_path",
+      "result_sha256",
+      "error_code",
+      "created_at_utc",
+      "updated_at_utc",
+      "protocol_json",
+      "protocol_sha256",
+      "checkpoint_json",
+      "progress_json",
+      "max_attempts",
+      "available_at_utc",
+      "retry_base_seconds",
+      "idempotency_key",
+      "request_fingerprint"
+    ],
+    "rows": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "workspace_record_revisions": {
+    "columns": [
+      "workspace_id",
+      "kind",
+      "record_id",
+      "revision",
+      "payload_json",
+      "deleted",
+      "created_at_utc"
+    ],
+    "rows": 245,
+    "sha256": "50095b45a7517918e33dce426c3ccd6c2ef0d435a443c639f0b0a88626ec9f66"
+  },
+  "workspace_records": {
+    "columns": [
+      "workspace_id",
+      "kind",
+      "record_id",
+      "source_key",
+      "current_revision",
+      "created_at_utc",
+      "updated_at_utc"
+    ],
+    "rows": 23,
+    "sha256": "1a0c2fd3b3e1418fafd51ac32792a10583abb649b6ad6084c4541861c43a28b0"
+  },
+  "workspaces": {
+    "columns": [
+      "workspace_id",
+      "created_at_utc"
+    ],
+    "rows": 1,
+    "sha256": "dc8eb05888484f61d40349147673fdc19c9678bcb5c00e62f1e693964f825d75"
+  }
+}
