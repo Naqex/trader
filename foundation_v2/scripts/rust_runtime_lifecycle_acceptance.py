@@ -20,8 +20,16 @@ def main():
     parser.add_argument('--output',type=Path,required=True)
     parser.add_argument('--pg-bin',type=Path,default=PG_DEFAULT)
     parser.add_argument('--bin-dir',type=Path,default=V2/'api-rust/target/debug')
+    parser.add_argument('--build-profile',choices=['debug','release','unspecified'],default='unspecified')
+    parser.add_argument('--scientific-capability',type=Path,help='Existing installed descriptor; verify scientific readiness using disposable pins only.')
     args = parser.parse_args(); output = args.output.resolve(); output.mkdir(parents=True,exist_ok=True)
     binary = args.bin_dir.resolve(); samples = []; owned = []; logs = []
+    def source_fingerprints():
+        paths=[*sorted((V2/'api-rust/src').rglob('*.rs')),V2/'scripts/run_api_platform.py',Path(__file__).resolve()]
+        return {str(p.relative_to(V2)):hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
+    def binary_fingerprints():
+        return {name:hashlib.sha256((binary/name).read_bytes()).hexdigest() for name in ['trading-workspace-api.exe','rust_runtime_admin.exe','rust_research_worker.exe']}
+    hashes=source_fingerprints(); binary_hashes=binary_fingerprints()
     flags = getattr(subprocess,'CREATE_NO_WINDOW',0)
     def record(name, **fields):
         samples.append(dict(name=name,passed=True,**fields)); print(json.dumps(samples[-1]),flush=True)
@@ -91,6 +99,59 @@ def main():
                     assert postgres.poll() is None;time.sleep(.1)
             else: raise AssertionError('fixture PostgreSQL startup timeout')
             run([str(binary/'rust_runtime_admin.exe'),'migrate'],env,'native-migrate')
+            if args.scientific_capability:
+                # Change only disposable pins, never installed dependency bytes.
+                # Metadata accepts this valid declaration; the worker must reject
+                # its stale tree commitment before publishing API readiness.
+                capability=args.scientific_capability.resolve()
+                stale=json.loads(capability.read_text(encoding='utf-8'))
+                digest=stale['dependency_trees']['engine_runtime']['sha256']
+                stale['dependency_trees']['engine_runtime']['sha256']=('1' if digest[0]=='0' else '0')+digest[1:]
+                manifest_bytes=(json.dumps(stale['dependency_trees'],sort_keys=True,separators=(',',':'))+'\n').encode()
+                stale['dependency_sha256']=hashlib.sha256(manifest_bytes).hexdigest()
+                stale_path=root/'stale-scientific.json';stale_path.write_text(json.dumps(stale),encoding='utf-8')
+                def rejected(command_value, environment, label):
+                    result=subprocess.run(command_value,env=environment,cwd=V2,capture_output=True,text=True,timeout=90,creationflags=flags)
+                    (output/f'{label}.out.log').write_text(result.stdout,encoding='utf-8')
+                    (output/f'{label}.err.log').write_text(result.stderr,encoding='utf-8')
+                    assert result.returncode!=0,f'{label} unexpectedly succeeded'
+                    return result
+                metadata=json.loads(run([str(binary/'rust_runtime_admin.exe'),'scientific-capability-metadata',str(stale_path)],env,'scientific-stale-metadata').stdout)
+                assert metadata['valid'] and metadata['verification']=='metadata'
+                rejected([str(binary/'rust_runtime_admin.exe'),'scientific-capability',str(stale_path)],env,'scientific-stale-full')
+                record('scientific-metadata-is-not-installed-verification')
+                scientific_env=dict(env,TW_V2_SCIENTIFIC_ADAPTER_CAPABILITY=str(stale_path))
+                for mode in ['--check-only','--setup-only']:
+                    label='scientific-stale-'+mode.removeprefix('--')
+                    rejected_manifest=root/f'{label}/owner.json'
+                    rejected(command('native',rejected_manifest)+[mode],scientific_env,label)
+                    assert not rejected_manifest.exists()
+                    record(label,no_process_manifest=True)
+                label='scientific-stale-worker';rejected_manifest=root/f'{label}/owner.json'
+                stdout=(output/f'{label}.out.log').open('wb');stderr=(output/f'{label}.err.log').open('wb');logs.extend([stdout,stderr])
+                rejected_child=subprocess.Popen(command('native',rejected_manifest),env=scientific_env,cwd=V2,stdout=stdout,stderr=stderr,creationflags=flags)
+                owned.append((rejected_child,rejected_manifest))
+                assert rejected_child.wait(timeout=60)!=0
+                rejected_state=json.loads(rejected_manifest.read_text())
+                assert not rejected_state['ready'] and rejected_state.get('stopped')
+                assert 'research' in rejected_state['processes'] and 'api' not in rejected_state['processes']
+                assert not list(rejected_manifest.parent.glob('*.ready.json'))
+                worker_logs=''.join(p.read_text(encoding='utf-8') for p in rejected_manifest.parent.glob('*research.err.log'))
+                assert 'scientific adapter installation is stale' in worker_logs
+                with socket.socket() as sock:assert sock.connect_ex(('127.0.0.1',apiport))!=0
+                record('scientific-stale-worker-blocks-api-readiness',api_spawned=False,worker_full_verification=True)
+                missing_ready=root/'scientific-missing.ready.json'
+                missing_env=dict(env,TW_V2_SCIENTIFIC_ADAPTER_CAPABILITY=str(root/'missing-scientific.json'),
+                                 TW_V2_WORKER_READY_FILE=str(missing_ready),TW_V2_WORKER_STARTUP_TOKEN='f'*64,
+                                 TW_V2_WORKER_ID='scientific-missing-fixture')
+                missing=rejected([str(binary/'rust_research_worker.exe'),'--once'],missing_env,'scientific-explicit-missing')
+                assert 'scientific_adapter_capability_missing' in missing.stderr and not missing_ready.exists()
+                record('scientific-explicit-missing-blocks-worker-readiness')
+                env['TW_V2_SCIENTIFIC_ADAPTER_CAPABILITY']=str(capability)
+                child,manifest,state=launch('native','scientific-valid-first')
+                assert list(manifest.parent.glob('*.ready.json'))
+                stop(child,manifest,'native','scientific-valid-drain')
+                env.pop('TW_V2_SCIENTIFIC_ADAPTER_CAPABILITY')
             routes=json.loads(run([str(binary/'rust_runtime_admin.exe'),'routes'],env,'native-routes').stdout)
             assert routes['required_command_routes']==[];record('native-route-manifest',delegated=0)
             child,manifest,state=launch('native','native-first')
@@ -211,8 +272,9 @@ print(json.dumps({'event':'complete','buckets_sha256':'1'*64,'transferred_bytes'
             for log in logs: log.close()
             if failed:
                 (output/'receipt.json').write_text(json.dumps(dict(passed=False,samples=samples,disposable=True,owner_runtime_touched=False),indent=2),encoding='utf-8')
-    hashes={str(path.relative_to(V2)):hashlib.sha256(path.read_bytes()).hexdigest() for path in [V2/'scripts/run_api_platform.py',V2/'api-rust/src/main.rs',V2/'api-rust/src/lib.rs',V2/'api-rust/src/commands.rs']}
-    receipt=dict(schema='native-runtime-lifecycle-acceptance-v1',passed=True,disposable=True,owner_runtime_touched=False,build='debug',provider='none plus owned synthetic process protocol',scientific_adapter=False,samples=samples,source_hashes=hashes)
+    source_unchanged=hashes==source_fingerprints(); binaries_unchanged=binary_hashes==binary_fingerprints()
+    receipt=dict(schema='native-runtime-lifecycle-acceptance-v1',passed=source_unchanged and binaries_unchanged,source_unchanged=source_unchanged,binaries_unchanged=binaries_unchanged,disposable=True,owner_runtime_touched=False,build=args.build_profile,provider='none plus owned synthetic process protocol',scientific_adapter=bool(args.scientific_capability),samples=samples,source_hashes=hashes,binary_hashes=binary_hashes)
     (output/'receipt.json').write_text(json.dumps(receipt,indent=2),encoding='utf-8')
+    assert receipt['passed'],'source or binaries changed during lifecycle acceptance'
 
 if __name__=='__main__': main()

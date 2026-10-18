@@ -66,8 +66,12 @@ without opening a dataset or starting a job:
 ```
 
 Pass `--scientific-capability <path>` to `scripts/run_api_platform.py` together
-with `--runtime-profile native`. The launcher rejects a stale descriptor before
-starting children. This inspects the existing installed engine; it does not
+with `--runtime-profile native`. Normal startup checks descriptor metadata first;
+the research worker verifies the installed files before publishing its owned
+readiness, and the supervisor starts the API only after that readiness is verified.
+`--check-only` and `--setup-only` perform full verification without starting children.
+An explicitly configured missing descriptor blocks worker readiness. This
+inspects the existing installed engine; it does not
 install dependencies or authorize research/provider/broker use.
 
 `scripts/rust_legacy_codec_bootstrap.py --output <path>` prepares the explicit

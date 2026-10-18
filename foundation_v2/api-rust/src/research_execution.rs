@@ -670,7 +670,7 @@ fn scientific_descriptor(state:&AppState)->PathBuf{
 /// a lease. Subsequent job checks reuse only reliable per-file hash receipts.
 pub async fn prepare_scientific(state:&AppState,options:&WorkerOptions)->Result<(),String>{
     let descriptor=scientific_descriptor(state);
-    if !descriptor.is_file(){return Ok(());}
+    if !descriptor.is_file(){return if std::env::var_os("TW_V2_SCIENTIFIC_ADAPTER_CAPABILITY").is_some(){Err("scientific_adapter_capability_missing".into())}else{Ok(())};}
     let shutdown=options.shutdown_file.clone();
     tokio::task::spawn_blocking(move||{
         let check=||if shutdown.as_ref().is_some_and(|p|p.exists()){Err("research_execution_interrupted".into())}else{Ok(())};

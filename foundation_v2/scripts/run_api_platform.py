@@ -207,11 +207,17 @@ def native_scientific_preflight(args, env):
     path = Path(env["TW_V2_SCIENTIFIC_ADAPTER_CAPABILITY"])
     if not path.is_absolute() or not path.is_file() or path.stat().st_size > 1024*1024:
         raise PreflightError("Scientific adapter capability is missing or invalid; prepare the installed adapter before startup.")
-    result = subprocess.run([str(args.rust_admin_binary), "scientific-capability", str(path)],
+    # The long-lived worker verifies all installed bytes before publishing its
+    # owned readiness. A second process cannot reuse its per-file receipts.
+    full = args.check_only or args.setup_only or args.stop
+    verification = "installation" if full else "metadata"
+    command = "scientific-capability" if full else "scientific-capability-metadata"
+    result = subprocess.run([str(args.rust_admin_binary), command, str(path)],
         env=env, cwd=FOUNDATION, capture_output=True, text=True, timeout=30,
         creationflags=getattr(subprocess,"CREATE_NO_WINDOW",0))
     try:
-        valid = result.returncode == 0 and json.loads(result.stdout).get("valid") is True
+        value = json.loads(result.stdout)
+        valid = result.returncode == 0 and value.get("valid") is True and value.get("verification") == verification
     except (ValueError, AttributeError):
         valid = False
     if not valid:
@@ -531,7 +537,7 @@ def parser():
     result.add_argument("--download-engine", choices=("qdm", "dukascopy", "none"), default="qdm")
     result.add_argument("--runtime-profile", choices=("compatibility", "native"), default="compatibility",
                         help="Compatibility remains rollback/default; native uses separate candidate binaries and no Python domain/research service.")
-    result.add_argument("--scientific-capability", type=Path, help="Existing installed Nautilus capability; validated by native admin before startup.")
+    result.add_argument("--scientific-capability", type=Path, help="Existing Nautilus capability; installed bytes verified before worker/API readiness.")
     result.add_argument("--legacy-codec-capability", type=Path, help="Existing PyArrow 21 capability for exact legacy artifact restoration only.")
     result.add_argument("--rust-binary", type=Path)
     result.add_argument("--rust-admin-binary", type=Path)

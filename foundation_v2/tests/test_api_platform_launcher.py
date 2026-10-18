@@ -26,9 +26,16 @@ class LauncherTests(unittest.TestCase):
                            MagicMock(returncode=0,stdout='not json')]:
                 with patch.object(launcher.subprocess,'run',return_value=result):
                     with self.assertRaises(launcher.PreflightError):launcher.native_scientific_preflight(args,env)
-            with patch.object(launcher.subprocess,'run',return_value=MagicMock(returncode=0,stdout='{"valid":true}')) as run:
+            with patch.object(launcher.subprocess,'run',return_value=MagicMock(returncode=0,stdout='{"valid":true,"verification":"metadata"}')) as run:
                 launcher.native_scientific_preflight(args,env)
-                self.assertEqual(run.call_args.args[0],[str(args.rust_admin_binary),'scientific-capability',str(capability)])
+                self.assertEqual(run.call_args.args[0],[str(args.rust_admin_binary),'scientific-capability-metadata',str(capability)])
+            for mode in ['--check-only','--setup-only','--stop']:
+                full_args=launcher.resolve_profile_paths(launcher.parser().parse_args(['--runtime-profile','native',mode]))
+                with patch.object(launcher.subprocess,'run',return_value=MagicMock(returncode=0,stdout='{"valid":true,"verification":"installation"}')) as run:
+                    launcher.native_scientific_preflight(full_args,env)
+                    self.assertEqual(run.call_args.args[0],[str(full_args.rust_admin_binary),'scientific-capability',str(capability)])
+                with patch.object(launcher.subprocess,'run',return_value=MagicMock(returncode=0,stdout='{"valid":true,"verification":"metadata"}')):
+                    with self.assertRaises(launcher.PreflightError):launcher.native_scientific_preflight(full_args,env)
 
     def test_native_provider_selection_and_pins_are_explicit(self):
         with tempfile.TemporaryDirectory() as folder:

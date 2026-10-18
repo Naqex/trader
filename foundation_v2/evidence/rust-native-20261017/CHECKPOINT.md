@@ -362,6 +362,27 @@ data/research/resource acceptance. Children remain quota-errored; root review
 does not count as independent integration sign-off. Owner8010/5180 unchanged.
 Goal ACTIVE.
 
+## Root continuation 18/10: one installed verification at startup
+
+- Normal scientific startup now validates cheap descriptor metadata in the
+  launcher and verifies installed bytes in the long-lived worker before readiness.
+  The supervisor checks that worker's nonce/PID/executable before spawning the API.
+  This removes duplicate cross-process tree verification without trusting metadata
+  as installed-file evidence. Explicit missing descriptors fail closed.
+- `../rust-native-20261018/runtime/scientific-startup-root/receipt.json` PASS on
+  release binaries with source and binary fingerprints unchanged throughout:
+  metadata/full-verification distinction, stale check/setup rejection without
+  children, stale worker rejection without API/ready, explicit missing descriptor,
+  valid scientific start/drain, native restart/persistence/crash, compatibility
+  rollback and synthetic provider pause/resume/cancel/cooldown. No owner runtime
+  was touched. The native route manifest delegates zero command routes.
+- 24 launcher unit tests PASS; independent startup_review found no blocker.
+  Native fixture startup was about 1s, optional scientific startup 20.38s in this
+  one local run. These are startup diagnostics, not request latency or capacity.
+- Next: compact mutation response and frontend reconciliation, then bounded mixed
+  resource acceptance. Snapshot storage/domain validation still scale with replay
+  history and need separate implementation. Goal remains ACTIVE.
+
 ## Root continuation: move long snapshots and isolate JSON CPU work
 
 - Record load/save/create and the pure core response now move owned JSON values
