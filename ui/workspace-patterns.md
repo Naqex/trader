@@ -351,7 +351,11 @@ Risk fields use 12px spacing and six equal
 token, estimated loss uses negative, and both prefix the currency symbol in
 Vietnamese and English. Declared fees remain outside this gross preview.
 Replay startup uses one centered full-viewport loading surface through route,
-session-read and chart-engine initialization. The native chart host remains
+session-read and chart-engine initialization. Both route/session and native loader
+variants use fixed viewport geometry in the eagerly loaded shared stylesheet;
+neither reserves space for the shell header. Colors resolve directly from the
+project palette so loading lazy chart CSS cannot move or recolor the surface.
+The native chart host remains
 visually hidden and inert until ready, keeping its own spinner out of view.
 The loading overlay covers viewport-floating playback controls. Same-session
 background refresh retains the ready chart without bringing loading back.

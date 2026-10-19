@@ -1,0 +1,102 @@
+{
+  "scope": "Intercepted synthetic session; actual preview bundles and native chart; no backend writes",
+  "cases": [
+    {
+      "width": 1368,
+      "theme": "dark",
+      "route": {
+        "top": 0,
+        "left": 0,
+        "width": 1368,
+        "height": 790,
+        "centerX": 684,
+        "centerY": 395,
+        "background": "rgb(8, 8, 8)",
+        "color": "rgb(184, 192, 201)",
+        "viewportWidth": 1368,
+        "viewportHeight": 790,
+        "covered": true
+      },
+      "data": {
+        "top": 0,
+        "left": 0,
+        "width": 1368,
+        "height": 790,
+        "centerX": 684,
+        "centerY": 395,
+        "background": "rgb(8, 8, 8)",
+        "color": "rgb(184, 192, 201)",
+        "viewportWidth": 1368,
+        "viewportHeight": 790,
+        "covered": true
+      },
+      "engine": {
+        "top": 0,
+        "left": 0,
+        "width": 1368,
+        "height": 790,
+        "centerX": 684,
+        "centerY": 395,
+        "background": "rgb(8, 8, 8)",
+        "color": "rgb(184, 192, 201)",
+        "viewportWidth": 1368,
+        "viewportHeight": 790,
+        "covered": true
+      },
+      "checkedFrames": 39,
+      "result": "PASS"
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "route": {
+        "top": 0,
+        "left": 0,
+        "width": 390,
+        "height": 790,
+        "centerX": 195,
+        "centerY": 395,
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(80, 89, 101)",
+        "viewportWidth": 390,
+        "viewportHeight": 790,
+        "covered": true
+      },
+      "data": {
+        "top": 0,
+        "left": 0,
+        "width": 390,
+        "height": 790,
+        "centerX": 195,
+        "centerY": 395,
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(80, 89, 101)",
+        "viewportWidth": 390,
+        "viewportHeight": 790,
+        "covered": true
+      },
+      "engine": {
+        "top": 0,
+        "left": 0,
+        "width": 390,
+        "height": 790,
+        "centerX": 195,
+        "centerY": 395,
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(80, 89, 101)",
+        "viewportWidth": 390,
+        "viewportHeight": 790,
+        "covered": true
+      },
+      "checkedFrames": 39,
+      "result": "PASS"
+    },
+    {
+      "case": "403 exits loading and shows denied state",
+      "result": "PASS"
+    }
+  ],
+  "errors": [],
+  "unexpected": [],
+  "result": "PASS"
+}

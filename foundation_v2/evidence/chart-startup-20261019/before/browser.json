@@ -1,0 +1,8 @@
+{
+  "scope": "Intercepted synthetic session; actual preview bundles and native chart; no backend writes",
+  "cases": [],
+  "errors": [],
+  "unexpected": [],
+  "result": "FAIL",
+  "failure": "AssertionError [ERR_ASSERTION]: 1368-dark-route: loader must cover the header and viewport\n+ actual - expected\n\n  [\n    0,\n+   46,\n-   0,\n    1368,\n+   744\n-   790\n  ]\n\n    at capture (file:///D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/web/tests/chartStartup.browser.mjs:68:10)\n    at async file:///D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/web/tests/chartStartup.browser.mjs:76:19"
+}
