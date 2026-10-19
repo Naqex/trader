@@ -69,6 +69,63 @@ try {
     }
     const entry = dialog.getByRole('spinbutton',{name:lang==='vi'?'Giá vào lệnh':'Entry Price',exact:true})
     await entry.fill(level)
+    const stop = dialog.locator('[data-protection=stopLoss]')
+    const target = dialog.locator('[data-protection=takeProfit]')
+    for (const section of [stop,target]) await section.getByRole('switch').uncheck()
+    const rows = dialog.locator('.legacy-protection-row')
+    const surfaces = await rows.evaluateAll(nodes => nodes.map(node => {
+      const {x,width,height} = node.getBoundingClientRect()
+      const style = getComputedStyle(node)
+      return {x,width,height,background:style.backgroundColor,expected:style.getPropertyValue('--project-control').trim()}
+    }))
+    assert.equal(surfaces.length,3)
+    assert.ok(surfaces.every(row=>row.x===surfaces[0].x && row.width===surfaces[0].width && row.height===surfaces[0].height),'SL, TP and break-even bars must align')
+    assert.notEqual(surfaces[0].background,'rgba(0, 0, 0, 0)')
+    assert.equal(await stop.getByRole('spinbutton').count(),0)
+    assert.equal(await target.getByRole('spinbutton').count(),0)
+    await noDraftMarkers()
+    await page.screenshot({path:`${out}/${side}-${type}-${width}-protection-off.png`})
+    for (const section of [stop,target]) {
+      await section.getByRole('switch').check()
+      const price = section.getByRole('spinbutton').nth(0), pips = section.getByRole('spinbutton').nth(1)
+      await pips.fill('30')
+      const direction = (side==='BUY'?1:-1)*(section===stop?-1:1)
+      const expected = Number((Number(level)+direction*.003).toFixed(5))
+      assert.equal(Number(await price.inputValue()),expected)
+      const geometry = await section.locator('.legacy-order-grid input').evaluateAll(nodes=>nodes.map(node=>{const r=node.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height}}))
+      assert.equal(geometry[0].y,geometry[1].y)
+      assert.equal(geometry[0].height,geometry[1].height)
+      assert.ok(Math.abs(geometry[0].width-geometry[1].width)<1)
+      await price.fill('')
+      assert.equal(await section.getByRole('switch').isChecked(),true,'Clearing a field must not turn protection off')
+      await price.fill(String(expected))
+      assert.equal(Number(await pips.inputValue()),30)
+    }
+    assert.equal(await stop.locator('.legacy-risk-sizing[open]').count(),0)
+    assert.equal(await target.locator('.legacy-risk-sizing').count(),0)
+    await stop.scrollIntoViewIfNeeded()
+    await page.screenshot({path:`${out}/${side}-${type}-${width}-protection-on.png`})
+    {
+      const risk=stop.locator('.legacy-risk-sizing'), summary=risk.locator('summary')
+      await summary.focus();await page.keyboard.press('Enter')
+      await risk.locator('button[aria-pressed]').filter({hasText:/^1%$/}).click()
+      const apply=risk.locator('.legacy-risk-apply button')
+      await apply.click()
+      const quantity=dialog.getByRole('spinbutton').first()
+      assert.equal(await quantity.inputValue(),'0.33','1% of 10000 / 30 pip stop rounds down to .33 lots')
+      const amount=risk.locator('.legacy-order-grid input').nth(1)
+      await amount.fill('1')
+      assert.equal(await apply.isDisabled(),true,'Budget below minimum cannot be applied')
+      assert.equal(await quantity.inputValue(),'0.33')
+      await amount.fill('100')
+      await amount.press('Enter')
+      assert.equal(await dialog.isVisible(),true,'Enter in the sizing calculator must not place an order')
+      await risk.scrollIntoViewIfNeeded()
+      await page.screenshot({path:`${out}/${side}-${type}-${width}-risk-sizing.png`})
+      assert.equal((await request('GET',path)).revision,record.revision,'Editing/sizing must not write an order')
+      await summary.click()
+      await quantity.fill('0.01')
+    }
     for (const toggle of await dialog.getByRole('switch').all()) {
       if (await toggle.isEnabled() && await toggle.isChecked()) await toggle.uncheck()
     }
@@ -104,6 +161,29 @@ try {
     await page.locator('[data-chart-status=ready]').waitFor({timeout:30000})
     await chart.locator('.wm-order-marker-text').filter({hasText:side}).waitFor()
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false)
+    await chart.locator('.wm-order-marker-quantity').first().click()
+    await dialog.waitFor({state:'visible'})
+    assert.equal(await dialog.locator('.legacy-risk-sizing').count(),0,'Sizing must not change an existing position')
+    assert.equal(await dialog.locator('.legacy-edit-protection').count(),2)
+    for (const section of [stop,target]) {
+      await section.getByRole('switch').check()
+      await section.getByRole('spinbutton').nth(1).fill('20')
+    }
+    const expectedStop = Number((Number(level)+(side==='BUY'?-1:1)*.002).toFixed(5))
+    const expectedTarget = Number((Number(level)+(side==='BUY'?1:-1)*.002).toFixed(5))
+    assert.equal(Number(await stop.getByRole('spinbutton').first().inputValue()),expectedStop)
+    await page.screenshot({path:`${out}/${side}-${type}-${width}-edit-protection.png`})
+    const protectionSaved=page.waitForResponse(r=>new URL(r.url()).pathname===`${path}/orders/protection` && r.request().method()==='POST')
+    await dialog.locator('.legacy-order-save').click()
+    const protectionResponse=await protectionSaved
+    assert.equal(protectionResponse.status(),200,await protectionResponse.text())
+    await dialog.waitFor({state:'hidden'})
+    record=await request('GET',path)
+    assert.equal(Number(record.payload.execution.position.stop_loss),expectedStop)
+    assert.equal(Number(record.payload.execution.position.take_profit),expectedTarget)
+    await page.reload()
+    await page.locator('[data-chart-status=ready]').waitFor({timeout:30000})
+    await chart.locator('[data-order-kind=stop]').waitFor({state:'visible'})
     report.cases.push({side,type,width,lang,passed:true})
     if (side==='BUY' && type==='limit') {
       record = await request('POST',`${path}/orders/close`,{expected_revision:record.revision,operation_id:'close-fixture',target_id:record.payload.execution.position.position_id})
@@ -128,6 +208,7 @@ try {
       assert.equal(record.payload.execution.position.side,'BUY')
       report.marketAndCancel=true
       report.noUnsubmittedMarkers=true
+      report.protectionLayoutAndSizing=true
     }
   }
   assert.deepEqual(report.errors,[])

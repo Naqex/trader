@@ -423,15 +423,27 @@ button.chart-order-level { cursor: ns-resize; touch-action: none; }
 .legacy-order-modal :is(input,button,select,summary):focus-visible { outline:2px solid var(--project-primary); outline-offset:2px; }
 .legacy-protection-row { display:flex; align-items:center; justify-content:space-between; gap:24px; min-height:36px; box-sizing:border-box; }
 .legacy-protection-row label { display:flex; align-items:center; flex-shrink:0; gap:10px; color:var(--chart-text); }
-.legacy-edit-protection { display:grid; gap:16px; }
-.legacy-new-protection { display:flex; align-items:center; justify-content:space-between; gap:24px; }
-.legacy-new-protection > div:last-child:not(:first-child) { flex:1; min-width:0; }
-.legacy-edit-protection > .legacy-protection-row { padding:12px 16px; border:1px solid var(--project-border); border-radius:var(--ds-radius-field); background:var(--project-control); }
-.legacy-protection-row input[type=switch], .legacy-order-form input[role=switch] { appearance:none; width:var(--ds-switch-width,28px); height:var(--ds-switch-height,16px); background:var(--project-control); border-radius:var(--ds-radius-pill,999px); margin:0; cursor:pointer; }
-.legacy-order-form input[role=switch]::before { content:''; display:block; width:12px; height:12px; margin:2px; background:var(--project-text); border-radius:50%; }
+.legacy-edit-protection, .legacy-new-protection { display:grid; gap:var(--wm-space-4,16px); min-width:0; }
+.legacy-order-form .legacy-protection-row { min-height:48px; padding:12px 16px; border-radius:var(--ds-radius-field,8px); background:var(--project-control); }
+.legacy-protection-row label { width:100%; cursor:pointer; }
+.legacy-protection-row input[type=switch], .legacy-order-form input[role=switch] { appearance:none; width:var(--ds-switch-width,28px); height:var(--ds-switch-height,16px); border:0; background:var(--wm-control-muted); border-radius:var(--ds-radius-pill,999px); margin:0; cursor:pointer; }
+.legacy-order-form input[role=switch]::before { content:''; display:block; width:12px; height:12px; margin:2px; background:var(--project-canvas); border-radius:50%; transition:transform var(--ds-motion-hover) var(--ds-ease-standard); }
 .legacy-order-form input[role=switch]:checked { background:var(--project-primary); }
 .legacy-order-form input[role=switch]:checked::before { transform:translateX(12px); }
-.legacy-protection-row.is-unavailable { opacity:var(--ds-disabled-opacity,.5); }
+.legacy-protection-row.is-unavailable > :is(label,small) { opacity:var(--ds-disabled-opacity,.5); }
+.legacy-protection-row.is-unavailable label { width:auto; cursor:default; }
+.legacy-protection-estimate { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 16px; color:var(--chart-muted); font-size:12px; }
+.legacy-protection-estimate strong { color:var(--chart-text); font-weight:var(--ds-weight-control,500); font-variant-numeric:tabular-nums; }
+.legacy-risk-sizing { color:var(--chart-muted); font-size:12px; }
+.legacy-risk-sizing summary { cursor:pointer; width:fit-content; color:var(--chart-text); }
+.legacy-risk-sizing summary:hover { color:var(--project-primary); }
+.legacy-risk-sizing summary:focus-visible { outline:2px solid var(--wm-focus); outline-offset:4px; border-radius:2px; }
+.legacy-risk-fields { display:grid; gap:16px; padding-top:16px; }
+.legacy-risk-presets { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:8px; }
+.legacy-order-modal .legacy-risk-presets button { min-width:0; padding:4px; border:1px solid var(--project-border); border-radius:var(--wm-control-radius); font-size:12px; }
+.legacy-order-modal .legacy-risk-presets button[aria-pressed=true], .legacy-order-modal .legacy-risk-presets button[aria-pressed=true]:hover:not(:disabled) { border-color:var(--project-highlight); background:var(--project-peach-soft); color:var(--project-highlight); }
+.legacy-risk-apply { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.legacy-order-modal .legacy-risk-apply button { border:1px solid var(--project-border); background:var(--project-control); border-radius:var(--wm-control-radius); padding:7px 12px; }
 .legacy-order-form .legacy-strategy-create { color:#76abff; text-align:left; padding:0; justify-self:start; margin-top:-12px; font-size:12px; }
 .legacy-order-form footer { display:flex; align-items:center; justify-content:flex-end; gap:8px; margin-top:10px; }
 .legacy-order-form footer label { margin-right:auto; color:var(--chart-text); display:flex; align-items:center; gap:8px; }

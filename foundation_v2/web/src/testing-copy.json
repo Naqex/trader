@@ -1,4 +1,13 @@
 {
+  "Tính khối lượng theo rủi ro": { "vi":"Tính khối lượng theo rủi ro", "en":"Calculate size by risk" },
+  "Số dư ban đầu": { "vi":"Số dư ban đầu", "en":"Initial balance" },
+  "Số dư hiện tại": { "vi":"Số dư hiện tại", "en":"Current balance" },
+  "Rủi ro (%)": { "vi":"Rủi ro (%)", "en":"Risk (%)" },
+  "Số tiền rủi ro": { "vi":"Số tiền rủi ro", "en":"Risk amount" },
+  "Khối lượng (trước phí)": { "vi":"Khối lượng (trước phí)", "en":"Size (before costs)" },
+  "Áp dụng khối lượng": { "vi":"Áp dụng khối lượng", "en":"Apply size" },
+  "Ước tính tại SL (trước phí)": { "vi":"Ước tính tại SL (trước phí)", "en":"Estimated P/L at SL (before costs)" },
+  "Ước tính tại TP (trước phí)": { "vi":"Ước tính tại TP (trước phí)", "en":"Estimated P/L at TP (before costs)" },
   "Khối lượng (lot)": { "vi": "Khối lượng (lot)", "en": "Volume (lots)" },
   "Hướng": { "vi": "Hướng", "en": "Side" },
   "entry gap invalidates the submitted protection bracket": {"vi": "Giá gap vượt vùng TP/SL đã đặt. Hãy chỉnh TP/SL hoặc hủy lệnh chờ.", "en": "entry gap invalidates the submitted protection bracket"},
