@@ -16,7 +16,7 @@
 .fx-app.fx-shell-story[data-theme] .fx-content .session-preset-icon svg { width:16px; height:16px; }
 .fx-app.fx-shell-story[data-theme] .fx-content .session-preset-menu > .session-preset-create { color:var(--project-action); }
 .fx-app.fx-shell-story[data-theme] .fx-content .session-preset-list:not(:empty) + .session-preset-create { border-top:1px solid var(--wm-border); }
-.fx-app.fx-shell-story[data-theme] .fx-content .session-preset-back { display:grid; place-items:center; flex-shrink:0; width:32px; height:32px; padding:0; border:1px solid var(--wm-border); border-radius:50%; background:transparent; }
+.fx-app.fx-shell-story[data-theme] .fx-content .session-preset-back { flex-shrink:0; }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-layout.is-preset-editor { display:flex; }
 .fx-app.fx-shell-story[data-theme] .fx-content .is-preset-editor > .quick-session-body { flex:1; }
 .fx-app.fx-shell-story[data-theme] .fx-content .session-preset-more > h3 { margin:var(--ds-space-2) 0 var(--ds-space-5); font-size:var(--ds-font-section); }

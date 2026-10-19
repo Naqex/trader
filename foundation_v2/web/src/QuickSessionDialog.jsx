@@ -228,7 +228,7 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
     if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) close()
   }}>
     <header className="quick-session-header">
-      {presetEditor && <button type="button" className="session-preset-back" aria-label={t('Quay lại tạo phiên')} onClick={close} disabled={busy}><TestingIcon kind="chevron-left" size={18} /></button>}
+      {presetEditor && <button type="button" className="session-preset-back wm-dialog-close" aria-label={t('Quay lại tạo phiên')} onClick={close} disabled={busy}><TestingIcon kind="chevron-left" size={18} /></button>}
       <h2 id={`${id}-title`}>{t(presetEditor ? presetEditor.id ? 'Sửa preset' : 'Tạo preset' : 'Create session')}</h2>
         {!presetEditor && <div className="quick-session-tabs" role="tablist" aria-label={t('Loại phiên')}>{[['backtest','Backtesting'],['prop','Prop Firm']].map(([key,label]) => <button key={key} id={`${id}-${key}`} role="tab" type="button" aria-selected={mode === key} aria-controls={`${id}-panel`} tabIndex={mode === key ? 0 : -1} disabled={busy} onClick={() => setMode(key)} onKeyDown={event => {
           if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return
