@@ -29,8 +29,8 @@
 .fx-app .wm-ai-chat button:disabled { opacity: var(--ds-disabled-opacity); cursor: default; }
 .wm-ai-body { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .wm-ai-body[hidden] { display: none; }
-.wm-ai-chat.is-welcome .wm-ai-body { display: block; padding: clamp(35px, 10vh, 90px) var(--ds-space-8) var(--ds-space-6); overflow: auto; background: radial-gradient(ellipse at 110% 0%, color-mix(in srgb, var(--project-highlight) 9%, transparent), transparent 60%), radial-gradient(ellipse at 15% 110%, color-mix(in srgb, var(--project-highlight) 14%, transparent), transparent 62%); }
-.wm-ai-chat.is-welcome .wm-ai-transcript { padding: 0; overflow: visible; }
+.wm-ai-chat.is-welcome .wm-ai-body { padding: clamp(35px, 10vh, 90px) var(--ds-space-8) var(--ds-space-6); overflow: hidden; background: radial-gradient(ellipse at 110% 0%, color-mix(in srgb, var(--project-highlight) 9%, transparent), transparent 60%), radial-gradient(ellipse at 15% 110%, color-mix(in srgb, var(--project-highlight) 14%, transparent), transparent 62%); }
+.wm-ai-chat.is-welcome .wm-ai-transcript { padding: 0; }
 .wm-ai-chat.is-welcome .wm-ai-bottom { padding: 0; }
 .wm-ai-transcript { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 24px 22px; scrollbar-width: thin; }
 .wm-ai-welcome { display: flex; flex-direction: column; align-items: center; margin-bottom: 36px; text-align: center; }
@@ -54,7 +54,7 @@
 .wm-ai-composer { border: 1px solid var(--wm-control-border); border-radius: var(--ds-radius-dialog); background: var(--fx-shell-bg); padding: var(--ds-space-3); transition: border-color var(--ds-motion-hover) var(--ds-ease-standard); }
 .wm-ai-composer:hover:not(:focus-within) { border-color: var(--wm-control-hover-border); }
 .wm-ai-composer:focus-within { border-color: var(--wm-focus); }
-.fx-app .wm-ai-composer textarea { display: block; box-sizing: border-box; width: 100%; min-height: calc(var(--ds-line-control) * 2); max-height: 180px; margin: 0; padding: 0; border: 0; border-radius: 0; outline: none; resize: vertical; background: transparent; color: var(--fx-shell-text); font: inherit; line-height: var(--ds-line-control); box-shadow: none; }
+.fx-app .wm-ai-composer textarea { display: block; box-sizing: border-box; width: 100%; min-height: calc(var(--ds-line-control) * 2); max-height: 180px; margin: 0; padding: 0; border: 0; border-radius: 0; outline: none; resize: none; background: transparent; color: var(--fx-shell-text); font: inherit; line-height: var(--ds-line-control); box-shadow: none; }
 .fx-app .wm-ai-chat .wm-ai-composer textarea:focus { outline: none; box-shadow: none; }
 .wm-ai-composer textarea::placeholder { color: var(--fx-shell-subtle); }
 .wm-ai-composer-footer { display: flex; align-items: center; gap: 6px; margin-top: 8px; }

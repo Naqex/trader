@@ -83,6 +83,14 @@ try {
     const bounds = await chat.boundingBox()
     assert.equal(Math.round(bounds.x + bounds.width), width)
     assert.equal(bounds.y, 0)
+    async function assertComposerAtBottom() {
+      const box = await chat.locator('.wm-ai-composer').boundingBox()
+      const panel = await chat.boundingBox()
+      const gap = panel.y + panel.height - box.y - box.height
+      assert.ok(gap >= 12 && gap <= 24, `composer stays at viewport bottom, gap=${gap}`)
+    }
+    await assertComposerAtBottom()
+    assert.equal(await chat.locator('#wm-ai-input').evaluate(element => getComputedStyle(element).resize), 'none')
     assert.equal(await chat.getByRole('button', { name: /Create agent|Tạo agent/ }).count(), 0)
     assert.equal(await chat.getByText('Resources', { exact: true }).count(), 0)
     if (width === 1368) {
@@ -105,6 +113,13 @@ try {
       checks.push('Desktop: pointer drag and keyboard resize, 360px minimum, main content >=620px, viewport resize clamp')
     } else assert.equal(await chat.getByRole('separator').count(), 0)
     const input = chat.getByRole('textbox', { name: 'Tin nhắn cho AI' })
+    await page.setViewportSize({ width, height: 480 })
+    await assertComposerAtBottom()
+    await input.fill(Array(12).fill('Dòng nhập dài để kiểm tra cuộn trong ô chat.').join('\n'))
+    await assertComposerAtBottom()
+    assert.equal(await input.evaluate(element => element.scrollHeight > element.clientHeight), true)
+    await input.fill('')
+    await page.setViewportSize({ width, height: 790 })
     await chat.getByRole('button', { name: 'Chat gần đây', exact: true }).click()
     await chat.getByText('Chưa có cuộc trò chuyện', { exact: true }).waitFor()
     await page.screenshot({ path: path.join(evidence, `history-empty-dark-${width}.png`) })
@@ -161,6 +176,7 @@ try {
     await input.fill('Giải thích expectancy bằng một ví dụ đơn giản.')
     await input.press('Enter')
     await chat.getByText('Đây là phản hồi kiểm thử giao diện.', { exact: true }).waitFor()
+    await assertComposerAtBottom()
     assert.deepEqual(sends[0], { messages: [{ role: 'user', content: 'Giải thích expectancy bằng một ví dụ đơn giản.' }], context: { screen: 'playbook', locale: 'vi' } })
     await chat.getByText('Bạn · Chiến lược', { exact: true }).waitFor()
     await chat.getByRole('button', { name: 'Đóng chat AI' }).click()
