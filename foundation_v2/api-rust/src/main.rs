@@ -51,6 +51,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             tracing::warn!("provider drain deadline reached; owned process tree stopped, interrupted job recovers paused");
         }
     }
+    state.chatgpt_web.shutdown().await;
     state.pool.close();
     Ok(())
 }

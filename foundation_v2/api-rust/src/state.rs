@@ -18,6 +18,7 @@ pub struct AppState {
     pub artifact_data: Arc<crate::artifact_data::ArtifactData>,
     pub analytics_cache: crate::analytics::ProjectionCache,
     pub notion_oauth: Arc<crate::notion_oauth::NotionOAuthService>,
+    pub chatgpt_web: crate::chatgpt_web::ChatGptWeb,
     pub providers: Arc<crate::provider_routes::ProviderRuntime>,
     pub event_hub: crate::events::EventHub,
     pub draining: AtomicBool,
@@ -84,6 +85,7 @@ impl AppState {
         Ok(Arc::new(Self {
             providers: crate::provider_routes::ProviderRuntime::from_environment(&config.artifact_root)?,
             notion_oauth: Arc::new(crate::notion_oauth::NotionOAuthService::from_environment()?),
+            chatgpt_web: crate::chatgpt_web::ChatGptWeb::from_environment()?,
             artifact_data: Arc::new(crate::artifact_data::ArtifactData::new(&config.artifact_root)?),
             analytics_cache: Default::default(),
             authorization: LocalAuthorization::new(config.local_identity.clone(), workspaces),

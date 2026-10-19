@@ -6151,6 +6151,160 @@
           }
         }
       }
+    },
+    "/api/v2/ai/chatgpt/account": {
+      "get": {
+        "operationId": "chatgpt_account_status",
+        "responses": {
+          "200": {
+            "description": "Sanitized machine-local ChatGPT browser connection; no credentials. A saved login marker is not a live model test.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Unavailable or untrusted state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {}
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Workspace membership denied"
+          },
+          "422": {
+            "description": "Workspace header required"
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Workspace-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/ai/chatgpt/account/{action}": {
+      "post": {
+        "operationId": "chatgpt_account_action",
+        "responses": {
+          "200": {
+            "description": "Sanitized machine-local ChatGPT browser connection; no credentials. A saved login marker is not a live model test.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Unavailable or untrusted state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {}
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Workspace membership denied"
+          },
+          "422": {
+            "description": "Workspace header required"
+          },
+          "409": {
+            "description": "An account or inference operation is already running"
+          },
+          "400": {
+            "description": "Invalid selection or unavailable account action"
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Workspace-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "action",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "start",
+                "login",
+                "probe",
+                "selection",
+                "cancel",
+                "disconnect"
+              ]
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Same loopback origin as Host; foreign/absent origins denied."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "maxProperties": 0
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "model",
+                      "effort"
+                    ],
+                    "properties": {
+                      "model": {
+                        "type": "string"
+                      },
+                      "effort": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "description": "Login/probe return promptly with an operation; poll GET account. Probe sends only a fixed test prompt. Disconnect clears this app's private local browser state. Strategy jobs remain disabled."
+      }
     }
   },
   "components": {

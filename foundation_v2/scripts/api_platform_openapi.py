@@ -65,6 +65,21 @@ def platform_contract():
                               "schema": {"type": "string"}, "description": "Bearer configured metrics token"}]
     metrics["responses"]["404"] = {"description": "Disabled or token mismatch"}
     schema["paths"]["/internal/metrics"] = {"get": metrics}
+    account = json_response("Sanitized machine-local ChatGPT browser connection; no credentials. A saved login marker is not a live model test.", {"type": "object"})
+    schema["paths"]["/api/v2/ai/chatgpt/account"] = {"get": operation("chatgpt_account_status", account, scoped=True)}
+    action = operation("chatgpt_account_action", account, scoped=True)
+    action["parameters"].extend([
+        {"name": "action", "in": "path", "required": True, "schema": {"enum": ["start", "login", "probe", "selection", "cancel", "disconnect"]}},
+        {"name": "Origin", "in": "header", "required": True, "schema": {"type": "string"}, "description": "Same loopback origin as Host; foreign/absent origins denied."},
+    ])
+    action["requestBody"] = {"required": True, "content": {"application/json": {"schema": {"oneOf": [
+        {"type": "object", "maxProperties": 0},
+        {"type": "object", "additionalProperties": False, "required": ["model", "effort"], "properties": {"model": {"type": "string"}, "effort": {"type": "string"}}},
+    ]}}}}
+    action["responses"]["409"] = {"description": "An account or inference operation is already running"}
+    action["responses"]["400"] = {"description": "Invalid selection or unavailable account action"}
+    action["description"] = "Login/probe return promptly with an operation; poll GET account. Probe sends only a fixed test prompt. Disconnect clears this app's private local browser state. Strategy jobs remain disabled."
+    schema["paths"]["/api/v2/ai/chatgpt/account/{action}"] = {"post": action}
     return schema
 
 
