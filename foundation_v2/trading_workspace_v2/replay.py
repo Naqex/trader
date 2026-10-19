@@ -603,7 +603,7 @@ class ReplayService:
         return self.view(workspace_id, session_id)
 
     def close_order(self, workspace_id: str, session_id: str, expected_revision: int,
-                    *, target_id: str, operation_id: str) -> dict:
+                    *, target_id: str, operation_id: str, quantity=None) -> dict:
         record = self.store.get_record(workspace_id, "replay", session_id)
         if record is None:
             raise LookupError("replay session not found")
@@ -627,7 +627,7 @@ class ReplayService:
             from .replay_tick_execution import close_tick_order
             close = close_tick_order
         changed = close(snapshot, target_id=target_id, operation_id=operation_id,
-            mid_close=bar["close"], virtual_time_utc=int(bar["timestamp"]) + snapshot.timeframe_seconds)
+            mid_close=bar["close"], virtual_time_utc=int(bar["timestamp"]) + snapshot.timeframe_seconds, quantity=quantity)
         payload["execution"] = changed.model_dump(mode="json")
         self._update_payload(workspace_id, session_id, expected_revision, payload)
         return self.view(workspace_id, session_id)
@@ -702,6 +702,7 @@ class ReplayService:
             "canonical_cursor_index": canonical_cursor,
             "historical_view": view_cursor != canonical_cursor,
             "execution_view_status": execution_view_status,
+            "execution_capabilities": {"partial_close": True},
             **({'session_period': {key: value for key, value in payload['session_period'].items() if key != 'asset_bounds'}
                  | {'start_cursor_index': bounds['start_cursor_index'], 'end_cursor_index': bounds['end_cursor_index'],
                     'asset_start_timestamp': bounds['start_timestamp'], 'asset_end_timestamp': bounds['end_timestamp']}} if bounds else {}),

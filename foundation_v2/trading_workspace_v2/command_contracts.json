@@ -6527,6 +6527,23 @@
                 "minLength": 1,
                 "title": "Operation Id",
                 "type": "string"
+              },
+              "quantity": {
+                "anyOf": [
+                  {
+                    "exclusiveMinimum": 0.0,
+                    "type": "number"
+                  },
+                  {
+                    "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Quantity"
               }
             },
             "required": [

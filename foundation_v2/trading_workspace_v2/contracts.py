@@ -584,6 +584,7 @@ class ReplayCloseOrderRequest(BaseModel):
     expected_revision: int = Field(ge=1, strict=True)
     target_id: str = Field(min_length=1, max_length=128)
     operation_id: str = Field(min_length=1, max_length=128)
+    quantity: Decimal | None = Field(default=None, gt=0)
 
 
 class ReplayPropFeedRequest(BaseModel):

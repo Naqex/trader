@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_serializer, model_validator
 
 from .execution_semantics import (
     IntrabarAmbiguityError,
@@ -67,6 +68,8 @@ class ReplayOpenPosition(BaseModel):
     source_operation_id: str = Field(min_length=1, max_length=128)
     side: Literal["BUY", "SELL"]
     quantity: Decimal = Field(gt=0)
+    original_quantity: Decimal | None = Field(default=None, gt=0)
+    realized_pnl: Decimal | None = None
     entry_bid: Decimal = Field(gt=0)
     entry_ask: Decimal = Field(gt=0)
     entry_fill: Decimal = Field(gt=0)
@@ -74,6 +77,22 @@ class ReplayOpenPosition(BaseModel):
     take_profit: Decimal | None = Field(default=None, gt=0)
     opened_cursor_index: int = Field(ge=0, strict=True)
     opened_time_utc: int = Field(ge=0, strict=True)
+
+    @model_validator(mode="after")
+    def partial_basis_is_consistent(self):
+        if self.original_quantity is not None and (not self.original_quantity.is_finite() or self.original_quantity < self.quantity):
+            raise ValueError("original quantity cannot be below remaining quantity")
+        if self.realized_pnl is not None and not self.realized_pnl.is_finite():
+            raise ValueError("realized pnl must be finite")
+        return self
+
+    @model_serializer(mode="wrap")
+    def retain_legacy_shape(self, handler):
+        result = handler(self)
+        for key in ("original_quantity", "realized_pnl"):
+            if result.get(key) is None:
+                result.pop(key, None)
+        return result
 
 
 class ReplayExecutionSnapshot(BaseModel):
@@ -131,6 +150,10 @@ class ReplayExecutionEvent(BaseModel):
     def money_is_consistent(self):
         if self.equity != self.balance + self.floating_pl:
             raise ValueError("event equity must equal balance plus floating_pl")
+        if self.kind == "market_fill" and any(
+                (self.details.get("open_position") or {}).get(key) is not None
+                for key in ("original_quantity", "realized_pnl")):
+            raise ValueError("opening fill cannot contain partial-close accounting")
         if self.kind == "protection_change":
             raw_position = self.details.get("open_position")
             raw_pending = self.details.get("pending_market_order")
@@ -157,8 +180,11 @@ class ReplayExecutionEvent(BaseModel):
             closed = ReplayOpenPosition.model_validate(d.get("closed_position")) if self.kind == "manual_close" else ReplayQueuedMarketOrder.model_validate(d.get("cancelled_order"))
             target = closed.position_id if self.kind == "manual_close" else closed.operation_id
             if (d.get("target_id") != target or not isinstance(d.get("command_operation_id"), str)
-                    or not d["command_operation_id"].strip() or self.open_positions or self.pending_orders
-                    or self.floating_pl != 0 or d.get("open_position") is not None or d.get("pending_market_order") is not None):
+                    or not d["command_operation_id"].strip() or self.pending_orders
+                    or self.open_positions != int(d.get("open_position") is not None)
+                    or (not self.open_positions and self.floating_pl != 0)
+                    or (self.kind == "order_cancel" and self.open_positions)
+                    or d.get("pending_market_order") is not None):
                 raise ValueError("close/cancel checkpoint is inconsistent")
             previous = _decimal(d.get("previous_balance"), "previous balance")
             realized = _decimal(d.get("net_pnl"), "realized pnl")
@@ -667,6 +693,12 @@ def _liquidation_pnl(
     instrument: InstrumentSpec,
     cost_model: CostModel,
 ) -> tuple[Decimal, dict]:
+    if position.original_quantity is not None:
+        ratio = position.quantity / position.original_quantity
+        cost_model = replace(cost_model,
+            commission_per_side_account=cost_model.commission_per_side_account * ratio,
+            minimum_fee_account=cost_model.minimum_fee_account * ratio,
+            financing_account=cost_model.financing_account * ratio)
     cost = calculate_round_trip_cost(
         cost_model,
         position.side,
@@ -685,10 +717,24 @@ def _validate_manual_close(snapshot, event):
     prior = next((raw for raw in reversed(snapshot.ledger) if raw["sequence"] == event.sequence - 1), None)
     if (prior is None or prior["cursor_index"] != event.cursor_index
             or prior["virtual_time_utc"] != event.virtual_time_utc
-            or prior["details"].get("open_position") != d.get("closed_position")
+            or prior["details"].get("open_position") != d.get("previous_position", d.get("closed_position"))
             or Decimal(str(prior["balance"])) != Decimal(str(d.get("previous_balance")))):
         raise ReplayExecutionError("manual close differs from its canonical position checkpoint")
     closed = ReplayOpenPosition.model_validate(d["closed_position"])
+    instrument = InstrumentSpec.from_mapping(snapshot.instrument_spec)
+    _validate_quantity(closed.quantity, instrument)
+    residual = ReplayOpenPosition.model_validate(d["open_position"]) if d.get("open_position") is not None else None
+    if residual is not None:
+        previous = ReplayOpenPosition.model_validate(d.get("previous_position"))
+        _validate_quantity(residual.quantity, instrument)
+        basis = previous.original_quantity or previous.quantity
+        expected_closed = previous.model_copy(update={"quantity": closed.quantity, "original_quantity": basis})
+        expected_residual = previous.model_copy(update={"quantity": previous.quantity - closed.quantity,
+            "original_quantity": basis, "realized_pnl": (previous.realized_pnl or Decimal(0)) + _decimal(d.get("net_pnl"), "net pnl")})
+        if closed != expected_closed or residual != expected_residual or closed.quantity >= previous.quantity:
+            raise ReplayExecutionError("partial close differs from its previous position")
+    elif "previous_position" in d:
+        raise ReplayExecutionError("full close cannot retain a partial position checkpoint")
     bid, ask = (_decimal(d.get(key), key, positive=True) for key in ("bid_close", "ask_close"))
     if snapshot.schema_version != "replay-execution-tick-v1":
         instrument = InstrumentSpec.from_mapping(snapshot.instrument_spec)
@@ -699,13 +745,16 @@ def _validate_manual_close(snapshot, event):
             raise ReplayExecutionError("manual close quote differs from the declared mid/spread")
     realized, cost = _liquidation_pnl(closed, exit_bid=bid, exit_ask=ask,
         instrument=InstrumentSpec.from_mapping(snapshot.instrument_spec), cost_model=CostModel.from_mapping(snapshot.cost_model))
+    floating = _liquidation_pnl(residual, exit_bid=bid, exit_ask=ask, instrument=instrument,
+        cost_model=CostModel.from_mapping(snapshot.cost_model))[0] if residual else Decimal(0)
     if (_decimal(d.get("net_pnl"), "realized pnl") != realized or d.get("cost_breakdown") != cost
+            or event.floating_pl != floating
             or d.get("cost_model_version") != cost["cost_model_version"]
             or _decimal(d.get("fill_price"), "fill price") != (bid if closed.side == "BUY" else ask)):
         raise ReplayExecutionError("manual close differs from frozen quote/cost accounting")
 
 
-def close_replay_order(snapshot, *, target_id, operation_id, mid_close, virtual_time_utc):
+def close_replay_order(snapshot, *, target_id, operation_id, mid_close, virtual_time_utc, quantity=None):
     """Close at the observed checkpoint quote, or cancel an unfilled order."""
     active = snapshot.position or snapshot.pending_market_order
     if active is None:
@@ -724,33 +773,54 @@ def close_replay_order(snapshot, *, target_id, operation_id, mid_close, virtual_
         "previous_balance": str(snapshot.balance), "net_pnl": "0", "mid_close": str(mid_close),
         "open_position": None, "pending_market_order": None, "intrabar_equity_coverage": next((raw["details"].get("intrabar_equity_coverage", "insufficient") for raw in reversed(snapshot.ledger) if raw.get("kind") == "price_mark"), "insufficient" if snapshot.position else "complete")}
     realized = Decimal(0)
+    floating = Decimal(0)
+    residual = None
     if snapshot.position:
         instrument = InstrumentSpec.from_mapping(snapshot.instrument_spec)
+        close_quantity = active.quantity if quantity is None else _decimal(quantity, "close quantity", positive=True)
+        _validate_quantity(close_quantity, instrument)
+        if close_quantity > active.quantity:
+            raise ReplayExecutionError("close quantity exceeds remaining position")
+        closed = active
+        if close_quantity < active.quantity:
+            remaining = active.quantity - close_quantity
+            _validate_quantity(remaining, instrument)
+            basis = active.original_quantity or active.quantity
+            closed = active.model_copy(update={"quantity": close_quantity, "original_quantity": basis})
+            residual = active.model_copy(update={"quantity": remaining, "original_quantity": basis})
+            details["previous_position"] = active.model_dump(mode="json")
         if snapshot.schema_version == "replay-execution-tick-v1":
             bid, ask = snapshot.last_bid, snapshot.last_ask
             if bid is None or ask is None:
                 raise ReplayExecutionError("manual close requires a canonical broker quote")
         else:
             bid, ask = quote_from_mid(mid_close, spread_price=snapshot.spread_price, tick_size=instrument.tick_size)
-        realized, cost = _liquidation_pnl(active, exit_bid=bid, exit_ask=ask, instrument=instrument,
+        realized, cost = _liquidation_pnl(closed, exit_bid=bid, exit_ask=ask, instrument=instrument,
             cost_model=CostModel.from_mapping(snapshot.cost_model))
-        details.update(operation_id=source_id, position_id=actual_id, side=active.side, quantity=str(active.quantity),
+        if residual is not None:
+            residual = residual.model_copy(update={"realized_pnl": (active.realized_pnl or Decimal(0)) + realized})
+            floating, _ = _liquidation_pnl(residual, exit_bid=bid, exit_ask=ask, instrument=instrument,
+                cost_model=CostModel.from_mapping(snapshot.cost_model))
+            details["open_position"] = residual.model_dump(mode="json")
+        details.update(operation_id=source_id, position_id=actual_id, side=active.side, quantity=str(closed.quantity),
             reason="manual_close", fill_price=str(bid if active.side == "BUY" else ask),
             bid_close=str(bid), ask_close=str(ask), net_pnl=str(realized), cost_model_version=cost["cost_model_version"],
-            cost_breakdown=cost, closed_position=active.model_dump(mode="json"))
+            cost_breakdown=cost, closed_position=closed.model_dump(mode="json"))
     else:
+        if quantity is not None:
+            raise ReplayExecutionError("quantity requires an open position")
         details["cancelled_order"] = active.model_dump(mode="json")
     event = _event_type(snapshot)(sequence=snapshot.event_sequence + 1,
         kind="manual_close" if snapshot.position else "order_cancel",
         replay_session_id=snapshot.replay_session_id, branch_id=snapshot.branch_id,
         dataset_id=snapshot.dataset_id, dataset_sha256=snapshot.dataset_sha256,
         cursor_index=snapshot.cursor_index, virtual_time_utc=virtual_time_utc,
-        balance=snapshot.balance + realized, floating_pl=0, equity=snapshot.balance + realized,
-        open_positions=0, pending_orders=0, details=details)
+        balance=snapshot.balance + realized, floating_pl=floating, equity=snapshot.balance + realized + floating,
+        open_positions=int(residual is not None), pending_orders=0, details=details)
     if snapshot.position:
         _validate_manual_close(snapshot, event)
-    return snapshot.model_copy(update={"position": None, "pending_market_order": None,
-        "balance": event.balance, "floating_pl": Decimal(0), "equity": event.equity,
+    return snapshot.model_copy(update={"position": residual, "pending_market_order": None,
+        "balance": event.balance, "floating_pl": floating, "equity": event.equity,
         "event_sequence": event.sequence, "ledger": [*snapshot.ledger, event.model_dump(mode="json")]})
 
 

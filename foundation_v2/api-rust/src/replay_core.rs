@@ -175,7 +175,12 @@ pub(super) fn pnl(
     } else {
         std::cmp::max(py(dec(c, "commission_per_side_account")? * BigDecimal::from(2)), dec(c, "minimum_fee_account")?)
     };
-    let finance = dec(c, "financing_account")?;
+    // Legacy fixed fees belong to the original position, not each closing slice.
+    let ratio = if p.get("original_quantity").is_some() {
+        div(positive(p, "quantity")?, positive(p, "original_quantity")?)
+    } else { BigDecimal::from(1) };
+    let comm = if matches!(c["version"].as_str(),Some("session-cost-v1" | "session-cost-v2")) { comm } else { py(comm * &ratio) };
+    let finance = py(dec(c, "financing_account")? * ratio);
     let net = py(account.clone() - py(py(&comm + &slip) + &finance));
     let places = int(c, "rounding_decimals")?;
     let money = |n: BigDecimal| number(n.with_scale_round(places, RoundingMode::HalfUp));
@@ -662,7 +667,20 @@ fn close(s: &mut Value, a: &Value, history: &mut History<'_>) -> R<()> {
     }];
     let mut details = json!({"command_operation_id":a["operation_id"],"target_id":a["target_id"],"operation_id":source,"previous_balance":s["balance"],"net_pnl":"0","mid_close":sval(positive(a,"mid_close")?),"open_position":null,"pending_market_order":null,"intrabar_equity_coverage":history.coverage(s,if is_position{"insufficient"}else{"complete"})});
     let mut realized = zero();
+    let mut floating = zero();
+    let mut remaining = Value::Null;
     if is_position {
+        let original = p.get("original_quantity").cloned().unwrap_or_else(|| p["quantity"].clone());
+        let requested = if a["quantity"].is_null() { positive(&p,"quantity")? } else { positive(a,"quantity")? };
+        let residual = positive(&p,"quantity")? - &requested;
+        qty(s,&requested)?;
+        if residual < zero() { return Err("close quantity exceeds remaining position".into()); }
+        if residual > zero() { qty(s,&residual)?; }
+        let mut closing = p.clone();
+        closing["quantity"] = sval(requested);
+        if residual > zero() || p.get("original_quantity").is_some() {
+            closing["original_quantity"] = original.clone();
+        }
         let (bid, ask) = if tick_mode(s) {
             (positive(s, "last_bid")?, positive(s, "last_ask")?)
         } else {
@@ -675,21 +693,31 @@ fn close(s: &mut Value, a: &Value, history: &mut History<'_>) -> R<()> {
         };
         let closing_side = if side(&p)? == "BUY" { "SELL" } else { "BUY" };
         let (executed, slip) = slippage::fill(s,if closing_side == "SELL" { &bid } else { &ask },closing_side,"market",txt(a,"operation_id")?,int(s,"cursor_index")?,time)?;
-        let (net, cost) = if slippage::enabled(s) { pnl(s,&p,&executed,&executed)? } else { pnl(s,&p,&bid,&ask)? };
+        let (net, cost) = if slippage::enabled(s) { pnl(s,&closing,&executed,&executed)? } else { pnl(s,&closing,&bid,&ask)? };
         if slippage::enabled(s) { details["fill_slippage"] = slip; }
         realized = net;
         merge(
             &mut details,
-            json!({"position_id":p["position_id"],"side":p["side"],"quantity":p["quantity"],"reason":"manual_close","fill_price":sval(executed),"bid_close":sval(bid),"ask_close":sval(ask),"net_pnl":sval(realized.clone()),"cost_model_version":cost["cost_model_version"],"cost_breakdown":cost,"closed_position":p}),
+            json!({"position_id":p["position_id"],"side":p["side"],"quantity":closing["quantity"],"reason":"manual_close","fill_price":sval(executed),"bid_close":sval(bid.clone()),"ask_close":sval(ask.clone()),"net_pnl":sval(realized.clone()),"cost_model_version":cost["cost_model_version"],"cost_breakdown":cost,"closed_position":closing}),
         );
+        if residual > zero() {
+            remaining = p.clone();
+            remaining["quantity"] = sval(residual);
+            remaining["original_quantity"] = original;
+            remaining["realized_pnl"] = sval(py(p.get("realized_pnl").map(d).transpose()?.unwrap_or_else(zero) + &realized));
+            floating = pnl(s,&remaining,&bid,&ask)?.0;
+            details["previous_position"] = p;
+            details["open_position"] = remaining.clone();
+        }
     } else {
+        if !a["quantity"].is_null() { return Err("quantity is only valid for an open position".into()); }
         details["cancelled_order"] = p;
     }
     if tick_mode(s) {
         merge(&mut details, provenance(s, false)?);
     }
     s["balance"] = sval(py(dec(s, "balance")? + realized));
-    s["position"] = Value::Null;
+    s["position"] = remaining;
     s["pending_market_order"] = Value::Null;
     emit_history(
         s,
@@ -701,7 +729,7 @@ fn close(s: &mut Value, a: &Value, history: &mut History<'_>) -> R<()> {
         },
         int(s, "cursor_index")?,
         time,
-        zero(),
+        floating,
         details,
     )
 }
@@ -1026,6 +1054,8 @@ fn order_valid(p: &Value, position: bool) -> R<()> {
             "opened_cursor_index",
             "opened_time_utc",
             "entry_slippage",
+            "original_quantity",
+            "realized_pnl",
         ]
     } else {
         vec![
@@ -1040,6 +1070,10 @@ fn order_valid(p: &Value, position: bool) -> R<()> {
     strict(p, &keys)?;
     side(p)?;
     positive(p, "quantity")?;
+    if p.get("original_quantity").is_some() && positive(p,"original_quantity")? < positive(p,"quantity")? {
+        return Err("original quantity is below remaining quantity".into());
+    }
+    if p.get("realized_pnl").is_some() { dec(p,"realized_pnl")?; }
     opt_dec(p, "stop_loss")?;
     opt_dec(p, "take_profit")?;
     if position {
@@ -1276,6 +1310,10 @@ pub(crate) fn validate_event_with_previous(s: &Value, e: &Value, previous: Optio
     }
     let kind = txt(e, "kind")?;
     let d = &e["details"];
+    if kind == "market_fill" && (d["open_position"].get("original_quantity").is_some()
+        || d["open_position"].get("realized_pnl").is_some()) {
+        return Err("opening fill cannot contain partial-close accounting".into());
+    }
     if ![
         "market_fill",
         "order_rejected",
@@ -1455,6 +1493,7 @@ pub(crate) fn validate_event_with_previous(s: &Value, e: &Value, previous: Optio
         }
     }
     if ["manual_close", "order_cancel"].contains(&kind) {
+        let partial = kind == "manual_close" && !d["open_position"].is_null();
         let p = &d[if kind == "manual_close" {
             "closed_position"
         } else {
@@ -1468,10 +1507,9 @@ pub(crate) fn validate_event_with_previous(s: &Value, e: &Value, previous: Optio
         }];
         bounded(d, "command_operation_id")?;
         if d["target_id"] != *target
-            || int(e, "open_positions")? != 0
+            || int(e, "open_positions")? != i64::from(partial)
             || int(e, "pending_orders")? != 0
-            || dec(e, "floating_pl")? != zero()
-            || !d["open_position"].is_null()
+            || (!partial && dec(e, "floating_pl")? != zero())
             || !d["pending_market_order"].is_null()
         {
             return Err("close/cancel checkpoint is inconsistent".into());
@@ -1493,15 +1531,39 @@ pub(crate) fn validate_event_with_previous(s: &Value, e: &Value, previous: Optio
             }
             let prev =
                 previous.ok_or("manual close lacks canonical position checkpoint")?;
+            let prior = &prev["details"]["open_position"];
             if prev["cursor_index"] != e["cursor_index"]
                 || prev["virtual_time_utc"] != e["virtual_time_utc"]
-                || prev["details"]["open_position"] != *p
+                || (!partial && *prior != *p)
                 || dec(prev, "balance")? != dec(d, "previous_balance")?
             {
                 return Err("manual close differs from its canonical position checkpoint".into());
             }
+            if partial {
+                order_valid(&d["open_position"],true)?;
+                let closed = positive(p,"quantity")?;
+                let residual = positive(prior,"quantity")? - &closed;
+                qty(s,&closed)?;
+                qty(s,&residual)?;
+                let original = prior.get("original_quantity").cloned().unwrap_or_else(||prior["quantity"].clone());
+                let mut expected_close = prior.clone();
+                expected_close["quantity"] = p["quantity"].clone();
+                expected_close["original_quantity"] = original.clone();
+                let mut expected_open = prior.clone();
+                expected_open["quantity"] = sval(residual);
+                expected_open["original_quantity"] = original;
+                expected_open["realized_pnl"] = sval(py(prior.get("realized_pnl").map(self::d).transpose()?.unwrap_or_else(zero) + &realized));
+                if d["previous_position"] != *prior || *p != expected_close || d["open_position"] != expected_open {
+                    return Err("partial close differs from its canonical position checkpoint".into());
+                }
+            } else if !d["previous_position"].is_null() {
+                return Err("full close cannot retain a partial position checkpoint".into());
+            }
             let bid = positive(d, "bid_close")?;
             let ask = positive(d, "ask_close")?;
+            if partial && dec(e,"floating_pl")? != pnl(s,&d["open_position"],&bid,&ask)?.0 {
+                return Err("partial close floating pnl differs from remaining position".into());
+            }
             if !tick_mode(s) {
                 if positive(d, "mid_close")? != positive(&prev["details"], "mid_close")? {
                     return Err("manual close must use the canonical checkpoint mid".into());

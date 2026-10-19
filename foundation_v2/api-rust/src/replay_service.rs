@@ -980,6 +980,7 @@ pub async fn view(
     out.insert("canonical_cursor_index".into(), json!(canonical));
     out.insert("historical_view".into(), json!(cursor != canonical));
     out.insert("execution_view_status".into(), json!(status));
+    out.insert("execution_capabilities".into(), json!({"partial_close":true}));
     if state.native_runtime && !multi && cursor == canonical
         && bar_execution(&out["payload"]["execution"])
     {
@@ -2021,6 +2022,7 @@ async fn step_view_response(
         "cutoff_timestamp":cutoff,"appended_rows":rows,"appended_events":events,
         "historical_view":false,"has_future_rows":cursor < limit,
         "execution_view_status":if execution.is_null(){"not_initialized"}else{"current"},
+        "execution_capabilities":{"partial_close":true},
         "updated_at_utc":saved["updated_at_utc"],"visible_row_start":start,
         "visible_row_count":cursor-start+1,"total_row_count":manifest["row_count"],
         "payload_patch":{"execution":execution,"cursor_index":cursor,"status":p["status"],"timing":p["timing"]}
@@ -2241,6 +2243,7 @@ async fn mutation_view(
         "cursor_index":cursor, "view_cursor_index":cursor, "canonical_cursor_index":cursor,
         "cutoff_timestamp":cutoff, "historical_view":false, "has_future_rows":future,
         "execution_view_status":"current",
+        "execution_capabilities":{"partial_close":true},
         "payload_patch":{"execution":execution, "cursor_index":cursor, "status":p["status"], "timing":p["timing"]}
     });
     result.as_object_mut().unwrap().extend(identity.as_object().unwrap().clone());

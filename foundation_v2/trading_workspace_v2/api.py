@@ -1455,7 +1455,7 @@ def create_app(
                                  workspace: str = Depends(workspace_id)):
         try:
             return replay.close_order(workspace, session_id, body.expected_revision,
-                target_id=body.target_id, operation_id=body.operation_id)
+                target_id=body.target_id, operation_id=body.operation_id, quantity=body.quantity)
         except LookupError:
             raise HTTPException(status_code=404, detail="replay_not_found")
         except RuntimeError as exc:

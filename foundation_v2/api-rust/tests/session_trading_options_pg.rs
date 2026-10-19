@@ -69,7 +69,7 @@ async fn frozen_options_backtest_and_prop_http_workflow() {
         assert_eq!(status,201,"{created}");
         assert_eq!(created["payload"]["trading_options"]["version"],options["version"]);
         let path = format!("/api/v2/replay/sessions/{}",created["record_id"].as_str().unwrap());
-        let (status,mut opened) = request(&app,"POST",&format!("{path}/orders/quick"),json!({"expected_revision":created["revision"],"operation_id":"open","side":"SELL","quantity":"0.01","execution_timing":"current_quote","instrument_spec":instrument,"timeframe_seconds":60,"starting_balance":"100000","spread_price":"0.0002","cost_model":{"version":"old-fixture","account_ccy":"USD","commission_per_side_account":"1"}})).await;
+        let (status,mut opened) = request(&app,"POST",&format!("{path}/orders/quick"),json!({"expected_revision":created["revision"],"operation_id":"open","side":"SELL","quantity":"0.04","execution_timing":"current_quote","instrument_spec":instrument,"timeframe_seconds":60,"starting_balance":"100000","spread_price":"0.0002","cost_model":{"version":"old-fixture","account_ccy":"USD","commission_per_side_account":"1"}})).await;
         assert_eq!(status,200,"{opened}");
         if v2 {
             let (status,protected) = request(&app,"POST",&format!("{path}/orders/protection"),json!({"expected_revision":opened["revision"],"operation_id":"protect","target_id":opened["payload"]["execution"]["position"]["position_id"],"stop_loss":"1.12100","take_profit":"1.12000"})).await;
@@ -78,7 +78,7 @@ async fn frozen_options_backtest_and_prop_http_workflow() {
         let execution = &opened["payload"]["execution"];
         let entry_fill = execution["position"]["entry_fill"].as_str().unwrap().parse::<BigDecimal>().unwrap();
         let base = "1.12044".parse::<BigDecimal>().unwrap();
-        let expected_fp = (&entry_fill - &base) * BigDecimal::from(1000);
+        let expected_fp = (&entry_fill - &base) * BigDecimal::from(4000);
         if v2 {
             assert!(entry_fill <= base);
             assert_eq!(execution["position"]["entry_slippage"]["maximum_ticks"],match mode { "off"=>0,"light"=>10,"medium"=>30,_=>20 });
@@ -94,17 +94,40 @@ async fn frozen_options_backtest_and_prop_http_workflow() {
         assert_eq!(metadata["payload"]["trading_options"],created["payload"]["trading_options"]);
         let (status,error) = request(&app,"PATCH",&path,json!({"expected_revision":opened["revision"],"trading_options":options})).await;
         assert_eq!(status,422,"{error}");
+        let mut prop_after_open = None;
         if let Some((session,attempt,started)) = prop_ident {
             let mark = execution["ledger"].as_array().unwrap().iter().find(|event|event["kind"]=="price_mark").unwrap();
             let (status,fed) = request(&app,"POST",&format!("{path}/prop/sessions/{session}/attempts/{attempt}/feed"),json!({"replay_event_sequence":mark["sequence"],"expected_prop_revision":started["attempt"]["revision"],"prop_event_sequence":started["phase"]["last_event_sequence"].as_i64().unwrap()+1})).await;
             assert_eq!(status,200,"{fed}");
             assert_eq!(fed["phase"]["equity"].as_str().unwrap().parse::<BigDecimal>().unwrap(),BigDecimal::from(100000)+&expected_fp);
+            prop_after_open = Some((session,attempt,fed));
         }
-        let (status,closed) = request(&app,"POST",&format!("{path}/orders/close"),json!({"expected_revision":opened["revision"],"operation_id":"close","target_id":execution["position"]["position_id"]})).await;
+        let target = execution["position"]["position_id"].clone();
+        let (status,partial) = request(&app,"POST",&format!("{path}/orders/close?response_view=mutation-v1"),json!({"expected_revision":opened["revision"],"operation_id":"partial","target_id":target,"quantity":"0.01"})).await;
+        assert_eq!(status,200,"{partial}");
+        assert_eq!(partial["execution_capabilities"]["partial_close"],true);
+        let partial_execution = &partial["payload_patch"]["execution"];
+        assert_eq!(partial_execution["position"]["quantity"],"0.03");
+        assert_eq!(partial_execution["position"]["original_quantity"],"0.04");
+        let partial_event = &partial["appended_events"][0];
+        assert_eq!(partial_event["open_positions"],1);
+        assert_eq!(partial_execution["position"]["realized_pnl"].as_str().unwrap().parse::<BigDecimal>().unwrap(),partial_event["details"]["net_pnl"].as_str().unwrap().parse::<BigDecimal>().unwrap());
+        let (status,after_partial) = request(&app,"GET",&path,Value::Null).await;
+        assert_eq!(status,200,"{after_partial}");
+        assert_eq!(after_partial["payload"]["execution"]["position"],partial_execution["position"]);
+        assert_eq!(after_partial["execution_capabilities"]["partial_close"],true);
+        if let Some((session,attempt,fed)) = prop_after_open {
+            let (status,next) = request(&app,"POST",&format!("{path}/prop/sessions/{session}/attempts/{attempt}/feed"),json!({"replay_event_sequence":partial_event["sequence"],"expected_prop_revision":fed["attempt"]["revision"],"prop_event_sequence":fed["phase"]["last_event_sequence"].as_i64().unwrap()+1})).await;
+            assert_eq!(status,200,"{next}");
+            assert_eq!(next["phase"]["balance"].as_str().unwrap().parse::<BigDecimal>().unwrap(),partial_execution["balance"].as_str().unwrap().parse::<BigDecimal>().unwrap());
+            assert_eq!(next["phase"]["floating_pl"].as_str().unwrap().parse::<BigDecimal>().unwrap(),partial_execution["floating_pl"].as_str().unwrap().parse::<BigDecimal>().unwrap());
+            assert_eq!(next["phase"]["open_positions"],1);
+        }
+        let (status,closed) = request(&app,"POST",&format!("{path}/orders/close"),json!({"expected_revision":partial["revision"],"operation_id":"close","target_id":target})).await;
         assert_eq!(status,200,"{closed}");
-        let close_event = closed["payload"]["execution"]["ledger"].as_array().unwrap().iter().find(|event|event["kind"]=="manual_close").unwrap();
+        let close_event = closed["payload"]["execution"]["ledger"].as_array().unwrap().iter().filter(|event|event["kind"]=="manual_close").last().unwrap();
         let exit_fill = close_event["details"]["fill_price"].as_str().unwrap().parse::<BigDecimal>().unwrap();
-        let expected_balance = BigDecimal::from(100000) + (&entry_fill - exit_fill)*BigDecimal::from(1000);
+        let expected_balance = partial_execution["balance"].as_str().unwrap().parse::<BigDecimal>().unwrap() + (&entry_fill - exit_fill)*BigDecimal::from(3000);
         assert_eq!(closed["payload"]["execution"]["balance"].as_str().unwrap().parse::<BigDecimal>().unwrap(),expected_balance);
         let (status,branched) = request(&app,"POST",&format!("{path}/branch"),json!({"expected_revision":closed["revision"],"cursor_index":0})).await;
         assert_eq!(status,201,"{branched}");

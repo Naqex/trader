@@ -113,7 +113,7 @@ pub fn build_replay_analytics_view(view:&Value,filters:Option<&Value>)->R<Value>
         let ledger=array(&s["ledger"])?;
         if s["replay_session_id"]!=*sid||s["dataset_id"]!=p["dataset_id"]||s["branch_id"]!=p["branch_id"]||s["cursor_index"]!=p["cursor_index"]||s["event_sequence"].as_u64()!=Some(ledger.len() as u64){return Err("replay execution lineage is inconsistent".into())}
         if truth(&base["dataset_sha256"])&&base["dataset_sha256"]!=s["dataset_sha256"]{return Err("replay dataset hash is inconsistent".into())}
-        let mut opened=HashMap::<String,&Value>::new();let mut positions=HashSet::new();let mut operations=HashSet::new();let mut trades=vec![];let mut rejects=vec![];
+        let mut opened=HashMap::<String,&Value>::new();let mut remaining_quantities=HashMap::<String,BigDecimal>::new();let mut partially_closed=HashSet::new();let mut positions=HashSet::new();let mut operations=HashSet::new();let mut trades=vec![];let mut rejects=vec![];
         let(mut last_cursor,mut last_time)=(-1,-1);let mut balance=decimal(&s["starting_balance"])?;let mut last:Option<&Value>=None;let mut phases=0;let mut phase_initial=balance.clone();
         for(i,e)in ledger.iter().enumerate(){
             crate::replay_core::validate_event(s,e)?;
@@ -122,8 +122,20 @@ pub fn build_replay_analytics_view(view:&Value,filters:Option<&Value>)->R<Value>
             last_cursor=c;last_time=time;let d=&e["details"];let id=text(&d["position_id"]);let kind=text(&e["kind"]);
             if ["replay-execution-v2","replay-execution-tick-v1"].contains(&text(&s["schema_version"]))&&["market_fill","order_rejected"].contains(&kind)&&!operations.insert(d["operation_id"].to_string()){return Err("replay order outcome is duplicated".into())}
             match kind{
-                "market_fill"=>{if id.trim().is_empty()||!positions.insert(id.to_string())||!opened.is_empty()||text(&d["operation_id"]).trim().is_empty()||!["BUY","SELL"].contains(&text(&d["side"])){return Err("replay opening fill is inconsistent".into())}if number(&d["quantity"])?<=0.0||number(&d["fill_price"])?<=0.0{return Err("replay opening price or quantity invalid".into())}opened.insert(id.to_string(),e);},
-                "protective_fill"|"manual_close"=>{let entry=opened.remove(id).ok_or("replay closing fill has no matching opening fill")?;if entry["details"]["operation_id"]!=d["operation_id"]{return Err("replay closing fill has no matching opening fill".into())}balance+=decimal(&d["net_pnl"])?;let exit=number(&d["fill_price"])?;if exit<=0.0{return Err("replay exit price invalid".into())}trades.push(json!({"trade_id":id,"session_id":sid,"source_position_id":id,"source_operation_id":d["operation_id"],"source":{"session_id":sid,"revision":view["revision"]},"symbol":s["instrument_spec"]["instrument_id"],"side":entry["details"]["side"],"quantity":number(&entry["details"]["quantity"])? ,"open_time_utc":entry["virtual_time_utc"],"close_time_utc":time,"open_cursor_index":entry["cursor_index"],"close_cursor_index":c,"close_event_sequence":i+1,"close_phase_index":phases+1,"price_open":number(&entry["details"]["fill_price"])? ,"price_close":exit,"net_pnl":number(&d["net_pnl"])? ,"gross_pnl":null,"fees":null,"planned_risk_budget":null,"realized_r":null,"exit_reason":d["reason"]}));},
+                "market_fill"=>{if id.trim().is_empty()||!positions.insert(id.to_string())||!opened.is_empty()||text(&d["operation_id"]).trim().is_empty()||!["BUY","SELL"].contains(&text(&d["side"])){return Err("replay opening fill is inconsistent".into())}if number(&d["quantity"])?<=0.0||number(&d["fill_price"])?<=0.0{return Err("replay opening price or quantity invalid".into())}opened.insert(id.to_string(),e);remaining_quantities.insert(id.to_string(),decimal(&d["quantity"])?);},
+                "protective_fill"|"manual_close"=>{
+                    let entry=*opened.get(id).ok_or("replay closing fill has no matching opening fill")?;
+                    let before=remaining_quantities.get(id).ok_or("replay closing quantity missing")?;
+                    // Historical protective fills omit quantity because they close all exposure.
+                    let quantity=if kind=="protective_fill"&&d["quantity"].is_null(){before.clone()}else{decimal(&d["quantity"])?};
+                    let remaining=before-&quantity;
+                    if quantity<=BigDecimal::from(0)||remaining<BigDecimal::from(0)||truth(&d["open_position"])!=(remaining>BigDecimal::from(0)){return Err("replay closing quantity differs from remaining position".into())}
+                    if remaining>BigDecimal::from(0){remaining_quantities.insert(id.to_string(),remaining);partially_closed.insert(id.to_string());}else{opened.remove(id);remaining_quantities.remove(id);}
+                    if entry["details"]["operation_id"]!=d["operation_id"]{return Err("replay closing fill has no matching opening fill".into())}
+                    balance+=decimal(&d["net_pnl"])?;let exit=number(&d["fill_price"])?;
+                    if exit<=0.0{return Err("replay exit price invalid".into())}
+                    trades.push(json!({"trade_id":if partially_closed.contains(id){format!("{id}:close:{}",i+1)}else{id.to_string()},"session_id":sid,"source_position_id":id,"source_operation_id":d["operation_id"],"source":{"session_id":sid,"revision":view["revision"]},"symbol":s["instrument_spec"]["instrument_id"],"side":entry["details"]["side"],"quantity":number(&json!(quantity.to_string()))? ,"open_time_utc":entry["virtual_time_utc"],"close_time_utc":time,"open_cursor_index":entry["cursor_index"],"close_cursor_index":c,"close_event_sequence":i+1,"close_phase_index":phases+1,"price_open":number(&entry["details"]["fill_price"])? ,"price_close":exit,"net_pnl":number(&d["net_pnl"])? ,"gross_pnl":null,"fees":null,"planned_risk_budget":null,"realized_r":null,"exit_reason":d["reason"]}));
+                },
                 "order_rejected"=>{let mut reject=json!({"event_sequence":i+1,"cursor_index":c,"virtual_time_utc":time});merge(&mut reject,d);rejects.push(reject)},
                 "phase_transition"=>{
                     if d["from_phase_index"].as_u64()!=Some(phases+1)||d["to_phase_index"].as_u64()!=Some(phases+2)||decimal(&d["from_balance"])?!=balance{return Err("replay phase transition is inconsistent".into())}

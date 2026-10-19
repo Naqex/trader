@@ -22,8 +22,8 @@ The later 18 October session-preset cutover applied additive migration0007 and
 kept all21 existing data-table projections and4,142 artifact hashes unchanged.
 See [the scoped checkpoint](../evidence/session-presets-db-20261018/CHECKPOINT.md).
 The active scientific descriptor is now
-`.runtime/api-platform/native-scientific-capability-session-presets-db-20261018.json`;
-the installed bootstrap refreshed its engine-code commitment after the slippage
+`.runtime/api-platform/native-scientific-capability-partial-close-20261019.json`;
+the installed bootstrap refreshed its engine-code commitment after the partial-close
 contract change, with dependency/runtime identities unchanged. Retain that explicit
 path and the existing legacy descriptor on restart. Local backups use the installed
 PostgreSQL18 client matching server18; the archived17 client cannot dump it.
@@ -228,6 +228,25 @@ Unsupported filesystems hash exact bytes without caching. This avoids repeatedly
 reading unchanged dependency bytes; it does not bypass installed-file validation.
 
 ## Compact replay mutation responses
+
+Replay views and mutation/step responses advertise
+`execution_capabilities.partial_close=true`. Clients must require this flag before
+sending a partial close: older runtimes do not understand the optional quantity.
+`POST orders/close` accepts an optional absolute decimal `quantity` in instrument
+lots. Omission closes the entire position (or cancels a pending order); quantities
+are only valid for open positions. Both the closed slice and any residual must
+meet the instrument minimum and step. Partial closes execute immediately against
+the canonical quote, keep TP/SL on the residual, and retain its `original_quantity`
+and cumulative `realized_pnl`; old unsplit positions omit those two fields.
+
+A partial close remains a `manual_close` checkpoint with one open position,
+`closed_position` for the slice, `previous_position` for validation, and
+`open_position` for the residual. Existing full-close ledgers retain their shape.
+Fixed commission/minimum fees and financing are allocated by the slice's share of
+original volume; per-lot commissions use the closed volume. Existing monetary
+rounding applies separately to each fill, so summed rounded allocations can differ
+by a cent from a single full close. Analytics records each closed slice once with
+a distinct trade ID while retaining the original source position ID.
 
 Single-asset POST requests to `execution`, `orders/quick`, `orders/market`,
 `orders/protection` and `orders/close` can opt into

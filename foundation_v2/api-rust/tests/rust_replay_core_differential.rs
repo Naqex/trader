@@ -192,3 +192,22 @@ fn tick_current_quote_reopens_after_close_and_rejects_changed_window() {
         assert!(transform(&serde_json::json!({"action":"validate", "snapshot":damaged, "args":{}})).is_err());
     }
 }
+
+#[test]
+fn tick_partial_close_retains_observed_quote_and_remaining_volume() {
+    let corpus: Value=serde_json::from_str(include_str!("../../evidence/rust-native-20261017/replay-core/oracle.json")).unwrap();
+    let seed=corpus.as_array().unwrap().iter().find(|c|c["request"]["action"]=="fill_current_quote"&&c["request"]["snapshot"]["schema_version"]=="replay-execution-tick-v1"&&c["expected"]["snapshot"]["position"].is_object()).unwrap();
+    let args=&seed["request"]["args"];
+    let mut state=transform(&seed["request"]).unwrap()["snapshot"].take();
+    state=transform(&serde_json::json!({"action":"close","snapshot":state,"args":{"operation_id":"reset","target_id":state["position"]["position_id"],"mid_close":args["mid_close"],"virtual_time_utc":args["virtual_time_utc"]}})).unwrap()["snapshot"].take();
+    for side in ["BUY","SELL"] {
+        state=transform(&serde_json::json!({"action":"queue_current_quote","snapshot":state,"args":{"operation_id":format!("open-{side}"),"side":side,"quantity":"0.04","mid_close":args["mid_close"],"virtual_time_utc":args["virtual_time_utc"]}})).unwrap()["snapshot"].take();
+        let target=state["position"]["position_id"].clone();
+        state=transform(&serde_json::json!({"action":"close","snapshot":state,"args":{"operation_id":format!("partial-{side}"),"target_id":target,"quantity":"0.01","mid_close":args["mid_close"],"virtual_time_utc":args["virtual_time_utc"]}})).unwrap()["snapshot"].take();
+        assert_eq!(state["position"]["quantity"],"0.03");
+        assert_eq!(state["position"]["original_quantity"],"0.04");
+        transform(&serde_json::json!({"action":"validate","snapshot":state,"args":{}})).unwrap();
+        state=transform(&serde_json::json!({"action":"close","snapshot":state,"args":{"operation_id":format!("final-{side}"),"target_id":target,"mid_close":args["mid_close"],"virtual_time_utc":args["virtual_time_utc"]}})).unwrap()["snapshot"].take();
+        assert!(state["position"].is_null());
+    }
+}

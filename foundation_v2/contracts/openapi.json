@@ -8223,6 +8223,22 @@
             "maxLength": 128,
             "minLength": 1,
             "title": "Operation Id"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity"
           }
         },
         "additionalProperties": false,
@@ -8571,6 +8587,15 @@
               }
             ],
             "title": "Take Profit"
+          },
+          "execution_timing": {
+            "type": "string",
+            "enum": [
+              "next_bar",
+              "current_quote"
+            ],
+            "title": "Execution Timing",
+            "default": "next_bar"
           }
         },
         "additionalProperties": false,
@@ -9551,6 +9576,15 @@
               }
             ],
             "title": "Tick Snapshot Id"
+          },
+          "execution_timing": {
+            "type": "string",
+            "enum": [
+              "next_bar",
+              "current_quote"
+            ],
+            "title": "Execution Timing",
+            "default": "next_bar"
           }
         },
         "additionalProperties": false,

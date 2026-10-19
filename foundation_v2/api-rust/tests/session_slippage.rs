@@ -220,6 +220,30 @@ fn mark_to_market_does_not_resample_and_manual_close_charges_only_actual_fills()
 }
 
 #[test]
+fn partial_close_then_protection_preserves_remaining_costs_and_analytics() {
+    for side in ["BUY","SELL"] {
+        let mut seed=initial("fixed",false);
+        seed["cost_model"]["commission_per_lot_account"]=json!("8");
+        let opened=apply(seed,"queue_current_quote",json!({"operation_id":"open-partial","side":side,"quantity":"0.04","mid_close":"1.12044","virtual_time_utc":60}));
+        let partial=apply(opened.clone(),"close",json!({"operation_id":"partial","target_id":opened["position"]["position_id"],"quantity":"0.01","mid_close":"1.12044","virtual_time_utc":60}));
+        assert_eq!(partial["position"]["original_quantity"],"0.04");
+        assert_eq!(partial["ledger"].as_array().unwrap().last().unwrap()["details"]["cost_breakdown"]["commission_account"],0.08);
+        let closed=advance(protect(partial,side,true),side,true,false);
+        assert!(closed["position"].is_null()); validate(&closed).unwrap();
+        let protective=closed["ledger"].as_array().unwrap().iter().find(|e|e["kind"]=="protective_fill").unwrap();
+        assert_eq!(protective["details"]["closed_position"]["quantity"],"0.03");
+        assert_eq!(protective["details"]["cost_breakdown"]["commission_account"],0.24);
+        let view=json!({"record_id":closed["replay_session_id"],"workspace_id":"tenant-a","revision":1,"payload":{"dataset_id":closed["dataset_id"],"branch_id":closed["branch_id"],"cursor_index":closed["cursor_index"],"execution":closed}});
+        let analytics=trading_workspace_api::analytics::build_replay_analytics_view(&view,None).unwrap();
+        assert_eq!(analytics["analytics_available"],true);
+        assert_eq!(analytics["ledger"].as_array().unwrap().len(),2);
+        assert_eq!(analytics["ledger"][0]["quantity"],0.01);
+        assert_eq!(analytics["ledger"][1]["quantity"],0.03);
+        assert_ne!(analytics["ledger"][0]["trade_id"],analytics["ledger"][1]["trade_id"]);
+    }
+}
+
+#[test]
 fn next_bar_market_fill_preserves_actual_entry_and_provenance() {
     let queued = apply(
         initial("fixed", false),

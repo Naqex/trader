@@ -559,6 +559,62 @@ mod tests {
         }
     }
     #[test]
+    fn partial_close_preserves_remaining_position_and_allocates_legacy_fees() {
+        for side in ["BUY", "SELL"] {
+            let mut p = Pair::new(false);
+            p.run("advance", bar(1));
+            let mut open = order(side,"open");
+            open["quantity"] = json!("0.04");
+            p.run("queue_current_quote",open);
+            let target = p.full["position"]["position_id"].clone();
+            let balance = dec(&p.full,"balance").unwrap();
+            for (index, left) in [(1,"0.03"),(2,"0.02"),(3,"0.01")] {
+                let events = p.run("close",json!({"operation_id":format!("partial-{index}"),"target_id":target,
+                    "quantity":"0.01","mid_close":"1.1","virtual_time_utc":1060}));
+                assert_eq!(dec(&p.full["position"],"quantity").unwrap(),d(&json!(left)).unwrap());
+                assert_eq!(p.full["position"]["original_quantity"],"0.04");
+                assert_eq!(events[0]["open_positions"],1);
+                assert_eq!(events[0]["details"]["cost_breakdown"]["commission_account"],0.5);
+                validate(&p.full).unwrap();
+            }
+            p.run("close",json!({"operation_id":"final","target_id":target,"mid_close":"1.1","virtual_time_utc":1060}));
+            assert!(p.full["position"].is_null());
+            assert_eq!(balance-dec(&p.full,"balance").unwrap(),d(&json!("2.80")).unwrap());
+            validate(&p.full).unwrap();
+        }
+    }
+    #[test]
+    fn partial_close_rejects_oversize_off_step_and_invalid_remainder() {
+        let mut p = Pair::new(false);
+        p.run("advance",bar(1));
+        let mut open = order("BUY","open"); open["quantity"] = json!("0.04");
+        p.run("queue_current_quote",open);
+        for quantity in ["0","-0.01","0.05","0.015","0.035"] {
+            let args=json!({"operation_id":"invalid","target_id":p.full["position"]["position_id"],
+                "quantity":quantity,"mid_close":"1.1","virtual_time_utc":1060});
+            assert!(transform(&json!({"action":"close","snapshot":p.full,"args":args})).is_err());
+            assert!(p.prefix.transition("close",args,&p.index).is_err());
+        }
+    }
+    #[test]
+    fn partial_close_allocates_minimum_fee_and_financing_once() {
+        let mut p=Pair::new(false);
+        p.full["cost_model"]["minimum_fee_account"]=json!("5");
+        p.full["cost_model"]["financing_account"]=json!("3");
+        p.prefix=ValidatedBarPrefix::import(p.full.clone()).unwrap();
+        p.run("advance",bar(1));
+        let mut open=order("BUY","open"); open["quantity"]=json!("0.04");
+        p.run("queue_current_quote",open);
+        let target=p.full["position"]["position_id"].clone();
+        let events=p.run("close",json!({"operation_id":"partial","target_id":target,"quantity":"0.01","mid_close":"1.1","virtual_time_utc":1060}));
+        assert_eq!(events[0]["details"]["cost_breakdown"]["commission_account"],1.25);
+        assert_eq!(events[0]["details"]["cost_breakdown"]["financing_account"],0.75);
+        let last=p.run("close",json!({"operation_id":"final","target_id":target,"mid_close":"1.1","virtual_time_utc":1060}));
+        assert_eq!(last[0]["details"]["cost_breakdown"]["commission_account"],3.75);
+        assert_eq!(last[0]["details"]["cost_breakdown"]["financing_account"],2.25);
+        assert_eq!(dec(&p.full,"balance").unwrap(),d(&json!("991.2")).unwrap());
+    }
+    #[test]
     fn queue_without_event_pending_amend_cancel_and_reuse_guard() {
         let mut p = Pair::new(false);
         p.run("advance", bar(1));

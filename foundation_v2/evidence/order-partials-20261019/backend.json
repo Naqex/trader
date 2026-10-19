@@ -1,0 +1,6 @@
+{
+  "passed": true,
+  "scope": "disposable PostgreSQL, native compact production routes",
+  "stdout": "\nrunning 1 test\ntest frozen_options_backtest_and_prop_http_workflow ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.48s\n\n",
+  "stderr": "   Compiling trading-workspace-api v0.1.0 (D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.07s\n     Running tests\\session_trading_options_pg.rs (target\\session-slippage-20261018\\debug\\deps\\session_trading_options_pg-704b55f006f43ea3.exe)\n"
+}

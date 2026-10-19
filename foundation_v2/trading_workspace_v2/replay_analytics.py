@@ -66,6 +66,8 @@ def build_replay_analytics_view(view: dict, filters: dict | None = None) -> dict
         if base["dataset_sha256"] and base["dataset_sha256"] != snapshot.dataset_sha256:
             raise AnalyticsValidationError("replay dataset hash is inconsistent")
         opened = {}
+        remaining_quantities = {}
+        partially_closed = set()
         position_ids = set()
         trades = []
         cutoff = None
@@ -107,22 +109,33 @@ def build_replay_analytics_view(view: dict, filters: dict | None = None) -> dict
                 _number(detail.get("fill_price"), "entry price", positive=True)
                 position_ids.add(position_id)
                 opened[position_id] = event
+                remaining_quantities[position_id] = _decimal(detail["quantity"], "quantity", positive=True)
             elif event.kind in {"protective_fill", "manual_close"}:
                 if not isinstance(position_id, str):
                     raise AnalyticsValidationError("replay closing fill position is invalid")
-                entry = opened.pop(position_id, None)
+                entry = opened.get(position_id)
                 if entry is None or entry.details.get("operation_id") != detail.get("operation_id"):
                     raise AnalyticsValidationError("replay closing fill has no matching opening fill")
+                quantity = _decimal(detail.get("quantity", remaining_quantities[position_id]), "close quantity", positive=True)
+                remaining = remaining_quantities[position_id] - quantity
+                if remaining < 0 or bool(detail.get("open_position")) != (remaining > 0):
+                    raise AnalyticsValidationError("replay closing quantity differs from remaining position")
+                if remaining > 0:
+                    remaining_quantities[position_id] = remaining
+                    partially_closed.add(position_id)
+                else:
+                    opened.pop(position_id)
+                    remaining_quantities.pop(position_id)
                 balance += _decimal(detail.get("net_pnl"), "net pnl")
                 trades.append({
-                    "trade_id": position_id,
+                    "trade_id": f"{position_id}:close:{event.sequence}" if position_id in partially_closed else position_id,
                     "session_id": session_id,
                     "source_position_id": position_id,
                     "source_operation_id": detail.get("operation_id"),
                     "source": {"session_id": session_id, "revision": view["revision"]},
                     "symbol": snapshot.instrument_spec["instrument_id"],
                     "side": entry.details["side"],
-                    "quantity": _number(entry.details["quantity"], "quantity", positive=True),
+                    "quantity": float(quantity),
                     "open_time_utc": entry.virtual_time_utc,
                     "close_time_utc": event.virtual_time_utc,
                     "open_cursor_index": entry.cursor_index,

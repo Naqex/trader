@@ -350,13 +350,13 @@ def change_tick_protection(snapshot: ReplayTickExecutionSnapshot, *, target_id: 
     return updated.model_copy(update={"ledger": [*updated.ledger[:-1], raw]})
 
 
-def close_tick_order(snapshot, *, target_id, operation_id, mid_close, virtual_time_utc):
+def close_tick_order(snapshot, *, target_id, operation_id, mid_close, virtual_time_utc, quantity=None):
     from .replay_execution import close_replay_order
     quote_event = next((raw for raw in reversed(snapshot.ledger) if "bid" in raw.get("details", {})), None)
     if quote_event is None or virtual_time_utc != snapshot.ledger[-1]["virtual_time_utc"]:
         raise ReplayExecutionError("close requires the current canonical broker checkpoint")
     updated = close_replay_order(snapshot, target_id=target_id, operation_id=operation_id,
-        mid_close=mid_close, virtual_time_utc=virtual_time_utc)
+        mid_close=mid_close, virtual_time_utc=virtual_time_utc, quantity=quantity)
     raw = updated.ledger[-1]
     d = {**raw["details"], **{key: quote_event["details"][key] for key in (
         "tick_snapshot_id", "tick_snapshot_sha256", "quote_source", "time_msc", "sequence", "bid", "ask")}}
