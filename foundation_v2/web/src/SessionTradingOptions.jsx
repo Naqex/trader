@@ -36,7 +36,7 @@ export default function SessionTradingOptions({ assets, value, onChange, disable
         const changeSlippage = next => onChange(updateGroupSlippage(value,group.assets,next))
         const max = slippage.mode === 'medium' ? [3,8] : [1,2]
         const unitLabel = count => language === 'en' && count !== 1 ? `${unit}s` : unit
-        const description = mixed ? t('Thiết lập khác nhau. Chọn để áp dụng cho cả nhóm.') : ['light','medium'].includes(slippage.mode)
+        const description = !available ? t('Chưa có bước giá (pip/tick).') : mixed ? t('Thiết lập khác nhau. Chọn để áp dụng cho cả nhóm.') : ['light','medium'].includes(slippage.mode)
           ? t('Tối đa {market} {marketUnit} với lệnh thị trường, {stop} {stopUnit} với lệnh stop.', { market:max[0], marketUnit:unitLabel(max[0]), stop:max[1], stopUnit:unitLabel(max[1]) })
           : t(slippage.mode === 'fixed' ? 'Cùng mức trượt cho lệnh thị trường và stop.' : 'Khớp đúng giá.')
         const fixedLabel = t('Mức cố định ({unit})', {unit:language === 'en' ? `${unit}s` : unit})

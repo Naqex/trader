@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import {mkdir,writeFile} from 'node:fs/promises'
 import {chromium} from 'playwright'
 const origin=process.env.TESTING_UI_ORIGIN || 'http://127.0.0.1:5180'
-const out=process.env.TW_UI_EVIDENCE_DIR || '../evidence/session-options-design-20261018/ui'
+const out=process.env.TW_UI_EVIDENCE_DIR || '../evidence/preset-hover-20261019/ui'
 await mkdir(out,{recursive:true})
 const browser=await chromium.launch()
 const report={scope:'Production UI with an in-memory preset HTTP fixture and isolated browser storage. Real catalog GETs, all owner writes blocked; one intercepted session-creation 503 test. Database acceptance is separate.',cases:[],errors:[],writes:[],presetRequests:0}
@@ -69,6 +69,7 @@ try {
   }
   assert.equal(await trigger.evaluate(el=>getComputedStyle(el).borderTopColor),'rgba(0, 0, 0, 0)','unselected preset has no colored border')
   await page.addStyleTag({content:'*,*::before,*::after{animation:none !important;transition:none !important}'})
+  assert.notEqual(await trigger.evaluate(el=>getComputedStyle(el).backgroundColor),'rgba(0, 0, 0, 0)','unselected preset has a neutral surface')
   await dialog.locator('input[maxlength="160"]').first().fill('OWNER DRAFT')
   const assets=dialog.locator('.dataset-asset-select .fx-select-trigger:not(:disabled)')
   for(let i=0;i<2;i++) {await assets.click();await dialog.locator('.dataset-asset-select [role=option][aria-selected=false]:not([disabled])').first().click()}
@@ -76,6 +77,8 @@ try {
   await trigger.click()
   assert.equal(await menu.locator('small').count(),0,'no browser-only storage caption')
   assert.equal(await menu.locator('.session-preset-create').evaluate(el=>getComputedStyle(el).borderTopWidth),'0px','empty menu has no stray separator')
+  await menu.locator('.session-preset-create').hover()
+  assert.notEqual(await menu.locator('.session-preset-create').evaluate(el=>getComputedStyle(el).backgroundColor),'rgba(0, 0, 0, 0)','create preset has a hover surface')
   if(mode==='backtest' && !en) await dialog.screenshot({animations:'disabled',path:`${out}/empty-menu.png`})
   await menu.locator('.session-preset-create').click()
   assert.equal(await dialog.locator('.quick-session-sections').count(),0)

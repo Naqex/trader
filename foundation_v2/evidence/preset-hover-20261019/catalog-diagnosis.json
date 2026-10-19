@@ -1,0 +1,32 @@
+{
+  "scope": "Read-only actual dataset catalog; no owner data writes",
+  "datasets": [
+    {
+      "dataset_id": "dataset-1483b9e976ebb75c647d1e2d913dfc99fd22c1ac83fb9e8e1dceca21d9ea144a",
+      "instrument_id": "XAU/USD",
+      "instrument_spec_present": false,
+      "replay_spec_present": false,
+      "tick_size": null,
+      "replay_tick_size": null,
+      "replay_pip_size": null
+    },
+    {
+      "dataset_id": "dataset-c7de666c3be38818c1d91ad143b8dbc4467f7a190d782d127fd34851c27f04cd",
+      "instrument_id": "XAU/USD",
+      "instrument_spec_present": false,
+      "replay_spec_present": false,
+      "tick_size": null,
+      "replay_tick_size": null,
+      "replay_pip_size": null
+    },
+    {
+      "dataset_id": "dataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c",
+      "instrument_id": "EUR/USD",
+      "instrument_spec_present": false,
+      "replay_spec_present": true,
+      "tick_size": null,
+      "replay_tick_size": "0.00001",
+      "replay_pip_size": "0.0001"
+    }
+  ]
+}
