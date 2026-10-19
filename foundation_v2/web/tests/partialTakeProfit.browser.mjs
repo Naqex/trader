@@ -49,6 +49,30 @@ try {
     await stop.getByRole('spinbutton').first().fill(side==='BUY'?'1.09':'1.11')
     await tp.getByRole('spinbutton').first().fill(side==='BUY'?'1.101':'1.099')
     await tp.getByRole('button',{name:lang==='vi'?'+ Chốt từng phần':'+ Partial TP',exact:true}).click()
+    const share=tp.getByRole('spinbutton',{name:lang==='vi'?'Tỷ lệ chốt TP1':'Close share TP1',exact:true})
+    const quick=tp.locator('.legacy-partial-target').first().locator('.legacy-partial-presets')
+    for (const percent of [10,25,50]) {
+      await quick.getByRole('button',{name:`${percent}%`,exact:true}).click()
+      assert.equal(Number(await share.inputValue()),percent)
+      assert.equal(await tp.locator('.legacy-partial-total').innerText(),`${percent+50} / 100%`)
+      assert.equal(await tp.locator('.legacy-partial-total').evaluate(node=>node.classList.contains('is-invalid')),percent!==50)
+    }
+    await tp.getByRole('button',{name:lang==='vi'?'Một mức chốt lời':'Single profit',exact:true}).click()
+    assert.equal(await tp.locator('.legacy-partial-target').count(),0)
+    assert.equal(await tp.getByRole('switch').isChecked(),true)
+    assert.equal(await tp.getByRole('spinbutton').first().inputValue(),side==='BUY'?'1.101':'1.099','Return to single retains the first target price')
+    const add=tp.locator('.legacy-partial-add')
+    const alignment=await add.evaluate(node=>{
+      const box=node.getBoundingClientRect(),parent=node.parentElement.getBoundingClientRect()
+      return {offset:Math.abs(box.x+box.width/2-parent.x-parent.width/2),background:getComputedStyle(node).backgroundColor}
+    })
+    assert.ok(alignment.offset<1,'Add partial target is centered')
+    assert.notEqual(alignment.background,'rgba(0, 0, 0, 0)')
+    await add.click()
+    if (width > 600) {
+      const tops=await tp.locator('.legacy-partial-target').first().locator('input').evaluateAll(nodes=>nodes.map(node=>node.getBoundingClientRect().top))
+      assert.ok(Math.max(...tops)-Math.min(...tops)<1,'Price, pips and close-share inputs align across the row')
+    }
     await tp.getByRole('spinbutton',{name:lang==='vi'?'Giá TP2':'Price TP2',exact:true}).fill(side==='BUY'?'1.102':'1.098')
     assert.equal(await tp.locator('.legacy-partial-quantity').first().innerText(),'0.02 lot')
     assert.ok((await tp.locator('.legacy-protection-estimate strong').innerText()).startsWith('$'))

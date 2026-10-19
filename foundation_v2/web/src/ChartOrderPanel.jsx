@@ -4,6 +4,7 @@ import { DEFAULT_COST_MODEL, RiskPreview, validateDraft } from './TradeWorkspace
 import { finiteNumber, marketQuotes, orderDraft, protectionReference, replayAtCutoff, validateEntry } from './replayOrderModel.js'
 import { useReplayTickOptions } from './useReplayTickOptions.js'
 import FxSelect from './FxSelect.jsx'
+import ChartIcon from './ChartIcon.jsx'
 import { scalperProtection } from './legacyScalperPreset.js'
 import { sessionExecutionConfig } from './sessionTradingOptions.js'
 import { closeNotice, protectionNotice } from './replayOrderNotices.js'
@@ -264,6 +265,7 @@ function PartialTakeProfits({ order, entry }) {
   const { t } = useTestingLocale()
   const { draft, setDraft, instrument, disabled } = order
   const rows = draft.takeProfits || []
+  const totalPercent = rows.reduce((sum,row) => sum + (finiteNumber(row.percent) ?? 0),0)
   let targets, error = ''
   try { targets = partialTargets(draft,instrument) } catch (failure) { error = failure.message }
   const update = (id,key,value) => setDraft(current => ({ ...current, takeProfits:current.takeProfits.map(row => row.id === id ? { ...row, [key]:value } : row) }))
@@ -283,6 +285,7 @@ function PartialTakeProfits({ order, entry }) {
       ...(!next.length ? { protectionEnabled:{ ...current.protectionEnabled,takeProfit:false } } : {}) }
   })
   return <div className="legacy-partial-targets">
+    {rows.length > 0 && <div className="legacy-partial-toolbar"><button type="button" className="legacy-partial-single" disabled={disabled} onClick={() => setDraft(current => ({ ...current,takeProfit:current.takeProfits[0]?.price || current.takeProfit,takeProfits:[] }))}><ChartIcon name="arrow-left" />{t('Một mức chốt lời')}</button><span className={`legacy-partial-total ${Math.abs(totalPercent-100) > 0.000001 ? 'is-invalid' : ''}`} role="status" aria-label={t('Tổng tỷ lệ chốt')}>{Number(totalPercent.toFixed(2))} / 100%</span></div>}
     {rows.length > 0 && <div className="legacy-partial-rows">{rows.map((row,index) => {
       const price = index === 0 ? draft.takeProfit : row.price
       const changePrice = value => setDraft(current => ({ ...current,...(index === 0 ? { takeProfit:value } : {}),takeProfits:current.takeProfits.map(target => target.id === row.id ? { ...target,price:value } : target) }))
@@ -291,7 +294,7 @@ function PartialTakeProfits({ order, entry }) {
         <div className="legacy-order-grid legacy-partial-grid">
           <label>{t('Giá')}<input aria-label={`${t('Giá')} TP${index+1}`} type="number" min="0" required step={instrument.tick_size} value={price} disabled={disabled} onChange={event => changePrice(event.target.value)} /></label>
           <label>{t('Take profit in pips')}<input aria-label={`${t('Take profit in pips')} TP${index+1}`} type="number" step="any" value={protectionPips(price,entry,draft.side,'takeProfit',instrument)} disabled={disabled} onChange={event => changePrice(protectionPrice(event.target.value,entry,draft.side,'takeProfit',instrument))} /></label>
-          <label>{t('Tỷ lệ chốt')}<span className="legacy-risk-input"><span aria-hidden="true">%</span><input aria-label={`${t('Tỷ lệ chốt')} TP${index+1}`} type="number" min="0" max="100" step="any" required value={row.percent} disabled={disabled} onChange={event => update(row.id,'percent',event.target.value)} /></span></label>
+          <div className="legacy-partial-share"><label>{t('Tỷ lệ chốt')}<span className="legacy-risk-input"><span aria-hidden="true">%</span><input aria-label={`${t('Tỷ lệ chốt')} TP${index+1}`} type="number" min="0" max="100" step="any" required value={row.percent} disabled={disabled} onChange={event => update(row.id,'percent',event.target.value)} /></span></label><div className="legacy-partial-presets" role="group" aria-label={`${t('Tỷ lệ chốt')} TP${index+1}`}>{[10,25,50].map(percent => <button type="button" key={percent} aria-pressed={Number(row.percent) === percent} disabled={disabled} onClick={() => update(row.id,'percent',String(percent))}>{percent}%</button>)}</div></div>
         </div>
       </div>
     })}</div>}

@@ -3,6 +3,8 @@
   "Bỏ": { "vi":"Bỏ", "en":"Remove" },
   "+ Partial TP": { "vi":"+ Chốt từng phần", "en":"+ Partial TP" },
   "Tỷ lệ chốt": { "vi":"Tỷ lệ chốt", "en":"Close share" },
+  "Một mức chốt lời": { "vi":"Một mức chốt lời", "en":"Single profit" },
+  "Tổng tỷ lệ chốt": { "vi":"Tổng tỷ lệ chốt", "en":"Total close share" },
   "Tổng tỷ lệ chốt lời phải bằng 100%.": { "vi":"Tổng tỷ lệ chốt lời phải bằng 100%.", "en":"Take-profit shares must total 100%." },
   "Khối lượng quá nhỏ để chia các mức TP theo bước của tài sản.": { "vi":"Khối lượng quá nhỏ để chia các mức TP theo bước của tài sản.", "en":"Quantity is too small to split targets at this instrument’s lot step." },
   "Các mức TP phải xếp từ gần đến xa theo hướng lệnh.": { "vi":"Các mức TP phải xếp từ gần đến xa theo hướng lệnh.", "en":"Take-profit targets must run from nearest to farthest in the trade direction." },
