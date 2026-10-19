@@ -1,0 +1,126 @@
+{
+  "scope": "Installed native chart; owner writes blocked; no trades or playback",
+  "cases": [
+    {
+      "width": 1368,
+      "errors": [],
+      "blocked": [
+        "/api/v2/replay/sessions/d848723290084cf98e8d03de6cff4dbf/activity"
+      ],
+      "chart": {
+        "x": 0,
+        "y": 0,
+        "width": 1320,
+        "height": 739
+      },
+      "top": {
+        "x": 8,
+        "y": 8,
+        "width": 312,
+        "height": 40
+      },
+      "bottom": {
+        "x": 1048,
+        "y": 742,
+        "width": 312,
+        "height": 40
+      },
+      "reloaded": {
+        "x": 1048,
+        "y": 742,
+        "width": 312,
+        "height": 40
+      },
+      "resized": {
+        "x": 151,
+        "y": 552,
+        "width": 201,
+        "height": 40
+      },
+      "passed": true
+    },
+    {
+      "width": 768,
+      "errors": [],
+      "blocked": [
+        "/api/v2/replay/sessions/d848723290084cf98e8d03de6cff4dbf/activity"
+      ],
+      "chart": {
+        "x": 0,
+        "y": 0,
+        "width": 720,
+        "height": 691
+      },
+      "top": {
+        "x": 8,
+        "y": 8,
+        "width": 312,
+        "height": 40
+      },
+      "bottom": {
+        "x": 448,
+        "y": 742,
+        "width": 312,
+        "height": 40
+      },
+      "reloaded": {
+        "x": 448,
+        "y": 742,
+        "width": 312,
+        "height": 40
+      },
+      "resized": {
+        "x": 151,
+        "y": 552,
+        "width": 201,
+        "height": 40
+      },
+      "passed": true
+    },
+    {
+      "width": 360,
+      "errors": [],
+      "blocked": [
+        "/api/v2/replay/sessions/d848723290084cf98e8d03de6cff4dbf/activity"
+      ],
+      "chart": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 659
+      },
+      "top": {
+        "x": 8,
+        "y": 8,
+        "width": 201,
+        "height": 40
+      },
+      "bottom": {
+        "x": 151,
+        "y": 742,
+        "width": 201,
+        "height": 40
+      },
+      "reloaded": {
+        "x": 151,
+        "y": 742,
+        "width": 201,
+        "height": 40
+      },
+      "resized": {
+        "x": 151,
+        "y": 552,
+        "width": 201,
+        "height": 40
+      },
+      "touch": {
+        "x": 151,
+        "y": 8,
+        "width": 201,
+        "height": 40
+      },
+      "passed": true
+    }
+  ],
+  "passed": true
+}
