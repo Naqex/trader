@@ -63,10 +63,17 @@ try {
           execution.position = { ...execution.position, stop_loss: body.stop_loss, take_profit: body.take_profit }
         } else if (url.pathname.endsWith('/orders/close')) {
           if (rejectClose) { rejectClose = false; return route.fulfill({ status: 422, json: { detail: 'QA partial close rejected' } }) }
-          assert.equal(body.target_id, 'qa-position')
-          const prior = Number(execution.position.quantity), amount = Number(body.quantity ?? prior)
-          assert.ok(amount > 0 && amount <= prior)
-          execution.position = amount === prior ? null : { ...execution.position, quantity: String(Number((prior - amount).toFixed(8))), original_quantity: '.10', realized_pnl: '0' }
+          if (execution.position) {
+            assert.equal(body.target_id, 'qa-position')
+            const prior = Number(execution.position.quantity), amount = Number(body.quantity ?? prior)
+            assert.ok(amount > 0 && amount <= prior)
+            execution.ledger.push({ kind: 'manual_close', details: { command_operation_id: body.operation_id, target_id: body.target_id, fill_price: (Number(replay.visible_rows.at(-1).close) - .00001).toFixed(5), closed_position: { ...execution.position, quantity: String(amount) } } })
+            execution.position = amount === prior ? null : { ...execution.position, quantity: String(Number((prior - amount).toFixed(8))), original_quantity: '.10', realized_pnl: '0' }
+          } else {
+            assert.equal(body.target_id, 'qa-pending')
+            execution.ledger.push({ kind: 'order_cancel', details: { command_operation_id: body.operation_id, cancelled_order: execution.pending_market_order } })
+            execution.pending_market_order = null
+          }
         } else throw Error(`Unexpected fixture write ${url.pathname}`)
         replay = { ...replay, revision: replay.revision + 1, payload: { ...replay.payload, execution: { ...execution } } }
         return route.fulfill({ json: replay })
@@ -205,6 +212,11 @@ try {
     }
     await dialog.getByRole('button', { name: t('Save'), exact: true }).click()
     await dialog.waitFor({ state: 'detached' })
+    const partialNotice = page.locator('.wm-notification[data-order-status=partial_closed]')
+    await partialNotice.waitFor()
+    assert.match(await partialNotice.innerText(), new RegExp(t('Partially closed your open position on')))
+    assert.ok((await partialNotice.locator('.wm-notification-detail').innerText()).includes('0.08'))
+    await page.screenshot({ path: `${output}/close-partial-${width}-${language}-${side}.png` })
     await page.reload(); native = await ready()
     await native.getByRole('button', { name: t('Đóng một phần vị thế'), exact: true }).click()
     await page.locator('.partial-close-dialog').getByRole('button', { name: '50%', exact: true }).click()
@@ -229,8 +241,28 @@ try {
     await native.getByRole('button', { name: t('Đóng/hủy lệnh'), exact: true }).click()
     await page.locator('.chart-order-close-dialog').waitFor()
     assert.equal(await page.locator('.partial-close-dialog').count(), 0)
-    await page.keyboard.press('Escape')
-    report.cases.push({ width, language, side, theme, colors, quickFilled: true, reload: true, partialUi: true, oldServerBlocked: true })
+    await page.locator('.chart-order-close-dialog').getByRole('button', { name: t('Đóng vị thế'), exact: true }).click()
+    const closedNotice = page.locator('.wm-notification[data-order-status=closed]')
+    await closedNotice.waitFor()
+    assert.match(await closedNotice.innerText(), new RegExp(t('Closed your open position on')))
+    assert.equal(await closedNotice.locator('.wm-notification-symbol').innerText(), spec.instrument_id)
+    assert.equal(await closedNotice.locator('.wm-notification-order-line b').innerText(), t(side === 'BUY' ? 'Buy' : 'Sell'))
+    assert.ok((await closedNotice.locator('.wm-notification-order-line').innerText()).includes(execution.ledger.at(-1).details.fill_price))
+    assert.equal(await closedNotice.locator('.wm-notification-detail').innerText(), t('{quantity} closed from avg entry {entryPrice} · now flat').replace('{quantity}', '0.08').replace('{entryPrice}', execution.ledger.at(-1).details.closed_position.entry_fill))
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, 'close receipt fits the viewport')
+    if (width === 1368 && language === 'en') assert.equal(await closedNotice.locator('.wm-notification-detail').evaluate(node => node.getBoundingClientRect().height), 18, 'desktop receipt summary fits on one line like the reference')
+    await page.screenshot({ path: `${output}/close-full-${width}-${language}-${side}.png` })
+    execution.pending_market_order = { operation_id: 'qa-pending', side, quantity: '0.1', stop_loss: null, take_profit: null }
+    replay = { ...replay, revision: replay.revision + 1, payload: { ...replay.payload, execution: { ...execution } } }
+    await page.reload(); native = await ready()
+    await native.getByRole('button', { name: t('Đóng/hủy lệnh'), exact: true }).click()
+    await page.locator('.chart-order-close-dialog').getByRole('button', { name: t('Hủy lệnh chờ'), exact: true }).click()
+    const cancelledNotice = page.locator('.wm-notification[data-order-status=cancelled]')
+    await cancelledNotice.waitFor()
+    assert.match(await cancelledNotice.innerText(), new RegExp(t('Cancelled your pending order on')))
+    assert.equal(await cancelledNotice.locator('.wm-notification-detail').count(), 0)
+    await page.screenshot({ path: `${output}/close-cancel-${width}-${language}-${side}.png` })
+    report.cases.push({ width, language, side, theme, colors, quickFilled: true, reload: true, partialUi: true, oldServerBlocked: true, closeNotifications: true })
     await context.close()
   }
   assert.deepEqual(report.errors, [])

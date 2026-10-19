@@ -1,4 +1,11 @@
 {
+  "Closed your open position on": { "vi": "Đã đóng vị thế trên", "en": "Closed your open position on" },
+  "Partially closed your open position on": { "vi": "Đã đóng một phần vị thế trên", "en": "Partially closed your open position on" },
+  "Cancelled your pending order on": { "vi": "Đã hủy lệnh chờ trên", "en": "Cancelled your pending order on" },
+  "{quantity} closed from avg entry {entryPrice} · now flat": { "vi": "Đã đóng {quantity} từ giá vào trung bình {entryPrice} · đã đóng hết vị thế", "en": "{quantity} closed from avg entry {entryPrice} · now flat" },
+  "{quantity} closed from avg entry {entryPrice} · {remainingQuantity} remaining": { "vi": "Đã đóng {quantity} từ giá vào trung bình {entryPrice} · còn lại {remainingQuantity}", "en": "{quantity} closed from avg entry {entryPrice} · {remainingQuantity} remaining" },
+  "Đã đóng vị thế.": { "vi": "Đã đóng vị thế.", "en": "Position closed." },
+  "Đã hủy lệnh chờ.": { "vi": "Đã hủy lệnh chờ.", "en": "Pending order cancelled." },
   "Đã khớp lệnh mô phỏng tại giá hiện tại.": { "vi": "Đã khớp lệnh mô phỏng tại giá hiện tại.", "en": "Simulated order filled at the current price." },
   "Đã đóng một phần vị thế.": { "vi": "Đã đóng một phần vị thế.", "en": "Position partially closed." },
   "Tối đa": { "vi": "Tối đa", "en": "Max" },

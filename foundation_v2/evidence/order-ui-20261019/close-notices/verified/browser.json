@@ -1,0 +1,576 @@
+{
+  "scope": "Synthetic API state and intercepted writes; real native chart library. Financial correctness is tested separately against a disposable database.",
+  "cases": [
+    {
+      "width": 1368,
+      "language": "vi",
+      "side": "BUY",
+      "theme": "dark",
+      "colors": [
+        {
+          "tooltip": "Stop loss",
+          "extendLeft": false,
+          "length": 0,
+          "price": 1.1032,
+          "color": "#46C7B7"
+        },
+        {
+          "tooltip": "Take profit",
+          "extendLeft": false,
+          "length": 0,
+          "price": 1.1032,
+          "color": "#46C7B7"
+        },
+        {
+          "tooltip": "Entry",
+          "extendLeft": false,
+          "length": 0,
+          "price": 1.1032,
+          "color": "#F5F8FF"
+        }
+      ],
+      "quickFilled": true,
+      "reload": true,
+      "partialUi": true,
+      "oldServerBlocked": true,
+      "closeNotifications": true
+    },
+    {
+      "width": 1368,
+      "language": "en",
+      "side": "SELL",
+      "theme": "dark",
+      "colors": [
+        {
+          "tooltip": "Stop loss",
+          "extendLeft": false,
+          "length": 0,
+          "price": 1.1032,
+          "color": "#46C7B7"
+        },
+        {
+          "tooltip": "Take profit",
+          "extendLeft": false,
+          "length": 0,
+          "price": 1.1032,
+          "color": "#46C7B7"
+        },
+        {
+          "tooltip": "Entry",
+          "extendLeft": false,
+          "length": 0,
+          "price": 1.1032,
+          "color": "#FFBF00"
+        }
+      ],
+      "quickFilled": true,
+      "reload": true,
+      "partialUi": true,
+      "oldServerBlocked": true,
+      "closeNotifications": true
+    },
+    {
+      "width": 390,
+      "language": "vi",
+      "side": "SELL",
+      "theme": "light",
+      "colors": [
+        {
+          "tooltip": "Stop loss",
+          "extendLeft": false,
+          "length": 0,
+          "price": 1.1032,
+          "color": "#159989"
+        },
+        {
+          "tooltip": "Take profit",
+          "extendLeft": false,
+          "length": 0,
+          "price": 1.1032,
+          "color": "#159989"
+        },
+        {
+          "tooltip": "Entry",
+          "extendLeft": false,
+          "length": 0,
+          "price": 1.1032,
+          "color": "#FFBF00"
+        }
+      ],
+      "quickFilled": true,
+      "reload": true,
+      "partialUi": true,
+      "oldServerBlocked": true,
+      "closeNotifications": true
+    },
+    {
+      "width": 768,
+      "language": "en",
+      "side": "BUY",
+      "theme": "light",
+      "colors": [
+        {
+          "tooltip": "Stop loss",
+          "extendLeft": false,
+          "length": 0,
+          "price": 1.1032,
+          "color": "#159989"
+        },
+        {
+          "tooltip": "Take profit",
+          "extendLeft": false,
+          "length": 0,
+          "price": 1.1032,
+          "color": "#159989"
+        },
+        {
+          "tooltip": "Entry",
+          "extendLeft": false,
+          "length": 0,
+          "price": 1.1032,
+          "color": "#E8EBEF"
+        }
+      ],
+      "quickFilled": true,
+      "reload": true,
+      "partialUi": true,
+      "oldServerBlocked": true,
+      "closeNotifications": true
+    }
+  ],
+  "errors": [],
+  "writes": [
+    {
+      "width": 1368,
+      "language": "vi",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/market",
+      "body": {
+        "operation_id": "quick-69451267-5b3a-4d46-afb9-78a808568d70",
+        "execution_timing": "current_quote",
+        "side": "BUY",
+        "quantity": "0.10",
+        "stop_loss": null,
+        "take_profit": null,
+        "expected_revision": 123
+      }
+    },
+    {
+      "width": 1368,
+      "language": "vi",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-cd2160b5-08c3-4080-8361-c3e7f54a400c",
+        "target_id": "qa-position",
+        "stop_loss": null,
+        "take_profit": "1.1033",
+        "expected_revision": 124
+      }
+    },
+    {
+      "width": 1368,
+      "language": "vi",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-fb8cb4fe-2afa-4eaf-995f-ebbca946a796",
+        "target_id": "qa-position",
+        "stop_loss": null,
+        "take_profit": "1.1034",
+        "expected_revision": 125
+      }
+    },
+    {
+      "width": 1368,
+      "language": "vi",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-516b1ff8-fdf5-43a5-9bbe-55a71fb3c368",
+        "target_id": "qa-position",
+        "stop_loss": "1.1031",
+        "take_profit": "1.1034",
+        "expected_revision": 126
+      }
+    },
+    {
+      "width": 1368,
+      "language": "vi",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-762626bf-ed8f-4f40-a5c1-b26328200a1d",
+        "target_id": "qa-position",
+        "stop_loss": "1.103",
+        "take_profit": "1.1034",
+        "expected_revision": 127
+      }
+    },
+    {
+      "width": 1368,
+      "language": "vi",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-e1401154-49f2-4e14-8b0f-7c252da99590",
+        "target_id": "qa-position",
+        "stop_loss": "1.1022",
+        "take_profit": "1.1034",
+        "expected_revision": 128
+      }
+    },
+    {
+      "width": 1368,
+      "language": "vi",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "body": {
+        "operation_id": "close-2e0b63f4-f5a9-4811-ac53-a29fb970d434",
+        "target_id": "qa-position",
+        "quantity": "0.02",
+        "expected_revision": 129
+      }
+    },
+    {
+      "width": 1368,
+      "language": "vi",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "body": {
+        "operation_id": "close-eb962009-979d-4aad-8d28-13ac204dffe7",
+        "target_id": "qa-position",
+        "quantity": "0.02",
+        "expected_revision": 129
+      }
+    },
+    {
+      "width": 1368,
+      "language": "vi",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "body": {
+        "operation_id": "close-1d7af7a0-fb93-4441-96fd-d0b0b70bb083",
+        "target_id": "qa-position",
+        "expected_revision": 130
+      }
+    },
+    {
+      "width": 1368,
+      "language": "vi",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "body": {
+        "operation_id": "close-afc3046c-d179-49d6-935a-e14ea428ce74",
+        "target_id": "qa-pending",
+        "expected_revision": 132
+      }
+    },
+    {
+      "width": 1368,
+      "language": "en",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/market",
+      "body": {
+        "operation_id": "quick-cd92f7cf-62fa-41cb-93fd-52e0ae011fd9",
+        "execution_timing": "current_quote",
+        "side": "SELL",
+        "quantity": "0.10",
+        "stop_loss": null,
+        "take_profit": null,
+        "expected_revision": 123
+      }
+    },
+    {
+      "width": 1368,
+      "language": "en",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-62e6296f-4edd-4628-af92-59366d9a6ff4",
+        "target_id": "qa-position",
+        "stop_loss": null,
+        "take_profit": "1.1031",
+        "expected_revision": 124
+      }
+    },
+    {
+      "width": 1368,
+      "language": "en",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-d5ca321f-f64e-4bbe-bbbc-3c44fa44ddc0",
+        "target_id": "qa-position",
+        "stop_loss": null,
+        "take_profit": "1.103",
+        "expected_revision": 125
+      }
+    },
+    {
+      "width": 1368,
+      "language": "en",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-dc4c7f32-9eb8-41db-b7e7-a8d4bcef1638",
+        "target_id": "qa-position",
+        "stop_loss": "1.1033",
+        "take_profit": "1.103",
+        "expected_revision": 126
+      }
+    },
+    {
+      "width": 1368,
+      "language": "en",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-00e2cf7b-88a7-4c16-b51e-dc98133b04b9",
+        "target_id": "qa-position",
+        "stop_loss": "1.1034",
+        "take_profit": "1.103",
+        "expected_revision": 127
+      }
+    },
+    {
+      "width": 1368,
+      "language": "en",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-6bbbbf02-6cb6-4db5-98b4-e6a2e9c5c3f5",
+        "target_id": "qa-position",
+        "stop_loss": "1.1042",
+        "take_profit": "1.103",
+        "expected_revision": 128
+      }
+    },
+    {
+      "width": 1368,
+      "language": "en",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "body": {
+        "operation_id": "close-154e78c9-3ded-4224-a75f-f69e07e92470",
+        "target_id": "qa-position",
+        "quantity": "0.02",
+        "expected_revision": 129
+      }
+    },
+    {
+      "width": 1368,
+      "language": "en",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "body": {
+        "operation_id": "close-a9a4b575-6428-43a8-8ca6-9be7509a428d",
+        "target_id": "qa-position",
+        "expected_revision": 130
+      }
+    },
+    {
+      "width": 1368,
+      "language": "en",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "body": {
+        "operation_id": "close-5d772203-cd6c-4a89-ab5e-e4857a47f183",
+        "target_id": "qa-pending",
+        "expected_revision": 132
+      }
+    },
+    {
+      "width": 390,
+      "language": "vi",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/market",
+      "body": {
+        "operation_id": "quick-1cfc5cb2-9bac-43cc-a6c1-4932a9817c39",
+        "execution_timing": "current_quote",
+        "side": "SELL",
+        "quantity": "0.10",
+        "stop_loss": null,
+        "take_profit": null,
+        "expected_revision": 123
+      }
+    },
+    {
+      "width": 390,
+      "language": "vi",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-65aed96f-de6a-4d77-ae8b-b8411d6c8cf8",
+        "target_id": "qa-position",
+        "stop_loss": null,
+        "take_profit": "1.1031",
+        "expected_revision": 124
+      }
+    },
+    {
+      "width": 390,
+      "language": "vi",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-facaca75-7be9-4e01-b227-f49a42a27c0a",
+        "target_id": "qa-position",
+        "stop_loss": null,
+        "take_profit": "1.103",
+        "expected_revision": 125
+      }
+    },
+    {
+      "width": 390,
+      "language": "vi",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-17a39671-617f-4c8e-9ce8-2fd2ef5de209",
+        "target_id": "qa-position",
+        "stop_loss": "1.1033",
+        "take_profit": "1.103",
+        "expected_revision": 126
+      }
+    },
+    {
+      "width": 390,
+      "language": "vi",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-56b951aa-b572-462d-b18e-569ca855225f",
+        "target_id": "qa-position",
+        "stop_loss": "1.1034",
+        "take_profit": "1.103",
+        "expected_revision": 127
+      }
+    },
+    {
+      "width": 390,
+      "language": "vi",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-3eab328b-cc14-4aae-97b3-29de0c7956de",
+        "target_id": "qa-position",
+        "stop_loss": "1.1042",
+        "take_profit": "1.103",
+        "expected_revision": 128
+      }
+    },
+    {
+      "width": 390,
+      "language": "vi",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "body": {
+        "operation_id": "close-4104f057-eb51-42d5-b463-d232c9f5e343",
+        "target_id": "qa-position",
+        "quantity": "0.02",
+        "expected_revision": 129
+      }
+    },
+    {
+      "width": 390,
+      "language": "vi",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "body": {
+        "operation_id": "close-337a19d0-91a0-4bd9-b08c-ad8d64143540",
+        "target_id": "qa-position",
+        "expected_revision": 130
+      }
+    },
+    {
+      "width": 390,
+      "language": "vi",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "body": {
+        "operation_id": "close-5f4cb258-8e18-47f6-bdb4-591ffcfc0053",
+        "target_id": "qa-pending",
+        "expected_revision": 132
+      }
+    },
+    {
+      "width": 768,
+      "language": "en",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/market",
+      "body": {
+        "operation_id": "quick-4d658b3e-edab-4d3c-aeba-bf97d2a8e1a6",
+        "execution_timing": "current_quote",
+        "side": "BUY",
+        "quantity": "0.10",
+        "stop_loss": null,
+        "take_profit": null,
+        "expected_revision": 123
+      }
+    },
+    {
+      "width": 768,
+      "language": "en",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-d5e77fa7-cca0-47c7-b37e-df484e216f12",
+        "target_id": "qa-position",
+        "stop_loss": null,
+        "take_profit": "1.1033",
+        "expected_revision": 124
+      }
+    },
+    {
+      "width": 768,
+      "language": "en",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-78c5d002-8fbb-4c2f-992e-5683c8e1455f",
+        "target_id": "qa-position",
+        "stop_loss": null,
+        "take_profit": "1.1034",
+        "expected_revision": 125
+      }
+    },
+    {
+      "width": 768,
+      "language": "en",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-6c0a5243-e95a-4696-9aac-2bc84099e635",
+        "target_id": "qa-position",
+        "stop_loss": "1.1031",
+        "take_profit": "1.1034",
+        "expected_revision": 126
+      }
+    },
+    {
+      "width": 768,
+      "language": "en",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-2337bc41-f2f8-4e92-82f3-5376a9c8c76e",
+        "target_id": "qa-position",
+        "stop_loss": "1.103",
+        "take_profit": "1.1034",
+        "expected_revision": 127
+      }
+    },
+    {
+      "width": 768,
+      "language": "en",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/protection",
+      "body": {
+        "operation_id": "chart-e54cc586-b665-4cf9-8b6d-2db9e3833892",
+        "target_id": "qa-position",
+        "stop_loss": "1.1022",
+        "take_profit": "1.1034",
+        "expected_revision": 128
+      }
+    },
+    {
+      "width": 768,
+      "language": "en",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "body": {
+        "operation_id": "close-1c967608-4a79-4589-90e2-10cdc4d9ed8c",
+        "target_id": "qa-position",
+        "quantity": "0.02",
+        "expected_revision": 129
+      }
+    },
+    {
+      "width": 768,
+      "language": "en",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "body": {
+        "operation_id": "close-262f88a6-405b-4e6b-bd3f-aff1ed499ee7",
+        "target_id": "qa-position",
+        "expected_revision": 130
+      }
+    },
+    {
+      "width": 768,
+      "language": "en",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "body": {
+        "operation_id": "close-4c3152e8-4117-4fa9-b6ce-4aaf0e129023",
+        "target_id": "qa-pending",
+        "expected_revision": 132
+      }
+    }
+  ],
+  "passed": true
+}

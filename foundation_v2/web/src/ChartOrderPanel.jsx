@@ -6,7 +6,7 @@ import { useReplayTickOptions } from './useReplayTickOptions.js'
 import FxSelect from './FxSelect.jsx'
 import { scalperProtection } from './legacyScalperPreset.js'
 import { sessionExecutionConfig } from './sessionTradingOptions.js'
-import { protectionNotice } from './replayOrderNotices.js'
+import { closeNotice, protectionNotice } from './replayOrderNotices.js'
 
 export function useChartOrder({ workspace, replay, dataset, ready, blocked, closeBlocked = blocked, submit, executionConfig = null }) {
   const execution = replayAtCutoff(replay)?.payload?.execution
@@ -43,7 +43,9 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
     setNotice(null)
     try {
       const success = await submit(endpoint, body)
-      if (success) setNotice({ kind: 'ok', text: endpoint === 'execution' ? 'Simulator sẵn sàng.' : endpoint.endsWith('close') ? success.payload?.execution?.position ? 'Đã đóng một phần vị thế.' : 'Đã đóng/hủy lệnh mô phỏng.' : endpoint.endsWith('protection') ? 'TP/SL đã lưu; áp dụng từ nến tiếp theo.' : execution?.quote_source === 'broker_bid_ask' ? 'Đã queue; fill ở tick đầu tiên của nến kế tiếp.' : 'Đã queue; fill ở giá mở nến kế tiếp.' })
+      if (success) setNotice(endpoint === 'orders/close'
+        ? closeNotice(execution, success.payload.execution, body.operation_id, instrument?.instrument_id || '—')
+        : { kind: 'ok', text: endpoint === 'execution' ? 'Simulator sẵn sàng.' : endpoint.endsWith('protection') ? 'TP/SL đã lưu; áp dụng từ nến tiếp theo.' : execution?.quote_source === 'broker_bid_ask' ? 'Đã queue; fill ở tick đầu tiên của nến kế tiếp.' : 'Đã queue; fill ở giá mở nến kế tiếp.' })
       return success
     } catch (error) { setNotice({ kind: 'error', text: error.message }) }
     finally { busy.current = false; setPending(false) }
