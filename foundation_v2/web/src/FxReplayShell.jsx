@@ -4,6 +4,7 @@ import './fx-shell-preferences.css'
 import { buildWorkspaceHref, readWorkspaceContext } from './workspaceContext.js'
 import { TestingLocaleProvider, useTestingLocale } from './testingLocale.jsx'
 import { NotificationProvider } from './Notifications.jsx'
+import AiChatPanel, { AiSparkles } from './AiChatPanel.jsx'
 
 export { buildWorkspaceHref, readWorkspaceContext }
 
@@ -244,7 +245,7 @@ function RailIcon({ id }) {
   return <svg {...common}><path d="M4 17V7M10 17V4M16 17V9M22 17V2" /><path d="M3 20h20" /></svg>
 }
 
-function ShellRail({ activeView, workspace, query, copy, railId, drawerOpen, onClose, closeButtonRef }) {
+function ShellRail({ activeView, workspace, query, copy, railId, drawerOpen, onClose, closeButtonRef, inert }) {
   const { t } = useTestingLocale()
   const activeArea = activeSectionId(activeView, query)
   const primary = SIDEBAR_SECTIONS.slice(0, 3)
@@ -272,7 +273,7 @@ function ShellRail({ activeView, workspace, query, copy, railId, drawerOpen, onC
     )
   }
   return (
-    <aside className="fx-rail" id={railId} aria-label={copy.workspaceAria} role={drawerOpen ? 'dialog' : undefined} aria-modal={drawerOpen ? 'true' : undefined}>
+    <aside className="fx-rail" id={railId} inert={inert} aria-label={copy.workspaceAria} role={drawerOpen ? 'dialog' : undefined} aria-modal={drawerOpen ? 'true' : undefined}>
       {drawerOpen && <div className="fx-mobile-nav-header">
         <span>{copy.product}</span>
         <button className="fx-shell-help-close" type="button" onClick={onClose} aria-label={copy.closeNavigation} ref={closeButtonRef}>×</button>
@@ -356,18 +357,20 @@ function ThemeIcon({ theme }) {
   </svg>
 }
 
-function ShellTopbar({ copy, language, setLanguage, theme, setTheme, railCollapsed, onToggleRail, chartWorkspace, query, workspace, helpOpen, onToggleHelp, helpButtonRef, railId, mobileNavigation, drawerOpen, menuButtonRef }) {
+function ShellTopbar({ copy, language, setLanguage, theme, setTheme, railCollapsed, onToggleRail, chartWorkspace, query, workspace, helpOpen, onToggleHelp, helpButtonRef, railId, mobileNavigation, drawerOpen, menuButtonRef, aiOpen, onToggleAi, aiButtonRef, aiModal }) {
   const navigationAction = mobileNavigation ? copy.openNavigation : railCollapsed ? copy.expandNavigation : copy.collapseNavigation
+  const aiButton = <button type="button" className="fx-shell-toggle wm-ai-toggle" onClick={onToggleAi} ref={aiButtonRef} aria-label={language === 'en' ? 'AI chat' : 'Chat AI'} title={language === 'en' ? 'AI chat' : 'Chat AI'} aria-expanded={aiOpen} aria-controls="wm-ai-chat" data-testid="ai-toggle"><AiSparkles /></button>
   if (chartWorkspace) {
     const backHref = buildWorkspaceHref('replay', workspace, query, { select: '1', surface: '' })
     return (
-      <header className="fx-topbar fx-chart-topbar">
+      <header className="fx-topbar fx-chart-topbar" inert={aiModal}>
         <div className="fx-chart-topbar-left">
           <a className="fx-chart-icon-button" href={backHref} aria-label="Quay lại Sessions" title="Quay lại Sessions">←</a>
           <span className="fx-chart-brand">{copy.product}</span>
         </div>
         <div id="replay-command-slot" />
         <div className="fx-chart-topbar-actions">
+          {aiButton}
           <button className="fx-shell-toggle fx-language-toggle" type="button" onClick={() => setLanguage(language === 'vi' ? 'en' : 'vi')} aria-label={copy.switchLanguage} title={copy.switchLanguage} data-testid="language-toggle">{language === 'vi' ? 'EN' : 'VI'}</button>
           <button className="fx-shell-toggle fx-theme-toggle" type="button" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-pressed={theme === 'light'} aria-label={theme === 'dark' ? copy.themeDark : copy.themeLight} title={theme === 'dark' ? copy.themeDark : copy.themeLight} data-testid="theme-toggle"><ThemeIcon theme={theme} /></button>
           <button className="fx-shell-toggle fx-utility-icon" type="button" onClick={onToggleHelp} aria-expanded={helpOpen} aria-controls={helpOpen ? 'fx-shell-help' : undefined} aria-label={copy.help} title={copy.help} data-testid="help-toggle" ref={helpButtonRef}>?</button>
@@ -376,7 +379,7 @@ function ShellTopbar({ copy, language, setLanguage, theme, setTheme, railCollaps
     )
   }
   return (
-    <header className="fx-topbar" inert={drawerOpen}>
+    <header className="fx-topbar" inert={drawerOpen || aiModal}>
       <div className="fx-topbar-brand" title={copy.product}>
         <button className="fx-menu-button" type="button" onClick={onToggleRail} aria-expanded={!railCollapsed} aria-controls={railId} aria-label={navigationAction} title={navigationAction} ref={menuButtonRef}>
           <svg className="fx-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
@@ -391,6 +394,7 @@ function ShellTopbar({ copy, language, setLanguage, theme, setTheme, railCollaps
         <span className="fx-wordmark-compact" role="img" aria-label={copy.product}>WM</span>
       </div>
       <div className="fx-topbar-actions">
+        {aiButton}
         <button className="fx-shell-toggle fx-language-toggle" type="button" onClick={() => setLanguage(language === 'vi' ? 'en' : 'vi')} aria-label={copy.switchLanguage} title={copy.switchLanguage} data-testid="language-toggle">
           {language === 'vi' ? 'EN' : 'VI'}
         </button>
@@ -458,6 +462,20 @@ export default function FxReplayShell({ children, workspace, query = currentQuer
     return window.matchMedia('(max-width: 1180px)').matches
   })
   const [helpOpen, setHelpOpen] = useState(false)
+  const [aiOpen, setAiOpen] = useState(false)
+  const [aiMounted, setAiMounted] = useState(false)
+  const [aiOverlay, setAiOverlay] = useState(() => window.matchMedia('(max-width: 1100px)').matches)
+  const aiButtonRef = useRef(null)
+  const closeAi = useCallback(() => { setAiOpen(false); requestAnimationFrame(() => aiButtonRef.current?.focus()) }, [])
+  const toggleAi = useCallback(() => {
+    setAiMounted(true); setAiOpen(value => !value); setHelpOpen(false); setMobileNavigationOpen(false)
+  }, [])
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 1100px)')
+    const update = () => setAiOverlay(media.matches)
+    media.addEventListener('change', update)
+    return () => media.removeEventListener('change', update)
+  }, [])
   const [mobileNavigation, setMobileNavigation] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 760px)').matches)
   const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false)
   const drawerOpen = mobileNavigation && mobileNavigationOpen && !chartWorkspace
@@ -617,15 +635,17 @@ export default function FxReplayShell({ children, workspace, query = currentQuer
 
   return (
     <TestingLocaleProvider language={language}><FxReplayContext.Provider value={contextValue}>
-      <div className={`fx-app fx-shell-story ${displayedRailCollapsed ? 'is-rail-collapsed' : ''} ${drawerOpen ? 'is-mobile-nav-open' : ''} ${chartWorkspace ? 'is-chart-workspace' : ''} ${chartRoute ? 'is-chart-route' : ''}`} data-testid="fxreplay-shell" data-theme={theme} data-ui-area={query.get('area') || (['overview', 'replay', 'trade', 'analytics', 'market-data', 'testing', 'prop'].includes(activeView) ? 'testing' : activeView)} lang={language}>
-        <ShellTopbar copy={copy} language={language} setLanguage={handleLanguage} theme={theme} setTheme={handleTheme} railCollapsed={displayedRailCollapsed} onToggleRail={handleRail} chartWorkspace={chartWorkspace} query={query} workspace={workspace} helpOpen={helpOpen} onToggleHelp={() => setHelpOpen((value) => !value)} helpButtonRef={helpButtonRef} railId="fxreplay-rail" mobileNavigation={mobileNavigation} drawerOpen={drawerOpen} menuButtonRef={menuButtonRef} />
+      <div className={`fx-app fx-shell-story ${aiOpen ? 'is-ai-open' : ''} ${displayedRailCollapsed ? 'is-rail-collapsed' : ''} ${drawerOpen ? 'is-mobile-nav-open' : ''} ${chartWorkspace ? 'is-chart-workspace' : ''} ${chartRoute ? 'is-chart-route' : ''}`} data-testid="fxreplay-shell" data-theme={theme} data-ui-area={query.get('area') || (['overview', 'replay', 'trade', 'analytics', 'market-data', 'testing', 'prop'].includes(activeView) ? 'testing' : activeView)} lang={language}>
+        <ShellTopbar copy={copy} language={language} setLanguage={handleLanguage} theme={theme} setTheme={handleTheme} railCollapsed={displayedRailCollapsed} onToggleRail={handleRail} chartWorkspace={chartWorkspace} query={query} workspace={workspace} helpOpen={helpOpen} onToggleHelp={() => { setHelpOpen((value) => !value); setAiOpen(false) }} helpButtonRef={helpButtonRef} railId="fxreplay-rail" mobileNavigation={mobileNavigation} drawerOpen={drawerOpen} menuButtonRef={menuButtonRef} aiOpen={aiOpen} onToggleAi={toggleAi} aiButtonRef={aiButtonRef} aiModal={aiOpen && aiOverlay} />
         {drawerOpen && <div className="fx-mobile-nav-backdrop" aria-hidden="true" onClick={() => setMobileNavigationOpen(false)} />}
-        {!chartWorkspace && <ShellRail activeView={activeView} workspace={workspace} query={query} copy={copy} railId="fxreplay-rail" drawerOpen={drawerOpen} onClose={() => setMobileNavigationOpen(false)} closeButtonRef={navigationCloseRef} />}
-        <section className="fx-main" role={['overview', 'live', 'market-data', 'analytics'].includes(activeView) || (activeView === 'trade' && query.get('intent') !== 'order') || (activeView === 'replay' && query.get('surface') !== 'workspace' && (query.get('select') === '1' || query.get('mode') === 'Practice')) ? 'main' : undefined} aria-label={copy.contentAria} inert={drawerOpen}>
+        {!chartWorkspace && <ShellRail activeView={activeView} workspace={workspace} query={query} copy={copy} railId="fxreplay-rail" drawerOpen={drawerOpen} onClose={() => setMobileNavigationOpen(false)} closeButtonRef={navigationCloseRef} inert={aiOpen && aiOverlay} />}
+        <section className="fx-main" role={['overview', 'live', 'market-data', 'analytics'].includes(activeView) || (activeView === 'trade' && query.get('intent') !== 'order') || (activeView === 'replay' && query.get('surface') !== 'workspace' && (query.get('select') === '1' || query.get('mode') === 'Practice')) ? 'main' : undefined} aria-label={copy.contentAria} inert={drawerOpen || (aiOpen && aiOverlay)}>
           <ShellSubnav activeView={activeView} workspace={workspace} query={query} copy={copy} action={subnavAction} />
           {helpOpen && <ShellHelp copy={copy} helpCloseRef={helpCloseRef} onClose={() => setHelpOpen(false)} />}
           <NotificationProvider key={workspace}><div className="fx-content" tabIndex={0}>{children}</div></NotificationProvider>
         </section>
+        {aiOpen && aiOverlay && <div className="wm-ai-backdrop" aria-hidden="true" onClick={closeAi} />}
+        {aiMounted && <AiChatPanel key={workspace} workspace={workspace} open={aiOpen} modal={aiOverlay} onClose={closeAi} settingsHref={buildWorkspaceHref('settings', workspace, query, { area: 'settings', section: null })} language={language} />}
       </div>
     </FxReplayContext.Provider></TestingLocaleProvider>
   )

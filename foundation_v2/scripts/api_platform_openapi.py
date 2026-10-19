@@ -80,6 +80,26 @@ def platform_contract():
     action["responses"]["400"] = {"description": "Invalid selection or unavailable account action"}
     action["description"] = "Login/probe return promptly with an operation; poll GET account. Probe sends only a fixed test prompt. Disconnect clears this app's private local browser state. Strategy jobs remain disabled."
     schema["paths"]["/api/v2/ai/chatgpt/account/{action}"] = {"post": action}
+    chat_response = json_response("Ephemeral text chat turn, scoped to workspace and identity. No tools or strategy actions.", {"type": "object"})
+    chat = operation("chatgpt_chat_start", chat_response, scoped=True)
+    chat["responses"]["202"] = chat["responses"].pop("200")
+    chat["responses"]["409"] = {"description": "One account or inference operation is already running; never retried automatically"}
+    chat["parameters"].append(copy.deepcopy(action["parameters"][-1]))
+    chat["requestBody"] = {"required": True, "content": {"application/json": {"schema": {
+        "type": "object", "additionalProperties": False, "required": ["messages"], "properties": {
+            "messages": {"type": "array", "minItems": 1, "maxItems": 63, "items": {
+                "type": "object", "additionalProperties": False, "required": ["role", "content"], "properties": {
+                    "role": {"enum": ["user", "assistant"]}, "content": {"type": "string", "minLength": 1}}}}}}}}}
+    chat["description"] = "Alternating user/assistant text, ending with user; max 48 KiB JSON. Uses current upstream model/effort selection. Returns promptly; poll by ID. In-memory result expires after 10 minutes or the next turn/API restart. No database history, page context, tools, agents or automatic retry."
+    schema["paths"]["/api/v2/ai/chatgpt/chat"] = {"post": chat}
+    turn = operation("chatgpt_chat_status", chat_response, scoped=True)
+    turn["parameters"].append({"name": "id", "in": "path", "required": True, "schema": {"type": "string", "format": "uuid"}})
+    turn["responses"]["404"] = {"description": "Turn expired, unknown or belongs to a different workspace/identity"}
+    cancel = copy.deepcopy(turn)
+    cancel["operationId"] = "chatgpt_chat_cancel"
+    cancel["parameters"].append(copy.deepcopy(action["parameters"][-1]))
+    cancel["description"] = "Abort this turn's upstream HTTP request. Already completed results remain completed. Does not disconnect the account."
+    schema["paths"]["/api/v2/ai/chatgpt/chat/{id}"] = {"get": turn, "delete": cancel}
     return schema
 
 

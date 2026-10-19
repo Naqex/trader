@@ -14,7 +14,6 @@ paste token trên web MT5. Có thể hủy đăng nhập từ Settings.
 
 Đây là thao tác kết nối được quản lý từ web MT5, còn màn hình xác thực vẫn
 nằm ở Chrome riêng. Chưa có OAuth popup/callback hoặc login nhúng trong web.
-Owner đã chọn đăng nhập sau; hiện chưa có tài khoản thật được xác minh.
 
 Sau đăng nhập, chọn model/mức suy luận rồi bấm **Kiểm tra kết nối**: core gửi
 một câu thử cố định, ngắn và hiển thị thời điểm có phản hồi thành công. Việc
@@ -92,11 +91,35 @@ Model ID được chọn từ catalog, không đóng cứng một alias trong s�
 
 ## Phạm vi hiện tại
 
-Engine kết nối, account UI và thao tác kiểm tra model đã có. Hai route AI nghiệp
-vụ hiện tại của Axum vẫn báo offline; chưa thay UI/luồng chiến lược. Lát tích hợp chiến lược cần tác vụ bất đồng bộ,
-cancel và kiểm tra context/hash trên boundary AI sẵn có, schema draft được
-validate trước khi owner lưu. Core readiness không đồng nghĩa chiến lược đã
-chạy được trong engine hoặc đạt whole-product AI acceptance.
+Nút tia sáng **Chat AI** trên topbar mở panel bên phải, có mặt cả trong replay.
+Desktop dành riêng 400px cho chat; dưới 1100px dùng dialog phủ bên phải, khóa
+focus nền và đóng bằng Escape. Đóng panel giữ hội thoại trong tab; cuộc trò
+chuyện mới, đổi workspace hoặc tải lại trang xóa hội thoại UI. Không lưu vào
+database/localStorage. Chỉ gửi các cặp tin nhắn đã hoàn tất và câu hỏi mới;
+tin bị lỗi/hủy không đi vào context tiếp theo. Không tự lấy chart, chiến lược
+hay dữ liệu tài khoản. Câu trả lời hiển thị dạng văn bản, không thực thi HTML.
+
+Chat dùng cùng model/effort đã chọn trong Settings và catalog nguyên bản của
+upstream. Picker trong panel cập nhật cùng lựa chọn này. Chỉ mở panel đọc
+trạng thái; nếu API vừa restart, bấm **Nạp kết nối đã lưu** để khởi động core
+riêng, không mở Chrome/login tự động. Nếu chưa đăng nhập, dùng liên kết Cài đặt.
+
+`POST /api/v2/ai/chatgpt/chat` nhận `{messages:[{role,content}]}` tối đa 48KiB,
+63 tin, user/assistant xen kẽ và kết thúc bằng user; trả 202 với ID tác vụ.
+`GET /api/v2/ai/chatgpt/chat/{id}` đọc trạng thái/kết quả;
+`DELETE` cùng URL hủy đúng tác vụ. Model/effort được backend đọc và kiểm tra
+với catalog trước khi gọi core. Không nhận tools, model override hoặc page state.
+Một tác vụ trên core; thay đổi account bị khóa trong lúc chat. Backend giữ
+kết quả trong RAM để poll, không log nội dung, không cache HTTP. Kết quả hết
+khả năng truy cập sau 10 phút, tác vụ kế tiếp hoặc API restart. Transport chờ
+tối đa 190 giây, core giới hạn 180 giây. Cancel ngắt HTTP tới Bun, signal truyền
+tiếp tới browser engine; không xóa nội dung đã được gửi trên phía ChatGPT.
+Không tự retry hoặc đổi model. ID và kết quả gắn cả workspace lẫn local identity.
+
+Hai route AI nghiệp vụ `/ai/status` và `/ai/request` vẫn offline: chúng dành
+cho context/hash và các job chiến lược/research, không được kích hoạt bởi chat
+văn bản. Luồng chiến lược sẽ mở rộng boundary này sau khi owner xác định hành
+vi, schema và quyền lưu draft. Chat transport chưa là whole-product U7 acceptance.
 
 Core lấy chọn lọc tương thích từ upstream v6.1.11; không phải bản full launcher.
 Cockpit OAuth dành cho Codex là tham khảo UX, không copy client identity/token
@@ -108,3 +131,8 @@ Kiểm chứng offline: `bun run typecheck`, `bun run test`,
 `bun run test:transport` trong core; `cargo test --locked --lib chatgpt_web`
 trong `api-rust`; build web; `scripts/chatgpt_web_acceptance.py` chạy PostgreSQL,
 Rust/Bun và UI tách biệt, không dùng tài khoản thật hay gửi inference.
+`scripts/chatgpt_chat_acceptance.py` kiểm Rust → core handler thật với responder
+synthetic, gồm gửi/poll, scope, khóa single-flight và cancel tới signal Bun.
+`web/run_ai_chat_acceptance.mjs` kiểm giao diện bằng fixture 360/768/1368px,
+dark/light, focus, gửi nhiều lượt, picker, cancel, lỗi, disconnected/denied.
+Các fixture này không chứng minh model thật đã trả lời.

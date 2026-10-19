@@ -6305,6 +6305,230 @@
         },
         "description": "Login/probe return promptly with an operation; poll GET account. Probe sends only a fixed test prompt. Disconnect clears this app's private local browser state. Strategy jobs remain disabled."
       }
+    },
+    "/api/v2/ai/chatgpt/chat": {
+      "post": {
+        "operationId": "chatgpt_chat_start",
+        "responses": {
+          "503": {
+            "description": "Unavailable or untrusted state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {}
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Workspace membership denied"
+          },
+          "422": {
+            "description": "Workspace header required"
+          },
+          "202": {
+            "description": "Ephemeral text chat turn, scoped to workspace and identity. No tools or strategy actions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "One account or inference operation is already running; never retried automatically"
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Workspace-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Same loopback origin as Host; foreign/absent origins denied."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "messages"
+                ],
+                "properties": {
+                  "messages": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 63,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "role",
+                        "content"
+                      ],
+                      "properties": {
+                        "role": {
+                          "enum": [
+                            "user",
+                            "assistant"
+                          ]
+                        },
+                        "content": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Alternating user/assistant text, ending with user; max 48 KiB JSON. Uses current upstream model/effort selection. Returns promptly; poll by ID. In-memory result expires after 10 minutes or the next turn/API restart. No database history, page context, tools, agents or automatic retry."
+      }
+    },
+    "/api/v2/ai/chatgpt/chat/{id}": {
+      "get": {
+        "operationId": "chatgpt_chat_status",
+        "responses": {
+          "200": {
+            "description": "Ephemeral text chat turn, scoped to workspace and identity. No tools or strategy actions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Unavailable or untrusted state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {}
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Workspace membership denied"
+          },
+          "422": {
+            "description": "Workspace header required"
+          },
+          "404": {
+            "description": "Turn expired, unknown or belongs to a different workspace/identity"
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Workspace-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "chatgpt_chat_cancel",
+        "responses": {
+          "200": {
+            "description": "Ephemeral text chat turn, scoped to workspace and identity. No tools or strategy actions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Unavailable or untrusted state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {}
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Workspace membership denied"
+          },
+          "422": {
+            "description": "Workspace header required"
+          },
+          "404": {
+            "description": "Turn expired, unknown or belongs to a different workspace/identity"
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Workspace-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Same loopback origin as Host; foreign/absent origins denied."
+          }
+        ],
+        "description": "Abort this turn's upstream HTTP request. Already completed results remain completed. Does not disconnect the account."
+      }
     }
   },
   "components": {

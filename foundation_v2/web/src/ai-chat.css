@@ -1,0 +1,80 @@
+.fx-app.fx-shell-story { --wm-ai-width: 400px; }
+.fx-app.fx-shell-story.is-ai-open { width: calc(100% - var(--wm-ai-width)); }
+.fx-app.fx-shell-story[data-theme] .fx-topbar .wm-ai-toggle {
+  width: 32px; height: 32px; padding: 7px; border: 0; border-radius: 50%;
+  color: var(--project-primary); background: color-mix(in srgb, var(--project-primary) 10%, var(--fx-shell-bg));
+}
+.fx-app.fx-shell-story[data-theme] .fx-topbar .wm-ai-toggle:hover,
+.fx-app.fx-shell-story[data-theme] .fx-topbar .wm-ai-toggle[aria-expanded='true'] { background: color-mix(in srgb, var(--project-primary) 20%, var(--fx-shell-bg)); color: var(--project-primary); }
+.wm-ai-toggle svg, .wm-ai-mark svg, .wm-ai-welcome-icon svg { width: 100%; height: 100%; display: block; }
+.fx-app .wm-ai-chat {
+  position: fixed; z-index: 90; inset: 0 0 0 auto; width: var(--wm-ai-width); height: 100dvh;
+  display: flex; flex-direction: column; box-sizing: border-box; min-width: 0;
+  background: var(--fx-shell-bg); color: var(--fx-shell-text); border-left: 1px solid var(--fx-shell-line);
+  font-size: 13px; line-height: 1.6;
+}
+.fx-app .wm-ai-chat[hidden] { display: none; }
+.wm-ai-header { min-height: 64px; box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 0 18px; border-bottom: 1px solid var(--fx-shell-line); flex-shrink: 0; }
+.wm-ai-mark { width: 23px; height: 23px; color: var(--project-primary); }
+.wm-ai-header h2 { margin: 0; font-size: 13px; font-weight: 650; letter-spacing: .02em; }
+.wm-ai-header h2 span { color: var(--project-primary); }
+.wm-ai-header-actions { display: flex; gap: 3px; margin-left: auto; }
+.fx-app .wm-ai-header-actions :is(button,a) {
+  display: inline-grid; place-items: center; width: 30px; height: 32px; min-height: 0; padding: 6px;
+  border: 0; background: transparent; color: var(--fx-shell-muted); border-radius: 6px; cursor: pointer;
+}
+.wm-ai-header-actions svg { width: 19px; height: 19px; }
+.fx-app .wm-ai-header-actions :is(button,a):hover { background: var(--project-hover); color: var(--fx-shell-text); }
+.fx-app .wm-ai-chat :is(button,a,textarea):focus-visible { outline: 2px solid var(--project-primary); outline-offset: 3px; }
+.fx-app .wm-ai-chat button:disabled { opacity: .4; cursor: default; }
+.wm-ai-transcript { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 24px 22px; scrollbar-width: thin; }
+.wm-ai-welcome { display: flex; min-height: 100%; flex-direction: column; justify-content: center; padding: 0 8px 42px; box-sizing: border-box; }
+.wm-ai-welcome-icon { display: block; width: 38px; height: 38px; margin-bottom: 22px; color: var(--project-primary); }
+.wm-ai-welcome h3 { margin: 0 0 12px; max-width: 285px; font-size: 25px; font-weight: 500; letter-spacing: -.6px; line-height: 1.35; }
+.wm-ai-welcome p { margin: 0; max-width: 300px; color: var(--fx-shell-muted); font-size: 13px; line-height: 1.7; }
+.wm-ai-message { margin-bottom: 26px; overflow-wrap: anywhere; }
+.wm-ai-speaker { display: block; margin-bottom: 6px; color: var(--fx-shell-muted); font-size: 11px; font-weight: 600; }
+.wm-ai-message > div { white-space: pre-wrap; }
+.wm-ai-message.is-user { margin-left: 32px; padding: 11px 14px; background: var(--project-surface); border-radius: 12px 12px 3px 12px; }
+.wm-ai-message small { color: var(--fx-shell-muted); font-size: 11px; }
+.wm-ai-thinking { display: flex; align-items: center; gap: 9px; margin: 0; font-size: 12px; color: var(--fx-shell-muted); }
+.wm-ai-thinking span { width: 6px; height: 6px; background: var(--project-primary); border-radius: 50%; }
+.wm-ai-bottom { padding: 0 16px 12px; flex-shrink: 0; }
+.wm-ai-note, .wm-ai-error { margin: 0 0 12px; font-size: 12px; color: var(--fx-shell-muted); }
+.wm-ai-error { color: var(--fx-shell-danger); }
+.wm-ai-connect { margin: 0 0 16px; font-size: 12px; color: var(--fx-shell-muted); }
+.wm-ai-connect p { margin: 0 0 8px; }
+.fx-app .wm-ai-connect :is(a,button) { display: inline-block; margin: 0 12px 0 0; min-height: 0; padding: 0; border: 0; background: transparent; color: var(--project-primary); font-size: 12px; cursor: pointer; text-decoration: none; }
+.fx-app .wm-ai-connect :is(a,button):hover { text-decoration: underline; }
+.wm-ai-composer { border: 1px solid var(--fx-shell-line-strong); border-radius: 14px; background: var(--project-surface); padding: 12px; }
+.wm-ai-composer:focus-within { border-color: var(--project-primary); }
+.fx-app .wm-ai-composer textarea { display: block; box-sizing: border-box; width: 100%; min-height: 76px; max-height: 180px; margin: 0; padding: 0; border: 0; border-radius: 0; outline: 0; resize: vertical; background: transparent; color: var(--fx-shell-text); font: inherit; line-height: 1.6; box-shadow: none; }
+.fx-app .wm-ai-composer textarea:focus-visible { outline: 0; }
+.wm-ai-composer textarea::placeholder { color: var(--fx-shell-subtle); }
+.wm-ai-composer-footer { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+.wm-ai-models { display: flex; gap: 2px; align-items: center; flex: 1; min-width: 0; font-size: 11px; color: var(--fx-shell-subtle); }
+.wm-ai-models .fx-select { min-width: 0; }
+.wm-ai-models .fx-select:first-child { flex: 1; }
+.fx-app .wm-ai-models .fx-select-trigger { min-height: 30px; max-width: 100%; padding: 3px 4px; gap: 4px; background: transparent; border: 0; color: var(--fx-shell-muted); font-size: 11px; }
+.wm-ai-models .fx-select-trigger > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wm-ai-models .fx-select-chevron { width: 12px; flex-shrink: 0; }
+.wm-ai-models .fx-select-menu { max-width: calc(var(--wm-ai-width) - 44px); }
+.wm-ai-models .fx-select:first-child .fx-select-menu { left: 0; right: auto; }
+.fx-app .wm-ai-composer .wm-ai-send { display: grid; place-items: center; flex-shrink: 0; width: 32px; height: 32px; min-height: 0; border: 0; border-radius: 50%; padding: 7px; background: var(--project-primary); color: var(--project-on-action); cursor: pointer; }
+.fx-app .wm-ai-composer .wm-ai-send:hover:not(:disabled) { background: color-mix(in srgb, var(--project-primary) 84%, var(--fx-shell-text)); }
+.wm-ai-send svg { width: 18px; height: 18px; }
+.wm-ai-disclosure { margin: 10px 2px 0; text-align: center; font-size: 10px; line-height: 1.5; color: var(--fx-shell-subtle); }
+.wm-ai-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.wm-ai-backdrop { position: fixed; inset: 0; z-index: 89; background: #0005; }
+@media (max-width: 1100px) {
+  .fx-app.fx-shell-story.is-ai-open { width: 100%; }
+  .fx-app .wm-ai-chat { width: min(420px, 100%); --wm-ai-width: min(420px, 100vw); }
+}
+@media (max-height: 600px) {
+  .wm-ai-header { min-height: 52px; }
+  .wm-ai-welcome { padding-bottom: 10px; }
+  .wm-ai-welcome-icon { width: 24px; height: 24px; margin-bottom: 8px; }
+  .wm-ai-welcome h3 { font-size: 20px; }
+  .wm-ai-welcome p { display: none; }
+  .fx-app .wm-ai-composer textarea { min-height: 48px; }
+}
