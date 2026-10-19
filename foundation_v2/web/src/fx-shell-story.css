@@ -173,6 +173,13 @@
   line-height: 1;
 }
 
+.fx-wordmark-compact > svg {
+  display: block;
+  width: 26px;
+  height: auto;
+  fill: currentColor;
+}
+
 .fx-shell-story .fx-status-dot {
   flex: 0 0 auto;
   width: 7px;

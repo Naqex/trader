@@ -191,14 +191,7 @@ const FxReplayContext = createContext(null)
 function WMReplayWordmark() {
   return (
     <svg className="fx-wordmark-svg" viewBox="0 0 242 30" role="img" aria-label="WMREPLAY" focusable="false">
-      <path d="M0 0h5l4 21 4-11 4 11 4-21h5l-6 30h-5l-4-10-2 10H4L0 0Z" />
-      <path d="M31 30V0h6l6 12 6-12h6v30h-6V10l-4 10h-4L37 10v20h-6Z" />
-      <path fillRule="evenodd" d="M62 30V0h14c8 0 12 4 12 10 0 5-3 8-7 9l8 11h-7l-7-10h-7v10h-6Zm6-25v10h7c5 0 7-2 7-5s-2-5-7-5h-7Z" />
-      <path d="M94 0h23v5h-17v7h14v5h-14v8h17v5H94V0Z" />
-      <path fillRule="evenodd" d="M122 30V0h14c8 0 12 4 12 10s-4 10-12 10h-8v10h-6Zm6-25v10h7c5 0 7-2 7-5s-2-5-7-5h-7Z" />
-      <path d="M153 0h6v25h17v5h-23V0Z" />
-      <path fillRule="evenodd" d="M177 30 188 0h7l12 30h-7l-3-8h-12l-3 8h-7Zm10-13h8l-4-11-4 11Z" />
-      <path d="M209 0h7l7 11 7-11h7l-11 16v14h-6V16L209 0Z" />
+      <use href="/brand/wmreplay.svg#wordmark" />
     </svg>
   )
 }
@@ -391,7 +384,9 @@ function ShellTopbar({ copy, language, setLanguage, theme, setTheme, railCollaps
           </svg>
         </button>
         <span className="fx-wordmark"><WMReplayWordmark /></span>
-        <span className="fx-wordmark-compact" role="img" aria-label={copy.product}>WM</span>
+        <span className="fx-wordmark-compact" role="img" aria-label={copy.product}>
+          <svg viewBox="0 0 55 30" aria-hidden="true" focusable="false"><use href="/brand/wmreplay.svg#wm" /></svg>
+        </span>
       </div>
       <div className="fx-topbar-actions">
         {aiButton}

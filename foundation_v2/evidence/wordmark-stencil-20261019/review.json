@@ -1,0 +1,61 @@
+{
+  "status": "PASS",
+  "scope": "Read-only production preview, logo/header geometry and manual visual review",
+  "cases": [
+    {
+      "theme": "dark",
+      "viewportWidth": 1368,
+      "width": 132,
+      "height": 16.359375,
+      "noMenuOverlap": true,
+      "noActionsOverlap": true,
+      "overflow": 0
+    },
+    {
+      "theme": "dark",
+      "viewportWidth": 768,
+      "width": 132,
+      "height": 16.359375,
+      "noMenuOverlap": true,
+      "noActionsOverlap": true,
+      "overflow": 0
+    },
+    {
+      "theme": "dark",
+      "viewportWidth": 360,
+      "width": 70,
+      "height": 8.671875,
+      "noMenuOverlap": true,
+      "noActionsOverlap": true,
+      "overflow": 0
+    },
+    {
+      "theme": "light",
+      "viewportWidth": 1368,
+      "width": 132,
+      "height": 16.359375,
+      "noMenuOverlap": true,
+      "noActionsOverlap": true,
+      "overflow": 0
+    },
+    {
+      "theme": "light",
+      "viewportWidth": 768,
+      "width": 132,
+      "height": 16.359375,
+      "noMenuOverlap": true,
+      "noActionsOverlap": true,
+      "overflow": 0
+    },
+    {
+      "theme": "light",
+      "viewportWidth": 360,
+      "width": 70,
+      "height": 8.671875,
+      "noMenuOverlap": true,
+      "noActionsOverlap": true,
+      "overflow": 0
+    }
+  ],
+  "errors": []
+}
