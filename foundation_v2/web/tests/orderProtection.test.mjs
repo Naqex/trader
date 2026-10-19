@@ -1,9 +1,37 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { protectionAmount, protectionPips, protectionPrice, quantityForRisk } from '../src/orderProtection.js'
+import { protectionAmount, protectionPips, protectionPrice, quantityForRisk, selectOrderDraft } from '../src/orderProtection.js'
+import { marketQuotes, orderDraft } from '../src/replayOrderModel.js'
 
 const spec = { pip_size:'0.0001', tick_size:'0.00001', contract_size:'100000', quantity_min:'0.01', quantity_step:'0.01' }
 const costs = { quote_to_account_rate:'1', account_ccy:'USD' }
+
+test('side/type transitions preserve each explicit protection state and pip distance', () => {
+  const replay = { visible_rows:[{close:1.1}], payload:{execution:{spread_price:'.0002',instrument_spec:spec}} }
+  const quotes = marketQuotes(replay)
+  const entry = draft => draft.orderType ? Number(draft.entryPrice) : draft.side === 'BUY' ? quotes.ask : quotes.bid
+  for (const stopLoss of [false,true]) for (const takeProfit of [false,true]) {
+    let draft = { ...orderDraft(replay,spec), quantity:'.37', protectionEnabled:{stopLoss,takeProfit} }
+    for (const key of ['stopLoss','takeProfit']) if (draft.protectionEnabled[key]) draft[key] = protectionPrice(30,entry(draft),draft.side,key,spec)
+    for (const side of ['SELL','BUY','SELL','BUY']) for (const orderType of ['limit','stop','market']) {
+      const before = structuredClone(draft)
+      const next = selectOrderDraft(draft,replay,spec,{side,orderType})
+      assert.deepEqual(draft,before,'Selection must not mutate the previous draft')
+      assert.deepEqual(next.protectionEnabled,{stopLoss,takeProfit})
+      assert.equal(next.quantity,'.37')
+      for (const key of ['stopLoss','takeProfit']) {
+        if (next.protectionEnabled[key]) assert.equal(protectionPips(next[key],entry(next),side,key,spec),30)
+        else assert.equal(next[key],'')
+      }
+      assert.equal(selectOrderDraft(next,replay,spec,{side,orderType}),next,'Reselecting the current option is a no-op')
+      draft = next
+    }
+  }
+  const emptyEnabled = { ...orderDraft(replay,spec), protectionEnabled:{stopLoss:true,takeProfit:false} }
+  const next = selectOrderDraft(emptyEnabled,replay,spec,{side:'SELL'})
+  assert.equal(next.protectionEnabled.stopLoss,true,'Cleared enabled inputs stay enabled and empty for required-field validation')
+  assert.equal(next.stopLoss,'')
+})
 
 test('price and pip edits agree for BUY and SELL, including profit-locking stops', () => {
   for (const side of ['BUY','SELL']) for (const kind of ['stopLoss','takeProfit']) for (const pips of [20,40,-10,0]) {

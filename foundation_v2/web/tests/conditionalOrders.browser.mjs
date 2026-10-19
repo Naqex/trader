@@ -64,6 +64,25 @@ try {
       await dialog.waitFor({state:'visible'})
       assert.equal(await dialog.locator('[data-protection] input[role=switch]:checked').count(),0,'Reopening discards unsaved protection')
       assert.equal(await dialog.locator('[data-protection] input[type=number]').count(),0)
+      const legs = [dialog.locator('[data-protection=stopLoss]'),dialog.locator('[data-protection=takeProfit]')]
+      for (const states of [[false,false],[true,false],[false,true],[true,true]]) {
+        for (const [i,leg] of legs.entries()) await leg.getByRole('switch').setChecked(states[i])
+        for (const [nextSide,nextType] of [['SELL','limit'],['BUY','stop'],['SELL','market'],['SELL','market'],['BUY','limit'],['BUY','market']]) {
+          await dialog.getByRole('button',{name:'Hướng',exact:true}).click()
+          await dialog.getByRole('option',{name:nextSide==='BUY'?'Mua':'Bán',exact:true}).click()
+          await dialog.getByRole('button',{name:'Loại lệnh',exact:true}).click()
+          await dialog.getByRole('option',{name:nextType[0].toUpperCase()+nextType.slice(1),exact:true}).click()
+          for (const [i,leg] of legs.entries()) {
+            assert.equal(await leg.getByRole('switch').isChecked(),states[i],'Side/type selection must preserve explicit SL/TP switches')
+            if (states[i]) assert.equal(Number(await leg.getByRole('spinbutton').nth(1).inputValue()),i===0?20:40,'Enabled protection keeps its pip distance')
+            else assert.equal(await leg.getByRole('spinbutton').count(),0)
+          }
+          await noDraftMarkers()
+        }
+      }
+      for (const leg of legs) await leg.getByRole('switch').uncheck()
+      assert.equal((await request('GET',path)).revision,record.revision,'Repeated selections must never submit an order')
+      report.selectionProtectionStates=true
     }
     await dialog.getByRole('button',{name:lang==='vi'?'Loại lệnh':'Type',exact:true}).click()
     assert.deepEqual((await dialog.getByRole('option').allTextContents()).map(text=>text.replace('✓','').trim()),['Market','Limit','Stop'])

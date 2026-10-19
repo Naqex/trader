@@ -1,7 +1,20 @@
-import { finiteNumber } from './replayOrderModel.js'
+import { finiteNumber, marketQuotes, orderDraft } from './replayOrderModel.js'
 
 const direction = (side, kind) => (side === 'BUY' ? 1 : -1) * (kind === 'stopLoss' ? -1 : 1)
 const positive = (...values) => values.every(value => finiteNumber(value) > 0)
+
+export function selectOrderDraft(current, replay, instrument, { side = current.side, orderType = current.orderType || 'market' }) {
+  if (side === current.side && orderType === (current.orderType || 'market')) return current
+  const next = { ...orderDraft(replay, instrument, side, orderType), quantity: current.quantity, protectionEnabled: current.protectionEnabled }
+  const quotes = marketQuotes(replay)
+  const reference = draft => draft.orderType && draft.orderType !== 'market' ? draft.entryPrice : draft.side === 'BUY' ? quotes.ask : quotes.bid
+  // Only reprice protection the user enabled; blank enabled fields stay blank.
+  for (const key of ['stopLoss', 'takeProfit']) {
+    const pips = protectionPips(current[key], reference(current), current.side, key, instrument)
+    next[key] = current.protectionEnabled[key] && pips !== '' ? protectionPrice(pips, reference(next), side, key, instrument) : ''
+  }
+  return next
+}
 
 export function protectionPips(price, entry, side, kind, instrument) {
   const pip = finiteNumber(instrument?.pip_size)

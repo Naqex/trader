@@ -7,7 +7,7 @@ import FxSelect from './FxSelect.jsx'
 import { scalperProtection } from './legacyScalperPreset.js'
 import { sessionExecutionConfig } from './sessionTradingOptions.js'
 import { closeNotice, protectionNotice } from './replayOrderNotices.js'
-import { protectionAmount, protectionPips, protectionPrice, quantityForRisk } from './orderProtection.js'
+import { protectionAmount, protectionPips, protectionPrice, quantityForRisk, selectOrderDraft } from './orderProtection.js'
 
 export function useChartOrder({ workspace, replay, dataset, ready, blocked, closeBlocked = blocked, submit, executionConfig = null }) {
   const execution = replayAtCutoff(replay)?.payload?.execution
@@ -115,10 +115,10 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
   }
   const reportError = text => setNotice({ kind: 'error', title: 'Order Error', message: String(text || 'Không thể cập nhật TP/SL.') })
   const chooseSide = side => {
-    if (!active && !disabled) { setDraft(current => ({ ...orderDraft(replay, instrument, side, current.orderType), quantity: current.quantity })); setNotice(null) }
+    if (!active && !disabled) { setDraft(current => selectOrderDraft(current, replay, instrument, { side })); setNotice(null) }
   }
   const chooseType = type => {
-    if (!active && !disabled) { setDraft(current => ({ ...orderDraft(replay,instrument,current.side,type),quantity:current.quantity })); setNotice(null) }
+    if (!active && !disabled) { setDraft(current => selectOrderDraft(current, replay, instrument, { orderType: type })); setNotice(null) }
   }
   const initializationBody = () => {
     if (!canInitialize || (tick.options === null && !executionConfig?.forceBar)) return
@@ -228,8 +228,7 @@ function LegacyOrderForm({ order, blockedReason, onClose, onJournal }) {
   const { t, fmt } = useTestingLocale()
   const [journal, setJournal] = useState(false)
   const { draft, setDraft, execution, disabled, instrument, active } = order
-  const [enabled, setEnabled] = useState(() => ({ stopLoss: active?.stop_loss != null, takeProfit: active?.take_profit != null }))
-  useEffect(() => { setEnabled({ stopLoss: active?.stop_loss != null, takeProfit: active?.take_profit != null }) }, [active, draft.side, draft.orderType])
+  const enabled = draft.protectionEnabled
   const changed = !active || ['stopLoss', 'takeProfit'].some((key, i) => String(draft[key] || '') !== String(active[i ? 'take_profit' : 'stop_loss'] ?? ''))
   const change = (key, value) => setDraft(current => ({ ...current, [key]:value }))
   const pip = Number(instrument?.pip_size), entry = finiteNumber(active?.entry_fill ?? active?.entry_price ?? order.reference)
@@ -237,12 +236,11 @@ function LegacyOrderForm({ order, blockedReason, onClose, onJournal }) {
     {!active && <div className="legacy-order-grid"><label>{t('Hướng')}<FxSelect className="is-field" label="Hướng" value={draft.side} disabled={disabled} onChange={order.chooseSide} options={[{ value: 'BUY', label: t('Buy') }, { value: 'SELL', label: t('Sell') }]} /></label><label>{t('Loại lệnh')}<FxSelect className="is-field" label="Loại lệnh" value={draft.orderType || 'market'} disabled={disabled || !order.conditionalOrders} onChange={order.chooseType} options={['market','limit','stop'].map(value => ({ value,label:value[0].toUpperCase()+value.slice(1) }))} /></label>
     <label>{t(instrument?.asset_class==='fx' ? 'Khối lượng (lot)' : 'Khối lượng (quantity)')}<input aria-label={t('Khối lượng lệnh')} type="number" min={instrument?.quantity_min || '0'} step={instrument?.quantity_step || 'any'} value={draft.quantity} disabled={disabled} onChange={event => change('quantity',event.target.value)} /></label><label>{t('Giá vào lệnh')}<input aria-label={t('Giá vào lệnh')} type={draft.orderType && draft.orderType !== 'market' ? 'number' : 'text'} min="0" step={instrument?.tick_size || 'any'} disabled={disabled} readOnly={!draft.orderType || draft.orderType === 'market'} value={draft.orderType && draft.orderType !== 'market' ? draft.entryPrice : order.reference ?? '—'} onChange={event => change('entryPrice',event.target.value)} /></label></div>}
     {[['stopLoss','Stop loss'],['takeProfit','Take profit']].map(([key,label]) => <section className={active ? 'legacy-edit-protection' : 'legacy-new-protection'} key={key} data-protection={key}><div className="legacy-protection-row"><label><input type="checkbox" role="switch" checked={enabled[key]} disabled={disabled || !execution} onChange={event => {
-      setEnabled(current => ({ ...current, [key]: event.target.checked }))
-      if (!event.target.checked) { change(key, ''); return }
+      const checked = event.target.checked
       const unit = Number(instrument?.pip_size) || Number(instrument?.tick_size)
       const direction = (key === 'stopLoss' ? -1 : 1) * (draft.side === 'BUY' ? 1 : -1)
       const price = order.reference + direction * unit * (key === 'stopLoss' ? 20 : 40)
-      change(key, Number.isFinite(price) && price > 0 ? String(Number(price.toFixed(8))) : '')
+      setDraft(current => ({ ...current, protectionEnabled: { ...current.protectionEnabled, [key]: checked }, [key]: checked && Number.isFinite(price) && price > 0 ? String(Number(price.toFixed(8))) : '' }))
     }} />{t(label)}</label></div>{enabled[key] && <>
       <div className="legacy-order-grid"><label>{t(label)}<input aria-label={t(label)} type="number" min="0" required step={instrument?.tick_size || 'any'} value={draft[key]} disabled={disabled} onChange={event => change(key,event.target.value)} /></label>{pip > 0 && entry > 0 && <label>{t(key === 'stopLoss' ? 'Stop loss in pips' : 'Take profit in pips')}<input type="number" step="any" value={protectionPips(draft[key], entry, draft.side, key, instrument)} disabled={disabled} onChange={event => change(key, protectionPrice(event.target.value, entry, draft.side, key, instrument))} /></label>}</div>
       <div className="legacy-protection-estimate"><span>{t(key === 'stopLoss' ? 'Ước tính tại SL (trước phí)' : 'Ước tính tại TP (trước phí)')}</span><strong>{fmt(protectionAmount(draft[key], entry, draft.side, draft.quantity, instrument, order.costs), ` ${order.costs?.account_ccy || ''}`)}</strong></div>

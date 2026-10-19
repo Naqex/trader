@@ -1,0 +1,7 @@
+# Order selection preserves protection - 2026-10-19
+
+- Reproduced in the owner's already-loaded preview bundle `index-0u-r7Ca_.js`: turn both switches off, select Sell, both switched on. The current pre-task build was `index-BPz_RCR9.js`; the preview server does not hot-update an already-loaded page. Reloaded the actual tab after building this fix; DOM script now reports `index-BQX3HNTy.js`.
+- Draft owns explicit SL/TP enabled flags. Side/type selection preserves those flags and quantity, reprices enabled legs at the same pip distance, leaves cleared enabled inputs empty, and does nothing when reselecting the same option. New orders still default off; existing orders hydrate persisted protection. No API/schema change.
+- Focused Node checks: 16/16 passed. Production Vite build passed (existing large-chunk warning).
+- Real disposable PostgreSQL/native API with compact replay storage: all cases passed in `native/browser.json`. Repeated side/type selections cover both-off, SL-only, TP-only and both-on; no unsubmitted markers or revision writes. Existing save/reload protection, conditional fills, immediate Market, cancellation and risk sizing regressions passed at 1368/768/390 widths, VI/EN, dark/light.
+- Actual owner tab: Sell Limit kept both off. Enabled SL at 30 pip, changed to Buy and Stop: SL stayed on at 30 pip, TP stayed off. Turned SL off for `owner-form-off.png`, then cancelled. No owner orders were submitted, modified or closed during QA. Reviewed desktop and mobile screenshots.

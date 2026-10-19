@@ -10,7 +10,7 @@ export function replayAtCutoff(replay) {
 export function orderDraft(replay, instrument, side = 'BUY', orderType = 'market') {
   replay = replayAtCutoff(replay)
   const active = replay?.payload?.execution?.position || replay?.payload?.execution?.pending_market_order
-  if (active) return { side: active.side, quantity: String(active.quantity), stopLoss: active.stop_loss == null ? '' : String(active.stop_loss), takeProfit: active.take_profit == null ? '' : String(active.take_profit), ...(active.order_type ? { orderType: active.order_type, entryPrice: String(active.entry_price) } : {}) }
+  if (active) return { side: active.side, quantity: String(active.quantity), stopLoss: active.stop_loss == null ? '' : String(active.stop_loss), takeProfit: active.take_profit == null ? '' : String(active.take_profit), protectionEnabled: { stopLoss: active.stop_loss != null, takeProfit: active.take_profit != null }, ...(active.order_type ? { orderType: active.order_type, entryPrice: String(active.entry_price) } : {}) }
   const quotes = marketQuotes(replay)
   let entry = replay?.payload?.execution ? (side === 'BUY' ? quotes.ask : quotes.bid) : finiteNumber(replay?.visible_rows?.at(-1)?.close)
   const pip = finiteNumber(instrument?.pip_size)
@@ -21,7 +21,7 @@ export function orderDraft(replay, instrument, side = 'BUY', orderType = 'market
   }
   return { side, quantity: instrument?.quantity_min == null ? '' : String(instrument.quantity_min),
     ...(orderType !== 'market' ? { orderType, entryPrice: entry > 0 ? String(entry) : '' } : {}),
-    stopLoss: '', takeProfit: '' }
+    stopLoss: '', takeProfit: '', protectionEnabled: { stopLoss: false, takeProfit: false } }
 }
 
 export function validateEntry(draft, quotes, instrument) {

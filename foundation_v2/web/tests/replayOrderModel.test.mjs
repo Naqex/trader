@@ -62,9 +62,10 @@ test('tick quote and draft use pinned historical Bid/Ask without OHLC fallback',
 })
 test('draft prices use declared pip and quantity assumptions without inventing missing values', () => {
   const plain = { visible_rows: [{ close: 1.1 }], payload: {} }
-  assert.deepEqual(orderDraft(plain, { pip_size: '.0001', quantity_min: '.01' }), { side: 'BUY', quantity: '.01', stopLoss: '', takeProfit: '' })
+  assert.deepEqual(orderDraft(plain, { pip_size: '.0001', quantity_min: '.01' }), { side: 'BUY', quantity: '.01', stopLoss: '', takeProfit: '', protectionEnabled: { stopLoss: false, takeProfit: false } })
   assert.equal(orderDraft(replay, {}).stopLoss, '1.09', 'Opening an existing position keeps its persisted protection')
   assert.equal(orderDraft(replay, {}).takeProfit, '1.12')
+  assert.deepEqual(orderDraft(replay, {}).protectionEnabled, { stopLoss: true, takeProfit: true })
   assert.equal(orderDraft(plain, {}, 'SELL').stopLoss, '')
   assert.equal(orderLevels(plain, { side: 'BUY', stopLoss: '', takeProfit: '1.12' }), null)
   assert.equal(orderLevels(replay, { stopLoss: '', takeProfit: '1.12' }).stop, 1.09, 'Persisted protection wins over a stale form draft')
