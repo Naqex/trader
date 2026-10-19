@@ -1,0 +1,252 @@
+bun test v1.4.2 (744846f84)
+
+tests\browser-login.test.ts:
+(pass) login starts with normal Chrome and captures state in a headed Keychain-aware context [0.22ms]
+(pass) passkey login authenticates in normal Chrome before isolated offline pipe capture [0.30ms]
+(pass) passkey storage capture excludes identity-provider and partitioned state [0.48ms]
+(pass) a storage-state file is not trusted without a verification marker [45.30ms]
+
+tests\browser-response-dom.test.ts:
+(pass) captured DIL smoke response reaches Markdown delivery and stable completion [55.78ms]
+(pass) current renderer response root reaches Markdown delivery without legacy turn attributes [4.97ms]
+(pass) shared current-renderer group delivers only the assistant branch [21.90ms]
+(pass) pending shared group never delivers the user bubble or treats its Copy as completion [6.12ms]
+(pass) hidden current renderer roots are treated as missing response DOM [5.59ms]
+(pass) DIL response extraction preserves ownership, commentary and completion boundaries [28.35ms]
+
+tests\browser-worker-contract.test.ts:
+(pass) unavailable Pro detail reads only its linked tooltip in any language [23.58ms]
+(pass) conversation turn identity survives ChatGPT DOM virtualization [1.33ms]
+(pass) submission DOM tracks logical identities and retains virtualized history in its baseline [7.78ms]
+(pass) submission DOM binds the current Activity renderer group by data-turn-key [1.04ms]
+(pass) assistant tracking rebinds only one proven replacement after React detaches its node [0.10ms]
+(pass) response caching rechecks CSS visibility without requiring a DOM mutation [24.15ms]
+(pass) current renderer copy labels provide assistant evidence without legacy turn attributes [0.45ms]
+(pass) a retained MCP conversation reuses its proven connector binding [0.05ms]
+(pass) browser turns run concurrently up to the ten-tab limit [0.62ms]
+(pass) browser turns have no absolute deadline unless one is explicitly configured [0.90ms]
+(pass) managed Chrome defaults follow the host platform [0.55ms]
+(pass) managed Chrome uses the normal sandbox and masks the Playwright automation fingerprint [0.30ms]
+(pass) send button locator keeps the legacy test id and accepts the current submit-button surface [0.22ms]
+(pass) browser configuration rejects the retired connector identity before opening a turn [0.25ms]
+(pass) connector verification reports a legacy-only ChatGPT menu as a migration error [0.40ms]
+[chatgpt-web] browser turn trace_timeout stage=browser_page started
+[chatgpt-web] browser turn trace_timeout stage=browser_page failed durationMs=12: ChatGPT browser stage timed out: browser_page
+(pass) browser stage timeout aborts late page acquisition [12.62ms]
+[chatgpt-web] browser turn trace_cleanup stage=prompt_attachment started
+[chatgpt-web] browser turn trace_cleanup stage=prompt_attachment failed durationMs=16: ChatGPT browser stage timed out: prompt_attachment
+(pass) a mutating stage timeout waits for abort cleanup before returning [16.16ms]
+[chatgpt-web] browser turn trace_cleanup_failure stage=prompt_attachment started
+[chatgpt-web] browser turn trace_cleanup_failure stage=prompt_attachment failed durationMs=25: ChatGPT labeled personalization change failed and its opened menu could not be closed
+(pass) a mutating stage timeout preserves a failed cleanup integrity error [26.60ms]
+[chatgpt-web] browser turn trace_compaction_retry_timeout stage=prompt_attachment started
+[chatgpt-web] browser turn trace_compaction_retry_timeout stage=prompt_attachment failed durationMs=12: ChatGPT browser stage timed out: prompt_attachment
+(pass) compaction retry submission evidence cannot make prompt-stage settlement unbounded [15.46ms]
+(pass) launcher page acquisition proves a nonzero operational viewport before DOM interaction [1.12ms]
+(pass) Luna turns without a retained conversation never send connector identity alone [0.84ms]
+(pass) a stalled DOM observation fails within its probe budget [6.20ms]
+[chatgpt-web] browser turn issue-285 stage=send started
+[chatgpt-web] browser turn issue-285 stage=send completed durationMs=285
+(pass) an accepted Full-mode send survives one stalled DOM probe and a later MCP batch without resending [286.44ms]
+[chatgpt-web] browser turn multipart-send-budget stage=send started
+[chatgpt-web] browser turn multipart-send-budget stage=send completed durationMs=253
+(pass) Bigger Context send activation keeps the outer stage budget instead of restoring a nested 20-second timeout [253.69ms]
+(pass) submission observation recovery resumes with rebound locators and is strictly bounded [0.48ms]
+(pass) detached current renderer binding re-discovers the assistant root before legacy identity recovery [0.51ms]
+(pass) an accepted turn rebinds the missing assistant observation and acknowledges a tool batch that arrives during recovery [1.06ms]
+(pass) missing-assistant expiry checks fresh DOM after a delayed wake while preserving the turn deadline [2.16ms]
+(pass) missing-assistant grace follows visible generation instead of submit wall clock [0.57ms]
+(pass) a failed stale-browser disconnect prevents the replacement connection [0.16ms]
+(pass) closing the launcher page is an immediate terminal turn error [0.25ms]
+(pass) active composer resolution waits for exactly one visible editor [51.72ms]
+(pass) prompt verification accepts Lexical NBSP preservation without weakening other mismatches [0.87ms]
+(pass) large Markdown-rich context uses one plain-text editing command before exact verification [1.14ms]
+(pass) plain-text editing command fails closed when the focused composer rejects it [0.38ms]
+(pass) temporary chat preparation tolerates a superseded navigation after validating the final surface [1.00ms]
+(pass) temporary chat preparation still fails on a real navigation error [0.13ms]
+(pass) temporary chat preparation fails closed when an aborted navigation leaves the wrong surface [0.14ms]
+(pass) compaction prompt attachment retries once only before submission evidence [0.34ms]
+(pass) prompt insertion stops before touching the composer when its stage is already aborted [0.12ms]
+(pass) connector selection re-resolves the active composer after ChatGPT replaces it [252.80ms]
+(pass) connector selection moves highlight to the exact hidden-viewport row before Enter [251.71ms]
+(pass) repeated connector verification reuses its selected pill before clearing the composer [0.36ms]
+(pass) connector selection retriggers the complete mention after a fresh-page hydration miss [503.15ms]
+[chatgpt-web] browser diagnostic trace=verify_f81fdd2868034bac83055b9fa92fe845 checkpoint=01-connector-verification-started path=C:\Users\MIIKEY\AppData\Local\Temp\cgw-catalog-verification-Ss763S\verify_f81fdd2868034bac83055b9fa92fe845-2ee36870
+[chatgpt-web] browser diagnostic trace=verify_f81fdd2868034bac83055b9fa92fe845 checkpoint=02-personalization-already-enabled path=C:\Users\MIIKEY\AppData\Local\Temp\cgw-catalog-verification-Ss763S\verify_f81fdd2868034bac83055b9fa92fe845-2ee36870
+[chatgpt-web] browser diagnostic trace=verify_f81fdd2868034bac83055b9fa92fe845 checkpoint=03-connector-mention-triggered path=C:\Users\MIIKEY\AppData\Local\Temp\cgw-catalog-verification-Ss763S\verify_f81fdd2868034bac83055b9fa92fe845-2ee36870
+[chatgpt-web] browser diagnostic trace=verify_f81fdd2868034bac83055b9fa92fe845 checkpoint=04-connector-menu-missing path=C:\Users\MIIKEY\AppData\Local\Temp\cgw-catalog-verification-Ss763S\verify_f81fdd2868034bac83055b9fa92fe845-2ee36870
+[chatgpt-web] browser diagnostic trace=verify_f81fdd2868034bac83055b9fa92fe845 checkpoint=05-connector-verification-failed path=C:\Users\MIIKEY\AppData\Local\Temp\cgw-catalog-verification-Ss763S\verify_f81fdd2868034bac83055b9fa92fe845-2ee36870
+(pass) connector verification preserves the host-refreshed catalog evidence [818.68ms]
+[chatgpt-web] browser diagnostic trace=verify_contract_trace checkpoint=01-connector-verification-started path=C:\Users\MIIKEY\AppData\Local\Temp\cgw-connector-verification-lSVif6\verify_contract_trace-83e4a10b
+[chatgpt-web] browser diagnostic trace=verify_contract_trace checkpoint=02-composer-ready path=C:\Users\MIIKEY\AppData\Local\Temp\cgw-connector-verification-lSVif6\verify_contract_trace-83e4a10b
+[chatgpt-web] browser diagnostic trace=verify_contract_trace checkpoint=03-connector-mention-triggered path=C:\Users\MIIKEY\AppData\Local\Temp\cgw-connector-verification-lSVif6\verify_contract_trace-83e4a10b
+[chatgpt-web] browser diagnostic trace=verify_contract_trace checkpoint=04-connector-verification-failed path=C:\Users\MIIKEY\AppData\Local\Temp\cgw-connector-verification-lSVif6\verify_contract_trace-83e4a10b
+(pass) connector failure persists safe checkpoints with opt-in screenshots (false) [25.39ms]
+[chatgpt-web] browser diagnostic trace=verify_contract_trace checkpoint=01-connector-verification-started path=C:\Users\MIIKEY\AppData\Local\Temp\cgw-connector-verification-CGhBV7\verify_contract_trace-54b839da
+[chatgpt-web] browser diagnostic trace=verify_contract_trace checkpoint=02-composer-ready path=C:\Users\MIIKEY\AppData\Local\Temp\cgw-connector-verification-CGhBV7\verify_contract_trace-54b839da
+[chatgpt-web] browser diagnostic trace=verify_contract_trace checkpoint=03-connector-mention-triggered path=C:\Users\MIIKEY\AppData\Local\Temp\cgw-connector-verification-CGhBV7\verify_contract_trace-54b839da
+[chatgpt-web] browser diagnostic trace=verify_contract_trace checkpoint=04-connector-verification-failed path=C:\Users\MIIKEY\AppData\Local\Temp\cgw-connector-verification-CGhBV7\verify_contract_trace-54b839da
+(pass) connector failure persists safe checkpoints with opt-in screenshots (true) [50.06ms]
+[chatgpt-web] browser diagnostic trace=verify_success_contract checkpoint=01-connector-verification-started path=C:\Users\MIIKEY\AppData\Local\Temp\cgw-connector-verification-success-11Ch7x\verify_success_contract-9cede8ea
+[chatgpt-web] browser diagnostic trace=verify_success_contract checkpoint=02-composer-ready path=C:\Users\MIIKEY\AppData\Local\Temp\cgw-connector-verification-success-11Ch7x\verify_success_contract-9cede8ea
+[chatgpt-web] browser diagnostic trace=verify_success_contract checkpoint=03-connector-selected path=C:\Users\MIIKEY\AppData\Local\Temp\cgw-connector-verification-success-11Ch7x\verify_success_contract-9cede8ea
+[chatgpt-web] browser diagnostic trace=verify_success_contract checkpoint=04-connector-verification-cleared path=C:\Users\MIIKEY\AppData\Local\Temp\cgw-connector-verification-success-11Ch7x\verify_success_contract-9cede8ea
+[chatgpt-web] browser diagnostic trace=verify_success_contract checkpoint=05-connector-verification-succeeded path=C:\Users\MIIKEY\AppData\Local\Temp\cgw-connector-verification-success-11Ch7x\verify_success_contract-9cede8ea
+(pass) successful connector verification clears the proven selection before releasing the page [29.69ms]
+(pass) production connector diagnostics distinguish an existing DEV connector [0.38ms]
+(pass) connector catalog refresh stays fail-closed for absent, legacy, and exact menu evidence [1772.11ms]
+(pass) tool-capable prompts use the shared Playwright connector selection before inserting context [252.35ms]
+(pass) an aborted connector proof clears its mention before the preflight releases the browser page [779.49ms]
+(pass) a lost connector mention cannot be used as evidence to change personalization [541.25ms]
+(pass) an aborted real connector selection clears the typed mention before returning [523.74ms]
+(pass) connector cleanup uses native editor deletion when contenteditable fill would retain the mention [252.11ms]
+(pass) an abort after connector activation removes the selected pill before returning [522.79ms]
+(pass) an abort while inserting a connector prompt clears the selected pill and partial text before returning [11.58ms]
+(pass) retained tool turns insert into the connector-bound composer without selecting it again [0.38ms]
+(pass) image attachment readiness uses exact file tiles and not localized remove-button text [1.27ms]
+(pass) effort slider ARIA state fails closed on malformed and unsupported ranges [0.14ms]
+(pass) Luna-only browser turns verify selector absence instead of opening an effort menu [255.95ms]
+(pass) Think slash toggles only when needed, preserves connectors, and normal Luna clears it [0.66ms]
+(pass) Think slash requires one command and verifies a newly exposed control [0.27ms]
+(pass) Think attachment runs after fresh connector selection and rechecks retained and Browser-only turns [1.48ms]
+(pass) Think attachment rolls back a lost connector and never inserts the prompt [0.38ms]
+(pass) the one-time Temporary Chat onboarding is accepted with an exact Playwright click [0.27ms]
+(pass) an unrelated Continue dialog is never auto-accepted [0.11ms]
+(pass) the known ChatGPT rate-limit dialog is acknowledged and returns a structured 429 [0.46ms]
+(pass) submission acceptance reports a rate-limit dialog that appears after Enter [0.56ms]
+(pass) the Traditional Chinese ChatGPT rate-limit dialog is acknowledged and returns a structured 429 [0.24ms]
+(pass) the Simplified Chinese ChatGPT rate-limit dialog is acknowledged and returns a structured 429 [0.12ms]
+(pass) the Japanese ChatGPT rate-limit dialog is acknowledged and returns a structured 429 [0.08ms]
+(pass) unrelated ChatGPT dialogs are left untouched [0.06ms]
+(pass) the known terminal ChatGPT error alert returns a structured retryable failure [0.28ms]
+(pass) terminal model errors are ignored while generation is actively running [0.06ms]
+(pass) only a size rejection of the current owned browser submission is non-retryable [0.67ms]
+(pass) the current response error action identifies short and localized failures without clicking Retry [0.18ms]
+(pass) a previous response error cannot reject a newly accepted user submission [0.13ms]
+(pass) a failed subscription fetch is retryable and does not falsely invalidate ChatGPT login [0.07ms]
+(pass) an expired ChatGPT session returns a non-retryable authentication failure: Your session has expired. Please log in again to continue using the app. Log in [0.06ms]
+(pass) an expired ChatGPT session returns a non-retryable authentication failure: 你的工作階段已過期 請重新登入以繼續使用應用程式。 登入 [0.03ms]
+(pass) an expired ChatGPT session returns a non-retryable authentication failure: 您的会话已过期 请重新登录以继续使用该应用。 登录
+(pass) effort selection stops as soon as ChatGPT reports an expired session [0.72ms]
+(pass) effort menu waiting stops when ChatGPT reports an expired session [252.28ms]
+(pass) terminal model errors are scoped to the new assistant turn instead of global page alerts [0.83ms]
+(pass) submission acceptance stops when its stage is aborted [0.24ms]
+(pass) proven current-turn MCP activity is conclusive submission evidence [0.15ms]
+(pass) unrelated ChatGPT alerts are not terminal [0.19ms]
+(pass) manual ChatGPT connector approval pauses and resumes the same browser turn [103.20ms]
+(pass) an unanswered ChatGPT connector approval is denied instead of aborting the turn [3.31ms]
+(pass) explicit connector auto-approval still selects Allow once [0.25ms]
+(pass) connector auto-approval accepts the current shortened Allow action [0.90ms]
+(pass) auto-approval recognizes the observed non-dialog approval card [0.16ms]
+(pass) browser preflight separates model context from one-message transport limits [10.08ms]
+(pass) Bigger Context fits mixed-density whole records within both token and composer limits [29379.77ms]
+(pass) Bigger Context preflight expands only the total context ceiling and keeps each message boundary [0.88ms]
+(pass) Bigger Context stages use the lowest account mode that can carry the stage [0.64ms]
+(pass) browser diagnostics redact context envelopes and capability values [0.04ms]
+(pass) browser diagnostic state drops every rendered text field before persistence [0.14ms]
+(pass) browser stage diagnostics use safe bounded artifact names [0.04ms]
+(pass) visible DOM trace interleaves statuses and explicit intermediate commentary [0.37ms]
+(pass) visible DOM trace does not duplicate a phase after a transient DOM disappearance [0.10ms]
+(pass) streaming commentary resumes by delta after a transient DOM disappearance [0.12ms]
+(pass) visible DOM trace emits a short-lived reasoning label on its first observation [0.09ms]
+(pass) completed-turn evidence flushes a short-lived reasoning label immediately [0.05ms]
+(pass) a structurally completed trailing Pro commentary does not wait for another parsed trace block [0.20ms]
+(pass) visible DOM trace emits one complete commentary paragraph before the next action [0.11ms]
+(pass) Stopped thinking is an explicit upstream error, not a user cancellation or a proven quota error [0.09ms]
+(pass) stopped-thinking detection recognizes localized UI without matching response content [22.03ms]
+(pass) visible DOM trace keeps a complete action phrase instead of a nested count [0.30ms]
+(pass) visible DOM trace waits out animated Pro fragments and appends genuine growth [0.19ms]
+(pass) trace parsing excludes the Answer now UI control [0.18ms]
+(pass) trace parsing removes an Answer now control appended to live reasoning [0.12ms]
+(pass) browser DOM health fails closed on a vanished or empty ChatGPT response [0.23ms]
+(pass) browser DOM health defers a missing-response verdict while generation remains active [0.07ms]
+(pass) stalled-response diagnostics measure inactivity instead of total turn duration [0.27ms]
+(pass) stalled-turn diagnostics record DOM metrics without response or overlay content [1.36ms]
+(pass) browser send accepts only new logical turns or generation, not remounted history [0.19ms]
+(pass) visible reasoning keeps the browser turn healthy before final assistant markdown exists [0.05ms]
+(pass) suspending DOM health for proven MCP progress restarts the missing-response window [0.09ms]
+(pass) clearing the missing-response window preserves whether a response was ever observed [0.10ms]
+(pass) the launcher helper transport carries MCP progress into the out-of-process browser worker [0.73ms]
+(pass) both response loops check explicit Stopped thinking before acknowledging further MCP work [0.70ms]
+(pass) proven MCP progress vetoes every terminal DOM conclusion, not just a missing response [0.13ms]
+(pass) live external progress still records that a response DOM was observed [0.07ms]
+(pass) an accepted turn survives internal observation faults instead of being torn down [0.83ms]
+(pass) stale MCP progress stops suppressing DOM health without penalising long active turns [0.11ms]
+(pass) the daemon prefers the browser helper that shipped beside its own entrypoint [0.49ms]
+(pass) multipart observation surfaces Stopped thinking on its first observation even with live MCP work [8.37ms]
+(pass) the shipped commentary classifier separates answer Markdown from reasoning in a real DOM [3.05ms]
+(pass) a painted link label waits for its destination before streaming [1.85ms]
+(pass) embedded chart hydration cannot replace Markdown answer content with renderer UI [21.98ms]
+(pass) proven MCP progress vetoes completion, not only the health verdicts [0.13ms]
+(pass) Full mode has no fixed post-tool final-answer deadline [0.34ms]
+(pass) Full mode fails closed when ChatGPT exposes completion without a post-tool final answer [0.29ms]
+(pass) a future progress timestamp is not treated as liveness [0.19ms]
+(pass) the bundled helper is adopted only for the packaged runtime layout [1.31ms]
+(pass) a staged Bigger Context part gets an acknowledgement window sized to its payload [0.10ms]
+(pass) the suspension clock charges only tick gaps that mean the process was frozen [0.06ms]
+(pass) remaining stage budget refunds slept time and stands once the awake budget is spent [0.03ms]
+[chatgpt-web] browser turn suspension-test stage=probe started
+[chatgpt-web] browser turn suspension-test stage=probe failed durationMs=502: ChatGPT browser stage timed out: probe
+(pass) a stage that spans a system sleep is not charged for the slept time [503.25ms]
+
+tests\chatgpt-model-selection.test.ts:
+(pass) model selection recognizes Latest in the launcher languages without accepting other model names [1.06ms]
+(pass) family confirmation verifies the exact Sol or Pro version, including the old Latest picker [0.41ms]
+(pass) model verification accepts Unicode announcement punctuation without weakening identity [0.55ms]
+
+tests\chatgpt-web-models.test.ts:
+(pass) fixed ChatGPT Web model routes > keeps the published legacy bindings while advertising named families [0.13ms]
+(pass) fixed ChatGPT Web model routes > exposes only Plus-eligible routes without the Pro account capability [0.28ms]
+(pass) fixed ChatGPT Web model routes > Extra High stays routable without granting Pro or Pro-sized context [18.59ms]
+(pass) fixed ChatGPT Web model routes > exposes Luna and Think when the authenticated account has no Sol selector [0.14ms]
+(pass) fixed ChatGPT Web model routes > Zero Risk exposes one generic route independent of account capabilities [0.13ms]
+(pass) fixed ChatGPT Web model routes > Zero Risk always publishes its fixed three-turn compaction interval and rejects multipart Bigger Context [0.08ms]
+(pass) fixed ChatGPT Web model routes > publishes measured Plus browser windows and compacts before the transport ceiling [0.08ms]
+(pass) fixed ChatGPT Web model routes > publishes the usable Pro browser window instead of the unreachable underlying model window [0.11ms]
+(pass) fixed ChatGPT Web model routes > publishes Luna's real model window without early native compaction [0.06ms]
+(pass) fixed ChatGPT Web model routes > triples Sol context and compaction limits only when Bigger Context is enabled [0.06ms]
+(pass) fixed ChatGPT Web model routes > binds the selected model authoritatively and ignores a conflicting request effort [20.04ms]
+(pass) fixed ChatGPT Web model routes > binds the Pro model to the browser Pro effort and fails closed for unknown routes [23.92ms]
+(pass) fixed ChatGPT Web model routes > keeps Pro compaction on the same retained Pro conversation [24.03ms]
+(pass) fixed ChatGPT Web model routes > binds the Luna route to Luna without a selectable effort [18.08ms]
+(pass) fixed ChatGPT Web model routes > binds the Think route to the Luna backend with explicit Think mode [19.35ms]
+(pass) fixed ChatGPT Web model routes > Zero Risk routing preserves its internal backend identity and only a technical Codex effort [18.36ms]
+(pass) fixed ChatGPT Web model routes > new families honor effort, gate availability, and separate pinned retained conversations [16.80ms]
+
+tests\core-account.test.ts:
+(pass) saved login, fresh login and completed inference are different facts [48.78ms]
+(pass) cancel waits for owned login cleanup and disconnect removes only its own browser state [26.56ms]
+(pass) account HTTP actions are authenticated, origin-blocked, bounded and cancel an active probe [33.06ms]
+(pass) failed probe never publishes a successful connection test [24.84ms]
+(pass) fresh accounts prefer GPT-6 Sol high while explicit saved choices win [28.01ms]
+
+tests\core-response-browser.test.ts:
+(pass) current renderer binds only the new answer when its toolbar shares a column with the private prompt [1348.17ms]
+(pass) headless product context restores login storage and native identity and accepts real clicks [2088.01ms]
+
+tests\core.test.ts:
+(pass) private initialization is idempotent and does not share homes or credentials [25.83ms]
+(pass) unsafe modes, tunnels and browser paths cannot use the core entrypoint [0.20ms]
+(pass) tool registries, history references, agent payloads, attachments and metadata are refused [0.34ms]
+(pass) HTTP surface authenticates and does not expose agents, global controls or browser access [1.81ms]
+(pass) validated requests cross the retained handler with clean headers and no response-state storage [0.63ms]
+(pass) real loopback HTTP uses the retained Responses parser and envelope with a synthetic model adapter [17.91ms]
+(pass) single-flight admission, cancellation and failure release the request slot [12.60ms]
+(pass) source snapshot retains recorded transport bytes and license [16.26ms]
+(pass) the public CLI refuses agent commands and cannot fall back to a global home [3106.50ms]
+
+tests\http-body.test.ts:
+(pass) decodes Codex zstd-compressed JSON request bodies [3.67ms]
+(pass) rejects unsupported request content encodings [0.29ms]
+
+tests\server-models.test.ts:
+(pass) proxies official /models auth and query, then appends the fixed ChatGPT Web models [18.79ms]
+(pass) Luna-only account exposes no paid ChatGPT Web routes [17.45ms]
+(pass) Zero Risk returns one generic Web row without using scanned capabilities [17.62ms]
+(pass) ChatGPT-only native catalog rows do not turn model discovery into a 502 [18.00ms]
+(pass) serves Cockpit-owned /models catalog with exact context limits for standard and bigger context [135.93ms]
+
+ 194 pass
+ 0 fail
+ 1789 expect() calls
+Ran 194 tests across 10 files. [46.00s]

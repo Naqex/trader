@@ -100,6 +100,8 @@ try {
       await page.mouse.down(); await page.mouse.move(handle.x - 120, 350, { steps: 8 }); await page.mouse.up()
       await page.waitForFunction(initial => document.querySelector('#wm-ai-chat').getBoundingClientRect().width > initial + 100, bounds.width)
       assert.equal(await chat.getAttribute('data-resizing'), null)
+      await separator.focus()
+      assert.equal(await separator.evaluate(element => getComputedStyle(element).outlineStyle), 'none', 'resize focus uses one line, not a full-height outlined rectangle')
       await separator.press('Home')
       await page.waitForFunction(() => document.querySelector('#wm-ai-chat').getBoundingClientRect().width === 360)
       await separator.press('End')

@@ -1,0 +1,20 @@
+{
+  "checks": [
+    "Cold saved-connection start and follow-up: each answer arrives after one send, history retained, no harness/transcript text, no page errors"
+  ],
+  "turns": [
+    {
+      "question": "Chào Mentor. Hãy trả lời đúng hai từ: REPLAY READY",
+      "answer": "REPLAY READY",
+      "elapsed_ms": 17333,
+      "submissions": 1
+    },
+    {
+      "question": "Tôi vừa yêu cầu bạn trả lời hai từ gì? Chỉ nhắc lại hai từ đó.",
+      "answer": "REPLAY READY",
+      "elapsed_ms": 16264,
+      "submissions": 1
+    }
+  ],
+  "errors": []
+}

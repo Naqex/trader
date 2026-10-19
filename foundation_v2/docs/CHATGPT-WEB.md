@@ -123,9 +123,22 @@ Màu nhấn dùng token cam của project; lịch sử trống có nút **Chat m
 
 Lựa chọn mặc định khi chưa có model hợp lệ đã lưu là GPT‑6 Sol/high nếu có
 trong catalog; lựa chọn người dùng đã lưu luôn được ưu tiên. Chrome xử lý
-request vẫn chạy headed nhưng khởi động thu nhỏ và thu nhỏ cửa sổ mới qua CDP.
-Đăng nhập vẫn hiện cửa sổ tương tác. `browserStartMinimized=false` trong config
-home riêng tắt hành vi thu nhỏ để chẩn đoán, không đổi engine hoặc profile.
+request chạy headless, không tạo cửa sổ. Context khôi phục browser state và dùng
+user agent của Chrome cùng phiên bản với login tương tác. Đăng nhập vẫn hiện
+cửa sổ riêng; engine, profile và bộ chọn model upstream được giữ lại. Không
+fallback sang cửa sổ visible khi request lỗi. `browserStartMinimized` chỉ áp dụng
+đường headed legacy, không còn điều khiển inference của Mentor.
+
+Core chỉ đóng gói policy Mentor, snapshot màn hình và hội thoại text; không thêm
+Codex harness/MCP hay thông báo thiếu local tools. Bridge đọc riêng nhánh
+assistant khi renderer ChatGPT gộp câu hỏi và câu trả lời vào một turn group.
+Không lấy user bubble, transcript hoặc tiêu đề screen-reader làm kết quả.
+Đầu ra cũ đã lưu trong lịch sử không được tự sửa; dùng Chat mới để kiểm tra.
+Smoke có tài khoản đã kết nối (hai câu synthetic, mỗi câu gửi một lần):
+`$env:TW_CHATGPT_LIVE_ACCEPTANCE='1'; node run_ai_chat_live_acceptance.mjs`
+từ `foundation_v2/web`. Report/screenshot riêng ở `.runtime/ai-chat-live/`.
+Receipt kiểm tra runtime ngày19/10:
+[Mentor runtime repair](../evidence/mentor-runtime-20261019/CHECKPOINT.md).
 
 Nút cạnh tên Mentor mở cài đặt trợ lý. Tên và mô tả đổi phần hiển thị trong
 tab hiện tại; không override prompt hoặc tạo agent. Ô hướng dẫn chỉ đọc, lấy

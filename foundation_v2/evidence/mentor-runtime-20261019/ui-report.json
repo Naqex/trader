@@ -1,0 +1,10 @@
+{
+  "scope": "UI fixtures only; no real ChatGPT request",
+  "checks": [
+    "360px: centered empty history + new chat CTA, orange accents, catalog-based model/effort popup, discrete slider pointer/keyboard saves once, Escape/outside dismissal, honest disabled data tools, design-system field radii + single focus border, action hover, no redundant footer copy, welcome/history/settings dark+light, rename/delete/open chats, isolated completed history, modal focus/Escape, upstream model/effort, send/cancel/error, disconnected/denied, no carousel/Create agent, no overflow or page errors",
+    "768px: centered empty history + new chat CTA, orange accents, catalog-based model/effort popup, discrete slider pointer/keyboard saves once, Escape/outside dismissal, honest disabled data tools, design-system field radii + single focus border, action hover, no redundant footer copy, welcome/history/settings dark+light, rename/delete/open chats, isolated completed history, modal focus/Escape, upstream model/effort, send/cancel/error, disconnected/denied, no carousel/Create agent, no overflow or page errors",
+    "Desktop: pointer drag and keyboard resize, 360px minimum, main content >=620px, viewport resize clamp",
+    "SPA workspace switch clears transcript/draft and cancels exact turn; Settings reveals page; Replay topbar opens chat without overflow",
+    "1368px: centered empty history + new chat CTA, orange accents, catalog-based model/effort popup, discrete slider pointer/keyboard saves once, Escape/outside dismissal, honest disabled data tools, design-system field radii + single focus border, action hover, no redundant footer copy, welcome/history/settings dark+light, rename/delete/open chats, isolated completed history, modal focus/Escape, upstream model/effort, send/cancel/error, disconnected/denied, no carousel/Create agent, no overflow or page errors"
+  ]
+}

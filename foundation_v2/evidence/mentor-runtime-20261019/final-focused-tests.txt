@@ -1,0 +1,29 @@
+bun test v1.4.2 (744846f84)
+
+tooling\chatgpt-web-core\tests\browser-response-dom.test.ts:
+(pass) captured DIL smoke response reaches Markdown delivery and stable completion [54.48ms]
+(pass) current renderer response root reaches Markdown delivery without legacy turn attributes [5.82ms]
+(pass) shared current-renderer group delivers only the assistant branch [7.57ms]
+(pass) pending shared group never delivers the user bubble or treats its Copy as completion [9.95ms]
+(pass) hidden current renderer roots are treated as missing response DOM [1.66ms]
+(pass) DIL response extraction preserves ownership, commentary and completion boundaries [15.30ms]
+
+tooling\chatgpt-web-core\tests\core-response-browser.test.ts:
+(pass) current renderer binds only the new answer when its toolbar shares a column with the private prompt [1287.11ms]
+(pass) headless product context restores login storage and native identity and accepts real clicks [1719.48ms]
+
+tooling\chatgpt-web-core\tests\core.test.ts:
+(pass) private initialization is idempotent and does not share homes or credentials [32.54ms]
+(pass) unsafe modes, tunnels and browser paths cannot use the core entrypoint [0.31ms]
+(pass) tool registries, history references, agent payloads, attachments and metadata are refused [0.53ms]
+(pass) HTTP surface authenticates and does not expose agents, global controls or browser access [4.01ms]
+(pass) validated requests cross the retained handler with clean headers and no response-state storage [0.71ms]
+(pass) real loopback HTTP uses the retained Responses parser and envelope with a synthetic model adapter [23.55ms]
+(pass) single-flight admission, cancellation and failure release the request slot [12.42ms]
+(pass) source snapshot retains recorded transport bytes and license [17.62ms]
+(pass) the public CLI refuses agent commands and cannot fall back to a global home [2713.34ms]
+
+ 17 pass
+ 0 fail
+ 298 expect() calls
+Ran 17 tests across 3 files. [7.90s]
