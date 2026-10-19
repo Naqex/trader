@@ -325,6 +325,8 @@ calculates quantity; manually editing quantity preserves those lots and reflects
 their actual SL exposure in the risk fields. Changing side or order type retains
 this sizing choice. Each SL/TP section uses one continuous control background,
 16px inner padding and no nested backgrounds around estimates or risk fields.
+Estimated totals use a thin top separator, left-aligned label and right-aligned
+16px semibold amount, retaining positive/negative semantic colors.
 Risk fields use 12px spacing and six equal
 24px percentage buttons in a centered row up to 360px wide
 (44px coarse-pointer targets). Gross estimated profit uses the positive semantic

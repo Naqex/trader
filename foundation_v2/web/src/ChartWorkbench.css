@@ -435,11 +435,11 @@ button.chart-order-level { cursor: ns-resize; touch-action: none; }
 .legacy-protection-row.is-unavailable > :is(label,small) { opacity:var(--ds-disabled-opacity,.5); }
 .legacy-protection-row.is-unavailable label { width:auto; cursor:default; }
 .legacy-protection-estimate { display:flex; flex-wrap:wrap; align-items:center; gap:var(--ds-space-2,8px); min-height:var(--ds-control,36px); box-sizing:border-box; padding:8px 12px; border-radius:var(--ds-radius-field,8px); background:var(--project-control); color:var(--chart-text); font-size:var(--ds-font-control,13px); }
-.legacy-protection-estimate > span { font-weight:var(--ds-weight-heading,600); }
-.legacy-protection-estimate strong { color:var(--project-muted); font-weight:var(--ds-weight-control,500); font-variant-numeric:tabular-nums; }
+.legacy-protection-estimate > span { font-weight:var(--ds-weight-control,500); }
+.legacy-protection-estimate strong { color:var(--project-muted); font-size:var(--ds-font-section,16px); line-height:24px; font-weight:var(--ds-weight-heading,600); font-variant-numeric:tabular-nums; }
 .legacy-protection-estimate strong.is-profit { color:var(--project-positive); }
 .legacy-protection-estimate strong.is-loss { color:var(--project-negative); }
-:is(.legacy-edit-protection,.legacy-new-protection) .legacy-protection-estimate { min-height:20px; padding:0; border-radius:0; background:transparent; }
+:is(.legacy-edit-protection,.legacy-new-protection) .legacy-protection-estimate { justify-content:space-between; min-height:36px; padding:12px 0 0; border-top:1px solid var(--chart-line); border-radius:0; background:transparent; }
 .legacy-risk-sizing { color:var(--chart-muted); font-size:12px; }
 .legacy-risk-fields { display:grid; gap:12px; }
 .legacy-risk-basis { display:flex; justify-content:center; flex-wrap:wrap; gap:12px 24px; min-width:0; margin:0; padding:0; border:0; }
