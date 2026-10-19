@@ -266,9 +266,13 @@ function PartialTakeProfits({ order, entry }) {
   const { draft, setDraft, instrument, disabled } = order
   const rows = draft.takeProfits || []
   const totalPercent = rows.reduce((sum,row) => sum + (finiteNumber(row.percent) ?? 0),0)
-  let targets, error = ''
-  try { targets = partialTargets(draft,instrument) } catch (failure) { error = failure.message }
+  let error = ''
+  try { partialTargets(draft,instrument) } catch (failure) { error = failure.message }
   const update = (id,key,value) => setDraft(current => ({ ...current, takeProfits:current.takeProfits.map(row => row.id === id ? { ...row, [key]:value } : row) }))
+  const equalize = () => setDraft(current => {
+    const count = current.takeProfits.length, base = Math.floor(100 / count), remainder = 100 % count
+    return { ...current,takeProfits:current.takeProfits.map((row,index) => ({ ...row,percent:String(base + (index >= count - remainder ? 1 : 0)) })) }
+  })
   const add = () => setDraft(current => {
     const existing = current.takeProfits?.length ? current.takeProfits : [{ id:crypto.randomUUID(), price:current.takeProfit, percent:'100' }]
     const last = existing.at(-1)
@@ -285,16 +289,15 @@ function PartialTakeProfits({ order, entry }) {
       ...(!next.length ? { protectionEnabled:{ ...current.protectionEnabled,takeProfit:false } } : {}) }
   })
   return <div className="legacy-partial-targets">
-    {rows.length > 0 && <div className="legacy-partial-toolbar"><button type="button" className="legacy-partial-single" disabled={disabled} onClick={() => setDraft(current => ({ ...current,takeProfit:current.takeProfits[0]?.price || current.takeProfit,takeProfits:[] }))}><ChartIcon name="arrow-left" />{t('Một mức chốt lời')}</button><span className={`legacy-partial-total ${Math.abs(totalPercent-100) > 0.000001 ? 'is-invalid' : ''}`} role="status" aria-label={t('Tổng tỷ lệ chốt')}>{Number(totalPercent.toFixed(2))} / 100%</span></div>}
+    {rows.length > 0 && <div className="legacy-partial-toolbar"><button type="button" className="legacy-partial-single" disabled={disabled} onClick={() => setDraft(current => ({ ...current,takeProfit:current.takeProfits[0]?.price || current.takeProfit,takeProfits:[] }))}><ChartIcon name="arrow-left" />{t('Một mức chốt lời')}</button><button type="button" className={`legacy-partial-total ${Math.abs(totalPercent-100) > 0.000001 ? 'is-invalid' : ''}`} disabled={disabled} title={t('Chia đều tỷ lệ chốt')} aria-label={t('Chia đều tỷ lệ chốt')} onClick={equalize}>{Number(totalPercent.toFixed(2))} / 100%</button></div>}
     {rows.length > 0 && <div className="legacy-partial-rows">{rows.map((row,index) => {
       const price = index === 0 ? draft.takeProfit : row.price
       const changePrice = value => setDraft(current => ({ ...current,...(index === 0 ? { takeProfit:value } : {}),takeProfits:current.takeProfits.map(target => target.id === row.id ? { ...target,price:value } : target) }))
       return <div className="legacy-partial-target" key={row.id} data-tp-id={row.id}>
-        <div className="legacy-partial-heading"><span className="legacy-partial-name">TP{index+1}<span className="legacy-partial-quantity">{targets?.[index]?.quantity || '—'} {t(instrument.asset_class === 'fx' ? 'lot' : 'quantity')}</span></span><button type="button" className="wm-dialog-close" aria-label={`${t('Bỏ')} TP${index+1}`} disabled={disabled} onClick={() => remove(row.id)}>×</button></div>
         <div className="legacy-order-grid legacy-partial-grid">
           <label>{t('Giá')}<input aria-label={`${t('Giá')} TP${index+1}`} type="number" min="0" required step={instrument.tick_size} value={price} disabled={disabled} onChange={event => changePrice(event.target.value)} /></label>
           <label>{t('Take profit in pips')}<input aria-label={`${t('Take profit in pips')} TP${index+1}`} type="number" step="any" value={protectionPips(price,entry,draft.side,'takeProfit',instrument)} disabled={disabled} onChange={event => changePrice(protectionPrice(event.target.value,entry,draft.side,'takeProfit',instrument))} /></label>
-          <div className="legacy-partial-share"><label>{t('Tỷ lệ chốt')}<span className="legacy-risk-input"><span aria-hidden="true">%</span><input aria-label={`${t('Tỷ lệ chốt')} TP${index+1}`} type="number" min="0" max="100" step="any" required value={row.percent} disabled={disabled} onChange={event => update(row.id,'percent',event.target.value)} /></span></label><div className="legacy-partial-presets" role="group" aria-label={`${t('Tỷ lệ chốt')} TP${index+1}`}>{[10,25,50].map(percent => <button type="button" key={percent} aria-pressed={Number(row.percent) === percent} disabled={disabled} onClick={() => update(row.id,'percent',String(percent))}>{percent}%</button>)}</div></div>
+          <div className="legacy-partial-share"><label htmlFor={`partial-share-${row.id}`}>{t('Tỷ lệ chốt')}</label><div className="legacy-partial-share-controls"><span className="legacy-risk-input"><span aria-hidden="true">%</span><input id={`partial-share-${row.id}`} aria-label={`${t('Tỷ lệ chốt')} TP${index+1}`} type="number" min="0" max="100" step="any" required value={row.percent} disabled={disabled} onChange={event => update(row.id,'percent',event.target.value)} /></span><button type="button" className="wm-dialog-close" aria-label={`${t('Bỏ')} TP${index+1}`} disabled={disabled} onClick={() => remove(row.id)}>×</button></div><div className="legacy-partial-presets" role="group" aria-label={`${t('Tỷ lệ chốt')} TP${index+1}`}>{[10,25,50].map(percent => <button type="button" key={percent} aria-pressed={Number(row.percent) === percent} disabled={disabled} onClick={() => update(row.id,'percent',String(percent))}>{percent}%</button>)}</div></div>
         </div>
       </div>
     })}</div>}

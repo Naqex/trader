@@ -330,10 +330,17 @@ label and 13px semibold amount retaining positive/negative semantic colors.
 There is no separate estimate row, background or separator.
 Partial TP uses a centered primary-orange add button. In split mode, a back-arrow
 Single profit action retains the first target price and restores full-size TP;
-the adjacent allocation badge shows total shares against 100%, with invalid totals
-using the negative token. Each share input has compact 10/25/50% shortcuts beneath
-it; they update only that target and reuse existing allocation validation. Desktop
-price/pip/share fields align at the top; mobile shares span the next row.
+the adjacent allocation button shows total shares against 100%, with invalid totals
+using the negative token. Activating it always splits shares equally into integer
+percentages totaling 100%, placing remainder points on the final targets (three
+targets become 33/33/34). Only draft percentages change; target IDs, prices and
+server state remain intact. Each share input has centered 10/25/50% shortcuts
+beneath it and a remove action immediately to its right. Redundant TP/lot headings
+are omitted. Shortcuts update only that target and reuse existing allocation
+validation. Desktop price/pip/share fields align at the top; mobile shares span
+the next row. Single profit hover brightens text without a border/background;
+the add button retains the shared action hover palette and text contrast. These
+role-specific hover selectors take precedence over the dialog's generic hover.
 Risk fields use 12px spacing and six equal
 24px percentage buttons in a centered row up to 360px wide
 (44px coarse-pointer targets). Gross estimated profit uses the positive semantic
