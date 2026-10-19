@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 
 const effortNames = { low: ['Nhanh', 'Fast'], medium: ['Vừa', 'Medium'], high: ['Cao', 'High'], xhigh: ['Rất cao', 'Extra high'], max: ['Pro', 'Pro'], ultra: ['Ultra', 'Ultra'] }
 
-export default function AiModelPicker({ models, selection, disabled, active, en, onSelect }) {
+export default function AiModelPicker({ models, selection, disabled, saving, active, en, onSelect }) {
   const id = useId()
   const popup = useRef(null), trigger = useRef(null), submitting = useRef(false), restoreFocus = useRef(false)
   const [expanded, setExpanded] = useState(false)
@@ -12,11 +12,16 @@ export default function AiModelPicker({ models, selection, disabled, active, en,
   const efforts = model?.efforts || []
   const name = value => effortNames[value]?.[en ? 1 : 0] || value
   const modelName = (model?.name || selection.model).replace(/\s*\(Web\)$/i, '')
-  useEffect(() => { setPreview(selection.effort) }, [selection.effort, disabled])
+  useEffect(() => { if (!saving) setPreview(selection.effort) }, [selection.effort, saving])
   useEffect(() => {
     if (!active || disabled) popup.current?.hidePopover()
-    if (active && !disabled && restoreFocus.current) { restoreFocus.current = false; trigger.current?.focus() }
-  }, [active, disabled])
+    if (active && !disabled && !saving && restoreFocus.current) {
+      restoreFocus.current = false
+      const slider = popup.current?.matches(':popover-open') && popup.current.querySelector('input:not(:disabled)')
+      const target = slider || trigger.current
+      target?.focus()
+    }
+  }, [active, disabled, saving])
   useEffect(() => {
     if (expanded) popup.current?.querySelector(view === 'models' ? '[aria-selected="true"]' : '.wm-ai-model-current')?.focus()
   }, [expanded, view])
@@ -26,7 +31,7 @@ export default function AiModelPicker({ models, selection, disabled, active, en,
     return () => window.removeEventListener('resize', close)
   }, [])
   async function commit(effort) {
-    if (disabled || submitting.current || effort === selection.effort || !efforts.includes(effort)) return
+    if (disabled || saving || submitting.current || effort === selection.effort || !efforts.includes(effort)) return
     submitting.current = true
     restoreFocus.current = true
     try { await onSelect({ model: selection.model, effort }) }
@@ -49,16 +54,16 @@ export default function AiModelPicker({ models, selection, disabled, active, en,
     options[next]?.focus()
   }
   return <div className="wm-ai-picker">
-    <button ref={trigger} type="button" className="wm-ai-model-trigger" disabled={disabled} aria-label={en ? 'AI model and effort' : 'Model và mức suy luận AI'} aria-haspopup="dialog" aria-expanded={expanded} aria-controls={id} onClick={toggle} title={`${model?.name || selection.model} · ${name(selection.effort)}`}>
+    <button ref={trigger} type="button" className="wm-ai-model-trigger" disabled={disabled || saving} aria-label={en ? 'AI model and effort' : 'Model và mức suy luận AI'} aria-haspopup="dialog" aria-expanded={expanded} aria-controls={id} onClick={toggle} title={`${model?.name || selection.model} · ${name(selection.effort)}`}>
       <span className="wm-ai-model-name">{modelName}</span><span className="wm-ai-effort-value">· {name(selection.effort)}</span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true"><path d="m4 6 4 4 4-4" /></svg>
     </button>
-    <div id={id} ref={popup} popover="auto" className="wm-ai-selection" role="dialog" aria-label={en ? 'AI model and effort' : 'Model và mức suy luận AI'} onToggle={event => setExpanded(event.newState === 'open')}>
+    <div id={id} ref={popup} popover="auto" className="wm-ai-selection" role="dialog" aria-busy={saving} aria-label={en ? 'AI model and effort' : 'Model và mức suy luận AI'} onToggle={event => setExpanded(event.newState === 'open')}>
       {view === 'effort' ? <>
-        <button type="button" className="wm-ai-model-current" onClick={() => setView('models')} aria-label={en ? 'AI model' : 'Model AI'} title={model?.name || selection.model}><span>{modelName} · {name(preview)}</span><span aria-hidden="true">›</span></button>
+        <button type="button" className="wm-ai-model-current" disabled={saving} onClick={() => setView('models')} aria-label={en ? 'AI model' : 'Model AI'} title={model?.name || selection.model}><span>{modelName} · {name(preview)}</span><span aria-hidden="true">›</span></button>
         <div className="wm-ai-effort-slider" style={{ '--wm-effort-fill': `${efforts.length > 1 ? Math.max(0, efforts.indexOf(preview)) / (efforts.length - 1) * 100 : 0}%` }}>
         <div className="wm-ai-slider-rail" aria-hidden="true" />
         <div className="wm-ai-slider-dots" aria-hidden="true">{efforts.map((value, index) => <span key={value} style={{ left: `${efforts.length > 1 ? index / (efforts.length - 1) * 100 : 0}%` }} />)}</div>
-        <input type="range" aria-label={en ? 'AI reasoning effort' : 'Mức suy luận AI'} aria-valuetext={name(preview)} min="0" max={Math.max(0, efforts.length - 1)} step="1" value={Math.max(0, efforts.indexOf(preview))} disabled={disabled || efforts.length < 2} onChange={event => setPreview(efforts[Number(event.target.value)])} onPointerUp={event => void commit(efforts[Number(event.currentTarget.value)])} onKeyUp={event => { if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) void commit(efforts[Number(event.currentTarget.value)]) }} onBlur={event => void commit(efforts[Number(event.currentTarget.value)])} />
+        <input type="range" aria-label={en ? 'AI reasoning effort' : 'Mức suy luận AI'} aria-valuetext={name(preview)} min="0" max={Math.max(0, efforts.length - 1)} step="1" value={Math.max(0, efforts.indexOf(preview))} disabled={disabled || saving || efforts.length < 2} onChange={event => setPreview(efforts[Number(event.target.value)])} onPointerUp={event => void commit(efforts[Number(event.currentTarget.value)])} onKeyUp={event => { if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) void commit(efforts[Number(event.currentTarget.value)]) }} onBlur={event => void commit(efforts[Number(event.currentTarget.value)])} />
         </div>
       </> : <>
         <button type="button" className="wm-ai-model-back" onClick={() => setView('effort')}>‹ {en ? 'Thinking effort' : 'Mức suy luận'}</button>

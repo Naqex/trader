@@ -116,9 +116,16 @@ Composer dùng một menu model/mức suy luận, thanh trượt chỉ có các 
 catalog trả về. Kéo chỉ xem trước; thả chuột, kết thúc phím điều chỉnh hoặc
 rời thanh trượt mới lưu lựa chọn. Không gửi request theo từng pixel kéo.
 Menu đóng trước panel khi nhấn Escape; chọn model giữ effort nếu được hỗ trợ.
+Lưu effort giữ menu mở; chỉ khóa thanh trượt trong lúc request đang lưu.
 Hai icon chiến lược/biểu đồ ở góc trái đang disabled, có tooltip nêu chưa
 kết nối dữ liệu. Chúng chưa gửi chiến lược hay ảnh biểu đồ tới AI.
 Màu nhấn dùng token cam của project; lịch sử trống có nút **Chat mới** ở giữa.
+
+Lựa chọn mặc định khi chưa có model hợp lệ đã lưu là GPT‑6 Sol/high nếu có
+trong catalog; lựa chọn người dùng đã lưu luôn được ưu tiên. Chrome xử lý
+request vẫn chạy headed nhưng khởi động thu nhỏ và thu nhỏ cửa sổ mới qua CDP.
+Đăng nhập vẫn hiện cửa sổ tương tác. `browserStartMinimized=false` trong config
+home riêng tắt hành vi thu nhỏ để chẩn đoán, không đổi engine hoặc profile.
 
 Nút cạnh tên Mentor mở cài đặt trợ lý. Tên và mô tả đổi phần hiển thị trong
 tab hiện tại; không override prompt hoặc tạo agent. Ô hướng dẫn chỉ đọc, lấy
