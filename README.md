@@ -12,6 +12,7 @@ Flask/EA cũ được giữ để đối chiếu và tái sử dụng logic, xem
 | UI | [`foundation_v2/web/`](foundation_v2/web/): React, Vite, TradingView Advanced Charts và shell WMReplay; Lightweight Charts giữ làm rollback |
 | Engine research | [`foundation_v2/engine_runtime/`](foundation_v2/engine_runtime/pyproject.toml): runtime Nautilus tách riêng |
 | Test và bằng chứng | [`foundation_v2/tests/`](foundation_v2/tests/), [`foundation_v2/evidence/`](foundation_v2/evidence/) |
+| AI chiến lược | [Chuẩn bị ChatGPT Web core](foundation_v2/docs/CHATGPT-WEB.md): source dùng chung trong workspace, runtime riêng cho MT5; AI API/UI chưa được bật |
 | Logic được dùng lại | [`retained.py`](foundation_v2/trading_workspace_v2/retained.py) khai báo các module Python gốc mà PATH-2 vẫn cần |
 | Runtime cũ | `workspace_app.py`, `app.py`, `templates/`, `static/`, launcher Windows/macOS; xem [tham chiếu Flask](docs/legacy-flask-reference.md) |
 
