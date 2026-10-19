@@ -200,32 +200,53 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
 }
 
 function ProtectionRiskSizing({ order, entry }) {
-  const { t, fmt } = useTestingLocale()
-  const [basis, setBasis] = useState('current')
+  const { t, locale } = useTestingLocale()
+  const [basis, setBasis] = useState('initial')
   const [input, setInput] = useState({ mode: 'percent', value: '1' })
+  const [open, setOpen] = useState(false)
+  const amountInput = useRef(null)
+  const { setDraft, disabled } = order
   const balance = finiteNumber(basis === 'initial' ? order.configuredBalance ?? order.execution?.starting_balance ?? order.startingBalance : order.account?.balance)
   const budget = input.mode === 'percent' ? balance > 0 && finiteNumber(input.value) > 0 ? balance * Number(input.value) / 100 : null : finiteNumber(input.value)
   const percent = input.mode === 'percent' ? input.value : balance > 0 && budget !== null ? Number((budget / balance * 100).toFixed(4)) : ''
   const quantity = quantityForRisk(budget, order.draft.stopLoss, entry, order.draft.side, order.instrument, order.costs)
-  return <details className="legacy-risk-sizing" onKeyDown={event => {
+  const currency = order.costs?.account_ccy
+  const symbol = currency ? new Intl.NumberFormat(locale, { style:'currency', currency, currencyDisplay:'narrowSymbol' }).formatToParts(0).find(part => part.type === 'currency')?.value : '—'
+  useEffect(() => {
+    // Closed calculators must not overwrite manual size or invalidate the form.
+    if (open && !disabled && quantity !== null) setDraft(current => current.quantity === quantity ? current : { ...current, quantity })
+  }, [open, disabled, quantity, basis, input, setDraft])
+  useEffect(() => {
+    amountInput.current?.setCustomValidity(open && quantity === null ? t('Không tính được khối lượng từ mức rủi ro này.') : '')
+  }, [open, quantity, t])
+  return <details className="legacy-risk-sizing" onToggle={event => setOpen(event.currentTarget.open)} onKeyDown={event => {
     // Calculating a size must not submit the enclosing order form.
     if (event.key === 'Enter' && event.target.tagName === 'INPUT') event.preventDefault()
   }}>
     <summary>{t('Tính khối lượng theo rủi ro')}</summary>
     <div className="legacy-risk-fields">
-      <label>{t('Tính tỷ lệ theo')}<FxSelect className="is-field" label="Tính tỷ lệ theo" value={basis} disabled={order.disabled} onChange={setBasis} options={[{ value:'initial', label:t('Số dư ban đầu') },{ value:'current', label:t('Số dư hiện tại') }]} /></label>
+      <fieldset className="legacy-risk-basis" disabled={disabled || !open} aria-label={t('Tính tỷ lệ theo')}>
+        {[['initial','Số dư ban đầu'],['current','Số dư hiện tại']].map(([value,label]) => <label key={value}><input type="radio" name="order-risk-basis" value={value} checked={basis === value} onChange={() => setBasis(value)} />{t(label)}</label>)}
+      </fieldset>
       <div className="legacy-risk-presets" role="group" aria-label={t('Rủi ro (%)')}>{['0.3','0.5','0.7','1','2','3'].map(value => <button type="button" key={value} aria-pressed={Number(percent) === Number(value)} disabled={order.disabled} onClick={() => setInput({ mode:'percent', value })}>{value}%</button>)}</div>
       <div className="legacy-order-grid">
-        <label>{t('Rủi ro (%)')}<input type="number" min="0" step="any" value={percent} disabled={order.disabled} onChange={event => setInput({ mode:'percent', value:event.target.value })} /></label>
-        <label>{t('Số tiền rủi ro')} · {order.costs?.account_ccy || '—'}<input type="number" min="0" step="any" value={input.mode === 'amount' ? input.value : budget === null ? '' : Number(budget.toFixed(2))} disabled={order.disabled} onChange={event => setInput({ mode:'amount', value:event.target.value })} /></label>
+        <label>{t('Rủi ro')}<span className="legacy-risk-input"><span aria-hidden="true">%</span><input aria-label={t('Rủi ro (%)')} type="number" min="0" step="any" required={open} value={percent} disabled={disabled || !open} onChange={event => setInput({ mode:'percent', value:event.target.value })} /></span></label>
+        <label>{t('Số tiền rủi ro')}<span className="legacy-risk-input"><span aria-hidden="true">{symbol}</span><input ref={amountInput} aria-label={`${t('Số tiền rủi ro')} ${currency || ''}`} aria-invalid={open && quantity === null ? true : undefined} type="number" min="0" step="any" required={open} value={input.mode === 'amount' ? input.value : budget === null ? '' : Number(budget.toFixed(2))} disabled={disabled || !open} onChange={event => setInput({ mode:'amount', value:event.target.value })} /></span></label>
       </div>
-      <div className="legacy-risk-apply"><span>{t('Khối lượng (trước phí)')}: <strong>{quantity === null ? '—' : fmt(quantity, order.instrument?.asset_class === 'fx' ? ' lot' : '', 8)}</strong></span><button type="button" disabled={order.disabled || quantity === null} onClick={() => order.setDraft(current => ({ ...current, quantity }))}>{t('Áp dụng khối lượng')}</button></div>
     </div>
   </details>
 }
 
+function ProtectionEstimate({ order, entry, kind }) {
+  const { t, locale } = useTestingLocale()
+  const amount = protectionAmount(order.draft[kind], entry, order.draft.side, order.draft.quantity, order.instrument, order.costs)
+  const value = amount === null ? '—' : new Intl.NumberFormat(locale, { style:'currency', currency:order.costs.account_ccy, currencyDisplay:'narrowSymbol', minimumFractionDigits:2, maximumFractionDigits:2 }).format(Math.abs(amount))
+  const loss = amount === null ? kind === 'stopLoss' : amount < 0
+  return <div className="legacy-protection-estimate" title={t(kind === 'stopLoss' ? 'Ước tính tại SL (trước phí)' : 'Ước tính tại TP (trước phí)')}><span>{t(loss ? 'Lỗ ước tính' : 'Lãi ước tính')}</span><strong>{value}</strong></div>
+}
+
 function LegacyOrderForm({ order, blockedReason, onClose, onJournal }) {
-  const { t, fmt } = useTestingLocale()
+  const { t } = useTestingLocale()
   const [journal, setJournal] = useState(false)
   const { draft, setDraft, execution, disabled, instrument, active } = order
   const enabled = draft.protectionEnabled
@@ -243,7 +264,7 @@ function LegacyOrderForm({ order, blockedReason, onClose, onJournal }) {
       setDraft(current => ({ ...current, protectionEnabled: { ...current.protectionEnabled, [key]: checked }, [key]: checked && Number.isFinite(price) && price > 0 ? String(Number(price.toFixed(8))) : '' }))
     }} />{t(label)}</label></div>{enabled[key] && <>
       <div className="legacy-order-grid"><label>{t(label)}<input aria-label={t(label)} type="number" min="0" required step={instrument?.tick_size || 'any'} value={draft[key]} disabled={disabled} onChange={event => change(key,event.target.value)} /></label>{pip > 0 && entry > 0 && <label>{t(key === 'stopLoss' ? 'Stop loss in pips' : 'Take profit in pips')}<input type="number" step="any" value={protectionPips(draft[key], entry, draft.side, key, instrument)} disabled={disabled} onChange={event => change(key, protectionPrice(event.target.value, entry, draft.side, key, instrument))} /></label>}</div>
-      <div className="legacy-protection-estimate"><span>{t(key === 'stopLoss' ? 'Ước tính tại SL (trước phí)' : 'Ước tính tại TP (trước phí)')}</span><strong>{fmt(protectionAmount(draft[key], entry, draft.side, draft.quantity, instrument, order.costs), ` ${order.costs?.account_ccy || ''}`)}</strong></div>
+      <ProtectionEstimate order={order} entry={entry} kind={key} />
       {!active && key === 'stopLoss' && <ProtectionRiskSizing order={order} entry={entry} />}
     </>}</section>)}
     {!active && <div className="legacy-protection-row is-unavailable" title={t('Chưa hỗ trợ tự dời SL về hòa vốn')}><label><input type="checkbox" role="switch" disabled />Auto Break-even</label><small>{t('Sắp có')}</small></div>}

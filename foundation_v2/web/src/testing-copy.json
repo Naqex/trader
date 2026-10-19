@@ -1,4 +1,8 @@
 {
+  "Rủi ro": { "vi":"Rủi ro", "en":"Risk Percent" },
+  "Lỗ ước tính": { "vi":"Lỗ ước tính", "en":"Estimated Loss" },
+  "Lãi ước tính": { "vi":"Lãi ước tính", "en":"Estimated Profit" },
+  "Không tính được khối lượng từ mức rủi ro này.": { "vi":"Không tính được khối lượng từ mức rủi ro này.", "en":"Cannot calculate a valid size for this risk amount." },
   "Tính khối lượng theo rủi ro": { "vi":"Tính khối lượng theo rủi ro", "en":"Calculate size by risk" },
   "Số dư ban đầu": { "vi":"Số dư ban đầu", "en":"Initial balance" },
   "Số dư hiện tại": { "vi":"Số dư hiện tại", "en":"Current balance" },
