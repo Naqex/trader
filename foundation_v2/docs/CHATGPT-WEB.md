@@ -92,10 +92,18 @@ Model ID được chọn từ catalog, không đóng cứng một alias trong s�
 ## Phạm vi hiện tại
 
 Nút tia sáng **Chat AI** trên topbar mở panel bên phải, có mặt cả trong replay.
-Desktop dành riêng 400px cho chat; dưới 1100px dùng dialog phủ bên phải, khóa
-focus nền và đóng bằng Escape. Đóng panel giữ hội thoại trong tab; cuộc trò
-chuyện mới, đổi workspace hoặc tải lại trang xóa hội thoại UI. Không lưu vào
-database/localStorage. Chỉ gửi các cặp tin nhắn đã hoàn tất và câu hỏi mới;
+Desktop dành khoảng 38% chiều rộng cho chat; kéo mép trái hoặc dùng phím mũi
+tên/Home/End khi focus separator để đổi độ rộng. Giới hạn 360–760px và chừa
+ít nhất 620px cho ứng dụng. Dưới 1100px dùng dialog phủ bên phải, khóa focus
+nền và đóng bằng Escape. Trang chào Mentor/composer, header và danh sách chat
+theo bố cục FX; không có carousel Resources hoặc Create agent.
+
+**Chat gần đây** giữ nhiều hội thoại thật trong RAM của tab theo workspace;
+có mở lại, đổi tên và xóa qua xác nhận. Chat mới giữ chat cũ trong danh sách.
+Đóng/mở panel giữ cả lịch sử và bản nháp; đổi workspace hoặc tải lại trang
+xóa lịch sử UI. Không lưu database/localStorage. Khi đang gửi, khóa chuyển,
+xóa và tạo chat mới để kết quả vẫn thuộc đúng hội thoại. Chỉ gửi lịch sử của
+chat đang chọn, gồm các cặp tin nhắn đã hoàn tất và câu hỏi mới;
 tin bị lỗi/hủy không đi vào context tiếp theo. Không tự lấy chart, chiến lược
 hay dữ liệu tài khoản. Câu trả lời hiển thị dạng văn bản, không thực thi HTML.
 
@@ -103,6 +111,12 @@ Chat dùng cùng model/effort đã chọn trong Settings và catalog nguyên b�
 upstream. Picker trong panel cập nhật cùng lựa chọn này. Chỉ mở panel đọc
 trạng thái; nếu API vừa restart, bấm **Nạp kết nối đã lưu** để khởi động core
 riêng, không mở Chrome/login tự động. Nếu chưa đăng nhập, dùng liên kết Cài đặt.
+
+Nút cạnh tên Mentor mở cài đặt trợ lý. Tên và mô tả đổi phần hiển thị trong
+tab hiện tại; không override prompt hoặc tạo agent. Ô hướng dẫn chỉ đọc, lấy
+từ cùng file policy sản phẩm tại lúc build web. Liên kết trong dialog dẫn
+đến cài đặt kết nối/model hiện có. Escape đóng dialog trước rồi mới đóng panel;
+focus trở về nút đã mở dialog. Engine, login và catalog không thay đổi.
 
 `POST /api/v2/ai/chatgpt/chat` nhận `{messages:[{role,content}],context?:{screen,locale}}` tối đa 48KiB,
 63 tin, user/assistant xen kẽ và kết thúc bằng user; trả 202 với ID tác vụ.
@@ -134,7 +148,8 @@ Rust/Bun và UI tách biệt, không dùng tài khoản thật hay gửi inferen
 `scripts/chatgpt_chat_acceptance.py` kiểm Rust → core handler thật với responder
 synthetic, gồm gửi/poll, scope, khóa single-flight và cancel tới signal Bun.
 `web/run_ai_chat_acceptance.mjs` kiểm giao diện bằng fixture 360/768/1368px,
-dark/light, focus, gửi nhiều lượt, picker, cancel, lỗi, disconnected/denied.
+dark/light, kéo/keyboard resize, focus, settings, mở/đổi tên/xóa nhiều chat,
+history isolation, gửi nhiều lượt, picker, cancel, lỗi, disconnected/denied.
 Các fixture này không chứng minh model thật đã trả lời.
 
 ## Vai trò và context của trợ lý

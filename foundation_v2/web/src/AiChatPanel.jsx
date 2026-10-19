@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import FxSelect from './FxSelect.jsx'
+import assistantPolicy from '../../api-rust/src/ai-assistant-policy.md?raw'
 import './ai-chat.css'
 
 export function AiSparkles() {
@@ -9,6 +10,20 @@ export function AiSparkles() {
 const base = '/api/v2/ai/chatgpt'
 const effortNames = { low: ['Nhanh', 'Fast'], medium: ['Vừa', 'Medium'], high: ['Cao', 'High'], xhigh: ['Rất cao', 'Extra high'], max: ['Pro', 'Pro'], ultra: ['Ultra', 'Ultra'] }
 const screens = { unknown: ['Chưa xác định', 'Unknown'], overview: ['Tổng quan', 'Overview'], replay: ['Replay', 'Replay'], trade: ['Giao dịch', 'Trading'], analytics: ['Phân tích', 'Analytics'], playbook: ['Chiến lược', 'Strategies'], learn: ['Học tập', 'Learning'], settings: ['Cài đặt', 'Settings'], 'market-data': ['Dữ liệu', 'Market data'], prop: ['Prop firm', 'Prop firm'], journal: ['Nhật ký', 'Journal'], sessions: ['Phiên', 'Sessions'] }
+
+function ChatIcon({ name }) {
+  const paths = {
+    history: <><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M9 4v16" /></>,
+    new: <><path d="M13 5H5v14h14v-8M15 4l5 5M10 14l1-5 7-7 4 4-7 7-5 1Z" /></>,
+    settings: <><path d="m9 4 1-2h4l1 2 2 1 2 0 2 4-1 2v2l1 2-2 4h-2l-2 1-1 2h-4l-1-2-2-1H5l-2-4 1-2v-2L3 9l2-4h2l2-1Z" /><circle cx="12" cy="12" r="3" /></>,
+    close: <path d="m6 6 12 12M18 6 6 18" />,
+    edit: <><path d="m14 4 6 6M4 20l2-7L17 2l5 5-11 11-7 2Z" /></>,
+    delete: <><path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7" /></>,
+    arrow: <path d="m9 5 7 7-7 7" />,
+    clock: <><path d="M3 4v5h5M3 9a9 9 0 1 1 0 6M12 6v6l4 2" /></>,
+  }
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>
+}
 
 export default function AiChatPanel({ workspace, open, modal, onClose, settingsHref, language, screen = 'unknown' }) {
   const en = language === 'en'
@@ -24,6 +39,18 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
   const [changing, setChanging] = useState(false)
   const [waiting, setWaiting] = useState(null)
   const [cancelled, setCancelled] = useState(false)
+  const [savedChats, setSavedChats] = useState([])
+  const [chatId, setChatId] = useState(() => crypto.randomUUID())
+  const [chatTitle, setChatTitle] = useState('')
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [mentor, setMentor] = useState({ name: 'Mentor', description: '' })
+  const [dialog, setDialog] = useState(null)
+  const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth)
+  const [resizeWidth, setResizeWidth] = useState(null)
+  const dialogRef = useRef(null)
+  const dialogTrigger = useRef(null)
+  const drag = useRef(null)
+  const resizeFrame = useRef(null)
   const panel = useRef(null)
   const composer = useRef(null)
   const scroll = useRef(null)
@@ -31,6 +58,64 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
   const active = useRef(null)
   const stopRequested = useRef(false)
   const submitting = useRef(false)
+
+  const description = mentor.description || say(`Mình là ${mentor.name}. Mình có thể giúp bạn tìm hiểu trading, backtest và cách dùng WMREPLAY.`, `I'm ${mentor.name}. I can help you learn about trading, backtesting and using WMREPLAY.`)
+  const currentChat = { id: chatId, title: chatTitle || messages[0]?.content.slice(0, 90), messages, draft, error, cancelled }
+  const chats = messages.length ? [currentChat, ...savedChats.filter(item => item.id !== chatId)] : savedChats
+  function archiveCurrent() {
+    if (messages.length) setSavedChats(previous => [currentChat, ...previous.filter(item => item.id !== chatId)])
+  }
+  function newChat() {
+    if (submitting.current) return
+    archiveCurrent(); setChatId(crypto.randomUUID()); setChatTitle(''); setMessages([]); setDraft(''); setError(''); setCancelled(false); setHistoryOpen(false)
+    requestAnimationFrame(() => composer.current?.focus())
+  }
+  function openChat(item) {
+    if (submitting.current) return
+    archiveCurrent(); setChatId(item.id); setChatTitle(item.title); setMessages(item.messages); setDraft(item.draft); setError(item.error); setCancelled(item.cancelled); setHistoryOpen(false)
+    requestAnimationFrame(() => composer.current?.focus())
+  }
+  function closeDialog() {
+    setDialog(null)
+    requestAnimationFrame(() => {
+      if (dialogTrigger.current?.isConnected) dialogTrigger.current.focus()
+      else panel.current?.querySelector('[aria-pressed]')?.focus()
+    })
+  }
+  function showDialog(value, trigger) { dialogTrigger.current = trigger; setDialog(value) }
+  useEffect(() => {
+    if (open && dialog) dialogRef.current?.showModal()
+  }, [open, dialog?.type])
+  function saveDialog(event) {
+    event.preventDefault()
+    if (dialog.type === 'settings') setMentor({ name: dialog.name.trim(), description: dialog.description.trim() })
+    if (dialog.type === 'rename') {
+      if (dialog.id === chatId) setChatTitle(dialog.name.trim())
+      setSavedChats(previous => previous.map(item => item.id === dialog.id ? { ...item, title: dialog.name.trim() } : item))
+    }
+    if (dialog.type === 'delete') {
+      setSavedChats(previous => previous.filter(item => item.id !== dialog.id))
+      if (dialog.id === chatId) { setChatId(crypto.randomUUID()); setChatTitle(''); setMessages([]); setDraft(''); setError(''); setCancelled(false) }
+    }
+    closeDialog()
+  }
+  const maxWidth = Math.max(360, Math.min(760, viewportWidth - 620))
+  function resize(next) {
+    const width = Math.round(Math.max(360, Math.min(Math.min(760, window.innerWidth - 620), next)))
+    cancelAnimationFrame(resizeFrame.current)
+    resizeFrame.current = requestAnimationFrame(() => {
+      panel.current?.closest('.fx-shell-story').style.setProperty('--wm-ai-width', `${width}px`)
+      setResizeWidth(width)
+    })
+  }
+  useEffect(() => {
+    const update = () => {
+      setViewportWidth(window.innerWidth)
+      if (resizeWidth !== null && window.innerWidth > 1100) resize(resizeWidth)
+    }
+    window.addEventListener('resize', update)
+    return () => { window.removeEventListener('resize', update); cancelAnimationFrame(resizeFrame.current) }
+  }, [resizeWidth])
 
   async function call(path, method = 'GET', body, signal) {
     const response = await fetch(`${base}${path}`, {
@@ -60,8 +145,10 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
   }
   useEffect(() => {
     mounted.current = true
+    const shell = panel.current?.closest('.fx-shell-story')
     return () => {
       mounted.current = false; stopRequested.current = true
+      shell?.style.removeProperty('--wm-ai-width')
       if (active.current) void call(`/chat/${active.current}`, 'DELETE').catch(() => {})
     }
   }, [workspace])
@@ -75,9 +162,10 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
   useEffect(() => {
     if (!open) return
     function keydown(event) {
-      if (event.key === 'Escape' && !event.defaultPrevented) { event.preventDefault(); onClose() }
-      if (event.key !== 'Tab' || !modal) return
-      const elements = [...panel.current.querySelectorAll('button:not(:disabled), a[href], textarea:not(:disabled), [tabindex="0"]')].filter(item => item.getClientRects().length)
+      const overlay = dialogRef.current?.open ? dialogRef.current : null
+      if (!overlay && event.key === 'Escape' && !event.defaultPrevented) { event.preventDefault(); onClose() }
+      if (event.key !== 'Tab' || (!modal && !overlay)) return
+      const elements = [...(overlay || panel.current).querySelectorAll('button:not(:disabled), a[href], input:not(:disabled), textarea:not(:disabled), [tabindex="0"]')].filter(item => item.getClientRects().length)
       const first = elements[0], last = elements.at(-1)
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
@@ -85,7 +173,7 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
     const element = panel.current
     element.addEventListener('keydown', keydown)
     // The close control is always focusable, including while disconnected.
-    const focus = element.querySelector('textarea:not(:disabled)') || element.querySelector('[data-chat-close]')
+    const focus = element.querySelector('.wm-ai-body:not([hidden]) textarea:not(:disabled)') || element.querySelector('[data-chat-close]')
     focus?.focus()
     return () => element.removeEventListener('keydown', keydown)
   }, [open, modal, onClose])
@@ -175,18 +263,39 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
   }
   const connected = !!account?.login_state_present && !account?.operation && !!account?.selection
   const model = account?.models?.find(item => item.id === account?.selection?.model)
-  return <aside id="wm-ai-chat" className="wm-ai-chat" ref={panel} hidden={!open} role={modal ? 'dialog' : 'complementary'} aria-modal={modal || undefined} aria-labelledby="wm-ai-title" data-testid="ai-chat">
+  useEffect(() => {
+    if (open && connected && !historyOpen && !dialogRef.current?.open) composer.current?.focus()
+  }, [open, connected])
+  return <aside id="wm-ai-chat" className={`wm-ai-chat ${historyOpen ? 'is-history' : messages.length ? 'is-conversation' : 'is-welcome'}`} ref={panel} hidden={!open} role={modal ? 'dialog' : 'complementary'} aria-modal={modal || undefined} aria-labelledby="wm-ai-title" data-testid="ai-chat">
+    {!modal && <div className="wm-ai-resize" role="separator" tabIndex={0} aria-label={say('Độ rộng chat AI', 'AI chat width')} aria-orientation="vertical" aria-valuemin={360} aria-valuemax={maxWidth} aria-valuenow={resizeWidth || Math.round(Math.min(600, Math.max(360, viewportWidth * .38)))}
+      onPointerDown={event => { if (event.button !== 0) return; event.preventDefault(); event.currentTarget.focus(); event.currentTarget.setPointerCapture(event.pointerId); drag.current = { x: event.clientX, width: panel.current.getBoundingClientRect().width }; panel.current.dataset.resizing = 'true' }}
+      onPointerMove={event => { if (drag.current) resize(drag.current.width + drag.current.x - event.clientX) }}
+      onPointerUp={event => { drag.current = null; delete panel.current.dataset.resizing; if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId) }}
+      onLostPointerCapture={() => { drag.current = null; if (panel.current) delete panel.current.dataset.resizing }}
+      onKeyDown={event => { if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return; event.preventDefault(); resize(event.key === 'Home' ? 360 : event.key === 'End' ? maxWidth : panel.current.getBoundingClientRect().width + (event.key === 'ArrowLeft' ? 20 : -20)) }} />}
     <header className="wm-ai-header">
-      <span className="wm-ai-mark"><AiSparkles /></span><h2 id="wm-ai-title">WMREPLAY <span>AI</span></h2>
       <div className="wm-ai-header-actions">
-        <button type="button" disabled={busy} onClick={() => { setMessages([]); setError(''); setCancelled(false); setDraft(''); composer.current?.focus() }} aria-label={say('Cuộc trò chuyện mới', 'New chat')} title={say('Cuộc trò chuyện mới', 'New chat')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg></button>
-        <a href={settingsHref} onClick={onClose} aria-label={say('Cài đặt AI', 'AI settings')} title={say('Cài đặt AI', 'AI settings')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M4 7h16M4 17h16" /><circle cx="9" cy="7" r="3" fill="var(--fx-shell-bg)" /><circle cx="15" cy="17" r="3" fill="var(--fx-shell-bg)" /></svg></a>
-        <button type="button" data-chat-close onClick={onClose} aria-label={say('Đóng chat AI', 'Close AI chat')} title={say('Đóng chat AI', 'Close AI chat')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button>
+        <button type="button" aria-pressed={historyOpen} onClick={() => setHistoryOpen(value => !value)} aria-label={say('Chat gần đây', 'Recent chats')} title={say('Chat gần đây', 'Recent chats')}><ChatIcon name="history" /></button>
+        <button type="button" disabled={busy} aria-pressed={!historyOpen && !messages.length} onClick={newChat} aria-label={say('Cuộc trò chuyện mới', 'New chat')} title={say('Cuộc trò chuyện mới', 'New chat')}><ChatIcon name="new" /></button>
       </div>
+      <div className="wm-ai-identity"><button type="button" onClick={event => showDialog({ type: 'settings', ...mentor }, event.currentTarget)} aria-label={say('Cài đặt trợ lý', 'Assistant settings')} title={say('Cài đặt trợ lý', 'Assistant settings')}><ChatIcon name="settings" /></button><h2 id="wm-ai-title">{mentor.name}</h2></div>
+      <button type="button" data-chat-close onClick={onClose} aria-label={say('Đóng chat AI', 'Close AI chat')} title={say('Đóng chat AI', 'Close AI chat')}><ChatIcon name="close" /></button>
     </header>
+    {historyOpen && <section className="wm-ai-history" aria-labelledby="wm-ai-history-title">
+      <h3 id="wm-ai-history-title"><ChatIcon name="clock" />{say('Chat gần đây', 'Recent chats')}</h3>
+      {!chats.length && <p className="wm-ai-history-empty">{say('Chưa có cuộc trò chuyện. Bắt đầu chat mới để trao đổi với Mentor.', 'No conversations yet. Start a new chat with Mentor.')}</p>}
+      <ul>{chats.map(item => <li key={item.id}>
+        <button type="button" className="wm-ai-history-open" disabled={busy} onClick={() => openChat(item)}><span>{item.title}</span><ChatIcon name="arrow" /></button>
+        <button type="button" className="wm-ai-history-delete" disabled={busy} aria-label={`${say('Xóa chat', 'Delete chat')}: ${item.title}`} onClick={event => showDialog({ type: 'delete', id: item.id, name: item.title }, event.currentTarget)}><ChatIcon name="delete" /></button>
+        <button type="button" className="wm-ai-history-edit" disabled={busy} aria-label={`${say('Đổi tên chat', 'Rename chat')}: ${item.title}`} onClick={event => showDialog({ type: 'rename', id: item.id, name: item.title }, event.currentTarget)}><ChatIcon name="edit" /></button>
+      </li>)}</ul>
+      <p className="wm-ai-history-note">{say('Chat được giữ trong tab này và sẽ xóa khi tải lại trang.', 'Chats stay in this tab and clear when you reload.')}</p>
+      {busy && <button className="wm-ai-history-return" type="button" onClick={() => setHistoryOpen(false)}>{say('Quay lại chat đang chờ', 'Return to active chat')} →</button>}
+    </section>}
+    <div className="wm-ai-body" hidden={historyOpen}>
     <div className="wm-ai-transcript" ref={scroll} role="log" aria-label={say('Nội dung trò chuyện', 'Conversation')} aria-live="polite" aria-relevant="additions text">
-      {!messages.length && <div className="wm-ai-welcome"><span className="wm-ai-welcome-icon"><AiSparkles /></span><h3>{say('Cùng hiểu rõ cách giao dịch', 'Understand your trading')}</h3><p>{say('Hỏi về trading, quản trị rủi ro, backtest hoặc cách dùng WMREPLAY.', 'Ask about trading, risk, backtesting or using WMREPLAY.')}</p></div>}
-      {messages.map((item, index) => <div className={`wm-ai-message is-${item.role}`} key={index}><span className="wm-ai-speaker">{item.role === 'user' ? `${say('Bạn', 'You')} · ${screenName(item.screen)}` : 'WMREPLAY AI'}</span><div>{item.content}</div>{item.role === 'user' && ['failed', 'cancelled'].includes(item.status) && <small>{item.status === 'cancelled' ? say('Đã dừng', 'Stopped') : say('Chưa có phản hồi', 'No response')}</small>}</div>)}
+      {!messages.length && <div className="wm-ai-welcome"><span className="wm-ai-welcome-icon"><AiSparkles /></span><h3>{mentor.name}</h3><p>{description}</p></div>}
+      {messages.map((item, index) => <div className={`wm-ai-message is-${item.role}`} key={index}><span className="wm-ai-speaker">{item.role === 'user' ? `${say('Bạn', 'You')} · ${screenName(item.screen)}` : mentor.name}</span><div>{item.content}</div>{item.role === 'user' && ['failed', 'cancelled'].includes(item.status) && <small>{item.status === 'cancelled' ? say('Đã dừng', 'Stopped') : say('Chưa có phản hồi', 'No response')}</small>}</div>)}
       {busy && <p className="wm-ai-thinking" role="status"><span />{say('Đang chờ ChatGPT…', 'Waiting for ChatGPT…')}</p>}
     </div>
     <div className="wm-ai-bottom">
@@ -206,5 +315,19 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
       </form>
       <p className="wm-ai-disclosure">{say(`Ngữ cảnh: ${screenName(currentScreen)}. Gửi hội thoại, tên màn hình và ngôn ngữ; chưa gửi chart hay số liệu tài khoản. Hội thoại lưu tạm trong trang.`, `Context: ${screenName(currentScreen)}. Sends chat, screen name and language; no chart or account figures. Chat stays in this page temporarily.`)}</p>
     </div>
+    </div>
+    {open && dialog && <dialog className="wm-ai-settings" ref={dialogRef} aria-labelledby="wm-ai-dialog-title" onCancel={event => { event.preventDefault(); closeDialog() }} onClick={event => { if (event.target === event.currentTarget) { const box = event.currentTarget.getBoundingClientRect(); if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) closeDialog() } }}>
+      <form onSubmit={saveDialog}>
+        <header><h3 id="wm-ai-dialog-title">{dialog.type === 'settings' ? say('Cài đặt trợ lý', 'Assistant settings') : dialog.type === 'rename' ? say('Đổi tên chat', 'Rename chat') : say('Xóa cuộc trò chuyện?', 'Delete conversation?')}</h3><button type="button" onClick={closeDialog} aria-label={say('Đóng hộp thoại', 'Close dialog')}><ChatIcon name="close" /></button></header>
+        {dialog.type === 'delete' ? <p className="wm-ai-delete-copy">{dialog.name}</p> : <label>{say('Tên', 'Name')}<input autoFocus required maxLength={dialog.type === 'settings' ? 40 : 90} value={dialog.name} onChange={event => setDialog(value => ({ ...value, name: event.target.value }))} /></label>}
+        {dialog.type === 'settings' && <>
+          <label>{say('Mô tả', 'Description')}<textarea rows={2} maxLength={240} placeholder={description} value={dialog.description} onChange={event => setDialog(value => ({ ...value, description: event.target.value }))} /></label>
+          <label>{say('Hướng dẫn trả lời', 'Instructions')}<textarea className="wm-ai-instructions" rows={7} readOnly value={assistantPolicy} aria-describedby="wm-ai-policy-note" /></label>
+          <p id="wm-ai-policy-note">{say('Hướng dẫn hiện tại chỉ để xem. Tên và mô tả chỉ đổi phần hiển thị trong tab này.', 'Current instructions are read-only. Name and description change the display in this tab only.')}</p>
+          <a href={settingsHref} onClick={() => { setDialog(null); onClose() }}>{say('Kết nối ChatGPT và chọn model', 'ChatGPT connection and model settings')} ↗</a>
+        </>}
+        <footer><button type="button" onClick={closeDialog}>{say('Hủy', 'Cancel')}</button><button className={dialog.type === 'delete' ? 'is-danger' : 'is-primary'} type="submit" disabled={dialog.type !== 'delete' && !dialog.name.trim()}>{dialog.type === 'delete' ? say('Xóa', 'Delete') : say('Xác nhận', 'Confirm')}</button></footer>
+      </form>
+    </dialog>}
   </aside>
 }
