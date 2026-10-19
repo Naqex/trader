@@ -66,6 +66,30 @@ try {
     await page.locator('.legacy-scalper-button').click()
     const scalper = page.locator('.legacy-scalper-settings')
     await scalper.waitFor()
+    for (const toggle of await scalper.locator('.legacy-scalper-toggle').all()) {
+      assert.equal(await toggle.evaluate(node => {
+        const input = node.querySelector('input').getBoundingClientRect(), text = node.querySelector('span').getBoundingClientRect()
+        return node.firstElementChild.tagName === 'INPUT' && input.right <= text.left && text.left - input.right <= 9
+      }), true, 'scalper switches precede their labels, including Auto Break-even')
+    }
+    for (const [index, seed] of ['20', '40'].entries()) {
+      const group = scalper.locator('fieldset').nth(index), toggle = group.getByRole('switch'), input = group.getByRole('spinbutton')
+      assert.equal(await toggle.isChecked(), false)
+      assert.equal(await input.isDisabled(), true)
+      assert.equal(await input.inputValue(), '', 'disabled distance hides its saved value')
+      assert.ok(Number(await group.locator('.legacy-scalper-distance').evaluate(node => getComputedStyle(node).opacity)) <= 0.5)
+      for (const unit of await group.getByRole('button').all()) assert.equal(await unit.isDisabled(), true)
+      await toggle.check()
+      assert.equal(await input.inputValue(), seed)
+      await input.fill('27')
+      await group.getByRole('button', { name: '%', exact: true }).click()
+      await toggle.uncheck()
+      assert.equal(await input.inputValue(), '')
+      await toggle.check()
+      assert.equal(await input.inputValue(), '27', 'toggling preserves the edited distance')
+      assert.equal(await group.getByRole('button', { name: '%', exact: true }).getAttribute('aria-pressed'), 'true')
+      await toggle.uncheck()
+    }
     assert.equal(await scalper.evaluate(node => getComputedStyle(node).display), 'grid', 'scalper groups use the intended spacing')
     assert.equal(await page.locator('.legacy-scalper-modal').evaluate(node => getComputedStyle(node).animationName), 'none', 'portal modal respects reduced motion')
     const strategy = scalper.getByRole('button', { name: 'Chiến lược', exact: true })
@@ -174,6 +198,8 @@ try {
     })
     await page.screenshot({ path: `${output}/order-menu-${width}-${theme}.png` })
     await dialog.getByRole('option', { name: 'Bán', exact: true }).click()
+    assert.equal(await dialog.locator('input[role=switch]:checked').count(), 0, 'changing side keeps protections off until enabled')
+    await dialog.locator('[data-protection=stopLoss]').getByRole('switch').check()
     assert.ok(Number(await dialog.getByRole('spinbutton', { name: vi('Stop loss'), exact: true }).inputValue()) > Number(await dialog.getByRole('textbox', { name: 'Giá vào lệnh', exact: true }).inputValue()), 'SELL protection recalculates above entry')
     await dialog.getByRole('button', { name: 'Hướng', exact: true }).click()
     await page.keyboard.press('Escape')
