@@ -27,7 +27,7 @@ try {
               const line = create(...args), record = {}
               if (line) {
                 window.__qaLines.push(record)
-                for (const [method, key] of [['setTooltip', 'tooltip'], ['setLineColor', 'color'], ['setPrice', 'price']]) {
+                for (const [method, key] of [['setTooltip', 'tooltip'], ['setLineColor', 'color'], ['setPrice', 'price'], ['setLineLength', 'length'], ['setExtendLeft', 'extendLeft']]) {
                   const original = line[method].bind(line)
                   line[method] = value => { record[key] = value; return original(value) }
                 }
@@ -90,6 +90,7 @@ try {
     await native.locator('.wm-order-marker-quantity').first().waitFor()
     assert.equal(await native.locator('.wm-order-marker-text').first().evaluate(node => getComputedStyle(node).color), theme === 'dark' ? 'rgb(255, 96, 59)' : 'rgb(181, 71, 24)')
     const colors = await page.evaluate(() => window.__qaLines.map(line => ({ ...line })))
+    assert.ok(colors.every(line => line.length === 0 && line.extendLeft === false), 'native primitives retain axis labels without duplicate dashed lines')
     assert.equal(colors.find(line => line.tooltip === 'Entry').color, side === 'SELL' ? '#FFBF00' : theme === 'dark' ? '#F5F8FF' : '#E8EBEF')
     assert.equal(colors.find(line => line.tooltip === 'Stop loss').color, theme === 'dark' ? '#46C7B7' : '#159989')
     const stop = native.locator('[data-order-drag=stop]')
@@ -120,6 +121,13 @@ try {
       assert.match(await protectionToast.innerText(), new RegExp(t('Position Updated')))
     }
     await page.screenshot({ path: `${output}/protection-moved-${width}-${language}.png` })
+    for (const kind of ['entry', 'stop', 'target']) {
+      const marker = native.locator(`[data-order-kind=${kind}]`)
+      const colors = await marker.evaluate(node => ({ line: getComputedStyle(node, '::before').borderTopColor, border: getComputedStyle(node.querySelector('.wm-order-marker-body')).borderTopColor, style: getComputedStyle(node, '::before').borderTopStyle, content: getComputedStyle(node, '::before').content }))
+      assert.equal(colors.line, colors.border, `${side} ${kind} dashed line matches its marker border`)
+      assert.equal(colors.style, 'dashed')
+      assert.notEqual(colors.content, 'none')
+    }
     const beforeDialog = report.writes.length
     await native.getByRole('button', { name: t('Chỉnh sửa vị thế'), exact: true }).click()
     const markerEdit = page.locator('.legacy-order-modal')

@@ -81,6 +81,8 @@ body.chart-page { width: calc(100% - var(--legacy-reserved-width, 0px)); overflo
 /* Chart-only trading markers: Entry is read-only; only the visible TP/SL
    handles claim pointer input. Geometry is deliberately denser than forms. */
 [data-wm-order-handles] .wm-order-marker { position:absolute; display:flex; align-items:stretch; width:max-content; max-width:calc(100% - 8px); height:22px; transform:translateY(-50%); color:var(--order-color); font:600 12px/20px Inter,Arial,sans-serif; font-variant-numeric:tabular-nums; white-space:nowrap; pointer-events:auto; user-select:none; }
+[data-wm-order-handles] .wm-order-marker::before { content:''; position:absolute; top:50%; left:-100vw; right:-100vw; border-top:1px dashed var(--order-border); pointer-events:none; z-index:-1; }
+[data-wm-order-handles] .wm-order-marker[data-ghost=true]::before { content:none; }
 [data-wm-order-handles] [hidden] { display:none !important; }
 [data-wm-order-handles] .wm-order-marker-body { display:flex; align-items:center; box-sizing:border-box; height:22px; min-width:0; margin:0; padding:0; border:1px solid var(--order-border); border-radius:0; outline:0; background:var(--order-bg); color:inherit; font:inherit; line-height:20px; touch-action:none; }
 [data-wm-order-handles] button.wm-order-marker-body { cursor:grab; }

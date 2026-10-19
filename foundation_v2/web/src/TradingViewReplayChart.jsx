@@ -214,7 +214,9 @@ export default function TradingViewReplayChart(props) {
                   .setText('').setQuantity('').setEditable(false).setCancellable(false)
                   .setBodyBorderColor('rgba(0, 0, 0, 0)').setBodyBackgroundColor('rgba(0, 0, 0, 0)').setBodyTextColor('rgba(0, 0, 0, 0)')
                   .setQuantityBorderColor('rgba(0, 0, 0, 0)').setQuantityBackgroundColor('rgba(0, 0, 0, 0)').setQuantityTextColor('rgba(0, 0, 0, 0)')
-                  .setLineLength(100)
+                  // Native line color also paints its price-axis label. Keep
+                  // that label, and let the existing marker draw its own line.
+                  .setExtendLeft(false).setLineLength(0)
                 lineByKind.set(kind, line)
               }
               const signature = [value, state.levels.side, priceColor].join(':')
