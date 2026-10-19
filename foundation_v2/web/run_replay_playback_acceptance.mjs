@@ -9,6 +9,7 @@ const output = new URL(`../evidence/replay-playback-20261019/${phase}/`, import.
 await mkdir(output, { recursive: true })
 const session = process.env.TW_REPLAY_QA_SESSION || '6428cf18b3f54a36b2e90207ef12392e'
 const startCursor = Number(process.env.TW_REPLAY_QA_CURSOR || 2997)
+const fullHistory = process.env.TW_REPLAY_QA_FULL_HISTORY === '1'
 assert.match(session, /^[a-zA-Z0-9-]+$/)
 assert.ok(Number.isSafeInteger(startCursor) && startCursor >= 0)
 const url = `http://127.0.0.1:5180/?workspace=tenant-a&view=replay&session=${session}&mode=Practice&surface=workspace&cursor=${startCursor}`
@@ -42,6 +43,13 @@ page.on('requestfinished', request => { const item = byRequest.get(request); if 
 // Historical playback must remain read-only; no test writes to the owner's session.
 await page.route('**/api/**', route => {
   if (!['GET', 'HEAD'].includes(route.request().method())) { blocked.push(route.request().method() + ' ' + route.request().url()); return route.abort() }
+  if (fullHistory) {
+    const url = new URL(route.request().url())
+    if (url.searchParams.get('response_view') === 'history-v1') {
+      url.searchParams.delete('response_view')
+      return route.continue({ url: url.href })
+    }
+  }
   return route.continue()
 })
 try {
@@ -175,7 +183,7 @@ if (phase !== 'before') {
   assert.deepEqual(blocked.filter(value => !value.includes('/activity')), [])
   assert.deepEqual(errors, [])
 }
-const result = { phase, steps, probe, requests, errors, blocked, buttons, checks }
+const result = { phase, fullHistory, steps, probe, requests, errors, blocked, buttons, checks }
 await writeFile(new URL('measurements.json', output), JSON.stringify(result, null, 2))
 console.log(JSON.stringify({ phase, steps: steps.map(Math.round), mounts: probe.mounts, errors, apiRequests: requests.length, checks }))
 } catch (error) {

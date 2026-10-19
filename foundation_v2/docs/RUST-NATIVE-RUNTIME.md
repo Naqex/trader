@@ -441,6 +441,42 @@ whether the chart resolution also changes the replay interval. See the scoped
 [playback UX/performance checkpoint](../evidence/replay-playback-20261019/CHECKPOINT.md):
 the remaining full historical execution projection still limits playback speed.
 
+### Forward historical API reads
+
+Native BAR views in phase1 advertise `history_view_version: "replay-history-v1"`.
+For forward historical playback the web client opts into
+`GET ...?response_view=history-v1`, supplying the expected revision, base cursor,
+base candle timestamp, every retained execution/portfolio event sequence and the
+existing `advance_interval_seconds`. This is a read; it never advances the saved
+session or creates execution receipts. Ordinary opens, rewinds, ticks, phase
+transitions and unsupported checkpoints retain the full response contract.
+
+The API reads the scoped current revision/deletion marker inside one repeatable
+read transaction. A bounded LRU retains at most3 fully validated immutable BAR
+revision snapshots, with a conservative96MiB retained-JSON estimate; this excludes
+transient requests and other process allocations. A revision change, including
+queue-only changes, cannot reuse an older entry. Cold admission uses the full
+storage hydrator and existing core/portfolio validators. Both legacy full-snapshot
+sessions and compact storage are supported without a migration or writes on GET.
+
+Warm projection borrows canonical ledger prefixes, restores the exact local
+checkpoints and uses the shared portfolio checkpoint arithmetic. It serializes
+the execution heads, at most1000 new native candles and at most3000 new events
+per ledger. Active-chart, per-asset and portfolio ledgers remain individually
+identified; they are not treated as one sequence. Uninitialized single-asset views
+retain the full API's stored payload cursor and separate selected chart cursor.
+Canonical portfolio `has_future_rows` semantics are preserved when viewing a
+completed session's past. Cutoffs preceding an asset initialization and other
+unsupported projections use the original full reader.
+
+React verifies the same revision, session/workspace/dataset lineage, base cutoff,
+each ledger sequence and the visible clock before merging its retained history.
+Malformed or stale responses retain the last chart and lock further stepping;
+no command is retried. The chart still receives only its verified new native tail.
+Cold reads and very large ledgers can remain slower; the cache is not a constant
+time or high-concurrency capacity claim. See
+[historical API evidence](../evidence/replay-playback-20261019/history-api/CHECKPOINT.md).
+
 Compact Prop feeds select the requested canonical mark and its immediate predecessor
 by primary key, then the next unacknowledged eligible mark using migration0006's
 partial index. Exact revision certificates, scope, dataset hash, phase/cost binding,

@@ -332,8 +332,15 @@ pub fn binding(snapshot: &Value, sequence: &Value) -> Value {
 }
 
 pub fn checkpoint(snapshot: &Value, payload: &Value, clock: i64) -> R<Value> {
-    let mut out = snapshot.clone();
-    let events: Vec<Value> = out["ledger"]
+    checkpoint_inner(snapshot,payload,clock,true)
+}
+pub(crate) fn checkpoint_head(snapshot: &Value, payload: &Value, clock: i64) -> R<Value> {
+    checkpoint_inner(snapshot,payload,clock,false)
+}
+fn checkpoint_inner(snapshot: &Value, payload: &Value, clock: i64, retain_ledger: bool) -> R<Value> {
+    let mut out = Value::Object(snapshot.as_object().ok_or("portfolio snapshot is invalid")?.iter()
+        .filter(|(key,_)|key.as_str() != "ledger").map(|(k,v)|(k.clone(),v.clone())).collect());
+    let events: Vec<&Value> = snapshot["ledger"]
         .as_array()
         .ok_or("portfolio history is missing")?
         .iter()
@@ -353,7 +360,6 @@ pub fn checkpoint(snapshot: &Value, payload: &Value, clock: i64) -> R<Value> {
                                 .unwrap_or(0)
                     })
         })
-        .cloned()
         .collect();
     let Some(tip) = events.last() else {
         return Err("portfolio checkpoint precedes account history".into());
@@ -374,7 +380,7 @@ pub fn checkpoint(snapshot: &Value, payload: &Value, clock: i64) -> R<Value> {
     }
     out["positions"] = tip["details"]["open_positions"].clone();
     out["pending_orders"] = tip["details"]["pending_orders"].clone();
-    out["ledger"] = json!(events);
+    if retain_ledger { out["ledger"] = json!(events); }
     out["asset_marks"] = json!({});
     out["phase_index"] = json!(1);
     out["phase_initial_balance"] = out["starting_balance"].clone();
@@ -404,10 +410,7 @@ pub fn checkpoint(snapshot: &Value, payload: &Value, clock: i64) -> R<Value> {
             "evaluation_quality":local["evaluation_quality"],"intrabar_equity_coverage":local["ledger"].as_array().into_iter().flatten().rev()
                 .find_map(|e|e["details"].get("intrabar_equity_coverage").cloned()).unwrap_or(json!("complete"))});
     }
-    let transitions: Vec<Value> = out["ledger"]
-        .as_array()
-        .unwrap()
-        .iter()
+    let transitions: Vec<Value> = events.iter()
         .filter(|event| event["kind"] == "phase_transition")
         .map(|event| event["details"].clone())
         .collect();

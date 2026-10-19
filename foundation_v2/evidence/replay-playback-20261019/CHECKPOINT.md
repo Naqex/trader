@@ -55,6 +55,11 @@ The browser historical GETs remain roughly0.9–1.2seconds each. Full history
 hydration/reconstruction/serialization is still the principal remaining latency;
 this UI change does not optimize that backend contract or remove correctness checks.
 
+Follow-up: [historical API optimization](history-api/CHECKPOINT.md) records the
+subsequent backend/frontend contract change, equivalent real-session measurements
+and guarded local runtime update. The measurements above remain the original UI
+checkpoint rather than being overwritten by the later optimization.
+
 Raw baseline: `before/measurements.json`; final: `final-verified/measurements.json`.
 Screenshots: `before/initial.png`, `final-verified/initial.png`,
 `final-verified/width-{360,768,1368}.png`.

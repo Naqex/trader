@@ -971,13 +971,7 @@ fn reconstruct(s: &mut Value, a: &Value) -> R<()> {
     let e = chosen.ok_or("execution branch cursor has no canonical checkpoint")?;
     s["phase_index"] = json!(phase);
     s["phase_initial_balance"] = initial;
-    for k in ["balance", "floating_pl", "equity"] {
-        s[k] = e[k].clone();
-    }
-    s["cursor_index"] = json!(cursor);
-    s["event_sequence"] = e["sequence"].clone();
-    s["position"] = e["details"]["open_position"].clone();
-    s["pending_market_order"] = e["details"]["pending_market_order"].clone();
+    apply_bar_checkpoint(s, &e, cursor);
     s["ledger"] = json!(prefix);
     if tick_mode(s) {
         let quote = latest_quote(s)?;
@@ -985,6 +979,44 @@ fn reconstruct(s: &mut Value, a: &Value) -> R<()> {
         s["last_ask"] = quote["ask"].clone();
     }
     Ok(())
+}
+
+// Shared by full reconstruction and repository-certified BAR read projections.
+// The caller owns phase selection and must validate the canonical event first.
+pub(crate) fn apply_bar_checkpoint(s: &mut Value, e: &Value, cursor: i64) {
+    for k in ["balance", "floating_pl", "equity"] {
+        s[k] = e[k].clone();
+    }
+    s["cursor_index"] = json!(cursor);
+    s["event_sequence"] = e["sequence"].clone();
+    s["position"] = e["details"]["open_position"].clone();
+    s["pending_market_order"] = e["details"]["pending_market_order"].clone();
+}
+
+// Only immutable, fully validated revision-cache snapshots may use this path.
+// Reconstruct still selects the same phase/event cutoff as the full engine.
+pub(crate) fn reconstruct_validated(snapshot: &Value, cursor: i64) -> R<Value> {
+    let mut head = Value::Object(snapshot.as_object().ok_or("invalid execution snapshot")?.iter()
+        .filter(|(key,_)|key.as_str() != "ledger").map(|(k,v)|(k.clone(),v.clone())).collect());
+    if cursor == int(snapshot,"cursor_index")? { return Ok(head); }
+    if cursor > int(snapshot,"cursor_index")? { return Err("checkpoint cursor cannot exceed the replay execution cursor".into()); }
+    let events = snapshot["ledger"].as_array().ok_or("ledger must be array")?;
+    let end = events.partition_point(|e|e["cursor_index"].as_i64().is_some_and(|c|c<=cursor));
+    let prefix = &events[..end];
+    let event = prefix.iter().rev().find(|e|e["cursor_index"] == cursor &&
+        matches!(e["kind"].as_str(),Some("price_mark"|"phase_transition"|"protection_change"|"manual_close"|"order_cancel"|"order_placed")))
+        .ok_or("execution branch cursor has no canonical checkpoint")?;
+    if event["sequence"].as_i64() != Some(end as i64) {
+        return Err("checkpoint has events after its selected canonical mark".into());
+    }
+    head["phase_index"] = json!(1);
+    head["phase_initial_balance"] = snapshot["starting_balance"].clone();
+    for event in prefix.iter().filter(|e|e["kind"] == "phase_transition") {
+        head["phase_index"] = event["details"]["to_phase_index"].clone();
+        head["phase_initial_balance"] = event["details"]["next_phase_initial_balance"].clone();
+    }
+    apply_bar_checkpoint(&mut head,event,cursor);
+    Ok(head)
 }
 fn fork(s: &mut Value, a: &Value) -> R<()> {
     bounded(a, "replay_session_id")?;

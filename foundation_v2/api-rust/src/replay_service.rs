@@ -23,6 +23,9 @@ use std::{
 use tokio_postgres::Transaction;
 use uuid::Uuid;
 
+#[path = "replay_history.rs"]
+pub mod history;
+
 struct ReplayTimings {
     operation: String,
     last: Option<std::time::Instant>,
@@ -443,6 +446,13 @@ async fn invoke(
         .map_err(|_| ApiError::database())?;
     timings.mark("transaction_begin");
     if method == "GET" {
+        if tail.is_empty() && q.get("response_view").is_some_and(|v| v == "history-v1") {
+            tx.batch_execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+                .await.map_err(|_|ApiError::database())?;
+            let result = history::read(&tx, &state, &scope.workspace_id, id, &q).await?;
+            tx.commit().await.map_err(|_| ApiError::database())?;
+            return Ok(Json(result).into_response());
+        }
         let record = load_record(&tx, &scope.workspace_id, id, false).await?;
         let result = match tail.as_str() {
             "metadata" => metadata(&tx, &scope.workspace_id, &record).await?,
@@ -731,27 +741,7 @@ pub async fn checkpoint_record(
         out["canonical_cursor_index"] = json!(canonical);
         out["historical_view"] = json!(selected < canonical);
         out["canonical_execution_event_sequence"] = Value::Null;
-        // Map each asset's closed-trade cursor onto the active chart clock.
-        let mut trade_cursors = Map::new();
-        for (key, a) in out["payload"]["asset_states"].as_object().unwrap() {
-            let am = snapshot_manifest(tx, workspace, key).await?;
-            for e in a["execution"]["ledger"]
-                .as_array()
-                .into_iter()
-                .flatten()
-                .filter(|e| matches!(e["kind"].as_str(), Some("protective_fill" | "manual_close")))
-            {
-                let t = times(state, &am, integer(e, "cursor_index")?, None).await?;
-                let clock = integer(&t, "index_utc")? + integer(&am, "timeframe_seconds")?
-                    - integer(&m, "timeframe_seconds")?;
-                let active_t = times(state, &m, 0, Some(clock)).await?;
-                trade_cursors.insert(
-                    format!("{}:{}", key, integer(e, "sequence")?),
-                    active_t["cursor_index"].clone(),
-                );
-            }
-        }
-        out["portfolio_trade_cursors"] = Value::Object(trade_cursors);
+        out["portfolio_trade_cursors"] = portfolio_trade_cursors(tx,state,workspace,&out["payload"],&m).await?;
         return Ok(out);
     }
     if let Some(e) = event {
@@ -783,6 +773,30 @@ pub async fn checkpoint_record(
     out["canonical_execution_event_sequence"] = canonical_seq;
     out["historical_view"] = json!(historical);
     Ok(out)
+}
+async fn portfolio_trade_cursors(
+    tx: &Transaction<'_>, state: &AppState, workspace: &str, p: &Value, m: &Value,
+) -> Result<Value, ApiError> {
+        let mut trade_cursors = Map::new();
+        for (key, a) in p["asset_states"].as_object().unwrap() {
+            let am = snapshot_manifest(tx, workspace, key).await?;
+            for e in a["execution"]["ledger"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter(|e| matches!(e["kind"].as_str(), Some("protective_fill" | "manual_close")))
+            {
+                let t = times(state, &am, integer(e, "cursor_index")?, None).await?;
+                let clock = integer(&t, "index_utc")? + integer(&am, "timeframe_seconds")?
+                    - integer(&m, "timeframe_seconds")?;
+                let active_t = times(state, &m, 0, Some(clock)).await?;
+                trade_cursors.insert(
+                    format!("{}:{}", key, integer(e, "sequence")?),
+                    active_t["cursor_index"].clone(),
+                );
+            }
+        }
+    Ok(Value::Object(trade_cursors))
 }
 const LINEAGE: &[&str] = &[
     "replay_session_id",
@@ -879,15 +893,24 @@ pub async fn view(
     tx: &Transaction<'_>,
     state: &AppState,
     workspace: &str,
-    mut record: Value,
+    record: Value,
     q: &HashMap<String, String>,
 ) -> Result<Value, ApiError> {
+    view_inner(tx, state, workspace, record, q, false, None).await
+}
+async fn view_inner(
+    tx: &Transaction<'_>, state: &AppState, workspace: &str, mut record: Value,
+    q: &HashMap<String, String>, validated: bool,
+    projected_canonical: Option<i64>,
+) -> Result<Value, ApiError> {
     let record_id = text(&record,"record_id")?.to_owned();
-    ensure_portfolio(tx, workspace, &record_id, &mut record["payload"]).await?;
-    crate::replay_portfolio::update(&mut record["payload"]).map_err(bad)?;
+    if !validated {
+        ensure_portfolio(tx, workspace, &record_id, &mut record["payload"]).await?;
+        crate::replay_portfolio::update(&mut record["payload"]).map_err(bad)?;
+    }
     let original = &record["payload"];
     let m = manifest(tx, workspace, text(&original, "dataset_id")?).await?;
-    let canonical = integer(&original, "cursor_index")?;
+    let canonical = projected_canonical.unwrap_or(integer(&original, "cursor_index")?);
     let total = integer(&m, "row_count")?;
     if canonical < 0 || canonical >= total {
         return Err(internal("replay cursor exceeds immutable dataset"));
@@ -926,7 +949,10 @@ pub async fn view(
     }
     let start = (cursor - 1999).max(0);
     let visible = slice(state, &m, start, cursor + 1).await?;
-    let mut status = if original["execution"].is_null() {
+    let mut status = if projected_canonical.is_some() && cursor != canonical
+        && (!original["execution"].is_null() || original["asset_states"].is_object()) {
+        "checkpoint"
+    } else if original["execution"].is_null() {
         "not_initialized"
     } else {
         "current"
@@ -941,6 +967,7 @@ pub async fn view(
     let session_period = period.as_ref().map(|_| original["session_period"].clone());
     let ident = identities(tx, workspace, text(&record, "record_id")?, original).await?;
     if cursor != canonical
+        && projected_canonical.is_none()
         && (!original["execution"].is_null() || original["asset_states"].is_object())
     {
         match checkpoint_record(
@@ -993,6 +1020,9 @@ pub async fn view(
     out.insert("historical_view".into(), json!(cursor != canonical));
     out.insert("execution_view_status".into(), json!(status));
     out.insert("execution_capabilities".into(), json!({"partial_close":true,"conditional_orders":true,"partial_take_profit":true}));
+    if state.native_runtime && history::eligible(&out["payload"]) {
+        out.insert("history_view_version".into(), json!("replay-history-v1"));
+    }
     if state.native_runtime && !multi && cursor == canonical
         && bar_execution(&out["payload"]["execution"])
     {

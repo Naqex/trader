@@ -223,6 +223,7 @@ pub(crate) mod tests {
             artifact_reads: Arc::new(tokio::sync::Semaphore::new(2)),
             artifact_data: Arc::new(crate::artifact_data::ArtifactData::new(".").unwrap()),
             analytics_cache: Default::default(),
+            replay_history: Default::default(),
             notion_oauth: Arc::new(crate::notion_oauth::NotionOAuthService::new(None).unwrap()),
             providers: crate::provider_routes::ProviderRuntime::load(std::path::PathBuf::from("."), crate::provider_routes::DownloadEngine::None).unwrap(),
             event_hub: crate::events::EventHub::default(),

@@ -14,14 +14,14 @@ function invalid() {
   return Object.assign(new Error('Phản hồi bước replay không khớp phiên. Nạp lại phiên trước khi tiếp tục.'), { code: 'replay_step_invalid' })
 }
 
-function validRow(row) {
+export function validRow(row) {
   return object(row) && integer(row.timestamp)
     && ['open', 'high', 'low', 'close'].every(key => Number.isFinite(row[key]))
     && row.high >= Math.max(row.open, row.close, row.low) && row.low <= Math.min(row.open, row.close)
     && ['volume', 'tick_volume'].every(key => row[key] == null || (Number.isFinite(row[key]) && row[key] >= 0))
 }
 
-function sameValue(left, right) {
+export function sameValue(left, right) {
   if (left === right) return true
   if (Array.isArray(left) && Array.isArray(right)) return left.length === right.length && left.every((value, index) => sameValue(value, right[index]))
   if (!object(left) || !object(right)) return false
@@ -29,7 +29,7 @@ function sameValue(left, right) {
   return keys.length === Object.keys(right).length && keys.every(key => Object.hasOwn(right, key) && sameValue(left[key], right[key]))
 }
 
-function validBaseWindow(replay) {
+export function validBaseWindow(replay) {
   const cursor = cursorOf(replay), start = Math.max(0, cursor - WINDOW_ROWS + 1)
   return integer(replay.total_row_count) && cursor < replay.total_row_count
     && replay.visible_row_start === start && replay.visible_row_count === cursor - start + 1

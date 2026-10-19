@@ -1,0 +1,10 @@
+{
+  "working_set_bytes": 128507904,
+  "binary_sha256": "e542e1b98d5fa6b27436dba99f5442c0cf370540c687e21c9411ce9d97ab2d2b",
+  "private_bytes": 119525376,
+  "storage_profile": "compact",
+  "scope": "one process snapshot after serial HTTP and browser diagnostic; not a controlled memory comparison",
+  "peak_working_set_bytes": 212353024,
+  "runtime_profile": "native",
+  "run_id": "23c257780efb4fa781676e67994c05a1"
+}

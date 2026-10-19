@@ -3,6 +3,7 @@ import { navigate } from './clientNavigation.js'
 import { scopedMutation } from './scopedMutation.js'
 import { canUseReplayMutationView, mergeReplayMutationView, replayMutationEventsAfter } from './replayMutationView.js'
 import { canUseReplayStepView, mergeReplayStepView } from './replayStepView.js'
+import { canUseReplayHistoryView, historyEventSequences, mergeReplayHistoryView } from './replayHistoryView.js'
 import { replayChartTail } from './replayChartWindow.js'
 import { scopedRead } from './scopedRead.js'
 import { NotificationSlot } from './Notifications.jsx'
@@ -273,9 +274,20 @@ export default function ReplayWorkspace({ workspace, query }) {
       if (targetCursor !== null) params.set('cursor_index', String(targetCursor))
       if (options.advanceIntervalSeconds) params.set('advance_interval_seconds', String(options.advanceIntervalSeconds))
       if (options.cutoffTimestamp !== undefined) params.set('cutoff_timestamp', String(options.cutoffTimestamp))
+      const base = chartView.current
+      const historyDelta = base?.record_id === targetSessionId && options.advanceIntervalSeconds
+        && targetCursor === base.view_cursor_index && canUseReplayHistoryView(base)
+      if (historyDelta) {
+        params.set('response_view', 'history-v1')
+        params.set('expected_revision', String(base.revision))
+        params.set('base_cursor_index', String(base.view_cursor_index))
+        params.set('base_cutoff_timestamp', String(base.cutoff_timestamp))
+        params.set('base_event_sequences', JSON.stringify(historyEventSequences(base)))
+      }
       const suffix = params.size ? `?${params}` : ''
       const response = await scopedRead(`/api/v2/replay/sessions/${encodeURIComponent(targetSessionId)}${suffix}`, workspace, controller.signal)
-      const payload = await readJson(response)
+      const result = await readJson(response)
+      const payload = historyDelta ? mergeReplayHistoryView(base, result, { workspace, sessionId: targetSessionId }) : result
       if (controller.signal.aborted) return
       const identity = { ...payload, ...payload.payload, record_id: payload.record_id, dataset_id: payload.payload.dataset_id }
       const currentQuery = new URLSearchParams(window.location.search)

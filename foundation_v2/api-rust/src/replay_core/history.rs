@@ -608,6 +608,11 @@ mod tests {
             pair.run("advance",second);
             assert!(pair.full["position"].is_null());
             assert_eq!(dec(&pair.full,"balance").unwrap(),d(&json!("1003.60")).unwrap());
+            for cursor in [1,2,3] {
+                let mut restored = transform(&json!({"action":"reconstruct","snapshot":pair.full,"args":{"cursor_index":cursor}})).unwrap()["snapshot"].clone();
+                restored.as_object_mut().unwrap().remove("ledger");
+                assert_eq!(super::super::reconstruct_validated(&pair.full,cursor).unwrap(),restored);
+            }
             for key in ["quantity","net_pnl","take_profit_target"] {
                 let mut corrupt = pair.full.clone();
                 corrupt["ledger"][3]["details"][key] = json!("bad");
