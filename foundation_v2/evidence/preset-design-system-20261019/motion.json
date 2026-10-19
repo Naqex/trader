@@ -1,0 +1,41 @@
+{
+  "scope": "Real UI/services, isolated browser, no writes. Actual CSS transitions enabled; hovered after settling.",
+  "cases": [
+    {
+      "width": 1368,
+      "theme": "dark",
+      "duration": "0.12s, 0.12s, 0.12s, 0.12s",
+      "timing": "cubic-bezier(0.2, 0, 0.2, 1), cubic-bezier(0.2, 0, 0.2, 1), cubic-bezier(0.2, 0, 0.2, 1), cubic-bezier(0.2, 0, 0.2, 1)",
+      "transform": "none",
+      "focus": false,
+      "radius": "6px"
+    },
+    {
+      "width": 1368,
+      "theme": "light",
+      "duration": "0.12s, 0.12s, 0.12s, 0.12s",
+      "timing": "cubic-bezier(0.2, 0, 0.2, 1), cubic-bezier(0.2, 0, 0.2, 1), cubic-bezier(0.2, 0, 0.2, 1), cubic-bezier(0.2, 0, 0.2, 1)",
+      "transform": "none",
+      "focus": false,
+      "radius": "6px"
+    },
+    {
+      "width": 360,
+      "theme": "dark",
+      "duration": "0.12s, 0.12s, 0.12s, 0.12s",
+      "timing": "cubic-bezier(0.2, 0, 0.2, 1), cubic-bezier(0.2, 0, 0.2, 1), cubic-bezier(0.2, 0, 0.2, 1), cubic-bezier(0.2, 0, 0.2, 1)",
+      "transform": "none",
+      "focus": false,
+      "radius": "6px"
+    },
+    {
+      "width": 360,
+      "theme": "light",
+      "duration": "0.12s, 0.12s, 0.12s, 0.12s",
+      "timing": "cubic-bezier(0.2, 0, 0.2, 1), cubic-bezier(0.2, 0, 0.2, 1), cubic-bezier(0.2, 0, 0.2, 1), cubic-bezier(0.2, 0, 0.2, 1)",
+      "transform": "none",
+      "focus": false,
+      "radius": "6px"
+    }
+  ]
+}

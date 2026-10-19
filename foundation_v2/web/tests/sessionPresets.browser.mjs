@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import {mkdir,writeFile} from 'node:fs/promises'
 import {chromium} from 'playwright'
 const origin=process.env.TESTING_UI_ORIGIN || 'http://127.0.0.1:5180'
-const out=process.env.TW_UI_EVIDENCE_DIR || '../evidence/preset-hover-20261019/ui'
+const out=process.env.TW_UI_EVIDENCE_DIR || '../evidence/preset-design-system-20261019/ui'
 await mkdir(out,{recursive:true})
 const browser=await chromium.launch()
 const report={scope:'Production UI with an in-memory preset HTTP fixture and isolated browser storage. Real catalog GETs, all owner writes blocked; one intercepted session-creation 503 test. Database acceptance is separate.',cases:[],errors:[],writes:[],presetRequests:0}
@@ -71,15 +71,36 @@ try {
   await page.addStyleTag({content:'*,*::before,*::after{animation:none !important;transition:none !important}'})
   assert.notEqual(await trigger.evaluate(el=>getComputedStyle(el).backgroundColor),'rgba(0, 0, 0, 0)','unselected preset has a neutral surface')
   await dialog.locator('input[maxlength="160"]').first().fill('OWNER DRAFT')
+  const menuStyle=locator=>locator.evaluate(el=>{const c=getComputedStyle(el);return Object.fromEntries(['borderRadius','fontSize','lineHeight'].map(key=>[key,c[key]]))})
+  const tokens=await trigger.evaluate(el=>{
+   const probe=document.createElement('span');el.append(probe)
+   const colors={};for(const name of ['--wm-hover','--wm-control-open','--wm-control-hover-border','--wm-focus']) {probe.style.color=`var(${name})`;colors[name]=getComputedStyle(probe).color}
+   probe.remove();return colors
+  })
   const assets=dialog.locator('.dataset-asset-select .fx-select-trigger:not(:disabled)')
-  for(let i=0;i<2;i++) {await assets.click();await dialog.locator('.dataset-asset-select [role=option][aria-selected=false]:not([disabled])').first().click()}
+  let optionStyle
+  for(let i=0;i<2;i++) {await assets.click();const option=dialog.locator('.dataset-asset-select [role=option][aria-selected=false]:not([disabled])').first();optionStyle=await menuStyle(option);await option.click()}
   await dialog.getByRole('radio',{name:'$50K',exact:true}).click()
+  await trigger.hover()
+  assert.equal(await trigger.evaluate(el=>getComputedStyle(el).backgroundColor),tokens['--wm-hover'],'preset uses shared select hover')
+  assert.equal(await trigger.evaluate(el=>el.matches(':focus-visible')),false,'pointer hover does not show keyboard focus')
   await trigger.click()
+  await dialog.locator('.quick-session-header h2').hover()
+  assert.equal(await trigger.evaluate(el=>getComputedStyle(el).backgroundColor),tokens['--wm-control-open'],'open preset uses shared select surface')
+  assert.equal(await trigger.evaluate(el=>getComputedStyle(el).borderTopColor),tokens['--wm-control-hover-border'],'open preset uses shared select border')
   assert.equal(await menu.locator('small').count(),0,'no browser-only storage caption')
   assert.equal(await menu.locator('.session-preset-create').evaluate(el=>getComputedStyle(el).borderTopWidth),'0px','empty menu has no stray separator')
   await menu.locator('.session-preset-create').hover()
-  assert.notEqual(await menu.locator('.session-preset-create').evaluate(el=>getComputedStyle(el).backgroundColor),'rgba(0, 0, 0, 0)','create preset has a hover surface')
+  assert.equal(await menu.locator('.session-preset-create').evaluate(el=>getComputedStyle(el).backgroundColor),tokens['--wm-hover'],'create preset uses shared menu hover')
+  assert.deepEqual(await menuStyle(menu.locator('.session-preset-create')),optionStyle,'create preset shares menu radius and typography')
+  assert.ok(await menu.locator('.session-preset-create').evaluate(el=>parseFloat(getComputedStyle(el).minHeight)===parseFloat(getComputedStyle(el).getPropertyValue('--wm-control-height'))),'single-line menu action uses shared control height; asset catalog has its own taller rows')
   if(mode==='backtest' && !en) await dialog.screenshot({animations:'disabled',path:`${out}/empty-menu.png`})
+  await page.keyboard.press('Escape');await page.keyboard.press('Tab');await page.keyboard.press('Shift+Tab')
+  assert.equal(await trigger.evaluate(el=>el.matches(':focus-visible')),true)
+  assert.equal(await trigger.evaluate(el=>getComputedStyle(el).borderTopColor),tokens['--wm-focus'],'preset uses shared keyboard focus')
+  await page.keyboard.press('Enter');await menu.waitFor()
+  assert.equal(await menu.locator('.session-preset-create').evaluate(el=>el.matches(':focus-visible')),true)
+  assert.equal(await menu.locator('.session-preset-create').evaluate(el=>getComputedStyle(el).outlineColor),tokens['--wm-focus'],'menu keyboard focus uses the shared focus color')
   await menu.locator('.session-preset-create').click()
   assert.equal(await dialog.locator('.quick-session-sections').count(),0)
   assert.equal(await dialog.locator('.quick-session-period-random').count(),0,'presets have no frozen backtest dates')
