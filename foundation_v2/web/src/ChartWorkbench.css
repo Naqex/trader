@@ -424,8 +424,9 @@ button.chart-order-level { cursor: ns-resize; touch-action: none; }
 .legacy-order-modal :is(input,button,select,summary):focus-visible { outline:2px solid var(--project-primary); outline-offset:2px; }
 .legacy-protection-row { display:flex; align-items:center; justify-content:space-between; gap:24px; min-height:36px; box-sizing:border-box; }
 .legacy-protection-row label { display:flex; align-items:center; flex-shrink:0; gap:10px; color:var(--chart-text); }
-.legacy-edit-protection, .legacy-new-protection { display:grid; gap:var(--wm-space-4,16px); min-width:0; }
+.legacy-edit-protection, .legacy-new-protection { display:grid; gap:var(--wm-space-4,16px); min-width:0; padding:16px; border-radius:var(--ds-radius-field,8px); background:var(--project-control); }
 .legacy-order-form .legacy-protection-row { min-height:48px; padding:12px 16px; border-radius:var(--ds-radius-field,8px); background:var(--project-control); }
+.legacy-order-form :is(.legacy-edit-protection,.legacy-new-protection) > .legacy-protection-row { min-height:16px; padding:0; border-radius:0; background:transparent; }
 .legacy-protection-row label { width:100%; cursor:pointer; }
 .legacy-protection-row input[type=switch], .legacy-order-form input[role=switch] { appearance:none; width:var(--ds-switch-width,28px); height:var(--ds-switch-height,16px); border:0; background:var(--wm-control-muted); border-radius:var(--ds-radius-pill,999px); margin:0; cursor:pointer; }
 .legacy-order-form input[role=switch]::before { content:''; display:block; width:12px; height:12px; margin:2px; background:var(--project-canvas); border-radius:50%; transition:transform var(--ds-motion-hover) var(--ds-ease-standard); }
@@ -438,8 +439,9 @@ button.chart-order-level { cursor: ns-resize; touch-action: none; }
 .legacy-protection-estimate strong { color:var(--project-muted); font-weight:var(--ds-weight-control,500); font-variant-numeric:tabular-nums; }
 .legacy-protection-estimate strong.is-profit { color:var(--project-positive); }
 .legacy-protection-estimate strong.is-loss { color:var(--project-negative); }
+:is(.legacy-edit-protection,.legacy-new-protection) .legacy-protection-estimate { min-height:20px; padding:0; border-radius:0; background:transparent; }
 .legacy-risk-sizing { color:var(--chart-muted); font-size:12px; }
-.legacy-risk-fields { display:grid; gap:12px; padding:12px; border-radius:var(--ds-radius-field,8px); background:var(--project-control); }
+.legacy-risk-fields { display:grid; gap:12px; }
 .legacy-risk-basis { display:flex; justify-content:center; flex-wrap:wrap; gap:12px 24px; min-width:0; margin:0; padding:0; border:0; }
 .legacy-order-form .legacy-risk-basis label { display:flex; align-items:center; gap:8px; min-height:var(--ds-control,36px); color:var(--project-text); cursor:pointer; }
 .legacy-risk-basis input[type=radio] { appearance:none; box-sizing:border-box; width:var(--ds-checkbox,16px); height:var(--ds-checkbox,16px); margin:0; padding:0; border:1px solid var(--project-border-strong); border-radius:50%; background:transparent; cursor:pointer; }

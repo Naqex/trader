@@ -323,7 +323,9 @@ fields appear directly inside enabled SL, without a disclosure or extra title.
 The initial risk is 1% of initial balance. Editing risk or a percentage preset
 calculates quantity; manually editing quantity preserves those lots and reflects
 their actual SL exposure in the risk fields. Changing side or order type retains
-this sizing choice. It uses one light control surface, 12px spacing and six equal
+this sizing choice. Each SL/TP section uses one continuous control background,
+16px inner padding and no nested backgrounds around estimates or risk fields.
+Risk fields use 12px spacing and six equal
 24px percentage buttons in a centered row up to 360px wide
 (44px coarse-pointer targets). Gross estimated profit uses the positive semantic
 token, estimated loss uses negative, and both prefix the currency symbol in
