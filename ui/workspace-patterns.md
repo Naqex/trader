@@ -55,7 +55,7 @@ Runtime and independent review receipts live in `foundation_v2/evidence/ui-patte
 
 ## Dashboard layout reopened by owner
 
-The owner requested one-page-at-a-time redesign using the supplied FX Replay screenshot. Dashboard now restores Backtesting session, Prop firm session and Tutorials entry actions. Performance uses the existing overview aggregate with a session scope and UTC close-date period; four metric surfaces sit beside the monthly trades chart, followed by monthly win rate and trades by symbol. Invested/replayed durations stay unknown because the API does not measure them. All-session totals include archived records and remove inherited duplicate closures; partial sources remain explicit. The earlier selected-session P/L layout is superseded for Dashboard only.
+The owner requested one-page-at-a-time redesign using the supplied FX Replay screenshot. Dashboard now restores Backtesting session, Prop firm session and Tutorials entry actions. Performance uses the existing overview aggregate with a session scope and UTC close-date period; four metric surfaces sit beside the monthly trades chart, followed by monthly win rate and trades by symbol. Invested/replayed durations stay unknown because the API does not measure them. All-session totals include archived records and remove inherited duplicate closures; partial sources remain explicit. The earlier selected-session PnL layout is superseded for Dashboard only.
 
 Recent Sessions has independent search/status/sort and six-row pagination. Direct actions open revision-aware settings, duplicate and exact-name delete dialogs. Session archive/restore UI is deferred; existing archived records remain readable through All or a direct link and keep replay/duplicate restrictions. Dashboard deletion remains scoped to the session, with conflict/uncertain-result reconciliation. Demo mutations stay in component state. URL parameters retain Performance and list filters separately. The shared subnav uses the existing hover/selected/focus tokens. Current control evidence: `foundation_v2/evidence/session-controls-20261006/`; initial layout evidence: `foundation_v2/evidence/ui-dashboard-fx-20261003/CHECKPOINT.md`.
 
@@ -65,9 +65,9 @@ Dropdown and navigation refinement: `fx-shell-story.css` owns the project shell 
 
 ### Sessions layout reopened by owner
 
-Sessions follows the owner's FX Replay reference: native session scope and existing management actions, session summary/description, closed-trade balance plus monthly and weekday Net P/L, six metrics, and paginated Recent Trades. This replaces Sessions' embedded four-metric Analytics summary only; Trades and Analytics retain their own layouts. `SessionPicker` owns catalog, revision-aware mutations and a scope-keyed/abortable analytics read; `SessionPerformance` uses the existing analytics adapter/model and renders that selected scope. Native dropdown interactions reuse the Dashboard system.
+Sessions follows the owner's FX Replay reference: native session scope and existing management actions, session summary/description, closed-trade balance plus monthly and weekday Net PnL, six metrics, and paginated Recent Trades. This replaces Sessions' embedded four-metric Analytics summary only; Trades and Analytics retain their own layouts. `SessionPicker` owns catalog, revision-aware mutations and a scope-keyed/abortable analytics read; `SessionPerformance` uses the existing analytics adapter/model and renders that selected scope. Native dropdown interactions reuse the Dashboard system.
 
-Balance excludes floating P/L. Average payoff is distinct from planned Risk/Reward and stays unknown when unavailable. Calendar P/L anchors to the last historical close in UTC; week starts Monday. Missing date/PnL makes time summaries unknown. Charts show the latest12months with reachable overflow; weekday bars include signed Net P/L across the session. Recent Trades sorts latest close first, offers5/10/20rows and page selection, and links each trade to its existing Analytics detail. Archive/restore replaces irreversible deletion; duplicate, metadata conflict and uncertain-write fences stay intact. Evidence: `foundation_v2/evidence/ui-sessions-fx-20261004/CHECKPOINT.md`.
+Balance excludes floating PnL. Average payoff is distinct from planned Risk/Reward and stays unknown when unavailable. Calendar PnL anchors to the last historical close in UTC; week starts Monday. Missing date/PnL makes time summaries unknown. Charts show the latest12months with reachable overflow; weekday bars include signed Net PnL across the session. Recent Trades sorts latest close first, offers5/10/20rows and page selection, and links each trade to its existing Analytics detail. Archive/restore replaces irreversible deletion; duplicate, metadata conflict and uncertain-write fences stay intact. Evidence: `foundation_v2/evidence/ui-sessions-fx-20261004/CHECKPOINT.md`.
 
 Owner feedback after migration: selection and child components still felt basic. `component-interactions.css` extends the same project pattern with distinct hover, persistent selection, open picker and keyboard focus, plus short color transitions and reduced-motion handling. Selected records use a subtle full-row tint/outline; no decorative left rail or nested card. Dashboard results show the actual selected row/checkmark; Data/Prop controls expose their selected state to assistive technology.
 
@@ -271,7 +271,7 @@ Buy/Sell retains simulated order ownership with white labels. Quantity has one
 outline with a separate spinner. The center grip resizes the positions list;
 the footer maximize button expands that list below the header, while header
 fullscreen uses the browser Fullscreen API. Replay/quick toolbars remain visible
-above the expanded list. The wallet popup shows cutoff-safe equity and P/L;
+above the expanded list. The wallet popup shows cutoff-safe equity and PnL;
 uninitialized execution stays unknown rather than inventing an account balance.
 Footer balance visibility and position expansion are UI state only. Positions read the cutoff-safe execution snapshot:
 open/pending state and protective fills from its ledger. Unavailable execution
@@ -282,18 +282,18 @@ Order opens a focus-trapped modal using the existing simulator submission and ri
 validation. Market orders and Quick Buy/Sell explicitly request `current_quote`:
 they open a simulated position at the visible cutoff's ask/bid without stepping
 replay or reading the next candle. Existing API clients retain `next_bar` by
-default. Spread and model costs remain reflected in actual floating P/L, so a new
+default. Spread and model costs remain reflected in actual floating PnL, so a new
 position can start below zero. SL/TP are optional; unsupported order types,
 Auto-BE, multiple active positions per asset and strategy creation stay disabled.
 A separate local Scalper preset converts positive distances in percent, pips or
 supported ticks to protective prices. It persists by workspace/session in browser
 storage; enabled legs are applied to the next quick entry.
 
-The fixed Entry marker reads `BUY/SELL → {actual P/L} {account currency}`. Its
+The fixed Entry marker reads `BUY/SELL → {actual PnL} {account currency}`. Its
 quantity opens the centered position editor (SL/TP only); X opens the close
 confirmation. Unset TP and SL are adjacent compact drag handles at Entry, each
 with one vertical grip column. Once moved they show projected account-currency
-P/L and quantity, with no pips. Entry and both protections use native dashed lines
+PnL and quantity, with no pips. Entry and both protections use native dashed lines
 and native price-scale badges; together with the current-price badge there are
 four labels when all levels are visible, stacked by the library when they coincide.
 Pointer drag has one border; keyboard focus keeps its visible focus ring. SELL
@@ -311,7 +311,7 @@ The native order form supports up to eight Partial TP targets. Form percentages
 resolve to exact instrument quantities before submission: intermediate slices
 round down to the quantity step and the final slice receives the remainder.
 Impossible allocations stay invalid. Each accepted target has its own chart
-marker, quantity and slice P/L; unsubmitted drafts never create order markers.
+marker, quantity and slice PnL; unsubmitted drafts never create order markers.
 Removing the last target disables TP. Cancelling the editor preserves the
 accepted order. A filled target disappears and the remaining shares rebase to
 100% of the residual quantity when reopening the editor.
@@ -345,6 +345,19 @@ Scalper settings place each SL/TP/Auto Break-even switch before its label. An of
 protection dims its entire distance/unit row and shows an empty disabled input;
 the draft retains its distance and unit so re-enabling restores both. Unsupported
 Auto Break-even remains disabled.
+
+PnL is the display spelling in both locales across Dashboard, Analytics, Replay,
+Research, Prop and Live. Existing translation IDs and API fields such as
+`floating_pl` and `net_pnl` retain their wire identities. The replay account pill
+shows authoritative Equity; while any asset has an open position it also shows
+signed unrealized PnL with a semantic dot. Zero remains visible while open;
+pending orders alone do not expose it. Closing part of a position retains this
+indicator, while closing all positions removes it and Equity equals Balance.
+The popup keeps Equity, realized PnL and unrealized PnL visible. Realized PnL
+is cumulative account Balance minus starting balance, rather than the latest
+trade result. Positive/negative PnL uses shared gain/loss colors; zero and unknown
+remain neutral. Unknown amounts display a dash, never a fabricated zero.
+
 Risk fields use 12px spacing and six equal
 24px percentage buttons in a centered row up to 360px wide
 (44px coarse-pointer targets). Gross estimated profit uses the positive semantic

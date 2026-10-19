@@ -10,6 +10,7 @@ test('system copy provides both locales with matching interpolation contracts', 
   for (const [key, entry] of Object.entries(copy)) {
     assert.ok(entry.vi.trim(), `Missing VI: ${key}`)
     assert.ok(entry.en.trim(), `Missing EN: ${key}`)
+    assert.ok(![entry.vi,entry.en].some(text => text.includes('P/L')), `Use PnL in displayed copy: ${key}`)
     assert.deepEqual(placeholders(entry.vi), placeholders(entry.en), `Mismatched placeholders: ${key}`)
     if (placeholders(key).length) assert.deepEqual(placeholders(entry.en), placeholders(key), `Key mismatch: ${key}`)
   }

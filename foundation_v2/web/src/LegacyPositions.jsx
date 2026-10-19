@@ -30,7 +30,7 @@ export default memo(function LegacyPositions({ execution, assetStates, symbol, a
       }}>{t(label)}</button>)}
     </div>
     <div id="legacy-position-panel" role="tabpanel" aria-labelledby={`position-tab-${tab}`}>
-      {rows.length ? <><div className="legacy-position-scroll" tabIndex={0} role="region" aria-labelledby={`position-tab-${tab}`}><table><thead><tr>{['Mã giao dịch', 'Hướng', 'Khối lượng', 'Take profit', 'Stop loss', 'P/L chưa chốt', 'P/L đã chốt', 'Phí hoa hồng'].map(label => <th key={label}>{t(label)}</th>)}</tr></thead><tbody>
+      {rows.length ? <><div className="legacy-position-scroll" tabIndex={0} role="region" aria-labelledby={`position-tab-${tab}`}><table><thead><tr>{['Mã giao dịch', 'Hướng', 'Khối lượng', 'Take profit', 'Stop loss', 'PnL chưa chốt', 'PnL đã chốt', 'Phí hoa hồng'].map(label => <th key={label}>{t(label)}</th>)}</tr></thead><tbody>
         {rows.slice(current * size, (current + 1) * size).map(row => <tr key={row.key}><td>{row.symbol}</td><td>{row.side || '—'}</td><td>{fmt(row.quantity, '', 8)}</td><td>{fmt(row.take_profit, '', 8)}</td><td>{fmt(row.stop_loss, '', 8)}</td><td>{fmt(row.unrealized)}</td><td>{fmt(row.realized)}</td><td>{fmt(row.commission)}</td></tr>)}
       </tbody></table></div>
       <PaginationFooter className="legacy-position-paging" label="Lệnh trong phiên replay" page={current + 1} pages={pages} onPageChange={value => setPage(value - 1)} pageSize={size} sizes={[10, 25, 50]} onPageSizeChange={value => { setSize(value); setPage(0) }} /></>

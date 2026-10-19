@@ -147,7 +147,7 @@ export function dashboardCurve(metrics) {
   if (!Array.isArray(raw) || raw.length < 2 || !known(metrics.starting_balance)) return null
   if (raw.some((point, index) => !known(point?.closed_trade_balance) || point.sequence !== index)) return null
   const start = Number(metrics.starting_balance)
-  // P/L and the balance curve share the session's original starting balance.
+  // PnL and the balance curve share the session's original starting balance.
   if (Number(raw[0].closed_trade_balance) !== start) return null
   const values = raw.map(point => Number(point.closed_trade_balance) - start)
   if (metrics.closed_trade_count !== undefined && metrics.closed_trade_count !== values.length - 1) return null

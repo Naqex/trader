@@ -378,7 +378,7 @@ export default function TradeWorkspace({ workspace, query, replay: controlledRep
             <section className="trade-grid">
               <div className="trade-main-column">
                 <section className="trade-account-strip" aria-label="Tài khoản mô phỏng">
-                  <div><span>Balance</span><strong>{formatMoney(account.balance, costModel?.account_ccy)}</strong></div><div><span>Equity</span><strong>{formatMoney(account.equity, costModel?.account_ccy)}</strong></div><div><span>Floating P/L</span><strong>{formatMoney(account.floating, costModel?.account_ccy)}</strong></div><div><span>Position</span><strong>{execution.position ? `${execution.position.side} ${execution.position.quantity}` : execution.pending_market_order ? 'Pending' : 'Flat'}</strong></div>
+                  <div><span>Balance</span><strong>{formatMoney(account.balance, costModel?.account_ccy)}</strong></div><div><span>Equity</span><strong>{formatMoney(account.equity, costModel?.account_ccy)}</strong></div><div><span>Floating PnL</span><strong>{formatMoney(account.floating, costModel?.account_ccy)}</strong></div><div><span>Position</span><strong>{execution.position ? `${execution.position.side} ${execution.position.quantity}` : execution.pending_market_order ? 'Pending' : 'Flat'}</strong></div>
                 </section>
                 <section className="trade-draft-section" aria-labelledby="trade-draft-title">
                   <div className="trade-section-title"><div><span className="trade-eyebrow">STEP 02</span><h2 id="trade-draft-title">Draft tại chart cutoff</h2></div><span className="trade-cutoff-label">future fill: nến kế tiếp</span></div>

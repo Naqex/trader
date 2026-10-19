@@ -8,9 +8,9 @@ The page has a compact title/session scope/action row, a small replay continuati
 
 Catalog owns available scopes; `dashboard_session` in the URL owns an explicit selection. Otherwise use a valid remembered playable session, then the newest updated playable session. An explicit missing ID remains unavailable with a recovery action. The stored replay preference changes only on actual replay navigation, not when browsing results.
 
-Results come from the existing workspace-scoped session Analytics read model and reuse `buildAnalyticsModel`. All four metrics refer to the full canonical selected session. Dashboard does not aggregate unlike currencies or inherit an old replay cursor/date filter. Analytics is the place for date/cutoff drilldown. Max drawdown and cumulative P/L describe balance after closed trades; neither describes floating equity or intratrade drawdown.
+Results come from the existing workspace-scoped session Analytics read model and reuse `buildAnalyticsModel`. All four metrics refer to the full canonical selected session. Dashboard does not aggregate unlike currencies or inherit an old replay cursor/date filter. Analytics is the place for date/cutoff drilldown. Max drawdown and cumulative PnL describe balance after closed trades; neither describes floating equity or intratrade drawdown.
 
-Changing scopes clears previous numbers; abort guards prevent late replies from replacing the selection. Blocked results hide metrics. Zero, unknown, loading, error, stale and partial states remain distinct. The chart rejects missing/nonsequential balances, wrong starting balance, truncated counts and endpoints inconsistent with net P/L. Money retains cents; absent currency is explicitly shown as account units.
+Changing scopes clears previous numbers; abort guards prevent late replies from replacing the selection. Blocked results hide metrics. Zero, unknown, loading, error, stale and partial states remain distinct. The chart rejects missing/nonsequential balances, wrong starting balance, truncated counts and endpoints inconsistent with net PnL. Money retains cents; absent currency is explicitly shown as account units.
 
 Header and rail icon centers align within one CSS pixel in expanded/collapsed/mobile resting states. The full wordmark and44px menu target remain visible; navigation separators remain absent.
 

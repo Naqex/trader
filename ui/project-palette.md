@@ -23,7 +23,7 @@ must not recolor trading candles, price levels or user drawings.
 | --- | --- | --- | --- |
 | Balance / main series | `--report-blue` | `#5FBEFF` | `#2D7195` |
 | Activity / comparison | `--report-peach` | `#FFAD7C` | `#A85A27` |
-| Gain / positive P/L | `--report-positive` | `#51D6A0` | `#367552` |
+| Gain / positive PnL | `--report-positive` | `#51D6A0` | `#367552` |
 | Loss / drawdown | `--report-negative` | `#FF7587` | `#AF494A` |
 | Additional comparison | `--report-violet` | `#B49AFF` | `#7154A3` |
 | Additional comparison | `--report-gold` | `#F3CE59` | `#876A1E` |

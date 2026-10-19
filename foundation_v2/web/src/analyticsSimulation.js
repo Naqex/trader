@@ -4,7 +4,7 @@ export function monteCarlo(config, ledger = []) {
   if (!Number.isInteger(simulations) || simulations < 1 || simulations > 1000 || !Number.isInteger(trades) || trades < 1 || trades > 1000 || simulations * trades > 250000 || !known(capital) || capital <= 0 || !Number.isInteger(seed) || seed < 0 || seed > 4294967295) throw new Error('Giới hạn: 1–1.000 lượt, 1–1.000 lệnh, tối đa 250.000 bước; vốn > 0 và seed 0–4.294.967.295.')
   const samples = ledger.map(row => number(row.net_pnl))
   const bootstrap = config.method === 'ledger'
-  if (bootstrap && (!samples.length || samples.some(value => value === null))) throw new Error('Ledger phải có Net P/L đầy đủ để lấy mẫu.')
+  if (bootstrap && (!samples.length || samples.some(value => value === null))) throw new Error('Ledger phải có Net PnL đầy đủ để lấy mẫu.')
   const win = Number(config.averageWin), loss = Number(config.averageLoss), rate = Number(config.winRate)
   if (!bootstrap && (![win, loss, rate].every(Number.isFinite) || win < 0 || loss < 0 || rate < 0 || rate > 100)) throw new Error('Lãi/lỗ trung bình phải ≥ 0; win rate từ 0 đến 100%.')
   const random = seededRandom(seed), paths = [], endings = [], drawdowns = []

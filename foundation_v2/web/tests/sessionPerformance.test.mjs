@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { closeTime, sessionPeriods } from '../src/sessionPerformanceModel.js'
 
-test('historical period P/L uses UTC close times, a Monday week and the last close rather than wall clock', () => {
+test('historical period PnL uses UTC close times, a Monday week and the last close rather than wall clock', () => {
   const ledger = [
     { close_time_utc: '2024-01-31T23:59:00Z', net_pnl: 10 },
     { close_time_utc: '2024-02-04T23:59:00Z', net_pnl: -4 },

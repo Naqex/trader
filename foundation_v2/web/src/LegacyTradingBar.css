@@ -20,6 +20,10 @@
 .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-trading-bar .chart-trading-account { gap: 6px; }
 .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .legacy-trading-bar .legacy-balance-pill { display: inline-flex; align-items: center; gap: 8px; width: auto; height: 32px; padding: 0 12px; background: var(--chart-hover); border-radius: 18px; color: var(--chart-text); white-space: nowrap; }
 .legacy-balance-pill strong { font-size: 12px; font-weight: 500; }
+.legacy-floating-pnl { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:var(--ds-weight-control,500); font-variant-numeric:tabular-nums; }
+.legacy-floating-pnl > span { font-size:8px; }
+.legacy-balance-pill .is-gain, .legacy-account-details .is-gain { color:var(--project-positive); }
+.legacy-balance-pill .is-loss, .legacy-account-details .is-loss { color:var(--project-negative); }
 .legacy-trading-bar .legacy-analytics-link { gap: 5px; padding-inline: 10px; font-size: 12px; }
 .is-legacy-chart .chart-trading-account .legacy-prop-rules-link { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; gap: 6px; width: auto; height: 32px; min-height: 32px; padding-inline: 10px; border: 1px solid var(--chart-line); border-radius: var(--ds-radius-pill); white-space: nowrap; font-size: var(--ds-font-meta); color: var(--chart-text); }
 .legacy-trading-bar .legacy-prop-rules-link:hover:not(:disabled) { color: var(--chart-text); background: var(--chart-hover); }

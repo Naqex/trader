@@ -39,7 +39,7 @@ export function calendarWeeks(month, payload, deals, filters = LIVE_FILTERS) {
   return Array.from({ length: Math.ceil((offset + days) / 7) }, (_, week) => Array.from({ length: 7 }, (_, weekday) => {
     const date = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), week * 7 + weekday - offset + 1)), key = date.toISOString().slice(0, 10)
     const inMonth = key.startsWith(month), rows = buckets.get(key) || []
-    // Edge days may be partial; no rows there cannot prove zero P/L.
+    // Edge days may be partial; no rows there cannot prove zero PnL.
     const covered = Boolean(payload?.account && Array.isArray(payload.deals) && Number.isFinite(history) && Number.isFinite(cutoff) && history < cutoff && key > firstCovered && key < lastCovered
       && (filters.account === 'all' || filters.account === payload.account.account_ref)
       && (!filters.from || key >= filters.from) && (!filters.to || key <= filters.to)

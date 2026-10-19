@@ -48,7 +48,7 @@ function FilterFields({ draft, setDraft, payload, onPreview }) {
   return <>
     {select('asset', 'Assets', [{ value: 'all', label: 'All assets' }, ...assets.map(value => ({ value, label: value, localize: false }))], { searchable: true })}
     {select('side', 'Side', [{ value: 'all', label: 'All sides' }, { value: '0', label: 'Buy' }, { value: '1', label: 'Sell' }])}
-    {select('outcome', 'Deal result', [{ value: 'all', label: 'All results' }, { value: 'gain', label: 'Positive P/L' }, { value: 'loss', label: 'Negative P/L' }, { value: 'flat', label: 'Zero P/L' }])}
+    {select('outcome', 'Deal result', [{ value: 'all', label: 'All results' }, { value: 'gain', label: 'Positive PnL' }, { value: 'loss', label: 'Negative PnL' }, { value: 'flat', label: 'Zero PnL' }])}
     <Action icon="tags" onClick={() => onPreview('Tags')}>{t('Tags')}</Action>
     {select('account', 'Accounts', [{ value: 'all', label: 'All accounts' }, ...(payload?.account ? [{ value: payload.account.account_ref, label: String(payload.account.account_ref), localize: false }] : [])])}
     {select('day', 'Day', [{ value: 'all', label: 'All days' }, ...['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((label, i) => ({ value: String(i), label }))])}
@@ -61,7 +61,7 @@ function FilterBar({ section, payload, draft, setDraft, applied, onApply, onClea
   const { t } = useTestingLocale(), [show, setShow] = useState(false)
   const chips = Object.entries(applied).filter(([key, value]) => value !== LIVE_FILTERS[key] && value !== '')
   const labels = { asset: 'Assets', side: 'Side', outcome: 'Deal result', account: 'Accounts', day: 'Day', timezone: 'Timezone', from: 'Start', to: 'End' }
-  const values = { side: { 0: 'Buy', 1: 'Sell' }, outcome: { gain: 'Positive P/L', loss: 'Negative P/L', flat: 'Zero P/L' }, day: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] }
+  const values = { side: { 0: 'Buy', 1: 'Sell' }, outcome: { gain: 'Positive PnL', loss: 'Negative PnL', flat: 'Zero PnL' }, day: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] }
   const fields = <><FilterFields draft={draft} setDraft={setDraft} payload={payload} onPreview={onPreview} /><Action primary onClick={() => onApply()}>{t('Áp dụng')}</Action></>
   return <section className="live-filters" aria-label={t('Filters')}>
     {section === 'analytics' ? <div className="live-filter-fields">{fields}</div> : <>
@@ -79,11 +79,11 @@ function FilterBar({ section, payload, draft, setDraft, applied, onApply, onClea
 function Summary({ payload, deals, sidebar = false }) {
   const { t, fmt } = useTestingLocale(), available = Boolean(payload?.account && Array.isArray(payload.deals))
   const summary = summarizeDeals(deals, available), currency = payload?.account?.currency || ''
-  const metrics = [['Net deal P/L', summary.net, currency], ['Filled deals', summary.count, ''], ['Return (%)', null, '']]
+  const metrics = [['Net deal PnL', summary.net, currency], ['Filled deals', summary.count, ''], ['Return (%)', null, '']]
   return <section className={sidebar ? 'live-analytics-side' : 'live-metrics'} aria-label={t('Analytics')}>
     {sidebar && <h2><TestingIcon kind="chart" />{t('Analytics')}</h2>}
     {!available || !deals.length ? <Empty title="No analytics yet" copy={available ? 'No deals in this selection.' : 'Select a connected account to view analytics.'} /> : <>
-      <dl>{metrics.map(([label, value, suffix]) => <div key={label}><dt>{t(label)}</dt><dd className={label === 'Net deal P/L' ? summary.net < 0 ? 'is-loss' : summary.net > 0 ? 'is-gain' : '' : ''}>{fmt(value, suffix ? ` ${suffix}` : '', label === 'Filled deals' ? 0 : 2)}</dd></div>)}</dl>
+      <dl>{metrics.map(([label, value, suffix]) => <div key={label}><dt>{t(label)}</dt><dd className={label === 'Net deal PnL' ? summary.net < 0 ? 'is-loss' : summary.net > 0 ? 'is-gain' : '' : ''}>{fmt(value, suffix ? ` ${suffix}` : '', label === 'Filled deals' ? 0 : 2)}</dd></div>)}</dl>
     </>}
   </section>
 }
@@ -93,11 +93,11 @@ function PnlCurve({ deals, currency, emptyTitle = 'No analytics yet' }) {
   const values = [0, ...known.map(point => point.value)], min = Math.min(...values), max = Math.max(...values), range = max - min || 1
   const x = i => 70 + i / Math.max(1, series.length - 1) * 700, y = value => 240 - (value - min) / range * 180
   const path = series.map((point, i) => point.value === null ? '' : `${i === 0 || series[i - 1].value === null ? 'M' : 'L'}${x(i)},${y(point.value)}`).join(' ')
-  return <section className="live-pnl-curve"><div className="live-section-heading"><h2>{t('Cumulative deal P/L')}</h2><span className="live-muted">{currency || '—'}</span></div>
-    {known.length ? <><svg viewBox="0 0 800 290" role="img" aria-label={t('Cumulative deal P/L')} preserveAspectRatio="xMidYMid meet">
+  return <section className="live-pnl-curve"><div className="live-section-heading"><h2>{t('Cumulative deal PnL')}</h2><span className="live-muted">{currency || '—'}</span></div>
+    {known.length ? <><svg viewBox="0 0 800 290" role="img" aria-label={t('Cumulative deal PnL')} preserveAspectRatio="xMidYMid meet">
       {[0, 1, 2, 3].map(i => { const value = min + range * i / 3; return <g key={i}><line x1="70" x2="770" y1={y(value)} y2={y(value)} /><text x="60" y={y(value)} textAnchor="end" dominantBaseline="middle">{fmt(value)}</text></g> })}
       <path d={path} className="live-pnl-line" />{known.length === 1 && <circle cx={x(0)} cy={y(known[0].value)} r="4" className="live-pnl-point" />}
-    </svg><div className="live-curve-range"><span>{dayKey(series[0].time)}</span><span>{dayKey(series.at(-1).time)} · UTC</span></div>{series.some(point => point.value === null) && <p className="live-muted">{t('Curve stops where deal costs are incomplete.')}</p>}</> : <Empty title={emptyTitle} copy="P/L will appear when complete deal data is available." />}
+    </svg><div className="live-curve-range"><span>{dayKey(series[0].time)}</span><span>{dayKey(series.at(-1).time)} · UTC</span></div>{series.some(point => point.value === null) && <p className="live-muted">{t('Curve stops where deal costs are incomplete.')}</p>}</> : <Empty title={emptyTitle} copy="PnL will appear when complete deal data is available." />}
   </section>
 }
 
@@ -113,7 +113,7 @@ function Calendar({ payload, deals, filters, onPreview }) {
     <div className="live-calendar-toolbar"><div className="live-month-nav"><div className="live-month-step"><Action compact label="Previous month" onClick={() => shift(-1)}>‹</Action><h2 aria-live="polite">{first.toLocaleDateString(locale, { month: 'long', timeZone: 'UTC' })}</h2><Action compact label="Next month" onClick={() => shift(1)}>›</Action></div><div className="live-month-step"><Action compact label="Previous year" onClick={() => shift(-12)}>‹</Action><strong>{first.getUTCFullYear()}</strong><Action compact label="Next year" onClick={() => shift(12)}>›</Action></div></div>
       <div className="live-toolbar-actions"><span className="live-money-mode">{currency || t('Amount')}</span><Action disabled title={t('Percentage requires opening capital.')}>%</Action><Action onClick={() => onPreview('Share')}>{t('Share')}</Action><Action icon="plus" onClick={() => onPreview('Monthly review')}>{t('Monthly review')}</Action></div>
     </div>
-    <div className="live-calendar-scroll" role="region" aria-label={`${t('P/L calendar')} · ${filters.timezone}`} tabIndex={0}><div className="live-calendar-grid">
+    <div className="live-calendar-scroll" role="region" aria-label={`${t('PnL calendar')} · ${filters.timezone}`} tabIndex={0}><div className="live-calendar-grid">
       {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su', 'Total'].map(day => <div className="live-calendar-dayname" key={day}>{t(day)}</div>)}
       {weeks.map((week, index) => <div className="live-calendar-week" key={week[0].key}>{week.map(day => <button type="button" key={day.key} className={`live-calendar-cell${!day.inMonth ? ' is-outside' : ''}${day.net > 0 ? ' is-gain' : day.net < 0 ? ' is-loss' : ''}`} disabled={!day.inMonth} aria-pressed={selected === day.key} aria-label={`${displayDate(day.key)} · ${fmt(day.net, currency ? ` ${currency}` : '')}`} onClick={() => setSelected(selected === day.key ? '' : day.key)}>
         <span className="live-day-number">{day.date.getUTCDate()}</span><strong>{day.inMonth ? fmt(day.net) : ''}</strong>{day.count !== null && day.count > 0 && <small>{t('{count} filled deals', { count: day.count })}</small>}
@@ -134,8 +134,8 @@ function Notes({ onPreview }) {
 
 function Tags({ onPreview }) {
   const { t } = useTestingLocale(), [search, setSearch] = useState(''), [list, setList] = useState(true)
-  return <section className="live-tag-analysis"><div className={`live-tag-grid${list ? '' : ' is-hidden'}`}><section className="live-tag-chart"><div className="live-section-heading"><h2>{t('P/L by tag')}</h2><Action onClick={() => setList(!list)}>{t(list ? 'Hide tag list' : 'Show tag list')}</Action></div><Empty title="No tag analysis yet" copy="Synced broker deals do not include journal tags." icon="tags" /></section>{list && <section className="live-tag-list" aria-label={t('Tag list')}><Search label="Search tags" value={search} onChange={setSearch} /><p className="live-muted">{t('No tags available.')}</p></section>}</div>
-    <div className="live-table-scroll" tabIndex={0} role="region" aria-label={t('Tag summary')}><table><thead><tr>{['Tag group', 'Trades', 'Win rate', 'Net P/L'].map(label => <th key={label}>{t(label)}</th>)}</tr></thead><tbody><tr><td>{t('Overall')}</td><td>—</td><td>—</td><td>—</td></tr></tbody></table></div>
+  return <section className="live-tag-analysis"><div className={`live-tag-grid${list ? '' : ' is-hidden'}`}><section className="live-tag-chart"><div className="live-section-heading"><h2>{t('PnL by tag')}</h2><Action onClick={() => setList(!list)}>{t(list ? 'Hide tag list' : 'Show tag list')}</Action></div><Empty title="No tag analysis yet" copy="Synced broker deals do not include journal tags." icon="tags" /></section>{list && <section className="live-tag-list" aria-label={t('Tag list')}><Search label="Search tags" value={search} onChange={setSearch} /><p className="live-muted">{t('No tags available.')}</p></section>}</div>
+    <div className="live-table-scroll" tabIndex={0} role="region" aria-label={t('Tag summary')}><table><thead><tr>{['Tag group', 'Trades', 'Win rate', 'Net PnL'].map(label => <th key={label}>{t(label)}</th>)}</tr></thead><tbody><tr><td>{t('Overall')}</td><td>—</td><td>—</td><td>—</td></tr></tbody></table></div>
     <details className="live-smart-picks"><summary>{t('Smart Picks')}</summary><p>{t('Interface preview')}</p><Action icon="plus" onClick={() => onPreview('Smart Picks')}>{t('Explore')}</Action></details>
   </section>
 }

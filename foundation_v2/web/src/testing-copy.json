@@ -21,8 +21,8 @@
   "Số tiền rủi ro": { "vi":"Số tiền rủi ro", "en":"Risk amount" },
   "Khối lượng (trước phí)": { "vi":"Khối lượng (trước phí)", "en":"Size (before costs)" },
   "Áp dụng khối lượng": { "vi":"Áp dụng khối lượng", "en":"Apply size" },
-  "Ước tính tại SL (trước phí)": { "vi":"Ước tính tại SL (trước phí)", "en":"Estimated P/L at SL (before costs)" },
-  "Ước tính tại TP (trước phí)": { "vi":"Ước tính tại TP (trước phí)", "en":"Estimated P/L at TP (before costs)" },
+  "Ước tính tại SL (trước phí)": { "vi":"Ước tính tại SL (trước phí)", "en":"Estimated PnL at SL (before costs)" },
+  "Ước tính tại TP (trước phí)": { "vi":"Ước tính tại TP (trước phí)", "en":"Estimated PnL at TP (before costs)" },
   "Khối lượng (lot)": { "vi": "Khối lượng (lot)", "en": "Volume (lots)" },
   "Hướng": { "vi": "Hướng", "en": "Side" },
   "entry gap invalidates the submitted protection bracket": {"vi": "Giá gap vượt vùng TP/SL đã đặt. Hãy chỉnh TP/SL hoặc hủy lệnh chờ.", "en": "entry gap invalidates the submitted protection bracket"},
@@ -223,8 +223,8 @@
   "Thông tin tài khoản": { "vi": "Thông tin tài khoản", "en": "Account details" },
   "Thu nhỏ danh sách lệnh": { "vi": "Thu nhỏ danh sách lệnh", "en": "Restore positions panel" },
   "Mở rộng danh sách lệnh": { "vi": "Mở rộng danh sách lệnh", "en": "Maximize positions panel" },
-  "Realized PnL": { "vi": "P/L đã chốt", "en": "Realized PnL" },
-  "Unrealized PnL": { "vi": "P/L chưa chốt", "en": "Unrealized PnL" },
+  "Realized PnL": { "vi": "PnL đã chốt", "en": "Realized PnL" },
+  "Unrealized PnL": { "vi": "PnL chưa chốt", "en": "Unrealized PnL" },
   "Khoảng cách {name}": { "vi": "Khoảng cách {name}", "en": "{name} distance" },
   "Đơn vị {name}": { "vi": "Đơn vị {name}", "en": "{name} units" },
   "Preset áp dụng vào lệnh nháp; bạn vẫn xác nhận trước khi đặt lệnh.": { "vi": "Preset áp dụng vào lệnh nháp; bạn vẫn xác nhận trước khi đặt lệnh.", "en": "The preset prepares an order draft; confirm before placing it." },
@@ -1161,24 +1161,24 @@
     "en": "No trade analytics are available."
   },
   "Chưa đủ ngày đóng hoặc Net P/L để tính kết quả theo thời gian.": {
-    "vi": "Thiếu ngày đóng hoặc P/L ròng để tính kết quả theo thời gian.",
-    "en": "Close dates or net P/L are missing for time-based results."
+    "vi": "Thiếu ngày đóng hoặc PnL ròng để tính kết quả theo thời gian.",
+    "en": "Close dates or net PnL are missing for time-based results."
   },
   "Chỉ số phiên": {
     "vi": "Chỉ số phiên",
     "en": "Session metrics"
   },
   "Total P/L": {
-    "vi": "P/L tổng",
-    "en": "Total P/L"
+    "vi": "PnL tổng",
+    "en": "Total PnL"
   },
   "Win rate": {
     "vi": "Tỷ lệ thắng",
     "en": "Win rate"
   },
   "Net · giao dịch đóng": {
-    "vi": "P/L ròng · giao dịch đã đóng",
-    "en": "Net P/L · closed trades"
+    "vi": "PnL ròng · giao dịch đã đóng",
+    "en": "Net PnL · closed trades"
   },
   "Lời/lỗ trung bình": {
     "vi": "Tỷ số lãi/lỗ trung bình",
@@ -1197,16 +1197,16 @@
     "en": "Average win / average loss magnitude"
   },
   "P/L tháng": {
-    "vi": "P/L tháng",
-    "en": "Monthly P/L"
+    "vi": "PnL tháng",
+    "en": "Monthly PnL"
   },
   "P/L tuần": {
-    "vi": "P/L tuần",
-    "en": "Weekly P/L"
+    "vi": "PnL tuần",
+    "en": "Weekly PnL"
   },
   "P/L ngày": {
-    "vi": "P/L ngày",
-    "en": "Daily P/L"
+    "vi": "PnL ngày",
+    "en": "Daily PnL"
   },
   "Chưa có ngày đóng": {
     "vi": "Chưa có ngày đóng lệnh",
@@ -1233,8 +1233,8 @@
     "en": "Symbol"
   },
   "Net P/L": {
-    "vi": "P/L ròng",
-    "en": "Net P/L"
+    "vi": "PnL ròng",
+    "en": "Net PnL"
   },
   "Số dòng": {
     "vi": "Số dòng",
@@ -1541,8 +1541,8 @@
     "en": "Order type"
   },
   "Return": {
-    "vi": "P/L ròng",
-    "en": "Net P/L"
+    "vi": "PnL ròng",
+    "en": "Net PnL"
   },
   "Return (%)": {
     "vi": "Tỷ suất (%)",
@@ -1581,8 +1581,8 @@
     "en": "Exit price"
   },
   "Gross PnL": {
-    "vi": "P/L trước phí",
-    "en": "Gross P/L"
+    "vi": "PnL trước phí",
+    "en": "Gross PnL"
   },
   "Fees": {
     "vi": "Phí",
@@ -1766,7 +1766,7 @@
   },
   "Balance từ lệnh đóng · không gồm floating P/L": {
     "vi": "Số dư sau lệnh đóng · không gồm lãi/lỗ thả nổi",
-    "en": "Closed balance · excludes floating P/L"
+    "en": "Closed balance · excludes floating PnL"
   },
   "Lệnh đã lọc, tính từ vốn ban đầu · không phải lịch sử tài khoản": {
     "vi": "Giao dịch đã lọc, tính từ vốn ban đầu · không phải lịch sử tài khoản",
@@ -1777,12 +1777,12 @@
     "en": "Balance after closed trades"
   },
   "Net P/L tích lũy": {
-    "vi": "P/L ròng tích lũy",
-    "en": "Cumulative net P/L"
+    "vi": "PnL ròng tích lũy",
+    "en": "Cumulative net PnL"
   },
   "Net P/L / số lệnh đóng": {
-    "vi": "P/L ròng / số giao dịch đã đóng",
-    "en": "Net P/L / closed-trade count"
+    "vi": "PnL ròng / số giao dịch đã đóng",
+    "en": "Net PnL / closed-trade count"
   },
   "Chưa có tổng lỗ để chia": {
     "vi": "Chưa có tổng lỗ để tính",
@@ -1897,8 +1897,8 @@
     "en": "Calculated trades"
   },
   "Scenario net P/L": {
-    "vi": "P/L ròng theo kịch bản",
-    "en": "Scenario net P/L"
+    "vi": "PnL ròng theo kịch bản",
+    "en": "Scenario net PnL"
   },
   "Chỉ mẫu tính được, không phải tổng toàn phiên": {
     "vi": "Chỉ gồm giao dịch tính được; không phải tổng toàn phiên",
@@ -1945,8 +1945,8 @@
     "en": "Method"
   },
   "Lấy mẫu Net P/L từ ledger": {
-    "vi": "Lấy mẫu P/L ròng từ danh sách giao dịch",
-    "en": "Sample net P/L from the trade ledger"
+    "vi": "Lấy mẫu PnL ròng từ danh sách giao dịch",
+    "en": "Sample net PnL from the trade ledger"
   },
   "Win / loss cấu hình": {
     "vi": "Lãi/lỗ theo cấu hình",
@@ -2673,8 +2673,8 @@
     "en": "The dataset lacks instrument or timeframe information."
   },
   "Floating P/L": {
-    "vi": "P/L thả nổi",
-    "en": "Floating P/L"
+    "vi": "PnL thả nổi",
+    "en": "Floating PnL"
   },
   "Vị thế đang mở": {
     "vi": "Vị thế đang mở",
@@ -3025,8 +3025,8 @@
     "en": "Use 1–1,000 runs, 1–1,000 trades per run, and at most 250,000 steps. Capital must be positive; the seed must be an integer from 0 to 4,294,967,295."
   },
   "Ledger phải có Net P/L đầy đủ để lấy mẫu.": {
-    "vi": "Cần P/L ròng đầy đủ của các giao dịch để lấy mẫu.",
-    "en": "All sampled trades must have net P/L values."
+    "vi": "Cần PnL ròng đầy đủ của các giao dịch để lấy mẫu.",
+    "en": "All sampled trades must have net PnL values."
   },
   "Lãi/lỗ trung bình phải ≥ 0; win rate từ 0 đến 100%.": {
     "vi": "Lãi trung bình và độ lớn lỗ trung bình không được âm; tỷ lệ thắng phải từ 0 đến 100%.",
@@ -3465,8 +3465,8 @@
     "en": "Balance basis"
   },
   "Biên bất lợi quan sát của những lệnh có Net P/L > 0": {
-    "vi": "Biên giá bất lợi quan sát được của giao dịch có P/L ròng > 0",
-    "en": "Observed adverse price excursion on trades with net P/L > 0"
+    "vi": "Biên giá bất lợi quan sát được của giao dịch có PnL ròng > 0",
+    "en": "Observed adverse price excursion on trades with net PnL > 0"
   },
   "Biên giá bất lợi quan sát được trong lệnh; nến đóng intrabar bị loại để tránh dùng giá sau khi thoát": {
     "vi": "Biên giá bất lợi quan sát được trong lệnh; loại nến thoát lệnh trong nến để tránh dùng giá sau khi thoát",
@@ -3501,8 +3501,8 @@
     "en": "Insufficient data for analytics"
   },
   "Chưa đủ ngày đóng và Net P/L.": {
-    "vi": "Chưa đủ ngày đóng lệnh và P/L ròng.",
-    "en": "Close dates and net P/L are insufficient."
+    "vi": "Chưa đủ ngày đóng lệnh và PnL ròng.",
+    "en": "Close dates and net PnL are insufficient."
   },
   "Chỉ dùng ledger đóng tại cutoff đã chọn. Các bộ lọc tạo lại đường số dư từ vốn ban đầu. — là dữ liệu chưa được nguồn cung cấp.": {
     "vi": "Chỉ dùng giao dịch đã đóng tại mốc đang chọn. Bộ lọc dựng lại đường số dư từ vốn ban đầu. — nghĩa là nguồn chưa cung cấp dữ liệu.",
@@ -3926,7 +3926,7 @@
   },
   "· không gồm lãi/lỗ thả nổi": {
     "vi": "· không gồm lãi/lỗ thả nổi",
-    "en": "· excludes floating P/L"
+    "en": "· excludes floating PnL"
   },
   "· net · UTC": {
     "vi": "· ròng · UTC",
@@ -4160,7 +4160,7 @@
   },
   "Không gồm lãi/lỗ thả nổi": {
     "vi": "Không gồm lãi/lỗ thả nổi",
-    "en": "Excludes floating P/L"
+    "en": "Excludes floating PnL"
   },
   "Không tải được thành phần giao diện.": {
     "vi": "Không tải được thành phần giao diện.",
@@ -4551,8 +4551,8 @@
     "en": "Current candle OHLC"
   },
   "P/L": {
-    "vi": "P/L",
-    "en": "P/L"
+    "vi": "PnL",
+    "en": "PnL"
   },
   "Panel replay": {
     "vi": "Bảng điều khiển phát lại",
@@ -4711,8 +4711,8 @@
     "en": "· L"
   },
   "· P/L": {
-    "vi": "· P/L",
-    "en": "· P/L"
+    "vi": "· PnL",
+    "en": "· PnL"
   },
   "· V": {
     "vi": "· V",
@@ -5023,16 +5023,16 @@
     "en": "All results"
   },
   "Positive P/L": {
-    "vi": "P/L dương",
-    "en": "Positive P/L"
+    "vi": "PnL dương",
+    "en": "Positive PnL"
   },
   "Negative P/L": {
-    "vi": "P/L âm",
-    "en": "Negative P/L"
+    "vi": "PnL âm",
+    "en": "Negative PnL"
   },
   "Zero P/L": {
-    "vi": "P/L bằng 0",
-    "en": "Zero P/L"
+    "vi": "PnL bằng 0",
+    "en": "Zero PnL"
   },
   "All accounts": {
     "vi": "Tất cả tài khoản",
@@ -5047,8 +5047,8 @@
     "en": "Start date must not be after end date."
   },
   "Net deal P/L": {
-    "vi": "P/L ròng từ deal",
-    "en": "Net deal P/L"
+    "vi": "PnL ròng từ deal",
+    "en": "Net deal PnL"
   },
   "Filled deals": {
     "vi": "Deal khớp lệnh",
@@ -5071,12 +5071,12 @@
     "en": "Includes deal costs. Return requires opening capital; deals have not been paired into trades."
   },
   "Cumulative deal P/L": {
-    "vi": "P/L tích lũy từ deal",
-    "en": "Cumulative deal P/L"
+    "vi": "PnL tích lũy từ deal",
+    "en": "Cumulative deal PnL"
   },
   "P/L will appear when complete deal data is available.": {
-    "vi": "P/L sẽ hiển thị khi có dữ liệu deal và phí đầy đủ.",
-    "en": "P/L will appear when complete deal data is available."
+    "vi": "PnL sẽ hiển thị khi có dữ liệu deal và phí đầy đủ.",
+    "en": "PnL will appear when complete deal data is available."
   },
   "Curve stops where deal costs are incomplete.": {
     "vi": "Biểu đồ dừng tại deal chưa có đầy đủ phí.",
@@ -5119,12 +5119,12 @@
     "en": "Monthly review"
   },
   "Booked deal P/L · {zone}": {
-    "vi": "P/L đã ghi nhận từ deal · {zone}",
-    "en": "Booked deal P/L · {zone}"
+    "vi": "PnL đã ghi nhận từ deal · {zone}",
+    "en": "Booked deal PnL · {zone}"
   },
   "P/L calendar": {
-    "vi": "Lịch P/L",
-    "en": "P/L calendar"
+    "vi": "Lịch PnL",
+    "en": "PnL calendar"
   },
   "{count} filled deals": {
     "vi": "{count} deal khớp lệnh",
@@ -5175,8 +5175,8 @@
     "en": "Add note"
   },
   "P/L by tag": {
-    "vi": "P/L theo nhãn",
-    "en": "P/L by tag"
+    "vi": "PnL theo nhãn",
+    "en": "PnL by tag"
   },
   "Hide tag list": {
     "vi": "Ẩn danh sách nhãn",
@@ -5481,8 +5481,8 @@
   "Lệnh trong phiên replay": { "vi": "Lệnh trong phiên replay", "en": "Replay session positions" },
   "Trạng thái lệnh": { "vi": "Trạng thái lệnh", "en": "Order status" },
   "Vị thế đã đóng": { "vi": "Vị thế đã đóng", "en": "Closed Positions" },
-  "P/L chưa chốt": { "vi": "P/L chưa chốt", "en": "Unrealized" },
-  "P/L đã chốt": { "vi": "P/L đã chốt", "en": "Realized" },
+  "P/L chưa chốt": { "vi": "PnL chưa chốt", "en": "Unrealized" },
+  "P/L đã chốt": { "vi": "PnL đã chốt", "en": "Realized" },
   "Phí hoa hồng": { "vi": "Phí hoa hồng", "en": "Commission" },
   "Không có lệnh trong mục này.": { "vi": "Không có lệnh trong mục này.", "en": "No positions in this section." },
   "Chưa có dữ liệu lệnh tại cutoff này.": { "vi": "Chưa có dữ liệu lệnh tại cutoff này.", "en": "Position data is unavailable at this cutoff." },

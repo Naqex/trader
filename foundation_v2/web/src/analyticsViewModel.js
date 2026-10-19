@@ -79,7 +79,7 @@ export function buildAnalyticsModel(result, reportKind = 'app') {
   const endingBalance = firstKnown(metrics.ending_closed_trade_balance, metrics.ending_balance, curve[curve.length - 1]?.value)
   const strategy = result?.strategy_version || result?.playbook_id || result?.engine_version || 'N/A'
   const range = { start: dateLabel(observedStart || ledgerDates[0]?.toISOString()), end: dateLabel(observedEnd || ledgerDates[ledgerDates.length - 1]?.toISOString()) }
-  const takeaway = !tradeCount ? 'Chưa có giao dịch đóng.' : !finite(netPnl) ? `${formatNumber(tradeCount, 0)} giao dịch đóng · Net P/L chưa có dữ liệu.` : `${formatNumber(tradeCount, 0)} giao dịch đóng · Net P/L ${formatNumber(netPnl, 2, result?.account_currency || 'account units')}`
+  const takeaway = !tradeCount ? 'Chưa có giao dịch đóng.' : !finite(netPnl) ? `${formatNumber(tradeCount, 0)} giao dịch đóng · Net PnL chưa có dữ liệu.` : `${formatNumber(tradeCount, 0)} giao dịch đóng · Net PnL ${formatNumber(netPnl, 2, result?.account_currency || 'account units')}`
   return {
     result: result || null,
     metrics,

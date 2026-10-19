@@ -27,7 +27,7 @@ export default function LegacyTradingBar({ order, analyticsHref, propRulesAction
   positionsLayout.current = { open: positionsOpen, maximized, height, overflowReserve }
   useEffect(() => () => { clearTimeout(hideBalance.current); cancelAnimationFrame(resizeFrame.current) }, [])
   useEffect(() => { try { localStorage.setItem(storageKey, JSON.stringify(preset)) } catch { /* The confirmation flow works without browser storage. */ } }, [storageKey, preset])
-  const execution = order.execution, account = order.account, tickPending = order.tick.options === null && !order.executionConfig?.forceBar, disabled = order.disabled || Boolean(order.active) || (!execution && (!order.canInitialize || tickPending)), currency = execution?.cost_model?.account_ccy || order.configuredCurrency || order.costs?.account_ccy
+  const execution = order.execution, account = order.account, tickPending = order.tick.options === null && !order.executionConfig?.forceBar, disabled = order.disabled || Boolean(order.active) || (!execution && (!order.canInitialize || tickPending)), currency = account?.account_ccy || execution?.cost_model?.account_ccy || order.configuredCurrency || order.costs?.account_ccy
   const money = value => {
     const amount = finiteNumber(value)
     if (amount === null) return '—'
@@ -35,6 +35,9 @@ export default function LegacyTradingBar({ order, analyticsHref, propRulesAction
     try { return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 2 }).format(amount) } catch { return fmt(amount, ' ' + currency) }
   }
   const realized = finiteNumber(account?.balance) !== null && finiteNumber(account?.starting_balance) !== null ? Number(account.balance) - Number(account.starting_balance) : null
+  const floating = finiteNumber(account?.floating_pl)
+  const hasPosition = account?.open_position_count != null ? Number(account.open_position_count) > 0 : order.assetStates ? Object.values(order.assetStates).some(asset => Boolean(asset.execution?.position)) : Boolean(execution?.position)
+  const pnlTone = value => value > 0 ? 'is-gain' : value < 0 ? 'is-loss' : ''
   const [quantity, setQuantity] = useState(() => String(order.instrument?.quantity_min || '0.01'))
   useEffect(() => { setQuantity(String(order.instrument?.quantity_min || '0.01')) }, [workspace, sessionId, order.instrument?.instrument_id])
   const openOrder = side => { setError(''); order.quickTrade(side, quantity, preset) }
@@ -156,7 +159,7 @@ export default function LegacyTradingBar({ order, analyticsHref, propRulesAction
         {readStatus}
         <a className="legacy-analytics-link" href={analyticsHref} aria-label={t('Analytics')} title={t('Analytics')}><ChartIcon name="analytics" /><span>{t('Analytics')}</span></a>
         {propRulesAction && <button type="button" className="legacy-prop-rules-link" data-testid="prop-rules-button" onClick={propRulesAction.onClick}><ChartIcon name="shield" />{propRulesAction.label}</button>}
-        <button type="button" className="legacy-balance-pill" aria-label={t('Thông tin tài khoản')} aria-expanded={Boolean(balanceAnchor)} onPointerEnter={event => { if (event.pointerType === 'mouse' && matchMedia('(hover:hover)').matches) showBalance(event.currentTarget) }} onPointerLeave={dismissBalance} onFocus={event => { if (event.currentTarget.matches(':focus-visible')) showBalance(event.currentTarget) }} onBlur={dismissBalance} onClick={event => balanceAnchor ? setBalanceAnchor(null) : showBalance(event.currentTarget)}><ChartIcon name="wallet" /><strong>{money(account?.balance ?? order.configuredBalance)}</strong></button>
+        <button type="button" className="legacy-balance-pill" aria-label={t('Thông tin tài khoản')} aria-expanded={Boolean(balanceAnchor)} onPointerEnter={event => { if (event.pointerType === 'mouse' && matchMedia('(hover:hover)').matches) showBalance(event.currentTarget) }} onPointerLeave={dismissBalance} onFocus={event => { if (event.currentTarget.matches(':focus-visible')) showBalance(event.currentTarget) }} onBlur={dismissBalance} onClick={event => balanceAnchor ? setBalanceAnchor(null) : showBalance(event.currentTarget)}><ChartIcon name="wallet" /><strong>{money(account ? account.equity : order.configuredBalance)}</strong>{hasPosition && <span className={`legacy-floating-pnl ${pnlTone(floating)}`} aria-label={t('Unrealized PnL')}><span aria-hidden="true">●</span>{floating !== null && floating >= 0 ? '+' : ''}{money(floating)}</span>}</button>
         <button type="button" aria-label={t(positionsOpen ? 'Thu gọn danh sách lệnh' : 'Mở danh sách lệnh')} aria-expanded={positionsOpen} onClick={() => {
           if (positionsOpen) { setMaximized(false); setPositionsOpen(false); return }
           const bounds = resizeBounds()
@@ -167,7 +170,7 @@ export default function LegacyTradingBar({ order, analyticsHref, propRulesAction
     </div>
     <div className="legacy-resizable-positions" hidden={!positionsOpen} style={maximized && !resizing ? undefined : { height: positionsOpen ? height : 0 }}><LegacyPositions execution={execution} assetStates={order.assetStates} symbol={symbol} active={positionsOpen} /></div>
     {error && !scalperAnchor && <p className="legacy-preset-error" role="alert">{t(error)}<button type="button" onClick={() => setError('')} aria-label={t('Đóng thông báo')}>×</button></p>}
-    {balanceAnchor && <LegacyPopover anchor={balanceAnchor} theme={theme} label={t('Thông tin tài khoản')} onClose={() => { clearTimeout(hideBalance.current); setBalanceAnchor(null) }}><dl className="legacy-account-details" onPointerEnter={() => clearTimeout(hideBalance.current)} onPointerLeave={dismissBalance}>{(account ? [['Equity', account.equity], ['Realized PnL', realized], ['Unrealized PnL', account.floating_pl]] : [['Account Balance', order.configuredBalance]]).map(([label, value]) => <div key={label}><dt>{t(label)}</dt><dd>{money(value)}</dd></div>)}</dl></LegacyPopover>}
+    {balanceAnchor && <LegacyPopover anchor={balanceAnchor} theme={theme} label={t('Thông tin tài khoản')} onClose={() => { clearTimeout(hideBalance.current); setBalanceAnchor(null) }}><dl className="legacy-account-details" onPointerEnter={() => clearTimeout(hideBalance.current)} onPointerLeave={dismissBalance}>{(account ? [['Equity', account.equity], ['Realized PnL', realized], ['Unrealized PnL', account.floating_pl]] : [['Account Balance', order.configuredBalance]]).map(([label, value]) => <div key={label}><dt>{t(label)}</dt><dd className={label === 'Equity' || label === 'Account Balance' ? '' : pnlTone(finiteNumber(value))}>{money(value)}</dd></div>)}</dl></LegacyPopover>}
     {scalperAnchor && <LegacyModal theme={theme} label="Scalper mode" className="legacy-scalper-modal" onClose={() => { setScalperAnchor(null); setError('') }}><form className="legacy-scalper-settings" onSubmit={event => {
       event.preventDefault()
       try {

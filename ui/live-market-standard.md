@@ -39,7 +39,7 @@ disclosure instead of repeated paragraphs beside the calendar and deal table.
 ## Data and state
 
 `liveWorkspaceModel.js` is the read model. Deal net requires finite numeric
-profit, commission, swap and fee. Deposits and withdrawals never enter deal P/L.
+profit, commission, swap and fee. Deposits and withdrawals never enter deal PnL.
 Missing fees remain unknown. Deal entries/exits are not paired into complete
 trades, so no trade win rate, duration, or equity curve is inferred.
 
@@ -47,7 +47,7 @@ Calendar buckets use the selected IANA timezone. A fully covered empty day can
 show zero. Missing feeds, absent coverage bounds, future days and incomplete
 boundary days remain unknown when they have no recorded deals. Totals explicitly
 cover synced deals only. Percent return requires opening capital and remains
-unavailable when that capital is missing. Analytics plots cumulative deal P/L,
+unavailable when that capital is missing. Analytics plots cumulative deal PnL,
 not account equity; an incomplete net result stops the cumulative curve.
 
 Filters use draft state; Apply commits it. Clear restores the default scope.

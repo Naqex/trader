@@ -150,7 +150,7 @@ try {
     const audit = await page.evaluate(() => axe.run(document.querySelector('.fx-app'), { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21aa'] } }))
     assert.deepEqual(audit.violations, [])
     await page.goto(`${origin}/?view=analytics&workspace=tenant-a&session=${session}&cursor=60`, { waitUntil: 'networkidle' })
-    const netMetric = page.locator('.as-story-metric').filter({ has: page.getByText('Net P/L', { exact: true }) })
+    const netMetric = page.locator('.as-story-metric').filter({ has: page.getByText('Net PnL', { exact: true }) })
     await netMetric.getByText('75', { exact: true }).waitFor()
     await netMetric.getByText('USD · net', { exact: true }).waitFor()
     const ledger = page.getByRole('region', { name: 'Trade ledger, cuộn ngang để xem các cột', exact: true })

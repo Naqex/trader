@@ -370,7 +370,7 @@ export default function ChartOrderPanel({ order, blockedReason, legacy = false, 
       <button type="submit" disabled={disabled || !order.canInitialize || (order.tick.options === null && !order.executionConfig?.forceBar)}>{t("Khởi tạo simulator")}</button>
       {!order.canInitialize && <p>{t("Đang thiếu instrument hoặc timeframe trong dataset.")}</p>}
     </form> : <>
-      <dl className="chart-account"><div><dt>{t("Balance")}</dt><dd>{money(execution.balance, costs?.account_ccy)}</dd></div><div><dt>{t("Equity")}</dt><dd>{money(execution.equity, costs?.account_ccy)}</dd></div><div><dt>{t("Floating P/L")}</dt><dd>{money(execution.floating_pl, costs?.account_ccy)}</dd></div></dl>
+      <dl className="chart-account"><div><dt>{t("Balance")}</dt><dd>{money(execution.balance, costs?.account_ccy)}</dd></div><div><dt>{t("Equity")}</dt><dd>{money(execution.equity, costs?.account_ccy)}</dd></div><div><dt>{t("Floating PnL")}</dt><dd>{money(execution.floating_pl, costs?.account_ccy)}</dd></div></dl>
       <form onSubmit={event => { event.preventDefault(); order.save() }}>
         <h2>{execution.position ? t("Vị thế đang mở") : active ? t("Lệnh chờ nến kế tiếp") : t("Lệnh mới")}</h2>
         <div className="chart-order-sides">{['BUY', 'SELL'].map(side => <button key={side} type="button" aria-pressed={draft.side === side} className={side.toLowerCase()} disabled={disabled || Boolean(active)} onClick={() => order.chooseSide(side)}>{side}</button>)}</div>

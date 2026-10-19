@@ -1,0 +1,134 @@
+{
+  "scope": "Synthetic account snapshots, real preview/native chart; API writes blocked",
+  "cases": [
+    {
+      "width": 1368,
+      "lang": "en",
+      "theme": "dark",
+      "state": "closed-profit",
+      "result": "PASS"
+    },
+    {
+      "width": 1368,
+      "lang": "en",
+      "theme": "dark",
+      "state": "open-profit",
+      "result": "PASS"
+    },
+    {
+      "width": 1368,
+      "lang": "en",
+      "theme": "dark",
+      "state": "open-loss",
+      "result": "PASS"
+    },
+    {
+      "width": 1368,
+      "lang": "en",
+      "theme": "dark",
+      "state": "partial-close",
+      "result": "PASS"
+    },
+    {
+      "width": 1368,
+      "lang": "en",
+      "theme": "dark",
+      "state": "closed-loss",
+      "result": "PASS"
+    },
+    {
+      "width": 1368,
+      "lang": "en",
+      "theme": "dark",
+      "state": "open-zero",
+      "result": "PASS"
+    },
+    {
+      "width": 1368,
+      "lang": "en",
+      "theme": "dark",
+      "state": "other-asset-open",
+      "result": "PASS"
+    },
+    {
+      "width": 1368,
+      "lang": "en",
+      "theme": "dark",
+      "state": "pending-only",
+      "result": "PASS"
+    },
+    {
+      "width": 1368,
+      "lang": "en",
+      "theme": "dark",
+      "state": "unknown",
+      "result": "PASS"
+    },
+    {
+      "width": 390,
+      "lang": "vi",
+      "theme": "light",
+      "state": "closed-profit",
+      "result": "PASS"
+    },
+    {
+      "width": 390,
+      "lang": "vi",
+      "theme": "light",
+      "state": "open-profit",
+      "result": "PASS"
+    },
+    {
+      "width": 390,
+      "lang": "vi",
+      "theme": "light",
+      "state": "open-loss",
+      "result": "PASS"
+    },
+    {
+      "width": 390,
+      "lang": "vi",
+      "theme": "light",
+      "state": "partial-close",
+      "result": "PASS"
+    },
+    {
+      "width": 390,
+      "lang": "vi",
+      "theme": "light",
+      "state": "closed-loss",
+      "result": "PASS"
+    },
+    {
+      "width": 390,
+      "lang": "vi",
+      "theme": "light",
+      "state": "open-zero",
+      "result": "PASS"
+    },
+    {
+      "width": 390,
+      "lang": "vi",
+      "theme": "light",
+      "state": "other-asset-open",
+      "result": "PASS"
+    },
+    {
+      "width": 390,
+      "lang": "vi",
+      "theme": "light",
+      "state": "pending-only",
+      "result": "PASS"
+    },
+    {
+      "width": 390,
+      "lang": "vi",
+      "theme": "light",
+      "state": "unknown",
+      "result": "PASS"
+    }
+  ],
+  "errors": [],
+  "unexpected": [],
+  "result": "PASS"
+}
