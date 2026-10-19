@@ -104,7 +104,6 @@ export default function TradingViewReplayChart(props) {
         }
       })
     }
-    const pauseNative = () => latest.current.onOrderDragStart()
     const publishHeader = interval => {
       if (!cancelled && chartReady && host.current && headerSlots?.market) latest.current.onHeaderSlots?.({ ...headerSlots, saveState, interval: typeof interval === 'string' ? interval : chart.resolution(), chartType: chart.chartType(), compact: host.current.clientWidth < 1180, headerHeight: headerSlots.market.ownerDocument.querySelector('.layout__area--top')?.getBoundingClientRect().height || 38 })
     }
@@ -293,10 +292,10 @@ export default function TradingViewReplayChart(props) {
         }
         instance.current = { widget, adapter, historyReader, chart, refresh, importAnnotations, save, scheduleSave }
         if (!adapter.update(latest.current.rows, latest.current.cutoff, latest.current.stepTail)) { historyReader?.reset(); chart.resetData() }
-        // Pause before native drawing/pan/order gestures, not after a drag ends.
+        // Panning keeps playback running; order drag handles pause separately.
         let replayHoverTimestamp = null
         widget.subscribe('mouse_down', () => {
-          latest.current.onOrderDragStart()
+          if (!['cursor', 'dot', 'arrow_cursor'].includes(widget.selectedLineTool())) latest.current.onOrderDragStart()
           if (!latest.current.selectingReplayBar) return
           // Crosshair updates from the same native pointer event may arrive
           // after mouse_down. Read that event before selecting a known candle.
@@ -316,7 +315,7 @@ export default function TradingViewReplayChart(props) {
           latest.current.onCrosshair?.(row ? { row } : null)
         })
         headerSlots = { save, fitOrder, intervals: adapter.supported,
-          setInterval: value => { if (!cancelled && adapter.supported.includes(value)) { latest.current.onOrderDragStart(); chart.setResolution(value) } },
+          setInterval: value => { if (!cancelled && adapter.supported.includes(value)) chart.setResolution(value) },
           setType: value => { if (!cancelled) { latest.current.onOrderDragStart(); chart.setChartType(value) } },
           action: value => { if (!cancelled) { latest.current.onOrderDragStart(); chart.executeActionById(value) } },
           objects: () => cancelled ? [] : [...chart.getAllStudies().map(item => ({ ...item, kind:'study', visible:chart.getStudyById(item.id).isVisible() })), ...chart.getAllShapes().filter(item => !importedShapes.includes(item.id)).map(item => ({ ...item, kind:'shape', visible:chart.getShapeById(item.id).getProperties().visible !== false }))],
@@ -361,8 +360,6 @@ export default function TradingViewReplayChart(props) {
             headerSlots[key] = slot
           }
           nativeHeader = headerSlots.market.ownerDocument.querySelector('.layout__area--top')
-          nativeHeader.addEventListener('pointerdown', pauseNative, true)
-          nativeHeader.addEventListener('keydown', pauseNative, true)
           nativeHeader.ownerDocument.addEventListener('keydown', saveShortcut, true)
           document.addEventListener('keydown', saveShortcut, true)
           headerObserver = new ResizeObserver(() => {
@@ -397,7 +394,7 @@ export default function TradingViewReplayChart(props) {
       }
     }).catch(error => { if (!cancelled) { clearTimeout(loadingTimer); setStatus('error'); setMessage(String(error.message || error)) } })
     return () => {
-      cancelled = true; clearOrderHandles(); layoutSave?.dispose(); clearTimeout(loadingTimer); headerObserver?.disconnect(); cancelAnimationFrame(resizeFrame); cancelAnimationFrame(publishFrame); resizeFrame = 0; publishFrame = 0; nativeHeader?.removeEventListener('pointerdown', pauseNative, true); nativeHeader?.removeEventListener('keydown', pauseNative, true); nativeHeader?.ownerDocument.removeEventListener('keydown', saveShortcut, true); document.removeEventListener('keydown', saveShortcut, true); instance.current = null
+      cancelled = true; clearOrderHandles(); layoutSave?.dispose(); clearTimeout(loadingTimer); headerObserver?.disconnect(); cancelAnimationFrame(resizeFrame); cancelAnimationFrame(publishFrame); resizeFrame = 0; publishFrame = 0; nativeHeader?.ownerDocument.removeEventListener('keydown', saveShortcut, true); document.removeEventListener('keydown', saveShortcut, true); instance.current = null
       latest.current.onHeaderSlots?.(null)
       adapter?.dispose(); historyReader?.dispose(); widget?.remove()
     }

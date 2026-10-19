@@ -2,6 +2,38 @@ import { frontendPerformance } from './frontendPerformance.js'
 
 const MAX_BARS = 2000
 
+// A full historical response already contains the new native candles. Reuse
+// them only after matching the immutable overlap and the exact cursor scope.
+export function replayChartTail(previous, next) {
+  if (!previous || !next || previous.record_id !== next.record_id || previous.revision !== next.revision
+      || !previous.dataset_sha256 || previous.dataset_sha256 !== next.dataset_sha256
+      || previous.payload?.dataset_id !== next.payload?.dataset_id) return undefined
+  const cursor = view => view.view_cursor_index ?? view.payload?.cursor_index
+  const before = cursor(previous), after = cursor(next), count = after - before
+  if (![before, after].every(Number.isSafeInteger) || count < 1 || count > 1000
+      || ![previous, next].every(view => Array.isArray(view.visible_rows) && view.visible_rows.length > 0
+        && view.visible_rows.length <= MAX_BARS && Number.isSafeInteger(view.visible_row_start)
+        && view.visible_row_start + view.visible_rows.length - 1 === cursor(view)
+        && view.visible_rows.at(-1).timestamp === view.cutoff_timestamp)) return undefined
+  const overlap = before - next.visible_row_start + 1
+  if (overlap < 1 || overlap + count !== next.visible_rows.length) return undefined
+  const fields = ['timestamp', 'open', 'high', 'low', 'close', 'volume', 'tick_volume']
+  for (let i = 0; i < overlap; i++) {
+    const old = previous.visible_rows[next.visible_row_start + i - previous.visible_row_start]
+    if (!old || fields.some(field => old[field] !== next.visible_rows[i][field])) return undefined
+  }
+  const rows = next.visible_rows.slice(overlap)
+  let timestamp = previous.cutoff_timestamp
+  for (const row of rows) {
+    if (!Number.isSafeInteger(row.timestamp) || row.timestamp <= timestamp
+        || !['open', 'high', 'low', 'close'].every(field => Number.isFinite(row[field]))
+        || row.high < Math.max(row.open, row.close, row.low) || row.low > Math.min(row.open, row.close)
+        || ['volume', 'tick_volume'].some(field => row[field] != null && (!Number.isFinite(row[field]) || row[field] < 0))) return undefined
+    timestamp = row.timestamp
+  }
+  return { baseCutoff: previous.cutoff_timestamp, cutoff: next.cutoff_timestamp, rows }
+}
+
 // Owned by one chart instance: neither portfolio changes nor workspace changes share history.
 export function createReplayChartWindowReader({ workspace, sessionId, datasetId, datasetSha256, fetchImpl = fetch }) {
   const cache = new Map(), pending = new Map()

@@ -432,6 +432,15 @@ before the local window. New subscriptions, stale seeds and incompatible updates
 use the existing scoped history reader. Rewinds still reset the datafeed. Ready
 forward updates do not require a chart-window fetch or recreate the chart iframe.
 
+Historical playback also retains the widget while moving forward. It verifies
+the overlapping immutable native windows before passing their new candles through
+the same incremental datafeed. A rewind restores a cutoff-safe native layout,
+so drawings saved later cannot remain visible at an earlier time. Panning and
+native chart-resolution changes keep playback running; the sync switch controls
+whether the chart resolution also changes the replay interval. See the scoped
+[playback UX/performance checkpoint](../evidence/replay-playback-20261019/CHECKPOINT.md):
+the remaining full historical execution projection still limits playback speed.
+
 Compact Prop feeds select the requested canonical mark and its immediate predecessor
 by primary key, then the next unacknowledged eligible mark using migration0006's
 partial index. Exact revision certificates, scope, dataset hash, phase/cost binding,

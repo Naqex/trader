@@ -256,7 +256,7 @@ button.chart-order-level { cursor: ns-resize; touch-action: none; }
 .fx-app.fx-shell-story .fx-content > .is-legacy-chart .chart-utility-rail :is(button, a) span { white-space: nowrap; font-size: 9px; line-height: 10px; color: inherit; }
 .fx-app.fx-shell-story.is-chart-workspace[data-theme='light'] .fx-content > .replay-shell.is-legacy-chart .chart-utility-rail button span { color: inherit; }
 .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .chart-bottom-bar { min-height: 28px; padding-left: 56px; }
-.fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .chart-bottom-bar:not(.is-historical) { display: none; }
+.fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart .chart-bottom-bar { display: none; }
 .is-legacy-chart .chart-bottom-range { display: none !important; }
 .is-legacy-chart .chart-trading-bar { min-height: 52px; border-top: 1px solid var(--chart-line); padding-left: 14px; }
 .is-legacy-chart .chart-trading-actions { gap: 8px; }

@@ -3,6 +3,7 @@ import { navigate } from './clientNavigation.js'
 import { scopedMutation } from './scopedMutation.js'
 import { canUseReplayMutationView, mergeReplayMutationView, replayMutationEventsAfter } from './replayMutationView.js'
 import { canUseReplayStepView, mergeReplayStepView } from './replayStepView.js'
+import { replayChartTail } from './replayChartWindow.js'
 import { scopedRead } from './scopedRead.js'
 import { NotificationSlot } from './Notifications.jsx'
 import { hasPendingPropReplayEvents, syncPropReplayEvents } from './propReplaySync.js'
@@ -139,6 +140,9 @@ export default function ReplayWorkspace({ workspace, query }) {
   const requestedCursorValid = requestedCursor === null || (Number.isInteger(requestedCursor) && requestedCursor >= 0)
   const [sessionId, setSessionId] = useState(requestedSession)
   const [state, setState] = useState({ status: 'idle', payload: null, error: null })
+  const chartView = useRef(null)
+  chartView.current = state.payload
+  const [chartReset, setChartReset] = useState(0)
   const [propState, setPropState] = useState({ status: propMode ? 'loading' : 'disabled', session: null, attempt: null, phase: null, resumeState: null, objectives: null, error: null })
   const [propRulesOpen, setPropRulesOpen] = useState(false)
   const propRules = propReplayRuleView(propState)
@@ -282,10 +286,14 @@ export default function ReplayWorkspace({ workspace, query }) {
         return
       }
       const viewCursor = Number(payload.view_cursor_index ?? payload.payload.cursor_index)
+      // Native saved drawings belong to their cutoff. Rewind restores a safe
+      // snapshot; forward playback keeps the widget and viewport intact.
+      if (chartView.current?.record_id === payload.record_id && Number(payload.cutoff_timestamp) < Number(chartView.current.cutoff_timestamp)) setChartReset(current => current + 1)
+      const stepTail = replayChartTail(chartView.current, payload)
       rememberSession(payload.record_id, true, viewCursor, payload.payload?.dataset_id)
       setBranchCursor(payload.historical_view ? Math.max(0, viewCursor) : Math.max(0, viewCursor - 1))
       setJumpDraft(Math.max(0, viewCursor))
-      setState({ status: 'ready', payload, error: null })
+      setState({ status: 'ready', payload, stepTail, error: null })
     } catch (error) {
       if (!controller.signal.aborted) setState(current => ({ status: 'error', payload: ![401, 403, 404].includes(error.status) && current.payload?.record_id === targetSessionId ? current.payload : null, error: error.name === 'TimeoutError' ? 'Đọc phiên quá thời gian chờ. Hãy mở lại phiên.' : String(error.message || error), errorStatus: error.status }))
     } finally {
@@ -842,7 +850,9 @@ export default function ReplayWorkspace({ workspace, query }) {
         return
       }
       // Native text, range and menu controls retain their own keyboard behavior.
-      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey || isEditableTarget(event.target) || !replay || conflict || pendingAction || state.status !== 'ready') return
+      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey || isEditableTarget(event.target)) return
+      if (event.key === ' ' && isPlaying) { event.preventDefault(); event.stopPropagation(); setIsPlaying(false); return }
+      if (!replay || conflict || pendingAction || state.status !== 'ready') return
       if (!['ArrowRight', 'ArrowLeft', ' '].includes(event.key)) return
       if (event.key === ' ' && !canReplayForward && !isPlaying) return
       event.preventDefault()
@@ -1013,7 +1023,7 @@ export default function ReplayWorkspace({ workspace, query }) {
             </section></NotificationSlot>
           )}
 
-          {historicalView && (
+          {historicalView && !advancedChart && (
             <section className="replay-history-banner" role="status" data-testid="replay-history-view">
               <div>
                 <strong>{t("Đang xem đúng cutoff report ở nến #")}{cursor}.</strong>
@@ -1052,7 +1062,8 @@ export default function ReplayWorkspace({ workspace, query }) {
                     onSync={value => { setIsPlaying(false); setReplaySync(value) }} onInterval={value => { setIsPlaying(false); setReplaySync(false); setReplayInterval(value) }}
                     busy={Boolean(pendingAction)} available={!conflict && state.status === 'ready'} forwardOnly={propMode} canBack={cursor > 0 && !propMode} canForward={canReplayForward}
                     playing={isPlaying} onPlay={toggleReplay} onBack={rewindReplay} onForward={() => advanceReplay()} selecting={selectingReplayBar}
-                    onSelect={() => { setIsPlaying(false); setSelectingReplayBar(current => !current); setChartNotice(selectingReplayBar ? '' : 'Bấm một nến trước cutoff hiện tại để bắt đầu replay; Escape để hủy.') }} />
+                    historical={historicalView} cursor={cursor} canonicalCursor={canonicalCursor} onLatest={() => loadSession(sessionId)}
+                    onSelect={() => { setIsPlaying(false); setSelectingReplayBar(current => !current); setChartNotice('') }} />
                     : <ChartFloatingToolbar name="Replay" compactRow={1} storageKey={`tw:chart:replay-toolbar:${workspace}`} initialPosition={{ x: 330, y: 46 }}>
                     <button type="button" aria-label={t("Lùi một nến")} title={t("Lùi một nến (chỉ đọc)")} onClick={rewindReplay} disabled={propMode || conflict || Boolean(pendingAction) || state.status !== 'ready' || cursor <= 0}><ChartIcon name="back" /></button>
                     <button type="button" className="chart-play" data-testid="play-toggle" aria-label={isPlaying ? t("Tạm dừng") : t("Phát replay")} title={t("Phát / tạm dừng replay")} onClick={toggleReplay} disabled={!isPlaying && (!canReplayForward || conflict || Boolean(pendingAction) || state.status !== 'ready')}><ChartIcon name={isPlaying ? 'pause' : 'play'} /></button>
@@ -1060,7 +1071,7 @@ export default function ReplayWorkspace({ workspace, query }) {
                     <button type="button" data-testid="step-10" aria-label={t("Tiến mười nến")} title={t("Shift + → Tiến mười nến")} aria-keyshortcuts="Shift+ArrowRight" onClick={() => advanceReplay(false, 10)} disabled={!canReplayForward || conflict || Boolean(pendingAction) || state.status !== 'ready'}>10</button>
                     <FxSelect label={t("Tốc độ replay")} value={speed} onChange={setSpeed} disabled={Boolean(pendingAction)} localizeOptions={false} options={['0.5', '1', '2', '4'].map(value => ({ value, label: value + '×', localize: false }))} /><span className="chart-float-cutoff" title={formatTimestamp(replay.cutoff_timestamp) + ' UTC'}>#{cursor}</span>
                   </ChartFloatingToolbar>}
-                  {advancedChart ? <TradingViewReplayChart key={`${sessionId}:${replay.payload.dataset_id}:${historicalView ? cursor : 'canonical'}`}
+                  {advancedChart ? <TradingViewReplayChart key={`${sessionId}:${replay.payload.dataset_id}:${chartReset}`}
                     workspace={workspace} datasetId={replay.payload.dataset_id} datasetSha256={replay.dataset_sha256} viewCursorIndex={replay.view_cursor_index} symbol={replayContext.instrument} assetClass={order.instrument?.asset_class} seconds={activeDataset?.timeframe_seconds || replay.payload.execution?.timeframe_seconds}
                     cutoff={Number(replay.cutoff_timestamp)} stepTail={state.stepTail} theme={theme} levels={priceLevels} orderEditable={!order.disabled} orderCloseable={order.canClose && Boolean(order.active)} onOrderClose={order.close} onOrderEdit={() => { setIsPlaying(false); openPanel('order') }} orderGeneration={`${sessionId}:${revision}:${cursor}`}
                     onOrderDragStart={() => setIsPlaying(false)} tickSize={order.instrument?.tick_size} onOrderPriceChange={order.changePrice} onOrderValidationError={order.reportError} rows={visibleRows} sessionId={sessionId}

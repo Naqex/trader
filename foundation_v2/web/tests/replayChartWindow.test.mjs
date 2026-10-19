@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { createReplayChartWindowReader } from '../src/replayChartWindow.js'
+import { createReplayChartWindowReader, replayChartTail } from '../src/replayChartWindow.js'
 import { createAdvancedReplayDatafeed, replayBars } from '../src/advancedReplayDatafeed.js'
 import { startFrontendPerformance } from '../src/frontendPerformance.js'
 
@@ -9,6 +9,24 @@ const options = { workspace: 'w', sessionId: 'session', datasetId: 'dataset', da
 const request = { resolution: '1', countBack: 5, cursorIndex: 9, cutoff: 60, to: 120 }
 const payload = { schema_version: 'replay-chart-window-v1', workspace_id: 'w', session_id: 'session', dataset_id: 'dataset',
   dataset_sha256: 'sha', cursor_index: 9, cutoff_timestamp: 60, resolution: '1', bars: [bar] }
+
+test('historical forward windows reuse only verified immutable overlap, including the 2000-row boundary', () => {
+  const rows = Array.from({ length: 2010 }, (_, i) => ({ timestamp: 60 + 60 * i, open: 1, high: 2, low: .5, close: 1.5, volume: i }))
+  const view = cursor => ({ record_id: 'session', revision: 9, dataset_sha256: 'sha', payload: { dataset_id: 'dataset' },
+    view_cursor_index: cursor, visible_row_start: Math.max(0, cursor - 1999), cutoff_timestamp: rows[cursor].timestamp,
+    visible_rows: rows.slice(Math.max(0, cursor - 1999), cursor + 1) })
+  for (const [before, after] of [[4, 5], [1999, 2002]]) {
+    assert.deepEqual(replayChartTail(view(before), view(after)), { baseCutoff: rows[before].timestamp, cutoff: rows[after].timestamp, rows: rows.slice(before + 1, after + 1) })
+  }
+  const previous = view(2002)
+  for (const next of [view(2001), previous, { ...view(2003), record_id: 'other' }, { ...view(2003), revision: 10 },
+    { ...view(2003), dataset_sha256: 'other' }, { ...view(2003), visible_row_start: 5 },
+    { ...view(2003), cutoff_timestamp: 0 }, { ...view(2003), payload: { dataset_id: 'other' } }]) assert.equal(replayChartTail(previous, next), undefined)
+  for (const index of [0, 1999]) {
+    const changed = structuredClone(view(2003)); changed.visible_rows[index].close = 9
+    assert.equal(replayChartTail(previous, changed), undefined, 'Changed overlap or malformed appended candle cannot be reused')
+  }
+})
 
 test('window cache deduplicates, returns independent candles, binds query and stays bounded', async () => {
   let calls = 0
