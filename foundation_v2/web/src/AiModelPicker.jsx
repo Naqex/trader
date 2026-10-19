@@ -11,6 +11,7 @@ export default function AiModelPicker({ models, selection, disabled, active, en,
   const model = models.find(item => item.id === selection.model)
   const efforts = model?.efforts || []
   const name = value => effortNames[value]?.[en ? 1 : 0] || value
+  const modelName = (model?.name || selection.model).replace(/\s*\(Web\)$/i, '')
   useEffect(() => { setPreview(selection.effort) }, [selection.effort, disabled])
   useEffect(() => {
     if (!active || disabled) popup.current?.hidePopover()
@@ -35,7 +36,7 @@ export default function AiModelPicker({ models, selection, disabled, active, en,
     if (expanded) { popup.current.hidePopover(); return }
     setView('effort'); setPreview(selection.effort)
     const box = trigger.current.getBoundingClientRect()
-    const width = Math.min(288, window.innerWidth - 32)
+    const width = Math.min(272, window.innerWidth - 32)
     Object.assign(popup.current.style, { width: `${width}px`, left: `${Math.max(16, Math.min(box.right - width, window.innerWidth - width - 16))}px`, bottom: `${window.innerHeight - box.top + 8}px` })
     popup.current.showPopover()
   }
@@ -49,14 +50,16 @@ export default function AiModelPicker({ models, selection, disabled, active, en,
   }
   return <div className="wm-ai-picker">
     <button ref={trigger} type="button" className="wm-ai-model-trigger" disabled={disabled} aria-label={en ? 'AI model and effort' : 'Model và mức suy luận AI'} aria-haspopup="dialog" aria-expanded={expanded} aria-controls={id} onClick={toggle} title={`${model?.name || selection.model} · ${name(selection.effort)}`}>
-      <span>{name(selection.effort)}</span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true"><path d="m4 6 4 4 4-4" /></svg>
+      <span className="wm-ai-model-name">{modelName}</span><span className="wm-ai-effort-value">· {name(selection.effort)}</span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true"><path d="m4 6 4 4 4-4" /></svg>
     </button>
     <div id={id} ref={popup} popover="auto" className="wm-ai-selection" role="dialog" aria-label={en ? 'AI model and effort' : 'Model và mức suy luận AI'} onToggle={event => setExpanded(event.newState === 'open')}>
       {view === 'effort' ? <>
-        <button type="button" className="wm-ai-model-current" onClick={() => setView('models')} aria-label={en ? 'AI model' : 'Model AI'}><span>{model?.name || selection.model}</span><span aria-hidden="true">›</span></button>
-        <div className="wm-ai-effort-heading"><span>{en ? 'Thinking effort' : 'Mức suy luận'}</span><strong>{name(preview)}</strong></div>
+        <button type="button" className="wm-ai-model-current" onClick={() => setView('models')} aria-label={en ? 'AI model' : 'Model AI'} title={model?.name || selection.model}><span>{modelName} · {name(preview)}</span><span aria-hidden="true">›</span></button>
+        <div className="wm-ai-effort-slider" style={{ '--wm-effort-fill': `${efforts.length > 1 ? Math.max(0, efforts.indexOf(preview)) / (efforts.length - 1) * 100 : 0}%` }}>
+        <div className="wm-ai-slider-rail" aria-hidden="true" />
+        <div className="wm-ai-slider-dots" aria-hidden="true">{efforts.map((value, index) => <span key={value} style={{ left: `${efforts.length > 1 ? index / (efforts.length - 1) * 100 : 0}%` }} />)}</div>
         <input type="range" aria-label={en ? 'AI reasoning effort' : 'Mức suy luận AI'} aria-valuetext={name(preview)} min="0" max={Math.max(0, efforts.length - 1)} step="1" value={Math.max(0, efforts.indexOf(preview))} disabled={disabled || efforts.length < 2} onChange={event => setPreview(efforts[Number(event.target.value)])} onPointerUp={event => void commit(efforts[Number(event.currentTarget.value)])} onKeyUp={event => { if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) void commit(efforts[Number(event.currentTarget.value)]) }} onBlur={event => void commit(efforts[Number(event.currentTarget.value)])} />
-        <div className="wm-ai-effort-stops" aria-hidden="true">{efforts.map(value => <span key={value}>{name(value)}</span>)}</div>
+        </div>
       </> : <>
         <button type="button" className="wm-ai-model-back" onClick={() => setView('effort')}>‹ {en ? 'Thinking effort' : 'Mức suy luận'}</button>
         <div role="listbox" aria-label={en ? 'AI model' : 'Model AI'} onKeyDown={moveModel}>{models.map(item => <button type="button" role="option" tabIndex={selection.model === item.id ? 0 : -1} aria-selected={selection.model === item.id} key={item.id} onClick={() => { popup.current.hidePopover(); trigger.current?.focus(); if (selection.model !== item.id) { restoreFocus.current = true; void onSelect({ model: item.id, effort: item.efforts.includes(selection.effort) ? selection.effort : item.efforts.includes('high') ? 'high' : item.efforts[0] }) } }}><span>{item.name}</span>{selection.model === item.id && <span aria-hidden="true">✓</span>}</button>)}</div>
