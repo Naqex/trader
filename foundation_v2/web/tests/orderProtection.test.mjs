@@ -10,8 +10,8 @@ test('side/type transitions preserve each explicit protection state and pip dist
   const replay = { visible_rows:[{close:1.1}], payload:{execution:{spread_price:'.0002',instrument_spec:spec}} }
   const quotes = marketQuotes(replay)
   const entry = draft => draft.orderType ? Number(draft.entryPrice) : draft.side === 'BUY' ? quotes.ask : quotes.bid
-  for (const stopLoss of [false,true]) for (const takeProfit of [false,true]) {
-    let draft = { ...orderDraft(replay,spec), quantity:'.37', protectionEnabled:{stopLoss,takeProfit} }
+  for (const sizingMode of ['risk','quantity']) for (const stopLoss of [false,true]) for (const takeProfit of [false,true]) {
+    let draft = { ...orderDraft(replay,spec), quantity:'.37', sizingMode, protectionEnabled:{stopLoss,takeProfit} }
     for (const key of ['stopLoss','takeProfit']) if (draft.protectionEnabled[key]) draft[key] = protectionPrice(30,entry(draft),draft.side,key,spec)
     for (const side of ['SELL','BUY','SELL','BUY']) for (const orderType of ['limit','stop','market']) {
       const before = structuredClone(draft)
@@ -19,6 +19,7 @@ test('side/type transitions preserve each explicit protection state and pip dist
       assert.deepEqual(draft,before,'Selection must not mutate the previous draft')
       assert.deepEqual(next.protectionEnabled,{stopLoss,takeProfit})
       assert.equal(next.quantity,'.37')
+      assert.equal(next.sizingMode,sizingMode,'Side/type changes retain the selected sizing method')
       for (const key of ['stopLoss','takeProfit']) {
         if (next.protectionEnabled[key]) assert.equal(protectionPips(next[key],entry(next),side,key,spec),30)
         else assert.equal(next[key],'')

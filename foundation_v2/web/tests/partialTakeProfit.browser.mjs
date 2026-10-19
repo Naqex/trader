@@ -60,11 +60,9 @@ try {
       },token)
       assert.equal(colors.actual,colors.expected)
     }
-    await stop.locator('summary').click()
     const presetHeight=await stop.locator('.legacy-risk-presets button').first().evaluate(node=>node.getBoundingClientRect().height)
-    assert.equal(presetHeight,28)
+    assert.equal(presetHeight,24)
     await page.screenshot({path:`${out}/${side}-${width}-risk.png`})
-    await stop.locator('summary').click()
     await size.fill('0.01')
     await tp.locator('[role=alert]').waitFor({state:'visible'})
     await dialog.locator('button[type=submit]').click()

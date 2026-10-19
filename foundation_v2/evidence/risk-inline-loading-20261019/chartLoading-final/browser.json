@@ -1,0 +1,113 @@
+{
+  "scope": "Labeled synthetic replay prefix and real local chart engine; GET-only backend access, no owner session or broker writes",
+  "cases": [
+    {
+      "width": 1440,
+      "theme": "dark",
+      "stage": "cold lazy route",
+      "motion": "no-preference"
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "stage": "initial session GET"
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "stage": "native library pending, host inert"
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "stage": "real engine ready, same shell, candle prefix retained"
+    },
+    {
+      "stage": "same-session background GET retains ready chart without spinner or status row"
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "stage": "cold lazy route",
+      "motion": "no-preference"
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "stage": "initial session GET"
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "stage": "native library pending, host inert"
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "stage": "real engine ready, same shell, candle prefix retained"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "stage": "cold lazy route",
+      "motion": "reduce"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "stage": "initial session GET"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "stage": "native library pending, host inert"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "stage": "real engine ready, same shell, candle prefix retained"
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "stage": "cold lazy route",
+      "motion": "reduce"
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "stage": "initial session GET"
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "stage": "native library pending, host inert"
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "stage": "real engine ready, same shell, candle prefix retained"
+    },
+    {
+      "stage": "initial network error exits loading"
+    },
+    {
+      "stage": "session deadline exits loading after 15 seconds"
+    },
+    {
+      "stage": "library-error"
+    },
+    {
+      "stage": "data-ready-timeout"
+    },
+    {
+      "stage": "Sessions picker retains report skeleton"
+    }
+  ],
+  "errors": [],
+  "unexpected": [],
+  "blockedSyntheticActivity": [
+    "POST http://127.0.0.1:65524/api/v2/replay/sessions/fixture-chart-ui/activity"
+  ],
+  "result": "PASS"
+}

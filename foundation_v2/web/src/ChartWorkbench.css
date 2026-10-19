@@ -2,6 +2,7 @@
 /* The workbench owns its chrome; the API owns candle and execution state. */
 .fx-app.fx-shell-story.is-chart-workspace .fx-content > .replay-shell .chart-frame.has-advanced-chart { grid-template-columns: minmax(0, 1fr); }
 .advanced-chart-host { position: absolute; inset: 0; }
+.advanced-chart-host[aria-hidden=true] { visibility:hidden; }
 .advanced-replay-chart { position: relative; }
 .is-legacy-chart .chart-utility-rail { position: relative; }
 .is-legacy-chart .chart-frame { position: relative; }
@@ -438,10 +439,7 @@ button.chart-order-level { cursor: ns-resize; touch-action: none; }
 .legacy-protection-estimate strong.is-profit { color:var(--project-positive); }
 .legacy-protection-estimate strong.is-loss { color:var(--project-negative); }
 .legacy-risk-sizing { color:var(--chart-muted); font-size:12px; }
-.legacy-risk-sizing summary { cursor:pointer; width:fit-content; color:var(--chart-text); }
-.legacy-risk-sizing summary:hover { color:var(--project-primary); }
-.legacy-risk-sizing summary:focus-visible { outline:2px solid var(--wm-focus); outline-offset:4px; border-radius:2px; }
-.legacy-risk-fields { display:grid; gap:12px; margin-top:12px; padding:12px; border-radius:var(--ds-radius-field,8px); background:var(--project-control); }
+.legacy-risk-fields { display:grid; gap:12px; padding:12px; border-radius:var(--ds-radius-field,8px); background:var(--project-control); }
 .legacy-risk-basis { display:flex; justify-content:center; flex-wrap:wrap; gap:12px 24px; min-width:0; margin:0; padding:0; border:0; }
 .legacy-order-form .legacy-risk-basis label { display:flex; align-items:center; gap:8px; min-height:var(--ds-control,36px); color:var(--project-text); cursor:pointer; }
 .legacy-risk-basis input[type=radio] { appearance:none; box-sizing:border-box; width:var(--ds-checkbox,16px); height:var(--ds-checkbox,16px); margin:0; padding:0; border:1px solid var(--project-border-strong); border-radius:50%; background:transparent; cursor:pointer; }
@@ -449,8 +447,8 @@ button.chart-order-level { cursor: ns-resize; touch-action: none; }
 .legacy-risk-input { position:relative; display:flex; align-items:center; min-width:0; }
 .legacy-risk-input > span { position:absolute; left:12px; color:var(--project-muted); font-size:var(--ds-font-section,16px); pointer-events:none; }
 .legacy-order-modal .legacy-risk-input > input[type=number] { padding-left:32px; }
-.legacy-risk-presets { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:8px; }
-.legacy-order-modal .legacy-risk-presets button { height:var(--ds-tab,28px); min-height:var(--ds-tab,28px); min-width:0; padding:4px; border:1px solid var(--project-border); border-radius:var(--wm-control-radius); font-size:12px; }
+.legacy-risk-presets { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:4px; width:min(100%,360px); justify-self:center; }
+.legacy-order-modal .legacy-risk-presets button { height:var(--ds-space-6,24px); min-height:var(--ds-space-6,24px); min-width:0; padding:0 4px; border:1px solid var(--project-border); border-radius:var(--wm-control-radius); font-size:12px; line-height:16px; }
 .legacy-order-modal .legacy-risk-presets button[aria-pressed=true], .legacy-order-modal .legacy-risk-presets button[aria-pressed=true]:hover:not(:disabled) { border-color:var(--project-highlight); background:var(--project-peach-soft); color:var(--project-highlight); }
 .legacy-order-form .legacy-strategy-create { color:#76abff; text-align:left; padding:0; justify-self:start; margin-top:-12px; font-size:12px; }
 .legacy-order-form footer { display:flex; align-items:center; justify-content:flex-end; gap:8px; margin-top:10px; }

@@ -318,13 +318,21 @@ accepted order. A filled target disappears and the remaining shares rebase to
 
 New orders keep SL/TP off until explicitly enabled. Editable seed distances are
 20 pips for SL and twice the enabled SL distance for TP (40 pips without SL).
-These seeds are form conveniences, not strategy recommendations. The optional
-calculator, labelled “Tính khối lượng theo mức rủi ro”, is collapsed by default;
-its initial value is 1% of initial balance and only changes quantity while open.
-It uses one light control surface, 12px spacing and 28px percentage buttons
+These seeds are form conveniences, not strategy recommendations. Risk sizing
+fields appear directly inside enabled SL, without a disclosure or extra title.
+The initial risk is 1% of initial balance. Editing risk or a percentage preset
+calculates quantity; manually editing quantity preserves those lots and reflects
+their actual SL exposure in the risk fields. Changing side or order type retains
+this sizing choice. It uses one light control surface, 12px spacing and six equal
+24px percentage buttons in a centered row up to 360px wide
 (44px coarse-pointer targets). Gross estimated profit uses the positive semantic
 token, estimated loss uses negative, and both prefix the currency symbol in
 Vietnamese and English. Declared fees remain outside this gross preview.
+Replay startup uses one centered full-viewport loading surface through route,
+session-read and chart-engine initialization. The native chart host remains
+visually hidden and inert until ready, keeping its own spinner out of view.
+The loading overlay covers viewport-floating playback controls. Same-session
+background refresh retains the ready chart without bringing loading back.
 The layout selector displays reference rows 1–8 and sync controls; only one chart is
 supported. Copy/rename/open layouts remain unavailable rather than implying cloud
 storage. The session title is plain italic text.

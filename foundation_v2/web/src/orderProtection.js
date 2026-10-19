@@ -5,7 +5,7 @@ const positive = (...values) => values.every(value => finiteNumber(value) > 0)
 
 export function selectOrderDraft(current, replay, instrument, { side = current.side, orderType = current.orderType || 'market' }) {
   if (side === current.side && orderType === (current.orderType || 'market')) return current
-  const next = { ...orderDraft(replay, instrument, side, orderType), quantity: current.quantity, protectionEnabled: current.protectionEnabled }
+  const next = { ...orderDraft(replay, instrument, side, orderType), quantity: current.quantity, sizingMode:current.sizingMode, protectionEnabled: current.protectionEnabled }
   const quotes = marketQuotes(replay)
   const reference = draft => draft.orderType && draft.orderType !== 'market' ? draft.entryPrice : draft.side === 'BUY' ? quotes.ask : quotes.bid
   // Only reprice protection the user enabled; blank enabled fields stay blank.

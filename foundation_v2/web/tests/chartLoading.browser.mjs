@@ -2,8 +2,9 @@ import assert from 'node:assert/strict'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { chromium } from 'playwright'
 
-const origin = 'http://127.0.0.1:5180'
-const output = '../evidence/chart-loading-20261012'
+const [origin, output] = process.argv.slice(2)
+assert.equal(new URL(origin).hostname,'127.0.0.1')
+assert.notEqual(new URL(origin).port,'5180','Use the isolated browser fixture')
 const fixture = JSON.parse(await readFile(new URL('./visual/chart-fixture.json', import.meta.url)))
 // This readiness test renders the established candle prefix; it does not test historical paging.
 const replay = { ...fixture.latest, dataset_sha256: null }
@@ -38,6 +39,7 @@ async function setup(width, theme, motion = 'reduce') {
 async function centered(page, region) {
   const loader = page.getByTestId('chart-loading')
   await loader.waitFor()
+  assert.equal(await loader.count(),1,'One app loading screen at a time')
   const [parent, box, indicator] = await Promise.all([region.boundingBox(), loader.boundingBox(), loader.locator(':scope > div').boundingBox()])
   assert.ok(Math.abs(parent.x - box.x) <= 1 && Math.abs(parent.y - box.y) <= 1)
   assert.ok(Math.abs(parent.width - box.width) <= 1 && Math.abs(parent.height - box.height) <= 1, 'Loading covers its chart viewport')
@@ -47,6 +49,10 @@ async function centered(page, region) {
   assert.equal(await page.locator('.wm-page-skeleton').count(), 0)
   assert.equal(await page.locator('.fx-rail').count(), 0)
   assert.equal(await loader.getAttribute('aria-busy'), 'true')
+  assert.equal(await page.locator('.legacy-replay-toolbar').evaluateAll(nodes => nodes.every(node => {
+    const box = node.getBoundingClientRect()
+    return Boolean(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)?.closest('[data-testid="chart-loading"]'))
+  })), true, 'Loading covers the viewport-floating Replay toolbar')
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false)
 }
 try {
@@ -56,7 +62,7 @@ try {
     const chunk = gate(), session = gate(), library = gate(), requested = gate()
     await page.route('**/src/ReplayWorkspace.jsx*', async route => { await chunk.promise; await route.continue() })
     await page.route(`**/api/v2/replay/sessions/${fixture.session}*`, async route => { requested.release(); await session.promise; await route.fulfill({ json: replay }) })
-    await page.route('**/charting_library/charting_library.standalone.js', async route => { await library.promise; await route.continue() })
+    await page.route('**/charting_library/charting_library.standalone.js*', async route => { await library.promise; await route.continue() })
     await page.goto(href(), { waitUntil: 'domcontentloaded' })
     await centered(page, page.locator('.fx-content'))
     const animation = await page.locator('.wm-chart-loading-spinner').evaluate(node => getComputedStyle(node).animationName)
@@ -70,10 +76,11 @@ try {
     report.cases.push({ width, theme, stage: 'initial session GET' })
     session.release()
     await page.locator('[data-chart-status=loading]').waitFor()
-    await centered(page, page.getByTestId('replay-chart'))
+    await centered(page, page.locator('.fx-content'))
     const host = page.locator('.advanced-chart-host')
     assert.equal(await host.getAttribute('inert'), '')
     assert.equal(await host.getAttribute('aria-hidden'), 'true')
+    assert.equal(await host.evaluate(node=>getComputedStyle(node).visibility),'hidden','Native iframe loader is not shown under the app loader')
     await page.screenshot({ path: `${output}/engine-pending-${width}-${theme}.png`, animations: 'disabled' })
     report.cases.push({ width, theme, stage: 'native library pending, host inert' })
     library.release()
@@ -137,7 +144,7 @@ try {
   for (const kind of ['library-error', 'data-ready-timeout']) {
     const { context, page } = await setup(1440, 'dark')
     await page.clock.install()
-    if (kind === 'library-error') await page.route('**/charting_library/charting_library.standalone.js', route => route.abort('failed'))
+    if (kind === 'library-error') await page.route('**/charting_library/charting_library.standalone.js*', route => route.abort('failed'))
     else await context.addInitScript(() => {
       document.addEventListener('load', event => {
         if (!event.target.src?.includes('charting_library.standalone.js')) return
@@ -152,6 +159,9 @@ try {
     await page.goto(href())
     if (kind === 'data-ready-timeout') {
       await page.waitForFunction(() => window.__blockedChartData === true)
+      await centered(page, page.locator('.fx-content'))
+      assert.equal(await page.locator('.advanced-chart-host').evaluate(node => getComputedStyle(node).visibility), 'hidden')
+      await page.screenshot({ path: `${output}/data-pending-1440-dark.png`, animations: 'disabled' })
       await page.clock.fastForward(21000)
     }
     await page.locator('[data-chart-status=error]').waitFor()

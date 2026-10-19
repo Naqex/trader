@@ -225,38 +225,39 @@ function ProtectionRiskSizing({ order, entry }) {
   const { t, locale } = useTestingLocale()
   const [basis, setBasis] = useState('initial')
   const [input, setInput] = useState({ mode: 'percent', value: '1' })
-  const [open, setOpen] = useState(false)
   const amountInput = useRef(null)
   const { setDraft, disabled } = order
   const balance = finiteNumber(basis === 'initial' ? order.configuredBalance ?? order.execution?.starting_balance ?? order.startingBalance : order.account?.balance)
-  const budget = input.mode === 'percent' ? balance > 0 && finiteNumber(input.value) > 0 ? balance * Number(input.value) / 100 : null : finiteNumber(input.value)
-  const percent = input.mode === 'percent' ? input.value : balance > 0 && budget !== null ? Number((budget / balance * 100).toFixed(4)) : ''
+  const manualSize = order.draft.sizingMode === 'quantity'
+  const loss = protectionAmount(order.draft.stopLoss, entry, order.draft.side, order.draft.quantity, order.instrument, order.costs)
+  const budget = manualSize ? loss < 0 ? -loss : null : input.mode === 'percent' ? balance > 0 && finiteNumber(input.value) > 0 ? balance * Number(input.value) / 100 : null : finiteNumber(input.value)
+  const percent = !manualSize && input.mode === 'percent' ? input.value : balance > 0 && budget !== null ? Number((budget / balance * 100).toFixed(4)) : ''
   const quantity = quantityForRisk(budget, order.draft.stopLoss, entry, order.draft.side, order.instrument, order.costs)
   const currency = order.costs?.account_ccy
   const symbol = currency ? new Intl.NumberFormat(locale, { style:'currency', currency, currencyDisplay:'narrowSymbol' }).formatToParts(0).find(part => part.type === 'currency')?.value : '—'
   useEffect(() => {
-    // Closed calculators must not overwrite manual size or invalidate the form.
-    if (open && !disabled && quantity !== null) setDraft(current => current.quantity === quantity ? current : { ...current, quantity })
-  }, [open, disabled, quantity, basis, input, setDraft])
+    // The last edited control owns sizing; manual lot edits must remain usable.
+    if (!manualSize && !disabled && quantity !== null) setDraft(current => current.quantity === quantity ? current : { ...current, quantity })
+  }, [manualSize, disabled, quantity, basis, input, setDraft])
   useEffect(() => {
-    amountInput.current?.setCustomValidity(open && quantity === null ? t('Không tính được khối lượng từ mức rủi ro này.') : '')
-  }, [open, quantity, t])
-  return <details className="legacy-risk-sizing" onToggle={event => setOpen(event.currentTarget.open)} onKeyDown={event => {
+    amountInput.current?.setCustomValidity(quantity === null ? t('Không tính được khối lượng từ mức rủi ro này.') : '')
+  }, [quantity, t])
+  const changeRisk = next => { setInput(next); setDraft(current => ({ ...current,sizingMode:'risk' })) }
+  return <div className="legacy-risk-sizing" onKeyDown={event => {
     // Calculating a size must not submit the enclosing order form.
     if (event.key === 'Enter' && event.target.tagName === 'INPUT') event.preventDefault()
   }}>
-    <summary>{t('Tính khối lượng theo mức rủi ro')}</summary>
     <div className="legacy-risk-fields">
-      <fieldset className="legacy-risk-basis" disabled={disabled || !open} aria-label={t('Tính tỷ lệ theo')}>
+      <fieldset className="legacy-risk-basis" disabled={disabled} aria-label={t('Tính tỷ lệ theo')}>
         {[['initial','Số dư ban đầu'],['current','Số dư hiện tại']].map(([value,label]) => <label key={value}><input type="radio" name="order-risk-basis" value={value} checked={basis === value} onChange={() => setBasis(value)} />{t(label)}</label>)}
       </fieldset>
-      <div className="legacy-risk-presets" role="group" aria-label={t('Rủi ro (%)')}>{['0.3','0.5','0.7','1','2','3'].map(value => <button type="button" key={value} aria-pressed={Number(percent) === Number(value)} disabled={order.disabled} onClick={() => setInput({ mode:'percent', value })}>{value}%</button>)}</div>
+      <div className="legacy-risk-presets" role="group" aria-label={t('Rủi ro (%)')}>{['0.3','0.5','0.7','1','2','3'].map(value => <button type="button" key={value} aria-pressed={Number(percent) === Number(value)} disabled={order.disabled} onClick={() => changeRisk({ mode:'percent', value })}>{value}%</button>)}</div>
       <div className="legacy-order-grid">
-        <label>{t('Rủi ro')}<span className="legacy-risk-input"><span aria-hidden="true">%</span><input aria-label={t('Rủi ro (%)')} type="number" min="0" step="any" required={open} value={percent} disabled={disabled || !open} onChange={event => setInput({ mode:'percent', value:event.target.value })} /></span></label>
-        <label>{t('Số tiền rủi ro')}<span className="legacy-risk-input"><span aria-hidden="true">{symbol}</span><input ref={amountInput} aria-label={`${t('Số tiền rủi ro')} ${currency || ''}`} aria-invalid={open && quantity === null ? true : undefined} type="number" min="0" step="any" required={open} value={input.mode === 'amount' ? input.value : budget === null ? '' : Number(budget.toFixed(2))} disabled={disabled || !open} onChange={event => setInput({ mode:'amount', value:event.target.value })} /></span></label>
+        <label>{t('Rủi ro')}<span className="legacy-risk-input"><span aria-hidden="true">%</span><input aria-label={t('Rủi ro (%)')} type="number" min="0" step="any" required value={percent} disabled={disabled} onChange={event => changeRisk({ mode:'percent', value:event.target.value })} /></span></label>
+        <label>{t('Số tiền rủi ro')}<span className="legacy-risk-input"><span aria-hidden="true">{symbol}</span><input ref={amountInput} aria-label={`${t('Số tiền rủi ro')} ${currency || ''}`} aria-invalid={quantity === null ? true : undefined} type="number" min="0" step="any" required value={!manualSize && input.mode === 'amount' ? input.value : budget === null ? '' : Number(budget.toFixed(2))} disabled={disabled} onChange={event => changeRisk({ mode:'amount', value:event.target.value })} /></span></label>
       </div>
     </div>
-  </details>
+  </div>
 }
 
 function PartialTakeProfits({ order, entry }) {
@@ -319,7 +320,7 @@ function LegacyOrderForm({ order, blockedReason, onClose, onJournal }) {
   const savedTargets = active ? orderDraft({ payload:{ execution:{ position:active } } },instrument).takeProfits || [] : []
   const changed = !active || JSON.stringify(draft.takeProfits || []) !== JSON.stringify(savedTargets)
     || ['stopLoss', 'takeProfit'].some((key, i) => String(draft[key] || '') !== String(active[i ? 'take_profit' : 'stop_loss'] ?? ''))
-  const change = (key, value) => setDraft(current => ({ ...current, [key]:value, ...(key === 'takeProfit' && current.takeProfits?.length ? { takeProfits:current.takeProfits.map((row,i) => i ? row : { ...row,price:value }) } : {}) }))
+  const change = (key, value) => setDraft(current => ({ ...current, [key]:value, ...(key === 'quantity' ? { sizingMode:'quantity' } : {}), ...(key === 'takeProfit' && current.takeProfits?.length ? { takeProfits:current.takeProfits.map((row,i) => i ? row : { ...row,price:value }) } : {}) }))
   const pip = Number(instrument?.pip_size), entry = finiteNumber(active?.entry_fill ?? active?.entry_price ?? order.reference)
   return <><form className="legacy-order-form" onChange={() => order.clearNotice()} onSubmit={async event => { event.preventDefault(); if (await order.save()) { onClose(); if (journal) onJournal() } }}>
     {!active && <div className="legacy-order-grid"><label>{t('Hướng')}<FxSelect className="is-field" label="Hướng" value={draft.side} disabled={disabled} onChange={order.chooseSide} options={[{ value: 'BUY', label: t('Buy') }, { value: 'SELL', label: t('Sell') }]} /></label><label>{t('Loại lệnh')}<FxSelect className="is-field" label="Loại lệnh" value={draft.orderType || 'market'} disabled={disabled || !order.conditionalOrders} onChange={order.chooseType} options={['market','limit','stop'].map(value => ({ value,label:value[0].toUpperCase()+value.slice(1) }))} /></label>
