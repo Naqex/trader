@@ -149,6 +149,7 @@ try {
   const orderDialog = page.locator('.legacy-order-modal')
   await orderDialog.waitFor()
   await orderDialog.getByRole('spinbutton', { name: 'Khối lượng lệnh', exact: true }).fill('0.08')
+  for (const toggle of await orderDialog.locator('[data-protection] input[role=switch]').all()) await toggle.check()
   const formProtections = await orderDialog.locator('[data-protection] .legacy-order-grid label:first-child input').evaluateAll(nodes => nodes.map(node => Number(node.value)))
   assert.equal(formProtections.length, 2)
   const formSave = page.waitForResponse(r => r.url().endsWith(path + '/orders/market') && r.request().method() === 'POST')

@@ -228,8 +228,8 @@ function LegacyOrderForm({ order, blockedReason, onClose, onJournal }) {
   const { t, fmt } = useTestingLocale()
   const [journal, setJournal] = useState(false)
   const { draft, setDraft, execution, disabled, instrument, active } = order
-  const [enabled, setEnabled] = useState(() => ({ stopLoss: active ? active.stop_loss != null : draft.stopLoss !== '', takeProfit: active ? active.take_profit != null : draft.takeProfit !== '' }))
-  useEffect(() => { setEnabled({ stopLoss: active ? active.stop_loss != null : draft.stopLoss !== '', takeProfit: active ? active.take_profit != null : draft.takeProfit !== '' }) }, [active, draft.side, draft.orderType])
+  const [enabled, setEnabled] = useState(() => ({ stopLoss: active?.stop_loss != null, takeProfit: active?.take_profit != null }))
+  useEffect(() => { setEnabled({ stopLoss: active?.stop_loss != null, takeProfit: active?.take_profit != null }) }, [active, draft.side, draft.orderType])
   const changed = !active || ['stopLoss', 'takeProfit'].some((key, i) => String(draft[key] || '') !== String(active[i ? 'take_profit' : 'stop_loss'] ?? ''))
   const change = (key, value) => setDraft(current => ({ ...current, [key]:value }))
   const pip = Number(instrument?.pip_size), entry = finiteNumber(active?.entry_fill ?? active?.entry_price ?? order.reference)

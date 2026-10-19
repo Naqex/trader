@@ -21,8 +21,7 @@ export function orderDraft(replay, instrument, side = 'BUY', orderType = 'market
   }
   return { side, quantity: instrument?.quantity_min == null ? '' : String(instrument.quantity_min),
     ...(orderType !== 'market' ? { orderType, entryPrice: entry > 0 ? String(entry) : '' } : {}),
-    stopLoss: entry > 0 && distance ? String(Number((entry + (side === 'BUY' ? -distance : distance)).toFixed(8))) : '',
-    takeProfit: entry > 0 && distance ? String(Number((entry + (side === 'BUY' ? distance * 2 : -distance * 2)).toFixed(8))) : '' }
+    stopLoss: '', takeProfit: '' }
 }
 
 export function validateEntry(draft, quotes, instrument) {

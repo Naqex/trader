@@ -17,6 +17,8 @@ test('conditional entries use the correct executable side and enforce price step
     assert.ok(validateEntry({ ...draft, entryPrice: '' }, quotes, spec))
     const empty = structuredClone(replay); empty.payload.execution.position = null
     const seeded = orderDraft(empty, spec, side, orderType)
+    assert.equal(seeded.stopLoss, '')
+    assert.equal(seeded.takeProfit, '')
     assert.equal(validateEntry(seeded, marketQuotes(empty), spec), null)
     assert.equal(orderLevels(empty, draft), null)
   }
@@ -50,7 +52,7 @@ test('tick quote and draft use pinned historical Bid/Ask without OHLC fallback',
   const tick = structuredClone(replay)
   Object.assign(tick.payload.execution, { quote_source: 'broker_bid_ask', last_bid: '1.1017', last_ask: '1.1024', spread_price: '0', position: null })
   assert.deepEqual(marketQuotes(tick), { bid: 1.1017, ask: 1.1024 })
-  assert.equal(orderDraft(tick, { pip_size: '.0001', quantity_min: '.01' }).stopLoss, '1.1004')
+  assert.equal(orderDraft(tick, { pip_size: '.0001', quantity_min: '.01' }).stopLoss, '')
   assert.equal(orderLevels(tick, { side: 'SELL', stopLoss: '1.11', takeProfit: '1.09' }), null)
   assert.deepEqual(marketQuotes({ ...tick, view_cursor_index: 0 }), { bid: null, ask: null })
   tick.payload.execution.last_ask = null
@@ -60,7 +62,9 @@ test('tick quote and draft use pinned historical Bid/Ask without OHLC fallback',
 })
 test('draft prices use declared pip and quantity assumptions without inventing missing values', () => {
   const plain = { visible_rows: [{ close: 1.1 }], payload: {} }
-  assert.deepEqual(orderDraft(plain, { pip_size: '.0001', quantity_min: '.01' }), { side: 'BUY', quantity: '.01', stopLoss: '1.098', takeProfit: '1.104' })
+  assert.deepEqual(orderDraft(plain, { pip_size: '.0001', quantity_min: '.01' }), { side: 'BUY', quantity: '.01', stopLoss: '', takeProfit: '' })
+  assert.equal(orderDraft(replay, {}).stopLoss, '1.09', 'Opening an existing position keeps its persisted protection')
+  assert.equal(orderDraft(replay, {}).takeProfit, '1.12')
   assert.equal(orderDraft(plain, {}, 'SELL').stopLoss, '')
   assert.equal(orderLevels(plain, { side: 'BUY', stopLoss: '', takeProfit: '1.12' }), null)
   assert.equal(orderLevels(replay, { stopLoss: '', takeProfit: '1.12' }).stop, 1.09, 'Persisted protection wins over a stale form draft')
