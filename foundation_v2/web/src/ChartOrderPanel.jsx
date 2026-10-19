@@ -42,7 +42,7 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
     setNotice(null)
     try {
       const success = await submit(endpoint, body)
-      if (success) setNotice({ kind: 'ok', text: endpoint === 'execution' ? 'Simulator sẵn sàng.' : endpoint.endsWith('close') ? 'Đã đóng/hủy lệnh mô phỏng.' : endpoint.endsWith('protection') ? 'TP/SL đã lưu; áp dụng từ nến tiếp theo.' : execution?.quote_source === 'broker_bid_ask' ? 'Đã queue; fill ở tick đầu tiên của nến kế tiếp.' : 'Đã queue; fill ở giá mở nến kế tiếp.' })
+      if (success) setNotice({ kind: 'ok', text: endpoint === 'execution' ? 'Simulator sẵn sàng.' : endpoint.endsWith('close') ? success.payload?.execution?.position ? 'Đã đóng một phần vị thế.' : 'Đã đóng/hủy lệnh mô phỏng.' : endpoint.endsWith('protection') ? 'TP/SL đã lưu; áp dụng từ nến tiếp theo.' : execution?.quote_source === 'broker_bid_ask' ? 'Đã queue; fill ở tick đầu tiên của nến kế tiếp.' : 'Đã queue; fill ở giá mở nến kế tiếp.' })
       return success
     } catch (error) { setNotice({ kind: 'error', text: error.message }) }
     finally { busy.current = false; setPending(false) }
@@ -184,9 +184,10 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
     } catch (error) { setNotice({ kind: 'error', text: error.message }); return false }
     finally { busy.current = false; setPending(false); setPendingOrder(null) }
   }
-  const close = () => active && run('orders/close', {
+  const close = quantity => active && (typeof quantity !== 'string' || replay?.execution_capabilities?.partial_close === true) && run('orders/close', {
     operation_id: `close-${crypto.randomUUID()}`,
     target_id: execution.position?.position_id || execution.pending_market_order.operation_id,
+    ...(typeof quantity === 'string' ? { quantity } : {}),
   })
   return { resetDraft: () => setDraft(orderDraft(replay, instrument)), draft, setDraft, execution, account, assetStates, instrument, costs, active, reference, disabled, pending, pendingOrder: pendingOrder?.context === context ? pendingOrder : null, notice, quickTrade, close, canClose: ready && !closeBlocked && !pending, startingBalance, configuredBalance: replay?.payload?.starting_balance, configuredCurrency: replay?.payload?.starting_balance_ccy, setStartingBalance, spread, setSpread, tick, canInitialize, initialize, save, changePrice, reportError, chooseSide, executionConfig }
 }
@@ -210,7 +211,6 @@ function LegacyOrderForm({ order, blockedReason, onClose, onJournal }) {
     {!active && <div className="legacy-protection-row is-unavailable" title={t('Chưa hỗ trợ tự dời SL về hòa vốn')}><label><input type="checkbox" role="switch" disabled />Auto Break-even</label><small>{t('Sắp có')}</small></div>}
     <label>{t('Chiến lược')}<FxSelect className="is-field" label="Chiến lược" value="session" disabled options={[{ value: 'session', label: t('Mặc định của phiên') }]} /></label><button type="button" className="legacy-strategy-create" disabled>{t('+ Tạo chiến lược mới')}</button>
     {blockedReason && <p role="status">{t(blockedReason)}</p>}
-    {execution && <p className="legacy-order-hint">{t(active ? 'Thay đổi TP/SL áp dụng từ nến tiếp theo.' : 'Market khớp tại Bid/Ask mô phỏng ở thời điểm hiện tại.')} · SIM</p>}
     {order.notice && <p role={order.notice.kind === 'error' ? 'alert' : 'status'}>{order.notice.title ? <><strong>{t(order.notice.title)}</strong> {t(order.notice.message, order.notice.values)}</> : t(order.notice.text)}</p>}
     <footer>{!active && <label><input type="checkbox" checked={journal} onChange={event => setJournal(event.target.checked)} />{t('Mở nhật ký sau khi đặt lệnh')}</label>}<button type="button" onClick={onClose}>{t('Hủy')}</button><button type="submit" className="legacy-order-save" disabled={disabled || !changed}>{t(order.pending ? 'Đang lưu…' : !changed ? 'Không có thay đổi' : 'Save')}</button></footer>
   </form></>

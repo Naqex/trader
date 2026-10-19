@@ -1,0 +1,21 @@
+{
+  "health": {
+    "command_worker": "not_required",
+    "contract_version": "foundation-v2.1",
+    "database": "ready",
+    "ok": true
+  },
+  "installed": {
+    "supervisor": "4d6f5f81a4bca11191c4c7c6b43632694d0a4ce74e068619d8fdc161d469859a",
+    "research": "46b67cd0c354def33acad2fe5c694c76b16aa6f376072a7b9dd082d926c16575",
+    "api": "a7ee074ed35651f5b3076ab534a0ba19fa706423064c3464fa53c40663429538"
+  },
+  "capability": {
+    "partial_close": true
+  },
+  "passed": true,
+  "owner_state_unchanged": true,
+  "runtime": "native",
+  "session_revision": 8,
+  "storage": "compact"
+}

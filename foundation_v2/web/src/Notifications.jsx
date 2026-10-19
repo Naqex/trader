@@ -27,9 +27,9 @@ function Notification({ notice, onDismiss }) {
     {order ? <>
       <span className={`wm-notification-mark is-${order.side === 'BUY' ? 'buy' : 'sell'}`} aria-hidden="true">✓</span>
       <div className="wm-notification-content" role={role}>
-        <strong>{t(order.status === 'executed' ? 'Market order executed on' : 'Market order queued on')}</strong>
+        <strong>{t(order.status === 'executed' ? 'Đã khớp lệnh market' : 'Đã gửi lệnh market chờ khớp')}</strong>
         <span className="wm-notification-symbol">{order.symbol}</span>
-        <span className={`wm-notification-order-line is-${order.side === 'BUY' ? 'buy' : 'sell'}`}><b>{t(order.side === 'BUY' ? 'Buy' : 'Sell')}</b> {order.quantity} {t('at')} {order.price}</span>
+        <span className={`wm-notification-order-line is-${order.side === 'BUY' ? 'buy' : 'sell'}`}><b>{t(order.side === 'BUY' ? 'Buy' : 'Sell')}</b> {t('{quantity} tại {price}', { quantity: order.quantity, price: order.price })}</span>
       </div>
     </> : structured ? <>
       <span className="wm-notification-mark is-neutral" aria-hidden="true">✓</span>

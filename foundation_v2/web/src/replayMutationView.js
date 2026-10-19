@@ -111,6 +111,7 @@ export function mergeReplayMutationView(current, response, { workspace, sessionI
     if (previous !== undefined && sameValue(previous, execution[key])) execution[key] = previous
   }
   const replay = { ...current, revision: response.revision, updated_at_utc: response.updated_at_utc,
+    execution_capabilities: response.execution_capabilities ?? current.execution_capabilities,
     execution_view_status: response.execution_view_status,
     payload: { ...current.payload, ...patch, execution } }
   return { replay, appendedEvents: response.appended_events, compact: true }

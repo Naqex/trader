@@ -1,0 +1,8 @@
+{
+  "scope": "Installed production UI and native API, all owner API writes blocked, no trades or playback",
+  "blocked": [],
+  "errors": [],
+  "ready": true,
+  "horizontalOverflow": false,
+  "passed": true
+}

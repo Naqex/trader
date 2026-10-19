@@ -8,8 +8,9 @@ import { readChartSnapshot, writeChartSnapshot } from './advancedChartStorage.js
 import { createChartSave } from './advancedChartSave.js'
 import ChartLoadingState from './ChartLoadingState.jsx'
 import { createAdvancedOrderOverlay } from './advancedOrderOverlay.js'
-import { orderLabel } from './replayOrderLabels.js'
+import { orderPriceColor } from './replayOrderLabels.js'
 import LegacyModal from './LegacyModal.jsx'
+import PartialCloseDialog from './PartialCloseDialog.jsx'
 import './chart-order-close.css'
 
 let libraryPromise
@@ -133,7 +134,10 @@ export default function TradingViewReplayChart(props) {
     }
     const syncOrderHandles = () => {
       orderOverlay ??= createAdvancedOrderOverlay({
-        getState: () => ({ ...latest.current, onOrderClose: () => setCloseTarget({ generation: latest.current.orderGeneration, levels: latest.current.levels }) }),
+        getState: () => ({ ...latest.current,
+          onOrderClose: () => setCloseTarget({ generation: latest.current.orderGeneration, levels: latest.current.levels }),
+          onOrderPartial: () => setCloseTarget({ generation: latest.current.orderGeneration, levels: latest.current.levels, partial: true }),
+        }),
         getPane: orderPane,
         getLine: kind => lineByKind.get(kind),
         t,
@@ -192,13 +196,14 @@ export default function TradingViewReplayChart(props) {
           renderingOverlays = true
           try {
             const state = latest.current
-            for (const kind of ['entry', 'stop', 'target']) {
+            // Equal-price native labels stack in reverse creation order: Entry, TP, SL.
+            for (const kind of ['stop', 'target', 'entry']) {
               const value = state.levels?.[kind] ?? (kind === 'stop' ? state.levels?.ghostStop : state.levels?.ghostTarget)
               if (!(value > 0)) {
                 lineByKind.get(kind)?.remove(); lineByKind.delete(kind); lineSignatures.delete(kind)
                 continue
               }
-              const label = orderLabel(state.levels, kind, value, state.theme, t)
+              const priceColor = orderPriceColor(kind, state.theme, false, state.levels.side)
               let line = lineByKind.get(kind)
               if (!line) {
                 line = chart.createOrderLine()
@@ -212,11 +217,11 @@ export default function TradingViewReplayChart(props) {
                   .setLineLength(100)
                 lineByKind.set(kind, line)
               }
-              const signature = [value, state.levels.side, label.ghost, label.color].join(':')
+              const signature = [value, state.levels.side, priceColor].join(':')
               if (lineSignatures.get(kind) !== signature) {
                 line.setPrice(value).setDirection(state.levels.side === 'SELL' ? 'sell' : 'buy')
                   .setMode(kind === 'stop' ? 'stop' : kind === 'target' ? 'limit' : '')
-                  .setLineColor(label.color).setLineStyle(2)
+                  .setLineColor(priceColor).setLineStyle(2)
                 lineSignatures.set(kind, signature)
               }
             }
@@ -436,7 +441,12 @@ export default function TradingViewReplayChart(props) {
     {status === 'error' && <div className="advanced-chart-message" role="alert">{t(message)} <a href={fallbackUrl.href}>{t("Mở chart dự phòng")}</a></div>}
     {status === 'ready' && layoutStatus === 'error' && <div className="advanced-chart-message" role="alert">{t(message)}</div>}
   </div>
-    {closeTarget && <LegacyModal theme={theme} label={t(closeTarget.levels.state === 'queued' ? 'Hủy lệnh chờ?' : 'Đóng vị thế?')} className="chart-order-close-dialog" onClose={() => { if (!closing) setCloseTarget(null) }}>
+    {closeTarget?.partial && <PartialCloseDialog levels={closeTarget.levels} theme={theme} pending={closing} disabled={!props.orderCloseable} onClose={() => setCloseTarget(null)} onSubmit={async quantity => {
+      if (closeTarget.generation !== latest.current.orderGeneration) { setCloseTarget(null); return false }
+      setClosing(true)
+      try { const success = await latest.current.onOrderClose(quantity); if (success) setCloseTarget(null); return Boolean(success) } finally { setClosing(false) }
+    }} />}
+    {closeTarget && !closeTarget.partial && <LegacyModal theme={theme} label={t(closeTarget.levels.state === 'queued' ? 'Hủy lệnh chờ?' : 'Đóng vị thế?')} className="chart-order-close-dialog" onClose={() => { if (!closing) setCloseTarget(null) }}>
       <div className="chart-order-close-summary"><strong>{closeTarget.levels.side} · {symbol}</strong><span>{t('Khối lượng')} {closeTarget.levels.quantity}</span></div>
       <footer><button type="button" className="wm-button" disabled={closing} onClick={() => setCloseTarget(null)}>{t('Hủy')}</button><button type="button" className="wm-button is-destructive" disabled={closing || !latest.current.orderCloseable} onClick={async () => {
         if (closeTarget.generation !== latest.current.orderGeneration) { setCloseTarget(null); return }

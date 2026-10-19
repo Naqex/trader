@@ -1,5 +1,5 @@
 import { nativeChartPalette } from './nativeChartPalette.js'
-import { orderLabel, protectionError } from './replayOrderLabels.js'
+import { orderLabel, orderPriceColor, protectionError } from './replayOrderLabels.js'
 
 // v23 exposes the visible raw-price range, mode and inversion, but no public
 // coordinate conversion. Percentage/indexed modes are affine in raw price.
@@ -46,12 +46,15 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
   const snap = (price, tick) => tick > 0 ? Number((Math.round(price / tick) * tick).toFixed(8)) : price
   const claim = event => { event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation() }
   const setPrice = (kind, price) => { if (price > 0) getLine(kind)?.setPrice(price) }
+  const paintPriceColor = (kind, state = getState()) => {
+    const row = rows.get(kind)
+    getLine(kind)?.setLineColor(orderPriceColor(kind, state.theme, row?.hovered || row?.focused || drag?.kind === kind, state.levels?.side))
+  }
   const restoreLine = kind => {
     const state = getState(), price = priceOf(state.levels || {}, kind)
     if (!(price > 0)) return
-    const label = orderLabel(state.levels, kind, price, state.theme, t)
     setPrice(kind, price)
-    getLine(kind)?.setLineColor(label.color)
+    paintPriceColor(kind, state)
   }
   const placeRows = () => {
     const markers = [...rows.values()].filter(row => !row.element.hidden).map(row => {
@@ -69,6 +72,7 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
   const paintRow = (row, state, price, preview = false) => {
     const levels = preview ? { ...state.levels, [row.kind]: price } : state.levels
     const label = orderLabel(levels, row.kind, price, state.theme, t)
+    paintPriceColor(row.kind, state)
     row.element.dataset.ghost = String(label.ghost)
     row.element.dataset.compact = String(label.compact)
     row.element.style.setProperty('--order-color', label.color)
@@ -82,7 +86,11 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     row.amount.textContent = parts[1] || ''
     row.quantity.textContent = String(levels.quantity ?? '—')
     row.quantity.hidden = label.compact
-    if (row.kind === 'entry') row.quantity.disabled = !state.orderEditable || !state.onOrderEdit
+    if (row.kind === 'entry') {
+      const position = levels.state === 'position'
+      row.quantity.disabled = position ? !levels.partialCloseSupported || !state.orderCloseable || !state.onOrderPartial : !state.orderEditable || !state.onOrderEdit
+      row.quantity.setAttribute('aria-label', t(position ? 'Đóng một phần vị thế' : 'Chỉnh sửa vị thế'))
+    }
     if (row.kind !== 'entry') {
       const hint = t('Kéo để dời · ↑ ↓ chỉnh giá · Delete để bỏ')
       row.body.title = label.ghost ? hint : `${label.detail} · ${price} · ${hint}`
@@ -107,13 +115,8 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     if (!drag.moved || price === drag.paintedPrice) return
     drag.paintedPrice = price
     const row = rows.get(drag.kind)
-    const label = paintRow(row, state, price, true)
+    paintRow(row, state, price, true)
     setPrice(drag.kind, price)
-    const line = getLine(drag.kind)
-    if (drag.line !== line || drag.color !== label.color) {
-      line?.setLineColor(label.color)
-      drag.line = line; drag.color = label.color
-    }
     row.element.style.top = `${toY(drag.info, price)}px`
     row.element.dataset.invalid = String(Boolean(protectionError(state.levels, drag.kind, price)))
     placeRows()
@@ -230,11 +233,19 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
       quantity.addEventListener('click', event => {
         claim(event)
         const state = getState()
-        if (state.orderEditable) { state.onOrderDragStart?.(); state.onOrderEdit?.() }
+        if (state.levels.state === 'position') {
+          if (state.levels.partialCloseSupported && state.orderCloseable) { state.onOrderDragStart?.(); state.onOrderPartial?.() }
+        } else if (state.orderEditable) { state.onOrderDragStart?.(); state.onOrderEdit?.() }
       })
     }
     body.append(text, quantity); element.append(body)
     const row = { kind, element, body, text, name, arrow, amount, quantity }
+    if (kind !== 'entry') {
+      element.addEventListener('pointerenter', () => { row.hovered = true; paintPriceColor(kind) })
+      element.addEventListener('pointerleave', () => { row.hovered = false; paintPriceColor(kind) })
+      body.addEventListener('focus', () => { row.focused = !body.dataset.pointerFocus; paintPriceColor(kind) })
+      body.addEventListener('blur', () => { row.focused = false; paintPriceColor(kind) })
+    }
     if (kind === 'entry') {
       const close = owner.createElement('button')
       close.type = 'button'; close.className = 'wm-order-marker-close'; close.textContent = '×'

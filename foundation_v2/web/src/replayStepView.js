@@ -151,6 +151,7 @@ export function mergeReplayStepView(current, response, scope) {
     }
   }
   const replay = { ...current, revision: response.revision, updated_at_utc: response.updated_at_utc,
+    execution_capabilities: response.execution_capabilities ?? current.execution_capabilities,
     view_cursor_index: cursor, canonical_cursor_index: cursor, cutoff_timestamp: timestamp,
     historical_view: false, has_future_rows: response.has_future_rows, execution_view_status: response.execution_view_status,
     visible_row_start: response.visible_row_start, visible_row_count: response.visible_row_count,

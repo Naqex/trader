@@ -1,8 +1,10 @@
 import { useEffect, useId, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import ChartIcon from './ChartIcon.jsx'
+import { useTestingLocale } from './testingLocale.jsx'
 
 export default function LegacyModal({ theme, label, onClose, children, className = '' }) {
+  const { t } = useTestingLocale()
   const panelRef = useRef(null)
   const titleId = useId()
   const closeRef = useRef(onClose)
@@ -35,7 +37,7 @@ export default function LegacyModal({ theme, label, onClose, children, className
   return createPortal(
     <div className={`legacy-modal-overlay ${theme === 'light' ? 'is-light' : ''}`} role="presentation" onPointerDown={event => { if (event.target === event.currentTarget) closeRef.current() }}>
       <section ref={panelRef} className={`legacy-modal ${className}`} role="dialog" aria-modal="true" aria-labelledby={titleId}>
-        <header><h2 id={titleId}>{label}</h2><button type="button" className="wm-dialog-close" aria-label="Đóng" onClick={() => closeRef.current()}><ChartIcon name="close" /></button></header>
+        <header><h2 id={titleId}>{label}</h2><button type="button" className="wm-dialog-close" aria-label={t('Đóng')} onClick={() => closeRef.current()}><ChartIcon name="close" /></button></header>
         {children}
       </section>
     </div>,

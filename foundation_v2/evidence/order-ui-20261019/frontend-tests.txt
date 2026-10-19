@@ -1,0 +1,42 @@
+✔ price-axis colors distinguish entry side, protection and selection (1.0856ms)
+✔ equal and nearby prices separate horizontally while distant levels share the right column (1.1048ms)
+✔ protection labels use account currency, direction and actual quantity; unknown FX conversion stays unknown (0.7419ms)
+✔ Entry-price protections use compact handles without losing saved state or hiding real nonzero distances (1.9792ms)
+✔ scale projection supports log, invert and tiny price ranges with reversible drag coordinates (1.0279ms)
+✔ pending entry is explicitly submitting and authoritative execution wins when it arrives (0.626ms)
+✔ percentage basis follows original or remaining position and rounds down without overclosing (2.0383ms)
+✔ invalid sizing cannot submit a zero, excess, off-step or dust remainder (0.2647ms)
+✔ closed positions list shows each realized slice including a protective final fill (1.0801ms)
+✔ protection confirmation updates financial state without replacing chart or unchanged configuration (3.072ms)
+✔ changed configuration is retained rather than hidden behind previous references (0.3286ms)
+✔ uninitialized quick sell can advance two revisions and immediately expose its filled position (0.2028ms)
+✔ initialization then market can merge sequentially before a render without losing the initialized head (0.6916ms)
+✔ Prop receives only newly appended price/close events, never the retained ledger (0.4174ms)
+✔ Prop recovers unacknowledged base marks after reload before new mutation marks, exactly once (0.3204ms)
+✔ Prop recovery also works with empty new suffix and legacy full-response ledgers (0.3701ms)
+✔ long ledgers stay complete and immutable while unchanged chart references survive (1.6965ms)
+✔ portfolio, historical, missing checksum and inconsistent local ledger choose full responses before sending (0.4877ms)
+✔ foreign context, unknown schema and changed cursor are rejected without applying a head (0.5771ms)
+✔ stale retries, future base, missing fields and invalid revision increments fail closed (1.0049ms)
+✔ missing, duplicated, reordered, overflowing or foreign event sequences never corrupt the ledger (0.8454ms)
+✔ Prop attempt identity cannot be silently changed by an otherwise valid mutation (0.283ms)
+✔ older servers returning full snapshots remain compatible and emit only their event suffix (0.4879ms)
+✔ one step hydrates exact new state while preserving retained candles and configuration references (7.0227ms)
+✔ 1000-step rolling window retains exactly 2000 candles without losing ledger history (6.3637ms)
+✔ uninitialized replay advances candles without fabricating an execution (1.194ms)
+✔ session-period completion and compatible final no-advance revision are explicit (5.4602ms)
+✔ gapped native timestamps and protective-fill then mark preserve causal ordering (0.6253ms)
+✔ eligibility requires advertised native canonical BAR scope and complete visible base window (1.5065ms)
+✔ foreign scope, stale base and missing or future cursor metadata fail closed (0.824ms)
+✔ malformed, missing, duplicate, unordered and overflowing bars are rejected (1.3599ms)
+✔ events require contiguous sequence, valid head, each advanced bar mark and no future data (1.027ms)
+✔ Prop identity is retained and unknown attempts are rejected (0.3905ms)
+✔ older full-response runtime is accepted only for the exact forward revision and scope (0.9753ms)
+ℹ tests 34
+ℹ suites 0
+ℹ pass 34
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 187.9157

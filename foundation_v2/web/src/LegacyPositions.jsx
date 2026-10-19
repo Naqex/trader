@@ -13,7 +13,7 @@ export default memo(function LegacyPositions({ execution, assetStates, symbol, a
     const executions = assetStates ? Object.entries(assetStates).filter(([, state]) => state.execution).map(([id, state]) => ({ id, execution:state.execution, symbol:state.execution.instrument_spec.instrument_id })) : [{ id:'active', execution, symbol }]
     return executions.flatMap(asset => {
       const item = tab === 'open' ? asset.execution?.position : asset.execution?.pending_market_order
-      return item ? [{ ...item, key:`${asset.id}:${item.position_id || item.operation_id}`, symbol:asset.symbol, unrealized:tab === 'open' ? asset.execution.floating_pl : undefined }] : []
+      return item ? [{ ...item, key:`${asset.id}:${item.position_id || item.operation_id}`, symbol:asset.symbol, unrealized:tab === 'open' ? asset.execution.floating_pl : undefined, realized:tab === 'open' ? item.realized_pnl ?? '0' : undefined }] : []
     })
   }, [active, tab, execution, assetStates, symbol])
   if (!active) return null

@@ -419,7 +419,7 @@ button.chart-order-level { cursor: ns-resize; touch-action: none; }
 .legacy-order-form { padding:var(--wm-space-6,24px); display:grid; gap:var(--wm-space-6,24px); }
 .legacy-order-form label { display:grid; gap:6px; color:var(--chart-muted); font-size:13px; }
 .legacy-order-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; }
-.legacy-order-modal :is(input:not([type=checkbox]),select) { box-sizing:border-box; min-width:0; width:100%; height:var(--ds-control,36px); border:1px solid var(--project-border); border-radius:var(--ds-radius-field,8px); padding:7px 12px; background:var(--project-canvas); color:var(--project-text); font:inherit; }
+.legacy-order-modal :is(input:not([type=checkbox]):not([type=radio]),select) { box-sizing:border-box; min-width:0; width:100%; height:var(--ds-control,36px); border:1px solid var(--project-border); border-radius:var(--ds-radius-field,8px); padding:7px 12px; background:var(--project-canvas); color:var(--project-text); font:inherit; }
 .legacy-order-modal :is(input,button,select,summary):focus-visible { outline:2px solid var(--project-primary); outline-offset:2px; }
 .legacy-protection-row { display:flex; align-items:center; justify-content:space-between; gap:24px; min-height:36px; box-sizing:border-box; }
 .legacy-protection-row label { display:flex; align-items:center; flex-shrink:0; gap:10px; color:var(--chart-text); }
@@ -429,7 +429,7 @@ button.chart-order-level { cursor: ns-resize; touch-action: none; }
 .legacy-order-form input[role=switch]:checked::before { transform:translateX(12px); }
 .legacy-protection-row.is-unavailable { opacity:var(--ds-disabled-opacity,.5); }
 .legacy-order-form .legacy-strategy-create { color:#76abff; text-align:left; padding:0; justify-self:start; margin-top:-12px; font-size:12px; }
-.legacy-order-form footer { display:flex; align-items:center; gap:8px; margin-top:10px; }
+.legacy-order-form footer { display:flex; align-items:center; justify-content:flex-end; gap:8px; margin-top:10px; }
 .legacy-order-form footer label { margin-right:auto; color:var(--chart-text); display:flex; align-items:center; gap:8px; }
 .legacy-order-form footer .legacy-order-save { display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box; width:auto; min-width:80px; height:var(--ds-control,36px); min-height:var(--ds-control,36px); padding:7px 12px; border:1px solid transparent; border-radius:var(--wm-control-radius); background:var(--wm-action-bg); color:var(--wm-on-primary); font-weight:var(--ds-weight-control); line-height:var(--ds-line-control,20px); }
 .legacy-order-form p { margin:0; font-size:12px; line-height:1.5; color:var(--chart-muted); }
@@ -454,7 +454,7 @@ button.chart-order-level { cursor: ns-resize; touch-action: none; }
 .legacy-native-menu button:disabled:hover { background:transparent; }
 .legacy-native-menu button, .legacy-order-modal :is(button,input,select), .is-legacy-chart :is(.chart-floating-toolbar,.chart-utility-rail,.chart-trading-bar,.replay-side) :is(button,a,input,select) { transition:background-color var(--ds-motion-hover),border-color var(--ds-motion-hover),color var(--ds-motion-hover); }
 .is-legacy-chart :is(.chart-floating-toolbar,.chart-utility-rail,.chart-trading-bar,.replay-side) :is(button,a,input,select):focus-visible { outline:2px solid var(--project-primary); outline-offset:-2px; }
-.legacy-order-modal :is(input:not([type=checkbox]):not([readonly]),select):hover:not(:disabled) { background:var(--project-hover); border-color:var(--project-border-strong); }
+.legacy-order-modal :is(input:not([type=checkbox]):not([type=radio]):not([readonly]),select):hover:not(:disabled) { background:var(--project-hover); border-color:var(--project-border-strong); }
 .legacy-order-modal :is(input,select):disabled { opacity:.5; cursor:default; }
 .is-legacy-chart .chart-floating-toolbar button.chart-float-grip { color:var(--chart-text); }
 .fx-app.fx-shell-story.is-chart-workspace .fx-content > .is-legacy-chart :is(.chart-floating-toolbar,.chart-utility-rail,.chart-trading-account) :is(button,a):not(.legacy-balance-pill):not(.legacy-analytics-link):not(.legacy-prop-rules-link) { border-radius:6px; }
@@ -484,7 +484,7 @@ button.chart-order-level { cursor: ns-resize; touch-action: none; }
 .legacy-positions .wm-pagination { --wm-canvas:var(--chart-bg); --wm-border:var(--chart-line); padding:12px 16px; }
 .legacy-positions tbody tr:hover { background:var(--project-row-hover); }
 .legacy-positions :is(th,td) { height:48px; box-sizing:border-box; font-size:13px; font-variant-numeric:tabular-nums; }
-.legacy-order-modal :is(input:not([type=checkbox]),select):focus { border-color:var(--project-primary); outline:none; box-shadow:none; }
+.legacy-order-modal :is(input:not([type=checkbox]):not([type=radio]),select):focus { border-color:var(--project-primary); outline:none; box-shadow:none; }
 .legacy-order-modal input[readonly] { color:var(--chart-muted); }
 .legacy-order-modal .fx-select.is-field .fx-select-trigger { height:36px; min-height:36px; border:1px solid var(--wm-control-border); border-radius:8px; font:inherit; }
 .legacy-order-modal .fx-select.is-field .fx-select-trigger:is(:focus-visible,[aria-expanded=true]):not(:disabled) { border-color:var(--wm-focus); outline:none; box-shadow:none; }
@@ -528,7 +528,7 @@ button.chart-order-level { cursor: ns-resize; touch-action: none; }
  .advanced-chart-save-status { right:8px; bottom:40px; }
 }
 @media (pointer:coarse) {
- .legacy-order-modal :is(input:not([type=checkbox]),select), .legacy-order-modal .fx-select.is-field .fx-select-trigger, .legacy-order-modal button:not(.wm-dialog-close), .legacy-popover :is(button,input:not([type=checkbox]),select) { min-height:44px; }
+ .legacy-order-modal :is(input:not([type=checkbox]):not([type=radio]),select), .legacy-order-modal .fx-select.is-field .fx-select-trigger, .legacy-order-modal button:not(.wm-dialog-close), .legacy-popover :is(button,input:not([type=checkbox]),select) { min-height:44px; }
  .legacy-order-modal .legacy-order-save { height:44px; }
  .legacy-order-modal .wm-dialog-close { min-height:44px; }
 }

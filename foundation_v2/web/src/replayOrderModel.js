@@ -55,6 +55,9 @@ export function orderLevels(replay, draft, scalperPreview = null, closeableRefer
   const costs = execution?.cost_model || null
   return { entry, reference: finiteNumber(closeableReference) ?? entry, stop, target, ghostStop, ghostTarget, quantity: active?.quantity || draft.quantity, side, state: pendingOrder && !execution?.position && !execution?.pending_market_order ? 'submitting' : modified ? 'edit' : execution?.position ? 'position' : active ? 'queued' : 'draft',
     floating: execution?.position ? execution.floating_pl : null, currency: costs?.account_ccy || spec?.account_ccy,
+    originalQuantity: active?.original_quantity ?? active?.quantity, realizedPnl: active?.realized_pnl ?? '0',
+    partialCloseSupported: replay?.execution_capabilities?.partial_close === true,
+    quantityMin: spec?.quantity_min, quantityStep: spec?.quantity_step, assetClass: spec?.asset_class,
     pipSize: finiteNumber(spec?.pip_size), tickSize: finiteNumber(spec?.tick_size), contractSize: finiteNumber(spec?.contract_size), quoteToAccountRate: finiteNumber(costs?.quote_to_account_rate), quoteCurrency: spec?.quote_ccy,
     timestamp: execution?.position?.opened_time_utc ?? replay?.visible_rows?.at(-1)?.timestamp }
 }

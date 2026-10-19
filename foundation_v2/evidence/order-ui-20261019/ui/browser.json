@@ -1,0 +1,228 @@
+{
+  "scope": "Synthetic API state and intercepted writes; real native chart library. Financial correctness is tested separately against a disposable database.",
+  "cases": [
+    {
+      "width": 1368,
+      "language": "vi",
+      "side": "BUY",
+      "theme": "dark",
+      "colors": [
+        {
+          "tooltip": "Stop loss",
+          "price": 1.1032,
+          "color": "#46C7B7"
+        },
+        {
+          "tooltip": "Take profit",
+          "price": 1.1032,
+          "color": "#46C7B7"
+        },
+        {
+          "tooltip": "Entry",
+          "price": 1.1032,
+          "color": "#F5F8FF"
+        }
+      ],
+      "quickFilled": true,
+      "reload": true,
+      "partialUi": true,
+      "oldServerBlocked": true
+    },
+    {
+      "width": 1368,
+      "language": "en",
+      "side": "SELL",
+      "theme": "dark",
+      "colors": [
+        {
+          "tooltip": "Stop loss",
+          "price": 1.1032,
+          "color": "#46C7B7"
+        },
+        {
+          "tooltip": "Take profit",
+          "price": 1.1032,
+          "color": "#46C7B7"
+        },
+        {
+          "tooltip": "Entry",
+          "price": 1.1032,
+          "color": "#FFBF00"
+        }
+      ],
+      "quickFilled": true,
+      "reload": true,
+      "partialUi": true,
+      "oldServerBlocked": true
+    },
+    {
+      "width": 390,
+      "language": "vi",
+      "side": "SELL",
+      "theme": "light",
+      "colors": [
+        {
+          "tooltip": "Stop loss",
+          "price": 1.1032,
+          "color": "#159989"
+        },
+        {
+          "tooltip": "Take profit",
+          "price": 1.1032,
+          "color": "#159989"
+        },
+        {
+          "tooltip": "Entry",
+          "price": 1.1032,
+          "color": "#FFBF00"
+        }
+      ],
+      "quickFilled": true,
+      "reload": true,
+      "partialUi": true,
+      "oldServerBlocked": true
+    },
+    {
+      "width": 768,
+      "language": "en",
+      "side": "BUY",
+      "theme": "light",
+      "colors": [
+        {
+          "tooltip": "Stop loss",
+          "price": 1.1032,
+          "color": "#159989"
+        },
+        {
+          "tooltip": "Take profit",
+          "price": 1.1032,
+          "color": "#159989"
+        },
+        {
+          "tooltip": "Entry",
+          "price": 1.1032,
+          "color": "#E8EBEF"
+        }
+      ],
+      "quickFilled": true,
+      "reload": true,
+      "partialUi": true,
+      "oldServerBlocked": true
+    }
+  ],
+  "errors": [],
+  "writes": [
+    {
+      "width": 1368,
+      "language": "vi",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/market",
+      "body": {
+        "operation_id": "quick-29557b3a-54f8-4dc0-a79e-1a79030f05ae",
+        "execution_timing": "current_quote",
+        "side": "BUY",
+        "quantity": "0.10",
+        "stop_loss": null,
+        "take_profit": null,
+        "expected_revision": 123
+      }
+    },
+    {
+      "width": 1368,
+      "language": "vi",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "body": {
+        "operation_id": "close-fed692e1-f8d1-48b2-a7aa-597c65dc2a87",
+        "target_id": "qa-position",
+        "quantity": "0.02",
+        "expected_revision": 124
+      }
+    },
+    {
+      "width": 1368,
+      "language": "vi",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "body": {
+        "operation_id": "close-92a0e460-4d3b-4168-bb73-368f6ae4407c",
+        "target_id": "qa-position",
+        "quantity": "0.02",
+        "expected_revision": 124
+      }
+    },
+    {
+      "width": 1368,
+      "language": "en",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/market",
+      "body": {
+        "operation_id": "quick-e6219e20-d9a1-42db-b019-c1b34e5e8923",
+        "execution_timing": "current_quote",
+        "side": "SELL",
+        "quantity": "0.10",
+        "stop_loss": null,
+        "take_profit": null,
+        "expected_revision": 123
+      }
+    },
+    {
+      "width": 1368,
+      "language": "en",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "body": {
+        "operation_id": "close-a0465a86-3a40-49f0-ae59-d4d0b4a5a714",
+        "target_id": "qa-position",
+        "quantity": "0.02",
+        "expected_revision": 124
+      }
+    },
+    {
+      "width": 390,
+      "language": "vi",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/market",
+      "body": {
+        "operation_id": "quick-1586e95e-db79-4c0b-8733-2c6e71ed855b",
+        "execution_timing": "current_quote",
+        "side": "SELL",
+        "quantity": "0.10",
+        "stop_loss": null,
+        "take_profit": null,
+        "expected_revision": 123
+      }
+    },
+    {
+      "width": 390,
+      "language": "vi",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "body": {
+        "operation_id": "close-cfdf59fa-0746-4c1f-be18-1061ed72f266",
+        "target_id": "qa-position",
+        "quantity": "0.02",
+        "expected_revision": 124
+      }
+    },
+    {
+      "width": 768,
+      "language": "en",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/market",
+      "body": {
+        "operation_id": "quick-1b96e7da-79bf-4bdf-9511-779b2f66f3bf",
+        "execution_timing": "current_quote",
+        "side": "BUY",
+        "quantity": "0.10",
+        "stop_loss": null,
+        "take_profit": null,
+        "expected_revision": 123
+      }
+    },
+    {
+      "width": 768,
+      "language": "en",
+      "path": "/api/v2/replay/sessions/fixture-chart-ui/orders/close",
+      "body": {
+        "operation_id": "close-b945e53a-06de-4184-b6ad-52f6152f5d7b",
+        "target_id": "qa-position",
+        "quantity": "0.02",
+        "expected_revision": 124
+      }
+    }
+  ],
+  "passed": true
+}

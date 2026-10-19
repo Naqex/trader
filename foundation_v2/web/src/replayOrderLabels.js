@@ -2,6 +2,11 @@ import { nativeChartPalette } from './nativeChartPalette.js'
 
 const amountFormat = new Intl.NumberFormat('en-US', { useGrouping: false, minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
+export function orderPriceColor(kind, theme, selected = false, side = 'BUY') {
+  const palette = nativeChartPalette(theme)
+  return kind === 'entry' ? side === 'SELL' ? palette.orderSelectedPrice : palette.orderEntryPrice : selected ? palette.orderSelectedPrice : palette.orderProtectionPrice
+}
+
 export function protectionProfit(levels, price) {
   const quantity = Number(levels.quantity), contract = Number(levels.contractSize)
   const declaredRate = Number(levels.quoteToAccountRate)

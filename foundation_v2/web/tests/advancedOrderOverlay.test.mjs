@@ -1,10 +1,18 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { orderScale, orderMarkerColumns } from '../src/advancedOrderOverlay.js'
-import { orderLabel, protectionError, protectionProfit } from '../src/replayOrderLabels.js'
+import { orderLabel, orderPriceColor, protectionError, protectionProfit } from '../src/replayOrderLabels.js'
 import { orderLevels } from '../src/replayOrderModel.js'
 
 const levels = { entry: 1.1, reference: 1.101, side: 'BUY', quantity: '.12', contractSize: 100000, quoteCurrency: 'USD', currency: 'USD', state: 'position', floating: '-3.12', stop: 1.09, target: 1.12 }
+test('price-axis colors distinguish entry side, protection and selection', () => {
+  assert.equal(orderPriceColor('entry', 'dark', false, 'BUY'), '#F5F8FF')
+  assert.equal(orderPriceColor('entry', 'dark', false, 'SELL'), '#FFBF00')
+  for (const side of ['BUY', 'SELL']) for (const kind of ['stop', 'target']) {
+    assert.equal(orderPriceColor(kind, 'dark', false, side), '#46C7B7')
+    assert.equal(orderPriceColor(kind, 'dark', true, side), '#FFBF00')
+  }
+})
 test('equal and nearby prices separate horizontally while distant levels share the right column', () => {
   const marker = (kind, y, width = 160) => ({ kind, y, width, height: 22 })
   assert.deepEqual(orderMarkerColumns([marker('entry', 100), marker('stop', 103), marker('target', 98)]), [
@@ -21,7 +29,7 @@ test('protection labels use account currency, direction and actual quantity; unk
   assert.equal(orderLabel(levels, 'target', 1.12, 'dark', s => s).text, 'TP → +240.00 USD')
   assert.equal(orderLabel(levels, 'entry', 1.1, 'dark', s => s).text, 'BUY → -3.12 USD')
   assert.equal(orderLabel(levels, 'entry', 1.1, 'dark', s => s).textColor, '#FF603B', 'Buy uses the reference orange text independently of its green line')
-  assert.equal(orderLabel({ ...levels, side: 'SELL', floating: '3.12' }, 'entry', 1.1, 'dark', s => s).textColor, '#00B26F', 'Sell uses the reference green text independently of its orange line')
+  assert.equal(orderLabel({ ...levels, side: 'SELL', floating: '3.12' }, 'entry', 1.1, 'dark', s => s).textColor, '#FF603B', 'Both sides use orange text independently of their line colors')
   assert.equal(orderLabel(levels, 'entry', 1.1, 'light', s => s).color, '#087F6A')
   assert.equal(orderLabel({ ...levels, side: 'SELL' }, 'entry', 1.1, 'light', s => s).color, '#B54718')
   assert.equal(orderLabel({ ...levels, side: 'SELL' }, 'stop', 1.11, 'dark', s => s).text, 'SL → -120.00 USD')

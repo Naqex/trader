@@ -22,9 +22,12 @@ export function nativeChartPalette(theme) {
     orderSell: theme === 'light' ? '#B54718' : '#FF603B',
     orderSellBorder: theme === 'light' ? '#B35A0A' : '#D87813',
     orderBuyText: theme === 'light' ? '#B54718' : '#FF603B',
-    orderSellText: theme === 'light' ? '#087F6A' : '#00B26F',
+    orderSellText: theme === 'light' ? '#B54718' : '#FF603B',
     orderCloseBackground: '#F5F8FF',
     orderCloseIcon: '#398EF0',
     orderCloseBorder: '#70B5FF',
+    orderEntryPrice: theme === 'light' ? '#E8EBEF' : '#F5F8FF',
+    orderProtectionPrice: theme === 'light' ? '#159989' : '#46C7B7',
+    orderSelectedPrice: '#FFBF00',
   }
 }
