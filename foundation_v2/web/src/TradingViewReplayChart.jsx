@@ -8,7 +8,7 @@ import { readChartSnapshot, writeChartSnapshot } from './advancedChartStorage.js
 import { createChartSave } from './advancedChartSave.js'
 import ChartLoadingState from './ChartLoadingState.jsx'
 import { createAdvancedOrderOverlay } from './advancedOrderOverlay.js'
-import { orderPriceColor } from './replayOrderLabels.js'
+import { orderPriceColor, orderKinds } from './replayOrderLabels.js'
 import LegacyModal from './LegacyModal.jsx'
 import PartialCloseDialog from './PartialCloseDialog.jsx'
 import './chart-order-close.css'
@@ -197,7 +197,9 @@ export default function TradingViewReplayChart(props) {
           try {
             const state = latest.current
             // Equal-price native labels stack in reverse creation order: Entry, TP, SL.
-            for (const kind of ['stop', 'target', 'entry']) {
+            const kinds = orderKinds(state.levels).reverse()
+            for (const [kind,line] of lineByKind) if (!kinds.includes(kind)) { line.remove(); lineByKind.delete(kind); lineSignatures.delete(kind) }
+            for (const kind of kinds) {
               const value = state.levels?.[kind] ?? (kind === 'stop' ? state.levels?.ghostStop : state.levels?.ghostTarget)
               if (!(value > 0)) {
                 lineByKind.get(kind)?.remove(); lineByKind.delete(kind); lineSignatures.delete(kind)
@@ -222,7 +224,7 @@ export default function TradingViewReplayChart(props) {
               const signature = [value, state.levels.side, priceColor].join(':')
               if (lineSignatures.get(kind) !== signature) {
                 line.setPrice(value).setDirection(state.levels.side === 'SELL' ? 'sell' : 'buy')
-                  .setMode(kind === 'stop' ? 'stop' : kind === 'target' ? 'limit' : '')
+                  .setMode(kind === 'stop' ? 'stop' : kind.startsWith('target') ? 'limit' : '')
                   .setLineColor(priceColor).setLineStyle(2)
                 lineSignatures.set(kind, signature)
               }
@@ -241,7 +243,7 @@ export default function TradingViewReplayChart(props) {
           const levels = latest.current.levels
           if (!levels) return
           const range = chart.getVisiblePriceRange()
-          const prices = [levels.entry, levels.stop, levels.target, levels.ghostStop, levels.ghostTarget].filter(value => Number.isFinite(value) && value > 0)
+          const prices = [levels.entry, levels.stop, levels.target, levels.ghostStop, levels.ghostTarget, ...(levels.targets || []).map(target => target.price)].filter(value => Number.isFinite(value) && value > 0)
           // Reopening an already visible position must not compound padding and
           // progressively zoom the chart out until protection drags cross zero.
           if (prices.every(price => price >= range.from && price <= range.to)) return

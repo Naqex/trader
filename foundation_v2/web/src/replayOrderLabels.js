@@ -2,6 +2,10 @@ import { nativeChartPalette } from './nativeChartPalette.js'
 
 const amountFormat = new Intl.NumberFormat('en-US', { useGrouping: false, minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
+export function orderKinds(levels) {
+  return ['entry','stop',...(levels?.targets?.length ? levels.targets.map(target => `target:${target.id}`) : ['target'])]
+}
+
 export function orderPriceColor(kind, theme, selected = false, side = 'BUY') {
   const palette = nativeChartPalette(theme)
   return kind === 'entry' ? side === 'SELL' ? palette.orderSelectedPrice : palette.orderEntryPrice : selected ? palette.orderSelectedPrice : palette.orderProtectionPrice
@@ -18,11 +22,13 @@ export function protectionProfit(levels, price) {
 export function orderLabel(levels, kind, price, theme, t) {
   const palette = nativeChartPalette(theme)
   const entry = kind === 'entry'
-  const name = entry ? levels.side : kind === 'stop' ? 'SL' : 'TP'
+  const targetIndex = levels.targets?.findIndex(target => `target:${target.id}` === kind) ?? -1
+  const target = targetIndex >= 0 ? levels.targets[targetIndex] : null
+  const name = entry ? levels.side : kind === 'stop' ? 'SL' : target ? `TP${targetIndex+1}` : 'TP'
   const ghost = !entry && levels[kind] == null
   const compact = !entry && (ghost || Number(price) === Number(levels.entry))
-  const color = kind === 'stop' ? palette.warning : kind === 'target' ? palette.positive : levels.side === 'SELL' ? palette.orderSell : palette.positive
-  const profit = entry ? levels.floating : protectionProfit(levels, price)
+  const color = kind === 'stop' ? palette.warning : kind.startsWith('target') ? palette.positive : levels.side === 'SELL' ? palette.orderSell : palette.positive
+  const profit = entry ? levels.floating : protectionProfit(target ? { ...levels,quantity:target.quantity } : levels, price)
   let text = name
   if (entry && levels.state === 'submitting') text += ` · ${t('Đang gửi…')}`
   else if (entry && levels.state === 'queued') text += `${['limit','stop'].includes(levels.orderType) ? ` ${levels.orderType.toUpperCase()}` : ''} · ${t('Chờ khớp')}`
@@ -41,6 +47,10 @@ export function protectionError(levels, kind, price) {
   if (!(reference > 0) || !(price > 0)) return 'Giá TP/SL không hợp lệ.'
   const buy = levels.side === 'BUY'
   const valid = kind === 'stop' ? buy ? price < reference : price > reference : buy ? price > reference : price < reference
+  if (valid && kind.startsWith('target:')) {
+    const index = levels.targets?.findIndex(target => `target:${target.id}` === kind) ?? -1
+    if (index >= 0 && levels.targets.some((target,i) => i !== index && (buy ? i < index ? target.price >= price : target.price <= price : i < index ? target.price <= price : target.price >= price))) return 'Các mức TP phải xếp từ gần đến xa theo hướng lệnh.'
+  }
   if (valid) return ''
   return kind === 'stop'
     ? buy ? 'Stop Loss price must be lower than the current price' : 'Stop Loss price must be higher than the current price'

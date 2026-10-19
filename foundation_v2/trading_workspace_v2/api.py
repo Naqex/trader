@@ -1386,6 +1386,8 @@ def create_app(
         workspace: str = Depends(workspace_id),
     ):
         try:
+            if body.take_profits:
+                raise ValueError('partial take profit requires the native replay runtime')
             if body.order_type != 'market' or body.entry_price is not None:
                 raise ValueError('conditional orders require the native replay runtime')
             return replay.queue_market_order(
@@ -1413,6 +1415,8 @@ def create_app(
         workspace: str = Depends(workspace_id),
     ):
         try:
+            if body.take_profits:
+                raise ValueError('partial take profit requires the native replay runtime')
             return replay.quick_market_order(
                 workspace,
                 session_id,
@@ -1442,6 +1446,8 @@ def create_app(
     def change_replay_protection_route(session_id: str, body: ReplayProtectionRequest,
                                        workspace: str = Depends(workspace_id)):
         try:
+            if body.take_profits:
+                raise ValueError('partial take profit requires the native replay runtime')
             return replay.change_protection(workspace, session_id, body.expected_revision,
                 target_id=body.target_id, operation_id=body.operation_id,
                 stop_loss=body.stop_loss, take_profit=body.take_profit)

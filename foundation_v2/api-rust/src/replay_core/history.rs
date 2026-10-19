@@ -585,6 +585,130 @@ mod tests {
         }
     }
     #[test]
+    fn partial_targets_execute_and_restore_identically_in_full_and_compact() {
+        for side in ["BUY","SELL"] {
+            let mut pair = Pair::new(false);
+            pair.run("advance",bar(1));
+            let mut open = order(side,"split");
+            open["quantity"] = json!("0.04");
+            let prices = if side == "BUY" { ["1.1010","1.1020"] } else { ["1.0990","1.0980"] };
+            open["take_profits"] = json!([{"target_id":"tp1","price":prices[0],"quantity":"0.02"},{"target_id":"tp2","price":prices[1],"quantity":"0.02"}]);
+            pair.run("queue_current_quote",open);
+            let mut first = bar(2);
+            first["bar"][if side == "BUY" { "high" } else { "low" }] = json!(if side == "BUY" { "1.1015" } else { "1.0985" });
+            let events = pair.run("advance",first);
+            assert_eq!(events.iter().filter(|e|e["kind"]=="protective_fill").count(),1);
+            assert_eq!(pair.full["position"]["quantity"],"0.02");
+            assert_eq!(pair.full["position"]["take_profits"][0]["target_id"],"tp2");
+            validate(&pair.full).unwrap();
+            let restored = transform(&json!({"action":"reconstruct","snapshot":pair.full,"args":{"cursor_index":2}})).unwrap();
+            assert_eq!(restored["snapshot"]["position"],pair.full["position"]);
+            let mut second = bar(3);
+            second["bar"][if side == "BUY" { "high" } else { "low" }] = json!(if side == "BUY" { "1.1025" } else { "1.0975" });
+            pair.run("advance",second);
+            assert!(pair.full["position"].is_null());
+            assert_eq!(dec(&pair.full,"balance").unwrap(),d(&json!("1003.60")).unwrap());
+            for key in ["quantity","net_pnl","take_profit_target"] {
+                let mut corrupt = pair.full.clone();
+                corrupt["ledger"][3]["details"][key] = json!("bad");
+                assert!(validate(&corrupt).is_err(),"{key}");
+            }
+        }
+    }
+    #[test]
+    fn partial_targets_gap_multiple_fills_stop_and_manual_close() {
+        for gap in [false,true] {
+            let mut pair=Pair::new(false); pair.run("advance",bar(1));
+            let mut open=order("BUY","split"); open["quantity"]=json!("0.04");
+            open["take_profits"]=json!([{"target_id":"a","price":"1.1010","quantity":"0.02"},{"target_id":"b","price":"1.1020","quantity":"0.02"}]);
+            pair.run("queue_current_quote",open);
+            let mut next=bar(2); next["bar"]["high"]=json!("1.1030");
+            if gap { next["bar"]["open"]=json!("1.1030"); }
+            let events=pair.run("advance",next);
+            assert_eq!(events.iter().filter(|e|e["kind"]=="protective_fill").count(),2);
+            assert!(pair.full["position"].is_null()); validate(&pair.full).unwrap();
+        }
+        let mut pair=Pair::new(false);pair.run("advance",bar(1));
+        let mut open=order("BUY","split"); open["quantity"]=json!("0.04"); open["stop_loss"]=json!("1.0990");
+        open["take_profits"]=json!([{"target_id":"a","price":"1.1010","quantity":"0.02"},{"target_id":"b","price":"1.1020","quantity":"0.02"}]);
+        pair.run("queue_current_quote",open);
+        let id=pair.full["position"]["position_id"].clone();
+        pair.run("close",json!({"operation_id":"manual","target_id":id,"quantity":"0.01","mid_close":"1.1","virtual_time_utc":1060}));
+        assert_eq!(pair.full["position"]["take_profits"][1]["quantity"],"0.01");
+        let mut ambiguous=bar(2);ambiguous["bar"]["low"]=json!("1.0980");ambiguous["bar"]["high"]=json!("1.1030");
+        assert!(transform(&json!({"action":"advance","snapshot":pair.full,"args":ambiguous})).is_err());
+        let mut stop=bar(2);stop["bar"]["low"]=json!("1.0980");
+        pair.run("advance",stop);assert!(pair.full["position"].is_null());validate(&pair.full).unwrap();
+    }
+    #[test]
+    fn partial_target_then_stop_preserves_session_slippage_and_per_lot_fees() {
+        for side in ["BUY", "SELL"] {
+            let mut pair = Pair::new(false);
+            let c = &mut pair.full["cost_model"];
+            c["version"] = json!("session-cost-v2");
+            c["commission_per_side_account"] = json!("0");
+            c["commission_per_lot_account"] = json!("5");
+            c["commission_charge"] = json!("per_side");
+            c["slippage_model"] = json!({"version":"deterministic-adverse-fill-v1","mode":"fixed","fixed_steps":1,"unit":"pip","unit_price":"0.0001","seed":"partial-stop"});
+            pair.prefix = ValidatedBarPrefix::import(pair.full.clone()).unwrap();
+            pair.run("advance", bar(1));
+            let mut open = order(side, "split");
+            open["quantity"] = json!("0.04");
+            open["stop_loss"] = json!(if side == "BUY" { "1.0990" } else { "1.1010" });
+            let prices = if side == "BUY" { ["1.1010", "1.1020"] } else { ["1.0990", "1.0980"] };
+            open["take_profits"] = json!([{"target_id":"a","price":prices[0],"quantity":"0.02"},{"target_id":"b","price":prices[1],"quantity":"0.02"}]);
+            pair.run("queue_current_quote", open);
+            assert_eq!(pair.full["position"]["entry_fill"], if side == "BUY" { "1.1002" } else { "1.0998" });
+            let mut first = bar(2);
+            first["bar"][if side == "BUY" { "high" } else { "low" }] = json!(if side == "BUY" { "1.1015" } else { "1.0985" });
+            let events = pair.run("advance", first);
+            let fill = events.iter().find(|e| e["kind"] == "protective_fill").unwrap();
+            assert_eq!(dec(&fill["details"], "net_pnl").unwrap(), d(&json!("1.4")).unwrap());
+            assert_eq!(fill["details"]["fill_slippage"]["offset_ticks"], 0);
+            let mut stop = bar(3);
+            stop["bar"][if side == "BUY" { "low" } else { "high" }] = json!(if side == "BUY" { "1.0980" } else { "1.1020" });
+            let events = pair.run("advance", stop);
+            let fill = events.iter().find(|e| e["kind"] == "protective_fill").unwrap();
+            assert_eq!(fill["details"]["quantity"], "0.02");
+            assert_eq!(fill["details"]["fill_slippage"]["offset_ticks"], 1);
+            assert_eq!(dec(&fill["details"], "net_pnl").unwrap(), d(&json!("-2.8")).unwrap());
+            assert!(pair.full["position"].is_null());
+            assert_eq!(dec(&pair.full, "balance").unwrap(), d(&json!("998.6")).unwrap());
+            validate(&pair.full).unwrap();
+        }
+    }
+    #[test]
+    fn conditional_entry_retains_partial_targets_until_later_candles() {
+        let mut pair = Pair::new(false);
+        pair.run("advance", bar(1));
+        let targets = json!([{"target_id":"a","price":"1.1020","quantity":"0.02"},{"target_id":"b","price":"1.1030","quantity":"0.02"}]);
+        pair.run("queue_entry", json!({"operation_id":"conditional","side":"BUY","quantity":"0.04","order_type":"stop","entry_price":"1.1010","take_profits":targets,"mid_close":"1.1","virtual_time_utc":1060}));
+        let mut touch = bar(2); touch["bar"]["high"] = json!("1.1012");
+        pair.run("advance", touch);
+        assert_eq!(pair.full["position"]["take_profits"], targets);
+        let mut first = bar(3); first["bar"]["high"] = json!("1.1025");
+        pair.run("advance", first);
+        assert_eq!(pair.full["position"]["quantity"], "0.02");
+        assert_eq!(pair.full["position"]["take_profits"][0]["target_id"], "b");
+        validate(&pair.full).unwrap();
+    }
+    #[test]
+    fn partial_targets_reject_invalid_allocations_without_changing_state() {
+        let mut pair=Pair::new(false);pair.run("advance",bar(1));
+        for targets in [
+            json!([]),
+            json!([{"target_id":"a","price":"1.1010","quantity":"0.01"},{"target_id":"b","price":"1.1020","quantity":"0.01"}]),
+            json!([{"target_id":"a","price":"1.1010","quantity":"0.015"},{"target_id":"b","price":"1.1020","quantity":"0.025"}]),
+            json!([{"target_id":"a","price":"1.1020","quantity":"0.02"},{"target_id":"b","price":"1.1010","quantity":"0.02"}]),
+            json!([{"target_id":"a","price":"1.1010","quantity":"0.02"},{"target_id":"a","price":"1.1020","quantity":"0.02"}]),
+        ] {
+            let mut open=order("BUY","bad");open["quantity"]=json!("0.04");open["take_profits"]=targets;
+            if open["take_profits"].as_array().unwrap().is_empty() { continue; }
+            assert!(transform(&json!({"action":"queue_current_quote","snapshot":pair.full,"args":open})).is_err());
+            assert!(pair.prefix.transition("queue_current_quote",open,&pair.index).is_err());
+        }
+    }
+    #[test]
     fn partial_close_preserves_remaining_position_and_allocates_legacy_fees() {
         for side in ["BUY", "SELL"] {
             let mut p = Pair::new(false);

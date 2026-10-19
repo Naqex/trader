@@ -271,6 +271,7 @@ pub(super) fn validate_event(s: &Value, event: &Value, previous: Option<&Value>)
             || p["quantity"] != order["quantity"]
             || p["stop_loss"] != order["stop_loss"]
             || p["take_profit"] != order["take_profit"]
+            || p["take_profits"] != order["take_profits"]
             || p["position_id"] != details["position_id"]
             || p["opened_cursor_index"] != event["cursor_index"]
             || p["opened_time_utc"] != event["virtual_time_utc"]

@@ -7,6 +7,7 @@ import { useTestingLocale } from './testingLocale.jsx'
 import { ReplayDrawingPrimitive } from './replayDrawingPrimitive.js'
 import { ReplayOrderPrimitive } from './replayOrderPrimitive.js'
 import ChartIcon from './ChartIcon.jsx'
+import { orderKinds } from './replayOrderLabels.js'
 
 export default function LightweightReplayChart({ rows, sessionId, chartType, showVolume, showAverage, viewportRequest, drawings, onCrosshair, onAnchorSelect, theme, levels, orderEditable, tickSize, onOrderPriceChange, orderGeneration, onOrderDragStart }) {
   const { t, locale, fmt } = useTestingLocale()
@@ -218,14 +219,14 @@ export default function LightweightReplayChart({ rows, sessionId, chartType, sho
     chartRef.current?.orderPrimitive.setLevels(current.levels)
   }
   return <div ref={hostRef} className="replay-chart" role="group" data-testid="replay-chart" data-visible-row-count={rows.length} data-visible-object-count={drawings.filter(record => !record.hidden).length} aria-label={`Biểu đồ replay với ${rows.length} nến đã mở. Nến cuối: ${formatTimestamp(lastBar?.timestamp)} UTC, mở ${formatPrice(lastBar?.open)}, cao ${formatPrice(lastBar?.high)}, thấp ${formatPrice(lastBar?.low)}, đóng ${formatPrice(lastBar?.close)}. Cuộn để zoom, kéo để pan; bấm nến để chọn mốc giá.`}>
-    {levels && ['entry', 'stop', 'target'].map(kind => kind === 'entry'
+    {levels && orderKinds(levels).map(kind => kind === 'entry'
       ? <span key={kind} className="chart-order-level is-entry" data-order-level={kind}>{levels.side} · {levels.state === 'draft' ? t("Nháp entry") : levels.state === 'queued' ? t("Chờ fill") : t("Entry")} {formatPrice(levels.entry)}{levels.floating !== null && <> {t("· P/L")} {money(levels.floating, levels.currency)}</>}</span>
-      : <button key={kind} type="button" className={`chart-order-level is-${kind} ${levels[kind] == null ? 'is-ghost' : ''}`} data-order-level={kind} aria-label={`${kind === 'stop' ? 'Kéo Stop loss' : 'Kéo Take profit'}`} title={t("Kéo để đặt hoặc đổi giá · phím ↑ ↓ chỉnh một tick")} disabled={!orderEditable}
+      : <button key={kind} type="button" className={`chart-order-level is-${kind.startsWith('target') ? 'target' : kind} ${levels[kind] == null ? 'is-ghost' : ''}`} data-order-level={kind} aria-label={`${kind === 'stop' ? 'Kéo Stop loss' : 'Kéo Take profit'}`} title={t("Kéo để đặt hoặc đổi giá · phím ↑ ↓ chỉnh một tick")} disabled={!orderEditable}
         onPointerDown={event => { if (!latestRef.current.orderEditable || event.button !== 0) return; event.preventDefault(); event.stopPropagation(); onOrderDragStart(); event.currentTarget.setPointerCapture(event.pointerId); orderDrag.current = { kind, generation: latestRef.current.orderGeneration } }}
         onPointerMove={event => { if (!orderDrag.current) return; const value = dragPrice(event); if (value) chartRef.current?.orderPrimitive.setLevels({ ...latestRef.current.levels, [kind]: value }) }}
         onPointerUp={event => endDrag(event, true)} onPointerCancel={event => endDrag(event, false)}
         onKeyDown={event => { if (!['ArrowUp', 'ArrowDown'].includes(event.key)) return; event.preventDefault(); event.stopPropagation(); const tick = Number(tickSize); if (tick > 0) onOrderPriceChange(kind, Number(((levels[kind] ?? (kind === 'stop' ? levels.ghostStop : levels.ghostTarget)) + (event.key === 'ArrowUp' ? tick : -tick)).toFixed(8))) }}>
-        <ChartIcon name="grip" />{kind === 'stop' ? t("SL") : t("TP")}{levels[kind] == null ? ` · ${t('Kéo để đặt')}` : levels.state === 'edit' ? t(" nháp") : ''} {formatPrice(levels[kind] ?? (kind === 'stop' ? levels.ghostStop : levels.ghostTarget))}
+        <ChartIcon name="grip" />{kind === 'stop' ? t("SL") : levels.targets?.length ? `TP${levels.targets.findIndex(row => `target:${row.id}` === kind)+1}` : t("TP")}{levels[kind] == null ? ` · ${t('Kéo để đặt')}` : levels.state === 'edit' ? t(" nháp") : ''} {formatPrice(levels[kind] ?? (kind === 'stop' ? levels.ghostStop : levels.ghostTarget))}
       </button>)}
   </div>
 }

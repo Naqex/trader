@@ -7,7 +7,7 @@ import FxSelect from './FxSelect.jsx'
 import { scalperProtection } from './legacyScalperPreset.js'
 import { sessionExecutionConfig } from './sessionTradingOptions.js'
 import { closeNotice, protectionNotice } from './replayOrderNotices.js'
-import { protectionAmount, protectionPips, protectionPrice, quantityForRisk, selectOrderDraft } from './orderProtection.js'
+import { protectionAmount, protectionPips, protectionPrice, quantityForRisk, selectOrderDraft, partialTargets, formatProtectionMoney } from './orderProtection.js'
 
 export function useChartOrder({ workspace, replay, dataset, ready, blocked, closeBlocked = blocked, submit, executionConfig = null }) {
   const execution = replayAtCutoff(replay)?.payload?.execution
@@ -79,10 +79,13 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
       if (nextReference === null || nextReference === undefined) throw new Error('Chưa có giá tham chiếu tại cutoff này.')
       const validation = validateDraft(nextDraft, nextReference, { optionalProtection: true })
       if (validation) { setNotice({ kind: 'error', title: 'Order Error', message: validation }); return false }
+      const targets = partialTargets(nextDraft,instrument)
+      if (targets && replay?.execution_capabilities?.partial_take_profit !== true) throw new Error('Phiên này chưa hỗ trợ chốt lời từng phần.')
+      const protection = { stop_loss:nextDraft.stopLoss || null, take_profit:nextDraft.takeProfit || null, ...(targets || nextActive?.take_profits ? { take_profits:targets || [] } : {}) }
       const operation_id = `chart-${crypto.randomUUID()}`
       const result = await submit(nextActive ? 'orders/protection' : 'orders/market', nextActive
-        ? { operation_id, target_id: nextExecution.position?.position_id || nextExecution.pending_market_order.operation_id, stop_loss: nextDraft.stopLoss || null, take_profit: nextDraft.takeProfit || null }
-        : { operation_id, execution_timing: conditional ? 'pending' : 'current_quote', ...(conditional ? { order_type: nextDraft.orderType, entry_price: nextDraft.entryPrice } : {}), side: nextDraft.side, quantity: nextDraft.quantity, stop_loss: nextDraft.stopLoss || null, take_profit: nextDraft.takeProfit || null }, nextReplay.revision)
+        ? { operation_id, target_id: nextExecution.position?.position_id || nextExecution.pending_market_order.operation_id, ...protection }
+        : { operation_id, execution_timing: conditional ? 'pending' : 'current_quote', ...(conditional ? { order_type: nextDraft.orderType, entry_price: nextDraft.entryPrice } : {}), side: nextDraft.side, quantity: nextDraft.quantity, ...protection }, nextReplay.revision)
       if (result) {
         if (!nextActive && !(conditional ? result.payload.execution.pending_market_order : result.payload.execution.position)) {
           throw new Error('Không đủ margin để mở vị thế.')
@@ -101,7 +104,26 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
   }
   const changePrice = (kind, price) => {
     if (disabled || (price !== null && !(price > 0))) return
-    const next = { ...draft, [kind === 'stop' ? 'stopLoss' : 'takeProfit']: price === null ? '' : String(price) }
+    const targetId = kind.startsWith('target:') ? kind.slice(7) : null
+    const next = { ...draft }
+    if (targetId && draft.takeProfits?.length) {
+      const index = draft.takeProfits.findIndex(target => target.id === targetId)
+      if (index < 0) return false
+      if (price === null) {
+        const rows = draft.takeProfits.filter(target => target.id !== targetId)
+        if (rows.length) rows[rows.length-1] = { ...rows.at(-1), percent:String(Number(rows.at(-1).percent) + Number(draft.takeProfits[index].percent)) }
+        next.takeProfits = rows
+        next.takeProfit = rows[0]?.price || ''
+      } else {
+        next.takeProfits = draft.takeProfits.map(target => target.id === targetId ? { ...target, price:String(price) } : target)
+        next.takeProfit = next.takeProfits[0].price
+      }
+    } else {
+      next[kind === 'stop' ? 'stopLoss' : 'takeProfit'] = price === null ? '' : String(price)
+      if (kind !== 'stop' && draft.takeProfits?.length) {
+        next.takeProfits = price === null ? [] : draft.takeProfits.map((target,index) => index ? target : { ...target,price:String(price) })
+      }
+    }
     // Validate the direction before an interactive chart drag reaches the API.
     // This keeps the line from briefly accepting a crossed bracket and gives
     // the same immediate feedback as the order form.
@@ -196,7 +218,7 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
     target_id: execution.position?.position_id || execution.pending_market_order.operation_id,
     ...(typeof quantity === 'string' ? { quantity } : {}),
   })
-  return { resetDraft: () => setDraft(orderDraft(replay, instrument)), draft, setDraft, execution, account, assetStates, instrument, costs, active, reference, disabled, pending, pendingOrder: pendingOrder?.context === context ? pendingOrder : null, notice, quickTrade, close, canClose: ready && !closeBlocked && !pending, startingBalance, configuredBalance: replay?.payload?.starting_balance, configuredCurrency: replay?.payload?.starting_balance_ccy, setStartingBalance, spread, setSpread, tick, canInitialize, initialize, save, changePrice, reportError, chooseSide, chooseType, conditionalOrders: replay?.execution_capabilities?.conditional_orders === true, executionConfig }
+  return { clearNotice: () => setNotice(null), resetDraft: () => setDraft(orderDraft(replay, instrument)), draft, setDraft, execution, account, assetStates, instrument, costs, active, reference, disabled, pending, pendingOrder: pendingOrder?.context === context ? pendingOrder : null, notice, quickTrade, close, canClose: ready && !closeBlocked && !pending, startingBalance, configuredBalance: replay?.payload?.starting_balance, configuredCurrency: replay?.payload?.starting_balance_ccy, setStartingBalance, spread, setSpread, tick, canInitialize, initialize, save, changePrice, reportError, chooseSide, chooseType, conditionalOrders: replay?.execution_capabilities?.conditional_orders === true, partialTakeProfit: replay?.execution_capabilities?.partial_take_profit === true, executionConfig }
 }
 
 function ProtectionRiskSizing({ order, entry }) {
@@ -223,7 +245,7 @@ function ProtectionRiskSizing({ order, entry }) {
     // Calculating a size must not submit the enclosing order form.
     if (event.key === 'Enter' && event.target.tagName === 'INPUT') event.preventDefault()
   }}>
-    <summary>{t('Tính khối lượng theo rủi ro')}</summary>
+    <summary>{t('Tính khối lượng theo mức rủi ro')}</summary>
     <div className="legacy-risk-fields">
       <fieldset className="legacy-risk-basis" disabled={disabled || !open} aria-label={t('Tính tỷ lệ theo')}>
         {[['initial','Số dư ban đầu'],['current','Số dư hiện tại']].map(([value,label]) => <label key={value}><input type="radio" name="order-risk-basis" value={value} checked={basis === value} onChange={() => setBasis(value)} />{t(label)}</label>)}
@@ -237,12 +259,56 @@ function ProtectionRiskSizing({ order, entry }) {
   </details>
 }
 
+function PartialTakeProfits({ order, entry }) {
+  const { t } = useTestingLocale()
+  const { draft, setDraft, instrument, disabled } = order
+  const rows = draft.takeProfits || []
+  let targets, error = ''
+  try { targets = partialTargets(draft,instrument) } catch (failure) { error = failure.message }
+  const update = (id,key,value) => setDraft(current => ({ ...current, takeProfits:current.takeProfits.map(row => row.id === id ? { ...row, [key]:value } : row) }))
+  const add = () => setDraft(current => {
+    const existing = current.takeProfits?.length ? current.takeProfits : [{ id:crypto.randomUUID(), price:current.takeProfit, percent:'100' }]
+    const last = existing.at(-1)
+    const distance = Math.abs(Number(last.price) - entry) || Number(instrument.pip_size) * 40
+    const nextPrice = protectionPrice(distance / Number(instrument.pip_size) + 20,entry,current.side,'takeProfit',instrument)
+    const half = Number(last.percent) / 2
+    return { ...current, takeProfits:[...existing.slice(0,-1),{ ...last,percent:String(half) },{ id:crypto.randomUUID(),price:nextPrice,percent:String(half) }] }
+  })
+  const remove = id => setDraft(current => {
+    const removed = current.takeProfits.find(row => row.id === id)
+    const next = current.takeProfits.filter(row => row.id !== id)
+    if (next.length) next[next.length-1] = { ...next.at(-1),percent:String(Number(next.at(-1).percent) + Number(removed.percent)) }
+    return { ...current,takeProfits:next.length > 1 ? next : [],takeProfit:next[0]?.price || '',
+      ...(!next.length ? { protectionEnabled:{ ...current.protectionEnabled,takeProfit:false } } : {}) }
+  })
+  return <div className="legacy-partial-targets">
+    {rows.length > 0 && <div className="legacy-partial-rows">{rows.map((row,index) => {
+      const price = index === 0 ? draft.takeProfit : row.price
+      const changePrice = value => setDraft(current => ({ ...current,...(index === 0 ? { takeProfit:value } : {}),takeProfits:current.takeProfits.map(target => target.id === row.id ? { ...target,price:value } : target) }))
+      return <div className="legacy-partial-target" key={row.id} data-tp-id={row.id}>
+        <div className="legacy-partial-heading"><span className="legacy-partial-name">TP{index+1}<span className="legacy-partial-quantity">{targets?.[index]?.quantity || '—'} {t(instrument.asset_class === 'fx' ? 'lot' : 'quantity')}</span></span><button type="button" className="wm-dialog-close" aria-label={`${t('Bỏ')} TP${index+1}`} disabled={disabled} onClick={() => remove(row.id)}>×</button></div>
+        <div className="legacy-order-grid legacy-partial-grid">
+          <label>{t('Giá')}<input aria-label={`${t('Giá')} TP${index+1}`} type="number" min="0" required step={instrument.tick_size} value={price} disabled={disabled} onChange={event => changePrice(event.target.value)} /></label>
+          <label>{t('Take profit in pips')}<input aria-label={`${t('Take profit in pips')} TP${index+1}`} type="number" step="any" value={protectionPips(price,entry,draft.side,'takeProfit',instrument)} disabled={disabled} onChange={event => changePrice(protectionPrice(event.target.value,entry,draft.side,'takeProfit',instrument))} /></label>
+          <label>{t('Tỷ lệ chốt')}<span className="legacy-risk-input"><span aria-hidden="true">%</span><input aria-label={`${t('Tỷ lệ chốt')} TP${index+1}`} type="number" min="0" max="100" step="any" required value={row.percent} disabled={disabled} onChange={event => update(row.id,'percent',event.target.value)} /></span></label>
+        </div>
+      </div>
+    })}</div>}
+    <button type="button" className="legacy-partial-add" disabled={disabled || rows.length >= 8} onClick={add}>{t('+ Partial TP')}</button>
+    {error && <p role="alert">{t(error)}</p>}
+  </div>
+}
+
 function ProtectionEstimate({ order, entry, kind }) {
   const { t, locale } = useTestingLocale()
-  const amount = protectionAmount(order.draft[kind], entry, order.draft.side, order.draft.quantity, order.instrument, order.costs)
-  const value = amount === null ? '—' : new Intl.NumberFormat(locale, { style:'currency', currency:order.costs.account_ccy, currencyDisplay:'narrowSymbol', minimumFractionDigits:2, maximumFractionDigits:2 }).format(Math.abs(amount))
+  let amount = protectionAmount(order.draft[kind], entry, order.draft.side, order.draft.quantity, order.instrument, order.costs)
+  if (kind === 'takeProfit' && order.draft.takeProfits?.length) {
+    try { const amounts = partialTargets(order.draft,order.instrument).map(row => protectionAmount(row.price,entry,order.draft.side,row.quantity,order.instrument,order.costs)); amount = amounts.every(value => value !== null) ? amounts.reduce((sum,value) => sum + value,0) : null }
+    catch { amount = null }
+  }
+  const value = formatProtectionMoney(amount,order.costs?.account_ccy,locale)
   const loss = amount === null ? kind === 'stopLoss' : amount < 0
-  return <div className="legacy-protection-estimate" title={t(kind === 'stopLoss' ? 'Ước tính tại SL (trước phí)' : 'Ước tính tại TP (trước phí)')}><span>{t(loss ? 'Lỗ ước tính' : 'Lãi ước tính')}</span><strong>{value}</strong></div>
+  return <div className="legacy-protection-estimate" title={t(kind === 'stopLoss' ? 'Ước tính tại SL (trước phí)' : 'Ước tính tại TP (trước phí)')}><span>{t(loss ? 'Lỗ ước tính' : 'Lãi ước tính')}</span><strong className={amount === null ? undefined : loss ? 'is-loss' : 'is-profit'}>{value}</strong></div>
 }
 
 function LegacyOrderForm({ order, blockedReason, onClose, onJournal }) {
@@ -250,20 +316,25 @@ function LegacyOrderForm({ order, blockedReason, onClose, onJournal }) {
   const [journal, setJournal] = useState(false)
   const { draft, setDraft, execution, disabled, instrument, active } = order
   const enabled = draft.protectionEnabled
-  const changed = !active || ['stopLoss', 'takeProfit'].some((key, i) => String(draft[key] || '') !== String(active[i ? 'take_profit' : 'stop_loss'] ?? ''))
-  const change = (key, value) => setDraft(current => ({ ...current, [key]:value }))
+  const savedTargets = active ? orderDraft({ payload:{ execution:{ position:active } } },instrument).takeProfits || [] : []
+  const changed = !active || JSON.stringify(draft.takeProfits || []) !== JSON.stringify(savedTargets)
+    || ['stopLoss', 'takeProfit'].some((key, i) => String(draft[key] || '') !== String(active[i ? 'take_profit' : 'stop_loss'] ?? ''))
+  const change = (key, value) => setDraft(current => ({ ...current, [key]:value, ...(key === 'takeProfit' && current.takeProfits?.length ? { takeProfits:current.takeProfits.map((row,i) => i ? row : { ...row,price:value }) } : {}) }))
   const pip = Number(instrument?.pip_size), entry = finiteNumber(active?.entry_fill ?? active?.entry_price ?? order.reference)
-  return <><form className="legacy-order-form" onSubmit={async event => { event.preventDefault(); if (await order.save()) { onClose(); if (journal) onJournal() } }}>
+  return <><form className="legacy-order-form" onChange={() => order.clearNotice()} onSubmit={async event => { event.preventDefault(); if (await order.save()) { onClose(); if (journal) onJournal() } }}>
     {!active && <div className="legacy-order-grid"><label>{t('Hướng')}<FxSelect className="is-field" label="Hướng" value={draft.side} disabled={disabled} onChange={order.chooseSide} options={[{ value: 'BUY', label: t('Buy') }, { value: 'SELL', label: t('Sell') }]} /></label><label>{t('Loại lệnh')}<FxSelect className="is-field" label="Loại lệnh" value={draft.orderType || 'market'} disabled={disabled || !order.conditionalOrders} onChange={order.chooseType} options={['market','limit','stop'].map(value => ({ value,label:value[0].toUpperCase()+value.slice(1) }))} /></label>
     <label>{t(instrument?.asset_class==='fx' ? 'Khối lượng (lot)' : 'Khối lượng (quantity)')}<input aria-label={t('Khối lượng lệnh')} type="number" min={instrument?.quantity_min || '0'} step={instrument?.quantity_step || 'any'} value={draft.quantity} disabled={disabled} onChange={event => change('quantity',event.target.value)} /></label><label>{t('Giá vào lệnh')}<input aria-label={t('Giá vào lệnh')} type={draft.orderType && draft.orderType !== 'market' ? 'number' : 'text'} min="0" step={instrument?.tick_size || 'any'} disabled={disabled} readOnly={!draft.orderType || draft.orderType === 'market'} value={draft.orderType && draft.orderType !== 'market' ? draft.entryPrice : order.reference ?? '—'} onChange={event => change('entryPrice',event.target.value)} /></label></div>}
     {[['stopLoss','Stop loss'],['takeProfit','Take profit']].map(([key,label]) => <section className={active ? 'legacy-edit-protection' : 'legacy-new-protection'} key={key} data-protection={key}><div className="legacy-protection-row"><label><input type="checkbox" role="switch" checked={enabled[key]} disabled={disabled || !execution} onChange={event => {
       const checked = event.target.checked
       const unit = Number(instrument?.pip_size) || Number(instrument?.tick_size)
       const direction = (key === 'stopLoss' ? -1 : 1) * (draft.side === 'BUY' ? 1 : -1)
-      const price = order.reference + direction * unit * (key === 'stopLoss' ? 20 : 40)
-      setDraft(current => ({ ...current, protectionEnabled: { ...current.protectionEnabled, [key]: checked }, [key]: checked && Number.isFinite(price) && price > 0 ? String(Number(price.toFixed(8))) : '' }))
+      const stopDistance = protectionPips(draft.stopLoss,entry,draft.side,'stopLoss',instrument)
+      const distance = key === 'stopLoss' ? 20 : enabled.stopLoss && stopDistance > 0 ? stopDistance * 2 : 40
+      const price = order.reference + direction * unit * distance
+      setDraft(current => ({ ...current, protectionEnabled: { ...current.protectionEnabled, [key]: checked }, [key]: checked && Number.isFinite(price) && price > 0 ? String(Number(price.toFixed(8))) : '', ...(key === 'takeProfit' && !checked ? { takeProfits:[] } : {}) }))
     }} />{t(label)}</label></div>{enabled[key] && <>
-      <div className="legacy-order-grid"><label>{t(label)}<input aria-label={t(label)} type="number" min="0" required step={instrument?.tick_size || 'any'} value={draft[key]} disabled={disabled} onChange={event => change(key,event.target.value)} /></label>{pip > 0 && entry > 0 && <label>{t(key === 'stopLoss' ? 'Stop loss in pips' : 'Take profit in pips')}<input type="number" step="any" value={protectionPips(draft[key], entry, draft.side, key, instrument)} disabled={disabled} onChange={event => change(key, protectionPrice(event.target.value, entry, draft.side, key, instrument))} /></label>}</div>
+      {!(key === 'takeProfit' && draft.takeProfits?.length) && <div className="legacy-order-grid"><label>{t(label)}<input aria-label={t(label)} type="number" min="0" required step={instrument?.tick_size || 'any'} value={draft[key]} disabled={disabled} onChange={event => change(key,event.target.value)} /></label>{pip > 0 && entry > 0 && <label>{t(key === 'stopLoss' ? 'Stop loss in pips' : 'Take profit in pips')}<input type="number" step="any" value={protectionPips(draft[key], entry, draft.side, key, instrument)} disabled={disabled} onChange={event => change(key, protectionPrice(event.target.value, entry, draft.side, key, instrument))} /></label>}</div>}
+      {key === 'takeProfit' && order.partialTakeProfit && <PartialTakeProfits order={order} entry={entry} />}
       <ProtectionEstimate order={order} entry={entry} kind={key} />
       {!active && key === 'stopLoss' && <ProtectionRiskSizing order={order} entry={entry} />}
     </>}</section>)}

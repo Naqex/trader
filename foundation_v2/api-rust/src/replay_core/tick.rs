@@ -176,7 +176,7 @@ fn advance_inner(s: &mut Value, a: &Value) -> Result<(), String> {
                 )?;
             }
         }
-        if !s["position"].is_null() {
+        while !s["position"].is_null() {
             let closed = s["position"].clone();
             let buy = closed["side"] == "BUY";
             let quote = if buy { &bid } else { &ask };
@@ -201,6 +201,11 @@ fn advance_inner(s: &mut Value, a: &Value) -> Result<(), String> {
                 }
             };
             if stop || target {
+                if super::partial::has(&closed) {
+                    let details = super::partial::settle(s,&closed,stop,&bid,&ask,quote,if stop {"stop_loss"} else {"take_profit"})?;
+                    record(s,"protective_fill",cursor,time / 1000,&raw,(start,end),details)?;
+                    continue;
+                }
                 let (net, cost) = pnl(s, &closed, &bid, &ask)?;
                 s["balance"] = sval(super::py(decimal(s, "balance")? + &net));
                 s["position"] = Value::Null;
@@ -217,7 +222,7 @@ fn advance_inner(s: &mut Value, a: &Value) -> Result<(), String> {
                     (start, end),
                     details,
                 )?;
-            }
+            } else { break; }
         }
     }
     let last = last.ok_or("tick coverage is empty; OHLC fallback is disabled")?;
@@ -510,6 +515,22 @@ mod tests {
     }
     fn args(ticks: Value) -> Value {
         json!({"cursor_index":1,"bar":{"timestamp":1000,"open":"1.1000","high":"1.1050","low":"1.0950","close":"1.1010"},"ticks":ticks})
+    }
+    #[test]
+    fn partial_targets_tick_sequence_preserves_residual_and_final_costs() {
+        for side in ["BUY","SELL"] {
+            let mut s=initial();
+            let prices=if side=="BUY" {["1.1010","1.1020"]} else {["1.0990","1.0980"]};
+            super::super::queue(&mut s,&json!({"operation_id":"split","side":side,"quantity":"0.04","take_profits":[
+                {"target_id":"a","price":prices[0],"quantity":"0.02"},{"target_id":"b","price":prices[1],"quantity":"0.02"}]})).unwrap();
+            let ticks=if side=="BUY" {json!([t("1.1000","1.1002",0),t("1.1010","1.1012",1),t("1.1020","1.1022",2)])}
+                else {json!([t("1.1000","1.1002",0),t("1.0988","1.0990",1),t("1.0978","1.0980",2)])};
+            advance(&mut s,&args(ticks)).unwrap();
+            super::super::validate(&s).unwrap();
+            assert!(s["position"].is_null());
+            assert_eq!(s["ledger"][1]["details"]["open_position"]["quantity"],"0.02");
+            assert_eq!(decimal(&s,"balance").unwrap(),d(&json!(if side=="BUY" {"100003.2"}else{"100004"})).unwrap());
+        }
     }
     #[test]
     fn first_touch_uses_correct_broker_side_and_same_ms_sequence() {

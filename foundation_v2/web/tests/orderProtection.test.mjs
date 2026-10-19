@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { protectionAmount, protectionPips, protectionPrice, quantityForRisk, selectOrderDraft } from '../src/orderProtection.js'
+import { protectionAmount, protectionPips, protectionPrice, quantityForRisk, selectOrderDraft, partialTargets, formatProtectionMoney } from '../src/orderProtection.js'
 import { marketQuotes, orderDraft } from '../src/replayOrderModel.js'
 
 const spec = { pip_size:'0.0001', tick_size:'0.00001', contract_size:'100000', quantity_min:'0.01', quantity_step:'0.01' }
@@ -66,4 +66,26 @@ test('risk sizing rounds down to instrument step and rejects unusable budgets', 
     const quantity = quantityForRisk(budget,'1.09703',1.1,'BUY',spec,costs)
     if (quantity) assert.ok(-protectionAmount('1.09703',1.1,'BUY',quantity,spec,costs) <= budget + 1e-8)
   }
+})
+
+
+test('partial target percentages resolve to exact lots and preserve hydrated allocations', () => {
+  const draft = { side:'BUY',quantity:'.03',takeProfit:'1.102',protectionEnabled:{takeProfit:true},takeProfits:[{id:'a',price:'1.102',percent:String(100/3)},{id:'b',price:'1.104',percent:String(200/3)}] }
+  assert.deepEqual(partialTargets(draft,spec),[{target_id:'a',price:'1.102',quantity:'0.01'},{target_id:'b',price:'1.104',quantity:'0.02'}])
+  assert.throws(() => partialTargets({...draft,quantity:'.01'},spec),/too small|nhỏ/)
+  assert.throws(() => partialTargets({...draft,takeProfits:draft.takeProfits.map(row=>({...row,percent:'40'}))},spec),/100%/)
+  assert.throws(() => partialTargets({...draft,takeProfits:[draft.takeProfits[0],{...draft.takeProfits[1],price:'1.101'}]},spec),/gần đến xa/)
+  assert.equal(partialTargets({...draft,protectionEnabled:{takeProfit:false}},spec),null)
+  const replay={visible_rows:[{close:1.1}],payload:{execution:{spread_price:'0',instrument_spec:spec}}}
+  const next=selectOrderDraft(draft,replay,spec,{side:'SELL'})
+  assert.equal(next.takeProfits.length,2)
+  assert.equal(next.takeProfits[1].price,'1.096')
+  assert.equal(next.takeProfits[0].percent,draft.takeProfits[0].percent)
+})
+
+test('estimated amounts place the currency symbol first in Vietnamese and English', () => {
+  assert.equal(formatProtectionMoney(4,'USD','vi'),'$4,00')
+  assert.equal(formatProtectionMoney(-2,'USD','vi'),'$2,00')
+  assert.equal(formatProtectionMoney(1234.5,'USD','en'),'$1,234.50')
+  assert.equal(formatProtectionMoney(null,'USD','vi'),'—')
 })

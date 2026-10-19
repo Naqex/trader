@@ -541,6 +541,13 @@ class ReplayExecutionInitialize(BaseModel):
         return result
 
 
+class ReplayTakeProfitTarget(BaseModel):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+    target_id: str = Field(min_length=1, max_length=128)
+    price: Decimal = Field(gt=0)
+    quantity: Decimal = Field(gt=0)
+
+
 class ReplayMarketOrderRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
@@ -550,6 +557,7 @@ class ReplayMarketOrderRequest(BaseModel):
     quantity: Decimal = Field(gt=0)
     stop_loss: Decimal | None = Field(default=None, gt=0)
     take_profit: Decimal | None = Field(default=None, gt=0)
+    take_profits: list[ReplayTakeProfitTarget] | None = Field(default=None, max_length=8)
     execution_timing: Literal["next_bar", "current_quote", "pending"] = "next_bar"
     order_type: Literal["market", "limit", "stop"] = "market"
     entry_price: Decimal | None = Field(default=None, gt=0)
@@ -581,6 +589,7 @@ class ReplayProtectionRequest(BaseModel):
     operation_id: str = Field(min_length=1, max_length=128)
     stop_loss: Decimal | None = Field(gt=0)
     take_profit: Decimal | None = Field(gt=0)
+    take_profits: list[ReplayTakeProfitTarget] | None = Field(default=None, max_length=8)
 
 
 class ReplayCloseOrderRequest(BaseModel):

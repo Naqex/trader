@@ -70,16 +70,26 @@ test('scale projection supports log, invert and tiny price ranges with reversibl
   }
 })
 
-test('pending entry is explicitly submitting and authoritative execution wins when it arrives', () => {
+test('unaccepted submissions stay off chart and authoritative execution wins when it arrives', () => {
   const replay = { view_cursor_index: 4, visible_rows: [{ close: 1.1 }], payload: { cursor_index: 4, execution: null } }
   const pending = { entry: 1.1001, side: 'SELL', quantity: '.12', stop_loss: null, take_profit: null }
   const submitting = orderLevels(replay, { side: 'BUY' }, null, null, null, pending)
-  assert.equal(submitting.state, 'submitting')
-  assert.equal(submitting.ghostStop, pending.entry)
-  assert.equal(submitting.side, 'SELL')
+  assert.equal(submitting,null)
   replay.payload.execution = { cursor_index: 4, instrument_spec: { tick_size: '.0001' }, spread_price: '.0002', position: { side: 'BUY', entry_fill: '1.102', quantity: '.2' } }
   const confirmed = orderLevels(replay, { side: 'SELL' }, null, null, null, pending)
   assert.equal(confirmed.state, 'position')
   assert.equal(confirmed.entry, 1.102)
   assert.equal(confirmed.side, 'BUY')
+})
+
+
+test('accepted partial targets expose separate marker identities and per-slice profit', () => {
+  const replay={view_cursor_index:0,visible_rows:[{close:1.1}],payload:{cursor_index:0,execution:{cursor_index:0,spread_price:'0',instrument_spec:{tick_size:'.0001',contract_size:'100000',account_ccy:'USD',quote_ccy:'USD'},cost_model:{account_ccy:'USD',quote_to_account_rate:'1'},position:{side:'BUY',entry_fill:'1.1',quantity:'.04',take_profit:'1.101',take_profits:[{target_id:'a',price:'1.101',quantity:'.02'},{target_id:'b',price:'1.102',quantity:'.02'}]}}}}
+  const levels=orderLevels(replay,{side:'BUY'})
+  assert.equal(levels['target:a'],1.101)
+  assert.equal(levels['target:b'],1.102)
+  const label=orderLabel(levels,'target:b',1.102,'dark',text=>text)
+  assert.match(label.text,/TP2.*4.00 USD/)
+  assert.equal(label.ghost,false)
+  assert.match(protectionError(levels,'target:b',1.1005),/gần đến xa/)
 })

@@ -1,5 +1,5 @@
 import { nativeChartPalette } from './nativeChartPalette.js'
-import { orderLabel, orderPriceColor, protectionError } from './replayOrderLabels.js'
+import { orderLabel, orderPriceColor, protectionError, orderKinds } from './replayOrderLabels.js'
 
 // v23 exposes the visible raw-price range, mode and inversion, but no public
 // coordinate conversion. Percentage/indexed modes are affine in raw price.
@@ -85,7 +85,7 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     row.arrow.textContent = parts.length > 1 ? ' → ' : ''
     row.amount.hidden = parts.length < 2
     row.amount.textContent = parts[1] || ''
-    row.quantity.textContent = String(levels.quantity ?? '—')
+    row.quantity.textContent = String(levels.targets?.find(target => `target:${target.id}` === row.kind)?.quantity ?? levels.quantity ?? '—')
     row.quantity.hidden = label.compact
     if (row.kind === 'entry') {
       row.quantity.disabled = !state.orderEditable || !state.onOrderEdit
@@ -304,7 +304,9 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     root.style.setProperty('--order-close-bg', palette.orderCloseBackground)
     root.style.setProperty('--order-close-icon', palette.orderCloseIcon)
     root.style.setProperty('--order-close-border', palette.orderCloseBorder)
-    for (const kind of ['entry', 'stop', 'target']) {
+    const kinds = orderKinds(state.levels)
+    for (const [kind,row] of rows) if (!kinds.includes(kind)) { resizeObserver?.unobserve(row.element); row.element.remove(); rows.delete(kind) }
+    for (const kind of kinds) {
       const row = rows.get(kind) || createRow(kind), pending = pendingPrices.get(kind)
       const price = pending?.generation === state.orderGeneration ? pending.price : priceOf(state.levels, kind)
       row.element.hidden = !(price > 0)

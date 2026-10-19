@@ -86,6 +86,33 @@ def test_contract_nullable_amendments_are_explicit_and_no_client_close_price():
     with pytest.raises(ValidationError): ReplayCloseOrderRequest(**base, target_id='p', price='1.1')
 
 
+def test_partial_targets_contract_and_compatibility_rejection(tmp_path, monkeypatch):
+    from fastapi.testclient import TestClient
+    from trading_workspace_v2 import api
+    from trading_workspace_v2.auth import LocalWorkspaceAuthorization
+
+    targets = [dict(target_id='tp1', price='1.12', quantity='.02'),
+               dict(target_id='tp2', price='1.13', quantity='.02')]
+    base = dict(expected_revision=1, operation_id='partial', side='BUY', quantity='.04')
+    assert ReplayMarketOrderRequest(**base, take_profits=targets).take_profits[0].quantity == Decimal('.02')
+    for invalid in ([{**targets[0], 'quantity': 0}], targets * 5):
+        with pytest.raises(ValidationError): ReplayMarketOrderRequest(**base, take_profits=invalid)
+    store = FakeStore([])
+    monkeypatch.setattr(store, 'initialize', lambda: None, raising=False)
+    monkeypatch.setattr(api, 'PostgresStore', lambda _: store)
+    app = api.create_app(dsn='synthetic-unused', artifact_root=tmp_path, learn_roots={},
+                         authorization=LocalWorkspaceAuthorization.for_local_owner(['tenant-a']))
+    before = deepcopy(store.records)
+    with TestClient(app, base_url='http://127.0.0.1:8039', client=('127.0.0.1', 50000)) as client:
+        for route, body in [('market', base), ('quick', base), ('protection',
+                dict(expected_revision=1, operation_id='partial', target_id='p', stop_loss=None, take_profit='1.12'))]:
+            response = client.post(f'/api/v2/replay/sessions/missing/orders/{route}',
+                headers={'X-Workspace-Id': 'tenant-a'}, json={**body, 'take_profits': targets})
+            assert response.status_code == 422
+            assert response.json()['detail'] == 'partial take profit requires the native replay runtime'
+            assert store.records == before
+
+
 def test_service_close_at_dataset_end_revision_tenant_analytics_and_checkpoint():
     rows = [{'timestamp': BASE_TIME + n * 60, 'open': 1.1, 'high': 1.105, 'low': 1.099, 'close': 1.102, 'volume': 10} for n in range(3)]
     service = ReplayService(FakeStore(rows), FakeArtifacts(rows))

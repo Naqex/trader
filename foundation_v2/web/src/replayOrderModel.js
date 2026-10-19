@@ -10,7 +10,7 @@ export function replayAtCutoff(replay) {
 export function orderDraft(replay, instrument, side = 'BUY', orderType = 'market') {
   replay = replayAtCutoff(replay)
   const active = replay?.payload?.execution?.position || replay?.payload?.execution?.pending_market_order
-  if (active) return { side: active.side, quantity: String(active.quantity), stopLoss: active.stop_loss == null ? '' : String(active.stop_loss), takeProfit: active.take_profit == null ? '' : String(active.take_profit), protectionEnabled: { stopLoss: active.stop_loss != null, takeProfit: active.take_profit != null }, ...(active.order_type ? { orderType: active.order_type, entryPrice: String(active.entry_price) } : {}) }
+  if (active) return { ...(active.take_profits?.length ? { takeProfits:active.take_profits.map(target => ({ id:target.target_id, price:String(target.price), quantity:String(target.quantity), percent:String(Number(target.quantity) / Number(active.quantity) * 100) })) } : {}), side: active.side, quantity: String(active.quantity), stopLoss: active.stop_loss == null ? '' : String(active.stop_loss), takeProfit: active.take_profit == null ? '' : String(active.take_profit), protectionEnabled: { stopLoss: active.stop_loss != null, takeProfit: active.take_profit != null }, ...(active.order_type ? { orderType: active.order_type, entryPrice: String(active.entry_price) } : {}) }
   const quotes = marketQuotes(replay)
   let entry = replay?.payload?.execution ? (side === 'BUY' ? quotes.ask : quotes.bid) : finiteNumber(replay?.visible_rows?.at(-1)?.close)
   const pip = finiteNumber(instrument?.pip_size)
@@ -74,7 +74,8 @@ export function orderLevels(replay, draft, scalperPreview = null, closeableRefer
   const ghostTarget = target === null && active ? Number(scalperPreview?.takeProfit || entry) : null
   const spec = execution?.instrument_spec || instrument || null
   const costs = execution?.cost_model || null
-  return { entry, reference: finiteNumber(closeableReference) ?? entry, stop, target, ghostStop, ghostTarget, quantity: active?.quantity || draft.quantity, side, state: pendingOrder && !execution?.position && !execution?.pending_market_order ? 'submitting' : modified ? 'edit' : execution?.position ? 'position' : active ? 'queued' : 'draft',
+  const targets = active?.take_profits?.map(target => ({ id:target.target_id, price:Number(target.price), quantity:target.quantity })) || []
+  return { targets, ...Object.fromEntries(targets.map(target => [`target:${target.id}`,target.price])), entry, reference: finiteNumber(closeableReference) ?? entry, stop, target, ghostStop, ghostTarget, quantity: active?.quantity || draft.quantity, side, state: pendingOrder && !execution?.position && !execution?.pending_market_order ? 'submitting' : modified ? 'edit' : execution?.position ? 'position' : active ? 'queued' : 'draft',
     orderType: execution?.pending_market_order?.order_type || draft.orderType || 'market', floating: execution?.position ? execution.floating_pl : null, currency: costs?.account_ccy || spec?.account_ccy,
     originalQuantity: active?.original_quantity ?? active?.quantity, realizedPnl: active?.realized_pnl ?? '0',
     partialCloseSupported: replay?.execution_capabilities?.partial_close === true,

@@ -22,8 +22,8 @@ The later 18 October session-preset cutover applied additive migration0007 and
 kept all21 existing data-table projections and4,142 artifact hashes unchanged.
 See [the scoped checkpoint](../evidence/session-presets-db-20261018/CHECKPOINT.md).
 The active scientific descriptor is now
-`.runtime/api-platform/native-scientific-capability-partial-close-20261019.json`;
-the installed bootstrap refreshed its engine-code commitment after the partial-close
+`.runtime/api-platform/native-scientific-capability-partial-tp-20261019.json`;
+the installed bootstrap refreshed its engine-code commitment after the Partial TP
 contract change, with dependency/runtime identities unchanged. Retain that explicit
 path and the existing legacy descriptor on restart. Local backups use the installed
 PostgreSQL18 client matching server18; the archived17 client cannot dump it.
@@ -365,6 +365,39 @@ Tick execution uses the first crossing executable quote. With BAR data, an
 intrabar entry is timestamped at candle end; a possible same-bar protective exit
 is rejected because OHLC cannot establish its order. Gap prices that invalidate
 submitted protection also reject the step atomically. No intrabar path is guessed.
+
+## Partial take-profit targets
+
+Native replay views advertise `execution_capabilities.partial_take_profit: true`.
+Market/Quick and protection requests accept optional `take_profits`: one to eight
+objects with stable `target_id`, decimal `price` and absolute decimal `quantity`.
+Prices must follow nearest-to-farthest trigger order for the side and meet the
+instrument tick grid. Every allocation meets its minimum/step; allocations must
+sum exactly to the remaining position. The server mirrors the nearest target in
+scalar `take_profit`. Omission or an empty list on a protection amendment returns
+to scalar TP; a null scalar removes TP. Compatibility rejects nonempty target
+lists explicitly rather than executing a different order.
+
+Each target closes only its allocation. The remainder retains SL and outstanding
+targets, cumulative realized P/L and original quantity. SL closes all remaining
+exposure. Manual partial closes consume the farthest allocations first; a
+sub-minimum tail merges into the previous allocation. Existing per-slice monetary
+rounding and original-volume fee allocation apply. Each protective slice is an
+existing `protective_fill` checkpoint with a unique analytics trade ID and common
+source-position ID. Full/compact history, reconstruction and branching preserve
+outstanding targets. Tick quotes can execute several targets in sequence; BAR
+execution retains the existing OHLC ambiguity rejection.
+
+No schema migration is required. Sessions containing targets require a native
+build that understands them; the Python compatibility engine cannot execute or
+validate that new state. Preserve this binary when restoring those sessions.
+Scoped evidence: [Partial TP checkpoint](../evidence/partial-tp-20261019/CHECKPOINT.md).
+The local owner runtime now uses `api-rust/target/partial-tp/release` with the
+explicit scientific descriptor above and the existing legacy-codec descriptor.
+Readiness and a form-only check on UI5180 passed; trading writes used disposable
+fixtures only. To change binary directories, first use guarded `--stop` with the
+manifest's recorded binaries, then start the new target. The restart wrapper
+correctly refuses using new binary paths to stop differently owned executables.
 
 ## Forward BAR step and chart tail
 

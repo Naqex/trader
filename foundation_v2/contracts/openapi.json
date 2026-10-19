@@ -8588,6 +8588,21 @@
             ],
             "title": "Take Profit"
           },
+          "take_profits": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ReplayTakeProfitTarget"
+                },
+                "type": "array",
+                "maxItems": 8
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Take Profits"
+          },
           "execution_timing": {
             "type": "string",
             "enum": [
@@ -8796,6 +8811,21 @@
               }
             ],
             "title": "Take Profit"
+          },
+          "take_profits": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ReplayTakeProfitTarget"
+                },
+                "type": "array",
+                "maxItems": 8
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Take Profits"
           }
         },
         "additionalProperties": false,
@@ -9514,6 +9544,21 @@
             ],
             "title": "Take Profit"
           },
+          "take_profits": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ReplayTakeProfitTarget"
+                },
+                "type": "array",
+                "maxItems": 8
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Take Profits"
+          },
           "execution_timing": {
             "type": "string",
             "enum": [
@@ -9814,6 +9859,50 @@
           "mode"
         ],
         "title": "SessionSlippageOptions"
+      },
+      "ReplayTakeProfitTarget": {
+        "properties": {
+          "target_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Target Id"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Price"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Quantity"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "target_id",
+          "price",
+          "quantity"
+        ],
+        "title": "ReplayTakeProfitTarget"
       }
     }
   }

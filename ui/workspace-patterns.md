@@ -306,6 +306,25 @@ remount the iframe or republish unchanged candles. Successful new-order Save can
 open Journal; errors leave the draft visible.
 Go To is anchored to the invoking rail or quick-bar button; custom cursor/date
 navigation preserves existing cutoff checks. Future/news/session jumps stay disabled.
+
+The native order form supports up to eight Partial TP targets. Form percentages
+resolve to exact instrument quantities before submission: intermediate slices
+round down to the quantity step and the final slice receives the remainder.
+Impossible allocations stay invalid. Each accepted target has its own chart
+marker, quantity and slice P/L; unsubmitted drafts never create order markers.
+Removing the last target disables TP. Cancelling the editor preserves the
+accepted order. A filled target disappears and the remaining shares rebase to
+100% of the residual quantity when reopening the editor.
+
+New orders keep SL/TP off until explicitly enabled. Editable seed distances are
+20 pips for SL and twice the enabled SL distance for TP (40 pips without SL).
+These seeds are form conveniences, not strategy recommendations. The optional
+calculator, labelled “Tính khối lượng theo mức rủi ro”, is collapsed by default;
+its initial value is 1% of initial balance and only changes quantity while open.
+It uses one light control surface, 12px spacing and 28px percentage buttons
+(44px coarse-pointer targets). Gross estimated profit uses the positive semantic
+token, estimated loss uses negative, and both prefix the currency symbol in
+Vietnamese and English. Declared fees remain outside this gross preview.
 The layout selector displays reference rows 1–8 and sync controls; only one chart is
 supported. Copy/rename/open layouts remain unavailable rather than implying cloud
 storage. The session title is plain italic text.

@@ -13,7 +13,35 @@ export function selectOrderDraft(current, replay, instrument, { side = current.s
     const pips = protectionPips(current[key], reference(current), current.side, key, instrument)
     next[key] = current.protectionEnabled[key] && pips !== '' ? protectionPrice(pips, reference(next), side, key, instrument) : ''
   }
+  if (current.takeProfits?.length) next.takeProfits = current.takeProfits.map(target => ({ ...target,
+    price: protectionPrice(protectionPips(target.price, reference(current), current.side, 'takeProfit', instrument), reference(next), side, 'takeProfit', instrument) }))
   return next
+}
+
+export function formatProtectionMoney(amount, currency, locale) {
+  if (amount === null || !currency) return '—'
+  const parts = new Intl.NumberFormat(locale, { style:'currency', currency, currencyDisplay:'narrowSymbol', minimumFractionDigits:2, maximumFractionDigits:2 }).formatToParts(Math.abs(amount))
+  const symbol = parts.find(part => part.type === 'currency')?.value || currency
+  return `${symbol}${/^[A-Z]+$/.test(symbol) ? ' ' : ''}${parts.filter(part => !['currency','literal'].includes(part.type)).map(part => part.value).join('')}`
+}
+
+// Percentages are a form convenience. Persist exact lot quantities so replay
+// never reallocates a previously accepted target after rounding or a fill.
+export function partialTargets(draft, instrument) {
+  if (!draft.takeProfits?.length || !draft.protectionEnabled.takeProfit) return null
+  const total = finiteNumber(draft.quantity), step = finiteNumber(instrument?.quantity_step), min = finiteNumber(instrument?.quantity_min)
+  const rows = draft.takeProfits.map((row,index) => ({ ...row, price:index === 0 ? draft.takeProfit : row.price }))
+  if (!(total > 0 && step > 0 && min > 0) || rows.length > 8 || rows.some(row => !(finiteNumber(row.percent) > 0)) || Math.abs(rows.reduce((sum,row) => sum + Number(row.percent),0) - 100) > 1e-7) throw new Error('Tổng tỷ lệ chốt lời phải bằng 100%.')
+  let allocated = 0
+  return rows.map((row,index) => {
+    const quantity = index === rows.length - 1 ? Number((total - allocated).toFixed(10)) : Number((Math.floor((total * Number(row.percent) / 100) / step + 1e-8) * step).toFixed(10))
+    const units = quantity / step
+    if (quantity < min || Math.abs(units - Math.round(units)) > 1e-7) throw new Error('Khối lượng quá nhỏ để chia các mức TP theo bước của tài sản.')
+    const price = finiteNumber(row.price), previous = index > 0 ? Number(rows[index-1].price) : null
+    if (!(price > 0) || (previous !== null && (draft.side === 'BUY' ? price <= previous : price >= previous))) throw new Error('Các mức TP phải xếp từ gần đến xa theo hướng lệnh.')
+    allocated += quantity
+    return { target_id:row.id, price:String(row.price), quantity:String(quantity) }
+  })
 }
 
 export function protectionPips(price, entry, side, kind, instrument) {
