@@ -1,0 +1,61 @@
+{
+  "scope": "Real native API, compact storage, disposable PostgreSQL and synthetic CSV only",
+  "cases": [
+    {
+      "side": "BUY",
+      "width": 1368,
+      "lang": "vi",
+      "theme": "dark",
+      "balance": "10004.20000000000000000000000",
+      "targetFills": [
+        {
+          "quantity": "0.02",
+          "net": "1.0"
+        },
+        {
+          "quantity": "0.02",
+          "net": "3.2"
+        }
+      ],
+      "fork": "7f5698af8a8e4c4a8c97ad0cd8dfe05f"
+    },
+    {
+      "side": "SELL",
+      "width": 768,
+      "lang": "en",
+      "theme": "light",
+      "balance": "10004.20000000000000000000000",
+      "targetFills": [
+        {
+          "quantity": "0.02",
+          "net": "1.0"
+        },
+        {
+          "quantity": "0.02",
+          "net": "3.2"
+        }
+      ],
+      "fork": "3125a653f0644bc89c3f421819427ba7"
+    },
+    {
+      "side": "BUY",
+      "width": 390,
+      "lang": "vi",
+      "theme": "dark",
+      "balance": "10004.20000000000000000000000",
+      "targetFills": [
+        {
+          "quantity": "0.02",
+          "net": "1.0"
+        },
+        {
+          "quantity": "0.02",
+          "net": "3.2"
+        }
+      ],
+      "fork": "5a846f5a593a4ffdaf7651c182a950fc"
+    }
+  ],
+  "errors": [],
+  "pass": true
+}

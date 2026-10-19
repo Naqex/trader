@@ -333,10 +333,9 @@ function LegacyOrderForm({ order, blockedReason, onClose, onJournal }) {
       const distance = key === 'stopLoss' ? 20 : enabled.stopLoss && stopDistance > 0 ? stopDistance * 2 : 40
       const price = order.reference + direction * unit * distance
       setDraft(current => ({ ...current, protectionEnabled: { ...current.protectionEnabled, [key]: checked }, [key]: checked && Number.isFinite(price) && price > 0 ? String(Number(price.toFixed(8))) : '', ...(key === 'takeProfit' && !checked ? { takeProfits:[] } : {}) }))
-    }} />{t(label)}</label></div>{enabled[key] && <>
+    }} />{t(label)}</label>{enabled[key] && <ProtectionEstimate order={order} entry={entry} kind={key} />}</div>{enabled[key] && <>
       {!(key === 'takeProfit' && draft.takeProfits?.length) && <div className="legacy-order-grid"><label>{t(label)}<input aria-label={t(label)} type="number" min="0" required step={instrument?.tick_size || 'any'} value={draft[key]} disabled={disabled} onChange={event => change(key,event.target.value)} /></label>{pip > 0 && entry > 0 && <label>{t(key === 'stopLoss' ? 'Stop loss in pips' : 'Take profit in pips')}<input type="number" step="any" value={protectionPips(draft[key], entry, draft.side, key, instrument)} disabled={disabled} onChange={event => change(key, protectionPrice(event.target.value, entry, draft.side, key, instrument))} /></label>}</div>}
       {key === 'takeProfit' && order.partialTakeProfit && <PartialTakeProfits order={order} entry={entry} />}
-      <ProtectionEstimate order={order} entry={entry} kind={key} />
       {!active && key === 'stopLoss' && <ProtectionRiskSizing order={order} entry={entry} />}
     </>}</section>)}
     {!active && <div className="legacy-protection-row is-unavailable" title={t('Chưa hỗ trợ tự dời SL về hòa vốn')}><label><input type="checkbox" role="switch" disabled />Auto Break-even</label><small>{t('Sắp có')}</small></div>}
