@@ -1,0 +1,14 @@
+[
+  {
+    "name": "trading-workspace-api.exe",
+    "sha256": "AEA39215BAAAC1954225C201AAEE01E6AEBB334AF950BC735D6F982705F7EB97"
+  },
+  {
+    "name": "rust_runtime_admin.exe",
+    "sha256": "80B58B42B5FB1F37C3884812EA7306704951BCA1072D71EDC91741FE8060F2BB"
+  },
+  {
+    "name": "rust_research_worker.exe",
+    "sha256": "54BB2C96BD27C64282F98F1383630A1F44B5E9F615210836B21A89371A291A22"
+  }
+]

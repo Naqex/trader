@@ -26,7 +26,16 @@ async fn frozen_options_backtest_and_prop_http_workflow() {
     let import = json!({"csv_text":"time,open,high,low,close,volume\n1767268800,1.12044,1.12050,1.12030,1.12044,3\n1767268860,1.12044,1.12050,1.12030,1.12044,3\n1767268920,1.12044,1.12050,1.12030,1.12044,3\n","source":{"source_id":"session-cost-test","provider":"CSV","instrument_mapping":{"EURUSD":"EUR/USD"},"license_use":"owner fixture","retrieved_at_utc":"2026-10-17","export_settings":"UTF-8"},"instrument":{"instrument_id":"EURUSD","asset_class":"forex","base_ccy":"EUR","quote_ccy":"USD","account_ccy":"USD","tick_size":"0.00001","pip_size":"0.0001","contract_size":"100000","quantity_min":"0.01","quantity_step":"0.01","effective_from_utc":"2020-01-01"},"timeframe_seconds":60});
     let (status, imported) = request(&app,"POST","/api/v2/data/csv/import",import).await;
     assert_eq!(status,201,"{imported}");
-    let manifest = &imported["dataset"];
+    for legacy in [false,true] {
+    let mut manifest = imported["dataset"].clone();
+    if legacy {
+        // Reproduce the owner's pre-spec slash-symbol manifest in this disposable DB only.
+        manifest.as_object_mut().unwrap().remove("instrument_spec");
+        manifest["instrument_id"] = json!("EUR/USD");
+        let conn = state.pool.get().await.unwrap();
+        conn.execute("UPDATE datasets SET manifest_json=$1 WHERE workspace_id='tenant-a' AND dataset_id=$2",&[&manifest,&manifest["dataset_id"].as_str().unwrap()]).await.unwrap();
+    }
+    let instrument = trading_workspace_api::provider_routes::catalog::replay_instrument(&manifest).unwrap();
     let dataset = manifest["dataset_id"].as_str().unwrap();
     for (prop, v2, mode) in [(false,false,"off"),(true,false,"off"),(false,true,"fixed"),(true,true,"fixed"),(false,true,"off"),(false,true,"light"),(false,true,"medium")] {
         let mut options = json!({"version":if v2 { "session-trading-options-v2" } else { "session-trading-options-v1" },"costs_enabled":false,"assets":{dataset:{"spread_price":"0.0002","commission_per_lot":"7","commission_charge":"round_trip","slippage_price":"0"}}});
@@ -60,7 +69,7 @@ async fn frozen_options_backtest_and_prop_http_workflow() {
         assert_eq!(status,201,"{created}");
         assert_eq!(created["payload"]["trading_options"]["version"],options["version"]);
         let path = format!("/api/v2/replay/sessions/{}",created["record_id"].as_str().unwrap());
-        let (status,mut opened) = request(&app,"POST",&format!("{path}/orders/quick"),json!({"expected_revision":created["revision"],"operation_id":"open","side":"SELL","quantity":"0.01","execution_timing":"current_quote","instrument_spec":manifest["instrument_spec"],"timeframe_seconds":60,"starting_balance":"100000","spread_price":"0.0002","cost_model":{"version":"old-fixture","account_ccy":"USD","commission_per_side_account":"1"}})).await;
+        let (status,mut opened) = request(&app,"POST",&format!("{path}/orders/quick"),json!({"expected_revision":created["revision"],"operation_id":"open","side":"SELL","quantity":"0.01","execution_timing":"current_quote","instrument_spec":instrument,"timeframe_seconds":60,"starting_balance":"100000","spread_price":"0.0002","cost_model":{"version":"old-fixture","account_ccy":"USD","commission_per_side_account":"1"}})).await;
         assert_eq!(status,200,"{opened}");
         if v2 {
             let (status,protected) = request(&app,"POST",&format!("{path}/orders/protection"),json!({"expected_revision":opened["revision"],"operation_id":"protect","target_id":opened["payload"]["execution"]["position"]["position_id"],"stop_loss":"1.12100","take_profit":"1.12000"})).await;
@@ -101,6 +110,7 @@ async fn frozen_options_backtest_and_prop_http_workflow() {
         assert_eq!(status,201,"{branched}");
         assert_eq!(branched["payload"]["trading_options"],created["payload"]["trading_options"]);
         if v2 { assert_eq!(branched["payload"]["trading_options_seed"],created["payload"]["trading_options_seed"]); }
+    }
     }
     state.pool.close();
 }

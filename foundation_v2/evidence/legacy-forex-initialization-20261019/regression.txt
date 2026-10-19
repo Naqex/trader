@@ -1,0 +1,21 @@
+   Compiling trading-workspace-api v0.1.0 (D:\ANNAM\TradingWorkspace\projects\mt5-tradingview-backtester\foundation_v2\api-rust)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 15.84s
+     Running tests\session_slippage.rs (foundation_v2\api-rust\target\debug\deps\session_slippage-f8aac5cc16c0cef8.exe)
+
+running 5 tests
+test next_bar_market_fill_preserves_actual_entry_and_provenance ... ok
+test mark_to_market_does_not_resample_and_manual_close_charges_only_actual_fills ... ok
+test model_rejects_ambiguous_units_and_double_slippage_costs ... ok
+test market_slippage_is_adverse_bounded_and_deterministic_for_all_modes ... ok
+test stop_and_stop_gap_have_adverse_slippage_but_tp_never_gets_worse ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 25.04s
+
+     Running tests\session_trading_options.rs (foundation_v2\api-rust\target\debug\deps\session_trading_options-c38432a976bed6cb.exe)
+
+running 3 tests
+test slippage_is_independent_cost_and_not_a_second_spread ... ok
+test commission_scales_each_position_without_rewriting_history ... ok
+test costs_off_both_sides_fill_exact_raw_close_with_zero_initial_pnl ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.37s

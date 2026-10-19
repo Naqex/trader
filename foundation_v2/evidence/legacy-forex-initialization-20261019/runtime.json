@@ -1,0 +1,17 @@
+{
+  "session_revision": 1,
+  "api_hash_matches": true,
+  "catalog_account_ccy": "USD",
+  "storage": "compact",
+  "session_id": "d848723290084cf98e8d03de6cff4dbf",
+  "profile": "native",
+  "dataset_original_spec_missing": true,
+  "health": {
+    "command_worker": "not_required",
+    "contract_version": "foundation-v2.1",
+    "database": "ready",
+    "ok": true
+  },
+  "ready": true,
+  "scope": "read-only owner API verification; no order submitted"
+}

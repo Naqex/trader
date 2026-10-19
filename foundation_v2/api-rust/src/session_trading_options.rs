@@ -68,7 +68,11 @@ pub fn initialization(payload: &Value, manifest: &Value, request: &Value) -> Res
     let options = &payload["trading_options"];
     let asset = &options["assets"][dataset];
     if !asset.is_object() { return Err("frozen trading options are missing for this dataset".into()); }
-    let currency = manifest["instrument_spec"]["account_ccy"].as_str().ok_or("dataset account currency is required")?;
+    // Legacy Forex manifests expose their replay spec through the catalog projection.
+    // Use that same authority for currency and pip/tick units without rewriting the dataset.
+    let instrument = crate::provider_routes::catalog::replay_instrument(manifest)
+        .ok_or("dataset replay instrument specification is required")?;
+    let currency = instrument["account_ccy"].as_str().ok_or("dataset account currency is required")?;
     let enabled = options["costs_enabled"] == true;
     let mut args = request.clone();
     args["spread_price"] = if enabled { asset["spread_price"].clone() } else { json!("0") };
@@ -81,7 +85,6 @@ pub fn initialization(payload: &Value, manifest: &Value, request: &Value) -> Res
     });
     if options["version"] == VERSION_V2 {
         let seed = payload["trading_options_seed"].as_str().ok_or("frozen slippage seed is required")?;
-        let instrument = &manifest["instrument_spec"];
         let forex = instrument["asset_class"].as_str().is_some_and(|class| class.eq_ignore_ascii_case("fx") || class.eq_ignore_ascii_case("forex"));
         let (unit, amount) = if forex { ("pip", &instrument["pip_size"]) } else { ("tick", &instrument["tick_size"]) };
         args["cost_model"]["slippage_model"] = json!({"version":"deterministic-adverse-fill-v1","mode":asset["slippage"]["mode"],"fixed_steps":asset["slippage"].get("fixed_steps").cloned().unwrap_or(Value::Null),"unit":unit,"unit_price":amount,"seed":seed});
@@ -131,5 +134,27 @@ mod tests {
         }
         value["assets"]["one"]["slippage"] = json!({"mode":"off"});
         assert!(initialization(&json!({"dataset_id":"one","trading_options":value}),&json!({"instrument_spec":{"account_ccy":"USD"}}),&json!({})).is_err());
+    }
+    #[test]
+    fn legacy_forex_uses_catalog_currency_and_slippage_units() {
+        let mut value = options(); value["version"] = json!(VERSION_V2);
+        value["assets"]["one"].as_object_mut().unwrap().remove("slippage_price");
+        value["assets"]["one"]["slippage"] = json!({"mode":"fixed","fixed_steps":2});
+        let payload = json!({"dataset_id":"one","trading_options":value,"trading_options_seed":"server-seed"});
+        for (symbol, currency, pip) in [("EUR/USD","USD","0.0001"),("USD/JPY","JPY","0.01")] {
+            let manifest = json!({"instrument_id":symbol,"first_timestamp":1052092800});
+            let before = manifest.clone();
+            let args = initialization(&payload,&manifest,&json!({})).unwrap();
+            assert_eq!(args["cost_model"]["account_ccy"],currency);
+            assert_eq!(args["cost_model"]["slippage_model"]["unit"],"pip");
+            assert_eq!(args["cost_model"]["slippage_model"]["unit_price"],pip);
+            assert_eq!(args["spread_price"],"0");
+            assert_eq!(manifest,before,"legacy manifest remains immutable");
+        }
+        assert!(initialization(&payload,&json!({"instrument_id":"XAU/USD"}),&json!({"instrument_spec":{"account_ccy":"USD"}})).is_err(),"caller data cannot invent missing metal specifications");
+        let declared = json!({"instrument_id":"EUR/USD","instrument_spec":{"account_ccy":"EUR","asset_class":"fx","pip_size":"0.001"}});
+        let args = initialization(&payload,&declared,&json!({})).unwrap();
+        assert_eq!(args["cost_model"]["account_ccy"],"EUR","declared specification stays authoritative");
+        assert_eq!(args["cost_model"]["slippage_model"]["unit_price"],"0.001");
     }
 }

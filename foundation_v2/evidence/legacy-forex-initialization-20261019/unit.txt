@@ -1,0 +1,11 @@
+   Compiling trading-workspace-api v0.1.0 (D:\ANNAM\TradingWorkspace\projects\mt5-tradingview-backtester\foundation_v2\api-rust)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 26.13s
+     Running unittests src\lib.rs (foundation_v2\api-rust\target\debug\deps\trading_workspace_api-7195938e6d918196.exe)
+
+running 4 tests
+test session_trading_options::tests::frozen_config_overrides_hidden_request_defaults_and_rejects_tick_mix ... ok
+test session_trading_options::tests::legacy_forex_uses_catalog_currency_and_slippage_units ... ok
+test session_trading_options::tests::validates_exact_asset_set_and_bounded_decimals ... ok
+test session_trading_options::tests::v2_slippage_is_explicit_bounded_and_seeded_by_the_server ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 135 filtered out; finished in 0.00s

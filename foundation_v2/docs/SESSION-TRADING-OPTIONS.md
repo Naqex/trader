@@ -64,6 +64,12 @@ cost defaults. Metadata and branches retain it; PATCH cannot change it. Starting
 balance is pinned when supplied at creation. Session settings show the saved
 configuration even before the simulator initializes.
 
+Native initialization resolves currency and pip/tick units through the same
+replay-instrument projection as the dataset catalog. Declared specs remain
+authoritative; legacy slash-symbol Forex manifests use the existing catalog
+projection. This does not rewrite their manifests or invent specs for metals
+and other unsupported datasets.
+
 `session-cost-v1` isolates the new calculation from legacy sessions:
 
 - With zero spread, Bid and Ask both equal the raw chart close; quick BUY and
