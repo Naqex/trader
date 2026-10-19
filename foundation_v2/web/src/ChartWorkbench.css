@@ -423,6 +423,10 @@ button.chart-order-level { cursor: ns-resize; touch-action: none; }
 .legacy-order-modal :is(input,button,select,summary):focus-visible { outline:2px solid var(--project-primary); outline-offset:2px; }
 .legacy-protection-row { display:flex; align-items:center; justify-content:space-between; gap:24px; min-height:36px; box-sizing:border-box; }
 .legacy-protection-row label { display:flex; align-items:center; flex-shrink:0; gap:10px; color:var(--chart-text); }
+.legacy-edit-protection { display:grid; gap:16px; }
+.legacy-new-protection { display:flex; align-items:center; justify-content:space-between; gap:24px; }
+.legacy-new-protection > div:last-child:not(:first-child) { flex:1; min-width:0; }
+.legacy-edit-protection > .legacy-protection-row { padding:12px 16px; border:1px solid var(--project-border); border-radius:var(--ds-radius-field); background:var(--project-control); }
 .legacy-protection-row input[type=switch], .legacy-order-form input[role=switch] { appearance:none; width:var(--ds-switch-width,28px); height:var(--ds-switch-height,16px); background:var(--project-control); border-radius:var(--ds-radius-pill,999px); margin:0; cursor:pointer; }
 .legacy-order-form input[role=switch]::before { content:''; display:block; width:12px; height:12px; margin:2px; background:var(--project-text); border-radius:50%; }
 .legacy-order-form input[role=switch]:checked { background:var(--project-primary); }

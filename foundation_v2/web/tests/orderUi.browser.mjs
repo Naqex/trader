@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { chromium } from 'playwright'
 
 const origin = 'http://127.0.0.1:5180'
-const output = '../evidence/order-ui-20261019/ui'
+const output = process.argv[2] || '../evidence/order-ui-20261019/ui'
 const fixture = JSON.parse(await readFile(new URL('./visual/chart-fixture.json', import.meta.url)))
 const copy = JSON.parse(await readFile(new URL('../src/testing-copy.json', import.meta.url)))
 const report = { scope: 'Synthetic API state and intercepted writes; real native chart library. Financial correctness is tested separately against a disposable database.', cases: [], errors: [], writes: [] }
@@ -58,6 +58,9 @@ try {
           const price = String(replay.visible_rows.at(-1).close)
           execution.position = { position_id: 'qa-position', source_operation_id: body.operation_id, side, quantity: body.quantity, entry_fill: price, stop_loss: null, take_profit: null, opened_time_utc: replay.cutoff_timestamp }
           execution.ledger.push({ kind: 'market_fill', details: { position_id: 'qa-position', operation_id: body.operation_id, side, quantity: body.quantity, fill_price: price } })
+        } else if (url.pathname.endsWith('/orders/protection')) {
+          assert.equal(body.target_id, 'qa-position')
+          execution.position = { ...execution.position, stop_loss: body.stop_loss, take_profit: body.take_profit }
         } else if (url.pathname.endsWith('/orders/close')) {
           if (rejectClose) { rejectClose = false; return route.fulfill({ status: 422, json: { detail: 'QA partial close rejected' } }) }
           assert.equal(body.target_id, 'qa-position')
@@ -96,6 +99,63 @@ try {
     await page.reload(); native = await ready()
     assert.ok((await native.locator('.wm-order-marker-text').first().innerText()).startsWith(side), 'position is retained after reload')
     assert.doesNotMatch(await native.locator('.wm-order-marker-text').first().innerText(), /queued|Chờ khớp/)
+    const beforeValidation = report.writes.length
+    const invalidStop = side === 'BUY' ? 'ArrowUp' : 'ArrowDown', invalidTarget = side === 'BUY' ? 'ArrowDown' : 'ArrowUp'
+    const protectionToast = page.locator('.wm-notification.is-structured').last()
+    for (const [kind, invalid, message] of [['stop', invalidStop, side === 'BUY' ? 'Stop Loss price must be lower than the current price' : 'Stop Loss price must be higher than the current price'], ['target', invalidTarget, side === 'BUY' ? 'Take Profit price must be higher than the current price' : 'Take Profit price must be lower than the current price']]) {
+      await native.locator(`[data-order-drag=${kind}]`).press(invalid)
+      await page.getByRole('alert').filter({ hasText: t(message) }).waitFor()
+      assert.match(await protectionToast.innerText(), new RegExp(t('Order Error')))
+      assert.equal(await protectionToast.locator('.wm-notification-mark').innerText(), '×')
+    }
+    assert.equal(report.writes.length, beforeValidation, 'invalid direction never writes an order')
+    await page.screenshot({ path: `${output}/protection-error-${width}-${language}.png` })
+    for (const [kind, valid, added, moved] of [['target', invalidStop, 'Take profit added!', 'Take profit moved to {price}!'], ['stop', invalidTarget, 'Stop loss added!', 'Stop loss moved to {price}!']]) {
+      const handle = native.locator(`[data-order-drag=${kind}]`)
+      await handle.press(valid)
+      await protectionToast.filter({ hasText: t(added) }).waitFor()
+      assert.match(await protectionToast.innerText(), new RegExp(t('Order Added')))
+      await handle.press(valid)
+      await protectionToast.filter({ hasText: t(moved).split('{price}')[0] }).waitFor()
+      assert.match(await protectionToast.innerText(), new RegExp(t('Position Updated')))
+    }
+    await page.screenshot({ path: `${output}/protection-moved-${width}-${language}.png` })
+    const beforeDialog = report.writes.length
+    await native.getByRole('button', { name: t('Chỉnh sửa vị thế'), exact: true }).click()
+    const markerEdit = page.locator('.legacy-order-modal')
+    await markerEdit.waitFor()
+    assert.equal(await markerEdit.getByRole('heading').innerText(), t('Chỉnh sửa vị thế'))
+    assert.equal(await page.locator('.partial-close-dialog').count(), 0, 'quantity opens edit, not close')
+    const stopPrice = markerEdit.getByRole('spinbutton', { name: t('Stop loss'), exact: true })
+    const stopPips = markerEdit.getByRole('spinbutton', { name: t('Stop loss in pips'), exact: true })
+    assert.ok(Number(await stopPips.inputValue()) > 0)
+    await stopPips.fill('')
+    assert.equal(await stopPips.isVisible(), true, 'clearing pips keeps the editor available')
+    assert.equal(await markerEdit.getByRole('switch', { name: t('Stop loss'), exact: true }).isChecked(), true)
+    await markerEdit.getByRole('button', { name: t('Confirm'), exact: true }).click()
+    assert.equal(report.writes.length, beforeDialog, 'an enabled but empty protection cannot be submitted')
+    await stopPips.fill('10')
+    const editEntry = Number(execution.position.entry_fill)
+    assert.ok(Math.abs(Number(await stopPrice.inputValue()) - (editEntry + (side === 'BUY' ? -1 : 1) * Number(spec.pip_size) * 10)) < 1e-8)
+    const wantedStop = await stopPrice.inputValue()
+    await stopPrice.fill('')
+    assert.equal(await stopPrice.isVisible(), true)
+    await stopPrice.fill(wantedStop)
+    assert.equal(Number(await stopPips.inputValue()), 10, 'price and pips update in both directions')
+    assert.equal(await markerEdit.locator('.legacy-edit-protection .legacy-protection-row').first().evaluate(node => getComputedStyle(node).borderRadius), '8px')
+    await page.screenshot({ path: `${output}/edit-pips-${width}-${language}.png` })
+    await page.keyboard.press('Escape')
+    assert.equal(report.writes.length, beforeDialog, 'opening/canceling an editor never trades')
+    await native.getByRole('button', { name: t('Chỉnh sửa vị thế'), exact: true }).click()
+    await page.locator('.legacy-order-modal').getByRole('switch', { name: t('Stop loss'), exact: true }).uncheck()
+    await page.keyboard.press('Escape')
+    await native.getByRole('button', { name: t('Chỉnh sửa vị thế'), exact: true }).click()
+    assert.equal(await page.locator('.legacy-order-modal').getByRole('switch', { name: t('Stop loss'), exact: true }).isChecked(), true, 'reopening discards the unsaved disabled state')
+    await page.locator('.legacy-order-modal').getByRole('spinbutton', { name: t('Stop loss in pips'), exact: true }).fill('10')
+    await page.locator('.legacy-order-modal').getByRole('button', { name: t('Confirm'), exact: true }).click()
+    await page.locator('.legacy-order-modal').waitFor({ state: 'detached' })
+    assert.equal(Number(execution.position.stop_loss), Number(wantedStop))
+    assert.equal(report.writes.at(-1).path.endsWith('/orders/protection'), true, 'edit submit never closes the position')
     await native.getByRole('button', { name: t('Đóng một phần vị thế'), exact: true }).click()
     const dialog = page.locator('.partial-close-dialog')
     await dialog.waitFor()
@@ -130,10 +190,14 @@ try {
     assert.ok(await edit.locator('footer').evaluate(node => getComputedStyle(node).justifyContent === 'flex-end'))
     await page.screenshot({ path: `${output}/edit-${width}-${language}-${side}.png` })
     await page.keyboard.press('Escape')
-    // Old servers must never receive partial quantities they could ignore.
+    // Old servers expose an explicit full-close confirmation, never a partial request.
     replay.execution_capabilities = {}
     await page.reload(); native = await ready()
-    assert.equal(await native.getByRole('button', { name: t('Đóng một phần vị thế'), exact: true }).isDisabled(), true)
+    assert.equal(await native.getByRole('button', { name: t('Chỉnh sửa vị thế'), exact: true }).isEnabled(), true)
+    await native.getByRole('button', { name: t('Đóng/hủy lệnh'), exact: true }).click()
+    await page.locator('.chart-order-close-dialog').waitFor()
+    assert.equal(await page.locator('.partial-close-dialog').count(), 0)
+    await page.keyboard.press('Escape')
     report.cases.push({ width, language, side, theme, colors, quickFilled: true, reload: true, partialUi: true, oldServerBlocked: true })
     await context.close()
   }

@@ -13,6 +13,9 @@
 .wm-notification-mark.is-sell { background:color-mix(in srgb,var(--wm-negative) 22%,transparent); color:var(--wm-negative); }
 .wm-notification-mark.is-neutral { background:color-mix(in srgb,var(--wm-content-muted) 18%,transparent); color:var(--wm-content-muted); }
 .wm-notification.is-error { border-color:var(--wm-negative); }
+.wm-notification-mark.is-error { background:color-mix(in srgb,var(--wm-negative) 18%,transparent); color:var(--wm-negative); }
+.fx-app .wm-notification.is-structured { border-color:var(--wm-border-strong); }
+.fx-app.is-chart-workspace .wm-notification.is-structured { background:var(--project-canvas); border-radius:var(--ds-radius-dialog); }
 .fx-app .wm-notification button { display:grid; place-items:center; flex:0 0 28px; width:28px; height:28px; min-height:28px; padding:0; border:0; border-radius:var(--ds-radius-small); background:transparent; color:var(--wm-content-muted); font:inherit; font-size:20px; cursor:pointer; }
 .fx-app .wm-notification button:not(.wm-notification-action):is(:hover, :active) { color:var(--wm-content); background:transparent; border:0; box-shadow:none; }
 .fx-app .wm-notification button:focus-visible { outline:2px solid var(--wm-focus); outline-offset:-2px; }

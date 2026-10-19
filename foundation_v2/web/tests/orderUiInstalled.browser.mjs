@@ -24,6 +24,22 @@ try {
   report.ready = true
   report.horizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)
   assert.equal(report.horizontalOverflow, false)
+  const native = page.frameLocator('.advanced-chart-host iframe')
+  if (await native.locator('.wm-order-marker-quantity').count()) {
+    const quantity = native.locator('.wm-order-marker-quantity').first(), close = native.locator('.wm-order-marker-close').first()
+    assert.equal(await quantity.getAttribute('aria-label'), 'Chỉnh sửa vị thế')
+    assert.equal(await close.getAttribute('aria-label'), 'Đóng một phần vị thế')
+    await close.click()
+    await page.locator('.partial-close-dialog').waitFor()
+    await page.screenshot({ path: `${output}/installed-partial.png` })
+    await page.keyboard.press('Escape')
+    await quantity.click()
+    await page.locator('.legacy-order-modal').waitFor()
+    assert.equal(await page.locator('.partial-close-dialog').count(), 0)
+    await page.screenshot({ path: `${output}/installed-edit.png` })
+    await page.keyboard.press('Escape')
+    report.installedMarkerDialogs = true
+  }
   await page.screenshot({ path: `${output}/installed-chart.png` })
   assert.deepEqual(report.errors, [])
   report.passed = true

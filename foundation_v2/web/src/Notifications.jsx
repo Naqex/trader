@@ -32,7 +32,7 @@ function Notification({ notice, onDismiss }) {
         <span className={`wm-notification-order-line is-${order.side === 'BUY' ? 'buy' : 'sell'}`}><b>{t(order.side === 'BUY' ? 'Buy' : 'Sell')}</b> {t('{quantity} tại {price}', { quantity: order.quantity, price: order.price })}</span>
       </div>
     </> : structured ? <>
-      <span className="wm-notification-mark is-neutral" aria-hidden="true">✓</span>
+      <span className={`wm-notification-mark ${notice.tone === 'error' ? 'is-error' : 'is-neutral'}`} aria-hidden="true">{notice.tone === 'error' ? '×' : '✓'}</span>
       <div className="wm-notification-content" role={role}>
         <strong>{t(notice.title)}</strong>
         <span className="wm-notification-detail">{t(notice.message, notice.values)}</span>
@@ -50,7 +50,7 @@ export function NotificationProvider({ children }) {
   const dismiss = useCallback(id => setNotices(items => items.filter(item => item.id !== id)), [])
   const notify = useCallback((messageOrNotice, tone = 'success') => {
     const input = typeof messageOrNotice === 'string' ? { message: messageOrNotice, tone } : { tone, ...messageOrNotice }
-    const key = input.order ? `order:${input.order.status}:${input.order.side}:${input.order.symbol}:${input.order.quantity}:${input.order.price}` : `message:${input.title || input.message}:${JSON.stringify(input.values || {})}`
+    const key = input.order ? `order:${input.order.status}:${input.order.side}:${input.order.symbol}:${input.order.quantity}:${input.order.price}` : `message:${input.title || ''}:${input.message || input.text}:${JSON.stringify(input.values || {})}`
     const notice = { id: ++sequence.current, ...input, key }
     setNotices(items => [...items.filter(item => item.key !== key), notice].slice(-3))
   }, [])

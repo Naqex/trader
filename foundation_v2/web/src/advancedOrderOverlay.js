@@ -87,9 +87,8 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     row.quantity.textContent = String(levels.quantity ?? '—')
     row.quantity.hidden = label.compact
     if (row.kind === 'entry') {
-      const position = levels.state === 'position'
-      row.quantity.disabled = position ? !levels.partialCloseSupported || !state.orderCloseable || !state.onOrderPartial : !state.orderEditable || !state.onOrderEdit
-      row.quantity.setAttribute('aria-label', t(position ? 'Đóng một phần vị thế' : 'Chỉnh sửa vị thế'))
+      row.quantity.disabled = !state.orderEditable || !state.onOrderEdit
+      row.quantity.setAttribute('aria-label', t('Chỉnh sửa vị thế'))
     }
     if (row.kind !== 'entry') {
       const hint = t('Kéo để dời · ↑ ↓ chỉnh giá · Delete để bỏ')
@@ -98,7 +97,9 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     row.body.disabled = row.kind !== 'entry' && !state.orderEditable
     row.element.dataset.pending = String(levels.state === 'submitting' || !state.orderEditable)
     if (row.close) {
+      const partial = levels.state === 'position' && levels.partialCloseSupported && state.onOrderPartial
       row.close.disabled = !state.orderCloseable
+      row.close.setAttribute('aria-label', t(partial ? 'Đóng một phần vị thế' : 'Đóng/hủy lệnh'))
       row.close.style.visibility = state.orderCloseable ? 'visible' : 'hidden'
     }
     return label
@@ -233,9 +234,7 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
       quantity.addEventListener('click', event => {
         claim(event)
         const state = getState()
-        if (state.levels.state === 'position') {
-          if (state.levels.partialCloseSupported && state.orderCloseable) { state.onOrderDragStart?.(); state.onOrderPartial?.() }
-        } else if (state.orderEditable) { state.onOrderDragStart?.(); state.onOrderEdit?.() }
+        if (state.orderEditable) { state.onOrderDragStart?.(); state.onOrderEdit?.() }
       })
     }
     body.append(text, quantity); element.append(body)
@@ -253,7 +252,11 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
       close.addEventListener('click', event => {
         claim(event)
         const state = getState()
-        if (state.orderCloseable) { state.onOrderDragStart?.(); state.onOrderClose?.() }
+        if (state.orderCloseable) {
+          state.onOrderDragStart?.()
+          if (state.levels.state === 'position' && state.levels.partialCloseSupported && state.onOrderPartial) state.onOrderPartial()
+          else state.onOrderClose?.()
+        }
       })
       element.append(close); row.close = close
     }

@@ -1,0 +1,24 @@
+✔ price-axis colors distinguish entry side, protection and selection (1.1102ms)
+✔ equal and nearby prices separate horizontally while distant levels share the right column (1.0358ms)
+✔ protection labels use account currency, direction and actual quantity; unknown FX conversion stays unknown (0.7112ms)
+✔ Entry-price protections use compact handles without losing saved state or hiding real nonzero distances (0.5815ms)
+✔ scale projection supports log, invert and tiny price ranges with reversible drag coordinates (0.5384ms)
+✔ pending entry is explicitly submitting and authoritative execution wins when it arrives (0.5968ms)
+✔ historical UI never reads canonical future account or position state (1.3116ms)
+✔ quote reference includes the closeable side of the spread (1.7967ms)
+✔ tick quote and draft use pinned historical Bid/Ask without OHLC fallback (0.3546ms)
+✔ draft prices use declared pip and quantity assumptions without inventing missing values (24.7418ms)
+✔ order projection changes with price scale and keeps unmappable anchors out (0.7243ms)
+✔ order primitive releases references and redraws through native engine lifecycle (0.5676ms)
+✔ TP and SL distinguish adding, moving and removing from persisted state (3.8698ms)
+✔ direction errors name the exact field and use current closeable price, including equality (1.0872ms)
+✔ system copy provides both locales with matching interpolation contracts (12.1791ms)
+✔ status families have both locales and blocked execution has an explanation (0.4039ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 160.8973

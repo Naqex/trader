@@ -4,6 +4,7 @@ import { useTestingLocale } from './testingLocale.jsx'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import './TradeWorkspace.css'
 import { marketQuotes } from './replayOrderModel.js'
+import { protectionError } from './replayOrderLabels.js'
 import { useReplayTickOptions } from './useReplayTickOptions.js'
 import { sessionExecutionConfig, slippageAllowance } from './sessionTradingOptions.js'
 
@@ -94,12 +95,9 @@ function validateDraft(draft, entry, { optionalProtection = false } = {}) {
   if (!Number.isFinite(entry) || !(entry > 0) || !Number.isFinite(quantity) || quantity <= 0 || (!noStop && (!Number.isFinite(stopLoss) || stopLoss <= 0)) || (!noTarget && (!Number.isFinite(takeProfit) || takeProfit <= 0))) {
     return 'Khối lượng, SL và TP phải là số dương.'
   }
-  if (draft.side === 'BUY' && !((noStop || stopLoss < entry) && (noTarget || takeProfit > entry))) {
-    return 'Lệnh BUY cần SL dưới giá tham chiếu và TP trên giá tham chiếu.'
-  }
-  if (draft.side === 'SELL' && !((noStop || stopLoss > entry) && (noTarget || takeProfit < entry))) {
-    return 'Lệnh SELL cần SL trên giá tham chiếu và TP dưới giá tham chiếu.'
-  }
+  const levels = { side: draft.side, reference: entry }
+  if (!noStop) { const error = protectionError(levels, 'stop', stopLoss); if (error) return error }
+  if (!noTarget) { const error = protectionError(levels, 'target', takeProfit); if (error) return error }
   return ''
 }
 

@@ -40,5 +40,8 @@ export function protectionError(levels, kind, price) {
   if (!(reference > 0) || !(price > 0)) return 'Giá TP/SL không hợp lệ.'
   const buy = levels.side === 'BUY'
   const valid = kind === 'stop' ? buy ? price < reference : price > reference : buy ? price > reference : price < reference
-  return valid ? '' : `Lệnh ${levels.side} cần ${kind === 'stop' ? 'SL' : 'TP'} ${kind === 'stop' ? buy ? 'dưới' : 'trên' : buy ? 'trên' : 'dưới'} giá tham chiếu.`
+  if (valid) return ''
+  return kind === 'stop'
+    ? buy ? 'Stop Loss price must be lower than the current price' : 'Stop Loss price must be higher than the current price'
+    : buy ? 'Take Profit price must be higher than the current price' : 'Take Profit price must be lower than the current price'
 }

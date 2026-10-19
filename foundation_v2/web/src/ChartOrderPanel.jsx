@@ -6,6 +6,7 @@ import { useReplayTickOptions } from './useReplayTickOptions.js'
 import FxSelect from './FxSelect.jsx'
 import { scalperProtection } from './legacyScalperPreset.js'
 import { sessionExecutionConfig } from './sessionTradingOptions.js'
+import { protectionNotice } from './replayOrderNotices.js'
 
 export function useChartOrder({ workspace, replay, dataset, ready, blocked, closeBlocked = blocked, submit, executionConfig = null }) {
   const execution = replayAtCutoff(replay)?.payload?.execution
@@ -70,7 +71,7 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
       const nextReference = nextActive ? protectionReference(nextReplay) : nextDraft.side === 'BUY' ? nextQuotes.ask : nextQuotes.bid
       if (nextReference === null || nextReference === undefined) throw new Error('Chưa có giá tham chiếu tại cutoff này.')
       const validation = validateDraft(nextDraft, nextReference, { optionalProtection: true })
-      if (validation) { setNotice({ kind: 'error', text: validation }); return false }
+      if (validation) { setNotice({ kind: 'error', title: 'Order Error', message: validation }); return false }
       const operation_id = `chart-${crypto.randomUUID()}`
       const result = await submit(nextActive ? 'orders/protection' : 'orders/market', nextActive
         ? { operation_id, target_id: nextExecution.position?.position_id || nextExecution.pending_market_order.operation_id, stop_loss: nextDraft.stopLoss || null, take_profit: nextDraft.takeProfit || null }
@@ -79,16 +80,12 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
         if (!nextActive && !result.payload.execution.position) {
           throw new Error('Không đủ margin để mở vị thế.')
         }
-        if (nextActive && options.movedKind && options.movedPrice > 0) {
-          const tick = finiteNumber(instrument?.tick_size)
-          const digits = tick ? Math.max(0, Math.min(8, String(tick).split('.')[1]?.length || 0)) : 5
-          const price = new Intl.NumberFormat('en-US', { useGrouping: false, minimumFractionDigits: digits, maximumFractionDigits: digits }).format(Number(options.movedPrice))
-          setNotice({ kind: 'ok', title: 'Position Updated', message: options.movedKind === 'target' ? 'Take profit moved to {price}!' : 'Stop loss moved to {price}!', values: { price } })
-        } else setNotice({ kind: 'ok', text: nextActive ? 'TP/SL đã lưu; áp dụng từ nến tiếp theo.' : 'Đã khớp lệnh mô phỏng tại giá hiện tại.' })
+        if (nextActive) setNotice(protectionNotice(nextActive, nextDraft, instrument?.tick_size, options.movedKind))
+        else setNotice({ kind: 'ok', text: 'Đã khớp lệnh mô phỏng tại giá hiện tại.' })
       }
       return Boolean(result)
     } catch (error) {
-      setNotice({ kind: 'error', text: error.message })
+      setNotice({ kind: 'error', title: 'Order Error', message: error.message })
       return false
     } finally {
       busy.current = false
@@ -103,13 +100,13 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
     // the same immediate feedback as the order form.
     if (active) {
       const validation = validateDraft(next, reference, { optionalProtection: true })
-      if (validation) { setNotice({ kind: 'error', text: validation }); return false }
+      if (validation) { setNotice({ kind: 'error', title: 'Order Error', message: validation }); return false }
       return save(next, { movedKind: kind === 'stop' ? 'stop' : 'target', movedPrice: price })
     }
     setDraft(next)
     return true
   }
-  const reportError = text => setNotice({ kind: 'error', text: String(text || 'Không thể cập nhật TP/SL.') })
+  const reportError = text => setNotice({ kind: 'error', title: 'Order Error', message: String(text || 'Không thể cập nhật TP/SL.') })
   const chooseSide = side => {
     if (!active && !disabled) { setDraft(current => ({ ...orderDraft(replay, instrument, side), quantity: current.quantity })); setNotice(null) }
   }
@@ -196,23 +193,31 @@ function LegacyOrderForm({ order, blockedReason, onClose, onJournal }) {
   const { t } = useTestingLocale()
   const [journal, setJournal] = useState(false)
   const { draft, setDraft, execution, disabled, instrument, active } = order
+  const [enabled, setEnabled] = useState(() => ({ stopLoss: active ? active.stop_loss != null : draft.stopLoss !== '', takeProfit: active ? active.take_profit != null : draft.takeProfit !== '' }))
+  useEffect(() => { if (active) setEnabled({ stopLoss: active.stop_loss != null, takeProfit: active.take_profit != null }) }, [active])
   const changed = !active || ['stopLoss', 'takeProfit'].some((key, i) => String(draft[key] || '') !== String(active[i ? 'take_profit' : 'stop_loss'] ?? ''))
   const change = (key, value) => setDraft(current => ({ ...current, [key]:value }))
+  const pip = Number(instrument?.pip_size), entry = Number(active?.entry_fill)
   return <><form className="legacy-order-form" onSubmit={async event => { event.preventDefault(); if (await order.save()) { onClose(); if (journal) onJournal() } }}>
     {!active && <div className="legacy-order-grid"><label>{t('Hướng')}<FxSelect className="is-field" label="Hướng" value={draft.side} disabled={disabled || Boolean(active)} onChange={order.chooseSide} options={[{ value: 'BUY', label: t('Buy') }, { value: 'SELL', label: t('Sell') }]} /></label><label>{t('Loại lệnh')}<FxSelect className="is-field" label="Loại lệnh" value="market" disabled options={[{ value: 'market', label: 'Market' }]} /></label>
     <label>{t(instrument?.asset_class==='fx' ? 'Khối lượng (lot)' : 'Khối lượng (quantity)')}<input aria-label={t('Khối lượng lệnh')} type="number" min={instrument?.quantity_min || '0'} step={instrument?.quantity_step || 'any'} value={draft.quantity} disabled={disabled || Boolean(active)} onChange={event => change('quantity',event.target.value)} /></label><label>{t('Giá vào lệnh')}<input type="text" readOnly value={order.reference ?? '—'} /></label></div>}
-    {[['stopLoss','Stop loss'],['takeProfit','Take profit']].map(([key,label]) => <div className="legacy-protection-row" key={key}><label><input type="checkbox" role="switch" checked={draft[key] !== ''} disabled={disabled || !execution} onChange={event => {
+    {[['stopLoss','Stop loss'],['takeProfit','Take profit']].map(([key,label]) => <section className={active ? 'legacy-edit-protection' : 'legacy-new-protection'} key={key}><div className="legacy-protection-row"><label><input type="checkbox" role="switch" checked={active ? enabled[key] : draft[key] !== ''} disabled={disabled || !execution} onChange={event => {
+      setEnabled(current => ({ ...current, [key]: event.target.checked }))
       if (!event.target.checked) { change(key, ''); return }
       const unit = Number(instrument?.pip_size) || Number(instrument?.tick_size)
       const direction = (key === 'stopLoss' ? -1 : 1) * (draft.side === 'BUY' ? 1 : -1)
       const price = order.reference + direction * unit * (key === 'stopLoss' ? 20 : 40)
       change(key, Number.isFinite(price) && price > 0 ? String(Number(price.toFixed(8))) : '')
-    }} />{t(label)}</label>{draft[key] !== '' && <input aria-label={t(label)} type="number" min="0" required step={instrument?.tick_size || 'any'} value={draft[key]} disabled={disabled} onChange={event => change(key,event.target.value)} />}</div>)}
+    }} />{t(label)}</label></div>{(active ? enabled[key] : draft[key] !== '') && <div className={active ? 'legacy-order-grid' : undefined}><label>{active && t(label)}<input aria-label={t(label)} type="number" min="0" required step={instrument?.tick_size || 'any'} value={draft[key]} disabled={disabled} onChange={event => change(key,event.target.value)} /></label>{active && pip > 0 && entry > 0 && <label>{t(key === 'stopLoss' ? 'Stop loss in pips' : 'Take profit in pips')}<input type="number" step="any" value={draft[key] === '' ? '' : Number(((Number(draft[key]) - entry) * (draft.side === 'BUY' ? 1 : -1) * (key === 'stopLoss' ? -1 : 1) / pip).toFixed(4))} disabled={disabled} onChange={event => {
+      if (event.target.value === '') { change(key, ''); return }
+      const direction = (draft.side === 'BUY' ? 1 : -1) * (key === 'stopLoss' ? -1 : 1)
+      change(key, String(Number((entry + Number(event.target.value) * pip * direction).toFixed(8))))
+    }} /></label>}</div>}</section>)}
     {!active && <div className="legacy-protection-row is-unavailable" title={t('Chưa hỗ trợ tự dời SL về hòa vốn')}><label><input type="checkbox" role="switch" disabled />Auto Break-even</label><small>{t('Sắp có')}</small></div>}
-    <label>{t('Chiến lược')}<FxSelect className="is-field" label="Chiến lược" value="session" disabled options={[{ value: 'session', label: t('Mặc định của phiên') }]} /></label><button type="button" className="legacy-strategy-create" disabled>{t('+ Tạo chiến lược mới')}</button>
+    {!active && <><label>{t('Chiến lược')}<FxSelect className="is-field" label="Chiến lược" value="session" disabled options={[{ value: 'session', label: t('Mặc định của phiên') }]} /></label><button type="button" className="legacy-strategy-create" disabled>{t('+ Tạo chiến lược mới')}</button></>}
     {blockedReason && <p role="status">{t(blockedReason)}</p>}
     {order.notice && <p role={order.notice.kind === 'error' ? 'alert' : 'status'}>{order.notice.title ? <><strong>{t(order.notice.title)}</strong> {t(order.notice.message, order.notice.values)}</> : t(order.notice.text)}</p>}
-    <footer>{!active && <label><input type="checkbox" checked={journal} onChange={event => setJournal(event.target.checked)} />{t('Mở nhật ký sau khi đặt lệnh')}</label>}<button type="button" onClick={onClose}>{t('Hủy')}</button><button type="submit" className="legacy-order-save" disabled={disabled || !changed}>{t(order.pending ? 'Đang lưu…' : !changed ? 'Không có thay đổi' : 'Save')}</button></footer>
+    <footer>{!active && <label><input type="checkbox" checked={journal} onChange={event => setJournal(event.target.checked)} />{t('Mở nhật ký sau khi đặt lệnh')}</label>}<button type="button" onClick={onClose}>{t('Hủy')}</button><button type="submit" className="legacy-order-save" disabled={disabled || !changed}>{t(order.pending ? 'Đang lưu…' : active ? 'Confirm' : !changed ? 'Không có thay đổi' : 'Save')}</button></footer>
   </form></>
 }
 
