@@ -4,10 +4,10 @@ import { useTestingLocale } from './testingLocale.jsx'
 import { partialCloseAmount, partialCloseBasis, partialCloseError } from './partialCloseModel.js'
 
 export default function PartialCloseDialog({ levels, theme, pending, disabled, onClose, onSubmit }) {
-  const { t, fmt } = useTestingLocale()
+  const { t, fmt, locale } = useTestingLocale()
   const [basis, setBasis] = useState('remaining')
-  const [percentage, setPercentage] = useState('50')
-  const [amount, setAmount] = useState(() => partialCloseAmount(levels, 'remaining', '50'))
+  const [percentage, setPercentage] = useState('100')
+  const [amount, setAmount] = useState(() => partialCloseAmount(levels, 'remaining', '100'))
   const [error, setError] = useState('')
   const validation = partialCloseError(levels, amount)
   const choosePercent = value => { setPercentage(value); setAmount(partialCloseAmount(levels, basis, value)); setError('') }
@@ -29,10 +29,10 @@ export default function PartialCloseDialog({ levels, theme, pending, disabled, o
       <div className="partial-close-presets" role="group" aria-label={t('Tỷ lệ đóng')}>{[25, 50, 75, 100].map(value => <button type="button" key={value} aria-pressed={Number(percentage) === value} disabled={pending} onClick={() => choosePercent(String(value))}>{value}%</button>)}</div>
       <div className="legacy-order-grid">
         <label>{t('Tỷ lệ đóng (%)')}<input type="number" min="0" max="100" step="any" value={percentage} disabled={pending} onChange={event => choosePercent(event.target.value)} /></label>
-        <label>{t(levels.assetClass === 'fx' ? 'Khối lượng đóng (lot)' : 'Khối lượng đóng')}<span className="partial-close-amount"><input type="number" aria-label={t('Khối lượng đóng')} min={levels.quantityMin || '0'} max={levels.quantity} step={levels.quantityStep || 'any'} value={amount} disabled={pending} onChange={event => chooseAmount(event.target.value)} /><button type="button" disabled={pending} onClick={() => chooseAmount(String(levels.quantity))}>{t('Tối đa')}</button></span></label>
+        <label>{t(levels.assetClass === 'fx' ? 'Khối lượng đóng (lot)' : 'Khối lượng đóng')}<input type="number" aria-label={t('Khối lượng đóng')} aria-invalid={Boolean(validation)} min={levels.quantityMin || '0'} max={levels.quantity} step={levels.quantityStep || 'any'} value={amount} disabled={pending} onChange={event => chooseAmount(event.target.value)} /></label>
       </div>
-      <dl className="partial-close-summary"><div><dt>{t('Khối lượng hiện tại')}</dt><dd>{levels.quantity}</dd></div><div><dt>{t('PnL đã chốt')}</dt><dd>{fmt(levels.realizedPnl ?? 0, levels.currency ? ` ${levels.currency}` : '')}</dd></div></dl>
-      {(error || validation) && <p className="partial-close-error" role={error ? 'alert' : 'status'}>{t(error || validation)}</p>}
+      <dl className="partial-close-summary"><div><dt>{t('Khối lượng hiện tại')}:</dt><dd className="partial-close-size">{fmt(levels.quantity, levels.assetClass === 'fx' ? ' lot' : '', 12)}</dd></div><div><dt>{t('PnL đã chốt')}:</dt><dd>{new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2, ...(levels.currency ? { style: 'currency', currency: levels.currency, currencyDisplay: 'narrowSymbol' } : {}) }).format(levels.realizedPnl ?? 0)}</dd></div></dl>
+      {error && <p className="partial-close-error" role="alert">{t(error)}</p>}
       <footer><button type="button" disabled={pending} onClick={onClose}>{t('Hủy')}</button><button className="legacy-order-save" type="submit" disabled={pending || disabled || !levels.partialCloseSupported || Boolean(validation)}>{t(pending ? 'Đang xử lý…' : 'Save')}</button></footer>
     </form>
   </LegacyModal>
