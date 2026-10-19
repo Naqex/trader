@@ -315,6 +315,7 @@ pub struct TimingQuery {
 pub struct ArtifactData {
     root: PathBuf,
     verified: Mutex<VecDeque<(FileIdentity, String)>>,
+    timestamps: Arc<Mutex<TimestampGroups>>,
 }
 
 struct OpenArtifact {
@@ -323,6 +324,7 @@ struct OpenArtifact {
     identity: FileIdentity,
     reader: SerializedFileReader<File>,
     stats: ReadStats,
+    timestamps: Arc<Mutex<TimestampGroups>>,
 }
 
 impl ArtifactData {
@@ -331,6 +333,7 @@ impl ArtifactData {
         Ok(Self {
             root,
             verified: Mutex::new(VecDeque::new()),
+            timestamps: Default::default(),
         })
     }
 
@@ -772,6 +775,7 @@ impl ArtifactData {
             identity: before,
             reader,
             stats,
+            timestamps: self.timestamps.clone(),
         })
     }
 
@@ -816,13 +820,8 @@ impl ArtifactData {
         for group in 0..artifact.reader.num_row_groups() {
             let count = artifact.group_size(group)?;
             if offset < end && offset + count > start {
-                let values = artifact.group(group, None)?;
-                rows.extend(
-                    values
-                        .into_iter()
-                        .skip(start.saturating_sub(offset))
-                        .take(end.min(offset + count) - start.max(offset)),
-                );
+                rows.extend(artifact.group_range(group, None,
+                    start.saturating_sub(offset), end.min(offset + count) - offset)?);
             }
             offset += count;
             if offset >= end {
@@ -1073,7 +1072,9 @@ impl OpenArtifact {
         Ok(rows)
     }
 
-    fn timestamp_group(&mut self, group: usize) -> DataResult<Vec<i64>> {
+    fn timestamp_group(&mut self, group: usize) -> DataResult<Arc<[i64]>> {
+        if let Some(values) = self.timestamps.lock().map_err(|_| "timestamp cache lock poisoned")?
+            .get(&self.identity, group) { return Ok(values); }
         let projection = self.projection(&["timestamp"])?;
         let reader = self
             .reader
@@ -1093,6 +1094,9 @@ impl OpenArtifact {
             .collect::<DataResult<Vec<_>>>()?;
         self.stats.row_groups_decoded += 1;
         self.stats.rows_decoded += values.len();
+        let values: Arc<[i64]> = values.into();
+        self.timestamps.lock().map_err(|_| "timestamp cache lock poisoned")?
+            .insert(self.identity.clone(), group, values.clone());
         Ok(values)
     }
 
@@ -1146,6 +1150,9 @@ impl OpenArtifact {
         )
     }
     fn group(&mut self, group: usize, columns: Option<&[&str]>) -> DataResult<Vec<Value>> {
+        self.group_range(group, columns, 0, self.group_size(group)?)
+    }
+    fn group_range(&mut self, group: usize, columns: Option<&[&str]>, start: usize, end: usize) -> DataResult<Vec<Value>> {
         let schema = self.reader.metadata().file_metadata().schema();
         let projection = columns
             .map(|columns| {
@@ -1166,20 +1173,76 @@ impl OpenArtifact {
             .reader
             .get_row_group(group)
             .map_err(|e| e.to_string())?;
-        let rows: Vec<Value> = reader
+        let iterator = reader
             .get_row_iter(projection)
-            .map_err(|e| e.to_string())?
-            .map(|row| row.map_err(|e| e.to_string()).and_then(row_json))
-            .collect::<DataResult<_>>()?;
+            .map_err(|e| e.to_string())?;
+        let mut rows = Vec::with_capacity(end - start);
+        let mut decoded = 0;
+        // A Parquet row group can contain 50,000 rows while replay needs only a
+        // small window. Stop at its end and materialize JSON only inside that window.
+        for (index, row) in iterator.take(end).enumerate() {
+            let row = row.map_err(|e| e.to_string())?;
+            decoded += 1;
+            if index >= start { rows.push(row_json(row)?); }
+        }
         self.stats.row_groups_decoded += 1;
-        self.stats.rows_decoded += rows.len();
+        self.stats.rows_decoded += decoded;
         Ok(rows)
     }
 }
 
 #[derive(Default)]
 struct TimestampCache {
-    groups: VecDeque<(usize, Vec<i64>)>,
+    groups: VecDeque<(usize, Arc<[i64]>)>,
+}
+
+// Reuse immutable timestamp columns across requests, with the same change stamp
+// and object identity checked by open/finish. No response or authorization is cached.
+#[derive(Default)]
+struct TimestampGroups(VecDeque<(FileIdentity, usize, Arc<[i64]>)>);
+impl TimestampGroups {
+    fn get(&mut self, file: &FileIdentity, group: usize) -> Option<Arc<[i64]>> {
+        let index = self.0.iter().position(|(id, key, _)| id == file && *key == group)?;
+        let entry = self.0.remove(index)?;
+        let values = entry.2.clone();
+        self.0.push_back(entry);
+        Some(values)
+    }
+    fn insert(&mut self, file: FileIdentity, group: usize, values: Arc<[i64]>) {
+        const BUDGET: usize = 16 * 1024 * 1024;
+        let bytes = values.len() * std::mem::size_of::<i64>();
+        if bytes > BUDGET { return; }
+        self.0.retain(|(id, key, _)| id != &file || *key != group);
+        while self.0.len() >= 32 || self.0.iter().map(|(_,_,v)|v.len() * 8).sum::<usize>() + bytes > BUDGET {
+            self.0.pop_front();
+        }
+        self.0.push_back((file, group, values));
+    }
+}
+
+#[cfg(test)]
+mod timestamp_cache_tests {
+    use super::*;
+    fn file(object: u8, change: i64) -> FileIdentity {
+        FileIdentity { size: 1, modified: None, device: 1, object: [object; 16], change }
+    }
+    #[test]
+    fn timestamps_are_scoped_to_file_object_change_stamp_and_group_with_lru_eviction() {
+        let mut cache = TimestampGroups::default();
+        cache.insert(file(1, 1), 0, Arc::from([10i64, 20]));
+        assert_eq!(cache.get(&file(1, 1), 0).unwrap().as_ref(), &[10, 20]);
+        assert!(cache.get(&file(1, 2), 0).is_none());
+        assert!(cache.get(&file(2, 1), 0).is_none());
+        assert!(cache.get(&file(1, 1), 1).is_none());
+        for group in 1..32 { cache.insert(file(1, 1), group, Arc::from([30i64])); }
+        cache.get(&file(1, 1), 0);
+        cache.insert(file(1, 1), 32, Arc::from([40i64]));
+        assert!(cache.get(&file(1, 1), 1).is_none());
+        assert!(cache.get(&file(1, 1), 0).is_some());
+        let oversized: Arc<[i64]> = vec![0; 16 * 1024 * 1024 / 8 + 1].into();
+        cache.insert(file(2, 1), 0, oversized);
+        assert!(cache.get(&file(2, 1), 0).is_none());
+    }
 }
 impl TimestampCache {
     fn group(&mut self, artifact: &mut OpenArtifact, group: usize) -> DataResult<&[i64]> {

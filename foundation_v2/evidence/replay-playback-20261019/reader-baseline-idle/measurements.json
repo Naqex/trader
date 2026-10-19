@@ -1,0 +1,496 @@
+{
+  "phase": "reader-baseline-idle",
+  "fullHistory": false,
+  "steps": [
+    747.0226000000002,
+    649.7482,
+    583.5203000000001,
+    599.9366999999993,
+    583.3344999999999
+  ],
+  "probe": {
+    "mounts": 0,
+    "gaps": [
+      -16.099999994039536,
+      33.40000000000009,
+      16.699999999999818,
+      16.59999999999991,
+      16.700000000000273,
+      16.699999999999818,
+      16.59999999999991,
+      16.600000000000364,
+      16.699999999999818,
+      16.699999999999818,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.699999999999818,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.699999999999818,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.699999999999818,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.699999999999818,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.699999999999818,
+      16.699999999999818,
+      16.600000000000364,
+      16.599999999999454,
+      16.800000000000182,
+      16.600000000000364,
+      16.699999999999818,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.699999999999818,
+      16.600000000000364,
+      16.599999999999454,
+      16.700000000000728,
+      16.699999999999818,
+      16.699999999999818,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.699999999999818,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.599999999999454,
+      16.800000000000182,
+      16.600000000000364,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.699999999999818,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.599999999999454,
+      16.700000000000728,
+      16.599999999999454,
+      16.800000000000182,
+      16.600000000000364,
+      16.599999999999454,
+      16.800000000000182,
+      16.600000000000364,
+      16.699999999999818,
+      16.699999999999818,
+      16.600000000000364,
+      16.599999999999454,
+      16.800000000000182,
+      16.699999999999818,
+      16.600000000000364,
+      16.599999999999454,
+      16.700000000000728,
+      16.699999999999818,
+      16.599999999999454,
+      16.700000000000728,
+      16.699999999999818,
+      16.599999999999454,
+      16.700000000000728,
+      16.599999999999454,
+      16.699999999999818,
+      16.700000000000728,
+      16.699999999999818,
+      16.599999999999454,
+      16.700000000000728,
+      16.599999999999454,
+      16.800000000000182,
+      16.600000000000364,
+      16.699999999999818,
+      16.699999999999818,
+      16.600000000000364,
+      16.599999999999454,
+      16.699999999999818,
+      16.700000000000728,
+      16.699999999999818,
+      16.599999999999454,
+      16.700000000000728,
+      16.599999999999454,
+      16.800000000000182,
+      16.600000000000364,
+      16.599999999999454,
+      16.699999999999818,
+      16.600000000000364,
+      16.800000000000182,
+      16.599999999999454,
+      16.700000000000728,
+      16.599999999999454,
+      16.699999999999818,
+      16.700000000000728,
+      16.599999999999454,
+      16.699999999999818,
+      16.600000000000364,
+      16.699999999999818,
+      16.699999999999818,
+      16.700000000000728,
+      16.699999999999818,
+      16.599999999999454,
+      16.700000000000728,
+      16.599999999999454,
+      16.699999999999818,
+      16.700000000000728,
+      16.699999999999818,
+      16.599999999999454,
+      16.700000000000728,
+      16.599999999999454,
+      16.699999999999818,
+      16.700000000000728,
+      16.599999999999454,
+      16.699999999999818,
+      16.700000000000728,
+      16.599999999999454,
+      16.699999999999818,
+      16.700000000000728,
+      16.599999999999454,
+      16.699999999999818,
+      16.700000000000728,
+      16.599999999999454,
+      16.699999999999818,
+      16.700000000000728
+    ]
+  },
+  "requests": [
+    {
+      "path": "/api/v2/events",
+      "status": 200,
+      "duration": null
+    },
+    {
+      "path": "/api/v2/chart/annotations",
+      "status": 200,
+      "duration": 93.282
+    },
+    {
+      "path": "/api/v2/data/datasets",
+      "status": 200,
+      "duration": 112.075
+    },
+    {
+      "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e?cursor_index=2997",
+      "status": 200,
+      "duration": 1960.242
+    },
+    {
+      "path": "/api/v2/data/datasets",
+      "status": 200,
+      "duration": 36.567
+    },
+    {
+      "path": "/api/v2/chart/annotations",
+      "status": 200,
+      "duration": 86.282
+    },
+    {
+      "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e?cursor_index=2997",
+      "status": 200,
+      "duration": 696.521
+    },
+    {
+      "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e/chart-window?dataset_id=dataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c&dataset_sha256=c3a034bda35e68f7c921649607243922b241678f3a30894781c68080eea5719e&cursor_index=2997&resolution=1&count_back=300&to_utc=1792427905&from_utc=1792409905",
+      "status": 200,
+      "duration": 273.482
+    },
+    {
+      "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e/chart-window?dataset_id=dataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c&dataset_sha256=c3a034bda35e68f7c921649607243922b241678f3a30894781c68080eea5719e&cursor_index=2997&resolution=1&count_back=1",
+      "status": 200,
+      "duration": 232.51
+    },
+    {
+      "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e?cursor_index=2997&advance_interval_seconds=60&response_view=history-v1&expected_revision=92&base_cursor_index=2997&base_cutoff_timestamp=1052272620&base_event_sequences=%7B%22%2Fexecution%22%3A2986%2C%22%2Fportfolio_execution%22%3A2985%2C%22%2Fasset_states%2Fdataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c%2Fexecution%22%3A2986%7D",
+      "status": 200,
+      "duration": 660.738
+    },
+    {
+      "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e?cursor_index=2998&advance_interval_seconds=60&response_view=history-v1&expected_revision=92&base_cursor_index=2998&base_cutoff_timestamp=1052272680&base_event_sequences=%7B%22%2Fexecution%22%3A2987%2C%22%2Fportfolio_execution%22%3A2986%2C%22%2Fasset_states%2Fdataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c%2Fexecution%22%3A2987%7D",
+      "status": 200,
+      "duration": 567.33
+    },
+    {
+      "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e?cursor_index=2999&advance_interval_seconds=60&response_view=history-v1&expected_revision=92&base_cursor_index=2999&base_cutoff_timestamp=1052272740&base_event_sequences=%7B%22%2Fexecution%22%3A2988%2C%22%2Fportfolio_execution%22%3A2987%2C%22%2Fasset_states%2Fdataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c%2Fexecution%22%3A2988%7D",
+      "status": 200,
+      "duration": 496.799
+    },
+    {
+      "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e?cursor_index=3000&advance_interval_seconds=60&response_view=history-v1&expected_revision=92&base_cursor_index=3000&base_cutoff_timestamp=1052272800&base_event_sequences=%7B%22%2Fexecution%22%3A2989%2C%22%2Fportfolio_execution%22%3A2988%2C%22%2Fasset_states%2Fdataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c%2Fexecution%22%3A2989%7D",
+      "status": 200,
+      "duration": 514.655
+    },
+    {
+      "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e?cursor_index=3001&advance_interval_seconds=60&response_view=history-v1&expected_revision=92&base_cursor_index=3001&base_cutoff_timestamp=1052272860&base_event_sequences=%7B%22%2Fexecution%22%3A2990%2C%22%2Fportfolio_execution%22%3A2989%2C%22%2Fasset_states%2Fdataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c%2Fexecution%22%3A2990%7D",
+      "status": 200,
+      "duration": 495.847
+    },
+    {
+      "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e?cursor_index=3002&advance_interval_seconds=60&response_view=history-v1&expected_revision=92&base_cursor_index=3002&base_cutoff_timestamp=1052272920&base_event_sequences=%7B%22%2Fexecution%22%3A2991%2C%22%2Fportfolio_execution%22%3A2990%2C%22%2Fasset_states%2Fdataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c%2Fexecution%22%3A2991%7D",
+      "status": 200,
+      "duration": 587.231
+    },
+    {
+      "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e?cursor_index=3003&advance_interval_seconds=60&response_view=history-v1&expected_revision=92&base_cursor_index=3003&base_cutoff_timestamp=1052272980&base_event_sequences=%7B%22%2Fexecution%22%3A2992%2C%22%2Fportfolio_execution%22%3A2991%2C%22%2Fasset_states%2Fdataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c%2Fexecution%22%3A2992%7D",
+      "status": 200,
+      "duration": 581.898
+    },
+    {
+      "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e/chart-window?dataset_id=dataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c&dataset_sha256=c3a034bda35e68f7c921649607243922b241678f3a30894781c68080eea5719e&cursor_index=3004&resolution=3&count_back=300&to_utc=1792427912&from_utc=1792373912",
+      "status": 200,
+      "duration": 159.65
+    },
+    {
+      "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e/chart-window?dataset_id=dataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c&dataset_sha256=c3a034bda35e68f7c921649607243922b241678f3a30894781c68080eea5719e&cursor_index=3004&resolution=3&count_back=1",
+      "status": 200,
+      "duration": 165.938
+    },
+    {
+      "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e?cursor_index=3004&advance_interval_seconds=60&response_view=history-v1&expected_revision=92&base_cursor_index=3004&base_cutoff_timestamp=1052273040&base_event_sequences=%7B%22%2Fexecution%22%3A2993%2C%22%2Fportfolio_execution%22%3A2992%2C%22%2Fasset_states%2Fdataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c%2Fexecution%22%3A2993%7D",
+      "status": 200,
+      "duration": 512.356
+    },
+    {
+      "path": "/api/v2/data/datasets",
+      "status": 200,
+      "duration": 30.761
+    },
+    {
+      "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e/chart-window?dataset_id=dataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c&dataset_sha256=c3a034bda35e68f7c921649607243922b241678f3a30894781c68080eea5719e&cursor_index=3005&resolution=5&count_back=300&to_utc=1792427913&from_utc=1792337913",
+      "status": 200,
+      "duration": 223.631
+    },
+    {
+      "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e/chart-window?dataset_id=dataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c&dataset_sha256=c3a034bda35e68f7c921649607243922b241678f3a30894781c68080eea5719e&cursor_index=3005&resolution=5&count_back=1",
+      "status": 200,
+      "duration": 155.549
+    },
+    {
+      "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e?cursor_index=3005&advance_interval_seconds=300&response_view=history-v1&expected_revision=92&base_cursor_index=3005&base_cutoff_timestamp=1052273100&base_event_sequences=%7B%22%2Fexecution%22%3A2994%2C%22%2Fportfolio_execution%22%3A2993%2C%22%2Fasset_states%2Fdataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c%2Fexecution%22%3A2994%7D",
+      "status": 200,
+      "duration": 664.74
+    },
+    {
+      "path": "/api/v2/data/datasets",
+      "status": 200,
+      "duration": 31.11
+    },
+    {
+      "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e?cursor_index=3010&advance_interval_seconds=300&response_view=history-v1&expected_revision=92&base_cursor_index=3010&base_cutoff_timestamp=1052273400&base_event_sequences=%7B%22%2Fexecution%22%3A2999%2C%22%2Fportfolio_execution%22%3A2998%2C%22%2Fasset_states%2Fdataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c%2Fexecution%22%3A2999%7D",
+      "status": 200,
+      "duration": 496.103
+    },
+    {
+      "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e?cursor_index=3010",
+      "status": 200,
+      "duration": 630.784
+    },
+    {
+      "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e/chart-window?dataset_id=dataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c&dataset_sha256=c3a034bda35e68f7c921649607243922b241678f3a30894781c68080eea5719e&cursor_index=3010&resolution=5&count_back=300&to_utc=1792427917&from_utc=1792337917",
+      "status": 200,
+      "duration": 257.507
+    },
+    {
+      "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e/chart-window?dataset_id=dataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c&dataset_sha256=c3a034bda35e68f7c921649607243922b241678f3a30894781c68080eea5719e&cursor_index=3010&resolution=5&count_back=1",
+      "status": 200,
+      "duration": 198.18
+    },
+    {
+      "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e",
+      "status": 200,
+      "duration": 291.517
+    },
+    {
+      "path": "/api/v2/events",
+      "status": 200,
+      "duration": null
+    },
+    {
+      "path": "/api/v2/chart/annotations",
+      "status": 200,
+      "duration": 87.031
+    },
+    {
+      "path": "/api/v2/data/datasets",
+      "status": 200,
+      "duration": 104.935
+    },
+    {
+      "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e?cursor_index=3129",
+      "status": 200,
+      "duration": 372.551
+    },
+    {
+      "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e/chart-window?dataset_id=dataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c&dataset_sha256=c3a034bda35e68f7c921649607243922b241678f3a30894781c68080eea5719e&cursor_index=3129&resolution=1&count_back=300&to_utc=1792427919&from_utc=1792409919",
+      "status": 200,
+      "duration": 175.801
+    },
+    {
+      "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e/chart-window?dataset_id=dataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c&dataset_sha256=c3a034bda35e68f7c921649607243922b241678f3a30894781c68080eea5719e&cursor_index=3129&resolution=1&count_back=1",
+      "status": 200,
+      "duration": 266.013
+    },
+    {
+      "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e?cursor_index=3128",
+      "status": 503,
+      "duration": 7.01
+    }
+  ],
+  "errors": [],
+  "blocked": [
+    "POST http://127.0.0.1:5180/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e/activity",
+    "POST http://127.0.0.1:5180/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e/activity",
+    "POST http://127.0.0.1:5180/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e/activity"
+  ],
+  "buttons": [
+    {
+      "text": "16:37:28 (UTC)",
+      "title": "Múi giờ",
+      "label": null,
+      "data": null
+    },
+    {
+      "text": "EUR/USD",
+      "title": "Chọn bộ dữ liệu đã tải",
+      "label": null,
+      "data": null
+    },
+    {
+      "text": "",
+      "title": "So sánh mã",
+      "label": "So sánh mã",
+      "data": null
+    },
+    {
+      "text": "New Layout",
+      "title": "",
+      "label": null,
+      "data": null
+    },
+    {
+      "text": "",
+      "title": "Bố cục chart",
+      "label": "Bố cục chart",
+      "data": null
+    },
+    {
+      "text": "1Lưu",
+      "title": "Lưu chart · Lưu trên trình duyệt này",
+      "label": "Lưu chart",
+      "data": null
+    },
+    {
+      "text": "",
+      "title": "Quản lý layout",
+      "label": "Quản lý layout",
+      "data": null
+    },
+    {
+      "text": "",
+      "title": "Tìm công cụ",
+      "label": "Tìm công cụ",
+      "data": null
+    },
+    {
+      "text": "",
+      "title": "Chụp biểu đồ PNG",
+      "label": "Chụp biểu đồ PNG",
+      "data": null
+    },
+    {
+      "text": "Editor",
+      "title": "Editor",
+      "label": "Editor",
+      "data": null
+    },
+    {
+      "text": "",
+      "title": "AI Mentor",
+      "label": "AI Mentor",
+      "data": null
+    },
+    {
+      "text": "",
+      "title": "Đổi giao diện",
+      "label": "Đổi giao diện",
+      "data": null
+    },
+    {
+      "text": "",
+      "title": "Toàn màn hình",
+      "label": "Toàn màn hình",
+      "data": null
+    },
+    {
+      "text": "",
+      "title": "Công cụ biểu đồ",
+      "label": "Công cụ biểu đồ",
+      "data": null
+    }
+  ],
+  "checks": [
+    "No banners or chart layout shift when selecting a replay start",
+    "Playback continues across native pan and 1m → 3m timeframe change",
+    "Synced timeframe change keeps Play active and advances at the new interval",
+    "Space can pause playback while a historical read is in flight",
+    "Rewind restores a safe earlier chart, without future bars",
+    "Compact return-to-latest control reaches the canonical cursor",
+    "Replay toolbar fits 360, 768 and 1368px",
+    "Failed historical read retains the last chart and locks stepping"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "run": "f7fd1f14017b4434b2f2c1ded3bb8c5e",
+  "api_sha256": "ee971f7aa8b32f4d7a4018607884b7e15c371ed22b329f1269e1b84d352b73bb",
+  "profile": "native",
+  "storage": "compact",
+  "ready": true,
+  "api_pid": 26056,
+  "working_set_bytes": 79761408,
+  "private_bytes": 74661888,
+  "memory_scope": "single post-HTTP snapshot, not controlled peak or process-wide cap"
+}

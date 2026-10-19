@@ -77,6 +77,8 @@ fn local_head(source: &Value, cursor: i64) -> Result<Value,ApiError> {
 async fn project(
     tx: &Transaction<'_>, state: &AppState, workspace: &str, cached: &Value, cursor: i64,
 ) -> Result<Value,ApiError> {
+    let mut timings = ReplayTimings::new();
+    timings.operation = "history_project".into();
     let original = &cached["payload"];
     let canonical = integer(original,"cursor_index")?;
     let mut record = without(cached,&["payload"]);
@@ -100,10 +102,12 @@ async fn project(
         }
         p["asset_states"] = Value::Object(assets);
         if cursor != canonical { p["replay_clock_utc"] = json!(clock); }
+        timings.mark("asset_heads");
         let portfolio = &original["portfolio_execution"];
         p["portfolio_execution"] = if cursor == canonical || portfolio["event_sequence"] == 0 {
             without(portfolio,&["ledger"])
         } else { crate::replay_portfolio::checkpoint_head(portfolio,&p,clock).map_err(bad)? };
+        timings.mark("portfolio_head");
         let active = text(&p,"dataset_id")?.to_owned();
         p["execution"] = p["asset_states"][&active]["execution"].clone();
         p["cursor_index"] = json!(cursor);
@@ -121,10 +125,12 @@ async fn project(
             if cursor != canonical { record["canonical_execution_event_sequence"] = original["execution"]["event_sequence"].clone(); }
         }
     }
+    timings.mark("trade_cursors");
     for path in ledger_paths(&p) { p.pointer_mut(&path).unwrap().as_object_mut().unwrap().remove("ledger"); }
     record["payload"] = p;
     let q = HashMap::from([("cursor_index".to_owned(),cursor.to_string())]);
     let mut result = view_inner(tx,state,workspace,record,&q,true,Some(canonical)).await?;
+    timings.mark("view");
     if multi {
         // The full API reports whether the canonical portfolio clock can move,
         // even while the selected chart is showing an earlier checkpoint.

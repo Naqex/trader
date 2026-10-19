@@ -123,3 +123,6 @@ browser control, set `TW_REPLAY_QA_FULL_HISTORY=1` and use another output label.
 A rerun overwrites its output
 directory; choose another phase label to preserve this acceptance run. No broker,
 holdout, provider action, migration or public deployment was performed.
+
+Follow-up: [bounded native artifact reads](../reader-api/CHECKPOINT.md) reduce
+forward and full rewind processing further while retaining these wire contracts.

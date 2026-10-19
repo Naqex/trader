@@ -1,0 +1,29 @@
+{
+  "schema_version": "rust-artifact-parity-v1",
+  "rows": 12013,
+  "row_group_size": 257,
+  "file_bytes": 504951,
+  "fixture_sha256": "d8adfda8f50758adfafd559db9b0729d8c09915714bb3e67eac26401e1bb6eb1",
+  "python_warm_chart_ms": [
+    5.6125,
+    7.1061,
+    11.0119,
+    10.64,
+    4.9441,
+    8.0161,
+    5.7223,
+    6.7525
+  ],
+  "rust_exit_code": 0,
+  "python_verified_rust_parquet_and_raw_writer": true,
+  "command": [
+    "cargo",
+    "test",
+    "--test",
+    "rust_artifact_parity",
+    "--",
+    "--include-ignored",
+    "--nocapture"
+  ],
+  "scope": "isolated canonical artifact fixture; no owner session mutation"
+}

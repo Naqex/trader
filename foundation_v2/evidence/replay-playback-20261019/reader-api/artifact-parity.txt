@@ -1,0 +1,13 @@
+
+running 2 tests
+test chart_period_contract ... ok
+rust_warm_chart_ms=[5.0213, 6.6831, 5.1061, 5.2908, 5.5683, 4.992800000000001, 6.4074, 4.9139]
+canonical parity: 5 index windows, 3 timestamp ranges, 5 timings, 4 cursor lookups, 24 chart windows; pinned tick/hash/uint64 parity; native 50003-row+raw source immutable publication; invalid bounds/path/checksum and restored-mtime mutation rejected
+test python_oracle_parity ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.81s
+
+    Blocking waiting for file lock on build directory
+   Compiling trading-workspace-api v0.1.0 (D:\ANNAM\TradingWorkspace\projects\mt5-tradingview-backtester\foundation_v2\api-rust)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 25.50s
+     Running tests\rust_artifact_parity.rs (target\debug\deps\rust_artifact_parity-ff6d85f89293c248.exe)

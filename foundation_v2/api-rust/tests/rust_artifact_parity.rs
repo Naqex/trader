@@ -174,6 +174,11 @@ fn python_oracle_parity() {
             .unwrap(),
         written_rows[49999..50003]
     );
+    let (early, stats) = data.indices_with_stats(&written_path, &written_sha, 10, 30).unwrap();
+    assert_eq!(early, written_rows[10..30]);
+    assert_eq!(stats.row_groups_decoded, 1);
+    assert_eq!(stats.rows_decoded, 30, "a short window must not materialize the remaining 49,970 rows");
+    assert!(data.indices(&written_path, &written_sha, 50003, 50003).unwrap().is_empty());
     assert!(
         data.write_dataset("fixture", "rust-created", &written_rows)
             .is_err()
@@ -206,6 +211,8 @@ fn python_oracle_parity() {
         .set_times(std::fs::FileTimes::new().set_modified(prior_modified))
         .unwrap();
     assert!(data.indices(path, sha, 0, 1).is_err());
+    assert!(data.timings(path, sha, &[TimingQuery { index: 0, at_or_before: None }]).is_err(),
+        "a warm timestamp cache must not authorize a changed file with restored mtime");
     println!(
         "canonical parity: 5 index windows, 3 timestamp ranges, 5 timings, 4 cursor lookups, 24 chart windows; pinned tick/hash/uint64 parity; native 50003-row+raw source immutable publication; invalid bounds/path/checksum and restored-mtime mutation rejected"
     );

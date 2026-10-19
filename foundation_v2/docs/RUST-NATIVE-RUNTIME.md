@@ -35,6 +35,15 @@ execution. A successful quick market order is already filled at the current
 modeled quote; it is not a pending next-bar order. Dragging protection previews
 locally and persists once on release. Server rejection restores confirmed state.
 
+Replay index-window reads now stop at the requested row-group offset and convert
+only the requested rows to JSON. Immutable timestamp columns are shared across
+requests by file object/change identity and row group, retaining at most 32 groups
+and 16 MiB of timestamp values. The existing SHA admission and open/finish identity
+checks still run; this cache does not authorize workspace access or cache API
+responses. Opening and rewinding retain their full response contracts. Paired
+measurements and read-only browser regression evidence are in
+[the reader checkpoint](../evidence/replay-playback-20261019/reader-api/CHECKPOINT.md).
+
 ## Native ownership and retained adapters
 
 `rust_runtime_admin routes` reports every frozen route using the actual dispatch

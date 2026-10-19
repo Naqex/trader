@@ -1,0 +1,125 @@
+{
+  "scope": "serial readonly local HTTP + JSON decode, same revision/cutoffs; alternating order; no capacity claim",
+  "session_id": "6428cf18b3f54a36b2e90207ef12392e",
+  "revision": 92,
+  "canonical_cursor": 3129,
+  "initial_full": {
+    "ms": 780.6176000158302,
+    "bytes": 6991862
+  },
+  "samples": [
+    {
+      "cursor": 2998,
+      "cache": "cold_candidate",
+      "order": [
+        "delta",
+        "full"
+      ],
+      "full": {
+        "ms": 817.8511000005528,
+        "bytes": 6994132
+      },
+      "delta": {
+        "ms": 650.2796999993734,
+        "bytes": 9245
+      },
+      "exact_parity": true
+    },
+    {
+      "cursor": 2999,
+      "cache": "warm",
+      "order": [
+        "full",
+        "delta"
+      ],
+      "full": {
+        "ms": 741.278900008183,
+        "bytes": 6996402
+      },
+      "delta": {
+        "ms": 623.9081000094302,
+        "bytes": 9245
+      },
+      "exact_parity": true
+    },
+    {
+      "cursor": 3000,
+      "cache": "warm",
+      "order": [
+        "delta",
+        "full"
+      ],
+      "full": {
+        "ms": 787.3145000194199,
+        "bytes": 6998669
+      },
+      "delta": {
+        "ms": 571.0131000087131,
+        "bytes": 9244
+      },
+      "exact_parity": true
+    },
+    {
+      "cursor": 3001,
+      "cache": "warm",
+      "order": [
+        "full",
+        "delta"
+      ],
+      "full": {
+        "ms": 765.0925000198185,
+        "bytes": 7000938
+      },
+      "delta": {
+        "ms": 549.8901999962982,
+        "bytes": 9246
+      },
+      "exact_parity": true
+    },
+    {
+      "cursor": 3002,
+      "cache": "warm",
+      "order": [
+        "delta",
+        "full"
+      ],
+      "full": {
+        "ms": 746.9699000066612,
+        "bytes": 7003208
+      },
+      "delta": {
+        "ms": 541.5408000117168,
+        "bytes": 9246
+      },
+      "exact_parity": true
+    },
+    {
+      "cursor": 3003,
+      "cache": "warm",
+      "order": [
+        "full",
+        "delta"
+      ],
+      "full": {
+        "ms": 869.0474999893922,
+        "bytes": 7005471
+      },
+      "delta": {
+        "ms": 658.2170000183396,
+        "bytes": 9239
+      },
+      "exact_parity": true
+    }
+  ],
+  "warm_full": {
+    "n": 5,
+    "median_ms": 765.0925000198185,
+    "sample_p95_ms": 869.0474999893922
+  },
+  "warm_delta": {
+    "n": 5,
+    "median_ms": 571.0131000087131,
+    "sample_p95_ms": 658.2170000183396
+  },
+  "final_payload_sha256": "03202e0e2e734d91497d5907b273f5a6a27c7ff4ee4ebbcc727c6672cec870e5"
+}
