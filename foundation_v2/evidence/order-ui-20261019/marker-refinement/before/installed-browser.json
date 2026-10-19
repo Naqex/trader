@@ -1,0 +1,21 @@
+{
+  "scope": "Installed production UI and native API, all owner API writes blocked, no trades or playback",
+  "blocked": [
+    "/api/v2/replay/sessions/d848723290084cf98e8d03de6cff4dbf/activity"
+  ],
+  "errors": [],
+  "ready": true,
+  "horizontalOverflow": false,
+  "saveHover": {
+    "color": "rgb(255, 255, 255)",
+    "background": "rgb(255, 196, 159)",
+    "filter": "none",
+    "rules": [
+      "button { min-height: 36px; border: 1px solid var(--project-border); background: var(--project-control); color: var(--project-text); cursor: pointer; }",
+      ".partial-close-dialog .legacy-order-form footer .legacy-order-save { background: var(--project-action); color: var(--project-on-action); }",
+      ".legacy-order-modal button { border: 0px; padding: 9px 14px; background: transparent; color: inherit; font: inherit; cursor: pointer; }",
+      ".legacy-order-form footer .legacy-order-save { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: auto; min-width: 80px; height: var(--ds-control,36px); min-height: var(--ds-control,36px); padding: 7px 12px; border: 1px solid transparent; border-radius: var(--wm-control-radius); background: var(--wm-action-bg); color: var(--wm-on-primary); font-weight: var(--ds-weight-control); line-height: var(--ds-line-control,20px); }",
+      ".legacy-order-modal button.legacy-order-save:hover:not(:disabled) { background: var(--wm-action-hover); border-color: transparent; color: var(--wm-on-primary); }"
+    ]
+  }
+}

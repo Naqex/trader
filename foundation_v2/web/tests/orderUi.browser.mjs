@@ -123,9 +123,11 @@ try {
     await page.screenshot({ path: `${output}/protection-moved-${width}-${language}.png` })
     for (const kind of ['entry', 'stop', 'target']) {
       const marker = native.locator(`[data-order-kind=${kind}]`)
-      const colors = await marker.evaluate(node => ({ line: getComputedStyle(node, '::before').borderTopColor, border: getComputedStyle(node.querySelector('.wm-order-marker-body')).borderTopColor, style: getComputedStyle(node, '::before').borderTopStyle, content: getComputedStyle(node, '::before').content }))
-      assert.equal(colors.line, colors.border, `${side} ${kind} dashed line matches its marker border`)
-      assert.equal(colors.style, 'dashed')
+      const colors = await marker.evaluate(node => ({ line: getComputedStyle(node, '::before').backgroundImage, border: getComputedStyle(node.querySelector('.wm-order-marker-body')).borderTopColor, height: getComputedStyle(node).height, content: getComputedStyle(node, '::before').content }))
+      const lineColor = kind === 'entry' && side === 'BUY' ? theme === 'dark' ? 'rgb(245, 248, 255)' : 'rgb(232, 235, 239)' : colors.border
+      assert.ok(colors.line.includes(lineColor), `${side} ${kind} dashed line uses its intended color`)
+      assert.match(colors.line, /repeating-linear-gradient.*6px.*12px/, 'six-pixel dashes alternate with six-pixel gaps')
+      assert.equal(colors.height, width < 600 ? '32px' : '20px', 'desktop marker is slimmer while touch targets retain their size')
       assert.notEqual(colors.content, 'none')
     }
     const beforeDialog = report.writes.length
@@ -179,6 +181,10 @@ try {
       return { stacked: rows[1].top > rows[0].bottom, aligned: rows[0].left === rows[1].left, fullDivider: Math.abs(footer.width - modal.width + 2) < 1, border: getComputedStyle(node.querySelector('footer')).borderTopWidth }
     })
     assert.deepEqual(layout, { stacked: true, aligned: true, fullDivider: true, border: '1px' })
+    const saveButton = dialog.getByRole('button', { name: t('Save'), exact: true })
+    const saveColor = await saveButton.evaluate(node => getComputedStyle(node).color)
+    await saveButton.hover()
+    assert.equal(await saveButton.evaluate(node => getComputedStyle(node).color), saveColor, 'Save preserves foreground color on hover in both themes')
     await page.screenshot({ path: `${output}/partial-default-${width}-${language}-${side}.png` })
     await dialog.getByRole('spinbutton', { name: t('Khối lượng đóng'), exact: true }).fill('0')
     assert.equal(await dialog.getByRole('button', { name: t('Save'), exact: true }).isEnabled(), false)

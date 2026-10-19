@@ -32,7 +32,7 @@
 .partial-close-dialog .partial-close-error[role=alert] { color:var(--project-negative); }
 .partial-close-dialog .legacy-order-form footer .legacy-order-save { background:var(--project-action); color:var(--project-on-action); }
 .partial-close-dialog .legacy-order-form footer button { border-radius:var(--ds-radius-pill,999px); }
-.partial-close-dialog .legacy-order-form footer .legacy-order-save:hover:not(:disabled) { background:var(--project-action-hover); }
+.partial-close-dialog .legacy-order-form footer .legacy-order-save:hover:not(:disabled) { background:var(--project-action-hover); color:var(--project-on-action); }
 .partial-close-dialog .legacy-order-form footer .legacy-order-save:disabled { background:var(--project-control); color:var(--project-muted); }
 @media (pointer:coarse) { .partial-close-dialog .partial-close-presets button { min-height:44px; } }
 @media (max-width:600px) { .partial-close-dialog .legacy-order-form { --partial-inset:var(--wm-space-4,16px); } }

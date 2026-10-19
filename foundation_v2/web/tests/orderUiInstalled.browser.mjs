@@ -34,6 +34,14 @@ try {
     assert.equal(await page.locator('.partial-close-dialog').getByRole('button', { name: '100%', exact: true }).getAttribute('aria-pressed'), 'true')
     assert.equal(await page.locator('.partial-close-dialog .partial-close-error').count(), 0)
     assert.equal(await page.locator('.partial-close-dialog').getByRole('button', { name: 'Lưu', exact: true }).isEnabled(), true)
+    const save = page.locator('.partial-close-dialog .legacy-order-save')
+    const saveColor = await save.evaluate(node => getComputedStyle(node).color)
+    await save.hover()
+    report.saveHover = await save.evaluate(node => {
+      const style = getComputedStyle(node)
+      return { color: style.color, background: style.backgroundColor, filter: style.filter }
+    })
+    assert.equal(report.saveHover.color, saveColor, 'Save keeps its foreground color on hover')
     await page.screenshot({ path: `${output}/installed-partial.png` })
     await page.keyboard.press('Escape')
     await quantity.click()

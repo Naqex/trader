@@ -77,6 +77,7 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     row.element.dataset.compact = String(label.compact)
     row.element.style.setProperty('--order-color', label.color)
     row.element.style.setProperty('--order-border', label.borderColor)
+    row.element.style.setProperty('--order-line', label.lineColor)
     row.body.style.color = label.textColor
     const parts = label.text.split(' → ')
     row.name.textContent = parts[0]
