@@ -2,16 +2,16 @@
 .fx-app.fx-shell-story.is-ai-open { width: calc(100% - var(--wm-ai-width)); }
 .fx-app.fx-shell-story[data-theme] .fx-topbar .wm-ai-toggle {
   width: var(--ds-icon-button); height: var(--ds-icon-button); padding: 7px; border: 0; border-radius: var(--ds-radius-pill);
-  color: var(--project-primary); background: color-mix(in srgb, var(--project-primary) 10%, var(--fx-shell-bg));
+  color: var(--project-highlight); background: color-mix(in srgb, var(--project-highlight) 10%, var(--fx-shell-bg));
 }
 .fx-app.fx-shell-story[data-theme] .fx-topbar .wm-ai-toggle:hover,
-.fx-app.fx-shell-story[data-theme] .fx-topbar .wm-ai-toggle[aria-expanded='true'] { background: color-mix(in srgb, var(--project-primary) 20%, var(--fx-shell-bg)); color: var(--project-primary); }
+.fx-app.fx-shell-story[data-theme] .fx-topbar .wm-ai-toggle[aria-expanded='true'] { background: color-mix(in srgb, var(--project-highlight) 20%, var(--fx-shell-bg)); color: var(--project-highlight); }
 .wm-ai-toggle svg, .wm-ai-welcome-icon svg { width: 100%; height: 100%; display: block; }
 .fx-app .wm-ai-chat {
   position: fixed; z-index: 90; inset: 0 0 0 auto; width: var(--wm-ai-width); height: 100dvh;
   display: flex; flex-direction: column; box-sizing: border-box; min-width: 0;
   background: var(--fx-shell-bg); color: var(--fx-shell-text); border-left: 1px solid var(--fx-shell-line);
-  font-size: var(--ds-font-control); line-height: 1.6;
+  --wm-focus: var(--project-highlight); font-size: var(--ds-font-control); line-height: 1.6;
 }
 .fx-app .wm-ai-chat[hidden] { display: none; }
 .wm-ai-header { min-height: 64px; box-sizing: border-box; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: var(--ds-space-2); padding: 0 var(--ds-space-4); flex-shrink: 0; }
@@ -29,12 +29,12 @@
 .fx-app .wm-ai-chat button:disabled { opacity: var(--ds-disabled-opacity); cursor: default; }
 .wm-ai-body { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .wm-ai-body[hidden] { display: none; }
-.wm-ai-chat.is-welcome .wm-ai-body { display: block; padding: clamp(35px, 10vh, 90px) var(--ds-space-8) var(--ds-space-6); overflow: auto; background: radial-gradient(ellipse at 110% 0%, color-mix(in srgb, var(--project-positive) 10%, transparent), transparent 60%), radial-gradient(ellipse at 15% 110%, color-mix(in srgb, var(--project-primary) 14%, transparent), transparent 62%); }
+.wm-ai-chat.is-welcome .wm-ai-body { display: block; padding: clamp(35px, 10vh, 90px) var(--ds-space-8) var(--ds-space-6); overflow: auto; background: radial-gradient(ellipse at 110% 0%, color-mix(in srgb, var(--project-highlight) 9%, transparent), transparent 60%), radial-gradient(ellipse at 15% 110%, color-mix(in srgb, var(--project-highlight) 14%, transparent), transparent 62%); }
 .wm-ai-chat.is-welcome .wm-ai-transcript { padding: 0; overflow: visible; }
 .wm-ai-chat.is-welcome .wm-ai-bottom { padding: 0; }
 .wm-ai-transcript { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 24px 22px; scrollbar-width: thin; }
 .wm-ai-welcome { display: flex; flex-direction: column; align-items: center; margin-bottom: 36px; text-align: center; }
-.wm-ai-welcome-icon { display: block; width: var(--ds-icon-small); height: var(--ds-icon-small); margin-bottom: var(--ds-space-3); color: var(--project-primary); }
+.wm-ai-welcome-icon { display: block; width: var(--ds-icon-small); height: var(--ds-icon-small); margin-bottom: var(--ds-space-3); color: var(--project-highlight); }
 .wm-ai-welcome h3 { margin: 0 0 var(--ds-space-2); max-width: 100%; overflow-wrap: anywhere; font-size: var(--ds-font-value); font-weight: var(--ds-weight-heading); letter-spacing: -.6px; line-height: 1.35; }
 .wm-ai-welcome p { margin: 0; max-width: 430px; color: var(--fx-shell-muted); font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
 .wm-ai-message { margin-bottom: 26px; overflow-wrap: anywhere; }
@@ -43,13 +43,13 @@
 .wm-ai-message.is-user { margin-left: 32px; padding: 11px 14px; background: var(--project-surface); border-radius: 12px 12px 3px 12px; }
 .wm-ai-message small { color: var(--fx-shell-muted); font-size: 11px; }
 .wm-ai-thinking { display: flex; align-items: center; gap: 9px; margin: 0; font-size: 12px; color: var(--fx-shell-muted); }
-.wm-ai-thinking span { width: 6px; height: 6px; background: var(--project-primary); border-radius: 50%; }
+.wm-ai-thinking span { width: 6px; height: 6px; background: var(--project-highlight); border-radius: 50%; }
 .wm-ai-bottom { padding: 0 16px 12px; flex-shrink: 0; }
 .wm-ai-note, .wm-ai-error { margin: 0 0 12px; font-size: 12px; color: var(--fx-shell-muted); }
 .wm-ai-error { color: var(--fx-shell-danger); }
 .wm-ai-connect { margin: 0 0 16px; font-size: 12px; color: var(--fx-shell-muted); }
 .wm-ai-connect p { margin: 0 0 8px; }
-.fx-app .wm-ai-connect :is(a,button) { display: inline-block; margin: 0 12px 0 0; min-height: 0; padding: 0; border: 0; background: transparent; color: var(--project-primary); font-size: 12px; cursor: pointer; text-decoration: none; }
+.fx-app .wm-ai-connect :is(a,button) { display: inline-block; margin: 0 12px 0 0; min-height: 0; padding: 0; border: 0; background: transparent; color: var(--project-highlight); font-size: 12px; cursor: pointer; text-decoration: none; }
 .fx-app .wm-ai-connect :is(a,button):hover { text-decoration: underline; }
 .wm-ai-composer { border: 1px solid var(--wm-control-border); border-radius: var(--ds-radius-dialog); background: var(--fx-shell-bg); padding: var(--ds-space-3); transition: border-color var(--ds-motion-hover) var(--ds-ease-standard); }
 .wm-ai-composer:hover:not(:focus-within) { border-color: var(--wm-control-hover-border); }
@@ -58,15 +58,25 @@
 .fx-app .wm-ai-chat .wm-ai-composer textarea:focus { outline: none; box-shadow: none; }
 .wm-ai-composer textarea::placeholder { color: var(--fx-shell-subtle); }
 .wm-ai-composer-footer { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
-.wm-ai-models { display: flex; gap: 2px; align-items: center; flex: 1; min-width: 0; font-size: 11px; color: var(--fx-shell-subtle); }
-.wm-ai-models .fx-select { min-width: 0; }
-.wm-ai-models .fx-select:first-child { flex: 1; }
-.fx-app .wm-ai-models .fx-select-trigger { min-height: var(--ds-tab); max-width: 100%; padding: 3px 8px; gap: 4px; background: transparent; border: 0; color: var(--fx-shell-muted); font-size: var(--ds-font-meta); }
-.fx-app .wm-ai-models .fx-select-trigger:focus-visible { outline: none; box-shadow: none; background: var(--wm-control-open); color: var(--fx-shell-text); }
-.wm-ai-models .fx-select-trigger > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.wm-ai-models .fx-select-chevron { width: 12px; flex-shrink: 0; }
-.wm-ai-models .fx-select-menu { max-width: calc(var(--wm-ai-width) - 44px); }
-.wm-ai-models .fx-select:first-child .fx-select-menu { left: 0; right: auto; }
+/* Utilities stay left; the compact thinking selector sits next to Send. */
+.wm-ai-tools { display: flex; align-items: center; gap: var(--ds-space-1); margin-right: auto; }
+.wm-ai-tools > span { display: inline-flex; }
+.fx-app .wm-ai-tools button { display: grid; place-items: center; width: var(--ds-icon-button); height: var(--ds-icon-button); min-height: 0; padding: 7px; border: 0; border-radius: var(--ds-radius-pill); color: var(--fx-shell-muted); background: transparent; }
+.wm-ai-tools svg { width: var(--ds-icon); height: var(--ds-icon); }
+.wm-ai-models { min-width: 0; font-size: var(--ds-font-meta); color: var(--fx-shell-subtle); }
+.fx-app .wm-ai-model-trigger { display: flex; align-items: center; gap: var(--ds-space-1); min-height: var(--ds-icon-button); padding: 4px 8px; border: 0; border-radius: var(--ds-radius-pill); background: transparent; color: var(--fx-shell-muted); font: inherit; cursor: pointer; }
+.fx-app .wm-ai-model-trigger:hover, .fx-app .wm-ai-model-trigger[aria-expanded='true'] { background: var(--project-hover); color: var(--fx-shell-text); }
+.wm-ai-model-trigger svg { width: 14px; height: 14px; }
+.fx-app .wm-ai-selection { position: fixed; inset: auto; margin: 0; box-sizing: border-box; max-height: min(380px, 60dvh); overflow: auto; padding: var(--ds-space-3); border: 1px solid var(--wm-control-border); border-radius: var(--ds-radius-dialog); color: var(--fx-shell-text); background: var(--fx-shell-bg); font-size: var(--ds-font-control); line-height: var(--ds-line-control); }
+.fx-app .wm-ai-selection button { display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; min-height: var(--ds-control); padding: 6px 8px; border: 0; border-radius: var(--ds-radius-small); background: transparent; color: inherit; text-align: left; font: inherit; cursor: pointer; }
+.fx-app .wm-ai-selection button:hover { background: var(--project-hover); }
+.wm-ai-selection button span:first-child { overflow-wrap: anywhere; }
+.fx-app .wm-ai-selection .wm-ai-model-back { justify-content: flex-start; color: var(--fx-shell-muted); }
+.wm-ai-effort-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 12px 8px 4px; color: var(--fx-shell-muted); font-size: var(--ds-font-meta); }
+.wm-ai-effort-heading strong { color: var(--fx-shell-text); font-weight: var(--ds-weight-heading); }
+.fx-app .wm-ai-selection input[type='range'] { display: block; box-sizing: border-box; width: calc(100% - 16px); height: var(--ds-control); min-height: 0; margin: 0 8px; padding: 0; border: 0; background: transparent; accent-color: var(--project-highlight); cursor: pointer; }
+.wm-ai-selection input:focus-visible { outline: 2px solid var(--wm-focus); outline-offset: 2px; }
+.wm-ai-effort-stops { display: flex; justify-content: space-between; gap: 4px; margin: 0 8px 4px; color: var(--fx-shell-muted); font-size: 10px; }
 .fx-app .wm-ai-composer .wm-ai-send { display: grid; place-items: center; flex-shrink: 0; width: var(--ds-icon-button); height: var(--ds-icon-button); min-height: 0; border: 0; border-radius: var(--ds-radius-pill); padding: 7px; background: var(--project-action); color: var(--project-on-action); cursor: pointer; }
 .fx-app .wm-ai-composer .wm-ai-send:hover:not(:disabled) { background: var(--project-action-hover); }
 .wm-ai-send svg { width: 18px; height: 18px; }
@@ -74,9 +84,9 @@
 .wm-ai-backdrop { position: fixed; inset: 0; z-index: 89; background: #0005; }
 .wm-ai-resize { position: absolute; inset: 0 auto 0 -5px; width: 10px; cursor: col-resize; touch-action: none; z-index: 2; }
 .wm-ai-resize::after { content: ''; display: block; width: 2px; height: 100%; margin: auto; background: transparent; }
-.wm-ai-resize:hover::after, .wm-ai-resize:focus-visible::after, .wm-ai-chat[data-resizing] .wm-ai-resize::after { background: var(--project-primary); }
+.wm-ai-resize:hover::after, .wm-ai-resize:focus-visible::after, .wm-ai-chat[data-resizing] .wm-ai-resize::after { background: var(--project-highlight); }
 .wm-ai-chat[data-resizing], .wm-ai-chat[data-resizing] * { cursor: col-resize; user-select: none; }
-.wm-ai-history { flex: 1; min-height: 0; overflow: auto; padding: 0 20px 24px; }
+.wm-ai-history { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: auto; padding: 0 20px 24px; }
 .wm-ai-history h3 { display: flex; align-items: center; gap: 8px; margin: 0; padding: 0 4px 12px; border-bottom: 1px solid var(--fx-shell-line); font-size: 17px; font-weight: 600; }
 .wm-ai-history h3 svg { width: 18px; height: 18px; color: var(--fx-shell-muted); }
 .wm-ai-history ul { margin: 0; padding: 0 10px; list-style: none; }
@@ -89,8 +99,13 @@
 .fx-app .wm-ai-history .wm-ai-history-delete { position: absolute; right: 52px; color: var(--fx-shell-danger); }
 .wm-ai-history li > .wm-ai-history-edit { position: absolute; right: 23px; }
 .wm-ai-history :is(.wm-ai-history-delete,.wm-ai-history-edit) svg { display: block; width: 17px; height: 17px; }
-.wm-ai-history-empty { color: var(--fx-shell-muted); margin: 26px 4px; }
-.fx-app .wm-ai-history-return { background: transparent; border: 0; color: var(--project-primary); padding: 4px; cursor: pointer; }
+.wm-ai-history-empty { flex: 1; min-height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--ds-space-4); color: var(--fx-shell-muted); text-align: center; padding: var(--ds-space-6) 0; }
+.wm-ai-empty-sketch { width: 180px; height: 112px; stroke: var(--fx-shell-muted); stroke-width: 1.5; }
+.wm-ai-history-empty p { margin: 0; font-size: var(--ds-font-section); color: var(--fx-shell-text); }
+.fx-app .wm-ai-history-empty button { display: flex; align-items: center; justify-content: center; gap: var(--ds-space-2); min-height: var(--ds-control); padding: 7px 16px; border: 0; border-radius: var(--ds-radius-pill); background: var(--project-action); color: var(--project-on-action); font: inherit; cursor: pointer; }
+.fx-app .wm-ai-history-empty button:hover { background: var(--project-action-hover); }
+.wm-ai-history-empty button svg { width: var(--ds-icon); height: var(--ds-icon); }
+.fx-app .wm-ai-history-return { background: transparent; border: 0; color: var(--project-highlight); padding: 4px; cursor: pointer; }
 .fx-app .wm-ai-settings { box-sizing: border-box; width: min(var(--ds-dialog-medium), calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: var(--ds-dialog-gutter); border: 1px solid var(--fx-shell-line); border-radius: var(--ds-radius-dialog); background: var(--fx-shell-bg); color: var(--fx-shell-text); overflow: auto; font: inherit; }
 .wm-ai-settings::backdrop { background: #0009; }
 .wm-ai-settings header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
@@ -102,7 +117,7 @@
 .fx-app .wm-ai-settings :is(input,textarea):focus { outline: none; box-shadow: none; border-color: var(--wm-focus); }
 .fx-app .wm-ai-settings .wm-ai-instructions { background: var(--fx-shell-bg); color: var(--fx-shell-muted); line-height: 1.7; font-size: 12px; }
 .wm-ai-settings #wm-ai-policy-note { margin: -8px 0 16px; font-size: 11px; line-height: 1.6; color: var(--fx-shell-muted); }
-.wm-ai-settings a { color: var(--project-primary); font-size: 12px; text-decoration: none; }
+.wm-ai-settings a { color: var(--project-highlight); font-size: 12px; text-decoration: none; }
 .wm-ai-settings footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 30px; }
 .fx-app .wm-ai-settings footer button { padding: 7px 16px; min-height: var(--ds-control); background: transparent; color: var(--fx-shell-text); border: 0; border-radius: var(--ds-radius-pill); font-size: var(--ds-font-control); line-height: var(--ds-line-control); cursor: pointer; }
 .fx-app .wm-ai-settings footer button:hover { background: var(--project-hover); }

@@ -9,7 +9,7 @@ await mkdir(evidence, { recursive: true })
 const browser = await chromium.launch({ headless: true })
 const checks = []
 const models = [
-  { id: 'chatgpt-web/gpt-6-sol', name: 'GPT-6 Sol', efforts: ['medium', 'high'] },
+  { id: 'chatgpt-web/gpt-6-sol', name: 'GPT-6 Sol', efforts: ['low', 'medium', 'high'] },
   { id: 'chatgpt-web/gpt-6-sol-instant', name: 'GPT-6 Sol Instant', efforts: ['low'] },
 ]
 const account = { status: 'connected', models, selection: { model: models[0].id, effort: 'high' }, login_state_present: true, operation: null }
@@ -30,7 +30,7 @@ try {
     const load = chat.getByRole('button', { name: 'Nạp kết nối đã lưu' })
     const state = await page.evaluate(async () => (await fetch('/api/v2/ai/chatgpt/account', { headers: { 'X-Workspace-Id': 'tenant-a' } })).json())
     if (state.status === 'stopped') await load.click()
-    await chat.getByRole('button', { name: 'Model AI', exact: true }).waitFor()
+    await chat.getByRole('button', { name: 'Model và mức suy luận AI', exact: true }).waitFor()
     await page.locator('.pb-empty').waitFor()
     const result = await page.evaluate(async () => {
       const headers = { 'X-Workspace-Id': 'tenant-a', 'Content-Type': 'application/json' }
@@ -46,7 +46,7 @@ try {
   for (const width of [360, 768, 1368]) {
     const context = await browser.newContext({ viewport: { width, height: 790 }, reducedMotion: 'reduce' })
     const page = await context.newPage()
-    const failures = [], sends = [], cancellations = []
+    const failures = [], sends = [], cancellations = [], selections = []
     let state = structuredClone(account), turn = null, mode = 'success', reads = 0
     page.on('pageerror', error => failures.push(error.message))
     await page.route('**/api/v2/ai/chatgpt/**', async route => {
@@ -56,7 +56,7 @@ try {
       if (endpoint === '/account' || endpoint.startsWith('/account/')) {
         reads++
         if (mode === 'denied') return route.fulfill({ status: 403, json: { detail: 'workspace_access_denied' } })
-        if (endpoint.endsWith('/selection')) state.selection = req.postDataJSON()
+        if (endpoint.endsWith('/selection')) { state.selection = req.postDataJSON(); selections.push(state.selection) }
         return route.fulfill({ json: state })
       }
       if (endpoint === '/chat') {
@@ -75,7 +75,7 @@ try {
     await toggle.waitFor()
     assert.equal(reads, 0, 'closed chat does no provider work')
     await toggle.focus(); await page.keyboard.press('Enter')
-    await chat.getByRole('button', { name: 'Model AI', exact: true }).waitFor()
+    await chat.getByRole('button', { name: 'Model và mức suy luận AI', exact: true }).waitFor()
     await page.locator('.pb-empty').waitFor()
     await page.waitForFunction(() => document.activeElement?.id === 'wm-ai-input')
     await page.screenshot({ path: path.join(evidence, `empty-dark-${width}.png`) })
@@ -105,6 +105,46 @@ try {
       checks.push('Desktop: pointer drag and keyboard resize, 360px minimum, main content >=620px, viewport resize clamp')
     } else assert.equal(await chat.getByRole('separator').count(), 0)
     const input = chat.getByRole('textbox', { name: 'Tin nhắn cho AI' })
+    await chat.getByRole('button', { name: 'Chat gần đây', exact: true }).click()
+    await chat.getByText('Chưa có cuộc trò chuyện', { exact: true }).waitFor()
+    await page.screenshot({ path: path.join(evidence, `history-empty-dark-${width}.png`) })
+    const empty = await chat.locator('.wm-ai-history-empty').boundingBox()
+    const cta = await chat.getByRole('button', { name: 'Chat mới', exact: true }).boundingBox()
+    assert.ok(Math.abs(cta.x + cta.width / 2 - empty.x - empty.width / 2) < 2)
+    await chat.getByRole('button', { name: 'Chat mới', exact: true }).click()
+    await page.waitForFunction(() => document.activeElement?.id === 'wm-ai-input')
+    assert.equal(await chat.locator('.wm-ai-tools button:disabled').count(), 2)
+    const picker = chat.getByRole('button', { name: 'Model và mức suy luận AI', exact: true })
+    await picker.click()
+    const popup = chat.locator('.wm-ai-selection')
+    const slider = popup.getByRole('slider', { name: 'Mức suy luận AI' })
+    await slider.waitFor()
+    assert.equal(selections.length, 0, 'opening picker makes no selection request')
+    const popupBounds = await popup.boundingBox()
+    assert.ok(popupBounds.x >= 0 && popupBounds.x + popupBounds.width <= width)
+    await page.screenshot({ path: path.join(evidence, `effort-dark-${width}.png`) })
+    const track = await slider.boundingBox()
+    await page.mouse.move(track.x + track.width / 2, track.y + track.height / 2)
+    await page.mouse.down()
+    assert.equal(selections.length, 0, 'drag preview makes no request before release')
+    await page.mouse.up()
+    await page.waitForFunction(() => document.querySelector('.wm-ai-model-trigger').textContent.includes('Vừa') && !document.querySelector('.wm-ai-model-trigger').disabled)
+    assert.equal(state.selection.effort, 'medium')
+    assert.equal(selections.length, 1, 'pointer release commits once')
+    await picker.click()
+    await slider.focus(); await slider.press('Home')
+    await page.waitForFunction(() => document.querySelector('.wm-ai-model-trigger').textContent.includes('Nhanh'))
+    assert.equal(state.selection.effort, 'low')
+    assert.equal(selections.length, 2, 'keyboard change commits once')
+    await picker.click()
+    await popup.getByRole('slider').focus()
+    await page.keyboard.press('Escape')
+    assert.equal(await popup.isVisible(), false)
+    assert.equal(await chat.isVisible(), true, 'Escape dismisses picker before chat')
+    await picker.click()
+    await chat.locator('.wm-ai-identity h2').click()
+    assert.equal(await popup.isVisible(), false, 'outside click dismisses picker')
+
     const composerStyle = await input.evaluate(element => {
       const value = getComputedStyle(element)
       return { outline: value.outlineStyle, shadow: value.boxShadow, border: value.borderTopWidth }
@@ -132,8 +172,13 @@ try {
     await chat.getByText('Tôi đã nhận câu hỏi tiếp theo.', { exact: true }).waitFor()
     assert.equal(sends[1].messages.length, 3)
     assert.equal(sends[1].messages[1].role, 'assistant')
+    await picker.click()
     await chat.getByRole('button', { name: 'Model AI', exact: true }).click()
-    await chat.getByRole('option', { name: 'GPT-6 Sol Instant', exact: true }).click()
+    await chat.getByRole('option', { name: 'GPT-6 Sol', exact: true }).press('ArrowDown')
+    assert.equal(await page.evaluate(() => document.activeElement?.textContent), 'GPT-6 Sol Instant')
+    await page.keyboard.press('Enter')
+    await page.waitForFunction(() => !document.querySelector('.wm-ai-model-trigger').disabled)
+    assert.equal(await picker.evaluate(element => element === document.activeElement), true, 'selection restores trigger focus')
     assert.equal(state.selection.model, models[1].id)
     assert.equal(state.selection.effort, 'low')
     await page.screenshot({ path: path.join(evidence, `conversation-dark-${width}.png`) })
@@ -143,6 +188,7 @@ try {
     assert.equal(await chat.getByRole('button', { name: 'Cuộc trò chuyện mới' }).isDisabled(), true)
     assert.equal(await chat.locator('.wm-ai-history-open').first().isDisabled(), true)
     await chat.getByRole('button', { name: 'Quay lại chat đang chờ' }).click()
+    assert.equal(await picker.isDisabled(), true)
     await chat.getByRole('button', { name: 'Dừng phản hồi' }).click()
     await chat.getByText('Đã dừng chờ phản hồi.', { exact: true }).waitFor()
     assert.equal(cancellations.length, 1)
@@ -212,6 +258,9 @@ try {
     await page.waitForFunction(() => document.activeElement?.dataset.testid === 'ai-toggle')
     await page.getByTestId('theme-toggle').click(); await toggle.click()
     await page.screenshot({ path: path.join(evidence, `empty-light-${width}.png`) })
+    await picker.click()
+    await page.screenshot({ path: path.join(evidence, `effort-light-${width}.png`) })
+    await chat.locator('.wm-ai-identity h2').click()
     await chat.getByRole('button', { name: 'Chat gần đây', exact: true }).click()
     await page.screenshot({ path: path.join(evidence, `history-light-${width}.png`) })
     await chat.getByRole('button', { name: 'Chat gần đây', exact: true }).click()
@@ -255,7 +304,7 @@ try {
       await page.evaluate(() => { history.pushState({}, '', '/?workspace=tenant-b&view=replay&surface=workspace'); dispatchEvent(new PopStateEvent('popstate')) })
       await page.locator('.fx-chart-topbar').waitFor()
       await toggle.click()
-      await chat.getByRole('button', { name: 'Model AI', exact: true }).waitFor()
+      await chat.getByRole('button', { name: 'Model và mức suy luận AI', exact: true }).waitFor()
       await page.screenshot({ path: path.join(evidence, 'replay-shell-chat.png') })
       mode = 'success'
       await input.fill('Bạn biết tôi đang ở màn hình nào?'); await input.press('Enter')
@@ -272,7 +321,7 @@ try {
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false)
       checks.push('SPA workspace switch clears transcript/draft and cancels exact turn; Settings reveals page; Replay topbar opens chat without overflow')
     }
-    checks.push(`${width}px: design-system field radii + single focus border, action hover, no redundant footer copy, welcome/history/settings dark+light, rename/delete/open chats, isolated completed history, modal focus/Escape, upstream model/effort, send/cancel/error, disconnected/denied, no carousel/Create agent, no overflow or page errors`)
+    checks.push(`${width}px: centered empty history + new chat CTA, orange accents, catalog-based model/effort popup, discrete slider pointer/keyboard saves once, Escape/outside dismissal, honest disabled data tools, design-system field radii + single focus border, action hover, no redundant footer copy, welcome/history/settings dark+light, rename/delete/open chats, isolated completed history, modal focus/Escape, upstream model/effort, send/cancel/error, disconnected/denied, no carousel/Create agent, no overflow or page errors`)
     await context.close()
   }
   await writeFile(path.join(evidence, 'report.json'), JSON.stringify({ scope: 'UI fixtures only; no real ChatGPT request', checks }, null, 2))

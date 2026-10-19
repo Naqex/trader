@@ -112,6 +112,14 @@ upstream. Picker trong panel cập nhật cùng lựa chọn này. Chỉ mở pa
 trạng thái; nếu API vừa restart, bấm **Nạp kết nối đã lưu** để khởi động core
 riêng, không mở Chrome/login tự động. Nếu chưa đăng nhập, dùng liên kết Cài đặt.
 
+Composer dùng một menu model/mức suy luận, thanh trượt chỉ có các mức do
+catalog trả về. Kéo chỉ xem trước; thả chuột, kết thúc phím điều chỉnh hoặc
+rời thanh trượt mới lưu lựa chọn. Không gửi request theo từng pixel kéo.
+Menu đóng trước panel khi nhấn Escape; chọn model giữ effort nếu được hỗ trợ.
+Hai icon chiến lược/biểu đồ ở góc trái đang disabled, có tooltip nêu chưa
+kết nối dữ liệu. Chúng chưa gửi chiến lược hay ảnh biểu đồ tới AI.
+Màu nhấn dùng token cam của project; lịch sử trống có nút **Chat mới** ở giữa.
+
 Nút cạnh tên Mentor mở cài đặt trợ lý. Tên và mô tả đổi phần hiển thị trong
 tab hiện tại; không override prompt hoặc tạo agent. Ô hướng dẫn chỉ đọc, lấy
 từ cùng file policy sản phẩm tại lúc build web. Liên kết trong dialog dẫn

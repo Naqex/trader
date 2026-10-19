@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import FxSelect from './FxSelect.jsx'
+import AiModelPicker from './AiModelPicker.jsx'
 import assistantPolicy from '../../api-rust/src/ai-assistant-policy.md?raw'
 import './ai-chat.css'
 
@@ -8,7 +8,6 @@ export function AiSparkles() {
 }
 
 const base = '/api/v2/ai/chatgpt'
-const effortNames = { low: ['Nhanh', 'Fast'], medium: ['Vừa', 'Medium'], high: ['Cao', 'High'], xhigh: ['Rất cao', 'Extra high'], max: ['Pro', 'Pro'], ultra: ['Ultra', 'Ultra'] }
 const screens = { unknown: ['Chưa xác định', 'Unknown'], overview: ['Tổng quan', 'Overview'], replay: ['Replay', 'Replay'], trade: ['Giao dịch', 'Trading'], analytics: ['Phân tích', 'Analytics'], playbook: ['Chiến lược', 'Strategies'], learn: ['Học tập', 'Learning'], settings: ['Cài đặt', 'Settings'], 'market-data': ['Dữ liệu', 'Market data'], prop: ['Prop firm', 'Prop firm'], journal: ['Nhật ký', 'Journal'], sessions: ['Phiên', 'Sessions'] }
 
 function ChatIcon({ name }) {
@@ -21,6 +20,8 @@ function ChatIcon({ name }) {
     delete: <><path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7" /></>,
     arrow: <path d="m9 5 7 7-7 7" />,
     clock: <><path d="M3 4v5h5M3 9a9 9 0 1 1 0 6M12 6v6l4 2" /></>,
+    strategies: <><path d="M4 4v16h16M7 15l4-5 4 3 5-8M16 5h4v4" /></>,
+    chart: <><path d="M6 3v4m0 8v6M12 3v8m0 6v4M18 3v3m0 8v7" /><path d="M4 7h4v8H4zM10 11h4v6h-4zM16 6h4v8h-4z" /></>,
   }
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>
 }
@@ -162,6 +163,8 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
   useEffect(() => {
     if (!open) return
     function keydown(event) {
+      const picker = panel.current?.querySelector('.wm-ai-selection:popover-open')
+      if (picker && event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); picker.hidePopover(); picker.previousElementSibling?.focus(); return }
       const overlay = dialogRef.current?.open ? dialogRef.current : null
       if (!overlay && event.key === 'Escape' && !event.defaultPrevented) { event.preventDefault(); onClose() }
       if (event.key !== 'Tab' || (!modal && !overlay)) return
@@ -262,7 +265,6 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
     finally { if (mounted.current) setChanging(false) }
   }
   const connected = !!account?.login_state_present && !account?.operation && !!account?.selection
-  const model = account?.models?.find(item => item.id === account?.selection?.model)
   useEffect(() => {
     if (open && connected && !historyOpen && !dialogRef.current?.open) composer.current?.focus()
   }, [open, connected])
@@ -283,7 +285,11 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
     </header>
     {historyOpen && <section className="wm-ai-history" aria-labelledby="wm-ai-history-title">
       <h3 id="wm-ai-history-title"><ChatIcon name="clock" />{say('Chat gần đây', 'Recent chats')}</h3>
-      {!chats.length && <p className="wm-ai-history-empty">{say('Chưa có cuộc trò chuyện. Bắt đầu chat mới để trao đổi với Mentor.', 'No conversations yet. Start a new chat with Mentor.')}</p>}
+      {!chats.length && <div className="wm-ai-history-empty">
+        <svg className="wm-ai-empty-sketch" viewBox="0 0 180 112" fill="none" aria-hidden="true">{[18, 46, 74].map((y, index) => <g key={y} opacity={index === 1 ? '.8' : '.4'}><rect x={index === 1 ? 10 : 24} y={y} width="142" height="22" rx="6" /><circle cx={index === 1 ? 23 : 37} cy={y + 11} r="3" /><path d={`M${index === 1 ? 34 : 48} ${y + 9}h66m-66 5h44`} /></g>)}</svg>
+        <p>{say('Chưa có cuộc trò chuyện', 'No chats yet')}</p>
+        <button type="button" onClick={newChat}><ChatIcon name="new" />{say('Chat mới', 'New chat')}</button>
+      </div>}
       <ul>{chats.map(item => <li key={item.id}>
         <button type="button" className="wm-ai-history-open" disabled={busy} onClick={() => openChat(item)}><span>{item.title}</span><ChatIcon name="arrow" /></button>
         <button type="button" className="wm-ai-history-delete" disabled={busy} aria-label={`${say('Xóa chat', 'Delete chat')}: ${item.title}`} onClick={event => showDialog({ type: 'delete', id: item.id, name: item.title }, event.currentTarget)}><ChatIcon name="delete" /></button>
@@ -305,10 +311,11 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
         <label className="wm-ai-sr" htmlFor="wm-ai-input">{say('Tin nhắn cho AI', 'Message AI')}</label>
         <textarea id="wm-ai-input" ref={composer} value={draft} onChange={event => setDraft(event.target.value)} disabled={!connected || changing} maxLength={16000} placeholder={say('Hỏi Mentor…', 'Ask Mentor…')} rows={2} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void send(event) } }} />
         <div className="wm-ai-composer-footer">
-          <div className="wm-ai-models">{connected ? <>
-            <FxSelect label={say('Model AI', 'AI model')} value={account.selection.model} disabled={busy || changing} options={account.models.map(item => ({ value: item.id, label: item.name, localize: false }))} onChange={value => { const next = account.models.find(item => item.id === value); void changeAccount('selection', { model: value, effort: next.efforts.includes('high') ? 'high' : next.efforts[0] }) }} />
-            <FxSelect label={say('Mức suy luận AI', 'AI reasoning effort')} value={account.selection.effort} disabled={busy || changing} options={(model?.efforts || []).map(value => ({ value, label: effortNames[value]?.[en ? 1 : 0] || value, localize: false }))} onChange={value => void changeAccount('selection', { model: account.selection.model, effort: value })} />
-          </> : <span>ChatGPT Web</span>}</div>
+          <div className="wm-ai-tools">
+            <span title={say('Chiến lược · Chưa kết nối với chat AI', 'Strategies · Not connected to AI chat yet')}><button type="button" disabled aria-label={say('Chiến lược · Sắp có', 'Strategies · Coming soon')}><ChatIcon name="strategies" /></button></span>
+            <span title={say('Phân tích biểu đồ · Chưa kết nối dữ liệu phiên', 'Analyze your chart · Session data is not connected yet')}><button type="button" disabled aria-label={say('Phân tích biểu đồ · Sắp có', 'Analyze chart · Coming soon')}><ChatIcon name="chart" /></button></span>
+          </div>
+          <div className="wm-ai-models">{connected ? <AiModelPicker models={account.models} selection={account.selection} disabled={busy || changing} active={open && !historyOpen} en={en} onSelect={value => changeAccount('selection', value)} /> : <span>ChatGPT Web</span>}</div>
           {busy ? <button type="button" className="wm-ai-send" onClick={stop} aria-label={say('Dừng phản hồi', 'Stop response')} title={say('Dừng phản hồi', 'Stop response')}><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" /></svg></button> : <button type="submit" className="wm-ai-send" disabled={!draft.trim() || !connected || changing} aria-label={say('Gửi tin nhắn', 'Send message')} title={say('Gửi tin nhắn', 'Send message')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6" /></svg></button>}
         </div>
       </form>
