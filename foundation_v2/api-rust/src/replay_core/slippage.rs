@@ -162,7 +162,7 @@ pub(super) fn validate_position(s: &Value, p: &Value) -> R<()> {
         &p["entry_slippage"],
         &base,
         side(p)?,
-        "market",
+        p["entry_order_type"].as_str().unwrap_or("market"),
         txt(p, "source_operation_id")?,
         int(p, "opened_cursor_index")?,
         int(p, "opened_time_utc")?,

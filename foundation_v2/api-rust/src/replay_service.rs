@@ -176,6 +176,18 @@ fn qint(q: &HashMap<String, String>, key: &str) -> Result<Option<i64>, ApiError>
 fn reader(state: &AppState) -> Result<Arc<ArtifactData>, ApiError> {
     Ok(state.artifact_data.clone())
 }
+fn entry_action(body: &Value, args: &mut Value, bar: &Value, head: &Value, quick: bool) -> Result<&'static str, ApiError> {
+    let kind = body["order_type"].as_str().unwrap_or("market");
+    let timing = body["execution_timing"].as_str().unwrap_or("next_bar");
+    args["mid_close"] = bar["close"].clone();
+    args["virtual_time_utc"] = json!(integer(bar,"timestamp")? + integer(head,"timeframe_seconds")?);
+    match (kind,timing) {
+        ("market","next_bar") if body["entry_price"].is_null() => Ok("queue"),
+        ("market","current_quote") if body["entry_price"].is_null() => Ok("queue_current_quote"),
+        ("limit" | "stop","pending") if !quick => Ok("queue_entry"),
+        _ => Err(bad("unsupported order type/execution timing")),
+    }
+}
 async fn read<T: Send + 'static>(
     state: &AppState,
     f: impl FnOnce(Arc<ArtifactData>) -> Result<T, String> + Send + 'static,
@@ -980,7 +992,7 @@ pub async fn view(
     out.insert("canonical_cursor_index".into(), json!(canonical));
     out.insert("historical_view".into(), json!(cursor != canonical));
     out.insert("execution_view_status".into(), json!(status));
-    out.insert("execution_capabilities".into(), json!({"partial_close":true}));
+    out.insert("execution_capabilities".into(), json!({"partial_close":true,"conditional_orders":true}));
     if state.native_runtime && !multi && cursor == canonical
         && bar_execution(&out["payload"]["execution"])
     {
@@ -1771,15 +1783,7 @@ async fn mutate(
             let bar = slice(state, &m, current, current + 1).await?.remove(0);
             asset_ready(&p, &m, &bar)?;
             let mut args = b.clone();
-            let action = match b["execution_timing"].as_str().unwrap_or("next_bar") {
-                "next_bar" => "queue",
-                "current_quote" => {
-                    args["mid_close"] = bar["close"].clone();
-                    args["virtual_time_utc"] = json!(integer(&bar,"timestamp")?+integer(&snapshot,"timeframe_seconds")?);
-                    "queue_current_quote"
-                }
-                _ => return Err(bad("unsupported market execution timing")),
-            };
+            let action = entry_action(b,&mut args,&bar,&snapshot,tail == "orders/quick")?;
             p["execution"] = engine_snapshot_owned(action, snapshot, args).await?;
         }
         "orders/protection" | "orders/close" => {
@@ -2022,7 +2026,7 @@ async fn step_view_response(
         "cutoff_timestamp":cutoff,"appended_rows":rows,"appended_events":events,
         "historical_view":false,"has_future_rows":cursor < limit,
         "execution_view_status":if execution.is_null(){"not_initialized"}else{"current"},
-        "execution_capabilities":{"partial_close":true},
+        "execution_capabilities":{"partial_close":true,"conditional_orders":true},
         "updated_at_utc":saved["updated_at_utc"],"visible_row_start":start,
         "visible_row_count":cursor-start+1,"total_row_count":manifest["row_count"],
         "payload_patch":{"execution":execution,"cursor_index":cursor,"status":p["status"],"timing":p["timing"]}
@@ -2134,15 +2138,7 @@ async fn mutate_compact_bar(
     asset_ready(&p, manifest, &bar)?;
     let mut args = b.clone();
     let action = match tail {
-        "orders/market" | "orders/quick" => match b["execution_timing"].as_str().unwrap_or("next_bar") {
-            "next_bar" => "queue",
-            "current_quote" => {
-                args["mid_close"] = bar["close"].clone();
-                args["virtual_time_utc"] = json!(integer(&bar, "timestamp")? + integer(head, "timeframe_seconds")?);
-                "queue_current_quote"
-            }
-            _ => return Err(bad("unsupported market execution timing")),
-        },
+        "orders/market" | "orders/quick" => entry_action(b,&mut args,&bar,head,tail == "orders/quick")?,
         "orders/protection" | "orders/close" => {
             args["mid_close"] = bar["close"].clone();
             args["virtual_time_utc"] = json!(integer(&bar, "timestamp")? + integer(head, "timeframe_seconds")?);
@@ -2243,7 +2239,7 @@ async fn mutation_view(
         "cursor_index":cursor, "view_cursor_index":cursor, "canonical_cursor_index":cursor,
         "cutoff_timestamp":cutoff, "historical_view":false, "has_future_rows":future,
         "execution_view_status":"current",
-        "execution_capabilities":{"partial_close":true},
+        "execution_capabilities":{"partial_close":true,"conditional_orders":true},
         "payload_patch":{"execution":execution, "cursor_index":cursor, "status":p["status"], "timing":p["timing"]}
     });
     result.as_object_mut().unwrap().extend(identity.as_object().unwrap().clone());

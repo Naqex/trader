@@ -51,6 +51,17 @@ class DirectDomainCommandTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "unreviewed"):
             DomainCommandDispatcher(self.app)
 
+    def test_compatibility_runtime_rejects_conditional_orders_without_submitting_market(self):
+        self.app.state.replay.queue_market_order = Mock()
+        for timing in ('pending', 'current_quote', 'next_bar'):
+            result = self.dispatcher.dispatch(self.command('POST', '/api/v2/replay/sessions/test/orders/market', body={
+                'expected_revision': 1, 'operation_id': 'conditional', 'side': 'BUY', 'quantity': '0.01',
+                'order_type': 'limit', 'entry_price': '1.09', 'execution_timing': timing,
+            }))
+            self.assertEqual(result.status, 422)
+            self.assertEqual(result.body['detail'], 'conditional orders require the native replay runtime')
+        self.app.state.replay.queue_market_order.assert_not_called()
+
     def test_missing_identity_and_cross_workspace_never_invoke_domain(self):
         self.app.state.replay.view = Mock()
         for overrides, detail in (({"workspace_id": "tenant-b"}, "workspace_access_denied"),

@@ -1,0 +1,15 @@
+{
+  "ready": true,
+  "runtime_profile": "native",
+  "storage_profile": "compact",
+  "binary": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust\\target\\conditional-entry\\release\\trading-workspace-api.exe",
+  "binary_sha256": "8cec0d9cfd0fd2b864896fc30284e19fb46a994ae439db94a2a31e20c6ac40e1",
+  "record_id": "d848723290084cf98e8d03de6cff4dbf",
+  "revision": 30,
+  "cursor": 8045708,
+  "execution_capabilities": {
+    "conditional_orders": true,
+    "partial_close": true
+  },
+  "read_only_verification": true
+}

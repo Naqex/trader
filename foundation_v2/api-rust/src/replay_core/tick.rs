@@ -136,7 +136,10 @@ fn advance_inner(s: &mut Value, a: &Value) -> Result<(), String> {
         if !s["pending_market_order"].is_null() {
             let order = s["pending_market_order"].clone();
             let fill = if order["side"] == "BUY" { &ask } else { &bid };
-            if order["submitted_cursor_index"].as_i64() != Some(old_cursor) {
+            let conditional = super::entry::conditional(&order);
+            if conditional && !super::entry::triggered(&order,fill)? { continue; }
+            if if conditional { order["submitted_cursor_index"].as_i64().is_none_or(|c| c > old_cursor) }
+                else { order["submitted_cursor_index"].as_i64() != Some(old_cursor) } {
                 return Err("tick order must be submitted at the previous closed bar".into());
             }
             if !brackets(&order, fill)? {
@@ -146,6 +149,7 @@ fn advance_inner(s: &mut Value, a: &Value) -> Result<(), String> {
             s["pending_market_order"] = Value::Null;
             let mut details = json!({"operation_id": order["operation_id"], "side": order["side"],
                 "quantity": order["quantity"], "fill_price": sval(fill.clone()), "margin_admission": admission["margin_admission"]});
+            if conditional { details["entry_order"] = order.clone(); }
             if !rejected {
                 s["position"] = position(s, &order, &bid, &ask, cursor, time / 1000)?;
                 exposure = true;
@@ -325,12 +329,14 @@ pub(super) fn validate(s: &Value) -> Result<(), String> {
         let kind = event["kind"].as_str().ok_or("invalid event kind")?;
         if kind == "protection_change" {
             let target = if open.is_null() { pending } else { open };
-            let reference = if target["side"] == "BUY" { &bid } else { &ask };
+            let entry = if open.is_null() && super::entry::conditional(target) { Some(decimal(target,"entry_price")?) } else { None };
+            let reference = entry.as_ref().unwrap_or(if target["side"] == "BUY" { &bid } else { &ask });
             if decimal(details, "closeable_quote")? != *reference {
                 return Err("tick protection must use the observed closeable quote".into());
             }
         } else if kind == "manual_close"
             || kind == "order_cancel"
+            || kind == "order_placed"
             || details["execution_timing"] == "current_quote"
         {
             let prior = if details["execution_timing"] == "current_quote" {

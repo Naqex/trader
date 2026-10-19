@@ -9,6 +9,8 @@ mod tick;
 pub mod history;
 #[path = "replay_core/slippage.rs"]
 mod slippage;
+#[path = "replay_core/entry.rs"]
+mod entry;
 use history::History;
 
 type R<T> = Result<T, String>;
@@ -229,9 +231,10 @@ pub(super) fn position(
     cursor: i64,
     time: i64,
 ) -> R<Value> {
-    let (fill, provenance) = slippage::fill(s,if side(o)? == "BUY" { ask } else { bid },side(o)?,"market",txt(o,"operation_id")?,cursor,time)?;
+    let (fill, provenance) = slippage::fill(s,if side(o)? == "BUY" { ask } else { bid },side(o)?,entry::kind(o),txt(o,"operation_id")?,cursor,time)?;
     let mut p = json!({"position_id":format!("replay-pos-{}",int(s,"event_sequence")?+1),"source_operation_id":o["operation_id"],"side":side(o)?,"quantity":o["quantity"],"entry_bid":sval(bid.clone()),"entry_ask":sval(ask.clone()),"entry_fill":sval(fill),"stop_loss":o["stop_loss"],"take_profit":o["take_profit"],"opened_cursor_index":cursor,"opened_time_utc":time});
     if slippage::enabled(s) { p["entry_slippage"] = provenance; }
+    if entry::conditional(o) { p["entry_order_type"] = o["order_type"].clone(); }
     Ok(p)
 }
 pub(super) fn emit(
@@ -489,7 +492,7 @@ fn initialize(a: &Value) -> R<Value> {
 }
 #[cfg(test)]
 fn queue(s: &mut Value, a: &Value) -> R<()> {
-    queue_history(s, a, &mut History::Full)
+    entry::queue_market(s, a, &mut History::Full)
 }
 fn queue_history(s: &mut Value, a: &Value, history: &mut History<'_>) -> R<()> {
     if !s["position"].is_null() || !s["pending_market_order"].is_null() {
@@ -506,7 +509,7 @@ fn fill(s: &mut Value, a: &Value, history: &mut History<'_>) -> R<()> {
     let o = s["pending_market_order"].clone();
     let cursor = int(s, "cursor_index")?;
     let time = int(a, "virtual_time_utc")?;
-    if o.is_null() || !s["position"].is_null() || int(&o, "submitted_cursor_index")? != cursor {
+    if o.is_null() || entry::conditional(&o) || !s["position"].is_null() || int(&o, "submitted_cursor_index")? != cursor {
         return Err("current-quote fill requires a newly submitted market order".into());
     }
     canonical_time_history(
@@ -603,7 +606,11 @@ fn protect(s: &mut Value, a: &Value, history: &mut History<'_>) -> R<()> {
     let mid = positive(a, "mid_close")?;
     let time = int(a, "virtual_time_utc")?;
     let is_position = !s["position"].is_null();
-    let reference = if tick_mode(s) {
+    let reference = if !is_position && entry::conditional(&p) {
+        canonical_time_history(s, history, time,
+            "protection amendment must stay at the current canonical checkpoint")?;
+        positive(&p,"entry_price")?
+    } else if tick_mode(s) {
         canonical_time_history(
             s,
             history,
@@ -803,7 +810,10 @@ fn advance(s: &mut Value, a: &Value, history: &mut History<'_>) -> R<()> {
     let end = time + int(s, "timeframe_seconds")?;
     let (mut opened, mut exposure) = (false, !s["position"].is_null());
     let (open_bid, open_ask) = quote(s, &positive(b, "open")?)?;
-    if !s["pending_market_order"].is_null() {
+    if entry::conditional(&s["pending_market_order"]) {
+        opened = entry::fill_bar(s,b,cursor,history)?;
+        exposure |= opened;
+    } else if !s["pending_market_order"].is_null() {
         let o = s["pending_market_order"].clone();
         let base_fill = if side(&o)? == "BUY" {
             &open_ask
@@ -934,6 +944,7 @@ fn reconstruct(s: &mut Value, a: &Value) -> R<()> {
             "protection_change",
             "manual_close",
             "order_cancel",
+            "order_placed",
         ]
         .contains(&txt(e, "kind")?)
             && int(e, "cursor_index")? == cursor
@@ -1056,6 +1067,7 @@ fn order_valid(p: &Value, position: bool) -> R<()> {
             "entry_slippage",
             "original_quantity",
             "realized_pnl",
+            "entry_order_type",
         ]
     } else {
         vec![
@@ -1065,6 +1077,8 @@ fn order_valid(p: &Value, position: bool) -> R<()> {
             "stop_loss",
             "take_profit",
             "submitted_cursor_index",
+            "order_type",
+            "entry_price",
         ]
     };
     strict(p, &keys)?;
@@ -1077,6 +1091,9 @@ fn order_valid(p: &Value, position: bool) -> R<()> {
     opt_dec(p, "stop_loss")?;
     opt_dec(p, "take_profit")?;
     if position {
+        if p.get("entry_order_type").is_some() && !matches!(p["entry_order_type"].as_str(),Some("limit" | "stop")) {
+            return Err("unsupported position entry type".into());
+        }
         bounded(p, "position_id")?;
         bounded(p, "source_operation_id")?;
         for k in ["entry_bid", "entry_ask", "entry_fill"] {
@@ -1087,6 +1104,7 @@ fn order_valid(p: &Value, position: bool) -> R<()> {
     } else {
         bounded(p, "operation_id")?;
         int(p, "submitted_cursor_index")?;
+        if p.get("order_type").is_some() || p.get("entry_price").is_some() { entry::validate_order(p)?; }
     }
     Ok(())
 }
@@ -1323,6 +1341,7 @@ pub(crate) fn validate_event_with_previous(s: &Value, e: &Value, previous: Optio
         "protection_change",
         "manual_close",
         "order_cancel",
+        "order_placed",
     ]
     .contains(&kind)
         || (!v2(s) && kind == "order_rejected")
@@ -1330,6 +1349,8 @@ pub(crate) fn validate_event_with_previous(s: &Value, e: &Value, previous: Optio
         return Err("unsupported replay event kind".into());
     }
     let current = d["execution_timing"] == "current_quote";
+    let conditional = !d["entry_order"].is_null();
+    if kind == "order_placed" || conditional { entry::validate_event(s,e,previous)?; }
     if current {
         if kind == "price_mark" {
             let prev = previous
@@ -1385,7 +1406,7 @@ pub(crate) fn validate_event_with_previous(s: &Value, e: &Value, previous: Optio
             return Err("unsupported current quote event".into());
         }
     }
-    if slippage::enabled(s) && !current && matches!(kind,"market_fill" | "order_rejected") {
+    if slippage::enabled(s) && !current && !conditional && matches!(kind,"market_fill" | "order_rejected") {
         let bid = positive(d,"bid_open")?;
         let ask = positive(d,"ask_open")?;
         let base = if side(d)? == "BUY" { &ask } else { &bid };
@@ -1421,7 +1442,9 @@ pub(crate) fn validate_event_with_previous(s: &Value, e: &Value, previous: Optio
         qty(s, &q)?;
         let fill = positive(d, "fill_price")?;
         let cursor = int(e, "cursor_index")?;
-        if int(m, "submitted_cursor_index")? != cursor - if current { 0 } else { 1 } {
+        let submitted = int(m,"submitted_cursor_index")?;
+        if if conditional { submitted >= cursor || m["submitted_cursor_index"] != d["entry_order"]["submitted_cursor_index"] }
+            else { submitted != cursor - if current { 0 } else { 1 } } {
             return Err("margin outcome lacks a prior closed-bar order".into());
         }
         let o = json!({"quantity":sval(q),"submitted_cursor_index":m["submitted_cursor_index"]});
@@ -1647,9 +1670,10 @@ pub fn transform_owned(mut request: Value) -> R<Value> {
     match action.as_str() {
         "initialize" => {}
         "validate" => {}
-        "queue" => queue_history(&mut s, a, &mut history)?,
+        "queue" => entry::queue_market(&mut s, a, &mut history)?,
+        "queue_entry" => entry::queue(&mut s, a, &mut history)?,
         "queue_current_quote" => {
-            queue_history(&mut s, a, &mut history)?;
+            entry::queue_market(&mut s, a, &mut history)?;
             fill(&mut s, a, &mut history)?;
         }
         "fill_current_quote" => fill(&mut s, a, &mut history)?,

@@ -8592,10 +8592,37 @@
             "type": "string",
             "enum": [
               "next_bar",
-              "current_quote"
+              "current_quote",
+              "pending"
             ],
             "title": "Execution Timing",
             "default": "next_bar"
+          },
+          "order_type": {
+            "type": "string",
+            "enum": [
+              "market",
+              "limit",
+              "stop"
+            ],
+            "title": "Order Type",
+            "default": "market"
+          },
+          "entry_price": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entry Price"
           }
         },
         "additionalProperties": false,
@@ -9487,6 +9514,37 @@
             ],
             "title": "Take Profit"
           },
+          "execution_timing": {
+            "type": "string",
+            "enum": [
+              "next_bar",
+              "current_quote"
+            ],
+            "title": "Execution Timing",
+            "default": "next_bar"
+          },
+          "order_type": {
+            "type": "string",
+            "const": "market",
+            "title": "Order Type",
+            "default": "market"
+          },
+          "entry_price": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entry Price"
+          },
           "instrument_spec": {
             "anyOf": [
               {
@@ -9576,15 +9634,6 @@
               }
             ],
             "title": "Tick Snapshot Id"
-          },
-          "execution_timing": {
-            "type": "string",
-            "enum": [
-              "next_bar",
-              "current_quote"
-            ],
-            "title": "Execution Timing",
-            "default": "next_bar"
           }
         },
         "additionalProperties": false,

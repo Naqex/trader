@@ -7,17 +7,36 @@ export function replayAtCutoff(replay) {
   return { ...replay, payload: { ...replay.payload, execution: null }, execution_view_status: 'unavailable' }
 }
 
-export function orderDraft(replay, instrument, side = 'BUY') {
+export function orderDraft(replay, instrument, side = 'BUY', orderType = 'market') {
   replay = replayAtCutoff(replay)
   const active = replay?.payload?.execution?.position || replay?.payload?.execution?.pending_market_order
-  if (active) return { side: active.side, quantity: String(active.quantity), stopLoss: active.stop_loss == null ? '' : String(active.stop_loss), takeProfit: active.take_profit == null ? '' : String(active.take_profit) }
+  if (active) return { side: active.side, quantity: String(active.quantity), stopLoss: active.stop_loss == null ? '' : String(active.stop_loss), takeProfit: active.take_profit == null ? '' : String(active.take_profit), ...(active.order_type ? { orderType: active.order_type, entryPrice: String(active.entry_price) } : {}) }
   const quotes = marketQuotes(replay)
-  const entry = replay?.payload?.execution ? (side === 'BUY' ? quotes.ask : quotes.bid) : finiteNumber(replay?.visible_rows?.at(-1)?.close)
+  let entry = replay?.payload?.execution ? (side === 'BUY' ? quotes.ask : quotes.bid) : finiteNumber(replay?.visible_rows?.at(-1)?.close)
   const pip = finiteNumber(instrument?.pip_size)
   const distance = pip > 0 ? pip * 20 : null
+  if (orderType !== 'market' && entry > 0 && distance) {
+    const direction = (side === 'BUY' ? 1 : -1) * (orderType === 'limit' ? -1 : 1)
+    entry = Number((entry + direction * distance / 2).toFixed(8))
+  }
   return { side, quantity: instrument?.quantity_min == null ? '' : String(instrument.quantity_min),
+    ...(orderType !== 'market' ? { orderType, entryPrice: entry > 0 ? String(entry) : '' } : {}),
     stopLoss: entry > 0 && distance ? String(Number((entry + (side === 'BUY' ? -distance : distance)).toFixed(8))) : '',
     takeProfit: entry > 0 && distance ? String(Number((entry + (side === 'BUY' ? distance * 2 : -distance * 2)).toFixed(8))) : '' }
+}
+
+export function validateEntry(draft, quotes, instrument) {
+  const kind = draft.orderType || 'market'
+  if (kind === 'market') return null
+  if (!['limit', 'stop'].includes(kind)) return 'Loại lệnh không hợp lệ.'
+  const level = finiteNumber(draft.entryPrice), quote = draft.side === 'BUY' ? quotes.ask : quotes.bid
+  if (!(level > 0)) return 'Nhập giá vào lệnh lớn hơn 0.'
+  if (!(quote > 0)) return 'Chưa có giá tham chiếu tại cutoff này.'
+  const tick = finiteNumber(instrument?.tick_size), units = level / tick
+  if (!(tick > 0) || Math.abs(units - Math.round(units)) > Number.EPSILON * Math.max(1, Math.abs(units)) * 4) return 'Giá vào lệnh phải đúng bước giá của tài sản.'
+  const below = (draft.side === 'BUY') === (kind === 'limit')
+  if (below ? level >= quote : level <= quote) return below ? 'Giá lệnh này phải thấp hơn giá thị trường hiện tại.' : 'Giá lệnh này phải cao hơn giá thị trường hiện tại.'
+  return null
 }
 
 export function protectionReference(replay) {
@@ -25,6 +44,7 @@ export function protectionReference(replay) {
   const execution = replay?.payload?.execution
   const close = finiteNumber(replay?.visible_rows?.at(-1)?.close)
   if (close === null) return null
+  if (execution?.pending_market_order?.entry_price) return finiteNumber(execution.pending_market_order.entry_price)
   const active = execution?.position || (execution?.quote_source === 'broker_bid_ask' ? execution.pending_market_order : null)
   if (!active) return close
   const quote = marketQuotes(replay)
@@ -37,7 +57,7 @@ export function orderLevels(replay, draft, scalperPreview = null, closeableRefer
   const active = execution?.position || execution?.pending_market_order || pendingOrder
   const quotes = marketQuotes(replay)
   const side = active?.side || draft.side
-  const entry = finiteNumber(execution?.position?.entry_fill ?? pendingOrder?.entry ?? (execution ? (side === 'BUY' ? quotes.ask : quotes.bid) : replay?.visible_rows?.at(-1)?.close))
+  const entry = finiteNumber(execution?.position?.entry_fill ?? execution?.pending_market_order?.entry_price ?? pendingOrder?.entry ?? (draft.orderType && draft.orderType !== 'market' ? draft.entryPrice : execution ? (side === 'BUY' ? quotes.ask : quotes.bid) : replay?.visible_rows?.at(-1)?.close))
   // Once an order exists, the simulator's protection values are authoritative.
   // The draft can still contain the previous order's values for one render while
   // the execution response is being applied; letting it win makes the native
@@ -54,7 +74,7 @@ export function orderLevels(replay, draft, scalperPreview = null, closeableRefer
   const spec = execution?.instrument_spec || instrument || null
   const costs = execution?.cost_model || null
   return { entry, reference: finiteNumber(closeableReference) ?? entry, stop, target, ghostStop, ghostTarget, quantity: active?.quantity || draft.quantity, side, state: pendingOrder && !execution?.position && !execution?.pending_market_order ? 'submitting' : modified ? 'edit' : execution?.position ? 'position' : active ? 'queued' : 'draft',
-    floating: execution?.position ? execution.floating_pl : null, currency: costs?.account_ccy || spec?.account_ccy,
+    orderType: execution?.pending_market_order?.order_type || draft.orderType || 'market', floating: execution?.position ? execution.floating_pl : null, currency: costs?.account_ccy || spec?.account_ccy,
     originalQuantity: active?.original_quantity ?? active?.quantity, realizedPnl: active?.realized_pnl ?? '0',
     partialCloseSupported: replay?.execution_capabilities?.partial_close === true,
     quantityMin: spec?.quantity_min, quantityStep: spec?.quantity_step, assetClass: spec?.asset_class,

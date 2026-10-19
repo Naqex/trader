@@ -242,7 +242,11 @@ impl ValidatedBarPrefix {
         let position = &self.head["position"];
         if !pending.is_null()
             && (!position.is_null()
-                || int(pending, "submitted_cursor_index")? != int(&self.head, "cursor_index")?)
+                || if entry::conditional(pending) {
+                    int(pending, "submitted_cursor_index")? > int(&self.head, "cursor_index")?
+                } else {
+                    int(pending, "submitted_cursor_index")? != int(&self.head, "cursor_index")?
+                })
         {
             return Err("incremental pending order differs from canonical cursor/state".into());
         }
@@ -330,9 +334,10 @@ impl ValidatedBarPrefix {
                 operations,
             };
             match action {
-                "queue" => queue_history(&mut head, &args, &mut history)?,
+                "queue" => entry::queue_market(&mut head, &args, &mut history)?,
+                "queue_entry" => entry::queue(&mut head, &args, &mut history)?,
                 "queue_current_quote" => {
-                    queue_history(&mut head, &args, &mut history)?;
+                    entry::queue_market(&mut head, &args, &mut history)?;
                     fill(&mut head, &args, &mut history)?;
                 }
                 "fill_current_quote" => fill(&mut head, &args, &mut history)?,
@@ -529,7 +534,7 @@ mod tests {
             );
             if matches!(
                 action,
-                "queue" | "queue_current_quote" | "protection" | "close"
+                "queue" | "queue_entry" | "queue_current_quote" | "protection" | "close"
             ) {
                 self.index
                     .consumed
@@ -543,6 +548,27 @@ mod tests {
     fn order(side: &str, id: &str) -> Value {
         json!({"operation_id":id,"side":side,"quantity":"0.01","stop_loss":null,"take_profit":null,
             "mid_close":"1.1","virtual_time_utc":1060})
+    }
+    #[test]
+    fn pending_entry_compact_prefix_matches_full_across_wait_fill_and_cancel() {
+        for kind in ["limit","stop"] {
+            let mut pair = Pair::new(false);
+            pair.run("advance",bar(1));
+            let level = if kind == "limit" { "1.0990" } else { "1.1010" };
+            pair.run("queue_entry",json!({"operation_id":"conditional","side":"BUY","quantity":"0.01","order_type":kind,"entry_price":level,"mid_close":"1.1000","virtual_time_utc":1060}));
+            pair.run("advance",bar(2));
+            assert!(pair.full["position"].is_null());
+            let mut touch = bar(3);
+            touch["bar"][if kind == "limit" { "low" } else { "high" }] = json!(if kind == "limit" { "1.0989" } else { "1.1011" });
+            pair.run("advance",touch);
+            assert_eq!(pair.full["position"]["entry_order_type"],kind);
+            let mut cancelled = Pair::new(true);
+            cancelled.run("advance",bar(1));
+            cancelled.run("queue_entry",json!({"operation_id":"conditional","side":"BUY","quantity":"0.01","order_type":kind,"entry_price":level,"mid_close":"1.1000","virtual_time_utc":1060}));
+            cancelled.run("advance",bar(2));
+            cancelled.run("close",json!({"operation_id":"cancel","target_id":"conditional","mid_close":"1.1000","virtual_time_utc":1120}));
+            assert!(cancelled.full["pending_market_order"].is_null());
+        }
     }
     #[test]
     fn current_fill_amend_close_both_sides_match_full_financial_events() {

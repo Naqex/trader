@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTestingLocale } from './testingLocale.jsx'
 import { DEFAULT_COST_MODEL, RiskPreview, validateDraft } from './TradeWorkspace.jsx'
-import { finiteNumber, marketQuotes, orderDraft, protectionReference, replayAtCutoff } from './replayOrderModel.js'
+import { finiteNumber, marketQuotes, orderDraft, protectionReference, replayAtCutoff, validateEntry } from './replayOrderModel.js'
 import { useReplayTickOptions } from './useReplayTickOptions.js'
 import FxSelect from './FxSelect.jsx'
 import { scalperProtection } from './legacyScalperPreset.js'
@@ -33,7 +33,7 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
   const active = execution?.position || execution?.pending_market_order
   const costs = execution?.cost_model || (dataset ? { ...DEFAULT_COST_MODEL, ...(executionConfig?.costModel || {}), account_ccy: executionConfig?.costModel?.account_ccy || instrument?.account_ccy || DEFAULT_COST_MODEL.account_ccy } : null)
   const quotes = marketQuotes(replay)
-  const reference = active ? protectionReference(replay) : execution ? (draft.side === 'BUY' ? quotes.ask : quotes.bid) : protectionReference(replay)
+  const reference = active ? protectionReference(replay) : draft.orderType && draft.orderType !== 'market' ? finiteNumber(draft.entryPrice) : execution ? (draft.side === 'BUY' ? quotes.ask : quotes.bid) : protectionReference(replay)
   const disabled = !ready || blocked || pending
   const canInitialize = Boolean(instrument && dataset?.timeframe_seconds && costs)
   const run = async (endpoint, body) => {
@@ -70,20 +70,24 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
       if (currentContext.current !== origin) throw new Error('Phiên hoặc cutoff đã thay đổi; lệnh chưa được gửi.')
       const nextActive = nextExecution.position || nextExecution.pending_market_order
       const nextQuotes = marketQuotes(nextReplay)
-      const nextReference = nextActive ? protectionReference(nextReplay) : nextDraft.side === 'BUY' ? nextQuotes.ask : nextQuotes.bid
+      const conditional = !nextActive && ['limit','stop'].includes(nextDraft.orderType)
+      if (conditional && replay?.execution_capabilities?.conditional_orders !== true) throw new Error('Phiên này chưa hỗ trợ lệnh Limit/Stop.')
+      const entryError = !nextActive && validateEntry(nextDraft,nextQuotes,instrument)
+      if (entryError) throw new Error(entryError)
+      const nextReference = nextActive ? protectionReference(nextReplay) : conditional ? finiteNumber(nextDraft.entryPrice) : nextDraft.side === 'BUY' ? nextQuotes.ask : nextQuotes.bid
       if (nextReference === null || nextReference === undefined) throw new Error('Chưa có giá tham chiếu tại cutoff này.')
       const validation = validateDraft(nextDraft, nextReference, { optionalProtection: true })
       if (validation) { setNotice({ kind: 'error', title: 'Order Error', message: validation }); return false }
       const operation_id = `chart-${crypto.randomUUID()}`
       const result = await submit(nextActive ? 'orders/protection' : 'orders/market', nextActive
         ? { operation_id, target_id: nextExecution.position?.position_id || nextExecution.pending_market_order.operation_id, stop_loss: nextDraft.stopLoss || null, take_profit: nextDraft.takeProfit || null }
-        : { operation_id, execution_timing: 'current_quote', side: nextDraft.side, quantity: nextDraft.quantity, stop_loss: nextDraft.stopLoss || null, take_profit: nextDraft.takeProfit || null }, nextReplay.revision)
+        : { operation_id, execution_timing: conditional ? 'pending' : 'current_quote', ...(conditional ? { order_type: nextDraft.orderType, entry_price: nextDraft.entryPrice } : {}), side: nextDraft.side, quantity: nextDraft.quantity, stop_loss: nextDraft.stopLoss || null, take_profit: nextDraft.takeProfit || null }, nextReplay.revision)
       if (result) {
-        if (!nextActive && !result.payload.execution.position) {
+        if (!nextActive && !(conditional ? result.payload.execution.pending_market_order : result.payload.execution.position)) {
           throw new Error('Không đủ margin để mở vị thế.')
         }
         if (nextActive) setNotice(protectionNotice(nextActive, nextDraft, instrument?.tick_size, options.movedKind))
-        else setNotice({ kind: 'ok', text: 'Đã khớp lệnh mô phỏng tại giá hiện tại.' })
+        else setNotice({ kind: 'ok', text: conditional ? 'Đã đặt lệnh chờ.' : 'Đã khớp lệnh mô phỏng tại giá hiện tại.' })
       }
       return Boolean(result)
     } catch (error) {
@@ -110,7 +114,10 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
   }
   const reportError = text => setNotice({ kind: 'error', title: 'Order Error', message: String(text || 'Không thể cập nhật TP/SL.') })
   const chooseSide = side => {
-    if (!active && !disabled) { setDraft(current => ({ ...orderDraft(replay, instrument, side), quantity: current.quantity })); setNotice(null) }
+    if (!active && !disabled) { setDraft(current => ({ ...orderDraft(replay, instrument, side, current.orderType), quantity: current.quantity })); setNotice(null) }
+  }
+  const chooseType = type => {
+    if (!active && !disabled) { setDraft(current => ({ ...orderDraft(replay,instrument,current.side,type),quantity:current.quantity })); setNotice(null) }
   }
   const initializationBody = () => {
     if (!canInitialize || (tick.options === null && !executionConfig?.forceBar)) return
@@ -188,7 +195,7 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
     target_id: execution.position?.position_id || execution.pending_market_order.operation_id,
     ...(typeof quantity === 'string' ? { quantity } : {}),
   })
-  return { resetDraft: () => setDraft(orderDraft(replay, instrument)), draft, setDraft, execution, account, assetStates, instrument, costs, active, reference, disabled, pending, pendingOrder: pendingOrder?.context === context ? pendingOrder : null, notice, quickTrade, close, canClose: ready && !closeBlocked && !pending, startingBalance, configuredBalance: replay?.payload?.starting_balance, configuredCurrency: replay?.payload?.starting_balance_ccy, setStartingBalance, spread, setSpread, tick, canInitialize, initialize, save, changePrice, reportError, chooseSide, executionConfig }
+  return { resetDraft: () => setDraft(orderDraft(replay, instrument)), draft, setDraft, execution, account, assetStates, instrument, costs, active, reference, disabled, pending, pendingOrder: pendingOrder?.context === context ? pendingOrder : null, notice, quickTrade, close, canClose: ready && !closeBlocked && !pending, startingBalance, configuredBalance: replay?.payload?.starting_balance, configuredCurrency: replay?.payload?.starting_balance_ccy, setStartingBalance, spread, setSpread, tick, canInitialize, initialize, save, changePrice, reportError, chooseSide, chooseType, conditionalOrders: replay?.execution_capabilities?.conditional_orders === true, executionConfig }
 }
 
 function LegacyOrderForm({ order, blockedReason, onClose, onJournal }) {
@@ -201,8 +208,8 @@ function LegacyOrderForm({ order, blockedReason, onClose, onJournal }) {
   const change = (key, value) => setDraft(current => ({ ...current, [key]:value }))
   const pip = Number(instrument?.pip_size), entry = Number(active?.entry_fill)
   return <><form className="legacy-order-form" onSubmit={async event => { event.preventDefault(); if (await order.save()) { onClose(); if (journal) onJournal() } }}>
-    {!active && <div className="legacy-order-grid"><label>{t('Hướng')}<FxSelect className="is-field" label="Hướng" value={draft.side} disabled={disabled || Boolean(active)} onChange={order.chooseSide} options={[{ value: 'BUY', label: t('Buy') }, { value: 'SELL', label: t('Sell') }]} /></label><label>{t('Loại lệnh')}<FxSelect className="is-field" label="Loại lệnh" value="market" disabled options={[{ value: 'market', label: 'Market' }]} /></label>
-    <label>{t(instrument?.asset_class==='fx' ? 'Khối lượng (lot)' : 'Khối lượng (quantity)')}<input aria-label={t('Khối lượng lệnh')} type="number" min={instrument?.quantity_min || '0'} step={instrument?.quantity_step || 'any'} value={draft.quantity} disabled={disabled || Boolean(active)} onChange={event => change('quantity',event.target.value)} /></label><label>{t('Giá vào lệnh')}<input type="text" readOnly value={order.reference ?? '—'} /></label></div>}
+    {!active && <div className="legacy-order-grid"><label>{t('Hướng')}<FxSelect className="is-field" label="Hướng" value={draft.side} disabled={disabled} onChange={order.chooseSide} options={[{ value: 'BUY', label: t('Buy') }, { value: 'SELL', label: t('Sell') }]} /></label><label>{t('Loại lệnh')}<FxSelect className="is-field" label="Loại lệnh" value={draft.orderType || 'market'} disabled={disabled || !order.conditionalOrders} onChange={order.chooseType} options={['market','limit','stop'].map(value => ({ value,label:value[0].toUpperCase()+value.slice(1) }))} /></label>
+    <label>{t(instrument?.asset_class==='fx' ? 'Khối lượng (lot)' : 'Khối lượng (quantity)')}<input aria-label={t('Khối lượng lệnh')} type="number" min={instrument?.quantity_min || '0'} step={instrument?.quantity_step || 'any'} value={draft.quantity} disabled={disabled} onChange={event => change('quantity',event.target.value)} /></label><label>{t('Giá vào lệnh')}<input aria-label={t('Giá vào lệnh')} type={draft.orderType && draft.orderType !== 'market' ? 'number' : 'text'} min="0" step={instrument?.tick_size || 'any'} disabled={disabled} readOnly={!draft.orderType || draft.orderType === 'market'} value={draft.orderType && draft.orderType !== 'market' ? draft.entryPrice : order.reference ?? '—'} onChange={event => change('entryPrice',event.target.value)} /></label></div>}
     {[['stopLoss','Stop loss'],['takeProfit','Take profit']].map(([key,label]) => <section className={active ? 'legacy-edit-protection' : 'legacy-new-protection'} key={key}><div className="legacy-protection-row"><label><input type="checkbox" role="switch" checked={active ? enabled[key] : draft[key] !== ''} disabled={disabled || !execution} onChange={event => {
       setEnabled(current => ({ ...current, [key]: event.target.checked }))
       if (!event.target.checked) { change(key, ''); return }

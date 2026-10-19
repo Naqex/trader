@@ -1386,6 +1386,8 @@ def create_app(
         workspace: str = Depends(workspace_id),
     ):
         try:
+            if body.order_type != 'market' or body.entry_price is not None:
+                raise ValueError('conditional orders require the native replay runtime')
             return replay.queue_market_order(
                 workspace,
                 session_id,

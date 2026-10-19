@@ -341,6 +341,31 @@ revision instead of reusing stale sidecars. The original native source stays int
 throughout this recovery rehearsal; subsequent owner switching is recorded at
 the top of this document and in the final acceptance audit.
 
+## Conditional replay entries
+
+Native replay views advertise `execution_capabilities.conditional_orders: true`.
+The chart order dialog reuses the shared Market/Limit/Stop selector. Market Save
+and Quick Buy/Sell execute at the current quote. Limit/Stop Save sends the existing
+`orders/market` route with `order_type`, `entry_price` and
+`execution_timing: "pending"`. Compatibility rejects these conditional fields;
+it does not advertise this capability.
+
+Conditional orders retain the existing `pending_market_order` storage slot with
+optional `order_type`/`entry_price` fields and a durable `order_placed` event.
+Only one pending order or position per asset is supported. Protection remains
+editable; changing the trigger requires cancel/recreate. Orders survive reload,
+compact storage and checkpoint reconstruction. Conditional positions record
+`entry_order_type`; older runtimes cannot consume these new ledger/state fields,
+so preserve a compatible native build when restoring such sessions.
+
+Buy entries trigger on Ask, Sell entries on Bid. A Limit gets its trigger price
+or a better opening gap; a Stop gets its trigger price or the worse opening gap,
+plus the declared adverse slippage. Margin is checked when the order fills.
+Tick execution uses the first crossing executable quote. With BAR data, an
+intrabar entry is timestamped at candle end; a possible same-bar protective exit
+is rejected because OHLC cannot establish its order. Gap prices that invalidate
+submitted protection also reject the step atomically. No intrabar path is guessed.
+
 ## Forward BAR step and chart tail
 
 Native canonical full views advertise `step_view_version: "replay-step-v1"` for

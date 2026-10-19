@@ -25,7 +25,7 @@ export function orderLabel(levels, kind, price, theme, t) {
   const profit = entry ? levels.floating : protectionProfit(levels, price)
   let text = name
   if (entry && levels.state === 'submitting') text += ` · ${t('Đang gửi…')}`
-  else if (entry && levels.state === 'queued') text += ` · ${t('Chờ khớp')}`
+  else if (entry && levels.state === 'queued') text += `${['limit','stop'].includes(levels.orderType) ? ` ${levels.orderType.toUpperCase()}` : ''} · ${t('Chờ khớp')}`
   else if (!ghost && profit != null && Number.isFinite(Number(profit)) && levels.currency) {
     const value = Number(profit)
     text += ` → ${value > 0 ? '+' : value < 0 ? '−' : ''}${amountFormat.format(Math.abs(value))} ${levels.currency}`

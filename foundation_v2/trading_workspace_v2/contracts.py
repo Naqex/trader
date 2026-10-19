@@ -550,7 +550,9 @@ class ReplayMarketOrderRequest(BaseModel):
     quantity: Decimal = Field(gt=0)
     stop_loss: Decimal | None = Field(default=None, gt=0)
     take_profit: Decimal | None = Field(default=None, gt=0)
-    execution_timing: Literal["next_bar", "current_quote"] = "next_bar"
+    execution_timing: Literal["next_bar", "current_quote", "pending"] = "next_bar"
+    order_type: Literal["market", "limit", "stop"] = "market"
+    entry_price: Decimal | None = Field(default=None, gt=0)
 
 
 class ReplayQuickMarketOrderRequest(ReplayMarketOrderRequest):
@@ -561,6 +563,8 @@ class ReplayQuickMarketOrderRequest(ReplayMarketOrderRequest):
     request for the common first quick order.
     """
 
+    order_type: Literal["market"] = "market"
+    execution_timing: Literal["next_bar", "current_quote"] = "next_bar"
     instrument_spec: dict | None = None
     cost_model: dict | None = None
     spread_price: Decimal | None = Field(default=None, ge=0)

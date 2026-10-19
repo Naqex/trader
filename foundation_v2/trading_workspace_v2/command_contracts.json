@@ -6137,10 +6137,38 @@
                 "default": "next_bar",
                 "enum": [
                   "next_bar",
-                  "current_quote"
+                  "current_quote",
+                  "pending"
                 ],
                 "title": "Execution Timing",
                 "type": "string"
+              },
+              "order_type": {
+                "default": "market",
+                "enum": [
+                  "market",
+                  "limit",
+                  "stop"
+                ],
+                "title": "Order Type",
+                "type": "string"
+              },
+              "entry_price": {
+                "anyOf": [
+                  {
+                    "exclusiveMinimum": 0.0,
+                    "type": "number"
+                  },
+                  {
+                    "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Entry Price"
               }
             },
             "required": [
@@ -6287,6 +6315,29 @@
                 ],
                 "title": "Execution Timing",
                 "type": "string"
+              },
+              "order_type": {
+                "const": "market",
+                "default": "market",
+                "title": "Order Type",
+                "type": "string"
+              },
+              "entry_price": {
+                "anyOf": [
+                  {
+                    "exclusiveMinimum": 0.0,
+                    "type": "number"
+                  },
+                  {
+                    "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Entry Price"
               },
               "instrument_spec": {
                 "anyOf": [
