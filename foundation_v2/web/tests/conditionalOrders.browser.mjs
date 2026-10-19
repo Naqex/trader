@@ -38,9 +38,27 @@ try {
     assert.equal(record.execution_capabilities.conditional_orders,true)
     await page.goto(`${origin}/?workspace=tenant-a&view=replay&surface=workspace&session=${record.record_id}&dataset=${dataset}`)
     await page.locator('[data-chart-status=ready]').waitFor({timeout:30000})
+    const chart = page.frameLocator('iframe[id^=tradingview_]')
+    const noDraftMarkers = async () => {
+      await chart.locator('.wm-order-marker').first().waitFor({state:'detached'})
+      assert.equal(await chart.locator('.wm-order-marker').count(),0,'Unsubmitted form must not look like a placed order')
+    }
     const open = page.locator('#chart-utility-actions > button').first()
     await open.click()
     const dialog = page.locator('.legacy-order-modal')
+    await dialog.waitFor({state:'visible'})
+    await noDraftMarkers()
+    if (side==='BUY' && type==='limit') {
+      await dialog.getByRole('button',{name:'Hủy',exact:true}).click()
+      await dialog.waitFor({state:'hidden'})
+      await noDraftMarkers()
+      const unchanged=await request('GET',path)
+      assert.equal(unchanged.revision,record.revision)
+      assert.equal(unchanged.payload.execution.pending_market_order,null)
+      assert.equal(unchanged.payload.execution.position,null)
+      await open.click()
+      await dialog.waitFor({state:'visible'})
+    }
     await dialog.getByRole('button',{name:lang==='vi'?'Loại lệnh':'Type',exact:true}).click()
     assert.deepEqual((await dialog.getByRole('option').allTextContents()).map(text=>text.replace('✓','').trim()),['Market','Limit','Stop'])
     await page.screenshot({path:`${out}/${side}-${type}-${width}-menu.png`})
@@ -54,6 +72,7 @@ try {
     for (const toggle of await dialog.getByRole('switch').all()) {
       if (await toggle.isEnabled() && await toggle.isChecked()) await toggle.uncheck()
     }
+    await noDraftMarkers()
     await page.screenshot({path:`${out}/${side}-${type}-${width}-form.png`})
     await request('POST',`${path}/orders/market`,{expected_revision:record.revision,operation_id:`invalid-${side}-${type}`,execution_timing:'pending',order_type:type,side,quantity:'0.01',entry_price:'1.10000'},422)
     const save = dialog.locator('.legacy-order-save')
@@ -69,7 +88,6 @@ try {
     assert.equal(record.payload.execution.pending_market_order.order_type,type)
     await page.reload()
     await page.locator('[data-chart-status=ready]').waitFor({timeout:30000})
-    const chart = page.frameLocator('iframe[id^=tradingview_]')
     await chart.locator('.wm-order-marker-text').filter({hasText:`${side} ${type.toUpperCase()}`}).waitFor()
     await page.screenshot({path:`${out}/${side}-${type}-${width}-pending.png`})
     record = await request('POST',`${path}/step`,{expected_revision:record.revision,steps:1})
@@ -98,6 +116,7 @@ try {
       await page.locator('[data-chart-status=ready]').waitFor({timeout:30000})
       await open.click()
       assert.equal(await dialog.getByRole('button',{name:'Loại lệnh',exact:true}).innerText(),'Market')
+      await noDraftMarkers()
       for (const toggle of await dialog.getByRole('switch').all()) if (await toggle.isEnabled() && await toggle.isChecked()) await toggle.uncheck()
       const marketSaved=page.waitForResponse(r=>new URL(r.url()).pathname===`${path}/orders/market` && r.request().method()==='POST')
       await dialog.locator('.legacy-order-save').click()
@@ -108,6 +127,7 @@ try {
       assert.equal(record.payload.execution.pending_market_order,null)
       assert.equal(record.payload.execution.position.side,'BUY')
       report.marketAndCancel=true
+      report.noUnsubmittedMarkers=true
     }
   }
   assert.deepEqual(report.errors,[])

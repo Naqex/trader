@@ -1,0 +1,37 @@
+{
+  "scope": "Disposable PostgreSQL/native API and real chart UI; synthetic CSV; no owner mutations",
+  "cases": [
+    {
+      "side": "BUY",
+      "type": "limit",
+      "width": 1368,
+      "lang": "vi",
+      "passed": true
+    },
+    {
+      "side": "SELL",
+      "type": "limit",
+      "width": 768,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "side": "BUY",
+      "type": "stop",
+      "width": 1368,
+      "lang": "en",
+      "passed": true
+    },
+    {
+      "side": "SELL",
+      "type": "stop",
+      "width": 390,
+      "lang": "vi",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "marketAndCancel": true,
+  "noUnsubmittedMarkers": true,
+  "passed": true
+}

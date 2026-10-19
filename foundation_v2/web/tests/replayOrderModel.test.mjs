@@ -18,7 +18,7 @@ test('conditional entries use the correct executable side and enforce price step
     const empty = structuredClone(replay); empty.payload.execution.position = null
     const seeded = orderDraft(empty, spec, side, orderType)
     assert.equal(validateEntry(seeded, marketQuotes(empty), spec), null)
-    assert.equal(orderLevels(empty, draft).entry, Number(entryPrice))
+    assert.equal(orderLevels(empty, draft), null)
   }
   assert.equal(validateEntry({ orderType:'market' }, quotes, spec), null)
   const queued = structuredClone(replay)
@@ -51,7 +51,7 @@ test('tick quote and draft use pinned historical Bid/Ask without OHLC fallback',
   Object.assign(tick.payload.execution, { quote_source: 'broker_bid_ask', last_bid: '1.1017', last_ask: '1.1024', spread_price: '0', position: null })
   assert.deepEqual(marketQuotes(tick), { bid: 1.1017, ask: 1.1024 })
   assert.equal(orderDraft(tick, { pip_size: '.0001', quantity_min: '.01' }).stopLoss, '1.1004')
-  assert.equal(orderLevels(tick, { side: 'SELL', stopLoss: '1.11', takeProfit: '1.09' }).entry, 1.1017)
+  assert.equal(orderLevels(tick, { side: 'SELL', stopLoss: '1.11', takeProfit: '1.09' }), null)
   assert.deepEqual(marketQuotes({ ...tick, view_cursor_index: 0 }), { bid: null, ask: null })
   tick.payload.execution.last_ask = null
   assert.deepEqual(marketQuotes(tick), { bid: null, ask: null })
@@ -62,11 +62,25 @@ test('draft prices use declared pip and quantity assumptions without inventing m
   const plain = { visible_rows: [{ close: 1.1 }], payload: {} }
   assert.deepEqual(orderDraft(plain, { pip_size: '.0001', quantity_min: '.01' }), { side: 'BUY', quantity: '.01', stopLoss: '1.098', takeProfit: '1.104' })
   assert.equal(orderDraft(plain, {}, 'SELL').stopLoss, '')
-  assert.equal(orderLevels(plain, { side: 'BUY', stopLoss: '', takeProfit: '1.12' }).stop, null)
+  assert.equal(orderLevels(plain, { side: 'BUY', stopLoss: '', takeProfit: '1.12' }), null)
   assert.equal(orderLevels(replay, { stopLoss: '', takeProfit: '1.12' }).stop, 1.09, 'Persisted protection wins over a stale form draft')
   assert.equal(money(null, 'USD'), 'N/A')
   assert.equal(money(0, null), 'N/A')
   assert.notEqual(money(0, 'USD'), 'N/A')
+})
+
+test('chart markers require an accepted order even while Quick Buy/Sell is submitting', () => {
+  const empty = structuredClone(replay)
+  empty.payload.execution.position = null
+  const draft = { side:'BUY', quantity:'.01', stopLoss:'1.09', takeProfit:'1.12' }
+  const submitting = { side:'BUY', quantity:'.01', entry:1.1021, stop_loss:'1.09', take_profit:'1.12' }
+  assert.equal(orderLevels(empty, draft, null, null, null, submitting), null)
+  assert.equal(orderLevels({ ...empty, payload:{} }, draft, null, null, null, submitting), null)
+  assert.equal(orderLevels(replay, draft).state, 'position')
+  const accepted = structuredClone(empty)
+  accepted.payload.execution.pending_market_order = { ...submitting, order_type:'limit', entry_price:'1.099' }
+  assert.equal(orderLevels(accepted, draft).state, 'queued')
+  assert.equal(orderLevels(accepted, draft).entry, 1.099)
 })
 test('order projection changes with price scale and keeps unmappable anchors out', () => {
   const levels = orderLevels(replay, orderDraft(replay))

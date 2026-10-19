@@ -54,7 +54,9 @@ export function protectionReference(replay) {
 export function orderLevels(replay, draft, scalperPreview = null, closeableReference = null, instrument = null, pendingOrder = null) {
   replay = replayAtCutoff(replay)
   const execution = replay?.payload?.execution
-  const active = execution?.position || execution?.pending_market_order || pendingOrder
+  const active = execution?.position || execution?.pending_market_order
+  // Form drafts and optimistic submissions are not accepted chart orders.
+  if (!active) return null
   const quotes = marketQuotes(replay)
   const side = active?.side || draft.side
   const entry = finiteNumber(execution?.position?.entry_fill ?? execution?.pending_market_order?.entry_price ?? pendingOrder?.entry ?? (draft.orderType && draft.orderType !== 'market' ? draft.entryPrice : execution ? (side === 'BUY' ? quotes.ask : quotes.bid) : replay?.visible_rows?.at(-1)?.close))
