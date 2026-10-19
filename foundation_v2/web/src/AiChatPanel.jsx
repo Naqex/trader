@@ -8,10 +8,13 @@ export function AiSparkles() {
 
 const base = '/api/v2/ai/chatgpt'
 const effortNames = { low: ['Nhanh', 'Fast'], medium: ['Vừa', 'Medium'], high: ['Cao', 'High'], xhigh: ['Rất cao', 'Extra high'], max: ['Pro', 'Pro'], ultra: ['Ultra', 'Ultra'] }
+const screens = { unknown: ['Chưa xác định', 'Unknown'], overview: ['Tổng quan', 'Overview'], replay: ['Replay', 'Replay'], trade: ['Giao dịch', 'Trading'], analytics: ['Phân tích', 'Analytics'], playbook: ['Chiến lược', 'Strategies'], learn: ['Học tập', 'Learning'], settings: ['Cài đặt', 'Settings'], 'market-data': ['Dữ liệu', 'Market data'], prop: ['Prop firm', 'Prop firm'], journal: ['Nhật ký', 'Journal'], sessions: ['Phiên', 'Sessions'] }
 
-export default function AiChatPanel({ workspace, open, modal, onClose, settingsHref, language }) {
+export default function AiChatPanel({ workspace, open, modal, onClose, settingsHref, language, screen = 'unknown' }) {
   const en = language === 'en'
   const say = (vi, english) => en ? english : vi
+  const currentScreen = Object.hasOwn(screens, screen) ? screen : 'unknown'
+  const screenName = key => (screens[key] || screens.unknown)[en ? 1 : 0]
   const [account, setAccount] = useState(null)
   const [loading, setLoading] = useState(false)
   const [messages, setMessages] = useState([])
@@ -41,10 +44,12 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
   function errorCopy(code) {
     if (code === 'chatgpt_busy') return say('ChatGPT đang bận. Chờ tác vụ hiện tại hoàn tất rồi gửi lại.', 'ChatGPT is busy. Wait for the active task before sending again.')
     if (code === 'chatgpt_login_required') return say('Bạn cần đăng nhập ChatGPT trong Cài đặt.', 'Connect ChatGPT in Settings first.')
+    if (code === 'chatgpt_model_unavailable') return say('Chưa chọn và xác minh được model trên ChatGPT Web. Câu hỏi chưa được gửi. Kiểm tra model trong Cài đặt AI; ứng dụng không tự đổi model.', 'The model could not be selected and verified on ChatGPT Web. Your question was not sent. Check the model in AI settings; the app does not switch models automatically.')
     if (code === 'chatgpt_turn_not_found') return say('Phản hồi không còn trên máy chủ. Cuộc trò chuyện vẫn ở đây; bạn có thể bắt đầu lại.', 'This response is no longer on the server. You can start a new chat.')
     if (code === 'chatgpt_timeout') return say('Đã hết thời gian chờ phản hồi. Kiểm tra kết nối trước khi gửi lại.', 'The response timed out. Check your connection before sending again.')
     if (code === 'workspace_access_denied' || code === 'trusted_identity_missing') return say('Workspace này chưa được cấp quyền dùng AI.', 'This workspace does not have AI access.')
     if (code === 'invalid_chat_messages') return say('Hội thoại vượt giới hạn hoặc nội dung không hợp lệ. Hãy mở cuộc trò chuyện mới.', 'The conversation exceeds the limit or contains invalid content. Start a new chat.')
+    if (code === 'invalid_chat_context') return say('Ngữ cảnh màn hình không hợp lệ. Hãy tải lại trang.', 'Invalid screen context. Reload the page.')
     return say('Chưa nhận được phản hồi. Kiểm tra phiên đăng nhập, model và hạn mức trong Cài đặt. Ứng dụng không tự gửi lại.', 'No response received. Check your login, model and limits in Settings. The app does not resend automatically.')
   }
   async function loadAccount(signal) {
@@ -122,13 +127,13 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
     const content = draft.trim()
     if (!content || submitting.current || !account?.login_state_present || account.operation) return
     const history = messages.filter(item => item.status === 'completed').map(({ role, content }) => ({ role, content }))
-    const payload = { messages: [...history, { role: 'user', content }] }
+    const payload = { messages: [...history, { role: 'user', content }], context: { screen: currentScreen, locale: en ? 'en' : 'vi' } }
     if (payload.messages.length > 63 || new TextEncoder().encode(JSON.stringify(payload)).length > 49152) {
       setError(errorCopy('invalid_chat_messages')); return
     }
     submitting.current = true; stopRequested.current = false
     setBusy(true); setError(''); setCancelled(false); setDraft('')
-    setMessages(previous => [...previous, { role: 'user', content, status: 'running', id: 'submitting' }])
+    setMessages(previous => [...previous, { role: 'user', content, screen: currentScreen, status: 'running', id: 'submitting' }])
     try {
       // Keep the POST alive until its ID is known so unmount can cancel the exact turn.
       const value = await call('/chat', 'POST', payload)
@@ -180,8 +185,8 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
       </div>
     </header>
     <div className="wm-ai-transcript" ref={scroll} role="log" aria-label={say('Nội dung trò chuyện', 'Conversation')} aria-live="polite" aria-relevant="additions text">
-      {!messages.length && <div className="wm-ai-welcome"><span className="wm-ai-welcome-icon"><AiSparkles /></span><h3>{say('Cùng làm rõ ý tưởng của bạn', 'Let’s explore your ideas')}</h3><p>{say('Hỏi về một ý tưởng, nhờ giải thích hoặc cùng phác thảo hướng đi tiếp theo.', 'Ask a question, explore an idea or work through your next step.')}</p></div>}
-      {messages.map((item, index) => <div className={`wm-ai-message is-${item.role}`} key={index}><span className="wm-ai-speaker">{item.role === 'user' ? say('Bạn', 'You') : 'WMREPLAY AI'}</span><div>{item.content}</div>{item.role === 'user' && ['failed', 'cancelled'].includes(item.status) && <small>{item.status === 'cancelled' ? say('Đã dừng', 'Stopped') : say('Chưa có phản hồi', 'No response')}</small>}</div>)}
+      {!messages.length && <div className="wm-ai-welcome"><span className="wm-ai-welcome-icon"><AiSparkles /></span><h3>{say('Cùng hiểu rõ cách giao dịch', 'Understand your trading')}</h3><p>{say('Hỏi về trading, quản trị rủi ro, backtest hoặc cách dùng WMREPLAY.', 'Ask about trading, risk, backtesting or using WMREPLAY.')}</p></div>}
+      {messages.map((item, index) => <div className={`wm-ai-message is-${item.role}`} key={index}><span className="wm-ai-speaker">{item.role === 'user' ? `${say('Bạn', 'You')} · ${screenName(item.screen)}` : 'WMREPLAY AI'}</span><div>{item.content}</div>{item.role === 'user' && ['failed', 'cancelled'].includes(item.status) && <small>{item.status === 'cancelled' ? say('Đã dừng', 'Stopped') : say('Chưa có phản hồi', 'No response')}</small>}</div>)}
       {busy && <p className="wm-ai-thinking" role="status"><span />{say('Đang chờ ChatGPT…', 'Waiting for ChatGPT…')}</p>}
     </div>
     <div className="wm-ai-bottom">
@@ -199,7 +204,7 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
           {busy ? <button type="button" className="wm-ai-send" onClick={stop} aria-label={say('Dừng phản hồi', 'Stop response')} title={say('Dừng phản hồi', 'Stop response')}><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" /></svg></button> : <button type="submit" className="wm-ai-send" disabled={!draft.trim() || !connected || changing} aria-label={say('Gửi tin nhắn', 'Send message')} title={say('Gửi tin nhắn', 'Send message')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6" /></svg></button>}
         </div>
       </form>
-      <p className="wm-ai-disclosure">{say('Chỉ gửi nội dung bạn nhập · Hội thoại lưu tạm trong trang này.', 'Only your messages are sent · Chat stays in this page temporarily.')}</p>
+      <p className="wm-ai-disclosure">{say(`Ngữ cảnh: ${screenName(currentScreen)}. Gửi hội thoại, tên màn hình và ngôn ngữ; chưa gửi chart hay số liệu tài khoản. Hội thoại lưu tạm trong trang.`, `Context: ${screenName(currentScreen)}. Sends chat, screen name and language; no chart or account figures. Chat stays in this page temporarily.`)}</p>
     </div>
   </aside>
 }

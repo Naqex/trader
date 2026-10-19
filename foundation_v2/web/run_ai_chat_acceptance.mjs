@@ -60,7 +60,7 @@ try {
       assert.ok(endpoint.startsWith('/chat/'))
       if (method === 'DELETE') { cancellations.push(endpoint); turn = { ...turn, status: 'cancelled' } }
       else if (mode === 'success') turn = { ...turn, status: 'completed', text: sends.length === 1 ? 'Đây là phản hồi kiểm thử giao diện.' : 'Tôi đã nhận câu hỏi tiếp theo.' }
-      else if (mode === 'failure') turn = { ...turn, status: 'failed', error: 'chatgpt_response_failed' }
+      else if (mode === 'failure') turn = { ...turn, status: 'failed', error: 'chatgpt_model_unavailable' }
       await route.fulfill({ json: turn })
     })
     await page.goto(`${origin}/?workspace=tenant-a&view=playbook&area=strategies&section=my-strategies`)
@@ -78,7 +78,8 @@ try {
     await input.fill('Giải thích expectancy bằng một ví dụ đơn giản.')
     await input.press('Enter')
     await chat.getByText('Đây là phản hồi kiểm thử giao diện.', { exact: true }).waitFor()
-    assert.deepEqual(sends[0], { messages: [{ role: 'user', content: 'Giải thích expectancy bằng một ví dụ đơn giản.' }] })
+    assert.deepEqual(sends[0], { messages: [{ role: 'user', content: 'Giải thích expectancy bằng một ví dụ đơn giản.' }], context: { screen: 'playbook', locale: 'vi' } })
+    await chat.getByText('Bạn · Chiến lược', { exact: true }).waitFor()
     await chat.getByRole('button', { name: 'Đóng chat AI' }).click()
     await page.waitForFunction(() => document.activeElement?.dataset.testid === 'ai-toggle')
     await toggle.click()
@@ -101,6 +102,8 @@ try {
     mode = 'failure'
     await input.fill('Tin nhắn lỗi kiểm thử.'); await input.press('Enter')
     await chat.getByRole('alert').waitFor()
+    await chat.getByRole('alert').filter({ hasText: 'Câu hỏi chưa được gửi.' }).waitFor()
+    await page.screenshot({ path: path.join(evidence, `model-unavailable-${width}.png`) })
     assert.equal(sends.at(-1).messages.length, 5, 'cancelled message excluded from subsequent context')
     assert.equal(await chat.getByRole('button', { name: 'Gửi tin nhắn' }).isDisabled(), true)
     await chat.getByRole('button', { name: 'Cuộc trò chuyện mới' }).click()
@@ -145,6 +148,18 @@ try {
       await toggle.click()
       await chat.getByRole('button', { name: 'Model AI', exact: true }).waitFor()
       await page.screenshot({ path: path.join(evidence, 'replay-shell-chat.png') })
+      mode = 'success'
+      await input.fill('Bạn biết tôi đang ở màn hình nào?'); await input.press('Enter')
+      await chat.getByText('Tôi đã nhận câu hỏi tiếp theo.', { exact: true }).waitFor()
+      assert.deepEqual(sends.at(-1).context, { screen: 'replay', locale: 'vi' })
+      await chat.getByText('Bạn · Replay', { exact: true }).waitFor()
+      await page.evaluate(() => { history.pushState({}, '', '/?workspace=tenant-b&view=settings'); dispatchEvent(new PopStateEvent('popstate')) })
+      await chat.locator('.wm-ai-disclosure').filter({ hasText: 'Ngữ cảnh: Cài đặt.' }).waitFor()
+      await chat.getByText('Bạn · Replay', { exact: true }).waitFor()
+      await input.fill('Còn bây giờ?'); await input.press('Enter')
+      await page.waitForFunction(() => document.querySelectorAll('.wm-ai-message.is-assistant').length === 2)
+      assert.deepEqual(sends.at(-1).context, { screen: 'settings', locale: 'vi' })
+      assert.equal(sends.at(-1).messages.length, 3)
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false)
       checks.push('SPA workspace switch clears transcript/draft and cancels exact turn; Settings reveals page; Replay topbar opens chat without overflow')
     }

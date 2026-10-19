@@ -6397,13 +6397,45 @@
                         }
                       }
                     }
+                  },
+                  "context": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "screen",
+                      "locale"
+                    ],
+                    "properties": {
+                      "screen": {
+                        "enum": [
+                          "unknown",
+                          "overview",
+                          "replay",
+                          "trade",
+                          "analytics",
+                          "playbook",
+                          "learn",
+                          "settings",
+                          "market-data",
+                          "prop",
+                          "journal",
+                          "sessions"
+                        ]
+                      },
+                      "locale": {
+                        "enum": [
+                          "vi",
+                          "en"
+                        ]
+                      }
+                    }
                   }
                 }
               }
             }
           }
         },
-        "description": "Alternating user/assistant text, ending with user; max 48 KiB JSON. Uses current upstream model/effort selection. Returns promptly; poll by ID. In-memory result expires after 10 minutes or the next turn/API restart. No database history, page context, tools, agents or automatic retry."
+        "description": "Alternating user/assistant text, ending with user; max 48 KiB JSON. Optional enum-only screen/locale context (default unknown/vi), no chart/account data. Backend owns versioned assistant policy; response grounding identifies the exact submitted context. Uses current upstream model/effort selection. Returns promptly; poll by ID. In-memory result expires after 10 minutes or the next turn/API restart. No database history, tools, agents or automatic retry."
       }
     },
     "/api/v2/ai/chatgpt/chat/{id}": {

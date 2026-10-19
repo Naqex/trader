@@ -42,7 +42,7 @@ config.solAvailable = true;
 const account = new CoreAccount(config, async () => true, {present: () => true});
 const handler = createCoreHandler(config, {account, loginPresent: () => true, respond: async request => {
   const body = await request.json(); writeFileSync(CAPTURE, JSON.stringify(body));
-  if (body.input.at(-1).content === "WAIT") return await new Promise(resolve => {
+  if (JSON.parse(body.input.at(-1).content).user_message === "WAIT") return await new Promise(resolve => {
     const cancel = () => { writeFileSync(CANCELLED, "cancelled"); resolve(Response.json({status:"cancelled"})); };
     if (request.signal.aborted) cancel(); else request.signal.addEventListener("abort", cancel, {once:true});
   });
@@ -90,7 +90,9 @@ Bun.serve({hostname:"127.0.0.1",port:config.port,fetch:handler,idleTimeout:255})
                     assert api.poll() is None; time.sleep(.1)
             assert call(chat, 'POST', {'messages':[{'role':'user','content':'Hello'}]}, origin_header=False)[0] == 403
             assert call(chat, 'POST', {'messages':[], 'tools':[]})[0] == 422
-            code, turn = call(chat, 'POST', {'messages':[{'role':'user','content':'Hello'}]})
+            context = {'screen':'playbook','locale':'vi'}
+            assert call(chat, 'POST', {'messages':[{'role':'user','content':'Hello'}], 'context':{**context,'balance':1000}})[0] == 422
+            code, turn = call(chat, 'POST', {'messages':[{'role':'user','content':'Hello'}], 'context':context})
             assert code == 202, (code, turn)
             status_path = chat+'/'+turn['id']
             for _ in range(100):
@@ -100,13 +102,20 @@ Bun.serve({hostname:"127.0.0.1",port:config.port,fetch:handler,idleTimeout:255})
             assert result['status'] == 'completed' and result['text'] == 'Synthetic transport reply', result
             assert call(status_path, workspace='tenant-b')[0] == 404
             captured = json.loads((root/'capture.json').read_text(encoding='utf-8'))
-            assert captured['input'] == [{'role':'user','content':'Hello'}]
+            packed = json.loads(captured['input'][-1]['content'])
+            assert packed == {'app_context':{'schema_version':1,'source':'client-route', **context,'data_access':'none'},'user_message':'Hello'}
+            assert turn['grounding']['context'] == result['grounding']['context'] == context
+            assert result['grounding']['policy_version'] == 'wmreplay-chat-2026-10-19.1'
+            assert captured['instructions'] == (V2/'api-rust/src/ai-assistant-policy.md').read_bytes().decode('utf-8')
             assert captured['stream'] is False and captured['store'] is False
-            assert set(captured) == {'model','reasoning','input','instructions','stream','store'}
+            assert set(captured) == {'model','reasoning','input','instructions','stream','store','client_metadata'}
+            identity = captured['client_metadata']['x-codex-turn-metadata']
+            assert identity['thread_id'].startswith('core-')
+            assert captured['input'][-1]['internal_chat_message_metadata_passthrough']['turn_id'] == identity['turn_id']
             code, turn = call(chat, 'POST', {'messages':[{'role':'user','content':'WAIT'}]})
             assert code == 202
             for _ in range(100):
-                if json.loads((root/'capture.json').read_text(encoding='utf-8'))['input'][-1]['content'] == 'WAIT': break
+                if json.loads(json.loads((root/'capture.json').read_text(encoding='utf-8'))['input'][-1]['content'])['user_message'] == 'WAIT': break
                 time.sleep(.03)
             assert call(chat, 'POST', {'messages':[{'role':'user','content':'duplicate'}]})[0] == 409
             assert call('/api/v2/ai/chatgpt/account/disconnect', 'POST', {})[0] == 409

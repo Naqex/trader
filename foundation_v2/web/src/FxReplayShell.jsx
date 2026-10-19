@@ -645,7 +645,7 @@ export default function FxReplayShell({ children, workspace, query = currentQuer
           <NotificationProvider key={workspace}><div className="fx-content" tabIndex={0}>{children}</div></NotificationProvider>
         </section>
         {aiOpen && aiOverlay && <div className="wm-ai-backdrop" aria-hidden="true" onClick={closeAi} />}
-        {aiMounted && <AiChatPanel key={workspace} workspace={workspace} open={aiOpen} modal={aiOverlay} onClose={closeAi} settingsHref={buildWorkspaceHref('settings', workspace, query, { area: 'settings', section: null })} language={language} />}
+        {aiMounted && <AiChatPanel key={workspace} workspace={workspace} screen={activeView} open={aiOpen} modal={aiOverlay} onClose={closeAi} settingsHref={buildWorkspaceHref('settings', workspace, query, { area: 'settings', section: null })} language={language} />}
       </div>
     </FxReplayContext.Provider></TestingLocaleProvider>
   )

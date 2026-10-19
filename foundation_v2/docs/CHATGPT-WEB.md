@@ -104,11 +104,11 @@ upstream. Picker trong panel cập nhật cùng lựa chọn này. Chỉ mở pa
 trạng thái; nếu API vừa restart, bấm **Nạp kết nối đã lưu** để khởi động core
 riêng, không mở Chrome/login tự động. Nếu chưa đăng nhập, dùng liên kết Cài đặt.
 
-`POST /api/v2/ai/chatgpt/chat` nhận `{messages:[{role,content}]}` tối đa 48KiB,
+`POST /api/v2/ai/chatgpt/chat` nhận `{messages:[{role,content}],context?:{screen,locale}}` tối đa 48KiB,
 63 tin, user/assistant xen kẽ và kết thúc bằng user; trả 202 với ID tác vụ.
 `GET /api/v2/ai/chatgpt/chat/{id}` đọc trạng thái/kết quả;
 `DELETE` cùng URL hủy đúng tác vụ. Model/effort được backend đọc và kiểm tra
-với catalog trước khi gọi core. Không nhận tools, model override hoặc page state.
+với catalog trước khi gọi core. Không nhận tools, model override hoặc page state tự do.
 Một tác vụ trên core; thay đổi account bị khóa trong lúc chat. Backend giữ
 kết quả trong RAM để poll, không log nội dung, không cache HTTP. Kết quả hết
 khả năng truy cập sau 10 phút, tác vụ kế tiếp hoặc API restart. Transport chờ
@@ -136,3 +136,67 @@ synthetic, gồm gửi/poll, scope, khóa single-flight và cancel tới signal 
 `web/run_ai_chat_acceptance.mjs` kiểm giao diện bằng fixture 360/768/1368px,
 dark/light, focus, gửi nhiều lượt, picker, cancel, lỗi, disconnected/denied.
 Các fixture này không chứng minh model thật đã trả lời.
+
+## Vai trò và context của trợ lý
+
+Policy sản phẩm nằm ở `api-rust/src/ai-assistant-policy.md`, được đóng vào binary;
+phiên bản `wmreplay-chat-2026-10-19.1` trả trong `grounding.policy_version` của
+mỗi tác vụ. Backend giữ policy, frontend không được ghi đè. AI bám trading,
+WMREPLAY và các chủ đề liên quan như thống kê/code backtest/tâm lý giao dịch;
+chào hỏi tự nhiên, câu ngoài phạm vi được chuyển hướng ngắn. Không lọc bằng
+từ khóa hoặc thêm một model phân loại cho mỗi lượt.
+
+UI gửi thêm tên màn hình từ allowlist và locale vi/en. Đây là metadata route
+do client khai báo, không phải bằng chứng tài khoản hay authority. Không gửi URL,
+ID tài khoản/phiên/dataset, DOM, chart, balance, Equity hoặc PnL tự động. Copy
+trong panel công bố phạm vi này; tên màn hình được giữ cạnh câu hỏi lúc gửi,
+kể cả khi người dùng chuyển trang trong lúc đợi. Snapshot đó được trả nguyên
+trong `grounding.context`. Client cũ không gửi context nhận unknown/vi.
+
+Backend đóng gói snapshot và câu hỏi cuối thành JSON trong user message;
+không nối dữ liệu vào instructions. Lịch sử vẫn chỉ gồm cặp tin đã hoàn tất.
+Policy yêu cầu dùng snapshot mới nhất, hỏi dữ liệu còn thiếu, không giả nhìn
+thấy chart hay thực hiện thao tác. Không có quyền mở broker, lưu chiến lược
+hoặc gọi công cụ. Đây là context cho chat tư vấn; chưa triển khai context dữ
+liệu/version/hash và hành động nghiệp vụ thuộc U7.
+
+Browser core chuyển instructions và các role thành JSON/text trong ChatGPT Web,
+không có bảo đảm native API role hierarchy. Prompt giúp định hướng, không phải
+ranh giới bảo mật tuyệt đối. Quyền và field allowlist vẫn do Rust/core thực thi;
+model trả text không được thực thi. Giữ engine, upstream model và login hiện có.
+Core tự cấp identity nội bộ cho từng lượt để browser engine nhận quyền sở hữu
+lượt đúng; caller vẫn không được gửi metadata/identity của Codex.
+
+Thiết kế dựa trên [Prompt engineering](https://developers.openai.com/api/docs/guides/prompt-engineering),
+[Reasoning best practices](https://developers.openai.com/api/docs/guides/reasoning-best-practices)
+và [Safety in building agents](https://developers.openai.com/api/docs/guides/agent-builder-safety):
+vai trò/phạm vi rõ, dữ liệu tách khỏi hướng dẫn, thiếu dữ liệu thì nêu giới hạn,
+kiểm thử các tình huống mong muốn và các yêu cầu lệch phạm vi. Không áp dụng
+Agent Builder hay chuyển sang API từ các tài liệu tham khảo này.
+
+`scripts/fixtures/ai_chat_evals.json` giữ tám tình huống và tiêu chí review:
+ngoài chủ đề, chủ đề liên quan, câu nối tiếp/số tiền, thiếu dữ liệu, injection,
+giới hạn hành động, câu hỏi trộn chủ đề, đổi màn hình/ngôn ngữ. Chạy
+`python scripts/ai_chat_evals.py` từ foundation_v2 chỉ kiểm fixture;
+thêm `--live` mới gửi tám prompt giả định tới tài khoản/model đang chọn qua
+API local. Không đổi model, không retry/fallback hoặc mở login. Report lưu
+trong `.runtime/ai-chat-evals/report.json` sau mỗi case để review thủ công;
+hoàn tất transport không tự đánh dấu hành vi pass. Rerun khi thay policy,
+formatter core hoặc model; kết quả chỉ có giá trị với phiên bản/lựa chọn đã thử.
+
+Kiểm chứng ngày 19/10/2026: Rust 7 test, core typecheck + 16 test và 173 test
+transport, integration Rust → core và UI fixture 360/768/1368px dark/light đạt.
+UI kiểm thêm màn hình thay đổi trong cùng hội thoại, nhãn màn hình cũ vẫn giữ
+đúng câu hỏi, và lỗi model hiển thị rõ câu hỏi chưa gửi. Build web/release API
+đạt; main chunk web vẫn có cảnh báo kích thước sẵn có.
+
+Live eval **chưa xác minh hành vi model**: lần đầu phát hiện thiếu turn identity
+trong core gọn; đã sửa và kiểm regression bằng parser/ownership helper thật.
+Lần sau, GPT‑6 Sol/medium trả `model_version_unavailable` trước khi gửi prompt
+("could not be selected and verified"). Chưa kết luận là thiếu entitlement,
+lỗi ngôn ngữ hay UI selector thay đổi. Không đổi model/account language để
+né lỗi. Bộ tám case dừng ngay case đầu; không có câu trả lời model để chấm.
+Chi tiết local: `.runtime/ai-chat-evals/report.json`, `attempt-*.json` và
+`provider-diagnostic.json`. API chỉ xuất mã lỗi đã chuẩn hóa, không chuyển raw
+browser diagnostic/credential sang frontend. Tám fixture không được tính là
+tám behavioral pass; cần chạy lại khi chọn/xác minh model thật thành công.
