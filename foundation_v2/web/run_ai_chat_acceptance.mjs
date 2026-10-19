@@ -13,6 +13,13 @@ const models = [
   { id: 'chatgpt-web/gpt-6-sol-instant', name: 'GPT-6 Sol Instant', efforts: ['low'] },
 ]
 const account = { status: 'connected', models, selection: { model: models[0].id, effort: 'high' }, login_state_present: true, operation: null }
+async function assertFieldEdge(field, radius) {
+  const style = await field.evaluate(element => {
+    const value = getComputedStyle(element)
+    return { outline: value.outlineStyle, shadow: value.boxShadow, border: value.borderTopWidth, radius: value.borderRadius }
+  })
+  assert.deepEqual(style, { outline: 'none', shadow: 'none', border: '1px', radius }, 'a field has one border and no extra focus ring or inset shadow')
+}
 try {
   if (process.env.TW_CHATGPT_CHAT_LIVE_UI === '1') {
     const context = await browser.newContext({ viewport: { width: 1368, height: 790 } })
@@ -98,6 +105,19 @@ try {
       checks.push('Desktop: pointer drag and keyboard resize, 360px minimum, main content >=620px, viewport resize clamp')
     } else assert.equal(await chat.getByRole('separator').count(), 0)
     const input = chat.getByRole('textbox', { name: 'Tin nhắn cho AI' })
+    const composerStyle = await input.evaluate(element => {
+      const value = getComputedStyle(element)
+      return { outline: value.outlineStyle, shadow: value.boxShadow, border: value.borderTopWidth }
+    })
+    assert.deepEqual(composerStyle, { outline: 'none', shadow: 'none', border: '0px' }, 'composer supplies the only input edge')
+    assert.equal(await chat.locator('.wm-ai-composer').evaluate(element => getComputedStyle(element).borderRadius), '12px')
+    assert.equal(await chat.locator('.wm-ai-disclosure,.wm-ai-history-note').count(), 0, 'no redundant copy below the composer or history')
+    await input.fill('Kiểm tra trạng thái nút')
+    const send = chat.getByRole('button', { name: 'Gửi tin nhắn' })
+    const actionColor = await send.evaluate(element => getComputedStyle(element).backgroundColor)
+    await send.hover()
+    assert.notEqual(await send.evaluate(element => getComputedStyle(element).backgroundColor), actionColor, 'action hover uses its separate design-system color')
+    await input.fill('')
     await input.fill('Giải thích expectancy bằng một ví dụ đơn giản.')
     await input.press('Enter')
     await chat.getByText('Đây là phản hồi kiểm thử giao diện.', { exact: true }).waitFor()
@@ -170,13 +190,16 @@ try {
     await chat.getByRole('button', { name: 'Cuộc trò chuyện mới' }).click()
     await chat.getByRole('button', { name: 'Cài đặt trợ lý', exact: true }).click()
     dialog = page.getByRole('dialog', { name: 'Cài đặt trợ lý', exact: true })
+    await assertFieldEdge(dialog.getByRole('textbox', { name: 'Tên', exact: true }), '8px')
     await dialog.getByRole('textbox', { name: 'Tên', exact: true }).fill('Mentor WM')
+    await assertFieldEdge(dialog.getByRole('textbox', { name: 'Tên', exact: true }), '8px')
     await dialog.getByRole('textbox', { name: 'Mô tả', exact: true }).fill('Cùng tìm hiểu trading và kiểm thử chiến lược.')
+    await assertFieldEdge(dialog.getByRole('textbox', { name: 'Mô tả', exact: true }), '8px')
     assert.equal(await dialog.getByRole('textbox', { name: 'Hướng dẫn trả lời' }).getAttribute('readonly'), '')
     assert.ok((await dialog.getByRole('textbox', { name: 'Hướng dẫn trả lời' }).inputValue()).includes('Bạn là trợ lý trading của WMREPLAY'))
+    await page.screenshot({ path: path.join(evidence, `settings-dark-${width}.png`) })
     await dialog.getByRole('button', { name: 'Xác nhận' }).focus(); await page.keyboard.press('Tab')
     assert.equal(await page.evaluate(() => document.activeElement.closest('dialog') !== null), true, 'settings traps focus on desktop and mobile')
-    await page.screenshot({ path: path.join(evidence, `settings-dark-${width}.png`) })
     await dialog.getByRole('button', { name: 'Xác nhận' }).click()
     await chat.getByRole('heading', { name: 'Mentor WM', level: 3 }).waitFor()
     await chat.getByText('Cùng tìm hiểu trading và kiểm thử chiến lược.', { exact: true }).waitFor()
@@ -193,6 +216,7 @@ try {
     await page.screenshot({ path: path.join(evidence, `history-light-${width}.png`) })
     await chat.getByRole('button', { name: 'Chat gần đây', exact: true }).click()
     await chat.getByRole('button', { name: 'Cài đặt trợ lý', exact: true }).click()
+    await assertFieldEdge(page.getByRole('dialog', { name: 'Cài đặt trợ lý', exact: true }).getByRole('textbox', { name: 'Tên', exact: true }), '8px')
     await page.screenshot({ path: path.join(evidence, `settings-light-${width}.png`) })
     await page.keyboard.press('Escape')
     if (width <= 1100) {
@@ -239,7 +263,7 @@ try {
       assert.deepEqual(sends.at(-1).context, { screen: 'replay', locale: 'vi' })
       await chat.getByText('Bạn · Replay', { exact: true }).waitFor()
       await page.evaluate(() => { history.pushState({}, '', '/?workspace=tenant-b&view=settings'); dispatchEvent(new PopStateEvent('popstate')) })
-      await chat.locator('.wm-ai-disclosure').filter({ hasText: 'Ngữ cảnh: Cài đặt.' }).waitFor()
+      await page.waitForURL('**/*view=settings*')
       await chat.getByText('Bạn · Replay', { exact: true }).waitFor()
       await input.fill('Còn bây giờ?'); await input.press('Enter')
       await page.waitForFunction(() => document.querySelectorAll('.wm-ai-message.is-assistant').length === 2)
@@ -248,7 +272,7 @@ try {
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false)
       checks.push('SPA workspace switch clears transcript/draft and cancels exact turn; Settings reveals page; Replay topbar opens chat without overflow')
     }
-    checks.push(`${width}px: welcome/history/settings dark+light, rename/delete/open chats, isolated completed history, modal focus/Escape, upstream model/effort, send/cancel/error, disconnected/denied, no carousel/Create agent, no overflow or page errors`)
+    checks.push(`${width}px: design-system field radii + single focus border, action hover, no redundant footer copy, welcome/history/settings dark+light, rename/delete/open chats, isolated completed history, modal focus/Escape, upstream model/effort, send/cancel/error, disconnected/denied, no carousel/Create agent, no overflow or page errors`)
     await context.close()
   }
   await writeFile(path.join(evidence, 'report.json'), JSON.stringify({ scope: 'UI fixtures only; no real ChatGPT request', checks }, null, 2))

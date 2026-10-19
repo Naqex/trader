@@ -59,7 +59,7 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
   const stopRequested = useRef(false)
   const submitting = useRef(false)
 
-  const description = mentor.description || say(`Mình là ${mentor.name}. Mình có thể giúp bạn tìm hiểu trading, backtest và cách dùng WMREPLAY.`, `I'm ${mentor.name}. I can help you learn about trading, backtesting and using WMREPLAY.`)
+  const description = mentor.description || say('Cùng tìm hiểu trading, backtest và WMREPLAY.', 'Explore trading, backtesting and WMREPLAY.')
   const currentChat = { id: chatId, title: chatTitle || messages[0]?.content.slice(0, 90), messages, draft, error, cancelled }
   const chats = messages.length ? [currentChat, ...savedChats.filter(item => item.id !== chatId)] : savedChats
   function archiveCurrent() {
@@ -129,7 +129,7 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
   function errorCopy(code) {
     if (code === 'chatgpt_busy') return say('ChatGPT đang bận. Chờ tác vụ hiện tại hoàn tất rồi gửi lại.', 'ChatGPT is busy. Wait for the active task before sending again.')
     if (code === 'chatgpt_login_required') return say('Bạn cần đăng nhập ChatGPT trong Cài đặt.', 'Connect ChatGPT in Settings first.')
-    if (code === 'chatgpt_model_unavailable') return say('Chưa chọn và xác minh được model trên ChatGPT Web. Câu hỏi chưa được gửi. Kiểm tra model trong Cài đặt AI; ứng dụng không tự đổi model.', 'The model could not be selected and verified on ChatGPT Web. Your question was not sent. Check the model in AI settings; the app does not switch models automatically.')
+    if (code === 'chatgpt_model_unavailable') return say('Câu hỏi chưa được gửi. Chưa xác minh được model trên ChatGPT Web. Kiểm tra Cài đặt AI.', 'Your question was not sent. The model could not be verified on ChatGPT Web. Check AI settings.')
     if (code === 'chatgpt_turn_not_found') return say('Phản hồi không còn trên máy chủ. Cuộc trò chuyện vẫn ở đây; bạn có thể bắt đầu lại.', 'This response is no longer on the server. You can start a new chat.')
     if (code === 'chatgpt_timeout') return say('Đã hết thời gian chờ phản hồi. Kiểm tra kết nối trước khi gửi lại.', 'The response timed out. Check your connection before sending again.')
     if (code === 'workspace_access_denied' || code === 'trusted_identity_missing') return say('Workspace này chưa được cấp quyền dùng AI.', 'This workspace does not have AI access.')
@@ -279,7 +279,7 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
         <button type="button" disabled={busy} aria-pressed={!historyOpen && !messages.length} onClick={newChat} aria-label={say('Cuộc trò chuyện mới', 'New chat')} title={say('Cuộc trò chuyện mới', 'New chat')}><ChatIcon name="new" /></button>
       </div>
       <div className="wm-ai-identity"><button type="button" onClick={event => showDialog({ type: 'settings', ...mentor }, event.currentTarget)} aria-label={say('Cài đặt trợ lý', 'Assistant settings')} title={say('Cài đặt trợ lý', 'Assistant settings')}><ChatIcon name="settings" /></button><h2 id="wm-ai-title">{mentor.name}</h2></div>
-      <button type="button" data-chat-close onClick={onClose} aria-label={say('Đóng chat AI', 'Close AI chat')} title={say('Đóng chat AI', 'Close AI chat')}><ChatIcon name="close" /></button>
+      <button type="button" className="wm-dialog-close" data-chat-close onClick={onClose} aria-label={say('Đóng chat AI', 'Close AI chat')} title={say('Đóng chat AI', 'Close AI chat')}><ChatIcon name="close" /></button>
     </header>
     {historyOpen && <section className="wm-ai-history" aria-labelledby="wm-ai-history-title">
       <h3 id="wm-ai-history-title"><ChatIcon name="clock" />{say('Chat gần đây', 'Recent chats')}</h3>
@@ -289,7 +289,6 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
         <button type="button" className="wm-ai-history-delete" disabled={busy} aria-label={`${say('Xóa chat', 'Delete chat')}: ${item.title}`} onClick={event => showDialog({ type: 'delete', id: item.id, name: item.title }, event.currentTarget)}><ChatIcon name="delete" /></button>
         <button type="button" className="wm-ai-history-edit" disabled={busy} aria-label={`${say('Đổi tên chat', 'Rename chat')}: ${item.title}`} onClick={event => showDialog({ type: 'rename', id: item.id, name: item.title }, event.currentTarget)}><ChatIcon name="edit" /></button>
       </li>)}</ul>
-      <p className="wm-ai-history-note">{say('Chat được giữ trong tab này và sẽ xóa khi tải lại trang.', 'Chats stay in this tab and clear when you reload.')}</p>
       {busy && <button className="wm-ai-history-return" type="button" onClick={() => setHistoryOpen(false)}>{say('Quay lại chat đang chờ', 'Return to active chat')} →</button>}
     </section>}
     <div className="wm-ai-body" hidden={historyOpen}>
@@ -304,7 +303,7 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
       {loading ? <p className="wm-ai-note" role="status">{say('Đang đọc kết nối…', 'Checking connection…')}</p> : !connected && <div className="wm-ai-connect"><p>{account?.operation ? say('Hoàn tất đăng nhập hoặc kiểm tra trong Cài đặt.', 'Finish login or the connection test in Settings.') : say('Kết nối ChatGPT để bắt đầu trò chuyện.', 'Connect ChatGPT to start chatting.')}</p>{account?.status === 'stopped' && <button type="button" disabled={changing} onClick={() => changeAccount('start')}>{say('Nạp kết nối đã lưu', 'Load saved connection')}</button>}<a href={settingsHref} onClick={onClose}>{say('Mở Cài đặt AI', 'Open AI settings')} ↗</a>{!account && <button type="button" disabled={loading} onClick={() => void loadAccount(new AbortController().signal)}>{say('Thử kết nối lại', 'Refresh connection')}</button>}</div>}
       <form className="wm-ai-composer" onSubmit={send}>
         <label className="wm-ai-sr" htmlFor="wm-ai-input">{say('Tin nhắn cho AI', 'Message AI')}</label>
-        <textarea id="wm-ai-input" ref={composer} value={draft} onChange={event => setDraft(event.target.value)} disabled={!connected || changing} maxLength={16000} placeholder={say('Bạn muốn hỏi điều gì?', 'What would you like to ask?')} rows={3} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void send(event) } }} />
+        <textarea id="wm-ai-input" ref={composer} value={draft} onChange={event => setDraft(event.target.value)} disabled={!connected || changing} maxLength={16000} placeholder={say('Hỏi Mentor…', 'Ask Mentor…')} rows={2} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void send(event) } }} />
         <div className="wm-ai-composer-footer">
           <div className="wm-ai-models">{connected ? <>
             <FxSelect label={say('Model AI', 'AI model')} value={account.selection.model} disabled={busy || changing} options={account.models.map(item => ({ value: item.id, label: item.name, localize: false }))} onChange={value => { const next = account.models.find(item => item.id === value); void changeAccount('selection', { model: value, effort: next.efforts.includes('high') ? 'high' : next.efforts[0] }) }} />
@@ -313,17 +312,16 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
           {busy ? <button type="button" className="wm-ai-send" onClick={stop} aria-label={say('Dừng phản hồi', 'Stop response')} title={say('Dừng phản hồi', 'Stop response')}><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" /></svg></button> : <button type="submit" className="wm-ai-send" disabled={!draft.trim() || !connected || changing} aria-label={say('Gửi tin nhắn', 'Send message')} title={say('Gửi tin nhắn', 'Send message')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6" /></svg></button>}
         </div>
       </form>
-      <p className="wm-ai-disclosure">{say(`Ngữ cảnh: ${screenName(currentScreen)}. Gửi hội thoại, tên màn hình và ngôn ngữ; chưa gửi chart hay số liệu tài khoản. Hội thoại lưu tạm trong trang.`, `Context: ${screenName(currentScreen)}. Sends chat, screen name and language; no chart or account figures. Chat stays in this page temporarily.`)}</p>
     </div>
     </div>
     {open && dialog && <dialog className="wm-ai-settings" ref={dialogRef} aria-labelledby="wm-ai-dialog-title" onCancel={event => { event.preventDefault(); closeDialog() }} onClick={event => { if (event.target === event.currentTarget) { const box = event.currentTarget.getBoundingClientRect(); if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) closeDialog() } }}>
       <form onSubmit={saveDialog}>
-        <header><h3 id="wm-ai-dialog-title">{dialog.type === 'settings' ? say('Cài đặt trợ lý', 'Assistant settings') : dialog.type === 'rename' ? say('Đổi tên chat', 'Rename chat') : say('Xóa cuộc trò chuyện?', 'Delete conversation?')}</h3><button type="button" onClick={closeDialog} aria-label={say('Đóng hộp thoại', 'Close dialog')}><ChatIcon name="close" /></button></header>
+        <header><h3 id="wm-ai-dialog-title">{dialog.type === 'settings' ? say('Cài đặt trợ lý', 'Assistant settings') : dialog.type === 'rename' ? say('Đổi tên chat', 'Rename chat') : say('Xóa cuộc trò chuyện?', 'Delete conversation?')}</h3><button type="button" className="wm-dialog-close" onClick={closeDialog} aria-label={say('Đóng hộp thoại', 'Close dialog')}><ChatIcon name="close" /></button></header>
         {dialog.type === 'delete' ? <p className="wm-ai-delete-copy">{dialog.name}</p> : <label>{say('Tên', 'Name')}<input autoFocus required maxLength={dialog.type === 'settings' ? 40 : 90} value={dialog.name} onChange={event => setDialog(value => ({ ...value, name: event.target.value }))} /></label>}
         {dialog.type === 'settings' && <>
           <label>{say('Mô tả', 'Description')}<textarea rows={2} maxLength={240} placeholder={description} value={dialog.description} onChange={event => setDialog(value => ({ ...value, description: event.target.value }))} /></label>
           <label>{say('Hướng dẫn trả lời', 'Instructions')}<textarea className="wm-ai-instructions" rows={7} readOnly value={assistantPolicy} aria-describedby="wm-ai-policy-note" /></label>
-          <p id="wm-ai-policy-note">{say('Hướng dẫn hiện tại chỉ để xem. Tên và mô tả chỉ đổi phần hiển thị trong tab này.', 'Current instructions are read-only. Name and description change the display in this tab only.')}</p>
+          <p id="wm-ai-policy-note">{say('Chỉ tùy chỉnh hiển thị. Chat lưu trong tab, chưa đọc biểu đồ hay tài khoản.', 'Display settings only. Chats stay in this tab; no chart or account data is read.')}</p>
           <a href={settingsHref} onClick={() => { setDialog(null); onClose() }}>{say('Kết nối ChatGPT và chọn model', 'ChatGPT connection and model settings')} ↗</a>
         </>}
         <footer><button type="button" onClick={closeDialog}>{say('Hủy', 'Cancel')}</button><button className={dialog.type === 'delete' ? 'is-danger' : 'is-primary'} type="submit" disabled={dialog.type !== 'delete' && !dialog.name.trim()}>{dialog.type === 'delete' ? say('Xóa', 'Delete') : say('Xác nhận', 'Confirm')}</button></footer>

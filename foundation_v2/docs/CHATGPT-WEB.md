@@ -163,8 +163,8 @@ từ khóa hoặc thêm một model phân loại cho mỗi lượt.
 
 UI gửi thêm tên màn hình từ allowlist và locale vi/en. Đây là metadata route
 do client khai báo, không phải bằng chứng tài khoản hay authority. Không gửi URL,
-ID tài khoản/phiên/dataset, DOM, chart, balance, Equity hoặc PnL tự động. Copy
-trong panel công bố phạm vi này; tên màn hình được giữ cạnh câu hỏi lúc gửi,
+ID tài khoản/phiên/dataset, DOM, chart, balance, Equity hoặc PnL tự động. Thông tin
+trong cài đặt trợ lý công bố phạm vi này; tên màn hình được giữ cạnh câu hỏi lúc gửi,
 kể cả khi người dùng chuyển trang trong lúc đợi. Snapshot đó được trả nguyên
 trong `grounding.context`. Client cũ không gửi context nhận unknown/vi.
 
