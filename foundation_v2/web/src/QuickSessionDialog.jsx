@@ -235,7 +235,7 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
           event.preventDefault(); const next = event.key === 'Home' ? 'backtest' : event.key === 'End' ? 'prop' : mode === 'backtest' ? 'prop' : 'backtest'; setMode(next); document.getElementById(`${id}-${next}`).focus()
         }}>{label}</button>)}</div>}
       {!presetEditor && <SessionPresetMenu items={presets} selected={activePreset} disabled={busy || presetLoading || problem?.uncertain || data.status !== 'ready'} onApply={applyPreset} onCreate={() => editPreset(null)} onEdit={editPreset} onDelete={removePreset} />}
-      <button type="button" className="quick-session-close wm-dialog-close" aria-label={t('Đóng tạo phiên')} disabled={busy} onClick={close}>×</button>
+      <button type="button" className="quick-session-close wm-dialog-close" aria-label={t('Đóng tạo phiên')} disabled={busy} onClick={close}><TestingIcon kind="close" size={18} /></button>
     </header>
     <form noValidate onSubmit={create} className="quick-session-form">
       <div className={`quick-session-layout${presetEditor ? ' is-preset-editor' : ''}`}>
