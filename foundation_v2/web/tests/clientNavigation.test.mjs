@@ -79,3 +79,15 @@ test('replace preserves existing history state; native hash movement neither rem
   assert.equal(navigationSearch(), new URL(base).search)
   stop()
 })
+
+test('live strategy filters preserve the reader; exact strategy resources still reset other pages', () => {
+  const base = new URLSearchParams('workspace=a&view=live&area=live&section=trades&live_account=usd')
+  const filtered = new URLSearchParams(base)
+  filtered.set('playbook','london'); filtered.set('playbook_revision','2')
+  assert.equal(navigationScope(base,'live'), navigationScope(filtered,'live'))
+  filtered.set('live_account','eur')
+  assert.equal(navigationScope(base,'live'), navigationScope(filtered,'live'))
+  for (const view of ['playbook','replay','analytics']) {
+    assert.notEqual(navigationScope(base,view), navigationScope(filtered,view),view)
+  }
+})

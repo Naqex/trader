@@ -32,3 +32,13 @@ test('unknown costs stop cumulative totals instead of bridging a misleading curv
  const series=cumulativeDealSeries([deals[0],{...deals[1],fee:null},{...deals[1],time_msc:Date.parse('2026-10-06T01:00:00Z')}])
  assert.deepEqual(series.map(x=>x.value),[95,null,null])
 })
+
+test('outcome filters use the same break-even tolerance as closed-trade statistics', () => {
+ const values = [-2e-12,-1e-12,0,1e-12,2e-12]
+ const source = {...payload,deals:values.map((value,index)=>makeDeal(String(index),'2026-10-05T09:00:00Z',value))}
+ source.deals.push({...source.deals[0],ticket:'unknown',fee:null})
+ assert.deepEqual(filterLiveDeals(source,{...LIVE_FILTERS,outcome:'flat'}).map(deal=>deal.profit),[-1e-12,0,1e-12])
+ assert.deepEqual(filterLiveDeals(source,{...LIVE_FILTERS,outcome:'gain'}).map(deal=>deal.profit),[2e-12])
+ assert.deepEqual(filterLiveDeals(source,{...LIVE_FILTERS,outcome:'loss'}).map(deal=>deal.profit),[-2e-12])
+ assert.equal(source.deals.length,6)
+})

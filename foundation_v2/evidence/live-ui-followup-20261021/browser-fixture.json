@@ -1,0 +1,280 @@
+{
+  "api": "http://127.0.0.1:18011",
+  "pid": 11028,
+  "postgres_pid": 7736,
+  "stop_file": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\.runtime\\live-ui-followup.stop",
+  "synthetic": true,
+  "strategies": [
+    {
+      "created_at_utc": "2026-10-20T22:55:19.610952Z",
+      "deleted": false,
+      "payload": {
+        "execution_capability": "manual-only",
+        "name": "Xu hướng London (QA)",
+        "parent_playbook_id": null,
+        "parent_revision": null,
+        "rules": {
+          "manual_notes": {
+            "context": "Synthetic QA only",
+            "entry": "Đóng nến vượt đỉnh rồi retest.",
+            "exit": "Đạt 2R hoặc chạm cắt lỗ.",
+            "notes": "Không gửi broker.",
+            "risk": "0.5%"
+          }
+        },
+        "status": "frozen",
+        "strategy_spec": null
+      },
+      "record_id": "40e0cf43f69444da83aba66765898f69",
+      "revision": 2,
+      "source_key": null,
+      "updated_at_utc": "2026-10-20T22:55:19.660355Z"
+    },
+    {
+      "created_at_utc": "2026-10-20T22:55:19.643039Z",
+      "deleted": false,
+      "payload": {
+        "execution_capability": "manual-only",
+        "name": "Đảo chiều New York (QA)",
+        "parent_playbook_id": null,
+        "parent_revision": null,
+        "rules": {
+          "manual_notes": {
+            "context": "Synthetic QA only",
+            "entry": "Nến xác nhận tại vùng H1.",
+            "exit": "Đạt 2R hoặc chạm cắt lỗ.",
+            "notes": "Không gửi broker.",
+            "risk": "0.5%"
+          }
+        },
+        "status": "draft",
+        "strategy_spec": null
+      },
+      "record_id": "4ac3db3bbb794f478e655202357e7519",
+      "revision": 1,
+      "source_key": null,
+      "updated_at_utc": "2026-10-20T22:55:19.643039Z"
+    }
+  ],
+  "accounts": [
+    {
+      "created_at_utc": "2026-10-20T22:55:19.677287Z",
+      "kind": "account",
+      "payload": {
+        "currency": "USD",
+        "name": "Tài khoản USD (QA)",
+        "opening_balance": "10000.00"
+      },
+      "record_id": "41062fde-31b0-45da-9911-1ed9ddb87995",
+      "revision": 1,
+      "updated_at_utc": "2026-10-20T22:55:19.677303Z"
+    },
+    {
+      "created_at_utc": "2026-10-20T22:55:19.691754Z",
+      "kind": "account",
+      "payload": {
+        "currency": "EUR",
+        "name": "Tài khoản EUR (QA)",
+        "opening_balance": "5000"
+      },
+      "record_id": "96dda0fa-d768-43ae-a6f2-1b0ad5965f13",
+      "revision": 1,
+      "updated_at_utc": "2026-10-20T22:55:19.691760Z"
+    }
+  ],
+  "trades": [
+    {
+      "created_at_utc": "2026-10-20T22:55:19.707845Z",
+      "kind": "trade",
+      "payload": {
+        "account_id": "41062fde-31b0-45da-9911-1ed9ddb87995",
+        "closed_at_utc": "2026-10-01T11:00:00Z",
+        "commission": "-2",
+        "entry_price": "1.1",
+        "exit_price": "1.11",
+        "fee": "-0.5",
+        "gross_pnl": "200",
+        "note": "Giao dịch giả lập để kiểm tra.",
+        "opened_at_utc": "2026-10-01T10:00:00Z",
+        "playbook_id": "40e0cf43f69444da83aba66765898f69",
+        "playbook_revision": 2,
+        "quantity": "0.10",
+        "side": "BUY",
+        "swap": "-1",
+        "symbol": "EURUSD",
+        "tags": [
+          "London"
+        ]
+      },
+      "record_id": "684b3389-b575-4da2-a4f0-69d702cb5a0e",
+      "revision": 1,
+      "updated_at_utc": "2026-10-20T22:55:19.709312Z"
+    },
+    {
+      "created_at_utc": "2026-10-20T22:55:19.723933Z",
+      "kind": "trade",
+      "payload": {
+        "account_id": "41062fde-31b0-45da-9911-1ed9ddb87995",
+        "closed_at_utc": "2026-10-02T11:00:00Z",
+        "commission": "-2",
+        "entry_price": "1.1",
+        "exit_price": "1.11",
+        "fee": "-0.5",
+        "gross_pnl": "-100",
+        "note": "Giao dịch giả lập để kiểm tra.",
+        "opened_at_utc": "2026-10-02T10:00:00Z",
+        "playbook_id": "4ac3db3bbb794f478e655202357e7519",
+        "playbook_revision": 1,
+        "quantity": "0.10",
+        "side": "SELL",
+        "swap": "0",
+        "symbol": "EURUSD",
+        "tags": [
+          "New York"
+        ]
+      },
+      "record_id": "41705684-9b5b-45a8-82cf-3d1435ada378",
+      "revision": 1,
+      "updated_at_utc": "2026-10-20T22:55:19.725143Z"
+    },
+    {
+      "created_at_utc": "2026-10-20T22:55:19.753171Z",
+      "kind": "trade",
+      "payload": {
+        "account_id": "41062fde-31b0-45da-9911-1ed9ddb87995",
+        "closed_at_utc": "2026-10-03T11:00:00Z",
+        "commission": "0",
+        "entry_price": "1.1",
+        "exit_price": "1.11",
+        "fee": "0",
+        "gross_pnl": "0",
+        "note": "Giao dịch giả lập để kiểm tra.",
+        "opened_at_utc": "2026-10-03T10:00:00Z",
+        "playbook_id": "40e0cf43f69444da83aba66765898f69",
+        "playbook_revision": 2,
+        "quantity": "0.10",
+        "side": "BUY",
+        "swap": "0",
+        "symbol": "EURUSD",
+        "tags": [
+          "London"
+        ]
+      },
+      "record_id": "5e71d961-283f-4354-a394-d357efe8f4d8",
+      "revision": 1,
+      "updated_at_utc": "2026-10-20T22:55:19.754420Z"
+    },
+    {
+      "created_at_utc": "2026-10-20T22:55:19.768917Z",
+      "kind": "trade",
+      "payload": {
+        "account_id": "96dda0fa-d768-43ae-a6f2-1b0ad5965f13",
+        "closed_at_utc": "2026-10-04T11:00:00Z",
+        "commission": "-1",
+        "entry_price": "1.1",
+        "exit_price": "1.11",
+        "fee": "0",
+        "gross_pnl": "50",
+        "note": "Giao dịch giả lập để kiểm tra.",
+        "opened_at_utc": "2026-10-04T10:00:00Z",
+        "playbook_id": "4ac3db3bbb794f478e655202357e7519",
+        "playbook_revision": 1,
+        "quantity": "0.10",
+        "side": "SELL",
+        "swap": "0",
+        "symbol": "EURUSD",
+        "tags": [
+          "New York"
+        ]
+      },
+      "record_id": "627468f0-48df-4aaa-87cd-36e870fe762e",
+      "revision": 1,
+      "updated_at_utc": "2026-10-20T22:55:19.770251Z"
+    }
+  ],
+  "note": {
+    "created_at_utc": "2026-10-20T22:55:19.784388Z",
+    "kind": "note",
+    "payload": {
+      "account_id": "41062fde-31b0-45da-9911-1ed9ddb87995",
+      "note": "USD: PnL ròng 94; số dư cuối 10094. EUR riêng: PnL 49.",
+      "playbook_id": null,
+      "playbook_revision": null,
+      "tags": [
+        "Review"
+      ],
+      "title": "Nhật ký kiểm chứng (QA)"
+    },
+    "record_id": "4a54f84c-5a77-42ef-bf6f-b12c144ddd76",
+    "revision": 1,
+    "updated_at_utc": "2026-10-20T22:55:19.784895Z"
+  },
+  "replay": {
+    "canonical_cursor_index": 0,
+    "created_at_utc": "2026-10-20T22:55:19.822107Z",
+    "cutoff_timestamp": 1767225600,
+    "dataset_sha256": "cc295fce61a7dea17019b89cba848f43e78a5761c0ea586a9c20b3e4c85ecaf4",
+    "deleted": false,
+    "execution_capabilities": {
+      "conditional_orders": true,
+      "partial_close": true,
+      "partial_take_profit": true
+    },
+    "execution_view_status": "not_initialized",
+    "has_future_rows": true,
+    "historical_view": false,
+    "history_view_version": "replay-history-v1",
+    "payload": {
+      "branch_id": "fcdeba8389a6464290b92a4e501c2dd0",
+      "chart_engine": "legacy",
+      "cursor_index": 0,
+      "dataset_id": "live-strategy-audit-eur",
+      "name": "Luyện tập chiến lược (QA)",
+      "parent_revision": null,
+      "parent_session_id": null,
+      "playbook_id": "40e0cf43f69444da83aba66765898f69",
+      "playbook_revision": 2,
+      "starting_balance": "10000",
+      "starting_balance_ccy": "USD",
+      "status": "paused",
+      "timing": {
+        "historical_time_replayed_seconds": 0,
+        "legacy_baseline": false,
+        "schema_version": "replay-timing-v1",
+        "started_at_utc": "2026-10-20T22:55:19.821390Z"
+      }
+    },
+    "record_id": "0d641af6e5ff4f3b97867b264c412de1",
+    "revision": 1,
+    "source_key": null,
+    "step_view_version": "replay-step-v1",
+    "total_row_count": 6500,
+    "updated_at_utc": "2026-10-20T22:55:19.822107Z",
+    "view_cursor_index": 0,
+    "visible_row_count": 1,
+    "visible_row_start": 0,
+    "visible_rows": [
+      {
+        "close": 1.10005,
+        "high": 1.10015,
+        "low": 1.09985,
+        "open": 1.1,
+        "timestamp": 1767225600,
+        "volume": 100
+      }
+    ]
+  },
+  "dataset": "live-strategy-audit-eur",
+  "expected": {
+    "USD": {
+      "net_pnl": 94,
+      "closed_balance": 10094,
+      "closed_trades": 3
+    },
+    "EUR": {
+      "net_pnl": 49,
+      "closed_balance": 5049,
+      "closed_trades": 1
+    }
+  }
+}

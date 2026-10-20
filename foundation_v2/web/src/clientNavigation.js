@@ -90,7 +90,8 @@ export function navigationScope(query, activeView) {
     : activeView === 'replay' ? picker ? 'picker' : 'chart'
       : activeView === 'analytics' ? analytics
         : activeView === 'trade' ? query.get('intent') === 'order' ? 'order' : 'ledger' : 'page'
-  const resources = ['dataset', 'prop_session', 'prop_attempt', 'attempt', 'playbook', 'playbook_revision'].map(key => query.get(key) || '')
+  // Live uses the playbook query as a filter, not a new reader/resource.
+  const resources = ['dataset', 'prop_session', 'prop_attempt', 'attempt', ...(activeView === 'live' ? [] : ['playbook', 'playbook_revision'])].map(key => query.get(key) || '')
   return JSON.stringify([
     workspace, activeView, query.get('area') || '', query.get('section') || '', surface,
     query.get('demo') === '1', query.get('ui_state') || '', query.get('session') || query.get('replay_session') || '',

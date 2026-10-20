@@ -85,9 +85,21 @@ This journal never submits an order or authenticates a broker provider.
   name is not in the current catalog uses a version reference, never the new name.
 - Account changes clear account-specific tags and basic filters. Same-account
   refresh retains selections; section links preserve `live_account` only in Live.
+- Account and strategy selections follow the URL, including Back/Forward. Account
+  changes create history entries; strategy filters replace the current entry and
+  do not remount the reader or clear other applied filters. Manual strategy/tag
+  filters do not hide broker fills when switching sources.
 - Notes support account/general scope, search and tag filters. Monthly review
   creates an editable note from the displayed recorded monthly total. Tag analytics
   allows overlapping tags; its groups must not be added together as a total.
+- Note tag options come from account-scoped notes before text search, so an active
+  tag stays visible when search returns no matches. A catalog/read refresh failure
+  keeps loaded notes readable in a shared read-only dialog; writes remain blocked.
+  Denial clears notes, including any open read-only detail. A new note without a
+  manual account defaults to general scope, not the first unrelated manual account.
+- Monthly review includes account, timezone, strategy/tag scope and applied filters,
+  and pins the selected strategy revision. Unknown monthly PnL cannot create a
+  summary. Recorded manual trades and synced broker deals remain distinct in copy.
 
 CSV uses the downloadable 13-column UTC template. It imports 1–500 closed trades,
 at most 1 MB. All rows are validated before submission (numbers, dates, text and

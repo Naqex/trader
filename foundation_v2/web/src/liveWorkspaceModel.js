@@ -19,7 +19,7 @@ export function filterLiveDeals(payload, filters = LIVE_FILTERS) {
     const day = dayKey(deal.time_msc, filters.timezone), net = dealNet(deal)
     return (filters.asset === 'all' || deal.symbol === filters.asset)
       && (filters.side === 'all' || deal.type === Number(filters.side))
-      && (filters.outcome === 'all' || net !== null && (filters.outcome === 'gain' ? net > 0 : filters.outcome === 'loss' ? net < 0 : net === 0))
+      && (filters.outcome === 'all' || net !== null && (filters.outcome === 'gain' ? net > 1e-12 : filters.outcome === 'loss' ? net < -1e-12 : Math.abs(net) <= 1e-12))
       && (filters.day === 'all' || day && new Date(`${day}T00:00:00Z`).getUTCDay() === Number(filters.day))
       && (!filters.from || day >= filters.from) && (!filters.to || day <= filters.to)
   })

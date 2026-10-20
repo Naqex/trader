@@ -13,7 +13,7 @@ export function downloadLiveCsv(records = [], name = 'wmreplay-trades.csv') {
 
 export default function LiveRecordDialog({ workspace, kind, accounts, strategies, accountId, record, seed, onClose, onSaved }) {
   const initial = record?.payload || seed || {}
-  const [draft, setDraft] = useState({ name: '', currency: 'USD', opening_balance: '10000', account_id: accountId || accounts[0]?.record_id || '',
+  const [draft, setDraft] = useState({ name: '', currency: 'USD', opening_balance: '10000', account_id: accountId || (kind === 'note' ? '' : accounts[0]?.record_id) || '',
     symbol: '', side: 'BUY', quantity: '1', opened_at_utc: new Date().toISOString().slice(0,16), closed_at_utc: new Date().toISOString().slice(0,16),
     entry_price: '', exit_price: '', gross_pnl: '', commission: '0', swap: '0', fee: '0', title: '', note: '',
     ...initial, ...(record && kind === 'trade' ? Object.fromEntries(['opened_at_utc','closed_at_utc'].map(key => [key,new Date(initial[key]).toISOString().slice(0,19)])) : {}), tags: (initial.tags || []).join(', '), strategy: initial.playbook_id ? `${initial.playbook_id}:${initial.playbook_revision}` : '' })

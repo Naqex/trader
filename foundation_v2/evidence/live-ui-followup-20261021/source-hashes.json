@@ -1,0 +1,38 @@
+[
+  {
+    "path": "foundation_v2/web/src/LiveSurfaces.jsx",
+    "sha256": "290570837a00779dcddeefe5508c009948de20454d9591e0ca8f8262ae2d9445"
+  },
+  {
+    "path": "foundation_v2/web/src/LiveJournalSurfaces.jsx",
+    "sha256": "b171b75de57c4b6c1d36a97584ec802a3a3c98a5640dca8f01f49c836011a1b3"
+  },
+  {
+    "path": "foundation_v2/web/src/LiveRecordDialog.jsx",
+    "sha256": "9817ce315c2b9ebdb885e2375108f9878ccd864a69af173f51678fc293f99b1c"
+  },
+  {
+    "path": "foundation_v2/web/src/clientNavigation.js",
+    "sha256": "92784411ff41d2b8476ab55c44b80a3b217e3178d3905c745f8855cd85887060"
+  },
+  {
+    "path": "foundation_v2/web/src/liveWorkspaceModel.js",
+    "sha256": "c173cea100f1154f45b7d109e0685ec7f057cfa6bab82daa7251aaeacf272c21"
+  },
+  {
+    "path": "foundation_v2/web/src/live-workspace.css",
+    "sha256": "b0da588c60901fbb874c688cbc74eef5eb46e8a8eebfb1794c55447aed3ba8fd"
+  },
+  {
+    "path": "foundation_v2/web/tests/clientNavigation.test.mjs",
+    "sha256": "6aaa5c45cc7aa6e722862a88280fa46fdf3f080c5acd579fa85f242a199ded70"
+  },
+  {
+    "path": "foundation_v2/web/tests/liveWorkspaceModel.test.mjs",
+    "sha256": "216ab69773be4b5f89824977dc1da8a9f73b12a41fedfe6f241028f5910419ea"
+  },
+  {
+    "path": "ui/live-market-standard.md",
+    "sha256": "58103e2ffe5b2e9e55575006f0537cd72034c6000c97be6ddbf6341a0f044bdb"
+  }
+]

@@ -1,0 +1,69 @@
+{
+  "syntheticFinancialData": true,
+  "cases": [
+    {
+      "case": "strategy retains applied Buy",
+      "passed": true
+    },
+    {
+      "case": "EUR selection shows own currency and net",
+      "passed": true
+    },
+    {
+      "case": "Back restores USD account and its net",
+      "passed": true
+    },
+    {
+      "case": "Forward restores EUR account and its net",
+      "passed": true
+    },
+    {
+      "case": "note tag remains visible while search excludes that tag",
+      "passed": true
+    },
+    {
+      "case": "catalog failure still permits complete read-only note",
+      "passed": true
+    },
+    {
+      "case": "read-only modal Escape restores opener focus",
+      "passed": true
+    },
+    {
+      "case": "monthly review seeds selected strategy and records scope",
+      "passed": true
+    },
+    {
+      "case": "saved monthly note survives navigation",
+      "passed": true
+    },
+    {
+      "case": "tag search empty distinguishes no match from no data",
+      "passed": true
+    },
+    {
+      "case": "read-only note mobile light fits viewport",
+      "passed": true
+    },
+    {
+      "case": "denied journal clears notes and disables writes",
+      "passed": true
+    },
+    {
+      "case": "retry recovers notes after denial",
+      "passed": true
+    },
+    {
+      "case": "production 5180 loads current empty journal",
+      "passed": true
+    },
+    {
+      "case": "final production build loads without console errors",
+      "passed": true
+    }
+  ],
+  "productionAssets": [
+    "http://127.0.0.1:5180/assets/index-CojGrfe3.js"
+  ],
+  "productionErrors": []
+}

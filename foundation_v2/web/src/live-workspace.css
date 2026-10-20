@@ -28,6 +28,7 @@
 .live-note-row { display: grid; gap: 8px; width: 100%; text-align: left; padding: 20px 0; background: transparent; color: var(--wm-content); border: 0; border-bottom: 1px solid var(--wm-border); cursor: pointer; }
 .live-note-row > span { white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; color: var(--wm-content-muted); font-size: 13px; }
 .live-note-row > small { color: var(--wm-content-muted); }
+.live-note-content { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .live-note-row:hover strong,.live-text-action:hover { color: var(--wm-highlight); }
 .live-text-action { background: transparent; border: 0; color: var(--wm-content); cursor: pointer; font: inherit; }
 .live-tag-bars { display: grid; gap: 16px; padding-block: 24px; }

@@ -9,6 +9,7 @@ import { tagResults } from './liveLedgerModel.js'
 import { downloadLiveCsv } from './LiveRecordDialog.jsx'
 import { manualSnapshot } from './liveLedgerModel.js'
 import { buildWorkspaceHref } from './workspaceContext.js'
+import LegacyModal from './LegacyModal.jsx'
 
 function StrategyReference({ payload, strategies, workspace }) {
   if (!payload.playbook_id) return '—'
@@ -31,20 +32,25 @@ export function ManualTrades({ deals, currency, strategies, workspace, filterKey
 }
 
 export function JournalNotes({ records, accountId, strategies, writable, onEdit, onCreate }) {
-  const [search,setSearch] = useState(''), [group,setGroup] = useState('all')
-  const rows = records.filter(record => record.kind === 'note' && (!accountId || !record.payload.account_id || record.payload.account_id === accountId)
+  const [search,setSearch] = useState(''), [group,setGroup] = useState('all'), [readId,setReadId] = useState(null)
+  const notes = records.filter(record => record.kind === 'note' && (!accountId || !record.payload.account_id || record.payload.account_id === accountId))
+  const tags = [...new Set(notes.flatMap(record => record.payload.tags))]
+  const activeGroup = tags.includes(group) ? group : 'all'
+  const rows = notes.filter(record => (activeGroup === 'all' || record.payload.tags.includes(activeGroup))
     && `${record.payload.title} ${record.payload.note} ${record.payload.tags.join(' ')}`.toLowerCase().includes(search.toLowerCase()))
-  const tags = [...new Set(rows.flatMap(record => record.payload.tags))]
-  return <section className="live-notes"><div className="live-toolbar"><button type="button" className="fxa-button is-primary" disabled={!writable} onClick={onCreate}>+ Ghi chú mới</button><div className="live-toolbar-actions"><label className="live-search"><TestingIcon kind="search" /><input type="search" aria-label="Tìm ghi chú" placeholder="Tìm ghi chú…" value={search} onChange={event => setSearch(event.target.value)} /></label><FxSelect label="Nhãn ghi chú" value={group} onChange={setGroup} options={[{value:'all',label:'Tất cả'},...tags.map(value => ({value,label:value,localize:false}))]} /></div></div>
-    <div className="live-note-list">{rows.filter(record => group === 'all' || record.payload.tags.includes(group)).map(record => <button type="button" className="live-note-row" key={record.record_id} disabled={!writable} onClick={() => onEdit(record)}><strong>{record.payload.title}</strong><span>{record.payload.note}</span><small>{displayDate(record.updated_at_utc)}{record.payload.playbook_id && ` · ${strategies.find(item => item.record_id === record.payload.playbook_id && item.revision === record.payload.playbook_revision)?.payload.name || `Chiến lược #${record.payload.playbook_id.slice(0,8)}`} v${record.payload.playbook_revision}`} · {record.payload.tags.join(', ')}</small></button>)}{!rows.filter(record => group === 'all' || record.payload.tags.includes(group)).length && <div className="live-empty"><h2>{search || group !== 'all' ? 'Không tìm thấy ghi chú' : 'Chưa có ghi chú'}</h2><p>Lưu quan sát và bài học sau mỗi giao dịch.</p></div>}</div>
+  const reading = notes.find(record => record.record_id === readId)
+  return <section className="live-notes"><div className="live-toolbar"><button type="button" className="fxa-button is-primary" disabled={!writable} onClick={onCreate}>+ Ghi chú mới</button><div className="live-toolbar-actions"><label className="live-search"><TestingIcon kind="search" /><input type="search" aria-label="Tìm ghi chú" placeholder="Tìm ghi chú…" value={search} onChange={event => setSearch(event.target.value)} /></label><FxSelect label="Nhãn ghi chú" value={activeGroup} onChange={setGroup} options={[{value:'all',label:'Tất cả'},...tags.map(value => ({value,label:value,localize:false}))]} /></div></div>
+    <div className="live-note-list">{rows.map(record => <button type="button" className="live-note-row" key={record.record_id} onClick={() => writable ? onEdit(record) : setReadId(record.record_id)}><strong>{record.payload.title}</strong><span>{record.payload.note}</span><small>{displayDate(record.updated_at_utc)}{record.payload.playbook_id && ` · ${strategies.find(item => item.record_id === record.payload.playbook_id && item.revision === record.payload.playbook_revision)?.payload.name || `Chiến lược #${record.payload.playbook_id.slice(0,8)}`} v${record.payload.playbook_revision}`} · {record.payload.tags.join(', ')}</small></button>)}{!rows.length && <div className="live-empty"><h2>{search || activeGroup !== 'all' ? 'Không tìm thấy ghi chú' : 'Chưa có ghi chú'}</h2><p>{search || activeGroup !== 'all' ? 'Thử từ khóa hoặc nhãn khác.' : 'Lưu quan sát và bài học sau mỗi giao dịch.'}</p></div>}</div>
+    {reading && <LegacyModal className="live-record-dialog" theme={document.querySelector('.fx-app')?.dataset.theme || 'dark'} label={reading.payload.title} onClose={() => setReadId(null)}><div className="live-record-form"><p className="live-muted">Chỉ đọc · tải lại dữ liệu trước khi chỉnh sửa.</p><p className="live-note-content">{reading.payload.note}</p><small className="live-muted">{displayDate(reading.updated_at_utc)} · {reading.payload.tags.join(', ') || 'Không có nhãn'}</small></div></LegacyModal>}
   </section>
 }
 
 export function JournalTags({ deals, currency }) {
   const { fmt } = useTestingLocale(), [search,setSearch] = useState('')
   const rows = tagResults(deals).filter(row => row.tag.toLowerCase().includes(search.toLowerCase()))
+  const maximum = rows.reduce((max,item) => Math.max(max,Math.abs(item.net || 0)),1)
   return <section className="live-journal-tags"><div className="live-section-heading"><h2>PnL theo nhãn</h2><label className="live-search"><TestingIcon kind="search" /><input type="search" aria-label="Tìm nhãn" placeholder="Tìm nhãn…" value={search} onChange={event => setSearch(event.target.value)} /></label></div>
-    {rows.length ? <><div className="live-tag-bars">{rows.map(row => <div key={row.tag}><span>{row.tag}</span><div><i className={row.net < 0 ? 'is-loss' : 'is-gain'} style={{width:`${row.net === null ? 0 : Math.abs(row.net)/Math.max(1,...rows.map(item => Math.abs(item.net || 0)))*100}%`}} /></div><strong className={row.net < 0 ? 'is-loss' : 'is-gain'}>{fmt(row.net)}</strong></div>)}</div><div className="live-table-scroll" tabIndex={0} role="region" aria-label="Thống kê nhãn"><table><thead><tr><th>Nhãn</th><th>Giao dịch</th><th>Tỷ lệ thắng</th><th>PnL ròng ({currency})</th></tr></thead><tbody>{rows.map(row => <tr key={row.tag}><td>{row.tag}</td><td>{row.count}</td><td>{fmt(row.winRate,'%')}</td><td>{fmt(row.net)}</td></tr>)}</tbody></table></div><p className="live-muted">Một giao dịch có thể có nhiều nhãn; không cộng các nhóm thành tổng PnL.</p></> : <div className="live-empty"><h2>Chưa có phân tích nhãn</h2><p>Thêm nhãn vào giao dịch để so sánh kết quả.</p></div>}
+    {rows.length ? <><div className="live-tag-bars">{rows.map(row => <div key={row.tag}><span>{row.tag}</span><div><i className={row.net < 0 ? 'is-loss' : row.net > 0 ? 'is-gain' : ''} style={{width:`${row.net === null ? 0 : Math.abs(row.net)/maximum*100}%`}} /></div><strong className={row.net < 0 ? 'is-loss' : row.net > 0 ? 'is-gain' : ''}>{fmt(row.net)}</strong></div>)}</div><div className="live-table-scroll" tabIndex={0} role="region" aria-label="Thống kê nhãn"><table><thead><tr><th>Nhãn</th><th>Giao dịch</th><th>Tỷ lệ thắng</th><th>PnL ròng ({currency})</th></tr></thead><tbody>{rows.map(row => <tr key={row.tag}><td>{row.tag}</td><td>{row.count}</td><td>{fmt(row.winRate,'%')}</td><td>{fmt(row.net)}</td></tr>)}</tbody></table></div><p className="live-muted">Một giao dịch có thể có nhiều nhãn; không cộng các nhóm thành tổng PnL.</p></> : <div className="live-empty"><h2>{search ? 'Không tìm thấy nhãn' : 'Chưa có phân tích nhãn'}</h2><p>{search ? 'Thử từ khóa khác hoặc xóa tìm kiếm.' : 'Thêm nhãn vào giao dịch để so sánh kết quả.'}</p></div>}
   </section>
 }
 
