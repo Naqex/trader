@@ -15,3 +15,7 @@ Validation:
 - preview.png uses the same external SVG symbols as the product, enlarged and at header size. Full header screenshots are saved beside it; responsive sizing was verified through DOM metrics. Invalid blank screenshot crops from the browser clip API were discarded.
 
 Scope limitation: dashboard data requests returned HTTP 500 during this check. Logo/theme/responsive validation does not establish API health or full product acceptance. API/runtime was not changed. Existing UI preview was unavailable; a local hidden Vite preview was started on 5180 for this work.
+
+## R legibility follow-up
+
+Owner found the R was missing its stem. Restored the lower left stem, retaining the upper separation to match P. Only R geometry changed. Build and scoped diff check passed; actual header and enlarged dark/light preview were inspected in the browser. See preview-r-restored.png.
