@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "scope": "owned disposable PostgreSQL; real native Router, auth, idempotency and concurrent revision/count admission",
+  "owner_runtime_touched": false,
+  "source_unchanged": true,
+  "source_sha256": {
+    "api-rust\\src\\live_ledger.rs": "41f778a3848d70efd06dd679ca7e7c4e4789a5519ba6c48b2d5558dcdc13ef5d",
+    "api-rust\\tests\\live_ledger_pg.rs": "873cd8ec1256430efb34df8adf0f334f903143767099e5421b16a243502d1cdc",
+    "api-rust\\tests\\live_ledger_pg.py": "17338af62d9a3a7919ea8e56cdd5cd1487459bd532739a0fa5637b92f9013708",
+    "api-rust\\src\\lib.rs": "eabed642a5fe82d272a7c1afed9057b739ed546a1c7acde9eb92e48457706b14",
+    "api-rust\\src\\commands.rs": "7efad38f1b6dc3c02d0362f5a0be550cd6878efe017102ebe247f595e71dbc23",
+    "api-rust\\src\\rust_runtime.rs": "c01f986efcc83e681107eb72e6810c2aeb924d72e7944e6ae27f120829de53ba",
+    "api-rust\\src\\native_mutation.rs": "3370b2b9ceec6dcb778fabda2469261fbd94a4489a0494411d55b19a05241283",
+    "migrations\\0008_live_journal.sql": "4eb3b5e093965a1503b4cbe2dd84e18060f0ed087258eba701d51a2b410053db"
+  },
+  "stdout": "\nrunning 1 test\ntest live_records_are_scoped_immutable_revisioned_and_idempotent ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.21s\n\n",
+  "stderr": "   Compiling trading-workspace-api v0.1.0 (D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.05s\n     Running tests\\live_ledger_pg.rs (target\\debug\\deps\\live_ledger_pg-fd4d2520b55a6440.exe)\n"
+}

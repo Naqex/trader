@@ -1,0 +1,1704 @@
+{
+  "status": "PASS",
+  "synthetic": true,
+  "api": "http://127.0.0.1:18011",
+  "workspace": "tenant-a",
+  "owner_data_mutated": false,
+  "broker_access": false,
+  "session_id": "ccc7241a22aa4e3baa7884d55d94075a",
+  "dataset": "live-strategy-audit-eur",
+  "revision": 10,
+  "first_partial_revision": 5,
+  "expected": {
+    "close_fill_pnl": [
+      "1.00",
+      "6.00",
+      "-7.00"
+    ],
+    "net_pnl": "0.00",
+    "closed_balance": "10000.00",
+    "closed_fills": 3,
+    "closed_positions": 2,
+    "win_rate_pct": 66.66666666666667,
+    "max_closed_balance_drawdown": "7.00"
+  },
+  "ui_query": "workspace=tenant-a&view=analytics&session=ccc7241a22aa4e3baa7884d55d94075a&area=testing&section=analytics",
+  "checks": [
+    {
+      "check": "closed fills count partial close twice and final independent position once",
+      "actual": 3,
+      "expected": 3
+    },
+    {
+      "check": "win rate is two positive closed fills out of three",
+      "actual": 66.66666666666666,
+      "expected": 66.66666666666667
+    },
+    {
+      "check": "net equals independent quote/quantity/cost arithmetic",
+      "actual": 0.0,
+      "expected": "0.00"
+    },
+    {
+      "check": "closed balance equals starting capital plus realized net",
+      "actual": 10000.0,
+      "expected": "10000.00"
+    },
+    {
+      "check": "peak-to-trough closed balance drawdown",
+      "actual": 7.0,
+      "expected": "7.00"
+    },
+    {
+      "check": "partial fixed commission is allocated once across both halves",
+      "actual": "4.0",
+      "expected": "4"
+    },
+    {
+      "check": "each close has a unique immutable trade id",
+      "actual": 3,
+      "expected": 3
+    },
+    {
+      "check": "closed fill 1 independent net",
+      "actual": 1.0,
+      "expected": "1.00"
+    },
+    {
+      "check": "closed fill 1 cost breakdown stays unknown",
+      "actual": null,
+      "expected": null
+    },
+    {
+      "check": "closed fill 2 independent net",
+      "actual": 6.0,
+      "expected": "6.00"
+    },
+    {
+      "check": "closed fill 2 cost breakdown stays unknown",
+      "actual": null,
+      "expected": null
+    },
+    {
+      "check": "closed fill 3 independent net",
+      "actual": -7.0,
+      "expected": "-7.00"
+    },
+    {
+      "check": "closed fill 3 cost breakdown stays unknown",
+      "actual": null,
+      "expected": null
+    },
+    {
+      "check": "flat equity matches final balance",
+      "actual": "10000.00000000000000000000000",
+      "expected": "10000.00"
+    },
+    {
+      "check": "open positions excluded after full close",
+      "actual": 0,
+      "expected": 0
+    },
+    {
+      "check": "win count recomputed",
+      "actual": 2,
+      "expected": 2
+    },
+    {
+      "check": "win net recomputed from selected fills",
+      "actual": 7.0,
+      "expected": "7.00"
+    },
+    {
+      "check": "win selected balance starts from original capital",
+      "actual": 10007.0,
+      "expected": "10007.00"
+    },
+    {
+      "check": "loss count recomputed",
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "check": "loss net recomputed from selected fills",
+      "actual": -7.0,
+      "expected": "-7.00"
+    },
+    {
+      "check": "loss selected balance starts from original capital",
+      "actual": 9993.0,
+      "expected": "9993.00"
+    },
+    {
+      "check": "historical cutoff excludes later second fill and loss",
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "check": "historical net includes only first partial close",
+      "actual": 1.0,
+      "expected": "1.00"
+    },
+    {
+      "check": "historical view retained the open residual position",
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "check": "historical exact event sequence preserved",
+      "actual": 13,
+      "expected": 13
+    },
+    {
+      "check": "historical read does not change current revision",
+      "actual": 10,
+      "expected": 10
+    },
+    {
+      "check": "trade report count agrees with analytics",
+      "actual": 3,
+      "expected": 3
+    },
+    {
+      "check": "trade report net agrees without duplicate partial fills",
+      "actual": "0.0",
+      "expected": "0.00"
+    }
+  ],
+  "requests": [
+    {
+      "path": "/api/v2/replay/sessions",
+      "status": 201,
+      "ms": 50.41
+    },
+    {
+      "path": "/api/v2/replay/sessions/ccc7241a22aa4e3baa7884d55d94075a/execution",
+      "status": 200,
+      "ms": 40.47
+    },
+    {
+      "path": "/api/v2/replay/sessions/ccc7241a22aa4e3baa7884d55d94075a/orders/market",
+      "status": 200,
+      "ms": 23.21
+    },
+    {
+      "path": "/api/v2/replay/sessions/ccc7241a22aa4e3baa7884d55d94075a/step",
+      "status": 200,
+      "ms": 51.74
+    },
+    {
+      "path": "/api/v2/replay/sessions/ccc7241a22aa4e3baa7884d55d94075a/orders/close",
+      "status": 200,
+      "ms": 44.53
+    },
+    {
+      "path": "/api/v2/replay/sessions/ccc7241a22aa4e3baa7884d55d94075a/step",
+      "status": 200,
+      "ms": 55.27
+    },
+    {
+      "path": "/api/v2/replay/sessions/ccc7241a22aa4e3baa7884d55d94075a/orders/close",
+      "status": 200,
+      "ms": 43.42
+    },
+    {
+      "path": "/api/v2/replay/sessions/ccc7241a22aa4e3baa7884d55d94075a/orders/market",
+      "status": 200,
+      "ms": 32.37
+    },
+    {
+      "path": "/api/v2/replay/sessions/ccc7241a22aa4e3baa7884d55d94075a/step",
+      "status": 200,
+      "ms": 50.37
+    },
+    {
+      "path": "/api/v2/replay/sessions/ccc7241a22aa4e3baa7884d55d94075a/orders/close",
+      "status": 200,
+      "ms": 36.32
+    },
+    {
+      "path": "/api/v2/replay/sessions/ccc7241a22aa4e3baa7884d55d94075a/analytics",
+      "status": 200,
+      "ms": 35.85
+    },
+    {
+      "path": "/api/v2/replay/sessions/ccc7241a22aa4e3baa7884d55d94075a/analytics?outcome=win",
+      "status": 200,
+      "ms": 30.35
+    },
+    {
+      "path": "/api/v2/replay/sessions/ccc7241a22aa4e3baa7884d55d94075a/analytics?outcome=loss",
+      "status": 200,
+      "ms": 13.65
+    },
+    {
+      "path": "/api/v2/replay/sessions/ccc7241a22aa4e3baa7884d55d94075a/analytics?cursor_index=10&event_sequence=13",
+      "status": 200,
+      "ms": 15.95
+    },
+    {
+      "path": "/api/v2/replay/sessions/ccc7241a22aa4e3baa7884d55d94075a",
+      "status": 200,
+      "ms": 15.08
+    },
+    {
+      "path": "/api/v2/replay/trades?session_id=ccc7241a22aa4e3baa7884d55d94075a&page=1&page_size=10",
+      "status": 200,
+      "ms": 22.56
+    }
+  ],
+  "views": {
+    "full": {
+      "account_currency": "USD",
+      "analytics_available": true,
+      "blocked_by_data": [],
+      "branch_id": "56d60b7f30fa4c02978cb358ea74d9bc",
+      "canonical_cursor_index": 25,
+      "canonical_execution_event_sequence": 32,
+      "created_at_utc": "2026-10-20T16:22:37.036223Z",
+      "cursor_index": 25,
+      "cutoff_timestamp": 1767227160,
+      "data_quality": "full_for_declared_model",
+      "dataset_id": "live-strategy-audit-eur",
+      "dataset_sha256": "cc295fce61a7dea17019b89cba848f43e78a5761c0ea586a9c20b3e4c85ecaf4",
+      "execution_event_sequence": 32,
+      "filters": {
+        "from_close_utc": null,
+        "outcome": "all",
+        "side": "all",
+        "to_close_utc": null
+      },
+      "historical_view": false,
+      "instrument_id": "EURUSD",
+      "ledger": [
+        {
+          "close_cursor_index": 10,
+          "close_event_sequence": 13,
+          "close_phase_index": 1,
+          "close_time_utc": 1767226260,
+          "exit_reason": "manual_close",
+          "fees": null,
+          "gross_pnl": null,
+          "net_pnl": 1.0,
+          "open_cursor_index": 0,
+          "open_time_utc": 1767225660,
+          "planned_risk_budget": null,
+          "price_close": 1.1004,
+          "price_open": 1.1002,
+          "quantity": 0.1,
+          "realized_r": null,
+          "session_id": "ccc7241a22aa4e3baa7884d55d94075a",
+          "side": "BUY",
+          "source": {
+            "revision": 10,
+            "session_id": "ccc7241a22aa4e3baa7884d55d94075a"
+          },
+          "source_operation_id": "6f21b37fab944ea48fea2378c32ada23",
+          "source_position_id": "replay-pos-1",
+          "symbol": "EURUSD",
+          "trade_id": "replay-pos-1:close:13"
+        },
+        {
+          "close_cursor_index": 20,
+          "close_event_sequence": 24,
+          "close_phase_index": 1,
+          "close_time_utc": 1767226860,
+          "exit_reason": "manual_close",
+          "fees": null,
+          "gross_pnl": null,
+          "net_pnl": 6.0,
+          "open_cursor_index": 0,
+          "open_time_utc": 1767225660,
+          "planned_risk_budget": null,
+          "price_close": 1.1009,
+          "price_open": 1.1002,
+          "quantity": 0.1,
+          "realized_r": null,
+          "session_id": "ccc7241a22aa4e3baa7884d55d94075a",
+          "side": "BUY",
+          "source": {
+            "revision": 10,
+            "session_id": "ccc7241a22aa4e3baa7884d55d94075a"
+          },
+          "source_operation_id": "6f21b37fab944ea48fea2378c32ada23",
+          "source_position_id": "replay-pos-1",
+          "symbol": "EURUSD",
+          "trade_id": "replay-pos-1:close:24"
+        },
+        {
+          "close_cursor_index": 25,
+          "close_event_sequence": 32,
+          "close_phase_index": 1,
+          "close_time_utc": 1767227160,
+          "exit_reason": "manual_close",
+          "fees": null,
+          "gross_pnl": null,
+          "net_pnl": -7.0,
+          "open_cursor_index": 20,
+          "open_time_utc": 1767226860,
+          "planned_risk_budget": null,
+          "price_close": 1.1014,
+          "price_open": 1.1009,
+          "quantity": 0.1,
+          "realized_r": null,
+          "session_id": "ccc7241a22aa4e3baa7884d55d94075a",
+          "side": "SELL",
+          "source": {
+            "revision": 10,
+            "session_id": "ccc7241a22aa4e3baa7884d55d94075a"
+          },
+          "source_operation_id": "61789ef73ff24c8b8f9471656fe51226",
+          "source_position_id": "replay-pos-25",
+          "symbol": "EURUSD",
+          "trade_id": "replay-pos-25"
+        }
+      ],
+      "metrics": {
+        "average_realized_r": null,
+        "basis": {
+          "cashflow": "not_available",
+          "costs": "incomplete_or_unknown",
+          "drawdown": "closed_trade_balance_only",
+          "floating_pnl": "not_available",
+          "pnl": "net_pnl from normalized closed-trade ledger",
+          "realized_r": "incomplete_or_unknown"
+        },
+        "breakeven": 0,
+        "closed_trade_balance_curve": [
+          {
+            "closed_trade_balance": 10000.0,
+            "sequence": 0,
+            "trade_id": null
+          },
+          {
+            "closed_trade_balance": 10001.0,
+            "sequence": 1,
+            "trade_id": "replay-pos-1:close:13"
+          },
+          {
+            "closed_trade_balance": 10007.0,
+            "sequence": 2,
+            "trade_id": "replay-pos-1:close:24"
+          },
+          {
+            "closed_trade_balance": 10000.0,
+            "sequence": 3,
+            "trade_id": "replay-pos-25"
+          }
+        ],
+        "closed_trade_balance_drawdown_curve": [
+          {
+            "closed_trade_balance": 10000.0,
+            "drawdown": 0.0,
+            "drawdown_pct": 0.0,
+            "peak_closed_trade_balance": 10000.0,
+            "sequence": 0,
+            "trade_id": null
+          },
+          {
+            "closed_trade_balance": 10001.0,
+            "drawdown": 0.0,
+            "drawdown_pct": 0.0,
+            "peak_closed_trade_balance": 10001.0,
+            "sequence": 1,
+            "trade_id": "replay-pos-1:close:13"
+          },
+          {
+            "closed_trade_balance": 10007.0,
+            "drawdown": 0.0,
+            "drawdown_pct": 0.0,
+            "peak_closed_trade_balance": 10007.0,
+            "sequence": 2,
+            "trade_id": "replay-pos-1:close:24"
+          },
+          {
+            "closed_trade_balance": 10000.0,
+            "drawdown": 7.0,
+            "drawdown_pct": 0.0699510342760068,
+            "peak_closed_trade_balance": 10007.0,
+            "sequence": 3,
+            "trade_id": "replay-pos-25"
+          }
+        ],
+        "closed_trade_balance_max_drawdown": 7.0,
+        "closed_trade_balance_max_drawdown_pct": 0.0699510342760068,
+        "closed_trade_count": 3,
+        "definitions": {
+          "average_realized_r": {
+            "formula": "mean(net_pnl_i / planned_risk_budget_i)",
+            "question": "What was average realized R when every selected trade has planned risk?",
+            "source": "normalized closed-trade ledger",
+            "unit": "R",
+            "version": "metrics-v2"
+          },
+          "closed_trade_balance_max_drawdown": {
+            "formula": "max_t(peak_closed_balance_t - closed_balance_t)",
+            "question": "What was the largest peak-to-trough drop in the closed-trade balance path?",
+            "source": "closed-trade balance path; no floating P/L or cashflow",
+            "unit": "account_currency",
+            "version": "metrics-v2"
+          },
+          "closed_trade_balance_max_drawdown_pct": {
+            "formula": "max_t(drawdown_t / peak_closed_balance_t * 100)",
+            "question": "What was the largest closed-trade balance drawdown as a percent of its prior peak?",
+            "source": "closed-trade balance path; no floating P/L or cashflow",
+            "unit": "percent",
+            "version": "metrics-v2"
+          },
+          "closed_trade_count": {
+            "formula": "count(selected closed trades)",
+            "question": "How many selected closed trades are in the denominator?",
+            "source": "normalized closed-trade ledger",
+            "unit": "trades",
+            "version": "metrics-v2"
+          },
+          "ending_closed_trade_balance": {
+            "formula": "starting_balance + sum(selected net_pnl_i)",
+            "question": "What is starting balance plus selected closed-trade net P/L?",
+            "source": "run artifact + normalized closed-trade ledger",
+            "unit": "account_currency",
+            "version": "metrics-v2"
+          },
+          "expectancy_net_per_trade": {
+            "formula": "sum(net_pnl_i) / closed_trade_count",
+            "question": "What was average net P/L per selected closed trade?",
+            "source": "normalized closed-trade ledger",
+            "unit": "account_currency_per_trade",
+            "version": "metrics-v2"
+          },
+          "max_loss_streak": {
+            "formula": "max consecutive net_pnl_i < 0; breakeven resets streak",
+            "question": "What was the longest consecutive net-loss streak in sequence order?",
+            "source": "normalized closed-trade ledger",
+            "unit": "trades",
+            "version": "metrics-v2"
+          },
+          "net_pnl": {
+            "formula": "sum(net_pnl_i)",
+            "question": "What did the selected closed trades make or lose after recorded costs?",
+            "source": "normalized closed-trade ledger",
+            "unit": "account_currency",
+            "version": "metrics-v2"
+          },
+          "payoff_ratio_after_cost": {
+            "formula": "mean(net winners) / abs(mean(net losers))",
+            "question": "How large was the mean net winner relative to the mean net loser?",
+            "source": "normalized closed-trade ledger",
+            "unit": "ratio",
+            "version": "metrics-v2"
+          },
+          "profit_factor_after_cost": {
+            "formula": "sum(net positive) / abs(sum(net negative))",
+            "question": "How much net-positive P/L was observed per unit of net-negative P/L?",
+            "source": "normalized closed-trade ledger",
+            "unit": "ratio",
+            "version": "metrics-v2"
+          },
+          "starting_balance": {
+            "formula": "persisted run starting_balance",
+            "question": "What run starting balance anchors this closed-trade balance path?",
+            "source": "run artifact",
+            "unit": "account_currency",
+            "version": "metrics-v2"
+          },
+          "win_rate_pct": {
+            "formula": "wins / closed_trade_count * 100",
+            "question": "What share of selected closed trades finished net positive?",
+            "source": "normalized closed-trade ledger",
+            "unit": "percent",
+            "version": "metrics-v2"
+          }
+        },
+        "ending_closed_trade_balance": 10000.0,
+        "expectancy_net_per_trade": 0.0,
+        "fees": null,
+        "fees_known_count": 0,
+        "gross_pnl": null,
+        "gross_pnl_known_count": 0,
+        "loss_rate_pct": 33.33333333333333,
+        "losses": 1,
+        "max_loss_streak": 1,
+        "metric_schema_version": "metrics-v2",
+        "net_pnl": 0.0,
+        "payoff_ratio_after_cost": 0.5,
+        "profit_factor_after_cost": 1.0,
+        "realized_r_known_count": 0,
+        "realized_r_values": [],
+        "starting_balance": 10000.0,
+        "win_rate_pct": 66.66666666666666,
+        "wins": 2
+      },
+      "mode": "replay",
+      "open_position_count": 0,
+      "parent_session_id": null,
+      "pending_order_count": 0,
+      "phase_index": 1,
+      "phase_initial_balance": 10000.0,
+      "phase_transition_count": 0,
+      "provenance": {
+        "account_currency": "USD",
+        "branch_id": "56d60b7f30fa4c02978cb358ea74d9bc",
+        "canonical_cursor_index": 25,
+        "canonical_execution_event_sequence": 32,
+        "created_at_utc": "2026-10-20T16:22:37.036223Z",
+        "cursor_index": 25,
+        "cutoff_timestamp": 1767227160,
+        "data_quality": "full_for_declared_model",
+        "dataset_id": "live-strategy-audit-eur",
+        "dataset_sha256": "cc295fce61a7dea17019b89cba848f43e78a5761c0ea586a9c20b3e4c85ecaf4",
+        "execution_event_sequence": 32,
+        "historical_view": false,
+        "instrument_id": "EURUSD",
+        "job_id": null,
+        "metrics_schema_version": null,
+        "mode": "replay",
+        "open_position_count": 0,
+        "parent_session_id": null,
+        "pending_order_count": 0,
+        "phase_index": 1,
+        "phase_initial_balance": 10000.0,
+        "phase_transition_count": 0,
+        "playbook_id": null,
+        "playbook_revision": null,
+        "protocol_sha256": null,
+        "revision": 10,
+        "session_id": "ccc7241a22aa4e3baa7884d55d94075a",
+        "split": null,
+        "timeframe": "60s",
+        "timeframe_seconds": 60,
+        "timezone": "UTC",
+        "workspace_id": "tenant-a"
+      },
+      "revision": 10,
+      "schema_version": "analytics-read-model-v1",
+      "scope": {
+        "active_filters": false,
+        "balance_curve_scope": "all closed trades replayed from result starting balance; floating P/L and cashflow unavailable",
+        "observed_range": {
+          "first_close_utc": "2026-01-01T00:11:00+00:00",
+          "last_close_utc": "2026-01-01T00:26:00+00:00"
+        },
+        "selected_trade_count": 3,
+        "total_trade_count": 3
+      },
+      "session_id": "ccc7241a22aa4e3baa7884d55d94075a",
+      "timeframe": "60s",
+      "timeframe_seconds": 60,
+      "timezone": "UTC",
+      "workspace_id": "tenant-a"
+    },
+    "win": {
+      "account_currency": "USD",
+      "analytics_available": true,
+      "blocked_by_data": [],
+      "branch_id": "56d60b7f30fa4c02978cb358ea74d9bc",
+      "canonical_cursor_index": 25,
+      "canonical_execution_event_sequence": 32,
+      "created_at_utc": "2026-10-20T16:22:37.036223Z",
+      "cursor_index": 25,
+      "cutoff_timestamp": 1767227160,
+      "data_quality": "full_for_declared_model",
+      "dataset_id": "live-strategy-audit-eur",
+      "dataset_sha256": "cc295fce61a7dea17019b89cba848f43e78a5761c0ea586a9c20b3e4c85ecaf4",
+      "execution_event_sequence": 32,
+      "filters": {
+        "from_close_utc": null,
+        "outcome": "win",
+        "side": "all",
+        "to_close_utc": null
+      },
+      "historical_view": false,
+      "instrument_id": "EURUSD",
+      "ledger": [
+        {
+          "close_cursor_index": 10,
+          "close_event_sequence": 13,
+          "close_phase_index": 1,
+          "close_time_utc": 1767226260,
+          "exit_reason": "manual_close",
+          "fees": null,
+          "gross_pnl": null,
+          "net_pnl": 1.0,
+          "open_cursor_index": 0,
+          "open_time_utc": 1767225660,
+          "planned_risk_budget": null,
+          "price_close": 1.1004,
+          "price_open": 1.1002,
+          "quantity": 0.1,
+          "realized_r": null,
+          "session_id": "ccc7241a22aa4e3baa7884d55d94075a",
+          "side": "BUY",
+          "source": {
+            "revision": 10,
+            "session_id": "ccc7241a22aa4e3baa7884d55d94075a"
+          },
+          "source_operation_id": "6f21b37fab944ea48fea2378c32ada23",
+          "source_position_id": "replay-pos-1",
+          "symbol": "EURUSD",
+          "trade_id": "replay-pos-1:close:13"
+        },
+        {
+          "close_cursor_index": 20,
+          "close_event_sequence": 24,
+          "close_phase_index": 1,
+          "close_time_utc": 1767226860,
+          "exit_reason": "manual_close",
+          "fees": null,
+          "gross_pnl": null,
+          "net_pnl": 6.0,
+          "open_cursor_index": 0,
+          "open_time_utc": 1767225660,
+          "planned_risk_budget": null,
+          "price_close": 1.1009,
+          "price_open": 1.1002,
+          "quantity": 0.1,
+          "realized_r": null,
+          "session_id": "ccc7241a22aa4e3baa7884d55d94075a",
+          "side": "BUY",
+          "source": {
+            "revision": 10,
+            "session_id": "ccc7241a22aa4e3baa7884d55d94075a"
+          },
+          "source_operation_id": "6f21b37fab944ea48fea2378c32ada23",
+          "source_position_id": "replay-pos-1",
+          "symbol": "EURUSD",
+          "trade_id": "replay-pos-1:close:24"
+        }
+      ],
+      "metrics": {
+        "average_realized_r": null,
+        "basis": {
+          "cashflow": "not_available",
+          "costs": "incomplete_or_unknown",
+          "drawdown": "closed_trade_balance_only",
+          "floating_pnl": "not_available",
+          "pnl": "net_pnl from normalized closed-trade ledger",
+          "realized_r": "incomplete_or_unknown"
+        },
+        "breakeven": 0,
+        "closed_trade_balance_curve": [
+          {
+            "closed_trade_balance": 10000.0,
+            "sequence": 0,
+            "trade_id": null
+          },
+          {
+            "closed_trade_balance": 10001.0,
+            "sequence": 1,
+            "trade_id": "replay-pos-1:close:13"
+          },
+          {
+            "closed_trade_balance": 10007.0,
+            "sequence": 2,
+            "trade_id": "replay-pos-1:close:24"
+          }
+        ],
+        "closed_trade_balance_drawdown_curve": [
+          {
+            "closed_trade_balance": 10000.0,
+            "drawdown": 0.0,
+            "drawdown_pct": 0.0,
+            "peak_closed_trade_balance": 10000.0,
+            "sequence": 0,
+            "trade_id": null
+          },
+          {
+            "closed_trade_balance": 10001.0,
+            "drawdown": 0.0,
+            "drawdown_pct": 0.0,
+            "peak_closed_trade_balance": 10001.0,
+            "sequence": 1,
+            "trade_id": "replay-pos-1:close:13"
+          },
+          {
+            "closed_trade_balance": 10007.0,
+            "drawdown": 0.0,
+            "drawdown_pct": 0.0,
+            "peak_closed_trade_balance": 10007.0,
+            "sequence": 2,
+            "trade_id": "replay-pos-1:close:24"
+          }
+        ],
+        "closed_trade_balance_max_drawdown": 0.0,
+        "closed_trade_balance_max_drawdown_pct": 0.0,
+        "closed_trade_count": 2,
+        "definitions": {
+          "average_realized_r": {
+            "formula": "mean(net_pnl_i / planned_risk_budget_i)",
+            "question": "What was average realized R when every selected trade has planned risk?",
+            "source": "normalized closed-trade ledger",
+            "unit": "R",
+            "version": "metrics-v2"
+          },
+          "closed_trade_balance_max_drawdown": {
+            "formula": "max_t(peak_closed_balance_t - closed_balance_t)",
+            "question": "What was the largest peak-to-trough drop in the closed-trade balance path?",
+            "source": "closed-trade balance path; no floating P/L or cashflow",
+            "unit": "account_currency",
+            "version": "metrics-v2"
+          },
+          "closed_trade_balance_max_drawdown_pct": {
+            "formula": "max_t(drawdown_t / peak_closed_balance_t * 100)",
+            "question": "What was the largest closed-trade balance drawdown as a percent of its prior peak?",
+            "source": "closed-trade balance path; no floating P/L or cashflow",
+            "unit": "percent",
+            "version": "metrics-v2"
+          },
+          "closed_trade_count": {
+            "formula": "count(selected closed trades)",
+            "question": "How many selected closed trades are in the denominator?",
+            "source": "normalized closed-trade ledger",
+            "unit": "trades",
+            "version": "metrics-v2"
+          },
+          "ending_closed_trade_balance": {
+            "formula": "starting_balance + sum(selected net_pnl_i)",
+            "question": "What is starting balance plus selected closed-trade net P/L?",
+            "source": "run artifact + normalized closed-trade ledger",
+            "unit": "account_currency",
+            "version": "metrics-v2"
+          },
+          "expectancy_net_per_trade": {
+            "formula": "sum(net_pnl_i) / closed_trade_count",
+            "question": "What was average net P/L per selected closed trade?",
+            "source": "normalized closed-trade ledger",
+            "unit": "account_currency_per_trade",
+            "version": "metrics-v2"
+          },
+          "max_loss_streak": {
+            "formula": "max consecutive net_pnl_i < 0; breakeven resets streak",
+            "question": "What was the longest consecutive net-loss streak in sequence order?",
+            "source": "normalized closed-trade ledger",
+            "unit": "trades",
+            "version": "metrics-v2"
+          },
+          "net_pnl": {
+            "formula": "sum(net_pnl_i)",
+            "question": "What did the selected closed trades make or lose after recorded costs?",
+            "source": "normalized closed-trade ledger",
+            "unit": "account_currency",
+            "version": "metrics-v2"
+          },
+          "payoff_ratio_after_cost": {
+            "formula": "mean(net winners) / abs(mean(net losers))",
+            "question": "How large was the mean net winner relative to the mean net loser?",
+            "source": "normalized closed-trade ledger",
+            "unit": "ratio",
+            "version": "metrics-v2"
+          },
+          "profit_factor_after_cost": {
+            "formula": "sum(net positive) / abs(sum(net negative))",
+            "question": "How much net-positive P/L was observed per unit of net-negative P/L?",
+            "source": "normalized closed-trade ledger",
+            "unit": "ratio",
+            "version": "metrics-v2"
+          },
+          "starting_balance": {
+            "formula": "persisted run starting_balance",
+            "question": "What run starting balance anchors this closed-trade balance path?",
+            "source": "run artifact",
+            "unit": "account_currency",
+            "version": "metrics-v2"
+          },
+          "win_rate_pct": {
+            "formula": "wins / closed_trade_count * 100",
+            "question": "What share of selected closed trades finished net positive?",
+            "source": "normalized closed-trade ledger",
+            "unit": "percent",
+            "version": "metrics-v2"
+          }
+        },
+        "ending_closed_trade_balance": 10007.0,
+        "expectancy_net_per_trade": 3.5,
+        "fees": null,
+        "fees_known_count": 0,
+        "gross_pnl": null,
+        "gross_pnl_known_count": 0,
+        "loss_rate_pct": 0.0,
+        "losses": 0,
+        "max_loss_streak": 0,
+        "metric_schema_version": "metrics-v2",
+        "net_pnl": 7.0,
+        "payoff_ratio_after_cost": null,
+        "profit_factor_after_cost": null,
+        "realized_r_known_count": 0,
+        "realized_r_values": [],
+        "starting_balance": 10000.0,
+        "win_rate_pct": 100.0,
+        "wins": 2
+      },
+      "mode": "replay",
+      "open_position_count": 0,
+      "parent_session_id": null,
+      "pending_order_count": 0,
+      "phase_index": 1,
+      "phase_initial_balance": 10000.0,
+      "phase_transition_count": 0,
+      "provenance": {
+        "account_currency": "USD",
+        "branch_id": "56d60b7f30fa4c02978cb358ea74d9bc",
+        "canonical_cursor_index": 25,
+        "canonical_execution_event_sequence": 32,
+        "created_at_utc": "2026-10-20T16:22:37.036223Z",
+        "cursor_index": 25,
+        "cutoff_timestamp": 1767227160,
+        "data_quality": "full_for_declared_model",
+        "dataset_id": "live-strategy-audit-eur",
+        "dataset_sha256": "cc295fce61a7dea17019b89cba848f43e78a5761c0ea586a9c20b3e4c85ecaf4",
+        "execution_event_sequence": 32,
+        "historical_view": false,
+        "instrument_id": "EURUSD",
+        "job_id": null,
+        "metrics_schema_version": null,
+        "mode": "replay",
+        "open_position_count": 0,
+        "parent_session_id": null,
+        "pending_order_count": 0,
+        "phase_index": 1,
+        "phase_initial_balance": 10000.0,
+        "phase_transition_count": 0,
+        "playbook_id": null,
+        "playbook_revision": null,
+        "protocol_sha256": null,
+        "revision": 10,
+        "session_id": "ccc7241a22aa4e3baa7884d55d94075a",
+        "split": null,
+        "timeframe": "60s",
+        "timeframe_seconds": 60,
+        "timezone": "UTC",
+        "workspace_id": "tenant-a"
+      },
+      "revision": 10,
+      "schema_version": "analytics-read-model-v1",
+      "scope": {
+        "active_filters": true,
+        "balance_curve_scope": "selected closed trades replayed from result starting balance; floating P/L and cashflow unavailable",
+        "observed_range": {
+          "first_close_utc": "2026-01-01T00:11:00+00:00",
+          "last_close_utc": "2026-01-01T00:21:00+00:00"
+        },
+        "selected_trade_count": 2,
+        "total_trade_count": 3
+      },
+      "session_id": "ccc7241a22aa4e3baa7884d55d94075a",
+      "timeframe": "60s",
+      "timeframe_seconds": 60,
+      "timezone": "UTC",
+      "workspace_id": "tenant-a"
+    },
+    "loss": {
+      "account_currency": "USD",
+      "analytics_available": true,
+      "blocked_by_data": [],
+      "branch_id": "56d60b7f30fa4c02978cb358ea74d9bc",
+      "canonical_cursor_index": 25,
+      "canonical_execution_event_sequence": 32,
+      "created_at_utc": "2026-10-20T16:22:37.036223Z",
+      "cursor_index": 25,
+      "cutoff_timestamp": 1767227160,
+      "data_quality": "full_for_declared_model",
+      "dataset_id": "live-strategy-audit-eur",
+      "dataset_sha256": "cc295fce61a7dea17019b89cba848f43e78a5761c0ea586a9c20b3e4c85ecaf4",
+      "execution_event_sequence": 32,
+      "filters": {
+        "from_close_utc": null,
+        "outcome": "loss",
+        "side": "all",
+        "to_close_utc": null
+      },
+      "historical_view": false,
+      "instrument_id": "EURUSD",
+      "ledger": [
+        {
+          "close_cursor_index": 25,
+          "close_event_sequence": 32,
+          "close_phase_index": 1,
+          "close_time_utc": 1767227160,
+          "exit_reason": "manual_close",
+          "fees": null,
+          "gross_pnl": null,
+          "net_pnl": -7.0,
+          "open_cursor_index": 20,
+          "open_time_utc": 1767226860,
+          "planned_risk_budget": null,
+          "price_close": 1.1014,
+          "price_open": 1.1009,
+          "quantity": 0.1,
+          "realized_r": null,
+          "session_id": "ccc7241a22aa4e3baa7884d55d94075a",
+          "side": "SELL",
+          "source": {
+            "revision": 10,
+            "session_id": "ccc7241a22aa4e3baa7884d55d94075a"
+          },
+          "source_operation_id": "61789ef73ff24c8b8f9471656fe51226",
+          "source_position_id": "replay-pos-25",
+          "symbol": "EURUSD",
+          "trade_id": "replay-pos-25"
+        }
+      ],
+      "metrics": {
+        "average_realized_r": null,
+        "basis": {
+          "cashflow": "not_available",
+          "costs": "incomplete_or_unknown",
+          "drawdown": "closed_trade_balance_only",
+          "floating_pnl": "not_available",
+          "pnl": "net_pnl from normalized closed-trade ledger",
+          "realized_r": "incomplete_or_unknown"
+        },
+        "breakeven": 0,
+        "closed_trade_balance_curve": [
+          {
+            "closed_trade_balance": 10000.0,
+            "sequence": 0,
+            "trade_id": null
+          },
+          {
+            "closed_trade_balance": 9993.0,
+            "sequence": 1,
+            "trade_id": "replay-pos-25"
+          }
+        ],
+        "closed_trade_balance_drawdown_curve": [
+          {
+            "closed_trade_balance": 10000.0,
+            "drawdown": 0.0,
+            "drawdown_pct": 0.0,
+            "peak_closed_trade_balance": 10000.0,
+            "sequence": 0,
+            "trade_id": null
+          },
+          {
+            "closed_trade_balance": 9993.0,
+            "drawdown": 7.0,
+            "drawdown_pct": 0.06999999999999999,
+            "peak_closed_trade_balance": 10000.0,
+            "sequence": 1,
+            "trade_id": "replay-pos-25"
+          }
+        ],
+        "closed_trade_balance_max_drawdown": 7.0,
+        "closed_trade_balance_max_drawdown_pct": 0.06999999999999999,
+        "closed_trade_count": 1,
+        "definitions": {
+          "average_realized_r": {
+            "formula": "mean(net_pnl_i / planned_risk_budget_i)",
+            "question": "What was average realized R when every selected trade has planned risk?",
+            "source": "normalized closed-trade ledger",
+            "unit": "R",
+            "version": "metrics-v2"
+          },
+          "closed_trade_balance_max_drawdown": {
+            "formula": "max_t(peak_closed_balance_t - closed_balance_t)",
+            "question": "What was the largest peak-to-trough drop in the closed-trade balance path?",
+            "source": "closed-trade balance path; no floating P/L or cashflow",
+            "unit": "account_currency",
+            "version": "metrics-v2"
+          },
+          "closed_trade_balance_max_drawdown_pct": {
+            "formula": "max_t(drawdown_t / peak_closed_balance_t * 100)",
+            "question": "What was the largest closed-trade balance drawdown as a percent of its prior peak?",
+            "source": "closed-trade balance path; no floating P/L or cashflow",
+            "unit": "percent",
+            "version": "metrics-v2"
+          },
+          "closed_trade_count": {
+            "formula": "count(selected closed trades)",
+            "question": "How many selected closed trades are in the denominator?",
+            "source": "normalized closed-trade ledger",
+            "unit": "trades",
+            "version": "metrics-v2"
+          },
+          "ending_closed_trade_balance": {
+            "formula": "starting_balance + sum(selected net_pnl_i)",
+            "question": "What is starting balance plus selected closed-trade net P/L?",
+            "source": "run artifact + normalized closed-trade ledger",
+            "unit": "account_currency",
+            "version": "metrics-v2"
+          },
+          "expectancy_net_per_trade": {
+            "formula": "sum(net_pnl_i) / closed_trade_count",
+            "question": "What was average net P/L per selected closed trade?",
+            "source": "normalized closed-trade ledger",
+            "unit": "account_currency_per_trade",
+            "version": "metrics-v2"
+          },
+          "max_loss_streak": {
+            "formula": "max consecutive net_pnl_i < 0; breakeven resets streak",
+            "question": "What was the longest consecutive net-loss streak in sequence order?",
+            "source": "normalized closed-trade ledger",
+            "unit": "trades",
+            "version": "metrics-v2"
+          },
+          "net_pnl": {
+            "formula": "sum(net_pnl_i)",
+            "question": "What did the selected closed trades make or lose after recorded costs?",
+            "source": "normalized closed-trade ledger",
+            "unit": "account_currency",
+            "version": "metrics-v2"
+          },
+          "payoff_ratio_after_cost": {
+            "formula": "mean(net winners) / abs(mean(net losers))",
+            "question": "How large was the mean net winner relative to the mean net loser?",
+            "source": "normalized closed-trade ledger",
+            "unit": "ratio",
+            "version": "metrics-v2"
+          },
+          "profit_factor_after_cost": {
+            "formula": "sum(net positive) / abs(sum(net negative))",
+            "question": "How much net-positive P/L was observed per unit of net-negative P/L?",
+            "source": "normalized closed-trade ledger",
+            "unit": "ratio",
+            "version": "metrics-v2"
+          },
+          "starting_balance": {
+            "formula": "persisted run starting_balance",
+            "question": "What run starting balance anchors this closed-trade balance path?",
+            "source": "run artifact",
+            "unit": "account_currency",
+            "version": "metrics-v2"
+          },
+          "win_rate_pct": {
+            "formula": "wins / closed_trade_count * 100",
+            "question": "What share of selected closed trades finished net positive?",
+            "source": "normalized closed-trade ledger",
+            "unit": "percent",
+            "version": "metrics-v2"
+          }
+        },
+        "ending_closed_trade_balance": 9993.0,
+        "expectancy_net_per_trade": -7.0,
+        "fees": null,
+        "fees_known_count": 0,
+        "gross_pnl": null,
+        "gross_pnl_known_count": 0,
+        "loss_rate_pct": 100.0,
+        "losses": 1,
+        "max_loss_streak": 1,
+        "metric_schema_version": "metrics-v2",
+        "net_pnl": -7.0,
+        "payoff_ratio_after_cost": null,
+        "profit_factor_after_cost": 0.0,
+        "realized_r_known_count": 0,
+        "realized_r_values": [],
+        "starting_balance": 10000.0,
+        "win_rate_pct": 0.0,
+        "wins": 0
+      },
+      "mode": "replay",
+      "open_position_count": 0,
+      "parent_session_id": null,
+      "pending_order_count": 0,
+      "phase_index": 1,
+      "phase_initial_balance": 10000.0,
+      "phase_transition_count": 0,
+      "provenance": {
+        "account_currency": "USD",
+        "branch_id": "56d60b7f30fa4c02978cb358ea74d9bc",
+        "canonical_cursor_index": 25,
+        "canonical_execution_event_sequence": 32,
+        "created_at_utc": "2026-10-20T16:22:37.036223Z",
+        "cursor_index": 25,
+        "cutoff_timestamp": 1767227160,
+        "data_quality": "full_for_declared_model",
+        "dataset_id": "live-strategy-audit-eur",
+        "dataset_sha256": "cc295fce61a7dea17019b89cba848f43e78a5761c0ea586a9c20b3e4c85ecaf4",
+        "execution_event_sequence": 32,
+        "historical_view": false,
+        "instrument_id": "EURUSD",
+        "job_id": null,
+        "metrics_schema_version": null,
+        "mode": "replay",
+        "open_position_count": 0,
+        "parent_session_id": null,
+        "pending_order_count": 0,
+        "phase_index": 1,
+        "phase_initial_balance": 10000.0,
+        "phase_transition_count": 0,
+        "playbook_id": null,
+        "playbook_revision": null,
+        "protocol_sha256": null,
+        "revision": 10,
+        "session_id": "ccc7241a22aa4e3baa7884d55d94075a",
+        "split": null,
+        "timeframe": "60s",
+        "timeframe_seconds": 60,
+        "timezone": "UTC",
+        "workspace_id": "tenant-a"
+      },
+      "revision": 10,
+      "schema_version": "analytics-read-model-v1",
+      "scope": {
+        "active_filters": true,
+        "balance_curve_scope": "selected closed trades replayed from result starting balance; floating P/L and cashflow unavailable",
+        "observed_range": {
+          "first_close_utc": "2026-01-01T00:26:00+00:00",
+          "last_close_utc": "2026-01-01T00:26:00+00:00"
+        },
+        "selected_trade_count": 1,
+        "total_trade_count": 3
+      },
+      "session_id": "ccc7241a22aa4e3baa7884d55d94075a",
+      "timeframe": "60s",
+      "timeframe_seconds": 60,
+      "timezone": "UTC",
+      "workspace_id": "tenant-a"
+    },
+    "historical": {
+      "account_currency": "USD",
+      "analytics_available": true,
+      "blocked_by_data": [],
+      "branch_id": "56d60b7f30fa4c02978cb358ea74d9bc",
+      "canonical_cursor_index": 25,
+      "canonical_execution_event_sequence": 32,
+      "created_at_utc": "2026-10-20T16:22:37.036223Z",
+      "cursor_index": 10,
+      "cutoff_timestamp": 1767226260,
+      "data_quality": "full_for_declared_model",
+      "dataset_id": "live-strategy-audit-eur",
+      "dataset_sha256": "cc295fce61a7dea17019b89cba848f43e78a5761c0ea586a9c20b3e4c85ecaf4",
+      "execution_event_sequence": 13,
+      "filters": {
+        "from_close_utc": null,
+        "outcome": "all",
+        "side": "all",
+        "to_close_utc": null
+      },
+      "historical_view": true,
+      "instrument_id": "EURUSD",
+      "ledger": [
+        {
+          "close_cursor_index": 10,
+          "close_event_sequence": 13,
+          "close_phase_index": 1,
+          "close_time_utc": 1767226260,
+          "exit_reason": "manual_close",
+          "fees": null,
+          "gross_pnl": null,
+          "net_pnl": 1.0,
+          "open_cursor_index": 0,
+          "open_time_utc": 1767225660,
+          "planned_risk_budget": null,
+          "price_close": 1.1004,
+          "price_open": 1.1002,
+          "quantity": 0.1,
+          "realized_r": null,
+          "session_id": "ccc7241a22aa4e3baa7884d55d94075a",
+          "side": "BUY",
+          "source": {
+            "revision": 10,
+            "session_id": "ccc7241a22aa4e3baa7884d55d94075a"
+          },
+          "source_operation_id": "6f21b37fab944ea48fea2378c32ada23",
+          "source_position_id": "replay-pos-1",
+          "symbol": "EURUSD",
+          "trade_id": "replay-pos-1:close:13"
+        }
+      ],
+      "metrics": {
+        "average_realized_r": null,
+        "basis": {
+          "cashflow": "not_available",
+          "costs": "incomplete_or_unknown",
+          "drawdown": "closed_trade_balance_only",
+          "floating_pnl": "not_available",
+          "pnl": "net_pnl from normalized closed-trade ledger",
+          "realized_r": "incomplete_or_unknown"
+        },
+        "breakeven": 0,
+        "closed_trade_balance_curve": [
+          {
+            "closed_trade_balance": 10000.0,
+            "sequence": 0,
+            "trade_id": null
+          },
+          {
+            "closed_trade_balance": 10001.0,
+            "sequence": 1,
+            "trade_id": "replay-pos-1:close:13"
+          }
+        ],
+        "closed_trade_balance_drawdown_curve": [
+          {
+            "closed_trade_balance": 10000.0,
+            "drawdown": 0.0,
+            "drawdown_pct": 0.0,
+            "peak_closed_trade_balance": 10000.0,
+            "sequence": 0,
+            "trade_id": null
+          },
+          {
+            "closed_trade_balance": 10001.0,
+            "drawdown": 0.0,
+            "drawdown_pct": 0.0,
+            "peak_closed_trade_balance": 10001.0,
+            "sequence": 1,
+            "trade_id": "replay-pos-1:close:13"
+          }
+        ],
+        "closed_trade_balance_max_drawdown": 0.0,
+        "closed_trade_balance_max_drawdown_pct": 0.0,
+        "closed_trade_count": 1,
+        "definitions": {
+          "average_realized_r": {
+            "formula": "mean(net_pnl_i / planned_risk_budget_i)",
+            "question": "What was average realized R when every selected trade has planned risk?",
+            "source": "normalized closed-trade ledger",
+            "unit": "R",
+            "version": "metrics-v2"
+          },
+          "closed_trade_balance_max_drawdown": {
+            "formula": "max_t(peak_closed_balance_t - closed_balance_t)",
+            "question": "What was the largest peak-to-trough drop in the closed-trade balance path?",
+            "source": "closed-trade balance path; no floating P/L or cashflow",
+            "unit": "account_currency",
+            "version": "metrics-v2"
+          },
+          "closed_trade_balance_max_drawdown_pct": {
+            "formula": "max_t(drawdown_t / peak_closed_balance_t * 100)",
+            "question": "What was the largest closed-trade balance drawdown as a percent of its prior peak?",
+            "source": "closed-trade balance path; no floating P/L or cashflow",
+            "unit": "percent",
+            "version": "metrics-v2"
+          },
+          "closed_trade_count": {
+            "formula": "count(selected closed trades)",
+            "question": "How many selected closed trades are in the denominator?",
+            "source": "normalized closed-trade ledger",
+            "unit": "trades",
+            "version": "metrics-v2"
+          },
+          "ending_closed_trade_balance": {
+            "formula": "starting_balance + sum(selected net_pnl_i)",
+            "question": "What is starting balance plus selected closed-trade net P/L?",
+            "source": "run artifact + normalized closed-trade ledger",
+            "unit": "account_currency",
+            "version": "metrics-v2"
+          },
+          "expectancy_net_per_trade": {
+            "formula": "sum(net_pnl_i) / closed_trade_count",
+            "question": "What was average net P/L per selected closed trade?",
+            "source": "normalized closed-trade ledger",
+            "unit": "account_currency_per_trade",
+            "version": "metrics-v2"
+          },
+          "max_loss_streak": {
+            "formula": "max consecutive net_pnl_i < 0; breakeven resets streak",
+            "question": "What was the longest consecutive net-loss streak in sequence order?",
+            "source": "normalized closed-trade ledger",
+            "unit": "trades",
+            "version": "metrics-v2"
+          },
+          "net_pnl": {
+            "formula": "sum(net_pnl_i)",
+            "question": "What did the selected closed trades make or lose after recorded costs?",
+            "source": "normalized closed-trade ledger",
+            "unit": "account_currency",
+            "version": "metrics-v2"
+          },
+          "payoff_ratio_after_cost": {
+            "formula": "mean(net winners) / abs(mean(net losers))",
+            "question": "How large was the mean net winner relative to the mean net loser?",
+            "source": "normalized closed-trade ledger",
+            "unit": "ratio",
+            "version": "metrics-v2"
+          },
+          "profit_factor_after_cost": {
+            "formula": "sum(net positive) / abs(sum(net negative))",
+            "question": "How much net-positive P/L was observed per unit of net-negative P/L?",
+            "source": "normalized closed-trade ledger",
+            "unit": "ratio",
+            "version": "metrics-v2"
+          },
+          "starting_balance": {
+            "formula": "persisted run starting_balance",
+            "question": "What run starting balance anchors this closed-trade balance path?",
+            "source": "run artifact",
+            "unit": "account_currency",
+            "version": "metrics-v2"
+          },
+          "win_rate_pct": {
+            "formula": "wins / closed_trade_count * 100",
+            "question": "What share of selected closed trades finished net positive?",
+            "source": "normalized closed-trade ledger",
+            "unit": "percent",
+            "version": "metrics-v2"
+          }
+        },
+        "ending_closed_trade_balance": 10001.0,
+        "expectancy_net_per_trade": 1.0,
+        "fees": null,
+        "fees_known_count": 0,
+        "gross_pnl": null,
+        "gross_pnl_known_count": 0,
+        "loss_rate_pct": 0.0,
+        "losses": 0,
+        "max_loss_streak": 0,
+        "metric_schema_version": "metrics-v2",
+        "net_pnl": 1.0,
+        "payoff_ratio_after_cost": null,
+        "profit_factor_after_cost": null,
+        "realized_r_known_count": 0,
+        "realized_r_values": [],
+        "starting_balance": 10000.0,
+        "win_rate_pct": 100.0,
+        "wins": 1
+      },
+      "mode": "replay",
+      "open_position_count": 1,
+      "parent_session_id": null,
+      "pending_order_count": 0,
+      "phase_index": 1,
+      "phase_initial_balance": 10000.0,
+      "phase_transition_count": 0,
+      "provenance": {
+        "account_currency": "USD",
+        "branch_id": "56d60b7f30fa4c02978cb358ea74d9bc",
+        "canonical_cursor_index": 25,
+        "canonical_execution_event_sequence": 32,
+        "created_at_utc": "2026-10-20T16:22:37.036223Z",
+        "cursor_index": 10,
+        "cutoff_timestamp": 1767226260,
+        "data_quality": "full_for_declared_model",
+        "dataset_id": "live-strategy-audit-eur",
+        "dataset_sha256": "cc295fce61a7dea17019b89cba848f43e78a5761c0ea586a9c20b3e4c85ecaf4",
+        "execution_event_sequence": 13,
+        "historical_view": true,
+        "instrument_id": "EURUSD",
+        "job_id": null,
+        "metrics_schema_version": null,
+        "mode": "replay",
+        "open_position_count": 1,
+        "parent_session_id": null,
+        "pending_order_count": 0,
+        "phase_index": 1,
+        "phase_initial_balance": 10000.0,
+        "phase_transition_count": 0,
+        "playbook_id": null,
+        "playbook_revision": null,
+        "protocol_sha256": null,
+        "revision": 10,
+        "session_id": "ccc7241a22aa4e3baa7884d55d94075a",
+        "split": null,
+        "timeframe": "60s",
+        "timeframe_seconds": 60,
+        "timezone": "UTC",
+        "workspace_id": "tenant-a"
+      },
+      "revision": 10,
+      "schema_version": "analytics-read-model-v1",
+      "scope": {
+        "active_filters": false,
+        "balance_curve_scope": "all closed trades replayed from result starting balance; floating P/L and cashflow unavailable",
+        "observed_range": {
+          "first_close_utc": "2026-01-01T00:11:00+00:00",
+          "last_close_utc": "2026-01-01T00:11:00+00:00"
+        },
+        "selected_trade_count": 1,
+        "total_trade_count": 1
+      },
+      "session_id": "ccc7241a22aa4e3baa7884d55d94075a",
+      "timeframe": "60s",
+      "timeframe_seconds": 60,
+      "timezone": "UTC",
+      "workspace_id": "tenant-a"
+    }
+  },
+  "trade_report": {
+    "excluded": [],
+    "facets": {
+      "assets": [
+        "EURUSD"
+      ],
+      "date_range": {
+        "from": "2026-01-01",
+        "to": "2026-01-01"
+      },
+      "has_notes": false,
+      "strategies": [],
+      "tags": [],
+      "types": [],
+      "years": [
+        "2026"
+      ]
+    },
+    "ledger": [
+      {
+        "account_currency": "USD",
+        "close_cursor_index": 25,
+        "close_event_sequence": 32,
+        "close_phase_index": 1,
+        "close_time_utc": 1767227160,
+        "exit_reason": "manual_close",
+        "fees": null,
+        "gross_pnl": null,
+        "has_notes": false,
+        "net_pnl": -7.0,
+        "open_cursor_index": 20,
+        "open_time_utc": 1767226860,
+        "origin_session_id": "ccc7241a22aa4e3baa7884d55d94075a",
+        "planned_risk_budget": null,
+        "price_close": 1.1014,
+        "price_open": 1.1009,
+        "quantity": 0.1,
+        "realized_r": null,
+        "report_kind": "app",
+        "session_id": "ccc7241a22aa4e3baa7884d55d94075a",
+        "session_name": "Analytics oracle — partial fills (QA)",
+        "side": "SELL",
+        "source": {
+          "revision": 10,
+          "session_id": "ccc7241a22aa4e3baa7884d55d94075a"
+        },
+        "source_operation_id": "61789ef73ff24c8b8f9471656fe51226",
+        "source_position_id": "replay-pos-25",
+        "source_provenance": {
+          "account_currency": "USD",
+          "branch_id": "56d60b7f30fa4c02978cb358ea74d9bc",
+          "canonical_cursor_index": 25,
+          "canonical_execution_event_sequence": null,
+          "created_at_utc": "2026-10-20T16:22:37.036223Z",
+          "cursor_index": 25,
+          "cutoff_timestamp": 1767227160,
+          "data_quality": "full_for_declared_model",
+          "dataset_id": "live-strategy-audit-eur",
+          "dataset_sha256": "cc295fce61a7dea17019b89cba848f43e78a5761c0ea586a9c20b3e4c85ecaf4",
+          "execution_event_sequence": 32,
+          "historical_view": false,
+          "instrument_id": "EURUSD",
+          "job_id": null,
+          "metrics_schema_version": null,
+          "mode": "replay",
+          "open_position_count": 0,
+          "parent_session_id": null,
+          "pending_order_count": 0,
+          "phase_index": 1,
+          "phase_initial_balance": 10000.0,
+          "phase_transition_count": 0,
+          "playbook_id": null,
+          "playbook_revision": null,
+          "protocol_sha256": null,
+          "revision": 10,
+          "session_id": "ccc7241a22aa4e3baa7884d55d94075a",
+          "split": null,
+          "timeframe": "60s",
+          "timeframe_seconds": 60,
+          "timezone": "UTC",
+          "workspace_id": "tenant-a"
+        },
+        "starting_balance": 10000.0,
+        "symbol": "EURUSD",
+        "tags": [],
+        "trade_id": "replay-pos-25"
+      },
+      {
+        "account_currency": "USD",
+        "close_cursor_index": 20,
+        "close_event_sequence": 24,
+        "close_phase_index": 1,
+        "close_time_utc": 1767226860,
+        "exit_reason": "manual_close",
+        "fees": null,
+        "gross_pnl": null,
+        "has_notes": false,
+        "net_pnl": 6.0,
+        "open_cursor_index": 0,
+        "open_time_utc": 1767225660,
+        "origin_session_id": "ccc7241a22aa4e3baa7884d55d94075a",
+        "planned_risk_budget": null,
+        "price_close": 1.1009,
+        "price_open": 1.1002,
+        "quantity": 0.1,
+        "realized_r": null,
+        "report_kind": "app",
+        "session_id": "ccc7241a22aa4e3baa7884d55d94075a",
+        "session_name": "Analytics oracle — partial fills (QA)",
+        "side": "BUY",
+        "source": {
+          "revision": 10,
+          "session_id": "ccc7241a22aa4e3baa7884d55d94075a"
+        },
+        "source_operation_id": "6f21b37fab944ea48fea2378c32ada23",
+        "source_position_id": "replay-pos-1",
+        "source_provenance": {
+          "account_currency": "USD",
+          "branch_id": "56d60b7f30fa4c02978cb358ea74d9bc",
+          "canonical_cursor_index": 25,
+          "canonical_execution_event_sequence": null,
+          "created_at_utc": "2026-10-20T16:22:37.036223Z",
+          "cursor_index": 25,
+          "cutoff_timestamp": 1767227160,
+          "data_quality": "full_for_declared_model",
+          "dataset_id": "live-strategy-audit-eur",
+          "dataset_sha256": "cc295fce61a7dea17019b89cba848f43e78a5761c0ea586a9c20b3e4c85ecaf4",
+          "execution_event_sequence": 32,
+          "historical_view": false,
+          "instrument_id": "EURUSD",
+          "job_id": null,
+          "metrics_schema_version": null,
+          "mode": "replay",
+          "open_position_count": 0,
+          "parent_session_id": null,
+          "pending_order_count": 0,
+          "phase_index": 1,
+          "phase_initial_balance": 10000.0,
+          "phase_transition_count": 0,
+          "playbook_id": null,
+          "playbook_revision": null,
+          "protocol_sha256": null,
+          "revision": 10,
+          "session_id": "ccc7241a22aa4e3baa7884d55d94075a",
+          "split": null,
+          "timeframe": "60s",
+          "timeframe_seconds": 60,
+          "timezone": "UTC",
+          "workspace_id": "tenant-a"
+        },
+        "starting_balance": 10000.0,
+        "symbol": "EURUSD",
+        "tags": [],
+        "trade_id": "replay-pos-1:close:24"
+      },
+      {
+        "account_currency": "USD",
+        "close_cursor_index": 10,
+        "close_event_sequence": 13,
+        "close_phase_index": 1,
+        "close_time_utc": 1767226260,
+        "exit_reason": "manual_close",
+        "fees": null,
+        "gross_pnl": null,
+        "has_notes": false,
+        "net_pnl": 1.0,
+        "open_cursor_index": 0,
+        "open_time_utc": 1767225660,
+        "origin_session_id": "ccc7241a22aa4e3baa7884d55d94075a",
+        "planned_risk_budget": null,
+        "price_close": 1.1004,
+        "price_open": 1.1002,
+        "quantity": 0.1,
+        "realized_r": null,
+        "report_kind": "app",
+        "session_id": "ccc7241a22aa4e3baa7884d55d94075a",
+        "session_name": "Analytics oracle — partial fills (QA)",
+        "side": "BUY",
+        "source": {
+          "revision": 10,
+          "session_id": "ccc7241a22aa4e3baa7884d55d94075a"
+        },
+        "source_operation_id": "6f21b37fab944ea48fea2378c32ada23",
+        "source_position_id": "replay-pos-1",
+        "source_provenance": {
+          "account_currency": "USD",
+          "branch_id": "56d60b7f30fa4c02978cb358ea74d9bc",
+          "canonical_cursor_index": 25,
+          "canonical_execution_event_sequence": null,
+          "created_at_utc": "2026-10-20T16:22:37.036223Z",
+          "cursor_index": 25,
+          "cutoff_timestamp": 1767227160,
+          "data_quality": "full_for_declared_model",
+          "dataset_id": "live-strategy-audit-eur",
+          "dataset_sha256": "cc295fce61a7dea17019b89cba848f43e78a5761c0ea586a9c20b3e4c85ecaf4",
+          "execution_event_sequence": 32,
+          "historical_view": false,
+          "instrument_id": "EURUSD",
+          "job_id": null,
+          "metrics_schema_version": null,
+          "mode": "replay",
+          "open_position_count": 0,
+          "parent_session_id": null,
+          "pending_order_count": 0,
+          "phase_index": 1,
+          "phase_initial_balance": 10000.0,
+          "phase_transition_count": 0,
+          "playbook_id": null,
+          "playbook_revision": null,
+          "protocol_sha256": null,
+          "revision": 10,
+          "session_id": "ccc7241a22aa4e3baa7884d55d94075a",
+          "split": null,
+          "timeframe": "60s",
+          "timeframe_seconds": 60,
+          "timezone": "UTC",
+          "workspace_id": "tenant-a"
+        },
+        "starting_balance": 10000.0,
+        "symbol": "EURUSD",
+        "tags": [],
+        "trade_id": "replay-pos-1:close:13"
+      }
+    ],
+    "pagination": {
+      "filtered_count": 3,
+      "has_next": false,
+      "page": 1,
+      "page_count": 1,
+      "page_size": 10,
+      "returned_count": 3
+    },
+    "schema_version": "replay-trades-page-v1",
+    "scope": {
+      "aggregation": "unique_closed_fills_within_root_lineage",
+      "duplicate_trade_count": 0,
+      "extra_filters": {},
+      "filters": {
+        "from_close_utc": null,
+        "outcome": "all",
+        "side": "all",
+        "to_close_utc": null
+      },
+      "includes_archived": true,
+      "readable_session_count": 1,
+      "session_count": 1,
+      "session_id": "ccc7241a22aa4e3baa7884d55d94075a",
+      "session_ids": [
+        "ccc7241a22aa4e3baa7884d55d94075a"
+      ],
+      "source": "persisted_replay_execution",
+      "timezone": "UTC"
+    },
+    "sessions": [
+      {
+        "archived": false,
+        "dataset_id": "live-strategy-audit-eur",
+        "instrument_id": "EURUSD",
+        "name": "Analytics oracle — partial fills (QA)",
+        "revision": 10,
+        "session_id": "ccc7241a22aa4e3baa7884d55d94075a"
+      },
+      {
+        "archived": false,
+        "dataset_id": "live-strategy-audit-eur",
+        "instrument_id": "EURUSD",
+        "name": "Analytics oracle — partial fills (QA)",
+        "revision": 10,
+        "session_id": "93ba66ae675b47179fda1a6e3d08a27e"
+      },
+      {
+        "archived": false,
+        "dataset_id": "live-strategy-audit-eur",
+        "instrument_id": null,
+        "name": "Luyện tập chiến lược (QA)",
+        "revision": 1,
+        "session_id": "0719a5d5b2e445f99cafb6a1f2e796dd"
+      }
+    ],
+    "snapshot_key": "543d2f5935730ea66185e64787541f1b6beadd511ceff2da8c9559891356dfa8",
+    "sort": {
+      "direction": "desc",
+      "key": "close_time_utc"
+    },
+    "sources": [
+      {
+        "closed_trade_count": 3,
+        "cutoff_timestamp": 1767227160,
+        "dataset_id": "live-strategy-audit-eur",
+        "dataset_sha256": "cc295fce61a7dea17019b89cba848f43e78a5761c0ea586a9c20b3e4c85ecaf4",
+        "revision": 10,
+        "session_id": "ccc7241a22aa4e3baa7884d55d94075a"
+      }
+    ],
+    "status": "ready"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "date": "2026-10-20",
+  "scope": "manual live journal, exact strategy revision handoff and replay analytics",
+  "method": "CUA browser interaction against disposable native API and PostgreSQL",
+  "frontend": "http://127.0.0.1:5183",
+  "api": "http://127.0.0.1:18011",
+  "synthetic_data": true,
+  "owner_financial_data_mutated": false,
+  "broker_execution_enabled": false,
+  "main_database_activation": "pending explicit backup/migration/restart permission",
+  "verified": [
+    "manual account create/edit and reload persistence",
+    "closed trade create/edit with signed costs and UTC timestamps",
+    "CSV upload, validation preview, sequential import and export",
+    "strategy create, revise, freeze and fork",
+    "historical strategy v2 survives current v3 in Practice creation and Live trade attachment",
+    "live account selection survives section navigation",
+    "account change clears previous account tag filter",
+    "notes creation and search/tag surfaces",
+    "calendar recorded monthly totals and populated historical days",
+    "tag analysis and account-scoped closed-trade metrics",
+    "journal read failure retains rows with warning and disables writes; retry recovers",
+    "empty tenant and denied workspace",
+    "dark/light desktop, tablet and mobile layout inspection",
+    "desktop dialog header remains available while form body scrolls",
+    "analytics net/count/win/drawdown and partial-close commission allocation",
+    "analytics historical cursor fence does not expose later fills"
+  ],
+  "live_oracles": {
+    "USD": { "trades": 5, "net": 141, "recorded_balance": 10141, "win_rate_pct": 60, "profit_factor_rounded": 2.38, "return_pct": 1.41 },
+    "EUR": { "trades": 2, "net": 28, "recorded_balance": 5028 }
+  },
+  "analytics_oracle": {
+    "closed_fill_net": [1, 6, -7], "net": 0, "balance": 10000,
+    "closed_fills": 3, "closed_positions": 2, "win_rate_pct_rounded": 66.67,
+    "closed_balance_drawdown": 7, "console_errors": []
+  },
+  "screenshots": ["live-trades-dark.jpg", "live-calendar-light.jpg", "strategies-dark.jpg", "analytics-oracle-dark.jpg"],
+  "limits": [
+    "Main owner database migration and API restart have not been performed.",
+    "No broker connection or execution acceptance is claimed.",
+    "The light-calendar 1440 px capture is cropped by the native screenshot surface.",
+    "Monthly-review note editing and revision-diff dropdown interaction were source/test reviewed; no additional end-to-end browser claim is made for them.",
+    "The final repeated viewport capability call did not change the current 1024 px page; prior responsive inspection is recorded separately and this call is not counted as a new 360 px verification."
+  ]
+}
