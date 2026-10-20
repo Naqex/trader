@@ -1,8 +1,5 @@
 import { displayDate } from './dateFormat.js'
-
-function finite(value) {
-  return value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value))
-}
+import { known as finite, outcomeOf } from './tradingAnalyticsModel.js'
 
 function firstKnown(...values) {
   return values.find((value) => finite(value))
@@ -10,7 +7,7 @@ function firstKnown(...values) {
 
 
 export function dateFromValue(value) {
-  if (value === null || value === undefined || value === '') return null
+  if (value === null || value === undefined || typeof value === 'boolean' || typeof value === 'string' && !value.trim()) return null
   const numericInput = typeof value === 'number' || (typeof value === 'string' && /^[+-]?(?:\d+\.?\d*|\.\d+)$/.test(value.trim()))
   if (numericInput && finite(value)) {
     const numeric = Number(value)
@@ -44,9 +41,9 @@ export function buildAnalyticsModel(result, reportKind = 'app') {
   const providedWins = firstKnown(metrics.wins, metrics.winning_trades)
   const providedLosses = firstKnown(metrics.losses, metrics.losing_trades)
   const providedBreakeven = firstKnown(metrics.breakeven, metrics.breakeven_trades)
-  const wins = finite(providedWins) ? Number(providedWins) : (ledgerHasCompletePnl ? ledger.filter((trade) => Number(trade.net_pnl) > 0).length : null)
-  const losses = finite(providedLosses) ? Number(providedLosses) : (ledgerHasCompletePnl ? ledger.filter((trade) => Number(trade.net_pnl) < 0).length : null)
-  const breakeven = finite(providedBreakeven) ? Number(providedBreakeven) : (ledgerHasCompletePnl ? ledger.filter((trade) => Number(trade.net_pnl) === 0).length : null)
+  const wins = finite(providedWins) ? Number(providedWins) : (ledgerHasCompletePnl ? ledger.filter((trade) => outcomeOf(trade.net_pnl) === 'win').length : null)
+  const losses = finite(providedLosses) ? Number(providedLosses) : (ledgerHasCompletePnl ? ledger.filter((trade) => outcomeOf(trade.net_pnl) === 'loss').length : null)
+  const breakeven = finite(providedBreakeven) ? Number(providedBreakeven) : (ledgerHasCompletePnl ? ledger.filter((trade) => outcomeOf(trade.net_pnl) === 'breakeven').length : null)
   const providedWinRate = firstKnown(metrics.win_rate_pct, metrics.win_rate, result?.win_rate_pct)
   const winRate = providedWinRate ?? (ledgerHasCompletePnl ? (wins / ledger.length) * 100 : null)
   const providedExpectancy = firstKnown(metrics.expectancy, metrics.expectancy_account, metrics.expectancy_net_per_trade)
@@ -63,7 +60,7 @@ export function buildAnalyticsModel(result, reportKind = 'app') {
   const observedEnd = observedRange.end_utc || observedRange.end || observedRange.to_utc || observedRange.to
   const ledgerDates = ledger.flatMap((trade) => [trade?.open_time_utc, trade?.close_time_utc]).map(dateFromValue).filter(Boolean).sort((a, b) => a - b)
   const dateLabel = (value) => { const date = dateFromValue(value); return !date ? 'N/A' : displayDate(date) }
-  const rows = ledger.map((trade, index) => { const pnl = finite(trade?.net_pnl) ? Number(trade.net_pnl) : null; const date = dateFromValue(trade?.close_time_utc); return { ...trade, report_kind: reportKind, rowIndex: index, tradeId: trade?.trade_id || `trade-${index + 1}`, pnl, outcome: pnl === null ? 'unknown' : pnl > 0 ? 'win' : pnl < 0 ? 'loss' : 'breakeven', source: trade?.source?.session_id || trade?.session_id || trade?.source_id || 'research ledger', closeDate: date ? displayDate(date, { timeStyle: 'medium' }) : 'N/A' } })
+  const rows = ledger.map((trade, index) => { const pnl = finite(trade?.net_pnl) ? Number(trade.net_pnl) : null; const date = dateFromValue(trade?.close_time_utc); return { ...trade, report_kind: reportKind, rowIndex: index, tradeId: trade?.trade_id || `trade-${index + 1}`, pnl, outcome: outcomeOf(pnl), source: trade?.source?.session_id || trade?.session_id || trade?.source_id || 'research ledger', closeDate: date ? displayDate(date, { timeStyle: 'medium' }) : 'N/A' } })
   const realizedRValues = (Array.isArray(metrics.realized_r_values) ? metrics.realized_r_values : rows.map((trade) => trade.realized_r)).filter(finite).map(Number)
   const metricDefinitions = metrics.definitions && typeof metrics.definitions === 'object'
     ? Object.entries(metrics.definitions).slice(0, 16).reduce((out, [key, value]) => {

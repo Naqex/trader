@@ -1,6 +1,6 @@
 import { closeTime } from './sessionPerformanceModel.js'
 
-export const known = value => value !== null && value !== undefined && value !== '' && typeof value !== 'boolean' && Number.isFinite(Number(value))
+export const known = value => (typeof value === 'number' || typeof value === 'string' && value.trim() !== '') && Number.isFinite(Number(value))
 export const number = value => known(value) ? Number(value) : null
 export const outcomeOf = value => !known(value) ? 'unknown' : Number(value) > 1e-12 ? 'win' : Number(value) < -1e-12 ? 'loss' : 'breakeven'
 export const DEFAULT_EXTRA_FILTERS = { asset: 'all', tag: 'all', strategy: 'all', source: 'all', weekday: 'all', hour: 'all', timeStart: '', timeEnd: '', reportKinds: '', timezone: 'UTC', search: '', notes: '', notesPresence: '', statuses: '', assets: '', sides: '', outcomes: '', types: '', years: '', months: '', days: '', hours: '', tagInclude: '', tagExclude: '', tagIncludeMode: 'AND', tagExcludeMode: 'AND' }

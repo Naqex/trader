@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { analyticsQuery, analyticsViewResult, buildAnalyticsModel, readAnalyticsFilters } from '../src/analyticsViewModel.js'
+import { analyticsQuery, analyticsViewResult, buildAnalyticsModel, dateFromValue, readAnalyticsFilters } from '../src/analyticsViewModel.js'
+import { advancedAnalytics } from '../src/tradingAnalyticsModel.js'
 
 test('model preserves unknown values, original financial metrics and immutable ledger', () => {
   const source = { metrics: { starting_balance: 1000, profit_factor_after_cost: 2, expectancy_net_per_trade: 1 }, ledger: [{ trade_id: 'loss', net_pnl: -2, open_time_utc: '2026-10-01T01:00:00Z', close_time_utc: '2026-10-01T01:01:00Z' }, { trade_id: 'win', net_pnl: 4 }] }
@@ -29,4 +30,27 @@ test('read projection retains scope, partial and cutoff provenance without React
   assert.equal(result.observed_range.start_utc, '2026-10-01T00:00:00Z')
   const filters = readAnalyticsFilters(new URLSearchParams({ side: 'SELL', from: '2026-10-01', to: '2026-10-17' }))
   assert.deepEqual(Object.fromEntries(analyticsQuery(filters)), { side: 'sell', from_close_utc: '2026-10-01T00:00:00.000Z', to_close_utc: '2026-10-17T23:59:59.999Z' })
+})
+
+test('rounding residue uses the same breakeven tolerance in ledger, summary and report', () => {
+  const model = buildAnalyticsModel({ ledger: [1e-13, -1e-13, 40, -20].map((net_pnl, index) => ({ trade_id: `close-${index}`, net_pnl })) })
+  assert.deepEqual(model.ledger.map(row => row.outcome), ['breakeven', 'breakeven', 'win', 'loss'])
+  assert.deepEqual([model.wins, model.losses, model.breakeven, model.winRate], [1, 1, 2, 25])
+  const report = advancedAnalytics(model)
+  assert.deepEqual([report.wins, report.losses, report.breakeven, report.winRate], [1, 1, 2, 25])
+  assert.equal(model.netPnl, 20)
+})
+
+test('malformed numeric data remains unknown instead of turning into zero or one', () => {
+  for (const invalid of [true, false, [], [12], {}, ' ', '\t']) {
+    const model = buildAnalyticsModel({ metrics: { net_pnl: invalid, starting_balance: invalid }, ledger: [{ net_pnl: invalid }] })
+    assert.equal(model.netPnl, null)
+    assert.equal(model.startBalance, undefined)
+    assert.equal(model.ledger[0].pnl, null)
+    assert.equal(model.ledger[0].outcome, 'unknown')
+    assert.equal(model.winRate, null)
+  }
+  assert.equal(dateFromValue(true), null)
+  assert.equal(dateFromValue('  '), null)
+  assert.equal(buildAnalyticsModel({ ledger: [{ net_pnl: '0' }] }).ledger[0].pnl, 0)
 })

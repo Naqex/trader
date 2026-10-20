@@ -131,4 +131,5 @@ test('aggregate ledger rejects malformed or mismatched source instead of fabrica
   assert.equal(validateTradesPayload(payload), payload);
   for (const ledger of [[null], [{ ...payload.ledger[0], source_provenance: { session_id: 'wrong', revision: 1 } }], [{ ...payload.ledger[0], net_pnl: null }]]) assert.throws(() => validateTradesPayload({ ...payload, ledger }));
   assert.throws(() => validateTradesPayload({ ...payload, metrics: { closed_trade_count: 0 } }));
+  for (const net_pnl of [true, false, [], [5], {}, ' ', '\t']) assert.throws(() => validateTradesPayload({ ...payload, ledger: [{ ...payload.ledger[0], net_pnl }] }));
 });
