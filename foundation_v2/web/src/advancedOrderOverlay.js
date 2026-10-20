@@ -1,6 +1,17 @@
 import { nativeChartPalette } from './nativeChartPalette.js'
 import { orderLabel, orderPriceColor, protectionError, orderKinds } from './replayOrderLabels.js'
 
+// Switching resolution briefly detaches the main series' price range. The
+// deprecated chart getter throws in that state; wait for the scale to return.
+export function readOrderPriceScale(chart) {
+  try {
+    const pane = chart?.getPanes?.()[0], scale = pane?.getMainSourcePriceScale?.()
+    const visible = scale?.getVisiblePriceRange?.()
+    if (!visible || !Number.isFinite(visible.from) || !Number.isFinite(visible.to) || visible.from === visible.to) return null
+    return { pane, scale, range: { from:Math.min(visible.from,visible.to), to:Math.max(visible.from,visible.to) } }
+  } catch { return null }
+}
+
 // v23 exposes the visible raw-price range, mode and inversion, but no public
 // coordinate conversion. Percentage/indexed modes are affine in raw price.
 export function orderScale(info) {

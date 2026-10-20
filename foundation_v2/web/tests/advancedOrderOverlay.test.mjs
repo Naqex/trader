@@ -1,10 +1,27 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { orderScale, orderMarkerColumns } from '../src/advancedOrderOverlay.js'
+import { orderScale, orderMarkerColumns, readOrderPriceScale } from '../src/advancedOrderOverlay.js'
 import { orderLabel, orderPriceColor, protectionError, protectionProfit } from '../src/replayOrderLabels.js'
 import { orderLevels } from '../src/replayOrderModel.js'
 
 const levels = { entry: 1.1, reference: 1.101, side: 'BUY', quantity: '.12', contractSize: 100000, quoteCurrency: 'USD', currency: 'USD', state: 'position', floating: '-3.12', stop: 1.09, target: 1.12 }
+
+test('resolution changes tolerate unavailable price scales and resume on the new range', () => {
+  let visible = null
+  const scale = {getVisiblePriceRange:() => { if (visible === 'detached') throw new Error('Value is null'); return visible }}
+  const pane = {getMainSourcePriceScale:() => scale}
+  const chart = {getPanes:() => [pane],getVisiblePriceRange:() => { throw new Error('Deprecated getter must never run') }}
+  assert.equal(readOrderPriceScale(chart),null)
+  visible = 'detached'
+  assert.equal(readOrderPriceScale(chart),null)
+  for (const value of [{from:1,to:1},{from:NaN,to:2},{from:1,to:Infinity}]) {
+    visible = value; assert.equal(readOrderPriceScale(chart),null)
+  }
+  visible = {from:1.12,to:1.09}
+  assert.deepEqual(readOrderPriceScale(chart),{pane,scale,range:{from:1.09,to:1.12}})
+  assert.equal(readOrderPriceScale({getPanes:() => []}),null)
+  assert.equal(readOrderPriceScale({getPanes:() => {throw new Error('Chart removed')}}),null)
+})
 test('price-axis colors distinguish entry side, protection and selection', () => {
   assert.equal(orderPriceColor('entry', 'dark', false, 'BUY'), '#F5F8FF')
   assert.equal(orderPriceColor('entry', 'dark', false, 'SELL'), '#FFBF00')

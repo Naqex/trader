@@ -116,7 +116,7 @@ export function AnalyticsPerformance({ model, data, extra, onSelect, selected })
   const currency = model.result?.account_currency || t('Đơn vị tài khoản')
   const suffix = metric === 'winRate' ? '%' : metric === 'net' ? ` ${currency}` : ''
   const curve = basis === 'balance' ? data.curve : data.curve.map(point => ({ ...point, value: point.value - Number(model.startBalance) }))
-  const averagePayoff = data.averageLoss ? data.averageWin / Math.abs(data.averageLoss) : null
+  const averagePayoff = data.averageWin !== null && data.averageLoss ? data.averageWin / Math.abs(data.averageLoss) : null
   return <div className="fxa-report" data-testid="analytics-performance">
     <Section title={t("Profit and loss")} note={data.localFiltered || model.result?.scope?.active_filters ? t("Lệnh đã lọc, tính từ vốn ban đầu · không phải lịch sử tài khoản") : t("Balance từ lệnh đóng · không gồm floating PnL")} actions={<SelectField label={t("Biểu đồ")} value={basis} onChange={setBasis} options={[["balance", 'Balance'], ['profit', 'Net PnL']]} />}>
       <div className="fxa-metrics"><Metric label={t("Total PnL")} value={fmt(data.net, ` ${currency}`)} tone={data.net < 0 ? 'is-negative' : 'is-positive'} /><Metric label={t("Closed balance")} value={fmt(data.endingBalance, ` ${currency}`)} /><Metric label={t("Win rate")} value={fmt(data.winRate, '%')} /><Metric label={t("Total trades")} value={fmt(data.count, '', 0)} /><Metric label={t("Breakeven")} value={fmt(data.breakeven, t(" lệnh"), 0)} /></div>

@@ -7,7 +7,7 @@ import { createReplayChartWindowReader } from './replayChartWindow.js'
 import { readChartSnapshot, writeChartSnapshot } from './advancedChartStorage.js'
 import { createChartSave } from './advancedChartSave.js'
 import ChartLoadingState from './ChartLoadingState.jsx'
-import { createAdvancedOrderOverlay } from './advancedOrderOverlay.js'
+import { createAdvancedOrderOverlay, readOrderPriceScale } from './advancedOrderOverlay.js'
 import { orderPriceColor, orderKinds } from './replayOrderLabels.js'
 import LegacyModal from './LegacyModal.jsx'
 import PartialCloseDialog from './PartialCloseDialog.jsx'
@@ -23,7 +23,6 @@ const volumeAppearance = theme => {
     // Volume and its SMA are opt-in in the replay workspace. Keep restored
     // layouts from reviving the default SMA 9 line on a fresh chart.
     'volume ma.visible': false,
-    'smoothedMA.visible': false,
   }
 }
 function hideDefaultVolumeStudies(chart) {
@@ -118,15 +117,13 @@ export default function TradingViewReplayChart(props) {
     const clearOrderHandles = () => { orderOverlay?.destroy(); orderOverlay = null }
     const orderPane = () => {
       const frame = host.current?.querySelector('iframe'), doc = frame?.contentDocument
-      const scale = chart?.getPanes?.()[0]?.getMainSourcePriceScale?.()
-      const paneApi = chart?.getPanes?.()[0]
-      if (!doc || !scale || !paneApi) return null
+      const priceScale = readOrderPriceScale(chart)
+      if (!doc || !priceScale) return null
+      const { pane:paneApi, scale, range } = priceScale
       const pane = doc.querySelector('td.chart-markup-table.pane div.chart-gui-wrapper') || doc.querySelector('td.chart-markup-table.pane')
       const rect = pane?.getBoundingClientRect?.()
       const canvas = host.current?.closest('.chart-canvas')
       if (!rect || !Number.isFinite(rect.top) || !canvas) return null
-      const visible = scale.getVisiblePriceRange?.() || chart.getVisiblePriceRange?.()
-      const range = visible && { from: Math.min(visible.from, visible.to), to: Math.max(visible.from, visible.to) }
       const height = Number(paneApi.getHeight?.() || rect.height)
       if (!range || !(height > 0) || !(range.to > range.from)) return null
       return { doc, scale, rect, range, height, canvas }
@@ -230,8 +227,7 @@ export default function TradingViewReplayChart(props) {
             }
             const signature = state.levels ? [state.levels.side, state.levels.entry, state.levels.timestamp].join(':') : ''
             if (signature !== fittedLevels) {
-              fittedLevels = signature
-              if (state.levels) fitOrder()
+              if (!state.levels || fitOrder()) fittedLevels = signature
             }
           } finally {
             renderingOverlays = false
@@ -241,15 +237,18 @@ export default function TradingViewReplayChart(props) {
         const fitOrder = () => {
           const levels = latest.current.levels
           if (!levels) return
-          const range = chart.getVisiblePriceRange()
+          const priceScale = readOrderPriceScale(chart)
+          if (!priceScale) return false
+          const { range, scale } = priceScale
           const prices = [levels.entry, levels.stop, levels.target, levels.ghostStop, levels.ghostTarget, ...(levels.targets || []).map(target => target.price)].filter(value => Number.isFinite(value) && value > 0)
           // Reopening an already visible position must not compound padding and
           // progressively zoom the chart out until protection drags cross zero.
-          if (prices.every(price => price >= range.from && price <= range.to)) return
+          if (prices.every(price => price >= range.from && price <= range.to)) return true
           const from = Math.min(range.from, range.to, ...prices)
           const to = Math.max(range.from, range.to, ...prices)
           const padding = (to - from) * .06
-          chart.getPanes()[0]?.getMainSourcePriceScale()?.setVisiblePriceRange({ from: from - padding, to: to + padding })
+          scale.setVisiblePriceRange({ from: from - padding, to: to + padding })
+          return true
         }
         const importAnnotations = () => {
           if (cancelled) return

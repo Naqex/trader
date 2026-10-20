@@ -18,7 +18,7 @@ test('project palette keeps small replay text and action foregrounds readable in
   assert.equal(themes.length, 2)
   for (const palette of themes) {
     for (const foreground of ['text', 'muted', 'primary', 'highlight', 'positive', 'negative', 'warning']) {
-      for (const background of ['canvas', 'surface', 'raised', 'control', 'hover']) {
+      for (const background of ['canvas', 'surface', 'raised', 'control', ...(['text', 'muted'].includes(foreground) ? ['hover'] : [])]) {
         assert.ok(contrast(palette[foreground], palette[background]) >= 4.5,
           `${foreground} on ${background} in canvas #${palette.canvas}`)
       }
@@ -28,4 +28,12 @@ test('project palette keeps small replay text and action foregrounds readable in
         `action foreground on ${background} in canvas #${palette.canvas}`)
     }
   }
+  // Semantic accents belong on content surfaces; selected/hovered controls use
+  // neutral text because several pinned accent/hover pairs fall below 4.5:1.
+  const chart = await readFile(new URL('../src/ChartWorkbench.css', import.meta.url), 'utf8')
+  const selected = [...chart.matchAll(/[^{}]*button\[aria-pressed='true'\][^{}]*\{([^{}]*)\}/g)]
+    .filter(match => /chart-(?:tool-rail|utility-rail|floating-toolbar)/.test(match[0]))
+  assert.ok(selected.length >= 2)
+  for (const rule of selected) assert.match(rule[1], /color:\s*var\(--chart-text\)/)
+  assert.match(chart, /\.legacy-partial-total\.is-invalid:hover:not\(:disabled\)\s*\{\s*color:var\(--project-text\)/)
 })

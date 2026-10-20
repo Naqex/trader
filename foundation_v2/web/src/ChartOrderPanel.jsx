@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTestingLocale } from './testingLocale.jsx'
 import { DEFAULT_COST_MODEL, RiskPreview, validateDraft } from './TradeWorkspace.jsx'
-import { finiteNumber, marketQuotes, orderDraft, protectionReference, replayAtCutoff, validateEntry } from './replayOrderModel.js'
+import { finiteNumber, marketQuotes, orderDraft, protectionReference, replayAtCutoff, replayOrderPreview, validateEntry } from './replayOrderModel.js'
 import { useReplayTickOptions } from './useReplayTickOptions.js'
 import FxSelect from './FxSelect.jsx'
 import ChartIcon from './ChartIcon.jsx'
@@ -34,10 +34,12 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
   useEffect(() => { setDraft(orderDraft(replay, instrument)); setNotice(null) }, [replay?.record_id, replay?.revision, instrument])
   const active = execution?.position || execution?.pending_market_order
   const costs = execution?.cost_model || (dataset ? { ...DEFAULT_COST_MODEL, ...(executionConfig?.costModel || {}), account_ccy: executionConfig?.costModel?.account_ccy || instrument?.account_ccy || DEFAULT_COST_MODEL.account_ccy } : null)
-  const quotes = marketQuotes(replay)
-  const reference = active ? protectionReference(replay) : draft.orderType && draft.orderType !== 'market' ? finiteNumber(draft.entryPrice) : execution ? (draft.side === 'BUY' ? quotes.ask : quotes.bid) : protectionReference(replay)
   const disabled = !ready || blocked || pending
   const canInitialize = Boolean(instrument && dataset?.timeframe_seconds && costs)
+  const previewReplay = execution || tick.useTicks ? replay : replayOrderPreview(replay, instrument, costs, spread)
+  const quotes = marketQuotes(previewReplay)
+  const reference = active ? protectionReference(replay) : draft.orderType && draft.orderType !== 'market' ? finiteNumber(draft.entryPrice) : draft.side === 'BUY' ? quotes.ask : quotes.bid
+  const canPreviewProtection = Boolean(reference > 0 && (execution || (!tick.useTicks && canInitialize)))
   const run = async (endpoint, body) => {
     if ((endpoint === 'orders/close' ? !ready || closeBlocked || pending : disabled) || busy.current) return
     busy.current = true
@@ -138,10 +140,10 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
   }
   const reportError = text => setNotice({ kind: 'error', title: 'Order Error', message: String(text || 'Không thể cập nhật TP/SL.') })
   const chooseSide = side => {
-    if (!active && !disabled) { setDraft(current => selectOrderDraft(current, replay, instrument, { side })); setNotice(null) }
+    if (!active && !disabled) { setDraft(current => selectOrderDraft(current, previewReplay, instrument, { side })); setNotice(null) }
   }
   const chooseType = type => {
-    if (!active && !disabled) { setDraft(current => selectOrderDraft(current, replay, instrument, { orderType: type })); setNotice(null) }
+    if (!active && !disabled) { setDraft(current => selectOrderDraft(current, previewReplay, instrument, { orderType: type })); setNotice(null) }
   }
   const initializationBody = () => {
     if (!canInitialize || (tick.options === null && !executionConfig?.forceBar)) return
@@ -172,7 +174,7 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
         if (!initialization) throw new Error('Chưa đủ cấu hình simulator để vào lệnh nhanh.')
         endpoint = 'orders/quick'
       }
-      const quoteSeed = initialization ? marketQuotes({ ...nextReplay, payload: { ...nextReplay.payload, execution: { cursor_index: nextReplay.view_cursor_index ?? nextReplay.payload.cursor_index, spread_price: initialization.spread_price, instrument_spec: initialization.instrument_spec, cost_model: initialization.cost_model } } }) : marketQuotes(nextReplay)
+      const quoteSeed = marketQuotes(initialization ? replayOrderPreview(nextReplay, initialization.instrument_spec, initialization.cost_model, initialization.spread_price) : nextReplay)
       const seedPrice = side === 'BUY' ? quoteSeed.ask : quoteSeed.bid
       const seededProtection = seedPrice === null ? null : scalperProtection(preset, seedPrice, side, initialization?.instrument_spec || execution?.instrument_spec)
       const invalidSeed = validateDraft({ side, quantity, ...seededProtection }, seedPrice, { optionalProtection: true })
@@ -219,7 +221,7 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
     target_id: execution.position?.position_id || execution.pending_market_order.operation_id,
     ...(typeof quantity === 'string' ? { quantity } : {}),
   })
-  return { clearNotice: () => setNotice(null), resetDraft: () => setDraft(orderDraft(replay, instrument)), draft, setDraft, execution, account, assetStates, instrument, costs, active, reference, disabled, pending, pendingOrder: pendingOrder?.context === context ? pendingOrder : null, notice, quickTrade, close, canClose: ready && !closeBlocked && !pending, startingBalance, configuredBalance: replay?.payload?.starting_balance, configuredCurrency: replay?.payload?.starting_balance_ccy, setStartingBalance, spread, setSpread, tick, canInitialize, initialize, save, changePrice, reportError, chooseSide, chooseType, conditionalOrders: replay?.execution_capabilities?.conditional_orders === true, partialTakeProfit: replay?.execution_capabilities?.partial_take_profit === true, executionConfig }
+  return { clearNotice: () => setNotice(null), resetDraft: () => setDraft(orderDraft(replay, instrument)), draft, setDraft, execution, account, assetStates, instrument, costs, active, reference, disabled, pending, pendingOrder: pendingOrder?.context === context ? pendingOrder : null, notice, quickTrade, close, canClose: ready && !closeBlocked && !pending, startingBalance, configuredBalance: replay?.payload?.starting_balance, configuredCurrency: replay?.payload?.starting_balance_ccy, setStartingBalance, spread, setSpread, tick, canInitialize, canPreviewProtection, initialize, save, changePrice, reportError, chooseSide, chooseType, conditionalOrders: replay?.execution_capabilities?.conditional_orders === true, partialTakeProfit: replay?.execution_capabilities?.partial_take_profit === true, executionConfig }
 }
 
 function ProtectionRiskSizing({ order, entry }) {
@@ -331,14 +333,13 @@ function LegacyOrderForm({ order, blockedReason, onClose, onJournal }) {
   return <><form className="legacy-order-form" onChange={() => order.clearNotice()} onSubmit={async event => { event.preventDefault(); if (await order.save()) { onClose(); if (journal) onJournal() } }}>
     {!active && <div className="legacy-order-grid"><label>{t('Hướng')}<FxSelect className="is-field" label="Hướng" value={draft.side} disabled={disabled} onChange={order.chooseSide} options={[{ value: 'BUY', label: t('Buy') }, { value: 'SELL', label: t('Sell') }]} /></label><label>{t('Loại lệnh')}<FxSelect className="is-field" label="Loại lệnh" value={draft.orderType || 'market'} disabled={disabled || !order.conditionalOrders} onChange={order.chooseType} options={['market','limit','stop'].map(value => ({ value,label:value[0].toUpperCase()+value.slice(1) }))} /></label>
     <label>{t(instrument?.asset_class==='fx' ? 'Khối lượng (lot)' : 'Khối lượng (quantity)')}<input aria-label={t('Khối lượng lệnh')} type="number" min={instrument?.quantity_min || '0'} step={instrument?.quantity_step || 'any'} value={draft.quantity} disabled={disabled} onChange={event => change('quantity',event.target.value)} /></label><label>{t('Giá vào lệnh')}<input aria-label={t('Giá vào lệnh')} type={draft.orderType && draft.orderType !== 'market' ? 'number' : 'text'} min="0" step={instrument?.tick_size || 'any'} disabled={disabled} readOnly={!draft.orderType || draft.orderType === 'market'} value={draft.orderType && draft.orderType !== 'market' ? draft.entryPrice : order.reference ?? '—'} onChange={event => change('entryPrice',event.target.value)} /></label></div>}
-    {[['stopLoss','Stop loss'],['takeProfit','Take profit']].map(([key,label]) => <section className={active ? 'legacy-edit-protection' : 'legacy-new-protection'} key={key} data-protection={key}><div className="legacy-protection-row"><label><input type="checkbox" role="switch" checked={enabled[key]} disabled={disabled || !execution} onChange={event => {
+    {[['stopLoss','Stop loss'],['takeProfit','Take profit']].map(([key,label]) => <section className={active ? 'legacy-edit-protection' : 'legacy-new-protection'} key={key} data-protection={key}><div className="legacy-protection-row"><label><input type="checkbox" role="switch" checked={enabled[key]} disabled={disabled || !order.canPreviewProtection} onChange={event => {
       const checked = event.target.checked
       const unit = Number(instrument?.pip_size) || Number(instrument?.tick_size)
-      const direction = (key === 'stopLoss' ? -1 : 1) * (draft.side === 'BUY' ? 1 : -1)
       const stopDistance = protectionPips(draft.stopLoss,entry,draft.side,'stopLoss',instrument)
       const distance = key === 'stopLoss' ? 20 : enabled.stopLoss && stopDistance > 0 ? stopDistance * 2 : 40
-      const price = order.reference + direction * unit * distance
-      setDraft(current => ({ ...current, protectionEnabled: { ...current.protectionEnabled, [key]: checked }, [key]: checked && Number.isFinite(price) && price > 0 ? String(Number(price.toFixed(8))) : '', ...(key === 'takeProfit' && !checked ? { takeProfits:[] } : {}) }))
+      const price = protectionPrice(distance,order.reference,draft.side,key,{ ...instrument,pip_size:unit })
+      setDraft(current => ({ ...current, protectionEnabled: { ...current.protectionEnabled, [key]: checked }, [key]: checked ? price : '', ...(key === 'takeProfit' && !checked ? { takeProfits:[] } : {}) }))
     }} />{t(label)}</label>{enabled[key] && <ProtectionEstimate order={order} entry={entry} kind={key} />}</div>{enabled[key] && <>
       {!(key === 'takeProfit' && draft.takeProfits?.length) && <div className="legacy-order-grid"><label>{t(label)}<input aria-label={t(label)} type="number" min="0" required step={instrument?.tick_size || 'any'} value={draft[key]} disabled={disabled} onChange={event => change(key,event.target.value)} /></label>{pip > 0 && entry > 0 && <label>{t(key === 'stopLoss' ? 'Stop loss in pips' : 'Take profit in pips')}<input type="number" step="any" value={protectionPips(draft[key], entry, draft.side, key, instrument)} disabled={disabled} onChange={event => change(key, protectionPrice(event.target.value, entry, draft.side, key, instrument))} /></label>}</div>}
       {key === 'takeProfit' && order.partialTakeProfit && <PartialTakeProfits order={order} entry={entry} />}

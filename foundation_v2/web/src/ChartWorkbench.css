@@ -83,7 +83,7 @@
 .fx-app.fx-shell-story.is-chart-workspace .fx-content > .replay-shell :is(.chart-tool-rail, .chart-utility-rail) { display: flex; gap: 6px; padding: 10px 5px; background: var(--chart-surface); border-color: var(--chart-line); }
 .fx-app.fx-shell-story.is-chart-workspace .fx-content > .replay-shell :is(.chart-tool-rail, .chart-utility-rail) :is(button, a) { width: 36px; min-height: 36px; border: 0; border-radius: 5px; color: var(--chart-muted); background: transparent; }
 .fx-app.fx-shell-story.is-chart-workspace .fx-content > .replay-shell :is(.chart-tool-rail, .chart-utility-rail) :is(button, a):hover { background: var(--chart-hover); color: var(--chart-text); }
-.fx-app.fx-shell-story.is-chart-workspace .fx-content > .replay-shell :is(.chart-tool-rail, .chart-utility-rail) button[aria-pressed='true'] { background: var(--chart-hover); color: var(--project-primary); }
+.fx-app.fx-shell-story.is-chart-workspace .fx-content > .replay-shell :is(.chart-tool-rail, .chart-utility-rail) button[aria-pressed='true'] { background: var(--chart-hover); color: var(--chart-text); }
 .fx-app.fx-shell-story.is-chart-workspace .fx-content > .replay-shell .chart-symbol-strip { left: 14px; top: 12px; color: var(--chart-muted); font-size: 11px; }
 .fx-app.fx-shell-story.is-chart-workspace .fx-content > .replay-shell .chart-symbol-strip strong { color: var(--chart-text); }
 .fx-app.fx-shell-story.is-chart-workspace .fx-content > .replay-shell .chart-symbol-ohlc { color: var(--chart-muted); }
@@ -92,7 +92,7 @@
 .chart-float-content button { flex-shrink: 0; }
 .chart-floating-toolbar button { display: grid; place-items: center; flex-shrink: 0; width: 30px; height: 30px; min-height: 30px; padding: 0; border: 0; border-radius: 4px; font: inherit; font-size: 11px; background: transparent; color: inherit; cursor: pointer; }
 .chart-floating-toolbar button:hover:not(:disabled) { background: var(--chart-hover); color: var(--chart-text); }
-.chart-floating-toolbar button[aria-pressed='true'] { background: var(--chart-hover); color: var(--project-primary); }
+.chart-floating-toolbar button[aria-pressed='true'] { background: var(--chart-hover); color: var(--chart-text); }
 .chart-floating-toolbar button.chart-play { background: var(--wm-action-bg); color: var(--wm-on-primary); }
 .chart-floating-toolbar button:disabled { opacity: .45; cursor: default; }
 .chart-floating-toolbar button.chart-float-grip { cursor: grab; width: 24px; touch-action: none; }
@@ -179,7 +179,6 @@ button.chart-order-level { cursor: ns-resize; touch-action: none; }
 .fx-app.is-chart-workspace :is(.chart-command-row, .chart-floating-toolbar, .chart-tool-rail, .chart-utility-rail, .chart-trading-bar, .chart-order-panel, .chart-dock-tabs, .replay-side, .chart-order-level) :is(button, a, input, select):focus-visible { outline: 2px solid var(--project-primary); outline-offset: 2px; }
 .fx-app.fx-shell-story.is-chart-workspace[data-theme='light'] .chart-order-level.is-stop { color: var(--project-negative); }
 .fx-app.fx-shell-story.is-chart-workspace[data-theme='light'] .chart-order-level.is-target { color: var(--project-positive); }
-.fx-app.fx-shell-story.is-chart-workspace[data-theme='light'] .fx-content > .replay-shell :is(.chart-tool-rail, .chart-utility-rail, .chart-floating-toolbar) button[aria-pressed='true'] { color: var(--project-primary); }
 @media (max-width: 1180px) {
   .chart-session-name, .chart-session-state, .chart-trading-account span:nth-of-type(2) { display: none; }
   .chart-command-row { gap: 3px; }
@@ -567,6 +566,7 @@ button.chart-order-level { cursor: ns-resize; touch-action: none; }
 .legacy-order-modal button.legacy-partial-total { min-height:28px; padding:4px 8px; border:0; border-radius:var(--ds-radius-field,8px); background:var(--project-surface); color:var(--project-muted); font-size:12px; font-variant-numeric:tabular-nums; white-space:nowrap; }
 .legacy-order-modal button.legacy-partial-total:hover:not(:disabled) { background:var(--project-hover); color:var(--project-text); }
 .legacy-order-modal button.legacy-partial-total.is-invalid { color:var(--project-negative); }
+.legacy-order-modal button.legacy-partial-total.is-invalid:hover:not(:disabled) { color:var(--project-text); }
 .legacy-partial-share { display:grid; align-content:start; gap:6px; min-width:0; }
 .legacy-partial-share-controls { display:flex; align-items:center; gap:4px; }
 .legacy-partial-share-controls > .legacy-risk-input { flex:1; }

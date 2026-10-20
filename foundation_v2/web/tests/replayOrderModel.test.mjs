@@ -1,11 +1,31 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { orderDraft, protectionReference, replayAtCutoff, orderLevels, marketQuotes, money, validateEntry } from '../src/replayOrderModel.js'
+import { orderDraft, protectionReference, replayAtCutoff, replayOrderPreview, orderLevels, marketQuotes, money, validateEntry } from '../src/replayOrderModel.js'
 import { projectOrder, ReplayOrderPrimitive } from '../src/replayOrderPrimitive.js'
 
 const replay = { view_cursor_index: 1, visible_rows: [{ timestamp: 120, close: 1.102 }], payload: { cursor_index: 1, execution: {
   cursor_index: 1, spread_price: '.0002', instrument_spec: { tick_size: '.0001' }, position: { side: 'BUY', quantity: '.1', entry_fill: '1.1001', stop_loss: '1.09', take_profit: '1.12', opened_time_utc: 60 },
 } } }
+
+test('first-order previews use frozen spread rules without initializing or replacing execution', () => {
+  const fresh = { view_cursor_index:1, visible_rows:[{timestamp:120,close:1.10205}], payload:{cursor_index:1} }
+  const spec = {tick_size:'.0001',pip_size:'.0001',quantity_min:'.01'}
+  const before = structuredClone(fresh)
+  const preview = replayOrderPreview(fresh,spec,{version:'session-cost-v2'},'.0002')
+  assert.deepEqual(marketQuotes(preview),{bid:1.1019,ask:1.1022})
+  assert.deepEqual(fresh,before,'Quote preparation cannot persist an account or mutate the session')
+  assert.deepEqual(marketQuotes(replayOrderPreview(fresh,spec,{version:'session-cost-v2'},'0')),{bid:1.10205,ask:1.10205})
+  for (const side of ['BUY','SELL']) for (const orderType of ['limit','stop']) {
+    const draft = orderDraft(preview,spec,side,orderType)
+    assert.equal(validateEntry(draft,marketQuotes(preview),spec),null)
+  }
+  assert.equal(replayOrderPreview(replay,spec,{},'.01'),replay,'Stored execution always wins over a preview')
+  const tick = structuredClone(replay)
+  Object.assign(tick.payload.execution,{quote_source:'broker_bid_ask',last_bid:'1.1001',last_ask:'1.1003'})
+  assert.equal(replayOrderPreview(tick,spec,{},'.01'),tick)
+  assert.deepEqual(marketQuotes(replayOrderPreview(tick,spec,{},'.01')),{bid:1.1001,ask:1.1003})
+  assert.equal(replayOrderPreview(fresh,spec,{},null),fresh,'Missing spread must not look like a free quote')
+})
 
 test('conditional entries use the correct executable side and enforce price steps', () => {
   const quotes = { bid: 1.1, ask: 1.1002 }, spec = { tick_size: '.0001', pip_size: '.0001', quantity_min: '.01' }

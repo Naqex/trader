@@ -7,6 +7,16 @@ export function replayAtCutoff(replay) {
   return { ...replay, payload: { ...replay.payload, execution: null }, execution_view_status: 'unavailable' }
 }
 
+// Use the same quote rules before the first order, without treating a preview
+// as persisted execution. Tick quotes remain unavailable until initialized.
+export function replayOrderPreview(replay, instrument, costs, spread) {
+  if (!replay || replay.payload?.execution || !instrument || !costs || finiteNumber(spread) === null) return replay
+  return { ...replay, payload: { ...replay.payload, execution: {
+    cursor_index: replay.view_cursor_index ?? replay.payload.cursor_index,
+    instrument_spec: instrument, cost_model: costs, spread_price: String(spread),
+  } } }
+}
+
 export function orderDraft(replay, instrument, side = 'BUY', orderType = 'market') {
   replay = replayAtCutoff(replay)
   const active = replay?.payload?.execution?.position || replay?.payload?.execution?.pending_market_order
