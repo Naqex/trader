@@ -1,0 +1,80 @@
+[
+  {
+    "path": "/api/v2/replay/sessions",
+    "samples_ms": [
+      159.4,
+      145.18,
+      134.58,
+      135.96,
+      152.97,
+      140.57
+    ],
+    "warm_p50_ms": 140.57,
+    "bytes": 2595
+  },
+  {
+    "path": "/api/v2/dashboard/sessions?page=1&page_size=3&sort=newest",
+    "samples_ms": [
+      147.26,
+      149.21,
+      150.02,
+      151.61,
+      149.36,
+      154.78
+    ],
+    "warm_p50_ms": 150.02,
+    "bytes": 17114
+  },
+  {
+    "path": "/api/v2/overview",
+    "samples_ms": [
+      18.46,
+      21.0,
+      15.99,
+      16.06,
+      15.78,
+      15.85
+    ],
+    "warm_p50_ms": 15.99,
+    "bytes": 3897
+  },
+  {
+    "path": "/api/v2/replay/trades?page=1&page_size=10",
+    "samples_ms": [
+      362.27,
+      2.88,
+      2.63,
+      2.51,
+      2.56,
+      2.47
+    ],
+    "warm_p50_ms": 2.56,
+    "bytes": 24272
+  },
+  {
+    "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e/metadata",
+    "samples_ms": [
+      95.39,
+      93.44,
+      92.5,
+      95.59,
+      96.3,
+      94.2
+    ],
+    "warm_p50_ms": 94.2,
+    "bytes": 1434
+  },
+  {
+    "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e/analytics",
+    "samples_ms": [
+      219.32,
+      212.98,
+      206.68,
+      218.48,
+      207.94,
+      211.33
+    ],
+    "warm_p50_ms": 211.33,
+    "bytes": 8084
+  }
+]

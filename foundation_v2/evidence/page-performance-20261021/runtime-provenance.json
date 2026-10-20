@@ -1,0 +1,99 @@
+{
+  "utc": "2026-10-20T23:31:23.6682433Z",
+  "baseline_commit": "f501dc724048e1bc769c7013b1a55271436168f9",
+  "readiness": {
+    "command_worker": "not_required",
+    "contract_version": "foundation-v2.1",
+    "database": "ready",
+    "ok": true
+  },
+  "execution": {
+    "broker_execution_capability": false,
+    "cancel": false,
+    "close": false,
+    "mode": "locked",
+    "modify": false,
+    "place": false,
+    "preview": false,
+    "reason": "F7 foundation software slice has no broker execution authority"
+  },
+  "owner": {
+    "schema": "api-platform-runtime-v2",
+    "runtime_profile": "native",
+    "replay_storage_profile": "compact",
+    "run_id": "dcac7bd6c8da496aa8efcdfa4d515ef4",
+    "project": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester",
+    "port": 8010,
+    "stop_file": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\.runtime\\api-platform\\platform-dcac7bd6c8da496aa8efcdfa4d515ef4.stop",
+    "ready": true,
+    "processes": {
+      "supervisor": {
+        "pid": 29400,
+        "created": 134370123915627556,
+        "executable": "C:\\Users\\MIIKEY\\AppData\\Local\\Programs\\Python\\Python312\\python.exe"
+      },
+      "research": {
+        "pid": 26244,
+        "created": 134370123921098938,
+        "executable": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust\\target\\navigation-candidate\\release\\rust_research_worker.exe"
+      },
+      "api": {
+        "pid": 26648,
+        "created": 134370123923943711,
+        "executable": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust\\target\\navigation-candidate\\release\\trading-workspace-api.exe"
+      }
+    },
+    "executable_sha256": {
+      "supervisor": "4d6f5f81a4bca11191c4c7c6b43632694d0a4ce74e068619d8fdc161d469859a",
+      "research": "d969a76942fc85cca3712a70f29055427e6b32d3dc4c934ab11efdd21760a765",
+      "api": "afeac05b333cffa8a4f6e2667bd439a9f626adbd4c02d3b0ee105e552a8f0150"
+    }
+  },
+  "source_sha256": [
+    {
+      "sha256": "22709659eaf3eaf21a1e8d51c4ab5aa9d1c1261412914bcd4108d7eaaee07ad9",
+      "path": "foundation_v2/api-rust/src/catalog.rs"
+    },
+    {
+      "sha256": "c12c6b1c92e3903c75dcd6527a6a0dbad2a9ff26d7fa6c28e22e8f7434d2faf6",
+      "path": "foundation_v2/api-rust/src/analytics/routes.rs"
+    },
+    {
+      "sha256": "a16103cdc4051da996cda53718d85b0211e1be6543ae3736c803b374ab16b11b",
+      "path": "foundation_v2/api-rust/tests/run_catalog_parity.py"
+    },
+    {
+      "sha256": "bdd5157c8820fe882f5a1b1a653061deffb09960c4dc69f2c02ec38f6d243175",
+      "path": "foundation_v2/web/src/SessionPicker.jsx"
+    },
+    {
+      "sha256": "69b7ee52c53ff23b5b06f226428eb113c318c7788a61557995f0cccc06e908ea",
+      "path": "foundation_v2/web/src/FxReplayShell.jsx"
+    },
+    {
+      "sha256": "32c890e287780b0431cc07c4c26ea2e2e6a2ecd3f9d0c2138ad054c9ea69fa31",
+      "path": "foundation_v2/web/src/AiChatPanel.jsx"
+    },
+    {
+      "sha256": "fb89c7be34e42291b380a47c944eeeba4105e18c6cb970e9da5866ce00360e73",
+      "path": "foundation_v2/web/src/AiSparkles.jsx"
+    },
+    {
+      "sha256": "1a66683a28a6d1f4d1a390af0159ed590b95168b9eb3494b80e418796de673d5",
+      "path": "foundation_v2/web/src/dashboardModel.js"
+    },
+    {
+      "sha256": "2f3add3bb3c5921f9bda48c4c77859d6e1d7ab8be28fb5a3021bb60e3985c1aa",
+      "path": "foundation_v2/web/tests/workspaceQuery.test.mjs"
+    },
+    {
+      "sha256": "662a9e341581e0b3895c965983dcb21d7b3fd28798ff5e45fa4a0aadd3db427d",
+      "path": "foundation_v2/web/tests/workspaceEvents.test.mjs"
+    }
+  ],
+  "frontend": {
+    "bundle": "index-DvFwtqrb.js",
+    "sha256": "146642ba98f6b37bb997dbde1635c556cde5b1f9698164720e15952939b2b152"
+  },
+  "api_binary_hash_matches_owner": true
+}

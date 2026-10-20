@@ -1,0 +1,277 @@
+[
+  {
+    "label": "session-reload",
+    "requests": [
+      {
+        "path": "/?workspace=tenant-a&view=replay&area=testing&section=sessions&select=1&session=6428cf18b3f54a36b2e90207ef12392e&dataset=dataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c",
+        "status": 200,
+        "ms": 5,
+        "ttfb": 6,
+        "bytes": 127
+      },
+      {
+        "path": "/project-palette.css",
+        "status": 200,
+        "ms": 12,
+        "ttfb": 22,
+        "bytes": 127
+      },
+      {
+        "path": "/assets/index-CojGrfe3.js",
+        "status": 200,
+        "ms": 17,
+        "ttfb": 31,
+        "bytes": 179
+      },
+      {
+        "path": "/assets/index-Dh_3F8u_.css",
+        "status": 200,
+        "ms": 15,
+        "ttfb": 22,
+        "bytes": 179
+      },
+      {
+        "path": "/brand/wmreplay.svg",
+        "status": 304,
+        "ms": 3,
+        "ttfb": 21,
+        "bytes": 127
+      },
+      {
+        "path": "/assets/SessionPicker-D8Yjn3hg.js",
+        "status": 200,
+        "ms": 6,
+        "ttfb": 16,
+        "bytes": 179
+      },
+      {
+        "path": "/assets/dataLibraryModel-Wy1xnn-Y.js",
+        "status": 200,
+        "ms": 6,
+        "ttfb": 16,
+        "bytes": 179
+      },
+      {
+        "path": "/assets/SessionSettingsDrawer-sNvrZw-Z.js",
+        "status": 200,
+        "ms": 9,
+        "ttfb": 17,
+        "bytes": 179
+      },
+      {
+        "path": "/assets/sessionCatalog-BtLTxtJV.js",
+        "status": 200,
+        "ms": 14,
+        "ttfb": 17,
+        "bytes": 179
+      },
+      {
+        "path": "/assets/sessionTradingOptions-DivZ7JCh.js",
+        "status": 200,
+        "ms": 15,
+        "ttfb": 17,
+        "bytes": 179
+      },
+      {
+        "path": "/assets/SessionSettingsDrawer-DoE4lc0O.css",
+        "status": 200,
+        "ms": 15,
+        "ttfb": 19,
+        "bytes": 179
+      },
+      {
+        "path": "/assets/session-settings-fjfP0f8W.css",
+        "status": 200,
+        "ms": 17,
+        "ttfb": 30,
+        "bytes": 179
+      },
+      {
+        "path": "/assets/AnalyticsWorkspace-B4P1fVBU.js",
+        "status": 200,
+        "ms": 18,
+        "ttfb": 31,
+        "bytes": 179
+      },
+      {
+        "path": "/assets/FxAnalytics-CjFQavRv.js",
+        "status": 200,
+        "ms": 18,
+        "ttfb": 32,
+        "bytes": 179
+      },
+      {
+        "path": "/assets/tradingAnalyticsModel-C05K7nh4.js",
+        "status": 200,
+        "ms": 19,
+        "ttfb": 32,
+        "bytes": 179
+      },
+      {
+        "path": "/assets/AnalyticsFilterControls-DFo_95Z5.js",
+        "status": 200,
+        "ms": 23,
+        "ttfb": 32,
+        "bytes": 179
+      },
+      {
+        "path": "/assets/ProjectDateInput-L_ALo1tZ.js",
+        "status": 200,
+        "ms": 23,
+        "ttfb": 32,
+        "bytes": 179
+      },
+      {
+        "path": "/assets/ProjectDateInput-BDSFDDdY.css",
+        "status": 200,
+        "ms": 19,
+        "ttfb": 30,
+        "bytes": 179
+      },
+      {
+        "path": "/assets/AnalyticsFilterControls-CZaWVFmy.css",
+        "status": 200,
+        "ms": 25,
+        "ttfb": 30,
+        "bytes": 179
+      },
+      {
+        "path": "/assets/FxAnalytics-C9zfle3a.css",
+        "status": 200,
+        "ms": 25,
+        "ttfb": 30,
+        "bytes": 179
+      },
+      {
+        "path": "/assets/PaginationFooter-DnipCtDl.js",
+        "status": 200,
+        "ms": 25,
+        "ttfb": 32,
+        "bytes": 179
+      },
+      {
+        "path": "/assets/PaginationFooter-MUWvR_mg.css",
+        "status": 200,
+        "ms": 25,
+        "ttfb": 30,
+        "bytes": 179
+      },
+      {
+        "path": "/assets/useReadRefresh-BIf6XVLd.js",
+        "status": 200,
+        "ms": 30,
+        "ttfb": 32,
+        "bytes": 179
+      },
+      {
+        "path": "/assets/useContentReadyMetric-iis4udF-.js",
+        "status": 200,
+        "ms": 30,
+        "ttfb": 33,
+        "bytes": 179
+      },
+      {
+        "path": "/assets/analyticsViewModel-tZz-SImQ.js",
+        "status": 200,
+        "ms": 30,
+        "ttfb": 36,
+        "bytes": 179
+      },
+      {
+        "path": "/assets/AnalyticsWorkspace-BPaK2S9Z.css",
+        "status": 200,
+        "ms": 30,
+        "ttfb": 32,
+        "bytes": 179
+      },
+      {
+        "path": "/assets/SessionActions-D2xftyIK.js",
+        "status": 200,
+        "ms": 32,
+        "ttfb": 40,
+        "bytes": 179
+      },
+      {
+        "path": "/assets/SessionActions-Fc-1qmdj.css",
+        "status": 200,
+        "ms": 31,
+        "ttfb": 39,
+        "bytes": 179
+      },
+      {
+        "path": "/assets/SessionPicker-DRkvKHPt.css",
+        "status": 200,
+        "ms": 31,
+        "ttfb": 39,
+        "bytes": 179
+      },
+      {
+        "path": "/assets/quick-session-DxQ0rAAw.css",
+        "status": 200,
+        "ms": 32,
+        "ttfb": 40,
+        "bytes": 179
+      },
+      {
+        "path": "/api/v2/events",
+        "status": 200,
+        "ms": null,
+        "ttfb": 33
+      },
+      {
+        "path": "/api/v2/data/datasets",
+        "status": 200,
+        "ms": 24,
+        "ttfb": 25,
+        "bytes": 287857
+      },
+      {
+        "path": "/api/v2/replay/sessions",
+        "status": 200,
+        "ms": 415,
+        "ttfb": 416,
+        "bytes": 2885
+      },
+      {
+        "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e/metadata",
+        "status": 200,
+        "ms": 106,
+        "ttfb": 107,
+        "bytes": 1724
+      },
+      {
+        "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e/analytics",
+        "status": 200,
+        "ms": 238,
+        "ttfb": 239,
+        "bytes": 8374
+      }
+    ]
+  },
+  {
+    "label": "overview-first",
+    "requests": [
+      {
+        "path": "/assets/DashboardSessions-DO_yWKad.js",
+        "status": 200,
+        "ms": 4,
+        "ttfb": 16,
+        "bytes": 179
+      },
+      {
+        "path": "/api/v2/dashboard/sessions?page=1&page_size=3&sort=newest",
+        "status": 200,
+        "ms": 424,
+        "ttfb": 425,
+        "bytes": 17405
+      },
+      {
+        "path": "/api/v2/overview",
+        "status": 200,
+        "ms": 22,
+        "ttfb": 22,
+        "bytes": 4187
+      }
+    ]
+  }
+]

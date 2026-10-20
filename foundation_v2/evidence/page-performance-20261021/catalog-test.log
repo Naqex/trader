@@ -1,0 +1,12 @@
+D:\ANNAM\TradingWorkspace\projects\mt5-tradingview-backtester\foundation_v2\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+   Compiling trading-workspace-api v0.1.0 (D:\ANNAM\TradingWorkspace\projects\mt5-tradingview-backtester\foundation_v2\api-rust)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 20.11s
+     Running tests\catalog_parity.rs (target\debug\deps\catalog_parity-9deaf738a7800484.exe)
+
+
+running 1 test
+60 native catalog HTTP contract cases matched Python reference
+test native_catalog_matches_python_http_contract ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.27s

@@ -169,7 +169,7 @@ mod csv_tests{
 }
 
 async fn enrich_identities(tx:&Transaction<'_>,workspace:&str,records:&mut[Value])->Result<(),ApiError>{
- let rows=tx.query("SELECT r.record_id,a.session_id,a.attempt_id FROM workspace_records r JOIN workspace_record_revisions v ON v.workspace_id=r.workspace_id AND v.kind=r.kind AND v.record_id=r.record_id AND v.revision=r.current_revision JOIN prop_attempts a ON a.workspace_id=r.workspace_id AND ((v.payload_json->>'prop_session_id'=a.session_id AND v.payload_json->>'prop_attempt_id'=a.attempt_id) OR a.resume_json->'replay_binding'->>'replay_session_id'=r.record_id OR (v.payload_json->>'prop_session_id' IS NULL AND a.snapshot_json->>'parent_attempt_id' IS NULL AND v.payload_json->>'name' IN ('Generic practice · ' || a.session_id,'Custom practice · ' || a.session_id) AND NOT EXISTS (SELECT 1 FROM prop_attempts b WHERE b.workspace_id=r.workspace_id AND b.resume_json->'replay_binding'->>'replay_session_id'=r.record_id))) WHERE r.workspace_id=$1 AND r.kind='replay' AND NOT v.deleted",&[&workspace]).await.map_err(|_|ApiError::database())?;
+ let rows=tx.query(crate::catalog::REPLAY_IDENTITIES,&[&workspace]).await.map_err(|_|ApiError::database())?;
  let mut bindings=HashMap::new();for r in rows{let id:String=r.get(0);let v=json!({"session_kind":"prop","prop_session_id":r.get::<_,String>(1),"prop_attempt_id":r.get::<_,String>(2)});if bindings.get(&id).is_some_and(|p|p!=&v){return Err(source("dashboard_source_invalid"))}bindings.insert(id,v);}
  for r in records{if let Some(identity)=bindings.get(text(&r["record_id"])){merge(&mut r["payload"],identity)}}Ok(())
 }

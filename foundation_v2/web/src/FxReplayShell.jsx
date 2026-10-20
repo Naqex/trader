@@ -1,10 +1,32 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import React, { createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import './fx-shell-story.css'
 import './fx-shell-preferences.css'
 import { buildWorkspaceHref, readWorkspaceContext } from './workspaceContext.js'
 import { TestingLocaleProvider, useTestingLocale } from './testingLocale.jsx'
 import { NotificationProvider } from './Notifications.jsx'
-import AiChatPanel, { AiSparkles } from './AiChatPanel.jsx'
+import AiSparkles from './AiSparkles.jsx'
+import './ai-chat.css'
+import { TestingRouteBoundary } from './TestingReadState.jsx'
+const AiChatPanel = lazy(() => import('./AiChatPanel.jsx'))
+
+function AiPanelFallback({ open, modal, onClose, language, error = false }) {
+  const close = useRef(null)
+  useEffect(() => {
+    if (!open) return
+    close.current?.focus()
+    const keydown = event => {
+      if (event.key === 'Escape') { event.preventDefault(); onClose() }
+      if (modal && event.key === 'Tab') { event.preventDefault(); close.current?.focus() }
+    }
+    document.addEventListener('keydown', keydown)
+    return () => document.removeEventListener('keydown', keydown)
+  }, [open, modal, onClose])
+  const en = language === 'en'
+  return <aside id="wm-ai-chat" className="wm-ai-chat" hidden={!open} role={modal ? 'dialog' : 'complementary'} aria-modal={modal || undefined} aria-label="Mentor" aria-busy={!error}>
+    <header className="wm-ai-header"><h2>Mentor</h2><span /><button type="button" className="wm-dialog-close" ref={close} onClick={onClose} aria-label={en ? 'Close AI chat' : 'Đóng chat AI'}>×</button></header>
+    <div className="wm-ai-transcript" role={error ? 'alert' : 'status'}>{error ? en ? 'AI chat could not load. Reload the page to try again.' : 'Không tải được chat AI. Tải lại trang để thử lại.' : en ? 'Loading…' : 'Đang tải…'}</div>
+  </aside>
+}
 
 export { buildWorkspaceHref, readWorkspaceContext }
 
@@ -640,7 +662,7 @@ export default function FxReplayShell({ children, workspace, query = currentQuer
           <NotificationProvider key={workspace}><div className="fx-content" tabIndex={0}>{children}</div></NotificationProvider>
         </section>
         {aiOpen && aiOverlay && <div className="wm-ai-backdrop" aria-hidden="true" onClick={closeAi} />}
-        {aiMounted && <AiChatPanel key={workspace} workspace={workspace} screen={activeView} open={aiOpen} modal={aiOverlay} onClose={closeAi} settingsHref={buildWorkspaceHref('settings', workspace, query, { area: 'settings', section: null })} language={language} />}
+        {aiMounted && <TestingRouteBoundary key={workspace} fallback={<AiPanelFallback open={aiOpen} modal={aiOverlay} onClose={closeAi} language={language} error />}><Suspense fallback={<AiPanelFallback open={aiOpen} modal={aiOverlay} onClose={closeAi} language={language} />}><AiChatPanel workspace={workspace} screen={activeView} open={aiOpen} modal={aiOverlay} onClose={closeAi} settingsHref={buildWorkspaceHref('settings', workspace, query, { area: 'settings', section: null })} language={language} /></Suspense></TestingRouteBoundary>}
       </div>
     </FxReplayContext.Provider></TestingLocaleProvider>
   )

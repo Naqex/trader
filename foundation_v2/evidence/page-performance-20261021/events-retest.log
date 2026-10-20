@@ -1,0 +1,36 @@
+✔ one authorized stream per workspace, scoped snapshots and teardown (92.5162ms)
+✔ disconnected stream reconnects once even when another consumer subscribes during backoff (101.2445ms)
+✔ hidden tabs pause, visible tabs reconcile a new snapshot and remove visibility listeners on teardown (171.7781ms)
+✔ 401/403 are terminal: no infinite reconnect, late subscribers see denied state (115.8933ms)
+✖ oversized partial frames fail boundedly and heartbeat timeouts recover (109.0985ms)
+✔ cancel during retry prevents resurrection and retry delay spreads tab reconnects (52.726ms)
+✔ aborted subscriber never opens a stream (0.5402ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 6
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1069.0813
+
+✖ failing tests:
+
+test at foundation_v2\web\tests\workspaceEvents.test.mjs:112:1
+✖ oversized partial frames fail boundedly and heartbeat timeouts recover (109.0985ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  false !== true
+
+      at TestContext.<anonymous> (file:///D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/web/tests/workspaceEvents.test.mjs:124:12)
+      at runNextTicks (node:internal/process/task_queues:65:5)
+      at process.processTimers (node:internal/timers:568:9)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

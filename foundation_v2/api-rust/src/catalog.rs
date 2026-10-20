@@ -55,6 +55,27 @@ pub fn routes() -> Router<Arc<AppState>> {
 
 const RECORD_SELECT: &str = "SELECT r.record_id,r.source_key,r.current_revision,r.created_at_utc,r.updated_at_utc,v.payload_json,v.deleted FROM workspace_records r JOIN workspace_record_revisions v ON v.workspace_id=r.workspace_id AND v.kind=r.kind AND v.record_id=r.record_id AND v.revision=r.current_revision";
 
+// Materialize only the identity fields once. The join's OR branches otherwise
+// repeatedly detoast large replay/prop JSON documents for every candidate pair.
+pub(crate) const REPLAY_IDENTITIES: &str = "
+WITH replay AS MATERIALIZED (
+    SELECT r.record_id, v.payload_json->>'prop_session_id' AS prop_session_id,
+           v.payload_json->>'prop_attempt_id' AS prop_attempt_id, v.payload_json->>'name' AS name
+    FROM workspace_records r JOIN workspace_record_revisions v
+      ON v.workspace_id=r.workspace_id AND v.kind=r.kind AND v.record_id=r.record_id AND v.revision=r.current_revision
+    WHERE r.workspace_id=$1 AND r.kind='replay' AND NOT v.deleted
+), attempts AS MATERIALIZED (
+    SELECT session_id, attempt_id, resume_json->'replay_binding'->>'replay_session_id' AS replay_id,
+           snapshot_json->>'parent_attempt_id' AS parent_attempt_id
+    FROM prop_attempts WHERE workspace_id=$1
+)
+SELECT r.record_id,a.session_id,a.attempt_id FROM replay r JOIN attempts a ON
+    (r.prop_session_id=a.session_id AND r.prop_attempt_id=a.attempt_id)
+    OR a.replay_id=r.record_id
+    OR (r.prop_session_id IS NULL AND a.parent_attempt_id IS NULL
+        AND r.name IN ('Generic practice · ' || a.session_id,'Custom practice · ' || a.session_id)
+        AND NOT EXISTS (SELECT 1 FROM attempts b WHERE b.replay_id=r.record_id))";
+
 fn record_json(row: &Row) -> Value {
     json!({"record_id":row.get::<_,String>("record_id"), "source_key":row.get::<_,Option<String>>("source_key"), "revision":row.get::<_,i32>("current_revision"), "payload":row.get::<_,Value>("payload_json"), "deleted":row.get::<_,bool>("deleted"), "created_at_utc":row.get::<_,String>("created_at_utc"), "updated_at_utc":row.get::<_,String>("updated_at_utc")})
 }
@@ -649,7 +670,7 @@ async fn replay_sessions(
     if !ids.is_empty() {
         for row in client.query("SELECT dataset_id,manifest_json FROM datasets WHERE workspace_id=$1 AND dataset_id=ANY($2)",&[&scope.workspace_id,&ids]).await.map_err(|_|ApiError::database())?{manifests.insert(row.get::<_,String>(0),row.get::<_,Value>(1));}
     }
-    let identities = client.query("SELECT r.record_id,a.session_id,a.attempt_id FROM workspace_records r JOIN workspace_record_revisions v ON v.workspace_id=r.workspace_id AND v.kind=r.kind AND v.record_id=r.record_id AND v.revision=r.current_revision JOIN prop_attempts a ON a.workspace_id=r.workspace_id AND ((v.payload_json->>'prop_session_id'=a.session_id AND v.payload_json->>'prop_attempt_id'=a.attempt_id) OR a.resume_json->'replay_binding'->>'replay_session_id'=r.record_id OR (v.payload_json->>'prop_session_id' IS NULL AND a.snapshot_json->>'parent_attempt_id' IS NULL AND v.payload_json->>'name' IN ('Generic practice · ' || a.session_id,'Custom practice · ' || a.session_id) AND NOT EXISTS (SELECT 1 FROM prop_attempts b WHERE b.workspace_id=r.workspace_id AND b.resume_json->'replay_binding'->>'replay_session_id'=r.record_id))) WHERE r.workspace_id=$1 AND r.kind='replay' AND NOT v.deleted", &[&scope.workspace_id]).await.map_err(|_|ApiError::database())?;
+    let identities = client.query(crate::catalog::REPLAY_IDENTITIES, &[&scope.workspace_id]).await.map_err(|_|ApiError::database())?;
     let mut bindings = HashMap::new();
     for row in identities {
         let id: String = row.get("record_id");

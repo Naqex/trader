@@ -1,0 +1,436 @@
+{
+  "reload": [
+    {
+      "path": "/?workspace=tenant-a&view=replay&session=6428cf18b3f54a36b2e90207ef12392e&dataset=dataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c&mode=Practice&select=1",
+      "status": 200,
+      "ms": 5,
+      "ttfb": 6,
+      "bytes": 727
+    },
+    {
+      "path": "/project-palette.css",
+      "status": 200,
+      "ms": 8,
+      "ttfb": 49,
+      "bytes": 127
+    },
+    {
+      "path": "/assets/index-DvFwtqrb.js",
+      "status": 200,
+      "ms": 24,
+      "ttfb": 50,
+      "bytes": 166061
+    },
+    {
+      "path": "/assets/index-Dh_3F8u_.css",
+      "status": 200,
+      "ms": 14,
+      "ttfb": 49,
+      "bytes": 35116
+    },
+    {
+      "path": "/brand/wmreplay.svg",
+      "status": 200,
+      "ms": 4,
+      "ttfb": 29,
+      "bytes": 127
+    },
+    {
+      "path": "/assets/SessionPicker-DV45uViD.js",
+      "status": 200,
+      "ms": 6,
+      "ttfb": 28,
+      "bytes": 5630
+    },
+    {
+      "path": "/assets/dataLibraryModel-Wy1xnn-Y.js",
+      "status": 200,
+      "ms": 9,
+      "ttfb": 28,
+      "bytes": 2298
+    },
+    {
+      "path": "/assets/SessionSettingsDrawer-s5GzE3rv.js",
+      "status": 200,
+      "ms": 10,
+      "ttfb": 28,
+      "bytes": 8962
+    },
+    {
+      "path": "/assets/sessionCatalog-CMxZVU5A.js",
+      "status": 200,
+      "ms": 10,
+      "ttfb": 28,
+      "bytes": 2175
+    },
+    {
+      "path": "/assets/sessionTradingOptions-DivZ7JCh.js",
+      "status": 200,
+      "ms": 17,
+      "ttfb": 30,
+      "bytes": 2316
+    },
+    {
+      "path": "/assets/SessionSettingsDrawer-DoE4lc0O.css",
+      "status": 200,
+      "ms": 10,
+      "ttfb": 19,
+      "bytes": 1988
+    },
+    {
+      "path": "/assets/session-settings-fjfP0f8W.css",
+      "status": 200,
+      "ms": 10,
+      "ttfb": 18,
+      "bytes": 1418
+    },
+    {
+      "path": "/assets/analyticsViewModel-CjVCl-Da.js",
+      "status": 200,
+      "ms": 16,
+      "ttfb": 29,
+      "bytes": 2838
+    },
+    {
+      "path": "/assets/tradingAnalyticsModel-C05K7nh4.js",
+      "status": 200,
+      "ms": 22,
+      "ttfb": 30,
+      "bytes": 4639
+    },
+    {
+      "path": "/assets/SessionActions-RwMeYnwM.js",
+      "status": 200,
+      "ms": 21,
+      "ttfb": 29,
+      "bytes": 5918
+    },
+    {
+      "path": "/assets/PaginationFooter-F8yaxbnZ.js",
+      "status": 200,
+      "ms": 20,
+      "ttfb": 29,
+      "bytes": 1234
+    },
+    {
+      "path": "/assets/PaginationFooter-MUWvR_mg.css",
+      "status": 200,
+      "ms": 11,
+      "ttfb": 18,
+      "bytes": 1090
+    },
+    {
+      "path": "/assets/SessionActions-Fc-1qmdj.css",
+      "status": 200,
+      "ms": 14,
+      "ttfb": 18,
+      "bytes": 4153
+    },
+    {
+      "path": "/assets/useReadRefresh-m-nZEDay.js",
+      "status": 200,
+      "ms": 21,
+      "ttfb": 29,
+      "bytes": 2244
+    },
+    {
+      "path": "/assets/SessionPicker-DRkvKHPt.css",
+      "status": 200,
+      "ms": 18,
+      "ttfb": 23,
+      "bytes": 6004
+    },
+    {
+      "path": "/api/v2/events",
+      "status": 200,
+      "ms": null,
+      "ttfb": 23
+    },
+    {
+      "path": "/api/v2/data/datasets",
+      "status": 200,
+      "ms": 22,
+      "ttfb": 22,
+      "bytes": 287857
+    },
+    {
+      "path": "/api/v2/replay/sessions",
+      "status": 200,
+      "ms": 132,
+      "ttfb": 133,
+      "bytes": 2885
+    },
+    {
+      "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e/metadata",
+      "status": 200,
+      "ms": 107,
+      "ttfb": 107,
+      "bytes": 1724
+    },
+    {
+      "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e/analytics",
+      "status": 200,
+      "ms": 230,
+      "ttfb": 230,
+      "bytes": 8374
+    }
+  ],
+  "checks": [
+    {
+      "name": "Session report ready",
+      "pass": true
+    },
+    {
+      "name": "Session does not fetch AnalyticsWorkspace or AI chunk",
+      "pass": true
+    },
+    {
+      "name": "Session ledger retains expected net PnL",
+      "pass": true
+    },
+    {
+      "name": "Warm session return reuses dataset metadata",
+      "pass": true
+    },
+    {
+      "name": "Trade page 2 renders three rows via server page=2 request",
+      "pass": true
+    },
+    {
+      "name": "AI chunk error at 768px remains dismissible with Escape and restores opener focus",
+      "pass": true
+    },
+    {
+      "name": "Analytics lazy view renders actual loss metrics",
+      "pass": true
+    },
+    {
+      "name": "AI chunk fetched on open and composer ready",
+      "pass": true
+    },
+    {
+      "name": "Closing loaded AI preserves analytics view",
+      "pass": true
+    }
+  ],
+  "navigation": [
+    {
+      "route": "overview",
+      "requests": [
+        {
+          "path": "/assets/DashboardSessions-DNtlPnTE.js",
+          "status": 200,
+          "ms": 12,
+          "ttfb": 14,
+          "bytes": 11392
+        },
+        {
+          "path": "/assets/ProjectDateInput-DhuFJdVs.js",
+          "status": 200,
+          "ms": 11,
+          "ttfb": 11,
+          "bytes": 4311
+        },
+        {
+          "path": "/assets/ProjectDateInput-BDSFDDdY.css",
+          "status": 200,
+          "ms": 13,
+          "ttfb": 14,
+          "bytes": 1984
+        },
+        {
+          "path": "/api/v2/dashboard/sessions?page=1&page_size=3&sort=newest",
+          "status": 200,
+          "ms": 143,
+          "ttfb": 143,
+          "bytes": 17405
+        },
+        {
+          "path": "/api/v2/overview",
+          "status": 200,
+          "ms": 23,
+          "ttfb": 24,
+          "bytes": 4187
+        }
+      ]
+    },
+    {
+      "route": "session",
+      "requests": [
+        {
+          "path": "/api/v2/data/datasets",
+          "status": 200,
+          "ms": 36,
+          "ttfb": 37,
+          "bytes": 287857
+        },
+        {
+          "path": "/api/v2/replay/sessions",
+          "status": 200,
+          "ms": 188,
+          "ttfb": 189,
+          "bytes": 2885
+        },
+        {
+          "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e/metadata",
+          "status": 200,
+          "ms": 149,
+          "ttfb": 151,
+          "bytes": 1724
+        },
+        {
+          "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e/analytics",
+          "status": 200,
+          "ms": 294,
+          "ttfb": 294,
+          "bytes": 8374
+        }
+      ]
+    },
+    {
+      "route": "overview-session-repeat",
+      "requests": [
+        {
+          "path": "/api/v2/dashboard/sessions?page=1&page_size=3&sort=newest",
+          "status": 200,
+          "ms": 147,
+          "ttfb": 148,
+          "bytes": 17405
+        },
+        {
+          "path": "/api/v2/overview",
+          "status": 200,
+          "ms": 24,
+          "ttfb": 26,
+          "bytes": 4187
+        },
+        {
+          "path": "/api/v2/replay/sessions",
+          "status": 200,
+          "ms": 131,
+          "ttfb": 132,
+          "bytes": 2885
+        },
+        {
+          "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e/metadata",
+          "status": 200,
+          "ms": 115,
+          "ttfb": 115,
+          "bytes": 1724
+        },
+        {
+          "path": "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e/analytics",
+          "status": 200,
+          "ms": 253,
+          "ttfb": 254,
+          "bytes": 8374
+        }
+      ]
+    },
+    {
+      "route": "trades",
+      "requests": [
+        {
+          "path": "/assets/SessionReports-CjAtyKYb.js",
+          "status": 200,
+          "ms": 10,
+          "ttfb": 23,
+          "bytes": 3973
+        },
+        {
+          "path": "/assets/AnalyticsWorkspace-B0lk70KG.js",
+          "status": 200,
+          "ms": 10,
+          "ttfb": 22,
+          "bytes": 8439
+        },
+        {
+          "path": "/assets/FxTradeLedger-D9V7AsGz.js",
+          "status": 200,
+          "ms": 9,
+          "ttfb": 22,
+          "bytes": 3869
+        },
+        {
+          "path": "/assets/FxTradeLedger-BPaK2S9Z.css",
+          "status": 200,
+          "ms": 10,
+          "ttfb": 20,
+          "bytes": 6254
+        },
+        {
+          "path": "/assets/FxAnalytics-80wLZ5L6.js",
+          "status": 200,
+          "ms": 15,
+          "ttfb": 23,
+          "bytes": 13129
+        },
+        {
+          "path": "/assets/AnalyticsFilterControls-CXNfC7pO.js",
+          "status": 200,
+          "ms": 18,
+          "ttfb": 23,
+          "bytes": 2616
+        },
+        {
+          "path": "/assets/AnalyticsFilterControls-CZaWVFmy.css",
+          "status": 200,
+          "ms": 13,
+          "ttfb": 20,
+          "bytes": 1286
+        },
+        {
+          "path": "/assets/FxAnalytics-C9zfle3a.css",
+          "status": 200,
+          "ms": 14,
+          "ttfb": 20,
+          "bytes": 3946
+        },
+        {
+          "path": "/assets/useContentReadyMetric-BTFi5YU-.js",
+          "status": 200,
+          "ms": 17,
+          "ttfb": 22,
+          "bytes": 829
+        },
+        {
+          "path": "/assets/SessionFilter-B1FV771S.js",
+          "status": 200,
+          "ms": 17,
+          "ttfb": 23,
+          "bytes": 2343
+        },
+        {
+          "path": "/assets/SessionFilter-BcGoz5e7.css",
+          "status": 200,
+          "ms": 14,
+          "ttfb": 21,
+          "bytes": 1272
+        },
+        {
+          "path": "/api/v2/replay/sessions",
+          "status": 200,
+          "ms": 130,
+          "ttfb": 131,
+          "bytes": 2885
+        },
+        {
+          "path": "/api/v2/replay/trades?page=1&page_size=10&sort_key=close_time_utc&sort_direction=desc&extra_filters=%7B%22asset%22%3A%22all%22%2C%22tag%22%3A%22all%22%2C%22strategy%22%3A%22all%22%2C%22source%22%3A%22all%22%2C%22weekday%22%3A%22all%22%2C%22hour%22%3A%22all%22%2C%22timeStart%22%3A%22%22%2C%22timeEnd%22%3A%22%22%2C%22reportKinds%22%3A%22%22%2C%22timezone%22%3A%22UTC%22%2C%22search%22%3A%22%22%2C%22notes%22%3A%22%22%2C%22notesPresence%22%3A%22%22%2C%22statuses%22%3A%22%22%2C%22assets%22%3A%22%22%2C%22sides%22%3A%22%22%2C%22outcomes%22%3A%22%22%2C%22types%22%3A%22%22%2C%22years%22%3A%22%22%2C%22months%22%3A%22%22%2C%22days%22%3A%22%22%2C%22hours%22%3A%22%22%2C%22tagInclude%22%3A%22%22%2C%22tagExclude%22%3A%22%22%2C%22tagIncludeMode%22%3A%22AND%22%2C%22tagExcludeMode%22%3A%22AND%22%7D",
+          "status": 200,
+          "ms": 7,
+          "ttfb": 8,
+          "bytes": 24937
+        }
+      ]
+    }
+  ],
+  "consoleErrors": [
+    {
+      "level": "error",
+      "message": "TypeError: Failed to fetch dynamically imported module: http://127.0.0.1:5180/assets/AiChatPanel-DoFADlvx.js",
+      "timestamp": "2026-10-20T23:24:05.468Z",
+      "url": "http://127.0.0.1:5180/assets/index-DVT6Orsj.js"
+    }
+  ],
+  "consoleErrorInterpretation": "The sole import error was intentionally induced by blocking the AI chunk at 768px on the preceding build; block cleared, final AiChatPanel-DW2MwQBP.js loaded with HTTP 200. No message sent or login performed."
+}

@@ -117,11 +117,22 @@ test('oversized partial frames fail boundedly and heartbeat timeouts recover', a
     await wait()
     assert.match(errors.find(event => event.event === 'error').data.reason, /buffer limit/)
   } finally { offHuge() }
-  const stalled = fixture({ heartbeatMs: 15 }), seen = [], offStalled = stalled.hub.subscribe('a', event => seen.push(event))
+  const timers = []
+  const stalled = fixture({ heartbeatMs: 15,
+    setTimeout: (fn, delay) => { const timer = { fn, delay }; timers.push(timer); return timer },
+    clearTimeout: timer => { if (timer) timer.cancelled = true },
+  }), seen = [], offStalled = stalled.hub.subscribe('a', event => seen.push(event))
   try {
-    await new Promise(resolve => setTimeout(resolve, 40))
+    // Drive watchdog and backoff separately; wall-clock scheduling under a build
+    // must not decide whether the recovery contract passes.
+    await new Promise(resolve => setImmediate(resolve))
+    timers.find(timer => timer.delay === 15 && !timer.cancelled).fn()
+    await new Promise(resolve => setImmediate(resolve))
     assert.equal(seen.some(event => event.data.reason === 'stream_heartbeat_timeout'), true)
-    assert.equal(stalled.requests.length >= 2, true)
+    assert.equal(stalled.requests.length, 1)
+    timers.find(timer => timer.delay === 10 && !timer.cancelled).fn()
+    await new Promise(resolve => setImmediate(resolve))
+    assert.equal(stalled.requests.length, 2)
   } finally { offStalled() }
 })
 

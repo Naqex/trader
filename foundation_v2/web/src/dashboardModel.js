@@ -2,6 +2,7 @@ import { retryAfterMs } from './researchDataApi.js'
 import { recentSessions } from './sessionCatalog.js'
 import { scopedRead } from './scopedRead.js'
 import { navigate } from './clientNavigation.js'
+import { readWorkspaceMetadata } from './workspaceQuery.js'
 
 export const DASHBOARD_PAGE_SIZE = 3
 
@@ -125,9 +126,7 @@ export async function readDashboardAnalytics(workspace, session, signal) {
 }
 
 export async function readDashboardDatasets(workspace, signal) {
-  const response = await scopedRead('/api/v2/data/datasets', workspace, signal)
-  const payload = await response.json().catch(() => ({}))
-  if (!response.ok) throw Object.assign(new Error('dashboard_dataset_catalog_unavailable'), { status: response.status, retryAfterMs: retryAfterMs(response) })
+  const payload = await readWorkspaceMetadata('datasets', workspace, signal)
   if (!Array.isArray(payload.items) || payload.items.some(item => !item || typeof item !== 'object' || Array.isArray(item) || typeof item.dataset_id !== 'string' || !item.dataset_id.trim())) throw new Error('dashboard_dataset_catalog_unavailable')
   return payload.items
 }

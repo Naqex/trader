@@ -62,6 +62,12 @@ def populate(store):
         attempt=ChallengeAttemptSnapshot(workspace_id=workspace,session_id=session.session_id,attempt_id='attempt-1',profile_id=session.profile.profile_id,terms_version=session.profile.terms_version,profile_hash=session.profile.profile_hash,data_version='qa-data',cost_version='qa-cost',engine_version='qa-engine',status='running',virtual_start_utc=start,virtual_cutoff_utc=start+timedelta(days=30))
         phase=PhaseStateSnapshot(workspace_id=workspace,session_id=session.session_id,attempt_id=attempt.attempt_id,profile_hash=session.profile.profile_hash,phase_index=1,initial_balance=Decimal('100000'),balance=Decimal('100250.00'),floating_pl=Decimal('-50.00'),equity=Decimal('100200.00'),high_water_mark=Decimal('100400'),daily_anchor=Decimal('100100'),virtual_time_utc=start,evaluation_quality='full_for_declared_model')
         store.create_prop_attempt(attempt,phase,resume_state={'cursor':{'bar_index':412},'unknown':None})
+        store.create_record(workspace,'replay',{'dataset_id':'a','cursor_index':0,'name':'Explicit prop','prop_session_id':'prop-1','prop_attempt_id':'attempt-1'})
+        store.create_record(workspace,'replay',{'dataset_id':'a','cursor_index':0,'name':'Generic practice · prop-1'})
+        bound=store.create_record(workspace,'replay',{'dataset_id':'a','cursor_index':0,'name':'Bound by resume'})
+        with store.connect() as conn:
+            conn.execute("UPDATE prop_attempts SET resume_json=jsonb_set(resume_json,'{replay_binding}',%s::jsonb) WHERE workspace_id=%s AND session_id='prop-1' AND attempt_id='attempt-1'",(json.dumps({'replay_session_id':bound['record_id']}),workspace))
+            conn.commit()
     return tombstones
 
 

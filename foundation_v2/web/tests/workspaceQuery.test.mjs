@@ -3,6 +3,22 @@ import assert from 'node:assert/strict'
 import { createWorkspaceQueryScope, metadataKey, metadataOptions, invalidateScopeMetadata,
   registerWorkspaceQueryScope, invalidateWorkspaceMetadata, retryMetadataRead, catalogEventRevision, readWorkspaceMetadata } from '../src/workspaceQuery.js'
 import { fetchDatasets, fetchProviders } from '../src/researchDataApi.js'
+import { readDashboardDatasets } from '../src/dashboardModel.js'
+
+test('session details reuse dataset metadata and see successful invalidation', async () => {
+  const originalFetch = globalThis.fetch
+  const scope = createWorkspaceQueryScope('session-metadata')
+  const dispose = registerWorkspaceQueryScope(scope)
+  let calls = 0
+  globalThis.fetch = async () => Response.json({ items: [{ dataset_id: `dataset-${++calls}` }] })
+  try {
+    assert.deepEqual(await readDashboardDatasets('session-metadata'), [{ dataset_id: 'dataset-1' }])
+    assert.deepEqual(await fetchDatasets('session-metadata'), [{ dataset_id: 'dataset-1' }])
+    assert.equal(calls, 1)
+    await invalidateWorkspaceMetadata('session-metadata', ['datasets'])
+    assert.deepEqual(await readDashboardDatasets('session-metadata'), [{ dataset_id: 'dataset-2' }])
+  } finally { dispose(); globalThis.fetch = originalFetch }
+})
 
 test('catalog cache deduplicates reads, keeps scopes/revisions separate, and invalidates exact resources', async () => {
   const fetchBefore = globalThis.fetch, calls = []

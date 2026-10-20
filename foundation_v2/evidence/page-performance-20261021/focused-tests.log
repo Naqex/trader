@@ -1,0 +1,38 @@
+✔ duration retains unknown, measured zero and whole elapsed days without calendar-month guesses (2.1117ms)
+✔ dashboard keeps unknown distinct from measured zero (0.6156ms)
+✔ recent period ranges use inclusive UTC calendar days across month boundaries (2.0635ms)
+✔ last week and month cover completed UTC calendar periods, preserving saved rolling scopes (0.3246ms)
+✔ Dashboard combines search/status/sort without mixing archived and active status (0.6754ms)
+✔ dashboard filters encode the selected session and complete UTC close dates (0.613ms)
+✔ overview request sends workspace and abort signal; rejects old inventory-only payload (39.7283ms)
+✔ malformed performance payload becomes a recoverable load error (0.8428ms)
+✔ dashboard chart uses original balance and preserves every loss and recovery (0.8479ms)
+✔ session result API fences workspace, provenance and ledger count (2.1487ms)
+✔ Assets and strategy intersect; unavailable strategy is not unassigned (1.1332ms)
+✔ profit sorting keeps unknown last and refuses mixed or missing currencies (0.3964ms)
+✔ replay context uses metadata-only route and verifies catalog revision (1.3593ms)
+✔ session analytics preserves HTTP denial for readers that must clear cached data (21.5337ms)
+✔ bounded dashboard list validates workspace, revision, summary and request page (2.4583ms)
+✔ sampled card curve keeps original sequences and rejects incorrect endpoint or coverage (0.5444ms)
+✔ recent sessions filters archived, searches domain fields and sorts without changing catalog (14.0495ms)
+✔ resume eligibility requires an active session with confirmed dataset availability (0.2413ms)
+✔ last session storage remains workspace-scoped and tolerates inaccessible storage (0.4891ms)
+✔ historical period PnL uses UTC close times, a Monday week and the last close rather than wall clock (27.5496ms)
+✔ missing dates/PnL do not become a zero period or a fabricated daily chart (0.3713ms)
+✔ numeric epoch seconds and milliseconds normalize to the same historical UTC instant (0.2116ms)
+✔ session details reuse dataset metadata and see successful invalidation (44.6048ms)
+✔ catalog cache deduplicates reads, keeps scopes/revisions separate, and invalidates exact resources (20.8229ms)
+✔ denial purges retained catalogs and stops retry/read until authority is replaced (21.3372ms)
+✔ query cancellation aborts the last shared consumer; retained revisions are bounded (10.1734ms)
+✔ known-success invalidation is workspace-scoped; progress ticks do not create catalog/read feedback (0.7457ms)
+✔ only bounded metadata resources and transient GET errors enter the pilot (2.4153ms)
+✔ real datasets/providers helpers use bounded scope cache and preserve independent abort ownership (2.4388ms)
+✔ last imperative consumer cancels its metadata transport, and refresh denial never returns cached data (1.3858ms)
+ℹ tests 30
+ℹ suites 0
+ℹ pass 30
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 853.7869

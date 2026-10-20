@@ -4,8 +4,9 @@ import { displayTimeframe } from './dataDisplay.js'
 import { sessionSettingsFacts } from './sessionSettingsModel.js'
 import TestingReadState, { TestingSkeleton } from './TestingReadState.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import AnalyticsWorkspace, { analyticsViewResult, buildAnalyticsModel } from './AnalyticsWorkspace.jsx'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { analyticsViewResult, buildAnalyticsModel } from './analyticsViewModel.js'
+const AnalyticsWorkspace = lazy(() => import('./AnalyticsWorkspace.jsx'))
 import SessionPerformance from './SessionPerformance.jsx'
 import { SessionActionDialog, SessionActions } from './SessionActions.jsx'
 import SessionSettingsDrawer from './SessionSettingsDrawer.jsx'
@@ -14,7 +15,6 @@ import FxSelect from './FxSelect.jsx'
 import TestingIcon from './TestingIcon.jsx'
 import SessionKindBadge from './SessionKindBadge.jsx'
 import { TestingEmptyState, TestingPageSkeleton, TestingResourceStatus } from './TestingPageState.jsx'
-import QuickSessionDialog from './QuickSessionDialog.jsx'
 import useReadRefresh from './useReadRefresh.js'
 import { readDashboardAnalytics, readDashboardDatasets, readDashboardReplayContext } from './dashboardModel.js'
 import { buildWorkspaceHref } from './workspaceContext.js'
@@ -232,7 +232,7 @@ export default function SessionPicker({ kind = 'replay', workspace = 'tenant-a',
         </SessionDescriptionCard>
       </div>}
       {kind !== 'replay' && <div className="fxr-session-links fxr-ledger-context"><span>{item.name || item.record_id} · {unknownValue(item.instrument_id)} · {timeframeLabel(item)}</span><a href={routeHref('replay')}>{t("Thông tin phiên")}</a>{!item.archived && item.dataset_available && <a href={routeHref('replay', { select: null, surface: 'workspace' })}>{t("Mở chart")}</a>}</div>}
-      <div className="fxr-session-report">{kind === 'replay' ? <>{performance.status === 'loading' && <TestingSkeleton label="Đang tải kết quả phiên…" />}{performance.denied && <TestingEmptyState kind="denied" />}{performance.status === 'error' && !performance.denied && <TestingReadState error message={t('Không tải được kết quả:') + ' ' + t(performance.error)} recovery={performanceRecovery} />}{performance.status === 'blocked' && performance.payload?.blocked_by_data?.some(reason => reason !== 'replay_execution_not_initialized') && <p role="status" data-testid="session-performance-blocked">{t("Kết quả chưa đủ dữ liệu để hiển thị.")}</p>}{['ready', 'blocked', 'stale'].includes(performance.status) && <SessionPerformance key={`${workspace}:${item.record_id}:${item.revision}`} model={performanceModel} payload={performance.payload} item={item} href={routeHref} />}</> : <AnalyticsWorkspace key={`${workspace}:${item.record_id}:${item.revision}`} workspace={workspace} query={selectedQuery} ledgerOnly={kind === 'trade'} sessionName={item.name || item.record_id} embedded />}</div>
+      <div className="fxr-session-report">{kind === 'replay' ? <>{performance.status === 'loading' && <TestingSkeleton label="Đang tải kết quả phiên…" />}{performance.denied && <TestingEmptyState kind="denied" />}{performance.status === 'error' && !performance.denied && <TestingReadState error message={t('Không tải được kết quả:') + ' ' + t(performance.error)} recovery={performanceRecovery} />}{performance.status === 'blocked' && performance.payload?.blocked_by_data?.some(reason => reason !== 'replay_execution_not_initialized') && <p role="status" data-testid="session-performance-blocked">{t("Kết quả chưa đủ dữ liệu để hiển thị.")}</p>}{['ready', 'blocked', 'stale'].includes(performance.status) && <SessionPerformance key={`${workspace}:${item.record_id}:${item.revision}`} model={performanceModel} payload={performance.payload} item={item} href={routeHref} />}</> : <Suspense fallback={<TestingSkeleton label="Đang tải báo cáo…" />}><AnalyticsWorkspace key={`${workspace}:${item.record_id}:${item.revision}`} workspace={workspace} query={selectedQuery} ledgerOnly={kind === 'trade'} sessionName={item.name || item.record_id} embedded /></Suspense>}</div>
     </>}
     {actionDialog && item && <SessionActionDialog key={actionDialog.mode + ':' + item.record_id} mode={actionDialog.mode} item={item} pending={Boolean(pending)} blocked={actionDisabled || Boolean(catalog.refreshing)} error={notice?.error ? notice.text : null} onClose={() => setActionDialog(null)} onSubmit={(action, entry, confirmation) => mutate(action, confirmation)} />}
     {editing && item && <SessionSettingsDrawer item={item} dataset={dataset} payload={performance.payload} model={performanceModel} replayRecord={replayRecord} workspace={workspace} pending={Boolean(pending)} blocked={actionDisabled} onClose={() => setEditing(false)} onSubmit={draft => mutate('save', draft)} error={notice?.error ? notice.text : null} />}
