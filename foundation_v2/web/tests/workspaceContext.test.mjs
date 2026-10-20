@@ -72,3 +72,13 @@ test('playbook context survives the journal deep link and rejects unsafe revisio
     '/?workspace=desk-1&view=journal&playbook=breakout',
   )
 })
+
+
+test('Live navigation preserves its account only inside Live and permits explicit clearing', () => {
+  const query = '?live_account=account-qa&playbook=breakout&playbook_revision=2'
+  const params = view => new URL(buildWorkspaceHref(view,'tenant-a',query), 'http://localhost').searchParams
+  assert.equal(params('live').get('live_account'),'account-qa')
+  assert.equal(params('playbook').has('live_account'),false)
+  assert.equal(new URL(buildWorkspaceHref('live','tenant-a',query,{live_account:null}),'http://localhost').searchParams.has('live_account'),false)
+  assert.equal(new URL(buildWorkspaceHref('live','tenant-a',query,{live_account:'other'}),'http://localhost').searchParams.get('live_account'),'other')
+})

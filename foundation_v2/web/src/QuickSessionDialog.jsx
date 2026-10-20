@@ -7,7 +7,7 @@ import FxSelect from './FxSelect.jsx'
 import SessionPeriodFields from './SessionPeriodFields.jsx'
 import { commonSessionRange, sessionPeriodState } from './sessionPeriod.js'
 import { fetchOfflineLibrary } from './dataDeskApi.js'
-import { createPlaybookDraft, fetchPlaybooks } from './playbookApi.js'
+import { createPlaybookDraft, fetchPlaybooks, resolvePlaybookSelection } from './playbookApi.js'
 import { createReplaySession, rememberSession, sessionNavigationHref } from './sessionCatalog.js'
 import { buildWorkspaceHref } from './workspaceContext.js'
 import { FieldError, FormFeedback, fieldValidationProps, focusFirstInvalid } from './FormValidation.jsx'
@@ -27,7 +27,9 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
   const [mode, setMode] = useState(initialMode === 'prop' ? 'prop' : 'backtest'), [advanced, setAdvanced] = useState(false)
   const panelBody = useRef(null)
   useLayoutEffect(() => { panelBody.current?.scrollTo(0, 0) }, [advanced, mode])
-  const [draft, setDraft] = useState({ name: '', balance: '10000', datasets: initialDataset ? [initialDataset] : [], strategy: '', period: { start: '', end: '', endMode: 'auto' } })
+  const [draft, setDraft] = useState({ name: '', balance: '10000', datasets: initialDataset ? [initialDataset] : [], strategy: query?.get('playbook') || '', period: { start: '', end: '', endMode: 'auto' } })
+  const [linkedStrategy, setLinkedStrategy] = useState(() => query?.get('playbook') ? { record_id: query.get('playbook'), invalid: true } : null)
+  const linkedRequest = useRef(query?.get('playbook') ? { id: query.get('playbook'), revision: query.get('playbook_revision') } : null)
   const [balanceMode, setBalanceMode] = useState('10000')
   const [tradingOptions, setTradingOptions] = useState({ costs_enabled: false, assets: {} })
   const [propDraft, setPropDraft] = useState({ profileKind: 'generic', targetPercent: '10', dailyLoss: '500', overallLoss: '1000', durationDays: '' })
@@ -47,18 +49,19 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
   const selectedAssets = draft.datasets.map(key => data.items.find(item => item.dataset_id === key)).filter(Boolean)
   const selected = selectedAssets[0]
   const currency = selected?.instrument_spec?.account_ccy || 'USD'
-  const selectedStrategy = strategies.items.find(item => item.record_id === draft.strategy)
+  const selectedStrategy = linkedStrategy?.record_id === draft.strategy ? linkedStrategy.invalid ? null : linkedStrategy : strategies.items.find(item => item.record_id === draft.strategy)
   const range = commonSessionRange(selectedAssets)
   const period = sessionPeriodState(draft.period, range)
   const validation = quickSessionErrors({ draft:presetEditor ? {...draft,name:presetEditor.name} : draft, mode, propDraft, selectedAssets, period:presetEditor ? {valid:true} : period, dataStatus: data.status, addingStrategy })
   if (presetEditor && !presetEditor.name.trim()) validation.name = 'Tên preset là bắt buộc.'
   if (draft.strategy && strategies.status === 'ready' && !selectedStrategy) validation.strategy = 'Chiến lược đã lưu không còn khả dụng. Chọn lại hoặc bỏ chọn.'
+  if (draft.strategy && strategies.status !== 'ready') validation.strategy = strategies.status === 'loading' ? 'Đang đọc phiên bản chiến lược đã chọn.' : 'Chưa đọc được phiên bản chiến lược. Thử lại hoặc bỏ chọn để tiếp tục.'
   const optionsError = tradingOptionsError(tradingOptions, selectedAssets)
   if (optionsError) validation.tradingOptions = optionsError
   const errors = submitted ? validation : {}
   const strategyError = strategySubmitted && !strategyName.trim() ? 'Tên chiến lược là bắt buộc.' : errors.strategy
   const fieldProps = key => fieldValidationProps(errors[key], `${id}-${key}-error`)
-  const change = (key, value) => { if (!['name','period'].includes(key)) setActivePreset(''); setDraft(current => ({ ...current, [key]: value })) }
+  const change = (key, value) => { if (!['name','period'].includes(key)) setActivePreset(''); if (key === 'strategy') { linkedRequest.current = null; setLinkedStrategy(null) }; setDraft(current => ({ ...current, [key]: value })) }
   const changeProp = (key, value) => {setActivePreset('');setPropDraft(current => ({ ...current, [key]: value }))}
   const changeTradingOptions = value => {setActivePreset('');setTradingOptions(value)}
   const loadPresets = async signal => {
@@ -78,6 +81,8 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
   },[workspace,mode])
   useLayoutEffect(() => {if(presetEditor) {panelBody.current?.scrollTo(0,0);nameInput.current?.focus()} else dialog.current?.querySelector('.session-preset-trigger')?.focus()},[Boolean(presetEditor)])
   const applyPreset = item => {
+    linkedRequest.current = null
+    setLinkedStrategy(null)
     const config = structuredClone(item.config)
     setDraft(current => ({...current,balance:config.balance,datasets:config.datasets,strategy:config.strategy}))
     setBalanceMode(['10000','50000','100000','250000'].includes(config.balance) ? config.balance : 'custom')
@@ -85,12 +90,13 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
     setSubmitted(false);setPresetProblem('');setAddingStrategy(false)
   }
   const editPreset = item => {
-    const before = structuredClone({draft,propDraft,tradingOptions,balanceMode,activePreset,advanced})
+    const before = structuredClone({draft,propDraft,tradingOptions,balanceMode,activePreset,advanced,linkedStrategy,linkedRequest:linkedRequest.current})
     if(item) applyPreset(item)
     setPresetEditor({id:item?.id || null,revision:item?.revision,name:item?.name || '',before});setSubmitted(false);setPresetProblem('')
   }
   const leavePreset = () => {
     const before = presetEditor.before
+    setLinkedStrategy(before.linkedStrategy); linkedRequest.current = before.linkedRequest
     setDraft(before.draft);setPropDraft(before.propDraft);setTradingOptions(before.tradingOptions)
     setBalanceMode(before.balanceMode);setActivePreset(before.activePreset);setAdvanced(before.advanced)
     setPresetEditor(null);setPresetProblem('');setSubmitted(false)
@@ -124,8 +130,14 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
     fetchOfflineLibrary(workspace, controller.signal).then(library => {
       if (!controller.signal.aborted) setData({ status: 'ready', items: library.datasets, instruments: library.instruments, error: '' })
     }).catch(error => { if (!controller.signal.aborted) setData({ status: 'error', items: [], error: error.message }) })
-    fetchPlaybooks(workspace, controller.signal).then(items => {
-      if (!controller.signal.aborted) setStrategies({ items, status: 'ready', error: '' })
+    fetchPlaybooks(workspace, controller.signal).then(async items => {
+      const request = linkedRequest.current
+      try {
+        const linked = request ? await resolvePlaybookSelection(workspace, items, request.id, request.revision, controller.signal) : null
+        if (!controller.signal.aborted) { if (linkedRequest.current === request) setLinkedStrategy(linked); setStrategies({ items, status: 'ready', error: '' }) }
+      } catch (error) {
+        if (!controller.signal.aborted) { if (linkedRequest.current === request) setLinkedStrategy({ record_id: request?.id, invalid: true }); setStrategies({ items, status: 'ready', error: linkedRequest.current === request ? error.message : '' }) }
+      }
     }).catch(error => { if (!controller.signal.aborted) setStrategies({ items: [], status: 'error', error: error.message }) })
     return () => controller.abort()
   }, [workspace, reload])
@@ -272,7 +284,7 @@ export default function QuickSessionDialog({ workspace, query, onClose, initialD
               balanceCaret.current = caret
               change('balance', value)
             }} /></div>}<FieldError id={`${id}-balance-error`} error={errors.balance} /></label>
-            <div className="quick-session-field quick-session-strategy"><span>{t('Strategy')}</span><FxSelect searchable={strategies.items.length > 0} label={t('Strategy')} value={draft.strategy} disabled={busy || strategies.status === 'loading'} onChange={value => change('strategy',value)} className={draft.strategy ? 'is-field' : 'is-field is-placeholder'} triggerContent={selectedStrategy?.payload?.name || t('Chọn chiến lược hoặc tạo mới')} localizeOptions={false} placeholder={t('Tìm chiến lược…')} emptyLabel={t('Không tìm thấy kết quả')} options={strategies.items.map(item => ({ value:item.record_id, label:item.payload?.name || item.record_id, localize:false }))} />{draft.strategy && <button type="button" className="quick-session-text-action" disabled={busy} onClick={() => change('strategy','')}>{t('Bỏ chọn chiến lược')}</button>}{!addingStrategy ? <button type="button" ref={strategyOpener} className="quick-session-text-action quick-session-new-strategy" disabled={busy || strategies.status === 'loading'} onClick={() => { setStrategySubmitted(false); setAddingStrategy(true) }}>{t('+ Tạo chiến lược mới')}</button> : <div className="quick-session-strategy-create"><input ref={strategyInput} maxLength={160} placeholder={t('Tên chiến lược')} aria-label={t('Tên chiến lược')} {...fieldValidationProps(strategyError, `${id}-strategy-error`)} value={strategyName} disabled={strategyPending} onChange={event => setStrategyName(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addStrategy() } }} /><button type="button" disabled={busy || strategyProblem?.uncertain} onClick={addStrategy}>{t(strategyPending ? 'Đang tạo…' : 'Tạo chiến lược')}</button><button type="button" disabled={strategyPending} onClick={() => setAddingStrategy(false)}>{t('Cancel')}</button><FieldError id={`${id}-strategy-error`} error={strategyError} />{strategyProblem && <small role="alert">{strategyProblem.uncertain ? t('Chưa xác định chiến lược đã tạo hay chưa. Kiểm tra danh sách chiến lược trước khi thử lại.') : strategyProblem.text}{strategyProblem.uncertain && <a aria-disabled={busy || undefined} onClick={event => { if (busy) event.preventDefault() }} href={buildWorkspaceHref('playbook',workspace,query)}>{t('Quản lý chiến lược')}</a>}</small>}</div>}{strategies.error && <small>{t('Chưa đọc được chiến lược. Bạn vẫn có thể tạo phiên không gắn chiến lược.')}</small>}</div>
+            <div className="quick-session-field quick-session-strategy"><span>{t('Strategy')}</span><FxSelect searchable={strategies.items.length > 0} label={t('Strategy')} {...fieldProps('strategy')} value={draft.strategy} disabled={busy || strategies.status === 'loading'} onChange={value => change('strategy',value)} className={draft.strategy ? 'is-field' : 'is-field is-placeholder'} triggerContent={selectedStrategy ? selectedStrategy.payload.name + ' · r' + selectedStrategy.revision : draft.strategy ? t('Phiên bản không khả dụng') : t('Chọn chiến lược hoặc tạo mới')} localizeOptions={false} placeholder={t('Tìm chiến lược…')} emptyLabel={t('Không tìm thấy kết quả')} options={strategies.items.map(item => ({ value:item.record_id, label:item.payload?.name || item.record_id, detail:'r' + item.revision, localize:false }))} />{!addingStrategy && <FieldError id={`${id}-strategy-error`} error={errors.strategy} />}{draft.strategy && <button type="button" className="quick-session-text-action" disabled={busy} onClick={() => change('strategy','')}>{t('Bỏ chọn chiến lược')}</button>}{!addingStrategy ? <button type="button" ref={strategyOpener} className="quick-session-text-action quick-session-new-strategy" disabled={busy || strategies.status === 'loading'} onClick={() => { setStrategySubmitted(false); setAddingStrategy(true) }}>{t('+ Tạo chiến lược mới')}</button> : <div className="quick-session-strategy-create"><input ref={strategyInput} maxLength={160} placeholder={t('Tên chiến lược')} aria-label={t('Tên chiến lược')} {...fieldValidationProps(strategyError, `${id}-strategy-error`)} value={strategyName} disabled={strategyPending} onChange={event => setStrategyName(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addStrategy() } }} /><button type="button" disabled={busy || strategyProblem?.uncertain} onClick={addStrategy}>{t(strategyPending ? 'Đang tạo…' : 'Tạo chiến lược')}</button><button type="button" disabled={strategyPending} onClick={() => setAddingStrategy(false)}>{t('Cancel')}</button><FieldError id={`${id}-strategy-error`} error={strategyError} />{strategyProblem && <small role="alert">{strategyProblem.uncertain ? t('Chưa xác định chiến lược đã tạo hay chưa. Kiểm tra danh sách chiến lược trước khi thử lại.') : strategyProblem.text}{strategyProblem.uncertain && <a aria-disabled={busy || undefined} onClick={event => { if (busy) event.preventDefault() }} href={buildWorkspaceHref('playbook',workspace,query)}>{t('Quản lý chiến lược')}</a>}</small>}</div>}{strategies.error && <small>{t(strategies.error)}</small>}</div>
             <div className="quick-session-field"><div className="quick-session-field-title"><span>{t('Assets')} <span className="quick-session-required" aria-hidden="true">*</span></span><a aria-disabled={busy || undefined} onClick={event => { if (busy) event.preventDefault() }} href={buildWorkspaceHref('data',workspace,query)}>{t('Kho dữ liệu')}</a></div><DatasetAssetSelect maxAssets={12} datasets={data.items} instruments={data.instruments} sessions={sessions} {...fieldProps('assets')} value={draft.datasets} disabled={busy || data.status !== 'ready'} onChange={value => change('datasets',value)} /><FieldError id={`${id}-assets-error`} error={errors.assets} />{data.status === 'loading' ? <small role="status">{t('Đang đọc danh mục dữ liệu…')}</small> : data.status === 'error' ? <div role="alert">{t('Không đọc được danh mục:')} {data.error}<button type="button" onClick={() => setReload(value => value + 1)}>{t('Thử lại')}</button></div> : !data.items.length && <small>{t('Chưa có dataset local trong workspace này.')}</small>}</div>
             {!presetEditor && selectedAssets.length > 0 && <SessionPeriodFields error={errors.period} range={range} value={draft.period} onChange={value => change('period', value)} disabled={busy || data.status !== 'ready'} />}
             {mode === 'prop' ? <section className="quick-session-prop-rules" aria-label={t('Prop Firm rules')}>

@@ -91,6 +91,7 @@ export function buildWorkspaceHref(view, workspace, queryLike, overrides = {}) {
   const workspaceId = overrides.workspace ?? workspace ?? context.workspaceId ?? 'tenant-a'
   params.set('workspace', String(workspaceId))
   if (view) params.set('view', String(view))
+  if (view === 'live' && /^[A-Za-z0-9-]{1,160}$/.test(source.get('live_account') || '') && overrides.live_account !== null) params.set('live_account', source.get('live_account'))
   // Preview is presentation state; it never changes replay/broker authority.
   if (source.get('demo') === '1' && overrides.demo !== null && overrides.demo !== '0') {
     params.set('demo', '1')

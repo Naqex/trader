@@ -3,8 +3,8 @@ import { scopedMutation } from './scopedMutation.js'
  * Playbook catalog and manual draft helpers.
  *
  * The Playbook backend owns revisions and lineage.
- * Quick session creation can add a needs-definition draft. Freeze, fork and
- * automated execution remain separate capabilities.
+ * Quick session creation can add a needs-definition draft. Manual editing,
+ * freeze and fork preserve backend revision authority; execution is separate.
  */
 
 function requestHeaders(workspace) {
@@ -27,14 +27,50 @@ export async function fetchPlaybooks(workspace, signal) {
     signal,
   })
   const payload = await readJson(response)
-  return Array.isArray(payload?.items) ? payload.items : []
+  if (!Array.isArray(payload?.items)) throw new Error('Dữ liệu chiến lược không hợp lệ. Tải lại để kiểm tra.')
+  return payload.items
 }
 
-export async function createPlaybookDraft(workspace, name) {
+export async function createPlaybookDraft(workspace, name, payload = {}) {
   return readJson(await scopedMutation('/api/v2/playbooks', workspace, {
     method: 'POST', headers: { ...requestHeaders(workspace), 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, status: 'draft', execution_capability: 'needs-definition', rules: {} }),
+    body: JSON.stringify({ execution_capability: 'needs-definition', rules: {}, ...payload, name, status: 'draft' }),
   }))
+}
+
+async function playbookCommand(workspace, record, action, body = {}) {
+  return readJson(await scopedMutation(`/api/v2/playbooks/${encodeURIComponent(record.record_id)}/${action}`, workspace, {
+    method: 'POST', headers: { ...requestHeaders(workspace), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...body, expected_revision: record.revision }),
+  }))
+}
+
+export const revisePlaybook = (workspace, record, payload) => playbookCommand(workspace, record, 'revisions', { payload })
+export const freezePlaybook = (workspace, record) => playbookCommand(workspace, record, 'freeze')
+export const forkPlaybook = (workspace, record, name) => playbookCommand(workspace, record, 'fork', { name })
+
+export const MANUAL_STRATEGY_FIELDS = Object.freeze([
+  ['context', 'Bối cảnh thị trường'], ['entry', 'Điều kiện vào lệnh'],
+  ['exit', 'Điều kiện thoát lệnh'], ['risk', 'Quản trị rủi ro'], ['notes', 'Ghi chú'],
+])
+
+export function manualStrategyForm(record) {
+  const payload = record?.payload || {}, notes = payload.rules?.manual_notes || {}
+  return Object.fromEntries([['name', String(payload.name || '')], ...MANUAL_STRATEGY_FIELDS.map(([key]) => [key, typeof notes[key] === 'string' ? notes[key] : ''])])
+}
+
+export function manualStrategyPayload(record, form) {
+  const name = String(form.name || '').trim()
+  if (!name || name.length > 160) throw new Error('Tên chiến lược cần từ 1 đến 160 ký tự.')
+  const notes = { ...record?.payload?.rules?.manual_notes }
+  for (const [key] of MANUAL_STRATEGY_FIELDS) {
+    const value = String(form[key] || '').trim()
+    if (value.length > 4000) throw new Error('Mỗi nội dung chiến lược tối đa 4.000 ký tự.')
+    notes[key] = value
+  }
+  return { ...record?.payload, name, status: 'draft',
+    execution_capability: record?.payload?.execution_capability || 'manual-only',
+    rules: { ...record?.payload?.rules, manual_notes: notes } }
 }
 
 export async function fetchPlaybookRevisions(workspace, playbookId, signal) {
@@ -44,7 +80,22 @@ export async function fetchPlaybookRevisions(workspace, playbookId, signal) {
     signal,
   })
   const payload = await readJson(response)
-  return Array.isArray(payload?.items) ? payload.items : []
+  if (!Array.isArray(payload?.items)) throw new Error('Dữ liệu chiến lược không hợp lệ. Tải lại để kiểm tra.')
+  return payload.items
+}
+
+export async function resolvePlaybookSelection(workspace, items, id, revision, signal) {
+  if (!id) return null
+  const current = items.find(item => item.record_id === id)
+  if (!current) throw new Error('Chiến lược trong liên kết không còn khả dụng.')
+  if (revision === null || revision === undefined || revision === '') return current
+  const version = Number(revision)
+  if (!Number.isInteger(version) || version < 1) throw new Error('Phiên bản chiến lược không hợp lệ.')
+  if (current.revision === version) return current
+  const history = await fetchPlaybookRevisions(workspace, id, signal)
+  const exact = history.find(item => item.revision === version && item.payload)
+  if (!exact) throw new Error('Không tìm thấy phiên bản chiến lược đã chọn. Chọn lại hoặc bỏ chọn chiến lược.')
+  return { ...current, ...exact, record_id: id, updated_at_utc: exact.created_at_utc }
 }
 
 function isObject(value) {

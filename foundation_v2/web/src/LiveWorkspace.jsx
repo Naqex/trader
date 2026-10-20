@@ -47,7 +47,7 @@ export default function LiveWorkspace({ workspace = 'tenant-a', query = new URLS
   useEffect(() => {
     if (preview) return
     const controller = new AbortController()
-    setState({ workspace, status: 'loading', payload: null })
+    setState(previous => previous.workspace === workspace && previous.status !== 'loading' ? previous : { workspace, status: 'loading', payload: null })
     let refreshing = false
     const refresh = async () => {
       if (refreshing) return
@@ -70,13 +70,13 @@ export default function LiveWorkspace({ workspace = 'tenant-a', query = new URLS
       <span className="live-status-dot" aria-hidden="true" /><span>{t(copy.title)}</span>
       {!preview && ['error', 'denied'].includes(state.status) && <button type="button" className="fxa-button live-retry" onClick={() => setReloadToken(value => value + 1)}>{t('Thử lại')}</button>}
     </div>}
-    {state.status === 'loading' ? <TestingSkeleton label="Reading account data…" /> : <LiveSurfaces key={`${workspace}:${section}:${Boolean(preview)}`} section={section} payload={state.payload} query={query} preview={Boolean(preview)} onRefresh={() => setReloadToken(value => value + 1)} />}
+    {state.status === 'loading' ? <TestingSkeleton label="Reading account data…" /> : <LiveSurfaces key={`${workspace}:${Boolean(preview)}`} workspace={workspace} section={section} payload={state.payload} query={query} preview={Boolean(preview)} onRefresh={() => setReloadToken(value => value + 1)} />}
     <details className="live-source-details"><summary>{t('Data source and access')}</summary><dl>
       <div><dt>{t('Workspace')}</dt><dd>{workspace}</dd></div>
       <div><dt>{t('Source')}</dt><dd>{state.payload?.source || '—'}</dd></div>
       <div><dt>{t('Last snapshot (UTC)')}</dt><dd>{state.payload?.captured_at_utc ? displayDate(state.payload.captured_at_utc, { timeStyle: 'medium' }) : '—'}</dd></div>
       <div><dt>{t('History from (UTC)')}</dt><dd>{state.payload?.history_from_utc ? displayDate(state.payload.history_from_utc, { timeStyle: 'medium' }) : '—'}</dd></div>
-    </dl><p>{t('Account data is read only. This page does not send orders or connect a broker.')}</p><p>{t('Includes deal costs. Return requires opening capital; deals have not been paired into trades.')}</p><p>{t('Totals cover synced deals only. — means data is unavailable or the day is not fully covered.')}</p></details>
+    </dl><p>Dữ liệu đồng bộ chỉ đọc. Giao dịch ghi tay lưu riêng theo tài khoản; số dư ghi tay = số dư ban đầu + PnL ròng đã ghi, không bao gồm dòng tiền nạp/rút.</p><p>Giao dịch ghi tay được nhập khi đã đóng. Dữ liệu broker vẫn hiển thị từng deal khớp lệnh; chưa ghép entry/exit thành giao dịch hoàn chỉnh.</p><p>Tổng tháng chỉ gồm dữ liệu đã ghi hoặc đã đồng bộ. — là chưa đủ dữ liệu. Trang này không gửi lệnh ra sàn.</p></details>
   </section>
 }
 

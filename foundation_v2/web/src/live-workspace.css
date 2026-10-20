@@ -1,5 +1,46 @@
 /* Live reuses Testing controls. Surfaces here express calendar/table/sidebar roles. */
 .live-workspace { min-width: 0; }
+.live-account-picker { display: flex; align-items: center; gap: 12px; margin-right: auto; min-width: 0; }
+.live-account-picker > .fx-select { min-width: 200px; }
+.live-account-picker > span { white-space: nowrap; }
+@media (max-width: 900px) {
+  .fx-app .wm-page.live-workspace .live-topbar { flex-wrap: wrap; }
+  .live-account-picker { flex-wrap: wrap; }
+}
+.live-journal-filters { display: flex; gap: 12px; flex-wrap: wrap; }
+.legacy-modal.live-record-dialog { display: flex; flex-direction: column; overflow: hidden; width: min(640px, calc(100vw - 32px)); }
+.live-record-dialog > header { flex: 0 0 auto; }
+.live-record-form { display: grid; gap: 20px; padding: 24px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.live-record-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
+.live-record-form label { display: grid; gap: 8px; min-width: 0; font-size: 13px; }
+.live-record-form :is(input,textarea) { box-sizing: border-box; width: 100%; border: 1px solid var(--wm-border); border-radius: var(--ds-radius-field,8px); background: var(--wm-control-open); color: var(--wm-content); font: inherit; padding: 8px 12px; min-height: var(--wm-control-height,36px); }
+.live-record-form .fxa-button { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-height: var(--wm-control-height,36px); border: 0; border-radius: var(--ds-radius-pill); padding: 7px 16px; background: var(--project-control); color: var(--project-text); font: 500 13px/20px Inter,ui-sans-serif,system-ui,sans-serif; cursor: pointer; }
+.live-record-form .fxa-button:hover:not(:disabled) { background: var(--project-hover); }
+.live-record-form .fxa-button.is-primary { background: var(--project-action); color: var(--project-on-action); }
+.live-record-form .fxa-button.is-primary:hover:not(:disabled) { background: var(--project-action-hover); }
+.live-record-form textarea { resize: vertical; }
+.live-record-form :is(input,textarea):focus-visible { outline: none; border-color: var(--wm-focus,#6c9fff); box-shadow: none; }
+.live-record-form .live-dialog-footer { margin: 0; padding-top: 16px; border-top: 1px solid var(--wm-border); display: flex; justify-content: flex-end; gap: 8px; }
+.live-record-form .live-record-error { color: var(--wm-negative); font-size: 13px; }
+.live-manual-accounts,.live-connected-account,.live-journal-tags { padding: 24px var(--wm-page-gutter); }
+.live-manual-accounts .live-section-heading { margin-bottom: 24px; }
+.live-note-list { padding-inline: var(--wm-page-gutter); }
+.live-note-row { display: grid; gap: 8px; width: 100%; text-align: left; padding: 20px 0; background: transparent; color: var(--wm-content); border: 0; border-bottom: 1px solid var(--wm-border); cursor: pointer; }
+.live-note-row > span { white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; color: var(--wm-content-muted); font-size: 13px; }
+.live-note-row > small { color: var(--wm-content-muted); }
+.live-note-row:hover strong,.live-text-action:hover { color: var(--wm-highlight); }
+.live-text-action { background: transparent; border: 0; color: var(--wm-content); cursor: pointer; font: inherit; }
+.live-tag-bars { display: grid; gap: 16px; padding-block: 24px; }
+.live-tag-bars > div { display: grid; grid-template-columns: minmax(80px,140px) minmax(40px,1fr) 100px; gap: 16px; align-items: center; font-size: 13px; }
+.live-tag-bars i { display: block; min-height: 12px; border-radius: 3px; background: var(--report-positive); }
+.live-tag-bars i.is-loss { background: var(--report-negative); }
+.live-tag-bars strong { text-align: right; }
+@media (max-width: 600px) {
+  .live-record-grid { grid-template-columns: minmax(0,1fr); }
+  .live-record-form { padding: 16px; }
+  .live-account-picker { width: 100%; flex-wrap: wrap; }
+  .live-account-picker > .fx-select { min-width: 0; max-width: 100%; }
+}
 /* Structural dividers span the workspace; gutters belong to their content. */
 .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-content > .wm-page.live-workspace { width: calc(100% + 2 * var(--wm-page-gutter)); margin-inline: calc(-1 * var(--wm-page-gutter)); padding: 0; }
 .fx-app .wm-page.live-workspace .live-topbar { display: flex; justify-content: flex-end; align-items: center; gap: 16px; margin: 0; padding: 16px var(--wm-page-gutter); border-bottom: 1px solid var(--wm-border); }

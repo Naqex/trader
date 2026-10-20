@@ -13,9 +13,10 @@ test('Live retains stale snapshots but clears data when access is denied',()=>{
  assert.match(source,/response.status === 404 \|\| response.status === 501/)
  assert.match(source,/TestingSkeleton/);assert.match(surfaces,/live-empty/)
 })
-test('Live shares every reference surface with labeled local previews and responsive layouts',()=>{
+test('Live shares reference surfaces with persisted manual records and responsive layouts',()=>{
  for(const section of ['calendar','trades','notes','tag-analytics','analytics','trading-accounts']) assert.ok(source.includes(section))
- assert.match(surfaces,/showModal\(\)/);assert.match(surfaces,/Changes are not saved/)
+ assert.match(surfaces,/LiveRecordDialog/);assert.match(surfaces,/fetchLiveRecords/)
+ assert.doesNotMatch(surfaces,/PreviewDialog|Changes are not saved/)
  assert.match(css,/@media \(max-width: 760px\)/);assert.match(css,/@media \(max-width: 480px\)/);assert.match(css,/prefers-reduced-motion/)
  assert.doesNotMatch(css,/gradient\(|backdrop-filter|framer-motion/i)
 })

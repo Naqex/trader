@@ -1,9 +1,15 @@
 import { displayDate } from './dateFormat.js'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTestingLocale } from './testingLocale.jsx'
 import FxSelect from './FxSelect.jsx'
 import TestingIcon from './TestingIcon.jsx'
 import { DateFilter, timezoneOptions } from './AnalyticsFilterControls.jsx'
+import { fetchLiveRecords } from './liveLedgerApi.js'
+import { fetchPlaybooks } from './playbookApi.js'
+import { manualSnapshot, closedTradeStats } from './liveLedgerModel.js'
+import LiveRecordDialog from './LiveRecordDialog.jsx'
+import { ManualTrades, ManualAccounts, JournalNotes, JournalTags } from './LiveJournalSurfaces.jsx'
+import { navigate } from './clientNavigation.js'
 import LiveBrokerSnapshot from './LiveBrokerSnapshot.jsx'
 import { LIVE_FILTERS, calendarWeeks, cumulativeDealSeries, dayKey, dealNet, filterLiveDeals, summarizeDeals } from './liveWorkspaceModel.js'
 
@@ -17,29 +23,6 @@ function Empty({ title, copy, icon = 'chart', action, onAction }) {
   return <div className="live-empty" data-testid="live-empty"><div className="live-empty-art" aria-hidden="true"><TestingIcon kind={icon} size={72} /></div><h2>{t(title)}</h2>{copy && <p>{t(copy)}</p>}{action && <Action primary icon="plus" onClick={onAction}>{t(action)}</Action>}</div>
 }
 
-function PreviewDialog({ action, onClose }) {
-  const { t } = useTestingLocale(), ref = useRef(null)
-  useEffect(() => {
-    const dialog = ref.current, opener = document.activeElement
-    dialog.showModal()
-    return () => { if (dialog.open) dialog.close(); if (opener?.isConnected) opener.focus({ preventScroll: true }) }
-  }, [])
-  const form = ['New note', 'Add trade', 'Manual account'].includes(action)
-  return <dialog ref={ref} className="live-preview-dialog" aria-labelledby="live-preview-title" onCancel={onClose} onClose={onClose}>
-    <div className="live-section-heading"><h2 id="live-preview-title">{t(action)}</h2><button type="button" className="wm-dialog-close" aria-label={t('Đóng')} onClick={onClose}>×</button></div>
-    <span className="live-preview-badge">{t('Interface preview')}</span>
-    <p>{t('This layout is a preview. Changes are not saved and no connection is made.')}</p>
-    {form && <div className="live-preview-fields"><label>{t(action === 'Add trade' ? 'Asset' : 'Name')}<input autoComplete="off" /></label>{action === 'Add trade' ? <label>{t('Quantity')}<input type="number" min="0" /></label> : <label>{t('Description')}<textarea rows="4" /></label>}</div>}
-    {action === 'Upload file' && <div className="live-upload"><TestingIcon kind="upload" size={32} /><strong>{t('CSV file import')}</strong><span>{t('Import settings will be added later.')}</span></div>}
-    <div className="live-dialog-footer"><Action onClick={onClose}>{t('Đóng')}</Action></div>
-  </dialog>
-}
-
-function Search({ label, value, onChange }) {
-  const { t } = useTestingLocale()
-  return <label className="live-search"><TestingIcon kind="search" /><input type="search" aria-label={t(label)} placeholder={t(label)} value={value} onChange={event => onChange(event.target.value)} /></label>
-}
-
 function FilterFields({ draft, setDraft, payload, onPreview }) {
   const { t } = useTestingLocale()
   const change = patch => setDraft(current => ({ ...current, ...patch }))
@@ -49,25 +32,23 @@ function FilterFields({ draft, setDraft, payload, onPreview }) {
     {select('asset', 'Assets', [{ value: 'all', label: 'All assets' }, ...assets.map(value => ({ value, label: value, localize: false }))], { searchable: true })}
     {select('side', 'Side', [{ value: 'all', label: 'All sides' }, { value: '0', label: 'Buy' }, { value: '1', label: 'Sell' }])}
     {select('outcome', 'Deal result', [{ value: 'all', label: 'All results' }, { value: 'gain', label: 'Positive PnL' }, { value: 'loss', label: 'Negative PnL' }, { value: 'flat', label: 'Zero PnL' }])}
-    <Action icon="tags" onClick={() => onPreview('Tags')}>{t('Tags')}</Action>
-    {select('account', 'Accounts', [{ value: 'all', label: 'All accounts' }, ...(payload?.account ? [{ value: payload.account.account_ref, label: String(payload.account.account_ref), localize: false }] : [])])}
+
     {select('day', 'Day', [{ value: 'all', label: 'All days' }, ...['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((label, i) => ({ value: String(i), label }))])}
     {select('timezone', 'Timezone', timezoneOptions.map(option => ({ ...option, localize: false })), { searchable: true })}
     <DateFilter value={draft} onChange={change} label="Date range" title="Date range" calendarLabel="Date range" />
   </>
 }
 
-function FilterBar({ section, payload, draft, setDraft, applied, onApply, onClear, onPreview, onRefresh }) {
+function FilterBar({ section, extra, payload, draft, setDraft, applied, onApply, onClear, onPreview, onRefresh }) {
   const { t } = useTestingLocale(), [show, setShow] = useState(false)
   const chips = Object.entries(applied).filter(([key, value]) => value !== LIVE_FILTERS[key] && value !== '')
   const labels = { asset: 'Assets', side: 'Side', outcome: 'Deal result', account: 'Accounts', day: 'Day', timezone: 'Timezone', from: 'Start', to: 'End' }
   const values = { side: { 0: 'Buy', 1: 'Sell' }, outcome: { gain: 'Positive PnL', loss: 'Negative PnL', flat: 'Zero PnL' }, day: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] }
   const fields = <><FilterFields draft={draft} setDraft={setDraft} payload={payload} onPreview={onPreview} /><Action primary onClick={() => onApply()}>{t('Áp dụng')}</Action></>
   return <section className="live-filters" aria-label={t('Filters')}>
-    {section === 'analytics' ? <div className="live-filter-fields">{fields}</div> : <>
-      <div className="live-toolbar"><FxSelect label="Accounts" value={draft.account} onChange={account => { setDraft(current => ({ ...current, account })); onApply({ ...applied, account }) }} options={[{ value: 'all', label: 'All accounts' }, ...(payload?.account ? [{ value: payload.account.account_ref, label: String(payload.account.account_ref), localize: false }] : [])]} />
-        <div className="live-toolbar-actions">{section === 'trades' && <Action compact icon="columns" label="Cột hiển thị" onClick={() => onPreview('Table columns')} />}
-          <span className="live-filter-divider" aria-hidden="true" /><span>{t('Filter by')}</span><Action aria-expanded={show} onClick={() => setShow(!show)}>{t('Basic')}</Action><Action onClick={() => onPreview(section === 'tag-analytics' ? 'Advanced filters' : 'Tags')}>{t(section === 'tag-analytics' ? 'Advanced' : 'Tags')}</Action>
+    {section === 'analytics' ? <div className="live-filter-fields">{extra}{fields}</div> : <>
+      <div className="live-toolbar">{extra}<div className="live-toolbar-actions">{section === 'trades' && <Action compact icon="refresh" label="Tải lại dữ liệu" onClick={onRefresh} />}
+          <span className="live-filter-divider" aria-hidden="true" /><span>{t('Filter by')}</span><Action aria-expanded={show} onClick={() => setShow(!show)}>{t('Basic')}</Action>
         </div>
       </div>{show && <div className="live-filter-fields">{fields}</div>}
     </>}
@@ -79,11 +60,12 @@ function FilterBar({ section, payload, draft, setDraft, applied, onApply, onClea
 function Summary({ payload, deals, sidebar = false }) {
   const { t, fmt } = useTestingLocale(), available = Boolean(payload?.account && Array.isArray(payload.deals))
   const summary = summarizeDeals(deals, available), currency = payload?.account?.currency || ''
-  const metrics = [['Net deal PnL', summary.net, currency], ['Filled deals', summary.count, ''], ['Return (%)', null, '']]
+  const stats = closedTradeStats(deals, payload?.account?.opening_balance)
+  const metrics = payload?.manual ? [['PnL ròng',stats.net,currency],['Giao dịch đã đóng',stats.count,''],['Tỷ lệ thắng',stats.winRate,'%'],['Profit factor',stats.profitFactor,''],['Return (%)',stats.returnPercent,'%']] : [['Net deal PnL', summary.net, currency], ['Filled deals', summary.count, ''], ['Return (%)', null, '']]
   return <section className={sidebar ? 'live-analytics-side' : 'live-metrics'} aria-label={t('Analytics')}>
     {sidebar && <h2><TestingIcon kind="chart" />{t('Analytics')}</h2>}
     {!available || !deals.length ? <Empty title="No analytics yet" copy={available ? 'No deals in this selection.' : 'Select a connected account to view analytics.'} /> : <>
-      <dl>{metrics.map(([label, value, suffix]) => <div key={label}><dt>{t(label)}</dt><dd className={label === 'Net deal PnL' ? summary.net < 0 ? 'is-loss' : summary.net > 0 ? 'is-gain' : '' : ''}>{fmt(value, suffix ? ` ${suffix}` : '', label === 'Filled deals' ? 0 : 2)}</dd></div>)}</dl>
+      <dl>{metrics.map(([label, value, suffix]) => <div key={label}><dt>{t(label)}</dt><dd className={['Net deal PnL','PnL ròng'].includes(label) ? summary.net < 0 ? 'is-loss' : summary.net > 0 ? 'is-gain' : '' : ''}>{fmt(value, suffix ? ` ${suffix}` : '', ['Filled deals','Giao dịch đã đóng'].includes(label) ? 0 : 2)}</dd></div>)}</dl>
     </>}
   </section>
 }
@@ -101,75 +83,89 @@ function PnlCurve({ deals, currency, emptyTitle = 'No analytics yet' }) {
   </section>
 }
 
-function Calendar({ payload, deals, filters, onPreview }) {
+function Calendar({ payload, deals, filters, canWrite, onPreview }) {
   const { t, fmt, locale } = useTestingLocale()
+  const [percent,setPercent] = useState(false)
   const [month, setMonth] = useState(() => dayKey(Date.parse(payload?.captured_at_utc) || Date.now(), filters.timezone).slice(0, 7)), [selected, setSelected] = useState('')
   const first = new Date(`${month}-01T00:00:00Z`), weeks = calendarWeeks(month, payload, deals, filters)
   const shift = delta => { setSelected(''); setMonth(new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + delta, 1)).toISOString().slice(0, 7)) }
   const rows = deals.filter(deal => dayKey(deal.time_msc, filters.timezone).startsWith(month))
   const total = summarizeDeals(rows, Boolean(payload?.account && Array.isArray(payload.deals) && weeks.flat().some(day => day.count !== null)))
   const currency = payload?.account?.currency || ''
+  const canPercent = payload?.manual && payload.account.opening_balance > 0
+  const amount = value => percent && canPercent ? fmt(value === null ? null : value/payload.account.opening_balance*100,'%') : fmt(value)
   return <div className="live-split"><section className="live-calendar-section">
     <div className="live-calendar-toolbar"><div className="live-month-nav"><div className="live-month-step"><Action compact label="Previous month" onClick={() => shift(-1)}>‹</Action><h2 aria-live="polite">{first.toLocaleDateString(locale, { month: 'long', timeZone: 'UTC' })}</h2><Action compact label="Next month" onClick={() => shift(1)}>›</Action></div><div className="live-month-step"><Action compact label="Previous year" onClick={() => shift(-12)}>‹</Action><strong>{first.getUTCFullYear()}</strong><Action compact label="Next year" onClick={() => shift(12)}>›</Action></div></div>
-      <div className="live-toolbar-actions"><span className="live-money-mode">{currency || t('Amount')}</span><Action disabled title={t('Percentage requires opening capital.')}>%</Action><Action onClick={() => onPreview('Share')}>{t('Share')}</Action><Action icon="plus" onClick={() => onPreview('Monthly review')}>{t('Monthly review')}</Action></div>
+      <div className="live-toolbar-actions"><Action aria-pressed={!percent} onClick={() => setPercent(false)}>{currency || t('Amount')}</Action><Action disabled={!canPercent} aria-pressed={percent} title={canPercent ? '% vốn ban đầu' : t('Percentage requires opening capital.')} onClick={() => setPercent(true)}>%</Action><Action disabled title="Chưa hỗ trợ chia sẻ tài khoản">{t('Share')}</Action><Action icon="plus" disabled={!canWrite} onClick={() => onPreview('note',{title:`Tổng kết tháng ${month}`,note:`PnL đã ghi: ${fmt(total.net)} ${currency}. ${rows.length} giao dịch.`})}>{t('Monthly review')}</Action></div>
     </div>
     <div className="live-calendar-scroll" role="region" aria-label={`${t('PnL calendar')} · ${filters.timezone}`} tabIndex={0}><div className="live-calendar-grid">
       {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su', 'Total'].map(day => <div className="live-calendar-dayname" key={day}>{t(day)}</div>)}
       {weeks.map((week, index) => <div className="live-calendar-week" key={week[0].key}>{week.map(day => <button type="button" key={day.key} className={`live-calendar-cell${!day.inMonth ? ' is-outside' : ''}${day.net > 0 ? ' is-gain' : day.net < 0 ? ' is-loss' : ''}`} disabled={!day.inMonth} aria-pressed={selected === day.key} aria-label={`${displayDate(day.key)} · ${fmt(day.net, currency ? ` ${currency}` : '')}`} onClick={() => setSelected(selected === day.key ? '' : day.key)}>
-        <span className="live-day-number">{day.date.getUTCDate()}</span><strong>{day.inMonth ? fmt(day.net) : ''}</strong>{day.count !== null && day.count > 0 && <small>{t('{count} filled deals', { count: day.count })}</small>}
-      </button>)}<div className="live-week-total"><span>{t('Week {count}', { count: index + 1 })}</span><strong>{fmt(week.filter(day => day.inMonth).every(day => day.net !== null) ? week.filter(day => day.inMonth).reduce((sum, day) => sum + day.net, 0) : null)}</strong></div></div>)}
+        <span className="live-day-number">{day.date.getUTCDate()}</span><strong>{day.inMonth ? amount(day.net) : ''}</strong>{day.count !== null && day.count > 0 && <small>{payload?.manual ? `${day.count} giao dịch` : t('{count} filled deals', { count: day.count })}</small>}
+      </button>)}<div className="live-week-total"><span>{t('Week {count}', { count: index + 1 })}</span><strong>{amount(week.filter(day => day.inMonth).every(day => day.net !== null) ? week.filter(day => day.inMonth).reduce((sum, day) => sum + day.net, 0) : null)}</strong></div></div>)}
     </div></div>
-    <div className="live-month-total"><span>{t('Month total')}</span><strong>{fmt(total.net, currency ? ` ${currency}` : '')}</strong><span>{total.count !== null ? t('{count} filled deals', { count: total.count }) : '—'}</span></div>
+    <div className="live-month-total"><span>{payload?.manual ? 'PnL đã ghi trong tháng' : 'PnL đã đồng bộ trong tháng'}</span><strong>{percent && canPercent ? amount(total.net) : fmt(total.net, currency ? ` ${currency}` : '')}</strong><span>{total.count !== null ? payload?.manual ? `${total.count} giao dịch` : t('{count} filled deals', { count: total.count }) : '—'}</span></div>
     {selected && <div className="live-day-detail"><h3>{displayDate(selected)}</h3>{deals.filter(deal => dayKey(deal.time_msc, filters.timezone) === selected).length ? <ul>{deals.filter(deal => dayKey(deal.time_msc, filters.timezone) === selected).map(deal => <li key={deal.ticket}><span>{deal.symbol} · #{deal.ticket}</span><strong>{fmt(dealNet(deal), currency ? ` ${currency}` : '')}</strong></li>)}</ul> : <p>{t(weeks.flat().find(day => day.key === selected)?.covered ? 'No deals recorded for this day.' : 'Data for this day is unavailable or incomplete.')}</p>}</div>}
   </section><Summary payload={payload} deals={rows} sidebar /></div>
 }
 
-function Notes({ onPreview }) {
-  const { t } = useTestingLocale(), [search, setSearch] = useState(''), [group, setGroup] = useState('all')
-  return <section className="live-notes"><div className="live-toolbar"><Action primary icon="plus" onClick={() => onPreview('New note')}>{t('New note')}</Action><div className="live-toolbar-actions"><Action compact icon="journal" label="Edit notes" onClick={() => onPreview('Edit notes')} /><Search label="Search notes" value={search} onChange={setSearch} /><FxSelect label="Group by" value={group} onChange={setGroup} options={[{ value: 'all', label: 'All' }, { value: 'account', label: 'Accounts' }, { value: 'tag', label: 'Tags' }]} /><Action icon="settings" onClick={() => onPreview('Note filters')}>{t('Filters')}</Action></div></div>
-    <div className="live-notes-groups"><span><TestingIcon kind="journal" />{t('All')}</span><Action compact icon="plus" label="Add note group" onClick={() => onPreview('Add note group')} /></div>
-    <Empty title="No notes yet" copy="Keep your observations and review notes here." icon="journal" action="Add note" onAction={() => onPreview('New note')} />
-  </section>
-}
-
-function Tags({ onPreview }) {
-  const { t } = useTestingLocale(), [search, setSearch] = useState(''), [list, setList] = useState(true)
-  return <section className="live-tag-analysis"><div className={`live-tag-grid${list ? '' : ' is-hidden'}`}><section className="live-tag-chart"><div className="live-section-heading"><h2>{t('PnL by tag')}</h2><Action onClick={() => setList(!list)}>{t(list ? 'Hide tag list' : 'Show tag list')}</Action></div><Empty title="No tag analysis yet" copy="Synced broker deals do not include journal tags." icon="tags" /></section>{list && <section className="live-tag-list" aria-label={t('Tag list')}><Search label="Search tags" value={search} onChange={setSearch} /><p className="live-muted">{t('No tags available.')}</p></section>}</div>
-    <div className="live-table-scroll" tabIndex={0} role="region" aria-label={t('Tag summary')}><table><thead><tr>{['Tag group', 'Trades', 'Win rate', 'Net PnL'].map(label => <th key={label}>{t(label)}</th>)}</tr></thead><tbody><tr><td>{t('Overall')}</td><td>—</td><td>—</td><td>—</td></tr></tbody></table></div>
-    <details className="live-smart-picks"><summary>{t('Smart Picks')}</summary><p>{t('Interface preview')}</p><Action icon="plus" onClick={() => onPreview('Smart Picks')}>{t('Explore')}</Action></details>
-  </section>
-}
-
-function AddAccount({ onPreview }) {
+export default function LiveSurfaces({ workspace = 'tenant-a', section, payload: broker, query, preview, onRefresh }) {
   const { t } = useTestingLocale()
-  return <section className="live-add-account" aria-labelledby="live-add-account-title"><h2 id="live-add-account-title">{t('Add account')}</h2><p className="live-muted">{t('Format your file before importing.')}</p><Action icon="download" onClick={() => onPreview('CSV template')}>{t('CSV template')}</Action>
-    <button type="button" className="live-upload" onClick={() => onPreview('Upload file')}><TestingIcon kind="upload" size={32} /><strong>{t('Upload file')}</strong><span>{t('Import your trade history')}</span></button>
-    <span className="live-or">{t('or')}</span><button type="button" className="live-manual-account" onClick={() => onPreview('Manual account')}><span><strong>{t('Manual')}</strong><small>{t('Create a manual account')}</small></span><TestingIcon kind="plus" /></button>
-    <span className="live-or">{t('or')}</span><h3>{t('Sync with broker')}</h3><div className="live-provider-grid">{['Tradovate', 'NinjaTrader', 'Alpaca', 'Webull', 'MetaTrader', 'TradeLocker', 'cTrader'].map(name => <button key={name} type="button" onClick={() => onPreview(name)}><span aria-hidden="true">{name.slice(0, 2)}</span><small>{name}</small></button>)}</div><p className="live-muted">{t('Connection options · interface preview')}</p>
-  </section>
-}
-
-function Accounts({ payload, query, onPreview }) {
-  const { t } = useTestingLocale(), [search, setSearch] = useState(''), [filter, setFilter] = useState('all')
-  const transactions = query.get('account_tab') === 'transactions', match = payload?.account && `${payload.source} ${payload.account.account_ref}`.toLowerCase().includes(search.toLowerCase())
-  return <div className="live-accounts-layout"><section><div className="live-toolbar"><span>{t(transactions ? 'Transactions' : 'Connected accounts')}</span><div className="live-toolbar-actions"><Search label="Search accounts" value={search} onChange={setSearch} /><FxSelect label="Account filter" value={filter} onChange={setFilter} options={[{ value: 'all', label: 'All accounts' }, { value: 'connected', label: 'Connected accounts' }]} /></div></div>
-    {match ? <LiveBrokerSnapshot payload={payload} section={transactions ? 'transactions' : 'trading-accounts'} /> : <Empty title={payload?.account ? 'No matching accounts' : 'No accounts yet'} copy="Add an account to keep your trade history in one place." icon="account" />}
-  </section><AddAccount onPreview={onPreview} /></div>
-}
-
-export default function LiveSurfaces({ section, payload, query, preview, onRefresh }) {
-  const { t } = useTestingLocale(), [draft, setDraft] = useState({ ...LIVE_FILTERS }), [applied, setApplied] = useState({ ...LIVE_FILTERS }), [action, setAction] = useState(null)
-  const deals = filterLiveDeals(payload, applied), clear = () => { setDraft({ ...LIVE_FILTERS }); setApplied({ ...LIVE_FILTERS }) }
-  const apply = override => { const next = override || draft; if (!next.from || !next.to || next.from <= next.to) setApplied({ ...next }) }
+  const [ledger,setLedger] = useState({status:preview ? 'ready' : 'loading',items:[],error:''})
+  const [strategies,setStrategies] = useState([]), [strategyError,setStrategyError] = useState(''), [strategyReady,setStrategyReady] = useState(false), [action,setAction] = useState(null), [reload,setReload] = useState(0)
+  const [selected,setSelected] = useState(query.get('live_account') || '')
+  const [strategy,setStrategy] = useState(query.get('playbook') ? `${query.get('playbook')}${query.get('playbook_revision') ? `:${query.get('playbook_revision')}` : ''}` : 'all'), [tag,setTag] = useState('all')
+  const [draft,setDraft] = useState({...LIVE_FILTERS}), [applied,setApplied] = useState({...LIVE_FILTERS})
+  useEffect(() => {
+    if (preview) return
+    const controller = new AbortController()
+    setLedger(current => ({...current,status:'loading',error:''}))
+    fetchLiveRecords(workspace,controller.signal).then(items => { if (!controller.signal.aborted) setLedger({status:'ready',items,error:''}) }).catch(error => { if (!controller.signal.aborted) setLedger(current => ({...current,status:'error',items:error.status === 403 ? [] : current.items,error:current.items.length && error.status !== 403 ? `${error.message} Đang hiển thị dữ liệu đã đọc trước đó.` : error.message})) })
+    setStrategyError('')
+    setStrategyReady(false)
+    fetchPlaybooks(workspace,controller.signal).then(items => { if (!controller.signal.aborted) { setStrategies(items); setStrategyReady(true) } }).catch(error => { if (!controller.signal.aborted) setStrategyError('Chưa đọc được chiến lược. Tải lại trước khi tạo hoặc sửa giao dịch.') })
+    return () => controller.abort()
+  },[workspace,preview,reload])
+  const accounts = ledger.items.filter(record => record.kind === 'account')
+  const chosen = selected || (broker?.account ? 'broker' : accounts[0]?.record_id || '')
+  const account = accounts.find(item => item.record_id === chosen)
+  const payload = chosen === 'broker' ? broker : manualSnapshot(account,ledger.items)
+  const choose = value => {
+    setSelected(value); setDraft({...LIVE_FILTERS}); setApplied({...LIVE_FILTERS}); setTag('all')
+    const url = new URL(window.location.href); url.searchParams.set('live_account',value); navigate(url.pathname+url.search,{replace:true})
+  }
+  const [strategyId,strategyRevision] = strategy.split(':')
+  const changeStrategy = value => {
+    setStrategy(value)
+    const [id,revision] = value.split(':'), url = new URL(window.location.href)
+    if (value === 'all') { url.searchParams.delete('playbook'); url.searchParams.delete('playbook_revision') }
+    else { url.searchParams.set('playbook',id); if (revision) url.searchParams.set('playbook_revision',revision); else url.searchParams.delete('playbook_revision') }
+    navigate(url.pathname+url.search,{replace:true})
+  }
+  const deals = filterLiveDeals(payload,applied).filter(deal => (strategy === 'all' || deal.record?.payload.playbook_id === strategyId && (!strategyRevision || deal.record?.payload.playbook_revision === Number(strategyRevision))) && (tag === 'all' || deal.record?.payload.tags.includes(tag)))
+  const showContent = preview || ledger.status === 'ready' || ledger.items.length > 0 || Boolean(broker?.account)
+  const tags = [...new Set((payload?.deals || []).flatMap(deal => deal.record?.payload.tags || []))]
+  const open = (kind,record) => { if (!preview && ledger.status === 'ready' && (strategyReady || kind === 'account')) setAction({kind,record,seed: !record && strategy !== 'all' ? {playbook_id:strategyId,playbook_revision:Number(strategyRevision || strategies.find(item => item.record_id === strategyId)?.revision)} : undefined}) }
+  const create = (kind,seed) => { if (seed && !preview && ledger.status === 'ready' && strategyReady) setAction({kind:'note',seed}); else if (!seed) open(kind === 'Add trade' ? 'trade' : kind === 'note' ? 'note' : 'account') }
+  const saved = (record,close = true) => {
+    setLedger(current => ({status:'ready',items:[record,...current.items.filter(item => item.record_id !== record.record_id)],error:''}))
+    if (record.kind === 'account') choose(record.record_id)
+    if (close) setAction(null)
+  }
+  const apply = override => { const next = override || draft; if (!next.from || !next.to || next.from <= next.to) setApplied({...next}) }
   return <>
-    <header className="live-topbar"><h1 className="sr-only">{t('Live')}</h1><div className="live-toolbar-actions"><Action primary icon="plus" onClick={() => setAction('Add trade')}>{t('Add trade')}</Action><Action compact icon="upload" label="Upload file" onClick={() => setAction('Upload file')} /></div></header>
-    {!['notes', 'trading-accounts'].includes(section) && <FilterBar section={section} payload={payload} draft={draft} setDraft={setDraft} applied={applied} onApply={apply} onClear={clear} onPreview={setAction} onRefresh={onRefresh} />}
-    {section === 'calendar' && <Calendar payload={payload} deals={deals} filters={applied} onPreview={setAction} />}
-    {section === 'trades' && <div className="live-split"><section>{payload?.account && Array.isArray(payload.deals) ? <LiveBrokerSnapshot payload={payload} section="trades" deals={deals} filterKey={JSON.stringify(applied)} /> : <Empty title="No trades yet" copy="Your synced deals will appear here." icon="journal" />}</section><Summary payload={payload} deals={deals} sidebar /></div>}
-    {section === 'notes' && <Notes onPreview={setAction} />}
-    {section === 'tag-analytics' && <Tags onPreview={setAction} />}
+    <header className="live-topbar"><h1 className="sr-only">{t('Live')}</h1><div className="live-account-picker"><FxSelect label="Tài khoản trực tiếp" value={chosen} onChange={choose} options={[...(broker?.account ? [{value:'broker',label:`${broker.source} · ${broker.account.account_ref}`,localize:false}] : []),...accounts.map(item => ({value:item.record_id,label:`${item.payload.name} · ${item.payload.currency}`,localize:false}))]} /><span className="live-muted">{payload?.manual ? 'Ghi tay' : broker?.account ? 'Đồng bộ · chỉ đọc' : 'Sổ giao dịch'}</span></div><div className="live-toolbar-actions"><Action primary icon="plus" disabled={preview || ledger.status !== 'ready' || !strategyReady && accounts.length > 0} onClick={() => open(accounts.length ? 'trade' : 'account')}>{accounts.length ? 'Thêm giao dịch' : 'Tạo tài khoản'}</Action><Action icon="upload" disabled={preview || ledger.status !== 'ready' || !strategyReady || !accounts.length} onClick={() => open('import')}>Nhập CSV</Action></div></header>
+    {ledger.error && <div className="live-status live-status-error" role="alert"><span>{ledger.error}</span><Action onClick={() => setReload(value => value+1)}>Thử lại</Action></div>}
+    {strategyError && <div className="live-status live-status-warning" role="alert"><span>{strategyError}</span><Action onClick={() => setReload(value => value+1)}>Tải lại</Action></div>}
+    {ledger.status === 'loading' && <p className="live-status" role="status">Đang đọc sổ giao dịch…</p>}
+    {showContent && <>{!['notes','trading-accounts'].includes(section) && <><FilterBar extra={payload?.manual ? <div className="live-journal-filters"><FxSelect label="Chiến lược" value={strategy} onChange={changeStrategy} options={[{value:'all',label:'Tất cả chiến lược'},...(strategyRevision ? [{value:strategy,label:`${strategies.find(item => item.record_id === strategyId)?.payload.name || 'Chiến lược'} · v${strategyRevision}`,localize:false}] : []),...strategies.map(item => ({value:item.record_id,label:item.payload.name,localize:false}))]} /><FxSelect label="Nhãn" value={tag} onChange={setTag} options={[{value:'all',label:'Tất cả nhãn'},...tags.map(value => ({value,label:value,localize:false}))]} /></div> : null} section={section} payload={payload} draft={draft} setDraft={setDraft} applied={applied} onApply={apply} onClear={() => { setDraft({...LIVE_FILTERS});setApplied({...LIVE_FILTERS});changeStrategy('all');setTag('all') }} onPreview={create} onRefresh={() => { setReload(value => value+1);onRefresh() }} /></>}
+    {section === 'calendar' && <Calendar canWrite={!preview && ledger.status === 'ready' && strategyReady} key={chosen} payload={payload} deals={deals} filters={applied} onPreview={create} />}
+    {section === 'trades' && <div className="live-split"><section>{payload?.manual ? <ManualTrades writable={!preview && ledger.status === 'ready' && strategyReady} filterKey={JSON.stringify([chosen,applied,strategy,tag])} workspace={workspace} deals={deals} currency={payload.account.currency} strategies={strategies} onEdit={record => open('trade',record)} /> : payload?.account ? <LiveBrokerSnapshot payload={payload} section="trades" deals={deals} filterKey={JSON.stringify(applied)} /> : <Empty title="No trades yet" copy="Tạo tài khoản ghi tay và thêm giao dịch để bắt đầu." icon="journal" />}</section><Summary payload={payload} deals={deals} sidebar /></div>}
+    {section === 'notes' && <JournalNotes writable={!preview && ledger.status === 'ready' && strategyReady} key={chosen} records={ledger.items} accountId={chosen || null} strategies={strategies} onEdit={record => open('note',record)} onCreate={() => open('note')} />}
+    {section === 'tag-analytics' && <JournalTags deals={deals} currency={payload?.account?.currency || ''} />}
     {section === 'analytics' && <><Summary payload={payload} deals={deals} />{deals.length > 0 && <PnlCurve deals={deals} currency={payload?.account?.currency} />}</>}
-    {section === 'trading-accounts' && <Accounts payload={payload} query={query} onPreview={setAction} />}
-    {action && <PreviewDialog action={action} onClose={() => setAction(null)} />}
+    {section === 'trading-accounts' && <><ManualAccounts writable={!preview && ledger.status === 'ready'} accounts={accounts} records={ledger.items} onCreate={() => open('account')} onEdit={record => open('account',record)} onSelect={choose} />{broker?.account && <div className="live-connected-account"><LiveBrokerSnapshot payload={broker} section={query.get('account_tab') === 'transactions' ? 'transactions' : 'trading-accounts'} /></div>}<p className="live-source-details">Đồng bộ broker cần adapter được cấu hình. Các tài khoản ghi tay không gửi lệnh ra sàn.</p></>}
+    </>}
+    {action && <LiveRecordDialog key={`${workspace}:${action.kind}:${action.record?.record_id || 'new'}`} workspace={workspace} kind={action.kind} record={action.record} seed={action.seed} accountId={account?.record_id} accounts={accounts} strategies={strategies} onClose={() => setAction(null)} onSaved={saved} />}
   </>
 }
