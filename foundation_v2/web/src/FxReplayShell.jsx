@@ -385,7 +385,7 @@ function ShellTopbar({ copy, language, setLanguage, theme, setTheme, railCollaps
         </button>
         <span className="fx-wordmark"><WMReplayWordmark /></span>
         <span className="fx-wordmark-compact" role="img" aria-label={copy.product}>
-          <svg viewBox="0 0 55 30" aria-hidden="true" focusable="false"><use href="/brand/wmreplay.svg#wm" /></svg>
+          <svg viewBox="0 0 60 30" aria-hidden="true" focusable="false"><use href="/brand/wmreplay.svg#wm" /></svg>
         </span>
       </div>
       <div className="fx-topbar-actions">
