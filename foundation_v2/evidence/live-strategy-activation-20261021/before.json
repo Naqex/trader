@@ -1,0 +1,52 @@
+{
+  "date": "2026-10-21",
+  "authorized_action": "verified backup, additive manual live journal migration, local API restart",
+  "health": {
+    "command_worker": "not_required",
+    "contract_version": "foundation-v2.1",
+    "database": "ready",
+    "ok": true
+  },
+  "execution_capabilities": {
+    "broker_execution_capability": false,
+    "cancel": false,
+    "close": false,
+    "mode": "locked",
+    "modify": false,
+    "place": false,
+    "preview": false,
+    "reason": "F7 foundation software slice has no broker execution authority"
+  },
+  "runtime": {
+    "schema": "api-platform-runtime-v2",
+    "runtime_profile": "native",
+    "replay_storage_profile": "compact",
+    "run_id": "94a0a334614d4bf4910c82bf1f74646f",
+    "project": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester",
+    "port": 8010,
+    "stop_file": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\.runtime\\api-platform\\platform-94a0a334614d4bf4910c82bf1f74646f.stop",
+    "ready": true,
+    "processes": {
+      "supervisor": {
+        "pid": 3020,
+        "created": 134369677632607177,
+        "executable": "C:\\Users\\MIIKEY\\AppData\\Local\\Programs\\Python\\Python312\\python.exe"
+      },
+      "research": {
+        "pid": 24208,
+        "created": 134369677638269993,
+        "executable": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust\\target\\native-candidate\\release\\rust_research_worker.exe"
+      },
+      "api": {
+        "pid": 18664,
+        "created": 134369677641101972,
+        "executable": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust\\target\\native-candidate\\release\\trading-workspace-api.exe"
+      }
+    },
+    "executable_sha256": {
+      "supervisor": "4d6f5f81a4bca11191c4c7c6b43632694d0a4ce74e068619d8fdc161d469859a",
+      "research": "88d8fd2e7c78e4d7c823842f0bff2517273462840cdf3ce7cc787678011eea5d",
+      "api": "ee971f7aa8b32f4d7a4018607884b7e15c371ed22b329f1269e1b84d352b73bb"
+    }
+  }
+}

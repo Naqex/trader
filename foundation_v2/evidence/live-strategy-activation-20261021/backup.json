@@ -1,0 +1,14 @@
+{
+  "result": "PASS",
+  "bundle": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\.runtime\\api-platform-backups\\live-journal-20261021",
+  "snapshot_id": "20261020T224748Z-2b9695377a05",
+  "manifest_sha256": "b685a0f811a36093c78191625c58ce97e2788711e9e50a8b6c6b2732a17c2cd0",
+  "artifact_files": 4142,
+  "backup_bytes": 4267576698,
+  "quiesced": true,
+  "source_and_bundle_hashes_verified": true,
+  "pg_dump_version": "18.6",
+  "pg_restore_catalog_readable": true,
+  "full_restore_rehearsal": false,
+  "initial_attempt": "PostgreSQL 17.11 dump rejected PostgreSQL 18.6 server; no backup accepted and no schema change occurred in that attempt"
+}

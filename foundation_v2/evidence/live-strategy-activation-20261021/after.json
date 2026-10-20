@@ -1,0 +1,47 @@
+{
+  "result": "PASS",
+  "runtime": {
+    "schema": "api-platform-runtime-v2",
+    "runtime_profile": "native",
+    "replay_storage_profile": "compact",
+    "run_id": "2ae9c43de5d64ebb9d2afcfe333b404d",
+    "project": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester",
+    "port": 8010,
+    "stop_file": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\.runtime\\api-platform\\platform-2ae9c43de5d64ebb9d2afcfe333b404d.stop",
+    "ready": true,
+    "processes": {
+      "supervisor": {
+        "pid": 5440,
+        "created": 134370101855292049,
+        "executable": "C:\\Users\\MIIKEY\\AppData\\Local\\Programs\\Python\\Python312\\python.exe"
+      },
+      "research": {
+        "pid": 12004,
+        "created": 134370101860725351,
+        "executable": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust\\target\\native-candidate\\release\\rust_research_worker.exe"
+      },
+      "api": {
+        "pid": 17156,
+        "created": 134370101863567629,
+        "executable": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust\\target\\native-candidate\\release\\trading-workspace-api.exe"
+      }
+    },
+    "executable_sha256": {
+      "supervisor": "4d6f5f81a4bca11191c4c7c6b43632694d0a4ce74e068619d8fdc161d469859a",
+      "research": "f7249743234295843db55b0e9162afb9b63ad938aa3168f7deeb92e1020c2cb9",
+      "api": "6708c3f6e0a6d28d9444463a9155fbf699fc7086ffb7a3cf3c110b9fb8589519"
+    }
+  },
+  "source_commit": "3c0bcc1ba7e0e0a7352f4ca947e9d9471fc83d3c",
+  "frontend_url": "http://127.0.0.1:5180",
+  "migration_applied": [
+    "0008_live_journal.sql"
+  ],
+  "browser_checks": [
+    "Live calendar loaded",
+    "Trading accounts empty state loaded",
+    "Create account dialog opened and canceled without save"
+  ],
+  "captured_browser_console_errors": [],
+  "broker_execution_enabled": false
+}

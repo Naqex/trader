@@ -1,0 +1,41 @@
+{
+  "result": "PASS",
+  "mutations_performed": false,
+  "checks": {
+    "ready": {
+      "status": 200,
+      "health": {
+        "command_worker": "not_required",
+        "contract_version": "foundation-v2.1",
+        "database": "ready",
+        "ok": true
+      }
+    },
+    "records": {
+      "status": 200,
+      "version": "live-records-v1",
+      "items": 0
+    },
+    "playbooks": {
+      "status": 200,
+      "items": 0
+    },
+    "broker_lock": {
+      "status": 200,
+      "capabilities": {
+        "broker_execution_capability": false,
+        "cancel": false,
+        "close": false,
+        "mode": "locked",
+        "modify": false,
+        "place": false,
+        "preview": false,
+        "reason": "F7 foundation software slice has no broker execution authority"
+      }
+    },
+    "live_source": {
+      "status": 200,
+      "source_status": "unavailable"
+    }
+  }
+}

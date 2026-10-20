@@ -1,5 +1,10 @@
 # Live journal, strategies and analytics — 20 October 2026
 
+**Activation update, 21 October:** the owner approved the local backup, migration
+and restart. Activation and main-instance read-only checks passed; see
+`../live-strategy-activation-20261021/CHECKPOINT.md`. The original checkpoint
+below records the implementation/fixture state before that separate approval.
+
 Implementation and disposable-fixture verification are complete for this slice.
 Activation on the owner's local database is pending explicit permission to back
 up the database/artifacts, apply migration 0008 and restart API 8010. The main
