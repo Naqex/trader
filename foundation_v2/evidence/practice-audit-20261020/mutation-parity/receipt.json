@@ -1,0 +1,860 @@
+{
+  "status": "PASS",
+  "checks": [
+    "unsupported create response views rejected without replay side effects",
+    "initialize parity",
+    "first quick parity",
+    "first quick retains two real persisted revisions",
+    "exact wire receipt retry and full/compact query fingerprint separation",
+    "stale revision and cross-workspace rejected",
+    "protection parity",
+    "close parity",
+    "pending market parity",
+    "atomic invalid quick rollback and unsupported response views rejected",
+    "portfolio compact rejected without side effects; default full remains supported",
+    "warmup stage 0",
+    "scaling 0 sample 0",
+    "scaling 0 sample 1",
+    "warmup stage 500",
+    "scaling 500 sample 0",
+    "scaling 500 sample 1",
+    "warmup stage 5000",
+    "scaling 5000 sample 0",
+    "scaling 5000 sample 1"
+  ],
+  "samples": [
+    {
+      "stage_steps": 0,
+      "base_events": 2,
+      "sample": 0,
+      "view": "full",
+      "order": [
+        "full"
+      ],
+      "router_elapsed_us": 9236,
+      "stdio_elapsed_ns": 9640600,
+      "response_bytes": 5731,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 16
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 124
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 107
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1912
+        },
+        {
+          "phase": "load_record",
+          "us": 1100
+        },
+        {
+          "phase": "load_manifest",
+          "us": 326
+        },
+        {
+          "phase": "domain_transition",
+          "us": 1572
+        },
+        {
+          "phase": "revision_save",
+          "us": 1179
+        },
+        {
+          "phase": "view_projection",
+          "us": 1873
+        },
+        {
+          "phase": "result_status",
+          "us": 5
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 660
+        },
+        {
+          "phase": "commit",
+          "us": 228
+        }
+      ]
+    },
+    {
+      "stage_steps": 0,
+      "base_events": 2,
+      "sample": 0,
+      "view": "compact",
+      "order": [
+        "full",
+        "compact"
+      ],
+      "router_elapsed_us": 8925,
+      "stdio_elapsed_ns": 9203700,
+      "response_bytes": 3275,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 14
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 147
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 89
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1930
+        },
+        {
+          "phase": "load_record",
+          "us": 1038
+        },
+        {
+          "phase": "load_manifest",
+          "us": 312
+        },
+        {
+          "phase": "domain_transition",
+          "us": 1636
+        },
+        {
+          "phase": "revision_save",
+          "us": 1169
+        },
+        {
+          "phase": "view_projection",
+          "us": 1587
+        },
+        {
+          "phase": "result_status",
+          "us": 4
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 607
+        },
+        {
+          "phase": "commit",
+          "us": 256
+        }
+      ]
+    },
+    {
+      "stage_steps": 0,
+      "base_events": 2,
+      "sample": 1,
+      "view": "compact",
+      "order": [
+        "compact"
+      ],
+      "router_elapsed_us": 8628,
+      "stdio_elapsed_ns": 8897700,
+      "response_bytes": 3275,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 14
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 129
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 97
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1794
+        },
+        {
+          "phase": "load_record",
+          "us": 1009
+        },
+        {
+          "phase": "load_manifest",
+          "us": 318
+        },
+        {
+          "phase": "domain_transition",
+          "us": 1564
+        },
+        {
+          "phase": "revision_save",
+          "us": 1146
+        },
+        {
+          "phase": "view_projection",
+          "us": 1583
+        },
+        {
+          "phase": "result_status",
+          "us": 5
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 588
+        },
+        {
+          "phase": "commit",
+          "us": 244
+        }
+      ]
+    },
+    {
+      "stage_steps": 0,
+      "base_events": 2,
+      "sample": 1,
+      "view": "full",
+      "order": [
+        "compact",
+        "full"
+      ],
+      "router_elapsed_us": 9743,
+      "stdio_elapsed_ns": 10181500,
+      "response_bytes": 5731,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 17
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 121
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 96
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1910
+        },
+        {
+          "phase": "load_record",
+          "us": 1097
+        },
+        {
+          "phase": "load_manifest",
+          "us": 313
+        },
+        {
+          "phase": "domain_transition",
+          "us": 1637
+        },
+        {
+          "phase": "revision_save",
+          "us": 1155
+        },
+        {
+          "phase": "view_projection",
+          "us": 1869
+        },
+        {
+          "phase": "result_status",
+          "us": 5
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 1002
+        },
+        {
+          "phase": "commit",
+          "us": 361
+        }
+      ]
+    },
+    {
+      "stage_steps": 500,
+      "base_events": 502,
+      "sample": 0,
+      "view": "full",
+      "order": [
+        "full"
+      ],
+      "router_elapsed_us": 30622,
+      "stdio_elapsed_ns": 44056500,
+      "response_bytes": 341567,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 14
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 129
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 112
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1870
+        },
+        {
+          "phase": "load_record",
+          "us": 5817
+        },
+        {
+          "phase": "load_manifest",
+          "us": 364
+        },
+        {
+          "phase": "domain_transition",
+          "us": 6129
+        },
+        {
+          "phase": "revision_save",
+          "us": 7065
+        },
+        {
+          "phase": "view_projection",
+          "us": 3952
+        },
+        {
+          "phase": "result_status",
+          "us": 5
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 4590
+        },
+        {
+          "phase": "commit",
+          "us": 434
+        }
+      ]
+    },
+    {
+      "stage_steps": 500,
+      "base_events": 502,
+      "sample": 0,
+      "view": "compact",
+      "order": [
+        "full",
+        "compact"
+      ],
+      "router_elapsed_us": 27926,
+      "stdio_elapsed_ns": 28252100,
+      "response_bytes": 3309,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 14
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 189
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 157
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 2018
+        },
+        {
+          "phase": "load_record",
+          "us": 5498
+        },
+        {
+          "phase": "load_manifest",
+          "us": 371
+        },
+        {
+          "phase": "domain_transition",
+          "us": 6388
+        },
+        {
+          "phase": "revision_save",
+          "us": 7650
+        },
+        {
+          "phase": "view_projection",
+          "us": 4021
+        },
+        {
+          "phase": "result_status",
+          "us": 5
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 973
+        },
+        {
+          "phase": "commit",
+          "us": 492
+        }
+      ]
+    },
+    {
+      "stage_steps": 500,
+      "base_events": 502,
+      "sample": 1,
+      "view": "compact",
+      "order": [
+        "compact"
+      ],
+      "router_elapsed_us": 27027,
+      "stdio_elapsed_ns": 27314000,
+      "response_bytes": 3309,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 14
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 195
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 124
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 2139
+        },
+        {
+          "phase": "load_record",
+          "us": 5704
+        },
+        {
+          "phase": "load_manifest",
+          "us": 443
+        },
+        {
+          "phase": "domain_transition",
+          "us": 6446
+        },
+        {
+          "phase": "revision_save",
+          "us": 7655
+        },
+        {
+          "phase": "view_projection",
+          "us": 3162
+        },
+        {
+          "phase": "result_status",
+          "us": 5
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 717
+        },
+        {
+          "phase": "commit",
+          "us": 276
+        }
+      ]
+    },
+    {
+      "stage_steps": 500,
+      "base_events": 502,
+      "sample": 1,
+      "view": "full",
+      "order": [
+        "compact",
+        "full"
+      ],
+      "router_elapsed_us": 30674,
+      "stdio_elapsed_ns": 44700600,
+      "response_bytes": 341567,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 13
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 143
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 136
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 1865
+        },
+        {
+          "phase": "load_record",
+          "us": 5325
+        },
+        {
+          "phase": "load_manifest",
+          "us": 374
+        },
+        {
+          "phase": "domain_transition",
+          "us": 6150
+        },
+        {
+          "phase": "revision_save",
+          "us": 7190
+        },
+        {
+          "phase": "view_projection",
+          "us": 4017
+        },
+        {
+          "phase": "result_status",
+          "us": 6
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 4891
+        },
+        {
+          "phase": "commit",
+          "us": 414
+        }
+      ]
+    },
+    {
+      "stage_steps": 5000,
+      "base_events": 5002,
+      "sample": 0,
+      "view": "full",
+      "order": [
+        "full"
+      ],
+      "router_elapsed_us": 216761,
+      "stdio_elapsed_ns": 361497300,
+      "response_bytes": 3109509,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 13
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 201
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 143
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 2294
+        },
+        {
+          "phase": "load_record",
+          "us": 42374
+        },
+        {
+          "phase": "load_manifest",
+          "us": 402
+        },
+        {
+          "phase": "domain_transition",
+          "us": 48246
+        },
+        {
+          "phase": "revision_save",
+          "us": 61505
+        },
+        {
+          "phase": "view_projection",
+          "us": 13631
+        },
+        {
+          "phase": "result_status",
+          "us": 8
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 36958
+        },
+        {
+          "phase": "commit",
+          "us": 10800
+        }
+      ]
+    },
+    {
+      "stage_steps": 5000,
+      "base_events": 5002,
+      "sample": 0,
+      "view": "compact",
+      "order": [
+        "full",
+        "compact"
+      ],
+      "router_elapsed_us": 175054,
+      "stdio_elapsed_ns": 175390400,
+      "response_bytes": 3325,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 13
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 173
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 147
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 2392
+        },
+        {
+          "phase": "load_record",
+          "us": 46863
+        },
+        {
+          "phase": "load_manifest",
+          "us": 403
+        },
+        {
+          "phase": "domain_transition",
+          "us": 46798
+        },
+        {
+          "phase": "revision_save",
+          "us": 61070
+        },
+        {
+          "phase": "view_projection",
+          "us": 15763
+        },
+        {
+          "phase": "result_status",
+          "us": 5
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 873
+        },
+        {
+          "phase": "commit",
+          "us": 404
+        }
+      ]
+    },
+    {
+      "stage_steps": 5000,
+      "base_events": 5002,
+      "sample": 1,
+      "view": "compact",
+      "order": [
+        "compact"
+      ],
+      "router_elapsed_us": 173020,
+      "stdio_elapsed_ns": 173405300,
+      "response_bytes": 3325,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 14
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 210
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 168
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 2141
+        },
+        {
+          "phase": "load_record",
+          "us": 41658
+        },
+        {
+          "phase": "load_manifest",
+          "us": 357
+        },
+        {
+          "phase": "domain_transition",
+          "us": 50405
+        },
+        {
+          "phase": "revision_save",
+          "us": 61203
+        },
+        {
+          "phase": "view_projection",
+          "us": 14948
+        },
+        {
+          "phase": "result_status",
+          "us": 5
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 1260
+        },
+        {
+          "phase": "commit",
+          "us": 443
+        }
+      ]
+    },
+    {
+      "stage_steps": 5000,
+      "base_events": 5002,
+      "sample": 1,
+      "view": "full",
+      "order": [
+        "compact",
+        "full"
+      ],
+      "router_elapsed_us": 208043,
+      "stdio_elapsed_ns": 324837000,
+      "response_bytes": 3109509,
+      "phases": [
+        {
+          "phase": "request_decode",
+          "us": 13
+        },
+        {
+          "phase": "pool_checkout",
+          "us": 190
+        },
+        {
+          "phase": "transaction_begin",
+          "us": 169
+        },
+        {
+          "phase": "receipt_admission",
+          "us": 2223
+        },
+        {
+          "phase": "load_record",
+          "us": 45972
+        },
+        {
+          "phase": "load_manifest",
+          "us": 680
+        },
+        {
+          "phase": "domain_transition",
+          "us": 47201
+        },
+        {
+          "phase": "revision_save",
+          "us": 59837
+        },
+        {
+          "phase": "view_projection",
+          "us": 13820
+        },
+        {
+          "phase": "result_status",
+          "us": 7
+        },
+        {
+          "phase": "receipt_save_and_response_serialize",
+          "us": 36157
+        },
+        {
+          "phase": "commit",
+          "us": 1619
+        }
+      ]
+    }
+  ],
+  "source_sha256": {
+    "api-rust\\src\\analytics\\prop_profile.rs": "853172436c86856edd4def504383c767ad33f1e072bc8bce00634516473bc4e2",
+    "api-rust\\src\\analytics\\routes.rs": "ed167996e667faf7c318db5d4cc6518d3dde865f0450cfb79b3f2a8fdb05aa2f",
+    "api-rust\\src\\analytics\\trades.rs": "69b39ec1d99fb8db34c945d06064de849215b623d2dab95bcc1547f704c5f7c8",
+    "api-rust\\src\\analytics.rs": "9ec062febc80584106a7dc24bd68168e0dae3633d3a8e5652c86f516ad21eba0",
+    "api-rust\\src\\artifact_data.rs": "3712ed2a150318b984d039bf69f908e1b6273d29fd7245a883d867f04c473c18",
+    "api-rust\\src\\auth.rs": "aeb69e8eb4bc60db381cabd9aac3e0e3ee0dbb76a468a88530f419978b715918",
+    "api-rust\\src\\bin\\rust_research_worker.rs": "564e53260587b90b3414892c9413ee9059263e7b65b6692460d17f6e93ba389c",
+    "api-rust\\src\\bin\\rust_runtime_admin.rs": "6759f6a5044b7871e74f019594eb5e5f62f38071ae578267d2864861016b1322",
+    "api-rust\\src\\catalog.rs": "b6d17c7bdbeea8015349e3c1bd5fb9a8c81dacbcffbe57ad0bd3c55cae2b74a3",
+    "api-rust\\src\\chatgpt_web.rs": "59a88b11bf20e43d6735b3e18b09f3cd4e36750c261638563778515c0acdc62c",
+    "api-rust\\src\\commands.rs": "706a58efabd0f94164c7e890da1bffbab23c5a6d297dba070addb5fcb00e13c4",
+    "api-rust\\src\\config.rs": "3cb808dd04494db5baccddbed0357386eadb13bb971a305f253272035900fedd",
+    "api-rust\\src\\context_routes.rs": "63d2ca7c1b102ba89be1e8670128f726243bc9991e19cb06ae0a1bc00a4a1002",
+    "api-rust\\src\\control_routes\\learn.rs": "d57a9760ae9d17b471a5e0225f84dd41efda422f7be450ca25f1c2dd7fabb4f1",
+    "api-rust\\src\\control_routes\\notion.rs": "d18645db203f0b7477f48d5207ca17a49af2e0680f167f04badc04d2c30a76a2",
+    "api-rust\\src\\control_routes.rs": "d1e8325be386619181e7b4617d62e296e16f674378ac1978ac388819d74afcdb",
+    "api-rust\\src\\data_routes\\ingest.rs": "532058513ebc35f8d145b5d7850202e35cbae1bbc1897884ffd502bbd88869aa",
+    "api-rust\\src\\data_routes\\legacy_codec.rs": "989f9b93c098af7b6a933b0d1a5810a0977e9e088cae627f5499b54dee424609",
+    "api-rust\\src\\data_routes\\lifecycle.rs": "398a4ea7f2a3853a53d026dfa320f1dd9d15e6becfd61c377ed21e6d9d3ba25c",
+    "api-rust\\src\\data_routes.rs": "30c502eac5b5e0bd3863e1ec92a9c10303cf807b9a051ea5840624a3430dd950",
+    "api-rust\\src\\events.rs": "3fc4a1254730e16b6746c7f19d6101118b593edc637ea0beb13afc1b8699721a",
+    "api-rust\\src\\jobs.rs": "4e793ba532d5b141d689fc1164424ecc0d76dac6d9ad5ddcafa790afaecc8d0e",
+    "api-rust\\src\\lib.rs": "f616e24eb374de0f9122eca0287cb8c3722d85245fee441ba908488845078e42",
+    "api-rust\\src\\main.rs": "c37eb37ac6e3779d20d1a4b83c708cee41a810eda23c13ab98b3ca7c214d6f46",
+    "api-rust\\src\\metadata_mutations.rs": "0e222647fa95e13cb9a653bf5bc06ba14adb261784be74150615fd4c8e718ed2",
+    "api-rust\\src\\middleware.rs": "27a299aabca5d9236a4998df79a11dcdc3db099c91c582276ed121bbdb089f83",
+    "api-rust\\src\\native_contracts.rs": "99a18bb92e81cfa651f4e2d65c545755eea5b9b4a604eb2eac345460eec68944",
+    "api-rust\\src\\native_mutation.rs": "3370b2b9ceec6dcb778fabda2469261fbd94a4489a0494411d55b19a05241283",
+    "api-rust\\src\\notion_oauth.rs": "17c1361c23dafc5904958f3d1c3a061873276a5a5e5c4154bc3d99c24cf1d1c3",
+    "api-rust\\src\\owned_process\\windows\\tests.rs": "e7cdf40d17655cce9757b7bcb1e6f3fe5935b050c020e2606b6a6d16e40e191c",
+    "api-rust\\src\\owned_process\\windows.rs": "1c07881f78cfe31381178b347faf6582dc7d508f960047973d88e6273683ef6d",
+    "api-rust\\src\\owned_process.rs": "913401072d229f250a6c4a37d075713623538870faebb6710fd28d806555166d",
+    "api-rust\\src\\prop_core\\paper.rs": "737e46f16ff6aff3e353a6ad1c8910b50e70b7ce4c6035f941dc2f482c96ebbd",
+    "api-rust\\src\\prop_core\\report.rs": "ef641744d4aa457258b42fb61e7916e58177c16bbd4e9989684f4dd424fc2e6d",
+    "api-rust\\src\\prop_core.rs": "6233d9da6f16bbbfe7cb11882ad22fec8c9913dda7fe79d37935b94293ee1f08",
+    "api-rust\\src\\prop_service.rs": "048a5f4e5f8c1f789322c74ed61c0a5b56251d7760015d5df8efe8ca690979a5",
+    "api-rust\\src\\provider_routes\\catalog.rs": "395b9cc0e4826edd9875be28dcba6271834971b81d5cdbdafc45c51ffa465244",
+    "api-rust\\src\\provider_routes\\catalog_refresh\\tests.rs": "ac1c3a6cdcf55929ffe60db02a776c2000192fae2d8afd5abcc93198c0968046",
+    "api-rust\\src\\provider_routes\\catalog_refresh.rs": "1f154b1f9adf22336deb5d0646a3ef4c8235783a26c97206fdf258f106c21378",
+    "api-rust\\src\\provider_routes\\dependencies.rs": "cf5f769124920c43c65102454387e4190350c18f602ff2d520574390ebb676bf",
+    "api-rust\\src\\provider_routes\\execution.rs": "2fcfdc478da932573bff578d7067c6885b6f30554c035689ae0c32430ea37612",
+    "api-rust\\src\\provider_routes\\lifecycle\\tests.rs": "04970c082b7f64a56a7b4483cf56e01682de4e28f6d40607362b95709386bbce",
+    "api-rust\\src\\provider_routes\\lifecycle.rs": "0a51ecaf4c8647acecbea90172c5542ae4e650b7ec36efc047191c84875de0c3",
+    "api-rust\\src\\provider_routes\\publication.rs": "1e66084fd3013a32e740d34ea3d6c4e562c669fc2b08f571ceb68f3c05d8a490",
+    "api-rust\\src\\provider_routes.rs": "ae74ba387d0b646fe7b4595f339d739c93c49a99dadff3299ea7c51d90c384ae",
+    "api-rust\\src\\replay_core\\entry.rs": "b64bc83fbf7391995ebda3d37bc94ba3989b0175b4684984652d7445d9599b9d",
+    "api-rust\\src\\replay_core\\history.rs": "78b9fc7a47e302fbe882e449a610d700396f173fa2954dd49686ad550f46b103",
+    "api-rust\\src\\replay_core\\partial.rs": "65e22506c8c5194f4b6d68b2d5aca26434d5d853f7b04776334c7d219fc25361",
+    "api-rust\\src\\replay_core\\slippage.rs": "07b1ba1d3075f3773f06fe0574bfcbb3dd4228b8c39d7414f69bb9d638e51f10",
+    "api-rust\\src\\replay_core\\tick.rs": "c3950066af1abab9901bc88627bf4757f6e1cde860fc536b8389c09019a28fa3",
+    "api-rust\\src\\replay_core.rs": "53cefcce1109248cf6885f66476674450ae6a138f638da3ee47c6ea1784b950c",
+    "api-rust\\src\\replay_history.rs": "2dc0c5c666aeca3ea607e948a25eb3645ff0f2fc0ae4eba3113fd0f219db663a",
+    "api-rust\\src\\replay_portfolio.rs": "53d0b7448b9d26896457b5086749862ee6dd861d9dbd8926ec25dc5838202667",
+    "api-rust\\src\\replay_service.rs": "17657367231909994cc3fef4b6adcaf7e417ba86ece0ba387a07041955fcc3e8",
+    "api-rust\\src\\replay_storage.rs": "f1e0ef05394e6499fb74024fc00532f11f0c43f3f568f7b177bfdbd2b149cea4",
+    "api-rust\\src\\research_execution\\independent.rs": "6bc99a5f143ecccbf09704f2846f4bded772779ad49e2a75b8fb728db91cf959",
+    "api-rust\\src\\research_execution\\oos_runner.rs": "f8f9038cbb7bd2f3dab68e5d1e71ee0333b917d82e83dbd0ea84ed31823c7e6f",
+    "api-rust\\src\\research_execution\\reference.rs": "5663d115be1ddec753c8e5ebda3988f5fab427b5fd922805e8dbbc15393696e3",
+    "api-rust\\src\\research_execution\\scientific.rs": "078076eeabc339447d9cf5a352711dca297a9323eb3bef9ff1bf0e268ecc53e1",
+    "api-rust\\src\\research_execution\\scientific_normalize.rs": "5d65dd88fec7c2a9323ab02badee25f56a70d81efa64fe0364f6a237f1806cc6",
+    "api-rust\\src\\research_execution.rs": "fa66fd4f376527b64535290d75707e37b3721da2b8705c71df7873505690ab78",
+    "api-rust\\src\\research_jobs\\adapter\\dependencies.rs": "1d05137f10005dca3697807de9bb34ecb8bf256394ff69e498c4f8a7c8f19298",
+    "api-rust\\src\\research_jobs\\adapter.rs": "d6e293d97d955d228aac119ba8f704abaf519600cf5a3946f8b7eec9c758da03",
+    "api-rust\\src\\research_jobs\\engine.rs": "58d88d5558eab314497e7d418306550a8942da88bb9a5645ac6ca5ddff708916",
+    "api-rust\\src\\research_jobs\\lifecycle.rs": "c55de421eaad638f4b4f0661f218af13162f3811828e24c67e584ff125ca6807",
+    "api-rust\\src\\research_jobs\\oos.rs": "ae88252a8149d69431eae8d59524b9c8cbb76a961b0e8f7fae48ac59d8d9403b",
+    "api-rust\\src\\research_jobs.rs": "dffacaf504dee66810225ddb8065385a2d8205ada8ec8d877b8c969c5cfdfe7e",
+    "api-rust\\src\\rust_runtime.rs": "6c8b1aa91e29c797e35c8c7242bfdfcb213406afdf05600d76f3063944d9cf51",
+    "api-rust\\src\\session_presets.rs": "86b380ab16d8a1fb871737929889d15f8943de5fc37da7e402e0c9d8f6a131c1",
+    "api-rust\\src\\session_trading_options.rs": "a308829e928a9644e6c08d20921b4070f29a515977a23ee6ba15ebb5f5711f26",
+    "api-rust\\src\\state.rs": "c79943d88c6264d6ae5474aba4e546171a99c0d76d53e8ba7b6969b9b8b26259",
+    "api-rust\\src\\telemetry.rs": "e7c6b4a66c306d82e7d9dc7d2955fec44a5352e2348cfe0e13f7ab79e6171d71",
+    "scripts\\rust_replay_mutation_acceptance.py": "97d4b9f984269309db4747454bd43a1e9f4c901e3238639ba32cc4a0c945bdf7",
+    "api-rust\\examples\\rust_replay_mutation_probe.rs": "a0bd62268b967ad6430deaa92c70bb9951eb3d00ed3cf4ea857cad28a13b5bab"
+  },
+  "probe_sha256": "f74ab20554303fe3088997fab360ff7700b4b16d5b07d089d17a43d196b245ab",
+  "scope": "owned disposable PostgreSQL, synthetic bars, same-state native replay Router full versus opt-in mutation-v1; not full native runtime acceptance",
+  "limitations": [
+    "Router time excludes TCP/browser paint; outer time includes JSON stdio.",
+    "Small alternating diagnostic samples, not stable tail or capacity evidence.",
+    "Compact response does not make full history validation/persistence constant time."
+  ]
+}

@@ -1,0 +1,257 @@
+{
+  "status": "PASS",
+  "checks": [
+    "SELL against rising quotes has negative unrealized PnL; balance unchanged",
+    "partial close realizes a loss only for the closed quantity",
+    "flat account has equity equal to balance, zero floating PnL and exact realized loss",
+    "another workspace cannot read a replay",
+    "stale revision is rejected without writes",
+    "retrying an identical order with its idempotency key cannot duplicate it",
+    "TP1 and TP2 close exact allocations, realize positive PnL and leave no residual",
+    "rewind reconstructs only events and candles available at the historical cutoff",
+    "stop loss closes at the protective price with negative realized PnL",
+    "BUY limit queues and cancels without changing balance",
+    "SELL limit queues and cancels without changing balance",
+    "BUY stop queues and cancels without changing balance",
+    "SELL stop queues and cancels without changing balance",
+    "invalid protective direction fails atomically"
+  ],
+  "samples": [
+    {
+      "path": "/api/v2/replay/sessions",
+      "status": 201,
+      "bytes": 1238,
+      "ms": 42.67
+    },
+    {
+      "path": "/api/v2/replay/sessions/ed9749102e7d4ac1ae6aba8e7bed70d0/execution",
+      "status": 200,
+      "bytes": 2385,
+      "ms": 29.38
+    },
+    {
+      "path": "/api/v2/replay/sessions/ed9749102e7d4ac1ae6aba8e7bed70d0/orders/market",
+      "status": 200,
+      "bytes": 4908,
+      "ms": 30.9
+    },
+    {
+      "path": "/api/v2/replay/sessions/ed9749102e7d4ac1ae6aba8e7bed70d0/step",
+      "status": 200,
+      "bytes": 14006,
+      "ms": 10.78
+    },
+    {
+      "path": "/api/v2/replay/sessions/ed9749102e7d4ac1ae6aba8e7bed70d0/orders/close",
+      "status": 200,
+      "bytes": 12101,
+      "ms": 20.54
+    },
+    {
+      "path": "/api/v2/replay/sessions/ed9749102e7d4ac1ae6aba8e7bed70d0/orders/close",
+      "status": 200,
+      "bytes": 13511,
+      "ms": 31.32
+    },
+    {
+      "path": "/api/v2/replay/sessions/ed9749102e7d4ac1ae6aba8e7bed70d0",
+      "status": 404,
+      "bytes": 29,
+      "ms": 1.3
+    },
+    {
+      "path": "/api/v2/replay/sessions/ed9749102e7d4ac1ae6aba8e7bed70d0/orders/market",
+      "status": 409,
+      "bytes": 37,
+      "ms": 3.65
+    },
+    {
+      "path": "/api/v2/replay/sessions/ed9749102e7d4ac1ae6aba8e7bed70d0",
+      "status": 200,
+      "bytes": 13511,
+      "ms": 20.36
+    },
+    {
+      "path": "/api/v2/replay/sessions",
+      "status": 201,
+      "bytes": 1238,
+      "ms": 17.18
+    },
+    {
+      "path": "/api/v2/replay/sessions/a8506d6e94ba4ab196129af489b7ab85/execution",
+      "status": 200,
+      "bytes": 2385,
+      "ms": 31.01
+    },
+    {
+      "path": "/api/v2/replay/sessions/a8506d6e94ba4ab196129af489b7ab85/orders/market",
+      "status": 200,
+      "bytes": 5302,
+      "ms": 33.8
+    },
+    {
+      "path": "/api/v2/replay/sessions/a8506d6e94ba4ab196129af489b7ab85/orders/market",
+      "status": 200,
+      "bytes": 5302,
+      "ms": 2.21
+    },
+    {
+      "path": "/api/v2/replay/sessions/a8506d6e94ba4ab196129af489b7ab85/step",
+      "status": 200,
+      "bytes": 49125,
+      "ms": 31.48
+    },
+    {
+      "path": "/api/v2/replay/sessions/a8506d6e94ba4ab196129af489b7ab85?cursor_index=0",
+      "status": 200,
+      "bytes": 5311,
+      "ms": 23.39
+    },
+    {
+      "path": "/api/v2/replay/sessions",
+      "status": 201,
+      "bytes": 1238,
+      "ms": 30.87
+    },
+    {
+      "path": "/api/v2/replay/sessions/c451d30ecc7a4948a28ad0e31b782138/execution",
+      "status": 200,
+      "bytes": 2385,
+      "ms": 31.56
+    },
+    {
+      "path": "/api/v2/replay/sessions/c451d30ecc7a4948a28ad0e31b782138/orders/market",
+      "status": 200,
+      "bytes": 4920,
+      "ms": 32.46
+    },
+    {
+      "path": "/api/v2/replay/sessions/c451d30ecc7a4948a28ad0e31b782138/step",
+      "status": 200,
+      "bytes": 33957,
+      "ms": 33.42
+    },
+    {
+      "path": "/api/v2/replay/sessions",
+      "status": 201,
+      "bytes": 1238,
+      "ms": 27.68
+    },
+    {
+      "path": "/api/v2/replay/sessions/b994af1b49e74d8cbe6cbaf8353a99f9/execution",
+      "status": 200,
+      "bytes": 2385,
+      "ms": 30.87
+    },
+    {
+      "path": "/api/v2/replay/sessions/b994af1b49e74d8cbe6cbaf8353a99f9/orders/market",
+      "status": 200,
+      "bytes": 3417,
+      "ms": 33.05
+    },
+    {
+      "path": "/api/v2/replay/sessions/b994af1b49e74d8cbe6cbaf8353a99f9/orders/close",
+      "status": 200,
+      "bytes": 4271,
+      "ms": 32.67
+    },
+    {
+      "path": "/api/v2/replay/sessions",
+      "status": 201,
+      "bytes": 1238,
+      "ms": 29.49
+    },
+    {
+      "path": "/api/v2/replay/sessions/304d97cd58b2421ea57c7a23bd13e3f8/execution",
+      "status": 200,
+      "bytes": 2385,
+      "ms": 31.79
+    },
+    {
+      "path": "/api/v2/replay/sessions/304d97cd58b2421ea57c7a23bd13e3f8/orders/market",
+      "status": 200,
+      "bytes": 3419,
+      "ms": 10.2
+    },
+    {
+      "path": "/api/v2/replay/sessions/304d97cd58b2421ea57c7a23bd13e3f8/orders/close",
+      "status": 200,
+      "bytes": 4273,
+      "ms": 21.86
+    },
+    {
+      "path": "/api/v2/replay/sessions",
+      "status": 201,
+      "bytes": 1238,
+      "ms": 28.83
+    },
+    {
+      "path": "/api/v2/replay/sessions/6ba5108c2c16486495e4db961fba69b9/execution",
+      "status": 200,
+      "bytes": 2385,
+      "ms": 8.03
+    },
+    {
+      "path": "/api/v2/replay/sessions/6ba5108c2c16486495e4db961fba69b9/orders/market",
+      "status": 200,
+      "bytes": 3415,
+      "ms": 9.83
+    },
+    {
+      "path": "/api/v2/replay/sessions/6ba5108c2c16486495e4db961fba69b9/orders/close",
+      "status": 200,
+      "bytes": 4269,
+      "ms": 9.29
+    },
+    {
+      "path": "/api/v2/replay/sessions",
+      "status": 201,
+      "bytes": 1238,
+      "ms": 7.47
+    },
+    {
+      "path": "/api/v2/replay/sessions/66aa544e40bd4cf0b2d0ebfd853ed649/execution",
+      "status": 200,
+      "bytes": 2385,
+      "ms": 27.49
+    },
+    {
+      "path": "/api/v2/replay/sessions/66aa544e40bd4cf0b2d0ebfd853ed649/orders/market",
+      "status": 200,
+      "bytes": 3417,
+      "ms": 31.76
+    },
+    {
+      "path": "/api/v2/replay/sessions/66aa544e40bd4cf0b2d0ebfd853ed649/orders/close",
+      "status": 200,
+      "bytes": 4271,
+      "ms": 31.15
+    },
+    {
+      "path": "/api/v2/replay/sessions",
+      "status": 201,
+      "bytes": 1238,
+      "ms": 29.54
+    },
+    {
+      "path": "/api/v2/replay/sessions/59ecc72d6ffa44a6874257f54e3a5001/execution",
+      "status": 200,
+      "bytes": 2385,
+      "ms": 8.03
+    },
+    {
+      "path": "/api/v2/replay/sessions/59ecc72d6ffa44a6874257f54e3a5001/orders/market",
+      "status": 422,
+      "bytes": 64,
+      "ms": 5.97
+    },
+    {
+      "path": "/api/v2/replay/sessions/59ecc72d6ffa44a6874257f54e3a5001",
+      "status": 200,
+      "bytes": 2385,
+      "ms": 4.73
+    }
+  ],
+  "synthetic": true,
+  "owner_sessions_mutated": false
+}

@@ -1,0 +1,16 @@
+{
+  "web/src/ChartOrderPanel.jsx": "e588daa44e58d0429a82dba4a4d3e69d99b065280a6b08a34a9af9dc40f34e03",
+  "web/src/ChartWorkbench.css": "7042160b2be571887d8857d2805765112b79edf7571e3435b42ab9c2ca28a1d6",
+  "web/src/FxAnalytics.jsx": "6b662fe17f01663f6033ff0311091fb68cbcce619fcad93f0ac3b3d8c8236a4e",
+  "web/src/PartialCloseDialog.jsx": "607a84476f35acebf92f9a6e232892739127517bbb2f0cb01cde3cd78e6c0a70",
+  "web/src/TradingViewReplayChart.jsx": "4cb5d5fd018d237f9e13cc35193992c2d31b787352e90e37d860c8e74533962c",
+  "web/src/advancedOrderOverlay.js": "5b196919417d10aaeb7f54a63abf9253d531515bd361e39eda33b6c0483be881",
+  "web/src/replayOrderModel.js": "d0acedf8087614e9325c0f3a4747140d3c2e47beadb32be6b3f44a4d6c490b08",
+  "web/tests/advancedOrderOverlay.test.mjs": "960a2c7d5c636469f69ab14de4533fc4d2348ba8426caaec2462793351fa02d1",
+  "web/tests/replayOrderModel.test.mjs": "9559e5d5ce499dffdb4bdb08d207e792f08e57cecf688d1988f51aed742d652b",
+  "web/tests/replay-contrast.test.mjs": "7e5a6d163c36bc701f774088e17a087793a9e9ce9ce064c8a4eae082f4cb6926",
+  "web/tests/retry-boundaries.test.mjs": "2ace41fca087393953f55733ef62f640d54bdc975b08fedd7755e59479543f14",
+  "web/src/ReplayWorkspace.jsx": "2919188c1424aa6af33ce047f34b458b2e888ed7f23675006b90e831424ea465",
+  "api-rust/target/native-candidate/release/trading-workspace-api.exe": "ee971f7aa8b32f4d7a4018607884b7e15c371ed22b329f1269e1b84d352b73bb",
+  "../scripts/restart_offline_api.ps1": "aa105912f187c2540b2dfd58442ed7b1595c1a6fa4e77ff75886fb1b0ef206bd"
+}

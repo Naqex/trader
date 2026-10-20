@@ -1,0 +1,172 @@
+   Compiling trading-workspace-api v0.1.0 (D:\ANNAM\TradingWorkspace\projects\mt5-tradingview-backtester\foundation_v2\api-rust)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 51.55s
+     Running unittests src\lib.rs (api-rust/target/native-candidate\debug\deps\trading_workspace_api-7195938e6d918196.exe)
+
+running 165 tests
+test auth::tests::identity_missing_fails_closed ... ok
+test auth::tests::request_cannot_choose_identity ... ok
+test catalog::tests::default_single_dataset_and_execution_are_preserved ... ok
+test catalog::tests::corrupt_catalog_fails_closed ... ok
+test catalog::tests::missing_dataset_is_retained_with_null_metadata ... ok
+test catalog::tests::demo_session_is_stable_scoped_and_has_no_credentials ... ok
+test catalog::tests::multi_asset_metadata_preserves_order_and_duplicates ... ok
+test artifact_data::publication_tests::immutable_publication_keeps_the_winner_and_losing_source ... ok
+test catalog::tests::prop_identity_is_preserved_in_catalog ... ok
+test chatgpt_web::tests::account_mutations_require_loopback_peer_and_same_origin ... ok
+test artifact_data::timestamp_cache_tests::timestamps_are_scoped_to_file_object_change_stamp_and_group_with_lru_eviction ... ok
+test chatgpt_web::tests::chat_cancel_is_scoped_idempotent_and_drops_the_running_task ... ok
+test chatgpt_web::tests::chat_accepts_only_bounded_alternating_text_without_provider_overrides ... ok
+test chatgpt_web::tests::chat_returns_only_complete_assistant_text ... ok
+test chatgpt_web::tests::completed_chat_survives_late_cancel_and_shutdown_aborts_pending_work ... ok
+test chatgpt_web::tests::route_context_is_bounded_data_not_policy_or_account_data ... ok
+test chatgpt_web::tests::status_does_not_start_a_browser_or_adopt_a_service ... ok
+test commands::tests::command_framing_preserves_duplicates_and_rejects_malformed ... ok
+test commands::tests::malformed_body_rejected_before_queue_io ... ok
+test commands::tests::worker_response_only_exports_reviewed_headers ... ok
+test control_routes::learn::tests::reads_fixture_without_mutation ... ok
+test control_routes::learn::tests::rejects_answer_keys_and_traversal ... ok
+test commands::tests::frozen_manifest_unique_and_native_routes_do_not_collide ... ok
+test catalog::tests::prop_decimal_exponents_remain_exact_and_timezone_is_required ... ok
+test catalog::tests::prop_corruption_and_wrong_scope_fail_closed ... ok
+test data_routes::ingest::streaming_tests::provider_record_bound_also_covers_multiline_quoted_fields ... ok
+test data_routes::ingest::streaming_tests::python_ordered_provider_preview ... ignored, requires rust_data_ingest_parity.py Python fixtures
+test data_routes::legacy_codec::tests::descriptor_tamper_fails_closed ... ok
+test data_routes::legacy_codec::tests::pinned_identity_and_timeout ... ignored, explicit installed codec capability only
+test control_routes::tests::controls_obey_workspace_and_schema_without_worker ... ok
+test data_routes::ingest::streaming_tests::ordered_stream_rejects_invalid_rows_instead_of_sorting_or_dropping_them ... ok
+test events::tests::empty_snapshot_is_scoped_unknown_progress_stays_absent ... ok
+test events::tests::postgres_resource_metadata_scan_measurement ... ignored, owned disposable database from run_events_parity.py only
+test events::tests::resource_tokens_are_scoped_and_include_all_aggregate_marks ... ok
+test jobs::tests::checkpoint_projects_and_fails_closed ... ok
+test jobs::tests::result_checksum_and_path_boundary ... ok
+test native_contracts::tests::coercion_and_strict_delete_contract ... ok
+test events::tests::latest_value_is_bounded_and_disconnect_releases_permit ... ok
+test native_contracts::tests::expands_nested_strategy_defaults ... ok
+test native_contracts::tests::exact_integers_and_bounded_decimals ... ok
+test native_contracts::tests::malformed_shapes_reject_without_panicking ... ok
+test native_mutation::tests::keys_are_framed_and_scoped ... ok
+test notion_oauth::tests::actual_router_enforces_peer_origin_and_no_store_on_every_oauth_response ... ok
+test notion_oauth::tests::callback_exact_origin_guard_does_not_consume_nonce ... ok
+test notion_oauth::tests::config_preserves_loopback_port_path_boundary ... ok
+test notion_oauth::tests::consume_once_expiry_identity_membership_and_invalid_code_precede_exchange ... ok
+test notion_oauth::tests::disconnect_invalidates_pending_and_inflight_exchanges_only_for_its_owner ... ok
+test notion_oauth::tests::exchange_expiry_disconnect_and_workspace_isolation_never_expose_tokens ... ok
+test notion_oauth::tests::exchange_never_follows_redirect_retries_or_exposes_provider_body ... ok
+test notion_oauth::tests::malformed_payloads_match_python_error_without_creating_connection ... ok
+test notion_oauth::tests::generated_python_config_and_exchange_oracle ... ok
+test notion_oauth::tests::unconfigured_and_nonce_entropy_are_explicit ... ok
+test notion_oauth::tests::socket_peer_and_full_boundary_callback_use_nonce_membership_in_multiworkspace_app ... ok
+test owned_process::windows::tests::abrupt_worker_fixture ... ignored
+test analytics::http_routes::csv_tests::python_csv_bytes ... ok
+test owned_process::windows::tests::arguments_environment_cwd_and_full_pipes ... ok
+test owned_process::windows::tests::abrupt_worker_exit_reaps_descendants ... ok
+test owned_process::windows::tests::cancelled_wait_and_deadline_keep_tree_owned ... ok
+test owned_process::windows::tests::spawn_failure_and_invalid_arguments_leave_no_process ... ok
+test prop_core::portfolio_tests::portfolio_filled_entries_qualify_once_per_local_day ... ok
+test prop_core::portfolio_tests::unknown_intrabar_equity_advances_bookkeeping_without_a_money_verdict ... ok
+test owned_process::windows::tests::limits_apply_before_child_code ... ok
+test provider_routes::catalog_refresh::tests::refresh_is_bounded_atomic_cached_and_cooldown_serialized ... ok
+test owned_process::windows::tests::drop_and_explicit_kill_terminate_the_entire_tree ... ok
+test provider_routes::dependencies::tests::installed_tree_identity_covers_changed_added_and_missing_files ... ok
+test provider_routes::catalog_refresh::tests::failed_refresh_preserves_cache_for_rate_limit_redirect_invalid_oversize_and_timeout ... ok
+test provider_routes::execution::tests::native_provider_claim_recovery_and_atomic_publication ... ignored, owned disposable PostgreSQL only; no vendor or network process
+test provider_routes::execution::tests::publication_resource_probe ... ignored, resource benchmark: explicit synthetic input and owned temporary root required
+test provider_routes::execution::tests::fragmented_adapter_event_survives_timer_cancellation_and_has_a_bound ... ok
+test provider_routes::execution::tests::qdm_streaming_export_preserves_bytes_and_does_not_replace_a_valid_file_on_failure ... ok
+test provider_routes::lifecycle::tests::configured_http_lifecycle_preserves_receipts_cooldowns_scope_and_revisions ... ignored, requires rust_metadata_parity.py disposable PostgreSQL
+test replay_core::entry::tests::pending_entry_all_four_sides_wait_reload_and_fill_only_on_touch ... ok
+test replay_core::entry::tests::pending_entry_cancel_fork_and_receipt_integrity ... ok
+test replay_core::entry::tests::pending_entry_gaps_improve_limits_and_slip_stops ... ok
+test provider_routes::catalog_refresh::tests::request_cancellation_leaves_no_partial_cache_or_queued_refresh ... ok
+test replay_core::entry::tests::pending_entry_margin_is_checked_on_fill_and_cannot_open_an_oversize_position ... ok
+test replay_core::entry::tests::pending_entry_rejects_wrong_side_grid_and_ambiguous_same_bar_exit ... ok
+test replay_core::entry::tests::pending_entry_ticks_use_the_executable_side_and_remain_pending_across_bars ... ok
+test replay_core::history::tests::commitments_survive_jsonb_equivalent_numeric_spelling ... ok
+test replay_core::history::tests::conditional_entry_retains_partial_targets_until_later_candles ... ok
+test replay_core::history::tests::import_and_persisted_context_corruption_fail_closed ... ok
+test replay_core::history::tests::current_fill_amend_close_both_sides_match_full_financial_events ... ok
+test replay_core::history::tests::invalid_amend_quote_and_unsupported_actions_leave_prefix_unchanged ... ok
+test replay_core::history::tests::margin_rejection_and_explicit_fill_match_full ... ok
+test replay_core::history::tests::partial_close_allocates_minimum_fee_and_financing_once ... ok
+test replay_core::history::tests::partial_close_rejects_oversize_off_step_and_invalid_remainder ... ok
+test provider_routes::execution::tests::subprocess_drain_reads_full_pipes_and_reaps_deadline_failure ... ok
+test replay_core::history::tests::partial_close_preserves_remaining_position_and_allocates_legacy_fees ... ok
+test replay_core::history::tests::partial_target_then_stop_preserves_session_slippage_and_per_lot_fees ... ok
+test replay_core::history::tests::partial_targets_reject_invalid_allocations_without_changing_state ... ok
+test replay_core::history::tests::pending_entry_compact_prefix_matches_full_across_wait_fill_and_cancel ... ok
+test replay_core::history::tests::partial_targets_gap_multiple_fills_stop_and_manual_close ... ok
+test replay_core::history::tests::partial_targets_execute_and_restore_identically_in_full_and_compact ... ok
+test replay_core::history::tests::queue_without_event_pending_amend_cancel_and_reuse_guard ... ok
+test replay_core::history::tests::tick_and_wrong_scope_operation_permits_are_explicitly_rejected ... ok
+test replay_core::tick::tests::first_touch_uses_correct_broker_side_and_same_ms_sequence ... ok
+test replay_core::tick::tests::invalid_coverage_and_order_fail_atomically ... ok
+test replay_core::history::tests::queued_next_bar_fill_protective_exit_and_batch_match_full ... ok
+test replay_core::tick::tests::margin_rejection_retains_observed_quote_and_stays_flat ... ok
+test replay_core::tick::tests::partial_targets_tick_sequence_preserves_residual_and_final_costs ... ok
+test replay_core::tick::tests::tampered_provenance_quotes_costs_and_causal_order_are_rejected ... ok
+test replay_core::tick::tests::wrong_side_quote_does_not_trigger_exit ... ok
+test replay_portfolio::tests::pending_heads_are_acknowledgeable_and_phase_reset_counts_capital_once ... ok
+test replay_portfolio::tests::causal_marks_group_simultaneous_assets_and_ignore_chart_switches ... ok
+test replay_service::history::tests::cache_is_scoped_to_workspace_and_exact_revision_and_evicts_superseded_heads ... ok
+test replay_portfolio::tests::secondary_first_does_not_borrow_a_future_primary_cursor ... ok
+test replay_service::history::tests::least_recently_used_entries_are_evicted_and_budget_is_conservative ... ok
+test replay_service::response_view_tests::response_views_are_explicit_and_route_scoped ... ok
+test replay_service::response_view_tests::step_capability_excludes_tick_and_unknown_execution_schemas ... ok
+test replay_storage::tests::consumed_source_ids_are_deduplicated_and_queue_reserves_zero_event_revision ... ok
+test replay_storage::tests::admission_never_accepts_unrequested_or_cross_scope_ids ... ok
+test replay_storage::tests::revision_scope_rejects_overflow_and_zero ... ok
+test replay_storage::tests::prop_mark_predecessor_scope_hash_and_financial_corruption_fail_closed ... ok
+test replay_storage::tests::selected_prop_marks_validate_without_materializing_history ... ok
+test research_execution::oos_runner::tests::interruption_deadline_and_checkpoint_failure_are_terminal ... ok
+test research_execution::oos_runner::tests::python_regime_oracle ... ignored, run rust_regime_oracle.py with its generated Python oracle
+test analytics::tests::python_oracle_parity ... ok
+test replay_core::history::tests::prefix_length_does_not_change_mutation_event_visits_or_index_reads ... ok
+test research_execution::scientific::tests::actual_native_adapter_oracle ... ignored, pinned installed offline scientific runtime and synthetic source only
+test research_execution::scientific::tests::cancellation_deadline_and_output_budget_reap_the_adapter ... ok
+test research_execution::scientific_normalize::tests::independent_source_and_native_tampering_oracle ... ignored, requires rust_scientific_normalize_oracle.py source fixtures
+test research_execution::scientific_normalize::tests::python_normalization_oracle ... ignored, requires rust_scientific_normalize_oracle.py fixtures
+test research_execution::tests::cancellation_and_paths_fail_closed ... ok
+test research_execution::tests::postgres_execution_fences ... ignored, requires explicitly owned disposable PostgreSQL via rust_research_execution_parity.py
+test research_execution::tests::python_baseline_oracle ... ignored, requires Python oracle generated by rust_research_execution_parity.py
+test research_jobs::adapter::dependencies::tests::cache_does_not_grow_past_its_file_budget ... ok
+test research_jobs::adapter::dependencies::tests::cache_hit_rechecks_the_pathname_after_use ... ok
+test research_jobs::adapter::dependencies::tests::cache_revalidates_change_stamp_replacement_names_and_cancellation ... ok
+test research_jobs::adapter::dependencies::tests::complete_tree_pins_compiled_transitive_bytecode_and_added_files ... ok
+test research_jobs::adapter::dependencies::tests::pathname_substituted_with_reparse_point_is_never_followed ... ok
+test research_jobs::adapter::dependencies::tests::rejects_links_and_file_roots ... ok
+test research_jobs::adapter::dependencies::tests::unsupported_change_stamp_never_uses_cache ... ok
+test research_jobs::adapter::dependencies::tests::verification_stops_during_a_file_read ... ok
+test research_jobs::adapter::tests::descriptor_rejects_changed_missing_or_foreign_runtime ... ok
+test research_jobs::adapter::tests::installed_descriptor_verification ... ignored, requires explicit installed descriptor; offline inspection only
+test research_jobs::engine::tests::decimal_constraints_match_retained_contracts ... ok
+test research_jobs::engine::tests::protocol_identity_pins_the_installed_dependencies ... ok
+test research_jobs::engine::tests::python_oracle_differential ... ok
+test research_jobs::oos::tests::grid_is_sorted_and_changes_last_parameter_first ... ok
+test research_jobs::oos::tests::normalizes_decimal_context_and_signed_zero ... ok
+test research_jobs::oos::tests::preserves_admission_only_walk_fields_and_falsey_stress ... ok
+test research_jobs::oos::tests::validates_every_merged_trial_even_when_base_is_valid ... ok
+test research_jobs::schema_runtime::tests::ledger_fails_closed_for_changed_and_future_schema ... ok
+test research_jobs::tests::cancellation_accounts_for_every_trial_and_fences_attempts ... ok
+test research_jobs::tests::postgres_admission_cancel_and_schema ... ignored, requires disposable PostgreSQL runner rust_runtime_parity.py
+test research_jobs::tests::postgres_engine_admission_differential ... ignored, requires owned disposable PostgreSQL runner rust_engine_admission_parity.py
+test research_jobs::tests::quarantines_without_overwriting_or_escaping ... ok
+test rust_runtime::tests::ledger_fails_closed_for_changed_and_future_schema ... ok
+test session_presets::tests::exact_config_and_costs_are_typed_and_bounded ... ok
+test session_presets::tests::names_modes_and_query_are_explicit ... ok
+test session_trading_options::tests::frozen_config_overrides_hidden_request_defaults_and_rejects_tick_mix ... ok
+test session_trading_options::tests::legacy_forex_uses_catalog_currency_and_slippage_units ... ok
+test session_trading_options::tests::v2_slippage_is_explicit_bounded_and_seeded_by_the_server ... ok
+test session_trading_options::tests::validates_exact_asset_set_and_bounded_decimals ... ok
+test state::tests::no_tls_cannot_connect_to_remote_hostaddr ... ok
+test tests::health_and_all_domain_paths_obey_identity_contract ... ok
+test tests::metrics_is_protected_and_readiness_is_separate ... ok
+test tests::oauth_callback_is_exact_and_only_the_nonce_handler_selects_scope ... ok
+test tests::overload_deadline_and_rate_are_explicit ... ok
+test tests::unreviewed_head_has_no_domain_or_worker_side_effect ... ok
+test research_execution::reference::tests::python_execution_oracle ... ok
+test research_execution::oos_runner::tests::python_oos_oracle ... ok
+test data_routes::ingest::streaming_tests::ordered_stream_retains_preview_rows_and_parquet_identity ... ok
+test research_execution::reference::tests::artifact_reconciliation_rejects_each_tampered_boundary ... ok
+test data_routes::lifecycle::streaming_recovery_tests::native_large_recovery_needs_no_legacy_codec_and_preserves_pinned_hash ... ok
+
+test result: ok. 149 passed; 0 failed; 16 ignored; 0 measured; 0 filtered out; finished in 54.97s
