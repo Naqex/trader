@@ -1,0 +1,562 @@
+[
+  {
+    "case": "popover-in-dialog",
+    "data": {
+      "bounds": {
+        "bottom": 604.5,
+        "height": 122,
+        "left": 306.796875,
+        "right": 570.796875,
+        "top": 482.5,
+        "width": 264,
+        "x": 306.796875,
+        "y": 482.5
+      },
+      "parent": "dialog",
+      "viewport": [
+        1280,
+        720
+      ]
+    }
+  },
+  {
+    "case": "date-keeps-allowed-time",
+    "value": "20/10/2026 10:30"
+  },
+  {
+    "case": "calendar-360",
+    "data": {
+      "close": {
+        "bottom": 226.5,
+        "height": 44,
+        "left": 283,
+        "right": 327,
+        "top": 182.5,
+        "width": 44,
+        "x": 283,
+        "y": 182.5
+      },
+      "days": [
+        {
+          "bottom": 141,
+          "height": 44,
+          "left": 203.28125,
+          "right": 249.84375,
+          "top": 97,
+          "width": 46.5625,
+          "x": 203.28125,
+          "y": 97
+        },
+        {
+          "bottom": 141,
+          "height": 44,
+          "left": 249.84375,
+          "right": 296.421875,
+          "top": 97,
+          "width": 46.578125,
+          "x": 249.84375,
+          "y": 97
+        }
+      ],
+      "popup": {
+        "bottom": 458,
+        "height": 450,
+        "left": 8,
+        "right": 352,
+        "top": 8,
+        "width": 344,
+        "x": 8,
+        "y": 8
+      },
+      "scroll": 360,
+      "viewport": [
+        360,
+        790
+      ]
+    }
+  },
+  {
+    "case": "light-dialog-360",
+    "data": {
+      "bg": "rgb(255, 255, 255)",
+      "bounds": {
+        "bottom": 624.5,
+        "height": 459,
+        "left": 16,
+        "right": 344,
+        "top": 165.5,
+        "width": 328,
+        "x": 16,
+        "y": 165.5
+      },
+      "close": "rgba(0, 0, 0, 0)",
+      "scrollWidth": 360,
+      "text": "rgb(21, 24, 28)"
+    }
+  },
+  {
+    "case": "settled-overview-empty",
+    "data": {
+      "busy": 0,
+      "headings": [
+        "Chào mừng đến với Luyện tập"
+      ],
+      "states": [],
+      "viewport": 1440,
+      "width": 1440
+    },
+    "content": "    - button \"Chế độ xem dữ liệu\":\n      - generic: Chưa có dữ liệu\n  - region \"Tổng quan\":\n    - heading \"Chào mừng đến với Luyện tập\" [level=1]\n    - paragraph: \"Chọn cách kiểm thử chiến lược: tích lũy dữ liệu hoặc luyện tập theo quy tắc prop firm.\"\n    - button \"Phiên backtest Tích lũy dữ liệu để hoàn thiện chiến lược\" [disabled]:\n      - strong: Phiên backtest\n      - generic: Tích lũy dữ liệu để hoàn thiện chiến lược\n    - button \"Thử thách prop firm Kiểm thử chiến lược theo quy tắc prop firm\" [disabled]:\n      - strong: Thử thách prop firm\n      - generic: Kiểm thử chiến lược theo quy tắc prop firm\n  - complementary \"Thông báo thao tác\""
+  },
+  {
+    "case": "settled-overview-error",
+    "data": {
+      "busy": 0,
+      "headings": [
+        "Tổng quan",
+        "Phiên gần đây",
+        "Hiệu suất"
+      ],
+      "states": [
+        "3 phiên trong tổng số 3",
+        "Chưa tải được hiệu suất."
+      ],
+      "viewport": 1440,
+      "width": 1440
+    },
+    "content": "ondon&select=1&analytics_source=sessions\n        - button \"Tạo bản sao phiên London Breakout\":\n        - link \"Tóm tắt phiên London Breakout\":\n          - /url: /?workspace=tenant-a&view=replay&demo=1&ui_state=error&demo_session=demo-london&select=1&analytics_source=sessions\n          - text: Tóm tắt\n        - button \"Mở rộng phiên London Breakout\":\n    - region \"Hiệu suất\":\n      - heading \"Hiệu suất\" [level=2]\n      - button \"Phạm vi hiệu suất\":\n        - generic: Backtest\n      - button \"Khoảng thời gian hiệu suất\":\n        - generic: Tất cả\n      - alert:\n        - paragraph: Chưa tải được hiệu suất.\n  - complementary \"Thông báo thao tác\""
+  },
+  {
+    "case": "settled-overview-loading",
+    "data": {
+      "busy": 1,
+      "headings": [],
+      "states": [
+        "Đang tải dữ liệu…"
+      ],
+      "viewport": 1440,
+      "width": 1440
+    },
+    "content": "loading&area=testing&section=trades&select=1&sessions=all\n      - text: Giao dịch\n    - link \"Phân tích\":\n      - /url: /?workspace=tenant-a&view=analytics&demo=1&ui_state=loading&area=testing&section=analytics&select=1\n      - text: Phân tích\n    - link \"Kho dữ liệu\":\n      - /url: /?workspace=tenant-a&view=market-data&demo=1&ui_state=loading&area=testing&section=market-data\n      - text: Kho dữ liệu\n    - status\n    - status:\n      - generic: Bản xem thử\n      - strong: Đang tải\n    - button \"Chế độ xem dữ liệu\":\n      - generic: Đang tải\n  - status \"Đang tải dữ liệu…\":\n    - generic: Đang tải dữ liệu…\n  - complementary \"Thông báo thao tác\""
+  },
+  {
+    "case": "settled-overview-denied",
+    "data": {
+      "busy": 0,
+      "headings": [
+        "Không có quyền truy cập"
+      ],
+      "states": [
+        "Không có quyền truy cậpBạn chưa có quyền xem dữ liệu trong workspace này. Hãy kiểm tra tài khoản và quyền được cấp."
+      ],
+      "viewport": 1440,
+      "width": 1440
+    },
+    "content": "rkspace=tenant-a&view=analytics&demo=1&ui_state=denied&area=testing&section=analytics&select=1\n      - text: Phân tích\n    - link \"Kho dữ liệu\":\n      - /url: /?workspace=tenant-a&view=market-data&demo=1&ui_state=denied&area=testing&section=market-data\n      - text: Kho dữ liệu\n    - status\n    - status:\n      - generic: Bản xem thử\n      - strong: Không có quyền xem\n    - button \"Chế độ xem dữ liệu\":\n      - generic: Không có quyền xem\n  - alert:\n    - heading \"Không có quyền truy cập\" [level=2]\n    - paragraph: Bạn chưa có quyền xem dữ liệu trong workspace này. Hãy kiểm tra tài khoản và quyền được cấp.\n  - complementary \"Thông báo thao tác\""
+  },
+  {
+    "case": "settled-overview-unavailable",
+    "data": {
+      "busy": 0,
+      "headings": [
+        "Tổng quan",
+        "Phiên gần đây",
+        "Hiệu suất"
+      ],
+      "states": [
+        "3 phiên trong tổng số 3"
+      ],
+      "viewport": 1440,
+      "width": 1440
+    },
+    "content": "generic \"2026-07: 52,6%\"':\n            - generic: 52,6%\n          - generic: 07/2026\n          - 'generic \"2026-08: 50%\"':\n            - generic: 50%\n          - generic: 08/2026\n          - 'generic \"2026-09: 47,4%\"':\n            - generic: 47,4%\n          - generic: 09/2026\n      - heading \"Giao dịch theo mã\" [level=3]\n      - 'img \"Giao dịch theo mã: EURUSD: 20; GBPUSD: 20; XAUUSD: 20\"':\n        - generic: EURUSD\n        - strong: \"20\"\n        - generic: GBPUSD\n        - strong: \"20\"\n        - generic: XAUUSD\n        - strong: \"20\"\n        - generic: \"0\"\n        - generic: \"10\"\n        - generic: \"20\"\n  - complementary \"Thông báo thao tác\""
+  },
+  {
+    "case": "settled-overview-stale",
+    "data": {
+      "busy": 0,
+      "headings": [
+        "Tổng quan",
+        "Phiên gần đây",
+        "Hiệu suất"
+      ],
+      "states": [
+        "3 phiên trong tổng số 3",
+        "Chưa cập nhật được Hiệu suất. Đang giữ bản đã đọc trước đó.Tự thử lại sau 5 giây."
+      ],
+      "viewport": 1440,
+      "width": 1440
+    },
+    "content": "generic \"2026-07: 52,6%\"':\n            - generic: 52,6%\n          - generic: 07/2026\n          - 'generic \"2026-08: 50%\"':\n            - generic: 50%\n          - generic: 08/2026\n          - 'generic \"2026-09: 47,4%\"':\n            - generic: 47,4%\n          - generic: 09/2026\n      - heading \"Giao dịch theo mã\" [level=3]\n      - 'img \"Giao dịch theo mã: EURUSD: 20; GBPUSD: 20; XAUUSD: 20\"':\n        - generic: EURUSD\n        - strong: \"20\"\n        - generic: GBPUSD\n        - strong: \"20\"\n        - generic: XAUUSD\n        - strong: \"20\"\n        - generic: \"0\"\n        - generic: \"10\"\n        - generic: \"20\"\n  - complementary \"Thông báo thao tác\""
+  },
+  {
+    "case": "settled-overview-partial",
+    "data": {
+      "busy": 0,
+      "headings": [
+        "Tổng quan",
+        "Phiên gần đây",
+        "Hiệu suất"
+      ],
+      "states": [
+        "2 phiên trong tổng số 2",
+        "Hiệu suất chỉ tổng hợp 2/3 phiên có dữ liệu."
+      ],
+      "viewport": 1440,
+      "width": 1440
+    },
+    "content": "neric \"2026-07: 46,2%\"':\n            - generic: 46,2%\n          - generic: 07/2026\n          - 'generic \"2026-08: 46,7%\"':\n            - generic: 46,7%\n          - generic: 08/2026\n          - 'generic \"2026-09: 58,3%\"':\n            - generic: 58,3%\n          - generic: 09/2026\n      - heading \"Giao dịch theo mã\" [level=3]\n      - 'img \"Giao dịch theo mã: EURUSD: 20; GBPUSD: 20; XAUUSD: 0\"':\n        - generic: EURUSD\n        - strong: \"20\"\n        - generic: GBPUSD\n        - strong: \"20\"\n        - generic: XAUUSD\n        - strong: \"0\"\n        - generic: \"0\"\n        - generic: \"10\"\n        - generic: \"20\"\n  - complementary \"Thông báo thao tác\""
+  },
+  {
+    "case": "settled-overview-unknown",
+    "data": {
+      "busy": 0,
+      "headings": [
+        "Tổng quan",
+        "Phiên gần đây",
+        "Hiệu suất"
+      ],
+      "states": [
+        "3 phiên trong tổng số 3"
+      ],
+      "viewport": 1440,
+      "width": 1440
+    },
+    "content": "generic \"2026-07: 52,6%\"':\n            - generic: 52,6%\n          - generic: 07/2026\n          - 'generic \"2026-08: 50%\"':\n            - generic: 50%\n          - generic: 08/2026\n          - 'generic \"2026-09: 47,4%\"':\n            - generic: 47,4%\n          - generic: 09/2026\n      - heading \"Giao dịch theo mã\" [level=3]\n      - 'img \"Giao dịch theo mã: EURUSD: 20; GBPUSD: 20; XAUUSD: 20\"':\n        - generic: EURUSD\n        - strong: \"20\"\n        - generic: GBPUSD\n        - strong: \"20\"\n        - generic: XAUUSD\n        - strong: \"20\"\n        - generic: \"0\"\n        - generic: \"10\"\n        - generic: \"20\"\n  - complementary \"Thông báo thao tác\""
+  },
+  {
+    "case": "settled-overview-refreshing",
+    "data": {
+      "busy": 2,
+      "headings": [
+        "Tổng quan",
+        "Phiên gần đây",
+        "Hiệu suất"
+      ],
+      "states": [
+        "3 phiên trong tổng số 3",
+        "Đang cập nhật Hiệu suất…"
+      ],
+      "viewport": 1440,
+      "width": 1440
+    },
+    "content": "generic \"2026-07: 52,6%\"':\n            - generic: 52,6%\n          - generic: 07/2026\n          - 'generic \"2026-08: 50%\"':\n            - generic: 50%\n          - generic: 08/2026\n          - 'generic \"2026-09: 47,4%\"':\n            - generic: 47,4%\n          - generic: 09/2026\n      - heading \"Giao dịch theo mã\" [level=3]\n      - 'img \"Giao dịch theo mã: EURUSD: 20; GBPUSD: 20; XAUUSD: 20\"':\n        - generic: EURUSD\n        - strong: \"20\"\n        - generic: GBPUSD\n        - strong: \"20\"\n        - generic: XAUUSD\n        - strong: \"20\"\n        - generic: \"0\"\n        - generic: \"10\"\n        - generic: \"20\"\n  - complementary \"Thông báo thao tác\""
+  },
+  {
+    "case": "route-replay-demo-1280",
+    "data": {
+      "alerts": [],
+      "headings": [
+        "Phiên",
+        "London BreakoutBacktest",
+        "Mô tả",
+        "Giao dịch gần đây"
+      ],
+      "viewport": 1280,
+      "width": 1280
+    }
+  },
+  {
+    "case": "route-trade-filtered-1280",
+    "data": {
+      "alerts": [
+        [
+          "filtered-trades",
+          "Không có giao dịch khớp bộ lọc.Thử đổi phiên hoặc điều chỉnh bộ lọc để xem giao dịch."
+        ]
+      ],
+      "headings": [
+        "Giao dịch",
+        "Không có giao dịch khớp bộ lọc."
+      ],
+      "viewport": 1280,
+      "width": 1280
+    }
+  },
+  {
+    "case": "route-analytics-partial-1280",
+    "data": {
+      "alerts": [
+        [
+          "partial",
+          "báo cáo phân tích: chỉ tính trên phần dữ liệu đã đọc được."
+        ]
+      ],
+      "headings": [
+        "Phân tích",
+        "Lãi và lỗ",
+        "Kỳ vọng và hệ số lợi nhuận",
+        "Giao dịch thắng và thua",
+        "Hiệu suất theo hướng lệnh",
+        "Hiệu suất theo phiên thị trường",
+        "Hiệu suất theo giờ",
+        "Hiệu suất theo thứ",
+        "Hiệu suất theo tháng",
+        "Lịch hiệu suất"
+      ],
+      "viewport": 1280,
+      "width": 1280
+    }
+  },
+  {
+    "case": "route-playbook-demo-1280",
+    "data": {
+      "alerts": [],
+      "headings": [
+        "Chiến lược của tôi",
+        "London Breakout"
+      ],
+      "viewport": 1280,
+      "width": 1280
+    }
+  },
+  {
+    "case": "route-journal-demo-1280",
+    "data": {
+      "alerts": [],
+      "headings": [
+        "Nhật ký"
+      ],
+      "viewport": 1280,
+      "width": 1280
+    }
+  },
+  {
+    "case": "market-data-empty",
+    "content": "    - link \"Phân tích\":\n      - /url: /?workspace=tenant-a&view=analytics&demo=1&ui_state=empty&area=testing&section=analytics&select=1\n      - text: Phân tích\n    - link \"Kho dữ liệu\":\n      - /url: /?workspace=tenant-a&view=market-data&demo=1&ui_state=empty&area=testing&section=market-data\n      - text: Kho dữ liệu\n    - status\n    - status:\n      - generic: Bản xem thử\n      - strong: Chưa có dữ liệu\n    - button \"Chế độ xem dữ liệu\":\n      - generic: Chưa có dữ liệu\n  - region \"Kho dữ liệu\":\n    - searchbox \"Tìm tài sản\"\n    - button \"Danh mục\":\n      - generic: Tất cả danh mục\n    - button \"Nguồn dữ liệu\":\n      - generic: Tất cả nguồn\n    - button \"Trạng thái tải\":\n      - generic: Đã tải\n    - button \"Sắp xếp dữ liệu\":\n      - generic: Tên A–Z\n    - button \"Xóa bộ lọc\" [disabled]:\n      - text: Xóa bộ lọc\n    - button \"Nhập CSV\" [disabled]:\n      - text: Nhập CSV\n    - region \"Dataset catalog\":\n      - status:\n        - heading \"Chưa có dữ liệu đã tải\" [level=2]\n        - paragraph: Nhập CSV hoặc chọn nguồn dữ liệu để bắt đầu tải lịch sử.\n  - complementary \"Thông báo thao tác\""
+  },
+  {
+    "case": "mobile-overview",
+    "data": {
+      "contentWidth": 287,
+      "headings": [
+        "Tổng quan",
+        "Phiên gần đây",
+        "Hiệu suất"
+      ],
+      "overflow": [],
+      "viewport": 360,
+      "width": 360
+    }
+  },
+  {
+    "case": "mobile-replay",
+    "data": {
+      "contentWidth": 287,
+      "headings": [
+        "Phiên",
+        "London BreakoutBacktest",
+        "Mô tả"
+      ],
+      "overflow": [],
+      "viewport": 360,
+      "width": 360
+    }
+  },
+  {
+    "case": "mobile-trade",
+    "data": {
+      "contentWidth": 302,
+      "headings": [
+        "Giao dịch",
+        "Không có giao dịch khớp bộ lọc."
+      ],
+      "overflow": [
+        [
+          "wm-page as-page",
+          270,
+          286
+        ]
+      ],
+      "viewport": 360,
+      "width": 360
+    }
+  },
+  {
+    "case": "mobile-analytics",
+    "data": {
+      "contentWidth": 287,
+      "headings": [
+        "Phân tích",
+        "Lãi và lỗ",
+        "Kỳ vọng và hệ số lợi nhuận"
+      ],
+      "overflow": [
+        [
+          "wm-page as-page",
+          255,
+          271
+        ]
+      ],
+      "viewport": 360,
+      "width": 360
+    }
+  },
+  {
+    "case": "mobile-playbook",
+    "data": {
+      "contentWidth": 287,
+      "headings": [
+        "Chiến lược của tôi",
+        "London Breakout"
+      ],
+      "overflow": [],
+      "viewport": 360,
+      "width": 360
+    }
+  },
+  {
+    "case": "mobile-journal",
+    "data": {
+      "contentWidth": 287,
+      "headings": [
+        "Nhật ký"
+      ],
+      "overflow": [],
+      "viewport": 360,
+      "width": 360
+    }
+  },
+  {
+    "case": "real-chart-order-readonly",
+    "bodyOverflow": "hidden",
+    "dialogs": 1,
+    "disabled": 11,
+    "modalWidth": 640
+  },
+  {
+    "case": "chart-goto-calendar-first-escape",
+    "calendar": false,
+    "focus": "Chọn ngày",
+    "parent": true
+  },
+  {
+    "case": "clamped-datetime-visible-and-value",
+    "display": "20/10/2026 09:00",
+    "time": "09:00"
+  },
+  {
+    "case": "touch-clearable-and-reduced-motion",
+    "clear": {
+      "h": 44,
+      "w": 44,
+      "x": 230
+    },
+    "inputTransition": "0s",
+    "modalAnimation": "none",
+    "picker": {
+      "h": 44,
+      "w": 44,
+      "x": 274
+    },
+    "reduced": true
+  },
+  {
+    "case": "portal-checkbox-keyboard-focus",
+    "active": "<input type=\"checkbox\">",
+    "outline": "solid",
+    "outlineWidth": "2px"
+  },
+  {
+    "case": "real-session-assets-no-bulk-bypass",
+    "allButtons": 0,
+    "dialog": true,
+    "options": 2
+  },
+  {
+    "case": "additional-route-dark-768-settings",
+    "alerts": [],
+    "scrollWidth": 768,
+    "title": "Settings",
+    "width": 768
+  },
+  {
+    "case": "additional-route-dark-768-live",
+    "alerts": [],
+    "scrollWidth": 768,
+    "title": "Trực tiếp",
+    "width": 768
+  },
+  {
+    "case": "additional-route-dark-768-learn",
+    "alerts": [],
+    "scrollWidth": 768,
+    "title": "Học & thuật ngữ",
+    "width": 768
+  },
+  {
+    "case": "additional-route-dark-768-research",
+    "alerts": [],
+    "scrollWidth": 768,
+    "title": "Research",
+    "width": 768
+  },
+  {
+    "case": "additional-route-dark-768-risk",
+    "alerts": [],
+    "scrollWidth": 768,
+    "title": "Risk & giới hạn",
+    "width": 768
+  },
+  {
+    "case": "prop-entry-dark-768",
+    "dialog": "_r_7_-title",
+    "propTab": "Prop Firm",
+    "scrollWidth": 768,
+    "url": "http://127.0.0.1:5182/?workspace=tenant-a&view=overview&create=prop",
+    "width": 768
+  },
+  {
+    "case": "additional-route-dark-360-settings",
+    "scrollWidth": 360,
+    "title": "Settings",
+    "width": 360
+  },
+  {
+    "case": "additional-route-dark-360-live",
+    "scrollWidth": 360,
+    "title": "Trực tiếp",
+    "width": 360
+  },
+  {
+    "case": "additional-route-dark-360-learn",
+    "scrollWidth": 360,
+    "title": "Học & thuật ngữ",
+    "width": 360
+  },
+  {
+    "case": "additional-route-dark-360-research",
+    "scrollWidth": 360,
+    "title": "Research",
+    "width": 360
+  },
+  {
+    "case": "additional-route-dark-360-risk",
+    "scrollWidth": 360,
+    "title": "Risk & giới hạn",
+    "width": 360
+  },
+  {
+    "case": "resource-popup-touch",
+    "h": 70.78125,
+    "open": true,
+    "targetHeight": 44,
+    "w": 280,
+    "withinViewport": true,
+    "x": 16,
+    "y": 483.828125
+  },
+  {
+    "case": "production-preview-5180",
+    "bodyLocked": "hidden",
+    "modalWidth": 440,
+    "pickerOutline": "none",
+    "script": "http://127.0.0.1:5180/assets/index-DZudBlQh.js",
+    "theme": "dark"
+  },
+  {
+    "case": "production-dashboard-ready",
+    "bodyOverflow": "",
+    "dialogs": 0,
+    "heading": "Tổng quan"
+  }
+]

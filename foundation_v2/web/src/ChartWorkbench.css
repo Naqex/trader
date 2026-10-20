@@ -409,7 +409,7 @@ button.chart-order-level { cursor: ns-resize; touch-action: none; }
 .legacy-object-row:hover { background:var(--chart-hover); }
 .legacy-object-row.is-hidden > button:first-child { color:var(--chart-muted); }
 .legacy-object-tree p { padding:12px; color:var(--chart-muted); }
-.legacy-order-overlay { --chart-bg:var(--project-surface); --chart-text:var(--project-text); --chart-muted:var(--project-muted); --chart-line:var(--project-border); --chart-hover:var(--project-hover); --chart-surface:var(--project-surface); z-index:11000; }
+.legacy-order-overlay { --chart-bg:var(--project-surface); --chart-text:var(--project-text); --chart-muted:var(--project-muted); --chart-line:var(--project-border); --chart-hover:var(--project-hover); --chart-surface:var(--project-surface); }
 .legacy-order-modal { width:min(640px,100%); }
 .legacy-order-modal h2 { font-weight:var(--ds-weight-heading,600); }
 .legacy-order-modal button { border:0; padding:9px 14px; background:transparent; color:inherit; font:inherit; cursor:pointer; }

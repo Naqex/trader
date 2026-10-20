@@ -1,5 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { dateFieldDisplay, parseDateField } from './dateFormat.js'
+import { boundedDateTimeValue } from './projectDateInputModel.js'
 import { useTestingLocale } from './testingLocale.jsx'
 import './project-date-input.css'
 
@@ -18,13 +19,6 @@ function yearStart(month) { return Math.floor(monthDate(month).getUTCFullYear() 
 function monthAllowed(month, min, max) { const first = `${month}-01`, last = `${month}-${String(lastDayOfMonth(month)).padStart(2, '0')}`; return (!max || first <= datePart(max)) && (!min || last >= datePart(min)) }
 function yearAllowed(year, min, max) { const first = `${year}-01-01`, last = `${year}-12-31`; return (!max || first <= datePart(max)) && (!min || last >= datePart(min)) }
 function formatPickerValue(date, time, type) { const display = date.split('-').reverse().join('/'); return type === 'date' ? display : `${display} ${time || '00:00'}` }
-function boundedDateTimeValue(date, time, min, max) {
-  const candidate = formatPickerValue(date, time, 'datetime-local')
-  if (isDateTimeAllowed(candidate, min, max)) return candidate
-  if (max && datePart(max) === date && candidate > stripZone(max)) return formatPickerValue(date, timePart(max), 'datetime-local')
-  if (min && datePart(min) === date && candidate < stripZone(min)) return formatPickerValue(date, timePart(min), 'datetime-local')
-  return candidate
-}
 function isDateAllowed(date, min, max) { const lower = datePart(min), upper = datePart(max); return (!lower || date >= lower) && (!upper || date <= upper) }
 function isDateTimeAllowed(value, min, max) { const candidate = stripZone(value), lower = stripZone(min), upper = stripZone(max); return (!lower || candidate >= lower) && (!upper || candidate <= upper) }
 
@@ -43,6 +37,8 @@ export default function ProjectDateInput({ value = '', onChange, type = 'date', 
   const [open, setOpen] = useState(false)
   const emitted = useRef(value), root = useRef(null), text = useRef(null), trigger = useRef(null), popover = useRef(null)
   const popoverId = useId()
+
+  useEffect(() => { if (props.disabled) setOpen(false) }, [props.disabled])
 
   useEffect(() => {
     if (value !== emitted.current) {
@@ -63,17 +59,18 @@ export default function ProjectDateInput({ value = '', onChange, type = 'date', 
   }, [min, max, draft, type, t])
 
   useEffect(() => {
-    if (!open) return undefined
-    const closeOnOutside = event => { if (!root.current?.contains(event.target)) { setOpen(false); trigger.current?.focus() } }
-    const closeOnEscape = event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setOpen(false); trigger.current?.focus() } }
+    if (!open || props.disabled) return undefined
+    const closeOnOutside = event => { if (!root.current?.contains(event.target)) { setOpen(false) } }
+    const closeOnEscape = event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setOpen(false); trigger.current?.focus({ preventScroll: true }) } }
     document.addEventListener('pointerdown', closeOnOutside)
-    document.addEventListener('keydown', closeOnEscape)
+    const field = root.current
+    field.addEventListener('keydown', closeOnEscape)
     popover.current?.querySelector('button:not(:disabled), input:not(:disabled)')?.focus({ preventScroll: true })
-    return () => { document.removeEventListener('pointerdown', closeOnOutside); document.removeEventListener('keydown', closeOnEscape) }
-  }, [open])
+    return () => { document.removeEventListener('pointerdown', closeOnOutside); field.removeEventListener('keydown', closeOnEscape) }
+  }, [open, props.disabled])
 
   useLayoutEffect(() => {
-    if (!open) return undefined
+    if (!open || props.disabled) return undefined
     const panel = popover.current
     // The top layer keeps the calendar out of scrolling forms and sticky footers.
     panel.showPopover()
@@ -96,7 +93,7 @@ export default function ProjectDateInput({ value = '', onChange, type = 'date', 
     window.addEventListener('resize', position)
     document.addEventListener('scroll', position, true)
     return () => { observer.disconnect(); window.removeEventListener('resize', position); document.removeEventListener('scroll', position, true); if (panel.matches(':popover-open')) panel.hidePopover() }
-  }, [open])
+  }, [open, props.disabled])
 
   const publish = (event, raw) => {
     const parsed = parseDateField(raw, type)
@@ -126,6 +123,7 @@ export default function ProjectDateInput({ value = '', onChange, type = 'date', 
     setPickerView('day')
     const nextTime = timeOverride || pickerTime || (type === 'datetime-local' ? '00:00' : '')
     const raw = type === 'datetime-local' ? boundedDateTimeValue(date, nextTime, min, max) : formatPickerValue(date, nextTime, type)
+    if (type === 'datetime-local') setPickerTime(timePart(parseDateField(raw, type)))
     setDraft(raw)
     publish({ type: 'change' }, raw)
     if (type === 'date') { setOpen(false); text.current?.focus() }
@@ -146,6 +144,25 @@ export default function ProjectDateInput({ value = '', onChange, type = 'date', 
   const monthDays = lastDayOfMonth(viewMonth)
   const firstWeekday = parsedMonth.getUTCDay()
   const minDate = datePart(min), maxDate = datePart(max)
+  const tabDate = pickerDate.startsWith(viewMonth) && isDateAllowed(pickerDate, min, max) ? pickerDate : minDate?.startsWith(viewMonth) ? minDate : `${viewMonth}-01`
+  const firstTabMonth = Math.max(0, Number((minDate?.startsWith(viewMonth.slice(0,4)) ? minDate : `${viewMonth.slice(0,4)}-01-01`).slice(5,7)) - 1)
+  const firstTabYear = Math.max(decadeStart, Number(minDate?.slice(0,4)) || decadeStart)
+  const gridKeys = event => {
+    if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key) || event.target.getAttribute('role') !== 'gridcell') return
+    event.preventDefault()
+    const cells = [...event.currentTarget.querySelectorAll('[role=gridcell]')], index = cells.indexOf(event.target)
+    const columns = pickerView === 'day' ? 7 : pickerView === 'month' ? 3 : 2
+    const offset = pickerView === 'day' ? firstWeekday : 0
+    const column = (index + offset) % columns
+    let next = event.key === 'Home' ? Math.max(0, index - column) : event.key === 'End' ? Math.min(cells.length - 1, index + columns - column - 1)
+      : index + ({ ArrowLeft:-1, ArrowRight:1, ArrowUp:-columns, ArrowDown:columns })[event.key]
+    const direction = next < index ? -1 : 1
+    while (cells[next]?.disabled) next += direction
+    if (!cells[next]) return
+    event.target.tabIndex = -1
+    cells[next].tabIndex = 0
+    cells[next].focus({ preventScroll: true })
+  }
   const prevDisabled = pickerView === 'day'
     ? Boolean(minDate && viewMonth <= minDate.slice(0, 7))
     : pickerView === 'month'
@@ -177,15 +194,15 @@ export default function ProjectDateInput({ value = '', onChange, type = 'date', 
     }} />
     {clearable && <button type="button" className="project-date-clear" aria-label={`${t('Xóa ngày')} · ${props['aria-label'] || ''}`} disabled={props.disabled || !draft} onClick={event => { setDraft(''); publish(event, ''); text.current?.focus() }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button>}
     <button ref={trigger} type="button" className="project-date-picker" aria-label={pickerLabel} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? popoverId : undefined} disabled={props.disabled} onClick={openPicker}><CalendarIcon /></button>
-    {open && <div ref={popover} id={popoverId} className="project-date-popover" popover="manual" role="dialog" aria-label={pickerLabel}>
+    {open && !props.disabled && <div ref={popover} id={popoverId} className="project-date-popover" popover="manual" role="dialog" aria-label={pickerLabel}>
       {type === 'time' ? <div className="project-date-time-panel"><label><span className="project-date-visually-hidden">{t('Giờ')}</span><input aria-label={t('Giờ')} type="time" step={step || '60'} value={draft || ''} onInput={chooseTime} onChange={chooseTime} /></label></div> : <>
         <div className="project-date-popover-heading"><button type="button" aria-label={t(pickerView === 'day' ? 'Previous month' : pickerView === 'month' ? 'Previous year' : 'Previous decade')} disabled={prevDisabled} onClick={movePrevious}><Chevron direction="prev" /></button><div className="project-date-heading-content">{heading}</div><button type="button" aria-label={t(pickerView === 'day' ? 'Next month' : pickerView === 'month' ? 'Next year' : 'Next decade')} disabled={nextDisabled} onClick={moveNext}><Chevron direction="next" /></button></div>
-        {pickerView === 'day' && <div className="project-date-calendar" role="grid" aria-label={pickerLabel}>{WEEKDAYS.map(day => <span key={day} role="columnheader">{t(day)}</span>)}{Array.from({ length: firstWeekday }, (_, index) => <span key={`empty-${index}`} aria-hidden="true" />)}{Array.from({ length: monthDays }, (_, index) => {
+        {pickerView === 'day' && <div className="project-date-calendar" role="grid" aria-label={pickerLabel} onKeyDown={gridKeys}>{WEEKDAYS.map(day => <span key={day} role="columnheader">{t(day)}</span>)}{Array.from({ length: firstWeekday }, (_, index) => <span key={`empty-${index}`} aria-hidden="true" />)}{Array.from({ length: monthDays }, (_, index) => {
           const date = `${viewMonth}-${String(index + 1).padStart(2, '0')}`, disabled = !isDateAllowed(date, min, max), selected = date === datePart(value), current = date === todayIso()
-          return <button key={date} type="button" role="gridcell" aria-label={dateFieldDisplay(date, 'date')} aria-pressed={selected} aria-current={current ? 'date' : undefined} disabled={disabled} className={`${selected ? 'is-selected' : ''}${current ? ' is-today' : ''}`} onClick={() => chooseDate(date)}>{index + 1}</button>
+          return <button key={date} type="button" role="gridcell" tabIndex={date === tabDate ? 0 : -1} aria-label={dateFieldDisplay(date, 'date')} aria-pressed={selected} aria-current={current ? 'date' : undefined} disabled={disabled} className={`${selected ? 'is-selected' : ''}${current ? ' is-today' : ''}`} onClick={() => chooseDate(date)}>{index + 1}</button>
         })}</div>}
-        {pickerView === 'month' && <div className="project-date-month-grid" role="grid" aria-label={t('Chọn tháng')}>{Array.from({ length: 12 }, (_, index) => { const month = `${viewMonth.slice(0, 4)}-${String(index + 1).padStart(2, '0')}`, selected = month === selectedMonth; return <button key={month} type="button" role="gridcell" aria-pressed={selected} disabled={!monthAllowed(month, min, max)} className={selected ? 'is-selected' : ''} onClick={() => chooseMonth(month)}>{monthDate(month).toLocaleDateString(locale, { month: 'short', timeZone: 'UTC' })}</button> })}</div>}
-        {pickerView === 'year' && <div className="project-date-year-grid" role="grid" aria-label={t('Chọn năm')}>{Array.from({ length: 10 }, (_, index) => { const year = decadeStart + index, selected = year === selectedYear; return <button key={year} type="button" role="gridcell" aria-pressed={selected} disabled={!yearAllowed(year, min, max)} className={selected ? 'is-selected' : ''} onClick={() => chooseYear(year)}>{year}</button> })}</div>}
+        {pickerView === 'month' && <div className="project-date-month-grid" onKeyDown={gridKeys} role="grid" aria-label={t('Chọn tháng')}>{Array.from({ length: 12 }, (_, index) => { const month = `${viewMonth.slice(0, 4)}-${String(index + 1).padStart(2, '0')}`, selected = month === selectedMonth; return <button key={month} type="button" role="gridcell" tabIndex={index === firstTabMonth ? 0 : -1} aria-pressed={selected} disabled={!monthAllowed(month, min, max)} className={selected ? 'is-selected' : ''} onClick={() => chooseMonth(month)}>{monthDate(month).toLocaleDateString(locale, { month: 'short', timeZone: 'UTC' })}</button> })}</div>}
+        {pickerView === 'year' && <div className="project-date-year-grid" onKeyDown={gridKeys} role="grid" aria-label={t('Chọn năm')}>{Array.from({ length: 10 }, (_, index) => { const year = decadeStart + index, selected = year === selectedYear; return <button key={year} type="button" role="gridcell" tabIndex={year === firstTabYear ? 0 : -1} aria-pressed={selected} disabled={!yearAllowed(year, min, max)} className={selected ? 'is-selected' : ''} onClick={() => chooseYear(year)}>{year}</button> })}</div>}
         {type === 'datetime-local' && <label className="project-date-time-field"><span className="project-date-visually-hidden">{t('Giờ')}</span><input aria-label={t('Giờ')} type="time" step={step || '60'} value={selectedTime} onInput={chooseTime} onChange={chooseTime} /></label>}
       </>}
       <footer className="project-date-popover-footer"><button type="button" onClick={() => chooseDate(todayIso(), type === 'datetime-local' && todayTime === 'end-of-day' ? '23:59' : null)} disabled={type === 'time' || !isDateAllowed(todayIso(), min, max)}>{t('Hôm nay')}</button><span />{clearable && <button type="button" onClick={event => { setDraft(''); publish(event, ''); setOpen(false); text.current?.focus() }}>{t('Clear')}</button>}<button type="button" className="is-primary" onClick={() => { setOpen(false); text.current?.focus() }}>{t('Xong')}</button></footer>

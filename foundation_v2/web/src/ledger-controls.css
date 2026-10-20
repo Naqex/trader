@@ -39,10 +39,6 @@
 .fxa-detail-button svg{width:16px;height:16px;display:block;margin:auto}
 
 .fxl-choices label:has(input:disabled){color:var(--wm-content-muted);cursor:default;opacity:.6}
-.fxl-filter-drawer .project-date-input.is-clearable input[type=text]{padding-right:68px}
-.fxl-filter-drawer .project-date-clear{position:absolute;right:34px;top:2px;bottom:2px;width:32px;display:grid;place-items:center;padding:0;border:0;background:transparent;color:var(--wm-content-muted);cursor:pointer}
-.fxl-filter-drawer .project-date-clear:hover:not(:disabled){color:var(--wm-content);background:var(--wm-hover)}
-.fxl-filter-drawer .project-date-clear:disabled{opacity:.35;cursor:default}
 
 .fxl-session-scope{display:flex;align-items:center;gap:12px;min-width:0;max-width:100%;flex:0 1 auto}
 .fxl-session-scope > .fxa-session-filter{flex:1;min-width:0}

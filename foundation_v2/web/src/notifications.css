@@ -1,4 +1,4 @@
-.wm-notifications { position:fixed; inset:16px 16px auto auto; display:grid; gap:8px; width:min(300px,calc(100vw - 32px)); z-index:120; pointer-events:none; }
+.wm-notifications { position:fixed; inset:16px 16px auto auto; display:grid; gap:8px; width:min(300px,calc(100vw - 32px)); z-index:var(--wm-layer-notification,12000); pointer-events:none; }
 .fx-app .wm-notification { display:flex; align-items:center; gap:12px; padding:10px 12px; border:1px solid var(--wm-border-strong); border-radius:var(--ds-radius-field); background:var(--wm-popup); color:var(--wm-content); pointer-events:auto; box-shadow:0 8px 24px rgb(0 0 0 / 24%); }
 .wm-notification p { margin:0; flex:1; font-size:13px; line-height:20px; overflow-wrap:anywhere; }
 .wm-notification-content { display:grid; min-width:0; flex:1; gap:2px; font-size:13px; line-height:18px; }

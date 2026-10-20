@@ -25,7 +25,7 @@ export default function DatasetAssetSelect({ datasets, instruments, sessions, va
   }
   const selected = options.filter(option => value.includes(option.value))
   const categories = [...CATEGORIES, ...(options.some(option => !option.category) ? [['', 'Chưa phân loại']] : [])]
-  return <FxSelect {...triggerProps} searchable multiple closeOnSelect selectedTags={selected} label="Chọn tài sản" value={value} onChange={choose} disabled={disabled}
+  return <FxSelect {...triggerProps} searchable multiple showSelectAll={false} closeOnSelect selectedTags={selected} label="Chọn tài sản" value={value} onChange={choose} disabled={disabled}
     className={`is-field dataset-asset-select${selected.length ? '' : ' is-placeholder'}`} localizeOptions={false}
     triggerContent={selected.length ? '' : t('Chọn tài sản')}
     placeholder="Tìm mã hoặc tên tài sản…" emptyLabel="Không có dữ liệu đã tải phù hợp."

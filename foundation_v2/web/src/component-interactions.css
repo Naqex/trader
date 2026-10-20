@@ -1,5 +1,5 @@
 /* Interaction states belong to controls and selected records, not page wrappers. */
-.fx-app.fx-shell-story, .legacy-order-overlay, .legacy-scalper-settings {
+.fx-app.fx-shell-story, .legacy-order-overlay, .legacy-scalper-settings, .wm-ui-portal {
   --wm-control-radius: var(--ds-radius-pill);
   --wm-control-height: var(--ds-control);
   --wm-control-text: var(--project-text);

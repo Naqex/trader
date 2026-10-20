@@ -10,7 +10,6 @@
 @media (pointer:coarse) { .chart-order-close-dialog footer .wm-button { min-height:44px; } }
 
 .legacy-modal.partial-close-dialog { width:min(560px,100%); }
-.legacy-modal-overlay:has(> .partial-close-dialog) { z-index:11000; }
 .partial-close-dialog .legacy-order-form { --partial-inset:var(--wm-space-6,24px); padding:var(--partial-inset) 0 0; gap:var(--partial-inset); }
 .partial-close-dialog .legacy-order-form > :not(footer) { margin-inline:var(--partial-inset); }
 .partial-close-dialog .legacy-order-form footer { margin:0; padding:var(--partial-inset); border-top:1px solid var(--project-border); }

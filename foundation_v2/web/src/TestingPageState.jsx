@@ -85,14 +85,15 @@ export function TestingResourceStatus({ state, resource, recovery, detail, textS
       const anchor = node.querySelector('summary').getBoundingClientRect()
       const width = Math.min(280, window.innerWidth - 32)
       const height = node.querySelector('.wm-resource-status-detail').offsetHeight
-      setPosition({ width, left: Math.max(16, Math.min(anchor.right - width, window.innerWidth - width - 16)), top: anchor.bottom + height + 8 > window.innerHeight ? Math.max(16, anchor.top - height - 8) : anchor.bottom + 8 })
+      setPosition({ width, maxHeight: window.innerHeight - 32, overflowY: 'auto', left: Math.max(16, Math.min(anchor.right - width, window.innerWidth - width - 16)), top: anchor.bottom + height + 8 > window.innerHeight ? Math.max(16, anchor.top - height - 8) : anchor.bottom + 8 })
     }
     const dismiss = event => { const node = element.current; if (node && !node.contains(event.target)) node.open = false }
     update()
     window.addEventListener('resize', update)
     document.addEventListener('scroll', update, true)
     document.addEventListener('pointerdown', dismiss)
-    return () => { window.removeEventListener('resize', update); document.removeEventListener('scroll', update, true); document.removeEventListener('pointerdown', dismiss) }
+    document.addEventListener('focusin', dismiss)
+    return () => { window.removeEventListener('resize', update); document.removeEventListener('scroll', update, true); document.removeEventListener('pointerdown', dismiss); document.removeEventListener('focusin', dismiss) }
   }, [open, hasMessage])
   const messages = {
     refreshing: t('Đang cập nhật {resource}…', { resource: t(resource) }),
@@ -102,7 +103,7 @@ export function TestingResourceStatus({ state, resource, recovery, detail, textS
   const message = detail || messages[state]
   if (textSummary && (!message || state === 'refreshing')) return null
   return <span className={`wm-resource-status-slot${textSummary ? ' is-text' : ''}`}>
-    {message && <details ref={element} className={`wm-resource-status is-${state}`} data-resource-state={state} aria-busy={state === 'refreshing'} onToggle={event => setOpen(event.currentTarget.open)} onKeyDown={event => { if (event.key === 'Escape') event.currentTarget.open = false }}>
+    {message && <details ref={element} className={`wm-resource-status is-${state}`} data-resource-state={state} aria-busy={state === 'refreshing'} onToggle={event => setOpen(event.currentTarget.open)} onKeyDown={event => { if (event.key === 'Escape' && event.currentTarget.open) { event.preventDefault(); event.stopPropagation(); event.currentTarget.open = false; event.currentTarget.querySelector('summary').focus({ preventScroll: true }) } }}>
       <summary aria-label={t(message)} title={t(message)}>{textSummary ? t(state === 'partial' ? 'Dữ liệu một phần.' : 'Dữ liệu chưa cập nhật.') : <TestingIcon kind={state === 'refreshing' ? 'history' : 'info'} size={16} />}</summary>
       <div className="wm-resource-status-detail" style={position} role="status"><p>{t(message)}</p><ReadRecoveryStatus recovery={recovery} /></div>
     </details>}

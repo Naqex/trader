@@ -75,3 +75,14 @@
 @media(max-width:480px), (pointer:coarse) {
   .wm-reference-choices label { min-height:var(--ds-touch); }
 }
+
+.wm-reference-portal-dialog .wm-reference-overlay-fields { display:grid; gap:16px; padding:24px; }
+.wm-reference-overlay-fields > label { display:grid; gap:8px; }
+.wm-reference-overlay-fields > label:has(input[type=checkbox]) { display:flex; align-items:center; }
+.wm-reference-portal-dialog > p { padding:0 24px; }
+.wm-reference-portal-dialog > footer { display:flex; justify-content:flex-end; padding:16px 24px; }
+.wm-reference-portal-dialog .wm-button { min-height:var(--wm-control-height); padding:7px 12px; border:1px solid var(--project-border); border-radius:var(--ds-radius-pill); background:transparent; color:var(--project-text); font:inherit; cursor:pointer; }
+.wm-reference-portal-dialog .wm-button:hover { background:var(--project-hover); }
+.wm-reference-portal-dialog .wm-button.is-primary { border-color:transparent; background:var(--project-action); color:var(--project-on-action); }
+.wm-reference-portal-dialog .wm-button.is-primary:hover { background:var(--project-action-hover); }
+.wm-reference-portal-dialog .wm-reference-controls { display:flex; flex-wrap:wrap; gap:8px; }

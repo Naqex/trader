@@ -262,6 +262,48 @@ hiện nhiều dòng; calendar là ô ngày lớn; chip remove và nút lịch l
 trong một composite field. Cần kiểm tra cả vùng bấm khi dùng cảm ứng. Những phần
 vendor nội bộ không được mô tả là đã refactor source.
 
+## Portal, dialog, popover và ô ngày
+
+Đây là adapter của WMREPLAY, không đổi snapshot `annam-compact@0.1.1`.
+Mẫu chạy tại `?area=testing&ui_reference=1`, mục **Lớp nổi**.
+
+| Thành phần | Owner và hành vi |
+| --- | --- |
+| Dialog React dùng portal | `LegacyModal` sở hữu stack, backdrop, khóa scroll nền, inert nền và focus. Chỉ dialog trên cùng nhận Escape/Tab; đóng dialog con trả focus về control trong dialog cha. Lớp cuối đóng mới khôi phục nền. |
+| Dialog lệnh | Dùng `LegacyModal`; form, validation, cutoff chỉ đọc và engine vẫn do order model/panel sở hữu. Không tạo focus trap thứ hai trong consumer. |
+| Dialog native | Giữ `showModal()` và top layer của trình duyệt; không thay bằng portal chỉ để đồng nhất source. |
+| Popover | `LegacyPopover` bám anchor khi scroll/resize, đảo lên trên khi cần, chừa mép viewport8px và cuộn nội dung dài. Trong dialog, portal nằm trong dialog đó để không rơi ra ngoài vùng inert/top layer. |
+| Select | `FxSelect`; ô form dùng `is-field`. Mũi tên/Home/End chọn mục khả dụng, Escape đóng select trước dialog, Tab ra khỏi select theo thứ tự form. Disabled không mở menu và đóng menu đang mở. |
+| Multi-select có ràng buộc domain | Dùng `showSelectAll={false}` nếu chọn hàng loạt không được domain hỗ trợ. Dataset picker vẫn kiểm tra từng tài sản; không dùng “Chọn tất cả” để đi vòng giới hạn. |
+| Ngày/giờ | `ProjectDateInput` giữ ISO ở form boundary, hiển thị dd/mm/yyyy. So sánh min/max bằng ISO trước khi format; giờ hiển thị trong lịch phải khớp giá trị đã phát ra sau clamp. Mũi tên/Home/End di chuyển trong grid hiện tại, không tự chuyển tháng. |
+| Resource status | Popup giải thích trạng thái có mép16px, giới hạn chiều cao, đóng khi click/focus ra ngoài. Escape chỉ consume khi popup đang mở. Không thay dữ liệu cũ bằng empty khi refresh. |
+
+Escape thuộc lớp nhỏ nhất đang thao tác: lịch → menu → dialog. Handler cha
+phải tôn trọng `defaultPrevented`; không bắt phím mũi tên của grid/input con.
+Click ngoài chuyển focus tới đích người dùng vừa chọn; chỉ Escape/đóng dialog
+mới chủ động trả focus về control mở. Opener đã bị gỡ hoặc nằm trong vùng inert
+không được nhận focus.
+
+Portal ngoài `.fx-app` phải mang `.wm-ui-portal` và `data-theme` để nhận alias
+màu, control, focus và reduced motion. CSS nền của modal/popover được import
+bởi chính component; không phụ thuộc việc chart đã tải CSS trước hay chưa.
+Không chồng outline/shadow lên border focus của field; nút X hover chỉ đổi màu
+icon. Trên touch/mobile, nút lịch và xoá ngày có vùng bấm riêng44×44px, input
+chừa chỗ cho cả hai; calendar day và menu row cao ít nhất44px.
+
+Layer riêng của project: `--wm-layer-chart-popup:10000`,
+`--wm-layer-modal:11000` (tăng theo stack), `--wm-layer-notification:12000`.
+Native dialog/calendar dùng top layer; tăng z-index không thay thế được quy tắc
+top layer. Không tăng số riêng ở từng consumer để chữa lỗi chồng lớp.
+
+LegacyModal nhỏ dùng440px, order640px; viewport luôn có khoảng hở. Header
+sticky, modal cũ cuộn cả panel; dialog tạo phiên có vùng body/footer riêng vẫn
+giữ anatomy đó. Không coi mọi dialog đã chuyển sang body-only scroll. Motion
+dùng token menu160ms/dialog220ms, reduced motion tắt cả portal bên ngoài shell.
+
+Kiểm chứng và giới hạn của lượt rà soát:
+[UI-system audit 20/10/2026](../foundation_v2/evidence/ui-system-audit-20261020/CHECKPOINT.md).
+
 ## Dùng cho tính năng sau này
 
 Đã có contract cho button, text action, icon action, field, select, checkbox/radio,

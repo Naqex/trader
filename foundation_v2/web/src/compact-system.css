@@ -85,3 +85,22 @@
     animation:none !important; transition:none !important; scroll-behavior:auto !important;
   }
 }
+
+/* Project overlays can live outside the shell; shared snapshot pins stay intact. */
+:root { --wm-layer-chart-popup:10000; --wm-layer-modal:11000; --wm-layer-notification:12000; }
+.wm-ui-portal { --wm-content:var(--project-text); --wm-content-muted:var(--project-muted); --wm-border:var(--project-border); --wm-border-strong:var(--project-border-strong); color-scheme:dark; }
+.wm-ui-portal[data-theme=light] { color-scheme:light; }
+.wm-ui-portal .fx-select-menu { border-radius:var(--ds-radius-menu); animation:wm-menu-enter var(--ds-motion-menu) var(--ds-ease-enter); }
+.wm-ui-portal .fx-select.is-field .fx-select-trigger { border-radius:var(--ds-radius-field); }
+.wm-ui-portal .fx-select-trigger:focus-visible { border-color:var(--project-primary); outline:none; box-shadow:none; }
+@media(max-width:480px),(pointer:coarse) {
+  .wm-ui-portal { --wm-control-height:var(--ds-touch); }
+  .fx-app.fx-shell-story[data-theme] .wm-resource-status-slot:not(.is-text) { width:44px; height:44px; flex-basis:44px; }
+  .fx-app.fx-shell-story[data-theme] .wm-connection-note { flex-basis:44px; }
+  .fx-app.fx-shell-story[data-theme] .wm-resource-status > summary { min-width:44px; height:44px; }
+  .fx-app.fx-shell-story[data-theme] .wm-resource-status-slot.is-text { height:44px; }
+  .fx-app.fx-shell-story[data-theme] .wm-resource-status-slot.is-text summary { line-height:44px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .wm-ui-portal, .wm-ui-portal *, .wm-ui-portal *::before, .wm-ui-portal *::after { animation:none !important; transition:none !important; scroll-behavior:auto !important; }
+}

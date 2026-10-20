@@ -1,0 +1,102 @@
+[
+  {
+    "path": "foundation_v2/web/public/chart-controls.css",
+    "sha256": "303b86cb44e52c520395b6815744455c7cad739d7a8dd27643b368b64709ce35"
+  },
+  {
+    "path": "foundation_v2/web/src/ChartWorkbench.css",
+    "sha256": "126fdb56e627f0442f2a53a89cab02d8ac76db4592b84be41569d7bbac100b45"
+  },
+  {
+    "path": "foundation_v2/web/src/DatasetAssetSelect.jsx",
+    "sha256": "50bd0ac8c70538808e2498774ccfdd40cc7ac2f2a991a52867d8bdc3389c4890"
+  },
+  {
+    "path": "foundation_v2/web/src/FxSelect.jsx",
+    "sha256": "eb936818a032b8383720ed428095824a4313c6b18e8d7be914f121832ccdb3f1"
+  },
+  {
+    "path": "foundation_v2/web/src/LegacyModal.jsx",
+    "sha256": "1593cbfe86373f17c917019d306758e32d7ce89b8554b178f6334b2b32cc8224"
+  },
+  {
+    "path": "foundation_v2/web/src/LegacyModal.css",
+    "sha256": "b6655cf2e821e7a184d7ed3fbb4878572bf92d59a30a934dc9ab06dee9cc2f93"
+  },
+  {
+    "path": "foundation_v2/web/src/LegacyOrderDialog.jsx",
+    "sha256": "0c8b0a427f67510614ca947233e65ec1f3458e55d869a9fbe805c97394fa1e72"
+  },
+  {
+    "path": "foundation_v2/web/src/LegacyPopover.jsx",
+    "sha256": "bec2736af8e27a8c23278d8612bd253b022fd2e51882ec1bbf72be366a4a7633"
+  },
+  {
+    "path": "foundation_v2/web/src/LegacyPopover.css",
+    "sha256": "6abf7d722d63c23885c03cac56b72a7dc48b3d4230bd83b2e41233da0f8c1d26"
+  },
+  {
+    "path": "foundation_v2/web/src/LegacyTradingBar.css",
+    "sha256": "57b8f7d94c1b601e27f540b59f4f396c9e091fbee06a4fef73e26ce3e725443d"
+  },
+  {
+    "path": "foundation_v2/web/src/ProjectDateInput.jsx",
+    "sha256": "54828ae5fd3d30b28fb4eec6f11da43f301e065d0c2d4c7356a10dadd02bfd55"
+  },
+  {
+    "path": "foundation_v2/web/src/projectDateInputModel.js",
+    "sha256": "6f78aef8cdef8f2f698de65449fb65d545ed97a259b732816e0356fb585cece4"
+  },
+  {
+    "path": "foundation_v2/web/tests/projectDateInputModel.test.mjs",
+    "sha256": "38c946f046846b50663394d05ee60950264a36cb6e91de048bed19a54d8af915"
+  },
+  {
+    "path": "foundation_v2/web/src/TestingComponentReference.jsx",
+    "sha256": "ea87da4695e0e6ae0c3b22dccf906a730fe2067405cad2633c26a5fc9286b1b1"
+  },
+  {
+    "path": "foundation_v2/web/src/TestingPageState.jsx",
+    "sha256": "a91461672c6bd5f9488bc570a1c540feb6f88041e462af96e41037911eaae2b1"
+  },
+  {
+    "path": "foundation_v2/web/src/chart-order-close.css",
+    "sha256": "6b13fad64ee46879836b3c81adf931801559d05523a1604ff34192e0d88d88ec"
+  },
+  {
+    "path": "foundation_v2/web/src/compact-system.css",
+    "sha256": "0d3c9c105f0ba6c5bb0e897d7d6547e27bd9280c14be76ce90cfec4e32dd3cc4"
+  },
+  {
+    "path": "foundation_v2/web/src/component-interactions.css",
+    "sha256": "5fb76b0646cd35d844bb3d09534bd0c691c3a637af2604a276bdf6dafd7c77e6"
+  },
+  {
+    "path": "foundation_v2/web/src/component-reference.css",
+    "sha256": "261537b73c400e6d5cd0e3be73671469b364cb548092e48e29e9e50863463a65"
+  },
+  {
+    "path": "foundation_v2/web/src/fx-select.css",
+    "sha256": "c51c4142cd747fbabd3da5022c233375835c4d274c988e93ef2e5938865aeaf1"
+  },
+  {
+    "path": "foundation_v2/web/src/ledger-controls.css",
+    "sha256": "8f2558bea9209cb07076a89d7c7f865a67dfcbcce0a733612b6bb35e172bbda4"
+  },
+  {
+    "path": "foundation_v2/web/src/notifications.css",
+    "sha256": "83563b5749214a3a87bf4fda4e31973414542c6ca7955bf99392daeb2523da72"
+  },
+  {
+    "path": "foundation_v2/web/src/project-date-input.css",
+    "sha256": "baf888657350cc01e6002424c40c48607d620989c7c5a230f416def025416b89"
+  },
+  {
+    "path": "ui/README.md",
+    "sha256": "77472706ba239f34474c293d3a781e60305240ca3ef29210f9646c62c9a35a68"
+  },
+  {
+    "path": "ui/compact-system.md",
+    "sha256": "65622965fd7f265656bba032cbe691224a2c401c0eb210149738784216063f2c"
+  }
+]

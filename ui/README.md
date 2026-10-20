@@ -14,6 +14,13 @@ This layer sits below:
 layout in Vietnamese. The living catalog is `?area=testing&ui_reference=1`.
 The app pins `annam-compact@0.1.1`; other products are not migrated implicitly.
 
+Project overlay, keyboard, date-field and touch behavior is specified in the
+[portal contract](compact-system.md#portal-dialog-popover-và-ô-ngày).
+The living catalog includes working nested dialogs, anchored menus, bounded
+date/time, disabled fields and resource-state examples. The
+[20/10 audit receipt](../foundation_v2/evidence/ui-system-audit-20261020/CHECKPOINT.md)
+records coverage and remaining limits; it does not replace product acceptance.
+
 ## Current state
 
 Status: **implementation in progress; partial local validation**.
