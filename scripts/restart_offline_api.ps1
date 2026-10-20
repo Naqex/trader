@@ -36,7 +36,9 @@ $profileArgs = @('--runtime-profile', $RuntimeProfile, '--replay-storage-profile
     '--rust-research-binary', (Join-Path $BinaryDirectory 'rust_research_worker.exe'))
 foreach ($option in @(@('--artifact-root', $ArtifactRoot), @('--qdm-home', $QdmHome),
     @('--scientific-capability', $ScientificCapability), @('--legacy-codec-capability', $LegacyCodecCapability))) {
-    if ($option[1]) { $profileArgs += $option }
+    # The detached supervisor runs in foundation_v2, unlike the preflight.
+    # Resolve caller-relative paths before either process receives them.
+    if ($option[1]) { $profileArgs += @($option[0], $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($option[1])) }
 }
 
 function Invoke-Platform([string[]]$ActionArgs) {
