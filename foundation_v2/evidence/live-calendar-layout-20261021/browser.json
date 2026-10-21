@@ -1,0 +1,61 @@
+{
+  "checks": [
+    {
+      "name": "1368px calendar fits all seven days and week-total column",
+      "pass": true
+    },
+    {
+      "name": "Heading action opens existing account dialog",
+      "pass": true
+    },
+    {
+      "name": "Basic filter fields expand in calendar left region",
+      "pass": true
+    },
+    {
+      "name": "Month navigation updates calendar",
+      "pass": true
+    },
+    {
+      "name": "360px viewport contains document overflow within calendar",
+      "pass": true
+    },
+    {
+      "name": "Demo snapshot retains 410 USD net PnL and 8 filled deals",
+      "pass": true
+    },
+    {
+      "name": "Final 1368px toolbar/sidebar aligned, full calendar fits",
+      "pass": true
+    },
+    {
+      "name": "Live Notes keeps one shared heading action",
+      "pass": true
+    }
+  ],
+  "responsive": [
+    {
+      "calendarScrollable": true,
+      "documentFits": true,
+      "sidebarBelow": true,
+      "width": 768
+    },
+    {
+      "calendarScrollable": true,
+      "documentFits": true,
+      "sidebarBelow": true,
+      "width": 360
+    }
+  ],
+  "desktop": {
+    "calendarFits": true,
+    "docFits": true,
+    "filterAndSidebarAligned": true,
+    "headingHeight": 84,
+    "weekLabel": "—\nW1\n—",
+    "width": 1368
+  },
+  "consoleErrors": [],
+  "ownerDataWrites": false,
+  "fixture": "Existing explicitly labeled DEMO_LIVE preview; no account created or trade sent"
+}

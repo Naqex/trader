@@ -31,8 +31,15 @@ manual account balances and separate read-only broker facts. At narrower widths,
 stack below content; calendars and tables scroll within their own regions.
 Structural dividers meet at panel boundaries and span the canonical workspace
 width. Content retains its gutter inside panels; interactive calendar cells
-retain their separate spacing. The shell already identifies Live and demo mode,
-so the page heading is accessible-only and ready/demo status is not repeated.
+retain their separate spacing. Live has a visible page heading above its shared
+section navigation. Journal actions render into the shell's Live heading slot,
+retaining their reader/dialog state and the shared control styles. Account choice
+and Basic filters share one toolbar. On Calendar that toolbar belongs to the left
+region; the Analytics heading starts at the same level on the right. Week totals
+use the same border, radius and height as day cells, with count and week label at
+the top. Unknown counts/amounts remain dashes, not fabricated zeroes. At narrower
+widths the sidebar stacks and the calendar alone scrolls horizontally.
+Ready/demo status is not repeated.
 Exceptional read states remain visible. Data caveats live in the source/access
 disclosure instead of repeated paragraphs beside the calendar and deal table.
 

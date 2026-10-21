@@ -89,6 +89,16 @@
   background: var(--fx-shell-bg);
 }
 
+/* Keep the Live heading stable while its route and journal actions load. */
+.fx-shell-story .live-page-heading { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 84px; box-sizing: border-box; padding-block: 28px 16px; }
+.fx-shell-story .live-page-heading h1 { margin: 0; font-weight: 700; }
+.fx-shell-story .live-heading-actions { min-width: 0; min-height: var(--wm-control-height); }
+.fx-app.fx-shell-story[data-ui-area='live'] .fx-content > .fx-subnav { margin-inline: calc(-1 * var(--wm-page-gutter)); padding-inline: var(--wm-page-gutter); }
+@media (max-width: 760px) {
+  .fx-shell-story .live-page-heading { align-items: flex-start; flex-wrap: wrap; gap: 16px; padding-top: 20px; }
+  .fx-shell-story .live-heading-actions { width: 100%; }
+}
+
 .fx-shell-story .fx-subnav {
   display: flex;
   min-height: 48px;

@@ -447,6 +447,7 @@ function currentQuery() {
 }
 
 export default function FxReplayShell({ children, workspace, query = currentQuery(), activeView = 'overview', mode = 'Replay', subnavAction }) {
+  const [liveHeaderActions, setLiveHeaderActions] = useState(null)
   const chartWorkspace = activeView === 'replay' && query.get('select') !== '1' && (query.get('surface') === 'workspace' || Boolean(query.get('session')) || Boolean(query.get('dataset')))
   const chartRoute = chartWorkspace
   const routeContext = useMemo(() => readWorkspaceContext(query), [query])
@@ -535,12 +536,13 @@ export default function FxReplayShell({ children, workspace, query = currentQuer
     return () => window.removeEventListener('storage', syncAppearance)
   }, [])
   const contextValue = useMemo(() => ({
+    liveHeaderActions,
     updateMarketContext,
     routeContext,
     appearance: { theme, language },
     applyAppearance,
     buildHref: (view, overrides) => buildWorkspaceHref(view, workspace, query, overrides),
-  }), [query, routeContext, updateMarketContext, workspace, theme, language, applyAppearance])
+  }), [query, routeContext, updateMarketContext, workspace, theme, language, applyAppearance, liveHeaderActions])
   const handleRail = useCallback(() => {
     if (mobileNavigation) {
       setHelpOpen(false)
@@ -657,9 +659,12 @@ export default function FxReplayShell({ children, workspace, query = currentQuer
         {drawerOpen && <div className="fx-mobile-nav-backdrop" aria-hidden="true" onClick={() => setMobileNavigationOpen(false)} />}
         {!chartWorkspace && <ShellRail activeView={activeView} workspace={workspace} query={query} copy={copy} railId="fxreplay-rail" drawerOpen={drawerOpen} onClose={() => setMobileNavigationOpen(false)} closeButtonRef={navigationCloseRef} inert={aiOpen && aiOverlay} />}
         <section className="fx-main" role={['overview', 'live', 'market-data', 'analytics'].includes(activeView) || (activeView === 'trade' && query.get('intent') !== 'order') || (activeView === 'replay' && query.get('surface') !== 'workspace' && (query.get('select') === '1' || query.get('mode') === 'Practice')) ? 'main' : undefined} aria-label={copy.contentAria} inert={drawerOpen || (aiOpen && aiOverlay)}>
-          <ShellSubnav activeView={activeView} workspace={workspace} query={query} copy={copy} action={subnavAction} />
+          {activeView !== 'live' && <ShellSubnav activeView={activeView} workspace={workspace} query={query} copy={copy} action={subnavAction} />}
           {helpOpen && <ShellHelp copy={copy} helpCloseRef={helpCloseRef} onClose={() => setHelpOpen(false)} />}
-          <NotificationProvider key={workspace}><div className="fx-content" tabIndex={0}>{children}</div></NotificationProvider>
+          <NotificationProvider key={workspace}><div className="fx-content" tabIndex={0}>
+            {activeView === 'live' && <><header className="live-page-heading"><h1>{language === 'en' ? 'Live' : 'Trực tiếp'}</h1><div className="live-heading-actions" ref={setLiveHeaderActions} /></header><ShellSubnav activeView={activeView} workspace={workspace} query={query} copy={copy} action={subnavAction} /></>}
+            {children}
+          </div></NotificationProvider>
         </section>
         {aiOpen && aiOverlay && <div className="wm-ai-backdrop" aria-hidden="true" onClick={closeAi} />}
         {aiMounted && <TestingRouteBoundary key={workspace} fallback={<AiPanelFallback open={aiOpen} modal={aiOverlay} onClose={closeAi} language={language} error />}><Suspense fallback={<AiPanelFallback open={aiOpen} modal={aiOverlay} onClose={closeAi} language={language} />}><AiChatPanel workspace={workspace} screen={activeView} open={aiOpen} modal={aiOverlay} onClose={closeAi} settingsHref={buildWorkspaceHref('settings', workspace, query, { area: 'settings', section: null })} language={language} /></Suspense></TestingRouteBoundary>}

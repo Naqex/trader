@@ -1,0 +1,26 @@
+✔ Live reads workspace-local snapshots and preview does not call the reader (1.1861ms)
+✔ Live retains stale snapshots but clears data when access is denied (0.2748ms)
+✔ Live shares reference surfaces with persisted manual records and responsive layouts (0.3548ms)
+✔ manual record command retains account scope and optimistic revision (33.8344ms)
+✔ successful HTTP without trustworthy write result remains uncertain (2.1424ms)
+✔ denied read is distinct from a valid empty workspace ledger (0.7646ms)
+✔ proxy/server errors cannot authorize a duplicate journal write (3.7962ms)
+✔ manual ledger isolates accounts/currency and uses signed costs once (5.8622ms)
+✔ missing cost or malformed opening capital cannot become a known balance (0.2981ms)
+✔ CSV roundtrip preserves decimals, multiline quotes and signed costs (1.2066ms)
+✔ CSV neutralizes formulas in text but preserves negative monetary amounts (0.2961ms)
+✔ CSV rejects invalid dates, incomplete quotes, headers and numeric overflow (0.9286ms)
+✔ CSV validates every row against server text and tag bounds before import starts (3.1146ms)
+✔ net includes every cost and excludes non-trading cashflows (24.5009ms)
+✔ filters use selected timezone and date bounds without mutating the source (1.0301ms)
+✔ calendar distinguishes missing feed, fully covered empty day and partial cutoff (2.4285ms)
+✔ unknown costs stop cumulative totals instead of bridging a misleading curve (1.1713ms)
+✔ outcome filters use the same break-even tolerance as closed-trade statistics (2.0624ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 244.1934
