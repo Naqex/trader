@@ -31,8 +31,8 @@ manual account balances and separate read-only broker facts. At narrower widths,
 stack below content; calendars and tables scroll within their own regions.
 Structural dividers meet at panel boundaries and span the canonical workspace
 width. Content retains its gutter inside panels; interactive calendar cells
-retain their separate spacing. Live has a visible page heading above its shared
-section navigation. Journal actions render into the shell's Live heading slot,
+retain their separate spacing. Live uses the shared section navigation without
+an additional page heading. Journal actions belong to their working surface,
 retaining their reader/dialog state and the shared control styles. Account choice
 and Basic filters share one toolbar. On Calendar that toolbar belongs to the left
 region; the Analytics heading starts at the same level on the right. Week totals
@@ -40,6 +40,14 @@ use the same border, radius and height as day cells, with count and week label a
 the top. Unknown counts/amounts remain dashes, not fabricated zeroes. At narrower
 widths the sidebar stacks and the calendar alone scrolls horizontally.
 Ready/demo status is not repeated.
+The data-mode selector is owned by the global topbar on all routes. Unsupported
+preview routes keep a disabled real-data selector; they must not switch to an
+unrelated fixture. On small screens it occupies the second header row.
+The fullscreen chart retains its existing hidden shell header; this does not
+introduce a preview selector into replay execution.
+Basic filters reuse `FilterDrawer` with Practice's native dialog, spacing, footer,
+search, Escape and focus restoration. Live owns its distinct side/outcome/date
+semantics; unsupported Practice filters are not copied into Live.
 Exceptional read states remain visible. Data caveats live in the source/access
 disclosure instead of repeated paragraphs beside the calendar and deal table.
 
@@ -121,6 +129,30 @@ Share and provider connection are intentionally unavailable. Demo calls the same
 surfaces without ledger reads or writes. Shared LegacyModal/FxSelect/date controls
 supply focus, keyboard and theme behavior; long dialog bodies scroll while the
 header remains available. Financial fixtures remain isolated test evidence.
+
+## Account connection and cashflows
+
+Connect uses an accounts table with search, source/status filter, sorting and
+shared pagination beside the Add account panel. Manual creation and CSV import
+reuse the persisted journal dialogs. CSV imports closed trades into a manual
+account; it is not an account-list upload or automatic broker connection.
+
+Transactions uses a separate cashflow table and account-details sidebar. Manual
+opening capital has its own Initial balance row, never a deposit; manual funding
+and fee CRUD are not supported and totals stay unknown. Broker MT5 balance events
+(type 2) are classified by signed profit into deposit/withdrawal; account charge,
+commission and tax events keep their signed amounts as fees. Other events retain
+their MT5 type. These events never enter trading PnL. Totals describe synced
+history, not lifetime, and broker opening balance is never reconstructed from a
+partial history. Unknown history stays unknown. Broker equity, margin, open
+positions, pending orders and quotes remain accessible in the read-only snapshot
+disclosure on Transactions.
+
+The existing terminal adapter reads a preconfigured demo account, validates its
+scope and never accepts passwords or switches accounts. The MetaTrader option
+explains this limitation and refreshes status. It must not render a working-looking
+password/login form until a secure connector backend exists. No credentials are
+stored in the browser or journal, and no broker execution is enabled.
 
 ## Strategies and Practice handoff
 

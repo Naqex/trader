@@ -10,8 +10,8 @@
 .fxl-tabs button[aria-selected=true]{background:var(--fx-shell-nav-selected)}
 .fxl-tabs button:hover,.fxl-close:hover,.fxl-tag-heading button:hover{background:var(--fx-shell-nav-hover)}
 .fxl-drawer-body{flex:1;min-height:0;overflow:auto;padding:12px 18px;overscroll-behavior:contain}
-.fxl-filter-drawer input:not([type=checkbox]){background:transparent;color:var(--wm-content);border:1px solid var(--wm-border);border-radius:var(--ds-radius-field);padding:7px 12px;min-height:var(--wm-control-height);line-height:var(--ds-line-control);font:inherit;width:100%;box-sizing:border-box;min-width:0}
-.fxl-filter-drawer input:not([type=checkbox]):hover{border-color:var(--wm-border-strong)}
+.fxl-filter-drawer input:not([type=checkbox]):not([type=radio]){background:transparent;color:var(--wm-content);border:1px solid var(--wm-border);border-radius:var(--ds-radius-field);padding:7px 12px;min-height:var(--wm-control-height);line-height:var(--ds-line-control);font:inherit;width:100%;box-sizing:border-box;min-width:0}
+.fxl-filter-drawer input:not([type=checkbox]):not([type=radio]):hover{border-color:var(--wm-border-strong)}
 .fxl-filter-drawer :is(input,button,summary):focus-visible{outline:2px solid var(--wm-focus);outline-offset:-2px}
 .fxl-filter-search{display:block;margin-bottom:16px}
 .fxl-filter-drawer details{padding:8px 0}

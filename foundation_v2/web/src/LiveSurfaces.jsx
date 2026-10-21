@@ -1,16 +1,17 @@
 import { displayDate } from './dateFormat.js'
 import { useEffect, useState } from 'react'
-import { createPortal } from 'react-dom'
-import { useFxReplayContext } from './FxReplayShell.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import FxSelect from './FxSelect.jsx'
 import TestingIcon from './TestingIcon.jsx'
-import { DateFilter, timezoneOptions } from './AnalyticsFilterControls.jsx'
+import { timezoneOptions } from './AnalyticsFilterControls.jsx'
 import { fetchLiveRecords } from './liveLedgerApi.js'
 import { fetchPlaybooks } from './playbookApi.js'
 import { manualSnapshot, closedTradeStats } from './liveLedgerModel.js'
 import LiveRecordDialog from './LiveRecordDialog.jsx'
-import { ManualTrades, ManualAccounts, JournalNotes, JournalTags } from './LiveJournalSurfaces.jsx'
+import FilterDrawer from './FilterDrawer.jsx'
+import ProjectDateInput from './ProjectDateInput.jsx'
+import LiveAccounts from './LiveAccounts.jsx'
+import { ManualTrades, JournalNotes, JournalTags } from './LiveJournalSurfaces.jsx'
 import { navigate } from './clientNavigation.js'
 import LiveBrokerSnapshot from './LiveBrokerSnapshot.jsx'
 import { LIVE_FILTERS, calendarWeeks, cumulativeDealSeries, dayKey, dealNet, filterLiveDeals, summarizeDeals } from './liveWorkspaceModel.js'
@@ -29,35 +30,24 @@ function Empty({ title, copy, icon = 'chart', action, onAction }) {
   return <div className="live-empty" data-testid="live-empty">{icon && <div className="live-empty-art" aria-hidden="true"><TestingIcon kind={icon} size={72} /></div>}<h2>{t(title)}</h2>{copy && <p>{t(copy)}</p>}{action && <Action primary icon="plus" onClick={onAction}>{t(action)}</Action>}</div>
 }
 
-function FilterFields({ draft, setDraft, payload, onPreview }) {
-  const { t } = useTestingLocale()
-  const change = patch => setDraft(current => ({ ...current, ...patch }))
-  const assets = [...new Set((payload?.deals || []).map(deal => deal.symbol).filter(Boolean))].sort()
-  const select = (key, label, options, extra = {}) => <FxSelect label={label} triggerContent={label} value={draft[key]} onChange={value => change({ [key]: value })} options={options} {...extra} />
-  return <>
-    {select('asset', 'Assets', [{ value: 'all', label: 'All assets' }, ...assets.map(value => ({ value, label: value, localize: false }))], { searchable: true })}
-    {select('side', 'Side', [{ value: 'all', label: 'All sides' }, { value: '0', label: 'Buy' }, { value: '1', label: 'Sell' }])}
-    {select('outcome', 'Deal result', [{ value: 'all', label: 'All results' }, { value: 'gain', label: 'Positive PnL' }, { value: 'loss', label: 'Negative PnL' }, { value: 'flat', label: 'Zero PnL' }])}
-
-    {select('day', 'Day', [{ value: 'all', label: 'All days' }, ...['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((label, i) => ({ value: String(i), label }))])}
-    {select('timezone', 'Timezone', timezoneOptions.map(option => ({ ...option, localize: false })), { searchable: true })}
-    <DateFilter value={draft} onChange={change} label="Date range" title="Date range" calendarLabel="Date range" />
-  </>
-}
-
-function FilterBar({ section, accountPicker, extra, payload, draft, setDraft, applied, onApply, onClear, onPreview, onRefresh }) {
+function FilterBar({ section, accountPicker, extra, payload, draft, setDraft, applied, onApply, onClear, onRefresh }) {
   const { t } = useTestingLocale(), [show, setShow] = useState(false)
   const chips = Object.entries(applied).filter(([key, value]) => value !== LIVE_FILTERS[key] && value !== '')
-  const fields = <><FilterFields draft={draft} setDraft={setDraft} payload={payload} onPreview={onPreview} /><Action primary onClick={() => onApply()}>{t('Áp dụng')}</Action></>
+  const change = patch => setDraft(current => ({...current,...patch}))
+  const assets = [...new Set((payload?.deals || []).map(deal => deal.symbol).filter(Boolean))].sort()
+  const choices = (key,options) => <div className="fxl-choices" role="group" aria-label={t(FILTER_LABELS[key])}>{options.map(([value,label]) => <label key={value}><input type="radio" name={`live-filter-${key}`} checked={draft[key] === value} onChange={() => change({[key]:value})} />{t(label)}</label>)}</div>
+  const sections = [
+    ['Assets', choices('asset',[['all','All assets'],...assets.map(value => [value,value])])],
+    ['Side', choices('side',[['all','All sides'],['0','Buy'],['1','Sell']])],
+    ['Deal result', choices('outcome',[['all','All results'],['gain','Positive PnL'],['loss','Negative PnL'],['flat','Zero PnL']])],
+    ['Day', choices('day',[['all','All days'],...['Su','Mo','Tu','We','Th','Fr','Sa'].map((label,i) => [String(i),label])])],
+    ['Timezone', <FxSelect searchable label="Timezone" value={draft.timezone} onChange={timezone => change({timezone})} options={timezoneOptions.map(option => ({...option,localize:false}))} />],
+    ['Date range', <div className="fxl-fields">{['from','to'].map(key => <label key={key} className="fxl-field">{t(FILTER_LABELS[key])}<ProjectDateInput clearable type="date" aria-label={t(FILTER_LABELS[key])} value={draft[key]} onChange={event => change({[key]:event.target.value})} /></label>)}</div>],
+  ]
   return <section className="live-filters" aria-label={t('Filters')}>
-    {section === 'analytics' ? <div className="live-filter-fields">{accountPicker}{extra}{fields}</div> : <>
-      <div className="live-toolbar">{accountPicker}<div className="live-toolbar-actions">{extra}{section === 'trades' && <Action compact icon="refresh" label="Tải lại dữ liệu" onClick={onRefresh} />}
-          <span>{t('Filter by')}</span><Action aria-expanded={show} onClick={() => setShow(!show)}>{t('Basic')}</Action>
-        </div>
-      </div>{show && <div className="live-filter-fields">{fields}</div>}
-    </>}
-    {chips.length > 0 && <div className="live-filter-chips">{chips.map(([key, value]) => <span key={key}>{t(FILTER_LABELS[key])}: {filterValue(key,value,t)}</span>)}<button type="button" className="fxa-clear-filters" onClick={onClear}><TestingIcon kind="delete" />{t('Clear filters')}</button></div>}
-    {draft.from && draft.to && draft.from > draft.to && <p role="alert">{t('Start date must not be after end date.')}</p>}
+    <div className="live-toolbar fxa-filter-toolbar is-ledger">{accountPicker}<div className="fxa-filter-actions">{extra}{section === 'trades' && <Action compact icon="refresh" label="Tải lại dữ liệu" onClick={onRefresh} />}<span className="fxa-filter-label">{t('Filter by')}</span><button className="fxa-button" type="button" aria-haspopup="dialog" aria-expanded={show} onClick={() => { setDraft({...applied});setShow(true) }}>{t('Basic')}</button></div></div>
+    {show && <FilterDrawer sections={sections} onClose={() => setShow(false)} onClear={() => setDraft({...LIVE_FILTERS})} onApply={() => { onApply();setShow(false) }} invalid={Boolean(draft.from && draft.to && draft.from > draft.to)} />}
+    {chips.length > 0 && <div className="live-filter-chips">{chips.map(([key,value]) => <span key={key}>{t(FILTER_LABELS[key])}: {filterValue(key,value,t)}</span>)}<button type="button" className="fxa-clear-filters" onClick={onClear}><TestingIcon kind="delete" />{t('Clear filters')}</button></div>}
   </section>
 }
 
@@ -120,7 +110,6 @@ function Calendar({ payload, deals, filters, filterBar, reviewScope, canWrite, o
 
 export default function LiveSurfaces({ workspace = 'tenant-a', section, payload: broker, query, preview, onRefresh }) {
   const { t } = useTestingLocale()
-  const { liveHeaderActions } = useFxReplayContext()
   const [ledger,setLedger] = useState({status:preview ? 'ready' : 'loading',items:[],error:''})
   const [strategies,setStrategies] = useState([]), [strategyError,setStrategyError] = useState(''), [strategyReady,setStrategyReady] = useState(false), [action,setAction] = useState(null), [reload,setReload] = useState(0)
   const selected = query.get('live_account') || ''
@@ -168,19 +157,20 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
   const headerActions = <div className="live-toolbar-actions"><Action primary icon="plus" disabled={preview || ledger.status !== 'ready' || !strategyReady && accounts.length > 0} onClick={() => open(accounts.length ? 'trade' : 'account')}>{accounts.length ? 'Thêm giao dịch' : 'Tạo tài khoản'}</Action><Action icon="upload" disabled={preview || ledger.status !== 'ready' || !strategyReady || !accounts.length} onClick={() => open('import')}>Nhập CSV</Action></div>
   const filterBar = <FilterBar accountPicker={accountPicker} extra={payload?.manual ? <div className="live-journal-filters"><FxSelect label="Chiến lược" value={strategy} onChange={changeStrategy} options={[{value:'all',label:'Tất cả chiến lược'},...(strategyRevision ? [{value:strategy,label:`${strategies.find(item => item.record_id === strategyId)?.payload.name || 'Chiến lược'} · v${strategyRevision}`,localize:false}] : []),...strategies.map(item => ({value:item.record_id,label:item.payload.name,localize:false}))]} /><FxSelect label="Nhãn" value={tag} onChange={setTag} options={[{value:'all',label:'Tất cả nhãn'},...tags.map(value => ({value,label:value,localize:false}))]} /></div> : null} section={section} payload={payload} draft={draft} setDraft={setDraft} applied={applied} onApply={apply} onClear={() => { setDraft({...LIVE_FILTERS});setApplied({...LIVE_FILTERS});changeStrategy('all');setTag('all') }} onPreview={create} onRefresh={() => { setReload(value => value+1);onRefresh() }} />
   return <>
-    {liveHeaderActions ? createPortal(headerActions, liveHeaderActions) : <header className="live-topbar"><h1>{t('Live')}</h1>{headerActions}</header>}
+    {section === 'trades' && <div className="live-toolbar">{headerActions}</div>}
     {ledger.error && <div className="live-status live-status-error" role="alert"><span>{ledger.error}</span><Action onClick={() => setReload(value => value+1)}>Thử lại</Action></div>}
     {strategyError && <div className="live-status live-status-warning" role="alert"><span>{strategyError}</span><Action onClick={() => setReload(value => value+1)}>Tải lại</Action></div>}
     {ledger.status === 'loading' && <p className="live-status" role="status">Đang đọc sổ giao dịch…</p>}
     {showContent && !['calendar','notes','trading-accounts'].includes(section) && filterBar}
-    {showContent && ['notes','trading-accounts'].includes(section) && <div className="live-toolbar">{accountPicker}</div>}
+    {showContent && section === 'notes' && <div className="live-toolbar">{accountPicker}</div>}
     {showContent && <>
     {section === 'calendar' && <Calendar filterBar={showContent ? filterBar : null} canWrite={!preview && ledger.status === 'ready' && strategyReady} key={chosen} payload={payload} deals={deals} filters={applied} reviewScope={payload?.manual ? `${strategy === 'all' ? 'Tất cả chiến lược' : `${strategies.find(item => item.record_id === strategyId)?.payload.name || strategyId}${strategyRevision ? ` · v${strategyRevision}` : ' · mọi phiên bản'}`} · ${tag === 'all' ? 'Tất cả nhãn' : tag}` : 'Deals đã đồng bộ'} onPreview={create} />}
     {section === 'trades' && <div className="live-split"><section>{payload?.manual ? <ManualTrades writable={!preview && ledger.status === 'ready' && strategyReady} filterKey={JSON.stringify([chosen,applied,strategy,tag])} workspace={workspace} deals={deals} currency={payload.account.currency} strategies={strategies} onEdit={record => open('trade',record)} /> : payload?.account ? <LiveBrokerSnapshot payload={payload} section="trades" deals={deals} filterKey={JSON.stringify(applied)} /> : <Empty title="No trades yet" copy="Tạo tài khoản ghi tay và thêm giao dịch để bắt đầu." icon="journal" />}</section><Summary payload={payload} deals={deals} sidebar /></div>}
     {section === 'notes' && <JournalNotes writable={!preview && ledger.status === 'ready' && strategyReady} key={chosen} records={ledger.items} accountId={chosen || null} strategies={strategies} onEdit={record => open('note',record)} onCreate={() => open('note')} />}
     {section === 'tag-analytics' && <JournalTags deals={deals} currency={payload?.account?.currency || ''} />}
     {section === 'analytics' && <><Summary payload={payload} deals={deals} />{deals.length > 0 && <PnlCurve deals={deals} currency={payload?.account?.currency} />}</>}
-    {section === 'trading-accounts' && <><ManualAccounts writable={!preview && ledger.status === 'ready'} accounts={accounts} records={ledger.items} onCreate={() => open('account')} onEdit={record => open('account',record)} onSelect={choose} />{broker?.account && <div className="live-connected-account"><LiveBrokerSnapshot payload={broker} section={query.get('account_tab') === 'transactions' ? 'transactions' : 'trading-accounts'} /></div>}<p className="live-source-details">Đồng bộ broker cần adapter được cấu hình. Các tài khoản ghi tay không gửi lệnh ra sàn.</p></>}
+    {section === 'trading-accounts' && <LiveAccounts key={workspace} accounts={accounts} records={ledger.items} broker={broker} chosen={chosen} onSelect={choose} transactions={query.get('account_tab') === 'transactions'} writable={!preview && ledger.status === 'ready'} canImport={!preview && ledger.status === 'ready' && strategyReady && accounts.length > 0} onCreate={() => open('account')} onImport={() => open('import')} onEdit={record => open('account',record)} onRefresh={onRefresh} />}
+
     </>}
     {action && <LiveRecordDialog key={`${workspace}:${action.kind}:${action.record?.record_id || 'new'}`} workspace={workspace} kind={action.kind} record={action.record} seed={action.seed} accountId={account?.record_id} accounts={accounts} strategies={strategies} onClose={() => setAction(null)} onSaved={saved} />}
   </>

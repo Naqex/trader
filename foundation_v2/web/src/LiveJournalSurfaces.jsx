@@ -7,7 +7,6 @@ import PaginationFooter from './PaginationFooter.jsx'
 import { dealNet } from './liveWorkspaceModel.js'
 import { tagResults } from './liveLedgerModel.js'
 import { downloadLiveCsv } from './LiveRecordDialog.jsx'
-import { manualSnapshot } from './liveLedgerModel.js'
 import { buildWorkspaceHref } from './workspaceContext.js'
 import LegacyModal from './LegacyModal.jsx'
 
@@ -52,9 +51,4 @@ export function JournalTags({ deals, currency }) {
   return <section className="live-journal-tags"><div className="live-section-heading"><h2>PnL theo nhãn</h2><label className="live-search"><TestingIcon kind="search" /><input type="search" aria-label="Tìm nhãn" placeholder="Tìm nhãn…" value={search} onChange={event => setSearch(event.target.value)} /></label></div>
     {rows.length ? <><div className="live-tag-bars">{rows.map(row => <div key={row.tag}><span>{row.tag}</span><div><i className={row.net < 0 ? 'is-loss' : row.net > 0 ? 'is-gain' : ''} style={{width:`${row.net === null ? 0 : Math.abs(row.net)/maximum*100}%`}} /></div><strong className={row.net < 0 ? 'is-loss' : row.net > 0 ? 'is-gain' : ''}>{fmt(row.net)}</strong></div>)}</div><div className="live-table-scroll" tabIndex={0} role="region" aria-label="Thống kê nhãn"><table><thead><tr><th>Nhãn</th><th>Giao dịch</th><th>Tỷ lệ thắng</th><th>PnL ròng ({currency})</th></tr></thead><tbody>{rows.map(row => <tr key={row.tag}><td>{row.tag}</td><td>{row.count}</td><td>{fmt(row.winRate,'%')}</td><td>{fmt(row.net)}</td></tr>)}</tbody></table></div><p className="live-muted">Một giao dịch có thể có nhiều nhãn; không cộng các nhóm thành tổng PnL.</p></> : <div className="live-empty"><h2>{search ? 'Không tìm thấy nhãn' : 'Chưa có phân tích nhãn'}</h2><p>{search ? 'Thử từ khóa khác hoặc xóa tìm kiếm.' : 'Thêm nhãn vào giao dịch để so sánh kết quả.'}</p></div>}
   </section>
-}
-
-export function ManualAccounts({ accounts, records, writable, onEdit, onSelect, onCreate }) {
-  const { fmt } = useTestingLocale()
-  return <section className="live-manual-accounts"><div className="live-section-heading"><h2>Tài khoản ghi tay</h2><button type="button" className="fxa-button is-primary" disabled={!writable} onClick={onCreate}>+ Tài khoản</button></div>{accounts.length ? <div className="live-table-scroll" role="region" tabIndex={0} aria-label="Tài khoản ghi tay"><table><thead><tr><th>Tên tài khoản</th><th>Tiền tệ</th><th>Số dư ban đầu</th><th>Số dư đã ghi</th><th>Giao dịch</th><th /></tr></thead><tbody>{accounts.map(account => <tr key={account.record_id}><td><button type="button" className="live-text-action" onClick={() => onSelect(account.record_id)}>{account.payload.name}</button></td><td>{account.payload.currency}</td><td>{fmt(Number(account.payload.opening_balance))}</td><td>{fmt(manualSnapshot(account,records).account.balance)}</td><td>{records.filter(record => record.kind === 'trade' && record.payload.account_id === account.record_id).length}</td><td><button type="button" className="fxa-button" disabled={!writable} onClick={() => onEdit(account)}>Sửa</button></td></tr>)}</tbody></table></div> : <div className="live-empty"><h2>Chưa có tài khoản</h2><p>Tạo tài khoản ghi tay để nhập và phân tích lịch sử giao dịch.</p></div>}</section>
 }

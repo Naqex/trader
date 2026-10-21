@@ -1,9 +1,9 @@
 import ProjectDateInput from './ProjectDateInput.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
-import React, { useEffect, useRef, useState } from 'react'
-import FxSelect, { FilterIcon } from './FxSelect.jsx'
+import React, { useState } from 'react'
+import FxSelect from './FxSelect.jsx'
 import { calendarParts, DEFAULT_EXTRA_FILTERS, filterValues } from './tradingAnalyticsModel.js'
-import './ledger-controls.css'
+import FilterDrawer from './FilterDrawer.jsx'
 
 const baseFilters = { side: 'all', outcome: 'all', from: '', to: '' }
 function Choices({ label, options, value, onChange, rawLabels = false }) {
@@ -18,10 +18,8 @@ function CalendarChoices({ label, options, value, onChange }) {
   return <FxSelect label={label} multiple searchable localizeOptions={false} value={selected} disabled={!options.length} triggerContent={selected.length ? options.filter(([key]) => selected.includes(String(key))).map(([, name]) => name).join(', ') : t('Chọn {label}', { label: label.toLocaleLowerCase() })} options={options.map(([key, name]) => ({ value: String(key), label: name }))} onChange={next => onChange(next.length ? JSON.stringify(next) : '')} />
 }
 export default function LedgerFilterDrawer({ initialTab, filters, extra, rows, facets, onApply, onClose }) {
-  const { t, locale } = useTestingLocale()
+  const { t } = useTestingLocale()
 
-  const dialog = useRef(null)
-  const [tab, setTab] = useState(initialTab), [search, setSearch] = useState('')
   const [draft, setDraft] = useState({ ...baseFilters, ...filters })
   const [draftExtra, setDraftExtra] = useState(() => ({ ...DEFAULT_EXTRA_FILTERS, ...extra,
     assets: extra.assets || (extra.asset !== 'all' ? JSON.stringify([extra.asset]) : ''),
@@ -36,11 +34,6 @@ export default function LedgerFilterDrawer({ initialTab, filters, extra, rows, f
   const years = facets?.years || [...new Set(rows.map(row => calendarParts(row.close_time_utc, draftExtra.timezone)?.key.slice(0, 4)).filter(Boolean))].sort()
   const dates = rows.map(row => calendarParts(row.close_time_utc, 'UTC')?.key).filter(Boolean).sort()
   const dateRange = facets?.date_range || { from: dates[0], to: dates.at(-1) }
-  useEffect(() => {
-    const opener = document.activeElement, element = dialog.current
-    element.showModal()
-    return () => { element.close(); if (opener?.isConnected) opener.focus({ preventScroll: true }) }
-  }, [])
   const clear = () => { setDraft(baseFilters); setDraftExtra({ ...DEFAULT_EXTRA_FILTERS }) }
   const apply = () => {
     onApply({ ...draft, side: 'all', outcome: 'all' }, { ...draftExtra, notes: '', types: '', days: '', asset: 'all', tag: 'all', weekday: 'all', hour: 'all' })
@@ -58,21 +51,10 @@ export default function LedgerFilterDrawer({ initialTab, filters, extra, rows, f
     ['Hour of the day', <CalendarChoices label={t('Hour of the day')} value={draftExtra.hours} options={Array.from({ length: 24 }, (_, i) => [i, `${String(i).padStart(2, '0')}:00`])} onChange={hours => change({ hours })} />],
   ]
   const calendarActive = ['years', 'months', 'hours'].some(key => filterValues(draftExtra[key]).length)
-  return <dialog ref={dialog} className="fxl-filter-drawer" aria-label={t("Filters")} onCancel={event => { event.preventDefault(); onClose() }} onKeyDown={event => {
-    if (event.key !== 'Tab') return
-    const controls = [...event.currentTarget.querySelectorAll('button, input, summary, [href], [tabindex]')].filter(element => !element.disabled && element.tabIndex >= 0 && element.getClientRects().length)
-    const first = controls[0], last = controls.at(-1)
-    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
-    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
-  }} onClick={event => { if (event.target !== event.currentTarget) return; const rect = event.currentTarget.getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) onClose() }}>
-    <header><h2><FilterIcon kind="filter" />{t("Filters")}</h2><button type="button" className="fxl-close wm-dialog-close" onClick={onClose} aria-label={t("Đóng Filters")}>×</button></header>
-    <div className="fxl-tabs" role="tablist" aria-label={t("Filter type")}>{['Basic', 'Tags'].map(name => <button key={name} type="button" role="tab" aria-selected={tab === name} aria-controls={`fxl-${name.toLowerCase()}`} id={`fxl-tab-${name.toLowerCase()}`} tabIndex={tab === name ? 0 : -1} onClick={() => setTab(name)} onKeyDown={event => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) { event.preventDefault(); const next = event.key === 'Home' ? 'Basic' : event.key === 'End' ? 'Tags' : tab === 'Basic' ? 'Tags' : 'Basic'; setTab(next); document.getElementById(`fxl-tab-${next.toLowerCase()}`)?.focus() } }}>{t(name)}</button>)}</div>
-    <div className="fxl-drawer-body">
-      {tab === 'Basic' ? <section role="tabpanel" id="fxl-basic" aria-labelledby="fxl-tab-basic"><label className="fxl-filter-search"><span className="sr-only">{t("Search filter")}</span><input type="search" aria-label={t("Search filter")} placeholder={t("Search filter")} value={search} onChange={event => setSearch(event.target.value)} /></label>{sections.filter(([name]) => t(name).toLocaleLowerCase(locale).includes(search.trim().toLocaleLowerCase(locale))).map(([name, content]) => <details key={name}><summary>{t(name)}</summary>{content}</details>)}{calendarActive && <small className="fxl-timezone">{t("Năm, tháng và giờ theo")} {draftExtra.timezone}.</small>}</section> : <section role="tabpanel" id="fxl-tags" aria-labelledby="fxl-tab-tags">{['Include', 'Exclude'].map((name, index) => {
+  return <FilterDrawer initialTab={initialTab} sections={sections} onClose={onClose} onClear={clear} onApply={apply} invalid={Boolean(draft.from && draft.to && draft.from > draft.to)}
+    note={calendarActive ? <small className="fxl-timezone">{t("Năm, tháng và giờ theo")} {draftExtra.timezone}.</small> : null}
+    tags={<>{['Include', 'Exclude'].map((name, index) => {
         const key = name === 'Include' ? 'tagInclude' : 'tagExclude', mode = `${key}Mode`
         return <React.Fragment key={key}>{index > 0 && <div className="fxl-tag-separator">{t("AND")}</div>}<div className="fxl-tag-heading"><span>{t(name)}</span><div role="group" aria-label={t('Cách kết hợp {name}', { name: t(name) })}>{['AND', 'OR'].map(value => <button type="button" key={value} aria-pressed={draftExtra[mode] === value} onClick={() => change({ [mode]: value })}>{value}</button>)}</div></div><FxSelect localizeOptions={false} label={`${t(name)} ${t("Tags")}`} triggerContent={filterValues(draftExtra[key]).length ? filterValues(draftExtra[key]).join(', ') : t("Select tags")} multiple searchable value={filterValues(draftExtra[key])} options={unique('tags').map(value => ({ value, label: value }))} onChange={value => change({ [key]: value.length ? JSON.stringify(value) : '' })} /></React.Fragment>
-      })}</section>}
-    </div>
-    <footer><button type="button" className="fxl-clear" onClick={clear}>{t("Clear All")}</button><button type="button" className="fxa-button is-primary" disabled={Boolean(draft.from && draft.to && draft.from > draft.to)} onClick={apply}>{t("Apply Filters")}</button></footer>
-  </dialog>
+      })}</>} />
 }
