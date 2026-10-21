@@ -3,7 +3,7 @@
 #[cfg(windows)]
 mod windows;
 #[cfg(windows)]
-pub use windows::{Child, Limits, spawn};
+pub use windows::{Child, Limits, spawn, spawn_with_stdin};
 
 #[cfg(not(windows))]
 pub type Child = tokio::process::Child;
@@ -27,3 +27,6 @@ pub fn spawn(
         "owned adapter processes are verified on Windows only",
     ))
 }
+
+#[cfg(not(windows))]
+pub use spawn as spawn_with_stdin;

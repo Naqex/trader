@@ -1,6 +1,38 @@
 use super::*;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, BufReader};
 
+#[tokio::test]
+async fn private_stdin_roundtrip_does_not_require_argv_secret() {
+    use tokio::io::AsyncWriteExt;
+    let mut child = spawn_with_stdin(
+        &python(),
+        &[
+            "-I".into(),
+            "-c".into(),
+            "import sys; sys.stdout.buffer.write(sys.stdin.buffer.read())".into(),
+        ],
+        None,
+        &[],
+        Limits::default(),
+        false,
+    )
+    .unwrap();
+    let mut stdin = child.stdin.take().unwrap();
+    stdin.write_all(b"fixture-private-pipe").await.unwrap();
+    stdin.shutdown().await.unwrap();
+    drop(stdin);
+    let mut bytes = Vec::new();
+    child
+        .stdout
+        .as_mut()
+        .unwrap()
+        .read_to_end(&mut bytes)
+        .await
+        .unwrap();
+    assert!(child.wait().await.unwrap().success());
+    assert_eq!(bytes, b"fixture-private-pipe");
+}
+
 fn python() -> std::path::PathBuf {
     let config =
         std::fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("../.venv/pyvenv.cfg"))

@@ -12,6 +12,7 @@ pub const MIGRATIONS: &[(&str, &[u8])] = &[
     ("0006_replay_prop_mark_index.sql", include_bytes!("../../migrations/0006_replay_prop_mark_index.sql")),
     ("0007_session_presets.sql", include_bytes!("../../migrations/0007_session_presets.sql")),
     ("0008_live_journal.sql", include_bytes!("../../migrations/0008_live_journal.sql")),
+    ("0009_mt5_connections.sql", include_bytes!("../../migrations/0009_mt5_connections.sql")),
 ];
 pub const MIGRATION_LOCK_KEY: i64 = 0x54574D47;
 

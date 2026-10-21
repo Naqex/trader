@@ -8,8 +8,8 @@ test('Live reads workspace-local snapshots and preview does not call the reader'
  assert.match(demo,/<LiveWorkspace[^>]+preview=\{DEMO_LIVE\}/)
 })
 test('Live retains stale snapshots but clears data when access is denied',()=>{
- assert.match(source,/error.kind === 'denied' \|\| previous.workspace !== workspace \? null/)
- assert.match(source,/stale: true/);assert.match(source,/payload.status === 'ready' \? payload : null/)
+ assert.match(source,/error.kind === 'denied' \|\| previous.workspace !== scopeKey \? null/)
+ assert.match(source,/stale: true/);assert.match(source,/status: payload.status, payload/)
  assert.match(source,/response.status === 404 \|\| response.status === 501/)
  assert.match(source,/TestingSkeleton/);assert.match(surfaces,/live-empty/)
 })

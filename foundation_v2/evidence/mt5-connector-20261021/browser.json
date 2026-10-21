@@ -1,0 +1,58 @@
+{
+  "final": {
+    "paginationBottom": 720,
+    "passwordEmpty": true,
+    "scrollWidth": 1280,
+    "sourceDisclosurePresent": false,
+    "viewport": {
+      "height": 720,
+      "width": 1280
+    }
+  },
+  "checkedViewports": [
+    {
+      "width": 360,
+      "height": 800
+    },
+    {
+      "width": 390,
+      "height": 844
+    },
+    {
+      "width": 768,
+      "height": 1024
+    },
+    {
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "width": 1280,
+      "height": 720
+    }
+  ],
+  "themes": [
+    "dark",
+    "light"
+  ],
+  "locales": [
+    "vi",
+    "en"
+  ],
+  "journeys": [
+    "empty accounts",
+    "open MT5 form",
+    "invalid u64 login rejected before SDK",
+    "password cleared after rejection",
+    "form reset on back and reopen",
+    "date popup and Escape",
+    "transactions empty page"
+  ],
+  "limits": [
+    "No real broker credentials or successful broker login tested",
+    "Populated account lifecycle covered by isolated API fixture rather than browser"
+  ],
+  "viewportRestored": true,
+  "localeRestored": "vi",
+  "themeRestored": "dark"
+}

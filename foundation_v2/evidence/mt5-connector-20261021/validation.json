@@ -1,0 +1,31 @@
+{
+  "python": [
+    "8 passed in 0.22s"
+  ],
+  "rust_library": [
+    "test result: ok. 157 passed; 0 failed; 16 ignored; 0 measured; 0 filtered out; finished in 57.26s"
+  ],
+  "rust_connector": [
+    "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 168 filtered out; finished in 0.01s"
+  ],
+  "windows_process": [
+    "test result: ok. 7 passed; 0 failed; 1 ignored; 0 measured; 164 filtered out; finished in 0.39s"
+  ],
+  "web": [
+    "ℹ tests 434",
+    "ℹ pass 434",
+    "ℹ fail 0",
+    "ℹ cancelled 0",
+    "ℹ skipped 0",
+    "ℹ todo 0",
+    "ℹ duration_ms 8925.837"
+  ],
+  "build": {
+    "mt5-build.log": "    Finished `release` profile [optimized] target(s) in 1m 51s",
+    "mt5-web-build.log": "✓ built in 3.26s"
+  },
+  "sdk_probe": {
+    "available": true,
+    "broker_contacted": false
+  }
+}

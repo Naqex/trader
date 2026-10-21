@@ -125,7 +125,7 @@ the same file again is a new explicit operation; global deduplication is not
 claimed. CSV is a trade-data format, not a full backup of strategy links/revisions.
 Export protects spreadsheet text from formula execution and keeps signed amounts.
 
-Share and provider connection are intentionally unavailable. Demo calls the same
+Share is intentionally unavailable. Demo calls the same
 surfaces without ledger reads or writes. Shared LegacyModal/FxSelect/date controls
 supply focus, keyboard and theme behavior; long dialog bodies scroll while the
 header remains available. Financial fixtures remain isolated test evidence.
@@ -148,11 +148,29 @@ partial history. Unknown history stays unknown. Broker equity, margin, open
 positions, pending orders and quotes remain accessible in the read-only snapshot
 disclosure on Transactions.
 
-The existing terminal adapter reads a preconfigured demo account, validates its
-scope and never accepts passwords or switches accounts. The MetaTrader option
-explains this limitation and refreshes status. It must not render a working-looking
-password/login form until a secure connector backend exists. No credentials are
-stored in the browser or journal, and no broker execution is enabled.
+The local MetaTrader 5 connector uses the existing FxSelect, ProjectDateInput,
+field/button tokens and account table. The Add account panel accepts server,
+numeric login, investor password and UTC history start date. Pending submissions
+lock the form; an unknown network outcome retries the same request ID. The visible
+password clears on submission; an uncertain request retains it only in component
+memory until reconciliation or unmount. It is never persisted in browser storage.
+Known validation failures require correction and password re-entry.
+
+Accounts show queued/syncing/connected/error/paused/disconnected metadata even
+before a first snapshot exists. Actions support full sync, pause/resume, credential
+replacement and disconnect/erase credential. Previously synced data remains
+readable as stale; disconnected does not mean history deletion. Each account's
+history stays scoped to its connection. Trading PnL remains separate from cashflows.
+
+On desktop, Accounts fills the available content viewport: the table and right
+panel scroll independently, with shared pagination at the bottom of the table
+pane. The bottom source disclosure is removed. Below 1000px the panel stacks and
+the page scrolls naturally, so all form controls remain reachable.
+
+The connector is Windows/local-host only and uses an isolated portable terminal
+per connection, DPAPI-protected credentials and a serialized background collector.
+It rejects effective trading permission and never sends broker orders. See
+`foundation_v2/README.md` for operational and verification limits.
 
 ## Strategies and Practice handoff
 

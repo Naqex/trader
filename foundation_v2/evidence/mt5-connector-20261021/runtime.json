@@ -1,0 +1,15 @@
+{
+  "ready": true,
+  "runtime_profile": "native",
+  "replay_storage_profile": "compact",
+  "run_id": "cc4c5589cc174d5ca4e69b276168e2bb",
+  "api_executable": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\.runtime\\api-builds\\mt5-connector-20261021-final\\trading-workspace-api.exe",
+  "api_sha256": "2cda6fcba0ef129c08f40c065cee7e0c20aed528cf6643ea57dabace758ef478",
+  "web_status": 200,
+  "connector_available": true,
+  "connection_count": 0,
+  "execution_capability": false,
+  "first_status": 200,
+  "unchanged_status": 304,
+  "broker_login_tested": false
+}

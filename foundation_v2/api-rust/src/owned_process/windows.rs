@@ -52,6 +52,7 @@ pub struct Child {
     process: OwnedHandle,
     id: u32,
     pub stdout: Option<tokio::process::ChildStdout>,
+    pub stdin: Option<tokio::process::ChildStdin>,
     pub stderr: Option<tokio::process::ChildStderr>,
 }
 
@@ -213,6 +214,46 @@ pub fn spawn(
     limits: Limits,
     capture_stderr: bool,
 ) -> io::Result<Child> {
+    spawn_inner(
+        executable,
+        args,
+        cwd,
+        overrides,
+        limits,
+        capture_stderr,
+        false,
+    )
+}
+
+/// Credentials travel in an inherited pipe, never command-line arguments.
+pub fn spawn_with_stdin(
+    executable: &Path,
+    args: &[String],
+    cwd: Option<&Path>,
+    overrides: &[(&str, &str)],
+    limits: Limits,
+    capture_stderr: bool,
+) -> io::Result<Child> {
+    spawn_inner(
+        executable,
+        args,
+        cwd,
+        overrides,
+        limits,
+        capture_stderr,
+        true,
+    )
+}
+
+fn spawn_inner(
+    executable: &Path,
+    args: &[String],
+    cwd: Option<&Path>,
+    overrides: &[(&str, &str)],
+    limits: Limits,
+    capture_stderr: bool,
+    piped_input: bool,
+) -> io::Result<Child> {
     if !executable.is_absolute()
         || !executable
             .extension()
@@ -264,6 +305,16 @@ pub fn spawn(
             FILE_ATTRIBUTE_NORMAL,
             null_mut(),
         ))?;
+        let (input, stdin) = if piped_input {
+            let (mut read, mut write) = (null_mut(), null_mut());
+            checked(CreatePipe(&mut read, &mut write, &security, 0))?;
+            let read = owned(read)?;
+            let write = owned(write)?;
+            checked(SetHandleInformation(raw(&write), HANDLE_FLAG_INHERIT, 0))?;
+            (read, Some(write))
+        } else {
+            (input, None)
+        };
         let (stdout, output) = pipe(&security)?;
         let (stderr, error) = if capture_stderr {
             let (read, write) = pipe(&security)?;
@@ -315,9 +366,13 @@ pub fn spawn(
             process,
             id: info.dwProcessId,
             stdout: None,
+            stdin: None,
             stderr: None,
         };
         child.stdout = Some(tokio::process::ChildStdout::from_std(stdout.into())?);
+        child.stdin = stdin
+            .map(|handle| tokio::process::ChildStdin::from_std(handle.into()))
+            .transpose()?;
         child.stderr = stderr
             .map(|handle| tokio::process::ChildStderr::from_std(handle.into()))
             .transpose()?;

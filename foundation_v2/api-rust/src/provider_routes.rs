@@ -203,7 +203,7 @@ pub fn routes_with_runtime(runtime: Arc<ProviderRuntime>) -> Router<Arc<AppState
 pub fn absent_market_routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/api/v2/data/market-assets", get(absent_market))
-        .route("/api/v2/live/status", get(absent_live))
+        .route("/api/v2/live/status", get(crate::mt5_connector::live_status))
         .route("/api/v2/data/market-assets/update", post(inactive_write))
 }
 
@@ -306,9 +306,6 @@ async fn qdm_refresh(
 
 async fn absent_market(_scope: Workspace) -> Json<Value> {
     Json(json!({"status":"unavailable","items":[],"execution_capability":false}))
-}
-async fn absent_live(_scope: Workspace) -> Json<Value> {
-    Json(json!({"status":"unavailable","execution_capability":false}))
 }
 
 async fn inactive_write(

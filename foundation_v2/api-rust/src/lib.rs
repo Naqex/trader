@@ -13,6 +13,7 @@ pub mod replay_service;
 pub mod session_trading_options;
 pub mod session_presets;
 pub mod live_ledger;
+pub mod mt5_connector;
 pub mod replay_portfolio;
 pub mod replay_storage;
 pub mod prop_core;
@@ -57,6 +58,7 @@ fn domain_routes_for(native_runtime: bool) -> Router<Arc<AppState>> {
         .merge(metadata_mutations::routes())
         .merge(session_presets::routes())
         .merge(live_ledger::routes())
+        .merge(mt5_connector::routes())
         .merge(replay_service::routes())
         .merge(prop_service::routes())
         .merge(analytics::routes())

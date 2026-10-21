@@ -24,6 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .transpose().map_err(std::io::Error::other)?
     } else { None };
     let app = trading_workspace_api::router(state.clone(), domain);
+    let mt5 = if state.native_runtime { Some(trading_workspace_api::mt5_connector::start(state.clone())) } else { None };
     tracing::info!(bind=%state.config.bind,contract_version=trading_workspace_api::CONTRACT_VERSION,"API listening");
     let (stop_tx, stop_rx) = tokio::sync::oneshot::channel::<()>();
     let server = axum::serve(listener, app.into_make_service_with_connect_info::<std::net::SocketAddr>())
@@ -52,6 +53,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     state.chatgpt_web.shutdown().await;
+    if let Some(mut mt5) = mt5 {
+        if tokio::time::timeout(std::time::Duration::from_secs(20), &mut mt5).await.is_err() {
+            mt5.abort(); let _ = mt5.await;
+        }
+    }
     state.pool.close();
     Ok(())
 }

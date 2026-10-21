@@ -33,3 +33,17 @@ test('account rows isolate manual accounts and mark stale snapshots visibly',()=
   assert.equal(broker.status,'stale')
   assert.equal(manual.updated,account.created_at_utc)
 })
+test('queued and disconnected MT5 accounts remain selectable without invented balances',()=>{
+  const rows=liveAccountRows([],[],{connections:[{id:'one',name:'One',status:'queued'},{id:'two',name:'Two',status:'disconnected',account:{balance:42,currency:'USD'}}]})
+  assert.deepEqual(rows.map(row=>row.id),['broker:one','broker:two'])
+  assert.equal(rows[0].snapshot.account.balance,undefined)
+  assert.equal(rows[1].snapshot.account.balance,42)
+  assert.equal(accountTransactions(rows[1]),null)
+  assert.equal(accountCashSummary(rows[1]).net,null)
+})
+test('only selected MT5 connection receives its full history',()=>{
+  const rows=liveAccountRows([],[],{connection_id:'two',account:{balance:20},deals:[],cashflows:[],connections:[{id:'one',name:'One',status:'connected',account:{balance:10}},{id:'two',name:'Two',status:'connected',account:{balance:20}}]})
+  assert.equal(accountTransactions(rows[0]),null)
+  assert.deepEqual(accountTransactions(rows[1]),[])
+  assert.equal(rows[0].snapshot.account.balance,10)
+})

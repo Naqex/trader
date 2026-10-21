@@ -13,6 +13,11 @@ dependencies = [
   "uvicorn>=0.53,<1",
 ]
 
+[project.optional-dependencies]
+mt5 = [
+    "metatrader5>=5.0.6231 ; sys_platform == 'win32'",
+]
+
 [dependency-groups]
 dev = ["pytest==9.1.1"]
 
