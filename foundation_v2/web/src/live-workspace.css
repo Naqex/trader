@@ -67,7 +67,6 @@
   .live-accounts-main { min-height:calc(100dvh - 180px); }
 }
 .live-transaction-tabs { display:flex; flex-wrap:wrap; gap:8px; padding:16px var(--wm-page-gutter); border-bottom:1px solid var(--wm-border); }
-.live-accounts-main .live-table-scroll [aria-selected='true'] td { background:var(--wm-hover); }
 .live-template-hint { margin:0 0 8px; color:var(--wm-content-muted); font-size:12px; line-height:18px; }
 .live-template-hint .live-template-link { display:inline-flex; align-items:center; gap:4px; width:auto; min-height:0; height:auto; padding:0; border:0; border-radius:0; background:transparent; color:var(--project-primary); font:inherit; vertical-align:baseline; }
 .live-template-hint .live-template-link:hover { background:transparent; color:var(--project-primary-hover); text-decoration:underline; text-underline-offset:3px; }

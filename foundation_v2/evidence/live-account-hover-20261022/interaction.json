@@ -1,0 +1,104 @@
+[
+  {
+    "state": "rest",
+    "data": {
+      "cells": [
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)"
+      ],
+      "current": "true",
+      "rect": {
+        "bottom": 338.5,
+        "height": 89,
+        "left": 248,
+        "right": 1028,
+        "top": 249.5,
+        "width": 780,
+        "x": 248,
+        "y": 249.5
+      },
+      "selected": null,
+      "width": 1368
+    }
+  },
+  {
+    "state": "hover",
+    "data": [
+      "rgb(61, 65, 72)",
+      "rgb(61, 65, 72)",
+      "rgb(61, 65, 72)",
+      "rgb(61, 65, 72)",
+      "rgb(61, 65, 72)",
+      "rgb(61, 65, 72)",
+      "rgb(61, 65, 72)"
+    ]
+  },
+  {
+    "state": "after-click-leave",
+    "data": {
+      "cells": [
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)"
+      ],
+      "current": "true",
+      "url": "http://127.0.0.1:5180/?workspace=tenant-a&view=live&area=live&section=trading-accounts&account_tab=connect&live_account=broker%3Af0e978a6-2f82-45ac-8dee-c5b36416057a"
+    }
+  },
+  {
+    "state": "keyboard-name",
+    "data": {
+      "current": "true",
+      "outline": "rgb(112, 181, 255) solid 2px",
+      "text": "MetaTrader 5"
+    }
+  },
+  {
+    "state": "light-rest",
+    "data": [
+      "rgba(0, 0, 0, 0)",
+      "rgba(0, 0, 0, 0)",
+      "rgba(0, 0, 0, 0)",
+      "rgba(0, 0, 0, 0)",
+      "rgba(0, 0, 0, 0)",
+      "rgba(0, 0, 0, 0)",
+      "rgba(0, 0, 0, 0)"
+    ]
+  },
+  {
+    "state": "light-hover",
+    "data": [
+      "rgb(221, 225, 231)",
+      "rgb(221, 225, 231)",
+      "rgb(221, 225, 231)",
+      "rgb(221, 225, 231)",
+      "rgb(221, 225, 231)",
+      "rgb(221, 225, 231)",
+      "rgb(221, 225, 231)"
+    ]
+  },
+  {
+    "state": "1920-rest",
+    "data": {
+      "cells": [
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)"
+      ],
+      "width": 1920
+    }
+  }
+]

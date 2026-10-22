@@ -244,6 +244,10 @@ inherited muted header text, token hover surface and an inset focus outline.
 Static headings share the same resting color. Account headers retain their
 60px height and connection-navigation centerline.
 
+The current account is conveyed by `aria-current` on its name button. Account
+context does not persist a whole-row selection fill; rows use the shared hover
+surface only while the pointer is over them.
+
 MT5 initialization reports only sanitized error categories: authorization,
 terminal IPC, timeout, version mismatch or unknown initialization failure.
 Historical `mt5_login_failed` records retain a neutral connection message;
