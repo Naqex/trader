@@ -1,0 +1,50 @@
+{
+  "date": "2026-10-22",
+  "scope": "Disposable PostgreSQL + real Rust API 8021 and preview 5191; read-only smoke on owner app 5180",
+  "journeys": {
+    "create": true,
+    "editRoundTrip": true,
+    "duplicateManualConfiguration": true,
+    "mt5Rename": true,
+    "crossRowTrade": true,
+    "crossRowCsv": true,
+    "openingCapitalUtcTransaction": true,
+    "deleteConfirmationCanceled": true,
+    "escapeAndFocusReturn": true,
+    "accountTypeSelectMobile": true
+  },
+  "viewports": [
+    {
+      "width": 1710,
+      "height": 987,
+      "theme": "dark",
+      "surface": "menus"
+    },
+    {
+      "width": 1368,
+      "height": 790,
+      "theme": "dark/light",
+      "surface": "account form"
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "theme": "light",
+      "surface": "form and select"
+    },
+    {
+      "width": 390,
+      "height": 650,
+      "theme": "dark",
+      "surface": "scrolling form; footer reachable; focus wraps to close"
+    }
+  ],
+  "consoleWarningsAndErrors": [],
+  "ownerAppWrites": false,
+  "brokerLoginOrExecution": false,
+  "limits": [
+    "UI delete confirmation canceled; destructive lifecycle validated through disposable PG integration tests",
+    "Broker sync/resume not exercised; synthetic paused connector has no credentials",
+    "No external reference form submitted"
+  ]
+}

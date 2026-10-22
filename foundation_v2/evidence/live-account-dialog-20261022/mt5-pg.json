@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "scope": "owned disposable PostgreSQL; real native Router, auth, DPAPI credential isolation and lifecycle retries; no broker login",
+  "owner_runtime_touched": false,
+  "source_unchanged": true,
+  "source_sha256": {
+    "api-rust\\src\\mt5_connector.rs": "eda8286e2633d0d2d9ff3f7ead51b39b7cdc2d18697b2816a6ddacaa28297b3b",
+    "api-rust\\tests\\mt5_connections_pg.rs": "d87601e6d53252020525d22a062410ed2cfcff39b85b9c00d7f957db59d38393",
+    "scripts\\mt5_connector.py": "6354c0bfd1a11901404706d80e9f175115934c34ae748fbf4955b3e9caaf0fc9",
+    "api-rust\\tests\\mt5_connections_pg.py": "e095bd1b9db3f13d809cba42da035d7fcddd1034c7b5fa25d3d51259c2877e71",
+    "api-rust\\src\\lib.rs": "5b4cf07370765750eb61c31f7cce4c5adf7bb4daabc5fa7999a9d7e144882ca5",
+    "api-rust\\src\\commands.rs": "f6b5f84cb2ef90ed94a89d608e7dc497d12adfce76e85aadc858fa6ba61e0619",
+    "api-rust\\src\\rust_runtime.rs": "e6393a355d15afa73a1149075bec0e5df52cba9e4b12513d2c6b724766d72a50",
+    "api-rust\\src\\native_mutation.rs": "3370b2b9ceec6dcb778fabda2469261fbd94a4489a0494411d55b19a05241283",
+    "migrations\\0009_mt5_connections.sql": "8a7a996f7bbd73aaf54059beff68485d6f4b78274d1dfa5120c61a8af29efa3c"
+  },
+  "stdout": "\nrunning 1 test\nfull_bytes=41417; summary_bytes=606\ntest secrets_retries_isolation_and_lifecycle ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.78s\n\n",
+  "stderr": "    Blocking waiting for file lock on build directory\n   Compiling trading-workspace-api v0.1.0 (D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 09s\n     Running tests\\mt5_connections_pg.rs (target\\debug\\deps\\mt5_connections_pg-0e4551c6c3a63c14.exe)\n"
+}

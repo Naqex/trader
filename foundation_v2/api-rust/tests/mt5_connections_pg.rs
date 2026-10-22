@@ -290,5 +290,75 @@ async fn secrets_retries_isolation_and_lifecycle() {
         .0,
         404
     );
+    let rename_path = format!("{base}/{id}/rename");
+    assert_eq!(
+        request(
+            &app,
+            "POST",
+            &rename_path,
+            "tenant-b",
+            json!({"name":"Denied"})
+        )
+        .await
+        .0,
+        422
+    );
+    assert_eq!(
+        request(&app, "POST", &rename_path, "tenant-a", json!({"name":"  "}))
+            .await
+            .0,
+        422
+    );
+    let renamed = request(
+        &app,
+        "POST",
+        &rename_path,
+        "tenant-a",
+        json!({"name":"Renamed locally"}),
+    )
+    .await;
+    assert_eq!(renamed.0, 200, "{}", renamed.1);
+    assert_eq!(renamed.1["name"], "Renamed locally");
+    assert_eq!(renamed.1["execution_capability"], false);
+    let remove_path = format!("{base}/{id}/remove");
+    assert_eq!(
+        request(&app, "POST", &remove_path, "tenant-b", Value::Null)
+            .await
+            .0,
+        200
+    );
+    assert_eq!(
+        request(&app, "GET", base, "tenant-a", Value::Null).await.1["items"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+    assert_eq!(
+        request(&app, "POST", &remove_path, "tenant-a", Value::Null)
+            .await
+            .1["removed"],
+        true
+    );
+    assert_eq!(
+        request(&app, "POST", &remove_path, "tenant-a", Value::Null)
+            .await
+            .1["removed"],
+        true
+    );
+    assert_eq!(
+        request(&app, "GET", base, "tenant-a", Value::Null).await.1["items"],
+        json!([])
+    );
+    assert_eq!(
+        db.query_one(
+            "SELECT count(*) FROM mt5_connection_requests WHERE workspace_id='tenant-a'",
+            &[]
+        )
+        .await
+        .unwrap()
+        .get::<_, i64>(0),
+        0
+    );
     state.pool.close();
 }

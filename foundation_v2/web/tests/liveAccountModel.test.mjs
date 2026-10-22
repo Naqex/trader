@@ -1,6 +1,34 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { liveAccountRows, accountTransactions, accountCashSummary } from '../src/liveAccountModel.js'
+import { liveAccountRows, accountTransactions, accountCashSummary, accountDraftErrors, duplicateAccountSeed } from '../src/liveAccountModel.js'
+
+test('account metadata validates type, UTC date and exact decimal input',()=>{
+  const draft={name:'New',currency:'USD',account_type:'prop',opening_balance:'0',opening_at_utc:'2026-09-01T10:20'}
+  assert.deepEqual(accountDraftErrors(draft),{})
+  for(const opening_balance of ['','-1','NaN','1e2','1000000000000001','0.0000000000001']) assert.ok(accountDraftErrors({...draft,opening_balance}).opening_balance)
+  assert.ok(accountDraftErrors({...draft,account_type:'unknown'}).account_type)
+  assert.ok(accountDraftErrors({...draft,opening_at_utc:''}).opening_at_utc)
+  assert.ok(accountDraftErrors({...draft,name:'   '}).name)
+})
+
+test('opening date survives snapshots and transactions; legacy uses creation time',()=>{
+  const dated={...account,payload:{...account.payload,opening_at_utc:'2026-09-01T10:20:00Z',account_type:'live'}}
+  const row=liveAccountRows([dated],[dated],null)[0]
+  assert.equal(row.snapshot.history_from_utc,dated.payload.opening_at_utc)
+  assert.equal(accountTransactions(row)[0].time,Date.parse(dated.payload.opening_at_utc))
+  assert.equal(accountTransactions(liveAccountRows([account],[account],null)[0])[0].time,Date.parse(account.created_at_utc))
+})
+
+test('duplicates copy configuration without account ids, history or credentials',()=>{
+  const row=liveAccountRows([account],[account],null)[0]
+  const seed=duplicateAccountSeed(row,0)
+  assert.equal(seed.opening_balance,'1000')
+  assert.equal(seed.opening_at_utc,'1970-01-01T00:00')
+  assert.equal(seed.account_id,undefined)
+  const broker=duplicateAccountSeed({name:'MT5',snapshot:{account:{}},connection:{credential:'never copy'}},0)
+  assert.equal(broker.opening_balance,'')
+  assert.equal(broker.connection,undefined)
+})
 
 const account = {record_id:'a',kind:'account',created_at_utc:'2026-10-01T00:00:00Z',payload:{name:'QA',currency:'USD',opening_balance:'1000'}}
 test('manual opening balance is its own event, never a deposit or live equity',()=>{

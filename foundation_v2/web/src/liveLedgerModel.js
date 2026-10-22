@@ -14,7 +14,7 @@ export function manualSnapshot(account, records, now = Date.now()) {
   const total = deals.every(deal => dealNet(deal) !== null) ? deals.reduce((sum, deal) => sum + dealNet(deal), 0) : null
   const opening = amount(account.payload.opening_balance)
   return { source: 'Ghi tay', manual: true, captured_at_utc: new Date(now).toISOString(),
-    history_from_utc: account.created_at_utc,
+    history_from_utc: account.payload.opening_at_utc || account.created_at_utc,
     account: { account_ref: account.record_id, name: account.payload.name, currency: account.payload.currency,
       opening_balance: opening, balance: opening !== null && total !== null ? opening + total : null,
       equity: null, profit: null }, deals, positions: null, orders: null, quotes: null, cashflows: [] }

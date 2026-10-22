@@ -1,0 +1,35 @@
+✔ Live reads workspace-local snapshots and preview does not call the reader (1.3716ms)
+✔ Live retains stale snapshots but clears data when access is denied (0.316ms)
+✔ Live shares reference surfaces with persisted manual records and responsive layouts (0.3964ms)
+✔ account metadata validates type, UTC date and exact decimal input (5.1819ms)
+✔ opening date survives snapshots and transactions; legacy uses creation time (2.4519ms)
+✔ duplicates copy configuration without account ids, history or credentials (0.4045ms)
+✔ manual opening balance is its own event, never a deposit or live equity (0.527ms)
+✔ broker cash movements are separated from trading deals and retain signed amounts (0.5332ms)
+✔ missing cashflow data or amounts remain unknown, empty verified history may be zero (0.293ms)
+✔ account rows isolate manual accounts and mark stale snapshots visibly (0.2314ms)
+✔ queued and disconnected MT5 accounts remain selectable without invented balances (0.2856ms)
+✔ only selected MT5 connection receives its full history (0.2615ms)
+✔ manual record command retains account scope and optimistic revision (40.7111ms)
+✔ successful HTTP without trustworthy write result remains uncertain (2.4258ms)
+✔ denied read is distinct from a valid empty workspace ledger (0.8719ms)
+✔ proxy/server errors cannot authorize a duplicate journal write (2.4695ms)
+✔ manual ledger isolates accounts/currency and uses signed costs once (5.4702ms)
+✔ missing cost or malformed opening capital cannot become a known balance (0.2804ms)
+✔ CSV roundtrip preserves decimals, multiline quotes and signed costs (1.2564ms)
+✔ CSV neutralizes formulas in text but preserves negative monetary amounts (0.3176ms)
+✔ CSV rejects invalid dates, incomplete quotes, headers and numeric overflow (1.0135ms)
+✔ CSV validates every row against server text and tag bounds before import starts (4.4634ms)
+✔ net includes every cost and excludes non-trading cashflows (28.8646ms)
+✔ filters use selected timezone and date bounds without mutating the source (0.8848ms)
+✔ calendar distinguishes missing feed, fully covered empty day and partial cutoff (5.0509ms)
+✔ unknown costs stop cumulative totals instead of bridging a misleading curve (1.5746ms)
+✔ outcome filters use the same break-even tolerance as closed-trade statistics (2.2092ms)
+ℹ tests 27
+ℹ suites 0
+ℹ pass 27
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 338.1809

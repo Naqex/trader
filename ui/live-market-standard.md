@@ -137,6 +137,28 @@ shared pagination beside the Add account panel. Manual creation and CSV import
 reuse the persisted journal dialogs. CSV imports closed trades into a manual
 account; it is not an account-list upload or automatic broker connection.
 
+The manual-account dialog uses the shared modal, searchable currency select and
+UTC date/time picker. Name, currency, Live/Demo/Prop firm type, opening capital and
+its effective timestamp are persisted together. New accounts require an explicit
+type and amount; editing preserves the existing currency. Legacy records without
+the new optional fields remain readable. Transactions date the Initial balance
+row from the effective opening timestamp, falling back to creation time for
+legacy records. Account-dialog footers have no horizontal divider.
+
+Each table row has a shared action popover, with source/status badges and a
+dedicated MT5 sync control. Actions always target that row, even when another
+account is selected. Manual accounts support edit, CSV, trade entry, journal,
+cashflow navigation, duplicate and archive. Duplication opens an editable manual
+account draft containing configuration only; it never copies trades, notes,
+connector IDs or credentials. Duplicating an MT5 account also creates a manual
+journal, with known snapshot balance proposed as its opening capital.
+
+Manual deletion is an append-only archive revision: the account and its children
+are hidden and cannot receive new revisions. MT5 rename changes the local display
+name only. MT5 removal deletes the local connector, credentials and synced
+snapshot; it never changes the broker account. Both delete paths require a shared
+confirmation dialog. Unknown write outcomes require reconciliation before retry.
+
 Transactions uses a separate cashflow table and account-details sidebar. Manual
 opening capital has its own Initial balance row, never a deposit; manual funding
 and fee CRUD are not supported and totals stay unknown. Broker MT5 balance events
@@ -175,6 +197,9 @@ The connector is Windows/local-host only and uses an isolated portable terminal
 per connection, DPAPI-protected credentials and a serialized background collector.
 It rejects effective trading permission and never sends broker orders. See
 `foundation_v2/README.md` for operational and verification limits.
+
+Account form/action evidence:
+`foundation_v2/evidence/live-account-dialog-20261022/CHECKPOINT.md`.
 
 ## Calendar viewport and empty values
 

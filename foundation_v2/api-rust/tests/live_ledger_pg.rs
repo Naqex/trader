@@ -262,4 +262,122 @@ async fn live_records_are_scoped_immutable_revisioned_and_idempotent() {
     assert_eq!(rows.len(), 2);
     assert_eq!(rows[0].get::<_, Value>(0)["note"], "");
     assert_eq!(rows[1].get::<_, Value>(0)["note"], "Correction");
+    let metadata = json!({"kind":"account","expected_revision":1,"payload":{"name":"Fixture revised","currency":"USD","opening_balance":"9000.25","account_type":"prop","opening_at_utc":"2026-09-01T12:34:00Z"}});
+    let revised = request(
+        &app,
+        "POST",
+        &account_path,
+        "tenant-a",
+        metadata,
+        "metadata-revision",
+    )
+    .await;
+    assert_eq!(revised.0, 200, "{}", revised.1);
+    assert_eq!(revised.1["payload"]["account_type"], "prop");
+    assert_eq!(
+        revised.1["payload"]["opening_at_utc"],
+        "2026-09-01T12:34:00Z"
+    );
+    let mut archived =
+        json!({"kind":"account","expected_revision":2,"payload":revised.1["payload"]});
+    archived["payload"]["archived"] = json!(true);
+    assert_eq!(
+        request(
+            &app,
+            "POST",
+            &account_path,
+            "tenant-b",
+            archived.clone(),
+            "cross-archive"
+        )
+        .await
+        .0,
+        404
+    );
+    let removed = request(
+        &app,
+        "POST",
+        &account_path,
+        "tenant-a",
+        archived.clone(),
+        "archive",
+    )
+    .await;
+    assert_eq!(removed.0, 200, "{}", removed.1);
+    assert_eq!(
+        request(&app, "POST", &account_path, "tenant-a", archived, "archive").await,
+        removed
+    );
+    assert_eq!(
+        request(&app, "GET", base, "tenant-a", Value::Null, "")
+            .await
+            .1["items"],
+        json!([])
+    );
+    assert_eq!(
+        request(
+            &app,
+            "POST",
+            base,
+            "tenant-a",
+            trade(&created.1),
+            "archived-parent-trade"
+        )
+        .await
+        .0,
+        422
+    );
+    let hidden_note = json!({"kind":"note","payload":{"account_id":created.1["record_id"],"title":"Hidden?","note":"No"}});
+    assert_eq!(
+        request(
+            &app,
+            "POST",
+            base,
+            "tenant-a",
+            hidden_note,
+            "archived-parent-note"
+        )
+        .await
+        .0,
+        422
+    );
+    let detached_note = json!({"kind":"note","expected_revision":1,"payload":{"title":"Escape","note":"Must stay archived","account_id":null}});
+    let note_path = format!("{base}/{}/revisions", note.1["record_id"].as_str().unwrap());
+    assert_eq!(
+        request(
+            &app,
+            "POST",
+            &note_path,
+            "tenant-a",
+            detached_note,
+            "archived-note-detach"
+        )
+        .await
+        .0,
+        422
+    );
+    let unarchive = json!({"kind":"account","expected_revision":3,"payload":revised.1["payload"]});
+    assert_eq!(
+        request(
+            &app,
+            "POST",
+            &account_path,
+            "tenant-a",
+            unarchive,
+            "reject-implicit-restore"
+        )
+        .await
+        .0,
+        409
+    );
+    assert_eq!(
+        db.query_one(
+            "SELECT count(*) FROM live_records WHERE workspace_id='tenant-a'",
+            &[]
+        )
+        .await
+        .unwrap()
+        .get::<_, i64>(0),
+        3
+    );
 }

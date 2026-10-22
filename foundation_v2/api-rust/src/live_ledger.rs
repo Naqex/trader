@@ -62,6 +62,12 @@ struct Account {
     name: String,
     currency: String,
     opening_balance: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    account_type: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    opening_at_utc: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    archived: Option<bool>,
 }
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -161,6 +167,14 @@ fn validate(kind: &str, payload: Value) -> Result<Value, ApiError> {
                 || !account.currency.bytes().all(|c| c.is_ascii_uppercase())
                 || !decimal(&account.opening_balance, false)
                 || account.opening_balance.starts_with('-')
+                || account
+                    .account_type
+                    .as_deref()
+                    .is_some_and(|v| !["live", "demo", "prop"].contains(&v))
+                || account
+                    .opening_at_utc
+                    .as_deref()
+                    .is_some_and(|v| timestamp(v).is_none())
             {
                 return Err(error());
             }
@@ -225,7 +239,7 @@ async fn list(
     let connection = state.pool.get().await.map_err(|_| ApiError::database())?;
     let rows = connection
         .query(
-            &format!("{SELECT} WHERE r.workspace_id=$1 ORDER BY r.updated_at_utc DESC,r.record_id"),
+            &format!("{SELECT} WHERE r.workspace_id=$1 AND NOT COALESCE((v.payload_json->>'archived')::boolean,false) AND NOT EXISTS (SELECT 1 FROM live_records a JOIN live_record_revisions av ON av.workspace_id=a.workspace_id AND av.record_id=a.record_id AND av.revision=a.current_revision WHERE a.workspace_id=r.workspace_id AND a.record_id=v.payload_json->>'account_id' AND COALESCE((av.payload_json->>'archived')::boolean,false)) ORDER BY r.updated_at_utc DESC,r.record_id"),
             &[&scope.workspace_id],
         )
         .await
@@ -293,7 +307,7 @@ async fn references(
     payload: &Value,
 ) -> Result<(), ApiError> {
     if let Some(account) = payload["account_id"].as_str() {
-        let exists: bool = tx.query_one("SELECT EXISTS(SELECT 1 FROM live_records WHERE workspace_id=$1 AND record_id=$2 AND kind='account')", &[&workspace, &account]).await.map_err(|_| ApiError::database())?.get(0);
+        let exists: bool = tx.query_one("SELECT EXISTS(SELECT 1 FROM live_records a JOIN live_record_revisions v ON v.workspace_id=a.workspace_id AND v.record_id=a.record_id AND v.revision=a.current_revision WHERE a.workspace_id=$1 AND a.record_id=$2 AND a.kind='account' AND NOT COALESCE((v.payload_json->>'archived')::boolean,false))", &[&workspace, &account]).await.map_err(|_| ApiError::database())?.get(0);
         if !exists {
             return Err(invalid("live_account_not_found"));
         }
@@ -354,6 +368,16 @@ async fn execute(
         let current_kind: String = current.get("kind");
         let revision: i64 = current.get("current_revision");
         let old: Value = current.get("payload_json");
+        if old["archived"] == true {
+            return Err(conflict("live_account_archived"));
+        }
+        // A note cannot escape an archived account by changing its parent in a revision.
+        references(
+            tx,
+            &scope.workspace_id,
+            &json!({"account_id":old["account_id"]}),
+        )
+        .await?;
         if Some(revision) != expected {
             return Err(conflict("live_revision_conflict"));
         }
@@ -447,9 +471,13 @@ mod tests {
             json!({"name":"a","currency":"usd","opening_balance":"100"}),
             json!({"name":"a","currency":"USD","opening_balance":"-100"}),
             json!({"name":"","currency":"USD","opening_balance":"0"}),
+            json!({"name":"a","currency":"USD","opening_balance":"0","account_type":"unknown"}),
+            json!({"name":"a","currency":"USD","opening_balance":"0","opening_at_utc":"2026-01-01T00:00:00+07:00"}),
+            json!({"name":"a","currency":"USD","opening_balance":"0","archived":"true"}),
         ] {
             assert!(validate("account", bad).is_err());
         }
+        assert!(validate("account",json!({"name":"a","currency":"USD","opening_balance":"0","account_type":"prop","opening_at_utc":"2026-01-01T00:00:00Z"})).is_ok());
         assert!(validate("note",json!({"title":"Review","note":"Line 1\nLine 2","tags":["Trend"],"playbook_id":"strategy-a","playbook_revision":2})).is_ok());
         assert!(validate("note", json!({"title":"Review","note":"","tags":[]})).is_err());
         for invalid in ["", "-", ".", "1.2.3", "+1", "1e2", "1000000000000001"] {

@@ -1,4 +1,7 @@
 {
+  "Thao tác tài khoản": { "vi": "Thao tác tài khoản", "en": "Account actions" },
+  "Sửa tài khoản": { "vi": "Sửa tài khoản", "en": "Edit account" },
+  "Xóa tài khoản": { "vi": "Xóa tài khoản", "en": "Delete account" },
   "Đang xử lý…": {"vi":"Đang xử lý…","en":"Working…"},
   "Thông tin tài khoản chưa hợp lệ. Kiểm tra tên, server và số tài khoản MT5.": {"vi":"Thông tin tài khoản chưa hợp lệ. Kiểm tra tên, server và số tài khoản MT5.","en":"Account details are invalid. Check the name, server and MT5 account login."},
   "Ngày bắt đầu phải từ 01/01/2000 đến hôm nay (UTC).": {"vi":"Ngày bắt đầu phải từ 01/01/2000 đến hôm nay (UTC).","en":"Start date must be between 1 January 2000 and today (UTC)."},

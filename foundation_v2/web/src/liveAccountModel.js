@@ -3,6 +3,25 @@ import { summarizeDeals } from './liveWorkspaceModel.js'
 
 const known = value => typeof value === 'number' && Number.isFinite(value)
 
+export function accountDraftErrors(draft) {
+  const errors = {}
+  if (!draft.name.trim()) errors.name = 'Nhập tên tài khoản.'
+  else if (draft.name.trim().length > 160) errors.name = 'Tên tài khoản tối đa 160 ký tự.'
+  if (!/^[A-Z]{3}$/.test(draft.currency)) errors.currency = 'Chọn đơn vị tiền tệ.'
+  if (!['live','demo','prop'].includes(draft.account_type)) errors.account_type = 'Chọn loại tài khoản.'
+  if (!/^\d+(\.\d{1,12})?$/.test(draft.opening_balance) || Number(draft.opening_balance) > 1e15) errors.opening_balance = 'Nhập số tiền từ 0 đến 1.000.000.000.000.000, tối đa 12 số thập phân.'
+  if (!draft.opening_at_utc || !Number.isFinite(Date.parse(`${draft.opening_at_utc.replace(/Z$/,'')}Z`))) errors.opening_at_utc = 'Chọn ngày và giờ vốn ban đầu.'
+  return errors
+}
+
+export function duplicateAccountSeed(row, now = Date.now()) {
+  // Copy configuration into a new manual journal; never duplicate trades or credentials.
+  return { name:`${row.name.slice(0,148)} (bản sao)`, currency:row.snapshot.account.currency || 'USD',
+    account_type:row.record?.payload.account_type || '',
+    opening_balance:row.record?.payload.opening_balance ?? (known(row.snapshot.account.balance) ? String(row.snapshot.account.balance) : ''),
+    opening_at_utc:new Date(now).toISOString().slice(0,16) }
+}
+
 export function liveAccountRows(accounts, records, broker) {
   return [
     ...(broker?.connections?.length ? broker.connections.map(connection => ({
@@ -16,7 +35,7 @@ export function liveAccountRows(accounts, records, broker) {
 
 export function accountTransactions(row) {
   if (!row) return null
-  if (row.record) return [{ id: `opening:${row.id}`, kind: 'opening', label: 'Số dư ban đầu', amount: row.snapshot.account.opening_balance, time: Date.parse(row.record.created_at_utc) }]
+  if (row.record) return [{ id: `opening:${row.id}`, kind: 'opening', label: 'Số dư ban đầu', amount: row.snapshot.account.opening_balance, time: Date.parse(row.record.payload.opening_at_utc || row.record.created_at_utc) }]
   if (!Array.isArray(row.snapshot.cashflows)) return null
   return row.snapshot.cashflows.map(item => {
     // MT5 balance events use profit for the cash movement, not trading PnL.

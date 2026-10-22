@@ -4,7 +4,7 @@ import { useTestingLocale } from './testingLocale.jsx'
 import FxSelect from './FxSelect.jsx'
 import TestingIcon from './TestingIcon.jsx'
 import { timezoneOptions } from './AnalyticsFilterControls.jsx'
-import { fetchLiveRecords } from './liveLedgerApi.js'
+import { fetchLiveRecords, saveLiveRecord } from './liveLedgerApi.js'
 import { fetchPlaybooks } from './playbookApi.js'
 import { manualSnapshot, closedTradeStats } from './liveLedgerModel.js'
 import LiveRecordDialog from './LiveRecordDialog.jsx'
@@ -150,6 +150,19 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
   const tags = [...new Set((payload?.deals || []).flatMap(deal => deal.record?.payload.tags || []))]
   const strategySeed = payload?.manual && strategy !== 'all' ? {playbook_id:strategyId,playbook_revision:Number(strategyRevision || strategies.find(item => item.record_id === strategyId)?.revision)} : undefined
   const open = (kind,record) => { if (!preview && ledger.status === 'ready' && (strategyReady || kind === 'account')) setAction({kind,record,seed: !record ? strategySeed : undefined}) }
+  const openAccountAction = (kind,record) => { if (!preview && ledger.status === 'ready' && strategyReady) setAction({kind,accountId:record?.record_id,seed:strategySeed}) }
+  const navigateAccount = (row,target) => {
+    const url=new URL(window.location.href)
+    url.searchParams.set('live_account',row.id)
+    url.searchParams.set('section',target==='transactions'?'trading-accounts':target)
+    if(target==='transactions')url.searchParams.set('account_tab','transactions');else url.searchParams.delete('account_tab')
+    navigate(url.pathname+url.search)
+  }
+  const archiveAccount = async record => {
+    await saveLiveRecord(workspace,'account',{...record.payload,archived:true},record)
+    setLedger(current=>({...current,items:current.items.filter(item=>item.record_id!==record.record_id && item.payload.account_id!==record.record_id)}))
+    if(chosen===record.record_id)choose('')
+  }
   const create = (kind,seed) => { if (seed && !preview && ledger.status === 'ready' && strategyReady) setAction({kind:'note',seed:{...strategySeed,...seed}}); else if (!seed) open(kind === 'Add trade' ? 'trade' : kind === 'note' ? 'note' : 'account') }
   const saved = (record,close = true) => {
     setLedger(current => ({status:'ready',items:[record,...current.items.filter(item => item.record_id !== record.record_id)],error:''}))
@@ -173,9 +186,9 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
     {section === 'notes' && <JournalNotes writable={!preview && ledger.status === 'ready' && strategyReady} key={chosen} records={ledger.items} accountId={chosen || null} strategies={strategies} onEdit={record => open('note',record)} onCreate={() => open('note')} />}
     {section === 'tag-analytics' && <JournalTags deals={deals} currency={payload?.account?.currency || ''} />}
     {section === 'analytics' && <><Summary payload={payload} deals={deals} />{deals.length > 0 && <PnlCurve deals={deals} currency={payload?.account?.currency} />}</>}
-    {section === 'trading-accounts' && <LiveAccounts key={workspace} workspace={workspace} accounts={accounts} records={ledger.items} broker={broker} chosen={chosen} onSelect={choose} transactions={query.get('account_tab') === 'transactions'} writable={!preview && ledger.status === 'ready'} canImport={!preview && ledger.status === 'ready' && strategyReady && accounts.length > 0} onCreate={() => open('account')} onImport={() => open('import')} onEdit={record => open('account',record)} onRefresh={onRefresh} />}
+    {section === 'trading-accounts' && <LiveAccounts key={workspace} workspace={workspace} accounts={accounts} records={ledger.items} broker={broker} chosen={chosen} onSelect={choose} transactions={query.get('account_tab') === 'transactions'} writable={!preview && ledger.status === 'ready'} canImport={!preview && ledger.status === 'ready' && strategyReady && accounts.length > 0} onCreate={seed => {if(!preview && ledger.status==='ready')setAction({kind:'account',seed})}} onImport={record => openAccountAction('import',record?.record_id ? record : null)} onEdit={record => open('account',record)} onTrade={record=>openAccountAction('trade',record)} onNavigate={navigateAccount} onArchive={archiveAccount} onRefresh={onRefresh} />}
 
     </>}
-    {action && <LiveRecordDialog key={`${workspace}:${action.kind}:${action.record?.record_id || 'new'}`} workspace={workspace} kind={action.kind} record={action.record} seed={action.seed} accountId={account?.record_id} accounts={accounts} strategies={strategies} onClose={() => setAction(null)} onSaved={saved} />}
+    {action && <LiveRecordDialog key={`${workspace}:${action.kind}:${action.record?.record_id || 'new'}`} workspace={workspace} kind={action.kind} record={action.record} seed={action.seed} accountId={action.accountId || account?.record_id} accounts={accounts} strategies={strategies} onClose={() => setAction(null)} onSaved={saved} />}
   </>
 }

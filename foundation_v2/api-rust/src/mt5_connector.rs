@@ -252,8 +252,60 @@ async fn action(
     scope: Workspace,
     Path((id, action)): Path<(Uuid, String)>,
     headers: HeaderMap,
+    body: Bytes,
 ) -> Result<Json<Value>, ApiError> {
     local_origin(&headers)?;
+    if action == "rename" || action == "remove" {
+        let mut conn = state.pool.get().await.map_err(|_| ApiError::database())?;
+        let tx = conn.transaction().await.map_err(|_| ApiError::database())?;
+        tx.query_one(
+            "SELECT pg_advisory_xact_lock($1)",
+            &[&crate::native_mutation::idempotency_lock(
+                &scope,
+                "mt5-connections",
+            )],
+        )
+        .await
+        .map_err(|_| ApiError::database())?;
+        if action == "rename" {
+            #[derive(Deserialize)]
+            #[serde(deny_unknown_fields)]
+            struct Rename {
+                name: String,
+            }
+            if body.len() > 1024 {
+                return Err(error("invalid_mt5_connection"));
+            }
+            let draft: Rename =
+                serde_json::from_slice(&body).map_err(|_| error("invalid_mt5_connection"))?;
+            let name = draft.name.trim();
+            if name.is_empty() || name.len() > 160 || name.chars().any(char::is_control) {
+                return Err(error("invalid_mt5_connection"));
+            }
+            let row = tx.query_opt("UPDATE mt5_connections SET name=$3,updated_at=CURRENT_TIMESTAMP WHERE workspace_id=$1 AND connection_id=$2 RETURNING *", &[&scope.workspace_id, &id, &name]).await.map_err(|_| ApiError::database())?.ok_or_else(|| error("mt5_connection_missing_or_credentials_required"))?;
+            let result = public(&row);
+            tx.commit().await.map_err(|_| ApiError::database())?;
+            return Ok(Json(result));
+        }
+        // Removing this local connector never closes or deletes the broker account.
+        // A worker with an in-flight snapshot cannot update a missing connection id.
+        tx.execute(
+            "DELETE FROM mt5_connection_requests WHERE workspace_id=$1 AND connection_id=$2",
+            &[&scope.workspace_id, &id],
+        )
+        .await
+        .map_err(|_| ApiError::database())?;
+        tx.execute(
+            "DELETE FROM mt5_connections WHERE workspace_id=$1 AND connection_id=$2",
+            &[&scope.workspace_id, &id],
+        )
+        .await
+        .map_err(|_| ApiError::database())?;
+        tx.commit().await.map_err(|_| ApiError::database())?;
+        return Ok(Json(
+            json!({"id":id,"removed":true,"execution_capability":false}),
+        ));
+    }
     let status = match action.as_str() {
         "sync" | "resume" => "queued",
         "pause" => "paused",
