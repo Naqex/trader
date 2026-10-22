@@ -1,0 +1,204 @@
+{
+  "passed": true,
+  "duration_seconds": 33.6187757,
+  "stopped_pid": 7528,
+  "samples": [
+    {
+      "at_utc": "2026-10-22T16:18:29.0923269Z",
+      "status": "connected",
+      "error_code": null,
+      "last_synced_at": "2026-10-22T16:18:06.684197Z",
+      "requested_mode": "read_only",
+      "verified_permissions": {
+        "read": true,
+        "trade": false
+      },
+      "terminal_pids": []
+    },
+    {
+      "at_utc": "2026-10-22T16:18:31.4207163Z",
+      "status": "connected",
+      "error_code": null,
+      "last_synced_at": "2026-10-22T16:18:06.684197Z",
+      "requested_mode": "read_only",
+      "verified_permissions": {
+        "read": true,
+        "trade": false
+      },
+      "terminal_pids": []
+    },
+    {
+      "at_utc": "2026-10-22T16:18:33.8900363Z",
+      "status": "connected",
+      "error_code": null,
+      "last_synced_at": "2026-10-22T16:18:06.684197Z",
+      "requested_mode": "read_only",
+      "verified_permissions": {
+        "read": true,
+        "trade": false
+      },
+      "terminal_pids": []
+    },
+    {
+      "at_utc": "2026-10-22T16:18:36.1702249Z",
+      "status": "connected",
+      "error_code": null,
+      "last_synced_at": "2026-10-22T16:18:06.684197Z",
+      "requested_mode": "read_only",
+      "verified_permissions": {
+        "read": true,
+        "trade": false
+      },
+      "terminal_pids": []
+    },
+    {
+      "at_utc": "2026-10-22T16:18:38.4836421Z",
+      "status": "connected",
+      "error_code": null,
+      "last_synced_at": "2026-10-22T16:18:06.684197Z",
+      "requested_mode": "read_only",
+      "verified_permissions": {
+        "read": true,
+        "trade": false
+      },
+      "terminal_pids": []
+    },
+    {
+      "at_utc": "2026-10-22T16:18:40.5821908Z",
+      "status": "error",
+      "error_code": "mt5_terminal_stopped",
+      "last_synced_at": "2026-10-22T16:18:06.684197Z",
+      "requested_mode": "read_only",
+      "verified_permissions": {
+        "read": true,
+        "trade": false
+      },
+      "terminal_pids": []
+    },
+    {
+      "at_utc": "2026-10-22T16:18:42.6798946Z",
+      "status": "error",
+      "error_code": "mt5_terminal_stopped",
+      "last_synced_at": "2026-10-22T16:18:06.684197Z",
+      "requested_mode": "read_only",
+      "verified_permissions": {
+        "read": true,
+        "trade": false
+      },
+      "terminal_pids": []
+    },
+    {
+      "at_utc": "2026-10-22T16:18:44.8338857Z",
+      "status": "error",
+      "error_code": "mt5_terminal_stopped",
+      "last_synced_at": "2026-10-22T16:18:06.684197Z",
+      "requested_mode": "read_only",
+      "verified_permissions": {
+        "read": true,
+        "trade": false
+      },
+      "terminal_pids": []
+    },
+    {
+      "at_utc": "2026-10-22T16:18:46.9938418Z",
+      "status": "error",
+      "error_code": "mt5_terminal_stopped",
+      "last_synced_at": "2026-10-22T16:18:06.684197Z",
+      "requested_mode": "read_only",
+      "verified_permissions": {
+        "read": true,
+        "trade": false
+      },
+      "terminal_pids": []
+    },
+    {
+      "at_utc": "2026-10-22T16:18:49.2779120Z",
+      "status": "error",
+      "error_code": "mt5_terminal_stopped",
+      "last_synced_at": "2026-10-22T16:18:06.684197Z",
+      "requested_mode": "read_only",
+      "verified_permissions": {
+        "read": true,
+        "trade": false
+      },
+      "terminal_pids": []
+    },
+    {
+      "at_utc": "2026-10-22T16:18:51.4357622Z",
+      "status": "error",
+      "error_code": "mt5_terminal_stopped",
+      "last_synced_at": "2026-10-22T16:18:06.684197Z",
+      "requested_mode": "read_only",
+      "verified_permissions": {
+        "read": true,
+        "trade": false
+      },
+      "terminal_pids": []
+    },
+    {
+      "at_utc": "2026-10-22T16:18:53.7061256Z",
+      "status": "error",
+      "error_code": "mt5_terminal_stopped",
+      "last_synced_at": "2026-10-22T16:18:06.684197Z",
+      "requested_mode": "read_only",
+      "verified_permissions": {
+        "read": true,
+        "trade": false
+      },
+      "terminal_pids": []
+    },
+    {
+      "at_utc": "2026-10-22T16:18:55.9747818Z",
+      "status": "error",
+      "error_code": "mt5_terminal_stopped",
+      "last_synced_at": "2026-10-22T16:18:06.684197Z",
+      "requested_mode": "read_only",
+      "verified_permissions": {
+        "read": true,
+        "trade": false
+      },
+      "terminal_pids": []
+    },
+    {
+      "at_utc": "2026-10-22T16:18:58.1081959Z",
+      "status": "syncing",
+      "error_code": "mt5_terminal_stopped",
+      "last_synced_at": "2026-10-22T16:18:06.684197Z",
+      "requested_mode": "read_only",
+      "verified_permissions": {
+        "read": true,
+        "trade": false
+      },
+      "terminal_pids": []
+    },
+    {
+      "at_utc": "2026-10-22T16:19:00.3253206Z",
+      "status": "syncing",
+      "error_code": "mt5_terminal_stopped",
+      "last_synced_at": "2026-10-22T16:18:06.684197Z",
+      "requested_mode": "read_only",
+      "verified_permissions": {
+        "read": true,
+        "trade": false
+      },
+      "terminal_pids": [
+        19340
+      ]
+    },
+    {
+      "at_utc": "2026-10-22T16:19:02.5849127Z",
+      "status": "connected",
+      "error_code": null,
+      "last_synced_at": "2026-10-22T16:19:02.098146Z",
+      "requested_mode": "read_only",
+      "verified_permissions": {
+        "read": true,
+        "trade": false
+      },
+      "terminal_pids": [
+        19340
+      ]
+    }
+  ],
+  "broker_orders_sent": 0
+}

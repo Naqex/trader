@@ -1,0 +1,15 @@
+Observed from the isolated terminal's UTF-16 log before its next cold startup.
+Account identifiers and addresses omitted. Build: 5.0.0.6230.
+
+23:00:09.156 Terminal MetaTrader 5 x64 build 6230 started
+23:00:09.699 LiveUpdate new version build 6230 (IDE: 6230, Tester: 6230) is available
+23:00:13.070 LiveUpdate downloaded successfully
+23:06:10.034 LiveUpdate start owned updater with /update /path:<isolated terminal> /portable
+23:06:11.681 Terminal exit with code 0
+23:06:11.976 Network disconnected from Exness-MT5Trial17
+23:06:12.105 Terminal shutdown with 0
+
+The source and owned terminal64.exe were both version 5.0.0.6230 with identical
+SHA256 d92c969e0c141cad6f4f9083234b841e2da21862e66b3bbc9b70cbfe5a8e7a47.
+The installed MetaEditor64.exe and metatester64.exe were also 5.0.0.6230.
+Old preparation copied terminal64.exe alone; old cleanup removed the companions.

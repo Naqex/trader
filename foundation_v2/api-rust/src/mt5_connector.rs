@@ -589,7 +589,7 @@ async fn run_one(state: &Arc<AppState>) -> Result<(), String> {
         return Ok(());
     }
     let allowed = state.authorization.authorized_workspace_ids();
-    let row=conn.query_opt("SELECT * FROM mt5_connections WHERE workspace_id=ANY($1) AND credential IS NOT NULL AND status IN ('queued','syncing','connected','error') AND next_sync_at<=CURRENT_TIMESTAMP ORDER BY next_sync_at LIMIT 1",&[&allowed]).await.map_err(|_|"mt5_database_unavailable")?;
+    let row=conn.query_opt("SELECT workspace_id,connection_id,generation,start_date,last_synced_at,full_sync,status,credential,requested_mode FROM mt5_connections WHERE workspace_id=ANY($1) AND credential IS NOT NULL AND status IN ('queued','syncing','connected','error') AND next_sync_at<=CURRENT_TIMESTAMP ORDER BY next_sync_at LIMIT 1",&[&allowed]).await.map_err(|_|"mt5_database_unavailable")?;
     let Some(row) = row else { return Ok(()) };
     let workspace: String = row.get("workspace_id");
     if !state
@@ -613,8 +613,13 @@ async fn run_one(state: &Arc<AppState>) -> Result<(), String> {
         .map(|date| (date - ChronoDuration::days(2)).to_rfc3339())
         .filter(|value| value.as_str() > history.as_str())
         .unwrap_or_else(|| history.clone());
+    let include_history = row.get::<_, bool>("full_sync")
+        || row.get::<_, String>("status") != "connected"
+        || row
+            .get::<_, Option<chrono::DateTime<Utc>>>("last_synced_at")
+            .is_none_or(|last| Utc::now() - last >= ChronoDuration::seconds(60));
     let result = {
-        let work = crate::demo_trading::managed_collect(
+        let work = crate::demo_trading::managed_read(
             state,
             &workspace,
             id,
@@ -623,6 +628,7 @@ async fn run_one(state: &Arc<AppState>) -> Result<(), String> {
             row.get::<_, String>("requested_mode"),
             &from,
             &history,
+            include_history,
         );
         tokio::pin!(work);
         loop {
@@ -636,8 +642,21 @@ async fn run_one(state: &Arc<AppState>) -> Result<(), String> {
         }
     };
     let Some(result) = result else { return Ok(()) };
+    if !include_history && result.is_ok() {
+        conn.execute("UPDATE mt5_connections SET next_sync_at=CURRENT_TIMESTAMP+interval '10 seconds' WHERE workspace_id=$1 AND connection_id=$2 AND generation=$3",&[&workspace,&id,&generation]).await.map_err(|_|"mt5_database_unavailable")?;
+        return Ok(());
+    }
+    // Heartbeats never transfer/decode the journal. Fetch it only when a
+    // successful incremental collection needs the previous revision to merge.
+    let previous = if include_history && result.is_ok() && !row.get::<_, bool>("full_sync") {
+        let previous = conn.query_opt("SELECT snapshot FROM mt5_connections WHERE workspace_id=$1 AND connection_id=$2 AND generation=$3", &[&workspace, &id, &generation]).await.map_err(|_|"mt5_database_unavailable")?;
+        let Some(previous) = previous else { return Ok(()) };
+        previous.get::<_, Option<Value>>(0)
+    } else {
+        None
+    };
     let result = result.and_then(|next| {
-        let snapshot = merge_snapshot(row.get("snapshot"), next, row.get("full_sync"));
+        let snapshot = merge_snapshot(previous, next, row.get("full_sync"));
         if serde_json::to_vec(&snapshot)
             .map_err(|_| "mt5_snapshot_failed")?
             .len()
@@ -650,18 +669,38 @@ async fn run_one(state: &Arc<AppState>) -> Result<(), String> {
     });
     match result {
         Ok(snapshot) => {
-            conn.execute("UPDATE mt5_connections SET status='connected',full_sync=false,snapshot=$4,error_code=NULL,last_synced_at=CURRENT_TIMESTAMP,next_sync_at=CURRENT_TIMESTAMP+interval '60 seconds',updated_at=CURRENT_TIMESTAMP WHERE workspace_id=$1 AND connection_id=$2 AND generation=$3",&[&workspace,&id,&generation,&snapshot]).await.map_err(|_|"mt5_database_unavailable")?;
+            conn.execute("UPDATE mt5_connections SET status='connected',full_sync=false,snapshot=$4,error_code=NULL,last_synced_at=CURRENT_TIMESTAMP,next_sync_at=CURRENT_TIMESTAMP+interval '10 seconds',updated_at=CURRENT_TIMESTAMP WHERE workspace_id=$1 AND connection_id=$2 AND generation=$3",&[&workspace,&id,&generation,&snapshot]).await.map_err(|_|"mt5_database_unavailable")?;
         }
         Err(code) => {
-            conn.execute("UPDATE mt5_connections SET status='error',error_code=$4,next_sync_at=CURRENT_TIMESTAMP+interval '5 minutes',updated_at=CURRENT_TIMESTAMP WHERE workspace_id=$1 AND connection_id=$2 AND generation=$3",&[&workspace,&id,&generation,&code]).await.map_err(|_|"mt5_database_unavailable")?;
+            let retry_seconds = retry_seconds(&code);
+            conn.execute("UPDATE mt5_connections SET status='error',error_code=$4,next_sync_at=CURRENT_TIMESTAMP+make_interval(secs=>$5),updated_at=CURRENT_TIMESTAMP WHERE workspace_id=$1 AND connection_id=$2 AND generation=$3",&[&workspace,&id,&generation,&code,&retry_seconds]).await.map_err(|_|"mt5_database_unavailable")?;
         }
     }
     Ok(())
 }
 
+fn retry_seconds(code: &str) -> f64 {
+    match code {
+        "mt5_disconnected"
+        | "mt5_terminal_stopped"
+        | "mt5_operation_timeout"
+        | "mt5_startup_timeout"
+        | "mt5_terminal_unavailable"
+        | "mt5_worker_failed" => 15.0,
+        _ => 300.0,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn terminal_or_network_failures_retry_quickly_without_authentication_loop() {
+        assert_eq!(retry_seconds("mt5_terminal_stopped"), 15.0);
+        assert_eq!(retry_seconds("mt5_disconnected"), 15.0);
+        assert_eq!(retry_seconds("mt5_auth_failed"), 300.0);
+        assert_eq!(retry_seconds("mt5_identity_changed"), 300.0);
+    }
     #[test]
     fn credentials_validate_without_echo() {
         let mut d = Connect {

@@ -26,17 +26,28 @@ stored permission/identity/generation binding, then sends private JSON lines to
 connection and authenticates once. Both read-only and trading connections keep
 their terminal running between journal refreshes; trading reads reuse that same
 session. Read-only workers enable no terminal trading permission and accept only
-journal collection. History/account snapshots refresh every 60 seconds while the
-local API is running, independently of which page is open. This is periodic data
+health checks and journal collection. Health is checked about every 10 seconds;
+history/account snapshots refresh every 60 seconds while the
+local API is running, independently of which page is open. Heartbeats select only
+connection metadata from PostgreSQL and never decode/merge its journal snapshot.
+A successful incremental history collection reads the previous snapshot once to
+merge it; a full sync replaces it. This is periodic data
 refresh over a persistent broker connection, not tick streaming. Normal refreshes
-keep the connected status; actual failures enter error and retry after 5 minutes
-with a fresh worker. Windows broker discovery copies only public `servers.dat`/`.srv`
+keep the connected status. Transient IPC/network/terminal failures retry after
+15 seconds; authentication, identity and other failures retain a 5-minute retry.
+A live terminal keeps its session through a broker network interruption; a stopped
+or broken worker is recreated. This recovery applies to reads/session ownership,
+never to order sends. Windows broker discovery copies only public `servers.dat`/`.srv`
 from data belonging to the installed terminal, never saved accounts/profiles/EAs.
 SDK cold startup has a 60s budget, worker startup 75s and warm operations 15s.
 Pause/disconnect/reconnect or API shutdown closes the owned terminal job, including
 WebView children. No terminal cleanup runs after a successful periodic read:
 cleaning there both disconnected MT5 and raced Windows file locks. A cold worker
-cleans its private terminal directory before authentication.
+cleans its private account/configuration directory before authentication, retaining
+only the three owned MT5 executables. Initial setup seeds terminal, MetaEditor and
+tester from the installed MT5 directory and keeps self-updated binaries. Removing
+the companion executables made MT5 LiveUpdate download them and restart the
+terminal even at the same build. No global update setting is changed.
 The native local supervisor must remain the single API owner of this terminal root;
 multiple independent API processes sharing it need a lifetime lease before use.
 
@@ -59,6 +70,8 @@ PostgreSQL and UI fixtures are separate from actual broker execution acceptance.
 See [current evidence](../evidence/mt5-connection-trading-20261022/CHECKPOINT.md).
 Persistent read-only lifetime is verified separately in the
 [warm-session checkpoint](../evidence/mt5-persistent-connection-20261022/CHECKPOINT.md).
+Health/recovery and the bounded resource measurement are recorded in the
+[connection-health checkpoint](../evidence/mt5-connection-health-20261022/CHECKPOINT.md).
 
 ## Legacy external DEMO policy
 

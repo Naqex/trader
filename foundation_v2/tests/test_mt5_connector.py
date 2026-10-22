@@ -46,6 +46,12 @@ class ConnectorTests(unittest.TestCase):
         self.sdk.account_info.side_effect=[self.account,NS(login=7,server='Fixture-Demo')]
         with self.assertRaisesRegex(RuntimeError,'mt5_identity_changed'):self.read()
 
+    def test_ipc_failure_is_distinct_from_broker_network_disconnection(self):
+        self.sdk.terminal_info.return_value=None
+        with self.assertRaisesRegex(RuntimeError,'^mt5_terminal_unavailable$'):self.read()
+        self.sdk.terminal_info.return_value=NS(connected=False)
+        with self.assertRaisesRegex(RuntimeError,'^mt5_disconnected$'):self.read()
+
     def test_trading_permission_and_environment_are_separate(self):
         self.account.trade_allowed=True
         self.account.trade_expert=True
@@ -139,6 +145,24 @@ class ConnectorTests(unittest.TestCase):
                     connector.clean_terminal(root,folder.name)
                 self.assertEqual(file.read_text(),'preserve')
             finally:junction.rmdir()
+
+    def test_owned_install_keeps_updated_binaries_and_seeds_missing_companions(self):
+        with tempfile.TemporaryDirectory(prefix='mt5-install-') as temp:
+            root=Path(temp)/'private'; source=Path(temp)/'installed/terminal64.exe'
+            source.parent.mkdir()
+            for name in connector.TERMINAL_BINARIES:
+                (source.parent/name).write_bytes(b'installed build')
+            connection=str(uuid.uuid4())
+            with patch.object(connector,'terminal_source',return_value=source):
+                target,_=connector.prepare_terminal(root,connection)
+                self.assertTrue(all((target.parent/name).is_file() for name in connector.TERMINAL_BINARIES))
+                target.write_bytes(b'newer self-updated build')
+                (target.parent/'Config/accounts.dat').write_text('synthetic secret')
+                connector.prepare_terminal(root,connection)
+                self.assertEqual(target.read_bytes(),b'newer self-updated build')
+                self.assertFalse((target.parent/'Config/accounts.dat').exists())
+                connector.clean_terminal(root,connection)
+                self.assertEqual({p.name for p in target.parent.iterdir()},set(connector.TERMINAL_BINARIES))
 
     def test_failed_login_preserves_error_until_owner_tree_stops_then_cleans(self):
         import base64

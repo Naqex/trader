@@ -21,9 +21,9 @@ def fence(request, operation):
         with psycopg.connect(os.environ['TW_V2_DATABASE_URL'], connect_timeout=5) as db:
             row = db.execute('SELECT generation,requested_mode,status,credential FROM mt5_connections WHERE workspace_id=%s AND connection_id=%s',
                              (request['workspace'], request['connection_id'])).fetchone()
-        statuses = ('queued', 'syncing', 'connected') if operation == 'collect' else ('connected',)
+        statuses = ('queued', 'syncing', 'connected') if operation in ('collect', 'health') else ('connected',)
         mode = request.get('requested_mode')
-        if mode not in ('read_only', 'trading') or (mode == 'read_only' and operation != 'collect'):
+        if mode not in ('read_only', 'trading') or (mode == 'read_only' and operation not in ('collect', 'health')):
             raise RuntimeError('mt5_connection_revoked')
         if not row or row[0] != request['generation'] or row[1] != mode or row[2] not in statuses or row[3] != request['credential']:
             raise RuntimeError('mt5_connection_revoked')
@@ -55,7 +55,12 @@ class Session:
             raise
 
     def check_identity(self):
-        account = connector.verify_identity(self.sdk, self.secret, self.context['requested_mode'])
+        try:
+            account = connector.verify_identity(self.sdk, self.secret, self.context['requested_mode'])
+        except RuntimeError as error:
+            if str(error) in ('mt5_disconnected', 'mt5_terminal_unavailable') and self.process and self.process.poll() is not None:
+                raise RuntimeError('mt5_terminal_stopped') from None
+            raise
         info = self.sdk.terminal_info()
         if not info or Path(info.path).resolve() != self.terminal.parent.resolve() or Path(info.data_path).resolve() != self.terminal.parent.resolve():
             raise RuntimeError('mt5_terminal_isolation_failed')
@@ -65,13 +70,15 @@ class Session:
         if any(request.get(key) != value for key,value in self.context.items()):
             raise RuntimeError('mt5_connection_revoked')
         operation = request['operation']
-        if operation not in ('collect','snapshot','preview','command','reconcile'):
+        if operation not in ('collect','health','snapshot','preview','command','reconcile'):
             raise RuntimeError('mt5_request_invalid')
-        if self.context['requested_mode'] == 'read_only' and operation != 'collect':
+        if self.context['requested_mode'] == 'read_only' and operation not in ('collect', 'health'):
             raise RuntimeError('mt5_connection_revoked')
         self.guard(request, operation)
         account = self.check_identity()
-        if operation == 'collect':
+        if operation == 'health':
+            result = {'status':'ready','connected':True}
+        elif operation == 'collect':
             result = connector.snapshot(self.sdk, self.secret, datetime.fromisoformat(request['from_utc'].replace('Z','+00:00')),
                                         request['history_from_utc'], self.context['requested_mode'], request['generation'])
         else:

@@ -1,0 +1,13 @@
+{
+  "status": "ready",
+  "stale": false,
+  "deals": 0,
+  "cashflows": 0,
+  "positions": 0,
+  "orders": 0,
+  "permissions": {
+    "read": true,
+    "trade": false
+  },
+  "at": "2026-10-22T17:37:55.3996144Z"
+}

@@ -1,0 +1,19 @@
+{
+  "baseline": "ff1a434",
+  "runtime": "native/compact release",
+  "source_sha256": {
+    "api-rust/src/demo_trading.rs": "5c1ce7f64a8521f09d0c1f7013163357bd27d9baa34398b5fda7beb4657e0a4f",
+    "api-rust/src/mt5_connector.rs": "79342dff7bcffd26a423d70ca6d5c247db28cc65b564b6e76da2260a9eddb5be",
+    "scripts/mt5_connector.py": "77ac7a06bab5d7e60ce559a9289d76f6634f1dd211f36893337ff8e757183091",
+    "scripts/mt5_broker_worker.py": "34e88a4ee4a0976b5fe09eaa82467e901fae88c41c8a5f5a09d9244019705ead",
+    "tests/test_mt5_connector.py": "87c8a1be56041dba4aa6d7321ab6d369b5442e6378136698c54947a52c2cb308",
+    "tests/test_mt5_broker_worker.py": "e6e74b883a98af117169fc0731268971375824e61c4bc068096018557e43e44b",
+    "web/src/LiveWorkspace.jsx": "3d97559d018b0cf5cfc33543af33dc27a9d40c147deb5b5e60b466e39a4632d4",
+    "web/src/mt5Connections.js": "9f0af2eaa445d940d2309ad0618800be15aaa602bbab84d802903a0051a4237e",
+    "web/src/testing-copy.json": "a899978ce47eddf65cf8ff46cd01d1e43ad882bbbe2d56e7b2e118c88221353d",
+    "docs/demo-trading.md": "d2401268cfe76c7c6be185febb24c2803104b780f062a5ce80dddebf391e0e3a"
+  },
+  "api_binary_sha256": "9125dccf4e03b5e314d7f274ffb56d7b3f8e664d88ce59b29a6de684c4c91264",
+  "logical_processors": 6,
+  "measured_at": "2026-10-22T17:37:55.2754736Z"
+}

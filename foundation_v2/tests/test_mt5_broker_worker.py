@@ -55,6 +55,7 @@ class WorkerTests(unittest.TestCase):
         with patch.dict(os.environ,TW_V2_DATABASE_URL='fixture-not-a-real-connection'),patch.object(psycopg,'connect',return_value=db):
             db.execute.return_value.fetchone.return_value=(3,'read_only','connected','ciphertext')
             worker.fence(request,'collect')
+            worker.fence(request,'health')
             for operation in ('snapshot','preview','command','reconcile'):
                 with self.subTest(operation=operation),self.assertRaisesRegex(RuntimeError,'mt5_connection_revoked'):
                     worker.fence(request,operation)
@@ -74,6 +75,7 @@ class WorkerTests(unittest.TestCase):
             session=worker.Session(request,guard=Mock(),sdk_loader=lambda:sdk)
             self.assertFalse(session.handle(request)['verified_permissions']['trade'])
             session.handle(request)
+            self.assertEqual(session.handle({**request,'operation':'health'}),{'status':'ready','connected':True})
             prepare.assert_called_once_with(request['root'],request['connection_id'],trading=False)
             sdk.initialize.assert_called_once()
             self.assertEqual(snapshot.call_count,2)
@@ -85,6 +87,18 @@ class WorkerTests(unittest.TestCase):
             sdk.order_send.assert_not_called()
             sdk.shutdown.assert_not_called()
             process.return_value.terminate.assert_not_called()
+
+    def test_identity_distinguishes_stopped_terminal_from_network_disconnect(self):
+        session=self.session()
+        session.context['requested_mode']='read_only'
+        session.process=Mock()
+        session.process.poll.return_value=None
+        with patch.object(worker.connector,'verify_identity',side_effect=RuntimeError('mt5_disconnected')):
+            with self.assertRaisesRegex(RuntimeError,'^mt5_disconnected$'):
+                worker.Session.check_identity(session)
+            session.process.poll.return_value=0
+            with self.assertRaisesRegex(RuntimeError,'^mt5_terminal_stopped$'):
+                worker.Session.check_identity(session)
 
     def test_session_rejects_changed_generation_before_sdk(self):
         session=self.session()

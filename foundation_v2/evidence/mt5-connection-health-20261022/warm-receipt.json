@@ -1,0 +1,36 @@
+{
+  "passed": true,
+  "duration_seconds": 481.5332247,
+  "samples": 47,
+  "terminal_pids": [
+    11032
+  ],
+  "worker_pids": [
+    8936
+  ],
+  "refreshes": [
+    "2026-10-22T17:31:51.427758Z",
+    "2026-10-22T17:32:54.847858Z",
+    "2026-10-22T17:33:58.218342Z",
+    "2026-10-22T17:35:01.741945Z",
+    "2026-10-22T17:36:04.948233Z",
+    "2026-10-22T17:37:08.581116Z",
+    "2026-10-22T17:38:12.21117Z",
+    "2026-10-22T17:39:15.612372Z"
+  ],
+  "broker_orders_sent": 0,
+  "scope": "Read-only existing authorized account; observation only; no credentials or broker commands",
+  "performance": {
+    "scope": "One connected account, no open positions/history; idle persistent connection plus summary GET every ~10s. No baseline speedup or trading-chart capacity claim.",
+    "first_request_ms": 113.1583,
+    "warm_requests": 46,
+    "warm_p50_ms": 63.0514,
+    "warm_sample_p95_ms": 162.7768,
+    "response_bytes_max": 614.0,
+    "api_broker_tree_mean_cpu_one_core_pct": 4.328189141819543,
+    "api_broker_tree_peak_private_mib": 337.671875,
+    "api_broker_tree_peak_working_set_mib": 228.8203125,
+    "logical_processors": 6,
+    "api_broker_tree_mean_cpu_machine_pct": 0.7213648569699238
+  }
+}

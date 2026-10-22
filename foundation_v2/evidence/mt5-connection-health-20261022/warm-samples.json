@@ -1,0 +1,2869 @@
+[
+  {
+    "at_utc": "2026-10-22T17:32:02.0328424Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:31:51.427758Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1335296,
+        "working_set_bytes": 7335936
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1339392,
+        "working_set_bytes": 7471104
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.4375,
+        "private_bytes": 199802880,
+        "working_set_bytes": 46989312
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1216512,
+        "working_set_bytes": 6422528
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 4.1875,
+        "private_bytes": 142987264,
+        "working_set_bytes": 153718784
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 0.46875,
+        "private_bytes": 7192576,
+        "working_set_bytes": 16760832
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:32:12.3519723Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:31:51.427758Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1335296,
+        "working_set_bytes": 7335936
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1339392,
+        "working_set_bytes": 7471104
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.46875,
+        "private_bytes": 199753728,
+        "working_set_bytes": 46964736
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1216512,
+        "working_set_bytes": 6422528
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 4.34375,
+        "private_bytes": 142987264,
+        "working_set_bytes": 153718784
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 0.65625,
+        "private_bytes": 7241728,
+        "working_set_bytes": 17035264
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:32:22.6002739Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:31:51.427758Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1335296,
+        "working_set_bytes": 7335936
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1339392,
+        "working_set_bytes": 7471104
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.484375,
+        "private_bytes": 199921664,
+        "working_set_bytes": 47108096
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1204224,
+        "working_set_bytes": 6418432
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 4.515625,
+        "private_bytes": 142909440,
+        "working_set_bytes": 153706496
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 0.890625,
+        "private_bytes": 7270400,
+        "working_set_bytes": 17022976
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:32:32.8801594Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:31:51.427758Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1335296,
+        "working_set_bytes": 7335936
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1339392,
+        "working_set_bytes": 7471104
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.5,
+        "private_bytes": 199921664,
+        "working_set_bytes": 47108096
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1204224,
+        "working_set_bytes": 6418432
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 4.875,
+        "private_bytes": 142827520,
+        "working_set_bytes": 153624576
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 1.15625,
+        "private_bytes": 7307264,
+        "working_set_bytes": 17076224
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:32:43.1281875Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:31:51.427758Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1335296,
+        "working_set_bytes": 7335936
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1339392,
+        "working_set_bytes": 7471104
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.515625,
+        "private_bytes": 199921664,
+        "working_set_bytes": 47108096
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1204224,
+        "working_set_bytes": 6418432
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 5.046875,
+        "private_bytes": 142831616,
+        "working_set_bytes": 153632768
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 1.328125,
+        "private_bytes": 7360512,
+        "working_set_bytes": 17129472
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:32:53.4644500Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:31:51.427758Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1306624,
+        "working_set_bytes": 7319552
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1310720,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.53125,
+        "private_bytes": 199852032,
+        "working_set_bytes": 47075328
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1204224,
+        "working_set_bytes": 6418432
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 5.4375,
+        "private_bytes": 142340096,
+        "working_set_bytes": 153305088
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 1.578125,
+        "private_bytes": 7254016,
+        "working_set_bytes": 17039360
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:33:03.6935003Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:32:54.847858Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1306624,
+        "working_set_bytes": 7319552
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1310720,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.53125,
+        "private_bytes": 199852032,
+        "working_set_bytes": 47075328
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1204224,
+        "working_set_bytes": 6418432
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 5.59375,
+        "private_bytes": 142344192,
+        "working_set_bytes": 153317376
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 1.734375,
+        "private_bytes": 7389184,
+        "working_set_bytes": 17170432
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:33:13.8765131Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:32:54.847858Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1306624,
+        "working_set_bytes": 7319552
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1310720,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.5625,
+        "private_bytes": 199852032,
+        "working_set_bytes": 47075328
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1204224,
+        "working_set_bytes": 6418432
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 5.828125,
+        "private_bytes": 142344192,
+        "working_set_bytes": 153317376
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 2.03125,
+        "private_bytes": 7360512,
+        "working_set_bytes": 17141760
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:33:24.1124231Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:32:54.847858Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1306624,
+        "working_set_bytes": 7319552
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1310720,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.5625,
+        "private_bytes": 199852032,
+        "working_set_bytes": 47075328
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1200128,
+        "working_set_bytes": 6414336
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 6.015625,
+        "private_bytes": 142344192,
+        "working_set_bytes": 153317376
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 2.1875,
+        "private_bytes": 7499776,
+        "working_set_bytes": 17285120
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:33:34.3493361Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:32:54.847858Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1306624,
+        "working_set_bytes": 7319552
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1310720,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.5625,
+        "private_bytes": 199852032,
+        "working_set_bytes": 47075328
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1200128,
+        "working_set_bytes": 6414336
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 6.21875,
+        "private_bytes": 142348288,
+        "working_set_bytes": 153329664
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 2.34375,
+        "private_bytes": 7479296,
+        "working_set_bytes": 17260544
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:33:44.5870252Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:32:54.847858Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1306624,
+        "working_set_bytes": 7319552
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1310720,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.59375,
+        "private_bytes": 199852032,
+        "working_set_bytes": 47075328
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1200128,
+        "working_set_bytes": 6414336
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 6.328125,
+        "private_bytes": 142348288,
+        "working_set_bytes": 153333760
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 2.5625,
+        "private_bytes": 7413760,
+        "working_set_bytes": 17199104
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:33:54.8195222Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:32:54.847858Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1306624,
+        "working_set_bytes": 7319552
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1310720,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.640625,
+        "private_bytes": 199856128,
+        "working_set_bytes": 47079424
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1200128,
+        "working_set_bytes": 6414336
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 6.484375,
+        "private_bytes": 142315520,
+        "working_set_bytes": 153317376
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 2.78125,
+        "private_bytes": 7495680,
+        "working_set_bytes": 17223680
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:34:05.0450530Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:33:58.218342Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1306624,
+        "working_set_bytes": 7319552
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1310720,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.65625,
+        "private_bytes": 199680000,
+        "working_set_bytes": 46956544
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1134592,
+        "working_set_bytes": 6389760
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 6.671875,
+        "private_bytes": 142258176,
+        "working_set_bytes": 153292800
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 3.03125,
+        "private_bytes": 7311360,
+        "working_set_bytes": 17125376
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:34:15.2756781Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:33:58.218342Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1306624,
+        "working_set_bytes": 7319552
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1310720,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.6875,
+        "private_bytes": 199680000,
+        "working_set_bytes": 46956544
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1134592,
+        "working_set_bytes": 6389760
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 6.859375,
+        "private_bytes": 142262272,
+        "working_set_bytes": 153296896
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 3.25,
+        "private_bytes": 7286784,
+        "working_set_bytes": 17104896
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:34:25.5190093Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:33:58.218342Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1306624,
+        "working_set_bytes": 7319552
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1310720,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.703125,
+        "private_bytes": 199680000,
+        "working_set_bytes": 46956544
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1134592,
+        "working_set_bytes": 6389760
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 6.96875,
+        "private_bytes": 142262272,
+        "working_set_bytes": 153305088
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 3.453125,
+        "private_bytes": 7286784,
+        "working_set_bytes": 17104896
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:34:35.7883651Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:33:58.218342Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1306624,
+        "working_set_bytes": 7319552
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1310720,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.703125,
+        "private_bytes": 199684096,
+        "working_set_bytes": 46960640
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1134592,
+        "working_set_bytes": 6389760
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 7.140625,
+        "private_bytes": 142270464,
+        "working_set_bytes": 153313280
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 3.65625,
+        "private_bytes": 7303168,
+        "working_set_bytes": 17121280
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:34:46.0342798Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:33:58.218342Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1306624,
+        "working_set_bytes": 7319552
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1310720,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.71875,
+        "private_bytes": 199680000,
+        "working_set_bytes": 46956544
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1134592,
+        "working_set_bytes": 6389760
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 7.359375,
+        "private_bytes": 142274560,
+        "working_set_bytes": 153317376
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 3.875,
+        "private_bytes": 7360512,
+        "working_set_bytes": 17178624
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:34:56.1999607Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:33:58.218342Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1306624,
+        "working_set_bytes": 7319552
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1310720,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.734375,
+        "private_bytes": 199680000,
+        "working_set_bytes": 46956544
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1138688,
+        "working_set_bytes": 6393856
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 7.640625,
+        "private_bytes": 142274560,
+        "working_set_bytes": 153321472
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 4.15625,
+        "private_bytes": 7266304,
+        "working_set_bytes": 17084416
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:35:06.3859878Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:35:01.741945Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1306624,
+        "working_set_bytes": 7319552
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1310720,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.75,
+        "private_bytes": 199680000,
+        "working_set_bytes": 46956544
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1138688,
+        "working_set_bytes": 6393856
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 7.890625,
+        "private_bytes": 142274560,
+        "working_set_bytes": 153325568
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 4.34375,
+        "private_bytes": 7368704,
+        "working_set_bytes": 17186816
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:35:16.6233488Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:35:01.741945Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1306624,
+        "working_set_bytes": 7319552
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1310720,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.78125,
+        "private_bytes": 199680000,
+        "working_set_bytes": 46956544
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1138688,
+        "working_set_bytes": 6393856
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 8.015625,
+        "private_bytes": 142278656,
+        "working_set_bytes": 153337856
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 4.578125,
+        "private_bytes": 7413760,
+        "working_set_bytes": 17231872
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:35:26.9721853Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:35:01.741945Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1306624,
+        "working_set_bytes": 7319552
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1310720,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.78125,
+        "private_bytes": 199680000,
+        "working_set_bytes": 46956544
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1138688,
+        "working_set_bytes": 6393856
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 8.1875,
+        "private_bytes": 142278656,
+        "working_set_bytes": 153337856
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 4.78125,
+        "private_bytes": 7254016,
+        "working_set_bytes": 17072128
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:35:37.2331717Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:35:01.741945Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1306624,
+        "working_set_bytes": 7319552
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1310720,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.78125,
+        "private_bytes": 199680000,
+        "working_set_bytes": 46956544
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1138688,
+        "working_set_bytes": 6393856
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 8.53125,
+        "private_bytes": 142278656,
+        "working_set_bytes": 153346048
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 5.046875,
+        "private_bytes": 7303168,
+        "working_set_bytes": 17063936
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:35:47.4774268Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:35:01.741945Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1306624,
+        "working_set_bytes": 7319552
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1310720,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.796875,
+        "private_bytes": 199684096,
+        "working_set_bytes": 46960640
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1105920,
+        "working_set_bytes": 6377472
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 8.640625,
+        "private_bytes": 142278656,
+        "working_set_bytes": 153346048
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 5.234375,
+        "private_bytes": 7311360,
+        "working_set_bytes": 17129472
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:35:57.7084607Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:35:01.741945Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1306624,
+        "working_set_bytes": 7319552
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1310720,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.8125,
+        "private_bytes": 199684096,
+        "working_set_bytes": 46960640
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1138688,
+        "working_set_bytes": 6393856
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 8.90625,
+        "private_bytes": 142282752,
+        "working_set_bytes": 153358336
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 5.5,
+        "private_bytes": 7311360,
+        "working_set_bytes": 17129472
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:36:07.9470096Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:36:04.948233Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1306624,
+        "working_set_bytes": 7319552
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1310720,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.859375,
+        "private_bytes": 199684096,
+        "working_set_bytes": 46960640
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1138688,
+        "working_set_bytes": 6393856
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 9.015625,
+        "private_bytes": 142290944,
+        "working_set_bytes": 153366528
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 5.890625,
+        "private_bytes": 7335936,
+        "working_set_bytes": 17154048
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:36:18.3011197Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:36:04.948233Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1306624,
+        "working_set_bytes": 7319552
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1310720,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.859375,
+        "private_bytes": 199680000,
+        "working_set_bytes": 46956544
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1138688,
+        "working_set_bytes": 6393856
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 9.28125,
+        "private_bytes": 142295040,
+        "working_set_bytes": 153374720
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 6.109375,
+        "private_bytes": 7372800,
+        "working_set_bytes": 17190912
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:36:28.5374725Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:36:04.948233Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1306624,
+        "working_set_bytes": 7319552
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1310720,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.875,
+        "private_bytes": 199680000,
+        "working_set_bytes": 46956544
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1138688,
+        "working_set_bytes": 6393856
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 9.453125,
+        "private_bytes": 142295040,
+        "working_set_bytes": 153374720
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 6.296875,
+        "private_bytes": 7421952,
+        "working_set_bytes": 17235968
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:36:38.7156040Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:36:04.948233Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1306624,
+        "working_set_bytes": 7319552
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1310720,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.890625,
+        "private_bytes": 199680000,
+        "working_set_bytes": 46956544
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1138688,
+        "working_set_bytes": 6393856
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 9.671875,
+        "private_bytes": 142295040,
+        "working_set_bytes": 153378816
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 6.5,
+        "private_bytes": 7348224,
+        "working_set_bytes": 17162240
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:36:48.9367828Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:36:04.948233Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1400832,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1409024,
+        "working_set_bytes": 7593984
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.921875,
+        "private_bytes": 199856128,
+        "working_set_bytes": 47185920
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1204224,
+        "working_set_bytes": 6508544
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 9.9375,
+        "private_bytes": 142405632,
+        "working_set_bytes": 153632768
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 6.75,
+        "private_bytes": 7372800,
+        "working_set_bytes": 17240064
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:36:59.1647551Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:36:04.948233Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1400832,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1409024,
+        "working_set_bytes": 7593984
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.9375,
+        "private_bytes": 199860224,
+        "working_set_bytes": 47190016
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1204224,
+        "working_set_bytes": 6508544
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 10.15625,
+        "private_bytes": 142409728,
+        "working_set_bytes": 153640960
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 7.03125,
+        "private_bytes": 7266304,
+        "working_set_bytes": 17133568
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:37:09.4086177Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:37:08.581116Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1400832,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1409024,
+        "working_set_bytes": 7593984
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.9375,
+        "private_bytes": 199938048,
+        "working_set_bytes": 47243264
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1204224,
+        "working_set_bytes": 6508544
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 10.34375,
+        "private_bytes": 142512128,
+        "working_set_bytes": 153661440
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 7.28125,
+        "private_bytes": 7610368,
+        "working_set_bytes": 17473536
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:37:19.7358193Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:37:08.581116Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1400832,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1409024,
+        "working_set_bytes": 7593984
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 1.96875,
+        "private_bytes": 199938048,
+        "working_set_bytes": 47243264
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1204224,
+        "working_set_bytes": 6508544
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 10.71875,
+        "private_bytes": 142413824,
+        "working_set_bytes": 153645056
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 7.53125,
+        "private_bytes": 7254016,
+        "working_set_bytes": 17121280
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:37:29.9714356Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:37:08.581116Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1400832,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1409024,
+        "working_set_bytes": 7593984
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 2.0,
+        "private_bytes": 199933952,
+        "working_set_bytes": 47239168
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1204224,
+        "working_set_bytes": 6508544
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 10.875,
+        "private_bytes": 142430208,
+        "working_set_bytes": 153665536
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 7.671875,
+        "private_bytes": 7487488,
+        "working_set_bytes": 17354752
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:37:40.2083107Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:37:08.581116Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1400832,
+        "working_set_bytes": 7454720
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1409024,
+        "working_set_bytes": 7593984
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 2.0,
+        "private_bytes": 199933952,
+        "working_set_bytes": 47239168
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1204224,
+        "working_set_bytes": 6508544
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 11.0625,
+        "private_bytes": 142430208,
+        "working_set_bytes": 153669632
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 7.953125,
+        "private_bytes": 7483392,
+        "working_set_bytes": 17358848
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:37:50.3776689Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:37:08.581116Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1372160,
+        "working_set_bytes": 7442432
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1380352,
+        "working_set_bytes": 7581696
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 2.0,
+        "private_bytes": 199860224,
+        "working_set_bytes": 47190016
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1204224,
+        "working_set_bytes": 6508544
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 11.25,
+        "private_bytes": 142385152,
+        "working_set_bytes": 153640960
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 8.203125,
+        "private_bytes": 7438336,
+        "working_set_bytes": 17338368
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:38:00.6045668Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:37:08.581116Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1372160,
+        "working_set_bytes": 7442432
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1380352,
+        "working_set_bytes": 7581696
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 2.0,
+        "private_bytes": 199856128,
+        "working_set_bytes": 47185920
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1204224,
+        "working_set_bytes": 6508544
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 11.359375,
+        "private_bytes": 142331904,
+        "working_set_bytes": 153735168
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 8.421875,
+        "private_bytes": 7372800,
+        "working_set_bytes": 17248256
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:38:10.8306339Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:37:08.581116Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1372160,
+        "working_set_bytes": 7442432
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1380352,
+        "working_set_bytes": 7581696
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 2.03125,
+        "private_bytes": 199856128,
+        "working_set_bytes": 47185920
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1204224,
+        "working_set_bytes": 6508544
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 11.4375,
+        "private_bytes": 142331904,
+        "working_set_bytes": 153735168
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 8.546875,
+        "private_bytes": 7471104,
+        "working_set_bytes": 17346560
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:38:21.0549912Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:38:12.21117Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1372160,
+        "working_set_bytes": 7442432
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1380352,
+        "working_set_bytes": 7581696
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 2.0625,
+        "private_bytes": 199860224,
+        "working_set_bytes": 47190016
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1204224,
+        "working_set_bytes": 6508544
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 11.65625,
+        "private_bytes": 142331904,
+        "working_set_bytes": 153743360
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 8.75,
+        "private_bytes": 7417856,
+        "working_set_bytes": 17293312
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:38:31.2777575Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:38:12.21117Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1335296,
+        "working_set_bytes": 7417856
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1339392,
+        "working_set_bytes": 7553024
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 2.109375,
+        "private_bytes": 199680000,
+        "working_set_bytes": 47042560
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1138688,
+        "working_set_bytes": 6471680
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 11.78125,
+        "private_bytes": 142299136,
+        "working_set_bytes": 153726976
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 8.953125,
+        "private_bytes": 7311360,
+        "working_set_bytes": 17215488
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:38:41.4975778Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:38:12.21117Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1335296,
+        "working_set_bytes": 7417856
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1339392,
+        "working_set_bytes": 7553024
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 2.125,
+        "private_bytes": 199680000,
+        "working_set_bytes": 47042560
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1138688,
+        "working_set_bytes": 6471680
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 12.03125,
+        "private_bytes": 142299136,
+        "working_set_bytes": 153726976
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 9.125,
+        "private_bytes": 7319552,
+        "working_set_bytes": 17223680
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:38:51.7188153Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:38:12.21117Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1335296,
+        "working_set_bytes": 7417856
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1339392,
+        "working_set_bytes": 7553024
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 2.140625,
+        "private_bytes": 199684096,
+        "working_set_bytes": 47046656
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1138688,
+        "working_set_bytes": 6471680
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 12.25,
+        "private_bytes": 142299136,
+        "working_set_bytes": 153731072
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 9.328125,
+        "private_bytes": 7327744,
+        "working_set_bytes": 17231872
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:39:01.9509456Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:38:12.21117Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1335296,
+        "working_set_bytes": 7417856
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1339392,
+        "working_set_bytes": 7553024
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 2.15625,
+        "private_bytes": 199680000,
+        "working_set_bytes": 47042560
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1138688,
+        "working_set_bytes": 6471680
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 12.546875,
+        "private_bytes": 142307328,
+        "working_set_bytes": 153743360
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 9.546875,
+        "private_bytes": 7278592,
+        "working_set_bytes": 17182720
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:39:12.1743680Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:38:12.21117Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1335296,
+        "working_set_bytes": 7417856
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1339392,
+        "working_set_bytes": 7553024
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 2.1875,
+        "private_bytes": 199684096,
+        "working_set_bytes": 47046656
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1138688,
+        "working_set_bytes": 6471680
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 12.78125,
+        "private_bytes": 142311424,
+        "working_set_bytes": 153751552
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 9.703125,
+        "private_bytes": 7262208,
+        "working_set_bytes": 17362944
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:39:22.3413627Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:39:15.612372Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1306624,
+        "working_set_bytes": 7401472
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1310720,
+        "working_set_bytes": 7536640
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 2.1875,
+        "private_bytes": 199680000,
+        "working_set_bytes": 47042560
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1138688,
+        "working_set_bytes": 6471680
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 12.875,
+        "private_bytes": 142311424,
+        "working_set_bytes": 153751552
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 9.953125,
+        "private_bytes": 7503872,
+        "working_set_bytes": 17604608
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:39:32.5757714Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:39:15.612372Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1306624,
+        "working_set_bytes": 7401472
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1310720,
+        "working_set_bytes": 7536640
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 2.203125,
+        "private_bytes": 199680000,
+        "working_set_bytes": 47042560
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1138688,
+        "working_set_bytes": 6471680
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 13.109375,
+        "private_bytes": 142311424,
+        "working_set_bytes": 153755648
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 10.09375,
+        "private_bytes": 7364608,
+        "working_set_bytes": 17465344
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:39:42.8103674Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:39:15.612372Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1339392,
+        "working_set_bytes": 7421952
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1339392,
+        "working_set_bytes": 7553024
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 2.234375,
+        "private_bytes": 199761920,
+        "working_set_bytes": 47108096
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1167360,
+        "working_set_bytes": 6488064
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 13.28125,
+        "private_bytes": 142270464,
+        "working_set_bytes": 153731072
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 10.3125,
+        "private_bytes": 7389184,
+        "working_set_bytes": 17477632
+      }
+    ]
+  },
+  {
+    "at_utc": "2026-10-22T17:39:53.1449942Z",
+    "status": "connected",
+    "last_synced_at": "2026-10-22T17:39:15.612372Z",
+    "error_code": null,
+    "requested_mode": "read_only",
+    "verified_permissions": {
+      "read": true,
+      "trade": false
+    },
+    "terminal_pids": [
+      11032
+    ],
+    "worker_pids": [
+      8936
+    ],
+    "resources": [
+      {
+        "pid": 5768,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1339392,
+        "working_set_bytes": 7421952
+      },
+      {
+        "pid": 13356,
+        "name": "conhost",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1339392,
+        "working_set_bytes": 7553024
+      },
+      {
+        "pid": 2440,
+        "name": "python",
+        "cpu_seconds": 2.265625,
+        "private_bytes": 199761920,
+        "working_set_bytes": 47108096
+      },
+      {
+        "pid": 8936,
+        "name": "python",
+        "cpu_seconds": 0.015625,
+        "private_bytes": 1167360,
+        "working_set_bytes": 6488064
+      },
+      {
+        "pid": 11032,
+        "name": "terminal64",
+        "cpu_seconds": 13.671875,
+        "private_bytes": 142282752,
+        "working_set_bytes": 153743360
+      },
+      {
+        "pid": 11652,
+        "name": "trading-workspace-api",
+        "cpu_seconds": 10.546875,
+        "private_bytes": 7438336,
+        "working_set_bytes": 17469440
+      }
+    ]
+  }
+]

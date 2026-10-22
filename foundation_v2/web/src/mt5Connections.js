@@ -12,6 +12,8 @@ const ERRORS = {
   mt5_terminal_unavailable:'Không liên lạc được với terminal MT5 riêng. Kiểm tra terminal trên máy chạy API rồi thử lại.',
   mt5_version_unsupported:'Phiên bản MT5 và bộ kết nối chưa tương thích. Cần kiểm tra phiên bản trên máy chạy API.',
   mt5_trading_disabled:'MT5 chưa cấp quyền giao dịch. Kiểm tra mật khẩu giao dịch và quyền Algo Trading trên terminal.',
+  mt5_disconnected:'MT5 đang mất kết nối với broker. Ứng dụng sẽ tự thử lại.',
+  mt5_terminal_stopped:'Terminal MT5 vừa dừng. Ứng dụng sẽ tự khởi động lại.',
   mt5_account_mode_unsupported:'Loại tài khoản MT5 này chưa được hỗ trợ.',
   mt5_connection_revoked:'Kết nối đã thay đổi. Tải lại tài khoản trước khi tiếp tục.',
   mt5_investor_required:'Tài khoản đang có quyền giao dịch. Hãy dùng mật khẩu investor (chỉ đọc).',

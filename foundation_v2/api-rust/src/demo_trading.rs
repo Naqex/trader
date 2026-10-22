@@ -993,9 +993,12 @@ async fn managed_adapter(managed: &Managed, input: Value) -> Result<Value, Strin
     };
     match result {
         Ok(value) => {
-            if input["operation"] == "collect" && value.get("error").is_some() {
-                // Reauthenticate on the next scheduled read after a disconnect or
-                // failed startup; never leave an unusable session cached as warm.
+            if matches!(input["operation"].as_str(), Some("collect" | "health"))
+                && value.get("error").is_some()
+                && value["error"] != "mt5_disconnected"
+            {
+                // A live terminal can recover a network interruption itself.
+                // Recreate stopped/broken workers on the next scheduled read.
                 let _ = worker.child.kill().await;
                 return Ok(value);
             }
@@ -1025,7 +1028,7 @@ pub(crate) async fn revoke_managed_worker(workspace: &str, id: Uuid) {
         }
     }
 }
-pub(crate) async fn managed_collect(
+pub(crate) async fn managed_read(
     state: &AppState,
     workspace: &str,
     id: Uuid,
@@ -1034,6 +1037,7 @@ pub(crate) async fn managed_collect(
     requested_mode: String,
     from: &str,
     history: &str,
+    include_history: bool,
 ) -> Result<Value, String> {
     if !matches!(requested_mode.as_str(), "read_only" | "trading") {
         return Err("mt5_connection_changed".into());
@@ -1073,7 +1077,7 @@ pub(crate) async fn managed_collect(
     let result = managed_adapter(
         &managed,
         context.input(
-            "collect",
+            if include_history { "collect" } else { "health" },
             json!({"from_utc":from,"history_from_utc":history}),
         ),
     )

@@ -5,7 +5,6 @@ are DPAPI-bound to this Windows user and this workspace/connection identity.
 """
 import base64
 import ctypes
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -22,7 +21,9 @@ ERRORS = {'mt5_login_failed', 'mt5_disconnected', 'mt5_identity_changed',
           'mt5_secret_unavailable', 'mt5_terminal_isolation_failed',
           'mt5_sync_timeout', 'mt5_terminal_unavailable', 'mt5_version_unsupported',
           'mt5_initialization_failed', 'mt5_auth_failed', 'mt5_trading_disabled',
-          'mt5_account_mode_unsupported', 'mt5_connection_revoked'}
+          'mt5_account_mode_unsupported', 'mt5_connection_revoked', 'mt5_terminal_stopped'}
+
+TERMINAL_BINARIES = ('terminal64.exe', 'MetaEditor64.exe', 'metatester64.exe')
 
 
 def initialization_error(sdk):
@@ -134,7 +135,7 @@ def clean_terminal(root, connection_id):
         for name in [*subdirs, *files]:
             require_local_tree(Path(directory) / name)
     for item in folder.iterdir():
-        if item.name == 'terminal64.exe':
+        if item.name in TERMINAL_BINARIES:
             continue
         if item.is_dir():
             shutil.rmtree(item)
@@ -180,8 +181,14 @@ def prepare_terminal(root, connection_id, trading=False):
     target = folder / 'terminal64.exe'
     if target.is_symlink():
         raise RuntimeError('mt5_terminal_isolation_failed')
-    if not target.exists() or hashlib.sha256(source.read_bytes()).digest() != hashlib.sha256(target.read_bytes()).digest():
-        shutil.copy2(source, target)
+    # Missing IDE/tester binaries trigger MT5 LiveUpdate and a terminal restart
+    # even at the same build. Keep its owned, self-updated binaries across logins.
+    for name in TERMINAL_BINARIES:
+        origin = source if name == 'terminal64.exe' else source.parent / name
+        destination = folder / name
+        if origin.is_file() and not destination.exists():
+            require_local_tree(origin)
+            shutil.copy2(origin, destination)
     # Broker discovery only: no accounts.dat, profiles, EAs or saved passwords.
     config = folder / 'Config'
     config.mkdir(exist_ok=True)
@@ -197,7 +204,9 @@ def prepare_terminal(root, connection_id, trading=False):
 
 def verify_identity(sdk, secret, requested_mode='read_only'):
     account, terminal = sdk.account_info(), sdk.terminal_info()
-    if not account or not terminal or not terminal.connected:
+    if not account or not terminal:
+        raise RuntimeError('mt5_terminal_unavailable')
+    if not terminal.connected:
         raise RuntimeError('mt5_disconnected')
     if str(account.login) != secret['login'] or account.server != secret['server']:
         raise RuntimeError('mt5_identity_changed')

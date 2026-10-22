@@ -1,0 +1,247 @@
+{
+  "passed": true,
+  "scope": "Loopback native release API, one connected read-only account with no trade history. Sequential reused HTTP connection; one warmup pair plus 15 measured pairs. API timing excludes browser render. Not a load/capacity benchmark.",
+  "measured_at": "2026-10-22T17:36:02.5851206Z",
+  "metrics": [
+    {
+      "kind": "summary",
+      "samples": 15,
+      "p50_ms": 0.9076,
+      "sample_p95_ms": 1.0865,
+      "max_bytes": 1083.0
+    },
+    {
+      "kind": "conditional",
+      "samples": 15,
+      "p50_ms": 0.9462,
+      "sample_p95_ms": 1.1023,
+      "max_bytes": 0.0
+    }
+  ],
+  "samples": [
+    {
+      "index": 0,
+      "kind": "summary",
+      "elapsed_ms": 115.2509,
+      "status": 200,
+      "bytes": 1083
+    },
+    {
+      "index": 0,
+      "kind": "conditional",
+      "elapsed_ms": 2.0514,
+      "status": 304,
+      "bytes": 0
+    },
+    {
+      "index": 1,
+      "kind": "summary",
+      "elapsed_ms": 1.0865,
+      "status": 200,
+      "bytes": 1083
+    },
+    {
+      "index": 1,
+      "kind": "conditional",
+      "elapsed_ms": 1.0286,
+      "status": 304,
+      "bytes": 0
+    },
+    {
+      "index": 2,
+      "kind": "summary",
+      "elapsed_ms": 0.9972,
+      "status": 200,
+      "bytes": 1083
+    },
+    {
+      "index": 2,
+      "kind": "conditional",
+      "elapsed_ms": 1.1023,
+      "status": 304,
+      "bytes": 0
+    },
+    {
+      "index": 3,
+      "kind": "summary",
+      "elapsed_ms": 0.9469,
+      "status": 200,
+      "bytes": 1083
+    },
+    {
+      "index": 3,
+      "kind": "conditional",
+      "elapsed_ms": 0.9429,
+      "status": 304,
+      "bytes": 0
+    },
+    {
+      "index": 4,
+      "kind": "summary",
+      "elapsed_ms": 0.9076,
+      "status": 200,
+      "bytes": 1083
+    },
+    {
+      "index": 4,
+      "kind": "conditional",
+      "elapsed_ms": 0.9608,
+      "status": 304,
+      "bytes": 0
+    },
+    {
+      "index": 5,
+      "kind": "summary",
+      "elapsed_ms": 0.8926,
+      "status": 200,
+      "bytes": 1083
+    },
+    {
+      "index": 5,
+      "kind": "conditional",
+      "elapsed_ms": 0.9623,
+      "status": 304,
+      "bytes": 0
+    },
+    {
+      "index": 6,
+      "kind": "summary",
+      "elapsed_ms": 1.0079,
+      "status": 200,
+      "bytes": 1083
+    },
+    {
+      "index": 6,
+      "kind": "conditional",
+      "elapsed_ms": 0.9914,
+      "status": 304,
+      "bytes": 0
+    },
+    {
+      "index": 7,
+      "kind": "summary",
+      "elapsed_ms": 1.0373,
+      "status": 200,
+      "bytes": 1083
+    },
+    {
+      "index": 7,
+      "kind": "conditional",
+      "elapsed_ms": 1.0331,
+      "status": 304,
+      "bytes": 0
+    },
+    {
+      "index": 8,
+      "kind": "summary",
+      "elapsed_ms": 0.9844,
+      "status": 200,
+      "bytes": 1083
+    },
+    {
+      "index": 8,
+      "kind": "conditional",
+      "elapsed_ms": 1.0593,
+      "status": 304,
+      "bytes": 0
+    },
+    {
+      "index": 9,
+      "kind": "summary",
+      "elapsed_ms": 0.9107,
+      "status": 200,
+      "bytes": 1083
+    },
+    {
+      "index": 9,
+      "kind": "conditional",
+      "elapsed_ms": 0.9462,
+      "status": 304,
+      "bytes": 0
+    },
+    {
+      "index": 10,
+      "kind": "summary",
+      "elapsed_ms": 0.8754,
+      "status": 200,
+      "bytes": 1083
+    },
+    {
+      "index": 10,
+      "kind": "conditional",
+      "elapsed_ms": 0.8483,
+      "status": 304,
+      "bytes": 0
+    },
+    {
+      "index": 11,
+      "kind": "summary",
+      "elapsed_ms": 0.7862,
+      "status": 200,
+      "bytes": 1083
+    },
+    {
+      "index": 11,
+      "kind": "conditional",
+      "elapsed_ms": 0.8363,
+      "status": 304,
+      "bytes": 0
+    },
+    {
+      "index": 12,
+      "kind": "summary",
+      "elapsed_ms": 0.8055,
+      "status": 200,
+      "bytes": 1083
+    },
+    {
+      "index": 12,
+      "kind": "conditional",
+      "elapsed_ms": 0.8152,
+      "status": 304,
+      "bytes": 0
+    },
+    {
+      "index": 13,
+      "kind": "summary",
+      "elapsed_ms": 0.7772,
+      "status": 200,
+      "bytes": 1083
+    },
+    {
+      "index": 13,
+      "kind": "conditional",
+      "elapsed_ms": 0.7846,
+      "status": 304,
+      "bytes": 0
+    },
+    {
+      "index": 14,
+      "kind": "summary",
+      "elapsed_ms": 0.7783,
+      "status": 200,
+      "bytes": 1083
+    },
+    {
+      "index": 14,
+      "kind": "conditional",
+      "elapsed_ms": 0.8448,
+      "status": 304,
+      "bytes": 0
+    },
+    {
+      "index": 15,
+      "kind": "summary",
+      "elapsed_ms": 0.8292,
+      "status": 200,
+      "bytes": 1083
+    },
+    {
+      "index": 15,
+      "kind": "conditional",
+      "elapsed_ms": 0.8791,
+      "status": 304,
+      "bytes": 0
+    }
+  ]
+}
