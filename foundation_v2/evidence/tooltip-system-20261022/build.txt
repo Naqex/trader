@@ -1,0 +1,84 @@
+
+> trading-workspace-foundation-v2-web@0.1.0 build
+> vite build
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 295 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                       0.48 kB │ gzip:   0.31 kB
+dist/assets/PaginationFooter-MUWvR_mg.css             2.35 kB │ gzip:   0.73 kB
+dist/assets/SessionFilter-BcGoz5e7.css                2.74 kB │ gzip:   0.91 kB
+dist/assets/LegacyModal-Bo02BDFY.css                  2.98 kB │ gzip:   1.03 kB
+dist/assets/session-settings-fjfP0f8W.css             3.78 kB │ gzip:   1.06 kB
+dist/assets/SettingsWorkspace-xEBqnNLr.css            5.86 kB │ gzip:   1.19 kB
+dist/assets/LearnWorkspace-Bm-pTJzN.css               6.59 kB │ gzip:   1.18 kB
+dist/assets/PlaybookWorkspace-DQUaAwXM.css            7.04 kB │ gzip:   1.87 kB
+dist/assets/TestingComponentReference-BLcHD_kn.css    7.27 kB │ gzip:   1.85 kB
+dist/assets/ProjectDateInput-BDSFDDdY.css             7.49 kB │ gzip:   1.62 kB
+dist/assets/LedgerFilterActions-DQDwh7Q_.css          7.73 kB │ gzip:   1.98 kB
+dist/assets/SessionSettingsDrawer-DoE4lc0O.css        9.12 kB │ gzip:   1.63 kB
+dist/assets/FxAnalytics-CF2M4nYe.css                 11.07 kB │ gzip:   2.62 kB
+dist/assets/RiskWorkspace-KPqYRzKt.css               13.39 kB │ gzip:   2.51 kB
+dist/assets/TradeWorkspace-DOe0KjCD.css              13.93 kB │ gzip:   2.60 kB
+dist/assets/SessionActions-Fc-1qmdj.css              19.36 kB │ gzip:   3.79 kB
+dist/assets/ResearchWorkspace-llijusaB.css           19.75 kB │ gzip:   3.64 kB
+dist/assets/JournalWorkspace-TXGcbyk3.css            22.48 kB │ gzip:   5.01 kB
+dist/assets/SessionPicker-DRkvKHPt.css               28.92 kB │ gzip:   5.64 kB
+dist/assets/LiveWorkspace-COjS9NFn.css               29.77 kB │ gzip:   5.53 kB
+dist/assets/FxTradeLedger-BPaK2S9Z.css               30.08 kB │ gzip:   5.89 kB
+dist/assets/QuickSessionDialog-DxQ0rAAw.css          30.41 kB │ gzip:   4.02 kB
+dist/assets/DataDeskWorkspace-DcHCZaSA.css           34.38 kB │ gzip:   6.16 kB
+dist/assets/ReplayWorkspace-BxuFR8lZ.css            126.52 kB │ gzip:  19.99 kB
+dist/assets/index-VcgTiVrb.css                      234.61 kB │ gzip:  36.90 kB
+dist/assets/useContentReadyMetric-DqfdDFQP.js         0.51 kB │ gzip:   0.32 kB
+dist/assets/TableColumnControl-dFvWlnJg.js            0.71 kB │ gzip:   0.47 kB
+dist/assets/analyticsSimulation-B7RGgANd.js           1.63 kB │ gzip:   1.03 kB
+dist/assets/PaginationFooter-CgAtqZh8.js              2.09 kB │ gzip:   0.87 kB
+dist/assets/dataDeskApi-Dm3_AZyB.js                   2.28 kB │ gzip:   0.86 kB
+dist/assets/orderProtection-TlQT8Uyv.js               3.06 kB │ gzip:   1.50 kB
+dist/assets/playbookApi-DOCtCqop.js                   3.67 kB │ gzip:   1.69 kB
+dist/assets/dataLibraryModel-Wy1xnn-Y.js              4.05 kB │ gzip:   1.93 kB
+dist/assets/useReadRefresh-C6aegZ4A.js                4.16 kB │ gzip:   1.88 kB
+dist/assets/sessionCatalog-B2wZffZa.js                4.19 kB │ gzip:   1.81 kB
+dist/assets/sessionTradingOptions-DivZ7JCh.js         4.78 kB │ gzip:   1.95 kB
+dist/assets/SessionFilter-BKS5xLHK.js                 4.79 kB │ gzip:   1.97 kB
+dist/assets/replayOrderModel-BEt0Rhb0.js              5.06 kB │ gzip:   2.03 kB
+dist/assets/LegacyModal-D3sq_Ove.js                   5.87 kB │ gzip:   3.01 kB
+dist/assets/analyticsViewModel-cDjP-VcZ.js            5.99 kB │ gzip:   2.47 kB
+dist/assets/PropAnalytics-DMKU4Pjb.js                 6.99 kB │ gzip:   2.93 kB
+dist/assets/FxTradeLedger-zDi_T4ko.js                 7.54 kB │ gzip:   3.30 kB
+dist/assets/LedgerFilterActions-aoik0O1P.js           7.86 kB │ gzip:   3.15 kB
+dist/assets/propSessionCreation-C8o8uO5i.js           8.56 kB │ gzip:   3.52 kB
+dist/assets/SessionReports-DAc2laTa.js                9.55 kB │ gzip:   3.62 kB
+dist/assets/tradingAnalyticsModel-C05K7nh4.js        10.23 kB │ gzip:   4.27 kB
+dist/assets/RiskWorkspace-CnvRVc-Z.js                10.36 kB │ gzip:   3.23 kB
+dist/assets/ProjectDateInput-C5oJwesP.js             11.38 kB │ gzip:   3.94 kB
+dist/assets/LearnWorkspace-DQrUGZvs.js               13.52 kB │ gzip:   3.84 kB
+dist/assets/SessionPicker-jv-BWOmG.js                14.39 kB │ gzip:   5.28 kB
+dist/assets/SessionActions-Cq2JwaCu.js               14.83 kB │ gzip:   5.56 kB
+dist/assets/PlaybookWorkspace-mSjTMO1W.js            16.60 kB │ gzip:   5.29 kB
+dist/assets/DemoPreview-DzpxmKAV.js                  17.60 kB │ gzip:   6.70 kB
+dist/assets/SettingsWorkspace-CHqC0C7P.js            18.39 kB │ gzip:   5.83 kB
+dist/assets/JournalWorkspace-D0gcMhFI.js             20.19 kB │ gzip:   6.12 kB
+dist/assets/AnalyticsWorkspace-WUecM-ek.js           22.04 kB │ gzip:   8.07 kB
+dist/assets/TradeWorkspace-DPwl_h5l.js               22.71 kB │ gzip:   7.92 kB
+dist/assets/TestingComponentReference-CoINJxJc.js    24.65 kB │ gzip:   7.84 kB
+dist/assets/SessionSettingsDrawer-g-TgL_hd.js        24.85 kB │ gzip:   8.59 kB
+dist/assets/ResearchWorkspace-d8SNVG8e.js            28.03 kB │ gzip:   8.08 kB
+dist/assets/AiChatPanel-OlL2svaZ.js                  29.89 kB │ gzip:  10.83 kB
+dist/assets/DashboardSessions-DebuvxTu.js            34.08 kB │ gzip:  11.05 kB
+dist/assets/FxAnalytics-vk81wbdW.js                  35.74 kB │ gzip:  12.04 kB
+dist/assets/QuickSessionDialog-BRbDv8NH.js           37.42 kB │ gzip:  11.93 kB
+dist/assets/DataDeskWorkspace-CpNtm-is.js            50.26 kB │ gzip:  15.55 kB
+dist/assets/LiveWorkspace-BYHh-gi5.js                77.20 kB │ gzip:  24.17 kB
+dist/assets/LightweightReplayChart-B24ILmYn.js      193.29 kB │ gzip:  62.69 kB
+dist/assets/ReplayWorkspace-BcelSMhN.js             220.03 kB │ gzip:  68.09 kB
+dist/assets/index-0cJ9FBaL.js                       595.34 kB │ gzip: 170.53 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 4.80s

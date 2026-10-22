@@ -83,8 +83,8 @@ export default function FxSelect({ label, value, options: inputOptions, onChange
       // Keep menu focus until the field click toggles it; otherwise dialog blur closes it first.
       if (!disabled && !event.target.closest('button')) event.preventDefault()
     }, onClick:event => { if (!disabled && !event.target.closest('button')) { trigger.current?.focus(); trigger.current?.click() } } } : {})}>
-    {selectedTags?.length > 0 && <div className="fx-select-tags">{selectedTags.map(tag => <span className="fx-select-tag" key={tag.value} title={tag.detail}><span>{tag.label}</span><button type="button" disabled={disabled} aria-label={t('Bỏ tài sản {asset}',{asset:tag.label})} onClick={() => { trigger.current?.focus(); onChange(value.filter(item => item !== tag.value)) }}><TestingIcon kind="close" size={14} /></button></span>)}</div>}
-    <button {...triggerProps} type="button" className="fx-select-trigger" aria-label={t(label)} aria-haspopup={searchable ? 'dialog' : 'listbox'} aria-expanded={open} aria-controls={open ? id : undefined} disabled={disabled} ref={trigger} onClick={() => { setSearch(''); setOpen(!open) }}>
+    {selectedTags?.length > 0 && <div className="fx-select-tags">{selectedTags.map(tag => <span className="fx-select-tag" key={tag.value} data-tooltip={tag.detail}><span>{tag.label}</span><button type="button" disabled={disabled} aria-label={t('Bỏ tài sản {asset}',{asset:tag.label})} onClick={() => { trigger.current?.focus(); onChange(value.filter(item => item !== tag.value)) }}><TestingIcon kind="close" size={14} /></button></span>)}</div>}
+    <button {...triggerProps} title={undefined} data-tooltip={triggerProps['data-tooltip'] ?? triggerProps.title} type="button" className="fx-select-trigger" aria-label={t(label)} aria-haspopup={searchable ? 'dialog' : 'listbox'} aria-expanded={open} aria-controls={open ? id : undefined} disabled={disabled} ref={trigger} onClick={() => { setSearch(''); setOpen(!open) }}>
       {icon && <FilterIcon kind={icon} />}{!iconOnly && <>{!selectedTags?.length && <span className="fx-select-value">{(localizeOptions ? t(triggerContent) : triggerContent) || selected?.label || t("Chọn…")}</span>}<SelectChevron /></>}
     </button>
     </Field>
@@ -99,7 +99,7 @@ export default function FxSelect({ label, value, options: inputOptions, onChange
         if (closeOnSelect) close()
       }}><span className={`fx-select-checkbox${allSelected ? ' is-checked' : selectedCount > 0 ? ' is-mixed' : ''}`} aria-hidden="true" /><span className="fx-select-option-label">{t(selectAllLabel)}</span></button>}
       <div role="listbox" tabIndex={-1} aria-label={t(label)} aria-multiselectable={multiple || undefined}>{[...groups].map(([group, entries]) => {
-        const content = entries.map(option => <button type="button" role="option" tabIndex={-1} key={option.value} aria-selected={isSelected(option)} disabled={option.disabled} title={renderOption || option.disabled ? option.detail : undefined} onClick={() => {
+        const content = entries.map(option => <button type="button" role="option" tabIndex={-1} key={option.value} aria-selected={isSelected(option)} disabled={option.disabled} data-tooltip={renderOption || option.disabled ? option.detail : undefined} onClick={() => {
         if (multiple) { onChange(isSelected(option) ? value.filter(item => item !== option.value) : [...value, option.value]); if (closeOnSelect) close() }
         else { onChange(option.value); close() }
       }}>{multiple && multipleStyle === 'checkbox' && <span className={`fx-select-checkbox${isSelected(option) ? ' is-checked' : ''}`} aria-hidden="true" />}{renderOption ? renderOption(option) : <span className="fx-select-option-label">{option.label}{option.detail && <small>{option.detail}</small>}</span>}{(multiple && multipleStyle === 'check' || !multiple && isSelected(option)) && <span className="fx-select-check" aria-hidden="true">{isSelected(option) ? '✓' : ''}</span>}</button>)

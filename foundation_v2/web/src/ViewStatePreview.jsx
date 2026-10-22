@@ -12,7 +12,7 @@ export function ViewStateSelect({ value, view, onChange, disabled = false }) {
   const { t } = useTestingLocale()
   const label = previewOptions(view).find(option => option.value === value)?.label || 'Dữ liệu mẫu'
   return <div className="wm-demo-action">
-    {value !== 'real' && <div className="wm-view-state-note" data-testid="view-state-preview" data-preview-state={value} role="status"><span>{t('Bản xem thử')}</span><strong title={t(label)}>{t(label)}</strong></div>}
+    {value !== 'real' && <div className="wm-view-state-note" data-testid="view-state-preview" data-preview-state={value} role="status"><span>{t('Bản xem thử')}</span><strong data-tooltip={t(label)}>{t(label)}</strong></div>}
     <FxSelect className="wm-view-state-select" disabled={disabled} label="Chế độ xem dữ liệu" value={value}
     triggerContent={t(previewOptions(view).find(option => option.value === value)?.label)}
     options={previewOptions(view).map(option => ({ ...option, detail: option.disabled ? 'Chưa có mẫu trạng thái này cho trang hiện tại.' : option.detail }))}

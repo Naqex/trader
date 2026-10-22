@@ -140,7 +140,7 @@ async function closeEntry({ dismiss = false } = {}) {
 async function markerState() {
   return chartFrame.locator('[data-order-kind]').evaluateAll(nodes => Object.fromEntries(nodes.map(node => {
     const body = node.querySelector('.wm-order-marker-body'), rect = node.getBoundingClientRect()
-    return [node.dataset.orderKind, { text: node.querySelector('.wm-order-marker-text').textContent, quantity: node.querySelector('.wm-order-marker-quantity').textContent, quantityHidden: node.querySelector('.wm-order-marker-quantity').hidden, title: body.title, ghost: node.dataset.ghost === 'true', color: node.style.getPropertyValue('--order-color'), y: rect.y, left: rect.left, right: rect.right, cursor: getComputedStyle(body).cursor }]
+    return [node.dataset.orderKind, { text: node.querySelector('.wm-order-marker-text').textContent, quantity: node.querySelector('.wm-order-marker-quantity').textContent, quantityHidden: node.querySelector('.wm-order-marker-quantity').hidden, title: body.dataset.tooltip, ghost: node.dataset.ghost === 'true', color: node.style.getPropertyValue('--order-color'), y: rect.y, left: rect.left, right: rect.right, cursor: getComputedStyle(body).cursor }]
   })))
 }
 async function preset({ stop, target, unit = 'pips', value = '15' }) {

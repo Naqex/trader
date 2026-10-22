@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import ChartIcon from './ChartIcon.jsx'
 import LegacyPopover from './LegacyPopover.jsx'
+import ProjectTooltipLayer from './ProjectTooltipLayer.jsx'
+import tooltipStyles from './project-tooltip.css?inline'
 import LegacyLayoutMenu from './LegacyLayoutMenu.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 
@@ -52,7 +54,7 @@ export default function LegacyChartHeader({ controls, symbol, name, backHref, th
     if (menu || popup) [popup?.anchor, opener.current, controls?.layout?.querySelector('button'), controls?.market?.querySelector('.legacy-symbol')].find(element => element?.isConnected && element.getBoundingClientRect().width > 0)?.focus()
   }, [controls?.compact, controls?.market])
   if (!controls?.market) return null
-  const button = (label, icon, action, extra = {}) => <button type="button" aria-label={t(label)} title={t(label)} onClick={action} {...extra}><ChartIcon name={icon} /></button>
+  const button = (label, icon, action, extra = {}) => <button type="button" aria-label={t(label)} data-tooltip={t(label)} onClick={action} {...extra}><ChartIcon name={icon} /></button>
   const open = tool => event => onOpenTool(tool, event.currentTarget)
   const show = kind => event => {
     // React clears currentTarget after dispatch; retain the node before a queued updater runs.
@@ -67,23 +69,24 @@ export default function LegacyChartHeader({ controls, symbol, name, backHref, th
   const saveLabel = saved ? 'Đã lưu mọi thay đổi' : saving ? 'Đang lưu…' : controls.saveState === 'error' ? 'Thử lưu lại chart' : 'Lưu chart'
   const saveAction = () => { controls.save(); closePopup() }
   return <>
+    {controls.market.ownerDocument !== document && <><ProjectTooltipLayer targetDocument={controls.market.ownerDocument} theme={theme} />{createPortal(<style>{tooltipStyles}</style>, controls.market.ownerDocument.head)}</>}
     {createPortal(<div className="legacy-native-extension legacy-native-market" data-testid="legacy-native-market">
-      <a href={backHref} target="_top" aria-label={t('Trở về Sessions')} title={t('Trở về Sessions')}><ChartIcon name="arrow-left" /></a>
-      <button type="button" className="legacy-symbol" onClick={open('data')} title={t('Chọn dataset local')}><ChartIcon name="search" /><strong>{symbol}</strong></button>
+      <a href={backHref} target="_top" aria-label={t('Trở về Sessions')} data-tooltip={t('Trở về Sessions')}><ChartIcon name="arrow-left" /></a>
+      <button type="button" className="legacy-symbol" onClick={open('data')} data-tooltip={t('Chọn dataset local')}><ChartIcon name="search" /><strong>{symbol}</strong></button>
       {button('So sánh mã', 'compare', open('compare'), { className: 'legacy-compare' })}
     </div>, controls.market)}
     {createPortal(<div className="legacy-native-extension"><button type="button" onClick={show('layout')}>New Layout</button></div>, controls.layout)}
     {createPortal(<div className="legacy-native-extension legacy-native-session">
-      <span className="legacy-session-name" title={name}>{name}</span>
+      <span className="legacy-session-name" data-tooltip={name}>{name}</span>
       {button('Bố cục chart', 'single-pane', show('layout'), { 'aria-expanded': popup?.kind === 'layout' })}
-      <button type="button" className="legacy-save-layout" data-save-state={controls.saveState} aria-label={t(saveLabel)} title={`${t(saveLabel)} · ${t('Lưu trên trình duyệt này')}`} disabled={saved || saving} onClick={controls.save}><span>{name}</span><small>{t(saving ? 'Đang lưu…' : 'Save')}</small></button>
+      <button type="button" className="legacy-save-layout" data-save-state={controls.saveState} aria-label={t(saveLabel)} data-tooltip={`${t(saveLabel)} · ${t('Lưu trên trình duyệt này')}`} disabled={saved || saving} onClick={controls.save}><span>{name}</span><small>{t(saving ? 'Đang lưu…' : 'Save')}</small></button>
       {button('Quản lý layout', 'down', show('manage'), { 'aria-expanded': popup?.kind === 'manage' })}
     </div>, controls.session)}
     {createPortal(<div className="legacy-native-extension">{button('Quick Search', 'quick-search', open('search'))}</div>, controls.search)}
     {createPortal(<div className="legacy-native-extension legacy-native-tools" data-testid="legacy-native-tools">
       {button('Chụp chart PNG', 'camera', show('capture'), { className: 'legacy-wide-action', 'aria-expanded': popup?.kind === 'capture' })}
       <span className="legacy-divider legacy-wide-action" />
-      <button type="button" className="legacy-editor legacy-wide-action" aria-label="Editor" title="Editor" onClick={open('editor')}><ChartIcon name="editor" /><span>Editor</span></button>
+      <button type="button" className="legacy-editor legacy-wide-action" aria-label="Editor" data-tooltip="Editor" onClick={open('editor')}><ChartIcon name="editor" /><span>Editor</span></button>
       {button('AI Mentor', 'mentor', open('mentor'), { className: 'legacy-mentor' })}
       {button('Đổi giao diện', theme === 'dark' ? 'moon' : 'sun', onTheme, { className: 'legacy-wide-action', 'data-testid': 'theme-toggle' })}
       {button('Toàn màn hình', 'fit', onFullscreen, { className: 'legacy-wide-action' })}

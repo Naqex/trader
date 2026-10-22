@@ -50,13 +50,13 @@ export default function ChartFloatingToolbar({ name, storageKey, initialPosition
     })
   }
   return <div ref={ref} className={`chart-floating-toolbar ${viewport ? 'is-viewport-floating' : ''} ${className} ${!minimal && layout.collapsed ? 'is-collapsed' : ''}`} role="group" aria-label={t(name)} style={{ left: layout.x, top: layout.y, maxWidth: viewport ? 'calc(100vw - 16px)' : `calc(100% - ${insetRight}px)` }}>
-    <button type="button" className="chart-float-grip" aria-label={t('Di chuyển {name}', { name: t(name) })} title={t("Kéo để di chuyển · phím mũi tên để chỉnh vị trí")} disabled={layout.pinned}
+    <button type="button" className="chart-float-grip" aria-label={t('Di chuyển {name}', { name: t(name) })} data-tooltip={t("Kéo để di chuyển · phím mũi tên để chỉnh vị trí")} disabled={layout.pinned}
       onPointerDown={event => { if (event.button !== 0) return; event.currentTarget.setPointerCapture(event.pointerId); drag.current = { x: event.clientX - layout.x, y: event.clientY - layout.y }; event.preventDefault() }}
       onPointerMove={event => { if (drag.current) move(event.clientX - drag.current.x, event.clientY - drag.current.y) }}
       onPointerUp={() => { drag.current = null }} onPointerCancel={() => { drag.current = null }} onLostPointerCapture={() => { drag.current = null }}
       onKeyDown={event => { if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return; event.preventDefault(); event.stopPropagation(); move(layout.x + (event.key === 'ArrowLeft' ? -12 : event.key === 'ArrowRight' ? 12 : 0), layout.y + (event.key === 'ArrowUp' ? -12 : event.key === 'ArrowDown' ? 12 : 0)) }}><ChartIcon name="grip" /></button>
     {(minimal || !layout.collapsed) && <div className="chart-float-content">{children}</div>}
-    {!minimal && <><button type="button" aria-label={t('Ghim {name}', { name: t(name) })} title={t("Ghim vị trí")} aria-pressed={layout.pinned} onClick={() => setLayout(current => ({ ...current, pinned: !current.pinned }))}><ChartIcon name="pin" /></button>
-    <button type="button" aria-label={t(layout.collapsed ? 'Mở {name}' : 'Thu gọn {name}', { name: t(name) })} title={layout.collapsed ? t("Mở thanh công cụ") : t("Thu gọn")} aria-expanded={!layout.collapsed} onClick={() => setLayout(current => ({ ...current, collapsed: !current.collapsed }))}><ChartIcon name={layout.collapsed ? 'expand' : 'collapse'} /></button></>}
+    {!minimal && <><button type="button" aria-label={t('Ghim {name}', { name: t(name) })} data-tooltip={t("Ghim vị trí")} aria-pressed={layout.pinned} onClick={() => setLayout(current => ({ ...current, pinned: !current.pinned }))}><ChartIcon name="pin" /></button>
+    <button type="button" aria-label={t(layout.collapsed ? 'Mở {name}' : 'Thu gọn {name}', { name: t(name) })} data-tooltip={layout.collapsed ? t("Mở thanh công cụ") : t("Thu gọn")} aria-expanded={!layout.collapsed} onClick={() => setLayout(current => ({ ...current, collapsed: !current.collapsed }))}><ChartIcon name={layout.collapsed ? 'expand' : 'collapse'} /></button></>}
   </div>
 }

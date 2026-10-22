@@ -104,7 +104,7 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     }
     if (row.kind !== 'entry') {
       const hint = t('Kéo để dời · ↑ ↓ chỉnh giá · Delete để bỏ')
-      row.body.title = label.ghost ? hint : `${label.detail} · ${price} · ${hint}`
+      row.body.dataset.tooltip = label.ghost ? hint : `${label.detail} · ${price} · ${hint}`
     }
     row.body.disabled = row.kind !== 'entry' && !state.orderEditable
     row.element.dataset.pending = String(levels.state === 'submitting' || !state.orderEditable)
@@ -236,7 +236,7 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
       body.type = 'button'; body.dataset.orderDrag = kind
       body.addEventListener('blur', () => { delete body.dataset.pointerFocus })
       body.setAttribute('aria-label', kind === 'stop' ? 'Kéo Stop loss' : 'Kéo Take profit')
-      body.title = t('Kéo để dời · ↑ ↓ chỉnh giá · Delete để bỏ')
+      body.dataset.tooltip = t('Kéo để dời · ↑ ↓ chỉnh giá · Delete để bỏ')
       const grip = owner.createElement('span')
       grip.className = 'wm-order-marker-grip'; grip.setAttribute('aria-hidden', 'true')
       body.append(grip)

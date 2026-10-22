@@ -23,7 +23,7 @@ export default function SessionPeriodFields({ range, value, onChange, disabled, 
           <label htmlFor={`${id}-start`}>{t('Ngày bắt đầu')}</label>
           <div className="quick-session-period-start">
             <ProjectDateInput id={`${id}-start`} type="datetime-local" required step="60" min={min} max={max} value={value.start} disabled={disabled} aria-label={t('Ngày bắt đầu phiên (UTC)')} {...fieldValidationProps(periodError && invalidStart, errorId)} aria-describedby={`${id}-hint${periodError && invalidStart ? ` ${errorId}` : ''}`} onChange={event => update({ start: event.target.value })} />
-            <button className="quick-session-period-random" type="button" aria-label={t('Chọn ngày bắt đầu ngẫu nhiên')} title={t('Chọn ngày bắt đầu ngẫu nhiên')} disabled={disabled || randomSessionDate(range, value, () => 0) === null} onClick={randomDate}>
+            <button className="quick-session-period-random" type="button" aria-label={t('Chọn ngày bắt đầu ngẫu nhiên')} data-tooltip={t('Chọn ngày bắt đầu ngẫu nhiên')} disabled={disabled || randomSessionDate(range, value, () => 0) === null} onClick={randomDate}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3" /><circle cx="9" cy="9" r="1" fill="currentColor" stroke="none" /><circle cx="15" cy="15" r="1" fill="currentColor" stroke="none" /><circle cx="15" cy="9" r="1" fill="currentColor" stroke="none" /><circle cx="9" cy="15" r="1" fill="currentColor" stroke="none" /></svg>
             </button>
           </div>

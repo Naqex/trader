@@ -100,7 +100,7 @@ try {
     const secondMedium=dialog.locator('[data-option=slippage] .session-slippage-asset').last().getByRole('button',{name:labels.medium,exact:true})
     const secondHasSpec=await secondMedium.isEnabled()
     if(secondHasSpec) await secondMedium.click()
-    else assert.ok(await secondMedium.getAttribute('title'),'unknown units keep slippage disabled with an explanation')
+    else assert.ok(await secondMedium.getAttribute('data-tooltip'),'unknown units keep slippage disabled with an explanation')
     await basics.click(); await more.click()
     assert.equal(await dialog.locator('.quick-session-body').evaluate(el=>el.scrollTop),0,'switching sections starts at the section heading')
     assert.equal(await fields.first().locator('input').first().inputValue(),'0.00010','switching panels preserves cost inputs')

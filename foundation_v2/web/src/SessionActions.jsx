@@ -7,7 +7,7 @@ export function SessionActions({ item, onAction, disabled = false, text = false 
   const { t } = useTestingLocale()
 
   return <div className="fxs-actions" aria-label={t("Thao tác {name}", { name: item.name || item.record_id })}>
-    <button type="button" className={`${text ? 'fxr-button fxr-button-secondary' : 'fxs-action-button'} is-danger`} aria-label={text ? t("Xóa phiên") : t("Xóa {name}", { name: item.name || item.record_id })} title={t("Xóa phiên")} disabled={disabled} onClick={() => onAction('delete', item)}>{text ? t("Xóa phiên") : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7" /></svg>}</button>
+    <button type="button" className={`${text ? 'fxr-button fxr-button-secondary' : 'fxs-action-button'} is-danger`} aria-label={text ? t("Xóa phiên") : t("Xóa {name}", { name: item.name || item.record_id })} data-tooltip={t("Xóa phiên")} disabled={disabled} onClick={() => onAction('delete', item)}>{text ? t("Xóa phiên") : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7" /></svg>}</button>
   </div>
 }
 

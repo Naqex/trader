@@ -30,8 +30,8 @@ export default function SessionPresetMenu({ items, selected, disabled, onApply, 
     {open && <div ref={popup} id={id} className="session-preset-menu fx-select-menu" role="dialog" aria-label={t('Preset phiên')}>
       <div className="session-preset-list">{items.map(item => <div className="session-preset-row" key={item.id}>
         <button type="button" className="session-preset-apply" aria-pressed={selected === item.id} onClick={() => {onApply(item);close()}}><span>{item.name}</span>{selected === item.id && <span aria-hidden="true">✓</span>}</button>
-        <button type="button" className="session-preset-icon" aria-label={t('Sửa preset {name}',{name:item.name})} title={t('Sửa preset')} onClick={() => {setOpen(false);onEdit(item)}}><FilterIcon kind="edit" /></button>
-        <button type="button" className="session-preset-icon" aria-label={t('Xóa preset {name}',{name:item.name})} title={t('Xóa preset')} onClick={event => {opener.current=event.currentTarget;setProblem('');setDeleting(item)}}><TestingIcon kind="delete" size={16} /></button>
+        <button type="button" className="session-preset-icon" aria-label={t('Sửa preset {name}',{name:item.name})} data-tooltip={t('Sửa preset')} onClick={() => {setOpen(false);onEdit(item)}}><FilterIcon kind="edit" /></button>
+        <button type="button" className="session-preset-icon" aria-label={t('Xóa preset {name}',{name:item.name})} data-tooltip={t('Xóa preset')} onClick={event => {opener.current=event.currentTarget;setProblem('');setDeleting(item)}}><TestingIcon kind="delete" size={16} /></button>
       </div>)}</div>
       <button type="button" className="session-preset-create fx-menu-action" onClick={() => {setOpen(false);onCreate()}}><TestingIcon kind="plus" size={16} /><span>{t('Tạo preset')}</span></button>
     </div>}

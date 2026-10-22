@@ -42,7 +42,7 @@ try {
       assert.equal(await control.innerText(), '')
       assert.equal(await control.locator('.data-library-progress-meta').count(), 0)
       assert.doesNotMatch(await control.getAttribute('aria-label'), /MB|GB|Thời gian còn lại|—/)
-      assert.doesNotMatch(await control.getAttribute('title'), /Dung lượng|tốc độ|thời gian còn lại/)
+      assert.doesNotMatch(await control.getAttribute('data-tooltip'), /Dung lượng|tốc độ|thời gian còn lại/)
     }
     await control.click()
     const dialog = page.getByRole('dialog', { name:'Tiến độ tải dữ liệu', exact:true })

@@ -104,7 +104,7 @@ export function TestingResourceStatus({ state, resource, recovery, detail, textS
   if (textSummary && (!message || state === 'refreshing')) return null
   return <span className={`wm-resource-status-slot${textSummary ? ' is-text' : ''}`}>
     {message && <details ref={element} className={`wm-resource-status is-${state}`} data-resource-state={state} aria-busy={state === 'refreshing'} onToggle={event => setOpen(event.currentTarget.open)} onKeyDown={event => { if (event.key === 'Escape' && event.currentTarget.open) { event.preventDefault(); event.stopPropagation(); event.currentTarget.open = false; event.currentTarget.querySelector('summary').focus({ preventScroll: true }) } }}>
-      <summary aria-label={t(message)} title={t(message)}>{textSummary ? t(state === 'partial' ? 'Dữ liệu một phần.' : 'Dữ liệu chưa cập nhật.') : <TestingIcon kind={state === 'refreshing' ? 'history' : 'info'} size={16} />}</summary>
+      <summary aria-label={t(message)} data-tooltip={t(message)}>{textSummary ? t(state === 'partial' ? 'Dữ liệu một phần.' : 'Dữ liệu chưa cập nhật.') : <TestingIcon kind={state === 'refreshing' ? 'history' : 'info'} size={16} />}</summary>
       <div className="wm-resource-status-detail" style={position} role="status"><p>{t(message)}</p><ReadRecoveryStatus recovery={recovery} /></div>
     </details>}
   </span>

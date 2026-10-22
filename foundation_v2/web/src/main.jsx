@@ -34,6 +34,7 @@ import { startFrontendPerformance } from './frontendPerformance.js'
 import { TestingRouteBoundary } from './TestingReadState.jsx'
 import { TestingEmptyState, TestingPageSkeleton } from './TestingPageState.jsx'
 import ChartLoadingState from './ChartLoadingState.jsx'
+import ProjectTooltipLayer from './ProjectTooltipLayer.jsx'
 
 function WorkspaceOverview({ workspace, query }) {
   return <section className="fx-dashboard" aria-label="Dashboard"><div className="fx-dashboard-inner"><DashboardSessions key={workspace} workspace={workspace} query={query} /></div></section>
@@ -152,7 +153,7 @@ if (!rootElement) throw new Error('Trading Workspace root element is missing')
 const rootStateKey = '__tradingWorkspaceReactRoot'
 const appRoot = rootElement[rootStateKey] || createRoot(rootElement)
 rootElement[rootStateKey] = appRoot
-appRoot.render(<App />)
+appRoot.render(<><App /><ProjectTooltipLayer /></>)
 
 if (import.meta.hot) {
   import.meta.hot.dispose(() => {

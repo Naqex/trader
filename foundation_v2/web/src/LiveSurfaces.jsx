@@ -23,9 +23,9 @@ const FILTER_LABELS = { asset: 'Assets', side: 'Side', outcome: 'Deal result', a
 const FILTER_VALUES = { side: { 0: 'Buy', 1: 'Sell' }, outcome: { gain: 'Positive PnL', loss: 'Negative PnL', flat: 'Zero PnL' }, day: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] }
 const filterValue = (key,value,t) => ['from','to'].includes(key) ? displayDate(value) : FILTER_VALUES[key]?.[value] ? t(FILTER_VALUES[key][value]) : value
 
-function Action({ children, icon, primary, compact, onClick, label, ...props }) {
+function Action({ children, icon, primary, compact, onClick, label, title, ...props }) {
   const { t } = useTestingLocale()
-  return <button type="button" className={`fxa-button${primary ? ' is-primary' : ''}${compact ? ' fxa-icon-button' : ''}`} aria-label={label ? t(label) : undefined} onClick={onClick} {...props}>{icon && <TestingIcon kind={icon} />}{children}</button>
+  return <button type="button" className={`fxa-button${primary ? ' is-primary' : ''}${compact ? ' fxa-icon-button' : ''}`} aria-label={label ? t(label) : undefined} data-tooltip={title} onClick={onClick} {...props}>{icon && <TestingIcon kind={icon} />}{children}</button>
 }
 
 function Empty({ title, copy, icon = 'chart', action, onAction }) {
@@ -110,7 +110,7 @@ function Calendar({ payload, deals, filters, filterBar, reviewScope, canWrite, o
     <div className="live-calendar-scroll" role="region" aria-label={`${t('PnL calendar')} · ${filters.timezone}`} tabIndex={0}><div className="live-calendar-grid" style={{ '--live-calendar-weeks': weeks.length }}>
       {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su', 'Total'].map(day => <div className={`live-calendar-dayname${day === 'Total' ? ' is-total' : ''}`} key={day}>{t(day)}</div>)}
       {weeks.map((week, index) => { const summary = calendarWeekSummary(week, empty); return <div className="live-calendar-week" key={week[0].key}>{week.map(day => <button type="button" key={day.key} className={`live-calendar-cell${!day.inMonth ? ' is-outside' : ''}${day.net > 0 ? ' is-gain' : day.net < 0 ? ' is-loss' : ''}`} disabled={!day.inMonth} aria-pressed={selected === day.key} aria-label={`${displayDate(day.key)} · ${fmt(day.net, currency ? ` ${currency}` : '')}`} onClick={() => setSelected(selected === day.key ? '' : day.key)}>
-        <span className="live-day-number">{day.date.getUTCDate()}</span><div className="live-day-result">{day.inMonth && day.net !== null && <strong>{amount(day.net)}</strong>}{day.count !== null && day.count > 0 && <small title={payload?.manual ? `${day.count} giao dịch` : t('{count} filled deals', { count: day.count })}>{payload?.manual ? `${day.count} giao dịch` : `${day.count} deals`}</small>}</div>
+        <span className="live-day-number">{day.date.getUTCDate()}</span><div className="live-day-result">{day.inMonth && day.net !== null && <strong>{amount(day.net)}</strong>}{day.count !== null && day.count > 0 && <small data-tooltip={payload?.manual ? `${day.count} giao dịch` : t('{count} filled deals', { count: day.count })}>{payload?.manual ? `${day.count} giao dịch` : `${day.count} deals`}</small>}</div>
       </button>)}<div className="live-week-total"><div><span>{countLabel(summary.count)}</span><span aria-label={t('Week {count}', { count: index + 1 })}>W{index + 1}</span></div><strong>{weekAmount(summary.net)}</strong></div></div>})}
     </div></div>
     <div className="live-month-total"><span>{empty ? t('Tổng tháng') : payload?.manual ? 'PnL đã ghi trong tháng' : 'PnL đã đồng bộ trong tháng'}</span><strong>{weekAmount(total.net)}</strong><span>{countLabel(total.count)}</span></div>

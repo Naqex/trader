@@ -1,28 +1,15 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import FxSelect from './FxSelect.jsx'
 import ProjectDateInput from './ProjectDateInput.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import { mt5Request } from './mt5Connections.js'
 import ChartIcon from './ChartIcon.jsx'
 import TestingIcon from './TestingIcon.jsx'
-import LegacyPopover from './LegacyPopover.jsx'
 import MetaTraderMark from './MetaTraderMark.jsx'
 
 function ConnectionHelp({ label, children, info = false, text = false }) {
-  const { t } = useTestingLocale(), [anchor,setAnchor] = useState(null)
-  const id = useId(), timer = useRef(null), focused = useRef(false)
-  const keepOpen = () => clearTimeout(timer.current)
-  const open = event => { keepOpen(); setAnchor(event.currentTarget) }
-  const closeSoon = () => { keepOpen(); timer.current=setTimeout(()=>{if(!focused.current)setAnchor(null)},120) }
-  useEffect(()=>()=>clearTimeout(timer.current),[])
-  useEffect(()=>{
-    if(!anchor)return
-    const escape=event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();keepOpen();setAnchor(null)}}
-    const doc=anchor.ownerDocument
-    doc.addEventListener('keydown',escape)
-    return ()=>doc.removeEventListener('keydown',escape)
-  },[anchor])
-  return <><button type="button" className={`live-connection-help${text?' is-sync-help':''}`} aria-label={t(label)} aria-describedby={anchor?id:undefined} onPointerEnter={open} onPointerLeave={closeSoon} onFocus={event=>{focused.current=true;open(event)}} onBlur={()=>{focused.current=false;closeSoon()}} onClick={open}>{text?t(label):null}{info?<TestingIcon kind="info" size={14}/>:<span aria-hidden="true">?</span>}</button>{anchor && <LegacyPopover id={id} role="tooltip" anchor={anchor} theme={document.querySelector('.fx-app')?.dataset.theme || 'dark'} label={t(label)} onClose={()=>setAnchor(null)} onPointerEnter={keepOpen} onPointerLeave={closeSoon}><p className="live-connection-help-copy">{t(children)}</p></LegacyPopover>}</>
+  const { t } = useTestingLocale()
+  return <button type="button" className={`live-connection-help${text?' is-sync-help':''}`} aria-label={t(label)} data-tooltip={t(children)} data-tooltip-touch>{text?t(label):null}{info?<TestingIcon kind="info" size={14}/>:<span aria-hidden="true">?</span>}</button>
 }
 
 export default function MetaTraderConnect({ workspace, connection, onBack, onSaved }) {

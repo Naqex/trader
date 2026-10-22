@@ -28,7 +28,7 @@ function PeriodBars({ title, items, currency, horizontal = false, totalCount = i
 function Metric({ title, value, detail }) {
   const { t } = useTestingLocale()
 
-  return <div className="fxs-metric"><span title={detail}>{t(title)}</span><strong>{value}</strong></div>
+  return <div className="fxs-metric"><span data-tooltip={detail}>{t(title)}</span><strong>{value}</strong></div>
 }
 
 export default function SessionPerformance({ model, payload, item, href, chartsOnly = false }) {

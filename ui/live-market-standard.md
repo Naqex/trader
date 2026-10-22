@@ -218,7 +218,9 @@ is deferred to account management. Only MT5 is supported. Field and sync help
 use hover/focus tooltips rather than permanent explanatory copy. The sync guide
 uses a question mark; server and login use the shared info icon. Tooltips have
 `role=tooltip`, describe their trigger, remain available while hovered, and close
-on Escape. Click remains available for touch. Vietnamese field labels are Máy
+on Escape. They use the app-wide `ProjectTooltipLayer` and the compact tooltip
+contract in `compact-system.md`; click remains available for touch. The back
+and sync-guide row shares the table header's centerline. Vietnamese field labels are Máy
 chủ, Tài khoản and Mật khẩu chỉ đọc; help retains the MT5 term “investor”.
 The provider summary shows the six platform market categories in a compact
 two-row layout; these are not a claim about a connected account's instruments.

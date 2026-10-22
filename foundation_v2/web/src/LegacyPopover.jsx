@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import './LegacyPopover.css'
 
-export default function LegacyPopover({ anchor, theme, label, onClose, onAnchorLost, children, wide = false, role = 'group', id, onPointerEnter, onPointerLeave }) {
+export default function LegacyPopover({ anchor, theme, label, onClose, onAnchorLost, children, wide = false, role = 'group', id, onPointerEnter, onPointerLeave, className = '', offset = 4, maxWidth = Infinity }) {
   const ref = useRef(null), closeRef = useRef(onClose), lostRef = useRef(onAnchorLost), [position, setPosition] = useState({ visibility: 'hidden' })
   closeRef.current = onClose
   lostRef.current = onAnchorLost
@@ -13,7 +13,7 @@ export default function LegacyPopover({ anchor, theme, label, onClose, onAnchorL
       if (!anchor.isConnected || !anchor.getBoundingClientRect().width) { (lostRef.current || closeRef.current)(); return }
       const a = anchor.getBoundingClientRect(), p = popup.getBoundingClientRect()
       const height = Math.min(p.height, view.innerHeight - 16), width = Math.min(p.width, view.innerWidth - 16)
-      setPosition({ maxWidth: view.innerWidth - 16, maxHeight: view.innerHeight - 16, left: Math.max(8, Math.min(a.right - width, view.innerWidth - width - 8)), top: Math.max(8, a.bottom + height + 4 <= view.innerHeight ? a.bottom + 4 : a.top - height - 4) })
+      setPosition({ maxWidth: Math.min(maxWidth, view.innerWidth - 16), maxHeight: view.innerHeight - 16, left: Math.max(8, Math.min(a.right - width, view.innerWidth - width - 8)), top: Math.max(8, a.bottom + height + offset <= view.innerHeight ? a.bottom + offset : a.top - height - offset) })
     }
     place()
     // Placement commits before paint, but a hidden node cannot take initial focus.
@@ -51,5 +51,5 @@ export default function LegacyPopover({ anchor, theme, label, onClose, onAnchorL
     }
   }, [anchor])
   if (!anchor) return null
-  return createPortal(<div ref={ref} id={id} className={`legacy-popover wm-ui-portal ${theme === 'light' ? 'is-light' : ''} ${wide ? 'is-wide' : ''}`} data-theme={theme} style={position} role={role} aria-label={role==='tooltip'?undefined:label} onPointerEnter={onPointerEnter} onPointerLeave={onPointerLeave}>{children}</div>, anchor.closest('dialog,[aria-modal="true"]') || anchor.ownerDocument.body)
+  return createPortal(<div ref={ref} id={id} className={`legacy-popover wm-ui-portal ${theme === 'light' ? 'is-light' : ''} ${wide ? 'is-wide' : ''} ${className}`} data-theme={theme} style={position} role={role} aria-label={role==='tooltip'?undefined:label} onPointerEnter={onPointerEnter} onPointerLeave={onPointerLeave}>{children}</div>, anchor.closest('dialog,[aria-modal="true"]') || anchor.ownerDocument.body)
 }

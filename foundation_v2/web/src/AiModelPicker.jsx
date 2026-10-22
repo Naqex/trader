@@ -54,12 +54,12 @@ export default function AiModelPicker({ models, selection, disabled, saving, act
     options[next]?.focus()
   }
   return <div className="wm-ai-picker">
-    <button ref={trigger} type="button" className="wm-ai-model-trigger" disabled={disabled || saving} aria-label={en ? 'AI model and effort' : 'Model và mức suy luận AI'} aria-haspopup="dialog" aria-expanded={expanded} aria-controls={id} onClick={toggle} title={`${model?.name || selection.model} · ${name(selection.effort)}`}>
+    <button ref={trigger} type="button" className="wm-ai-model-trigger" disabled={disabled || saving} aria-label={en ? 'AI model and effort' : 'Model và mức suy luận AI'} aria-haspopup="dialog" aria-expanded={expanded} aria-controls={id} onClick={toggle} data-tooltip={`${model?.name || selection.model} · ${name(selection.effort)}`}>
       <span className="wm-ai-model-name">{modelName}</span><span className="wm-ai-effort-value">· {name(selection.effort)}</span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true"><path d="m4 6 4 4 4-4" /></svg>
     </button>
     <div id={id} ref={popup} popover="auto" className="wm-ai-selection" role="dialog" aria-busy={saving} aria-label={en ? 'AI model and effort' : 'Model và mức suy luận AI'} onToggle={event => setExpanded(event.newState === 'open')}>
       {view === 'effort' ? <>
-        <button type="button" className="wm-ai-model-current" disabled={saving} onClick={() => setView('models')} aria-label={en ? 'AI model' : 'Model AI'} title={model?.name || selection.model}><span>{modelName} · {name(preview)}</span><span aria-hidden="true">›</span></button>
+        <button type="button" className="wm-ai-model-current" disabled={saving} onClick={() => setView('models')} aria-label={en ? 'AI model' : 'Model AI'} data-tooltip={model?.name || selection.model}><span>{modelName} · {name(preview)}</span><span aria-hidden="true">›</span></button>
         <div className="wm-ai-effort-slider" style={{ '--wm-effort-fill': `${efforts.length > 1 ? Math.max(0, efforts.indexOf(preview)) / (efforts.length - 1) * 100 : 0}%` }}>
         <div className="wm-ai-slider-rail" aria-hidden="true" />
         <div className="wm-ai-slider-dots" aria-hidden="true">{efforts.map((value, index) => <span key={value} style={{ left: `${efforts.length > 1 ? index / (efforts.length - 1) * 100 : 0}%` }} />)}</div>

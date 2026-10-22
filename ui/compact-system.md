@@ -135,6 +135,19 @@ lớp nội dung; chưa có cơ sở hứa mọi máy chạy60fps hay giống t�
   miễn cùng đường căn và ý nghĩa dữ liệu.
 - **Menu/tooltip:** bám nút mở, tránh mép màn hình, Escape đóng và trả focus.
   Tooltip không giữ thông tin duy nhất để hoàn thành tác vụ.
+
+Tooltip của app dùng `ProjectTooltipLayer` một lần tại root và `data-tooltip`
+trên control, thay cho `title` mặc định. Dùng màu `project-raised/text/border`,
+chữ 12/18px, padding 8/10px, bo field, rộng tối đa 280px, cách control 8px và
+cách mép viewport ít nhất 8px. Chỉ fade theo motion hover; reduced-motion tắt fade.
+Hover chờ 180ms, focus bàn phím hiện ngay; có 120ms để đi từ control vào tooltip.
+Escape, cuộn, đổi kích thước hoặc mất anchor đóng gợi ý; tooltip không nhận focus.
+Giữ `aria-label` cho tên nút; lớp chung thêm/xóa `aria-describedby` khi hiện/đóng.
+`data-tooltip-touch` cho nút trợ giúp cần mở bằng chạm. Không đặt action/link trong
+tooltip; dùng popover cho nội dung tương tác. Mẫu thật ở `?ui_reference=1`, mục
+Tooltip và dialog. Header cùng order marker do app vẽ trong iframe chart dùng
+cùng controller, gắn theo ownerDocument và viewport của iframe. Tooltip dữ liệu
+và control do TradingView tự vẽ giữ lifecycle riêng của renderer.
   Menu chọn checkbox có một lề hàng10px và gap8px; “Chọn tất cả” và lựa chọn
   dùng cùng bố cục36px desktop/44px touch. Nhãn cùng điểm bắt đầu; mô tả nằm dưới
   nhãn, không bị space-between đẩy ra mép phải. Số đã chọn chỉ đếm mục có thể chọn;

@@ -16,7 +16,7 @@ function Duration({ seconds }) {
 function Metric({ title, value, detail, icon, children }) {
   const { t } = useTestingLocale()
 
-  return <div className="fx-dashboard-metric"><span title={detail || undefined}><span className="fx-dashboard-metric-icon" aria-hidden="true"><TestingIcon kind={icon} /></span>{t(title)}</span><strong>{value}</strong>{children}{detail && <small>{t(detail)}</small>}</div>
+  return <div className="fx-dashboard-metric"><span data-tooltip={detail || undefined}><span className="fx-dashboard-metric-icon" aria-hidden="true"><TestingIcon kind={icon} /></span>{t(title)}</span><strong>{value}</strong>{children}{detail && <small>{t(detail)}</small>}</div>
 }
 
 function timingDetail(performance, kind, t) {
@@ -54,7 +54,7 @@ function MonthlyChart({ title, items, field, rate = false, accent = 'gold' }) {
         <div className="fx-dashboard-month-bars" role="img" aria-label={`${title}: ${valid.map(item => `${item.month}: ${rate ? dashboardNumber(item[field], '%') : t('{count} giao dịch', { count: dashboardNumber(item[field]) })}`).join('; ')}`}>
           <div className="fx-dashboard-plot-grid" aria-hidden="true">{ticks.map(value => <i key={value} style={{ top: `${(1 - value / max) * 100}%` }} />)}</div>
           {valid.map(item => <div className="fx-dashboard-month-column" key={item.month}>
-            <div className="fx-dashboard-bar-track"><div className={`fx-dashboard-bar${item[field] === 0 ? ' is-zero' : ''}`} style={{ height: `${item[field] / max * 100}%` }} title={`${item.month}: ${dashboardNumber(item[field], rate ? '%' : '')}`}><span>{dashboardNumber(item[field], rate ? '%' : '')}</span></div></div>
+            <div className="fx-dashboard-bar-track"><div className={`fx-dashboard-bar${item[field] === 0 ? ' is-zero' : ''}`} style={{ height: `${item[field] / max * 100}%` }} data-tooltip={`${item.month}: ${dashboardNumber(item[field], rate ? '%' : '')}`}><span>{dashboardNumber(item[field], rate ? '%' : '')}</span></div></div>
             <span className="fx-dashboard-month-label">{item.month.slice(5)}/{item.month.slice(0, 4)}</span>
           </div>)}
         </div>

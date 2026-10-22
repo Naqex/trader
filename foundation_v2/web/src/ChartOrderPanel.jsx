@@ -291,7 +291,7 @@ function PartialTakeProfits({ order, entry }) {
       ...(!next.length ? { protectionEnabled:{ ...current.protectionEnabled,takeProfit:false } } : {}) }
   })
   return <div className="legacy-partial-targets">
-    {rows.length > 0 && <div className="legacy-partial-toolbar"><button type="button" className="legacy-partial-single" disabled={disabled} onClick={() => setDraft(current => ({ ...current,takeProfit:current.takeProfits[0]?.price || current.takeProfit,takeProfits:[] }))}><ChartIcon name="arrow-left" />{t('Chốt lời một lần')}</button><button type="button" className={`legacy-partial-total ${Math.abs(totalPercent-100) > 0.000001 ? 'is-invalid' : ''}`} disabled={disabled} title={t('Chia đều tỷ lệ chốt')} aria-label={t('Chia đều tỷ lệ chốt')} onClick={equalize}>{Number(totalPercent.toFixed(2))} / 100%</button></div>}
+    {rows.length > 0 && <div className="legacy-partial-toolbar"><button type="button" className="legacy-partial-single" disabled={disabled} onClick={() => setDraft(current => ({ ...current,takeProfit:current.takeProfits[0]?.price || current.takeProfit,takeProfits:[] }))}><ChartIcon name="arrow-left" />{t('Chốt lời một lần')}</button><button type="button" className={`legacy-partial-total ${Math.abs(totalPercent-100) > 0.000001 ? 'is-invalid' : ''}`} disabled={disabled} data-tooltip={t('Chia đều tỷ lệ chốt')} aria-label={t('Chia đều tỷ lệ chốt')} onClick={equalize}>{Number(totalPercent.toFixed(2))} / 100%</button></div>}
     {rows.length > 0 && <div className="legacy-partial-rows">{rows.map((row,index) => {
       const price = index === 0 ? draft.takeProfit : row.price
       const changePrice = value => setDraft(current => ({ ...current,...(index === 0 ? { takeProfit:value } : {}),takeProfits:current.takeProfits.map(target => target.id === row.id ? { ...target,price:value } : target) }))
@@ -317,7 +317,7 @@ function ProtectionEstimate({ order, entry, kind }) {
   }
   const value = formatProtectionMoney(amount,order.costs?.account_ccy,locale)
   const loss = amount === null ? kind === 'stopLoss' : amount < 0
-  return <div className="legacy-protection-estimate" title={t(kind === 'stopLoss' ? 'Ước tính tại SL (trước phí)' : 'Ước tính tại TP (trước phí)')}><span>{t(loss ? 'Lỗ ước tính' : 'Lãi ước tính')}</span><strong className={amount === null ? undefined : loss ? 'is-loss' : 'is-profit'}>{value}</strong></div>
+  return <div className="legacy-protection-estimate" data-tooltip={t(kind === 'stopLoss' ? 'Ước tính tại SL (trước phí)' : 'Ước tính tại TP (trước phí)')}><span>{t(loss ? 'Lỗ ước tính' : 'Lãi ước tính')}</span><strong className={amount === null ? undefined : loss ? 'is-loss' : 'is-profit'}>{value}</strong></div>
 }
 
 function LegacyOrderForm({ order, blockedReason, onClose, onJournal }) {
@@ -345,7 +345,7 @@ function LegacyOrderForm({ order, blockedReason, onClose, onJournal }) {
       {key === 'takeProfit' && order.partialTakeProfit && <PartialTakeProfits order={order} entry={entry} />}
       {!active && key === 'stopLoss' && <ProtectionRiskSizing order={order} entry={entry} />}
     </>}</section>)}
-    {!active && <div className="legacy-protection-row is-unavailable" title={t('Chưa hỗ trợ tự dời SL về hòa vốn')}><label><input type="checkbox" role="switch" disabled />Auto Break-even</label><small>{t('Sắp có')}</small></div>}
+    {!active && <div className="legacy-protection-row is-unavailable" data-tooltip={t('Chưa hỗ trợ tự dời SL về hòa vốn')}><label><input type="checkbox" role="switch" disabled />Auto Break-even</label><small>{t('Sắp có')}</small></div>}
     {!active && <><label>{t('Chiến lược')}<FxSelect className="is-field" label="Chiến lược" value="session" disabled options={[{ value: 'session', label: t('Mặc định của phiên') }]} /></label><button type="button" className="legacy-strategy-create" disabled>{t('+ Tạo chiến lược mới')}</button></>}
     {blockedReason && <p role="status">{t(blockedReason)}</p>}
     {order.notice && <p role={order.notice.kind === 'error' ? 'alert' : 'status'}>{order.notice.title ? <><strong>{t(order.notice.title)}</strong> {t(order.notice.message, order.notice.values)}</> : t(order.notice.text)}</p>}

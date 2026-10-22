@@ -26,7 +26,7 @@ export default function LegacyJournal({ execution, assetStates, symbol, cutoff, 
       event.preventDefault()
       const next=event.key==='Home'?'trades':event.key==='End'?'calendar':key==='trades'?'calendar':'trades'
       setTab(next);document.getElementById(`journal-tab-${next}`)?.focus()
-    }}>{t(label)}</button>)}</div><a href={onOpenJournal} title={t('Mở trang nhật ký')} aria-label={t('Mở trang nhật ký')}><ChartIcon name="expand" /></a></header>
+    }}>{t(label)}</button>)}</div><a href={onOpenJournal} data-tooltip={t('Mở trang nhật ký')} aria-label={t('Mở trang nhật ký')}><ChartIcon name="expand" /></a></header>
     <div role="tabpanel" id="legacy-journal-panel" aria-labelledby={`journal-tab-${tab}`}>
       {tab==='trades' ? <><label className="legacy-journal-search"><ChartIcon name="search" /><input type="search" aria-label={t('Tìm giao dịch')} placeholder={t('Tìm giao dịch')} value={search} onChange={event => setSearch(event.target.value)} /></label>{day && <button type="button" className="legacy-journal-day" onClick={() => setDay('')}>{displayDate(day)} ×</button>}<div className="legacy-journal-trades">
         {!rows.length ? <TestingEmptyState kind={execution || Object.values(assetStates || {}).some(state => state.execution) ? search || day ? 'filtered-trades' : 'chart-closed' : 'chart-unknown'} /> : rows.map(row => <article key={row.key}><div><strong>{row.symbol}</strong><span>{row.side} · {fmt(row.quantity, '', 8)} {t(row.assetClass==='fx'?'lot':'quantity')}</span><time>{displayDate(new Date(row.closed_time_utc*1000), { timeStyle: 'short' })} UTC</time></div><strong className={Number(row.realized)>=0?'is-profit':'is-loss'}>{fmt(row.realized)} {row.currency || ''}</strong></article>)}

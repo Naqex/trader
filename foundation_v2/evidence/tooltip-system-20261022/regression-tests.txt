@@ -1,0 +1,27 @@
+✔ resolution changes tolerate unavailable price scales and resume on the new range (2.3321ms)
+✔ price-axis colors distinguish entry side, protection and selection (0.365ms)
+✔ equal and nearby prices separate horizontally while distant levels share the right column (0.4304ms)
+✔ protection labels use account currency, direction and actual quantity; unknown FX conversion stays unknown (0.7974ms)
+✔ Entry-price protections use compact handles without losing saved state or hiding real nonzero distances (0.6535ms)
+✔ scale projection supports log, invert and tiny price ranges with reversible drag coordinates (0.5466ms)
+✔ unaccepted submissions stay off chart and authoritative execution wins when it arrives (0.5432ms)
+✔ accepted partial targets expose separate marker identities and per-slice profit (0.3894ms)
+✔ slippage categories combine aliases and apply a shared mode without changing other assets or fees (3.2084ms)
+✔ mixed preset assumptions remain explicit; incomplete group specs cannot enable slippage (1.5256ms)
+✔ default costs are explicitly off for every selected asset, with no inherited fixture fees (0.8417ms)
+✔ options preserve independent assets, fee units and charge convention; deselected drafts are not persisted (0.5229ms)
+✔ empty, negative, nonfinite, overprecise and excessive active fees are rejected without treating them as zero (0.486ms)
+✔ zero-cost market quotes exactly equal chart close, including sub-tick input; spread-on keeps modeled quotes (0.3631ms)
+✔ creation response must retain the chosen costs, allowing server decimal normalization (0.3464ms)
+✔ Prop freezes the same options and cost pin through bundle and replay creation (50.9456ms)
+✔ four slippage modes preserve units and reject invalid fixed amounts before submission (0.6579ms)
+✔ legacy frozen slippage costs remain separate from new adverse-fill modes (0.2872ms)
+✔ pre-initialization risk previews include market and stop bounds but keep limit TP protected (0.3801ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 384.0615

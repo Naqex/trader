@@ -113,9 +113,9 @@ export default function LegacyTradingBar({ order, analyticsHref, propRulesAction
   return <div ref={workspaceRef} className={`legacy-trading-workspace ${resizing ? 'is-resizing' : ''} ${overlay ? 'is-expanded' : maximized ? 'is-maximized' : ''}`} style={overlay ? { height: overflowReserve, '--positions-height': `${positionsOpen ? height : 0}px` } : undefined}>
     <div className="chart-trading-bar legacy-trading-bar" role="group" aria-label={t('Giao dịch mô phỏng')}>
       <div className="chart-trading-actions">
-        {['BUY', 'SELL'].map(side => <button key={side} type="button" className={side.toLowerCase()} disabled={disabled} onClick={() => openOrder(side)} title={t('Đặt lệnh nhanh theo khối lượng đã chọn')}>{t(side === 'BUY' ? 'Buy' : 'Sell')}</button>)}
+        {['BUY', 'SELL'].map(side => <button key={side} type="button" className={side.toLowerCase()} disabled={disabled} onClick={() => openOrder(side)} data-tooltip={t('Đặt lệnh nhanh theo khối lượng đã chọn')}>{t(side === 'BUY' ? 'Buy' : 'Sell')}</button>)}
         <div className="legacy-quantity-control"><input aria-label={t('Khối lượng nhanh')} type="number" min={order.instrument?.quantity_min || '0'} max={order.instrument?.quantity_max || undefined} step={order.instrument?.quantity_step || 'any'} value={quantity} disabled={disabled} onChange={event => setQuantity(event.target.value)} /><div><button type="button" aria-label={t('Tăng khối lượng')} disabled={disabled || !(Number(order.instrument?.quantity_step) > 0)} onClick={() => quantityStep(1)}><ChartIcon name="down" style={{ transform: 'rotate(180deg)' }} /></button><button type="button" aria-label={t('Giảm khối lượng')} disabled={disabled || !(Number(order.instrument?.quantity_step) > 0)} onClick={() => quantityStep(-1)}><ChartIcon name="down" /></button></div></div>
-        <button type="button" className={`legacy-scalper-button ${preset.enabled ? 'is-enabled' : ''}`} aria-label="Scalper mode" title="Scalper mode" aria-expanded={Boolean(scalperAnchor)} aria-pressed={preset.enabled} onClick={event => {
+        <button type="button" className={`legacy-scalper-button ${preset.enabled ? 'is-enabled' : ''}`} aria-label="Scalper mode" data-tooltip="Scalper mode" aria-expanded={Boolean(scalperAnchor)} aria-pressed={preset.enabled} onClick={event => {
           const next = structuredClone(preset)
           for (const key of ['stop', 'target']) {
             if (!preset.enabled) next[key].enabled = false
@@ -124,7 +124,7 @@ export default function LegacyTradingBar({ order, analyticsHref, propRulesAction
           setDraft(next); setError(''); setScalperAnchor(event.currentTarget)
         }}><ChartIcon name="rocket" /></button>
       </div>
-      <button type="button" className="legacy-positions-grip" aria-label={t('Kéo để chỉnh chiều cao danh sách lệnh')} title={t('Kéo để chỉnh chiều cao danh sách lệnh')} aria-expanded={positionsOpen}
+      <button type="button" className="legacy-positions-grip" aria-label={t('Kéo để chỉnh chiều cao danh sách lệnh')} data-tooltip={t('Kéo để chỉnh chiều cao danh sách lệnh')} aria-expanded={positionsOpen}
         onPointerDown={event => {
           if (event.button !== 0 || !event.isPrimary || drag.current) return
           event.currentTarget.setPointerCapture(event.pointerId)
@@ -157,7 +157,7 @@ export default function LegacyTradingBar({ order, analyticsHref, propRulesAction
         }}><ChartIcon name="grip-horizontal" /></button>
       <div className="chart-trading-account">
         {readStatus}
-        <a className="legacy-analytics-link" href={analyticsHref} aria-label={t('Analytics')} title={t('Analytics')}><ChartIcon name="analytics" /><span>{t('Analytics')}</span></a>
+        <a className="legacy-analytics-link" href={analyticsHref} aria-label={t('Analytics')} data-tooltip={t('Analytics')}><ChartIcon name="analytics" /><span>{t('Analytics')}</span></a>
         {propRulesAction && <button type="button" className="legacy-prop-rules-link" data-testid="prop-rules-button" onClick={propRulesAction.onClick}><ChartIcon name="shield" />{propRulesAction.label}</button>}
         <button type="button" className="legacy-balance-pill" aria-label={t('Thông tin tài khoản')} aria-expanded={Boolean(balanceAnchor)} onPointerEnter={event => { if (event.pointerType === 'mouse' && matchMedia('(hover:hover)').matches) showBalance(event.currentTarget) }} onPointerLeave={dismissBalance} onFocus={event => { if (event.currentTarget.matches(':focus-visible')) showBalance(event.currentTarget) }} onBlur={dismissBalance} onClick={event => balanceAnchor ? setBalanceAnchor(null) : showBalance(event.currentTarget)}><ChartIcon name="wallet" /><strong>{money(account ? account.equity : order.configuredBalance)}</strong>{hasPosition && <span className={`legacy-floating-pnl ${pnlTone(floating)}`} aria-label={t('Unrealized PnL')}><span aria-hidden="true">●</span>{floating !== null && floating >= 0 ? '+' : ''}{money(floating)}</span>}</button>
         <button type="button" aria-label={t(positionsOpen ? 'Thu gọn danh sách lệnh' : 'Mở danh sách lệnh')} aria-expanded={positionsOpen} onClick={() => {
@@ -180,7 +180,7 @@ export default function LegacyTradingBar({ order, analyticsHref, propRulesAction
       } catch (failure) { setError(failure.message) }
     }}>
       {[['stop', 'Stop loss'], ['target', 'Take profit']].map(([key, label]) => <fieldset key={key}><label className="legacy-scalper-toggle"><input type="checkbox" role="switch" checked={draft[key].enabled} onChange={event => setDraft(current => ({ ...current, [key]: { ...current[key], enabled: event.target.checked } }))} /><span>{t(label)}</span></label><div className={`legacy-scalper-distance ${!draft[key].enabled ? 'is-off' : ''}`}><input aria-label={t('Khoảng cách {name}', { name: label })} type="number" min="0.00000001" step="any" required disabled={!draft[key].enabled} value={draft[key].enabled ? draft[key].value : ''} onChange={event => setDraft(current => ({ ...current, [key]: { ...current[key], value: event.target.value } }))} /><div className="legacy-scalper-units" role="group" aria-label={t('Đơn vị {name}', { name: label })}>{[['percent', '%'], ['pips', 'Pips'], ...(order.instrument?.asset_class && order.instrument.asset_class !== 'fx' && Number(order.instrument.tick_size) > 0 ? [['ticks', 'Ticks']] : [])].map(([unit, caption]) => <button key={unit} type="button" aria-pressed={draft[key].unit === unit} disabled={!draft[key].enabled || (unit === 'pips' && !(Number(order.instrument?.pip_size) > 0)) || (unit === 'ticks' && !(Number(order.instrument?.tick_size) > 0))} onClick={() => setDraft(current => ({ ...current, [key]: { ...current[key], unit } }))}>{caption}</button>)}</div></div></fieldset>)}
-      <label className="legacy-scalper-toggle is-unavailable" title={t('Chưa hỗ trợ tự dời SL về hòa vốn')}><input type="checkbox" role="switch" disabled /><span>Auto Break-even</span></label>
+      <label className="legacy-scalper-toggle is-unavailable" data-tooltip={t('Chưa hỗ trợ tự dời SL về hòa vốn')}><input type="checkbox" role="switch" disabled /><span>Auto Break-even</span></label>
       <label>{t('Chiến lược')}<FxSelect className="is-field" label="Chiến lược" value="session" disabled options={[{ value:'session', label:'Mặc định của phiên' }]} /></label>
       {error && <p role="alert">{t(error)}</p>}
       <footer><button type="button" onClick={() => { setScalperAnchor(null); setError('') }}>{t('Discard')}</button><button type="submit" className="legacy-scalper-save" disabled={order.disabled}>{t('Save')}</button></footer>
