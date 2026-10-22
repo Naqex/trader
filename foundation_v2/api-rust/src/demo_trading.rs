@@ -216,6 +216,7 @@ struct Managed {
     login: String,
     server: String,
     environment: String,
+    cached: Value,
 }
 #[derive(Clone)]
 enum Context {
@@ -299,16 +300,19 @@ async fn context(
     state: &AppState,
     scope: &Workspace,
     id: Option<Uuid>,
+    allow_read: bool,
 ) -> Result<Context, ApiError> {
     let Some(id) = id else {
         return policy(scope).await.map(Context::External).map_err(denied);
     };
     let conn = state.pool.get().await.map_err(|_| ApiError::database())?;
-    let row=conn.query_opt("SELECT connection_id,workspace_id,generation,credential,server,status,requested_mode,snapshot FROM mt5_connections WHERE workspace_id=$1 AND connection_id=$2",&[&scope.workspace_id,&id]).await.map_err(|_|ApiError::database())?.ok_or_else(||denied("mt5_connection_not_available"))?;
-    managed_record(&row).map(Context::Managed)
+    let row=conn.query_opt("SELECT connection_id,workspace_id,generation,credential,server,status,requested_mode,jsonb_build_object('account_binding',snapshot->'account_binding','execution_binding',snapshot->'execution_binding','verified_permissions',snapshot->'verified_permissions','account',snapshot->'account','captured_at_utc',snapshot->'captured_at_utc') AS snapshot FROM mt5_connections WHERE workspace_id=$1 AND connection_id=$2",&[&scope.workspace_id,&id]).await.map_err(|_|ApiError::database())?.ok_or_else(||denied("mt5_connection_not_available"))?;
+    managed_record(&row, allow_read).map(Context::Managed)
 }
-fn managed_record(row: &tokio_postgres::Row) -> Result<Managed, ApiError> {
-    if row.get::<_, String>("requested_mode") != "trading" {
+fn managed_record(row: &tokio_postgres::Row, allow_read: bool) -> Result<Managed, ApiError> {
+    let requested_mode: String = row.get("requested_mode");
+    let read_only = requested_mode == "read_only";
+    if requested_mode != "trading" && !(allow_read && read_only) {
         return Err(denied("mt5_trading_access_required"));
     }
     if row.get::<_, String>("status") != "connected" {
@@ -316,7 +320,7 @@ fn managed_record(row: &tokio_postgres::Row) -> Result<Managed, ApiError> {
     }
     let snapshot: Option<Value> = row.get("snapshot");
     let snapshot = snapshot.ok_or_else(|| denied("mt5_permissions_unverified"))?;
-    let binding = &snapshot["execution_binding"];
+    let binding = &snapshot[if read_only { "account_binding" } else { "execution_binding" }];
     let generation: i64 = row.get("generation");
     let server: String = row.get("server");
     let login = binding["login"]
@@ -327,7 +331,7 @@ fn managed_record(row: &tokio_postgres::Row) -> Result<Managed, ApiError> {
         .as_str()
         .filter(|v| matches!(*v, "demo" | "real"))
         .ok_or_else(|| denied("mt5_account_environment_unsupported"))?;
-    if snapshot["verified_permissions"]["trade"] != true
+    if snapshot["verified_permissions"][if read_only { "read" } else { "trade" }] != true
         || binding["generation"].as_i64() != Some(generation)
         || binding["server"].as_str() != Some(server.as_str())
     {
@@ -339,10 +343,11 @@ fn managed_record(row: &tokio_postgres::Row) -> Result<Managed, ApiError> {
         connection_id: row.get("connection_id"),
         generation,
         credential: credential.ok_or_else(|| denied("mt5_credentials_required"))?,
-        requested_mode: "trading".into(),
+        requested_mode,
         login: login.into(),
         server,
         environment: environment.into(),
+        cached: snapshot.clone(),
     })
 }
 fn locked(reason: &str) -> Value {
@@ -382,7 +387,7 @@ async fn snapshot(
             })
         })
         .transpose()?;
-    let p = match context(&state, &scope, id).await {
+    let p = match context(&state, &scope, id, true).await {
         Ok(p) => p,
         Err(ApiError(_, value)) => {
             return Ok(Json(locked(
@@ -394,6 +399,17 @@ async fn snapshot(
     };
     if !state.native_runtime {
         return Ok(Json(locked("demo_native_runtime_required")));
+    }
+    if query.get("summary").map(String::as_str) == Some("true") {
+        if let Context::Managed(m) = &p {
+            let mut account = m.cached["account"].clone();
+            account["login"] = json!(m.login);
+            account["server"] = json!(m.server);
+            account["trade_mode"] = json!(m.environment);
+            return Ok(Json(json!({"status":"ready","mode":m.environment,"summary":true,
+                "connection_id":m.connection_id,"account":account,"captured_at_utc":m.cached["captured_at_utc"],
+                "execution_enabled":false,"requested_mode":m.requested_mode,"bars":[],"positions":[],"orders":[],"symbols":[]})));
+        }
     }
     let (paused, unknown) = control(&state, &p).await?;
     let timeframe = query.get("timeframe").map(String::as_str).unwrap_or("M1");
@@ -433,16 +449,18 @@ async fn snapshot(
     if let Some(id) = id {
         result["connection_id"] = json!(id);
     }
+    let can_trade = !matches!(&p, Context::Managed(m) if m.requested_mode == "read_only");
+    result["requested_mode"] = json!(if can_trade {"trading"} else {"read_only"});
     result["paused"] = json!(paused);
-    if paused || unknown {
+    if paused || unknown || !can_trade {
         result["execution_enabled"] = json!(false);
         result["reason"] = json!(if unknown {
             "demo_unresolved_request"
         } else {
-            "demo_paused"
+            if can_trade { "demo_paused" } else { "mt5_trading_access_required" }
         });
     }
-    result["capabilities"] = json!({"market":!paused&&!unknown,"limit":false,"stop":false,"close":!unknown,"cancel":!unknown,"protect":!paused&&!unknown});
+    result["capabilities"] = json!({"market":can_trade&&!paused&&!unknown,"limit":false,"stop":false,"close":can_trade&&!unknown,"cancel":can_trade&&!unknown,"protect":can_trade&&!paused&&!unknown});
     Ok(Json(result))
 }
 #[derive(Deserialize, Serialize)]
@@ -539,7 +557,7 @@ async fn preview(
             "demo_action_unsupported",
         ));
     }
-    let p = context(&state, &scope, d.connection_id).await?;
+    let p = context(&state, &scope, d.connection_id, false).await?;
     if !state.native_runtime {
         return Err(denied("demo_native_runtime_required"));
     }
@@ -591,7 +609,7 @@ async fn command(
         if row.get::<_,String>(0)!=fingerprint { return Err(error(StatusCode::CONFLICT,"demo_request_conflict")); }
         return Ok(Json(row.get(1)));
     }
-    let p = context(&state, &scope, d.connection_id).await?;
+    let p = context(&state, &scope, d.connection_id, false).await?;
     if !state.native_runtime {
         return Err(denied("demo_native_runtime_required"));
     }
@@ -690,7 +708,7 @@ async fn reconcile(
     }
     let request: Reconcile = serde_json::from_slice(&bytes)
         .map_err(|_| error(StatusCode::UNPROCESSABLE_ENTITY, "demo_request_invalid"))?;
-    let p = context(&state, &scope, request.connection_id).await?;
+    let p = context(&state, &scope, request.connection_id, false).await?;
     if !state.native_runtime {
         return Err(denied("demo_native_runtime_required"));
     }
@@ -788,12 +806,12 @@ async fn adapter_for(state: &AppState, p: &Context, input: Value) -> Result<Valu
     let result = match p {
         Context::External(_) => adapter(input).await,
         Context::Managed(managed) => {
-            let current=tx.query_opt("SELECT connection_id,workspace_id,generation,credential,server,status,requested_mode,snapshot FROM mt5_connections WHERE workspace_id=$1 AND connection_id=$2",&[&managed.workspace,&managed.connection_id]).await.map_err(|_|"mt5_connection_not_available".to_owned())?;
+            let current=tx.query_opt("SELECT connection_id,workspace_id,generation,credential,server,status,requested_mode,jsonb_build_object('account_binding',snapshot->'account_binding','execution_binding',snapshot->'execution_binding','verified_permissions',snapshot->'verified_permissions','account',snapshot->'account','captured_at_utc',snapshot->'captured_at_utc') AS snapshot FROM mt5_connections WHERE workspace_id=$1 AND connection_id=$2",&[&managed.workspace,&managed.connection_id]).await.map_err(|_|"mt5_connection_not_available".to_owned())?;
             let current = current
                 .as_ref()
                 .ok_or_else(|| "mt5_connection_not_available".to_owned())
                 .and_then(|row| {
-                    managed_record(row).map_err(|_| "mt5_permissions_unverified".to_owned())
+                    managed_record(row, input["operation"] == "snapshot").map_err(|_| "mt5_permissions_unverified".to_owned())
                 })?;
             if current.generation != managed.generation
                 || current.login != managed.login
@@ -1051,6 +1069,7 @@ pub(crate) async fn managed_read(
         login: String::new(),
         server: String::new(),
         environment: String::new(),
+        cached: Value::Null,
     };
     let context = Context::Managed(managed.clone());
     let mut conn = state
@@ -1137,6 +1156,7 @@ mod tests {
             login: "123".into(),
             server: "Fixture".into(),
             environment: "real".into(),
+            cached: Value::Null,
         });
         let symbol = Some("EURUSD".into());
         let mut old = p.binding(&symbol);

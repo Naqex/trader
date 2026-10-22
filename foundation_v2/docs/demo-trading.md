@@ -26,7 +26,7 @@ stored permission/identity/generation binding, then sends private JSON lines to
 connection and authenticates once. Both read-only and trading connections keep
 their terminal running between journal refreshes; trading reads reuse that same
 session. Read-only workers enable no terminal trading permission and accept only
-health checks and journal collection. Health is checked about every 10 seconds;
+health checks, journal collection and read-only chart snapshots. Preview, commands and reconciliation remain denied for read-only access, even if the supplied credential can trade. Health is checked about every 10 seconds;
 history/account snapshots refresh every 60 seconds while the
 local API is running, independently of which page is open. Heartbeats select only
 connection metadata from PostgreSQL and never decode/merge its journal snapshot.
@@ -72,6 +72,15 @@ Persistent read-only lifetime is verified separately in the
 [warm-session checkpoint](../evidence/mt5-persistent-connection-20261022/CHECKPOINT.md).
 Health/recovery and the bounded resource measurement are recorded in the
 [connection-health checkpoint](../evidence/mt5-connection-health-20261022/CHECKPOINT.md).
+
+Overview uses `GET /api/v2/live/trading?connection_id=…&summary=true` to read
+verified, workspace-scoped persisted account metadata without SDK work. It does
+not advertise execution permission. Full chart reads use the same identity and
+generation binding; read-only charts return all action capabilities as false.
+The browser does not infer trading permission from an account being Demo or Real.
+
+The [Live-flow audit](../evidence/live-flow-audit-20261023/CHECKPOINT.md) records
+read/trade isolation, lazy-loading, locale and journal-link regression evidence.
 
 ## Legacy external DEMO policy
 

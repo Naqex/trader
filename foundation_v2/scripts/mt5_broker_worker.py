@@ -23,7 +23,7 @@ def fence(request, operation):
                              (request['workspace'], request['connection_id'])).fetchone()
         statuses = ('queued', 'syncing', 'connected') if operation in ('collect', 'health') else ('connected',)
         mode = request.get('requested_mode')
-        if mode not in ('read_only', 'trading') or (mode == 'read_only' and operation not in ('collect', 'health')):
+        if mode not in ('read_only', 'trading') or (mode == 'read_only' and operation not in ('collect', 'health', 'snapshot')):
             raise RuntimeError('mt5_connection_revoked')
         if not row or row[0] != request['generation'] or row[1] != mode or row[2] not in statuses or row[3] != request['credential']:
             raise RuntimeError('mt5_connection_revoked')
@@ -72,7 +72,7 @@ class Session:
         operation = request['operation']
         if operation not in ('collect','health','snapshot','preview','command','reconcile'):
             raise RuntimeError('mt5_request_invalid')
-        if self.context['requested_mode'] == 'read_only' and operation not in ('collect', 'health'):
+        if self.context['requested_mode'] == 'read_only' and operation not in ('collect', 'health', 'snapshot'):
             raise RuntimeError('mt5_connection_revoked')
         self.guard(request, operation)
         account = self.check_identity()
@@ -89,14 +89,15 @@ class Session:
             if not names or len(names) > 10000:
                 raise RuntimeError('demo_symbol_unavailable')
             mode = {0:'demo',2:'real'}[account.trade_mode]
-            policy = trading.BrokerPolicy(mode=mode, login=self.secret['login'], server=self.secret['server'], terminal_path=str(self.terminal),
+            read_only = self.context['requested_mode'] == 'read_only'
+            policy = trading.BrokerPolicy(mode=mode, read_only=read_only, login=self.secret['login'], server=self.secret['server'], terminal_path=str(self.terminal),
                                           symbols=names, max_quote_age_ms=5000, deviation_points=10, magic=1464685138, cost_buffer_per_lot=0)
             if operation == 'snapshot':
                 symbol = request.get('symbol') or next((s for s in ('EURUSD','EURUSDm','XAUUSD','XAUUSDm') if s in names), next((s.name for s in symbols if s.visible and s.name in names), names[0]))
                 result = trading.snapshot(self.sdk, policy, symbol, request.get('timeframe','M1'))
                 result['account']['trade_mode'] = mode
                 result['account_environment'] = mode
-                result['verified_permissions'] = {'read':True,'trade':True}
+                result['verified_permissions'] = {'read':True,'trade':not read_only}
             elif operation == 'preview':
                 result = trading.prepare(self.sdk, policy, request.get('command',{}))[1]
             elif operation == 'reconcile':

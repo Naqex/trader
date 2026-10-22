@@ -56,7 +56,8 @@ class WorkerTests(unittest.TestCase):
             db.execute.return_value.fetchone.return_value=(3,'read_only','connected','ciphertext')
             worker.fence(request,'collect')
             worker.fence(request,'health')
-            for operation in ('snapshot','preview','command','reconcile'):
+            worker.fence(request,'snapshot')
+            for operation in ('preview','command','reconcile'):
                 with self.subTest(operation=operation),self.assertRaisesRegex(RuntimeError,'mt5_connection_revoked'):
                     worker.fence(request,operation)
             for row in ((3,'trading','connected','ciphertext'),(4,'read_only','connected','ciphertext'),(3,'read_only','paused','ciphertext')):
@@ -80,13 +81,27 @@ class WorkerTests(unittest.TestCase):
             sdk.initialize.assert_called_once()
             self.assertEqual(snapshot.call_count,2)
             self.assertEqual(snapshot.call_args.args[-2:],('read_only',3))
-            for operation in ('snapshot','preview','command','reconcile'):
+            for operation in ('preview','command','reconcile'):
                 with self.subTest(operation=operation),self.assertRaisesRegex(RuntimeError,'mt5_connection_revoked'):
                     session.handle({**request,'operation':operation})
             sdk.symbols_get.assert_not_called()
             sdk.order_send.assert_not_called()
             sdk.shutdown.assert_not_called()
             process.return_value.terminate.assert_not_called()
+
+    def test_read_only_chart_snapshot_keeps_execution_disabled(self):
+        session=self.session()
+        session.context['requested_mode']='read_only'
+        request={**self.request,'requested_mode':'read_only','operation':'snapshot'}
+        def snapshot(sdk,policy,symbol,timeframe):
+            self.assertIs(policy['read_only'],True)
+            return {'execution_enabled':False,'account':{}}
+        with patch.object(worker.trading,'snapshot',side_effect=snapshot):
+            result=session.handle(request)
+        self.assertFalse(result['execution_enabled'])
+        self.assertEqual(result['verified_permissions'],{'read':True,'trade':False})
+        session.sdk.order_check.assert_not_called()
+        session.sdk.order_send.assert_not_called()
 
     def test_identity_distinguishes_stopped_terminal_from_network_disconnect(self):
         session=self.session()

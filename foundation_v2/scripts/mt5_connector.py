@@ -249,6 +249,7 @@ def snapshot(sdk, secret, start, history_from, requested_mode='read_only', gener
     permissions = dict(read=True, trade=requested_mode == 'trading')
     return dict(status='ready', source=f"{account.server} / MT5", mode=environment,
         account_environment=environment, verified_permissions=permissions,
+        account_binding=dict(login=str(account.login),server=account.server,account_environment=environment,generation=generation),
         execution_binding=dict(login=str(account.login),server=account.server,account_environment=environment,generation=generation,verified_permissions=permissions) if requested_mode == 'trading' else None,
         captured_at_utc=now.isoformat(), history_from_utc=history_from, history_read_from_utc=start.isoformat(), execution_capability=False,
         account={**{key:getattr(account,key) for key in ('currency','balance','equity','profit','margin','margin_free','leverage')},'account_ref':f"…{str(account.login)[-4:]}"},

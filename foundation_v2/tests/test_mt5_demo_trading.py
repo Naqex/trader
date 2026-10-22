@@ -42,6 +42,29 @@ class DemoTradingTests(unittest.TestCase):
             self.execute(**changes)
         self.sdk.order_send.assert_not_called()
 
+    def test_read_only_snapshot_never_grants_trade_authority_even_with_master_password(self):
+        policy=demo.BrokerPolicy(self.policy,read_only=True)
+        self.account.leverage=100
+        self.account.trade_allowed=False
+        self.account.trade_expert=False
+        self.terminal.trade_allowed=False
+        self.terminal.tradeapi_disabled=True
+        self.sdk.copy_rates_from_pos.return_value=[]
+        result=demo.snapshot(self.sdk,policy,'EURUSD')
+        self.assertEqual(result['account']['balance'],10000)
+        self.assertFalse(result['execution_enabled'])
+        self.account.trade_allowed=True
+        self.account.trade_expert=True
+        self.terminal.trade_allowed=True
+        self.terminal.tradeapi_disabled=False
+        with self.assertRaisesRegex(demo.Denied,'demo_trading_disabled'):
+            demo.identity(self.sdk,policy)
+        self.sdk.order_send.assert_not_called()
+        self.sdk.order_check.assert_not_called()
+        self.account.login=999
+        with self.assertRaisesRegex(demo.Denied,'demo_identity_changed'):
+            demo.snapshot(self.sdk,policy,'EURUSD')
+
     def test_managed_demo_and_real_use_same_broker_constraints_without_app_caps(self):
         for mode,code in [('demo',0),('real',2)]:
             with self.subTest(mode=mode):

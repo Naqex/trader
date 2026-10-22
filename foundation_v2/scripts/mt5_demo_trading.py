@@ -82,7 +82,7 @@ def validate_policy(policy, workspace, check_path=True):
     return policy
 
 
-def identity(sdk, policy):
+def identity(sdk, policy, read=False):
     account, terminal = sdk.account_info(), sdk.terminal_info()
     if account is None or terminal is None or not terminal.connected:
         deny('demo_disconnected')
@@ -93,7 +93,8 @@ def identity(sdk, policy):
         deny('demo_account_required')
     if isinstance(policy, BrokerPolicy) and {0:'demo',2:'real'}[account.trade_mode] != policy['mode']:
         deny('demo_identity_changed')
-    if not account.trade_allowed or not account.trade_expert or not terminal.trade_allowed or terminal.tradeapi_disabled:
+    readonly_snapshot = read and isinstance(policy, BrokerPolicy) and policy.get('read_only') is True
+    if not readonly_snapshot and (policy.get('read_only') is True or not account.trade_allowed or not account.trade_expert or not terminal.trade_allowed or terminal.tradeapi_disabled):
         deny('demo_trading_disabled')
     expected = Path(policy['terminal_path']).parent
     if os.path.normcase(str(Path(terminal.path).resolve())) != os.path.normcase(str(expected.resolve())):
@@ -101,10 +102,10 @@ def identity(sdk, policy):
     return account
 
 
-def instrument(sdk, policy, symbol, now=None, allow_stale=False):
+def instrument(sdk, policy, symbol, now=None, allow_stale=False, read=False):
     if symbol not in policy['symbols']:
         deny('demo_symbol_denied')
-    identity(sdk, policy)
+    identity(sdk, policy, read=read)
     info = sdk.symbol_info(symbol)
     if info is None:
         deny('demo_symbol_unavailable')
@@ -314,8 +315,8 @@ def execute(sdk, policy, command, before_send=lambda: None):
 
 
 def snapshot(sdk, policy, symbol, timeframe='M1'):
-    info, quote = instrument(sdk, policy, symbol, allow_stale=isinstance(policy, BrokerPolicy))
-    account = identity(sdk, policy)
+    info, quote = instrument(sdk, policy, symbol, allow_stale=isinstance(policy, BrokerPolicy), read=True)
+    account = identity(sdk, policy, read=True)
     positions, orders = inventory(sdk)
     if timeframe not in ('M1','M5','M15','H1','H4','D1'):
         deny('demo_timeframe_unsupported')
@@ -324,8 +325,8 @@ def snapshot(sdk, policy, symbol, timeframe='M1'):
         deny('demo_bars_unavailable')
     def row(item, pending=False):
         return {'ticket': item.ticket, 'symbol': item.symbol, 'side': 'BUY' if item.type in (0, 2, 4, 6) else 'SELL', 'volume': item.volume_current if pending else item.volume, 'price_open': item.price_open, 'sl': item.sl, 'tp': item.tp, 'profit': getattr(item, 'profit', None), 'type': item.type, 'managed': isinstance(policy, BrokerPolicy) or item.magic == policy['magic']}
-    identity(sdk, policy)
-    return {'status': 'ready', 'reason': 'demo_ready', 'mode': policy['mode'] if isinstance(policy, BrokerPolicy) else 'demo', 'execution_enabled': True, 'account': {key: getattr(account, key) for key in ('server', 'currency', 'balance', 'equity', 'margin', 'margin_free', 'trade_mode', *(['leverage'] if isinstance(policy, BrokerPolicy) else []))} | {'login': str(account.login)}, 'symbols': policy['symbols'], 'symbol': symbol, 'timeframe': timeframe, 'quote': {'bid': quote.bid, 'ask': quote.ask, 'time_msc': quote.time_msc}, 'instrument': {'symbol':symbol, 'asset_class':'fx' if info.trade_calc_mode in (0,5) else 'other', 'tick_size': info.trade_tick_size, 'point': info.point, 'digits': info.digits, 'quantity_min': info.volume_min, 'quantity_max': info.volume_max, 'quantity_step': info.volume_step, 'stops_level': info.trade_stops_level, 'freeze_level': info.trade_freeze_level}, 'positions': [row(p) for p in positions], 'orders': [row(p, True) for p in orders], 'bars': [{'timestamp': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(int(r['time']))), **{key: float(r[key]) for key in ('open', 'high', 'low', 'close')}, 'volume': int(r['tick_volume'])} for r in rates], 'policy': {'source':'broker', 'max_quote_age_ms':policy['max_quote_age_ms']} if isinstance(policy, BrokerPolicy) else {key: policy[key] for key in ('max_risk_amount', 'max_risk_pct', 'max_positions', 'max_volume', 'max_quote_age_ms', 'cost_buffer_per_lot')}}
+    identity(sdk, policy, read=True)
+    return {'status': 'ready', 'reason': 'demo_ready', 'mode': policy['mode'] if isinstance(policy, BrokerPolicy) else 'demo', 'execution_enabled': policy.get('read_only') is not True, 'account': {key: getattr(account, key) for key in ('server', 'currency', 'balance', 'equity', 'margin', 'margin_free', 'trade_mode', *(['leverage'] if isinstance(policy, BrokerPolicy) else []))} | {'login': str(account.login)}, 'symbols': policy['symbols'], 'symbol': symbol, 'timeframe': timeframe, 'quote': {'bid': quote.bid, 'ask': quote.ask, 'time_msc': quote.time_msc}, 'instrument': {'symbol':symbol, 'asset_class':'fx' if info.trade_calc_mode in (0,5) else 'other', 'tick_size': info.trade_tick_size, 'point': info.point, 'digits': info.digits, 'quantity_min': info.volume_min, 'quantity_max': info.volume_max, 'quantity_step': info.volume_step, 'stops_level': info.trade_stops_level, 'freeze_level': info.trade_freeze_level}, 'positions': [row(p) for p in positions], 'orders': [row(p, True) for p in orders], 'bars': [{'timestamp': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(int(r['time']))), **{key: float(r[key]) for key in ('open', 'high', 'low', 'close')}, 'volume': int(r['tick_volume'])} for r in rates], 'policy': {'source':'broker', 'max_quote_age_ms':policy['max_quote_age_ms']} if isinstance(policy, BrokerPolicy) else {key: policy[key] for key in ('max_risk_amount', 'max_risk_pct', 'max_positions', 'max_volume', 'max_quote_age_ms', 'cost_buffer_per_lot')}}
 
 
 def reconcile(sdk, policy, command, submitted_at, previous):

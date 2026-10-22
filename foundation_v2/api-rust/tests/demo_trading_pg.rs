@@ -71,6 +71,31 @@ async fn locked_policy_durable_unknown_retries_controls_and_scopes() {
     assert_eq!(locked.0, 200);
     assert_eq!(locked.1["status"], "locked");
     assert_eq!(locked.1["account"], Value::Null);
+    // Read-only summaries use persisted account metadata without launching a
+    // terminal. Their identity binding cannot authorize preview or commands.
+    let connection_id = uuid::Uuid::new_v4();
+    let saved = json!({"account":{"currency":"USD","balance":1234.5,"equity":1234.5},
+        "account_binding":{"login":"789","server":"Fixture-Read","account_environment":"demo","generation":1},
+        "verified_permissions":{"read":true,"trade":false},"captured_at_utc":"2026-10-23T00:00:00Z"});
+    db.execute("INSERT INTO mt5_connections(workspace_id,connection_id,request_id,account_key,name,server,login_hint,start_date,credential,status,requested_mode,snapshot) VALUES('tenant-a',$1,$1,'read-fixture','Read account','Fixture-Read','789','2026-10-01','fixture-not-a-secret','connected','read_only',$2)",&[&connection_id,&saved]).await.unwrap();
+    let summary_path = format!("{base}?connection_id={connection_id}&summary=true");
+    let summary = request(&app,"GET",&summary_path,"tenant-a",Value::Null).await;
+    assert_eq!(summary.0,200);
+    assert_eq!(summary.1["account"]["balance"],1234.5);
+    assert_eq!(summary.1["execution_enabled"],false);
+    assert_eq!(summary.1["summary"],true);
+    assert_eq!(summary.1["bars"],json!([]));
+    assert!(!summary.1.to_string().contains("fixture-not-a-secret"));
+    let read_draft = json!({"request_id":uuid::Uuid::new_v4(),"action":"place","connection_id":connection_id,"mode":"demo","account_id":"789","server":"Fixture-Read","symbol":"EURUSD","side":"BUY","order_type":"market","volume":0.01});
+    for endpoint in ["preview","commands"] {
+        let result=request(&app,"POST",&format!("{base}/{endpoint}"),"tenant-a",read_draft.clone()).await;
+        assert_eq!(result.0,423);
+        assert_eq!(result.1["detail"],"mt5_trading_access_required");
+    }
+    assert_eq!(request(&app,"GET",&summary_path,"tenant-b",Value::Null).await.1["account"],Value::Null);
+    db.execute("UPDATE mt5_connections SET generation=2 WHERE connection_id=$1",&[&connection_id]).await.unwrap();
+    assert_eq!(request(&app,"GET",&summary_path,"tenant-a",Value::Null).await.1["reason"],"mt5_permissions_unverified");
+    db.execute("DELETE FROM mt5_connections WHERE connection_id=$1",&[&connection_id]).await.unwrap();
     let id = uuid::Uuid::new_v4();
     let draft = json!({"request_id":id,"mode":"demo","account_id":"12345","server":"Fixture-Demo","action":"place","symbol":"EURUSD","side":"BUY","order_type":"market","volume":0.01,"entry_price":null,"stop_loss":1.0,"take_profit":null,"ticket":null});
     assert_eq!(
