@@ -145,6 +145,7 @@
 .live-workspace .is-gain { color: var(--report-positive); }
 .live-workspace .is-loss { color: var(--report-negative); }
 .live-calendar-toolbar { margin-bottom: 8px; flex-wrap: wrap; }
+.live-calendar-action-divider { flex: 0 0 1px; height: 20px; background: var(--wm-border); }
 .live-month-nav { gap: 8px; flex-wrap: wrap; }
 .live-month-step { display: flex; align-items: center; gap: 8px; }
 .fx-app .live-month-nav h2 { margin: 0; text-transform: capitalize; }
@@ -152,13 +153,14 @@
 .fx-app.fx-shell-story[data-theme] .fx-content .live-month-nav .fxa-button:not(:hover) { background: transparent; }
 .live-money-mode { color: var(--project-on-peach-soft); background: var(--project-peach-soft); padding: 8px 12px; border-radius: 999px; font-size: 12px; }
 .live-calendar-scroll { overflow-x: auto; margin-top: 20px; }
+.is-calendar :is(.live-calendar-scroll, .live-calendar-content, .live-analytics-side) { scrollbar-width:thin; scrollbar-color:var(--wm-control-muted) transparent; }
 .live-calendar-grid { min-width: 640px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)) minmax(85px, .9fr); gap: 6px; }
 .live-calendar-dayname { padding: 8px 0 12px; text-align: center; font-size: 12px; color: var(--wm-content-muted); }
 .live-calendar-week { display: contents; }
 .fx-app .live-calendar-cell { display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; gap: 8px; height: clamp(128px, 9vw, 140px); padding: 10px; border: 1px solid var(--wm-border); border-radius: 6px; background: transparent; color: var(--wm-content); cursor: pointer; text-align: left; font-variant-numeric: tabular-nums; }
 .fx-app .live-calendar-cell:hover:not(:disabled) { background: var(--wm-hover); }
 .fx-app .live-calendar-cell[aria-pressed='true'] { border-color: var(--wm-highlight); background: var(--project-peach-soft); }
-.fx-app .live-calendar-cell.is-outside { background: var(--wm-surface); color: var(--wm-content-muted); opacity: 1; }
+.fx-app .live-calendar-cell.is-outside { background: var(--wm-surface); color: var(--wm-content-muted); opacity: .4; }
 .live-day-number { align-self: flex-end; font-size: 12px; }
 .live-day-result { display: grid; gap: 4px; max-width: 100%; overflow-wrap: anywhere; }
 .live-calendar-cell strong { font-size: 15px; }
@@ -175,6 +177,22 @@
 .live-day-detail ul { padding: 0; list-style: none; }
 .live-day-detail li { display: flex; justify-content: space-between; gap: 12px; padding-block: 8px; font-size: 13px; }
 .live-day-detail p { color: var(--wm-content-muted); }
+@media (min-width:1241px) {
+  .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-main > .fx-content:has(> .live-workspace.is-calendar) { display:flex; flex-direction:column; overflow:hidden; padding-bottom:0; }
+  .live-workspace.is-calendar { display:flex; flex-direction:column; flex:1; min-height:0; }
+  .is-calendar > .live-split { flex:1; min-height:0; }
+  .is-calendar .live-calendar-section { display:flex; flex-direction:column; min-height:0; }
+  .is-calendar .live-filters { flex-shrink:0; }
+  .is-calendar .live-calendar-content { display:flex; flex-direction:column; flex:1; min-height:0; overflow:auto; }
+  .is-calendar .live-calendar-toolbar, .is-calendar .live-month-total { flex-shrink:0; }
+  .is-calendar .live-calendar-scroll { flex:1 0 280px; min-height:0; }
+  .is-calendar .live-calendar-grid { height:100%; grid-template-rows:auto repeat(var(--live-calendar-weeks), minmax(min-content,1fr)); }
+  .fx-app .is-calendar .live-calendar-cell { height:auto; min-height:0; box-sizing:border-box; }
+  .is-calendar .live-day-detail { flex-shrink:0; }
+  .is-calendar .live-analytics-side { display:flex; flex-direction:column; min-height:0; overflow:auto; }
+  .is-calendar .live-analytics-side > h2 { flex-shrink:0; }
+  .is-calendar .live-analytics-side > .live-empty { flex:1; min-height:0; }
+}
 .live-notes-groups { display: flex; align-items: center; gap: 12px; padding: 16px var(--wm-page-gutter); }
 .live-notes-groups > span { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: var(--project-peach-soft); color: var(--project-on-peach-soft); font-size: 13px; }
 .live-notes .live-empty { min-height: 440px; }
@@ -262,7 +280,7 @@
   .live-toolbar-actions { width: 100%; }
   .live-metrics > dl, .live-analytics-side dl { grid-template-columns: minmax(0, 1fr); }
   .live-source-details dl { grid-template-columns: minmax(0, 1fr); }
-  .live-filter-divider { display: none; }
+  .live-filter-divider, .live-calendar-action-divider { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .live-workspace *, .live-workspace *::before, .live-workspace *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }

@@ -37,7 +37,7 @@ retaining their reader/dialog state and the shared control styles. Account choic
 and Basic filters share one toolbar. On Calendar that toolbar belongs to the left
 region; the Analytics heading starts at the same level on the right. Week totals
 use the same border, radius and height as day cells, with count and week label at
-the top. Unknown counts/amounts remain dashes, not fabricated zeroes. At narrower
+the top. Unknown weekly counts/amounts remain dashes, not fabricated zeroes. At narrower
 widths the sidebar stacks and the calendar alone scrolls horizontally.
 Ready/demo status is not repeated.
 The data-mode selector is owned by the global topbar on all routes. Unsupported
@@ -171,6 +171,18 @@ The connector is Windows/local-host only and uses an isolated portable terminal
 per connection, DPAPI-protected credentials and a serialized background collector.
 It rejects effective trading permission and never sends broker orders. See
 `foundation_v2/README.md` for operational and verification limits.
+
+## Calendar viewport and empty values
+
+Above 1240px, Calendar and its Analytics sidebar fill the available content
+viewport. Calendar rows share the remaining height; short windows scroll within
+the calendar pane, preserving readable cells and access to selected-day details.
+Below this breakpoint the sidebar stacks and the page scrolls naturally.
+Days outside the month are disabled and dimmed. Unknown daily amounts render
+blank; accessible day labels retain their unknown value. Weekly totals keep
+count and week number above the amount in account currency. A covered empty week
+shows zero deals/trades and zero money; missing coverage remains unknown. A subtle
+vertical rule separates Share from Monthly review using the existing border token.
 
 ## Strategies and Practice handoff
 
