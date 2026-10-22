@@ -8,6 +8,7 @@ import { displayDate } from './dateFormat.js'
 import { formatProtectionMoney } from './orderProtection.js'
 import { downloadLiveCsv } from './LiveRecordDialog.jsx'
 import MetaTraderConnect from './MetaTraderConnect.jsx'
+import MetaTraderMark from './MetaTraderMark.jsx'
 import LegacyPopover from './LegacyPopover.jsx'
 import LegacyModal from './LegacyModal.jsx'
 import { MT5_STATUS, mt5Error, mt5Request } from './mt5Connections.js'
@@ -85,9 +86,9 @@ export default function LiveAccounts({ workspace, accounts, records, broker, cho
       <h2>{t(transactions ? 'Chi tiết tài khoản' : 'Thêm tài khoản')}</h2>
       {transactions ? <>{picker}<dl className="live-cash-summary">{[['Số dư',selected?.snapshot.account.balance],['Số dư ban đầu',selected?.snapshot.account.opening_balance],['Nạp tiền',cash.deposit],['Rút tiền',cash.withdrawal],['Phí tài khoản',cash.fees],[selected?.record ? 'PnL ròng đã ghi' : 'PnL deals đã đồng bộ',cash.net]].map(([label,value]) => <div key={label}><dt>{t(label)}</dt><dd>{money(value,selected?.snapshot.account.currency)}</dd></div>)}</dl><p className="live-muted">{t(selected?.record ? 'Số dư ghi tay = số dư ban đầu + PnL ròng đã ghi. Chưa gồm nạp/rút.' : 'Dòng tiền và PnL trong phạm vi lịch sử đã đồng bộ. Số dư ban đầu chưa xác định.')}</p></> : provider ? <MetaTraderConnect key={provider.id || 'new'} workspace={workspace} connection={provider===true?null:provider} onBack={()=>setProvider(false)} onSaved={value=>{setProvider(false);onSelect(`broker:${value.id}`);onRefresh()}} /> : <>
         <button type="button" className="live-template-link live-text-action" onClick={() => downloadLiveCsv([], 'wmreplay-trades-template.csv')}>{t("Tải mẫu CSV ")}<TestingIcon kind="download" /></button>
-        <button type="button" className="live-upload" disabled={!canImport} onClick={onImport}><TestingIcon kind="upload" size={24} /><strong>{t("Nhập tệp CSV")}</strong><small>{t(accounts.length ? 'Nhập lịch sử giao dịch vào tài khoản ghi tay.' : 'Tạo tài khoản ghi tay trước khi nhập.')}</small></button>
+        <button type="button" className="live-upload" disabled={!canImport} onClick={onImport}><span className="live-upload-icon"><TestingIcon kind="upload" size={16} /></span><span className="live-upload-copy"><strong>{t("Nhập tệp CSV")}</strong><small>{t(accounts.length ? 'Nhập lịch sử giao dịch vào tài khoản ghi tay.' : 'Tạo tài khoản ghi tay trước khi nhập.')}</small></span></button>
         <span className="live-add-separator">{t("hoặc")}</span><button type="button" className="live-manual-option" disabled={!writable} onClick={()=>onCreate()}><span><strong>{t("Ghi tay")}</strong><small>{t("Tạo tài khoản và ghi giao dịch")}</small></span><TestingIcon kind="plus" /></button>
-        <span className="live-add-separator">{t("hoặc")}</span><h3>{t("Đồng bộ với broker")}</h3><button type="button" className="live-metatrader-option" disabled={!writable} onClick={() => setProvider(true)}><span className="live-metatrader-avatar" aria-hidden="true"><img src="/brand/metatrader-5.png" alt="" width="36" height="36" /></span><span>MetaTrader</span></button>
+        <span className="live-add-separator">{t("hoặc")}</span><h3>{t("Đồng bộ với broker")}</h3><button type="button" className="live-metatrader-option" disabled={!writable} onClick={() => setProvider(true)}><MetaTraderMark /><span>MetaTrader</span></button>
       </>}
     </aside>
     {menu&&<LegacyPopover anchor={menu.anchor} theme={document.querySelector('.fx-app')?.dataset.theme || 'dark'} label={`${t('Thao tác tài khoản')} ${menu.row.name}`} onClose={()=>setMenu(null)}>

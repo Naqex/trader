@@ -211,6 +211,17 @@ panel scroll independently, with shared pagination at the bottom of the table
 pane. The bottom source disclosure is removed. Below 1000px the panel stacks and
 the page scrolls naturally, so all form controls remain reachable.
 
+The add-account sidebar uses a compact horizontal CSV action and a centered
+MetaTrader symbol cropped from the existing brand asset. The connection form
+orders start date, platform, server, login and investor password; account naming
+is deferred to account management. Only MT5 is supported. Field and sync help
+use accessible question-mark popovers rather than permanent explanatory copy.
+Back and Cancel use the chart partial-TP text-action treatment: transparent
+background, muted text brightens on hover, and a visible keyboard focus ring.
+Connection actions sit at the panel bottom when space permits; short panels
+scroll without overlapping fields. Existing idempotency, uncertain-request
+locking and password-clearing behavior remains authoritative.
+
 The connector is Windows/local-host only and uses an isolated portable terminal
 per connection, DPAPI-protected credentials and a serialized background collector.
 It rejects effective trading permission and never sends broker orders. See
