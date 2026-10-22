@@ -221,6 +221,9 @@ vertical rule separates Share from Monthly review using the existing border toke
 The toolbar-to-calendar gap is 8px, without a second bottom margin. The Total
 column heading uses the primary content color, one step above muted weekday labels
 in both themes.
+All eight calendar columns, including Total, use equal-width grid tracks. Week
+summaries share the daily cells' row height; narrow screens scroll the calendar
+horizontally rather than giving Total a separate column ratio.
 Before any account is selected, the empty calendar scaffold shows zero trades and
 $0 in each week and the monthly footer, matching the reference. Daily cells stay
 blank and analytics still asks for an account. This display default does not turn
