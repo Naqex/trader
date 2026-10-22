@@ -601,8 +601,7 @@ async fn run_one(state: &Arc<AppState>) -> Result<(), String> {
     }
     let id: Uuid = row.get("connection_id");
     let generation: i64 = row.get("generation");
-    let trading = row.get::<_, String>("requested_mode") == "trading";
-    if conn.execute("UPDATE mt5_connections SET status=CASE WHEN requested_mode='trading' AND status='connected' THEN status ELSE 'syncing' END,updated_at=CURRENT_TIMESTAMP WHERE workspace_id=$1 AND connection_id=$2 AND generation=$3",&[&workspace,&id,&generation]).await.map_err(|_|"mt5_database_unavailable")?!=1{return Ok(())}
+    if conn.execute("UPDATE mt5_connections SET status=CASE WHEN status='connected' THEN status ELSE 'syncing' END,updated_at=CURRENT_TIMESTAMP WHERE workspace_id=$1 AND connection_id=$2 AND generation=$3",&[&workspace,&id,&generation]).await.map_err(|_|"mt5_database_unavailable")?!=1{return Ok(())}
     let date: NaiveDate = row.get("start_date");
     let history = format!("{date}T00:00:00Z");
     let last: Option<chrono::DateTime<Utc>> = if row.get::<_, bool>("full_sync") {
@@ -615,22 +614,16 @@ async fn run_one(state: &Arc<AppState>) -> Result<(), String> {
         .filter(|value| value.as_str() > history.as_str())
         .unwrap_or_else(|| history.clone());
     let result = {
-        let work = async {
-            if trading {
-                crate::demo_trading::managed_collect(
-                    state,
-                    &workspace,
-                    id,
-                    generation,
-                    row.get::<_, String>("credential"),
-                    &from,
-                    &history,
-                )
-                .await
-            } else {
-                adapter(json!({"action":"collect","workspace":workspace,"connection_id":id,"generation":generation,"requested_mode":row.get::<_,String>("requested_mode"),"root":root(),"credential":row.get::<_,String>("credential"),"from_utc":from,"history_from_utc":history}),Duration::from_secs(120)).await
-            }
-        };
+        let work = crate::demo_trading::managed_collect(
+            state,
+            &workspace,
+            id,
+            generation,
+            row.get::<_, String>("credential"),
+            row.get::<_, String>("requested_mode"),
+            &from,
+            &history,
+        );
         tokio::pin!(work);
         loop {
             tokio::select! {
@@ -642,19 +635,8 @@ async fn run_one(state: &Arc<AppState>) -> Result<(), String> {
             }
         }
     };
-    // Dropping the adapter future kills its job tree before disposing terminal files.
-    let cleanup = if trading {
-        Ok(json!({"persistent_worker":true}))
-    } else {
-        adapter(
-            json!({"action":"cleanup","connection_id":id,"root":root()}),
-            Duration::from_secs(15),
-        )
-        .await
-    };
     let Some(result) = result else { return Ok(()) };
     let result = result.and_then(|next| {
-        cleanup?;
         let snapshot = merge_snapshot(row.get("snapshot"), next, row.get("full_sync"));
         if serde_json::to_vec(&snapshot)
             .map_err(|_| "mt5_snapshot_failed")?

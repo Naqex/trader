@@ -290,7 +290,6 @@
 .live-table-scroll th { position: sticky; top: 0; background: var(--project-canvas); color: var(--wm-content-muted); font-weight: 500; }
 .live-table-scroll small { display: block; color: var(--wm-content-muted); margin-top: 4px; }
 .live-table-scroll tbody tr:hover td { background: var(--wm-row-hover); }
-.live-accounts-main .live-source-badge + .live-source-badge { margin-left:6px; }
 .fx-app.fx-shell-story[data-theme] .fx-content .live-accounts-main :is(.live-sync-action,.live-account-menu-trigger).fxa-button { background:var(--wm-control-open); }
 .fx-app.fx-shell-story[data-theme] .fx-content .live-accounts-main :is(.live-sync-action,.live-account-menu-trigger).fxa-button:hover:not(:disabled) { background:var(--wm-control-hover); }
 .live-table-scroll:focus-visible, .live-calendar-scroll:focus-visible { outline: 2px solid var(--wm-focus); outline-offset: 2px; }

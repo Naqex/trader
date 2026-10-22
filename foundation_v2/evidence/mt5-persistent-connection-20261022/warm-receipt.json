@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "duration_seconds": 141.7387185,
+  "samples": 27,
+  "terminal_pids": [
+    6320
+  ],
+  "worker_pids": [
+    14464
+  ],
+  "refreshes": [
+    "2026-10-22T16:00:10.850414Z",
+    "2026-10-22T16:01:11.266201Z",
+    "2026-10-22T16:02:12.269156Z"
+  ],
+  "broker_orders_sent": 0,
+  "scope": "Read-only existing authorized account; observation only; no credentials or broker commands"
+}

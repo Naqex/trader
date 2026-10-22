@@ -212,6 +212,7 @@ struct Managed {
     connection_id: Uuid,
     generation: i64,
     credential: String,
+    requested_mode: String,
     login: String,
     server: String,
     environment: String,
@@ -285,7 +286,7 @@ impl Context {
                 fields["workspace"] = json!(m.workspace);
                 fields["connection_id"] = json!(m.connection_id);
                 fields["generation"] = json!(m.generation);
-                fields["requested_mode"] = json!("trading");
+                fields["requested_mode"] = json!(m.requested_mode);
                 fields["credential"] = json!(m.credential);
                 fields["root"] =
                     json!(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.runtime/mt5-broker"));
@@ -338,6 +339,7 @@ fn managed_record(row: &tokio_postgres::Row) -> Result<Managed, ApiError> {
         connection_id: row.get("connection_id"),
         generation,
         credential: credential.ok_or_else(|| denied("mt5_credentials_required"))?,
+        requested_mode: "trading".into(),
         login: login.into(),
         server,
         environment: environment.into(),
@@ -991,6 +993,12 @@ async fn managed_adapter(managed: &Managed, input: Value) -> Result<Value, Strin
     };
     match result {
         Ok(value) => {
+            if input["operation"] == "collect" && value.get("error").is_some() {
+                // Reauthenticate on the next scheduled read after a disconnect or
+                // failed startup; never leave an unusable session cached as warm.
+                let _ = worker.child.kill().await;
+                return Ok(value);
+            }
             // Worker error responses are safe to keep only if its protocol line
             // completed; every next operation still verifies current DB authority.
             *slot = Some(worker);
@@ -1023,14 +1031,19 @@ pub(crate) async fn managed_collect(
     id: Uuid,
     generation: i64,
     credential: String,
+    requested_mode: String,
     from: &str,
     history: &str,
 ) -> Result<Value, String> {
+    if !matches!(requested_mode.as_str(), "read_only" | "trading") {
+        return Err("mt5_connection_changed".into());
+    }
     let managed = Managed {
         workspace: workspace.into(),
         connection_id: id,
         generation,
         credential,
+        requested_mode,
         login: String::new(),
         server: String::new(),
         environment: String::new(),
@@ -1053,7 +1066,7 @@ pub(crate) async fn managed_collect(
     tx.query_one("SELECT pg_advisory_xact_lock($1)", &[&lock])
         .await
         .map_err(|_| "mt5_terminal_busy".to_owned())?;
-    let active=tx.query_opt("SELECT 1 FROM mt5_connections WHERE workspace_id=$1 AND connection_id=$2 AND generation=$3 AND requested_mode='trading' AND credential IS NOT NULL AND status IN ('queued','syncing','connected','error')",&[&workspace,&id,&generation]).await.map_err(|_|"mt5_database_unavailable".to_owned())?;
+    let active=tx.query_opt("SELECT 1 FROM mt5_connections WHERE workspace_id=$1 AND connection_id=$2 AND generation=$3 AND requested_mode=$4 AND credential=$5 AND status IN ('queued','syncing','connected')",&[&workspace,&id,&generation,&managed.requested_mode,&managed.credential]).await.map_err(|_|"mt5_database_unavailable".to_owned())?;
     if active.is_none() {
         return Err("mt5_connection_changed".into());
     }
@@ -1098,11 +1111,13 @@ mod tests {
         let in_flight = slot.lock().await;
         let revocation = tokio::spawn(revoke_managed_worker(workspace, id));
         tokio::task::yield_now().await;
-        assert!(workers()
-            .lock()
-            .await
-            .get(&key)
-            .is_some_and(|current| Arc::ptr_eq(current, &slot)));
+        assert!(
+            workers()
+                .lock()
+                .await
+                .get(&key)
+                .is_some_and(|current| Arc::ptr_eq(current, &slot))
+        );
         drop(in_flight);
         revocation.await.unwrap();
         workers().lock().await.remove(&key);
@@ -1114,6 +1129,7 @@ mod tests {
             connection_id: Uuid::new_v4(),
             generation: 2,
             credential: "ciphertext".into(),
+            requested_mode: "trading".into(),
             login: "123".into(),
             server: "Fixture".into(),
             environment: "real".into(),

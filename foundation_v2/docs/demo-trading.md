@@ -23,14 +23,20 @@ Pass `connection_id` on trading snapshots, previews, commands and reconciliation
 The native API resolves the connection in the authorized workspace, verifies its
 stored permission/identity/generation binding, then sends private JSON lines to
 `mt5_broker_worker.py`. The worker owns a separate portable terminal for that
-connection and authenticates once; journal collection and trading reads reuse the
-same warm session. Windows broker discovery copies only public `servers.dat`/`.srv`
+connection and authenticates once. Both read-only and trading connections keep
+their terminal running between journal refreshes; trading reads reuse that same
+session. Read-only workers enable no terminal trading permission and accept only
+journal collection. History/account snapshots refresh every 60 seconds while the
+local API is running, independently of which page is open. This is periodic data
+refresh over a persistent broker connection, not tick streaming. Normal refreshes
+keep the connected status; actual failures enter error and retry after 5 minutes
+with a fresh worker. Windows broker discovery copies only public `servers.dat`/`.srv`
 from data belonging to the installed terminal, never saved accounts/profiles/EAs.
 SDK cold startup has a 60s budget, worker startup 75s and warm operations 15s.
-The read-only collector returns its snapshot before cleanup: the native owner
-first closes the entire terminal job (including WebView children), then runs its
-bounded cleanup action. Cleaning inside the collector raced Windows file locks
-and incorrectly replaced successful reads with sync errors.
+Pause/disconnect/reconnect or API shutdown closes the owned terminal job, including
+WebView children. No terminal cleanup runs after a successful periodic read:
+cleaning there both disconnected MT5 and raced Windows file locks. A cold worker
+cleans its private terminal directory before authentication.
 The native local supervisor must remain the single API owner of this terminal root;
 multiple independent API processes sharing it need a lifetime lease before use.
 
@@ -51,6 +57,8 @@ and partial close remain unsupported. The UI exposes only supported capabilities
 No broker order was sent for the implementation acceptance; synthetic SDK, native
 PostgreSQL and UI fixtures are separate from actual broker execution acceptance.
 See [current evidence](../evidence/mt5-connection-trading-20261022/CHECKPOINT.md).
+Persistent read-only lifetime is verified separately in the
+[warm-session checkpoint](../evidence/mt5-persistent-connection-20261022/CHECKPOINT.md).
 
 ## Legacy external DEMO policy
 

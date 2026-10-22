@@ -46,6 +46,46 @@ class WorkerTests(unittest.TestCase):
         session.terminal=Path('C:/owned/terminal64.exe')
         return session
 
+    def test_read_only_fence_allows_collection_but_never_execution(self):
+        import psycopg
+        db = Mock()
+        db.__enter__ = Mock(return_value=db)
+        db.__exit__ = Mock(return_value=False)
+        request = {**self.request, 'requested_mode':'read_only'}
+        with patch.dict(os.environ,TW_V2_DATABASE_URL='fixture-not-a-real-connection'),patch.object(psycopg,'connect',return_value=db):
+            db.execute.return_value.fetchone.return_value=(3,'read_only','connected','ciphertext')
+            worker.fence(request,'collect')
+            for operation in ('snapshot','preview','command','reconcile'):
+                with self.subTest(operation=operation),self.assertRaisesRegex(RuntimeError,'mt5_connection_revoked'):
+                    worker.fence(request,operation)
+            for row in ((3,'trading','connected','ciphertext'),(4,'read_only','connected','ciphertext'),(3,'read_only','paused','ciphertext')):
+                db.execute.return_value.fetchone.return_value=row
+                with self.subTest(row=row),self.assertRaisesRegex(RuntimeError,'mt5_connection_revoked'):
+                    worker.fence(request,'collect')
+
+    def test_read_only_terminal_authenticates_once_and_stays_warm_without_trade_permissions(self):
+        request={**self.request,'credential':'e30=','requested_mode':'read_only','from_utc':'2026-10-22T00:00:00Z','history_from_utc':'2026-10-22T00:00:00Z'}
+        terminal=Path('C:/owned/terminal64.exe')
+        sdk=Mock()
+        sdk.account_info.return_value=NS(login=123,server='Fixture',trade_allowed=False,trade_expert=False)
+        sdk.terminal_info.return_value=NS(connected=True,path=str(terminal.parent),data_path=str(terminal.parent),trade_allowed=False,tradeapi_disabled=True)
+        secret=b'{"login":"123","server":"Fixture","password":"fixture-only"}'
+        with patch.object(worker.connector,'protect',return_value=secret),patch.object(worker.connector,'prepare_terminal',return_value=(terminal,Path('C:/owned/connector.ini'))) as prepare,patch.object(worker.subprocess,'Popen') as process,patch.object(worker.connector,'snapshot',return_value={'verified_permissions':{'read':True,'trade':False}}) as snapshot:
+            session=worker.Session(request,guard=Mock(),sdk_loader=lambda:sdk)
+            self.assertFalse(session.handle(request)['verified_permissions']['trade'])
+            session.handle(request)
+            prepare.assert_called_once_with(request['root'],request['connection_id'],trading=False)
+            sdk.initialize.assert_called_once()
+            self.assertEqual(snapshot.call_count,2)
+            self.assertEqual(snapshot.call_args.args[-2:],('read_only',3))
+            for operation in ('snapshot','preview','command','reconcile'):
+                with self.subTest(operation=operation),self.assertRaisesRegex(RuntimeError,'mt5_connection_revoked'):
+                    session.handle({**request,'operation':operation})
+            sdk.symbols_get.assert_not_called()
+            sdk.order_send.assert_not_called()
+            sdk.shutdown.assert_not_called()
+            process.return_value.terminate.assert_not_called()
+
     def test_session_rejects_changed_generation_before_sdk(self):
         session=self.session()
         with self.assertRaisesRegex(RuntimeError,'mt5_connection_revoked'):

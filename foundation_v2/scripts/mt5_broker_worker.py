@@ -22,7 +22,10 @@ def fence(request, operation):
             row = db.execute('SELECT generation,requested_mode,status,credential FROM mt5_connections WHERE workspace_id=%s AND connection_id=%s',
                              (request['workspace'], request['connection_id'])).fetchone()
         statuses = ('queued', 'syncing', 'connected') if operation == 'collect' else ('connected',)
-        if not row or row[0] != request['generation'] or row[1] != 'trading' or row[2] not in statuses or row[3] != request['credential']:
+        mode = request.get('requested_mode')
+        if mode not in ('read_only', 'trading') or (mode == 'read_only' and operation != 'collect'):
+            raise RuntimeError('mt5_connection_revoked')
+        if not row or row[0] != request['generation'] or row[1] != mode or row[2] not in statuses or row[3] != request['credential']:
             raise RuntimeError('mt5_connection_revoked')
     except (KeyError, psycopg.Error):
         raise RuntimeError('mt5_connection_revoked') from None
@@ -32,11 +35,11 @@ class Session:
     def __init__(self, request, guard=fence, sdk_loader=None):
         self.context = {key: request[key] for key in ('workspace','connection_id','generation','credential','root','requested_mode')}
         self.guard, self.process, self.sdk = guard, None, None
-        if self.context['requested_mode'] != 'trading':
+        if self.context['requested_mode'] not in ('read_only', 'trading'):
             raise RuntimeError('mt5_connection_revoked')
         guard(request, request['operation'])
         self.secret = json.loads(connector.protect(base64.b64decode(request['credential'], validate=True), connector.entropy(request), True))
-        self.terminal, config = connector.prepare_terminal(request['root'], request['connection_id'], trading=True)
+        self.terminal, config = connector.prepare_terminal(request['root'], request['connection_id'], trading=self.context['requested_mode'] == 'trading')
         try:
             self.sdk = (sdk_loader or (lambda: importlib.import_module('MetaTrader5')))()
             startup = subprocess.STARTUPINFO()
@@ -52,7 +55,7 @@ class Session:
             raise
 
     def check_identity(self):
-        account = connector.verify_identity(self.sdk, self.secret, 'trading')
+        account = connector.verify_identity(self.sdk, self.secret, self.context['requested_mode'])
         info = self.sdk.terminal_info()
         if not info or Path(info.path).resolve() != self.terminal.parent.resolve() or Path(info.data_path).resolve() != self.terminal.parent.resolve():
             raise RuntimeError('mt5_terminal_isolation_failed')
@@ -64,11 +67,13 @@ class Session:
         operation = request['operation']
         if operation not in ('collect','snapshot','preview','command','reconcile'):
             raise RuntimeError('mt5_request_invalid')
+        if self.context['requested_mode'] == 'read_only' and operation != 'collect':
+            raise RuntimeError('mt5_connection_revoked')
         self.guard(request, operation)
         account = self.check_identity()
         if operation == 'collect':
             result = connector.snapshot(self.sdk, self.secret, datetime.fromisoformat(request['from_utc'].replace('Z','+00:00')),
-                                        request['history_from_utc'], 'trading', request['generation'])
+                                        request['history_from_utc'], self.context['requested_mode'], request['generation'])
         else:
             symbols = self.sdk.symbols_get()
             if symbols is None:

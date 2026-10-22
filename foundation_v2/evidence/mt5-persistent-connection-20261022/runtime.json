@@ -1,0 +1,8 @@
+{
+  "run_id": "f88dcd6033054e87a1201520e4a84f9b",
+  "ready": true,
+  "api_pid": 21472,
+  "api_sha256": "8738f59ccbba5c616cc9a9c955aabb070688248a607a1cb063dec739f6eabc68",
+  "runtime_profile": "native",
+  "replay_storage_profile": "compact"
+}

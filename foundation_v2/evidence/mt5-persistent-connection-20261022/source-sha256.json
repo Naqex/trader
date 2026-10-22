@@ -1,0 +1,8 @@
+{
+  "foundation_v2/api-rust/src/demo_trading.rs": "38c095349944ae50baf753ee753a3fa617fb536ecc523e80834f2b73720a4a2f",
+  "foundation_v2/api-rust/src/mt5_connector.rs": "b154e591a8a5a4f00c82405daef8d450055304c8346043d9b67d057d1c61f389",
+  "foundation_v2/scripts/mt5_broker_worker.py": "d34caef43aad632d7e83deacd6a5b7771339bcc457362edc11eb769e5bc96716",
+  "foundation_v2/tests/test_mt5_broker_worker.py": "d031b0b3967812cacb6532ff6514b775a610610607f01e91ee6e63a39cba709b",
+  "foundation_v2/web/src/LiveAccounts.jsx": "de836dfec19df702db80d364f7f6c1167ed458e3d4cbad9048d736a43b2280d3",
+  "foundation_v2/web/src/live-workspace.css": "d09567ffaed64c5a36b73f71b9bc3eb92a0ebcc67feedaa4bc881fffd8cf73b8"
+}
