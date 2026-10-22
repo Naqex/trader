@@ -13,6 +13,10 @@
 .legacy-modal :is(input:not([type=checkbox]):not([type=radio]),select,textarea):focus-visible { border-color:var(--project-primary); outline:none; box-shadow:none; }
 .legacy-modal input:is([type=checkbox],[type=radio]):focus-visible { outline:2px solid var(--project-primary); outline-offset:2px; box-shadow:none; }
 .legacy-modal :is(button,input,select,textarea):disabled { opacity:var(--ds-disabled-opacity,.45); cursor:not-allowed; }
+.legacy-modal .wm-button { display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box; min-height:var(--ds-control,36px); padding:7px 16px; border:1px solid transparent; border-radius:var(--ds-radius-pill,999px); background:var(--project-control); color:var(--project-text); font:inherit; cursor:pointer; }
+.legacy-modal .wm-button:hover:not(:disabled) { background:var(--project-hover); }
+.legacy-modal .wm-button.is-primary { background:var(--project-action); color:var(--project-on-action); }
+.legacy-modal .wm-button.is-primary:hover:not(:disabled) { background:var(--project-action-hover); }
 @media(max-width:480px),(pointer:coarse) {
   .legacy-modal-overlay { padding:8px; }
   .legacy-modal > header { padding:16px; }

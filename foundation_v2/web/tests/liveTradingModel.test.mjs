@@ -1,0 +1,44 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { DEMO_DRAFT, tradingReady, demoDraftError, demoIntent, previewMatches, decodeDemoSnapshot, finalDemoReceipt } from '../src/liveTradingModel.js'
+const now = 1700000000000
+const ready = {status:'ready',mode:'demo',execution_enabled:true,account:{login:'123',server:'Test',trade_mode:'demo'},policy:{max_quote_age_ms:5000},quote:{bid:1.1,ask:1.1002,time_msc:now},bars:[],positions:[],orders:[]}
+const spec = {quantity_min:0.01,quantity_max:10,quantity_step:0.01}
+test('permission, account mode, quote age and crossed market fail closed',()=>{
+ assert.equal(tradingReady(ready,now),true)
+ for(const payload of [{...ready,execution_enabled:false},{...ready,mode:'live'},{...ready,account:{...ready.account,trade_mode:'real'}},{...ready,quote:{...ready.quote,time_msc:now-5001}},{...ready,quote:{...ready.quote,time_msc:now+1}},{...ready,quote:{...ready.quote,bid:1.2}}]) assert.equal(tradingReady(payload,now),false)
+})
+test('ticket requires MT5 lot grid and a correctly directed stop',()=>{
+ const good = {...DEMO_DRAFT,quantity:'0.02',stopLoss:'1.09',takeProfit:'1.12'}
+ assert.equal(demoDraftError(good,spec,ready.quote),'')
+ for(const draft of [{...good,quantity:'0.015'},{...good,quantity:''},{...good,quantity:true},{...good,stopLoss:'1.2'},{...good,takeProfit:'1.0'},{...good,orderType:'limit'}]) assert.ok(demoDraftError(draft,spec,ready.quote))
+ assert.ok(demoDraftError(good,{},ready.quote))
+})
+test('confirmation expires and binds exact account, server, side and amounts',()=>{
+ const draft = {...DEMO_DRAFT,quantity:'0.02',stopLoss:'1.09'}
+ const intent = demoIntent(ready,'EURUSD',draft), preview={value:{passed:true},key:JSON.stringify(intent),at:now}
+ assert.equal(previewMatches(preview,intent,now+4999),true)
+ assert.equal(previewMatches(preview,intent,now+5000),false)
+ for(const patch of [{account_id:'other'},{server:'other'},{side:'SELL'},{volume:0.03}]) assert.equal(previewMatches(preview,{...intent,...patch},now),false)
+ assert.equal(previewMatches({...preview,value:{passed:false}},intent,now),false)
+})
+test('invalid snapshots cannot present a ready trading workspace',()=>{
+ assert.equal(decodeDemoSnapshot(ready),ready)
+ assert.throws(()=>decodeDemoSnapshot({...ready,positions:null}))
+ assert.throws(()=>decodeDemoSnapshot({...ready,mode:'live'}))
+})
+
+test('ISO terminal bars normalize at the API boundary for both chart engines',()=>{
+ const row={timestamp:'2023-11-14T22:13:00+00:00',open:1.1,high:1.2,low:1.0,close:1.15,volume:5}
+ assert.equal(decodeDemoSnapshot({...ready,bars:[row]}).bars[0].timestamp,1699999980)
+ assert.throws(()=>decodeDemoSnapshot({...ready,bars:[{...row,timestamp:'invalid'}]}))
+ assert.throws(()=>decodeDemoSnapshot({...ready,bars:[{...row,close:null}]}))
+})
+
+test('accepted or partial results needing reconciliation never release the send lock',()=>{
+ for(const status of ['filled','accepted','done']) {
+  assert.equal(finalDemoReceipt({status}),true)
+  assert.equal(finalDemoReceipt({status,requires_reconciliation:true}),false)
+ }
+ assert.equal(finalDemoReceipt({status:'unknown'}),false)
+})

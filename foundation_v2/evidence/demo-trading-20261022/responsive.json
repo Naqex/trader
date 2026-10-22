@@ -1,0 +1,142 @@
+[
+  {
+    "chart": {
+      "bottom": 710,
+      "height": 477,
+      "left": 248,
+      "right": 1600,
+      "top": 233,
+      "width": 1352,
+      "x": 248,
+      "y": 233
+    },
+    "height": 940,
+    "ledger": {
+      "bottom": 940,
+      "height": 230,
+      "left": 248,
+      "right": 1600,
+      "top": 710,
+      "width": 1352,
+      "x": 248,
+      "y": 710
+    },
+    "overflow": 0,
+    "ticket": {
+      "bottom": 940,
+      "height": 751,
+      "left": 1600,
+      "right": 1920,
+      "top": 189,
+      "width": 320,
+      "x": 1600,
+      "y": 189
+    },
+    "width": 1920
+  },
+  {
+    "chart": {
+      "bottom": 560,
+      "height": 327,
+      "left": 248,
+      "right": 1048,
+      "top": 233,
+      "width": 800,
+      "x": 248,
+      "y": 233
+    },
+    "height": 790,
+    "ledger": {
+      "bottom": 790,
+      "height": 230,
+      "left": 248,
+      "right": 1048,
+      "top": 560,
+      "width": 800,
+      "x": 248,
+      "y": 560
+    },
+    "overflow": 0,
+    "ticket": {
+      "bottom": 790,
+      "height": 601,
+      "left": 1048,
+      "right": 1368,
+      "top": 189,
+      "width": 320,
+      "x": 1048,
+      "y": 189
+    },
+    "width": 1368
+  },
+  {
+    "chart": {
+      "bottom": 689,
+      "height": 360,
+      "left": 248,
+      "right": 753,
+      "top": 329,
+      "width": 505,
+      "x": 248,
+      "y": 329
+    },
+    "height": 1000,
+    "ledger": {
+      "bottom": 919,
+      "height": 230,
+      "left": 248,
+      "right": 753,
+      "top": 689,
+      "width": 505,
+      "x": 248,
+      "y": 689
+    },
+    "overflow": 0,
+    "ticket": {
+      "bottom": 1579.375,
+      "height": 660.375,
+      "left": 248,
+      "right": 753,
+      "top": 919,
+      "width": 505,
+      "x": 248,
+      "y": 919
+    },
+    "width": 768
+  },
+  {
+    "chart": {
+      "bottom": 798,
+      "height": 360,
+      "left": 58,
+      "right": 345,
+      "top": 438,
+      "width": 287,
+      "x": 58,
+      "y": 438
+    },
+    "height": 800,
+    "ledger": {
+      "bottom": 1028,
+      "height": 230,
+      "left": 58,
+      "right": 345,
+      "top": 798,
+      "width": 287,
+      "x": 58,
+      "y": 798
+    },
+    "overflow": 0,
+    "ticket": {
+      "bottom": 1755.5625,
+      "height": 727.5625,
+      "left": 58,
+      "right": 345,
+      "top": 1028,
+      "width": 287,
+      "x": 58,
+      "y": 1028
+    },
+    "width": 360
+  }
+]

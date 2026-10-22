@@ -68,6 +68,7 @@ const SHELL_COPY = {
       live: ['Live', 'Theo dõi thị trường và tài khoản'],
       calendar: ['Calendar', 'PnL giao dịch theo ngày'],
       liveTrades: ['Trades', 'Deal khớp lệnh đã đồng bộ'],
+      liveTerminal: ['Giao dịch MT5', 'Đặt và quản lý lệnh demo trong MT5'],
       notes: ['Notes', 'Ghi chú thị trường'],
       tagAnalytics: ['Tag analytics', 'Phân tích theo tag'],
       tradingAccounts: ['Trading accounts', 'Tài khoản giao dịch'],
@@ -120,6 +121,7 @@ const SHELL_COPY = {
       live: ['Live', 'Market and account workspace'],
       calendar: ['Calendar', 'Daily deal PnL'],
       liveTrades: ['Trades', 'Synced broker deals'],
+      liveTerminal: ['MT5 trading', 'Place and manage MT5 demo orders'],
       notes: ['Notes', 'Market notes'],
       tagAnalytics: ['Tag analytics', 'Tag-based analytics'],
       tradingAccounts: ['Trading accounts', 'Trading accounts'],
@@ -162,6 +164,7 @@ const SIDEBAR_SECTIONS = [
     defaultRoute: 'live',
     defaultSection: 'calendar',
     items: [
+      { id: 'live-terminal', copyKey: 'liveTerminal', icon: 'live', route: 'live', activeViews: ['live'], section: 'terminal' },
       { id: 'live-calendar', copyKey: 'calendar', icon: 'calendar', route: 'live', activeViews: ['live'], section: 'calendar' },
       { id: 'live-trades', copyKey: 'liveTrades', icon: 'trades', route: 'live', activeViews: ['live'], section: 'trades' },
       { id: 'live-notes', copyKey: 'notes', icon: 'notes', route: 'live', activeViews: ['live'], section: 'notes' },

@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { useTestingLocale } from './testingLocale.jsx'
 import { TestingSkeleton } from './TestingReadState.jsx'
 import LiveSurfaces from './LiveSurfaces.jsx'
 import './live-workspace.css'
 
 const LIVE_STATUS_URL = '/api/v2/live/status'
-const LIVE_SECTIONS = Object.freeze({ calendar: 'Calendar', trades: 'Trades', notes: 'Notes', 'tag-analytics': 'Tag analytics', analytics: 'Analytics', 'trading-accounts': 'Trading accounts' })
+const LiveTradingWorkspace = lazy(() => import('./LiveTradingWorkspace.jsx'))
+const LIVE_SECTIONS = Object.freeze({ terminal:'Giao dịch MT5', calendar: 'Calendar', trades: 'Trades', notes: 'Notes', 'tag-analytics': 'Tag analytics', analytics: 'Analytics', 'trading-accounts': 'Trading accounts' })
 
 function statusError(message, kind = 'error') {
   const error = new Error(message)
@@ -43,6 +44,11 @@ function statusCopy(state) {
 }
 
 export default function LiveWorkspace({ workspace = 'tenant-a', query = new URLSearchParams(window.location.search), preview }) {
+  if (query.get('section') === 'terminal') return <Suspense fallback={<TestingSkeleton label="Đang tải giao dịch MT5…" />}><LiveTradingWorkspace workspace={workspace} query={query} preview={Boolean(preview)}/></Suspense>
+  return <LiveJournalWorkspace workspace={workspace} query={query} preview={preview}/>
+}
+
+function LiveJournalWorkspace({ workspace, query, preview }) {
   const { t, locale } = useTestingLocale()
   const section = LIVE_SECTIONS[query.get('section')] ? query.get('section') : 'calendar'
   const connectionId = query.get('live_account')?.startsWith('broker:') ? query.get('live_account').slice(7) : ''

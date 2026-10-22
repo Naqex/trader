@@ -1,0 +1,31 @@
+{
+  "scope": "synthetic browser journeys; no broker",
+  "actions": [
+    "pause",
+    "resume",
+    "place",
+    "protect",
+    "close"
+  ],
+  "request_count": 5,
+  "remaining_positions": 0,
+  "final_paused": false,
+  "scenarios_verified": [
+    "ready",
+    "accepted_requires_reconciliation",
+    "reload_pending",
+    "reconcile_inconclusive",
+    "reconcile_final",
+    "reject423",
+    "capability_loss",
+    "stale",
+    "error",
+    "dark_vi",
+    "light_en",
+    "modal_keyboard"
+  ],
+  "frontend_tests": 18,
+  "python_fake_sdk_tests": 18,
+  "independent_review": "no remaining P0/P1",
+  "broker_execution_tested": false
+}

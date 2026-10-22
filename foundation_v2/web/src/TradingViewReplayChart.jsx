@@ -3,6 +3,7 @@ import { nativeChartPalette } from './nativeChartPalette.js'
 import { useTestingLocale } from './testingLocale.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { createAdvancedReplayDatafeed } from './advancedReplayDatafeed.js'
+import { createLiveChartDatafeed } from './liveChartDatafeed.js'
 import { createReplayChartWindowReader } from './replayChartWindow.js'
 import { readChartSnapshot, writeChartSnapshot } from './advancedChartStorage.js'
 import { createChartSave } from './advancedChartSave.js'
@@ -69,14 +70,14 @@ function loadLibrary() {
 export default function TradingViewReplayChart(props) {
   const { t, locale } = useTestingLocale()
 
-  const { workspace, sessionId, datasetId, datasetSha256, symbol, assetClass, seconds, tickSize, rows, cutoff, theme, drawings, levels, orderEditable, orderGeneration, viewportRequest } = props
+  const { workspace, sessionId, datasetId, datasetSha256, symbol, assetClass, seconds, tickSize, rows, cutoff, theme, drawings, levels, orderEditable, orderGeneration, viewportRequest, marketMode = 'replay' } = props
   const host = useRef(null), instance = useRef(null), latest = useRef(props)
   latest.current = props
   const [status, setStatus] = useState('loading'), [message, setMessage] = useState('')
   const [layoutStatus, setLayoutStatus] = useState('saved')
   const [closeTarget, setCloseTarget] = useState(null)
   const [closing, setClosing] = useState(false)
-  const storageKey = `tw:advanced-chart:v1:${workspace}:${sessionId}:${datasetId}`
+  const storageKey = marketMode === 'live' ? `tw:advanced-chart:live:v1:${workspace}:${sessionId}:${datasetId}` : `tw:advanced-chart:v1:${workspace}:${sessionId}:${datasetId}`
 
   useEffect(() => {
     let cancelled = false, layoutSave, historyReader, saveState = 'saved', restoringImports = false, importedShapes = []
@@ -151,7 +152,7 @@ export default function TradingViewReplayChart(props) {
         const state = latest.current
         return historyReader.read({ resolution, ...period, cursorIndex: state.viewCursorIndex, cutoff: state.cutoff })
       } : undefined
-      adapter = createAdvancedReplayDatafeed({ symbol, assetClass, seconds, tickSize, rows: current.rows, cutoff: current.cutoff, readHistory })
+      adapter = (marketMode === 'live' ? createLiveChartDatafeed : createAdvancedReplayDatafeed)({ symbol, assetClass, seconds, tickSize, rows: current.rows, cutoff: current.cutoff, readHistory })
       let saved
       try { saved = readChartSnapshot(localStorage, storageKey, Number(current.cutoff)) }
       catch { setMessage('Không đọc được chart đã lưu trên trình duyệt này.') }
@@ -175,7 +176,7 @@ export default function TradingViewReplayChart(props) {
       widget.onChartReady(() => {
         if (cancelled) return
         const frame = host.current?.querySelector('iframe')
-        if (frame) { frame.title = t('Biểu đồ replay {symbol}', { symbol }); if (frame.contentDocument) frame.contentDocument.title = `WMReplay · ${symbol}` }
+        if (frame) { frame.title = marketMode === 'live' ? `MT5 Demo · ${symbol}` : t('Biểu đồ replay {symbol}', { symbol }); if (frame.contentDocument) frame.contentDocument.title = `WMReplay · ${symbol}` }
         chart = widget.activeChart()
         layoutSave = createChartSave({
           snapshot: callback => widget.save(callback),
@@ -397,7 +398,7 @@ export default function TradingViewReplayChart(props) {
       latest.current.onHeaderSlots?.(null)
       adapter?.dispose(); historyReader?.dispose(); widget?.remove()
     }
-  }, [workspace, sessionId, datasetId, datasetSha256, symbol, assetClass, seconds, tickSize, storageKey, locale])
+  }, [workspace, sessionId, datasetId, datasetSha256, symbol, assetClass, seconds, tickSize, storageKey, locale, marketMode])
 
   useEffect(() => {
     const item = instance.current
@@ -435,7 +436,7 @@ export default function TradingViewReplayChart(props) {
 
   const fallbackUrl = new URL(window.location.href)
   fallbackUrl.searchParams.set('chart_engine', 'lightweight')
-  return <><div className="replay-chart advanced-replay-chart" data-testid="replay-chart" data-chart-engine="advanced" data-chart-status={status} data-visible-row-count={rows.length} data-cutoff={cutoff} role="group" aria-label={t('Advanced Charts · {symbol} · {count} nến đến cutoff {cutoff} UTC', { symbol, count: rows.length, cutoff })}>
+  return <><div className="replay-chart advanced-replay-chart" data-testid="replay-chart" data-chart-engine="advanced" data-chart-status={status} data-visible-row-count={rows.length} data-cutoff={cutoff} role="group" aria-label={marketMode === 'live' ? `MT5 Demo · ${symbol}` : t('Advanced Charts · {symbol} · {count} nến đến cutoff {cutoff} UTC', { symbol, count: rows.length, cutoff })}>
     <div ref={host} className="advanced-chart-host" inert={status !== 'ready'} aria-hidden={status !== 'ready' ? true : undefined} />
     {status === 'loading' && <ChartLoadingState />}
     {status === 'error' && <div className="advanced-chart-message" role="alert">{t(message)} <a href={fallbackUrl.href}>{t("Mở chart dự phòng")}</a></div>}

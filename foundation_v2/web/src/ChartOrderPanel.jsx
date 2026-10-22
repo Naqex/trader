@@ -4,6 +4,7 @@ import { DEFAULT_COST_MODEL, RiskPreview, validateDraft } from './TradeWorkspace
 import { finiteNumber, marketQuotes, orderDraft, protectionReference, replayAtCutoff, replayOrderPreview, validateEntry } from './replayOrderModel.js'
 import { useReplayTickOptions } from './useReplayTickOptions.js'
 import FxSelect from './FxSelect.jsx'
+import OrderEntryFields from './OrderEntryFields.jsx'
 import ChartIcon from './ChartIcon.jsx'
 import { scalperProtection } from './legacyScalperPreset.js'
 import { sessionExecutionConfig } from './sessionTradingOptions.js'
@@ -331,8 +332,7 @@ function LegacyOrderForm({ order, blockedReason, onClose, onJournal }) {
   const change = (key, value) => setDraft(current => ({ ...current, [key]:value, ...(key === 'quantity' ? { sizingMode:'quantity' } : {}), ...(key === 'takeProfit' && current.takeProfits?.length ? { takeProfits:current.takeProfits.map((row,i) => i ? row : { ...row,price:value }) } : {}) }))
   const pip = Number(instrument?.pip_size), entry = finiteNumber(active?.entry_fill ?? active?.entry_price ?? order.reference)
   return <><form className="legacy-order-form" onChange={() => order.clearNotice()} onSubmit={async event => { event.preventDefault(); if (await order.save()) { onClose(); if (journal) onJournal() } }}>
-    {!active && <div className="legacy-order-grid"><label>{t('Hướng')}<FxSelect className="is-field" label="Hướng" value={draft.side} disabled={disabled} onChange={order.chooseSide} options={[{ value: 'BUY', label: t('Buy') }, { value: 'SELL', label: t('Sell') }]} /></label><label>{t('Loại lệnh')}<FxSelect className="is-field" label="Loại lệnh" value={draft.orderType || 'market'} disabled={disabled || !order.conditionalOrders} onChange={order.chooseType} options={['market','limit','stop'].map(value => ({ value,label:value[0].toUpperCase()+value.slice(1) }))} /></label>
-    <label>{t(instrument?.asset_class==='fx' ? 'Khối lượng (lot)' : 'Khối lượng (quantity)')}<input aria-label={t('Khối lượng lệnh')} type="number" min={instrument?.quantity_min || '0'} step={instrument?.quantity_step || 'any'} value={draft.quantity} disabled={disabled} onChange={event => change('quantity',event.target.value)} /></label><label>{t('Giá vào lệnh')}<input aria-label={t('Giá vào lệnh')} type={draft.orderType && draft.orderType !== 'market' ? 'number' : 'text'} min="0" step={instrument?.tick_size || 'any'} disabled={disabled} readOnly={!draft.orderType || draft.orderType === 'market'} value={draft.orderType && draft.orderType !== 'market' ? draft.entryPrice : order.reference ?? '—'} onChange={event => change('entryPrice',event.target.value)} /></label></div>}
+    {!active && <OrderEntryFields draft={draft} instrument={instrument} disabled={disabled} conditionalOrders={order.conditionalOrders} onSide={order.chooseSide} onType={order.chooseType} onChange={change} reference={order.reference} />}
     {[['stopLoss','Stop loss'],['takeProfit','Take profit']].map(([key,label]) => <section className={active ? 'legacy-edit-protection' : 'legacy-new-protection'} key={key} data-protection={key}><div className="legacy-protection-row"><label><input type="checkbox" role="switch" checked={enabled[key]} disabled={disabled || !order.canPreviewProtection} onChange={event => {
       const checked = event.target.checked
       const unit = Number(instrument?.pip_size) || Number(instrument?.tick_size)

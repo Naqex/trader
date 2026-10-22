@@ -4,6 +4,31 @@ Live and the Testing Market Data catalog consume `testing-standard.md` and
 `project-palette.md`. FX Replay references guide layout only. Source data,
 read access and unknown states come from this project's existing adapters.
 
+## MT5 demo trading surface
+
+`section=terminal` lazy-loads `LiveTradingWorkspace`; the journal reader is not
+mounted on this route. It reuses `TradingViewReplayChart` with a separate live
+datafeed and chart storage namespace, `OrderEntryFields`, `FxSelect` and
+`LegacyModal`. Current-candle updates stream without replay rewinds. Desktop
+chart, position ledger and order ticket end at the shell viewport bottom; below
+1000px they stack in the content scroll region without overlap.
+
+Terminal identity, symbol specification, quote and action capabilities come from
+the dedicated demo API. Missing policy and stale/disconnected data disable sends.
+Preview binds exact account/server/symbol/side/volume/SL/TP, expires after five
+seconds and can be refreshed inside confirmation. The server independently checks
+every command. Confirmation shows DEMO and the exact account/server; replay fills
+and investor journal accounts never supply execution state.
+
+The browser saves the request UUID before POST. Accepted/partial results carrying
+`requires_reconciliation` remain locked across reload. Reconciliation only reads
+broker evidence and never repeats the send. Definitive pre-submission rejection
+(including HTTP 423) clears that local request; ambiguous outcomes remain locked.
+Only advertised per-action capabilities enable position actions. See
+`foundation_v2/docs/demo-trading.md` for activation, risk and initial limitations.
+
+UI fixture screenshots are explicitly synthetic and do not prove broker execution.
+
 ## Ownership and presentation
 
 - `testing-standard.css` explicitly opts Live into Testing typography, control

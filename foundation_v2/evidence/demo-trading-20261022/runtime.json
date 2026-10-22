@@ -1,0 +1,56 @@
+{
+  "checked_at": "2026-10-22T10:31:20.2735108Z",
+  "health": {
+    "command_worker": "not_required",
+    "contract_version": "foundation-v2.1",
+    "database": "ready",
+    "ok": true
+  },
+  "runtime": "native",
+  "ready": true,
+  "snapshot": {
+    "account": null,
+    "bars": [],
+    "execution_enabled": false,
+    "instrument": null,
+    "mode": "demo",
+    "orders": [],
+    "policy": null,
+    "positions": [],
+    "quote": null,
+    "reason": "demo_policy_locked",
+    "requests": [],
+    "status": "locked",
+    "symbol": null,
+    "symbols": [],
+    "timeframe": "M1"
+  },
+  "denials": [
+    {
+      "response": {
+        "detail": "demo_policy_locked"
+      },
+      "status": 423,
+      "path": "preview"
+    },
+    {
+      "response": {
+        "detail": "demo_policy_locked"
+      },
+      "status": 423,
+      "path": "commands"
+    },
+    {
+      "response": {
+        "detail": "demo_policy_locked"
+      },
+      "status": 423,
+      "path": "reconcile"
+    }
+  ],
+  "terminal_pid_set_unchanged": true,
+  "policy_configured": false,
+  "broker_execution_tested": false,
+  "migration": "0010_demo_trading.sql",
+  "backup_manifest_sha256": "3155a9265e176c974b71bfbdfe0b4e4699483cc5d78b381adfc497000d76b2fd"
+}
