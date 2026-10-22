@@ -12,7 +12,7 @@ export function createLiveChartDatafeed({ symbol, seconds, tickSize, rows, asset
   const defer = callback => setTimeout(() => { if (alive) callback() },0)
   const datafeed = {
     onReady(callback) { defer(() => callback({supported_resolutions:supported,supports_marks:false,supports_timescale_marks:false,supports_time:false})) },
-    resolveSymbol(name,callback,error) { defer(() => name === symbol ? callback({name:symbol,ticker:symbol,description:`${symbol} · MT5 Demo`,exchange:'MT5',listed_exchange:'MT5',type,session:'24x7',timezone:'Etc/UTC',format:'price',pricescale,minmov:Math.max(1,Math.round(Number(tickSize || 1/pricescale)*pricescale)),has_intraday:seconds<86400,has_daily:seconds>=86400,has_weekly_and_monthly:false,intraday_multipliers:seconds<86400?[interval]:[],daily_multipliers:seconds>=86400?['1']:[],supported_resolutions:supported,data_status:'streaming'}) : error('Unknown MT5 symbol')) },
+    resolveSymbol(name,callback,error) { defer(() => name === symbol ? callback({name:symbol,ticker:symbol,description:`${symbol} · MT5`,exchange:'MT5',listed_exchange:'MT5',type,session:'24x7',timezone:'Etc/UTC',format:'price',pricescale,minmov:Math.max(1,Math.round(Number(tickSize || 1/pricescale)*pricescale)),has_intraday:seconds<86400,has_daily:seconds>=86400,has_weekly_and_monthly:false,intraday_multipliers:seconds<86400?[interval]:[],daily_multipliers:seconds>=86400?['1']:[],supported_resolutions:supported,data_status:'streaming'}) : error('Unknown MT5 symbol')) },
     getBars(info,resolution,period,callback,error) {
       defer(() => {
         if (resolution !== interval) { error('Select the timeframe in the MT5 toolbar.'); return }

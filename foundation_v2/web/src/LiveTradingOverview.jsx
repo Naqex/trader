@@ -5,13 +5,13 @@ import { useTestingLocale } from './testingLocale.jsx'
 import { liveTradingHref } from './liveTradingNavigation.js'
 import { navigate } from './clientNavigation.js'
 
-export default function LiveTradingOverview({ workspace, query, snapshot, status, reason, symbol, timeframe, onSelect, onRefresh, onResetSymbol }) {
+export default function LiveTradingOverview({ workspace, query, snapshot, status, reason, symbol, timeframe, onRefresh, onResetSymbol }) {
   const { t,fmt }=useTestingLocale()
   const account=snapshot?.account, currency=account?.currency
   const money=value=>Number.isFinite(value)?fmt(value,currency?` ${currency}`:''):t('Chưa có dữ liệu')
   return <section className="fx-dashboard mt5-overview" data-testid="mt5-overview" aria-label={t('Tổng quan giao dịch MT5')}>
     <h1 className="sr-only">{t('Tổng quan giao dịch MT5')}</h1>
-    <nav className="fx-dashboard-quick-actions mt5-quick-actions" aria-label={t('Giao dịch MT5')}><button type="button" className="fx-dashboard-quick-action is-primary" onClick={()=>navigate(liveTradingHref(workspace,query,{chart:true,symbol,timeframe}))}><TestingIcon kind="chart" size={28}/><span><strong>{t('Mở biểu đồ')}</strong><small>{t('Chọn mã và giao dịch qua MT5')}</small></span></button></nav>
+    <nav className="fx-dashboard-quick-actions mt5-quick-actions" aria-label={t('Giao dịch MT5')}><button type="button" className="fx-dashboard-quick-action is-primary" onClick={()=>navigate(liveTradingHref(workspace,query,{chart:true,symbol,timeframe}))}><TestingIcon kind="chart" size={28}/><span><strong>{t('Mở biểu đồ')}</strong></span></button></nav>
     <section className="fx-dashboard-results" aria-label={t('Performance')} aria-busy={status==='loading'}>
       <div className="fx-dashboard-section-head"><div className="wm-resource-heading"><h2 className="fx-dashboard-performance-heading">{t('Performance')}</h2></div></div>
       {status==='loading' && !account ? <TestingSkeleton label="Đang tải Performance…"/> : <>

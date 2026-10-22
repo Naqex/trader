@@ -1,0 +1,68 @@
+{
+  "summary": {
+    "samples": [
+      {
+        "ms": 56.87,
+        "bytes": 481,
+        "status": "ready",
+        "bars": 0,
+        "execution_enabled": false
+      },
+      {
+        "ms": 13.12,
+        "bytes": 481,
+        "status": "ready",
+        "bars": 0,
+        "execution_enabled": false
+      },
+      {
+        "ms": 16.19,
+        "bytes": 481,
+        "status": "ready",
+        "bars": 0,
+        "execution_enabled": false
+      },
+      {
+        "ms": 15.79,
+        "bytes": 481,
+        "status": "ready",
+        "bars": 0,
+        "execution_enabled": false
+      },
+      {
+        "ms": 16.04,
+        "bytes": 481,
+        "status": "ready",
+        "bars": 0,
+        "execution_enabled": false
+      }
+    ],
+    "median_ms": 16.04
+  },
+  "chart": {
+    "samples": [
+      {
+        "ms": 106.84,
+        "bytes": 250,
+        "status": "unavailable",
+        "bars": 0,
+        "execution_enabled": false
+      },
+      {
+        "ms": 250.32,
+        "bytes": 36092,
+        "status": "ready",
+        "bars": 300,
+        "execution_enabled": false
+      },
+      {
+        "ms": 170.85,
+        "bytes": 36092,
+        "status": "ready",
+        "bars": 300,
+        "execution_enabled": false
+      }
+    ],
+    "median_ms": 170.85
+  }
+}

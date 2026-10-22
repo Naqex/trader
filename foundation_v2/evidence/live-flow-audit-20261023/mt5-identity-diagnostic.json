@@ -1,0 +1,10 @@
+{
+  "account_present": true,
+  "terminal_present": true,
+  "connected": true,
+  "login_matches": true,
+  "server_matches": true,
+  "server_casefold_matches": true,
+  "login_is_zero": false,
+  "status": "ready"
+}

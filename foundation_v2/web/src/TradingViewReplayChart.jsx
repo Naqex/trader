@@ -176,7 +176,7 @@ export default function TradingViewReplayChart(props) {
       widget.onChartReady(() => {
         if (cancelled) return
         const frame = host.current?.querySelector('iframe')
-        if (frame) { frame.title = marketMode === 'live' ? `MT5 Demo · ${symbol}` : t('Biểu đồ replay {symbol}', { symbol }); if (frame.contentDocument) frame.contentDocument.title = `WMReplay · ${symbol}` }
+        if (frame) { frame.title = marketMode === 'live' ? `MT5 · ${symbol}` : t('Biểu đồ replay {symbol}', { symbol }); if (frame.contentDocument) frame.contentDocument.title = `WMReplay · ${symbol}` }
         chart = widget.activeChart()
         layoutSave = createChartSave({
           snapshot: callback => widget.save(callback),
@@ -436,7 +436,7 @@ export default function TradingViewReplayChart(props) {
 
   const fallbackUrl = new URL(window.location.href)
   fallbackUrl.searchParams.set('chart_engine', 'lightweight')
-  return <><div className="replay-chart advanced-replay-chart" data-testid="replay-chart" data-chart-engine="advanced" data-chart-status={status} data-visible-row-count={rows.length} data-cutoff={cutoff} role="group" aria-label={marketMode === 'live' ? `MT5 Demo · ${symbol}` : t('Advanced Charts · {symbol} · {count} nến đến cutoff {cutoff} UTC', { symbol, count: rows.length, cutoff })}>
+  return <><div className="replay-chart advanced-replay-chart" data-testid="replay-chart" data-chart-engine="advanced" data-chart-status={status} data-visible-row-count={rows.length} data-cutoff={cutoff} role="group" aria-label={marketMode === 'live' ? `MT5 · ${symbol}` : t('Advanced Charts · {symbol} · {count} nến đến cutoff {cutoff} UTC', { symbol, count: rows.length, cutoff })}>
     <div ref={host} className="advanced-chart-host" inert={status !== 'ready'} aria-hidden={status !== 'ready' ? true : undefined} />
     {status === 'loading' && <ChartLoadingState />}
     {status === 'error' && <div className="advanced-chart-message" role="alert">{t(message)} <a href={fallbackUrl.href}>{t("Mở chart dự phòng")}</a></div>}

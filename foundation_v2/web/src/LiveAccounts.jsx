@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import FxSelect, { FilterIcon } from './FxSelect.jsx'
 import TestingIcon from './TestingIcon.jsx'
 import LiveBrokerSnapshot from './LiveBrokerSnapshot.jsx'
@@ -6,25 +6,28 @@ import PaginationFooter from './PaginationFooter.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import { displayDate } from './dateFormat.js'
 import { formatProtectionMoney } from './orderProtection.js'
-import { downloadLiveCsv } from './LiveRecordDialog.jsx'
-import MetaTraderConnect from './MetaTraderConnect.jsx'
+import { downloadLiveCsv } from './liveCsvDownload.js'
+import { TestingSkeleton } from './TestingReadState.jsx'
 import MetaTraderMark from './MetaTraderMark.jsx'
 import LegacyPopover from './LegacyPopover.jsx'
 import LegacyModal from './LegacyModal.jsx'
 import { MT5_STATUS, mt5Error, mt5Request } from './mt5Connections.js'
 import { liveAccountRows, accountTransactions, accountCashSummary, duplicateAccountSeed } from './liveAccountModel.js'
 
+const MetaTraderConnect = lazy(() => import('./MetaTraderConnect.jsx'))
+
 function AccountActionDialog({ action, onClose, onConfirm }) {
+  const { t } = useTestingLocale()
   const [name,setName]=useState(action.row.name), [pending,setPending]=useState(false), [error,setError]=useState(''), [uncertain,setUncertain]=useState(false)
   const lock=useRef(false), removing=action.kind==='remove'
-  return <LegacyModal className="live-record-dialog is-account" label={removing?'Xóa tài khoản':'Sửa tài khoản'} theme={document.querySelector('.fx-app')?.dataset.theme || 'dark'} onClose={()=>{if(!lock.current)onClose()}}>
+  return <LegacyModal className="live-record-dialog is-account" label={t(removing?'Xóa tài khoản':'Sửa tài khoản')} theme={document.querySelector('.fx-app')?.dataset.theme || 'dark'} onClose={()=>{if(!lock.current)onClose()}}>
     <form className="live-record-form" aria-busy={pending} onSubmit={async event=>{
       event.preventDefault();if(lock.current || uncertain)return;lock.current=true;setPending(true);setError('')
       try{await onConfirm(name.trim());onClose()}catch(problem){setError(problem.message);setUncertain(problem.outcomeKnown===false || problem.uncertain===true)}finally{lock.current=false;setPending(false)}
     }}>
-      {removing?<p className="live-account-action-copy">{action.row.record ? <>Xóa <strong>{action.row.name}</strong> khỏi sổ đang dùng? Tài khoản và các giao dịch, ghi chú liên quan sẽ được ẩn; lịch sử bản ghi vẫn được giữ.</> : <>Gỡ kết nối <strong>{action.row.name}</strong> cùng mật khẩu và bản dữ liệu đồng bộ khỏi ứng dụng? Tài khoản tại broker không bị thay đổi.</>}</p>:<label>Tên tài khoản<input required maxLength={160} value={name} disabled={pending} onChange={event=>setName(event.target.value)}/></label>}
-      {error&&<p role="alert" className="live-record-error">{error}{uncertain?' Tải lại danh sách để kiểm tra kết quả trước khi thao tác tiếp.':''}</p>}
-      <footer className="live-dialog-footer"><button type="button" className="fxa-button" disabled={pending} onClick={onClose}>Hủy</button><button className={`fxa-button ${removing?'is-danger':'is-primary'}`} disabled={pending || uncertain || !removing && !name.trim()}>{pending?'Đang xử lý…':removing?'Xóa tài khoản':'Lưu thay đổi'}</button></footer>
+      {removing?<p className="live-account-action-copy">{action.row.record ? <>{t('Archive account {name} and its trades and notes? Record history is retained.',{name:action.row.name})}</> : <>{t('Remove connection {name}, saved credentials and synced data? Your broker account is unchanged.',{name:action.row.name})}</>}</p>:<label>{t('Tên tài khoản')}<input required maxLength={160} value={name} disabled={pending} onChange={event=>setName(event.target.value)}/></label>}
+      {error&&<p role="alert" className="live-record-error">{t(error)}{uncertain?` ${t('Tải lại danh sách để kiểm tra kết quả trước khi thao tác tiếp.')}`:''}</p>}
+      <footer className="live-dialog-footer"><button type="button" className="fxa-button" disabled={pending} onClick={onClose}>{t('Hủy')}</button><button className={`fxa-button ${removing?'is-danger':'is-primary'}`} disabled={pending || uncertain || !removing && !name.trim()}>{t(pending?'Đang xử lý…':removing?'Xóa tài khoản':'Lưu thay đổi')}</button></footer>
     </form>
   </LegacyModal>
 }
@@ -37,13 +40,14 @@ export default function LiveAccounts({ workspace, accounts, records, broker, cho
   const actionLock=useRef(false)
   const sidebar=useRef(null)
   useEffect(()=>{sidebar.current?.scrollTo({top:0})},[provider])
+  useEffect(()=>setPage(1),[chosen,transactions])
   async function connectionAction(row,action) {
     if(action === 'reconnect'){setProvider(row.connection);return}
     if(actionLock.current)return
     actionLock.current=true;setBusy(row.id);setConnectionError('')
     try {await mt5Request(workspace,`/${row.connection.id}/${action}`);onRefresh()} catch(error){setConnectionError(error.message)} finally {setBusy('');actionLock.current=false}
   }
-  const rows = liveAccountRows(accounts,records,broker), selected = rows.find(row => row.id === chosen)
+  const rows = useMemo(()=>liveAccountRows(accounts,records,broker),[accounts,records,broker]), selected = rows.find(row => row.id === chosen)
   const money = (value,currency) => typeof value === 'number' && Number.isFinite(value) ? `${value < 0 ? '−' : ''}${formatProtectionMoney(value,currency,locale)}` : '—'
   const filtered = rows.filter(row => (source === 'all' || row.status === source || source === 'connected' && row.status === 'synced') && row.name.toLocaleLowerCase(locale).includes(search.toLocaleLowerCase(locale))).sort((a,b) => {
     const value = row => sort.key === 'balance' ? row.snapshot.account.balance : sort.key === 'updated' ? Date.parse(row.updated) : row.name
@@ -73,7 +77,7 @@ export default function LiveAccounts({ workspace, accounts, records, broker, cho
         <div className="live-table-scroll" role="region" tabIndex={0} aria-label={t("Danh sách tài khoản")}><table><thead><tr>{[['name','Tài khoản'],['source','Nguồn'],['status','Trạng thái'],['balance','Số dư'],['updated','Cập nhật gần nhất'],['sync','Đồng bộ'],['edit','']].map(([key,label]) => <th key={key} aria-label={key === 'edit' ? t('Thao tác') : undefined} aria-sort={['name','balance','updated'].includes(key) ? sort.key === key ? sort.ascending ? 'ascending' : 'descending' : 'none' : undefined}>{['name','balance','updated'].includes(key) ? <button type="button" className="wm-table-sort" onClick={() => sortBy(key)}>{t(label)} ↕</button> : t(label)}</th>)}</tr></thead><tbody>{filtered.slice((current-1)*size,current*size).map(row => <tr key={row.id}>
           <td><button className="live-text-action" type="button" aria-current={chosen === row.id ? 'true' : undefined} onClick={() => choose(row.id)}>{row.name}{row.connection?.requested_mode==='read_only' ? ` - ${t('Chỉ xem')}` : ''}</button></td>
           <td><span className="live-source-badge">{t(row.source)}</span></td>
-          <td><span className={`live-account-status is-${row.status}`}>{t(row.status === 'manual' ? 'Đã lưu' : row.status === 'stale' ? 'Dữ liệu cũ' : MT5_STATUS[row.status] || 'Đã đồng bộ')}</span>{row.status === 'error' && row.connection?.error_code&&<small className="live-connection-error">{t(mt5Error(row.connection.error_code))}</small>}</td>
+          <td><span className={`live-account-status is-${row.status}`}>{t(row.status === 'manual' ? 'Đã lưu' : row.status === 'stale' ? 'Dữ liệu cũ' : MT5_STATUS[row.status] || 'Đã đồng bộ')}</span>{['error','disconnected'].includes(row.status) && row.connection?.error_code&&<small className="live-connection-error">{t(mt5Error(row.connection.error_code))}</small>}</td>
           <td>{money(row.snapshot.account.balance,row.snapshot.account.currency)}</td><td>{row.updated ? displayDate(row.updated,{timeStyle:'short'}) : '—'}</td>
           <td>{row.connection&&<button type="button" className="fxa-button fxa-icon-button live-sync-action" aria-label={`${t('Đồng bộ')} ${row.name}`} disabled={!writable || Boolean(busy) || ['queued','syncing','disconnected'].includes(row.status)} onClick={()=>connectionAction(row,'sync')}><TestingIcon kind="refresh"/></button>}</td><td>{rowActions(row)}</td>
         </tr>)}</tbody></table></div>
@@ -84,7 +88,7 @@ export default function LiveAccounts({ workspace, accounts, records, broker, cho
     </section>
     <aside ref={sidebar} className="live-add-account" aria-label={t(transactions ? 'Chi tiết tài khoản' : 'Thêm tài khoản')}>
       <h2>{t(transactions ? 'Chi tiết tài khoản' : 'Thêm tài khoản')}</h2>
-      {transactions ? <>{picker}<dl className="live-cash-summary">{[['Số dư',selected?.snapshot.account.balance],['Số dư ban đầu',selected?.snapshot.account.opening_balance],['Nạp tiền',cash.deposit],['Rút tiền',cash.withdrawal],['Phí tài khoản',cash.fees],[selected?.record ? 'PnL ròng đã ghi' : 'PnL deals đã đồng bộ',cash.net]].map(([label,value]) => <div key={label}><dt>{t(label)}</dt><dd>{money(value,selected?.snapshot.account.currency)}</dd></div>)}</dl><p className="live-muted">{t(selected?.record ? 'Số dư thủ công = số dư ban đầu + PnL ròng đã ghi. Chưa gồm nạp/rút.' : 'Dòng tiền và PnL trong phạm vi lịch sử đã đồng bộ. Số dư ban đầu chưa xác định.')}</p></> : provider ? <MetaTraderConnect key={provider.id || 'new'} workspace={workspace} connection={provider===true?null:provider} onBack={()=>setProvider(false)} onSaved={value=>{setProvider(false);onSelect(`broker:${value.id}`);onRefresh()}} /> : <>
+      {transactions ? <>{picker}<dl className="live-cash-summary">{[['Số dư',selected?.snapshot.account.balance],['Số dư ban đầu',selected?.snapshot.account.opening_balance],['Nạp tiền',cash.deposit],['Rút tiền',cash.withdrawal],['Phí tài khoản',cash.fees],[selected?.record ? 'PnL ròng đã ghi' : 'PnL deals đã đồng bộ',cash.net]].map(([label,value]) => <div key={label}><dt>{t(label)}</dt><dd>{money(value,selected?.snapshot.account.currency)}</dd></div>)}</dl><p className="live-muted">{t(selected?.record ? 'Số dư thủ công = số dư ban đầu + PnL ròng đã ghi. Chưa gồm nạp/rút.' : 'Dòng tiền và PnL trong phạm vi lịch sử đã đồng bộ. Số dư ban đầu chưa xác định.')}</p></> : provider ? <Suspense fallback={<TestingSkeleton />}><MetaTraderConnect key={provider.id || 'new'} workspace={workspace} connection={provider===true?null:provider} onBack={()=>setProvider(false)} onSaved={value=>{setProvider(false);onSelect(`broker:${value.id}`);onRefresh()}} /></Suspense> : <>
         <p className="live-template-hint"><span>{t('Format your file before uploading')}</span>{' '}<button type="button" className="live-template-link live-text-action" onClick={() => downloadLiveCsv([], 'wmreplay-trades-template.csv')}>{t('download CSV template')}<TestingIcon kind="download" size={12} /></button></p>
         <button type="button" className="live-upload" disabled={!canImport} onClick={onImport}><span className="live-upload-icon"><TestingIcon kind="upload" size={16} /></span><span className="live-upload-copy"><strong>{t("Nhập tệp CSV")}</strong><small>{t(accounts.length ? 'Nhập lịch sử giao dịch vào tài khoản thủ công.' : 'Tạo tài khoản thủ công trước khi nhập.')}</small></span></button>
         <span className="live-add-separator">{t("hoặc")}</span><button type="button" className="live-manual-option" disabled={!writable} onClick={()=>onCreate()}><span><strong>{t("Thủ công")}</strong><small>{t("Tạo tài khoản và ghi giao dịch")}</small></span><TestingIcon kind="plus" /></button>

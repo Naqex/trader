@@ -1,0 +1,31 @@
+{
+  "scope": "Live MT5 overview, chart, accounts and journal; production build on 5180 plus isolated synthetic fixture on 5192",
+  "broker_order_sent": false,
+  "real_account_access": "read_only, unchanged",
+  "checks": [
+    "Explicit EN deep link, language toggle to VI, URL/link locale retained",
+    "Overview opens chart directly without automatic setup dialog; chart top=0 after journal navigation",
+    "Current local account: connected, balance/equity 10000 USD; read-only chart has 300 bars; preview/send disabled",
+    "Manual account creation, closed-trade edit at quantity 0.01, search and last-page reset",
+    "65 manual trades: net 90 USD, win rate 49.23%, PF 1.45, return 0.9%; calendar and analytics agree",
+    "20-row trade paging ends with 5; 50-row paging ends with 15; summary values unchanged",
+    "31 initial notes and 45 tag groups paginate; note search resets paging",
+    "Monthly review includes account, timezone, filters and strategy scope",
+    "Broker note defaults to chosen connection, persists connection_id and is hidden under another account",
+    "General note with null account edits/saves; empty tags no trailing separator",
+    "MT5 form uses shared controls, access changes password label; sync guide opens on hover",
+    "Synthetic market preview/confirmation/receipt closes form and opens Requests; EN displays Place order / Filled",
+    "Synthetic unknown outcome locks new commands across reload; read-only reconciliation does not resend",
+    "Notes empty and denied states: no retained journal records, create disabled on denial",
+    "Mobile 390x844: notes/accounts/form/calendar do not overflow document width; internal table/calendar regions scroll",
+    "Dark/light theme inspection; desktop 1440x900 chart aligned and no document horizontal overflow; viewport reset afterwards"
+  ],
+  "limits": [
+    "Pagination is local, not server-side.",
+    "Synthetic execution does not establish actual broker order acceptance.",
+    "Market placement/full close/protection/cancellation supported; new pending orders and partial close remain unsupported.",
+    "Initial identity-changed issue recovered after explicit sync but was not reproduced; cause remains unconfirmed.",
+    "One initial chart read after restart returned unavailable in the small API sample; following reads/UI recovered. Its exact reason was not retained; no cold-start success claim.",
+    "Common entry bundle still emits the existing >500 kB build warning."
+  ]
+}

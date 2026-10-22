@@ -1,0 +1,116 @@
+- main "WMREPLAY content":
+  - main "MT5 trading":
+    - group "MT5 · EURUSD":
+      - iframe [id="tradingview_cd1d2"] [name="tradingview_cd1d2"]:
+        - generic "1d"
+        - generic "Go to":
+        - button "18:49:10 (UTC)":
+          - generic: 18:49:10 (UTC)
+        - generic "Toggle Percentage":
+        - generic "Toggle Log Scale":
+          - generic: log
+        - generic "Toggle Auto Scale":
+          - generic: auto
+        - table:
+          - row "EURUSD · MT5 · 1 · MT5 O1.10194H1.10234L1.10174C1.10214 +0.00005 (+0.00%)":
+            - cell
+            - cell "EURUSD · MT5 · 1 · MT5 O1.10194H1.10234L1.10174C1.10214 +0.00005 (+0.00%)":
+              - generic: EURUSD · MT5
+              - generic: · 1
+              - generic: · MT5
+              - generic "Market open":
+              - generic: O1.10194
+              - generic: H1.10234
+              - generic: L1.10174
+              - generic: C1.10214
+              - generic: +0.00005 (+0.00%)
+            - cell
+          - row:
+            - cell
+            - cell
+            - cell
+        - generic "1 minute":
+          - generic: 1m
+        - generic "Candles":
+        - generic "Indicators & Strategies":
+          - generic: Indicators
+        - generic "Undo apply chart theme":
+        - link "Back to MT5 overview":
+          - /url: /?workspace=tenant-a&view=live&area=live&section=terminal&lang=en&live_account=00000000-0000-4000-8000-000000000002&mt5_connection=00000000-0000-4000-8000-000000000001&mt5_symbol=EURUSD&mt5_timeframe=M1
+        - button "EURUSD":
+          - strong: EURUSD
+        - button "New Layout"
+        - generic "Chart settings":
+        - generic: MT5 · 999000111
+        - button "Chart layout":
+        - button "All changes saved" [disabled]:
+          - generic: MT5 · 999000111
+          - generic: Save
+        - button "Manage layouts":
+        - button "Choose an MT5 symbol":
+        - button "Capture chart as PNG":
+        - button "Change theme":
+        - button "Fullscreen":
+        - generic "Cross":
+        - generic "Cursors":
+        - generic "Trend Line":
+        - generic "Trend Line Tools":
+        - generic "Fib Retracement":
+        - generic "Gann and Fibonacci Tools":
+        - generic "Brush":
+        - generic "Geometric Shapes":
+        - generic "Text":
+        - generic "Annotation Tools":
+        - generic "XABCD Pattern":
+        - generic "Patterns":
+        - generic "Long Position":
+        - generic "Prediction and Measurement Tools":
+        - generic "Icon":
+          - generic: 
+        - generic "Icons":
+        - generic "Measure":
+        - generic "Zoom In":
+        - generic "Magnet Mode snaps drawings placed near price bars to the closest OHLC value":
+        - generic "Stay in Drawing Mode":
+        - generic "Lock All Drawing Tools":
+        - generic "Hide all drawings":
+        - generic "Remove Drawings":
+        - generic "Hide Drawings Toolbar":
+    - navigation "MT5 trading tools":
+      - button "Chart object tree":
+      - button "New order":
+        - generic: Order
+      - button "Choose an MT5 symbol":
+      - button "Trading conditions":
+    - navigation "Manage MT5 orders":
+      - button "Position 1"
+      - button "Pending 0"
+      - button "Requests 2" [active]
+    - region "Manage MT5 orders":
+      - table:
+        - rowgroup:
+          - row "Request ID Actions Status":
+            - columnheader "Request ID"
+            - columnheader "Actions"
+            - columnheader "Status"
+        - rowgroup:
+          - row "384696fe-0b94-4245-86af-d627f2c60c3b Place order Filled":
+            - cell "384696fe-0b94-4245-86af-d627f2c60c3b"
+            - cell "Place order"
+            - cell "Filled"
+          - row "d1695358-f74a-451a-b504-8a8e25db639e Place order Filled":
+            - cell "d1695358-f74a-451a-b504-8a8e25db639e"
+            - cell "Place order"
+            - cell "Filled"
+    - button "SELL":
+      - generic: SELL
+    - button "BUY":
+      - generic: BUY
+    - generic: Demo
+    - text: Balance
+    - strong: 10,000 USD
+    - text: Equity
+    - strong: 10,002 USD
+    - button "Position (1)" [expanded]:
+      - text: Position (1)
+  - complementary "Action notifications"

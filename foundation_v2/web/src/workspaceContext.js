@@ -91,7 +91,13 @@ export function buildWorkspaceHref(view, workspace, queryLike, overrides = {}) {
   const workspaceId = overrides.workspace ?? workspace ?? context.workspaceId ?? 'tenant-a'
   params.set('workspace', String(workspaceId))
   if (view) params.set('view', String(view))
-  if (view === 'live' && /^[A-Za-z0-9-]{1,160}$/.test(source.get('live_account') || '') && overrides.live_account !== null) params.set('live_account', source.get('live_account'))
+  if (['vi','en'].includes(source.get('lang'))) params.set('lang',source.get('lang'))
+  if (view === 'live') {
+    for (const key of ['live_account','mt5_connection','mt5_symbol','mt5_timeframe','chart_engine']) {
+      const value = source.get(key)
+      if (value && /^(?:broker:)?[A-Za-z0-9_.-]{1,160}$/.test(value) && overrides[key] !== null) params.set(key,value)
+    }
+  }
   // Preview is presentation state; it never changes replay/broker authority.
   if (source.get('demo') === '1' && overrides.demo !== null && overrides.demo !== '0') {
     params.set('demo', '1')
@@ -108,6 +114,7 @@ export function buildWorkspaceHref(view, workspace, queryLike, overrides = {}) {
     playbook_revision: context.playbookRevision,
   }
   for (const key of ['session', 'dataset', 'cursor', 'cutoff', 'mode', 'playbook', 'playbook_revision']) {
+    if (view === 'live' && ['session','dataset','cursor','cutoff','mode'].includes(key)) continue
     const hasOverride = Object.prototype.hasOwnProperty.call(overrides, key)
     const value = hasOverride && overrides[key] !== undefined ? overrides[key] : values[key]
     if (value === null || value === undefined || value === '') continue

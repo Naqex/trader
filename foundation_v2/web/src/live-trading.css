@@ -1,5 +1,3 @@
-@import './ReplayWorkspace.css';
-@import './ChartWorkbench.css';
 .mt5-overview { min-width:0; }
 .mt5-quick-actions { grid-template-columns:minmax(0,1fr); }
 .mt5-quick-actions .fx-dashboard-quick-action { max-width:480px; }

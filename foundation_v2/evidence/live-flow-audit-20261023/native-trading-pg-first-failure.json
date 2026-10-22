@@ -1,0 +1,19 @@
+{
+  "passed": false,
+  "scope": "owned disposable PostgreSQL; real native Router, auth, locked policy, durable unknown retry/concurrency, pause/resume and scope; no SDK or terminal",
+  "owner_runtime_touched": false,
+  "source_unchanged": true,
+  "source_sha256": {
+    "api-rust\\src\\demo_trading.rs": "eb86d014abd10b32918d9ef089da346d2619ceb4ffd8d6dc11ddabfa347d14ae",
+    "api-rust\\tests\\demo_trading_pg.rs": "6027e7857d731cc4dd64a671c70be10b3d6d88df6b1c8a1c3b0b9a6b53410640",
+    "scripts\\mt5_demo_trading.py": "c6d2f720eb0122de925368980aaf53d4400530c12ec2ba005a886ca829a092ff",
+    "api-rust\\tests\\demo_trading_pg.py": "ff9a9c24f287733b3a9bceecf8f7dd9207865bfbb224a18ed439dfe65c1ed4fd",
+    "api-rust\\src\\lib.rs": "345f019add5fce330b58ba4c5c68cdf31b1f10e454d338d6ffa251b27a141205",
+    "api-rust\\src\\commands.rs": "15d20f72fe5cbcc508bcb6cd31194635d0213b903cd138ffa8e663d9d24c88c8",
+    "api-rust\\src\\rust_runtime.rs": "15ac138bdcab3e1827b9fc164a70d39d32bd9e9320536a62fe3a6c1fa1c821dc",
+    "api-rust\\src\\native_mutation.rs": "3370b2b9ceec6dcb778fabda2469261fbd94a4489a0494411d55b19a05241283",
+    "migrations\\0010_demo_trading.sql": "b4f63edab863d2ea254e3cef30b60bb86f9fbd6e0ccdff175b2efec911ca1c32"
+  },
+  "stdout": "\nrunning 1 test\ntest locked_policy_durable_unknown_retries_controls_and_scopes ... FAILED\n\nfailures:\n\nfailures:\n    locked_policy_durable_unknown_retries_controls_and_scopes\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.22s\n\n",
+  "stderr": "   Compiling trading-workspace-api v0.1.0 (D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 25.48s\n     Running tests\\demo_trading_pg.rs (D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/.runtime/api-builds/mt5-access-final-20261022\\debug\\deps\\demo_trading_pg-793ce1f0b8090c9e.exe)\n\nthread 'locked_policy_durable_unknown_retries_controls_and_scopes' (6488) panicked at tests\\demo_trading_pg.rs:92:9:\nassertion `left == right` failed\n  left: 423\n right: 403\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\nerror: test failed, to rerun pass `--test demo_trading_pg`\n"
+}

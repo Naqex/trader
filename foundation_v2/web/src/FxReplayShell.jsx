@@ -3,6 +3,7 @@ import React, { createContext, lazy, Suspense, useCallback, useContext, useEffec
 import './fx-shell-story.css'
 import './fx-shell-preferences.css'
 import { buildWorkspaceHref, readWorkspaceContext } from './workspaceContext.js'
+import { navigate } from './clientNavigation.js'
 import { TestingLocaleProvider, useTestingLocale } from './testingLocale.jsx'
 import { NotificationProvider } from './Notifications.jsx'
 import AiSparkles from './AiSparkles.jsx'
@@ -458,6 +459,8 @@ export default function FxReplayShell({ children, workspace, query = currentQuer
   const chartRoute = chartWorkspace
   const routeContext = useMemo(() => readWorkspaceContext(query), [query])
   const [language, setLanguage] = useState(() => {
+    const requested = query.get('lang')
+    if (requested === 'vi' || requested === 'en') return requested
     try {
       return window.localStorage.getItem(LANGUAGE_STORAGE_KEY) === 'en' ? 'en' : 'vi'
     } catch {
@@ -515,8 +518,15 @@ export default function FxReplayShell({ children, workspace, query = currentQuer
   const copy = SHELL_COPY[language]
   const handleLanguage = useCallback((next) => {
     setLanguage(next)
+    const url = new URL(window.location.href)
+    url.searchParams.set('lang', next)
+    navigate(url.href, { replace: true })
     try { window.localStorage.setItem(LANGUAGE_STORAGE_KEY, next); return true } catch { return false }
   }, [])
+  const requestedLanguage = query.get('lang')
+  useEffect(() => {
+    if (requestedLanguage === 'vi' || requestedLanguage === 'en') setLanguage(requestedLanguage)
+  }, [requestedLanguage])
   const handleTheme = useCallback((next) => {
     setTheme(next)
     try { window.localStorage.setItem(THEME_STORAGE_KEY, next); return true } catch { return false }

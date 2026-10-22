@@ -15,10 +15,11 @@ async function request(workspace, path, { body, signal } = {}) {
     return payload
   } finally { clearTimeout(timer); signal?.removeEventListener('abort',abort) }
 }
-export async function readDemoTrading(workspace,symbol,timeframe,signal,connectionId) {
+export async function readDemoTrading(workspace,symbol,timeframe,signal,connectionId,{ summary = false } = {}) {
   const params = new URLSearchParams({timeframe})
   if (symbol) params.set('symbol',symbol)
   if (connectionId) params.set('connection_id',connectionId)
+  if (summary) params.set('summary','true')
   return decodeDemoSnapshot(await request(workspace,`?${params}`,{signal}))
 }
 export const previewDemoOrder = (workspace,body,signal) => request(workspace,'/preview',{body,signal})

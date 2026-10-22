@@ -1,0 +1,11 @@
+   Compiling trading-workspace-api v0.1.0 (D:\ANNAM\TradingWorkspace\projects\mt5-tradingview-backtester\foundation_v2\api-rust)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 48.90s
+     Running unittests src\lib.rs (D:\ANNAM\TradingWorkspace\projects\mt5-tradingview-backtester\foundation_v2\.runtime\api-builds\mt5-live-audit-20261023\debug\deps\trading_workspace_api-7195938e6d918196.exe)
+
+running 4 tests
+test demo_trading::tests::reconnect_reconciliation_preserves_account_identity_without_old_generation ... ok
+test demo_trading::tests::absent_policy_never_needs_database_or_adapter ... ok
+test demo_trading::tests::origin_and_request_fail_closed ... ok
+test demo_trading::tests::revocation_retains_slot_while_inflight_operation_finishes ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 174 filtered out; finished in 0.00s

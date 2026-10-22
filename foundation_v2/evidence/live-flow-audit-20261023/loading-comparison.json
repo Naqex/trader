@@ -1,0 +1,59 @@
+{
+  "baseline-overview": {
+    "asset_requests": 22,
+    "asset_files": [
+      "index-D2PB5Qnu.css",
+      "index-vAOgqk3T.js",
+      "LiveWorkspace-Cbl1BfK_.js",
+      "LedgerFilterActions-SCvEkVNJ.js",
+      "ProjectDateInput-BVAA_ZTQ.js",
+      "ProjectDateInput-BDSFDDdY.css",
+      "LedgerFilterActions-DQDwh7Q_.css",
+      "playbookApi-BYxdGfIz.js",
+      "LegacyModal-ndC05MTa.js",
+      "LegacyModal-Bet535Yx.css",
+      "TableColumnControl-CVtGpnJe.js",
+      "PaginationFooter-DS87WR-k.js",
+      "PaginationFooter-MUWvR_mg.css",
+      "orderProtection-TlQT8Uyv.js",
+      "replayOrderModel-BEt0Rhb0.js",
+      "LiveWorkspace-C3Gt2a5Z.css",
+      "LiveTradingWorkspace-C7ZxF2Xt.js",
+      "DashboardMetric-BoQLGO4R.js",
+      "LegacyObjectTree-DoZERO1o.js",
+      "LegacyObjectTree-Bi9ePQ5i.css",
+      "LiveTradingWorkspace-Ce7gozxw.css",
+      "quick-session-CJqJbBtY.css"
+    ],
+    "api_urls": [
+      "v2/events",
+      "v2/live/status?summary=true",
+      "v2/live/records",
+      "v2/playbooks",
+      "v2/live/connections",
+      "v2/live/trading?timeframe=M1&connection_id=f0e978a6-2f82-45ac-8dee-c5b36416057a"
+    ]
+  },
+  "current-overview": {
+    "asset_requests": 9,
+    "asset_files": [
+      "index-CN5VH4Gq.js",
+      "index-EyDD5qkS.css",
+      "LiveWorkspace-BctMVyav.js",
+      "LiveWorkspace-C3Gt2a5Z.css",
+      "LiveTradingWorkspace-CVC-FjHB.js",
+      "DashboardMetric-DkONMpE3.js",
+      "LegacyModal-DRI2Xrxm.js",
+      "LegacyModal-Bet535Yx.css",
+      "LiveTradingWorkspace-BpwA2PVC.css"
+    ],
+    "api_urls": [
+      "v2/live/trading?timeframe=M1&connection_id=f0e978a6-2f82-45ac-8dee-c5b36416057a&summary=true"
+    ]
+  },
+  "limits": [
+    "Baseline and candidate byte counters use different compression/cache fields; no transfer percentage or latency speedup is derived.",
+    "Only asset request counts and route dependency presence are compared.",
+    "API timings are a small current-runtime diagnostic; the initial unavailable chart sample remains in api-timings.json."
+  ]
+}

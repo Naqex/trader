@@ -1,5 +1,5 @@
 import { displayDate } from './dateFormat.js'
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { useTestingLocale } from './testingLocale.jsx'
 import FxSelect from './FxSelect.jsx'
 import TestingIcon from './TestingIcon.jsx'
@@ -7,17 +7,21 @@ import { timezoneOptions } from './AnalyticsFilterControls.jsx'
 import { fetchLiveRecords, saveLiveRecord } from './liveLedgerApi.js'
 import { fetchPlaybooks } from './playbookApi.js'
 import { manualSnapshot, closedTradeStats } from './liveLedgerModel.js'
-import LiveRecordDialog from './LiveRecordDialog.jsx'
+import { TestingSkeleton } from './TestingReadState.jsx'
 import FilterDrawer from './FilterDrawer.jsx'
 import LedgerFilterActions from './LedgerFilterActions.jsx'
 import TableColumnControl from './TableColumnControl.jsx'
 import { MANUAL_TRADE_COLUMNS, BROKER_DEAL_COLUMNS } from './liveTradeColumns.js'
 import ProjectDateInput from './ProjectDateInput.jsx'
-import LiveAccounts from './LiveAccounts.jsx'
-import { ManualTrades, JournalNotes, JournalTags } from './LiveJournalSurfaces.jsx'
 import { navigate } from './clientNavigation.js'
 import LiveBrokerSnapshot from './LiveBrokerSnapshot.jsx'
 import { LIVE_FILTERS, calendarWeeks, calendarWeekSummary, cumulativeDealSeries, dayKey, dealNet, filterLiveDeals, summarizeDeals } from './liveWorkspaceModel.js'
+
+const LiveAccounts = lazy(() => import('./LiveAccounts.jsx'))
+const LiveRecordDialog = lazy(() => import('./LiveRecordDialog.jsx'))
+const ManualTrades = lazy(() => import('./LiveJournalSurfaces.jsx').then(module => ({default:module.ManualTrades})))
+const JournalNotes = lazy(() => import('./LiveJournalSurfaces.jsx').then(module => ({default:module.JournalNotes})))
+const JournalTags = lazy(() => import('./LiveJournalSurfaces.jsx').then(module => ({default:module.JournalTags})))
 
 const FILTER_LABELS = { asset: 'Assets', side: 'Side', outcome: 'Deal result', account: 'Accounts', day: 'Day', timezone: 'Timezone', from: 'Start', to: 'End' }
 const FILTER_VALUES = { side: { 0: 'Buy', 1: 'Sell' }, outcome: { gain: 'Positive PnL', loss: 'Negative PnL', flat: 'Zero PnL' }, day: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] }
@@ -25,7 +29,7 @@ const filterValue = (key,value,t) => ['from','to'].includes(key) ? displayDate(v
 
 function Action({ children, icon, primary, compact, onClick, label, title, ...props }) {
   const { t } = useTestingLocale()
-  return <button type="button" className={`fxa-button${primary ? ' is-primary' : ''}${compact ? ' fxa-icon-button' : ''}`} aria-label={label ? t(label) : undefined} data-tooltip={title} onClick={onClick} {...props}>{icon && <TestingIcon kind={icon} />}{children}</button>
+  return <button type="button" className={`fxa-button${primary ? ' is-primary' : ''}${compact ? ' fxa-icon-button' : ''}`} aria-label={label ? t(label) : undefined} data-tooltip={title ? t(title) : undefined} onClick={onClick} {...props}>{icon && <TestingIcon kind={icon} />}{children}</button>
 }
 
 function Empty({ title, copy, icon = 'chart', action, onAction }) {
@@ -99,8 +103,8 @@ function Calendar({ payload, deals, filters, filterBar, reviewScope, canWrite, o
     try { return new Intl.NumberFormat(locale, { style: 'currency', currency, currencyDisplay: 'narrowSymbol', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(value) } catch { return fmt(value, ` ${currency}`) }
   }
   const review = () => onPreview('note', {
-    title: `Tổng kết tháng ${month}`,
-    note: `${payload?.manual ? 'PnL đã ghi' : 'PnL deals đã đồng bộ'}: ${fmt(total.net)} ${currency}. ${rows.length} ${payload?.manual ? 'giao dịch đã đóng' : 'deals'}.\nTài khoản: ${payload?.account?.name || payload?.account?.account_ref || '—'}. Múi giờ: ${filters.timezone}.\nPhạm vi: ${reviewScope}.\n${Object.entries(filters).filter(([key,value]) => key !== 'timezone' && value !== LIVE_FILTERS[key] && value !== '').map(([key,value]) => `${t(FILTER_LABELS[key])}: ${filterValue(key,value,t)}`).join(' · ')}`.trim(),
+    title: t('Monthly review {month}',{month}),
+    note: `${t(payload?.manual ? 'PnL đã ghi' : 'PnL deals đã đồng bộ')}: ${fmt(total.net)} ${currency}. ${rows.length} ${t(payload?.manual ? 'giao dịch đã đóng' : 'Filled deals')}.\n${t('Tài khoản')}: ${payload?.account?.name || payload?.account?.account_ref || '—'}. ${t('Timezone')}: ${filters.timezone}.\n${t('Scope')}: ${reviewScope}.\n${Object.entries(filters).filter(([key,value]) => key !== 'timezone' && value !== LIVE_FILTERS[key] && value !== '').map(([key,value]) => `${t(FILTER_LABELS[key])}: ${filterValue(key,value,t)}`).join(' · ')}`.trim(),
   })
   return <div className="live-split"><section className="live-calendar-section">
     {filterBar}<div className="live-calendar-content">
@@ -110,10 +114,10 @@ function Calendar({ payload, deals, filters, filterBar, reviewScope, canWrite, o
     <div className="live-calendar-scroll" role="region" aria-label={`${t('PnL calendar')} · ${filters.timezone}`} tabIndex={0}><div className="live-calendar-grid" style={{ '--live-calendar-weeks': weeks.length }}>
       {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su', 'Total'].map(day => <div className={`live-calendar-dayname${day === 'Total' ? ' is-total' : ''}`} key={day}>{t(day)}</div>)}
       {weeks.map((week, index) => { const summary = calendarWeekSummary(week, empty); return <div className="live-calendar-week" key={week[0].key}>{week.map(day => <button type="button" key={day.key} className={`live-calendar-cell${!day.inMonth ? ' is-outside' : ''}${day.net > 0 ? ' is-gain' : day.net < 0 ? ' is-loss' : ''}`} disabled={!day.inMonth} aria-pressed={selected === day.key} aria-label={`${displayDate(day.key)} · ${fmt(day.net, currency ? ` ${currency}` : '')}`} onClick={() => setSelected(selected === day.key ? '' : day.key)}>
-        <span className="live-day-number">{day.date.getUTCDate()}</span><div className="live-day-result">{day.inMonth && day.net !== null && <strong>{amount(day.net)}</strong>}{day.count !== null && day.count > 0 && <small data-tooltip={payload?.manual ? `${day.count} giao dịch` : t('{count} filled deals', { count: day.count })}>{payload?.manual ? `${day.count} giao dịch` : `${day.count} deals`}</small>}</div>
+        <span className="live-day-number">{day.date.getUTCDate()}</span><div className="live-day-result">{day.inMonth && day.net !== null && <strong>{amount(day.net)}</strong>}{day.count !== null && day.count > 0 && <small data-tooltip={payload?.manual ? t('{count} giao dịch',{count:day.count}) : t('{count} filled deals', { count: day.count })}>{payload?.manual ? t('{count} giao dịch',{count:day.count}) : t('{count} filled deals',{count:day.count})}</small>}</div>
       </button>)}<div className="live-week-total"><div><span>{countLabel(summary.count)}</span><span aria-label={t('Week {count}', { count: index + 1 })}>W{index + 1}</span></div><strong>{weekAmount(summary.net)}</strong></div></div>})}
     </div></div>
-    <div className="live-month-total"><span>{empty ? t('Tổng tháng') : payload?.manual ? 'PnL đã ghi trong tháng' : 'PnL đã đồng bộ trong tháng'}</span><strong>{weekAmount(total.net)}</strong><span>{countLabel(total.count)}</span></div>
+    <div className="live-month-total"><span>{t(empty ? 'Tổng tháng' : payload?.manual ? 'PnL đã ghi trong tháng' : 'PnL đã đồng bộ trong tháng')}</span><strong>{weekAmount(total.net)}</strong><span>{countLabel(total.count)}</span></div>
     {selected && <div className="live-day-detail"><h3>{displayDate(selected)}</h3>{deals.filter(deal => dayKey(deal.time_msc, filters.timezone) === selected).length ? <ul>{deals.filter(deal => dayKey(deal.time_msc, filters.timezone) === selected).map(deal => <li key={deal.ticket}><span>{deal.symbol} · #{deal.ticket}</span><strong>{fmt(dealNet(deal), currency ? ` ${currency}` : '')}</strong></li>)}</ul> : <p>{t(weeks.flat().find(day => day.key === selected)?.covered ? 'No deals recorded for this day.' : 'Data for this day is unavailable or incomplete.')}</p>}</div>}
   </div></section><Summary payload={payload} deals={rows} sidebar /></div>
 }
@@ -130,19 +134,28 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
     if (preview) return
     const controller = new AbortController()
     setLedger(current => ({...current,status:'loading',error:''}))
-    fetchLiveRecords(workspace,controller.signal).then(items => { if (!controller.signal.aborted) setLedger({status:'ready',items,error:''}) }).catch(error => { if (!controller.signal.aborted) setLedger(current => ({...current,status:'error',items:error.status === 403 ? [] : current.items,error:current.items.length && error.status !== 403 ? `${error.message} Đang hiển thị dữ liệu đã đọc trước đó.` : error.message})) })
-    setStrategyError('')
-    setStrategyReady(false)
-    fetchPlaybooks(workspace,controller.signal).then(items => { if (!controller.signal.aborted) { setStrategies(items); setStrategyReady(true) } }).catch(error => { if (!controller.signal.aborted) setStrategyError('Chưa đọc được chiến lược. Tải lại trước khi tạo hoặc sửa giao dịch.') })
+    fetchLiveRecords(workspace,controller.signal).then(items => { if (!controller.signal.aborted) setLedger({status:'ready',items,error:''}) }).catch(error => { if (!controller.signal.aborted) setLedger(current => ({...current,status:'error',items:error.status === 403 ? [] : current.items,error:current.items.length && error.status !== 403 ? t('Previous journal data is shown. {error}',{error:t(error.message)}) : error.message})) })
     return () => controller.abort()
   },[workspace,preview,reload])
-  const accounts = ledger.items.filter(record => record.kind === 'account')
+  const accounts = useMemo(() => ledger.items.filter(record => record.kind === 'account'),[ledger.items])
   const chosen = selected || (broker?.connection_id ? `broker:${broker.connection_id}` : broker?.account ? 'broker' : accounts[0]?.record_id || '')
   const account = accounts.find(item => item.record_id === chosen)
-  const payload = chosen === 'broker' || chosen.startsWith('broker:') ? broker?.account ? broker : null : manualSnapshot(account,ledger.items)
+  const payload = useMemo(() => chosen === 'broker' || chosen.startsWith('broker:') ? broker?.account ? broker : null : manualSnapshot(account,ledger.items),[chosen,broker,account,ledger.items])
+  const needsStrategies = Boolean(payload?.manual || section === 'notes' || action && action.kind !== 'account')
+  useEffect(() => {
+    if (preview || !needsStrategies || strategyReady) return
+    const controller = new AbortController()
+    setStrategyError('')
+    fetchPlaybooks(workspace,controller.signal).then(items => {
+      if (!controller.signal.aborted) { setStrategies(items); setStrategyReady(true) }
+    }).catch(() => { if (!controller.signal.aborted) setStrategyError('Chưa đọc được chiến lược. Tải lại trước khi tạo hoặc sửa giao dịch.') })
+    return () => controller.abort()
+  },[workspace,preview,needsStrategies,strategyReady,reload])
   useEffect(() => { setDraft({...LIVE_FILTERS}); setApplied({...LIVE_FILTERS}); setTag('all') },[chosen])
   const choose = value => {
-    const url = new URL(window.location.href); url.searchParams.set('live_account',value); navigate(url.pathname+url.search)
+    const url = new URL(window.location.href); url.searchParams.set('live_account',value);
+    if(value.startsWith('broker:'))url.searchParams.set('mt5_connection',value.slice(7));else url.searchParams.delete('mt5_connection')
+    navigate(url.pathname+url.search)
   }
   const [strategyId,strategyRevision] = strategy.split(':')
   const changeStrategy = value => {
@@ -151,15 +164,16 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
     else { url.searchParams.set('playbook',id); if (revision) url.searchParams.set('playbook_revision',revision); else url.searchParams.delete('playbook_revision') }
     navigate(url.pathname+url.search,{replace:true})
   }
-  const deals = filterLiveDeals(payload,applied).filter(deal => !payload?.manual || (strategy === 'all' || deal.record?.payload.playbook_id === strategyId && (!strategyRevision || deal.record?.payload.playbook_revision === Number(strategyRevision))) && (tag === 'all' || deal.record?.payload.tags.includes(tag)))
+  const deals = useMemo(() => filterLiveDeals(payload,applied).filter(deal => !payload?.manual || (strategy === 'all' || deal.record?.payload.playbook_id === strategyId && (!strategyRevision || deal.record?.payload.playbook_revision === Number(strategyRevision))) && (tag === 'all' || deal.record?.payload.tags.includes(tag))),[payload,applied,strategy,strategyId,strategyRevision,tag])
   const showContent = preview || ledger.status === 'ready' || ledger.items.length > 0 || Boolean(broker?.account || broker?.connections?.length)
   const tags = [...new Set((payload?.deals || []).flatMap(deal => deal.record?.payload.tags || []))]
   const strategySeed = payload?.manual && strategy !== 'all' ? {playbook_id:strategyId,playbook_revision:Number(strategyRevision || strategies.find(item => item.record_id === strategyId)?.revision)} : undefined
-  const open = (kind,record) => { if (!preview && ledger.status === 'ready' && (strategyReady || kind === 'account')) setAction({kind,record,seed: !record ? strategySeed : undefined}) }
-  const openAccountAction = (kind,record) => { if (!preview && ledger.status === 'ready' && strategyReady) setAction({kind,accountId:record?.record_id,seed:strategySeed}) }
+  const open = (kind,record) => { if (!preview && ledger.status === 'ready') setAction({kind,record,seed: !record ? strategySeed : undefined}) }
+  const openAccountAction = (kind,record) => { if (!preview && ledger.status === 'ready') setAction({kind,accountId:record?.record_id,seed:strategySeed}) }
   const navigateAccount = (row,target) => {
     const url=new URL(window.location.href)
     url.searchParams.set('live_account',row.id)
+    if(row.id.startsWith('broker:'))url.searchParams.set('mt5_connection',row.id.slice(7));else url.searchParams.delete('mt5_connection')
     url.searchParams.set('section',target==='transactions'?'trading-accounts':target)
     if(target==='transactions')url.searchParams.set('account_tab','transactions');else url.searchParams.delete('account_tab')
     navigate(url.pathname+url.search)
@@ -169,34 +183,35 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
     setLedger(current=>({...current,items:current.items.filter(item=>item.record_id!==record.record_id && item.payload.account_id!==record.record_id)}))
     if(chosen===record.record_id)choose('')
   }
-  const create = (kind,seed) => { if (seed && !preview && ledger.status === 'ready' && strategyReady) setAction({kind:'note',seed:{...strategySeed,...seed}}); else if (!seed) open(kind === 'Add trade' ? 'trade' : kind === 'note' ? 'note' : 'account') }
+  const create = (kind,seed) => { if (seed && !preview && ledger.status === 'ready') setAction({kind:'note',seed:{...strategySeed,...seed}}); else if (!seed) open(kind === 'Add trade' ? 'trade' : kind === 'note' ? 'note' : 'account') }
   const saved = (record,close = true) => {
     setLedger(current => ({status:'ready',items:[record,...current.items.filter(item => item.record_id !== record.record_id)],error:''}))
     if (record.kind === 'account') choose(record.record_id)
     if (close) setAction(null)
   }
   const apply = override => { const next = override || draft; if (!next.from || !next.to || next.from <= next.to) setApplied({...next}) }
-  const accountPicker = <div className="live-account-picker"><FxSelect label="Tài khoản trực tiếp" triggerContent={chosen ? undefined : 'Chọn tài khoản'} value={chosen} onChange={choose} options={[...(broker?.connections?.length ? broker.connections.map(item=>({value:`broker:${item.id}`,label:`${item.name} · ${item.login_hint}`,localize:false})) : broker?.account ? [{value:'broker',label:`${broker.source} · ${broker.account.account_ref}`,localize:false}] : []),...accounts.map(item => ({value:item.record_id,label:`${item.payload.name} · ${item.payload.currency}`,localize:false}))]} />{(payload?.manual || broker?.account) && <span className="live-muted">{payload?.manual ? 'Thủ công' : 'Đồng bộ · chỉ đọc'}</span>}</div>
+  const accountPicker = <div className="live-account-picker"><FxSelect label="Tài khoản trực tiếp" triggerContent={chosen ? undefined : 'Chọn tài khoản'} value={chosen} onChange={choose} options={[...(broker?.connections?.length ? broker.connections.map(item=>({value:`broker:${item.id}`,label:`${item.name} · ${item.login_hint}`,localize:false})) : broker?.account ? [{value:'broker',label:`${broker.source} · ${broker.account.account_ref}`,localize:false}] : []),...accounts.map(item => ({value:item.record_id,label:`${item.payload.name} · ${item.payload.currency}`,localize:false}))]} /></div>
   const columnKind = payload?.manual ? 'manual' : 'broker'
   const columnOptions = payload?.manual ? MANUAL_TRADE_COLUMNS : BROKER_DEAL_COLUMNS
   const columns = tableColumns[columnKind] || columnOptions.map(([key]) => key)
   const columnControl = section === 'trades' ? <TableColumnControl columns={columns} options={columnOptions} onChange={next => setTableColumns(current => ({...current,[columnKind]:next}))} /> : null
   const filterBar = <FilterBar columnControl={columnControl} tags={tags} tag={tag} onTagChange={setTag} accountPicker={accountPicker} extra={payload?.manual ? <div className="live-journal-filters"><FxSelect label="Chiến lược" value={strategy} onChange={changeStrategy} options={[{value:'all',label:'Tất cả chiến lược'},...(strategyRevision ? [{value:strategy,label:`${strategies.find(item => item.record_id === strategyId)?.payload.name || 'Chiến lược'} · v${strategyRevision}`,localize:false}] : []),...strategies.map(item => ({value:item.record_id,label:item.payload.name,localize:false}))]} /></div> : null} payload={payload} draft={draft} setDraft={setDraft} applied={applied} onApply={apply} onClear={() => { setDraft({...LIVE_FILTERS});setApplied({...LIVE_FILTERS});changeStrategy('all');setTag('all') }} />
-  return <>
-    {ledger.error && <div className="live-status live-status-error" role="alert"><span>{ledger.error}</span><Action onClick={() => setReload(value => value+1)}>Thử lại</Action></div>}
-    {strategyError && <div className="live-status live-status-warning" role="alert"><span>{strategyError}</span><Action onClick={() => setReload(value => value+1)}>Tải lại</Action></div>}
-    {ledger.status === 'loading' && <p className="live-status" role="status">Đang đọc sổ giao dịch…</p>}
+  return <Suspense fallback={<TestingSkeleton />}>
+    {ledger.error && <div className="live-status live-status-error" role="alert"><span>{t(ledger.error)}</span><Action onClick={() => setReload(value => value+1)}>{t('Thử lại')}</Action></div>}
+    {strategyError && <div className="live-status live-status-warning" role="alert"><span>{t(strategyError)}</span><Action onClick={() => setReload(value => value+1)}>{t('Tải lại')}</Action></div>}
+    {ledger.status === 'loading' && <p className="live-status" role="status">{t('Đang đọc sổ giao dịch…')}</p>}
     {showContent && !['calendar','trades','notes','trading-accounts'].includes(section) && filterBar}
     {showContent && section === 'notes' && <div className="live-toolbar">{accountPicker}</div>}
     {showContent && <>
-    {section === 'calendar' && <Calendar empty={ledger.status === 'ready' && !chosen && !accounts.length && Array.isArray(broker?.connections) && !broker.connections.length && !broker.stale && ['ready','unavailable'].includes(broker.status)} filterBar={showContent ? filterBar : null} canWrite={!preview && ledger.status === 'ready' && strategyReady} key={chosen} payload={payload} deals={deals} filters={applied} reviewScope={payload?.manual ? `${strategy === 'all' ? 'Tất cả chiến lược' : `${strategies.find(item => item.record_id === strategyId)?.payload.name || strategyId}${strategyRevision ? ` · v${strategyRevision}` : ' · mọi phiên bản'}`} · ${tag === 'all' ? 'Tất cả nhãn' : tag}` : 'Deals đã đồng bộ'} onPreview={create} />}
+    {section === 'calendar' && <Calendar empty={ledger.status === 'ready' && !chosen && !accounts.length && Array.isArray(broker?.connections) && !broker.connections.length && !broker.stale && ['ready','unavailable'].includes(broker.status)} filterBar={showContent ? filterBar : null} canWrite={!preview && ledger.status === 'ready'} key={chosen} payload={payload} deals={deals} filters={applied} reviewScope={payload?.manual ? `${strategy === 'all' ? t('Tất cả chiến lược') : `${strategies.find(item => item.record_id === strategyId)?.payload.name || strategyId}${strategyRevision ? ` · v${strategyRevision}` : ` · ${t('mọi phiên bản')}`}`} · ${tag === 'all' ? t('Tất cả nhãn') : tag}` : t('Synced deals')} onPreview={create} />}
     {section === 'trades' && <div className="live-split"><section className="live-trades-section">{filterBar}<div className="live-trades-content">{payload?.manual ? <ManualTrades columns={columns} writable={!preview && ledger.status === 'ready' && strategyReady} filterKey={JSON.stringify([chosen,applied,strategy,tag])} workspace={workspace} deals={deals} currency={payload.account.currency} strategies={strategies} onEdit={record => open('trade',record)} /> : payload?.account ? <LiveBrokerSnapshot columns={columns} payload={payload} section="trades" deals={deals} filterKey={JSON.stringify(applied)} /> : <Empty title="No trades yet" copy="Tạo tài khoản thủ công và thêm giao dịch để bắt đầu." icon="journal" />}</div></section><Summary payload={payload} deals={deals} sidebar /></div>}
     {section === 'notes' && <JournalNotes writable={!preview && ledger.status === 'ready' && strategyReady} key={chosen} records={ledger.items} accountId={chosen || null} strategies={strategies} onEdit={record => open('note',record)} onCreate={() => open('note')} />}
-    {section === 'tag-analytics' && <JournalTags deals={deals} currency={payload?.account?.currency || ''} />}
+    {section === 'tag-analytics' && <JournalTags filterKey={JSON.stringify([chosen,applied,strategy,tag])} deals={deals} currency={payload?.account?.currency || ''} />}
     {section === 'analytics' && <><Summary payload={payload} deals={deals} />{deals.length > 0 && <PnlCurve deals={deals} currency={payload?.account?.currency} />}</>}
-    {section === 'trading-accounts' && <LiveAccounts key={workspace} workspace={workspace} accounts={accounts} records={ledger.items} broker={broker} chosen={chosen} onSelect={choose} transactions={query.get('account_tab') === 'transactions'} writable={!preview && ledger.status === 'ready'} canImport={!preview && ledger.status === 'ready' && strategyReady && accounts.length > 0} onCreate={seed => {if(!preview && ledger.status==='ready')setAction({kind:'account',seed})}} onImport={record => openAccountAction('import',record?.record_id ? record : null)} onEdit={record => open('account',record)} onTrade={record=>openAccountAction('trade',record)} onNavigate={navigateAccount} onArchive={archiveAccount} onRefresh={onRefresh} />}
+    {section === 'trading-accounts' && <LiveAccounts key={workspace} workspace={workspace} accounts={accounts} records={ledger.items} broker={broker} chosen={chosen} onSelect={choose} transactions={query.get('account_tab') === 'transactions'} writable={!preview && ledger.status === 'ready'} canImport={!preview && ledger.status === 'ready' && accounts.length > 0} onCreate={seed => {if(!preview && ledger.status==='ready')setAction({kind:'account',seed})}} onImport={record => openAccountAction('import',record?.record_id ? record : null)} onEdit={record => open('account',record)} onTrade={record=>openAccountAction('trade',record)} onNavigate={navigateAccount} onArchive={archiveAccount} onRefresh={onRefresh} />}
 
     </>}
-    {action && <LiveRecordDialog key={`${workspace}:${action.kind}:${action.record?.record_id || 'new'}`} workspace={workspace} kind={action.kind} record={action.record} seed={action.seed} accountId={action.accountId || account?.record_id} accounts={accounts} strategies={strategies} onClose={() => setAction(null)} onSaved={saved} />}
-  </>
+    <Suspense fallback={null}>{action && (action.kind === 'account' || strategyReady) && <LiveRecordDialog key={`${workspace}:${action.kind}:${action.record?.record_id || 'new'}`} workspace={workspace} kind={action.kind} record={action.record} seed={action.seed} accountId={action.accountId || (action.kind === 'note' && chosen.startsWith('broker:') ? chosen : account?.record_id)} accounts={accounts} connections={broker?.connections || []} strategies={strategies} onClose={() => setAction(null)} onSaved={saved} />}</Suspense>
+    {action && action.kind !== 'account' && !strategyReady && !strategyError && <TestingSkeleton label="Đang tải chiến lược…" />}
+  </Suspense>
 }

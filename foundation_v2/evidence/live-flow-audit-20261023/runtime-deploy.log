@@ -1,0 +1,4 @@
+{"check_only": true, "runtime_profile": "native", "port_free": true, "compact_revision_count": 0, "compatibility_ready": true, "migration_count": 11, "pending": [], "schema_current": true}
+Rust offline API ready (native / compact): http://127.0.0.1:8010
+Reload the page. MT5/live execution and public services were not enabled.
+Runtime logs: D:\ANNAM\TradingWorkspace\projects\mt5-tradingview-backtester\foundation_v2\.runtime\api-platform

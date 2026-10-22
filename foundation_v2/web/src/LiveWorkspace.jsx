@@ -1,11 +1,11 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { useTestingLocale } from './testingLocale.jsx'
 import { TestingSkeleton } from './TestingReadState.jsx'
-import LiveSurfaces from './LiveSurfaces.jsx'
 import './live-workspace.css'
 
 const LIVE_STATUS_URL = '/api/v2/live/status'
 const LiveTradingWorkspace = lazy(() => import('./LiveTradingWorkspace.jsx'))
+const LiveSurfaces = lazy(() => import('./LiveSurfaces.jsx'))
 const LIVE_SECTIONS = Object.freeze({ terminal:'Giao dịch MT5', calendar: 'Calendar', trades: 'Trades', notes: 'Notes', 'tag-analytics': 'Tag analytics', analytics: 'Analytics', 'trading-accounts': 'Trading accounts' })
 
 function statusError(message, kind = 'error') {
@@ -68,15 +68,17 @@ function LiveJournalWorkspace({ workspace, query, preview }) {
       refreshing = true
       try {
         const payload = await readLiveStatus(workspace, controller.signal, connectionId, summary, readCache)
-        if (!controller.signal.aborted) setState({ workspace:scopeKey, status: payload.status, payload })
+        if (!controller.signal.aborted) setState(previous => previous.workspace === scopeKey && previous.status === payload.status && previous.payload === payload ? previous : { workspace:scopeKey, status: payload.status, payload })
       } catch (error) {
         if (!controller.signal.aborted) setState(previous => ({ workspace:scopeKey, status: error.kind || 'error',
           payload: error.kind === 'denied' || previous.workspace !== scopeKey ? null : previous.payload ? { ...previous.payload, stale: true } : null, error }))
       } finally { refreshing = false }
     }
     refresh()
-    const timer = setInterval(refresh, 5000)
-    return () => { controller.abort(); clearInterval(timer) }
+    const visibleRefresh = () => { if (document.visibilityState !== 'hidden') void refresh() }
+    const timer = setInterval(visibleRefresh, 5000)
+    document.addEventListener('visibilitychange',visibleRefresh)
+    return () => { controller.abort(); clearInterval(timer); document.removeEventListener('visibilitychange',visibleRefresh) }
   }, [reloadToken, workspace, scopeKey, connectionId, summary, preview])
   const copy = statusCopy(state)
   return <section className={`live-workspace wm-page${section === 'trading-accounts' ? ' is-accounts' : section === 'calendar' ? ' is-calendar' : section === 'trades' ? ' is-trades' : ''}`} data-testid="live-workspace" aria-label={t('Live')}>
@@ -84,7 +86,7 @@ function LiveJournalWorkspace({ workspace, query, preview }) {
       <span className="live-status-dot" aria-hidden="true" /><span>{t(copy.title)}</span>
       {!preview && ['error', 'denied'].includes(state.status) && <button type="button" className="fxa-button live-retry" onClick={() => setReloadToken(value => value + 1)}>{t('Thử lại')}</button>}
     </div>}
-    {state.status === 'loading' ? <TestingSkeleton label="Reading account data…" /> : <LiveSurfaces key={`${workspace}:${Boolean(preview)}`} workspace={workspace} section={section} payload={state.payload} query={query} preview={Boolean(preview)} onRefresh={() => setReloadToken(value => value + 1)} />}
+    <Suspense fallback={<TestingSkeleton label="Reading account data…" />}>{state.status === 'loading' ? <TestingSkeleton label="Reading account data…" /> : <LiveSurfaces key={`${workspace}:${Boolean(preview)}`} workspace={workspace} section={section} payload={state.payload} query={query} preview={Boolean(preview)} onRefresh={() => setReloadToken(value => value + 1)} />}</Suspense>
 
   </section>
 }

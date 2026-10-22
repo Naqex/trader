@@ -82,3 +82,18 @@ test('Live navigation preserves its account only inside Live and permits explici
   assert.equal(new URL(buildWorkspaceHref('live','tenant-a',query,{live_account:null}),'http://localhost').searchParams.has('live_account'),false)
   assert.equal(new URL(buildWorkspaceHref('live','tenant-a',query,{live_account:'other'}),'http://localhost').searchParams.get('live_account'),'other')
 })
+
+
+test('Live shell links retain broker, locale and market context without replay settings',()=>{
+ const query=new URLSearchParams('lang=en&live_account=broker:conn-a&mt5_connection=conn-a&mt5_symbol=EURUSD.m&mt5_timeframe=M5&session=replay&dataset=old&cursor=12&mode=Practice&playbook=setup')
+ const target=new URL(buildWorkspaceHref('live','tenant-a',query,{area:'live',section:'calendar'}),'http://localhost').searchParams
+ assert.equal(target.get('live_account'),'broker:conn-a')
+ assert.equal(target.get('lang'),'en')
+ assert.equal(target.get('mt5_connection'),'conn-a')
+ assert.equal(target.get('mt5_symbol'),'EURUSD.m')
+ assert.equal(target.get('playbook'),'setup')
+ for (const key of ['session','dataset','cursor','mode']) assert.equal(target.has(key),false)
+ const other=new URL(buildWorkspaceHref('overview','tenant-a',query),'http://localhost').searchParams
+ assert.equal(other.has('mt5_connection'),false)
+ assert.equal(other.get('lang'),'en')
+})

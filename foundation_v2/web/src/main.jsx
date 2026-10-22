@@ -75,9 +75,10 @@ function App() {
   }
   const scope = navigationScope(query, activeView)
   useEffect(() => {
-    const content = document.querySelector('.fx-content')
-    if (content) { content.scrollTop = 0; content.scrollLeft = 0 }
-  }, [scope])
+    for (const content of document.querySelectorAll('.fx-main, .fx-content')) {
+      content.scrollTop = 0; content.scrollLeft = 0
+    }
+  }, [scope, query.get('section'), query.get('surface')])
   // Trading tabs open persisted reports. Order entry is an explicit chart action.
   const showSessionPicker = query.get('surface') !== 'workspace' && (query.get('select') === '1' || query.get('mode') === 'Practice')
   const loadingFallback = activeView === 'replay' && !showSessionPicker ? <ChartLoadingState viewport /> : <TestingPageSkeleton view={activeView} />

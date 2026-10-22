@@ -4,7 +4,7 @@ Live and the Testing Market Data catalog consume `testing-standard.md` and
 `project-palette.md`. FX Replay references guide layout only. Source data,
 read access and unknown states come from this project's existing adapters.
 
-## MT5 demo trading surface
+## MT5 trading surface
 
 `section=terminal` lazy-loads `LiveTradingWorkspace`; the journal reader is not
 mounted on this route. It reuses `TradingViewReplayChart` with a separate live
@@ -14,10 +14,10 @@ chart, position ledger and order ticket end at the shell viewport bottom; below
 1000px they stack in the content scroll region without overlap.
 
 Terminal identity, symbol specification, quote and action capabilities come from
-the dedicated demo API. Missing policy and stale/disconnected data disable sends.
+the managed MT5 API (Demo and Real use the same flow). Missing policy and stale/disconnected data disable sends.
 Preview binds exact account/server/symbol/side/volume/SL/TP, expires after five
 seconds and can be refreshed inside confirmation. The server independently checks
-every command. Confirmation shows DEMO and the exact account/server; replay fills
+every command. Confirmation shows the broker account environment and exact account/server; replay fills
 and investor journal accounts never supply execution state.
 
 The browser saves the request UUID before POST. Accepted/partial results carrying
@@ -141,14 +141,14 @@ This journal never submits an order or authenticates a broker provider.
   changes create history entries; strategy filters replace the current entry and
   do not remount the reader or clear other applied filters. Manual strategy/tag
   filters do not hide broker fills when switching sources.
-- Notes support account/general scope, search and tag filters. Monthly review
+- Notes support manual-account, broker-connection and general scope, search and tag filters. A note has at most one account parent; the API checks broker connection ownership in the current workspace. Switching accounts retains general notes and hides other accounts' notes. Monthly review
   creates an editable note from the displayed recorded monthly total. Tag analytics
   allows overlapping tags; its groups must not be added together as a total.
 - Note tag options come from account-scoped notes before text search, so an active
   tag stays visible when search returns no matches. A catalog/read refresh failure
   keeps loaded notes readable in a shared read-only dialog; writes remain blocked.
   Denial clears notes, including any open read-only detail. A new note without a
-  manual account defaults to general scope, not the first unrelated manual account.
+  selected account defaults to general scope, not the first unrelated manual account. Monthly reviews for a selected MT5 connection retain that connection as their parent.
 - Monthly review includes account, timezone, strategy/tag scope and applied filters,
   and pins the selected strategy revision. Unknown monthly PnL cannot create a
   summary. Recorded manual trades and synced broker deals remain distinct in copy.
@@ -351,3 +351,22 @@ its subtree. Browser-host OS fullscreen itself needs a normal-browser check;
 IAB did not expose a fullscreen element during QA.
 
 Evidence: `foundation_v2/evidence/mt5-overview-flow-20261022/CHECKPOINT.md`.
+
+## Loading and navigation
+
+The Overview requests `summary=true` every ten seconds while visible. It reads
+verified persisted account metadata, without loading bars/history or contacting
+the SDK. Chart reads poll every two seconds while visible and reuse the persistent
+worker. Returning to a visible page refreshes its data; hidden pages stop polling.
+Read-only connections can open the chart and inspect positions; the backend and
+worker independently deny previews, commands and reconciliation for that access.
+
+Chart CSS, chart controls, broker form, journal sections and record dialogs load
+at their owning route/action. Shared filters, modal, select, tooltip, date input
+and pagination remain the same components as Testing. Notes and tag analytics
+page locally at 10/20/50/100 rows; no server-side history paging is implied.
+`lang` explicitly selects VI/EN, survives links and follows Back/Forward. Live
+links retain broker, symbol and timeframe but discard replay session/dataset and
+cursor settings. Changing section resets shell scroll, not applied filter state.
+
+Audit evidence: `foundation_v2/evidence/live-flow-audit-20261023/CHECKPOINT.md`.

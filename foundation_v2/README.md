@@ -420,64 +420,25 @@ The existing owner profile also stores its durable data in
 Those two directories contain user data: preserve and back them up regardless of
 Git ignore status. Do not treat the entire `.runtime/` tree as disposable.
 
-## Local read-only MetaTrader 5 connections
+## Local MetaTrader 5 connections
 
-Live → Trading accounts → MetaTrader 5 accepts server, account login, **investor
-password** and history start date in UTC. No pre-login in the user's terminal is
-required. This first connector supports MT5 on a Windows API host, not MT4 or a
-remote hosted web deployment. Install MT5 and the locked optional SDK first:
+Live supports managed Demo and Real accounts with separate read-only or trading
+access. Start at Live → Tổng quan → Mở biểu đồ. The form accepts broker server,
+account login and the password for the chosen access. Demo and Real share the
+same broker-backed flow; no replay/Prop configuration supplies execution state.
 
-```powershell
-uv sync --project foundation_v2 --extra mt5 --python 3.12
-```
+The current connection lifetime, permissions, encrypted credential storage,
+recovery and supported orders are documented in [MT5 broker trading](docs/demo-trading.md).
+This Windows/loopback integration requires the installed MT5 terminal and optional
+locked SDK (`uv sync --project foundation_v2 --extra mt5 --python 3.12`). It owns a
+private terminal per connection and does not switch the user's personal terminal.
+The API must remain running for background broker health/history refreshes.
 
-The default source is `C:/Program Files/MetaTrader 5/terminal64.exe`; an API-process
-environment variable `TW_V2_MT5_TERMINAL` can point to another absolute installed
-terminal. Broker discovery files (`servers.dat`/`.srv`) are copied from its Config
-folder. If a broker server is not discoverable, configure it in that installed
-terminal first. The collector never switches or restarts the user's terminal.
-Migration `0009_mt5_connections.sql` is additive; use the existing verified backup,
-migration and native-runtime restart procedure before enabling the feature.
+Overview reads cached account metadata; chart reads query the existing worker.
+Read-only connections can inspect a chart without acquiring trade authority.
+Journal pages reuse Testing controls and paginate locally; history is not
+server-paged. See the [Live UI contract](../ui/live-market-standard.md) and
+[latest audit evidence](evidence/live-flow-audit-20261023/CHECKPOINT.md).
 
-The web POST passes credentials directly to the native connector, outside command
-receipts. A private stdin pipe passes them to the Python SDK adapter. PostgreSQL
-stores a Windows-user-scoped DPAPI envelope bound to workspace/connection identity;
-credentials cannot simply be moved to another Windows user/machine. Receipts store
-metadata only. The form uses no browser persistent storage for credentials.
-This is a loopback deployment contract, not remote authentication infrastructure.
-Mutations require workspace authorization and JSON; cross-site origins are rejected.
-
-Each connection owns a portable terminal folder under `.runtime/mt5-connectors`,
-with access restricted to the current Windows user and SYSTEM. Only the terminal
-executable and server discovery files are copied; no EAs, profiles or saved user
-accounts. The SDK verifies terminal paths and account identity, and rejects
-effective `trade_allowed=true`. That flag does not independently prove which
-password type the broker supplied. The adapter only reads data; it never calls
-order_send or order_check. Terminal settings are defense in depth, not evidence
-that the SDK is incapable of trading. Real broker acceptance remains a separate gate.
-
-Up to ten connections per workspace are retained. One worker serializes terminal
-sessions using a PostgreSQL advisory lock. Successful connections sync every 60
-seconds; failures retry after five minutes. The UI polls metadata every five
-seconds, uses summary responses for Accounts, and reuses ETags for unchanged
-snapshots. Metadata and selected history are read in one repeatable-read snapshot.
-Other pages fetch full history only for the selected connection. This reduces
-repeated transfer; it is not server-side paging of deal history.
-
-Initial connect, reconnect, resume and manual full sync read from the chosen start
-date. Subsequent syncs reconcile an authoritative two-day overlap, replacing
-corrected/deleted fills rather than blindly appending. History reads are chunked
-into 31-day intervals and capped at 32 MB per adapter response. Partial failures
-retain the last successful snapshot as stale. Pause retains the encrypted
-credential; disconnect cancels in-flight work and erases it, retaining historical
-data. Reconnect requires credentials again. Generation fencing prevents an old
-worker from publishing after these actions. Request IDs make uncertain POST retries
-idempotent without persisting password-bearing requests.
-
-The Windows Job Object owns the child process tree. Session configuration/logs
-are cleaned after success, failure, cancellation and timeout, and reaped at next
-startup. Abrupt power/API loss may leave terminal session files inside the private
-ACL folder until that cleanup. Do not describe all terminal artifacts as DPAPI-only
-at rest. Fully invisible terminal launch is not yet verified with a real login.
-
-Evidence and exact limits: `evidence/mt5-connector-20261021/CHECKPOINT.md`.
+Older connector behavior is preserved as historical evidence in
+`evidence/mt5-connector-20261021/CHECKPOINT.md`; it is not the current runtime contract.
