@@ -32,3 +32,24 @@ defaults to MetaTrader 5 and can be changed through the existing account menu.
 Screenshots: `after-options.jpg`, `after-connect-dark.jpg`,
 `after-connect-light.jpg`, `after-connect-390.jpg`, `after-connect-768.jpg`.
 UI verification does not claim broker authentication or collection acceptance.
+
+## Follow-up: hover help and reference details
+
+- Sync guide now opens by hovering the whole text/icon action. Server/account
+  use the existing shared info icon. Field labels are Máy chủ, Tài khoản and
+  Mật khẩu chỉ đọc; guide explains the MT5 term investor. English copy verified.
+- Added Forex/Crypto/CFD and Stocks/Futures/Options as two rows beside the brand.
+  Categories describe the platform, not connected-account instrument coverage.
+- Reused LegacyPopover placement/theme through optional role/id/pointer props;
+  existing group callers keep their defaults. No request or credential-state
+  changes. No dependency added.
+- Actual hover (without click) opens a tooltip and does not focus the trigger.
+  Moving onto tooltip content keeps it visible; leaving closes it. Keyboard
+  Tab opens help, focus keeps it visible, Escape closes. Click supports touch.
+  aria-describedby links to the tooltip content. Independent review caught an
+  aria-label overriding the description; removed for tooltip role and rechecked.
+- Vite build and 18 focused tests pass. Desktop light/dark and mobile 390px
+  checked; platform categories and tooltip stay within their bounds, document
+  width remains 390px. No captured console errors. No broker requests submitted.
+- Follow-up screenshots in `tooltips/`: form-dark.jpg, form-light.jpg,
+  hover-guide.jpg, info-mobile.jpg.

@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import './LegacyPopover.css'
 
-export default function LegacyPopover({ anchor, theme, label, onClose, onAnchorLost, children, wide = false }) {
+export default function LegacyPopover({ anchor, theme, label, onClose, onAnchorLost, children, wide = false, role = 'group', id, onPointerEnter, onPointerLeave }) {
   const ref = useRef(null), closeRef = useRef(onClose), lostRef = useRef(onAnchorLost), [position, setPosition] = useState({ visibility: 'hidden' })
   closeRef.current = onClose
   lostRef.current = onAnchorLost
@@ -51,5 +51,5 @@ export default function LegacyPopover({ anchor, theme, label, onClose, onAnchorL
     }
   }, [anchor])
   if (!anchor) return null
-  return createPortal(<div ref={ref} className={`legacy-popover wm-ui-portal ${theme === 'light' ? 'is-light' : ''} ${wide ? 'is-wide' : ''}`} data-theme={theme} style={position} role="group" aria-label={label}>{children}</div>, anchor.closest('dialog,[aria-modal="true"]') || anchor.ownerDocument.body)
+  return createPortal(<div ref={ref} id={id} className={`legacy-popover wm-ui-portal ${theme === 'light' ? 'is-light' : ''} ${wide ? 'is-wide' : ''}`} data-theme={theme} style={position} role={role} aria-label={role==='tooltip'?undefined:label} onPointerEnter={onPointerEnter} onPointerLeave={onPointerLeave}>{children}</div>, anchor.closest('dialog,[aria-modal="true"]') || anchor.ownerDocument.body)
 }

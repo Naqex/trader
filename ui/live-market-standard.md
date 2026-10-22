@@ -215,7 +215,13 @@ The add-account sidebar uses a compact horizontal CSV action and a centered
 MetaTrader symbol cropped from the existing brand asset. The connection form
 orders start date, platform, server, login and investor password; account naming
 is deferred to account management. Only MT5 is supported. Field and sync help
-use accessible question-mark popovers rather than permanent explanatory copy.
+use hover/focus tooltips rather than permanent explanatory copy. The sync guide
+uses a question mark; server and login use the shared info icon. Tooltips have
+`role=tooltip`, describe their trigger, remain available while hovered, and close
+on Escape. Click remains available for touch. Vietnamese field labels are Máy
+chủ, Tài khoản and Mật khẩu chỉ đọc; help retains the MT5 term “investor”.
+The provider summary shows the six platform market categories in a compact
+two-row layout; these are not a claim about a connected account's instruments.
 Back and Cancel use the chart partial-TP text-action treatment: transparent
 background, muted text brightens on hover, and a visible keyboard focus ring.
 Connection actions sit at the panel bottom when space permits; short panels
