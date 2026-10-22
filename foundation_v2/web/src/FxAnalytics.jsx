@@ -7,6 +7,7 @@ import './fx-analytics.css'
 import AnalyticsFilterBar from './AnalyticsFilterBar.jsx'
 import LedgerFilterDrawer from './LedgerFilterDrawer.jsx'
 import FxSelect from './FxSelect.jsx'
+import LedgerFilterActions from './LedgerFilterActions.jsx'
 
 export const fmt = (value, suffix = '', digits = 2) => known(value) ? `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: digits }).format(Number(value))}${suffix}` : '—'
 export function SelectField({ label, value, onChange, options, disabled }) {
@@ -23,7 +24,7 @@ function LedgerFilters({ filters, onChange, extra, onExtra, rows, sessionControl
 
   const [drawer, setDrawer] = useState('')
   return <section className="fxa-filters" inert={disabled || undefined} aria-disabled={disabled || undefined} aria-label={t("Bộ lọc giao dịch")} data-testid="analytics-filters">
-    <div className="fxa-filter-toolbar is-ledger"><div className="fxl-session-scope">{sessionControl}{statusControl}</div><div className="fxa-filter-actions">{columnControl}{columnControl && <span className="fxa-filter-divider" aria-hidden="true" />}<span className="fxa-filter-label">{t("Filter by")}</span>{['Basic', 'Tags'].map(tab => <button key={tab} className="fxa-button" type="button" aria-haspopup="dialog" aria-expanded={drawer === tab} onClick={() => setDrawer(tab)}>{t(tab)}</button>)}</div></div>
+    <div className="fxa-filter-toolbar is-ledger"><div className="fxl-session-scope">{sessionControl}{statusControl}</div><LedgerFilterActions columnControl={columnControl} activeTab={drawer} onOpen={setDrawer} /></div>
     {drawer && <LedgerFilterDrawer initialTab={drawer} {...{ filters, extra, rows, facets }} onApply={(next, nextExtra) => { onChange(next); onExtra(nextExtra) }} onClose={() => setDrawer('')} />}
   </section>
 }

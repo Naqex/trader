@@ -34,12 +34,24 @@ width. Content retains its gutter inside panels; interactive calendar cells
 retain their separate spacing. Live uses the shared section navigation without
 an additional page heading. Journal actions belong to their working surface,
 retaining their reader/dialog state and the shared control styles. Account choice
-and Basic filters share one toolbar. On Calendar that toolbar belongs to the left
+and Basic/Tags filters share one toolbar. On Calendar and Trades that toolbar belongs to the left
 region; the Analytics heading starts at the same level on the right. Week totals
 use the same border, radius and height as day cells, with count and week label at
 the top. Unknown weekly counts/amounts remain dashes, not fabricated zeroes. At narrower
 widths the sidebar stacks and the calendar alone scrolls horizontally.
 Ready/demo status is not repeated.
+On desktop, both Calendar and Trades use the remaining shell viewport: Analytics
+starts immediately beneath the section navigation and ends at the viewport bottom.
+The filter toolbar is inside the left column, aligned with the Analytics heading;
+applied-filter chips expand only the left column. Narrow layouts stack Analytics
+below the working surface instead of squeezing the two columns.
+Practice and Live share `LedgerFilterActions` and `TableColumnControl`, including
+the reset-columns button, column selector, divider, and Basic/Tags drawer triggers.
+Live Trades owns separate column selections for manual trades and broker deals;
+changing visible columns never changes the deal selection or summary calculations.
+Tags use the existing manual-ledger semantics, staged until Apply and discarded
+on Cancel/Escape. Broker deals expose no invented tags. Reset columns restores
+the source's default columns and does not clear filters or reload account data.
 The data-mode selector is owned by the global topbar on all routes. Unsupported
 preview routes keep a disabled real-data selector; they must not switch to an
 unrelated fixture. On small screens it occupies the second header row.

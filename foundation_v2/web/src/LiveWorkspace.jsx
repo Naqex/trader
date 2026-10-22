@@ -73,7 +73,7 @@ export default function LiveWorkspace({ workspace = 'tenant-a', query = new URLS
     return () => { controller.abort(); clearInterval(timer) }
   }, [reloadToken, workspace, scopeKey, connectionId, summary, preview])
   const copy = statusCopy(state)
-  return <section className={`live-workspace wm-page${section === 'trading-accounts' ? ' is-accounts' : section === 'calendar' ? ' is-calendar' : ''}`} data-testid="live-workspace" aria-label={t('Live')}>
+  return <section className={`live-workspace wm-page${section === 'trading-accounts' ? ' is-accounts' : section === 'calendar' ? ' is-calendar' : section === 'trades' ? ' is-trades' : ''}`} data-testid="live-workspace" aria-label={t('Live')}>
     {!preview && copy.tone !== 'ready' && state.status !== 'unavailable' && <div className={`live-status live-status-${copy.tone}`} data-testid="live-status" role={copy.tone === 'error' ? 'alert' : 'status'}>
       <span className="live-status-dot" aria-hidden="true" /><span>{t(copy.title)}</span>
       {!preview && ['error', 'denied'].includes(state.status) && <button type="button" className="fxa-button live-retry" onClick={() => setReloadToken(value => value + 1)}>{t('Thử lại')}</button>}

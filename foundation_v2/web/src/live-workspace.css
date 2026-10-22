@@ -145,6 +145,8 @@
 .live-split > section, .live-accounts-layout > section { min-width: 0; }
 .live-split > section:first-child { padding: 24px var(--wm-page-gutter); }
 .live-split > section.live-calendar-section:first-child { padding: 0; }
+.live-split > section.live-trades-section:first-child { padding: 0; }
+.live-trades-content { padding: 24px var(--wm-page-gutter); min-width: 0; }
 .live-calendar-content { padding: 24px var(--wm-page-gutter); }
 .live-analytics-side { border-left: 1px solid var(--wm-border); padding: 0; }
 .live-analytics-side > h2 { display: flex; align-items: center; gap: 8px; margin: 0; min-height: 69px; box-sizing: border-box; padding: 16px 24px; border-bottom: 1px solid var(--wm-border); }
@@ -201,9 +203,12 @@
 .live-day-detail li { display: flex; justify-content: space-between; gap: 12px; padding-block: 8px; font-size: 13px; }
 .live-day-detail p { color: var(--wm-content-muted); }
 @media (min-width:1241px) {
-  .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-main > .fx-content:has(> .live-workspace.is-calendar) { display:flex; flex-direction:column; overflow:hidden; padding-bottom:0; }
-  .live-workspace.is-calendar { display:flex; flex-direction:column; flex:1; min-height:0; }
-  .is-calendar > .live-split { flex:1; min-height:0; }
+  .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-main > .fx-content:has(> .live-workspace:is(.is-calendar,.is-trades)) { display:flex; flex-direction:column; overflow:hidden; padding-bottom:0; }
+  .live-workspace:is(.is-calendar,.is-trades) { display:flex; flex-direction:column; flex:1; min-height:0; }
+  :is(.is-calendar,.is-trades) > .live-split { flex:1; min-height:0; }
+  .is-trades .live-trades-section { display:flex; flex-direction:column; min-height:0; }
+  .is-trades .live-filters { flex-shrink:0; }
+  .is-trades .live-trades-content { flex:1; min-height:0; overflow:auto; }
   .is-calendar .live-calendar-section { display:flex; flex-direction:column; min-height:0; }
   .is-calendar .live-filters { flex-shrink:0; }
   .is-calendar .live-calendar-content { display:flex; flex-direction:column; flex:1; min-height:0; overflow:auto; }
@@ -212,9 +217,9 @@
   .is-calendar .live-calendar-grid { height:100%; grid-template-rows:auto repeat(var(--live-calendar-weeks), minmax(min-content,1fr)); }
   .fx-app .is-calendar .live-calendar-cell { height:auto; min-height:0; box-sizing:border-box; }
   .is-calendar .live-day-detail { flex-shrink:0; }
-  .is-calendar .live-analytics-side { display:flex; flex-direction:column; min-height:0; overflow:auto; }
-  .is-calendar .live-analytics-side > h2 { flex-shrink:0; }
-  .is-calendar .live-analytics-side > .live-empty { flex:1; min-height:0; }
+  :is(.is-calendar,.is-trades) .live-analytics-side { display:flex; flex-direction:column; min-height:0; overflow:auto; }
+  :is(.is-calendar,.is-trades) .live-analytics-side > h2 { flex-shrink:0; }
+  :is(.is-calendar,.is-trades) .live-analytics-side > .live-empty { flex:1; min-height:0; }
 }
 .live-notes-groups { display: flex; align-items: center; gap: 12px; padding: 16px var(--wm-page-gutter); }
 .live-notes-groups > span { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: var(--project-peach-soft); color: var(--project-on-peach-soft); font-size: 13px; }

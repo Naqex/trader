@@ -1,0 +1,74 @@
+[
+  {
+    "filterBottom": 186,
+    "headingBottom": 186,
+    "height": 940,
+    "sidebarBottom": 940,
+    "sidebarTop": 117,
+    "subnavBottom": 117,
+    "view": "trades",
+    "width": 1920
+  },
+  {
+    "actions": {
+      "bottom": 337,
+      "height": 96,
+      "left": 74,
+      "right": 359,
+      "top": 241,
+      "width": 285,
+      "x": 74,
+      "y": 241
+    },
+    "height": 844,
+    "pageWidth": 390,
+    "sidebar": {
+      "bottom": 1012,
+      "height": 270,
+      "left": 58,
+      "right": 375,
+      "top": 742,
+      "width": 317,
+      "x": 58,
+      "y": 742
+    },
+    "view": "trades",
+    "width": 390
+  },
+  {
+    "height": 1024,
+    "pageWidth": 768,
+    "sidebar": {
+      "bottom": 892,
+      "height": 270,
+      "left": 248,
+      "right": 768,
+      "top": 622,
+      "width": 520,
+      "x": 248,
+      "y": 622
+    },
+    "view": "trades",
+    "width": 768
+  },
+  {
+    "filterBottom": 186,
+    "headingBottom": 186,
+    "height": 940,
+    "sidebarBottom": 940,
+    "sidebarTop": 117,
+    "subnavBottom": 117,
+    "view": "calendar",
+    "width": 1920
+  },
+  {
+    "filterBottom": 186,
+    "headingBottom": 186,
+    "height": 790,
+    "sidebarBottom": 790,
+    "sidebarTop": 117,
+    "subnavBottom": 117,
+    "view": "trades",
+    "width": 1368
+  }
+]

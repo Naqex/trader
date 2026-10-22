@@ -4,7 +4,7 @@ import { TestingSkeleton } from './TestingReadState.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { filterAnalyticsRows, known, outcomeOf } from './tradingAnalyticsModel.js'
 import { closeTime } from './sessionPerformanceModel.js'
-import FxSelect from './FxSelect.jsx'
+import TableColumnControl from './TableColumnControl.jsx'
 import TestingIcon from './TestingIcon.jsx'
 import { TestingTradesEmpty } from './TestingPageState.jsx'
 import PaginationFooter from './PaginationFooter.jsx'
@@ -86,7 +86,7 @@ export default function FxTradeLedger({ model, extra, selected, onSelect, sessio
   const empty = !remotePage?.pending && (total === 0 || total === null) && !rows.length
   const incomplete = Boolean(model.result?.partial || model.result?.status === 'partial')
   const noTrades = !incomplete && (emptyScopeKnown || model.result?.scope?.total_trade_count === 0)
-  const columnControl = <><button type="button" className="fxa-button fxa-icon-button" aria-label={t("Reset table columns")} title={t("Reset table columns")} onClick={() => setColumns([...DEFAULT_COLUMNS])}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M4 11a8 8 0 1 1 2 7M4 4v7h7" /></svg></button><FxSelect label={t("Cột hiển thị")} value={columns} onChange={setColumns} options={COLUMNS.map(([value, label]) => ({ value, label }))} multiple searchable icon="edit" iconOnly className="fxa-columns-control" /></>
+  const columnControl = <TableColumnControl columns={columns} onChange={setColumns} options={COLUMNS} />
   return <>
     {renderFilters?.(columnControl)}
     {readNotice}
