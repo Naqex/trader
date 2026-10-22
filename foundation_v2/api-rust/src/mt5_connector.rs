@@ -449,6 +449,11 @@ async fn adapter(input: Value, timeout: Duration) -> Result<Value, String> {
         if !status.success() || value.get("error").is_some() {
             return Err(match value["error"].as_str() {
                 Some("mt5_login_failed") => "mt5_login_failed",
+                Some("mt5_auth_failed") => "mt5_auth_failed",
+                Some("mt5_initialization_failed") => "mt5_initialization_failed",
+                Some("mt5_terminal_unavailable") => "mt5_terminal_unavailable",
+                Some("mt5_version_unsupported") => "mt5_version_unsupported",
+                Some("mt5_sync_timeout") => "mt5_sync_timeout",
                 Some("mt5_investor_required") => "mt5_investor_required",
                 Some("mt5_identity_changed") => "mt5_identity_changed",
                 Some("mt5_history_too_large") => "mt5_history_too_large",

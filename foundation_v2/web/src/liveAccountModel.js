@@ -29,7 +29,7 @@ export function liveAccountRows(accounts, records, broker) {
       updated:connection.last_synced_at, connection,
       snapshot:broker.connection_id === connection.id && broker.account ? broker : {account:connection.account || {},source:connection.source},
     })) : broker?.account ? [{ id: 'broker', name: `${broker.source || 'MT5'} · ${broker.account.account_ref}`, source: 'MT5', status: broker.stale ? 'stale' : 'synced', updated: broker.captured_at_utc, snapshot: broker }] : []),
-    ...accounts.map(record => ({ id: record.record_id, name: record.payload.name, source: 'Ghi tay', status: 'manual', updated: records.filter(item => item.record_id === record.record_id || item.payload.account_id === record.record_id).map(item => item.updated_at_utc || item.created_at_utc).filter(Boolean).sort().at(-1), record, snapshot: manualSnapshot(record, records) })),
+    ...accounts.map(record => ({ id: record.record_id, name: record.payload.name, source: 'Thủ công', status: 'manual', updated: records.filter(item => item.record_id === record.record_id || item.payload.account_id === record.record_id).map(item => item.updated_at_utc || item.created_at_utc).filter(Boolean).sort().at(-1), record, snapshot: manualSnapshot(record, records) })),
   ]
 }
 

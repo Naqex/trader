@@ -45,6 +45,22 @@ class ConnectorTests(unittest.TestCase):
         self.sdk.account_info.side_effect=[self.account,NS(login=7,server='Fixture-Demo')]
         with self.assertRaisesRegex(RuntimeError,'mt5_identity_changed'):self.read()
 
+    def test_initialize_errors_distinguish_auth_ipc_timeout_and_unknown(self):
+        cases = {-6:'mt5_auth_failed', -10005:'mt5_sync_timeout',
+                 -5:'mt5_version_unsupported', -1:'mt5_initialization_failed',
+                 -10000:'mt5_terminal_unavailable', -10001:'mt5_terminal_unavailable',
+                 -10002:'mt5_terminal_unavailable', -10003:'mt5_terminal_unavailable'}
+        for code, expected in cases.items():
+            with self.subTest(code=code):
+                self.sdk.last_error.return_value=(code,'sensitive fixture description')
+                self.assertEqual(connector.initialization_error(self.sdk),expected)
+                self.assertIn(expected,connector.ERRORS)
+        for malformed in (None, (), {}, 'unexpected'):
+            self.sdk.last_error.return_value=malformed
+            self.assertEqual(connector.initialization_error(self.sdk),'mt5_initialization_failed')
+        self.sdk.last_error.side_effect=RuntimeError('sensitive fixture exception')
+        self.assertEqual(connector.initialization_error(self.sdk),'mt5_initialization_failed')
+
     def test_incomplete_history_never_becomes_empty_success(self):
         self.sdk.history_deals_get.return_value=None
         with self.assertRaisesRegex(RuntimeError,'mt5_history_failed'):self.read()
@@ -108,9 +124,10 @@ class ConnectorTests(unittest.TestCase):
             request={'action':'collect','root':str(root),'workspace':'fixture','connection_id':folder.name,'from_utc':'2026-10-01T00:00:00Z','history_from_utc':'2026-10-01T00:00:00Z'}
             request['credential']=base64.b64encode(connector.protect(json.dumps(self.secret).encode(),connector.entropy(request))).decode()
             self.sdk.initialize.return_value=False
+            self.sdk.last_error.return_value=(-6,'sensitive fixture description')
             process=Mock();process.poll.return_value=None
             with patch.dict('sys.modules',MetaTrader5=self.sdk),patch.object(connector,'prepare_terminal',return_value=(binary,config)),patch.object(connector.subprocess,'Popen',return_value=process) as spawn,patch.object(connector.time,'sleep'):
-                with self.assertRaisesRegex(RuntimeError,'mt5_login_failed'):connector.run(request)
+                with self.assertRaisesRegex(RuntimeError,'mt5_auth_failed'):connector.run(request)
                 self.sdk.initialize.assert_called_once_with(str(binary),login=1234567,password='fixture-only',server='Fixture-Demo',timeout=20000,portable=True)
                 self.assertNotIn('fixture-only',str(spawn.call_args))
                 process.terminate.assert_called_once();self.sdk.shutdown.assert_called_once()

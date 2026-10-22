@@ -1,4 +1,19 @@
 /* Project adapters for the pinned compact tokens; chart vendor geometry is separate. */
+/* A sortable heading owns the whole cell, including its padding. */
+.fx-app :is(.live-table-scroll,.fxa-table-scroll) th[aria-sort],
+.fx-app .live-accounts-main .live-table-scroll th[aria-sort] { padding:0; }
+.fx-app :is(.live-table-scroll,.fxa-table-scroll) th > .wm-table-sort {
+  display:block; box-sizing:border-box; width:100%; min-height:var(--wm-table-heading-height,44px);
+  padding:0 var(--wm-table-heading-inset,14px); border:0; border-radius:0;
+  background:transparent; color:inherit; font:inherit; text-align:inherit; cursor:pointer;
+  transition:background-color var(--ds-motion-hover) var(--ds-ease-standard),color var(--ds-motion-hover) var(--ds-ease-standard);
+}
+.fx-app :is(.live-table-scroll,.fxa-table-scroll) th > .wm-table-sort:hover:not(:disabled) { background:var(--wm-hover); color:var(--wm-content); }
+.fx-app :is(.live-table-scroll,.fxa-table-scroll) th > .wm-table-sort:focus-visible { outline:2px solid var(--wm-focus); outline-offset:-2px; }
+.live-accounts-main .live-table-scroll th { --wm-table-heading-height:60px; --wm-table-heading-inset:8px; }
+.live-accounts-main .live-table-scroll th:first-child { --wm-table-heading-inset:16px; }
+.live-accounts-main .live-table-scroll th:last-child { --wm-table-heading-inset:16px; }
+@media (prefers-reduced-motion:reduce) { .fx-app th > .wm-table-sort { transition:none; } }
 .fx-app.fx-shell-story[data-theme] {
   --wm-control-height:var(--ds-control);
   --wm-icon-action-size:var(--ds-icon-button);

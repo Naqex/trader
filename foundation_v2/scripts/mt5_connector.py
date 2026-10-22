@@ -19,7 +19,27 @@ from datetime import datetime, timedelta, timezone
 ERRORS = {'mt5_login_failed', 'mt5_disconnected', 'mt5_identity_changed',
           'mt5_investor_required', 'mt5_history_failed', 'mt5_snapshot_failed',
           'mt5_history_too_large', 'mt5_terminal_missing', 'mt5_sdk_missing',
-          'mt5_secret_unavailable', 'mt5_terminal_isolation_failed'}
+          'mt5_secret_unavailable', 'mt5_terminal_isolation_failed',
+          'mt5_sync_timeout', 'mt5_terminal_unavailable', 'mt5_version_unsupported',
+          'mt5_initialization_failed', 'mt5_auth_failed'}
+
+
+def initialization_error(sdk):
+    # SDK descriptions can contain account/server details; expose only known codes.
+    try:
+        error = sdk.last_error()
+        code = error[0] if isinstance(error, (tuple, list)) and error else None
+    except Exception:
+        code = None
+    if code == -6:
+        return 'mt5_auth_failed'
+    if code == -10005:
+        return 'mt5_sync_timeout'
+    if code in (-10000, -10001, -10002, -10003):
+        return 'mt5_terminal_unavailable'
+    if code == -5:
+        return 'mt5_version_unsupported'
+    return 'mt5_initialization_failed'
 
 
 def protect(raw, entropy, decrypt=False):
@@ -246,7 +266,7 @@ def run(request):
     try:
         time.sleep(1)
         if not sdk.initialize(str(terminal), login=int(secret['login']), password=secret['password'], server=secret['server'], timeout=20000, portable=True):
-            raise RuntimeError('mt5_login_failed')
+            raise RuntimeError(initialization_error(sdk))
         info = sdk.terminal_info()
         if not info or Path(info.path).resolve() != terminal.parent.resolve() or Path(info.data_path).resolve() != terminal.parent.resolve():
             raise RuntimeError('mt5_terminal_isolation_failed')

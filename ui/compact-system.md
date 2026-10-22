@@ -341,3 +341,9 @@ theo dòng đầu. Trong bảng, checkbox/nút thao tác căn giữa, chữ căn
 phải; tiêu đề dùng cùng mép với dữ liệu. Cột có thể bật/tắt gắn vai trò theo key,
 không theo vị trí. Search và dropdown cùng toolbar dùng cùng chiều cao theo role;
 các hàng stack trên mobile không bị ép chung một trục tâm.
+
+Tiêu đề bảng có sắp xếp dùng `wm-table-sort`: toàn ô nhận hover/bấm, chữ kế thừa
+màu tiêu đề, focus nằm trong ô và giữ `aria-sort` trên `th`. Mặc định cao44px;
+bảng tài khoản dùng60px để cùng tâm với thanh quay lại/hướng dẫn kết nối.
+Hai bảng hiện có (tài khoản và trade ledger) dùng chung recipe trong
+`compact-system.css`, không dùng text-action cho nút sắp xếp.

@@ -221,7 +221,9 @@ uses a question mark; server and login use the shared info icon. Tooltips have
 on Escape. They use the app-wide `ProjectTooltipLayer` and the compact tooltip
 contract in `compact-system.md`; click remains available for touch. The back
 and sync-guide row shares the table header's centerline. Vietnamese field labels are Máy
-chủ, Tài khoản and Mật khẩu chỉ đọc; help retains the MT5 term “investor”.
+chủ, Tài khoản and Mật khẩu investor. Password help distinguishes viewing access
+from trading access for both demo and real accounts, using the same info-tooltip
+pattern as server/login. The password visibility action remains separate.
 The provider summary shows the six platform market categories in a compact
 two-row layout; these are not a claim about a connected account's instruments.
 Back and Cancel use the chart partial-TP text-action treatment: transparent
@@ -234,6 +236,20 @@ The connector is Windows/local-host only and uses an isolated portable terminal
 per connection, DPAPI-protected credentials and a serialized background collector.
 It rejects effective trading permission and never sends broker orders. See
 `foundation_v2/README.md` for operational and verification limits.
+
+Manual entry is labeled Thủ công consistently, including account sources,
+dialogs and import guidance. Sortable account and trade-ledger headings use
+the shared `wm-table-sort` treatment: full-cell pointer/keyboard target,
+inherited muted header text, token hover surface and an inset focus outline.
+Static headings share the same resting color. Account headers retain their
+60px height and connection-navigation centerline.
+
+MT5 initialization reports only sanitized error categories: authorization,
+terminal IPC, timeout, version mismatch or unknown initialization failure.
+Historical `mt5_login_failed` records retain a neutral connection message;
+they do not prove bad credentials or missing investor access. SDK descriptions
+are never forwarded to the client. This classification does not change the
+investor/identity/isolation gates or enable broker execution.
 
 Account form/action evidence:
 `foundation_v2/evidence/live-account-dialog-20261022/CHECKPOINT.md`.

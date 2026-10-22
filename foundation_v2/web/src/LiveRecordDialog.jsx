@@ -27,7 +27,7 @@ export default function LiveRecordDialog({ workspace, kind, accounts, strategies
   const hint = key => touched[key] && accountErrors[key] ? <small id={`live-account-${key}-error`} className="live-field-error">{accountErrors[key]}</small> : null
   const accountField = (key,label,options={}) => <label>{label}<input aria-label={label} value={draft[key]} onChange={event=>change(key,event.target.value)} onBlur={()=>setTouched(current=>({...current,[key]:true}))} aria-invalid={Boolean(touched[key] && accountErrors[key])} aria-describedby={touched[key] && accountErrors[key] ? `live-account-${key}-error` : undefined} disabled={pending} {...options}/>{hint(key)}</label>
   const change = (key, value) => setDraft(current => ({ ...current, [key]: value }))
-  const titles = { account: 'Tài khoản ghi tay', trade: 'Giao dịch đã đóng', note: 'Ghi chú', import: 'Nhập giao dịch từ CSV' }
+  const titles = { account: 'Tài khoản thủ công', trade: 'Giao dịch đã đóng', note: 'Ghi chú', import: 'Nhập giao dịch từ CSV' }
   const strategyOptions = strategies.map(item => ({ value: `${item.record_id}:${item.revision}`, label: `${item.payload.name} · v${item.revision}`, localize: false }))
   if (draft.strategy && !strategyOptions.some(item => item.value === draft.strategy)) strategyOptions.unshift({ value: draft.strategy, label: `Phiên bản đã lưu · v${initial.playbook_revision}`, localize: false })
   const field = (key, label, options = {}) => <label>{label}<input value={draft[key]} onChange={event => change(key,event.target.value)} disabled={pending} {...options} /></label>

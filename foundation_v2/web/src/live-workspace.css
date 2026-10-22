@@ -46,6 +46,8 @@
 .live-mt5-form :is(.live-connection-help,.live-password-toggle):hover:not(:disabled) { background:transparent; color:var(--wm-content); }
 .live-connection-help > span { display:grid; place-items:center; box-sizing:border-box; width:14px; height:14px; border:1px solid currentColor; border-radius:50%; font-size:10px; line-height:1; }
 .live-connect-input > button { position:absolute; right:6px; top:50%; transform:translateY(-50%); }
+.live-connect-input:has(.live-password-toggle) > input { padding-right:76px; }
+.live-connect-input > .live-connection-help:has(+ .live-password-toggle) { right:40px; }
 .live-password-toggle svg { width:16px; height:16px; }
 .live-mt5-form :is(.live-back-action,.live-connection-help,.live-password-toggle):focus-visible { outline:2px solid var(--wm-focus); outline-offset:2px; }
 .live-connect-footer { display:grid; gap:8px; margin-top:auto; padding-top:24px; }
