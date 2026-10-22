@@ -175,6 +175,12 @@ field/button tokens and account table. The provider picker uses a circular
 MetaTrader mark above its label, with token
 colors for hover, focus and disabled states. It has no info icon or helper copy;
 connection details remain in the form.
+The provider tile is labelled MetaTrader; the connection form retains the exact
+MetaTrader 5 platform identity. Its 96px tile keeps avatar and label on one center
+axis. The accounts search header and Add account heading share a 72px minimum
+height so their desktop dividers align in the standard single-row layout.
+The Trades page starts with its filter bar. Account creation/import and manual
+trade entry remain available from Accounts and its per-row menus.
 The Add account panel accepts server, numeric login, investor password and UTC
 history start date. Pending submissions lock the form; an unknown network outcome
 retries the same request ID. The visible
@@ -212,6 +218,9 @@ blank; accessible day labels retain their unknown value. Weekly totals keep
 count and week number above the amount in account currency. A covered empty week
 shows zero deals/trades and zero money; missing coverage remains unknown. A subtle
 vertical rule separates Share from Monthly review using the existing border token.
+The toolbar-to-calendar gap is 8px, without a second bottom margin. The Total
+column heading uses the primary content color, one step above muted weekday labels
+in both themes.
 Before any account is selected, the empty calendar scaffold shows zero trades and
 $0 in each week and the monthly footer, matching the reference. Daily cells stay
 blank and analytics still asks for an account. This display default does not turn
