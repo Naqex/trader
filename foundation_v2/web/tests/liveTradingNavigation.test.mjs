@@ -18,3 +18,12 @@ test('opening a chart only chooses the broker symbol and timeframe',()=>{
   assert.equal(url.searchParams.get('workspace'),'tenant-b')
   assert.equal(url.searchParams.has('session'),false)
 })
+
+
+test('direct chart routing retains the selected broker connection',()=>{
+ const query=new URLSearchParams('live_account=broker:fixture&mt5_connection=fixture&session=replay')
+ const url=new URL(liveTradingHref('tenant-a',query,{chart:true}),'http://localhost')
+ assert.equal(url.searchParams.get('mt5_connection'),'fixture')
+ assert.equal(url.searchParams.get('live_account'),'broker:fixture')
+ assert.equal(url.searchParams.has('session'),false)
+})

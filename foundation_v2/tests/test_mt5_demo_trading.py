@@ -42,6 +42,52 @@ class DemoTradingTests(unittest.TestCase):
             self.execute(**changes)
         self.sdk.order_send.assert_not_called()
 
+    def test_managed_demo_and_real_use_same_broker_constraints_without_app_caps(self):
+        for mode,code in [('demo',0),('real',2)]:
+            with self.subTest(mode=mode):
+                self.account.trade_mode=code
+                self.account.margin_mode=0
+                policy=demo.BrokerPolicy(self.policy,mode=mode)
+                command={**self.command,'mode':mode,'volume':1.,'stop_loss':None}
+                request,preview=demo.prepare(self.sdk,policy,command)
+                self.assertEqual(request['volume'],1.)
+                self.assertEqual(request['sl'],0.)
+                self.assertIsNone(preview['risk_limit'])
+                self.assertIsNone(preview['estimated_stop_risk'])
+                self.assertIn('commission',preview['risk_estimate_excludes'])
+        self.sdk.order_send.assert_not_called()
+
+    def test_managed_connection_revoked_immediately_before_send_never_sends(self):
+        policy=demo.BrokerPolicy(self.policy)
+        def revoked():
+            raise RuntimeError('mt5_connection_revoked')
+        with self.assertRaisesRegex(RuntimeError,'mt5_connection_revoked'):
+            demo.execute(self.sdk,policy,self.command,revoked)
+        self.sdk.order_send.assert_not_called()
+
+    def test_managed_cannot_change_environment_or_broker_volume_grid(self):
+        policy=demo.BrokerPolicy(self.policy)
+        for command in [{**self.command,'mode':'real'},{**self.command,'volume':10.01},{**self.command,'volume':.015}]:
+            with self.assertRaises(demo.Denied):
+                demo.prepare(self.sdk,policy,command)
+        self.sdk.order_send.assert_not_called()
+
+    def test_managed_netting_and_external_order_cancellation_reconcile(self):
+        stamp=int(time.time()*1000);submitted=datetime.fromtimestamp(stamp/1000,timezone.utc).isoformat()
+        tag=demo.request_comment(self.command['request_id'])
+        deal=NS(ticket=12,order=11,comment=tag,magic=self.policy['magic'],symbol='EURUSD',time_msc=stamp,entry=1,type=0,volume=.1,price=1.1)
+        order=NS(ticket=11,comment=tag,magic=self.policy['magic'],symbol='EURUSD',state=4,volume_initial=.1,volume_current=0.)
+        self.sdk.history_deals_get.return_value=(deal,);self.sdk.history_orders_get.return_value=(order,)
+        policy=demo.BrokerPolicy(self.policy)
+        self.assertTrue(demo.reconcile(self.sdk,policy,self.command,submitted,{})['resolved'])
+        self.assertFalse(demo.reconcile(self.sdk,self.policy,self.command,submitted,{})['resolved'])
+        cancel=NS(ticket=88,symbol='EURUSD',magic=0,state=2,time_done_msc=stamp)
+        self.sdk.history_orders_get.return_value=(cancel,)
+        command={**self.command,'action':'cancel','ticket':88}
+        self.assertTrue(demo.reconcile(self.sdk,policy,command,submitted,{})['resolved'])
+        self.assertFalse(demo.reconcile(self.sdk,self.policy,command,submitted,{})['resolved'])
+        self.sdk.order_send.assert_not_called()
+
     def test_no_policy_or_disabled_policy_never_loads_sdk(self):
         loader = Mock(side_effect=AssertionError('SDK must not load'))
         for policy, workspace in [(None, 'tenant-a'), ({**self.policy, 'enabled':False}, 'tenant-a'), (self.policy, 'tenant-b'), ({**self.policy, 'mode':'real'}, 'tenant-a')]:

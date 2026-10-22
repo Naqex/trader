@@ -21,7 +21,8 @@ ERRORS = {'mt5_login_failed', 'mt5_disconnected', 'mt5_identity_changed',
           'mt5_history_too_large', 'mt5_terminal_missing', 'mt5_sdk_missing',
           'mt5_secret_unavailable', 'mt5_terminal_isolation_failed',
           'mt5_sync_timeout', 'mt5_terminal_unavailable', 'mt5_version_unsupported',
-          'mt5_initialization_failed', 'mt5_auth_failed'}
+          'mt5_initialization_failed', 'mt5_auth_failed', 'mt5_trading_disabled',
+          'mt5_account_mode_unsupported', 'mt5_connection_revoked'}
 
 
 def initialization_error(sdk):
@@ -141,7 +142,27 @@ def clean_terminal(root, connection_id):
             item.unlink()
 
 
-def prepare_terminal(root, connection_id):
+def discovery_directories(source):
+    """Read only public broker discovery from data belonging to this install."""
+    yield source.parent / 'Config'
+    base = Path(os.environ.get('APPDATA', '')) / 'MetaQuotes' / 'Terminal'
+    if not base.is_absolute() or not base.exists():
+        return
+    require_local_tree(base)
+    for folder in base.iterdir():
+        origin = folder / 'origin.txt'
+        if not folder.is_dir() or not origin.is_file():
+            continue
+        require_local_tree(origin)
+        if origin.stat().st_size > 4096:
+            continue
+        raw = origin.read_bytes()
+        installed = raw.decode('utf-16' if raw.startswith((b'\xff\xfe', b'\xfe\xff')) else 'utf-8-sig').strip().rstrip('\x00')
+        if os.path.normcase(str(Path(installed).resolve())) == os.path.normcase(str(source.parent.resolve())):
+            yield folder / 'Config'
+
+
+def prepare_terminal(root, connection_id, trading=False):
     # Only API-generated UUIDs enter a path. Never touch the user's active terminal.
     import uuid
     connection_id = str(uuid.UUID(connection_id))
@@ -164,28 +185,34 @@ def prepare_terminal(root, connection_id):
     # Broker discovery only: no accounts.dat, profiles, EAs or saved passwords.
     config = folder / 'Config'
     config.mkdir(exist_ok=True)
-    for item in (source.parent / 'Config').glob('*'):
-        if item.is_file() and not item.is_symlink() and (item.name.lower() == 'servers.dat' or item.suffix.lower() == '.srv'):
-            shutil.copy2(item, config / item.name)
+    for directory in discovery_directories(source):
+        for item in directory.glob('*'):
+            if item.is_file() and (item.name.lower() == 'servers.dat' or item.suffix.lower() == '.srv'):
+                require_local_tree(item)
+                shutil.copy2(item, config / item.name)
     settings = folder / 'connector.ini'
-    settings.write_text('[Common]\nKeepPrivate=0\n[Experts]\nEnabled=0\nAllowLiveTrading=0\n', encoding='utf-16')
+    settings.write_text(f'[Common]\nKeepPrivate=0\n[Experts]\nEnabled={int(trading)}\nAllowLiveTrading={int(trading)}\nAllowDllImport=0\n', encoding='utf-16')
     return target, settings
 
 
-def verify_identity(sdk, secret):
+def verify_identity(sdk, secret, requested_mode='read_only'):
     account, terminal = sdk.account_info(), sdk.terminal_info()
     if not account or not terminal or not terminal.connected:
         raise RuntimeError('mt5_disconnected')
     if str(account.login) != secret['login'] or account.server != secret['server']:
         raise RuntimeError('mt5_identity_changed')
-    # Fail closed on effective trading permission; this alone cannot identify password type.
-    if account.trade_allowed:
-        raise RuntimeError('mt5_investor_required')
+    # Permission is independent of demo/real. A read-only connection never sends,
+    # even when the credential also has trading rights at the broker.
+    if requested_mode == 'trading':
+        if account.trade_mode not in (0, 2):
+            raise RuntimeError('mt5_account_mode_unsupported')
+        if not (account.trade_allowed and account.trade_expert and terminal.trade_allowed and not terminal.tradeapi_disabled):
+            raise RuntimeError('mt5_trading_disabled')
     return account
 
 
-def snapshot(sdk, secret, start, history_from):
-    account = verify_identity(sdk, secret)
+def snapshot(sdk, secret, start, history_from, requested_mode='read_only', generation=None):
+    account = verify_identity(sdk, secret, requested_mode)
     now = datetime.now(timezone.utc)
     positions, orders = sdk.positions_get(), sdk.orders_get()
     if positions is None or orders is None:
@@ -207,9 +234,13 @@ def snapshot(sdk, secret, start, history_from):
         tick = sdk.symbol_info_tick(symbol)
         if tick and tick.bid > 0 and tick.ask > 0:
             quotes.append(dict(symbol=symbol,bid=tick.bid,ask=tick.ask,time_msc=tick.time_msc))
-    verify_identity(sdk, secret)
+    verify_identity(sdk, secret, requested_mode)
     rows = sorted(deals.values(), key=lambda item: (item['time_msc'], item['ticket']))
-    return dict(status='ready', source=f"{account.server} / MT5", mode={0:'demo',1:'contest',2:'real'}.get(account.trade_mode,'unknown'),
+    environment = {0:'demo',1:'contest',2:'real'}.get(account.trade_mode,'unknown')
+    permissions = dict(read=True, trade=requested_mode == 'trading')
+    return dict(status='ready', source=f"{account.server} / MT5", mode=environment,
+        account_environment=environment, verified_permissions=permissions,
+        execution_binding=dict(login=str(account.login),server=account.server,account_environment=environment,generation=generation,verified_permissions=permissions) if requested_mode == 'trading' else None,
         captured_at_utc=now.isoformat(), history_from_utc=history_from, history_read_from_utc=start.isoformat(), execution_capability=False,
         account={**{key:getattr(account,key) for key in ('currency','balance','equity','profit','margin','margin_free','leverage')},'account_ref':f"…{str(account.login)[-4:]}"},
         positions=[{key:getattr(item,key) for key in ('ticket','symbol','type','volume','price_open','price_current','sl','tp','profit','swap','time')} for item in positions],
@@ -264,8 +295,7 @@ def run(request):
     # All descendants remain in the native API's kill-on-close job object.
     process = subprocess.Popen([str(terminal), '/portable', f'/config:{config}'], cwd=terminal.parent, startupinfo=startup, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
-        time.sleep(1)
-        if not sdk.initialize(str(terminal), login=int(secret['login']), password=secret['password'], server=secret['server'], timeout=20000, portable=True):
+        if not sdk.initialize(str(terminal), login=int(secret['login']), password=secret['password'], server=secret['server'], timeout=60000, portable=True):
             raise RuntimeError(initialization_error(sdk))
         info = sdk.terminal_info()
         if not info or Path(info.path).resolve() != terminal.parent.resolve() or Path(info.data_path).resolve() != terminal.parent.resolve():
@@ -281,7 +311,9 @@ def run(request):
         except subprocess.TimeoutExpired:
             process.kill()
             process.wait(timeout=5)
-        clean_terminal(request['root'], request['connection_id'])
+        # The native owner closes the entire job (including MT5 WebView children)
+        # before its separate cleanup action. Deleting here races their file locks
+        # and can replace a successful snapshot or an auth error with PermissionError.
 
 
 if __name__ == '__main__':

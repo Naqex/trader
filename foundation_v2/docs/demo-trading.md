@@ -1,8 +1,65 @@
-# Dedicated DEMO execution
+# MT5 broker trading
 
-The Live trading workspace is locked by default. The existing investor connector
-stays read-only and cannot become an execution connector. No activation policy or
-broker/terminal execution was authorized as part of implementation and tests.
+## Managed account connection
+
+Live uses the selected account connection for both Demo and Real broker accounts.
+The account environment comes from MT5 `account.trade_mode`; it is independent of
+`requested_mode` (`read_only` or `trading`). Existing connections default to
+`read_only` under migration 0011. Reconnect explicitly in the form to change access;
+the app never treats a Demo account as a simulation or an investor password as
+permission to trade. Trading requires the master/trading password and effective
+MT5 account/terminal/Python permissions. Credentials stay DPAPI encrypted and never
+enter command receipts or logs.
+
+The flow is Live → Tổng quan → Mở biểu đồ (direct navigation). Symbol/timeframe
+selection stays inside the chart. The account balance/equity, available assets,
+quotes, lot/tick/stops/freeze constraints, margin and execution results come from
+that account's MT5 terminal. Commission remains unknown until broker history
+reports it; stop-risk estimates exclude unknown commissions, swap, gaps and
+slippage. The managed path does not impose Prop/replay settings or application
+risk/volume caps. SL/TP are optional when the broker allows it.
+
+Pass `connection_id` on trading snapshots, previews, commands and reconciliation.
+The native API resolves the connection in the authorized workspace, verifies its
+stored permission/identity/generation binding, then sends private JSON lines to
+`mt5_broker_worker.py`. The worker owns a separate portable terminal for that
+connection and authenticates once; journal collection and trading reads reuse the
+same warm session. Windows broker discovery copies only public `servers.dat`/`.srv`
+from data belonging to the installed terminal, never saved accounts/profiles/EAs.
+SDK cold startup has a 60s budget, worker startup 75s and warm operations 15s.
+The read-only collector returns its snapshot before cleanup: the native owner
+first closes the entire terminal job (including WebView children), then runs its
+bounded cleanup action. Cleaning inside the collector raced Windows file locks
+and incorrectly replaced successful reads with sync errors.
+The native local supervisor must remain the single API owner of this terminal root;
+multiple independent API processes sharing it need a lifetime lease before use.
+
+Each worker operation checks DB generation, requested access, status and encrypted
+credential. Execution checks again immediately before its single `order_send`.
+Pause/disconnect/reconnect revoke the worker; generation changes do not discard
+unknown receipts. A broker timeout/crash remains unknown, blocks new sends and
+requires read-only reconciliation. Reconciliation verifies the same account,
+connection, environment and request identity across reconnects. Removing a
+connection is denied while any receipt is unresolved. There is no automatic send
+retry. A completed send result is preserved if access changes afterward.
+Revocation retains the shared worker slot until the in-flight operation finishes,
+so a new generation cannot start a second terminal while the previous one closes.
+
+Current commands support Market placement, full close, SL/TP changes and canceling
+existing pending orders on both hedging and netting accounts. New Limit/Stop orders
+and partial close remain unsupported. The UI exposes only supported capabilities.
+No broker order was sent for the implementation acceptance; synthetic SDK, native
+PostgreSQL and UI fixtures are separate from actual broker execution acceptance.
+See [current evidence](../evidence/mt5-connection-trading-20261022/CHECKPOINT.md).
+
+## Legacy external DEMO policy
+
+The following separately configured adapter remains available when no managed
+`connection_id` is supplied. Its stricter Demo-only limits are retained for
+compatibility; they do not configure the managed account flow above.
+
+This external-policy path is locked by default and cannot promote an investor
+connection. Its activation remains separate from managed connection access.
 
 An operator must explicitly approve the exact DEMO account, workspace, terminal,
 symbols and risk limits before configuring `TW_V2_MT5_DEMO_POLICY` to an absolute
@@ -111,13 +168,6 @@ Primary protocol references: [order_send](https://www.mql5.com/en/docs/python_me
 
 ### Product navigation
 
-Live → Tổng quan MT5 → Mở biểu đồ uses the Practice dashboard/setup/chart visual
-components while retaining this demo API and its receipt/controller ownership.
-Setup only selects an allowed symbol and timeframe; it never creates replay/prop
-sessions or mutates account balance, spread or fee assumptions. A single configured
-demo terminal supplies execution identity. Investor journal connections remain
-separate. Missing fees/specifications are explicitly unknown, not zero.
-The frontend route sanitizer excludes replay/session/dataset/prop state.
-
-Current runtime/UI evidence and limitations:
-`../evidence/mt5-overview-flow-20261022/CHECKPOINT.md`.
+The dashboard/chart visuals reuse Practice components. Route sanitization drops
+replay/session/dataset/Prop identifiers and preserves the selected MT5 connection.
+Symbol/timeframe selection never creates a replay session or rewrites broker costs.

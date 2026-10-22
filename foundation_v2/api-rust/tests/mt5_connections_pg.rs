@@ -70,6 +70,7 @@ async fn secrets_retries_isolation_and_lifecycle() {
     let created = request(&app, "POST", base, "tenant-a", draft.clone()).await;
     assert_eq!(created.0, 202, "{}", created.1);
     assert_eq!(created.1["status"], "queued");
+    assert_eq!(created.1["requested_mode"], "read_only");
     assert_eq!(created.1["login_hint"], "…4567");
     assert!(!created.1.to_string().contains("synthetic-private"));
     assert!(created.1.get("credential").is_none());
@@ -118,12 +119,14 @@ async fn secrets_retries_isolation_and_lifecycle() {
     reconnected["request_id"] = json!(uuid::Uuid::new_v4());
     reconnected["name"] = json!("Renamed");
     reconnected["password"] = json!("new-synthetic-private");
+    reconnected["requested_mode"] = json!("trading");
     assert_eq!(
         request(&app, "POST", base, "tenant-a", reconnected).await.0,
         202
     );
     let replay = request(&app, "POST", base, "tenant-a", draft.clone()).await;
     assert_eq!(replay.1["name"], "Renamed");
+    assert_eq!(replay.1["requested_mode"], "trading");
     assert_eq!(
         db.query_one(
             "SELECT generation FROM mt5_connections WHERE workspace_id='tenant-a'",
@@ -321,6 +324,22 @@ async fn secrets_retries_isolation_and_lifecycle() {
     assert_eq!(renamed.1["name"], "Renamed locally");
     assert_eq!(renamed.1["execution_capability"], false);
     let remove_path = format!("{base}/{id}/remove");
+    use sha2::{Digest, Sha256};
+    let key = Sha256::digest(format!("mt5-managed:tenant-a:{id}").as_bytes())
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect::<String>();
+    let receipt = uuid::Uuid::new_v4();
+    db.execute("INSERT INTO mt5_demo_requests(workspace_id,request_id,terminal_key,fingerprint,command_body,status,result) VALUES('tenant-a',$1,$2,'fixture','{}','unknown','{\"status\":\"unknown\"}')",&[&receipt,&key]).await.unwrap();
+    let blocked = request(&app, "POST", &remove_path, "tenant-a", Value::Null).await;
+    assert_eq!(blocked.0, 423);
+    assert_eq!(blocked.1["detail"], "mt5_reconciliation_required");
+    db.execute(
+        "DELETE FROM mt5_demo_requests WHERE request_id=$1",
+        &[&receipt],
+    )
+    .await
+    .unwrap();
     assert_eq!(
         request(&app, "POST", &remove_path, "tenant-b", Value::Null)
             .await

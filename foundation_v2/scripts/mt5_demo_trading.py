@@ -20,6 +20,13 @@ class Denied(Exception):
     pass
 
 
+class BrokerPolicy(dict):
+    """Internal capability created only by the authenticated connection worker.
+
+    JSON policy files cannot construct this type; legacy demo limits remain intact.
+    """
+
+
 def deny(reason):
     raise Denied(reason)
 
@@ -82,8 +89,10 @@ def identity(sdk, policy):
     if str(account.login) != policy['login'] or account.server != policy['server']:
         deny('demo_identity_changed')
     # ACCOUNT_TRADE_MODE_DEMO is 0. Never infer mode from a server's display name.
-    if account.trade_mode != 0:
+    if (account.trade_mode not in (0, 2)) if isinstance(policy, BrokerPolicy) else (account.trade_mode != 0):
         deny('demo_account_required')
+    if isinstance(policy, BrokerPolicy) and {0:'demo',2:'real'}[account.trade_mode] != policy['mode']:
+        deny('demo_identity_changed')
     if not account.trade_allowed or not account.trade_expert or not terminal.trade_allowed or terminal.tradeapi_disabled:
         deny('demo_trading_disabled')
     expected = Path(policy['terminal_path']).parent
@@ -92,7 +101,7 @@ def identity(sdk, policy):
     return account
 
 
-def instrument(sdk, policy, symbol, now=None):
+def instrument(sdk, policy, symbol, now=None, allow_stale=False):
     if symbol not in policy['symbols']:
         deny('demo_symbol_denied')
     identity(sdk, policy)
@@ -107,7 +116,7 @@ def instrument(sdk, policy, symbol, now=None):
     for value in (quote.bid, quote.ask, info.trade_tick_size, info.point, info.volume_min, info.volume_max, info.volume_step):
         finite(value, True)
     age = int((time.time() if now is None else now) * 1000) - quote.time_msc
-    if age < -1000 or age > policy['max_quote_age_ms'] or quote.ask < quote.bid:
+    if quote.ask < quote.bid or not allow_stale and (age < -1000 or age > policy['max_quote_age_ms']):
         deny('demo_quote_stale')
     return info, quote
 
@@ -189,7 +198,8 @@ def protection(info, quote, side, sl, tp, required=False):
 
 
 def prepare(sdk, policy, command):
-    if command.get('mode') != 'demo' or str(command.get('account_id')) != policy['login'] or command.get('server') != policy['server']:
+    managed = isinstance(policy, BrokerPolicy)
+    if command.get('mode') != (policy['mode'] if managed else 'demo') or str(command.get('account_id')) != policy['login'] or command.get('server') != policy['server']:
         deny('demo_identity_mismatch')
     symbol, action = command.get('symbol'), command.get('action', 'place')
     info, quote = instrument(sdk, policy, symbol)
@@ -204,21 +214,26 @@ def prepare(sdk, policy, command):
         if side not in ('BUY', 'SELL'):
             deny('demo_side_invalid')
         # Netting would merge user/order state. Initial workspace explicitly supports hedging only.
-        if account.margin_mode != 2:
+        if not managed and account.margin_mode != 2:
             deny('demo_hedging_required')
-        if info.trade_mode != 4 or not (info.order_mode & 1) or not (info.order_mode & 16):
+        if info.trade_mode not in ((1,2,4) if managed else (4,)) or not (info.order_mode & 1):
             deny('demo_symbol_trade_disabled')
-        if len(positions) + len(orders) >= policy['max_positions']:
+        if info.trade_mode == 1 and side != 'BUY' or info.trade_mode == 2 and side != 'SELL':
+            deny('demo_symbol_trade_disabled')
+        if not managed and len(positions) + len(orders) >= policy['max_positions']:
             deny('demo_position_limit')
         volume = finite(command.get('volume'), True)
-        if volume < info.volume_min or volume > min(info.volume_max, policy['max_volume']) or not aligned(volume, info.volume_step):
+        if volume < info.volume_min or volume > (info.volume_max if managed else min(info.volume_max, policy['max_volume'])) or not aligned(volume, info.volume_step):
             deny('demo_volume_step_or_limit')
         price = quote.ask if side == 'BUY' else quote.bid
-        sl, tp = protection(info, quote, side, command.get('stop_loss'), command.get('take_profit'), True)
+        sl, tp = protection(info, quote, side, command.get('stop_loss'), command.get('take_profit'), not managed)
+        if sl and not (info.order_mode & 16):
+            deny('demo_symbol_trade_disabled')
         if tp and not (info.order_mode & 32):
             deny('demo_symbol_trade_disabled')
-        estimated = stop_risk(sdk, policy, symbol, side, volume, price, sl)
-        total_risk, limit = risk_budget(sdk, policy, account, positions, orders, estimated)
+        estimated = stop_risk(sdk, policy, symbol, side, volume, price, sl) if sl else None
+        if not managed:
+            total_risk, limit = risk_budget(sdk, policy, account, positions, orders, estimated)
         identity(sdk, policy)
         margin = sdk.order_calc_margin(0 if side == 'BUY' else 1, symbol, volume, price)
         if margin is None or finite(margin) < 0 or margin > finite(account.margin_free):
@@ -232,7 +247,7 @@ def prepare(sdk, policy, command):
             deny('demo_ticket_invalid')
         items = orders if action == 'cancel' else positions
         item = next((p for p in items if p.ticket == ticket and p.symbol == symbol), None)
-        if item is None or item.magic != policy['magic']:
+        if item is None or not managed and item.magic != policy['magic']:
             deny('demo_ticket_not_managed')
         if action == 'cancel':
             if info.trade_freeze_level * info.point >= min(abs(item.price_open - quote.bid), abs(item.price_open - quote.ask)):
@@ -248,13 +263,14 @@ def prepare(sdk, policy, command):
                 request['price'] = price
         else:
             side = 'BUY' if item.type == 0 else 'SELL'
-            sl, tp = protection(info, quote, side, command.get('stop_loss'), command.get('take_profit'), True)
+            sl, tp = protection(info, quote, side, command.get('stop_loss'), command.get('take_profit'), not managed)
             # Reject modifying an already frozen level as well as a new frozen level.
             reference = quote.bid if side == 'BUY' else quote.ask
             if any(value and abs(value - reference) <= info.trade_freeze_level * info.point for value in (item.sl, item.tp)):
                 deny('demo_frozen')
-            estimated = stop_risk(sdk, policy, symbol, side, item.volume, quote.bid if side == 'BUY' else quote.ask, sl)
-            total_risk, limit = risk_budget(sdk, policy, account, positions, orders, estimated, ticket)
+            estimated = stop_risk(sdk, policy, symbol, side, item.volume, quote.bid if side == 'BUY' else quote.ask, sl) if sl else None
+            if not managed:
+                total_risk, limit = risk_budget(sdk, policy, account, positions, orders, estimated, ticket)
             request.update(action=6, position=ticket, sl=sl, tp=tp)
     else:
         deny('demo_action_unsupported')
@@ -262,7 +278,7 @@ def prepare(sdk, policy, command):
     check = sdk.order_check(request)
     if check is None or check.retcode != 0:
         deny('demo_order_check_rejected')
-    return request, {'passed': True, 'reason': 'demo_preview_passed', 'entry_price': price if action in ('place', 'close') else None, 'estimated_stop_risk': estimated, 'margin_required': margin, 'currency': account.currency, 'total_stop_risk': total_risk, 'risk_limit': limit, 'risk_estimate_excludes': ['slippage', 'gap_risk'], 'cost_buffer_per_lot': policy['cost_buffer_per_lot']}
+    return request, {'passed': True, 'reason': 'demo_preview_passed', 'entry_price': price if action in ('place', 'close') else None, 'estimated_stop_risk': estimated, 'margin_required': margin, 'currency': account.currency, 'total_stop_risk': total_risk, 'risk_limit': limit, 'risk_estimate_excludes': ['slippage', 'gap_risk', *(['commission','swap'] if managed else [])], 'cost_buffer_per_lot': None if managed else policy['cost_buffer_per_lot']}
 
 
 def execute(sdk, policy, command, before_send=lambda: None):
@@ -298,7 +314,7 @@ def execute(sdk, policy, command, before_send=lambda: None):
 
 
 def snapshot(sdk, policy, symbol, timeframe='M1'):
-    info, quote = instrument(sdk, policy, symbol)
+    info, quote = instrument(sdk, policy, symbol, allow_stale=isinstance(policy, BrokerPolicy))
     account = identity(sdk, policy)
     positions, orders = inventory(sdk)
     if timeframe not in ('M1','M5','M15','H1','H4','D1'):
@@ -307,15 +323,15 @@ def snapshot(sdk, policy, symbol, timeframe='M1'):
     if rates is None:
         deny('demo_bars_unavailable')
     def row(item, pending=False):
-        return {'ticket': item.ticket, 'symbol': item.symbol, 'side': 'BUY' if item.type in (0, 2, 4, 6) else 'SELL', 'volume': item.volume_current if pending else item.volume, 'price_open': item.price_open, 'sl': item.sl, 'tp': item.tp, 'profit': getattr(item, 'profit', None), 'type': item.type, 'managed': item.magic == policy['magic']}
+        return {'ticket': item.ticket, 'symbol': item.symbol, 'side': 'BUY' if item.type in (0, 2, 4, 6) else 'SELL', 'volume': item.volume_current if pending else item.volume, 'price_open': item.price_open, 'sl': item.sl, 'tp': item.tp, 'profit': getattr(item, 'profit', None), 'type': item.type, 'managed': isinstance(policy, BrokerPolicy) or item.magic == policy['magic']}
     identity(sdk, policy)
-    return {'status': 'ready', 'reason': 'demo_ready', 'mode': 'demo', 'execution_enabled': True, 'account': {key: getattr(account, key) for key in ('server', 'currency', 'balance', 'equity', 'margin', 'margin_free', 'trade_mode')} | {'login': str(account.login)}, 'symbols': policy['symbols'], 'symbol': symbol, 'timeframe': timeframe, 'quote': {'bid': quote.bid, 'ask': quote.ask, 'time_msc': quote.time_msc}, 'instrument': {'symbol':symbol, 'asset_class':'fx' if info.trade_calc_mode in (0,5) else 'other', 'tick_size': info.trade_tick_size, 'point': info.point, 'digits': info.digits, 'quantity_min': info.volume_min, 'quantity_max': info.volume_max, 'quantity_step': info.volume_step, 'stops_level': info.trade_stops_level, 'freeze_level': info.trade_freeze_level}, 'positions': [row(p) for p in positions], 'orders': [row(p, True) for p in orders], 'bars': [{'timestamp': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(int(r['time']))), **{key: float(r[key]) for key in ('open', 'high', 'low', 'close')}, 'volume': int(r['tick_volume'])} for r in rates], 'policy': {key: policy[key] for key in ('max_risk_amount', 'max_risk_pct', 'max_positions', 'max_volume', 'max_quote_age_ms', 'cost_buffer_per_lot')}}
+    return {'status': 'ready', 'reason': 'demo_ready', 'mode': policy['mode'] if isinstance(policy, BrokerPolicy) else 'demo', 'execution_enabled': True, 'account': {key: getattr(account, key) for key in ('server', 'currency', 'balance', 'equity', 'margin', 'margin_free', 'trade_mode', *(['leverage'] if isinstance(policy, BrokerPolicy) else []))} | {'login': str(account.login)}, 'symbols': policy['symbols'], 'symbol': symbol, 'timeframe': timeframe, 'quote': {'bid': quote.bid, 'ask': quote.ask, 'time_msc': quote.time_msc}, 'instrument': {'symbol':symbol, 'asset_class':'fx' if info.trade_calc_mode in (0,5) else 'other', 'tick_size': info.trade_tick_size, 'point': info.point, 'digits': info.digits, 'quantity_min': info.volume_min, 'quantity_max': info.volume_max, 'quantity_step': info.volume_step, 'stops_level': info.trade_stops_level, 'freeze_level': info.trade_freeze_level}, 'positions': [row(p) for p in positions], 'orders': [row(p, True) for p in orders], 'bars': [{'timestamp': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(int(r['time']))), **{key: float(r[key]) for key in ('open', 'high', 'low', 'close')}, 'volume': int(r['tick_volume'])} for r in rates], 'policy': {'source':'broker', 'max_quote_age_ms':policy['max_quote_age_ms']} if isinstance(policy, BrokerPolicy) else {key: policy[key] for key in ('max_risk_amount', 'max_risk_pct', 'max_positions', 'max_volume', 'max_quote_age_ms', 'cost_buffer_per_lot')}}
 
 
 def reconcile(sdk, policy, command, submitted_at, previous):
     """Prove a known broker outcome; absence of evidence is never a rejection."""
     identity(sdk, policy)
-    if command.get('mode') != 'demo' or command.get('account_id') != policy['login'] or command.get('server') != policy['server'] or command.get('symbol') not in policy['symbols']:
+    if command.get('mode') != (policy['mode'] if isinstance(policy, BrokerPolicy) else 'demo') or command.get('account_id') != policy['login'] or command.get('server') != policy['server'] or command.get('symbol') not in policy['symbols']:
         deny('demo_identity_mismatch')
     started = datetime.fromisoformat(submitted_at.replace('Z','+00:00'))
     now = datetime.now(timezone.utc)
@@ -326,8 +342,8 @@ def reconcile(sdk, policy, command, submitted_at, previous):
     action = command['action']
     ticket = command.get('ticket')
     if action == 'protect':
-        position = next((p for p in positions if p.ticket == ticket and p.symbol == command['symbol'] and p.magic == policy['magic']),None)
-        if position and position.time_update_msc >= int(started.timestamp()*1000) and position.sl == command['stop_loss'] and position.tp == (command.get('take_profit') or 0):
+        position = next((p for p in positions if p.ticket == ticket and p.symbol == command['symbol'] and (isinstance(policy, BrokerPolicy) or p.magic == policy['magic'])),None)
+        if position and position.time_update_msc >= int(started.timestamp()*1000) and position.sl == (command.get('stop_loss') or 0) and position.tp == (command.get('take_profit') or 0):
             identity(sdk, policy)
             return {'resolved':True,'status':'accepted','reason':'demo_reconciled_protection_active','requires_reconciliation':False,'position':ticket,'evidence':{'sl':position.sl,'tp':position.tp,'time_update_msc':position.time_update_msc}}
         return {'resolved':False,'reason':'demo_reconciliation_unproven'}
@@ -337,7 +353,7 @@ def reconcile(sdk, policy, command, submitted_at, previous):
         history = sdk.history_orders_get(ticket=ticket)
         if history is None:
             deny('demo_history_unavailable')
-        matched = [o for o in history if o.ticket == ticket and o.symbol == command['symbol'] and o.magic == policy['magic'] and o.state == 2 and o.time_done_msc >= int(started.timestamp()*1000)]
+        matched = [o for o in history if o.ticket == ticket and o.symbol == command['symbol'] and (isinstance(policy, BrokerPolicy) or o.magic == policy['magic']) and o.state == 2 and o.time_done_msc >= int(started.timestamp()*1000)]
         if len(matched) == 1:
             identity(sdk, policy)
             return {'resolved':True,'status':'accepted','reason':'demo_reconciled_cancelled','requires_reconciliation':False,'order':ticket}
@@ -356,7 +372,7 @@ def reconcile(sdk, policy, command, submitted_at, previous):
     if not matches:
         return {'resolved':False,'reason':'demo_reconciliation_unproven'}
     if action == 'place':
-        if any(d.entry != 0 or d.type != expected_side for d in matches):
+        if any(d.entry not in ((0,1,2) if isinstance(policy, BrokerPolicy) else (0,)) or d.type != expected_side for d in matches):
             return {'resolved':False,'reason':'demo_reconciliation_unproven'}
     else:
         if any(d.entry not in (1,3) or d.position_id != ticket for d in matches) or any(p.ticket == ticket for p in positions):

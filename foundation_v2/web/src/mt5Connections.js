@@ -1,15 +1,19 @@
 export const MT5_STATUS = {
-  queued:'Đang chờ đồng bộ', syncing:'Đang đồng bộ', connected:'Đã đồng bộ · chỉ đọc',
+  queued:'Đang chờ đồng bộ', syncing:'Đang đồng bộ', connected:'Đã kết nối',
   error:'Lỗi kết nối', paused:'Đã tạm dừng', disconnected:'Đã ngắt kết nối',
 }
 const ERRORS = {
+  mt5_reconciliation_required:'Cần đối soát lệnh chưa rõ kết quả trước khi gỡ kết nối tài khoản.',
   invalid_mt5_connection:'Thông tin tài khoản chưa hợp lệ. Kiểm tra tên, server và số tài khoản MT5.',
   invalid_mt5_start_date:'Ngày bắt đầu phải từ 01/01/2000 đến hôm nay (UTC).',
-  mt5_login_failed:'Chưa kết nối được MT5. Kiểm tra terminal, mạng, máy chủ, tài khoản và mật khẩu investor.',
-  mt5_auth_failed:'MT5 từ chối đăng nhập. Kiểm tra máy chủ, tài khoản và mật khẩu investor.',
+  mt5_login_failed:'Chưa kết nối được MT5. Kiểm tra terminal, mạng, máy chủ, tài khoản và mật khẩu MT5.',
+  mt5_auth_failed:'MT5 từ chối đăng nhập. Kiểm tra máy chủ, tài khoản và mật khẩu MT5.',
   mt5_initialization_failed:'Chưa khởi tạo được kết nối MT5. Kiểm tra terminal, mạng và thông tin đăng nhập.',
   mt5_terminal_unavailable:'Không liên lạc được với terminal MT5 riêng. Kiểm tra terminal trên máy chạy API rồi thử lại.',
   mt5_version_unsupported:'Phiên bản MT5 và bộ kết nối chưa tương thích. Cần kiểm tra phiên bản trên máy chạy API.',
+  mt5_trading_disabled:'MT5 chưa cấp quyền giao dịch. Kiểm tra mật khẩu giao dịch và quyền Algo Trading trên terminal.',
+  mt5_account_mode_unsupported:'Loại tài khoản MT5 này chưa được hỗ trợ.',
+  mt5_connection_revoked:'Kết nối đã thay đổi. Tải lại tài khoản trước khi tiếp tục.',
   mt5_investor_required:'Tài khoản đang có quyền giao dịch. Hãy dùng mật khẩu investor (chỉ đọc).',
   mt5_identity_changed:'Thông tin terminal không khớp tài khoản. Kết nối đã bị chặn.',
   mt5_terminal_missing:'Chưa tìm thấy terminal MetaTrader 5 trên máy chạy API.',

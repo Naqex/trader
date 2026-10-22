@@ -20,6 +20,6 @@ export default function Mt5TradingConditions({ snapshot, stale = false }) {
       <div><dt>{t('Hoa hồng')}</dt><dd>{t('Theo broker · chưa có biểu phí')}</dd></div>
     </dl>
     <p className="live-muted">{t('Thông số từ terminal MT5; spread thay đổi theo giá. Phí thực thu lấy từ lịch sử khớp lệnh. Không dùng chi phí mô phỏng.')}</p>
-    {snapshot?.policy && <p className="live-muted">{t('Giới hạn của ứng dụng')}: {value(snapshot.policy.max_volume,' lot')} · {value(snapshot.policy.max_risk_amount,account?.currency ? ` ${account.currency}`:'')} {t('tổng rủi ro')}. {t('Khoản dự phòng chi phí không phải biểu phí broker.')}</p>}
+    {snapshot?.policy && snapshot.policy.source!=='broker' && <p className="live-muted">{t('Giới hạn của ứng dụng')}: {value(snapshot.policy.max_volume,' lot')} · {value(snapshot.policy.max_risk_amount,account?.currency ? ` ${account.currency}`:'')} {t('tổng rủi ro')}. {t('Khoản dự phòng chi phí không phải biểu phí broker.')}</p>}
   </section>
 }

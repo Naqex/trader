@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "scope": "owned disposable PostgreSQL; real native Router, auth, locked policy, durable unknown retry/concurrency, pause/resume and scope; no SDK or terminal",
+  "owner_runtime_touched": false,
+  "source_unchanged": true,
+  "source_sha256": {
+    "api-rust\\src\\demo_trading.rs": "aec78427616a674fce0a454f1cd5425a8b936b203c637a48b981d71c190e0d4f",
+    "api-rust\\tests\\demo_trading_pg.rs": "275aa2fe599fd393d28f91b1a74f6e49bae5e07556bd52ec093504f4fe33c2bf",
+    "scripts\\mt5_demo_trading.py": "d4d55533a37192fff1cbd975fcfeca0c744754546ad0b3e16b96317727c74777",
+    "api-rust\\tests\\demo_trading_pg.py": "ff9a9c24f287733b3a9bceecf8f7dd9207865bfbb224a18ed439dfe65c1ed4fd",
+    "api-rust\\src\\lib.rs": "345f019add5fce330b58ba4c5c68cdf31b1f10e454d338d6ffa251b27a141205",
+    "api-rust\\src\\commands.rs": "15d20f72fe5cbcc508bcb6cd31194635d0213b903cd138ffa8e663d9d24c88c8",
+    "api-rust\\src\\rust_runtime.rs": "a2a4c2390e1740d6b0794ca8032d378ee65c485f7b2f3989b5214d9e811362b4",
+    "api-rust\\src\\native_mutation.rs": "3370b2b9ceec6dcb778fabda2469261fbd94a4489a0494411d55b19a05241283",
+    "migrations\\0010_demo_trading.sql": "b4f63edab863d2ea254e3cef30b60bb86f9fbd6e0ccdff175b2efec911ca1c32"
+  },
+  "stdout": "\nrunning 1 test\ntest locked_policy_durable_unknown_retries_controls_and_scopes ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.60s\n\n",
+  "stderr": "    Blocking waiting for file lock on build directory\n   Compiling trading-workspace-api v0.1.0 (D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 50s\n     Running tests\\demo_trading_pg.rs (target\\debug\\deps\\demo_trading_pg-793ce1f0b8090c9e.exe)\n"
+}

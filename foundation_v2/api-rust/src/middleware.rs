@@ -111,7 +111,14 @@ pub async fn boundary(
                 .insert("retry-after", HeaderValue::from_static("1"));
             return response;
         };
-        match tokio::time::timeout(state.config.request_timeout, next.run(request)).await {
+        // A cold owned MT5 terminal may need the SDK's 60s startup deadline.
+        // Other API pages retain their configured request budget.
+        let budget = if request.uri().path().starts_with("/api/v2/live/trading") {
+            state.config.request_timeout.max(Duration::from_secs(120))
+        } else {
+            state.config.request_timeout
+        };
+        match tokio::time::timeout(budget, next.run(request)).await {
             Ok(response) => response,
             Err(_) => {
                 ApiError::detail(StatusCode::GATEWAY_TIMEOUT, "request_timeout").into_response()

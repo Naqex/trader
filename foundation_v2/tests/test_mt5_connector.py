@@ -38,12 +38,39 @@ class ConnectorTests(unittest.TestCase):
         self.sdk.order_check.assert_not_called()
         self.assertEqual(self.sdk.history_deals_get.call_count,3)
 
-    def test_reject_trade_permission_and_identity_change(self):
+    def test_read_only_is_application_access_not_password_inference(self):
         self.account.trade_allowed=True
-        with self.assertRaisesRegex(RuntimeError,'mt5_investor_required'):self.read()
+        self.assertFalse(self.read()['verified_permissions']['trade'])
+        self.sdk.order_send.assert_not_called()
         self.account.trade_allowed=False
         self.sdk.account_info.side_effect=[self.account,NS(login=7,server='Fixture-Demo')]
         with self.assertRaisesRegex(RuntimeError,'mt5_identity_changed'):self.read()
+
+    def test_trading_permission_and_environment_are_separate(self):
+        self.account.trade_allowed=True
+        self.account.trade_expert=True
+        self.sdk.terminal_info.return_value=NS(connected=True,trade_allowed=True,tradeapi_disabled=False)
+        for environment in (0,2):
+            self.account.trade_mode=environment
+            self.assertEqual(connector.verify_identity(self.sdk,self.secret,'trading'),self.account)
+        self.account.trade_allowed=False
+        with self.assertRaisesRegex(RuntimeError,'mt5_trading_disabled'):
+            connector.verify_identity(self.sdk,self.secret,'trading')
+
+    def test_discovery_copies_only_matching_install_public_server_data(self):
+        with tempfile.TemporaryDirectory() as temp:
+            base=Path(temp);source=base/'install/terminal64.exe';source.parent.mkdir();source.write_bytes(b'fixture')
+            app=base/'appdata';data=app/'MetaQuotes/Terminal/matching';(data/'Config').mkdir(parents=True)
+            (data/'origin.txt').write_text(str(source.parent),encoding='utf-16')
+            (data/'Config/servers.dat').write_bytes(b'public discovery')
+            (data/'Config/accounts.dat').write_bytes(b'private fixture must not copy')
+            other=app/'MetaQuotes/Terminal/other';(other/'Config').mkdir(parents=True)
+            (other/'origin.txt').write_text(str(base/'other-install'))
+            (other/'Config/servers.dat').write_bytes(b'wrong installation')
+            with patch.dict('os.environ',APPDATA=str(app)),patch.object(connector,'terminal_source',return_value=source):
+                terminal,_=connector.prepare_terminal(base/'owned',str(uuid.uuid4()))
+                self.assertEqual((terminal.parent/'Config/servers.dat').read_bytes(),b'public discovery')
+                self.assertFalse((terminal.parent/'Config/accounts.dat').exists())
 
     def test_initialize_errors_distinguish_auth_ipc_timeout_and_unknown(self):
         cases = {-6:'mt5_auth_failed', -10005:'mt5_sync_timeout',
@@ -113,7 +140,7 @@ class ConnectorTests(unittest.TestCase):
                 self.assertEqual(file.read_text(),'preserve')
             finally:junction.rmdir()
 
-    def test_collect_uses_explicit_portable_terminal_and_cleans_failed_login(self):
+    def test_failed_login_preserves_error_until_owner_tree_stops_then_cleans(self):
         import base64
         import json
         with tempfile.TemporaryDirectory(prefix='mt5-run-') as temp:
@@ -128,9 +155,11 @@ class ConnectorTests(unittest.TestCase):
             process=Mock();process.poll.return_value=None
             with patch.dict('sys.modules',MetaTrader5=self.sdk),patch.object(connector,'prepare_terminal',return_value=(binary,config)),patch.object(connector.subprocess,'Popen',return_value=process) as spawn,patch.object(connector.time,'sleep'):
                 with self.assertRaisesRegex(RuntimeError,'mt5_auth_failed'):connector.run(request)
-                self.sdk.initialize.assert_called_once_with(str(binary),login=1234567,password='fixture-only',server='Fixture-Demo',timeout=20000,portable=True)
+                self.sdk.initialize.assert_called_once_with(str(binary),login=1234567,password='fixture-only',server='Fixture-Demo',timeout=60000,portable=True)
                 self.assertNotIn('fixture-only',str(spawn.call_args))
                 process.terminate.assert_called_once();self.sdk.shutdown.assert_called_once()
+                self.assertTrue((folder/'Config/accounts.dat').exists())
+                connector.run({'action':'cleanup','root':str(root),'connection_id':folder.name})
                 self.assertEqual([p.name for p in folder.iterdir()],['terminal64.exe'])
 
 if __name__=='__main__':unittest.main()

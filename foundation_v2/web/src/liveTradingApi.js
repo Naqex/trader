@@ -5,7 +5,7 @@ async function request(workspace, path, { body, signal } = {}) {
   const abort = () => controller.abort()
   signal?.addEventListener('abort',abort,{once:true})
   if (signal?.aborted) controller.abort()
-  const timer = setTimeout(abort,body ? 25000 : 12000)
+  const timer = setTimeout(abort,125000)
   try {
     // Commands never retry automatically: an interrupted send needs reconciliation.
     const response = await fetch(`/api/v2/live/trading${path}`,{ method:body ? 'POST' : 'GET', signal:controller.signal,
@@ -15,11 +15,12 @@ async function request(workspace, path, { body, signal } = {}) {
     return payload
   } finally { clearTimeout(timer); signal?.removeEventListener('abort',abort) }
 }
-export async function readDemoTrading(workspace,symbol,timeframe,signal) {
+export async function readDemoTrading(workspace,symbol,timeframe,signal,connectionId) {
   const params = new URLSearchParams({timeframe})
   if (symbol) params.set('symbol',symbol)
+  if (connectionId) params.set('connection_id',connectionId)
   return decodeDemoSnapshot(await request(workspace,`?${params}`,{signal}))
 }
 export const previewDemoOrder = (workspace,body,signal) => request(workspace,'/preview',{body,signal})
 export const commandDemoOrder = (workspace,body) => request(workspace,'/commands',{body})
-export const reconcileDemoOrder = (workspace,requestId) => request(workspace,'/reconcile',{body:{request_id:requestId}})
+export const reconcileDemoOrder = (workspace,requestId,connectionId) => request(workspace,'/reconcile',{body:{request_id:requestId,...(connectionId?{connection_id:connectionId}:{})}})

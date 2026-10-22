@@ -42,3 +42,18 @@ test('accepted or partial results needing reconciliation never release the send 
  }
  assert.equal(finalDemoReceipt({status:'unknown'}),false)
 })
+
+
+test('managed Demo and Real accounts share order rules and preserve connection identity',()=>{
+ for(const mode of ['demo','real']) {
+  const payload={...ready,mode,connection_id:'selected-connection',policy:{source:'broker',max_quote_age_ms:5000},account:{...ready.account,trade_mode:mode}}
+  assert.equal(tradingReady(payload,now),true)
+  const draft={...DEMO_DRAFT,quantity:'0.02'}
+  assert.equal(demoDraftError(draft,spec,payload.quote,true),'')
+  const intent=demoIntent(payload,'EURUSD',draft)
+  assert.equal(intent.mode,mode)
+  assert.equal(intent.connection_id,'selected-connection')
+  assert.equal(intent.stop_loss,null)
+ }
+ assert.equal(tradingReady({...ready,mode:'real',account:{...ready.account,trade_mode:'real'}},now),false)
+})

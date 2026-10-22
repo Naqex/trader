@@ -1,0 +1,38 @@
+[
+  {
+    "status": "connected",
+    "error_code": null,
+    "last_synced_at": "2026-10-22T15:31:45.765132Z",
+    "requested_mode": "read_only"
+  },
+  {
+    "status": "connected",
+    "error_code": null,
+    "last_synced_at": "2026-10-22T15:31:53.086481Z",
+    "requested_mode": "read_only"
+  },
+  {
+    "status": "connected",
+    "error_code": null,
+    "last_synced_at": "2026-10-22T15:32:00.353061Z",
+    "requested_mode": "read_only"
+  },
+  {
+    "status": "connected",
+    "error_code": null,
+    "last_synced_at": "2026-10-22T15:32:07.589604Z",
+    "requested_mode": "read_only"
+  },
+  {
+    "status": "connected",
+    "error_code": null,
+    "last_synced_at": "2026-10-22T15:32:15.317306Z",
+    "requested_mode": "read_only"
+  },
+  {
+    "status": "connected",
+    "error_code": null,
+    "last_synced_at": "2026-10-22T15:32:23.067343Z",
+    "requested_mode": "read_only"
+  }
+]

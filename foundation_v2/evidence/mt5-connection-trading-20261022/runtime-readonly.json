@@ -1,0 +1,53 @@
+{
+  "captured_at": "2026-10-22T15:33:01.4835915Z",
+  "health": {
+    "command_worker": "not_required",
+    "contract_version": "foundation-v2.1",
+    "database": "ready",
+    "ok": true
+  },
+  "connections": {
+    "available": true,
+    "execution_capability": false,
+    "items": [
+      {
+        "account": {
+          "account_ref": "…4926",
+          "balance": 10000.0,
+          "currency": "USD",
+          "equity": 10000.0,
+          "leverage": 2000,
+          "margin": 0.0,
+          "margin_free": 10000.0,
+          "profit": 0.0
+        },
+        "account_environment": "demo",
+        "error_code": null,
+        "execution_capability": false,
+        "id": "f0e978a6-2f82-45ac-8dee-c5b36416057a",
+        "last_synced_at": "2026-10-22T15:32:23.067343Z",
+        "login_hint": "…4926",
+        "name": "MetaTrader 5",
+        "requested_mode": "read_only",
+        "server": "Exness-MT5Trial17",
+        "source": "Exness-MT5Trial17 / MT5",
+        "start_date": "2026-10-22",
+        "status": "connected",
+        "verified_permissions": {
+          "read": true,
+          "trade": false
+        }
+      }
+    ]
+  },
+  "runtime": {
+    "run_id": "996ff9179967439fadbdf8ed29cc2488",
+    "runtime_profile": "native",
+    "replay_storage_profile": "compact",
+    "executable_sha256": {
+      "supervisor": "4d6f5f81a4bca11191c4c7c6b43632694d0a4ce74e068619d8fdc161d469859a",
+      "research": "8efef9d5c6f1a04877798323be9f9dcd69fadcd9998ce8e883ce3286d8215f08",
+      "api": "d5636d45f2a810841ed8a79f6a9553317e002e68bf4a48c1eef4c12fcc6e661c"
+    }
+  }
+}

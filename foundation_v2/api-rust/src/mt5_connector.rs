@@ -86,10 +86,10 @@ fn local_origin(headers: &HeaderMap) -> Result<(), ApiError> {
     }
     Ok(())
 }
-const SUMMARY_COLUMNS: &str = "connection_id,name,server,login_hint,start_date,status,error_code,last_synced_at,CASE WHEN snapshot IS NULL THEN NULL ELSE jsonb_build_object('status',snapshot->'status','account',snapshot->'account','source',snapshot->'source','captured_at_utc',snapshot->'captured_at_utc','history_from_utc',snapshot->'history_from_utc') END AS snapshot";
+const SUMMARY_COLUMNS: &str = "connection_id,name,server,login_hint,start_date,status,error_code,last_synced_at,requested_mode,CASE WHEN snapshot IS NULL THEN NULL ELSE jsonb_build_object('status',snapshot->'status','account',snapshot->'account','source',snapshot->'source','captured_at_utc',snapshot->'captured_at_utc','history_from_utc',snapshot->'history_from_utc','verified_permissions',snapshot->'verified_permissions','account_environment',snapshot->'account_environment') END AS snapshot";
 fn public(row: &Row) -> Value {
     let snapshot: Option<Value> = row.get("snapshot");
-    json!({"id":row.get::<_,Uuid>("connection_id"),"name":row.get::<_,String>("name"),"server":row.get::<_,String>("server"),"login_hint":row.get::<_,String>("login_hint"),"start_date":row.get::<_,NaiveDate>("start_date"),"status":row.get::<_,String>("status"),"error_code":row.get::<_,Option<String>>("error_code"),"last_synced_at":row.get::<_,Option<chrono::DateTime<Utc>>>("last_synced_at"),"account":snapshot.as_ref().and_then(|v|v.get("account")),"source":snapshot.as_ref().and_then(|v|v.get("source")),"execution_capability":false})
+    json!({"id":row.get::<_,Uuid>("connection_id"),"name":row.get::<_,String>("name"),"server":row.get::<_,String>("server"),"login_hint":row.get::<_,String>("login_hint"),"start_date":row.get::<_,NaiveDate>("start_date"),"requested_mode":row.get::<_,String>("requested_mode"),"status":row.get::<_,String>("status"),"error_code":row.get::<_,Option<String>>("error_code"),"last_synced_at":row.get::<_,Option<chrono::DateTime<Utc>>>("last_synced_at"),"account":snapshot.as_ref().and_then(|v|v.get("account")),"source":snapshot.as_ref().and_then(|v|v.get("source")),"verified_permissions":snapshot.as_ref().and_then(|v|v.get("verified_permissions")),"account_environment":snapshot.as_ref().and_then(|v|v.get("account_environment")),"execution_capability":false})
 }
 async fn list(
     State(state): State<Arc<AppState>>,
@@ -118,12 +118,18 @@ struct Connect {
     login: String,
     password: String,
     start_date: String,
+    #[serde(default = "read_only_mode")]
+    requested_mode: String,
+}
+fn read_only_mode() -> String {
+    "read_only".into()
 }
 fn validate(draft: &Connect) -> Result<NaiveDate, ApiError> {
     let text = |s: &str, max: usize| {
         !s.trim().is_empty() && s.len() <= max && !s.chars().any(char::is_control)
     };
-    if !text(&draft.name, 160)
+    if !matches!(draft.requested_mode.as_str(), "read_only" | "trading")
+        || !text(&draft.name, 160)
         || !text(&draft.server, 160)
         || draft.server != draft.server.trim()
         || draft.login.len() > 20
@@ -188,7 +194,10 @@ async fn connect(
     .map_err(|_| ApiError::database())?;
     let fingerprint = format!(
         "{:x}",
-        Sha256::digest(serde_json::to_vec(&json!([key, draft.name.trim(), date])).unwrap())
+        Sha256::digest(
+            serde_json::to_vec(&json!([key, draft.name.trim(), date, draft.requested_mode]))
+                .unwrap()
+        )
     );
     if let Some(receipt)=tx.query_opt("SELECT connection_id,fingerprint FROM mt5_connection_requests WHERE workspace_id=$1 AND request_id=$2",&[&scope.workspace_id,&draft.request_id]).await.map_err(|_|ApiError::database())? {
         if receipt.get::<_,String>("fingerprint")!=fingerprint{return Err(ApiError::detail(StatusCode::CONFLICT,"mt5_request_conflict"))}
@@ -242,9 +251,13 @@ async fn connect(
     )
     .await
     .map_err(|_| ApiError::database())?;
-    let row=tx.query_one("INSERT INTO mt5_connections(workspace_id,connection_id,request_id,account_key,name,server,login_hint,start_date,credential,status) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,'queued') ON CONFLICT(workspace_id,account_key) DO UPDATE SET request_id=EXCLUDED.request_id,name=EXCLUDED.name,credential=EXCLUDED.credential,start_date=EXCLUDED.start_date,snapshot=CASE WHEN mt5_connections.start_date=EXCLUDED.start_date THEN mt5_connections.snapshot ELSE NULL END,last_synced_at=CASE WHEN mt5_connections.start_date=EXCLUDED.start_date THEN mt5_connections.last_synced_at ELSE NULL END,generation=mt5_connections.generation+1,full_sync=true,status='queued',error_code=NULL,next_sync_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP RETURNING *",&[&scope.workspace_id,&id,&draft.request_id,&key,&draft.name.trim(),&draft.server,&hint,&date,&credential]).await.map_err(|_|ApiError::database())?;
+    let row=tx.query_one("INSERT INTO mt5_connections(workspace_id,connection_id,request_id,account_key,name,server,login_hint,start_date,credential,status,requested_mode) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,'queued',$10) ON CONFLICT(workspace_id,account_key) DO UPDATE SET request_id=EXCLUDED.request_id,name=EXCLUDED.name,credential=EXCLUDED.credential,start_date=EXCLUDED.start_date,requested_mode=EXCLUDED.requested_mode,snapshot=CASE WHEN mt5_connections.start_date=EXCLUDED.start_date AND mt5_connections.requested_mode=EXCLUDED.requested_mode THEN mt5_connections.snapshot ELSE NULL END,last_synced_at=CASE WHEN mt5_connections.start_date=EXCLUDED.start_date AND mt5_connections.requested_mode=EXCLUDED.requested_mode THEN mt5_connections.last_synced_at ELSE NULL END,generation=mt5_connections.generation+1,full_sync=true,status='queued',error_code=NULL,next_sync_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP RETURNING *",&[&scope.workspace_id,&id,&draft.request_id,&key,&draft.name.trim(),&draft.server,&hint,&date,&credential,&draft.requested_mode]).await.map_err(|_|ApiError::database())?;
     tx.execute("INSERT INTO mt5_connection_requests(workspace_id,request_id,connection_id,fingerprint) VALUES($1,$2,$3,$4)",&[&scope.workspace_id,&draft.request_id,&id,&fingerprint]).await.map_err(|_|ApiError::database())?;
     tx.commit().await.map_err(|_| ApiError::database())?;
+    let workspace = scope.workspace_id.clone();
+    tokio::spawn(async move {
+        crate::demo_trading::revoke_managed_worker(&workspace, id).await;
+    });
     Ok((StatusCode::ACCEPTED, Json(public(&row))))
 }
 async fn action(
@@ -289,6 +302,18 @@ async fn action(
         }
         // Removing this local connector never closes or deletes the broker account.
         // A worker with an in-flight snapshot cannot update a missing connection id.
+        let key = crate::demo_trading::managed_terminal_key(&scope.workspace_id, id);
+        let lock = i64::from_be_bytes(Sha256::digest(key.as_bytes())[..8].try_into().unwrap());
+        tx.query_one("SELECT pg_advisory_xact_lock($1)", &[&lock])
+            .await
+            .map_err(|_| ApiError::database())?;
+        let unresolved: bool = tx.query_one("SELECT EXISTS(SELECT 1 FROM mt5_demo_requests WHERE terminal_key=$1 AND (status='unknown' OR result->>'requires_reconciliation'='true'))", &[&key]).await.map_err(|_|ApiError::database())?.get(0);
+        if unresolved {
+            return Err(ApiError::detail(
+                StatusCode::LOCKED,
+                "mt5_reconciliation_required",
+            ));
+        }
         tx.execute(
             "DELETE FROM mt5_connection_requests WHERE workspace_id=$1 AND connection_id=$2",
             &[&scope.workspace_id, &id],
@@ -302,6 +327,10 @@ async fn action(
         .await
         .map_err(|_| ApiError::database())?;
         tx.commit().await.map_err(|_| ApiError::database())?;
+        let workspace = scope.workspace_id.clone();
+        tokio::spawn(async move {
+            crate::demo_trading::revoke_managed_worker(&workspace, id).await;
+        });
         return Ok(Json(
             json!({"id":id,"removed":true,"execution_capability":false}),
         ));
@@ -314,6 +343,10 @@ async fn action(
     };
     let conn = state.pool.get().await.map_err(|_| ApiError::database())?;
     let row=conn.query_opt("UPDATE mt5_connections SET status=$3,generation=generation+1,error_code=NULL,credential=CASE WHEN $3='disconnected' THEN NULL ELSE credential END,full_sync=CASE WHEN $3='queued' THEN true ELSE full_sync END,next_sync_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE workspace_id=$1 AND connection_id=$2 AND ($3 IN ('paused','disconnected') OR credential IS NOT NULL) RETURNING *",&[&scope.workspace_id,&id,&status]).await.map_err(|_|ApiError::database())?.ok_or_else(||ApiError::detail(StatusCode::NOT_FOUND,"mt5_connection_missing_or_credentials_required"))?;
+    let workspace = scope.workspace_id.clone();
+    tokio::spawn(async move {
+        crate::demo_trading::revoke_managed_worker(&workspace, id).await;
+    });
     Ok(Json(public(&row)))
 }
 
@@ -568,7 +601,8 @@ async fn run_one(state: &Arc<AppState>) -> Result<(), String> {
     }
     let id: Uuid = row.get("connection_id");
     let generation: i64 = row.get("generation");
-    if conn.execute("UPDATE mt5_connections SET status='syncing',updated_at=CURRENT_TIMESTAMP WHERE workspace_id=$1 AND connection_id=$2 AND generation=$3",&[&workspace,&id,&generation]).await.map_err(|_|"mt5_database_unavailable")?!=1{return Ok(())}
+    let trading = row.get::<_, String>("requested_mode") == "trading";
+    if conn.execute("UPDATE mt5_connections SET status=CASE WHEN requested_mode='trading' AND status='connected' THEN status ELSE 'syncing' END,updated_at=CURRENT_TIMESTAMP WHERE workspace_id=$1 AND connection_id=$2 AND generation=$3",&[&workspace,&id,&generation]).await.map_err(|_|"mt5_database_unavailable")?!=1{return Ok(())}
     let date: NaiveDate = row.get("start_date");
     let history = format!("{date}T00:00:00Z");
     let last: Option<chrono::DateTime<Utc>> = if row.get::<_, bool>("full_sync") {
@@ -581,10 +615,22 @@ async fn run_one(state: &Arc<AppState>) -> Result<(), String> {
         .filter(|value| value.as_str() > history.as_str())
         .unwrap_or_else(|| history.clone());
     let result = {
-        let work = adapter(
-            json!({"action":"collect","workspace":workspace,"connection_id":id,"root":root(),"credential":row.get::<_,String>("credential"),"from_utc":from,"history_from_utc":history}),
-            Duration::from_secs(120),
-        );
+        let work = async {
+            if trading {
+                crate::demo_trading::managed_collect(
+                    state,
+                    &workspace,
+                    id,
+                    generation,
+                    row.get::<_, String>("credential"),
+                    &from,
+                    &history,
+                )
+                .await
+            } else {
+                adapter(json!({"action":"collect","workspace":workspace,"connection_id":id,"generation":generation,"requested_mode":row.get::<_,String>("requested_mode"),"root":root(),"credential":row.get::<_,String>("credential"),"from_utc":from,"history_from_utc":history}),Duration::from_secs(120)).await
+            }
+        };
         tokio::pin!(work);
         loop {
             tokio::select! {
@@ -597,11 +643,15 @@ async fn run_one(state: &Arc<AppState>) -> Result<(), String> {
         }
     };
     // Dropping the adapter future kills its job tree before disposing terminal files.
-    let cleanup = adapter(
-        json!({"action":"cleanup","connection_id":id,"root":root()}),
-        Duration::from_secs(15),
-    )
-    .await;
+    let cleanup = if trading {
+        Ok(json!({"persistent_worker":true}))
+    } else {
+        adapter(
+            json!({"action":"cleanup","connection_id":id,"root":root()}),
+            Duration::from_secs(15),
+        )
+        .await
+    };
     let Some(result) = result else { return Ok(()) };
     let result = result.and_then(|next| {
         cleanup?;
@@ -639,6 +689,7 @@ mod tests {
             login: "12345".into(),
             password: "secret".into(),
             start_date: "2026-01-01".into(),
+            requested_mode: "read_only".into(),
         };
         assert!(validate(&d).is_ok());
         d.login = "../../a".into();
