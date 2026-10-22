@@ -149,9 +149,13 @@ positions, pending orders and quotes remain accessible in the read-only snapshot
 disclosure on Transactions.
 
 The local MetaTrader 5 connector uses the existing FxSelect, ProjectDateInput,
-field/button tokens and account table. The Add account panel accepts server,
-numeric login, investor password and UTC history start date. Pending submissions
-lock the form; an unknown network outcome retries the same request ID. The visible
+field/button tokens and account table. The provider picker uses a circular
+MetaTrader mark above its label, with token
+colors for hover, focus and disabled states. It has no info icon or helper copy;
+connection details remain in the form.
+The Add account panel accepts server, numeric login, investor password and UTC
+history start date. Pending submissions lock the form; an unknown network outcome
+retries the same request ID. The visible
 password clears on submission; an uncertain request retains it only in component
 memory until reconciliation or unmount. It is never persisted in browser storage.
 Known validation failures require correction and password re-entry.
