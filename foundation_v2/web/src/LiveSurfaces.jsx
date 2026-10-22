@@ -14,7 +14,7 @@ import LiveAccounts from './LiveAccounts.jsx'
 import { ManualTrades, JournalNotes, JournalTags } from './LiveJournalSurfaces.jsx'
 import { navigate } from './clientNavigation.js'
 import LiveBrokerSnapshot from './LiveBrokerSnapshot.jsx'
-import { LIVE_FILTERS, calendarWeeks, cumulativeDealSeries, dayKey, dealNet, filterLiveDeals, summarizeDeals } from './liveWorkspaceModel.js'
+import { LIVE_FILTERS, calendarWeeks, calendarWeekSummary, cumulativeDealSeries, dayKey, dealNet, filterLiveDeals, summarizeDeals } from './liveWorkspaceModel.js'
 
 const FILTER_LABELS = { asset: 'Assets', side: 'Side', outcome: 'Deal result', account: 'Accounts', day: 'Day', timezone: 'Timezone', from: 'Start', to: 'End' }
 const FILTER_VALUES = { side: { 0: 'Buy', 1: 'Sell' }, outcome: { gain: 'Positive PnL', loss: 'Negative PnL', flat: 'Zero PnL' }, day: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] }
@@ -77,18 +77,20 @@ function PnlCurve({ deals, currency, emptyTitle = 'No analytics yet' }) {
   </section>
 }
 
-function Calendar({ payload, deals, filters, filterBar, reviewScope, canWrite, onPreview }) {
+function Calendar({ payload, deals, filters, filterBar, reviewScope, canWrite, onPreview, empty = false }) {
   const { t, fmt, locale } = useTestingLocale()
   const [percent,setPercent] = useState(false)
   const [month, setMonth] = useState(() => dayKey(Date.parse(payload?.captured_at_utc) || Date.now(), filters.timezone).slice(0, 7)), [selected, setSelected] = useState('')
   const first = new Date(`${month}-01T00:00:00Z`), weeks = calendarWeeks(month, payload, deals, filters)
   const shift = delta => { setSelected(''); setMonth(new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + delta, 1)).toISOString().slice(0, 7)) }
   const rows = deals.filter(deal => dayKey(deal.time_msc, filters.timezone).startsWith(month))
-  const total = summarizeDeals(rows, Boolean(payload?.account && Array.isArray(payload.deals) && weeks.flat().some(day => day.count !== null)))
-  const currency = payload?.account?.currency || ''
+  const total = summarizeDeals(rows, empty || Boolean(payload?.account && Array.isArray(payload.deals) && weeks.flat().some(day => day.count !== null)))
+  const currency = payload?.account?.currency || (empty ? 'USD' : '')
+  const countLabel = count => count === null ? '—' : (empty || payload?.manual) ? t('{count} giao dịch', { count }) : t('{count} filled deals', { count })
   const canPercent = payload?.manual && payload.account.opening_balance > 0
   const amount = value => percent && canPercent ? fmt(value === null ? null : value/payload.account.opening_balance*100,'%') : fmt(value)
   const weekAmount = value => {
+    if (empty) return `$${fmt(value)}`
     if (value === null || percent || !currency) return amount(value)
     try { return new Intl.NumberFormat(locale, { style: 'currency', currency, currencyDisplay: 'narrowSymbol', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(value) } catch { return fmt(value, ` ${currency}`) }
   }
@@ -99,15 +101,15 @@ function Calendar({ payload, deals, filters, filterBar, reviewScope, canWrite, o
   return <div className="live-split"><section className="live-calendar-section">
     {filterBar}<div className="live-calendar-content">
     <div className="live-calendar-toolbar"><div className="live-month-nav"><div className="live-month-step"><Action compact icon="chevron-left" label="Previous month" onClick={() => shift(-1)} /><h2 aria-live="polite">{first.toLocaleDateString(locale, { month: 'long', timeZone: 'UTC' })}</h2><Action compact icon="chevron-right" label="Next month" onClick={() => shift(1)} /></div><div className="live-month-step"><Action compact icon="chevron-left" label="Previous year" onClick={() => shift(-12)} /><strong>{first.getUTCFullYear()}</strong><Action compact icon="chevron-right" label="Next year" onClick={() => shift(12)} /></div></div>
-      <div className="live-toolbar-actions"><Action aria-pressed={!percent} label="Amount" onClick={() => setPercent(false)}>{currency || '$'}</Action><Action disabled={!canPercent} aria-pressed={percent} title={canPercent ? '% vốn ban đầu' : t('Percentage requires opening capital.')} onClick={() => setPercent(true)}>%</Action><Action disabled title="Chưa hỗ trợ chia sẻ tài khoản">{t('Share')}</Action><span className="live-calendar-action-divider" aria-hidden="true" /><Action icon="plus" disabled={!canWrite || total.net === null} onClick={review}>{t('Monthly review')}</Action></div>
+      <div className="live-toolbar-actions"><Action aria-pressed={!percent} label="Amount" onClick={() => setPercent(false)}>{payload?.account?.currency || '$'}</Action><Action disabled={!canPercent} aria-pressed={percent} title={canPercent ? '% vốn ban đầu' : t('Percentage requires opening capital.')} onClick={() => setPercent(true)}>%</Action><Action disabled title="Chưa hỗ trợ chia sẻ tài khoản">{t('Share')}</Action><span className="live-calendar-action-divider" aria-hidden="true" /><Action icon="plus" disabled={!canWrite || !payload?.account || total.net === null} onClick={review}>{t('Monthly review')}</Action></div>
     </div>
     <div className="live-calendar-scroll" role="region" aria-label={`${t('PnL calendar')} · ${filters.timezone}`} tabIndex={0}><div className="live-calendar-grid" style={{ '--live-calendar-weeks': weeks.length }}>
       {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su', 'Total'].map(day => <div className="live-calendar-dayname" key={day}>{t(day)}</div>)}
-      {weeks.map((week, index) => <div className="live-calendar-week" key={week[0].key}>{week.map(day => <button type="button" key={day.key} className={`live-calendar-cell${!day.inMonth ? ' is-outside' : ''}${day.net > 0 ? ' is-gain' : day.net < 0 ? ' is-loss' : ''}`} disabled={!day.inMonth} aria-pressed={selected === day.key} aria-label={`${displayDate(day.key)} · ${fmt(day.net, currency ? ` ${currency}` : '')}`} onClick={() => setSelected(selected === day.key ? '' : day.key)}>
+      {weeks.map((week, index) => { const summary = calendarWeekSummary(week, empty); return <div className="live-calendar-week" key={week[0].key}>{week.map(day => <button type="button" key={day.key} className={`live-calendar-cell${!day.inMonth ? ' is-outside' : ''}${day.net > 0 ? ' is-gain' : day.net < 0 ? ' is-loss' : ''}`} disabled={!day.inMonth} aria-pressed={selected === day.key} aria-label={`${displayDate(day.key)} · ${fmt(day.net, currency ? ` ${currency}` : '')}`} onClick={() => setSelected(selected === day.key ? '' : day.key)}>
         <span className="live-day-number">{day.date.getUTCDate()}</span><div className="live-day-result">{day.inMonth && day.net !== null && <strong>{amount(day.net)}</strong>}{day.count !== null && day.count > 0 && <small title={payload?.manual ? `${day.count} giao dịch` : t('{count} filled deals', { count: day.count })}>{payload?.manual ? `${day.count} giao dịch` : `${day.count} deals`}</small>}</div>
-      </button>)}<div className="live-week-total"><div><span>{week.filter(day => day.inMonth).every(day => day.count !== null) ? payload?.manual ? `${week.reduce((sum, day) => sum + (day.inMonth ? day.count : 0), 0)} giao dịch` : `${week.reduce((sum, day) => sum + (day.inMonth ? day.count : 0), 0)} deals` : '—'}</span><span aria-label={t('Week {count}', { count: index + 1 })}>W{index + 1}</span></div><strong>{weekAmount(week.filter(day => day.inMonth).every(day => day.net !== null) ? week.filter(day => day.inMonth).reduce((sum, day) => sum + day.net, 0) : null)}</strong></div></div>)}
+      </button>)}<div className="live-week-total"><div><span>{countLabel(summary.count)}</span><span aria-label={t('Week {count}', { count: index + 1 })}>W{index + 1}</span></div><strong>{weekAmount(summary.net)}</strong></div></div>})}
     </div></div>
-    <div className="live-month-total"><span>{payload?.manual ? 'PnL đã ghi trong tháng' : 'PnL đã đồng bộ trong tháng'}</span><strong>{percent && canPercent ? amount(total.net) : fmt(total.net, currency ? ` ${currency}` : '')}</strong><span>{total.count !== null ? payload?.manual ? `${total.count} giao dịch` : t('{count} filled deals', { count: total.count }) : '—'}</span></div>
+    <div className="live-month-total"><span>{empty ? t('Tổng tháng') : payload?.manual ? 'PnL đã ghi trong tháng' : 'PnL đã đồng bộ trong tháng'}</span><strong>{weekAmount(total.net)}</strong><span>{countLabel(total.count)}</span></div>
     {selected && <div className="live-day-detail"><h3>{displayDate(selected)}</h3>{deals.filter(deal => dayKey(deal.time_msc, filters.timezone) === selected).length ? <ul>{deals.filter(deal => dayKey(deal.time_msc, filters.timezone) === selected).map(deal => <li key={deal.ticket}><span>{deal.symbol} · #{deal.ticket}</span><strong>{fmt(dealNet(deal), currency ? ` ${currency}` : '')}</strong></li>)}</ul> : <p>{t(weeks.flat().find(day => day.key === selected)?.covered ? 'No deals recorded for this day.' : 'Data for this day is unavailable or incomplete.')}</p>}</div>}
   </div></section><Summary payload={payload} deals={rows} sidebar /></div>
 }
@@ -181,7 +183,7 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
     {showContent && !['calendar','notes','trading-accounts'].includes(section) && filterBar}
     {showContent && section === 'notes' && <div className="live-toolbar">{accountPicker}</div>}
     {showContent && <>
-    {section === 'calendar' && <Calendar filterBar={showContent ? filterBar : null} canWrite={!preview && ledger.status === 'ready' && strategyReady} key={chosen} payload={payload} deals={deals} filters={applied} reviewScope={payload?.manual ? `${strategy === 'all' ? 'Tất cả chiến lược' : `${strategies.find(item => item.record_id === strategyId)?.payload.name || strategyId}${strategyRevision ? ` · v${strategyRevision}` : ' · mọi phiên bản'}`} · ${tag === 'all' ? 'Tất cả nhãn' : tag}` : 'Deals đã đồng bộ'} onPreview={create} />}
+    {section === 'calendar' && <Calendar empty={ledger.status === 'ready' && !chosen && !accounts.length && Array.isArray(broker?.connections) && !broker.connections.length && !broker.stale && ['ready','unavailable'].includes(broker.status)} filterBar={showContent ? filterBar : null} canWrite={!preview && ledger.status === 'ready' && strategyReady} key={chosen} payload={payload} deals={deals} filters={applied} reviewScope={payload?.manual ? `${strategy === 'all' ? 'Tất cả chiến lược' : `${strategies.find(item => item.record_id === strategyId)?.payload.name || strategyId}${strategyRevision ? ` · v${strategyRevision}` : ' · mọi phiên bản'}`} · ${tag === 'all' ? 'Tất cả nhãn' : tag}` : 'Deals đã đồng bộ'} onPreview={create} />}
     {section === 'trades' && <div className="live-split"><section>{payload?.manual ? <ManualTrades writable={!preview && ledger.status === 'ready' && strategyReady} filterKey={JSON.stringify([chosen,applied,strategy,tag])} workspace={workspace} deals={deals} currency={payload.account.currency} strategies={strategies} onEdit={record => open('trade',record)} /> : payload?.account ? <LiveBrokerSnapshot payload={payload} section="trades" deals={deals} filterKey={JSON.stringify(applied)} /> : <Empty title="No trades yet" copy="Tạo tài khoản ghi tay và thêm giao dịch để bắt đầu." icon="journal" />}</section><Summary payload={payload} deals={deals} sidebar /></div>}
     {section === 'notes' && <JournalNotes writable={!preview && ledger.status === 'ready' && strategyReady} key={chosen} records={ledger.items} accountId={chosen || null} strategies={strategies} onEdit={record => open('note',record)} onCreate={() => open('note')} />}
     {section === 'tag-analytics' && <JournalTags deals={deals} currency={payload?.account?.currency || ''} />}

@@ -57,3 +57,13 @@ export function cumulativeDealSeries(deals) {
     return { time: deal.time_msc, value: unknown ? null : total }
   })
 }
+
+export function calendarWeekSummary(week, empty = false) {
+  // Zero is the empty calendar scaffold, not a substitute for missing account data.
+  if (empty) return { count: 0, net: 0 }
+  const days = week.filter(day => day.inMonth)
+  return {
+    count: days.every(day => day.count !== null) ? days.reduce((sum, day) => sum + day.count, 0) : null,
+    net: days.every(day => day.net !== null) ? days.reduce((sum, day) => sum + day.net, 0) : null,
+  }
+}

@@ -212,6 +212,11 @@ blank; accessible day labels retain their unknown value. Weekly totals keep
 count and week number above the amount in account currency. A covered empty week
 shows zero deals/trades and zero money; missing coverage remains unknown. A subtle
 vertical rule separates Share from Monthly review using the existing border token.
+Before any account is selected, the empty calendar scaffold shows zero trades and
+$0 in each week and the monthly footer, matching the reference. Daily cells stay
+blank and analytics still asks for an account. This display default does not turn
+unknown values from a selected account into zero; account currency replaces USD
+once available.
 
 ## Strategies and Practice handoff
 
