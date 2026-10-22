@@ -1,3 +1,4 @@
+import { liveTradingHref } from './liveTradingNavigation.js'
 import React, { createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import './fx-shell-story.css'
 import './fx-shell-preferences.css'
@@ -68,7 +69,7 @@ const SHELL_COPY = {
       live: ['Live', 'Theo dõi thị trường và tài khoản'],
       calendar: ['Calendar', 'PnL giao dịch theo ngày'],
       liveTrades: ['Trades', 'Deal khớp lệnh đã đồng bộ'],
-      liveTerminal: ['Giao dịch MT5', 'Đặt và quản lý lệnh demo trong MT5'],
+      liveTerminal: ['Tổng quan MT5', 'Tài khoản và biểu đồ giao dịch MT5'],
       notes: ['Notes', 'Ghi chú thị trường'],
       tagAnalytics: ['Tag analytics', 'Phân tích theo tag'],
       tradingAccounts: ['Trading accounts', 'Tài khoản giao dịch'],
@@ -121,7 +122,7 @@ const SHELL_COPY = {
       live: ['Live', 'Market and account workspace'],
       calendar: ['Calendar', 'Daily deal PnL'],
       liveTrades: ['Trades', 'Synced broker deals'],
-      liveTerminal: ['MT5 trading', 'Place and manage MT5 demo orders'],
+      liveTerminal: ['MT5 overview', 'MT5 account and trading charts'],
       notes: ['Notes', 'Market notes'],
       tagAnalytics: ['Tag analytics', 'Tag-based analytics'],
       tradingAccounts: ['Trading accounts', 'Trading accounts'],
@@ -162,7 +163,7 @@ const SIDEBAR_SECTIONS = [
     copyKey: 'live',
     icon: 'live',
     defaultRoute: 'live',
-    defaultSection: 'calendar',
+    defaultSection: 'terminal',
     items: [
       { id: 'live-terminal', copyKey: 'liveTerminal', icon: 'live', route: 'live', activeViews: ['live'], section: 'terminal' },
       { id: 'live-calendar', copyKey: 'calendar', icon: 'calendar', route: 'live', activeViews: ['live'], section: 'calendar' },
@@ -379,11 +380,12 @@ function ShellTopbar({ copy, language, setLanguage, theme, setTheme, railCollaps
   const navigationAction = mobileNavigation ? copy.openNavigation : railCollapsed ? copy.expandNavigation : copy.collapseNavigation
   const aiButton = <button type="button" className="fx-shell-toggle wm-ai-toggle" onClick={onToggleAi} ref={aiButtonRef} aria-label={language === 'en' ? 'AI chat' : 'Chat AI'} data-tooltip={language === 'en' ? 'AI chat' : 'Chat AI'} aria-expanded={aiOpen} aria-controls="wm-ai-chat" data-testid="ai-toggle"><AiSparkles /></button>
   if (chartWorkspace) {
-    const backHref = buildWorkspaceHref('replay', workspace, query, { select: '1', surface: '' })
+    const liveChart = query.get('view') === 'live'
+    const backHref = liveChart ? liveTradingHref(workspace,query) : buildWorkspaceHref('replay', workspace, query, { select: '1', surface: '' })
     return (
       <header className="fx-topbar fx-chart-topbar" inert={aiModal}>
         <div className="fx-chart-topbar-left">
-          <a className="fx-chart-icon-button" href={backHref} aria-label="Quay lại Sessions" data-tooltip="Quay lại Sessions">←</a>
+          <a className="fx-chart-icon-button" href={backHref} aria-label={liveChart ? copy.nav.liveTerminal[0] : "Quay lại Sessions"} data-tooltip={liveChart ? copy.nav.liveTerminal[0] : "Quay lại Sessions"}>←</a>
           <span className="fx-chart-brand">{copy.product}</span>
         </div>
         <div id="replay-command-slot" />
@@ -452,7 +454,7 @@ function currentQuery() {
 }
 
 export default function FxReplayShell({ children, workspace, query = currentQuery(), activeView = 'overview', mode = 'Replay', subnavAction, topbarAction }) {
-  const chartWorkspace = activeView === 'replay' && query.get('select') !== '1' && (query.get('surface') === 'workspace' || Boolean(query.get('session')) || Boolean(query.get('dataset')))
+  const chartWorkspace = (activeView === 'live' && query.get('section') === 'terminal' && query.get('surface') === 'workspace') || (activeView === 'replay' && query.get('select') !== '1' && (query.get('surface') === 'workspace' || Boolean(query.get('session')) || Boolean(query.get('dataset'))))
   const chartRoute = chartWorkspace
   const routeContext = useMemo(() => readWorkspaceContext(query), [query])
   const [language, setLanguage] = useState(() => {

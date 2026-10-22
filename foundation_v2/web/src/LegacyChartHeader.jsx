@@ -10,8 +10,9 @@ import { useTestingLocale } from './testingLocale.jsx'
 export const intervalLabel = value => ({ '60': '1h', '120': '2h', '240': '4h', '1D': 'D', '1W': 'W', '1M': 'M' })[value] || (/^\d+$/.test(value) ? `${value}m` : value)
 
 // Only FX-specific extensions render here. The chart library renders its native toolbar.
-export default function LegacyChartHeader({ controls, symbol, name, backHref, theme, onTheme, onOpenTool, onFullscreen }) {
+export default function LegacyChartHeader({ controls, symbol, name, backHref, theme, onTheme, onOpenTool, onFullscreen, marketMode = 'replay' }) {
   const { t } = useTestingLocale()
+  const live = marketMode === 'live'
   const [menu, setMenu] = useState(false)
   const [popup, setPopup] = useState(null)
   const opener = useRef(null), menuRef = useRef(null)
@@ -71,9 +72,9 @@ export default function LegacyChartHeader({ controls, symbol, name, backHref, th
   return <>
     {controls.market.ownerDocument !== document && <><ProjectTooltipLayer targetDocument={controls.market.ownerDocument} theme={theme} />{createPortal(<style>{tooltipStyles}</style>, controls.market.ownerDocument.head)}</>}
     {createPortal(<div className="legacy-native-extension legacy-native-market" data-testid="legacy-native-market">
-      <a href={backHref} target="_top" aria-label={t('Trở về Sessions')} data-tooltip={t('Trở về Sessions')}><ChartIcon name="arrow-left" /></a>
-      <button type="button" className="legacy-symbol" onClick={open('data')} data-tooltip={t('Chọn dataset local')}><ChartIcon name="search" /><strong>{symbol}</strong></button>
-      {button('So sánh mã', 'compare', open('compare'), { className: 'legacy-compare' })}
+      <a href={backHref} target="_top" aria-label={t(live ? 'Trở về tổng quan MT5' : 'Trở về Sessions')} data-tooltip={t(live ? 'Trở về tổng quan MT5' : 'Trở về Sessions')}><ChartIcon name="arrow-left" /></a>
+      <button type="button" className="legacy-symbol" onClick={open('data')} data-tooltip={t(live ? 'Chọn mã giao dịch MT5' : 'Chọn dataset local')}><ChartIcon name="search" /><strong>{symbol}</strong></button>
+      {!live && button('So sánh mã', 'compare', open('compare'), { className: 'legacy-compare' })}
     </div>, controls.market)}
     {createPortal(<div className="legacy-native-extension"><button type="button" onClick={show('layout')}>New Layout</button></div>, controls.layout)}
     {createPortal(<div className="legacy-native-extension legacy-native-session">
@@ -82,19 +83,19 @@ export default function LegacyChartHeader({ controls, symbol, name, backHref, th
       <button type="button" className="legacy-save-layout" data-save-state={controls.saveState} aria-label={t(saveLabel)} data-tooltip={`${t(saveLabel)} · ${t('Lưu trên trình duyệt này')}`} disabled={saved || saving} onClick={controls.save}><span>{name}</span><small>{t(saving ? 'Đang lưu…' : 'Save')}</small></button>
       {button('Quản lý layout', 'down', show('manage'), { 'aria-expanded': popup?.kind === 'manage' })}
     </div>, controls.session)}
-    {createPortal(<div className="legacy-native-extension">{button('Quick Search', 'quick-search', open('search'))}</div>, controls.search)}
+    {createPortal(<div className="legacy-native-extension">{button(live ? 'Chọn mã giao dịch MT5' : 'Quick Search', 'quick-search', open(live ? 'data' : 'search'))}</div>, controls.search)}
     {createPortal(<div className="legacy-native-extension legacy-native-tools" data-testid="legacy-native-tools">
       {button('Chụp chart PNG', 'camera', show('capture'), { className: 'legacy-wide-action', 'aria-expanded': popup?.kind === 'capture' })}
       <span className="legacy-divider legacy-wide-action" />
-      <button type="button" className="legacy-editor legacy-wide-action" aria-label="Editor" data-tooltip="Editor" onClick={open('editor')}><ChartIcon name="editor" /><span>Editor</span></button>
-      {button('AI Mentor', 'mentor', open('mentor'), { className: 'legacy-mentor' })}
+      {!live && <button type="button" className="legacy-editor legacy-wide-action" aria-label="Editor" data-tooltip="Editor" onClick={open('editor')}><ChartIcon name="editor" /><span>Editor</span></button>}
+      {!live && button('AI Mentor', 'mentor', open('mentor'), { className: 'legacy-mentor' })}
       {button('Đổi giao diện', theme === 'dark' ? 'moon' : 'sun', onTheme, { className: 'legacy-wide-action', 'data-testid': 'theme-toggle' })}
       {button('Toàn màn hình', 'fit', onFullscreen, { className: 'legacy-wide-action' })}
       {button('Công cụ chart', 'more', event => { opener.current = event.currentTarget; setMenu(value => !value) }, { className: 'chart-header-overflow', 'aria-expanded': menu })}
     </div>, controls.tools)}
     {menu && <div ref={menuRef} className="legacy-native-menu" role="group" aria-label={t('Công cụ chart')}>
       <button type="button" onClick={() => { setMenu(false); setPopup({kind:'layout',anchor:opener.current}) }}>New Layout</button>
-      {[['compare', 'So sánh mã'], ['data', 'Dữ liệu'], ['context', 'Chi tiết và nhánh'], ['search', 'Quick Search'], ['editor', 'Editor'], ['mentor', 'AI Mentor']].map(([tool, label]) => <button key={tool} type="button" onClick={() => { setMenu(false); onOpenTool(tool, opener.current) }}>{t(label)}</button>)}
+      {(live ? [['data','Chọn mã giao dịch MT5'],['context','Điều kiện giao dịch']] : [['compare', 'So sánh mã'], ['data', 'Dữ liệu'], ['context', 'Chi tiết và nhánh'], ['search', 'Quick Search'], ['editor', 'Editor'], ['mentor', 'AI Mentor']]).map(([tool, label]) => <button key={tool} type="button" onClick={() => { setMenu(false); onOpenTool(tool, opener.current) }}>{t(label)}</button>)}
       {[['insertIndicator', 'Indicators'], ['undo', 'Hoàn tác'], ['redo', 'Làm lại']].map(([action, label]) => <button key={action} type="button" onClick={() => { setMenu(false); controls.action(action); opener.current?.focus() }}>{t(label)}</button>)}
       <button type="button" disabled={saved || saving} onClick={() => { setMenu(false); controls.save(); opener.current?.focus() }}>{t(saveLabel)}</button>
       <button type="button" onClick={() => { setMenu(false); setPopup({kind:'capture',anchor:opener.current}) }}>{t('Chụp chart PNG')}</button>

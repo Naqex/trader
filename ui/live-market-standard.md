@@ -316,3 +316,38 @@ Practice links open session creation with exact strategy ID + revision. Changing
 or clearing the selection is explicit; edits never rewrite an existing session.
 
 Evidence: `foundation_v2/evidence/live-strategy-audit-20261020/CHECKPOINT.md`.
+
+
+## MT5 overview and chart journey
+
+The MT5 entry (`view=live&section=terminal`) is an overview, using the Practice
+Dashboard action/metric styles and shared DashboardMetric. It has one action,
+**Mở biểu đồ**, with no replay/prop creation, Sessions page, or Recent Sessions.
+The action opens the Practice-style setup frame (quick-session.css, FxSelect):
+account/balance, a permitted MT5 symbol, timeframe, and read-only broker conditions.
+There is currently one policy-bound executable demo terminal, not an investor
+account selector. A journal connection never grants trading authority.
+
+`surface=workspace` opens the existing fullbleed chart workbench, native
+LegacyChartHeader, drawing tools, LegacyObjectTree, OrderEntryFields and
+LegacyModal. The order ticket opens over the chart rather than a permanent
+standalone terminal sidebar; positions/orders/receipts expand from the bottom.
+MT5 header actions only expose implemented live capabilities. Back returns to
+the MT5 overview. liveTradingNavigation discards all replay/prop identifiers and
+simulation settings in both directions. Opening a chart does not create a record
+or unlock execution. Unknown receipts survive navigation and reload.
+
+Data ownership: demo trading snapshot supplies exact terminal identity, balance,
+equity, margin, authorized symbol list, quote and instrument constraints. Spread
+is Ask minus Bid with a UTC quote timestamp. Missing leverage/specifications stay
+unknown. Commission schedule is not inferred from spread or assumed zero; actual
+charges belong to synchronized deal history. Application risk/volume limits and
+cost reserve are labeled separately from broker specifications. There are no
+editable simulated spread/commission switches in MT5 setup.
+
+A rejected symbol can be reset to the terminal's valid default without editing
+the URL. Fullscreen targets documentElement so body-portaled dialogs remain in
+its subtree. Browser-host OS fullscreen itself needs a normal-browser check;
+IAB did not expose a fullscreen element during QA.
+
+Evidence: `foundation_v2/evidence/mt5-overview-flow-20261022/CHECKPOINT.md`.

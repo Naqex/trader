@@ -1,0 +1,8 @@
+{
+  "scenario": "ready",
+  "commandCount": 0,
+  "endpoints": [
+    "GET /api/v2/events",
+    "GET /api/v2/live/trading"
+  ]
+}

@@ -107,3 +107,17 @@ Primary protocol references: [order_send](https://www.mql5.com/en/docs/python_me
 [order_check](https://www.mql5.com/en/docs/python_metatrader5/mt5ordercheck_py),
 [symbol properties](https://www.mql5.com/en/docs/constants/environment_state/marketinfoconstants),
 [trade return codes](https://www.mql5.com/en/docs/constants/errorswarnings/enum_trade_return_codes).
+
+
+### Product navigation
+
+Live → Tổng quan MT5 → Mở biểu đồ uses the Practice dashboard/setup/chart visual
+components while retaining this demo API and its receipt/controller ownership.
+Setup only selects an allowed symbol and timeframe; it never creates replay/prop
+sessions or mutates account balance, spread or fee assumptions. A single configured
+demo terminal supplies execution identity. Investor journal connections remain
+separate. Missing fees/specifications are explicitly unknown, not zero.
+The frontend route sanitizer excludes replay/session/dataset/prop state.
+
+Current runtime/UI evidence and limitations:
+`../evidence/mt5-overview-flow-20261022/CHECKPOINT.md`.

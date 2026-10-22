@@ -1,0 +1,17 @@
+{
+  "account": null,
+  "bars": [],
+  "execution_enabled": false,
+  "instrument": null,
+  "mode": "demo",
+  "orders": [],
+  "policy": null,
+  "positions": [],
+  "quote": null,
+  "reason": "demo_policy_locked",
+  "requests": [],
+  "status": "locked",
+  "symbol": null,
+  "symbols": [],
+  "timeframe": "M1"
+}

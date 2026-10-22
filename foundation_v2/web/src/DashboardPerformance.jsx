@@ -1,3 +1,4 @@
+import Metric from './DashboardMetric.jsx'
 import TestingReadState, { TestingSkeleton } from './TestingReadState.jsx'
 import { TestingResourceStatus } from './TestingPageState.jsx'
 import { previewReadRecovery } from './demoMode.js'
@@ -11,12 +12,6 @@ function Duration({ seconds }) {
   const { t, locale } = useTestingLocale()
   const parts = dashboardDurationParts(seconds)
   return parts ? <span className="fx-dashboard-duration">{parts.map(([value, unit]) => <span key={unit}><span>{value.toLocaleString(locale)}</span><small>{t(`duration.${unit}`)}</small></span>)}</span> : '—'
-}
-
-function Metric({ title, value, detail, icon, children }) {
-  const { t } = useTestingLocale()
-
-  return <div className="fx-dashboard-metric"><span data-tooltip={detail || undefined}><span className="fx-dashboard-metric-icon" aria-hidden="true"><TestingIcon kind={icon} /></span>{t(title)}</span><strong>{value}</strong>{children}{detail && <small>{t(detail)}</small>}</div>
 }
 
 function timingDetail(performance, kind, t) {
