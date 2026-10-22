@@ -33,7 +33,7 @@ pub fn required_worker_manifest_for(native_runtime: bool) -> Value {
     )
 }
 pub fn allowed_methods(template: &str) -> Vec<String> {
-    let additive: Vec<String> = crate::session_presets::ROUTES.iter().chain(crate::live_ledger::ROUTES.iter()).chain(crate::mt5_connector::ROUTES.iter())
+    let additive: Vec<String> = crate::session_presets::ROUTES.iter().chain(crate::live_ledger::ROUTES.iter()).chain(crate::mt5_connector::ROUTES.iter()).chain(crate::demo_trading::ROUTES.iter())
         .filter(|(_, path)| *path == template).map(|(method, _)| (*method).to_owned()).collect();
     if !additive.is_empty() { return additive; }
     serde_json::from_str::<Vec<Route>>(FROZEN)
@@ -53,7 +53,8 @@ fn native(method: &str, path: &str) -> bool {
 }
 
 fn native_owner(method: &str, path: &str) -> Option<&'static str> {
-    let owners: [(&str, fn(&str, &str) -> bool); 13] = [
+    let owners: [(&str, fn(&str, &str) -> bool); 14] = [
+        ("demo_trading", crate::demo_trading::native),
         ("mt5_connector", crate::mt5_connector::native),
         ("live_ledger", crate::live_ledger::native),
         ("session_presets", crate::session_presets::native),
@@ -105,6 +106,7 @@ pub fn route_inventory_for(native_runtime: bool) -> Value {
         .chain(crate::session_presets::ROUTES.iter().map(|(method,path)| Route { method:(*method).to_owned(), path:(*path).to_owned() }))
         .chain(crate::live_ledger::ROUTES.iter().map(|(method,path)| Route { method:(*method).to_owned(), path:(*path).to_owned() }))
         .chain(crate::mt5_connector::ROUTES.iter().map(|(method,path)| Route { method:(*method).to_owned(), path:(*path).to_owned() }))
+        .chain(crate::demo_trading::ROUTES.iter().map(|(method,path)| Route { method:(*method).to_owned(), path:(*path).to_owned() }))
         .map(|route| {
             let owner = native_owner(&route.method, &route.path).or_else(||
                 (native_runtime && crate::provider_routes::native_profile(&route.method, &route.path))
@@ -460,7 +462,7 @@ mod tests {
         assert_eq!(required_worker_manifest_for(true),json!([]),"native readiness must not depend on a compatibility worker");
         for native_runtime in [false, true] {
             let inventory = route_inventory_for(native_runtime);
-            assert_eq!(inventory.as_array().unwrap().len(), 105 + crate::session_presets::ROUTES.len() + crate::live_ledger::ROUTES.len() + crate::mt5_connector::ROUTES.len());
+            assert_eq!(inventory.as_array().unwrap().len(), 105 + crate::session_presets::ROUTES.len() + crate::live_ledger::ROUTES.len() + crate::mt5_connector::ROUTES.len() + crate::demo_trading::ROUTES.len());
             for (method,path) in crate::session_presets::ROUTES {
                 assert!(inventory.as_array().unwrap().iter().any(|entry|
                     entry["method"] == *method && entry["path"] == *path && entry["owner"] == "session_presets" && entry["dispatch"] == "rust_native"));
