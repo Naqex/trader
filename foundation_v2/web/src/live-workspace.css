@@ -66,7 +66,9 @@
 }
 .live-transaction-tabs { display:flex; flex-wrap:wrap; gap:8px; padding:16px var(--wm-page-gutter); border-bottom:1px solid var(--wm-border); }
 .live-accounts-main .live-table-scroll [aria-selected='true'] td { background:var(--wm-hover); }
-.live-template-link { display:flex; align-items:center; justify-content:flex-end; gap:8px; width:100%; font-size:12px; margin-bottom:8px; }
+.live-template-hint { margin:0 0 8px; color:var(--wm-content-muted); font-size:12px; line-height:18px; }
+.live-template-hint .live-template-link { display:inline-flex; align-items:center; gap:4px; width:auto; min-height:0; height:auto; padding:0; border:0; border-radius:0; background:transparent; color:var(--project-primary); font:inherit; vertical-align:baseline; }
+.live-template-hint .live-template-link:hover { background:transparent; color:var(--project-primary-hover); text-decoration:underline; text-underline-offset:3px; }
 .live-upload { display:flex; align-items:center; gap:12px; width:100%; box-sizing:border-box; min-height:80px; padding:16px; border:1px dashed var(--wm-border); border-radius:var(--ds-radius-field); background:transparent; color:var(--wm-content); font:inherit; text-align:left; cursor:pointer; }
 .live-upload-icon { display:grid; place-items:center; flex:0 0 32px; width:32px; height:32px; border-radius:50%; background:var(--wm-control-open); }
 .live-upload-copy { display:grid; gap:4px; min-width:0; }

@@ -5330,6 +5330,14 @@
     "vi": "Chuẩn hóa tệp trước khi nhập dữ liệu.",
     "en": "Format your file before importing."
   },
+  "Format your file before uploading": {
+    "vi": "Định dạng tệp trước khi tải lên",
+    "en": "Format your file before uploading"
+  },
+  "download CSV template": {
+    "vi": "tải mẫu CSV",
+    "en": "download CSV template"
+  },
   "CSV template": {
     "vi": "Mẫu CSV",
     "en": "CSV template"
