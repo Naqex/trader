@@ -55,3 +55,16 @@ Actual terminal connectivity and execution acceptance remain outstanding because
 the runtime policy is locked. No order_send, terminal restart or policy unlock was
 performed. Unrelated pre-existing worktree changes were preserved and excluded
 from this feature commit.
+
+## Owner follow-up: simplify overview
+
+The Live tab now reads **Tổng quan / Dashboard** with the same dashboard icon as
+Practice. The overview reuses the Performance heading, metric layout, skeleton
+and read-state component. Removed account identity, refresh shortcut, position/
+pending-order summary, Manage accounts and Trade analytics links from this page.
+Without an account it shows the terminal state instead of four unknown-value
+cards. Error retry and invalid-symbol recovery remain available.
+
+Build passed (3.54 s), scoped diff check passed, independent source review found
+no material issue. Browser checked actual locked state and isolated synthetic
+ready state, including 360 px layout. Follow-up screenshots use `overview-trimmed-*`.
