@@ -71,6 +71,7 @@
 .fx-app .wm-ai-model-trigger { display: flex; align-items: center; gap: var(--ds-space-1); max-width: 100%; min-height: var(--ds-icon-button); padding: 4px 8px; border: 0; border-radius: var(--ds-radius-pill); background: transparent; color: var(--fx-shell-muted); font: inherit; cursor: pointer; }
 .wm-ai-model-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wm-ai-effort-value, .wm-ai-model-trigger svg { flex-shrink: 0; }
+.wm-ai-effort-value { border-inline-start: 1px solid var(--wm-control-border); padding-inline-start: var(--ds-space-2); color: var(--fx-shell-subtle); }
 .fx-app .wm-ai-model-trigger:hover, .fx-app .wm-ai-model-trigger[aria-expanded='true'] { background: var(--project-hover); color: var(--fx-shell-text); }
 .wm-ai-model-trigger svg { width: 14px; height: 14px; }
 .fx-app .wm-ai-selection { position: fixed; inset: auto; margin: 0; box-sizing: border-box; max-height: min(380px, 60dvh); overflow: auto; padding: var(--ds-space-2); border: 1px solid var(--wm-control-border); border-radius: var(--ds-radius-dialog); color: var(--fx-shell-text); background: var(--fx-shell-bg); font-size: var(--ds-font-control); line-height: var(--ds-line-control); }
@@ -78,7 +79,10 @@
 .fx-app .wm-ai-selection button:hover { background: var(--project-hover); }
 .wm-ai-selection button span:first-child { overflow-wrap: anywhere; }
 .fx-app .wm-ai-selection .wm-ai-model-back { justify-content: flex-start; color: var(--fx-shell-muted); }
-.fx-app .wm-ai-selection .wm-ai-model-current { justify-content: center; gap: var(--ds-space-1); }
+.fx-app .wm-ai-selection .wm-ai-model-current { gap: var(--ds-space-1); }
+.wm-ai-model-label { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.wm-ai-model-label small { color: var(--fx-shell-subtle); font-size: var(--ds-font-meta); }
+.wm-ai-effort-caption { display: flex; justify-content: space-between; gap: var(--ds-space-2); padding: var(--ds-space-2); color: var(--fx-shell-muted); font-size: var(--ds-font-meta); }
 .wm-ai-effort-slider { position: relative; height: var(--ds-control); margin-inline: var(--ds-space-1); }
 .wm-ai-slider-rail { position: absolute; inset: 6px 0; border-radius: var(--ds-radius-pill); background: linear-gradient(to right, var(--project-highlight) var(--wm-effort-fill), var(--project-hover) var(--wm-effort-fill)); }
 .wm-ai-slider-dots { position: absolute; inset: 0 14px; }

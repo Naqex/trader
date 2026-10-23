@@ -212,7 +212,7 @@ export default function useAiChat({ workspace, open, en, screen }) {
     finally { if (version === epoch.current) setLoading(false) }
   }
   const route = routes.find(value => value.provider === selected?.provider)
-  const models = routes.flatMap(r => r.models.map(m => ({ ...m, id: modelKey(r.provider, m.id), sourceId: m.id, provider: r.provider, name: `${m.name} · ${providerName(r.provider)}` })))
+  const models = routes.flatMap(r => r.models.map(m => ({ ...m, id: modelKey(r.provider, m.id), sourceId: m.id, provider: r.provider, providerLabel: providerName(r.provider) })))
   const account = selected ? { ...route, provider: selected.provider, selection: selected, models: route?.models || [], ready: !!route?.ready && route.models.some(m => m.id === selected.model) } : null
   const pickerSelection = selected?.model ? { ...selected, model: modelKey(selected.provider, selected.model) } : { model: '', effort: null }
   function selectModel(value) { const model = models.find(m => m.id === value.model); if (model) choose({ provider: model.provider, model: model.sourceId, effort: value.effort }) }
