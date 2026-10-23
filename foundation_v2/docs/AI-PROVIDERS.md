@@ -433,7 +433,7 @@ Migration `0015_ai_documents.sql` stores files separately from agent configurati
 scoped by workspace and subject, with a 100-file / 200-MiB storage limit. Upload is
 a bounded raw-body endpoint; downloads reproduce the original bytes. Deletion is
 rejected while an agent references a document. Existing inline files remain readable.
-The Documents page and agent editor reuse this library; no PDF/DOCX extraction or
+The agent editor uploads and selects files from this library; there is no standalone Documents page. No PDF/DOCX extraction or
 vector service is introduced. The UI links to the FX Replay strategy-file sample: one
 strategy per file, clear rules for bias/setup/entry/risk/management/exit/no-trade.
 

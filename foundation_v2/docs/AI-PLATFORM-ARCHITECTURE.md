@@ -297,7 +297,7 @@ Kiểm chứng này không gửi model requests và không xác nhận inference
 
 ## Giao diện quản lý hiện hành
 
-AI và Bot gồm Kết nối, CLIProxyAPI, Model, Tài liệu, Luồng AI, Bot; mặc định mở Kết nối. Mentor mở từ icon
+AI và Bot gồm Kết nối, CLIProxyAPI, Model, Luồng AI, Bot; mặc định mở Kết nối. Tài liệu được tải lên/chọn trong trình sửa agent, không có trang riêng. Mentor mở từ icon
 AI trên header, dùng chung component/harness; URL assistant cũ vẫn tương thích.
 Kết nối tải lười danh
 sách hai transport và drawer chi tiết; Model tải lười profiles/catalog. Không

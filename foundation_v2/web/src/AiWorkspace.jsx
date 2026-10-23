@@ -7,7 +7,6 @@ import './ai-workspace.css'
 
 const AiProviderSettings = lazy(() => import('./AiProviderSettings.jsx'))
 const AiModelProfiles = lazy(() => import('./AiModelProfiles.jsx'))
-const AiDocuments = lazy(() => import('./AiDocuments.jsx'))
 const AiWorkflows = lazy(() => import('./AiWorkflows.jsx'))
 
 export default function AiWorkspace({ workspace, query }) {
@@ -21,8 +20,8 @@ export default function AiWorkspace({ workspace, query }) {
       <AiProviderSettings workspace={workspace} language={appearance?.language} />
     </Suspense> : section === 'models' ? <Suspense fallback={<TestingPageSkeleton label={say('Đang tải model…', 'Loading models…')} />}>
       <AiModelProfiles workspace={workspace} language={appearance?.language} />
-    </Suspense> : ['documents', 'workflows'].includes(section) ? <Suspense fallback={<TestingPageSkeleton label={say('Đang tải…', 'Loading…')} />}>
-      {section === 'documents' ? <AiDocuments key={workspace} workspace={workspace} language={appearance?.language} /> : <AiWorkflows key={workspace} workspace={workspace} language={appearance?.language} />}
+    </Suspense> : section === 'workflows' ? <Suspense fallback={<TestingPageSkeleton label={say('Đang tải…', 'Loading…')} />}>
+      <AiWorkflows key={workspace} workspace={workspace} language={appearance?.language} />
     </Suspense> : section === 'automation' ? <>
       <header className="ai-page-heading"><h1>{say('Bot', 'Bots')}</h1></header>
       <section className="ai-bots-empty"><AiSparkles /><h2>{say('Chưa hỗ trợ chạy bot', 'Bot execution is not available yet')}</h2><p>{say('Bot theo quy tắc và bot dùng AI sẽ được quản lý tại đây.', 'Rule-based bots and AI bots will be managed here.')}</p></section>

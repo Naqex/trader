@@ -55,11 +55,6 @@
 .ai-source-picker .fx-select-trigger { width:100%; }
 .ai-source-picker > small, .ai-source-picker > p { flex-basis:100%; margin:0; color:var(--wm-content-muted); font-size:11px; }
 .ai-source-provenance { display:block; color:var(--wm-content-muted); overflow-wrap:anywhere; font-size:11px; }
-.ai-document-list { margin:0 0 20px; padding:0; list-style:none; }
-.ai-document-list > li { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:16px 0; border-top:1px solid var(--wm-border); }
-.ai-document-list > li > div:first-child { display:grid; gap:6px; min-width:0; overflow-wrap:anywhere; }
-.ai-document-list strong { font-weight:500; font-size:13px; }
-.ai-document-list small { color:var(--wm-content-muted); }
 .ai-row-actions { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
 .ai-workflow-form { display:grid; gap:12px; margin-bottom:28px; }
 .ai-workflow-form > label { font-size:13px; }
@@ -83,7 +78,6 @@
 @media (max-width:760px) {
   .ai-workflow-layout { grid-template-columns:minmax(0,1fr); }
   .ai-workflow-history { max-height:200px; }
-  .ai-document-list > li { align-items:flex-start; flex-direction:column; }
 }
 .ai-bots-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:320px; text-align:center; gap:12px; }
 .ai-bots-empty > svg { width:28px; height:28px; color:var(--wm-content-muted); }
