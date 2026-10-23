@@ -5,6 +5,11 @@ chạy thành process riêng và nối bằng adapter nhỏ trong backend**. Ch�
 để fork gateway hoặc tự viết lại OAuth, token refresh và account pool. Tối ưu
 WebGPT bridge hiện tại được hoãn theo yêu cầu owner.
 
+Owner xác định AI sẽ được dùng thường xuyên ở nhiều tính năng. Thiết kế nền chung,
+ranh giới reuse/SDK, persistence/concurrency/context và tiêu chí chuyển đổi nằm ở
+[AI-PLATFORM-ARCHITECTURE.md](AI-PLATFORM-ARCHITECTURE.md). Adapter hiện tại là lát
+kết nối đầu tiên, chưa phải nền runtime đầy đủ cho mục tiêu đó.
+
 Provider đã được tích hợp vào source backend và khu vực **AI và Bot → Kết nối** của sản phẩm.
 Owner đã chấp nhận thử CLIProxyAPI local với rủi ro tài khoản; đăng nhập vẫn do
 owner thực hiện thủ công. Chưa đăng nhập Google, nhập token, gửi inference hoặc
