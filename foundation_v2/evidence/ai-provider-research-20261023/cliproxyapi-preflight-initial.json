@@ -1,0 +1,25 @@
+{
+  "scope": "official Windows binary; isolated empty auth home; synthetic local requests only",
+  "repo": "router-for-me/CLIProxyAPI",
+  "version": "v8.0.40",
+  "commit": "d946c4fba6fc9a5cfbca1f3d85184d62ad2fb683",
+  "archive_sha256": "a5c4ca84350e1b31a11331a573a50bcffd9fc775b8f9111fd2caec480e826e57",
+  "real_account_used": false,
+  "product_runtime_changed": false,
+  "passed": false,
+  "startup_ms": 549.15,
+  "models": {
+    "without_key": 401,
+    "with_key": 200,
+    "count": 0
+  },
+  "management_status": 404,
+  "control_panel_status": 404,
+  "unauthenticated_inference_status": 401,
+  "local_empty_catalog_ms": {
+    "n": 20,
+    "median": 11.949,
+    "p95": 21.535
+  },
+  "gateway_stopped": true
+}

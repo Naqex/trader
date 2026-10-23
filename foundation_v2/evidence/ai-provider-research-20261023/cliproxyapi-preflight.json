@@ -1,0 +1,46 @@
+{
+  "scope": "official Windows binary; isolated empty auth home; synthetic local requests only",
+  "binary_sha256": "0fd1f03b80a4acac69515e3737fc9f4445de69221e4750e20a3c70038a3b8443",
+  "repo": "router-for-me/CLIProxyAPI",
+  "version": "v8.0.40",
+  "commit": "d946c4fba6fc9a5cfbca1f3d85184d62ad2fb683",
+  "archive_sha256": "a5c4ca84350e1b31a11331a573a50bcffd9fc775b8f9111fd2caec480e826e57",
+  "real_account_used": false,
+  "product_runtime_changed": false,
+  "passed": true,
+  "startup_ms": 526.32,
+  "models": {
+    "without_key": 401,
+    "with_key": 200,
+    "count": 0
+  },
+  "management_status": 404,
+  "management_v8_status": 404,
+  "control_panel_status": 404,
+  "unauthenticated_inference_status": 401,
+  "local_empty_catalog_ms": {
+    "n": 20,
+    "median": 0.765,
+    "p95": 25.619
+  },
+  "auth_store": {
+    "credential_json_files": 0,
+    "generated_entries": []
+  },
+  "commercial_mode": true,
+  "request_body_files_after_error": 0,
+  "background_version_metadata_fetch_observed": {
+    "antigravity": true,
+    "grok_npm": true
+  },
+  "network_isolated": false,
+  "inference_or_pool_acceptance": false,
+  "working_set_bytes": 42909696,
+  "listeners": [
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 17852
+    }
+  ],
+  "gateway_stopped": true
+}
