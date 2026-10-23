@@ -5,6 +5,9 @@ xuyên ở nhiều tính năng, không chỉ một hộp chat. Đây là thiết
 chuyển đổi, chưa phải bằng chứng triển khai/benchmark hoặc cấp quyền broker.
 [Product Completion Plan](../../../../planning/mt5-tradingview-backtester/PRODUCT-COMPLETION-PLAN.md)
 vẫn own phạm vi và acceptance toàn sản phẩm; tài liệu này không tạo ledger mới.
+Review liên project và bằng chứng offline: [AI workspace architecture](../../../../planning/research/AI-WORKSPACE-ARCHITECTURE-2026-10-23.md).
+Quyết định sau review: Rust own API/admission/public events; Python/LangGraph own
+workflow nhiều bước. Không có agent engine thứ hai trong Rust ở lát đầu.
 Luồng provider đã triển khai và receipts nằm ở [AI-PROVIDERS.md](AI-PROVIDERS.md).
 
 ## Hiện trạng đối chiếu source
@@ -23,16 +26,24 @@ Luồng provider đã triển khai và receipts nằm ở [AI-PROVIDERS.md](AI-P
 Giữ Rust/Axum là cửa vào và nơi kiểm quyền; PostgreSQL giữ trạng thái bền vững.
 Tách module theo trách nhiệm trong backend hiện có trước khi tách service. Gateway
 vẫn là process riêng. Chưa có bằng chứng cần thêm Redis, Kafka, Kubernetes hoặc một
-backend Node/Python trên đường tương tác chỉ để dùng framework AI.
+backend Node trên đường tương tác chỉ để dùng framework AI. Worker Python hữu hạn
+phục vụ complex workflows; single-call tasks gọi adapter từ Rust với cùng admission.
+Một run giữ model/config snapshot và một graph instance riêng; LangGraph own
+private node checkpoints, Rust own lifecycle/events công khai. Không dùng automatic
+research-job requeue cho call/external effect chưa rõ kết quả.
 
 ```mermaid
 flowchart TD
   F["Mentor · Chart · Journal · Research · Automation"] --> A["AI API dùng chung\nQuyền · kiểm dữ liệu · chống gửi trùng"]
-  A --> R["Run và event store\nPostgreSQL · checkpoint · trạng thái"]
+  A --> R["Run và event store\nPostgreSQL · trạng thái · event · checkpoint refs"]
   R --> S["Scheduler\nƯu tiên · hàng đợi · giới hạn tài nguyên"]
-  S --> W["Workflow\nNgữ cảnh · gọi model · kiểm kết quả"]
+  S --> C["Single call trong Rust"]
+  S --> W["LangGraph worker\nAgent/tool loop · branches · joins"]
+  C --> P
   W --> P["Provider adapter\nCLIProxyAPI · WebGPT · API · model local"]
-  P --> W
+  P -- workflow response --> W
+  P -- single-call response --> C
+  C --> R
   W --> T["Tools của WMREPLAY\nKiểm quyền và revision lại khi thực thi"]
   T --> W
   W --> R
@@ -110,16 +121,22 @@ tokens, CPU/RAM/GPU và ảnh hưởng p95 của UI/API/broker heartbeat. Usage/
 | Streaming, typed tools/output, agent loop | Ưu tiên đánh giá SDK trước khi tự viết; SDK phải nằm sau boundary của sản phẩm |
 | Jobs, persistence, events | Reuse hạ tầng Rust/PostgreSQL hiện có sau khi chứng minh phù hợp với AI; không giả một chat slot là durable runtime |
 
-Ứng viên đánh giá đầu tiên là **Rig** vì Rust-native/MIT và có provider/tool/agent
-primitives. Đây là shortlist, không phải quyết định cài hoặc chứng minh tương thích
-CLIProxyAPI/WebGPT. So với adapter hiện tại bằng đúng fixture: Responses, streamed
-events, structured output, tool loop, cancel, lỗi/partial response, custom loopback
-endpoint, token accounting, dependency/build footprint và Windows compatibility.
+Ưu tiên **LangGraph** cho workflow nhiều bước sau đối chiếu TradingAgents
+upstream 0.7.0: isolated parallel analysts, join barrier, run-scoped config và
+provider riêng theo quick/deep tier. Reuse execution primitives và thiết kế; không
+lấy toàn bộ debate graph làm harness cho mọi tính năng. SDK adapters chỉ gọi
+registered route sau per-call admission, không tự bypass quota/retry policy.
 
-**PydanticAI/LangGraph** là đối chiếu cho typed agents/durable workflows; chỉ đưa
-vào worker riêng khi nhu cầu và kiểm chứng bù được một runtime khác. **Vercel AI
-SDK** có UI/provider primitives tốt để khảo sát, nhưng không đổi backend Rust sang
-Node chỉ vì UI đang dùng React. Không cài tất cả SDK hoặc bọc nhiều tầng agent.
+**Rig/PydanticAI** giữ vai trò challenger nếu benchmark cùng fixture cho thấy
+đơn giản hơn hoặc nhanh/nhẹ hơn đáng kể. Không thêm nhiều runtime trước khi có
+bằng chứng. Implementation cũ không được ưu tiên chỉ vì đang có: thay RAM chat slot/global
+selection bằng persistent per-conversation runs; giữ domain contracts/cutoff và
+đánh giá lại implementation. Rust không là bằng chứng toàn app nhanh nhất.
+
+Per-call permits khác run leases: parent chờ subagent không giữ model slot. Mọi
+child call phải được admission, có deadline, cancellation phase và usage tracking.
+Model discovery/capability/status phân biệt asserted với verified; model ID và
+`high` không có cùng semantics giữa provider. Không âm thầm đổi route/effort.
 
 ## Thứ tự chuyển đổi và bằng chứng cần đạt
 
@@ -127,7 +144,7 @@ Node chỉ vì UI đang dùng React. Không cài tất cả SDK hoặc bọc nhi
    và admission có giới hạn. Giữ alias chat cũ; test nhiều feature/scope đồng thời,
    không ghi đè kết quả nhau, config snapshot và restart/cancel. Migration thật có
    rollout/backup gate; chưa áp migration trong lượt thiết kế này.
-2. Spike SDK cách ly và provider-neutral eval. Bắt đầu synthetic/offline; đánh giá
+2. Spike worker/adapter cách ly và provider-neutral eval. Bắt đầu synthetic/offline; đánh giá
    một model thật sau owner OAuth, rồi pool/cancel/quota. Chỉ promote khi đạt cùng
    fixture; chưa tuyên bố SDK, pool hay chất lượng model đã đạt.
 3. Tích hợp dọc Mentor + một tính năng đọc dữ liệu (chart hoặc journal) qua cùng
@@ -149,11 +166,12 @@ toàn sản phẩm nhanh. Mỗi lát giữ rollback provider/config/schema tươ
 - [PydanticAI durable execution](https://pydantic.dev/docs/ai/capabilities/durable_execution/overview/):
   phân biệt persistence với durable workflow execution.
 - [LangGraph overview](https://docs.langchain.com/oss/python/langgraph/overview):
-  orchestration/persistence/streaming; chưa đánh giá runtime trong repo.
+  orchestration/persistence/streaming; có offline fixtures/TradingAgents regression, chưa product worker acceptance.
 - [Vercel AI SDK](https://ai-sdk.dev/docs/introduction): TypeScript/provider/UI
   primitives, không là lý do tự đổi stack.
 - [OWASP excessive agency](https://genai.owasp.org/llmrisk/llm062025-excessive-agency/):
   ranh giới functionality, permission và autonomy.
 
-Lượt này chỉ đối chiếu source/tài liệu và ghi thiết kế. Chưa cài SDK/dependency,
-chạy benchmark/provider, sửa DB hoặc thay runtime đang hoạt động.
+Review có offline LangGraph probes và topology fixture; TradingAgents được nâng
+upstream và kiểm regression trong repo độc lập. Chưa tích hợp worker vào WMREPLAY,
+benchmark model thật, sửa DB hoặc thay runtime sản phẩm đang hoạt động.
