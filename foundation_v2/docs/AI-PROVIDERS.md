@@ -12,16 +12,19 @@ kết nối đầu tiên, chưa phải nền runtime đầy đủ cho mục tiê
 
 Provider đã được tích hợp vào source backend và khu vực **AI và Bot → Kết nối** của sản phẩm.
 Owner đã chấp nhận thử CLIProxyAPI local với rủi ro tài khoản; đăng nhập vẫn do
-owner thực hiện thủ công. Chưa đăng nhập Google, nhập token, gửi inference hoặc
-nghiệm thu pool thật. Receipt triển khai local nằm ở
+owner thực hiện thủ công; agent không tự đăng nhập hoặc nhập token. Catalog từ
+account đã lưu hiện đã sẵn sàng, nhưng chưa gửi inference hoặc nghiệm thu pool
+thật. Receipt tích hợp ban đầu nằm ở
 [ai-provider-integration-20261023](../evidence/ai-provider-integration-20261023/).
 Tiến độ toàn sản phẩm vẫn thuộc Product Completion Plan của workspace.
 
 Lát nền tiếp theo đã có trong source: chat/profile/run/event lưu bền và pilot worker
 LangGraph dùng cùng admission. Xem [receipt chat](../evidence/ai-runs-20261023/RECEIPT.md)
 và [receipt workflow](../evidence/ai-workflows-20261023/RECEIPT.md). Migration0012–0013
-chưa áp vào database đang dùng; các receipt managed gateway cũ không là nghiệm thu
-runtime mới. Chat/profile và workflow không tự kế thừa tools của Gemini/Antigravity.
+đã áp vào database local sau backup/restore verification; API và UI mới đã chạy qua
+[kiểm chứng triển khai](../evidence/ai-platform-deployment-20261023/RECEIPT.md).
+Chưa nghiệm thu inference/pool/throughput thật. Chat/profile và workflow không tự
+kế thừa tools của Gemini/Antigravity.
 
 ## Khu vực AI và Bot
 

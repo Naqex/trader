@@ -245,3 +245,7 @@ Receipt: [chat/profiles](../evidence/ai-runs-20261023/RECEIPT.md),
 [workflow pilot](../evidence/ai-workflows-20261023/RECEIPT.md). Chưa có giao diện gọi
 review, tự động hóa, Quant tool, TradingAgents strategy graph, direct API/local model
 adapter hoặc Auto routing. Không dùng pilot text để quảng bá các năng lực đó.
+
+Local deployment0012–0013 và UI/API đã được kiểm chứng sau backup/restore; xem
+[deployment receipt](../evidence/ai-platform-deployment-20261023/RECEIPT.md).
+Kiểm chứng này không gửi model requests và không xác nhận inference throughput.
