@@ -29,6 +29,18 @@ const ERRORS = {
 }
 export const mt5Error = code => ERRORS[code] || 'Chưa đồng bộ được dữ liệu MT5. Kiểm tra terminal, mạng và thông tin đăng nhập rồi thử lại.'
 
+export const canSyncMt5Connection = connection => ['connected','error'].includes(connection.status)
+
+export async function syncMt5Connections(workspace, connections, request = mt5Request) {
+  const failures = []
+  // Queue requests in order; the collector owns terminal serialization and retries.
+  for (const connection of connections.filter(canSyncMt5Connection)) {
+    try { await request(workspace, `/${connection.id}/sync`) }
+    catch (error) { failures.push({ connection, error }) }
+  }
+  return failures
+}
+
 // Deliberately separate from command receipts: credential bodies must never be cached.
 export async function mt5Request(workspace, path, body) {
   let response

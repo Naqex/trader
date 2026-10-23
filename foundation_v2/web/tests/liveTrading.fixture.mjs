@@ -2,7 +2,7 @@
 import { preview } from 'vite'
 import { readFile } from 'node:fs/promises'
 import { journalRecords, fixtureStrategies, brokerSnapshot } from './liveJournal.fixture.mjs'
-const state={scenario:'ready',environment:'demo',paused:false,requests:[],commands:[],positions:[],reads:[],records:journalRecords()}
+const state={scenario:'ready',environment:'demo',paused:false,requests:[],commands:[],positions:[],reads:[],records:journalRecords(),connections:null,syncRequests:[],syncFailure:null}
 const json=(res,value,status=200)=>{res.statusCode=status;res.setHeader('Content-Type','application/json');res.end(JSON.stringify(value))}
 const body=async req=>{let text='';for await(const part of req)text+=part;return JSON.parse(text||'{}')}
 const step={M1:60,M5:300,M15:900,H1:3600,H4:14400,D1:86400}
@@ -19,7 +19,7 @@ const fixture={name:'isolated-demo-trading-fixture',configurePreviewServer(serve
   }
   if(!url.pathname.startsWith('/api/'))return next()
   state.reads.push({method:req.method,path:url.pathname,query:url.search});if(state.reads.length>200)state.reads.shift()
-  if(url.pathname==='/api/v2/live/status')return json(res,state.scenario==='empty'?{status:'unavailable',connections:[]}:brokerSnapshot())
+  if(url.pathname==='/api/v2/live/status')return json(res,state.scenario==='empty'?{status:'unavailable',connections:[]}:state.connections?{...brokerSnapshot(),connections:state.connections}:brokerSnapshot())
   if(url.pathname==='/api/v2/playbooks')return json(res,{items:fixtureStrategies})
   if(url.pathname.startsWith('/api/v2/live/records')) {
    if(state.scenario==='denied')return json(res,{detail:'workspace_denied'},403)
@@ -29,7 +29,14 @@ const fixture={name:'isolated-demo-trading-fixture',configurePreviewServer(serve
    const saved={record_id:id||`saved-${state.records.length}`,kind:draft.kind,revision:previous?previous.revision+1:1,payload:draft.payload,created_at_utc:new Date().toISOString(),updated_at_utc:new Date().toISOString()}
    state.records=[saved,...state.records.filter(item=>item.record_id!==saved.record_id)];return json(res,saved)
   }
-  if(url.pathname==='/api/v2/live/connections')return json(res,{available:true,items:[{id:'00000000-0000-4000-8000-000000000001',name:'SYNTHETIC UI FIXTURE',status:'connected',requested_mode:'trading',account_environment:state.environment}]})
+  if(url.pathname==='/api/v2/live/connections')return json(res,{available:true,items:state.connections||[{id:'00000000-0000-4000-8000-000000000001',name:'SYNTHETIC UI FIXTURE',status:'connected',requested_mode:'trading',account_environment:state.environment}]})
+  if(req.method==='POST'&&/^\/api\/v2\/live\/connections\/[^/]+\/sync$/.test(url.pathname)) {
+   const id=url.pathname.split('/')[5];state.syncRequests.push(id)
+   if(id===state.syncFailure)return json(res,{detail:'mt5_disconnected'},503)
+   const connection=state.connections?.find(item=>item.id===id)
+   if(connection)connection.status='queued'
+   return json(res,{id,status:'queued'},202)
+  }
   if(url.pathname==='/api/v2/live/trading') {
    if(url.searchParams.get('symbol') && !['EURUSD','GBPUSD'].includes(url.searchParams.get('symbol')))return json(res,{detail:'demo_symbol_denied'},403)
    if(state.scenario==='managed-symbol-error'&&url.searchParams.get('symbol'))return json(res,{status:'unavailable',reason:'demo_symbol_denied',mode:state.environment,execution_enabled:false})

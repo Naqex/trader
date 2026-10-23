@@ -1,0 +1,26 @@
+{
+  "syncRequests": [
+    "00000000-0000-4000-8000-000000000001",
+    "fixture-error",
+    "fixture-next"
+  ],
+  "commands": [],
+  "states": [
+    {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "status": "queued"
+    },
+    {
+      "id": "fixture-error",
+      "status": "error"
+    },
+    {
+      "id": "fixture-paused",
+      "status": "paused"
+    },
+    {
+      "id": "fixture-next",
+      "status": "queued"
+    }
+  ]
+}

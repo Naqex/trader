@@ -178,7 +178,7 @@ async fn secrets_retries_isolation_and_lifecycle() {
     assert_eq!(status.0, 200);
     assert_eq!(status.1["status"], "unavailable");
     assert_eq!(status.1["connections"].as_array().unwrap().len(), 1);
-    let snapshot = json!({"status":"ready","source":"Fixture","captured_at_utc":"2026-10-21T00:00:00Z","account":{"balance":1000,"currency":"USD"},"deals":(1..=1000).map(|ticket|json!({"ticket":ticket,"profit":1,"time_msc":ticket})).collect::<Vec<_>>(),"cashflows":[]});
+    let snapshot = json!({"status":"ready","source":"Fixture","captured_at_utc":"2026-10-21T00:00:00Z","account":{"balance":1000,"currency":"USD"},"account_binding":{"login":"1234567","server":"Fixture-Demo","generation":2},"account_environment":"demo","deals":(1..=1000).map(|ticket|json!({"ticket":ticket,"profit":1,"time_msc":ticket})).collect::<Vec<_>>(),"cashflows":[]});
     db.execute("UPDATE mt5_connections SET snapshot=$1,status='connected',last_synced_at=CURRENT_TIMESTAMP WHERE workspace_id='tenant-a'",&[&snapshot]).await.unwrap();
     let full = request(
         &app,
@@ -196,6 +196,16 @@ async fn secrets_retries_isolation_and_lifecycle() {
         Value::Null,
     )
     .await;
+    let listed = request(&app, "GET", base, "tenant-a", Value::Null).await;
+    assert_eq!(listed.1["items"][0]["account_login"], "1234567");
+    assert_eq!(listed.1["items"][0]["account_environment"], "demo");
+    assert_eq!(summary.1["connections"][0]["account_login"], "1234567");
+    assert!(listed.1["items"][0].get("account_binding").is_none());
+    assert!(listed.1["items"][0].get("deals").is_none());
+    assert!(!listed.1.to_string().contains("synthetic-private"));
+    assert_eq!(request(&app, "GET", base, "tenant-b", Value::Null).await.1["items"], json!([]));
+    let renamed = request(&app, "POST", &format!("{base}/{id}/rename"), "tenant-a", json!({"name":"Standard"})).await;
+    assert_eq!(renamed.1["account_login"], "1234567");
     assert!(summary.1.get("deals").is_none());
     assert_eq!(full.1["deals"].as_array().unwrap().len(), 1000);
     let full_bytes = full.1.to_string().len();

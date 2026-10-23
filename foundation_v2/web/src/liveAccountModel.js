@@ -3,6 +3,15 @@ import { summarizeDeals } from './liveWorkspaceModel.js'
 
 const known = value => typeof value === 'number' && Number.isFinite(value)
 
+export function mt5AccountName(connection) {
+  const login = connection.account_login || connection.login_hint
+  const nickname = connection.name?.trim()
+  return [login ? `MT5 ${login}` : 'MT5',
+    ['demo','real','contest'].includes(connection.account_environment) ? connection.account_environment : null,
+    nickname && !/^(?:MetaTrader(?:\s*5)?|MT5)$/i.test(nickname) ? nickname : null,
+  ].filter(Boolean).join(' - ')
+}
+
 export function accountDraftErrors(draft) {
   const errors = {}
   if (!draft.name.trim()) errors.name = 'Nhập tên tài khoản.'
@@ -25,7 +34,7 @@ export function duplicateAccountSeed(row, now = Date.now()) {
 export function liveAccountRows(accounts, records, broker) {
   return [
     ...(broker?.connections?.length ? broker.connections.map(connection => ({
-      id:`broker:${connection.id}`, name:connection.name, source:'MT5', status:connection.status === 'connected' && (Date.now()-Date.parse(connection.last_synced_at)>180000 || broker.connection_id === connection.id && broker.stale) ? 'stale' : connection.status,
+      id:`broker:${connection.id}`, name:mt5AccountName(connection), source:'MT5', status:connection.status === 'connected' && (Date.now()-Date.parse(connection.last_synced_at)>180000 || broker.connection_id === connection.id && broker.stale) ? 'stale' : connection.status,
       updated:connection.last_synced_at, connection,
       snapshot:broker.connection_id === connection.id && broker.account ? broker : {account:connection.account || {},source:connection.source},
     })) : broker?.account ? [{ id: 'broker', name: `${broker.source || 'MT5'} · ${broker.account.account_ref}`, source: 'MT5', status: broker.stale ? 'stale' : 'synced', updated: broker.captured_at_utc, snapshot: broker }] : []),

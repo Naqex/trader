@@ -370,3 +370,20 @@ links retain broker, symbol and timeframe but discard replay session/dataset and
 cursor settings. Changing section resets shell scroll, not applied filter state.
 
 Audit evidence: `foundation_v2/evidence/live-flow-audit-20261023/CHECKPOINT.md`.
+
+## Trading account controls
+
+Broker names combine MT5, verified account login, environment and optional saved
+nickname; generic MetaTrader names are omitted. Read-only access adds a localized
+suffix. A commercial account label such as Standard comes from the owner's saved
+nickname, never from an assumption about MT5's demo or hedging mode. List and
+status summaries project the login from the stored verified binding, with no
+additional SDK read or history payload.
+
+Header and row sync actions reuse the green two-arrow icon and shared tooltip.
+Sync all queues every eligible workspace connection, independently of filtering
+and pagination. Paused, disconnected, queued and syncing connections are skipped;
+partial failures identify the affected account without stopping later requests.
+CSV template access is a short, left-aligned link.
+
+Evidence: `foundation_v2/evidence/live-account-controls-20261023/CHECKPOINT.md`.

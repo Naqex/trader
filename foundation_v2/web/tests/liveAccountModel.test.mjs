@@ -1,6 +1,15 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { liveAccountRows, accountTransactions, accountCashSummary, accountDraftErrors, duplicateAccountSeed } from '../src/liveAccountModel.js'
+import { liveAccountRows, accountTransactions, accountCashSummary, accountDraftErrors, duplicateAccountSeed, mt5AccountName } from '../src/liveAccountModel.js'
+
+test('MT5 names use verified login and environment with an optional owner label',()=>{
+  const connection={name:'MetaTrader 5',account_login:'464104926',login_hint:'…4926',account_environment:'demo'}
+  assert.equal(mt5AccountName(connection),'MT5 464104926 - demo')
+  assert.equal(mt5AccountName({...connection,name:'Standard'}),'MT5 464104926 - demo - Standard')
+  assert.equal(mt5AccountName({...connection,name:'MT5',account_environment:'real'}),'MT5 464104926 - real')
+  assert.equal(mt5AccountName({...connection,name:'MetaTrader',account_environment:'unknown',account_login:null}),'MT5 …4926')
+  assert.equal(mt5AccountName({name:'My account'}),'MT5 - My account')
+})
 
 test('account metadata validates type, UTC date and exact decimal input',()=>{
   const draft={name:'New',currency:'USD',account_type:'prop',opening_balance:'0',opening_at_utc:'2026-09-01T10:20'}

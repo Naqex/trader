@@ -1,0 +1,31 @@
+{
+  "url": "http://127.0.0.1:5180/?workspace=tenant-a&view=live&lang=vi&live_account=broker%3Af0e978a6-2f82-45ac-8dee-c5b36416057a&mt5_connection=f0e978a6-2f82-45ac-8dee-c5b36416057a&mt5_timeframe=M1&area=live&section=trading-accounts",
+  "viewport": [
+    1920,
+    940
+  ],
+  "name": "MT5 464104926 - demo - Chỉ xem",
+  "styles": {
+    "background": "rgba(0, 0, 0, 0)",
+    "color": "rgb(114, 207, 161)"
+  },
+  "postRequests": [
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5180/api/v2/live/connections/f0e978a6-2f82-45ac-8dee-c5b36416057a/sync"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:5180/api/v2/live/connections/f0e978a6-2f82-45ac-8dee-c5b36416057a/sync"
+    }
+  ],
+  "viEnChecked": true,
+  "csvDownloadChecked": true,
+  "keyboardTooltipChecked": true,
+  "mobile": {
+    "width": 390,
+    "pageWidth": 390,
+    "tableWidth": 696,
+    "tableViewport": 317
+  }
+}

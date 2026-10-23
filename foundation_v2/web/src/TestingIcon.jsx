@@ -3,6 +3,7 @@ import React from 'react'
 export default function TestingIcon({ kind = 'info', size = 18 }) {
   const paths = {
     refresh: <><path d="M20 11a8 8 0 1 0-2 6M20 4v7h-7" /></>,
+    sync: <><path d="M20 4v6h-6M4 20v-6h6"/><path d="M5.6 8a7 7 0 0 1 11.5-2L20 10M4 14l2.9 4A7 7 0 0 0 18.4 16"/></>,
     lock: <><rect x="5" y="10" width="14" height="11" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3" /></>,
     ledger: <><path d="M4 4h16v16H4ZM4 9h16M8 13h5m-5 4h8" /></>,
     trophy: <><path d="M8 3h8v7a4 4 0 0 1-8 0ZM8 5H4v3a4 4 0 0 0 4 4M16 5h4v3a4 4 0 0 1-4 4M12 14v6M8 21h8" /></>,
