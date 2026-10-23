@@ -14,7 +14,9 @@
 .live-account-status:is(.is-stale,.is-error,.is-disconnected) { background:color-mix(in srgb,var(--wm-warning) 12%,transparent); }
 .live-account-menu-trigger.fxa-button { border:0; background:transparent; }
 .fx-app.fx-shell-story[data-theme] .fx-content .live-accounts-main .live-sync-action.fxa-button { color:var(--wm-positive); border:0; background:transparent; }
-.live-sync-all { display:inline-flex; align-items:center; gap:8px; padding:0; border:0; background:transparent; color:inherit; font:inherit; cursor:pointer; }
+.live-sync-heading { display:inline-flex; align-items:center; gap:4px; }
+.live-sync-all { display:inline-grid; place-items:center; width:32px; height:32px; padding:0; border:0; background:transparent; color:inherit; font:inherit; cursor:pointer; }
+.fx-app.fx-shell-story[data-theme] .fx-content .live-accounts-main .live-sync-all:is(:hover,:active) { background:transparent; }
 .live-sync-all svg { color:var(--wm-positive); }
 .live-sync-all:disabled { cursor:default; opacity:.45; }
 .fx-app.fx-shell-story[data-theme] .fx-content .live-accounts-main .live-sync-action.fxa-button:hover:not(:disabled) { background:transparent; color:var(--wm-positive); }
@@ -29,7 +31,7 @@
 .live-add-account:has(> .live-mt5-form) { display:flex; flex-direction:column; }
 .live-mt5-form { display:flex; flex-direction:column; flex:1; gap:20px; }
 .live-mt5-form label { display:grid; gap:8px; font-size:13px; min-width:0; }
-.live-mt5-form input { width:100%; box-sizing:border-box; min-height:var(--wm-control-height); padding:7px 12px; border:1px solid var(--wm-border); border-radius:var(--ds-radius-field); background:var(--wm-surface); color:var(--wm-content); font:inherit; }
+.live-mt5-form input:not([type='radio']) { width:100%; box-sizing:border-box; min-height:var(--wm-control-height); padding:7px 12px; border:1px solid var(--wm-border); border-radius:var(--ds-radius-field); background:var(--wm-surface); color:var(--wm-content); font:inherit; }
 .live-mt5-form input:focus-visible { outline:2px solid var(--wm-focus); outline-offset:2px; }
 .fx-app .live-add-account:has(> .live-mt5-form) > h2 { margin-bottom:0; }
 .live-connect-nav { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:60px; flex-shrink:0; }

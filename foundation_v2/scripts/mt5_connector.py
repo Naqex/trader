@@ -198,7 +198,9 @@ def prepare_terminal(root, connection_id, trading=False):
                 require_local_tree(item)
                 shutil.copy2(item, config / item.name)
     settings = folder / 'connector.ini'
-    settings.write_text(f'[Common]\nKeepPrivate=0\n[Experts]\nEnabled={int(trading)}\nAllowLiveTrading={int(trading)}\nAllowDllImport=0\n', encoding='utf-16')
+    # First login changes the account. This isolated terminal is bound by our
+    # identity/generation checks, so MT5 must not disable its requested access.
+    settings.write_text(f'[Common]\nKeepPrivate=0\n[Experts]\nEnabled={int(trading)}\nAllowLiveTrading={int(trading)}\nAccount=0\nAllowDllImport=0\n', encoding='utf-16')
     return target, settings
 
 

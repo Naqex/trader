@@ -380,10 +380,26 @@ nickname, never from an assumption about MT5's demo or hedging mode. List and
 status summaries project the login from the stored verified binding, with no
 additional SDK read or history payload.
 
-Header and row sync actions reuse the green two-arrow icon and shared tooltip.
+Account names are static text; navigation remains in the account action menu.
+The sync header is static text beside an icon-only button. Header and row sync
+icons reuse the green two-arrow icon and shared tooltip, with transparent hover.
 Sync all queues every eligible workspace connection, independently of filtering
 and pagination. Paused, disconnected, queued and syncing connections are skipped;
 partial failures identify the affected account without stopping later requests.
 CSV template access is a short, left-aligned link.
+
+Connection access uses a native horizontal radio group: Trading on the left,
+selected for new connections, and Read only on the right. Reconnecting preserves
+saved access. Password labels follow the selected access; demo/real environment
+does not change these permissions. Connection errors show a badge, with details
+in the shared tooltip rather than a permanent second line.
+
+Owned terminals explicitly use `[Experts] Account=0` so the first login does not
+disable the requested trading access after initialization. Read-only terminals
+still disable Experts/live trading; identity, credential and generation checks
+remain authoritative before operations. MT5's standard `account_info()` has no
+broker commercial product field for Standard/Pro/Zero/Raw Spread.
+
+Startup/access evidence: `foundation_v2/evidence/mt5-connection-startup-20261023/CHECKPOINT.md`.
 
 Evidence: `foundation_v2/evidence/live-account-controls-20261023/CHECKPOINT.md`.

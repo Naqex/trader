@@ -1,0 +1,12 @@
+{
+  "observed_at": "2026-10-23T01:27:09.0568660Z",
+  "connections": [
+    {
+      "id": "492ec8a5-3938-41a3-8a26-8c0f7f59ed43",
+      "status": "connected",
+      "requested_mode": "trading",
+      "error_code": null,
+      "last_synced_at": "2026-10-23T01:26:58.445399Z"
+    }
+  ]
+}

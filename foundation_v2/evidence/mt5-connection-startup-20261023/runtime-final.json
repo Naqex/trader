@@ -1,0 +1,18 @@
+{
+  "trading_summary": {
+    "verified_permissions": null,
+    "mode": "demo",
+    "status": "ready",
+    "reason": null
+  },
+  "observed_at": "2026-10-23T01:30:05.6959993Z",
+  "connections": [
+    {
+      "id": "492ec8a5-3938-41a3-8a26-8c0f7f59ed43",
+      "status": "connected",
+      "requested_mode": "trading",
+      "error_code": null,
+      "last_synced_at": "2026-10-23T01:29:06.894082Z"
+    }
+  ]
+}

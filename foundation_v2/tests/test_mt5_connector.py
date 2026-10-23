@@ -1,5 +1,6 @@
 """Synthetic SDK fixtures; never authorize or log into a broker."""
 import importlib.util
+import configparser
 from pathlib import Path
 from types import SimpleNamespace as NS
 from datetime import datetime, timedelta, timezone
@@ -62,6 +63,28 @@ class ConnectorTests(unittest.TestCase):
         self.account.trade_allowed=False
         with self.assertRaisesRegex(RuntimeError,'mt5_trading_disabled'):
             connector.verify_identity(self.sdk,self.secret,'trading')
+
+    def test_owned_terminal_keeps_requested_access_after_first_login(self):
+        with tempfile.TemporaryDirectory() as temp:
+            base=Path(temp)
+            source=base/'install/terminal64.exe'
+            source.parent.mkdir()
+            source.write_bytes(b'fixture binary')
+            user_config=source.parent/'Config/common.ini'
+            user_config.parent.mkdir()
+            user_config.write_bytes(b'user configuration must remain unchanged')
+            with patch.object(connector,'terminal_source',return_value=source):
+                for trading in (True,False):
+                    with self.subTest(trading=trading):
+                        _,settings=connector.prepare_terminal(base/'owned',str(uuid.uuid4()),trading)
+                        config=configparser.ConfigParser()
+                        config.read(settings,encoding='utf-16')
+                        self.assertEqual(config.getboolean('Experts','Enabled'),trading)
+                        self.assertEqual(config.getboolean('Experts','AllowLiveTrading'),trading)
+                        self.assertFalse(config.getboolean('Experts','Account'))
+                        self.assertFalse(config.getboolean('Experts','AllowDllImport'))
+                        self.assertFalse(config.getboolean('Common','KeepPrivate'))
+            self.assertEqual(user_config.read_bytes(),b'user configuration must remain unchanged')
 
     def test_discovery_copies_only_matching_install_public_server_data(self):
         with tempfile.TemporaryDirectory() as temp:

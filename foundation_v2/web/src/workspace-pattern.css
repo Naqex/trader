@@ -63,6 +63,14 @@
 .fx-app .wm-page :where(table, dl) { font-variant-numeric: tabular-nums; }
 .fx-app .wm-page :where(th, td) { font-size: 13px; line-height: 1.5; }
 .fx-app .wm-page :where(summary) { min-height: 44px; align-content: center; cursor: pointer; }
+.fx-app .wm-page .wm-radio-group { min-width:0; margin:0; padding:0; border:0; font-size:13px; }
+.fx-app .wm-page .wm-radio-group legend { margin-bottom:8px; padding:0; }
+.fx-app .wm-page .wm-radio-group > div { display:flex; flex-wrap:wrap; gap:8px 24px; }
+.fx-app .wm-page .wm-radio-group label { display:flex; align-items:center; gap:8px; min-height:var(--wm-control-height); cursor:pointer; }
+.fx-app .wm-page .wm-radio-group input { appearance:none; box-sizing:border-box; flex-shrink:0; width:var(--ds-checkbox,16px); height:var(--ds-checkbox,16px); margin:0; padding:0; border:1px solid var(--wm-border-strong); border-radius:50%; background:transparent; cursor:pointer; }
+.fx-app .wm-page .wm-radio-group input:checked { border:5px solid var(--project-highlight); }
+.fx-app .wm-page .wm-radio-group:disabled label { cursor:default; opacity:.45; }
+.fx-app .wm-page .wm-radio-group input:disabled { cursor:default; }
 @media (max-width: 760px) {
   .fx-app .wm-page { padding: 24px 16px 32px; }
   .fx-app .wm-page-header { align-items: flex-start; flex-wrap: wrap; gap: 12px; }
