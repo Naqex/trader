@@ -4,7 +4,7 @@ use serde_json::{json, Value};
 use std::{path::PathBuf, sync::Arc, time::Duration};
 use tokio::{io::AsyncReadExt, sync::Mutex};
 
-/// One product harness and task slot; transports never acquire product tools or broker rights.
+/// Product transport harness. Public run state and admission live in ai_runs.
 pub struct AiAssistant {
     source: PathBuf,
     home: PathBuf,
@@ -12,7 +12,6 @@ pub struct AiAssistant {
     port: u16,
     child: Mutex<Option<owned_process::Child>>,
     client: reqwest::Client,
-    chat: Mutex<Option<ChatTurn>>,
     provider: Mutex<Provider>,
     gateway: crate::ai_gateway::LocalGateway,
 }
@@ -27,23 +26,11 @@ impl Provider {
     }
 }
 
-struct ChatTurn {
-    id: String,
-    workspace: String,
-    subject: String,
-    created: std::time::Instant,
-    selection: Value,
-    grounding: Value,
-    task: Option<tokio::task::JoinHandle<Result<String, &'static str>>>,
-    result: Value,
-    provider: Provider,
-}
-
-const POLICY_VERSION: &str = "wmreplay-chat-2026-10-19.1";
+pub(crate) const POLICY_VERSION: &str = "wmreplay-chat-2026-10-19.1";
 const ASSISTANT_POLICY: &str = include_str!("ai-assistant-policy.md");
 const CHAT_SCREENS: &[&str] = &["unknown", "overview", "replay", "trade", "analytics", "playbook", "learn", "settings", "market-data", "prop", "journal", "sessions"];
 
-fn chat_context(body: &Value) -> Result<Value, ApiError> {
+pub(crate) fn chat_context(body: &Value) -> Result<Value, ApiError> {
     let invalid = || ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY, "invalid_chat_context");
     let Some(context) = body.get("context") else { return Ok(json!({"screen":"unknown","locale":"vi"})); };
     if context.as_object().is_none_or(|v| v.len() != 2)
@@ -52,9 +39,9 @@ fn chat_context(body: &Value) -> Result<Value, ApiError> {
     Ok(context.clone())
 }
 
-fn chat_messages(body: Value) -> Result<Value, ApiError> {
+pub(crate) fn chat_messages(body: Value) -> Result<Value, ApiError> {
     let invalid = || ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY, "invalid_chat_messages");
-    if body.as_object().is_none_or(|v| v.keys().any(|key| !["messages", "context", "expected_selection"].contains(&key.as_str()))) { return Err(invalid()); }
+    if body.as_object().is_none_or(|v| v.keys().any(|key| !["messages", "context", "expected_selection", "conversation_id", "idempotency_key"].contains(&key.as_str()))) { return Err(invalid()); }
     let messages = body["messages"].as_array().ok_or_else(invalid)?;
     if messages.is_empty() || messages.len() > 63 || serde_json::to_vec(&body).map_err(|_| invalid())?.len() > 49152 { return Err(invalid()); }
     for (index, message) in messages.iter().enumerate() {
@@ -76,7 +63,7 @@ fn grounded_messages(mut messages: Value, context: &Value) -> Value {
     messages
 }
 
-fn chat_text(value: &Value) -> Result<String, &'static str> {
+pub(crate) fn chat_text(value: &Value) -> Result<String, &'static str> {
     if value["status"] == "failed" && value["error"]["code"] == "model_version_unavailable" {
         return Err("chatgpt_model_unavailable");
     }
@@ -92,7 +79,39 @@ fn chat_text(value: &Value) -> Result<String, &'static str> {
 
 fn unavailable(code: &str) -> ApiError { ApiError::detail(StatusCode::SERVICE_UNAVAILABLE, code) }
 
+pub(crate) fn selection_shape(selection:&Value)->Result<(),ApiError> {
+    if selection.as_object().is_none_or(|v|v.len()!=3 || v.keys().any(|k|!["provider","model","effort"].contains(&k.as_str())))
+        || !selection["model"].as_str().is_some_and(|v|!v.trim().is_empty() && v.len()<=256 && !v.chars().any(char::is_control))
+        || !(selection["effort"].is_null() || selection["effort"].as_str().is_some_and(|v|v.len()<=32)) {
+        return Err(ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY,"invalid_ai_selection"));
+    }
+    Provider::parse(selection["provider"].as_str().unwrap_or(""))?;
+    Ok(())
+}
+
+async fn catalog(State(state):State<Arc<AppState>>, _scope:Workspace)->Result<Json<Value>,ApiError> {
+    let mut routes=Vec::new();
+    for provider in [Provider::Gateway,Provider::Web] {
+        let account=match provider { Provider::Gateway=>state.ai_assistant.gateway.status(false).await,Provider::Web=>state.ai_assistant.web_status().await? };
+        let models=account["models"].as_array().into_iter().flatten().map(|m|json!({"id":m["id"],"name":m["name"],"efforts":m["efforts"],"capabilities":{"text":"asserted","tools":"unverified","structured_output":"unverified","streaming":if provider==Provider::Web{"unsupported"}else{"unverified"},"effort":if provider==Provider::Web{"asserted"}else{"unverified"}}})).collect::<Vec<_>>();
+        let ready=if provider==Provider::Web { account["login_state_present"]==true && account["operation"].is_null() }else{!models.is_empty()};
+        routes.push(json!({"provider":provider.id(),"models":models,"status":account["status"],"selection":account["selection"],"ready":ready}));
+    }
+    Ok(Json(json!({"routes":routes})))
+}
+
 impl AiAssistant {
+    pub(crate) async fn validate_selection(&self,selection:&Value)->Result<(),ApiError> {
+        selection_shape(selection)?;
+        let account=match Provider::parse(selection["provider"].as_str().unwrap())? { Provider::Web=>self.web_status().await?,Provider::Gateway=>self.gateway.status(false).await };
+        if account["models"].as_array().is_some_and(|models|models.iter().any(|m|m["id"]==selection["model"] && (m["efforts"].as_array().is_some_and(|v|v.is_empty()) && selection["effort"].is_null() || m["efforts"].as_array().is_some_and(|v|v.contains(&selection["effort"]))))) { Ok(()) }else{Err(ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY,"invalid_ai_selection"))}
+    }
+    #[cfg(test)]
+    pub(crate) fn fixture_gateway(base:&str,key_file:PathBuf)->Arc<Self> {
+        let mut value=Self::from_environment().unwrap();
+        value.gateway=crate::ai_gateway::LocalGateway::new(base,key_file,None).unwrap();
+        Arc::new(value)
+    }
     pub fn from_environment() -> Result<Self, String> {
         let workspace = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).ancestors().nth(4).ok_or("workspace path unavailable")?;
         let source = std::env::var_os("TW_CHATGPT_WEB_CORE").map(PathBuf::from)
@@ -107,7 +126,7 @@ impl AiAssistant {
         }
         let provider = Provider::parse(&std::env::var("TW_AI_PROVIDER").unwrap_or_else(|_| "chatgpt-web".into()))
             .map_err(|_| "invalid TW_AI_PROVIDER")?;
-        Ok(Self { source, home, bun, port, child: Mutex::new(None), chat: Mutex::new(None),
+        Ok(Self { source, home, bun, port, child: Mutex::new(None),
             provider:Mutex::new(provider), gateway:crate::ai_gateway::LocalGateway::from_environment()?,
             client: reqwest::Client::builder().no_proxy().redirect(reqwest::redirect::Policy::none())
                 .timeout(Duration::from_secs(15)).build().map_err(|_| "ChatGPT Web HTTP client unavailable")? })
@@ -186,7 +205,7 @@ impl AiAssistant {
         if action == "start" { return self.call("GET", "", None).await; }
         self.call("POST", &format!("/{action}"), Some(body)).await
     }
-    async fn account(&self, legacy: bool, refresh: bool) -> Result<Value, ApiError> {
+    pub(crate) async fn account(&self, legacy: bool, refresh: bool) -> Result<Value, ApiError> {
         let provider = if legacy { Provider::Web } else { *self.provider.lock().await };
         let mut value = match provider {
             Provider::Web => self.web_status().await?,
@@ -202,10 +221,6 @@ impl AiAssistant {
         Ok(value)
     }
     async fn account_action(&self, legacy: bool, action: &str, body: Value) -> Result<Value, ApiError> {
-        let _chat = self.chat.lock().await;
-        if _chat.as_ref().is_some_and(|turn| turn.task.as_ref().is_some_and(|task| !task.is_finished())) {
-            return Err(ApiError::detail(StatusCode::CONFLICT, "chatgpt_busy"));
-        }
         if !legacy && action == "provider" {
             if body.as_object().is_none_or(|v| v.len() != 1) { return Err(ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY,"invalid_ai_provider")); }
             let provider = Provider::parse(body["provider"].as_str().unwrap_or(""))?;
@@ -228,98 +243,24 @@ impl AiAssistant {
         }
         self.account(legacy, action == "refresh").await
     }
-    async fn web_request(&self, messages: Value, context: &Value) -> Result<(Value, reqwest::RequestBuilder), ApiError> {
-        let mut child = self.child.lock().await;
+    pub(crate) async fn prepare(&self, selection:&Value, messages:Value, context:&Value) -> Result<reqwest::RequestBuilder,ApiError> {
+        selection_shape(selection)?;
+        let provider=Provider::parse(selection["provider"].as_str().unwrap())?;
+        if provider==Provider::Gateway {
+            return self.gateway.prepare_selection(selection,grounded_messages(messages,context),ASSISTANT_POLICY).await;
+        }
+        let mut child=self.child.lock().await;
         self.ensure_started(&mut child).await?;
-        let account = self.call("GET", "", None).await?;
-        if !account["operation"].is_null() { return Err(ApiError::detail(StatusCode::CONFLICT, "chatgpt_busy")); }
-        if account["login_state_present"] != true { return Err(unavailable("chatgpt_login_required")); }
-        let selection = account["selection"].clone();
-        let model = selection["model"].as_str().ok_or_else(|| unavailable("chatgpt_selection_required"))?;
-        let effort = selection["effort"].as_str().ok_or_else(|| unavailable("chatgpt_selection_required"))?;
-        if !account["models"].as_array().is_some_and(|models| models.iter().any(|item|
-            item["id"] == model && item["efforts"].as_array().is_some_and(|efforts| efforts.iter().any(|v| v == effort)))) {
+        let account=self.call("GET","",None).await?;
+        if !account["operation"].is_null() { return Err(ApiError::detail(StatusCode::CONFLICT,"chatgpt_busy")); }
+        if account["login_state_present"]!=true { return Err(unavailable("chatgpt_login_required")); }
+        if !account["models"].as_array().is_some_and(|models|models.iter().any(|item|item["id"]==selection["model"] && item["efforts"].as_array().is_some_and(|efforts|efforts.contains(&selection["effort"])))) {
             return Err(unavailable("chatgpt_selection_required"));
         }
-        let payload = json!({"model":model,"reasoning":{"effort":effort},"input":grounded_messages(messages, context),"stream":false,"store":false,
-            "instructions":ASSISTANT_POLICY});
-        let request = self.client.post(format!("http://127.0.0.1:{}/v1/responses", self.port))
-            .bearer_auth(self.token()?).timeout(Duration::from_secs(190)).json(&payload);
-        Ok((selection, request))
-    }
-    async fn start_chat(&self, scope: &Workspace, body: Value, legacy: bool) -> Result<Value, ApiError> {
-        let context = chat_context(&body)?;
-        let expected = body.get("expected_selection").cloned();
-        let messages = chat_messages(body)?;
-        let grounding = json!({"policy_version":POLICY_VERSION,"context":context,"data_access":"none"});
-        let mut chat = self.chat.lock().await;
-        if chat.as_ref().is_some_and(|turn| turn.task.as_ref().is_some_and(|task| !task.is_finished())) {
-            return Err(ApiError::detail(StatusCode::CONFLICT, "chatgpt_busy"));
-        }
-        let provider = if legacy { Provider::Web } else { *self.provider.lock().await };
-        if provider == Provider::Gateway && self.gateway.busy().await { return Err(ApiError::detail(StatusCode::CONFLICT,"chatgpt_busy")); }
-        let (selection, request) = match provider {
-            Provider::Web => self.web_request(messages, &context).await?,
-            Provider::Gateway => self.gateway.prepare(grounded_messages(messages, &context), ASSISTANT_POLICY).await?,
-        };
-        if !legacy && expected != Some(json!({"provider":provider.id(),"model":selection["model"],"effort":selection["effort"]})) {
-            return Err(ApiError::detail(StatusCode::CONFLICT,"ai_selection_changed"));
-        }
-        let task = tokio::spawn(async move {
-            if provider == Provider::Gateway {
-                let value = crate::ai_gateway::read_json(request).await?;
-                return chat_text(&value).map_err(|code| match code {
-                    "chatgpt_model_unavailable" => "ai_gateway_model_unavailable",
-                    "chatgpt_empty_response" => "ai_gateway_empty_response",
-                    _ => "ai_gateway_incomplete_response",
-                });
-            }
-            let mut response = request.send().await.map_err(|error| if error.is_timeout() { "chatgpt_timeout" } else { "chatgpt_response_failed" })?;
-            if !response.status().is_success() {
-                return Err(if [409, 429].contains(&response.status().as_u16()) { "chatgpt_busy" } else { "chatgpt_response_failed" });
-            }
-            let mut bytes = Vec::new();
-            while let Some(chunk) = response.chunk().await.map_err(|_| "chatgpt_response_failed")? {
-                if bytes.len() + chunk.len() > 262144 { return Err("chatgpt_response_too_large"); }
-                bytes.extend_from_slice(&chunk);
-            }
-            let value: Value = serde_json::from_slice(&bytes).map_err(|_| "chatgpt_invalid_response")?;
-            chat_text(&value)
-        });
-        let id = uuid::Uuid::new_v4().to_string();
-        *chat = Some(ChatTurn { id: id.clone(), workspace: scope.workspace_id.clone(), subject: scope.subject.clone(),
-            created: std::time::Instant::now(), selection: selection.clone(), grounding:grounding.clone(), provider, task: Some(task), result: json!({"status":"running"}) });
-        Ok(json!({"id":id,"status":"running","selection":selection,"grounding":grounding,"provider":provider.id()}))
-    }
-    async fn read_chat(&self, scope: &Workspace, id: &str, cancel: bool) -> Result<Value, ApiError> {
-        let mut chat = self.chat.lock().await;
-        if chat.as_ref().is_some_and(|turn| turn.created.elapsed() > Duration::from_secs(600)) {
-            if let Some(task) = chat.as_mut().and_then(|turn| turn.task.take()) { task.abort(); }
-            *chat = None;
-        }
-        let turn = chat.as_mut().filter(|turn| turn.id == id && turn.workspace == scope.workspace_id && turn.subject == scope.subject)
-            .ok_or_else(|| ApiError::detail(StatusCode::NOT_FOUND, "chatgpt_turn_not_found"))?;
-        if cancel || turn.task.as_ref().is_some_and(|task| task.is_finished()) {
-            if let Some(task) = turn.task.take() {
-                if cancel && !task.is_finished() { task.abort(); }
-                turn.result = match task.await {
-                    Ok(Ok(text)) => json!({"status":"completed","text":text}),
-                    Ok(Err(code)) => json!({"status":"failed","error":code}),
-                    Err(_) => json!({"status":"cancelled"}),
-                };
-            }
-        }
-        let mut result = turn.result.clone();
-        result["id"] = json!(turn.id);
-        result["selection"] = turn.selection.clone();
-        result["grounding"] = turn.grounding.clone();
-        result["provider"] = json!(turn.provider.id());
-        Ok(result)
+        let payload=json!({"model":selection["model"],"reasoning":{"effort":selection["effort"]},"input":grounded_messages(messages,context),"stream":false,"store":false,"instructions":ASSISTANT_POLICY});
+        Ok(self.client.post(format!("http://127.0.0.1:{}/v1/responses",self.port)).bearer_auth(self.token()?).timeout(Duration::from_secs(190)).json(&payload))
     }
     pub async fn shutdown(&self) {
-        if let Some(mut turn) = self.chat.lock().await.take() {
-            if let Some(task) = turn.task.take() { task.abort(); let _ = task.await; }
-        }
         if let Some(mut child) = self.child.lock().await.take() { let _ = child.kill().await; }
         self.gateway.shutdown().await;
     }
@@ -333,10 +274,17 @@ pub fn routes() -> Router<Arc<AppState>> {
             .route(&format!("{base}/chat"), post(start_chat))
             .route(&format!("{base}/chat/{{id}}"), get(read_chat).delete(cancel_chat));
     }
+    routes = routes.route("/api/v2/ai/assistant/conversations",get(crate::ai_runs::list_conversations))
+        .route("/api/v2/ai/assistant/profiles",get(crate::ai_profiles::list))
+        .route("/api/v2/ai/assistant/profiles/{feature}/{role}",axum::routing::put(crate::ai_profiles::save))
+        .route("/api/v2/ai/assistant/conversations/{id}",get(crate::ai_runs::read_conversation).patch(crate::ai_runs::edit_conversation).delete(crate::ai_runs::delete_conversation))
+        .route("/api/v2/ai/assistant/chat/{id}/events",get(crate::ai_runs::stream_events))
+        .route("/api/v2/ai/assistant/catalog",get(catalog));
     routes.route_layer(axum::middleware::from_fn(local_boundary))
 }
 pub fn native(method: &str, path: &str) -> bool {
     let suffix = path.strip_prefix("/api/v2/ai/chatgpt").or_else(|| path.strip_prefix("/api/v2/ai/assistant"));
+    if matches!((method,suffix),("GET",Some("/profiles" | "/conversations" | "/catalog" | "/chat/{id}/events")) | ("PUT",Some("/profiles/{feature}/{role}")) | ("GET" | "PATCH" | "DELETE",Some("/conversations/{id}"))) { return true; }
     matches!((method, suffix), ("GET", Some("/account")) | ("POST", Some("/account/{action}"))
         | ("POST", Some("/chat")) | ("GET" | "DELETE", Some("/chat/{id}")))
 }
@@ -365,19 +313,18 @@ async fn action(State(state): State<Arc<AppState>>, _scope: Workspace, Path(acti
     state.ai_assistant.account_action(uri.path().starts_with("/api/v2/ai/chatgpt/"), &action, body).await.map(Json)
 }
 async fn start_chat(State(state): State<Arc<AppState>>, scope: Workspace, OriginalUri(uri): OriginalUri, Json(body): Json<Value>) -> Result<(StatusCode, Json<Value>), ApiError> {
-    state.ai_assistant.start_chat(&scope, body, uri.path().starts_with("/api/v2/ai/chatgpt/")).await.map(|value| (StatusCode::ACCEPTED, Json(value)))
+    state.ai_runs.submit(&scope, body, uri.path().starts_with("/api/v2/ai/chatgpt/")).await.map(|value| (StatusCode::ACCEPTED, Json(value)))
 }
 async fn read_chat(State(state): State<Arc<AppState>>, scope: Workspace, Path(id): Path<String>) -> Result<Json<Value>, ApiError> {
-    state.ai_assistant.read_chat(&scope, &id, false).await.map(Json)
+    state.ai_runs.read(&scope, crate::ai_runs::identifier(&id)?, false).await.map(Json)
 }
 async fn cancel_chat(State(state): State<Arc<AppState>>, scope: Workspace, Path(id): Path<String>) -> Result<Json<Value>, ApiError> {
-    state.ai_assistant.read_chat(&scope, &id, true).await.map(Json)
+    state.ai_runs.read(&scope, crate::ai_runs::identifier(&id)?, true).await.map(Json)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::{AtomicU8, AtomicUsize, Ordering};
 
     #[tokio::test]
     async fn provider_routes_keep_identity_origin_and_no_store_boundaries() {
@@ -454,155 +401,6 @@ mod tests {
         let _listener = tokio::net::TcpListener::bind("127.0.0.1:17852").await.unwrap();
     }
 
-    struct GatewayFixture {
-        service: AiAssistant,
-        mode: Arc<AtomicU8>,
-        catalogs: Arc<AtomicUsize>,
-        requests: Arc<Mutex<Vec<Value>>>,
-        server: tokio::task::JoinHandle<()>,
-        key_file: PathBuf,
-    }
-    impl Drop for GatewayFixture {
-        fn drop(&mut self) { self.server.abort(); let _ = std::fs::remove_file(&self.key_file); }
-    }
-    impl GatewayFixture {
-        async fn new() -> Self {
-            let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-            let address = listener.local_addr().unwrap();
-            let mode = Arc::new(AtomicU8::new(0));
-            let catalogs = Arc::new(AtomicUsize::new(0));
-            let requests = Arc::new(Mutex::new(Vec::new()));
-            let (catalog_mode, catalog_count) = (mode.clone(), catalogs.clone());
-            let (response_mode, recorded) = (mode.clone(), requests.clone());
-            let app = Router::new().route("/v1/models", get(move |headers: axum::http::HeaderMap| {
-                let (mode, count) = (catalog_mode.clone(), catalog_count.clone());
-                async move {
-                    count.fetch_add(1, Ordering::SeqCst);
-                    assert_eq!(headers["authorization"], "Bearer synthetic-gateway-fixture-key-0001");
-                    match mode.load(Ordering::SeqCst) {
-                        8 => (StatusCode::UNAUTHORIZED, Json(json!({"private":"never return this"}))),
-                        9 => (StatusCode::OK, Json(json!({"wrong":"shape"}))),
-                        10 => (StatusCode::OK, Json(json!({"data":[]}))),
-                        _ => (StatusCode::OK, Json(json!({"data":[{"id":"gemini-fixture-pro"},{"id":"gemini-fixture-fast"}]}))),
-                    }
-                }
-            })).route("/v1/responses", post(move |Json(payload): Json<Value>| {
-                let (mode, recorded) = (response_mode.clone(), recorded.clone());
-                async move {
-                    recorded.lock().await.push(payload);
-                    match mode.load(Ordering::SeqCst) {
-                        1 => (StatusCode::TOO_MANY_REQUESTS, Json(json!({"secret":"do not expose upstream bodies"}))),
-                        2 => { std::future::pending::<()>().await; unreachable!() },
-                        3 => (StatusCode::OK, Json(json!({"status":"incomplete","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"partial"}]}]}))),
-                        4 => (StatusCode::OK, Json(json!({"status":"completed","output":[]}))),
-                        5 => (StatusCode::OK, Json(json!({"status":"completed","private":"x".repeat(262145)}))),
-                        _ => (StatusCode::OK, Json(json!({"status":"completed","output":[
-                            {"type":"message","role":"user","content":[{"type":"output_text","text":"never echo user"}]},
-                            {"type":"message","role":"assistant","content":[{"type":"output_text","text":"synthetic complete response"}]}]}))),
-                    }
-                }
-            }));
-            let server = tokio::spawn(async move { axum::serve(listener, app).await.unwrap(); });
-            let key_file = std::env::temp_dir().join(format!("wm-ai-fixture-{}.key", uuid::Uuid::new_v4()));
-            std::fs::write(&key_file, "synthetic-gateway-fixture-key-0001").unwrap();
-            let mut service = AiAssistant::from_environment().unwrap();
-            service.gateway = crate::ai_gateway::LocalGateway::new(&format!("http://{address}/v1"), key_file.clone(), None).unwrap();
-            *service.provider.lock().await = Provider::Web;
-            Self { service, mode, catalogs, requests, server, key_file }
-        }
-        fn scope() -> Workspace { Workspace {workspace_id:"synthetic".into(),subject:"fixture-owner".into()} }
-        async fn connect(&self) {
-            let account = self.service.account_action(false,"provider",json!({"provider":"local-gateway"})).await.unwrap();
-            assert_eq!(account["ready"], false);
-            self.service.account_action(false,"selection",json!({"model":"gemini-fixture-pro","effort":null})).await.unwrap();
-        }
-        async fn send(&self) -> String {
-            self.service.start_chat(&Self::scope(),json!({"messages":[{"role":"user","content":"synthetic question"}],"context":{"screen":"trade","locale":"en"},
-                "expected_selection":{"provider":"local-gateway","model":"gemini-fixture-pro","effort":null}}),false)
-                .await.unwrap()["id"].as_str().unwrap().to_owned()
-        }
-        async fn finish(&self, id: &str) -> Value {
-            tokio::time::timeout(Duration::from_secs(3), async {
-                loop {
-                    let value = self.service.read_chat(&Self::scope(),id,false).await.unwrap();
-                    if value["status"] != "running" { return value; }
-                    tokio::task::yield_now().await;
-                }
-            }).await.unwrap()
-        }
-    }
-
-    #[tokio::test]
-    async fn gateway_uses_shared_policy_context_and_task_scope_without_browser_or_tools() {
-        let fixture = GatewayFixture::new().await;
-        assert_eq!(fixture.service.account(false,false).await.unwrap()["provider"],"chatgpt-web");
-        assert_eq!(fixture.catalogs.load(Ordering::SeqCst),0,"unused gateway must be lazy");
-        fixture.connect().await;
-        let account = fixture.service.account(false,false).await.unwrap();
-        assert_eq!(account["ready"],true);
-        assert_eq!(account["capabilities"]["tools"],false);
-        assert_eq!(account["models"][0]["efforts"],json!([]));
-        assert_eq!(fixture.catalogs.load(Ordering::SeqCst),1,"catalog is cached across UI reads and selection");
-        for expected in [Value::Null,json!({"provider":"chatgpt-web","model":"gemini-fixture-pro","effort":null}),
-            json!({"provider":"local-gateway","model":"different-model","effort":null})] {
-            let body = json!({"messages":[{"role":"user","content":"must not send"}],"expected_selection":expected});
-            assert_eq!(fixture.service.start_chat(&GatewayFixture::scope(),body,false).await.unwrap_err().0,StatusCode::CONFLICT);
-        }
-        assert!(fixture.requests.lock().await.is_empty());
-        for body in [json!({"model":"unknown","effort":null}),json!({"model":"gemini-fixture-pro","effort":"high"}),
-            json!({"model":"gemini-fixture-pro","effort":null,"endpoint":"https://evil.example"})] {
-            assert_eq!(fixture.service.account_action(false,"selection",body).await.unwrap_err().0,StatusCode::UNPROCESSABLE_ENTITY);
-        }
-        let id = fixture.send().await;
-        let result = fixture.finish(&id).await;
-        assert_eq!(result["text"],"synthetic complete response");
-        assert_eq!(result["provider"],"local-gateway");
-        let requests = fixture.requests.lock().await;
-        assert_eq!(requests.len(),1,"no automatic retries");
-        let sent = &requests[0];
-        assert_eq!(sent["instructions"],ASSISTANT_POLICY);
-        assert_eq!(sent["model"],"gemini-fixture-pro");
-        assert_eq!(sent["store"],false);
-        assert!(sent.get("reasoning").is_none() && sent.get("tools").is_none());
-        let grounded: Value = serde_json::from_str(sent["input"][0]["content"].as_str().unwrap()).unwrap();
-        assert_eq!(grounded["app_context"]["screen"],"trade");
-        assert_eq!(grounded["app_context"]["data_access"],"none");
-        assert!(fixture.service.child.lock().await.is_none(),"gateway never launches WebGPT");
-    }
-
-    #[tokio::test]
-    async fn gateway_failures_are_sanitized_and_cancel_keeps_provider_selection_atomic() {
-        let fixture = GatewayFixture::new().await;
-        fixture.connect().await;
-        for (mode, code) in [(1,"ai_gateway_rate_limited"),(3,"ai_gateway_incomplete_response"),(4,"ai_gateway_empty_response"),(5,"ai_gateway_response_too_large")] {
-            fixture.mode.store(mode,Ordering::SeqCst);
-            let id = fixture.send().await;
-            let result = fixture.finish(&id).await;
-            assert_eq!(result["status"],"failed");
-            assert_eq!(result["error"],code);
-            assert!(!result.to_string().contains("secret"));
-        }
-        assert_eq!(fixture.requests.lock().await.len(),4);
-        fixture.mode.store(2,Ordering::SeqCst);
-        let id = fixture.send().await;
-        assert_eq!(fixture.service.account_action(false,"provider",json!({"provider":"chatgpt-web"})).await.unwrap_err().0,StatusCode::CONFLICT);
-        assert_eq!(fixture.service.account_action(false,"selection",json!({"model":"gemini-fixture-fast","effort":null})).await.unwrap_err().0,StatusCode::CONFLICT);
-        let foreign = Workspace {subject:"foreign".into(),..GatewayFixture::scope()};
-        assert_eq!(fixture.service.read_chat(&foreign,&id,true).await.unwrap_err().0,StatusCode::NOT_FOUND);
-        assert_eq!(fixture.service.read_chat(&GatewayFixture::scope(),&id,true).await.unwrap()["status"],"cancelled");
-        assert_eq!(fixture.service.read_chat(&GatewayFixture::scope(),&id,true).await.unwrap()["status"],"cancelled");
-        for (mode, code) in [(8,"ai_gateway_auth_failed"),(9,"ai_gateway_invalid_response")] {
-            fixture.mode.store(mode,Ordering::SeqCst);
-            let value = fixture.service.account_action(false,"refresh",json!({})).await.unwrap();
-            assert_eq!(value["ready"],false);
-            assert_eq!(value["models"],json!([]));
-            assert_eq!(value["error"],code);
-            assert!(!value.to_string().contains("never return"));
-        }
-        fixture.mode.store(10,Ordering::SeqCst);
-        assert_eq!(fixture.service.account_action(false,"refresh",json!({})).await.unwrap()["status"],"empty");
-        assert_eq!(fixture.service.start_chat(&GatewayFixture::scope(),json!({"messages":[{"role":"user","content":"x"}]}),false).await.unwrap_err().0,StatusCode::SERVICE_UNAVAILABLE);
-    }
     #[test]
     fn route_context_is_bounded_data_not_policy_or_account_data() {
         let context = json!({"screen":"playbook","locale":"vi"});
@@ -649,43 +447,6 @@ mod tests {
         assert!(chat_text(&incomplete).is_err());
         assert!(chat_text(&json!({"status":"completed","output":[]})).is_err());
         assert_eq!(chat_text(&json!({"status":"failed","error":{"code":"model_version_unavailable","message":"private browser detail"}})), Err("chatgpt_model_unavailable"));
-    }
-    #[tokio::test]
-    async fn chat_cancel_is_scoped_idempotent_and_drops_the_running_task() {
-        let service = AiAssistant::from_environment().unwrap();
-        let scope = Workspace { workspace_id:"fixture".into(), subject:"owner".into() };
-        let task = tokio::spawn(async { std::future::pending::<Result<String, &'static str>>().await });
-        let abort = task.abort_handle();
-        *service.chat.lock().await = Some(ChatTurn { id:"fixture-turn".into(), workspace:scope.workspace_id.clone(), subject:scope.subject.clone(),
-            created:std::time::Instant::now(), provider:Provider::Web, selection:json!({"model":"fixture","effort":"high"}), grounding:json!({"policy_version":POLICY_VERSION}), task:Some(task), result:json!({"status":"running"}) });
-        for foreign in [Workspace { workspace_id:"other".into(), ..scope.clone() }, Workspace { subject:"other".into(), ..scope.clone() }] {
-            assert_eq!(service.read_chat(&foreign, "fixture-turn", true).await.unwrap_err().0, StatusCode::NOT_FOUND);
-        }
-        assert!(!abort.is_finished());
-        assert_eq!(service.read_chat(&scope, "fixture-turn", false).await.unwrap()["status"], "running");
-        assert_eq!(service.account_action(true, "disconnect", json!({})).await.unwrap_err().0, StatusCode::CONFLICT);
-        assert_eq!(service.read_chat(&scope, "fixture-turn", true).await.unwrap()["status"], "cancelled");
-        assert_eq!(service.read_chat(&scope, "fixture-turn", false).await.unwrap()["grounding"]["policy_version"], POLICY_VERSION);
-        assert!(abort.is_finished());
-        assert_eq!(service.read_chat(&scope, "fixture-turn", true).await.unwrap()["status"], "cancelled");
-        service.chat.lock().await.as_mut().unwrap().created -= Duration::from_secs(601);
-        assert_eq!(service.read_chat(&scope, "fixture-turn", false).await.unwrap_err().0, StatusCode::NOT_FOUND);
-    }
-    #[tokio::test]
-    async fn completed_chat_survives_late_cancel_and_shutdown_aborts_pending_work() {
-        let service = AiAssistant::from_environment().unwrap();
-        let scope = Workspace { workspace_id:"fixture".into(), subject:"owner".into() };
-        let task = tokio::spawn(async { Ok("fixture reply".into()) });
-        while !task.is_finished() { tokio::task::yield_now().await; }
-        *service.chat.lock().await = Some(ChatTurn { id:"done".into(), workspace:scope.workspace_id.clone(), subject:scope.subject.clone(),
-            created:std::time::Instant::now(), provider:Provider::Web, selection:json!({}), grounding:json!({}), task:Some(task), result:json!({"status":"running"}) });
-        assert_eq!(service.read_chat(&scope, "done", true).await.unwrap()["text"], "fixture reply");
-        let task = tokio::spawn(async { std::future::pending::<Result<String, &'static str>>().await });
-        let abort = task.abort_handle();
-        service.chat.lock().await.as_mut().unwrap().task = Some(task);
-        service.shutdown().await;
-        assert!(abort.is_finished());
-        assert!(service.chat.lock().await.is_none());
     }
     #[tokio::test]
     async fn status_does_not_start_a_browser_or_adopt_a_service() {

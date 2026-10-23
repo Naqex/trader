@@ -2,9 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import AiModelPicker from './AiModelPicker.jsx'
 import assistantPolicy from '../../api-rust/src/ai-assistant-policy.md?raw'
 import AiSparkles from './AiSparkles.jsx'
-import { aiErrorCopy, isGatewayError } from './aiProvider.js'
+import useAiChat from './useAiChat.js'
 
-const base = '/api/v2/ai/assistant'
 const screens = { unknown: ['Chưa xác định', 'Unknown'], overview: ['Tổng quan', 'Overview'], replay: ['Replay', 'Replay'], trade: ['Giao dịch', 'Trading'], analytics: ['Phân tích', 'Analytics'], playbook: ['Chiến lược', 'Strategies'], learn: ['Học tập', 'Learning'], settings: ['Cài đặt', 'Settings'], 'market-data': ['Dữ liệu', 'Market data'], prop: ['Prop firm', 'Prop firm'], journal: ['Nhật ký', 'Journal'], sessions: ['Phiên', 'Sessions'] }
 
 function ChatIcon({ name }) {
@@ -28,19 +27,9 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
   const say = (vi, english) => en ? english : vi
   const currentScreen = Object.hasOwn(screens, screen) ? screen : 'unknown'
   const screenName = key => (screens[key] || screens.unknown)[en ? 1 : 0]
-  const [account, setAccount] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [messages, setMessages] = useState([])
-  const [draft, setDraft] = useState('')
-  const [error, setError] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [changing, setChanging] = useState(false)
-  const [waiting, setWaiting] = useState(null)
-  const [cancelled, setCancelled] = useState(false)
-  const [savedChats, setSavedChats] = useState([])
-  const [chatId, setChatId] = useState(() => crypto.randomUUID())
-  const [chatTitle, setChatTitle] = useState('')
-  const [historyOpen, setHistoryOpen] = useState(false)
+  const { account, loading, changing, messages, draft, setDraft, error, cancelled, busy, chatId, chats, next,
+    historyOpen, setHistoryOpen, partial, older, loadOlder, newChat, openChat, send, stop, changeAccount, loadAccount,
+    renameChat, deleteChat, models, pickerSelection, selectModel, loadMore, retryConnection, reportError } = useAiChat({ workspace, open, en, screen: currentScreen })
   const [mentor, setMentor] = useState({ name: 'Mentor', description: '' })
   const [dialog, setDialog] = useState(null)
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth)
@@ -52,27 +41,8 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
   const panel = useRef(null)
   const composer = useRef(null)
   const scroll = useRef(null)
-  const mounted = useRef(true)
-  const active = useRef(null)
-  const stopRequested = useRef(false)
-  const submitting = useRef(false)
-
+  const restoringScroll = useRef(false)
   const description = mentor.description || say('Cùng tìm hiểu trading, backtest và WMREPLAY.', 'Explore trading, backtesting and WMREPLAY.')
-  const currentChat = { id: chatId, title: chatTitle || messages[0]?.content.slice(0, 90), messages, draft, error, cancelled }
-  const chats = messages.length ? [currentChat, ...savedChats.filter(item => item.id !== chatId)] : savedChats
-  function archiveCurrent() {
-    if (messages.length) setSavedChats(previous => [currentChat, ...previous.filter(item => item.id !== chatId)])
-  }
-  function newChat() {
-    if (submitting.current) return
-    archiveCurrent(); setChatId(crypto.randomUUID()); setChatTitle(''); setMessages([]); setDraft(''); setError(''); setCancelled(false); setHistoryOpen(false)
-    requestAnimationFrame(() => composer.current?.focus())
-  }
-  function openChat(item) {
-    if (submitting.current) return
-    archiveCurrent(); setChatId(item.id); setChatTitle(item.title); setMessages(item.messages); setDraft(item.draft); setError(item.error); setCancelled(item.cancelled); setHistoryOpen(false)
-    requestAnimationFrame(() => composer.current?.focus())
-  }
   function closeDialog() {
     setDialog(null)
     requestAnimationFrame(() => {
@@ -84,18 +54,14 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
   useEffect(() => {
     if (open && dialog) dialogRef.current?.showModal()
   }, [open, dialog?.type])
-  function saveDialog(event) {
+  async function saveDialog(event) {
     event.preventDefault()
-    if (dialog.type === 'settings') setMentor({ name: dialog.name.trim(), description: dialog.description.trim() })
-    if (dialog.type === 'rename') {
-      if (dialog.id === chatId) setChatTitle(dialog.name.trim())
-      setSavedChats(previous => previous.map(item => item.id === dialog.id ? { ...item, title: dialog.name.trim() } : item))
-    }
-    if (dialog.type === 'delete') {
-      setSavedChats(previous => previous.filter(item => item.id !== dialog.id))
-      if (dialog.id === chatId) { setChatId(crypto.randomUUID()); setChatTitle(''); setMessages([]); setDraft(''); setError(''); setCancelled(false) }
-    }
-    closeDialog()
+    try {
+      if (dialog.type === 'settings') setMentor({ name: dialog.name.trim(), description: dialog.description.trim() })
+      if (dialog.type === 'rename') await renameChat(dialog.id, dialog.name.trim())
+      if (dialog.type === 'delete') await deleteChat(dialog.id)
+      closeDialog()
+    } catch (failure) { reportError(failure); closeDialog() }
   }
   const maxWidth = Math.max(360, Math.min(760, viewportWidth - 620))
   function resize(next) {
@@ -115,55 +81,6 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
     return () => { window.removeEventListener('resize', update); cancelAnimationFrame(resizeFrame.current) }
   }, [resizeWidth])
 
-  async function call(path, method = 'GET', body, signal) {
-    const response = await fetch(`${base}${path}`, {
-      method, signal, headers: { 'X-Workspace-Id': workspace, ...(body ? { 'Content-Type': 'application/json' } : {}) },
-      ...(body ? { body: JSON.stringify(body) } : {}),
-    })
-    const value = await response.json().catch(() => ({}))
-    if (!response.ok) { const failure = new Error(typeof value.detail === 'string' ? value.detail : 'chatgpt_unavailable'); failure.status = response.status; throw failure }
-    return value
-  }
-  function errorCopy(code) {
-    if (isGatewayError(code) || code === 'chatgpt_busy') return aiErrorCopy(code, en)
-    if (code === 'chatgpt_login_required') return say('Bạn cần đăng nhập ChatGPT trong Cài đặt.', 'Connect ChatGPT in Settings first.')
-    if (code === 'chatgpt_model_unavailable') return say('Câu hỏi chưa được gửi. Chưa xác minh được model trên ChatGPT Web. Kiểm tra Cài đặt AI.', 'Your question was not sent. The model could not be verified on ChatGPT Web. Check AI settings.')
-    if (code === 'chatgpt_turn_not_found') return say('Phản hồi không còn trên máy chủ. Cuộc trò chuyện vẫn ở đây; bạn có thể bắt đầu lại.', 'This response is no longer on the server. You can start a new chat.')
-    if (code === 'chatgpt_timeout') return say('Đã hết thời gian chờ phản hồi. Kiểm tra kết nối trước khi gửi lại.', 'The response timed out. Check your connection before sending again.')
-    if (code === 'workspace_access_denied' || code === 'trusted_identity_missing') return say('Workspace này chưa được cấp quyền dùng AI.', 'This workspace does not have AI access.')
-    if (code === 'invalid_chat_messages') return say('Hội thoại vượt giới hạn hoặc nội dung không hợp lệ. Hãy mở cuộc trò chuyện mới.', 'The conversation exceeds the limit or contains invalid content. Start a new chat.')
-    if (code === 'invalid_chat_context') return say('Ngữ cảnh màn hình không hợp lệ. Hãy tải lại trang.', 'Invalid screen context. Reload the page.')
-    return say('Chưa nhận được phản hồi. Kiểm tra phiên đăng nhập, model và hạn mức trong Cài đặt. Ứng dụng không tự gửi lại.', 'No response received. Check your login, model and limits in Settings. The app does not resend automatically.')
-  }
-  async function loadAccount(signal) {
-    setLoading(true); setError('')
-    try { const value = await call('/account', 'GET', undefined, signal); if (!signal.aborted) setAccount(value) }
-    catch (failure) { if (!signal.aborted) { setAccount(null); setError(errorCopy(failure.message)) } }
-    finally { if (!signal.aborted) setLoading(false) }
-  }
-  useEffect(() => {
-    mounted.current = true
-    const shell = panel.current?.closest('.fx-shell-story')
-    return () => {
-      mounted.current = false; stopRequested.current = true
-      shell?.style.removeProperty('--wm-ai-width')
-      if (active.current) void call(`/chat/${active.current}`, 'DELETE').catch(() => {})
-    }
-  }, [workspace])
-  useEffect(() => {
-    if (!open) return
-    const controller = new AbortController()
-    void loadAccount(controller.signal)
-    composer.current?.focus()
-    return () => controller.abort()
-  }, [open, workspace])
-  useEffect(() => {
-    if (!open) return
-    const controller = new AbortController()
-    const refresh = event => { if (event.detail?.workspace === workspace && !submitting.current) void loadAccount(controller.signal) }
-    window.addEventListener('wm-ai-provider-change', refresh)
-    return () => { controller.abort(); window.removeEventListener('wm-ai-provider-change', refresh) }
-  }, [open, workspace])
   useEffect(() => {
     if (!open) return
     function keydown(event) {
@@ -185,94 +102,18 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
     return () => element.removeEventListener('keydown', keydown)
   }, [open, modal, onClose])
   useEffect(() => {
-    if (open && scroll.current) scroll.current.scrollTop = scroll.current.scrollHeight
+    if (open && scroll.current && !restoringScroll.current) scroll.current.scrollTop = scroll.current.scrollHeight
   }, [messages, busy, open, error])
-
-  function finish(value) {
-    const id = active.current
-    if (!id) return
-    active.current = null; submitting.current = false
-    setBusy(false); setWaiting(null)
-    setMessages(previous => previous.map(item => item.id === id ? { ...item, status: value.status } : item)
-      .concat(value.status === 'completed' ? [{ role: 'assistant', content: value.text, status: 'completed', selection: value.selection }] : []))
-    if (value.status === 'failed') setError(errorCopy(value.error))
-    setCancelled(value.status === 'cancelled')
-  }
   useEffect(() => {
-    if (!waiting) return
-    const controller = new AbortController()
-    const timer = setTimeout(async () => {
-      try {
-        const value = await call(`/chat/${waiting.id}`, 'GET', undefined, controller.signal)
-        if (controller.signal.aborted || !mounted.current) return
-        if (value.status === 'running') setWaiting({ id: waiting.id })
-        else finish(value)
-      } catch (failure) {
-        if (controller.signal.aborted || !mounted.current) return
-        // A failed status read must not leave an unowned provider request running.
-        void call(`/chat/${waiting.id}`, 'DELETE').catch(() => {})
-        finish({ status: 'failed', error: failure.message })
-      }
-    }, 1000)
-    return () => { clearTimeout(timer); controller.abort() }
-  }, [waiting, workspace])
+    if (open && !historyOpen && !loading) composer.current?.focus()
+  }, [chatId, historyOpen, loading, open])
+  async function showOlder() {
+    const element=scroll.current, height=element.scrollHeight, top=element.scrollTop
+    restoringScroll.current=true
+    await loadOlder()
+    requestAnimationFrame(()=>{element.scrollTop=top+element.scrollHeight-height;restoringScroll.current=false})
+  }
 
-  async function send(event) {
-    event.preventDefault()
-    const content = draft.trim()
-    if (!content || loading || changing || submitting.current || !(account?.ready ?? account?.login_state_present) || account.operation) return
-    const history = messages.filter(item => item.status === 'completed').map(({ role, content }) => ({ role, content }))
-    const payload = { messages: [...history, { role: 'user', content }], context: { screen: currentScreen, locale: en ? 'en' : 'vi' },
-      expected_selection: { provider: account.provider || 'chatgpt-web', model: account.selection.model, effort: account.selection.effort ?? null } }
-    if (payload.messages.length > 63 || new TextEncoder().encode(JSON.stringify(payload)).length > 49152) {
-      setError(errorCopy('invalid_chat_messages')); return
-    }
-    submitting.current = true; stopRequested.current = false
-    setBusy(true); setError(''); setCancelled(false); setDraft('')
-    setMessages(previous => [...previous, { role: 'user', content, screen: currentScreen, status: 'running', id: 'submitting' }])
-    try {
-      // Keep the POST alive until its ID is known so unmount can cancel the exact turn.
-      const value = await call('/chat', 'POST', payload)
-      active.current = value.id
-      if (!mounted.current || stopRequested.current) {
-        const result = await call(`/chat/${value.id}`, 'DELETE')
-        if (mounted.current) { setMessages(previous => previous.map(item => item.id === 'submitting' ? { ...item, id: value.id } : item)); finish(result) }
-        return
-      }
-      setMessages(previous => previous.map(item => item.id === 'submitting' ? { ...item, id: value.id } : item))
-      setWaiting({ id: value.id })
-    } catch (failure) {
-      if (!mounted.current) return
-      if (failure.message === 'ai_selection_changed') {
-        try { const current = await call('/account'); if (mounted.current) { setAccount(current); setDraft(content) } } catch {}
-        if (!mounted.current) return
-      }
-      if (active.current) {
-        const id = active.current
-        setMessages(previous => previous.map(item => item.id === 'submitting' ? { ...item, id } : item))
-        setError(errorCopy(failure.message)); setWaiting({ id })
-        return
-      }
-      submitting.current = false
-      setBusy(false); setError(errorCopy(failure.message))
-      setMessages(previous => previous.map(item => item.id === 'submitting' ? { ...item, status: 'failed' } : item))
-    }
-  }
-  async function stop() {
-    stopRequested.current = true
-    if (!active.current) return
-    const id = active.current
-    setWaiting(null)
-    try { const value = await call(`/chat/${id}`, 'DELETE'); if (mounted.current) finish(value) }
-    catch (failure) { if (mounted.current) { setError(errorCopy(failure.message)); setWaiting({ id }) } }
-  }
-  async function changeAccount(action, body) {
-    if (changing || submitting.current) return
-    setChanging(true); setError('')
-    try { const value = await call(`/account/${action}`, 'POST', body || {}); if (mounted.current) setAccount(value) }
-    catch (failure) { if (mounted.current) setError(errorCopy(failure.message)) }
-    finally { if (mounted.current) setChanging(false) }
-  }
   const connected = !!(account?.ready ?? account?.login_state_present) && !account?.operation && !!account?.selection
   useEffect(() => {
     if (open && connected && !loading && !historyOpen && !dialogRef.current?.open) composer.current?.focus()
@@ -287,7 +128,7 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
     <header className="wm-ai-header">
       <div className="wm-ai-header-actions">
         <button type="button" aria-pressed={historyOpen} onClick={() => setHistoryOpen(value => !value)} aria-label={say('Chat gần đây', 'Recent chats')} data-tooltip={say('Chat gần đây', 'Recent chats')}><ChatIcon name="history" /></button>
-        <button type="button" disabled={busy} aria-pressed={!historyOpen && !messages.length} onClick={newChat} aria-label={say('Cuộc trò chuyện mới', 'New chat')} data-tooltip={say('Cuộc trò chuyện mới', 'New chat')}><ChatIcon name="new" /></button>
+        <button type="button" aria-pressed={!historyOpen && !messages.length} onClick={newChat} aria-label={say('Cuộc trò chuyện mới', 'New chat')} data-tooltip={say('Cuộc trò chuyện mới', 'New chat')}><ChatIcon name="new" /></button>
       </div>
       <div className="wm-ai-identity"><button type="button" onClick={event => showDialog({ type: 'settings', ...mentor }, event.currentTarget)} aria-label={say('Cài đặt trợ lý', 'Assistant settings')} data-tooltip={say('Cài đặt trợ lý', 'Assistant settings')}><ChatIcon name="settings" /></button><h2 id="wm-ai-title">{mentor.name}</h2></div>
       <button type="button" className="wm-dialog-close" data-chat-close onClick={onClose} aria-label={say('Đóng chat AI', 'Close AI chat')} data-tooltip={say('Đóng chat AI', 'Close AI chat')}><ChatIcon name="close" /></button>
@@ -300,20 +141,23 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
         <button type="button" onClick={newChat}><ChatIcon name="new" />{say('Chat mới', 'New chat')}</button>
       </div>}
       <ul>{chats.map(item => <li key={item.id}>
-        <button type="button" className="wm-ai-history-open" disabled={busy} onClick={() => openChat(item)}><span>{item.title}</span><ChatIcon name="arrow" /></button>
+        <button type="button" className="wm-ai-history-open" onClick={() => openChat(item)}><span>{item.title}</span><ChatIcon name="arrow" /></button>
         <button type="button" className="wm-ai-history-delete" disabled={busy} aria-label={`${say('Xóa chat', 'Delete chat')}: ${item.title}`} onClick={event => showDialog({ type: 'delete', id: item.id, name: item.title }, event.currentTarget)}><ChatIcon name="delete" /></button>
         <button type="button" className="wm-ai-history-edit" disabled={busy} aria-label={`${say('Đổi tên chat', 'Rename chat')}: ${item.title}`} onClick={event => showDialog({ type: 'rename', id: item.id, name: item.title }, event.currentTarget)}><ChatIcon name="edit" /></button>
       </li>)}</ul>
+      {next && <button type="button" onClick={loadMore}>{say('Xem thêm', 'Load more')}</button>}
       {busy && <button className="wm-ai-history-return" type="button" onClick={() => setHistoryOpen(false)}>{say('Quay lại chat đang chờ', 'Return to active chat')} →</button>}
     </section>}
     <div className="wm-ai-body" hidden={historyOpen}>
     <div className="wm-ai-transcript" ref={scroll} role="log" aria-label={say('Nội dung trò chuyện', 'Conversation')} aria-live="polite" aria-relevant="additions text">
+      {older && <button type="button" disabled={loading} onClick={showOlder}>{say('Tin nhắn trước', 'Earlier messages')}</button>}
       {!messages.length && <div className="wm-ai-welcome"><span className="wm-ai-welcome-icon"><AiSparkles /></span><h3>{mentor.name}</h3><p>{description}</p></div>}
-      {messages.map((item, index) => <div className={`wm-ai-message is-${item.role}`} key={index}><span className="wm-ai-speaker">{item.role === 'user' ? `${say('Bạn', 'You')} · ${screenName(item.screen)}` : mentor.name}</span><div>{item.content}</div>{item.role === 'user' && ['failed', 'cancelled'].includes(item.status) && <small>{item.status === 'cancelled' ? say('Đã dừng', 'Stopped') : say('Chưa có phản hồi', 'No response')}</small>}</div>)}
-      {busy && <p className="wm-ai-thinking" role="status"><span />{say('Đang chờ phản hồi…', 'Waiting for a response…')}</p>}
+      {messages.map((item, index) => <div className={`wm-ai-message is-${item.role}`} key={index}><span className="wm-ai-speaker">{item.role === 'user' ? `${say('Bạn', 'You')} · ${screenName(item.screen)}` : mentor.name}</span><div>{item.content}</div>{item.role === 'user' && ['failed', 'cancelled', 'interrupted'].includes(item.status) && <small>{item.status === 'cancelled' ? say('Đã dừng', 'Stopped') : say('Chưa có phản hồi', 'No response')}</small>}</div>)}
+      {partial && <div className="wm-ai-message is-assistant"><span className="wm-ai-speaker">{mentor.name}</span><div>{partial}</div></div>}
+      {busy && !partial && <p className="wm-ai-thinking" role="status"><span />{say('Đang chờ phản hồi…', 'Waiting for a response…')}</p>}
     </div>
     <div className="wm-ai-bottom">
-      {error && <p className="wm-ai-error" role="alert">{error}</p>}
+      {error && <p className="wm-ai-error" role="alert">{error}{busy && <button type="button" onClick={retryConnection}>{say('Kết nối lại', 'Reconnect')}</button>}</p>}
       {cancelled && <p className="wm-ai-note" role="status">{say('Đã dừng chờ phản hồi.', 'Response stopped.')}</p>}
       {loading ? <p className="wm-ai-note" role="status">{say('Đang đọc kết nối…', 'Checking connection…')}</p> : !connected && <div className="wm-ai-connect"><p>{account?.operation ? say('Hoàn tất đăng nhập hoặc kiểm tra trong Cài đặt.', 'Finish login or the connection test in Settings.') : say('Chọn kết nối và model trong Cài đặt AI.', 'Select a connection and model in AI settings.')}</p>{account?.status === 'stopped' && <button type="button" disabled={changing} onClick={() => changeAccount('start')}>{say('Nạp kết nối đã lưu', 'Load saved connection')}</button>}<a href={settingsHref} onClick={onClose}>{say('Mở Cài đặt AI', 'Open AI settings')} ↗</a>{!account && <button type="button" disabled={loading} onClick={() => void loadAccount(new AbortController().signal)}>{say('Thử kết nối lại', 'Refresh connection')}</button>}</div>}
       <form className="wm-ai-composer" onSubmit={send}>
@@ -324,7 +168,7 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
             <span data-tooltip={say('Chiến lược · Chưa kết nối với chat AI', 'Strategies · Not connected to AI chat yet')}><button type="button" disabled aria-label={say('Chiến lược · Sắp có', 'Strategies · Coming soon')}><ChatIcon name="strategies" /></button></span>
             <span data-tooltip={say('Phân tích biểu đồ · Chưa kết nối dữ liệu phiên', 'Analyze your chart · Session data is not connected yet')}><button type="button" disabled aria-label={say('Phân tích biểu đồ · Sắp có', 'Analyze chart · Coming soon')}><ChatIcon name="chart" /></button></span>
           </div>
-          <div className="wm-ai-models">{connected ? <AiModelPicker models={account.models} selection={account.selection} disabled={busy || loading} saving={changing} active={open && !historyOpen} en={en} onSelect={value => changeAccount('selection', value)} /> : <span>{account?.provider === 'local-gateway' ? 'CLIProxyAPI local' : 'ChatGPT Web'}</span>}</div>
+          <div className="wm-ai-models">{models.length ? <AiModelPicker models={models} selection={pickerSelection} disabled={loading} saving={changing} active={open && !historyOpen} en={en} onSelect={selectModel} /> : <span>{account?.provider === 'local-gateway' ? 'CLIProxyAPI local' : 'ChatGPT Web'}</span>}</div>
           {busy ? <button type="button" className="wm-ai-send" onClick={stop} aria-label={say('Dừng phản hồi', 'Stop response')} data-tooltip={say('Dừng phản hồi', 'Stop response')}><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" /></svg></button> : <button type="submit" className="wm-ai-send" disabled={!draft.trim() || !connected || changing || loading} aria-label={say('Gửi tin nhắn', 'Send message')} data-tooltip={say('Gửi tin nhắn', 'Send message')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6" /></svg></button>}
         </div>
       </form>
@@ -337,7 +181,7 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
         {dialog.type === 'settings' && <>
           <label>{say('Mô tả', 'Description')}<textarea rows={2} maxLength={240} placeholder={description} value={dialog.description} onChange={event => setDialog(value => ({ ...value, description: event.target.value }))} /></label>
           <label>{say('Hướng dẫn trả lời', 'Instructions')}<textarea className="wm-ai-instructions" rows={7} readOnly value={assistantPolicy} aria-describedby="wm-ai-policy-note" /></label>
-          <p id="wm-ai-policy-note">{say('Chỉ tùy chỉnh hiển thị. Chat lưu trong tab, chưa đọc biểu đồ hay tài khoản.', 'Display settings only. Chats stay in this tab; no chart or account data is read.')}</p>
+          <p id="wm-ai-policy-note">{say('Chỉ tùy chỉnh hiển thị. Chat được lưu theo workspace; chưa đọc biểu đồ hay tài khoản.', 'Display settings only. Chats are saved in this workspace; no chart or account data is read.')}</p>
           <a href={settingsHref} onClick={() => { setDialog(null); onClose() }}>{say('Kết nối AI và chọn model', 'AI connection and model settings')} ↗</a>
         </>}
         <footer><button type="button" onClick={closeDialog}>{say('Hủy', 'Cancel')}</button><button className={dialog.type === 'delete' ? 'is-danger' : 'is-primary'} type="submit" disabled={dialog.type !== 'delete' && !dialog.name.trim()}>{dialog.type === 'delete' ? say('Xóa', 'Delete') : say('Xác nhận', 'Confirm')}</button></footer>

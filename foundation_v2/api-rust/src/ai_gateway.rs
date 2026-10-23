@@ -147,16 +147,15 @@ impl LocalGateway {
         Ok(())
     }
 
-    pub(crate) async fn prepare(&self, messages: Value, instructions: &str) -> Result<(Value, reqwest::RequestBuilder), ApiError> {
-        let mut state = self.state.lock().await;
-        let models = self.catalog(&mut state, false).await?;
-        let model = state.selected.as_ref().filter(|id| models.iter().any(|m| m["id"] == id.as_str()))
-            .ok_or_else(|| unavailable("ai_gateway_selection_required"))?;
-        let selection = json!({"model":model,"effort":null});
-        let payload = json!({"model":model,"input":messages,"instructions":instructions,"stream":false,"store":false});
-        let request = self.client.post(format!("{}/responses", self.base)).bearer_auth(self.key().await?)
-            .timeout(Duration::from_secs(190)).json(&payload);
-        Ok((selection, request))
+    pub(crate) async fn prepare_selection(&self,selection:&Value,messages:Value,instructions:&str)->Result<reqwest::RequestBuilder,ApiError> {
+        if self.busy().await {return Err(ApiError::detail(StatusCode::CONFLICT,"chatgpt_busy"));}
+        let mut state=self.state.lock().await;
+        let models=self.catalog(&mut state,false).await?;
+        if !selection["effort"].is_null() || !models.iter().any(|m|m["id"]==selection["model"]) {
+            return Err(ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY,"invalid_ai_selection"));
+        }
+        let payload=json!({"model":selection["model"],"input":messages,"instructions":instructions,"stream":true,"store":false});
+        Ok(self.client.post(format!("{}/responses",self.base)).bearer_auth(self.key().await?).timeout(Duration::from_secs(190)).json(&payload))
     }
 }
 

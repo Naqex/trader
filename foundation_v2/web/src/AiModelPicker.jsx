@@ -11,7 +11,7 @@ export default function AiModelPicker({ models, selection, disabled, saving, act
   const model = models.find(item => item.id === selection.model)
   const efforts = model?.efforts || []
   const name = value => effortNames[value]?.[en ? 1 : 0] || value
-  const modelName = (model?.name || selection.model).replace(/\s*\(Web\)$/i, '')
+  const modelName = (model?.name || selection.model || (en ? 'Select model' : 'Chọn model')).replace(/\s*\(Web\)$/i, '')
   useEffect(() => { if (!saving) setPreview(selection.effort) }, [selection.effort, saving])
   useEffect(() => {
     if (!active || disabled) popup.current?.hidePopover()

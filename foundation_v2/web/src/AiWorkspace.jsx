@@ -7,6 +7,7 @@ import './settings.css'
 import './ai-workspace.css'
 
 const AiProviderSettings = lazy(() => import('./AiProviderSettings.jsx'))
+const AiModelProfiles = lazy(() => import('./AiModelProfiles.jsx'))
 
 export default function AiWorkspace({ workspace, query }) {
   const { appearance, openAi } = useFxReplayContext()
@@ -18,6 +19,7 @@ export default function AiWorkspace({ workspace, query }) {
   return <main className="ai-workspace settings-shell wm-page" data-testid="ai-workspace" data-section={section}>
     {section === 'connections' ? <Suspense fallback={<TestingPageSkeleton label={say('Đang đọc kết nối…', 'Checking connection…')} />}>
       <AiProviderSettings workspace={workspace} language={appearance?.language} />
+      <AiModelProfiles workspace={workspace} language={appearance?.language} />
     </Suspense> : section === 'automation' ? <>
       <header className="wm-page-header"><h1>{say('Tự động hóa', 'Automation')}</h1></header>
       <div className="ai-automation-list">

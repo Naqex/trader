@@ -111,7 +111,8 @@ gọi routes trung lập `/api/v2/ai/assistant/*`. Harness giữ:
 - Policy do server sở hữu ở `ai-assistant-policy.md`.
 - Hội thoại xen kẽ user/assistant, tối đa63 tin/48KiB; context chỉ `{screen,locale}`.
 - Context được đóng gói như dữ liệu, không chèn vào system instructions.
-- Task202 → poll/cancel; ID gắn workspace và subject; kết quả ở RAM, hết hạn10phút.
+- Task202 → SSE/read/cancel; conversation/run/event lưu PostgreSQL, gắn workspace và subject.
+- Catalog dùng chung; lựa chọn theo conversation và profile tính năng/role, snapshot bất biến cho từng run.
 - Response text có giới hạn256KiB, timeout hữu hạn, không tự retry/fallback.
 - Boundary loopback/Origin/Host, bearer backend-only và HTTP no-store.
 
@@ -132,11 +133,11 @@ endpoint; tools của sản phẩm vẫn phải do WMREPLAY triển khai và c�
 
 Giữ kết nối HTTP qua client dùng lại; lấy catalog khi cần và cache ngắn có
 invalidation, không probe model/gọi inference mỗi lần mở panel. Bắt đầu bằng
-concurrency hữu hạn; pool không tự loại bỏ giới hạn một turn toàn cục hiện có.
-Nếu cần nhiều người dùng đồng thời, đổi thành task map theo scope có global cap,
-TTL cleanup và cancel thật, không chỉ tăng số credential.
+concurrency hữu hạn: global4, gateway3, WebGPT1, workspace3 model calls. Hàng đợi
+tối đa64 toàn cục/16 mỗi workspace. Dispatcher không tạo task ngủ cho từng item.
+Số tài khoản trong pool không tự tăng các giới hạn này.
 
-Mỗi turn giữ provider/model đã chọn đến cuối. Lịch sử đầy đủ bounded hiện tại
+Mỗi turn giữ provider/model đã chọn đến cuối. Lịch sử bounded hiện tại
 không phụ thuộc conversation ID của upstream. Nếu thêm cache/resume stateful,
 phải chứng minh session affinity, không chuyển credential giữa một response
 đang stream. Hủy client ngắt request nhưng không hứa hoàn tác request upstream.

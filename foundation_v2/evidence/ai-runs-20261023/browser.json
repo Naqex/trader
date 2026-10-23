@@ -1,0 +1,53 @@
+{
+  "scope": "production UI with isolated API fixtures; no real inference",
+  "checks": [
+    {
+      "width": 360,
+      "lang": "vi",
+      "submissions": 2,
+      "cancelled": 1,
+      "default_mutations": 0,
+      "status": "pass"
+    },
+    {
+      "width": 360,
+      "lang": "en",
+      "submissions": 2,
+      "cancelled": 1,
+      "default_mutations": 0,
+      "status": "pass"
+    },
+    {
+      "width": 768,
+      "lang": "vi",
+      "submissions": 2,
+      "cancelled": 1,
+      "default_mutations": 0,
+      "status": "pass"
+    },
+    {
+      "width": 768,
+      "lang": "en",
+      "submissions": 2,
+      "cancelled": 1,
+      "default_mutations": 0,
+      "status": "pass"
+    },
+    {
+      "width": 1440,
+      "lang": "vi",
+      "submissions": 2,
+      "cancelled": 1,
+      "default_mutations": 0,
+      "status": "pass"
+    },
+    {
+      "width": 1440,
+      "lang": "en",
+      "submissions": 2,
+      "cancelled": 1,
+      "default_mutations": 0,
+      "status": "pass"
+    }
+  ]
+}

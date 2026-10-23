@@ -15,6 +15,7 @@ pub const MIGRATIONS: &[(&str, &[u8])] = &[
     ("0009_mt5_connections.sql", include_bytes!("../../migrations/0009_mt5_connections.sql")),
     ("0010_demo_trading.sql", include_bytes!("../../migrations/0010_demo_trading.sql")),
     ("0011_mt5_connection_access.sql", include_bytes!("../../migrations/0011_mt5_connection_access.sql")),
+    ("0012_ai_runs.sql", include_bytes!("../../migrations/0012_ai_runs.sql")),
 ];
 pub const MIGRATION_LOCK_KEY: i64 = 0x54574D47;
 

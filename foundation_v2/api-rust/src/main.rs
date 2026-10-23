@@ -24,6 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .transpose().map_err(std::io::Error::other)?
     } else { None };
     let app = trading_workspace_api::router(state.clone(), domain);
+    state.ai_runs.start().await;
     let mt5 = if state.native_runtime { Some(trading_workspace_api::mt5_connector::start(state.clone())) } else { None };
     tracing::info!(bind=%state.config.bind,contract_version=trading_workspace_api::CONTRACT_VERSION,"API listening");
     let (stop_tx, stop_rx) = tokio::sync::oneshot::channel::<()>();
@@ -52,6 +53,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             tracing::warn!("provider drain deadline reached; owned process tree stopped, interrupted job recovers paused");
         }
     }
+    state.ai_runs.shutdown().await;
     state.ai_assistant.shutdown().await;
     if let Some(mut mt5) = mt5 {
         if tokio::time::timeout(std::time::Duration::from_secs(20), &mut mt5).await.is_err() {

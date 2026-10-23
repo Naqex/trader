@@ -14,8 +14,8 @@ Luồng provider đã triển khai và receipts nằm ở [AI-PROVIDERS.md](AI-P
 
 | Phần | Đang có | Giới hạn cần xử lý |
 | --- | --- | --- |
-| Chat/Mentor | `api-rust/src/ai_assistant.rs`, React chat dùng chung | Một `ChatTurn` trong RAM, lựa chọn provider/model chung; chưa phù hợp nhiều feature chạy đồng thời |
-| Transport | CLIProxyAPI local và WebGPT core | Text-only, phản hồi hoàn tất rồi UI mới nhận; chưa nghiệm thu Google OAuth/inference/pool thật |
+| Chat/Mentor | `ai_runs.rs`, `ai_profiles.rs`, React chat dùng chung | PostgreSQL runs/events/history, model theo conversation và role, admission hữu hạn; chưa rollout migration0012 lên runtime đang dùng |
+| Transport | CLIProxyAPI local và WebGPT core, `ai_response.rs` | Text-only; gateway Responses SSE có parser bounded và progress theo đợt; chưa nghiệm thu inference/pool/capability thật |
 | Ngữ cảnh | Policy do server sở hữu; route/locale là dữ liệu | Chat chưa đọc chart/tài khoản; không được quảng bá đã hiểu dữ liệu đang mở |
 | AI nghiệp vụ | `api-rust/src/control_routes.rs` và `trading_workspace_v2/chart_ai_contract.py` | Contract advisory/offline riêng, chưa nối cùng runtime chat; cần kiểm tương đương schema/cutoff khi hội tụ |
 | Tác vụ dài | `api-rust/src/research_jobs/lifecycle.rs` | Đã có lease/attempt/fencing/cancel; reuse cơ chế có bằng chứng, không coi research job là AI run hoặc dùng bảng cũ tùy tiện |
@@ -175,3 +175,31 @@ toàn sản phẩm nhanh. Mỗi lát giữ rollback provider/config/schema tươ
 Review có offline LangGraph probes và topology fixture; TradingAgents được nâng
 upstream và kiểm regression trong repo độc lập. Chưa tích hợp worker vào WMREPLAY,
 benchmark model thật, sửa DB hoặc thay runtime sản phẩm đang hoạt động.
+
+## Lát persistence và chat đã triển khai trong source
+
+Migration `0012_ai_runs.sql` bổ sung profiles, conversations, runs, events và call
+permits. `/api/v2/ai/assistant/chat` giữ alias202; client mới gửi UUID conversation,
+idempotency key và lựa chọn model. Cùng key/input trả lại cùng run kể cả khi default
+đổi; key với input khác trả409. SSE `/chat/{id}/events?after=N` hoặc Last-Event-ID
+chỉ đọc lại event, không gửi inference. Trạng thái/cấu hình tách theo workspace và
+subject; profile ưu tiên role → feature default → system default. Legacy connection
+default chỉ bootstrap chat khi chưa có profile.
+
+Lease30s, heartbeat5s, deadline210s. Dispatcher tối đa4 tasks; model permits global4,
+gateway3/WebGPT1/workspace3. Queue64 toàn cục/16 workspace. Không giữ DB connection
+khi chờ provider, không tự retry/requeue outcome chưa rõ. Lease hết hạn thành
+`interrupted`; call đã đánh dấu sent thành `unknown`. Cancel sau khi sent không hứa
+dừng xử lý ở upstream. Completion đến trước cancel vẫn giữ kết quả.
+
+Progress dùng bounded channel2, text256KiB, wire stream1MiB, gộp theo byte/thời gian;
+event lưu delta/byte offset, row lưu partial snapshot. Tối đa16 SSE sessions/process,
+mỗi session240s; UI reconnect cùng run với snapshot repair. History keyset pagination,
+tối đa500 conversations/principal/workspace và64 runs/conversation. Chạm cap trả lỗi,
+không tự xóa lịch sử. Mỗi trang message tối đa512KiB; xóa conversation cascade khi
+không còn run hoạt động. LocalStorage chỉ giữ ID để mở lại chat.
+
+Validation dùng PostgreSQL tạm do runner sở hữu và synthetic provider loopback;
+browser production build chạy riêng với API fixtures. Không dùng các kết quả này
+để claim model thật, tools/effort hoặc whole-platform performance đã đạt. Build QA
+phải dùng `--outDir ../.runtime/ai-runs-dist`, vì preview5180 đọc trực tiếp `web/dist`.

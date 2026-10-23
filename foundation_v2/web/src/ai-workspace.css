@@ -13,6 +13,9 @@
 .ai-automation-row h2 { margin:0; color:var(--wm-content); }
 .ai-automation-row p { margin:6px 0 0; color:var(--wm-content-muted); font-size:13px; line-height:1.6; }
 .ai-unavailable { flex-shrink:0; color:var(--wm-content-muted); font-size:12px; }
+.ai-model-profile-row { display:grid; grid-template-columns:minmax(150px,1fr) minmax(0,2fr) minmax(72px,.6fr); align-items:center; gap:16px; padding:12px 0; }
+.ai-model-profile-row > span { font-size:13px; color:var(--wm-content); }
 @media (max-width:520px) {
+  .ai-model-profile-row { grid-template-columns:minmax(0,1fr); gap:8px; }
   .ai-automation-row { align-items:flex-start; flex-direction:column; gap:12px; }
 }

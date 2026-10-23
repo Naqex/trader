@@ -27,6 +27,9 @@ pub mod context_routes;
 pub mod provider_routes;
 pub mod notion_oauth;
 pub mod ai_assistant;
+pub mod ai_runs;
+mod ai_profiles;
+mod ai_response;
 mod ai_gateway;
 mod ai_gateway_runtime;
 pub mod research_jobs;
@@ -221,8 +224,11 @@ pub(crate) mod tests {
         .max_size(1)
         .build()
         .unwrap();
+        let ai_assistant = Arc::new(crate::ai_assistant::AiAssistant::from_environment().unwrap());
+        let ai_runs = crate::ai_runs::Engine::new(pool.clone(), ai_assistant.clone());
         Arc::new(AppState {
-            ai_assistant: crate::ai_assistant::AiAssistant::from_environment().unwrap(),
+            ai_assistant,
+            ai_runs,
             config,
             pool,
             authorization: auth::LocalAuthorization::new("owner".into(), vec!["a".into()]),
