@@ -77,6 +77,7 @@ const SHELL_COPY = {
       strategies: ['Strategies', 'Quản lý chiến lược'],
       ai: ['AI and Bots', 'Trợ lý AI, kết nối model và bot giao dịch'],
       aiConnections: ['Kết nối', 'Tài khoản và dịch vụ AI'],
+      aiGateway: ['CLIProxyAPI', 'Trang quản trị CLIProxyAPI'],
       aiModels: ['Model', 'Model mặc định và theo tính năng'],
       automation: ['Bot', 'Bot giao dịch và AI giao dịch'],
       myStrategies: ['My strategies', 'Chiến lược của tôi'],
@@ -134,6 +135,7 @@ const SHELL_COPY = {
       strategies: ['Strategies', 'Strategy workspace'],
       ai: ['AI and Bots', 'AI assistant, model connections and trading bots'],
       aiConnections: ['Connections', 'AI accounts and services'],
+      aiGateway: ['CLIProxyAPI', 'CLIProxyAPI management'],
       aiModels: ['Models', 'Default and feature models'],
       automation: ['Bots', 'Trading bots and AI trading'],
       myStrategies: ['My strategies', 'Your strategies'],
@@ -197,6 +199,7 @@ const SIDEBAR_SECTIONS = [
     id: 'ai', copyKey: 'ai', icon: 'ai', defaultRoute: 'ai', defaultSection: 'connections',
     items: [
       { id: 'ai-connections', copyKey: 'aiConnections', icon: 'connections', route: 'ai', activeViews: ['ai'], section: 'connections' },
+      { id: 'ai-gateway', copyKey: 'aiGateway', icon: 'connections', route: 'ai', activeViews: ['ai'], section: 'gateway' },
       { id: 'ai-models', copyKey: 'aiModels', icon: 'settings', route: 'ai', activeViews: ['ai'], section: 'models' },
       { id: 'ai-automation', copyKey: 'automation', icon: 'automation', route: 'ai', activeViews: ['ai'], section: 'automation' },
     ],

@@ -305,13 +305,25 @@ gateway từ ứng dụng, migration một lần bật management local và tạ
 ngẫu nhiên, riêng inference key; upstream lưu hash trong YAML. Các lần sau giữ
 nguyên YAML và khóa. Sai key giữa file và config sẽ bị từ chối khi start.
 
-Vào **Kết nối → Chi tiết CLIProxyAPI → Mở trang quản trị**. Panel ở
-`http://127.0.0.1:17852/management.html`, origin riêng với WMREPLAY. Mở trang không
+Vào tab **CLIProxyAPI**, hoặc **Kết nối → Chi tiết CLIProxyAPI → Mở trang quản trị**.
+Tab hiển thị nguyên panel tại `http://127.0.0.1:17852/management.html` trong iframe
+khác origin, chiếm toàn bộ vùng nội dung dưới điều hướng. Giữ UI/menu upstream;
+không fork, sửa DOM/CSS hoặc chép source panel vào app. Chỉ tải khi mở tab, gỡ khi
+rời tab; không polling trạng thái hoặc tự bật gateway. Gateway chưa bật/lỗi có
+nút về Kết nối và thử lại. URL trực tiếp vẫn dùng được độc lập. Mở trang không
 đổi profile/model của app. Lấy khóa cho lần đăng nhập đầu bằng lệnh trong thư mục repo:
 
 ```powershell
 .\scripts\ai_gateway.ps1 -Action CopyManagementKey
 ```
+
+Iframe giữ cơ chế refresh/polling của chính upstream trong khi đang mở. WMREPLAY
+không inject theme/locale hoặc key, không đọc DOM/storage khác origin. Sandbox
+cho phép script, storage, form, popup OAuth, download và clipboard-write; không
+cho frame điều hướng top-level. OAuth popup/storage phụ thuộc trình duyệt, cần
+nghiệm thu theo provider trước khi sử dụng; test nhúng chỉ đăng nhập quản trị và
+đọc trang Providers, chưa thực hiện OAuth/provider inference. Tích hợp này dành
+cho app local cùng máy với gateway;127.0.0.1 không là gateway remote.
 
 Lệnh chỉ copy vào clipboard Windows, không in khóa, không trả secret qua API/native
 UI hoặc query URL. Panel chính thức nhận khóa trực tiếp; tùy chọn Remember password

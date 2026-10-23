@@ -10,7 +10,7 @@ const providers = [
 const endpoint = '/api/v2/ai/assistant/connections'
 
 export default function AiProviderSettings({ workspace, language }) {
-  const { appearance } = useFxReplayContext()
+  const { appearance, buildHref } = useFxReplayContext()
   const en = language === 'en', say = (vi, english) => en ? english : vi
   const [records, setRecords] = useState({}), [detail, setDetail] = useState(null), [pending, setPending] = useState(null)
   const requests = useRef(new Map()), generation = useRef(0), submitting = useRef(false), oauthWindow = useRef(null)
@@ -109,7 +109,7 @@ export default function AiProviderSettings({ workspace, language }) {
       {managed && <button type="button" className={`wm-button ${!value.runtime.accounts ? 'is-primary' : ''}`} disabled={locked} onClick={() => void act(provider, 'login')}>{value.runtime.accounts ? say('Thêm tài khoản Google', 'Add Google account') : say('Kết nối Google', 'Connect Google')}</button>}
       {managed && value.runtime.running && <button type="button" className="wm-button" disabled={locked} onClick={() => void act(provider, 'stop')}>{say('Tắt kết nối', 'Stop connection')}</button>}
       <button type="button" className="wm-button" disabled={locked} onClick={() => void act(provider, 'refresh')}>{say('Tải lại model', 'Refresh models')}</button>
-      {managed && value.runtime.management_url === 'http://127.0.0.1:17852/management.html' && <a className="wm-button" href={value.runtime.management_url} target="_blank" rel="noopener noreferrer">{say('Mở trang quản trị', 'Open management')} ↗</a>}
+      {managed && value.runtime.management_url === 'http://127.0.0.1:17852/management.html' && <a className="wm-button" href={buildHref('ai', { area: 'ai', section: 'gateway' })}>{say('Mở trang quản trị', 'Open management')}</a>}
     </>
     return <>
       <button type="button" className="wm-button is-primary" disabled={locked} onClick={() => void act(provider, value.status === 'stopped' ? 'start' : 'login')}>{value.status === 'stopped' ? say('Bật kết nối', 'Start connection') : value.login_state_present ? say('Đăng nhập lại', 'Sign in again') : say('Đăng nhập ChatGPT', 'Sign in to ChatGPT')}</button>

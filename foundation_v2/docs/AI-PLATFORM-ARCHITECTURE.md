@@ -252,7 +252,7 @@ Kiểm chứng này không gửi model requests và không xác nhận inference
 
 ## Giao diện quản lý hiện hành
 
-AI và Bot gồm ba tab: Kết nối, Model, Bot; mặc định mở Kết nối. Mentor mở từ icon
+AI và Bot gồm Kết nối, CLIProxyAPI, Model, Bot; mặc định mở Kết nối. Mentor mở từ icon
 AI trên header, dùng chung component/harness; URL assistant cũ vẫn tương thích.
 Kết nối tải lười danh
 sách hai transport và drawer chi tiết; Model tải lười profiles/catalog. Không
@@ -268,9 +268,14 @@ thiếu dữ liệu giữ unknown. Bot chưa có execution UI.
 Xem [receipt UI](../evidence/ai-workspace-redesign-20261023/RECEIPT.md) cho kiểm
 chứng VI/EN, responsive, fixture và UI → API local đọc thật.
 
-Trang quản trị nâng cao reuse Management Center chính thức, ghim asset độc lập
-với bundle UI. Nút ở drawer kết nối mở origin gateway loopback riêng, không proxy
-management key qua app. `managed.yaml` lưu bền provider/routing; chỉ bootstrap và
+Tab CLIProxyAPI nhúng nguyên Management Center từ origin gateway loopback bằng
+iframe chiếm toàn bộ vùng nội dung, không sửa DOM/CSS hoặc đưa panel vào bundle.
+Chỉ mount khi mở tab, unmount khi rời; đọc trạng thái một lần, không polling idle.
+Gateway tắt/lỗi có recovery về Kết nối, không tự start. Frame có sandbox cho
+script/forms/storage, popup OAuth và download; clipboard chỉ cấp quyền ghi. Không
+proxy management key qua app. Asset vẫn ghim phiên bản và kiểm digest; nâng cấp
+panel/backend được kiểm tương thích riêng, không tự update. `managed.yaml` lưu bền
+provider/routing; chỉ bootstrap và
 bật management một lần, giữ chỉnh sửa qua restart. WMREPLAY kiểm invariant kết nối
 và binary/panel digest lúc bật; đây không là giới hạn quyền administrator trong
 panel đang chạy. Admission và quyền tools/broker vẫn do sản phẩm sở hữu. Panel
