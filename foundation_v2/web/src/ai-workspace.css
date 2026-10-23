@@ -19,6 +19,7 @@
 .ai-detail-status small, .ai-detail-note { color:var(--project-muted); font-size:12px; line-height:1.7; }
 .ai-detail-note { margin:8px 0 0; }
 .ai-connection-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:20px; }
+.ai-connection-actions a.wm-button { text-decoration:none; }
 .ai-detail-section { border-top:1px solid var(--project-border); margin-top:24px; padding-top:20px; }
 .ai-detail-section h3 { margin:0 0 12px; font-size:13px; font-weight:600; }
 .ai-detail-section p { overflow-wrap:anywhere; }

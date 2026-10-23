@@ -260,10 +260,14 @@ sẽ dừng process tree thuộc API. Chỉ mở trang hoặc đổi provider kh
 hay bật gateway. Tài khoản mới vẫn cần owner đồng ý OAuth trên Google.
 
 Các POST `account/start`, `login`, `cancel`, `stop` dùng boundary local peer,
-same-origin và workspace hiện có; bị khóa khi đang gửi chat. Chỉ cấu hình mặc định
-loopback/key path đã khởi tạo được quản lý. Mỗi lần start kiểm SHA256 binary,
-sinh `managed.yaml` với profile loopback/management-off đã đánh giá, dùng chung
-auth-dir và key hiện có. Không áp dụng tùy chỉnh trong `config.yaml` vào chế độ này.
+same-origin và workspace hiện có. Chỉ cấu hình mặc định loopback/key path đã khởi
+tạo được quản lý. Mỗi lần start kiểm SHA256 binary và các ràng buộc kết nối.
+`managed.yaml` là cấu hình lưu bền; không sinh đè sau mỗi lần bật. Nếu chưa có,
+bootstrap từ `config.yaml` cũ hoặc profile mặc định. Provider/routing/model mapping
+do gateway sở hữu, được giữ qua restart. Cấu hình sai host/port/auth-dir, thiếu
+inference key của app, mở remote management/discovery/pprof hoặc auto-update panel
+sẽ bị từ chối khi bật lại; không tự ghi đè để sửa. Đây là guard lúc managed start,
+không là sandbox cho administrator đang chỉnh gateway trực tiếp.
 Chỉ đếm file credential, không đọc nội dung token hay đưa tên/email/key về web.
 Không nhận/tắt process chỉ vì nó đang chiếm port; gateway chạy thủ công vẫn dùng
 được qua adapter, cần dừng bản đó trước khi chuyển sang quản lý trong ứng dụng.
@@ -274,14 +278,52 @@ Từ gốc repo, owner vẫn có thể dùng luồng CLI (agent không tự đă
 
 ```powershell
 & .\.runtime\ai-gateway-evaluation\cliproxyapi-v8.0.40\cli-proxy-api.exe `
-  --antigravity-login --config .\.runtime\mt5-ai-gateway\config.yaml
+  --antigravity-login --config .\.runtime\mt5-ai-gateway\managed.yaml
 .\scripts\ai_gateway.ps1 -Action Serve
 ```
 
 `Serve` chạy foreground tại127.0.0.1:17852, Ctrl+C để dừng; không service/autostart,
 không tự login hoặc nhận process có sẵn. Gateway vẫn có thể tải metadata phiên
-bản dù bật `--local-model`. Management/UI/update panel, request log và usage log
-đều tắt; commercial mode giảm middleware và đã kiểm không lưu body lỗi401.
+bản dù bật `--local-model`. Request/usage logs mặc định tắt; commercial mode giảm
+middleware và đã kiểm không lưu body lỗi401. `Serve` ưu tiên `managed.yaml`, chỉ
+dùng `config.yaml` cho home cũ chưa chuyển; không tái tạo hai cấu hình song song.
+
+### Trang quản trị CLIProxyAPI
+
+Reuse [Management Center chính thức v1.26.7](https://github.com/router-for-me/Cli-Proxy-API-Management-Center/releases/tag/v1.26.7)
+với backend ghim v8.0.40. Panel MIT là HTML bundle riêng, không đưa vào bundle app
+hoặc fork. Asset SHA256 `8c9c6b7d3fb311e6aad5d06e1993e53a2d28389e640448a1bc6304ed20b057b5`;
+runtime kiểm digest trước khi bật panel. Không tự tải/cập nhật panel trong gateway.
+
+```powershell
+.\scripts\ai_gateway.ps1 -Action InstallManagement
+```
+
+Helper tải đúng release qua HTTPS vào `E:\BACKUP-TRADINGWORKSPACE\ai-gateway-admin-20261023`,
+kiểm digest rồi copy asset vào home private. Không tự restart/login. Khi bật lại
+gateway từ ứng dụng, migration một lần bật management local và tạo `management.key`
+ngẫu nhiên, riêng inference key; upstream lưu hash trong YAML. Các lần sau giữ
+nguyên YAML và khóa. Sai key giữa file và config sẽ bị từ chối khi start.
+
+Vào **Kết nối → Chi tiết CLIProxyAPI → Mở trang quản trị**. Panel ở
+`http://127.0.0.1:17852/management.html`, origin riêng với WMREPLAY. Mở trang không
+đổi profile/model của app. Lấy khóa cho lần đăng nhập đầu bằng lệnh trong thư mục repo:
+
+```powershell
+.\scripts\ai_gateway.ps1 -Action CopyManagementKey
+```
+
+Lệnh chỉ copy vào clipboard Windows, không in khóa, không trả secret qua API/native
+UI hoặc query URL. Panel chính thức nhận khóa trực tiếp; tùy chọn Remember password
+lưu bằng reversible obfuscation, không là mã hóa. Khóa trong clipboard cần được
+owner xử lý như secret. Đăng nhập panel là quyền administrator có thể sửa gateway,
+xem credential hoặc làm gián đoạn inference; không tự cấp quyền tools/broker cho AI.
+
+Panel có provider/auth/OAuth, mapping, quota theo hỗ trợ, logs và cấu hình. Không
+giả mọi provider/capability đã được WMREPLAY nghiệm thu. Add provider không tự bật
+API có phí. UI native chỉ nhận URL cố định/version, không management key. Làm mới
+model sau khi đổi cấu hình ở panel. Source/tests/rollout:
+[receipt quản trị](../evidence/ai-gateway-admin-20261023/RECEIPT.md).
 
 Mở **AI và Bot → Kết nối → Chi tiết CLIProxyAPI → Tải lại model**, rồi chọn
 model ở tab **Model** hoặc trong Chat.

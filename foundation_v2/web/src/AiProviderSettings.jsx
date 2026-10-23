@@ -4,7 +4,7 @@ import { useFxReplayContext } from './FxReplayShell.jsx'
 import { aiErrorCopy, googleOAuthUrl } from './aiProvider.js'
 
 const providers = [
-  { id: 'local-gateway', name: 'CLIProxyAPI', description: ['Gemini và Antigravity qua gateway local', 'Gemini and Antigravity through a local gateway'] },
+  { id: 'local-gateway', name: 'CLIProxyAPI', description: ['Gateway kết nối nhiều nhà cung cấp AI', 'A gateway for multiple AI providers'] },
   { id: 'chatgpt-web', name: 'ChatGPT Web', description: ['Kết nối qua phiên đăng nhập ChatGPT', 'Connect through a ChatGPT browser session'] },
 ]
 const endpoint = '/api/v2/ai/assistant/connections'
@@ -109,6 +109,7 @@ export default function AiProviderSettings({ workspace, language }) {
       {managed && <button type="button" className={`wm-button ${!value.runtime.accounts ? 'is-primary' : ''}`} disabled={locked} onClick={() => void act(provider, 'login')}>{value.runtime.accounts ? say('Thêm tài khoản Google', 'Add Google account') : say('Kết nối Google', 'Connect Google')}</button>}
       {managed && value.runtime.running && <button type="button" className="wm-button" disabled={locked} onClick={() => void act(provider, 'stop')}>{say('Tắt kết nối', 'Stop connection')}</button>}
       <button type="button" className="wm-button" disabled={locked} onClick={() => void act(provider, 'refresh')}>{say('Tải lại model', 'Refresh models')}</button>
+      {managed && value.runtime.management_url === 'http://127.0.0.1:17852/management.html' && <a className="wm-button" href={value.runtime.management_url} target="_blank" rel="noopener noreferrer">{say('Mở trang quản trị', 'Open management')} ↗</a>}
     </>
     return <>
       <button type="button" className="wm-button is-primary" disabled={locked} onClick={() => void act(provider, value.status === 'stopped' ? 'start' : 'login')}>{value.status === 'stopped' ? say('Bật kết nối', 'Start connection') : value.login_state_present ? say('Đăng nhập lại', 'Sign in again') : say('Đăng nhập ChatGPT', 'Sign in to ChatGPT')}</button>
@@ -140,6 +141,7 @@ export default function AiProviderSettings({ workspace, language }) {
         <div className="ai-detail-status"><span className="ai-status" role="status">{status(detail, record)}</span>{record?.updatedAt && <small>{say('Cập nhật', 'Updated')} {record.updatedAt.toLocaleTimeString(en ? 'en-US' : 'vi-VN', { hour: '2-digit', minute: '2-digit' })}</small>}</div>
         {connectionError && <p className="ai-inline-error" role="alert">{aiErrorCopy(connectionError, en)}</p>}
         <div className="ai-connection-actions">{actions(detail, record)}</div>
+        {detail === 'local-gateway' && value?.runtime?.management_available && !value.runtime.running && <p className="ai-detail-note">{say('Bật kết nối để mở trang quản trị.', 'Start the connection to open management.')}</p>}
         {value?.operation?.kind === 'login' && <p className="ai-detail-note">{detail === 'local-gateway' ? say('Hoàn tất đăng nhập trong tab Google.', 'Complete sign-in in the Google tab.') : say('Đăng nhập trong cửa sổ Chrome vừa mở, rồi đóng cửa sổ đó.', 'Sign in in the separate Chrome window, then close it.')}{authUrl && <> <a href={authUrl} target="_blank" rel="noopener noreferrer">{say('Mở trang đăng nhập', 'Open sign-in page')} ↗</a></>}</p>}
         <section className="ai-detail-section"><h3>{say('Tài khoản', 'Accounts')}</h3><p>{stored(detail, value)}</p><dl className="ai-detail-values"><div><dt>{say('Hạn mức còn lại', 'Remaining quota')}</dt><dd>{say('Chưa có dữ liệu', 'No data')}</dd></div></dl></section>
         <section className="ai-detail-section"><h3>{say('Model khả dụng', 'Available models')}</h3>
@@ -153,7 +155,8 @@ export default function AiProviderSettings({ workspace, language }) {
           {value?.endpoint && <div><dt>Endpoint</dt><dd>{value.endpoint}</dd></div>}
           <div><dt>{say('Quản lý kết nối', 'Connection management')}</dt><dd>{detail === 'chatgpt-web' || value?.runtime?.managed && !value.runtime.external ? 'WMREPLAY' : say('Bên ngoài ứng dụng', 'External')}</dd></div>
           <div><dt>{say('Phạm vi', 'Scope')}</dt><dd>{say('Dùng chung trên máy này', 'Shared on this machine')}</dd></div>
-        </dl></details>
+          {detail === 'local-gateway' && value?.runtime?.management_version && <div><dt>{say('Trang quản trị', 'Management Center')}</dt><dd>{value.runtime.management_version}</dd></div>}
+        </dl>{detail === 'local-gateway' && value?.runtime?.management_available && <p className="ai-detail-note">{say('Lần đầu đăng nhập trang quản trị, chạy lệnh này ở thư mục dự án rồi dán khóa:', 'For the first management sign-in, run this in the project folder and paste the key:')}<br /><code>.\scripts\ai_gateway.ps1 -Action CopyManagementKey</code></p>}</details>
       </div>
     </LegacyModal>}
   </section>

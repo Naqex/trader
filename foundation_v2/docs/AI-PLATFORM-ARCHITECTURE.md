@@ -266,3 +266,11 @@ thiếu dữ liệu giữ unknown. Bot chưa có execution UI.
 
 Xem [receipt UI](../evidence/ai-workspace-redesign-20261023/RECEIPT.md) cho kiểm
 chứng VI/EN, responsive, fixture và UI → API local đọc thật.
+
+Trang quản trị nâng cao reuse Management Center chính thức, ghim asset độc lập
+với bundle UI. Nút ở drawer kết nối mở origin gateway loopback riêng, không proxy
+management key qua app. `managed.yaml` lưu bền provider/routing; chỉ bootstrap và
+bật management một lần, giữ chỉnh sửa qua restart. WMREPLAY kiểm invariant kết nối
+và binary/panel digest lúc bật; đây không là giới hạn quyền administrator trong
+panel đang chạy. Admission và quyền tools/broker vẫn do sản phẩm sở hữu. Panel
+không đổi persistent model profiles hoặc cấu hình run đã snapshot.

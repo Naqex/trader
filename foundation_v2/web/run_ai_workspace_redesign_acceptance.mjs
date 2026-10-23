@@ -30,7 +30,7 @@ try {
           if (action === 'stop') stopped = true
           if (action === 'start') stopped = false
           if (failGateway) return route.fulfill({ status: 503, json: { detail: 'ai_gateway_unavailable' } })
-          return route.fulfill({ json: { provider, status: stopped ? 'unavailable' : 'catalog_ready', error: stopped ? 'ai_gateway_unavailable' : null, operation, models: operation || stopped ? [] : models, selection, runtime: { managed: true, running: !stopped, external: false, accounts: 2 }, endpoint: 'http://127.0.0.1:17852/v1' } })
+          return route.fulfill({ json: { provider, status: stopped ? 'unavailable' : 'catalog_ready', error: stopped ? 'ai_gateway_unavailable' : null, operation, models: operation || stopped ? [] : models, selection, runtime: { managed: true, running: !stopped, external: false, accounts: 2, management_available: true, management_version: 'v1.26.7', management_url: stopped ? null : 'http://127.0.0.1:17852/management.html' }, endpoint: 'http://127.0.0.1:17852/v1' } })
         }
         return route.fulfill({ json: { provider, status: 'stopped', login_state_present: null, models: [], operation: null } })
       }
@@ -53,6 +53,10 @@ try {
     await gateway.getByRole('button').click()
     const drawer = page.getByRole('dialog', { name: 'CLIProxyAPI', exact: true })
     await drawer.waitFor()
+    const management = drawer.getByRole('link', { name: say('Mở trang quản trị', 'Open management'), exact: false })
+    assert.equal(await management.getAttribute('href'), 'http://127.0.0.1:17852/management.html')
+    assert.equal(await management.getAttribute('target'), '_blank')
+    assert.ok((await management.getAttribute('rel')).includes('noopener'))
     await drawer.getByText(say('Chưa có dữ liệu', 'No data'), { exact: true }).waitFor()
     assert.equal(await drawer.locator('input').count(), 0, 'no editable endpoint or secrets')
     assert.equal(await drawer.getByText('http://127.0.0.1:17852/v1', { exact: true }).isVisible(), false)

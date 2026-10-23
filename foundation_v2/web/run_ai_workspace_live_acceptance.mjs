@@ -38,6 +38,26 @@ try {
     await gateway.getByRole('button').click()
     const drawer = page.getByRole('dialog', { name: 'CLIProxyAPI', exact: true })
     await drawer.waitFor()
+    if (baseline.gateway.runtime?.management_url) {
+      const management = drawer.getByRole('link', { name: say('Mở trang quản trị', 'Open management'), exact: false })
+      assert.equal(await management.getAttribute('href'), baseline.gateway.runtime.management_url)
+      assert.equal(await management.getAttribute('target'), '_blank')
+      await context.route('http://127.0.0.1:17852/**', route => {
+        const request = route.request(), url = new URL(request.url())
+        if (request.method() !== 'GET' || /\/oauth\/|auth-url|api-call/.test(url.pathname)) {
+          report.writes.push(url.pathname); return route.abort('blockedbyclient')
+        }
+        return route.continue()
+      })
+      const opened = context.waitForEvent('page')
+      await management.click()
+      const popup = await opened
+      await popup.getByPlaceholder('Enter the management key', { exact: true }).waitFor()
+      assert.equal(new URL(popup.url()).origin, 'http://127.0.0.1:17852')
+      assert.equal(await popup.getByPlaceholder('Enter the management key', { exact: true }).inputValue(), '')
+      await popup.screenshot({ path: path.join(evidence, `management-login-${lang}-${width}.png`) })
+      await popup.close()
+    }
     assert.equal(await drawer.locator('.ai-catalog-list li').count(), baseline.gateway.models.length)
     await drawer.locator('summary').click()
     if (baseline.gateway.endpoint) assert.equal(await drawer.getByText(baseline.gateway.endpoint, { exact: true }).isVisible(), true)
