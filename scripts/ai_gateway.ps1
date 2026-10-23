@@ -110,7 +110,7 @@ if ($Action -eq 'CopyManagementKey') {
     $taskManagementKey = Join-Path $taskHome 'management.key'
     if (-not (Test-Path -LiteralPath $taskManagementKey -PathType Leaf)) { throw 'Start the managed gateway with the panel installed first.' }
     $taskAdminToken = [IO.File]::ReadAllText($taskManagementKey).Trim()
-    if ($taskAdminToken -cnotmatch '^[A-Za-z0-9_-]{43}$') { throw 'Unexpected management key format.' }
+    if ($taskAdminToken.Length -lt 8 -or $taskAdminToken.Length -gt 256 -or $taskAdminToken -match '[\x00-\x1f\x7f]') { throw 'Unexpected management key format.' }
     Set-Clipboard -Value $taskAdminToken
     Write-Output 'Management key copied to the Windows clipboard. Paste it into the local management page; it was not printed or sent to WMREPLAY UI.'
     return
