@@ -44,6 +44,7 @@
 .wm-ai-message > div { white-space: pre-wrap; }
 .wm-ai-message.is-user { margin-left: 32px; padding: 11px 14px; background: var(--project-surface); border-radius: 12px 12px 3px 12px; }
 .wm-ai-message small { color: var(--fx-shell-muted); font-size: 11px; }
+.wm-ai-continue { margin-bottom: var(--ds-space-3); }
 .wm-ai-thinking { display: flex; align-items: center; gap: 9px; margin: 0; font-size: 12px; color: var(--fx-shell-muted); }
 .wm-ai-thinking span { width: 6px; height: 6px; background: var(--project-highlight); border-radius: 50%; }
 .wm-ai-bottom { padding: 0 16px 12px; flex-shrink: 0; }

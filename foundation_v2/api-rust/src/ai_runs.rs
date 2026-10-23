@@ -28,7 +28,7 @@ use tokio::sync::{Mutex, Notify, Semaphore};
 use uuid::Uuid;
 
 pub(crate) const ADMISSION: i64 = 0x41495255;
-const VIEW: &str = "(result || jsonb_build_object('id',run_id,'conversation_id',conversation_id,'request_key',idempotency_key,'status',status,'outcome',outcome,'selection',COALESCE(config->'workflow'->'roles'->'reviewer'->'selection',config->'selection') - 'provider','provider',COALESCE(config->'workflow'->'roles'->'reviewer'->'selection',config->'selection')->'provider','workflow',config->'workflow'->'version','roles',config->'workflow'->'roles','grounding',config->'grounding','sequence',event_seq,'created_at',created_at,'updated_at',updated_at))";
+const VIEW: &str = "(result || jsonb_build_object('id',run_id,'conversation_id',conversation_id,'request_key',idempotency_key,'status',status,'outcome',outcome,'selection',COALESCE(config->'workflow'->'roles'->'reviewer'->'selection',config->'selection') - 'provider','provider',COALESCE(config->'workflow'->'roles'->'reviewer'->'selection',config->'selection')->'provider','continuation_of',config->'continuation_of','workflow',config->'workflow'->'version','roles',config->'workflow'->'roles','grounding',config->'grounding','sequence',event_seq,'created_at',created_at,'updated_at',updated_at))";
 fn invalid(code: &str) -> ApiError {
     ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY, code)
 }
@@ -172,7 +172,10 @@ impl Engine {
             })
             .transpose()?
             .unwrap_or_else(Uuid::new_v4);
+        let continuation = body.get("continuation_of").map(|v| v.as_str().ok_or_else(|| invalid("invalid_ai_continuation")).and_then(identifier)).transpose()?;
+        if continuation.is_some() && (workflow || legacy || body.get("conversation_id").is_none()) { return Err(invalid("invalid_ai_continuation")); }
         let mut identity = json!({"messages":messages,"context":context,"conversation_id":conversation,"selection":if legacy {Value::Null}else{body["expected_selection"].clone()},"legacy":legacy});
+        if let Some(id) = continuation { identity["continuation_of"] = json!(id); }
         if workflow {
             identity["workflow"] = json!("evidence-review-v1");
         }
@@ -223,6 +226,7 @@ impl Engine {
         crate::ai_assistant::selection_shape(&selection)?;
         body = json!({"messages":messages,"context":context,"selection":selection,"conversation_id":conversation});
         let mut config = json!({"selection":selection,"profile":profile,"grounding":{"policy_version":crate::ai_assistant::POLICY_VERSION,"context":context,"data_access":"none"}});
+        if let Some(id) = continuation { config["continuation_of"] = json!(id); }
         if workflow {
             config["workflow"] = json!({"version":"evidence-review-v1","roles":roles});
             config["grounding"]["data_access"] = json!("user-supplied-text");
@@ -255,6 +259,12 @@ impl Engine {
         tx.execute("INSERT INTO ai_conversations(workspace_id,subject,conversation_id,selection,title,kind) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING",&[&scope.workspace_id,&scope.subject,&conversation,&selection,&messages[0]["content"].as_str().unwrap().chars().take(90).collect::<String>(),&kind]).await.map_err(db)?;
         if tx.query_one("SELECT kind FROM ai_conversations WHERE workspace_id=$1 AND subject=$2 AND conversation_id=$3",&[&scope.workspace_id,&scope.subject,&conversation]).await.map_err(db)?.get::<_,String>(0)!=kind {return Err(conflict("ai_idempotency_conflict"));}
         if tx.query_opt("SELECT run_id FROM ai_runs WHERE workspace_id=$1 AND subject=$2 AND conversation_id=$3 AND status IN ('queued','running','cancelling')",&[&scope.workspace_id,&scope.subject,&conversation]).await.map_err(db)?.is_some() { return Err(conflict("ai_conversation_busy")); }
+        if let Some(prior) = continuation {
+            let latest = tx.query_opt("SELECT run_id,status FROM ai_runs WHERE workspace_id=$1 AND subject=$2 AND conversation_id=$3 ORDER BY created_at DESC,run_id DESC LIMIT 1", &[&scope.workspace_id,&scope.subject,&conversation]).await.map_err(db)?;
+            if latest.is_none_or(|row| row.get::<_,Uuid>(0) != prior || !["cancelled","failed","interrupted"].contains(&row.get::<_,String>(1).as_str())) {
+                return Err(conflict("invalid_ai_continuation"));
+            }
+        }
         // Saving a new selection affects this conversation and future runs only.
         tx.execute("UPDATE ai_conversations SET selection=$4,revision=revision+1,updated_at=clock_timestamp() WHERE workspace_id=$1 AND subject=$2 AND conversation_id=$3",&[&scope.workspace_id,&scope.subject,&conversation,&selection]).await.map_err(db)?;
         let id = Uuid::new_v4();
@@ -338,8 +348,8 @@ impl Engine {
         Ok(row.get::<_, String>(0) == "cancelling")
     }
     async fn execute(self: &Arc<Self>, id: Uuid, input: Value, config: Value) {
+        let (progress, mut updates) = tokio::sync::watch::channel(crate::ai_response::Progress::default());
         let result = {
-            let (progress, mut updates) = tokio::sync::mpsc::channel(2);
             let operation = async {
                 if config.get("workflow").is_some() {
                     return self.workflows.execute(self, id, &input, &config).await;
@@ -376,13 +386,18 @@ impl Engine {
             let mut heartbeat = tokio::time::interval(Duration::from_secs(5));
             heartbeat.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
             let mut published = 0;
+            let mut checkpoints = tokio::time::interval(Duration::from_millis(250));
+            checkpoints.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
             loop {
                 tokio::select! {
                     result=&mut operation=>break result,
-                    Some(text)=updates.recv()=>{
+                    _=checkpoints.tick()=>{
+                        if !updates.has_changed().unwrap_or(false) { continue; }
+                        let snapshot = updates.borrow_and_update().clone();
+                        let text = snapshot.text;
                         if let Ok(mut conn)=self.pool.get().await {
                             if let Ok(tx)=conn.transaction().await {
-                                let checkpoint=json!({"text":text,"partial":true,"delta":&text[published..],"offset":published});
+                                let checkpoint=json!({"text":text,"phase":if snapshot.thinking {"thinking"}else{"answering"},"partial":true,"delta":&text[published..],"offset":published});
                                 if transition(&tx,id,Some(self.owner),"running",checkpoint).await.is_ok() {if tx.commit().await.is_ok(){published=text.len();self.publish();}}
                             }
                         }
@@ -406,6 +421,12 @@ impl Engine {
             }
             Err(value) => ("failed", value),
         };
+        if status != "completed" && config.get("workflow").is_none() {
+            let snapshot = updates.borrow();
+            result["text"] = json!(snapshot.text);
+            result["partial"] = json!(!snapshot.text.is_empty());
+            result["phase"] = json!(if snapshot.thinking {"thinking"}else if snapshot.text.is_empty() {"waiting"}else{"answering"});
+        }
         if let Ok(mut conn) = self.pool.get().await {
             if let Ok(tx) = conn.transaction().await {
                 if config.get("workflow").is_some() && status != "completed" {
@@ -443,7 +464,7 @@ pub(crate) async fn transition(
     let row=tx.query_opt(&format!("UPDATE ai_runs SET status=$3,result=result || ($4::jsonb - ARRAY['outcome','delta','offset']),outcome=COALESCE($4::jsonb->>'outcome',outcome),event_seq=event_seq+1,updated_at=clock_timestamp() WHERE run_id=$1 AND ($2::uuid IS NULL OR (owner=$2 AND lease_until>clock_timestamp())) AND status IN ('queued','running','cancelling') AND ($3<>'running' OR status IN ('queued','running')) RETURNING {VIEW}"),&[&id,&owner,&status,&result]).await.map_err(db)?.ok_or_else(missing)?;
     let value: Value = row.get(0);
     let mut event = value.clone();
-    if result["partial"] == true {
+    if status == "running" && result["partial"] == true {
         event.as_object_mut().unwrap().remove("text");
         event["delta"] = result["delta"].clone();
         event["offset"] = result["offset"].clone();
@@ -539,9 +560,16 @@ pub async fn read_conversation(
         user["status"] = run["status"].clone();
         user["id"] = run["id"].clone();
         user["screen"] = input["context"]["screen"].clone();
-        messages.push(user);
-        if run["status"] == "completed" {
-            messages.push(json!({"role":"assistant","content":run["text"],"status":"completed","selection":run["selection"]}));
+        let continuation = run["continuation_of"].as_str();
+        if continuation.is_none() { messages.push(user); }
+        if terminal(run) && (run["status"] == "completed" || run["status"] == "cancelled" || run["text"].as_str().is_some_and(|text| !text.is_empty())) {
+            let content = run["text"].as_str().unwrap_or("");
+            if let Some(previous) = messages.last_mut().filter(|m| m["role"] == "assistant" && m["id"].as_str() == continuation && continuation.is_some()) {
+                previous["content"] = json!(format!("{}{}", previous["content"].as_str().unwrap_or(""), content));
+                previous["id"] = run["id"].clone(); previous["status"] = run["status"].clone(); previous["phase"] = run["phase"].clone(); previous["selection"] = run["selection"].clone();
+            } else {
+                messages.push(json!({"role":"assistant","id":run["id"],"content":content,"status":run["status"],"selection":run["selection"],"phase":run["phase"],"continuation_of":run["continuation_of"]}));
+            }
         }
     }
     Ok(Json(

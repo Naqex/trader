@@ -1,7 +1,12 @@
 //! Bounded Responses decoding, restricted to assistant text. No tool execution here.
 use serde_json::{Value, json};
-use std::time::{Duration, Instant};
-use tokio::sync::mpsc;
+use tokio::sync::watch;
+
+#[derive(Clone, Default)]
+pub(crate) struct Progress {
+    pub text: String,
+    pub thinking: bool,
+}
 
 const TEXT_LIMIT: usize = 262144;
 fn failure(code: &str) -> Value {
@@ -10,7 +15,7 @@ fn failure(code: &str) -> Value {
 pub(crate) async fn complete(
     request: reqwest::RequestBuilder,
     provider: &str,
-    progress: Option<mpsc::Sender<String>>,
+    progress: Option<watch::Sender<Progress>>,
 ) -> Result<Value, Value> {
     let mut response = request.send().await.map_err(|e| {
         failure(if e.is_timeout() {
@@ -92,8 +97,6 @@ struct Responses {
     bytes: Vec<u8>,
     text: String,
     completed: Option<Value>,
-    last_at: Instant,
-    last_size: usize,
     json_size: usize,
 }
 impl Responses {
@@ -102,8 +105,6 @@ impl Responses {
             bytes: Vec::new(),
             text: String::new(),
             completed: None,
-            last_at: Instant::now(),
-            last_size: 0,
             json_size: 2,
         }
     }
@@ -131,7 +132,7 @@ impl Responses {
             .map_err(|_| failure("ai_invalid_response"))?;
         Ok(Some(frame))
     }
-    fn event(&mut self, frame: &str, progress: Option<&mpsc::Sender<String>>) -> Result<(), Value> {
+    fn event(&mut self, frame: &str, progress: Option<&watch::Sender<Progress>>) -> Result<(), Value> {
         let data = frame
             .lines()
             .filter_map(|line| {
@@ -168,12 +169,8 @@ impl Responses {
                     return Err(failure("ai_response_too_large"));
                 }
                 self.text.push_str(delta);
-                if self.text.len() - self.last_size >= 1024
-                    && self.last_at.elapsed() >= Duration::from_millis(250)
-                    && progress.is_some_and(|p| p.try_send(self.text.clone()).is_ok())
-                {
-                    self.last_size = self.text.len();
-                    self.last_at = Instant::now();
+                if let Some(progress) = progress {
+                    progress.send_modify(|snapshot| { snapshot.text.push_str(delta); snapshot.thinking = false; });
                 }
             }
             Some("response.completed") => {
@@ -185,6 +182,15 @@ impl Responses {
             Some("response.failed" | "response.incomplete" | "error") => {
                 return Err(failure("ai_gateway_incomplete_response"));
             }
+            Some("response.reasoning_text.delta" | "response.reasoning_summary_text.delta") => {
+                // Expose only the phase, never private chain-of-thought text.
+                if let Some(progress) = progress {
+                    progress.send_if_modified(|snapshot| {
+                        if snapshot.thinking || !snapshot.text.is_empty() { return false; }
+                        snapshot.thinking = true; true
+                    });
+                }
+            }
             _ => (), // Reasoning and protocol bookkeeping never enter public text events.
         }
         Ok(())
@@ -194,11 +200,21 @@ impl Responses {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn short_output_and_thinking_phase_survive_between_checkpoints() {
+        let mut reader=Responses::new();
+        let(tx,rx)=watch::channel(Progress::default());
+        reader.event("data: {\"type\":\"response.reasoning_text.delta\",\"delta\":\"private\"}",Some(&tx)).unwrap();
+        assert!(rx.borrow().thinking);assert!(rx.borrow().text.is_empty());
+        for delta in ["xin ","chào"] {
+            reader.event(&format!("data: {}",json!({"type":"response.output_text.delta","delta":delta})),Some(&tx)).unwrap();
+        }
+        assert_eq!(rx.borrow().text,"xin chào");assert!(!rx.borrow().thinking);
+    }
     #[tokio::test]
     async fn response_frames_handle_split_utf8_crlf_and_ignore_reasoning() {
         let mut reader = Responses::new();
-        let (tx, mut rx) = mpsc::channel(2);
-        reader.last_at -= Duration::from_secs(1);
+        let (tx, rx) = watch::channel(Progress::default());
         let text = "đúng ".repeat(210);
         let payload = format!(
             "data: {}\r\n\r\ndata: {}\n\ndata: {}\n\n",
@@ -212,7 +228,7 @@ mod tests {
                 reader.event(&frame, Some(&tx)).unwrap();
             }
         }
-        assert_eq!(rx.recv().await.unwrap(), text);
+        assert_eq!(rx.borrow().text, text);
         assert!(!reader.text.contains("private"));
         assert!(reader.completed.is_some());
         assert!(
@@ -226,7 +242,7 @@ mod tests {
     }
     #[test]
     fn malformed_oversized_and_incomplete_streams_fail_closed() {
-        let (tx, _) = mpsc::channel(1);
+        let (tx, _) = watch::channel(Progress::default());
         let mut reader = Responses::new();
         assert!(reader.event("data: broken", Some(&tx)).is_err());
         assert!(

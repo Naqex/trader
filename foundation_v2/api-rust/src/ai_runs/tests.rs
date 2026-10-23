@@ -71,10 +71,14 @@ async fn postgres_ai_lifecycle() {
                     n.fetch_add(1,Ordering::SeqCst);s.lock().await.push(payload.clone());
                     let current=a.fetch_add(1,Ordering::SeqCst)+1;p.fetch_max(current,Ordering::SeqCst);
                     let mode=m.load(Ordering::SeqCst);
-                    if mode==3 {
+                    if mode==3 || mode==4 {
                         assert_eq!(payload["stream"],true);
                         a.fetch_sub(1,Ordering::SeqCst);
                         let stream=async_stream::stream! {
+                            if mode==4 {
+                                yield Ok::<_,std::convert::Infallible>(format!("data: {}\n\ndata: {}\n\n",json!({"type":"response.reasoning_text.delta","delta":"private reasoning"}),json!({"type":"response.output_text.delta","delta":"Đang viết "})));
+                                tokio::time::sleep(Duration::from_secs(10)).await;
+                            }
                             for _ in 0..2 {
                                 tokio::time::sleep(Duration::from_millis(300)).await;
                                 yield Ok::<_,std::convert::Infallible>(format!("data: {}\n\n",json!({"type":"response.output_text.delta","delta":"đ".repeat(600)})));
@@ -280,6 +284,33 @@ async fn postgres_ai_lifecycle() {
         restart.read(&scope, pending_id, false).await.unwrap()["status"],
         "interrupted"
     );
+    mode.store(4, Ordering::SeqCst);
+    let continuation_conversation = Uuid::new_v4();
+    let partial = engine.submit(&scope,body(continuation_conversation,Uuid::new_v4(),"pro"),false).await.unwrap();
+    let partial_id = identifier(partial["id"].as_str().unwrap()).unwrap();
+    tokio::time::timeout(Duration::from_secs(5),async {
+        loop {
+            if engine.read(&scope,partial_id,false).await.unwrap()["text"]=="Đang viết " { break; }
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+    }).await.unwrap();
+    engine.read(&scope,partial_id,true).await.unwrap();
+    let stopped=finish(&engine,&scope,partial_id).await;
+    assert_eq!(stopped["text"],"Đang viết ");assert_eq!(stopped["partial"],true);
+    assert!(!stopped.to_string().contains("private reasoning"));
+    let terminal_event=engine.events(&scope,partial_id,0).await.unwrap().pop().unwrap();
+    assert_eq!(terminal_event["text"],"Đang viết ","terminal events retain the full stopped snapshot");
+    mode.store(0, Ordering::SeqCst);
+    let mut next=body(continuation_conversation,Uuid::new_v4(),"pro");
+    next["continuation_of"]=json!(partial_id);
+    next["messages"]=json!([{"role":"user","content":"fixture only"},{"role":"assistant","content":"Đang viết "},{"role":"user","content":"Continue without repetition"}]);
+    let continued=engine.submit(&scope,next.clone(),false).await.unwrap();
+    let continued_id=identifier(continued["id"].as_str().unwrap()).unwrap();
+    assert_eq!(continued["continuation_of"],partial["id"]);
+    assert_eq!(engine.submit(&scope,next.clone(),false).await.unwrap()["id"],continued["id"]);
+    finish(&engine,&scope,continued_id).await;
+    next["idempotency_key"]=json!(Uuid::new_v4());
+    assert_eq!(engine.submit(&scope,next,false).await.unwrap_err().1["detail"],"invalid_ai_continuation","a stale Continue cannot target an older reply");
     let payloads = seen.lock().await;
     assert!(
         payloads
@@ -395,6 +426,7 @@ async fn postgres_ai_lifecycle() {
         .0,
         StatusCode::OK
     );
+    let before = count.load(Ordering::SeqCst);
     assert_eq!(
         http(
             "GET",
@@ -431,6 +463,12 @@ async fn postgres_ai_lifecycle() {
     assert_eq!(response.0, StatusCode::OK);
     let detail: Value = serde_json::from_str(&response.1).unwrap();
     assert_eq!(detail["run"]["text"], "pro result");
+    let continued_detail = http("GET",format!("/api/v2/ai/assistant/conversations/{continuation_conversation}"),Value::Null).await;
+    assert_eq!(continued_detail.0,StatusCode::OK);
+    let continued_detail:Value=serde_json::from_str(&continued_detail.1).unwrap();
+    assert_eq!(continued_detail["messages"].as_array().unwrap().len(),2,"continuation is one visible assistant reply");
+    assert_eq!(continued_detail["messages"][1]["content"],"Đang viết pro result");
+    assert_eq!(continued_detail["messages"][1]["id"],json!(continued_id));
     assert_eq!(
         http(
             "PATCH",

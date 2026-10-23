@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 
-const effortNames = { low: ['Thấp', 'Low'], medium: ['Trung bình', 'Medium'], high: ['Cao', 'High'], xhigh: ['Rất cao', 'Extra high'], max: ['Tối đa', 'Max'], ultra: ['Ultra', 'Ultra'] }
+import { aiEffortName } from './aiProvider.js'
 
 export default function AiModelPicker({ models, selection, disabled, saving, active, en, onSelect }) {
   const id = useId()
@@ -9,8 +9,8 @@ export default function AiModelPicker({ models, selection, disabled, saving, act
   const [view, setView] = useState('effort')
   const [preview, setPreview] = useState(selection.effort)
   const model = models.find(item => item.id === selection.model)
-  const efforts = model?.efforts || []
-  const name = value => effortNames[value]?.[en ? 1 : 0] || value
+  const efforts = model?.efforts.length ? [...(model.provider === 'local-gateway' ? [null] : []), ...model.efforts] : []
+  const name = value => aiEffortName(value, en)
   const modelName = (model?.name || selection.model || (en ? 'Select model' : 'Chọn model')).replace(/\s*\(Web\)$/i, '')
   useEffect(() => { if (!saving) setPreview(selection.effort) }, [selection.effort, saving])
   useEffect(() => {

@@ -39,6 +39,14 @@ Read the current manifest before the next guarded stop; earlier binary paths
 in this document describe historical cutovers. See
 [the AI integration checkpoint](../evidence/ai-provider-integration-20261023/CHECKPOINT.md).
 
+The later 23 October chat-continuation update runs API8010 from
+`E:/BACKUP-TRADINGWORKSPACE/ai-chat-continuation-20261023/release-target/release`.
+No schema migration; native/compact, QDM, existing database/artifacts and the AI
+workflow interpreter remain configured. The preserved scientific descriptor is
+`.runtime/api-platform/native-scientific-capability-ai-platform-20261023.json`;
+the legacy descriptor is unchanged. Old-owned binaries were used for guarded stop
+before starting the new binary directory. See [chat receipt](../evidence/ai-chat-continuation-20261023/RECEIPT.md).
+
 The native flow is `React → Axum → native domain → PostgreSQL transaction and
 revision/receipt → HTTP response`. Research and downloads use bounded background
 execution. A successful quick market order is already filled at the current

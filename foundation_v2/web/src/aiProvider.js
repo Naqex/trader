@@ -1,4 +1,5 @@
 const errors = {
+  invalid_ai_continuation: ['Câu trả lời đã thay đổi. Mở lại chat trước khi tiếp tục.', 'The response has changed. Reopen the chat before continuing.'],
   ai_profile_changed: ['Cấu hình đã thay đổi ở nơi khác. Tải lại trang trước khi lưu.', 'This profile changed elsewhere. Reload the page before saving.'],
   ai_invalid_response: ['Model trả dữ liệu không hợp lệ. Ứng dụng không tự gửi lại.', 'The model returned invalid data. The app does not resend.'],
   ai_response_too_large: ['Phản hồi vượt giới hạn của cuộc chat.', 'The response exceeds the chat limit.'],
@@ -51,6 +52,11 @@ const errors = {
 
 export function aiErrorCopy(code, en = false) {
   return errors[code]?.[en ? 1 : 0] || (en ? 'Cannot read the AI connection. Try again.' : 'Không đọc được kết nối AI. Hãy thử lại.')
+}
+
+export function aiEffortName(value, en) {
+  const names = { minimal: ['Tối thiểu', 'Minimal'], low: ['Thấp', 'Low'], medium: ['Trung bình', 'Medium'], high: ['Cao', 'High'], xhigh: ['Rất cao', 'Extra high'], max: ['Tối đa', 'Max'], ultra: ['Ultra', 'Ultra'] }
+  return value == null || value === '' ? (en ? 'Default' : 'Mặc định') : names[value]?.[en ? 1 : 0] || value
 }
 
 export function isGatewayError(code) { return code?.startsWith('ai_gateway_') || code === 'invalid_ai_selection' || code === 'ai_selection_changed' }

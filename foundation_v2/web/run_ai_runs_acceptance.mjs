@@ -89,7 +89,7 @@ try {
     await chat.getByRole('button', { name: say('Dừng phản hồi', 'Stop response'), exact: true }).waitFor()
     assert.equal(sends.length, 2, 'reload resumes the existing run')
     await chat.getByRole('button', { name: say('Dừng phản hồi', 'Stop response'), exact: true }).click()
-    await chat.getByText(say('Đã dừng chờ phản hồi.', 'Response stopped.'), { exact: true }).waitFor()
+    await chat.getByText(say('Đã dừng trước khi có câu trả lời.', 'Stopped before a response arrived.'), { exact: true }).waitFor()
     assert.equal(cancellations.length, 1)
     await chat.getByRole('button', { name: say('Chat gần đây', 'Recent chats'), exact: true }).click()
     await chat.getByRole('button', { name: 'First conversation', exact: true }).click()

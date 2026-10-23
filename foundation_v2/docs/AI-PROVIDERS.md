@@ -129,10 +129,11 @@ active và danh sách model không chứng minh gói Pro, quota còn lại hoặ
 credential và không tự tăng admission của WMREPLAY.
 
 Audit này chỉ đọc config/management metadata, không inference/quota probe, không
-đổi routing/retry/credential. Catalog công khai hiện chỉ có ID/object/owned_by;
-không có đủ metadata để tự bật effort/tools/vision. Model ID có hậu tố high hay
-thinking không được suy thành danh sách effort tùy chọn. Giữ capability chưa kiểm
-chứng; cần nghiệm thu từng khả năng trên đúng model/endpoint trước khi mở.
+đổi routing/retry/credential. Catalog công khai hiện chỉ có ID/object/owned_by.
+Bản cập nhật sau đó bổ sung tên hiển thị và các effort rời rạc được management
+API công bố, đối chiếu đúng channel và ID với danh sách model đang truy cập được.
+Không suy effort từ hậu tố high/thinking; metadata không chứng minh tools/vision
+hoặc chất lượng inference. Cần nghiệm thu từng khả năng trên đúng model/endpoint.
 Xem [receipt đồng bộ và pool](../evidence/ai-catalog-pool-20261023/RECEIPT.md).
 
 ### Cái có thể reuse và chỗ cần sửa
@@ -153,7 +154,11 @@ gọi routes trung lập `/api/v2/ai/assistant/*`. Harness giữ:
 - Boundary loopback/Origin/Host, bearer backend-only và HTTP no-store.
 
 Transport WebGPT cũ và alias `/api/v2/ai/chatgpt/*` được giữ, luôn gọi WebGPT.
-Tên model gateway lấy nguyên catalog; không bịa mức reasoning giống ChatGPT.
+Gateway giữ nguyên ID định tuyến, dùng tên hiển thị nếu có và cho chọn effort
+được công bố hoặc Mặc định (không gửi reasoning override). Backend đọc tối đa8
+channel management, đồng thời4 request, timeout2s/request, cùng cache catalog30s;
+không thêm polling. Metadata lỗi thì dùng ID và không gợi ý effort. Management
+key chỉ ở backend. Receipt: [tên model và tiếp tục chat](../evidence/ai-chat-continuation-20261023/RECEIPT.md).
 UI chọn provider/model; lỗi dịch vi/en theo nguyên nhân.
 Endpoint và secret do cấu hình backend sở hữu, không nhận URL tùy ý từ browser.
 

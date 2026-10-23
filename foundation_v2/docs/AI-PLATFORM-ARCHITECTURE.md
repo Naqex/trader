@@ -194,12 +194,25 @@ khi chờ provider, không tự retry/requeue outcome chưa rõ. Lease hết h�
 `interrupted`; call đã đánh dấu sent thành `unknown`. Cancel sau khi sent không hứa
 dừng xử lý ở upstream. Completion đến trước cancel vẫn giữ kết quả.
 
-Progress dùng bounded channel2, text256KiB, wire stream1MiB, gộp theo byte/thời gian;
-event lưu delta/byte offset, row lưu partial snapshot. Tối đa16 SSE sessions/process,
+Progress dùng một watch snapshot, text256KiB, wire stream1MiB. Delta nối vào
+snapshot; checkpoint tối đa mỗi250ms, event lưu delta/byte offset, row lưu partial.
+Khi cancel/fail, snapshot mới nhất được giữ kể cả chưa đến checkpoint. Reasoning
+chỉ công bố phase thinking, không lưu/hiện nội dung suy luận riêng của model.
+Tối đa16 SSE sessions/process,
 mỗi session240s; UI reconnect cùng run với snapshot repair. History keyset pagination,
 tối đa500 conversations/principal/workspace và64 runs/conversation. Chạm cap trả lỗi,
 không tự xóa lịch sử. Mỗi trang message tối đa512KiB; xóa conversation cascade khi
 không còn run hoạt động. LocalStorage chỉ giữ ID để mở lại chat.
+
+Dừng giữ câu hỏi và phần trả lời đã nhận, kể cả sau reload. Tiếp tục tham chiếu
+`continuation_of` là run vừa dừng, chỉ cùng conversation và run terminal mới nhất;
+idempotency vẫn áp dụng. UI không thêm câu hỏi giả, nối phần trả lời mới vào câu
+cũ. Transport gửi một request mới kèm lịch sử và phần dở dang: không thể khôi phục
+inference nội bộ đã bị hủy. Gửi prompt khác sau Dừng tạo lượt mới với ngữ cảnh
+hiện có. Cùng giới hạn48KiB/63 messages, không mở thêm quyền tools hay broker.
+History tự nối thêm trang nếu trang đầu bắt đầu giữa chuỗi continuation; chỉ lấy
+phần đầu câu đang bị cắt, giữ pagination cho các câu cũ khác. Chưa dựng xong ngữ
+cảnh thì khóa gửi. Tải trang cũ cũng nối theo run ID để không nhân đôi câu trả lời.
 
 Validation dùng PostgreSQL tạm do runner sở hữu và synthetic provider loopback;
 browser production build chạy riêng với API fixtures. Không dùng các kết quả này

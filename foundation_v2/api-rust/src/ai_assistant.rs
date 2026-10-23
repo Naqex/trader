@@ -41,7 +41,7 @@ pub(crate) fn chat_context(body: &Value) -> Result<Value, ApiError> {
 
 pub(crate) fn chat_messages(body: Value) -> Result<Value, ApiError> {
     let invalid = || ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY, "invalid_chat_messages");
-    if body.as_object().is_none_or(|v| v.keys().any(|key| !["messages", "context", "expected_selection", "conversation_id", "idempotency_key"].contains(&key.as_str()))) { return Err(invalid()); }
+    if body.as_object().is_none_or(|v| v.keys().any(|key| !["messages", "context", "expected_selection", "conversation_id", "idempotency_key", "continuation_of"].contains(&key.as_str()))) { return Err(invalid()); }
     let messages = body["messages"].as_array().ok_or_else(invalid)?;
     if messages.is_empty() || messages.len() > 63 || serde_json::to_vec(&body).map_err(|_| invalid())?.len() > 49152 { return Err(invalid()); }
     for (index, message) in messages.iter().enumerate() {
@@ -104,7 +104,7 @@ impl AiAssistant {
     pub(crate) async fn validate_selection(&self,selection:&Value)->Result<(),ApiError> {
         selection_shape(selection)?;
         let account=match Provider::parse(selection["provider"].as_str().unwrap())? { Provider::Web=>self.web_status().await?,Provider::Gateway=>self.gateway.status(false).await };
-        if account["models"].as_array().is_some_and(|models|models.iter().any(|m|m["id"]==selection["model"] && (m["efforts"].as_array().is_some_and(|v|v.is_empty()) && selection["effort"].is_null() || m["efforts"].as_array().is_some_and(|v|v.contains(&selection["effort"]))))) { Ok(()) }else{Err(ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY,"invalid_ai_selection"))}
+        if account["models"].as_array().is_some_and(|models|models.iter().any(|m|m["id"]==selection["model"] && (selection["effort"].is_null() && (selection["provider"]=="local-gateway" || m["efforts"].as_array().is_some_and(|v|v.is_empty())) || m["efforts"].as_array().is_some_and(|v|v.contains(&selection["effort"]))))) { Ok(()) }else{Err(ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY,"invalid_ai_selection"))}
     }
     #[cfg(test)]
     pub(crate) fn fixture_gateway(base:&str,key_file:PathBuf)->Arc<Self> {

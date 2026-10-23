@@ -55,7 +55,11 @@ try {
     await page.getByRole('heading', { name: say('Model', 'Models'), exact: true }).waitFor()
     await page.waitForFunction(() => document.querySelector('.ai-model-profiles')?.getAttribute('aria-busy') === 'false')
     const system = baseline.profiles.items.find(item => item.feature === 'system' && item.role === 'default')
-    if (system) assert.ok((await page.locator('[data-profile="system/default"] .fx-select-trigger').first().innerText()).includes(system.selection.model))
+    if (system) {
+      const connection = system.selection.provider === 'local-gateway' ? baseline.gateway : baseline.web
+      const name = connection.models.find(model => model.id === system.selection.model)?.name || system.selection.model
+      assert.ok((await page.locator('[data-profile="system/default"] .fx-select-trigger').first().innerText()).includes(name))
+    }
     await page.reload()
     await page.getByRole('heading', { name: say('Model', 'Models'), exact: true }).waitFor()
     await page.waitForFunction(() => document.querySelector('.ai-model-profiles')?.getAttribute('aria-busy') === 'false')

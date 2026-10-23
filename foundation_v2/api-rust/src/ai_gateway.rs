@@ -1,7 +1,7 @@
 use crate::auth::ApiError;
 use axum::http::StatusCode;
 use serde_json::{Value, json};
-use std::{collections::BTreeSet, path::PathBuf, time::{Duration, Instant}};
+use std::{collections::{BTreeMap, BTreeSet}, path::PathBuf, time::{Duration, Instant}};
 use tokio::sync::Mutex;
 
 /// OAuth tokens stay in the pinned gateway; the product only counts credential files.
@@ -14,7 +14,7 @@ pub(crate) struct LocalGateway {
 }
 
 struct GatewayState {
-    selected: Option<String>,
+    selected: Option<Value>,
     catalog: Option<(Instant, Vec<Value>)>,
 }
 
@@ -51,7 +51,7 @@ impl LocalGateway {
         Ok(Self { base: base_url(base)?, key_file,
             client: reqwest::Client::builder().no_proxy().redirect(reqwest::redirect::Policy::none())
                 .timeout(Duration::from_secs(3)).build().map_err(|_| "AI gateway client unavailable")?,
-            state: Mutex::new(GatewayState { selected, catalog: None }), runtime: None })
+            state: Mutex::new(GatewayState { selected: selected.map(|model| json!({"model":model,"effort":null})), catalog: None }), runtime: None })
     }
 
     async fn key(&self) -> Result<String, ApiError> {
@@ -74,13 +74,23 @@ impl LocalGateway {
         let request = self.client.get(format!("{}/models", self.base)).bearer_auth(self.key().await?);
         let value = read_json(request).await.map_err(unavailable)?;
         let rows = value["data"].as_array().filter(|rows| rows.len() <= 256).ok_or_else(|| unavailable("ai_gateway_invalid_response"))?;
-        let mut ids = BTreeSet::new();
+        let channels = rows.iter().filter_map(|r| r["owned_by"].as_str())
+            .filter(|s| !s.is_empty() && s.len() <= 64 && s.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_'))
+            .map(str::to_owned).collect::<BTreeSet<_>>();
+        let definitions = match &self.runtime {
+            Some(runtime) => runtime.model_metadata(&self.client, channels.into_iter().collect()).await,
+            None => Vec::new(),
+        };
+        let mut ids = BTreeMap::new();
         for row in rows {
             let id = row["id"].as_str().filter(|s| !s.trim().is_empty() && s.len() <= 256 && !s.chars().any(char::is_control))
                 .ok_or_else(|| unavailable("ai_gateway_invalid_response"))?;
-            ids.insert(id.to_owned());
+            let metadata = definitions.iter().find(|(channel, _)| row["owned_by"] == *channel)
+                .and_then(|(_, value)| value["models"].as_array())
+                .and_then(|models| models.iter().find(|model| model["id"] == id));
+            ids.insert(id.to_owned(), model_metadata(row, metadata));
         }
-        let models: Vec<_> = ids.into_iter().map(|id| json!({"id":id,"name":id,"efforts":[]})).collect();
+        let models: Vec<_> = ids.into_values().collect();
         state.catalog = Some((Instant::now(), models.clone()));
         Ok(models)
     }
@@ -97,8 +107,7 @@ impl LocalGateway {
         let mut state = self.state.lock().await;
         let mut value = match self.catalog(&mut state, refresh || completed).await {
             Ok(models) => {
-                let selection = state.selected.as_ref().filter(|id| models.iter().any(|m| m["id"] == id.as_str()))
-                    .map(|id| json!({"model":id,"effort":null}));
+                let selection = state.selected.as_ref().filter(|selection| valid_selection(&models, selection));
                 json!({"status":if models.is_empty() {"empty"} else {"catalog_ready"},"models":models,
                     "ready":selection.is_some(),"selection":selection,"operation":null,"endpoint":self.base})
             }
@@ -136,14 +145,13 @@ impl LocalGateway {
     }
 
     pub(crate) async fn select(&self, body: &Value) -> Result<(), ApiError> {
-        if body.as_object().is_none_or(|o| o.len() != 2 || !o.contains_key("effort")) || !body["effort"].is_null() {
+        if body.as_object().is_none_or(|o| o.len() != 2 || !o.contains_key("effort") || !o.contains_key("model")) {
             return Err(ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY, "invalid_ai_selection"));
         }
         let mut state = self.state.lock().await;
         let models = self.catalog(&mut state, false).await?;
-        let model = body["model"].as_str().filter(|id| models.iter().any(|m| m["id"] == *id))
-            .ok_or_else(|| ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY, "invalid_ai_selection"))?;
-        state.selected = Some(model.to_owned());
+        if !valid_selection(&models, body) { return Err(ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY, "invalid_ai_selection")); }
+        state.selected = Some(body.clone());
         Ok(())
     }
 
@@ -151,12 +159,28 @@ impl LocalGateway {
         if self.busy().await {return Err(ApiError::detail(StatusCode::CONFLICT,"chatgpt_busy"));}
         let mut state=self.state.lock().await;
         let models=self.catalog(&mut state,false).await?;
-        if !selection["effort"].is_null() || !models.iter().any(|m|m["id"]==selection["model"]) {
+        if !valid_selection(&models, selection) {
             return Err(ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY,"invalid_ai_selection"));
         }
-        let payload=json!({"model":selection["model"],"input":messages,"instructions":instructions,"stream":true,"store":false});
+        let mut payload=json!({"model":selection["model"],"input":messages,"instructions":instructions,"stream":true,"store":false});
+        if !selection["effort"].is_null() { payload["reasoning"] = json!({"effort":selection["effort"]}); }
         Ok(self.client.post(format!("{}/responses",self.base)).bearer_auth(self.key().await?).timeout(Duration::from_secs(190)).json(&payload))
     }
+}
+
+fn valid_selection(models: &[Value], selection: &Value) -> bool {
+    models.iter().any(|m| m["id"] == selection["model"] && (selection["effort"].is_null()
+        || m["efforts"].as_array().is_some_and(|levels| levels.contains(&selection["effort"]))))
+}
+
+fn model_metadata(row: &Value, definition: Option<&Value>) -> Value {
+    let clean = |value: &Value| value.as_str().filter(|s| !s.trim().is_empty() && s.len() <= 256 && !s.chars().any(char::is_control)).map(str::to_owned);
+    let name = clean(&row["display_name"]).or_else(|| definition.and_then(|m| clean(&m["display_name"]))).unwrap_or_else(|| row["id"].as_str().unwrap().to_owned());
+    let thinking = row.get("thinking").or_else(|| definition.and_then(|m| m.get("thinking")));
+    let levels = thinking.and_then(|t| t["levels"].as_array());
+    let efforts: Vec<_> = ["minimal", "low", "medium", "high", "xhigh", "max", "ultra"].into_iter()
+        .filter(|level| levels.is_some_and(|v| v.iter().any(|item| item.as_str() == Some(*level)))).collect();
+    json!({"id":row["id"],"name":name,"efforts":efforts})
 }
 
 pub(crate) async fn read_json(request: reqwest::RequestBuilder) -> Result<Value, &'static str> {
@@ -178,6 +202,31 @@ pub(crate) async fn read_json(request: reqwest::RequestBuilder) -> Result<Value,
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn metadata_keeps_route_ids_and_only_advertised_efforts() {
+        let row = json!({"id":"route-high"});
+        let definition = json!({"id":"route-high","display_name":"Friendly model","thinking":{"levels":["high","low","made-up"]}});
+        let model = model_metadata(&row, Some(&definition));
+        assert_eq!(model, json!({"id":"route-high","name":"Friendly model","efforts":["low","high"]}));
+        assert!(valid_selection(&[model.clone()], &json!({"model":"route-high","effort":null})));
+        assert!(valid_selection(&[model.clone()], &json!({"model":"route-high","effort":"high"})));
+        assert!(!valid_selection(&[model], &json!({"model":"route-high","effort":"medium"})));
+        assert_eq!(model_metadata(&row,None)["efforts"], json!([]));
+        assert_eq!(model_metadata(&json!({"id":"route-high","display_name":"Alias label"}),Some(&definition))["name"],"Alias label");
+    }
+
+    #[tokio::test]
+    async fn supported_effort_reaches_responses_without_renaming_model() {
+        let key = std::env::temp_dir().join(format!("gateway-effort-{}.key",uuid::Uuid::new_v4()));
+        tokio::fs::write(&key,"synthetic-gateway-fixture-key-0001").await.unwrap();
+        let gateway = LocalGateway::new("http://127.0.0.1:17859/v1",key.clone(),None).unwrap();
+        gateway.state.lock().await.catalog=Some((Instant::now(),vec![json!({"id":"route-high","name":"Friendly model","efforts":["low","high"]})]));
+        let body = gateway.prepare_selection(&json!({"model":"route-high","effort":"low"}),json!([]),"fixture").await.unwrap().build().unwrap();
+        let payload:Value=serde_json::from_slice(body.body().unwrap().as_bytes().unwrap()).unwrap();
+        assert_eq!(payload["model"],"route-high");assert_eq!(payload["reasoning"]["effort"],"low");
+        assert!(gateway.prepare_selection(&json!({"model":"route-high","effort":"medium"}),json!([]),"fixture").await.is_err());
+        tokio::fs::remove_file(key).await.unwrap();
+    }
     #[test]
     fn url_cannot_send_credentials_off_machine_or_to_management() {
         assert!(base_url("http://127.0.0.1:17852/v1/").is_ok());

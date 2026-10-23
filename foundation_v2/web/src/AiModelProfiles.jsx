@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import FxSelect from './FxSelect.jsx'
 import { useFxReplayContext } from './FxReplayShell.jsx'
-import { aiErrorCopy } from './aiProvider.js'
+import { aiErrorCopy, aiEffortName } from './aiProvider.js'
 
 const key = (provider, model) => `${provider}::${model}`
 const providerName = provider => provider === 'local-gateway' ? 'CLIProxyAPI' : 'ChatGPT Web'
@@ -72,8 +72,8 @@ export default function AiModelProfiles({ workspace, language }) {
       <div className="ai-profile-name"><span>{label}</span><small>{effective ? providerName(effective.provider) : say('Chưa cấu hình', 'Not configured')}</small></div>
       <div className="ai-profile-controls"><FxSelect label={label} value={selectedKey} options={options} disabled={loading || saving || !!error} searchable
         onChange={value => { const item = models.find(m => key(m.provider, m.id) === value); void save(feature, role, item ? { provider: item.provider, model: item.id, effort: item.efforts.includes('high') ? 'high' : item.efforts[0] || null } : null) }} />
-        {model?.efforts.length > 0 && <FxSelect label={`${label} · ${say('Mức suy luận', 'Reasoning effort')}`} value={selection.effort} disabled={loading || saving || !!error}
-          options={model.efforts.map(effort => ({ value: effort, label: effort, localize: false }))} onChange={effort => void save(feature, role, { ...selection, effort })} />}
+        {model?.efforts.length > 0 && <FxSelect label={`${label} · ${say('Mức suy luận', 'Reasoning effort')}`} value={selection.effort || ''} disabled={loading || saving || !!error}
+          options={[...(model.provider === 'local-gateway' ? [{ value: '', label: say('Mặc định', 'Default'), localize: false }] : []), ...model.efforts.map(effort => ({ value: effort, label: aiEffortName(effort, en), localize: false }))]} onChange={effort => void save(feature, role, { ...selection, effort: effort || null })} />}
       </div>
     </div>
   }

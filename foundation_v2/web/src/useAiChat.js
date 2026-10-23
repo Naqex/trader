@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { aiErrorCopy } from './aiProvider.js'
 import { readRunEvents, runPending } from './aiRunClient.js'
+import { chatHistory, finishReply, prependHistory } from './aiTranscript.js'
 
 const base = '/api/v2/ai/assistant'
 const providerName = id => id === 'local-gateway' ? 'CLIProxyAPI' : 'ChatGPT Web'
@@ -14,9 +15,12 @@ export default function useAiChat({ workspace, open, en, screen }) {
   const [chats, setChats] = useState([]), [next, setNext] = useState(null), [waiting, setWaiting] = useState(null)
   const [cancelled, setCancelled] = useState(false), [historyOpen, setHistoryOpen] = useState(false)
   const [partial, setPartial] = useState(''), [reconnect, setReconnect] = useState(0)
+  const [phase, setPhase] = useState(null), [stopping, setStopping] = useState(false), [continuation, setContinuation] = useState(null)
+  const [stoppedRun, setStoppedRun] = useState(null)
   const [older, setOlder] = useState(null)
+  const [restoring, setRestoring] = useState(false)
   const active = useRef(null), controller = useRef(null), epoch = useRef(0), submitting = useRef(false), selectedRef = useRef(null), defaultSelection = useRef(null)
-  const unresolved = useRef(null)
+  const unresolved = useRef(null), unresolvedPrompt = useRef(null)
   const accountRevision = useRef(0)
   const accountError = useRef(null)
   const storedId = `wm-ai-chat:${workspace}`
@@ -30,6 +34,16 @@ export default function useAiChat({ workspace, open, en, screen }) {
   }
   function choose(value) { selectedRef.current = value; setSelected(value) }
   function remember(id) { try { localStorage.setItem(storedId, id) } catch {} }
+  async function readChat(id, signal) {
+    const value = await request(`/conversations/${id}`, 'GET', undefined, signal)
+    // A page may start inside a continued answer. Restore its beginning before sending context.
+    for (let pages = 0; pages < 64 && value.next && value.messages[0]?.role === 'assistant' && value.messages[0].continuation_of; pages++) {
+      const older = await request(`/conversations/${id}?${new URLSearchParams(value.next)}`, 'GET', undefined, signal)
+      value.messages = prependHistory(older.messages, value.messages)
+      value.next = older.next
+    }
+    return value
+  }
   async function list(signal, cursor = null) {
     const query = cursor ? `?${new URLSearchParams(cursor)}` : ''
     const value = await request(`/conversations${query}`, 'GET', undefined, signal)
@@ -53,8 +67,8 @@ export default function useAiChat({ workspace, open, en, screen }) {
   function leave() {
     epoch.current++; controller.current?.abort(); active.current = null; submitting.current = false
     unresolved.current = null
-    setWaiting(null); setPartial(''); setError(''); setCancelled(false)
-    setOlder(null)
+    setWaiting(null); setPartial(''); setError(''); setCancelled(false); setPhase(null); setStopping(false); setContinuation(null); setStoppedRun(null)
+    setOlder(null); setRestoring(false)
   }
   function newChat() {
     leave(); const id = crypto.randomUUID(); setChatId(id); remember(id); choose(defaultSelection.current); setChatTitle(''); setMessages([]); setDraft(''); setHistoryOpen(false)
@@ -65,12 +79,14 @@ export default function useAiChat({ workspace, open, en, screen }) {
     const items = value.messages.map(message => ({ ...message, status: runPending(message) ? 'running' : message.status }))
     setOlder(value.next)
     setMessages(items); setCancelled(run?.status === 'cancelled'); setPartial(runPending(run) ? run?.text || '' : '')
+    setPhase(run?.phase || null); setStopping(run?.status === 'cancelling'); setContinuation(runPending(run) ? run.continuation_of || null : null)
+    setStoppedRun(run?.status === 'cancelled' ? run.id : null)
     if (runPending(run)) { active.current = run.id; setWaiting({ id: run.id, sequence: 0 }) }
     else if (['failed', 'interrupted'].includes(run?.status)) setError(errorCopy(run.error))
   }
   async function openChat(item) {
     leave(); const version = epoch.current; setLoading(true)
-    try { const value = await request(`/conversations/${item.id}`); if (version === epoch.current) { adopt(value); setDraft(''); setHistoryOpen(false) } }
+    try { const value = await readChat(item.id); if (version === epoch.current) { adopt(value); setDraft(''); setHistoryOpen(false) } }
     catch (failure) { if (version === epoch.current) setError(errorCopy(failure.message)) }
     finally { if (version === epoch.current) setLoading(false) }
   }
@@ -83,7 +99,11 @@ export default function useAiChat({ workspace, open, en, screen }) {
       void list(abort.signal).catch(f => { if (!abort.signal.aborted) setError(errorCopy(f.message)) })
       let saved
       try { saved = localStorage.getItem(storedId) } catch {}
-      if (saved) void request(`/conversations/${saved}`, 'GET', undefined, abort.signal).then(value => { if (!abort.signal.aborted) adopt(value) }).catch(f => { if (!abort.signal.aborted && f.message !== 'chatgpt_turn_not_found') setError(errorCopy(f.message)) })
+      if (saved) {
+        const version = epoch.current
+        setRestoring(true)
+        void readChat(saved, abort.signal).then(value => { if (!abort.signal.aborted && version === epoch.current) adopt(value) }).catch(f => { if (!abort.signal.aborted && version === epoch.current && f.message !== 'chatgpt_turn_not_found') setError(errorCopy(f.message)) }).finally(() => { if (!abort.signal.aborted && version === epoch.current) setRestoring(false) })
+      }
     }
     return () => { abort.abort(); controller.current?.abort(); epoch.current++; active.current = null; submitting.current = false }
   }, [workspace, open])
@@ -111,11 +131,11 @@ export default function useAiChat({ workspace, open, en, screen }) {
           if (new TextEncoder().encode(streamText).length !== value.offset) throw new Error('ai_stream_gap')
           streamText += value.delta
         } else if (typeof value.text === 'string') streamText = value.text
-        setPartial(streamText); return true
+        setPartial(streamText); setPhase(value.phase || null); setStopping(value.status === 'cancelling'); return true
       }
       done = true; active.current = null; submitting.current = false; setWaiting(null); setPartial('')
-      setMessages(previous => previous.map(item => item.id === value.id || item.status === 'running' ? { ...item, status: value.status } : item)
-        .concat(value.status === 'completed' ? [{ role: 'assistant', content: value.text, status: 'completed', selection: value.selection }] : []))
+      setMessages(previous => finishReply(previous, value))
+      setStopping(false); setContinuation(null); setPhase(null); setStoppedRun(value.status === 'cancelled' ? value.id : null)
       setCancelled(value.status === 'cancelled')
       if (['failed', 'interrupted'].includes(value.status)) setError(errorCopy(value.error))
       void list(abort.signal).catch(() => {})
@@ -137,17 +157,19 @@ export default function useAiChat({ workspace, open, en, screen }) {
     })()
     return () => abort.abort()
   }, [waiting?.id, workspace, open, reconnect])
-  async function send(event) {
+  async function send(event, continueRun = null) {
     event.preventDefault()
-    if (!draft.trim() || submitting.current || waiting || loading || !selectedRef.current) return
-    const content = draft.trim(), version = epoch.current
-    const history = messages.filter(item => item.status === 'completed').map(({ role, content }) => ({ role, content }))
-    const body = unresolved.current?.conversation_id === chatId && unresolved.current.messages.at(-1).content === content ? unresolved.current
-      : { conversation_id: chatId, idempotency_key: crypto.randomUUID(), messages: [...history, { role: 'user', content }], context: { screen, locale: en ? 'en' : 'vi' }, expected_selection: selectedRef.current }
+    if ((!draft.trim() && !continueRun) || submitting.current || waiting || loading || restoring || !selectedRef.current) return
+    const content = continueRun ? say('Tiếp tục câu trả lời vừa dừng từ đúng chỗ dở dang. Chỉ viết phần tiếp theo, không nhắc lại phần đã viết.', 'Continue the stopped response from exactly where it ended. Write only the continuation without repeating the existing text.') : draft.trim(), version = epoch.current
+    const history = chatHistory(messages)
+    const outgoing = chatHistory([...history, { role: 'user', content }])
+    const retrying = unresolved.current?.conversation_id === chatId && unresolved.current.continuation_of === (continueRun || undefined) && unresolvedPrompt.current === content
+    const body = retrying ? unresolved.current
+      : { conversation_id: chatId, idempotency_key: crypto.randomUUID(), messages: outgoing, context: { screen, locale: en ? 'en' : 'vi' }, expected_selection: selectedRef.current, ...(continueRun ? { continuation_of: continueRun } : {}) }
     if (body.messages.length > 63 || new TextEncoder().encode(JSON.stringify(body)).length > 49152) { setError(errorCopy('invalid_chat_messages')); return }
-    submitting.current = true; setError(''); setCancelled(false); setDraft(''); setPartial('')
-    unresolved.current = body
-    setMessages(previous => [...previous, { role: 'user', content, screen, status: 'running', id: 'submitting' }])
+    submitting.current = true; setError(''); setCancelled(false); if (!continueRun) setDraft(''); setPartial(''); setContinuation(continueRun); setPhase(null); setStopping(false)
+    unresolved.current = body; unresolvedPrompt.current = content
+    if (!continueRun) setMessages(previous => retrying && previous.some(item => item.id === 'submitting') ? previous.map(item => item.id === 'submitting' ? { ...item, status: 'running' } : item) : [...previous, { role: 'user', content, screen, status: 'running', id: 'submitting' }])
     try {
       const value = await request('/chat', 'POST', body)
       if (version !== epoch.current) return
@@ -157,15 +179,16 @@ export default function useAiChat({ workspace, open, en, screen }) {
     } catch (failure) {
       if (version !== epoch.current) return
       // The POST response may be lost after commit. Resolve its conversation before offering another send.
-      try { const value = await request(`/conversations/${chatId}`); if (version === epoch.current && value.run?.request_key === body.idempotency_key) { unresolved.current = null; adopt(value); return } } catch {}
+      try { const value = await readChat(chatId); if (version === epoch.current && value.run?.request_key === body.idempotency_key) { unresolved.current = null; adopt(value); return } } catch {}
       if (failure.status && failure.status < 500) unresolved.current = null
-      if (version === epoch.current) { setError(errorCopy(failure.message)); setDraft(content); setMessages(previous => previous.map(v => v.id === 'submitting' ? { ...v, status: 'failed' } : v)) }
+      if (version === epoch.current) { setError(errorCopy(failure.message)); if (!continueRun) setDraft(content); setContinuation(null); setCancelled(!!continueRun); setMessages(previous => previous.map(v => v.id === 'submitting' ? { ...v, status: 'failed' } : v)) }
     } finally { if (version === epoch.current) submitting.current = false }
   }
   async function stop() {
-    if (!active.current) return
+    if (!active.current || stopping) return
+    setStopping(true)
     try { await request(`/chat/${active.current}`, 'DELETE') }
-    catch (failure) { setError(errorCopy(failure.message)) }
+    catch (failure) { setStopping(false); setError(errorCopy(failure.message)) }
   }
   async function changeAccount(action, body) {
     if (action === 'selection') { choose(body); return }
@@ -184,7 +207,7 @@ export default function useAiChat({ workspace, open, en, screen }) {
   async function loadOlder() {
     if (!older || loading) return
     const version = epoch.current; setLoading(true)
-    try { const value = await request(`/conversations/${chatId}?${new URLSearchParams(older)}`); if (version === epoch.current) { setMessages(previous => [...value.messages, ...previous]); setOlder(value.next) } }
+    try { const value = await request(`/conversations/${chatId}?${new URLSearchParams(older)}`); if (version === epoch.current) { setMessages(previous => prependHistory(value.messages, previous)); setOlder(value.next) } }
     catch (failure) { if (version === epoch.current) setError(errorCopy(failure.message)) }
     finally { if (version === epoch.current) setLoading(false) }
   }
@@ -193,7 +216,9 @@ export default function useAiChat({ workspace, open, en, screen }) {
   const account = selected ? { ...route, provider: selected.provider, selection: selected, models: route?.models || [], ready: !!route?.ready && route.models.some(m => m.id === selected.model) } : null
   const pickerSelection = selected?.model ? { ...selected, model: modelKey(selected.provider, selected.model) } : { model: '', effort: null }
   function selectModel(value) { const model = models.find(m => m.id === value.model); if (model) choose({ provider: model.provider, model: model.sourceId, effort: value.effort }) }
-  return { account, loading, changing, messages, draft, setDraft, error, cancelled, busy: !!waiting || submitting.current, chatId, chatTitle, chats, next, historyOpen, setHistoryOpen, partial, older, loadOlder,
+  const continued = continuation && messages.at(-1)?.role === 'assistant' && messages.at(-1).id === continuation
+  const visibleMessages = continued ? messages.map((item, index) => index === messages.length - 1 ? { ...item, content: item.content + partial, status: 'running' } : item) : messages
+  return { account, loading: loading || restoring, changing, messages: visibleMessages, draft, setDraft, error, cancelled, stopping, phase, hasPartial: !!partial, continueReply: event => void send(event, stoppedRun), busy: !!waiting || submitting.current, chatId, chatTitle, chats, next, historyOpen, setHistoryOpen, partial: continued ? '' : partial, older, loadOlder,
     newChat, openChat, send, stop, loadAccount, changeAccount, renameChat, deleteChat, models, pickerSelection, selectModel,
     loadMore: () => list(undefined, next).catch(f => setError(errorCopy(f.message))), retryConnection: () => { setError(''); setReconnect(v => v + 1) },
     reportError: failure => setError(errorCopy(failure.message)), say }

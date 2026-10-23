@@ -56,6 +56,17 @@ pub(crate) fn google_auth_url(value: &str) -> Option<String> {
 }
 
 impl GatewayRuntime {
+    pub(crate) async fn model_metadata(&self, client: &reqwest::Client, channels: Vec<String>) -> Vec<(String, Value)> {
+        use futures_util::{stream, StreamExt};
+        let Ok(Some(key)) = read_config(&self.home.join("management.key")).await else { return Vec::new() };
+        // Only metadata from this managed loopback gateway; the key never leaves the backend.
+        stream::iter(channels.into_iter().take(8).map(|channel| {
+            let request = client.get(format!("http://127.0.0.1:{}/v8/management/routing/model-definitions/{channel}", self.port))
+                .bearer_auth(key.trim()).timeout(Duration::from_secs(2));
+            async move { (channel, crate::ai_gateway::read_json(request).await.ok()) }
+        })).buffer_unordered(4).filter_map(|(channel, value)| async move { value.map(|v| (channel, v)) }).collect().await
+    }
+
     pub(crate) fn new(project: &Path) -> Self {
         Self { binary: project.join(".runtime/ai-gateway-evaluation/cliproxyapi-v8.0.40/cli-proxy-api.exe"),
             home: project.join(".runtime/mt5-ai-gateway"), port:17852, state: Mutex::new(RuntimeState::default()) }

@@ -27,7 +27,7 @@ export default function AiChatPanel({ workspace, open, modal, standalone = false
   const say = (vi, english) => en ? english : vi
   const currentScreen = Object.hasOwn(screens, screen) ? screen : 'unknown'
   const screenName = key => (screens[key] || screens.unknown)[en ? 1 : 0]
-  const { account, loading, changing, messages, draft, setDraft, error, cancelled, busy, chatId, chats, next,
+  const { account, loading, changing, messages, draft, setDraft, error, cancelled, busy, stopping, phase, hasPartial, continueReply, chatId, chats, next,
     historyOpen, setHistoryOpen, partial, older, loadOlder, newChat, openChat, send, stop, changeAccount, loadAccount,
     renameChat, deleteChat, models, pickerSelection, selectModel, loadMore, retryConnection, reportError } = useAiChat({ workspace, open, en, screen: currentScreen })
   const [mentor, setMentor] = useState({ name: 'Mentor', description: '' })
@@ -153,13 +153,13 @@ export default function AiChatPanel({ workspace, open, modal, standalone = false
     <div className="wm-ai-transcript" ref={scroll} role="log" aria-label={say('Nội dung trò chuyện', 'Conversation')} aria-live="polite" aria-relevant="additions text">
       {older && <button type="button" disabled={loading} onClick={showOlder}>{say('Tin nhắn trước', 'Earlier messages')}</button>}
       {!messages.length && <div className="wm-ai-welcome"><span className="wm-ai-welcome-icon"><AiSparkles /></span><h3>{mentor.name}</h3><p>{description}</p></div>}
-      {messages.map((item, index) => <div className={`wm-ai-message is-${item.role}`} key={index}><span className="wm-ai-speaker">{item.role === 'user' ? `${say('Bạn', 'You')} · ${screenName(item.screen)}` : mentor.name}</span><div>{item.content}</div>{item.role === 'user' && ['failed', 'cancelled', 'interrupted'].includes(item.status) && <small>{item.status === 'cancelled' ? say('Đã dừng', 'Stopped') : say('Chưa có phản hồi', 'No response')}</small>}</div>)}
+      {messages.map((item, index) => <div className={`wm-ai-message is-${item.role}`} key={index}><span className="wm-ai-speaker">{item.role === 'user' ? `${say('Bạn', 'You')} · ${screenName(item.screen)}` : mentor.name}</span><div>{item.content}</div>{item.role === 'assistant' && ['failed', 'cancelled', 'interrupted'].includes(item.status) && <small>{item.status === 'cancelled' ? item.content ? say('Đã dừng', 'Stopped') : item.phase === 'thinking' ? say('Đã dừng khi đang suy nghĩ.', 'Stopped while thinking.') : say('Đã dừng trước khi có câu trả lời.', 'Stopped before a response arrived.') : say('Phản hồi bị gián đoạn', 'Response interrupted')}</small>}</div>)}
       {partial && <div className="wm-ai-message is-assistant"><span className="wm-ai-speaker">{mentor.name}</span><div>{partial}</div></div>}
-      {busy && !partial && <p className="wm-ai-thinking" role="status"><span />{say('Đang chờ phản hồi…', 'Waiting for a response…')}</p>}
+      {busy && (!hasPartial || stopping) && <p className="wm-ai-thinking" role="status"><span />{stopping ? say('Đang dừng…', 'Stopping…') : phase === 'thinking' ? say('Đang suy nghĩ…', 'Thinking…') : say('Đang chờ phản hồi…', 'Waiting for a response…')}</p>}
     </div>
     <div className="wm-ai-bottom">
       {error && <p className="wm-ai-error" role="alert">{error}{busy && <button type="button" onClick={retryConnection}>{say('Kết nối lại', 'Reconnect')}</button>}</p>}
-      {cancelled && <p className="wm-ai-note" role="status">{say('Đã dừng chờ phản hồi.', 'Response stopped.')}</p>}
+      {cancelled && !busy && <div className="wm-ai-continue"><button type="button" className="wm-button" disabled={!connected || loading || changing} onClick={continueReply}>{say('Tiếp tục', 'Continue')}</button></div>}
       {loading ? <p className="wm-ai-note" role="status">{say('Đang đọc kết nối…', 'Checking connection…')}</p> : !connected && <div className="wm-ai-connect"><p>{account?.operation ? say('Hoàn tất đăng nhập hoặc kiểm tra trong Cài đặt.', 'Finish login or the connection test in Settings.') : say('Chọn kết nối và model trong Cài đặt AI.', 'Select a connection and model in AI settings.')}</p>{account?.status === 'stopped' && <button type="button" disabled={changing} onClick={() => changeAccount('start')}>{say('Nạp kết nối đã lưu', 'Load saved connection')}</button>}<a href={settingsHref} onClick={onClose}>{say('Mở Cài đặt AI', 'Open AI settings')} ↗</a>{!account && <button type="button" disabled={loading} onClick={() => void loadAccount(new AbortController().signal)}>{say('Thử kết nối lại', 'Refresh connection')}</button>}</div>}
       <form className="wm-ai-composer" onSubmit={send}>
         <label className="wm-ai-sr" htmlFor="wm-ai-input">{say('Tin nhắn cho AI', 'Message AI')}</label>
@@ -167,7 +167,7 @@ export default function AiChatPanel({ workspace, open, modal, standalone = false
         <div className="wm-ai-composer-footer">
           <div className="wm-ai-tools" />
           <div className="wm-ai-models">{models.length ? <AiModelPicker models={models} selection={pickerSelection} disabled={loading} saving={changing} active={open && !historyOpen} en={en} onSelect={selectModel} /> : <span>{account?.provider === 'local-gateway' ? 'CLIProxyAPI local' : 'ChatGPT Web'}</span>}</div>
-          {busy ? <button type="button" className="wm-ai-send" onClick={stop} aria-label={say('Dừng phản hồi', 'Stop response')} data-tooltip={say('Dừng phản hồi', 'Stop response')}><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" /></svg></button> : <button type="submit" className="wm-ai-send" disabled={!draft.trim() || !connected || changing || loading} aria-label={say('Gửi tin nhắn', 'Send message')} data-tooltip={say('Gửi tin nhắn', 'Send message')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6" /></svg></button>}
+          {busy ? <button type="button" className="wm-ai-send" disabled={stopping} onClick={stop} aria-label={say('Dừng phản hồi', 'Stop response')} data-tooltip={say('Dừng phản hồi', 'Stop response')}><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" /></svg></button> : <button type="submit" className="wm-ai-send" disabled={!draft.trim() || !connected || changing || loading} aria-label={say('Gửi tin nhắn', 'Send message')} data-tooltip={say('Gửi tin nhắn', 'Send message')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6" /></svg></button>}
         </div>
       </form>
     </div>
