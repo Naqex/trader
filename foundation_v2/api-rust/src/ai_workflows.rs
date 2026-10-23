@@ -215,7 +215,7 @@ async fn call(
     } else {
         "analyst"
     };
-    let selection = &config["workflow"]["roles"][role]["selection"];
+    let selection = config["workflow"]["roles"][node].get("selection").unwrap_or(&config["workflow"]["roles"][role]["selection"]);
     let rule = match node {
         "facts" => {
             "Identify claims supported by the supplied evidence. Cite short excerpts. Do not invent market data or calculate financial metrics."
@@ -254,7 +254,8 @@ async fn call(
         let route = selection["provider"].as_str().ok_or_else(protocol)?;
         let row=tx.query_opt("SELECT workspace_id FROM ai_runs r WHERE run_id=$1 AND owner=$2 AND status='running' AND lease_until>clock_timestamp() FOR UPDATE",&[&id,&engine.owner]).await.map_err(|_|protocol())?.ok_or_else(||failure("ai_cancelled_before_send"))?;
         let workspace: String = row.get(0);
-        let admitted:bool=tx.query_one("SELECT count(*)<4 AND count(*) FILTER(WHERE workspace_id=$1)<3 AND count(*) FILTER(WHERE route=$2)<CASE WHEN $2='chatgpt-web' THEN 1 ELSE 3 END FROM ai_model_calls",&[&workspace,&route]).await.map_err(|_|protocol())?.get(0);
+        // Background branches leave one global and one workspace call slot for chat.
+        let admitted:bool=tx.query_one("SELECT count(*)<3 AND count(*) FILTER(WHERE workspace_id=$1)<2 AND count(*) FILTER(WHERE route=$2)<CASE WHEN $2='chatgpt-web' THEN 1 ELSE 2 END FROM ai_model_calls",&[&workspace,&route]).await.map_err(|_|protocol())?.get(0);
         if admitted {
             tx.execute("INSERT INTO ai_model_calls(call_id,run_id,owner,route,workspace_id,lease_until,node) SELECT $1,run_id,owner,$3,workspace_id,lease_until,$4 FROM ai_runs WHERE run_id=$2",&[&Uuid::new_v4(),&id,&route,&node]).await.map_err(|_|protocol())?;
         }
@@ -265,7 +266,9 @@ async fn call(
         tokio::time::sleep(Duration::from_millis(100)).await;
     }
     let result=async {
-        let request=engine.assistant.prepare(selection,json!([{"role":"user","content":prompt}]),&input["context"]).await.map_err(|e|json!({"error":e.1["detail"],"outcome":"not_sent"}))?;
+        let mut context=input["context"].clone();
+        if !config["snapshot"].is_null(){context["snapshot"]=config["snapshot"].clone();}
+        let request=engine.assistant.prepare(selection,json!([{"role":"user","content":prompt}]),&context).await.map_err(|e|json!({"error":e.1["detail"],"outcome":"not_sent"}))?;
         let mut conn=engine.pool.get().await.map_err(|_|failure("database_unavailable"))?;
         let tx=conn.transaction().await.map_err(|_|protocol())?;
         if tx.execute("UPDATE ai_runs SET outcome='sent' WHERE run_id=$1 AND owner=$2 AND status='running' AND lease_until>clock_timestamp()",&[&id,&engine.owner]).await.map_err(|_|protocol())?!=1 {return Err(failure("ai_cancelled_before_send"));}
@@ -319,7 +322,7 @@ pub(crate) async fn submit(
     scope: Workspace,
     Json(body): Json<Value>,
 ) -> Result<(StatusCode, Json<Value>), ApiError> {
-    if body.as_object().is_none_or(|v| v.len() != 3)
+    if body.as_object().is_none_or(|v| v.len()<3 || v.keys().any(|k|!["idempotency_key","text","locale","source"].contains(&k.as_str())))
         || !body["text"]
             .as_str()
             .is_some_and(|v| !v.trim().is_empty() && v.len() <= 8192)
@@ -341,10 +344,11 @@ pub(crate) async fn submit(
                 "invalid_ai_idempotency_key",
             )
         })?;
-    let request = json!({"conversation_id":key,"idempotency_key":key,"messages":[{"role":"user","content":body["text"]}],"context":{"screen":"journal","locale":body["locale"]}});
+    let mut request = json!({"conversation_id":key,"idempotency_key":key,"messages":[{"role":"user","content":body["text"]}],"context":{"screen":"journal","locale":body["locale"]}});
+    if let Some(source)=body.get("source") {request["context"]["source"]=source.clone();}
     state
         .ai_runs
-        .submit_inner(&scope, request, false, true)
+        .submit_with_state(&scope, request, false, true, Some(&state))
         .await
         .map(|v| (StatusCode::ACCEPTED, Json(v)))
 }

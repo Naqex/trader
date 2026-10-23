@@ -145,10 +145,13 @@ impl Engine {
     pub(crate) async fn submit_inner(
         self: &Arc<Self>,
         scope: &Workspace,
-        mut body: Value,
+        body: Value,
         legacy: bool,
         workflow: bool,
     ) -> Result<Value, ApiError> {
+        self.submit_with_state(scope,body,legacy,workflow,None).await
+    }
+    pub(crate) async fn submit_with_state(self:&Arc<Self>,scope:&Workspace, mut body:Value,legacy:bool,workflow:bool,state:Option<&crate::state::AppState>)->Result<Value,ApiError> {
         let context = crate::ai_assistant::chat_context(&body)?;
         let messages = crate::ai_assistant::chat_messages(body.clone())?;
         let (agent_id, agent_revision) = crate::ai_agents::reference(&body)?;
@@ -194,6 +197,9 @@ impl Engine {
                 return Ok(row.get(1));
             }
         }
+        let snapshot=if let Some(source)=context.get("source").filter(|_|continuation.is_none()) {
+            Some(crate::ai_context::snapshot(state.ok_or_else(||invalid("invalid_ai_source"))?,scope,source).await?)
+        }else{None};
         let mut roles = serde_json::Map::new();
         if workflow {
             if !self.workflows.configured() {
@@ -202,10 +208,12 @@ impl Engine {
                     "ai_workflow_not_configured",
                 ));
             }
-            for role in ["analyst", "reviewer"] {
-                let value = crate::ai_profiles::resolve(&self.pool, scope, "evidence-review", role)
-                    .await?
-                    .ok_or_else(|| invalid("ai_profile_required"))?;
+            for role in ["analyst", "facts", "gaps", "reviewer"] {
+                let value = match crate::ai_profiles::resolve(&self.pool, scope, "evidence-review", role).await? {
+                    Some(value)=>value,
+                    None=>{let account=self.assistant.account(false,false).await?;
+                        json!({"selection":{"provider":account["provider"],"model":account["selection"]["model"],"effort":account["selection"]["effort"]},"feature":"connection","role":"default","revision":0})},
+                };
                 self.assistant
                     .validate_selection(&value["selection"])
                     .await?;
@@ -229,6 +237,7 @@ impl Engine {
         crate::ai_assistant::selection_shape(&selection)?;
         body = json!({"messages":messages,"context":context,"selection":selection,"conversation_id":conversation});
         let mut config = json!({"selection":selection,"profile":profile,"grounding":{"policy_version":crate::ai_assistant::POLICY_VERSION,"context":context,"data_access":"none"}});
+        if let Some(snapshot)=snapshot { config["grounding"]["source"]=snapshot["provenance"].clone();config["snapshot"]=snapshot; }
         if let Some(id) = continuation { config["continuation_of"] = json!(id); }
         if workflow {
             config["workflow"] = json!({"version":"evidence-review-v1","roles":roles});
@@ -259,19 +268,26 @@ impl Engine {
             return Err(conflict("ai_history_full"));
         }
         let kind = if workflow { "evidence-review" } else { "chat" };
-        let mut agent = crate::ai_agents::snapshot(&tx,scope,agent_id,agent_revision).await?;
+        let mut agent = if continuation.is_none() {
+            crate::ai_agents::snapshot(&tx,scope,agent_id,agent_revision,messages.as_array().unwrap().last().unwrap()["content"].as_str().unwrap()).await?
+        } else { Value::Null };
         tx.execute("INSERT INTO ai_conversations(workspace_id,subject,conversation_id,selection,title,kind,agent_id) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT DO NOTHING",&[&scope.workspace_id,&scope.subject,&conversation,&selection,&messages[0]["content"].as_str().unwrap().chars().take(90).collect::<String>(),&kind,&agent_id]).await.map_err(db)?;
         if tx.query_one("SELECT kind FROM ai_conversations WHERE workspace_id=$1 AND subject=$2 AND conversation_id=$3",&[&scope.workspace_id,&scope.subject,&conversation]).await.map_err(db)?.get::<_,String>(0)!=kind {return Err(conflict("ai_idempotency_conflict"));}
         if tx.query_one("SELECT agent_id FROM ai_conversations WHERE workspace_id=$1 AND subject=$2 AND conversation_id=$3",&[&scope.workspace_id,&scope.subject,&conversation]).await.map_err(db)?.get::<_,Option<Uuid>>(0)!=agent_id { return Err(conflict("ai_agent_mismatch")); }
         if tx.query_opt("SELECT run_id FROM ai_runs WHERE workspace_id=$1 AND subject=$2 AND conversation_id=$3 AND status IN ('queued','running','cancelling')",&[&scope.workspace_id,&scope.subject,&conversation]).await.map_err(db)?.is_some() { return Err(conflict("ai_conversation_busy")); }
         if let Some(prior) = continuation {
-            let latest = tx.query_opt("SELECT run_id,status,config->'agent' FROM ai_runs WHERE workspace_id=$1 AND subject=$2 AND conversation_id=$3 ORDER BY created_at DESC,run_id DESC LIMIT 1", &[&scope.workspace_id,&scope.subject,&conversation]).await.map_err(db)?;
+            let latest = tx.query_opt("SELECT run_id,status,config->'agent',config->'snapshot',config->'grounding' FROM ai_runs WHERE workspace_id=$1 AND subject=$2 AND conversation_id=$3 ORDER BY created_at DESC,run_id DESC LIMIT 1", &[&scope.workspace_id,&scope.subject,&conversation]).await.map_err(db)?;
             if latest.as_ref().is_none_or(|row| row.get::<_,Uuid>(0) != prior || !["cancelled","failed","interrupted"].contains(&row.get::<_,String>(1).as_str())) {
                 return Err(conflict("invalid_ai_continuation"));
             }
-            agent = latest.unwrap().get::<_,Option<Value>>(2).unwrap_or(Value::Null);
+            let latest=latest.unwrap();
+            agent = latest.get::<_,Option<Value>>(2).unwrap_or(Value::Null);
+            config["snapshot"]=latest.get::<_,Option<Value>>(3).unwrap_or(Value::Null);
+            config["grounding"]=latest.get::<_,Option<Value>>(4).unwrap_or_else(||json!({}));
+            config["grounding"]["policy_version"]=json!(crate::ai_assistant::POLICY_VERSION);
         }
         if !agent.is_null() { config["agent"]=agent; config["grounding"]["data_access"]=json!("user-supplied-agent-text"); }
+        if !config["snapshot"].is_null() {config["grounding"]["data_access"]=json!("server-snapshot-read-only");}
         // Saving a new selection affects this conversation and future runs only.
         tx.execute("UPDATE ai_conversations SET selection=$4,revision=revision+1,updated_at=clock_timestamp() WHERE workspace_id=$1 AND subject=$2 AND conversation_id=$3",&[&scope.workspace_id,&scope.subject,&conversation,&selection]).await.map_err(db)?;
         let id = Uuid::new_v4();
@@ -358,11 +374,13 @@ impl Engine {
         let (progress, mut updates) = tokio::sync::watch::channel(crate::ai_response::Progress::default());
         let result = {
             let operation = async {
+                if config["grounding"]["policy_version"] != crate::ai_assistant::POLICY_VERSION { return Err(json!({"error":"ai_policy_changed","outcome":"not_sent"})); }
                 if config.get("workflow").is_some() {
                     return self.workflows.execute(self, id, &input, &config).await;
                 }
                 let mut context=input["context"].clone();
                 if !config["agent"].is_null() { context["agent"]=config["agent"].clone(); }
+                if !config["snapshot"].is_null() {context["snapshot"]=config["snapshot"].clone();}
                 let request = self
                     .assistant
                     .prepare(
@@ -503,6 +521,15 @@ pub struct Page {
     before_id: Option<Uuid>,
     limit: Option<i64>,
 }
+pub async fn list_workflows(State(state):State<Arc<crate::state::AppState>>,scope:Workspace,Query(page):Query<Page>)->Result<Json<Value>,ApiError> {
+    let limit=page.limit.unwrap_or(20);
+    if !(1..=50).contains(&limit) || page.before_at.is_some()!=page.before_id.is_some() || page.agent_id.is_some(){return Err(invalid("invalid_ai_page"));}
+    let conn=state.pool.get().await.map_err(db)?;
+    let rows=conn.query(&format!("SELECT {VIEW},input->'messages'->0->>'content' FROM ai_runs WHERE workspace_id=$1 AND subject=$2 AND config ? 'workflow' AND ($3::timestamptz IS NULL OR (created_at,run_id)<($3,$4::uuid)) ORDER BY created_at DESC,run_id DESC LIMIT $5"),&[&scope.workspace_id,&scope.subject,&page.before_at,&page.before_id,&(limit+1)]).await.map_err(db)?;
+    let items:Vec<Value>=rows.iter().take(limit as usize).map(|r|{let mut value:Value=r.get(0);value.as_object_mut().unwrap().remove("text");value["title"]=json!(r.get::<_,Option<String>>(1).unwrap_or_default().chars().take(90).collect::<String>());value}).collect();
+    let next=if rows.len()>limit as usize {items.last().map(|v|json!({"before_id":v["id"],"before_at":v["created_at"]}))}else{None};
+    Ok(Json(json!({"items":items,"next":next})))
+}
 pub async fn list_conversations(
     State(state): State<Arc<crate::state::AppState>>,
     scope: Workspace,
@@ -579,7 +606,7 @@ pub async fn read_conversation(
                 previous["content"] = json!(format!("{}{}", previous["content"].as_str().unwrap_or(""), content));
                 previous["id"] = run["id"].clone(); previous["status"] = run["status"].clone(); previous["phase"] = run["phase"].clone(); previous["selection"] = run["selection"].clone();
             } else {
-                messages.push(json!({"role":"assistant","id":run["id"],"content":content,"status":run["status"],"selection":run["selection"],"phase":run["phase"],"continuation_of":run["continuation_of"]}));
+                messages.push(json!({"role":"assistant","id":run["id"],"content":content,"status":run["status"],"selection":run["selection"],"phase":run["phase"],"grounding":run["grounding"],"continuation_of":run["continuation_of"]}));
             }
         }
     }

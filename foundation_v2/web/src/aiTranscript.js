@@ -15,7 +15,7 @@ export function finishReply(messages, run) {
   if (previous?.role === 'assistant' && previous.id === run.id) return result
   const content = run.text || ''
   if (!content && !['completed', 'cancelled'].includes(run.status)) return result
-  const reply = { role: 'assistant', id: run.id, content, status: run.status, selection: run.selection, phase: run.phase }
+  const reply = { role: 'assistant', id: run.id, content, status: run.status, selection: run.selection, phase: run.phase, grounding: run.grounding }
   if (run.continuation_of && previous?.role === 'assistant' && previous.id === run.continuation_of) {
     result[result.length - 1] = { ...reply, content: previous.content + content }
   } else result.push(reply)

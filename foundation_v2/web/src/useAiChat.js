@@ -9,7 +9,7 @@ const providerName = id => id === 'local-gateway' ? 'CLIProxyAPI' : 'ChatGPT Web
 const modelKey = (provider, model) => `${provider}::${model}`
 const builtinMentor = { id: 'mentor', name: 'Mentor', description: '', revision: 0, builtin: true }
 
-export default function useAiChat({ workspace, open, en, screen }) {
+export default function useAiChat({ workspace, open, en, screen, source = null }) {
   const [routes, setRoutes] = useState([]), [selected, setSelected] = useState(null)
   const [loading, setLoading] = useState(false), [changing, setChanging] = useState(false)
   const [messages, setMessages] = useState([]), [draft, setDraft] = useState(''), [error, setError] = useState('')
@@ -95,7 +95,7 @@ export default function useAiChat({ workspace, open, en, screen }) {
   }
   async function saveAgent(value, create = false) {
     const version = epoch.current
-    const body = { name: value.name, description: value.description, instructions: value.instructions, knowledge: value.knowledge, ...(!create ? { revision: value.revision } : {}) }
+    const body = { name: value.name, description: value.description, instructions: value.instructions, knowledge: value.knowledge.map(file => file.id ? { id: file.id } : file), ...(!create ? { revision: value.revision } : {}) }
     const saved = await request(create ? '/agents' : `/agents/${value.id}`, create ? 'POST' : 'PATCH', body)
     if (version !== epoch.current) throw new Error('ai_request_failed')
     rosterRef.current = create ? [...rosterRef.current, saved] : rosterRef.current.map(a => a.id === saved.id ? saved : a)
@@ -226,7 +226,7 @@ export default function useAiChat({ workspace, open, en, screen }) {
     const outgoing = chatHistory([...history, { role: 'user', content }])
     const retrying = unresolved.current?.conversation_id === chatId && unresolved.current.continuation_of === (continueRun || undefined) && unresolvedPrompt.current === content
     const body = retrying ? unresolved.current
-      : { conversation_id: chatId, idempotency_key: crypto.randomUUID(), messages: outgoing, context: { screen, locale: en ? 'en' : 'vi' }, expected_selection: selectedRef.current, agent: { id: agentRef.current.id, revision: agentRef.current.revision }, ...(continueRun ? { continuation_of: continueRun } : {}) }
+      : { conversation_id: chatId, idempotency_key: crypto.randomUUID(), messages: outgoing, context: { screen, locale: en ? 'en' : 'vi', ...(source ? { source } : {}) }, expected_selection: selectedRef.current, agent: { id: agentRef.current.id, revision: agentRef.current.revision }, ...(continueRun ? { continuation_of: continueRun } : {}) }
     if (body.messages.length > 63 || new TextEncoder().encode(JSON.stringify(body)).length > 49152) { setError(errorCopy('invalid_chat_messages')); return }
     submitting.current = true; setError(''); setCancelled(false); if (!continueRun) setDraft(''); setPartial(''); setContinuation(continueRun); setPhase(null); setStopping(false)
     unresolved.current = body; unresolvedPrompt.current = content

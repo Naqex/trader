@@ -14,7 +14,7 @@ try {
     await context.addInitScript(theme => localStorage.setItem('tw-theme', theme), lang === 'en' ? 'light' : 'dark')
     const page = await context.newPage(), say = (vi, en) => lang === 'en' ? en : vi
     const mentor = { id: 'mentor', name: 'Mentor', description: '', builtin: true, revision: 0 }
-    const agents = [mentor], conversations = new Map(), sends = []
+    const agents = [mentor], documents = new Map(), conversations = new Map(), sends = []
     const selection = { provider: 'local-gateway', model: 'gemini-fixture', effort: null }
     let saveFails = true
     page.on('pageerror', error => report.errors.push(error.message))
@@ -23,11 +23,13 @@ try {
       if (endpoint === '/account') return route.fulfill({ json: { provider: 'local-gateway', ready: true, selection } })
       if (endpoint === '/catalog') return route.fulfill({ json: { routes: [{ provider: 'local-gateway', ready: true, models: [{ id: selection.model, name: 'Fixture Gemini', efforts: [] }] }] } })
       if (endpoint === '/profiles') return route.fulfill({ json: { items: [], chat_default: { selection } } })
+      if (endpoint === '/documents' && method === 'GET') return route.fulfill({ json: { items: [...documents.values()] } })
+      if (endpoint === '/documents' && method === 'POST') { const file = { id: crypto.randomUUID(), name: url.searchParams.get('name'), bytes: request.postDataBuffer().length, sha256: 'a'.repeat(64) }; documents.set(file.id, file); return route.fulfill({ status: 201, json: file }) }
       if (endpoint === '/agents' && method === 'GET') return route.fulfill({ json: { items: agents } })
       if (endpoint === '/agents' && method === 'POST') {
         if (saveFails) { saveFails = false; return route.fulfill({ status: 503, json: { detail: 'database_unavailable' } }) }
         const agent = { ...request.postDataJSON(), id: crypto.randomUUID(), revision: 1, builtin: false }
-        agents.push(agent); return route.fulfill({ status: 201, json: agent })
+        agent.knowledge = agent.knowledge.map(file => file.id ? documents.get(file.id) : file); agents.push(agent); return route.fulfill({ status: 201, json: agent })
       }
       if (endpoint?.startsWith('/agents/')) {
         const agent = agents.find(a => a.id === endpoint.split('/')[2]); assert.ok(agent)
@@ -57,8 +59,9 @@ try {
     await open()
     const panel = page.getByTestId('ai-chat'), dialog = panel.locator('dialog'), composer = panel.locator('#wm-ai-input')
     await panel.getByRole('button', { name: say('Cài đặt trợ lý', 'Assistant settings'), exact: true }).click()
-    assert.equal(await dialog.getByLabel(say('Tên', 'Name'), { exact: true }).getAttribute('readonly'), '')
-    assert.equal(await dialog.getByLabel(say('Mô tả', 'Description'), { exact: true }).getAttribute('readonly'), '')
+    assert.equal(await dialog.getByLabel(say('Tên', 'Name'), { exact: true }).isDisabled(), true)
+    assert.equal(await dialog.getByLabel(say('Mô tả', 'Description'), { exact: true }).isDisabled(), true)
+    assert.equal(await dialog.getByLabel(say('Hướng dẫn trả lời', 'Instructions'), { exact: true }).count(), 0)
     await dialog.getByRole('button', { name: say('Đóng', 'Close'), exact: true }).click()
     await composer.fill('Mentor chat'); await composer.press('Enter')
     await panel.getByText('Reply for mentor', { exact: true }).waitFor()
@@ -66,6 +69,8 @@ try {
     const geometry = await panel.evaluate(p => { const bounds = p.getBoundingClientRect(); return [...p.querySelectorAll('.wm-ai-history h3,.wm-ai-history li')].map(el => { const rect = el.getBoundingClientRect(); return { inset: rect.left - bounds.left, gap: bounds.right - rect.right } }) })
     assert.ok(geometry.length > 1 && geometry.every(r => r.inset <= 1.1 && r.gap <= 1.1), 'History rules span panel width')
     await page.screenshot({ path: path.join(evidence, `history-${lang}-${width}.png`) })
+    assert.equal(await panel.getByRole('button', { name: say('Tạo agent', 'Create agent'), exact: true }).count(), 0, 'Create agent is hidden in history')
+    await panel.getByRole('button', { name: say('Chat gần đây', 'Recent chats'), exact: true }).click()
     await panel.getByRole('button', { name: say('Tạo agent', 'Create agent'), exact: true }).click()
     await dialog.getByLabel(say('Tên', 'Name'), { exact: true }).fill('Breakout')
     await dialog.getByLabel(say('Mô tả', 'Description'), { exact: true }).fill('Trade lifecycle rules')
@@ -75,7 +80,7 @@ try {
     await upload.setInputFiles({ name: 'bad.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF') })
     await dialog.getByRole('alert').waitFor()
     await upload.setInputFiles({ name: 'rules.md', mimeType: 'text/markdown', buffer: Buffer.from('Risk: 0.5%. Skip news.') })
-    await dialog.getByText('rules.md', { exact: true }).waitFor()
+    await dialog.locator('li').filter({ hasText: 'rules.md' }).waitFor()
     await page.screenshot({ path: path.join(evidence, `create-${lang}-${width}.png`) })
     await dialog.getByRole('button', { name: say('Tạo', 'Create'), exact: true }).click()
     await dialog.getByRole('alert').waitFor()
@@ -92,11 +97,11 @@ try {
     await composer.fill('Custom chat'); await composer.press('Enter')
     await panel.getByText(`Reply for ${agents[1].id}`, { exact: true }).waitFor()
     assert.equal(sends[1].messages.length, 1, 'Selecting agent starts a separate conversation')
-    assert.equal(agents[1].knowledge[0].text, 'Risk: 0.5%. Skip news.')
+    assert.equal(documents.get(agents[1].knowledge[0].id).name, 'rules.md')
     await page.reload(); await page.getByTestId('ai-toggle').click()
     await panel.getByText(`Reply for ${agents[1].id}`, { exact: true }).waitFor()
     await panel.getByRole('button', { name: say('Cài đặt trợ lý', 'Assistant settings'), exact: true }).click()
-    assert.equal(await dialog.getByLabel(say('Tên', 'Name'), { exact: true }).getAttribute('readonly'), null)
+    assert.equal(await dialog.getByLabel(say('Tên', 'Name'), { exact: true }).isDisabled(), false)
     await dialog.getByLabel(say('Tên', 'Name'), { exact: true }).fill('Edited Breakout')
     await dialog.getByRole('button', { name: say('Lưu', 'Save'), exact: true }).click()
     await dialog.waitFor({ state: 'hidden' })

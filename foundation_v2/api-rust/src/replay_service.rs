@@ -1042,6 +1042,19 @@ async fn view_inner(
     }
     Ok(record)
 }
+pub(crate) async fn ai_snapshot(tx: &Transaction<'_>, state: &AppState, workspace: &str, id: &str) -> Result<Value, ApiError> {
+    let record = load_record_inner(tx, workspace, id, false, false).await?;
+    let p = &record["payload"];
+    let m = snapshot_manifest(tx, workspace, text(p, "dataset_id")?).await?;
+    let cursor = integer(p, "cursor_index")?;
+    if cursor < 0 { return Err(bad("invalid replay cursor")); }
+    let period = ChartPeriod::parse(&format!("{}S", integer(&m,"timeframe_seconds")?), integer(&m,"timeframe_seconds")?).map_err(bad)?;
+    let path = text(&m,"artifact_path")?.to_owned();
+    let hash = text(&m,"artifact_sha256")?.to_owned();
+    let bars = read(state, move |r| r.chart_window(&path,&hash,cursor as usize,period,None,120)).await?;
+    Ok(json!({"kind":"replay","id":id,"revision":record["revision"],"dataset_id":p["dataset_id"],"dataset_sha256":m["artifact_sha256"],"symbol":m["symbol"],"timeframe_seconds":m["timeframe_seconds"],"cursor_index":cursor,"cutoff_timestamp":bars["cutoff_timestamp"],"bars":bars["bars"]}))
+}
+
 async fn chart(
     tx: &Transaction<'_>,
     state: &AppState,

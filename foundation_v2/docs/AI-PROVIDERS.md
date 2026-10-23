@@ -428,9 +428,13 @@ current `revision`. Agents belong to `(workspace_id, subject)`, with at most 32
 custom agents. No provider credentials or execution permissions live in agents.
 
 Custom configuration contains name (40 characters), description (240), instructions
-(8,000), and up to five UTF-8 TXT/Markdown files (64 KiB combined). This first
-version deliberately accepts bounded text, without PDF/DOCX extraction, embeddings
-or a retrieval service. The UI links to the FX Replay strategy-file sample: one
+(8,000), and up to five UTF-8 TXT/Markdown document references (10 MiB per file).
+Migration `0015_ai_documents.sql` stores files separately from agent configuration,
+scoped by workspace and subject, with a 100-file / 200-MiB storage limit. Upload is
+a bounded raw-body endpoint; downloads reproduce the original bytes. Deletion is
+rejected while an agent references a document. Existing inline files remain readable.
+The Documents page and agent editor reuse this library; no PDF/DOCX extraction or
+vector service is introduced. The UI links to the FX Replay strategy-file sample: one
 strategy per file, clear rules for bias/setup/entry/risk/management/exit/no-trade.
 
 Chat submission optionally includes `agent: {id, revision}`. Omission means Mentor.
@@ -439,10 +443,41 @@ Mentor/old chats). History can be filtered by `agent_id=mentor|<uuid>`. Switchin
 agents starts a separate conversation; opening saved history restores its owner.
 The server rejects an agent/conversation mismatch and stale configuration writes.
 
-Each admitted run snapshots the agent config. The final user message's grounded
+Each admitted run snapshots the agent config and relevant document excerpts. Text
+is split losslessly at UTF-8 boundaries into 4-KiB chunks; PostgreSQL full-text
+search selects up to three chunks per document, with a 24-KiB combined excerpt
+budget. No match falls back to the introduction and is marked explicitly. This
+does not imply that the model read every byte of a 10-MiB file. IDs, names, hashes,
+chunk indices and retrieval mode accompany excerpts. The final user message's grounded
 JSON carries `agent_configuration` alongside `user_message`; server policy remains
 separate and has higher authority. Knowledge is reference data, grants no tools,
 and is not treated as trusted instructions. Editing an agent affects later turns;
 Continue retains the stopped run's agent snapshot. Browser requests carry only
 the agent reference, and list responses omit instructions/knowledge. Full config
 is read when editing and by the server at run admission; no agent polling is added.
+
+Mentor identity fields are disabled and its user-instruction field is hidden.
+Project policy stays server-owned, versioned separately, and is never copied into
+editable user instructions. The create-agent shortcut is hidden in chat history.
+
+## Read-only evidence and workflow UI
+
+`GET /api/v2/ai/assistant/sources` lists recent replay/journal sources and completed
+research outputs in the current workspace. Chat and evidence-review accept only
+`{kind,id}` references, never caller-supplied chart data. The server freezes an
+authorized snapshot before enqueue: at most 120 bars through the replay cursor,
+anchored journal entries at or before that cursor, or a checksum/identity-validated
+completed research result. It does not open new datasets or holdout data. Provenance
+and cutoff accompany the result; reload/idempotency replay does not resnapshot.
+
+The Workflows page runs the fixed LangGraph facts/gaps → reviewer graph, shows
+progress, per-role selections, cancellation and saved runs. Facts/gaps may override
+analyst settings; otherwise they inherit analyst → feature default → system default.
+Reload only reads saved state. An ambiguous submission remains pending until an
+explicit recovery reuses its original idempotency key; definitive 4xx errors unlock
+editing. This is not the full TradingAgents domain graph or an arbitrary tool loop.
+
+See [foundation receipt](../evidence/ai-foundation-20261023/RECEIPT.md) for scoped
+validation and local rollout status. Real multi-provider/load/pool acceptance is
+deferred by the owner; API/local-model transports, Auto routing and broker execution
+remain outside this implementation.

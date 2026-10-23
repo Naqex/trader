@@ -20,6 +20,8 @@ pub mod replay_storage;
 pub mod prop_core;
 pub mod prop_service;
 pub mod artifact_data;
+mod ai_documents;
+mod ai_context;
 pub mod data_routes;
 pub mod analytics;
 pub mod control_routes;

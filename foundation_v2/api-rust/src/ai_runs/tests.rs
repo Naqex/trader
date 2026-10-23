@@ -5,6 +5,7 @@ use axum::{
     routing::{get, post},
 };
 use std::sync::atomic::{AtomicU8, AtomicUsize};
+mod foundation;
 
 #[tokio::test]
 #[ignore = "requires the owned disposable PostgreSQL runner"]
@@ -29,7 +30,7 @@ async fn postgres_ai_lifecycle() {
             .await
             .unwrap()
             .len(),
-        14
+        crate::rust_runtime::MIGRATIONS.len()
     );
     assert!(
         crate::rust_runtime::apply_migrations(&mut client, false)
@@ -336,6 +337,8 @@ async fn postgres_ai_lifecycle() {
     mutable.ai_runs = Engine::new(pool.clone(), assistant.clone());
     mutable.config.request_timeout = Duration::from_secs(5);
     mutable.config.max_body_bytes = 65536;
+    mutable.config.artifact_root = std::path::PathBuf::from(std::env::var("TW_RUST_RUNTIME_TEST_ARTIFACTS").unwrap());
+    mutable.artifact_data = Arc::new(crate::artifact_data::ArtifactData::new(&mutable.config.artifact_root).unwrap());
     let app = crate::router(state.clone(), crate::ai_assistant::routes());
     let http = |method: &str, path: String, body: Value| {
         let app = app.clone();
@@ -749,6 +752,7 @@ async fn postgres_ai_lifecycle() {
             "AI_WORKFLOW_PIPE_HTTP_PG_PASS: role snapshots, branch/join, 3 admitted calls, replay, warm reuse, scope, cancel/unknown"
         );
     }
+    foundation::verify(&state,&client).await;
     // Agent configuration survives reads, is tenant scoped and reaches provider input as data.
     let agent_body=json!({"name":"Breakout","description":"One strategy","instructions":"Explain the setup first","knowledge":[{"name":"rules.md","text":"Risk per trade: 0.5%. No trade during news."}]});
     let created=http("POST","/api/v2/ai/assistant/agents".into(),agent_body.clone()).await;
@@ -777,6 +781,15 @@ async fn postgres_ai_lifecycle() {
     assert_eq!(state.ai_runs.submit(&scope,agent_run.clone(),false).await.unwrap()["id"],submitted["id"]);
     agent_run["idempotency_key"]=json!(Uuid::new_v4());
     assert_eq!(state.ai_runs.submit(&scope,agent_run.clone(),false).await.unwrap_err().1["detail"],"ai_agent_changed");
+    // Continue must not re-resolve an edited agent before restoring the pinned configuration.
+    client.execute("UPDATE ai_runs SET status='cancelled' WHERE run_id=$1", &[&agent_run_id]).await.unwrap();
+    let mut agent_continue=agent_run.clone();agent_continue["continuation_of"]=json!(agent_run_id);
+    let resumed=state.ai_runs.submit(&scope,agent_continue,false).await.unwrap();
+    let resumed_id=identifier(resumed["id"].as_str().unwrap()).unwrap();
+    assert_eq!(finish(&state.ai_runs,&scope,resumed_id).await["status"],"completed");
+    let pinned:Value=client.query_one("SELECT config->'agent' FROM ai_runs WHERE run_id=$1", &[&resumed_id]).await.unwrap().get(0);
+    assert_eq!(pinned["instructions"],"Explain the setup first");
+    agent_run["idempotency_key"]=json!(Uuid::new_v4());
     agent_run["agent"]["revision"]=json!(2);agent_run["agent"]["id"]=json!("mentor");agent_run["agent"]["revision"]=json!(0);
     assert_eq!(state.ai_runs.submit(&scope,agent_run,false).await.unwrap_err().1["detail"],"ai_agent_mismatch");
     let custom_history:Value=serde_json::from_str(&http("GET",format!("/api/v2/ai/assistant/conversations?agent_id={agent_uuid}"),Value::Null).await.1).unwrap();

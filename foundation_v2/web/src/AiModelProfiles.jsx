@@ -61,7 +61,7 @@ export default function AiModelProfiles({ workspace, language }) {
   const find = (feature, role) => profiles.find(profile => profile.feature === feature && profile.role === role)?.selection
   const system = find('system', 'default') || fallback
   function row(feature, role, label, systemRow = false) {
-    const selection = find(feature, role), inherited = systemRow ? fallback : (role !== 'default' && find(feature, 'default')) || system
+    const selection = find(feature, role), inherited = systemRow ? fallback : (['facts', 'gaps'].includes(role) && find(feature, 'analyst')) || (role !== 'default' && find(feature, 'default')) || system
     const effective = selection || inherited
     const selectedKey = selection ? key(selection.provider, selection.model) : ''
     const model = models.find(item => key(item.provider, item.id) === selectedKey)
@@ -83,8 +83,10 @@ export default function AiModelProfiles({ workspace, language }) {
     {!loading && !error && !models.length && <p className="ai-detail-note">{say('Chưa có model khả dụng.', 'No models available.')} <a href={buildHref('ai', { area: 'ai', section: 'connections' })}>{say('Mở Kết nối', 'Open Connections')} →</a></p>}
     <div className="ai-profile-group"><h2>{say('Mặc định', 'Default')}</h2>{row('system', 'default', say('Model hệ thống', 'System model'), true)}</div>
     <div className="ai-profile-group"><h2>{say('Theo tính năng', 'By feature')}</h2>{row('chat', 'default', say('Trò chuyện', 'Chat'))}
-      <details className="ai-workflow-profiles"><summary><span>{say('Đánh giá dữ liệu', 'Evidence review')}<small>{say('2 vai trò · Thử nghiệm', '2 roles · Experimental')}</small></span><span aria-hidden="true">⌄</span></summary>
-        {row('evidence-review', 'analyst', say('Phân tích', 'Analyst'))}
+      <details className="ai-workflow-profiles"><summary><span>{say('Đánh giá dữ liệu', 'Evidence review')}<small>{say('2 nhánh song song + reviewer', '2 parallel branches + reviewer')}</small></span><span aria-hidden="true">⌄</span></summary>
+        {row('evidence-review', 'analyst', say('Phân tích mặc định', 'Default analyst'))}
+        {row('evidence-review', 'facts', say('Phân tích bằng chứng', 'Analyze evidence'))}
+        {row('evidence-review', 'gaps', say('Tìm điểm còn thiếu', 'Find gaps'))}
         {row('evidence-review', 'reviewer', say('Tổng hợp', 'Reviewer'))}
       </details>
     </div>

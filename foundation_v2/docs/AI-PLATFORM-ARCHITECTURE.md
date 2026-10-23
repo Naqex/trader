@@ -14,12 +14,12 @@ Luồng provider đã triển khai và receipts nằm ở [AI-PROVIDERS.md](AI-P
 
 | Phần | Đang có | Giới hạn cần xử lý |
 | --- | --- | --- |
-| Chat/Mentor | `ai_runs.rs`, `ai_profiles.rs`, `ai_agents.rs`, React chat dùng chung; migrations0012–0014 đã rollout local | Runs/events/history và agents lưu PostgreSQL; đã thử Gemini thật, Stop/reload/Continue và agent knowledge; chưa nghiệm thu tải đồng thời thật |
+| Chat/Mentor | `ai_runs.rs`, `ai_profiles.rs`, `ai_agents.rs`, React chat dùng chung; migrations0012–0015 đã rollout local | Runs/events/history, agents và documents lưu PostgreSQL; đã thử Gemini thật ở lát trước; chưa nghiệm thu tải đồng thời thật |
 | Transport | CLIProxyAPI local và WebGPT core, `ai_response.rs`; catalog có tên hiển thị/effort được upstream công bố | Text-only; Gemini thật đã trả lời; pool3 credentials đã audit cấu hình, chưa nghiệm thu rotation/failover/quota hoặc capability từng model |
-| Ngữ cảnh | Policy do server sở hữu; route/locale là dữ liệu | Chat chưa đọc chart/tài khoản; không được quảng bá đã hiểu dữ liệu đang mở |
+| Ngữ cảnh | Policy server; tài liệu 10 MiB, snapshot chart/journal và completed research do server dựng từ tham chiếu | Chọn nguồn rõ ràng; tối đa120 bars đến cursor, không đọc tài khoản/broker, không tự hiểu mọi màn hình đang mở |
 | AI nghiệp vụ | `api-rust/src/control_routes.rs` và `trading_workspace_v2/chart_ai_contract.py` | Contract advisory/offline riêng, chưa nối cùng runtime chat; cần kiểm tương đương schema/cutoff khi hội tụ |
 | Tác vụ dài | `api-rust/src/research_jobs/lifecycle.rs` | Đã có lease/attempt/fencing/cancel; reuse cơ chế có bằng chứng, không coi research job là AI run hoặc dùng bảng cũ tùy tiện |
-| Workflow | `ai_workflows.rs` → `trading_workspace_v2/ai_workflow.py`; worker interpreter đã cấu hình trong runtime local | Hai nhánh và join qua admission Rust đã qua PostgreSQL/Python fixtures; chưa chạy pilot nhiều model thật, nối Quant tools/TradingAgents domain graph hoặc có UI gọi workflow |
+| Workflow | `ai_workflows.rs` → `trading_workspace_v2/ai_workflow.py`; UI chạy/dừng/lịch sử; model riêng facts/gaps/reviewer | Hai nhánh và join qua admission Rust đã qua PostgreSQL/Python fixtures; đọc completed research được, chưa chạy nhiều model thật hoặc nối TradingAgents domain graph |
 | Evals | `scripts/ai_chat_evals.py` và HTTP/UI fixtures | Live evaluator còn gọi alias ChatGPT; chưa là bộ đánh giá đa tính năng/đa provider |
 
 Đối chiếu ngày 23/10/2026 với source, [deployment](../evidence/ai-platform-deployment-20261023/RECEIPT.md),
@@ -34,14 +34,15 @@ connections/catalog và profiles theo feature/role, nhưng direct API/local mode
 chưa nối. Lát 2 đã dùng được với một chat thật; nhiều chat/model, nền so với tương
 tác và pool cần kiểm chứng cùng workload thật. Lát 3 mới là fixed text-review pilot;
 cập nhật TradingAgents trong repo riêng không có nghĩa graph của nó đã tích hợp.
-Scheduler hiện chọn FIFO theo thời điểm enqueue trong cap; chưa có capacity dành
-riêng cho tương tác, token budget hoặc bằng chứng p95 chart/MT5 khi AI chịu tải.
+Scheduler giữ một model-call slot global và workspace cho chat khi nhận child call
+nền; gateway nền tối đa2, WebGPT nền tối đa1. Đây là reservation đơn giản, chưa là
+fair scheduler/token budget hay bằng chứng p95 chart/MT5 khi AI chịu tải.
 
-Bước tiếp theo là nghiệm thu có giới hạn: hai chat model khác nhau cùng pilot
-facts/gaps→reviewer, kiểm snapshot/reload/cancel và đo queue wait/first-token/total,
-RAM/CPU cùng độ phản hồi chart/API. Chỉ nâng cap hay thêm scheduling khi thấy
-bottleneck. Sau đó nối một context chart hoặc journal chỉ đọc, có revision/cutoff;
-chưa mở rộng automation, broker hay Auto routing.
+Theo owner, hoàn thiện source/UI và kiểm tra lỗi chức năng trước; nghiệm thu tải
+thật được để sau. Mốc đó vẫn cần hai chat model khác nhau cùng workflow nền, đo
+queue wait/first-token/total, RAM/CPU và độ phản hồi chart/API. Không dùng fixture
+PASS để công nhận pool, throughput, chất lượng model hoặc TradingAgents toàn bộ.
+Xem [receipt nền AI](../evidence/ai-foundation-20261023/RECEIPT.md).
 
 ## Quyết định nền
 
@@ -194,10 +195,10 @@ toàn sản phẩm nhanh. Mỗi lát giữ rollback provider/config/schema tươ
 - [OWASP excessive agency](https://genai.owasp.org/llmrisk/llm062025-excessive-agency/):
   ranh giới functionality, permission và autonomy.
 
-Review có offline LangGraph probes và topology fixture; TradingAgents được nâng
-upstream và kiểm regression trong repo độc lập. Worker pilot hiện nối được API
-WMREPLAY trong fixture độc lập; chưa benchmark model thật, sửa DB hoặc thay runtime
-sản phẩm đang hoạt động.
+Review ban đầu có offline LangGraph probes và topology fixture; TradingAgents được
+nâng upstream và kiểm regression trong repo độc lập. Worker pilot hiện nối được API
+WMREPLAY trong fixture độc lập. Các receipts phía trên ghi nhận các rollout local
+tiếp theo; chưa benchmark tải nhiều model thật.
 
 ## Lát persistence và chat đã triển khai trong source
 
@@ -253,10 +254,10 @@ phải dùng `--outDir ../.runtime/ai-runs-dist`, vì preview5180 đọc trực 
 
 Migration0013 tách observations bền `ai_run_steps` khỏi call permits ngắn hạn.
 `POST /api/v2/ai/assistant/workflows/evidence-review` nhận đúng
-`{idempotency_key,text,locale}` (text tối đa8KiB). Đây là dữ liệu do caller cung cấp,
-không là bằng chứng app đã đọc chart/Quant/account hoặc kiểm cutoff. Hash nguồn,
+`{idempotency_key,text,locale,source?}` (text tối đa8KiB). Text là dữ liệu caller;
+`source` chỉ nhận kind/id, backend dựng snapshot chỉ đọc và kiểm cutoff. Hash nguồn,
 workflow version và model/profile revisions được snapshot trước khi enqueue.
-Hai node facts/gaps dùng analyst profile; reviewer dùng profile riêng và chỉ chạy
+Hai node facts/gaps có profile riêng, kế thừa analyst khi chưa đặt; reviewer dùng profile riêng và chỉ chạy
 khi cả hai hoàn tất. Branch outputs tối đa16KiB mỗi nhánh, kết quả cuối theo budget
 text/frame chung. Usage tổng chỉ có khi cả ba upstream observations đều cung cấp.
 
@@ -285,8 +286,9 @@ bao gồm cả các workflow roots. Migration/backup/restart guards từ chối 
 queued/running/cancelling.
 
 Receipt: [chat/profiles](../evidence/ai-runs-20261023/RECEIPT.md),
-[workflow pilot](../evidence/ai-workflows-20261023/RECEIPT.md). Chưa có giao diện gọi
-review, tự động hóa, Quant tool, TradingAgents strategy graph, direct API/local model
+[workflow pilot](../evidence/ai-workflows-20261023/RECEIPT.md),
+[UI và context](../evidence/ai-foundation-20261023/RECEIPT.md). Chưa có tự động hóa,
+Quant tool tùy ý, TradingAgents strategy graph, direct API/local model
 adapter hoặc Auto routing. Không dùng pilot text để quảng bá các năng lực đó.
 
 Local deployment0012–0013 và UI/API đã được kiểm chứng sau backup/restore; xem
@@ -295,7 +297,7 @@ Kiểm chứng này không gửi model requests và không xác nhận inference
 
 ## Giao diện quản lý hiện hành
 
-AI và Bot gồm Kết nối, CLIProxyAPI, Model, Bot; mặc định mở Kết nối. Mentor mở từ icon
+AI và Bot gồm Kết nối, CLIProxyAPI, Model, Tài liệu, Luồng AI, Bot; mặc định mở Kết nối. Mentor mở từ icon
 AI trên header, dùng chung component/harness; URL assistant cũ vẫn tương thích.
 Kết nối tải lười danh
 sách hai transport và drawer chi tiết; Model tải lười profiles/catalog. Không

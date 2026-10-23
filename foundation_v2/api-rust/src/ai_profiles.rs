@@ -14,7 +14,7 @@ fn valid(feature: &str, role: &str) -> bool {
     matches!(
         (feature, role),
         ("system" | "chat" | "journal-summary", "default")
-            | ("evidence-review", "default" | "analyst" | "reviewer")
+            | ("evidence-review", "default" | "analyst" | "facts" | "gaps" | "reviewer")
     )
 }
 pub(crate) async fn resolve(
@@ -24,7 +24,7 @@ pub(crate) async fn resolve(
     role: &str,
 ) -> Result<Option<Value>, ApiError> {
     let conn = pool.get().await.map_err(|_| ApiError::database())?;
-    let row=conn.query_opt("SELECT selection,feature,role,revision FROM ai_profiles WHERE workspace_id=$1 AND subject=$2 AND ((feature=$3 AND role=$4) OR (feature=$3 AND role='default') OR (feature='system' AND role='default')) ORDER BY CASE WHEN feature=$3 AND role=$4 THEN 0 WHEN feature=$3 THEN 1 ELSE 2 END LIMIT 1",&[&scope.workspace_id,&scope.subject,&feature,&role]).await.map_err(|_|ApiError::database())?;
+    let row=conn.query_opt("SELECT selection,feature,role,revision FROM ai_profiles WHERE workspace_id=$1 AND subject=$2 AND ((feature=$3 AND role=$4) OR (feature=$3 AND role='analyst' AND $4 IN ('facts','gaps')) OR (feature=$3 AND role='default') OR (feature='system' AND role='default')) ORDER BY CASE WHEN feature=$3 AND role=$4 THEN 0 WHEN feature=$3 AND role='analyst' THEN 1 WHEN feature=$3 THEN 2 ELSE 3 END LIMIT 1",&[&scope.workspace_id,&scope.subject,&feature,&role]).await.map_err(|_|ApiError::database())?;
     Ok(row.map(|r|json!({"selection":r.get::<_,Value>(0),"feature":r.get::<_,String>(1),"role":r.get::<_,String>(2),"revision":r.get::<_,i64>(3)})))
 }
 pub async fn list(

@@ -26,16 +26,17 @@ impl Provider {
     }
 }
 
-pub(crate) const POLICY_VERSION: &str = "wmreplay-chat-2026-10-23.1";
+pub(crate) const POLICY_VERSION: &str = "wmreplay-chat-2026-10-23.2";
 const ASSISTANT_POLICY: &str = include_str!("ai-assistant-policy.md");
 const CHAT_SCREENS: &[&str] = &["unknown", "overview", "replay", "trade", "analytics", "playbook", "learn", "settings", "market-data", "prop", "journal", "sessions"];
 
 pub(crate) fn chat_context(body: &Value) -> Result<Value, ApiError> {
     let invalid = || ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY, "invalid_chat_context");
     let Some(context) = body.get("context") else { return Ok(json!({"screen":"unknown","locale":"vi"})); };
-    if context.as_object().is_none_or(|v| v.len() != 2)
+    if context.as_object().is_none_or(|v| v.len() < 2 || v.keys().any(|k|!["screen","locale","source"].contains(&k.as_str())))
         || !context["screen"].as_str().is_some_and(|s| CHAT_SCREENS.contains(&s))
         || !context["locale"].as_str().is_some_and(|s| ["vi", "en"].contains(&s)) { return Err(invalid()); }
+    if let Some(source)=context.get("source") { crate::ai_context::validate(source)?; }
     Ok(context.clone())
 }
 
@@ -61,6 +62,7 @@ fn grounded_messages(mut messages: Value, context: &Value) -> Value {
         "screen":context["screen"],"locale":context["locale"],"data_access":"none"},
         "user_message":last["content"]});
     if !context["agent"].is_null() { packed["agent_configuration"] = context["agent"].clone(); }
+    if !context["snapshot"].is_null() { packed["app_context"]["data_access"]=json!("server-snapshot-read-only"); packed["evidence_snapshot"]=context["snapshot"].clone(); }
     last["content"] = json!(packed.to_string());
     messages
 }
@@ -283,6 +285,10 @@ pub fn routes() -> Router<Arc<AppState>> {
             .route(&format!("{base}/chat/{{id}}"), get(read_chat).delete(cancel_chat));
     }
     routes = routes.route("/api/v2/ai/assistant/agents",get(crate::ai_agents::list).post(crate::ai_agents::create))
+        .route("/api/v2/ai/assistant/documents",get(crate::ai_documents::list).post(crate::ai_documents::upload))
+        .route("/api/v2/ai/assistant/documents/{id}",get(crate::ai_documents::read).delete(crate::ai_documents::delete))
+        .route("/api/v2/ai/assistant/sources",get(crate::ai_context::sources))
+        .route("/api/v2/ai/assistant/workflows",get(crate::ai_runs::list_workflows))
         .route("/api/v2/ai/assistant/agents/{id}",get(crate::ai_agents::read).patch(crate::ai_agents::update))
         .route("/api/v2/ai/assistant/conversations",get(crate::ai_runs::list_conversations))
         .route("/api/v2/ai/assistant/profiles",get(crate::ai_profiles::list))
@@ -300,6 +306,7 @@ pub fn routes() -> Router<Arc<AppState>> {
 pub fn native(method: &str, path: &str) -> bool {
     let suffix = path.strip_prefix("/api/v2/ai/chatgpt").or_else(|| path.strip_prefix("/api/v2/ai/assistant"));
     if matches!((method,suffix),("GET" | "POST",Some("/agents")) | ("GET" | "PATCH",Some("/agents/{id}"))) { return true; }
+    if matches!((method,suffix),("GET" | "POST",Some("/documents")) | ("GET" | "DELETE",Some("/documents/{id}")) | ("GET",Some("/sources"|"/workflows"))) { return true; }
     if matches!((method,suffix),("GET",Some("/connections/{provider}")) | ("POST",Some("/connections/{provider}/{action}"))) { return true; }
     if matches!((method,suffix),("POST",Some("/workflows/evidence-review")) | ("GET" | "DELETE",Some("/workflows/{id}")) | ("GET",Some("/workflows/{id}/events"))) {return true;}
     if matches!((method,suffix),("GET",Some("/profiles" | "/conversations" | "/catalog" | "/chat/{id}/events")) | ("PUT",Some("/profiles/{feature}/{role}")) | ("GET" | "PATCH" | "DELETE",Some("/conversations/{id}"))) { return true; }
@@ -339,7 +346,7 @@ async fn action(State(state): State<Arc<AppState>>, _scope: Workspace, Path(acti
     state.ai_assistant.account_action(uri.path().starts_with("/api/v2/ai/chatgpt/"), &action, body).await.map(Json)
 }
 async fn start_chat(State(state): State<Arc<AppState>>, scope: Workspace, OriginalUri(uri): OriginalUri, Json(body): Json<Value>) -> Result<(StatusCode, Json<Value>), ApiError> {
-    state.ai_runs.submit(&scope, body, uri.path().starts_with("/api/v2/ai/chatgpt/")).await.map(|value| (StatusCode::ACCEPTED, Json(value)))
+    state.ai_runs.submit_with_state(&scope, body, uri.path().starts_with("/api/v2/ai/chatgpt/"), false, Some(&state)).await.map(|value| (StatusCode::ACCEPTED, Json(value)))
 }
 async fn read_chat(State(state): State<Arc<AppState>>, scope: Workspace, Path(id): Path<String>) -> Result<Json<Value>, ApiError> {
     state.ai_runs.read(&scope, crate::ai_runs::identifier(&id)?, false).await.map(Json)
