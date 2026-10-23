@@ -16,6 +16,7 @@ pub const MIGRATIONS: &[(&str, &[u8])] = &[
     ("0010_demo_trading.sql", include_bytes!("../../migrations/0010_demo_trading.sql")),
     ("0011_mt5_connection_access.sql", include_bytes!("../../migrations/0011_mt5_connection_access.sql")),
     ("0012_ai_runs.sql", include_bytes!("../../migrations/0012_ai_runs.sql")),
+    ("0013_ai_workflows.sql", include_bytes!("../../migrations/0013_ai_workflows.sql")),
 ];
 pub const MIGRATION_LOCK_KEY: i64 = 0x54574D47;
 
@@ -58,8 +59,14 @@ pub async fn apply_migrations(client: &mut Client, backup_confirmed: bool) -> Re
     if tables > 0 && !backup_confirmed { return Err("existing database requires verified DB/artifact backup and explicit backup acknowledgement".into()); }
     // Both the Rust enqueue lock and Python claim locks participate. The managed
     // runtime must still be stopped before this explicit schema administration.
-    for lock in [0x54574143_i64,0x52534A41_i64,0x41504351_i64] {
+    for lock in [0x54574143_i64,0x52534A41_i64,0x41504351_i64,crate::ai_runs::ADMISSION] {
         tx.query_one("SELECT pg_advisory_xact_lock($1)",&[&lock]).await.map_err(|_|"cannot acquire worker admission fence")?;
+    }
+    let ai:Option<String>=tx.query_one("SELECT to_regclass('public.ai_runs')::text",&[]).await.map_err(|_|"cannot inspect active AI work")?.get(0);
+    if ai.is_some() {
+        tx.batch_execute("LOCK TABLE ai_runs IN ACCESS EXCLUSIVE MODE NOWAIT").await.map_err(|_|"active AI work prevents schema migration")?;
+        let count:i64=tx.query_one("SELECT count(*) FROM ai_runs WHERE status IN ('queued','running','cancelling')",&[]).await.map_err(|_|"cannot inspect active AI work")?.get(0);
+        if count>0 {return Err("active AI work prevents schema migration".into());}
     }
     for table in ["research_jobs","api_commands"] {
         let exists:Option<String>=tx.query_one("SELECT to_regclass($1)::text",&[&format!("public.{table}")]).await.map_err(|_|"cannot inspect active work")?.get(0);

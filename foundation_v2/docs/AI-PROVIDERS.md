@@ -17,6 +17,12 @@ nghiệm thu pool thật. Receipt triển khai local nằm ở
 [ai-provider-integration-20261023](../evidence/ai-provider-integration-20261023/).
 Tiến độ toàn sản phẩm vẫn thuộc Product Completion Plan của workspace.
 
+Lát nền tiếp theo đã có trong source: chat/profile/run/event lưu bền và pilot worker
+LangGraph dùng cùng admission. Xem [receipt chat](../evidence/ai-runs-20261023/RECEIPT.md)
+và [receipt workflow](../evidence/ai-workflows-20261023/RECEIPT.md). Migration0012–0013
+chưa áp vào database đang dùng; các receipt managed gateway cũ không là nghiệm thu
+runtime mới. Chat/profile và workflow không tự kế thừa tools của Gemini/Antigravity.
+
 ## Khu vực AI và Bot
 
 Sidebar đặt **AI và Bot** dưới đường phân cách sau Chiến lược, có đường phân cách

@@ -27,8 +27,8 @@ use std::{
 use tokio::sync::{Mutex, Notify, Semaphore};
 use uuid::Uuid;
 
-const ADMISSION: i64 = 0x41495255;
-const VIEW: &str = "(result || jsonb_build_object('id',run_id,'conversation_id',conversation_id,'request_key',idempotency_key,'status',status,'outcome',outcome,'selection',(config->'selection') - 'provider','provider',config->'selection'->'provider','grounding',config->'grounding','sequence',event_seq,'created_at',created_at,'updated_at',updated_at))";
+pub(crate) const ADMISSION: i64 = 0x41495255;
+const VIEW: &str = "(result || jsonb_build_object('id',run_id,'conversation_id',conversation_id,'request_key',idempotency_key,'status',status,'outcome',outcome,'selection',COALESCE(config->'workflow'->'roles'->'reviewer'->'selection',config->'selection') - 'provider','provider',COALESCE(config->'workflow'->'roles'->'reviewer'->'selection',config->'selection')->'provider','workflow',config->'workflow'->'version','roles',config->'workflow'->'roles','grounding',config->'grounding','sequence',event_seq,'created_at',created_at,'updated_at',updated_at))";
 fn invalid(code: &str) -> ApiError {
     ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY, code)
 }
@@ -52,9 +52,10 @@ pub(crate) fn terminal(value: &Value) -> bool {
 }
 
 pub struct Engine {
-    pool: Pool,
-    assistant: Arc<AiAssistant>,
-    owner: Uuid,
+    pub(crate) pool: Pool,
+    pub(crate) assistant: Arc<AiAssistant>,
+    pub(crate) owner: Uuid,
+    pub(crate) workflows: crate::ai_workflows::Workers,
     stopped: AtomicBool,
     wake: Notify,
     cancel: Notify,
@@ -68,6 +69,7 @@ impl Engine {
         Arc::new(Self {
             pool,
             assistant,
+            workflows: crate::ai_workflows::Workers::from_environment(),
             owner: Uuid::new_v4(),
             stopped: AtomicBool::new(false),
             wake: Notify::new(),
@@ -77,7 +79,7 @@ impl Engine {
             streams: Arc::new(Semaphore::new(16)),
         })
     }
-    fn publish(&self) {
+    pub(crate) fn publish(&self) {
         self.changed.send_modify(|v| *v = v.wrapping_add(1));
     }
     pub async fn start(self: &Arc<Self>) {
@@ -97,7 +99,7 @@ impl Engine {
                 }
                 while tasks.try_join_next().is_some() {}
                 // Never accumulate one sleeping Tokio task for every queued run.
-                if tasks.len() < 4 {
+                if tasks.len() < 6 {
                     match engine.claim().await {
                         Ok(Some((id, input, config))) => {
                             let runner = engine.clone();
@@ -122,6 +124,7 @@ impl Engine {
         if let Some(worker) = self.worker.lock().await.take() {
             let _ = worker.await;
         }
+        self.workflows.shutdown().await;
         // Aborted transports may have reached the provider. Never requeue them.
         if let Ok(mut conn) = self.pool.get().await {
             if let Ok(tx) = conn.transaction().await {
@@ -134,8 +137,17 @@ impl Engine {
     pub async fn submit(
         self: &Arc<Self>,
         scope: &Workspace,
+        body: Value,
+        legacy: bool,
+    ) -> Result<Value, ApiError> {
+        self.submit_inner(scope, body, legacy, false).await
+    }
+    pub(crate) async fn submit_inner(
+        self: &Arc<Self>,
+        scope: &Workspace,
         mut body: Value,
         legacy: bool,
+        workflow: bool,
     ) -> Result<Value, ApiError> {
         let context = crate::ai_assistant::chat_context(&body)?;
         let messages = crate::ai_assistant::chat_messages(body.clone())?;
@@ -160,7 +172,14 @@ impl Engine {
             })
             .transpose()?
             .unwrap_or_else(Uuid::new_v4);
-        let hash=format!("{:x}",Sha256::digest(serde_json::to_vec(&json!({"messages":messages,"context":context,"conversation_id":conversation,"selection":if legacy {Value::Null}else{body["expected_selection"].clone()},"legacy":legacy})).map_err(db)?));
+        let mut identity = json!({"messages":messages,"context":context,"conversation_id":conversation,"selection":if legacy {Value::Null}else{body["expected_selection"].clone()},"legacy":legacy});
+        if workflow {
+            identity["workflow"] = json!("evidence-review-v1");
+        }
+        let hash = format!(
+            "{:x}",
+            Sha256::digest(serde_json::to_vec(&identity).map_err(db)?)
+        );
         // Replay must still work after a default/credential/catalog has changed.
         {
             let conn = self.pool.get().await.map_err(db)?;
@@ -168,6 +187,25 @@ impl Engine {
                 if row.get::<_,String>(0)!=hash{return Err(conflict("ai_idempotency_conflict"));}
                 return Ok(row.get(1));
             }
+        }
+        let mut roles = serde_json::Map::new();
+        if workflow {
+            if !self.workflows.configured() {
+                return Err(ApiError::detail(
+                    StatusCode::SERVICE_UNAVAILABLE,
+                    "ai_workflow_not_configured",
+                ));
+            }
+            for role in ["analyst", "reviewer"] {
+                let value = crate::ai_profiles::resolve(&self.pool, scope, "evidence-review", role)
+                    .await?
+                    .ok_or_else(|| invalid("ai_profile_required"))?;
+                self.assistant
+                    .validate_selection(&value["selection"])
+                    .await?;
+                roles.insert(role.into(), value);
+            }
+            body["expected_selection"] = roles["analyst"]["selection"].clone();
         }
         let profile = if !legacy && body.get("expected_selection").is_none() {
             crate::ai_profiles::resolve(&self.pool, scope, "chat", "default").await?
@@ -184,7 +222,15 @@ impl Engine {
         };
         crate::ai_assistant::selection_shape(&selection)?;
         body = json!({"messages":messages,"context":context,"selection":selection,"conversation_id":conversation});
-        let config = json!({"selection":selection,"profile":profile,"grounding":{"policy_version":crate::ai_assistant::POLICY_VERSION,"context":context,"data_access":"none"}});
+        let mut config = json!({"selection":selection,"profile":profile,"grounding":{"policy_version":crate::ai_assistant::POLICY_VERSION,"context":context,"data_access":"none"}});
+        if workflow {
+            config["workflow"] = json!({"version":"evidence-review-v1","roles":roles});
+            config["grounding"]["data_access"] = json!("user-supplied-text");
+            config["grounding"]["source_sha256"] = json!(format!(
+                "{:x}",
+                Sha256::digest(messages[0]["content"].as_str().unwrap().as_bytes())
+            ));
+        }
         let mut conn = self.pool.get().await.map_err(db)?;
         let tx = conn.transaction().await.map_err(db)?;
         tx.query_one("SELECT pg_advisory_xact_lock($1)", &[&ADMISSION])
@@ -205,7 +251,9 @@ impl Engine {
         if stored.get::<_, i64>(0) >= 500 || stored.get::<_, i64>(1) >= 64 {
             return Err(conflict("ai_history_full"));
         }
-        tx.execute("INSERT INTO ai_conversations(workspace_id,subject,conversation_id,selection,title) VALUES($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING",&[&scope.workspace_id,&scope.subject,&conversation,&selection,&messages[0]["content"].as_str().unwrap().chars().take(90).collect::<String>()]).await.map_err(db)?;
+        let kind = if workflow { "evidence-review" } else { "chat" };
+        tx.execute("INSERT INTO ai_conversations(workspace_id,subject,conversation_id,selection,title,kind) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING",&[&scope.workspace_id,&scope.subject,&conversation,&selection,&messages[0]["content"].as_str().unwrap().chars().take(90).collect::<String>(),&kind]).await.map_err(db)?;
+        if tx.query_one("SELECT kind FROM ai_conversations WHERE workspace_id=$1 AND subject=$2 AND conversation_id=$3",&[&scope.workspace_id,&scope.subject,&conversation]).await.map_err(db)?.get::<_,String>(0)!=kind {return Err(conflict("ai_idempotency_conflict"));}
         if tx.query_opt("SELECT run_id FROM ai_runs WHERE workspace_id=$1 AND subject=$2 AND conversation_id=$3 AND status IN ('queued','running','cancelling')",&[&scope.workspace_id,&scope.subject,&conversation]).await.map_err(db)?.is_some() { return Err(conflict("ai_conversation_busy")); }
         // Saving a new selection affects this conversation and future runs only.
         tx.execute("UPDATE ai_conversations SET selection=$4,revision=revision+1,updated_at=clock_timestamp() WHERE workspace_id=$1 AND subject=$2 AND conversation_id=$3",&[&scope.workspace_id,&scope.subject,&conversation,&selection]).await.map_err(db)?;
@@ -236,6 +284,10 @@ impl Engine {
             };
             value = transition(&tx, id, None, next, json!({})).await?;
         }
+        if value["workflow"].is_string() {
+            let steps=tx.query("SELECT node,selection,status,outcome,result-'text',created_at,updated_at FROM ai_run_steps WHERE run_id=$1 ORDER BY created_at,node",&[&id]).await.map_err(db)?;
+            value["steps"]=json!(steps.iter().map(|r|json!({"node":r.get::<_,String>(0),"selection":r.get::<_,Value>(1),"status":r.get::<_,String>(2),"outcome":r.get::<_,String>(3),"result":r.get::<_,Value>(4),"created_at":r.get::<_,chrono::DateTime<chrono::Utc>>(5),"updated_at":r.get::<_,chrono::DateTime<chrono::Utc>>(6)})).collect::<Vec<_>>());
+        }
         tx.commit().await.map_err(db)?;
         if cancel {
             self.wake.notify_one();
@@ -260,7 +312,7 @@ impl Engine {
             .await
             .map_err(db)?;
         recover(&tx).await?;
-        let row=tx.query_opt("SELECT r.run_id,r.input,r.config FROM ai_runs r WHERE r.status='queued' AND (SELECT count(*) FROM ai_model_calls)<4 AND (SELECT count(*) FROM ai_model_calls c WHERE c.workspace_id=r.workspace_id)<3 AND (SELECT count(*) FROM ai_model_calls c WHERE c.route=r.config->'selection'->>'provider') < CASE WHEN r.config->'selection'->>'provider'='chatgpt-web' THEN 1 ELSE 3 END ORDER BY r.created_at,r.run_id LIMIT 1 FOR UPDATE OF r SKIP LOCKED",&[]).await.map_err(db)?;
+        let row=tx.query_opt("SELECT r.run_id,r.input,r.config FROM ai_runs r WHERE r.status='queued' AND ((r.config ? 'workflow' AND $1::boolean AND (SELECT count(*) FROM ai_runs WHERE status IN ('running','cancelling') AND config ? 'workflow')<2) OR (NOT(r.config ? 'workflow') AND (SELECT count(*) FROM ai_model_calls)<4 AND (SELECT count(*) FROM ai_model_calls c WHERE c.workspace_id=r.workspace_id)<3 AND (SELECT count(*) FROM ai_model_calls c WHERE c.route=r.config->'selection'->>'provider') < CASE WHEN r.config->'selection'->>'provider'='chatgpt-web' THEN 1 ELSE 3 END)) ORDER BY r.created_at,r.run_id LIMIT 1 FOR UPDATE OF r SKIP LOCKED",&[&self.workflows.configured()]).await.map_err(db)?;
         let Some(row) = row else {
             tx.commit().await.map_err(db)?;
             return Ok(None);
@@ -269,7 +321,9 @@ impl Engine {
         let input: Value = row.get(1);
         let config: Value = row.get(2);
         tx.execute("UPDATE ai_runs SET owner=$2,lease_until=clock_timestamp()+interval '30 seconds' WHERE run_id=$1",&[&id,&self.owner]).await.map_err(db)?;
-        tx.execute("INSERT INTO ai_model_calls(call_id,run_id,owner,route,workspace_id,lease_until) SELECT $1,run_id,$2,config->'selection'->>'provider',workspace_id,lease_until FROM ai_runs WHERE run_id=$3",&[&Uuid::new_v4(),&self.owner,&id]).await.map_err(db)?;
+        if config.get("workflow").is_none() {
+            tx.execute("INSERT INTO ai_model_calls(call_id,run_id,owner,route,workspace_id,lease_until) SELECT $1,run_id,$2,config->'selection'->>'provider',workspace_id,lease_until FROM ai_runs WHERE run_id=$3",&[&Uuid::new_v4(),&self.owner,&id]).await.map_err(db)?;
+        }
         transition(&tx, id, Some(self.owner), "running", json!({})).await?;
         tx.commit().await.map_err(db)?;
         self.publish();
@@ -283,10 +337,13 @@ impl Engine {
         tx.commit().await.map_err(db)?;
         Ok(row.get::<_, String>(0) == "cancelling")
     }
-    async fn execute(&self, id: Uuid, input: Value, config: Value) {
+    async fn execute(self: &Arc<Self>, id: Uuid, input: Value, config: Value) {
         let result = {
             let (progress, mut updates) = tokio::sync::mpsc::channel(2);
             let operation = async {
+                if config.get("workflow").is_some() {
+                    return self.workflows.execute(self, id, &input, &config).await;
+                }
                 let request = self
                     .assistant
                     .prepare(
@@ -309,7 +366,7 @@ impl Engine {
                 crate::ai_response::complete(
                     request,
                     config["selection"]["provider"].as_str().unwrap(),
-                    progress,
+                    Some(progress),
                 )
                 .await
             };
@@ -339,7 +396,7 @@ impl Engine {
                 }
             }
         }; // Drop the HTTP future before releasing its call permit.
-        let (status, result) = match result {
+        let (status, mut result) = match result {
             Ok(value) => ("completed", value),
             Err(value)
                 if value["error"] == "ai_cancelled"
@@ -351,10 +408,16 @@ impl Engine {
         };
         if let Ok(mut conn) = self.pool.get().await {
             if let Ok(tx) = conn.transaction().await {
+                if config.get("workflow").is_some() && status != "completed" {
+                    // A sibling may have been sent even when this branch failed
+                    // before send. Preserve uncertainty at the parent boundary.
+                    if let Ok(row)=tx.query_one("SELECT CASE WHEN count(*) FILTER(WHERE outcome IN ('sent','unknown'))>0 THEN 'unknown' WHEN count(*) FILTER(WHERE outcome='completed')>0 THEN 'completed' WHEN count(*) FILTER(WHERE outcome='rejected')>0 THEN 'rejected' ELSE 'not_sent' END FROM ai_run_steps WHERE run_id=$1",&[&id]).await {result["outcome"]=json!(row.get::<_,String>(0));}
+                }
                 if transition(&tx, id, Some(self.owner), status, result)
                     .await
                     .is_ok()
                 {
+                    let _=tx.execute("UPDATE ai_run_steps SET status='interrupted',outcome=CASE WHEN outcome='sent' THEN 'unknown' ELSE outcome END,updated_at=clock_timestamp() WHERE run_id=$1 AND status IN ('waiting','sent')",&[&id]).await;
                     let _ = tx
                         .execute(
                             "DELETE FROM ai_model_calls WHERE run_id=$1 AND owner=$2",
@@ -370,7 +433,7 @@ impl Engine {
     }
 }
 
-async fn transition(
+pub(crate) async fn transition(
     tx: &tokio_postgres::Transaction<'_>,
     id: Uuid,
     owner: Option<Uuid>,
@@ -398,6 +461,7 @@ async fn recover(tx: &tokio_postgres::Transaction<'_>) -> Result<(), ApiError> {
     // One statement captures the expired run set and durable event atomically.
     tx.execute(&format!("WITH expired AS (UPDATE ai_runs SET status='interrupted',outcome=CASE WHEN outcome='sent' THEN 'unknown' ELSE outcome END,result=result || jsonb_build_object('error','ai_run_interrupted'),event_seq=event_seq+1,updated_at=clock_timestamp() WHERE status IN ('running','cancelling') AND lease_until<=clock_timestamp() RETURNING *) INSERT INTO ai_run_events(run_id,sequence,payload) SELECT run_id,event_seq,{VIEW} FROM expired"),&[]).await.map_err(db)?;
     tx.execute("DELETE FROM ai_model_calls c WHERE NOT EXISTS(SELECT 1 FROM ai_runs r WHERE r.run_id=c.run_id AND r.status IN ('running','cancelling') AND r.lease_until>clock_timestamp())",&[]).await.map_err(db)?;
+    tx.execute("UPDATE ai_run_steps s SET status='interrupted',outcome=CASE WHEN outcome='sent' THEN 'unknown' ELSE outcome END,updated_at=clock_timestamp() WHERE s.status IN ('waiting','sent') AND NOT EXISTS(SELECT 1 FROM ai_runs r WHERE r.run_id=s.run_id AND r.status IN ('running','cancelling') AND r.lease_until>clock_timestamp())",&[]).await.map_err(db)?;
     Ok(())
 }
 
@@ -418,7 +482,7 @@ pub async fn list_conversations(
         return Err(invalid("invalid_ai_page"));
     }
     let conn = state.pool.get().await.map_err(db)?;
-    let rows=conn.query("SELECT conversation_id,title,selection,revision,updated_at FROM ai_conversations WHERE workspace_id=$1 AND subject=$2 AND ($3::timestamptz IS NULL OR (updated_at,conversation_id)<($3,$4::uuid)) ORDER BY updated_at DESC,conversation_id DESC LIMIT $5",&[&scope.workspace_id,&scope.subject,&page.before_at,&page.before_id,&(limit+1)]).await.map_err(db)?;
+    let rows=conn.query("SELECT conversation_id,title,selection,revision,updated_at FROM ai_conversations WHERE kind='chat' AND workspace_id=$1 AND subject=$2 AND ($3::timestamptz IS NULL OR (updated_at,conversation_id)<($3,$4::uuid)) ORDER BY updated_at DESC,conversation_id DESC LIMIT $5",&[&scope.workspace_id,&scope.subject,&page.before_at,&page.before_id,&(limit+1)]).await.map_err(db)?;
     let items:Vec<Value>=rows.iter().take(limit as usize).map(|r|json!({"id":r.get::<_,Uuid>(0),"title":r.get::<_,String>(1),"selection":r.get::<_,Value>(2),"revision":r.get::<_,i64>(3),"updated_at":r.get::<_,chrono::DateTime<chrono::Utc>>(4)})).collect();
     let next = if rows.len() > limit as usize {
         items

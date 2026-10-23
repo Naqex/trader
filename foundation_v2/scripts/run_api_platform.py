@@ -77,10 +77,10 @@ def active_jobs_preflight(env):
     """Startup guard only; native schema authority belongs to the Rust admin."""
     import psycopg
     with psycopg.connect(env["TW_V2_DATABASE_URL"], connect_timeout=5) as conn:
-        for table in ("research_jobs", "api_commands"):
+        for table in ("research_jobs", "api_commands", "ai_runs"):
             if conn.execute("SELECT to_regclass(%s)", (f"public.{table}",)).fetchone()[0] and conn.execute(
-                f"SELECT count(*) FROM {table} WHERE status IN ('queued','running')").fetchone()[0]:
-                raise PreflightError("A research/API job is active. Finish or cancel it before restart/migration.")
+                f"SELECT count(*) FROM {table} WHERE status IN ('queued','running','cancelling')").fetchone()[0]:
+                raise PreflightError("A background or AI job is active. Finish or cancel it before restart/migration.")
         if conn.execute("SELECT to_regclass('public.download_job_snapshots')").fetchone()[0] and conn.execute(
             "SELECT count(*) FROM download_job_snapshots WHERE snapshot->>'status' IN ('queued','running','pausing')").fetchone()[0]:
             raise PreflightError("A download is active. Pause it and wait until paused before restart/migration.")
@@ -140,10 +140,10 @@ def database_preflight(env, *, migrate=False, backup_confirmed=False, require_id
         if not allow_compact:
             compatibility_storage_preflight(conn)
         if require_idle or migrate:
-            for table in ("research_jobs", "api_commands"):
+            for table in ("research_jobs", "api_commands", "ai_runs"):
                 present = conn.execute("SELECT to_regclass(%s) AS name", (f"public.{table}",)).fetchone()["name"]
-                if present and conn.execute(f"SELECT count(*) AS count FROM {table} WHERE status IN ('queued','running')").fetchone()["count"]:
-                    raise PreflightError("A research/API job is active. Finish or cancel it before restart/migration.")
+                if present and conn.execute(f"SELECT count(*) AS count FROM {table} WHERE status IN ('queued','running','cancelling')").fetchone()["count"]:
+                    raise PreflightError("A background or AI job is active. Finish or cancel it before restart/migration.")
             present = conn.execute("SELECT to_regclass('public.download_job_snapshots') AS name").fetchone()["name"]
             if present and conn.execute("SELECT count(*) AS count FROM download_job_snapshots WHERE snapshot->>'status' IN ('queued','running','pausing')").fetchone()["count"]:
                 raise PreflightError("A download is active. Pause it and wait until paused before restart/migration.")

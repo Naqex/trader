@@ -10,7 +10,7 @@ fn failure(code: &str) -> Value {
 pub(crate) async fn complete(
     request: reqwest::RequestBuilder,
     provider: &str,
-    progress: mpsc::Sender<String>,
+    progress: Option<mpsc::Sender<String>>,
 ) -> Result<Value, Value> {
     let mut response = request.send().await.map_err(|e| {
         failure(if e.is_timeout() {
@@ -56,7 +56,7 @@ pub(crate) async fn complete(
         decoder.bytes.extend_from_slice(&chunk);
         if stream {
             while let Some(frame) = decoder.frame()? {
-                decoder.event(&frame, &progress)?;
+                decoder.event(&frame, progress.as_ref())?;
             }
         }
     }
@@ -82,9 +82,11 @@ pub(crate) async fn complete(
     }
     // Missing usage/effective options remain unknown, never fabricated as zero or as requested.
     let usage=value.get("usage").map(|v|json!({"input_tokens":v["input_tokens"].as_u64(),"output_tokens":v["output_tokens"].as_u64()}));
-    Ok(
-        json!({"text":text,"outcome":"completed","usage":usage,"effective_effort":null,"partial":false}),
-    )
+    let result = json!({"text":text,"outcome":"completed","usage":usage,"effective_effort":null,"partial":false});
+    if serde_json::to_vec(&result).map_or(true, |v| v.len() > 280000) {
+        return Err(failure("ai_response_too_large"));
+    }
+    Ok(result)
 }
 struct Responses {
     bytes: Vec<u8>,
@@ -92,6 +94,7 @@ struct Responses {
     completed: Option<Value>,
     last_at: Instant,
     last_size: usize,
+    json_size: usize,
 }
 impl Responses {
     fn new() -> Self {
@@ -101,6 +104,7 @@ impl Responses {
             completed: None,
             last_at: Instant::now(),
             last_size: 0,
+            json_size: 2,
         }
     }
     fn frame(&mut self) -> Result<Option<String>, Value> {
@@ -127,7 +131,7 @@ impl Responses {
             .map_err(|_| failure("ai_invalid_response"))?;
         Ok(Some(frame))
     }
-    fn event(&mut self, frame: &str, progress: &mpsc::Sender<String>) -> Result<(), Value> {
+    fn event(&mut self, frame: &str, progress: Option<&mpsc::Sender<String>>) -> Result<(), Value> {
         let data = frame
             .lines()
             .filter_map(|line| {
@@ -152,10 +156,21 @@ impl Responses {
                 if self.text.len() + delta.len() > TEXT_LIMIT {
                     return Err(failure("ai_response_too_large"));
                 }
+                self.json_size += delta
+                    .bytes()
+                    .map(|b| match b {
+                        b'"' | b'\\' | b'\n' | b'\r' | b'\t' | 8 | 12 => 2,
+                        0..=31 => 6,
+                        _ => 1,
+                    })
+                    .sum::<usize>();
+                if self.json_size > 279000 {
+                    return Err(failure("ai_response_too_large"));
+                }
                 self.text.push_str(delta);
                 if self.text.len() - self.last_size >= 1024
                     && self.last_at.elapsed() >= Duration::from_millis(250)
-                    && progress.try_send(self.text.clone()).is_ok()
+                    && progress.is_some_and(|p| p.try_send(self.text.clone()).is_ok())
                 {
                     self.last_size = self.text.len();
                     self.last_at = Instant::now();
@@ -194,7 +209,7 @@ mod tests {
         for byte in payload.bytes() {
             reader.bytes.push(byte);
             while let Some(frame) = reader.frame().unwrap() {
-                reader.event(&frame, &tx).unwrap();
+                reader.event(&frame, Some(&tx)).unwrap();
             }
         }
         assert_eq!(rx.recv().await.unwrap(), text);
@@ -204,7 +219,7 @@ mod tests {
             reader
                 .event(
                     "data: {\"type\":\"response.output_text.delta\",\"delta\":\"late\"}",
-                    &tx
+                    Some(&tx)
                 )
                 .is_err()
         );
@@ -213,10 +228,10 @@ mod tests {
     fn malformed_oversized_and_incomplete_streams_fail_closed() {
         let (tx, _) = mpsc::channel(1);
         let mut reader = Responses::new();
-        assert!(reader.event("data: broken", &tx).is_err());
+        assert!(reader.event("data: broken", Some(&tx)).is_err());
         assert!(
             reader
-                .event("data: {\"type\":\"response.incomplete\"}", &tx)
+                .event("data: {\"type\":\"response.incomplete\"}", Some(&tx))
                 .is_err()
         );
         reader.bytes = vec![b'x'; 300001];
@@ -226,9 +241,30 @@ mod tests {
             reader
                 .event(
                     "data: {\"type\":\"response.output_text.delta\",\"delta\":\"x\"}",
-                    &tx
+                    Some(&tx)
                 )
                 .is_err()
         );
+    }
+    #[test]
+    fn escaped_text_cannot_overflow_the_persistent_or_public_frame_budget() {
+        let mut reader = Responses::new();
+        let sample = "đ\"\\\n\r\t\u{0000}\u{0008}\u{000c}";
+        for _ in 0..10 {
+            reader
+                .event(
+                    &format!(
+                        "data: {}",
+                        json!({"type":"response.output_text.delta","delta":sample})
+                    ),
+                    None,
+                )
+                .unwrap();
+        }
+        assert_eq!(
+            reader.json_size,
+            serde_json::to_vec(&reader.text).unwrap().len()
+        );
+        assert!(reader.event(&format!("data: {}",json!({"type":"response.output_text.delta","delta":"\u{0000}".repeat(50000)})),None).is_err());
     }
 }

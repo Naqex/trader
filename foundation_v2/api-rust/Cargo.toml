@@ -20,6 +20,7 @@ sha2 = "0.10"
 bytes = "1"
 tokio-stream = "0.1"
 async-stream = "0.3"
+futures-util = { version = "0.3", default-features = false, features = ["std"] }
 subtle = "2"
 form_urlencoded = "1"
 percent-encoding = "2"

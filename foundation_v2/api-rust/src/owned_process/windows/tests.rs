@@ -1,6 +1,13 @@
 use super::*;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, BufReader};
 
+#[test]
+fn isolated_environment_contains_only_explicit_variables() {
+    assert_eq!(environment(&[], false).unwrap(), vec![0, 0]);
+    let block = environment(&[("ONLY_FIXTURE", "one")], false).unwrap();
+    assert_eq!(String::from_utf16(&block).unwrap(), "ONLY_FIXTURE=one\0\0");
+}
+
 #[tokio::test]
 async fn private_stdin_roundtrip_does_not_require_argv_secret() {
     use tokio::io::AsyncWriteExt;

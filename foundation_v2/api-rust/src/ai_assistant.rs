@@ -92,7 +92,7 @@ pub(crate) fn selection_shape(selection:&Value)->Result<(),ApiError> {
 async fn catalog(State(state):State<Arc<AppState>>, _scope:Workspace)->Result<Json<Value>,ApiError> {
     let mut routes=Vec::new();
     for provider in [Provider::Gateway,Provider::Web] {
-        let account=match provider { Provider::Gateway=>state.ai_assistant.gateway.status(false).await,Provider::Web=>state.ai_assistant.web_status().await? };
+        let account=match provider { Provider::Gateway=>state.ai_assistant.gateway.status(false).await,Provider::Web=>state.ai_assistant.web_status().await.unwrap_or_else(|_|json!({"status":"unavailable","models":[],"selection":null,"login_state_present":false})) };
         let models=account["models"].as_array().into_iter().flatten().map(|m|json!({"id":m["id"],"name":m["name"],"efforts":m["efforts"],"capabilities":{"text":"asserted","tools":"unverified","structured_output":"unverified","streaming":if provider==Provider::Web{"unsupported"}else{"unverified"},"effort":if provider==Provider::Web{"asserted"}else{"unverified"}}})).collect::<Vec<_>>();
         let ready=if provider==Provider::Web { account["login_state_present"]==true && account["operation"].is_null() }else{!models.is_empty()};
         routes.push(json!({"provider":provider.id(),"models":models,"status":account["status"],"selection":account["selection"],"ready":ready}));
@@ -279,11 +279,15 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/api/v2/ai/assistant/profiles/{feature}/{role}",axum::routing::put(crate::ai_profiles::save))
         .route("/api/v2/ai/assistant/conversations/{id}",get(crate::ai_runs::read_conversation).patch(crate::ai_runs::edit_conversation).delete(crate::ai_runs::delete_conversation))
         .route("/api/v2/ai/assistant/chat/{id}/events",get(crate::ai_runs::stream_events))
+        .route("/api/v2/ai/assistant/workflows/evidence-review",post(crate::ai_workflows::submit))
+        .route("/api/v2/ai/assistant/workflows/{id}",get(read_chat).delete(cancel_chat))
+        .route("/api/v2/ai/assistant/workflows/{id}/events",get(crate::ai_runs::stream_events))
         .route("/api/v2/ai/assistant/catalog",get(catalog));
     routes.route_layer(axum::middleware::from_fn(local_boundary))
 }
 pub fn native(method: &str, path: &str) -> bool {
     let suffix = path.strip_prefix("/api/v2/ai/chatgpt").or_else(|| path.strip_prefix("/api/v2/ai/assistant"));
+    if matches!((method,suffix),("POST",Some("/workflows/evidence-review")) | ("GET" | "DELETE",Some("/workflows/{id}")) | ("GET",Some("/workflows/{id}/events"))) {return true;}
     if matches!((method,suffix),("GET",Some("/profiles" | "/conversations" | "/catalog" | "/chat/{id}/events")) | ("PUT",Some("/profiles/{feature}/{role}")) | ("GET" | "PATCH" | "DELETE",Some("/conversations/{id}"))) { return true; }
     matches!((method, suffix), ("GET", Some("/account")) | ("POST", Some("/account/{action}"))
         | ("POST", Some("/chat")) | ("GET" | "DELETE", Some("/chat/{id}")))

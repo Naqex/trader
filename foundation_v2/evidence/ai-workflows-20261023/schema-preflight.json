@@ -1,0 +1,1 @@
+{"mode": "read-only", "database": "trading_workspace_v2_exness_history", "compact_revision_count": 0, "compatibility_ready": false, "migration_count": 13, "pending": ["0012_ai_runs.sql", "0013_ai_workflows.sql"], "schema_current": false}

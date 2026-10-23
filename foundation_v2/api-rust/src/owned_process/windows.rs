@@ -114,8 +114,12 @@ fn command_line(executable: &Path, args: &[String]) -> io::Result<Vec<u16>> {
     Ok(result)
 }
 
-fn environment(overrides: &[(&str, &str)]) -> io::Result<Vec<u16>> {
-    let mut entries: Vec<(OsString, OsString)> = std::env::vars_os().collect();
+fn environment(overrides: &[(&str, &str)], inherit: bool) -> io::Result<Vec<u16>> {
+    let mut entries: Vec<(OsString, OsString)> = if inherit {
+        std::env::vars_os().collect()
+    } else {
+        Vec::new()
+    };
     for (key, value) in overrides {
         if key.is_empty() || key.contains(['=', '\0']) {
             return Err(invalid("invalid environment key"));
@@ -222,6 +226,7 @@ pub fn spawn(
         limits,
         capture_stderr,
         false,
+        true,
     )
 }
 
@@ -242,6 +247,28 @@ pub fn spawn_with_stdin(
         limits,
         capture_stderr,
         true,
+        true,
+    )
+}
+
+/// Start trusted workers without leaking the API's provider/broker environment.
+pub fn spawn_isolated_with_stdin(
+    executable: &Path,
+    args: &[String],
+    cwd: Option<&Path>,
+    environment: &[(&str, &str)],
+    limits: Limits,
+    capture_stderr: bool,
+) -> io::Result<Child> {
+    spawn_inner(
+        executable,
+        args,
+        cwd,
+        environment,
+        limits,
+        capture_stderr,
+        true,
+        false,
     )
 }
 
@@ -253,6 +280,7 @@ fn spawn_inner(
     limits: Limits,
     capture_stderr: bool,
     piped_input: bool,
+    inherit_environment: bool,
 ) -> io::Result<Child> {
     if !executable.is_absolute()
         || !executable
@@ -270,7 +298,7 @@ fn spawn_inner(
     let application = wide(executable.as_os_str())?;
     let mut command = command_line(executable, args)?;
     let cwd = cwd.map(|p| wide(p.as_os_str())).transpose()?;
-    let environment = environment(overrides)?;
+    let environment = environment(overrides, inherit_environment)?;
     let security = SECURITY_ATTRIBUTES {
         nLength: size_of::<SECURITY_ATTRIBUTES>() as u32,
         lpSecurityDescriptor: null_mut(),

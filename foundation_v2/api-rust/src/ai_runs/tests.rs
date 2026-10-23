@@ -29,7 +29,7 @@ async fn postgres_ai_lifecycle() {
             .await
             .unwrap()
             .len(),
-        12
+        13
     );
     assert!(
         crate::rust_runtime::apply_migrations(&mut client, false)
@@ -493,6 +493,224 @@ async fn postgres_ai_lifecycle() {
         replay["selection"]["model"], "pro",
         "default changes cannot alter an idempotent replay"
     );
+    #[cfg(windows)]
+    if state.ai_runs.workflows.configured() {
+        let baseline = count.load(Ordering::SeqCst);
+        let workflow_body = json!({"idempotency_key":Uuid::new_v4(),"text":"Synthetic evidence only: sample A, no broker data.","locale":"vi"});
+        let (status, wire) = http(
+            "POST",
+            "/api/v2/ai/assistant/workflows/evidence-review".into(),
+            workflow_body.clone(),
+        )
+        .await;
+        assert_eq!(status, StatusCode::ACCEPTED, "{wire}");
+        let submitted: Value = serde_json::from_str(&wire).unwrap();
+        let workflow_id = identifier(submitted["id"].as_str().unwrap()).unwrap();
+        let result = finish(&state.ai_runs, &scope, workflow_id).await;
+        assert_eq!(result["status"], "completed", "{result}");
+        assert_eq!(result["text"], "fast result");
+        assert_eq!(result["grounding"]["data_access"], "user-supplied-text");
+        assert_eq!(
+            count.load(Ordering::SeqCst),
+            baseline + 3,
+            "two branches and one reviewer"
+        );
+        let steps = client
+            .query(
+                "SELECT node,selection,status FROM ai_run_steps WHERE run_id=$1 ORDER BY node",
+                &[&workflow_id],
+            )
+            .await
+            .unwrap();
+        assert_eq!(steps.len(), 3);
+        assert!(steps.iter().all(|s| s.get::<_, String>(2) == "completed"));
+        assert_eq!(steps[0].get::<_, Value>(1)["model"], "pro");
+        assert_eq!(steps[2].get::<_, Value>(1)["model"], "fast");
+        let first_pid = state.ai_runs.workflows.idle_ids().await;
+        assert_eq!(first_pid.len(), 1);
+        let (_, wire) = http(
+            "POST",
+            "/api/v2/ai/assistant/workflows/evidence-review".into(),
+            workflow_body.clone(),
+        )
+        .await;
+        assert_eq!(
+            serde_json::from_str::<Value>(&wire).unwrap()["id"],
+            submitted["id"]
+        );
+        assert_eq!(
+            count.load(Ordering::SeqCst),
+            baseline + 3,
+            "graph replay does not infer"
+        );
+        let mut next_body = workflow_body.clone();
+        next_body["idempotency_key"] = json!(Uuid::new_v4());
+        let (_, wire) = http(
+            "POST",
+            "/api/v2/ai/assistant/workflows/evidence-review".into(),
+            next_body.clone(),
+        )
+        .await;
+        let next_id = identifier(
+            serde_json::from_str::<Value>(&wire).unwrap()["id"]
+                .as_str()
+                .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            finish(&state.ai_runs, &scope, next_id).await["status"],
+            "completed"
+        );
+        assert_eq!(
+            state.ai_runs.workflows.idle_ids().await,
+            first_pid,
+            "reuse a warm worker"
+        );
+        assert_eq!(
+            state
+                .ai_runs
+                .read(&foreign, next_id, false)
+                .await
+                .unwrap_err()
+                .0,
+            StatusCode::NOT_FOUND
+        );
+        let (_, list) = http(
+            "GET",
+            "/api/v2/ai/assistant/conversations".into(),
+            Value::Null,
+        )
+        .await;
+        assert!(
+            !serde_json::from_str::<Value>(&list).unwrap()["items"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|v| v["id"] == next_body["idempotency_key"]),
+            "workflow does not pollute chat history"
+        );
+        mode.store(2, Ordering::SeqCst);
+        let before_cancel = count.load(Ordering::SeqCst);
+        next_body["idempotency_key"] = json!(Uuid::new_v4());
+        let (_, wire) = http(
+            "POST",
+            "/api/v2/ai/assistant/workflows/evidence-review".into(),
+            next_body,
+        )
+        .await;
+        let cancel_id = identifier(
+            serde_json::from_str::<Value>(&wire).unwrap()["id"]
+                .as_str()
+                .unwrap(),
+        )
+        .unwrap();
+        tokio::time::timeout(Duration::from_secs(8), async {
+            while count.load(Ordering::SeqCst) < before_cancel + 2 {
+                tokio::time::sleep(Duration::from_millis(20)).await;
+            }
+        })
+        .await
+        .unwrap();
+        assert_eq!(
+            client
+                .query_one(
+                    "SELECT count(*) FROM ai_model_calls WHERE run_id=$1",
+                    &[&cancel_id]
+                )
+                .await
+                .unwrap()
+                .get::<_, i64>(0),
+            2,
+            "parent holds no model permit"
+        );
+        state.ai_runs.read(&scope, cancel_id, true).await.unwrap();
+        let cancelled = finish(&state.ai_runs, &scope, cancel_id).await;
+        assert_eq!(cancelled["status"], "cancelled");
+        assert_eq!(cancelled["outcome"], "unknown");
+        assert!(
+            state.ai_runs.workflows.idle_ids().await.is_empty(),
+            "cancel discards the in-flight pipe session"
+        );
+        assert_eq!(
+            client
+                .query_one(
+                    "SELECT count(*) FROM ai_model_calls WHERE run_id=$1",
+                    &[&cancel_id]
+                )
+                .await
+                .unwrap()
+                .get::<_, i64>(0),
+            0
+        );
+        assert_eq!(client.query_one("SELECT count(*) FROM ai_run_steps WHERE run_id=$1 AND status='interrupted' AND outcome='unknown'",&[&cancel_id]).await.unwrap().get::<_,i64>(0),2);
+        mode.store(0, Ordering::SeqCst);
+        let recover_body = json!({"idempotency_key":Uuid::new_v4(),"text":"Fresh run after cancellation.","locale":"en"});
+        let (_, wire) = http(
+            "POST",
+            "/api/v2/ai/assistant/workflows/evidence-review".into(),
+            recover_body,
+        )
+        .await;
+        let recover_id = identifier(
+            serde_json::from_str::<Value>(&wire).unwrap()["id"]
+                .as_str()
+                .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            finish(&state.ai_runs, &scope, recover_id).await["status"],
+            "completed"
+        );
+        assert_ne!(
+            state.ai_runs.workflows.idle_ids().await,
+            first_pid,
+            "a cancelled worker is replaced for a new logical run only"
+        );
+        mode.store(1, Ordering::SeqCst);
+        let rejected_body = json!({"idempotency_key":Uuid::new_v4(),"text":"Synthetic quota failure.","locale":"en"});
+        let (_, wire) = http(
+            "POST",
+            "/api/v2/ai/assistant/workflows/evidence-review".into(),
+            rejected_body,
+        )
+        .await;
+        let rejected_id = identifier(
+            serde_json::from_str::<Value>(&wire).unwrap()["id"]
+                .as_str()
+                .unwrap(),
+        )
+        .unwrap();
+        let rejected = finish(&state.ai_runs, &scope, rejected_id).await;
+        assert_eq!(rejected["status"], "failed");
+        assert_eq!(rejected["error"], "ai_gateway_rate_limited");
+        assert_eq!(
+            client
+                .query_one(
+                    "SELECT count(*) FROM ai_run_steps WHERE run_id=$1 AND node='reviewer'",
+                    &[&rejected_id]
+                )
+                .await
+                .unwrap()
+                .get::<_, i64>(0),
+            0,
+            "failed branch cannot reach join/reviewer"
+        );
+        let requests_after_failure = count.load(Ordering::SeqCst);
+        state
+            .ai_runs
+            .read(&scope, rejected_id, false)
+            .await
+            .unwrap();
+        assert_eq!(
+            count.load(Ordering::SeqCst),
+            requests_after_failure,
+            "reading failure does not retry"
+        );
+        mode.store(0, Ordering::SeqCst);
+        println!(
+            "AI_WORKFLOW_PIPE_HTTP_PG_PASS: role snapshots, branch/join, 3 admitted calls, replay, warm reuse, scope, cancel/unknown"
+        );
+    }
     state.ai_runs.shutdown().await;
     let before = count.load(Ordering::SeqCst);
     let paused = Engine::new(pool.clone(), assistant.clone());
@@ -530,6 +748,20 @@ async fn postgres_ai_lifecycle() {
     );
     let replacement = body(queued_conversation, Uuid::new_v4(), "pro");
     paused.submit(&scope, replacement, false).await.unwrap();
+    let ledger=client.query_one("DELETE FROM tw_schema_migrations WHERE version='0013_ai_workflows.sql' RETURNING sha256",&[]).await.unwrap();
+    assert!(
+        crate::rust_runtime::apply_migrations(&mut client, true)
+            .await
+            .unwrap_err()
+            .contains("active AI work")
+    );
+    client
+        .execute(
+            "INSERT INTO tw_schema_migrations(version,sha256) VALUES('0013_ai_workflows.sql',$1)",
+            &[&ledger.get::<_, String>(0)],
+        )
+        .await
+        .unwrap();
     let competitor = Engine::new(pool.clone(), assistant.clone());
     let (left, right) = tokio::join!(paused.claim(), competitor.claim());
     assert!(left.unwrap().is_some() && right.unwrap().is_some());

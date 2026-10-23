@@ -19,6 +19,7 @@ Luồng provider đã triển khai và receipts nằm ở [AI-PROVIDERS.md](AI-P
 | Ngữ cảnh | Policy do server sở hữu; route/locale là dữ liệu | Chat chưa đọc chart/tài khoản; không được quảng bá đã hiểu dữ liệu đang mở |
 | AI nghiệp vụ | `api-rust/src/control_routes.rs` và `trading_workspace_v2/chart_ai_contract.py` | Contract advisory/offline riêng, chưa nối cùng runtime chat; cần kiểm tương đương schema/cutoff khi hội tụ |
 | Tác vụ dài | `api-rust/src/research_jobs/lifecycle.rs` | Đã có lease/attempt/fencing/cancel; reuse cơ chế có bằng chứng, không coi research job là AI run hoặc dùng bảng cũ tùy tiện |
+| Workflow | `ai_workflows.rs` → `trading_workspace_v2/ai_workflow.py` | Pilot LangGraph có hai nhánh và join qua admission Rust; chưa nối Quant tools/TradingAgents domain graph hoặc rollout runtime |
 | Evals | `scripts/ai_chat_evals.py` và HTTP/UI fixtures | Live evaluator còn gọi alias ChatGPT; chưa là bộ đánh giá đa tính năng/đa provider |
 
 ## Quyết định nền
@@ -173,8 +174,9 @@ toàn sản phẩm nhanh. Mỗi lát giữ rollback provider/config/schema tươ
   ranh giới functionality, permission và autonomy.
 
 Review có offline LangGraph probes và topology fixture; TradingAgents được nâng
-upstream và kiểm regression trong repo độc lập. Chưa tích hợp worker vào WMREPLAY,
-benchmark model thật, sửa DB hoặc thay runtime sản phẩm đang hoạt động.
+upstream và kiểm regression trong repo độc lập. Worker pilot hiện nối được API
+WMREPLAY trong fixture độc lập; chưa benchmark model thật, sửa DB hoặc thay runtime
+sản phẩm đang hoạt động.
 
 ## Lát persistence và chat đã triển khai trong source
 
@@ -203,3 +205,43 @@ Validation dùng PostgreSQL tạm do runner sở hữu và synthetic provider lo
 browser production build chạy riêng với API fixtures. Không dùng các kết quả này
 để claim model thật, tools/effort hoặc whole-platform performance đã đạt. Build QA
 phải dùng `--outDir ../.runtime/ai-runs-dist`, vì preview5180 đọc trực tiếp `web/dist`.
+
+## Pilot LangGraph đã nối cùng admission
+
+Migration0013 tách observations bền `ai_run_steps` khỏi call permits ngắn hạn.
+`POST /api/v2/ai/assistant/workflows/evidence-review` nhận đúng
+`{idempotency_key,text,locale}` (text tối đa8KiB). Đây là dữ liệu do caller cung cấp,
+không là bằng chứng app đã đọc chart/Quant/account hoặc kiểm cutoff. Hash nguồn,
+workflow version và model/profile revisions được snapshot trước khi enqueue.
+Hai node facts/gaps dùng analyst profile; reviewer dùng profile riêng và chỉ chạy
+khi cả hai hoàn tất. Branch outputs tối đa16KiB mỗi nhánh, kết quả cuối theo budget
+text/frame chung. Usage tổng chỉ có khi cả ba upstream observations đều cung cấp.
+
+Parent lease không giữ model permit. Mỗi child vào cùng global/route/workspace cap
+với chat, có node identity, selection, status/outcome/usage riêng. Global tối đa2
+parents; mỗi API process có tối đa2 worker warm, lazy-start. Task dispatcher tối đa6
+tasks bao gồm parents; số model calls vẫn tối đa4. Worker gọi callback qua inherited
+stdio, không có HTTP port, provider credentials hoặc SDK inference riêng. Rust
+kiểm allowlist node, join và mỗi lần admission. Bỏ graph future đồng thời bỏ child
+HTTP futures trước khi thu hồi permit; session dở bị loại, process tree được reap.
+
+`TW_AI_WORKFLOW_PYTHON` là đường dẫn tuyệt đối tới interpreter có optional extra
+`workflow` của `pyproject.toml`/`uv.lock` (LangGraph1.2.12). Không cấu hình thì endpoint
+từ chối chạy mới; replay key đã lưu vẫn đọc được. Worker dùng source cố định của
+product, môi trường chỉ gồm biến hệ điều hành cần thiết và tắt LangSmith tracing;
+không kế thừa provider/broker environment. Windows Job giới hạn2 processes (kể cả
+venv launcher) và384MiB mỗi process. Đây là process ownership/resource limits,
+không phải OS sandbox chống source/dependency độc hại.
+
+Pilot không có graph checkpoint resume: call observations đã lưu không tự cho phép
+gửi lại node sau crash. Parent/children interrupted giữ unknown khi đã sent. GET và
+SSE `/workflows/{id}` dùng cùng quyền/lifecycle; GET bổ sung child metadata, không
+expose raw branch text. Workflow không lẫn vào danh sách chat. Xóa qua conversation
+ID của run khi đã terminal sẽ cascade observations/events; cap500 conversations
+bao gồm cả các workflow roots. Migration/backup/restart guards từ chối AI work còn
+queued/running/cancelling.
+
+Receipt: [chat/profiles](../evidence/ai-runs-20261023/RECEIPT.md),
+[workflow pilot](../evidence/ai-workflows-20261023/RECEIPT.md). Chưa có giao diện gọi
+review, tự động hóa, Quant tool, TradingAgents strategy graph, direct API/local model
+adapter hoặc Auto routing. Không dùng pilot text để quảng bá các năng lực đó.

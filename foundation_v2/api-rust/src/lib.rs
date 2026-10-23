@@ -30,6 +30,7 @@ pub mod ai_assistant;
 pub mod ai_runs;
 mod ai_profiles;
 mod ai_response;
+mod ai_workflows;
 mod ai_gateway;
 mod ai_gateway_runtime;
 pub mod research_jobs;

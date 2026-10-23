@@ -1,0 +1,22 @@
+{
+  "profile": "release",
+  "deployed": false,
+  "source_base": "6581925",
+  "binaries": [
+    {
+      "name": "trading-workspace-api.exe",
+      "sha256": "b14a9319cc18b4081f1d83467aad854210f0e219eaf17779c0284025c52c4804",
+      "bytes": 29029888
+    },
+    {
+      "name": "rust_runtime_admin.exe",
+      "sha256": "e151c826f6da992702270c2957efc70c8569c43aaed60b5859dc5bf1e87743d3",
+      "bytes": 3856896
+    },
+    {
+      "name": "rust_research_worker.exe",
+      "sha256": "78d96553ece45e641b133ab439e75b31333e6ba3240671911babbc65e8101588",
+      "bytes": 8477696
+    }
+  ]
+}

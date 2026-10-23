@@ -1,0 +1,15 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.54s
+     Running unittests src\lib.rs (foundation_v2\api-rust\target\debug\deps\trading_workspace_api-e041a0e2faf72440.exe)
+
+running 9 tests
+test owned_process::windows::tests::abrupt_worker_fixture ... ignored
+test owned_process::windows::tests::isolated_environment_contains_only_explicit_variables ... ok
+test owned_process::windows::tests::limits_apply_before_child_code ... ok
+test owned_process::windows::tests::private_stdin_roundtrip_does_not_require_argv_secret ... ok
+test owned_process::windows::tests::arguments_environment_cwd_and_full_pipes ... ok
+test owned_process::windows::tests::spawn_failure_and_invalid_arguments_leave_no_process ... ok
+test owned_process::windows::tests::cancelled_wait_and_deadline_keep_tree_owned ... ok
+test owned_process::windows::tests::abrupt_worker_exit_reaps_descendants ... ok
+test owned_process::windows::tests::drop_and_explicit_kill_terminate_the_entire_tree ... ok
+
+test result: ok. 8 passed; 0 failed; 1 ignored; 0 measured; 179 filtered out; finished in 0.36s

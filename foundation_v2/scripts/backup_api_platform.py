@@ -45,10 +45,10 @@ def require_stopped_port(port: int) -> None:
 def database_preflight(config: dict) -> int:
     with psycopg.connect(make_conninfo(**config), connect_timeout=5) as conn:
         conn.execute("SET TRANSACTION READ ONLY")
-        for table in ("research_jobs", "api_commands"):
+        for table in ("research_jobs", "api_commands", "ai_runs"):
             present = conn.execute("SELECT to_regclass(%s)", (f"public.{table}",)).fetchone()[0]
-            if present and conn.execute(f"SELECT count(*) FROM {table} WHERE status IN ('queued','running')").fetchone()[0]:
-                raise BackupPreflightError("Research/API jobs are queued or running; finish/cancel them before backup.")
+            if present and conn.execute(f"SELECT count(*) FROM {table} WHERE status IN ('queued','running','cancelling')").fetchone()[0]:
+                raise BackupPreflightError("Background or AI jobs are active; finish/cancel them before backup.")
         present = conn.execute("SELECT to_regclass('public.download_job_snapshots')").fetchone()[0]
         if present and conn.execute("SELECT count(*) FROM download_job_snapshots WHERE snapshot->>'status' IN ('queued','running','pausing')").fetchone()[0]:
             raise BackupPreflightError("Download jobs are active; wait for a verified paused/terminal state.")
