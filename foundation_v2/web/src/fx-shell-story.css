@@ -834,6 +834,7 @@
   background: var(--fx-shell-rail);
 }
 
+.fx-app.fx-shell-story:not(.is-chart-workspace) .fx-rail-ai,
 .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-rail-primary,
 .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-rail-utility {
   display: flex;
@@ -842,6 +843,7 @@
 }
 
 .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-rail-primary { gap: 12px; padding-block: 16px; border-block: 1px solid var(--fx-shell-line); }
+.fx-app.fx-shell-story:not(.is-chart-workspace) .fx-rail-ai { padding-block: 16px; border-bottom: 1px solid var(--fx-shell-line); }
 
 .fx-rail-workspace { display: flex; align-items: center; gap: 12px; min-height: 56px; margin-bottom: 16px; padding: 8px 12px; border-radius: 8px; color: var(--fx-shell-text); text-decoration: none; box-sizing: border-box; }
 .fx-rail-workspace:hover { background: var(--fx-shell-nav-hover); }

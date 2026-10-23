@@ -53,7 +53,7 @@ export default function AiProviderSettings({ workspace, language }) {
 
   return <>
     <section className="settings-chatgpt" aria-labelledby="ai-provider-title" data-testid="ai-provider-settings">
-      <div className="settings-heading"><div><h2 id="ai-provider-title">AI</h2><p className="settings-note">{say('Kết nối dùng chung trên máy này.', 'Connection shared on this machine.')}</p></div>
+      <div className="settings-heading"><div><h1 id="ai-provider-title">{say('Nhà cung cấp AI', 'AI provider')}</h1><p className="settings-note">{say('Kết nối dùng chung trên máy này.', 'Connection shared on this machine.')}</p></div>
         {gateway && <span className="settings-status" role="status">{status}</span>}</div>
       <div className="chatgpt-model-fields ai-provider-fields">
         <label><span>{say('Nhà cung cấp', 'Provider')}</span><FxSelect label={say('Nhà cung cấp AI', 'AI provider')} value={account?.provider || ''} disabled={pending || !account}
@@ -68,10 +68,10 @@ export default function AiProviderSettings({ workspace, language }) {
         {account.error && <p className="settings-message is-warn" role="status">{aiErrorCopy(account.error, en)}</p>}
         {account.status === 'empty' && <p className="settings-note">{say('Đăng nhập tài khoản qua CLIProxyAPI, rồi tải lại model.', 'Sign in through CLIProxyAPI, then refresh the models.')}</p>}
         {account.status === 'catalog_ready' && !account.selection && <p className="settings-note">{say('Chọn model để bắt đầu trò chuyện.', 'Select a model to start chatting.')}</p>}
-        <div className="chatgpt-account-actions"><button type="button" disabled={pending} onClick={() => void load('refresh')}>{say('Tải lại model', 'Refresh models')}</button></div>
+        <div className="chatgpt-account-actions"><button type="button" className="wm-button" disabled={pending} onClick={() => void load('refresh')}>{say('Tải lại model', 'Refresh models')}</button></div>
       </>}
-      {!account && !pending && <button type="button" onClick={() => void load()}>{say('Thử lại', 'Retry')}</button>}
+      {!account && !pending && <button type="button" className="wm-button" onClick={() => void load()}>{say('Thử lại', 'Retry')}</button>}
     </section>
-    {account?.provider === 'chatgpt-web' && <ChatGptAccount workspace={workspace} />}
+    {account?.provider === 'chatgpt-web' && <ChatGptAccount workspace={workspace} language={language} />}
   </>
 }

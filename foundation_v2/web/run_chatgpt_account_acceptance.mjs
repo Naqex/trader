@@ -17,7 +17,7 @@ try {
   if (process.env.TW_CHATGPT_INTEGRATED === '1') {
     const context = await browser.newContext()
     const page = await context.newPage()
-    await page.goto(`${origin}/?workspace=tenant-a&view=settings`)
+    await page.goto(`${origin}/?workspace=tenant-a&view=ai&area=ai&section=connections`)
     await page.getByTestId('chatgpt-account').getByText('Chưa khởi động', { exact: true }).waitFor()
     const call = (action, body = {}) => page.evaluate(async ({ action, body }) => {
       const response = await fetch(`/api/v2/ai/chatgpt/account${action ? `/${action}` : ''}`, {
@@ -59,7 +59,7 @@ try {
       if (action === 'disconnect') state = structuredClone(initial)
       await route.fulfill({ status: action === 'login' || action === 'probe' ? 202 : 200, json: state })
     })
-    await page.goto(`${origin}/?workspace=tenant-a&view=settings`)
+    await page.goto(`${origin}/?workspace=tenant-a&view=ai&area=ai&section=connections`)
     const section = page.getByTestId('chatgpt-account')
     await section.getByText('Chưa đăng nhập', { exact: true }).waitFor()
     // Keyboard activation exercises the same button that pointer users see.

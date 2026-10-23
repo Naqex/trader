@@ -1,0 +1,14 @@
+{
+  "scope": "Actual preview5180 → API8010 → pinned gateway, empty auth; no login/model inference",
+  "checks": [
+    "Real Settings provider selection/refresh returns empty catalog",
+    "Backend reads private key; browser never receives it",
+    "Chat disabled without selected model",
+    "Foreign workspace403",
+    "No login/probe/chat requests or page errors"
+  ],
+  "passed": true,
+  "gateway_stopped": true,
+  "provider_restored": "local-gateway",
+  "page_errors": []
+}

@@ -7,6 +7,7 @@ import FxReplayShell from './FxReplayShell.jsx'
 const AnalyticsWorkspace = lazy(() => import('./AnalyticsWorkspace.jsx'))
 const JournalWorkspace = lazy(() => import('./JournalWorkspace.jsx'))
 const SettingsWorkspace = lazy(() => import('./SettingsWorkspace.jsx'))
+const AiWorkspace = lazy(() => import('./AiWorkspace.jsx'))
 const DataDeskWorkspace = lazy(() => import('./DataDeskWorkspace.jsx'))
 const ResearchWorkspaceV2 = lazy(() => import('./ResearchWorkspace.jsx'))
 const TradeWorkspace = lazy(() => import('./TradeWorkspace.jsx'))
@@ -69,6 +70,10 @@ function App() {
   }, [requestedView, workspace])
   // Preserve deep links emitted by the research/learn flows while keeping a bare root on the overview.
   const activeView = requestedView === 'data' ? 'market-data' : requestedView || (query.has('job') ? 'research' : query.has('session') || query.has('dataset') ? 'replay' : 'overview')
+  if (activeView === 'ai') {
+    query.set('area', 'ai')
+    if (!['assistant', 'connections', 'automation'].includes(query.get('section'))) query.set('section', 'assistant')
+  }
   if (activeView === 'market-data') {
     query.set('area', 'testing')
     query.set('section', 'market-data')
@@ -125,6 +130,9 @@ function App() {
   } else if (activeView === 'settings') {
     content = <SettingsWorkspace workspace={workspace} query={query} />
     mode = 'Workspace'
+  } else if (activeView === 'ai') {
+    content = <AiWorkspace workspace={workspace} query={query} />
+    mode = 'AI'
   } else {
     const copy = {
       journal: ['JOURNAL / DECISION LOG', 'Journal', 'Ghi chú phải gắn với replay session và trade ID để không tách khỏi context.', 'Mở một replay session trước khi ghi journal.'],

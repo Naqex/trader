@@ -75,6 +75,10 @@ const SHELL_COPY = {
       tagAnalytics: ['Tag analytics', 'Phân tích theo tag'],
       tradingAccounts: ['Trading accounts', 'Tài khoản giao dịch'],
       strategies: ['Strategies', 'Quản lý chiến lược'],
+      ai: ['AI and Bots', 'Trợ lý AI, kết nối model và bot giao dịch'],
+      aiAssistant: ['AI assistant', 'Trò chuyện với trợ lý'],
+      aiConnections: ['AI connections', 'Tài khoản và model AI'],
+      automation: ['Automation', 'Bot giao dịch và AI giao dịch'],
       myStrategies: ['My strategies', 'Chiến lược của tôi'],
       trade: ['Trades', 'Giao dịch trong phiên replay'],
       playbook: ['Strategies', 'Strategy và playbook'],
@@ -128,6 +132,10 @@ const SHELL_COPY = {
       tagAnalytics: ['Tag analytics', 'Tag-based analytics'],
       tradingAccounts: ['Trading accounts', 'Trading accounts'],
       strategies: ['Strategies', 'Strategy workspace'],
+      ai: ['AI and Bots', 'AI assistant, model connections and trading bots'],
+      aiAssistant: ['AI assistant', 'Chat with your assistant'],
+      aiConnections: ['AI connections', 'AI accounts and models'],
+      automation: ['Automation', 'Trading bots and AI trading'],
       myStrategies: ['My strategies', 'Your strategies'],
       trade: ['Trades', 'Trades in a replay session'],
       playbook: ['Strategies', 'Strategies and playbooks'],
@@ -185,6 +193,14 @@ const SIDEBAR_SECTIONS = [
       { id: 'my-strategies', copyKey: 'myStrategies', icon: 'my-strategies', route: 'playbook', activeViews: ['playbook'], section: 'my-strategies' },
     ],
   },
+  {
+    id: 'ai', copyKey: 'ai', icon: 'ai', defaultRoute: 'ai', defaultSection: 'assistant',
+    items: [
+      { id: 'ai-assistant', copyKey: 'aiAssistant', icon: 'ai', route: 'ai', activeViews: ['ai'], section: 'assistant' },
+      { id: 'ai-connections', copyKey: 'aiConnections', icon: 'connections', route: 'ai', activeViews: ['ai'], section: 'connections' },
+      { id: 'ai-automation', copyKey: 'automation', icon: 'automation', route: 'ai', activeViews: ['ai'], section: 'automation' },
+    ],
+  },
   { id: 'education', copyKey: 'learn', icon: 'education', defaultRoute: 'learn', items: [] },
   { id: 'settings', copyKey: 'settings', icon: 'settings', defaultRoute: 'settings', items: [] },
 ]
@@ -193,6 +209,7 @@ const SUBNAV_GROUPS = {
   testing: SIDEBAR_SECTIONS[0].items,
   live: SIDEBAR_SECTIONS[1].items,
   strategies: SIDEBAR_SECTIONS[2].items,
+  ai: SIDEBAR_SECTIONS[3].items,
 }
 
 function activeSectionId(activeView, query) {
@@ -201,6 +218,7 @@ function activeSectionId(activeView, query) {
   if (['overview', 'replay', 'trade', 'analytics', 'market-data'].includes(activeView)) return 'testing'
   if (activeView === 'live') return 'live'
   if (activeView === 'playbook') return 'strategies'
+  if (activeView === 'ai') return 'ai'
   if (activeView === 'learn') return 'education'
   if (activeView === 'settings') return 'settings'
   return ''
@@ -208,7 +226,7 @@ function activeSectionId(activeView, query) {
 
 function isNavItemActive(item, activeView, query, sectionId) {
   if (!item.activeViews?.includes(activeView)) return false
-  if (sectionId !== 'testing' && (query?.get('section') || (sectionId === 'live' ? 'calendar' : '')) !== item.section) return false
+  if (sectionId !== 'testing' && (query?.get('section') || (sectionId === 'live' ? 'calendar' : sectionId === 'ai' ? 'assistant' : '')) !== item.section) return false
   if (sectionId === 'testing' && query?.get('area') === 'live') return false
   return !query?.get('section') || query.get('section') === item.section || sectionId === 'testing'
 }
@@ -262,6 +280,9 @@ function RailIcon({ id }) {
   if (id === 'trade') return <svg {...common}><rect x="3" y="5" width="18" height="14" rx="3" /><path d="M8 9h.01M12 9h.01M16 9h.01M8 13h.01M12 13h.01M16 13h.01M8 17h8" /></svg>
   if (id === 'playbook') return <svg {...common}><circle cx="12" cy="12" r="8.5" /><path d="m15.7 8.3-2.2 5.2-5.2 2.2 2.2-5.2 5.2-2.2Z" /></svg>
   if (id === 'settings') return <svg {...common}><path d="M12 3.5v2M12 18.5v2M3.5 12h2M18.5 12h2M6 6l1.4 1.4M16.6 16.6 18 18M18 6l-1.4 1.4M7.4 16.6 6 18" /><circle cx="12" cy="12" r="3.3" /></svg>
+  if (id === 'ai') return <AiSparkles className="fx-nav-icon-svg" />
+  if (id === 'connections') return <svg {...common}><path d="m8 7 3-3a5 5 0 0 1 7 7l-3 3M16 17l-3 3a5 5 0 0 1-7-7l3-3M8 16l8-8" /></svg>
+  if (id === 'automation') return <svg {...common}><rect x="4" y="7" width="16" height="13" rx="3" /><path d="M12 3v4M1 12v4M23 12v4M9 16h6" /><circle cx="8" cy="12" r=".6" /><circle cx="16" cy="12" r=".6" /></svg>
   return <svg {...common}><path d="M4 17V7M10 17V4M16 17V9M22 17V2" /><path d="M3 20h20" /></svg>
 }
 
@@ -269,7 +290,7 @@ function ShellRail({ activeView, workspace, query, copy, railId, drawerOpen, onC
   const { t } = useTestingLocale()
   const activeArea = activeSectionId(activeView, query)
   const primary = SIDEBAR_SECTIONS.slice(0, 3)
-  const utility = SIDEBAR_SECTIONS.slice(3)
+  const utility = SIDEBAR_SECTIONS.slice(4)
   const renderSectionLink = (section) => {
     const [label, description] = copy.nav[section.copyKey] || [section.id, '']
     const active = activeArea === section.id
@@ -307,6 +328,7 @@ function ShellRail({ activeView, workspace, query, copy, railId, drawerOpen, onC
       <div className="fx-rail-primary">
         {primary.map(renderSectionLink)}
       </div>
+      <div className="fx-rail-ai">{renderSectionLink(SIDEBAR_SECTIONS[3])}</div>
       <div className="fx-rail-spacer" />
       <div className="fx-rail-utility">
         {utility.map(renderSectionLink)}
@@ -497,6 +519,9 @@ export default function FxReplayShell({ children, workspace, query = currentQuer
   const toggleAi = useCallback(() => {
     setAiMounted(true); setAiOpen(value => !value); setHelpOpen(false); setMobileNavigationOpen(false)
   }, [])
+  const openAi = useCallback(() => {
+    setAiMounted(true); setAiOpen(true); setHelpOpen(false); setMobileNavigationOpen(false)
+  }, [])
   useEffect(() => {
     const media = window.matchMedia('(max-width: 1100px)')
     const update = () => setAiOverlay(media.matches)
@@ -556,8 +581,9 @@ export default function FxReplayShell({ children, workspace, query = currentQuer
     routeContext,
     appearance: { theme, language },
     applyAppearance,
+    openAi,
     buildHref: (view, overrides) => buildWorkspaceHref(view, workspace, query, overrides),
-  }), [query, routeContext, updateMarketContext, workspace, theme, language, applyAppearance])
+  }), [query, routeContext, updateMarketContext, workspace, theme, language, applyAppearance, openAi])
   const handleRail = useCallback(() => {
     if (mobileNavigation) {
       setHelpOpen(false)
@@ -681,7 +707,7 @@ export default function FxReplayShell({ children, workspace, query = currentQuer
           </div></NotificationProvider>
         </section>
         {aiOpen && aiOverlay && <div className="wm-ai-backdrop" aria-hidden="true" onClick={closeAi} />}
-        {aiMounted && <TestingRouteBoundary key={workspace} fallback={<AiPanelFallback open={aiOpen} modal={aiOverlay} onClose={closeAi} language={language} error />}><Suspense fallback={<AiPanelFallback open={aiOpen} modal={aiOverlay} onClose={closeAi} language={language} />}><AiChatPanel workspace={workspace} screen={activeView} open={aiOpen} modal={aiOverlay} onClose={closeAi} settingsHref={buildWorkspaceHref('settings', workspace, query, { area: 'settings', section: null })} language={language} /></Suspense></TestingRouteBoundary>}
+        {aiMounted && <TestingRouteBoundary key={workspace} fallback={<AiPanelFallback open={aiOpen} modal={aiOverlay} onClose={closeAi} language={language} error />}><Suspense fallback={<AiPanelFallback open={aiOpen} modal={aiOverlay} onClose={closeAi} language={language} />}><AiChatPanel workspace={workspace} screen={activeView === 'ai' ? 'settings' : activeView} open={aiOpen} modal={aiOverlay} onClose={closeAi} settingsHref={buildWorkspaceHref('ai', workspace, query, { area: 'ai', section: 'connections', demo: null })} language={language} /></Suspense></TestingRouteBoundary>}
       </div>
     </FxReplayContext.Provider></TestingLocaleProvider>
   )

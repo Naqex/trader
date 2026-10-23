@@ -4,7 +4,7 @@ import path from 'node:path'
 import { chromium } from 'playwright'
 
 const origin = process.env.TW_AI_UI_ORIGIN || 'http://127.0.0.1:5180'
-const evidence = path.resolve('../evidence/ai-provider-integration-20261023/ui')
+const evidence = path.resolve(process.env.TW_AI_UI_EVIDENCE || '../evidence/ai-provider-integration-20261023/ui')
 await mkdir(evidence, { recursive: true })
 const browser = await chromium.launch({ headless: true })
 const checks = []
@@ -41,7 +41,7 @@ try {
       else if (mode !== 'pending') turn = { ...turn, status: 'completed', text: 'Synthetic gateway response' }
       return route.fulfill({ json: turn })
     })
-    await page.goto(`${origin}/?workspace=tenant-a&view=settings&lang=${language}&theme=${theme}`)
+    await page.goto(`${origin}/?workspace=tenant-a&view=ai&area=ai&section=connections&lang=${language}&theme=${theme}`)
     const settings = page.getByTestId('ai-provider-settings')
     await page.waitForFunction(value => document.querySelector('.fx-app')?.dataset.theme === value, theme)
     await settings.getByRole('button', { name: say('Nhà cung cấp AI', 'AI provider'), exact: true }).click()

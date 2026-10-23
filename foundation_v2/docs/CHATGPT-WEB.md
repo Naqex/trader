@@ -7,10 +7,10 @@ Cockpit UI, MCP, shell hoặc subagents từ luồng này.
 
 ## Đăng nhập từ web MT5
 
-Mở **Settings → AI → ChatGPT Web → Kết nối ChatGPT**. Backend khởi động core riêng,
+Mở **AI và Bot → Kết nối → ChatGPT Web → Kết nối ChatGPT**. Backend khởi động core riêng,
 mở Chrome với profile của MT5. Đăng nhập trực tiếp trên ChatGPT, sau đó đóng
 cửa sổ Chrome riêng để core xác minh và lưu phiên. Không nhập mật khẩu hoặc
-paste token trên web MT5. Có thể hủy đăng nhập từ Settings.
+paste token trên web MT5. Có thể hủy đăng nhập từ trang Kết nối.
 
 Đây là thao tác kết nối được quản lý từ web MT5, còn màn hình xác thực vẫn
 nằm ở Chrome riêng. Chưa có OAuth popup/callback hoặc login nhúng trong web.
@@ -23,7 +23,7 @@ dùng được. Phiên hết hạn/model không phù hợp/hạn mức lỗi đ�
 Kết nối dùng chung giữa các workspace được cấp quyền trên cùng máy local;
 UI ghi rõ phạm vi. Không phải đăng nhập người dùng cho một dịch vụ hosted.
 Ngắt kết nối xóa state Chrome riêng của MT5, không ảnh hưởng VI Dubber hoặc
-phiên ChatGPT trên thiết bị khác. Không tự khởi động khi chỉ mở Settings.
+phiên ChatGPT trên thiết bị khác. Không tự khởi động khi chỉ mở trang Kết nối.
 
 ## Chuẩn bị runtime riêng
 
@@ -110,10 +110,10 @@ chat đang chọn, gồm các cặp tin nhắn đã hoàn tất và câu hỏi m
 tin bị lỗi/hủy không đi vào context tiếp theo. Không tự lấy chart, chiến lược
 hay dữ liệu tài khoản. Câu trả lời hiển thị dạng văn bản, không thực thi HTML.
 
-Chat dùng cùng model/effort đã chọn trong Settings và catalog nguyên bản của
+Chat dùng cùng model/effort đã chọn trong AI và Bot → Kết nối và catalog nguyên bản của
 upstream. Picker trong panel cập nhật cùng lựa chọn này. Chỉ mở panel đọc
 trạng thái; nếu API vừa restart, bấm **Nạp kết nối đã lưu** để khởi động core
-riêng, không mở Chrome/login tự động. Nếu chưa đăng nhập, dùng liên kết Cài đặt.
+riêng, không mở Chrome/login tự động. Nếu chưa đăng nhập, dùng liên kết Kết nối AI.
 
 Composer dùng một menu model/mức suy luận, thanh trượt chỉ có các mức do
 catalog trả về. Kéo chỉ xem trước; thả chuột, kết thúc phím điều chỉnh hoặc

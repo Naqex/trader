@@ -1,0 +1,8 @@
+{
+  "scope": "isolated-runtime + labeled UI fixtures; no real account login/inference",
+  "checks": [
+    "360px fixture: login/poll, test, model effort, disconnect, keyboard, cancel, stale/recovery, denied; no overflow or page errors",
+    "768px fixture: login/poll, test, model effort, disconnect, keyboard, cancel, stale/recovery, denied; no overflow or page errors",
+    "1440px fixture: login/poll, test, model effort, disconnect, keyboard, cancel, stale/recovery, denied; no overflow or page errors"
+  ]
+}

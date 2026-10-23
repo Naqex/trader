@@ -5,12 +5,31 @@ chạy thành process riêng và nối bằng adapter nhỏ trong backend**. Ch�
 để fork gateway hoặc tự viết lại OAuth, token refresh và account pool. Tối ưu
 WebGPT bridge hiện tại được hoãn theo yêu cầu owner.
 
-Provider đã được tích hợp vào source backend và Settings/chat của sản phẩm.
+Provider đã được tích hợp vào source backend và khu vực **AI và Bot → Kết nối** của sản phẩm.
 Owner đã chấp nhận thử CLIProxyAPI local với rủi ro tài khoản; đăng nhập vẫn do
 owner thực hiện thủ công. Chưa đăng nhập Google, nhập token, gửi inference hoặc
 nghiệm thu pool thật. Receipt triển khai local nằm ở
 [ai-provider-integration-20261023](../evidence/ai-provider-integration-20261023/).
 Tiến độ toàn sản phẩm vẫn thuộc Product Completion Plan của workspace.
+
+## Khu vực AI và Bot
+
+Sidebar đặt **AI và Bot** dưới đường phân cách sau Chiến lược, có đường phân cách
+bên dưới. Ba tab dùng route `view=ai`, giữ workspace và ngôn ngữ hiện hành:
+
+- **Trợ lý** (`section=assistant`): mở lại panel Mentor dùng chung, giữ lịch sử
+  chat trong shell; không tạo chat harness khác.
+- **Kết nối** (`section=connections`): tải lười `AiProviderSettings` và các
+  điều khiển provider/model hiện có. Cài đặt chung chỉ giữ liên kết tới đây.
+- **Tự động hóa** (`section=automation`): khung Bot giao dịch và AI giao dịch,
+  chưa có nút kích hoạt, API thực thi hoặc polling nền.
+
+Mở trang không tự đăng nhập, đổi provider hoặc gửi prompt. Chat từ khu vực này
+dùng context `screen=settings` trong contract backend hiện hành vì đây là
+ngữ cảnh cấu hình; không mở rộng quyền giao dịch. Provider/model vẫn theo vòng
+đời và phạm vi máy đã mô tả bên dưới, không tự chuyển thành cấu hình workspace.
+Kiểm chứng điều hướng, tải lười, vi/en và local API được lưu riêng tại
+[ai-workspace-20261023](../evidence/ai-workspace-20261023/).
 
 ## Giới hạn quan trọng của subscription
 
@@ -203,7 +222,7 @@ không tự login hoặc nhận process có sẵn. Gateway vẫn có thể tải
 bản dù bật `--local-model`. Management/UI/update panel, request log và usage log
 đều tắt; commercial mode giảm middleware và đã kiểm không lưu body lỗi401.
 
-Mở **Settings → AI → CLIProxyAPI local → Tải lại model**, rồi chọn model.
+Mở **AI và Bot → Kết nối → CLIProxyAPI local → Tải lại model**, rồi chọn model.
 Catalog có model chưa chứng minh inference thành công. Muốn thêm account phải
 đăng nhập riêng từng account do owner kiểm soát; chưa kiểm routing pool thật.
 
@@ -225,7 +244,7 @@ Chat bắt buộc `expected_selection:{provider,model,effort}` khớp lựa ch�
 tab cũ bị409 trước inference, không âm thầm gửi sang model khác.
 Gateway không quảng bá effort nên gửi null. Mỗi lần chỉ một turn đang xử lý;
 provider/model bị khóa trong lúc đó. Catalog cache30s, chỉ tải khi mở/refresh/
-chuẩn bị gửi, không poll nền khi Settings đứng yên. Không tự retry/fallback.
+chuẩn bị gửi, không poll nền khi trang Kết nối đứng yên. Không tự retry/fallback.
 
 ## Điều kiện nghiệm thu còn lại
 

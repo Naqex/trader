@@ -1,4 +1,8 @@
 {
+  "AI and Bots": {"vi":"AI và Bot","en":"AI and Bots"},
+  "AI assistant": {"vi":"Trợ lý","en":"Assistant"},
+  "AI connections": {"vi":"Kết nối","en":"Connections"},
+  "Automation": {"vi":"Tự động hóa","en":"Automation"},
   "Bỏ chọn tất cả": {"vi": "Bỏ chọn tất cả", "en": "Deselect all"},
   "Số dư ghi nhận khi đồng bộ thành công lần đầu; không phải vốn gốc tại broker.": {"vi": "Số dư ghi nhận khi đồng bộ thành công lần đầu; không phải vốn gốc tại broker.", "en": "Balance recorded on the first successful sync, not the original capital at the broker."},
   "Chọn tài khoản trên trang": {"vi": "Chọn tài khoản trên trang", "en": "Select accounts on this page"},
