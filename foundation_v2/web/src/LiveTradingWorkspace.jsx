@@ -1,6 +1,7 @@
 import LiveTradingOverview from './LiveTradingOverview.jsx'
 import ChartIcon from './ChartIcon.jsx'
 import { liveTradingHref } from './liveTradingNavigation.js'
+import { buildWorkspaceHref } from './workspaceContext.js'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { useTestingLocale } from './testingLocale.jsx'
 import { useFxReplayContext } from './FxReplayShell.jsx'
@@ -21,6 +22,7 @@ const LegacyChartHeader = lazy(() => import('./LegacyChartHeader.jsx'))
 const LegacyObjectTree = lazy(() => import('./LegacyObjectTree.jsx'))
 const OrderEntryFields = lazy(() => import('./OrderEntryFields.jsx'))
 const LiveChartSurface = lazy(() => import('./LiveChartSurface.jsx'))
+const Mt5TradingBar = lazy(() => import('./Mt5TradingBar.jsx'))
 const EMPTY = []
 const noop = () => {}
 const finalReceipt = finalDemoReceipt
@@ -29,7 +31,7 @@ function recoverPending(key) {
 }
 
 export default function LiveTradingWorkspace({ workspace, query, preview: demoPreview = false }) {
-  const { t,fmt } = useTestingLocale(), {appearance,applyAppearance} = useFxReplayContext()
+  const { t,fmt } = useTestingLocale(), {appearance,applyAppearance,openAi} = useFxReplayContext()
   const theme = appearance?.theme || 'dark'
   const chartSurface = query.get('surface') === 'workspace'
   const [panel,setPanel]=useState(null), [setup,setSetup]=useState(false), [ledgerOpen,setLedgerOpen]=useState(false), [headerSlots,setHeaderSlots]=useState(null)
@@ -171,7 +173,8 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
   const reason = demoPreview ? 'Gửi lệnh không khả dụng trong chế độ xem thử.' : read.status==='loading' ? 'Đang đọc tài khoản MT5…' : resetSymbol ? demoReason('demo_symbol_denied') : read.status==='error' ? 'Mất kết nối dữ liệu giao dịch. Đang giữ ảnh chụp trước đó.' : !chartSurface && snapshot?.summary ? '' : !marketReady ? demoReason(tradingBlockReason(snapshot,now)) : ''
   if (!chartSurface) return <LiveTradingOverview workspace={workspace} query={accountQuery} snapshot={snapshot} status={read.status} reason={unresolved ? 'Chưa rõ kết quả. Đối soát MT5 trước khi gửi lệnh khác.' : reason} symbol={activeSymbol} timeframe={timeframe} onRefresh={()=>setRefresh(value=>value+1)} onResetSymbol={resetSymbol}/>
   const fullscreen=()=>{if(document.fullscreenElement)document.exitFullscreen?.();else document.documentElement.requestFullscreen?.()}
-  const openTool=tool=>{if(tool==='data')setSetup(true);else if(tool==='context')setPanel('conditions')}
+  const openTool=tool=>{if(tool==='data')setSetup(true);else if(tool==='context')setPanel('conditions');else if(tool==='mentor')openAi()}
+  const journalHref = section => buildWorkspaceHref('live',workspace,accountQuery,{area:'live',section,surface:null,live_account:connectionId ? `broker:${connectionId}` : null,live_accounts:null})
   return <Suspense fallback={<TestingSkeleton label="Đang tải biểu đồ…" />}><LiveChartSurface headerHeight={headerSlots?.headerHeight || 38}>
     <LegacyChartHeader marketMode="live" controls={headerSlots} symbol={activeSymbol} name={`MT5 · ${snapshot?.account?.login || 'MT5'}`} backHref={liveTradingHref(workspace,accountQuery)} theme={theme} onTheme={()=>applyAppearance({...appearance,theme:theme==='dark'?'light':'dark'})} onOpenTool={openTool} onFullscreen={fullscreen}/>
     {!headerSlots && <header className="live-terminal-toolbar"><a href={liveTradingHref(workspace,accountQuery)} aria-label={t('Trở về tổng quan MT5')}><ChartIcon name="arrow-left"/></a><strong>{activeSymbol || 'MetaTrader'} · {timeframe}</strong><button type="button" className="live-text-action" onClick={()=>setSetup(true)}>{t('Chọn mã giao dịch MT5')}</button></header>}
@@ -183,20 +186,20 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
         </div><nav className="chart-utility-rail" aria-label={t('Công cụ giao dịch MT5')}><div className="chart-utility-actions">
           <div className="legacy-rail-tools"><button type="button" disabled={!headerSlots} aria-label={t('Cây đối tượng chart')} data-tooltip={t('Cây đối tượng chart')} onClick={()=>setPanel('objects')}><ChartIcon name="layers"/></button></div>
           <button type="button" aria-label={t('Lệnh mới')} data-tooltip={t('Lệnh mới')} onClick={()=>setPanel('order')}><ChartIcon name="place-order"/><span>{t('Order')}</span></button>
-          <button type="button" aria-label={t('Chọn mã giao dịch MT5')} data-tooltip={t('Chọn mã giao dịch MT5')} onClick={()=>setSetup(true)}><ChartIcon name="search"/></button>
-          <button type="button" aria-label={t('Điều kiện giao dịch')} data-tooltip={t('Điều kiện giao dịch')} onClick={()=>setPanel('conditions')}><ChartIcon name="settings"/></button>
+          <button type="button" aria-label={t('Chọn mã giao dịch MT5')} data-tooltip={t('Chọn mã giao dịch MT5')} onClick={()=>setSetup(true)}><ChartIcon name="search"/><span>{t('Asset')}</span></button>
+          <a href={journalHref('notes')} aria-label={t('Ghi chú')} data-tooltip={t('Ghi chú')}><ChartIcon name="journal"/><span>{t('Journal')}</span></a>
+          <button type="button" className="legacy-session-settings" aria-label={t('Điều kiện giao dịch')} data-tooltip={t('Điều kiện giao dịch')} onClick={()=>setPanel('conditions')}><ChartIcon name="settings"/></button>
+          <button type="button" className="legacy-mobile-theme" aria-label={t('Đổi giao diện')} data-tooltip={t('Đổi giao diện')} onClick={()=>applyAppearance({...appearance,theme:theme==='dark'?'light':'dark'})}><ChartIcon name={theme==='dark'?'moon':'sun'}/></button>
         </div></nav></div>
-        {ledgerOpen && <div className="live-terminal-ledger legacy-positions">
+        <Mt5TradingBar key={`${identity}:${activeSymbol}`} snapshot={snapshot} positions={positions} instrument={instrument} quantity={draft.quantity} onQuantity={value=>change('quantity',value)} onOrder={side=>{change('side',side);setPanel('order')}} disabled={!canAct||paused||!capability('place')} open={ledgerOpen} onOpenChange={setLedgerOpen} analyticsHref={journalHref('analytics')} theme={theme}>
+        <div className="live-terminal-ledger legacy-positions">
           <nav className="live-terminal-tabs" aria-label={t('Quản lý lệnh MT5')}>{[['positions','Vị thế'],['orders','Lệnh chờ'],['requests','Yêu cầu']].map(([key,label])=><button type="button" className="live-text-action" aria-current={tab===key?'page':undefined} onClick={()=>setTab(key)} key={key}>{t(label)} <span>{key==='positions'?positions.length:key==='orders'?orders.length:snapshot?.requests?.length||0}</span></button>)}</nav>
           <div className="live-table-scroll" role="region" tabIndex={0} aria-label={t('Quản lý lệnh MT5')}>
             {tab==='requests' ? <table><thead><tr>{['Mã yêu cầu','Thao tác','Trạng thái'].map(label=><th key={label}>{t(label)}</th>)}</tr></thead><tbody>{(snapshot?.requests||EMPTY).map(item=><tr key={item.request_id}><td>{item.request_id}</td><td>{t(({place:'Place order',close:'Close position',protect:'Update SL/TP',cancel:'Cancel pending order',pause:'Pause new orders',resume:'Resume new orders'})[item.action||item.operation]||item.action||item.operation||'—')}</td><td>{t(({filled:'Đã khớp',accepted:'Đã tiếp nhận',rejected:'Bị từ chối',unknown:'Chưa rõ kết quả',done:'Hoàn tất',cancelled:'Đã hủy'})[item.status]||item.status)}</td></tr>)}</tbody></table> : <table><thead><tr>{['Ticket','Asset','Side','Lot','Entry price','SL / TP','PnL','Thao tác'].map(label=><th key={label}>{t(label)}</th>)}</tr></thead><tbody>{(tab==='positions'?positions:orders).map(item=><tr key={item.ticket}><td>{item.ticket}</td><td>{item.symbol}</td><td>{item.side}</td><td>{fmt(item.volume,'',5)}</td><td>{fmt(item.price_open,'',8)}</td><td>{fmt(item.sl||null,'',8)} / {fmt(item.tp||null,'',8)}</td><td>{money(item.profit)}</td><td>{tab==='positions'?<div className="live-terminal-row-actions"><button className="live-text-action" disabled={!canAct||!capability('protect')} onClick={()=>openAction('protect',{ticket:item.ticket,symbol:item.symbol,stop_loss:item.sl||'',take_profit:item.tp||''},'Sửa SL/TP')}>{t('Sửa SL/TP')}</button><button className="live-text-action" disabled={!canAct||!capability('close')} onClick={()=>openAction('close',{ticket:item.ticket,symbol:item.symbol},'Đóng vị thế MT5')}>{t('Đóng')}</button></div>:<button className="live-text-action" disabled={!canAct||!capability('cancel')} onClick={()=>openAction('cancel',{ticket:item.ticket,symbol:item.symbol},'Hủy lệnh chờ MT5')}>{t('Hủy')}</button>}</td></tr>)}</tbody></table>}
             {!(tab==='positions'?positions.length:tab==='orders'?orders.length:snapshot?.requests?.length) && <p className="live-terminal-empty">{t(snapshot?.status==='ready' ? tab==='positions'?'Không có vị thế đang mở.':tab==='orders'?'Không có lệnh chờ.':'Chưa có yêu cầu giao dịch.' : 'Chưa có dữ liệu terminal giao dịch.')}</p>}
           </div>
-        </div>}
-        <footer className="chart-trading-bar mt5-trading-bar">
-          <div className="chart-trading-actions"><button type="button" className="sell" onClick={()=>{change('side','SELL');setPanel('order')}}><span>SELL</span><strong>{fmt(snapshot?.quote?.bid,'',8)}</strong></button><button type="button" className="buy" onClick={()=>{change('side','BUY');setPanel('order')}}><span>BUY</span><strong>{fmt(snapshot?.quote?.ask,'',8)}</strong></button><span className="live-badge">{snapshot?.mode==='real'?t('Real'):snapshot?.mode==='demo'?t('Demo'):'MT5'}</span></div>
-          <div className="chart-trading-account"><span>{t('Balance')} <strong>{money(snapshot?.account?.balance)}</strong></span><span>{t('Equity')} <strong>{money(snapshot?.account?.equity)}</strong></span><button type="button" className="live-text-action" aria-expanded={ledgerOpen} onClick={()=>setLedgerOpen(value=>!value)}>{t('Vị thế')} ({positions.length}) <ChartIcon name="down"/></button></div>
-        </footer>
+        </div>
+        </Mt5TradingBar>
       </div>
       {panel==='order' && <LegacyModal label={t('Lệnh mới')} theme={theme} className="legacy-order-modal live-mt5-order" onClose={()=>setPanel(null)}><div className="live-terminal-ticket" aria-label={t('Phiếu lệnh MT5')}>
         <p className="mt5-order-identity">{activeSymbol} · #{snapshot?.account?.login || '—'} <span className="live-badge">{snapshot?.mode==='real'?t('Real'):snapshot?.mode==='demo'?t('Demo'):'MT5'}</span></p>

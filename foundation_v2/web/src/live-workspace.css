@@ -294,7 +294,12 @@
 }
 .live-notes-groups { display: flex; align-items: center; gap: 12px; padding: 16px var(--wm-page-gutter); }
 .live-notes-groups > span { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: var(--project-peach-soft); color: var(--project-on-peach-soft); font-size: 13px; }
-.live-notes .live-empty { min-height: 440px; }
+.fx-app.fx-shell-story:not(.is-chart-workspace) .fx-content:has(> .live-workspace.is-notes) { display:flex; flex-direction:column; overflow:hidden; padding-bottom:0; }
+.live-workspace.is-notes { display:flex; flex-direction:column; flex:1; min-height:0; }
+.is-notes > .live-toolbar, .live-notes > :is(.live-toolbar,.wm-pagination) { flex-shrink:0; }
+.live-notes { display:flex; flex-direction:column; flex:1; min-height:0; }
+.live-note-list { flex:1; min-height:0; overflow:auto; }
+.live-notes .live-empty { min-height:180px; height:100%; box-sizing:border-box; }
 .live-tag-grid { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 0; margin: 0; border-bottom: 1px solid var(--wm-border); }
 .live-tag-grid.is-hidden { grid-template-columns: minmax(0, 1fr); }
 .live-tag-chart, .live-tag-list { min-width: 0; }

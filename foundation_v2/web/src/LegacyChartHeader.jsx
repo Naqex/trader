@@ -88,14 +88,14 @@ export default function LegacyChartHeader({ controls, symbol, name, backHref, th
       {button('Chụp chart PNG', 'camera', show('capture'), { className: 'legacy-wide-action', 'aria-expanded': popup?.kind === 'capture' })}
       <span className="legacy-divider legacy-wide-action" />
       {!live && <button type="button" className="legacy-editor legacy-wide-action" aria-label="Editor" data-tooltip="Editor" onClick={open('editor')}><ChartIcon name="editor" /><span>Editor</span></button>}
-      {!live && button('AI Mentor', 'mentor', open('mentor'), { className: 'legacy-mentor' })}
+      {button('AI Mentor', 'mentor', open('mentor'), { className: 'legacy-mentor' })}
       {button('Đổi giao diện', theme === 'dark' ? 'moon' : 'sun', onTheme, { className: 'legacy-wide-action', 'data-testid': 'theme-toggle' })}
       {button('Toàn màn hình', 'fit', onFullscreen, { className: 'legacy-wide-action' })}
       {button('Công cụ chart', 'more', event => { opener.current = event.currentTarget; setMenu(value => !value) }, { className: 'chart-header-overflow', 'aria-expanded': menu })}
     </div>, controls.tools)}
     {menu && <div ref={menuRef} className="legacy-native-menu" role="group" aria-label={t('Công cụ chart')}>
       <button type="button" onClick={() => { setMenu(false); setPopup({kind:'layout',anchor:opener.current}) }}>New Layout</button>
-      {(live ? [['data','Chọn mã giao dịch MT5'],['context','Điều kiện giao dịch']] : [['compare', 'So sánh mã'], ['data', 'Dữ liệu'], ['context', 'Chi tiết và nhánh'], ['search', 'Quick Search'], ['editor', 'Editor'], ['mentor', 'AI Mentor']]).map(([tool, label]) => <button key={tool} type="button" onClick={() => { setMenu(false); onOpenTool(tool, opener.current) }}>{t(label)}</button>)}
+      {(live ? [['data','Chọn mã giao dịch MT5'],['context','Điều kiện giao dịch'],['mentor','AI Mentor']] : [['compare', 'So sánh mã'], ['data', 'Dữ liệu'], ['context', 'Chi tiết và nhánh'], ['search', 'Quick Search'], ['editor', 'Editor'], ['mentor', 'AI Mentor']]).map(([tool, label]) => <button key={tool} type="button" onClick={() => { setMenu(false); onOpenTool(tool, opener.current) }}>{t(label)}</button>)}
       {[['insertIndicator', 'Indicators'], ['undo', 'Hoàn tác'], ['redo', 'Làm lại']].map(([action, label]) => <button key={action} type="button" onClick={() => { setMenu(false); controls.action(action); opener.current?.focus() }}>{t(label)}</button>)}
       <button type="button" disabled={saved || saving} onClick={() => { setMenu(false); controls.save(); opener.current?.focus() }}>{t(saveLabel)}</button>
       <button type="button" onClick={() => { setMenu(false); setPopup({kind:'capture',anchor:opener.current}) }}>{t('Chụp chart PNG')}</button>
