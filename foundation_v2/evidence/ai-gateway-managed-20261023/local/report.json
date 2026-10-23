@@ -1,0 +1,11 @@
+{
+  "scope": "Actual UI5180 → new API8010 → owned pinned gateway; no OAuth/inference/broker orders",
+  "checks": [
+    "Managed controls exposed",
+    "Page load is lazy; no idle polling",
+    "Empty gateway starts through actual API",
+    "Real UI stop cleans owned gateway",
+    "Credentials remain empty; no page errors"
+  ],
+  "passed": true
+}

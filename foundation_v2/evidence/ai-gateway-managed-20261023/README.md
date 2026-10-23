@@ -48,13 +48,21 @@ This adds setup controls; it does not add tool execution or broker authority.
 
 ## Rollout boundary
 
-The UI build contains the new controls, shown only when the backend reports the
-managed-runtime capability. The active API is still the previous binary. A final
-candidate is prepared separately; no running API/terminal is replaced by build or
-fixture tests.
+After explicit owner permission, the prepared candidate was activated with the
+existing native/compact profile. The restart helper initially rejected the old
+runtime because it compared its executable paths with the new candidate. No
+process was stopped by that rejection. The old runtime was then stopped through
+the guarded launcher using its exact recorded old binaries (PID/creation/hash
+checks retained), and the normal helper started the new candidate. No migrations.
 
-The current API starts MT5 recovery through `reap_sessions → cleanup_all`, and an
-active project-owned MT5 terminal was observed. Reloading the API may reconnect
-that terminal, so rollout waits for owner permission under the project AGENTS
-safety gate. No orders, Google login, token import, model inference or real pool
-routing were performed. Actual provider/pool acceptance remains outstanding.
+`node run_ai_gateway_managed_local_acceptance.mjs` passed against actual UI5180 →
+API8010 → owned pinned gateway: controls exposed, lazy page/no idle polling, empty
+gateway start, real UI stop, credentials unchanged, no page errors. The gateway
+is left stopped and CLIProxyAPI selected, ready for owner-initiated Google login.
+See `local/report.json` and the reviewed `local/managed-stopped-vi.png` screenshot.
+
+MT5 startup recovery temporarily showed syncing and the previous worker error;
+the connection subsequently returned to connected, cleared its error, and advanced
+last_synced_at. `local/rollout.json` records sanitized runtime/connection status.
+No orders, Google login, token import, model inference or real pool routing were
+performed. Actual provider/pool acceptance remains outstanding.

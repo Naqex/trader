@@ -1,0 +1,32 @@
+{
+  "checked_at_utc": "2026-10-23T05:23:05.0762739Z",
+  "api": {
+    "ready": true,
+    "storage": "compact",
+    "profile": "native",
+    "pid": 20056,
+    "binary": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\.runtime\\api-builds\\ai-managed-20261023\\release\\trading-workspace-api.exe"
+  },
+  "ai": {
+    "provider": "local-gateway",
+    "runtime": {
+      "accounts": 0,
+      "error": null,
+      "external": false,
+      "managed": true,
+      "operation": null,
+      "running": false
+    },
+    "ready": false,
+    "operation": null
+  },
+  "connections": [
+    {
+      "id": "492ec8a5-3938-41a3-8a26-8c0f7f59ed43",
+      "status": "connected",
+      "error_code": null,
+      "last_synced_at": "2026-10-23T05:22:04.004175Z"
+    }
+  ],
+  "scope": "Read-only MT5 state verification; empty AI gateway start/stop only. No OAuth, inference or broker orders."
+}

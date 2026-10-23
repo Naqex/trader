@@ -31,6 +31,11 @@ ngữ cảnh cấu hình; không mở rộng quyền giao dịch. Provider/model
 Kiểm chứng điều hướng, tải lười, vi/en và local API được lưu riêng tại
 [ai-workspace-20261023](../evidence/ai-workspace-20261023/).
 
+Luồng quản lý gateway/OAuth trên web đã triển khai local sau khi owner cho phép
+restart API. Kiểm chứng UI → API → gateway rỗng và trạng thái MT5 phục hồi nằm ở
+[ai-gateway-managed-20261023](../evidence/ai-gateway-managed-20261023/).
+Chưa thực hiện đăng nhập Google hoặc inference thật.
+
 ## Giới hạn quan trọng của subscription
 
 Google AI Pro/Ultra, Gemini app, Gemini CLI, Antigravity và Gemini API là các
