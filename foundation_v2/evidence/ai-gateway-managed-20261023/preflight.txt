@@ -1,0 +1,2 @@
+{"check_only": true, "runtime_profile": "native", "port_free": false, "compact_revision_count": 0, "compatibility_ready": true, "migration_count": 11, "pending": [], "schema_current": true}
+Preflight passed. Check-only: no schema/process/provider changes.

@@ -1,0 +1,7 @@
+{
+  "scope": "Product UI with labeled read-only HTTP fixtures; no provider login or inference",
+  "checks": [
+    "1440px vi/dark: sidebar placement, collapse/drawer, shared chat, lazy provider, no idle polling, navigation/reload/history, Settings migration, localization, no mutations/overflow/page errors",
+    "360px en/light: sidebar placement, collapse/drawer, shared chat, lazy provider, no idle polling, navigation/reload/history, Settings migration, localization, no mutations/overflow/page errors"
+  ]
+}

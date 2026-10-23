@@ -1,0 +1,7 @@
+{
+  "scope": "Product UI with labeled HTTP and Google-page fixtures; no real OAuth or inference",
+  "checks": [
+    "1440px vi/dark: user-only login, sanitized popup/no opener, blocked-popup fallback, cancel, offline polling pause/retry, successful catalog/selection, stop/start/reload, no idle polling/inference/overflow/page errors",
+    "360px en/light: user-only login, sanitized popup/no opener, blocked-popup fallback, cancel, offline polling pause/retry, successful catalog/selection, stop/start/reload, no idle polling/inference/overflow/page errors"
+  ]
+}

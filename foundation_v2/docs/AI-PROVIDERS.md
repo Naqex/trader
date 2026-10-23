@@ -93,7 +93,8 @@ Google là ba loại secret khác nhau.
 ### Cái có thể reuse và chỗ cần sửa
 
 `api-rust/src/ai_assistant.rs` giữ harness dùng chung và transport WebGPT;
-`ai_gateway.rs` giữ adapter Responses cho gateway. Không thêm trait/framework
+`ai_gateway.rs` giữ adapter Responses cho gateway; `ai_gateway_runtime.rs` quản lý
+process gateway và CLI OAuth qua `owned_process` hiện có. Không thêm trait/framework
 hoặc dependency. `AiProviderSettings.jsx` chọn provider/model; `AiChatPanel.jsx`
 gọi routes trung lập `/api/v2/ai/assistant/*`. Harness giữ:
 
@@ -209,7 +210,38 @@ Tại gốc repo sản phẩm, helper kiểm hash v8.0.40 trước mỗi thao t�
 ignore và kiểm ACL chỉ current Windows user. Đây không phải mã hóa credential;
 app khác chạy cùng user vẫn có thể đọc. Không lấy credential từ app khác.
 
-Khi owner sẵn sàng, tự chạy lệnh tương tác sau (agent chưa chạy):
+### Kết nối trên web
+
+Trong **AI và Bot → Kết nối**, chọn **CLIProxyAPI local**, rồi bấm **Kết nối Google**.
+Backend bật gateway đã ghim phiên bản và chạy CLI OAuth với `--no-browser`.
+Frontend mở URL Google đã được kiểm tra trong tab riêng; owner tự xem quyền và
+đăng nhập. Nếu popup bị chặn, dùng liên kết **Mở trang đăng nhập**. Không đọc
+profile trình duyệt, lấy token từ Antigravity hay dùng management API.
+
+Trang chỉ poll trong lúc đăng nhập; dừng khi hoàn tất/hủy và tạm dừng khi lỗi mạng.
+Backend áp timeout 5 phút ngay cả khi rời trang. Nút **Hủy đăng nhập** dừng process
+OAuth; không xóa các tài khoản đã lưu. Đăng nhập xong chọn model trong catalog;
+nếu catalog chưa cập nhật kịp có thể bấm **Tải lại model**. **Thêm tài khoản Google**
+lặp lại OAuth để gateway lưu thêm credential, chưa phải nghiệm thu routing pool thật.
+
+Những lần sau bấm **Bật kết nối** để dùng tài khoản đã lưu. **Tắt kết nối** chỉ dừng
+gateway do API này tạo, không xóa credential. Gateway chạy nền theo vòng đời API,
+không cần terminal PowerShell, không cài Windows service/autostart. Dừng/crash API
+sẽ dừng process tree thuộc API. Chỉ mở trang hoặc đổi provider không tự đăng nhập
+hay bật gateway. Tài khoản mới vẫn cần owner đồng ý OAuth trên Google.
+
+Các POST `account/start`, `login`, `cancel`, `stop` dùng boundary local peer,
+same-origin và workspace hiện có; bị khóa khi đang gửi chat. Chỉ cấu hình mặc định
+loopback/key path đã khởi tạo được quản lý. Mỗi lần start kiểm SHA256 binary,
+sinh `managed.yaml` với profile loopback/management-off đã đánh giá, dùng chung
+auth-dir và key hiện có. Không áp dụng tùy chỉnh trong `config.yaml` vào chế độ này.
+Chỉ đếm file credential, không đọc nội dung token hay đưa tên/email/key về web.
+Không nhận/tắt process chỉ vì nó đang chiếm port; gateway chạy thủ công vẫn dùng
+được qua adapter, cần dừng bản đó trước khi chuyển sang quản lý trong ứng dụng.
+
+### Chạy thủ công khi cần chẩn đoán
+
+Từ gốc repo, owner vẫn có thể dùng luồng CLI (agent không tự đăng nhập):
 
 ```powershell
 & .\.runtime\ai-gateway-evaluation\cliproxyapi-v8.0.40\cli-proxy-api.exe `

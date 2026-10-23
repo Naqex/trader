@@ -1,0 +1,9 @@
+{
+  "scope": "Product UI with labeled HTTP fixtures; no Google account or model inference",
+  "checks": [
+    "1440px vi/dark: provider/model, empty/auth/quota, no implicit login/inference/retry, idle, no fabricated effort, send/cancel, expected selection, no overflow/page errors",
+    "1440px en/light: provider/model, empty/auth/quota, no implicit login/inference/retry, idle, no fabricated effort, send/cancel, expected selection, no overflow/page errors",
+    "360px vi/dark: provider/model, empty/auth/quota, no implicit login/inference/retry, idle, no fabricated effort, send/cancel, expected selection, no overflow/page errors",
+    "360px en/light: provider/model, empty/auth/quota, no implicit login/inference/retry, idle, no fabricated effort, send/cancel, expected selection, no overflow/page errors"
+  ]
+}

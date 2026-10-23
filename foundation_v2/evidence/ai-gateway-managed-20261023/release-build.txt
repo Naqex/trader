@@ -1,0 +1,2 @@
+   Compiling trading-workspace-api v0.1.0 (D:\ANNAM\TradingWorkspace\projects\mt5-tradingview-backtester\foundation_v2\api-rust)
+    Finished `release` profile [optimized] target(s) in 1m 45s

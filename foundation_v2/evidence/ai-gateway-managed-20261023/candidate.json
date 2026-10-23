@@ -1,0 +1,14 @@
+[
+  {
+    "Path": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\.runtime\\api-builds\\ai-managed-20261023\\release\\rust_research_worker.exe",
+    "Hash": "7B51F3B2F038A0EF27E47B2351A772C3B254EA14C777B2218D43139763658FC8"
+  },
+  {
+    "Path": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\.runtime\\api-builds\\ai-managed-20261023\\release\\rust_runtime_admin.exe",
+    "Hash": "4700FFF5F2EA400FB917B15A727D89C0748D249A93CC2BC723E2AE12A0B7CE14"
+  },
+  {
+    "Path": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\.runtime\\api-builds\\ai-managed-20261023\\release\\trading-workspace-api.exe",
+    "Hash": "2D1515C47FACBB8E656FF048C58695FCFD5315390D935D51C19F7BBB6D50F6CB"
+  }
+]

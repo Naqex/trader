@@ -1,0 +1,22 @@
+   Compiling trading-workspace-api v0.1.0 (D:\ANNAM\TradingWorkspace\projects\mt5-tradingview-backtester\foundation_v2\api-rust)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 20.50s
+     Running unittests src\lib.rs (target\debug\deps\trading_workspace_api-7195938e6d918196.exe)
+
+running 15 tests
+test ai_assistant::tests::account_mutations_require_loopback_peer_and_same_origin ... ok
+test ai_assistant::tests::chat_returns_only_complete_assistant_text ... ok
+test ai_assistant::tests::chat_cancel_is_scoped_idempotent_and_drops_the_running_task ... ok
+test ai_assistant::tests::completed_chat_survives_late_cancel_and_shutdown_aborts_pending_work ... ok
+test ai_assistant::tests::chat_accepts_only_bounded_alternating_text_without_provider_overrides ... ok
+test ai_assistant::tests::status_does_not_start_a_browser_or_adopt_a_service ... ok
+test ai_assistant::tests::route_context_is_bounded_data_not_policy_or_account_data ... ok
+test ai_gateway::tests::url_cannot_send_credentials_off_machine_or_to_management ... ok
+test ai_gateway_runtime::tests::only_google_oauth_with_exact_local_callback_is_opened ... ok
+test ai_assistant::tests::provider_routes_keep_identity_origin_and_no_store_boundaries ... ok
+test ai_assistant::tests::gateway_uses_shared_policy_context_and_task_scope_without_browser_or_tools ... ok
+test ai_gateway_runtime::tests::idle_is_lazy_cancel_stops_job_and_errors_are_sanitized ... ok
+test ai_assistant::tests::gateway_failures_are_sanitized_and_cancel_keeps_provider_selection_atomic ... ok
+test ai_assistant::tests::managed_gateway_http_start_stop_preserve_boundaries_and_credentials ... ok
+test ai_gateway_runtime::tests::pinned_empty_gateway_starts_once_and_stops_owned_process ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 172 filtered out; finished in 32.19s

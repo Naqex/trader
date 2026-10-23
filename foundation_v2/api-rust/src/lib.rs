@@ -28,6 +28,7 @@ pub mod provider_routes;
 pub mod notion_oauth;
 pub mod ai_assistant;
 mod ai_gateway;
+mod ai_gateway_runtime;
 pub mod research_jobs;
 pub mod research_execution;
 pub mod rust_runtime;

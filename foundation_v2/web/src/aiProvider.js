@@ -1,4 +1,12 @@
 const errors = {
+  ai_gateway_not_installed: ['Chưa cài gateway trên máy chạy ứng dụng.', 'The gateway is not installed on the app server.'],
+  ai_gateway_binary_invalid: ['Bản gateway không khớp phiên bản đã cấu hình.', 'The gateway binary does not match the configured version.'],
+  ai_gateway_port_in_use: ['Gateway đang chạy ngoài ứng dụng. Dừng bản đó trước khi bật kết nối tại đây.', 'The gateway is running outside the app. Stop that instance before starting it here.'],
+  ai_gateway_start_failed: ['Chưa bật được kết nối AI. Thử lại.', 'Could not start the AI connection. Retry.'],
+  ai_gateway_stopped: ['Kết nối AI đã dừng. Bật lại để tiếp tục.', 'The AI connection stopped. Start it again to continue.'],
+  ai_gateway_login_failed: ['Chưa hoàn tất đăng nhập Google. Thử kết nối lại.', 'Google sign-in did not complete. Try connecting again.'],
+  ai_gateway_login_timeout: ['Đã hết thời gian đăng nhập Google. Thử kết nối lại.', 'Google sign-in timed out. Try connecting again.'],
+  ai_gateway_unmanaged: ['Kết nối này được quản lý ngoài ứng dụng.', 'This connection is managed outside the app.'],
   ai_selection_changed: ['Lựa chọn AI đã thay đổi. Kiểm tra model rồi gửi lại câu hỏi.', 'The AI selection changed. Check the model before resending your question.'],
   ai_gateway_not_configured: ['Chưa cấu hình gateway trên máy này.', 'The gateway is not configured on this machine.'],
   ai_gateway_key_invalid: ['Khóa kết nối gateway không hợp lệ. Kiểm tra cấu hình máy chủ.', 'Invalid gateway key. Check the server configuration.'],
@@ -24,3 +32,12 @@ export function aiErrorCopy(code, en = false) {
 }
 
 export function isGatewayError(code) { return code?.startsWith('ai_gateway_') || code === 'invalid_ai_selection' || code === 'ai_selection_changed' }
+
+export function googleOAuthUrl(value) {
+  try {
+    const url = new URL(value), callback = new URL(url.searchParams.get('redirect_uri'))
+    return url.protocol === 'https:' && url.hostname === 'accounts.google.com' && !url.port && !url.username && !url.password && !url.hash
+      && ['/o/oauth2/auth', '/o/oauth2/v2/auth'].includes(url.pathname) && url.searchParams.get('response_type') === 'code' && url.searchParams.get('state')
+      && callback.origin === 'http://localhost:51121' && callback.pathname === '/oauth-callback' && !callback.search && !callback.hash && !callback.username && !callback.password ? url.href : null
+  } catch { return null }
+}

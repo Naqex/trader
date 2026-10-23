@@ -209,19 +209,22 @@ impl AiAssistant {
         if !legacy && action == "provider" {
             if body.as_object().is_none_or(|v| v.len() != 1) { return Err(ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY,"invalid_ai_provider")); }
             let provider = Provider::parse(body["provider"].as_str().unwrap_or(""))?;
-            if self.web_status().await?["operation"].is_object() {
+            if self.web_status().await?["operation"].is_object() || self.gateway.busy().await {
                 return Err(ApiError::detail(StatusCode::CONFLICT, "chatgpt_busy"));
             }
             *self.provider.lock().await = provider;
             return self.account(false, false).await;
         }
         let provider = if legacy { Provider::Web } else { *self.provider.lock().await };
+        if provider == Provider::Gateway && self.gateway.busy().await && !["cancel", "stop"].contains(&action) {
+            return Err(ApiError::detail(StatusCode::CONFLICT, "chatgpt_busy"));
+        }
         if provider == Provider::Web {
             self.web_action(action, body).await?;
         } else if action == "selection" {
             self.gateway.select(&body).await?;
         } else if action != "refresh" || body.as_object().is_none_or(|v| !v.is_empty()) {
-            return Err(ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY, "invalid_ai_action"));
+            self.gateway.action(action, &body).await?;
         }
         self.account(legacy, action == "refresh").await
     }
@@ -254,6 +257,7 @@ impl AiAssistant {
             return Err(ApiError::detail(StatusCode::CONFLICT, "chatgpt_busy"));
         }
         let provider = if legacy { Provider::Web } else { *self.provider.lock().await };
+        if provider == Provider::Gateway && self.gateway.busy().await { return Err(ApiError::detail(StatusCode::CONFLICT,"chatgpt_busy")); }
         let (selection, request) = match provider {
             Provider::Web => self.web_request(messages, &context).await?,
             Provider::Gateway => self.gateway.prepare(grounded_messages(messages, &context), ASSISTANT_POLICY).await?,
@@ -317,6 +321,7 @@ impl AiAssistant {
             if let Some(task) = turn.task.take() { task.abort(); let _ = task.await; }
         }
         if let Some(mut child) = self.child.lock().await.take() { let _ = child.kill().await; }
+        self.gateway.shutdown().await;
     }
 }
 
@@ -403,6 +408,50 @@ mod tests {
                 assert!(!String::from_utf8_lossy(&bytes).contains("inference.key"));
             }
         }
+    }
+
+    #[tokio::test]
+    #[ignore = "Explicit local acceptance: pinned empty gateway, actual product HTTP handlers, no DB/broker/OAuth"]
+    async fn managed_gateway_http_start_stop_preserve_boundaries_and_credentials() {
+        use http_body_util::BodyExt;
+        use tower::ServiceExt;
+        let _guard = crate::ai_gateway_runtime::ACCEPTANCE_LOCK.lock().await;
+        let mut state = crate::tests::fixture(100);
+        Arc::get_mut(&mut state).unwrap().config.request_timeout = Duration::from_secs(30);
+        let app = crate::router(state.clone(), routes());
+        let call = |method: &'static str, suffix: &'static str, body: Value| {
+            let app = app.clone();
+            async move {
+                let mut request = axum::http::Request::builder().method(method)
+                    .uri(format!("/api/v2/ai/assistant/account{suffix}"))
+                    .header("host","localhost:5180").header("origin","http://localhost:5180")
+                    .header("x-workspace-id","a").header("content-type","application/json")
+                    .body(axum::body::Body::from(body.to_string())).unwrap();
+                request.extensions_mut().insert(ConnectInfo("127.0.0.1:1000".parse::<std::net::SocketAddr>().unwrap()));
+                let response = app.oneshot(request).await.unwrap();
+                let status = response.status();
+                assert_eq!(response.headers()["cache-control"],"no-store");
+                let bytes = response.into_body().collect().await.unwrap().to_bytes();
+                (status, serde_json::from_slice::<Value>(&bytes).unwrap())
+            }
+        };
+        let (status, value) = call("POST","/provider",json!({"provider":"local-gateway"})).await;
+        assert_eq!(status,StatusCode::OK); assert_eq!(value["runtime"]["managed"],true);
+        assert_eq!(value["runtime"]["accounts"],0,"Only run against empty auth");
+        assert_eq!(value["runtime"]["running"],false,"navigation/provider selection never starts a process");
+        assert_eq!(call("POST","/start",json!({"path":"untrusted.exe"})).await.0,StatusCode::UNPROCESSABLE_ENTITY);
+        let (status, value) = call("POST","/start",json!({})).await;
+        assert_eq!(status,StatusCode::OK); assert_eq!(value["status"],"empty");
+        assert_eq!(value["runtime"]["running"],true); assert_eq!(value["runtime"]["external"],false);
+        assert_eq!(value["ready"],false); assert!(value["operation"].is_null());
+        assert!(!value.to_string().contains("inference.key"));
+        assert_eq!(call("POST","/start",json!({})).await.0,StatusCode::OK);
+        assert_eq!(call("POST","/login",json!({"callback":"https://evil.example"})).await.0,StatusCode::UNPROCESSABLE_ENTITY);
+        let (status, value) = call("POST","/stop",json!({})).await;
+        assert_eq!(status,StatusCode::OK); assert_eq!(value["ready"],false);
+        assert_eq!(value["runtime"]["running"],false); assert_eq!(value["runtime"]["accounts"],0);
+        state.ai_assistant.shutdown().await;
+        let _listener = tokio::net::TcpListener::bind("127.0.0.1:17852").await.unwrap();
     }
 
     struct GatewayFixture {

@@ -4,12 +4,13 @@ use serde_json::{Value, json};
 use std::{collections::BTreeSet, path::PathBuf, time::{Duration, Instant}};
 use tokio::sync::Mutex;
 
-/// The product never opens the gateway's OAuth store or management API.
+/// OAuth tokens stay in the pinned gateway; the product only counts credential files.
 pub(crate) struct LocalGateway {
     base: String,
     key_file: PathBuf,
     client: reqwest::Client,
     state: Mutex<GatewayState>,
+    runtime: Option<crate::ai_gateway_runtime::GatewayRuntime>,
 }
 
 struct GatewayState {
@@ -38,7 +39,11 @@ impl LocalGateway {
         let base = std::env::var("TW_AI_GATEWAY_BASE_URL").unwrap_or_else(|_| "http://127.0.0.1:17852/v1".into());
         let key_file = std::env::var_os("TW_AI_GATEWAY_KEY_FILE").map(PathBuf::from)
             .unwrap_or_else(|| project.join(".runtime/mt5-ai-gateway/inference.key"));
-        Self::new(&base, key_file, std::env::var("TW_AI_GATEWAY_MODEL").ok())
+        let managed = base_url(&base)? == "http://127.0.0.1:17852/v1"
+            && key_file == project.join(".runtime/mt5-ai-gateway/inference.key");
+        let mut gateway = Self::new(&base, key_file, std::env::var("TW_AI_GATEWAY_MODEL").ok())?;
+        if managed && cfg!(windows) { gateway.runtime = Some(crate::ai_gateway_runtime::GatewayRuntime::new(project)); }
+        Ok(gateway)
     }
 
     pub(crate) fn new(base: &str, key_file: PathBuf, selected: Option<String>) -> Result<Self, String> {
@@ -46,7 +51,7 @@ impl LocalGateway {
         Ok(Self { base: base_url(base)?, key_file,
             client: reqwest::Client::builder().no_proxy().redirect(reqwest::redirect::Policy::none())
                 .timeout(Duration::from_secs(3)).build().map_err(|_| "AI gateway client unavailable")?,
-            state: Mutex::new(GatewayState { selected, catalog: None }) })
+            state: Mutex::new(GatewayState { selected, catalog: None }), runtime: None })
     }
 
     async fn key(&self) -> Result<String, ApiError> {
@@ -81,8 +86,16 @@ impl LocalGateway {
     }
 
     pub(crate) async fn status(&self, refresh: bool) -> Value {
+        let (runtime, completed) = match &self.runtime {
+            Some(runtime) => runtime.status().await,
+            None => (json!({"managed":false}), false),
+        };
+        if runtime["operation"].is_object() {
+            return json!({"status":"waiting_for_browser","models":[],"ready":false,"selection":null,
+                "operation":runtime["operation"],"runtime":runtime,"endpoint":self.base});
+        }
         let mut state = self.state.lock().await;
-        match self.catalog(&mut state, refresh).await {
+        let mut value = match self.catalog(&mut state, refresh || completed).await {
             Ok(models) => {
                 let selection = state.selected.as_ref().filter(|id| models.iter().any(|m| m["id"] == id.as_str()))
                     .map(|id| json!({"model":id,"effort":null}));
@@ -91,7 +104,35 @@ impl LocalGateway {
             }
             Err(error) => json!({"status":"unavailable","error":error.1["detail"],"models":[],"selection":null,
                 "ready":false,"operation":null,"endpoint":self.base}),
+        };
+        if runtime["error"].is_string() { value["error"] = runtime["error"].clone(); }
+        value["runtime"] = runtime;
+        value["runtime"]["external"] = json!(value["runtime"]["managed"] == true && value["runtime"]["running"] == false && value["status"] != "unavailable");
+        value
+    }
+
+    pub(crate) async fn busy(&self) -> bool {
+        match &self.runtime { Some(runtime) => runtime.busy().await, None => false }
+    }
+
+    pub(crate) async fn action(&self, action: &str, body: &Value) -> Result<(), ApiError> {
+        if body.as_object().is_none_or(|v| !v.is_empty()) || !["start","login","cancel","stop"].contains(&action) {
+            return Err(ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY,"invalid_ai_action"));
         }
+        let runtime = self.runtime.as_ref().ok_or_else(|| unavailable("ai_gateway_unmanaged"))?;
+        match action {
+            "start" => runtime.start(&self.key().await?).await?,
+            "login" => runtime.login(&self.key().await?).await?,
+            "cancel" => runtime.cancel().await,
+            "stop" => runtime.stop().await,
+            _ => unreachable!(),
+        }
+        self.state.lock().await.catalog = None;
+        Ok(())
+    }
+
+    pub(crate) async fn shutdown(&self) {
+        if let Some(runtime) = &self.runtime { runtime.stop().await; }
     }
 
     pub(crate) async fn select(&self, body: &Value) -> Result<(), ApiError> {
