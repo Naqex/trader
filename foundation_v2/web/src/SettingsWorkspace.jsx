@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { buildWorkspaceHref } from './workspaceContext.js'
 import { useFxReplayContext } from './FxReplayShell.jsx'
 import './settings.css'
-import ChatGptAccount from './ChatGptAccount.jsx'
+import AiProviderSettings from './AiProviderSettings.jsx'
 
 const NOTION_STATUS_URL = '/api/v2/connectors/notion/oauth/status'
 
@@ -169,7 +169,7 @@ export default function SettingsWorkspace({ workspace = 'tenant-a', query }) {
         <p className="settings-note" role="status" data-testid="settings-appearance-status">{appearanceStatus === 'saved' ? 'Đã lưu giao diện trên trình duyệt này.' : appearanceStatus === 'volatile' ? 'Đã áp dụng trong phiên này. Trình duyệt đang chặn lưu tùy chọn; bạn có thể thử lưu lại.' : appearanceDirty ? 'Có thay đổi chưa lưu.' : ''}</p>
       </section>}
 
-      <ChatGptAccount workspace={workspace} />
+      <AiProviderSettings workspace={workspace} language={appearance?.language} />
 
       <section className="settings-context" aria-label="Ngữ cảnh hiện tại">
         <div><span>Workspace</span><strong>{workspace}</strong></div>

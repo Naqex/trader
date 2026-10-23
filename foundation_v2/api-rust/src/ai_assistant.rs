@@ -1,11 +1,11 @@
 use crate::{auth::{ApiError, Workspace}, owned_process, state::AppState};
-use axum::{extract::{ConnectInfo, Path, Request, State}, http::StatusCode, middleware::Next, response::{IntoResponse, Response}, routing::{get, post}, Json, Router};
+use axum::{extract::{ConnectInfo, OriginalUri, Path, Request, State}, http::StatusCode, middleware::Next, response::{IntoResponse, Response}, routing::{get, post}, Json, Router};
 use serde_json::{json, Value};
 use std::{path::PathBuf, sync::Arc, time::Duration};
 use tokio::{io::AsyncReadExt, sync::Mutex};
 
-/// Owns the dedicated browser bridge tree. Credentials remain in its private home.
-pub struct ChatGptWeb {
+/// One product harness and task slot; transports never acquire product tools or broker rights.
+pub struct AiAssistant {
     source: PathBuf,
     home: PathBuf,
     bun: PathBuf,
@@ -13,6 +13,18 @@ pub struct ChatGptWeb {
     child: Mutex<Option<owned_process::Child>>,
     client: reqwest::Client,
     chat: Mutex<Option<ChatTurn>>,
+    provider: Mutex<Provider>,
+    gateway: crate::ai_gateway::LocalGateway,
+}
+
+#[derive(Clone, Copy, PartialEq)]
+enum Provider { Web, Gateway }
+impl Provider {
+    fn id(self) -> &'static str { match self { Self::Web => "chatgpt-web", Self::Gateway => "local-gateway" } }
+    fn parse(value: &str) -> Result<Self, ApiError> {
+        match value { "chatgpt-web" => Ok(Self::Web), "local-gateway" => Ok(Self::Gateway),
+            _ => Err(ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY, "invalid_ai_provider")) }
+    }
 }
 
 struct ChatTurn {
@@ -24,6 +36,7 @@ struct ChatTurn {
     grounding: Value,
     task: Option<tokio::task::JoinHandle<Result<String, &'static str>>>,
     result: Value,
+    provider: Provider,
 }
 
 const POLICY_VERSION: &str = "wmreplay-chat-2026-10-19.1";
@@ -41,7 +54,7 @@ fn chat_context(body: &Value) -> Result<Value, ApiError> {
 
 fn chat_messages(body: Value) -> Result<Value, ApiError> {
     let invalid = || ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY, "invalid_chat_messages");
-    if body.as_object().is_none_or(|v| v.keys().any(|key| !["messages", "context"].contains(&key.as_str()))) { return Err(invalid()); }
+    if body.as_object().is_none_or(|v| v.keys().any(|key| !["messages", "context", "expected_selection"].contains(&key.as_str()))) { return Err(invalid()); }
     let messages = body["messages"].as_array().ok_or_else(invalid)?;
     if messages.is_empty() || messages.len() > 63 || serde_json::to_vec(&body).map_err(|_| invalid())?.len() > 49152 { return Err(invalid()); }
     for (index, message) in messages.iter().enumerate() {
@@ -79,7 +92,7 @@ fn chat_text(value: &Value) -> Result<String, &'static str> {
 
 fn unavailable(code: &str) -> ApiError { ApiError::detail(StatusCode::SERVICE_UNAVAILABLE, code) }
 
-impl ChatGptWeb {
+impl AiAssistant {
     pub fn from_environment() -> Result<Self, String> {
         let workspace = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).ancestors().nth(4).ok_or("workspace path unavailable")?;
         let source = std::env::var_os("TW_CHATGPT_WEB_CORE").map(PathBuf::from)
@@ -92,7 +105,10 @@ impl ChatGptWeb {
         if !source.is_absolute() || !home.is_absolute() || !bun.is_absolute() || port < 1024 {
             return Err("ChatGPT Web requires explicit absolute local paths and a nonprivileged port".into());
         }
+        let provider = Provider::parse(&std::env::var("TW_AI_PROVIDER").unwrap_or_else(|_| "chatgpt-web".into()))
+            .map_err(|_| "invalid TW_AI_PROVIDER")?;
         Ok(Self { source, home, bun, port, child: Mutex::new(None), chat: Mutex::new(None),
+            provider:Mutex::new(provider), gateway:crate::ai_gateway::LocalGateway::from_environment()?,
             client: reqwest::Client::builder().no_proxy().redirect(reqwest::redirect::Policy::none())
                 .timeout(Duration::from_secs(15)).build().map_err(|_| "ChatGPT Web HTTP client unavailable")? })
     }
@@ -148,7 +164,7 @@ impl ChatGptWeb {
         }
         response.json().await.map_err(|_| unavailable("chatgpt_invalid_response"))
     }
-    pub async fn status(&self) -> Result<Value, ApiError> {
+    async fn web_status(&self) -> Result<Value, ApiError> {
         let mut child = self.child.lock().await;
         if child.as_ref().is_none_or(|process| process.try_wait().ok().flatten().is_some()) {
             *child = None;
@@ -157,7 +173,7 @@ impl ChatGptWeb {
         }
         self.call("GET", "", None).await
     }
-    async fn action(&self, action: &str, body: Value) -> Result<Value, ApiError> {
+    async fn web_action(&self, action: &str, body: Value) -> Result<Value, ApiError> {
         if !["login", "probe", "selection", "cancel", "disconnect", "start"].contains(&action) {
             return Err(ApiError::detail(StatusCode::NOT_FOUND, "Not Found"));
         }
@@ -165,23 +181,51 @@ impl ChatGptWeb {
             || (action == "selection" && (body.as_object().is_some_and(|v| v.len() != 2) || !body["model"].is_string() || !body["effort"].is_string())) {
             return Err(ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY, "invalid_chatgpt_action"));
         }
-        let chat = self.chat.lock().await;
-        if chat.as_ref().is_some_and(|turn| turn.task.as_ref().is_some_and(|task| !task.is_finished())) {
-            return Err(ApiError::detail(StatusCode::CONFLICT, "chatgpt_busy"));
-        }
         let mut child = self.child.lock().await;
         self.ensure_started(&mut child).await?;
         if action == "start" { return self.call("GET", "", None).await; }
         self.call("POST", &format!("/{action}"), Some(body)).await
     }
-    async fn start_chat(&self, scope: &Workspace, body: Value) -> Result<Value, ApiError> {
-        let context = chat_context(&body)?;
-        let messages = chat_messages(body)?;
-        let grounding = json!({"policy_version":POLICY_VERSION,"context":context,"data_access":"none"});
-        let mut chat = self.chat.lock().await;
-        if chat.as_ref().is_some_and(|turn| turn.task.as_ref().is_some_and(|task| !task.is_finished())) {
+    async fn account(&self, legacy: bool, refresh: bool) -> Result<Value, ApiError> {
+        let provider = if legacy { Provider::Web } else { *self.provider.lock().await };
+        let mut value = match provider {
+            Provider::Web => self.web_status().await?,
+            Provider::Gateway => self.gateway.status(refresh).await,
+        };
+        if provider == Provider::Web {
+            value["ready"] = json!(value["login_state_present"] == true && value["operation"].is_null() && value["selection"].is_object());
+        }
+        value["provider"] = json!(provider.id());
+        value["providers"] = json!([{"id":"local-gateway","name":"CLIProxyAPI local"},{"id":"chatgpt-web","name":"ChatGPT Web"}]);
+        value["account_scope"] = json!("local-machine");
+        value["capabilities"] = json!({"text":true,"tools":false,"agents":false});
+        Ok(value)
+    }
+    async fn account_action(&self, legacy: bool, action: &str, body: Value) -> Result<Value, ApiError> {
+        let _chat = self.chat.lock().await;
+        if _chat.as_ref().is_some_and(|turn| turn.task.as_ref().is_some_and(|task| !task.is_finished())) {
             return Err(ApiError::detail(StatusCode::CONFLICT, "chatgpt_busy"));
         }
+        if !legacy && action == "provider" {
+            if body.as_object().is_none_or(|v| v.len() != 1) { return Err(ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY,"invalid_ai_provider")); }
+            let provider = Provider::parse(body["provider"].as_str().unwrap_or(""))?;
+            if self.web_status().await?["operation"].is_object() {
+                return Err(ApiError::detail(StatusCode::CONFLICT, "chatgpt_busy"));
+            }
+            *self.provider.lock().await = provider;
+            return self.account(false, false).await;
+        }
+        let provider = if legacy { Provider::Web } else { *self.provider.lock().await };
+        if provider == Provider::Web {
+            self.web_action(action, body).await?;
+        } else if action == "selection" {
+            self.gateway.select(&body).await?;
+        } else if action != "refresh" || body.as_object().is_none_or(|v| !v.is_empty()) {
+            return Err(ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY, "invalid_ai_action"));
+        }
+        self.account(legacy, action == "refresh").await
+    }
+    async fn web_request(&self, messages: Value, context: &Value) -> Result<(Value, reqwest::RequestBuilder), ApiError> {
         let mut child = self.child.lock().await;
         self.ensure_started(&mut child).await?;
         let account = self.call("GET", "", None).await?;
@@ -190,16 +234,42 @@ impl ChatGptWeb {
         let selection = account["selection"].clone();
         let model = selection["model"].as_str().ok_or_else(|| unavailable("chatgpt_selection_required"))?;
         let effort = selection["effort"].as_str().ok_or_else(|| unavailable("chatgpt_selection_required"))?;
-        // Validate against this core's upstream catalog immediately before sending.
         if !account["models"].as_array().is_some_and(|models| models.iter().any(|item|
             item["id"] == model && item["efforts"].as_array().is_some_and(|efforts| efforts.iter().any(|v| v == effort)))) {
             return Err(unavailable("chatgpt_selection_required"));
         }
-        let payload = json!({"model":model,"reasoning":{"effort":effort},"input":grounded_messages(messages, &context),"stream":false,"store":false,
+        let payload = json!({"model":model,"reasoning":{"effort":effort},"input":grounded_messages(messages, context),"stream":false,"store":false,
             "instructions":ASSISTANT_POLICY});
         let request = self.client.post(format!("http://127.0.0.1:{}/v1/responses", self.port))
             .bearer_auth(self.token()?).timeout(Duration::from_secs(190)).json(&payload);
+        Ok((selection, request))
+    }
+    async fn start_chat(&self, scope: &Workspace, body: Value, legacy: bool) -> Result<Value, ApiError> {
+        let context = chat_context(&body)?;
+        let expected = body.get("expected_selection").cloned();
+        let messages = chat_messages(body)?;
+        let grounding = json!({"policy_version":POLICY_VERSION,"context":context,"data_access":"none"});
+        let mut chat = self.chat.lock().await;
+        if chat.as_ref().is_some_and(|turn| turn.task.as_ref().is_some_and(|task| !task.is_finished())) {
+            return Err(ApiError::detail(StatusCode::CONFLICT, "chatgpt_busy"));
+        }
+        let provider = if legacy { Provider::Web } else { *self.provider.lock().await };
+        let (selection, request) = match provider {
+            Provider::Web => self.web_request(messages, &context).await?,
+            Provider::Gateway => self.gateway.prepare(grounded_messages(messages, &context), ASSISTANT_POLICY).await?,
+        };
+        if !legacy && expected != Some(json!({"provider":provider.id(),"model":selection["model"],"effort":selection["effort"]})) {
+            return Err(ApiError::detail(StatusCode::CONFLICT,"ai_selection_changed"));
+        }
         let task = tokio::spawn(async move {
+            if provider == Provider::Gateway {
+                let value = crate::ai_gateway::read_json(request).await?;
+                return chat_text(&value).map_err(|code| match code {
+                    "chatgpt_model_unavailable" => "ai_gateway_model_unavailable",
+                    "chatgpt_empty_response" => "ai_gateway_empty_response",
+                    _ => "ai_gateway_incomplete_response",
+                });
+            }
             let mut response = request.send().await.map_err(|error| if error.is_timeout() { "chatgpt_timeout" } else { "chatgpt_response_failed" })?;
             if !response.status().is_success() {
                 return Err(if [409, 429].contains(&response.status().as_u16()) { "chatgpt_busy" } else { "chatgpt_response_failed" });
@@ -214,12 +284,15 @@ impl ChatGptWeb {
         });
         let id = uuid::Uuid::new_v4().to_string();
         *chat = Some(ChatTurn { id: id.clone(), workspace: scope.workspace_id.clone(), subject: scope.subject.clone(),
-            created: std::time::Instant::now(), selection: selection.clone(), grounding:grounding.clone(), task: Some(task), result: json!({"status":"running"}) });
-        Ok(json!({"id":id,"status":"running","selection":selection,"grounding":grounding}))
+            created: std::time::Instant::now(), selection: selection.clone(), grounding:grounding.clone(), provider, task: Some(task), result: json!({"status":"running"}) });
+        Ok(json!({"id":id,"status":"running","selection":selection,"grounding":grounding,"provider":provider.id()}))
     }
     async fn read_chat(&self, scope: &Workspace, id: &str, cancel: bool) -> Result<Value, ApiError> {
         let mut chat = self.chat.lock().await;
-        if chat.as_ref().is_some_and(|turn| turn.created.elapsed() > Duration::from_secs(600)) { *chat = None; }
+        if chat.as_ref().is_some_and(|turn| turn.created.elapsed() > Duration::from_secs(600)) {
+            if let Some(task) = chat.as_mut().and_then(|turn| turn.task.take()) { task.abort(); }
+            *chat = None;
+        }
         let turn = chat.as_mut().filter(|turn| turn.id == id && turn.workspace == scope.workspace_id && turn.subject == scope.subject)
             .ok_or_else(|| ApiError::detail(StatusCode::NOT_FOUND, "chatgpt_turn_not_found"))?;
         if cancel || turn.task.as_ref().is_some_and(|task| task.is_finished()) {
@@ -236,6 +309,7 @@ impl ChatGptWeb {
         result["id"] = json!(turn.id);
         result["selection"] = turn.selection.clone();
         result["grounding"] = turn.grounding.clone();
+        result["provider"] = json!(turn.provider.id());
         Ok(result)
     }
     pub async fn shutdown(&self) {
@@ -247,15 +321,19 @@ impl ChatGptWeb {
 }
 
 pub fn routes() -> Router<Arc<AppState>> {
-    Router::new().route("/api/v2/ai/chatgpt/account", get(status))
-        .route("/api/v2/ai/chatgpt/account/{action}", post(action))
-        .route("/api/v2/ai/chatgpt/chat", post(start_chat))
-        .route("/api/v2/ai/chatgpt/chat/{id}", get(read_chat).delete(cancel_chat))
-        .route_layer(axum::middleware::from_fn(local_boundary))
+    let mut routes = Router::new();
+    for base in ["/api/v2/ai/chatgpt", "/api/v2/ai/assistant"] {
+        routes = routes.route(&format!("{base}/account"), get(status))
+            .route(&format!("{base}/account/{{action}}"), post(action))
+            .route(&format!("{base}/chat"), post(start_chat))
+            .route(&format!("{base}/chat/{{id}}"), get(read_chat).delete(cancel_chat));
+    }
+    routes.route_layer(axum::middleware::from_fn(local_boundary))
 }
 pub fn native(method: &str, path: &str) -> bool {
-    matches!((method, path), ("GET", "/api/v2/ai/chatgpt/account") | ("POST", "/api/v2/ai/chatgpt/account/{action}")
-        | ("POST", "/api/v2/ai/chatgpt/chat") | ("GET" | "DELETE", "/api/v2/ai/chatgpt/chat/{id}"))
+    let suffix = path.strip_prefix("/api/v2/ai/chatgpt").or_else(|| path.strip_prefix("/api/v2/ai/assistant"));
+    matches!((method, suffix), ("GET", Some("/account")) | ("POST", Some("/account/{action}"))
+        | ("POST", Some("/chat")) | ("GET" | "DELETE", Some("/chat/{id}")))
 }
 fn local_request(request: &Request) -> bool {
     if !request.extensions().get::<ConnectInfo<std::net::SocketAddr>>().is_some_and(|peer| peer.0.ip().is_loopback()) { return false; }
@@ -269,30 +347,213 @@ fn local_request(request: &Request) -> bool {
     true
 }
 async fn local_boundary(request: Request, next: Next) -> Response {
-    if !local_request(&request) { return ApiError::detail(StatusCode::FORBIDDEN, "chatgpt_local_origin_required").into_response(); }
-    let mut response = next.run(request).await;
+    let mut response = if !local_request(&request) {
+        ApiError::detail(StatusCode::FORBIDDEN, "chatgpt_local_origin_required").into_response()
+    } else { next.run(request).await };
     response.headers_mut().insert("cache-control", axum::http::HeaderValue::from_static("no-store"));
     response
 }
-async fn status(State(state): State<Arc<AppState>>, _scope: Workspace) -> Result<Json<Value>, ApiError> {
-    state.chatgpt_web.status().await.map(Json)
+async fn status(State(state): State<Arc<AppState>>, _scope: Workspace, OriginalUri(uri): OriginalUri) -> Result<Json<Value>, ApiError> {
+    state.ai_assistant.account(uri.path().starts_with("/api/v2/ai/chatgpt/"), false).await.map(Json)
 }
-async fn action(State(state): State<Arc<AppState>>, _scope: Workspace, Path(action): Path<String>, Json(body): Json<Value>) -> Result<Json<Value>, ApiError> {
-    state.chatgpt_web.action(&action, body).await.map(Json)
+async fn action(State(state): State<Arc<AppState>>, _scope: Workspace, Path(action): Path<String>, OriginalUri(uri): OriginalUri, Json(body): Json<Value>) -> Result<Json<Value>, ApiError> {
+    state.ai_assistant.account_action(uri.path().starts_with("/api/v2/ai/chatgpt/"), &action, body).await.map(Json)
 }
-async fn start_chat(State(state): State<Arc<AppState>>, scope: Workspace, Json(body): Json<Value>) -> Result<(StatusCode, Json<Value>), ApiError> {
-    state.chatgpt_web.start_chat(&scope, body).await.map(|value| (StatusCode::ACCEPTED, Json(value)))
+async fn start_chat(State(state): State<Arc<AppState>>, scope: Workspace, OriginalUri(uri): OriginalUri, Json(body): Json<Value>) -> Result<(StatusCode, Json<Value>), ApiError> {
+    state.ai_assistant.start_chat(&scope, body, uri.path().starts_with("/api/v2/ai/chatgpt/")).await.map(|value| (StatusCode::ACCEPTED, Json(value)))
 }
 async fn read_chat(State(state): State<Arc<AppState>>, scope: Workspace, Path(id): Path<String>) -> Result<Json<Value>, ApiError> {
-    state.chatgpt_web.read_chat(&scope, &id, false).await.map(Json)
+    state.ai_assistant.read_chat(&scope, &id, false).await.map(Json)
 }
 async fn cancel_chat(State(state): State<Arc<AppState>>, scope: Workspace, Path(id): Path<String>) -> Result<Json<Value>, ApiError> {
-    state.chatgpt_web.read_chat(&scope, &id, true).await.map(Json)
+    state.ai_assistant.read_chat(&scope, &id, true).await.map(Json)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::atomic::{AtomicU8, AtomicUsize, Ordering};
+
+    #[tokio::test]
+    async fn provider_routes_keep_identity_origin_and_no_store_boundaries() {
+        use http_body_util::BodyExt;
+        use tower::ServiceExt;
+        let state = crate::tests::fixture(100);
+        let app = crate::router(state, routes());
+        for base in ["/api/v2/ai/assistant", "/api/v2/ai/chatgpt"] {
+            assert!(native("GET", &format!("{base}/account")));
+            assert!(native("POST", &format!("{base}/account/{{action}}")));
+            for (workspace, origin, method, suffix, expected) in [
+                ("a",None,"GET","account",StatusCode::OK),
+                ("foreign",None,"GET","account",StatusCode::FORBIDDEN),
+                ("a",Some("https://foreign.example"),"POST","account/selection",StatusCode::FORBIDDEN),
+                ("a",Some("http://localhost:5180"),"POST","account/selection",StatusCode::UNPROCESSABLE_ENTITY),
+            ] {
+                let mut request = axum::http::Request::builder().method(method).uri(format!("{base}/{suffix}"))
+                    .header("host","localhost:5180").header("x-workspace-id",workspace).header("content-type","application/json");
+                if let Some(origin) = origin { request = request.header("origin",origin); }
+                let mut request = request.body(axum::body::Body::from("{}" )).unwrap();
+                request.extensions_mut().insert(ConnectInfo("127.0.0.1:1000".parse::<std::net::SocketAddr>().unwrap()));
+                let response = app.clone().oneshot(request).await.unwrap();
+                assert_eq!(response.status(),expected);
+                if expected != StatusCode::FORBIDDEN || workspace == "a" {
+                    assert_eq!(response.headers()["cache-control"],"no-store");
+                }
+                let bytes = response.into_body().collect().await.unwrap().to_bytes();
+                assert!(!String::from_utf8_lossy(&bytes).contains("inference.key"));
+            }
+        }
+    }
+
+    struct GatewayFixture {
+        service: AiAssistant,
+        mode: Arc<AtomicU8>,
+        catalogs: Arc<AtomicUsize>,
+        requests: Arc<Mutex<Vec<Value>>>,
+        server: tokio::task::JoinHandle<()>,
+        key_file: PathBuf,
+    }
+    impl Drop for GatewayFixture {
+        fn drop(&mut self) { self.server.abort(); let _ = std::fs::remove_file(&self.key_file); }
+    }
+    impl GatewayFixture {
+        async fn new() -> Self {
+            let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let address = listener.local_addr().unwrap();
+            let mode = Arc::new(AtomicU8::new(0));
+            let catalogs = Arc::new(AtomicUsize::new(0));
+            let requests = Arc::new(Mutex::new(Vec::new()));
+            let (catalog_mode, catalog_count) = (mode.clone(), catalogs.clone());
+            let (response_mode, recorded) = (mode.clone(), requests.clone());
+            let app = Router::new().route("/v1/models", get(move |headers: axum::http::HeaderMap| {
+                let (mode, count) = (catalog_mode.clone(), catalog_count.clone());
+                async move {
+                    count.fetch_add(1, Ordering::SeqCst);
+                    assert_eq!(headers["authorization"], "Bearer synthetic-gateway-fixture-key-0001");
+                    match mode.load(Ordering::SeqCst) {
+                        8 => (StatusCode::UNAUTHORIZED, Json(json!({"private":"never return this"}))),
+                        9 => (StatusCode::OK, Json(json!({"wrong":"shape"}))),
+                        10 => (StatusCode::OK, Json(json!({"data":[]}))),
+                        _ => (StatusCode::OK, Json(json!({"data":[{"id":"gemini-fixture-pro"},{"id":"gemini-fixture-fast"}]}))),
+                    }
+                }
+            })).route("/v1/responses", post(move |Json(payload): Json<Value>| {
+                let (mode, recorded) = (response_mode.clone(), recorded.clone());
+                async move {
+                    recorded.lock().await.push(payload);
+                    match mode.load(Ordering::SeqCst) {
+                        1 => (StatusCode::TOO_MANY_REQUESTS, Json(json!({"secret":"do not expose upstream bodies"}))),
+                        2 => { std::future::pending::<()>().await; unreachable!() },
+                        3 => (StatusCode::OK, Json(json!({"status":"incomplete","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"partial"}]}]}))),
+                        4 => (StatusCode::OK, Json(json!({"status":"completed","output":[]}))),
+                        5 => (StatusCode::OK, Json(json!({"status":"completed","private":"x".repeat(262145)}))),
+                        _ => (StatusCode::OK, Json(json!({"status":"completed","output":[
+                            {"type":"message","role":"user","content":[{"type":"output_text","text":"never echo user"}]},
+                            {"type":"message","role":"assistant","content":[{"type":"output_text","text":"synthetic complete response"}]}]}))),
+                    }
+                }
+            }));
+            let server = tokio::spawn(async move { axum::serve(listener, app).await.unwrap(); });
+            let key_file = std::env::temp_dir().join(format!("wm-ai-fixture-{}.key", uuid::Uuid::new_v4()));
+            std::fs::write(&key_file, "synthetic-gateway-fixture-key-0001").unwrap();
+            let mut service = AiAssistant::from_environment().unwrap();
+            service.gateway = crate::ai_gateway::LocalGateway::new(&format!("http://{address}/v1"), key_file.clone(), None).unwrap();
+            *service.provider.lock().await = Provider::Web;
+            Self { service, mode, catalogs, requests, server, key_file }
+        }
+        fn scope() -> Workspace { Workspace {workspace_id:"synthetic".into(),subject:"fixture-owner".into()} }
+        async fn connect(&self) {
+            let account = self.service.account_action(false,"provider",json!({"provider":"local-gateway"})).await.unwrap();
+            assert_eq!(account["ready"], false);
+            self.service.account_action(false,"selection",json!({"model":"gemini-fixture-pro","effort":null})).await.unwrap();
+        }
+        async fn send(&self) -> String {
+            self.service.start_chat(&Self::scope(),json!({"messages":[{"role":"user","content":"synthetic question"}],"context":{"screen":"trade","locale":"en"},
+                "expected_selection":{"provider":"local-gateway","model":"gemini-fixture-pro","effort":null}}),false)
+                .await.unwrap()["id"].as_str().unwrap().to_owned()
+        }
+        async fn finish(&self, id: &str) -> Value {
+            tokio::time::timeout(Duration::from_secs(3), async {
+                loop {
+                    let value = self.service.read_chat(&Self::scope(),id,false).await.unwrap();
+                    if value["status"] != "running" { return value; }
+                    tokio::task::yield_now().await;
+                }
+            }).await.unwrap()
+        }
+    }
+
+    #[tokio::test]
+    async fn gateway_uses_shared_policy_context_and_task_scope_without_browser_or_tools() {
+        let fixture = GatewayFixture::new().await;
+        assert_eq!(fixture.service.account(false,false).await.unwrap()["provider"],"chatgpt-web");
+        assert_eq!(fixture.catalogs.load(Ordering::SeqCst),0,"unused gateway must be lazy");
+        fixture.connect().await;
+        let account = fixture.service.account(false,false).await.unwrap();
+        assert_eq!(account["ready"],true);
+        assert_eq!(account["capabilities"]["tools"],false);
+        assert_eq!(account["models"][0]["efforts"],json!([]));
+        assert_eq!(fixture.catalogs.load(Ordering::SeqCst),1,"catalog is cached across UI reads and selection");
+        for expected in [Value::Null,json!({"provider":"chatgpt-web","model":"gemini-fixture-pro","effort":null}),
+            json!({"provider":"local-gateway","model":"different-model","effort":null})] {
+            let body = json!({"messages":[{"role":"user","content":"must not send"}],"expected_selection":expected});
+            assert_eq!(fixture.service.start_chat(&GatewayFixture::scope(),body,false).await.unwrap_err().0,StatusCode::CONFLICT);
+        }
+        assert!(fixture.requests.lock().await.is_empty());
+        for body in [json!({"model":"unknown","effort":null}),json!({"model":"gemini-fixture-pro","effort":"high"}),
+            json!({"model":"gemini-fixture-pro","effort":null,"endpoint":"https://evil.example"})] {
+            assert_eq!(fixture.service.account_action(false,"selection",body).await.unwrap_err().0,StatusCode::UNPROCESSABLE_ENTITY);
+        }
+        let id = fixture.send().await;
+        let result = fixture.finish(&id).await;
+        assert_eq!(result["text"],"synthetic complete response");
+        assert_eq!(result["provider"],"local-gateway");
+        let requests = fixture.requests.lock().await;
+        assert_eq!(requests.len(),1,"no automatic retries");
+        let sent = &requests[0];
+        assert_eq!(sent["instructions"],ASSISTANT_POLICY);
+        assert_eq!(sent["model"],"gemini-fixture-pro");
+        assert_eq!(sent["store"],false);
+        assert!(sent.get("reasoning").is_none() && sent.get("tools").is_none());
+        let grounded: Value = serde_json::from_str(sent["input"][0]["content"].as_str().unwrap()).unwrap();
+        assert_eq!(grounded["app_context"]["screen"],"trade");
+        assert_eq!(grounded["app_context"]["data_access"],"none");
+        assert!(fixture.service.child.lock().await.is_none(),"gateway never launches WebGPT");
+    }
+
+    #[tokio::test]
+    async fn gateway_failures_are_sanitized_and_cancel_keeps_provider_selection_atomic() {
+        let fixture = GatewayFixture::new().await;
+        fixture.connect().await;
+        for (mode, code) in [(1,"ai_gateway_rate_limited"),(3,"ai_gateway_incomplete_response"),(4,"ai_gateway_empty_response"),(5,"ai_gateway_response_too_large")] {
+            fixture.mode.store(mode,Ordering::SeqCst);
+            let id = fixture.send().await;
+            let result = fixture.finish(&id).await;
+            assert_eq!(result["status"],"failed");
+            assert_eq!(result["error"],code);
+            assert!(!result.to_string().contains("secret"));
+        }
+        assert_eq!(fixture.requests.lock().await.len(),4);
+        fixture.mode.store(2,Ordering::SeqCst);
+        let id = fixture.send().await;
+        assert_eq!(fixture.service.account_action(false,"provider",json!({"provider":"chatgpt-web"})).await.unwrap_err().0,StatusCode::CONFLICT);
+        assert_eq!(fixture.service.account_action(false,"selection",json!({"model":"gemini-fixture-fast","effort":null})).await.unwrap_err().0,StatusCode::CONFLICT);
+        let foreign = Workspace {subject:"foreign".into(),..GatewayFixture::scope()};
+        assert_eq!(fixture.service.read_chat(&foreign,&id,true).await.unwrap_err().0,StatusCode::NOT_FOUND);
+        assert_eq!(fixture.service.read_chat(&GatewayFixture::scope(),&id,true).await.unwrap()["status"],"cancelled");
+        assert_eq!(fixture.service.read_chat(&GatewayFixture::scope(),&id,true).await.unwrap()["status"],"cancelled");
+        for (mode, code) in [(8,"ai_gateway_auth_failed"),(9,"ai_gateway_invalid_response")] {
+            fixture.mode.store(mode,Ordering::SeqCst);
+            let value = fixture.service.account_action(false,"refresh",json!({})).await.unwrap();
+            assert_eq!(value["ready"],false);
+            assert_eq!(value["models"],json!([]));
+            assert_eq!(value["error"],code);
+            assert!(!value.to_string().contains("never return"));
+        }
+        fixture.mode.store(10,Ordering::SeqCst);
+        assert_eq!(fixture.service.account_action(false,"refresh",json!({})).await.unwrap()["status"],"empty");
+        assert_eq!(fixture.service.start_chat(&GatewayFixture::scope(),json!({"messages":[{"role":"user","content":"x"}]}),false).await.unwrap_err().0,StatusCode::SERVICE_UNAVAILABLE);
+    }
     #[test]
     fn route_context_is_bounded_data_not_policy_or_account_data() {
         let context = json!({"screen":"playbook","locale":"vi"});
@@ -342,18 +603,18 @@ mod tests {
     }
     #[tokio::test]
     async fn chat_cancel_is_scoped_idempotent_and_drops_the_running_task() {
-        let service = ChatGptWeb::from_environment().unwrap();
+        let service = AiAssistant::from_environment().unwrap();
         let scope = Workspace { workspace_id:"fixture".into(), subject:"owner".into() };
         let task = tokio::spawn(async { std::future::pending::<Result<String, &'static str>>().await });
         let abort = task.abort_handle();
         *service.chat.lock().await = Some(ChatTurn { id:"fixture-turn".into(), workspace:scope.workspace_id.clone(), subject:scope.subject.clone(),
-            created:std::time::Instant::now(), selection:json!({"model":"fixture","effort":"high"}), grounding:json!({"policy_version":POLICY_VERSION}), task:Some(task), result:json!({"status":"running"}) });
+            created:std::time::Instant::now(), provider:Provider::Web, selection:json!({"model":"fixture","effort":"high"}), grounding:json!({"policy_version":POLICY_VERSION}), task:Some(task), result:json!({"status":"running"}) });
         for foreign in [Workspace { workspace_id:"other".into(), ..scope.clone() }, Workspace { subject:"other".into(), ..scope.clone() }] {
             assert_eq!(service.read_chat(&foreign, "fixture-turn", true).await.unwrap_err().0, StatusCode::NOT_FOUND);
         }
         assert!(!abort.is_finished());
         assert_eq!(service.read_chat(&scope, "fixture-turn", false).await.unwrap()["status"], "running");
-        assert_eq!(service.action("disconnect", json!({})).await.unwrap_err().0, StatusCode::CONFLICT);
+        assert_eq!(service.account_action(true, "disconnect", json!({})).await.unwrap_err().0, StatusCode::CONFLICT);
         assert_eq!(service.read_chat(&scope, "fixture-turn", true).await.unwrap()["status"], "cancelled");
         assert_eq!(service.read_chat(&scope, "fixture-turn", false).await.unwrap()["grounding"]["policy_version"], POLICY_VERSION);
         assert!(abort.is_finished());
@@ -363,12 +624,12 @@ mod tests {
     }
     #[tokio::test]
     async fn completed_chat_survives_late_cancel_and_shutdown_aborts_pending_work() {
-        let service = ChatGptWeb::from_environment().unwrap();
+        let service = AiAssistant::from_environment().unwrap();
         let scope = Workspace { workspace_id:"fixture".into(), subject:"owner".into() };
         let task = tokio::spawn(async { Ok("fixture reply".into()) });
         while !task.is_finished() { tokio::task::yield_now().await; }
         *service.chat.lock().await = Some(ChatTurn { id:"done".into(), workspace:scope.workspace_id.clone(), subject:scope.subject.clone(),
-            created:std::time::Instant::now(), selection:json!({}), grounding:json!({}), task:Some(task), result:json!({"status":"running"}) });
+            created:std::time::Instant::now(), provider:Provider::Web, selection:json!({}), grounding:json!({}), task:Some(task), result:json!({"status":"running"}) });
         assert_eq!(service.read_chat(&scope, "done", true).await.unwrap()["text"], "fixture reply");
         let task = tokio::spawn(async { std::future::pending::<Result<String, &'static str>>().await });
         let abort = task.abort_handle();
@@ -379,10 +640,10 @@ mod tests {
     }
     #[tokio::test]
     async fn status_does_not_start_a_browser_or_adopt_a_service() {
-        let service = ChatGptWeb::from_environment().unwrap();
-        assert_eq!(service.status().await.unwrap()["status"], "stopped");
-        assert_eq!(service.action("arbitrary", json!({})).await.unwrap_err().0, StatusCode::NOT_FOUND);
-        assert_eq!(service.action("login", json!({"home":"untrusted"})).await.unwrap_err().0, StatusCode::UNPROCESSABLE_ENTITY);
+        let service = AiAssistant::from_environment().unwrap();
+        assert_eq!(service.account(true, false).await.unwrap()["status"], "stopped");
+        assert_eq!(service.account_action(true, "arbitrary", json!({})).await.unwrap_err().0, StatusCode::NOT_FOUND);
+        assert_eq!(service.account_action(true, "login", json!({"home":"untrusted"})).await.unwrap_err().0, StatusCode::UNPROCESSABLE_ENTITY);
         assert!(service.child.lock().await.is_none());
     }
     #[test]

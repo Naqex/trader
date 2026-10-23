@@ -43,6 +43,7 @@ try {
     let state = structuredClone(initial), mode = '', polls = 0
     const actions = [], pageErrors = []
     page.on('pageerror', error => pageErrors.push(error.message))
+    await page.route('**/api/v2/ai/assistant/account', route => route.fulfill({ json: { ...state, provider: 'chatgpt-web' } }))
     await page.route('**/api/v2/ai/chatgpt/account**', async route => {
       const request = route.request(), suffix = new URL(request.url()).pathname.split('/account')[1]
       const action = suffix?.slice(1)

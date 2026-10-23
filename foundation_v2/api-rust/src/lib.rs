@@ -26,7 +26,8 @@ pub mod control_routes;
 pub mod context_routes;
 pub mod provider_routes;
 pub mod notion_oauth;
-pub mod chatgpt_web;
+pub mod ai_assistant;
+mod ai_gateway;
 pub mod research_jobs;
 pub mod research_execution;
 pub mod rust_runtime;
@@ -66,7 +67,7 @@ fn domain_routes_for(native_runtime: bool) -> Router<Arc<AppState>> {
         .merge(analytics::routes())
         .merge(context_routes::routes())
         .merge(notion_oauth::routes())
-        .merge(chatgpt_web::routes())
+        .merge(ai_assistant::routes())
         .merge(control_routes::routes())
         .merge(research_jobs::routes())
         .merge(data_routes::routes())
@@ -220,7 +221,7 @@ pub(crate) mod tests {
         .build()
         .unwrap();
         Arc::new(AppState {
-            chatgpt_web: crate::chatgpt_web::ChatGptWeb::from_environment().unwrap(),
+            ai_assistant: crate::ai_assistant::AiAssistant::from_environment().unwrap(),
             config,
             pool,
             authorization: auth::LocalAuthorization::new("owner".into(), vec!["a".into()]),

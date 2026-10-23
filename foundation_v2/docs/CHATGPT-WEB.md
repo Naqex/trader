@@ -7,7 +7,7 @@ Cockpit UI, MCP, shell hoặc subagents từ luồng này.
 
 ## Đăng nhập từ web MT5
 
-Mở **Settings → ChatGPT → Kết nối ChatGPT**. Backend khởi động core riêng,
+Mở **Settings → AI → ChatGPT Web → Kết nối ChatGPT**. Backend khởi động core riêng,
 mở Chrome với profile của MT5. Đăng nhập trực tiếp trên ChatGPT, sau đó đóng
 cửa sổ Chrome riêng để core xác minh và lưu phiên. Không nhập mật khẩu hoặc
 paste token trên web MT5. Có thể hủy đăng nhập từ Settings.
@@ -79,7 +79,10 @@ Request chỉ nhận model, input, instructions và tùy chọn văn bản/reaso
 không có tools, previous-response ID, attachments hoặc metadata của Codex.
 Core không lưu Responses history; caller gửi lại phần hội thoại cần thiết.
 
-API sản phẩm: `GET /api/v2/ai/chatgpt/account`,
+Harness dùng chung nằm trong `api-rust/src/ai_assistant.rs`; UI chat dùng routes
+trung lập `/api/v2/ai/assistant/*` cùng precondition provider/model/effort.
+Xem [AI-PROVIDERS.md](AI-PROVIDERS.md) cho CLIProxyAPI local. Alias WebGPT được giữ:
+`GET /api/v2/ai/chatgpt/account`,
 `POST /api/v2/ai/chatgpt/account/{start|login|probe|selection|cancel|disconnect}`.
 Yêu cầu workspace được phép, peer/Host loopback và Origin cùng web cho mutation.
 Backend giữ bearer token. Login/probe trả operation ngay và UI poll status;

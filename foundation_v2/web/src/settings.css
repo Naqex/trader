@@ -2,6 +2,7 @@
 .fx-app .wm-page.settings-shell .settings-chatgpt { padding: 24px 0 32px; border-top: 1px solid var(--wm-border); margin-bottom: 24px; }
 .settings-chatgpt .settings-heading { align-items: flex-start; gap: 20px; }
 .chatgpt-model-fields { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 180px); gap: 16px; margin: 20px 0 12px; }
+.chatgpt-model-fields.ai-provider-fields { grid-template-columns: repeat(2, minmax(0, 320px)); }
 .chatgpt-model-fields > label { display: grid; gap: 8px; min-width: 0; font-size: 13px; }
 .chatgpt-model-fields .fx-select, .chatgpt-model-fields .fx-select-trigger { width: 100%; }
 .chatgpt-account-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
@@ -12,6 +13,7 @@
 @media (max-width: 600px) {
   .settings-chatgpt .settings-heading { flex-direction: column; gap: 8px; }
   .chatgpt-model-fields { grid-template-columns: minmax(0, 1fr); }
+  .chatgpt-model-fields.ai-provider-fields { grid-template-columns: minmax(0, 1fr); }
 }
 .fx-app .wm-page.settings-shell .settings-topbar { min-height: 0; border: 0; }
 .settings-topbar-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }

@@ -1,0 +1,18 @@
+[
+  {
+    "current_user_only": true,
+    "item": "home"
+  },
+  {
+    "current_user_only": true,
+    "item": "config.yaml"
+  },
+  {
+    "current_user_only": true,
+    "item": "inference.key"
+  },
+  {
+    "current_user_only": true,
+    "item": "auth"
+  }
+]

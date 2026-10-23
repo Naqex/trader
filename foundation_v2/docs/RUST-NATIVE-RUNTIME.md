@@ -29,6 +29,16 @@ path and the existing legacy descriptor on restart. Local backups use the instal
 PostgreSQL18 client matching server18; the archived17 client cannot dump it.
 Rollback to a pre0007 binary requires its matching pre0007 database backup.
 
+The 23 October local AI-provider update now runs API8010 from
+`.runtime/api-builds/ai-provider-20261023/release`, preserving native/compact,
+QDM and the existing database/artifact profile without migration. The active
+scientific descriptor is
+`.runtime/api-platform/native-scientific-capability-demo-trading-20261022.json`,
+with `.runtime/api-platform/native-legacy-codec-capability.json` retained.
+Read the current manifest before the next guarded stop; earlier binary paths
+in this document describe historical cutovers. See
+[the AI integration checkpoint](../evidence/ai-provider-integration-20261023/CHECKPOINT.md).
+
 The native flow is `React → Axum → native domain → PostgreSQL transaction and
 revision/receipt → HTTP response`. Research and downloads use bounded background
 execution. A successful quick market order is already filled at the current

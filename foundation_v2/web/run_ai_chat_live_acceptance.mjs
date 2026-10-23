@@ -14,11 +14,12 @@ try {
   const page = await browser.newPage({ viewport: { width: 1368, height: 790 } })
   page.on('pageerror', error => report.errors.push(error.message))
   let sends = 0
-  page.on('request', request => { if (request.method() === 'POST' && new URL(request.url()).pathname === '/api/v2/ai/chatgpt/chat') sends++ })
+  page.on('request', request => { if (request.method() === 'POST' && new URL(request.url()).pathname === '/api/v2/ai/assistant/chat') sends++ })
   await page.goto(`${origin}/?workspace=tenant-a&view=overview&area=testing&section=dashboard`)
   await page.getByTestId('ai-toggle').click()
   const chat = page.getByTestId('ai-chat')
-  const state = await page.evaluate(async () => (await fetch('/api/v2/ai/chatgpt/account', { headers: { 'X-Workspace-Id': 'tenant-a' } })).json())
+  const state = await page.evaluate(async () => (await fetch('/api/v2/ai/assistant/account', { headers: { 'X-Workspace-Id': 'tenant-a' } })).json())
+  assert.equal(state.provider, 'chatgpt-web', 'This opt-in test is only authorized for the selected WebGPT provider')
   if (state.status === 'stopped') await chat.getByRole('button', { name: 'Nạp kết nối đã lưu' }).click()
   await chat.getByRole('button', { name: 'Model và mức suy luận AI', exact: true }).waitFor()
   for (const [index, question] of ['Chào Mentor. Hãy trả lời đúng hai từ: REPLAY READY', 'Tôi vừa yêu cầu bạn trả lời hai từ gì? Chỉ nhắc lại hai từ đó.'].entries()) {

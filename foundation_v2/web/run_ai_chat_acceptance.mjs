@@ -12,7 +12,7 @@ const models = [
   { id: 'chatgpt-web/gpt-6-sol', name: 'GPT-6 Sol', efforts: ['low', 'medium', 'high'] },
   { id: 'chatgpt-web/gpt-6-sol-instant', name: 'GPT-6 Sol Instant', efforts: ['low'] },
 ]
-const account = { status: 'connected', models, selection: { model: models[0].id, effort: 'high' }, login_state_present: true, operation: null }
+const account = { provider: 'chatgpt-web', status: 'connected', models, selection: { model: models[0].id, effort: 'high' }, login_state_present: true, operation: null }
 async function assertFieldEdge(field, radius) {
   const style = await field.evaluate(element => {
     const value = getComputedStyle(element)
@@ -28,14 +28,14 @@ try {
     await page.getByTestId('ai-toggle').click()
     const chat = page.getByTestId('ai-chat')
     const load = chat.getByRole('button', { name: 'Nạp kết nối đã lưu' })
-    const state = await page.evaluate(async () => (await fetch('/api/v2/ai/chatgpt/account', { headers: { 'X-Workspace-Id': 'tenant-a' } })).json())
+    const state = await page.evaluate(async () => (await fetch('/api/v2/ai/assistant/account', { headers: { 'X-Workspace-Id': 'tenant-a' } })).json())
     if (state.status === 'stopped') await load.click()
     await chat.getByRole('button', { name: 'Model và mức suy luận AI', exact: true }).waitFor()
     await page.locator('.pb-empty').waitFor()
     const result = await page.evaluate(async () => {
       const headers = { 'X-Workspace-Id': 'tenant-a', 'Content-Type': 'application/json' }
-      const invalid = await fetch('/api/v2/ai/chatgpt/chat', { method: 'POST', headers, body: JSON.stringify({ messages: [], tools: [] }) })
-      const absent = await fetch('/api/v2/ai/chatgpt/chat/not-a-turn', { headers })
+      const invalid = await fetch('/api/v2/ai/assistant/chat', { method: 'POST', headers, body: JSON.stringify({ messages: [], tools: [] }) })
+      const absent = await fetch('/api/v2/ai/assistant/chat/not-a-turn', { headers })
       return [invalid.status, absent.status]
     })
     assert.deepEqual(result, [422, 404])
@@ -49,10 +49,10 @@ try {
     const failures = [], sends = [], cancellations = [], selections = []
     let state = structuredClone(account), turn = null, mode = 'success', reads = 0
     page.on('pageerror', error => failures.push(error.message))
-    await page.route('**/api/v2/ai/chatgpt/**', async route => {
+    await page.route('**/api/v2/ai/assistant/**', async route => {
       const req = route.request(), url = new URL(req.url()), method = req.method()
       assert.ok(['tenant-a', 'tenant-b'].includes(req.headers()['x-workspace-id']))
-      const endpoint = url.pathname.split('/chatgpt')[1]
+      const endpoint = url.pathname.split('/assistant')[1]
       if (endpoint === '/account' || endpoint.startsWith('/account/')) {
         reads++
         if (mode === 'denied') return route.fulfill({ status: 403, json: { detail: 'workspace_access_denied' } })
@@ -182,7 +182,7 @@ try {
     await input.press('Enter')
     await chat.getByText('Đây là phản hồi kiểm thử giao diện.', { exact: true }).waitFor()
     await assertComposerAtBottom()
-    assert.deepEqual(sends[0], { messages: [{ role: 'user', content: 'Giải thích expectancy bằng một ví dụ đơn giản.' }], context: { screen: 'playbook', locale: 'vi' } })
+    assert.deepEqual(sends[0], { messages: [{ role: 'user', content: 'Giải thích expectancy bằng một ví dụ đơn giản.' }], context: { screen: 'playbook', locale: 'vi' }, expected_selection: { provider: 'chatgpt-web', ...state.selection } })
     await chat.getByText('Bạn · Chiến lược', { exact: true }).waitFor()
     await chat.getByRole('button', { name: 'Đóng chat AI' }).click()
     await page.waitForFunction(() => document.activeElement?.dataset.testid === 'ai-toggle')
@@ -299,7 +299,7 @@ try {
     await chat.getByRole('button', { name: 'Đóng chat AI' }).click()
     state = { status: 'disconnected', login_state_present: false, models: [], selection: null }
     await toggle.click()
-    await chat.getByText('Kết nối ChatGPT để bắt đầu trò chuyện.', { exact: true }).waitFor()
+    await chat.getByText('Chọn kết nối và model trong Cài đặt AI.', { exact: true }).waitFor()
     assert.equal(await input.isDisabled(), true)
     assert.ok((await chat.getByRole('link', { name: 'Mở Cài đặt AI' }).getAttribute('href')).includes('workspace=tenant-a'))
     await page.screenshot({ path: path.join(evidence, `disconnected-${width}.png`) })
@@ -321,7 +321,7 @@ try {
       assert.ok(Math.abs((await chat.boundingBox()).width - width * .38) < 1, 'workspace change resets the resized width with panel state')
       assert.equal(await chat.locator('.wm-ai-history li').count(), 0, 'workspace switch clears all conversations')
       await chat.getByRole('button', { name: 'Cài đặt trợ lý', exact: true }).click()
-      await page.getByRole('dialog', { name: 'Cài đặt trợ lý', exact: true }).getByRole('link', { name: 'Kết nối ChatGPT và chọn model' }).click()
+      await page.getByRole('dialog', { name: 'Cài đặt trợ lý', exact: true }).getByRole('link', { name: 'Kết nối AI và chọn model' }).click()
       assert.equal(await chat.isVisible(), false, 'settings link reveals the settings page')
       await page.evaluate(() => { history.pushState({}, '', '/?workspace=tenant-b&view=replay&surface=workspace'); dispatchEvent(new PopStateEvent('popstate')) })
       await page.locator('.fx-chart-topbar').waitFor()

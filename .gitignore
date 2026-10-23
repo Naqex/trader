@@ -170,6 +170,8 @@ Thumbs.db
 *~
 
 # Local runtime journals and one-off browser diagnostics
+/.runtime/mt5-ai-gateway/
+/.runtime/ai-gateway-evaluation/
 /foundation_v2/runtime/
 /foundation_v2/web/tmp-*.cjs
 /foundation_v2/web/.wmgeom.mjs

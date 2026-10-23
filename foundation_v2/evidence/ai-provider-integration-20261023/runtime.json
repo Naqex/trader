@@ -1,0 +1,15 @@
+{
+  "terminal_restarted": false,
+  "api_binary": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\.runtime\\api-builds\\ai-provider-20261023\\release\\trading-workspace-api.exe",
+  "run_id": "4a33f3ee94884009af81e0e5c3b9f032",
+  "legacy_descriptor": "native-legacy-codec-capability.json",
+  "migration_applied": false,
+  "scientific_descriptor": "native-scientific-capability-demo-trading-20261022.json",
+  "storage_profile": "compact",
+  "api_sha256": "cfac91fd7788b8ded78686923aa0c01d4efa44be29c52efc913d821f69274cbe",
+  "ready": true,
+  "runtime_profile": "native",
+  "model_inference_sent": false,
+  "login_performed": false,
+  "gateway_listener_remaining": false
+}

@@ -14,6 +14,7 @@ import uuid
 parser = argparse.ArgumentParser(description='Pinned CLIProxyAPI Windows preflight; synthetic requests, no login or inference.')
 parser.add_argument('--gateway-dir', type=Path, required=True)
 parser.add_argument('--report', type=Path, required=True)
+parser.add_argument('--runtime-home', type=Path, help='Smoke an initialized private, empty gateway home without rewriting its configuration.')
 args = parser.parse_args()
 if os.name != 'nt':
     parser.error('Windows-only binary evaluation')
@@ -25,12 +26,20 @@ if hashlib.sha256(binary.read_bytes()).hexdigest() != expected:
 port = 17852
 with socket.socket() as check:
     check.bind(('127.0.0.1', port))
-home = root / ('preflight-' + uuid.uuid4().hex)
+home = args.runtime_home.resolve(strict=True) if args.runtime_home else root / ('preflight-' + uuid.uuid4().hex)
 home.mkdir(exist_ok=True)
 auth = home / 'auth'
 auth.mkdir(exist_ok=True)
-config = home / 'preflight.yaml'
-config.write_text(f'''config-version: 8
+config = home / ('config.yaml' if args.runtime_home else 'preflight.yaml')
+key = 'synthetic-preflight-no-upstream'
+if args.runtime_home:
+    if list(auth.rglob('*.json')):
+        parser.error('runtime-home must contain no account credentials')
+    key = (home / 'inference.key').read_text(encoding='utf-8').strip()
+    if not 32 <= len(key) <= 256 or not config.is_file():
+        parser.error('initialized gateway configuration is invalid')
+else:
+    config.write_text(f'''config-version: 8
 server:
   host: "127.0.0.1"
   port: {port}
@@ -105,12 +114,12 @@ try:
                 time.sleep(0.1)
         result['startup_ms'] = round((time.perf_counter() - start)*1000, 2)
         assert unauth == 401, f'unauthenticated models status={unauth}'
-        status, body, _ = request('/v1/models', 'synthetic-preflight-no-upstream')
+        status, body, _ = request('/v1/models', key)
         models = json.loads(body)
         assert status == 200 and models['data'] == [], 'expected empty isolated catalog'
         result['models'] = {'without_key': unauth, 'with_key': status, 'count': len(models['data'])}
-        management = request('/v0/management/auth-files', 'synthetic-preflight-no-upstream')[0]
-        management_v8 = request('/v8/management/auth-files', 'synthetic-preflight-no-upstream')[0]
+        management = request('/v0/management/auth-files', key)[0]
+        management_v8 = request('/v8/management/auth-files', key)[0]
         panel = request('/management.html')[0]
         assert management == management_v8 == panel == 404, 'management/control panel must remain disabled'
         result['management_status'] = management
@@ -119,7 +128,7 @@ try:
         denied = request('/v1/chat/completions', payload={'model':'synthetic-unavailable','messages':[{'role':'user','content':'synthetic preflight'}]})[0]
         assert denied == 401
         result['unauthenticated_inference_status'] = denied
-        latency = [request('/v1/models', 'synthetic-preflight-no-upstream')[2] for _ in range(20)]
+        latency = [request('/v1/models', key)[2] for _ in range(20)]
         result['local_empty_catalog_ms'] = {'n':20, 'median':round(statistics.median(latency), 3), 'p95':round(sorted(latency)[18], 3)}
         ps = Path(os.environ['SystemRoot']) / 'System32/WindowsPowerShell/v1.0/powershell.exe'
         command = f"$p=Get-Process -Id {proc.pid}; $l=@(Get-NetTCPConnection -OwningProcess {proc.pid} -State Listen -ErrorAction SilentlyContinue); [pscustomobject]@{{working_set_bytes=$p.WorkingSet64;listeners=@($l|Select-Object LocalAddress,LocalPort)}}|ConvertTo-Json -Depth 3 -Compress"
@@ -139,6 +148,7 @@ try:
         }
         result['network_isolated'] = False
         result['inference_or_pool_acceptance'] = False
+        result['initialized_private_config'] = bool(args.runtime_home)
         result.update(metrics)
         result['passed'] = True
 except Exception as error:

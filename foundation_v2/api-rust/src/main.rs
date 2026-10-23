@@ -52,7 +52,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             tracing::warn!("provider drain deadline reached; owned process tree stopped, interrupted job recovers paused");
         }
     }
-    state.chatgpt_web.shutdown().await;
+    state.ai_assistant.shutdown().await;
     if let Some(mut mt5) = mt5 {
         if tokio::time::timeout(std::time::Duration::from_secs(20), &mut mt5).await.is_err() {
             mt5.abort(); let _ = mt5.await;

@@ -5,10 +5,12 @@ chạy thành process riêng và nối bằng adapter nhỏ trong backend**. Ch�
 để fork gateway hoặc tự viết lại OAuth, token refresh và account pool. Tối ưu
 WebGPT bridge hiện tại được hoãn theo yêu cầu owner.
 
-Đây là kết quả nghiên cứu và preflight, **chưa tích hợp provider mới vào sản phẩm**.
-Chưa đăng nhập Google, nhập token, gửi inference, bật pool thật hoặc thay API8010.
-Tài liệu này giữ quyết định và contract dự kiến; tiến độ sản phẩm vẫn thuộc
-Product Completion Plan của workspace.
+Provider đã được tích hợp vào source backend và Settings/chat của sản phẩm.
+Owner đã chấp nhận thử CLIProxyAPI local với rủi ro tài khoản; đăng nhập vẫn do
+owner thực hiện thủ công. Chưa đăng nhập Google, nhập token, gửi inference hoặc
+nghiệm thu pool thật. Receipt triển khai local nằm ở
+[ai-provider-integration-20261023](../evidence/ai-provider-integration-20261023/).
+Tiến độ toàn sản phẩm vẫn thuộc Product Completion Plan của workspace.
 
 ## Giới hạn quan trọng của subscription
 
@@ -28,10 +30,9 @@ của CLI để dùng trong công cụ khác.
 
 Vì vậy, CLIProxyAPI là ứng viên kỹ thuật phù hợp nhất trong nhóm đã khảo sát,
 nhưng pool subscription Antigravity **không phải kênh được Google hỗ trợ để vận
-hành ứng dụng ổn định**. Fork hay tự build không giải quyết hạn chế này. Cần
-owner chọn rõ thử nghiệm có rủi ro tài khoản hay dùng kênh API được hỗ trợ trước
-khi kích hoạt tài khoản. Không tự chuyển sang API có phí hoặc lấy token từ app
-đang đăng nhập.
+hành ứng dụng ổn định**. Fork hay tự build không giải quyết hạn chế này. Owner
+đã chọn thử nghiệm local có rủi ro tài khoản, chưa cho đăng nhập tự động.
+Không tự chuyển sang API có phí hoặc lấy token từ app đang đăng nhập.
 
 ## So sánh theo nhu cầu hiện tại
 
@@ -72,12 +73,10 @@ Google là ba loại secret khác nhau.
 
 ### Cái có thể reuse và chỗ cần sửa
 
-Source hiện tại chưa có provider abstraction: `AiChatPanel.jsx`,
-`ChatGptAccount.jsx`, `SettingsWorkspace.jsx`, `AppState` và route
-`/api/v2/ai/chatgpt/*` đều gắn với ChatGPT. Không thể chỉ đổi URL rồi gọi là đã
-thêm provider.
-
-`api-rust/src/chatgpt_web.rs` đang chứa cả transport lẫn harness hữu ích:
+`api-rust/src/ai_assistant.rs` giữ harness dùng chung và transport WebGPT;
+`ai_gateway.rs` giữ adapter Responses cho gateway. Không thêm trait/framework
+hoặc dependency. `AiProviderSettings.jsx` chọn provider/model; `AiChatPanel.jsx`
+gọi routes trung lập `/api/v2/ai/assistant/*`. Harness giữ:
 
 - Policy do server sở hữu ở `ai-assistant-policy.md`.
 - Hội thoại xen kẽ user/assistant, tối đa63 tin/48KiB; context chỉ `{screen,locale}`.
@@ -86,10 +85,9 @@ thêm provider.
 - Response text có giới hạn256KiB, timeout hữu hạn, không tự retry/fallback.
 - Boundary loopback/Origin/Host, bearer backend-only và HTTP no-store.
 
-Nên tách phần này thành harness dùng chung rồi giữ transport WebGPT như adapter
-cũ. Thêm adapter `openai-compatible` cho gateway; tên model Gemini lấy từ catalog
-được allowlist/cấu hình, không gán mọi model là GPT hoặc bịa các mức reasoning
-giống ChatGPT. UI chọn provider/model/capability; lỗi dịch vi/en theo nguyên nhân.
+Transport WebGPT cũ và alias `/api/v2/ai/chatgpt/*` được giữ, luôn gọi WebGPT.
+Tên model gateway lấy nguyên catalog; không bịa mức reasoning giống ChatGPT.
+UI chọn provider/model; lỗi dịch vi/en theo nguyên nhân.
 Endpoint và secret do cấu hình backend sở hữu, không nhận URL tùy ý từ browser.
 
 Harness hiện chỉ chat text: **chưa có agent/tool loop**, không tự đọc chart,
@@ -178,19 +176,69 @@ Script dùng stdlib, kiểm hash executable trước chạy, không tải/cài/l
 home/log synthetic riêng để điều tra; không dùng output catalog latency làm
 benchmark model. Không dùng config key giả của bài kiểm tra cho triển khai thật.
 
-## Lát tích hợp tiếp theo và điều kiện nghiệm thu
+## Cấu hình và sử dụng local
 
-Sau lựa chọn kênh truy cập của owner: tách harness, thêm adapter backend, nối
-provider/model selection vào Settings/panel, giữ đường WebGPT cũ. Kiểm offline
-với HTTP fixture cho lịch sử/policy, lỗi auth/quota/timeout, partial response,
-cancel, boundary workspace và không lộ secret. Không cài app quản trị thứ hai
-hoặc framework mới; reqwest/tokio/axum hiện có đủ cho adapter.
+Tại gốc repo sản phẩm, helper kiểm hash v8.0.40 trước mỗi thao tác:
+
+```powershell
+.\scripts\ai_gateway.ps1 -Action Init
+.\scripts\ai_gateway.ps1 -Action Status
+```
+
+`Init` đã chạy trên checkout này. Không chạy lại để ghi đè: helper từ chối home
+đã tồn tại. Home `.runtime/mt5-ai-gateway` chứa config/key/auth riêng, được Git
+ignore và kiểm ACL chỉ current Windows user. Đây không phải mã hóa credential;
+app khác chạy cùng user vẫn có thể đọc. Không lấy credential từ app khác.
+
+Khi owner sẵn sàng, tự chạy lệnh tương tác sau (agent chưa chạy):
+
+```powershell
+& .\.runtime\ai-gateway-evaluation\cliproxyapi-v8.0.40\cli-proxy-api.exe `
+  --antigravity-login --config .\.runtime\mt5-ai-gateway\config.yaml
+.\scripts\ai_gateway.ps1 -Action Serve
+```
+
+`Serve` chạy foreground tại127.0.0.1:17852, Ctrl+C để dừng; không service/autostart,
+không tự login hoặc nhận process có sẵn. Gateway vẫn có thể tải metadata phiên
+bản dù bật `--local-model`. Management/UI/update panel, request log và usage log
+đều tắt; commercial mode giảm middleware và đã kiểm không lưu body lỗi401.
+
+Mở **Settings → AI → CLIProxyAPI local → Tải lại model**, rồi chọn model.
+Catalog có model chưa chứng minh inference thành công. Muốn thêm account phải
+đăng nhập riêng từng account do owner kiểm soát; chưa kiểm routing pool thật.
+
+Cấu hình chỉ ở backend, không nhập endpoint/key trong web:
+
+| Biến | Mặc định |
+| --- | --- |
+| `TW_AI_PROVIDER` | `chatgpt-web`; có thể đặt `local-gateway` |
+| `TW_AI_GATEWAY_BASE_URL` | `http://127.0.0.1:17852/v1`; chỉ IP loopback HTTP và port>=1024 |
+| `TW_AI_GATEWAY_KEY_FILE` | Đường dẫn tuyệt đối tới `.runtime/mt5-ai-gateway/inference.key` của repo |
+| `TW_AI_GATEWAY_MODEL` | Trống; phải chọn model có trong catalog |
+
+Provider/model do UI chọn chỉ giữ trong RAM của API, restart trở về env defaults.
+Lựa chọn dùng chung trên máy, không phải cấu hình riêng từng workspace.
+
+Routes trung lập: `GET account`, `POST account/{provider|selection|refresh}`,
+`POST chat`, `GET/DELETE chat/{id}`, dưới `/api/v2/ai/assistant`.
+Chat bắt buộc `expected_selection:{provider,model,effort}` khớp lựa chọn backend;
+tab cũ bị409 trước inference, không âm thầm gửi sang model khác.
+Gateway không quảng bá effort nên gửi null. Mỗi lần chỉ một turn đang xử lý;
+provider/model bị khóa trong lúc đó. Catalog cache30s, chỉ tải khi mở/refresh/
+chuẩn bị gửi, không poll nền khi Settings đứng yên. Không tự retry/fallback.
+
+## Điều kiện nghiệm thu còn lại
+
+HTTP fixtures đã kiểm harness/policy/context, catalog, lỗi auth/quota/malformed/
+incomplete/oversize, hủy tác vụ và quyền workspace. Browser fixtures kiểm
+provider/model, lỗi/empty/cancel, Việt–Anh, desktop/mobile và sáng–tối.
+Gateway binary thật đã kiểm với config private rỗng, không login/inference.
 
 Chỉ sau khi cấu hình upstream được owner cho phép mới chạy một prompt synthetic
 thật trên model được chọn. Inference đơn phải pass trước pool; sau đó kiểm2account
 độc lập, refresh/revoke/quota, routing/affinity, max concurrency và số attempt.
-Gate này chưa đạt. Không gọi preflight hiện tại là nghiệm thu Gemini, account
-pool, tool calling, chart analysis hay tích hợp UI.
+Gate inference/pool này chưa đạt. Không gọi fixture hoặc preflight là nghiệm thu
+Gemini, account pool, tool calling hay chart analysis.
 
 Nguồn bổ sung:
 [config v8 ghim phiên bản](https://github.com/router-for-me/CLIProxyAPI/blob/v8.0.40/config.example.yaml),

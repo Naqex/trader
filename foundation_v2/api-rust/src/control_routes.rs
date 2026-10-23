@@ -17,7 +17,7 @@ mod learn;
 pub mod notion;
 
 pub fn native(method: &str, path: &str) -> bool {
-    if crate::chatgpt_web::native(method, path) { return true; }
+    if crate::ai_assistant::native(method, path) { return true; }
     if notion::native(method, path) {
         return true;
     }
