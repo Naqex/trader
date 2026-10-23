@@ -419,3 +419,30 @@ Nguồn bổ sung:
 [auth file store](https://github.com/router-for-me/CLIProxyAPI/blob/v8.0.40/sdk/auth/filestore.go),
 [client version updater](https://github.com/router-for-me/CLIProxyAPI/blob/v8.0.40/internal/misc/antigravity_version.go),
 [Google AI Studio subscription benefits](https://blog.google/innovation-and-ai/technology/developers-tools/google-one-ai-studio/).
+
+## Custom chat agents
+
+Mentor is built in and immutable. `/api/v2/ai/assistant/agents` lists metadata or
+creates an agent; `/agents/{id}` reads full configuration or PATCHes it with its
+current `revision`. Agents belong to `(workspace_id, subject)`, with at most 32
+custom agents. No provider credentials or execution permissions live in agents.
+
+Custom configuration contains name (40 characters), description (240), instructions
+(8,000), and up to five UTF-8 TXT/Markdown files (64 KiB combined). This first
+version deliberately accepts bounded text, without PDF/DOCX extraction, embeddings
+or a retrieval service. The UI links to the FX Replay strategy-file sample: one
+strategy per file, clear rules for bias/setup/entry/risk/management/exit/no-trade.
+
+Chat submission optionally includes `agent: {id, revision}`. Omission means Mentor.
+Migration `0014_ai_agents.sql` associates conversations with their agent (NULL for
+Mentor/old chats). History can be filtered by `agent_id=mentor|<uuid>`. Switching
+agents starts a separate conversation; opening saved history restores its owner.
+The server rejects an agent/conversation mismatch and stale configuration writes.
+
+Each admitted run snapshots the agent config. The final user message's grounded
+JSON carries `agent_configuration` alongside `user_message`; server policy remains
+separate and has higher authority. Knowledge is reference data, grants no tools,
+and is not treated as trusted instructions. Editing an agent affects later turns;
+Continue retains the stopped run's agent snapshot. Browser requests carry only
+the agent reference, and list responses omit instructions/knowledge. Full config
+is read when editing and by the server at run admission; no agent polling is added.

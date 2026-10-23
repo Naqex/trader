@@ -29,6 +29,7 @@ pub mod notion_oauth;
 pub mod ai_assistant;
 pub mod ai_runs;
 mod ai_profiles;
+mod ai_agents;
 mod ai_response;
 mod ai_workflows;
 mod ai_gateway;

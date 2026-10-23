@@ -1,4 +1,10 @@
 const errors = {
+  invalid_ai_agent: ['Cấu hình agent không hợp lệ. Kiểm tra tên, hướng dẫn và tài liệu.', 'Invalid agent configuration. Check the name, instructions and knowledge files.'],
+  ai_agent_not_found: ['Không tìm thấy agent trong workspace này.', 'This agent was not found in this workspace.'],
+  ai_agent_changed: ['Agent đã được sửa ở nơi khác. Mở lại cài đặt để dùng bản mới.', 'This agent was edited elsewhere. Reopen settings to load the latest version.'],
+  ai_agent_readonly: ['Mentor là trợ lý mặc định, không thể chỉnh sửa.', 'Mentor is the built-in assistant and cannot be edited.'],
+  ai_agent_mismatch: ['Chat này thuộc agent khác. Mở lại chat hoặc tạo chat mới.', 'This chat belongs to another agent. Reopen it or start a new chat.'],
+  ai_agents_full: ['Workspace đã có tối đa 32 agent tùy chỉnh.', 'This workspace already has the maximum of 32 custom agents.'],
   invalid_ai_continuation: ['Câu trả lời đã thay đổi. Mở lại chat trước khi tiếp tục.', 'The response has changed. Reopen the chat before continuing.'],
   ai_profile_changed: ['Cấu hình đã thay đổi ở nơi khác. Tải lại trang trước khi lưu.', 'This profile changed elsewhere. Reload the page before saving.'],
   ai_invalid_response: ['Model trả dữ liệu không hợp lệ. Ứng dụng không tự gửi lại.', 'The model returned invalid data. The app does not resend.'],

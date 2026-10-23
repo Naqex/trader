@@ -29,7 +29,7 @@ async fn postgres_ai_lifecycle() {
             .await
             .unwrap()
             .len(),
-        13
+        14
     );
     assert!(
         crate::rust_runtime::apply_migrations(&mut client, false)
@@ -749,6 +749,39 @@ async fn postgres_ai_lifecycle() {
             "AI_WORKFLOW_PIPE_HTTP_PG_PASS: role snapshots, branch/join, 3 admitted calls, replay, warm reuse, scope, cancel/unknown"
         );
     }
+    // Agent configuration survives reads, is tenant scoped and reaches provider input as data.
+    let agent_body=json!({"name":"Breakout","description":"One strategy","instructions":"Explain the setup first","knowledge":[{"name":"rules.md","text":"Risk per trade: 0.5%. No trade during news."}]});
+    let created=http("POST","/api/v2/ai/assistant/agents".into(),agent_body.clone()).await;
+    assert_eq!(created.0,StatusCode::CREATED);
+    let agent:Value=serde_json::from_str(&created.1).unwrap();
+    let agent_uuid=identifier(agent["id"].as_str().unwrap()).unwrap();
+    assert_eq!(http("PATCH","/api/v2/ai/assistant/agents/mentor".into(),agent_body.clone()).await.0,StatusCode::CONFLICT);
+    let roster:Value=serde_json::from_str(&http("GET","/api/v2/ai/assistant/agents".into(),Value::Null).await.1).unwrap();
+    assert_eq!(roster["items"].as_array().unwrap().len(),2);
+    assert!(roster["items"][1].get("knowledge").is_none());
+    let mut agent_run=body(Uuid::new_v4(),Uuid::new_v4(),"pro");
+    agent_run["agent"]=json!({"id":agent["id"],"revision":1});
+    assert_eq!(state.ai_runs.submit(&foreign,agent_run.clone(),false).await.unwrap_err().0,StatusCode::NOT_FOUND);
+    let submitted=state.ai_runs.submit(&scope,agent_run.clone(),false).await.unwrap();
+    let agent_run_id=identifier(submitted["id"].as_str().unwrap()).unwrap();
+    let mut edit=agent_body.clone();edit["revision"]=json!(1);edit["instructions"]=json!("Updated instruction");
+    assert_eq!(http("PATCH",format!("/api/v2/ai/assistant/agents/{agent_uuid}"),edit.clone()).await.0,StatusCode::OK);
+    assert_eq!(http("PATCH",format!("/api/v2/ai/assistant/agents/{agent_uuid}"),edit).await.0,StatusCode::CONFLICT);
+    assert_eq!(finish(&state.ai_runs,&scope,agent_run_id).await["status"],"completed");
+    let agent_payload=seen.lock().await.last().unwrap().clone();
+    let packed:Value=serde_json::from_str(agent_payload["input"].as_array().unwrap().last().unwrap()["content"].as_str().unwrap()).unwrap();
+    assert_eq!(packed["agent_configuration"]["instructions"],"Explain the setup first");
+    assert_eq!(packed["agent_configuration"]["knowledge"][0]["name"],"rules.md");
+    assert!(agent_payload.get("tools").is_none());
+    // Idempotent replay keeps the old immutable snapshot after editing the agent.
+    assert_eq!(state.ai_runs.submit(&scope,agent_run.clone(),false).await.unwrap()["id"],submitted["id"]);
+    agent_run["idempotency_key"]=json!(Uuid::new_v4());
+    assert_eq!(state.ai_runs.submit(&scope,agent_run.clone(),false).await.unwrap_err().1["detail"],"ai_agent_changed");
+    agent_run["agent"]["revision"]=json!(2);agent_run["agent"]["id"]=json!("mentor");agent_run["agent"]["revision"]=json!(0);
+    assert_eq!(state.ai_runs.submit(&scope,agent_run,false).await.unwrap_err().1["detail"],"ai_agent_mismatch");
+    let custom_history:Value=serde_json::from_str(&http("GET",format!("/api/v2/ai/assistant/conversations?agent_id={agent_uuid}"),Value::Null).await.1).unwrap();
+    assert_eq!(custom_history["items"].as_array().unwrap().len(),1);
+    println!("AI_AGENT_HTTP_PG_PASS: CRUD, scope, immutable snapshot, provider grounding, history separation, idempotency");
     state.ai_runs.shutdown().await;
     let before = count.load(Ordering::SeqCst);
     let paused = Engine::new(pool.clone(), assistant.clone());

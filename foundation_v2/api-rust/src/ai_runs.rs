@@ -151,6 +151,8 @@ impl Engine {
     ) -> Result<Value, ApiError> {
         let context = crate::ai_assistant::chat_context(&body)?;
         let messages = crate::ai_assistant::chat_messages(body.clone())?;
+        let (agent_id, agent_revision) = crate::ai_agents::reference(&body)?;
+        if agent_id.is_some() && (workflow || legacy) { return Err(invalid("invalid_ai_agent")); }
         if body.get("conversation_id").is_some() != body.get("idempotency_key").is_some() {
             return Err(invalid("invalid_ai_idempotency_key"));
         }
@@ -176,6 +178,7 @@ impl Engine {
         if continuation.is_some() && (workflow || legacy || body.get("conversation_id").is_none()) { return Err(invalid("invalid_ai_continuation")); }
         let mut identity = json!({"messages":messages,"context":context,"conversation_id":conversation,"selection":if legacy {Value::Null}else{body["expected_selection"].clone()},"legacy":legacy});
         if let Some(id) = continuation { identity["continuation_of"] = json!(id); }
+        if let Some(agent) = body.get("agent") { identity["agent"] = agent.clone(); }
         if workflow {
             identity["workflow"] = json!("evidence-review-v1");
         }
@@ -256,15 +259,19 @@ impl Engine {
             return Err(conflict("ai_history_full"));
         }
         let kind = if workflow { "evidence-review" } else { "chat" };
-        tx.execute("INSERT INTO ai_conversations(workspace_id,subject,conversation_id,selection,title,kind) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING",&[&scope.workspace_id,&scope.subject,&conversation,&selection,&messages[0]["content"].as_str().unwrap().chars().take(90).collect::<String>(),&kind]).await.map_err(db)?;
+        let mut agent = crate::ai_agents::snapshot(&tx,scope,agent_id,agent_revision).await?;
+        tx.execute("INSERT INTO ai_conversations(workspace_id,subject,conversation_id,selection,title,kind,agent_id) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT DO NOTHING",&[&scope.workspace_id,&scope.subject,&conversation,&selection,&messages[0]["content"].as_str().unwrap().chars().take(90).collect::<String>(),&kind,&agent_id]).await.map_err(db)?;
         if tx.query_one("SELECT kind FROM ai_conversations WHERE workspace_id=$1 AND subject=$2 AND conversation_id=$3",&[&scope.workspace_id,&scope.subject,&conversation]).await.map_err(db)?.get::<_,String>(0)!=kind {return Err(conflict("ai_idempotency_conflict"));}
+        if tx.query_one("SELECT agent_id FROM ai_conversations WHERE workspace_id=$1 AND subject=$2 AND conversation_id=$3",&[&scope.workspace_id,&scope.subject,&conversation]).await.map_err(db)?.get::<_,Option<Uuid>>(0)!=agent_id { return Err(conflict("ai_agent_mismatch")); }
         if tx.query_opt("SELECT run_id FROM ai_runs WHERE workspace_id=$1 AND subject=$2 AND conversation_id=$3 AND status IN ('queued','running','cancelling')",&[&scope.workspace_id,&scope.subject,&conversation]).await.map_err(db)?.is_some() { return Err(conflict("ai_conversation_busy")); }
         if let Some(prior) = continuation {
-            let latest = tx.query_opt("SELECT run_id,status FROM ai_runs WHERE workspace_id=$1 AND subject=$2 AND conversation_id=$3 ORDER BY created_at DESC,run_id DESC LIMIT 1", &[&scope.workspace_id,&scope.subject,&conversation]).await.map_err(db)?;
-            if latest.is_none_or(|row| row.get::<_,Uuid>(0) != prior || !["cancelled","failed","interrupted"].contains(&row.get::<_,String>(1).as_str())) {
+            let latest = tx.query_opt("SELECT run_id,status,config->'agent' FROM ai_runs WHERE workspace_id=$1 AND subject=$2 AND conversation_id=$3 ORDER BY created_at DESC,run_id DESC LIMIT 1", &[&scope.workspace_id,&scope.subject,&conversation]).await.map_err(db)?;
+            if latest.as_ref().is_none_or(|row| row.get::<_,Uuid>(0) != prior || !["cancelled","failed","interrupted"].contains(&row.get::<_,String>(1).as_str())) {
                 return Err(conflict("invalid_ai_continuation"));
             }
+            agent = latest.unwrap().get::<_,Option<Value>>(2).unwrap_or(Value::Null);
         }
+        if !agent.is_null() { config["agent"]=agent; config["grounding"]["data_access"]=json!("user-supplied-agent-text"); }
         // Saving a new selection affects this conversation and future runs only.
         tx.execute("UPDATE ai_conversations SET selection=$4,revision=revision+1,updated_at=clock_timestamp() WHERE workspace_id=$1 AND subject=$2 AND conversation_id=$3",&[&scope.workspace_id,&scope.subject,&conversation,&selection]).await.map_err(db)?;
         let id = Uuid::new_v4();
@@ -354,12 +361,14 @@ impl Engine {
                 if config.get("workflow").is_some() {
                     return self.workflows.execute(self, id, &input, &config).await;
                 }
+                let mut context=input["context"].clone();
+                if !config["agent"].is_null() { context["agent"]=config["agent"].clone(); }
                 let request = self
                     .assistant
                     .prepare(
                         &config["selection"],
                         input["messages"].clone(),
-                        &input["context"],
+                        &context,
                     )
                     .await
                     .map_err(|e| json!({"error":e.1["detail"],"outcome":"not_sent"}))?;
@@ -489,6 +498,7 @@ async fn recover(tx: &tokio_postgres::Transaction<'_>) -> Result<(), ApiError> {
 #[derive(serde::Deserialize, Default)]
 #[serde(deny_unknown_fields)]
 pub struct Page {
+    agent_id: Option<String>,
     before_at: Option<chrono::DateTime<chrono::Utc>>,
     before_id: Option<Uuid>,
     limit: Option<i64>,
@@ -503,7 +513,8 @@ pub async fn list_conversations(
         return Err(invalid("invalid_ai_page"));
     }
     let conn = state.pool.get().await.map_err(db)?;
-    let rows=conn.query("SELECT conversation_id,title,selection,revision,updated_at FROM ai_conversations WHERE kind='chat' AND workspace_id=$1 AND subject=$2 AND ($3::timestamptz IS NULL OR (updated_at,conversation_id)<($3,$4::uuid)) ORDER BY updated_at DESC,conversation_id DESC LIMIT $5",&[&scope.workspace_id,&scope.subject,&page.before_at,&page.before_id,&(limit+1)]).await.map_err(db)?;
+    let agent_id=page.agent_id.as_deref().filter(|v|*v!="mentor").map(identifier).transpose()?;
+    let rows=conn.query("SELECT conversation_id,title,selection,revision,updated_at FROM ai_conversations WHERE kind='chat' AND workspace_id=$1 AND subject=$2 AND ($3::timestamptz IS NULL OR (updated_at,conversation_id)<($3,$4::uuid)) AND (NOT $6::boolean OR agent_id IS NOT DISTINCT FROM $7::uuid) ORDER BY updated_at DESC,conversation_id DESC LIMIT $5",&[&scope.workspace_id,&scope.subject,&page.before_at,&page.before_id,&(limit+1),&page.agent_id.is_some(),&agent_id]).await.map_err(db)?;
     let items:Vec<Value>=rows.iter().take(limit as usize).map(|r|json!({"id":r.get::<_,Uuid>(0),"title":r.get::<_,String>(1),"selection":r.get::<_,Value>(2),"revision":r.get::<_,i64>(3),"updated_at":r.get::<_,chrono::DateTime<chrono::Utc>>(4)})).collect();
     let next = if rows.len() > limit as usize {
         items
@@ -526,7 +537,7 @@ pub async fn read_conversation(
     if !(1..=20).contains(&limit) || page.before_at.is_some() != page.before_id.is_some() {
         return Err(invalid("invalid_ai_page"));
     }
-    let row=conn.query_opt("SELECT title,selection,revision FROM ai_conversations WHERE workspace_id=$1 AND subject=$2 AND conversation_id=$3",&[&scope.workspace_id,&scope.subject,&id]).await.map_err(db)?.ok_or_else(missing)?;
+    let row=conn.query_opt("SELECT title,selection,revision,agent_id FROM ai_conversations WHERE workspace_id=$1 AND subject=$2 AND conversation_id=$3",&[&scope.workspace_id,&scope.subject,&id]).await.map_err(db)?.ok_or_else(missing)?;
     let rows=conn.query(&format!("SELECT input,{VIEW} FROM ai_runs WHERE workspace_id=$1 AND subject=$2 AND conversation_id=$3 AND ($4::timestamptz IS NULL OR (created_at,run_id)<($4,$5::uuid)) ORDER BY created_at DESC,run_id DESC LIMIT $6"),&[&scope.workspace_id,&scope.subject,&id,&page.before_at,&page.before_id,&(limit+1)]).await.map_err(db)?;
     let mut turns = Vec::new();
     let mut bytes = 0;
@@ -573,7 +584,7 @@ pub async fn read_conversation(
         }
     }
     Ok(Json(
-        json!({"id":id,"title":row.get::<_,String>(0),"selection":row.get::<_,Value>(1),"revision":row.get::<_,i64>(2),"messages":messages,"run":latest,"next":next}),
+        json!({"id":id,"title":row.get::<_,String>(0),"selection":row.get::<_,Value>(1),"revision":row.get::<_,i64>(2),"agent_id":row.get::<_,Option<Uuid>>(3).map_or_else(||"mentor".into(),|v|v.to_string()),"messages":messages,"run":latest,"next":next}),
     ))
 }
 pub async fn edit_conversation(

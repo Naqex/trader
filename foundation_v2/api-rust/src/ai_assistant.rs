@@ -26,7 +26,7 @@ impl Provider {
     }
 }
 
-pub(crate) const POLICY_VERSION: &str = "wmreplay-chat-2026-10-19.1";
+pub(crate) const POLICY_VERSION: &str = "wmreplay-chat-2026-10-23.1";
 const ASSISTANT_POLICY: &str = include_str!("ai-assistant-policy.md");
 const CHAT_SCREENS: &[&str] = &["unknown", "overview", "replay", "trade", "analytics", "playbook", "learn", "settings", "market-data", "prop", "journal", "sessions"];
 
@@ -41,7 +41,7 @@ pub(crate) fn chat_context(body: &Value) -> Result<Value, ApiError> {
 
 pub(crate) fn chat_messages(body: Value) -> Result<Value, ApiError> {
     let invalid = || ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY, "invalid_chat_messages");
-    if body.as_object().is_none_or(|v| v.keys().any(|key| !["messages", "context", "expected_selection", "conversation_id", "idempotency_key", "continuation_of"].contains(&key.as_str()))) { return Err(invalid()); }
+    if body.as_object().is_none_or(|v| v.keys().any(|key| !["messages", "context", "expected_selection", "conversation_id", "idempotency_key", "continuation_of", "agent"].contains(&key.as_str()))) { return Err(invalid()); }
     let messages = body["messages"].as_array().ok_or_else(invalid)?;
     if messages.is_empty() || messages.len() > 63 || serde_json::to_vec(&body).map_err(|_| invalid())?.len() > 49152 { return Err(invalid()); }
     for (index, message) in messages.iter().enumerate() {
@@ -57,9 +57,11 @@ pub(crate) fn chat_messages(body: Value) -> Result<Value, ApiError> {
 fn grounded_messages(mut messages: Value, context: &Value) -> Value {
     // Route metadata stays in a user record, never interpolated into policy instructions.
     let last = messages.as_array_mut().unwrap().last_mut().unwrap();
-    last["content"] = json!(json!({"app_context":{"schema_version":1,"source":"client-route",
+    let mut packed = json!({"app_context":{"schema_version":1,"source":"client-route",
         "screen":context["screen"],"locale":context["locale"],"data_access":"none"},
-        "user_message":last["content"]}).to_string());
+        "user_message":last["content"]});
+    if !context["agent"].is_null() { packed["agent_configuration"] = context["agent"].clone(); }
+    last["content"] = json!(packed.to_string());
     messages
 }
 
@@ -280,7 +282,9 @@ pub fn routes() -> Router<Arc<AppState>> {
             .route(&format!("{base}/chat"), post(start_chat))
             .route(&format!("{base}/chat/{{id}}"), get(read_chat).delete(cancel_chat));
     }
-    routes = routes.route("/api/v2/ai/assistant/conversations",get(crate::ai_runs::list_conversations))
+    routes = routes.route("/api/v2/ai/assistant/agents",get(crate::ai_agents::list).post(crate::ai_agents::create))
+        .route("/api/v2/ai/assistant/agents/{id}",get(crate::ai_agents::read).patch(crate::ai_agents::update))
+        .route("/api/v2/ai/assistant/conversations",get(crate::ai_runs::list_conversations))
         .route("/api/v2/ai/assistant/profiles",get(crate::ai_profiles::list))
         .route("/api/v2/ai/assistant/profiles/{feature}/{role}",axum::routing::put(crate::ai_profiles::save))
         .route("/api/v2/ai/assistant/conversations/{id}",get(crate::ai_runs::read_conversation).patch(crate::ai_runs::edit_conversation).delete(crate::ai_runs::delete_conversation))
@@ -295,6 +299,7 @@ pub fn routes() -> Router<Arc<AppState>> {
 }
 pub fn native(method: &str, path: &str) -> bool {
     let suffix = path.strip_prefix("/api/v2/ai/chatgpt").or_else(|| path.strip_prefix("/api/v2/ai/assistant"));
+    if matches!((method,suffix),("GET" | "POST",Some("/agents")) | ("GET" | "PATCH",Some("/agents/{id}"))) { return true; }
     if matches!((method,suffix),("GET",Some("/connections/{provider}")) | ("POST",Some("/connections/{provider}/{action}"))) { return true; }
     if matches!((method,suffix),("POST",Some("/workflows/evidence-review")) | ("GET" | "DELETE",Some("/workflows/{id}")) | ("GET",Some("/workflows/{id}/events"))) {return true;}
     if matches!((method,suffix),("GET",Some("/profiles" | "/conversations" | "/catalog" | "/chat/{id}/events")) | ("PUT",Some("/profiles/{feature}/{role}")) | ("GET" | "PATCH" | "DELETE",Some("/conversations/{id}"))) { return true; }

@@ -103,18 +103,18 @@
 .wm-ai-resize::after { content: ''; display: block; width: 2px; height: 100%; margin: auto; background: transparent; }
 .wm-ai-resize:hover::after, .wm-ai-resize:focus-visible::after, .wm-ai-chat[data-resizing] .wm-ai-resize::after { background: var(--project-highlight); }
 .wm-ai-chat[data-resizing], .wm-ai-chat[data-resizing] * { cursor: col-resize; user-select: none; }
-.wm-ai-history { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: auto; padding: 0 20px 24px; }
-.wm-ai-history h3 { display: flex; align-items: center; gap: 8px; margin: 0; padding: 0 4px 12px; border-bottom: 1px solid var(--fx-shell-line); font-size: 17px; font-weight: 600; }
+.wm-ai-history { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: auto; padding: 0 0 24px; }
+.wm-ai-history h3 { display: flex; align-items: center; gap: 8px; margin: 0; padding: 0 24px 12px; border-bottom: 1px solid var(--fx-shell-line); font-size: 17px; font-weight: 600; }
 .wm-ai-history h3 svg { width: 18px; height: 18px; color: var(--fx-shell-muted); }
-.wm-ai-history ul { margin: 0; padding: 0 10px; list-style: none; }
+.wm-ai-history ul { margin: 0; padding: 0; list-style: none; }
 .wm-ai-history li { position: relative; display: flex; align-items: center; border-bottom: 1px solid var(--fx-shell-line); min-height: 56px; }
 .fx-app .wm-ai-history li button { background: transparent; border: 0; color: var(--fx-shell-muted); padding: 6px; min-height: 36px; cursor: pointer; }
 .fx-app .wm-ai-history li button:hover { color: var(--fx-shell-text); }
-.fx-app .wm-ai-history .wm-ai-history-open { flex: 1; display: flex; align-items: center; gap: 12px; width: 100%; min-width: 0; padding: 16px 84px 16px 8px; text-align: left; font-size: 13px; color: var(--fx-shell-text); }
+.fx-app .wm-ai-history .wm-ai-history-open { flex: 1; display: flex; align-items: center; gap: 12px; width: 100%; min-width: 0; padding: 16px 108px 16px 24px; text-align: left; font-size: 13px; color: var(--fx-shell-text); }
 .wm-ai-history-open span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.wm-ai-history-open svg { position: absolute; right: 0; width: 18px; height: 18px; }
-.fx-app .wm-ai-history .wm-ai-history-delete { position: absolute; right: 52px; color: var(--fx-shell-danger); }
-.wm-ai-history li > .wm-ai-history-edit { position: absolute; right: 23px; }
+.wm-ai-history-open svg { position: absolute; right: 20px; width: 18px; height: 18px; }
+.fx-app .wm-ai-history .wm-ai-history-delete { position: absolute; right: 76px; color: var(--fx-shell-danger); }
+.wm-ai-history li > .wm-ai-history-edit { position: absolute; right: 47px; }
 .wm-ai-history :is(.wm-ai-history-delete,.wm-ai-history-edit) svg { display: block; width: 17px; height: 17px; }
 .wm-ai-history-empty { flex: 1; min-height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--ds-space-4); color: var(--fx-shell-muted); text-align: center; padding: var(--ds-space-6) 0; }
 .wm-ai-empty-sketch { width: 180px; height: 112px; stroke: var(--fx-shell-muted); stroke-width: 1.5; }
@@ -132,8 +132,6 @@
 .fx-app .wm-ai-settings :is(input,textarea) { box-sizing: border-box; width: 100%; min-height: var(--ds-control); border: 1px solid var(--wm-control-border); border-radius: var(--ds-radius-field); background: transparent; color: var(--fx-shell-text); padding: 7px 12px; font: inherit; line-height: var(--ds-line-control); resize: vertical; transition: border-color var(--ds-motion-hover) var(--ds-ease-standard); }
 .fx-app .wm-ai-settings :is(input,textarea):hover:not(:focus) { border-color: var(--wm-control-hover-border); }
 .fx-app .wm-ai-settings :is(input,textarea):focus { outline: none; box-shadow: none; border-color: var(--wm-focus); }
-.fx-app .wm-ai-settings .wm-ai-instructions { background: var(--fx-shell-bg); color: var(--fx-shell-muted); line-height: 1.7; font-size: 12px; }
-.wm-ai-settings #wm-ai-policy-note { margin: -8px 0 16px; font-size: 11px; line-height: 1.6; color: var(--fx-shell-muted); }
 .wm-ai-settings a { color: var(--project-highlight); font-size: 12px; text-decoration: none; }
 .wm-ai-settings footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 30px; }
 .fx-app .wm-ai-settings footer button { padding: 7px 16px; min-height: var(--ds-control); background: transparent; color: var(--fx-shell-text); border: 0; border-radius: var(--ds-radius-pill); font-size: var(--ds-font-control); line-height: var(--ds-line-control); cursor: pointer; }
@@ -154,6 +152,31 @@
 .wm-ai-chat.is-standalone .wm-ai-bottom { padding-bottom:24px; }
 .wm-ai-settings-link { justify-self:end; color:var(--fx-shell-muted); font-size:12px; text-decoration:none; }
 .wm-ai-settings-link:hover { color:var(--fx-shell-text); }
+.wm-ai-create { display: flex; justify-content: center; flex-shrink: 0; padding: 0 var(--ds-space-4) var(--ds-space-3); }
+.fx-app .wm-ai-create button { display: inline-flex; align-items: center; justify-content: center; gap: var(--ds-space-2); min-height: var(--ds-control); padding: 6px 16px; border: 1px solid var(--wm-control-border); border-radius: var(--ds-radius-pill); background: transparent; color: var(--fx-shell-text); font: inherit; cursor: pointer; }
+.wm-ai-create svg { width: var(--ds-icon); height: var(--ds-icon); }
+.fx-app .wm-ai-create button:hover { background: var(--project-hover); border-color: var(--wm-control-hover-border); }
+.fx-app .wm-ai-header .wm-ai-agent-trigger { display: flex; gap: var(--ds-space-1); width: auto; max-width: 100%; padding: 4px 6px; color: var(--fx-shell-text); font: inherit; }
+.wm-ai-agent-trigger span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.wm-ai-agent-trigger svg { width: 14px; height: 14px; flex: none; }
+.fx-app .wm-ai-agent-menu { position: fixed; inset: auto; margin: 0; box-sizing: border-box; max-height: min(440px, 70dvh); overflow: auto; padding: var(--ds-space-2); border: 1px solid var(--wm-control-border); border-radius: var(--ds-radius-dialog); background: var(--fx-shell-bg); color: var(--fx-shell-text); font-size: var(--ds-font-control); }
+.fx-app .wm-ai-agent-menu button { display: flex; align-items: center; justify-content: space-between; gap: var(--ds-space-3); width: 100%; height: auto; min-height: var(--ds-control); padding: 8px; border: 0; border-radius: var(--ds-radius-small); background: transparent; color: inherit; font: inherit; font-weight: 400; text-align: left; cursor: pointer; }
+.fx-app .wm-ai-agent-menu button:hover { background: var(--project-hover); }
+.wm-ai-agent-menu strong { display: block; font-weight: var(--ds-weight-heading); overflow-wrap: anywhere; }
+.wm-ai-agent-menu small { display: block; color: var(--fx-shell-muted); font-size: var(--ds-font-meta); overflow-wrap: anywhere; }
+.fx-app .wm-ai-agent-menu .wm-ai-agent-add { justify-content: flex-start; border-top: 1px solid var(--fx-shell-line); border-radius: 0; margin-top: var(--ds-space-2); padding-top: var(--ds-space-3); }
+.wm-ai-agent-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
+.fx-app .wm-ai-settings :is(input,textarea)[readonly] { color: var(--fx-shell-muted); border-color: var(--fx-shell-line); }
+.wm-ai-knowledge-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--ds-space-2); }
+.wm-ai-knowledge p { color: var(--fx-shell-muted); font-size: var(--ds-font-meta); line-height: 1.6; margin: var(--ds-space-2) 0 var(--ds-space-3); }
+.fx-app .wm-ai-settings .wm-ai-knowledge input[type='file'] { width: 1px; min-height: 0; padding: 0; border: 0; }
+.fx-app .wm-ai-upload { display: inline-flex; align-items: center; gap: var(--ds-space-2); min-height: var(--ds-control); padding: 6px 14px; border: 1px solid var(--wm-control-border); border-radius: var(--ds-radius-pill); color: var(--fx-shell-text); background: transparent; font: inherit; cursor: pointer; }
+.fx-app .wm-ai-upload:hover { border-color: var(--wm-control-hover-border); background: var(--project-hover); }
+.wm-ai-knowledge ul { list-style: none; margin: var(--ds-space-2) 0 0; padding: 0; }
+.wm-ai-knowledge li { display: flex; align-items: center; gap: var(--ds-space-2); border-bottom: 1px solid var(--fx-shell-line); }
+.wm-ai-knowledge li span { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: var(--ds-font-meta); }
+.fx-app .wm-ai-knowledge li button { border: 0; background: transparent; color: var(--fx-shell-muted); width: var(--ds-icon-button); min-height: var(--ds-icon-button); cursor: pointer; }
+.fx-app .wm-ai-knowledge li button:hover { color: var(--fx-shell-danger); }
 @media (max-width: 1100px) {
   .fx-app.fx-shell-story.is-ai-open { width: 100%; }
   .fx-app .wm-ai-chat { width: min(560px, 100%); --wm-ai-width: min(560px, 100vw); }
