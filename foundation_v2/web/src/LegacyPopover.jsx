@@ -14,11 +14,13 @@ export default function LegacyPopover({ anchor, theme, label, onClose, onAnchorL
       const a = anchor.getBoundingClientRect(), p = popup.getBoundingClientRect()
       const height = Math.min(p.height, view.innerHeight - 16), width = Math.min(p.width, view.innerWidth - 16)
       const below = a.bottom + height + offset <= view.innerHeight
-      const left = Math.max(8, Math.min(a.right - width, view.innerWidth - width - 8))
+      const preferredLeft = role === 'tooltip' ? a.left + a.width / 2 - width / 2 : a.right - width
+      const left = Math.max(8, Math.min(preferredLeft, view.innerWidth - width - 8))
+      const arrowInset = Math.min(18, width / 2)
       setPosition({ side: below ? 'bottom' : 'top', style: {
         maxWidth: Math.min(maxWidth, view.innerWidth - 16), maxHeight: view.innerHeight - 16,
         left, top: Math.max(8, below ? a.bottom + offset : a.top - height - offset),
-        ...(role === 'tooltip' ? { '--wm-tooltip-arrow-x': `${Math.max(12, Math.min(a.left + a.width / 2 - left, width - 12))}px` } : {}),
+        ...(role === 'tooltip' ? { '--wm-tooltip-arrow-x': `${Math.max(arrowInset, Math.min(a.left + a.width / 2 - left, width - arrowInset))}px` } : {}),
       } })
     }
     place()

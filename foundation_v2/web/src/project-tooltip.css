@@ -18,14 +18,14 @@
   content:"";
   position:absolute;
   left:var(--wm-tooltip-arrow-x);
-  width:8px;
-  height:8px;
+  width:6px;
+  height:6px;
   box-sizing:border-box;
   background:var(--project-raised);
   transform:translateX(-50%) rotate(45deg);
   pointer-events:none;
 }
-.legacy-popover.wm-tooltip[data-side=bottom]::before { top:-5px; border-top:1px solid var(--project-border); border-left:1px solid var(--project-border); }
-.legacy-popover.wm-tooltip[data-side=top]::before { bottom:-5px; border-right:1px solid var(--project-border); border-bottom:1px solid var(--project-border); }
+.legacy-popover.wm-tooltip[data-side=bottom]::before { top:-4px; border-top:1px solid var(--project-border); border-left:1px solid var(--project-border); }
+.legacy-popover.wm-tooltip[data-side=top]::before { bottom:-4px; border-right:1px solid var(--project-border); border-bottom:1px solid var(--project-border); }
 @keyframes wm-tooltip-enter { from { opacity:0; } to { opacity:1; } }
 @media (prefers-reduced-motion:reduce) { .legacy-popover.wm-tooltip { animation:none; } }
