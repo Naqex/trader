@@ -17,6 +17,8 @@ export default function useAiChat({ workspace, open, en, screen }) {
   const [older, setOlder] = useState(null)
   const active = useRef(null), controller = useRef(null), epoch = useRef(0), submitting = useRef(false), selectedRef = useRef(null), defaultSelection = useRef(null)
   const unresolved = useRef(null)
+  const accountRevision = useRef(0)
+  const accountError = useRef(null)
   const storedId = `wm-ai-chat:${workspace}`
   const say = (vi, english) => en ? english : vi
   function errorCopy(code) { return aiErrorCopy(code, en) }
@@ -36,15 +38,17 @@ export default function useAiChat({ workspace, open, en, screen }) {
     setNext(value.next)
   }
   async function loadAccount(signal) {
+    const revision = ++accountRevision.current
     setLoading(true)
     try {
       const [account, catalog, profiles] = await Promise.all([request('/account', 'GET', undefined, signal), request('/catalog', 'GET', undefined, signal), request('/profiles', 'GET', undefined, signal)])
-      if (signal?.aborted) return
+      if (signal?.aborted || revision !== accountRevision.current) return
       setRoutes(catalog.routes)
+      if (accountError.current) { const message = accountError.current; setError(previous => previous === message ? '' : previous); accountError.current = null }
       defaultSelection.current = profiles.chat_default?.selection || { provider: account.provider, ...account.selection }
       if (!selectedRef.current) choose(defaultSelection.current)
-    } catch (failure) { if (!signal?.aborted) setError(errorCopy(failure.message)) }
-    finally { if (!signal?.aborted) setLoading(false) }
+    } catch (failure) { if (!signal?.aborted && revision === accountRevision.current) { accountError.current = errorCopy(failure.message); setError(accountError.current) } }
+    finally { if (!signal?.aborted && revision === accountRevision.current) setLoading(false) }
   }
   function leave() {
     epoch.current++; controller.current?.abort(); active.current = null; submitting.current = false
@@ -86,7 +90,11 @@ export default function useAiChat({ workspace, open, en, screen }) {
   useEffect(() => {
     if (!open) return
     const abort = new AbortController()
-    const refresh = event => { if (event.detail?.workspace === workspace) void loadAccount(abort.signal) }
+    const refresh = event => {
+      if (event.detail?.workspace !== workspace) return
+      if (event.detail.error) { accountRevision.current++; setLoading(false); accountError.current = errorCopy(event.detail.error); setError(accountError.current) }
+      else void loadAccount(abort.signal)
+    }
     window.addEventListener('wm-ai-provider-change', refresh)
     window.addEventListener('wm-ai-profile-change', refresh)
     return () => { abort.abort(); window.removeEventListener('wm-ai-provider-change', refresh); window.removeEventListener('wm-ai-profile-change', refresh) }

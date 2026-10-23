@@ -47,7 +47,16 @@ export default function AiProviderSettings({ workspace, language }) {
   useEffect(() => {
     setRecords({}); setDetail(null); setPending(null); submitting.current = false
     providers.forEach(provider => void read(provider.id))
+    const refresh = event => {
+      if (event.detail?.workspace !== workspace || event.detail.source !== 'gateway-panel') return
+      if (event.detail.error) {
+        requests.current.get('local-gateway')?.abort()
+        setRecords(previous => ({ ...previous, 'local-gateway': { ...previous['local-gateway'], loading: false, error: event.detail.error } }))
+      } else void read('local-gateway')
+    }
+    window.addEventListener('wm-ai-provider-change', refresh)
     return () => {
+      window.removeEventListener('wm-ai-provider-change', refresh)
       generation.current++; requests.current.forEach(controller => controller.abort())
       oauthWindow.current?.close(); oauthWindow.current = null
     }

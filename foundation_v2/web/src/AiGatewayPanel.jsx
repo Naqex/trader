@@ -1,14 +1,41 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useFxReplayContext } from './FxReplayShell.jsx'
 import { aiErrorCopy } from './aiProvider.js'
 
 const managementUrl = 'http://127.0.0.1:17852/management.html'
 
-export default function AiGatewayPanel({ workspace, language, active }) {
+export default function AiGatewayPanel({ workspace, language, active, chatOpen }) {
   const { buildHref } = useFxReplayContext()
   const en = language === 'en', say = (vi, english) => en ? english : vi
   const [attempt, setAttempt] = useState(0), [state, setState] = useState(null)
   const [documentVersion, setDocumentVersion] = useState(null)
+  const previous = useRef({ active, chatOpen })
+  const refreshRequest = useRef(null)
+  useEffect(() => () => refreshRequest.current?.abort(), [workspace])
+  useEffect(() => {
+    const leaving = previous.current.active && (!active || (chatOpen && !previous.current.chatOpen))
+    previous.current = { active, chatOpen }
+    if (!leaving) return
+    refreshRequest.current?.abort()
+    const controller = new AbortController()
+    refreshRequest.current = controller
+    // The cross-origin panel has no change event. Refresh at the handoff to native UI.
+    async function refresh() {
+      let error
+      try {
+        const response = await fetch('/api/v2/ai/assistant/connections/local-gateway/refresh', {
+          method: 'POST', headers: { 'X-Workspace-Id': workspace, 'Content-Type': 'application/json' }, body: '{}',
+          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]),
+        })
+        const value = await response.json()
+        if (!response.ok || value.error) throw new Error(value.error || value.detail || 'ai_gateway_unavailable')
+      } catch (failure) { error = failure.message || 'ai_gateway_unavailable' }
+      if (!controller.signal.aborted) window.dispatchEvent(new CustomEvent('wm-ai-provider-change', {
+        detail: { workspace, provider: 'local-gateway', source: 'gateway-panel', error },
+      }))
+    }
+    void refresh()
+  }, [active, chatOpen, workspace])
   useEffect(() => {
     if (!active) return
     const controller = new AbortController()

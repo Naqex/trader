@@ -117,6 +117,24 @@ WMREPLAY sở hữu policy, context, quyền tools, hội thoại, kiểm tra k�
 key/OAuth token về browser. Inference key của gateway, management key và token
 Google là ba loại secret khác nhau.
 
+### Pool Antigravity đã kiểm tra local
+
+Ngày23/10/2026, management API đang chạy báo3credential Antigravity active,
+không disabled/unavailable, cùng8model đăng ký. Cấu hình hiệu lực là
+`routing.strategy: round-robin`, `routing.session-affinity: true`. Pool chọn một
+credential đủ điều kiện cho mỗi model call; cùng session có thể bám credential
+đã chọn. Round-robin không đồng nghĩa mỗi tin nhắn phải đổi tài khoản. Trạng thái
+active và danh sách model không chứng minh gói Pro, quota còn lại hoặc3account
+đã inference/failover thành công. Không cộng token/context của3account thành một
+credential và không tự tăng admission của WMREPLAY.
+
+Audit này chỉ đọc config/management metadata, không inference/quota probe, không
+đổi routing/retry/credential. Catalog công khai hiện chỉ có ID/object/owned_by;
+không có đủ metadata để tự bật effort/tools/vision. Model ID có hậu tố high hay
+thinking không được suy thành danh sách effort tùy chọn. Giữ capability chưa kiểm
+chứng; cần nghiệm thu từng khả năng trên đúng model/endpoint trước khi mở.
+Xem [receipt đồng bộ và pool](../evidence/ai-catalog-pool-20261023/RECEIPT.md).
+
 ### Cái có thể reuse và chỗ cần sửa
 
 `api-rust/src/ai_assistant.rs` giữ harness dùng chung và transport WebGPT;
@@ -320,7 +338,11 @@ nút về Kết nối và thử lại. URL trực tiếp vẫn dùng được đ
 
 Iframe giữ cơ chế refresh/polling của upstream cả khi bị ẩn; ẩn không đóng băng
 JavaScript. Chưa có contract pause/resume với upstream. WMREPLAY chỉ đọc metadata
-khi mở/quay lại tab hoặc bấm Thử lại, không poll nền. Lỗi metadata không tự hủy
+khi mở/quay lại tab hoặc bấm Thử lại. Khi rời panel hoặc mở chat ngay trên panel,
+app gọi endpoint refresh catalog có sẵn rồi thông báo cho Kết nối/Model/chat đang
+mở. Refresh không đổi provider mặc định, model đã chọn, profile hay run đang chạy.
+Không poll nền; phản hồi catalog cũ đến muộn không ghi đè bản mới. Lỗi đồng bộ
+hiện ở giao diện native, không giả danh sách cũ đã được cập nhật. Lỗi metadata không tự hủy
 document; Thử lại khi gateway sẵn sàng sẽ tải mới panel. Nâng bản panel chỉ áp
 dụng sau lần tải mới, không ngắt form đang nhập. WMREPLAY
 không inject theme/locale hoặc key, không đọc DOM/storage khác origin. Sandbox

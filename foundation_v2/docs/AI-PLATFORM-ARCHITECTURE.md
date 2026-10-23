@@ -275,6 +275,10 @@ khi không dùng. Đổi workspace hoặc reload app mới hủy document. Đọ
 khi mở/quay lại tab và retry, không polling idle từ WMREPLAY. Ẩn không freeze
 JavaScript/polling upstream; không có contract pause/resume hay sửa bundle upstream.
 Lỗi trạng thái giữ document; retry rõ ràng mới reload sau khi gateway sẵn sàng.
+Khi rời panel hoặc mở Mentor trên panel, native UI gọi refresh catalog rồi phát
+`wm-ai-provider-change` theo workspace. Các consumer tải lại dữ liệu; phản hồi cũ
+đến muộn bị loại, lỗi đồng bộ hiện rõ, model/profile/run không bị tự thay. Đây là
+refresh theo thao tác, không polling hay đọc DOM/storage của iframe.
 Gateway tắt/lỗi có recovery về Kết nối, không tự start. Frame có sandbox cho
 script/forms/storage, popup OAuth và download; clipboard chỉ cấp quyền ghi. Không
 proxy management key qua app. Asset vẫn ghim phiên bản và kiểm digest; nâng cấp

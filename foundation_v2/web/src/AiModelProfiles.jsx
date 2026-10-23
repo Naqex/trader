@@ -34,7 +34,11 @@ export default function AiModelProfiles({ workspace, language }) {
   useEffect(() => {
     setProfiles([]); setModels([]); setFallback(null); setSaving(false); submitting.current = false
     void load()
-    const refresh = event => { if (event.detail?.workspace === workspace) void load() }
+    const refresh = event => {
+      if (event.detail?.workspace !== workspace) return
+      if (event.detail.error) { generation.current++; request.current?.abort(); setLoading(false); setError(aiErrorCopy(event.detail.error, en)) }
+      else void load()
+    }
     window.addEventListener('wm-ai-provider-change', refresh)
     return () => { generation.current++; request.current?.abort(); window.removeEventListener('wm-ai-provider-change', refresh) }
   }, [workspace, en])

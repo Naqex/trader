@@ -13,7 +13,7 @@ import { TestingRouteBoundary } from './TestingReadState.jsx'
 const AiChatPanel = lazy(() => import('./AiChatPanel.jsx'))
 const AiGatewayPanel = lazy(() => import('./AiGatewayPanel.jsx'))
 
-function PersistentGateway({ active, workspace, language }) {
+function PersistentGateway({ active, workspace, language, chatOpen }) {
   const [visited, setVisited] = useState(active)
   useEffect(() => { if (active) setVisited(true) }, [active])
   if (!active && !visited) return null
@@ -21,7 +21,7 @@ function PersistentGateway({ active, workspace, language }) {
   return <section className="ai-gateway-host" hidden={!active} inert={!active} aria-label="CLIProxyAPI">
     <TestingRouteBoundary fallback={<div className="ai-gateway-state" role="alert">{language === 'en' ? 'CLIProxyAPI could not load. Reload the page to try again.' : 'Không tải được CLIProxyAPI. Tải lại trang để thử lại.'}</div>}>
     <Suspense fallback={null}>
-      <AiGatewayPanel workspace={workspace} language={language} active={active} />
+      <AiGatewayPanel workspace={workspace} language={language} active={active} chatOpen={chatOpen} />
     </Suspense>
     </TestingRouteBoundary>
   </section>
@@ -727,7 +727,7 @@ export default function FxReplayShell({ children, workspace, query = currentQuer
           <NotificationProvider key={workspace}><div className="fx-content" tabIndex={0} hidden={gatewayPage}>
             {children}
           </div></NotificationProvider>
-          <PersistentGateway key={`gateway:${workspace}`} active={gatewayPage} workspace={workspace} language={language} />
+          <PersistentGateway key={`gateway:${workspace}`} active={gatewayPage} workspace={workspace} language={language} chatOpen={aiOpen || aiPage} />
           </div>
           {(aiMounted || aiPage) && <TestingRouteBoundary key={workspace} fallback={<AiPanelFallback open={aiOpen || aiPage} modal={!aiPage && aiOverlay} standalone={aiPage} onClose={closeAi} language={language} error />}><Suspense fallback={<AiPanelFallback open={aiOpen || aiPage} modal={!aiPage && aiOverlay} standalone={aiPage} onClose={closeAi} language={language} />}><AiChatPanel workspace={workspace} screen={activeView === 'ai' ? 'settings' : activeView} open={aiOpen || aiPage} modal={!aiPage && aiOverlay} standalone={aiPage} onClose={closeAi} settingsHref={buildWorkspaceHref('ai', workspace, query, { area: 'ai', section: 'connections', demo: null })} language={language} /></Suspense></TestingRouteBoundary>}
         </section>

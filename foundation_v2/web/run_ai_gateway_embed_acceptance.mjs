@@ -13,7 +13,7 @@ const evidence = path.resolve(process.env.TW_AI_UI_EVIDENCE || 'E:/BACKUP-TRADIN
 const management = 'http://127.0.0.1:17852/management.html'
 await mkdir(evidence, { recursive: true })
 const browser = await chromium.launch({ headless: true })
-const report = { scope: live ? 'Actual UI/API and upstream panel, read-only' : 'Fixture gateway metadata, real upstream panel, read-only', checks: [], writes: [], errors: [] }
+const report = { scope: live ? 'Actual UI/API and upstream panel; catalog-refresh POST only' : 'Fixture gateway metadata, real upstream panel; catalog-refresh POST only', checks: [], refreshes: 0, writes: [], errors: [] }
 try {
   for (const width of [1440, 768, 360]) for (const lang of ['vi', 'en']) {
     const context = await browser.newContext({ viewport: { width, height: 940 }, reducedMotion: 'reduce' })
@@ -24,6 +24,10 @@ try {
     page.on('request', request => { if (request.url() === management) frameLoads++ })
     await context.route('**/*', async route => {
       const request = route.request(), url = new URL(request.url())
+      if (request.method() === 'POST' && url.origin === origin && url.pathname === '/api/v2/ai/assistant/connections/local-gateway/refresh' && request.postData() === '{}') {
+        report.refreshes++
+        return live ? route.continue() : route.fulfill({ json: { status: 'catalog_ready', models: [] } })
+      }
       if (!['GET', 'HEAD'].includes(request.method())) {
         report.writes.push({ method: request.method(), path: url.pathname }); return route.abort('blockedbyclient')
       }
