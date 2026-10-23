@@ -12,6 +12,48 @@ SPEC.loader.exec_module(backup)
 
 
 class BackupGuardTests(unittest.TestCase):
+    def test_backup_output_is_confined_to_dedicated_root(self):
+        with tempfile.TemporaryDirectory() as folder, patch.object(backup, "FOUNDATION", Path(folder)):
+            base = Path(folder)
+            artifacts = base / "artifacts"
+            expected = base / ".runtime/api-platform-backups/snapshot"
+            self.assertEqual(backup.backup_output(None, "snapshot", artifacts), expected.resolve())
+            expected.mkdir(parents=True)
+            for rejected in (expected, base / "outside", expected.parent / "../escape"):
+                with self.assertRaises(backup.BackupPreflightError):
+                    backup.backup_output(rejected, "snapshot", artifacts)
+            new = expected.parent / "new"
+            for artifacts in (expected.parent, new, new / "nested"):
+                with self.assertRaises(backup.BackupPreflightError):
+                    backup.backup_output(new, "snapshot", artifacts)
+
+    @unittest.skipUnless(os.name == "nt", "Windows junction relocation")
+    def test_backup_root_can_be_a_junction_without_allowing_child_escape(self):
+        import subprocess
+        with tempfile.TemporaryDirectory() as folder, patch.object(backup, "FOUNDATION", Path(folder) / "project"):
+            base = Path(folder)
+            target = base / "external-backups"
+            target.mkdir()
+            link = backup.FOUNDATION / ".runtime/api-platform-backups"
+            link.parent.mkdir(parents=True)
+            def junction(path, destination):
+                subprocess.run(["powershell.exe", "-NoProfile", "-Command",
+                                f"New-Item -ItemType Junction -Path '{path}' -Target '{destination}' | Out-Null"],
+                               check=True, capture_output=True)
+            junction(link, target)
+            try:
+                self.assertEqual(backup.backup_output(link / "new", "snapshot", base / "artifacts"), target / "new")
+                outside = base / "outside"
+                outside.mkdir()
+                junction(target / "escape", outside)
+                try:
+                    with self.assertRaises(backup.BackupPreflightError):
+                        backup.backup_output(link / "escape/new", "snapshot", base / "artifacts")
+                finally:
+                    os.rmdir(target / "escape")
+            finally:
+                os.rmdir(link)
+
     def test_no_implicit_mutation_authority(self):
         with self.assertRaises(SystemExit), patch.object(backup, "database_preflight") as database:
             backup.main([])

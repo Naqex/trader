@@ -82,6 +82,16 @@ stopped or migration applied by this script. Canceled/paused download partial fi
 are preserved when their terminal checkpoint is verified; unowned publication
 temporary files fail closed. The caller must keep other filesystem writers stopped.
 
+The dedicated `.runtime/api-platform-backups` root may be an owner-managed NTFS
+junction to another local volume. The backup command resolves that root before
+checking the output: a new bundle must remain below it and outside the artifact
+tree; arbitrary `--output` paths and child junction escapes are rejected. Dump
+temporary files and free-space checks use the destination volume. On this machine
+the root points into `E:\BACKUP-TRADINGWORKSPACE\workspace`, preserving its original
+workspace-relative path. Keep E available when backing up or reading old bundles.
+See the [local relocation receipt](../evidence/local-storage-relocation-20261023/RECEIPT.md)
+for verified scope, retained SSD paths and rollback notes.
+
 For rollback, stop the manifest-owned API/workers, verify the bundle, and restore
 the archive with compatible `pg_restore` into a **new** local database. Use
 `restore_backup_files()` to restore files into a **new** artifact directory. Compare

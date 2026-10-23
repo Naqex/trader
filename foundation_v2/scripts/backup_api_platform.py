@@ -122,6 +122,18 @@ def dump_database(config: dict, pg_dump: Path, target: Path, *, timeout: int) ->
         raise BackupPreflightError("pg_dump failed; no backup was accepted. Check PostgreSQL permissions/version without exposing connection secrets.")
 
 
+def backup_output(requested: Path | None, snapshot: str, artifacts: Path) -> Path:
+    # Resolve the dedicated root separately so an owner-managed junction can put
+    # backup bytes on another volume without permitting arbitrary output paths.
+    backup_root = (FOUNDATION / ".runtime/api-platform-backups").resolve()
+    output = (requested or backup_root / snapshot).resolve()
+    root = artifacts.resolve()
+    if (backup_root not in output.parents or output == root or root in output.parents
+            or output in root.parents or output.exists()):
+        raise BackupPreflightError("Backup must be a new directory under .runtime/api-platform-backups, outside the artifact tree.")
+    return output
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--database-name", default="trading_workspace_v2_exness_history")
@@ -142,10 +154,7 @@ def main(argv=None) -> int:
         if not root.is_dir():
             raise BackupPreflightError("Existing artifact directory is missing.")
         snapshot = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid4().hex[:12]
-        runtime = (FOUNDATION / ".runtime").resolve()
-        output = (args.output or runtime / "api-platform-backups" / snapshot).resolve()
-        if runtime not in output.parents or output == root or root in output.parents or output in root.parents or output.exists():
-            raise BackupPreflightError("Backup must be a new ignored .runtime directory outside the artifact tree.")
+        output = backup_output(args.output, snapshot, root)
         binary = None if args.pg_bin is None else args.pg_bin / ("pg_dump.exe" if os.name == "nt" else "pg_dump")
         if binary is None or not binary.is_file():
             raise BackupPreflightError("Set --pg-bin/TW_V2_PG_BIN to the audited PostgreSQL bin directory.")
