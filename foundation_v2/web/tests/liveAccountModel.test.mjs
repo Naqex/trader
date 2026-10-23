@@ -64,6 +64,21 @@ test('missing cashflow data or amounts remain unknown, empty verified history ma
   assert.equal(accountCashSummary(row).deposit,0)
   assert.equal(accountTransactions(null),null)
 })
+
+test('cashflow sorting preserves signed amounts and keeps unknown values last in both directions',()=>{
+  const row={snapshot:{cashflows:[
+    {ticket:'deposit',type:2,profit:100,time_msc:3000},
+    {ticket:'withdrawal',type:2,profit:-20,time_msc:1000},
+    {ticket:'unknown',type:4,profit:null,time_msc:null},
+    {ticket:'fee',type:4,profit:-5,time_msc:2000},
+  ]}}
+  const ids=sort=>accountTransactions(row,sort).map(item=>item.id)
+  assert.deepEqual(ids({key:'amount',ascending:true}),['withdrawal','fee','deposit','unknown'])
+  assert.deepEqual(ids({key:'amount',ascending:false}),['deposit','fee','withdrawal','unknown'])
+  assert.deepEqual(ids({key:'time',ascending:true}),['withdrawal','fee','deposit','unknown'])
+  assert.deepEqual(ids(),['deposit','fee','withdrawal','unknown'])
+  assert.equal(row.snapshot.cashflows[0].ticket,'deposit')
+})
 test('account rows isolate manual accounts and mark stale snapshots visibly',()=>{
   const records = [account,{record_id:'other',kind:'trade',updated_at_utc:'2099-01-01',payload:{account_id:'elsewhere'}}]
   const [broker,manual] = liveAccountRows([account],records,{stale:true,account:{account_ref:'mask'}})

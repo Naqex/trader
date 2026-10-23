@@ -42,7 +42,7 @@ export function liveAccountRows(accounts, records, broker) {
   ]
 }
 
-export function accountTransactions(row) {
+export function accountTransactions(row, { key = 'time', ascending = false } = {}) {
   if (!row) return null
   if (row.record) return [{ id: `opening:${row.id}`, kind: 'opening', label: 'Số dư ban đầu', amount: row.snapshot.account.opening_balance, time: Date.parse(row.record.payload.opening_at_utc || row.record.created_at_utc) }]
   if (!Array.isArray(row.snapshot.cashflows)) return null
@@ -51,7 +51,12 @@ export function accountTransactions(row) {
     const amount = known(item.profit) ? item.profit : null
     const kind = item.type === 2 && amount !== null && amount !== 0 ? amount > 0 ? 'deposit' : 'withdrawal' : [4,7,8,9,10,11,17].includes(item.type) ? 'fee' : 'other'
     return { id: String(item.ticket), kind, label: {deposit:'Nạp tiền',withdrawal:'Rút tiền',fee:'Phí'}[kind] || `MT5 · ${item.type}`, amount, time: item.time_msc }
-  }).sort((a,b) => b.time-a.time)
+  }).sort((a,b) => {
+    const left = a[key], right = b[key]
+    if (!known(left)) return known(right) ? 1 : 0
+    if (!known(right)) return -1
+    return (left-right)*(ascending ? 1 : -1)
+  })
 }
 
 export function accountCashSummary(row) {

@@ -1,0 +1,22 @@
+{
+  "brokerDisclosure": false,
+  "dividerBottom": [
+    189,
+    189
+  ],
+  "infoHeights": [
+    20,
+    20,
+    20,
+    20,
+    20,
+    20
+  ],
+  "paginationBottom": 940,
+  "summary": "Số dư\n$10.000,00\nSố dư ban đầu\n—\nNạp tiền\n$0,00\nRút tiền\n$0,00\nPhí tài khoản\n$0,00\nPnL ròng\n$0,00",
+  "url": "http://127.0.0.1:5180/?workspace=tenant-a&view=live&lang=vi&area=live&section=trading-accounts&account_tab=transactions",
+  "viewport": [
+    1920,
+    940
+  ]
+}

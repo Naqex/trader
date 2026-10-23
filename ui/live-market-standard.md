@@ -169,10 +169,15 @@ header remains available. Financial fixtures remain isolated test evidence.
 
 ## Account connection and cashflows
 
-Connect uses an accounts table with search, source/status filter, sorting and
+Connect uses an accounts table with search, source filter, sorting and
 shared pagination beside the Add account panel. Manual creation and CSV import
 reuse the persisted journal dialogs. CSV imports closed trades into a manual
 account; it is not an account-list upload or automatic broker connection.
+Search starts as a right-aligned icon and expands into a focused field with a
+clear-and-close action. The shared FxSelect checkbox menu filters Manual and
+Sync sources; CSV is not a separate account source. Account action icons stay
+transparent, including hover. Sidebar and main toolbar share the same header
+height and divider position.
 
 The manual-account dialog uses the shared modal, searchable currency select and
 UTC date/time picker. Name, currency, Live/Demo/Prop firm type, opening capital and
@@ -203,9 +208,12 @@ and fee CRUD are not supported and totals stay unknown. Broker MT5 balance event
 commission and tax events keep their signed amounts as fees. Other events retain
 their MT5 type. These events never enter trading PnL. Totals describe synced
 history, not lifetime, and broker opening balance is never reconstructed from a
-partial history. Unknown history stays unknown. Broker equity, margin, open
-positions, pending orders and quotes remain accessible in the read-only snapshot
-disclosure on Transactions.
+partial history. Unknown history stays unknown. Amount and UTC time sort before
+tab filtering and shared pagination. The sidebar uses the existing account picker
+and action menu, with balance separate from the grouped financial metrics. Shared
+info tooltips explain scope and unavailable values without persistent helper copy.
+Transactions has no raw broker snapshot disclosure; positions, orders, quotes and
+account trading conditions belong to the MT5 trading workspace.
 
 The local MetaTrader 5 connector uses the existing FxSelect, ProjectDateInput,
 field/button tokens and account table. The provider picker uses a circular

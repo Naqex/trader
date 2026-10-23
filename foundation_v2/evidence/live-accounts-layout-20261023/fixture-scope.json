@@ -1,0 +1,9 @@
+{
+  "origin": "http://127.0.0.1:5192",
+  "synthetic": true,
+  "cashflow_count": 26,
+  "commands": 0,
+  "sync_requests": 0,
+  "broker_access": false,
+  "database_access": false
+}

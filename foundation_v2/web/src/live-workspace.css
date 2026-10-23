@@ -7,8 +7,17 @@
 .live-accounts-main .live-table-scroll :is(th,td) { padding:12px 8px; }
 .live-accounts-main .live-table-scroll :is(th,td):first-child { padding-left:16px; }
 .live-accounts-main .live-table-scroll :is(th,td):last-child { padding-right:16px; }
-.live-accounts-toolbar { display:flex; align-items:center; justify-content:flex-end; gap:12px; min-height:var(--live-accounts-heading-height); padding:16px var(--wm-page-gutter); border-bottom:1px solid var(--wm-border); flex-wrap:wrap; }
-.live-accounts-toolbar .live-search { margin-right:auto; }
+.live-accounts-toolbar { display:flex; align-items:center; justify-content:flex-end; gap:12px; min-height:var(--live-accounts-heading-height); padding:16px var(--wm-page-gutter); border-bottom:1px solid var(--wm-border); }
+.live-account-search { display:flex; align-items:center; flex:0 1 auto; min-width:0; height:var(--wm-control-height); border:1px solid transparent; border-radius:var(--ds-radius-field); }
+.live-account-search.is-open { width:260px; border-color:var(--wm-border); }
+.live-account-search:focus-within { border-color:var(--wm-focus); }
+.live-account-search > button { flex:0 0 32px; display:grid; place-items:center; width:32px; height:32px; padding:0; border:0; background:transparent; color:var(--wm-content-muted); cursor:pointer; }
+.fx-app .live-account-search > input { min-width:0; width:100%; min-height:0; height:100%; padding:0; border:0; border-radius:0; outline:0; background:transparent; color:var(--wm-content); font:inherit; box-shadow:none; }
+.live-account-search > input::-webkit-search-cancel-button { appearance:none; }
+.fx-app.fx-shell-story[data-theme] .fx-content .live-account-search > button:is(:hover,:active) { background:transparent; color:var(--wm-content); }
+.fx-app.fx-shell-story[data-theme] .fx-content .live-source-filter > .fx-select-trigger { width:var(--wm-control-height); height:var(--wm-control-height); padding:0; justify-content:center; border:0; background:var(--wm-control-open); }
+.live-source-filter { flex-shrink:0; }
+.fx-app.fx-shell-story[data-theme] .fx-content .live-source-filter.has-selection > .fx-select-trigger { color:var(--project-primary); }
 .live-account-status,.live-source-badge { display:inline-flex; align-items:center; padding:3px 7px; border-radius:var(--ds-radius-field); font-size:11px; line-height:18px; font-weight:600; white-space:nowrap; color:var(--wm-content-muted); background:var(--wm-control-open); }
 .live-account-status:is(.is-manual,.is-connected,.is-synced) { color:var(--wm-positive); background:color-mix(in srgb,var(--wm-positive) 12%,transparent); }
 .live-account-status:is(.is-stale,.is-error,.is-disconnected) { background:color-mix(in srgb,var(--wm-warning) 12%,transparent); }
@@ -33,7 +42,7 @@
 .live-mt5-form label { display:grid; gap:8px; font-size:13px; min-width:0; }
 .live-mt5-form input:not([type='radio']) { width:100%; box-sizing:border-box; min-height:var(--wm-control-height); padding:7px 12px; border:1px solid var(--wm-border); border-radius:var(--ds-radius-field); background:var(--wm-surface); color:var(--wm-content); font:inherit; }
 .live-mt5-form input:focus-visible { outline:2px solid var(--wm-focus); outline-offset:2px; }
-.fx-app .live-add-account:has(> .live-mt5-form) > h2 { margin-bottom:0; }
+.fx-app .live-add-account:has(> .live-mt5-form) > .live-account-sidebar-heading { margin-bottom:0; }
 .live-connect-nav { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:60px; flex-shrink:0; }
 .live-connect-nav > button { line-height:20px; }
 .live-mt5-form .live-back-action { display:inline-flex; align-items:center; justify-content:center; gap:8px; border:0; padding:4px 0; background:transparent; color:var(--wm-content-muted); font:inherit; font-size:12px; cursor:pointer; transition:color var(--ds-motion-hover); }
@@ -73,7 +82,10 @@
 @media (max-width:1000px) {
   .live-accounts-main { min-height:calc(100dvh - 180px); }
 }
-.live-transaction-tabs { display:flex; flex-wrap:wrap; gap:8px; padding:16px var(--wm-page-gutter); border-bottom:1px solid var(--wm-border); }
+.live-transaction-tabs { display:flex; align-items:center; flex-wrap:wrap; gap:8px; min-height:var(--live-accounts-heading-height); flex-shrink:0; box-sizing:border-box; padding:16px var(--wm-page-gutter); border-bottom:1px solid var(--wm-border); }
+.fx-app.fx-shell-story[data-theme] .fx-content .live-transaction-tabs > .fxa-button { background:transparent; border-color:transparent; color:var(--wm-content-muted); }
+.fx-app.fx-shell-story[data-theme] .fx-content .live-transaction-tabs > .fxa-button[aria-pressed=true] { background:var(--wm-control-open); color:var(--wm-content); }
+.fx-app.fx-shell-story[data-theme] .fx-content .live-transaction-tabs > .fxa-button:hover:not(:disabled) { background:var(--wm-control-hover); color:var(--wm-content); }
 .live-template-hint { margin:0 0 8px; color:var(--wm-content-muted); font-size:12px; line-height:18px; }
 .live-template-hint .live-template-link { display:inline-flex; align-items:center; gap:4px; width:auto; min-height:0; height:auto; padding:0; border:0; border-radius:0; background:transparent; color:var(--project-primary); font:inherit; vertical-align:baseline; }
 .live-template-hint .live-template-link:hover { background:transparent; color:var(--project-primary-hover); text-decoration:underline; text-underline-offset:3px; }
@@ -92,9 +104,17 @@
 .live-metatrader-option:hover:not(:disabled) { background:transparent; color:var(--wm-content); }
 .live-metatrader-option:hover:not(:disabled) .live-metatrader-avatar { background:var(--wm-hover); }
 .live-metatrader-option:focus-visible { outline:2px solid var(--wm-focus); outline-offset:2px; }
-.live-cash-summary { display:grid; gap:16px; margin-block:20px; }
-.live-cash-summary dt { color:var(--wm-content-muted); font-size:13px; }
-.live-cash-summary dd { margin:4px 0 0; font-size:20px; font-weight:600; font-variant-numeric:tabular-nums; }
+.live-cash-summary { display:grid; gap:0; margin:12px 0 0; }
+.live-cash-summary > div { padding:12px; background:var(--wm-surface); border-inline:1px solid var(--wm-border); }
+.live-cash-summary > .live-cash-balance { margin-bottom:12px; border:1px solid var(--wm-border); border-radius:var(--ds-radius-field); }
+.live-cash-summary > div:nth-child(2) { border-top:1px solid var(--wm-border); border-radius:var(--ds-radius-field) var(--ds-radius-field) 0 0; }
+.live-cash-summary > div:last-child { border-bottom:1px solid var(--wm-border); border-radius:0 0 var(--ds-radius-field) var(--ds-radius-field); }
+.live-cash-summary dt { display:flex; align-items:center; gap:6px; color:var(--wm-content); font-size:13px; font-weight:600; }
+.live-cash-summary dd { margin:6px 0 0; font-size:18px; font-weight:600; font-variant-numeric:tabular-nums; }
+.fx-app.fx-shell-story[data-theme] .fx-content .live-cash-info { display:grid; place-items:center; align-self:flex-start; margin-left:auto; width:20px; height:20px; min-height:20px; padding:0; border:0; background:transparent; color:var(--wm-content-muted); cursor:pointer; }
+.fx-app.fx-shell-story[data-theme] .fx-content .live-cash-info:is(:hover,:active) { background:transparent; color:var(--wm-content); }
+.is-transactions .live-add-account { padding-inline:12px; }
+.is-transactions .live-account-sidebar-heading { margin-inline:-12px; padding-inline:12px; }
 .live-connect-instructions { display:grid; gap:16px; font-size:14px; line-height:1.6; }
 .live-connect-instructions :is(h3,p,ol) { margin:0; }
 .live-connect-instructions ol { padding-left:20px; }
@@ -269,7 +289,8 @@
 .live-accounts-layout { --live-accounts-heading-height:72px; display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 0; }
 .live-accounts-layout > section:first-child > :is(.live-broker, .live-empty) { padding: 24px var(--wm-page-gutter); }
 .live-add-account { border-left: 1px solid var(--wm-border); padding: 0 24px 24px; }
-.fx-app .live-add-account h2 { display: flex; align-items: center; min-height: var(--live-accounts-heading-height); box-sizing: border-box; margin: 0 -24px 20px; padding: 16px 24px; border-bottom: 1px solid var(--wm-border); }
+.live-account-sidebar-heading { display:flex; align-items:center; gap:12px; min-height:var(--live-accounts-heading-height); flex-shrink:0; box-sizing:border-box; margin:0 -24px 20px; padding:16px 24px; border-bottom:1px solid var(--wm-border); }
+.fx-app .live-account-sidebar-heading h2 { flex:1; min-height:0; margin:0; padding:0; border:0; }
 .live-manual-account:hover { background: var(--wm-hover); }
 .live-or { display: block; color: var(--wm-content-muted); font-size: 12px; text-align: center; margin-block: 20px; }
 .live-manual-account { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; text-align: left; padding: 16px; border: 1px solid var(--wm-border); border-radius: 12px; background: transparent; color: var(--wm-content); cursor: pointer; }
@@ -297,8 +318,8 @@
 .live-table-scroll th { position: sticky; top: 0; background: var(--project-canvas); color: var(--wm-content-muted); font-weight: 500; }
 .live-table-scroll small { display: block; color: var(--wm-content-muted); margin-top: 4px; }
 .live-table-scroll tbody tr:hover td { background: var(--wm-row-hover); }
-.fx-app.fx-shell-story[data-theme] .fx-content .live-accounts-main .live-account-menu-trigger.fxa-button { background:var(--wm-control-open); }
-.fx-app.fx-shell-story[data-theme] .fx-content .live-accounts-main .live-account-menu-trigger.fxa-button:hover:not(:disabled) { background:var(--wm-control-hover); }
+.fx-app.fx-shell-story[data-theme] .fx-content .live-accounts-layout .live-account-menu-trigger.fxa-button { border:0; background:transparent; color:var(--wm-content-muted); }
+.fx-app.fx-shell-story[data-theme] .fx-content .live-accounts-layout .live-account-menu-trigger.fxa-button:is(:hover,:active):not(:disabled) { background:transparent; color:var(--wm-content); }
 .live-table-scroll:focus-visible, .live-calendar-scroll:focus-visible { outline: 2px solid var(--wm-focus); outline-offset: 2px; }
 .live-pnl-curve { padding-top: 24px; border-top: 1px solid var(--wm-border); }
 .live-pnl-curve svg { display: block; width: 100%; height: auto; margin-block: 16px; overflow: visible; }
@@ -347,5 +368,3 @@
 @media (prefers-reduced-motion: reduce) {
   .live-workspace *, .live-workspace *::before, .live-workspace *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
-
-.live-accounts-main > .live-broker-extra { margin-inline:0; padding:16px var(--wm-page-gutter); }

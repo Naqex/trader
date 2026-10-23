@@ -22,6 +22,8 @@ export default function TestingIcon({ kind = 'info', size = 18 }) {
     columns: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16m6-16v16" /></>,
     account: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 9h18m-5 5h3" /></>,
     chart: <><path d="M4 4v16h16M7 15l4-5 4 3 5-7" /></>,
+    deposit: <path d="M18 6 6 18M6 8v10h10" />,
+    withdrawal: <path d="M6 18 18 6M8 6h10v10" />,
     tags: <><path d="m4 4 7 0 10 10-7 7L4 11Z" /><circle cx="8" cy="8" r="1" /></>,
   }
   if (paths[kind]) return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[kind]}</svg>

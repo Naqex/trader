@@ -1,4 +1,13 @@
 {
+  "Đóng tìm kiếm": {"vi":"Đóng tìm kiếm","en":"Close search"},
+  "Về {label}": {"vi":"Về {label}","en":"About {label}"},
+  "Số dư do MT5 cung cấp tại lần cập nhật gần nhất.": {"vi":"Số dư do MT5 cung cấp tại lần cập nhật gần nhất.","en":"Balance reported by MT5 at the latest update."},
+  "Vốn ban đầu đã lưu của tài khoản thủ công.": {"vi":"Vốn ban đầu đã lưu của tài khoản thủ công.","en":"The saved initial balance of this manual account."},
+  "Chưa xác định số dư đầu kỳ từ lịch sử MT5 đã đồng bộ.": {"vi":"Chưa xác định số dư đầu kỳ từ lịch sử MT5 đã đồng bộ.","en":"The synced MT5 history does not establish an initial balance."},
+  "Tổng tiền nạp trong phạm vi lịch sử đã đồng bộ.": {"vi":"Tổng tiền nạp trong phạm vi lịch sử đã đồng bộ.","en":"Total deposits within the synced history."},
+  "Tổng tiền rút trong phạm vi lịch sử đã đồng bộ.": {"vi":"Tổng tiền rút trong phạm vi lịch sử đã đồng bộ.","en":"Total withdrawals within the synced history."},
+  "Các khoản phí tài khoản; phí giao dịch được tính trong PnL ròng.": {"vi":"Các khoản phí tài khoản; phí giao dịch được tính trong PnL ròng.","en":"Account charges. Trading costs are included in net PnL."},
+  "Lãi/lỗ giao dịch đã đóng sau hoa hồng, swap và phí, trong phạm vi lịch sử đã đồng bộ.": {"vi":"Lãi/lỗ giao dịch đã đóng sau hoa hồng, swap và phí, trong phạm vi lịch sử đã đồng bộ.","en":"Closed-trade profit and loss after commission, swap and fees within the synced history."},
   "Đồng bộ tất cả tài khoản": {"vi":"Đồng bộ tất cả tài khoản","en":"Sync all accounts"},
   "Đồng bộ tài khoản": {"vi":"Đồng bộ tài khoản","en":"Sync account"},
   "Đã khớp": {"vi":"Đã khớp","en":"Filled"},
