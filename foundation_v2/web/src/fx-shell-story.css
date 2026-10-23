@@ -1090,7 +1090,7 @@
 
 /* The chart has its own full-bleed toolbar and must not inherit the shell
  * subheader introduced for normal pages. */
-.fx-app.fx-shell-story.is-chart-workspace .fx-main > .fx-subnav { display: none; }
+.fx-app.fx-shell-story.is-chart-workspace .fx-main .fx-subnav { display: none; }
 
 /* Shell help is a short decision-free reference, so it sits above the frame
  * instead of taking the user to a separate route. The layer is fixed to keep

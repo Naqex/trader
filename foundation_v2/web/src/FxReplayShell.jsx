@@ -11,21 +11,21 @@ import './ai-chat.css'
 import { TestingRouteBoundary } from './TestingReadState.jsx'
 const AiChatPanel = lazy(() => import('./AiChatPanel.jsx'))
 
-function AiPanelFallback({ open, modal, onClose, language, error = false }) {
+function AiPanelFallback({ open, modal, onClose, language, standalone, error = false }) {
   const close = useRef(null)
   useEffect(() => {
     if (!open) return
     close.current?.focus()
     const keydown = event => {
-      if (event.key === 'Escape') { event.preventDefault(); onClose() }
+      if (event.key === 'Escape' && !standalone) { event.preventDefault(); onClose() }
       if (modal && event.key === 'Tab') { event.preventDefault(); close.current?.focus() }
     }
     document.addEventListener('keydown', keydown)
     return () => document.removeEventListener('keydown', keydown)
-  }, [open, modal, onClose])
+  }, [open, modal, onClose, standalone])
   const en = language === 'en'
-  return <aside id="wm-ai-chat" className="wm-ai-chat" hidden={!open} role={modal ? 'dialog' : 'complementary'} aria-modal={modal || undefined} aria-label="Mentor" aria-busy={!error}>
-    <header className="wm-ai-header"><h2>Mentor</h2><span /><button type="button" className="wm-dialog-close" ref={close} onClick={onClose} aria-label={en ? 'Close AI chat' : 'Đóng chat AI'}>×</button></header>
+  return <aside id="wm-ai-chat" className={`wm-ai-chat ${standalone ? 'is-standalone' : ''}`} hidden={!open} role={modal ? 'dialog' : 'complementary'} aria-modal={modal || undefined} aria-label="Mentor" aria-busy={!error}>
+    <header className="wm-ai-header"><h2>Mentor</h2><span />{!standalone && <button type="button" className="wm-dialog-close" ref={close} onClick={onClose} aria-label={en ? 'Close AI chat' : 'Đóng chat AI'}>×</button>}</header>
     <div className="wm-ai-transcript" role={error ? 'alert' : 'status'}>{error ? en ? 'AI chat could not load. Reload the page to try again.' : 'Không tải được chat AI. Tải lại trang để thử lại.' : en ? 'Loading…' : 'Đang tải…'}</div>
   </aside>
 }
@@ -76,9 +76,10 @@ const SHELL_COPY = {
       tradingAccounts: ['Trading accounts', 'Tài khoản giao dịch'],
       strategies: ['Strategies', 'Quản lý chiến lược'],
       ai: ['AI and Bots', 'Trợ lý AI, kết nối model và bot giao dịch'],
-      aiAssistant: ['AI assistant', 'Trò chuyện với trợ lý'],
-      aiConnections: ['AI connections', 'Tài khoản và model AI'],
-      automation: ['Automation', 'Bot giao dịch và AI giao dịch'],
+      aiAssistant: ['Trò chuyện', 'Trò chuyện với trợ lý'],
+      aiConnections: ['Kết nối', 'Tài khoản và dịch vụ AI'],
+      aiModels: ['Model', 'Model mặc định và theo tính năng'],
+      automation: ['Bot', 'Bot giao dịch và AI giao dịch'],
       myStrategies: ['My strategies', 'Chiến lược của tôi'],
       trade: ['Trades', 'Giao dịch trong phiên replay'],
       playbook: ['Strategies', 'Strategy và playbook'],
@@ -133,9 +134,10 @@ const SHELL_COPY = {
       tradingAccounts: ['Trading accounts', 'Trading accounts'],
       strategies: ['Strategies', 'Strategy workspace'],
       ai: ['AI and Bots', 'AI assistant, model connections and trading bots'],
-      aiAssistant: ['AI assistant', 'Chat with your assistant'],
-      aiConnections: ['AI connections', 'AI accounts and models'],
-      automation: ['Automation', 'Trading bots and AI trading'],
+      aiAssistant: ['Chat', 'Chat with your assistant'],
+      aiConnections: ['Connections', 'AI accounts and services'],
+      aiModels: ['Models', 'Default and feature models'],
+      automation: ['Bots', 'Trading bots and AI trading'],
       myStrategies: ['My strategies', 'Your strategies'],
       trade: ['Trades', 'Trades in a replay session'],
       playbook: ['Strategies', 'Strategies and playbooks'],
@@ -198,6 +200,7 @@ const SIDEBAR_SECTIONS = [
     items: [
       { id: 'ai-assistant', copyKey: 'aiAssistant', icon: 'ai', route: 'ai', activeViews: ['ai'], section: 'assistant' },
       { id: 'ai-connections', copyKey: 'aiConnections', icon: 'connections', route: 'ai', activeViews: ['ai'], section: 'connections' },
+      { id: 'ai-models', copyKey: 'aiModels', icon: 'settings', route: 'ai', activeViews: ['ai'], section: 'models' },
       { id: 'ai-automation', copyKey: 'automation', icon: 'automation', route: 'ai', activeViews: ['ai'], section: 'automation' },
     ],
   },
@@ -511,14 +514,16 @@ export default function FxReplayShell({ children, workspace, query = currentQuer
     return window.matchMedia('(max-width: 1180px)').matches
   })
   const [helpOpen, setHelpOpen] = useState(false)
+  const aiPage = activeView === 'ai' && !['connections', 'models', 'automation'].includes(query.get('section'))
   const [aiOpen, setAiOpen] = useState(false)
   const [aiMounted, setAiMounted] = useState(false)
   const [aiOverlay, setAiOverlay] = useState(() => window.matchMedia('(max-width: 1100px)').matches)
   const aiButtonRef = useRef(null)
   const closeAi = useCallback(() => { setAiOpen(false); requestAnimationFrame(() => aiButtonRef.current?.focus()) }, [])
   const toggleAi = useCallback(() => {
+    if (aiPage) { document.getElementById('wm-ai-input')?.focus(); return }
     setAiMounted(true); setAiOpen(value => !value); setHelpOpen(false); setMobileNavigationOpen(false)
-  }, [])
+  }, [aiPage])
   const openAi = useCallback(() => {
     setAiMounted(true); setAiOpen(true); setHelpOpen(false); setMobileNavigationOpen(false)
   }, [])
@@ -695,19 +700,21 @@ export default function FxReplayShell({ children, workspace, query = currentQuer
 
   return (
     <TestingLocaleProvider language={language}><FxReplayContext.Provider value={contextValue}>
-      <div className={`fx-app fx-shell-story ${aiOpen ? 'is-ai-open' : ''} ${displayedRailCollapsed ? 'is-rail-collapsed' : ''} ${drawerOpen ? 'is-mobile-nav-open' : ''} ${chartWorkspace ? 'is-chart-workspace' : ''} ${chartRoute ? 'is-chart-route' : ''}`} data-testid="fxreplay-shell" data-theme={theme} data-ui-area={query.get('area') || (['overview', 'replay', 'trade', 'analytics', 'market-data', 'testing', 'prop'].includes(activeView) ? 'testing' : activeView)} lang={language}>
-        <ShellTopbar copy={copy} language={language} setLanguage={handleLanguage} theme={theme} setTheme={handleTheme} railCollapsed={displayedRailCollapsed} onToggleRail={handleRail} chartWorkspace={chartWorkspace} query={query} workspace={workspace} helpOpen={helpOpen} onToggleHelp={() => { setHelpOpen((value) => !value); setAiOpen(false) }} helpButtonRef={helpButtonRef} railId="fxreplay-rail" mobileNavigation={mobileNavigation} drawerOpen={drawerOpen} menuButtonRef={menuButtonRef} aiOpen={aiOpen} onToggleAi={toggleAi} aiButtonRef={aiButtonRef} aiModal={aiOpen && aiOverlay} topbarAction={topbarAction} />
+      <div className={`fx-app fx-shell-story ${aiOpen && !aiPage ? 'is-ai-open' : ''} ${aiPage ? 'is-ai-page' : ''} ${displayedRailCollapsed ? 'is-rail-collapsed' : ''} ${drawerOpen ? 'is-mobile-nav-open' : ''} ${chartWorkspace ? 'is-chart-workspace' : ''} ${chartRoute ? 'is-chart-route' : ''}`} data-testid="fxreplay-shell" data-theme={theme} data-ui-area={query.get('area') || (['overview', 'replay', 'trade', 'analytics', 'market-data', 'testing', 'prop'].includes(activeView) ? 'testing' : activeView)} lang={language}>
+        <ShellTopbar copy={copy} language={language} setLanguage={handleLanguage} theme={theme} setTheme={handleTheme} railCollapsed={displayedRailCollapsed} onToggleRail={handleRail} chartWorkspace={chartWorkspace} query={query} workspace={workspace} helpOpen={helpOpen} onToggleHelp={() => { setHelpOpen((value) => !value); setAiOpen(false) }} helpButtonRef={helpButtonRef} railId="fxreplay-rail" mobileNavigation={mobileNavigation} drawerOpen={drawerOpen} menuButtonRef={menuButtonRef} aiOpen={aiOpen || aiPage} onToggleAi={toggleAi} aiButtonRef={aiButtonRef} aiModal={!aiPage && aiOpen && aiOverlay} topbarAction={topbarAction} />
         {drawerOpen && <div className="fx-mobile-nav-backdrop" aria-hidden="true" onClick={() => setMobileNavigationOpen(false)} />}
-        {!chartWorkspace && <ShellRail activeView={activeView} workspace={workspace} query={query} copy={copy} railId="fxreplay-rail" drawerOpen={drawerOpen} onClose={() => setMobileNavigationOpen(false)} closeButtonRef={navigationCloseRef} inert={aiOpen && aiOverlay} />}
-        <section className="fx-main" role={['overview', 'live', 'market-data', 'analytics'].includes(activeView) || (activeView === 'trade' && query.get('intent') !== 'order') || (activeView === 'replay' && query.get('surface') !== 'workspace' && (query.get('select') === '1' || query.get('mode') === 'Practice')) ? 'main' : undefined} aria-label={copy.contentAria} inert={drawerOpen || (aiOpen && aiOverlay)}>
+        {!chartWorkspace && <ShellRail activeView={activeView} workspace={workspace} query={query} copy={copy} railId="fxreplay-rail" drawerOpen={drawerOpen} onClose={() => setMobileNavigationOpen(false)} closeButtonRef={navigationCloseRef} inert={!aiPage && aiOpen && aiOverlay} />}
+        <section className="fx-main" role={['overview', 'live', 'market-data', 'analytics'].includes(activeView) || aiPage || (activeView === 'trade' && query.get('intent') !== 'order') || (activeView === 'replay' && query.get('surface') !== 'workspace' && (query.get('select') === '1' || query.get('mode') === 'Practice')) ? 'main' : undefined} aria-label={copy.contentAria} inert={drawerOpen}>
+          <div className="fx-main-content" inert={!aiPage && aiOpen && aiOverlay}>
           <ShellSubnav activeView={activeView} workspace={workspace} query={query} copy={copy} action={subnavAction} />
           {helpOpen && <ShellHelp copy={copy} helpCloseRef={helpCloseRef} onClose={() => setHelpOpen(false)} />}
           <NotificationProvider key={workspace}><div className="fx-content" tabIndex={0}>
             {children}
           </div></NotificationProvider>
+          </div>
+          {(aiMounted || aiPage) && <TestingRouteBoundary key={workspace} fallback={<AiPanelFallback open={aiOpen || aiPage} modal={!aiPage && aiOverlay} standalone={aiPage} onClose={closeAi} language={language} error />}><Suspense fallback={<AiPanelFallback open={aiOpen || aiPage} modal={!aiPage && aiOverlay} standalone={aiPage} onClose={closeAi} language={language} />}><AiChatPanel workspace={workspace} screen={activeView === 'ai' ? 'settings' : activeView} open={aiOpen || aiPage} modal={!aiPage && aiOverlay} standalone={aiPage} onClose={closeAi} settingsHref={buildWorkspaceHref('ai', workspace, query, { area: 'ai', section: 'connections', demo: null })} language={language} /></Suspense></TestingRouteBoundary>}
         </section>
-        {aiOpen && aiOverlay && <div className="wm-ai-backdrop" aria-hidden="true" onClick={closeAi} />}
-        {aiMounted && <TestingRouteBoundary key={workspace} fallback={<AiPanelFallback open={aiOpen} modal={aiOverlay} onClose={closeAi} language={language} error />}><Suspense fallback={<AiPanelFallback open={aiOpen} modal={aiOverlay} onClose={closeAi} language={language} />}><AiChatPanel workspace={workspace} screen={activeView === 'ai' ? 'settings' : activeView} open={aiOpen} modal={aiOverlay} onClose={closeAi} settingsHref={buildWorkspaceHref('ai', workspace, query, { area: 'ai', section: 'connections', demo: null })} language={language} /></Suspense></TestingRouteBoundary>}
+        {!aiPage && aiOpen && aiOverlay && <div className="wm-ai-backdrop" aria-hidden="true" onClick={closeAi} />}
       </div>
     </FxReplayContext.Provider></TestingLocaleProvider>
   )

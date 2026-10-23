@@ -207,6 +207,9 @@ impl AiAssistant {
     }
     pub(crate) async fn account(&self, legacy: bool, refresh: bool) -> Result<Value, ApiError> {
         let provider = if legacy { Provider::Web } else { *self.provider.lock().await };
+        self.connection(provider, refresh).await
+    }
+    async fn connection(&self, provider: Provider, refresh: bool) -> Result<Value, ApiError> {
         let mut value = match provider {
             Provider::Web => self.web_status().await?,
             Provider::Gateway => self.gateway.status(refresh).await,
@@ -231,6 +234,9 @@ impl AiAssistant {
             return self.account(false, false).await;
         }
         let provider = if legacy { Provider::Web } else { *self.provider.lock().await };
+        self.connection_action(provider, action, body).await
+    }
+    async fn connection_action(&self, provider: Provider, action: &str, body: Value) -> Result<Value, ApiError> {
         if provider == Provider::Gateway && self.gateway.busy().await && !["cancel", "stop"].contains(&action) {
             return Err(ApiError::detail(StatusCode::CONFLICT, "chatgpt_busy"));
         }
@@ -241,7 +247,7 @@ impl AiAssistant {
         } else if action != "refresh" || body.as_object().is_none_or(|v| !v.is_empty()) {
             self.gateway.action(action, &body).await?;
         }
-        self.account(legacy, action == "refresh").await
+        self.connection(provider, action == "refresh").await
     }
     pub(crate) async fn prepare(&self, selection:&Value, messages:Value, context:&Value) -> Result<reqwest::RequestBuilder,ApiError> {
         selection_shape(selection)?;
@@ -283,10 +289,13 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/api/v2/ai/assistant/workflows/{id}",get(read_chat).delete(cancel_chat))
         .route("/api/v2/ai/assistant/workflows/{id}/events",get(crate::ai_runs::stream_events))
         .route("/api/v2/ai/assistant/catalog",get(catalog));
+    routes = routes.route("/api/v2/ai/assistant/connections/{provider}", get(connection_status))
+        .route("/api/v2/ai/assistant/connections/{provider}/{action}", post(connection_action));
     routes.route_layer(axum::middleware::from_fn(local_boundary))
 }
 pub fn native(method: &str, path: &str) -> bool {
     let suffix = path.strip_prefix("/api/v2/ai/chatgpt").or_else(|| path.strip_prefix("/api/v2/ai/assistant"));
+    if matches!((method,suffix),("GET",Some("/connections/{provider}")) | ("POST",Some("/connections/{provider}/{action}"))) { return true; }
     if matches!((method,suffix),("POST",Some("/workflows/evidence-review")) | ("GET" | "DELETE",Some("/workflows/{id}")) | ("GET",Some("/workflows/{id}/events"))) {return true;}
     if matches!((method,suffix),("GET",Some("/profiles" | "/conversations" | "/catalog" | "/chat/{id}/events")) | ("PUT",Some("/profiles/{feature}/{role}")) | ("GET" | "PATCH" | "DELETE",Some("/conversations/{id}"))) { return true; }
     matches!((method, suffix), ("GET", Some("/account")) | ("POST", Some("/account/{action}"))
@@ -313,6 +322,14 @@ async fn local_boundary(request: Request, next: Next) -> Response {
 async fn status(State(state): State<Arc<AppState>>, _scope: Workspace, OriginalUri(uri): OriginalUri) -> Result<Json<Value>, ApiError> {
     state.ai_assistant.account(uri.path().starts_with("/api/v2/ai/chatgpt/"), false).await.map(Json)
 }
+async fn connection_status(State(state): State<Arc<AppState>>, _scope: Workspace, Path(provider): Path<String>) -> Result<Json<Value>, ApiError> {
+    state.ai_assistant.connection(Provider::parse(&provider)?, false).await.map(Json)
+}
+async fn connection_action(State(state): State<Arc<AppState>>, _scope: Workspace, Path((provider, action)): Path<(String, String)>, Json(body): Json<Value>) -> Result<Json<Value>, ApiError> {
+    // Management addresses a transport explicitly; it must not change defaults or per-run selections.
+    if action == "provider" || action == "selection" { return Err(ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY, "invalid_ai_action")); }
+    state.ai_assistant.connection_action(Provider::parse(&provider)?, &action, body).await.map(Json)
+}
 async fn action(State(state): State<Arc<AppState>>, _scope: Workspace, Path(action): Path<String>, OriginalUri(uri): OriginalUri, Json(body): Json<Value>) -> Result<Json<Value>, ApiError> {
     state.ai_assistant.account_action(uri.path().starts_with("/api/v2/ai/chatgpt/"), &action, body).await.map(Json)
 }
@@ -329,6 +346,43 @@ async fn cancel_chat(State(state): State<Arc<AppState>>, scope: Workspace, Path(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn explicit_connection_management_never_changes_the_default_provider() {
+        use http_body_util::BodyExt;
+        use tower::ServiceExt;
+        let mut state = crate::tests::fixture(100);
+        let assistant = AiAssistant::fixture_gateway("http://127.0.0.1:17859/v1", std::env::temp_dir().join("wm-missing-ai-ui-test-key"));
+        let before = *assistant.provider.lock().await;
+        Arc::get_mut(&mut state).unwrap().ai_assistant = assistant.clone();
+        let app = crate::router(state, routes());
+        for (method, path, workspace, origin, expected) in [
+            ("GET", "/connections/local-gateway", "a", "http://localhost:5180", StatusCode::OK),
+            ("GET", "/connections/chatgpt-web", "a", "http://localhost:5180", StatusCode::OK),
+            ("GET", "/connections/local-gateway", "foreign", "http://localhost:5180", StatusCode::FORBIDDEN),
+            ("POST", "/connections/local-gateway/refresh", "a", "https://foreign.example", StatusCode::FORBIDDEN),
+            ("POST", "/connections/local-gateway/refresh", "a", "http://localhost:5180", StatusCode::OK),
+            ("POST", "/connections/chatgpt-web/selection", "a", "http://localhost:5180", StatusCode::UNPROCESSABLE_ENTITY),
+            ("POST", "/connections/local-gateway/provider", "a", "http://localhost:5180", StatusCode::UNPROCESSABLE_ENTITY),
+            ("GET", "/connections/unregistered", "a", "http://localhost:5180", StatusCode::UNPROCESSABLE_ENTITY),
+        ] {
+            let mut request = axum::http::Request::builder().method(method).uri(format!("/api/v2/ai/assistant{path}"))
+                .header("host", "localhost:5180").header("origin", origin).header("x-workspace-id", workspace)
+                .header("content-type", "application/json").body(axum::body::Body::from("{}")).unwrap();
+            request.extensions_mut().insert(ConnectInfo("127.0.0.1:1000".parse::<std::net::SocketAddr>().unwrap()));
+            let response = app.clone().oneshot(request).await.unwrap();
+            assert_eq!(response.status(), expected, "{method} {path}");
+            if workspace == "a" { assert_eq!(response.headers()["cache-control"], "no-store"); }
+            let bytes = response.into_body().collect().await.unwrap().to_bytes();
+            let text = String::from_utf8_lossy(&bytes);
+            assert!(!text.contains("wm-missing-ai-ui-test-key"));
+            assert!(!text.contains("controlToken"));
+            assert!(*assistant.provider.lock().await == before);
+            assert!(assistant.child.lock().await.is_none(), "navigation must not start the browser bridge");
+        }
+        assert!(native("GET", "/api/v2/ai/assistant/connections/{provider}"));
+        assert!(native("POST", "/api/v2/ai/assistant/connections/{provider}/{action}"));
+    }
 
     #[tokio::test]
     async fn provider_routes_keep_identity_origin_and_no_store_boundaries() {

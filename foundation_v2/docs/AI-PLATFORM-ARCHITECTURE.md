@@ -249,3 +249,20 @@ adapter hoặc Auto routing. Không dùng pilot text để quảng bá các năn
 Local deployment0012–0013 và UI/API đã được kiểm chứng sau backup/restore; xem
 [deployment receipt](../evidence/ai-platform-deployment-20261023/RECEIPT.md).
 Kiểm chứng này không gửi model requests và không xác nhận inference throughput.
+
+## Giao diện quản lý hiện hành
+
+AI và Bot tách bốn tab: Trò chuyện, Kết nối, Model, Bot. Mentor toàn trang và
+panel ở các màn hình khác dùng cùng component/harness. Kết nối tải lười danh
+sách hai transport và drawer chi tiết; Model tải lười profiles/catalog. Không
+poll idle hoặc inference chỉ vì mở trang. Chỉ login/test đang chạy có polling.
+
+`GET connections/{provider}` và `POST connections/{provider}/{action}` dưới
+`/api/v2/ai/assistant` chọn transport rõ ràng, giữ các boundary hiện có và không
+đổi default/profile. Legacy account routes được giữ tương thích. Model hệ thống,
+feature và role có giá trị kế thừa rõ; thay profile có revision, chỉ áp dụng cho
+run mới. Số credential/catalog không là bằng chứng inference/pool khỏe, quota
+thiếu dữ liệu giữ unknown. Bot chưa có execution UI.
+
+Xem [receipt UI](../evidence/ai-workspace-redesign-20261023/RECEIPT.md) cho kiểm
+chứng VI/EN, responsive, fixture và UI → API local đọc thật.

@@ -29,21 +29,29 @@ kế thừa tools của Gemini/Antigravity.
 ## Khu vực AI và Bot
 
 Sidebar đặt **AI và Bot** dưới đường phân cách sau Chiến lược, có đường phân cách
-bên dưới. Ba tab dùng route `view=ai`, giữ workspace và ngôn ngữ hiện hành:
+bên dưới. Bốn tab dùng route `view=ai`, giữ workspace và ngôn ngữ hiện hành:
 
-- **Trợ lý** (`section=assistant`): mở lại panel Mentor dùng chung, giữ lịch sử
-  chat trong shell; không tạo chat harness khác.
-- **Kết nối** (`section=connections`): tải lười `AiProviderSettings` và các
-  điều khiển provider/model hiện có. Cài đặt chung chỉ giữ liên kết tới đây.
-- **Tự động hóa** (`section=automation`): khung Bot giao dịch và AI giao dịch,
-  chưa có nút kích hoạt, API thực thi hoặc polling nền.
+- **Trò chuyện** (`section=assistant`): Mentor toàn trang, dùng cùng instance,
+  lịch sử và harness với panel mở từ các trang khác.
+- **Kết nối** (`section=connections`): tải lười danh sách CLIProxyAPI và ChatGPT
+  Web; mỗi kết nối có drawer bên phải để đăng nhập, quản lý và xem chi tiết.
+- **Model** (`section=models`): tải lười cấu hình mặc định hệ thống, lựa chọn
+  riêng của Chat và các role workflow thử nghiệm. Giá trị kế thừa được hiển thị.
+- **Bot** (`section=automation`): trạng thái chưa khả dụng, chưa có nút kích
+  hoạt, API thực thi hoặc polling nền.
 
 Mở trang không tự đăng nhập, đổi provider hoặc gửi prompt. Chat từ khu vực này
 dùng context `screen=settings` trong contract backend hiện hành vì đây là
 ngữ cảnh cấu hình; không mở rộng quyền giao dịch. Provider/model vẫn theo vòng
 đời và phạm vi máy đã mô tả bên dưới, không tự chuyển thành cấu hình workspace.
 Kiểm chứng điều hướng, tải lười, vi/en và local API được lưu riêng tại
-[ai-workspace-20261023](../evidence/ai-workspace-20261023/).
+[ai-workspace-redesign-20261023](../evidence/ai-workspace-redesign-20261023/RECEIPT.md).
+
+Kết nối là cấu hình máy; profile model tách theo workspace/subject. Xem hoặc quản
+lý kết nối không thay provider/model mặc định. Số credential đã lưu không đại diện
+cho pool khỏe; catalog không chứng minh inference thành công. Quota chưa có nguồn
+dữ liệu hiển thị là chưa có dữ liệu. Chỉ poll trong lúc đăng nhập/kiểm tra đang
+chạy; mở trang không gửi inference hoặc tự bật dịch vụ.
 
 Luồng quản lý gateway/OAuth trên web đã triển khai local sau khi owner cho phép
 restart API. Kiểm chứng UI → API → gateway rỗng và trạng thái MT5 phục hồi nằm ở
@@ -114,7 +122,8 @@ Google là ba loại secret khác nhau.
 `api-rust/src/ai_assistant.rs` giữ harness dùng chung và transport WebGPT;
 `ai_gateway.rs` giữ adapter Responses cho gateway; `ai_gateway_runtime.rs` quản lý
 process gateway và CLI OAuth qua `owned_process` hiện có. Không thêm trait/framework
-hoặc dependency. `AiProviderSettings.jsx` chọn provider/model; `AiChatPanel.jsx`
+hoặc dependency. `AiProviderSettings.jsx` quản lý kết nối, `AiModelProfiles.jsx`
+quản lý mặc định model; `AiChatPanel.jsx`
 gọi routes trung lập `/api/v2/ai/assistant/*`. Harness giữ:
 
 - Policy do server sở hữu ở `ai-assistant-policy.md`.
@@ -274,7 +283,8 @@ không tự login hoặc nhận process có sẵn. Gateway vẫn có thể tải
 bản dù bật `--local-model`. Management/UI/update panel, request log và usage log
 đều tắt; commercial mode giảm middleware và đã kiểm không lưu body lỗi401.
 
-Mở **AI và Bot → Kết nối → CLIProxyAPI local → Tải lại model**, rồi chọn model.
+Mở **AI và Bot → Kết nối → Chi tiết CLIProxyAPI → Tải lại model**, rồi chọn
+model ở tab **Model** hoặc trong Chat.
 Catalog có model chưa chứng minh inference thành công. Muốn thêm account phải
 đăng nhập riêng từng account do owner kiểm soát; chưa kiểm routing pool thật.
 
@@ -287,16 +297,23 @@ Cấu hình chỉ ở backend, không nhập endpoint/key trong web:
 | `TW_AI_GATEWAY_KEY_FILE` | Đường dẫn tuyệt đối tới `.runtime/mt5-ai-gateway/inference.key` của repo |
 | `TW_AI_GATEWAY_MODEL` | Trống; phải chọn model có trong catalog |
 
-Provider/model do UI chọn chỉ giữ trong RAM của API, restart trở về env defaults.
-Lựa chọn dùng chung trên máy, không phải cấu hình riêng từng workspace.
+Profile model lưu PostgreSQL theo workspace/subject, có revision và tồn tại qua
+restart. Run snapshot lựa chọn lúc enqueue; cấu hình mới không đổi run đang chạy.
+Legacy `account/provider` và `account/selection` vẫn giữ mặc định RAM để tương
+thích client cũ; env chỉ bootstrap khi chưa có profile.
 
-Routes trung lập: `GET account`, `POST account/{provider|selection|refresh}`,
-`POST chat`, `GET/DELETE chat/{id}`, dưới `/api/v2/ai/assistant`.
-Chat bắt buộc `expected_selection:{provider,model,effort}` khớp lựa chọn backend;
-tab cũ bị409 trước inference, không âm thầm gửi sang model khác.
-Gateway không quảng bá effort nên gửi null. Mỗi lần chỉ một turn đang xử lý;
-provider/model bị khóa trong lúc đó. Catalog cache30s, chỉ tải khi mở/refresh/
-chuẩn bị gửi, không poll nền khi trang Kết nối đứng yên. Không tự retry/fallback.
+Các route dưới `/api/v2/ai/assistant`:
+
+- `GET connections/{provider}`, `POST connections/{provider}/{action}` quản lý
+  rõ `local-gateway` hoặc `chatgpt-web`, không thay default. Không chấp nhận action
+  `provider`/`selection`; giữ local-origin/workspace/no-store boundary.
+- `GET profiles`, `PUT profiles/{feature}/{role}` quản lý profile có revision.
+- `POST chat`, `GET/DELETE chat/{id}` và SSE events dùng persistent run lifecycle;
+  lựa chọn riêng của conversation được giữ, không tự fallback sang model khác.
+
+Effort chỉ dùng khi catalog quảng bá hỗ trợ; gateway hiện gửi null. Admission
+giới hạn global/provider/workspace, không còn một turn chung cho toàn ứng dụng.
+Catalog cache30s, không poll nền khi trang Kết nối đứng yên. Không tự retry/fallback.
 
 ## Điều kiện nghiệm thu còn lại
 

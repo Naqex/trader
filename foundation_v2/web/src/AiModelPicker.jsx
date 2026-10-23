@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 
-const effortNames = { low: ['Nhanh', 'Fast'], medium: ['Vừa', 'Medium'], high: ['Cao', 'High'], xhigh: ['Rất cao', 'Extra high'], max: ['Pro', 'Pro'], ultra: ['Ultra', 'Ultra'] }
+const effortNames = { low: ['Thấp', 'Low'], medium: ['Trung bình', 'Medium'], high: ['Cao', 'High'], xhigh: ['Rất cao', 'Extra high'], max: ['Tối đa', 'Max'], ultra: ['Ultra', 'Ultra'] }
 
 export default function AiModelPicker({ models, selection, disabled, saving, active, en, onSelect }) {
   const id = useId()

@@ -22,7 +22,7 @@ function ChatIcon({ name }) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>
 }
 
-export default function AiChatPanel({ workspace, open, modal, onClose, settingsHref, language, screen = 'unknown' }) {
+export default function AiChatPanel({ workspace, open, modal, standalone = false, onClose, settingsHref, language, screen = 'unknown' }) {
   const en = language === 'en'
   const say = (vi, english) => en ? english : vi
   const currentScreen = Object.hasOwn(screens, screen) ? screen : 'unknown'
@@ -87,7 +87,7 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
       const picker = panel.current?.querySelector('.wm-ai-selection:popover-open')
       if (picker && event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); picker.hidePopover(); picker.previousElementSibling?.focus(); return }
       const overlay = dialogRef.current?.open ? dialogRef.current : null
-      if (!overlay && event.key === 'Escape' && !event.defaultPrevented) { event.preventDefault(); onClose() }
+      if (!standalone && !overlay && event.key === 'Escape' && !event.defaultPrevented) { event.preventDefault(); onClose() }
       if (event.key !== 'Tab' || (!modal && !overlay)) return
       const elements = [...(overlay || panel.current).querySelectorAll('button:not(:disabled), a[href], input:not(:disabled), textarea:not(:disabled), [tabindex="0"]')].filter(item => item.getClientRects().length)
       const first = elements[0], last = elements.at(-1)
@@ -100,7 +100,7 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
     const focus = element.querySelector('.wm-ai-body:not([hidden]) textarea:not(:disabled)') || element.querySelector('[data-chat-close]')
     focus?.focus()
     return () => element.removeEventListener('keydown', keydown)
-  }, [open, modal, onClose])
+  }, [open, modal, onClose, standalone])
   useEffect(() => {
     if (open && scroll.current && !restoringScroll.current) scroll.current.scrollTop = scroll.current.scrollHeight
   }, [messages, busy, open, error])
@@ -118,8 +118,9 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
   useEffect(() => {
     if (open && connected && !loading && !historyOpen && !dialogRef.current?.open) composer.current?.focus()
   }, [open, connected, loading])
-  return <aside id="wm-ai-chat" className={`wm-ai-chat ${historyOpen ? 'is-history' : messages.length ? 'is-conversation' : 'is-welcome'}`} ref={panel} hidden={!open} role={modal ? 'dialog' : 'complementary'} aria-modal={modal || undefined} aria-labelledby="wm-ai-title" data-testid="ai-chat">
-    {!modal && <div className="wm-ai-resize" role="separator" tabIndex={0} aria-label={say('Độ rộng chat AI', 'AI chat width')} aria-orientation="vertical" aria-valuemin={360} aria-valuemax={maxWidth} aria-valuenow={resizeWidth || Math.round(Math.min(600, Math.max(360, viewportWidth * .38)))}
+  const Title = standalone ? 'h1' : 'h2'
+  return <aside id="wm-ai-chat" className={`wm-ai-chat ${standalone ? 'is-standalone' : ''} ${historyOpen ? 'is-history' : messages.length ? 'is-conversation' : 'is-welcome'}`} ref={panel} hidden={!open} role={modal ? 'dialog' : 'complementary'} aria-modal={modal || undefined} aria-labelledby="wm-ai-title" data-testid="ai-chat">
+    {!modal && !standalone && <div className="wm-ai-resize" role="separator" tabIndex={0} aria-label={say('Độ rộng chat AI', 'AI chat width')} aria-orientation="vertical" aria-valuemin={360} aria-valuemax={maxWidth} aria-valuenow={resizeWidth || Math.round(Math.min(600, Math.max(360, viewportWidth * .38)))}
       onPointerDown={event => { if (event.button !== 0) return; event.preventDefault(); event.currentTarget.focus(); event.currentTarget.setPointerCapture(event.pointerId); drag.current = { x: event.clientX, width: panel.current.getBoundingClientRect().width }; panel.current.dataset.resizing = 'true' }}
       onPointerMove={event => { if (drag.current) resize(drag.current.width + drag.current.x - event.clientX) }}
       onPointerUp={event => { drag.current = null; delete panel.current.dataset.resizing; if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId) }}
@@ -130,8 +131,8 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
         <button type="button" aria-pressed={historyOpen} onClick={() => setHistoryOpen(value => !value)} aria-label={say('Chat gần đây', 'Recent chats')} data-tooltip={say('Chat gần đây', 'Recent chats')}><ChatIcon name="history" /></button>
         <button type="button" aria-pressed={!historyOpen && !messages.length} onClick={newChat} aria-label={say('Cuộc trò chuyện mới', 'New chat')} data-tooltip={say('Cuộc trò chuyện mới', 'New chat')}><ChatIcon name="new" /></button>
       </div>
-      <div className="wm-ai-identity"><button type="button" onClick={event => showDialog({ type: 'settings', ...mentor }, event.currentTarget)} aria-label={say('Cài đặt trợ lý', 'Assistant settings')} data-tooltip={say('Cài đặt trợ lý', 'Assistant settings')}><ChatIcon name="settings" /></button><h2 id="wm-ai-title">{mentor.name}</h2></div>
-      <button type="button" className="wm-dialog-close" data-chat-close onClick={onClose} aria-label={say('Đóng chat AI', 'Close AI chat')} data-tooltip={say('Đóng chat AI', 'Close AI chat')}><ChatIcon name="close" /></button>
+      <div className="wm-ai-identity"><button type="button" onClick={event => showDialog({ type: 'settings', ...mentor }, event.currentTarget)} aria-label={say('Cài đặt trợ lý', 'Assistant settings')} data-tooltip={say('Cài đặt trợ lý', 'Assistant settings')}><ChatIcon name="settings" /></button><Title id="wm-ai-title">{mentor.name}</Title></div>
+      {standalone ? <a className="wm-ai-settings-link" href={settingsHref}>{say('Kết nối', 'Connections')}</a> : <button type="button" className="wm-dialog-close" data-chat-close onClick={onClose} aria-label={say('Đóng chat AI', 'Close AI chat')} data-tooltip={say('Đóng chat AI', 'Close AI chat')}><ChatIcon name="close" /></button>}
     </header>
     {historyOpen && <section className="wm-ai-history" aria-labelledby="wm-ai-history-title">
       <h3 id="wm-ai-history-title"><ChatIcon name="clock" />{say('Chat gần đây', 'Recent chats')}</h3>
@@ -164,10 +165,7 @@ export default function AiChatPanel({ workspace, open, modal, onClose, settingsH
         <label className="wm-ai-sr" htmlFor="wm-ai-input">{say('Tin nhắn cho AI', 'Message AI')}</label>
         <textarea id="wm-ai-input" ref={composer} value={draft} onChange={event => setDraft(event.target.value)} disabled={!connected || changing || loading} maxLength={16000} placeholder={say('Hỏi Mentor…', 'Ask Mentor…')} rows={2} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void send(event) } }} />
         <div className="wm-ai-composer-footer">
-          <div className="wm-ai-tools">
-            <span data-tooltip={say('Chiến lược · Chưa kết nối với chat AI', 'Strategies · Not connected to AI chat yet')}><button type="button" disabled aria-label={say('Chiến lược · Sắp có', 'Strategies · Coming soon')}><ChatIcon name="strategies" /></button></span>
-            <span data-tooltip={say('Phân tích biểu đồ · Chưa kết nối dữ liệu phiên', 'Analyze your chart · Session data is not connected yet')}><button type="button" disabled aria-label={say('Phân tích biểu đồ · Sắp có', 'Analyze chart · Coming soon')}><ChatIcon name="chart" /></button></span>
-          </div>
+          <div className="wm-ai-tools" />
           <div className="wm-ai-models">{models.length ? <AiModelPicker models={models} selection={pickerSelection} disabled={loading} saving={changing} active={open && !historyOpen} en={en} onSelect={selectModel} /> : <span>{account?.provider === 'local-gateway' ? 'CLIProxyAPI local' : 'ChatGPT Web'}</span>}</div>
           {busy ? <button type="button" className="wm-ai-send" onClick={stop} aria-label={say('Dừng phản hồi', 'Stop response')} data-tooltip={say('Dừng phản hồi', 'Stop response')}><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" /></svg></button> : <button type="submit" className="wm-ai-send" disabled={!draft.trim() || !connected || changing || loading} aria-label={say('Gửi tin nhắn', 'Send message')} data-tooltip={say('Gửi tin nhắn', 'Send message')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6" /></svg></button>}
         </div>
