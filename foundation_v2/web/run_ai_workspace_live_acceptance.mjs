@@ -21,7 +21,7 @@ try {
       }
       return route.continue()
     })
-    await page.goto(`${origin}/?workspace=tenant-a&view=ai&area=ai&section=connections&lang=${lang}`)
+    await page.goto(`${origin}/?workspace=tenant-a&view=ai&area=ai&lang=${lang}`)
     const baseline = await page.evaluate(async () => {
       const headers = { 'X-Workspace-Id': 'tenant-a' }
       const read = async path => {
@@ -75,14 +75,17 @@ try {
     await page.getByRole('heading', { name: say('Model', 'Models'), exact: true }).waitFor()
     await page.waitForFunction(() => document.querySelector('.ai-model-profiles')?.getAttribute('aria-busy') === 'false')
     await page.screenshot({ path: path.join(evidence, `models-${lang}-${width}.png`) })
-    await page.locator('.fx-subnav').getByRole('link', { name: say('Trò chuyện', 'Chat'), exact: true }).click()
+    assert.equal(await page.locator('.fx-subnav').getByRole('link', { name: say('Trò chuyện', 'Chat'), exact: true }).count(), 0)
+    await page.getByTestId('ai-toggle').click()
     const chat = page.getByTestId('ai-chat')
     await chat.getByRole('textbox').waitFor()
     await page.waitForFunction(() => !document.querySelector('#wm-ai-input')?.disabled)
     assert.equal(await chat.count(), 1)
-    assert.equal(await chat.getAttribute('aria-modal'), null)
-    assert.equal(await page.locator('.wm-ai-backdrop').count(), 0)
+    assert.equal(await chat.getAttribute('aria-modal'), width <= 1100 ? 'true' : null)
+    assert.equal(await page.locator('.wm-ai-backdrop').count(), width <= 1100 ? 1 : 0)
     await page.screenshot({ path: path.join(evidence, `chat-${lang}-${width}.png`) })
+    await page.keyboard.press('Escape')
+    assert.equal(await chat.isVisible(), false)
     await page.locator('.fx-subnav').getByRole('link', { name: say('Bot', 'Bots'), exact: true }).click()
     await page.locator('.ai-bots-empty').waitFor()
     assert.equal(await page.getByTestId('ai-workspace').getByRole('button').count(), 0)

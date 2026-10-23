@@ -12,7 +12,7 @@ export default function AiWorkspace({ workspace, query }) {
   const { appearance } = useFxReplayContext()
   const en = appearance?.language === 'en'
   const say = (vi, english) => en ? english : vi
-  const section = query.get('section') || 'assistant'
+  const section = query.get('section') || 'connections'
 
   return <main className="ai-workspace settings-shell wm-page" data-testid="ai-workspace" data-section={section}>
     {section === 'connections' ? <Suspense fallback={<TestingPageSkeleton label={say('Đang đọc kết nối…', 'Checking connection…')} />}>

@@ -76,7 +76,6 @@ const SHELL_COPY = {
       tradingAccounts: ['Trading accounts', 'Tài khoản giao dịch'],
       strategies: ['Strategies', 'Quản lý chiến lược'],
       ai: ['AI and Bots', 'Trợ lý AI, kết nối model và bot giao dịch'],
-      aiAssistant: ['Trò chuyện', 'Trò chuyện với trợ lý'],
       aiConnections: ['Kết nối', 'Tài khoản và dịch vụ AI'],
       aiModels: ['Model', 'Model mặc định và theo tính năng'],
       automation: ['Bot', 'Bot giao dịch và AI giao dịch'],
@@ -134,7 +133,6 @@ const SHELL_COPY = {
       tradingAccounts: ['Trading accounts', 'Trading accounts'],
       strategies: ['Strategies', 'Strategy workspace'],
       ai: ['AI and Bots', 'AI assistant, model connections and trading bots'],
-      aiAssistant: ['Chat', 'Chat with your assistant'],
       aiConnections: ['Connections', 'AI accounts and services'],
       aiModels: ['Models', 'Default and feature models'],
       automation: ['Bots', 'Trading bots and AI trading'],
@@ -196,9 +194,8 @@ const SIDEBAR_SECTIONS = [
     ],
   },
   {
-    id: 'ai', copyKey: 'ai', icon: 'ai', defaultRoute: 'ai', defaultSection: 'assistant',
+    id: 'ai', copyKey: 'ai', icon: 'ai', defaultRoute: 'ai', defaultSection: 'connections',
     items: [
-      { id: 'ai-assistant', copyKey: 'aiAssistant', icon: 'ai', route: 'ai', activeViews: ['ai'], section: 'assistant' },
       { id: 'ai-connections', copyKey: 'aiConnections', icon: 'connections', route: 'ai', activeViews: ['ai'], section: 'connections' },
       { id: 'ai-models', copyKey: 'aiModels', icon: 'settings', route: 'ai', activeViews: ['ai'], section: 'models' },
       { id: 'ai-automation', copyKey: 'automation', icon: 'automation', route: 'ai', activeViews: ['ai'], section: 'automation' },
@@ -229,7 +226,7 @@ function activeSectionId(activeView, query) {
 
 function isNavItemActive(item, activeView, query, sectionId) {
   if (!item.activeViews?.includes(activeView)) return false
-  if (sectionId !== 'testing' && (query?.get('section') || (sectionId === 'live' ? 'calendar' : sectionId === 'ai' ? 'assistant' : '')) !== item.section) return false
+  if (sectionId !== 'testing' && (query?.get('section') || (sectionId === 'live' ? 'calendar' : sectionId === 'ai' ? 'connections' : '')) !== item.section) return false
   if (sectionId === 'testing' && query?.get('area') === 'live') return false
   return !query?.get('section') || query.get('section') === item.section || sectionId === 'testing'
 }
@@ -514,7 +511,7 @@ export default function FxReplayShell({ children, workspace, query = currentQuer
     return window.matchMedia('(max-width: 1180px)').matches
   })
   const [helpOpen, setHelpOpen] = useState(false)
-  const aiPage = activeView === 'ai' && !['connections', 'models', 'automation'].includes(query.get('section'))
+  const aiPage = activeView === 'ai' && query.get('section') === 'assistant'
   const [aiOpen, setAiOpen] = useState(false)
   const [aiMounted, setAiMounted] = useState(false)
   const [aiOverlay, setAiOverlay] = useState(() => window.matchMedia('(max-width: 1100px)').matches)

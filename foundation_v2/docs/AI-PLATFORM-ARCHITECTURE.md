@@ -252,8 +252,9 @@ Kiểm chứng này không gửi model requests và không xác nhận inference
 
 ## Giao diện quản lý hiện hành
 
-AI và Bot tách bốn tab: Trò chuyện, Kết nối, Model, Bot. Mentor toàn trang và
-panel ở các màn hình khác dùng cùng component/harness. Kết nối tải lười danh
+AI và Bot gồm ba tab: Kết nối, Model, Bot; mặc định mở Kết nối. Mentor mở từ icon
+AI trên header, dùng chung component/harness; URL assistant cũ vẫn tương thích.
+Kết nối tải lười danh
 sách hai transport và drawer chi tiết; Model tải lười profiles/catalog. Không
 poll idle hoặc inference chỉ vì mở trang. Chỉ login/test đang chạy có polling.
 

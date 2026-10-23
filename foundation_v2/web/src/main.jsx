@@ -72,7 +72,7 @@ function App() {
   const activeView = requestedView === 'data' ? 'market-data' : requestedView || (query.has('job') ? 'research' : query.has('session') || query.has('dataset') ? 'replay' : 'overview')
   if (activeView === 'ai') {
     query.set('area', 'ai')
-    if (!['assistant', 'connections', 'models', 'automation'].includes(query.get('section'))) query.set('section', 'assistant')
+    if (!['assistant', 'connections', 'models', 'automation'].includes(query.get('section'))) query.set('section', 'connections')
   }
   if (activeView === 'market-data') {
     query.set('area', 'testing')
