@@ -1,4 +1,13 @@
 {
+  "Bỏ chọn tất cả": {"vi": "Bỏ chọn tất cả", "en": "Deselect all"},
+  "Số dư ghi nhận khi đồng bộ thành công lần đầu; không phải vốn gốc tại broker.": {"vi": "Số dư ghi nhận khi đồng bộ thành công lần đầu; không phải vốn gốc tại broker.", "en": "Balance recorded on the first successful sync, not the original capital at the broker."},
+  "Chọn tài khoản trên trang": {"vi": "Chọn tài khoản trên trang", "en": "Select accounts on this page"},
+  "Chọn tài khoản {name}": {"vi": "Chọn tài khoản {name}", "en": "Select account {name}"},
+  "Thao tác tài khoản đã chọn": {"vi": "Thao tác tài khoản đã chọn", "en": "Selected account actions"},
+  "Đã chọn {count} tài khoản": {"vi": "Đã chọn {count} tài khoản", "en": "{count} accounts selected"},
+  "Đồng bộ các kết nối MT5 đã chọn": {"vi": "Đồng bộ các kết nối MT5 đã chọn", "en": "Sync selected MT5 connections"},
+  "Xóa {count} tài khoản đã chọn?": {"vi": "Xóa {count} tài khoản đã chọn?", "en": "Remove {count} selected accounts?"},
+  "Kết nối MT5 và dữ liệu đồng bộ sẽ bị gỡ khỏi ứng dụng. Tài khoản thủ công được lưu trữ cùng lịch sử. Tài khoản tại broker không thay đổi.": {"vi": "Kết nối MT5 và dữ liệu đồng bộ sẽ bị gỡ khỏi ứng dụng. Tài khoản thủ công được lưu trữ cùng lịch sử. Tài khoản tại broker không thay đổi.", "en": "MT5 connections and synced data will be removed from this app. Manual accounts and their history will be archived. Broker accounts are unchanged."},
   "Đóng tìm kiếm": {"vi":"Đóng tìm kiếm","en":"Close search"},
   "Về {label}": {"vi":"Về {label}","en":"About {label}"},
   "Số dư do MT5 cung cấp tại lần cập nhật gần nhất.": {"vi":"Số dư do MT5 cung cấp tại lần cập nhật gần nhất.","en":"Balance reported by MT5 at the latest update."},

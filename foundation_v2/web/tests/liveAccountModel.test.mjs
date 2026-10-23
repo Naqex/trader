@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { liveAccountRows, accountTransactions, accountCashSummary, accountDraftErrors, duplicateAccountSeed, mt5AccountName } from '../src/liveAccountModel.js'
+import { liveAccountRows, accountTransactions, accountCashSummary, accountInitialBalance, accountDraftErrors, duplicateAccountSeed, mt5AccountName } from '../src/liveAccountModel.js'
 
 test('MT5 names use verified login and environment with an optional owner label',()=>{
   const connection={name:'MetaTrader 5',account_login:'464104926',login_hint:'…4926',account_environment:'demo'}
@@ -98,4 +98,26 @@ test('only selected MT5 connection receives its full history',()=>{
   assert.equal(accountTransactions(rows[0]),null)
   assert.deepEqual(accountTransactions(rows[1]),[])
   assert.equal(rows[0].snapshot.account.balance,10)
+})
+
+test('broker baseline remains a separate dated observation, never cashflow or PnL',()=>{
+  const baseline={amount:10000,currency:'USD',captured_at_utc:'2026-10-21T21:29:00Z',source:'first_sync'}
+  const broker={connection_id:'one',balance_baseline:baseline,account:{balance:10520,currency:'USD'},deals:[{profit:20,commission:0,swap:0,fee:0}],cashflows:[{ticket:1,type:2,profit:10000,time_msc:1},{ticket:2,type:2,profit:500,time_msc:2}],connections:[{id:'one',status:'connected',balance_baseline:baseline}]}
+  const row=liveAccountRows([],[],broker)[0], events=accountTransactions(row)
+  assert.equal(events.filter(item=>item.kind==='opening').length,1)
+  assert.deepEqual(accountInitialBalance(row),{amount:10000,currency:'USD',time:Date.parse(baseline.captured_at_utc)})
+  assert.deepEqual(accountCashSummary(row),{deposit:10500,withdrawal:0,fees:0,net:20})
+  broker.account.balance=11000
+  assert.equal(accountInitialBalance(liveAccountRows([],[],broker)[0]).amount,10000)
+})
+
+test('baseline-only summary exposes the observation without inventing historical totals',()=>{
+  const baseline={amount:0,currency:'EUR',captured_at_utc:'2026-10-23T00:00:00Z'}
+  const row=liveAccountRows([],[],{connections:[{id:'one',status:'disconnected',balance_baseline:baseline,account:{currency:'USD'}}]})[0]
+  assert.equal(accountTransactions(row)[0].amount,0)
+  assert.equal(accountTransactions(row)[0].currency,'EUR')
+  assert.deepEqual(accountCashSummary(row),{deposit:null,withdrawal:null,fees:null,net:null})
+  row.connection.balance_baseline={...baseline,captured_at_utc:'invalid'}
+  assert.equal(accountInitialBalance(row),null)
+  assert.equal(accountTransactions(row),null)
 })

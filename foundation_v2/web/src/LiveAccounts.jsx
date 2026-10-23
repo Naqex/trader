@@ -11,20 +11,21 @@ import MetaTraderMark from './MetaTraderMark.jsx'
 import LegacyPopover from './LegacyPopover.jsx'
 import LegacyModal from './LegacyModal.jsx'
 import { MT5_STATUS, mt5Error, mt5Request, canSyncMt5Connection, syncMt5Connections } from './mt5Connections.js'
-import { liveAccountRows, accountTransactions, accountCashSummary, duplicateAccountSeed } from './liveAccountModel.js'
+import { liveAccountRows, accountTransactions, accountCashSummary, accountInitialBalance, duplicateAccountSeed } from './liveAccountModel.js'
+import { removeLiveAccounts } from './liveAccountActions.js'
 
 const MetaTraderConnect = lazy(() => import('./MetaTraderConnect.jsx'))
 
 function AccountActionDialog({ action, onClose, onConfirm }) {
   const { t } = useTestingLocale()
-  const [name,setName]=useState(action.row.connection?.name || action.row.name), [pending,setPending]=useState(false), [error,setError]=useState(''), [uncertain,setUncertain]=useState(false)
+  const [name,setName]=useState(action.row?.connection?.name || action.row?.name || ''), [pending,setPending]=useState(false), [error,setError]=useState(''), [uncertain,setUncertain]=useState(false)
   const lock=useRef(false), removing=action.kind==='remove'
   return <LegacyModal className="live-record-dialog is-account" label={t(removing?'Xóa tài khoản':'Sửa tài khoản')} theme={document.querySelector('.fx-app')?.dataset.theme || 'dark'} onClose={()=>{if(!lock.current)onClose()}}>
     <form className="live-record-form" aria-busy={pending} onSubmit={async event=>{
       event.preventDefault();if(lock.current || uncertain)return;lock.current=true;setPending(true);setError('')
       try{await onConfirm(name.trim());onClose()}catch(problem){setError(problem.message);setUncertain(problem.outcomeKnown===false || problem.uncertain===true)}finally{lock.current=false;setPending(false)}
     }}>
-      {removing?<p className="live-account-action-copy">{action.row.record ? <>{t('Archive account {name} and its trades and notes? Record history is retained.',{name:action.row.name})}</> : <>{t('Remove connection {name}, saved credentials and synced data? Your broker account is unchanged.',{name:action.row.name})}</>}</p>:<label>{t('Tên tài khoản')}<input required maxLength={160} value={name} disabled={pending} onChange={event=>setName(event.target.value)}/></label>}
+      {removing?<div className="live-account-action-copy">{action.rows ? <><p>{t('Xóa {count} tài khoản đã chọn?',{count:action.rows.length})}</p><ul>{action.rows.map(row=><li key={row.id}>{row.name}</li>)}</ul><p>{t('Kết nối MT5 và dữ liệu đồng bộ sẽ bị gỡ khỏi ứng dụng. Tài khoản thủ công được lưu trữ cùng lịch sử. Tài khoản tại broker không thay đổi.')}</p></> : action.row.record ? <>{t('Archive account {name} and its trades and notes? Record history is retained.',{name:action.row.name})}</> : <>{t('Remove connection {name}, saved credentials and synced data? Your broker account is unchanged.',{name:action.row.name})}</>}</div>:<label>{t('Tên tài khoản')}<input required maxLength={160} value={name} disabled={pending} onChange={event=>setName(event.target.value)}/></label>}
       {error&&<p role="alert" className="live-record-error">{t(error)}{uncertain?` ${t('Tải lại danh sách để kiểm tra kết quả trước khi thao tác tiếp.')}`:''}</p>}
       <footer className="live-dialog-footer"><button type="button" className="fxa-button" disabled={pending} onClick={onClose}>{t('Hủy')}</button><button className={`fxa-button ${removing?'is-danger':'is-primary'}`} disabled={pending || uncertain || !removing && !name.trim()}>{t(pending?'Đang xử lý…':removing?'Xóa tài khoản':'Lưu thay đổi')}</button></footer>
     </form>
@@ -36,8 +37,9 @@ export default function LiveAccounts({ workspace, accounts, records, broker, cho
   const [search,setSearch] = useState(''), [sources,setSources] = useState([]), [searchOpen,setSearchOpen] = useState(false), [tab,setTab] = useState('all'), [page,setPage] = useState(1), [size,setSize] = useState(10), [sort,setSort] = useState({key:'name',ascending:true}), [provider,setProvider] = useState(false)
   const [connectionError,setConnectionError]=useState(''), [busy,setBusy]=useState('')
   const [menu,setMenu]=useState(null), [action,setAction]=useState(null)
+  const [checked,setChecked]=useState(new Set()), [mutationUncertain,setMutationUncertain]=useState(false)
   const actionLock=useRef(false)
-  const sidebar=useRef(null), searchInput=useRef(null), searchTrigger=useRef(null), searchId=useId()
+  const sidebar=useRef(null), searchInput=useRef(null), searchTrigger=useRef(null), selectPage=useRef(null), searchId=useId()
   const [transactionSort,setTransactionSort]=useState({key:'time',ascending:false})
   useEffect(()=>{if(searchOpen)searchInput.current?.focus()},[searchOpen])
   const closeSearch=()=>{setSearch('');setPage(1);setSearchOpen(false);searchTrigger.current?.focus()}
@@ -50,12 +52,14 @@ export default function LiveAccounts({ workspace, accounts, records, broker, cho
     try {await mt5Request(workspace,`/${row.connection.id}/${action}`);onRefresh()} catch(error){setConnectionError(error.message)} finally {setBusy('');actionLock.current=false}
   }
   const rows = useMemo(()=>liveAccountRows(accounts,records,broker),[accounts,records,broker]), selected = rows.find(row => row.id === chosen)
+  useEffect(()=>{setChecked(new Set())},[search,sources,transactions])
+  useEffect(()=>{setChecked(current=>{const ids=new Set(rows.map(row=>row.id)), next=new Set([...current].filter(id=>ids.has(id)));return next.size===current.size?current:next})},[rows])
   const syncable = (broker?.connections || []).filter(canSyncMt5Connection)
-  async function syncAll() {
-    if (!writable || actionLock.current || !syncable.length) return
+  async function syncConnections(connections) {
+    if (!writable || mutationUncertain || actionLock.current || !connections.length) return
     actionLock.current=true;setBusy('all');setConnectionError('')
     try {
-      const failures = await syncMt5Connections(workspace,syncable)
+      const failures = await syncMt5Connections(workspace,connections)
       if (failures.length) setConnectionError(failures.map(({connection,error}) => `${rows.find(row=>row.connection?.id===connection.id)?.name || connection.name}: ${t(error.message)}`).join(' · '))
     } finally {onRefresh();setBusy('');actionLock.current=false}
   }
@@ -67,13 +71,19 @@ export default function LiveAccounts({ workspace, accounts, records, broker, cho
     if (right == null || Number.isNaN(right)) return -1
     return (typeof left === 'string' ? left.localeCompare(right,locale) : left-right)*(sort.ascending ? 1 : -1)
   })
-  const allTransactions = accountTransactions(selected,transactionSort), cash = accountCashSummary(selected)
+  const allTransactions = accountTransactions(selected,transactionSort), cash = accountCashSummary(selected), opening = accountInitialBalance(selected)
   const entries = (allTransactions || []).filter(item => tab === 'all' || item.kind === tab)
   const listing = transactions ? entries : filtered, pages = Math.max(1,Math.ceil(listing.length/size)), current = Math.min(page,pages)
+  const visible = filtered.slice((current-1)*size,current*size), checkedRows=filtered.filter(row=>checked.has(row.id))
+  const allChecked=visible.length>0 && visible.every(row=>checked.has(row.id)), mixedChecked=!allChecked && visible.some(row=>checked.has(row.id))
+  const allFilteredChecked=filtered.length>0 && checkedRows.length===filtered.length
+  const checkedConnections=checkedRows.flatMap(row=>row.connection && canSyncMt5Connection(row.connection)?[row.connection]:[])
+  useEffect(()=>{if(selectPage.current)selectPage.current.indeterminate=mixedChecked},[mixedChecked,transactions])
+  const toggleChecked = id => setChecked(current=>{const next=new Set(current);next.has(id)?next.delete(id):next.add(id);return next})
   const sortBy = key => { setSort(current => ({key,ascending:current.key === key ? !current.ascending : true}));setPage(1) }
   const choose = value => { onSelect(value);setPage(1) }
   const runMenu = callback => {setMenu(null);callback()}
-  const rowActions = row => <button type="button" className="fxa-button fxa-icon-button live-account-menu-trigger" aria-label={`${t('Thao tác tài khoản')} ${row.name}`} aria-expanded={menu?.row.id===row.id} disabled={!writable || Boolean(busy)} onClick={event=>setMenu(menu?.row.id===row.id?null:{row,anchor:event.currentTarget})}><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
+  const rowActions = row => <button type="button" className="fxa-button fxa-icon-button live-account-menu-trigger" aria-label={`${t('Thao tác tài khoản')} ${row.name}`} aria-expanded={menu?.row.id===row.id} disabled={!writable || mutationUncertain || Boolean(busy)} onClick={event=>setMenu(menu?.row.id===row.id?null:{row,anchor:event.currentTarget})}><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
   const picker = <FxSelect className="is-field" label="Tài khoản giao dịch" value={chosen} triggerContent={selected?.name || t('Chọn tài khoản')} localizeOptions={false} onChange={choose} options={rows.map(row => ({value:row.id,label:row.name}))} />
   const pagination = <PaginationFooter label={transactions ? 'Trang dòng tiền' : 'Trang tài khoản'} page={current} pages={pages} onPageChange={setPage} pageSize={size} onPageSizeChange={value => {setSize(value);setPage(1)}} sizes={[10,20,50]} />
   return <div className={`live-accounts-layout${transactions ? ' is-transactions' : ''}`}>
@@ -81,7 +91,7 @@ export default function LiveAccounts({ workspace, accounts, records, broker, cho
       {connectionError&&<p role="alert" className="live-connection-error">{t(connectionError)}</p>}
       {transactions ? <>
         <div className="live-transaction-tabs" role="group" aria-label={t("Loại dòng tiền")}>{[['all','Tất cả'],['withdrawal','Rút tiền'],['deposit','Nạp tiền'],['fee','Phí']].map(([value,label]) => <button key={value} type="button" className="fxa-button" aria-pressed={tab === value} onClick={() => {setTab(value);setPage(1)}}>{t(label)}</button>)}</div>
-        <div className="live-table-scroll" role="region" tabIndex={0} aria-label={t("Dòng tiền tài khoản")}><table><thead><tr><th>{t("Loại giao dịch")}</th>{[['amount','Số tiền'],['time','Thời gian (UTC)']].map(([key,label])=><th key={key} aria-sort={transactionSort.key===key ? transactionSort.ascending?'ascending':'descending' : 'none'}><button type="button" className="wm-table-sort" onClick={()=>{setTransactionSort(current=>({key,ascending:current.key===key?!current.ascending:true}));setPage(1)}}>{t(label)} ↕</button></th>)}</tr></thead><tbody>{entries.slice((current-1)*size,current*size).map(item => <tr key={item.id}><td><span className="live-source-badge">{t(item.label)}</span></td><td>{money(item.amount,selected?.snapshot.account.currency)}</td><td>{Number.isFinite(item.time) ? displayDate(new Date(item.time),{timeStyle:'short'}) : '—'}</td></tr>)}</tbody></table></div>
+        <div className="live-table-scroll" role="region" tabIndex={0} aria-label={t("Dòng tiền tài khoản")}><table><thead><tr><th>{t("Loại giao dịch")}</th>{[['amount','Số tiền'],['time','Thời gian (UTC)']].map(([key,label])=><th key={key} aria-sort={transactionSort.key===key ? transactionSort.ascending?'ascending':'descending' : 'none'}><button type="button" className="wm-table-sort" onClick={()=>{setTransactionSort(current=>({key,ascending:current.key===key?!current.ascending:true}));setPage(1)}}>{t(label)} ↕</button></th>)}</tr></thead><tbody>{entries.slice((current-1)*size,current*size).map(item => <tr key={item.id}><td><span className="live-source-badge" data-tooltip={item.kind==='opening' && !selected?.record?t('Số dư ghi nhận khi đồng bộ thành công lần đầu; không phải vốn gốc tại broker.'):undefined}>{t(item.label)}</span></td><td>{money(item.amount,item.currency || selected?.snapshot.account.currency)}</td><td>{Number.isFinite(item.time) ? displayDate(new Date(item.time),{timeStyle:'short'}) : '—'}</td></tr>)}</tbody></table></div>
         {!entries.length && <div className="live-empty"><h2>{t(!selected ? 'Chọn tài khoản' : allTransactions === null ? 'Chưa có dữ liệu dòng tiền' : 'Chưa có giao dịch trong nhóm này')}</h2>{selected?.record && <p>{t("Tài khoản thủ công hiện chưa hỗ trợ ghi nhận nạp, rút và phí tài khoản.")}</p>}</div>}
       </> : <>
         <div className="live-accounts-toolbar">
@@ -91,15 +101,25 @@ export default function LiveAccounts({ workspace, accounts, records, broker, cho
           </div>
           <FxSelect className={`live-source-filter${sources.length?' has-selection':''}`} label="Lọc tài khoản" icon="filter" iconOnly multiple showSelectAll={false} menuTitle="Filter by" value={sources} onChange={value=>{setSources(value);setPage(1)}} options={[{value:'manual',label:'Thủ công'},{value:'sync',label:'Đồng bộ'}]}/>
         </div>
-        <div className="live-table-scroll" role="region" tabIndex={0} aria-label={t("Danh sách tài khoản")}><table><thead><tr>{[['name','Tài khoản'],['source','Nguồn'],['status','Trạng thái'],['balance','Số dư'],['updated','Cập nhật gần nhất'],['sync','Đồng bộ'],['edit','']].map(([key,label]) => <th key={key} aria-label={key === 'edit' ? t('Thao tác') : undefined} aria-sort={['name','balance','updated'].includes(key) ? sort.key === key ? sort.ascending ? 'ascending' : 'descending' : 'none' : undefined}>{['name','balance','updated'].includes(key) ? <button type="button" className="wm-table-sort" onClick={() => sortBy(key)}>{t(label)} ↕</button> : key === 'sync' ? <span className="live-sync-heading"><span>{t(label)}</span><button type="button" className="live-sync-all" aria-label={t('Đồng bộ tất cả tài khoản')} data-tooltip={t('Đồng bộ tất cả tài khoản')} disabled={!writable || Boolean(busy) || !syncable.length} aria-busy={busy==='all'} onClick={syncAll}><TestingIcon kind="sync" size={16}/></button></span> : t(label)}</th>)}</tr></thead><tbody>{filtered.slice((current-1)*size,current*size).map(row => <tr key={row.id}>
+        <div className="live-table-scroll" role="region" tabIndex={0} aria-label={t("Danh sách tài khoản")}><table><thead><tr><th className="live-account-check"><input ref={selectPage} type="checkbox" aria-label={t('Chọn tài khoản trên trang')} aria-checked={mixedChecked?'mixed':allChecked} checked={allChecked} disabled={!writable || Boolean(busy) || !visible.length} onChange={()=>setChecked(current=>{const next=new Set(current);visible.forEach(row=>allChecked?next.delete(row.id):next.add(row.id));return next})}/></th>{[['name','Tài khoản'],['source','Nguồn'],['status','Trạng thái'],['balance','Số dư'],['updated','Cập nhật gần nhất'],['sync','Đồng bộ'],['edit','']].map(([key,label]) => <th key={key} aria-label={key === 'edit' ? t('Thao tác') : undefined} aria-sort={['name','balance','updated'].includes(key) ? sort.key === key ? sort.ascending ? 'ascending' : 'descending' : 'none' : undefined}>{['name','balance','updated'].includes(key) ? <button type="button" className="wm-table-sort" onClick={() => sortBy(key)}>{t(label)} ↕</button> : key === 'sync' ? <span className="live-sync-heading"><span>{t(label)}</span><button type="button" className="live-sync-all" aria-label={t('Đồng bộ tất cả tài khoản')} data-tooltip={t('Đồng bộ tất cả tài khoản')} disabled={!writable || mutationUncertain || Boolean(busy) || !syncable.length} aria-busy={busy==='all'} onClick={()=>syncConnections(syncable)}><TestingIcon kind="sync" size={16}/></button></span> : t(label)}</th>)}</tr></thead><tbody>{visible.map(row => <tr key={row.id} aria-selected={checked.has(row.id)}>
+          <td className="live-account-check"><input type="checkbox" aria-label={t('Chọn tài khoản {name}',{name:row.name})} checked={checked.has(row.id)} disabled={!writable || Boolean(busy)} onChange={()=>toggleChecked(row.id)}/></td>
           <td>{row.name}{row.connection?.requested_mode==='read_only' ? ` - ${t('Chỉ xem')}` : ''}</td>
           <td><span className="live-source-badge">{t(row.source)}</span></td>
           <td><span className={`live-account-status is-${row.status}`} data-tooltip={['error','disconnected'].includes(row.status) && row.connection?.error_code ? t(mt5Error(row.connection.error_code)) : undefined}>{t(row.status === 'manual' ? 'Đã lưu' : row.status === 'stale' ? 'Dữ liệu cũ' : MT5_STATUS[row.status] || 'Đã đồng bộ')}</span></td>
           <td>{money(row.snapshot.account.balance,row.snapshot.account.currency)}</td><td>{row.updated ? displayDate(row.updated,{timeStyle:'short'}) : '—'}</td>
-          <td>{row.connection&&<button type="button" className="fxa-button fxa-icon-button live-sync-action" aria-label={`${t('Đồng bộ')} ${row.name}`} data-tooltip={t('Đồng bộ tài khoản')} disabled={!writable || Boolean(busy) || !canSyncMt5Connection(row.connection)} aria-busy={busy===row.id} onClick={()=>connectionAction(row,'sync')}><TestingIcon kind="sync"/></button>}</td><td>{rowActions(row)}</td>
+          <td>{row.connection&&<button type="button" className="fxa-button fxa-icon-button live-sync-action" aria-label={`${t('Đồng bộ')} ${row.name}`} data-tooltip={t('Đồng bộ tài khoản')} disabled={!writable || mutationUncertain || Boolean(busy) || !canSyncMt5Connection(row.connection)} aria-busy={busy===row.id} onClick={()=>connectionAction(row,'sync')}><TestingIcon kind="sync"/></button>}</td><td>{rowActions(row)}</td>
         </tr>)}</tbody></table></div>
         {!filtered.length && <div className="live-empty"><h2>{t(search || sources.length ? 'Không tìm thấy tài khoản' : 'Chưa có tài khoản')}</h2><p>{t(search || sources.length ? 'Thử thay đổi từ khóa hoặc bộ lọc.' : 'Thêm tài khoản ở bảng bên phải để bắt đầu.')}</p></div>}
       </>}
+      {!transactions && checkedRows.length>0 && <div className="live-account-selection" role="region" aria-label={t('Thao tác tài khoản đã chọn')} aria-busy={Boolean(busy)}>
+        <button type="button" className="live-selection-close" aria-label={t('Bỏ chọn tất cả')} data-tooltip={t('Bỏ chọn tất cả')} disabled={Boolean(busy)} onClick={()=>setChecked(new Set())}><TestingIcon kind="close" size={16}/></button>
+        <span role="status">{t('Đã chọn {count} tài khoản',{count:checkedRows.length})}</span>
+        <button type="button" className="live-text-action" disabled={Boolean(busy)} onClick={()=>setChecked(allFilteredChecked?new Set():new Set(filtered.map(row=>row.id)))}>{t(allFilteredChecked?'Bỏ chọn tất cả':'Chọn tất cả')}</button>
+        <div className="live-selection-actions">
+          <button type="button" className="fxa-button" disabled={!writable || mutationUncertain || Boolean(busy) || !checkedConnections.length} data-tooltip={t('Đồng bộ các kết nối MT5 đã chọn')} onClick={()=>syncConnections(checkedConnections)}><TestingIcon kind="sync" size={16}/>{t('Đồng bộ')}</button>
+          <button type="button" className="fxa-button is-danger" disabled={!writable || mutationUncertain || Boolean(busy)} onClick={()=>setAction({kind:'remove',rows:checkedRows})}><TestingIcon kind="delete" size={16}/>{t('Xoá')}</button>
+        </div>
+      </div>}
       {pagination}
     </section>
     <aside ref={sidebar} className="live-add-account" aria-label={t(transactions ? 'Chi tiết tài khoản' : 'Thêm tài khoản')}>
@@ -107,12 +127,12 @@ export default function LiveAccounts({ workspace, accounts, records, broker, cho
       {transactions ? <>{picker}<dl className="live-cash-summary">
         {[
           ['Số dư',selected?.snapshot.account.balance,'chart',selected?.record?'Số dư thủ công = số dư ban đầu + PnL ròng đã ghi. Chưa gồm nạp/rút.':'Số dư do MT5 cung cấp tại lần cập nhật gần nhất.'],
-          ['Số dư ban đầu',selected?.snapshot.account.opening_balance,'chart',selected?.record?'Vốn ban đầu đã lưu của tài khoản thủ công.':'Chưa xác định số dư đầu kỳ từ lịch sử MT5 đã đồng bộ.'],
+          ['Số dư ban đầu',opening?.amount,'chart',selected?.record?'Vốn ban đầu đã lưu của tài khoản thủ công.':'Số dư ghi nhận khi đồng bộ thành công lần đầu; không phải vốn gốc tại broker.'],
           ['Nạp tiền',cash.deposit,'deposit','Tổng tiền nạp trong phạm vi lịch sử đã đồng bộ.'],
           ['Rút tiền',cash.withdrawal,'withdrawal','Tổng tiền rút trong phạm vi lịch sử đã đồng bộ.'],
           ['Phí tài khoản',cash.fees,'ledger','Các khoản phí tài khoản; phí giao dịch được tính trong PnL ròng.'],
           ['PnL ròng',cash.net,'chart','Lãi/lỗ giao dịch đã đóng sau hoa hồng, swap và phí, trong phạm vi lịch sử đã đồng bộ.'],
-        ].map(([label,value,icon,help],index)=><div className={index===0?'live-cash-balance':undefined} key={label}><dt><TestingIcon kind={icon} size={14}/><span>{t(label)}</span><button type="button" className="live-cash-info" aria-label={t('Về {label}',{label:t(label)})} data-tooltip={t(help)} data-tooltip-touch><TestingIcon kind="info" size={14}/></button></dt><dd>{money(value,selected?.snapshot.account.currency)}</dd></div>)}
+        ].map(([label,value,icon,help],index)=><div className={index===0?'live-cash-balance':undefined} key={label}><dt><TestingIcon kind={icon} size={14}/><span>{t(label)}</span><button type="button" className="live-cash-info" aria-label={t('Về {label}',{label:t(label)})} data-tooltip={t(help)} data-tooltip-touch><TestingIcon kind="info" size={14}/></button></dt><dd>{money(value,label==='Số dư ban đầu'?opening?.currency:selected?.snapshot.account.currency)}</dd></div>)}
       </dl></> : provider ? <Suspense fallback={<TestingSkeleton />}><MetaTraderConnect key={provider.id || 'new'} workspace={workspace} connection={provider===true?null:provider} onBack={()=>setProvider(false)} onSaved={value=>{setProvider(false);onSelect(`broker:${value.id}`);onRefresh()}} /></Suspense> : <>
         <p className="live-template-hint"><button type="button" className="live-template-link live-text-action" onClick={() => downloadLiveCsv([], 'wmreplay-trades-template.csv')}>{t('Tải mẫu CSV')}<TestingIcon kind="download" size={12} /></button></p>
         <button type="button" className="live-upload" disabled={!canImport} onClick={onImport}><span className="live-upload-icon"><TestingIcon kind="upload" size={16} /></span><span className="live-upload-copy"><strong>{t("Nhập tệp CSV")}</strong><small>{t(accounts.length ? 'Nhập lịch sử giao dịch vào tài khoản thủ công.' : 'Tạo tài khoản thủ công trước khi nhập.')}</small></span></button>
@@ -130,8 +150,20 @@ export default function LiveAccounts({ workspace, accounts, records, broker, cho
       {(menu.row.record||menu.row.connection)&&<><hr/><button type="button" className="live-account-delete" onClick={()=>runMenu(()=>setAction({kind:'remove',row:menu.row}))}><TestingIcon kind="delete"/>{t('Xóa tài khoản')}</button></>}
     </LegacyPopover>}
     {action&&<AccountActionDialog action={action} onClose={()=>setAction(null)} onConfirm={async name=>{
-      if(action.row.record)await onArchive(action.row.record)
-      else {await mt5Request(workspace,`/${action.row.connection.id}/${action.kind}`,action.kind==='rename'?{name}:undefined);onRefresh();if(action.kind==='remove'&&chosen===action.row.id)onSelect('')}
+      if(actionLock.current || mutationUncertain)return
+      actionLock.current=true;setBusy('mutation')
+      try {
+        if(action.kind==='rename'){await mt5Request(workspace,`/${action.row.connection.id}/rename`,{name});return}
+        const {failures,remaining,uncertain}=await removeLiveAccounts(action.rows || [action.row],
+          row=>row.record?onArchive(row.record):mt5Request(workspace,`/${row.connection.id}/remove`),
+          row=>{setChecked(current=>{const next=new Set(current);next.delete(row.id);return next});if(!row.record && chosen===row.id)onSelect('')})
+        if(failures.length) {
+          if(action.rows)setAction(current=>({...current,rows:remaining}))
+          const message=failures.map(({row,error})=>`${row.name}: ${t(error.message)}`).join(' · '), problem=new Error(message)
+          if(uncertain){setMutationUncertain(true);setConnectionError(`${message} ${t('Tải lại danh sách để kiểm tra kết quả trước khi thao tác tiếp.')}`);problem.uncertain=true}
+          throw problem
+        }
+      } finally {onRefresh();setBusy('');actionLock.current=false}
     }}/>}
   </div>
 }

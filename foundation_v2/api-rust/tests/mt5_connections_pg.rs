@@ -179,7 +179,15 @@ async fn secrets_retries_isolation_and_lifecycle() {
     assert_eq!(status.1["status"], "unavailable");
     assert_eq!(status.1["connections"].as_array().unwrap().len(), 1);
     let snapshot = json!({"status":"ready","source":"Fixture","captured_at_utc":"2026-10-21T00:00:00Z","account":{"balance":1000,"currency":"USD"},"account_binding":{"login":"1234567","server":"Fixture-Demo","generation":2},"account_environment":"demo","deals":(1..=1000).map(|ticket|json!({"ticket":ticket,"profit":1,"time_msc":ticket})).collect::<Vec<_>>(),"cashflows":[]});
-    db.execute("UPDATE mt5_connections SET snapshot=$1,status='connected',last_synced_at=CURRENT_TIMESTAMP WHERE workspace_id='tenant-a'",&[&snapshot]).await.unwrap();
+    let connection_id = uuid::Uuid::parse_str(id).unwrap();
+    let generation: i64 = db.query_one("SELECT generation FROM mt5_connections WHERE workspace_id='tenant-a' AND connection_id=$1", &[&connection_id]).await.unwrap().get(0);
+    assert_eq!(trading_workspace_api::mt5_connector::persist_snapshot(&db, "tenant-a", connection_id, generation - 1, &snapshot).await.unwrap(), 0);
+    assert_eq!(trading_workspace_api::mt5_connector::persist_snapshot(&db, "tenant-b", connection_id, generation, &snapshot).await.unwrap(), 0);
+    assert_eq!(trading_workspace_api::mt5_connector::persist_snapshot(&db, "tenant-a", connection_id, generation, &snapshot).await.unwrap(), 1);
+    let mut updated_snapshot = snapshot.clone();
+    updated_snapshot["account"]["balance"] = json!(2000);
+    updated_snapshot["captured_at_utc"] = json!("2026-10-22T00:00:00Z");
+    trading_workspace_api::mt5_connector::persist_snapshot(&db, "tenant-a", connection_id, generation, &updated_snapshot).await.unwrap();
     let full = request(
         &app,
         "GET",
@@ -199,6 +207,11 @@ async fn secrets_retries_isolation_and_lifecycle() {
     let listed = request(&app, "GET", base, "tenant-a", Value::Null).await;
     assert_eq!(listed.1["items"][0]["account_login"], "1234567");
     assert_eq!(listed.1["items"][0]["account_environment"], "demo");
+    let baseline = json!({"amount":1000,"currency":"USD","captured_at_utc":"2026-10-21T00:00:00Z","source":"first_sync"});
+    assert_eq!(listed.1["items"][0]["balance_baseline"], baseline);
+    assert_eq!(summary.1["balance_baseline"], baseline);
+    assert_eq!(full.1["balance_baseline"], baseline);
+    assert_eq!(full.1["account"]["balance"], 2000);
     assert_eq!(summary.1["connections"][0]["account_login"], "1234567");
     assert!(listed.1["items"][0].get("account_binding").is_none());
     assert!(listed.1["items"][0].get("deals").is_none());
@@ -269,6 +282,14 @@ async fn secrets_retries_isolation_and_lifecycle() {
         .1["connections"],
         json!([])
     );
+    // Changing history/permissions invalidates history, but not the saved baseline.
+    let reconfigured = request(&app, "POST", base, "tenant-a", json!({"request_id":uuid::Uuid::new_v4(),"name":"Changed history","server":"Fixture-Demo","login":"1234567","password":"synthetic-private-value","start_date":"2026-02-01","requested_mode":"read_only"})).await;
+    assert_eq!(reconfigured.0, 202);
+    assert_eq!(reconfigured.1["balance_baseline"], baseline);
+    assert!(reconfigured.1["account"].is_null());
+    assert_eq!(trading_workspace_api::mt5_connector::persist_snapshot(&db, "tenant-a", connection_id, generation, &snapshot).await.unwrap(), 0);
+    trading_workspace_api::mt5_connector::persist_snapshot(&db, "tenant-a", connection_id, generation + 1, &updated_snapshot).await.unwrap();
+    assert_eq!(request(&app, "GET", base, "tenant-a", Value::Null).await.1["items"][0]["balance_baseline"], baseline);
     assert_eq!(
         request(
             &app,

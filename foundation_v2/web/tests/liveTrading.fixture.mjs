@@ -2,7 +2,7 @@
 import { preview } from 'vite'
 import { readFile } from 'node:fs/promises'
 import { journalRecords, fixtureStrategies, brokerSnapshot } from './liveJournal.fixture.mjs'
-const state={scenario:'ready',environment:'demo',paused:false,requests:[],commands:[],positions:[],reads:[],records:journalRecords(),connections:null,cashflows:null,syncRequests:[],syncFailure:null}
+const state={scenario:'ready',environment:'demo',paused:false,requests:[],commands:[],positions:[],reads:[],records:journalRecords(),connections:null,cashflows:null,balanceBaseline:null,syncRequests:[],syncFailure:null}
 const json=(res,value,status=200)=>{res.statusCode=status;res.setHeader('Content-Type','application/json');res.end(JSON.stringify(value))}
 const body=async req=>{let text='';for await(const part of req)text+=part;return JSON.parse(text||'{}')}
 const step={M1:60,M5:300,M15:900,H1:3600,H4:14400,D1:86400}
@@ -19,7 +19,7 @@ const fixture={name:'isolated-demo-trading-fixture',configurePreviewServer(serve
   }
   if(!url.pathname.startsWith('/api/'))return next()
   state.reads.push({method:req.method,path:url.pathname,query:url.search});if(state.reads.length>200)state.reads.shift()
-  if(url.pathname==='/api/v2/live/status')return json(res,state.scenario==='empty'?{status:'unavailable',connections:[]}:{...brokerSnapshot(),...(state.connections?{connections:state.connections}:{}),...(Array.isArray(state.cashflows)?{cashflows:state.cashflows}:{})})
+  if(url.pathname==='/api/v2/live/status')return json(res,state.scenario==='empty'?{status:'unavailable',connections:[]}:{...brokerSnapshot(),...(state.balanceBaseline?{balance_baseline:state.balanceBaseline}:{}),...(state.connections?{connections:state.connections}:{}),...(Array.isArray(state.cashflows)?{cashflows:state.cashflows}:{})})
   if(url.pathname==='/api/v2/playbooks')return json(res,{items:fixtureStrategies})
   if(url.pathname.startsWith('/api/v2/live/records')) {
    if(state.scenario==='denied')return json(res,{detail:'workspace_denied'},403)

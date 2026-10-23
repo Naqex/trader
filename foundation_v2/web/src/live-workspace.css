@@ -32,6 +32,17 @@
 .live-sync-all:focus-visible { outline:2px solid var(--project-primary); outline-offset:4px; border-radius:2px; }
 .legacy-popover .live-account-delete { color:var(--project-negative); }
 .live-account-action-copy { margin:0; font-size:14px; line-height:1.7; overflow-wrap:anywhere; }
+.live-account-action-copy p { margin:0 0 12px; }
+.live-account-action-copy ul { margin:0 0 16px; padding-left:20px; }
+.live-accounts-main .live-account-check { width:40px; box-sizing:border-box; text-align:center; }
+.live-account-check input { display:block; margin:0 auto; cursor:pointer; }
+.live-account-check input:disabled { cursor:default; }
+.live-account-selection { display:flex; flex-wrap:wrap; align-items:center; gap:12px; flex-shrink:0; box-sizing:border-box; width:min(560px,calc(100% - 32px)); margin:12px auto; padding:12px 16px; border:1px solid var(--wm-border); border-radius:var(--ds-radius-field); background:var(--project-raised); font-size:13px; }
+.live-selection-close { display:grid; place-items:center; width:32px; height:32px; padding:0; border:0; border-radius:50%; background:transparent; color:var(--wm-content-muted); cursor:pointer; }
+.live-selection-close:hover { color:var(--wm-content); }
+.live-selection-actions { display:flex; justify-content:space-around; gap:8px; width:100%; padding-top:12px; border-top:1px solid var(--wm-border); }
+.live-selection-actions button { display:inline-flex; align-items:center; justify-content:center; flex:1; gap:8px; }
+.live-selection-close:focus-visible { outline:2px solid var(--wm-focus); outline-offset:2px; }
 .live-account-status.is-synced { color:var(--wm-positive); }
 .live-account-status.is-stale { color:var(--wm-warning); }
 .live-account-status.is-connected { color:var(--wm-positive); }

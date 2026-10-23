@@ -86,10 +86,10 @@ fn local_origin(headers: &HeaderMap) -> Result<(), ApiError> {
     }
     Ok(())
 }
-const SUMMARY_COLUMNS: &str = "connection_id,name,server,login_hint,start_date,status,error_code,last_synced_at,requested_mode,CASE WHEN snapshot IS NULL THEN NULL ELSE jsonb_build_object('status',snapshot->'status','account',snapshot->'account','source',snapshot->'source','captured_at_utc',snapshot->'captured_at_utc','history_from_utc',snapshot->'history_from_utc','verified_permissions',snapshot->'verified_permissions','account_environment',snapshot->'account_environment','account_login',COALESCE(snapshot#>'{account_binding,login}',snapshot#>'{execution_binding,login}')) END AS snapshot";
+const SUMMARY_COLUMNS: &str = "connection_id,name,server,login_hint,start_date,status,error_code,last_synced_at,requested_mode,CASE WHEN snapshot IS NULL THEN NULL ELSE jsonb_build_object('status',snapshot->'status','account',snapshot->'account','balance_baseline',snapshot->'balance_baseline','source',snapshot->'source','captured_at_utc',snapshot->'captured_at_utc','history_from_utc',snapshot->'history_from_utc','verified_permissions',snapshot->'verified_permissions','account_environment',snapshot->'account_environment','account_login',COALESCE(snapshot#>'{account_binding,login}',snapshot#>'{execution_binding,login}')) END AS snapshot";
 fn public(row: &Row) -> Value {
     let snapshot: Option<Value> = row.get("snapshot");
-    json!({"id":row.get::<_,Uuid>("connection_id"),"name":row.get::<_,String>("name"),"server":row.get::<_,String>("server"),"login_hint":row.get::<_,String>("login_hint"),"start_date":row.get::<_,NaiveDate>("start_date"),"requested_mode":row.get::<_,String>("requested_mode"),"status":row.get::<_,String>("status"),"error_code":row.get::<_,Option<String>>("error_code"),"last_synced_at":row.get::<_,Option<chrono::DateTime<Utc>>>("last_synced_at"),"account":snapshot.as_ref().and_then(|v|v.get("account")),"source":snapshot.as_ref().and_then(|v|v.get("source")),"verified_permissions":snapshot.as_ref().and_then(|v|v.get("verified_permissions")),"account_environment":snapshot.as_ref().and_then(|v|v.get("account_environment")),"account_login":snapshot.as_ref().and_then(|v|v.get("account_login").or_else(||v.pointer("/account_binding/login")).or_else(||v.pointer("/execution_binding/login"))),"execution_capability":false})
+    json!({"id":row.get::<_,Uuid>("connection_id"),"name":row.get::<_,String>("name"),"server":row.get::<_,String>("server"),"login_hint":row.get::<_,String>("login_hint"),"start_date":row.get::<_,NaiveDate>("start_date"),"requested_mode":row.get::<_,String>("requested_mode"),"status":row.get::<_,String>("status"),"error_code":row.get::<_,Option<String>>("error_code"),"last_synced_at":row.get::<_,Option<chrono::DateTime<Utc>>>("last_synced_at"),"account":snapshot.as_ref().and_then(|v|v.get("account")),"balance_baseline":snapshot.as_ref().and_then(|v|v.get("balance_baseline")),"source":snapshot.as_ref().and_then(|v|v.get("source")),"verified_permissions":snapshot.as_ref().and_then(|v|v.get("verified_permissions")),"account_environment":snapshot.as_ref().and_then(|v|v.get("account_environment")),"account_login":snapshot.as_ref().and_then(|v|v.get("account_login").or_else(||v.pointer("/account_binding/login")).or_else(||v.pointer("/execution_binding/login"))),"execution_capability":false})
 }
 async fn list(
     State(state): State<Arc<AppState>>,
@@ -251,7 +251,7 @@ async fn connect(
     )
     .await
     .map_err(|_| ApiError::database())?;
-    let row=tx.query_one("INSERT INTO mt5_connections(workspace_id,connection_id,request_id,account_key,name,server,login_hint,start_date,credential,status,requested_mode) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,'queued',$10) ON CONFLICT(workspace_id,account_key) DO UPDATE SET request_id=EXCLUDED.request_id,name=EXCLUDED.name,credential=EXCLUDED.credential,start_date=EXCLUDED.start_date,requested_mode=EXCLUDED.requested_mode,snapshot=CASE WHEN mt5_connections.start_date=EXCLUDED.start_date AND mt5_connections.requested_mode=EXCLUDED.requested_mode THEN mt5_connections.snapshot ELSE NULL END,last_synced_at=CASE WHEN mt5_connections.start_date=EXCLUDED.start_date AND mt5_connections.requested_mode=EXCLUDED.requested_mode THEN mt5_connections.last_synced_at ELSE NULL END,generation=mt5_connections.generation+1,full_sync=true,status='queued',error_code=NULL,next_sync_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP RETURNING *",&[&scope.workspace_id,&id,&draft.request_id,&key,&draft.name.trim(),&draft.server,&hint,&date,&credential,&draft.requested_mode]).await.map_err(|_|ApiError::database())?;
+    let row=tx.query_one("INSERT INTO mt5_connections(workspace_id,connection_id,request_id,account_key,name,server,login_hint,start_date,credential,status,requested_mode) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,'queued',$10) ON CONFLICT(workspace_id,account_key) DO UPDATE SET request_id=EXCLUDED.request_id,name=EXCLUDED.name,credential=EXCLUDED.credential,start_date=EXCLUDED.start_date,requested_mode=EXCLUDED.requested_mode,snapshot=CASE WHEN mt5_connections.start_date=EXCLUDED.start_date AND mt5_connections.requested_mode=EXCLUDED.requested_mode THEN mt5_connections.snapshot ELSE CASE WHEN mt5_connections.snapshot->'balance_baseline' IS NULL THEN NULL ELSE jsonb_build_object('status','unavailable','balance_baseline',mt5_connections.snapshot->'balance_baseline') END END,last_synced_at=CASE WHEN mt5_connections.start_date=EXCLUDED.start_date AND mt5_connections.requested_mode=EXCLUDED.requested_mode THEN mt5_connections.last_synced_at ELSE NULL END,generation=mt5_connections.generation+1,full_sync=true,status='queued',error_code=NULL,next_sync_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP RETURNING *",&[&scope.workspace_id,&id,&draft.request_id,&key,&draft.name.trim(),&draft.server,&hint,&date,&credential,&draft.requested_mode]).await.map_err(|_|ApiError::database())?;
     tx.execute("INSERT INTO mt5_connection_requests(workspace_id,request_id,connection_id,fingerprint) VALUES($1,$2,$3,$4)",&[&scope.workspace_id,&draft.request_id,&id,&fingerprint]).await.map_err(|_|ApiError::database())?;
     tx.commit().await.map_err(|_| ApiError::database())?;
     let workspace = scope.workspace_id.clone();
@@ -669,7 +669,7 @@ async fn run_one(state: &Arc<AppState>) -> Result<(), String> {
     });
     match result {
         Ok(snapshot) => {
-            conn.execute("UPDATE mt5_connections SET status='connected',full_sync=false,snapshot=$4,error_code=NULL,last_synced_at=CURRENT_TIMESTAMP,next_sync_at=CURRENT_TIMESTAMP+interval '10 seconds',updated_at=CURRENT_TIMESTAMP WHERE workspace_id=$1 AND connection_id=$2 AND generation=$3",&[&workspace,&id,&generation,&snapshot]).await.map_err(|_|"mt5_database_unavailable")?;
+            persist_snapshot(&conn, &workspace, id, generation, &snapshot).await.map_err(|_| "mt5_database_unavailable")?;
         }
         Err(code) => {
             let retry_seconds = retry_seconds(&code);
@@ -677,6 +677,33 @@ async fn run_one(state: &Arc<AppState>) -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+fn balance_baseline(snapshot: &Value) -> Value {
+    let amount = snapshot.pointer("/account/balance").and_then(Value::as_f64);
+    let currency = snapshot.pointer("/account/currency").and_then(Value::as_str);
+    let captured = snapshot["captured_at_utc"].as_str();
+    if snapshot["status"] != "ready"
+        || !amount.is_some_and(f64::is_finite)
+        || !currency.is_some_and(|v| !v.trim().is_empty())
+        || !captured.is_some_and(|v| chrono::DateTime::parse_from_rfc3339(v).is_ok())
+    {
+        return Value::Null;
+    }
+    json!({"amount":snapshot["account"]["balance"],"currency":currency,"captured_at_utc":captured,"source":"first_sync"})
+}
+
+// The baseline and snapshot commit together, and a revoked worker cannot create
+// either. Preserve the first observed balance across full syncs and reconnects.
+pub async fn persist_snapshot(
+    conn: &tokio_postgres::Client,
+    workspace: &str,
+    id: Uuid,
+    generation: i64,
+    snapshot: &Value,
+) -> Result<u64, tokio_postgres::Error> {
+    let baseline = balance_baseline(snapshot);
+    conn.execute("UPDATE mt5_connections SET status='connected',full_sync=false,snapshot=$4 || jsonb_build_object('balance_baseline',COALESCE(NULLIF(snapshot->'balance_baseline','null'::jsonb),$5)),error_code=NULL,last_synced_at=CURRENT_TIMESTAMP,next_sync_at=CURRENT_TIMESTAMP+interval '10 seconds',updated_at=CURRENT_TIMESTAMP WHERE workspace_id=$1 AND connection_id=$2 AND generation=$3", &[&workspace,&id,&generation,snapshot,&baseline]).await
 }
 
 fn retry_seconds(code: &str) -> f64 {
@@ -694,6 +721,17 @@ fn retry_seconds(code: &str) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn baseline_requires_a_real_balance_currency_and_observation_time() {
+        let snapshot = json!({"status":"ready","account":{"balance":0,"currency":"USD"},"captured_at_utc":"2026-10-23T02:00:00Z"});
+        assert_eq!(balance_baseline(&snapshot)["amount"], 0);
+        assert_eq!(balance_baseline(&snapshot)["source"], "first_sync");
+        for path in ["/account/balance", "/account/currency", "/captured_at_utc", "/status"] {
+            let mut incomplete = snapshot.clone();
+            *incomplete.pointer_mut(path).unwrap() = Value::Null;
+            assert!(balance_baseline(&incomplete).is_null());
+        }
+    }
     #[test]
     fn terminal_or_network_failures_retry_quickly_without_authentication_loop() {
         assert_eq!(retry_seconds("mt5_terminal_stopped"), 15.0);

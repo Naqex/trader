@@ -53,7 +53,7 @@ export async function mt5Request(workspace, path, body) {
     const error = new Error('Chưa xác nhận được kết quả. Bấm thử lại để kiểm tra cùng yêu cầu.'); error.uncertain=true; throw error
   }
   const value = await response.json().catch(() => null)
-  if (!response.ok) throw new Error(mt5Error(value?.detail))
+  if (!response.ok) { const error=new Error(mt5Error(value?.detail));error.uncertain=response.status>=500 || response.status===408;throw error }
   if (!value?.id) { const error=new Error('Chưa xác nhận được kết quả. Bấm thử lại.');error.uncertain=true;throw error }
   return value
 }

@@ -396,6 +396,28 @@ and pagination. Paused, disconnected, queued and syncing connections are skipped
 partial failures identify the affected account without stopping later requests.
 CSV template access is a short, left-aligned link.
 
+Account rows and the page header use native design-system checkboxes. Header
+selection applies to the current page; the selected-account panel can select all
+filtered rows. Selection survives pagination and sorting, clears when search,
+source filter or account tab changes, and prunes removed accounts. The compact
+panel stays in layout flow above pagination so it cannot cover rows or controls.
+Selected sync skips manual, paused, disconnected and already queued connections.
+Bulk removal reuses the shared confirmation and existing archive/remove APIs;
+completed writes are excluded from retries. An ambiguous outcome stops remaining
+writes and blocks row/bulk mutations until reload and reconciliation.
+
+MT5 Initial balance is the first valid balance observed by this app after the
+baseline feature is active, with that sync's UTC time and currency. It is stored
+atomically in the connection snapshot and retained across syncs/reconnects. It is
+not the broker account's original capital and is never backdated or reconstructed
+from partial history. The separate Initial balance event/sidebar value never
+contributes to deposits or trading PnL. Existing connections acquire the baseline
+on their next successful sync with the updated backend. A baseline-only summary
+can display the observation while unavailable history totals remain unknown.
+
+Selection/baseline evidence:
+`foundation_v2/evidence/live-account-selection-20261023/CHECKPOINT.md`.
+
 Connection access uses a native horizontal radio group: Trading on the left,
 selected for new connections, and Read only on the right. Reconnecting preserves
 saved access. Password labels follow the selected access; demo/real environment

@@ -1,0 +1,19 @@
+{
+  "passed": false,
+  "scope": "owned disposable PostgreSQL; real native Router, auth, DPAPI credential isolation and lifecycle retries; no broker login",
+  "owner_runtime_touched": false,
+  "source_unchanged": true,
+  "source_sha256": {
+    "api-rust\\src\\mt5_connector.rs": "a7030eba33315ac720a8d5ba729d85d87ee46f759ca2924497e4bd76bd140727",
+    "api-rust\\tests\\mt5_connections_pg.rs": "3315664cea2fb6e77053fe7936273cfdf22e8e5aca9ee385d622f22930c7ecbe",
+    "scripts\\mt5_connector.py": "ba79780e5083806454ae2889dbd7cf468cc58271d22d52d55529d60cbf0bf3db",
+    "api-rust\\tests\\mt5_connections_pg.py": "e095bd1b9db3f13d809cba42da035d7fcddd1034c7b5fa25d3d51259c2877e71",
+    "api-rust\\src\\lib.rs": "345f019add5fce330b58ba4c5c68cdf31b1f10e454d338d6ffa251b27a141205",
+    "api-rust\\src\\commands.rs": "15d20f72fe5cbcc508bcb6cd31194635d0213b903cd138ffa8e663d9d24c88c8",
+    "api-rust\\src\\rust_runtime.rs": "15ac138bdcab3e1827b9fc164a70d39d32bd9e9320536a62fe3a6c1fa1c821dc",
+    "api-rust\\src\\native_mutation.rs": "3370b2b9ceec6dcb778fabda2469261fbd94a4489a0494411d55b19a05241283",
+    "migrations\\0009_mt5_connections.sql": "8a7a996f7bbd73aaf54059beff68485d6f4b78274d1dfa5120c61a8af29efa3c"
+  },
+  "stdout": "\nrunning 1 test\ntest secrets_retries_isolation_and_lifecycle ... FAILED\n\nfailures:\n\nfailures:\n    secrets_retries_isolation_and_lifecycle\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.68s\n\n",
+  "stderr": "   Compiling trading-workspace-api v0.1.0 (D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\api-rust)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 37.22s\n     Running tests\\mt5_connections_pg.rs (target\\debug\\deps\\mt5_connections_pg-0e4551c6c3a63c14.exe)\n\nthread 'secrets_retries_isolation_and_lifecycle' (17460) panicked at tests\\mt5_connections_pg.rs:185:5:\nassertion `left == right` failed\n  left: 0\n right: 1\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\nerror: test failed, to rerun pass `--test mt5_connections_pg`\n"
+}

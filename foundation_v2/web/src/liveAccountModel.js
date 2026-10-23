@@ -44,14 +44,16 @@ export function liveAccountRows(accounts, records, broker) {
 
 export function accountTransactions(row, { key = 'time', ascending = false } = {}) {
   if (!row) return null
-  if (row.record) return [{ id: `opening:${row.id}`, kind: 'opening', label: 'Số dư ban đầu', amount: row.snapshot.account.opening_balance, time: Date.parse(row.record.payload.opening_at_utc || row.record.created_at_utc) }]
-  if (!Array.isArray(row.snapshot.cashflows)) return null
-  return row.snapshot.cashflows.map(item => {
+  const opening = accountInitialBalance(row)
+  const initial = opening ? [{ id:`opening:${row.id}`,kind:'opening',label:'Số dư ban đầu',...opening }] : []
+  if (row.record) return initial
+  if (!Array.isArray(row.snapshot.cashflows) && !initial.length) return null
+  return [...initial,...(row.snapshot.cashflows || []).map(item => {
     // MT5 balance events use profit for the cash movement, not trading PnL.
     const amount = known(item.profit) ? item.profit : null
     const kind = item.type === 2 && amount !== null && amount !== 0 ? amount > 0 ? 'deposit' : 'withdrawal' : [4,7,8,9,10,11,17].includes(item.type) ? 'fee' : 'other'
     return { id: String(item.ticket), kind, label: {deposit:'Nạp tiền',withdrawal:'Rút tiền',fee:'Phí'}[kind] || `MT5 · ${item.type}`, amount, time: item.time_msc }
-  }).sort((a,b) => {
+  })].sort((a,b) => {
     const left = a[key], right = b[key]
     if (!known(left)) return known(right) ? 1 : 0
     if (!known(right)) return -1
@@ -59,8 +61,16 @@ export function accountTransactions(row, { key = 'time', ascending = false } = {
   })
 }
 
+export function accountInitialBalance(row) {
+  if (!row) return null
+  if (row.record) return {amount:row.snapshot.account.opening_balance,currency:row.snapshot.account.currency,time:Date.parse(row.record.payload.opening_at_utc || row.record.created_at_utc)}
+  const baseline = row.connection?.balance_baseline || row.snapshot.balance_baseline
+  return known(baseline?.amount) && baseline.currency && Number.isFinite(Date.parse(baseline.captured_at_utc))
+    ? {amount:baseline.amount,currency:baseline.currency,time:Date.parse(baseline.captured_at_utc)} : null
+}
+
 export function accountCashSummary(row) {
   const transactions = accountTransactions(row)
-  const sum = kind => !row || row.record || transactions === null || transactions.some(item => item.amount === null) ? null : transactions.filter(item => item.kind === kind).reduce((total,item) => total + item.amount,0)
+  const sum = kind => !row || row.record || !Array.isArray(row.snapshot.cashflows) || transactions.some(item => item.amount === null) ? null : transactions.filter(item => item.kind === kind).reduce((total,item) => total + item.amount,0)
   return { deposit:sum('deposit'),withdrawal:sum('withdrawal'),fees:sum('fee'),net:row ? summarizeDeals(row.snapshot.deals || [],Array.isArray(row.snapshot.deals)).net : null }
 }
