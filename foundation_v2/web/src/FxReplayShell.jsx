@@ -20,7 +20,7 @@ function PersistentGateway({ active, workspace, language }) {
   // Keep the document outside route boundaries; moving an iframe also reloads it.
   return <section className="ai-gateway-host" hidden={!active} inert={!active} aria-label="CLIProxyAPI">
     <TestingRouteBoundary fallback={<div className="ai-gateway-state" role="alert">{language === 'en' ? 'CLIProxyAPI could not load. Reload the page to try again.' : 'Không tải được CLIProxyAPI. Tải lại trang để thử lại.'}</div>}>
-    <Suspense fallback={<div role="status">{language === 'en' ? 'Opening CLIProxyAPI…' : 'Đang mở CLIProxyAPI…'}</div>}>
+    <Suspense fallback={null}>
       <AiGatewayPanel workspace={workspace} language={language} active={active} />
     </Suspense>
     </TestingRouteBoundary>
