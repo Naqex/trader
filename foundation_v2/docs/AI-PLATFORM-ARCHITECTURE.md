@@ -14,13 +14,34 @@ Luồng provider đã triển khai và receipts nằm ở [AI-PROVIDERS.md](AI-P
 
 | Phần | Đang có | Giới hạn cần xử lý |
 | --- | --- | --- |
-| Chat/Mentor | `ai_runs.rs`, `ai_profiles.rs`, React chat dùng chung | PostgreSQL runs/events/history, model theo conversation và role, admission hữu hạn; chưa rollout migration0012 lên runtime đang dùng |
-| Transport | CLIProxyAPI local và WebGPT core, `ai_response.rs` | Text-only; gateway Responses SSE có parser bounded và progress theo đợt; chưa nghiệm thu inference/pool/capability thật |
+| Chat/Mentor | `ai_runs.rs`, `ai_profiles.rs`, `ai_agents.rs`, React chat dùng chung; migrations0012–0014 đã rollout local | Runs/events/history và agents lưu PostgreSQL; đã thử Gemini thật, Stop/reload/Continue và agent knowledge; chưa nghiệm thu tải đồng thời thật |
+| Transport | CLIProxyAPI local và WebGPT core, `ai_response.rs`; catalog có tên hiển thị/effort được upstream công bố | Text-only; Gemini thật đã trả lời; pool3 credentials đã audit cấu hình, chưa nghiệm thu rotation/failover/quota hoặc capability từng model |
 | Ngữ cảnh | Policy do server sở hữu; route/locale là dữ liệu | Chat chưa đọc chart/tài khoản; không được quảng bá đã hiểu dữ liệu đang mở |
 | AI nghiệp vụ | `api-rust/src/control_routes.rs` và `trading_workspace_v2/chart_ai_contract.py` | Contract advisory/offline riêng, chưa nối cùng runtime chat; cần kiểm tương đương schema/cutoff khi hội tụ |
 | Tác vụ dài | `api-rust/src/research_jobs/lifecycle.rs` | Đã có lease/attempt/fencing/cancel; reuse cơ chế có bằng chứng, không coi research job là AI run hoặc dùng bảng cũ tùy tiện |
-| Workflow | `ai_workflows.rs` → `trading_workspace_v2/ai_workflow.py` | Pilot LangGraph có hai nhánh và join qua admission Rust; chưa nối Quant tools/TradingAgents domain graph hoặc rollout runtime |
+| Workflow | `ai_workflows.rs` → `trading_workspace_v2/ai_workflow.py`; worker interpreter đã cấu hình trong runtime local | Hai nhánh và join qua admission Rust đã qua PostgreSQL/Python fixtures; chưa chạy pilot nhiều model thật, nối Quant tools/TradingAgents domain graph hoặc có UI gọi workflow |
 | Evals | `scripts/ai_chat_evals.py` và HTTP/UI fixtures | Live evaluator còn gọi alias ChatGPT; chưa là bộ đánh giá đa tính năng/đa provider |
+
+Đối chiếu ngày 23/10/2026 với source, [deployment](../evidence/ai-platform-deployment-20261023/RECEIPT.md),
+[agents](../evidence/ai-agents-20261023/RECEIPT.md),
+[Stop/Continue](../evidence/ai-chat-continuation-20261023/RECEIPT.md) và GET local hiện tại:
+gateway ready, 3 models; WebGPT stopped; system profile revision 2 dùng Gemini qua gateway.
+Đây là snapshot readiness/cấu hình, không là load test. Agent user tạo là preset
+hướng dẫn/knowledge của chat, không phải subagent thực thi song song.
+
+Ba lát đã có nền source và local rollout; acceptance chưa đồng đều. Lát 1 có
+connections/catalog và profiles theo feature/role, nhưng direct API/local model vẫn
+chưa nối. Lát 2 đã dùng được với một chat thật; nhiều chat/model, nền so với tương
+tác và pool cần kiểm chứng cùng workload thật. Lát 3 mới là fixed text-review pilot;
+cập nhật TradingAgents trong repo riêng không có nghĩa graph của nó đã tích hợp.
+Scheduler hiện chọn FIFO theo thời điểm enqueue trong cap; chưa có capacity dành
+riêng cho tương tác, token budget hoặc bằng chứng p95 chart/MT5 khi AI chịu tải.
+
+Bước tiếp theo là nghiệm thu có giới hạn: hai chat model khác nhau cùng pilot
+facts/gaps→reviewer, kiểm snapshot/reload/cancel và đo queue wait/first-token/total,
+RAM/CPU cùng độ phản hồi chart/API. Chỉ nâng cap hay thêm scheduling khi thấy
+bottleneck. Sau đó nối một context chart hoặc journal chỉ đọc, có revision/cutoff;
+chưa mở rộng automation, broker hay Auto routing.
 
 ## Quyết định nền
 
@@ -202,7 +223,16 @@ Tối đa16 SSE sessions/process,
 mỗi session240s; UI reconnect cùng run với snapshot repair. History keyset pagination,
 tối đa500 conversations/principal/workspace và64 runs/conversation. Chạm cap trả lỗi,
 không tự xóa lịch sử. Mỗi trang message tối đa512KiB; xóa conversation cascade khi
-không còn run hoạt động. LocalStorage chỉ giữ ID để mở lại chat.
+không còn run hoạt động. LocalStorage giữ ID để mở lại chat và lựa chọn
+provider/model/effort mới nhất theo workspace, kể cả khi chưa gửi. Reload ưu tiên
+lựa chọn local; khi chủ động mở chat từ history, dùng selection của chat đó.
+Chat mới/đổi agent giữ lựa chọn hiện tại. Catalog ready xác nhận model bị gỡ thì
+ưu tiên default hợp lệ trong cùng provider, rồi model đầu tiên của provider đó;
+provider bị gỡ hoàn toàn mới xét route sẵn sàng khác. Route offline/catalog lỗi
+không xóa lựa chọn hoặc tự chuyển provider. Effort bị gỡ về default gateway hoặc
+mức đầu tiên được WebGPT công bố. Những thay đổi này chỉ áp dụng lượt gửi mới,
+không thay snapshot của run đã được nhận; storage bị chặn chỉ mất khả năng nhớ
+qua reload, không làm hỏng phiên hiện tại.
 
 Dừng giữ câu hỏi và phần trả lời đã nhận, kể cả sau reload. Tiếp tục tham chiếu
 `continuation_of` là run vừa dừng, chỉ cùng conversation và run terminal mới nhất;
