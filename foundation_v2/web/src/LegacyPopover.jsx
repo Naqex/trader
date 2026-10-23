@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import './LegacyPopover.css'
 
 export default function LegacyPopover({ anchor, theme, label, onClose, onAnchorLost, children, wide = false, role = 'group', id, onPointerEnter, onPointerLeave, className = '', offset = 4, maxWidth = Infinity }) {
-  const ref = useRef(null), closeRef = useRef(onClose), lostRef = useRef(onAnchorLost), [position, setPosition] = useState({ visibility: 'hidden' })
+  const ref = useRef(null), closeRef = useRef(onClose), lostRef = useRef(onAnchorLost), [position, setPosition] = useState({ style: { visibility: 'hidden' } })
   closeRef.current = onClose
   lostRef.current = onAnchorLost
   useLayoutEffect(() => {
@@ -13,7 +13,13 @@ export default function LegacyPopover({ anchor, theme, label, onClose, onAnchorL
       if (!anchor.isConnected || !anchor.getBoundingClientRect().width) { (lostRef.current || closeRef.current)(); return }
       const a = anchor.getBoundingClientRect(), p = popup.getBoundingClientRect()
       const height = Math.min(p.height, view.innerHeight - 16), width = Math.min(p.width, view.innerWidth - 16)
-      setPosition({ maxWidth: Math.min(maxWidth, view.innerWidth - 16), maxHeight: view.innerHeight - 16, left: Math.max(8, Math.min(a.right - width, view.innerWidth - width - 8)), top: Math.max(8, a.bottom + height + offset <= view.innerHeight ? a.bottom + offset : a.top - height - offset) })
+      const below = a.bottom + height + offset <= view.innerHeight
+      const left = Math.max(8, Math.min(a.right - width, view.innerWidth - width - 8))
+      setPosition({ side: below ? 'bottom' : 'top', style: {
+        maxWidth: Math.min(maxWidth, view.innerWidth - 16), maxHeight: view.innerHeight - 16,
+        left, top: Math.max(8, below ? a.bottom + offset : a.top - height - offset),
+        ...(role === 'tooltip' ? { '--wm-tooltip-arrow-x': `${Math.max(12, Math.min(a.left + a.width / 2 - left, width - 12))}px` } : {}),
+      } })
     }
     place()
     // Placement commits before paint, but a hidden node cannot take initial focus.
@@ -49,7 +55,7 @@ export default function LegacyPopover({ anchor, theme, label, onClose, onAnchorL
       docs.forEach(d => { d.removeEventListener('pointerdown', close); d.removeEventListener('focusin', close) })
       if (anchor.isConnected && popup.contains(doc.activeElement)) anchor.focus({ preventScroll: true })
     }
-  }, [anchor])
+  }, [anchor, offset, maxWidth, role])
   if (!anchor) return null
-  return createPortal(<div ref={ref} id={id} className={`legacy-popover wm-ui-portal ${theme === 'light' ? 'is-light' : ''} ${wide ? 'is-wide' : ''} ${className}`} data-theme={theme} style={position} role={role} aria-label={role==='tooltip'?undefined:label} onPointerEnter={onPointerEnter} onPointerLeave={onPointerLeave}>{children}</div>, anchor.closest('dialog,[aria-modal="true"]') || anchor.ownerDocument.body)
+  return createPortal(<div ref={ref} id={id} className={`legacy-popover wm-ui-portal ${theme === 'light' ? 'is-light' : ''} ${wide ? 'is-wide' : ''} ${className}`} data-theme={theme} data-side={role==='tooltip'?position.side:undefined} style={position.style} role={role} aria-label={role==='tooltip'?undefined:label} onPointerEnter={onPointerEnter} onPointerLeave={onPointerLeave}>{children}</div>, anchor.closest('dialog,[aria-modal="true"]') || anchor.ownerDocument.body)
 }

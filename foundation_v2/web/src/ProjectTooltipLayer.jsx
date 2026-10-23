@@ -112,5 +112,5 @@ export default function ProjectTooltipLayer({ targetDocument = document, theme: 
   }, [tip?.anchor, id, targetDocument])
   if (!tip) return null
   const theme = suppliedTheme || tip.anchor.closest('[data-theme]')?.dataset.theme || document.querySelector('.fx-app')?.dataset.theme || 'dark'
-  return <LegacyPopover anchor={tip.anchor} theme={theme} id={id} role="tooltip" className="wm-tooltip" offset={8} maxWidth={280} onClose={hide} onPointerEnter={keepOpen} onPointerLeave={closeSoon}>{tip.text}</LegacyPopover>
+  return <LegacyPopover anchor={tip.anchor} theme={theme} id={id} role="tooltip" className="wm-tooltip" offset={8} maxWidth={280} onClose={hide} onPointerEnter={keepOpen} onPointerLeave={closeSoon}><span className="wm-tooltip-content">{tip.text}</span></LegacyPopover>
 }

@@ -54,6 +54,7 @@
 .live-mt5-provider .live-metatrader-avatar { width:32px; height:32px; }
 .live-mt5-provider .live-metatrader-avatar svg { width:22px; height:22px; }
 .live-mt5-fields { display:grid; gap:16px; }
+.fx-app .wm-page .live-mt5-form .wm-radio-group > div { justify-content:center; }
 .live-mt5-field { display:grid; gap:8px; min-width:0; font-size:13px; }
 .live-connect-input { position:relative; }
 .live-mt5-form .live-connect-input input { padding-right:40px; }

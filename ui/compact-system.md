@@ -140,6 +140,9 @@ Tooltip của app dùng `ProjectTooltipLayer` một lần tại root và `data-t
 trên control, thay cho `title` mặc định. Dùng màu `project-raised/text/border`,
 chữ 12/18px, padding 8/10px, bo field, rộng tối đa 280px, cách control 8px và
 cách mép viewport ít nhất 8px. Chỉ fade theo motion hover; reduced-motion tắt fade.
+Mũi tên nhỏ dùng cùng nền/viền tooltip, trỏ về tâm control và đổi cạnh khi tooltip
+chuyển lên trên. Tâm mũi tên tránh góc bo khi tooltip bị đẩy vào trong viewport.
+Phần chữ dài cuộn bên trong để không cắt mũi tên.
 Hover chờ 180ms, focus bàn phím hiện ngay; có 120ms để đi từ control vào tooltip.
 Escape, cuộn, đổi kích thước hoặc mất anchor đóng gợi ý; tooltip không nhận focus.
 Giữ `aria-label` cho tên nút; lớp chung thêm/xóa `aria-describedby` khi hiện/đóng.
