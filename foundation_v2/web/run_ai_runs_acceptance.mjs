@@ -4,7 +4,7 @@ import path from 'node:path'
 import { chromium } from 'playwright'
 
 const origin = process.env.TW_AI_UI_ORIGIN || 'http://127.0.0.1:5187'
-const evidence = path.resolve('../.runtime/ai-runs-ui')
+const evidence = path.resolve(process.env.TW_AI_UI_EVIDENCE || '../.runtime/ai-runs-ui')
 await mkdir(evidence, { recursive: true })
 const browser = await chromium.launch({ headless: true })
 const checks = []
@@ -13,6 +13,7 @@ try {
     const context = await browser.newContext({ viewport: { width, height: 900 }, reducedMotion: 'reduce' })
     const page = await context.newPage(), errors = [], sends = [], cancellations = [], conversations = new Map(), runs = new Map()
     let requests = 0, hold = false, defaultWrites = 0
+    const profiles = new Map(), profileWrites = []
     page.on('pageerror', e => errors.push(e.message))
     const selection = { provider: 'local-gateway', model: 'pro', effort: null }
     const models = [{ id: 'pro', name: 'Fixture Pro', efforts: [] }, { id: 'fast', name: 'Fixture Fast', efforts: [] }]
@@ -23,7 +24,15 @@ try {
       if (endpoint === '/account') return route.fulfill({ json: { provider: 'local-gateway', ready: true, status: 'catalog_ready', models, selection } })
       if (endpoint.startsWith('/account/')) { defaultWrites++; return route.fulfill({ status: 400, json: { detail: 'unexpected_default_mutation' } }) }
       if (endpoint === '/catalog') return route.fulfill({ json: { routes: [{ provider: 'local-gateway', models, ready: true }, { provider: 'chatgpt-web', models: [{ id: 'pro', name: 'Fixture Web', efforts: ['low', 'high'] }], ready: true }] } })
-      if (endpoint === '/profiles') return route.fulfill({ json: { items: [], chat_default: { selection } } })
+      if (endpoint === '/profiles') return route.fulfill({ json: { items: [...profiles.values()], chat_default: profiles.get('system/default') || { selection } } })
+      if (endpoint.startsWith('/profiles/') && method === 'PUT') {
+        const body = request.postDataJSON(), id = endpoint.slice('/profiles/'.length), [feature, role] = id.split('/')
+        assert.equal(body.revision, profiles.get(id)?.revision || 0)
+        profileWrites.push({ id, ...body })
+        if (body.selection) profiles.set(id, { feature, role, selection: body.selection, revision: body.revision + 1 })
+        else profiles.delete(id)
+        return route.fulfill({ json: { revision: body.revision + 1 } })
+      }
       if (endpoint === '/conversations') return route.fulfill({ json: { items: [...conversations.values()].map(({ messages, run, ...item }) => item), next: null } })
       if (endpoint.startsWith('/conversations/')) {
         const id = endpoint.split('/')[2], value = conversations.get(id)
@@ -106,6 +115,23 @@ try {
     await chat.getByRole('button', { name: say('Đóng chat AI', 'Close AI chat'), exact: true }).click()
     await page.goto(`${origin}/?workspace=tenant-a&view=ai&area=ai&section=connections&lang=${lang}`)
     await page.getByRole('heading', { name: say('Model theo tính năng', 'Feature models') }).waitFor()
+    const profile = page.locator('.ai-model-profile-row').first().locator('.fx-select-trigger').first()
+    await profile.click()
+    const saveFast = page.waitForResponse(r => r.request().method() === 'PUT' && r.url().endsWith('/profiles/system/default'))
+    await page.getByRole('option', { name: /Fixture Fast/ }).click()
+    assert.equal((await saveFast).status(), 200)
+    assert.deepEqual(profileWrites.at(-1).selection, { provider: 'local-gateway', model: 'fast', effort: null })
+    await page.waitForFunction(() => document.querySelector('.ai-model-profile-row .fx-select-value')?.textContent.includes('Fixture Fast'))
+    await page.reload()
+    await page.getByRole('heading', { name: say('Model theo tính năng', 'Feature models') }).waitFor()
+    await profile.click()
+    const saveWeb = page.waitForResponse(r => r.request().method() === 'PUT' && r.url().endsWith('/profiles/system/default'))
+    await page.getByRole('option', { name: /Fixture Web/ }).click()
+    assert.equal((await saveWeb).status(), 200)
+    assert.deepEqual(profileWrites.at(-1).selection, { provider: 'chatgpt-web', model: 'pro', effort: 'high' })
+    await page.waitForFunction(() => document.querySelector('.ai-model-profile-row .fx-select-value')?.textContent.includes('Fixture Web'))
+    assert.equal(profileWrites.at(-1).revision, 1)
+    assert.equal(await page.getByRole('button', { name: `${say('Mặc định hệ thống', 'System default')} · ${say('Mức suy luận', 'Reasoning effort')}`, exact: true }).count(), 1)
     await page.screenshot({ path: path.join(evidence, `profiles-${lang}-${width}.png`) })
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false)
     assert.deepEqual(errors, [])

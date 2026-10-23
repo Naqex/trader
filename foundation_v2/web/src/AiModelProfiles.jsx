@@ -8,7 +8,7 @@ const rows = [
   ['evidence-review', 'analyst', 'Review dữ liệu · Phân tích', 'Evidence review · Analyst'],
   ['evidence-review', 'reviewer', 'Review dữ liệu · Tổng hợp', 'Evidence review · Reviewer'],
 ]
-const key = selection => `${selection.provider}::${selection.model}`
+const key = (provider, model) => `${provider}::${model}`
 
 export default function AiModelProfiles({ workspace, language }) {
   const en = language === 'en', say = (vi, english) => en ? english : vi
@@ -51,13 +51,14 @@ export default function AiModelProfiles({ workspace, language }) {
     {error && <p className="settings-message is-error" role="alert">{error}</p>}
     {rows.map(([feature, role, vi, english]) => {
       const profile = profiles.find(p => p.feature === feature && p.role === role)
-      const selection = profile?.selection, model = models.find(m => selection && key(m) === key(selection))
-      const options = [{ value: '', label: say('Theo mặc định', 'Use default'), localize: false }, ...models.map(m => ({ value: key(m), label: m.name, detail: m.provider === 'local-gateway' ? 'CLIProxyAPI' : 'ChatGPT Web', localize: false }))]
-      if (selection && !model) options.push({ value: key(selection), label: selection.model, disabled: true, localize: false })
+      const selection = profile?.selection, selectedKey = selection ? key(selection.provider, selection.model) : ''
+      const model = models.find(m => key(m.provider, m.id) === selectedKey)
+      const options = [{ value: '', label: say('Theo mặc định', 'Use default'), localize: false }, ...models.map(m => ({ value: key(m.provider, m.id), label: m.name, detail: m.provider === 'local-gateway' ? 'CLIProxyAPI' : 'ChatGPT Web', localize: false }))]
+      if (selection && !model) options.push({ value: selectedKey, label: selection.model, disabled: true, localize: false })
       return <div className="ai-model-profile-row" key={`${feature}:${role}`}>
         <span>{say(vi, english)}</span>
-        <FxSelect label={say(vi, english)} value={selection ? key(selection) : ''} options={options} disabled={pending} searchable
-          onChange={value => { const m = models.find(m => key(m) === value); void save(feature, role, m ? { provider: m.provider, model: m.id, effort: m.efforts.includes('high') ? 'high' : m.efforts[0] || null } : null) }} />
+        <FxSelect label={say(vi, english)} value={selectedKey} options={options} disabled={pending} searchable
+          onChange={value => { const m = models.find(m => key(m.provider, m.id) === value); void save(feature, role, m ? { provider: m.provider, model: m.id, effort: m.efforts.includes('high') ? 'high' : m.efforts[0] || null } : null) }} />
         {model?.efforts.length > 0 && <FxSelect label={`${say(vi, english)} · ${say('Mức suy luận', 'Reasoning effort')}`} value={selection.effort} disabled={pending}
           options={model.efforts.map(effort => ({ value: effort, label: effort, localize: false }))} onChange={effort => void save(feature, role, { ...selection, effort })} />}
       </div>
