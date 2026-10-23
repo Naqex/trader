@@ -71,7 +71,7 @@
 .fx-app .wm-ai-model-trigger { display: flex; align-items: center; gap: var(--ds-space-1); max-width: 100%; min-height: var(--ds-icon-button); padding: 4px 8px; border: 0; border-radius: var(--ds-radius-pill); background: transparent; color: var(--fx-shell-muted); font: inherit; cursor: pointer; }
 .wm-ai-model-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wm-ai-effort-value, .wm-ai-model-trigger svg { flex-shrink: 0; }
-.wm-ai-effort-value { border-inline-start: 1px solid var(--wm-control-border); padding-inline-start: var(--ds-space-2); color: var(--fx-shell-subtle); }
+.wm-ai-effort-value { margin-inline-start: var(--ds-space-1); color: var(--fx-shell-subtle); }
 .fx-app .wm-ai-model-trigger:hover, .fx-app .wm-ai-model-trigger[aria-expanded='true'] { background: var(--project-hover); color: var(--fx-shell-text); }
 .wm-ai-model-trigger svg { width: 14px; height: 14px; }
 .fx-app .wm-ai-selection { position: fixed; inset: auto; margin: 0; box-sizing: border-box; max-height: min(380px, 60dvh); overflow: auto; padding: var(--ds-space-2); border: 1px solid var(--wm-control-border); border-radius: var(--ds-radius-dialog); color: var(--fx-shell-text); background: var(--fx-shell-bg); font-size: var(--ds-font-control); line-height: var(--ds-line-control); }

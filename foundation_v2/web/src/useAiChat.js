@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { aiErrorCopy } from './aiProvider.js'
 import { readRunEvents, runPending } from './aiRunClient.js'
 import { chatHistory, finishReply, prependHistory } from './aiTranscript.js'
+import { resolveSelection, storedSelection } from './aiSelection.js'
 
 const base = '/api/v2/ai/assistant'
 const providerName = id => id === 'local-gateway' ? 'CLIProxyAPI' : 'ChatGPT Web'
@@ -28,8 +29,10 @@ export default function useAiChat({ workspace, open, en, screen }) {
   const unresolved = useRef(null), unresolvedPrompt = useRef(null)
   const accountRevision = useRef(0)
   const accountError = useRef(null)
+  const catalogRef = useRef(null)
   const storedId = `wm-ai-chat:${workspace}`
   const storedAgent = `wm-ai-agent:${workspace}`
+  const storedModel = `wm-ai-selection:${workspace}`
   const say = (vi, english) => en ? english : vi
   function errorCopy(code) { return aiErrorCopy(code, en) }
   async function request(path, method = 'GET', body, signal) {
@@ -38,7 +41,11 @@ export default function useAiChat({ workspace, open, en, screen }) {
     if (!response.ok) { const failure = new Error(typeof value.detail === 'string' ? value.detail : 'ai_request_failed'); failure.status = response.status; throw failure }
     return value
   }
-  function choose(value) { selectedRef.current = value; setSelected(value) }
+  function choose(value, persist = true) {
+    const selection = resolveSelection(value, defaultSelection.current, catalogRef.current)
+    selectedRef.current = selection; setSelected(selection)
+    if (persist && selection) try { localStorage.setItem(storedModel, JSON.stringify(selection)) } catch {}
+  }
   function remember(id) { try { localStorage.setItem(storedId, id); localStorage.setItem(storedAgent, agentRef.current.id) } catch {} }
   async function readChat(id, signal) {
     const value = await request(`/conversations/${id}`, 'GET', undefined, signal)
@@ -65,9 +72,10 @@ export default function useAiChat({ workspace, open, en, screen }) {
       const [account, catalog, profiles] = await Promise.all([request('/account', 'GET', undefined, signal), request('/catalog', 'GET', undefined, signal), request('/profiles', 'GET', undefined, signal)])
       if (signal?.aborted || revision !== accountRevision.current) return
       setRoutes(catalog.routes)
+      catalogRef.current = catalog.routes
       if (accountError.current) { const message = accountError.current; setError(previous => previous === message ? '' : previous); accountError.current = null }
       defaultSelection.current = profiles.chat_default?.selection || { provider: account.provider, ...account.selection }
-      if (!selectedRef.current) choose(defaultSelection.current)
+      choose(selectedRef.current || defaultSelection.current)
     } catch (failure) { if (!signal?.aborted && revision === accountRevision.current) { accountError.current = errorCopy(failure.message); setError(accountError.current) } }
     finally { if (!signal?.aborted && revision === accountRevision.current) setLoading(false) }
   }
@@ -78,7 +86,7 @@ export default function useAiChat({ workspace, open, en, screen }) {
     setOlder(null); setRestoring(false)
   }
   function newChat() {
-    leave(); const id = crypto.randomUUID(); setChatId(id); remember(id); choose(defaultSelection.current); setChatTitle(''); setMessages([]); setDraft(''); setHistoryOpen(false)
+    leave(); const id = crypto.randomUUID(); setChatId(id); remember(id); choose(selectedRef.current || defaultSelection.current); setChatTitle(''); setMessages([]); setDraft(''); setHistoryOpen(false)
   }
   function selectAgent(agent) {
     agentRef.current = agent; setAgentId(agent.id)
@@ -105,12 +113,13 @@ export default function useAiChat({ workspace, open, en, screen }) {
     if (agentRef.current.id === id) agentRef.current = metadata
     return value
   }
-  function adopt(value) {
+  function adopt(value, restoreSelection = true) {
     const run = value.run
     const id = value.agent_id || 'mentor'
     agentRef.current = rosterRef.current.find(a => a.id === id) || { id, revision: 0 }
     setAgentId(id)
-    setChatId(value.id); remember(value.id); setChatTitle(value.title); choose(value.selection)
+    setChatId(value.id); remember(value.id); setChatTitle(value.title)
+    if (restoreSelection) choose(value.selection)
     const items = value.messages.map(message => ({ ...message, status: runPending(message) ? 'running' : message.status }))
     setOlder(value.next)
     setMessages(items); setCancelled(run?.status === 'cancelled'); setPartial(runPending(run) ? run?.text || '' : '')
@@ -127,7 +136,11 @@ export default function useAiChat({ workspace, open, en, screen }) {
   }
   useEffect(() => {
     const abort = new AbortController()
-    leave(); setMessages([]); setDraft(''); setChats([]); setNext(null); choose(null)
+    leave(); setMessages([]); setDraft(''); setChats([]); setNext(null)
+    catalogRef.current = null; defaultSelection.current = null; setRoutes([])
+    let preference = null
+    try { preference = storedSelection(JSON.parse(localStorage.getItem(storedModel))) } catch {}
+    choose(preference, false)
     agentRef.current = builtinMentor; rosterRef.current = [builtinMentor]; setAgentId('mentor'); setAgents([builtinMentor])
     const id = crypto.randomUUID(); setChatId(id); setChatTitle('')
     if (open) {
@@ -150,7 +163,7 @@ export default function useAiChat({ workspace, open, en, screen }) {
       if (saved) {
         const version = epoch.current
         setRestoring(true)
-        void readChat(saved, abort.signal).then(value => { if (!abort.signal.aborted && version === epoch.current) { const previousAgent = agentRef.current.id; adopt(value); if (previousAgent !== agentRef.current.id) void list(abort.signal).catch(() => {}) } }).catch(f => { if (!abort.signal.aborted && version === epoch.current && f.message !== 'chatgpt_turn_not_found') setError(errorCopy(f.message)) }).finally(() => { if (!abort.signal.aborted && version === epoch.current) setRestoring(false) })
+        void readChat(saved, abort.signal).then(value => { if (!abort.signal.aborted && version === epoch.current) { const previousAgent = agentRef.current.id; adopt(value, !preference); if (previousAgent !== agentRef.current.id) void list(abort.signal).catch(() => {}) } }).catch(f => { if (!abort.signal.aborted && version === epoch.current && f.message !== 'chatgpt_turn_not_found') setError(errorCopy(f.message)) }).finally(() => { if (!abort.signal.aborted && version === epoch.current) setRestoring(false) })
       }
     }
     return () => { abort.abort(); controller.current?.abort(); epoch.current++; active.current = null; submitting.current = false }
@@ -227,7 +240,7 @@ export default function useAiChat({ workspace, open, en, screen }) {
     } catch (failure) {
       if (version !== epoch.current) return
       // The POST response may be lost after commit. Resolve its conversation before offering another send.
-      try { const value = await readChat(chatId); if (version === epoch.current && value.run?.request_key === body.idempotency_key) { unresolved.current = null; adopt(value); return } } catch {}
+      try { const value = await readChat(chatId); if (version === epoch.current && value.run?.request_key === body.idempotency_key) { unresolved.current = null; adopt(value, false); return } } catch {}
       if (failure.status && failure.status < 500) unresolved.current = null
       if (version === epoch.current) { setError(errorCopy(failure.message)); if (!continueRun) setDraft(content); setContinuation(null); setCancelled(!!continueRun); setMessages(previous => previous.map(v => v.id === 'submitting' ? { ...v, status: 'failed' } : v)) }
     } finally { if (version === epoch.current) submitting.current = false }
