@@ -1,0 +1,7 @@
+{
+  "scope": "Product UI with labeled MT5 fixture; no owner account operations",
+  "checks": [
+    "dark: green sync icon, shared sync/delete hover, keyboard focus, cancel deletion, deselect, no mutations/page errors",
+    "light: green sync icon, shared sync/delete hover, keyboard focus, cancel deletion, deselect, no mutations/page errors"
+  ]
+}

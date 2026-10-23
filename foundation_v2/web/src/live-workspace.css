@@ -38,8 +38,11 @@
 .live-account-check input { display:block; margin:0 auto; cursor:pointer; }
 .live-account-check input:disabled { cursor:default; }
 .live-account-selection { display:flex; flex-wrap:wrap; align-items:center; gap:12px; flex-shrink:0; box-sizing:border-box; width:min(560px,calc(100% - 32px)); margin:12px auto; padding:12px 16px; border:1px solid var(--wm-border); border-radius:var(--ds-radius-field); background:var(--project-raised); font-size:13px; }
-.live-selection-close { display:grid; place-items:center; width:32px; height:32px; padding:0; border:0; border-radius:50%; background:transparent; color:var(--wm-content-muted); cursor:pointer; }
-.live-selection-close:hover { color:var(--wm-content); }
+.live-selection-close { display:grid; place-items:center; width:32px; height:32px; padding:0; border:0; border-radius:50%; background:transparent; color:var(--wm-content-muted); cursor:pointer; transition:background-color var(--ds-motion-hover) var(--ds-ease-standard),color var(--ds-motion-hover) var(--ds-ease-standard); }
+.live-selection-close:hover:not(:disabled) { background:var(--wm-control-hover); color:var(--wm-content); }
+.live-selection-close:active:not(:disabled) { background:var(--wm-control-open); }
+.live-selection-close:disabled { opacity:.45; cursor:not-allowed; }
+.live-selection-sync > svg { color:var(--wm-positive); }
 .live-selection-actions { display:flex; justify-content:space-around; gap:8px; width:100%; padding-top:12px; border-top:1px solid var(--wm-border); }
 .live-selection-actions button { display:inline-flex; align-items:center; justify-content:center; flex:1; gap:8px; }
 .live-selection-close:focus-visible { outline:2px solid var(--wm-focus); outline-offset:2px; }

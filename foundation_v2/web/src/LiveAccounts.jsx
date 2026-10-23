@@ -116,7 +116,7 @@ export default function LiveAccounts({ workspace, accounts, records, broker, cho
         <span role="status">{t('Đã chọn {count} tài khoản',{count:checkedRows.length})}</span>
         <button type="button" className="live-text-action" disabled={Boolean(busy)} onClick={()=>setChecked(allFilteredChecked?new Set():new Set(filtered.map(row=>row.id)))}>{t(allFilteredChecked?'Bỏ chọn tất cả':'Chọn tất cả')}</button>
         <div className="live-selection-actions">
-          <button type="button" className="fxa-button" disabled={!writable || mutationUncertain || Boolean(busy) || !checkedConnections.length} data-tooltip={t('Đồng bộ các kết nối MT5 đã chọn')} onClick={()=>syncConnections(checkedConnections)}><TestingIcon kind="sync" size={16}/>{t('Đồng bộ')}</button>
+          <button type="button" className="fxa-button live-selection-sync" disabled={!writable || mutationUncertain || Boolean(busy) || !checkedConnections.length} data-tooltip={t('Đồng bộ các kết nối MT5 đã chọn')} onClick={()=>syncConnections(checkedConnections)}><TestingIcon kind="sync" size={16}/>{t('Đồng bộ')}</button>
           <button type="button" className="fxa-button is-danger" disabled={!writable || mutationUncertain || Boolean(busy)} onClick={()=>setAction({kind:'remove',rows:checkedRows})}><TestingIcon kind="delete" size={16}/>{t('Xoá')}</button>
         </div>
       </div>}
