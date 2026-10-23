@@ -6604,5 +6604,18 @@
   "Chưa rõ kết quả": {"vi":"Chưa rõ kết quả","en":"Unknown outcome"},
   "Giới hạn tổng rủi ro": {"vi":"Giới hạn tổng rủi ro","en":"Total risk limits"},
   "Stop loss mới": {"vi":"Cắt lỗ mới","en":"New stop loss"},
-  "Take profit mới": {"vi":"Chốt lời mới","en":"New take profit"}
+  "Take profit mới": {"vi":"Chốt lời mới","en":"New take profit"},
+  "Tất cả tài khoản": {"vi":"Tất cả tài khoản","en":"All accounts"},
+  "Bản ghi giao dịch": {"vi":"Bản ghi giao dịch","en":"Trading records"},
+  "{count} bản ghi": {"vi":"{count} bản ghi","en":"{count} records"},
+  "PnL trong tháng": {"vi":"PnL trong tháng","en":"Monthly PnL"},
+  "{count} tài khoản": {"vi":"{count} tài khoản","en":"{count} accounts"},
+  "Tài khoản: {name}": {"vi":"Tài khoản: {name}","en":"Account: {name}"},
+  "Không tìm thấy tài khoản.": {"vi":"Không tìm thấy tài khoản.","en":"No accounts found."},
+  "Chưa đủ dữ liệu cho các tài khoản đã chọn.": {"vi":"Chưa đủ dữ liệu cho các tài khoản đã chọn.","en":"Data is incomplete for the selected accounts."},
+  "Các tài khoản khác tiền tệ chưa thể cộng PnL. Chọn các tài khoản cùng tiền tệ.": {"vi":"Các tài khoản khác tiền tệ chưa thể cộng PnL. Chọn các tài khoản cùng tiền tệ.","en":"PnL cannot be combined across currencies. Select accounts with the same currency."},
+  "Dữ liệu tài khoản đã cũ. Đồng bộ tài khoản để cập nhật.": {"vi":"Dữ liệu tài khoản đã cũ. Đồng bộ tài khoản để cập nhật.","en":"Account data is stale. Sync the account to update it."},
+  "Báo giá hoặc thông số mã MT5 chưa hợp lệ. Đợi dữ liệu mới trước khi giao dịch.": {"vi":"Báo giá hoặc thông số mã MT5 chưa hợp lệ. Đợi dữ liệu mới trước khi giao dịch.","en":"MT5 quotes or symbol specifications are invalid. Wait for fresh data before trading."},
+  "Chưa có báo giá MT5 hợp lệ. Đợi dữ liệu mới trước khi giao dịch.": {"vi":"Chưa có báo giá MT5 hợp lệ. Đợi dữ liệu mới trước khi giao dịch.","en":"No valid MT5 quote yet. Wait for fresh data before trading."},
+  "Báo giá MT5 chưa đủ mới. Kiểm tra đồng hồ Windows và kết nối giá trước khi gửi lệnh.": {"vi":"Báo giá MT5 chưa đủ mới. Kiểm tra đồng hồ Windows và kết nối giá trước khi gửi lệnh.","en":"The MT5 quote is not fresh enough. Check the Windows clock and price feed before placing an order."}
 }

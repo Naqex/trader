@@ -1,5 +1,6 @@
 /* Live reuses Testing controls. Surfaces here express calendar/table/sidebar roles. */
 .live-workspace { min-width: 0; }
+.live-account-picker > .fxa-session-filter { align-self:center; }
 .live-accounts-main { display:flex; flex-direction:column; min-width:0; min-height:0; }
 .live-workspace .live-accounts-main > .live-table-scroll { margin-inline:0; }
 .live-accounts-main > .live-empty { flex:1; }
@@ -86,7 +87,7 @@
 @media (prefers-reduced-motion:reduce) { .live-mt5-form .live-back-action { transition:none; } }
 .live-mt5-form > p { margin:0; line-height:1.6; }
 @media (min-width:1001px) {
-  .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-main > .fx-content:has(> .live-workspace.is-accounts) { display:flex; flex-direction:column; overflow:hidden; padding-bottom:0; }
+  .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-content:has(> .live-workspace.is-accounts) { display:flex; flex-direction:column; overflow:hidden; padding-bottom:0; }
   .live-workspace.is-accounts { display:flex; flex-direction:column; flex:1; min-height:0; }
   .is-accounts .live-accounts-layout { flex:1; min-height:0; overflow:hidden; }
   .is-accounts .live-add-account { overflow-y:auto; min-height:0; }
@@ -184,7 +185,7 @@
   .live-record-grid { grid-template-columns: minmax(0,1fr); }
   .live-record-form { padding: 16px; }
   .live-account-picker { width: 100%; flex-wrap: wrap; }
-  .live-account-picker > .fx-select { min-width: 0; max-width: 100%; }
+  .live-account-picker > :is(.fx-select,.fxa-session-filter) { min-width: 0; max-width: 100%; }
 }
 /* Structural dividers span the workspace; gutters belong to their content. */
 .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-content > .wm-page.live-workspace { width: calc(100% + 2 * var(--wm-page-gutter)); margin-inline: calc(-1 * var(--wm-page-gutter)); padding: 0; }
@@ -273,7 +274,7 @@
 .live-day-detail li { display: flex; justify-content: space-between; gap: 12px; padding-block: 8px; font-size: 13px; }
 .live-day-detail p { color: var(--wm-content-muted); }
 @media (min-width:1241px) {
-  .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-main > .fx-content:has(> .live-workspace:is(.is-calendar,.is-trades)) { display:flex; flex-direction:column; overflow:hidden; padding-bottom:0; }
+  .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-content:has(> .live-workspace:is(.is-calendar,.is-trades)) { display:flex; flex-direction:column; overflow:hidden; padding-bottom:0; }
   .live-workspace:is(.is-calendar,.is-trades) { display:flex; flex-direction:column; flex:1; min-height:0; }
   :is(.is-calendar,.is-trades) > .live-split { flex:1; min-height:0; }
   .is-trades .live-trades-section { display:flex; flex-direction:column; min-height:0; }

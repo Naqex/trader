@@ -29,7 +29,7 @@
 .live-terminal-ticket { padding:24px; overflow:auto; min-height:0; }
 .mt5-order-identity { display:flex; align-items:center; gap:12px; margin:0 0 24px; }
 .mt5-trading-bar .chart-trading-account { display:flex; flex-wrap:wrap; gap:16px; }
-.mt5-trading-bar .chart-trading-account > button { width:auto; display:flex; gap:8px; padding-inline:8px; }
+.live-trading .mt5-trading-bar .chart-trading-account > button { width:auto; height:auto; min-height:32px; display:flex; align-items:center; gap:8px; padding-inline:8px; white-space:nowrap; flex-shrink:0; }
 .live-terminal-values { display:grid; gap:10px; margin:0; font-variant-numeric:tabular-nums; }
 .live-terminal-values > div { display:flex; gap:8px; justify-content:space-between; }
 .live-terminal-values dt { color:var(--wm-content-muted); }

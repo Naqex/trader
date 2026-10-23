@@ -9,7 +9,7 @@ import FxSelect from './FxSelect.jsx'
 import TestingIcon from './TestingIcon.jsx'
 import LegacyModal from './LegacyModal.jsx'
 import { readDemoTrading, previewDemoOrder, commandDemoOrder, reconcileDemoOrder } from './liveTradingApi.js'
-import { DEMO_DRAFT, DEMO_TIMEFRAMES, demoIdentity, demoDraftError, demoIntent, tradingReady, previewMatches, demoReason, finalDemoReceipt } from './liveTradingModel.js'
+import { DEMO_DRAFT, DEMO_TIMEFRAMES, demoIdentity, demoDraftError, demoIntent, tradingReady, tradingBlockReason, previewMatches, demoReason, finalDemoReceipt } from './liveTradingModel.js'
 import { TestingSkeleton } from './TestingReadState.jsx'
 import './live-trading.css'
 
@@ -168,7 +168,7 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
   const currency=snapshot?.account?.currency || '', money=value=>Number.isFinite(value)?fmt(value,currency?` ${currency}`:''):t('Chưa xác định')
   const accountQuery=new URLSearchParams(query);if(connectionId)accountQuery.set('mt5_connection',connectionId)
   const resetSymbol = (read.error==='demo_symbol_denied'||snapshot?.reason==='demo_symbol_denied') ? ()=>route({mt5_symbol:null}) : undefined
-  const reason = demoPreview ? 'Gửi lệnh không khả dụng trong chế độ xem thử.' : read.status==='loading' ? 'Đang đọc tài khoản MT5…' : resetSymbol ? demoReason('demo_symbol_denied') : read.status==='error' ? 'Mất kết nối dữ liệu giao dịch. Đang giữ ảnh chụp trước đó.' : !chartSurface && snapshot?.summary ? '' : !marketReady ? demoReason(snapshot?.reason || 'demo_quote_stale') : ''
+  const reason = demoPreview ? 'Gửi lệnh không khả dụng trong chế độ xem thử.' : read.status==='loading' ? 'Đang đọc tài khoản MT5…' : resetSymbol ? demoReason('demo_symbol_denied') : read.status==='error' ? 'Mất kết nối dữ liệu giao dịch. Đang giữ ảnh chụp trước đó.' : !chartSurface && snapshot?.summary ? '' : !marketReady ? demoReason(tradingBlockReason(snapshot,now)) : ''
   if (!chartSurface) return <LiveTradingOverview workspace={workspace} query={accountQuery} snapshot={snapshot} status={read.status} reason={unresolved ? 'Chưa rõ kết quả. Đối soát MT5 trước khi gửi lệnh khác.' : reason} symbol={activeSymbol} timeframe={timeframe} onRefresh={()=>setRefresh(value=>value+1)} onResetSymbol={resetSymbol}/>
   const fullscreen=()=>{if(document.fullscreenElement)document.exitFullscreen?.();else document.documentElement.requestFullscreen?.()}
   const openTool=tool=>{if(tool==='data')setSetup(true);else if(tool==='context')setPanel('conditions')}

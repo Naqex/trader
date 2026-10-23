@@ -5,13 +5,16 @@ export function demoIdentity(snapshot) {
   const account = snapshot?.account
   return account?.login && account?.server ? `${account.login}:${account.server}` : ''
 }
-export function tradingReady(snapshot, now = Date.now(), allowPaused = false) {
-  if (snapshot?.status !== 'ready' || !(snapshot.execution_enabled === true || allowPaused && snapshot.paused === true && snapshot.reason === 'demo_paused') || !['demo','real'].includes(snapshot.mode) || !demoIdentity(snapshot)) return false
-  if (!(snapshot.mode==='demo'?['demo',0]:['real',2]).includes(snapshot.account.trade_mode)) return false
-  if (snapshot.mode==='real' && !snapshot.connection_id) return false
+export function tradingBlockReason(snapshot, now = Date.now(), allowPaused = false) {
+  if (snapshot?.status !== 'ready' || !(snapshot.execution_enabled === true || allowPaused && snapshot.paused === true && snapshot.reason === 'demo_paused')) return snapshot?.reason || 'mt5_connection_not_ready'
+  if (!['demo','real'].includes(snapshot.mode) || !demoIdentity(snapshot) || !(snapshot.mode==='demo'?['demo',0]:['real',2]).includes(snapshot.account.trade_mode) || snapshot.mode==='real' && !snapshot.connection_id) return 'demo_identity_mismatch'
+  if (!positive(snapshot.quote?.bid) || !positive(snapshot.quote?.ask) || Number(snapshot.quote.ask) < Number(snapshot.quote.bid)) return 'demo_quote_unavailable'
   const age = now - Number(snapshot.quote?.time_msc)
-  return positive(snapshot.quote?.bid) && positive(snapshot.quote?.ask) && Number(snapshot.quote.ask) >= Number(snapshot.quote.bid)
-    && Number.isFinite(age) && age >= 0 && age <= Math.min(Number(snapshot.policy?.max_quote_age_ms) || 5000,10000)
+  if (!Number.isFinite(age) || age < -1000 || age > Math.min(Number(snapshot.policy?.max_quote_age_ms) || 5000,10000)) return 'demo_quote_stale'
+  return ''
+}
+export function tradingReady(snapshot, now = Date.now(), allowPaused = false) {
+  return tradingBlockReason(snapshot, now, allowPaused) === ''
 }
 export function demoIntent(snapshot, symbol, draft) {
   return { mode:snapshot.mode, ...(snapshot.connection_id?{connection_id:snapshot.connection_id}:{}), account_id:String(snapshot.account.login), server:snapshot.account.server, symbol,
@@ -49,6 +52,8 @@ export function decodeDemoSnapshot(payload) {
 export const finalDemoReceipt = receipt => receipt?.requires_reconciliation !== true && ['filled','accepted','rejected','cancelled','done'].includes(receipt?.status)
 
 export const DEMO_REASONS = Object.freeze({
+  demo_invalid_number:'Báo giá hoặc thông số mã MT5 chưa hợp lệ. Đợi dữ liệu mới trước khi giao dịch.',
+  demo_quote_unavailable:'Chưa có báo giá MT5 hợp lệ. Đợi dữ liệu mới trước khi giao dịch.',
   mt5_trading_access_required:'Tài khoản đang ở chế độ Chỉ xem. Kết nối lại và chọn Giao dịch để đặt lệnh.', mt5_connection_not_ready:'Kết nối MT5 chưa sẵn sàng. Kiểm tra tài khoản giao dịch.',
   mt5_permissions_unverified:'Chưa xác minh được quyền giao dịch từ MT5.', mt5_connection_not_available:'Chưa chọn được kết nối MT5.', mt5_trading_disabled:'MT5 chưa cho phép giao dịch. Kiểm tra mật khẩu giao dịch và Algo Trading.',
   mt5_startup_timeout:'Terminal MT5 khởi động chậm. Kiểm tra kết nối tài khoản.', mt5_operation_timeout:'MT5 chưa phản hồi. Đối soát trước khi gửi lại lệnh.',
@@ -69,7 +74,7 @@ export const DEMO_REASONS = Object.freeze({
   demo_disabled:'Gửi lệnh demo chưa được bật.', demo_policy_disabled:'Gửi lệnh demo chưa được bật.',
   demo_workspace_denied:'Workspace này chưa được cấp quyền giao dịch demo.', demo_identity_mismatch:'Tài khoản hoặc máy chủ MT5 không khớp cấu hình.',
   demo_only:'Chỉ chấp nhận tài khoản demo.', demo_terminal_unavailable:'Terminal giao dịch demo chưa sẵn sàng.',
-  demo_quote_stale:'Giá MT5 đã cũ. Đợi báo giá mới trước khi gửi lệnh.', demo_response_invalid:'Dữ liệu giao dịch chưa hợp lệ.',
+  demo_quote_stale:'Báo giá MT5 chưa đủ mới. Kiểm tra đồng hồ Windows và kết nối giá trước khi gửi lệnh.', demo_response_invalid:'Dữ liệu giao dịch chưa hợp lệ.',
   demo_paused:'Đã tạm dừng mở lệnh mới.', demo_outcome_unknown:'Chưa rõ kết quả. Đối soát MT5 trước khi gửi lệnh khác.',
   demo_pending_unsupported:'Hiện chỉ hỗ trợ lệnh Market.', demo_not_configured:'Chưa cấu hình terminal giao dịch demo.',
 })

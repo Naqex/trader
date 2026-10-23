@@ -2,6 +2,9 @@ import { displayDate } from './dateFormat.js'
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { useTestingLocale } from './testingLocale.jsx'
 import FxSelect from './FxSelect.jsx'
+import SessionFilter from './SessionFilter.jsx'
+import useLiveCalendarAccounts from './useLiveCalendarAccounts.js'
+import { calendarAccountSelection } from './liveCalendarAccounts.js'
 import TestingIcon from './TestingIcon.jsx'
 import { timezoneOptions } from './AnalyticsFilterControls.jsx'
 import { fetchLiveRecords, saveLiveRecord } from './liveLedgerApi.js'
@@ -25,6 +28,7 @@ const JournalTags = lazy(() => import('./LiveJournalSurfaces.jsx').then(module =
 
 const FILTER_LABELS = { asset: 'Assets', side: 'Side', outcome: 'Deal result', account: 'Accounts', day: 'Day', timezone: 'Timezone', from: 'Start', to: 'End' }
 const FILTER_VALUES = { side: { 0: 'Buy', 1: 'Sell' }, outcome: { gain: 'Positive PnL', loss: 'Negative PnL', flat: 'Zero PnL' }, day: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] }
+const ACCOUNT_PICKER_LABELS = { all:'Tất cả tài khoản', count:'{count} tài khoản', choose:'Chọn tài khoản', trigger:'Tài khoản: {name}', dialog:'Chọn tài khoản', search:'Tìm tài khoản', placeholder:'Tìm tài khoản…', empty:'Không tìm thấy tài khoản.' }
 const filterValue = (key,value,t) => ['from','to'].includes(key) ? displayDate(value) : FILTER_VALUES[key]?.[value] ? t(FILTER_VALUES[key][value]) : value
 
 function Action({ children, icon, primary, compact, onClick, label, title, ...props }) {
@@ -63,11 +67,11 @@ function Summary({ payload, deals, sidebar = false }) {
   const { t, fmt } = useTestingLocale(), available = Boolean(payload?.account && Array.isArray(payload.deals))
   const summary = summarizeDeals(deals, available), currency = payload?.account?.currency || ''
   const stats = closedTradeStats(deals, payload?.account?.opening_balance)
-  const metrics = payload?.manual ? [['PnL ròng',stats.net,currency],['Giao dịch đã đóng',stats.count,''],['Tỷ lệ thắng',stats.winRate,'%'],['Profit factor',stats.profitFactor,''],['Return (%)',stats.returnPercent,'%']] : [['Net deal PnL', summary.net, currency], ['Filled deals', summary.count, ''], ['Return (%)', null, '']]
+  const metrics = payload?.aggregate ? [['PnL ròng',summary.net,currency],['Bản ghi giao dịch',summary.count,'']] : payload?.manual ? [['PnL ròng',stats.net,currency],['Giao dịch đã đóng',stats.count,''],['Tỷ lệ thắng',stats.winRate,'%'],['Profit factor',stats.profitFactor,''],['Return (%)',stats.returnPercent,'%']] : [['Net deal PnL', summary.net, currency], ['Filled deals', summary.count, ''], ['Return (%)', null, '']]
   return <section className={sidebar ? 'live-analytics-side' : 'live-metrics'} aria-label={t('Analytics')}>
     {sidebar && <h2><TestingIcon kind="chart" />{t('Analytics')}</h2>}
     {!available || !deals.length ? <Empty icon={sidebar ? null : 'chart'} title="No analytics yet" copy={available ? 'No deals in this selection.' : 'Select a connected account to view analytics.'} /> : <>
-      <dl>{metrics.map(([label, value, suffix]) => <div key={label}><dt>{t(label)}</dt><dd className={['Net deal PnL','PnL ròng'].includes(label) ? summary.net < 0 ? 'is-loss' : summary.net > 0 ? 'is-gain' : '' : ''}>{fmt(value, suffix ? ` ${suffix}` : '', ['Filled deals','Giao dịch đã đóng'].includes(label) ? 0 : 2)}</dd></div>)}</dl>
+      <dl>{metrics.map(([label, value, suffix]) => <div key={label}><dt>{t(label)}</dt><dd className={['Net deal PnL','PnL ròng'].includes(label) ? summary.net < 0 ? 'is-loss' : summary.net > 0 ? 'is-gain' : '' : ''}>{fmt(value, suffix ? ` ${suffix}` : '', ['Filled deals','Giao dịch đã đóng','Bản ghi giao dịch'].includes(label) ? 0 : 2)}</dd></div>)}</dl>
     </>}
   </section>
 }
@@ -85,16 +89,17 @@ function PnlCurve({ deals, currency, emptyTitle = 'No analytics yet' }) {
   </section>
 }
 
-function Calendar({ payload, deals, filters, filterBar, reviewScope, canWrite, onPreview, empty = false }) {
+function Calendar({ payload, deals, filters, filterBar, reviewScope, canWrite, onPreview, selectionKey, empty = false }) {
   const { t, fmt, locale } = useTestingLocale()
   const [percent,setPercent] = useState(false)
   const [month, setMonth] = useState(() => dayKey(Date.parse(payload?.captured_at_utc) || Date.now(), filters.timezone).slice(0, 7)), [selected, setSelected] = useState('')
+  useEffect(() => { setSelected(''); setPercent(false) }, [selectionKey])
   const first = new Date(`${month}-01T00:00:00Z`), weeks = calendarWeeks(month, payload, deals, filters)
   const shift = delta => { setSelected(''); setMonth(new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + delta, 1)).toISOString().slice(0, 7)) }
   const rows = deals.filter(deal => dayKey(deal.time_msc, filters.timezone).startsWith(month))
   const total = summarizeDeals(rows, empty || Boolean(payload?.account && Array.isArray(payload.deals) && weeks.flat().some(day => day.count !== null)))
   const currency = payload?.account?.currency || (empty ? 'USD' : '')
-  const countLabel = count => count === null ? '—' : (empty || payload?.manual) ? t('{count} giao dịch', { count }) : t('{count} filled deals', { count })
+  const countLabel = count => count === null ? '—' : payload?.aggregate ? t('{count} bản ghi', { count }) : (empty || payload?.manual) ? t('{count} giao dịch', { count }) : t('{count} filled deals', { count })
   const canPercent = payload?.manual && payload.account.opening_balance > 0
   const amount = value => percent && canPercent ? fmt(value === null ? null : value/payload.account.opening_balance*100,'%') : fmt(value)
   const weekAmount = value => {
@@ -114,11 +119,11 @@ function Calendar({ payload, deals, filters, filterBar, reviewScope, canWrite, o
     <div className="live-calendar-scroll" role="region" aria-label={`${t('PnL calendar')} · ${filters.timezone}`} tabIndex={0}><div className="live-calendar-grid" style={{ '--live-calendar-weeks': weeks.length }}>
       {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su', 'Total'].map(day => <div className={`live-calendar-dayname${day === 'Total' ? ' is-total' : ''}`} key={day}>{t(day)}</div>)}
       {weeks.map((week, index) => { const summary = calendarWeekSummary(week, empty); return <div className="live-calendar-week" key={week[0].key}>{week.map(day => <button type="button" key={day.key} className={`live-calendar-cell${!day.inMonth ? ' is-outside' : ''}${day.net > 0 ? ' is-gain' : day.net < 0 ? ' is-loss' : ''}`} disabled={!day.inMonth} aria-pressed={selected === day.key} aria-label={`${displayDate(day.key)} · ${fmt(day.net, currency ? ` ${currency}` : '')}`} onClick={() => setSelected(selected === day.key ? '' : day.key)}>
-        <span className="live-day-number">{day.date.getUTCDate()}</span><div className="live-day-result">{day.inMonth && day.net !== null && <strong>{amount(day.net)}</strong>}{day.count !== null && day.count > 0 && <small data-tooltip={payload?.manual ? t('{count} giao dịch',{count:day.count}) : t('{count} filled deals', { count: day.count })}>{payload?.manual ? t('{count} giao dịch',{count:day.count}) : t('{count} filled deals',{count:day.count})}</small>}</div>
+        <span className="live-day-number">{day.date.getUTCDate()}</span><div className="live-day-result">{day.inMonth && day.net !== null && <strong>{amount(day.net)}</strong>}{day.count !== null && day.count > 0 && <small data-tooltip={countLabel(day.count)}>{countLabel(day.count)}</small>}</div>
       </button>)}<div className="live-week-total"><div><span>{countLabel(summary.count)}</span><span aria-label={t('Week {count}', { count: index + 1 })}>W{index + 1}</span></div><strong>{weekAmount(summary.net)}</strong></div></div>})}
     </div></div>
-    <div className="live-month-total"><span>{t(empty ? 'Tổng tháng' : payload?.manual ? 'PnL đã ghi trong tháng' : 'PnL đã đồng bộ trong tháng')}</span><strong>{weekAmount(total.net)}</strong><span>{countLabel(total.count)}</span></div>
-    {selected && <div className="live-day-detail"><h3>{displayDate(selected)}</h3>{deals.filter(deal => dayKey(deal.time_msc, filters.timezone) === selected).length ? <ul>{deals.filter(deal => dayKey(deal.time_msc, filters.timezone) === selected).map(deal => <li key={deal.ticket}><span>{deal.symbol} · #{deal.ticket}</span><strong>{fmt(dealNet(deal), currency ? ` ${currency}` : '')}</strong></li>)}</ul> : <p>{t(weeks.flat().find(day => day.key === selected)?.covered ? 'No deals recorded for this day.' : 'Data for this day is unavailable or incomplete.')}</p>}</div>}
+    <div className="live-month-total"><span>{t(empty ? 'Tổng tháng' : payload?.aggregate ? 'PnL trong tháng' : payload?.manual ? 'PnL đã ghi trong tháng' : 'PnL đã đồng bộ trong tháng')}</span><strong>{weekAmount(total.net)}</strong><span>{countLabel(total.count)}</span></div>
+    {selected && <div className="live-day-detail"><h3>{displayDate(selected)}</h3>{deals.filter(deal => dayKey(deal.time_msc, filters.timezone) === selected).length ? <ul>{deals.filter(deal => dayKey(deal.time_msc, filters.timezone) === selected).map(deal => <li key={`${deal.source_account || ''}:${deal.ticket}`}><span>{deal.symbol} · #{deal.ticket}</span><strong>{fmt(dealNet(deal), currency ? ` ${currency}` : '')}</strong></li>)}</ul> : <p>{t(weeks.flat().find(day => day.key === selected)?.covered ? 'No deals recorded for this day.' : 'Data for this day is unavailable or incomplete.')}</p>}</div>}
   </div></section><Summary payload={payload} deals={rows} sidebar /></div>
 }
 
@@ -138,9 +143,18 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
     return () => controller.abort()
   },[workspace,preview,reload])
   const accounts = useMemo(() => ledger.items.filter(record => record.kind === 'account'),[ledger.items])
-  const chosen = selected || (broker?.connection_id ? `broker:${broker.connection_id}` : broker?.account ? 'broker' : accounts[0]?.record_id || '')
+  const pickerItems = [
+    ...(broker?.connections?.length ? broker.connections.map(item => ({record_id:`broker:${item.id}`,name:item.name,detail:[item.login_hint,item.server,item.account?.currency].filter(Boolean).join(' · ')})) : broker?.account ? [{record_id:'broker',name:broker.source,detail:broker.account.account_ref}] : []),
+    ...accounts.map(item => ({record_id:item.record_id,name:item.payload.name,detail:item.payload.currency})),
+  ]
+  const calendarSelection = calendarAccountSelection(query)
+  const calendarIds = calendarSelection === null ? pickerItems.map(item => item.record_id) : calendarSelection
+  const chosen = section === 'calendar' ? calendarIds.length === 1 ? calendarIds[0] : '' : selected || (broker?.connection_id ? `broker:${broker.connection_id}` : broker?.account ? 'broker' : accounts[0]?.record_id || '')
   const account = accounts.find(item => item.record_id === chosen)
-  const payload = useMemo(() => chosen === 'broker' || chosen.startsWith('broker:') ? broker?.account ? broker : null : manualSnapshot(account,ledger.items),[chosen,broker,account,ledger.items])
+  const singlePayload = useMemo(() => chosen === 'broker' || chosen.startsWith('broker:') ? broker?.account ? broker : null : manualSnapshot(account,ledger.items),[chosen,broker,account,ledger.items])
+  const calendar = useLiveCalendarAccounts({ workspace, enabled:section === 'calendar', selection:calendarSelection, items:pickerItems, broker, accounts, records:ledger.items, preview })
+  const payload = section === 'calendar' ? calendar.payload : singlePayload
+  const selectionKey = section === 'calendar' ? JSON.stringify(calendarIds) : chosen
   const needsStrategies = Boolean(payload?.manual || section === 'notes' || action && action.kind !== 'account')
   useEffect(() => {
     if (preview || !needsStrategies || strategyReady) return
@@ -151,11 +165,20 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
     }).catch(() => { if (!controller.signal.aborted) setStrategyError('Chưa đọc được chiến lược. Tải lại trước khi tạo hoặc sửa giao dịch.') })
     return () => controller.abort()
   },[workspace,preview,needsStrategies,strategyReady,reload])
-  useEffect(() => { setDraft({...LIVE_FILTERS}); setApplied({...LIVE_FILTERS}); setTag('all') },[chosen])
+  useEffect(() => { setDraft({...LIVE_FILTERS}); setApplied({...LIVE_FILTERS}); setTag('all') },[selectionKey])
   const choose = value => {
     const url = new URL(window.location.href); url.searchParams.set('live_account',value);
+    url.searchParams.delete('live_accounts')
     if(value.startsWith('broker:'))url.searchParams.set('mt5_connection',value.slice(7));else url.searchParams.delete('mt5_connection')
     navigate(url.pathname+url.search)
+  }
+  const chooseCalendar = value => {
+    const url = new URL(window.location.href)
+    url.searchParams.set('live_accounts',value === null ? 'all' : value.length ? value.join(',') : 'none')
+    const single = value?.length === 1 ? value[0] : ''
+    if (single) url.searchParams.set('live_account',single); else url.searchParams.delete('live_account')
+    if (single.startsWith('broker:')) url.searchParams.set('mt5_connection',single.slice(7)); else url.searchParams.delete('mt5_connection')
+    navigate(url.pathname+url.search,{replace:true})
   }
   const [strategyId,strategyRevision] = strategy.split(':')
   const changeStrategy = value => {
@@ -173,6 +196,7 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
   const navigateAccount = (row,target) => {
     const url=new URL(window.location.href)
     url.searchParams.set('live_account',row.id)
+    url.searchParams.delete('live_accounts')
     if(row.id.startsWith('broker:'))url.searchParams.set('mt5_connection',row.id.slice(7));else url.searchParams.delete('mt5_connection')
     url.searchParams.set('section',target==='transactions'?'trading-accounts':target)
     if(target==='transactions')url.searchParams.set('account_tab','transactions');else url.searchParams.delete('account_tab')
@@ -190,7 +214,7 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
     if (close) setAction(null)
   }
   const apply = override => { const next = override || draft; if (!next.from || !next.to || next.from <= next.to) setApplied({...next}) }
-  const accountPicker = <div className="live-account-picker"><FxSelect label="Tài khoản trực tiếp" triggerContent={chosen ? undefined : 'Chọn tài khoản'} value={chosen} onChange={choose} options={[...(broker?.connections?.length ? broker.connections.map(item=>({value:`broker:${item.id}`,label:`${item.name} · ${item.login_hint}`,localize:false})) : broker?.account ? [{value:'broker',label:`${broker.source} · ${broker.account.account_ref}`,localize:false}] : []),...accounts.map(item => ({value:item.record_id,label:`${item.payload.name} · ${item.payload.currency}`,localize:false}))]} /></div>
+  const accountPicker = <div className="live-account-picker"><SessionFilter items={pickerItems} value={section === 'calendar' ? calendarSelection : chosen} multiple={section === 'calendar'} onChange={section === 'calendar' ? chooseCalendar : choose} labels={ACCOUNT_PICKER_LABELS} /></div>
   const columnKind = payload?.manual ? 'manual' : 'broker'
   const columnOptions = payload?.manual ? MANUAL_TRADE_COLUMNS : BROKER_DEAL_COLUMNS
   const columns = tableColumns[columnKind] || columnOptions.map(([key]) => key)
@@ -199,11 +223,12 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
   return <Suspense fallback={<TestingSkeleton />}>
     {ledger.error && <div className="live-status live-status-error" role="alert"><span>{t(ledger.error)}</span><Action onClick={() => setReload(value => value+1)}>{t('Thử lại')}</Action></div>}
     {strategyError && <div className="live-status live-status-warning" role="alert"><span>{t(strategyError)}</span><Action onClick={() => setReload(value => value+1)}>{t('Tải lại')}</Action></div>}
+    {section === 'calendar' && calendar.issue && <div className="live-status live-status-warning" role="status">{t(calendar.issue)}</div>}
     {ledger.status === 'loading' && <p className="live-status" role="status">{t('Đang đọc sổ giao dịch…')}</p>}
     {showContent && !['calendar','trades','notes','trading-accounts'].includes(section) && filterBar}
     {showContent && section === 'notes' && <div className="live-toolbar">{accountPicker}</div>}
     {showContent && <>
-    {section === 'calendar' && <Calendar empty={ledger.status === 'ready' && !chosen && !accounts.length && Array.isArray(broker?.connections) && !broker.connections.length && !broker.stale && ['ready','unavailable'].includes(broker.status)} filterBar={showContent ? filterBar : null} canWrite={!preview && ledger.status === 'ready'} key={chosen} payload={payload} deals={deals} filters={applied} reviewScope={payload?.manual ? `${strategy === 'all' ? t('Tất cả chiến lược') : `${strategies.find(item => item.record_id === strategyId)?.payload.name || strategyId}${strategyRevision ? ` · v${strategyRevision}` : ` · ${t('mọi phiên bản')}`}`} · ${tag === 'all' ? t('Tất cả nhãn') : tag}` : t('Synced deals')} onPreview={create} />}
+    {section === 'calendar' && <Calendar empty={ledger.status === 'ready' && !calendarIds.length && !broker?.stale} filterBar={showContent ? filterBar : null} canWrite={!preview && ledger.status === 'ready' && calendarIds.length === 1} selectionKey={selectionKey} payload={payload} deals={deals} filters={applied} reviewScope={payload?.manual ? `${strategy === 'all' ? t('Tất cả chiến lược') : `${strategies.find(item => item.record_id === strategyId)?.payload.name || strategyId}${strategyRevision ? ` · v${strategyRevision}` : ` · ${t('mọi phiên bản')}`}`} · ${tag === 'all' ? t('Tất cả nhãn') : tag}` : t('Synced deals')} onPreview={create} />}
     {section === 'trades' && <div className="live-split"><section className="live-trades-section">{filterBar}<div className="live-trades-content">{payload?.manual ? <ManualTrades columns={columns} writable={!preview && ledger.status === 'ready' && strategyReady} filterKey={JSON.stringify([chosen,applied,strategy,tag])} workspace={workspace} deals={deals} currency={payload.account.currency} strategies={strategies} onEdit={record => open('trade',record)} /> : payload?.account ? <LiveBrokerSnapshot columns={columns} payload={payload} section="trades" deals={deals} filterKey={JSON.stringify(applied)} /> : <Empty title="No trades yet" copy="Tạo tài khoản thủ công và thêm giao dịch để bắt đầu." icon="journal" />}</div></section><Summary payload={payload} deals={deals} sidebar /></div>}
     {section === 'notes' && <JournalNotes writable={!preview && ledger.status === 'ready' && strategyReady} key={chosen} records={ledger.items} accountId={chosen || null} strategies={strategies} onEdit={record => open('note',record)} onCreate={() => open('note')} />}
     {section === 'tag-analytics' && <JournalTags filterKey={JSON.stringify([chosen,applied,strategy,tag])} deals={deals} currency={payload?.account?.currency || ''} />}

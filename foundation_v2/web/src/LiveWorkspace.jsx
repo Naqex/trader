@@ -51,7 +51,8 @@ export default function LiveWorkspace({ workspace = 'tenant-a', query = new URLS
 function LiveJournalWorkspace({ workspace, query, preview }) {
   const { t, locale } = useTestingLocale()
   const section = LIVE_SECTIONS[query.get('section')] ? query.get('section') : 'calendar'
-  const connectionId = query.get('live_account')?.startsWith('broker:') ? query.get('live_account').slice(7) : ''
+  // Calendar reads the primary snapshot once; its multi-account reader owns selection.
+  const connectionId = section !== 'calendar' && query.get('live_account')?.startsWith('broker:') ? query.get('live_account').slice(7) : ''
   const summary = section === 'trading-accounts' && query.get('account_tab') !== 'transactions'
   const scopeKey = `${workspace}:${connectionId}:${summary}`
   const [reloadToken, setReloadToken] = useState(0)

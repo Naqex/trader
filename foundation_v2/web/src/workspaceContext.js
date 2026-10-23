@@ -93,6 +93,8 @@ export function buildWorkspaceHref(view, workspace, queryLike, overrides = {}) {
   if (view) params.set('view', String(view))
   if (['vi','en'].includes(source.get('lang'))) params.set('lang',source.get('lang'))
   if (view === 'live') {
+    const accountSelection = source.get('live_accounts')
+    if (accountSelection && accountSelection.length <= 16000 && /^(?:all|none|(?:broker:)?[A-Za-z0-9_.-]{1,160}(?:,(?:broker:)?[A-Za-z0-9_.-]{1,160})*)$/.test(accountSelection) && overrides.live_accounts !== null) params.set('live_accounts',accountSelection)
     for (const key of ['live_account','mt5_connection','mt5_symbol','mt5_timeframe','chart_engine']) {
       const value = source.get(key)
       if (value && /^(?:broker:)?[A-Za-z0-9_.-]{1,160}$/.test(value) && overrides[key] !== null) params.set(key,value)

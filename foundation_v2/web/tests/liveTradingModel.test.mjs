@@ -1,12 +1,19 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { DEMO_DRAFT, tradingReady, demoDraftError, demoIntent, previewMatches, decodeDemoSnapshot, finalDemoReceipt } from '../src/liveTradingModel.js'
+import { DEMO_DRAFT, tradingReady, tradingBlockReason, demoDraftError, demoIntent, previewMatches, decodeDemoSnapshot, finalDemoReceipt } from '../src/liveTradingModel.js'
 const now = 1700000000000
 const ready = {status:'ready',mode:'demo',execution_enabled:true,account:{login:'123',server:'Test',trade_mode:'demo'},policy:{max_quote_age_ms:5000},quote:{bid:1.1,ask:1.1002,time_msc:now},bars:[],positions:[],orders:[]}
 const spec = {quantity_min:0.01,quantity_max:10,quantity_step:0.01}
 test('permission, account mode, quote age and crossed market fail closed',()=>{
  assert.equal(tradingReady(ready,now),true)
- for(const payload of [{...ready,execution_enabled:false},{...ready,mode:'live'},{...ready,account:{...ready.account,trade_mode:'real'}},{...ready,quote:{...ready.quote,time_msc:now-5001}},{...ready,quote:{...ready.quote,time_msc:now+1}},{...ready,quote:{...ready.quote,bid:1.2}}]) assert.equal(tradingReady(payload,now),false)
+ for(const payload of [{...ready,execution_enabled:false},{...ready,mode:'live'},{...ready,account:{...ready.account,trade_mode:'real'}},{...ready,quote:{...ready.quote,time_msc:now-5001}},{...ready,quote:{...ready.quote,time_msc:now+1001}},{...ready,quote:{...ready.quote,bid:1.2}}]) assert.equal(tradingReady(payload,now),false)
+})
+test('block reason describes stale quotes even when snapshot reports demo_ready',()=>{
+ assert.equal(tradingBlockReason({...ready,reason:'demo_ready',quote:{...ready.quote,time_msc:now-13000}},now),'demo_quote_stale')
+ assert.equal(tradingBlockReason({...ready,execution_enabled:false,reason:'demo_paused'},now),'demo_paused')
+ assert.equal(tradingBlockReason({...ready,quote:{...ready.quote,bid:0}},now),'demo_quote_unavailable')
+ assert.equal(tradingReady({...ready,quote:{...ready.quote,time_msc:now+1000}},now),true)
+ assert.equal(tradingReady({...ready,quote:{...ready.quote,time_msc:now-5000}},now),true)
 })
 test('ticket requires MT5 lot grid and a correctly directed stop',()=>{
  const good = {...DEMO_DRAFT,quantity:'0.02',stopLoss:'1.09',takeProfit:'1.12'}
