@@ -8,8 +8,24 @@ import { TestingLocaleProvider, useTestingLocale } from './testingLocale.jsx'
 import { NotificationProvider } from './Notifications.jsx'
 import AiSparkles from './AiSparkles.jsx'
 import './ai-chat.css'
+import './ai-gateway.css'
 import { TestingRouteBoundary } from './TestingReadState.jsx'
 const AiChatPanel = lazy(() => import('./AiChatPanel.jsx'))
+const AiGatewayPanel = lazy(() => import('./AiGatewayPanel.jsx'))
+
+function PersistentGateway({ active, workspace, language }) {
+  const [visited, setVisited] = useState(active)
+  useEffect(() => { if (active) setVisited(true) }, [active])
+  if (!active && !visited) return null
+  // Keep the document outside route boundaries; moving an iframe also reloads it.
+  return <section className="ai-gateway-host" hidden={!active} inert={!active} aria-label="CLIProxyAPI">
+    <TestingRouteBoundary fallback={<div className="ai-gateway-state" role="alert">{language === 'en' ? 'CLIProxyAPI could not load. Reload the page to try again.' : 'Không tải được CLIProxyAPI. Tải lại trang để thử lại.'}</div>}>
+    <Suspense fallback={<div role="status">{language === 'en' ? 'Opening CLIProxyAPI…' : 'Đang mở CLIProxyAPI…'}</div>}>
+      <AiGatewayPanel workspace={workspace} language={language} active={active} />
+    </Suspense>
+    </TestingRouteBoundary>
+  </section>
+}
 
 function AiPanelFallback({ open, modal, onClose, language, standalone, error = false }) {
   const close = useRef(null)
@@ -479,7 +495,7 @@ function currentQuery() {
   return typeof window === 'undefined' ? new URLSearchParams() : new URLSearchParams(window.location.search)
 }
 
-export default function FxReplayShell({ children, workspace, query = currentQuery(), activeView = 'overview', mode = 'Replay', subnavAction, topbarAction }) {
+export default function FxReplayShell({ children, workspace, query = currentQuery(), activeView = 'overview', mode = 'Replay', subnavAction, topbarAction, gatewayPage = false }) {
   const chartWorkspace = (activeView === 'live' && query.get('section') === 'terminal' && query.get('surface') === 'workspace') || (activeView === 'replay' && query.get('select') !== '1' && (query.get('surface') === 'workspace' || Boolean(query.get('session')) || Boolean(query.get('dataset'))))
   const chartRoute = chartWorkspace
   const routeContext = useMemo(() => readWorkspaceContext(query), [query])
@@ -708,9 +724,10 @@ export default function FxReplayShell({ children, workspace, query = currentQuer
           <div className="fx-main-content" inert={!aiPage && aiOpen && aiOverlay}>
           <ShellSubnav activeView={activeView} workspace={workspace} query={query} copy={copy} action={subnavAction} />
           {helpOpen && <ShellHelp copy={copy} helpCloseRef={helpCloseRef} onClose={() => setHelpOpen(false)} />}
-          <NotificationProvider key={workspace}><div className="fx-content" tabIndex={0}>
+          <NotificationProvider key={workspace}><div className="fx-content" tabIndex={0} hidden={gatewayPage}>
             {children}
           </div></NotificationProvider>
+          <PersistentGateway key={`gateway:${workspace}`} active={gatewayPage} workspace={workspace} language={language} />
           </div>
           {(aiMounted || aiPage) && <TestingRouteBoundary key={workspace} fallback={<AiPanelFallback open={aiOpen || aiPage} modal={!aiPage && aiOverlay} standalone={aiPage} onClose={closeAi} language={language} error />}><Suspense fallback={<AiPanelFallback open={aiOpen || aiPage} modal={!aiPage && aiOverlay} standalone={aiPage} onClose={closeAi} language={language} />}><AiChatPanel workspace={workspace} screen={activeView === 'ai' ? 'settings' : activeView} open={aiOpen || aiPage} modal={!aiPage && aiOverlay} standalone={aiPage} onClose={closeAi} settingsHref={buildWorkspaceHref('ai', workspace, query, { area: 'ai', section: 'connections', demo: null })} language={language} /></Suspense></TestingRouteBoundary>}
         </section>

@@ -144,6 +144,8 @@ function App() {
 
   const demoAvailable = canPreviewDemo(activeView, query)
   const visualMode = previewMode(query, activeView)
+  const gatewayPage = activeView === 'ai' && query.get('section') === 'gateway' && visualMode === 'real' && query.get('ui_reference') !== '1'
+  if (gatewayPage) content = null
   const changePreview = value => {
     navigate(previewStateHref(window.location.href, value))
   }
@@ -151,7 +153,7 @@ function App() {
   if (visualMode !== 'real') content = <ViewStatePreview key={`${activeView}:${query.get('analytics_source')}:${query.get('section')}:${visualMode}`} state={visualMode} view={activeView} workspace={workspace} query={query} onChange={changePreview} />
   if (query.get('ui_reference') === '1') content = <TestingComponentReference />
   const topbarAction = query.get('ui_reference') !== '1' && <><WorkspaceConnectionNote key={workspace} workspace={workspace} enabled={visualMode === 'real'} previewState={visualMode} /><ViewStateSelect value={visualMode} view={activeView} disabled={!demoAvailable} onChange={changePreview} /></>
-  return <FxReplayShell workspace={workspace} query={query} activeView={activeView} mode={mode} topbarAction={topbarAction}><WorkspaceQueryProvider key={workspace} workspace={workspace} eventsEnabled={visualMode === 'real' && query.get('ui_reference') !== '1'}><TestingRouteBoundary key={scope} fallback={<TestingEmptyState kind="page-error" viewport />}><Suspense fallback={loadingFallback}>{content}</Suspense></TestingRouteBoundary></WorkspaceQueryProvider></FxReplayShell>
+  return <FxReplayShell workspace={workspace} query={query} activeView={activeView} mode={mode} topbarAction={topbarAction} gatewayPage={gatewayPage}><WorkspaceQueryProvider key={workspace} workspace={workspace} eventsEnabled={visualMode === 'real' && query.get('ui_reference') !== '1'}><TestingRouteBoundary key={scope} fallback={<TestingEmptyState kind="page-error" viewport />}><Suspense fallback={loadingFallback}>{content}</Suspense></TestingRouteBoundary></WorkspaceQueryProvider></FxReplayShell>
 }
 
 const rootElement = document.getElementById('root')

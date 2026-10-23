@@ -7,7 +7,6 @@ import './ai-workspace.css'
 
 const AiProviderSettings = lazy(() => import('./AiProviderSettings.jsx'))
 const AiModelProfiles = lazy(() => import('./AiModelProfiles.jsx'))
-const AiGatewayPanel = lazy(() => import('./AiGatewayPanel.jsx'))
 
 export default function AiWorkspace({ workspace, query }) {
   const { appearance } = useFxReplayContext()
@@ -15,11 +14,9 @@ export default function AiWorkspace({ workspace, query }) {
   const say = (vi, english) => en ? english : vi
   const section = query.get('section') || 'connections'
 
-  return <main className={`ai-workspace settings-shell wm-page${section === 'gateway' ? ' is-gateway' : ''}`} data-testid="ai-workspace" data-section={section}>
+  return <main className="ai-workspace settings-shell wm-page" data-testid="ai-workspace" data-section={section}>
     {section === 'connections' ? <Suspense fallback={<TestingPageSkeleton label={say('Đang đọc kết nối…', 'Checking connection…')} />}>
       <AiProviderSettings workspace={workspace} language={appearance?.language} />
-    </Suspense> : section === 'gateway' ? <Suspense fallback={<TestingPageSkeleton label={say('Đang mở CLIProxyAPI…', 'Opening CLIProxyAPI…')} />}>
-      <AiGatewayPanel key={workspace} workspace={workspace} language={appearance?.language} />
     </Suspense> : section === 'models' ? <Suspense fallback={<TestingPageSkeleton label={say('Đang tải model…', 'Loading models…')} />}>
       <AiModelProfiles workspace={workspace} language={appearance?.language} />
     </Suspense> : section === 'automation' ? <>

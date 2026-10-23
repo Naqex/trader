@@ -270,7 +270,11 @@ chứng VI/EN, responsive, fixture và UI → API local đọc thật.
 
 Tab CLIProxyAPI nhúng nguyên Management Center từ origin gateway loopback bằng
 iframe chiếm toàn bộ vùng nội dung, không sửa DOM/CSS hoặc đưa panel vào bundle.
-Chỉ mount khi mở tab, unmount khi rời; đọc trạng thái một lần, không polling idle.
+Tải lười ở lần mở đầu; shell giữ đúng một iframe khi đổi tab/khu vực, ẩn và inert
+khi không dùng. Đổi workspace hoặc reload app mới hủy document. Đọc trạng thái
+khi mở/quay lại tab và retry, không polling idle từ WMREPLAY. Ẩn không freeze
+JavaScript/polling upstream; không có contract pause/resume hay sửa bundle upstream.
+Lỗi trạng thái giữ document; retry rõ ràng mới reload sau khi gateway sẵn sàng.
 Gateway tắt/lỗi có recovery về Kết nối, không tự start. Frame có sandbox cho
 script/forms/storage, popup OAuth và download; clipboard chỉ cấp quyền ghi. Không
 proxy management key qua app. Asset vẫn ghim phiên bản và kiểm digest; nâng cấp
@@ -280,3 +284,5 @@ bật management một lần, giữ chỉnh sửa qua restart. WMREPLAY kiểm i
 và binary/panel digest lúc bật; đây không là giới hạn quyền administrator trong
 panel đang chạy. Admission và quyền tools/broker vẫn do sản phẩm sở hữu. Panel
 không đổi persistent model profiles hoặc cấu hình run đã snapshot.
+
+Kiểm chứng vòng đời và chi phí idle: [receipt keepalive](../evidence/ai-gateway-keepalive-20261023/RECEIPT.md).

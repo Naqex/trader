@@ -308,8 +308,9 @@ nguyên YAML và khóa. Sai key giữa file và config sẽ bị từ chối khi
 Vào tab **CLIProxyAPI**, hoặc **Kết nối → Chi tiết CLIProxyAPI → Mở trang quản trị**.
 Tab hiển thị nguyên panel tại `http://127.0.0.1:17852/management.html` trong iframe
 khác origin, chiếm toàn bộ vùng nội dung dưới điều hướng. Giữ UI/menu upstream;
-không fork, sửa DOM/CSS hoặc chép source panel vào app. Chỉ tải khi mở tab, gỡ khi
-rời tab; không polling trạng thái hoặc tự bật gateway. Gateway chưa bật/lỗi có
+không fork, sửa DOM/CSS hoặc chép source panel vào app. Tải lười ở lần mở đầu;
+shell giữ một iframe khi chuyển tab/khu vực, ẩn và inert khi không dùng. Đổi
+workspace hoặc reload app mới hủy document; không tự bật gateway. Gateway chưa bật/lỗi có
 nút về Kết nối và thử lại. URL trực tiếp vẫn dùng được độc lập. Mở trang không
 đổi profile/model của app. Lấy khóa cho lần đăng nhập đầu bằng lệnh trong thư mục repo:
 
@@ -317,7 +318,11 @@ nút về Kết nối và thử lại. URL trực tiếp vẫn dùng được đ
 .\scripts\ai_gateway.ps1 -Action CopyManagementKey
 ```
 
-Iframe giữ cơ chế refresh/polling của chính upstream trong khi đang mở. WMREPLAY
+Iframe giữ cơ chế refresh/polling của upstream cả khi bị ẩn; ẩn không đóng băng
+JavaScript. Chưa có contract pause/resume với upstream. WMREPLAY chỉ đọc metadata
+khi mở/quay lại tab hoặc bấm Thử lại, không poll nền. Lỗi metadata không tự hủy
+document; Thử lại khi gateway sẵn sàng sẽ tải mới panel. Nâng bản panel chỉ áp
+dụng sau lần tải mới, không ngắt form đang nhập. WMREPLAY
 không inject theme/locale hoặc key, không đọc DOM/storage khác origin. Sandbox
 cho phép script, storage, form, popup OAuth, download và clipboard-write; không
 cho frame điều hướng top-level. OAuth popup/storage phụ thuộc trình duyệt, cần
