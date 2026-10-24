@@ -1,0 +1,88 @@
+{
+  "scope": "synthetic dense report data, browser resize, GET only",
+  "checks": [
+    {
+      "theme": "dark",
+      "width": 1920,
+      "charts": 3,
+      "barsPerChart": 24,
+      "noNestedScroll": true,
+      "noTickOverlap": true
+    },
+    {
+      "theme": "dark",
+      "width": 1440,
+      "charts": 3,
+      "barsPerChart": 24,
+      "noNestedScroll": true,
+      "noTickOverlap": true
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "charts": 3,
+      "barsPerChart": 24,
+      "noNestedScroll": true,
+      "noTickOverlap": true
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "charts": 3,
+      "barsPerChart": 24,
+      "noNestedScroll": true,
+      "noTickOverlap": true
+    },
+    {
+      "theme": "dark",
+      "width": 1920,
+      "charts": 3,
+      "barsPerChart": 24,
+      "noNestedScroll": true,
+      "noTickOverlap": true
+    },
+    {
+      "theme": "light",
+      "width": 1920,
+      "charts": 3,
+      "barsPerChart": 24,
+      "noNestedScroll": true,
+      "noTickOverlap": true
+    },
+    {
+      "theme": "light",
+      "width": 1440,
+      "charts": 3,
+      "barsPerChart": 24,
+      "noNestedScroll": true,
+      "noTickOverlap": true
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "charts": 3,
+      "barsPerChart": 24,
+      "noNestedScroll": true,
+      "noTickOverlap": true
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "charts": 3,
+      "barsPerChart": 24,
+      "noNestedScroll": true,
+      "noTickOverlap": true
+    },
+    {
+      "theme": "light",
+      "width": 1920,
+      "charts": 3,
+      "barsPerChart": 24,
+      "noNestedScroll": true,
+      "noTickOverlap": true
+    }
+  ],
+  "errors": [],
+  "writes": [],
+  "status": "PASS"
+}

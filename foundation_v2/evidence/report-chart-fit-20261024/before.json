@@ -1,0 +1,466 @@
+[
+  {
+    "view": "overview",
+    "width": 1920,
+    "pageOverflow": false,
+    "charts": [
+      {
+        "title": "Thời gian luyện tập theo tháng",
+        "width": 750,
+        "height": 320,
+        "scrollWidth": 750,
+        "scrollHeight": 335,
+        "svg": {
+          "x": 1117,
+          "y": 923,
+          "width": 750,
+          "height": 334.8125,
+          "top": 923,
+          "right": 1867,
+          "bottom": 1257.8125,
+          "left": 1117
+        }
+      },
+      {
+        "title": "Tỷ lệ thắng theo tháng",
+        "width": 750,
+        "height": 320,
+        "scrollWidth": 750,
+        "scrollHeight": 335,
+        "svg": {
+          "x": 301,
+          "y": 1337,
+          "width": 750,
+          "height": 334.8125,
+          "top": 1337,
+          "right": 1051,
+          "bottom": 1671.8125,
+          "left": 301
+        }
+      },
+      {
+        "title": "Giao dịch theo mã",
+        "width": 750,
+        "height": 320,
+        "scrollWidth": 750,
+        "scrollHeight": 335,
+        "svg": {
+          "x": 1117,
+          "y": 1337,
+          "width": 750,
+          "height": 334.8125,
+          "top": 1337,
+          "right": 1867,
+          "bottom": 1671.8125,
+          "left": 1117
+        }
+      }
+    ]
+  },
+  {
+    "view": "overview",
+    "width": 1440,
+    "pageOverflow": false,
+    "charts": [
+      {
+        "title": "Thời gian luyện tập theo tháng",
+        "width": 510,
+        "height": 228,
+        "scrollWidth": 510,
+        "scrollHeight": 228,
+        "svg": {
+          "x": 877,
+          "y": 923,
+          "width": 510,
+          "height": 227.671875,
+          "top": 923,
+          "right": 1387,
+          "bottom": 1150.671875,
+          "left": 877
+        }
+      },
+      {
+        "title": "Tỷ lệ thắng theo tháng",
+        "width": 510,
+        "height": 228,
+        "scrollWidth": 510,
+        "scrollHeight": 228,
+        "svg": {
+          "x": 301,
+          "y": 1295,
+          "width": 510,
+          "height": 227.671875,
+          "top": 1295,
+          "right": 811,
+          "bottom": 1522.671875,
+          "left": 301
+        }
+      },
+      {
+        "title": "Giao dịch theo mã",
+        "width": 510,
+        "height": 228,
+        "scrollWidth": 510,
+        "scrollHeight": 228,
+        "svg": {
+          "x": 877,
+          "y": 1295,
+          "width": 510,
+          "height": 227.671875,
+          "top": 1295,
+          "right": 1387,
+          "bottom": 1522.671875,
+          "left": 877
+        }
+      }
+    ]
+  },
+  {
+    "view": "overview",
+    "width": 768,
+    "pageOverflow": false,
+    "charts": [
+      {
+        "title": "Thời gian luyện tập theo tháng",
+        "width": 604,
+        "height": 270,
+        "scrollWidth": 604,
+        "scrollHeight": 270,
+        "svg": {
+          "x": 119,
+          "y": 1667,
+          "width": 604,
+          "height": 269.640625,
+          "top": 1667,
+          "right": 723,
+          "bottom": 1936.640625,
+          "left": 119
+        }
+      },
+      {
+        "title": "Tỷ lệ thắng theo tháng",
+        "width": 604,
+        "height": 270,
+        "scrollWidth": 604,
+        "scrollHeight": 270,
+        "svg": {
+          "x": 119,
+          "y": 2030.640625,
+          "width": 604,
+          "height": 269.640625,
+          "top": 2030.640625,
+          "right": 723,
+          "bottom": 2300.28125,
+          "left": 119
+        }
+      },
+      {
+        "title": "Giao dịch theo mã",
+        "width": 604,
+        "height": 270,
+        "scrollWidth": 604,
+        "scrollHeight": 270,
+        "svg": {
+          "x": 119,
+          "y": 2398.28125,
+          "width": 604,
+          "height": 269.640625,
+          "top": 2398.28125,
+          "right": 723,
+          "bottom": 2667.921875,
+          "left": 119
+        }
+      }
+    ]
+  },
+  {
+    "view": "overview",
+    "width": 390,
+    "pageOverflow": false,
+    "charts": [
+      {
+        "title": "Thời gian luyện tập theo tháng",
+        "width": 266,
+        "height": 223,
+        "scrollWidth": 500,
+        "scrollHeight": 223,
+        "svg": {
+          "x": 91,
+          "y": 2195.78125,
+          "width": 500,
+          "height": 223.203125,
+          "top": 2195.78125,
+          "right": 591,
+          "bottom": 2418.984375,
+          "left": 91
+        }
+      },
+      {
+        "title": "Tỷ lệ thắng theo tháng",
+        "width": 266,
+        "height": 223,
+        "scrollWidth": 500,
+        "scrollHeight": 223,
+        "svg": {
+          "x": 91,
+          "y": 2504.984375,
+          "width": 500,
+          "height": 223.203125,
+          "top": 2504.984375,
+          "right": 591,
+          "bottom": 2728.1875,
+          "left": 91
+        }
+      },
+      {
+        "title": "Giao dịch theo mã",
+        "width": 266,
+        "height": 223,
+        "scrollWidth": 500,
+        "scrollHeight": 223,
+        "svg": {
+          "x": 91,
+          "y": 2818.1875,
+          "width": 500,
+          "height": 223.203125,
+          "top": 2818.1875,
+          "right": 591,
+          "bottom": 3041.390625,
+          "left": 91
+        }
+      }
+    ]
+  },
+  {
+    "view": "replay",
+    "width": 1920,
+    "pageOverflow": false,
+    "charts": [
+      {
+        "title": "Số dư",
+        "width": 481,
+        "height": 223,
+        "scrollWidth": 500,
+        "scrollHeight": 223,
+        "svg": {
+          "x": 301,
+          "y": 653.1875,
+          "width": 500,
+          "height": 223.203125,
+          "top": 653.1875,
+          "right": 801,
+          "bottom": 876.390625,
+          "left": 301
+        }
+      },
+      {
+        "title": "Kết quả theo tháng",
+        "width": 481,
+        "height": 223,
+        "scrollWidth": 500,
+        "scrollHeight": 223,
+        "svg": {
+          "x": 843.65625,
+          "y": 653.1875,
+          "width": 500,
+          "height": 223.203125,
+          "top": 653.1875,
+          "right": 1343.65625,
+          "bottom": 876.390625,
+          "left": 843.65625
+        }
+      },
+      {
+        "title": "Kết quả theo thứ",
+        "width": 481,
+        "height": 223,
+        "scrollWidth": 500,
+        "scrollHeight": 223,
+        "svg": {
+          "x": 1386.328125,
+          "y": 653.1875,
+          "width": 500,
+          "height": 223.203125,
+          "top": 653.1875,
+          "right": 1886.328125,
+          "bottom": 876.390625,
+          "left": 1386.328125
+        }
+      }
+    ]
+  },
+  {
+    "view": "replay",
+    "width": 1440,
+    "pageOverflow": false,
+    "charts": [
+      {
+        "title": "Số dư",
+        "width": 321,
+        "height": 223,
+        "scrollWidth": 500,
+        "scrollHeight": 223,
+        "svg": {
+          "x": 301,
+          "y": 653.1875,
+          "width": 500,
+          "height": 223.203125,
+          "top": 653.1875,
+          "right": 801,
+          "bottom": 876.390625,
+          "left": 301
+        }
+      },
+      {
+        "title": "Kết quả theo tháng",
+        "width": 321,
+        "height": 223,
+        "scrollWidth": 500,
+        "scrollHeight": 223,
+        "svg": {
+          "x": 683.65625,
+          "y": 653.1875,
+          "width": 500,
+          "height": 223.203125,
+          "top": 653.1875,
+          "right": 1183.65625,
+          "bottom": 876.390625,
+          "left": 683.65625
+        }
+      },
+      {
+        "title": "Kết quả theo thứ",
+        "width": 321,
+        "height": 223,
+        "scrollWidth": 500,
+        "scrollHeight": 223,
+        "svg": {
+          "x": 1066.328125,
+          "y": 653.1875,
+          "width": 500,
+          "height": 223.203125,
+          "top": 653.1875,
+          "right": 1566.328125,
+          "bottom": 876.390625,
+          "left": 1066.328125
+        }
+      }
+    ]
+  },
+  {
+    "view": "replay",
+    "width": 768,
+    "pageOverflow": false,
+    "charts": [
+      {
+        "title": "Số dư",
+        "width": 604,
+        "height": 270,
+        "scrollWidth": 604,
+        "scrollHeight": 270,
+        "svg": {
+          "x": 119,
+          "y": 846.1875,
+          "width": 604,
+          "height": 269.640625,
+          "top": 846.1875,
+          "right": 723,
+          "bottom": 1115.828125,
+          "left": 119
+        }
+      },
+      {
+        "title": "Kết quả theo tháng",
+        "width": 604,
+        "height": 270,
+        "scrollWidth": 604,
+        "scrollHeight": 270,
+        "svg": {
+          "x": 119,
+          "y": 1209.828125,
+          "width": 604,
+          "height": 269.640625,
+          "top": 1209.828125,
+          "right": 723,
+          "bottom": 1479.46875,
+          "left": 119
+        }
+      },
+      {
+        "title": "Kết quả theo thứ",
+        "width": 604,
+        "height": 270,
+        "scrollWidth": 604,
+        "scrollHeight": 270,
+        "svg": {
+          "x": 119,
+          "y": 1573.46875,
+          "width": 604,
+          "height": 269.640625,
+          "top": 1573.46875,
+          "right": 723,
+          "bottom": 1843.109375,
+          "left": 119
+        }
+      }
+    ]
+  },
+  {
+    "view": "replay",
+    "width": 390,
+    "pageOverflow": false,
+    "charts": [
+      {
+        "title": "Số dư",
+        "width": 266,
+        "height": 223,
+        "scrollWidth": 500,
+        "scrollHeight": 223,
+        "svg": {
+          "x": 91,
+          "y": 942.1875,
+          "width": 500,
+          "height": 223.203125,
+          "top": 942.1875,
+          "right": 591,
+          "bottom": 1165.390625,
+          "left": 91
+        }
+      },
+      {
+        "title": "Kết quả theo tháng",
+        "width": 266,
+        "height": 223,
+        "scrollWidth": 500,
+        "scrollHeight": 223,
+        "svg": {
+          "x": 91,
+          "y": 1251.390625,
+          "width": 500,
+          "height": 223.203125,
+          "top": 1251.390625,
+          "right": 591,
+          "bottom": 1474.59375,
+          "left": 91
+        }
+      },
+      {
+        "title": "Kết quả theo thứ",
+        "width": 266,
+        "height": 223,
+        "scrollWidth": 500,
+        "scrollHeight": 223,
+        "svg": {
+          "x": 91,
+          "y": 1560.59375,
+          "width": 500,
+          "height": 223.203125,
+          "top": 1560.59375,
+          "right": 591,
+          "bottom": 1783.796875,
+          "left": 91
+        }
+      }
+    ]
+  }
+]
