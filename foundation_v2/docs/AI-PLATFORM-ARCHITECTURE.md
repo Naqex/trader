@@ -335,3 +335,13 @@ panel đang chạy. Admission và quyền tools/broker vẫn do sản phẩm s�
 không đổi persistent model profiles hoặc cấu hình run đã snapshot.
 
 Kiểm chứng vòng đời và chi phí idle: [receipt keepalive](../evidence/ai-gateway-keepalive-20261023/RECEIPT.md).
+
+## Nghiên cứu công cụ MT5 native
+
+[Probe MCP ngày 24/10](../evidence/mt5-native-mcp-20261024/RESEARCH.md) đã xác thực
+terminal build6230, discovery67 tools và thử19 calls chỉ đọc. Ưu tiên tận dụng
+metadata symbol cho asset catalog, rồi đánh giá calendar/indicator/tester như
+capability bổ sung. Chưa nối MCP vào Mentor/runtime hay đổi đường SDK execution.
+Probe ghi nhận offset local tự mâu thuẫn, tick_size zero và calendar có lỗi/độ trễ
+dài; mọi integration cần normalization, account binding, allowlist và budget riêng.
+Kết quả này không cấp quyền broker, file mutation hoặc tự chạy tester/EA.
