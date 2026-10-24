@@ -1,3 +1,4 @@
+import { getTimezone } from './timezone.js'
 const formatters = new Map()
 
 export function dateFieldDisplay(value, type = 'date') {
@@ -27,13 +28,15 @@ export function parseDateField(value, type = 'date') {
   return `${isoDate}T${hour}:${minute}${second === undefined ? '' : `:${second}`}`
 }
 
-export function displayTime(value, { seconds = false, timeZone = 'UTC' } = {}) {
+export function displayTime(value, { seconds = false, timeZone = getTimezone() } = {}) {
   const dateTime = displayDate(value, { timeStyle: seconds ? 'medium' : 'short', timeZone })
   return dateTime === '—' ? dateTime : dateTime.split(' ')[1]
 }
 
-export function displayDate(value, { timeStyle, timeZone = 'UTC', fallback = '—' } = {}) {
+export function displayDate(value, { timeStyle, timeZone = getTimezone(), fallback = '—' } = {}) {
   if (value == null || value === '' || typeof value === 'boolean') return fallback
+  // A date-only value is a civil date, not UTC midnight to shift into another day.
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) timeZone = 'UTC'
   const numeric = typeof value === 'number' || (typeof value === 'string' && /^[+-]?\d+(?:\.\d+)?$/.test(value.trim()))
   const date = value instanceof Date ? value : numeric
     ? new Date(Math.abs(Number(value)) >= 100_000_000_000 ? Number(value) : Number(value) * 1000)

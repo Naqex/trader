@@ -1,9 +1,11 @@
+import SearchInput from './SearchInput.jsx'
 import { previewReadRecovery } from './demoMode.js'
 import { useNotifications } from './Notifications.jsx'
 import useReadRefresh from './useReadRefresh.js'
 import TestingReadState from './TestingReadState.jsx'
 import { TestingEmptyState, TestingPageSkeleton, TestingResourceStatus } from './TestingPageState.jsx'
 import ProjectDateInput from './ProjectDateInput.jsx'
+import InstantDateInput from './InstantDateInput.jsx'
 import { displayDate } from './dateFormat.js'
 import { displayTimeframe, formatDataSize as formatDatasetSize } from './dataDisplay.js'
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react'
@@ -84,7 +86,7 @@ function DatasetDetails({ dataset, workspace, query }) {
         {downloadEngineOf(dataset) === 'QuantDataManager' && <div><dt>{t('Công cụ tải')}</dt><dd>QuantDataManager (QDM) · CLI</dd></div>}
         <div><dt>Instrument / TF</dt><dd>{dataset.instrument_id || 'N/A'} · {displayTimeframe(dataset, 'N/A')}</dd></div>
         <div><dt>{t('Số nến')}</dt><dd>{fmt(dataset.row_count, '', 0)}</dd></div>
-        <div><dt>Range UTC</dt><dd>{t(formatUtc(range.start, locale))} → {t(formatUtc(range.end, locale))}</dd></div>
+        <div><dt>Range</dt><dd>{t(formatUtc(range.start, locale))} → {t(formatUtc(range.end, locale))}</dd></div>
         <div><dt>License</dt><dd>{source.license_use || 'Chưa xác minh'}</dd></div>
         <div><dt>Quality</dt><dd><QualityBadge dataset={dataset} /></dd></div>
         {Array.isArray(dataset.quality?.gaps) && <div><dt>{t('Khoảng trống dữ liệu')}</dt><dd>{fmt(dataset.quality.gap_count ?? dataset.quality.gaps.length,'',0)}</dd></div>}
@@ -128,7 +130,7 @@ function LocalCsvQualityReport({ preview }) {
       <dl className="rd-import-facts">
         <div><dt>Rows</dt><dd>{formatNumber(preview?.row_count, 0)}</dd></div>
         <div><dt>Unique timestamps</dt><dd>{formatNumber(preview?.unique_row_count, 0)}</dd></div>
-        <div><dt>Range UTC</dt><dd>{formatUtc(range.from_utc)} → {formatUtc(range.to_utc)}</dd></div>
+        <div><dt>Range</dt><dd>{formatUtc(range.from_utc)} → {formatUtc(range.to_utc)}</dd></div>
         <div><dt>Duplicates</dt><dd>{formatNumber(quality.duplicates, 0)}</dd></div>
         <div><dt>Out of order</dt><dd>{formatNumber(quality.out_of_order, 0)}</dd></div>
         <div><dt>Gaps / overlap</dt><dd>{formatNumber(gaps.length, 0)} / {formatNumber(quality.overlapping_intervals, 0)}</dd></div>
@@ -329,7 +331,7 @@ function LocalCsvImport({ workspace, onImported, onBusyChange, asset }) {
               <label className="rd-field"><span>Contract size</span><input name="contractSize" value={form.contractSize} onChange={updateForm} /></label>
               <label className="rd-field"><span>Quantity min</span><input name="quantityMin" value={form.quantityMin} onChange={updateForm} /></label>
               <label className="rd-field"><span>Quantity step</span><input name="quantityStep" value={form.quantityStep} onChange={updateForm} /></label>
-              <label className="rd-field"><span>Effective from UTC</span><ProjectDateInput type="datetime-local" step="1" utc name="effectiveFromUtc" value={form.effectiveFromUtc} onChange={updateForm} /></label>
+              <label className="rd-field"><span>Effective from</span><InstantDateInput step="1" name="effectiveFromUtc" value={form.effectiveFromUtc} onChange={updateForm} /></label>
             </div>
           </details>
           <div className="rd-import-actions">
@@ -631,7 +633,7 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
   return (
     <section className="rd-shell wm-page data-library" data-testid="data-desk-root" aria-label={t('Market Data')}>
       <div className="data-library-toolbar">
-        <label className="data-library-search"><TestingIcon kind="search" /><input type="search" aria-label={t('Tìm asset')} placeholder={t('Tìm asset…')} value={search} onChange={event => setSearch(event.target.value)} /></label>
+        <label className="data-library-search"><TestingIcon kind="search" /><SearchInput type="search" aria-label={t('Tìm asset')} placeholder={t('Tìm asset…')} value={search} onChange={event => setSearch(event.target.value)} /></label>
         <div className="data-library-filters">
           <FxSelect label={t('Danh mục')} value={categoryFilter} onChange={setCategoryFilter} options={[{value:'all',label:'Tất cả danh mục'}, ...CATEGORIES.map(([value,label]) => ({value,label})), ...(rows.some(item => !categoryOf(item)) ? [{value:'',label:'Chưa phân loại'}] : [])]} />
           <FxSelect label={t('Nguồn dữ liệu')} value={providerFilter} onChange={setProviderFilter} options={sourceOptions} />
@@ -676,7 +678,7 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
               <div className="rd-table-wrap" tabIndex={0} role="region" aria-label={t('Dữ liệu đã có')}>
                 <table className="rd-table" data-testid="data-desk-dataset-table">
                   <colgroup>{['asset','category','source','data','from','to','count','size','actions'].map(name => <col key={name} className={`data-library-column-${name}`} />)}</colgroup>
-                  <thead><tr>{['Sản phẩm','Danh mục','Nguồn','Dữ liệu','Từ ngày (UTC)','Đến ngày (UTC)','Số nến','Dung lượng','Thao tác'].map(label => <th key={label} scope="col" data-tooltip={label === 'Dung lượng' ? t('Dữ liệu replay; không gồm bản nguồn và cache tải.') : undefined}>{t(label)}</th>)}</tr></thead>
+                  <thead><tr>{['Sản phẩm','Danh mục','Nguồn','Dữ liệu','Từ ngày','Đến ngày','Số nến','Dung lượng','Thao tác'].map(label => <th key={label} scope="col" data-tooltip={label === 'Dung lượng' ? t('Dữ liệu replay; không gồm bản nguồn và cache tải.') : undefined}>{t(label)}</th>)}</tr></thead>
                   <tbody>
                     {pageItems.map((dataset) => {
                       const range = datasetRange(dataset)
@@ -722,7 +724,7 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
         <dl className="data-library-catalog-facts">
           {catalogSourceSelected && downloadEngineOf(state.catalog) === 'QuantDataManager' && <div><dt>{t('Công cụ tải')}</dt><dd>QuantDataManager (QDM) · CLI</dd></div>}
           <div><dt>{t('Số tài sản')}</dt><dd>{fmt(sourceAssetCount, '', 0)}</dd></div>
-          <div><dt>{t(catalogSourceSelected ? 'Cập nhật lần cuối (UTC)' : 'Lần lưu gần nhất (UTC)')}</dt><dd>{(catalogSourceSelected ? state.catalog?.retrieved_at_utc : latestSourceSave) ? formatUtc(catalogSourceSelected ? state.catalog.retrieved_at_utc : latestSourceSave, locale) : '—'}</dd></div>
+          <div><dt>{t(catalogSourceSelected ? 'Cập nhật lần cuối' : 'Lần lưu gần nhất')}</dt><dd>{(catalogSourceSelected ? state.catalog?.retrieved_at_utc : latestSourceSave) ? formatUtc(catalogSourceSelected ? state.catalog.retrieved_at_utc : latestSourceSave, locale) : '—'}</dd></div>
         </dl>
         {catalogSourceSelected && (catalogMessage ? <p className="data-library-catalog-status" role="status">{t(catalogMessage)}</p> : catalogUpdated && <p className="data-library-catalog-status" role="status">{t('Đã cập nhật danh mục.')}</p>)}
         {catalogSourceSelected && !catalogBusy && state.catalog?.configured && !state.catalog.refresh_available && !catalogMessage && <p className="data-library-catalog-status" role="status">{t('Vui lòng chờ trước khi cập nhật lại.')}</p>}

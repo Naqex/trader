@@ -1,3 +1,4 @@
+import { getTimezone, zonedDateKey } from './timezone.js'
 import { cumulativeDealSeries, dealNet, filterLiveDeals, summarizeDeals } from './liveWorkspaceModel.js'
 
 export function selectLiveConnection(items, previousId) {
@@ -17,9 +18,9 @@ export function liveOverviewPerformance(payload, connectionId, expectedAccount) 
   const chartComplete=deals.every(deal=>Number.isFinite(deal.time_msc) && Number.isFinite(new Date(deal.time_msc).getTime()) && dealNet(deal)!==null)
   const months=new Map(), weekdays=Array(7).fill(0)
   if(chartComplete)for(const deal of deals){
-    const date=new Date(deal.time_msc), month=date.toISOString().slice(0,7), net=dealNet(deal)
+    const date=new Date(deal.time_msc), month=zonedDateKey(date).slice(0,7), net=dealNet(deal)
     months.set(month,(months.get(month)||0)+net)
-    weekdays[(date.getUTCDay()+6)%7]+=net
+    weekdays[(new Date(`${zonedDateKey(date)}T00:00:00Z`).getUTCDay()+6)%7]+=net
   }
   return {...summarizeDeals(deals),gross:sum(['profit']),costs:sum(['commission','swap','fee']),from,to,stale:payload.stale===true,currency:payload.account.currency,
     deals:[...deals].sort((a,b)=>(b.time_msc||0)-(a.time_msc||0)),chartComplete,

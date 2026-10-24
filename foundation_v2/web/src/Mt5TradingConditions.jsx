@@ -1,3 +1,4 @@
+import { displayDate } from './dateFormat.js'
 import { useTestingLocale } from './testingLocale.jsx'
 import { managedBrokerRules, quoteQuality } from './liveTradingModel.js'
 
@@ -32,7 +33,7 @@ export default function Mt5TradingConditions({ snapshot, stale = false }) {
     <h4>{t('Chất lượng dữ liệu')}</h4>
     <dl className="live-terminal-values">
       <div><dt>{t('Báo giá MT5')}</dt><dd>{t(({fresh:'Trong ngưỡng của ứng dụng',stale:'Báo giá cũ',future:'Thời gian báo giá đi trước đồng hồ máy',invalid:'Thời gian báo giá không hợp lệ'})[quality.state])}</dd></div>
-      <div><dt>{t('Báo giá cuối')}</dt><dd>{quality.state!=='invalid'?new Date(Number(quote.time_msc)).toISOString().replace('T',' ').slice(0,19)+' UTC':t('Chưa có dữ liệu')}</dd></div>
+      <div><dt>{t('Báo giá cuối')}</dt><dd>{quality.state!=='invalid'?displayDate(Number(quote.time_msc), {timeStyle:'medium'}):t('Chưa có dữ liệu')}</dd></div>
     </dl>
     <p className="live-muted">{t('Tuổi báo giá được ứng dụng tính theo đồng hồ máy; không xác nhận thị trường đóng hay mở.')}</p>
     <h4>{t('Chính sách ứng dụng')}</h4>

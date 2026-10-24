@@ -9,6 +9,7 @@ import { scopedRead } from './scopedRead.js'
 import { NotificationSlot, NotificationSurface } from './Notifications.jsx'
 import { hasPendingPropReplayEvents, syncPropReplayEvents } from './propReplaySync.js'
 import ProjectDateInput from './ProjectDateInput.jsx'
+import InstantDateInput from './InstantDateInput.jsx'
 import { displayDate } from './dateFormat.js'
 import { displayTimeframe } from './dataDisplay.js'
 import FxSelect from './FxSelect.jsx'
@@ -893,9 +894,9 @@ export default function ReplayWorkspace({ workspace, query }) {
       setChartNotice('Prop Firm challenge chỉ cho phép tiến theo replay clock.')
       return
     }
-    const timestamp = Date.parse(goToDateDraft + 'Z') / 1000
+    const timestamp = Date.parse(goToDateDraft.endsWith('Z') ? goToDateDraft : goToDateDraft + 'Z') / 1000
     if (!Number.isFinite(timestamp) || timestamp > Number(replay?.cutoff_timestamp)) {
-      setChartNotice('Chọn thời điểm UTC không vượt quá cutoff đang xem.')
+      setChartNotice('Chọn thời điểm không vượt quá cutoff đang xem.')
       return
     }
     setChartNotice('')
@@ -1017,7 +1018,7 @@ export default function ReplayWorkspace({ workspace, query }) {
               <small>{workspace} {t("· broker locked")}</small>
             </div>
             <div><span>{t("Dataset")}</span><code>{replay.payload.dataset_id}</code></div>
-            <div><span>{t("Decision cutoff")}</span><strong>#{cursor}</strong><small>{formatTimestamp(replay.cutoff_timestamp)} {t("UTC")}</small></div>
+            <div><span>{t("Decision cutoff")}</span><strong>#{cursor}</strong><small>{formatTimestamp(replay.cutoff_timestamp)}</small></div>
             <div><span>{t("Visible rows")}</span><strong>{visibleRowCount ?? t("N/A")} {t("nến")}</strong><small>{t("revision r")}{revision}</small></div>
             <div className={`replay-state ${completed ? 'is-complete' : ''} ${conflict ? 'is-conflict' : ''}`}>
               {statusLabel}
@@ -1062,7 +1063,7 @@ export default function ReplayWorkspace({ workspace, query }) {
                 <div className="chart-canvas">
                   {!advancedChart && <><div className="chart-symbol-strip" role="group" aria-label={t("Thông tin symbol")}>
                     <strong>{replayContext.instrument}</strong>
-                    <span>{displayTimeframe(replayContext)} {t("· UTC")}</span>
+                    <span>{displayTimeframe(replayContext)} </span>
                     <span className="chart-symbol-ohlc">{t("O")} {formatPrice((crosshair?.row || currentBar)?.open)} {t("· H")} {formatPrice((crosshair?.row || currentBar)?.high)} {t("· L")} {formatPrice((crosshair?.row || currentBar)?.low)} {t("· C")} {formatPrice((crosshair?.row || currentBar)?.close)} {t("· V")} {formatVolume((crosshair?.row || currentBar)?.volume ?? (crosshair?.row || currentBar)?.tick_volume)}</span>
                   </div>
                   <ChartFloatingToolbar name="Công cụ vẽ" storageKey={`tw:chart:draw-toolbar:${workspace}`} initialPosition={{ x: 22, y: 46 }}>
@@ -1081,7 +1082,7 @@ export default function ReplayWorkspace({ workspace, query }) {
                     <button type="button" className="chart-play" data-testid="play-toggle" aria-label={isPlaying ? t("Tạm dừng") : t("Phát replay")} data-tooltip={t("Phát / tạm dừng replay")} onClick={toggleReplay} disabled={!isPlaying && (!canReplayForward || conflict || Boolean(pendingAction) || state.status !== 'ready')}><ChartIcon name={isPlaying ? 'pause' : 'play'} /></button>
                     <button type="button" data-testid="step-1" aria-label={t("Tiến một nến")} data-tooltip={t("→ Tiến một nến")} aria-keyshortcuts="ArrowRight" onClick={() => advanceReplay()} disabled={!canReplayForward || conflict || Boolean(pendingAction) || state.status !== 'ready'}><ChartIcon name="step" /></button>
                     <button type="button" data-testid="step-10" aria-label={t("Tiến mười nến")} data-tooltip={t("Shift + → Tiến mười nến")} aria-keyshortcuts="Shift+ArrowRight" onClick={() => advanceReplay(false, 10)} disabled={!canReplayForward || conflict || Boolean(pendingAction) || state.status !== 'ready'}>10</button>
-                    <FxSelect label={t("Tốc độ replay")} value={speed} onChange={setSpeed} disabled={Boolean(pendingAction)} localizeOptions={false} options={['0.5', '1', '2', '4'].map(value => ({ value, label: value + '×', localize: false }))} /><span className="chart-float-cutoff" data-tooltip={formatTimestamp(replay.cutoff_timestamp) + ' UTC'}>#{cursor}</span>
+                    <FxSelect label={t("Tốc độ replay")} value={speed} onChange={setSpeed} disabled={Boolean(pendingAction)} localizeOptions={false} options={['0.5', '1', '2', '4'].map(value => ({ value, label: value + '×', localize: false }))} /><span className="chart-float-cutoff" data-tooltip={formatTimestamp(replay.cutoff_timestamp)}>#{cursor}</span>
                   </ChartFloatingToolbar>}
                   {advancedChart ? <TradingViewReplayChart key={`${sessionId}:${replay.payload.dataset_id}:${chartReset}`}
                     workspace={workspace} datasetId={replay.payload.dataset_id} datasetSha256={replay.dataset_sha256} viewCursorIndex={replay.view_cursor_index} symbol={replayContext.instrument} assetClass={order.instrument?.asset_class} seconds={activeDataset?.timeframe_seconds || replay.payload.execution?.timeframe_seconds}
@@ -1113,7 +1114,7 @@ export default function ReplayWorkspace({ workspace, query }) {
                   <button type="button" className="chart-bottom-step" aria-label={t("Về nến đầu tiên")} onClick={() => loadSession(sessionId, 0)} disabled={propMode || conflict || Boolean(pendingAction) || state.status !== 'ready' || cursor <= 0}>|‹</button>
                   <button type="button" className="chart-bottom-step" aria-label={t("Mở cutoff trước")} onClick={() => loadSession(sessionId, Math.max(0, cursor - 1))} disabled={propMode || conflict || Boolean(pendingAction) || state.status !== 'ready' || cursor <= 0}>‹</button>
                   {historicalView && !propMode && <button type="button" onClick={() => loadSession(sessionId)} disabled={state.status !== 'ready'}>{t("Về cursor mới nhất")}</button>}
-                  <span className="chart-bottom-cursor">#{cursor} / #{canonicalCursor} {t("· UTC")}</span>
+                  <span className="chart-bottom-cursor">#{cursor} / #{canonicalCursor} </span>
                 </div>
                 <div className="chart-bottom-status"><span className="status-dot" /> {t("Paper replay")} <strong>{replayContext.instrument}</strong></div>
               </div>
@@ -1144,7 +1145,7 @@ export default function ReplayWorkspace({ workspace, query }) {
                 <span>{t("H")} <strong>{formatPrice((crosshair?.row || currentBar)?.high)}</strong></span>
                 <span>{t("L")} <strong>{formatPrice((crosshair?.row || currentBar)?.low)}</strong></span>
                 <span>{t("C")} <strong>{formatPrice((crosshair?.row || currentBar)?.close)}</strong></span>
-                {crosshair?.row && <span className="bar-readout-time">{formatTimestamp(crosshair.row.timestamp)} {t("UTC")}</span>}
+                {crosshair?.row && <span className="bar-readout-time">{formatTimestamp(crosshair.row.timestamp)}</span>}
               </div>
 
               <div className="replay-jump" role="group" aria-label={t("Đi tới nến")}>
@@ -1187,7 +1188,7 @@ export default function ReplayWorkspace({ workspace, query }) {
                 <div className="decision-readout">
                   <span>{t("Giá đóng hiện tại")}</span>
                   <strong>{formatPrice(currentBar?.close)}</strong>
-                  <small>{formatTimestamp(currentBar?.timestamp)} {t("UTC")}</small>
+                  <small>{formatTimestamp(currentBar?.timestamp)}</small>
                 </div>
                 {canOpenOrder
                   ? <a className="next-action-link" href={routeHref('trade', { surface: 'workspace', intent: 'order' })}>{t("Mở Trade draft / risk preview →")}</a>
@@ -1197,7 +1198,7 @@ export default function ReplayWorkspace({ workspace, query }) {
                   {annotationDraft?.status === 'ready' && (
                     <>
                       <strong>{annotationDraft.draft.annotation_type === 'horizontal-line' ? t("Draft horizontal line đã chọn") : t("{count} đã chọn", { count: DRAWING_LABELS[annotationDraft.draft.annotation_type] })}</strong>
-                      <span>#{(replay.visible_row_start || 0) + visibleRows.findIndex((item) => Number(item.timestamp) === Number(annotationDraft.draft.anchors[0].timestamp))} · {formatTimestamp(annotationDraft.draft.anchors[0].timestamp)} {t("UTC · giá")} {formatPrice(annotationDraft.draft.anchors[0].price)}</span>
+                      <span>#{(replay.visible_row_start || 0) + visibleRows.findIndex((item) => Number(item.timestamp) === Number(annotationDraft.draft.anchors[0].timestamp))} · {formatTimestamp(annotationDraft.draft.anchors[0].timestamp)} {t("· giá")} {formatPrice(annotationDraft.draft.anchors[0].price)}</span>
                     </>
                   )}
                   {annotationDraft?.status !== 'ready' && annotationDraft?.message && <span>{annotationDraft.message}</span>}
@@ -1220,7 +1221,7 @@ export default function ReplayWorkspace({ workspace, query }) {
               </>}
               {['context', 'goto'].includes(sidePanel) && <>
               <form className="replay-date-jump" onSubmit={(event) => { event.preventDefault(); goToDate() }}>
-                <label>{t("Đi tới thời điểm UTC đã mở")}<ProjectDateInput type="datetime-local" aria-label={t("Thời điểm replay UTC")} value={goToDateDraft} onChange={(event) => setGoToDateDraft(event.target.value)} /></label>
+                <label>{t("Đi tới thời điểm đã mở")}<InstantDateInput aria-label={t("Thời điểm replay")} value={goToDateDraft} onChange={(event) => setGoToDateDraft(event.target.value)} /></label>
                 <button type="submit" disabled={propMode || !goToDateDraft || Boolean(pendingAction) || state.status !== 'ready'}>{t("Mở cutoff theo thời điểm")}</button>
               </form>
               </>}
@@ -1292,7 +1293,7 @@ export default function ReplayWorkspace({ workspace, query }) {
             {orderModalOpen && <LegacyOrderDialog order={order} blockedReason={orderBlockedReason} theme={theme} chartDocument={nativeHeaderSlots?.market?.ownerDocument} onClose={closeSide} onJournal={() => openPanel('journal')} />}
             {advancedChart && goToPopup && <LegacyPopover anchor={goToPopup} theme={theme} label={t('Go To')} onClose={() => setGoToPopup(null)}>
               {!goToCustom ? <>{[['Đầu ngày kế tiếp','Y'],['Tin tức kế tiếp','W'],['Phiên kế tiếp','Z'],['Giá','']].map(([label,key]) => <button type="button" key={label} disabled data-tooltip={t('Chưa có điều hướng này cho dataset')}><span>{t(label)}</span>{key && <kbd>{key}</kbd>}</button>)}<hr /><button type="button" onClick={() => setGoToCustom(true)}>{t('Tùy chỉnh')}</button><p className="legacy-menu-note">{t('Chỉ điều hướng trong dữ liệu đã mở.')}</p></> : <>
-                <h3>{t('Tùy chỉnh')}</h3><form onSubmit={event => { event.preventDefault(); jumpToCursor(); setGoToPopup(null) }}><label>{t('Nến đã mở')}<input type="number" aria-label={t('Số nến cutoff')} min="0" max={canonicalCursor} step="1" value={jumpDraft} onChange={event => setJumpDraft(event.target.value)} /></label><button type="submit" disabled={conflict || Boolean(pendingAction) || state.status!=='ready' || !Number.isInteger(Number(jumpDraft)) || Number(jumpDraft)<0 || Number(jumpDraft)>canonicalCursor || Number(jumpDraft)===cursor}>{t('Mở cutoff này')}</button></form><form onSubmit={event => { event.preventDefault(); goToDate() }}><label>{t('Đi tới thời điểm UTC đã mở')}<ProjectDateInput type="datetime-local" value={goToDateDraft} onChange={event => setGoToDateDraft(event.target.value)} /></label><button type="submit" disabled={!goToDateDraft || Boolean(pendingAction)}>{t('Mở cutoff theo thời điểm')}</button></form>
+                <h3>{t('Tùy chỉnh')}</h3><form onSubmit={event => { event.preventDefault(); jumpToCursor(); setGoToPopup(null) }}><label>{t('Nến đã mở')}<input type="number" aria-label={t('Số nến cutoff')} min="0" max={canonicalCursor} step="1" value={jumpDraft} onChange={event => setJumpDraft(event.target.value)} /></label><button type="submit" disabled={conflict || Boolean(pendingAction) || state.status!=='ready' || !Number.isInteger(Number(jumpDraft)) || Number(jumpDraft)<0 || Number(jumpDraft)>canonicalCursor || Number(jumpDraft)===cursor}>{t('Mở cutoff này')}</button></form><form onSubmit={event => { event.preventDefault(); goToDate() }}><label>{t('Đi tới thời điểm đã mở')}<ProjectDateInput type="datetime-local" value={goToDateDraft} onChange={event => setGoToDateDraft(event.target.value)} /></label><button type="submit" disabled={!goToDateDraft || Boolean(pendingAction)}>{t('Mở cutoff theo thời điểm')}</button></form>
               </>}
             </LegacyPopover>}
           </section>

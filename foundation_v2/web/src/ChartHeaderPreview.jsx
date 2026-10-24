@@ -1,3 +1,4 @@
+import SearchInput from './SearchInput.jsx'
 import { useState } from 'react'
 import { useTestingLocale } from './testingLocale.jsx'
 
@@ -8,7 +9,7 @@ export default function ChartHeaderPreview({ tool, symbol, onOpenTool }) {
   return <section className="chart-header-preview" data-testid={`chart-preview-${tool}`}>
     {tool !== 'search' && <p className="chart-preview-status">{t('Giao diện mẫu · chưa kích hoạt chức năng')}</p>}
     {tool === 'compare' && <>
-      <label>{t('Tìm mã giao dịch')}<input type="search" placeholder={t('Nhập mã giao dịch')} /></label>
+      <label>{t('Tìm mã giao dịch')}<SearchInput type="search" placeholder={t('Nhập mã giao dịch')} /></label>
       <p>{t('Chart hiện tại')}: <strong>{symbol}</strong></p>
       <button type="button" disabled>{t('Thêm mã so sánh')}</button>
     </>}
@@ -31,7 +32,7 @@ export default function ChartHeaderPreview({ tool, symbol, onOpenTool }) {
       <button type="button" disabled>{t('Bật Scalper mode')}</button>
     </>}
     {tool === 'search' && <>
-      <label>{t('Tìm công cụ chart')}<input type="search" value={query} onChange={event => setQuery(event.target.value)} /></label>
+      <label>{t('Tìm công cụ chart')}<SearchInput type="search" value={query} onChange={event => setQuery(event.target.value)} /></label>
       {['New Layout', 'Editor', 'AI Mentor'].filter(label => label.toLowerCase().includes(query.toLowerCase())).map(label => <button key={label} type="button" onClick={() => onOpenTool(({ 'New Layout': 'layout', Editor: 'editor', 'AI Mentor': 'mentor' })[label])}>{label}</button>)}
     </>}
     {tool === 'editor' && <>

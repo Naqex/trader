@@ -1,4 +1,6 @@
-import { createContext, useCallback, useContext, useMemo } from 'react'
+import { createContext, useCallback, useContext, useMemo, useSyncExternalStore } from 'react'
+import { formatAmount } from './moneyFormat.js'
+import { getTimezone, subscribeTimezone } from './timezone.js'
 import copy from './testing-copy.json'
 import enums from './testing-enums.json'
 
@@ -34,9 +36,10 @@ export function translateTesting(text, language = 'vi', values = {}) {
 }
 
 export function useTestingLocale() {
+  const timezone = useSyncExternalStore(subscribeTimezone, getTimezone)
   const language = useContext(LocaleContext), locale = language === 'en' ? 'en-US' : 'vi-VN'
   const t = useCallback((text, values) => translateTesting(text, language, values), [language])
-  const fmt = useCallback((value, suffix = '', digits = 2) => value !== null && value !== undefined && value !== '' && typeof value !== 'boolean' && Number.isFinite(Number(value)) ? `${new Intl.NumberFormat(locale, { maximumFractionDigits: digits }).format(Number(value))}${suffix}` : '—', [locale])
+  const fmt = useCallback((value, suffix = '', digits = 2) => formatAmount(value, suffix, digits, locale), [locale])
   const statusLabel = useCallback((family, value) => enums[family]?.[value]?.[language] || value || '—', [language])
-  return useMemo(() => ({ language, locale, t, fmt, statusLabel }), [language, locale, t, fmt, statusLabel])
+  return useMemo(() => ({ language, locale, t, fmt, statusLabel, timezone }), [language, locale, t, fmt, statusLabel, timezone])
 }

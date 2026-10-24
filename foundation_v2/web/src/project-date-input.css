@@ -53,3 +53,5 @@
   :is(.fx-app,.wm-ui-portal) .project-date-input > .project-date-clear { top:-1px; bottom:-1px; right:44px; width:44px; }
   .project-date-input.is-clearable > input[type=text] { padding-right:92px; }
 }
+
+.instant-date-input{display:block;min-width:0}.instant-date-input .project-date-input{width:100%}

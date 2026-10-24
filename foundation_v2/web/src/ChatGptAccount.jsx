@@ -1,3 +1,4 @@
+import { displayTime } from './dateFormat.js'
 import { useEffect, useRef, useState } from 'react'
 import FxSelect from './FxSelect.jsx'
 
@@ -124,7 +125,7 @@ export default function ChatGptAccount({ workspace, language }) {
           onChange={value => act('selection', { model: selection.model, effort: value })} /></label>
       </div>
       <p className="settings-note">{t('Danh sách dựa trên khả năng ghi nhận khi đăng nhập. “Kiểm tra kết nối” gửi một câu thử ngắn tới model đã chọn.')}</p>
-      {account.test && <p className="chatgpt-test-result" role="status">{t('Đã nhận phản hồi')} · {account.models.find(item => item.id === account.test.model)?.name || account.test.model} · {t(effortNames[account.test.effort])} · {new Date(account.test.at).toLocaleTimeString(en ? 'en-US' : 'vi-VN')}</p>}
+      {account.test && <p className="chatgpt-test-result" role="status">{t('Đã nhận phản hồi')} · {account.models.find(item => item.id === account.test.model)?.name || account.test.model} · {t(effortNames[account.test.effort])} · {displayTime(account.test.at, { seconds: true })}</p>}
     </>}
     <div className="chatgpt-account-actions">
       {!loading && !active && <button type="button" className={`wm-button ${!account?.login_state_present ? 'is-primary' : ''}`} disabled={pending || denied}

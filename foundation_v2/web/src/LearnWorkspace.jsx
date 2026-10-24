@@ -1,3 +1,4 @@
+import SearchInput from './SearchInput.jsx'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { buildWorkspaceHref } from './workspaceContext.js'
 import './learnIntegration.css'
@@ -349,7 +350,7 @@ export default function LearnWorkspace({ workspace, query }) {
           </div>
           <label className="learn-search">
             <span>Tìm thuật ngữ</span>
-            <input
+            <SearchInput
               type="search"
               value={glossaryQuery}
               onChange={(event) => setGlossaryQuery(event.target.value)}

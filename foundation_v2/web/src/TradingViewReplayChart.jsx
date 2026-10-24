@@ -1,4 +1,4 @@
-import { displayDate, displayTime } from './dateFormat.js'
+import { chartTimezone } from './timezone.js'
 import { nativeChartPalette } from './nativeChartPalette.js'
 import { useTestingLocale } from './testingLocale.jsx'
 import { useEffect, useRef, useState } from 'react'
@@ -69,7 +69,7 @@ function loadLibrary() {
 }
 
 export default function TradingViewReplayChart(props) {
-  const { t, locale } = useTestingLocale()
+  const { t, locale, timezone } = useTestingLocale()
 
   const { workspace, sessionId, datasetId, datasetSha256, symbol, assetClass, seconds, tickSize, rows, cutoff, theme, drawings, levels, orderEditable, orderGeneration, viewportRequest, marketMode = 'replay' } = props
   const host = useRef(null), instance = useRef(null), liveAdapter = useRef(null), latest = useRef(props)
@@ -172,9 +172,8 @@ export default function TradingViewReplayChart(props) {
       if (seriesState) { seriesState.symbol = symbol; seriesState.interval = restoredInterval }
       widget = new window.TradingView.widget({
         container: host.current, library_path: '/charting_library/', datafeed: adapter.datafeed,
-        symbol, interval: restoredInterval, locale: locale.slice(0, 2), timezone: 'Etc/UTC', theme: theme === 'light' ? 'Light' : 'Dark', autosize: true,
+        symbol, interval: restoredInterval, locale: locale.slice(0, 2), timezone: chartTimezone(), theme: theme === 'light' ? 'Light' : 'Dark', autosize: true,
         ...(saved ? { saved_data: saved } : {}),
-        custom_formatters: { dateFormatter: { format: date => displayDate(date), formatLocal: date => displayDate(date, { timeZone: null }) }, timeFormatter: { format: date => displayTime(date, { seconds: true }), formatLocal: date => displayTime(date, { seconds: true, timeZone: null }) } },
         custom_css_url: '/chart-legacy.css', favorites: { intervals: adapter.supported, chartTypes: ['Candles'] },
         header_widget_buttons_mode: 'adaptive',
         auto_save_delay: 1,
@@ -189,6 +188,7 @@ export default function TradingViewReplayChart(props) {
         const frame = host.current?.querySelector('iframe')
         if (frame) { frame.title = marketMode === 'live' ? `MT5 · ${symbol}` : t('Biểu đồ replay {symbol}', { symbol }); if (frame.contentDocument) frame.contentDocument.title = `WMReplay · ${symbol}` }
         chart = widget.activeChart()
+        chart.getTimezoneApi().setTimezone(chartTimezone())
         layoutSave = createChartSave({
           snapshot: callback => widget.save(callback),
           persist: (at, layout) => writeChartSnapshot(localStorage, storageKey, at, layout),
@@ -425,6 +425,7 @@ export default function TradingViewReplayChart(props) {
     const item = instance.current
     if (marketMode === 'live' && item && item.adapter.supported.includes(props.preferredInterval) && item.chart.resolution() !== props.preferredInterval) item.chart.setResolution(props.preferredInterval)
   }, [props.preferredInterval, marketMode])
+  useEffect(() => { instance.current?.chart.getTimezoneApi().setTimezone(chartTimezone()) }, [timezone])
   useEffect(() => { instance.current?.refresh() }, [levels, orderEditable, props.orderCloseable, orderGeneration])
   useEffect(() => { if (closeTarget && closeTarget.generation !== orderGeneration && !closing) setCloseTarget(null) }, [orderGeneration, closeTarget, closing])
   useEffect(() => { instance.current?.importAnnotations() }, [drawings])

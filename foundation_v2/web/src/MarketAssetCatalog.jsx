@@ -1,3 +1,5 @@
+import { matchesSearch } from './searchText.js'
+import SearchInput from './SearchInput.jsx'
 import { scopedMutation } from './scopedMutation.js'
 import ProjectDateInput from './ProjectDateInput.jsx'
 import { formatDataSize } from './dataDisplay.js'
@@ -82,7 +84,7 @@ export default function MarketAssetCatalog({ workspace, query, showHeading = tru
   }
   const items = state.items || []
   const visible = items.filter(item => (all || item.enabled) && (group === 'all' || item.metadata?.group === group)
-    && `${item.symbol} ${item.metadata?.description || ''}`.toLowerCase().includes(search.toLowerCase()))
+    && matchesSearch(`${item.symbol} ${item.metadata?.description || ''}`, search))
   const groups = [...new Set(items.map(item => item.metadata?.group).filter(Boolean))].sort()
   const pages = Math.max(1, Math.ceil(visible.length / pageSize)), currentPage = Math.min(page, pages)
   const pageItems = visible.slice((currentPage - 1) * pageSize, currentPage * pageSize)
@@ -98,13 +100,13 @@ export default function MarketAssetCatalog({ workspace, query, showHeading = tru
     {state.status === 'denied' && <TestingReadState error message={t('Không có quyền đọc kho dữ liệu trong workspace này.')} />}
     {!catalogRead.denied && (error || catalogRead.error) && <TestingReadState error message={t(error || 'Không đọc được kho assets; trạng thái tải có thể đã cũ.')} onRetry={() => { setError(''); void catalogRead.refetch() }} />}
     <div className="market-sync-filters">
-      <label className="market-sync-search"><TestingIcon kind="search" /><input type="search" aria-label={t("Tìm asset")} placeholder={t("Tìm asset…")} value={search} onChange={event => setSearch(event.target.value)} /></label>
+      <label className="market-sync-search"><TestingIcon kind="search" /><SearchInput type="search" aria-label={t("Tìm asset")} placeholder={t("Tìm asset…")} value={search} onChange={event => setSearch(event.target.value)} /></label>
       <FxSelect label={t("Nhóm asset")} value={group} onChange={setGroup} options={[{ value: 'all', label: 'Tất cả nhóm' }, ...groups.map(value => ({ value, label: value, localize: false }))]} />
       <label>{t("Tải từ ngày")}<ProjectDateInput type="date" aria-label={t("Ngày bắt đầu tải lịch sử")} value={fromDate} onChange={event => setFromDate(event.target.value)} /></label>
       <label><input type="checkbox" checked={all} onChange={event => setAll(event.target.checked)} />{t("Hiện toàn bộ danh mục broker")}</label>
       <button type="button" className="fxr-button fxr-button-primary market-sync-update" onClick={() => update(null)} disabled={Boolean(preview) || pending || !items.length || Boolean(state.queued) || Boolean(state.running)}><TestingIcon kind="download" />{t("Cập nhật dữ liệu")}</button>
     </div>
-    {items.length > 0 && <div className="market-sync-table" tabIndex={0} role="region" aria-label={t("Danh mục lịch sử broker")}><table><thead><tr><th>{t("Asset / sản phẩm")}</th><th>{t("Nguồn")}</th><th>{t("Lịch sử UTC")}</th><th>{t("Trạng thái")}</th><th><span className="sr-only">{t("Thao tác")}</span></th></tr></thead><tbody>{pageItems.map(item => <tr key={item.symbol}>
+    {items.length > 0 && <div className="market-sync-table" tabIndex={0} role="region" aria-label={t("Danh mục lịch sử broker")}><table><thead><tr><th>{t("Asset / sản phẩm")}</th><th>{t("Nguồn")}</th><th>{t("Lịch sử")}</th><th>{t("Trạng thái")}</th><th><span className="sr-only">{t("Thao tác")}</span></th></tr></thead><tbody>{pageItems.map(item => <tr key={item.symbol}>
       <td><strong>{item.symbol}</strong><small>{item.metadata?.group || '—'}</small></td><td>{state.source}</td>
       <td>{item.dataset_id ? <>{formatUtc(item.first_timestamp)}<small>{t('đến {date} · {count} nến', { date: formatUtc(item.last_timestamp), count: fmt(item.row_count, '', 0) })}</small></> : t("Chưa có dữ liệu")}{item.ticks && <small>{t("Tick Bid/Ask:")} {fmt(item.ticks.row_count, '', 0)} · {formatDataSize(item.ticks.bytes,fmt)} {t("nén ·")} {item.ticks.unavailable_days} {t("ngày broker trả rỗng")}</small>}</td>
       <td><span className={`market-sync-status is-${item.status}`}>{statusLabel('market_asset', item.status)}</span>{item.dataset_id && <small>{item.quality === 'review' ? t("Có khoảng gián đoạn cần kiểm tra") : t("Kiểm tra cơ bản; phí lịch sử chưa xác minh")}</small>}{item.error && <small>{item.error}</small>}</td>

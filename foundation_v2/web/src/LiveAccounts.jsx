@@ -1,3 +1,5 @@
+import { matchesSearch } from './searchText.js'
+import SearchInput from './SearchInput.jsx'
 import { lazy, Suspense, useEffect, useId, useMemo, useRef, useState } from 'react'
 import FxSelect from './FxSelect.jsx'
 import TestingIcon from './TestingIcon.jsx'
@@ -64,7 +66,7 @@ export default function LiveAccounts({ workspace, accounts, records, broker, cho
     } finally {onRefresh();setBusy('');actionLock.current=false}
   }
   const money = (value,currency) => typeof value === 'number' && Number.isFinite(value) ? `${value < 0 ? '−' : ''}${formatProtectionMoney(value,currency,locale)}` : '—'
-  const filtered = rows.filter(row => (!sources.length || sources.includes(row.record ? 'manual' : 'sync')) && row.name.toLocaleLowerCase(locale).includes(search.toLocaleLowerCase(locale))).sort((a,b) => {
+  const filtered = rows.filter(row => (!sources.length || sources.includes(row.record ? 'manual' : 'sync')) && matchesSearch(row.name, search)).sort((a,b) => {
     const value = row => sort.key === 'balance' ? row.snapshot.account.balance : sort.key === 'updated' ? Date.parse(row.updated) : row.name
     const left = value(a), right = value(b)
     if (left == null || Number.isNaN(left)) return 1
@@ -91,13 +93,13 @@ export default function LiveAccounts({ workspace, accounts, records, broker, cho
       {connectionError&&<p role="alert" className="live-connection-error">{t(connectionError)}</p>}
       {transactions ? <>
         <div className="live-transaction-tabs" role="group" aria-label={t("Loại dòng tiền")}>{[['all','Tất cả'],['withdrawal','Rút tiền'],['deposit','Nạp tiền'],['fee','Phí']].map(([value,label]) => <button key={value} type="button" className="fxa-button" aria-pressed={tab === value} onClick={() => {setTab(value);setPage(1)}}>{t(label)}</button>)}</div>
-        <div className="live-table-scroll" role="region" tabIndex={0} aria-label={t("Dòng tiền tài khoản")}><table><thead><tr><th>{t("Loại giao dịch")}</th>{[['amount','Số tiền'],['time','Thời gian (UTC)']].map(([key,label])=><th key={key} aria-sort={transactionSort.key===key ? transactionSort.ascending?'ascending':'descending' : 'none'}><button type="button" className="wm-table-sort" onClick={()=>{setTransactionSort(current=>({key,ascending:current.key===key?!current.ascending:true}));setPage(1)}}>{t(label)} ↕</button></th>)}</tr></thead><tbody>{entries.slice((current-1)*size,current*size).map(item => <tr key={item.id}><td><span className="live-source-badge" data-tooltip={item.kind==='opening' && !selected?.record?t('Số dư ghi nhận khi đồng bộ thành công lần đầu; không phải vốn gốc tại broker.'):undefined}>{t(item.label)}</span></td><td>{money(item.amount,item.currency || selected?.snapshot.account.currency)}</td><td>{Number.isFinite(item.time) ? displayDate(new Date(item.time),{timeStyle:'short'}) : '—'}</td></tr>)}</tbody></table></div>
+        <div className="live-table-scroll" role="region" tabIndex={0} aria-label={t("Dòng tiền tài khoản")}><table><thead><tr><th>{t("Loại giao dịch")}</th>{[['amount','Số tiền'],['time','Thời gian']].map(([key,label])=><th key={key} aria-sort={transactionSort.key===key ? transactionSort.ascending?'ascending':'descending' : 'none'}><button type="button" className="wm-table-sort" onClick={()=>{setTransactionSort(current=>({key,ascending:current.key===key?!current.ascending:true}));setPage(1)}}>{t(label)} ↕</button></th>)}</tr></thead><tbody>{entries.slice((current-1)*size,current*size).map(item => <tr key={item.id}><td><span className="live-source-badge" data-tooltip={item.kind==='opening' && !selected?.record?t('Số dư ghi nhận khi đồng bộ thành công lần đầu; không phải vốn gốc tại broker.'):undefined}>{t(item.label)}</span></td><td>{money(item.amount,item.currency || selected?.snapshot.account.currency)}</td><td>{Number.isFinite(item.time) ? displayDate(new Date(item.time),{timeStyle:'short'}) : '—'}</td></tr>)}</tbody></table></div>
         {!entries.length && <div className="live-empty"><h2>{t(!selected ? 'Chọn tài khoản' : allTransactions === null ? 'Chưa có dữ liệu dòng tiền' : 'Chưa có giao dịch trong nhóm này')}</h2>{selected?.record && <p>{t("Tài khoản thủ công hiện chưa hỗ trợ ghi nhận nạp, rút và phí tài khoản.")}</p>}</div>}
       </> : <>
         <div className="live-accounts-toolbar">
           <div className={`live-account-search${searchOpen?' is-open':''}`} onKeyDown={event=>{if(event.key==='Escape'){event.preventDefault();closeSearch()}}}>
             <button ref={searchTrigger} type="button" className="live-search-trigger" aria-label={t('Tìm tài khoản')} aria-expanded={searchOpen} aria-controls={searchOpen?searchId:undefined} data-tooltip={searchOpen?undefined:t('Tìm tài khoản')} onClick={()=>searchOpen?searchInput.current?.focus():setSearchOpen(true)}><TestingIcon kind="search" size={16}/></button>
-            {searchOpen&&<><input ref={searchInput} id={searchId} type="search" placeholder={t('Tìm tài khoản…')} aria-label={t('Tìm tài khoản')} value={search} onChange={event=>{setSearch(event.target.value);setPage(1)}}/><button type="button" className="live-search-close" aria-label={t('Đóng tìm kiếm')} data-tooltip={t('Đóng tìm kiếm')} onClick={closeSearch}><TestingIcon kind="close" size={16}/></button></>}
+            {searchOpen&&<><SearchInput ref={searchInput} id={searchId} type="search" placeholder={t('Tìm tài khoản…')} aria-label={t('Tìm tài khoản')} value={search} onChange={event=>{setSearch(event.target.value);setPage(1)}}/><button type="button" className="live-search-close" aria-label={t('Đóng tìm kiếm')} data-tooltip={t('Đóng tìm kiếm')} onClick={closeSearch}><TestingIcon kind="close" size={16}/></button></>}
           </div>
           <FxSelect className={`live-source-filter${sources.length?' has-selection':''}`} label="Lọc tài khoản" icon="filter" iconOnly multiple showSelectAll={false} menuTitle="Filter by" value={sources} onChange={value=>{setSources(value);setPage(1)}} options={[{value:'manual',label:'Thủ công'},{value:'sync',label:'Đồng bộ'}]}/>
         </div>

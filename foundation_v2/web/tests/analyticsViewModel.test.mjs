@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { analyticsQuery, analyticsViewResult, buildAnalyticsModel, dateFromValue, readAnalyticsFilters } from '../src/analyticsViewModel.js'
 import { advancedAnalytics } from '../src/tradingAnalyticsModel.js'
+import { setTimezone } from '../src/timezone.js'
 
 test('model preserves unknown values, original financial metrics and immutable ledger', () => {
   const source = { metrics: { starting_balance: 1000, profit_factor_after_cost: 2, expectancy_net_per_trade: 1 }, ledger: [{ trade_id: 'loss', net_pnl: -2, open_time_utc: '2026-10-01T01:00:00Z', close_time_utc: '2026-10-01T01:01:00Z' }, { trade_id: 'win', net_pnl: 4 }] }
@@ -29,7 +30,31 @@ test('read projection retains scope, partial and cutoff provenance without React
   assert.equal(result.dataset_sha256, 'hash')
   assert.equal(result.observed_range.start_utc, '2026-10-01T00:00:00Z')
   const filters = readAnalyticsFilters(new URLSearchParams({ side: 'SELL', from: '2026-10-01', to: '2026-10-17' }))
-  assert.deepEqual(Object.fromEntries(analyticsQuery(filters)), { side: 'sell', from_close_utc: '2026-10-01T00:00:00.000Z', to_close_utc: '2026-10-17T23:59:59.999Z' })
+  assert.deepEqual(Object.fromEntries(analyticsQuery(filters)), { timezone: 'UTC', side: 'sell', from_close_utc: '2026-10-01T00:00:00.000Z', to_close_utc: '2026-10-17T23:59:59.999Z' })
+})
+
+test('Settings zone updates existing report projection and civil date request boundaries', () => {
+  const source = { ledger: [{ trade_id: 'close', net_pnl: 2, close_time_utc: '2026-10-01T23:30:00Z', entry_type: null }] }
+  const query = new URLSearchParams('from_close_utc=2026-10-01T23%3A30%3A00Z&to_close_utc=2026-10-02T01%3A00%3A00Z')
+  try {
+    setTimezone('Asia/Ho_Chi_Minh')
+    assert.equal(buildAnalyticsModel(source).ledger[0].closeDate, '02/10/2026 06:30:00')
+    assert.equal(buildAnalyticsModel(source).ledger[0].entry_type, null)
+    assert.deepEqual(readAnalyticsFilters(query), { side: 'all', outcome: 'all', from: '2026-10-02', to: '2026-10-02' })
+    assert.deepEqual(Object.fromEntries(analyticsQuery({ from: '2026-10-02', to: '2026-10-02' })), {
+      timezone: 'Asia/Ho_Chi_Minh', from_close_utc: '2026-10-01T17:00:00.000Z', to_close_utc: '2026-10-02T16:59:59.999Z',
+    })
+    setTimezone('America/New_York')
+    assert.equal(buildAnalyticsModel(source).ledger[0].closeDate, '01/10/2026 19:30:00')
+    assert.equal(readAnalyticsFilters(query).from, '2026-10-01')
+    assert.equal(readAnalyticsFilters(new URLSearchParams('from=2026-10-02')).from, '2026-10-02')
+    const spring = analyticsQuery({ from: '2026-03-08', to: '2026-03-08' })
+    assert.equal(spring.get('from_close_utc'), '2026-03-08T05:00:00.000Z')
+    assert.equal(spring.get('to_close_utc'), '2026-03-09T03:59:59.999Z')
+    const autumn = analyticsQuery({ from: '2026-11-01', to: '2026-11-01' })
+    assert.equal(autumn.get('from_close_utc'), '2026-11-01T04:00:00.000Z')
+    assert.equal(autumn.get('to_close_utc'), '2026-11-02T04:59:59.999Z')
+  } finally { setTimezone('UTC') }
 })
 
 test('rounding residue uses the same breakeven tolerance in ledger, summary and report', () => {

@@ -1,3 +1,5 @@
+import { dayBoundary } from './timezone.js'
+
 export const LIVE_FILTERS = Object.freeze({ asset: 'all', side: 'all', outcome: 'all', account: 'all', day: 'all', timezone: 'UTC', from: '', to: '' })
 
 export function dealNet(deal) {
@@ -32,19 +34,30 @@ export function summarizeDeals(deals, available = true) {
 export function calendarWeeks(month, payload, deals, filters = LIVE_FILTERS) {
   const first = new Date(`${month}-01T00:00:00Z`), days = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate()
   const offset = (first.getUTCDay() + 6) % 7
-  const history = Date.parse(payload?.history_from_utc), cutoff = Date.parse(payload?.captured_at_utc)
-  const firstCovered = dayKey(history, filters.timezone), lastCovered = dayKey(cutoff, filters.timezone)
+  const available = Boolean(payload?.account && Array.isArray(payload.deals))
+  const coverage = (payload?.coverage?.length ? payload.coverage : [payload]).map(source => ({ history: Date.parse(source?.history_from_utc), cutoff: Date.parse(source?.captured_at_utc) }))
+  const boundaries = new Map()
+  const boundary = key => {
+    if (!boundaries.has(key)) boundaries.set(key, dayBoundary(key, filters.timezone))
+    return boundaries.get(key)
+  }
   const buckets = new Map()
   deals.forEach(deal => { const key = dayKey(deal.time_msc, filters.timezone); if (key) buckets.set(key, [...(buckets.get(key) || []), deal]) })
   return Array.from({ length: Math.ceil((offset + days) / 7) }, (_, week) => Array.from({ length: 7 }, (_, weekday) => {
     const date = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), week * 7 + weekday - offset + 1)), key = date.toISOString().slice(0, 10)
     const inMonth = key.startsWith(month), rows = buckets.get(key) || []
-    // Edge days may be partial; no rows there cannot prove zero PnL.
-    const covered = Boolean(payload?.account && Array.isArray(payload.deals) && Number.isFinite(history) && Number.isFinite(cutoff) && history < cutoff && key > firstCovered && key < lastCovered
-      && (filters.account === 'all' || filters.account === payload.account.account_ref)
+    const eligible = Boolean(inMonth && (filters.account === 'all' || filters.account === payload?.account?.account_ref)
       && (!filters.from || key >= filters.from) && (!filters.to || key <= filters.to)
       && (filters.day === 'all' || date.getUTCDay() === Number(filters.day)))
-    return { key, date, inMonth, covered, ...summarizeDeals(rows, inMonth && (covered || rows.length > 0)) }
+    // A zero is proven only for an entire local day, including DST boundaries.
+    const coveredAccounts = available && eligible ? coverage.filter(({ history, cutoff }) => {
+      if (!Number.isFinite(history) || !Number.isFinite(cutoff) || history >= cutoff) return false
+      const start = boundary(key), end = boundary(new Date(date.getTime() + 86400000).toISOString().slice(0, 10))
+      return history <= start && cutoff >= end && start < end
+    }).length : 0
+    const covered = eligible && coveredAccounts === coverage.length && coveredAccounts > 0
+    const summary = summarizeDeals(rows, eligible && (covered || rows.length > 0))
+    return { key, date, inMonth, eligible, covered, partial: eligible && (!covered || summary.net === null), ...summary }
   }))
 }
 
@@ -60,10 +73,12 @@ export function cumulativeDealSeries(deals) {
 
 export function calendarWeekSummary(week, empty = false) {
   // Zero is the empty calendar scaffold, not a substitute for missing account data.
-  if (empty) return { count: 0, net: 0 }
-  const days = week.filter(day => day.inMonth)
+  if (empty) return { count: 0, net: 0, partial: false }
+  const days = week.filter(day => day.eligible ?? day.inMonth)
+  const known = days.filter(day => day.count !== null)
   return {
-    count: days.every(day => day.count !== null) ? days.reduce((sum, day) => sum + day.count, 0) : null,
-    net: days.every(day => day.net !== null) ? days.reduce((sum, day) => sum + day.net, 0) : null,
+    count: known.length ? known.reduce((sum, day) => sum + day.count, 0) : null,
+    net: known.length && known.every(day => day.net !== null) ? known.reduce((sum, day) => sum + day.net, 0) : null,
+    partial: days.some(day => day.partial || day.count === null || day.net === null),
   }
 }

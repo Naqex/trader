@@ -36,18 +36,41 @@ test('unknown costs stop cumulative totals instead of bridging a misleading curv
 test('calendar scaffold shows zero while missing account coverage remains unknown', () => {
  const empty = calendarWeeks('2026-10', null, [])
  assert.ok(empty.every(week => {
-  assert.deepEqual(calendarWeekSummary(week, true), {count:0,net:0})
+  assert.deepEqual(calendarWeekSummary(week, true), {count:0,net:0,partial:false})
   return week.every(day => day.net === null)
  }))
  // A selected MT5 connection may have no snapshot yet; it is not the empty scaffold.
- assert.deepEqual(calendarWeekSummary(empty[0], false), {count:null,net:null})
+ assert.deepEqual(calendarWeekSummary(empty[0], false), {count:null,net:null,partial:true})
  const complete = {...payload,history_from_utc:'2026-09-30T00:00:00Z',captured_at_utc:'2026-11-01T00:00:00Z'}
  const weeks = calendarWeeks('2026-10', complete, filterLiveDeals(complete))
- assert.deepEqual(calendarWeekSummary(weeks[0]),{count:1,net:95})
- assert.deepEqual(calendarWeekSummary(weeks[2]),{count:0,net:0})
- assert.deepEqual(calendarWeekSummary(calendarWeeks('2026-10',payload,filterLiveDeals(payload))[1]),{count:null,net:null})
+ assert.deepEqual(calendarWeekSummary(weeks[0]),{count:1,net:95,partial:false})
+ assert.deepEqual(calendarWeekSummary(weeks[2]),{count:0,net:0,partial:false})
+ assert.deepEqual(calendarWeekSummary(calendarWeeks('2026-10',payload,filterLiveDeals(payload))[1]),{count:1,net:-52,partial:true})
  const missingCost = {...complete,deals:[makeDeal('unknown','2026-10-04T12:00:00Z',100,{fee:null})]}
- assert.deepEqual(calendarWeekSummary(calendarWeeks('2026-10',missingCost,filterLiveDeals(missingCost))[0]),{count:1,net:null})
+ assert.deepEqual(calendarWeekSummary(calendarWeeks('2026-10',missingCost,filterLiveDeals(missingCost))[0]),{count:1,net:null,partial:true})
+})
+
+test('weekly totals exclude dates and weekdays outside the selected filter', () => {
+ const complete = {...payload,history_from_utc:'2026-09-01T00:00:00Z',captured_at_utc:'2026-11-01T00:00:00Z'}
+ const filters = {...LIVE_FILTERS,day:'1',from:'2026-10-05',to:'2026-10-05'}
+ const weeks = calendarWeeks('2026-10', complete, filterLiveDeals(complete,filters),filters)
+ assert.deepEqual(calendarWeekSummary(weeks[1]),{count:1,net:-52,partial:false})
+ assert.equal(weeks[1].filter(day=>day.eligible).length,1)
+ assert.deepEqual(calendarWeekSummary(weeks[0]),{count:null,net:null,partial:false})
+})
+
+test('full local-day coverage uses the selected zone and DST day length', () => {
+ const filters={...LIVE_FILTERS,timezone:'America/New_York'}
+ for(const [month,key,start,end] of [
+  ['2026-03','2026-03-08','2026-03-08T05:00:00Z','2026-03-09T04:00:00Z'],
+  ['2026-11','2026-11-01','2026-11-01T04:00:00Z','2026-11-02T05:00:00Z'],
+ ]) {
+  const source={account:payload.account,deals:[],history_from_utc:start,captured_at_utc:end}
+  const cell=calendarWeeks(month,source,[],filters).flat().find(day=>day.key===key)
+  assert.equal(cell.covered,true);assert.equal(cell.net,0);assert.equal(cell.partial,false)
+  const incomplete={...source,captured_at_utc:new Date(Date.parse(end)-1).toISOString()}
+  assert.equal(calendarWeeks(month,incomplete,[],filters).flat().find(day=>day.key===key).net,null)
+ }
 })
 
 test('outcome filters use the same break-even tolerance as closed-trade statistics', () => {

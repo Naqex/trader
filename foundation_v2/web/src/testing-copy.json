@@ -660,10 +660,7 @@
     "vi": "Hướng dẫn",
     "en": "Tutorials"
   },
-  "Journal": {
-    "vi": "Nhật ký",
-    "en": "Journal"
-  },
+  "Journal": {"vi": "Journal", "en": "Journal"},
   "Performance": {
     "vi": "Hiệu suất",
     "en": "Performance"
@@ -3506,10 +3503,7 @@
     "vi": "{wins} thắng · {losses} thua · {breakeven} hòa",
     "en": "Wins: {wins} · Losses: {losses} · Breakeven: {breakeven}"
   },
-  "Remaining {count} days": {
-    "vi": "Còn {count} ngày",
-    "en": "{count} days remaining"
-  },
+  "Remaining {count} days": {"vi": "Còn lại: {count} ngày", "en": "Remaining: {count} days"},
   "{count} days": {
     "vi": "{count} ngày",
     "en": "{count} days"
@@ -6745,5 +6739,34 @@
   "MT5 báo chưa có giá để xử lý yêu cầu.": {"vi": "MT5 báo chưa có giá để xử lý yêu cầu.", "en": "MT5 reports that no quotes are available to process the request."},
   "MT5 chỉ cho phép mở vị thế mua với mã này.": {"vi": "MT5 chỉ cho phép mở vị thế mua với mã này.", "en": "MT5 only allows opening long positions for this symbol."},
   "MT5 chỉ cho phép mở vị thế bán với mã này.": {"vi": "MT5 chỉ cho phép mở vị thế bán với mã này.", "en": "MT5 only allows opening short positions for this symbol."},
-  "MT5 chỉ cho phép đóng vị thế với mã này.": {"vi": "MT5 chỉ cho phép đóng vị thế với mã này.", "en": "MT5 only allows closing positions for this symbol."}
+  "MT5 chỉ cho phép đóng vị thế với mã này.": {"vi": "MT5 chỉ cho phép đóng vị thế với mã này.", "en": "MT5 only allows closing positions for this symbol."},
+  "Lãi/Lỗ TB": {"vi": "Lãi/Lỗ TB", "en": "Avg. win/loss"},
+  "Lãi/Lỗ tháng": {"vi": "Lãi/Lỗ tháng", "en": "Monthly P/L"},
+  "Lãi/Lỗ tuần": {"vi": "Lãi/Lỗ tuần", "en": "Weekly P/L"},
+  "Lãi/Lỗ ngày": {"vi": "Lãi/Lỗ ngày", "en": "Daily P/L"},
+  "Số dư": {"vi": "Số dư", "en": "Balance"},
+  "WMReplay": {"vi": "WMReplay", "en": "WMReplay"},
+  "Múi giờ": {"vi": "Múi giờ", "en": "Timezone"},
+  "Thời gian luyện tập theo tháng": {"vi": "Thời gian luyện tập theo tháng", "en": "Time invested by month"},
+  "Một phần": {"vi": "Một phần", "en": "Partial"},
+  "Chỉ cộng phần dữ liệu đã ghi nhận; chưa đủ dữ liệu cho toàn bộ phạm vi.": {"vi": "Chỉ cộng phần dữ liệu đã ghi nhận; chưa đủ dữ liệu cho toàn bộ phạm vi.", "en": "Only recorded data is included; coverage is incomplete for this selection."},
+  "Tuần T2–CN chứa {date}": {"vi": "Tuần T2–CN chứa {date}", "en": "Monday–Sunday containing {date}"},
+  "Lưu thay đổi": {"vi": "Lưu thay đổi", "en": "Save changes"},
+  "Đã lưu thay đổi.": {"vi": "Đã lưu thay đổi.", "en": "Changes saved."},
+  "Giờ này không tồn tại hoặc bị trùng do DST. Chọn UTC trong Settings để nhập chính xác.": {"vi": "Giờ này không tồn tại hoặc bị trùng do DST. Chọn UTC trong Settings để nhập chính xác.", "en": "This time is missing or ambiguous due to DST. Select UTC in Settings to enter an exact time."},
+  "Dữ liệu của bản sao": {"vi": "Dữ liệu của bản sao", "en": "Copy data"},
+  "Không có giao dịch": {"vi": "Không có giao dịch", "en": "Without trades"},
+  "Giữ dữ liệu giao dịch": {"vi": "Giữ dữ liệu giao dịch", "en": "Keep trading data"},
+  "Tạo phiên Backtest độc lập từ cấu hình này.": {"vi": "Tạo phiên Backtest độc lập từ cấu hình này.", "en": "Create an independent Backtest from this setup."},
+  "Bắt đầu lại từ đầu với cùng cấu hình phiên.": {"vi": "Bắt đầu lại từ đầu với cùng cấu hình phiên.", "en": "Start from the beginning with the same session setup."},
+  "Chưa hỗ trợ sao chép lịch sử Prop Firm.": {"vi": "Chưa hỗ trợ sao chép lịch sử Prop Firm.", "en": "Copying Prop Firm history is not supported yet."},
+  "Giữ lịch sử và trạng thái tại vị trí replay hiện tại.": {"vi": "Giữ lịch sử và trạng thái tại vị trí replay hiện tại.", "en": "Keep history and state at the current replay position."},
+  "Ngày vốn ban đầu": {"vi": "Ngày vốn ban đầu", "en": "Initial capital date"},
+  "Thời gian mở": {"vi": "Thời gian mở", "en": "Open time"},
+  "Thời gian đóng": {"vi": "Thời gian đóng", "en": "Close time"},
+  "Từ ngày": {"vi": "Từ ngày", "en": "From date"},
+  "Đến ngày": {"vi": "Đến ngày", "en": "To date"},
+  "Replay position": {"vi": "Replay position", "en": "Replay position"},
+  "Lịch sử": {"vi": "Lịch sử", "en": "History"},
+  "· giá": {"vi": "· giá", "en": "· price"}
 }

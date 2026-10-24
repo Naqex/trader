@@ -1,3 +1,4 @@
+import { getTimezone } from './timezone.js'
 import LiveTradingOverview from './LiveTradingOverview.jsx'
 import ChartLoadingState from './ChartLoadingState.jsx'
 import { recentChartsKey, rememberLiveChart } from './liveRecentCharts.js'
@@ -274,7 +275,7 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
   const quoteUnit=quoteAge>=3600000?3600000:quoteAge>=60000?60000:1000
   const quoteNotice=blockReason==='demo_quote_stale'&&Number.isFinite(new Date(quoteTime).getTime())&&quoteTime>0 ? quoteAge < -1000
     ? t('Thời gian báo giá đi trước đồng hồ máy. Kiểm tra đồng bộ giờ Windows.')
-    : t('Ứng dụng chưa gửi lệnh vì báo giá cũ. Giá cuối: {time} · {count} {unit} trước.',{time:new Intl.DateTimeFormat(locale,{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',timeZoneName:'short'}).format(quoteTime),count:fmt(Math.floor(Math.max(0,quoteAge)/quoteUnit),'',0),unit:t(quoteUnit===3600000?'giờ':quoteUnit===60000?'phút':'giây')})
+    : t('Ứng dụng chưa gửi lệnh vì báo giá cũ. Giá cuối: {time} · {count} {unit} trước.',{time:new Intl.DateTimeFormat(locale,{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',timeZoneName:'short',timeZone:getTimezone()}).format(quoteTime),count:fmt(Math.floor(Math.max(0,quoteAge)/quoteUnit),'',0),unit:t(quoteUnit===3600000?'giờ':quoteUnit===60000?'phút':'giây')})
     : demoReason('demo_quote_stale')
   const reason = demoPreview ? 'Gửi lệnh không khả dụng trong chế độ xem thử.' : read.status==='loading' ? 'Đang đọc tài khoản MT5…' : resetSymbol ? demoReason('demo_symbol_denied') : read.status==='error' ? 'Mất kết nối dữ liệu giao dịch. Đang giữ ảnh chụp trước đó.' : !chartSurface && snapshot?.summary ? '' : !marketReady ? blockReason==='demo_quote_stale'?quoteNotice:demoReason(blockReason) : ''
   const quoteState = blockReason==='demo_quote_stale' ? !Number.isFinite(new Date(quoteTime).getTime()) || quoteTime<=0 ? 'invalid' : quoteAge<0 ? 'future' : 'past' : ''

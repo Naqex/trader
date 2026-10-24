@@ -85,7 +85,7 @@ test('catalog and mutations use workspace scope and exact revision/cursor withou
   const controller = new AbortController()
   assert.deepEqual(await fetchReplaySessions('tenant-a', controller.signal), [item])
   await updateSessionMetadata('tenant-a', item, { name: 'Phiên mới', description: 'Mô tả', archived: true })
-  await duplicateSession('tenant-a', item)
+  await duplicateSession('tenant-a', item, { history: 'keep' })
   assert.equal(calls.length, 3)
   assert.equal(calls[0].options.signal instanceof AbortSignal, true)
   for (const call of calls) assert.equal(call.options.headers['X-Workspace-Id'], 'tenant-a')

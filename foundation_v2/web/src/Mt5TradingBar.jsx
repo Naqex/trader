@@ -1,3 +1,4 @@
+import { getTimezone } from './timezone.js'
 import ChartTradingDock from './ChartTradingDock.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import { useMemo, useState } from 'react'
@@ -17,9 +18,9 @@ export default function Mt5TradingBar({ workspace, connectionId, scopeId, snapsh
     catch { return fmt(value, snapshot?.account?.currency ? ` ${snapshot.account.currency}` : '') }
   }
   const {floating,realized,from,to} = mt5AccountPnl(snapshot,history.isError?null:history.data,connectionId)
-  const date = value => new Intl.DateTimeFormat(locale,{day:'2-digit',month:'2-digit',year:'numeric'}).format(value)
+  const date = value => new Intl.DateTimeFormat(locale,{timeZone:getTimezone(),day:'2-digit',month:'2-digit',year:'numeric'}).format(value)
   const note = history.isFetching && !history.data ? t('Đang đọc lịch sử giao dịch…') : realized===null ? t('Chưa có lịch sử giao dịch hợp lệ để tính PnL đã chốt.')
-    : t('PnL giao dịch từ {from} đến {to}, gồm phí và swap; không gồm nạp/rút.',{from:date(from),to:new Intl.DateTimeFormat(locale,{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZoneName:'short'}).format(to)})
+    : t('PnL giao dịch từ {from} đến {to}, gồm phí và swap; không gồm nạp/rút.',{from:date(from),to:new Intl.DateTimeFormat(locale,{timeZone:getTimezone(),day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZoneName:'short'}).format(to)})
   return <ChartTradingDock key={`${workspace}:${scopeId}`} workspace={workspace} scopeId={`mt5:${scopeId}`} label="Giao dịch MT5" theme={theme}
     instrument={instrument} reference={snapshot?.quote?.ask} disabled={disabled} settingsDisabled={!instrument} onQuickTrade={onQuickTrade}
     quickLabel="Chuẩn bị lệnh MT5 theo khối lượng và preset đã chọn" analyticsHref={analyticsHref} openSignal={ledgerEvent?.sequence}

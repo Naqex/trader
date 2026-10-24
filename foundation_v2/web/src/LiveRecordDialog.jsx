@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import LegacyModal from './LegacyModal.jsx'
 import FxSelect from './FxSelect.jsx'
-import ProjectDateInput from './ProjectDateInput.jsx'
+import InstantDateInput from './InstantDateInput.jsx'
 import { saveLiveRecord } from './liveLedgerApi.js'
 import { parseTradesCsv } from './liveLedgerModel.js'
 import { downloadLiveCsv } from './liveCsvDownload.js'
@@ -9,12 +9,12 @@ import { useTestingLocale } from './testingLocale.jsx'
 import { accountDraftErrors } from './liveAccountModel.js'
 
 export default function LiveRecordDialog({ workspace, kind, accounts, connections = [], strategies, accountId, record, seed, onClose, onSaved }) {
-  const { t } = useTestingLocale()
+  const { t, timezone } = useTestingLocale()
   const initial = record?.payload || seed || {}
-  const [draft, setDraft] = useState({ name: '', currency: 'USD', opening_balance: '', account_type:'', opening_at_utc:new Date().toISOString().slice(0,16), account_id: accountId || (kind === 'note' ? '' : accounts[0]?.record_id) || '',
-    symbol: '', side: 'BUY', quantity: '1', opened_at_utc: new Date().toISOString().slice(0,16), closed_at_utc: new Date().toISOString().slice(0,16),
+  const [draft, setDraft] = useState({ name: '', currency: 'USD', opening_balance: '', account_type:'', opening_at_utc:new Date().toISOString(), account_id: accountId || (kind === 'note' ? '' : accounts[0]?.record_id) || '',
+    symbol: '', side: 'BUY', quantity: '1', opened_at_utc: new Date().toISOString(), closed_at_utc: new Date().toISOString(),
     entry_price: '', exit_price: '', gross_pnl: '', commission: '0', swap: '0', fee: '0', title: '', note: '',
-    ...initial, ...(kind === 'note' ? {account_id:initial.connection_id ? `broker:${initial.connection_id}` : initial.account_id || (record ? '' : accountId || '')} : {}), ...(record && kind === 'account' ? {account_type:initial.account_type || '',opening_at_utc:new Date(initial.opening_at_utc || record.created_at_utc).toISOString().slice(0,19)} : {}), ...(record && kind === 'trade' ? Object.fromEntries(['opened_at_utc','closed_at_utc'].map(key => [key,new Date(initial[key]).toISOString().slice(0,19)])) : {}), tags: (initial.tags || []).join(', '), strategy: initial.playbook_id ? `${initial.playbook_id}:${initial.playbook_revision}` : '' })
+    ...initial, ...(kind === 'note' ? {account_id:initial.connection_id ? `broker:${initial.connection_id}` : initial.account_id || (record ? '' : accountId || '')} : {}), ...(record && kind === 'account' ? {account_type:initial.account_type || '',opening_at_utc:new Date(initial.opening_at_utc || record.created_at_utc).toISOString()} : {}), ...(record && kind === 'trade' ? Object.fromEntries(['opened_at_utc','closed_at_utc'].map(key => [key,new Date(initial[key]).toISOString()])) : {}), tags: (initial.tags || []).join(', '), strategy: initial.playbook_id ? `${initial.playbook_id}:${initial.playbook_revision}` : '' })
   const [pending, setPending] = useState(false), [error, setError] = useState(''), [uncertain, setUncertain] = useState(false)
   const [importRows, setImportRows] = useState([]), [importDone, setImportDone] = useState(0)
   const lock = useRef(false)
@@ -69,13 +69,13 @@ export default function LiveRecordDialog({ workspace, kind, accounts, connection
         </div>
         <fieldset className="live-initial-balance"><legend>{t('Vốn ban đầu')}</legend><div className="live-record-grid">
           {accountField('opening_balance',`Số tiền (${draft.currency})`,{required:true,inputMode:'decimal',placeholder:'0.00'})}
-          <label>{t('Ngày vốn ban đầu (UTC)')}<ProjectDateInput type="datetime-local" utc required disabled={pending} value={draft.opening_at_utc.replace(/Z$/,'')} onChange={event=>change('opening_at_utc',event.target.value)}/>{hint('opening_at_utc')}</label>
+          <label>{`${t('Ngày vốn ban đầu')} · ${timezone}`}<InstantDateInput required disabled={pending} value={draft.opening_at_utc.replace(/Z$/,'')} onChange={event=>change('opening_at_utc',event.target.value)}/>{hint('opening_at_utc')}</label>
         </div></fieldset>
       </> : <>
         <div className="live-record-grid">{selectAccount}{<label>{t('Strategy')}<FxSelect label="Strategy" className="is-field" localizeOptions={false} disabled={pending || importDone > 0} value={draft.strategy} onChange={value => change('strategy',value)} options={[{ value:'',label:t('Không gắn chiến lược'),localize:false },...strategyOptions]} /></label>}</div>
         {kind === 'trade' && <>
           <div className="live-record-grid">{field('symbol','Sản phẩm',{required:true,maxLength:64})}<label>{t('Chiều lệnh')}<FxSelect label="Chiều lệnh" className="is-field" value={draft.side} onChange={value => change('side',value)} disabled={pending} options={[{value:'BUY',label:'Buy'},{value:'SELL',label:'Sell'}]} /></label>{field('quantity','Khối lượng',{required:true,inputMode:'decimal',pattern:'[0-9]+(\\.[0-9]{1,12})?'})}</div>
-          <div className="live-record-grid"><label>{t('Thời gian mở (UTC)')}<ProjectDateInput type="datetime-local" utc required disabled={pending} value={draft.opened_at_utc.replace(/Z$/,'')} onChange={event => change('opened_at_utc',event.target.value)} /></label><label>{t('Thời gian đóng (UTC)')}<ProjectDateInput type="datetime-local" utc required disabled={pending} value={draft.closed_at_utc.replace(/Z$/,'')} onChange={event => change('closed_at_utc',event.target.value)} /></label>{field('entry_price','Giá vào',{required:true,inputMode:'decimal'})}{field('exit_price','Giá đóng',{required:true,inputMode:'decimal'})}</div>
+          <div className="live-record-grid"><label>{`${t('Thời gian mở')} · ${timezone}`}<InstantDateInput required disabled={pending} value={draft.opened_at_utc.replace(/Z$/,'')} onChange={event => change('opened_at_utc',event.target.value)} /></label><label>{`${t('Thời gian đóng')} · ${timezone}`}<InstantDateInput required disabled={pending} value={draft.closed_at_utc.replace(/Z$/,'')} onChange={event => change('closed_at_utc',event.target.value)} /></label>{field('entry_price','Giá vào',{required:true,inputMode:'decimal'})}{field('exit_price','Giá đóng',{required:true,inputMode:'decimal'})}</div>
           <div className="live-record-grid">{field('gross_pnl','PnL gộp',{required:true,inputMode:'decimal'})}{field('commission','Hoa hồng',{required:true,inputMode:'decimal'})}{field('swap','Swap',{required:true,inputMode:'decimal'})}{field('fee','Phí khác',{required:true,inputMode:'decimal'})}</div>
           <p className="live-muted">{t('Số tiền theo đơn vị tài khoản. Phí thu ghi số âm; hoàn phí ghi số dương.')}</p>
         </>}

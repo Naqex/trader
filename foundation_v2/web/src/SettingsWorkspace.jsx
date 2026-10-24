@@ -1,3 +1,7 @@
+import { useTestingLocale } from './testingLocale.jsx'
+import { chartTimezones, setTimezone } from './timezone.js'
+import { timezoneOptions } from './AnalyticsFilterControls.jsx'
+import FxSelect from './FxSelect.jsx'
 import React, { useEffect, useRef, useState } from 'react'
 import { buildWorkspaceHref } from './workspaceContext.js'
 import { useFxReplayContext } from './FxReplayShell.jsx'
@@ -66,6 +70,9 @@ function StatusBadge({ status, children }) {
 }
 
 export default function SettingsWorkspace({ workspace = 'tenant-a', query }) {
+  const { t, timezone } = useTestingLocale()
+  const [timezoneDraft, setTimezoneDraft] = useState(timezone), [timezoneStatus, setTimezoneStatus] = useState('')
+  useEffect(() => { setTimezoneDraft(timezone) }, [timezone])
   const { appearance, applyAppearance } = useFxReplayContext()
   const [appearanceDraft, setAppearanceDraft] = useState(() => appearance || { theme: 'dark', language: 'vi' })
   const [appearanceStatus, setAppearanceStatus] = useState('')
@@ -168,6 +175,14 @@ export default function SettingsWorkspace({ workspace = 'tenant-a', query }) {
         <p className="settings-note" role="status" data-testid="settings-appearance-status">{appearanceStatus === 'saved' ? 'Đã lưu giao diện trên trình duyệt này.' : appearanceStatus === 'volatile' ? 'Đã áp dụng trong phiên này. Trình duyệt đang chặn lưu tùy chọn; bạn có thể thử lưu lại.' : appearanceDirty ? 'Có thay đổi chưa lưu.' : ''}</p>
       </section>}
 
+      <section className="settings-timezone" aria-label={t('Múi giờ')}>
+        <form onSubmit={event => { event.preventDefault(); setTimezoneStatus(setTimezone(timezoneDraft) ? 'saved' : 'volatile') }}>
+          <label className="settings-timezone-label">{t('Múi giờ')}</label>
+          <FxSelect label="Múi giờ" value={timezoneDraft} options={timezoneOptions.filter(option => chartTimezones.includes(option.value))} localizeOptions={false} searchable onChange={value => { setTimezoneDraft(value); setTimezoneStatus('') }} />
+          <button type="submit" className="wm-button" disabled={timezoneDraft === timezone}>{t('Lưu thay đổi')}</button>
+          <span role="status">{timezoneStatus === 'saved' ? t('Đã lưu thay đổi.') : timezoneStatus === 'volatile' ? t('Đã áp dụng trong phiên này. Trình duyệt đang chặn lưu tùy chọn; bạn có thể thử lưu lại.') : ''}</span>
+        </form>
+      </section>
       <a className="context-link settings-ai-link" href={buildWorkspaceHref('ai', workspace, query, { area: 'ai', section: 'connections', demo: null })}>{appearance?.language === 'en' ? 'AI connections' : 'Kết nối AI'} ↗</a>
 
       <section className="settings-context" aria-label="Ngữ cảnh hiện tại">

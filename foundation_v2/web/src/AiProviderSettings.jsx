@@ -1,3 +1,4 @@
+import { displayDate, displayTime } from './dateFormat.js'
 import { useEffect, useRef, useState } from 'react'
 import LegacyModal from './LegacyModal.jsx'
 import { useFxReplayContext } from './FxReplayShell.jsx'
@@ -147,7 +148,7 @@ export default function AiProviderSettings({ workspace, language }) {
     </div>
     {selected && <LegacyModal theme={appearance?.theme} label={selected.name} closeLabel={say('Đóng chi tiết kết nối', 'Close connection details')} onClose={() => setDetail(null)} className="ai-connection-drawer" overlayClassName="ai-connection-overlay">
       <div className="ai-connection-body">
-        <div className="ai-detail-status"><span className="ai-status" role="status">{status(detail, record)}</span>{record?.updatedAt && <small>{say('Cập nhật', 'Updated')} {record.updatedAt.toLocaleTimeString(en ? 'en-US' : 'vi-VN', { hour: '2-digit', minute: '2-digit' })}</small>}</div>
+        <div className="ai-detail-status"><span className="ai-status" role="status">{status(detail, record)}</span>{record?.updatedAt && <small>{say('Cập nhật', 'Updated')} {displayTime(record.updatedAt)}</small>}</div>
         {connectionError && <p className="ai-inline-error" role="alert">{aiErrorCopy(connectionError, en)}</p>}
         <div className="ai-connection-actions">{actions(detail, record)}</div>
         {detail === 'local-gateway' && value?.runtime?.management_available && !value.runtime.running && <p className="ai-detail-note">{say('Bật kết nối để mở trang quản trị.', 'Start the connection to open management.')}</p>}
@@ -157,7 +158,7 @@ export default function AiProviderSettings({ workspace, language }) {
           {value?.models?.length ? <ul className="ai-catalog-list">{value.models.map(model => <li key={model.id}><span>{model.name}</span>{model.efforts?.length > 0 && <small>{model.efforts.join(' · ')}</small>}</li>)}</ul> : <p className="ai-detail-note">{record?.loading ? say('Đang tải…', 'Loading…') : say('Chưa tải được danh sách model.', 'No model catalog loaded.')}</p>}
         </section>
         <section className="ai-detail-section"><h3>{say('Kiểm tra phản hồi', 'Response test')}</h3>
-          {value?.test ? <><p>{say('Đã nhận phản hồi', 'Response received')}</p><p className="ai-detail-note">{value.test.model} · {new Date(value.test.at).toLocaleString(en ? 'en-US' : 'vi-VN')}</p></> : <p className="ai-detail-note">{say('Chưa có kết quả kiểm tra.', 'No test result recorded.')}</p>}
+          {value?.test ? <><p>{say('Đã nhận phản hồi', 'Response received')}</p><p className="ai-detail-note">{value.test.model} · {displayDate(value.test.at, { timeStyle: 'medium' })}</p></> : <p className="ai-detail-note">{say('Chưa có kết quả kiểm tra.', 'No test result recorded.')}</p>}
           {detail === 'chatgpt-web' && value?.login_state_present && <p className="ai-detail-note">{say('Kiểm tra sẽ gửi một câu thử tới model đã chọn.', 'Testing sends a short prompt to the selected model.')}{value.selection?.model && <> {value.selection.model}</>}</p>}
         </section>
         <details className="ai-detail-section ai-advanced"><summary>{say('Nâng cao', 'Advanced')}</summary><dl className="ai-detail-values">

@@ -2,6 +2,7 @@ import { createPropChartSession, openPropReplay } from './propSessionCreation.js
 import { sessionNavigationHref } from './sessionCatalog.js'
 import { scopedMutation } from './scopedMutation.js'
 import ProjectDateInput from './ProjectDateInput.jsx'
+import InstantDateInput from './InstantDateInput.jsx'
 import { displayDate } from './dateFormat.js'
 import FxSelect from './FxSelect.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
@@ -19,6 +20,7 @@ function formatPropMoney(value, currency = 'USD', locale = 'vi-VN') {
     return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency,
+      currencyDisplay: 'narrowSymbol',
       maximumFractionDigits: 2,
     }).format(number)
   } catch {
@@ -615,8 +617,8 @@ export default function PropWorkspace({ workspace, query }) {
                 {datasets.status === 'error' && <small>{t("Không đọc được catalog dataset:")} {datasets.error}</small>}
               </label>
               <label className="prop-field">
-                <span>{t("Bắt đầu (UTC)")}</span>
-                <ProjectDateInput aria-label={t("Bắt đầu UTC")} type="datetime-local" value={draft.startUtc} onChange={(event) => updateDraft('startUtc', event.target.value)} />
+                <span>{t("Bắt đầu")}</span>
+                <InstantDateInput aria-label={t("Bắt đầu")} value={draft.startUtc} onChange={(event) => updateDraft('startUtc', event.target.value)} />
               </label>
               <label className="prop-field">
                 <span>{t("Max days")}</span>

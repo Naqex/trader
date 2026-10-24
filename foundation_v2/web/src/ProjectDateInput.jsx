@@ -1,3 +1,4 @@
+import { zonedDateKey } from './timezone.js'
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { dateFieldDisplay, parseDateField } from './dateFormat.js'
 import { boundedDateTimeValue } from './projectDateInputModel.js'
@@ -9,7 +10,7 @@ const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 function stripZone(value = '') { return String(value).replace(/Z$/, '') }
 function datePart(value = '') { return value ? stripZone(value).split('T')[0] : '' }
 function timePart(value = '') { return stripZone(value).split('T')[1]?.slice(0, 5) || '' }
-function todayIso() { return new Date().toISOString().slice(0, 10) }
+function todayIso() { return zonedDateKey(new Date()) }
 function monthKey(value) { return `${value.getUTCFullYear()}-${String(value.getUTCMonth() + 1).padStart(2, '0')}` }
 function monthDate(month) { return new Date(`${month}-01T00:00:00Z`) }
 function shiftMonth(month, delta) { const date = monthDate(month); date.setUTCMonth(date.getUTCMonth() + delta); return monthKey(date) }
@@ -26,7 +27,7 @@ function CalendarIcon() { return <svg width="16" height="16" viewBox="0 0 24 24"
 function Chevron({ direction }) { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d={direction === 'prev' ? 'm14.5 5-7 7 7 7' : 'm9.5 5 7 7-7 7'} /></svg> }
 
 // Keep ISO at the form boundary while the editable text is independent of OS locale.
-export default function ProjectDateInput({ value = '', onChange, type = 'date', min, max, step, utc = false, clearable = false, todayTime = 'preserve', ...props }) {
+export default function ProjectDateInput({ value = '', onChange, type = 'date', min, max, step, utc = false, clearable = false, todayTime = 'preserve', validationError = '', ...props }) {
   const { t, locale } = useTestingLocale()
   const [draft, setDraft] = useState(() => dateFieldDisplay(value, type))
   const initialDate = datePart(value) || todayIso()
@@ -46,7 +47,7 @@ export default function ProjectDateInput({ value = '', onChange, type = 'date', 
       setDraft(dateFieldDisplay(value, type))
       if (datePart(value)) { setPickerDate(datePart(value)); setViewMonth(datePart(value).slice(0, 7)) }
       if (type === 'datetime-local' || type === 'time') setPickerTime(timePart(value) || (type === 'datetime-local' ? '00:00' : ''))
-      text.current?.setCustomValidity('')
+      text.current?.setCustomValidity(validationError)
     }
   }, [value, type])
 
@@ -54,9 +55,9 @@ export default function ProjectDateInput({ value = '', onChange, type = 'date', 
     const parsed = parseDateField(draft, type)
     if (parsed) {
       const valid = type === 'datetime-local' ? isDateTimeAllowed(parsed, min, max) : type === 'date' ? isDateAllowed(parsed, min, max) : true
-      text.current?.setCustomValidity(valid ? '' : t('Ngày giờ không hợp lệ'))
+      text.current?.setCustomValidity(validationError || (valid ? '' : t('Ngày giờ không hợp lệ')))
     }
-  }, [min, max, draft, type, t])
+  }, [min, max, draft, type, t, validationError])
 
   useEffect(() => {
     if (!open || props.disabled) return undefined
@@ -98,7 +99,7 @@ export default function ProjectDateInput({ value = '', onChange, type = 'date', 
   const publish = (event, raw) => {
     const parsed = parseDateField(raw, type)
     const valid = parsed !== null && (!parsed || (type === 'datetime-local' ? isDateTimeAllowed(parsed, min, max) : type === 'date' ? isDateAllowed(parsed, min, max) : true))
-    text.current?.setCustomValidity(valid ? '' : t('Ngày giờ không hợp lệ'))
+    text.current?.setCustomValidity(validationError || (valid ? '' : t('Ngày giờ không hợp lệ')))
     const next = valid && parsed ? `${parsed}${utc ? 'Z' : ''}` : ''
     if (next === emitted.current) return
     emitted.current = next

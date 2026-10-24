@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { AreaSeries, BarSeries, BaselineSeries, CandlestickSeries, LineSeries, HistogramSeries, createChart } from 'lightweight-charts'
-import { displayDate } from './dateFormat.js'
+import { displayDate, displayTime } from './dateFormat.js'
 import { chartSeriesPalette } from './projectPalette.js'
 import { nativeChartPalette } from './nativeChartPalette.js'
 import { useTestingLocale } from './testingLocale.jsx'
@@ -10,9 +10,10 @@ import ChartIcon from './ChartIcon.jsx'
 import { orderKinds } from './replayOrderLabels.js'
 
 export default function LightweightReplayChart({ rows, sessionId, chartType, showVolume, showAverage, viewportRequest, drawings, onCrosshair, onAnchorSelect, theme, levels, orderEditable, tickSize, onOrderPriceChange, orderGeneration, onOrderDragStart, onStatusChange }) {
-  const { t, locale, fmt } = useTestingLocale()
+  const { t, locale, fmt, timezone } = useTestingLocale()
   const formatTimestamp = value => value === null || value === undefined || !Number.isFinite(Number(value)) ? '—' : displayDate(new Date(Number(value) * 1000), { timeStyle: 'medium' })
   const formatPrice = value => fmt(value, '', 8)
+  useEffect(() => { chartRef.current?.chart.applyOptions({ localization: { locale, timeFormatter: time => displayDate(typeof time === 'object' ? `${time.year}-${String(time.month).padStart(2,'0')}-${String(time.day).padStart(2,'0')}` : time, { timeStyle: typeof time === 'number' ? 'short' : undefined }) } }) }, [timezone, locale])
   const money = (value, currency) => {
     if (value === null || value === undefined || !Number.isFinite(Number(value))) return '—'
     try { return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'USD', maximumFractionDigits: 2 }).format(Number(value)) } catch { return fmt(value, ' ' + (currency || t('Đơn vị tài khoản'))) }
@@ -37,9 +38,9 @@ export default function LightweightReplayChart({ rows, sessionId, chartType, sho
       layout: { background: { color: palette.canvas }, textColor: palette.text, fontSize: 12, attributionLogo: false },
       grid: { vertLines: { color: palette.grid }, horzLines: { color: palette.grid } },
       rightPriceScale: { borderColor: palette.border, scaleMargins: { top: 0.12, bottom: 0.22 } },
-      timeScale: { borderColor: palette.border, timeVisible: true, secondsVisible: false, lockVisibleTimeRangeOnResize: true },
+      timeScale: { borderColor: palette.border, timeVisible: true, secondsVisible: false, lockVisibleTimeRangeOnResize: true, tickMarkFormatter: (time, type) => typeof time === 'number' ? type >= 3 ? displayTime(time, { seconds: type === 4 }) : displayDate(time) : null },
       crosshair: { mode: 0 },
-      localization: { locale: 'vi-VN', timeFormatter: time => displayDate(typeof time === 'object' ? new Date(Date.UTC(time.year, time.month - 1, time.day)) : time, { timeStyle: typeof time === 'number' ? 'short' : undefined }) },
+      localization: { locale, timeFormatter: time => displayDate(typeof time === 'object' ? new Date(Date.UTC(time.year, time.month - 1, time.day)) : time, { timeStyle: typeof time === 'number' ? 'short' : undefined }) },
     })
     const seriesType = chartType === 'bars' ? BarSeries : chartType === 'line' ? LineSeries : chartType === 'area' ? AreaSeries : chartType === 'baseline' ? BaselineSeries : CandlestickSeries
     const series = chart.addSeries(seriesType, {

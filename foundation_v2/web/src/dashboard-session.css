@@ -81,3 +81,5 @@
 }
 @media (pointer: coarse) { .fx-app .fx-dashboard :is(.fx-dashboard-card-icon, .fx-dashboard-card-play, .fx-dashboard-card-summary) { min-height: 44px; min-width: 44px; } }
 @media (prefers-reduced-motion: reduce) { .fx-dashboard-card-expand svg, .fx-dashboard-card-disclosure, .fx-dashboard-session-card, .fx-dashboard-session-card-head { transition: none; } }
+
+.fx-dashboard-card-facts > span + span::before { content:"·"; margin-right:4px; color:var(--wm-content-muted); }

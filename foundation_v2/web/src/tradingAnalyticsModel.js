@@ -1,3 +1,4 @@
+import { getTimezone } from './timezone.js'
 import { closeTime } from './sessionPerformanceModel.js'
 
 export const known = value => (typeof value === 'number' || typeof value === 'string' && value.trim() !== '') && Number.isFinite(Number(value))
@@ -15,12 +16,12 @@ export function filterValues(value) {
   try { const parsed = JSON.parse(value); return Array.isArray(parsed) ? parsed.map(String) : [] } catch { return [] }
 }
 export function readAnalyticsExtraFilters(query) {
-  const values = { ...DEFAULT_EXTRA_FILTERS }
+  const values = { ...DEFAULT_EXTRA_FILTERS, timezone: getTimezone() }
   for (const key of Object.keys(values)) {
+    if (key === 'timezone') continue
     const param = key === 'source' ? 'analytics_trade_source' : `analytics_${key}`
     if (query.get(param)) values[key] = query.get(param)
   }
-  try { new Intl.DateTimeFormat('en', { timeZone: values.timezone }) } catch { values.timezone = 'UTC' }
   for (const key of ['timeStart', 'timeEnd']) if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(values[key])) values[key] = ''
   return values
 }
@@ -54,7 +55,7 @@ export function validateTradesPagePayload(payload) {
 export const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
 const calendarFormatters = new Map()
 
-export function calendarParts(value, timezone = 'UTC') {
+export function calendarParts(value, timezone = getTimezone()) {
   const date = closeTime(value)
   if (!date) return null
   if (!calendarFormatters.has(timezone)) calendarFormatters.set(timezone, new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }))
@@ -64,8 +65,8 @@ export function calendarParts(value, timezone = 'UTC') {
   return { key, month: key.slice(0, 7), hour: Number(at('hour')), minute: Number(at('minute')), weekday: new Date(`${key}T00:00:00Z`).getUTCDay() }
 }
 
-export function filterAnalyticsRows(rows, filters = DEFAULT_EXTRA_FILTERS) {
-  filters = { ...DEFAULT_EXTRA_FILTERS, ...filters }
+export function filterAnalyticsRows(rows, filters = {}) {
+  filters = { ...DEFAULT_EXTRA_FILTERS, timezone: getTimezone(), ...filters }
   const search = filters.search.trim().toLowerCase()
   const notes = filters.notes.trim().toLowerCase()
   const lists = Object.fromEntries(['assets', 'sides', 'outcomes', 'types', 'notesPresence', 'statuses', 'years', 'months', 'days', 'hours', 'tagInclude', 'tagExclude'].map(key => [key, filterValues(filters[key])]))
@@ -135,7 +136,8 @@ function stats(rows) {
   }
 }
 
-export function advancedAnalytics(model, filters = DEFAULT_EXTRA_FILTERS) {
+export function advancedAnalytics(model, filters = {}) {
+  filters = { ...DEFAULT_EXTRA_FILTERS, timezone: getTimezone(), ...filters }
   if (model.result?.paged) throw new Error('paged_ledger_cannot_compute_full_analytics')
   const rows = filterAnalyticsRows(model.ledger, filters)
   const summary = stats(rows)

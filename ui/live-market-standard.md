@@ -489,3 +489,5 @@ broker commercial product field for Standard/Pro/Zero/Raw Spread.
 Startup/access evidence: `foundation_v2/evidence/mt5-connection-startup-20261023/CHECKPOINT.md`.
 
 Evidence: `foundation_v2/evidence/live-account-controls-20261023/CHECKPOINT.md`.
+
+Calendar coverage: preserve coverage per account. Week/month totals may show observed subtotals with a visible partial state; days outside the selected filter do not count as missing. Missing costs or unobserved coverage must never become a complete zero.

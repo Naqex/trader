@@ -1,3 +1,5 @@
+import { matchesSearch } from './searchText.js'
+import SearchInput from './SearchInput.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import LegacyModal from './LegacyModal.jsx'
 import ChartIcon from './ChartIcon.jsx'
@@ -32,11 +34,11 @@ export default function Mt5SymbolPicker({anchor,theme,symbols,symbol,status,onSe
   const options=useMemo(()=>mt5SymbolOptions(symbols,metadata),[symbols,metadata])
   useEffect(()=>{if(category!=='all'&&!options.some(item=>item.category===category))setCategory('all')},[options,category])
   const groups=[['all','Tất cả'],...CATEGORIES.filter(([key])=>options.some(item=>item.category===key)),...(options.some(item=>!item.category)?[['','Chưa phân loại']]:[])]
-  const matches=options.filter(item=>(category==='all'||item.category===category)&&item.search.includes(search.trim().toLowerCase()))
+  const matches=options.filter(item=>(category==='all'||item.category===category)&&matchesSearch(item.search, search))
   const tabSymbol=matches.some(item=>item.symbol===focused)?focused:matches[0]?.symbol
   const select=value=>{if(status==='ready' && value!==symbol)onSelect({mt5_symbol:value});onClose()}
   return <LegacyModal theme={theme} label={t('Chọn mã giao dịch MT5')} className="mt5-symbol-picker" onClose={onClose}>
-      <div className="mt5-symbol-search"><ChartIcon name="search"/><input ref={input} type="search" aria-label={t('Tìm mã giao dịch MT5')} placeholder={t('Tìm mã giao dịch MT5')} value={search} onChange={event=>setSearch(event.target.value)} onKeyDown={event=>{
+      <div className="mt5-symbol-search"><ChartIcon name="search"/><SearchInput ref={input} type="search" aria-label={t('Tìm mã giao dịch MT5')} placeholder={t('Tìm mã giao dịch MT5')} value={search} onChange={event=>setSearch(event.target.value)} onKeyDown={event=>{
         if(['ArrowDown','ArrowUp'].includes(event.key)) {
           event.preventDefault();event.stopPropagation()
           const entries=event.currentTarget.closest('.mt5-symbol-picker').querySelectorAll('[role="option"]:not(:disabled)')

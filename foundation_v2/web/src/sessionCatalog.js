@@ -1,3 +1,4 @@
+import { matchesSearch } from './searchText.js'
 import { retryAfterMs } from './researchDataApi.js'
 import { scopedMutation } from './scopedMutation.js'
 import { buildWorkspaceHref } from './workspaceContext.js'
@@ -39,7 +40,7 @@ export function canResumeSession(item) {
 export function recentSessions(items, { search = '', archived = false, sort = 'newest' } = {}) {
   const needle = search.trim().toLocaleLowerCase('vi')
   const timestamp = item => Number.isFinite(Date.parse(item.updated_at_utc)) ? Date.parse(item.updated_at_utc) : 0
-  return items.filter(item => (archived || !item.archived) && (!needle || `${item.name || item.record_id} ${item.instrument_id || ''} ${item.timeframe || ''}`.toLocaleLowerCase('vi').includes(needle)))
+  return items.filter(item => (archived || !item.archived) && (!needle || matchesSearch(`${item.name || item.record_id} ${item.instrument_id || ''} ${item.timeframe || ''}`, search)))
     .sort((left, right) => (sort === 'oldest' ? 1 : -1) * (timestamp(left) - timestamp(right)) || left.record_id.localeCompare(right.record_id))
 }
 
@@ -79,10 +80,41 @@ export function updateSessionMetadata(workspace, session, changes) {
   })
 }
 
-export function duplicateSession(workspace, session) {
-  return request(`/api/v2/replay/sessions/${encodeURIComponent(session.record_id)}/branch`, workspace, {
-    method: 'POST', body: JSON.stringify({ expected_revision: session.revision, cursor_index: session.cursor_index }),
-  })
+export function cleanSessionConfiguration(record) {
+  const source = record?.payload
+  if (!source || typeof source.dataset_id !== 'string' || !source.dataset_id) throw Object.assign(new Error('Không đọc được cấu hình tài sản của phiên.'), { status: 422 })
+  const executions = source.asset_states ? Object.values(source.asset_states).map(asset => asset.execution) : [source.execution]
+  if (!source.trading_options && executions.some(execution => execution && (execution.ledger || execution.cost_model || execution.spread_price != null))) {
+    throw Object.assign(new Error('Phiên cũ chưa lưu cấu hình chi phí để tạo bản sao trống. Tạo phiên mới để chọn lại chi phí, hoặc giữ dữ liệu giao dịch.'), { status: 422 })
+  }
+  const configuration = { dataset_id: source.dataset_id, name: `${source.name || 'Phiên'} (bản sao)`.slice(0, 160) }
+  // Only creation settings cross into a fresh session; execution, timing and Prop authority do not.
+  for (const key of ['dataset_ids', 'description', 'starting_balance', 'playbook_id', 'playbook_revision', 'trading_options']) {
+    if (source[key] !== undefined && source[key] !== null) configuration[key] = source[key]
+  }
+  if (configuration.starting_balance == null && source.execution?.starting_balance != null) configuration.starting_balance = source.execution.starting_balance
+  const period = record.session_period || source.session_period
+  if (period) {
+    const start = period.requested_start_timestamp ?? period.start_timestamp
+    const end = period.requested_end_timestamp ?? period.end_timestamp
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) throw Object.assign(new Error('Không đọc được khoảng thời gian của phiên.'), { status: 422 })
+    configuration.start_timestamp = start
+    configuration.end_timestamp = end
+  }
+  return configuration
+}
+
+export async function duplicateSession(workspace, session, { history = 'clean' } = {}) {
+  if (history === 'keep') {
+    if (session.session_kind === 'prop' || session.prop_attempt_id) throw Object.assign(new Error('Chưa hỗ trợ giữ lịch sử khi sao chép phiên Prop Firm. Chọn bản sao Backtest không có giao dịch.'), { status: 422 })
+    return request(`/api/v2/replay/sessions/${encodeURIComponent(session.record_id)}/branch`, workspace, {
+      method: 'POST', body: JSON.stringify({ expected_revision: session.revision, cursor_index: session.cursor_index }),
+    })
+  }
+  if (history !== 'clean') throw Object.assign(new Error('Lựa chọn sao chép không hợp lệ.'), { status: 422 })
+  const record = await request(`/api/v2/replay/sessions/${encodeURIComponent(session.record_id)}`, workspace)
+  if (record.record_id !== session.record_id || record.revision !== session.revision) throw Object.assign(new Error('Phiên đã thay đổi; tải lại danh mục trước khi tạo bản sao.'), { status: 409 })
+  return createReplaySession(workspace, cleanSessionConfiguration(record))
 }
 
 export async function deleteSession(workspace, session, confirmationName) {

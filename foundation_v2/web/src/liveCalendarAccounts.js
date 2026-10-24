@@ -20,6 +20,8 @@ export function combineCalendarAccounts(sources) {
   return { payload: {
     account: { account_ref: sources.map(source => source.id).join(','), currency: [...currencies][0], balance: sum('balance'), opening_balance: sum('opening_balance') },
     manual: sources.every(({ payload }) => payload.manual), aggregate: true,
+    stale: sources.some(({ payload }) => payload.stale === true),
+    coverage: sources.map(({ id, payload }) => ({ id, history_from_utc: payload.history_from_utc, captured_at_utc: payload.captured_at_utc })),
     // Only the intersection can prove a day has complete data across accounts.
     history_from_utc: boundary('history_from_utc', Math.max), captured_at_utc: boundary('captured_at_utc', Math.min),
     deals: sources.flatMap(({ id, payload }) => payload.deals.map(deal => ({ ...deal, source_account: id }))),

@@ -1,0 +1,11 @@
+.fx-dashboard-dialog.fxs-duplicate-dialog { width: min(480px, calc(100vw - 32px)); }
+.fxs-duplicate-dialog .fxs-duplicate-name { color: var(--wm-content-muted); overflow-wrap: anywhere; }
+.fxs-duplicate-dialog fieldset { display: grid; gap: 20px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.fx-dashboard-dialog.fxs-duplicate-dialog fieldset label { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; }
+.fx-dashboard-dialog.fxs-duplicate-dialog input[type="radio"] { flex: 0 0 16px; width: 16px; height: 16px; margin: 3px 0 0; accent-color: var(--wm-action-bg); }
+.fxs-duplicate-dialog fieldset label span { display: grid; gap: 4px; }
+.fxs-duplicate-dialog fieldset strong { font-size: 14px; font-weight: 500; }
+.fxs-duplicate-dialog fieldset small { font-size: 12px; line-height: 18px; color: var(--wm-content-muted); }
+.fxs-duplicate-dialog fieldset label:has(input:disabled) { opacity: .6; cursor: default; }
+.fxs-duplicate-dialog [role="alert"] { color: var(--wm-negative); }
+@media (pointer: coarse) { .fxs-duplicate-dialog fieldset label { min-height: 44px; } }

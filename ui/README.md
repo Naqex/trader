@@ -16,6 +16,8 @@ The app pins `annam-compact@0.1.1`; other products are not migrated implicitly.
 
 Project overlay, keyboard, date-field and touch behavior is specified in the
 [portal contract](compact-system.md#portal-dialog-popover-và-ô-ngày).
+Shared time, money, search and report semantics follow
+[display conventions](display-conventions.md).
 The living catalog includes working nested dialogs, anchored menus, bounded
 date/time, disabled fields and resource-state examples. The
 [20/10 audit receipt](../foundation_v2/evidence/ui-system-audit-20261020/CHECKPOINT.md)

@@ -1,3 +1,4 @@
+import { dateRangeBoundary, getTimezone, zonedDateKey } from './timezone.js'
 import { displayDate } from './dateFormat.js'
 import { known as finite, outcomeOf } from './tradingAnalyticsModel.js'
 
@@ -30,7 +31,7 @@ function netFromLedger(ledger) {
   return ledger.reduce((total, trade) => total + Number(trade.net_pnl), 0)
 }
 
-export function buildAnalyticsModel(result, reportKind = 'app') {
+export function buildAnalyticsModel(result, reportKind = 'app', timezone = getTimezone()) {
   const metrics = result?.metrics && typeof result.metrics === 'object' ? result.metrics : {}
   const ledger = Array.isArray(result?.ledger) ? result.ledger : []
   const providedNet = firstKnown(metrics.net_pnl, metrics.net_profit, result?.net_pnl)
@@ -59,8 +60,8 @@ export function buildAnalyticsModel(result, reportKind = 'app') {
   const observedStart = observedRange.start_utc || observedRange.start || observedRange.from_utc || observedRange.from
   const observedEnd = observedRange.end_utc || observedRange.end || observedRange.to_utc || observedRange.to
   const ledgerDates = ledger.flatMap((trade) => [trade?.open_time_utc, trade?.close_time_utc]).map(dateFromValue).filter(Boolean).sort((a, b) => a - b)
-  const dateLabel = (value) => { const date = dateFromValue(value); return !date ? 'N/A' : displayDate(date) }
-  const rows = ledger.map((trade, index) => { const pnl = finite(trade?.net_pnl) ? Number(trade.net_pnl) : null; const date = dateFromValue(trade?.close_time_utc); return { ...trade, report_kind: reportKind, rowIndex: index, tradeId: trade?.trade_id || `trade-${index + 1}`, pnl, outcome: outcomeOf(pnl), source: trade?.source?.session_id || trade?.session_id || trade?.source_id || 'research ledger', closeDate: date ? displayDate(date, { timeStyle: 'medium' }) : 'N/A' } })
+  const dateLabel = (value) => { const date = dateFromValue(value); return !date ? 'N/A' : displayDate(date, { timeZone: timezone }) }
+  const rows = ledger.map((trade, index) => { const pnl = finite(trade?.net_pnl) ? Number(trade.net_pnl) : null; const date = dateFromValue(trade?.close_time_utc); return { ...trade, report_kind: reportKind, rowIndex: index, tradeId: trade?.trade_id || `trade-${index + 1}`, pnl, outcome: outcomeOf(pnl), source: trade?.source?.session_id || trade?.session_id || trade?.source_id || 'research ledger', closeDate: date ? displayDate(date, { timeStyle: 'medium', timeZone: timezone }) : 'N/A' } })
   const realizedRValues = (Array.isArray(metrics.realized_r_values) ? metrics.realized_r_values : rows.map((trade) => trade.realized_r)).filter(finite).map(Number)
   const metricDefinitions = metrics.definitions && typeof metrics.definitions === 'object'
     ? Object.entries(metrics.definitions).slice(0, 16).reduce((out, [key, value]) => {
@@ -107,28 +108,28 @@ export function buildAnalyticsModel(result, reportKind = 'app') {
   }
 }
 
-export function readAnalyticsFilters(query) {
-  const from = query?.get('from_close_utc') || query?.get('from') || ''
-  const to = query?.get('to_close_utc') || query?.get('to') || ''
+export function readAnalyticsFilters(query, timezone = getTimezone()) {
+  const civilDate = (utcKey, civilKey) => {
+    const instant = query?.get(utcKey)
+    if (!instant) return query?.get(civilKey) || ''
+    const date = dateFromValue(instant)
+    return date ? zonedDateKey(date, timezone) : ''
+  }
   return {
     side: (query?.get('side') || 'all').toLowerCase(),
     outcome: (query?.get('outcome') || 'all').toLowerCase(),
-    from: from ? String(from).slice(0, 10) : '',
-    to: to ? String(to).slice(0, 10) : '',
+    from: civilDate('from_close_utc', 'from'),
+    to: civilDate('to_close_utc', 'to'),
   }
 }
 
-function dateBoundary(value, endOfDay = false) {
-  if (!value) return ''
-  return `${value}T${endOfDay ? '23:59:59.999' : '00:00:00.000'}Z`
-}
-
-export function analyticsQuery(filters) {
+export function analyticsQuery(filters, timezone = getTimezone()) {
   const params = new URLSearchParams()
+  params.set('timezone', timezone)
   if (filters.side && filters.side !== 'all') params.set('side', filters.side)
   if (filters.outcome && filters.outcome !== 'all') params.set('outcome', filters.outcome)
-  if (filters.from) params.set('from_close_utc', dateBoundary(filters.from))
-  if (filters.to) params.set('to_close_utc', dateBoundary(filters.to, true))
+  if (filters.from) params.set('from_close_utc', dateRangeBoundary(filters.from, false, timezone))
+  if (filters.to) params.set('to_close_utc', dateRangeBoundary(filters.to, true, timezone))
   return params
 }
 

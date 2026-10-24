@@ -3,6 +3,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { advancedAnalytics, calendarParts, DEFAULT_EXTRA_FILTERS, readAnalyticsExtraFilters, validateTradesPayload, filterAnalyticsRows, outcomeOf, tradesCsv } from '../src/tradingAnalyticsModel.js'
 import { buildPropAnalyticsView, propReplayQuery } from '../src/propAnalyticsModel.js'
+import { setTimezone } from '../src/timezone.js'
 
 const rows = [100, -50, 0, 150, -100].map((value, index) => ({ trade_id: `trade-${index}`, tradeId: `trade-${index}`, rowIndex: index, net_pnl: value, pnl: value, side: index % 2 ? 'SELL' : 'BUY', symbol: index % 2 ? 'EURUSD' : 'GBPUSD', realized_r: null, open_time_utc: `2024-01-0${index + 1}T12:00:00Z`, close_time_utc: `2024-01-0${index + 1}T13:00:00Z`, tags: index === 3 ? ['breakout'] : [] }))
 const model = { ledger: rows, startBalance: 1000, endingBalance: 1100, curve: [1000, 1100, 1050, 1050, 1200, 1100].map((value, index) => ({ value, index })), drawdown: [0, 50, 50, 0, 100].map((drawdown, index) => ({ drawdown, drawdownPct: drawdown / (index < 3 ? 1100 : 1200) * 100 })) }
@@ -26,11 +27,16 @@ test('Type belongs to report source and never substitutes the trade entry type',
   assert.equal(filterAnalyticsRows(ledger, { reportKinds: '' }).length, 3)
   assert.deepEqual(filterAnalyticsRows(ledger, { reportKinds: '["app","prop"]', types: '["market"]' }), ledger.slice(0, 2))
 })
-test('URL accepts supported cities and clears malformed HH:mm values', () => {
+test('Settings timezone overrides legacy URL zone and clears malformed HH:mm values', () => {
   const valid = readAnalyticsExtraFilters(new URLSearchParams('analytics_timezone=Pacific/Honolulu&analytics_timeStart=23:59&analytics_timeEnd=00:30'))
-  assert.equal(valid.timezone, 'Pacific/Honolulu'); assert.equal(valid.timeStart, '23:59'); assert.equal(valid.timeEnd, '00:30')
+  assert.equal(valid.timezone, 'UTC'); assert.equal(valid.timeStart, '23:59'); assert.equal(valid.timeEnd, '00:30')
   const bad = readAnalyticsExtraFilters(new URLSearchParams('analytics_timezone=not/a-zone&analytics_timeStart=25:00&analytics_timeEnd=9:30'))
   assert.equal(bad.timezone, 'UTC'); assert.equal(bad.timeStart, ''); assert.equal(bad.timeEnd, '')
+  try {
+    setTimezone('Asia/Ho_Chi_Minh')
+    assert.equal(readAnalyticsExtraFilters(new URLSearchParams('analytics_timezone=Pacific/Honolulu')).timezone, 'Asia/Ho_Chi_Minh')
+    assert.equal(calendarParts('2026-10-01T23:30:00Z').key, '2026-10-02')
+  } finally { setTimezone('UTC') }
 })
 test('known numeric oracle: metrics, partial risk, closed DD, durations and calendar', () => {
   const data = advancedAnalytics(model)

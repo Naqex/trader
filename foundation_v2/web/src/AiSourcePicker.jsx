@@ -1,3 +1,4 @@
+import { displayDate } from './dateFormat.js'
 import { useEffect, useState } from 'react'
 import FxSelect from './FxSelect.jsx'
 import { aiErrorCopy } from './aiProvider.js'
@@ -28,5 +29,5 @@ export default function AiSourcePicker({ workspace, value, onChange, en, disable
 export function AiSourceProvenance({ source, en }) {
   if (!source) return null
   const label = { research:'Quant', journal:en?'Journal':'Nhật ký', mt5_symbols:en?'MT5 symbols':'Danh mục MT5', mt5_indicators:'MT5 indicators', replay:'Chart' }
-  return <small className="ai-source-provenance" title={`SHA256 ${source.sha256 || ''}`}>{label[source.kind] || source.kind} · {source.id}{source.revision != null ? ` · r${source.revision}` : ''}{source.cursor_index != null ? ` · ${en ? 'bar' : 'nến'} ${source.cursor_index}` : ''}{source.cutoff_timestamp != null ? ` · ${new Date(source.cutoff_timestamp * 1000).toISOString()}` : ''}{source.captured_at_utc ? ` · ${new Date(source.captured_at_utc).toLocaleString(en?'en-GB':'vi-VN')}` : ''}</small>
+  return <small className="ai-source-provenance" title={`SHA256 ${source.sha256 || ''}`}>{label[source.kind] || source.kind} · {source.id}{source.revision != null ? ` · r${source.revision}` : ''}{source.cursor_index != null ? ` · ${en ? 'bar' : 'nến'} ${source.cursor_index}` : ''}{source.cutoff_timestamp != null ? ` · ${displayDate(source.cutoff_timestamp, { timeStyle: 'medium' })}` : ''}{source.captured_at_utc ? ` · ${displayDate(source.captured_at_utc, { timeStyle: 'medium' })}` : ''}</small>
 }

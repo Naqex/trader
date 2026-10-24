@@ -58,3 +58,10 @@
 }
 .fx-app .wm-page.settings-shell .context-link { display: inline-flex; align-items: center; min-height: var(--wm-control-height); color: var(--wm-content); }
 .fx-app .wm-page.settings-shell .settings-appearance-actions button[type='submit']:not(:disabled):hover { background: var(--wm-action-hover); }
+
+.settings-timezone { padding-block:24px; border-bottom:1px solid var(--wm-border); }
+.settings-timezone form { display:grid; gap:12px; max-width:480px; }
+.settings-timezone .fx-select { width:100%; }
+.settings-timezone .fx-select-trigger { width:100%; }
+.settings-timezone button[type=submit] { justify-self:start; }
+.settings-timezone-label { font-size:13px; }

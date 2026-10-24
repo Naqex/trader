@@ -1,3 +1,5 @@
+import { formatAmount } from './moneyFormat.js'
+import { getTimezone, zonedDateKey, dateRangeBoundary } from './timezone.js'
 import { retryAfterMs } from './researchDataApi.js'
 import { recentSessions } from './sessionCatalog.js'
 import { scopedRead } from './scopedRead.js'
@@ -17,7 +19,7 @@ export function dashboardDurationParts(seconds) {
 
 export function dashboardMoney(value, currency) {
   if (dashboardNumber(value) === '—') return '—'
-  return `${moneyFormatter.format(Number(value))} ${currency || 'đơn vị tài khoản'}`
+  return formatAmount(value, ` ${currency || 'đơn vị tài khoản'}`, 2)
 }
 
 export function dashboardNumber(value, suffix = '') {
@@ -31,10 +33,10 @@ export function dashboardFilters(query) {
 }
 
 export function dashboardRequestUrl(filters) {
-  const params = new URLSearchParams()
+  const params = new URLSearchParams({ timezone: getTimezone() })
   if (filters.session) params.set('session_id', filters.session)
-  if (filters.from) params.set('from_close_utc', `${filters.from}T00:00:00.000Z`)
-  if (filters.to) params.set('to_close_utc', `${filters.to}T23:59:59.999Z`)
+  if (filters.from) params.set('from_close_utc', dateRangeBoundary(filters.from))
+  if (filters.to) params.set('to_close_utc', dateRangeBoundary(filters.to, true))
   return `/api/v2/overview${params.size ? `?${params}` : ''}`
 }
 
@@ -44,7 +46,7 @@ export function dashboardFilterError(filters) {
 
 export function dashboardPeriodRange(period, now = new Date()) {
   if (period === 'lifetime') return { from: '', to: '' }
-  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
+  const today = new Date(`${zonedDateKey(now)}T00:00:00Z`)
   if (period === 'last-week' || period === 'last-month') {
     const start = new Date(today), end = new Date(today)
     if (period === 'last-week') {
@@ -113,7 +115,7 @@ export async function readDashboardOverview(workspace, filters, signal) {
 }
 
 export async function readDashboardAnalytics(workspace, session, signal) {
-  const response = await scopedRead(`/api/v2/replay/sessions/${encodeURIComponent(session)}/analytics`, workspace, signal)
+  const response = await scopedRead(`/api/v2/replay/sessions/${encodeURIComponent(session)}/analytics?timezone=${encodeURIComponent(getTimezone())}`, workspace, signal)
   const payload = await response.json().catch(() => ({}))
   if (!response.ok) throw Object.assign(new Error(typeof payload.detail === 'string' ? payload.detail : `HTTP ${response.status}`), { status: response.status, retryAfterMs: retryAfterMs(response) })
   const count = payload.scope?.selected_trade_count
@@ -164,7 +166,7 @@ export function dashboardCurve(metrics) {
 
 
 export function dashboardListUrl({ page = 1, search = '', sort = 'newest', asset = '', strategy = '', revision = '' } = {}) {
-  const params = new URLSearchParams({ page: String(page), page_size: String(DASHBOARD_PAGE_SIZE), sort })
+  const params = new URLSearchParams({ timezone: getTimezone(), page: String(page), page_size: String(DASHBOARD_PAGE_SIZE), sort })
   for (const [key, value] of Object.entries({ search, asset, strategy, revision })) if (value) params.set(key, value)
   return `/api/v2/dashboard/sessions?${params}`
 }

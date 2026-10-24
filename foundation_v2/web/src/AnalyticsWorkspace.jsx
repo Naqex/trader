@@ -1,4 +1,5 @@
 import { displayDate } from './dateFormat.js'
+import { timezoneLabel } from './timezone.js'
 import TestingReadState, { TestingSkeleton } from './TestingReadState.jsx'
 import { TestingEmptyState, TestingPageSkeleton, TestingResourceStatus } from './TestingPageState.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
@@ -44,9 +45,9 @@ function ContextValue({ label, value, code = false }) {
 
 export function ProvenanceInspector({ model, selectedTrade, journalCount, links }) {
   const formatNumber = (value, digits = 2, suffix = '') => fmt(value, suffix, digits)
-  const formatDate = value => dateFromValue(value) ? displayDate(dateFromValue(value), { timeStyle: 'short' }) : '—'
+  const formatDate = value => dateFromValue(value) ? displayDate(dateFromValue(value), { timeStyle: 'short', timeZone: timezone }) : '—'
 
-  const { t, locale, fmt } = useTestingLocale()
+  const { t, locale, fmt, timezone } = useTestingLocale()
 
   return (
     <aside className="as-inspector" aria-label={t("Provenance và drilldown")}>
@@ -54,13 +55,13 @@ export function ProvenanceInspector({ model, selectedTrade, journalCount, links 
       {selectedTrade ? (
         <section className="as-inspector-selection" aria-label={t("Trade detail")}>
           <div className="as-selection-outcome"><span className={'as-outcome-dot is-' + selectedTrade.outcome} />{selectedTrade.outcome === 'win' ? t("Thắng") : selectedTrade.outcome === 'loss' ? t("Thua") : selectedTrade.outcome === 'breakeven' ? t("Hòa vốn") : t("Chưa xác định")}<strong>{formatNumber(selectedTrade.pnl)}</strong></div>
-          <dl className="as-detail-list"><ContextValue label={t("Đóng (UTC)")} value={selectedTrade.closeDate} /><ContextValue label={t("Side")} value={selectedTrade.side} /><ContextValue label={t("Symbol")} value={selectedTrade.symbol} /><ContextValue label={t("Khối lượng")} value={formatNumber(selectedTrade.quantity, 4)} /><ContextValue label={t("Giá mở")} value={formatNumber(selectedTrade.price_open, 6)} /><ContextValue label={t("Giá đóng")} value={formatNumber(selectedTrade.price_close, 6)} /><ContextValue label={t("Net R")} value={formatNumber(selectedTrade.realized_r, 2, 'R')} /><ContextValue label={t("Risk budget")} value={formatNumber(selectedTrade.planned_risk_budget)} /></dl>
+          <dl className="as-detail-list"><ContextValue label={t("Đóng (UTC)").replace(/UTC(?:[+-]\d+(?::\d+)?)?/, timezoneLabel(timezone, dateFromValue(selectedTrade.close_time_utc) || new Date()))} value={selectedTrade.closeDate} /><ContextValue label={t("Side")} value={selectedTrade.side} /><ContextValue label={t("Symbol")} value={selectedTrade.symbol} /><ContextValue label={t("Khối lượng")} value={formatNumber(selectedTrade.quantity, 4)} /><ContextValue label={t("Giá mở")} value={formatNumber(selectedTrade.price_open, 6)} /><ContextValue label={t("Giá đóng")} value={formatNumber(selectedTrade.price_close, 6)} /><ContextValue label={t("Net R")} value={formatNumber(selectedTrade.realized_r, 2, 'R')} /><ContextValue label={t("Risk budget")} value={formatNumber(selectedTrade.planned_risk_budget)} /></dl>
           <p className="as-inspector-note">{selectedTrade.source === 'closed balance curve' ? t("Result chỉ cung cấp trade ID trên balance curve; full ledger record chưa có nên các field còn lại giữ N/A.") : t("Trade được đọc từ ledger đã lưu theo phiên hoặc research job. Chọn Journal để ghi nhận diễn giải riêng; không sửa fill/result trong Analytics.")}</p>
           <details className="as-raw-details"><summary>{t("Xem record gốc")}</summary><pre>{JSON.stringify(selectedTrade, null, 2)}</pre></details>
         </section>
       ) : null}
       <details className="as-provenance-details"><summary>{t("Nguồn và giới hạn")}</summary>
-      <dl className="as-provenance-list"><ContextValue label={t("Session revision")} value={model.result?.revision} /><ContextValue label={t("Cutoff UTC")} value={formatDate(model.result?.cutoff_timestamp)} /><ContextValue label={t("Dataset")} value={model.result?.dataset_id} code /><ContextValue label={t("Dataset SHA")} value={model.result?.dataset_sha256} code /><ContextValue label={t("Protocol SHA")} value={model.result?.protocol_sha256} code /><ContextValue label={t("Artifact SHA")} value={model.sourceHash} code /><ContextValue label={t("Strategy / engine")} value={model.strategy} /><ContextValue label={t("Split")} value={model.result?.split} /><ContextValue label={t("Metric schema")} value={model.result?.metrics_schema_version || model.metrics.metric_schema_version} code /><ContextValue label={t("Observed range")} value={model.observed.start + ' → ' + model.observed.end} /><ContextValue label={t("Journal context")} value={journalCount === null ? 'N/A' : journalCount + ' entries'} /></dl>
+      <dl className="as-provenance-list"><ContextValue label={t("Session revision")} value={model.result?.revision} /><ContextValue label={`${t("Cutoff")} (${timezone})`} value={formatDate(model.result?.cutoff_timestamp)} /><ContextValue label={t("Dataset")} value={model.result?.dataset_id} code /><ContextValue label={t("Dataset SHA")} value={model.result?.dataset_sha256} code /><ContextValue label={t("Protocol SHA")} value={model.result?.protocol_sha256} code /><ContextValue label={t("Artifact SHA")} value={model.sourceHash} code /><ContextValue label={t("Strategy / engine")} value={model.strategy} /><ContextValue label={t("Split")} value={model.result?.split} /><ContextValue label={t("Metric schema")} value={model.result?.metrics_schema_version || model.metrics.metric_schema_version} code /><ContextValue label={t("Observed range")} value={model.observed.start + ' → ' + model.observed.end} /><ContextValue label={t("Journal context")} value={journalCount === null ? 'N/A' : journalCount + ' entries'} /></dl>
       <p className="as-limit-note">{t("N/A nghĩa là nguồn chưa cung cấp dữ liệu cần thiết. Research/simulation đang broker locked; không có đường nào gửi lệnh.")}</p>
       </details>
       <div className="as-inspector-actions"><a href={links.journal}>{t("Mở Journal →")}</a>{links.replay && <a href={links.replay}>{t("Mở Replay →")}</a>}</div>
@@ -71,7 +72,7 @@ export function ProvenanceInspector({ model, selectedTrade, journalCount, links 
 function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearchParams(), ledgerOnly = false, summaryOnly = false, embedded = false, sessionName = '', propReport = null, sessionControl = null, catalogStatus = null, sessionAssets = [] }) {
   const formatNumber = (value, digits = 2, suffix = '') => fmt(value, suffix, digits)
 
-  const { t, fmt } = useTestingLocale()
+  const { t, fmt, timezone } = useTestingLocale()
 
   const jobId = query?.get('job') || query?.get('job_id') || ''
   const sessionId = query?.get('session') || query?.get('replay_session') || ''
@@ -82,8 +83,8 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
   const replayCutoff = jobId ? null : query?.get('cutoff') ?? query?.get('decision_cutoff')
   const eventSequence = jobId ? null : query?.get('event_sequence')
   const tradeId = query?.get('trade') || query?.get('trade_id') || ''
-  const [localFilters, setLocalFilters] = useState(() => readAnalyticsFilters(query))
-  const filters = useMemo(() => summaryOnly ? localFilters : readAnalyticsFilters(query), [summaryOnly, localFilters, query])
+  const [localFilters, setLocalFilters] = useState(() => readAnalyticsFilters(query, timezone))
+  const filters = useMemo(() => summaryOnly ? localFilters : readAnalyticsFilters(query, timezone), [summaryOnly, localFilters, query, timezone])
   const [state, setState] = useState({ status: resourceId ? 'loading' : 'idle', payload: null, error: null })
   const [journalContext, setJournalContext] = useState(null)
   const [journalStatus, setJournalStatus] = useState('idle')
@@ -103,11 +104,13 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
   const [exportPending, setExportPending] = useState(false)
   const [exportError, setExportError] = useState('')
   const [localExtra, setLocalExtra] = useState(() => readAnalyticsExtraFilters(query))
-  const extra = useMemo(() => ({ ...(summaryOnly ? localExtra : readAnalyticsExtraFilters(query)), ...(ledgerOnly ? { days: '', weekday: 'all', types: '', notes: '' } : {}) }), [summaryOnly, localExtra, query, ledgerOnly])
+  const extra = useMemo(() => ({ ...(summaryOnly ? localExtra : readAnalyticsExtraFilters(query)), timezone, ...(ledgerOnly ? { days: '', weekday: 'all', types: '', notes: '' } : {}) }), [summaryOnly, localExtra, query, ledgerOnly, timezone])
   const updateExtra = useCallback(patch => {
     if (summaryOnly) { setLocalExtra(current => ({ ...current, ...patch })); return }
     const next = new URL(window.location.href)
+    next.searchParams.delete('analytics_timezone')
     for (const [key, value] of Object.entries({ ...extra, ...patch })) {
+      if (key === 'timezone') continue
       const param = key === 'source' ? 'analytics_trade_source' : `analytics_${key}`
       if (value === DEFAULT_EXTRA_FILTERS[key]) next.searchParams.delete(param)
       else next.searchParams.set(param, value)
@@ -123,12 +126,12 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
   const readController = useRef(null)
 
   const filterParams = useMemo(() => {
-    const params = analyticsQuery(filters)
+    const params = analyticsQuery(filters, timezone)
     if (replayCursor !== null && replayCursor !== undefined) params.set('cursor_index', replayCursor)
     if (replayCutoff !== null && replayCutoff !== undefined) params.set('cutoff_timestamp', replayCutoff)
     if (eventSequence !== null && eventSequence !== undefined) params.set('event_sequence', eventSequence)
     return params
-  }, [filters, replayCursor, replayCutoff, eventSequence])
+  }, [filters, replayCursor, replayCutoff, eventSequence, timezone])
   const analyticsPath = useMemo(() => {
     const suffix = filterParams.toString()
     return `/api/v2/${resourceKind}/${encodeURIComponent(resourceId)}/analytics${suffix ? `?${suffix}` : ''}`
@@ -219,12 +222,12 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
 
   const result = useMemo(() => state.readPath === analyticsPath && state.workspace === workspace && state.payload?.schema_version === 'analytics-read-model-v1' ? analyticsViewResult(state.payload) : null, [state.payload, state.readPath, state.workspace, analyticsPath, workspace])
   const model = useMemo(() => {
-    const base = buildAnalyticsModel(result, propReport ? 'prop' : jobId ? 'research' : 'app')
+    const base = buildAnalyticsModel(result, propReport ? 'prop' : jobId ? 'research' : 'app', timezone)
     const finish = frontendPerformance().beginDomain('analytics-project')
     const ledger = enrichJournalTags(base.ledger, scopedJournal)
     finish('ready')
     return { ...base, ledger }
-  }, [result, scopedJournal, propReport, jobId])
+  }, [result, scopedJournal, propReport, jobId, timezone])
   useEffect(() => {
     if (!selectedTradeId || !result || state.readPath !== analyticsPath || state.workspace !== workspace || state.status === 'loading') return
     const isKnown = model.ledger.some((trade) => trade.tradeId === selectedTradeId) || model.curve.some((point) => point.tradeId === selectedTradeId)

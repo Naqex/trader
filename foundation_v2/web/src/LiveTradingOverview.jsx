@@ -9,7 +9,6 @@ import { useTestingLocale } from './testingLocale.jsx'
 import { liveTradingHref } from './liveTradingNavigation.js'
 import { navigate } from './clientNavigation.js'
 import { readLiveStatus } from './liveStatusApi.js'
-import { recentChartsKey, readRecentCharts } from './liveRecentCharts.js'
 import { liveOverviewPerformance } from './liveOverviewModel.js'
 
 export default function LiveTradingOverview({ workspace, connectionId, query, snapshot, status, reason, symbol, timeframe, onRefresh, onResetSymbol, connections, onSelectConnection }) {
@@ -20,7 +19,6 @@ export default function LiveTradingOverview({ workspace, connectionId, query, sn
   const scope=`${workspace}:${connectionId}`
   const [history,setHistory]=useState(null), [revision,setRevision]=useState(0)
   const performance=account && history?.scope===scope ? liveOverviewPerformance(history.payload,connectionId,account) : null
-  const recent=readRecentCharts(recentChartsKey(workspace,connectionId,account))
   useEffect(()=>{
     if(!connectionId)return
     const controller=new AbortController()
@@ -67,7 +65,6 @@ export default function LiveTradingOverview({ workspace, connectionId, query, sn
             <div><dt>{t('Quyền giao dịch')}</dt><dd>{permission(currentConnection?.status==='connected'?currentConnection?.verified_permissions?.trade:undefined)}</dd></div>
           </dl></article>
         </div>
-        {recent.length>0&&<section className="mt5-recent" aria-label={t('Biểu đồ gần đây')}><h2>{t('Biểu đồ gần đây')}</h2><div className="mt5-recent-list">{recent.map(item=><button type="button" key={`${item.symbol}:${item.timeframe}`} onClick={()=>open(item.symbol,item.timeframe)}><TestingIcon kind="chart"/><span><strong>{item.symbol}</strong><small>{item.timeframe}</small></span><TestingIcon kind="chevron-right"/></button>)}</div></section>}
         {performance?<LiveOverviewReport key={scope} performance={performance} tradesHref={tradesHref}/>:history?.scope===scope&&history.status==='loading'?<TestingSkeleton label="Đang đọc lịch sử giao dịch…"/>:<TestingReadState message="Chưa có lịch sử giao dịch đã đồng bộ." onRetry={connectionId?refresh:undefined}/>}
       </>}
     </>}

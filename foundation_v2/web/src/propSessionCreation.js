@@ -11,7 +11,7 @@ async function propJson(url, workspace, options = {}) {
   return payload
 }
 function utcIsoFromInput(value) {
-  const parsed = new Date(`${value}:00Z`)
+  const parsed = new Date(value.endsWith('Z') ? value : `${value}Z`)
   if (Number.isNaN(parsed.getTime())) return null
   return parsed.toISOString()
 }
