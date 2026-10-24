@@ -6638,6 +6638,10 @@
     "vi": "Phân nhóm theo mã tài sản.",
     "en": "Grouped by symbol name."
   },
+  "Phân nhóm từ thông tin broker.": {
+    "vi": "Phân nhóm từ thông tin broker.",
+    "en": "Grouped using broker metadata."
+  },
   "Thời gian báo giá đi trước đồng hồ máy. Kiểm tra đồng bộ giờ Windows.": {
     "vi": "Thời gian báo giá đi trước đồng hồ máy. Kiểm tra đồng bộ giờ Windows.",
     "en": "The quote timestamp is ahead of this computer. Check Windows time synchronization."

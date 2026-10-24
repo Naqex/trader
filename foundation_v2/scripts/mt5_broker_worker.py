@@ -12,6 +12,7 @@ from datetime import datetime
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import mt5_connector as connector
 import mt5_demo_trading as trading
+import mt5_symbol_catalog
 
 
 def fence(request, operation):
@@ -23,7 +24,7 @@ def fence(request, operation):
                              (request['workspace'], request['connection_id'])).fetchone()
         statuses = ('queued', 'syncing', 'connected') if operation in ('collect', 'health') else ('connected',)
         mode = request.get('requested_mode')
-        if mode not in ('read_only', 'trading') or (mode == 'read_only' and operation not in ('collect', 'health', 'snapshot')):
+        if mode not in ('read_only', 'trading') or (mode == 'read_only' and operation not in ('collect', 'health', 'snapshot', 'symbols')):
             raise RuntimeError('mt5_connection_revoked')
         if not row or row[0] != request['generation'] or row[1] != mode or row[2] not in statuses or row[3] != request['credential']:
             raise RuntimeError('mt5_connection_revoked')
@@ -70,14 +71,16 @@ class Session:
         if any(request.get(key) != value for key,value in self.context.items()):
             raise RuntimeError('mt5_connection_revoked')
         operation = request['operation']
-        if operation not in ('collect','health','snapshot','preview','command','reconcile'):
+        if operation not in ('collect','health','snapshot','symbols','preview','command','reconcile'):
             raise RuntimeError('mt5_request_invalid')
-        if self.context['requested_mode'] == 'read_only' and operation not in ('collect', 'health', 'snapshot'):
+        if self.context['requested_mode'] == 'read_only' and operation not in ('collect', 'health', 'snapshot', 'symbols'):
             raise RuntimeError('mt5_connection_revoked')
         self.guard(request, operation)
         account = self.check_identity()
         if operation == 'health':
             result = {'status':'ready','connected':True}
+        elif operation == 'symbols':
+            result = mt5_symbol_catalog.catalog(self.sdk)
         elif operation == 'collect':
             result = connector.snapshot(self.sdk, self.secret, datetime.fromisoformat(request['from_utc'].replace('Z','+00:00')),
                                         request['history_from_utc'], self.context['requested_mode'], request['generation'])

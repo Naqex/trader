@@ -57,6 +57,16 @@ so canonical ownership paths remain valid while logs/manifests live on E:.
 See [Live chart receipt](../evidence/live-chart-stability-20261024/RECEIPT.md)
 for the deployed UI hash and read-only stream acceptance.
 
+The later 24 October MT5 read-tools update runs API8010 from
+`E:/BACKUP-TRADINGWORKSPACE/mt5-tools-20261024/rust-target/release`.
+Native/compact, QDM, database/artifacts, scientific/legacy descriptors and the
+existing AI workflow interpreter are retained; no migration. UI5180 was promoted
+atomically with prior assets retained. The owner authorized reconnect of account
+…4926; SDK metadata and the AI source were checked on the running services.
+Native MCP remains optional and unconfigured after terminal restart. See
+[read-tools receipt](../evidence/mt5-read-tools-20261024/RECEIPT.md), including the
+transient reconnect error and recovery rather than a lifecycle stability claim.
+
 The native flow is `React → Axum → native domain → PostgreSQL transaction and
 revision/receipt → HTTP response`. Research and downloads use bounded background
 execution. A successful quick market order is already filled at the current

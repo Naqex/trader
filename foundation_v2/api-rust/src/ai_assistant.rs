@@ -288,6 +288,7 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/api/v2/ai/assistant/documents",get(crate::ai_documents::list).post(crate::ai_documents::upload))
         .route("/api/v2/ai/assistant/documents/{id}",get(crate::ai_documents::read).delete(crate::ai_documents::delete))
         .route("/api/v2/ai/assistant/sources",get(crate::ai_context::sources))
+        .route("/api/v2/ai/assistant/mt5/{id}/{tool}",get(crate::ai_mt5_tools::read))
         .route("/api/v2/ai/assistant/workflows",get(crate::ai_runs::list_workflows))
         .route("/api/v2/ai/assistant/agents/{id}",get(crate::ai_agents::read).patch(crate::ai_agents::update))
         .route("/api/v2/ai/assistant/conversations",get(crate::ai_runs::list_conversations))
@@ -304,6 +305,7 @@ pub fn routes() -> Router<Arc<AppState>> {
     routes.route_layer(axum::middleware::from_fn(local_boundary))
 }
 pub fn native(method: &str, path: &str) -> bool {
+    if method == "GET" && path == "/api/v2/ai/assistant/mt5/{id}/{tool}" { return true; }
     let suffix = path.strip_prefix("/api/v2/ai/chatgpt").or_else(|| path.strip_prefix("/api/v2/ai/assistant"));
     if matches!((method,suffix),("GET" | "POST",Some("/agents")) | ("GET" | "PATCH",Some("/agents/{id}"))) { return true; }
     if matches!((method,suffix),("GET" | "POST",Some("/documents")) | ("GET" | "DELETE",Some("/documents/{id}")) | ("GET",Some("/sources"|"/workflows"))) { return true; }

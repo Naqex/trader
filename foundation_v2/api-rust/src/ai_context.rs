@@ -16,7 +16,7 @@ pub(crate) fn validate(source: &Value) -> Result<(), ApiError> {
     if source.as_object().is_none_or(|v| v.len() != 2)
         || !source["kind"]
             .as_str()
-            .is_some_and(|v| ["replay", "journal", "research"].contains(&v))
+            .is_some_and(|v| ["replay", "journal", "research", "mt5_symbols", "mt5_indicators"].contains(&v))
         || !source["id"].as_str().is_some_and(|v| {
             !v.is_empty()
                 && v.len() <= 128
@@ -26,6 +26,7 @@ pub(crate) fn validate(source: &Value) -> Result<(), ApiError> {
     {
         return Err(invalid());
     }
+    if source["kind"].as_str().is_some_and(|s| s.starts_with("mt5_")) && source["id"].as_str().and_then(|s| uuid::Uuid::parse_str(s).ok()).is_none() { return Err(invalid()); }
     Ok(())
 }
 pub(crate) async fn sources(
@@ -47,6 +48,14 @@ pub(crate) async fn sources(
         items
             .push(json!({"kind":"research","id":r.get::<_,String>(0),"name":r.get::<_,String>(1)}));
     }
+    let accounts=conn.query("SELECT connection_id,name,generation FROM mt5_connections WHERE workspace_id=$1 AND status='connected' ORDER BY created_at,connection_id LIMIT 10", &[&scope.workspace_id]).await.map_err(|_|ApiError::database())?;
+    for r in accounts {
+        let id:uuid::Uuid=r.get(0);
+        items.push(json!({"kind":"mt5_symbols","id":id,"name":r.get::<_,String>(1)}));
+        if state.mt5_tools.configured(&scope.workspace_id,id,r.get(2)) {
+            items.push(json!({"kind":"mt5_indicators","id":id,"name":r.get::<_,String>(1)}));
+        }
+    }
     Ok(Json(json!({"items":items})))
 }
 pub(crate) async fn snapshot(
@@ -55,6 +64,19 @@ pub(crate) async fn snapshot(
     source: &Value,
 ) -> Result<Value, ApiError> {
     validate(source)?;
+    if let Some(kind @ ("mt5_symbols" | "mt5_indicators")) = source["kind"].as_str() {
+        let id=uuid::Uuid::parse_str(source["id"].as_str().unwrap()).map_err(|_|invalid())?;
+        let result=state.mt5_tools.read(state,scope,id,if kind=="mt5_symbols" {"symbols"}else{"indicators"},&Default::default()).await?;
+        let items=result["data"]["items"].as_array().ok_or_else(invalid)?;
+        // An explicit sample, not an apparently complete catalog or chart context.
+        let mut selected=Vec::new();let mut size=0;
+        for item in items.iter().take(64) {
+            let bytes=item.to_string().len();if size+bytes>24576 {break;}size+=bytes;selected.push(item.clone());
+        }
+        let data=json!({"kind":kind,"id":id,"workspace_id":scope.workspace_id,"items":selected,"total_count":items.len(),"truncated":selected.len()<items.len(),"captured_at_utc":result["data"]["captured_at_utc"],"time_basis":result["data"]["time_basis"],"source_provenance":result["provenance"]});
+        let hash=format!("{:x}",Sha256::digest(serde_json::to_vec(&data).map_err(|_|invalid())?));
+        return Ok(json!({"provenance":{"kind":kind,"id":id,"generation":result["provenance"]["generation"],"captured_at_utc":data["captured_at_utc"],"sha256":hash,"read_only":true},"data":data}));
+    }
     let mut conn = state.pool.get().await.map_err(|_| ApiError::database())?;
     let tx = conn
         .build_transaction()

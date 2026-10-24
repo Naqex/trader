@@ -13,7 +13,7 @@ export default function AiSourcePicker({ workspace, value, onChange, en, disable
       .catch(failure => { if (!abort.signal.aborted) setError(aiErrorCopy(failure.message, en)) })
     return () => abort.abort()
   }, [workspace, en, revision])
-  const label = { replay: say('Chart', 'Chart'), journal: say('Nhật ký', 'Journal'), research: say('Quant', 'Quant') }
+  const label = { replay: say('Chart', 'Chart'), journal: say('Nhật ký', 'Journal'), research: say('Quant', 'Quant'), mt5_symbols: say('Danh mục MT5', 'MT5 symbols'), mt5_indicators: say('Indicator MT5', 'MT5 indicators') }
   const key = item => `${item.kind}:${item.id}`
   const options = [{ value: '', label: say('Không đính kèm dữ liệu', 'No data attached'), localize: false }, ...items.map(item => ({ value: key(item), label: item.name, detail: `${label[item.kind]} · ${item.id}`, localize: false }))]
   if (value && !items.some(item => key(item) === key(value))) options.push({ value: key(value), label: value.id, detail: say('Chưa xác minh nguồn', 'Source not verified'), localize: false })
@@ -21,11 +21,12 @@ export default function AiSourcePicker({ workspace, value, onChange, en, disable
     <FxSelect label={say('Nguồn dữ liệu chỉ đọc', 'Read-only data source')} value={value ? key(value) : ''} options={options} searchable disabled={disabled} onChange={selected => { const item = items.find(item => key(item) === selected); onChange(item ? { kind: item.kind, id: item.id } : null) }} />
     <button className="wm-button" type="button" disabled={disabled} onClick={() => refresh(n => n + 1)} aria-label={say('Tải lại nguồn dữ liệu', 'Refresh data sources')}>↻</button>
     {error && <p className="ai-inline-error" role="alert">{error}</p>}
-    {value && <small>{say('Chụp dữ liệu khi gửi · chỉ đọc', 'Snapshot on send · read only')}</small>}
+    {value && <small>{value.kind.startsWith('mt5_') ? say('Chỉ đọc · dữ liệu có thể lưu đệm tối đa 60 giây', 'Read only · data may be cached for up to 60 seconds') : say('Chụp dữ liệu khi gửi · chỉ đọc', 'Snapshot on send · read only')}</small>}
   </div>
 }
 
 export function AiSourceProvenance({ source, en }) {
   if (!source) return null
-  return <small className="ai-source-provenance" title={`SHA256 ${source.sha256 || ''}`}>{source.kind === 'research' ? 'Quant' : source.kind === 'journal' ? en ? 'Journal' : 'Nhật ký' : 'Chart'} · {source.id}{source.revision != null ? ` · r${source.revision}` : ''}{source.cursor_index != null ? ` · ${en ? 'bar' : 'nến'} ${source.cursor_index}` : ''}{source.cutoff_timestamp != null ? ` · ${new Date(source.cutoff_timestamp * 1000).toISOString()}` : ''}</small>
+  const label = { research:'Quant', journal:en?'Journal':'Nhật ký', mt5_symbols:en?'MT5 symbols':'Danh mục MT5', mt5_indicators:'MT5 indicators', replay:'Chart' }
+  return <small className="ai-source-provenance" title={`SHA256 ${source.sha256 || ''}`}>{label[source.kind] || source.kind} · {source.id}{source.revision != null ? ` · r${source.revision}` : ''}{source.cursor_index != null ? ` · ${en ? 'bar' : 'nến'} ${source.cursor_index}` : ''}{source.cutoff_timestamp != null ? ` · ${new Date(source.cutoff_timestamp * 1000).toISOString()}` : ''}{source.captured_at_utc ? ` · ${new Date(source.captured_at_utc).toLocaleString(en?'en-GB':'vi-VN')}` : ''}</small>
 }

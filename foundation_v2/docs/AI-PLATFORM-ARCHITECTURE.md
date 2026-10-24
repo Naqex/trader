@@ -341,7 +341,16 @@ Kiểm chứng vòng đời và chi phí idle: [receipt keepalive](../evidence/a
 [Probe MCP ngày 24/10](../evidence/mt5-native-mcp-20261024/RESEARCH.md) đã xác thực
 terminal build6230, discovery67 tools và thử19 calls chỉ đọc. Ưu tiên tận dụng
 metadata symbol cho asset catalog, rồi đánh giá calendar/indicator/tester như
-capability bổ sung. Chưa nối MCP vào Mentor/runtime hay đổi đường SDK execution.
+capability bổ sung. Probe này chưa đổi đường SDK execution.
 Probe ghi nhận offset local tự mâu thuẫn, tick_size zero và calendar có lỗi/độ trễ
 dài; mọi integration cần normalization, account binding, allowlist và budget riêng.
 Kết quả này không cấp quyền broker, file mutation hoặc tự chạy tester/EA.
+
+[MT5 read services](MT5-READ-TOOLS.md) dùng SDK cho metadata,
+MCP client Rust chỉ đọc cho indicator/calendar/event, dùng chung workspace/account
+binding và snapshot cho Mentor/workflow. Không có MCP server riêng hoặc autonomous
+tool loop. API/UI local đã được cập nhật với quyền owner; danh mục SDK và nguồn
+AI đã kiểm tra trên tài khoản đang kết nối. Native MCP mặc định tắt; adapter đã
+đọc được 38 standard indicators từ terminal thật nhưng chưa tự phục hồi cấu hình
+MCP sau restart. Xem [receipt](../evidence/mt5-read-tools-20261024/RECEIPT.md)
+để phân biệt source, fixture và runtime đã kiểm chứng.

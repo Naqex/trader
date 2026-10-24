@@ -356,6 +356,27 @@ fn managed_record(row: &tokio_postgres::Row, allow_read: bool) -> Result<Managed
 fn locked(reason: &str) -> Value {
     json!({"status":"locked","reason":reason,"mode":"demo","execution_enabled":false,"account":null,"symbols":[],"symbol":null,"timeframe":"M1","quote":null,"instrument":null,"bars":[],"positions":[],"orders":[],"policy":null,"requests":[]})
 }
+
+// Shared read services use the same saved connection authority as Live, without
+// handing the MCP adapter broker credentials or execution methods.
+#[derive(Clone, PartialEq, Eq)]
+pub(crate) struct ReadBinding {
+    pub generation: i64,
+    pub login: String,
+    pub server: String,
+}
+pub(crate) async fn read_binding(state: &AppState, scope: &Workspace, id: Uuid) -> Result<ReadBinding, ApiError> {
+    if !state.native_runtime { return Err(denied("mt5_native_runtime_required")); }
+    let Context::Managed(m) = context(state, scope, Some(id), true).await? else { unreachable!() };
+    Ok(ReadBinding { generation: m.generation, login: m.login, server: m.server })
+}
+pub(crate) async fn symbol_catalog(state: &AppState, scope: &Workspace, id: Uuid) -> Result<Value, ApiError> {
+    let ctx = context(state, scope, Some(id), true).await?;
+    let result=adapter_for(state, &ctx, ctx.input("symbols", json!({}))).await
+        .map_err(|code| ApiError::detail(StatusCode::SERVICE_UNAVAILABLE, &code))?;
+    if let Some(code)=result["error"].as_str() { return Err(ApiError::detail(StatusCode::SERVICE_UNAVAILABLE,code)); }
+    Ok(result)
+}
 fn read_failure(status: StatusCode, reason: &str) -> Value {
     let mut value=locked(reason);
     value["access_denied"]=json!(matches!(status,StatusCode::UNAUTHORIZED|StatusCode::FORBIDDEN)
@@ -824,7 +845,7 @@ async fn adapter_for(state: &AppState, p: &Context, input: Value) -> Result<Valu
                 .as_ref()
                 .ok_or_else(|| "mt5_connection_not_available".to_owned())
                 .and_then(|row| {
-                    managed_record(row, input["operation"] == "snapshot").map_err(|_| "mt5_permissions_unverified".to_owned())
+                    managed_record(row, matches!(input["operation"].as_str(), Some("snapshot" | "symbols"))).map_err(|_| "mt5_permissions_unverified".to_owned())
                 })?;
             if current.generation != managed.generation
                 || current.login != managed.login

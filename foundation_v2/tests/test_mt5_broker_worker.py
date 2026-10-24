@@ -104,6 +104,33 @@ class WorkerTests(unittest.TestCase):
         session.sdk.order_check.assert_not_called()
         session.sdk.order_send.assert_not_called()
 
+    def test_catalog_is_read_only_preserves_broker_metadata_and_checks_revocation(self):
+        session=self.session()
+        session.context['requested_mode']='read_only'
+        request={**self.request,'requested_mode':'read_only','operation':'symbols'}
+        session.sdk.symbols_get.return_value=(NS(name='ODD_SYMBOL',category='Crypto',path='CFD\\Crypto',description='Bitcoin',currency_base='BTC',currency_profit='USD',trade_mode=4,trade_calc_mode=2,swap_long=float('nan')), NS(name='DISABLED',trade_mode=0))
+        result=session.handle(request)
+        self.assertEqual([s['symbol'] for s in result['items']],['DISABLED','ODD_SYMBOL'])
+        self.assertEqual(result['items'][1]['category'],'Crypto')
+        self.assertNotIn('swap_long',result['items'][1])
+        self.assertEqual(session.guard.call_count,2)
+        session.sdk.symbol_select.assert_not_called()
+        session.sdk.symbol_info_tick.assert_not_called()
+        session.sdk.order_check.assert_not_called()
+        session.sdk.order_send.assert_not_called()
+        session.guard.side_effect=[None,RuntimeError('mt5_connection_revoked')]
+        with self.assertRaisesRegex(RuntimeError,'mt5_connection_revoked'):
+            session.handle(request)
+
+    def test_catalog_failure_is_not_an_empty_success(self):
+        session=self.session()
+        session.sdk.symbols_get.return_value=None
+        with self.assertRaisesRegex(RuntimeError,'demo_symbol_unavailable'):
+            session.handle({**self.request,'operation':'symbols'})
+        session.sdk.symbols_get.return_value=tuple(NS(name=str(i),description='x'*512,path='x'*512,category='x'*512,currency_base='x'*512,currency_profit='x'*512,currency_margin='x'*512) for i in range(1000))
+        with self.assertRaisesRegex(RuntimeError,'demo_catalog_too_large'):
+            session.handle({**self.request,'operation':'symbols'})
+
     def test_identity_distinguishes_stopped_terminal_from_network_disconnect(self):
         session=self.session()
         session.context['requested_mode']='read_only'

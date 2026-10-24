@@ -22,6 +22,7 @@ pub mod prop_service;
 pub mod artifact_data;
 mod ai_documents;
 mod ai_context;
+pub mod ai_mt5_tools;
 pub mod data_routes;
 pub mod analytics;
 pub mod control_routes;
@@ -233,6 +234,7 @@ pub(crate) mod tests {
         Arc::new(AppState {
             ai_assistant,
             ai_runs,
+            mt5_tools: crate::ai_mt5_tools::Mt5Tools::from_environment().unwrap(),
             config,
             pool,
             authorization: auth::LocalAuthorization::new("owner".into(), vec!["a".into()]),
