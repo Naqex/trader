@@ -21,6 +21,7 @@
 .fx-app .wm-notification button:focus-visible { outline:2px solid var(--wm-focus); outline-offset:-2px; }
 @media(max-width:700px) { .wm-notifications { inset:16px 16px auto 16px; width:auto; } .fx-app .wm-notification button { flex-basis:44px; width:44px; height:44px; } }
 .fx-app.is-chart-workspace .wm-notifications { inset:auto auto calc(72px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px)); width:min(340px,calc(100vw - 32px)); max-height:calc(100dvh - 160px); overflow-y:auto; }
+@media(max-width:600px) { .fx-app.is-chart-workspace .wm-notifications { bottom:calc(104px + env(safe-area-inset-bottom,0px)); } }
 .fx-app.is-chart-workspace .wm-notifications:has([data-order-status=closed],[data-order-status=partial_closed],[data-order-status=cancelled]) { width:min(400px,calc(100vw - 32px)); }
 .fx-app .wm-notification.is-blocking { align-items:flex-start; flex-wrap:wrap; }
 .fx-app .wm-notification .wm-notification-action { flex:0 0 auto; width:auto; height:auto; min-height:32px; padding:4px 8px; font-size:13px; background:var(--wm-hover); color:var(--wm-content); }

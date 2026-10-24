@@ -1,7 +1,7 @@
 import LiveTradingOverview from './LiveTradingOverview.jsx'
 import ChartIcon from './ChartIcon.jsx'
 import { replayResolution } from './advancedReplayDatafeed.js'
-import { useNotifications } from './Notifications.jsx'
+import { NotificationSlot, useNotifications } from './Notifications.jsx'
 import { liveTradingHref } from './liveTradingNavigation.js'
 import { buildWorkspaceHref } from './workspaceContext.js'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
@@ -234,7 +234,7 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
   return <Suspense fallback={<TestingSkeleton label="Đang tải biểu đồ…" />}><LiveChartSurface objectsOpen={panel==='objects'} headerHeight={headerSlots?.headerHeight || 38}>
     <LegacyChartHeader marketMode="live" controls={headerSlots} symbol={chartSymbol} name={`MT5 · ${snapshot?.account?.login || chartSnapshot?.account?.login || 'MT5'}`} backHref={liveTradingHref(workspace,accountQuery)} theme={theme} onTheme={()=>applyAppearance({...appearance,theme:theme==='dark'?'light':'dark'})} onOpenTool={openTool} onFullscreen={fullscreen}/>
     {!headerSlots && <header className="live-terminal-toolbar"><a href={liveTradingHref(workspace,accountQuery)} aria-label={t('Trở về tổng quan MT5')}><ChartIcon name="arrow-left"/></a><strong>{chartSymbol || 'MetaTrader'}</strong><FxSelect label="Khung thời gian MT5" value={timeframe} options={Object.keys(DEMO_TIMEFRAMES).map(value=>({value,label:value}))} onChange={value=>route({mt5_timeframe:value})}/><button type="button" className="live-text-action" onClick={event=>openTool('data',event.currentTarget)}>{t('Chọn mã giao dịch MT5')}</button></header>}
-    {(reason || paused || unresolved) && <div className="live-terminal-state" role={read.status==='error'||unresolved?'alert':'status'}><TestingIcon kind="info" /><span>{unresolved?t('Chưa rõ kết quả. Đối soát MT5 trước khi gửi lệnh khác.'):t(reason || 'Đã tạm dừng mở lệnh mới.')}</span>{unresolved && <button className="live-text-action" type="button" disabled={busy} onClick={reconcile}>{t(busy?'Đang đối soát…':'Đối soát')}</button>}{resetSymbol && <button type="button" className="live-text-action" onClick={resetSymbol}>{t('Tải lại danh sách mã')}</button>}</div>}
+    <NotificationSlot>{(reason || paused || unresolved) && <section className={`wm-notification is-blocking live-terminal-state ${read.status==='error'||unresolved?'is-error':''}`} role={read.status==='error'||unresolved?'alert':'status'}><TestingIcon kind="info" /><p>{unresolved?t('Chưa rõ kết quả. Đối soát MT5 trước khi gửi lệnh khác.'):t(reason || 'Đã tạm dừng mở lệnh mới.')}</p>{unresolved && <button className="wm-notification-action" type="button" disabled={busy} onClick={reconcile}>{t(busy?'Đang đối soát…':'Đối soát')}</button>}{resetSymbol && <button type="button" className="wm-notification-action" onClick={resetSymbol}>{t('Tải lại danh sách mã')}</button>}</section>}</NotificationSlot>
     <section className="replay-workspace live-terminal-main">
       <div className="replay-main live-terminal-market">
         <div className="live-terminal-chart chart-frame has-advanced-chart"><div className="chart-canvas">
