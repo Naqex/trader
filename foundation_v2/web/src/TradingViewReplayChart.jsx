@@ -72,7 +72,7 @@ export default function TradingViewReplayChart(props) {
   const { t, locale } = useTestingLocale()
 
   const { workspace, sessionId, datasetId, datasetSha256, symbol, assetClass, seconds, tickSize, rows, cutoff, theme, drawings, levels, orderEditable, orderGeneration, viewportRequest, marketMode = 'replay' } = props
-  const host = useRef(null), instance = useRef(null), latest = useRef(props)
+  const host = useRef(null), instance = useRef(null), liveAdapter = useRef(null), latest = useRef(props)
   latest.current = props
   const [status, setStatus] = useState('loading'), [message, setMessage] = useState('')
   const [layoutStatus, setLayoutStatus] = useState('saved')
@@ -81,6 +81,7 @@ export default function TradingViewReplayChart(props) {
     if(status==='ready'&&host.current)return bindBrowserChartAnnotations(host.current)
   },[status,sessionId])
   const [closing, setClosing] = useState(false)
+  const widgetSeconds = marketMode === 'live' ? null : seconds
   const storageKey = marketMode === 'live' ? `tw:advanced-chart:live:v1:${workspace}:${sessionId}:${datasetId}` : `tw:advanced-chart:v1:${workspace}:${sessionId}:${datasetId}`
 
   useEffect(() => {
@@ -156,12 +157,17 @@ export default function TradingViewReplayChart(props) {
         const state = latest.current
         return historyReader.read({ resolution, ...period, cursorIndex: state.viewCursorIndex, cutoff: state.cutoff })
       } : undefined
-      adapter = (marketMode === 'live' ? createLiveChartDatafeed : createAdvancedReplayDatafeed)({ symbol, assetClass, seconds, tickSize, rows: current.rows, cutoff: current.cutoff, readHistory })
+      adapter = (marketMode === 'live' ? createLiveChartDatafeed : createAdvancedReplayDatafeed)({ symbol, assetClass, seconds: current.seconds, tickSize, rows: current.rows, cutoff: current.cutoff, readHistory, timeframes:current.liveTimeframes, onResolution:resolution=>{
+        // A route change during library startup must win over the widget's initial request.
+        if (!chart && resolution !== latest.current.preferredInterval) return
+        latest.current.onIntervalChange?.(resolution)
+      } })
+      if (marketMode === 'live') liveAdapter.current = adapter
       let saved
       try { saved = readChartSnapshot(localStorage, storageKey, Number(current.cutoff)) }
       catch { setMessage('Không đọc được chart đã lưu trên trình duyệt này.') }
       const seriesState = saved?.charts?.[0]?.panes?.flatMap(pane => pane.sources || []).find(source => source.type === 'MainSeries')?.state
-      const restoredInterval = adapter.supported.includes(current.preferredInterval) ? current.preferredInterval : adapter.supported.includes(seriesState?.interval) ? seriesState.interval : adapter.interval
+      const restoredInterval = adapter.supported.includes(current.preferredInterval) ? current.preferredInterval : marketMode !== 'live' && adapter.supported.includes(seriesState?.interval) ? seriesState.interval : adapter.interval
       if (seriesState) { seriesState.symbol = symbol; seriesState.interval = restoredInterval }
       widget = new window.TradingView.widget({
         container: host.current, library_path: '/charting_library/', datafeed: adapter.datafeed,
@@ -173,7 +179,7 @@ export default function TradingViewReplayChart(props) {
         auto_save_delay: 1,
         enabled_features: ['seconds_resolution', 'items_favoriting'],
         // v23's sampled analytics assumes an http document URL and fails on srcdoc.
-        disabled_features: ['14851', 'create_volume_indicator_by_default', 'main_series_scale_menu', 'header_symbol_search', 'symbol_search_hot_key', 'compare_symbol', 'header_compare', 'header_saveload', 'use_localstorage_for_settings', 'header_screenshot', 'header_fullscreen_button', 'widget_logo', ...(marketMode==='live'?['header_resolutions']:[])],
+        disabled_features: ['14851', 'create_volume_indicator_by_default', 'main_series_scale_menu', 'header_symbol_search', 'symbol_search_hot_key', 'compare_symbol', 'header_compare', 'header_saveload', 'use_localstorage_for_settings', 'header_screenshot', 'header_fullscreen_button', 'widget_logo'],
         overrides: paneAppearance(theme),
         studies_overrides: Object.fromEntries(Object.entries(volumeAppearance(theme)).map(([key, value]) => [`volume.${key}`, value])),
       })
@@ -190,7 +196,9 @@ export default function TradingViewReplayChart(props) {
         })
         // Restoring a layout cannot change the authoritative dataset symbol.
         if (chart.symbol() !== symbol) chart.setSymbol(symbol)
-        if (!adapter.supported.includes(chart.resolution())) chart.setResolution(adapter.interval)
+        const preferred = marketMode === 'live' ? latest.current.preferredInterval : null
+        if (adapter.supported.includes(preferred) && chart.resolution() !== preferred) chart.setResolution(preferred)
+        else if (!adapter.supported.includes(chart.resolution())) chart.setResolution(adapter.interval)
         const refresh = () => {
           if (cancelled || !chart || !latest.current.rows.length) return
           if (orderOverlay?.isDragging()) return
@@ -295,7 +303,7 @@ export default function TradingViewReplayChart(props) {
           }).catch(error => { if (!cancelled) { clearTimeout(loadingTimer); setStatus('error'); setMessage(String(error.message || error)) } })
         }
         instance.current = { widget, adapter, historyReader, chart, refresh, importAnnotations, save, scheduleSave }
-        if (!adapter.update(latest.current.rows, latest.current.cutoff, latest.current.stepTail)) { historyReader?.reset(); chart.resetData() }
+        if (!(marketMode === 'live' ? adapter.update(latest.current.rows, latest.current.seconds) : adapter.update(latest.current.rows, latest.current.cutoff, latest.current.stepTail))) { historyReader?.reset(); chart.resetData() }
         // Panning keeps playback running; order drag handles pause separately.
         let replayHoverTimestamp = null
         widget.subscribe('mouse_down', () => {
@@ -375,7 +383,7 @@ export default function TradingViewReplayChart(props) {
           resizeChrome()
           publishHeader()
         })
-        chart.onIntervalChanged().subscribe(null, value => { publishHeader(value); scheduleSave() })
+        chart.onIntervalChanged().subscribe(null, value => { if(marketMode === 'live')adapter.selectInterval(value); publishHeader(value); scheduleSave() })
         chart.onVisibleRangeChanged?.().subscribe(null, () => syncOrderHandles())
         chart.onChartTypeChanged().subscribe(null, () => { publishHeader(); scheduleSave() })
         publishHeader()
@@ -400,16 +408,22 @@ export default function TradingViewReplayChart(props) {
     return () => {
       cancelled = true; clearOrderHandles(); layoutSave?.dispose(); clearTimeout(loadingTimer); headerObserver?.disconnect(); cancelAnimationFrame(resizeFrame); cancelAnimationFrame(publishFrame); resizeFrame = 0; publishFrame = 0; nativeHeader?.ownerDocument.removeEventListener('keydown', saveShortcut, true); document.removeEventListener('keydown', saveShortcut, true); instance.current = null
       latest.current.onHeaderSlots?.(null)
+      if (liveAdapter.current === adapter) liveAdapter.current = null
       adapter?.dispose(); historyReader?.dispose(); widget?.remove()
     }
-  }, [workspace, sessionId, datasetId, datasetSha256, symbol, assetClass, seconds, tickSize, storageKey, locale, marketMode])
+  }, [workspace, sessionId, datasetId, datasetSha256, symbol, assetClass, widgetSeconds, tickSize, storageKey, locale, marketMode])
 
   useEffect(() => {
     const item = instance.current
-    if (!item) return
-    if (!item.adapter.update(rows, cutoff, props.stepTail)) { item.historyReader?.reset(); item.chart.resetData() }
+    // Initial native history can be waiting for a newly selected timeframe before onChartReady.
+    if (!item) { liveAdapter.current?.update(rows, seconds); return }
+    if (!(marketMode === 'live' ? item.adapter.update(rows, seconds) : item.adapter.update(rows, cutoff, props.stepTail))) { item.historyReader?.reset(); item.chart.resetData() }
     item.chart.dataReady(() => { if (item === instance.current) item.refresh() })
-  }, [rows, cutoff, props.stepTail])
+  }, [rows, cutoff, props.stepTail, seconds])
+  useEffect(() => {
+    const item = instance.current
+    if (marketMode === 'live' && item && item.adapter.supported.includes(props.preferredInterval) && item.chart.resolution() !== props.preferredInterval) item.chart.setResolution(props.preferredInterval)
+  }, [props.preferredInterval, marketMode])
   useEffect(() => { instance.current?.refresh() }, [levels, orderEditable, props.orderCloseable, orderGeneration])
   useEffect(() => { if (closeTarget && closeTarget.generation !== orderGeneration && !closing) setCloseTarget(null) }, [orderGeneration, closeTarget, closing])
   useEffect(() => { instance.current?.importAnnotations() }, [drawings])

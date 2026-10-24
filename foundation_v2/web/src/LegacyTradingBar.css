@@ -51,6 +51,7 @@
 .legacy-account-details > div { display: flex; justify-content: space-between; gap: 20px; }
 .legacy-account-details dt { color: var(--menu-muted); }
 .legacy-account-details dd { margin: 0; font-variant-numeric: tabular-nums; }
+.legacy-account-note { max-width:280px; margin:0; padding:0 16px 14px; color:var(--menu-muted); font-size:11px; line-height:1.5; }
 .legacy-preset-error { display: flex; align-items: center; justify-content: space-between; margin: 0; padding: 8px 14px; color: var(--chart-text); font-size: 12px; background: var(--chart-bg); }
 .legacy-preset-error button { border: 0; background: transparent; color: inherit; cursor: pointer; }
 .legacy-scalper-modal form.legacy-scalper-settings { display: grid; gap: 24px; padding: 24px; }

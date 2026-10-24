@@ -11,13 +11,14 @@ import './LegacyTradingBar.css'
 // Shared chart UI only. Each adapter owns validation, execution and receipts.
 export default function ChartTradingDock({ workspace, scopeId, instrument, reference, disabled,
   onQuickTrade, onPresetChange, analyticsHref, propRulesAction, readStatus, theme,
-  equity, floating, hasPosition, accountDetails, money, label, openSignal, settingsDisabled = disabled,
+  equity, floating, hasPosition, accountDetails, accountNote, onAccountOpenChange, money, label, openSignal, settingsDisabled = disabled,
   quickLabel = 'Đặt lệnh nhanh theo khối lượng đã chọn', children }) {
   const { t } = useTestingLocale()
   const [positionsOpen, setPositionsOpen] = useState(false), [maximized, setMaximized] = useState(false), [height, setHeight] = useState(260)
   const [overflowReserve, setOverflowReserve] = useState(null)
   const [resizing, setResizing] = useState(false)
   const [balanceAnchor, setBalanceAnchor] = useState(null)
+  useEffect(()=>{onAccountOpenChange?.(Boolean(balanceAnchor))},[Boolean(balanceAnchor),onAccountOpenChange])
   const storageKey = scalperPresetStorageKey(workspace, scopeId)
   const [preset, setPreset] = useState(() => readScalperPreset(workspace, scopeId)), [draft, setDraft] = useState(defaultScalperPreset), [scalperAnchor, setScalperAnchor] = useState(null), [error, setError] = useState('')
   const workspaceRef = useRef(null), drag = useRef(null), hideBalance = useRef(null)
@@ -161,7 +162,7 @@ export default function ChartTradingDock({ workspace, scopeId, instrument, refer
     </div>
     <div className="legacy-resizable-positions" hidden={!positionsOpen} style={maximized && !resizing ? undefined : { height: positionsOpen ? height : 0 }}>{typeof children === 'function' ? children(positionsOpen) : children}</div>
     {error && !scalperAnchor && <p className="legacy-preset-error" role="alert">{t(error)}<button type="button" onClick={() => setError('')} aria-label={t('Đóng thông báo')}>×</button></p>}
-    {balanceAnchor && <LegacyPopover anchor={balanceAnchor} theme={theme} label={t('Thông tin tài khoản')} onClose={() => { clearTimeout(hideBalance.current); setBalanceAnchor(null) }}><dl className="legacy-account-details" onPointerEnter={() => clearTimeout(hideBalance.current)} onPointerLeave={dismissBalance}>{accountDetails.map(([label, value]) => <div key={label}><dt>{t(label)}</dt><dd className={['Realized PnL', 'Unrealized PnL'].includes(label) ? pnlTone(value) : ''}>{money(value)}</dd></div>)}</dl></LegacyPopover>}
+    {balanceAnchor && <LegacyPopover anchor={balanceAnchor} theme={theme} label={t('Thông tin tài khoản')} onPointerEnter={() => clearTimeout(hideBalance.current)} onPointerLeave={dismissBalance} onClose={() => { clearTimeout(hideBalance.current); setBalanceAnchor(null) }}><dl className="legacy-account-details">{accountDetails.map(([label, value]) => <div key={label}><dt>{t(label)}</dt><dd className={['Realized PnL', 'Unrealized PnL'].includes(label) ? pnlTone(value) : ''}>{money(value)}</dd></div>)}</dl>{accountNote && <p className="legacy-account-note">{accountNote}</p>}</LegacyPopover>}
     {scalperAnchor && <LegacyModal theme={theme} label="Scalper mode" className="legacy-scalper-modal" onClose={() => { setScalperAnchor(null); setError('') }}><form className="legacy-scalper-settings" onSubmit={event => {
       event.preventDefault()
       try {

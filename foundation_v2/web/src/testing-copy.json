@@ -6657,5 +6657,29 @@
   "giây": {
     "vi": "giây",
     "en": "seconds"
+  },
+  "Đang đọc lịch sử giao dịch…": {
+    "vi": "Đang đọc lịch sử giao dịch…",
+    "en": "Reading trade history…"
+  },
+  "Chưa có lịch sử giao dịch hợp lệ để tính PnL đã chốt.": {
+    "vi": "Chưa có lịch sử giao dịch hợp lệ để tính PnL đã chốt.",
+    "en": "Valid trade history is unavailable; realized PnL is unknown."
+  },
+  "PnL giao dịch từ {from} đến {to}, gồm phí và swap; không gồm nạp/rút.": {
+    "vi": "PnL giao dịch từ {from} đến {to}, gồm phí và swap; không gồm nạp/rút.",
+    "en": "Trading PnL from {from} to {to}, including fees and swap; excludes deposits/withdrawals."
+  },
+  "MT5 đã khớp lệnh.": {
+    "vi": "MT5 đã khớp lệnh.",
+    "en": "MT5 filled the order."
+  },
+  "MT5 đã tiếp nhận yêu cầu.": {
+    "vi": "MT5 đã tiếp nhận yêu cầu.",
+    "en": "MT5 accepted the request."
+  },
+  "MT5 đã hoàn tất yêu cầu.": {
+    "vi": "MT5 đã hoàn tất yêu cầu.",
+    "en": "MT5 completed the request."
   }
 }

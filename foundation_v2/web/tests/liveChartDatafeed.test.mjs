@@ -32,3 +32,18 @@ test('only the selected terminal timeframe serves history and it respects countB
  assert.match(error,/timeframe/)
  live.dispose()
 })
+test('native resolution selection waits for its own SSE bars and never streams another timeframe',async()=>{
+ const selected=[],live=createLiveChartDatafeed({symbol:'EURUSD',seconds:60,tickSize:0.00001,rows:[candle(1800)],timeframes:[60,300,86400],onResolution:value=>selected.push(value)})
+ let served=false
+ const history=new Promise((resolve,reject)=>live.datafeed.getBars({},'5',{from:0,to:3600,countBack:10},bars=>{served=true;resolve(bars)},reject))
+ await new Promise(resolve=>setTimeout(resolve,15))
+ assert.equal(served,false);assert.deepEqual(selected,['5'])
+ const one=[],five=[]
+ live.datafeed.subscribeBars({},'1',bar=>one.push(bar),'one',()=>{})
+ live.datafeed.subscribeBars({},'5',bar=>five.push(bar),'five',()=>{})
+ live.update([candle(1800,1.15)],300)
+ assert.equal((await history)[0].close,1.15);assert.equal(one.length,0);assert.equal(five.length,1)
+ live.selectInterval('5');assert.deepEqual(selected,['5'])
+ live.update([candle(1800,1.12)],60);assert.equal(one.length,1);assert.equal(five.length,1)
+ live.dispose()
+})

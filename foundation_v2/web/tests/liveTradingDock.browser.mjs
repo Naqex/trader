@@ -97,7 +97,11 @@ try {
       await protect.waitFor({state:'hidden'});await detail.waitFor({state:'hidden'})
       assert.equal(await page.getByRole('tab',{name:'Yêu cầu',exact:true}).getAttribute('aria-selected'),'true')
       assert.deepEqual(Object.keys(report.commands.at(-1)).sort(),['mode','connection_id','account_id','server','ticket','symbol','stop_loss','take_profit','action','request_id'].sort())
-      commandStatus='unknown';await page.getByRole('tab',{name:'Vị thế đang mở',exact:true}).click()
+      commandStatus='rejected';await page.getByRole('tab',{name:'Vị thế đang mở',exact:true}).click()
+      await panel.getByRole('button',{name:'Sửa SL/TP',exact:true}).click();await protect.getByRole('button',{name:'Xác nhận',exact:true}).click()
+      await page.locator('.wm-notification.is-error').filter({hasText:vi('MT5 đã từ chối yêu cầu.')}).waitFor()
+      await page.keyboard.press('Escape')
+      commandStatus='unknown'
     }
     await page.screenshot({path:`${output}/positions-${width}-${theme}.png`})
     await page.getByRole('button',{name:'Thu gọn danh sách lệnh',exact:true}).click()
@@ -133,8 +137,8 @@ try {
       assert.equal(await page.getByRole('button',{name:'Scalper mode',exact:true}).getAttribute('aria-pressed'),'false')
       await page.goto(href());await ready(page)
       assert.equal(await page.getByRole('button',{name:'Scalper mode',exact:true}).getAttribute('aria-pressed'),'true')
-      mode='real';await page.locator('.legacy-trading-bar .live-badge').filter({hasText:'Real'}).waitFor()
-      modal=await order(page);await modal.getByRole('button',{name:'Kiểm tra lệnh',exact:true}).click();await page.waitForFunction(()=>document.querySelector('.legacy-order-save')?.disabled===false)
+      mode='real';modal=await order(page);await modal.locator('.live-badge').filter({hasText:vi('Thật')}).waitFor()
+      await modal.getByRole('button',{name:'Kiểm tra lệnh',exact:true}).click();await page.waitForFunction(()=>document.querySelector('.legacy-order-save')?.disabled===false)
       await modal.getByRole('button',{name:'Xem và xác nhận lệnh',exact:true}).click()
       const confirm=page.getByRole('dialog',{name:'Xác nhận lệnh MT5',exact:true});await confirm.locator('strong').filter({hasText:'#fixture'}).waitFor()
       await page.waitForFunction(()=>document.querySelector('.live-terminal-confirm .is-primary')?.disabled===true,{},{timeout:7000})
