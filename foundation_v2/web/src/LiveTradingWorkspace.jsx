@@ -1,6 +1,7 @@
 import LiveTradingOverview from './LiveTradingOverview.jsx'
 import ChartLoadingState from './ChartLoadingState.jsx'
 import { recentChartsKey, rememberLiveChart } from './liveRecentCharts.js'
+import { selectLiveConnection } from './liveOverviewModel.js'
 import ChartIcon from './ChartIcon.jsx'
 import { replayResolution } from './advancedReplayDatafeed.js'
 import { NotificationSlot, NotificationSurface, useNotifications } from './Notifications.jsx'
@@ -50,7 +51,7 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
   const [panel,setPanel]=useState(null), [symbolAnchor,setSymbolAnchor]=useState(null), [headerSlots,setHeaderSlots]=useState(null)
   const symbol = query.get('mt5_symbol') || '', timeframe = DEMO_TIMEFRAMES[query.get('mt5_timeframe')] ? query.get('mt5_timeframe') : 'M1'
   const explicitConnection=(query.get('live_account')?.startsWith('broker:')?query.get('live_account').slice(7):'') || query.get('mt5_connection')
-  const [connection,setConnection]=useState({workspace:null,id:''})
+  const [connection,setConnection]=useState({workspace:null,id:'',items:[],status:'loading'})
   const connectionId=explicitConnection || (connection.workspace===workspace?connection.id:'')
   const connectionReady=Boolean(explicitConnection)||connection.workspace===workspace
   const chartScope = `${workspace}:${connectionId}:${symbol}:${chartSurface}`
@@ -90,14 +91,27 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
     if (chartSurface) (lightweight ? loadSimpleChart() : loadAdvancedChart()).catch(noop)
   },[rendererKey,chartSurface,lightweight])
   useEffect(()=>{
-    if(explicitConnection)return
     const controller=new AbortController()
-    fetch('/api/v2/live/connections',{headers:{'X-Workspace-Id':workspace},signal:controller.signal}).then(response=>{if(!response.ok)throw new Error('mt5_connection_not_available');return response.json()}).then(value=>{
-      const items=value.items || [], eligible=items.find(item=>item.status==='connected'&&item.requested_mode==='trading') || items.find(item=>item.requested_mode==='trading') || items[0]
-      setConnection({workspace,id:eligible?.id || ''})
-    }).catch(()=>{if(!controller.signal.aborted)setConnection({workspace,id:''})})
-    return ()=>controller.abort()
-  },[workspace,explicitConnection])
+    setConnection(previous=>previous.workspace===workspace?previous:{workspace,id:'',items:[],status:'loading'})
+    let reading=false
+    const read=async()=>{
+      if(reading||controller.signal.aborted)return
+      reading=true
+      try{
+        const response=await fetch('/api/v2/live/connections',{headers:{'X-Workspace-Id':workspace},signal:controller.signal})
+        if(!response.ok)throw new Error('mt5_connection_not_available')
+        const value=await response.json(),items=value.items||[]
+        if(!controller.signal.aborted)setConnection(previous=>({workspace,id:selectLiveConnection(items,previous.workspace===workspace?previous.id:''),items,status:'ready'}))
+      }catch{
+        if(!controller.signal.aborted)setConnection(previous=>({workspace,id:previous.workspace===workspace?previous.id:'',items:previous.workspace===workspace?previous.items:[],status:'error'}))
+      }finally{reading=false}
+    }
+    void read()
+    const visibleRead=()=>{if(document.visibilityState!=='hidden')void read()}
+    const timer=chartSurface?null:setInterval(visibleRead,10000)
+    document.addEventListener('visibilitychange',visibleRead)
+    return ()=>{controller.abort();clearInterval(timer);document.removeEventListener('visibilitychange',visibleRead)}
+  },[workspace,refresh,chartSurface])
   useEffect(() => {
     if (!chartSurface) return
     const tick=()=>{if(document.visibilityState !== 'hidden')setClock(Date.now())}
@@ -117,6 +131,10 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
     let reading = false
     setRead(previous=>({scope,chartScope,status:demoPreview ? 'locked' : 'loading',payload:!demoPreview&&previous.scope===scope?previous.payload:null,chart:!demoPreview&&previous.chartScope===chartScope?previous.chart:null}))
     if (demoPreview || !connectionReady) return () => controller.abort()
+    if(!chartSurface&&!connectionId){
+      setRead({scope,chartScope,status:'ready',payload:null,chart:null})
+      return ()=>controller.abort()
+    }
     const receive=payload=>setRead(previous=>({scope,chartScope,status:'ready',payload,chart:retainLiveChart(previous.chartScope===chartScope?previous.chart:null,payload)}))
     const failed=error=>setRead(previous=>({scope,chartScope,status:'error',payload:[401,403].includes(error.status)?null:previous.scope===scope?previous.payload:null,chart:[401,403].includes(error.status)?null:previous.chartScope===chartScope?previous.chart:null,error:error.message}))
     if(chartSurface&&connectionId) {
@@ -159,7 +177,7 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
   const route = patch => {
     const next=new URLSearchParams(query)
     Object.entries(patch).forEach(([key,value])=>value ? next.set(key,value) : next.delete(key))
-    if(connectionId)next.set('mt5_connection',connectionId)
+    if(connectionId&&!Object.hasOwn(patch,'mt5_connection'))next.set('mt5_connection',connectionId)
     navigate(liveTradingHref(workspace,next,{chart:chartSurface}))
   }
 
@@ -262,7 +280,7 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
   const quoteState = blockReason==='demo_quote_stale' ? !Number.isFinite(new Date(quoteTime).getTime()) || quoteTime<=0 ? 'invalid' : quoteAge<0 ? 'future' : 'past' : ''
   const stateKey=reason||paused||unresolved ? `${chartScope}:${read.status}:${unresolved?.request_id || (paused?'paused':`${blockReason}:${quoteState}`)}` : ''
   useEffect(()=>{setDismissedState(null);setRequestedState('')},[stateKey])
-  if (!chartSurface) return <LiveTradingOverview workspace={workspace} connectionId={connectionId} query={accountQuery} snapshot={snapshot} status={read.status} reason={unresolved ? 'Chưa rõ kết quả. Đối soát MT5 trước khi gửi lệnh khác.' : reason} symbol={activeSymbol} timeframe={timeframe} onRefresh={()=>setRefresh(value=>value+1)} onResetSymbol={resetSymbol}/>
+  if (!chartSurface) return <LiveTradingOverview workspace={workspace} connectionId={connectionId} query={accountQuery} snapshot={snapshot} status={read.status} reason={unresolved ? 'Chưa rõ kết quả. Đối soát MT5 trước khi gửi lệnh khác.' : reason} symbol={activeSymbol} timeframe={timeframe} onRefresh={()=>setRefresh(value=>value+1)} onResetSymbol={resetSymbol} connections={connection.workspace===workspace?connection:{items:[],status:'loading'}} onSelectConnection={id=>route({mt5_connection:id,live_account:`broker:${id}`,mt5_symbol:null})}/>
   const fullscreen=()=>{if(document.fullscreenElement)document.exitFullscreen?.();else document.documentElement.requestFullscreen?.()}
   const changeInterval=value=>{const next=Object.keys(DEMO_TIMEFRAMES).find(key=>replayResolution(DEMO_TIMEFRAMES[key])===value);if(next&&next!==timeframe)route({mt5_timeframe:next})}
   const openTool=(tool,anchor)=>{if(tool==='data')setSymbolAnchor(current=>current===anchor?null:anchor);else if(tool==='context')setPanel('conditions');else if(tool==='mentor')openAi()}

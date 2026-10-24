@@ -9,7 +9,7 @@ import { SessionChartLink } from './SessionDetails.jsx'
 
 
 
-function PeriodBars({ title, items, currency, horizontal = false, totalCount = items.length }) {
+export function PeriodBars({ title, items, currency, horizontal = false, totalCount = items.length, emptyLabel = 'Chưa có dữ liệu giao dịch đóng.' }) {
   const dashboardNumber = (value, suffix = '') => value == null || value === '' || typeof value === 'boolean' || !Number.isFinite(Number(value)) ? '—' : `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(Number(value))}${suffix}`
   const dashboardMoney = (value, currency) => fmt(value, ` ${currency || t('Đơn vị tài khoản')}`)
 
@@ -22,10 +22,10 @@ function PeriodBars({ title, items, currency, horizontal = false, totalCount = i
   const zero = -low / span * 100
   return <section className="fxs-chart-panel"><h3>{t(title)}</h3><small>{currency || t("Đơn vị tài khoản")} {t("· net · UTC")}</small>{shown.length ? <div className={`fxs-bars ${horizontal ? 'is-horizontal' : ''}`} role="img" aria-label={`${title}: ${shown.map(item => `${t(item.label)}: ${dashboardMoney(item.value, currency)}`).join('; ')}`}>
     {shown.map(item => <div className="fxs-bar-item" key={item.label}><span>{t(item.label)}</span><div className="fxs-bar-track"><i className="fxs-bar-zero" style={horizontal ? { left: `${zero}%` } : { bottom: `${zero}%` }} /><i className={`fxs-bar ${item.value < 0 ? 'is-negative' : ''}`} style={horizontal ? { left: `${(Math.min(0, item.value) - low) / span * 100}%`, width: `${Math.abs(item.value) / span * 100}%` } : { bottom: `${(Math.min(0, item.value) - low) / span * 100}%`, height: `${Math.abs(item.value) / span * 100}%` }} /></div><strong>{dashboardNumber(item.value)}</strong></div>)}
-  </div> : <p className="fxs-chart-empty">{t("Chưa có dữ liệu giao dịch đóng.")}</p>}{horizontal && totalCount > 12 && <small>{t("12 tháng gần nhất · đầy đủ tại Analytics")}</small>}</section>
+  </div> : <p className="fxs-chart-empty">{t(emptyLabel)}</p>}{horizontal && totalCount > 12 && <small>{t("12 tháng gần nhất · đầy đủ tại Analytics")}</small>}</section>
 }
 
-function Metric({ title, value, detail }) {
+export function Metric({ title, value, detail }) {
   const { t } = useTestingLocale()
 
   return <div className="fxs-metric"><span data-tooltip={detail}>{t(title)}</span><strong>{value}</strong></div>

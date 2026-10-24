@@ -31,6 +31,17 @@ UI fixture screenshots are explicitly synthetic and do not prove broker executio
 
 ### Overview and chart entry
 
+The Tổng quan tab follows the Sessions composition: rich account selector and
+management/refresh actions, account summary with chart entry, connection/margin
+facts, then period charts, metrics and recent executions. It shares the existing
+report cards, bars and pagination. The separate Trading accounts tab keeps account
+management. Selection is scoped to the workspace/connection and carried in the
+URL; refresh/catalog reordering never switches an existing selected account.
+Overview connection metadata refreshes every ten seconds while visible. Failed
+or stale reads display unknown connection/permission state rather than stale
+permissions as current facts. Verified trade permission is not symbol/session
+availability or authorization to send an order.
+
 The overview separates the current MT5 account snapshot (balance, equity, floating
 P/L, used and free margin) from executions in the synced history window. Trading
 results use the bound connection's `/live/status` snapshot and show its actual
@@ -39,6 +50,11 @@ fee; deposits/withdrawals are excluded. Counts are executions, not closed trades
 or a win rate. Missing fields/coverage remain unknown; a covered empty window is
 zero. History is read on entry/account change and explicit refresh, independently
 of chart quotes. Revoked/failed reads do not keep another account's metrics.
+The cumulative curve is net execution PnL starting at zero, not a historical
+balance curve. Month/weekday buckets use UTC. Missing timestamps or costs suppress
+the plots instead of inventing zero points. The recent table shows executions,
+including entry commissions and partial fills; volume is in lots. It does not
+claim that one execution equals one completed trade or use an invented ROI basis.
 
 Recently opened charts are saved only after the renderer is ready. Local storage
 is scoped to workspace, connection, login and server; at most six distinct

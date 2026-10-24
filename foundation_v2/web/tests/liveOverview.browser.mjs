@@ -10,7 +10,7 @@ await mkdir(output,{recursive:true})
 const account={login:999111,server:'SYNTHETIC - NO BROKER',account_ref:'…111',currency:'USD',balance:10000,equity:10024,profit:24,margin:100,margin_free:9924,leverage:100,trade_mode:'demo'}
 const bars=Array.from({length:150},(_,i)=>({timestamp:1792742400+i*60,open:1.1+i*.00001,high:1.1005+i*.00001,low:1.0995+i*.00001,close:1.1001+i*.00001,volume:100}))
 const snapshot={status:'ready',mode:'demo',account,symbol:'EURUSD',timeframe:'M1',bars,positions:[],orders:[],requests:[],quote:{bid:1.1,ask:1.1002,time_msc:Date.now()},instrument:{tick_size:.00001,quantity_min:.01,quantity_max:10,quantity_step:.01,asset_class:'fx'},policy:{source:'broker',max_quote_age_ms:5000},capabilities:{}}
-const history={status:'ready',connection_id:'fixture',account,history_from_utc:'2026-10-23T00:00:00Z',captured_at_utc:'2026-10-24T00:00:00Z',deals:[{type:2,profit:10000},{type:0,profit:30,commission:-2,swap:-1,fee:-1}]}
+const history={status:'ready',connection_id:'fixture',account,history_from_utc:'2026-10-23T00:00:00Z',captured_at_utc:'2026-10-24T00:00:00Z',deals:[{type:2,profit:10000},{ticket:1,type:0,symbol:'EURUSD',volume:.1,time_msc:Date.parse('2026-10-23T12:00:00Z'),profit:30,commission:-2,swap:-1,fee:-1}]}
 let scenario='ready', releaseMarket, marketRequested, streamCount=0
 const streams=new Set(), report={scope:'Synthetic GET-only fixture and real chart engine',cases:[],errors:[],mutations:[]}
 const server=createServer((req,res)=>{
@@ -48,11 +48,11 @@ try{
  for(const width of (process.env.TW_QA_CASE?[]:[1440,390]))for(const theme of ['dark','light']){
   scenario='ready';const {context,page}=await setup(width,theme)
   await page.goto(url())
-  await page.getByText('10.000 USD',{exact:true}).waitFor()
-  await page.getByText('26 USD',{exact:true}).waitFor()
+  await page.getByTestId('mt5-account-balance').getByText('10.000 USD',{exact:true}).waitFor()
+  await page.locator('.mt5-report .fxs-metric').first().getByText('26 USD',{exact:true}).waitFor()
   assert.equal(await page.getByText('10000',{exact:true}).count(),0)
-  assert.equal(await page.locator('.mt5-account-metrics .fx-dashboard-metric').count(),5)
-  assert.ok(await page.locator('.mt5-quick-actions button').evaluate(node=>node.clientWidth<300||innerWidth<480))
+  assert.equal(await page.locator('.mt5-report .fxs-metric').count(),4)
+  assert.ok(await page.locator('.mt5-account-card .fxs-go-chart').evaluate(node=>node.clientWidth<300||innerWidth<480))
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false)
   await page.screenshot({path:`${output}/overview-${width}-${theme}.png`,fullPage:true})
   await page.getByRole('button',{name:/Mở biểu đồ/}).click()
@@ -103,7 +103,7 @@ try{
   const {context,page}=await setup(390,'light')
   if(kind==='library-error')await page.route('**/charting_library/charting_library.standalone.js*',r=>r.abort())
   await page.goto(url(kind==='denied'?'':`&surface=workspace${kind==='lightweight'?'&chart_engine=lightweight':''}`))
-  if(kind==='denied')await page.getByText('Chưa có lịch sử giao dịch đã đồng bộ.').waitFor()
+  if(kind==='denied')await page.locator('.mt5-overview .wm-read-state').first().waitFor()
   else if(kind==='library-error')await page.locator('.advanced-chart-message a[href*="chart_engine=lightweight"]').waitFor()
   else if(kind==='lightweight')await page.locator('.tv-lightweight-charts').waitFor()
   else await page.getByText('Chưa có biểu đồ MT5').waitFor()
