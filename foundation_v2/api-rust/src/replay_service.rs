@@ -25,6 +25,8 @@ use uuid::Uuid;
 
 #[path = "replay_history.rs"]
 pub mod history;
+#[path = "replay_entry_recording.rs"]
+mod entry_recording;
 
 struct ReplayTimings {
     operation: String,
@@ -351,12 +353,23 @@ async fn lock_datasets(tx: &Transaction<'_>, workspace: &str, p: &Value) -> Resu
     }
     Ok(())
 }
+fn take_mutation_payload(record: &mut Value) -> Value {
+    let payload=record["payload"].take();
+    record["_entry_recording_baseline"]=entry_recording::baseline(&payload);
+    payload
+}
 pub async fn save_record(
     tx: &Transaction<'_>,
     workspace: &str,
     record: &Value,
-    mut payload: Value,
+    payload: Value,
     deleted: bool,
+) -> Result<Value, ApiError> {
+    save_record_with_events(tx,workspace,record,payload,deleted,&[]).await
+}
+async fn save_record_with_events(
+    tx: &Transaction<'_>, workspace: &str, record: &Value, mut payload: Value,
+    deleted: bool, events: &[Value],
 ) -> Result<Value, ApiError> {
     sync(&mut payload)?;
     lock_datasets(tx, workspace, &payload).await?;
@@ -366,6 +379,8 @@ pub async fn save_record(
     let expected = integer(record, "revision")?;
     let rev = i32::try_from(expected + 1).map_err(|_| bad("record revision overflow"))?;
     let stamp = now();
+    let baseline=if record["payload"].is_object(){entry_recording::baseline(&record["payload"])}else{record["_entry_recording_baseline"].clone()};
+    entry_recording::capture(&baseline,&mut payload,events,&stamp);
     let n=tx.execute("UPDATE workspace_records SET current_revision=$3,updated_at_utc=$4 WHERE workspace_id=$1 AND kind='replay' AND record_id=$2 AND current_revision=$5",&[&workspace,&id,&rev,&stamp,&(expected as i32)]).await.map_err(|_|ApiError::database())?;
     if n != 1 {
         return Err(conflict("record revision conflict"));
@@ -1698,7 +1713,7 @@ async fn mutate(
         return Err(conflict("record revision conflict"));
     }
     let base_revision = integer(&record, "revision")?;
-    let mut p = record["payload"].take();
+    let mut p = take_mutation_payload(&mut record);
     ensure_portfolio(tx,workspace,id,&mut p).await?;
     crate::replay_portfolio::update(&mut p).map_err(bad)?;
     if p["asset_states"].is_object() && (tail == "execution" || tail == "step" || tail.starts_with("orders/")) {
@@ -2019,7 +2034,7 @@ async fn mutate_step_view(
         p = crate::replay_storage::compact_payload(p, &transition.next).map_err(internal)?;
     }
     timings.mark("domain_transition");
-    let mut saved = save_record(tx, workspace, &record, p, false).await?;
+    let mut saved = save_record_with_events(tx, workspace, &record, p, false, &events).await?;
     if let Some((prefix, transition)) = &checked_transition {
         saved["payload"] = crate::replay_storage::persist_transition(tx, workspace, id,
             base_revision, integer(&saved, "revision")?, prefix, transition, &saved["payload"])
@@ -2143,7 +2158,7 @@ async fn mutate_compact_bar(
             return response;
         }
         initialized_events = events;
-        p = record["payload"].take();
+        p = take_mutation_payload(&mut record);
     }
     if p["execution"].is_null() {
         return Err(bad("replay execution is not initialized"));
@@ -2203,7 +2218,7 @@ async fn mutate_compact_bar(
     p["execution"] = transition.next.head().clone();
     let payload = crate::replay_storage::compact_payload(p, &transition.next).map_err(internal)?;
     timings.mark("domain_transition");
-    let mut saved = save_record(tx, workspace, &record, payload, false).await?;
+    let mut saved = save_record_with_events(tx, workspace, &record, payload, false, &transition.events).await?;
     saved["payload"] = crate::replay_storage::persist_transition(tx, workspace, id, revision,
         integer(&saved, "revision")?, &prefix, &transition, &saved["payload"])
         .await.map_err(internal)?;
@@ -2530,6 +2545,7 @@ async fn branch(
             "session_period",
             "trading_options",
             "trading_options_seed",
+            "entry_recording",
         ] {
             if let Some(v) = old.get(key) {
                 p[key] = v.clone();

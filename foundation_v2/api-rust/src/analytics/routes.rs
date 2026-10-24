@@ -23,9 +23,9 @@ async fn catalog_records(tx:&Transaction<'_>,workspace:&str)->Result<Vec<Value>,
     let rows=tx.query("SELECT r.record_id,r.current_revision,r.created_at_utc,r.updated_at_utc,v.payload_json-'execution'-'asset_states' AS payload_json,((v.payload_json->'execution' IS NOT NULL AND v.payload_json->'execution'<>'null'::jsonb) OR CASE WHEN jsonb_typeof(v.payload_json->'asset_states')='object' THEN EXISTS(SELECT 1 FROM jsonb_each(v.payload_json->'asset_states') s WHERE s.value->'execution' IS NOT NULL AND s.value->'execution' NOT IN ('null'::jsonb,'false'::jsonb,'0'::jsonb,'\"\"'::jsonb,'[]'::jsonb,'{}'::jsonb)) ELSE false END) AS has_execution FROM workspace_records r JOIN workspace_record_revisions v ON v.workspace_id=r.workspace_id AND v.kind=r.kind AND v.record_id=r.record_id AND v.revision=r.current_revision WHERE r.workspace_id=$1 AND r.kind='replay' AND NOT v.deleted ORDER BY r.updated_at_utc DESC,r.record_id",&[&workspace]).await.map_err(|_|ApiError::database())?;
     Ok(rows.iter().map(|r|json!({"record_id":r.get::<_,String>(0),"revision":r.get::<_,i32>(1),"created_at_utc":r.get::<_,String>(2),"updated_at_utc":r.get::<_,String>(3),"payload":r.get::<_,Value>(4),"has_execution":r.get::<_,bool>(5)})).collect())
 }
-async fn summary(cache:&ProjectionCache,tx:&Transaction<'_>,workspace:&str,record:&Value)->Result<Value,ApiError>{
-    let key=json!(["summary-v1",workspace,record["record_id"],record["revision"]]).to_string();if let Some(v)=cached(cache,&key){return Ok(v.as_ref().clone())}
-    let full=crate::replay_service::load_record(tx,workspace,text(&record["record_id"]),false).await?;let value=build_session_summary(&full,workspace).map_err(source)?;Ok(retain(cache,key,value).as_ref().clone())
+async fn summary(cache:&ProjectionCache,tx:&Transaction<'_>,workspace:&str,record:&Value,zone:chrono_tz::Tz)->Result<Value,ApiError>{
+    let key=json!(["summary-v2",workspace,record["record_id"],record["revision"],zone.name()]).to_string();if let Some(v)=cached(cache,&key){return Ok(v.as_ref().clone())}
+    let full=crate::replay_service::load_record(tx,workspace,text(&record["record_id"]),false).await?;let value=build_session_summary_in_timezone(&full,workspace,zone).map_err(source)?;Ok(retain(cache,key,value).as_ref().clone())
 }
 pub fn native(method:&str,path:&str)->bool{if method=="POST"&&path=="/api/v2/analytics/prop/evaluate"{return true}method=="GET"&&matches!(path,"/api/v2/overview"|"/api/v2/dashboard/sessions"|"/api/v2/replay/trades"|"/api/v2/replay/sessions/{session_id}/analytics"|"/api/v2/replay/sessions/{session_id}/analytics.csv")}
 pub fn routes()->Router<Arc<AppState>>{Router::new().route("/api/v2/analytics/prop/evaluate",post(prop_evaluate)).route("/api/v2/overview",get(invoke)).route("/api/v2/dashboard/sessions",get(invoke)).route("/api/v2/replay/trades",get(invoke)).route("/api/v2/replay/sessions/{session_id}/analytics",get(invoke)).route("/api/v2/replay/sessions/{session_id}/analytics.csv",get(invoke))}
@@ -33,6 +33,15 @@ fn bad(s:impl AsRef<str>)->ApiError{ApiError::detail(StatusCode::UNPROCESSABLE_E
 fn source(s:impl AsRef<str>)->ApiError{ApiError::detail(StatusCode::SERVICE_UNAVAILABLE,s.as_ref())}
 fn qint(q:&HashMap<String,String>,key:&str)->Result<Option<i64>,ApiError>{q.get(key).map(|s|s.parse().map_err(|_|bad(format!("{key} must be integer")))).transpose()}
 fn filters(q:&HashMap<String,String>)->Value{let mut f=json!({});for k in ["side","outcome","from_close_utc","to_close_utc"]{if let Some(v)=q.get(k){f[k]=json!(v)}}f}
+fn presentation_query(q:&HashMap<String,String>)->Result<(chrono_tz::Tz,String),ApiError>{
+    let mut extra:Value=serde_json::from_str(q.get("extra_filters").map(String::as_str).filter(|v|!v.is_empty()).unwrap_or("{}")).map_err(|_|bad("trade_page_filters_invalid"))?;
+    let extra=extra.as_object_mut().ok_or_else(||bad("trade_page_filters_invalid"))?;
+    let inherited=extra.get("timezone").map(|v|v.as_str().ok_or_else(||bad("trade_page_filters_invalid"))).transpose()?.filter(|v|!v.is_empty());
+    let zone=presentation::timezone(q.get("timezone").map(String::as_str).or(inherited)).map_err(bad)?;
+    if q.contains_key("timezone")&&inherited.is_some_and(|v|presentation::timezone(Some(v)).ok()!=Some(zone)){return Err(bad("analytics_timezone_conflict"))}
+    extra.insert("timezone".into(),json!(zone.name()));
+    Ok((zone,serde_json::to_string(extra).expect("JSON filter object")))
+}
 async fn records(tx:&Transaction<'_>,workspace:&str,kind:&str)->Result<Vec<Value>,ApiError>{
     let rows=tx.query("SELECT r.record_id,r.source_key,r.current_revision,r.created_at_utc,r.updated_at_utc,v.payload_json FROM workspace_records r JOIN workspace_record_revisions v ON v.workspace_id=r.workspace_id AND v.kind=r.kind AND v.record_id=r.record_id AND v.revision=r.current_revision WHERE r.workspace_id=$1 AND r.kind=$2 AND NOT v.deleted ORDER BY r.updated_at_utc DESC,r.record_id",&[&workspace,&kind]).await.map_err(|_|ApiError::database())?;
     let mut records=Vec::with_capacity(rows.len());
@@ -52,6 +61,7 @@ async fn activity(tx:&Transaction<'_>,workspace:&str)->Result<Vec<Value>,ApiErro
 async fn invoke(State(state):State<Arc<AppState>>,scope:Workspace,request:Request)->Result<Response,ApiError>{
     let cache=&state.analytics_cache;
     let path=request.uri().path().to_string();let q:HashMap<String,String>=form_urlencoded::parse(request.uri().query().unwrap_or("").as_bytes()).map(|(k,v)|(k.into_owned(),v.into_owned())).collect();
+    let (zone,extra_filters)=presentation_query(&q)?;
     let f=normalize_filters(Some(&filters(&q))).map_err(bad)?;
     let mut client=state.pool.get().await.map_err(|_|ApiError::database())?;
     let tx=client.build_transaction().isolation_level(tokio_postgres::IsolationLevel::RepeatableRead).read_only(true).start().await.map_err(|_|ApiError::database())?;
@@ -59,12 +69,12 @@ async fn invoke(State(state):State<Arc<AppState>>,scope:Workspace,request:Reques
         let id=path.split('/').nth(5).ok_or_else(||bad("invalid replay path"))?;
         let record=crate::replay_service::load_record(&tx,&scope.workspace_id,id,false).await?;
         let mut record=crate::replay_service::checkpoint_record(&tx,&state,&scope.workspace_id,record,qint(&q,"cursor_index")?,qint(&q,"cutoff_timestamp")?,qint(&q,"event_sequence")?).await.map_err(|e|if e.0==StatusCode::UNPROCESSABLE_ENTITY{bad("replay_analytics_invalid_source_or_filter")}else{e})?;record["workspace_id"]=json!(scope.workspace_id);
-        let view=build_replay_analytics_view(&record,Some(&f)).map_err(|_|bad("replay_analytics_invalid_source_or_filter"))?;
+        let mut view=build_replay_analytics_view(&record,Some(&f)).map_err(|_|bad("replay_analytics_invalid_source_or_filter"))?;
         if path.ends_with(".csv"){let csv=analytics_csv(&view);tx.commit().await.map_err(|_|ApiError::database())?;return Ok(([(header::CONTENT_TYPE,"text/csv; charset=utf-8"),(header::CONTENT_DISPOSITION,"attachment; filename=\"replay-analytics-v1.csv\"")],csv).into_response())}
-        view
+        presentation::apply_timezone(&mut view,zone);presentation::entry_metadata(&mut view,&record);view
     }else if path=="/api/v2/dashboard/sessions"{
         let mut records=catalog_records(&tx,&scope.workspace_id).await?;enrich_identities(&tx,&scope.workspace_id,&mut records).await?;
-        dashboard_sessions(cache,&tx,&scope.workspace_id,&records,&q).await?
+        dashboard_sessions(cache,&tx,&scope.workspace_id,&records,&q,zone).await?
     }else{
         let heads=record_heads(&tx,&scope.workspace_id,"replay").await?;
         let selected=q.get("sessions").map(|s|s.split(',').filter(|s|!s.is_empty()).map(str::to_owned).collect::<Vec<_>>());
@@ -76,25 +86,25 @@ async fn invoke(State(state):State<Arc<AppState>>,scope:Workspace,request:Reques
         let journal_heads=if paged{record_heads(&tx,&scope.workspace_id,"journal").await?}else{vec![]};
         let page_key=json!(["trade-page-v1",scope.workspace_id,heads,journal_heads,q.iter().collect::<BTreeMap<_,_>>()]).to_string();
         if let Some(hit)=if paged{cached(cache,&page_key)}else{None}{hit.as_ref().clone()}else{
-            let report_key=json!(["performance-v1",scope.workspace_id,heads,sid,selected,f,path!="/api/v2/overview"]).to_string();
+            let report_key=json!(["performance-v2",scope.workspace_id,heads,sid,selected,f,path!="/api/v2/overview",zone.name()]).to_string();
             let (report,source_records)=if let Some(report)=cached(cache,&report_key){(report,None)}else{
                 let records=records(&tx,&scope.workspace_id,"replay").await?;
-                let report=build_dashboard_performance(&records,&scope.workspace_id,sid,selected.as_deref(),Some(&f),path!="/api/v2/overview",&[]).map_err(|e|if e=="replay session not found"{ApiError::detail(StatusCode::NOT_FOUND,"replay_not_found")}else{source("trade_ledger_source_invalid")})?;
+                let report=build_dashboard_performance_in_timezone(&records,&scope.workspace_id,sid,selected.as_deref(),Some(&f),path!="/api/v2/overview",&[],zone).map_err(|e|if e=="replay session not found"{ApiError::detail(StatusCode::NOT_FOUND,"replay_not_found")}else{source("trade_ledger_source_invalid")})?;
                 (retain(cache,report_key,report),Some(records))
             };
             if paged{
-                let facet_key=json!(["performance-v1",scope.workspace_id,heads,sid,selected,normalize_filters(None).unwrap(),true]).to_string();
+                let facet_key=json!(["performance-v2",scope.workspace_id,heads,sid,selected,normalize_filters(None).unwrap(),true,zone.name()]).to_string();
                 let facet=if f==normalize_filters(None).unwrap()||!truth(&f){report.clone()}else if let Some(facet)=cached(cache,&facet_key){facet}else{
                     let records=if let Some(r)=source_records{r}else{records(&tx,&scope.workspace_id,"replay").await?};
-                    retain(cache,facet_key,build_dashboard_performance(&records,&scope.workspace_id,None,selected.as_deref(),None,true,&[]).map_err(source)?)
+                    retain(cache,facet_key,build_dashboard_performance_in_timezone(&records,&scope.workspace_id,sid,selected.as_deref(),None,true,&[],zone).map_err(source)?)
                 };
                 let journals=records_for_journals(&tx,&scope.workspace_id).await?;
-                let value=trades::build_trades_page(&report,&journals,page as usize,size as usize,q.get("sort_key").map(String::as_str).unwrap_or("close_time_utc"),q.get("sort_direction").map(String::as_str).unwrap_or("desc"),q.get("extra_filters").map(String::as_str).unwrap_or("{}"),Some(&facet)).map_err(bad)?;
+                let value=trades::build_trades_page(&report,&journals,page as usize,size as usize,q.get("sort_key").map(String::as_str).unwrap_or("close_time_utc"),q.get("sort_direction").map(String::as_str).unwrap_or("desc"),&extra_filters,Some(&facet)).map_err(bad)?;
                 retain(cache,page_key,value).as_ref().clone()
             }else{
                 let intervals=activity(&tx,&scope.workspace_id).await?;
                 let metadata=tx.query("SELECT r.record_id,jsonb_build_object('timing',v.payload_json->'timing') FROM workspace_records r JOIN workspace_record_revisions v ON v.workspace_id=r.workspace_id AND v.kind=r.kind AND v.record_id=r.record_id AND v.revision=r.current_revision WHERE r.workspace_id=$1 AND r.kind='replay' AND NOT v.deleted",&[&scope.workspace_id]).await.map_err(|_|ApiError::database())?.iter().map(|r|json!({"record_id":r.get::<_,String>(0),"payload":r.get::<_,Value>(1)})).filter(|r|sid.is_none_or(|id|r["record_id"]==id)&&selected.as_ref().is_none_or(|ids|ids.iter().any(|id|r["record_id"]==*id))).collect::<Vec<_>>();
-                let mut report=report.as_ref().clone();report["as_of_utc"]=json!(iso(Utc::now()));merge(&mut report,&dashboard_timing(&metadata,&intervals).map_err(source)?);
+                let mut report=report.as_ref().clone();report["as_of_utc"]=json!(iso(Utc::now()));merge(&mut report,&dashboard_timing(&metadata,&intervals).map_err(source)?);report["activity_months"]=presentation::activity_months(&metadata,&intervals,zone).map_err(source)?;report["timing_scope"]["timezone"]=json!(zone.name());
                 if path=="/api/v2/overview"{let mut out=overview(&tx,&scope.workspace_id).await?;out["performance"]=report;out}else{report}
             }
         }
@@ -107,7 +117,7 @@ async fn overview(tx:&Transaction<'_>,workspace:&str)->Result<Value,ApiError>{
     let mut records=json!({});for r in tx.query("SELECT kind,count(*) FROM workspace_records WHERE workspace_id=$1 GROUP BY kind",&[&workspace]).await.map_err(|_|ApiError::database())?{records[r.get::<_,String>(0)]=json!(r.get::<_,i64>(1));}
     Ok(json!({"counts":{"datasets":n,"research_jobs":jobs,"records":records},"ai":crate::control_routes::ai_status(),"execution":crate::catalog::capabilities(),"blocked_reasons":["u1_owner_visual_approval","real_data_qa","real_ai_provider_approval","demo_broker_acceptance","live_execution_authorization","miro_update_permission"]}))
 }
-async fn dashboard_sessions(cache:&ProjectionCache,tx:&Transaction<'_>,workspace:&str,records:&[Value],q:&HashMap<String,String>)->Result<Value,ApiError>{
+async fn dashboard_sessions(cache:&ProjectionCache,tx:&Transaction<'_>,workspace:&str,records:&[Value],q:&HashMap<String,String>,zone:chrono_tz::Tz)->Result<Value,ApiError>{
     let page=qint(q,"page")?.unwrap_or(1);let size=qint(q,"page_size")?.unwrap_or(6);if page<1||!(1..=25).contains(&size){return Err(bad("invalid_dashboard_page"))}
     let sort=q.get("sort").map(String::as_str).unwrap_or("newest");let search=q.get("search").map(String::as_str).unwrap_or("");let asset=q.get("asset").map(String::as_str).unwrap_or("");let strategy=q.get("strategy").map(String::as_str).unwrap_or("");if !["newest","oldest","last","profit"].contains(&sort)||search.chars().count()>200||asset.chars().count()>128||strategy.chars().count()>128{return Err(bad("invalid_dashboard_filters"))}
     let mut manifests=HashMap::new();for r in tx.query("SELECT dataset_id,manifest_json FROM datasets WHERE workspace_id=$1",&[&workspace]).await.map_err(|_|ApiError::database())?{manifests.insert(r.get::<_,String>(0),r.get::<_,Value>(1));}
@@ -116,14 +126,14 @@ async fn dashboard_sessions(cache:&ProjectionCache,tx:&Transaction<'_>,workspace
     if q.get("revision").is_some_and(|r|!r.is_empty()&&*r!=stamp){return Err(ApiError::detail(StatusCode::CONFLICT,"dashboard_revision_changed"))}
     let mut items=vec![];let mut by_id=HashMap::new();
     for r in records{let mut r=r.clone();if r.get("has_execution").is_none(){r["has_execution"]=json!(truth(&r["payload"]["execution"])||r["payload"]["asset_states"].as_object().is_some_and(|o|o.values().any(|s|truth(&s["execution"]))));}let mut item=crate::catalog::replay_catalog_item(&r,&manifests)?;item["strategy"]=r["payload"]["playbook_id"].clone();if item["archived"]==false{items.push(item)}by_id.insert(text(&r["record_id"]).to_string(),r);}
-    let assets:BTreeSet<String>=items.iter().flat_map(|i|i["instrument_ids"].as_array().unwrap().iter().map(|v|text(v).to_string())).collect();let strategies:BTreeSet<_>=items.iter().filter_map(|i|i["strategy"].as_str()).collect();let unassigned=items.iter().any(|i|i["strategy"].is_null());let total=items.len();let needle=search.trim().to_lowercase();
+    let assets:BTreeSet<String>=items.iter().flat_map(|i|i["instrument_ids"].as_array().unwrap().iter().map(|v|text(v).to_string())).collect();let strategies:BTreeSet<_>=items.iter().filter_map(|i|i["strategy"].as_str()).collect();let unassigned=items.iter().any(|i|i["strategy"].is_null());let total=items.len();let needle=presentation::search_text(search);
     let facets=json!({"assets":assets,"strategies":strategies,"unassigned":unassigned});
-    items.retain(|i|{let hay=[text(&i["name"]),text(&i["record_id"]),text(&i["instrument_id"]),text(&i["timeframe"])].join(" ")+" "+&i["instrument_ids"].as_array().unwrap().iter().map(text).collect::<Vec<_>>().join(" ");(needle.is_empty()||hay.to_lowercase().contains(&needle))&&(asset.is_empty()||i["instrument_ids"].as_array().unwrap().contains(&json!(asset)))&&(strategy.is_empty()||if strategy=="unassigned"{i["strategy"].is_null()}else{i["strategy"]==strategy})});
+    items.retain(|i|{let hay=[text(&i["name"]),text(&i["record_id"]),text(&i["instrument_id"]),text(&i["timeframe"])].join(" ")+" "+&i["instrument_ids"].as_array().unwrap().iter().map(text).collect::<Vec<_>>().join(" ");let hay=presentation::search_text(&hay);needle.split_whitespace().all(|word|hay.contains(word))&&(asset.is_empty()||i["instrument_ids"].as_array().unwrap().contains(&json!(asset)))&&(strategy.is_empty()||if strategy=="unassigned"{i["strategy"].is_null()}else{i["strategy"]==strategy})});
     items.sort_by(|a,b|{let key=if sort=="last"{"updated_at_utc"}else{"created_at_utc"};let date=text(&a[key]).cmp(text(&b[key]));(if sort=="oldest"{date}else{date.reverse()}).then(text(&a["record_id"]).cmp(text(&b["record_id"]))) });
     let mut summaries=HashMap::new();let mut comparable=true;
-    if sort=="profit"{for i in &items{let id=text(&i["record_id"]);summaries.insert(id.to_string(),summary(cache,tx,workspace,&by_id[id]).await?);}let currencies:BTreeSet<_>=summaries.values().filter(|v|!v["pnl"].is_null()).map(|v|v["currency"].to_string()).collect();comparable=currencies.len()<=1&&!currencies.contains("null");if comparable{items.sort_by(|a,b|{let(aid,bid)=(text(&a["record_id"]),text(&b["record_id"]));let(a,b)=(&summaries[aid]["pnl"],&summaries[bid]["pnl"]);a.is_null().cmp(&b.is_null()).then_with(||b.as_f64().unwrap_or(0.0).partial_cmp(&a.as_f64().unwrap_or(0.0)).unwrap()).then(aid.cmp(bid))});}}
+    if sort=="profit"{for i in &items{let id=text(&i["record_id"]);summaries.insert(id.to_string(),summary(cache,tx,workspace,&by_id[id],zone).await?);}let currencies:BTreeSet<_>=summaries.values().filter(|v|!v["pnl"].is_null()).map(|v|v["currency"].to_string()).collect();comparable=currencies.len()<=1&&!currencies.contains("null");if comparable{items.sort_by(|a,b|{let(aid,bid)=(text(&a["record_id"]),text(&b["record_id"]));let(a,b)=(&summaries[aid]["pnl"],&summaries[bid]["pnl"]);a.is_null().cmp(&b.is_null()).then_with(||b.as_f64().unwrap_or(0.0).partial_cmp(&a.as_f64().unwrap_or(0.0)).unwrap()).then(aid.cmp(bid))});}}
     let count=items.len();let pages=count.div_ceil(size as usize).max(1);let page=(page as usize).min(pages);let mut visible:Vec<_>=items.into_iter().skip((page-1)*size as usize).take(size as usize).collect();
-    for i in &mut visible{let id=text(&i["record_id"]).to_string();i["detail"]=if let Some(v)=summaries.get(&id){v.clone()}else{summary(cache,tx,workspace,&by_id[&id]).await?};i["dataset"]=if let Some(m)=manifests.get(text(&i["dataset_id"])){let mut d=json!({});for k in ["dataset_id","instrument_id","timeframe","row_count","first_timestamp","last_timestamp"]{d[k]=m[k].clone()}d}else{Value::Null};}
+    for i in &mut visible{let id=text(&i["record_id"]).to_string();i["detail"]=if let Some(v)=summaries.get(&id){v.clone()}else{summary(cache,tx,workspace,&by_id[&id],zone).await?};i["dataset"]=if let Some(m)=manifests.get(text(&i["dataset_id"])){let mut d=json!({});for k in ["dataset_id","instrument_id","timeframe","row_count","first_timestamp","last_timestamp"]{d[k]=m[k].clone()}d}else{Value::Null};}
     let summary_values:Vec<&Value>=if sort=="profit"{summaries.values().collect()}else{visible.iter().map(|i|&i["detail"]).collect()};let unavailable=summary_values.iter().filter(|s|s["unavailable"]==true).count();
     Ok(json!({"status":if unavailable>0{"partial"}else{"ready"},"summary_unavailable_count":unavailable,"summary_scope_count":summary_values.len(),"schema_version":"dashboard-session-list-v1","workspace_id":workspace,"revision":stamp,"as_of_utc":iso(Utc::now()),"items":visible,"facets":facets,"total":total,"matching_count":count,"page":page,"page_size":size,"pages":pages,"profit_comparable":comparable,"freshness":"current_revision"}))
 }
@@ -164,6 +174,28 @@ async fn prop_evaluate(scope:Workspace,Json(body):Json<Value>)->Result<Json<Valu
 #[cfg(test)]
 mod csv_tests{
  use super::*;
+ #[test]
+ fn dashboard_search_matches_vietnamese_accents_and_unordered_tokens(){
+    let name=presentation::search_text("  Luyện Tập ĐẶT Lệnh EURUSD  ");
+    assert_eq!(name,"luyen tap dat lenh eurusd");
+    assert_eq!(presentation::search_text("Đa\u{0323}\u{0306}t"),"dat");
+    assert!(presentation::search_text("eurusd   LUYỆN").split_whitespace().all(|word|name.contains(word)));
+    assert!(!presentation::search_text("eurusd bitcoin").split_whitespace().all(|word|name.contains(word)));
+ }
+ #[test]
+ fn timezone_query_validates_inheritance_conflicts_and_cache_isolation(){
+    let q=|pairs:&[(&str,&str)]|pairs.iter().map(|(k,v)|(k.to_string(),v.to_string())).collect::<HashMap<_,_>>();
+    assert_eq!(presentation_query(&q(&[])).unwrap().0,chrono_tz::UTC);
+    let (zone,extra)=presentation_query(&q(&[("timezone","Asia/Ho_Chi_Minh")])).unwrap();
+    assert_eq!(zone.name(),"Asia/Ho_Chi_Minh");assert_eq!(serde_json::from_str::<Value>(&extra).unwrap()["timezone"],"Asia/Ho_Chi_Minh");
+    assert_eq!(presentation_query(&q(&[("extra_filters",r#"{"timezone":"America/New_York"}"#)])).unwrap().0.name(),"America/New_York");
+    assert_eq!(presentation_query(&q(&[("timezone","UTC+7")])).unwrap_err().0,StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(presentation_query(&q(&[("timezone","UTC"),("extra_filters",r#"{"timezone":"Asia/Ho_Chi_Minh"}"#)])).unwrap_err().1["detail"],"analytics_timezone_conflict");
+    let cache=ProjectionCache::default();
+    let utc=json!(["summary-v2","w","s",1,"UTC"]).to_string();let local=json!(["summary-v2","w","s",1,zone.name()]).to_string();
+    retain(&cache,utc.clone(),json!({"month":"2026-01"}));retain(&cache,local.clone(),json!({"month":"2026-02"}));
+    assert_eq!(cached(&cache,&utc).unwrap()["month"],"2026-01");assert_eq!(cached(&cache,&local).unwrap()["month"],"2026-02");
+ }
  #[test]
  fn python_csv_bytes(){let cases:Value=serde_json::from_str(include_str!("../../tests/rust_context/csv_oracle.json")).unwrap();for(i,c)in cases.as_array().unwrap().iter().enumerate(){let view=if c["kind"]=="replay"{build_replay_analytics_view(&c["source"],Some(&c["filters"]))}else{build_analytics_view(&c["source"],Some(&c["filters"]))}.unwrap();assert_eq!(analytics_csv(&view),c["expected"].as_str().unwrap(),"case {i}")}}
 }
