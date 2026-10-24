@@ -34,12 +34,26 @@ also has text and `aria-invalid`/`aria-describedby`; never add a second outline.
 
 `NotificationProvider` in the shell and `useNotifications()` own transient action
 feedback across routes. Reuse the pinned spacing, surface, border, type and focus
-tokens. Success/info notices dismiss after six seconds, pausing on hover/focus;
-errors stay until dismissed. At most three distinct messages are shown, without
+tokens. Transient notices use `NotificationSurface`: success 5 seconds, info 7,
+warning 8 and ordinary errors 10. Hover, keyboard focus and a hidden browser tab
+pause the countdown; resuming keeps the remaining time. Content/prop updates do
+not restart it. Explicit retries create a fresh display period. Persistent state
+requiring a recovery action (uncertain writes, revision conflict, unavailable
+symbol recovery or pending save retry) stays until resolved or manually dismissed
+where dismissal is supported. Hiding a notice never clears its domain lock.
+At most three distinct action messages are shown, without
 moving focus. Workspace changes clear them. Validation stays inline; pending
 actions, uncertain writes and errors requiring retry keep their local controls.
 Market Data repair, import and deletion use the shared notices; existing domain
 error/retry flows remain local. Other consumers can migrate without another host.
+
+Live stale-quote state appears when detected, then hides after 8 seconds for that
+episode. A stale Buy/Sell attempt shows it again for a fresh 8 seconds without
+calling preview or commands. Backtest/Propfirm chart messages share the info timer;
+their synchronization and uncertain-write recovery controls remain persistent.
+These product durations allow longer reading for errors; the baseline references
+are [Carbon's optional 5-second toast](https://www.carbondesignsystem.com/building-blocks/core/components/notification/guidelines)
+and [Atlassian's 8-second automatic flag](https://developer.atlassian.com/platform/forge/apis-reference/ui-api-bridge/showFlag/).
 
 Market Data and new-session asset selection collapse only explicit compatible
 `parent_dataset_id` update chains to their current version. Unrelated imports,

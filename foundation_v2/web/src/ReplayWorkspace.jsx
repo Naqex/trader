@@ -6,7 +6,7 @@ import { canUseReplayStepView, mergeReplayStepView } from './replayStepView.js'
 import { canUseReplayHistoryView, historyEventSequences, mergeReplayHistoryView } from './replayHistoryView.js'
 import { replayChartTail } from './replayChartWindow.js'
 import { scopedRead } from './scopedRead.js'
-import { NotificationSlot } from './Notifications.jsx'
+import { NotificationSlot, NotificationSurface } from './Notifications.jsx'
 import { hasPendingPropReplayEvents, syncPropReplayEvents } from './propReplaySync.js'
 import ProjectDateInput from './ProjectDateInput.jsx'
 import { displayDate } from './dateFormat.js'
@@ -1128,7 +1128,7 @@ export default function ReplayWorkspace({ workspace, query }) {
               </div>}
               <NotificationSlot>
                 {activityWaiting && <div className="wm-notification" role="status"><p>{t('Chưa lưu được thời gian luyện tập. Đang thử lại…')}</p></div>}
-                {chartNotice && <div className="wm-notification" role="status"><p>{t(chartNotice)}</p><button type="button" aria-label={t("Đóng thông báo")} onClick={() => setChartNotice('')}>×</button></div>}
+                {chartNotice && <NotificationSurface key={chartNotice} role="status" onDismiss={()=>setChartNotice('')}><p>{t(chartNotice)}</p><button type="button" aria-label={t("Đóng thông báo")} onClick={() => setChartNotice('')}>×</button></NotificationSurface>}
               </NotificationSlot>
 
               <div className="replay-evidence-strip" role="group" aria-label={t("Bằng chứng chart")}>

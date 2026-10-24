@@ -50,6 +50,13 @@ try{
  assert.equal(await page.locator('.wm-notifications .live-terminal-state').count(),1)
  const noticeBox=await page.locator('.live-terminal-state').boundingBox();assert.ok(noticeBox.x>=0&&noticeBox.x<width/2);assert.ok(noticeBox.y>470&&noticeBox.y+noticeBox.height<940);assert.ok(noticeBox.x+noticeBox.width<=width);assert.ok(noticeBox.y+noticeBox.height<=(await page.locator('.legacy-trading-bar').boundingBox()).y)
  assert.equal(await page.locator('.live-trading > .live-terminal-state').count(),0);assert.equal(await page.locator('.legacy-trading-bar button.buy').isDisabled(),false)
+ if(width===1920){
+   await page.mouse.move(width-2,470)
+   await page.locator('.live-terminal-state').waitFor({state:'hidden',timeout:9500})
+   await page.waitForTimeout(1000);assert.equal(await page.locator('.live-terminal-state').count(),0)
+   await page.locator('.legacy-trading-bar button.buy').click();await page.locator('.live-terminal-state').waitFor()
+   assert.equal(await page.getByRole('dialog',{name:'Lệnh mới',exact:true}).count(),0)
+ }
  await page.locator('.live-terminal-state').getByRole('button',{name:'Đóng thông báo',exact:true}).click();await page.locator('.live-terminal-state').waitFor({state:'hidden'})
  await page.waitForFunction(start=>Date.now()-start>1200,Date.now());assert.equal(await page.locator('.live-terminal-state').count(),0)
  await page.locator('.legacy-trading-bar button.buy').click();await page.locator('.live-terminal-state').filter({hasText:'Giá cũ'}).waitFor();assert.equal(await page.getByRole('dialog',{name:'Lệnh mới',exact:true}).count(),0)

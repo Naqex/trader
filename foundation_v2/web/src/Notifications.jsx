@@ -12,19 +12,36 @@ export function NotificationSlot({ children }) {
   return viewport ? createPortal(children, viewport) : null
 }
 
+const durations = { success:5000, info:7000, warning:8000, error:10000 }
+
+export function NotificationSurface({ as:Element='div', tone='info', persistent=false, onDismiss, className='', children, ...props }) {
+  const duration = persistent ? 0 : durations[tone] || durations.info
+  const remaining = useRef(duration), dismiss = useRef(onDismiss)
+  dismiss.current = onDismiss
+  const [hovered,setHovered] = useState(false), [focused,setFocused] = useState(false)
+  const [hidden,setHidden] = useState(document.visibilityState==='hidden')
+  useEffect(()=>{
+    const changed=()=>setHidden(document.visibilityState==='hidden')
+    document.addEventListener('visibilitychange',changed)
+    return ()=>document.removeEventListener('visibilitychange',changed)
+  },[])
+  useEffect(()=>{remaining.current=duration},[duration])
+  useEffect(()=>{
+    if (!duration || hovered || focused || hidden || !dismiss.current) return
+    const started=performance.now()
+    const timer=setTimeout(()=>dismiss.current?.(),remaining.current)
+    return ()=>{clearTimeout(timer);remaining.current=Math.max(0,remaining.current-(performance.now()-started))}
+  },[duration,hovered,focused,hidden])
+  return <Element {...props} className={`wm-notification is-${tone} ${className}`.trim()} onMouseEnter={()=>setHovered(true)} onMouseLeave={()=>setHovered(false)} onFocus={()=>setFocused(true)} onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget))setFocused(false)}}>{children}</Element>
+}
+
 function Notification({ notice, onDismiss }) {
   const { t } = useTestingLocale()
-  const [paused, setPaused] = useState(false)
-  useEffect(() => {
-    if (notice.tone === 'error' || paused) return
-    const timer = setTimeout(() => onDismiss(notice.id), 6000)
-    return () => clearTimeout(timer)
-  }, [notice, paused, onDismiss])
   const order = notice.order
   const orderTitle = { executed: 'Đã khớp lệnh market', closed: 'Closed your open position on', partial_closed: 'Partially closed your open position on', cancelled: 'Cancelled your pending order on' }[order?.status] || 'Đã gửi lệnh market chờ khớp'
   const structured = Boolean(notice.title)
   const role = notice.tone === 'error' ? 'alert' : 'status'
-  return <div className={`wm-notification is-${notice.tone}${order ? ' is-order' : ''}${structured ? ' is-structured' : ''}`} data-order-status={order?.status} onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onFocus={() => setPaused(true)} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setPaused(false) }}>
+  return <NotificationSurface tone={notice.tone} persistent={notice.persistent} onDismiss={()=>onDismiss(notice.id)} className={`${order ? 'is-order' : ''}${structured ? ' is-structured' : ''}`} data-order-status={order?.status}>
     {order ? <>
       <span className={`wm-notification-mark is-${order.side === 'BUY' ? 'buy' : 'sell'}`} aria-hidden="true">✓</span>
       <div className="wm-notification-content" role={role}>
@@ -41,7 +58,7 @@ function Notification({ notice, onDismiss }) {
       </div>
     </> : <p role={role}>{t(notice.message || notice.text)}</p>}
     <button type="button" aria-label={t('Đóng thông báo')} onClick={() => onDismiss(notice.id)}>×</button>
-  </div>
+  </NotificationSurface>
 }
 
 export function NotificationProvider({ children }) {

@@ -1,7 +1,7 @@
 import LiveTradingOverview from './LiveTradingOverview.jsx'
 import ChartIcon from './ChartIcon.jsx'
 import { replayResolution } from './advancedReplayDatafeed.js'
-import { NotificationSlot, useNotifications } from './Notifications.jsx'
+import { NotificationSlot, NotificationSurface, useNotifications } from './Notifications.jsx'
 import { liveTradingHref } from './liveTradingNavigation.js'
 import { buildWorkspaceHref } from './workspaceContext.js'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
@@ -58,6 +58,7 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
   const [pending,setPending] = useState(() => recoverPending(receiptKey)), [confirmation,setConfirmation] = useState(null)
   const [ledgerEvent,setLedgerEvent] = useState({tab:'positions',sequence:0})
   const [dismissedState,setDismissedState] = useState(null), reportedReceipts = useRef(new Set())
+  const [stateAttempt,setStateAttempt] = useState(0)
   const snapshot = read.scope === scope ? read.payload : null
   const chartSnapshot = read.chartScope === chartScope ? read.chart : null
   const unresolved = pending || snapshot?.requests?.find(item=>item.status==='unknown'||item.requires_reconciliation===true)
@@ -153,7 +154,7 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
     setChecked(null);setNotice('');setPanel('order')
   }
   const quickOrder = (side,quantity,preset) => {
-    if (staleDraft) {setDismissedState(null);return}
+    if (staleDraft) {setDismissedState(null);setStateAttempt(value=>value+1);return}
     if (!canAct || paused || !capability('place')) return
     setChecked(null)
     try { setDraft(mt5QuickDraft(snapshot,side,quantity,preset));setNotice('');setPanel('order') }
@@ -167,7 +168,7 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
 
   const checkOrder = async event => {
     event.preventDefault()
-    if (staleDraft) {setPanel(null);setChecked(null);setDismissedState(null);return}
+    if (staleDraft) {setPanel(null);setChecked(null);setDismissedState(null);setStateAttempt(value=>value+1);return}
     if (!canAct || paused || error || !intent || running.current) return
     running.current=true; setBusy(true);setNotice('');setChecked(null)
     const origin=scope, key=JSON.stringify(intent)
@@ -251,7 +252,7 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
   return <Suspense fallback={<TestingSkeleton label="Đang tải biểu đồ…" />}><LiveChartSurface objectsOpen={panel==='objects'} headerHeight={headerSlots?.headerHeight || 38}>
     <LegacyChartHeader marketMode="live" controls={headerSlots} symbol={chartSymbol} name={`MT5 · ${snapshot?.account?.login || chartSnapshot?.account?.login || 'MT5'}`} backHref={liveTradingHref(workspace,accountQuery)} theme={theme} onTheme={()=>applyAppearance({...appearance,theme:theme==='dark'?'light':'dark'})} onOpenTool={openTool} onFullscreen={fullscreen}/>
     {!headerSlots && <header className="live-terminal-toolbar"><a href={liveTradingHref(workspace,accountQuery)} aria-label={t('Trở về tổng quan MT5')}><ChartIcon name="arrow-left"/></a><strong>{chartSymbol || 'MetaTrader'}</strong><FxSelect label="Khung thời gian MT5" value={timeframe} options={Object.keys(DEMO_TIMEFRAMES).map(value=>({value,label:value}))} onChange={value=>route({mt5_timeframe:value})}/><button type="button" className="live-text-action" onClick={event=>openTool('data',event.currentTarget)}>{t('Chọn mã giao dịch MT5')}</button></header>}
-    <NotificationSlot>{stateKey && dismissedState!==stateKey && <section className={`wm-notification is-blocking live-terminal-state ${read.status==='error'||unresolved?'is-error':''}`} role={read.status==='error'||unresolved?'alert':'status'}><TestingIcon kind="info" /><p>{unresolved?t('Chưa rõ kết quả. Đối soát MT5 trước khi gửi lệnh khác.'):t(reason || 'Đã tạm dừng mở lệnh mới.')}</p>{unresolved && <button className="wm-notification-action" type="button" disabled={busy} onClick={reconcile}>{t(busy?'Đang đối soát…':'Đối soát')}</button>}{resetSymbol && <button type="button" className="wm-notification-action" onClick={resetSymbol}>{t('Tải lại danh sách mã')}</button>}<button type="button" aria-label={t('Đóng thông báo')} onClick={()=>setDismissedState(stateKey)}>×</button></section>}</NotificationSlot>
+    <NotificationSlot>{stateKey && dismissedState!==stateKey && <NotificationSurface as="section" key={`${stateKey}:${stateAttempt}`} tone={read.status==='error'||unresolved?'error':'warning'} persistent={Boolean(unresolved||resetSymbol)} onDismiss={()=>setDismissedState(stateKey)} className="is-blocking live-terminal-state" role={read.status==='error'||unresolved?'alert':'status'}><TestingIcon kind="info" /><p>{unresolved?t('Chưa rõ kết quả. Đối soát MT5 trước khi gửi lệnh khác.'):t(reason || 'Đã tạm dừng mở lệnh mới.')}</p>{unresolved && <button className="wm-notification-action" type="button" disabled={busy} onClick={reconcile}>{t(busy?'Đang đối soát…':'Đối soát')}</button>}{resetSymbol && <button type="button" className="wm-notification-action" onClick={resetSymbol}>{t('Tải lại danh sách mã')}</button>}<button type="button" aria-label={t('Đóng thông báo')} onClick={()=>setDismissedState(stateKey)}>×</button></NotificationSurface>}</NotificationSlot>
     <section className="replay-workspace live-terminal-main">
       <div className="replay-main live-terminal-market">
         <div className="live-terminal-chart chart-frame has-advanced-chart"><div className="chart-canvas">
