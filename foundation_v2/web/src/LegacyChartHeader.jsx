@@ -10,7 +10,7 @@ import { useTestingLocale } from './testingLocale.jsx'
 export const intervalLabel = value => ({ '60': '1h', '120': '2h', '240': '4h', '1D': 'D', '1W': 'W', '1M': 'M' })[value] || (/^\d+$/.test(value) ? `${value}m` : value)
 
 // Only FX-specific extensions render here. The chart library renders its native toolbar.
-export default function LegacyChartHeader({ controls, symbol, name, backHref, theme, onTheme, onOpenTool, onFullscreen, marketMode = 'replay' }) {
+export default function LegacyChartHeader({ controls, symbol, name, backHref, theme, onTheme, onOpenTool, onFullscreen, marketMode = 'replay', timeframe, timeframes, onTimeframe }) {
   const { t } = useTestingLocale()
   const live = marketMode === 'live'
   const [menu, setMenu] = useState(false)
@@ -74,6 +74,7 @@ export default function LegacyChartHeader({ controls, symbol, name, backHref, th
     {createPortal(<div className="legacy-native-extension legacy-native-market" data-testid="legacy-native-market">
       <a href={backHref} target="_top" aria-label={t(live ? 'Trở về tổng quan MT5' : 'Trở về Sessions')} data-tooltip={t(live ? 'Trở về tổng quan MT5' : 'Trở về Sessions')}><ChartIcon name="arrow-left" /></a>
       <button type="button" className="legacy-symbol" onClick={open('data')} data-tooltip={t(live ? 'Chọn mã giao dịch MT5' : 'Chọn dataset local')}><ChartIcon name="search" /><strong>{symbol}</strong></button>
+      {live && timeframes && <button type="button" aria-label={t('Khung thời gian MT5')} aria-haspopup="true" aria-expanded={popup?.kind==='timeframe'} onClick={show('timeframe')}>{timeframe}<ChartIcon name="down"/></button>}
       {!live && button('So sánh mã', 'compare', open('compare'), { className: 'legacy-compare' })}
     </div>, controls.market)}
     {createPortal(<div className="legacy-native-extension"><button type="button" onClick={show('layout')}>New Layout</button></div>, controls.layout)}
@@ -102,7 +103,8 @@ export default function LegacyChartHeader({ controls, symbol, name, backHref, th
       <button type="button" onClick={() => { setMenu(false); onTheme(); opener.current?.focus() }}>{t('Đổi giao diện')}</button>
       <button type="button" onClick={() => { setMenu(false); onFullscreen(); opener.current?.focus() }}>{t('Toàn màn hình')}</button>
     </div>}
-    {popup && <LegacyPopover anchor={popup.anchor} theme={theme} label={t(({layout:'Bố cục chart',manage:'Quản lý layout',capture:'Ảnh chart'})[popup.kind])} wide={popup.kind === 'layout'} onClose={() => setPopup(null)} onAnchorLost={closePopup}>
+    {popup && <LegacyPopover anchor={popup.anchor} theme={theme} label={t(({layout:'Bố cục chart',manage:'Quản lý layout',capture:'Ảnh chart',timeframe:'Khung thời gian MT5'})[popup.kind])} wide={popup.kind === 'layout'} onClose={() => setPopup(null)} onAnchorLost={closePopup}>
+      {popup.kind==='timeframe' && timeframes.map(value=><button type="button" key={value} aria-pressed={timeframe===value} onClick={()=>{closePopup();if(value!==timeframe)onTimeframe(value)}}>{value}</button>)}
       {popup.kind === 'layout' && <LegacyLayoutMenu onClose={closePopup} />}
       {popup.kind === 'manage' && <>
         <button type="button" disabled={saved || saving} onClick={saveAction}><span>{t('Lưu layout')}</span><kbd>Ctrl + S</kbd></button>

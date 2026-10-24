@@ -8,6 +8,7 @@ import { useFxReplayContext } from './FxReplayShell.jsx'
 import { navigate } from './clientNavigation.js'
 import TestingIcon from './TestingIcon.jsx'
 import LegacyModal from './LegacyModal.jsx'
+import FxSelect from './FxSelect.jsx'
 import { readDemoTrading, previewDemoOrder, commandDemoOrder, reconcileDemoOrder } from './liveTradingApi.js'
 import { retainLiveChart, watchLiveMarket } from './liveMarketStream.js'
 import Mt5SymbolPicker from './Mt5SymbolPicker.jsx'
@@ -35,7 +36,7 @@ function recoverPending(key) {
 }
 
 export default function LiveTradingWorkspace({ workspace, query, preview: demoPreview = false }) {
-  const { t,fmt } = useTestingLocale(), {appearance,applyAppearance,openAi} = useFxReplayContext()
+  const { t,fmt,locale } = useTestingLocale(), {appearance,applyAppearance,openAi} = useFxReplayContext()
   const theme = appearance?.theme || 'dark'
   const chartSurface = query.get('surface') === 'workspace'
   const [panel,setPanel]=useState(null), [symbolAnchor,setSymbolAnchor]=useState(null), [headerSlots,setHeaderSlots]=useState(null)
@@ -210,14 +211,20 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
   const currency=snapshot?.account?.currency || '', money=value=>Number.isFinite(value)?fmt(value,currency?` ${currency}`:''):t('Chưa xác định')
   const accountQuery=new URLSearchParams(query);if(connectionId)accountQuery.set('mt5_connection',connectionId)
   const resetSymbol = (read.error==='demo_symbol_denied'||snapshot?.reason==='demo_symbol_denied') ? ()=>route({mt5_symbol:null}) : undefined
-  const reason = demoPreview ? 'Gửi lệnh không khả dụng trong chế độ xem thử.' : read.status==='loading' ? 'Đang đọc tài khoản MT5…' : resetSymbol ? demoReason('demo_symbol_denied') : read.status==='error' ? 'Mất kết nối dữ liệu giao dịch. Đang giữ ảnh chụp trước đó.' : !chartSurface && snapshot?.summary ? '' : !marketReady ? demoReason(tradingBlockReason(snapshot,now)) : ''
+  const blockReason=tradingBlockReason(snapshot,now), quoteTime=Number(snapshot?.quote?.time_msc), quoteAge=now-quoteTime
+  const quoteUnit=quoteAge>=3600000?3600000:quoteAge>=60000?60000:1000
+  const quoteNotice=blockReason==='demo_quote_stale'&&Number.isFinite(new Date(quoteTime).getTime())&&quoteTime>0 ? quoteAge < -1000
+    ? t('Thời gian báo giá đi trước đồng hồ máy. Kiểm tra đồng bộ giờ Windows.')
+    : t('Báo giá cuối: {time} · {count} {unit} trước. Chờ giá mới để giao dịch.',{time:new Intl.DateTimeFormat(locale,{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',timeZoneName:'short'}).format(quoteTime),count:fmt(Math.floor(Math.max(0,quoteAge)/quoteUnit),'',0),unit:t(quoteUnit===3600000?'giờ':quoteUnit===60000?'phút':'giây')})
+    : demoReason('demo_quote_stale')
+  const reason = demoPreview ? 'Gửi lệnh không khả dụng trong chế độ xem thử.' : read.status==='loading' ? 'Đang đọc tài khoản MT5…' : resetSymbol ? demoReason('demo_symbol_denied') : read.status==='error' ? 'Mất kết nối dữ liệu giao dịch. Đang giữ ảnh chụp trước đó.' : !chartSurface && snapshot?.summary ? '' : !marketReady ? blockReason==='demo_quote_stale'?quoteNotice:demoReason(blockReason) : ''
   if (!chartSurface) return <LiveTradingOverview workspace={workspace} query={accountQuery} snapshot={snapshot} status={read.status} reason={unresolved ? 'Chưa rõ kết quả. Đối soát MT5 trước khi gửi lệnh khác.' : reason} symbol={activeSymbol} timeframe={timeframe} onRefresh={()=>setRefresh(value=>value+1)} onResetSymbol={resetSymbol}/>
   const fullscreen=()=>{if(document.fullscreenElement)document.exitFullscreen?.();else document.documentElement.requestFullscreen?.()}
   const openTool=(tool,anchor)=>{if(tool==='data')setSymbolAnchor(current=>current===anchor?null:anchor);else if(tool==='context')setPanel('conditions');else if(tool==='mentor')openAi()}
   const journalHref = section => buildWorkspaceHref('live',workspace,accountQuery,{area:'live',section,surface:null,live_account:connectionId ? `broker:${connectionId}` : null,live_accounts:null})
   return <Suspense fallback={<TestingSkeleton label="Đang tải biểu đồ…" />}><LiveChartSurface headerHeight={headerSlots?.headerHeight || 38}>
-    <LegacyChartHeader marketMode="live" controls={headerSlots} symbol={chartSymbol} name={`MT5 · ${snapshot?.account?.login || chartSnapshot?.account?.login || 'MT5'}`} backHref={liveTradingHref(workspace,accountQuery)} theme={theme} onTheme={()=>applyAppearance({...appearance,theme:theme==='dark'?'light':'dark'})} onOpenTool={openTool} onFullscreen={fullscreen}/>
-    {!headerSlots && <header className="live-terminal-toolbar"><a href={liveTradingHref(workspace,accountQuery)} aria-label={t('Trở về tổng quan MT5')}><ChartIcon name="arrow-left"/></a><strong>{chartSymbol || 'MetaTrader'} · {timeframe}</strong><button type="button" className="live-text-action" onClick={event=>openTool('data',event.currentTarget)}>{t('Chọn mã giao dịch MT5')}</button></header>}
+    <LegacyChartHeader marketMode="live" controls={headerSlots} symbol={chartSymbol} timeframe={timeframe} timeframes={Object.keys(DEMO_TIMEFRAMES)} onTimeframe={value=>route({mt5_timeframe:value})} name={`MT5 · ${snapshot?.account?.login || chartSnapshot?.account?.login || 'MT5'}`} backHref={liveTradingHref(workspace,accountQuery)} theme={theme} onTheme={()=>applyAppearance({...appearance,theme:theme==='dark'?'light':'dark'})} onOpenTool={openTool} onFullscreen={fullscreen}/>
+    {!headerSlots && <header className="live-terminal-toolbar"><a href={liveTradingHref(workspace,accountQuery)} aria-label={t('Trở về tổng quan MT5')}><ChartIcon name="arrow-left"/></a><strong>{chartSymbol || 'MetaTrader'}</strong><FxSelect label="Khung thời gian MT5" value={timeframe} options={Object.keys(DEMO_TIMEFRAMES).map(value=>({value,label:value}))} onChange={value=>route({mt5_timeframe:value})}/><button type="button" className="live-text-action" onClick={event=>openTool('data',event.currentTarget)}>{t('Chọn mã giao dịch MT5')}</button></header>}
     {(reason || paused || unresolved) && <div className="live-terminal-state" role={read.status==='error'||unresolved?'alert':'status'}><TestingIcon kind="info" /><span>{unresolved?t('Chưa rõ kết quả. Đối soát MT5 trước khi gửi lệnh khác.'):t(reason || 'Đã tạm dừng mở lệnh mới.')}</span>{unresolved && <button className="live-text-action" type="button" disabled={busy} onClick={reconcile}>{t(busy?'Đang đối soát…':'Đối soát')}</button>}{resetSymbol && <button type="button" className="live-text-action" onClick={resetSymbol}>{t('Tải lại danh sách mã')}</button>}</div>}
     <section className="replay-workspace live-terminal-main">
       <div className="replay-main live-terminal-market">
@@ -257,7 +264,7 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
     </section>
     {panel==='conditions' && <LegacyModal label={t('Điều kiện giao dịch')} theme={theme} onClose={()=>setPanel(null)}><div className="live-terminal-confirm-body"><Suspense fallback={<TestingSkeleton rows={2}/>}><Mt5TradingConditions snapshot={snapshot} stale={read.status!=='ready'}/></Suspense><button type="button" className="wm-button" disabled={!canAct} onClick={()=>openAction(paused?'resume':'pause',{},paused?'Tiếp tục mở lệnh mới':'Tạm dừng mở lệnh mới')}>{t(paused?'Tiếp tục mở lệnh mới':'Tạm dừng mở lệnh mới')}</button></div></LegacyModal>}
     {panel==='objects' && <LegacyModal label={t('Cây đối tượng chart')} theme={theme} onClose={()=>setPanel(null)}><Suspense fallback={<TestingSkeleton rows={2}/>}><LegacyObjectTree controls={headerSlots} symbol={activeSymbol}/></Suspense></LegacyModal>}
-    {symbolAnchor && <Mt5SymbolPicker anchor={symbolAnchor} theme={theme} symbols={snapshot?.symbols||chartSnapshot?.symbols||EMPTY} symbol={chartSymbol} timeframe={timeframe} status={read.status==='ready'&&snapshot?.status==='ready'?'ready':'unavailable'} onSelect={route} onClose={()=>setSymbolAnchor(null)}/>}
+    {symbolAnchor && <Mt5SymbolPicker anchor={symbolAnchor} theme={theme} symbols={snapshot?.symbols||chartSnapshot?.symbols||EMPTY} symbol={chartSymbol} status={read.status==='ready'&&snapshot?.status==='ready'?'ready':'unavailable'} onSelect={route} onClose={()=>setSymbolAnchor(null)}/>}
     {confirmation && <LegacyModal label={t(confirmation.label)} theme={theme} className="live-terminal-confirm" onClose={()=>{if(!busy)setConfirmation(null)}}>
       <div className="live-terminal-confirm-body"><p><strong>{t(snapshot?.mode==='real'?'Real':'Demo')} · #{snapshot?.account?.login}</strong><br/>{snapshot?.account?.server}</p>
         {confirmation.action==='place' && <><p>{draft.side} · {activeSymbol} · {fmt(draft.quantity,' lot',5)}</p><dl className="live-terminal-values"><div><dt>SL / TP</dt><dd>{draft.stopLoss||'—'} / {draft.takeProfit||'—'}</dd></div><div><dt>{t('Risk tới SL')}</dt><dd>{money(checked?.value.estimated_stop_risk)}</dd></div><div><dt>{t('Margin cần thiết')}</dt><dd>{money(checked?.value.margin_required)}</dd></div></dl><p className="live-muted">{t('Giá khớp thực tế có thể thay đổi. MT5 sẽ kiểm tra lại trước khi gửi.')}</p></>}

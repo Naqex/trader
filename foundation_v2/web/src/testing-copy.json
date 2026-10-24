@@ -6629,5 +6629,33 @@
   "Dữ liệu tài khoản đã cũ. Đồng bộ tài khoản để cập nhật.": {"vi":"Dữ liệu tài khoản đã cũ. Đồng bộ tài khoản để cập nhật.","en":"Account data is stale. Sync the account to update it."},
   "Báo giá hoặc thông số mã MT5 chưa hợp lệ. Đợi dữ liệu mới trước khi giao dịch.": {"vi":"Báo giá hoặc thông số mã MT5 chưa hợp lệ. Đợi dữ liệu mới trước khi giao dịch.","en":"MT5 quotes or symbol specifications are invalid. Wait for fresh data before trading."},
   "Chưa có báo giá MT5 hợp lệ. Đợi dữ liệu mới trước khi giao dịch.": {"vi":"Chưa có báo giá MT5 hợp lệ. Đợi dữ liệu mới trước khi giao dịch.","en":"No valid MT5 quote yet. Wait for fresh data before trading."},
-  "Báo giá MT5 chưa đủ mới. Kiểm tra đồng hồ Windows và kết nối giá trước khi gửi lệnh.": {"vi":"Báo giá MT5 chưa đủ mới. Kiểm tra đồng hồ Windows và kết nối giá trước khi gửi lệnh.","en":"The MT5 quote is not fresh enough. Check the Windows clock and price feed before placing an order."}
+  "Báo giá MT5 chưa đủ mới. Kiểm tra đồng hồ Windows và kết nối giá trước khi gửi lệnh.": {"vi":"Báo giá MT5 chưa đủ mới. Kiểm tra đồng hồ Windows và kết nối giá trước khi gửi lệnh.","en":"The MT5 quote is not fresh enough. Check the Windows clock and price feed before placing an order."},
+  "{count} mã": {
+    "vi": "{count} mã",
+    "en": "{count} symbols"
+  },
+  "Phân nhóm theo mã tài sản.": {
+    "vi": "Phân nhóm theo mã tài sản.",
+    "en": "Grouped by symbol name."
+  },
+  "Thời gian báo giá đi trước đồng hồ máy. Kiểm tra đồng bộ giờ Windows.": {
+    "vi": "Thời gian báo giá đi trước đồng hồ máy. Kiểm tra đồng bộ giờ Windows.",
+    "en": "The quote timestamp is ahead of this computer. Check Windows time synchronization."
+  },
+  "Báo giá cuối: {time} · {count} {unit} trước. Chờ giá mới để giao dịch.": {
+    "vi": "Báo giá cuối: {time} · {count} {unit} trước. Chờ giá mới để giao dịch.",
+    "en": "Last quote: {time} · {count} {unit} ago. Waiting for a fresh price to trade."
+  },
+  "Báo giá MT5 đã cũ hoặc lệch thời gian. Chờ báo giá hợp lệ trước khi gửi lệnh.": {
+    "vi": "Báo giá MT5 đã cũ hoặc lệch thời gian. Chờ báo giá hợp lệ trước khi gửi lệnh.",
+    "en": "The MT5 quote is old or its timestamp is inconsistent. Wait for a valid quote before sending an order."
+  },
+  "giờ": {
+    "vi": "giờ",
+    "en": "hours"
+  },
+  "giây": {
+    "vi": "giây",
+    "en": "seconds"
+  }
 }

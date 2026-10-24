@@ -74,7 +74,7 @@ export const DEMO_REASONS = Object.freeze({
   demo_disabled:'Gửi lệnh demo chưa được bật.', demo_policy_disabled:'Gửi lệnh demo chưa được bật.',
   demo_workspace_denied:'Workspace này chưa được cấp quyền giao dịch demo.', demo_identity_mismatch:'Tài khoản hoặc máy chủ MT5 không khớp cấu hình.',
   demo_only:'Chỉ chấp nhận tài khoản demo.', demo_terminal_unavailable:'Terminal giao dịch demo chưa sẵn sàng.',
-  demo_quote_stale:'Báo giá MT5 chưa đủ mới. Kiểm tra đồng hồ Windows và kết nối giá trước khi gửi lệnh.', demo_response_invalid:'Dữ liệu giao dịch chưa hợp lệ.',
+  demo_quote_stale:'Báo giá MT5 đã cũ hoặc lệch thời gian. Chờ báo giá hợp lệ trước khi gửi lệnh.', demo_response_invalid:'Dữ liệu giao dịch chưa hợp lệ.',
   demo_paused:'Đã tạm dừng mở lệnh mới.', demo_outcome_unknown:'Chưa rõ kết quả. Đối soát MT5 trước khi gửi lệnh khác.',
   demo_pending_unsupported:'Hiện chỉ hỗ trợ lệnh Market.', demo_not_configured:'Chưa cấu hình terminal giao dịch demo.',
 })
