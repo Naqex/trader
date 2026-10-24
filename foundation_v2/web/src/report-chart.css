@@ -5,7 +5,6 @@
 .report-svg text { font-size:12px; fill:var(--wm-content-muted); font-variant-numeric:tabular-nums; }
 .report-svg .report-bar-value { font-size:11px; fill:var(--wm-content); }
 .report-grid { stroke:color-mix(in srgb,var(--wm-content-muted) 40%,transparent); stroke-width:1; stroke-dasharray:5 5; }
-.report-zero { stroke:var(--wm-border-strong); stroke-width:1; }
 .report-line { fill:none; stroke:var(--report-accent); stroke-width:2; stroke-linejoin:round; vector-effect:non-scaling-stroke; }
 .report-point,.report-bar rect { fill:var(--report-accent); }
 .report-bar.is-positive rect { fill:var(--report-positive); }

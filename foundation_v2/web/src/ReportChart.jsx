@@ -71,8 +71,7 @@ export function ReportBars({ title, items, currency, horizontal = false, accent 
   const labelWidth = Math.max(40, ...items.map(item => Math.max(t(item.label).length, (valueFormat ? valueFormat(item.value) : fmt(item.value)).length) * 7 + 12))
   const labelStride = Math.ceil(items.length / Math.max(1, Math.floor((right - left) / labelWidth)))
   return <section className={`fxs-chart-panel report-chart is-${accent}`}><h3>{t(title)}</h3>{domain ? <div ref={plotRef} className="report-plot" role="group" aria-label={t(title)}><svg className="report-svg" viewBox={`0 0 ${width} ${height}`} style={{ height }} role="img" aria-label={`${t(title)}: ${items.map(item => `${t(item.label)}: ${amount(item.value)}`).join('; ')}`}>
-    {ticks.map(value => <g key={value}>{horizontal ? <><line className="report-grid" x1={x(value)} x2={x(value)} y1={top} y2={edge}/><text x={x(value)} y={height - 14} textAnchor="middle">{tickLabel(value)}</text></> : <><line className="report-grid" x1={left} x2={right} y1={y(value)} y2={y(value)}/><text x={left - 12} y={y(value)} dominantBaseline="middle" textAnchor="end">{valueFormat ? valueFormat(value) : axis.get(value)}</text></>}</g>)}
-    {horizontal ? <line className="report-zero" x1={x(0)} x2={x(0)} y1={top} y2={edge}/> : <line className="report-zero" x1={left} x2={right} y1={y(0)} y2={y(0)}/>}
+    {ticks.map(value => <g key={value}>{horizontal ? <text x={x(value)} y={height - 14} textAnchor="middle">{tickLabel(value)}</text> : <><line className="report-grid" x1={left} x2={right} y1={y(value)} y2={y(value)}/><text x={left - 12} y={y(value)} dominantBaseline="middle" textAnchor="end">{valueFormat ? valueFormat(value) : axis.get(value)}</text></>}</g>)}
     {items.map((item, index) => {
       const step = (horizontal ? edge - top : right - left) / items.length
       const center = (horizontal ? top : left) + (index + .5) * step, width = Math.min(36, step * .55)

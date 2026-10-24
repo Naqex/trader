@@ -1,0 +1,49 @@
+{
+  "scope": "read-only demo and real shared report grid rendering",
+  "checks": [
+    {
+      "mode": "demo",
+      "width": 1920,
+      "theme": "dark",
+      "charts": 5,
+      "horizontalGridOnly": true,
+      "noSeparateZeroLine": true,
+      "barsRetained": true,
+      "noChartOverflow": true
+    },
+    {
+      "mode": "real",
+      "width": 1920,
+      "theme": "dark",
+      "charts": 3,
+      "horizontalGridOnly": true,
+      "noSeparateZeroLine": true,
+      "barsRetained": true,
+      "noChartOverflow": true
+    },
+    {
+      "mode": "demo",
+      "width": 390,
+      "theme": "light",
+      "charts": 5,
+      "horizontalGridOnly": true,
+      "noSeparateZeroLine": true,
+      "barsRetained": true,
+      "noChartOverflow": true
+    },
+    {
+      "mode": "real",
+      "width": 390,
+      "theme": "light",
+      "charts": 3,
+      "horizontalGridOnly": true,
+      "noSeparateZeroLine": true,
+      "barsRetained": true,
+      "noChartOverflow": true
+    }
+  ],
+  "errors": [],
+  "writes": [],
+  "servedIndexSha256": "786f4a17fe0d02bb493724cb574f61f0cdece36477f0e9ceb4aa3c94d4163dda",
+  "status": "PASS"
+}
