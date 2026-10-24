@@ -33,7 +33,7 @@ export default function LegacyPopover({ anchor, theme, label, onClose, onAnchorL
       if (event.type === 'keydown' && (event.defaultPrevented || event.target.closest?.('[popover]:popover-open'))) return
       if (event.type === 'pointerdown' && !popup.contains(event.target) && !anchor.contains(event.target)) closeRef.current()
       if (event.type === 'focusin' && !popup.contains(event.target) && !anchor.contains(event.target)) closeRef.current()
-      if (event.type === 'keydown' && event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closeRef.current(); anchor.focus({ preventScroll: true }) }
+      if (event.type === 'keydown' && event.key === 'Escape' && (popup.contains(event.target) || anchor.contains(event.target))) { event.preventDefault(); event.stopPropagation(); closeRef.current(); anchor.focus({ preventScroll: true }) }
       if (event.type === 'keydown' && ['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key) && event.target.tagName === 'BUTTON' && popup.contains(event.target)) {
         event.preventDefault()
         const buttons = [...popup.querySelectorAll('button:not(:disabled)')], index = buttons.indexOf(event.target)
@@ -43,16 +43,20 @@ export default function LegacyPopover({ anchor, theme, label, onClose, onAnchorL
     const blur = event => {
       if (event.relatedTarget && !popup.contains(event.relatedTarget) && !anchor.contains(event.relatedTarget)) closeRef.current()
     }
+    // A read-only popup leaves focus on its trigger; handle that Escape before a parent dialog.
+    const closeFromAnchor = event => { if (event.key === 'Escape' && anchor.contains(event.target)) close(event) }
     popup.addEventListener('focusout', blur)
     const docs = [...new Set([doc, document])]
     docs.forEach(d => { d.addEventListener('pointerdown', close); d.addEventListener('focusin', close) })
     popup.addEventListener('keydown', close)
+    doc.addEventListener('keydown', closeFromAnchor, true)
     doc.addEventListener('scroll', place, true)
     view.addEventListener('resize', place)
     const observer = new view.ResizeObserver(place); observer.observe(popup); observer.observe(anchor)
     return () => {
       observer.disconnect(); view.removeEventListener('resize', place); doc.removeEventListener('scroll', place, true)
       popup.removeEventListener('keydown', close)
+      doc.removeEventListener('keydown', closeFromAnchor, true)
       popup.removeEventListener('focusout', blur)
       docs.forEach(d => { d.removeEventListener('pointerdown', close); d.removeEventListener('focusin', close) })
       if (anchor.isConnected && popup.contains(doc.activeElement)) anchor.focus({ preventScroll: true })

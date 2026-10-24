@@ -12,7 +12,6 @@ export default function Mt5TradingBar({ workspace, scopeId, snapshot, positions,
   return <ChartTradingDock key={`${workspace}:${scopeId}`} workspace={workspace} scopeId={`mt5:${scopeId}`} label="Giao dịch MT5" theme={theme}
     instrument={instrument} reference={snapshot?.quote?.ask} disabled={disabled} settingsDisabled={!instrument} onQuickTrade={onQuickTrade}
     quickLabel="Chuẩn bị lệnh MT5 theo khối lượng và preset đã chọn" analyticsHref={analyticsHref} openSignal={ledgerEvent?.sequence}
-    readStatus={<span className="live-badge">{snapshot?.mode === 'real' ? 'Real' : snapshot?.mode === 'demo' ? 'Demo' : 'MT5'}</span>}
     money={money} equity={snapshot?.account?.equity} floating={floating} hasPosition={positions.length > 0}
     accountDetails={[["Balance",snapshot?.account?.balance],["Equity",snapshot?.account?.equity],["Free margin",snapshot?.account?.margin_free]]}>
     {children}

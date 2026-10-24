@@ -53,6 +53,8 @@ body.chart-page { width: calc(100% - var(--legacy-reserved-width, 0px)); overflo
 .legacy-native-extension :is(button, a):focus-visible { outline: 2px solid var(--project-primary); outline-offset: -2px; }
 .legacy-native-extension svg { width: 20px; height: 20px; display: block; flex-shrink: 0; }
 .legacy-native-market strong { font-weight: 600; }
+.legacy-native-market .legacy-live-interval { position:relative; margin-left:4px; padding-inline:10px; }
+.legacy-native-market .legacy-live-interval::before { content:''; position:absolute; left:0; top:7px; bottom:7px; width:1px; background:var(--tv-color-platform-background); pointer-events:none; }
 .legacy-session-group { flex:1 1 0% !important; min-width:0; }
 .legacy-session-host { width:100%; }
 .legacy-native-session { display:grid; grid-template-columns:minmax(0,1fr) auto auto auto; width:100%; }

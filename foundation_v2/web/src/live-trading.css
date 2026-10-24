@@ -38,7 +38,7 @@
 
 @media(max-width:600px) {
   .live-mt5-order .legacy-order-form footer .legacy-order-save { flex:1 0 100%; }
-  .live-terminal-state { left:48px; }
+  .live-terminal-state { left:48px; right:64px; }
   .live-terminal-values > div { flex-wrap:wrap; }
   .live-terminal-values dd { margin-left:auto; }
   .live-trading .chart-frame.has-advanced-chart { min-height:180px; }

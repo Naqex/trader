@@ -74,7 +74,7 @@ export default function LegacyChartHeader({ controls, symbol, name, backHref, th
     {createPortal(<div className="legacy-native-extension legacy-native-market" data-testid="legacy-native-market">
       <a href={backHref} target="_top" aria-label={t(live ? 'Trở về tổng quan MT5' : 'Trở về Sessions')} data-tooltip={t(live ? 'Trở về tổng quan MT5' : 'Trở về Sessions')}><ChartIcon name="arrow-left" /></a>
       <button type="button" className="legacy-symbol" onClick={open('data')} data-tooltip={t(live ? 'Chọn mã giao dịch MT5' : 'Chọn dataset local')}><ChartIcon name="search" /><strong>{symbol}</strong></button>
-      {live && timeframes && <button type="button" aria-label={t('Khung thời gian MT5')} aria-haspopup="true" aria-expanded={popup?.kind==='timeframe'} onClick={show('timeframe')}>{timeframe}<ChartIcon name="down"/></button>}
+      {live && timeframes && <button type="button" className="legacy-live-interval" aria-label={t('Khung thời gian MT5')} aria-haspopup="true" aria-expanded={popup?.kind==='timeframe'} onClick={show('timeframe')}>{timeframe}<ChartIcon name="down"/></button>}
       {!live && button('So sánh mã', 'compare', open('compare'), { className: 'legacy-compare' })}
     </div>, controls.market)}
     {createPortal(<div className="legacy-native-extension"><button type="button" onClick={show('layout')}>New Layout</button></div>, controls.layout)}
@@ -87,7 +87,7 @@ export default function LegacyChartHeader({ controls, symbol, name, backHref, th
     {createPortal(<div className="legacy-native-extension">{button(live ? 'Chọn mã giao dịch MT5' : 'Quick Search', 'quick-search', open(live ? 'data' : 'search'))}</div>, controls.search)}
     {createPortal(<div className="legacy-native-extension legacy-native-tools" data-testid="legacy-native-tools">
       {button('Chụp chart PNG', 'camera', show('capture'), { className: 'legacy-wide-action', 'aria-expanded': popup?.kind === 'capture' })}
-      <span className="legacy-divider legacy-wide-action" />
+      {!live && <span className="legacy-divider legacy-wide-action" />}
       {!live && <button type="button" className="legacy-editor legacy-wide-action" aria-label="Editor" data-tooltip="Editor" onClick={open('editor')}><ChartIcon name="editor" /><span>Editor</span></button>}
       {button('AI Mentor', 'mentor', open('mentor'), { className: 'legacy-mentor' })}
       {button('Đổi giao diện', theme === 'dark' ? 'moon' : 'sun', onTheme, { className: 'legacy-wide-action', 'data-testid': 'theme-toggle' })}

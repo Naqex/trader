@@ -6642,9 +6642,9 @@
     "vi": "Thời gian báo giá đi trước đồng hồ máy. Kiểm tra đồng bộ giờ Windows.",
     "en": "The quote timestamp is ahead of this computer. Check Windows time synchronization."
   },
-  "Báo giá cuối: {time} · {count} {unit} trước. Chờ giá mới để giao dịch.": {
-    "vi": "Báo giá cuối: {time} · {count} {unit} trước. Chờ giá mới để giao dịch.",
-    "en": "Last quote: {time} · {count} {unit} ago. Waiting for a fresh price to trade."
+  "Giá cũ: tạm khóa gửi lệnh. Báo giá cuối: {time} · {count} {unit} trước.": {
+    "vi": "Giá cũ: tạm khóa gửi lệnh. Báo giá cuối: {time} · {count} {unit} trước.",
+    "en": "Order submission paused: stale price. Last quote: {time} · {count} {unit} ago."
   },
   "Báo giá MT5 đã cũ hoặc lệch thời gian. Chờ báo giá hợp lệ trước khi gửi lệnh.": {
     "vi": "Báo giá MT5 đã cũ hoặc lệch thời gian. Chờ báo giá hợp lệ trước khi gửi lệnh.",
