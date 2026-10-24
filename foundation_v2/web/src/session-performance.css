@@ -48,7 +48,7 @@
 .fxs-metric { display: grid; gap: 12px; align-content: start; min-width: 0; padding: 16px; border: 1px solid var(--wm-border); border-radius: 10px; background: var(--wm-surface); }
 .fxs-metric > span { font-size: 12px; font-weight: 600; }
 .fxs-metric strong { font-size: 20px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-.fxs-recent { margin-top:32px; border:1px solid var(--wm-border); border-radius:10px; background:var(--project-raised); overflow:hidden; }
+.fxs-recent { margin-top:32px; border:1px solid var(--wm-border); border-radius:10px; background:var(--wm-surface); overflow:hidden; }
 .fxs-recent > .fxs-section-heading { margin:0; padding:16px 20px; border-bottom:1px solid var(--wm-border); }
 .fxs-section-heading h2 { margin: 0; font-size: 16px; }
 .fxs-table-scroll { overflow-x: auto; }
@@ -57,7 +57,6 @@
 .fxs-table-scroll td { padding: 14px 12px; border-top: 1px solid var(--wm-border); white-space: nowrap; }
 .fxs-table-scroll td:first-child { white-space: normal; min-width: 180px; max-width: 300px; overflow-wrap: anywhere; }
 .fxs-table-scroll td:last-child, .fxs-table-scroll th:last-child { text-align: right; font-variant-numeric: tabular-nums; }
-.fxs-table-scroll tr:hover { background: var(--fx-shell-nav-hover); }
 .fxs-recent .fxs-table-scroll :is(th,td):first-child { padding-left:20px; }
 .fxs-recent .fxs-table-scroll :is(th,td):last-child { padding-right:20px; }
 .fxs-recent .wm-pagination { padding-inline:20px; background:transparent; border-top-color:var(--wm-border); }

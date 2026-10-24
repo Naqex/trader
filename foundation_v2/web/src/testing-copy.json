@@ -1553,6 +1553,10 @@
     "vi": "Đóng lệnh (UTC)",
     "en": "Close time (UTC)"
   },
+  "Ngày đóng lệnh": {
+    "vi": "Ngày đóng lệnh",
+    "en": "Close date"
+  },
   "Symbol": {
     "vi": "Mã giao dịch",
     "en": "Symbol"
