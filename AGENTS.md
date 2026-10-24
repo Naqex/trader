@@ -40,6 +40,11 @@ The project may consume shared contracts but should not copy or mutate shared gl
 
 ## Safety gates
 
+For local API/UI rollout, runtime health/recovery or an owned terminal reconnect,
+use `.agents/skills/mt5-runtime-operations/SKILL.md`. A copy/layout-only fix does
+not require an API or terminal restart. Runtime skill invocation does not grant
+broker execution or change the authorization gates below.
+
 - Never enable live broker execution without explicit user permission.
 - Do not open holdout data without the approved protocol/user gate.
 - Do not add paid providers, OAuth integrations, deploy/restart active terminals, delete user data, or public-release the app without the required user approval.

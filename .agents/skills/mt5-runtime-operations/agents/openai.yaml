@@ -1,0 +1,4 @@
+interface:
+  display_name: "MT5 Runtime Operations"
+  short_description: "Inspect and update the owned local MT5 runtime"
+  default_prompt: "Use $mt5-runtime-operations for this local runtime task, preserving its current ownership and authorization boundaries."

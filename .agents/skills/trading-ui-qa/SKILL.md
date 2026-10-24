@@ -1,6 +1,6 @@
 ---
 name: trading-ui-qa
-description: Verify Trading Workspace web UI with scoped Playwright CLI/tests, selective visual evidence and durable handoff. Use for this project's UI acceptance, regression and worker preparation, not broker execution or general desktop control.
+description: Verify MT5 WMREPLAY UI interactions and visual regressions with Playwright and scoped evidence. Use for this product's rendered acceptance, not design exploration, broker execution or general desktop control.
 ---
 
 # Trading UI QA
@@ -16,6 +16,12 @@ node tooling/ui-qa/qa.mjs doctor --plan D:/ANNAM/TradingWorkspace/planning/mt5-t
 ```
 
 Doctor is read-only. Load only the assigned U/Y/W packet and operational state/receipts linked by the entrypoint or WMREPLAY; do not rediscover the whole repo or reset accepted work. Verify the main repo's `foundation_v2` UI using its README and closest AGENTS. Old static U1 previews and retired design checkouts are not the default test target. Resolve the kit from this file when working from another cwd.
+
+For a directly assigned small fix, use the relevant component/contract and focused
+checks; plan routing does not require reading every historical packet. For chat,
+chart, asset, notification or cross-mode bugs, select only the affected row from
+[interaction regression cases](references/interactions.md). Design choices belong
+to `ui-platform-workflow`; this skill owns their verification.
 
 ## Choose the smallest useful check
 
