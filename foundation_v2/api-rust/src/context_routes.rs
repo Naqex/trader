@@ -128,8 +128,10 @@ async fn invoke(
             .iter()
             .map(|r| json!({"payload":r.get::<_,Value>(0)}))
             .collect::<Vec<_>>();
-        journal_context(&records, &scope.workspace_id, id)
-            .map_err(|_| error(StatusCode::SERVICE_UNAVAILABLE, "stored_contract_untrusted"))?
+        let mut context=journal_context(&records, &scope.workspace_id, id)
+            .map_err(|_| error(StatusCode::SERVICE_UNAVAILABLE,"stored_contract_untrusted"))?;
+        crate::trade_labels::project_context(&tx,&scope.workspace_id,id,&mut context).await?;
+        context
     } else if path.starts_with("/api/v2/research/") {
         let id = path.split('/').nth(5).unwrap_or("");
         let row=tx.query_opt(crate::jobs::JOB_QUERY,&[&scope.workspace_id,&id]).await.map_err(|_|ApiError::database())?.ok_or_else(||error(StatusCode::NOT_FOUND,"job_not_found"))?;

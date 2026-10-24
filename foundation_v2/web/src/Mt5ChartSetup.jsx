@@ -5,6 +5,7 @@ import { useTestingLocale } from './testingLocale.jsx'
 import { DEMO_TIMEFRAMES } from './liveTradingModel.js'
 import Mt5TradingConditions from './Mt5TradingConditions.jsx'
 import './quick-session.css'
+import { mt5AccountName } from './liveAccountModel.js'
 
 export default function Mt5ChartSetup({ snapshot, status, reason, symbol, timeframe, onSelect, onOpen, onClose, onResetSymbol }) {
   const { t,fmt }=useTestingLocale(), id=useId(), dialog=useRef(null), opener=useRef(document.activeElement)
@@ -23,7 +24,7 @@ export default function Mt5ChartSetup({ snapshot, status, reason, symbol, timefr
         <button type="button" aria-pressed={advanced} aria-controls={`${id}-panel`} onClick={()=>setAdvanced(true)}><strong>{t('Điều kiện giao dịch')}</strong><span>{t('Thông số từ broker')}</span></button>
       </nav><div className="quick-session-body"><div id={`${id}-panel`} className="quick-session-fields">
         {advanced ? <Mt5TradingConditions snapshot={snapshot} stale={status!=='ready'}/> : <>
-          <div className="quick-session-field"><span>{t('Tài khoản MT5')}</span><FxSelect label={t('Tài khoản MT5')} className="is-field" value={String(snapshot?.account?.login || '')} disabled options={snapshot?.account ? [{value:String(snapshot.account.login),label:`#${snapshot.account.login} · ${snapshot.account.server}`,localize:false}] : [{value:'',label:t('Chưa kết nối terminal giao dịch')}]} onChange={()=>{}}/></div>
+          <div className="quick-session-field"><span>{t('Tài khoản MT5')}</span><FxSelect label={t('Tài khoản MT5')} className="is-field" value={String(snapshot?.account?.login || '')} disabled options={snapshot?.account ? [{value:String(snapshot.account.login),label:mt5AccountName({account_login:snapshot.account.login,account_environment:snapshot.mode}),localize:false}] : [{value:'',label:t('Chưa kết nối terminal giao dịch')}]} onChange={()=>{}}/></div>
           <div className="quick-session-field"><span>{t('Account Balance')}</span><output>{snapshot?.account ? fmt(snapshot.account.balance,` ${snapshot.account.currency}`):t('Chưa có dữ liệu')}</output></div>
           <div className="quick-session-field"><span>{t('Assets')}</span><FxSelect className="is-field" label={t('Mã giao dịch MT5')} searchable disabled={!snapshot?.symbols?.length || status!=='ready'} value={symbol} triggerContent={symbol || t('Chọn mã')} options={(snapshot?.symbols||[]).map(value=>({value,label:value,localize:false}))} onChange={value=>onSelect({mt5_symbol:value})}/></div>
           <div className="quick-session-field"><span>{t('Khung thời gian')}</span><FxSelect className="is-field" label={t('Khung thời gian MT5')} value={timeframe} options={Object.keys(DEMO_TIMEFRAMES).map(value=>({value,label:value,localize:false}))} onChange={value=>onSelect({mt5_timeframe:value})}/></div>

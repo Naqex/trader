@@ -204,7 +204,7 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
     return () => controller.abort()
   }, [workspace, sessionId, jobId, filterParams.toString(), experimentConfig, experimentReload, summaryOnly, ledgerOnly, activeReportTab, experimentHasTrades])
   const journalScope = `${workspace}:${sessionId}`
-  const journalRecovery = useReadRefresh(() => setJournalReload(value => value + 1), Boolean(sessionId && !jobId && !summaryOnly), { workspace, resources: [], scopeKey: journalScope, error: journalRead.scope === journalScope ? journalRead.error : null, pending: journalRead.scope !== journalScope || journalRead.pending })
+  const journalRecovery = useReadRefresh(() => setJournalReload(value => value + 1), Boolean(sessionId && !jobId && !summaryOnly), { workspace, resources: ['journal'], scopeKey: journalScope, error: journalRead.scope === journalScope ? journalRead.error : null, pending: journalRead.scope !== journalScope || journalRead.pending })
   useEffect(() => {
     if (!sessionId || jobId || summaryOnly) { setJournalContext(null); setJournalStatus('idle'); return }
     const controller = new AbortController()
@@ -296,7 +296,7 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
   const renderFilters = columnControl => <FxAnalyticsFilters statusControl={statusControl} sourceType={propReport ? 'Prop firm' : jobId ? 'Research' : 'Backtesting'} sessionControl={sessionControl} filters={filters} onChange={updateFilters} extra={extra} onExtra={updateExtra} rows={model.ledger} facets={ledgerOnly ? { assets: [...new Set([...model.ledger.map(row => row.symbol).filter(Boolean), ...sessionAssets])] } : undefined} onExport={exportCsv} pending={exportPending || journalFilterPending || !result || !['ready', 'partial', 'stale', 'empty'].includes(state.status)} columnControl={columnControl} ledgerOnly={ledgerOnly} />
   return <section className={`as-page fxa-page ${embedded ? 'as-embedded' : 'wm-page'}`} aria-label={ledgerOnly ? t("Trades") : t("Analytics")} data-testid="analytics-workspace">
     {!embedded && <h1 className="sr-only">{ledgerOnly ? t("Trades") : t("Analytics")}</h1>}
-    {(resourceId || sessionControl) && !summaryOnly && (ledgerOnly ? <FxTradeLedger model={model} extra={extra} selected={selectedTradeId} onSelect={setSelectedTradeId} sessionName={sessionName} hidden={journalFilterPending || !result || !['ready', 'stale', 'partial', 'empty'].includes(state.status)} renderFilters={renderFilters} readNotice={readNotice} /> : <>{renderFilters()}{readNotice}</>)}
+    {(resourceId || sessionControl) && !summaryOnly && (ledgerOnly ? <FxTradeLedger workspace={!jobId && sessionId ? workspace : undefined} onLabelsChanged={()=>setJournalReload(value=>value+1)} model={model} extra={extra} selected={selectedTradeId} onSelect={setSelectedTradeId} sessionName={sessionName} hidden={journalFilterPending || !result || !['ready', 'stale', 'partial', 'empty'].includes(state.status)} renderFilters={renderFilters} readNotice={readNotice} /> : <>{renderFilters()}{readNotice}</>)}
     {summaryOnly && readNotice}
     {journalFilterPending && journalStatus === 'loading' && <TestingReadState message="Đang đọc nhãn giao dịch…" />}
     {exportError && <p role="alert" className="fxa-error">{t(exportError)}</p>}

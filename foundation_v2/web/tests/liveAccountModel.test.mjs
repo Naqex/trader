@@ -9,6 +9,7 @@ test('MT5 names use verified login and environment with an optional owner label'
   assert.equal(mt5AccountName({...connection,name:'MT5',account_environment:'real'}),'MT5 464104926 - real')
   assert.equal(mt5AccountName({...connection,name:'MetaTrader',account_environment:'unknown',account_login:null}),'MT5 …4926')
   assert.equal(mt5AccountName({name:'My account'}),'MT5 - My account')
+  assert.equal(mt5AccountName({...connection,name:'MT5 464104926 - demo'}),'MT5 464104926 - demo')
 })
 
 test('account metadata validates type, UTC date and exact decimal input',()=>{

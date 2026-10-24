@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "scope": "disposable PostgreSQL, synthetic licensed dataset, no broker",
+  "checks": [
+    "migration16, label create/idempotent retry, multi assignment/reload, immutable execution",
+    "stale revision, missing trade, cross-workspace isolation, duplicate names",
+    "rename aliases/case/color/delete, compact context, canonical facets/filter and snapshot invalidation",
+    "creating/editing blank-tag notes preserves explicit labels; nonempty note merges",
+    "journal edit applies only added/removed labels; does not resurrect unchanged stale tags",
+    "dashboard source selection and empty intersection; All keeps one metric layout contract",
+    "rendered UI with real disposable native Rust/PG label mutations"
+  ],
+  "probe_sha256": "3e2e4e049e6dd8a8edc6a3acaf28bf325fa7c5200e65b722ccee531b33dcc5ae"
+}

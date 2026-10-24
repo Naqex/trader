@@ -34,6 +34,7 @@ export function dashboardFilters(query) {
 
 export function dashboardRequestUrl(filters) {
   const params = new URLSearchParams({ timezone: getTimezone() })
+  params.set('dashboard_source', filters.source || 'backtest')
   if (filters.session) params.set('session_id', filters.session)
   if (filters.from) params.set('from_close_utc', dateRangeBoundary(filters.from))
   if (filters.to) params.set('to_close_utc', dateRangeBoundary(filters.to, true))

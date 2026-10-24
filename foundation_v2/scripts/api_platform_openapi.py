@@ -103,6 +103,40 @@ def platform_contract():
     cancel["parameters"].append(copy.deepcopy(action["parameters"][-1]))
     cancel["description"] = "Abort this turn's upstream HTTP request. Already completed results remain completed. Does not disconnect the account."
     schema["paths"]["/api/v2/ai/chatgpt/chat/{id}"] = {"get": turn, "delete": cancel}
+    label_name = {"type": "string", "minLength": 1, "maxLength": 64}
+    label_color = {"enum": ["green", "blue", "orange", "red", "purple", "cyan", "gray"]}
+    revision = {"type": "integer", "minimum": 0}
+    label = {"type": "object", "required": ["id", "revision", "name", "color"], "properties": {
+        "id": {"type": "string"}, "revision": revision, "name": label_name, "color": label_color}}
+    labels_response = json_response("Native workspace label catalog; metadata only, execution unchanged", {
+        "type": "object", "required": ["schema_version", "items"], "properties": {
+            "schema_version": {"const": "trade-labels-v1"}, "items": {"type": "array", "items": label},
+            "assignment": {"type": "object", "required": ["session_id", "trade_id", "revision", "tags"], "properties": {
+                "session_id": {"type": "string"}, "trade_id": {"type": "string"}, "revision": revision,
+                "tags": {"type": "array", "maxItems": 32, "items": label_name}}}}})
+    labels_read = operation("native_trade_labels_read", labels_response, scoped=True)
+    labels_write = operation("native_trade_labels_write", labels_response, scoped=True)
+    drafts = []
+    for kind, fields in {
+        "create": {"name": label_name, "color": label_color},
+        "update": {"id": {"type": "string"}, "expected_revision": revision, "name": label_name, "color": label_color},
+        "delete": {"id": {"type": "string"}, "expected_revision": revision},
+        "assign": {"session_id": {"type": "string", "minLength": 1, "maxLength": 128}, "trade_id": {"type": "string", "minLength": 1, "maxLength": 512},
+                   "expected_revision": revision, "tags": {"type": "array", "maxItems": 32, "items": label_name}},
+    }.items():
+        fields = {"action": {"const": kind}, **fields}
+        drafts.append({"type": "object", "additionalProperties": False, "required": list(fields), "properties": fields})
+    labels_write["requestBody"] = {"required": True, "content": {"application/json": {"schema": {"oneOf": drafts}}}}
+    labels_write["parameters"].append({"name": "Idempotency-Key", "in": "header", "required": False,
+                                         "schema": {"type": "string", "minLength": 1, "maxLength": 200}})
+    labels_write["responses"]["404"] = {"description": "Trade or label is not in this workspace"}
+    labels_write["responses"]["409"] = {"description": "Name reserved or revision conflict; read again before saving"}
+    labels_write["description"] = "Rename retains historical aliases. Delete removes the visible label globally and reserves its old names. Assign verifies a persisted replay trade. Native idempotency receipts apply; unknown outcomes require reconciliation, never blind resend."
+    schema["paths"]["/api/v2/trade-labels"] = {"get": labels_read, "post": labels_write}
+    schema["paths"]["/api/v2/overview"]["get"].setdefault("parameters", []).append({
+        "name": "dashboard_source", "in": "query", "required": False,
+        "schema": {"enum": ["backtest", "prop", "all"], "default": "all"},
+        "description": "Native Performance source scope; intersects selected sessions and retains ancestry for fill deduplication."})
     return schema
 
 

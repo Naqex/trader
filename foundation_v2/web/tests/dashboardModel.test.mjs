@@ -69,6 +69,8 @@ test('dashboard filters encode the selected session and complete UTC close dates
   assert.equal(url.searchParams.get('from_close_utc'), '2023-11-14T00:00:00.000Z')
   assert.equal(url.searchParams.get('to_close_utc'), '2023-11-15T23:59:59.999Z')
   assert.equal(dashboardFilterError(filters), '')
+  assert.equal(new URL(dashboardRequestUrl({...filters,source:'prop'}),'http://localhost').searchParams.get('dashboard_source'),'prop')
+  assert.equal(new URL(dashboardRequestUrl({...filters,source:'all'}),'http://localhost').searchParams.get('dashboard_source'),'all')
   assert.ok(dashboardFilterError({ from: '2023-12-01', to: '2023-11-01' }))
   assert.deepEqual(dashboardFilters(new URLSearchParams('dashboard_from=bad')), { session: '', from: '', to: '' })
 })
@@ -76,7 +78,7 @@ test('dashboard filters encode the selected session and complete UTC close dates
 test('overview request sends workspace and abort signal; rejects old inventory-only payload', async (context) => {
   const controller = new AbortController()
   context.mock.method(globalThis, 'fetch', async (url, options) => {
-    assert.equal(url, '/api/v2/overview?timezone=UTC')
+    assert.equal(url, '/api/v2/overview?timezone=UTC&dashboard_source=backtest')
     assert.equal(options.headers['X-Workspace-Id'], 'tenant-test')
     assert.equal(options.signal instanceof AbortSignal, true)
     return new Response(JSON.stringify({ counts: { datasets: 2 } }))

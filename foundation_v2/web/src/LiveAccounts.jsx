@@ -1,3 +1,4 @@
+import AccountActionDialog from './AccountActionDialog.jsx'
 import { matchesSearch } from './searchText.js'
 import SearchInput from './SearchInput.jsx'
 import { lazy, Suspense, useEffect, useId, useMemo, useRef, useState } from 'react'
@@ -18,21 +19,6 @@ import { removeLiveAccounts } from './liveAccountActions.js'
 
 const MetaTraderConnect = lazy(() => import('./MetaTraderConnect.jsx'))
 
-function AccountActionDialog({ action, onClose, onConfirm }) {
-  const { t } = useTestingLocale()
-  const [name,setName]=useState(action.row?.connection?.name || action.row?.name || ''), [pending,setPending]=useState(false), [error,setError]=useState(''), [uncertain,setUncertain]=useState(false)
-  const lock=useRef(false), removing=action.kind==='remove'
-  return <LegacyModal className="live-record-dialog is-account" label={t(removing?'Xóa tài khoản':'Sửa tài khoản')} theme={document.querySelector('.fx-app')?.dataset.theme || 'dark'} onClose={()=>{if(!lock.current)onClose()}}>
-    <form className="live-record-form" aria-busy={pending} onSubmit={async event=>{
-      event.preventDefault();if(lock.current || uncertain)return;lock.current=true;setPending(true);setError('')
-      try{await onConfirm(name.trim());onClose()}catch(problem){setError(problem.message);setUncertain(problem.outcomeKnown===false || problem.uncertain===true)}finally{lock.current=false;setPending(false)}
-    }}>
-      {removing?<div className="live-account-action-copy">{action.rows ? <><p>{t('Xóa {count} tài khoản đã chọn?',{count:action.rows.length})}</p><ul>{action.rows.map(row=><li key={row.id}>{row.name}</li>)}</ul><p>{t('Kết nối MT5 và dữ liệu đồng bộ sẽ bị gỡ khỏi ứng dụng. Tài khoản thủ công được lưu trữ cùng lịch sử. Tài khoản tại broker không thay đổi.')}</p></> : action.row.record ? <>{t('Archive account {name} and its trades and notes? Record history is retained.',{name:action.row.name})}</> : <>{t('Remove connection {name}, saved credentials and synced data? Your broker account is unchanged.',{name:action.row.name})}</>}</div>:<label>{t('Tên tài khoản')}<input required maxLength={160} value={name} disabled={pending} onChange={event=>setName(event.target.value)}/></label>}
-      {error&&<p role="alert" className="live-record-error">{t(error)}{uncertain?` ${t('Tải lại danh sách để kiểm tra kết quả trước khi thao tác tiếp.')}`:''}</p>}
-      <footer className="live-dialog-footer"><button type="button" className="fxa-button" disabled={pending} onClick={onClose}>{t('Hủy')}</button><button className={`fxa-button ${removing?'is-danger':'is-primary'}`} disabled={pending || uncertain || !removing && !name.trim()}>{t(pending?'Đang xử lý…':removing?'Xóa tài khoản':'Lưu thay đổi')}</button></footer>
-    </form>
-  </LegacyModal>
-}
 
 export default function LiveAccounts({ workspace, accounts, records, broker, chosen, onSelect, transactions, writable, canImport, onCreate, onImport, onEdit, onTrade, onNavigate, onArchive, onRefresh }) {
   const { t, locale } = useTestingLocale()
@@ -103,7 +89,7 @@ export default function LiveAccounts({ workspace, accounts, records, broker, cho
           </div>
           <FxSelect className={`live-source-filter${sources.length?' has-selection':''}`} label="Lọc tài khoản" icon="filter" iconOnly multiple showSelectAll={false} menuTitle="Filter by" value={sources} onChange={value=>{setSources(value);setPage(1)}} options={[{value:'manual',label:'Thủ công'},{value:'sync',label:'Đồng bộ'}]}/>
         </div>
-        <div className="live-table-scroll" role="region" tabIndex={0} aria-label={t("Danh sách tài khoản")}><table><thead><tr><th className="live-account-check"><input ref={selectPage} type="checkbox" aria-label={t('Chọn tài khoản trên trang')} aria-checked={mixedChecked?'mixed':allChecked} checked={allChecked} disabled={!writable || Boolean(busy) || !visible.length} onChange={()=>setChecked(current=>{const next=new Set(current);visible.forEach(row=>allChecked?next.delete(row.id):next.add(row.id));return next})}/></th>{[['name','Tài khoản'],['source','Nguồn'],['status','Trạng thái'],['balance','Số dư'],['updated','Cập nhật gần nhất'],['sync','Đồng bộ'],['edit','']].map(([key,label]) => <th key={key} aria-label={key === 'edit' ? t('Thao tác') : undefined} aria-sort={['name','balance','updated'].includes(key) ? sort.key === key ? sort.ascending ? 'ascending' : 'descending' : 'none' : undefined}>{['name','balance','updated'].includes(key) ? <button type="button" className="wm-table-sort" onClick={() => sortBy(key)}>{t(label)} ↕</button> : key === 'sync' ? <span className="live-sync-heading"><span>{t(label)}</span><button type="button" className="live-sync-all" aria-label={t('Đồng bộ tất cả tài khoản')} data-tooltip={t('Đồng bộ tất cả tài khoản')} disabled={!writable || mutationUncertain || Boolean(busy) || !syncable.length} aria-busy={busy==='all'} onClick={()=>syncConnections(syncable)}><TestingIcon kind="sync" size={16}/></button></span> : t(label)}</th>)}</tr></thead><tbody>{visible.map(row => <tr key={row.id} aria-selected={checked.has(row.id)}>
+        <div className="live-table-scroll" role="region" tabIndex={0} aria-label={t("Danh sách tài khoản")}><table><thead><tr><th className="live-account-check"><input ref={selectPage} type="checkbox" aria-label={t('Chọn tài khoản trên trang')} aria-checked={mixedChecked?'mixed':allChecked} checked={allChecked} disabled={!writable || Boolean(busy) || !visible.length} onChange={()=>setChecked(current=>{const next=new Set(current);visible.forEach(row=>allChecked?next.delete(row.id):next.add(row.id));return next})}/></th>{[['name','Tài khoản'],['source','Nguồn'],['status','Trạng thái'],['balance','Số dư'],['updated','Dữ liệu cập nhật'],['sync','Đồng bộ'],['edit','']].map(([key,label]) => <th key={key} aria-label={key === 'edit' ? t('Thao tác') : undefined} aria-sort={['name','balance','updated'].includes(key) ? sort.key === key ? sort.ascending ? 'ascending' : 'descending' : 'none' : undefined}>{['name','balance','updated'].includes(key) ? <button type="button" className="wm-table-sort" onClick={() => sortBy(key)}>{t(label)} ↕</button> : key === 'sync' ? <span className="live-sync-heading"><span>{t(label)}</span><button type="button" className="live-sync-all" aria-label={t('Đồng bộ tất cả tài khoản')} data-tooltip={t('Đồng bộ tất cả tài khoản')} disabled={!writable || mutationUncertain || Boolean(busy) || !syncable.length} aria-busy={busy==='all'} onClick={()=>syncConnections(syncable)}><TestingIcon kind="sync" size={16}/></button></span> : t(label)}</th>)}</tr></thead><tbody>{visible.map(row => <tr key={row.id} aria-selected={checked.has(row.id)}>
           <td className="live-account-check"><input type="checkbox" aria-label={t('Chọn tài khoản {name}',{name:row.name})} checked={checked.has(row.id)} disabled={!writable || Boolean(busy)} onChange={()=>toggleChecked(row.id)}/></td>
           <td>{row.name}{row.connection?.requested_mode==='read_only' ? ` - ${t('Chỉ xem')}` : ''}</td>
           <td><span className="live-source-badge">{t(row.source)}</span></td>

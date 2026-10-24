@@ -33,7 +33,7 @@ pub fn required_worker_manifest_for(native_runtime: bool) -> Value {
     )
 }
 pub fn allowed_methods(template: &str) -> Vec<String> {
-    let additive: Vec<String> = crate::session_presets::ROUTES.iter().chain(crate::live_ledger::ROUTES.iter()).chain(crate::mt5_connector::ROUTES.iter()).chain(crate::demo_trading::ROUTES.iter())
+    let additive: Vec<String> = crate::session_presets::ROUTES.iter().chain(crate::live_ledger::ROUTES.iter()).chain(crate::trade_labels::ROUTES.iter()).chain(crate::mt5_connector::ROUTES.iter()).chain(crate::demo_trading::ROUTES.iter())
         .filter(|(_, path)| *path == template).map(|(method, _)| (*method).to_owned()).collect();
     if !additive.is_empty() { return additive; }
     serde_json::from_str::<Vec<Route>>(FROZEN)
@@ -53,10 +53,11 @@ fn native(method: &str, path: &str) -> bool {
 }
 
 fn native_owner(method: &str, path: &str) -> Option<&'static str> {
-    let owners: [(&str, fn(&str, &str) -> bool); 14] = [
+    let owners: [(&str, fn(&str, &str) -> bool); 15] = [
         ("demo_trading", crate::demo_trading::native),
         ("mt5_connector", crate::mt5_connector::native),
         ("live_ledger", crate::live_ledger::native),
+        ("trade_labels", crate::trade_labels::native),
         ("session_presets", crate::session_presets::native),
         ("metadata_mutations", crate::metadata_mutations::native),
         ("replay_service", crate::replay_service::native),
@@ -105,6 +106,7 @@ pub fn route_inventory_for(native_runtime: bool) -> Value {
         .expect("reviewed route manifest").into_iter()
         .chain(crate::session_presets::ROUTES.iter().map(|(method,path)| Route { method:(*method).to_owned(), path:(*path).to_owned() }))
         .chain(crate::live_ledger::ROUTES.iter().map(|(method,path)| Route { method:(*method).to_owned(), path:(*path).to_owned() }))
+        .chain(crate::trade_labels::ROUTES.iter().map(|(method,path)| Route { method:(*method).to_owned(), path:(*path).to_owned() }))
         .chain(crate::mt5_connector::ROUTES.iter().map(|(method,path)| Route { method:(*method).to_owned(), path:(*path).to_owned() }))
         .chain(crate::demo_trading::ROUTES.iter().map(|(method,path)| Route { method:(*method).to_owned(), path:(*path).to_owned() }))
         .map(|route| {

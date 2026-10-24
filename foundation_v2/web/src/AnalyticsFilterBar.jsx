@@ -41,6 +41,14 @@ export default function AnalyticsFilterBar({ filters, onChange, extra, onExtra, 
   }
   const options = (allLabel, values) => [{ value: 'all', label: allLabel }, ...values.map(value => ({ value, label: value, localize: false }))]
   const pill = (label, key, values, server = false, searchable = false) => <FxSelect key={key} label={label} triggerContent={label} value={(server ? draft : draftExtra)[key]} options={values} searchable={searchable} onChange={value => server ? change({ [key]: value }) : changeExtra({ [key]: value })} />
+  const multi = (label, key, values, legacy, server = false) => {
+    const old = (server ? draft : draftExtra)[legacy]
+    const chosen = filterValues(draftExtra[key])
+    return <FxSelect key={key} label={label} triggerContent={label} searchable multiple selectionField emptySelectionLabel="All" value={chosen.length ? chosen : old && old !== 'all' ? [old] : []} clearValue={[]} options={values} onChange={next => {
+      changeExtra({ [key]: JSON.stringify(next), ...(!server && legacy ? { [legacy]: 'all' } : {}), ...(key === 'tagInclude' ? { tagIncludeMode: 'OR' } : {}) })
+      if (server) change({ [legacy]: 'all' })
+    }} />
+  }
   const sessionName = sessionProps?.items.find(item => item.record_id === sessionProps.value)?.name
   const chips = [
     ['asset', 'Assets', extra.asset, false], ['side', 'Side', filters.side, true], ['outcome', 'Outcome', filters.outcome, true],
@@ -50,6 +58,7 @@ export default function AnalyticsFilterBar({ filters, onChange, extra, onExtra, 
     ['reportKinds', 'Type', extra.reportKinds === '' ? 'all' : filterValues(extra.reportKinds).join(', ') || 'None', false],
     ['timeStart', 'Start', extra.timeStart || 'all', false], ['timeEnd', 'End', extra.timeEnd || 'all', false],
     ['search', 'Search', extra.search || 'all', false],
+    ...[['assets', 'Assets'], ['sides', 'Side'], ['outcomes', 'Outcome'], ['tagInclude', 'Tags'], ['days', 'Day']].map(([key, label]) => [key, label, filterValues(extra[key]).join(', ') || 'all', false]),
   ].filter(([, , value]) => value && value !== 'all')
   const chipValue = (key, value) => key === 'side' ? t(value === 'buy' ? 'Buy' : 'Sell') : key === 'outcome' ? t({ win: 'Thắng', loss: 'Thua', breakeven: 'Hòa vốn' }[value] || 'Chưa rõ') : key === 'weekday' ? t(value) : key === 'reportKinds' ? filterValues(extra.reportKinds).map(kind => t({ app: 'App', prop: 'Prop Firm', research: 'Research' }[kind] || kind)).join(', ') || t('None') : value
   const allKinds = sourceType === 'Research' ? ['app', 'prop', 'research'] : ['app', 'prop']
@@ -57,13 +66,13 @@ export default function AnalyticsFilterBar({ filters, onChange, extra, onExtra, 
   return <section className="fxa-filters fxa-analytics-filters" inert={disabled || undefined} aria-disabled={disabled || undefined} aria-label={t("Bộ lọc analytics")} data-testid="analytics-filters">
     <div className="fxa-analytics-filter-row">
       <FxSelect className="is-filter" label={t("Type")} triggerContent={t("Type")} menuTitle={t("Type filter")} selectionField searchable multiple selectAllLabel={t("All")} clearValue={allKinds} value={draftExtra.reportKinds === '' ? allKinds : filterValues(draftExtra.reportKinds)} options={[{ value: 'app', label: 'App' }, { value: 'battles', label: 'Battles', disabled: true, detail: 'Chưa có nguồn dữ liệu Battles' }, { value: 'prop', label: 'Prop Firm' }, ...(sourceType === 'Research' ? [{ value: 'research', label: 'Research' }] : [])]} onChange={values => changeExtra({ reportKinds: JSON.stringify(values) })} />
-      {pill('Assets', 'asset', options('Tất cả assets', unique('symbol')), false, true)}
-      {pill('Side', 'side', [{ value: 'all', label: 'Tất cả sides' }, { value: 'buy', label: 'Buy' }, { value: 'sell', label: 'Sell' }], true)}
-      {pill('Outcome', 'outcome', [{ value: 'all', label: 'Tất cả kết quả' }, { value: 'win', label: 'Thắng' }, { value: 'loss', label: 'Thua' }, { value: 'breakeven', label: 'Hòa vốn' }], true)}
-      {pill('Tags', 'tag', options('Tất cả tags', unique('tags')), false, true)}
+      {multi('Assets', 'assets', options('', unique('symbol')).slice(1), 'asset')}
+      {multi('Side', 'sides', [{ value: 'buy', label: 'Buy' }, { value: 'sell', label: 'Sell' }], 'side', true)}
+      {multi('Outcome', 'outcomes', [{ value: 'win', label: 'Thắng' }, { value: 'loss', label: 'Thua' }, { value: 'breakeven', label: 'Hòa vốn' }], 'outcome', true)}
+      {multi('Tags', 'tagInclude', options('', unique('tags')).slice(1), 'tag')}
       {sessionControl && React.cloneElement(sessionControl, { value: draftSession, onChange: setDraftSession, triggerContent: 'Session', compact: true })}
       {pill('Strategy', 'strategy', options('Tất cả strategies', unique('playbook_id')), false, true)}
-      {pill('Day', 'weekday', [{ value: 'all', label: 'Mọi thứ' }, ...WEEKDAYS.map((label, i) => ({ value: String(i), label }))])}
+      {multi('Day', 'days', WEEKDAYS.map((label, i) => ({ value: String(i), label })), 'weekday')}
       <TimeFilter value={draftExtra} onChange={changeExtra} />
       <DateFilter value={draft} onChange={change} />
       {statusControl}

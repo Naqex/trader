@@ -23,9 +23,9 @@ fn parse(raw:&str)->R<(Value,Tz,bool)>{
     for(k,lo,hi)in[("days",0,6),("hours",0,23),("months",1,12)]{if strings(&f[k]).iter().any(|s|s.parse::<i32>().ok().is_none_or(|n|n<lo||n>hi||n.to_string()!=*s)){return Err("trade_page_filters_invalid".into())}}
     let empty=f.get("reportKinds").is_some_and(|v|!truth(v))&&original["reportKinds"]!="";Ok((f,zone,empty))
 }
-fn decorate(raw:&Value,journals:&[Value])->Value{
+pub(crate) fn decorate(raw:&Value,journals:&[Value])->Value{
     let mut r=raw.clone();r["report_kind"]=json!("app");let mut tags=strings(&r["tags"]);let mut notes=truth(&r["note"])&& !text(&r["note"]).trim().is_empty()||truth(&r["notes"])&&!text(&r["notes"]).trim().is_empty();
-    for j in journals{let p=&j["payload"];let s=&p["source"];if ["session_id","replay_session_id"].iter().any(|k|s[k]==r["session_id"])&&["trade_id","id"].iter().any(|k|s[k]==r["trade_id"]){tags.extend(strings(&p["tags"]));let n=if truth(&p["note"]){&p["note"]}else{&p["notes"]};notes|=!text(n).trim().is_empty()}}
+    for j in journals{let p=&j["payload"];let s=&p["source"];if ["session_id","replay_session_id"].iter().any(|k|s[k]==r["session_id"])&&["trade_id","id"].iter().any(|k|s[k]==r["trade_id"]){if r["labels_authoritative"]!=true{tags.extend(strings(&p["tags"]));}let n=if truth(&p["note"]){&p["note"]}else{&p["notes"]};notes|=!text(n).trim().is_empty()}}
     let mut seen=HashSet::new();tags.retain(|t|seen.insert(t.clone()));r["tags"]=json!(tags);r["has_notes"]=json!(notes);r
 }
 fn matches(r:&Value,f:&Value,zone:Tz,empty:bool)->R<bool>{
@@ -36,7 +36,7 @@ fn matches(r:&Value,f:&Value,zone:Tz,empty:bool)->R<bool>{
     for(k,v)in values.as_object().unwrap(){if truth(&f[k])&&!strings(&f[k]).contains(&python_str(v)){return Ok(false)}}
     let source=if r["source"].is_object(){r["source"]["session_id"].clone()}else if truth(&r["source"]){r["source"].clone()}else{r["session_id"].clone()};let values=json!({"asset":r["symbol"],"strategy":r["playbook_id"],"source":source,"weekday":weekday,"hour":date.map(|d|d.hour())});
     for(k,v)in values.as_object().unwrap(){if f.get(k).is_some()&&truth(&f[k])&&f[k]!="all"&&python_str(v)!=text(&f[k]){return Ok(false)}}
-    let tags=strings(&r["tags"]);if truth(&f["tag"])&&f["tag"]!="all"&&!tags.contains(&text(&f["tag"]).to_string()){return Ok(false)}
+    let mut tags=strings(&r["tags"]);tags.extend(strings(&r["label_aliases"]));if truth(&f["tag"])&&f["tag"]!="all"&&!tags.contains(&text(&f["tag"]).to_string()){return Ok(false)}
     for k in ["tagInclude","tagExclude"]{let chosen=strings(&f[k]);if !chosen.is_empty(){let group=if f[format!("{k}Mode")]=="OR"{chosen.iter().any(|v|tags.contains(v))}else{chosen.iter().all(|v|tags.contains(v))};if group==(k=="tagExclude"){return Ok(false)}}}
     let search=text(&f["search"]).trim().to_lowercase();let id=serde_json::to_string(&json!([r["session_id"],r["trade_id"]])).unwrap();let hay=std::iter::once(id).chain([python_str(&r["trade_id"]),python_str(&r["symbol"]),python_str(&r["side"])]).chain(tags).collect::<Vec<_>>().join(" ").to_lowercase();
     if !search.is_empty()&&!hay.contains(&search){return Ok(false)}let notes=text(&f["notes"]).trim().to_lowercase();Ok(notes.is_empty()||["notes","note"].iter().any(|k|text(&r[k]).to_lowercase().contains(&notes)))
@@ -55,7 +55,7 @@ pub fn build_trades_page(report:&Value,journals:&[Value],page:usize,page_size:us
     let mut filtered=vec![];for(i,r)in rows.iter().enumerate(){let r=decorate(r,journals);if matches(&r,&f,zone,empty)?{let val=sort_value(&r,sort_key);filtered.push((i,r,val));}}
     filtered.sort_by(|a,b|{let(l,r)=(&a.2,&b.2);if l.is_null()||r.is_null(){return if l.is_null()&&r.is_null(){Ordering::Equal}else if l.is_null(){Ordering::Greater}else{Ordering::Less}}let result=if let(Some(l),Some(r))=(l.as_f64(),r.as_f64()){l.partial_cmp(&r).unwrap_or(Ordering::Equal)}else{python_str(l).cmp(&python_str(r))};let result=if sort_direction=="desc"{result.reverse()}else{result};result.then(a.0.cmp(&b.0))});
     let count=if report["metrics"]["closed_trade_count"].is_null(){None}else{Some(filtered.len())};let pages=count.map(|n|n.div_ceil(page_size));let page=page.min(pages.unwrap_or(1).max(1));let visible:Vec<_>=filtered.into_iter().skip((page-1)*page_size).take(page_size).map(|(_,r,_)|r).collect();
-    let snapshot=json!({"scope":report["scope"],"sources":report["sources"],"excluded":report["excluded"],"journals":journals.iter().map(|r|json!([r["record_id"],r["revision"]])).collect::<Vec<_>>(),"filters":f});let hash=format!("{:x}",Sha256::digest(python_json(&snapshot,true)));
+    let snapshot=json!({"scope":report["scope"],"sources":report["sources"],"excluded":report["excluded"],"journals":journals.iter().map(|r|json!([r["record_id"],r["revision"]])).collect::<Vec<_>>(),"filters":f});let mut snapshot=snapshot;if let Some(labels)=report.get("label_revision_key"){snapshot["labels"]=labels.clone();}let hash=format!("{:x}",Sha256::digest(python_json(&snapshot,true)));
     let mut scope=report["scope"].clone();scope["extra_filters"]=f;
     Ok(json!({"schema_version":"replay-trades-page-v1","status":report["status"],"scope":scope,"sources":report["sources"],"excluded":report["excluded"],"sessions":report["sessions"],"ledger":visible,"facets":{"assets":assets,"tags":tags,"strategies":strategies,"years":years,"types":types,"has_notes":has_notes,"date_range":{"from":dates.first(),"to":dates.last()}},"sort":{"key":sort_key,"direction":sort_direction},"snapshot_key":hash,"pagination":{"page":page,"page_size":page_size,"returned_count":visible.len(),"filtered_count":count,"page_count":pages,"has_next":pages.is_some_and(|n|page<n)}}))
 }

@@ -53,9 +53,9 @@ export default function DashboardPerformance({ workspace, filters, reload, contr
 
   const [retry, setRetry] = useState(0)
   const [state, setState] = useState({ status: 'loading', payload: null, error: '', key: '' })
-  const key = JSON.stringify([workspace, filters.session, filters.from, filters.to, timezone])
+  const key = JSON.stringify([workspace, filters.source, filters.session, filters.from, filters.to, timezone])
   const filterError = dashboardFilterError(filters)
-  const recovery = useReadRefresh(() => setRetry(value => value + 1), !previewPayload && !filterError, { workspace, resources: ['sessions'], scopeKey: key, error: state.key === key ? state.readError : null, pending: state.key !== key || state.status === 'loading' || state.pending })
+  const recovery = useReadRefresh(() => setRetry(value => value + 1), !previewPayload && !filterError, { workspace, resources: ['sessions', 'prop'], scopeKey: key, error: state.key === key ? state.readError : null, pending: state.key !== key || state.status === 'loading' || state.pending })
   useEffect(() => {
     if (filterError) return
     if (previewPayload) { setState({ status: previewState === 'error' ? 'error' : previewState === 'stale' ? 'stale' : 'ready', refreshing: previewState === 'refreshing', payload: previewState === 'error' ? null : previewPayload, error: '', key }); return }
@@ -80,7 +80,7 @@ export default function DashboardPerformance({ workspace, filters, reload, contr
   const unavailable = failed && state.error === 'dashboard_performance_unavailable'
   const noSessions = performance?.scope?.session_count === 0
   const noTrades = !blocked && !noSessions && metrics?.closed_trade_count === 0
-  const groupMessage = filterError || (denied ? 'Bạn không có quyền xem Performance.' : unavailable ? 'Nguồn Performance chưa khả dụng.' : failed ? 'Chưa tải được Performance.' : blocked ? 'Chưa đủ dữ liệu thực thi để tính Performance.' : noSessions ? 'Chưa có phiên backtest trong phạm vi này. Tạo phiên đầu tiên để xem kết quả.' : '')
+  const groupMessage = filterError || (denied ? 'Bạn không có quyền xem Performance.' : unavailable ? 'Nguồn Performance chưa khả dụng.' : failed ? 'Chưa tải được Performance.' : blocked ? 'Chưa đủ dữ liệu thực thi để tính Performance.' : noSessions ? 'Chưa có phiên trong phạm vi này.' : '')
   const readStatus = state.key === key && state.status === 'stale' ? 'stale' : state.key === key && state.refreshing ? 'refreshing' : partialNotice ? 'partial' : undefined
   const groupState = filterError ? 'invalid' : loading ? 'loading' : denied ? 'denied' : unavailable || blocked ? 'unavailable' : failed ? 'error' : noSessions ? 'empty' : noTrades ? 'no-trades' : 'ready'
   return <section className="fx-dashboard-results" aria-label={t("Performance")} aria-busy={loading || (!filterError && state.key === key && Boolean(state.refreshing))} aria-description={partialNotice || undefined}>

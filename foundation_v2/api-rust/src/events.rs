@@ -212,6 +212,14 @@ SELECT 'sessions' AS resource,count(*) FILTER (WHERE visible)::bigint AS n,count
        COALESCE(sum(hashtextextended(token,1)::numeric),0)::text AS checksum_b
 FROM session_marks
 UNION ALL
+SELECT 'journal',count(*)::bigint,count(*)::bigint,
+       COALESCE(sum(hashtextextended(token,0)::numeric),0)::text,
+       COALESCE(sum(hashtextextended(token,1)::numeric),0)::text
+FROM (
+    SELECT jsonb_build_array(kind,record_id,current_revision)::text AS token
+    FROM workspace_records WHERE workspace_id=$1 AND kind IN ('journal','trade_label','trade_label_assignment')
+) journal_marks
+UNION ALL
 SELECT 'datasets',count(*)::bigint,count(*)::bigint,
        COALESCE(sum(hashtextextended(token,0)::numeric),0)::text,
        COALESCE(sum(hashtextextended(token,1)::numeric),0)::text
@@ -280,6 +288,7 @@ fn resource_revision(
 fn empty_resources(workspace: &str) -> Value {
     json!({
         "sessions":resource_revision(workspace,"sessions",0,0,"0","0"),
+        "journal":resource_revision(workspace,"journal",0,0,"0","0"),
         "datasets":resource_revision(workspace,"datasets",0,0,"0","0"),
         "prop":resource_revision(workspace,"prop",0,0,"0","0"),
         "research":resource_revision(workspace,"research",0,0,"0","0")

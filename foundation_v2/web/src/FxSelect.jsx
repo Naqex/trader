@@ -13,7 +13,7 @@ export function SelectChevron() {
   return <svg className="fx-select-chevron" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 8 5 5 5-5" /></svg>
 }
 
-export default function FxSelect({ label, value, options: inputOptions, onChange, icon, searchable = false, placeholder = 'Tìm…', emptyLabel = 'Không có lựa chọn phù hợp.', disabled = false, triggerContent, className = '', multiple = false, multipleStyle = 'checkbox', closeOnSelect = false, selectedTags, iconOnly = false, selectAllLabel = 'Chọn tất cả', showSelectAll = true, menuTitle, menuHeader, renderOption, filterOption, selectionField = false, clearValue, localizeOptions = true, ...triggerProps }) {
+export default function FxSelect({ label, value, options: inputOptions, onChange, icon, searchable = false, placeholder = 'Tìm…', emptyLabel = 'Không có lựa chọn phù hợp.', disabled = false, triggerContent, className = '', multiple = false, multipleStyle = 'checkbox', closeOnSelect = false, selectedTags, iconOnly = false, selectAllLabel = 'Chọn tất cả', showSelectAll = true, menuTitle, menuHeader, renderOption, filterOption, selectionField = false, emptySelectionLabel = 'None', clearValue, localizeOptions = true, ...triggerProps }) {
   const { t } = useTestingLocale()
   const options = inputOptions.map(option => ({ ...option, label: option.localize === false || !localizeOptions ? option.label : t(option.label), detail: option.localize === false || !localizeOptions ? option.detail : t(option.detail) }))
 
@@ -92,7 +92,7 @@ export default function FxSelect({ label, value, options: inputOptions, onChange
     </Field>
     {open && !disabled && <div id={id} className="fx-select-menu" role={searchable ? 'dialog' : 'presentation'} aria-label={searchable ? t(label) : undefined}>
       {menuTitle && <h3 className="fx-filter-title">{t(menuTitle)}</h3>}
-      {selectionField && <div className="fx-filter-selection"><span>{multiple ? allSelected ? t("All") : options.filter(isSelected).map(option => option.label).join(', ') || t("None") : selected?.label}</span>{clearValue !== undefined && <button type="button" aria-label={t('Bỏ lọc {label}', { label: t(label) })} onClick={() => onChange(clearValue)}>×</button>}<SelectChevron /></div>}
+      {selectionField && <div className="fx-filter-selection"><span>{multiple ? allSelected ? t("All") : options.filter(isSelected).map(option => option.label).join(', ') || t(emptySelectionLabel) : selected?.label}</span>{clearValue !== undefined && <button type="button" aria-label={t('Bỏ lọc {label}', { label: t(label) })} onClick={() => onChange(clearValue)}>×</button>}<SelectChevron /></div>}
       {searchable && <SearchInput ref={input} type="search" aria-label={t('Tìm {label}', { label: t(label) })} placeholder={t(placeholder)} value={search} onChange={event => setSearch(event.target.value)} />}
       {menuHeader}
       {multiple && showSelectAll && multipleStyle === 'checkbox' && <button type="button" role="checkbox" disabled={!available.length} aria-checked={allSelected ? true : selectedCount > 0 ? 'mixed' : false} className="fx-select-all" onClick={() => {

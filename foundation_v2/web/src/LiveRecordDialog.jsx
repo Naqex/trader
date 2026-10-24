@@ -6,7 +6,7 @@ import { saveLiveRecord } from './liveLedgerApi.js'
 import { parseTradesCsv } from './liveLedgerModel.js'
 import { downloadLiveCsv } from './liveCsvDownload.js'
 import { useTestingLocale } from './testingLocale.jsx'
-import { accountDraftErrors } from './liveAccountModel.js'
+import { accountDraftErrors, mt5AccountName } from './liveAccountModel.js'
 
 export default function LiveRecordDialog({ workspace, kind, accounts, connections = [], strategies, accountId, record, seed, onClose, onSaved }) {
   const { t, timezone } = useTestingLocale()
@@ -28,7 +28,7 @@ export default function LiveRecordDialog({ workspace, kind, accounts, connection
   const strategyOptions = strategies.map(item => ({ value: `${item.record_id}:${item.revision}`, label: `${item.payload.name} · v${item.revision}`, localize: false }))
   if (draft.strategy && !strategyOptions.some(item => item.value === draft.strategy)) strategyOptions.unshift({ value: draft.strategy, label: t('Saved revision · v{revision}',{revision:initial.playbook_revision}), localize: false })
   const field = (key, label, options = {}) => <label>{t(label)}<input value={draft[key]} onChange={event => change(key,event.target.value)} disabled={pending} {...options} /></label>
-  const selectAccount = <label>{t('Account')}<FxSelect className="is-field" label="Account" localizeOptions={false} disabled={pending || importDone > 0 || Boolean(record && kind === 'trade')} value={draft.account_id} onChange={value => change('account_id',value)} options={[...(kind === 'note' ? [{value:'',label:t('Ghi chú chung'),localize:false}] : []),...accounts.map(item => ({ value:item.record_id,label:`${item.payload.name} · ${item.payload.currency}`,localize:false })),...(kind === 'note' ? connections.map(item => ({value:`broker:${item.id}`,label:`${item.name} · ${item.login_hint}`,localize:false})) : [])]} /></label>
+  const selectAccount = <label>{t('Account')}<FxSelect className="is-field" label="Account" localizeOptions={false} disabled={pending || importDone > 0 || Boolean(record && kind === 'trade')} value={draft.account_id} onChange={value => change('account_id',value)} options={[...(kind === 'note' ? [{value:'',label:t('Ghi chú chung'),localize:false}] : []),...accounts.map(item => ({ value:item.record_id,label:`${item.payload.name} · ${item.payload.currency}`,localize:false })),...(kind === 'note' ? connections.map(item => ({value:`broker:${item.id}`,label:mt5AccountName(item),localize:false})) : [])]} /></label>
   async function submit(event) {
     event.preventDefault()
     if (lock.current || uncertain) return

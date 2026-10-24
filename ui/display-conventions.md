@@ -25,6 +25,35 @@ Settings currently offers zones supported by the installed native chart library.
 The preference is local to the browser, not synchronized to a user profile.
 CSV retains its explicit UTC column contract.
 
+## Selection and trade labels
+
+Use searchable checkbox lists for independent filter sets (sessions/accounts in
+aggregate reports, assets, sides, outcomes, weekdays and labels). Choices within
+one set use OR; different sets intersect. In Analytics, an empty asset/side/
+outcome/day/label set means no restriction and displays All; report kinds retain
+their explicit empty-set semantics. Keep one account for an active chart/order,
+and one timezone, sort, currency or order type. Navigation uses links, not selects.
+DataDesk provider still controls one catalog operation; its filter is intentionally
+single until that operation and list filtering have separate state owners.
+
+`TradeLabelCell` reads workspace label definitions and revisioned per-trade
+assignments from `/api/v2/trade-labels`. Labels are metadata and never change
+replay execution or financial results. Blank cells reveal the affordance on
+hover/focus. The popup supports search/create, multiple selections and global
+rename/color/delete, then refreshes the shared label facets. Renames retain aliases
+for existing filters; deleted names stay reserved to avoid reviving old labels.
+Journal edits apply only their added/removed label delta to current assignments.
+Unknown mutation outcomes require reading again; conflicts never overwrite a
+newer assignment. Do not replace confirmed selections with a slower older read.
+
+Dashboard Backtest/Prop/All keeps one Performance layout and changes only its
+source scope. Aggregate projection retains ancestry to deduplicate inherited
+fills; an explicit empty source intersection remains empty. Practice activity
+uses the same selected sessions. MT5 account selectors share `mt5AccountName`:
+verified login, environment and optional owner name; server/currency are details.
+Live summary read errors/staleness take precedence over a cached connected label.
+Last sync is the last successful data observation, not a connection expiry date.
+
 ## Shared controls and financial semantics
 
 - `SearchInput` owns search appearance and Escape clearing; preserve native

@@ -83,11 +83,11 @@ export function filterAnalyticsRows(rows, filters = {}) {
   const tagsMatch = (values, tags, mode) => mode === 'OR' ? values.some(value => tags.includes(value)) : values.every(value => tags.includes(value))
   return rows.filter(row => {
     const time = calendarParts(row.close_time_utc, filters.timezone)
-    const tags = Array.isArray(row.tags) ? row.tags : []
+    const tags = [...(Array.isArray(row.tags) ? row.tags : []), ...(row.label_aliases || [])]
     return inTime(time)
       && (filters.reportKinds === '' || reportKinds.includes(row.report_kind || 'app'))
       && (filters.asset === 'all' || row.symbol === filters.asset)
-      && (filters.tag === 'all' || (row.tags || []).includes(filters.tag))
+      && (filters.tag === 'all' || tags.includes(filters.tag))
       && (!filters.strategy || filters.strategy === 'all' || row.playbook_id === filters.strategy)
       && (filters.source === 'all' || row.source_id === filters.source || (typeof row.source === 'string' ? row.source : row.source?.session_id) === filters.source)
       && (filters.weekday === 'all' || time?.weekday === Number(filters.weekday))

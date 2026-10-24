@@ -8,7 +8,7 @@ export function mt5AccountName(connection) {
   const nickname = connection.name?.trim()
   return [login ? `MT5 ${login}` : 'MT5',
     ['demo','real','contest'].includes(connection.account_environment) ? connection.account_environment : null,
-    nickname && !/^(?:MetaTrader(?:\s*5)?|MT5)$/i.test(nickname) ? nickname : null,
+    nickname && nickname !== [login ? `MT5 ${login}` : 'MT5', connection.account_environment].filter(Boolean).join(' - ') && !/^(?:MetaTrader(?:\s*5)?|MT5)$/i.test(nickname) ? nickname : null,
   ].filter(Boolean).join(' - ')
 }
 

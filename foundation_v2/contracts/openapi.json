@@ -123,6 +123,20 @@
               "minLength": 1,
               "title": "X-Workspace-Id"
             }
+          },
+          {
+            "name": "dashboard_source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "backtest",
+                "prop",
+                "all"
+              ],
+              "default": "all"
+            },
+            "description": "Native Performance source scope; intersects selected sessions and retains ancestry for fill deduplication."
           }
         ],
         "responses": {
@@ -145,6 +159,405 @@
             }
           }
         }
+      }
+    },
+    "/api/v2/trade-labels": {
+      "get": {
+        "operationId": "native_trade_labels_read",
+        "responses": {
+          "200": {
+            "description": "Native workspace label catalog; metadata only, execution unchanged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "schema_version",
+                    "items"
+                  ],
+                  "properties": {
+                    "schema_version": {
+                      "const": "trade-labels-v1"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "revision",
+                          "name",
+                          "color"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 64
+                          },
+                          "color": {
+                            "enum": [
+                              "green",
+                              "blue",
+                              "orange",
+                              "red",
+                              "purple",
+                              "cyan",
+                              "gray"
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "assignment": {
+                      "type": "object",
+                      "required": [
+                        "session_id",
+                        "trade_id",
+                        "revision",
+                        "tags"
+                      ],
+                      "properties": {
+                        "session_id": {
+                          "type": "string"
+                        },
+                        "trade_id": {
+                          "type": "string"
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "tags": {
+                          "type": "array",
+                          "maxItems": 32,
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 64
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Unavailable or untrusted state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {}
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Workspace membership denied"
+          },
+          "422": {
+            "description": "Workspace header required"
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Workspace-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "native_trade_labels_write",
+        "responses": {
+          "200": {
+            "description": "Native workspace label catalog; metadata only, execution unchanged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "schema_version",
+                    "items"
+                  ],
+                  "properties": {
+                    "schema_version": {
+                      "const": "trade-labels-v1"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "revision",
+                          "name",
+                          "color"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 64
+                          },
+                          "color": {
+                            "enum": [
+                              "green",
+                              "blue",
+                              "orange",
+                              "red",
+                              "purple",
+                              "cyan",
+                              "gray"
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "assignment": {
+                      "type": "object",
+                      "required": [
+                        "session_id",
+                        "trade_id",
+                        "revision",
+                        "tags"
+                      ],
+                      "properties": {
+                        "session_id": {
+                          "type": "string"
+                        },
+                        "trade_id": {
+                          "type": "string"
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "tags": {
+                          "type": "array",
+                          "maxItems": 32,
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 64
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Unavailable or untrusted state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {}
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Workspace membership denied"
+          },
+          "422": {
+            "description": "Workspace header required"
+          },
+          "404": {
+            "description": "Trade or label is not in this workspace"
+          },
+          "409": {
+            "description": "Name reserved or revision conflict; read again before saving"
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Workspace-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "action",
+                      "name",
+                      "color"
+                    ],
+                    "properties": {
+                      "action": {
+                        "const": "create"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64
+                      },
+                      "color": {
+                        "enum": [
+                          "green",
+                          "blue",
+                          "orange",
+                          "red",
+                          "purple",
+                          "cyan",
+                          "gray"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "action",
+                      "id",
+                      "expected_revision",
+                      "name",
+                      "color"
+                    ],
+                    "properties": {
+                      "action": {
+                        "const": "update"
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "expected_revision": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64
+                      },
+                      "color": {
+                        "enum": [
+                          "green",
+                          "blue",
+                          "orange",
+                          "red",
+                          "purple",
+                          "cyan",
+                          "gray"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "action",
+                      "id",
+                      "expected_revision"
+                    ],
+                    "properties": {
+                      "action": {
+                        "const": "delete"
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "expected_revision": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "action",
+                      "session_id",
+                      "trade_id",
+                      "expected_revision",
+                      "tags"
+                    ],
+                    "properties": {
+                      "action": {
+                        "const": "assign"
+                      },
+                      "session_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                      },
+                      "trade_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 512
+                      },
+                      "expected_revision": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "tags": {
+                        "type": "array",
+                        "maxItems": 32,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "description": "Rename retains historical aliases. Delete removes the visible label globally and reserves its old names. Assign verifies a persisted replay trade. Native idempotency receipts apply; unknown outcomes require reconciliation, never blind resend."
       }
     },
     "/api/v2/dashboard/sessions": {

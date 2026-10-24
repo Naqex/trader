@@ -77,16 +77,24 @@ async fn invoke(State(state):State<Arc<AppState>>,scope:Workspace,request:Reques
         dashboard_sessions(cache,&tx,&scope.workspace_id,&records,&q,zone).await?
     }else{
         let heads=record_heads(&tx,&scope.workspace_id,"replay").await?;
-        let selected=q.get("sessions").map(|s|s.split(',').filter(|s|!s.is_empty()).map(str::to_owned).collect::<Vec<_>>());
+        let mut selected=q.get("sessions").map(|s|s.split(',').filter(|s|!s.is_empty()).map(str::to_owned).collect::<Vec<_>>());
         let sid=q.get("session_id").map(String::as_str);
         if sid.is_some_and(|id|!heads.iter().any(|h|h[0]==id))||selected.as_ref().is_some_and(|ids|ids.iter().any(|id|!heads.iter().any(|h|h[0]==*id))){return Err(ApiError::detail(StatusCode::NOT_FOUND,"replay_not_found"))}
+        let dashboard_source=if path=="/api/v2/overview" { q.get("dashboard_source").map(String::as_str).unwrap_or("all") } else { "all" };
+        if !["backtest","prop","all"].contains(&dashboard_source){return Err(bad("invalid_dashboard_source"))}
+        if path=="/api/v2/overview" {
+            let mut identities=catalog_records(&tx,&scope.workspace_id).await?;
+            enrich_identities(&tx,&scope.workspace_id,&mut identities).await?;
+            selected=Some(dashboard_source_ids(&identities,dashboard_source,sid,selected.as_deref()));
+        }
         let paged=path=="/api/v2/replay/trades"&&q.contains_key("page");
         let page=if paged{qint(&q,"page")?.unwrap_or(1)}else{1};let size=qint(&q,"page_size")?.unwrap_or(10);
         if paged&&(page<1||!(1..=100).contains(&size)){return Err(bad("trade_page_parameters_invalid"))}
-        let journal_heads=if paged{record_heads(&tx,&scope.workspace_id,"journal").await?}else{vec![]};
+        let mut journal_heads=if paged{record_heads(&tx,&scope.workspace_id,"journal").await?}else{vec![]};
+        if paged{journal_heads.extend(record_heads(&tx,&scope.workspace_id,"trade_label").await?);journal_heads.extend(record_heads(&tx,&scope.workspace_id,"trade_label_assignment").await?);}
         let page_key=json!(["trade-page-v1",scope.workspace_id,heads,journal_heads,q.iter().collect::<BTreeMap<_,_>>()]).to_string();
         if let Some(hit)=if paged{cached(cache,&page_key)}else{None}{hit.as_ref().clone()}else{
-            let report_key=json!(["performance-v2",scope.workspace_id,heads,sid,selected,f,path!="/api/v2/overview",zone.name()]).to_string();
+            let report_key=json!(["performance-v3",scope.workspace_id,heads,dashboard_source,sid,selected,f,path!="/api/v2/overview",zone.name()]).to_string();
             let (report,source_records)=if let Some(report)=cached(cache,&report_key){(report,None)}else{
                 let records=records(&tx,&scope.workspace_id,"replay").await?;
                 let report=build_dashboard_performance_in_timezone(&records,&scope.workspace_id,sid,selected.as_deref(),Some(&f),path!="/api/v2/overview",&[],zone).map_err(|e|if e=="replay session not found"{ApiError::detail(StatusCode::NOT_FOUND,"replay_not_found")}else{source("trade_ledger_source_invalid")})?;
@@ -99,13 +107,21 @@ async fn invoke(State(state):State<Arc<AppState>>,scope:Workspace,request:Reques
                     retain(cache,facet_key,build_dashboard_performance_in_timezone(&records,&scope.workspace_id,sid,selected.as_deref(),None,true,&[],zone).map_err(source)?)
                 };
                 let journals=records_for_journals(&tx,&scope.workspace_id).await?;
+                let mut report=report.as_ref().clone();let mut facet=facet.as_ref().clone();
+                report["label_revision_key"]=json!(journal_heads);
+                for projection in [&mut report,&mut facet]{
+                    if let Some(rows)=projection["ledger"].as_array_mut(){
+                        for row in rows.iter_mut(){*row=trades::decorate(row,&journals);}
+                        crate::trade_labels::project(&tx,&scope.workspace_id,rows,None).await?;
+                    }
+                }
                 let value=trades::build_trades_page(&report,&journals,page as usize,size as usize,q.get("sort_key").map(String::as_str).unwrap_or("close_time_utc"),q.get("sort_direction").map(String::as_str).unwrap_or("desc"),&extra_filters,Some(&facet)).map_err(bad)?;
                 retain(cache,page_key,value).as_ref().clone()
             }else{
                 let intervals=activity(&tx,&scope.workspace_id).await?;
                 let metadata=tx.query("SELECT r.record_id,jsonb_build_object('timing',v.payload_json->'timing') FROM workspace_records r JOIN workspace_record_revisions v ON v.workspace_id=r.workspace_id AND v.kind=r.kind AND v.record_id=r.record_id AND v.revision=r.current_revision WHERE r.workspace_id=$1 AND r.kind='replay' AND NOT v.deleted",&[&scope.workspace_id]).await.map_err(|_|ApiError::database())?.iter().map(|r|json!({"record_id":r.get::<_,String>(0),"payload":r.get::<_,Value>(1)})).filter(|r|sid.is_none_or(|id|r["record_id"]==id)&&selected.as_ref().is_none_or(|ids|ids.iter().any(|id|r["record_id"]==*id))).collect::<Vec<_>>();
                 let mut report=report.as_ref().clone();report["as_of_utc"]=json!(iso(Utc::now()));merge(&mut report,&dashboard_timing(&metadata,&intervals).map_err(source)?);report["activity_months"]=presentation::activity_months(&metadata,&intervals,zone).map_err(source)?;report["timing_scope"]["timezone"]=json!(zone.name());
-                if path=="/api/v2/overview"{let mut out=overview(&tx,&scope.workspace_id).await?;out["performance"]=report;out}else{report}
+                if path=="/api/v2/overview"{report["scope"]["dashboard_source"]=json!(dashboard_source);let mut out=overview(&tx,&scope.workspace_id).await?;out["performance"]=report;out}else{report}
             }
         }
     };tx.commit().await.map_err(|_|ApiError::database())?;Ok(Json(result).into_response())
@@ -204,4 +220,29 @@ async fn enrich_identities(tx:&Transaction<'_>,workspace:&str,records:&mut[Value
  let rows=tx.query(crate::catalog::REPLAY_IDENTITIES,&[&workspace]).await.map_err(|_|ApiError::database())?;
  let mut bindings=HashMap::new();for r in rows{let id:String=r.get(0);let v=json!({"session_kind":"prop","prop_session_id":r.get::<_,String>(1),"prop_attempt_id":r.get::<_,String>(2)});if bindings.get(&id).is_some_and(|p|p!=&v){return Err(source("dashboard_source_invalid"))}bindings.insert(id,v);}
  for r in records{if let Some(identity)=bindings.get(text(&r["record_id"])){merge(&mut r["payload"],identity)}}Ok(())
+}
+
+// Keep the complete replay ancestry for fill deduplication; narrow only the selected IDs.
+fn dashboard_source_ids(records:&[Value],source:&str,sid:Option<&str>,selected:Option<&[String]>)->Vec<String>{
+    let mut ids=records.iter().filter(|r| {
+        let prop=r["payload"]["session_kind"]=="prop";
+        (source=="all" || prop==(source=="prop"))
+            && sid.is_none_or(|id|r["record_id"]==id)
+            && selected.is_none_or(|ids|ids.iter().any(|id|r["record_id"]==*id))
+    }).map(|r|text(&r["record_id"]).to_owned()).collect::<Vec<_>>();
+    ids.sort();ids.dedup();ids
+}
+#[cfg(test)]
+mod source_tests {
+    use super::*;
+    #[test] fn source_intersects_explicit_scope_without_turning_empty_into_all(){
+        let records=vec![json!({"record_id":"b","payload":{}}),json!({"record_id":"p","payload":{"session_kind":"prop"}})];
+        assert_eq!(dashboard_source_ids(&records,"all",None,None),vec!["b","p"]);
+        assert_eq!(dashboard_source_ids(&records,"prop",None,None),vec!["p"]);
+        assert_eq!(dashboard_source_ids(&records,"backtest",None,None),vec!["b"]);
+        assert!(dashboard_source_ids(&records,"prop",Some("b"),None).is_empty());
+        assert!(dashboard_source_ids(&records,"all",None,Some(&[])).is_empty());
+        let mut rebound=records.clone();rebound[0]["payload"]["session_kind"]=json!("prop");
+        assert_eq!(dashboard_source_ids(&rebound,"prop",None,None),vec!["b","p"]);
+    }
 }

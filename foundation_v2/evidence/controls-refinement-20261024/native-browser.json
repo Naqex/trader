@@ -1,0 +1,14 @@
+{
+  "scope": "disposable native Rust/PostgreSQL labels; synthetic live accounts; no broker",
+  "checks": [
+    "empty affordance, create via Enter, rapid multiple selection against real persisted revision, reload, Escape/focus return; finance unchanged",
+    "global rename/color/delete and persisted reload",
+    "anchored popup fits mobile/light/dark; table owns horizontal scroll",
+    "Backtest/Prop/All use the same report charts with native filtered data",
+    "session Analytics is a direct destination link",
+    "searchable checkbox filter selects multiple sides and persists applied scope on reload; empty selection displays All"
+  ],
+  "errors": [],
+  "blockedWrites": [],
+  "status": "PASS"
+}

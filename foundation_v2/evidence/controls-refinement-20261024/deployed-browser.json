@@ -1,0 +1,14 @@
+{
+  "scope": "real deployed local API/UI, read-only UI journeys, no order/label/account mutations",
+  "checks": [
+    "served index matches promoted hash; real Backtest/Prop/All retain one Performance layout",
+    "real ledger label catalog/search opens and Escape returns focus; Return badges rendered; no label writes",
+    "real Sessions Analytics is a direct link",
+    "real Live account name, hierarchy, actions, disabled settings, chart arrow and mobile bounds",
+    "real aggregate Live trade account selector shares verified login/environment",
+    "account table labels timestamp Last sync"
+  ],
+  "errors": [],
+  "writes": [],
+  "status": "PASS"
+}

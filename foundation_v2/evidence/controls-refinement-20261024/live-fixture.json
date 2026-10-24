@@ -1,0 +1,33 @@
+{
+  "scope": "synthetic Live UI, GET only, no terminal",
+  "checks": [
+    {
+      "scenario": "ready",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "scenario": "ready",
+      "width": 390,
+      "theme": "light"
+    },
+    {
+      "scenario": "stale",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "scenario": "error",
+      "width": 390,
+      "theme": "dark"
+    },
+    {
+      "scenario": "disconnected",
+      "width": 1440,
+      "theme": "dark"
+    }
+  ],
+  "errors": [],
+  "writes": [],
+  "status": "PASS"
+}

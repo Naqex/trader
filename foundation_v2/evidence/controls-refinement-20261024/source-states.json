@@ -1,0 +1,40 @@
+{
+  "scope": "synthetic source/filter/read-state UI; no broker",
+  "checks": [
+    {
+      "source": "all",
+      "theme": "dark",
+      "sameLayout": true,
+      "staleRetains": true,
+      "deniedClears": true,
+      "emptyKnown": true
+    },
+    {
+      "source": "prop",
+      "theme": "dark",
+      "sameLayout": true,
+      "staleRetains": true,
+      "deniedClears": true,
+      "emptyKnown": true
+    },
+    {
+      "source": "all",
+      "theme": "light",
+      "sameLayout": true,
+      "staleRetains": true,
+      "deniedClears": true,
+      "emptyKnown": true
+    },
+    {
+      "source": "prop",
+      "theme": "light",
+      "sameLayout": true,
+      "staleRetains": true,
+      "deniedClears": true,
+      "emptyKnown": true
+    }
+  ],
+  "errors": [],
+  "writes": [],
+  "status": "PASS"
+}
