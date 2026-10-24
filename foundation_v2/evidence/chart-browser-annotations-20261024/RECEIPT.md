@@ -4,7 +4,7 @@
 
 The reported control is the ChatGPT/Codex browser toolbar's **Chú thích**, not a WMREPLAY note/drawing feature. No application annotation button or editor was added.
 
-Implemented and installed a compatibility candidate. Source/fixture checks pass; actual end-to-end browser selection is **not yet confirmed**. Earlier user trials remained unsuccessful, and inspection after each trial found a new page/iframe with temporary diagnostic changes absent. Do not classify those trials as acceptance, or infer that pointer hit-testing alone proves the browser editor works.
+Implemented and installed a compatibility candidate. Source/fixture checks pass; the user subsequently reported that actual selection **still fails on the installed candidate**. Earlier temporary trials also failed. Do not classify pointer hit-testing or synthetic API checks as actual browser annotation acceptance.
 
 ## Change and state flow
 
@@ -32,3 +32,20 @@ Builds, backups, scripts, screenshots and reports are under `E:/BACKUP-TRADINGWO
 Remaining: confirm selecting/dragging an actual chart region opens the ChatGPT/Codex annotation editor on this installed candidate, then exit and confirm native chart interaction. If selection still fails with confirmed parent hit testing, investigate the browser picker boundary; do not add a parallel WMREPLAY annotation feature or claim a broker issue.
 
 Reproduce fixtures from `foundation_v2/web`: `TW_TEST_BROWSER_ANNOTATIONS=1` with `TW_LIVE_UI_ORIGIN`/`TW_LIVE_UI_EVIDENCE` then `node run_live_market_acceptance.mjs`; `CHART_DS_ORIGIN`/`CHART_DS_OUTPUT` then `node tests/browserChartAnnotations.browser.mjs`.
+
+## Follow-up research: local Backtest versus Live
+
+The owner clarified that the working comparison is Backtest/Propfirm **inside this project**, not the external FX Replay site. The external site's top-document canvas cannot explain this local difference.
+
+Read-only runtime comparison on installed UI5180 used a stored tenant-a Replay session and the existing Live route, with all API writes blocked. Both report Advanced Charts, one same-origin srcdoc chart iframe at 1920 x 889, seven canvases inside the iframe, zero top-document canvases, and matching host/nearest-ancestor pointer, transform and stacking styles. Both source paths use TradingViewReplayChart. Three stored Replay records specify chart_engine=legacy (the application maps this to Advanced Charts). No page errors or attempted API writes occurred. Top document has no CSP header or CSP meta. Full comparison and screenshots: E:/BACKUP-TRADINGWORKSPACE/chart-browser-annotations-20261024/research/.
+
+Installed Windows package metadata: OpenAI.Codex 26.1016.8622.0. This is not a claim about update availability or a confirmed regression boundary.
+
+Primary research:
+
+- https://github.com/openai/codex/issues/44627 — open report with same-origin iframe reproductions; mainly macOS. Supports iframe compatibility as a candidate, but cannot by itself explain why local Replay reportedly works while local Live does not.
+- https://github.com/openai/codex/issues/49935 — open Windows report that annotations fail while an agent holds browser control. Recovery and underlying cause explicitly remain unverified. Treat as a hypothesis, not a confirmed workaround.
+- https://github.com/openai/codex/issues/52941 — Windows CSP overlay failure. Current local top-document policy does not match its restrictive-CSP trigger; do not weaken security policy based on this report.
+- https://learn.chatgpt.com/docs/annotations-extensibility — text selection containers do not enable iframe text selection; canvas surface registration is top-document only. This does not establish that every ordinary iframe area annotation must fail.
+
+Next useful isolation is the same installed build and same browser tab, agent not controlling the browser, switching between local Replay and Live and targeting chart versus surrounding chrome. If only Live fails under that matched comparison, collect browser overlay errors at that transition before further application changes. No additional application patch, browser update or security-policy change was made during research.
