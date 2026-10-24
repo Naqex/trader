@@ -47,9 +47,12 @@ actions, uncertain writes and errors requiring retry keep their local controls.
 Market Data repair, import and deletion use the shared notices; existing domain
 error/retry flows remain local. Other consumers can migrate without another host.
 
-Live stale-quote state appears when detected, then hides after 8 seconds for that
-episode. A stale Buy/Sell attempt shows it again for a fresh 8 seconds without
-calling preview or commands. Backtest/Propfirm chart messages share the info timer;
+Live stale-quote state does not create a toast on chart entry, reload or stream
+updates. A blocked Buy/Sell or order-check attempt shows it for 8 seconds without
+calling preview or commands. Closing it stays effective until another explicit
+attempt; quote updates do not respawn it. Current conditions remain available in
+the trading-conditions dialog. Transport errors, uncertain outcomes and symbol
+recovery retain their separate feedback. Backtest/Propfirm chart messages share the info timer;
 their synchronization and uncertain-write recovery controls remain persistent.
 These product durations allow longer reading for errors; the baseline references
 are [Carbon's optional 5-second toast](https://www.carbondesignsystem.com/building-blocks/core/components/notification/guidelines)

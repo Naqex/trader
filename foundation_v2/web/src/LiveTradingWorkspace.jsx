@@ -18,7 +18,7 @@ import { mt5QuickDraft } from './mt5QuickOrder.js'
 import { mt5OrderNotice } from './mt5OrderNotices.js'
 import { protectionPrice } from './orderProtection.js'
 import OrderProtectionSection from './OrderProtectionSection.jsx'
-import { DEMO_DRAFT, DEMO_TIMEFRAMES, demoIdentity, demoDraftError, demoIntent, tradingReady, tradingBlockReason, previewMatches, demoReason, finalDemoReceipt } from './liveTradingModel.js'
+import { DEMO_DRAFT, DEMO_TIMEFRAMES, demoIdentity, demoDraftError, demoIntent, tradingReady, tradingBlockReason, previewMatches, demoReason, finalDemoReceipt, managedBrokerRules } from './liveTradingModel.js'
 import { TestingSkeleton } from './TestingReadState.jsx'
 import './live-trading.css'
 
@@ -59,6 +59,7 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
   const [ledgerEvent,setLedgerEvent] = useState({tab:'positions',sequence:0})
   const [dismissedState,setDismissedState] = useState(null), reportedReceipts = useRef(new Set())
   const [stateAttempt,setStateAttempt] = useState(0)
+  const [requestedState,setRequestedState] = useState('')
   const snapshot = read.scope === scope ? read.payload : null
   const chartSnapshot = read.chartScope === chartScope ? read.chart : null
   const unresolved = pending || snapshot?.requests?.find(item=>item.status==='unknown'||item.requires_reconciliation===true)
@@ -73,7 +74,8 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
   const intent = identity && activeSymbol ? demoIntent(snapshot,activeSymbol,draft) : null
   const validPreview = intent && previewMatches(checked,intent,now)
   const instrument = snapshot?.instrument && {...snapshot.instrument,quantity_max:Math.min(snapshot.instrument.quantity_max,snapshot.policy?.max_volume||Infinity)}
-  const error = demoDraftError(draft,instrument,snapshot?.quote,snapshot?.policy?.source==='broker')
+  const brokerRules = managedBrokerRules(snapshot)
+  const error = demoDraftError(draft,instrument,snapshot?.quote,brokerRules)
   const reference = draft.side === 'BUY' ? snapshot?.quote?.ask : snapshot?.quote?.bid
   useEffect(()=>{
     if(explicitConnection)return
@@ -154,7 +156,7 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
     setChecked(null);setNotice('');setPanel('order')
   }
   const quickOrder = (side,quantity,preset) => {
-    if (staleDraft) {setDismissedState(null);setStateAttempt(value=>value+1);return}
+    if (staleDraft) {setRequestedState(stateKey);setDismissedState(null);setStateAttempt(value=>value+1);return}
     if (!canAct || paused || !capability('place')) return
     setChecked(null)
     try { setDraft(mt5QuickDraft(snapshot,side,quantity,preset));setNotice('');setPanel('order') }
@@ -168,7 +170,7 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
 
   const checkOrder = async event => {
     event.preventDefault()
-    if (staleDraft) {setPanel(null);setChecked(null);setDismissedState(null);setStateAttempt(value=>value+1);return}
+    if (staleDraft) {setPanel(null);setChecked(null);setRequestedState(stateKey);setDismissedState(null);setStateAttempt(value=>value+1);return}
     if (!canAct || paused || error || !intent || running.current) return
     running.current=true; setBusy(true);setNotice('');setChecked(null)
     const origin=scope, key=JSON.stringify(intent)
@@ -223,7 +225,7 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
   const protectionTicket = confirmation?.action === 'protect' ? positions.find(item=>String(item.ticket)===String(confirmation.body.ticket)&&item.symbol===confirmation.body.symbol) : null
   const protectionInstrument = protectionTicket?.symbol === activeSymbol ? instrument : null
   const protectionDraft = { side:protectionTicket?.side,stopLoss:confirmation?.body?.stop_loss ?? '',takeProfit:confirmation?.body?.take_profit ?? '' }
-  const protectionInvalid = !protectionTicket || ['stopLoss','takeProfit'].some(key=>(confirmation?.protectionEnabled?.[key] || key==='stopLoss'&&snapshot?.policy?.source!=='broker')&&!(Number(protectionDraft[key])>0))
+  const protectionInvalid = !protectionTicket || ['stopLoss','takeProfit'].some(key=>(confirmation?.protectionEnabled?.[key] || key==='stopLoss'&&!brokerRules)&&!(Number(protectionDraft[key])>0))
   const changeProtection = (key,value) => setConfirmation(previous=>({...previous,body:{...previous.body,[key==='stopLoss'?'stop_loss':'take_profit']:value}}))
   const toggleTicketProtection = (key,enabled) => {
     const unit=Number(protectionInstrument?.pip_size)||Number(protectionInstrument?.tick_size)
@@ -238,12 +240,12 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
   const quoteUnit=quoteAge>=3600000?3600000:quoteAge>=60000?60000:1000
   const quoteNotice=blockReason==='demo_quote_stale'&&Number.isFinite(new Date(quoteTime).getTime())&&quoteTime>0 ? quoteAge < -1000
     ? t('Thời gian báo giá đi trước đồng hồ máy. Kiểm tra đồng bộ giờ Windows.')
-    : t('Giá cũ: tạm khóa gửi lệnh. Báo giá cuối: {time} · {count} {unit} trước.',{time:new Intl.DateTimeFormat(locale,{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',timeZoneName:'short'}).format(quoteTime),count:fmt(Math.floor(Math.max(0,quoteAge)/quoteUnit),'',0),unit:t(quoteUnit===3600000?'giờ':quoteUnit===60000?'phút':'giây')})
+    : t('Ứng dụng chưa gửi lệnh vì báo giá cũ. Giá cuối: {time} · {count} {unit} trước.',{time:new Intl.DateTimeFormat(locale,{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',timeZoneName:'short'}).format(quoteTime),count:fmt(Math.floor(Math.max(0,quoteAge)/quoteUnit),'',0),unit:t(quoteUnit===3600000?'giờ':quoteUnit===60000?'phút':'giây')})
     : demoReason('demo_quote_stale')
   const reason = demoPreview ? 'Gửi lệnh không khả dụng trong chế độ xem thử.' : read.status==='loading' ? 'Đang đọc tài khoản MT5…' : resetSymbol ? demoReason('demo_symbol_denied') : read.status==='error' ? 'Mất kết nối dữ liệu giao dịch. Đang giữ ảnh chụp trước đó.' : !chartSurface && snapshot?.summary ? '' : !marketReady ? blockReason==='demo_quote_stale'?quoteNotice:demoReason(blockReason) : ''
   const quoteState = blockReason==='demo_quote_stale' ? !Number.isFinite(new Date(quoteTime).getTime()) || quoteTime<=0 ? 'invalid' : quoteAge<0 ? 'future' : 'past' : ''
   const stateKey=reason||paused||unresolved ? `${chartScope}:${read.status}:${unresolved?.request_id || (paused?'paused':`${blockReason}:${quoteState}`)}` : ''
-  useEffect(()=>{setDismissedState(null)},[stateKey])
+  useEffect(()=>{setDismissedState(null);setRequestedState('')},[stateKey])
   if (!chartSurface) return <LiveTradingOverview workspace={workspace} query={accountQuery} snapshot={snapshot} status={read.status} reason={unresolved ? 'Chưa rõ kết quả. Đối soát MT5 trước khi gửi lệnh khác.' : reason} symbol={activeSymbol} timeframe={timeframe} onRefresh={()=>setRefresh(value=>value+1)} onResetSymbol={resetSymbol}/>
   const fullscreen=()=>{if(document.fullscreenElement)document.exitFullscreen?.();else document.documentElement.requestFullscreen?.()}
   const changeInterval=value=>{const next=Object.keys(DEMO_TIMEFRAMES).find(key=>replayResolution(DEMO_TIMEFRAMES[key])===value);if(next&&next!==timeframe)route({mt5_timeframe:next})}
@@ -252,7 +254,7 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
   return <Suspense fallback={<TestingSkeleton label="Đang tải biểu đồ…" />}><LiveChartSurface objectsOpen={panel==='objects'} headerHeight={headerSlots?.headerHeight || 38}>
     <LegacyChartHeader marketMode="live" controls={headerSlots} symbol={chartSymbol} name={`MT5 · ${snapshot?.account?.login || chartSnapshot?.account?.login || 'MT5'}`} backHref={liveTradingHref(workspace,accountQuery)} theme={theme} onTheme={()=>applyAppearance({...appearance,theme:theme==='dark'?'light':'dark'})} onOpenTool={openTool} onFullscreen={fullscreen}/>
     {!headerSlots && <header className="live-terminal-toolbar"><a href={liveTradingHref(workspace,accountQuery)} aria-label={t('Trở về tổng quan MT5')}><ChartIcon name="arrow-left"/></a><strong>{chartSymbol || 'MetaTrader'}</strong><FxSelect label="Khung thời gian MT5" value={timeframe} options={Object.keys(DEMO_TIMEFRAMES).map(value=>({value,label:value}))} onChange={value=>route({mt5_timeframe:value})}/><button type="button" className="live-text-action" onClick={event=>openTool('data',event.currentTarget)}>{t('Chọn mã giao dịch MT5')}</button></header>}
-    <NotificationSlot>{stateKey && dismissedState!==stateKey && <NotificationSurface as="section" key={`${stateKey}:${stateAttempt}`} tone={read.status==='error'||unresolved?'error':'warning'} persistent={Boolean(unresolved||resetSymbol)} onDismiss={()=>setDismissedState(stateKey)} className="is-blocking live-terminal-state" role={read.status==='error'||unresolved?'alert':'status'}><TestingIcon kind="info" /><p>{unresolved?t('Chưa rõ kết quả. Đối soát MT5 trước khi gửi lệnh khác.'):t(reason || 'Đã tạm dừng mở lệnh mới.')}</p>{unresolved && <button className="wm-notification-action" type="button" disabled={busy} onClick={reconcile}>{t(busy?'Đang đối soát…':'Đối soát')}</button>}{resetSymbol && <button type="button" className="wm-notification-action" onClick={resetSymbol}>{t('Tải lại danh sách mã')}</button>}<button type="button" aria-label={t('Đóng thông báo')} onClick={()=>setDismissedState(stateKey)}>×</button></NotificationSurface>}</NotificationSlot>
+    <NotificationSlot>{stateKey && (unresolved || resetSymbol || read.status==='error' || requestedState===stateKey) && dismissedState!==stateKey && <NotificationSurface as="section" key={`${stateKey}:${stateAttempt}`} tone={read.status==='error'||unresolved?'error':'warning'} persistent={Boolean(unresolved||resetSymbol)} onDismiss={()=>setDismissedState(stateKey)} className="is-blocking live-terminal-state" role={read.status==='error'||unresolved?'alert':'status'}><TestingIcon kind="info" /><p>{unresolved?t('Chưa rõ kết quả. Đối soát MT5 trước khi gửi lệnh khác.'):t(reason || 'Đã tạm dừng mở lệnh mới.')}</p>{unresolved && <button className="wm-notification-action" type="button" disabled={busy} onClick={reconcile}>{t(busy?'Đang đối soát…':'Đối soát')}</button>}{resetSymbol && <button type="button" className="wm-notification-action" onClick={resetSymbol}>{t('Tải lại danh sách mã')}</button>}<button type="button" aria-label={t('Đóng thông báo')} onClick={()=>setDismissedState(stateKey)}>×</button></NotificationSurface>}</NotificationSlot>
     <section className="replay-workspace live-terminal-main">
       <div className="replay-main live-terminal-market">
         <div className="live-terminal-chart chart-frame has-advanced-chart"><div className="chart-canvas">
@@ -276,10 +278,10 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
         <form onSubmit={checkOrder} className="legacy-order-form">
           <Suspense fallback={<TestingSkeleton rows={2}/>}><OrderEntryFields draft={draft} instrument={instrument || {asset_class:'fx'}} quantityLabel="Khối lượng (lot)" disabled={busy||Boolean(unresolved)} conditionalOrders={false} onSide={value=>change('side',value)} onType={value=>change('orderType',value)} onChange={change} reference={reference}/></Suspense>
           {['stopLoss','takeProfit'].map(key => <OrderProtectionSection key={key} kind={key} draft={draft} instrument={instrument} reference={reference}
-            enabled={key === 'stopLoss' && snapshot?.policy?.source !== 'broker' || (draft.protectionEnabled?.[key] ?? draft[key] !== '')}
-            required={key === 'stopLoss' && snapshot?.policy?.source !== 'broker'} disabled={busy||Boolean(unresolved)}
+            enabled={key === 'stopLoss' && !brokerRules || (draft.protectionEnabled?.[key] ?? draft[key] !== '')}
+            required={key === 'stopLoss' && !brokerRules} disabled={busy||Boolean(unresolved)}
             toggleDisabled={!marketReady || !(Number(instrument?.tick_size)>0)} onToggle={value=>toggleProtection(key,value)} onChange={change}/>) }
-          {snapshot?.policy && snapshot.policy.source!=='broker' && <p className="live-muted">{t('Giới hạn tổng rủi ro')}: {money(snapshot.policy.max_risk_amount)} · {fmt(snapshot.policy.max_risk_pct)}% · {snapshot.policy.max_positions} {t('Vị thế')}</p>}
+          {snapshot?.policy && !brokerRules && <p className="live-muted">{t('Giới hạn tổng rủi ro')}: {money(snapshot.policy.max_risk_amount)} · {fmt(snapshot.policy.max_risk_pct)}% · {snapshot.policy.max_positions} {t('Vị thế')}</p>}
           {marketReady && error && (draft.quantity!==''||draft.stopLoss!=='') && <p className="live-muted" role="status">{t(error)}</p>}
           {checked && <dl className="live-terminal-values"><div><dt>{t('Risk tới SL')}</dt><dd>{money(checked.value.estimated_stop_risk)}</dd></div><div><dt>{t('Margin cần thiết')}</dt><dd>{money(checked.value.margin_required)}</dd></div></dl>}
           <footer><button type="button" onClick={()=>setPanel(null)}>{t('Hủy')}</button>
@@ -298,8 +300,8 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
         {confirmation.body?.ticket && <p>Ticket #{confirmation.body.ticket} · {confirmation.body.symbol}</p>}
         {confirmation.action==='place'&&!validPreview&&<div role="status"><p className="live-muted">{t('Kiểm tra lại lệnh để lấy báo giá mới.')}</p><button className="live-text-action" disabled={!canAct} onClick={()=>checkOrder({preventDefault:noop})}>{t('Kiểm tra lệnh')}</button></div>}
         {confirmation.action==='protect' && <div className="legacy-order-form mt5-protection-editor">{['stopLoss','takeProfit'].map(key=><OrderProtectionSection key={key} kind={key} draft={protectionDraft} instrument={protectionInstrument} reference={protectionTicket?.price_open}
-          enabled={key==='stopLoss'&&snapshot?.policy?.source!=='broker'||confirmation.protectionEnabled[key]}
-          required={key==='stopLoss'&&snapshot?.policy?.source!=='broker'} disabled={busy||!canAct||!protectionTicket}
+          enabled={key==='stopLoss'&&!brokerRules||confirmation.protectionEnabled[key]}
+          required={key==='stopLoss'&&!brokerRules} disabled={busy||!canAct||!protectionTicket}
           onToggle={value=>toggleTicketProtection(key,value)} onChange={changeProtection}/>)}</div>}
         <footer><button className="wm-button" disabled={busy} onClick={()=>setConfirmation(null)}>{t('Hủy')}</button><button className="wm-button is-primary" disabled={!canAct || !capability(confirmation.action) || confirmation.action==='place'&&!validPreview || confirmation.action==='protect'&&protectionInvalid} onClick={send}>{t(busy?'Đang gửi…':confirmation.action==='place'?'Gửi lệnh MT5':'Xác nhận')}</button></footer>
       </div>

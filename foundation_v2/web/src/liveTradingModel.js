@@ -1,6 +1,14 @@
 export const DEMO_TIMEFRAMES = Object.freeze({ M1:60, M5:300, M15:900, H1:3600, H4:14400, D1:86400 })
 export const DEMO_DRAFT = Object.freeze({ side:'BUY', orderType:'market', quantity:'', entryPrice:'', stopLoss:'', takeProfit:'' })
 export const positive = value => value !== '' && value !== null && value !== undefined && typeof value !== 'boolean' && Number.isFinite(Number(value)) && Number(value) > 0
+// Older running workers labelled their managed-account profile as "broker".
+export const managedBrokerRules = snapshot => snapshot?.policy?.profile==='managed_account' || snapshot?.policy?.source==='broker'
+export function quoteQuality(snapshot, now=Date.now()) {
+  const stamp=Number(snapshot?.quote?.time_msc), maxAgeMs=Math.min(Number(snapshot?.policy?.max_quote_age_ms)||5000,10000)
+  const valid=positive(snapshot?.quote?.time_msc)&&Number.isFinite(new Date(stamp).getTime())
+  const ageMs=valid?now-stamp:null
+  return {maxAgeMs,ageMs,state:!valid?'invalid':ageMs < -1000?'future':ageMs > maxAgeMs?'stale':'fresh'}
+}
 export function demoIdentity(snapshot) {
   const account = snapshot?.account
   return account?.login && account?.server ? `${account.login}:${account.server}` : ''
@@ -9,8 +17,7 @@ export function tradingBlockReason(snapshot, now = Date.now(), allowPaused = fal
   if (snapshot?.status !== 'ready' || !(snapshot.execution_enabled === true || allowPaused && snapshot.paused === true && snapshot.reason === 'demo_paused')) return snapshot?.reason || 'mt5_connection_not_ready'
   if (!['demo','real'].includes(snapshot.mode) || !demoIdentity(snapshot) || !(snapshot.mode==='demo'?['demo',0]:['real',2]).includes(snapshot.account.trade_mode) || snapshot.mode==='real' && !snapshot.connection_id) return 'demo_identity_mismatch'
   if (!positive(snapshot.quote?.bid) || !positive(snapshot.quote?.ask) || Number(snapshot.quote.ask) < Number(snapshot.quote.bid)) return 'demo_quote_unavailable'
-  const age = now - Number(snapshot.quote?.time_msc)
-  if (!Number.isFinite(age) || age < -1000 || age > Math.min(Number(snapshot.policy?.max_quote_age_ms) || 5000,10000)) return 'demo_quote_stale'
+  if (quoteQuality(snapshot,now).state!=='fresh') return 'demo_quote_stale'
   return ''
 }
 export function tradingReady(snapshot, now = Date.now(), allowPaused = false) {
@@ -66,6 +73,9 @@ export const DEMO_REASONS = Object.freeze({
   demo_risk_limit:'Lệnh vượt giới hạn rủi ro đã cấu hình.', demo_existing_risk_unknown:'Chưa xác định được rủi ro của các vị thế đang mở.',
   demo_margin_insufficient:'Không đủ margin khả dụng.', demo_order_check_rejected:'MT5 từ chối bước kiểm tra lệnh.',
   demo_broker_rejected:'MT5 từ chối yêu cầu giao dịch. Kiểm tra mã phản hồi của broker.',
+  demo_market_closed:'MT5 xác nhận thị trường đang đóng cửa.', demo_broker_trade_disabled:'MT5 xác nhận giao dịch đang bị khóa.',
+  demo_broker_no_quotes:'MT5 báo chưa có giá để xử lý yêu cầu.', demo_broker_long_only:'MT5 chỉ cho phép mở vị thế mua với mã này.',
+  demo_broker_short_only:'MT5 chỉ cho phép mở vị thế bán với mã này.', demo_broker_close_only:'MT5 chỉ cho phép đóng vị thế với mã này.',
   demo_ticket_not_managed:'Lệnh này không do luồng giao dịch của ứng dụng quản lý.', demo_partial_close_unsupported:'Chưa hỗ trợ đóng một phần vị thế.',
   demo_order_type_unsupported:'Hiện chỉ hỗ trợ lệnh Market.', demo_hedging_required:'Luồng demo hiện yêu cầu tài khoản Hedging.',
   demo_unresolved_request:'Chưa rõ kết quả. Đối soát MT5 trước khi gửi lệnh khác.', demo_request_conflict:'Mã yêu cầu đã dùng cho một thao tác khác.',
@@ -79,4 +89,5 @@ export const DEMO_REASONS = Object.freeze({
   demo_paused:'Đã tạm dừng mở lệnh mới.', demo_outcome_unknown:'Chưa rõ kết quả. Đối soát MT5 trước khi gửi lệnh khác.',
   demo_pending_unsupported:'Hiện chỉ hỗ trợ lệnh Market.', demo_not_configured:'Chưa cấu hình terminal giao dịch demo.',
 })
-export const demoReason = code => DEMO_REASONS[code] || 'Chưa sẵn sàng giao dịch. Kiểm tra terminal và tài khoản MT5.'
+const BROKER_REASON_CODES = {10017:'demo_broker_trade_disabled',10018:'demo_market_closed',10021:'demo_broker_no_quotes',10042:'demo_broker_long_only',10043:'demo_broker_short_only',10044:'demo_broker_close_only'}
+export const demoReason = (code,retcode) => DEMO_REASONS[['demo_broker_rejected','demo_order_check_rejected'].includes(code) ? BROKER_REASON_CODES[retcode] || code : code] || 'Chưa sẵn sàng giao dịch. Kiểm tra terminal và tài khoản MT5.'

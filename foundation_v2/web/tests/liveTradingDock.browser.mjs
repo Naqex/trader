@@ -17,7 +17,8 @@ function snapshot(url) {
   return {status:'ready',mode,connection_id:connection,symbol,timeframe:'M1',reason:phase==='readonly'?'mt5_trading_access_required':'demo_ready',execution_enabled:phase!=='readonly',
     account:{login:connection===first?'fixture':'fixture2',server:'Fixture-Server',trade_mode:mode,currency:'USD',balance:10000,equity:10015,margin_free:9900},
     symbols:['EURUSDm','GBPUSDm'],instrument:{symbol,asset_class:'fx',tick_size:0.00001,quantity_min:0.01,quantity_max:10,quantity_step:0.01},
-    policy:{source:'broker',max_quote_age_ms:5000},capabilities:{market:true,close:true,protect:true,cancel:true},
+    policy:{source:'application',profile:'managed_account',max_quote_age_ms:5000},capabilities:{market:true,close:true,protect:true,cancel:true},
+    broker_state:{source:'mt5',account:{trade_allowed:true,trade_expert:true},terminal:{connected:true,trade_allowed:true,tradeapi_disabled:false},symbol:{trade_mode:4,order_mode:49},session:{state:'unknown',reason:'session_schedule_unavailable'}},
     quote:{bid:1.1,ask:1.1002,time_msc:Date.now()-(phase==='stale'?10000:0)},
     positions:populated?[{ticket:123,symbol,side:'BUY',volume:0.03,price_open:1.099,sl:1.098,tp:1.105,profit:15,managed:true}]:[],orders:[],requests,
     bars:Array.from({length:120},(_,i)=>({timestamp:start+i*60,open:1.1+Math.sin(i/8)*0.001,close:1.1+Math.sin((i+1)/8)*0.001,high:1.102,low:1.098,volume:100}))}
@@ -85,20 +86,19 @@ try {
     await page.screenshot({path:`${output}/detail-${width}-${theme}.png`});await page.keyboard.press('Escape')
     await panel.getByRole('button',{name:'Sửa SL/TP',exact:true}).click()
     const protect=page.getByRole('dialog',{name:'Sửa SL/TP',exact:true});await protect.getByRole('spinbutton',{name:vi('Stop loss'),exact:true}).waitFor()
-    phase='stale';await page.locator('.live-terminal-state').waitFor();assert.equal(await protect.getByRole('spinbutton',{name:vi('Stop loss'),exact:true}).isDisabled(),true)
-    phase='ready';await page.locator('.live-terminal-state').waitFor({state:'hidden'});await page.keyboard.press('Escape')
+    phase='stale';await page.waitForFunction(()=>document.querySelector('.mt5-protection-editor input')?.disabled===true);assert.equal(await page.locator('.live-terminal-state').count(),0)
+    phase='ready';await page.waitForFunction(()=>document.querySelector('.mt5-protection-editor input')?.disabled===false);await page.keyboard.press('Escape')
     // Stale quotes block submission, while draft controls stay usable and errors remain dismissible.
     await page.getByRole('button',{name:'Thu gọn danh sách lệnh',exact:true}).click()
-    phase='stale';await page.locator('.live-terminal-state').waitFor()
+    phase='stale';await page.waitForTimeout(650);assert.equal(await page.locator('.live-terminal-state').count(),0)
     const previewCount=report.previews.length,commandCount=report.commands.length
-    await page.locator('.live-terminal-state').getByRole('button',{name:'Đóng thông báo',exact:true}).click()
     assert.equal(await bar.locator('.buy').isDisabled(),false)
     await bar.locator('.buy').click();await page.locator('.live-terminal-state').waitFor()
     await page.getByRole('button',{name:'Lệnh mới',exact:true}).click()
     const staleOrder=page.getByRole('dialog',{name:'Lệnh mới',exact:true})
     await staleOrder.getByRole('button',{name:'Kiểm tra lệnh',exact:true}).click();await staleOrder.waitFor({state:'hidden'})
     await page.locator('.live-terminal-state').waitFor();assert.equal(report.previews.length,previewCount);assert.equal(report.commands.length,commandCount)
-    phase='ready';await page.locator('.live-terminal-state').waitFor({state:'hidden'})
+    phase='ready';await ready(page);await page.locator('.live-terminal-state').waitFor({state:'hidden'})
     await page.getByRole('button',{name:'Mở danh sách lệnh',exact:true}).click()
     if(width===1920) {
       await panel.locator('.mt5-ticket-link').click();await detail.getByRole('button',{name:'Sửa SL/TP',exact:true}).click()

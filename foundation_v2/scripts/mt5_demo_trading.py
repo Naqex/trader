@@ -27,6 +27,11 @@ class BrokerPolicy(dict):
     """
 
 
+BROKER_REASONS = {10017: 'demo_broker_trade_disabled', 10018: 'demo_market_closed',
+                  10021: 'demo_broker_no_quotes', 10042: 'demo_broker_long_only',
+                  10043: 'demo_broker_short_only', 10044: 'demo_broker_close_only'}
+
+
 def deny(reason):
     raise Denied(reason)
 
@@ -278,7 +283,7 @@ def prepare(sdk, policy, command):
     identity(sdk, policy)
     check = sdk.order_check(request)
     if check is None or check.retcode != 0:
-        deny('demo_order_check_rejected')
+        deny(BROKER_REASONS.get(getattr(check, 'retcode', None), 'demo_order_check_rejected'))
     return request, {'passed': True, 'reason': 'demo_preview_passed', 'entry_price': price if action in ('place', 'close') else None, 'estimated_stop_risk': estimated, 'margin_required': margin, 'currency': account.currency, 'total_stop_risk': total_risk, 'risk_limit': limit, 'risk_estimate_excludes': ['slippage', 'gap_risk', *(['commission','swap'] if managed else [])], 'cost_buffer_per_lot': None if managed else policy['cost_buffer_per_lot']}
 
 
@@ -308,7 +313,7 @@ def execute(sdk, policy, command, before_send=lambda: None):
     elif code in (10008, 10025):
         status, reason = 'accepted', 'demo_order_accepted'
     elif 10004 <= code <= 10046:
-        status, reason = 'rejected', 'demo_broker_rejected'
+        status, reason = 'rejected', BROKER_REASONS.get(code, 'demo_broker_rejected')
     else:
         status, reason = 'unknown', 'demo_send_outcome_unknown'
     return {'status': status, 'reason': reason, 'retcode': code, 'requires_reconciliation': code in (10008, 10010), 'order': getattr(result, 'order', None), 'deal': getattr(result, 'deal', None), 'volume': getattr(result, 'volume', None), 'price': getattr(result, 'price', None), 'estimate': preview}
@@ -328,7 +333,29 @@ def snapshot(sdk, policy, symbol, timeframe='M1', bar_count=300):
     def row(item, pending=False):
         return {'ticket': item.ticket, 'symbol': item.symbol, 'side': 'BUY' if item.type in (0, 2, 4, 6) else 'SELL', 'volume': item.volume_current if pending else item.volume, 'price_open': item.price_open, 'sl': item.sl, 'tp': item.tp, 'profit': getattr(item, 'profit', None), 'type': item.type, 'managed': isinstance(policy, BrokerPolicy) or item.magic == policy['magic']}
     identity(sdk, policy, read=True)
-    return {'status': 'ready', 'reason': 'demo_ready', 'mode': policy['mode'] if isinstance(policy, BrokerPolicy) else 'demo', 'execution_enabled': policy.get('read_only') is not True, 'account': {key: getattr(account, key) for key in ('server', 'currency', 'balance', 'equity', 'margin', 'margin_free', 'trade_mode', *(['leverage'] if isinstance(policy, BrokerPolicy) else []))} | {'login': str(account.login)}, 'symbols': policy['symbols'], 'symbol': symbol, 'timeframe': timeframe, 'quote': {'bid': quote.bid, 'ask': quote.ask, 'time_msc': quote.time_msc}, 'instrument': {'symbol':symbol, 'asset_class':'fx' if info.trade_calc_mode in (0,5) else 'other', 'tick_size': info.trade_tick_size, 'point': info.point, 'digits': info.digits, 'quantity_min': info.volume_min, 'quantity_max': info.volume_max, 'quantity_step': info.volume_step, 'stops_level': info.trade_stops_level, 'freeze_level': info.trade_freeze_level}, 'positions': [row(p) for p in positions], 'orders': [row(p, True) for p in orders], 'bars': [{'timestamp': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(int(r['time']))), **{key: float(r[key]) for key in ('open', 'high', 'low', 'close')}, 'volume': int(r['tick_volume'])} for r in rates], 'policy': {'source':'broker', 'max_quote_age_ms':policy['max_quote_age_ms']} if isinstance(policy, BrokerPolicy) else {key: policy[key] for key in ('max_risk_amount', 'max_risk_pct', 'max_positions', 'max_volume', 'max_quote_age_ms', 'cost_buffer_per_lot')}}
+    result = {'status': 'ready', 'reason': 'demo_ready', 'mode': policy['mode'] if isinstance(policy, BrokerPolicy) else 'demo', 'execution_enabled': policy.get('read_only') is not True, 'account': {key: getattr(account, key) for key in ('server', 'currency', 'balance', 'equity', 'margin', 'margin_free', 'trade_mode', *(['leverage'] if isinstance(policy, BrokerPolicy) else []))} | {'login': str(account.login)}, 'symbols': policy['symbols'], 'symbol': symbol, 'timeframe': timeframe, 'quote': {'bid': quote.bid, 'ask': quote.ask, 'time_msc': quote.time_msc}, 'instrument': {'symbol':symbol, 'asset_class':'fx' if info.trade_calc_mode in (0,5) else 'other', 'tick_size': info.trade_tick_size, 'point': info.point, 'digits': info.digits, 'quantity_min': info.volume_min, 'quantity_max': info.volume_max, 'quantity_step': info.volume_step, 'stops_level': info.trade_stops_level, 'freeze_level': info.trade_freeze_level}, 'positions': [row(p) for p in positions], 'orders': [row(p, True) for p in orders], 'bars': [{'timestamp': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(int(r['time']))), **{key: float(r[key]) for key in ('open', 'high', 'low', 'close')}, 'volume': int(r['tick_volume'])} for r in rates], 'policy': {'source':'application', 'profile':'managed_account', 'max_quote_age_ms':policy['max_quote_age_ms']} if isinstance(policy, BrokerPolicy) else {'source':'application', 'profile':'bounded_demo', **{key: policy[key] for key in ('max_risk_amount', 'max_risk_pct', 'max_positions', 'max_volume', 'max_quote_age_ms', 'cost_buffer_per_lot')}}}
+    terminal = sdk.terminal_info()
+    if terminal is None:
+        deny('demo_disconnected')
+    result['broker_state'] = {
+        'source': 'mt5', 'observed_at_msc': int(time.time() * 1000),
+        'account': {'trade_allowed': account.trade_allowed, 'trade_expert': account.trade_expert},
+        'terminal': {'connected': terminal.connected, 'trade_allowed': terminal.trade_allowed, 'tradeapi_disabled': terminal.tradeapi_disabled},
+        'symbol': {'trade_mode': info.trade_mode, 'order_mode': info.order_mode},
+        # Python's current adapter has no session-window contract. Do not infer it from tick age.
+        'session': {'state': 'unknown', 'reason': 'session_schedule_unavailable'},
+    }
+    result['capabilities_source'] = 'application'
+    result['execution_enabled_source'] = 'application'
+    stamp, observed = quote.time_msc, int(time.time() * 1000)
+    valid_time = type(stamp) in (int, float) and math.isfinite(stamp) and 0 < stamp <= 8640000000000000
+    age = observed - stamp if valid_time else None
+    result['data_quality'] = {
+        'source': 'application', 'quote_source': 'mt5', 'clock': 'host_utc',
+        'observed_at_msc': observed, 'quote_age_ms': age,
+        'quote_status': 'invalid' if not valid_time else 'future' if age < -1000 else 'stale' if age > policy['max_quote_age_ms'] else 'fresh',
+    }
+    return result
 
 
 def reconcile(sdk, policy, command, submitted_at, previous):

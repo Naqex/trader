@@ -79,6 +79,27 @@ not advertise execution permission. Full chart reads use the same identity and
 generation binding; read-only charts return all action capabilities as false.
 The browser does not infer trading permission from an account being Demo or Real.
 
+### Trading-state provenance
+
+Trading snapshots expose `broker_state` (raw account/terminal permission flags,
+symbol `trade_mode`/`order_mode`, and observation time), `data_quality` (MT5 quote
+timestamp checked against the application host's UTC clock), and `policy`
+(`source: application`, `profile: managed_account` or `bounded_demo`). Derived
+`capabilities` and `execution_enabled` are application admission decisions; their
+source metadata does not promise that the broker will accept an order.
+
+The current adapter has no session-window contract, so the session is explicitly
+unknown. Old quotes do not establish that a market is closed. The unchanged
+five-second quote-age gate is an application limit. Broker responses 10017, 10018,
+10021 and 10042–10044 map to their explicit MT5 rejection reasons; other responses
+retain the existing generic/unknown handling and raw send retcode.
+
+Existing warm workers load this module only at startup. Until an approved
+reconnection, UI accepts their older `policy.source: broker` shape as the managed
+profile, labels the age gate as application policy, and shows absent raw flags as
+unknown. No new permission, automatic send retry or change to execution guards
+is introduced. The separate `bounded_demo` risk and mandatory-SL rules remain.
+
 The [Live-flow audit](../evidence/live-flow-audit-20261023/CHECKPOINT.md) records
 read/trade isolation, lazy-loading, locale and journal-link regression evidence.
 

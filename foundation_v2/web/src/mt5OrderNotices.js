@@ -4,7 +4,7 @@ import { demoReason, finalDemoReceipt, positive } from './liveTradingModel.js'
 export function mt5OrderNotice(receipt, command = {}) {
   const context = [command.symbol, command.ticket ? `#${command.ticket}` : '', receipt.retcode != null ? `MT5 ${receipt.retcode}` : ''].filter(Boolean).join(' · ')
   if (!finalDemoReceipt(receipt)) return { tone:'error', title:'Chưa rõ kết quả', message:'Chưa rõ kết quả. Đối soát MT5 trước khi gửi lệnh khác.' }
-  if (receipt.status === 'rejected') return { tone:'error', title:'MT5 đã từ chối yêu cầu.', message:[context, receipt.reason ? demoReason(receipt.reason) : ''].filter(Boolean).join(' · ') }
+  if (receipt.status === 'rejected') return { tone:'error', title:'MT5 đã từ chối yêu cầu.', message:[context, receipt.reason ? demoReason(receipt.reason,receipt.retcode) : ''].filter(Boolean).join(' · ') }
   const action = command.action || receipt.action
   const provenProtection = receipt.reason === 'demo_reconciled_protection_active'
   const provenCancel = receipt.reason === 'demo_reconciled_cancelled'

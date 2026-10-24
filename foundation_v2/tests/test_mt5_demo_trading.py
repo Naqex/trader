@@ -80,6 +80,43 @@ class DemoTradingTests(unittest.TestCase):
                 self.assertIn('commission',preview['risk_estimate_excludes'])
         self.sdk.order_send.assert_not_called()
 
+    def test_snapshot_separates_broker_facts_quote_quality_and_application_policy(self):
+        self.account.leverage=100
+        self.sdk.copy_rates_from_pos.return_value=[]
+        self.tick.time_msc=int(time.time()*1000)-7*3600000
+        self.info.trade_mode=3
+        result=demo.snapshot(self.sdk,demo.BrokerPolicy(self.policy),'EURUSD')
+        self.assertEqual(result['policy']['source'],'application')
+        self.assertEqual(result['policy']['profile'],'managed_account')
+        self.assertEqual(result['policy']['max_quote_age_ms'],2000)
+        self.assertEqual(result['broker_state']['source'],'mt5')
+        self.assertEqual(result['broker_state']['symbol']['trade_mode'],3)
+        self.assertTrue(result['broker_state']['account']['trade_allowed'])
+        self.assertEqual(result['broker_state']['session']['state'],'unknown')
+        self.assertEqual(result['data_quality']['source'],'application')
+        self.assertEqual(result['data_quality']['quote_source'],'mt5')
+        self.assertEqual(result['data_quality']['quote_status'],'stale')
+        self.assertTrue(result['execution_enabled'])
+        with self.assertRaisesRegex(demo.Denied,'demo_quote_stale'):
+            demo.prepare(self.sdk,demo.BrokerPolicy(self.policy),self.command)
+        self.sdk.order_send.assert_not_called()
+        self.sdk.order_check.assert_not_called()
+
+    def test_broker_closed_market_and_side_restrictions_are_not_inferred_from_quote_age(self):
+        for retcode,reason in demo.BROKER_REASONS.items():
+            with self.subTest(retcode=retcode):
+                self.sdk.order_check.return_value=NS(retcode=retcode)
+                with self.assertRaisesRegex(demo.Denied,'^'+reason+'$'):
+                    demo.prepare(self.sdk,self.policy,self.command)
+                self.sdk.order_send.assert_not_called()
+                self.sdk.order_check.return_value=NS(retcode=0)
+                self.sdk.order_send.return_value=NS(retcode=retcode)
+                result=self.execute()
+                self.assertEqual(result['reason'],reason)
+                self.assertEqual(result['retcode'],retcode)
+                self.assertEqual(result['status'],'rejected')
+                self.sdk.order_send.reset_mock()
+
     def test_managed_connection_revoked_immediately_before_send_never_sends(self):
         policy=demo.BrokerPolicy(self.policy)
         def revoked():

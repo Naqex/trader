@@ -1,9 +1,23 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { DEMO_DRAFT, tradingReady, tradingBlockReason, demoDraftError, demoIntent, previewMatches, decodeDemoSnapshot, finalDemoReceipt } from '../src/liveTradingModel.js'
+import { DEMO_DRAFT, tradingReady, tradingBlockReason, demoDraftError, demoIntent, previewMatches, decodeDemoSnapshot, finalDemoReceipt, managedBrokerRules, quoteQuality, demoReason } from '../src/liveTradingModel.js'
 const now = 1700000000000
 const ready = {status:'ready',mode:'demo',execution_enabled:true,account:{login:'123',server:'Test',trade_mode:'demo'},policy:{max_quote_age_ms:5000},quote:{bid:1.1,ask:1.1002,time_msc:now},bars:[],positions:[],orders:[]}
 const spec = {quantity_min:0.01,quantity_max:10,quantity_step:0.01}
+
+test('application freshness policy stays distinct from broker permissions and session state',()=>{
+ const payload={...ready,policy:{source:'application',profile:'managed_account',max_quote_age_ms:5000},broker_state:{source:'mt5',session:{state:'unknown'}}}
+ assert.equal(managedBrokerRules(payload),true)
+ assert.equal(managedBrokerRules({...ready,policy:{source:'broker'}}),true)
+ assert.equal(managedBrokerRules({...ready,policy:{source:'application',profile:'bounded_demo'}}),false)
+ assert.equal(quoteQuality(payload,now).state,'fresh')
+ assert.equal(quoteQuality(payload,now+7000).state,'stale')
+ assert.equal(quoteQuality({...payload,quote:{...payload.quote,time_msc:now+2000}},now).state,'future')
+ assert.equal(quoteQuality({...payload,quote:{...payload.quote,time_msc:1e20}},now).state,'invalid')
+ assert.equal(payload.broker_state.session.state,'unknown')
+ assert.match(demoReason('demo_broker_rejected',10018),/MT5 xác nhận thị trường/)
+ assert.doesNotMatch(demoReason('demo_quote_stale',10018),/MT5 xác nhận thị trường/)
+})
 test('permission, account mode, quote age and crossed market fail closed',()=>{
  assert.equal(tradingReady(ready,now),true)
  for(const payload of [{...ready,execution_enabled:false},{...ready,mode:'live'},{...ready,account:{...ready.account,trade_mode:'real'}},{...ready,quote:{...ready.quote,time_msc:now-5001}},{...ready,quote:{...ready.quote,time_msc:now+1001}},{...ready,quote:{...ready.quote,bid:1.2}}]) assert.equal(tradingReady(payload,now),false)

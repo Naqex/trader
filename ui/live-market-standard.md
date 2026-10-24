@@ -29,6 +29,16 @@ Only advertised per-action capabilities enable position actions. See
 
 UI fixture screenshots are explicitly synthetic and do not prove broker execution.
 
+Trading conditions separate three sources: raw MT5 account/terminal permissions
+and symbol flags; quote quality calculated against the host clock; and application
+send policy. The five-second quote-age limit is application policy, not a broker
+session signal. Without a session schedule the session remains unknown. Only an
+actual MT5 check/send retcode can report a broker rejection such as market closed.
+Stale-price toasts appear on blocked trading attempts, never merely on entry,
+reload or repeated snapshots. Buy/Sell stays enabled for valid past quotes, but
+stale attempts show a warning without reaching preview or send. Order drafts
+remain editable through the order ticket.
+
 ## Ownership and presentation
 
 - `testing-standard.css` explicitly opts Live into Testing typography, control
