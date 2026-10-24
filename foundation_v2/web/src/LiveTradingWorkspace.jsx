@@ -15,6 +15,7 @@ import { readDemoTrading, previewDemoOrder, commandDemoOrder, reconcileDemoOrder
 import { retainLiveChart, watchLiveMarket } from './liveMarketStream.js'
 import Mt5SymbolPicker from './Mt5SymbolPicker.jsx'
 import { mt5QuickDraft } from './mt5QuickOrder.js'
+import { mt5OrderNotice } from './mt5OrderNotices.js'
 import { protectionPrice } from './orderProtection.js'
 import OrderProtectionSection from './OrderProtectionSection.jsx'
 import { DEMO_DRAFT, DEMO_TIMEFRAMES, demoIdentity, demoDraftError, demoIntent, tradingReady, tradingBlockReason, previewMatches, demoReason, finalDemoReceipt } from './liveTradingModel.js'
@@ -56,6 +57,7 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
   const [busy,setBusy] = useState(false), running = useRef(false), [notice,setNotice] = useState('')
   const [pending,setPending] = useState(() => recoverPending(receiptKey)), [confirmation,setConfirmation] = useState(null)
   const [ledgerEvent,setLedgerEvent] = useState({tab:'positions',sequence:0})
+  const [dismissedState,setDismissedState] = useState(null), reportedReceipts = useRef(new Set())
   const snapshot = read.scope === scope ? read.payload : null
   const chartSnapshot = read.chartScope === chartScope ? read.chart : null
   const unresolved = pending || snapshot?.requests?.find(item=>item.status==='unknown'||item.requires_reconciliation===true)
@@ -64,6 +66,9 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
   const marketReady = !demoPreview && read.status === 'ready' && tradingReady(snapshot,now)
   const canAct = !demoPreview && read.status === 'ready' && tradingReady(snapshot,now,true) && !busy && !unresolved
   const paused = snapshot?.paused === true
+  const staleDraft = !demoPreview && read.status==='ready' && tradingBlockReason(snapshot,now,true)==='demo_quote_stale'
+    && Number.isFinite(new Date(snapshot?.quote?.time_msc).getTime()) && Number(snapshot?.quote?.time_msc)>0 && now>=Number(snapshot?.quote?.time_msc) && !busy && !unresolved
+  const canDraft = canAct || staleDraft
   const intent = identity && activeSymbol ? demoIntent(snapshot,activeSymbol,draft) : null
   const validPreview = intent && previewMatches(checked,intent,now)
   const instrument = snapshot?.instrument && {...snapshot.instrument,quantity_max:Math.min(snapshot.instrument.quantity_max,snapshot.policy?.max_volume||Infinity)}
@@ -125,9 +130,16 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
     if (!finalReceipt(receipt)) return
     try {sessionStorage.removeItem(receiptKey)} catch {return}
     setPending(null)
-    setNotice(receipt.status === 'rejected' ? 'MT5 đã từ chối yêu cầu.' : 'Đã nhận kết quả đối soát từ MT5.')
+    reportReceipt(receipt,pending)
   },[snapshot,pending,receiptKey])
-  useEffect(()=>{if(notice&&panel!=='order')notify?.(notice,notice==='Đã nhận kết quả đối soát từ MT5.'?'success':'error')},[notice,panel,notify])
+  useEffect(()=>{if(notice&&panel!=='order'){notify?.(notice,'error');setNotice('')}},[notice,panel,notify])
+  function reportReceipt(receipt,command) {
+    const key=`${receiptKey}:${receipt.request_id || command.request_id}:${receipt.status}`
+    if(reportedReceipts.current.has(key))return
+    reportedReceipts.current.add(key)
+    if(reportedReceipts.current.size>100)reportedReceipts.current.delete(reportedReceipts.current.values().next().value)
+    notify?.(mt5OrderNotice(receipt,command))
+  }
   const change = (key,value) => {setDraft(previous=>({...previous,[key]:value}));setChecked(null);setNotice('')}
   const route = patch => {
     const next=new URLSearchParams(query)
@@ -141,6 +153,7 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
     setChecked(null);setNotice('');setPanel('order')
   }
   const quickOrder = (side,quantity,preset) => {
+    if (staleDraft) {setDismissedState(null);return}
     if (!canAct || paused || !capability('place')) return
     setChecked(null)
     try { setDraft(mt5QuickDraft(snapshot,side,quantity,preset));setNotice('');setPanel('order') }
@@ -154,6 +167,7 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
 
   const checkOrder = async event => {
     event.preventDefault()
+    if (staleDraft) {setPanel(null);setChecked(null);setDismissedState(null);return}
     if (!canAct || paused || error || !intent || running.current) return
     running.current=true; setBusy(true);setNotice('');setChecked(null)
     const origin=scope, key=JSON.stringify(intent)
@@ -178,7 +192,7 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
       const receipt=await commandDemoOrder(workspace,command)
       if (finalReceipt(receipt)) {
         sessionStorage.removeItem(receiptKey)
-        if(currentScope.current===origin){setPending(null);setLedgerEvent(value=>({tab:'requests',sequence:value.sequence+1}));setNotice(receipt.status==='rejected'?'MT5 đã từ chối yêu cầu.':'');if(receipt.status!=='rejected'){setPanel(null);notify?.(receipt.status==='filled'?'MT5 đã khớp lệnh.':receipt.status==='accepted'?'MT5 đã tiếp nhận yêu cầu.':'MT5 đã hoàn tất yêu cầu.','success')}}
+        if(currentScope.current===origin){setPending(null);setLedgerEvent(value=>({tab:'requests',sequence:value.sequence+1}));setNotice('');setPanel(null);reportReceipt(receipt,command)}
       } else if(currentScope.current===origin) setNotice('Chưa rõ kết quả. Đối soát MT5 trước khi gửi lệnh khác.')
     } catch(error) {
       // A definite validation rejection is safe; transport/timeout outcomes stay pending.
@@ -197,7 +211,7 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
       const receipt=await reconcileDemoOrder(workspace,unresolved.request_id,connectionId)
       if (currentScope.current!==origin) return
       if(finalReceipt(receipt)) {
-        sessionStorage.removeItem(receiptKey);setPending(null);setNotice('Đã nhận kết quả đối soát từ MT5.')
+        sessionStorage.removeItem(receiptKey);setPending(null);setNotice('');reportReceipt(receipt,unresolved)
       } else setNotice('Chưa rõ kết quả. Đối soát MT5 trước khi gửi lệnh khác.')
     } catch(error) {if(currentScope.current===origin)setNotice(demoReason(error.message))}
     finally {running.current=false;setBusy(false);if(currentScope.current===origin)setRefresh(value=>value+1)}
@@ -226,6 +240,9 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
     : t('Giá cũ: tạm khóa gửi lệnh. Báo giá cuối: {time} · {count} {unit} trước.',{time:new Intl.DateTimeFormat(locale,{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',timeZoneName:'short'}).format(quoteTime),count:fmt(Math.floor(Math.max(0,quoteAge)/quoteUnit),'',0),unit:t(quoteUnit===3600000?'giờ':quoteUnit===60000?'phút':'giây')})
     : demoReason('demo_quote_stale')
   const reason = demoPreview ? 'Gửi lệnh không khả dụng trong chế độ xem thử.' : read.status==='loading' ? 'Đang đọc tài khoản MT5…' : resetSymbol ? demoReason('demo_symbol_denied') : read.status==='error' ? 'Mất kết nối dữ liệu giao dịch. Đang giữ ảnh chụp trước đó.' : !chartSurface && snapshot?.summary ? '' : !marketReady ? blockReason==='demo_quote_stale'?quoteNotice:demoReason(blockReason) : ''
+  const quoteState = blockReason==='demo_quote_stale' ? !Number.isFinite(new Date(quoteTime).getTime()) || quoteTime<=0 ? 'invalid' : quoteAge<0 ? 'future' : 'past' : ''
+  const stateKey=reason||paused||unresolved ? `${chartScope}:${read.status}:${unresolved?.request_id || (paused?'paused':`${blockReason}:${quoteState}`)}` : ''
+  useEffect(()=>{setDismissedState(null)},[stateKey])
   if (!chartSurface) return <LiveTradingOverview workspace={workspace} query={accountQuery} snapshot={snapshot} status={read.status} reason={unresolved ? 'Chưa rõ kết quả. Đối soát MT5 trước khi gửi lệnh khác.' : reason} symbol={activeSymbol} timeframe={timeframe} onRefresh={()=>setRefresh(value=>value+1)} onResetSymbol={resetSymbol}/>
   const fullscreen=()=>{if(document.fullscreenElement)document.exitFullscreen?.();else document.documentElement.requestFullscreen?.()}
   const changeInterval=value=>{const next=Object.keys(DEMO_TIMEFRAMES).find(key=>replayResolution(DEMO_TIMEFRAMES[key])===value);if(next&&next!==timeframe)route({mt5_timeframe:next})}
@@ -234,7 +251,7 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
   return <Suspense fallback={<TestingSkeleton label="Đang tải biểu đồ…" />}><LiveChartSurface objectsOpen={panel==='objects'} headerHeight={headerSlots?.headerHeight || 38}>
     <LegacyChartHeader marketMode="live" controls={headerSlots} symbol={chartSymbol} name={`MT5 · ${snapshot?.account?.login || chartSnapshot?.account?.login || 'MT5'}`} backHref={liveTradingHref(workspace,accountQuery)} theme={theme} onTheme={()=>applyAppearance({...appearance,theme:theme==='dark'?'light':'dark'})} onOpenTool={openTool} onFullscreen={fullscreen}/>
     {!headerSlots && <header className="live-terminal-toolbar"><a href={liveTradingHref(workspace,accountQuery)} aria-label={t('Trở về tổng quan MT5')}><ChartIcon name="arrow-left"/></a><strong>{chartSymbol || 'MetaTrader'}</strong><FxSelect label="Khung thời gian MT5" value={timeframe} options={Object.keys(DEMO_TIMEFRAMES).map(value=>({value,label:value}))} onChange={value=>route({mt5_timeframe:value})}/><button type="button" className="live-text-action" onClick={event=>openTool('data',event.currentTarget)}>{t('Chọn mã giao dịch MT5')}</button></header>}
-    <NotificationSlot>{(reason || paused || unresolved) && <section className={`wm-notification is-blocking live-terminal-state ${read.status==='error'||unresolved?'is-error':''}`} role={read.status==='error'||unresolved?'alert':'status'}><TestingIcon kind="info" /><p>{unresolved?t('Chưa rõ kết quả. Đối soát MT5 trước khi gửi lệnh khác.'):t(reason || 'Đã tạm dừng mở lệnh mới.')}</p>{unresolved && <button className="wm-notification-action" type="button" disabled={busy} onClick={reconcile}>{t(busy?'Đang đối soát…':'Đối soát')}</button>}{resetSymbol && <button type="button" className="wm-notification-action" onClick={resetSymbol}>{t('Tải lại danh sách mã')}</button>}</section>}</NotificationSlot>
+    <NotificationSlot>{stateKey && dismissedState!==stateKey && <section className={`wm-notification is-blocking live-terminal-state ${read.status==='error'||unresolved?'is-error':''}`} role={read.status==='error'||unresolved?'alert':'status'}><TestingIcon kind="info" /><p>{unresolved?t('Chưa rõ kết quả. Đối soát MT5 trước khi gửi lệnh khác.'):t(reason || 'Đã tạm dừng mở lệnh mới.')}</p>{unresolved && <button className="wm-notification-action" type="button" disabled={busy} onClick={reconcile}>{t(busy?'Đang đối soát…':'Đối soát')}</button>}{resetSymbol && <button type="button" className="wm-notification-action" onClick={resetSymbol}>{t('Tải lại danh sách mã')}</button>}<button type="button" aria-label={t('Đóng thông báo')} onClick={()=>setDismissedState(stateKey)}>×</button></section>}</NotificationSlot>
     <section className="replay-workspace live-terminal-main">
       <div className="replay-main live-terminal-market">
         <div className="live-terminal-chart chart-frame has-advanced-chart"><div className="chart-canvas">
@@ -249,7 +266,7 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
         </div></nav></div>
         {panel==='objects' && <aside className="replay-side" id="live-objects-panel" aria-label={t('Cây đối tượng chart')} onKeyDown={event=>{if(event.key==='Escape'){event.stopPropagation();setPanel(null);document.querySelector('[aria-controls="live-objects-panel"]')?.focus()}}}><header className="chart-dock-heading"><strong>{t('Cây đối tượng chart')}</strong><button type="button" className="replay-panel-close" aria-label={t('Đóng panel')} onClick={()=>{setPanel(null);document.querySelector('[aria-controls="live-objects-panel"]')?.focus()}}><ChartIcon name="close"/></button></header><Suspense fallback={<TestingSkeleton rows={2}/>}><LegacyObjectTree controls={headerSlots} symbol={activeSymbol}/></Suspense></aside>}
         <Mt5TradingBar connectionId={connectionId} workspace={workspace} scopeId={`${connectionId}:${identity}:${activeSymbol}`} snapshot={snapshot} positions={positions} instrument={instrument}
-          onQuickTrade={quickOrder} ledgerEvent={ledgerEvent} disabled={!canAct||paused||!capability('place')} analyticsHref={journalHref('analytics')} theme={theme}>
+          onQuickTrade={quickOrder} ledgerEvent={ledgerEvent} disabled={!canDraft||paused||!capability('place')} analyticsHref={journalHref('analytics')} theme={theme}>
           {active => <Mt5Positions snapshot={snapshot} active={active} ledgerEvent={ledgerEvent} canAct={canAct} capability={capability} onAction={openAction} theme={theme}/>}
         </Mt5TradingBar>
       </div>
@@ -265,14 +282,14 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
           {marketReady && error && (draft.quantity!==''||draft.stopLoss!=='') && <p className="live-muted" role="status">{t(error)}</p>}
           {checked && <dl className="live-terminal-values"><div><dt>{t('Risk tới SL')}</dt><dd>{money(checked.value.estimated_stop_risk)}</dd></div><div><dt>{t('Margin cần thiết')}</dt><dd>{money(checked.value.margin_required)}</dd></div></dl>}
           <footer><button type="button" onClick={()=>setPanel(null)}>{t('Hủy')}</button>
-            <button type="submit" disabled={!canAct||paused||!capability('place')||Boolean(error)}>{t(busy?'Đang kiểm tra…':'Kiểm tra lệnh')}</button>
+            <button type="submit" disabled={!canDraft||paused||!capability('place')||Boolean(error)}>{t(busy?'Đang kiểm tra…':'Kiểm tra lệnh')}</button>
             <button className="legacy-order-save" type="button" disabled={!canAct||paused||!capability('place')||!validPreview} onClick={()=>openAction('place',null,'Xác nhận lệnh MT5')}>{t('Xem và xác nhận lệnh')}</button>
           </footer>
         </form>
         {notice && <p className="live-terminal-notice" role="status">{t(notice)}</p>}
       </div></LegacyModal>}
     </section>
-    {panel==='conditions' && <LegacyModal label={t('Điều kiện giao dịch')} theme={theme} onClose={()=>setPanel(null)}><div className="live-terminal-confirm-body"><Suspense fallback={<TestingSkeleton rows={2}/>}><Mt5TradingConditions snapshot={snapshot} stale={read.status!=='ready'}/></Suspense><button type="button" className="wm-button" disabled={!canAct} onClick={()=>openAction(paused?'resume':'pause',{},paused?'Tiếp tục mở lệnh mới':'Tạm dừng mở lệnh mới')}>{t(paused?'Tiếp tục mở lệnh mới':'Tạm dừng mở lệnh mới')}</button></div></LegacyModal>}
+    {panel==='conditions' && <LegacyModal label={t('Điều kiện giao dịch')} theme={theme} onClose={()=>setPanel(null)}><div className="live-terminal-confirm-body"><Suspense fallback={<TestingSkeleton rows={2}/>}><Mt5TradingConditions snapshot={snapshot} stale={read.status!=='ready'}/></Suspense>{unresolved&&<button className="wm-button" type="button" disabled={busy} onClick={reconcile}>{t(busy?'Đang đối soát…':'Đối soát')}</button>}<button type="button" className="wm-button" disabled={!canAct} onClick={()=>openAction(paused?'resume':'pause',{},paused?'Tiếp tục mở lệnh mới':'Tạm dừng mở lệnh mới')}>{t(paused?'Tiếp tục mở lệnh mới':'Tạm dừng mở lệnh mới')}</button></div></LegacyModal>}
     {symbolAnchor && <Mt5SymbolPicker anchor={symbolAnchor} theme={theme} symbols={snapshot?.symbols||chartSnapshot?.symbols||EMPTY} symbol={chartSymbol} status={read.status==='ready'&&snapshot?.status==='ready'?'ready':'unavailable'} onSelect={route} onClose={()=>setSymbolAnchor(null)}/>}
     {confirmation && <LegacyModal label={t(confirmation.label)} theme={theme} className="live-terminal-confirm" onClose={()=>{if(!busy)setConfirmation(null)}}>
       <div className="live-terminal-confirm-body"><p><strong>{t(snapshot?.mode==='real'?'Real':'Demo')} · #{snapshot?.account?.login}</strong><br/>{snapshot?.account?.server}</p>

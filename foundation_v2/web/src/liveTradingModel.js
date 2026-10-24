@@ -65,6 +65,7 @@ export const DEMO_REASONS = Object.freeze({
   demo_stop_direction_or_distance:'Stop loss sai hướng hoặc quá gần giá MT5.', demo_target_direction_or_distance:'Take profit sai hướng hoặc quá gần giá MT5.',
   demo_risk_limit:'Lệnh vượt giới hạn rủi ro đã cấu hình.', demo_existing_risk_unknown:'Chưa xác định được rủi ro của các vị thế đang mở.',
   demo_margin_insufficient:'Không đủ margin khả dụng.', demo_order_check_rejected:'MT5 từ chối bước kiểm tra lệnh.',
+  demo_broker_rejected:'MT5 từ chối yêu cầu giao dịch. Kiểm tra mã phản hồi của broker.',
   demo_ticket_not_managed:'Lệnh này không do luồng giao dịch của ứng dụng quản lý.', demo_partial_close_unsupported:'Chưa hỗ trợ đóng một phần vị thế.',
   demo_order_type_unsupported:'Hiện chỉ hỗ trợ lệnh Market.', demo_hedging_required:'Luồng demo hiện yêu cầu tài khoản Hedging.',
   demo_unresolved_request:'Chưa rõ kết quả. Đối soát MT5 trước khi gửi lệnh khác.', demo_request_conflict:'Mã yêu cầu đã dùng cho một thao tác khác.',

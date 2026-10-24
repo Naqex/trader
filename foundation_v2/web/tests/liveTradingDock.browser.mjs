@@ -9,7 +9,7 @@ const output=process.env.TW_LIVE_UI_EVIDENCE || 'E:/BACKUP-TRADINGWORKSPACE/live
 await mkdir(output,{recursive:true})
 const copy=JSON.parse(await readFile(new URL('../src/testing-copy.json',import.meta.url))),vi=key=>copy[key]?.vi || key
 const first='492ec8a5-3938-41a3-8a26-8c0f7f59ed43',second='492ec8a5-3938-41a3-8a26-8c0f7f59ed44'
-let phase='ready',populated=false,requests=[],mode='demo',holdCommand=null,commandStatus='unknown'
+let phase='ready',populated=false,requests=[],mode='demo',holdCommand=null,commandStatus='unknown',receiptFields={}
 const sockets=new Set(),report={fixture:true,brokerCalls:0,cases:[],errors:[],blocked:[],previews:[],commands:[]}
 function snapshot(url) {
   const symbol=url.searchParams.get('symbol')||'EURUSDm',connection=url.searchParams.get('connection_id')||first
@@ -54,7 +54,7 @@ try {
       if(req.method()==='POST'&&url.pathname==='/api/v2/live/trading/commands') {
         const body=req.postDataJSON();report.commands.push(body)
         if(holdCommand)await holdCommand
-        const receipt={request_id:body.request_id,action:body.action,status:commandStatus,requires_reconciliation:commandStatus==='unknown'}
+        const receipt={request_id:body.request_id,action:body.action,status:commandStatus,requires_reconciliation:commandStatus==='unknown',...receiptFields}
         requests=[receipt];return route.fulfill({json:receipt})
       }
       if(!['GET','HEAD','OPTIONS'].includes(req.method())){report.blocked.push({path:url.pathname,method:req.method()});return route.abort()}
@@ -87,6 +87,19 @@ try {
     const protect=page.getByRole('dialog',{name:'Sửa SL/TP',exact:true});await protect.getByRole('spinbutton',{name:vi('Stop loss'),exact:true}).waitFor()
     phase='stale';await page.locator('.live-terminal-state').waitFor();assert.equal(await protect.getByRole('spinbutton',{name:vi('Stop loss'),exact:true}).isDisabled(),true)
     phase='ready';await page.locator('.live-terminal-state').waitFor({state:'hidden'});await page.keyboard.press('Escape')
+    // Stale quotes block submission, while draft controls stay usable and errors remain dismissible.
+    await page.getByRole('button',{name:'Thu gọn danh sách lệnh',exact:true}).click()
+    phase='stale';await page.locator('.live-terminal-state').waitFor()
+    const previewCount=report.previews.length,commandCount=report.commands.length
+    await page.locator('.live-terminal-state').getByRole('button',{name:'Đóng thông báo',exact:true}).click()
+    assert.equal(await bar.locator('.buy').isDisabled(),false)
+    await bar.locator('.buy').click();await page.locator('.live-terminal-state').waitFor()
+    await page.getByRole('button',{name:'Lệnh mới',exact:true}).click()
+    const staleOrder=page.getByRole('dialog',{name:'Lệnh mới',exact:true})
+    await staleOrder.getByRole('button',{name:'Kiểm tra lệnh',exact:true}).click();await staleOrder.waitFor({state:'hidden'})
+    await page.locator('.live-terminal-state').waitFor();assert.equal(report.previews.length,previewCount);assert.equal(report.commands.length,commandCount)
+    phase='ready';await page.locator('.live-terminal-state').waitFor({state:'hidden'})
+    await page.getByRole('button',{name:'Mở danh sách lệnh',exact:true}).click()
     if(width===1920) {
       await panel.locator('.mt5-ticket-link').click();await detail.getByRole('button',{name:'Sửa SL/TP',exact:true}).click()
       await protect.waitFor();let release
@@ -97,11 +110,34 @@ try {
       await protect.waitFor({state:'hidden'});await detail.waitFor({state:'hidden'})
       assert.equal(await page.getByRole('tab',{name:'Yêu cầu',exact:true}).getAttribute('aria-selected'),'true')
       assert.deepEqual(Object.keys(report.commands.at(-1)).sort(),['mode','connection_id','account_id','server','ticket','symbol','stop_loss','take_profit','action','request_id'].sort())
-      commandStatus='rejected';await page.getByRole('tab',{name:'Vị thế đang mở',exact:true}).click()
+      commandStatus='rejected';receiptFields={reason:'demo_margin_insufficient',retcode:10019};await page.getByRole('tab',{name:'Vị thế đang mở',exact:true}).click()
       await panel.getByRole('button',{name:'Sửa SL/TP',exact:true}).click();await protect.getByRole('button',{name:'Xác nhận',exact:true}).click()
-      await page.locator('.wm-notification.is-error').filter({hasText:vi('MT5 đã từ chối yêu cầu.')}).waitFor()
-      await page.keyboard.press('Escape')
-      commandStatus='unknown'
+      const rejection=page.locator('.wm-notification.is-error').filter({hasText:vi('MT5 đã từ chối yêu cầu.')})
+      await rejection.waitFor();assert.match(await rejection.innerText(),/EURUSDm.*#123.*10019/)
+      await rejection.getByRole('button',{name:'Đóng thông báo',exact:true}).click()
+      await page.waitForTimeout(650);assert.equal(await rejection.count(),0)
+      await page.getByRole('tab',{name:'Vị thế đang mở',exact:true}).click()
+      commandStatus='filled';receiptFields={volume:0.03,price:1.10025}
+      await panel.getByRole('button',{name:'Đóng vị thế',exact:true}).click()
+      const closing=page.getByRole('dialog',{name:'Đóng vị thế MT5',exact:true})
+      await closing.getByRole('button',{name:'Xác nhận',exact:true}).click();await closing.waitFor({state:'hidden'})
+      await page.locator('.wm-notification').filter({hasText:vi('Đã đóng vị thế.')}).waitFor()
+      for(const status of ['filled','accepted']) {
+        commandStatus=status;receiptFields={volume:0.02,price:1.10025}
+        const draft=await order(page)
+        await draft.getByRole('button',{name:'Kiểm tra lệnh',exact:true}).click()
+        await draft.getByRole('button',{name:'Xem và xác nhận lệnh',exact:true}).click()
+        const sending=page.getByRole('dialog',{name:'Xác nhận lệnh MT5',exact:true})
+        await sending.getByRole('button',{name:'Gửi lệnh MT5',exact:true}).click();await sending.waitFor({state:'hidden'})
+        const notice=status==='filled'?page.locator('.wm-notification[data-order-status=executed]'):page.locator('.wm-notification').filter({hasText:vi('MT5 đã tiếp nhận yêu cầu.')})
+        await notice.waitFor()
+        if(status==='filled')assert.match(await notice.innerText(),/EURUSDm[\s\S]*0.02 lot[\s\S]*1.10025/)
+        else assert.equal(await page.locator('.wm-notification[data-order-status=executed]').count(),0)
+        await page.screenshot({path:`${output}/receipt-${status}.png`})
+        await notice.getByRole('button',{name:'Đóng thông báo',exact:true}).click()
+        await page.waitForTimeout(650);assert.equal(await notice.count(),0)
+      }
+      commandStatus='unknown';receiptFields={}
     }
     await page.screenshot({path:`${output}/positions-${width}-${theme}.png`})
     await page.getByRole('button',{name:'Thu gọn danh sách lệnh',exact:true}).click()
@@ -151,6 +187,12 @@ try {
       await page.waitForFunction(()=>document.querySelector('.legacy-trading-bar .buy')?.disabled===true)
       await page.reload();await page.locator('[data-chart-status=ready]').waitFor()
       assert.equal(await bar.locator('.buy').isDisabled(),true);assert.equal(report.commands.length,commandsBefore+1)
+      requests=[{...requests[0],status:'rejected',requires_reconciliation:false,reason:'demo_margin_insufficient',retcode:10019}]
+      const reconciled=page.locator('.wm-notification.is-error').filter({hasText:vi('MT5 đã từ chối yêu cầu.')})
+      await reconciled.waitFor();await ready(page)
+      assert.equal(await page.locator('.wm-notification.is-success').count(),0)
+      await reconciled.getByRole('button',{name:'Đóng thông báo',exact:true}).click()
+      await page.waitForTimeout(650);assert.equal(await reconciled.count(),0)
       requests=[];await page.evaluate(()=>sessionStorage.clear());mode='demo';await page.reload();await ready(page)
     }
     phase='readonly';await page.waitForFunction(()=>document.querySelector('.legacy-trading-bar .buy')?.disabled===true)

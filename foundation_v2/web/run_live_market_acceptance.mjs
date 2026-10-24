@@ -49,7 +49,11 @@ try{
  phase='stale';await page.locator('.live-terminal-state').filter({hasText:'Giá cũ: tạm khóa gửi lệnh'}).waitFor();assert.match(await page.locator('.live-terminal-state').innerText(),/6 giờ trước/);
  assert.equal(await page.locator('.wm-notifications .live-terminal-state').count(),1)
  const noticeBox=await page.locator('.live-terminal-state').boundingBox();assert.ok(noticeBox.x>=0&&noticeBox.x<width/2);assert.ok(noticeBox.y>470&&noticeBox.y+noticeBox.height<940);assert.ok(noticeBox.x+noticeBox.width<=width);assert.ok(noticeBox.y+noticeBox.height<=(await page.locator('.legacy-trading-bar').boundingBox()).y)
- assert.equal(await page.locator('.live-trading > .live-terminal-state').count(),0);assert.equal(await page.locator('.legacy-trading-bar button.buy').isDisabled(),true);await assert.doesNotReject(async()=>assert.deepEqual(await page.locator('.chart-canvas').boundingBox(),before));await page.screenshot({path:`${output}/stale-${width}-${theme}.png`})
+ assert.equal(await page.locator('.live-trading > .live-terminal-state').count(),0);assert.equal(await page.locator('.legacy-trading-bar button.buy').isDisabled(),false)
+ await page.locator('.live-terminal-state').getByRole('button',{name:'Đóng thông báo',exact:true}).click();await page.locator('.live-terminal-state').waitFor({state:'hidden'})
+ await page.waitForFunction(start=>Date.now()-start>1200,Date.now());assert.equal(await page.locator('.live-terminal-state').count(),0)
+ await page.locator('.legacy-trading-bar button.buy').click();await page.locator('.live-terminal-state').filter({hasText:'Giá cũ'}).waitFor();assert.equal(await page.getByRole('dialog',{name:'Lệnh mới',exact:true}).count(),0)
+ await assert.doesNotReject(async()=>assert.deepEqual(await page.locator('.chart-canvas').boundingBox(),before));await page.screenshot({path:`${output}/stale-${width}-${theme}.png`})
  phase='unavailable';await page.locator('.live-terminal-state').filter({hasText:'chưa sẵn sàng'}).waitFor();assert.equal(await page.locator('.legacy-trading-bar button.buy').isDisabled(),true);assert.equal(await page.locator('[data-chart-status="ready"]').count(),1)
  phase='ready';await page.locator('.live-terminal-state').waitFor({state:'hidden'});assert.equal(await page.locator('.legacy-trading-bar button.buy').isDisabled(),false);assert.deepEqual(await page.locator('.chart-canvas').boundingBox(),before);assert.equal(mounts,initialMounts);assert.equal(detaches,initialDetaches)
  await frame.locator('.legacy-symbol').click();const popup=page.getByRole('dialog',{name:'Chọn mã giao dịch MT5',exact:true}),search=popup.getByRole('searchbox');await search.waitFor();await search.evaluate(n=>new Promise(resolve=>requestAnimationFrame(()=>resolve(n===n.ownerDocument.activeElement)))) .then(value=>assert.equal(value,true))
@@ -69,7 +73,10 @@ try{
  assert.equal(new URL(page.url()).searchParams.get('mt5_symbol'),'GBPUSDm');assert.equal(mounts,timeframeMounts);assert.equal(detaches,timeframeDetaches)
  await frame.locator('.legacy-symbol').click();await popup.getByRole('searchbox').fill('XAU');phase='unavailable';await popup.getByRole('status').filter({hasText:'Đang kết nối lại'}).waitFor();assert.equal(await popup.getByRole('option').isDisabled(),true);await popup.getByRole('searchbox').press('Enter');assert.equal(await popup.count(),1)
  phase='ready';await popup.getByRole('option').waitFor();await popup.getByRole('searchbox').press('Escape');await popup.waitFor({state:'hidden'})
+ phase='stale';await page.locator('.live-terminal-state').waitFor()
+ await page.locator('.live-terminal-state').getByRole('button',{name:'Đóng thông báo',exact:true}).click()
  phase='future';await page.locator('.live-terminal-state').filter({hasText:'đi trước đồng hồ máy'}).waitFor();assert.equal(await page.locator('.legacy-trading-bar button.buy').isDisabled(),true)
+ await page.locator('.live-terminal-state').getByRole('button',{name:'Đóng thông báo',exact:true}).click()
  phase='invalid';await page.locator('.live-terminal-state').filter({hasText:'đã cũ hoặc lệch thời gian'}).waitFor();assert.equal(await page.locator('[data-chart-status="ready"]').count(),1)
  phase='empty';await page.locator('.live-terminal-state').waitFor({state:'hidden'});await frame.locator('.legacy-symbol').click();await popup.getByRole('status').filter({hasText:'Chưa có danh sách mã'}).waitFor();assert.equal(await popup.getByRole('option').count(),0);await popup.getByRole('searchbox').press('Escape');phase='ready'
 
