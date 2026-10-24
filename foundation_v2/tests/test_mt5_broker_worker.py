@@ -93,8 +93,9 @@ class WorkerTests(unittest.TestCase):
         session=self.session()
         session.context['requested_mode']='read_only'
         request={**self.request,'requested_mode':'read_only','operation':'snapshot'}
-        def snapshot(sdk,policy,symbol,timeframe):
+        def snapshot(sdk,policy,symbol,timeframe,bar_count):
             self.assertIs(policy['read_only'],True)
+            self.assertEqual(bar_count,300)
             return {'execution_enabled':False,'account':{}}
         with patch.object(worker.trading,'snapshot',side_effect=snapshot):
             result=session.handle(request)

@@ -47,6 +47,16 @@ workflow interpreter remain configured. The preserved scientific descriptor is
 the legacy descriptor is unchanged. Old-owned binaries were used for guarded stop
 before starting the new binary directory. See [chat receipt](../evidence/ai-chat-continuation-20261023/RECEIPT.md).
 
+The 24 October Live chart update runs API8010 from
+`E:/BACKUP-TRADINGWORKSPACE/live-chart-stability-20261024/rust-target/release`,
+retaining native/compact and the same scientific/legacy descriptors without a
+schema migration. API8010 and UI5180 were stopped before this restoration;
+the existing terminal was not restarted. `.runtime/api-platform` is now a
+junction to `E:/BACKUP-TRADINGWORKSPACE/live-chart-stability-20261024/runtime-api-platform`
+so canonical ownership paths remain valid while logs/manifests live on E:.
+See [Live chart receipt](../evidence/live-chart-stability-20261024/RECEIPT.md)
+for the deployed UI hash and read-only stream acceptance.
+
 The native flow is `React → Axum → native domain → PostgreSQL transaction and
 revision/receipt → HTTP response`. Research and downloads use bounded background
 execution. A successful quick market order is already filled at the current

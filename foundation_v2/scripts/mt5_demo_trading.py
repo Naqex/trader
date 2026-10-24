@@ -314,13 +314,15 @@ def execute(sdk, policy, command, before_send=lambda: None):
     return {'status': status, 'reason': reason, 'retcode': code, 'requires_reconciliation': code in (10008, 10010), 'order': getattr(result, 'order', None), 'deal': getattr(result, 'deal', None), 'volume': getattr(result, 'volume', None), 'price': getattr(result, 'price', None), 'estimate': preview}
 
 
-def snapshot(sdk, policy, symbol, timeframe='M1'):
+def snapshot(sdk, policy, symbol, timeframe='M1', bar_count=300):
     info, quote = instrument(sdk, policy, symbol, allow_stale=isinstance(policy, BrokerPolicy), read=True)
     account = identity(sdk, policy, read=True)
     positions, orders = inventory(sdk)
     if timeframe not in ('M1','M5','M15','H1','H4','D1'):
         deny('demo_timeframe_unsupported')
-    rates = sdk.copy_rates_from_pos(symbol, getattr(sdk, 'TIMEFRAME_' + timeframe), 0, 300)
+    if type(bar_count) is not int or not 1 <= bar_count <= 300:
+        deny('demo_bars_unavailable')
+    rates = sdk.copy_rates_from_pos(symbol, getattr(sdk, 'TIMEFRAME_' + timeframe), 0, bar_count)
     if rates is None:
         deny('demo_bars_unavailable')
     def row(item, pending=False):

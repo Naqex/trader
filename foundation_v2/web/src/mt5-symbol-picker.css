@@ -1,0 +1,10 @@
+.legacy-popover.mt5-symbol-picker { width:320px; padding:0; overflow:hidden; display:flex; flex-direction:column; }
+.mt5-symbol-search { display:flex; align-items:center; gap:8px; margin:10px; }
+.mt5-symbol-search > svg { width:18px; height:18px; flex:none; color:var(--menu-muted); }
+.mt5-symbol-timeframes { display:flex; padding:0 6px 8px; gap:2px; border-bottom:1px solid var(--menu-line); flex:none; }
+.mt5-symbol-timeframes button { flex:1; width:auto; justify-content:center; padding:4px; min-height:30px; font-size:11px; }
+.mt5-symbol-timeframes button[aria-pressed=true] { color:var(--project-action); background:var(--menu-hover); }
+.mt5-symbol-options { overflow:auto; min-height:0; max-height:280px; padding:6px; }
+.mt5-symbol-options button { justify-content:space-between; font-variant-numeric:tabular-nums; }
+.mt5-symbol-options button[aria-selected=true] { color:var(--project-action); }
+.mt5-symbol-picker > p { padding:10px 14px; margin:0; font-size:12px; color:var(--menu-muted); }

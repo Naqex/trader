@@ -245,6 +245,7 @@ pub(crate) mod tests {
             notion_oauth: Arc::new(crate::notion_oauth::NotionOAuthService::new(None).unwrap()),
             providers: crate::provider_routes::ProviderRuntime::load(std::path::PathBuf::from("."), crate::provider_routes::DownloadEngine::None).unwrap(),
             event_hub: crate::events::EventHub::default(),
+            market_hub: crate::demo_trading::market_stream::MarketHub::default(),
             draining: AtomicBool::new(false),
             rate_windows: Mutex::new(HashMap::new()),
             openapi_schema: None,

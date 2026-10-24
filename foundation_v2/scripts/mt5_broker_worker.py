@@ -94,7 +94,7 @@ class Session:
                                           symbols=names, max_quote_age_ms=5000, deviation_points=10, magic=1464685138, cost_buffer_per_lot=0)
             if operation == 'snapshot':
                 symbol = request.get('symbol') or next((s for s in ('EURUSD','EURUSDm','XAUUSD','XAUUSDm') if s in names), next((s.name for s in symbols if s.visible and s.name in names), names[0]))
-                result = trading.snapshot(self.sdk, policy, symbol, request.get('timeframe','M1'))
+                result = trading.snapshot(self.sdk, policy, symbol, request.get('timeframe','M1'), request.get('bar_count',300))
                 result['account']['trade_mode'] = mode
                 result['account_environment'] = mode
                 result['verified_permissions'] = {'read':True,'trade':not read_only}

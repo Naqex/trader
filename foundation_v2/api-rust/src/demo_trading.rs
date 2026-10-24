@@ -22,12 +22,14 @@ use std::{
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::sync::Mutex;
 use uuid::Uuid;
+pub(crate) mod market_stream;
 
 pub const ROUTES: &[(&str, &str)] = &[
     ("GET", "/api/v2/live/trading"),
     ("POST", "/api/v2/live/trading/preview"),
     ("POST", "/api/v2/live/trading/commands"),
     ("POST", "/api/v2/live/trading/reconcile"),
+    ("GET", "/api/v2/live/trading/events"),
 ];
 pub fn native(method: &str, path: &str) -> bool {
     ROUTES.contains(&(method, path))
@@ -38,6 +40,7 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route(ROUTES[1].1, post(preview))
         .route(ROUTES[2].1, post(command))
         .route(ROUTES[3].1, post(reconcile))
+        .route(ROUTES[4].1, get(market_stream::events))
 }
 fn error(status: StatusCode, reason: &str) -> ApiError {
     ApiError::detail(status, reason)
@@ -353,6 +356,12 @@ fn managed_record(row: &tokio_postgres::Row, allow_read: bool) -> Result<Managed
 fn locked(reason: &str) -> Value {
     json!({"status":"locked","reason":reason,"mode":"demo","execution_enabled":false,"account":null,"symbols":[],"symbol":null,"timeframe":"M1","quote":null,"instrument":null,"bars":[],"positions":[],"orders":[],"policy":null,"requests":[]})
 }
+fn read_failure(status: StatusCode, reason: &str) -> Value {
+    let mut value=locked(reason);
+    value["access_denied"]=json!(matches!(status,StatusCode::UNAUTHORIZED|StatusCode::FORBIDDEN)
+        || matches!(reason,"mt5_connection_not_available"|"mt5_connection_revoked"|"mt5_connection_changed"|"mt5_permissions_unverified"|"demo_identity_changed"|"demo_identity_mismatch"));
+    value
+}
 async fn control(state: &AppState, p: &Context) -> Result<(bool, bool), ApiError> {
     let conn = state.pool.get().await.map_err(|_| ApiError::database())?;
     let key = p.terminal_key();
@@ -376,6 +385,10 @@ async fn snapshot(
     Query(query): Query<HashMap<String, String>>,
 ) -> Result<Json<Value>, ApiError> {
     local_origin(&headers)?;
+    read_snapshot(&state, &scope, &query, 300).await.map(Json)
+}
+
+async fn read_snapshot(state: &AppState, scope: &Workspace, query: &HashMap<String, String>, bar_count: usize) -> Result<Value, ApiError> {
     let id = query
         .get("connection_id")
         .map(|v| {
@@ -389,16 +402,16 @@ async fn snapshot(
         .transpose()?;
     let p = match context(&state, &scope, id, true).await {
         Ok(p) => p,
-        Err(ApiError(_, value)) => {
-            return Ok(Json(locked(
+        Err(ApiError(status, value)) => {
+            return Ok(read_failure(status,
                 value["detail"]
                     .as_str()
                     .unwrap_or("mt5_connection_not_available"),
-            )));
+            ));
         }
     };
     if !state.native_runtime {
-        return Ok(Json(locked("demo_native_runtime_required")));
+        return Ok(locked("demo_native_runtime_required"));
     }
     if query.get("summary").map(String::as_str) == Some("true") {
         if let Context::Managed(m) = &p {
@@ -406,9 +419,9 @@ async fn snapshot(
             account["login"] = json!(m.login);
             account["server"] = json!(m.server);
             account["trade_mode"] = json!(m.environment);
-            return Ok(Json(json!({"status":"ready","mode":m.environment,"summary":true,
+            return Ok(json!({"status":"ready","mode":m.environment,"summary":true,
                 "connection_id":m.connection_id,"account":account,"captured_at_utc":m.cached["captured_at_utc"],
-                "execution_enabled":false,"requested_mode":m.requested_mode,"bars":[],"positions":[],"orders":[],"symbols":[]})));
+                "execution_enabled":false,"requested_mode":m.requested_mode,"bars":[],"positions":[],"orders":[],"symbols":[]}));
         }
     }
     let (paused, unknown) = control(&state, &p).await?;
@@ -429,15 +442,15 @@ async fn snapshot(
     let mut result = adapter_for(
         &state,
         &p,
-        p.input("snapshot", json!({"symbol":symbol,"timeframe":timeframe})),
+        p.input("snapshot", json!({"symbol":symbol,"timeframe":timeframe,"bar_count":bar_count})),
     )
     .await
     .unwrap_or_else(|reason| json!({"status":"unavailable","reason":reason}));
     if result["status"] != "ready" {
         let reason = result["reason"].as_str().unwrap_or("demo_unavailable");
-        let mut value = locked(reason);
+        let mut value = read_failure(StatusCode::LOCKED,reason);
         value["status"] = json!("unavailable");
-        return Ok(Json(value));
+        return Ok(value);
     }
     let conn = state.pool.get().await.map_err(|_| ApiError::database())?;
     let rows = conn.query("SELECT result FROM mt5_demo_requests WHERE workspace_id=$1 AND terminal_key=$2 ORDER BY created_at DESC LIMIT 50", &[&scope.workspace_id,&p.terminal_key()]).await.map_err(|_|ApiError::database())?;
@@ -461,7 +474,7 @@ async fn snapshot(
         });
     }
     result["capabilities"] = json!({"market":can_trade&&!paused&&!unknown,"limit":false,"stop":false,"close":can_trade&&!unknown,"cancel":can_trade&&!unknown,"protect":can_trade&&!paused&&!unknown});
-    Ok(Json(result))
+    Ok(result)
 }
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
