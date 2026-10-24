@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import ChartIcon from './ChartIcon.jsx'
 import LegacyPopover from './LegacyPopover.jsx'
 import ProjectTooltipLayer from './ProjectTooltipLayer.jsx'
+import { nativeChartPalette } from './nativeChartPalette.js'
 import tooltipStyles from './project-tooltip.css?inline'
 import LegacyLayoutMenu from './LegacyLayoutMenu.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
@@ -95,7 +96,7 @@ export default function LegacyChartHeader({ controls, symbol, name, backHref, th
     </div>, controls.tools)}
     {menu && <div ref={menuRef} className="legacy-native-menu" role="group" aria-label={t('Công cụ chart')}>
       <button type="button" onClick={() => { setMenu(false); setPopup({kind:'layout',anchor:opener.current}) }}>New Layout</button>
-      {(live ? [['data','Chọn mã giao dịch MT5'],['context','Điều kiện giao dịch'],['mentor','AI Mentor']] : [['compare', 'So sánh mã'], ['data', 'Dữ liệu'], ['context', 'Chi tiết và nhánh'], ['search', 'Quick Search'], ['editor', 'Editor'], ['mentor', 'AI Mentor']]).map(([tool, label]) => <button key={tool} type="button" onClick={() => { setMenu(false); onOpenTool(tool, opener.current) }}>{t(label)}</button>)}
+      {(live ? [['data','Chọn mã giao dịch MT5'],['context','Điều kiện giao dịch'],['mentor','AI Mentor']] : [['compare', 'So sánh mã'], ['data', 'Dữ liệu'], ['context', 'Chi tiết và nhánh'], ['search', 'Quick Search'], ['editor', 'Editor'], ['mentor', 'AI Mentor']]).map(([tool, label]) => <button key={tool} type="button" style={tool==='mentor'?{color:nativeChartPalette(theme).highlight}:undefined} onClick={() => { setMenu(false); onOpenTool(tool, opener.current) }}>{t(label)}</button>)}
       {[['insertIndicator', 'Indicators'], ['undo', 'Hoàn tác'], ['redo', 'Làm lại']].map(([action, label]) => <button key={action} type="button" onClick={() => { setMenu(false); controls.action(action); opener.current?.focus() }}>{t(label)}</button>)}
       <button type="button" disabled={saved || saving} onClick={() => { setMenu(false); controls.save(); opener.current?.focus() }}>{t(saveLabel)}</button>
       <button type="button" onClick={() => { setMenu(false); setPopup({kind:'capture',anchor:opener.current}) }}>{t('Chụp chart PNG')}</button>

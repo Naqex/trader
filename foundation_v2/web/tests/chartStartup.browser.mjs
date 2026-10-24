@@ -2,7 +2,8 @@ import assert from 'node:assert/strict'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { chromium } from 'playwright'
 
-const origin = 'http://127.0.0.1:5180'
+const origin = process.env.CHART_STARTUP_ORIGIN || 'http://127.0.0.1:5180'
+assert.equal(new URL(origin).hostname,'127.0.0.1')
 const output = process.env.CHART_STARTUP_OUTPUT || '../evidence/chart-startup-20261019'
 const fixture = JSON.parse(await readFile(new URL('./visual/chart-fixture.json', import.meta.url)))
 const report = { scope:'Intercepted synthetic session; actual preview bundles and native chart; no backend writes', cases:[], errors:[], unexpected:[] }

@@ -1,4 +1,6 @@
 import LiveTradingOverview from './LiveTradingOverview.jsx'
+import ChartLoadingState from './ChartLoadingState.jsx'
+import { recentChartsKey, rememberLiveChart } from './liveRecentCharts.js'
 import ChartIcon from './ChartIcon.jsx'
 import { replayResolution } from './advancedReplayDatafeed.js'
 import { NotificationSlot, NotificationSurface, useNotifications } from './Notifications.jsx'
@@ -22,8 +24,10 @@ import { DEMO_DRAFT, DEMO_TIMEFRAMES, demoIdentity, demoDraftError, demoIntent, 
 import { TestingSkeleton } from './TestingReadState.jsx'
 import './live-trading.css'
 
-const AdvancedChart = lazy(() => import('./TradingViewReplayChart.jsx'))
-const SimpleChart = lazy(() => import('./LightweightReplayChart.jsx'))
+const loadAdvancedChart = () => import('./TradingViewReplayChart.jsx')
+const loadSimpleChart = () => import('./LightweightReplayChart.jsx')
+const AdvancedChart = lazy(loadAdvancedChart)
+const SimpleChart = lazy(loadSimpleChart)
 const Mt5TradingConditions = lazy(() => import('./Mt5TradingConditions.jsx'))
 const LegacyChartHeader = lazy(() => import('./LegacyChartHeader.jsx'))
 const LegacyObjectTree = lazy(() => import('./LegacyObjectTree.jsx'))
@@ -50,6 +54,10 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
   const connectionId=explicitConnection || (connection.workspace===workspace?connection.id:'')
   const connectionReady=Boolean(explicitConnection)||connection.workspace===workspace
   const chartScope = `${workspace}:${connectionId}:${symbol}:${chartSurface}`
+  const lightweight = query.get('chart_engine') === 'lightweight'
+  const rendererKey = `${chartScope}:${lightweight}`
+  const [renderer,setRenderer] = useState(null)
+  const rendererStatus = renderer?.key === rendererKey ? renderer.status : 'loading'
   const scope = `${chartScope}:${timeframe}`, receiptKey = `tw:mt5-pending:v2:${workspace}:${connectionId || 'external'}`
   const currentScope = useRef(scope); currentScope.current = scope
   const [read,setRead] = useState({scope,status:'loading',payload:null}), [refresh,setRefresh] = useState(0)
@@ -77,6 +85,10 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
   const brokerRules = managedBrokerRules(snapshot)
   const error = demoDraftError(draft,instrument,snapshot?.quote,brokerRules)
   const reference = draft.side === 'BUY' ? snapshot?.quote?.ask : snapshot?.quote?.bid
+  useEffect(() => {
+    if (!chartSurface) setRenderer(null)
+    if (chartSurface) (lightweight ? loadSimpleChart() : loadAdvancedChart()).catch(noop)
+  },[rendererKey,chartSurface,lightweight])
   useEffect(()=>{
     if(explicitConnection)return
     const controller=new AbortController()
@@ -233,6 +245,10 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
     setConfirmation(previous=>({...previous,protectionEnabled:{...previous.protectionEnabled,[key]:enabled},body:{...previous.body,[key==='stopLoss'?'stop_loss':'take_profit']:value}}))
   }
   const chartIdentity=demoIdentity(chartSnapshot), chartSymbol=symbol||chartSnapshot?.symbol||activeSymbol
+  const recentKey=recentChartsKey(workspace,connectionId,chartSnapshot?.account)
+  useEffect(()=>{
+    if(chartSurface && rendererStatus==='ready') rememberLiveChart(recentKey,chartSymbol,timeframe)
+  },[chartSurface,rendererStatus,recentKey,chartSymbol,timeframe])
   const currency=snapshot?.account?.currency || '', money=value=>Number.isFinite(value)?fmt(value,currency?` ${currency}`:''):t('Chưa xác định')
   const accountQuery=new URLSearchParams(query);if(connectionId)accountQuery.set('mt5_connection',connectionId)
   const resetSymbol = (read.error==='demo_symbol_denied'||snapshot?.reason==='demo_symbol_denied') ? ()=>route({mt5_symbol:null}) : undefined
@@ -246,19 +262,22 @@ export default function LiveTradingWorkspace({ workspace, query, preview: demoPr
   const quoteState = blockReason==='demo_quote_stale' ? !Number.isFinite(new Date(quoteTime).getTime()) || quoteTime<=0 ? 'invalid' : quoteAge<0 ? 'future' : 'past' : ''
   const stateKey=reason||paused||unresolved ? `${chartScope}:${read.status}:${unresolved?.request_id || (paused?'paused':`${blockReason}:${quoteState}`)}` : ''
   useEffect(()=>{setDismissedState(null);setRequestedState('')},[stateKey])
-  if (!chartSurface) return <LiveTradingOverview workspace={workspace} query={accountQuery} snapshot={snapshot} status={read.status} reason={unresolved ? 'Chưa rõ kết quả. Đối soát MT5 trước khi gửi lệnh khác.' : reason} symbol={activeSymbol} timeframe={timeframe} onRefresh={()=>setRefresh(value=>value+1)} onResetSymbol={resetSymbol}/>
+  if (!chartSurface) return <LiveTradingOverview workspace={workspace} connectionId={connectionId} query={accountQuery} snapshot={snapshot} status={read.status} reason={unresolved ? 'Chưa rõ kết quả. Đối soát MT5 trước khi gửi lệnh khác.' : reason} symbol={activeSymbol} timeframe={timeframe} onRefresh={()=>setRefresh(value=>value+1)} onResetSymbol={resetSymbol}/>
   const fullscreen=()=>{if(document.fullscreenElement)document.exitFullscreen?.();else document.documentElement.requestFullscreen?.()}
   const changeInterval=value=>{const next=Object.keys(DEMO_TIMEFRAMES).find(key=>replayResolution(DEMO_TIMEFRAMES[key])===value);if(next&&next!==timeframe)route({mt5_timeframe:next})}
   const openTool=(tool,anchor)=>{if(tool==='data')setSymbolAnchor(current=>current===anchor?null:anchor);else if(tool==='context')setPanel('conditions');else if(tool==='mentor')openAi()}
   const journalHref = section => buildWorkspaceHref('live',workspace,accountQuery,{area:'live',section,surface:null,live_account:connectionId ? `broker:${connectionId}` : null,live_accounts:null})
-  return <Suspense fallback={<TestingSkeleton label="Đang tải biểu đồ…" />}><LiveChartSurface objectsOpen={panel==='objects'} headerHeight={headerSlots?.headerHeight || 38}>
+  const chartLoading = !demoPreview && ((!rows.length && read.status==='loading') || (rows.length>0 && !['ready','error'].includes(rendererStatus)))
+  const rendererChanged = status => setRenderer(previous=>previous?.key===rendererKey && previous.status===status ? previous : {key:rendererKey,status})
+  return <Suspense fallback={<ChartLoadingState viewport />}><LiveChartSurface objectsOpen={panel==='objects'} headerHeight={headerSlots?.headerHeight || 38}>
+    {chartLoading && <ChartLoadingState />}
     <LegacyChartHeader marketMode="live" controls={headerSlots} symbol={chartSymbol} name={`MT5 · ${snapshot?.account?.login || chartSnapshot?.account?.login || 'MT5'}`} backHref={liveTradingHref(workspace,accountQuery)} theme={theme} onTheme={()=>applyAppearance({...appearance,theme:theme==='dark'?'light':'dark'})} onOpenTool={openTool} onFullscreen={fullscreen}/>
     {!headerSlots && <header className="live-terminal-toolbar"><a href={liveTradingHref(workspace,accountQuery)} aria-label={t('Trở về tổng quan MT5')}><ChartIcon name="arrow-left"/></a><strong>{chartSymbol || 'MetaTrader'}</strong><FxSelect label="Khung thời gian MT5" value={timeframe} options={Object.keys(DEMO_TIMEFRAMES).map(value=>({value,label:value}))} onChange={value=>route({mt5_timeframe:value})}/><button type="button" className="live-text-action" onClick={event=>openTool('data',event.currentTarget)}>{t('Chọn mã giao dịch MT5')}</button></header>}
     <NotificationSlot>{stateKey && (unresolved || resetSymbol || read.status==='error' || requestedState===stateKey) && dismissedState!==stateKey && <NotificationSurface as="section" key={`${stateKey}:${stateAttempt}`} tone={read.status==='error'||unresolved?'error':'warning'} persistent={Boolean(unresolved||resetSymbol)} onDismiss={()=>setDismissedState(stateKey)} className="is-blocking live-terminal-state" role={read.status==='error'||unresolved?'alert':'status'}><TestingIcon kind="info" /><p>{unresolved?t('Chưa rõ kết quả. Đối soát MT5 trước khi gửi lệnh khác.'):t(reason || 'Đã tạm dừng mở lệnh mới.')}</p>{unresolved && <button className="wm-notification-action" type="button" disabled={busy} onClick={reconcile}>{t(busy?'Đang đối soát…':'Đối soát')}</button>}{resetSymbol && <button type="button" className="wm-notification-action" onClick={resetSymbol}>{t('Tải lại danh sách mã')}</button>}<button type="button" aria-label={t('Đóng thông báo')} onClick={()=>setDismissedState(stateKey)}>×</button></NotificationSurface>}</NotificationSlot>
     <section className="replay-workspace live-terminal-main">
       <div className="replay-main live-terminal-market">
         <div className="live-terminal-chart chart-frame has-advanced-chart"><div className="chart-canvas">
-          {rows.length ? <Suspense fallback={<div className="live-empty">{t('Đang tải biểu đồ…')}</div>}>{query.get('chart_engine')==='lightweight' ? <SimpleChart rows={rows} sessionId={`${chartIdentity}:${chartSymbol}:${timeframe}`} chartType="candles" showVolume theme={theme} drawings={EMPTY} /> : <AdvancedChart drawings={EMPTY} marketMode="live" workspace={workspace} sessionId={`live:${chartIdentity}:${chartSymbol}`} datasetId="mt5-live" symbol={chartSymbol} assetClass={chartSnapshot?.instrument?.asset_class || 'fx'} seconds={DEMO_TIMEFRAMES[chartSnapshot?.timeframe || timeframe]} preferredInterval={replayResolution(DEMO_TIMEFRAMES[timeframe])} liveTimeframes={Object.values(DEMO_TIMEFRAMES)} onIntervalChange={changeInterval} tickSize={chartSnapshot?.instrument?.tick_size} rows={rows} cutoff={Number(rows.at(-1).timestamp)} theme={theme} orderEditable={false} orderCloseable={false} onOrderDragStart={noop} orderGeneration={scope} onHeaderSlots={setHeaderSlots} />}</Suspense> : <div className="live-empty"><TestingIcon kind="chart" size={48}/><h2>{t('Chưa có biểu đồ MT5')}</h2><p>{t('Kết nối terminal MT5 để đọc giá và dữ liệu tài khoản.')}</p></div>}
+          {rows.length ? <Suspense fallback={null}>{lightweight ? <SimpleChart rows={rows} sessionId={`${chartIdentity}:${chartSymbol}:${timeframe}`} chartType="candles" showVolume theme={theme} drawings={EMPTY} onStatusChange={rendererChanged} /> : <AdvancedChart drawings={EMPTY} marketMode="live" workspace={workspace} sessionId={`live:${chartIdentity}:${chartSymbol}`} datasetId="mt5-live" symbol={chartSymbol} assetClass={chartSnapshot?.instrument?.asset_class || 'fx'} seconds={DEMO_TIMEFRAMES[chartSnapshot?.timeframe || timeframe]} preferredInterval={replayResolution(DEMO_TIMEFRAMES[timeframe])} liveTimeframes={Object.values(DEMO_TIMEFRAMES)} onIntervalChange={changeInterval} tickSize={chartSnapshot?.instrument?.tick_size} rows={rows} cutoff={Number(rows.at(-1).timestamp)} theme={theme} orderEditable={false} orderCloseable={false} onOrderDragStart={noop} orderGeneration={scope} onHeaderSlots={setHeaderSlots} loadingManaged onStatusChange={rendererChanged} />}</Suspense> : !chartLoading && <div className="live-empty"><TestingIcon kind="chart" size={48}/><h2>{t('Chưa có biểu đồ MT5')}</h2><p>{t(reason || 'Kết nối terminal MT5 để đọc giá và dữ liệu tài khoản.')}</p>{read.status==='error' && <button type="button" className="wm-button" onClick={()=>setRefresh(value=>value+1)}>{t('Thử lại')}</button>}</div>}
         </div><nav className="chart-utility-rail" aria-label={t('Công cụ giao dịch MT5')}><div className="chart-utility-actions">
           <div className="legacy-rail-tools"><button type="button" disabled={!headerSlots} aria-pressed={panel==='objects'} aria-controls="live-objects-panel" aria-label={t('Cây đối tượng chart')} data-tooltip={t('Cây đối tượng chart')} onClick={()=>setPanel(current=>current==='objects'?null:'objects')}><ChartIcon name="layers"/></button></div>
           <button type="button" aria-label={t('Lệnh mới')} data-tooltip={t('Lệnh mới')} onClick={beginOrder}><ChartIcon name="place-order"/><span>{t('Order')}</span></button>

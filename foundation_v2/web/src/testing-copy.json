@@ -1,4 +1,13 @@
 {
+  "Biểu đồ gần đây": {"vi":"Biểu đồ gần đây","en":"Recent charts"},
+  "Làm mới dữ liệu": {"vi":"Làm mới dữ liệu","en":"Refresh data"},
+  "P/L đang mở": {"vi":"P/L đang mở","en":"Floating P/L"},
+  "Kết quả giao dịch": {"vi":"Kết quả giao dịch","en":"Trading results"},
+  "P/L ròng đã đồng bộ": {"vi":"P/L ròng đã đồng bộ","en":"Synced net P/L"},
+  "P/L trước phí": {"vi":"P/L trước phí","en":"P/L before costs"},
+  "Hoa hồng, swap và phí": {"vi":"Hoa hồng, swap và phí","en":"Commission, swap and fees"},
+  "Lượt khớp lệnh": {"vi":"Lượt khớp lệnh","en":"Executions"},
+  "Chưa có lịch sử giao dịch đã đồng bộ.": {"vi":"Chưa có lịch sử giao dịch đã đồng bộ.","en":"Synced trade history is unavailable."},
   "Chi tiết lệnh": {"vi":"Chi tiết lệnh","en":"Order details"},
   "Lệnh không còn trong ảnh chụp MT5 hiện tại.": {"vi":"Lệnh không còn trong ảnh chụp MT5 hiện tại.","en":"This order is no longer in the current MT5 snapshot."},
   "Giao dịch MT5": {"vi":"Giao dịch MT5","en":"MT5 trading"},

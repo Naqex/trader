@@ -29,6 +29,36 @@ Only advertised per-action capabilities enable position actions. See
 
 UI fixture screenshots are explicitly synthetic and do not prove broker execution.
 
+### Overview and chart entry
+
+The overview separates the current MT5 account snapshot (balance, equity, floating
+P/L, used and free margin) from executions in the synced history window. Trading
+results use the bound connection's `/live/status` snapshot and show its actual
+history start/capture dates. Trading deals (types 0/1) include commission, swap and
+fee; deposits/withdrawals are excluded. Counts are executions, not closed trades
+or a win rate. Missing fields/coverage remain unknown; a covered empty window is
+zero. History is read on entry/account change and explicit refresh, independently
+of chart quotes. Revoked/failed reads do not keep another account's metrics.
+
+Recently opened charts are saved only after the renderer is ready. Local storage
+is scoped to workspace, connection, login and server; at most six distinct
+symbol/timeframe pairs are retained. Entries reopen the current account through
+the existing Live route, without replay IDs or order authority. Storage failure
+does not block navigation. They are chart shortcuts, not market-session status.
+The adapter currently has no broker session schedule; quote age never supplies
+an inferred open/close calendar.
+
+Live chart entry uses the shared `ChartLoadingState` across route/lazy-code,
+initial market snapshot and renderer readiness. Live owns the overlay; the
+advanced renderer reports loading/ready/error and suppresses its duplicate
+loader only in this managed mode. Replay retains its default loader ownership.
+The lightweight renderer reports readiness after applying its series. Empty,
+denied and failed initial reads exit loading; renderer failures expose the
+existing fallback. SSE reconnect retains the chart and does not restart the
+entry screen. Code preloading starts alongside the market read; no artificial
+minimum delay is introduced. Shared chart AI controls use the orange highlight
+palette, including the compact menu.
+
 Trading conditions separate three sources: raw MT5 account/terminal permissions
 and symbol flags; quote quality calculated against the host clock; and application
 send policy. The five-second quote-age limit is application policy, not a broker

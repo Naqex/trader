@@ -75,8 +75,10 @@ body.chart-page { width: calc(100% - var(--legacy-reserved-width, 0px)); overflo
 .legacy-native-tools .legacy-mentor::before { left:0; }
 .legacy-native-tools :is(.legacy-mentor, [data-testid='theme-toggle'])::after { right:0; }
 @media (min-width:1181px) { .layout__area--top [class*='fill-'] { display:none; } }
-.legacy-native-tools .legacy-editor, .legacy-native-tools .legacy-mentor { color: #70B5FF; }
-:root:not(.theme-dark) .legacy-native-tools :is(.legacy-editor, .legacy-mentor), :root:not(.theme-dark) .legacy-save-layout small { color: #2466AC; }
+.legacy-native-tools .legacy-editor { color: #70B5FF; }
+:root:not(.theme-dark) .legacy-native-tools .legacy-editor, :root:not(.theme-dark) .legacy-save-layout small { color: #2466AC; }
+.legacy-native-tools .legacy-mentor { color: #FFAD7C; }
+:root:not(.theme-dark) .legacy-native-tools .legacy-mentor { color: #A44715; }
 .legacy-native-tools .chart-header-overflow { display: none; }
 /* Chart-only trading markers: Entry is read-only; only the visible TP/SL
    handles claim pointer input. Geometry is deliberately denser than forms. */

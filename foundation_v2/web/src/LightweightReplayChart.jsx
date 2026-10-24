@@ -9,7 +9,7 @@ import { ReplayOrderPrimitive } from './replayOrderPrimitive.js'
 import ChartIcon from './ChartIcon.jsx'
 import { orderKinds } from './replayOrderLabels.js'
 
-export default function LightweightReplayChart({ rows, sessionId, chartType, showVolume, showAverage, viewportRequest, drawings, onCrosshair, onAnchorSelect, theme, levels, orderEditable, tickSize, onOrderPriceChange, orderGeneration, onOrderDragStart }) {
+export default function LightweightReplayChart({ rows, sessionId, chartType, showVolume, showAverage, viewportRequest, drawings, onCrosshair, onAnchorSelect, theme, levels, orderEditable, tickSize, onOrderPriceChange, orderGeneration, onOrderDragStart, onStatusChange }) {
   const { t, locale, fmt } = useTestingLocale()
   const formatTimestamp = value => value === null || value === undefined || !Number.isFinite(Number(value)) ? '—' : displayDate(new Date(Number(value) * 1000), { timeStyle: 'medium' })
   const formatPrice = value => fmt(value, '', 8)
@@ -21,7 +21,7 @@ export default function LightweightReplayChart({ rows, sessionId, chartType, sho
   const hostRef = useRef(null)
   const chartRef = useRef(null)
   const latestRef = useRef(null)
-  latestRef.current = { rows, onCrosshair, onAnchorSelect, levels, orderEditable, tickSize, onOrderPriceChange, orderGeneration }
+  latestRef.current = { rows, onCrosshair, onAnchorSelect, levels, orderEditable, tickSize, onOrderPriceChange, orderGeneration, onStatusChange }
   const orderDrag = useRef(null)
   const paintFrame = useRef(null)
   const previousSessionRef = useRef(null)
@@ -170,6 +170,7 @@ export default function LightweightReplayChart({ rows, sessionId, chartType, sho
     previousRowCountRef.current = rows.length
     previousSessionRef.current = sessionId
     rangeRef.current = null
+    latestRef.current.onStatusChange?.('ready')
   }, [chartType, rows, sessionId, theme])
 
   useEffect(() => {

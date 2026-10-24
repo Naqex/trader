@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { useTestingLocale } from './testingLocale.jsx'
 import { TestingSkeleton } from './TestingReadState.jsx'
+import ChartLoadingState from './ChartLoadingState.jsx'
 import './live-workspace.css'
 
 import { readLiveStatus } from './liveStatusApi.js'
@@ -20,7 +21,7 @@ function statusCopy(state) {
 }
 
 export default function LiveWorkspace({ workspace = 'tenant-a', query = new URLSearchParams(window.location.search), preview }) {
-  if (query.get('section') === 'terminal') return <Suspense fallback={<TestingSkeleton label="Đang tải giao dịch MT5…" />}><LiveTradingWorkspace workspace={workspace} query={query} preview={Boolean(preview)}/></Suspense>
+  if (query.get('section') === 'terminal') return <Suspense fallback={query.get('surface') === 'workspace' ? <ChartLoadingState viewport /> : <TestingSkeleton label="Đang tải giao dịch MT5…" />}><LiveTradingWorkspace workspace={workspace} query={query} preview={Boolean(preview)}/></Suspense>
   return <LiveJournalWorkspace workspace={workspace} query={query} preview={preview}/>
 }
 

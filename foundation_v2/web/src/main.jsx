@@ -86,7 +86,7 @@ function App() {
   }, [scope, query.get('section'), query.get('surface')])
   // Trading tabs open persisted reports. Order entry is an explicit chart action.
   const showSessionPicker = query.get('surface') !== 'workspace' && (query.get('select') === '1' || query.get('mode') === 'Practice')
-  const loadingFallback = activeView === 'replay' && !showSessionPicker ? <ChartLoadingState viewport /> : <TestingPageSkeleton view={activeView} />
+  const loadingFallback = (activeView === 'replay' && !showSessionPicker) || (activeView === 'live' && query.get('section') === 'terminal' && query.get('surface') === 'workspace') ? <ChartLoadingState viewport /> : <TestingPageSkeleton view={activeView} />
   const showTradeLedger = query.get('intent') !== 'order'
   const showSessionAnalytics = query.get('surface') !== 'workspace' && !query.get('job') && !query.get('job_id')
   const isLearn = activeView === 'learn'

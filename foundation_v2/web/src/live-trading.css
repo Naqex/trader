@@ -1,6 +1,19 @@
 .mt5-overview { min-width:0; }
-.mt5-quick-actions { grid-template-columns:minmax(0,1fr); }
-.mt5-quick-actions .fx-dashboard-quick-action { max-width:480px; }
+.mt5-quick-actions { display:flex; flex-wrap:wrap; }
+.fx-app.fx-shell-story[data-theme] .fx-content .mt5-overview .mt5-quick-actions .fx-dashboard-quick-action { min-width:220px; max-width:100%; min-height:72px; padding:14px 20px; gap:12px; }
+.mt5-quick-actions .fx-dashboard-quick-action small { margin-top:3px; }
+.mt5-recent h2 { margin:0 0 16px; font-size:16px; }
+.mt5-recent-list { display:flex; flex-wrap:wrap; gap:12px; }
+.mt5-recent-list button { display:flex; align-items:center; gap:12px; padding:12px 16px; border:1px solid var(--wm-border); border-radius:var(--wm-control-radius,8px); background:transparent; color:var(--wm-content); cursor:pointer; }
+.mt5-recent-list button:hover { background:var(--wm-surface); }
+.mt5-recent-list button span { display:grid; gap:4px; text-align:left; white-space:nowrap; }
+.mt5-recent-list small { color:var(--wm-content-muted); }
+.mt5-overview .mt5-account-metrics { grid-template-columns:repeat(5,minmax(0,1fr)); }
+.mt5-performance .fx-dashboard-section-head { flex-wrap:wrap; gap:8px; }
+.mt5-performance .fx-dashboard-section-head > span { font-size:12px; }
+.mt5-overview > section + section { margin-top:32px; }
+@media(max-width:900px) { .mt5-overview .mt5-account-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:480px) { .mt5-quick-actions .fx-dashboard-quick-action { width:100%; min-width:0; } .mt5-recent-list button { flex:1 1 140px; } }
 .mt5-conditions { display:grid; gap:20px; min-width:0; }
 .mt5-conditions h3 { font-size:16px; margin:0; }
 .mt5-conditions p { margin:0; line-height:1.6; }
