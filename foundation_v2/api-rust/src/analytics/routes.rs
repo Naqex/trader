@@ -25,7 +25,9 @@ async fn catalog_records(tx:&Transaction<'_>,workspace:&str)->Result<Vec<Value>,
 }
 async fn summary(cache:&ProjectionCache,tx:&Transaction<'_>,workspace:&str,record:&Value,zone:chrono_tz::Tz,activity_basis:bool)->Result<Value,ApiError>{
     let key=json!(["summary-v3",workspace,record["record_id"],record["revision"],zone.name(),activity_basis]).to_string();if let Some(v)=cached(cache,&key){return Ok(v.as_ref().clone())}
-    let full=crate::replay_service::load_record(tx,workspace,text(&record["record_id"]),false).await?;let value=if activity_basis{build_activity_session_summary(&full,workspace,zone)}else{build_session_summary_in_timezone(&full,workspace,zone)}.map_err(source)?;Ok(retain(cache,key,value).as_ref().clone())
+    let full=crate::replay_service::load_record(tx,workspace,text(&record["record_id"]),false).await?;let mut value=if activity_basis{build_activity_session_summary(&full,workspace,zone)}else{build_session_summary_in_timezone(&full,workspace,zone)}.map_err(source)?;
+    if !activity_basis && value["status"]=="ready" { value["equity_curve"]=activity::equity_curve(&full["payload"],None,false).map_err(source)?;value["periods"]["time_basis"]=json!("market"); }
+    Ok(retain(cache,key,value).as_ref().clone())
 }
 pub fn native(method:&str,path:&str)->bool{if method=="POST"&&path=="/api/v2/analytics/prop/evaluate"{return true}method=="GET"&&matches!(path,"/api/v2/overview"|"/api/v2/dashboard/sessions"|"/api/v2/replay/trades"|"/api/v2/replay/sessions/{session_id}/analytics"|"/api/v2/replay/sessions/{session_id}/analytics.csv")}
 pub fn routes()->Router<Arc<AppState>>{Router::new().route("/api/v2/analytics/prop/evaluate",post(prop_evaluate)).route("/api/v2/overview",get(invoke)).route("/api/v2/dashboard/sessions",get(invoke)).route("/api/v2/replay/trades",get(invoke)).route("/api/v2/replay/sessions/{session_id}/analytics",get(invoke)).route("/api/v2/replay/sessions/{session_id}/analytics.csv",get(invoke))}
@@ -72,7 +74,9 @@ async fn invoke(State(state):State<Arc<AppState>>,scope:Workspace,request:Reques
         let mut record=crate::replay_service::checkpoint_record(&tx,&state,&scope.workspace_id,record,qint(&q,"cursor_index")?,qint(&q,"cutoff_timestamp")?,qint(&q,"event_sequence")?).await.map_err(|e|if e.0==StatusCode::UNPROCESSABLE_ENTITY{bad("replay_analytics_invalid_source_or_filter")}else{e})?;record["workspace_id"]=json!(scope.workspace_id);
         let mut view=if activity_basis{activity::view(&record,Some(&f),zone)}else{build_replay_analytics_view(&record,Some(&f))}.map_err(|_|bad("replay_analytics_invalid_source_or_filter"))?;
         if path.ends_with(".csv"){let csv=analytics_csv(&view);tx.commit().await.map_err(|_|ApiError::database())?;return Ok(([(header::CONTENT_TYPE,"text/csv; charset=utf-8"),(header::CONTENT_DISPOSITION,"attachment; filename=\"replay-analytics-v1.csv\"")],csv).into_response())}
-        presentation::apply_timezone(&mut view,zone);presentation::entry_metadata(&mut view,&record);view
+        presentation::apply_timezone(&mut view,zone);presentation::entry_metadata(&mut view,&record);
+        if !activity_basis { view["scope"]["time_basis"]=json!("market");view["equity_curve"]=activity::equity_curve(&record["payload"],Some(&f),false).map_err(source)?; }
+        view
     }else if path=="/api/v2/dashboard/sessions"{
         let mut records=catalog_records(&tx,&scope.workspace_id).await?;enrich_identities(&tx,&scope.workspace_id,&mut records).await?;
         dashboard_sessions(cache,&tx,&scope.workspace_id,&records,&q,zone,activity_basis).await?

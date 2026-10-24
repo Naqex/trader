@@ -56,15 +56,21 @@ export function ReportLineChart({ title, points, currency, emptyLabel = 'Chưa c
   </svg></div> : <div className="fxs-chart-empty">{t(emptyLabel)}</div>}</section>
 }
 
-export function ReportBars({ title, items, currency, period, horizontal = false, accent = 'blue', signed = false, maximum, valueFormat, emptyLabel = 'Chưa có dữ liệu để vẽ biểu đồ.' }) {
+export function ReportBars({ title, items, currency, period, horizontal = false, accent = 'blue', signed = false, split = false, controls, maximum, valueFormat, emptyLabel = 'Chưa có dữ liệu để vẽ biểu đồ.' }) {
   const { t, fmt, locale } = useTestingLocale()
-  const values = items.map(item => item.value), valid = items.length > 0 && values.every(finite)
+  const divided = split && items.every(item => finite(item.profit) && item.profit >= 0 && finite(item.loss) && item.loss <= 0)
+  const series = item => divided ? [item.loss, item.profit].filter(value => value !== 0) : [item.value]
+  const values = items.flatMap(item => divided ? [item.loss, item.profit] : [item.value]), valid = items.length > 0 && values.every(finite)
   const domain = valid ? chartDomain(values, { maximum }) : null
   const [plotRef, width] = usePlotWidth(Boolean(domain)), right = width - 24
   const axis = axisLabels(domain?.ticks || [], fmt, locale)
-  const plotRight = horizontal ? right - 72 : right
+  const left = horizontal ? 88 : Math.max(40, ...[...axis.values()].map(label => label.length * 6.5 + 16))
+  const compactValue = value => valueFormat ? valueFormat(value, true) : Math.abs(value) >= 1000 ? new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(value) : fmt(value, '', 2)
+  const valueWidths = values.map(value => compactValue(value).length * 6.5)
+  const plotRight = horizontal ? right - Math.max(24, ...valueWidths.map(value => value + 12)) : right
   const weekday = period === 'weekday'
-  const height = horizontal ? Math.max(H, items.length * 36 + 58) : weekday ? H + 64 : H
+  const angled = weekday || period === 'month' && !horizontal
+  const height = horizontal ? Math.max(H, items.length * 30 + 58) : angled ? bottom + 88 : H
   const edge = horizontal ? height - 40 : bottom
   const x = value => left + (value - domain.low) / (domain.high - domain.low) * (plotRight - left)
   const y = value => edge - (value - domain.low) / (domain.high - domain.low) * (edge - top)
@@ -74,27 +80,46 @@ export function ReportBars({ title, items, currency, period, horizontal = false,
   const year = years.length === 1 ? years[0] : ''
   const labels = items.map(item => {
     let label = t(item.label)
-    if (monthKeys) label = year ? new Intl.DateTimeFormat(locale, { month: 'long', timeZone: 'UTC' }).format(new Date(`${item.label}-01T00:00:00Z`)) : `${item.label.slice(5)}/${item.label.slice(0, 4)}`
+    if (monthKeys) label = year ? new Intl.DateTimeFormat(locale, { month: horizontal ? 'long' : 'short', timeZone: 'UTC' }).format(new Date(`${item.label}-01T00:00:00Z`)) : `${item.label.slice(5)}/${item.label.slice(0, 4)}`
     const day = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].indexOf(item.label)
     if (weekday && day >= 0) label = locale.startsWith('vi') ? day === 6 ? 'Chủ nhật' : `Thứ ${day + 2}` : new Intl.DateTimeFormat(locale, { weekday: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2024, 0, 1 + day)))
     return label.charAt(0).toLocaleUpperCase(locale) + label.slice(1)
   })
-  const tickLabel = value => maximum === 100 ? `${fmt(value, '', 0)}%` : axis.get(value)
+  const description = (item, index) => `${monthKeys ? item.label : labels[index]}: ${divided ? `${t('Lãi')}: ${amount(item.profit)}; ${t('Lỗ')}: ${amount(item.loss)}; ${t('Net PnL')}: ` : ''}${amount(item.value)}`
+  const tickLabel = value => maximum === 100 ? `${fmt(value, '', 0)}%` : axis.get(value) ?? fmt(value, '', 2)
   const tickCount = domain ? Math.min(domain.ticks.length, Math.max(2, Math.floor((plotRight - left) / Math.max(...domain.ticks.map(value => tickLabel(value).length * 7 + 12))) + 1)) : 0
-  const ticks = horizontal && domain ? Array.from({ length: tickCount }, (_, index) => domain.ticks[Math.round(index * (domain.ticks.length - 1) / (tickCount - 1))]) : domain?.ticks
+  const baseTicks = horizontal && domain ? Array.from({ length: tickCount }, (_, index) => domain.ticks[Math.round(index * (domain.ticks.length - 1) / (tickCount - 1))]) : domain?.ticks
+  const ticks = divided && domain?.low < 0 && domain.high > 0 ? [...(baseTicks || []).filter(value => Math.abs(value / (domain.high - domain.low) * (horizontal ? plotRight - left : edge - top)) > 32), 0].sort((a,b) => a-b) : baseTicks
   // Keep every bar; thin axis/value labels only when their text would overlap.
-  const labelWidth = Math.max(40, ...items.map((item, index) => Math.max(weekday ? 0 : labels[index].length, (valueFormat ? valueFormat(item.value) : fmt(item.value)).length) * 7 + 12))
+  const labelWidth = Math.max(40, ...items.map((item, index) => Math.max(angled ? 0 : labels[index].length, compactValue(item.value).length) * 7 + 12))
   const labelStride = Math.ceil(items.length / Math.max(1, Math.floor((right - left) / labelWidth)))
-  return <section className={`fxs-chart-panel report-chart is-${accent}`}><h3>{t(title)}{year && <span className="report-year">{year}</span>}</h3>{domain ? <div ref={plotRef} className="report-plot" role="group" aria-label={t(title)}><svg className="report-svg" viewBox={`0 0 ${width} ${height}`} style={{ height }} role="img" aria-label={`${t(title)}: ${items.map((item, index) => `${monthKeys ? item.label : labels[index]}: ${amount(item.value)}`).join('; ')}`}>
+  return <section className={`fxs-chart-panel report-chart is-${accent}`}><div className="report-heading"><h3>{t(title)}{year && <span className="report-year">{year}</span>}</h3>{controls}</div>{domain ? <div ref={plotRef} className="report-plot" role="group" aria-label={t(title)}><svg className="report-svg" viewBox={`0 0 ${width} ${height}`} style={{ height }} role="img" aria-label={`${t(title)}: ${items.map(description).join('; ')}`}>
     {horizontal && <line className="report-grid" x1={left} x2={right} y1={top} y2={top}/>}
-    {ticks.map(value => <g key={value}>{horizontal ? <text x={x(value)} y={height - 14} textAnchor="middle">{tickLabel(value)}</text> : <><line className="report-grid" x1={left} x2={right} y1={y(value)} y2={y(value)}/><text x={left - 12} y={y(value)} dominantBaseline="middle" textAnchor="end">{valueFormat ? valueFormat(value) : axis.get(value)}</text></>}</g>)}
+    {ticks.map(value => <g key={value}>{horizontal ? <text x={x(value)} y={height - 14} textAnchor="middle">{tickLabel(value)}</text> : <><line className="report-grid" x1={left} x2={right} y1={y(value)} y2={y(value)}/><text x={left - 12} y={y(value)} dominantBaseline="middle" textAnchor="end">{valueFormat ? valueFormat(value) : tickLabel(value)}</text></>}</g>)}
     {items.map((item, index) => {
       const step = (horizontal ? edge - top : right - left) / items.length
-      const center = (horizontal ? top : left) + (index + .5) * step, width = Math.min(36, step * .55)
-      const negative = signed && item.value < 0
-      return <g key={item.label} className={`report-bar${signed ? negative ? ' is-negative' : ' is-positive' : ''}`}>
-        {horizontal ? <><line className="report-grid" x1={left} x2={right} y1={center + step / 2} y2={center + step / 2}/><text x={left - 12} y={center} dominantBaseline="middle" textAnchor="end">{labels[index]}</text><rect x={Math.min(x(0), x(item.value))} y={center - width / 2} width={Math.max(item.value === 0 ? 2 : 0, Math.abs(x(item.value) - x(0)))} height={width} rx="2"/><text className="report-bar-value" x={x(item.value) + (negative && x(item.value) >= left + 48 ? -8 : 8)} y={center} dominantBaseline="middle" textAnchor={negative && x(item.value) < left + 48 ? 'start' : negative ? 'end' : 'start'}>{valueFormat ? valueFormat(item.value) : fmt(item.value)}</text></> : <><rect x={center - width / 2} y={Math.min(y(0), y(item.value))} width={width} height={Math.max(item.value === 0 ? 2 : 0, Math.abs(y(item.value) - y(0)))} rx="2"/>{index % labelStride === 0 && <text className="report-bar-value" x={center} y={item.value < 0 ? y(item.value) + 14 : y(item.value) - 9} textAnchor="middle">{valueFormat ? valueFormat(item.value) : fmt(item.value)}</text>}{(weekday || index % labelStride === 0) && <text className="report-category" x={center} y={weekday ? bottom + 22 : height - 14} textAnchor={weekday ? 'end' : 'middle'} transform={weekday ? `rotate(-45 ${center} ${bottom + 22})` : undefined}>{labels[index]}</text>}</>}
-        <title>{`${monthKeys ? item.label : labels[index]}: ${amount(item.value)}`}</title>
+      const center = (horizontal ? top : left) + (index + .5) * step, barWidth = Math.min(36, step * .55)
+      const points = series(item)
+      const rotation = weekday && step < 32 ? -90 : -45
+      const showCategory = weekday || index % (angled ? Math.max(1, Math.ceil(30 / step)) : labelStride) === 0
+      return <g key={item.label} className="report-bar">
+        {horizontal ? <><line className="report-grid" x1={left} x2={right} y1={center + step / 2} y2={center + step / 2}/><text x={left - 12} y={center} dominantBaseline="middle" textAnchor="end">{labels[index]}</text></> : showCategory && <text className="report-category" x={center} y={angled ? bottom + 22 : height - 14} textAnchor={angled ? 'end' : 'middle'} transform={angled ? `rotate(${rotation} ${center} ${bottom + 22})` : undefined}>{labels[index]}</text>}
+        {(points.length ? points : [0]).map((value, part) => {
+          const zero = value === 0, negative = value < 0
+          const textWidth = compactValue(value).length * 6.5
+          const length = horizontal ? Math.abs(x(value) - x(0)) : Math.abs(y(value) - y(0))
+          const inside = !zero && (horizontal ? length >= textWidth + 16 : barWidth >= textWidth + 10 && length >= 28)
+          const leftCollision = horizontal && negative && !inside && x(value) - textWidth - 8 < left
+          const showValue = (horizontal || index % labelStride === 0) && !(divided && leftCollision)
+          const vx = horizontal ? leftCollision ? x(0) + 8 : x(value) + (negative ? inside ? 8 : -8 : inside ? -8 : 8) : center
+          const vy = horizontal ? center : zero ? y(0) - 8 : negative ? inside ? y(value) - 10 : Math.min(edge + 14, y(value) + 14) : inside ? y(value) + 16 : Math.max(14, y(value) - 8)
+          const anchor = horizontal ? leftCollision ? 'start' : negative ? inside ? 'start' : 'end' : inside ? 'end' : 'start' : 'middle'
+          return <g key={part} className={`report-bar-segment${divided || signed ? negative ? ' is-negative' : ' is-positive' : ''}`}>
+            {!zero && (horizontal ? <rect x={Math.min(x(0), x(value))} y={center - barWidth / 2} width={length} height={barWidth} rx="2"/> : <rect x={center - barWidth / 2} y={Math.min(y(0), y(value))} width={barWidth} height={length} rx="2"/>)}
+            {showValue && <text className={`report-bar-value${inside ? ' is-inside' : ''}${zero ? ' is-zero' : ''}`} x={vx} y={vy} dominantBaseline={horizontal ? 'middle' : undefined} textAnchor={anchor}>{compactValue(value)}</text>}
+          </g>
+        })}
+        <title>{description(item, index)}</title>
       </g>
     })}
   </svg></div> : <div className="fxs-chart-empty">{t(emptyLabel)}</div>}</section>

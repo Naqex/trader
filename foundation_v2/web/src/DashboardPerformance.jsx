@@ -36,14 +36,14 @@ function SideSplit({ counts, total }) {
 
 function MonthlyChart({ title, items, field, rate = false, accent = 'gold' }) {
   const { fmt } = useTestingLocale()
-  return <ReportBars title={title} period="month" items={items.filter(item => typeof item[field] === 'number' && item[field] >= 0).map(item => ({ label: item.month, value: item[field] }))} accent={accent} maximum={rate ? 100 : undefined} valueFormat={value => rate ? fmt(value, '%', 0) : fmt(value)} />
+  return <ReportBars title={title} period="month" items={items.filter(item => typeof item[field] === 'number' && item[field] >= 0).map(item => ({ label: item.month, value: item[field] }))} accent={accent} maximum={rate ? 100 : undefined} valueFormat={rate ? value => fmt(value, '%', 0) : undefined} />
 }
 function SymbolChart({ items }) {
   return <ReportBars title="Trades by symbol" items={items.map(item => ({ label: item.symbol, value: item.closed_trade_count }))} horizontal accent="pink" />
 }
 function ActivityChart({ items }) {
-  const { t, fmt } = useTestingLocale()
-  return <ReportBars title={t('Thời gian luyện tập theo tháng')} period="month" items={items.map(item => ({ label: item.month, value: item.time_invested_seconds / 3600 }))} accent="gold" valueFormat={value => `${fmt(value, '', 1)} ${t('duration.hour')}`} emptyLabel="Chưa có dữ liệu thời gian luyện tập" />
+  const { t, fmt, locale } = useTestingLocale()
+  return <ReportBars title={t('Thời gian luyện tập theo tháng')} period="month" items={items.map(item => ({ label: item.month, value: item.time_invested_seconds / 3600 }))} accent="gold" valueFormat={(value, compact) => `${compact && Math.abs(value) >= 1000 ? new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(value) : fmt(value, '', 1)} ${t('duration.hour')}`} emptyLabel="Chưa có dữ liệu thời gian luyện tập" />
 }
 
 export default function DashboardPerformance({ workspace, filters, reload, controls, dateControls, sourceHeading, previewPayload, previewState }) {

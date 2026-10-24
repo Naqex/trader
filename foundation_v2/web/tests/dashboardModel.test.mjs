@@ -114,7 +114,7 @@ test('session result API fences workspace, provenance and ledger count', async c
   const controller = new AbortController()
   const payload = { schema_version: 'analytics-read-model-v1', analytics_available: true, scope: { selected_trade_count: 1, total_trade_count: 1 }, provenance: { workspace_id: 'w', session_id: 's/a' }, ledger: [{ net_pnl: 5 }], metrics: { closed_trade_count: 1 } }
   context.mock.method(globalThis, 'fetch', async (url, options) => {
-    assert.equal(url, '/api/v2/replay/sessions/s%2Fa/analytics?timezone=UTC&time_basis=activity')
+    assert.equal(url, '/api/v2/replay/sessions/s%2Fa/analytics?timezone=UTC&time_basis=market')
     assert.equal(options.headers['X-Workspace-Id'], 'w')
     assert.equal(options.signal instanceof AbortSignal, true)
     return new Response(JSON.stringify(payload))
@@ -172,7 +172,7 @@ test('bounded dashboard list validates workspace, revision, summary and request 
     periods: { months: [] }, curve: { points: [] }, currency: 'USD' } }
   const payload = { schema_version: 'dashboard-session-list-v1', workspace_id: 'tenant-a', revision: 'snapshot', items: [item], facets: { assets: [], strategies: [] }, total: 1000, matching_count: 1000, page: 2, pages: 334 }
   context.mock.method(globalThis, 'fetch', async (url, options) => {
-    assert.equal(url, '/api/v2/dashboard/sessions?timezone=UTC&time_basis=activity&page=2&page_size=3&sort=profit&strategy=breakout')
+    assert.equal(url, '/api/v2/dashboard/sessions?timezone=UTC&time_basis=market&page=2&page_size=3&sort=profit&strategy=breakout')
     assert.equal(options.headers['X-Workspace-Id'], 'tenant-a')
     return new Response(JSON.stringify(payload))
   })
@@ -186,7 +186,7 @@ test('bounded dashboard list validates workspace, revision, summary and request 
   await assert.rejects(readDashboardSessionList('tenant-a', filters), /dashboard_session_list_invalid/)
   item.detail.metadata.workspace_id = 'tenant-a'; item.detail.curve.points = Array(129).fill({})
   await assert.rejects(readDashboardSessionList('tenant-a', filters), /dashboard_session_list_invalid/)
-  assert.equal(dashboardListUrl(), '/api/v2/dashboard/sessions?timezone=UTC&time_basis=activity&page=1&page_size=3&sort=newest')
+  assert.equal(dashboardListUrl(), '/api/v2/dashboard/sessions?timezone=UTC&time_basis=market&page=1&page_size=3&sort=newest')
 })
 
 test('sampled card curve keeps original sequences and rejects incorrect endpoint or coverage', () => {

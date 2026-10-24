@@ -50,3 +50,31 @@ test('numeric epoch seconds and milliseconds normalize to the same historical UT
   assert.equal(closeTime('1704067200').toISOString(), '2024-01-01T00:00:00.000Z')
   assert.equal(closeTime(false), null)
 })
+
+
+test('session backtest periods keep years separate and ignore real observation dates', () => {
+  const ledger = [
+    { close_time_utc: '2003-01-06T12:00:00Z', report_time_utc: '2026-10-25T10:00:00Z', net_pnl: 10 },
+    { close_time_utc: '2004-01-05T12:00:00Z', report_time_utc: '2026-10-25T10:01:00Z', net_pnl: -3 },
+  ]
+  const market = sessionPeriods(ledger, 'UTC', new Date('2026-10-25'), 'market')
+  assert.deepEqual(market.months, [{ label: '2003-01', value: 10 }, { label: '2004-01', value: -3 }])
+  assert.equal(market.day, -3)
+  assert.equal(market.weekdays[0].value, 7)
+  assert.equal(market.incomplete, false)
+  const activity = sessionPeriods(ledger, 'UTC', new Date('2026-10-25'))
+  assert.deepEqual(activity.months, [{ label: '2026-10', value: 7 }])
+  const legacy = sessionPeriods([{ close_time_utc: '2004-01-05T12:00:00Z', net_pnl: 5 }], 'UTC', new Date(), 'market')
+  assert.equal(legacy.day, 5)
+  assert.equal(legacy.incomplete, false)
+})
+
+
+test('split performance keeps both sides of a breakeven period, zero and missing months distinct', () => {
+ const ledger = [10, -10, 0].map(net_pnl => ({ close_time_utc: '2003-01-01T00:00:00Z', net_pnl }))
+ const result = sessionPeriods(ledger, 'UTC', new Date(), 'market')
+ assert.deepEqual(result.performance.months, [{ label: '2003-01', value: 0, profit: 10, loss: -10, count: 3 }])
+ assert.equal(result.performance.weekdays[2].count, 3)
+ assert.equal(result.performance.weekdays[0].count, 0)
+ assert.equal(result.performance.months.some(row => row.label === '2003-02'), false)
+})

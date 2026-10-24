@@ -1,4 +1,12 @@
 {
+  "Hiệu suất theo tháng": {"vi":"Hiệu suất theo tháng","en":"Monthly Performance"},
+  "Hiệu suất theo ngày": {"vi":"Hiệu suất theo ngày","en":"Daily Performance"},
+  "Năm hiệu suất": {"vi":"Năm hiệu suất","en":"Performance year"},
+  "Tất cả các năm": {"vi":"Tất cả các năm","en":"All years"},
+  "Lãi/lỗ ròng theo tháng": {"vi":"Lãi/lỗ ròng theo tháng","en":"Net PnL by month"},
+  "Lãi": {"vi":"Lãi","en":"Profit"},
+  "Lỗ": {"vi":"Lỗ","en":"Loss"},
+  "Chưa có lịch sử Equity của phiên.": {"vi":"Chưa có lịch sử Equity của phiên.","en":"No Equity history for this session yet."},
   "Tài khoản mới": {"vi":"Tài khoản mới","en":"New account"},
   "Cài đặt tài khoản": {"vi":"Cài đặt tài khoản","en":"Account settings"},
   "Dữ liệu cập nhật": {"vi":"Lần đồng bộ","en":"Last sync"},

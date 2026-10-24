@@ -195,6 +195,21 @@ def main():
                 summaries = probe.call("GET", query("/api/v2/dashboard/sessions", time_basis="activity", timezone="Asia/Ho_Chi_Minh", page_size=25))["body"]
                 detail = next(item["detail"] for item in summaries["items"] if item["record_id"] == session["record_id"])
                 assert detail["periods"]["months"][0]["label"] == current_month
+                market_view = probe.call("GET", query(path + "/analytics", time_basis="market", timezone="Asia/Ho_Chi_Minh"))["body"]
+                assert market_view["scope"]["time_basis"] == "market"
+                assert market_view["metrics"]["closed_trade_count"] == 2
+                assert market_view["equity_curve"]["time_basis"] == "market"
+                assert all(instant(point["time_utc"]).timestamp() < begin.timestamp() - 86400
+                    for point in market_view["equity_curve"]["points"])
+                market_summaries = probe.call("GET", query("/api/v2/dashboard/sessions", time_basis="market", timezone="Asia/Ho_Chi_Minh", page_size=25))["body"]
+                market_detail = next(item["detail"] for item in market_summaries["items"] if item["record_id"] == session["record_id"])
+                assert market_detail["periods"]["time_basis"] == "market"
+                performance_months = market_detail["periods"]["performance"]["months"]
+                expected_month = datetime.fromtimestamp(closes[-1]["virtual_time_utc"], timezone.utc).astimezone(timezone(timedelta(hours=7))).strftime("%Y-%m")
+                assert performance_months[0]["label"] == expected_month != current_month
+                assert sum(row["count"] for row in performance_months) == 2
+                assert abs(sum(row["profit"] + row["loss"] for row in performance_months) - analytics["metrics"]["net_pnl"]) < 1e-7
+                assert market_detail["equity_curve"]["points"] == market_view["equity_curve"]["points"]
                 assert detail["scope"]["recording_coverage"]["known_close_count"] == 2
                 assert detail["equity_curve"]["points"] == analytics["equity_curve"]["points"]
                 child = probe.call("POST", path + "/branch", {"expected_revision": session["revision"],

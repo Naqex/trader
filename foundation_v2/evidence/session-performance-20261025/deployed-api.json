@@ -1,0 +1,54 @@
+{
+  "scope": "owner API GET-only, market session vs activity aggregate",
+  "ready": {
+    "command_worker": "not_required",
+    "contract_version": "foundation-v2.1",
+    "database": "ready",
+    "ok": true
+  },
+  "checks": [
+    {
+      "zone": "UTC",
+      "count": 3,
+      "time_basis": "market"
+    },
+    {
+      "session": "d848723290084cf98e8d03de6cff4dbf",
+      "months": 1,
+      "equity_points": 1
+    },
+    {
+      "session": "e2bee5a8094547779094630a794cff32",
+      "months": 1,
+      "equity_points": 6
+    },
+    {
+      "session": "6428cf18b3f54a36b2e90207ef12392e",
+      "months": 1,
+      "equity_points": 5
+    },
+    {
+      "zone": "Asia%2FHo_Chi_Minh",
+      "count": 3,
+      "time_basis": "market"
+    },
+    {
+      "session": "d848723290084cf98e8d03de6cff4dbf",
+      "months": 1,
+      "equity_points": 1
+    },
+    {
+      "session": "e2bee5a8094547779094630a794cff32",
+      "months": 1,
+      "equity_points": 6
+    },
+    {
+      "session": "6428cf18b3f54a36b2e90207ef12392e",
+      "months": 1,
+      "equity_points": 5
+    }
+  ],
+  "status": "PASS",
+  "runtime_run_id": "44e79cde7c1c48798cf8c6af8895035d",
+  "ui_sha256": "2e5f886bb8c97d069d34b72c8e1fb55318fefab3e8fd1d4817c1948dda1067f7"
+}

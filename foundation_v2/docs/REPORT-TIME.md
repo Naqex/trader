@@ -1,6 +1,12 @@
 # Report time and account curves
 
-Product report requests use `time_basis=activity`. The API keeps `market` as its
+Aggregate performance, Journal, calendar and detailed analytics requests use
+`time_basis=activity`. Individual session summaries (including expanded Dashboard
+cards) use `time_basis=market` to describe the backtest. Session month/day/week
+metrics anchor to its latest market close, not today's real calendar. Both bases
+use the same account Equity ledger, including floating P/L; only the time axis
+changes. Month buckets retain year identity; weekdays aggregate Monday–Sunday
+across the selected session range. The API keeps `market` as its
 compatibility default for engine/research consumers. Cache keys include basis,
 Settings timezone, selected revisions and filters.
 
@@ -12,9 +18,18 @@ Settings timezone, selected revisions and filters.
   instant. Partial closes each have their own observed time.
 
 Persist instants in UTC. Convert to the selected IANA timezone before grouping
-days, weekdays, hours or months. Month/week/day cards use the current real calendar,
+days, weekdays, hours or months. Aggregate month/week/day cards use the current real calendar,
 not the final replay candle. Multi-year month labels retain the year; a single year
 appears once in the chart heading.
+
+Session `periods.performance` contains every observed year-month (the legacy
+`periods.months` compatibility field still contains the last twelve). Each bucket
+has positive and negative sums of **net trade P/L**, its net value and trade count;
+costs are included once through net P/L. Both sides remain visible when they
+cancel to zero. Multiple years use a compact year-by-month net P/L heatmap with
+year drilldown. A selected year uses fixed-height bars for more than six months.
+Absent months are missing, not fabricated zero-return months. Actual breakeven
+buckets retain zero and their count; tooltips preserve exact amounts.
 
 Server save boundaries capture only newly appended events. Sparse timestamp
 receipts verify dataset, event sequence and canonical financial/cause hash. Forks

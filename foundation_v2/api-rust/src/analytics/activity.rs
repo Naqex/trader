@@ -50,7 +50,7 @@ pub(super) fn view(record: &Value, filters: Option<&Value>, zone: chrono_tz::Tz)
     let rows = view["ledger"].as_array().cloned().unwrap_or_default();
     let known = rows.iter().filter(|r| !r["report_time_utc"].is_null()).count();
     view["scope"]["recording_coverage"] = json!({"known_close_count":known,"unknown_close_count":all_rows.len()-all_known,"selected_known_close_count":known,"legacy_backfill":false});
-    view["equity_curve"] = equity_curve(payload, filters)?;
+    view["equity_curve"] = equity_curve(payload, filters, true)?;
     Ok(view)
 }
 
@@ -119,9 +119,35 @@ mod tests {
         assert_eq!(v["equity_curve"]["scope"],"account");
         assert_eq!(v["equity_curve"]["trade_filters_apply"],false);
     }
+
+    #[test]
+    fn session_equity_uses_market_clock_without_needing_activity_receipts() {
+        let r = fixture(&[None,None]);
+        let market = equity_curve(&r["payload"],None,false).unwrap();
+        assert_eq!(market["time_basis"],"market");
+        assert_eq!(market["partial"],false);
+        assert_eq!(market["points"][0]["equity"],99996.0);
+        assert_eq!(market["points"][1]["equity"],100017.0);
+        assert_eq!(timestamp(&market["points"][1]["time_utc"]).unwrap(),timestamp(&json!(1700000060)).unwrap());
+        assert!(equity_curve(&r["payload"],None,true).unwrap()["points"].as_array().unwrap().is_empty());
+        let filtered=equity_curve(&r["payload"],Some(&json!({"from_close_utc":1700000060})),false).unwrap();
+        assert_eq!(filtered["points"].as_array().unwrap().len(),1);
+    }
+
+    #[test]
+    fn market_portfolio_equity_comes_from_account_ledger() {
+        let payload=json!({"asset_states":{"a":{},"b":{}},"portfolio_execution":{"ledger":[
+            {"sequence":1,"virtual_time_utc":1700000000,"kind":"market_fill","equity":99996.0,"balance":100000.0},
+            {"sequence":2,"virtual_time_utc":1700000060,"kind":"manual_close","equity":100017.0,"balance":100017.0}
+        ]}});
+        let curve=equity_curve(&payload,None,false).unwrap();
+        assert_eq!(curve["points"].as_array().unwrap().len(),2);
+        assert_eq!(curve["points"][0]["equity"],99996.0);
+        assert_eq!(curve["scope"],"account");
+    }
 }
 
-fn equity_curve(payload: &Value, filters: Option<&Value>) -> R<Value> {
+pub(super) fn equity_curve(payload: &Value, filters: Option<&Value>, activity_basis: bool) -> R<Value> {
     let portfolio = payload["asset_states"].is_object();
     let account = if portfolio { &payload["portfolio_execution"] } else { &payload["execution"] };
     let f = normalize_filters(filters)?;
@@ -134,7 +160,11 @@ fn equity_curve(payload: &Value, filters: Option<&Value>) -> R<Value> {
         // Unchanged administrative events do not create holes in a financial curve.
         if previous.as_ref() == Some(&state) && !["market_fill","manual_close","protective_fill","phase_transition"].contains(&text(&event["kind"])) { continue; }
         previous = Some(state);
-        let stamp = crate::replay_service::activity_recording::timestamp(payload, event, portfolio);
+        let stamp = if activity_basis {
+            crate::replay_service::activity_recording::timestamp(payload, event, portfolio)
+        } else {
+            timestamp(&event["virtual_time_utc"])?.map(iso)
+        };
         let Some(date) = stamp.as_ref().and_then(|s| timestamp(&json!(s)).ok().flatten()) else { missing += 1; segment += 1; continue; };
         if from.is_some_and(|f|date<f) || to.is_some_and(|t|date>t) { continue; }
         points.push(json!({"time_utc":stamp,"equity":number(&event["equity"])? ,"balance":number(&event["balance"])? ,"sequence":event["sequence"],"segment":segment}));
@@ -145,5 +175,5 @@ fn equity_curve(payload: &Value, filters: Option<&Value>) -> R<Value> {
         let keep: BTreeSet<_> = (0..128).map(|i|i*(total-1)/127).collect();
         points = points.into_iter().enumerate().filter(|(i,_)|keep.contains(i)).map(|(_,p)|p).collect();
     }
-    Ok(json!({"points":points,"total_points":total,"sampled":total>128,"time_basis":"activity","value_basis":"account_equity_including_floating_pnl","scope":"account","trade_filters_apply":false,"unknown_event_count":missing,"partial":missing>0,"legacy_backfill":false}))
+    Ok(json!({"points":points,"total_points":total,"sampled":total>128,"time_basis":if activity_basis {"activity"} else {"market"},"value_basis":"account_equity_including_floating_pnl","scope":"account","trade_filters_apply":false,"unknown_event_count":missing,"partial":missing>0,"legacy_backfill":false}))
 }

@@ -192,9 +192,52 @@ pub(super) fn activity_months(records: &[Value], intervals: &[Value], zone: Tz) 
     ))
 }
 
+// Keep the complete small calendar projection; the compatibility summary above
+// still exposes its last twelve months. No trade ledger is sent with this view.
+pub(super) fn performance_periods(view: &Value, zone: chrono_tz::Tz) -> R<Value> {
+    let mut months = BTreeMap::<String, (f64, f64, usize)>::new();
+    let mut days = [(0.0f64, 0.0f64, 0usize); 7];
+    for trade in array(&view["ledger"])? {
+        let Some(date) = timestamp(activity::time(trade))? else { continue };
+        let date = date.with_timezone(&zone);
+        let pnl = number(&trade["net_pnl"])?;
+        let month = months.entry(date.format("%Y-%m").to_string()).or_default();
+        let day = &mut days[date.weekday().num_days_from_monday() as usize];
+        for bucket in [month, day] {
+            bucket.0 += pnl.max(0.0); bucket.1 += pnl.min(0.0); bucket.2 += 1;
+        }
+    }
+    let has_dates = !months.is_empty();
+    let row = |label: String, (profit, loss, count): (f64, f64, usize)| json!({"label":label,"value":profit+loss,"profit":profit,"loss":loss,"count":count});
+    Ok(json!({"months":months.into_iter().map(|(k,v)|row(k,v)).collect::<Vec<_>>(),"weekdays":if !has_dates {vec![]} else {["T2","T3","T4","T5","T6","T7","CN"].iter().zip(days).map(|(k,v)|row(k.to_string(),v)).collect::<Vec<_>>()}}))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn full_month_history_splits_net_wins_and_losses_without_merging_years() {
+        let mut ledger = Vec::new();
+        for year in 2003..2006 {
+            for month in 1..=12 {
+                let stamp = format!("{year}-{month:02}-05T23:30:00Z");
+                ledger.push(json!({"close_time_utc":stamp,"net_pnl":10.0}));
+                ledger.push(json!({"close_time_utc":stamp,"net_pnl":-4.0}));
+            }
+        }
+        let view = json!({"ledger":ledger});
+        let periods = performance_periods(&view,chrono_tz::UTC).unwrap();
+        let months = periods["months"].as_array().unwrap();
+        assert_eq!(months.len(),36);
+        assert_eq!(months[0],json!({"label":"2003-01","profit":10.0,"loss":-4.0,"value":6.0,"count":2}));
+        assert_eq!(months[35]["label"],"2005-12");
+        assert_eq!(periods["weekdays"].as_array().unwrap().iter().map(|r|r["value"].as_f64().unwrap()).sum::<f64>(),216.0);
+        let unknown=json!({"ledger":[{"report_time_utc":null,"close_time_utc":1700000060,"net_pnl":9.0}]});
+        assert!(performance_periods(&unknown,chrono_tz::UTC).unwrap()["months"].as_array().unwrap().is_empty());
+        let shifted=performance_periods(&json!({"ledger":[{"close_time_utc":"2026-01-31T23:30:00Z","net_pnl":-3.0}]}),chrono_tz::Asia::Ho_Chi_Minh).unwrap();
+        assert_eq!(shifted["months"][0]["label"],"2026-02");
+    }
+
     fn fixture() -> Value {
         let cases: Value = serde_json::from_str(include_str!("oracle_cases.json")).unwrap();
         cases["inputs"][2].clone()

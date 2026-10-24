@@ -1,0 +1,34 @@
+{
+  "scope": "explicit GET response fixture: five complete years and zero/missing/extreme periods, no owner mutations",
+  "checks": [
+    {
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "fiveYears60Cells": true,
+      "dataMonths": 59,
+      "missingDistinctFromZero": true,
+      "yearDrilldown": true,
+      "splitBothSides": true,
+      "zeroNoBar": true,
+      "compactFixedHeight": true,
+      "noScroll": true
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "lang": "en",
+      "fiveYears60Cells": true,
+      "dataMonths": 59,
+      "missingDistinctFromZero": true,
+      "yearDrilldown": true,
+      "splitBothSides": true,
+      "zeroNoBar": true,
+      "compactFixedHeight": true,
+      "noScroll": true
+    }
+  ],
+  "errors": [],
+  "writes": [],
+  "status": "PASS"
+}

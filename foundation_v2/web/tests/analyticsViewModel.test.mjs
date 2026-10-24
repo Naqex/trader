@@ -98,3 +98,12 @@ test('report date/range never fall back to historical market or entry/update tim
   const equity_curve = { points: [{ time_utc: '2026-10-31T23:30:00Z', equity: 1010, balance: 1000, segment: 0 }] }
   assert.deepEqual(analyticsViewResult({ equity_curve }).equity_curve, equity_curve)
 })
+
+
+test('explicit market session scope uses backtest dates while preserving real timestamps', () => {
+ const trade = { net_pnl: 3, close_time_utc: '2003-01-05T23:30:00Z', report_time_utc: '2026-10-25T10:00:00Z' }
+ const model = buildAnalyticsModel({ scope: { time_basis: 'market' }, ledger: [trade] }, 'app', 'Asia/Ho_Chi_Minh')
+ assert.equal(model.ledger[0].closeDate, '06/01/2003 06:30:00')
+ assert.equal(model.ledger[0].report_time_utc, trade.report_time_utc)
+ assert.deepEqual(model.observed, { start: '06/01/2003', end: '06/01/2003' })
+})

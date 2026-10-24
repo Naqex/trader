@@ -84,8 +84,8 @@ function DemoSessions({ workspace, query, state }) {
   useEffect(() => { setId(items.find(item => item.record_id === query.get('demo_session'))?.record_id || items[0]?.record_id || '') }, [query, items])
   const [editing, setEditing] = useState(false), [actionDialog, setActionDialog] = useState(null)
   const item = items.find(item => item.record_id === id)
-  const payload = useMemo(() => item ? demoDashboardAnalytics(item, workspace, state === 'no-trades' || state === 'new-session' && item.record_id === DEMO_SESSIONS[0].record_id ? [] : undefined) : null, [item, workspace, state])
-  const model = useMemo(() => item ? buildAnalyticsModel(demoResult(payload.ledger, item)) : null, [payload, item])
+  const payload = useMemo(() => item ? demoDashboardAnalytics(item, workspace, state === 'no-trades' || state === 'new-session' && item.record_id === DEMO_SESSIONS[0].record_id ? [] : undefined, 'market') : null, [item, workspace, state])
+  const model = useMemo(() => item ? buildAnalyticsModel(demoResult(payload.ledger, item, 'market')) : null, [payload, item])
   const dataset = DEMO_DATASETS.find(entry => entry.dataset_id === item?.dataset_id), replayRecord = item ? demoReplayContext(item) : null
   if (replayRecord) replayRecord.payload.execution.cost_model = { account_ccy: payload.provenance.account_currency }
   if ((state === 'no-trades' || state === 'new-session' && item?.record_id === DEMO_SESSIONS[0].record_id) && replayRecord) replayRecord.payload.execution.balance = 10000
@@ -124,7 +124,7 @@ function DemoSessions({ workspace, query, state }) {
 function DemoDashboard({ workspace, query, state }) {
   const { t } = useTestingLocale()
 
-  const preview = useMemo(() => ({ state, items: state === 'empty' ? [] : state === 'partial' ? DEMO_SESSIONS.slice(0, 2) : DEMO_SESSIONS, datasets: DEMO_DATASETS, analytics: (item, workspace) => demoDashboardAnalytics(item, workspace, state === 'no-trades' ? [] : undefined), replayContext: item => { const record = demoReplayContext(item); if (state === 'no-trades') record.payload.execution.balance = 10000; return record },
+  const preview = useMemo(() => ({ state, items: state === 'empty' ? [] : state === 'partial' ? DEMO_SESSIONS.slice(0, 2) : DEMO_SESSIONS, datasets: DEMO_DATASETS, analytics: (item, workspace) => demoDashboardAnalytics(item, workspace, state === 'no-trades' ? [] : undefined, 'market'), replayContext: item => { const record = demoReplayContext(item); if (state === 'no-trades') record.payload.execution.balance = 10000; return record },
     overview: (filters, items) => {
       const result = demoOverview(state === 'no-trades' ? [] : demoFilterRows(filters.session ? [items.find(item => item.record_id === filters.session)?.source_record_id || filters.session] : [...new Set(items.map(item => item.source_record_id || item.record_id))], filters))
       result.performance.scope = { session_count: DEMO_SESSIONS.length, readable_session_count: items.length }

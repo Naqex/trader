@@ -59,9 +59,11 @@ export function buildAnalyticsModel(result, reportKind = 'app', timezone = getTi
   const observedRange = result?.observed_range || result?.range || {}
   const observedStart = observedRange.start_utc || observedRange.start || observedRange.from_utc || observedRange.from
   const observedEnd = observedRange.end_utc || observedRange.end || observedRange.to_utc || observedRange.to
-  const ledgerDates = ledger.map(trade => dateFromValue(trade?.report_time_utc)).filter(Boolean).sort((a, b) => a - b)
+  const marketScope = result?.scope?.time_basis === 'market'
+  const reportTime = trade => marketScope ? trade?.close_time_utc : trade?.report_time_utc
+  const ledgerDates = ledger.map(trade => dateFromValue(reportTime(trade))).filter(Boolean).sort((a, b) => a - b)
   const dateLabel = (value) => { const date = dateFromValue(value); return !date ? 'N/A' : displayDate(date, { timeZone: timezone }) }
-  const rows = ledger.map((trade, index) => { const pnl = finite(trade?.net_pnl) ? Number(trade.net_pnl) : null; const date = dateFromValue(trade?.report_time_utc); return { ...trade, report_kind: reportKind, rowIndex: index, tradeId: trade?.trade_id || `trade-${index + 1}`, pnl, outcome: outcomeOf(pnl), source: trade?.source?.session_id || trade?.session_id || trade?.source_id || 'research ledger', closeDate: date ? displayDate(date, { timeStyle: 'medium', timeZone: timezone }) : 'N/A' } })
+  const rows = ledger.map((trade, index) => { const pnl = finite(trade?.net_pnl) ? Number(trade.net_pnl) : null; const date = dateFromValue(reportTime(trade)); return { ...trade, report_kind: reportKind, rowIndex: index, tradeId: trade?.trade_id || `trade-${index + 1}`, pnl, outcome: outcomeOf(pnl), source: trade?.source?.session_id || trade?.session_id || trade?.source_id || 'research ledger', closeDate: date ? displayDate(date, { timeStyle: 'medium', timeZone: timezone }) : 'N/A' } })
   const realizedRValues = (Array.isArray(metrics.realized_r_values) ? metrics.realized_r_values : rows.map((trade) => trade.realized_r)).filter(finite).map(Number)
   const metricDefinitions = metrics.definitions && typeof metrics.definitions === 'object'
     ? Object.entries(metrics.definitions).slice(0, 16).reduce((out, [key, value]) => {
