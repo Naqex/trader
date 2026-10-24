@@ -7,6 +7,7 @@ import { createLiveChartDatafeed } from './liveChartDatafeed.js'
 import { createReplayChartWindowReader } from './replayChartWindow.js'
 import { readChartSnapshot, writeChartSnapshot } from './advancedChartStorage.js'
 import { createChartSave } from './advancedChartSave.js'
+import { bindBrowserChartAnnotations } from './browserChartAnnotations.js'
 import ChartLoadingState from './ChartLoadingState.jsx'
 import { createAdvancedOrderOverlay, readOrderPriceScale } from './advancedOrderOverlay.js'
 import { orderPriceColor, orderKinds } from './replayOrderLabels.js'
@@ -76,6 +77,9 @@ export default function TradingViewReplayChart(props) {
   const [status, setStatus] = useState('loading'), [message, setMessage] = useState('')
   const [layoutStatus, setLayoutStatus] = useState('saved')
   const [closeTarget, setCloseTarget] = useState(null)
+  useEffect(()=>{
+    if(status==='ready'&&host.current)return bindBrowserChartAnnotations(host.current)
+  },[status,sessionId])
   const [closing, setClosing] = useState(false)
   const storageKey = marketMode === 'live' ? `tw:advanced-chart:live:v1:${workspace}:${sessionId}:${datasetId}` : `tw:advanced-chart:v1:${workspace}:${sessionId}:${datasetId}`
 
@@ -436,8 +440,8 @@ export default function TradingViewReplayChart(props) {
 
   const fallbackUrl = new URL(window.location.href)
   fallbackUrl.searchParams.set('chart_engine', 'lightweight')
-  return <><div className="replay-chart advanced-replay-chart" data-testid="replay-chart" data-chart-engine="advanced" data-chart-status={status} data-visible-row-count={rows.length} data-cutoff={cutoff} role="group" aria-label={marketMode === 'live' ? `MT5 · ${symbol}` : t('Advanced Charts · {symbol} · {count} nến đến cutoff {cutoff} UTC', { symbol, count: rows.length, cutoff })}>
-    <div ref={host} className="advanced-chart-host" inert={status !== 'ready'} aria-hidden={status !== 'ready' ? true : undefined} />
+  return <><div className="replay-chart advanced-replay-chart" oai-annotation-container="" data-testid="replay-chart" data-chart-engine="advanced" data-chart-status={status} data-visible-row-count={rows.length} data-cutoff={cutoff} role="group" aria-label={marketMode === 'live' ? `MT5 · ${symbol}` : t('Advanced Charts · {symbol} · {count} nến đến cutoff {cutoff} UTC', { symbol, count: rows.length, cutoff })}>
+    <div ref={host} className="advanced-chart-host" oai-annotatable={marketMode==='live'?`MT5 · ${symbol}`:`Replay · ${symbol}`} inert={status !== 'ready'} aria-hidden={status !== 'ready' ? true : undefined} />
     {status === 'loading' && <ChartLoadingState />}
     {status === 'error' && <div className="advanced-chart-message" role="alert">{t(message)} <a href={fallbackUrl.href}>{t("Mở chart dự phòng")}</a></div>}
     {status === 'ready' && layoutStatus === 'error' && <div className="advanced-chart-message" role="alert">{t(message)}</div>}

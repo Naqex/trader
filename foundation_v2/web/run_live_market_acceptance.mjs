@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import {createServer} from 'node:http'
 import {mkdir,writeFile} from 'node:fs/promises'
 import {chromium} from 'playwright'
+import {installBrowserAnnotationFixture,checkBrowserChartAnnotations} from './tests/browserChartAnnotationChecks.mjs'
 const origin=process.env.TW_LIVE_UI_ORIGIN||'http://127.0.0.1:5180',output=process.env.TW_LIVE_UI_EVIDENCE||'E:/BACKUP-TRADINGWORKSPACE/live-market-ui'
 await mkdir(output,{recursive:true})
 let phase='ready',connections=0
@@ -16,11 +17,13 @@ try{
  for(const [width,theme] of [[1920,'dark'],[1440,'light'],[768,'dark'],[390,'dark']]){
  phase='ready';const context=await browser.newContext({viewport:{width,height:940},reducedMotion:'reduce',timezoneId:'Asia/Ho_Chi_Minh'}),page=await context.newPage();current=page
  page.on('pageerror',e=>report.errors.push(e.message))
+ if(process.env.TW_TEST_BROWSER_ANNOTATIONS==='1')await installBrowserAnnotationFixture(context)
 
  await context.route('**/api/**',async r=>{const req=r.request(),url=new URL(req.url());if(!['GET','HEAD','OPTIONS'].includes(req.method())){report.mutations.push(req.url());return r.abort()}if(url.pathname==='/api/v2/live/trading/events')return r.continue({url:`http://127.0.0.1:${port}/events${url.search}`});return r.continue()})
  let mounts=0,detaches=0;page.on('frameattached',()=>mounts++);page.on('framedetached',()=>detaches++)
  await page.goto(`${origin}/?workspace=tenant-a&view=live&area=live&section=terminal&lang=vi&mt5_connection=492ec8a5-3938-41a3-8a26-8c0f7f59ed43&surface=workspace&mt5_timeframe=M1&mt5_symbol=EURUSDm`)
  await page.locator('[data-chart-status="ready"]').waitFor({timeout:30000});const frame=page.frameLocator('.advanced-chart-host iframe')
+ if(process.env.TW_TEST_BROWSER_ANNOTATIONS==='1')await checkBrowserChartAnnotations(page)
  if(await page.locator('.fx-app').getAttribute('data-theme')!==theme)await frame.getByTestId('theme-toggle').click()
  const before=await page.locator('.chart-canvas').boundingBox();const initialMounts=mounts,initialDetaches=detaches
  phase='stale';await page.locator('.live-terminal-state').filter({hasText:'Báo giá cuối:'}).waitFor();assert.match(await page.locator('.live-terminal-state').innerText(),/6 giờ trước/);assert.equal(await page.locator('.legacy-trading-bar button.buy').isDisabled(),true);await assert.doesNotReject(async()=>assert.deepEqual(await page.locator('.chart-canvas').boundingBox(),before))
@@ -50,7 +53,7 @@ try{
    const picker=page.locator('.live-terminal-toolbar').getByRole('button',{name:'Khung thời gian MT5',exact:true});await picker.click();await page.getByRole('option',{name:'H1',exact:true}).click();await page.waitForURL(/mt5_timeframe=H1/)
    await page.locator('.live-terminal-toolbar').getByRole('button',{name:'Chọn mã giao dịch MT5',exact:true}).click();await popup.waitFor();await popup.getByRole('searchbox').fill('BTC');await popup.getByRole('searchbox').press('Enter');await page.waitForURL(/mt5_symbol=BTCUSDm/);assert.equal(new URL(page.url()).searchParams.get('mt5_timeframe'),'H1')
  }
- report.cases.push({width,theme,stableGeometry:true,retainsChartOnUnavailable:true,blocksOrders:true,keyboardSearchAndFocus:true,centeredDialog:true,categoryFiltering:true,unclassifiedAndEmpty:true,unavailableSelectionBlocked:true,quoteAgeAndFutureWarning:true,symbolNavigationPreservesTimeframe:true,reconnect:true})
+ report.cases.push({width,theme,browserAnnotations:process.env.TW_TEST_BROWSER_ANNOTATIONS==='1'?'fixture-pass':'not-tested',stableGeometry:true,retainsChartOnUnavailable:true,blocksOrders:true,keyboardSearchAndFocus:true,centeredDialog:true,categoryFiltering:true,unclassifiedAndEmpty:true,unavailableSelectionBlocked:true,quoteAgeAndFutureWarning:true,symbolNavigationPreservesTimeframe:true,reconnect:true})
  await context.close()
  }
  assert.deepEqual(report.errors,[]);assert.deepEqual(report.mutations,[])

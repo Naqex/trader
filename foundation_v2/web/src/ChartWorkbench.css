@@ -2,6 +2,7 @@
 /* The workbench owns its chrome; the API owns candle and execution state. */
 .fx-app.fx-shell-story.is-chart-workspace .fx-content > .replay-shell .chart-frame.has-advanced-chart { grid-template-columns: minmax(0, 1fr); }
 .advanced-chart-host { position: absolute; inset: 0; }
+.advanced-chart-host[data-browser-annotating] iframe { pointer-events:none; }
 .advanced-chart-host[aria-hidden=true] { visibility:hidden; }
 .advanced-replay-chart { position: relative; }
 .is-legacy-chart .chart-utility-rail { position: relative; }
