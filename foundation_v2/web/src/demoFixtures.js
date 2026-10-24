@@ -14,7 +14,7 @@ export const DEMO_LEDGER = Array.from({ length: 60 }, (_, i) => {
   const quantity = symbol === 'XAUUSD' ? 1 : .2, multiplier = symbol === 'XAUUSD' ? 100 : 100000, direction = side === 'buy' ? 1 : -1
   const time = Date.UTC(2026, 6, 6 + i * 1.4, 7 + i % 15)
   return { trade_id: `demo-trade-${String(i + 1).padStart(3, '0')}`, session_id: session.record_id, session_name: session.name, source: 'UI demo', symbol, side,
-    open_time_utc: new Date(time).toISOString(), close_time_utc: new Date(time + (20 + i % 8 * 15) * 60000).toISOString(), recorded_at_utc: '2026-10-05T08:00:00Z',
+    open_time_utc: new Date(time).toISOString(), close_time_utc: new Date(time + (20 + i % 8 * 15) * 60000).toISOString(), recorded_at_utc: new Date(time).toISOString(), close_recorded_at_utc: new Date(time + (20 + i % 8 * 15) * 60000).toISOString(), report_time_utc: new Date(time + (20 + i % 8 * 15) * 60000).toISOString(),
     entry_type: 'market', price_open: price, price_close: price + direction * (net + 3) / (quantity * multiplier), quantity, stop_loss: price - direction * 100 / (quantity * multiplier), take_profit: price + direction * 200 / (quantity * multiplier),
     has_notes: i % 3 === 0, net_pnl: net, gross_pnl: net + 3, fees: 3, planned_risk_budget: 100, realized_r: net / 100, account_currency: 'USD', starting_balance: 10000, rating: 1 + i % 5, tags: [i % 2 ? 'reversal' : 'breakout', i % 3 ? 'planned' : 'review'] }
 })
@@ -23,17 +23,24 @@ export function demoResult(rows = DEMO_LEDGER, session = DEMO_SESSIONS[0]) {
   let balance = 10000
   const curve = [{ sequence: 0, closed_trade_balance: balance }]
   for (const row of rows) { balance += row.net_pnl; curve.push({ sequence: curve.length, trade_id: row.trade_id, closed_trade_balance: balance }) }
+  let accountBalance = 10000
+  const accountRows = DEMO_LEDGER.filter(row => row.session_id === (session.source_record_id || session.record_id))
+  const equityPoints = accountRows.flatMap(row => {
+    const open = { time_utc: row.recorded_at_utc, balance: accountBalance, equity: accountBalance - 3, segment: 0 }
+    accountBalance += row.net_pnl
+    return [open, { time_utc: row.report_time_utc, balance: accountBalance, equity: accountBalance, segment: 0 }]
+  })
   const wins = rows.filter(row => row.net_pnl > 0).length, losses = rows.filter(row => row.net_pnl < 0).length
   const profit = rows.reduce((sum, row) => sum + Math.max(0, row.net_pnl), 0), loss = -rows.reduce((sum, row) => sum + Math.min(0, row.net_pnl), 0)
-  return { preview: true, account_currency: 'USD', session_id: session.record_id, ledger: rows, metrics: { starting_balance: 10000, ending_closed_trade_balance: balance,
+  return { preview: true, equity_curve: { points: equityPoints, time_basis: 'activity', scope: 'account', trade_filters_apply: false, partial: false }, account_currency: 'USD', session_id: session.record_id, ledger: rows, metrics: { starting_balance: 10000, ending_closed_trade_balance: balance,
     closed_trade_count: rows.length, net_pnl: balance - 10000, wins, losses, breakeven: rows.length - wins - losses, win_rate_pct: rows.length ? wins / rows.length * 100 : null,
     profit_factor_after_cost: loss ? profit / loss : null, payoff_ratio_after_cost: wins && losses ? (profit / wins) / (loss / losses) : null, closed_trade_balance_curve: curve } }
 }
 
 export function demoOverview(rows = DEMO_LEDGER) {
   const metrics = demoResult(rows).metrics
-  const months = [...new Set(rows.map(row => row.close_time_utc.slice(0, 7)))].map(month => {
-    const group = rows.filter(row => row.close_time_utc.startsWith(month))
+  const months = [...new Set(rows.map(row => row.report_time_utc.slice(0, 7)))].map(month => {
+    const group = rows.filter(row => row.report_time_utc.startsWith(month))
     return { month, closed_trade_count: group.length, win_rate_pct: group.filter(row => row.net_pnl > 0).length / group.length * 100 }
   })
   return { performance: { schema_version: 'dashboard-replay-performance-v1', status: 'ready', scope: { session_count: 3, readable_session_count: 3 }, metrics, months,
@@ -45,14 +52,14 @@ export function demoOverview(rows = DEMO_LEDGER) {
 export function demoFilterRows(ids, filters = {}, sourceRows = DEMO_LEDGER) {
   return sourceRows.filter(row => (ids === null || ids.includes(row.session_id)) && (!filters.side || filters.side === 'all' || row.side === filters.side)
     && (!filters.outcome || filters.outcome === 'all' || (row.net_pnl > 0 ? 'win' : row.net_pnl < 0 ? 'loss' : 'breakeven') === filters.outcome)
-    && (!filters.from || row.close_time_utc.slice(0, 10) >= filters.from) && (!filters.to || row.close_time_utc.slice(0, 10) <= filters.to))
+    && (!filters.from || row.report_time_utc.slice(0, 10) >= filters.from) && (!filters.to || row.report_time_utc.slice(0, 10) <= filters.to))
 }
 
 export function demoDashboardAnalytics(item, workspace, sourceRows = demoFilterRows([item.source_record_id || item.record_id])) {
   const rows = sourceRows.map(row => ({ ...row, session_id: item.record_id, session_name: item.name }))
   const result = demoResult(rows, item)
-  return { schema_version: 'analytics-read-model-v1', analytics_available: true, metrics: result.metrics, ledger: rows,
-    scope: { selected_trade_count: rows.length, total_trade_count: rows.length },
+  return { schema_version: 'analytics-read-model-v1', analytics_available: true, equity_curve: result.equity_curve, metrics: result.metrics, ledger: rows,
+    scope: { time_basis: 'activity', selected_trade_count: rows.length, total_trade_count: rows.length },
     provenance: { preview: true, workspace_id: workspace, session_id: item.record_id, account_currency: 'USD', instrument_id: item.instrument_id,
       playbook_id: item.source_record_id || item.record_id, cutoff_timestamp: rows.length ? Date.parse(rows.at(-1).close_time_utc) / 1000 : null } }
 }

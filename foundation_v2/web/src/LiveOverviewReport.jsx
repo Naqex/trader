@@ -20,7 +20,7 @@ export default function LiveOverviewReport({ performance, tradesHref }) {
     <div className="fxs-scope"><h2>{t('Kết quả giao dịch')}</h2><span>{displayDate(performance.from)} – {displayDate(performance.to)}</span></div>
     {performance.stale&&<p role="status">{t('Dữ liệu trước đó · đang mất kết nối')}</p>}
     {!performance.chartComplete&&<p role="status">{t('Chưa đủ thời gian hoặc phí để vẽ biểu đồ PnL.')}</p>}
-    <div className="fxs-charts"><PnlCurve series={performance.series} currency={performance.currency}/><PeriodBars title="Kết quả theo tháng" items={performance.months} currency={performance.currency} horizontal emptyLabel="Chưa có dữ liệu để vẽ biểu đồ."/><PeriodBars title="Kết quả theo thứ" items={performance.weekdays} currency={performance.currency} emptyLabel="Chưa có dữ liệu để vẽ biểu đồ."/></div>
+    <div className="fxs-charts"><PnlCurve series={performance.series} currency={performance.currency}/><PeriodBars title="Kết quả theo tháng" period="month" items={performance.months} currency={performance.currency} horizontal emptyLabel="Chưa có dữ liệu để vẽ biểu đồ."/><PeriodBars title="Kết quả theo ngày" period="weekday" items={performance.weekdays} currency={performance.currency} emptyLabel="Chưa có dữ liệu để vẽ biểu đồ."/></div>
     <div className="fxs-metrics mt5-report-metrics">
       <Metric title="P/L ròng đã đồng bộ" value={money(performance.net)}/><Metric title="P/L trước phí" value={money(performance.gross)}/><Metric title="Hoa hồng, swap và phí" value={money(performance.costs)}/><Metric title="Lượt khớp lệnh" value={fmt(performance.count,'',0)}/>
     </div>

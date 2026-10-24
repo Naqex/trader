@@ -82,7 +82,7 @@ export function filterAnalyticsRows(rows, filters = {}) {
   }
   const tagsMatch = (values, tags, mode) => mode === 'OR' ? values.some(value => tags.includes(value)) : values.every(value => tags.includes(value))
   return rows.filter(row => {
-    const time = calendarParts(row.close_time_utc, filters.timezone)
+    const time = calendarParts(row.report_time_utc, filters.timezone)
     const tags = [...(Array.isArray(row.tags) ? row.tags : []), ...(row.label_aliases || [])]
     return inTime(time)
       && (filters.reportKinds === '' || reportKinds.includes(row.report_kind || 'app'))
@@ -160,35 +160,38 @@ export function advancedAnalytics(model, filters = {}) {
     if (value > 1e-12) { if (!current) episodes++; current++; longest = Math.max(longest, current) }
     else if (current) { recoverySum += current; recovered++; current = 0 }
   }
-  const datesComplete = rows.length > 0 && rows.every(row => calendarParts(row.close_time_utc, filters.timezone) && known(row.net_pnl))
-  const group = (keys, keyOf) => keys.map(label => ({ label, ...stats(rows.filter(row => keyOf(row) === label)) }))
-  const timeParts = new Map(rows.map(row => [row, calendarParts(row.close_time_utc, filters.timezone)]))
+  const timeParts = new Map(rows.map(row => [row, calendarParts(row.report_time_utc, filters.timezone)]))
   const parts = row => timeParts.get(row)
-  const months = datesComplete ? [...new Set(rows.map(row => parts(row).month))].sort() : []
-  const days = datesComplete ? [...new Set(rows.map(row => parts(row).key))].sort() : []
+  // Unknown observation times still count financially, but cannot enter a date bucket.
+  const datedRows = rows.filter(row => parts(row) && known(row.net_pnl))
+  const datesComplete = rows.length > 0 && datedRows.length === rows.length
+  const hasDates = datedRows.length > 0
+  const group = (keys, keyOf) => keys.map(label => ({ label, ...stats(datedRows.filter(row => keyOf(row) === label)) }))
+  const months = [...new Set(datedRows.map(row => parts(row).month))].sort()
+  const days = [...new Set(datedRows.map(row => parts(row).key))].sort()
   const side = ['BUY', 'SELL'].map(label => ({ label, ...stats(rows.filter(row => String(row.side).toUpperCase() === label)) }))
   const unknownSide = rows.filter(row => !['BUY', 'SELL'].includes(String(row.side).toUpperCase())).length
-  const hours = datesComplete ? group(Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, '0')), row => String(parts(row).hour).padStart(2, '0')) : []
-  const weekdays = datesComplete ? group(['1', '2', '3', '4', '5', '6', '0'], row => String(parts(row).weekday)).map(item => ({ ...item, label: WEEKDAYS[Number(item.label)] })) : []
-  const calendar = datesComplete ? group(days, row => parts(row).key) : []
-  const monthGroups = datesComplete ? group(months, row => parts(row).month) : []
-  const sessions = datesComplete ? group(['00–08', '08–13', '13–21', '21–24'], row => { const h = calendarParts(row.close_time_utc, 'UTC').hour; return h < 8 ? '00–08' : h < 13 ? '08–13' : h < 21 ? '13–21' : '21–24' }) : []
-  const frequencyGroups = datesComplete ? [
-    { label: 'Ngày', count: days.length ? rows.length / (Math.round((new Date(days.at(-1)) - new Date(days[0])) / 86400000) + 1) : null },
-    { label: 'Tuần', count: (() => { const weeks = rows.map(row => { const date = new Date(`${parts(row).key}T00:00:00Z`); date.setUTCDate(date.getUTCDate() - (date.getUTCDay() + 6) % 7); return date.getTime() }); return rows.length / (Math.round((Math.max(...weeks) - Math.min(...weeks)) / 604800000) + 1) })() },
-    { label: 'Tháng', count: (() => { const index = key => Number(key.slice(0, 4)) * 12 + Number(key.slice(5, 7)); return rows.length / (index(months.at(-1)) - index(months[0]) + 1) })() },
+  const hours = hasDates ? group(Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, '0')), row => String(parts(row).hour).padStart(2, '0')) : []
+  const weekdays = hasDates ? group(['1', '2', '3', '4', '5', '6', '0'], row => String(parts(row).weekday)).map(item => ({ ...item, label: WEEKDAYS[Number(item.label)] })) : []
+  const calendar = group(days, row => parts(row).key)
+  const monthGroups = group(months, row => parts(row).month)
+  const sessions = hasDates ? group(['00–08', '08–13', '13–21', '21–24'], row => { const h = parts(row).hour; return h < 8 ? '00–08' : h < 13 ? '08–13' : h < 21 ? '13–21' : '21–24' }) : []
+  const frequencyGroups = hasDates ? [
+    { label: 'Ngày', count: datedRows.length / (Math.round((new Date(days.at(-1)) - new Date(days[0])) / 86400000) + 1) },
+    { label: 'Tuần', count: (() => { const weeks = datedRows.map(row => { const date = new Date(`${parts(row).key}T00:00:00Z`); date.setUTCDate(date.getUTCDate() - (date.getUTCDay() + 6) % 7); return date.getTime() }); return datedRows.length / (Math.round((Math.max(...weeks) - Math.min(...weeks)) / 604800000) + 1) })() },
+    { label: 'Tháng', count: (() => { const index = key => Number(key.slice(0, 4)) * 12 + Number(key.slice(5, 7)); return datedRows.length / (index(months.at(-1)) - index(months[0]) + 1) })() },
   ] : []
   return { ...summary, rows, curve, drawdown, endingBalance: balance, localFiltered, maxDrawdown: dd.length ? Math.max(...dd) : null,
     maxDrawdownPct: drawdown.some(point => known(point.drawdownPct)) ? Math.max(...drawdown.map(point => number(point.drawdownPct) ?? 0)) : null,
     averageDrawdown: positiveDD.length ? positiveDD.reduce((sum, value) => sum + value, 0) / positiveDD.length : dd.length ? 0 : null,
     episodes: dd.length ? episodes : null, recoveryTrades: recovered ? recoverySum / recovered : null, unrecovered: current, longest,
-    side, unknownSide, hours, weekdays, months: monthGroups, calendar, sessions, frequency: frequencyGroups, datesComplete,
+    side, unknownSide, hours, weekdays, months: monthGroups, calendar, sessions, frequency: frequencyGroups, datesComplete, incomplete: datedRows.length !== rows.length,
   }
 }
 
 export function tradesCsv(rows, currency, metadata = {}) {
   const safe = value => { const text = String(value ?? ''); const numeric = /^-?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(text) && Number.isFinite(Number(text)); const formula = /^[\t\r\n]/.test(text) || /^\s*[=+@-]/.test(text) && !numeric; return `"${(formula ? `'${text}` : text).replaceAll('"', '""')}"` }
-  const columns = ['trade_id', 'session_id', 'symbol', 'side', 'open_time_utc', 'close_time_utc', 'price_open', 'price_close', 'quantity', 'net_pnl', 'gross_pnl', 'fees', 'realized_r', 'tags']
+  const columns = ['trade_id', 'session_id', 'symbol', 'side', 'report_time_utc', 'close_recorded_at_utc', 'open_time_utc', 'close_time_utc', 'price_open', 'price_close', 'quantity', 'net_pnl', 'gross_pnl', 'fees', 'realized_r', 'tags']
   if (rows.some(row => row.source_provenance)) columns.push('origin_session_id', 'source_provenance')
   const metaKeys = Object.keys(metadata).map(key => `report_${key}`)
   return '\uFEFF' + [...[columns.concat('account_currency', metaKeys).map(safe).join(',')], ...rows.map(row => columns.map(key => safe(key === 'tags' ? (row.tags || []).join('|') : key === 'source_provenance' ? JSON.stringify(row[key]) : row[key])).concat(safe(row.account_currency ?? currency), Object.values(metadata).map(safe)).join(','))].join('\r\n')

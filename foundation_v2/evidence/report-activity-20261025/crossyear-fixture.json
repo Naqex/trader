@@ -1,0 +1,17 @@
+{
+  "scope": "explicit GET response fixture for multi-year axis; no data writes or financial correctness claim",
+  "results": [
+    {
+      "width": 1920,
+      "lang": "vi",
+      "labels": "12/2025, 01/2026",
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "lang": "en",
+      "labels": "12/2025, 01/2026",
+      "status": "PASS"
+    }
+  ]
+}

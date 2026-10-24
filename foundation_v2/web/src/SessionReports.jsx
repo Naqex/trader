@@ -19,7 +19,7 @@ function AggregateTrades({ workspace, ids, query, sessionControl, onClearSession
   const filters = useMemo(() => readAnalyticsFilters(query, timezone), [query, timezone])
   const extra = useMemo(() => ({ ...readAnalyticsExtraFilters(query), days: '', weekday: 'all', types: '', notes: '', timezone }), [query, timezone])
   const [readState, setState] = useState({ status: 'loading', payload: null })
-  const [reload, setReload] = useState(0), [selected, setSelected] = useState(''), [paging, setPaging] = useState({ page: 1, pageSize: 10, sort: { key: 'close_time_utc', direction: 'desc' } })
+  const [reload, setReload] = useState(0), [selected, setSelected] = useState(''), [paging, setPaging] = useState({ page: 1, pageSize: 10, sort: { key: 'report_time_utc', direction: 'desc' } })
   const params = useMemo(() => {
     const params = analyticsQuery(filters, timezone)
     if (ids !== null) params.set('sessions', ids.join(','))

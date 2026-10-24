@@ -5,13 +5,13 @@ import { advancedAnalytics, calendarParts, DEFAULT_EXTRA_FILTERS, readAnalyticsE
 import { buildPropAnalyticsView, propReplayQuery } from '../src/propAnalyticsModel.js'
 import { setTimezone } from '../src/timezone.js'
 
-const rows = [100, -50, 0, 150, -100].map((value, index) => ({ trade_id: `trade-${index}`, tradeId: `trade-${index}`, rowIndex: index, net_pnl: value, pnl: value, side: index % 2 ? 'SELL' : 'BUY', symbol: index % 2 ? 'EURUSD' : 'GBPUSD', realized_r: null, open_time_utc: `2024-01-0${index + 1}T12:00:00Z`, close_time_utc: `2024-01-0${index + 1}T13:00:00Z`, tags: index === 3 ? ['breakout'] : [] }))
+const rows = [100, -50, 0, 150, -100].map((value, index) => ({ trade_id: `trade-${index}`, tradeId: `trade-${index}`, rowIndex: index, net_pnl: value, pnl: value, side: index % 2 ? 'SELL' : 'BUY', symbol: index % 2 ? 'EURUSD' : 'GBPUSD', realized_r: null, open_time_utc: `2024-01-0${index + 1}T12:00:00Z`, close_time_utc: `2024-01-0${index + 1}T13:00:00Z`, report_time_utc: `2024-01-0${index + 1}T13:00:00Z`, tags: index === 3 ? ['breakout'] : [] }))
 const model = { ledger: rows, startBalance: 1000, endingBalance: 1100, curve: [1000, 1100, 1050, 1050, 1200, 1100].map((value, index) => ({ value, index })), drawdown: [0, 50, 50, 0, 100].map((drawdown, index) => ({ drawdown, drawdownPct: drawdown / (index < 3 ? 1100 : 1200) * 100 })) }
 const almost = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-8, `${actual} !== ${expected}`)
 
 test('minute range is inclusive, supports overnight and uses selected IANA timezone', () => {
   const times = ['09:14', '09:15', '09:45', '09:46', '23:30', '00:30']
-  const ledger = times.map((time, i) => ({ trade_id: String(i), close_time_utc: `2024-01-01T${time}:30Z` }))
+  const ledger = times.map((time, i) => ({ trade_id: String(i), close_time_utc: `2003-01-01T${time}:30Z`, report_time_utc: `2024-01-01T${time}:30Z` }))
   const ids = extra => filterAnalyticsRows(ledger, extra).map(row => row.trade_id)
   assert.deepEqual(ids({ timeStart: '09:15', timeEnd: '09:45' }), ['1', '2'])
   assert.deepEqual(ids({ timeStart: '23:30', timeEnd: '00:30' }), ['4', '5'])
@@ -139,3 +139,27 @@ test('aggregate ledger rejects malformed or mismatched source instead of fabrica
   assert.throws(() => validateTradesPayload({ ...payload, metrics: { closed_trade_count: 0 } }));
   for (const net_pnl of [true, false, [], [5], {}, ' ', '\t']) assert.throws(() => validateTradesPayload({ ...payload, ledger: [{ ...payload.ledger[0], net_pnl }] }));
 });
+
+test('activity calendar/filter uses real observations and keeps unknown-time financial totals', () => {
+  const ledger = [
+    { ...rows[0], open_time_utc: '2003-01-01T12:00:00Z', close_time_utc: '2003-01-01T13:00:00Z', report_time_utc: '2026-10-31T23:30:00Z', net_pnl: 10 },
+    { ...rows[1], report_time_utc: null, recorded_at_utc: '2026-10-31T22:00:00Z', close_recorded_at_utc: null, net_pnl: -3 },
+  ]
+  const data = advancedAnalytics({ ...model, ledger }, { timezone: 'Asia/Ho_Chi_Minh' })
+  assert.equal(data.net, 7)
+  assert.equal(data.count, 2)
+  assert.equal(data.incomplete, true)
+  assert.equal(data.datesComplete, false)
+  assert.equal(data.winDuration, 60, 'holding duration must still use the market interval')
+  assert.deepEqual(data.months.map(({ label, net }) => ({ label, net })), [{ label: '2026-11', net: 10 }])
+  assert.equal(data.calendar[0].label, '2026-11-01')
+  assert.equal(data.hours.find(item => item.label === '06').net, 10)
+  assert.equal(data.frequency[0].count, 1, 'unknown times cannot enter the frequency numerator')
+  assert.deepEqual(filterAnalyticsRows(ledger, { timezone: 'Asia/Ho_Chi_Minh', years: '["2026"]', months: '["11"]', hours: '["6"]' }), [ledger[0]])
+  assert.deepEqual(filterAnalyticsRows(ledger, { years: '["2003"]' }), [])
+  const unknown = advancedAnalytics({ ...model, ledger: [ledger[1]] })
+  assert.equal(unknown.net, -3)
+  assert.equal(unknown.incomplete, true)
+  assert.deepEqual(unknown.calendar, [])
+  assert.deepEqual(unknown.months, [])
+})

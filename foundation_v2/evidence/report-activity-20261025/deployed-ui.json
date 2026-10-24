@@ -1,0 +1,44 @@
+{
+  "scope": "deployed owner UI GET-only, legacy unknown and report clock requests",
+  "checks": [
+    {
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "dashboardSources": 3,
+      "legacyEquityUnknown": true,
+      "noFabricatedDateCharts": true,
+      "explicitExitClockColumns": true
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "lang": "vi",
+      "dashboardSources": 3,
+      "legacyEquityUnknown": true,
+      "noFabricatedDateCharts": true,
+      "explicitExitClockColumns": true
+    }
+  ],
+  "writes": [],
+  "errors": [],
+  "requests": [
+    "/api/v2/dashboard/sessions?timezone=Asia%2FHo_Chi_Minh&time_basis=activity&page=1&page_size=3&sort=newest",
+    "/api/v2/overview?timezone=Asia%2FHo_Chi_Minh&time_basis=activity&dashboard_source=backtest",
+    "/api/v2/dashboard/sessions?timezone=Asia%2FHo_Chi_Minh&time_basis=activity&page=1&page_size=3&sort=newest",
+    "/api/v2/overview?timezone=Asia%2FHo_Chi_Minh&time_basis=activity&dashboard_source=prop",
+    "/api/v2/dashboard/sessions?timezone=Asia%2FHo_Chi_Minh&time_basis=activity&page=1&page_size=3&sort=newest",
+    "/api/v2/overview?timezone=Asia%2FHo_Chi_Minh&time_basis=activity&dashboard_source=all",
+    "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e/analytics?timezone=Asia%2FHo_Chi_Minh&time_basis=activity",
+    "/api/v2/replay/trades?timezone=Asia%2FHo_Chi_Minh&time_basis=activity&page=1&page_size=10&sort_key=report_time_utc&sort_direction=desc&extra_filters=%7B%22asset%22%3A%22all%22%2C%22tag%22%3A%22all%22%2C%22strategy%22%3A%22all%22%2C%22source%22%3A%22all%22%2C%22weekday%22%3A%22all%22%2C%22hour%22%3A%22all%22%2C%22timeStart%22%3A%22%22%2C%22timeEnd%22%3A%22%22%2C%22reportKinds%22%3A%22%22%2C%22timezone%22%3A%22Asia%2FHo_Chi_Minh%22%2C%22search%22%3A%22%22%2C%22notes%22%3A%22%22%2C%22notesPresence%22%3A%22%22%2C%22statuses%22%3A%22%22%2C%22assets%22%3A%22%22%2C%22sides%22%3A%22%22%2C%22outcomes%22%3A%22%22%2C%22types%22%3A%22%22%2C%22years%22%3A%22%22%2C%22months%22%3A%22%22%2C%22days%22%3A%22%22%2C%22hours%22%3A%22%22%2C%22tagInclude%22%3A%22%22%2C%22tagExclude%22%3A%22%22%2C%22tagIncludeMode%22%3A%22AND%22%2C%22tagExcludeMode%22%3A%22AND%22%7D",
+    "/api/v2/dashboard/sessions?timezone=Asia%2FHo_Chi_Minh&time_basis=activity&page=1&page_size=3&sort=newest",
+    "/api/v2/overview?timezone=Asia%2FHo_Chi_Minh&time_basis=activity&dashboard_source=backtest",
+    "/api/v2/dashboard/sessions?timezone=Asia%2FHo_Chi_Minh&time_basis=activity&page=1&page_size=3&sort=newest",
+    "/api/v2/overview?timezone=Asia%2FHo_Chi_Minh&time_basis=activity&dashboard_source=prop",
+    "/api/v2/dashboard/sessions?timezone=Asia%2FHo_Chi_Minh&time_basis=activity&page=1&page_size=3&sort=newest",
+    "/api/v2/overview?timezone=Asia%2FHo_Chi_Minh&time_basis=activity&dashboard_source=all",
+    "/api/v2/replay/sessions/6428cf18b3f54a36b2e90207ef12392e/analytics?timezone=Asia%2FHo_Chi_Minh&time_basis=activity",
+    "/api/v2/replay/trades?timezone=Asia%2FHo_Chi_Minh&time_basis=activity&page=1&page_size=10&sort_key=report_time_utc&sort_direction=desc&extra_filters=%7B%22asset%22%3A%22all%22%2C%22tag%22%3A%22all%22%2C%22strategy%22%3A%22all%22%2C%22source%22%3A%22all%22%2C%22weekday%22%3A%22all%22%2C%22hour%22%3A%22all%22%2C%22timeStart%22%3A%22%22%2C%22timeEnd%22%3A%22%22%2C%22reportKinds%22%3A%22%22%2C%22timezone%22%3A%22Asia%2FHo_Chi_Minh%22%2C%22search%22%3A%22%22%2C%22notes%22%3A%22%22%2C%22notesPresence%22%3A%22%22%2C%22statuses%22%3A%22%22%2C%22assets%22%3A%22%22%2C%22sides%22%3A%22%22%2C%22outcomes%22%3A%22%22%2C%22types%22%3A%22%22%2C%22years%22%3A%22%22%2C%22months%22%3A%22%22%2C%22days%22%3A%22%22%2C%22hours%22%3A%22%22%2C%22tagInclude%22%3A%22%22%2C%22tagExclude%22%3A%22%22%2C%22tagIncludeMode%22%3A%22AND%22%2C%22tagExcludeMode%22%3A%22AND%22%7D"
+  ],
+  "status": "PASS"
+}

@@ -6801,5 +6801,10 @@
   "Replay position": {"vi": "Replay position", "en": "Replay position"},
   "Lịch sử": {"vi": "Lịch sử", "en": "History"},
   "· giá": {"vi": "· giá", "en": "· price"},
-  "Chưa có phiên trong phạm vi này.": {"vi": "Chưa có phiên trong phạm vi này.", "en": "No sessions in this scope."}
+  "Chưa có phiên trong phạm vi này.": {"vi": "Chưa có phiên trong phạm vi này.", "en": "No sessions in this scope."},
+  "Kết quả theo ngày": {"vi": "Kết quả theo ngày", "en": "Results by day"},
+  "Chưa có lịch sử Equity theo thời gian thực.": {"vi": "Chưa có lịch sử Equity theo thời gian thực.", "en": "No recorded account equity history yet."},
+  "Một số giao dịch cũ chưa có thời gian ghi nhận.": {"vi": "Một số giao dịch cũ chưa có thời gian ghi nhận.", "en": "Some older trades have no recorded activity time."},
+  "Exit Date (Realtime)": {"vi": "Ngày đóng (thực tế)", "en": "Exit Date (Realtime)"},
+  "Exit Date (Chart UTC)": {"vi": "Ngày đóng (biểu đồ UTC)", "en": "Exit Date (Chart UTC)"}
 }

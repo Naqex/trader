@@ -3,10 +3,10 @@ import assert from 'node:assert/strict'
 import { DEFAULT_EXTRA_FILTERS, filterAnalyticsRows, filterValues, readAnalyticsExtraFilters } from '../src/tradingAnalyticsModel.js'
 
 const rows = [
-  { tradeId: 'a', symbol: 'EURUSD', side: 'buy', net_pnl: 10, close_time_utc: '2026-10-05T23:30:00Z', tags: ['planned', 'review, later'], entry_type: 'market', notes: 'Waited for retest' },
-  { tradeId: 'b', symbol: 'GBPUSD', side: 'sell', net_pnl: -10, close_time_utc: '2026-09-04T07:00:00Z', tags: ['planned'], entry_type: 'limit', note: 'No retest' },
-  { tradeId: 'c', symbol: 'XAUUSD', side: 'buy', net_pnl: null, close_time_utc: null, tags: ['review, later'] },
-  { tradeId: 'd', symbol: 'EURUSD', side: 'sell', net_pnl: 0, close_time_utc: '2026-10-06T00:10:00Z', tags: [] },
+  { tradeId: 'a', symbol: 'EURUSD', side: 'buy', net_pnl: 10, close_time_utc: '2003-01-01T23:30:00Z', report_time_utc: '2026-10-05T23:30:00Z', tags: ['planned', 'review, later'], entry_type: 'market', notes: 'Waited for retest' },
+  { tradeId: 'b', symbol: 'GBPUSD', side: 'sell', net_pnl: -10, close_time_utc: '2003-01-02T07:00:00Z', report_time_utc: '2026-09-04T07:00:00Z', tags: ['planned'], entry_type: 'limit', note: 'No retest' },
+  { tradeId: 'c', symbol: 'XAUUSD', side: 'buy', net_pnl: null, close_time_utc: null, report_time_utc: null, tags: ['review, later'] },
+  { tradeId: 'd', symbol: 'EURUSD', side: 'sell', net_pnl: 0, close_time_utc: '2003-01-03T00:10:00Z', report_time_utc: '2026-10-06T00:10:00Z', tags: [] },
 ]
 const matching = patch => filterAnalyticsRows(rows, { ...DEFAULT_EXTRA_FILTERS, ...patch }).map(row => row.tradeId)
 

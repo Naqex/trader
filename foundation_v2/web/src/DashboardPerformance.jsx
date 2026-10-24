@@ -36,14 +36,14 @@ function SideSplit({ counts, total }) {
 
 function MonthlyChart({ title, items, field, rate = false, accent = 'gold' }) {
   const { fmt } = useTestingLocale()
-  return <ReportBars title={title} items={items.filter(item => typeof item[field] === 'number' && item[field] >= 0).map(item => ({ label: `${item.month.slice(5)}/${item.month.slice(0,4)}`, value: item[field] }))} accent={accent} maximum={rate ? 100 : undefined} valueFormat={value => rate ? fmt(value, '%', 0) : fmt(value)} />
+  return <ReportBars title={title} period="month" items={items.filter(item => typeof item[field] === 'number' && item[field] >= 0).map(item => ({ label: item.month, value: item[field] }))} accent={accent} maximum={rate ? 100 : undefined} valueFormat={value => rate ? fmt(value, '%', 0) : fmt(value)} />
 }
 function SymbolChart({ items }) {
   return <ReportBars title="Trades by symbol" items={items.map(item => ({ label: item.symbol, value: item.closed_trade_count }))} horizontal accent="pink" />
 }
 function ActivityChart({ items }) {
   const { t, fmt } = useTestingLocale()
-  return <ReportBars title={t('Thời gian luyện tập theo tháng')} items={items.map(item => ({ label: `${item.month.slice(5)}/${item.month.slice(0,4)}`, value: item.time_invested_seconds / 3600 }))} accent="gold" valueFormat={value => `${fmt(value, '', 1)} ${t('duration.hour')}`} emptyLabel="Chưa có dữ liệu thời gian luyện tập" />
+  return <ReportBars title={t('Thời gian luyện tập theo tháng')} period="month" items={items.map(item => ({ label: item.month, value: item.time_invested_seconds / 3600 }))} accent="gold" valueFormat={value => `${fmt(value, '', 1)} ${t('duration.hour')}`} emptyLabel="Chưa có dữ liệu thời gian luyện tập" />
 }
 
 export default function DashboardPerformance({ workspace, filters, reload, controls, dateControls, sourceHeading, previewPayload, previewState }) {
@@ -85,6 +85,7 @@ export default function DashboardPerformance({ workspace, filters, reload, contr
   const groupState = filterError ? 'invalid' : loading ? 'loading' : denied ? 'denied' : unavailable || blocked ? 'unavailable' : failed ? 'error' : noSessions ? 'empty' : noTrades ? 'no-trades' : 'ready'
   return <section className="fx-dashboard-results" aria-label={t("Performance")} aria-busy={loading || (!filterError && state.key === key && Boolean(state.refreshing))} aria-description={partialNotice || undefined}>
     <div className="fx-dashboard-section-head"><div className="wm-resource-heading"><h2 className="fx-dashboard-performance-heading">{t("Performance")}</h2><TestingResourceStatus state={!groupMessage ? readStatus : undefined} resource="Performance" detail={readStatus === 'partial' ? partialNotice : undefined} recovery={previewPayload ? previewReadRecovery(previewState) : recovery} /></div><div className="fx-dashboard-performance-filters">{controls}{dateControls}</div></div>
+    {performance?.scope?.recording_coverage?.unknown_close_count > 0 && <p role="status">{t("Một số giao dịch cũ chưa có thời gian ghi nhận.")}</p>}
     {sourceHeading && <h3 className="fx-dashboard-source-heading">{sourceHeading}</h3>}
     <div data-testid="dashboard-result-group" data-state={groupState}>
     {loading ? <TestingSkeleton label="Đang tải Performance…" /> : groupMessage ? <TestingReadState message={groupMessage} error={Boolean(filterError || failed)} recovery={!previewPayload && failed && !denied ? recovery : undefined} /> : <><div className={`fx-dashboard-performance-layout${noTrades ? ' has-no-trades' : ''}`} data-testid="dashboard-performance"><div className="fx-dashboard-performance">

@@ -1,0 +1,71 @@
+{
+  "status": "PASS",
+  "checks": [
+    "full: full/compact append roundtrip, fill/partial-close proofs, floating Equity, real report clocks, timezone, date filters, cached summary/dashboard/paged parity, retries, metadata, fork inheritance, unknown legacy",
+    "full: multiasset close clocks use local events; true Equity uses canonical portfolio ledger, never raw asset sum",
+    "compact: full/compact append roundtrip, fill/partial-close proofs, floating Equity, real report clocks, timezone, date filters, cached summary/dashboard/paged parity, retries, metadata, fork inheritance, unknown legacy",
+    "compact: multiasset close clocks use local events; true Equity uses canonical portfolio ledger, never raw asset sum"
+  ],
+  "profiles": {
+    "full": {
+      "session_id": "5f9c49c4873548628c4c65348b390d2a",
+      "child_id": "3914086124384045b9458539ea41bda0",
+      "fill_recorded_at_utc": "2026-10-24T17:17:00.452912Z",
+      "close_recorded_at_utc": [
+        "2026-10-24T17:17:00.474200Z",
+        "2026-10-24T17:17:00.508955Z"
+      ],
+      "market_close_times": [
+        1767225780,
+        1767225840
+      ],
+      "local_month": "2026-10",
+      "equity_points": 6,
+      "portfolio": {
+        "session_id": "d7249c57f83c46dda4fe096c37d347ef",
+        "account_equity_before_close": 99996.0,
+        "raw_asset_equity_sum": 199996.0,
+        "equity_partial": false,
+        "equity_points": 8
+      }
+    },
+    "compact": {
+      "session_id": "2d5b7093bfd74144ade8da77ff9274ef",
+      "child_id": "7003410a3c664837b2575c0d60655917",
+      "fill_recorded_at_utc": "2026-10-24T17:17:00.985959Z",
+      "close_recorded_at_utc": [
+        "2026-10-24T17:17:01.014123Z",
+        "2026-10-24T17:17:01.092221Z"
+      ],
+      "market_close_times": [
+        1767225780,
+        1767225840
+      ],
+      "local_month": "2026-10",
+      "equity_points": 6,
+      "portfolio": {
+        "session_id": "8808e53f42e240fc8e8dff8d13369d87",
+        "account_equity_before_close": 99996.0,
+        "raw_asset_equity_sum": 199996.0,
+        "equity_partial": false,
+        "equity_points": 8
+      }
+    }
+  },
+  "scope": "native Routers, disposable PG, synthetic old-market BARs; no owner DB/provider/broker",
+  "probe_sha256": "4d966c00e8d3afdcde26588548789a949f530687724b0a36070ed246c372955c",
+  "source_sha256": {
+    "scripts\\report_activity_acceptance.py": "00675adaf230f5e824351d70ca3fb95aa469139aa8a3a6ec9b3656045db005f0",
+    "api-rust\\examples\\rust_replay_service_probe.rs": "468a35d46fd77283bb2a8bbbca577d00860648864cd0fd1ea3b169d003993a1a",
+    "api-rust\\src\\replay_activity_recording.rs": "271c9d4902338021f016edc1d43c4ca9735817f23b8e17a998180d792278101b",
+    "api-rust\\src\\replay_service.rs": "aa927db44cf3eee0597b20e80288fe08efc9a270701c58f15938d53e7ed393c0",
+    "api-rust\\src\\analytics.rs": "2dc761cf297cc2b9c18ef2860b3158dcea278b7f2e6755ceb6a0e0aa56b4ec28",
+    "api-rust\\src\\analytics\\activity.rs": "2dfd87394ed4bc50adb59c7597179e2ead803b4bbd3197451435f28ee65210a3",
+    "api-rust\\src\\analytics\\routes.rs": "8c511a73b807b07b0ea546c0ade8b2aee05108368bbcac01a7bfeb8a77bf4c04",
+    "api-rust\\src\\analytics\\trades.rs": "caef807dce493cde6cd5bca815b68538e95554946d8618c4f7033d6a1e0ea381"
+  },
+  "limitations": [
+    "Router/stdio acceptance does not verify browser paint or live broker execution.",
+    "Legacy fixture deliberately has no recording proof; no historical recovery is attempted."
+  ]
+}

@@ -59,9 +59,9 @@ export function buildAnalyticsModel(result, reportKind = 'app', timezone = getTi
   const observedRange = result?.observed_range || result?.range || {}
   const observedStart = observedRange.start_utc || observedRange.start || observedRange.from_utc || observedRange.from
   const observedEnd = observedRange.end_utc || observedRange.end || observedRange.to_utc || observedRange.to
-  const ledgerDates = ledger.flatMap((trade) => [trade?.open_time_utc, trade?.close_time_utc]).map(dateFromValue).filter(Boolean).sort((a, b) => a - b)
+  const ledgerDates = ledger.map(trade => dateFromValue(trade?.report_time_utc)).filter(Boolean).sort((a, b) => a - b)
   const dateLabel = (value) => { const date = dateFromValue(value); return !date ? 'N/A' : displayDate(date, { timeZone: timezone }) }
-  const rows = ledger.map((trade, index) => { const pnl = finite(trade?.net_pnl) ? Number(trade.net_pnl) : null; const date = dateFromValue(trade?.close_time_utc); return { ...trade, report_kind: reportKind, rowIndex: index, tradeId: trade?.trade_id || `trade-${index + 1}`, pnl, outcome: outcomeOf(pnl), source: trade?.source?.session_id || trade?.session_id || trade?.source_id || 'research ledger', closeDate: date ? displayDate(date, { timeStyle: 'medium', timeZone: timezone }) : 'N/A' } })
+  const rows = ledger.map((trade, index) => { const pnl = finite(trade?.net_pnl) ? Number(trade.net_pnl) : null; const date = dateFromValue(trade?.report_time_utc); return { ...trade, report_kind: reportKind, rowIndex: index, tradeId: trade?.trade_id || `trade-${index + 1}`, pnl, outcome: outcomeOf(pnl), source: trade?.source?.session_id || trade?.session_id || trade?.source_id || 'research ledger', closeDate: date ? displayDate(date, { timeStyle: 'medium', timeZone: timezone }) : 'N/A' } })
   const realizedRValues = (Array.isArray(metrics.realized_r_values) ? metrics.realized_r_values : rows.map((trade) => trade.realized_r)).filter(finite).map(Number)
   const metricDefinitions = metrics.definitions && typeof metrics.definitions === 'object'
     ? Object.entries(metrics.definitions).slice(0, 16).reduce((out, [key, value]) => {
@@ -76,7 +76,8 @@ export function buildAnalyticsModel(result, reportKind = 'app', timezone = getTi
   const startBalance = firstKnown(metrics.starting_balance, result?.starting_balance, curve[0]?.value)
   const endingBalance = firstKnown(metrics.ending_closed_trade_balance, metrics.ending_balance, curve[curve.length - 1]?.value)
   const strategy = result?.strategy_version || result?.playbook_id || result?.engine_version || 'N/A'
-  const range = { start: dateLabel(observedStart || ledgerDates[0]?.toISOString()), end: dateLabel(observedEnd || ledgerDates[ledgerDates.length - 1]?.toISOString()) }
+  const activityScope = result?.scope?.time_basis === 'activity'
+  const range = { start: dateLabel(activityScope && observedStart || ledgerDates[0]?.toISOString()), end: dateLabel(activityScope && observedEnd || ledgerDates[ledgerDates.length - 1]?.toISOString()) }
   const takeaway = !tradeCount ? 'Chưa có giao dịch đóng.' : !finite(netPnl) ? `${formatNumber(tradeCount, 0)} giao dịch đóng · Net PnL chưa có dữ liệu.` : `${formatNumber(tradeCount, 0)} giao dịch đóng · Net PnL ${formatNumber(netPnl, 2, result?.account_currency || 'account units')}`
   return {
     result: result || null,
@@ -99,6 +100,7 @@ export function buildAnalyticsModel(result, reportKind = 'app', timezone = getTi
     startBalance,
     endingBalance,
     observed: range,
+    activityIncomplete: ledgerDates.length !== ledger.length,
     strategy,
     sourceHash: result?.artifact_sha256 || 'N/A',
     derivedNet: !finite(providedNet) && finite(netPnl),
@@ -126,6 +128,7 @@ export function readAnalyticsFilters(query, timezone = getTimezone()) {
 export function analyticsQuery(filters, timezone = getTimezone()) {
   const params = new URLSearchParams()
   params.set('timezone', timezone)
+  params.set('time_basis', 'activity')
   if (filters.side && filters.side !== 'all') params.set('side', filters.side)
   if (filters.outcome && filters.outcome !== 'all') params.set('outcome', filters.outcome)
   if (filters.from) params.set('from_close_utc', dateRangeBoundary(filters.from, false, timezone))
@@ -155,6 +158,7 @@ export function analyticsViewResult(view) {
     blocked_by_data: Array.isArray(view.blocked_by_data) ? view.blocked_by_data : [],
     filters: view.filters && typeof view.filters === 'object' ? view.filters : {},
     scope,
+    equity_curve: view.equity_curve,
   }
 }
 

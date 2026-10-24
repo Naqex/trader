@@ -1,0 +1,13 @@
+{
+  "ready": true,
+  "runtime_profile": "native",
+  "replay_storage_profile": "compact",
+  "binary_sha256": {
+    "supervisor": "4d6f5f81a4bca11191c4c7c6b43632694d0a4ce74e068619d8fdc161d469859a",
+    "research": "fada2db630309a2b807c8353938f9854bf7c9c39a5b57c044d91c4175ce75bc0",
+    "api": "e6f8c3c3c9d5e65ef40d25276e8cb29811197ec33e7a12c2f25b753171a9c26b"
+  },
+  "no_schema_migration": true,
+  "terminal_reconnect": false,
+  "broker_submissions": false
+}

@@ -2,26 +2,30 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { closeTime, sessionPeriods } from '../src/sessionPerformanceModel.js'
 
-test('historical period PnL uses UTC close times, a Monday week and the last close rather than wall clock', () => {
+test('activity period PnL uses observation times, Monday week and current calendar', () => {
   const ledger = [
-    { close_time_utc: '2024-01-31T23:59:00Z', net_pnl: 10 },
-    { close_time_utc: '2024-02-04T23:59:00Z', net_pnl: -4 },
-    { close_time_utc: '2024-02-05T00:01:00Z', net_pnl: 7 },
-    { close_time_utc: '2024-02-05T08:00:00+07:00', net_pnl: 2 },
+    { close_time_utc: '2003-01-01T00:00:00Z', report_time_utc: '2026-09-30T23:59:00Z', net_pnl: 10 },
+    { close_time_utc: '2003-01-02T00:00:00Z', report_time_utc: '2026-10-04T23:59:00Z', net_pnl: -4 },
+    { close_time_utc: '2003-01-03T00:00:00Z', report_time_utc: '2026-10-05T00:01:00Z', net_pnl: 7 },
+    { close_time_utc: '2003-01-04T00:00:00Z', report_time_utc: '2026-10-05T08:00:00+07:00', net_pnl: 2 },
   ]
-  const result = sessionPeriods(ledger)
-  assert.equal(result.anchor.toISOString(), '2024-02-05T01:00:00.000Z')
+  const result = sessionPeriods(ledger, 'UTC', new Date('2026-10-05T12:00:00Z'))
+  assert.equal(result.anchor.toISOString(), '2026-10-05T12:00:00.000Z')
   assert.equal(result.month, 5)
   assert.equal(result.week, 9)
   assert.equal(result.day, 9)
-  assert.deepEqual(result.months, [{ label: '2024-01', value: 10 }, { label: '2024-02', value: 5 }])
+  assert.deepEqual(result.months, [{ label: '2026-09', value: 10 }, { label: '2026-10', value: 5 }])
   assert.equal(result.weekdays.find(day => day.label === 'CN').value, -4)
   assert.equal(result.weekdays.find(day => day.label === 'T2').value, 9)
   assert.equal(result.weekdays.reduce((sum, day) => sum + day.value, 0), 15)
+  const later = sessionPeriods(ledger, 'UTC', new Date('2026-11-05T12:00:00Z'))
+  assert.equal(later.month, 0)
+  assert.equal(later.week, 0)
+  assert.equal(later.day, 0)
 })
 
 test('missing dates/PnL do not become a zero period or a fabricated daily chart', () => {
-  for (const trade of [{ close_time_utc: null, net_pnl: 1 }, { close_time_utc: 'invalid', net_pnl: 1 }, { close_time_utc: 1704067200, net_pnl: null }]) {
+  for (const trade of [{ report_time_utc: null, net_pnl: 1 }, { report_time_utc: 'invalid', net_pnl: 1 }, { report_time_utc: 1704067200, net_pnl: null }, { close_time_utc: '2003-01-01', recorded_at_utc: '2026-10-01', updated_at_utc: '2026-10-02', net_pnl: 1 }]) {
     const result = sessionPeriods([trade])
     assert.equal(result.incomplete, true)
     assert.equal(result.day, null)
@@ -29,6 +33,16 @@ test('missing dates/PnL do not become a zero period or a fabricated daily chart'
   }
   assert.equal(sessionPeriods([]).day, null)
   assert.deepEqual(sessionPeriods([]).weekdays, [])
+})
+
+test('unknown observations do not erase known groups and Settings zone owns day boundaries', () => {
+  const ledger = [{ report_time_utc: '2026-10-31T23:30:00Z', net_pnl: 10 }, { report_time_utc: null, close_time_utc: '2003-01-01', net_pnl: 90 }]
+  const utc = sessionPeriods(ledger, 'UTC', new Date('2026-11-01T01:00:00Z'))
+  const vn = sessionPeriods(ledger, 'Asia/Ho_Chi_Minh', new Date('2026-11-01T01:00:00Z'))
+  assert.equal(utc.incomplete, true)
+  assert.equal(utc.day, 0)
+  assert.equal(vn.day, 10)
+  assert.deepEqual(vn.months, [{ label: '2026-11', value: 10 }])
 })
 
 test('numeric epoch seconds and milliseconds normalize to the same historical UTC instant', () => {

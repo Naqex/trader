@@ -33,7 +33,7 @@ export function dashboardFilters(query) {
 }
 
 export function dashboardRequestUrl(filters) {
-  const params = new URLSearchParams({ timezone: getTimezone() })
+  const params = new URLSearchParams({ timezone: getTimezone(), time_basis: 'activity' })
   params.set('dashboard_source', filters.source || 'backtest')
   if (filters.session) params.set('session_id', filters.session)
   if (filters.from) params.set('from_close_utc', dateRangeBoundary(filters.from))
@@ -116,7 +116,7 @@ export async function readDashboardOverview(workspace, filters, signal) {
 }
 
 export async function readDashboardAnalytics(workspace, session, signal) {
-  const response = await scopedRead(`/api/v2/replay/sessions/${encodeURIComponent(session)}/analytics?timezone=${encodeURIComponent(getTimezone())}`, workspace, signal)
+  const response = await scopedRead(`/api/v2/replay/sessions/${encodeURIComponent(session)}/analytics?timezone=${encodeURIComponent(getTimezone())}&time_basis=activity`, workspace, signal)
   const payload = await response.json().catch(() => ({}))
   if (!response.ok) throw Object.assign(new Error(typeof payload.detail === 'string' ? payload.detail : `HTTP ${response.status}`), { status: response.status, retryAfterMs: retryAfterMs(response) })
   const count = payload.scope?.selected_trade_count
@@ -167,7 +167,7 @@ export function dashboardCurve(metrics) {
 
 
 export function dashboardListUrl({ page = 1, search = '', sort = 'newest', asset = '', strategy = '', revision = '' } = {}) {
-  const params = new URLSearchParams({ timezone: getTimezone(), page: String(page), page_size: String(DASHBOARD_PAGE_SIZE), sort })
+  const params = new URLSearchParams({ timezone: getTimezone(), time_basis: 'activity', page: String(page), page_size: String(DASHBOARD_PAGE_SIZE), sort })
   for (const [key, value] of Object.entries({ search, asset, strategy, revision })) if (value) params.set(key, value)
   return `/api/v2/dashboard/sessions?${params}`
 }
@@ -179,7 +179,7 @@ export function dashboardSummaryDetail(summary) {
   return { ...summary, payload, replayRecord: summary.metadata, model: summary.analytics_available ? {
     metrics, ledger: [], result: { account_currency: summary.currency },
     endingBalance: metrics.ending_closed_trade_balance, startBalance: metrics.starting_balance,
-    summaryPeriods: summary.periods, summaryCurve: summary.curve,
+    summaryPeriods: summary.periods, summaryCurve: summary.curve, summaryEquityCurve: summary.equity_curve,
   } : null }
 }
 

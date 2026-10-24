@@ -1,0 +1,61 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "source": "backtest",
+      "count": 1,
+      "months": [],
+      "coverage": {
+        "known_close_count": 0,
+        "legacy_backfill": false,
+        "selected_known_close_count": 0,
+        "unknown_close_count": 1
+      }
+    },
+    {
+      "source": "prop",
+      "count": 12,
+      "months": [],
+      "coverage": {
+        "known_close_count": 0,
+        "legacy_backfill": false,
+        "selected_known_close_count": 0,
+        "unknown_close_count": 12
+      }
+    },
+    {
+      "source": "all",
+      "count": 13,
+      "months": [],
+      "coverage": {
+        "known_close_count": 0,
+        "legacy_backfill": false,
+        "selected_known_close_count": 0,
+        "unknown_close_count": 13
+      }
+    }
+  ],
+  "scope": "owner deployment GET-only; no broker submissions",
+  "session": {
+    "count": 1,
+    "equity_points": 0,
+    "coverage": {
+      "known_close_count": 0,
+      "legacy_backfill": false,
+      "selected_known_close_count": 0,
+      "unknown_close_count": 1
+    }
+  },
+  "paged": {
+    "rows": 10,
+    "date_range": {
+      "from": null,
+      "to": null
+    },
+    "sort": {
+      "direction": "desc",
+      "key": "report_time_utc"
+    }
+  },
+  "ui_index_sha256": "61778c1d7ce479644cef74a6c4ec05389623eaa2376bf2216ec2ae183592b374"
+}

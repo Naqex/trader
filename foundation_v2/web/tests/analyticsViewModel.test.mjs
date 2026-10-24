@@ -30,11 +30,11 @@ test('read projection retains scope, partial and cutoff provenance without React
   assert.equal(result.dataset_sha256, 'hash')
   assert.equal(result.observed_range.start_utc, '2026-10-01T00:00:00Z')
   const filters = readAnalyticsFilters(new URLSearchParams({ side: 'SELL', from: '2026-10-01', to: '2026-10-17' }))
-  assert.deepEqual(Object.fromEntries(analyticsQuery(filters)), { timezone: 'UTC', side: 'sell', from_close_utc: '2026-10-01T00:00:00.000Z', to_close_utc: '2026-10-17T23:59:59.999Z' })
+  assert.deepEqual(Object.fromEntries(analyticsQuery(filters)), { timezone: 'UTC', time_basis: 'activity', side: 'sell', from_close_utc: '2026-10-01T00:00:00.000Z', to_close_utc: '2026-10-17T23:59:59.999Z' })
 })
 
 test('Settings zone updates existing report projection and civil date request boundaries', () => {
-  const source = { ledger: [{ trade_id: 'close', net_pnl: 2, close_time_utc: '2026-10-01T23:30:00Z', entry_type: null }] }
+  const source = { ledger: [{ trade_id: 'close', net_pnl: 2, close_time_utc: '2003-01-01T23:30:00Z', report_time_utc: '2026-10-01T23:30:00Z', entry_type: null }] }
   const query = new URLSearchParams('from_close_utc=2026-10-01T23%3A30%3A00Z&to_close_utc=2026-10-02T01%3A00%3A00Z')
   try {
     setTimezone('Asia/Ho_Chi_Minh')
@@ -42,7 +42,7 @@ test('Settings zone updates existing report projection and civil date request bo
     assert.equal(buildAnalyticsModel(source).ledger[0].entry_type, null)
     assert.deepEqual(readAnalyticsFilters(query), { side: 'all', outcome: 'all', from: '2026-10-02', to: '2026-10-02' })
     assert.deepEqual(Object.fromEntries(analyticsQuery({ from: '2026-10-02', to: '2026-10-02' })), {
-      timezone: 'Asia/Ho_Chi_Minh', from_close_utc: '2026-10-01T17:00:00.000Z', to_close_utc: '2026-10-02T16:59:59.999Z',
+      timezone: 'Asia/Ho_Chi_Minh', time_basis: 'activity', from_close_utc: '2026-10-01T17:00:00.000Z', to_close_utc: '2026-10-02T16:59:59.999Z',
     })
     setTimezone('America/New_York')
     assert.equal(buildAnalyticsModel(source).ledger[0].closeDate, '01/10/2026 19:30:00')
@@ -78,4 +78,23 @@ test('malformed numeric data remains unknown instead of turning into zero or one
   assert.equal(dateFromValue(true), null)
   assert.equal(dateFromValue('  '), null)
   assert.equal(buildAnalyticsModel({ ledger: [{ net_pnl: '0' }] }).ledger[0].pnl, 0)
+})
+
+test('report date/range never fall back to historical market or entry/update timestamps', () => {
+  const ledger = [
+    { trade_id: 'known', net_pnl: 10, open_time_utc: '2003-01-01T00:00:00Z', close_time_utc: '2003-01-02T00:00:00Z', report_time_utc: '2026-10-31T23:30:00Z' },
+    { trade_id: 'unknown', net_pnl: -3, close_time_utc: '2003-02-01T00:00:00Z', report_time_utc: null, recorded_at_utc: '2026-10-01T00:00:00Z', updated_at_utc: '2026-10-02T00:00:00Z' },
+  ]
+  const source = { ledger, observed_range: { start_utc: '2003-01-01', end_utc: '2003-02-01' } }
+  const model = buildAnalyticsModel(source, 'app', 'Asia/Ho_Chi_Minh')
+  assert.equal(model.netPnl, 7)
+  assert.equal(model.ledger[0].closeDate, '01/11/2026 06:30:00')
+  assert.equal(model.ledger[1].closeDate, 'N/A')
+  assert.equal(model.ledger[0].close_time_utc, ledger[0].close_time_utc)
+  assert.deepEqual(model.observed, { start: '01/11/2026', end: '01/11/2026' })
+  assert.equal(model.activityIncomplete, true)
+  const missing = buildAnalyticsModel({ ledger: [ledger[1]], observed_range: source.observed_range })
+  assert.deepEqual(missing.observed, { start: 'N/A', end: 'N/A' })
+  const equity_curve = { points: [{ time_utc: '2026-10-31T23:30:00Z', equity: 1010, balance: 1000, segment: 0 }] }
+  assert.deepEqual(analyticsViewResult({ equity_curve }).equity_curve, equity_curve)
 })

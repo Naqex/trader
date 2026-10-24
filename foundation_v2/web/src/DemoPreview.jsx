@@ -43,7 +43,7 @@ function DemoReports({ ledgerOnly, prop = false, query, state = 'demo' }) {
   const [filters, setFilters] = useState({ side: 'all', outcome: 'all', from: state === 'filtered' ? '2099-01-01' : '', to: '' })
   const [extra, setExtra] = useState({ ...DEFAULT_EXTRA_FILTERS })
   const scopedRows = state === 'no-trades' ? [] : demoFilterRows(ledgerOnly ? ids : [ids]).filter(row => state !== 'new-session' || row.session_id !== sessions[0].record_id)
-  const dates = scopedRows.map(row => row.close_time_utc.slice(0, 10)).sort()
+  const dates = scopedRows.map(row => row.report_time_utc.slice(0, 10)).sort()
   const facets = { assets: [...new Set(sessions.filter(item => ids === null || (Array.isArray(ids) ? ids : [ids]).includes(item.record_id)).map(item => item.instrument_id))], tags: [...new Set(scopedRows.flatMap(row => row.tags || []))], years: [...new Set(dates.map(date => date.slice(0, 4)))], date_range: { from: dates[0], to: dates.at(-1) } }
   const [selected, setSelected] = useState(''), [config, setConfig] = useState({ stop_distance_ticks: 10, stop_multiplier: 1, target_r: 2 })
   const model = useMemo(() => {

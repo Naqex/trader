@@ -6,12 +6,14 @@ export function closeTime(value) {
   return Number.isNaN(date.getTime()) ? null : date
 }
 
-// Calendar summaries are anchored to the last historical close, never today's clock.
-export function sessionPeriods(ledger, timezone = getTimezone()) {
+// Report calendars describe user activity; market timestamps remain for holding time.
+export function sessionPeriods(ledger, timezone = getTimezone(), now = new Date()) {
   if (!ledger.length) return { months: [], weekdays: [], anchor: null, month: null, week: null, day: null, incomplete: false }
-  const rows = ledger.map(trade => ({ date: closeTime(trade.close_time_utc), pnl: trade.net_pnl }))
-  if (rows.some(row => !row.date || typeof row.pnl !== 'number' || !Number.isFinite(row.pnl))) return { months: [], weekdays: [], anchor: null, month: null, week: null, day: null, incomplete: true }
-  const anchor = new Date(Math.max(...rows.map(row => row.date.getTime())))
+  const observed = ledger.map(trade => ({ date: closeTime(trade.report_time_utc), pnl: trade.net_pnl }))
+  const rows = observed.filter(row => row.date && typeof row.pnl === 'number' && Number.isFinite(row.pnl))
+  const incomplete = rows.length !== ledger.length
+  const anchor = closeTime(now)
+  if (!rows.length || !anchor) return { months: [], weekdays: [], anchor, month: null, week: null, day: null, incomplete: true }
   const anchorKey = zonedDateKey(anchor, timezone)
   const dayStart = new Date(`${anchorKey}T00:00:00Z`)
   const weekStart = new Date(dayStart)
@@ -26,8 +28,8 @@ export function sessionPeriods(ledger, timezone = getTimezone()) {
     grouped.set(key, (grouped.get(key) || 0) + row.pnl)
     weekdays[(localDate.getUTCDay() + 6) % 7].value += row.pnl
     if (key === monthKey) month += row.pnl
-    if (localDate >= weekStart) week += row.pnl
-    if (localDate >= dayStart) day += row.pnl
+    if (localDate >= weekStart && localDate <= dayStart) week += row.pnl
+    if (localKey === anchorKey) day += row.pnl
   }
-  return { months: [...grouped].sort(([a], [b]) => a.localeCompare(b)).map(([label, value]) => ({ label, value })), weekdays, anchor, month, week, day, incomplete: false }
+  return { months: [...grouped].sort(([a], [b]) => a.localeCompare(b)).map(([label, value]) => ({ label, value })), weekdays, anchor, month, week, day, incomplete }
 }

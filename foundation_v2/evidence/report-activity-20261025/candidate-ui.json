@@ -1,0 +1,38 @@
+{
+  "scope": "demo rendered activity/equity and period presentation, no mutations",
+  "checks": [
+    {
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "equity": true,
+      "fullWeekdays": true,
+      "topHorizontalGrid": true,
+      "noChartScroll": true,
+      "singleYearContext": true
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "lang": "vi",
+      "equity": true,
+      "fullWeekdays": true,
+      "topHorizontalGrid": true,
+      "noChartScroll": true,
+      "singleYearContext": true
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "lang": "en",
+      "equity": true,
+      "fullWeekdays": true,
+      "topHorizontalGrid": true,
+      "noChartScroll": true,
+      "singleYearContext": true
+    }
+  ],
+  "errors": [],
+  "writes": [],
+  "status": "PASS"
+}

@@ -27,6 +27,8 @@ use uuid::Uuid;
 pub mod history;
 #[path = "replay_entry_recording.rs"]
 mod entry_recording;
+#[path = "replay_activity_recording.rs"]
+pub(crate) mod activity_recording;
 
 struct ReplayTimings {
     operation: String,
@@ -356,6 +358,7 @@ async fn lock_datasets(tx: &Transaction<'_>, workspace: &str, p: &Value) -> Resu
 fn take_mutation_payload(record: &mut Value) -> Value {
     let payload=record["payload"].take();
     record["_entry_recording_baseline"]=entry_recording::baseline(&payload);
+    record["_activity_recording_baseline"]=activity_recording::baseline(&payload);
     payload
 }
 pub async fn save_record(
@@ -381,6 +384,8 @@ async fn save_record_with_events(
     let stamp = now();
     let baseline=if record["payload"].is_object(){entry_recording::baseline(&record["payload"])}else{record["_entry_recording_baseline"].clone()};
     entry_recording::capture(&baseline,&mut payload,events,&stamp);
+    let activity_baseline=if record["payload"].is_object(){activity_recording::baseline(&record["payload"])}else{record["_activity_recording_baseline"].clone()};
+    activity_recording::capture(&activity_baseline,&mut payload,events,&stamp);
     let n=tx.execute("UPDATE workspace_records SET current_revision=$3,updated_at_utc=$4 WHERE workspace_id=$1 AND kind='replay' AND record_id=$2 AND current_revision=$5",&[&workspace,&id,&rev,&stamp,&(expected as i32)]).await.map_err(|_|ApiError::database())?;
     if n != 1 {
         return Err(conflict("record revision conflict"));
@@ -399,6 +404,8 @@ async fn create_record(
     lock_datasets(tx, workspace, &p).await?;
     ensure_portfolio(tx, workspace, id, &mut p).await?;
     let stamp = now();
+    let activity_baseline=activity_recording::baseline(&p);
+    activity_recording::capture(&activity_baseline,&mut p,&[],&stamp);
     tx.execute("INSERT INTO workspace_records(workspace_id,kind,record_id,current_revision,created_at_utc,updated_at_utc) VALUES($1,'replay',$2,1,$3,$3)",&[&workspace,&id,&stamp]).await.map_err(|_|ApiError::database())?;
     tx.execute("INSERT INTO workspace_record_revisions(workspace_id,kind,record_id,revision,payload_json,deleted,created_at_utc) VALUES($1,'replay',$2,1,$3,false,$4)",&[&workspace,&id,&p,&stamp]).await.map_err(|_|ApiError::database())?;
     let mut record = json!({"record_id":id,"source_key":null,"revision":1,"deleted":false,"created_at_utc":stamp,"updated_at_utc":stamp});
@@ -2546,6 +2553,7 @@ async fn branch(
             "trading_options",
             "trading_options_seed",
             "entry_recording",
+            "activity_recording",
         ] {
             if let Some(v) = old.get(key) {
                 p[key] = v.clone();

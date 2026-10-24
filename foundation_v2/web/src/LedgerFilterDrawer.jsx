@@ -32,8 +32,8 @@ export default function LedgerFilterDrawer({ initialTab, filters, extra, rows, f
   useEffect(() => setDraftExtra(value => ({ ...value, timezone })), [timezone])
   const change = patch => setDraftExtra(value => ({ ...value, ...patch }))
   const unique = key => (facets?.[{ symbol: 'assets', tags: 'tags', playbook_id: 'strategies', entry_type: 'types' }[key]] || [...new Set(rows.flatMap(row => key === 'tags' ? row.tags || [] : row[key] ? [row[key]] : []))].sort())
-  const years = facets?.years || [...new Set(rows.map(row => calendarParts(row.close_time_utc, timezone)?.key.slice(0, 4)).filter(Boolean))].sort()
-  const dates = rows.map(row => calendarParts(row.close_time_utc, timezone)?.key).filter(Boolean).sort()
+  const years = facets?.years || [...new Set(rows.map(row => calendarParts(row.report_time_utc, timezone)?.key.slice(0, 4)).filter(Boolean))].sort()
+  const dates = rows.map(row => calendarParts(row.report_time_utc, timezone)?.key).filter(Boolean).sort()
   const dateRange = facets?.date_range || { from: dates[0], to: dates.at(-1) }
   const clear = () => { setDraft(baseFilters); setDraftExtra({ ...DEFAULT_EXTRA_FILTERS, timezone }) }
   const apply = () => {

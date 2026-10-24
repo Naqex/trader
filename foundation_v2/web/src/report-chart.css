@@ -11,5 +11,6 @@
 .report-bar.is-negative rect { fill:var(--report-negative); }
 .report-plot { min-width:0; }
 .report-chart h3 { margin-bottom:16px; }
+.report-year { margin-left:8px;color:var(--wm-content-muted);font-size:12px;font-weight:400; }
 
 .report-chart{min-width:0}

@@ -40,45 +40,61 @@ export function ReportLineChart({ title, points, currency, emptyLabel = 'Chưa c
   const timed = valid && points.every(point => finite(point.time)) && points.at(-1).time > points[0].time
   const x = (point, index) => left + (timed ? (point.time - points[0].time) / (points.at(-1).time - points[0].time) : index / Math.max(1, points.length - 1)) * (right - left)
   const y = value => bottom - (value - domain.low) / (domain.high - domain.low) * (bottom - top)
-  const path = valid ? points.map((point, index) => `${index ? 'L' : 'M'}${x(point, index)},${y(point.value)}`).join(' ') : ''
-  const labels = [...new Set(width < 420 ? [0, points.length - 1] : [0, Math.floor((points.length - 1) / 2), points.length - 1])].filter(index => index >= 0)
+  const groups = []
+  if (valid) points.forEach((point, index) => {
+    if (!index || point.segment !== points[index - 1].segment) groups.push([])
+    groups.at(-1).push({ point, index })
+  })
+  const paths = groups.map(group => ({ group, path: group.map(({ point, index }, i) => `${i ? 'L' : 'M'}${x(point, index)},${y(point.value)}`).join(' ') }))
+  const labels = [...new Set(right - left < 180 ? [points.length - 1] : width < 420 ? [0, points.length - 1] : [0, Math.floor((points.length - 1) / 2), points.length - 1])].filter(index => index >= 0)
   return <section className="fxs-chart-panel report-chart is-blue"><h3>{t(title)}</h3>{domain ? <div ref={plotRef} className="report-plot" role="group" aria-label={t(title)}><svg className="report-svg" viewBox={`0 0 ${width} ${H}`} style={{ height: H }} role="img" aria-label={`${t(title)}: ${fmt(points[0].value, currency ? ` ${currency}` : '')} → ${fmt(points.at(-1).value, currency ? ` ${currency}` : '')}`}>
     <defs><linearGradient id={id} x1="0" x2="0" y1="0" y2="1"><stop stopColor="var(--report-accent)" stopOpacity=".2"/><stop offset="1" stopColor="var(--report-accent)" stopOpacity=".015"/></linearGradient></defs>
     {domain.ticks.map(value => <g key={value}><line className="report-grid" x1={left} x2={right} y1={y(value)} y2={y(value)}/><text x={left - 12} y={y(value)} dominantBaseline="middle" textAnchor="end">{axis.get(value)}</text></g>)}
-    {area && <path d={`${path} L${x(points.at(-1), points.length - 1)},${bottom} L${left},${bottom} Z`} fill={`url(#${id})`}/>}
-    <path className="report-line" d={path}/>
+    {paths.map(({ path, group }, index) => <g key={index}>{area && <path d={`${path} L${x(group.at(-1).point, group.at(-1).index)},${bottom} L${x(group[0].point, group[0].index)},${bottom} Z`} fill={`url(#${id})`}/>}<path className="report-line" d={path}/></g>)}
     {points.filter((_, index) => points.length <= 20 || labels.includes(index)).map((point, index) => <circle key={`${point.time}:${index}`} cx={x(point, points.indexOf(point))} cy={y(point.value)} r="3" className="report-point"><title>{`${finite(point.time) ? displayDate(point.time, { timeStyle: 'short' }) : point.label || ''}: ${fmt(point.value, currency ? ` ${currency}` : '')}`}</title></circle>)}
     {labels.map(index => <text key={index} x={x(points[index], index)} y="236" textAnchor={index === 0 ? 'start' : index === points.length - 1 ? 'end' : 'middle'}>{finite(points[index].time) ? displayDate(points[index].time) : points[index].label || index}</text>)}
   </svg></div> : <div className="fxs-chart-empty">{t(emptyLabel)}</div>}</section>
 }
 
-export function ReportBars({ title, items, currency, horizontal = false, accent = 'blue', signed = false, maximum, valueFormat, emptyLabel = 'Chưa có dữ liệu để vẽ biểu đồ.' }) {
+export function ReportBars({ title, items, currency, period, horizontal = false, accent = 'blue', signed = false, maximum, valueFormat, emptyLabel = 'Chưa có dữ liệu để vẽ biểu đồ.' }) {
   const { t, fmt, locale } = useTestingLocale()
   const values = items.map(item => item.value), valid = items.length > 0 && values.every(finite)
   const domain = valid ? chartDomain(values, { maximum }) : null
   const [plotRef, width] = usePlotWidth(Boolean(domain)), right = width - 24
   const axis = axisLabels(domain?.ticks || [], fmt, locale)
   const plotRight = horizontal ? right - 72 : right
-  const height = horizontal ? Math.max(H, items.length * 36 + 58) : H
+  const weekday = period === 'weekday'
+  const height = horizontal ? Math.max(H, items.length * 36 + 58) : weekday ? H + 64 : H
   const edge = horizontal ? height - 40 : bottom
   const x = value => left + (value - domain.low) / (domain.high - domain.low) * (plotRight - left)
   const y = value => edge - (value - domain.low) / (domain.high - domain.low) * (edge - top)
   const amount = value => valueFormat ? valueFormat(value) : fmt(value, currency ? ` ${currency}` : '')
+  const monthKeys = period === 'month' && items.length && items.every(item => /^\d{4}-(0[1-9]|1[0-2])$/.test(item.label))
+  const years = monthKeys ? [...new Set(items.map(item => item.label.slice(0, 4)))] : []
+  const year = years.length === 1 ? years[0] : ''
+  const labels = items.map(item => {
+    let label = t(item.label)
+    if (monthKeys) label = year ? new Intl.DateTimeFormat(locale, { month: 'long', timeZone: 'UTC' }).format(new Date(`${item.label}-01T00:00:00Z`)) : `${item.label.slice(5)}/${item.label.slice(0, 4)}`
+    const day = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].indexOf(item.label)
+    if (weekday && day >= 0) label = locale.startsWith('vi') ? day === 6 ? 'Chủ nhật' : `Thứ ${day + 2}` : new Intl.DateTimeFormat(locale, { weekday: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2024, 0, 1 + day)))
+    return label.charAt(0).toLocaleUpperCase(locale) + label.slice(1)
+  })
   const tickLabel = value => maximum === 100 ? `${fmt(value, '', 0)}%` : axis.get(value)
   const tickCount = domain ? Math.min(domain.ticks.length, Math.max(2, Math.floor((plotRight - left) / Math.max(...domain.ticks.map(value => tickLabel(value).length * 7 + 12))) + 1)) : 0
   const ticks = horizontal && domain ? Array.from({ length: tickCount }, (_, index) => domain.ticks[Math.round(index * (domain.ticks.length - 1) / (tickCount - 1))]) : domain?.ticks
   // Keep every bar; thin axis/value labels only when their text would overlap.
-  const labelWidth = Math.max(40, ...items.map(item => Math.max(t(item.label).length, (valueFormat ? valueFormat(item.value) : fmt(item.value)).length) * 7 + 12))
+  const labelWidth = Math.max(40, ...items.map((item, index) => Math.max(weekday ? 0 : labels[index].length, (valueFormat ? valueFormat(item.value) : fmt(item.value)).length) * 7 + 12))
   const labelStride = Math.ceil(items.length / Math.max(1, Math.floor((right - left) / labelWidth)))
-  return <section className={`fxs-chart-panel report-chart is-${accent}`}><h3>{t(title)}</h3>{domain ? <div ref={plotRef} className="report-plot" role="group" aria-label={t(title)}><svg className="report-svg" viewBox={`0 0 ${width} ${height}`} style={{ height }} role="img" aria-label={`${t(title)}: ${items.map(item => `${t(item.label)}: ${amount(item.value)}`).join('; ')}`}>
+  return <section className={`fxs-chart-panel report-chart is-${accent}`}><h3>{t(title)}{year && <span className="report-year">{year}</span>}</h3>{domain ? <div ref={plotRef} className="report-plot" role="group" aria-label={t(title)}><svg className="report-svg" viewBox={`0 0 ${width} ${height}`} style={{ height }} role="img" aria-label={`${t(title)}: ${items.map((item, index) => `${monthKeys ? item.label : labels[index]}: ${amount(item.value)}`).join('; ')}`}>
+    {horizontal && <line className="report-grid" x1={left} x2={right} y1={top} y2={top}/>}
     {ticks.map(value => <g key={value}>{horizontal ? <text x={x(value)} y={height - 14} textAnchor="middle">{tickLabel(value)}</text> : <><line className="report-grid" x1={left} x2={right} y1={y(value)} y2={y(value)}/><text x={left - 12} y={y(value)} dominantBaseline="middle" textAnchor="end">{valueFormat ? valueFormat(value) : axis.get(value)}</text></>}</g>)}
     {items.map((item, index) => {
       const step = (horizontal ? edge - top : right - left) / items.length
       const center = (horizontal ? top : left) + (index + .5) * step, width = Math.min(36, step * .55)
       const negative = signed && item.value < 0
       return <g key={item.label} className={`report-bar${signed ? negative ? ' is-negative' : ' is-positive' : ''}`}>
-        {horizontal ? <><line className="report-grid" x1={left} x2={right} y1={center + step / 2} y2={center + step / 2}/><text x={left - 12} y={center} dominantBaseline="middle" textAnchor="end">{t(item.label)}</text><rect x={Math.min(x(0), x(item.value))} y={center - width / 2} width={Math.max(item.value === 0 ? 2 : 0, Math.abs(x(item.value) - x(0)))} height={width} rx="2"/><text className="report-bar-value" x={x(item.value) + (negative && x(item.value) >= left + 48 ? -8 : 8)} y={center} dominantBaseline="middle" textAnchor={negative && x(item.value) < left + 48 ? 'start' : negative ? 'end' : 'start'}>{valueFormat ? valueFormat(item.value) : fmt(item.value)}</text></> : <><rect x={center - width / 2} y={Math.min(y(0), y(item.value))} width={width} height={Math.max(item.value === 0 ? 2 : 0, Math.abs(y(item.value) - y(0)))} rx="2"/>{index % labelStride === 0 && <><text className="report-bar-value" x={center} y={item.value < 0 ? y(item.value) + 14 : y(item.value) - 9} textAnchor="middle">{valueFormat ? valueFormat(item.value) : fmt(item.value)}</text><text x={center} y={height - 14} textAnchor="middle">{t(item.label)}</text></>}</>}
-        <title>{`${t(item.label)}: ${amount(item.value)}`}</title>
+        {horizontal ? <><line className="report-grid" x1={left} x2={right} y1={center + step / 2} y2={center + step / 2}/><text x={left - 12} y={center} dominantBaseline="middle" textAnchor="end">{labels[index]}</text><rect x={Math.min(x(0), x(item.value))} y={center - width / 2} width={Math.max(item.value === 0 ? 2 : 0, Math.abs(x(item.value) - x(0)))} height={width} rx="2"/><text className="report-bar-value" x={x(item.value) + (negative && x(item.value) >= left + 48 ? -8 : 8)} y={center} dominantBaseline="middle" textAnchor={negative && x(item.value) < left + 48 ? 'start' : negative ? 'end' : 'start'}>{valueFormat ? valueFormat(item.value) : fmt(item.value)}</text></> : <><rect x={center - width / 2} y={Math.min(y(0), y(item.value))} width={width} height={Math.max(item.value === 0 ? 2 : 0, Math.abs(y(item.value) - y(0)))} rx="2"/>{index % labelStride === 0 && <text className="report-bar-value" x={center} y={item.value < 0 ? y(item.value) + 14 : y(item.value) - 9} textAnchor="middle">{valueFormat ? valueFormat(item.value) : fmt(item.value)}</text>}{(weekday || index % labelStride === 0) && <text className="report-category" x={center} y={weekday ? bottom + 22 : height - 14} textAnchor={weekday ? 'end' : 'middle'} transform={weekday ? `rotate(-45 ${center} ${bottom + 22})` : undefined}>{labels[index]}</text>}</>}
+        <title>{`${monthKeys ? item.label : labels[index]}: ${amount(item.value)}`}</title>
       </g>
     })}
   </svg></div> : <div className="fxs-chart-empty">{t(emptyLabel)}</div>}</section>

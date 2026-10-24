@@ -108,6 +108,7 @@ async fn invoke(
         form_urlencoded::parse(request.uri().query().unwrap_or("").as_bytes())
             .map(|(k, v)| (k.into_owned(), v.into_owned()))
             .collect();
+    let activity_basis = match q.get("time_basis").map(String::as_str).unwrap_or("market") { "activity" => true, "market" => false, _ => return Err(bad("analytics_time_basis_invalid")) };
     let mut client = state.pool.get().await.map_err(|_| ApiError::database())?;
     let tx = client
         .build_transaction()
@@ -172,7 +173,15 @@ async fn invoke(
                     error(StatusCode::SERVICE_UNAVAILABLE, "stored_contract_untrusted")
                 }
             })?;
-            research_projection(&result, &f)
+            if activity_basis {
+                let mut result=result;
+                if let Some(rows)=result["ledger"].as_array_mut(){for row in rows {row["report_time_utc"]=Value::Null;row["close_recorded_at_utc"]=Value::Null;}}
+                let mut view=research_projection(&result,&f)?;
+                view["scope"]["time_basis"]=json!("activity");
+                view["provenance"]["time_basis"]=json!("activity");
+                view["scope"]["recording_coverage"]=json!({"known_close_count":0,"unknown_close_count":view["ledger"].as_array().map_or(0,Vec::len),"legacy_backfill":false});
+                Ok(view)
+            } else {research_projection(&result, &f)}
         })
         .await
         .map_err(|_| {
@@ -283,7 +292,7 @@ async fn invoke(
         tokio::task::spawn_blocking(move || {
             let _permit = permit;
             let bars = reader.indices(&path, &sha, 0, end)?;
-            build_experiments(&record, &bars, &sha, Some(&f), &config)
+            build_experiments_for_basis(&record, &bars, &sha, Some(&f), &config, activity_basis)
         })
         .await
         .map_err(|_| bad("replay_experiment_invalid_source_or_config"))?
@@ -386,6 +395,9 @@ pub fn build_experiments(
     filters: Option<&Value>,
     raw: &Value,
 ) -> R<Value> {
+    build_experiments_for_basis(record,bars,sha,filters,raw,false)
+}
+fn build_experiments_for_basis(record:&Value,bars:&[Value],sha:&str,filters:Option<&Value>,raw:&Value,activity_basis:bool)->R<Value>{
     use crate::replay_core::d;
     let mut config = json!({});
     for (k, default, max) in [
@@ -403,7 +415,7 @@ pub fn build_experiments(
         }
         config[k] = json!(n.to_string())
     }
-    let a = crate::analytics::build_replay_analytics_view(record, filters)?;
+    let a = if activity_basis { crate::analytics::build_replay_activity_view(record,filters,chrono_tz::UTC)? } else { crate::analytics::build_replay_analytics_view(record, filters)? };
     let mut out = json!({"schema_version":"replay-analytics-experiments-v1","read_only":true,"config":{},"provenance":a["provenance"],"scope":a["scope"],"account_currency":a["account_currency"],"rows":[],"bounds":"selected closed trades; original close; no future bars","risk_basis":"user_configured_distance; not original planned risk","blocked_by_data":a["blocked_by_data"]});
     for k in ["stop_distance_ticks", "stop_multiplier", "target_r"] {
         out["config"][k] = number(d(&config[k])?)?

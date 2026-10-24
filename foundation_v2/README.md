@@ -41,6 +41,9 @@ existing HTTP command path; background signals never advance the replay cursor.
 HTTP JSON/OpenAPI remains the public contract. WebSocket and gRPC are conditional
 future transports, with no unused services installed.
 
+Product report dates follow [observed activity time](docs/REPORT-TIME.md);
+market timestamps remain separate for replay and execution.
+
 Managed MT5 charts additionally use a shared SSE market stream with incremental
 bar updates and reconnect; the warm terminal SDK adapter is sampled rather than
 broker tick-pushed. See [market stream contract and limits](docs/LIVE-MARKET-STREAM.md).
