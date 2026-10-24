@@ -51,7 +51,7 @@ export default function Mt5SymbolPicker({anchor,theme,symbols,symbol,status,onSe
         entries[event.key==='Home'?0:event.key==='End'?entries.length-1:(index+(event.key==='ArrowDown'?1:entries.length-1))%entries.length]?.focus()
       }}>{matches.map(item=><button type="button" role="option" aria-selected={item.symbol===symbol} tabIndex={item.symbol===tabSymbol?0:-1} onFocus={()=>setFocused(item.symbol)} key={item.symbol} title={item.metadata?.description||undefined} disabled={status!=='ready'} onClick={()=>select(item.symbol)}><strong>{item.symbol}</strong><span>{t(categoryLabel(item.category))}</span><span className="mt5-symbol-check" aria-hidden="true">{item.symbol===symbol?'✓':''}</span></button>)}</div>
       {!matches.length&&<p className="mt5-symbol-empty" role="status">{t(symbols.length?'Không tìm thấy mã phù hợp.':'Chưa có danh sách mã từ MT5.')}</p>}
-      <footer><span>{t('{count} mã',{count:matches.length})}</span><span>{t(metadata.length?'Phân nhóm từ thông tin broker.':'Phân nhóm theo mã tài sản.')}</span></footer>
+      <footer><span>{t('{count} mã',{count:matches.length})}</span></footer>
       {status!=='ready'&&symbols.length>0&&<p role="status">{t('Đang kết nối lại MT5…')}</p>}
     </LegacyModal>
 }
