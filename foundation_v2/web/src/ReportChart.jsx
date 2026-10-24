@@ -1,7 +1,6 @@
 import { useId, useLayoutEffect, useRef, useState } from 'react'
 import { displayDate } from './dateFormat.js'
 import { useTestingLocale } from './testingLocale.jsx'
-import { currencyLabel } from './moneyFormat.js'
 import './report-chart.css'
 
 const W = 560, H = 250, left = 88, top = 24, bottom = 208
@@ -32,7 +31,6 @@ export function chartDomain(values, { zero = true, maximum } = {}) {
   if (high === low) { const pad = Math.max(Math.abs(high) * .0001, 1); low -= zero && low === 0 ? 0 : pad; high += pad }
   return { low, high, ticks: Array.from({ length: maximum === 100 ? 6 : 5 }, (_, index) => low + (high - low) * index / (maximum === 100 ? 5 : 4)) }
 }
-function Unit({ currency }) { return currency ? <text className="report-unit" x={left - 12} y="12" textAnchor="end">{currencyLabel(currency)}</text> : null }
 export function ReportLineChart({ title, points, currency, emptyLabel = 'Chưa có dữ liệu để vẽ biểu đồ.', area = true }) {
   const { t, fmt, locale } = useTestingLocale(), id = useId()
   const valid = points.length > 0 && points.every(point => finite(point.value))
@@ -45,7 +43,7 @@ export function ReportLineChart({ title, points, currency, emptyLabel = 'Chưa c
   const path = valid ? points.map((point, index) => `${index ? 'L' : 'M'}${x(point, index)},${y(point.value)}`).join(' ') : ''
   const labels = [...new Set(width < 420 ? [0, points.length - 1] : [0, Math.floor((points.length - 1) / 2), points.length - 1])].filter(index => index >= 0)
   return <section className="fxs-chart-panel report-chart is-blue"><h3>{t(title)}</h3>{domain ? <div ref={plotRef} className="report-plot" role="group" aria-label={t(title)}><svg className="report-svg" viewBox={`0 0 ${width} ${H}`} style={{ height: H }} role="img" aria-label={`${t(title)}: ${fmt(points[0].value, currency ? ` ${currency}` : '')} → ${fmt(points.at(-1).value, currency ? ` ${currency}` : '')}`}>
-    <defs><linearGradient id={id} x1="0" x2="0" y1="0" y2="1"><stop stopColor="var(--report-accent)" stopOpacity=".2"/><stop offset="1" stopColor="var(--report-accent)" stopOpacity=".015"/></linearGradient></defs><Unit currency={currency}/>
+    <defs><linearGradient id={id} x1="0" x2="0" y1="0" y2="1"><stop stopColor="var(--report-accent)" stopOpacity=".2"/><stop offset="1" stopColor="var(--report-accent)" stopOpacity=".015"/></linearGradient></defs>
     {domain.ticks.map(value => <g key={value}><line className="report-grid" x1={left} x2={right} y1={y(value)} y2={y(value)}/><text x={left - 12} y={y(value)} dominantBaseline="middle" textAnchor="end">{axis.get(value)}</text></g>)}
     {area && <path d={`${path} L${x(points.at(-1), points.length - 1)},${bottom} L${left},${bottom} Z`} fill={`url(#${id})`}/>}
     <path className="report-line" d={path}/>
@@ -72,7 +70,7 @@ export function ReportBars({ title, items, currency, horizontal = false, accent 
   // Keep every bar; thin axis/value labels only when their text would overlap.
   const labelWidth = Math.max(40, ...items.map(item => Math.max(t(item.label).length, (valueFormat ? valueFormat(item.value) : fmt(item.value)).length) * 7 + 12))
   const labelStride = Math.ceil(items.length / Math.max(1, Math.floor((right - left) / labelWidth)))
-  return <section className={`fxs-chart-panel report-chart is-${accent}`}><h3>{t(title)}</h3>{domain ? <div ref={plotRef} className="report-plot" role="group" aria-label={t(title)}><svg className="report-svg" viewBox={`0 0 ${width} ${height}`} style={{ height }} role="img" aria-label={`${t(title)}: ${items.map(item => `${t(item.label)}: ${amount(item.value)}`).join('; ')}`}><Unit currency={currency}/>
+  return <section className={`fxs-chart-panel report-chart is-${accent}`}><h3>{t(title)}</h3>{domain ? <div ref={plotRef} className="report-plot" role="group" aria-label={t(title)}><svg className="report-svg" viewBox={`0 0 ${width} ${height}`} style={{ height }} role="img" aria-label={`${t(title)}: ${items.map(item => `${t(item.label)}: ${amount(item.value)}`).join('; ')}`}>
     {ticks.map(value => <g key={value}>{horizontal ? <><line className="report-grid" x1={x(value)} x2={x(value)} y1={top} y2={edge}/><text x={x(value)} y={height - 14} textAnchor="middle">{tickLabel(value)}</text></> : <><line className="report-grid" x1={left} x2={right} y1={y(value)} y2={y(value)}/><text x={left - 12} y={y(value)} dominantBaseline="middle" textAnchor="end">{valueFormat ? valueFormat(value) : axis.get(value)}</text></>}</g>)}
     {horizontal ? <line className="report-zero" x1={x(0)} x2={x(0)} y1={top} y2={edge}/> : <line className="report-zero" x1={left} x2={right} y1={y(0)} y2={y(0)}/>}
     {items.map((item, index) => {

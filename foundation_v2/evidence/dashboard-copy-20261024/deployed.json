@@ -1,0 +1,40 @@
+{
+  "checks": [
+    {
+      "language": "vi",
+      "width": 1440,
+      "descriptionsRestored": true,
+      "noStandaloneCurrency": true,
+      "accessibleCurrencyRetained": true,
+      "noChartOverflow": true
+    },
+    {
+      "language": "vi",
+      "width": 390,
+      "descriptionsRestored": true,
+      "noStandaloneCurrency": true,
+      "accessibleCurrencyRetained": true,
+      "noChartOverflow": true
+    },
+    {
+      "language": "en",
+      "width": 1440,
+      "descriptionsRestored": true,
+      "noStandaloneCurrency": true,
+      "accessibleCurrencyRetained": true,
+      "noChartOverflow": true
+    },
+    {
+      "language": "en",
+      "width": 390,
+      "descriptionsRestored": true,
+      "noStandaloneCurrency": true,
+      "accessibleCurrencyRetained": true,
+      "noChartOverflow": true
+    }
+  ],
+  "errors": [],
+  "writes": [],
+  "servedIndexSha256": "1809421e6ea0e8c570312cec8dfa0e64d7ec81ed000632f3c61ce08a816354c8",
+  "status": "PASS"
+}
