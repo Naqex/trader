@@ -353,3 +353,53 @@ async fn native_jobs_and_sse_durable_http_contract() {
         golden["cases"].as_array().unwrap().len()
     );
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "owned fixture PostgreSQL from run_events_parity.py only"]
+async fn native_background_resource_events() {
+    let golden: Value = serde_json::from_slice(&std::fs::read(std::env::var("TW_EVENTS_GOLDEN").unwrap()).unwrap()).unwrap();
+    let state = AppState::connect(Config::from_environment().unwrap()).await.unwrap();
+    let conn = state.pool.get().await.unwrap();
+    let database: String = conn.query_one("SELECT current_database()", &[]).await.unwrap().get(0);
+    assert!(database.starts_with("events_parity_"), "refuse owner database");
+    let app = trading_workspace_api::router(state.clone(), events::routes());
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let address = listener.local_addr().unwrap();
+    let server = tokio::spawn(async move { axum::serve(listener, app).await.unwrap(); });
+    let mut a = Wire::connect(address, Some("tenant-a"));
+    let initial = a.snapshot();
+    let mut b = Wire::connect(address, Some("tenant-b"));
+    let other = b.snapshot();
+    drop(b);
+    conn.batch_execute("INSERT INTO prop_sessions(workspace_id,session_id,current_revision,snapshot_json,created_at_utc,updated_at_utc) VALUES('tenant-a','signal-prop',1,'{\"secret\":\"private-secret\"}','now','now'); INSERT INTO prop_attempts(workspace_id,session_id,attempt_id,current_revision,snapshot_json,phase_json,created_at_utc,updated_at_utc) VALUES('tenant-a','signal-prop','attempt-1',1,'{}','{}','now','now')").await.unwrap();
+    let prop_added = a.snapshot();
+    assert_eq!(prop_added["resources"]["prop"]["count"], 1);
+    assert_eq!(prop_added["resources"]["sessions"], initial["resources"]["sessions"]);
+    assert!(!prop_added.to_string().contains("signal-prop"));
+    assert!(!prop_added.to_string().contains("private-secret"));
+    conn.batch_execute("UPDATE prop_attempts SET current_revision=2 WHERE workspace_id='tenant-a' AND session_id='signal-prop'").await.unwrap();
+    let prop_attempt = a.snapshot();
+    assert_ne!(prop_attempt["resources"]["prop"], prop_added["resources"]["prop"]);
+    conn.batch_execute("UPDATE prop_sessions SET current_revision=2 WHERE workspace_id='tenant-a' AND session_id='signal-prop'").await.unwrap();
+    let prop_session = a.snapshot();
+    assert_ne!(prop_session["resources"]["prop"], prop_attempt["resources"]["prop"]);
+    // The job is deliberately outside recent_jobs, even after its metadata changes.
+    let job = golden["active_id"].as_str().unwrap();
+    conn.batch_execute("INSERT INTO research_jobs(workspace_id,job_id,dataset_id,strategy_version,starting_balance,status,created_at_utc,updated_at_utc) SELECT 'tenant-a','signal-old-'||n,'data','close-delta-v1',10000,'completed','1900-01-03T00:00:00Z','1900-01-03T00:00:00Z' FROM generate_series(1,21) n").await.unwrap();
+    conn.execute("UPDATE research_jobs SET updated_at_utc='1900-01-01T00:00:00Z' WHERE workspace_id='tenant-a' AND job_id=$1", &[&job]).await.unwrap();
+    let research_before = a.snapshot();
+    assert!(!research_before["research"]["recent_jobs"].as_array().unwrap().iter().any(|item|item["job_id"]==job));
+    conn.execute("UPDATE research_jobs SET updated_at_utc='1900-01-02T00:00:00Z' WHERE workspace_id='tenant-a' AND job_id=$1", &[&job]).await.unwrap();
+    let research_after = a.snapshot();
+    assert_eq!(research_before["research"]["recent_jobs"], research_after["research"]["recent_jobs"]);
+    assert_ne!(research_before["resources"]["research"], research_after["resources"]["research"]);
+    assert_eq!(research_before["resources"]["prop"], research_after["resources"]["prop"]);
+    let mut unchanged_other = Wire::connect(address, Some("tenant-b"));
+    assert_eq!(unchanged_other.snapshot()["resources"], other["resources"]);
+    let mut reconnected = Wire::connect(address, Some("tenant-a"));
+    assert_eq!(reconnected.snapshot()["resources"], research_after["resources"]);
+    assert!(research_after.to_string().len() < 16 * 1024);
+    drop(a); drop(unchanged_other); drop(reconnected);
+    server.abort(); state.pool.close();
+    println!("Prop session/attempt metadata, off-page research progress, tenant isolation, bounded payload and reconnect passed");
+}

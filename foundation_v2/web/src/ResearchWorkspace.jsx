@@ -16,7 +16,7 @@ import {
   qualityLabel,
 } from './researchDataApi.js'
 import './research-story.css'
-import { subscribeWorkspaceEvents } from './workspaceEvents.js'
+import useReadRefresh from './useReadRefresh.js'
 
 const FLOW_STEPS = [
   { id: 'context', label: 'Context', note: 'Dataset và phạm vi' },
@@ -206,55 +206,36 @@ export default function ResearchWorkspace({ workspace = 'tenant-a', query = new 
 
   const refreshJob = useCallback(async (jobId, signal, requestSeq) => {
     const job = await readWithBoundedRetry((retrySignal) => getResearchJob(workspace, jobId, retrySignal), signal)
-    if (requestSeq !== jobRequestSeq.current) return null
+    if (signal.aborted || requestSeq !== jobRequestSeq.current) return null
     let checkpoint = null
     if (job.status === 'queued' || job.status === 'running') {
       checkpoint = await readWithBoundedRetry((retrySignal) => getResearchCheckpoint(workspace, jobId, retrySignal), signal)
     }
-    if (requestSeq !== jobRequestSeq.current) return null
-    setJobState({ status: 'ready', job, checkpoint, error: null })
+    if (signal.aborted || requestSeq !== jobRequestSeq.current) return null
+    setJobState({ status: 'ready', job, checkpoint, error: null, readScope: JSON.stringify([workspace, jobId]), readPending: false, readError: null })
     return job
   }, [workspace])
   const pollJobId = requestedJob || jobState.job?.job_id || ''
+  const jobScope = JSON.stringify([workspace, pollJobId])
+  useReadRefresh(() => setJobRetryToken(value => value + 1), Boolean(pollJobId), {
+    workspace, resources: ['research'], scopeKey: pollJobId, reconcileInitial: true,
+    error: jobState.readScope === jobScope ? jobState.readError : null,
+    pending: jobState.readScope !== jobScope || Boolean(jobState.readPending) || Boolean(pending),
+  })
   useEffect(() => {
     const requestSeq = ++jobRequestSeq.current
-    if (!pollJobId) return undefined
-    const controller = new AbortController(); let timer
-    let healthy = false; let busy = false; let invalidated = false; let revision = ''
-    const poll = async () => {
-      if (busy) { invalidated = true; return }
-      busy = true
-      window.clearTimeout(timer)
-      timer = undefined
-      try {
-        const job = await refreshJob(pollJobId, controller.signal, requestSeq)
-        if (!job || !['queued', 'running'].includes(job.status)) return
-        if (!healthy) timer = window.setTimeout(poll, 1500)
-      } catch (error) {
-        if (error.name !== 'AbortError' && requestSeq === jobRequestSeq.current) {
-          setJobState((current) => ({ ...current, status: 'error', error: String(error.message || error) }))
-          if (!healthy) timer = window.setTimeout(poll, 3000)
-        }
-      } finally {
-        busy = false
-        if (invalidated && !controller.signal.aborted) { invalidated = false; void poll() }
+    if (!pollJobId || pending) return undefined
+    const controller = new AbortController()
+    setJobState(current => current.readScope === jobScope ? { ...current, readPending: true }
+      : { status: 'loading', job: null, checkpoint: null, error: null, readScope: jobScope, readPending: true })
+    refreshJob(pollJobId, controller.signal, requestSeq).catch(error => {
+      if (!controller.signal.aborted && requestSeq === jobRequestSeq.current) {
+        setJobState(current => ({ ...current, ...([401, 403].includes(error.status) ? { job: null, checkpoint: null } : {}),
+          status: 'error', error: String(error.message || error), readScope: jobScope, readPending: false, readError: error }))
       }
-    }
-    const unsubscribe = subscribeWorkspaceEvents(workspace, ({ event, data }) => {
-      if (controller.signal.aborted) return
-      const summary = event === 'snapshot' ? data?.research?.recent_jobs?.find((job) => job.job_id === pollJobId) : null
-      healthy = Boolean(summary)
-      if (!healthy) {
-        if (!timer && !busy) timer = window.setTimeout(poll, 1500)
-        return
-      }
-      window.clearTimeout(timer); timer = undefined
-      const nextRevision = `${summary.status}:${summary.updated_at_utc}`
-      if (nextRevision !== revision) { revision = nextRevision; void poll() }
-    }, { signal: controller.signal })
-    void poll()
-    return () => { unsubscribe(); controller.abort(); if (timer) window.clearTimeout(timer) }
-  }, [jobRetryToken, refreshJob, pollJobId, workspace])
+    })
+    return () => controller.abort()
+  }, [jobRetryToken, refreshJob, pollJobId, workspace, pending])
 
   const runResearch = async (event) => {
     event.preventDefault()

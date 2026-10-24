@@ -219,6 +219,25 @@ FROM (
     SELECT jsonb_build_array(dataset_id,artifact_sha256,md5(manifest_json::text))::text AS token
     FROM datasets WHERE workspace_id=$1
 ) dataset_marks
+UNION ALL
+SELECT 'prop',count(*) FILTER (WHERE visible)::bigint,count(*)::bigint,
+       COALESCE(sum(hashtextextended(token,0)::numeric),0)::text,
+       COALESCE(sum(hashtextextended(token,1)::numeric),0)::text
+FROM (
+    SELECT jsonb_build_array('session',session_id,current_revision)::text AS token,true AS visible
+    FROM prop_sessions WHERE workspace_id=$1
+    UNION ALL
+    SELECT jsonb_build_array('attempt',session_id,attempt_id,current_revision)::text,false
+    FROM prop_attempts WHERE workspace_id=$1
+) prop_marks
+UNION ALL
+SELECT 'research',count(*)::bigint,count(*)::bigint,
+       COALESCE(sum(hashtextextended(token,0)::numeric),0)::text,
+       COALESCE(sum(hashtextextended(token,1)::numeric),0)::text
+FROM (
+    SELECT jsonb_build_array(job_id,status,updated_at_utc)::text AS token
+    FROM research_jobs WHERE workspace_id=$1
+) research_marks
 "#;
 
 async fn resource_revisions(
@@ -261,7 +280,9 @@ fn resource_revision(
 fn empty_resources(workspace: &str) -> Value {
     json!({
         "sessions":resource_revision(workspace,"sessions",0,0,"0","0"),
-        "datasets":resource_revision(workspace,"datasets",0,0,"0","0")
+        "datasets":resource_revision(workspace,"datasets",0,0,"0","0"),
+        "prop":resource_revision(workspace,"prop",0,0,"0","0"),
+        "research":resource_revision(workspace,"research",0,0,"0","0")
     })
 }
 
@@ -303,6 +324,8 @@ mod tests {
         assert_eq!(a["research"]["recent_jobs"], json!([]));
         assert_eq!(a["resources"]["sessions"]["count"], 0);
         assert_eq!(a["resources"]["datasets"]["count"], 0);
+        assert_eq!(a["resources"]["prop"]["count"], 0);
+        assert_eq!(a["resources"]["research"]["count"], 0);
         assert_ne!(
             a["resources"]["sessions"]["revision"],
             b["resources"]["sessions"]["revision"]
@@ -374,7 +397,8 @@ mod tests {
             inserted = target;
             let resources = resource_revisions(&conn, "signal-benchmark").await.unwrap();
             assert_eq!(resources["sessions"]["count"], target);
-            assert!(resources.to_string().len() < 256);
+            assert_eq!(resources.as_object().unwrap().len(), 4);
+            assert!(resources.to_string().len() < 512);
             let plan: Value = conn
                 .query_one(
                     &format!("EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) {RESOURCE_REVISIONS_SQL}"),

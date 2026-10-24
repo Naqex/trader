@@ -27,7 +27,17 @@ and remaining acceptance are in the linked native-runtime document.
 The implemented flow is `React -> Axum -> scoped PostgreSQL reads / durable
 commands -> Python domain worker -> PostgreSQL + immutable Parquet/results`.
 Research runs in a separate bounded worker. Workspace SSE supplies current
-download/research snapshots; reconnect reads current state, not historical events.
+download/research snapshots and opaque revision signals for session, dataset,
+Prop and research resources; reconnect reads current state, not historical events.
+Prop reports and Research reconcile through the shared workspace stream, including
+jobs outside the recent-job list. An initial reconciliation closes the race with
+an in-flight first GET; unchanged snapshots do not trigger repeated reads.
+Disconnected visible readers fall back to a 15-second GET cadence, with bounded
+transient-error retries; hidden/offline readers pause and 401/403 stop recovery.
+The server samples workspace metadata every two seconds and emits changes only;
+this is not database push, and fingerprint work scales with metadata rows.
+Replay Play/Step, rewind, simulated orders and Prop calculations remain on their
+existing HTTP command path; background signals never advance the replay cursor.
 HTTP JSON/OpenAPI remains the public contract. WebSocket and gRPC are conditional
 future transports, with no unused services installed.
 

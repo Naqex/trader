@@ -17,7 +17,10 @@ export default function PropAnalytics({ workspace, query, embedded = false }) {
 
   const [state, setState] = useState({ status: 'loading', loaded: false, items: [], error: '' }), [reload, setReload] = useState(0)
   const [selected, setSelected] = useState(query.get('prop_session') && query.get('attempt') ? `${query.get('prop_session')}:${query.get('attempt')}` : null)
-  useReadRefresh(() => setReload(value => value + 1))
+  useReadRefresh(() => setReload(value => value + 1), true, {
+    workspace, resources: ['prop'], error: state.readError, reconcileInitial: true,
+    pending: state.status === 'loading' || Boolean(state.refreshing),
+  })
   useEffect(() => {
     const controller = new AbortController()
     setState(current => current.loaded ? { ...current, refreshing: true, error: '' } : { status: 'loading', loaded: false, items: [], error: '' })
@@ -28,8 +31,8 @@ export default function PropAnalytics({ workspace, query, embedded = false }) {
       const identifier = value => typeof value === 'string' && value.trim().length > 0
       if (value?.schema_version !== 'prop-report-list-v1' || value.broker_execution_capability !== false || !Array.isArray(value.items) || value.items.some(item => !object(item) || !identifier(item.session?.session_id) || !identifier(item.attempt?.attempt_id) || item.schema_version !== 'prop-attempt-report-v1' || !object(item.phase) || !Number.isSafeInteger(item.phase.phase_index) || !object(item.profile) || !identifier(item.profile.profile_id) || typeof item.profile.terms_version !== 'string' || !object(item.outcome) || typeof item.outcome.status !== 'string' || item.phase.virtual_time_utc != null && typeof item.phase.virtual_time_utc !== 'string' || item.phase.evaluation_quality != null && typeof item.phase.evaluation_quality !== 'string')) throw new Error('prop_report_invalid')
       return value.items
-    }).then(items => { if (!controller.signal.aborted) setState(current => ({ status: 'ready', loaded: true, items: items.map(item => current.items.find(previous => reportKey(previous) === reportKey(item) && JSON.stringify(previous) === JSON.stringify(item)) || item), error: '' })) }).catch(error => {
-      if (!controller.signal.aborted) setState(current => [401, 403].includes(error.status) ? { status: 'error', loaded: false, items: [], error: error.message } : { ...current, status: current.loaded ? 'stale' : 'error', refreshing: false, error: error.message })
+    }).then(items => { if (!controller.signal.aborted) setState(current => ({ status: 'ready', loaded: true, items: items.map(item => current.items.find(previous => reportKey(previous) === reportKey(item) && JSON.stringify(previous) === JSON.stringify(item)) || item), error: '', readError: null })) }).catch(error => {
+      if (!controller.signal.aborted) setState(current => [401, 403].includes(error.status) ? { status: 'error', loaded: false, items: [], error: error.message, readError: error } : { ...current, status: current.loaded ? 'stale' : 'error', refreshing: false, error: error.message, readError: error })
     })
     return () => controller.abort()
   }, [workspace, reload])

@@ -17,6 +17,7 @@ function resourceRevision(snapshot, resource) {
 
 // All automatic actions are reads. The caller owns requests and their abort/scope fences.
 export function createReadRecovery({ refresh, onChange = () => {}, resources = [], workspace,
+  reconcileInitial = false,
   now = Date.now, random = Math.random, setTimeout: later = setTimeout, clearTimeout: cancel = clearTimeout,
   document: page = globalThis.document, window: browser = globalThis.window,
   navigator: network = globalThis.navigator, subscribe, fallbackMs = 15000 } = {}) {
@@ -72,8 +73,9 @@ export function createReadRecovery({ refresh, onChange = () => {}, resources = [
     armRetry()
   }
   function armFallback() {
-    clear('fallback')
-    if (!resources.length || !active() || connection === 'connected' || connection === 'denied' || error) return
+    if (!resources.length || !active() || connection === 'connected' || connection === 'denied' || error) { clear('fallback'); return }
+    // Reconnect attempts must not keep postponing the independent fallback deadline.
+    if (fallbackTimer) return
     fallbackTimer = later(() => { fallbackTimer = undefined; invoke('fallback'); armFallback() }, Math.min(15000, Math.max(1000, fallbackMs)))
   }
   function coalesce() {
@@ -95,7 +97,8 @@ export function createReadRecovery({ refresh, onChange = () => {}, resources = [
       if (changed && error && isRetryableReadError(error) && attempts >= RETRY_DELAYS.length) {
         attempts = 0; scheduleRetry()
       }
-      if (changed || (seenSnapshot && reconnect)) coalesce()
+      // A GET can finish with old data after the first SSE snapshot already saw a commit.
+      if (changed || (seenSnapshot && reconnect) || (!seenSnapshot && reconcileInitial)) coalesce()
       revisions = next; seenSnapshot = true; reconnect = false; connection = 'connected'
       armFallback(); emit()
     }

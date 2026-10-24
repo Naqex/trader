@@ -117,6 +117,43 @@ test('first snapshot avoids duplicate GET; matching changes coalesce and unrelat
   } finally { f.controller.dispose() }
 })
 
+test('Prop and research refresh only for their resource, defer while busy, and resync after reconnect', () => {
+  for (const resource of ['prop', 'research']) {
+    const f = fixture({ resources: [resource] })
+    const snapshot = (revision, other = 'a') => f.controller.event({ event: 'snapshot', data: {
+      workspace_id: 'a', resources: { [resource]: { revision }, sessions: { revision: other } },
+    } })
+    try {
+      f.controller.update({}); snapshot('r1'); f.tick(30000)
+      assert.equal(f.calls.length, 0)
+      snapshot('r1', 'b'); f.tick(3000)
+      assert.equal(f.calls.length, 0)
+      f.controller.update({ pending: true }); snapshot('r2'); snapshot('r3'); f.tick(3000)
+      assert.equal(f.calls.length, 0)
+      f.controller.update({ pending: false }); f.tick(200)
+      assert.equal(f.calls.length, 1)
+      f.controller.update({ pending: true }); f.controller.update({ pending: false })
+      f.connection('disconnected'); f.connection('connecting'); snapshot('r3'); f.tick(2000)
+      assert.equal(f.calls.length, 2)
+    } finally { f.controller.dispose() }
+  }
+})
+
+test('opt-in initial reconciliation cannot lose a completion between the first GET and first SSE snapshot', () => {
+  for (const resource of ['prop', 'research']) {
+    const f = fixture({ resources: [resource], reconcileInitial: true })
+    try {
+      f.controller.update({ pending: true }) // GET captured the pre-completion state.
+      f.controller.event({ event: 'snapshot', data: { workspace_id: 'a', resources: { [resource]: { revision: 'completed' } } } })
+      f.tick(5000); assert.equal(f.calls.length, 0)
+      f.controller.update({ pending: false }) // The old GET arrives; no further server event.
+      f.tick(200); assert.equal(f.calls.length, 1)
+      f.controller.update({ pending: true }); f.controller.update({ pending: false })
+      f.tick(30000); assert.equal(f.calls.length, 1)
+    } finally { f.controller.dispose() }
+  }
+})
+
 test('reconnect reconciles even same revision; healthy stream suppresses fallback and no overlap during a read', () => {
   const f = fixture()
   try {
@@ -127,6 +164,19 @@ test('reconnect reconciles even same revision; healthy stream suppresses fallbac
     assert.equal(f.calls.length, 1)
     f.controller.update({ pending: false }); f.tick(15000)
     assert.equal(f.calls.length, 2)
+  } finally { f.controller.dispose() }
+})
+
+test('repeated SSE reconnect attempts cannot starve the read fallback', () => {
+  const f = fixture()
+  try {
+    f.controller.update({}); f.snapshot('r1'); f.connection('disconnected')
+    for (let index = 0; index < 14; index++) {
+      f.tick(1000); f.connection('connecting'); f.connection('disconnected')
+    }
+    assert.equal(f.calls.length, 0)
+    f.tick(1000); assert.equal(f.calls.length, 1)
+    assert.equal(f.calls[0].reason, 'fallback')
   } finally { f.controller.dispose() }
 })
 

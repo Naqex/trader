@@ -5,7 +5,7 @@ import { subscribeWorkspaceEvents } from './workspaceEvents.js'
 const IDLE = { retryAt: null, seconds: null, offline: false, exhausted: false, connection: 'paused' }
 
 // Reconcile persisted reads on return to the app; never retries a mutation.
-export default function useReadRefresh(refresh, enabled = true, { workspace, resources = [], error, pending = false, scopeKey } = {}) {
+export default function useReadRefresh(refresh, enabled = true, { workspace, resources = [], error, pending = false, scopeKey, reconcileInitial = false } = {}) {
   const latest = useRef(refresh)
   latest.current = refresh
   const controller = useRef(null)
@@ -17,7 +17,7 @@ export default function useReadRefresh(refresh, enabled = true, { workspace, res
     if (!enabled) { setRecovery(IDLE); return }
     if (workspace) {
       const current = createReadRecovery({ refresh: () => latest.current(), onChange: setRecovery,
-        workspace, resources: resourcesKey ? resourcesKey.split(',') : [], subscribe: subscribeWorkspaceEvents })
+        workspace, resources: resourcesKey ? resourcesKey.split(',') : [], subscribe: subscribeWorkspaceEvents, reconcileInitial })
       controller.current = current
       current.update(read.current)
       return () => { current.dispose(); if (controller.current === current) controller.current = null }
@@ -32,7 +32,7 @@ export default function useReadRefresh(refresh, enabled = true, { workspace, res
     window.addEventListener('focus', reconcile)
     window.addEventListener('online', reconcile)
     return () => { window.removeEventListener('focus', reconcile); window.removeEventListener('online', reconcile) }
-  }, [enabled, workspace, resourcesKey, scopeKey])
+  }, [enabled, workspace, resourcesKey, scopeKey, reconcileInitial])
   useEffect(() => { controller.current?.update({ error, pending }) }, [error, pending])
   return recovery
 }

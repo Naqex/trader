@@ -52,7 +52,9 @@ def fixtures(store, artifacts):
     return active,completed,empty,isolated,checkpoint
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--pg-bin',required=True,type=Path);parser.add_argument('--output',type=Path);args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--pg-bin',required=True,type=Path);parser.add_argument('--output',type=Path)
+    parser.add_argument('--test-name', choices=['native_jobs_and_sse_durable_http_contract','native_background_resource_events'], default='native_jobs_and_sse_durable_http_contract')
+    args=parser.parse_args()
     with tempfile.TemporaryDirectory(prefix='tw-events-parity-') as folder:
         runtime=Path(folder);pgdata=runtime/'pgdata';port=free_port();
         subprocess.run([str(args.pg_bin/'initdb.exe'),'-D',str(pgdata),'--auth=trust','--username=postgres','--no-locale','--encoding=UTF8'],check=True,capture_output=True)
@@ -90,7 +92,7 @@ def main():
             golden=runtime/'golden.json';golden.write_text(json.dumps({'cases':cases,'active_id':active.job_id,'completed_id':completed.job_id}),encoding='utf-8')
             with store.connect() as conn:conn.execute('UPDATE research_jobs SET checkpoint_json=%s::jsonb WHERE workspace_id=%s AND job_id=%s',(json.dumps(checkpoint),'tenant-a',active.job_id));conn.commit()
             env={**os.environ,'TW_V2_DATABASE_URL':dsn,'TW_V2_ARTIFACT_ROOT':str(runtime/'artifacts'),'TW_V2_LOCAL_IDENTITY':'local-owner','TW_V2_LOCAL_WORKSPACES':','.join(['tenant-a','tenant-b',*(f'limit-{n}' for n in range(9))]),'TW_V2_RUST_REQUESTS_PER_MINUTE':'2000','TW_EVENTS_GOLDEN':str(golden)}
-            result=subprocess.run(['cargo','test','--test','events_pg','--','--ignored','--nocapture'],cwd=API_RUST,env=env,text=True,capture_output=True,timeout=240)
+            result=subprocess.run(['cargo','test','--test','events_pg',args.test_name,'--','--ignored','--nocapture'],cwd=API_RUST,env=env,text=True,capture_output=True,timeout=240)
             print(result.stdout);print(result.stderr,file=sys.stderr)
             benchmark = None
             if result.returncode == 0:
@@ -106,6 +108,6 @@ def main():
             if result.returncode:raise SystemExit(result.returncode)
             if benchmark and benchmark.returncode:raise SystemExit(benchmark.returncode)
         finally:
-            subprocess.run([str(args.pg_bin/'pg_ctl.exe'),'-D',str(pgdata),'-m','fast','stop'],capture_output=True,timeout=20);postgres.wait(timeout=20);log.close()
+            subprocess.run([str(args.pg_bin/'pg_ctl.exe'),'-D',str(pgdata),'-m','fast','stop'],stdout=log,stderr=log,check=True,timeout=30);postgres.wait(timeout=20);log.close()
 
 if __name__=='__main__':main()
