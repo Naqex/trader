@@ -34,6 +34,10 @@ export function TestingEmptyState({ kind = 'sessions', viewport = false, onClear
     'chart-open': ['ledger', 'Chưa có vị thế đang mở', 'Vị thế mô phỏng đang mở tại cutoff này sẽ xuất hiện ở đây.'],
     'chart-pending': ['history', 'Chưa có lệnh chờ', 'Lệnh mô phỏng đang chờ khớp tại cutoff này sẽ xuất hiện ở đây.'],
     'chart-closed': ['ledger', 'Chưa có vị thế đã đóng', 'Vị thế mô phỏng đã đóng đến cutoff này sẽ xuất hiện ở đây.'],
+    'mt5-positions': ['ledger', 'Chưa có vị thế đang mở', 'Vị thế đang mở trên tài khoản MT5 sẽ xuất hiện ở đây.'],
+    'mt5-orders': ['history', 'Chưa có lệnh chờ', 'Lệnh đang chờ khớp trên tài khoản MT5 sẽ xuất hiện ở đây.'],
+    'mt5-requests': ['ledger', 'Chưa có yêu cầu giao dịch', 'Kết quả gửi và đối soát yêu cầu MT5 sẽ xuất hiện ở đây.'],
+    'mt5-unknown': ['info', 'Chưa có dữ liệu lệnh MT5', 'Kiểm tra kết nối tài khoản để tải danh sách lệnh.'],
     'chart-unknown': ['info', 'Chưa có dữ liệu lệnh tại cutoff này.', 'Khởi tạo simulator để theo dõi lệnh mô phỏng trong phiên.'],
   }
   const [icon, title, detail] = states[kind]

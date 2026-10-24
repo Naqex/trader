@@ -16,32 +16,19 @@
 .live-terminal-chart .live-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; box-sizing:border-box; gap:12px; margin:0; padding:24px; text-align:center; color:var(--chart-muted); }
 .live-terminal-chart .live-empty h2 { font-size:16px; }
 .live-terminal-chart .live-empty p { max-width:330px; line-height:1.6; }
-.live-terminal-ledger { height:100%; display:flex; flex-direction:column; border-top:1px solid var(--chart-line); flex:none; min-width:0; }
-.live-terminal-tabs { display:flex; gap:20px; padding:0 16px; border-bottom:1px solid var(--chart-line); min-height:44px; }
-.live-terminal-tabs button { min-height:44px; border-bottom:2px solid transparent; border-radius:0; color:var(--chart-muted); white-space:nowrap; }
-.live-terminal-tabs button[aria-current=page] { color:var(--chart-text); border-bottom-color:var(--project-primary); }
-.live-terminal-tabs span { margin-left:4px; color:var(--chart-muted); }
-.live-terminal-ledger .live-table-scroll { margin:0; flex:1; min-height:0; overflow:auto; }
-.live-terminal-ledger th { position:sticky; top:0; z-index:1; }
 .live-terminal-row-actions { display:flex; gap:12px; }
-.live-terminal-empty { text-align:center; padding:24px 16px; color:var(--chart-muted); }
-.live-mt5-order { width:min(440px,calc(100vw - 24px)); }
-.live-terminal-ticket { padding:24px; overflow:auto; min-height:0; }
-.mt5-order-identity { display:flex; align-items:center; gap:12px; margin:0 0 24px; }
-.mt5-positions-dock > .live-terminal-ledger { max-height:none; }
+.live-mt5-order { width:min(640px,100%); }
+.mt5-order-ticket { display:flex; flex-direction:column; min-height:0; overflow:auto; }
+.mt5-order-identity { display:flex; align-items:center; gap:12px; margin:0; padding:16px 24px 0; font-size:13px; color:var(--chart-muted); }
+.live-mt5-order .legacy-order-form footer { flex-wrap:wrap; }
+.mt5-ticket-details { width:min(480px,100%); }
+.legacy-positions .mt5-ticket-link { border:0; background:transparent; color:var(--chart-text); padding:0; font:inherit; cursor:pointer; text-decoration:underline; text-underline-offset:4px; }
+.legacy-positions .mt5-ticket-link:hover { color:var(--project-primary); }
+.legacy-positions .mt5-ticket-link:focus-visible { outline:2px solid var(--project-primary); outline-offset:4px; }
 .live-terminal-values { display:grid; gap:10px; margin:0; font-variant-numeric:tabular-nums; }
 .live-terminal-values > div { display:flex; gap:8px; justify-content:space-between; }
 .live-terminal-values dt { color:var(--wm-content-muted); }
 .live-terminal-values dd { margin:0; text-align:right; overflow-wrap:anywhere; }
-.live-terminal-form { display:grid; gap:16px; margin-top:24px; }
-.live-terminal-form .wm-order-entry-fields { gap:16px 12px; }
-.live-terminal-form label, .live-terminal-confirm-body label { display:grid; gap:6px; color:var(--wm-content-muted); font-size:13px; }
-.live-terminal-form input, .live-terminal-confirm-body input { box-sizing:border-box; min-width:0; width:100%; height:var(--ds-control,36px); border:1px solid var(--project-border); border-radius:var(--ds-radius-field,8px); padding:7px 12px; background:var(--project-canvas); color:var(--project-text); font:inherit; }
-.live-terminal-form input:focus-visible, .live-terminal-confirm-body input:focus-visible { border-color:var(--project-primary); outline:none; }
-.live-terminal-form input[readonly] { color:var(--wm-content-muted); }
-.live-terminal-form .live-required { display:contents; }
-.live-terminal-form p { margin:0; line-height:1.6; font-size:12px; }
-.live-terminal-form > .fxa-button { width:100%; justify-content:center; }
 .live-terminal-notice { margin-top:20px; line-height:1.6; }
 .live-terminal-confirm { width:min(480px,100%); }
 .live-terminal-confirm-body { display:grid; gap:20px; padding:24px; font-size:13px; }
@@ -50,9 +37,12 @@
 .live-trading :is(button,input):focus-visible { outline:2px solid var(--project-primary); outline-offset:2px; }
 
 @media(max-width:600px) {
+  .live-mt5-order .legacy-order-form footer .legacy-order-save { flex:1 0 100%; }
   .live-terminal-state { left:48px; }
-  .live-terminal-ticket { padding:20px 16px; }
   .live-terminal-values > div { flex-wrap:wrap; }
   .live-terminal-values dd { margin-left:auto; }
   .live-trading .chart-frame.has-advanced-chart { min-height:180px; }
 }
+.live-terminal-confirm-body .mt5-protection-editor { padding:0; }
+.live-terminal-confirm-body input:not([role=switch]) { box-sizing:border-box; width:100%; min-width:0; height:var(--ds-control,36px); padding:7px 12px; border:1px solid var(--project-border); border-radius:var(--ds-radius-field,8px); background:var(--project-canvas); color:var(--project-text); font:inherit; }
+.live-terminal-confirm-body input:focus-visible { border-color:var(--project-primary); outline:none; }

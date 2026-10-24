@@ -2,7 +2,8 @@ import assert from 'node:assert/strict'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { chromium } from 'playwright'
 
-const origin = 'http://127.0.0.1:5180'
+const origin = process.env.CHART_DS_ORIGIN || 'http://127.0.0.1:5180'
+assert.equal(new URL(origin).hostname, '127.0.0.1')
 const output = process.env.CHART_DS_OUTPUT || '../evidence/chart-design-system-20261012'
 const widths = (process.env.CHART_DS_WIDTHS || '1440,390').split(',').map(Number)
 const fixture = JSON.parse(await readFile(new URL('./visual/chart-fixture.json', import.meta.url)))

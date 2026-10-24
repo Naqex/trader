@@ -5,6 +5,7 @@ import { finiteNumber, marketQuotes, orderDraft, protectionReference, replayAtCu
 import { useReplayTickOptions } from './useReplayTickOptions.js'
 import FxSelect from './FxSelect.jsx'
 import OrderEntryFields from './OrderEntryFields.jsx'
+import OrderProtectionSection from './OrderProtectionSection.jsx'
 import ChartIcon from './ChartIcon.jsx'
 import { scalperProtection } from './legacyScalperPreset.js'
 import { sessionExecutionConfig } from './sessionTradingOptions.js'
@@ -330,21 +331,22 @@ function LegacyOrderForm({ order, blockedReason, onClose, onJournal }) {
   const changed = !active || JSON.stringify(draft.takeProfits || []) !== JSON.stringify(savedTargets)
     || ['stopLoss', 'takeProfit'].some((key, i) => String(draft[key] || '') !== String(active[i ? 'take_profit' : 'stop_loss'] ?? ''))
   const change = (key, value) => setDraft(current => ({ ...current, [key]:value, ...(key === 'quantity' ? { sizingMode:'quantity' } : {}), ...(key === 'takeProfit' && current.takeProfits?.length ? { takeProfits:current.takeProfits.map((row,i) => i ? row : { ...row,price:value }) } : {}) }))
-  const pip = Number(instrument?.pip_size), entry = finiteNumber(active?.entry_fill ?? active?.entry_price ?? order.reference)
+  const entry = finiteNumber(active?.entry_fill ?? active?.entry_price ?? order.reference)
   return <><form className="legacy-order-form" onChange={() => order.clearNotice()} onSubmit={async event => { event.preventDefault(); if (await order.save()) { onClose(); if (journal) onJournal() } }}>
     {!active && <OrderEntryFields draft={draft} instrument={instrument} disabled={disabled} conditionalOrders={order.conditionalOrders} onSide={order.chooseSide} onType={order.chooseType} onChange={change} reference={order.reference} />}
-    {[['stopLoss','Stop loss'],['takeProfit','Take profit']].map(([key,label]) => <section className={active ? 'legacy-edit-protection' : 'legacy-new-protection'} key={key} data-protection={key}><div className="legacy-protection-row"><label><input type="checkbox" role="switch" checked={enabled[key]} disabled={disabled || !order.canPreviewProtection} onChange={event => {
-      const checked = event.target.checked
-      const unit = Number(instrument?.pip_size) || Number(instrument?.tick_size)
-      const stopDistance = protectionPips(draft.stopLoss,entry,draft.side,'stopLoss',instrument)
-      const distance = key === 'stopLoss' ? 20 : enabled.stopLoss && stopDistance > 0 ? stopDistance * 2 : 40
-      const price = protectionPrice(distance,order.reference,draft.side,key,{ ...instrument,pip_size:unit })
-      setDraft(current => ({ ...current, protectionEnabled: { ...current.protectionEnabled, [key]: checked }, [key]: checked ? price : '', ...(key === 'takeProfit' && !checked ? { takeProfits:[] } : {}) }))
-    }} />{t(label)}</label>{enabled[key] && <ProtectionEstimate order={order} entry={entry} kind={key} />}</div>{enabled[key] && <>
-      {!(key === 'takeProfit' && draft.takeProfits?.length) && <div className="legacy-order-grid"><label>{t(label)}<input aria-label={t(label)} type="number" min="0" required step={instrument?.tick_size || 'any'} value={draft[key]} disabled={disabled} onChange={event => change(key,event.target.value)} /></label>{pip > 0 && entry > 0 && <label>{t(key === 'stopLoss' ? 'Stop loss in pips' : 'Take profit in pips')}<input type="number" step="any" value={protectionPips(draft[key], entry, draft.side, key, instrument)} disabled={disabled} onChange={event => change(key, protectionPrice(event.target.value, entry, draft.side, key, instrument))} /></label>}</div>}
+    {['stopLoss','takeProfit'].map(key => <OrderProtectionSection key={key} kind={key} draft={draft} instrument={instrument} reference={entry}
+      enabled={enabled[key]} disabled={disabled} toggleDisabled={!order.canPreviewProtection} editing={Boolean(active)}
+      hidePrice={key === 'takeProfit' && Boolean(draft.takeProfits?.length)} onChange={change}
+      estimate={<ProtectionEstimate order={order} entry={entry} kind={key} />} onToggle={checked => {
+        const unit = Number(instrument?.pip_size) || Number(instrument?.tick_size)
+        const stopDistance = protectionPips(draft.stopLoss,entry,draft.side,'stopLoss',instrument)
+        const distance = key === 'stopLoss' ? 20 : enabled.stopLoss && stopDistance > 0 ? stopDistance * 2 : 40
+        const price = protectionPrice(distance,order.reference,draft.side,key,{ ...instrument,pip_size:unit })
+        setDraft(current => ({ ...current, protectionEnabled: { ...current.protectionEnabled, [key]: checked }, [key]: checked ? price : '', ...(key === 'takeProfit' && !checked ? { takeProfits:[] } : {}) }))
+      }}>
       {key === 'takeProfit' && order.partialTakeProfit && <PartialTakeProfits order={order} entry={entry} />}
       {!active && key === 'stopLoss' && <ProtectionRiskSizing order={order} entry={entry} />}
-    </>}</section>)}
+    </OrderProtectionSection>)}
     {!active && <div className="legacy-protection-row is-unavailable" data-tooltip={t('Chưa hỗ trợ tự dời SL về hòa vốn')}><label><input type="checkbox" role="switch" disabled />Auto Break-even</label><small>{t('Sắp có')}</small></div>}
     {!active && <><label>{t('Chiến lược')}<FxSelect className="is-field" label="Chiến lược" value="session" disabled options={[{ value: 'session', label: t('Mặc định của phiên') }]} /></label><button type="button" className="legacy-strategy-create" disabled>{t('+ Tạo chiến lược mới')}</button></>}
     {blockedReason && <p role="status">{t(blockedReason)}</p>}

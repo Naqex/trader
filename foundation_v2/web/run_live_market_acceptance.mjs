@@ -24,7 +24,7 @@ try{
  if(await page.locator('.fx-app').getAttribute('data-theme')!==theme)await frame.getByTestId('theme-toggle').click()
  const before=await page.locator('.chart-canvas').boundingBox();const initialMounts=mounts,initialDetaches=detaches
  phase='stale';await page.locator('.live-terminal-state').waitFor();await assert.doesNotReject(async()=>assert.deepEqual(await page.locator('.chart-canvas').boundingBox(),before))
- phase='unavailable';await page.locator('.live-terminal-state').filter({hasText:'chưa sẵn sàng'}).waitFor();assert.equal(await page.locator('.mt5-trading-bar button.buy').isDisabled(),true);assert.equal(await page.locator('[data-chart-status="ready"]').count(),1)
+ phase='unavailable';await page.locator('.live-terminal-state').filter({hasText:'chưa sẵn sàng'}).waitFor();assert.equal(await page.locator('.legacy-trading-bar button.buy').isDisabled(),true);assert.equal(await page.locator('[data-chart-status="ready"]').count(),1)
  phase='ready';await page.locator('.live-terminal-state').waitFor({state:'hidden'});assert.deepEqual(await page.locator('.chart-canvas').boundingBox(),before);assert.equal(mounts,initialMounts);assert.equal(detaches,initialDetaches)
  await frame.locator('.legacy-symbol').click();const popup=frame.getByRole('dialog',{name:'Chọn mã giao dịch MT5',exact:true}),search=popup.getByRole('searchbox');await search.waitFor();assert.equal(await search.evaluate(n=>n===n.ownerDocument.activeElement),true)
  const box=await popup.boundingBox();assert.ok(box.x>=0&&box.x+box.width<=width+1);assert.ok(box.y+box.height<=941)
