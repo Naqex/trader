@@ -388,6 +388,34 @@ fn unavailable(reason: &str) -> Value {
     json!({"status":"unsupported","reason":reason,"net_pnl":null,"exit_price":null})
 }
 
+fn initial_position<'a>(s: &'a Value, t: &Value) -> R<Option<&'a Value>> {
+    use crate::replay_core::dec;
+    let ledger = s["ledger"].as_array().ok_or("invalid ledger")?;
+    for (index, event) in ledger.iter().enumerate() {
+        let detail = &event["details"];
+        if event["kind"] != "market_fill" || detail["position_id"] != t["source_position_id"] {
+            continue;
+        }
+        let mut p = &detail["open_position"];
+        // A synchronous bar mark precedes user amendments; later marks do not
+        // prove the initial SL, even when they still refer to the same position.
+        if p.is_null() {
+            if let Some(following) = ledger.get(index + 1).filter(|next|
+                next["kind"] == "price_mark" && next["cursor_index"] == event["cursor_index"]) {
+                p = &following["details"]["open_position"];
+            }
+        }
+        if p.is_null() { return Ok(None); }
+        if p["position_id"] != detail["position_id"] || p["source_operation_id"] != detail["operation_id"]
+            || p["side"] != t["side"] || dec(p,"entry_fill")? != dec(detail,"fill_price")?
+            || p["opened_cursor_index"] != event["cursor_index"] || p["opened_time_utc"] != event["virtual_time_utc"] {
+            return Err("initial risk checkpoint disagrees with opening fill".into());
+        }
+        return Ok(Some(p));
+    }
+    Ok(None)
+}
+
 pub fn build_experiments(
     record: &Value,
     bars: &[Value],
@@ -416,7 +444,7 @@ fn build_experiments_for_basis(record:&Value,bars:&[Value],sha:&str,filters:Opti
         config[k] = json!(n.to_string())
     }
     let a = if activity_basis { crate::analytics::build_replay_activity_view(record,filters,chrono_tz::UTC)? } else { crate::analytics::build_replay_analytics_view(record, filters)? };
-    let mut out = json!({"schema_version":"replay-analytics-experiments-v1","read_only":true,"config":{},"provenance":a["provenance"],"scope":a["scope"],"account_currency":a["account_currency"],"rows":[],"bounds":"selected closed trades; original close; no future bars","risk_basis":"user_configured_distance; not original planned risk","blocked_by_data":a["blocked_by_data"]});
+    let mut out = json!({"schema_version":"replay-analytics-experiments-v1","read_only":true,"config":{},"provenance":a["provenance"],"scope":a["scope"],"account_currency":a["account_currency"],"rows":[],"bounds":"selected closed trades; original close; no future bars","risk_basis":"stop_loss: user_configured_distance; risk_reward: initial_stop_distance","scenario_risk_basis":{"stop_loss":"user_configured_distance","risk_reward":"initial_stop_distance"},"blocked_by_data":a["blocked_by_data"]});
     for k in ["stop_distance_ticks", "stop_multiplier", "target_r"] {
         out["config"][k] = number(d(&config[k])?)?
     }
@@ -506,10 +534,23 @@ fn trade_experiment(t: &Value, bars: &[Value], s: &Value, config: &Value) -> R<V
     let distance = (dec(config, "stop_distance_ticks")? * dec(&s["instrument_spec"], "tick_size")?)
         .with_prec(28);
     let distance = (distance * dec(config, "stop_multiplier")?).with_prec(28);
-    let stop = (&entry - (&direction * &distance).with_prec(28)).with_prec(28);
-    let take = (&entry
-        + ((&direction * &distance).with_prec(28) * dec(config, "target_r")?).with_prec(28))
-    .with_prec(28);
+    // A final closing snapshot can contain a moved SL. The opening checkpoint is
+    // the only evidence of the stop that existed when the trade was executed.
+    let original = initial_position(s, t)?;
+    let original_stop = original.filter(|p| !p["stop_loss"].is_null())
+        .map(|p| dec(p, "stop_loss")).transpose()?;
+    if original_stop.as_ref().is_some_and(|stop| *stop <= BigDecimal::from(0)) {
+        return Err("initial stop must be finite and positive".into());
+    }
+    let original_distance = original_stop.as_ref().map(|stop| ((&entry - stop) * &direction).with_prec(28))
+        .filter(|distance| *distance > BigDecimal::from(0));
+    let original_stop = original_stop.filter(|_| original_distance.is_some());
+    base["realized_r"] = if let Some(stop) = &original_stop {
+        let (_, cost) = pnl(s, &position, stop, stop)?;
+        let risk = d(&cost["gross_account"])?;
+        let risk = if risk < BigDecimal::from(0) { -risk } else { risk };
+        if risk > BigDecimal::from(0) { number((dec(t, "net_pnl")? / risk).with_prec(28))? } else { Value::Null }
+    } else { Value::Null };
     let gap = ["stop_loss_gap", "take_profit_gap"]
         .iter()
         .any(|x| t["exit_reason"] == *x);
@@ -531,8 +572,14 @@ fn trade_experiment(t: &Value, bars: &[Value], s: &Value, config: &Value) -> R<V
     let zero = BigDecimal::from(0);
     let mae = zero.clone().max(-changes.iter().min().unwrap().clone());
     let mfe = zero.clone().max(changes.iter().max().unwrap().clone());
-    base["excursion"] = json!({"status":if gap{"observed"}else{"lower_bound"},"basis":"closeable_bid_ask_price; terminal intrabar extrema excluded","mae_price":number(mae.clone())?,"mfe_price":number(mfe.clone())?,"mae_r":number((mae/&distance).with_prec(28))?,"mfe_r":number((mfe/&distance).with_prec(28))?,"r_basis":"configured_stop_distance","ideal_r":null,"excluded_terminal_bar":!gap});
+    base["excursion"] = json!({"status":if gap{"observed"}else{"lower_bound"},"basis":"closeable_bid_ask_price; terminal intrabar extrema excluded","mae_price":number(mae.clone())?,"mfe_price":number(mfe.clone())?,"mae_r":original_distance.as_ref().map(|d|number((&mae/d).with_prec(28))).transpose()?,"mfe_r":original_distance.as_ref().map(|d|number((&mfe/d).with_prec(28))).transpose()?,"configured_mae_r":number((&mae/&distance).with_prec(28))?,"configured_mfe_r":number((&mfe/&distance).with_prec(28))?,"r_basis":if original_distance.is_some(){"initial_stop_distance"}else{"unavailable"},"original_stop_price":original_stop.clone().map(number).transpose()?,"initial_risk_distance":original_distance.clone().map(number).transpose()?,"ideal_r":null,"excluded_terminal_bar":!gap});
     for (name, stop_only) in [("stop_loss", true), ("risk_reward", false)] {
+        let scenario_distance = if stop_only { &distance } else if let Some(distance) = &original_distance { distance } else {
+            base[name] = unavailable("original_stop_unavailable");
+            continue;
+        };
+        let stop = (&entry - (&direction * scenario_distance).with_prec(28)).with_prec(28);
+        let take = (&entry + ((&direction * scenario_distance).with_prec(28) * dec(config, "target_r")?).with_prec(28)).with_prec(28);
         if stop <= zero || (!stop_only && take <= zero) {
             base[name] = unavailable("configured_bracket_nonpositive");
             continue;

@@ -9,10 +9,10 @@ from test_replay_execution_core import initial_state
 from trading_workspace_v2.analytics_experiments import build_replay_experiments
 from trading_workspace_v2.analytics_read_model import AnalyticsValidationError
 from trading_workspace_v2.replay import ReplayService
-from trading_workspace_v2.replay_execution import advance_replay_execution, queue_market_order
+from trading_workspace_v2.replay_execution import advance_replay_execution, change_replay_protection, queue_market_order
 
 
-def exposure(*, side="BUY", ambiguous=False, gap=False):
+def exposure(*, side="BUY", ambiguous=False, gap=False, stop_loss=None):
     bars = [{"timestamp": 1699999940, "open": 1.1, "high": 1.1, "low": 1.1, "close": 1.1},
             {"timestamp": 1700000000, "open": 1.1, "high": 1.101, "low": 1.0998, "close": 1.1},
             {"timestamp": 1700000060, "open": 1.1, "high": 1.105 if ambiguous else 1.103,
@@ -25,7 +25,7 @@ def exposure(*, side="BUY", ambiguous=False, gap=False):
         bars = [{**bar, "open": mirror(bar["open"]), "high": mirror(bar["low"]),
                  "low": mirror(bar["high"]), "close": mirror(bar["close"])} for bar in bars]
     queued = queue_market_order(initial_state(), operation_id="entry", side=side, quantity="0.10",
-                                stop_loss="1.09" if side == "BUY" else "1.11",
+                                stop_loss=stop_loss or ("1.09" if side == "BUY" else "1.11"),
                                 take_profit="1.12" if side == "BUY" else "1.08")
     for cursor, bar in enumerate(bars[1:], 1):
         queued = advance_replay_execution(queued, bar=bar, cursor_index=cursor).snapshot
@@ -40,18 +40,22 @@ def evaluate(source, bars, **kwargs):
 def test_costed_alternative_exit_and_lower_bound_exclude_post_exit_extrema(side):
     source, bars = exposure(side=side)
     before = deepcopy(source)
-    result = evaluate(source, bars, target_r=1)
+    result = evaluate(source, bars, target_r=.1)
     row = result["rows"][0]
     assert row["risk_reward"]["status"] == "ready"
     assert row["risk_reward"]["exit_cursor_index"] == 2
-    assert row["risk_reward"]["net_pnl"] == pytest.approx(18)
-    assert row["risk_reward"]["gross_pnl"] == pytest.approx(20)
+    assert row["risk_reward"]["net_pnl"] == pytest.approx(8.1)
+    assert row["risk_reward"]["gross_pnl"] == pytest.approx(10.1)
+    assert row["risk_reward"]["stop_price"] == pytest.approx(1.09 if side == "BUY" else 1.11)
     assert row["stop_loss"]["net_pnl"] == pytest.approx(197)
     assert row["stop_loss"]["target_price"] is None
     assert row["excursion"]["status"] == "lower_bound"
     assert row["excursion"]["mae_price"] == pytest.approx(.0012)
     assert row["excursion"]["mfe_price"] == pytest.approx(.0199)
-    assert row["excursion"]["mae_r"] == pytest.approx(.6)
+    assert row["excursion"]["mae_r"] == pytest.approx(.0012 / .0101)
+    assert row["excursion"]["configured_mae_r"] == pytest.approx(.6)
+    assert row["excursion"]["r_basis"] == "initial_stop_distance"
+    assert row["realized_r"] == pytest.approx(197 / 101)
     assert row["excursion"]["ideal_r"] is None
     assert source == before
     assert source["payload"]["execution"]["ledger"][-2]["details"].get("gross_pnl") is None
@@ -67,19 +71,77 @@ def test_stop_distance_multiplier_controls_actual_costed_stop_exit():
     assert row["stop_loss"]["net_pnl"] == pytest.approx(-12)
 
 
+def test_rr_and_original_mae_do_not_change_with_configured_stop_distance():
+    source, bars = exposure()
+    first = evaluate(source, bars, target_r=.1)
+    other = evaluate(source, bars, target_r=.1, stop_distance_ticks=80, stop_multiplier=2)
+    assert first["rows"][0]["risk_reward"] == other["rows"][0]["risk_reward"]
+    assert first["rows"][0]["excursion"]["mae_r"] == other["rows"][0]["excursion"]["mae_r"]
+    assert first["rows"][0]["excursion"]["configured_mae_r"] != other["rows"][0]["excursion"]["configured_mae_r"]
+
+
+def test_a_later_checkpoint_cannot_recover_missing_entry_proof():
+    source, bars = exposure()
+    source["payload"]["execution"]["ledger"][1]["details"]["open_position"] = None
+    row = evaluate(source, bars)["rows"][0]
+    assert row["risk_reward"]["reason"] == "original_stop_unavailable"
+    assert row["excursion"]["mae_r"] is None
+
+
+def test_mismatched_entry_checkpoint_fails_instead_of_adopting_foreign_risk():
+    source, bars = exposure()
+    source["payload"]["execution"]["ledger"][1]["details"]["open_position"]["position_id"] = "foreign"
+    with pytest.raises(AnalyticsValidationError, match="initial risk checkpoint"):
+        evaluate(source, bars)
+
+
+@pytest.mark.parametrize("late_stop", [False, True])
+def test_rr_excludes_missing_or_late_initial_stop(late_stop):
+    _, bars = exposure()
+    snapshot = queue_market_order(initial_state(), operation_id="no-initial-sl", side="BUY",
+                                  quantity="0.10", stop_loss=None, take_profit="1.12")
+    snapshot = advance_replay_execution(snapshot, bar=bars[1], cursor_index=1).snapshot
+    if late_stop:
+        snapshot = change_replay_protection(snapshot, target_id=snapshot.position.position_id,
+            operation_id="late-sl", stop_loss="1.09", take_profit="1.12",
+            mid_close=bars[1]["close"], virtual_time_utc=bars[1]["timestamp"] + 60)
+    for index in (2, 3):
+        snapshot = advance_replay_execution(snapshot, bar=bars[index], cursor_index=index).snapshot
+    row = evaluate(record(snapshot), bars, target_r=.1)["rows"][0]
+    assert row["risk_reward"]["reason"] == "original_stop_unavailable"
+    assert row["excursion"]["mae_r"] is None
+    assert row["excursion"]["r_basis"] == "unavailable"
+    assert row["realized_r"] is None
+    assert row["stop_loss"]["status"] == "ready"
+
+
+def test_original_risk_uses_first_checkpoint_not_later_moved_stop():
+    _, bars = exposure()
+    snapshot = queue_market_order(initial_state(), operation_id="original-sl", side="BUY",
+                                  quantity="0.10", stop_loss="1.09", take_profit="1.12")
+    snapshot = advance_replay_execution(snapshot, bar=bars[1], cursor_index=1).snapshot
+    snapshot = change_replay_protection(snapshot, target_id=snapshot.position.position_id,
+        operation_id="moved-sl", stop_loss="1.0995", take_profit="1.12",
+        mid_close=bars[1]["close"], virtual_time_utc=bars[1]["timestamp"] + 60)
+    snapshot = advance_replay_execution(snapshot, bar=bars[2], cursor_index=2).snapshot
+    row = evaluate(record(snapshot), bars, target_r=.1)["rows"][0]
+    assert row["excursion"]["original_stop_price"] == pytest.approx(1.09)
+    assert row["excursion"]["initial_risk_distance"] == pytest.approx(.0101)
+
+
 def test_ambiguous_paths_never_pick_arbitrary_winner_and_totals_remain_unknown():
-    source, bars = exposure(ambiguous=True)
-    result = evaluate(source, bars)
+    source, bars = exposure(ambiguous=True, stop_loss="1.099")
+    result = evaluate(source, bars, target_r=1)
     assert result["rows"][0]["risk_reward"]["status"] == "ambiguous"
     assert result["rows"][0]["risk_reward"]["net_pnl"] is None
     assert result["summary"]["risk_reward"]["ambiguous_trade_count"] == 1
     assert result["summary"]["risk_reward"]["net_pnl"] is None
-    assert result["rows"][0]["stop_loss"]["net_pnl"] == pytest.approx(-22)
+    assert result["rows"][0]["stop_loss"]["reason"] == "original_exit_precedes_unknown_terminal_extrema"
 
 
 def test_terminal_intrabar_crossing_cannot_be_used_as_alternative_exit():
     source, bars = exposure()
-    result = evaluate(source, bars)
+    result = evaluate(source, bars, target_r=1)
     assert result["rows"][0]["risk_reward"]["status"] == "unsupported"
     assert result["rows"][0]["risk_reward"]["reason"] == "original_exit_precedes_unknown_terminal_extrema"
     bars[-1]["high"] = 1.9
@@ -122,6 +184,10 @@ def test_historical_cutoff_and_filters_use_existing_read_only_analytics_contract
             {"timestamp": 1700000000, "open": 1.1, "high": 1.103, "low": 1.099, "close": 1.102},
             {"timestamp": 1700000060, "open": 1.1, "high": 1.103, "low": 1.099, "close": 1.102}]
     monkeypatch.setattr(service, "_dataset_rows", lambda *_: (SimpleNamespace(artifact_sha256="d" * 64), bars))
+    monkeypatch.setattr(service, "_dataset_timing", lambda *_, **query: (None, {
+        "first_utc": bars[0]["timestamp"], "index_utc": bars[query["index"]]["timestamp"],
+        "cursor_index": sum(bar["timestamp"] <= query["at_or_before"] for bar in bars) - 1,
+    }))
     before = deepcopy(store.current)
     historical = service.analytics_experiments("tenant-a", "replay-fixture", cutoff_timestamp=1700000000)
     assert len(historical["rows"]) == 1
@@ -186,6 +252,9 @@ def test_readonly_http_route_validates_scope_config_and_history_without_database
             super().__init__()
 
         def initialize(self):
+            pass
+
+        def close(self):
             pass
 
     monkeypatch.setattr(api, "PostgresStore", FakeStore)

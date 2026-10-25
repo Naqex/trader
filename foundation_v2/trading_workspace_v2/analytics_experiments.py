@@ -23,6 +23,33 @@ def _unavailable(reason):
     return {"status": "unsupported", "reason": reason, "net_pnl": None, "exit_price": None}
 
 
+def _initial_position(snapshot, trade):
+    for index, event in enumerate(snapshot.ledger):
+        detail = event["details"]
+        if event["kind"] != "market_fill" or detail.get("position_id") != trade["source_position_id"]:
+            continue
+        position = detail.get("open_position")
+        # Bar advance emits its mark synchronously, before a user can amend SL.
+        # A later mark (or any intervening protection event) is not entry proof.
+        if position is None and index + 1 < len(snapshot.ledger):
+            following = snapshot.ledger[index + 1]
+            if following["kind"] == "price_mark" and following["cursor_index"] == event["cursor_index"]:
+                position = following["details"].get("open_position")
+        if not position:
+            return {}
+        if not isinstance(position, dict):
+            raise AnalyticsValidationError("initial risk checkpoint must be an object")
+        if (position.get("position_id") != detail["position_id"]
+                or position.get("source_operation_id") != detail["operation_id"]
+                or position.get("side") != trade["side"]
+                or Decimal(str(position.get("entry_fill"))) != Decimal(str(detail["fill_price"]))
+                or position.get("opened_cursor_index") != event["cursor_index"]
+                or position.get("opened_time_utc") != event["virtual_time_utc"]):
+            raise AnalyticsValidationError("initial risk checkpoint disagrees with opening fill")
+        return position
+    return {}
+
+
 def _trade_experiment(trade, bars, snapshot, config, instrument, costs):
     start, end = trade["open_cursor_index"], trade["close_cursor_index"]
     if not 0 <= start <= end < len(bars):
@@ -54,8 +81,20 @@ def _trade_experiment(trade, bars, snapshot, config, instrument, costs):
                 "stop_loss": _unavailable("original_cost_model_mismatch"),
                 "risk_reward": _unavailable("original_cost_model_mismatch")}
     distance = config["stop_distance_ticks"] * instrument.tick_size * config["stop_multiplier"]
-    stop = entry - direction * distance
-    take = entry + direction * distance * config["target_r"]
+    # A closing snapshot can contain a moved SL. Only the opening checkpoint proves
+    # the risk that existed at execution; legacy fills without it stay unsupported.
+    original = _initial_position(snapshot, trade)
+    original_stop = original.get("stop_loss")
+    original_stop = Decimal(str(original_stop)) if original_stop is not None else None
+    if original_stop is not None and (not original_stop.is_finite() or original_stop <= 0):
+        raise AnalyticsValidationError("initial stop must be finite and positive")
+    original_distance = (entry - original_stop) * direction if original_stop is not None else None
+    if original_distance is not None and original_distance <= 0:
+        original_stop, original_distance = None, None
+    risk = calculate_round_trip_cost(costs, side, Decimal(str(trade["quantity"])),
+        instrument.contract_size, entry_bid, entry_ask, original_stop, original_stop) if original_stop is not None else None
+    risk_account = abs(Decimal(str(risk["gross_account"]))) if risk else None
+    base["realized_r"] = float(Decimal(str(trade["net_pnl"])) / risk_account) if risk_account else None
     gap_close = trade["exit_reason"] in {"stop_loss_gap", "take_profit_gap"}
     observations = [entry, close]
     for index, bar in enumerate(path):
@@ -69,12 +108,21 @@ def _trade_experiment(trade, bars, snapshot, config, instrument, costs):
         "status": "observed" if gap_close else "lower_bound",
         "basis": "closeable_bid_ask_price; terminal intrabar extrema excluded",
         "mae_price": float(mae), "mfe_price": float(mfe),
-        "mae_r": float(mae / distance), "mfe_r": float(mfe / distance),
-        "r_basis": "configured_stop_distance", "ideal_r": None,
+        "mae_r": float(mae / original_distance) if original_distance else None,
+        "mfe_r": float(mfe / original_distance) if original_distance else None,
+        "configured_mae_r": float(mae / distance), "configured_mfe_r": float(mfe / distance),
+        "r_basis": "initial_stop_distance" if original_distance else "unavailable", "ideal_r": None,
+        "original_stop_price": float(original_stop) if original_stop is not None else None,
+        "initial_risk_distance": float(original_distance) if original_distance else None,
         "excluded_terminal_bar": not gap_close,
     }
 
     def simulate(stop_only):
+        if not stop_only and original_distance is None:
+            return _unavailable("original_stop_unavailable")
+        scenario_distance = distance if stop_only else original_distance
+        stop = entry - direction * scenario_distance
+        take = entry + direction * scenario_distance * config["target_r"]
         if stop <= 0 or (not stop_only and take <= 0):
             return _unavailable("configured_bracket_nonpositive")
         # An unreachable opposite bracket permits reuse of the engine's stop/gap semantics.
@@ -96,22 +144,22 @@ def _trade_experiment(trade, bars, snapshot, config, instrument, costs):
             if exit_value is not None:
                 if terminal and not exit_value["at_open"]:
                     return _unavailable("original_exit_precedes_unknown_terminal_extrema")
-                result = outcome(exit_value["exit_price"], exit_value["reason"], start + index)
+                result = outcome(exit_value["exit_price"], exit_value["reason"], start + index, stop, take)
                 if stop_only:
                     result["target_price"] = None
                 return result
             if terminal and gap_close:
                 # The position ceased to exist at this open: later extrema cannot be consulted.
-                result = outcome(close, "original_close", end)
+                result = outcome(close, "original_close", end, stop, take)
                 if stop_only:
                     result["target_price"] = None
                 return result
-        result = outcome(close, "original_close", end)
+        result = outcome(close, "original_close", end, stop, take)
         if stop_only:
             result["target_price"] = None
         return result
 
-    def outcome(price, reason, cursor):
+    def outcome(price, reason, cursor, stop, take):
         result = calculate_round_trip_cost(costs, side, Decimal(str(trade["quantity"])),
                                            instrument.contract_size, entry_bid, entry_ask, price, price)
         return {"status": "ready", "reason": reason, "exit_cursor_index": cursor,
@@ -134,7 +182,8 @@ def build_replay_experiments(record, bars, *, dataset_sha256, filters=None,
                 "provenance": analytics["provenance"], "scope": analytics["scope"],
                 "account_currency": analytics.get("account_currency"), "rows": [],
                 "bounds": "selected closed trades; original close; no future bars",
-                "risk_basis": "user_configured_distance; not original planned risk",
+                "risk_basis": "stop_loss: user_configured_distance; risk_reward: initial_stop_distance",
+                "scenario_risk_basis": {"stop_loss": "user_configured_distance", "risk_reward": "initial_stop_distance"},
                 "blocked_by_data": analytics.get("blocked_by_data", [])}
     if not analytics["analytics_available"]:
         return response
