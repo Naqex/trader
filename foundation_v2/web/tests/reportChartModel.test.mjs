@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { chartDomain, chartTicks, reportCurvePath } from '../src/reportChartModel.js'
-import { groupPerformanceMonths } from '../src/sessionPerformanceModel.js'
+import { averagePerformanceDays, averagePerformanceMonths } from '../src/sessionPerformanceModel.js'
 
 test('mixed signs center zero with equal nice steps', () => {
   for (const values of [[-295, 865], [-6, 14], [-500, 600], [-90, 0, 0, 310]]) {
@@ -59,12 +59,17 @@ test('nice axes cover the data with round steps, integer counts and bounded perc
   assert.ok(tinyFlat.low >= .0008 && tinyFlat.high <= .0012)
 })
 
-test('calendar month grouping sums both sides over years and keeps missing months absent', () => {
+test('calendar month means weight each active year/month once and retain knownzero', () => {
   const rows = [{ label: '2021-01', value: 10, profit: 30, loss: -20, count: 2 }, { label: '2025-01', value: -10, profit: 5, loss: -15, count: 3 }, { label: '2023-03', value: 0, profit: 0, loss: 0, count: 1 }]
   const original = structuredClone(rows)
-  assert.deepEqual(groupPerformanceMonths(rows), [{ label: '01', value: 0, profit: 35, loss: -35, count: 5 }, { label: '03', value: 0, profit: 0, loss: 0, count: 1 }])
+  assert.deepEqual(averagePerformanceMonths(rows), [{ label: '01', value: 0, profit: 17.5, loss: -17.5, count: 5, period_count: 2 }, { label: '03', value: 0, profit: 0, loss: 0, count: 1, period_count: 1 }])
   assert.deepEqual(rows, original)
-  assert.equal(groupPerformanceMonths([{ label: '2021-01', value: 10 }])[0].profit, null)
+  assert.equal(averagePerformanceMonths([{ label: '2021-01', value: 10 }])[0].profit, null)
+  assert.equal(averagePerformanceMonths([{ label: '2026-07', value: 100, count: 10 }, { label: '2025-07', value: 300, count: 1 }])[0].value, 200)
+  assert.equal(averagePerformanceDays([{ label: 'T2', value: 90, period_count: 2, count: 3 }])[0].value, 45)
+  assert.equal(averagePerformanceDays([{ label: 'T3', value: 0, period_count: 0, count: 0 }])[0].value, null)
+  assert.equal(averagePerformanceDays([{ label: 'T3', value: 0, period_count: 1, count: 1 }])[0].value, 0)
+  assert.equal(averagePerformanceDays([{ label: 'T3', value: 30 }])[0].value, null)
 })
 
 test('curve passes each observation and its control points cannot overshoot a local range', () => {

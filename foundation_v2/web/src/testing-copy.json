@@ -1,4 +1,11 @@
 {
+  "Hiệu suất trung bình theo tháng": {"vi":"Hiệu suất trung bình theo tháng","en":"Average Monthly Performance"},
+  "Hiệu suất trung bình theo ngày": {"vi":"Hiệu suất trung bình theo ngày","en":"Average Daily Performance"},
+  "Lãi trung bình theo kỳ": {"vi":"Lãi trung bình","en":"Average profit"},
+  "Lỗ trung bình theo kỳ": {"vi":"Lỗ trung bình","en":"Average loss"},
+  "PnL ròng trung bình": {"vi":"PnL ròng trung bình","en":"Average net PnL"},
+  "Trung bình trên {count} tháng có giao dịch": {"vi":"Trung bình trên {count} tháng có giao dịch","en":"Active months in average: {count}"},
+  "Trung bình trên {count} ngày có giao dịch": {"vi":"Trung bình trên {count} ngày có giao dịch","en":"Active days in average: {count}"},
   "Hiệu suất theo tháng": {"vi":"Hiệu suất theo tháng","en":"Monthly Performance"},
   "Hiệu suất theo ngày": {"vi":"Hiệu suất theo ngày","en":"Daily Performance"},
   "Năm hiệu suất": {"vi":"Năm hiệu suất","en":"Performance year"},

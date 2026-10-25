@@ -227,19 +227,22 @@ pub(super) fn dashboard_activity(records: &[Value], intervals: &[Value], filters
 pub(super) fn performance_periods(view: &Value, zone: chrono_tz::Tz) -> R<Value> {
     let mut months = BTreeMap::<String, (f64, f64, usize)>::new();
     let mut days = [(0.0f64, 0.0f64, 0usize); 7];
+    let mut dates: [HashSet<NaiveDate>; 7] = std::array::from_fn(|_| HashSet::new());
     for trade in array(&view["ledger"])? {
         let Some(date) = timestamp(activity::time(trade))? else { continue };
         let date = date.with_timezone(&zone);
         let pnl = number(&trade["net_pnl"])?;
         let month = months.entry(date.format("%Y-%m").to_string()).or_default();
-        let day = &mut days[date.weekday().num_days_from_monday() as usize];
+        let weekday = date.weekday().num_days_from_monday() as usize;
+        dates[weekday].insert(date.date_naive());
+        let day = &mut days[weekday];
         for bucket in [month, day] {
             bucket.0 += pnl.max(0.0); bucket.1 += pnl.min(0.0); bucket.2 += 1;
         }
     }
     let has_dates = !months.is_empty();
     let row = |label: String, (profit, loss, count): (f64, f64, usize)| json!({"label":label,"value":profit+loss,"profit":profit,"loss":loss,"count":count});
-    Ok(json!({"months":months.into_iter().map(|(k,v)|row(k,v)).collect::<Vec<_>>(),"weekdays":if !has_dates {vec![]} else {["T2","T3","T4","T5","T6","T7","CN"].iter().zip(days).map(|(k,v)|row(k.to_string(),v)).collect::<Vec<_>>()}}))
+    Ok(json!({"months":months.into_iter().map(|(k,v)|row(k,v)).collect::<Vec<_>>(),"weekdays":if !has_dates {vec![]} else {["T2","T3","T4","T5","T6","T7","CN"].iter().zip(days).enumerate().map(|(i,(k,v))|{let mut item=row(k.to_string(),v);item["period_count"]=json!(dates[i].len());item}).collect::<Vec<_>>()}}))
 }
 
 #[cfg(test)]
@@ -284,6 +287,23 @@ mod tests {
         assert!(performance_periods(&unknown,chrono_tz::UTC).unwrap()["months"].as_array().unwrap().is_empty());
         let shifted=performance_periods(&json!({"ledger":[{"close_time_utc":"2026-01-31T23:30:00Z","net_pnl":-3.0}]}),chrono_tz::Asia::Ho_Chi_Minh).unwrap();
         assert_eq!(shifted["months"][0]["label"],"2026-02");
+    }
+
+    #[test]
+    fn weekday_denominators_count_distinct_active_local_dates_not_trades() {
+        let view=json!({"ledger":[
+            {"close_time_utc":"2026-10-04T23:30:00Z","net_pnl":10.0},
+            {"close_time_utc":"2026-10-05T01:00:00Z","net_pnl":20.0},
+            {"close_time_utc":"2026-10-12T01:00:00Z","net_pnl":0.0}
+        ]});
+        let utc=performance_periods(&view,chrono_tz::UTC).unwrap();
+        assert_eq!(utc["weekdays"][0]["period_count"],2);
+        assert_eq!(utc["weekdays"][6]["period_count"],1);
+        let vn=performance_periods(&view,chrono_tz::Asia::Ho_Chi_Minh).unwrap();
+        assert_eq!(vn["weekdays"][0]["period_count"],2);
+        assert_eq!(vn["weekdays"][0]["count"],3);
+        assert_eq!(vn["weekdays"][0]["value"],30.0);
+        assert_eq!(vn["weekdays"][6]["period_count"],0);
     }
 
     fn fixture() -> Value {

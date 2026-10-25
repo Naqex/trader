@@ -1,7 +1,9 @@
 # Rust-native candidate runtime
 
-Latest local recovery: [25 October startup receipt](../evidence/runtime-start-20261025/RECEIPT.md)
-records native/compact API8010 readiness and the real-data Dashboard check on UI5180.
+Latest local rollout: [25 October period averages](../evidence/report-period-averages-20261025/RECEIPT.md)
+records native/compact API8010 readiness, active-date denominators and the real-data
+Dashboard check on UI5180. Earlier recovery is in the
+[startup receipt](../evidence/runtime-start-20261025/RECEIPT.md).
 
 The 17 October 2026 execution extension in the workspace Product Completion Plan
 expands the earlier API-only migration. The candidate runs interactive domain

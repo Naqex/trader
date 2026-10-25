@@ -56,11 +56,12 @@ export function ReportLineChart({ title, points, currency, emptyLabel = 'Chưa c
   </svg></div> : <div className="fxs-chart-empty">{t(emptyLabel)}</div>}</section>
 }
 
-export function ReportBars({ title, items, currency, period, scopeLabel, horizontal = false, accent = 'blue', signed = false, split = false, maximum, integer = false, valueFormat, emptyLabel = 'Chưa có dữ liệu để vẽ biểu đồ.' }) {
+export function ReportBars({ title, items, currency, period, scopeLabel, averagePeriod, horizontal = false, accent = 'blue', signed = false, split = false, maximum, integer = false, valueFormat, emptyLabel = 'Chưa có dữ liệu để vẽ biểu đồ.' }) {
   const { t, fmt, locale } = useTestingLocale()
   const divided = split && items.every(item => finite(item.profit) && item.profit >= 0 && finite(item.loss) && item.loss <= 0)
-  const series = item => divided ? [item.loss, item.profit].filter(value => value !== 0) : [item.value]
-  const values = items.flatMap(item => divided ? [item.loss, item.profit] : [item.value]), valid = items.length > 0 && values.every(finite)
+  const unobserved = item => averagePeriod && item.period_count === 0 && item.value === null
+  const series = item => unobserved(item) ? [] : divided ? [item.loss, item.profit].filter(value => value !== 0) : [item.value]
+  const values = items.flatMap(item => unobserved(item) ? [] : divided ? [item.loss, item.profit] : [item.value]), valid = values.length > 0 && values.every(finite)
   const domain = valid ? chartDomain(values, { maximum, symmetric: true, integer }) : null
   const weekday = period === 'weekday'
   const angled = weekday
@@ -84,7 +85,12 @@ export function ReportBars({ title, items, currency, period, scopeLabel, horizon
     if (weekday && day >= 0) label = locale.startsWith('vi') ? day === 6 ? 'Chủ nhật' : `Thứ ${day + 2}` : new Intl.DateTimeFormat(locale, { weekday: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2024, 0, 1 + day)))
     return label.charAt(0).toLocaleUpperCase(locale) + label.slice(1)
   })
-  const description = (item, index) => `${monthKeys ? item.label : labels[index]}${scopeLabel ? ` (${scopeLabel})` : ''}: ${divided ? `${t('Lãi')}: ${amount(item.profit)}; ${t('Lỗ')}: ${amount(item.loss)}; ${t('Net PnL')}: ` : ''}${amount(item.value)}`
+  const description = (item, index) => {
+    const label = `${monthKeys ? item.label : labels[index]}${scopeLabel ? ` (${scopeLabel})` : ''}`
+    if (unobserved(item)) return `${label}: ${t('Chưa có giao dịch')}`
+    const value = `${divided ? `${t(averagePeriod ? 'Lãi trung bình theo kỳ' : 'Lãi')}: ${amount(item.profit)}; ${t(averagePeriod ? 'Lỗ trung bình theo kỳ' : 'Lỗ')}: ${amount(item.loss)}; ${t(averagePeriod ? 'PnL ròng trung bình' : 'Net PnL')}: ` : ''}${amount(item.value)}`
+    return `${label}: ${value}${averagePeriod ? `; ${t(averagePeriod === 'month' ? 'Trung bình trên {count} tháng có giao dịch' : 'Trung bình trên {count} ngày có giao dịch', { count: item.period_count })}` : ''}`
+  }
   const tickLabel = value => maximum === 100 ? `${fmt(value, '', 0)}%` : axis.get(value) ?? fmt(value, '', 2)
   const tickCount = domain ? Math.max(2, horizontal
     ? Math.floor((plotRight - left) / Math.max(...domain.ticks.map(value => tickLabel(value).length * 7 + 12))) + 1

@@ -3,7 +3,7 @@ import { displayDate } from './dateFormat.js'
 import { zonedDateKey } from './timezone.js'
 import { useTestingLocale } from './testingLocale.jsx'
 import { useMemo, useState } from 'react'
-import { closeTime, sessionPeriods } from './sessionPerformanceModel.js'
+import { averagePerformanceDays, closeTime, sessionPeriods } from './sessionPerformanceModel.js'
 import PaginationFooter from './PaginationFooter.jsx'
 import TestingIcon from './TestingIcon.jsx'
 import { SessionChartLink } from './SessionDetails.jsx'
@@ -13,7 +13,7 @@ import MonthlyPerformance from './MonthlyPerformance.jsx'
 
 export function PeriodBars({ title, items, currency, period, horizontal = false, totalCount = items.length, emptyLabel = 'Chưa có dữ liệu giao dịch đóng.' }) {
   const { t } = useTestingLocale()
-  return period === 'month' ? <MonthlyPerformance title={title} items={items} currency={currency} emptyLabel={emptyLabel} /> : <ReportBars title={totalCount > items.length ? `${t(title)} · ${items.length}/${totalCount}` : title} items={items} currency={currency} period={period} horizontal={horizontal} emptyLabel={emptyLabel} />
+  return period === 'month' ? <MonthlyPerformance title={title} items={items} currency={currency} emptyLabel={emptyLabel} /> : <ReportBars title={totalCount > items.length ? `${t(title)} · ${items.length}/${totalCount}` : title} items={period === 'weekday' ? averagePerformanceDays(items) : items} averagePeriod={period === 'weekday' ? 'day' : undefined} currency={currency} period={period} horizontal={horizontal} emptyLabel={emptyLabel} />
 }
 
 export function Metric({ title, value, detail }) {
@@ -47,8 +47,8 @@ export default function SessionPerformance({ model, payload, item, href, chartsO
     {limited && <p role="status">{payload.stale || payload.freshness === 'stale' || payload.provenance?.freshness === 'stale' || payload.provenance?.status === 'stale' ? t("Dữ liệu chưa cập nhật.") : t("Dữ liệu một phần.")}{t("Kết quả chỉ phản ánh phạm vi nguồn đã đọc.")}</p>}
     {rows.length || equityPoints.length || model?.summaryPeriods?.months?.length ? <div className="fxs-charts">
       <ReportLineChart title="Equity" currency={currency} points={equityPoints} emptyLabel={timeBasis === 'market' ? 'Chưa có lịch sử Equity của phiên.' : 'Chưa có lịch sử Equity theo thời gian thực.'} />
-      <PeriodBars title="Hiệu suất theo tháng" period="month" items={performancePeriods.months} currency={currency} horizontal />
-      <PeriodBars title="Hiệu suất theo ngày" period="weekday" items={performancePeriods.weekdays} currency={currency} />
+      <PeriodBars title="Hiệu suất trung bình theo tháng" period="month" items={performancePeriods.months} currency={currency} horizontal />
+      <PeriodBars title="Hiệu suất trung bình theo ngày" period="weekday" items={performancePeriods.weekdays} currency={currency} />
     </div> : <p className="fxs-no-analytics">{t("Chưa có phân tích giao dịch.")}</p>}
     {periods.incomplete && <p role="status">{t("Một số giao dịch cũ chưa có thời gian ghi nhận.")}</p>}
     {!chartsOnly && <><section className="fxs-metrics" aria-label={t("Chỉ số phiên")}>

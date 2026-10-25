@@ -75,6 +75,15 @@ test('split performance keeps both sides of a breakeven period, zero and missing
  const result = sessionPeriods(ledger, 'UTC', new Date(), 'market')
  assert.deepEqual(result.performance.months, [{ label: '2003-01', value: 0, profit: 10, loss: -10, count: 3 }])
  assert.equal(result.performance.weekdays[2].count, 3)
+ assert.equal(result.performance.weekdays[2].period_count, 1)
  assert.equal(result.performance.weekdays[0].count, 0)
  assert.equal(result.performance.months.some(row => row.label === '2003-02'), false)
+})
+
+test('weekday average denominators count distinct active local dates, including breakeven days', () => {
+ const ledger = [{ report_time_utc:'2026-10-05T01:00:00Z',net_pnl:10 }, { report_time_utc:'2026-10-05T02:00:00Z',net_pnl:20 }, { report_time_utc:'2026-10-12T01:00:00Z',net_pnl:0 }]
+ const monday=sessionPeriods(ledger,'UTC').performance.weekdays[0]
+ assert.equal(monday.value,30);assert.equal(monday.count,3);assert.equal(monday.period_count,2)
+ const shifted=sessionPeriods([{report_time_utc:'2026-10-04T23:30:00Z',net_pnl:10},...ledger],'Asia/Ho_Chi_Minh').performance.weekdays[0]
+ assert.equal(shifted.period_count,2);assert.equal(shifted.count,4)
 })

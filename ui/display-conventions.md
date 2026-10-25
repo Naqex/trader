@@ -74,12 +74,16 @@ Last sync is the last successful data observation, not a connection expiry date.
   an interactive category target and explicit tooltip value. Dated month labels
   use horizontal `MM/YYYY`, never a detached year beside the heading. Session
   summaries follow backtest time; aggregate performance and Journal follow real activity.
-  Monthly P/L uses horizontal rows, at most twelve calendar months, summing matching
-  months over every year in the selected scope. There is no year picker/heatmap.
+  Average Monthly Performance uses horizontal rows, at most twelve calendar months,
+  grouping matching months even when only one year is present. Axis labels never
+  include a year. There is no year picker/heatmap.
   Preserve the full dated source projection; grouping is presentation, not data loss
-  or a last-twelve-month limit. Tooltip includes the merged year range. It shows sums
-  of positive/negative net trade P/L, not averages. Daily shows one blue net P/L bar
-  per weekday, summing matching weekdays across the same selected scope.
+  or a last-twelve-month limit. Divide each grouped profit/loss/net total by the
+  number of dated months containing trades. Average Daily Performance shows one
+  blue net P/L bar per weekday, dividing its total by distinct active local dates
+  in Settings timezone. Count breakeven periods; exclude absent periods. This is
+  a period mean, not a per-trade mean. Tooltips state the denominator. Weekdays
+  without observations retain their category/tooltip and no numeric average.
   Bar axes include zero: positive-only data uses zero to a rounded maximum,
   negative-only data a rounded minimum to zero, and mixed signs symmetric bounds
   about zero. Split monthly axes consider each profit/loss segment, never net alone.
