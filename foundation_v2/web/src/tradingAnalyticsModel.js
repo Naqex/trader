@@ -74,7 +74,7 @@ export function calendarParts(value, timezone = getTimezone()) {
   return { key, month: key.slice(0, 7), hour: Number(at('hour')), minute: Number(at('minute')), weekday: new Date(`${key}T00:00:00Z`).getUTCDay() }
 }
 
-export function filterAnalyticsRows(rows, filters = {}) {
+export function filterAnalyticsRows(rows, filters = {}, classifyOutcome = outcomeOf) {
   filters = { ...DEFAULT_EXTRA_FILTERS, timezone: getTimezone(), ...filters }
   const search = filters.search
   const notes = filters.notes.trim().toLowerCase()
@@ -103,7 +103,7 @@ export function filterAnalyticsRows(rows, filters = {}) {
       && (filters.hour === 'all' || time?.hour === Number(filters.hour))
       && matches('assets', row.symbol)
       && matches('sides', row.side?.toLowerCase())
-      && matches('outcomes', outcomeOf(row.net_pnl))
+      && matches('outcomes', classifyOutcome(row.net_pnl))
       && matches('types', row.entry_type)
       && matches('statuses', row.status || 'closed')
       && matches('notesPresence', hasTradeNotes(row) === null ? null : hasTradeNotes(row) ? 'with' : 'without')
@@ -118,38 +118,94 @@ export function filterAnalyticsRows(rows, filters = {}) {
   })
 }
 
-function stats(rows) {
+function stats(rows, classifyOutcome = outcomeOf) {
   const complete = rows.every(row => known(row.net_pnl))
   const pnl = complete ? rows.map(row => Number(row.net_pnl)) : []
-  const wins = pnl.filter(value => outcomeOf(value) === 'win'), losses = pnl.filter(value => outcomeOf(value) === 'loss')
+  const wins = pnl.filter(value => classifyOutcome(value) === 'win'), losses = pnl.filter(value => classifyOutcome(value) === 'loss')
   const total = values => values.reduce((sum, value) => sum + value, 0)
   const average = values => values.length ? total(values) / values.length : null
   let winStreak = 0, lossStreak = 0, maxWinStreak = 0, maxLossStreak = 0
+  const winRuns = [], lossRuns = []
   for (const value of pnl) {
-    winStreak = outcomeOf(value) === 'win' ? winStreak + 1 : 0
-    lossStreak = outcomeOf(value) === 'loss' ? lossStreak + 1 : 0
+    if (classifyOutcome(value) !== 'win' && winStreak) winRuns.push(winStreak)
+    if (classifyOutcome(value) !== 'loss' && lossStreak) lossRuns.push(lossStreak)
+    winStreak = classifyOutcome(value) === 'win' ? winStreak + 1 : 0
+    lossStreak = classifyOutcome(value) === 'loss' ? lossStreak + 1 : 0
     maxWinStreak = Math.max(maxWinStreak, winStreak); maxLossStreak = Math.max(maxLossStreak, lossStreak)
   }
-  const duration = kind => rows.filter(row => outcomeOf(row.net_pnl) === kind).map(row => {
+  if (winStreak) winRuns.push(winStreak)
+  if (lossStreak) lossRuns.push(lossStreak)
+  const duration = kind => rows.filter(row => classifyOutcome(row.net_pnl) === kind).map(row => {
     const start = closeTime(row.open_time_utc), end = closeTime(row.close_time_utc)
     return start && end && end >= start ? (end - start) / 60000 : null
   })
   const durationAverage = kind => { const values = duration(kind); return values.length && values.every(known) ? average(values) : null }
-  const r = rows.map(row => number(row.realized_r)).filter(value => value !== null)
+  const r = rows.map(row => known(row.realized_r) ? Number(row.realized_r)
+    : known(row.planned_risk_budget) && Number(row.planned_risk_budget) > 0 && known(row.net_pnl)
+      ? number(Number(row.net_pnl) / Number(row.planned_risk_budget)) : null).filter(value => value !== null)
   return { count: rows.length, complete, net: complete ? total(pnl) : null, wins: complete ? wins.length : null, losses: complete ? losses.length : null,
     breakeven: complete ? pnl.length - wins.length - losses.length : null, winRate: complete && pnl.length ? wins.length / pnl.length * 100 : null,
     expectancy: average(pnl), profitFactor: losses.length ? total(wins) / Math.abs(total(losses)) : null,
     averageWin: average(wins), averageLoss: average(losses), bestWin: wins.length ? Math.max(...wins) : null, worstLoss: losses.length ? Math.min(...losses) : null,
     maxWinStreak: complete ? maxWinStreak : null, maxLossStreak: complete ? maxLossStreak : null, winDuration: durationAverage('win'), lossDuration: durationAverage('loss'),
+    averageWinStreak: complete ? average(winRuns) : null, averageLossStreak: complete ? average(lossRuns) : null,
     averageR: average(r), maxR: r.length ? Math.max(...r) : null, rCount: r.length,
   }
 }
 
-export function advancedAnalytics(model, filters = {}) {
+function frequencySeries(days, dayCounts) {
+  if (!days.length) return { day: [], week: [], month: [] }
+  const first = Date.parse(`${days[0]}T00:00:00Z`), last = Date.parse(`${days.at(-1)}T00:00:00Z`)
+  const weeks = new Map(), months = new Map(), day = []
+  // Iterate civil labels, not elapsed 24-hour steps in the selected timezone.
+  // DST changes observation grouping without losing/repeating a calendar day.
+  for (let value = first; value <= last; value += 86400000) {
+    const date = new Date(value), label = date.toISOString().slice(0, 10), count = dayCounts.get(label) || 0
+    day.push({ label, count })
+    date.setUTCDate(date.getUTCDate() - (date.getUTCDay() + 6) % 7)
+    const week = date.toISOString().slice(0, 10), month = label.slice(0, 7)
+    weeks.set(week, (weeks.get(week) || 0) + count)
+    months.set(month, (months.get(month) || 0) + count)
+  }
+  return { day, week: [...weeks].map(([label, count]) => ({ label, count })),
+    month: [...months].map(([label, count]) => ({ label, count })) }
+}
+
+function drawdownRecovery(drawdown, rows) {
+  const byId = new Map(rows.map(row => [row.tradeId, row]))
+  let peakTime = null, episode = null
+  const episodes = []
+  for (const [index, point] of drawdown.entries()) {
+    const value = number(point.drawdown)
+    if (value === null) return { recoveryDays: null, longestRecoveryDays: null, recoveryDaysKnownCount: 0, recoveryEpisodes: [] }
+    const row = point.tradeId ? byId.get(point.tradeId) : rows[Number.isSafeInteger(point.index) ? point.index - 1 : index]
+    const at = closeTime(row?.report_time_utc)
+    if (value > 1e-12) {
+      if (!episode) episode = { peakTimeUtc: peakTime?.toISOString() ?? null, firstUnderwaterTimeUtc: at?.toISOString() ?? null }
+    } else {
+      if (episode) {
+        const start = closeTime(episode.peakTimeUtc)
+        const days = start && at && at >= start ? (at - start) / 86400000 : null
+        episodes.push({ ...episode, recoveryTimeUtc: at?.toISOString() ?? null, recovered: true, elapsedDays: days })
+        episode = null
+      }
+      peakTime = at
+    }
+  }
+  if (episode) episodes.push({ ...episode, recoveryTimeUtc: null, recovered: false, elapsedDays: null })
+  const recovered = episodes.filter(item => item.recovered), knownDays = recovered.map(item => item.elapsedDays).filter(known)
+  const complete = recovered.length > 0 && knownDays.length === recovered.length
+  return { recoveryDays: complete ? knownDays.reduce((sum, value) => sum + value, 0) / knownDays.length : null,
+    longestRecoveryDays: complete ? Math.max(...knownDays) : null, recoveryDaysKnownCount: knownDays.length, recoveryEpisodes: episodes }
+}
+
+export function advancedAnalytics(model, filters = {}, options = {}) {
   filters = { ...DEFAULT_EXTRA_FILTERS, timezone: getTimezone(), ...filters }
   if (model.result?.paged) throw new Error('paged_ledger_cannot_compute_full_analytics')
-  const rows = filterAnalyticsRows(model.ledger, filters)
-  const summary = stats(rows)
+  const breakevenThreshold = known(options.breakevenThreshold) ? Math.max(0, Number(options.breakevenThreshold)) : 0
+  const classifyOutcome = value => !known(value) ? 'unknown' : Math.abs(Number(value)) <= Math.max(1e-12, breakevenThreshold) ? 'breakeven' : Number(value) > 0 ? 'win' : 'loss'
+  const rows = filterAnalyticsRows(model.ledger, filters, classifyOutcome).map(row => ({ ...row, outcome: classifyOutcome(row.net_pnl) }))
+  const summary = stats(rows, classifyOutcome)
   const localFiltered = Object.keys(DEFAULT_EXTRA_FILTERS).filter(key => key !== 'timezone').some(key => (filters[key] ?? DEFAULT_EXTRA_FILTERS[key]) !== DEFAULT_EXTRA_FILTERS[key])
   // A filtered balance is a hypothetical sequence from the original starting capital.
   let balance = number(model.startBalance), peak = balance, drawdown = [], curve = []
@@ -175,10 +231,10 @@ export function advancedAnalytics(model, filters = {}) {
   const datedRows = rows.filter(row => parts(row) && known(row.net_pnl))
   const datesComplete = rows.length > 0 && datedRows.length === rows.length
   const hasDates = datedRows.length > 0
-  const group = (keys, keyOf) => keys.map(label => ({ label, ...stats(datedRows.filter(row => keyOf(row) === label)) }))
+  const group = (keys, keyOf) => keys.map(label => ({ label, ...stats(datedRows.filter(row => keyOf(row) === label), classifyOutcome) }))
   const months = [...new Set(datedRows.map(row => parts(row).month))].sort()
   const days = [...new Set(datedRows.map(row => parts(row).key))].sort()
-  const side = ['BUY', 'SELL'].map(label => ({ label, ...stats(rows.filter(row => String(row.side).toUpperCase() === label)) }))
+  const side = ['BUY', 'SELL'].map(label => ({ label, ...stats(rows.filter(row => String(row.side).toUpperCase() === label), classifyOutcome) }))
   const unknownSide = rows.filter(row => !['BUY', 'SELL'].includes(String(row.side).toUpperCase())).length
   const hours = hasDates ? group(Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, '0')), row => String(parts(row).hour).padStart(2, '0')) : []
   const weekdays = hasDates ? group(['1', '2', '3', '4', '5', '6', '0'], row => String(parts(row).weekday)).map(item => ({ ...item, label: WEEKDAYS[Number(item.label)] })) : []
@@ -190,11 +246,20 @@ export function advancedAnalytics(model, filters = {}) {
     { label: 'Tuần', count: (() => { const weeks = datedRows.map(row => { const date = new Date(`${parts(row).key}T00:00:00Z`); date.setUTCDate(date.getUTCDate() - (date.getUTCDay() + 6) % 7); return date.getTime() }); return datedRows.length / (Math.round((Math.max(...weeks) - Math.min(...weeks)) / 604800000) + 1) })() },
     { label: 'Tháng', count: (() => { const index = key => Number(key.slice(0, 4)) * 12 + Number(key.slice(5, 7)); return datedRows.length / (index(months.at(-1)) - index(months[0]) + 1) })() },
   ] : []
+  const frequencies = frequencySeries(days, new Map(calendar.map(item => [item.label, item.count])))
+  const recovery = drawdownRecovery(drawdown, rows)
   return { ...summary, rows, curve, drawdown, endingBalance: balance, localFiltered, maxDrawdown: dd.length ? Math.max(...dd) : null,
     maxDrawdownPct: drawdown.some(point => known(point.drawdownPct)) ? Math.max(...drawdown.map(point => number(point.drawdownPct) ?? 0)) : null,
     averageDrawdown: positiveDD.length ? positiveDD.reduce((sum, value) => sum + value, 0) / positiveDD.length : dd.length ? 0 : null,
     episodes: dd.length ? episodes : null, recoveryTrades: recovered ? recoverySum / recovered : null, unrecovered: current, longest,
     side, unknownSide, hours, weekdays, months: monthGroups, calendar, sessions, frequency: frequencyGroups, datesComplete, incomplete: datedRows.length !== rows.length,
+    frequencySeries: frequencies, ...recovery,
+    riskReward: { average: summary.averageR, max: summary.maxR, knownCount: summary.rCount, totalCount: rows.length,
+      basis: 'net_realized_r', idealAverage: null, idealMax: null },
+    excursion: { maeHistogram: [], winningAdverseR: null, knownCount: 0, basis: 'unavailable' },
+    sessionGrouping: { basis: 'fixed_close_hour_bands', timezone: filters.timezone, timeField: 'report_time_utc' },
+    recoveryBasis: 'closed_trade_balance_peak_close_to_recovery_close_elapsed_24h_days',
+    classification: { breakevenThreshold, winRateBasis: 'wins_over_all_closed_trades_including_breakeven' },
   }
 }
 
