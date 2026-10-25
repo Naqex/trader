@@ -18,8 +18,9 @@ export const DEMO_LEDGER = tradeSlots.map(i => {
   const time = longHistory ? Date.UTC(2021, Math.floor(ordinal / 2), 6 + ordinal % 2 * 12, 7 + i % 15) : Date.UTC(2026, 6, 6 + i * 1.4, 7 + i % 15)
   const recorded = longHistory ? Date.UTC(2026, 8, 7, 7 + ordinal * 4) : time
   const duration = (20 + i % 8 * 15) * 60000
+  const marketDuration = longHistory ? 5 * 86400000 : duration
   return { trade_id: `demo-trade-${String(i + 1).padStart(3, '0')}`, session_id: session.record_id, session_name: session.name, source: 'UI demo', symbol, side,
-    open_time_utc: new Date(time).toISOString(), close_time_utc: new Date(time + duration).toISOString(), recorded_at_utc: new Date(recorded).toISOString(), close_recorded_at_utc: new Date(recorded + duration).toISOString(), report_time_utc: new Date(recorded + duration).toISOString(),
+    open_time_utc: new Date(time).toISOString(), close_time_utc: new Date(time + marketDuration).toISOString(), recorded_at_utc: new Date(recorded).toISOString(), close_recorded_at_utc: new Date(recorded + duration).toISOString(), report_time_utc: new Date(recorded + duration).toISOString(),
     entry_type: 'market', price_open: price, price_close: price + direction * (net + 3) / (quantity * multiplier), quantity, stop_loss: price - direction * 100 / (quantity * multiplier), take_profit: price + direction * 200 / (quantity * multiplier),
     has_notes: i % 3 === 0, net_pnl: net, gross_pnl: net + 3, fees: 3, planned_risk_budget: 100, realized_r: net / 100, account_currency: 'USD', starting_balance: 10000, rating: 1 + i % 5, tags: [i % 2 ? 'reversal' : 'breakout', i % 3 ? 'planned' : 'review'] }
 }).sort((a, b) => a.report_time_utc.localeCompare(b.report_time_utc))

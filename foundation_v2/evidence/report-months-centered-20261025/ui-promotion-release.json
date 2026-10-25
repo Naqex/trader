@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "candidate": "E:\\BACKUP-TRADINGWORKSPACE\\report-months-centered-20261025\\source\\foundation_v2\\web\\dist",
+  "target": "D:\\ANNAM\\TradingWorkspace\\projects\\mt5-tradingview-backtester\\foundation_v2\\web\\dist",
+  "index_before_sha256": "65a9c3fd0a86aed8e48fd349449f275246c50a16e08ec70595c6050f486a9d58",
+  "index_sha256": "4cf98e25fc4d28f5c169f919ad7da33afdc6205a5157a671554450ebf524c572",
+  "old_assets_retained_for_open_pages": true,
+  "preserved": [
+    "brand/wmreplay.svg"
+  ]
+}

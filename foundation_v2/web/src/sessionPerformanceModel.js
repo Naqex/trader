@@ -1,4 +1,15 @@
 import { getTimezone, zonedDateKey } from './timezone.js'
+
+// Presentation groups calendar months across years; the dated source buckets stay intact.
+export function groupPerformanceMonths(items) {
+  const months = new Map()
+  for (const item of items) {
+    const label = item.label.slice(5), bucket = months.get(label) || { label, value: 0, profit: 0, loss: 0, count: 0 }
+    for (const field of ['value', 'profit', 'loss', 'count']) bucket[field] = Number.isFinite(bucket[field]) && Number.isFinite(item[field]) ? bucket[field] + item[field] : null
+    months.set(label, bucket)
+  }
+  return [...months.values()].sort((a, b) => a.label.localeCompare(b.label))
+}
 export function closeTime(value) {
   if (value === null || value === undefined || value === '' || typeof value === 'boolean') return null
   const numeric = typeof value === 'number' || /^\d+(\.\d+)?$/.test(String(value))

@@ -67,16 +67,21 @@ Last sync is the last successful data observation, not a connection expiry date.
   summaries with their displayed/total count rather than hiding the truncation.
   Bar values appear in the shared tooltip on hover, focus or tap, never printed
   over the plot. Keep scale/category labels. Zero has no artificial bar but retains
-  an interactive category target and explicit tooltip value. Month buckets never merge years:
-  one year in the heading, or `MM/YYYY` across years. Session summaries follow
-  backtest time; aggregate performance and Journal follow real activity time.
-  Monthly performance separates sums of positive/negative net trade P/L; daily
-  performance shows one blue net P/L bar per weekday, including negative values.
-  Multiple-year monthly history uses a year-by-12-month net heatmap, with a year
-  selector/cell drilldown to split bars. Preserve the complete calendar projection;
-  do not silently reuse a last-12-month slice as an all-history view. More than six
-  months in one year use a fixed-height vertical plot. No-data months and recorded
-  zero P/L have distinct states; density may thin labels, never data bars.
+  an interactive category target and explicit tooltip value. Single-year/date bucket
+  charts show the year below the month label, never beside the heading. Session
+  summaries follow backtest time; aggregate performance and Journal follow real activity.
+  Monthly P/L uses horizontal rows, at most twelve calendar months, summing matching
+  months over every year in the selected scope. There is no year picker/heatmap.
+  Preserve the full dated source projection; grouping is presentation, not data loss
+  or a last-twelve-month limit. Tooltip includes the merged year range. It shows sums
+  of positive/negative net trade P/L, not averages. Daily shows one blue net P/L bar
+  per weekday, summing matching weekdays across the same selected scope.
+  Signed performance axes are symmetric about zero with equally spaced nice ticks;
+  mobile may use three symmetric ticks instead of five. No-data months stay absent;
+  a known zero remains accessible. Category density may thin labels, never bars.
+  Equity curves pass each observed point with bounded cubic controls; preserve real
+  timestamps, account segments and observed extrema. Interpolation is visual, not
+  new market observations or a replacement for the account Equity ledger.
 - Closed-trade balance is **Số dư / Balance**, not Equity. Avg. win/loss is a
   realized payoff ratio, not planned Risk/Reward. Recent trade amounts remain
   net P/L; do not relabel money as ROI without a stated return denominator.
