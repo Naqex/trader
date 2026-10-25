@@ -127,10 +127,10 @@ export function readAnalyticsFilters(query, timezone = getTimezone()) {
   }
 }
 
-export function analyticsQuery(filters, timezone = getTimezone()) {
+export function analyticsQuery(filters, timezone = getTimezone(), timeBasis = 'activity') {
   const params = new URLSearchParams()
   params.set('timezone', timezone)
-  params.set('time_basis', 'activity')
+  params.set('time_basis', timeBasis === 'market' ? 'market' : 'activity')
   if (filters.side && filters.side !== 'all') params.set('side', filters.side)
   if (filters.outcome && filters.outcome !== 'all') params.set('outcome', filters.outcome)
   if (filters.from) params.set('from_close_utc', dateRangeBoundary(filters.from, false, timezone))

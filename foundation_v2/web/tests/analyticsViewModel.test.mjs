@@ -101,6 +101,10 @@ test('report date/range never fall back to historical market or entry/update tim
 
 
 test('explicit market session scope uses backtest dates while preserving real timestamps', () => {
+ const params = analyticsQuery({ from: '2003-01-06', to: '2003-01-06' }, 'Asia/Ho_Chi_Minh', 'market')
+ assert.equal(params.get('time_basis'), 'market')
+ assert.equal(params.get('from_close_utc'), '2003-01-05T17:00:00.000Z')
+ assert.equal(params.get('to_close_utc'), '2003-01-06T16:59:59.999Z')
  const trade = { net_pnl: 3, close_time_utc: '2003-01-05T23:30:00Z', report_time_utc: '2026-10-25T10:00:00Z' }
  const model = buildAnalyticsModel({ scope: { time_basis: 'market' }, ledger: [trade] }, 'app', 'Asia/Ho_Chi_Minh')
  assert.equal(model.ledger[0].closeDate, '06/01/2003 06:30:00')

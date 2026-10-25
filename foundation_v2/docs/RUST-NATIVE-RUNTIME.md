@@ -1,11 +1,21 @@
 # Rust-native candidate runtime
 
-Latest local API rollout: [25 October page spacing and ledger audit](../evidence/page-rhythm-ledger-20261025/RECEIPT.md)
+Latest local API/UI rollout: [25-26 October Analytics redesign](../evidence/analytics-redesign-20261025/RECEIPT.md)
+records the three report tabs, market-time session filters, true-equity drawdown and
+portfolio price experiments with exact per-asset checkpoints. API binaries are under
+`E:/BACKUP-TRADINGWORKSPACE/analytics-redesign-20261025/portfolio-release/backend-target/release`;
+the scientific descriptor is `E:/BACKUP-TRADINGWORKSPACE/analytics-redesign-20261025/portfolio-release/scientific-candidate.json`.
+Native/compact, storage, QDM, legacy descriptor and AI interpreter remain retained.
+UI5180 and API8010 passed read-only actual-session journeys and deployed hash checks.
+Missing original SL/complete ideal-R windows remain unavailable; this is not broker
+or whole-product acceptance. The receipt links source/oracle and rollback evidence.
+
+The preceding [25 October page spacing and ledger audit](../evidence/page-rhythm-ledger-20261025/RECEIPT.md)
 records exact Prop portfolio account-event checkpoints and provenance, successful
 reads of both bound reports, consistent page insets and read-only API-to-grid checks.
-API binaries are under `E:/BACKUP-TRADINGWORKSPACE/page-rhythm-ledger-20261025/backend-target/release`;
+That rollout used `E:/BACKUP-TRADINGWORKSPACE/page-rhythm-ledger-20261025/backend-target/release`;
 native/compact and existing storage/capabilities were retained without migration.
-The scientific descriptor remains `E:/BACKUP-TRADINGWORKSPACE/grid-sort-20261025/scientific-candidate.json`,
+Its scientific descriptor was `E:/BACKUP-TRADINGWORKSPACE/grid-sort-20261025/scientific-candidate.json`,
 with the existing legacy descriptor and AI interpreter. Historical non-checkpoint
 events remain rejected explicitly; see the receipt's limits before broader claims.
 The preceding [25 October analytics filters](../evidence/analytics-filter-polish-20261025/RECEIPT.md)

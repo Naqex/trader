@@ -54,7 +54,7 @@ export function ProvenanceInspector({ model, selectedTrade, journalCount, links 
       {selectedTrade ? (
         <section className="as-inspector-selection" aria-label={t("Trade detail")}>
           <div className="as-selection-outcome"><span className={'as-outcome-dot is-' + selectedTrade.outcome} />{selectedTrade.status === 'open' ? t('Open') : selectedTrade.outcome === 'win' ? t("Thắng") : selectedTrade.outcome === 'loss' ? t("Thua") : selectedTrade.outcome === 'breakeven' ? t("Hòa vốn") : t("Chưa xác định")}<strong>{selectedTrade.status === 'open' ? <span title={t('Chưa áp dụng khi lệnh đang mở')}>N/A</span> : formatNumber(selectedTrade.pnl)}</strong></div>
-          <dl className="as-detail-list"><ContextValue label={`${t("Thoát lệnh")} (Realtime · ${timezone})`} value={selectedTrade.closeDate} /><ContextValue label={t("Side")} value={selectedTrade.side} /><ContextValue label={t("Symbol")} value={selectedTrade.symbol} /><ContextValue label={t("Khối lượng")} value={formatNumber(selectedTrade.quantity, 4)} /><ContextValue label={t("Giá mở")} value={formatNumber(selectedTrade.price_open, 6)} /><ContextValue label={t("Giá đóng")} value={formatNumber(selectedTrade.price_close, 6)} /><ContextValue label={t("Net R")} value={selectedTrade.status === 'open' || selectedTrade.realized_r == null ? 'N/A' : formatNumber(selectedTrade.realized_r, 2, 'R')} /><ContextValue label={t("Risk budget")} value={formatNumber(selectedTrade.planned_risk_budget)} /></dl>
+          <dl className="as-detail-list"><ContextValue label={`${t("Thoát lệnh")} (${model.result?.scope?.time_basis === 'market' ? 'Chart' : 'Realtime'} · ${timezone})`} value={selectedTrade.closeDate} /><ContextValue label={t("Side")} value={selectedTrade.side} /><ContextValue label={t("Symbol")} value={selectedTrade.symbol} /><ContextValue label={t("Khối lượng")} value={formatNumber(selectedTrade.quantity, 4)} /><ContextValue label={t("Giá mở")} value={formatNumber(selectedTrade.price_open, 6)} /><ContextValue label={t("Giá đóng")} value={formatNumber(selectedTrade.price_close, 6)} /><ContextValue label={t("Net R")} value={selectedTrade.status === 'open' || selectedTrade.realized_r == null ? 'N/A' : formatNumber(selectedTrade.realized_r, 2, 'R')} /><ContextValue label={t("Risk budget")} value={formatNumber(selectedTrade.planned_risk_budget)} /></dl>
           <details className="as-raw-details"><summary>{t("Xem record gốc")}</summary><pre>{JSON.stringify(selectedTrade, null, 2)}</pre></details>
         </section>
       ) : null}
@@ -115,8 +115,6 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
     }
     navigate(next.href, { replace: true })
   }, [summaryOnly, extra])
-  const [activeReportTab, setActiveReportTab] = useState(query.get('analytics_tab') || 'performance')
-  useEffect(() => { if (!summaryOnly) setActiveReportTab(query.get('analytics_tab') || 'performance') }, [query, summaryOnly])
   const [experimentConfig, setExperimentConfig] = useState({ stop_distance_ticks: 20, stop_multiplier: 1, target_r: 2 })
   const [experiments, setExperiments] = useState({ status: 'idle', payload: null, error: '' })
   const [experimentReload, setExperimentReload] = useState(0)
@@ -124,12 +122,12 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
   const readController = useRef(null)
 
   const filterParams = useMemo(() => {
-    const params = analyticsQuery(filters, timezone)
+    const params = analyticsQuery(filters, timezone, sessionId && !jobId && !ledgerOnly ? 'market' : 'activity')
     if (replayCursor !== null && replayCursor !== undefined) params.set('cursor_index', replayCursor)
     if (replayCutoff !== null && replayCutoff !== undefined) params.set('cutoff_timestamp', replayCutoff)
     if (eventSequence !== null && eventSequence !== undefined) params.set('event_sequence', eventSequence)
     return params
-  }, [filters, replayCursor, replayCutoff, eventSequence, timezone])
+  }, [filters, replayCursor, replayCutoff, eventSequence, timezone, sessionId, jobId, ledgerOnly])
   const analyticsPath = useMemo(() => {
     const suffix = filterParams.toString()
     return `/api/v2/${resourceKind}/${encodeURIComponent(resourceId)}/analytics${suffix ? `?${suffix}` : ''}`
@@ -188,7 +186,7 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
   const recovery = useReadRefresh(() => { load({ background: true }); setExperimentReload(value => value + 1); setJournalReload(value => value + 1) }, Boolean(resourceId), { workspace, resources: fixedHistoricalScope ? [] : [jobId ? 'research' : 'sessions'], scopeKey: analyticsPath, error: state.readPath === analyticsPath && state.workspace === workspace ? state.readError : null, pending: state.readPath !== analyticsPath || state.workspace !== workspace || state.status === 'loading' || state.pending })
   const experimentHasTrades = state.readPath === analyticsPath && state.workspace === workspace && ['ready', 'partial', 'stale'].includes(state.status) && state.payload?.ledger?.length > 0
   useEffect(() => {
-    if (jobId || !sessionId || summaryOnly || ledgerOnly || !experimentHasTrades || !['drawdown', 'simulation'].includes(activeReportTab)) return
+    if (jobId || !sessionId || summaryOnly || ledgerOnly || !experimentHasTrades) return
     const controller = new AbortController()
     const params = new URLSearchParams(filterParams)
     for (const [key, value] of Object.entries(experimentConfig)) params.set(key, value)
@@ -200,7 +198,7 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
       }
     }).catch(error => { if (!controller.signal.aborted) setExperiments({ status: 'error', payload: null, error: `Chưa đọc được đường giá: ${error.message}` }) })
     return () => controller.abort()
-  }, [workspace, sessionId, jobId, filterParams.toString(), experimentConfig, experimentReload, summaryOnly, ledgerOnly, activeReportTab, experimentHasTrades])
+  }, [workspace, sessionId, jobId, filterParams.toString(), experimentConfig, experimentReload, summaryOnly, ledgerOnly, experimentHasTrades])
   const journalScope = `${workspace}:${sessionId}`
   const journalRecovery = useReadRefresh(() => setJournalReload(value => value + 1), Boolean(sessionId && !jobId && !summaryOnly), { workspace, resources: ['journal'], scopeKey: journalScope, error: journalRead.scope === journalScope ? journalRead.error : null, pending: journalRead.scope !== journalScope || journalRead.pending })
   useEffect(() => {
@@ -310,7 +308,7 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
     {state.denied && <TestingEmptyState kind="denied" />}
     {state.status === 'blocked_by_data' && <section className="as-empty-state" data-testid="analytics-blocked"><h2>{t("Chưa đủ dữ liệu để tính analytics")}</h2><p>{state.payload?.blocked_by_data?.map(reason => t(reason)).join(' · ') || t(state.error) || t("Nguồn chưa có kết quả đã phát hành.")}</p></section>}
     {result && !journalFilterPending && ['ready', 'stale', 'partial', 'empty'].includes(state.status) && <>
-      {summaryOnly ? <section className="as-metric-strip" aria-label={t("Metrics chính")}><StoryMetric label={t("Net PnL")} value={formatNumber(model.netPnl)} detail={result.account_currency} /><StoryMetric label={t("Win rate")} value={formatNumber(model.winRate, 1, '%')} /><StoryMetric label={t("Trades")} value={formatNumber(model.tradeCount, 0)} /><StoryMetric label={t("Max DD")} value={formatNumber(model.maxDrawdown)} detail={t("Closed balance")} /></section> : ledgerOnly ? null : <FxAnalyticsReport model={model} extra={extra} experiments={experimentScopeMatches ? experiments.payload : null} experimentStatus={experimentScopeMatches ? experiments.status : experiments.status === 'ready' ? 'error' : experiments.status} experimentError={experiments.error || (experiments.status === 'ready' && !experimentScopeMatches ? 'Đường giá chưa khớp revision/cutoff của báo cáo.' : '')} config={experimentConfig} onConfig={setExperimentConfig} onTabChange={setActiveReportTab} selected={selectedTradeId} onSelect={setSelectedTradeId} />}
+      {summaryOnly ? <section className="as-metric-strip" aria-label={t("Metrics chính")}><StoryMetric label={t("Net PnL")} value={formatNumber(model.netPnl)} detail={result.account_currency} /><StoryMetric label={t("Win rate")} value={formatNumber(model.winRate, 1, '%')} /><StoryMetric label={t("Trades")} value={formatNumber(model.tradeCount, 0)} /><StoryMetric label={t("Max DD")} value={formatNumber(model.maxDrawdown)} detail={t("Closed balance")} /></section> : ledgerOnly ? null : <FxAnalyticsReport model={model} extra={extra} experiments={experimentScopeMatches ? experiments.payload : null} experimentStatus={experimentScopeMatches ? experiments.status : experiments.status === 'ready' ? 'error' : experiments.status} experimentError={experiments.error || (experiments.status === 'ready' && !experimentScopeMatches ? 'Đường giá chưa khớp revision/cutoff của báo cáo.' : '')} config={experimentConfig} onConfig={setExperimentConfig} selected={selectedTradeId} onSelect={setSelectedTradeId} />}
       {!summaryOnly && !ledgerOnly && <details className="as-scope-details"><summary>{t("Phạm vi và nguồn dữ liệu")}</summary><dl className="as-scope-strip"><ContextValue label={t("Session")} value={sessionId || jobId} code /><ContextValue label={t("Revision")} value={result.revision} /><ContextValue label={t("Cutoff")} value={result.cursor_index} /><ContextValue label={t("Dataset SHA")} value={result.dataset_sha256} code /><ContextValue label={t("Balance basis")} value={result.scope?.balance_curve_scope} /><ContextValue label={t("Mode")} value={sourceLabel + ' / simulation'} /></dl><p>{t("Chỉ dùng ledger đóng tại cutoff đã chọn. Các bộ lọc tạo lại đường số dư từ vốn ban đầu. - là dữ liệu chưa được nguồn cung cấp.")}</p></details>}
       {!summaryOnly && selectedTrade && <Inspector onClose={() => setSelectedTradeId('')} className="fxa-trade-inspector" aria-label={t("Chi tiết giao dịch")}><div className="fxa-section-heading"><h2>{t("Trade detail")}</h2><button className="fxa-button" type="button" onClick={() => setSelectedTradeId('')}>{t("Đóng chi tiết")}</button></div><ProvenanceInspector model={model} selectedTrade={selectedTrade} journalCount={journalCount} links={links} /></Inspector>}
     </>}

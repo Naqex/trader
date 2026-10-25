@@ -19,6 +19,63 @@ details only when useful; do not replace every removed sentence with a tooltip.
 
 ## Time ownership
 
+### Analytics composition and calculation bases
+
+Analytics groups each chart with its summary and controls. Performance follows
+profit/loss, realized and ideal R, expectancy/profit factor, outcomes, side,
+time-window radars, hour/day/month, calendar and frequency. Drawdown groups the
+account path, four summary metrics, MAE distribution and winning-trade MAE.
+Simulation groups configured SL, original-risk RR and Monte Carlo separately.
+Use shared rounded chart domains and shape-preserving curves; interpolation
+does not create price observations. Mobile radars use one column. Definitions
+belong in accessible info controls, with no permanent explanatory paragraphs.
+
+Session Analytics requests market time; the trade ledger and research retain
+activity time. Projection honors its declared `scope.time_basis`: market uses the
+recorded chart close instant; activity uses recorded real closing activity.
+`analytics_time_utc` is a view field and must never overwrite raw timestamps or
+fill a missing activity timestamp from chart time. Calendar, time groups,
+frequency and recovery use that declared basis and the selected display zone.
+The current four radar axes are fixed close-hour windows, not named market
+sessions. Monthly Analytics is a year/month matrix of totals; dashboard period
+averages retain their separate contract. Percent of starting capital is explicit.
+
+Main win rate retains wins/all closed trades, including breakeven. The local
+breakeven threshold is an absolute net amount in account currency; it changes
+classification and streaks without changing money, curves or saved trades.
+RR Simulator win rate excludes breakeven. Undefined denominators show `N/A`.
+Realized R joins verified observations per trade, retaining valid ledger/risk
+samples when experiments cover only part of the set. Show known/total counts.
+
+Equity drawdown uses the account equity path including floating P/L, resetting
+peaks at source segment boundaries and preserving unknown gaps. Sampled/partial
+paths are labeled as observed samples. A trade-filtered report cannot present
+unfiltered account equity as filtered; use closed balance when that is the only
+valid path. Neutral source-kind selection alone does not hide account equity.
+Recovery uses elapsed 24-hour days from the prior peak to a verified recovery;
+unfinished or missing-time episodes have no invented duration. Funding resets
+start a new segment; carry policies and ordinary market losses do not.
+
+SL experiments use the configured distance. RR experiments retain a stop proven
+at entry by the opening checkpoint or its immediate synchronous price mark;
+later protection edits are not entry proof. MAE/MFE R use this original distance,
+not the configured experiment distance. Excluding ambiguous terminal-bar extrema
+can make excursion a lower bound. SL/RR outcomes stop at original exposure and
+the selected cutoff; unresolved rows stay absent, never zero. Comparison curves
+use the same eligible trades and disclose eligible/total coverage.
+
+Ideal R is the maximum costed closeable net P/L divided by original gross risk
+over seven elapsed days after entry, ignoring subsequent SL/TP. A numeric result
+requires a complete observed window at or before cutoff with a complete boundary
+candle. Partial windows remain unavailable; even the best result can be negative.
+The opportunity count includes only losing trades with complete coverage whose
+best observed net amount is nonnegative. These are recorded OHLC opportunities,
+not guarantees of tick execution. Monte Carlo retains seeded, bounded sampling
+and stops each path at zero capital; statistics cover all runs, not only drawn paths.
+
+Reference definitions: [FX Replay drawdown](https://support.fxreplay.com/articles/how-to-use-drawdown-analytics)
+and [RR Simulator](https://support.fxreplay.com/articles/how-to-use-the-rr-simulator).
+
 Persist instants as UTC ISO timestamps or UTC epoch values. Never rewrite bars,
 ledger events or existing records to the owner's display offset. The workspace clock
 and Settings use the browser preference `tw-timezone`, an IANA identifier; the default is UTC.
@@ -70,8 +127,9 @@ Analytics filter menus show the search and checkbox list directly, without a
 second selection field. Display weekdays as Monday through Sunday (Thứ 2 to
 Chủ nhật), preserving their numeric calendar values. The timezone control sits
 between time and close-date filters, starts from Settings and commits to the same
-browser preference on Apply. Time and date filter recorded closing activity;
-they do not substitute the asset's historical candle clock. Hour ranges are
+browser preference on Apply. Session Analytics time/date filters use chart close
+time; aggregate activity reports and the trade ledger use recorded closing
+activity. Missing activity is never replaced with chart time. Hour ranges are
 inclusive and may cross midnight. The hour/minute popup publishes edits before
 outside-click dismissal so direct Apply cannot lose the last keystroke.
 Equal applied filter values must preserve the draft across report/route refresh;
