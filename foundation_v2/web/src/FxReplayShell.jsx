@@ -7,6 +7,7 @@ import { navigate } from './clientNavigation.js'
 import { TestingLocaleProvider, useTestingLocale } from './testingLocale.jsx'
 import { NotificationProvider } from './Notifications.jsx'
 import AiSparkles from './AiSparkles.jsx'
+import ShellClock from './ShellClock.jsx'
 import './ai-chat.css'
 import './ai-gateway.css'
 import { TestingRouteBoundary } from './TestingReadState.jsx'
@@ -435,6 +436,7 @@ function ShellTopbar({ copy, language, setLanguage, theme, setTheme, railCollaps
         </div>
         <div id="replay-command-slot" />
         <div className="fx-chart-topbar-actions">
+          <ShellClock />
           <div className="fx-topbar-data">{topbarAction}</div>
           {aiButton}
           <button className="fx-shell-toggle fx-language-toggle" type="button" onClick={() => setLanguage(language === 'vi' ? 'en' : 'vi')} aria-label={copy.switchLanguage} data-tooltip={copy.switchLanguage} data-testid="language-toggle">{language === 'vi' ? 'EN' : 'VI'}</button>
@@ -462,6 +464,7 @@ function ShellTopbar({ copy, language, setLanguage, theme, setTheme, railCollaps
         </span>
       </div>
       <div className="fx-topbar-actions">
+        <ShellClock />
         <div className="fx-topbar-data">{topbarAction}</div>
         {aiButton}
         <button className="fx-shell-toggle fx-language-toggle" type="button" onClick={() => setLanguage(language === 'vi' ? 'en' : 'vi')} aria-label={copy.switchLanguage} data-tooltip={copy.switchLanguage} data-testid="language-toggle">

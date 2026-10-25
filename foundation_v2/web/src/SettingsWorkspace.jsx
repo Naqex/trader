@@ -1,6 +1,5 @@
 import { useTestingLocale } from './testingLocale.jsx'
-import { chartTimezones, setTimezone } from './timezone.js'
-import { timezoneOptions } from './AnalyticsFilterControls.jsx'
+import { setTimezone, timezoneOptionsAt } from './timezone.js'
 import FxSelect from './FxSelect.jsx'
 import React, { useEffect, useRef, useState } from 'react'
 import { buildWorkspaceHref } from './workspaceContext.js'
@@ -178,7 +177,7 @@ export default function SettingsWorkspace({ workspace = 'tenant-a', query }) {
       <section className="settings-timezone" aria-label={t('Múi giờ')}>
         <form onSubmit={event => { event.preventDefault(); setTimezoneStatus(setTimezone(timezoneDraft) ? 'saved' : 'volatile') }}>
           <label className="settings-timezone-label">{t('Múi giờ')}</label>
-          <FxSelect label="Múi giờ" value={timezoneDraft} options={timezoneOptions.filter(option => chartTimezones.includes(option.value))} localizeOptions={false} searchable onChange={value => { setTimezoneDraft(value); setTimezoneStatus('') }} />
+          <FxSelect label="Múi giờ" value={timezoneDraft} options={timezoneOptionsAt()} localizeOptions={false} searchable onChange={value => { setTimezoneDraft(value); setTimezoneStatus('') }} />
           <button type="submit" className="wm-button" disabled={timezoneDraft === timezone}>{t('Lưu thay đổi')}</button>
           <span role="status">{timezoneStatus === 'saved' ? t('Đã lưu thay đổi.') : timezoneStatus === 'volatile' ? t('Đã áp dụng trong phiên này. Trình duyệt đang chặn lưu tùy chọn; bạn có thể thử lưu lại.') : ''}</span>
         </form>

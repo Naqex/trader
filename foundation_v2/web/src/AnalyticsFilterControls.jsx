@@ -6,17 +6,6 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { FilterIcon, SelectChevron } from './FxSelect.jsx'
 import './analytics-filter-controls.css'
 
-export const timezoneOptions = (() => {
-  const preferred = ['UTC', 'Asia/Ho_Chi_Minh', 'Pacific/Honolulu', 'America/Anchorage', 'America/Juneau', 'America/New_York', 'Europe/London']
-  const zones = [...new Set([...preferred, ...Intl.supportedValuesOf('timeZone')])]
-  return zones.map(value => {
-    if (value === 'UTC') return { value, label: 'UTC' }
-    const offset = new Intl.DateTimeFormat('en', { timeZone: value, timeZoneName: 'shortOffset' }).formatToParts(new Date()).find(part => part.type === 'timeZoneName').value.replace('GMT', 'UTC')
-    const city = value === 'Asia/Ho_Chi_Minh' ? 'Ho Chi Minh' : value.split('/').slice(1).join(' / ').replaceAll('_', ' ')
-    return { value, label: `(${offset}) ${city}`, detail: value }
-  })
-})()
-
 function FilterPopover({ label, title, icon, children }) {
   const { t } = useTestingLocale()
 

@@ -1,9 +1,19 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { dayBoundary, dateRangeBoundary, setTimezone, zonedDateKey, instantToWall, wallToInstant, chartTimezones } from '../src/timezone.js'
+import { dayBoundary, dateRangeBoundary, setTimezone, zonedDateKey, instantToWall, wallToInstant, chartTimezones, timezoneOptionsAt } from '../src/timezone.js'
 import { displayDate } from '../src/dateFormat.js'
 import { formatAmount } from '../src/moneyFormat.js'
 import { matchesSearch } from '../src/searchText.js'
+
+test('shared timezone choices retain IANA identity and calculate offsets at the current instant', () => {
+  const winter = timezoneOptionsAt(new Date('2026-01-15T12:00:00Z'))
+  const summer = timezoneOptionsAt(new Date('2026-07-15T12:00:00Z'))
+  assert.deepEqual(winter.map(option => option.value), chartTimezones)
+  assert.equal(winter.find(option => option.value === 'America/New_York').label, '(UTC-5) America/New York')
+  assert.equal(summer.find(option => option.value === 'America/New_York').label, '(UTC-4) America/New York')
+  assert.equal(winter.find(option => option.value === 'Asia/Ho_Chi_Minh').label, '(UTC+7) Asia/Ho Chi Minh')
+  assert.equal(winter.find(option => option.value === 'Asia/Ho_Chi_Minh').searchText, 'Asia/Ho_Chi_Minh')
+})
 
 test('UTC persistence boundary and selected display zone remain independent', () => {
   setTimezone('Asia/Ho_Chi_Minh')

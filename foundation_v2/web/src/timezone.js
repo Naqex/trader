@@ -33,6 +33,10 @@ export function tableTimezoneLabel(value, instants = []) {
   const name = value.replaceAll('_', ' ')
   return offsets.length ? `(${offsets.join(' / ')}) ${name}` : name
 }
+
+export function timezoneOptionsAt(at = new Date(), zones = chartTimezones) {
+  return zones.map(value => ({ value, label: `(${timezoneLabel(value, at)}) ${value.replaceAll('_', ' ')}`, searchText: value }))
+}
 const dateFormatters = new Map()
 export function zonedDateKey(value, timeZone = zone) {
   const date = value instanceof Date ? value : new Date(value)

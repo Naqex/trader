@@ -1,4 +1,7 @@
 {
+  "Ngày giờ và múi giờ": {"vi":"Ngày giờ và múi giờ", "en":"Date, time and timezone"},
+  "Múi giờ hiển thị": {"vi":"Múi giờ hiển thị", "en":"Display timezone"},
+  "Giờ hiện tại": {"vi":"Giờ hiện tại", "en":"Current time"},
   "Không lưu được cột hiển thị trong trình duyệt này.": {"vi": "Không lưu được cột hiển thị trong trình duyệt này.", "en": "Could not save column preferences in this browser."},
   "Số thứ tự": {"vi": "Số thứ tự", "en": "Row number"},
   "Xóa tất cả sắp xếp": {"vi": "Xóa tất cả sắp xếp", "en": "Clear all sorting"},

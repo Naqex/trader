@@ -1,0 +1,30 @@
+.wm-shell-clock { flex:0 1 224px; width:224px; min-width:0; color:var(--wm-content); }
+.wm-shell-clock-content { display:flex; min-width:0; flex-direction:column; gap:1px; font-size:12px; line-height:17px; font-variant-numeric:tabular-nums; }
+.wm-shell-clock-content time,.wm-shell-clock-zone { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wm-shell-clock-content strong { font-weight:500; }
+.wm-shell-clock-zone { font-size:11px; color:var(--wm-content-muted); }
+.fx-app .wm-shell-clock .fx-select-trigger { min-height:44px; padding:4px 8px; border-color:transparent; border-radius:6px; }
+.wm-shell-clock .fx-select-menu { width:320px; }
+.wm-shell-clock .fx-select-menu .fx-filter-title { margin:4px 8px 8px; font-size:14px; font-weight:500; }
+.wm-shell-clock .fx-select-menu [role=listbox] { max-height:300px; }
+.fx-topbar-data .wm-connection-note:not(:has(.wm-resource-status)) { display:none; }
+@media (min-width:601px) and (max-width:1100px) {
+  .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-topbar { display:grid; grid-template-columns:minmax(0,1fr) auto; }
+  .fx-app.fx-shell-story .fx-topbar-actions { gap:6px; }
+  .wm-shell-clock { flex-basis:180px; width:180px; }
+  .fx-app .fx-topbar-data .wm-view-state-select { width:136px; }
+}
+@media (max-width:900px) {
+  .fx-app.fx-shell-story.is-chart-workspace[data-theme] { grid-template-rows:auto minmax(0,1fr); }
+  .fx-app.fx-shell-story.is-chart-workspace[data-theme] .fx-topbar.fx-chart-topbar { height:auto; min-height:46px; padding-block:4px; }
+  .fx-app.is-chart-workspace .fx-chart-topbar-actions { grid-column:1 / -1; flex-wrap:wrap; }
+}
+@media (max-width:600px) {
+  .fx-app.fx-shell-story:not(.is-chart-workspace) .wm-shell-clock { position:absolute; left:16px; right:148px; bottom:8px; width:auto; }
+  .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-topbar-actions > .fx-topbar-data { left:auto; width:120px; }
+  .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-topbar-data .wm-demo-action { min-width:0; flex:1; }
+  .fx-app.fx-shell-story:not(.is-chart-workspace) .wm-shell-clock-content { font-size:11px; }
+  .fx-app.is-chart-workspace .wm-shell-clock { flex:1 1 170px; width:auto; }
+  .fx-app.is-chart-workspace .wm-shell-clock-zone-name { display:none; }
+  .fx-app.is-chart-workspace .fx-topbar-data .wm-view-state-select { width:120px; }
+}

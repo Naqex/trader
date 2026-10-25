@@ -1,6 +1,9 @@
 # Rust-native candidate runtime
 
-Latest local rollout: [25 October grid sorting](../evidence/grid-sort-20261025/RECEIPT.md)
+Latest UI-only rollout: [25 October shell timezone](../evidence/shell-timezone-20261025/RECEIPT.md)
+records the shared wall-clock/timezone menu and responsive UI5180 verification;
+the API and terminals were not restarted.
+The preceding [25 October grid sorting](../evidence/grid-sort-20261025/RECEIPT.md)
 records native/compact API8010 readiness, full-scope ordered multi-sort, persisted
 column visibility and UI5180 promotion without migration or terminal reconnect.
 The preceding [grid semantics receipt](../evidence/grid-semantics-20261025/RECEIPT.md)
