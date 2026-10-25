@@ -6840,5 +6840,21 @@
   "Thời gian thao tác thực tế trong WMReplay": {"vi":"Thời gian thao tác thực tế trong WMReplay","en":"Actual active time in WMReplay"},
   "Thời gian lịch sử đã chạy trong Backtest/Prop Firm": {"vi":"Thời gian lịch sử đã chạy trong Backtest/Prop Firm","en":"Historical time advanced in Backtest/Prop Firm"},
   "Trong khoảng thời gian đã chọn": {"vi":"Trong khoảng thời gian đã chọn","en":"Within the selected date range"},
-  "Giao dịch đã đóng trong phạm vi đã chọn": {"vi":"Giao dịch đã đóng trong phạm vi đã chọn","en":"Closed trades within the selected scope"}
+  "Giao dịch đã đóng trong phạm vi đã chọn": {"vi":"Giao dịch đã đóng trong phạm vi đã chọn","en":"Closed trades within the selected scope"},
+  "Thứ 2": {"vi": "Thứ 2", "en": "Monday"},
+  "Thứ 3": {"vi": "Thứ 3", "en": "Tuesday"},
+  "Thứ 4": {"vi": "Thứ 4", "en": "Wednesday"},
+  "Thứ 5": {"vi": "Thứ 5", "en": "Thursday"},
+  "Thứ 6": {"vi": "Thứ 6", "en": "Friday"},
+  "Thứ 7": {"vi": "Thứ 7", "en": "Saturday"},
+  "Chủ nhật": {"vi": "Chủ nhật", "en": "Sunday"},
+  "Tăng phút": {"vi": "Tăng phút", "en": "Increase minute"},
+  "Tăng giờ": {"vi": "Tăng giờ", "en": "Increase hour"},
+  "Giảm phút": {"vi": "Giảm phút", "en": "Decrease minute"},
+  "Giảm giờ": {"vi": "Giảm giờ", "en": "Decrease hour"},
+  "Phút": {"vi": "Phút", "en": "Minute"},
+  "Lọc ngày đóng lệnh": {"vi": "Lọc ngày đóng lệnh", "en": "Close-date filter"},
+  "Chọn khoảng ngày đóng": {"vi": "Chọn khoảng ngày đóng", "en": "Choose close-date range"},
+  "Bỏ lọc Giờ": {"vi": "Bỏ lọc Giờ", "en": "Remove time filter"},
+  "Bỏ lọc ngày đóng lệnh": {"vi": "Bỏ lọc ngày đóng lệnh", "en": "Remove close-date filter"}
 }

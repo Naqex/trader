@@ -43,11 +43,29 @@ timezone option offsets refresh by minute, without a global store update per tic
 Use searchable checkbox lists for independent filter sets (sessions/accounts in
 aggregate reports, assets, sides, outcomes, weekdays and labels). Choices within
 one set use OR; different sets intersect. In Analytics, an empty asset/side/
-outcome/day/label set means no restriction and displays All; report kinds retain
+outcome/day/label set means no restriction; report kinds retain
 their explicit empty-set semantics. Keep one account for an active chart/order,
 and one timezone, sort, currency or order type. Navigation uses links, not selects.
 DataDesk provider still controls one catalog operation; its filter is intentionally
 single until that operation and list filtering have separate state owners.
+
+Analytics filter menus show the search and checkbox list directly, without a
+second selection field. Display weekdays as Monday through Sunday (Thứ 2 to
+Chủ nhật), preserving their numeric calendar values. The timezone control sits
+between time and close-date filters, starts from Settings and commits to the same
+browser preference on Apply. Time and date filter recorded closing activity;
+they do not substitute the asset's historical candle clock. Hour ranges are
+inclusive and may cross midnight. The hour/minute popup publishes edits before
+outside-click dismissal so direct Apply cannot lose the last keystroke.
+Equal applied filter values must preserve the draft across report/route refresh;
+reset it only when the applied values themselves change.
+
+Applied chips show readable filter values with per-filter removal and one clear-all
+action when filters exist. Group the time endpoints and date endpoints separately.
+The current session is report context, not a removable filter. Internal report
+kind `app` is displayed as Backtest, not App; the kind filter only narrows the
+current report source. Keep the existing net-after-fees breakeven category, separate
+from unknown data.
 
 `TradeLabelCell` reads workspace label definitions and revisioned per-trade
 assignments from `/api/v2/trade-labels`. Labels are metadata and never change
@@ -58,6 +76,9 @@ for existing filters; deleted names stay reserved to avoid reviving old labels.
 Journal edits apply only their added/removed label delta to current assignments.
 Unknown mutation outcomes require reading again; conflicts never overwrite a
 newer assignment. Do not replace confirmed selections with a slower older read.
+Analytics uses the same workspace label definitions from journal context, including
+unused labels, their colors and selected legacy names. Provisioning default label
+metadata does not assign a rating to any existing trade.
 
 Dashboard Backtest/Prop/All keeps one Performance layout and changes only its
 source scope. Aggregate projection retains ancestry to deduplicate inherited

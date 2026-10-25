@@ -31,7 +31,7 @@ export default function SessionPerformance({ model, payload, item, href, chartsO
   const { t, locale, fmt, timezone } = useTestingLocale()
 
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(5), [sort,setSort] = useState({key:'date',direction:'desc'})
+  const [pageSize, setPageSize] = useState(5), [sort,setSort] = useState({key:'',direction:'desc'})
   const timeBasis = model?.summaryPeriods?.time_basis || model?.result?.scope?.time_basis || 'activity'
   const tradeTime = trade => timeBasis === 'market' ? trade.close_time_utc : trade.report_time_utc
   const periods = useMemo(() => model?.summaryPeriods || sessionPeriods(model?.ledger || [], timezone, new Date(), timeBasis), [model?.ledger, model?.summaryPeriods, timezone, timeBasis])
@@ -39,7 +39,11 @@ export default function SessionPerformance({ model, payload, item, href, chartsO
   const performancePeriods = periods.performance || periods
   const equityPoints = (equity?.points || []).flatMap(point => { const date = closeTime(point.time_utc); return date && Number.isFinite(point.equity) ? [{ value: point.equity, time: date.getTime(), segment: point.segment }] : [] })
   const currency = model?.result?.account_currency
-  const rows = useMemo(() => { const value = trade => sort.key === 'date' ? closeTime(tradeTime(trade))?.getTime() : sort.key === 'symbol' ? trade.symbol : trade.pnl; return [...(model?.ledger || [])].sort((a,b)=>compareTableValues(value(a),value(b),sort.direction,locale)||a.rowIndex-b.rowIndex) }, [model?.ledger,timeBasis,sort,locale])
+  const rows = useMemo(() => {
+    const key = sort.key || 'date', direction = sort.key ? sort.direction : 'desc'
+    const value = trade => key === 'date' ? closeTime(tradeTime(trade))?.getTime() : key === 'symbol' ? trade.symbol : trade.pnl
+    return [...(model?.ledger || [])].sort((a, b) => compareTableValues(value(a), value(b), direction, locale) || a.rowIndex - b.rowIndex)
+  }, [model?.ledger, timeBasis, sort, locale])
   const pages = Math.max(1, Math.ceil(rows.length / pageSize))
   const current = Math.min(page, pages)
   const visible = rows.slice((current - 1) * pageSize, current * pageSize)

@@ -1,5 +1,5 @@
 import { zonedDateKey } from './timezone.js'
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
+import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { dateFieldDisplay, parseDateField } from './dateFormat.js'
 import { boundedDateTimeValue } from './projectDateInputModel.js'
 import { useTestingLocale } from './testingLocale.jsx'
@@ -25,6 +25,43 @@ function isDateTimeAllowed(value, min, max) { const candidate = stripZone(value)
 
 function CalendarIcon() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M8 3v4m8-4v4M4 10h16" /></svg> }
 function Chevron({ direction }) { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d={direction === 'prev' ? 'm14.5 5-7 7 7 7' : 'm9.5 5 7 7-7 7'} /></svg> }
+
+function TimeSpinner({ value, onChange }) {
+  const { t } = useTestingLocale()
+  const read = value => /^\d{2}:\d{2}/.test(value || '') ? value.split(':').slice(0, 2) : ['00', '00']
+  const [parts, setParts] = useState(() => read(value))
+  const emitted = useRef(value)
+  useEffect(() => { if (value !== emitted.current) { emitted.current = value; setParts(read(value)) } }, [value])
+  const publish = next => {
+    const time = next.every(part => part !== '') ? next.map(part => String(Number(part)).padStart(2, '0')).join(':') : ''
+    emitted.current = time
+    onChange({ target: { value: time } })
+  }
+  const edit = (index, raw) => {
+    const digits = raw.replace(/\D/g, '').slice(0, 2), limit = index ? 59 : 23
+    const next = parts.map((part, i) => i === index ? digits !== '' && Number(digits) > limit ? String(limit) : digits : part)
+    setParts(next)
+    // Outside pointerdown can unmount the popup before blur, so publish each edit.
+    publish(next)
+  }
+  const commit = (index, delta = 0) => {
+    const limit = index ? 60 : 24
+    const next = parts.map((part, i) => {
+      const number = Number(part) || 0
+      return String(i === index && delta ? (number + delta + limit) % limit : Math.min(i ? 59 : 23, number)).padStart(2, '0')
+    })
+    setParts(next)
+    publish(next)
+  }
+  return <div className="project-time-spinner" role="group" aria-label={t('Chọn giờ')}>{parts.map((part, index) => <React.Fragment key={index}>
+    {index === 1 && <span aria-hidden="true">:</span>}
+    <div className="project-time-spinner-column">
+      <button type="button" aria-label={t(index ? 'Tăng phút' : 'Tăng giờ')} onClick={() => commit(index, 1)}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 12 5-5 5 5" /></svg></button>
+      <input type="text" inputMode="numeric" role="spinbutton" aria-label={t(index ? 'Phút' : 'Giờ')} aria-valuemin={0} aria-valuemax={index ? 59 : 23} aria-valuenow={Number(part) || 0} value={part} maxLength={2} onFocus={event => event.target.select()} onChange={event => edit(index, event.target.value)} onBlur={() => commit(index)} onKeyDown={event => { if (event.key === 'ArrowUp' || event.key === 'ArrowDown') { event.preventDefault(); commit(index, event.key === 'ArrowUp' ? 1 : -1) } }} />
+      <button type="button" aria-label={t(index ? 'Giảm phút' : 'Giảm giờ')} onClick={() => commit(index, -1)}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 8 5 5 5-5" /></svg></button>
+    </div>
+  </React.Fragment>)}</div>
+}
 
 // Keep ISO at the form boundary while the editable text is independent of OS locale.
 export default function ProjectDateInput({ value = '', onChange, type = 'date', min, max, step, utc = false, clearable = false, todayTime = 'preserve', validationError = '', ...props }) {
@@ -196,7 +233,7 @@ export default function ProjectDateInput({ value = '', onChange, type = 'date', 
     {clearable && <button type="button" className="project-date-clear" aria-label={`${t('Xóa ngày')} · ${props['aria-label'] || ''}`} disabled={props.disabled || !draft} onClick={event => { setDraft(''); publish(event, ''); text.current?.focus() }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button>}
     <button ref={trigger} type="button" className="project-date-picker" aria-label={pickerLabel} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? popoverId : undefined} disabled={props.disabled} onClick={openPicker}><CalendarIcon /></button>
     {open && !props.disabled && <div ref={popover} id={popoverId} className="project-date-popover" popover="manual" role="dialog" aria-label={pickerLabel}>
-      {type === 'time' ? <div className="project-date-time-panel"><label><span className="project-date-visually-hidden">{t('Giờ')}</span><input aria-label={t('Giờ')} type="time" step={step || '60'} value={draft || ''} onInput={chooseTime} onChange={chooseTime} /></label></div> : <>
+      {type === 'time' ? <TimeSpinner value={draft} onChange={chooseTime} /> : <>
         <div className="project-date-popover-heading"><button type="button" aria-label={t(pickerView === 'day' ? 'Previous month' : pickerView === 'month' ? 'Previous year' : 'Previous decade')} disabled={prevDisabled} onClick={movePrevious}><Chevron direction="prev" /></button><div className="project-date-heading-content">{heading}</div><button type="button" aria-label={t(pickerView === 'day' ? 'Next month' : pickerView === 'month' ? 'Next year' : 'Next decade')} disabled={nextDisabled} onClick={moveNext}><Chevron direction="next" /></button></div>
         {pickerView === 'day' && <div className="project-date-calendar" role="grid" aria-label={pickerLabel} onKeyDown={gridKeys}>{WEEKDAYS.map(day => <span key={day} role="columnheader">{t(day)}</span>)}{Array.from({ length: firstWeekday }, (_, index) => <span key={`empty-${index}`} aria-hidden="true" />)}{Array.from({ length: monthDays }, (_, index) => {
           const date = `${viewMonth}-${String(index + 1).padStart(2, '0')}`, disabled = !isDateAllowed(date, min, max), selected = date === datePart(value), current = date === todayIso()
@@ -206,7 +243,7 @@ export default function ProjectDateInput({ value = '', onChange, type = 'date', 
         {pickerView === 'year' && <div className="project-date-year-grid" onKeyDown={gridKeys} role="grid" aria-label={t('Chọn năm')}>{Array.from({ length: 10 }, (_, index) => { const year = decadeStart + index, selected = year === selectedYear; return <button key={year} type="button" role="gridcell" tabIndex={year === firstTabYear ? 0 : -1} aria-pressed={selected} disabled={!yearAllowed(year, min, max)} className={selected ? 'is-selected' : ''} onClick={() => chooseYear(year)}>{year}</button> })}</div>}
         {type === 'datetime-local' && <label className="project-date-time-field"><span className="project-date-visually-hidden">{t('Giờ')}</span><input aria-label={t('Giờ')} type="time" step={step || '60'} value={selectedTime} onInput={chooseTime} onChange={chooseTime} /></label>}
       </>}
-      <footer className="project-date-popover-footer"><button type="button" onClick={() => chooseDate(todayIso(), type === 'datetime-local' && todayTime === 'end-of-day' ? '23:59' : null)} disabled={type === 'time' || !isDateAllowed(todayIso(), min, max)}>{t('Hôm nay')}</button><span />{clearable && <button type="button" onClick={event => { setDraft(''); publish(event, ''); setOpen(false); text.current?.focus() }}>{t('Clear')}</button>}<button type="button" className="is-primary" onClick={() => { setOpen(false); text.current?.focus() }}>{t('Xong')}</button></footer>
+      <footer className="project-date-popover-footer">{type !== 'time' && <button type="button" onClick={() => chooseDate(todayIso(), type === 'datetime-local' && todayTime === 'end-of-day' ? '23:59' : null)} disabled={!isDateAllowed(todayIso(), min, max)}>{t('Hôm nay')}</button>}<span />{clearable && <button type="button" onClick={event => { setDraft(''); publish(event, ''); setOpen(false); text.current?.focus() }}>{t('Clear')}</button>}<button type="button" className="is-primary" onClick={() => { setOpen(false); text.current?.focus() }}>{t('Xong')}</button></footer>
     </div>}
   </span>
 }

@@ -368,7 +368,7 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
   const [catalogProvider, setCatalogProvider] = useState('all')
   const [categoryFilter, setCategoryFilter] = useState('all'), [sort, setSort] = useState('asset-asc'), [downloadFilter, setDownloadFilter] = useState('downloaded')
   const [search, setSearch] = useState(preview?.state === 'filtered' ? 'no-matching-asset' : ''), [page, setPage] = useState(1), [pageSize, setPageSize] = useState(25)
-  const [detailsOpen, setDetailsOpen] = useState(Boolean(requestedDataset)), [importAsset, setImportAsset] = useState(null)
+  const [detailsOpen, setDetailsOpen] = useState(false), [importAsset, setImportAsset] = useState(null)
   const [catalogRevision, setCatalogRevision] = useState(0)
   const [csvOpen, setCsvOpen] = useState(false), [csvBusy, setCsvBusy] = useState(false)
   const [catalogBusy, setCatalogBusy] = useState(false), [catalogRefreshError, setCatalogRefreshError] = useState(false)
@@ -640,7 +640,7 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
           <FxSelect label={t('Nguồn dữ liệu')} value={providerFilter} onChange={setProviderFilter} options={sourceOptions} />
           <FxSelect className="data-library-status" label={t('Trạng thái tải')} value={downloadFilter} onChange={setDownloadFilter} options={[{value:'downloaded',label:'Đã tải'},{value:'downloading',label:'Đang tải'},{value:'not-downloaded',label:'Chưa tải'},{value:'all',label:'Tất cả trạng thái'}]} />
           {sort === 'newest' && <span className="data-library-sort-state">{t('Mới cập nhật')}</span>}
-          <FxSelect className="data-library-table-options" label={t('Tuỳ chọn bảng')} value={sort} icon="settings" iconOnly onChange={setSort} options={[{value:'asset-asc',label:'Sắp xếp mặc định'},{value:'newest',label:'Mới cập nhật'}]} />
+          <FxSelect className="data-library-table-options" label={t('Tuỳ chọn bảng')} triggerContent="Tuỳ chọn bảng" value={sort} onChange={setSort} options={[{value:'asset-asc',label:'Sắp xếp mặc định'},{value:'newest',label:'Mới cập nhật'}]} />
           <button type="button" className="fxa-clear-filters" disabled={!filtersApplied} onClick={clearFilters}><TestingIcon kind="delete" />{t('Clear filters')}</button>
           {state.catalog && <button type="button" className="data-library-catalog-trigger" onClick={() => setCatalogOpen(true)} aria-haspopup="dialog" aria-expanded={catalogOpen}>{t('Danh mục tài sản')}</button>}
           <button type="button" className="fxa-button is-primary data-library-import" disabled={Boolean(preview)} onClick={() => openCsv()}><TestingIcon kind="upload" />{t('Nhập CSV')}</button>

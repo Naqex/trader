@@ -45,6 +45,10 @@ dialog.fxa-trade-inspector::backdrop { background: #0008; }
 .fxa-analytics-filter-row > .fx-select { flex: 0 0 auto; font-size: 13px; }
 .fxa-analytics-filter-row .fx-select-trigger { gap: 6px; padding-inline: 12px; }
 .fxa-analytics-filter-row .fx-select-chevron { margin-left: 0; }
+.fxa-analytics-filter-status { display:contents; }
+.fxa-analytics-filter-status > :not(:has(.wm-resource-status)) { display:none; }
+.fxa-filter-count { display:inline-grid; place-items:center; min-width:18px; padding:1px 4px; margin-left:4px; border-radius:8px; background:var(--wm-hover); font-size:11px; font-variant-numeric:tabular-nums; }
+.fxa-analytics-filters .fxa-filter-chip > span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:320px; }
 .fxa-session-filter.is-compact { align-self: center; }
 .fxa-session-filter.is-compact .fxa-session-trigger { width: auto; min-width: 0; min-height: var(--wm-control-height); border-radius: var(--wm-control-radius); gap: 8px; }
 .fxa-analytics-filters { gap: 16px; margin-block: 0 28px; }

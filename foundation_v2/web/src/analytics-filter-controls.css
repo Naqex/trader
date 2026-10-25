@@ -1,5 +1,5 @@
 .fx-filter-control { position: relative; }
-.fx-filter-popover { position: absolute; top: calc(100% + 8px); right: 0; z-index: 30; width: 340px; overflow-y: auto; box-sizing: border-box; padding: 16px; border: 1px solid var(--wm-control-border); border-radius: 12px; background: var(--wm-surface); color: var(--wm-content); box-shadow: 0 8px 24px #0003; }
+.fx-filter-popover { position: absolute; top: calc(100% + 8px); right: 0; z-index: 30; width: 340px; overflow-y: auto; box-sizing: border-box; padding: 12px; border: 1px solid var(--wm-control-border); border-radius: var(--ds-radius-small, 6px); background: var(--wm-popup); color: var(--wm-content); box-shadow: 0 8px 24px #0003; }
 .fx-filter-title { margin: 0 0 14px; font-size: 14px; font-weight: 600; color: var(--wm-content); }
 .fx-filter-selection { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 6px 10px; margin-bottom: 8px; border: 1px solid var(--wm-control-border); border-radius: 8px; box-sizing: border-box; }
 .fx-filter-selection > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
@@ -7,7 +7,14 @@
 .fx-filter-selection > svg { width: 16px; height: 16px; flex-shrink: 0; }
 .fx-select.is-filter .fx-select-menu { width: 320px; padding: 16px; }
 .fx-select.is-filter .fx-select-all { padding-inline: 10px; }
-.fx-time-range, .fx-date-range { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.fx-date-range { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.fx-time-range { display:grid; gap:12px; }
+.fx-filter-popover:has(.fx-time-range) { background:var(--project-surface); }
+.fx-filter-popover .fx-time-range > label { display:grid; grid-template-columns:84px minmax(0,1fr); align-items:center; gap:12px; }
+.fx-time-range .project-date-input { background:var(--project-canvas); border-radius:var(--ds-radius-small, 6px); }
+.fx-app .fx-time-range .project-date-input > .project-date-picker { top:0; right:0; bottom:0; width:36px; border-left:1px solid var(--wm-control-border); border-radius:0; background:var(--wm-hover); }
+.fx-app.fx-shell-story[data-theme] .fx-content .fx-time-range .project-date-input { background:var(--project-canvas); }
+.fx-app.fx-shell-story[data-theme] .fx-content .fx-time-range .project-date-input > input[type=text] { background:transparent; padding-inline:8px 40px; }
 .fx-filter-popover label { display: grid; gap: 8px; font-size: 12px; color: var(--wm-content-muted); }
 .fx-filter-popover input { width: 100%; box-sizing: border-box; min-height: 40px; padding: 8px; border: 1px solid var(--wm-control-border); border-radius: 8px; background: transparent; color: var(--wm-content); font: inherit; color-scheme: dark; }
 .fx-app[data-theme='light'] .fx-filter-popover input { color-scheme: light; }

@@ -1,6 +1,10 @@
 # Rust-native candidate runtime
 
-Latest UI-only rollout: [25 October workspace clock](../evidence/workspace-clock-20261025/RECEIPT.md)
+Latest UI-only rollout: [25 October analytics filters](../evidence/analytics-filter-polish-20261025/RECEIPT.md)
+records filter/time-picker corrections, shared label definitions and session/library
+navigation checks. Six requested labels were created through the existing metadata
+API; trade assignments, API processes and terminals were unchanged.
+The preceding [25 October workspace clock](../evidence/workspace-clock-20261025/RECEIPT.md)
 records the sidebar workspace clock with seconds, shared dropdown search styling,
 and responsive UI5180 verification without restarting the API or terminals.
 The preceding [25 October compact sort headers](../evidence/grid-sort-compact-20261025/RECEIPT.md)

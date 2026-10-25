@@ -47,6 +47,11 @@ bảng vì khác với ngày kết thúc lịch sử. Sort ngày dùng đúng me
 thị, thống nhất epoch seconds/milliseconds và ISO. Tìm không dấu hoặc nhiều từ
 khác thứ tự dùng chuẩn search chung; server Trades dùng cùng quy tắc.
 
+Giao dịch gần đây giữ thứ tự mặc định mới nhất trước nhưng không tô header như
+sort người dùng đã chọn; bấm header mới hiện trạng thái sort. Kho dữ liệu không
+tự mở chi tiết khi URL còn dataset từ trang trước. Mở chi tiết qua thao tác của
+người dùng; Tuỳ chọn bảng dùng trigger chữ và chevron tiêu chuẩn.
+
 ## Consumers và kiểm tra
 
 Áp dụng cho Trades, Kho dữ liệu, danh mục lịch sử broker, Tài khoản/Dòng tiền,

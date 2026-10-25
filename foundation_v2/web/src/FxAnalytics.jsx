@@ -16,8 +16,8 @@ export function SelectField({ label, value, onChange, options, disabled }) {
 
   return <label className="fxa-field"><span>{t(label)}</span><FxSelect label={label} value={value} onChange={onChange} disabled={disabled} options={options.map(([value, label]) => ({ value, label }))} /></label>
 }
-export function FxAnalyticsFilters({ filters, onChange, extra, onExtra, rows, onExport, pending, ledgerOnly, sessionControl, onClearSessions, columnControl, facets, persistInUrl, sourceType, statusControl, disabled = false }) {
-  if (!ledgerOnly) return <AnalyticsFilterBar {...{ filters, onChange, extra, onExtra, rows, onExport, pending, sessionControl, persistInUrl, sourceType, statusControl, disabled }} />
+export function FxAnalyticsFilters({ filters, onChange, extra, onExtra, rows, labels, onExport, pending, ledgerOnly, sessionControl, onClearSessions, columnControl, facets, persistInUrl, sourceType, statusControl, disabled = false }) {
+  if (!ledgerOnly) return <AnalyticsFilterBar {...{ filters, onChange, extra, onExtra, rows, labels, onExport, pending, sessionControl, persistInUrl, sourceType, statusControl, disabled }} />
   return <LedgerFilters {...{ filters, onChange, extra, onExtra, rows, onExport, pending, sessionControl, onClearSessions, columnControl, facets, statusControl, disabled }} />
 }
 function LedgerFilters({ filters, onChange, extra, onExtra, rows, sessionControl, columnControl, facets, statusControl, disabled }) {

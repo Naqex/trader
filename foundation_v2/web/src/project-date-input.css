@@ -13,6 +13,12 @@
 :is(.fx-app,.wm-ui-portal) .project-date-input > .project-date-clear:hover:not(:disabled) { color:var(--wm-content); background:transparent; }
 :is(.fx-app,.wm-ui-portal) .project-date-input > .project-date-clear:disabled { opacity:.35; cursor:default; }
 .project-date-popover { position:fixed; inset:auto; margin:0; width:min(304px, calc(100vw - 24px)); box-sizing:border-box; padding:12px; overflow:auto; border:1px solid var(--wm-control-border); border-radius:var(--wm-popup-radius, 12px); background:var(--wm-popup); color:var(--wm-content); box-shadow:0 12px 28px #0004; }
+.project-date-popover:has(.project-time-spinner) { width:220px; border-radius:var(--ds-radius-small, 6px); background:var(--project-canvas); }
+.project-time-spinner { display:flex; align-items:center; justify-content:center; gap:6px; padding:4px 12px; font-variant-numeric:tabular-nums; }
+.project-time-spinner-column { display:grid; justify-items:center; gap:4px; }
+.fx-app.fx-shell-story[data-theme] .project-date-popover .project-time-spinner-column > input { width:44px; min-height:36px; padding:4px; border:0; border-radius:0; background:transparent; text-align:center; font-size:16px; color:var(--wm-content); }
+.fx-app.fx-shell-story[data-theme] .project-date-popover .project-time-spinner-column > button { display:grid; place-items:center; width:36px; color:var(--wm-focus); }
+.project-time-spinner-column svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
 .project-date-popover-heading { display:grid; grid-template-columns:32px minmax(0, 1fr) 32px; align-items:center; gap:6px; margin-bottom:8px; }
 .project-date-heading-content { display:flex; min-width:0; align-items:center; justify-content:center; gap:4px; }
 .project-date-popover-heading strong, .project-date-heading-button { min-width:0; overflow:hidden; text-align:center; text-overflow:ellipsis; text-transform:capitalize; font-size:13px; font-weight:600; }
