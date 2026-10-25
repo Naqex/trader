@@ -65,9 +65,7 @@ export function ReportBars({ title, items, currency, period, horizontal = false,
   const [plotRef, width] = usePlotWidth(Boolean(domain)), right = width - 24
   const axis = axisLabels(domain?.ticks || [], fmt, locale)
   const left = horizontal ? 88 : Math.max(40, ...[...axis.values()].map(label => label.length * 6.5 + 16))
-  const compactValue = value => valueFormat ? valueFormat(value, true) : Math.abs(value) >= 1000 ? new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(value) : fmt(value, '', 2)
-  const valueWidths = values.map(value => compactValue(value).length * 6.5)
-  const plotRight = horizontal ? right - Math.max(24, ...valueWidths.map(value => value + 12)) : right
+  const plotRight = right
   const weekday = period === 'weekday'
   const angled = weekday || period === 'month' && !horizontal
   const height = horizontal ? Math.max(H, items.length * 30 + 58) : angled ? bottom + 88 : H
@@ -89,11 +87,11 @@ export function ReportBars({ title, items, currency, period, horizontal = false,
   const tickLabel = value => maximum === 100 ? `${fmt(value, '', 0)}%` : axis.get(value) ?? fmt(value, '', 2)
   const tickCount = domain ? Math.min(domain.ticks.length, Math.max(2, Math.floor((plotRight - left) / Math.max(...domain.ticks.map(value => tickLabel(value).length * 7 + 12))) + 1)) : 0
   const baseTicks = horizontal && domain ? Array.from({ length: tickCount }, (_, index) => domain.ticks[Math.round(index * (domain.ticks.length - 1) / (tickCount - 1))]) : domain?.ticks
-  const ticks = divided && domain?.low < 0 && domain.high > 0 ? [...(baseTicks || []).filter(value => Math.abs(value / (domain.high - domain.low) * (horizontal ? plotRight - left : edge - top)) > 32), 0].sort((a,b) => a-b) : baseTicks
-  // Keep every bar; thin axis/value labels only when their text would overlap.
-  const labelWidth = Math.max(40, ...items.map((item, index) => Math.max(angled ? 0 : labels[index].length, compactValue(item.value).length) * 7 + 12))
+  const ticks = domain?.low < 0 && domain.high > 0 ? [...(baseTicks || []).filter(value => Math.abs(value / (domain.high - domain.low) * (horizontal ? plotRight - left : edge - top)) > 32), 0].sort((a,b) => a-b) : baseTicks
+  // Keep every bar; thin category labels only when their text would overlap.
+  const labelWidth = Math.max(40, ...labels.map(label => (angled ? 0 : label.length) * 7 + 12))
   const labelStride = Math.ceil(items.length / Math.max(1, Math.floor((right - left) / labelWidth)))
-  return <section className={`fxs-chart-panel report-chart is-${accent}`}><div className="report-heading"><h3>{t(title)}{year && <span className="report-year">{year}</span>}</h3>{controls}</div>{domain ? <div ref={plotRef} className="report-plot" role="group" aria-label={t(title)}><svg className="report-svg" viewBox={`0 0 ${width} ${height}`} style={{ height }} role="img" aria-label={`${t(title)}: ${items.map(description).join('; ')}`}>
+  return <section className={`fxs-chart-panel report-chart is-${accent}`}><div className="report-heading"><h3>{t(title)}{year && <span className="report-year">{year}</span>}</h3>{controls}</div>{domain ? <div ref={plotRef} className="report-plot" role="group" aria-label={t(title)}><svg className="report-svg" viewBox={`0 0 ${width} ${height}`} style={{ height }} role="group" aria-label={t(title)}>
     {horizontal && <line className="report-grid" x1={left} x2={right} y1={top} y2={top}/>}
     {ticks.map(value => <g key={value}>{horizontal ? <text x={x(value)} y={height - 14} textAnchor="middle">{tickLabel(value)}</text> : <><line className="report-grid" x1={left} x2={right} y1={y(value)} y2={y(value)}/><text x={left - 12} y={y(value)} dominantBaseline="middle" textAnchor="end">{valueFormat ? valueFormat(value) : tickLabel(value)}</text></>}</g>)}
     {items.map((item, index) => {
@@ -102,24 +100,17 @@ export function ReportBars({ title, items, currency, period, horizontal = false,
       const points = series(item)
       const rotation = weekday && step < 32 ? -90 : -45
       const showCategory = weekday || index % (angled ? Math.max(1, Math.ceil(30 / step)) : labelStride) === 0
-      return <g key={item.label} className="report-bar">
+      const detail = description(item, index)
+      return <g key={item.label} className="report-bar" role="img" tabIndex={0} aria-label={detail} data-tooltip={detail.replaceAll('; ', '\n')} data-tooltip-touch="">
         {horizontal ? <><line className="report-grid" x1={left} x2={right} y1={center + step / 2} y2={center + step / 2}/><text x={left - 12} y={center} dominantBaseline="middle" textAnchor="end">{labels[index]}</text></> : showCategory && <text className="report-category" x={center} y={angled ? bottom + 22 : height - 14} textAnchor={angled ? 'end' : 'middle'} transform={angled ? `rotate(${rotation} ${center} ${bottom + 22})` : undefined}>{labels[index]}</text>}
         {(points.length ? points : [0]).map((value, part) => {
           const zero = value === 0, negative = value < 0
-          const textWidth = compactValue(value).length * 6.5
           const length = horizontal ? Math.abs(x(value) - x(0)) : Math.abs(y(value) - y(0))
-          const inside = !zero && (horizontal ? length >= textWidth + 16 : barWidth >= textWidth + 10 && length >= 28)
-          const leftCollision = horizontal && negative && !inside && x(value) - textWidth - 8 < left
-          const showValue = (horizontal || index % labelStride === 0) && !(divided && leftCollision)
-          const vx = horizontal ? leftCollision ? x(0) + 8 : x(value) + (negative ? inside ? 8 : -8 : inside ? -8 : 8) : center
-          const vy = horizontal ? center : zero ? y(0) - 8 : negative ? inside ? y(value) - 10 : Math.min(edge + 14, y(value) + 14) : inside ? y(value) + 16 : Math.max(14, y(value) - 8)
-          const anchor = horizontal ? leftCollision ? 'start' : negative ? inside ? 'start' : 'end' : inside ? 'end' : 'start' : 'middle'
           return <g key={part} className={`report-bar-segment${divided || signed ? negative ? ' is-negative' : ' is-positive' : ''}`}>
             {!zero && (horizontal ? <rect x={Math.min(x(0), x(value))} y={center - barWidth / 2} width={length} height={barWidth} rx="2"/> : <rect x={center - barWidth / 2} y={Math.min(y(0), y(value))} width={barWidth} height={length} rx="2"/>)}
-            {showValue && <text className={`report-bar-value${inside ? ' is-inside' : ''}${zero ? ' is-zero' : ''}`} x={vx} y={vy} dominantBaseline={horizontal ? 'middle' : undefined} textAnchor={anchor}>{compactValue(value)}</text>}
           </g>
         })}
-        <title>{description(item, index)}</title>
+        <rect className="report-hit" x={horizontal ? left : center - step / 2} y={horizontal ? center - step / 2 : top} width={horizontal ? right - left : step} height={horizontal ? step : edge - top} />
       </g>
     })}
   </svg></div> : <div className="fxs-chart-empty">{t(emptyLabel)}</div>}</section>

@@ -33,7 +33,7 @@ export default function MonthlyPerformance({ title, items, currency, emptyLabel 
           const key = `${year}-${String(index + 1).padStart(2, '0')}`, item = byMonth.get(key)
           const intensity = item && maximum ? 18 + Math.sqrt(Math.abs(item.value) / maximum) * 72 : 0
           const style = item?.value ? { backgroundColor: `color-mix(in srgb, var(--report-${item.value > 0 ? 'positive' : 'negative'}) ${intensity}%, var(--wm-surface))` } : undefined
-          return <div role="cell" key={key}><button type="button" className={`report-month-cell${!item ? ' is-missing' : item.value === 0 ? ' is-flat' : ''}`} style={style} disabled={!item} title={item ? description(item) : `${key}: ${t('Chưa có giao dịch')}`} aria-label={item ? description(item) : `${key}: ${t('Chưa có giao dịch')}`} onClick={() => selectYear(year)}>{!item ? '—' : item.value === 0 ? '0' : ''}</button></div>
+          return <div role="cell" key={key}><button type="button" className={`report-month-cell${!item ? ' is-missing' : item.value === 0 ? ' is-flat' : ''}`} style={style} disabled={!item} data-tooltip={item ? description(item).replaceAll('; ', '\n') : `${key}: ${t('Chưa có giao dịch')}`} aria-label={item ? description(item) : `${key}: ${t('Chưa có giao dịch')}`} onClick={() => selectYear(year)}>{!item ? '—' : ''}</button></div>
         })}
       </div>)}
     </div>

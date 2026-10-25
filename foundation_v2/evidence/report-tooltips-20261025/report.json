@@ -1,0 +1,50 @@
+{
+  "scope": "Actual demo fixtures, no response substitution or mutations",
+  "checks": [
+    {
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "touch": false,
+      "fiveCompleteYears": true,
+      "yearDrilldown": true,
+      "monthlySplit": true,
+      "dailyNetBlue": true,
+      "hiddenBarValues": true,
+      "zeroTooltip": true,
+      "hoverFocusEscape": true,
+      "noScroll": true
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "lang": "vi",
+      "touch": true,
+      "fiveCompleteYears": true,
+      "yearDrilldown": true,
+      "monthlySplit": true,
+      "dailyNetBlue": true,
+      "hiddenBarValues": true,
+      "zeroTooltip": true,
+      "hoverFocusEscape": true,
+      "noScroll": true
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "lang": "en",
+      "touch": false,
+      "fiveCompleteYears": true,
+      "yearDrilldown": true,
+      "monthlySplit": true,
+      "dailyNetBlue": true,
+      "hiddenBarValues": true,
+      "zeroTooltip": true,
+      "hoverFocusEscape": true,
+      "noScroll": true
+    }
+  ],
+  "errors": [],
+  "writes": [],
+  "status": "PASS"
+}

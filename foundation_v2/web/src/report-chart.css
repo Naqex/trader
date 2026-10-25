@@ -3,16 +3,14 @@
 .report-chart.is-pink { --report-accent:#e69ac2; }
 .report-svg { display:block; width:100%; overflow:visible; }
 .report-svg text { font-size:12px; fill:var(--wm-content-muted); font-variant-numeric:tabular-nums; }
-.report-svg .report-bar-value { font-size:11px; fill:var(--wm-content); }
-.report-svg .report-bar-value.is-inside { fill:#101418; font-weight:600; }
-.fx-app[data-theme=light] .report-bar-segment:is(.is-positive,.is-negative) .report-bar-value.is-inside { fill:#fff; }
-.fx-app[data-theme=light] .report-chart.is-blue .report-bar-value.is-inside { fill:#fff; }
-.report-svg .report-bar-value.is-zero { fill:var(--wm-content-muted); }
 .report-grid { stroke:color-mix(in srgb,var(--wm-content-muted) 40%,transparent); stroke-width:1; stroke-dasharray:5 5; }
 .report-line { fill:none; stroke:var(--report-accent); stroke-width:2; stroke-linejoin:round; vector-effect:non-scaling-stroke; }
 .report-point,.report-bar rect { fill:var(--report-accent); }
 .report-bar-segment.is-positive rect { fill:var(--report-positive); }
 .report-bar-segment.is-negative rect { fill:var(--report-negative); }
+.report-bar .report-hit { fill:transparent; }
+.report-bar:focus { outline:none; }
+.report-bar:focus-visible .report-hit { stroke:var(--wm-primary); stroke-width:2; }
 .report-plot { min-width:0; }
 .report-chart h3 { margin-bottom:16px; }
 .report-year { margin-left:8px;color:var(--wm-content-muted);font-size:12px;font-weight:400; }

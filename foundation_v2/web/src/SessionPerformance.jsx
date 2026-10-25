@@ -13,7 +13,7 @@ import MonthlyPerformance from './MonthlyPerformance.jsx'
 
 export function PeriodBars({ title, items, currency, period, horizontal = false, totalCount = items.length, emptyLabel = 'Chưa có dữ liệu giao dịch đóng.' }) {
   const { t } = useTestingLocale()
-  return period === 'month' ? <MonthlyPerformance title={title} items={items} currency={currency} emptyLabel={emptyLabel} /> : <ReportBars title={totalCount > items.length ? `${t(title)} · ${items.length}/${totalCount}` : title} items={items} currency={currency} period={period} horizontal={horizontal} signed split emptyLabel={emptyLabel} />
+  return period === 'month' ? <MonthlyPerformance title={title} items={items} currency={currency} emptyLabel={emptyLabel} /> : <ReportBars title={totalCount > items.length ? `${t(title)} · ${items.length}/${totalCount}` : title} items={items} currency={currency} period={period} horizontal={horizontal} emptyLabel={emptyLabel} />
 }
 
 export function Metric({ title, value, detail }) {

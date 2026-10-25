@@ -7,17 +7,22 @@ export const DEMO_SESSIONS = [
 
 export function demoSessionItems() { return DEMO_SESSIONS }
 
-export const DEMO_LEDGER = Array.from({ length: 60 }, (_, i) => {
+// Two short sessions and one complete five-year backtest exercise both layouts.
+const tradeSlots = [...Array.from({ length: 60 }, (_, i) => i).filter(i => i % 3 !== 2), ...Array.from({ length: 120 }, (_, i) => i * 3 + 2)]
+export const DEMO_LEDGER = tradeSlots.map(i => {
   const session = DEMO_SESSIONS[i % 3], side = i % 2 ? 'sell' : 'buy'
-  const net = [160, -90, 220, -120, 0, 85, -65, 140, 260, -110][i % 10]
+  const longHistory = session.record_id === 'demo-gold', ordinal = Math.floor(i / 3)
+  const net = longHistory ? [160, -290, 220, -120, 0, 0, -65, 140, 260, -110][ordinal % 10] : [160, -90, 220, -120, 0, 85, -65, 140, 260, -110][i % 10]
   const symbol = session.instrument_id, price = symbol === 'XAUUSD' ? 2550 + i * .4 : symbol === 'GBPUSD' ? 1.29 + i * .0001 : 1.08 + i * .0001
   const quantity = symbol === 'XAUUSD' ? 1 : .2, multiplier = symbol === 'XAUUSD' ? 100 : 100000, direction = side === 'buy' ? 1 : -1
-  const time = Date.UTC(2026, 6, 6 + i * 1.4, 7 + i % 15)
+  const time = longHistory ? Date.UTC(2021, Math.floor(ordinal / 2), 6 + ordinal % 2 * 12, 7 + i % 15) : Date.UTC(2026, 6, 6 + i * 1.4, 7 + i % 15)
+  const recorded = longHistory ? Date.UTC(2026, 8, 7, 7 + ordinal * 4) : time
+  const duration = (20 + i % 8 * 15) * 60000
   return { trade_id: `demo-trade-${String(i + 1).padStart(3, '0')}`, session_id: session.record_id, session_name: session.name, source: 'UI demo', symbol, side,
-    open_time_utc: new Date(time).toISOString(), close_time_utc: new Date(time + (20 + i % 8 * 15) * 60000).toISOString(), recorded_at_utc: new Date(time).toISOString(), close_recorded_at_utc: new Date(time + (20 + i % 8 * 15) * 60000).toISOString(), report_time_utc: new Date(time + (20 + i % 8 * 15) * 60000).toISOString(),
+    open_time_utc: new Date(time).toISOString(), close_time_utc: new Date(time + duration).toISOString(), recorded_at_utc: new Date(recorded).toISOString(), close_recorded_at_utc: new Date(recorded + duration).toISOString(), report_time_utc: new Date(recorded + duration).toISOString(),
     entry_type: 'market', price_open: price, price_close: price + direction * (net + 3) / (quantity * multiplier), quantity, stop_loss: price - direction * 100 / (quantity * multiplier), take_profit: price + direction * 200 / (quantity * multiplier),
     has_notes: i % 3 === 0, net_pnl: net, gross_pnl: net + 3, fees: 3, planned_risk_budget: 100, realized_r: net / 100, account_currency: 'USD', starting_balance: 10000, rating: 1 + i % 5, tags: [i % 2 ? 'reversal' : 'breakout', i % 3 ? 'planned' : 'review'] }
-})
+}).sort((a, b) => a.report_time_utc.localeCompare(b.report_time_utc))
 
 export function demoResult(rows = DEMO_LEDGER, session = DEMO_SESSIONS[0], timeBasis = 'activity') {
   let balance = 10000
@@ -64,7 +69,7 @@ export function demoDashboardAnalytics(item, workspace, sourceRows = demoFilterR
       playbook_id: item.source_record_id || item.record_id, cutoff_timestamp: rows.length ? Date.parse(rows.at(-1).close_time_utc) / 1000 : null } }
 }
 
-export const DEMO_DATASETS = DEMO_SESSIONS.map(item => ({ dataset_id: item.dataset_id, instrument_id: item.instrument_id, timeframe_seconds:item.timeframe_seconds, row_count:item.row_count, provider:'Dukascopy', asset_class:item.instrument_id === 'XAUUSD' ? 'metals' : 'forex', first_timestamp: Date.UTC(2026, 6, 6) / 1000, last_timestamp: Date.UTC(2026, 9, 5) / 1000 }))
+export const DEMO_DATASETS = DEMO_SESSIONS.map(item => ({ dataset_id: item.dataset_id, instrument_id: item.instrument_id, timeframe_seconds:item.timeframe_seconds, row_count:item.row_count, provider:'Dukascopy', asset_class:item.instrument_id === 'XAUUSD' ? 'metals' : 'forex', first_timestamp: (item.record_id === 'demo-gold' ? Date.UTC(2021, 0, 1) : Date.UTC(2026, 6, 6)) / 1000, last_timestamp: (item.record_id === 'demo-gold' ? Date.UTC(2025, 11, 31) : Date.UTC(2026, 9, 5)) / 1000 }))
 
 export function demoReplayContext(item) {
   const source = item.source_record_id || item.record_id
@@ -81,4 +86,4 @@ export const DEMO_ASSETS = { status: 'ready', source: 'UI demo', items: ['EURUSD
 
 export const DEMO_LIVE = { source: 'UI demo', captured_at_utc: '2026-10-05T08:00:00Z', account: { account_ref: 'DEMO PREVIEW', balance: 12380, equity: 12512, profit: 132, margin: 250, margin_free: 12262, currency: 'USD' },
   positions: DEMO_LEDGER.slice(0, 3).map((row, i) => ({ ticket: `demo-${i + 1}`, symbol: row.symbol, type: row.side === 'buy' ? 0 : 1, volume: row.quantity, price_open: row.price_open, sl: row.stop_loss, tp: row.take_profit, profit: [84, -36, 84][i] })), orders: [], quotes: [],
-  deals: DEMO_LEDGER.map((row, i) => ({ ticket: `demo-${i + 1}`, symbol: row.symbol, position_id: row.trade_id, type: row.side === 'buy' ? 0 : 1, entry: 1, volume: row.quantity, price: row.price_close, profit: row.gross_pnl, commission: -row.fees, swap: 0, fee: 0, time_msc: i >= DEMO_LEDGER.length - 8 ? Date.parse('2026-10-03T08:00:00Z') + (i - DEMO_LEDGER.length + 8) * 3 * 3600000 : Date.parse(row.close_time_utc) })), deal_count: DEMO_LEDGER.length, cashflows: [{ ticket: 'demo-deposit', type: 2, profit: 10000, time_msc: Date.parse('2026-07-06T08:00:00Z'), comment: 'Demo deposit' }], history_from_utc: '2026-07-06T00:00:00Z' }
+  deals: DEMO_LEDGER.map((row, i) => ({ ticket: `demo-${i + 1}`, symbol: row.symbol, position_id: row.trade_id, type: row.side === 'buy' ? 0 : 1, entry: 1, volume: row.quantity, price: row.price_close, profit: row.gross_pnl, commission: -row.fees, swap: 0, fee: 0, time_msc: i >= DEMO_LEDGER.length - 8 ? Date.parse('2026-10-03T08:00:00Z') + (i - DEMO_LEDGER.length + 8) * 3 * 3600000 : Date.parse(row.report_time_utc) })), deal_count: DEMO_LEDGER.length, cashflows: [{ ticket: 'demo-deposit', type: 2, profit: 10000, time_msc: Date.parse('2026-07-06T08:00:00Z'), comment: 'Demo deposit' }], history_from_utc: '2026-07-06T00:00:00Z' }

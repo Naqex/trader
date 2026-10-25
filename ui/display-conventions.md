@@ -65,12 +65,13 @@ Last sync is the last successful data observation, not a connection expiry date.
 - `ReportLineChart`/`ReportBars` own report chart layout, dashed grids and color
   accents. Preserve signed losses and readable mobile axes; label bounded period
   summaries with their displayed/total count rather than hiding the truncation.
-  Put compact values inside bars when they fit with padding; otherwise place them
-  immediately outside. Tooltips/accessibility retain full amounts. Zero has a
-  muted `0` at the baseline and no artificial bar. Month buckets never merge years:
+  Bar values appear in the shared tooltip on hover, focus or tap, never printed
+  over the plot. Keep scale/category labels. Zero has no artificial bar but retains
+  an interactive category target and explicit tooltip value. Month buckets never merge years:
   one year in the heading, or `MM/YYYY` across years. Session summaries follow
   backtest time; aggregate performance and Journal follow real activity time.
-  Monthly/daily performance separates sums of positive/negative net trade P/L.
+  Monthly performance separates sums of positive/negative net trade P/L; daily
+  performance shows one blue net P/L bar per weekday, including negative values.
   Multiple-year monthly history uses a year-by-12-month net heatmap, with a year
   selector/cell drilldown to split bars. Preserve the complete calendar projection;
   do not silently reuse a last-12-month slice as an all-history view. More than six

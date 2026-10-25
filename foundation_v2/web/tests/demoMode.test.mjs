@@ -3,13 +3,14 @@ import assert from 'node:assert/strict'
 import { DEMO_LEDGER, DEMO_SESSIONS, demoSessionItems, demoDashboardAnalytics, demoResult, demoFilterRows, demoOverview } from '../src/demoFixtures.js'
 import { canPreviewDemo, demoToggleHref, previewMode, previewStateHref, previewOptions } from '../src/demoMode.js'
 import { buildWorkspaceHref, readWorkspaceContext } from '../src/workspaceContext.js'
+import { sessionPeriods } from '../src/sessionPerformanceModel.js'
 
 test('demo curve, money, fee and R values reconcile to the same ledger', () => {
-  assert.equal(DEMO_LEDGER.length, 60)
-  assert.equal(new Set(DEMO_LEDGER.map(row => row.trade_id)).size, 60)
+  assert.equal(DEMO_LEDGER.length, 160)
+  assert.equal(new Set(DEMO_LEDGER.map(row => row.trade_id)).size, 160)
   for (const session of DEMO_SESSIONS) {
     const rows = demoFilterRows([session.record_id]), { metrics } = demoResult(rows, session)
-    assert.equal(rows.length, 20)
+    assert.equal(rows.length, session.record_id === 'demo-gold' ? 120 : 20)
     const net = rows.reduce((sum, row) => sum + row.net_pnl, 0)
     assert.equal(metrics.net_pnl, net)
     assert.equal(metrics.ending_closed_trade_balance, 10000 + net)
@@ -23,17 +24,29 @@ test('demo curve, money, fee and R values reconcile to the same ledger', () => {
     }
   }
   const { performance } = demoOverview()
-  assert.equal(performance.months.reduce((n, item) => n + item.closed_trade_count, 0), 60)
-  assert.equal(performance.symbols.reduce((n, item) => n + item.closed_trade_count, 0), 60)
+  assert.equal(performance.months.reduce((n, item) => n + item.closed_trade_count, 0), 160)
+  assert.equal(performance.symbols.reduce((n, item) => n + item.closed_trade_count, 0), 160)
 })
 
 test('demo selection and UTC date filters have an independent numeric oracle', () => {
-  assert.equal(demoFilterRows(null, { side: 'buy' }).length, 30)
-  assert.equal(demoFilterRows(null, { outcome: 'win' }).length, 30)
-  assert.equal(demoFilterRows(null, { outcome: 'loss' }).length, 24)
-  assert.equal(demoFilterRows(null, { outcome: 'breakeven' }).length, 6)
+  assert.equal(demoFilterRows(null, { side: 'buy' }).length, 80)
+  assert.equal(demoFilterRows(null, { outcome: 'win' }).length, 68)
+  assert.equal(demoFilterRows(null, { outcome: 'loss' }).length, 64)
+  assert.equal(demoFilterRows(null, { outcome: 'breakeven' }).length, 28)
   assert.equal(demoFilterRows([]).length, 0)
-  assert.ok(demoFilterRows(null, { from: '2026-09-01', to: '2026-09-30' }).every(row => row.close_time_utc.startsWith('2026-09')))
+  assert.ok(demoFilterRows(null, { from: '2026-09-01', to: '2026-09-30' }).every(row => row.report_time_utc.startsWith('2026-09')))
+})
+
+test('Gold Swing demo has five complete backtest years, separate from real activity time', () => {
+  const rows = demoFilterRows(['demo-gold'])
+  const history = sessionPeriods(rows, 'UTC', new Date('2026-10-25'), 'market').performance.months
+  assert.equal(history.length, 60)
+  assert.deepEqual([...new Set(history.map(month => month.label.slice(0, 4)))], ['2021', '2022', '2023', '2024', '2025'])
+  assert.ok(history.every(month => month.count === 2 && month.value === month.profit + month.loss))
+  assert.ok(history.some(month => month.value < 0))
+  assert.ok(history.some(month => month.value > 0))
+  assert.ok(history.some(month => month.value === 0 && month.count > 0))
+  assert.deepEqual(sessionPeriods(rows, 'UTC', new Date('2026-10-25'), 'activity').months.map(month => month.label), ['2026-09'])
 })
 
 test('preview keeps exactly three fixture sessions and rejects the retired many mode', () => {
@@ -64,7 +77,7 @@ test('new-session preview preserves old session data and round-trips only suppor
   const oldRows = DEMO_LEDGER.filter(row => row.session_id !== DEMO_SESSIONS[0].record_id)
   assert.equal(demoFilterRows([DEMO_SESSIONS[0].record_id], {}, oldRows).length, 0)
   assert.equal(demoFilterRows([DEMO_SESSIONS[1].record_id], {}, oldRows).length, 20)
-  assert.equal(demoFilterRows(null, {}, oldRows).length, 40)
+  assert.equal(demoFilterRows(null, {}, oldRows).length, 140)
   for (const view of ['replay', 'trade', 'analytics']) {
     const url = previewStateHref(`http://127.0.0.1:5180/?view=${view}&select=1`, 'new-session')
     assert.equal(previewMode(url.searchParams, view), 'new-session')
