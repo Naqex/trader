@@ -183,3 +183,18 @@ test('sampled equity metrics describe observed points and filtered trade scopes 
   assert.equal(advancedAnalytics({ ...built, result: { ...built.result, scope: {} } }, { asset: 'EUR/USD' }).equityDrawdown.available, false)
   assert.equal(accountEquityDrawdown({ ...source, value_basis: 'closed_trade_balance' }).available, false)
 })
+
+test('current report kind is neutral for equity while actual kind omission and exposure filters still gate it', () => {
+  const source = { ledger: [{ trade_id: 'a', net_pnl: 1, symbol: 'EUR/USD' }],
+    equity_curve: equitySource([equityPoint(100, 1), equityPoint(80, 2)]) }
+  const app = buildAnalyticsModel(source, 'app')
+  const neutral = advancedAnalytics(app, { reportKinds: '["app"]' })
+  assert.equal(neutral.localFiltered, true, 'retain existing balance filter semantics')
+  assert.equal(neutral.equityDrawdown.available, true)
+  assert.equal(advancedAnalytics(app, { reportKinds: '["app","prop"]' }).equityDrawdown.available, true)
+  assert.equal(advancedAnalytics(app, { reportKinds: '["prop"]' }).equityDrawdown.available, false)
+  assert.equal(advancedAnalytics(app, { reportKinds: '["app"]', asset: 'EUR/USD' }).equityDrawdown.available, false)
+  const mixed = { ...app, ledger: [...app.ledger, { ...app.ledger[0], tradeId: 'prop', report_kind: 'prop' }] }
+  assert.equal(advancedAnalytics(mixed, { reportKinds: '["app"]' }).equityDrawdown.available, false)
+  assert.equal(advancedAnalytics({ ...app, result: { ...app.result, scope: { active_filters: true } } }, { reportKinds: '["app"]' }).equityDrawdown.available, false)
+})

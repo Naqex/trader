@@ -263,6 +263,12 @@ export function advancedAnalytics(model, filters = {}, options = {}) {
   const rows = filterAnalyticsRows(timedRows, filters, classifyOutcome).map(row => ({ ...row, outcome: classifyOutcome(row.net_pnl) }))
   const summary = stats(rows, classifyOutcome)
   const localFiltered = Object.keys(DEFAULT_EXTRA_FILTERS).filter(key => key !== 'timezone').some(key => (filters[key] ?? DEFAULT_EXTRA_FILTERS[key]) !== DEFAULT_EXTRA_FILTERS[key])
+  // Selecting the current report kind is source context, not an account filter.
+  // Other filters can hide open exposure even when every closed row survives.
+  const kinds = filterValues(filters.reportKinds)
+  const neutralKinds = !filters.reportKinds || model.ledger.every(row => kinds.includes(row.report_kind || 'app'))
+  const equityFiltered = Object.keys(DEFAULT_EXTRA_FILTERS).filter(key => key !== 'timezone' && (key !== 'reportKinds' || !neutralKinds))
+    .some(key => (filters[key] ?? DEFAULT_EXTRA_FILTERS[key]) !== DEFAULT_EXTRA_FILTERS[key])
   // A filtered balance is a hypothetical sequence from the original starting capital.
   let balance = number(model.startBalance), peak = balance, drawdown = [], curve = []
   if (balance !== null && summary.complete) {
@@ -310,7 +316,7 @@ export function advancedAnalytics(model, filters = {}, options = {}) {
     episodes: dd.length ? episodes : null, recoveryTrades: recovered ? recoverySum / recovered : null, unrecovered: current, longest,
     side, unknownSide, hours, weekdays, months: monthGroups, calendar, sessions, frequency: frequencyGroups, datesComplete, incomplete: datedRows.length !== rows.length,
     frequencySeries: frequencies, ...recovery,
-    equityDrawdown: accountEquityDrawdown(model.result?.equity_curve, { filtered: localFiltered || model.result?.scope?.active_filters === true }),
+    equityDrawdown: accountEquityDrawdown(model.result?.equity_curve, { filtered: equityFiltered || model.result?.scope?.active_filters === true }),
     riskReward: { average: summary.averageR, max: summary.maxR, knownCount: summary.rCount, totalCount: rows.length,
       basis: 'net_realized_r', idealAverage: null, idealMax: null },
     excursion: { maeHistogram: [], winningAdverseR: null, knownCount: 0, basis: 'unavailable' },
