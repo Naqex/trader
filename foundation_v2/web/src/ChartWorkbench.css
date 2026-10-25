@@ -512,7 +512,7 @@ button.chart-order-level { cursor: ns-resize; touch-action: none; }
 .legacy-order-modal :is(input:not([type=checkbox]):not([type=radio]),select):focus { border-color:var(--project-primary); outline:none; box-shadow:none; }
 .legacy-order-modal input[readonly] { color:var(--chart-muted); }
 .legacy-order-modal .fx-select.is-field .fx-select-trigger { height:36px; min-height:36px; border:1px solid var(--wm-control-border); border-radius:8px; font:inherit; }
-.legacy-order-modal .fx-select.is-field .fx-select-trigger:is(:focus-visible,[aria-expanded=true]):not(:disabled) { border-color:var(--wm-focus); outline:none; box-shadow:none; }
+.legacy-order-modal .fx-select.is-field .fx-select-trigger:is(:focus-visible,[aria-expanded=true]):not(:disabled) { border-color:transparent; outline:none; box-shadow:none; background:var(--wm-hover); }
 .legacy-order-modal .fx-select.is-field .fx-select-trigger:disabled { opacity:.5; cursor:default; }
 .legacy-order-modal .fx-select.is-field .fx-select-trigger:disabled:hover { background:transparent; border-color:var(--wm-control-border); }
 .legacy-order-modal .fx-select-menu button { min-height:36px; padding:8px 12px; }

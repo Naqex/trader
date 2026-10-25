@@ -13,9 +13,13 @@ Giữ palette `annam-compact@0.1.1`; không thay token pin.
   rộng của footer. Popup dùng overlay có sẵn.
 - Consumer giữ cách lấy dữ liệu, tính tiền, quyền thao tác và trạng thái đọc.
 
-Trades giữ tên cột thời gian một dòng (`Vào lệnh · Thực tế`, `Vào lệnh · Chart`
+Trades giữ tên cột thời gian một dòng (`Vào lệnh (Realtime)`, `Vào lệnh (Chart)`
 và tương tự cho thoát lệnh). Múi giờ từ Settings nằm trong meta của footer,
 không thêm hàng phía trên header; giữ tên IANA để tránh sai offset lịch sử/DST.
+
+Tên, nhãn và thời gian căn trái; số căn phải; trạng thái/badge, checkbox và
+thao tác căn giữa. Header và nội dung dùng cùng trục và padding; icon sort nằm
+trước nhãn số, còn nhãn căn giữa có khoảng icon cân xứng hai bên để không lệch tâm.
 
 ## Data contract
 

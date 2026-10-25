@@ -23,7 +23,7 @@ của sản phẩm. Thông số chuẩn và các ngoại lệ bên dưới đư�
 | Số KPI | 28px | 28px | Số và đơn vị cùng hàng; chữ số không đổi độ rộng |
 | Bo góc ô nhập / menu-dialog | 8 / 12px | Như desktop | Nút vẫn pill, icon button vẫn tròn |
 | Viền cấu trúc | 1px | 1px | Không mọc thêm viền khi hover |
-| Dấu focus bàn phím | Ring2px cho nút; viền1px xanh cho field | Như desktop | Một dấu; không chồng viền/outline/shadow |
+| Dấu focus bàn phím | Ring2px cho nút; viền1px xanh cho ô nhập; dropdown dùng nền + gạch chân | Như desktop | Một dấu; không chồng viền/outline/shadow |
 | Khoảng icon–chữ / các nút cùng nhóm | 8px | 8px | Chung đường căn giữa |
 | Khoảng các ô / nhóm | 24px | 16–24px | Khoảng trống phân nhóm trước card/viền |
 | Khoảng khu vực lớn | 32px | 24px | Không thêm wrapper để lấp chỗ trống |
@@ -72,14 +72,15 @@ Owner đã bỏ phương án hover xanh đục; hover chung dùng hai độ sán
 | X đóng dialog | Trong suốt | Chỉ đổi màu icon | Focus bàn phím vẫn có dấu |
 | Dòng dữ liệu | Nền trang | Nền nhẹ | Nền chọn riêng, không giống hover nút |
 | Switch | Xám khi tắt | Không đổi vai trò | Xanh biển khi bật; xanh lá dành cho kết quả thành công |
-| Option dropdown | Không tô nền lâu dài | Nền hover control | Tích cam phía phải; không phủ màu chỉ vì selected |
+| Option dropdown | Không tô nền lâu dài | Nền hover control | Tích cam phía phải; focus bàn phím dùng nền + gạch chân, không viền |
 | Ô nhập | Viền1px | Viền rõ hơn | Viền/focus xanh; lỗi đỏ bên cạnh ô |
 | Nút không khả dụng | Giữ chỗ, giảm nhấn mạnh | Không hiện hover enabled | Không bấm/submit được |
 
 Dropdown nằm trong form dùng `FxSelect` với `className="is-field"`: cùng viền
 1px, góc 8px và chiều cao một dòng 36px như textbox. Bình thường viền nhẹ,
-hover viền đậm hơn và nền trung tính `--wm-hover`, focus bằng chuột/Tab hoặc
-đang mở dùng viền xanh biển. Ô ghép tài sản tô hover trên toàn ô ngoài;
+hover và khi mở dùng nền trung tính `--wm-hover`, không thêm viền sáng.
+Focus bàn phím dùng nền và gạch chân nhãn; lựa chọn vẫn giữ tích/checkbox.
+Ô ghép tài sản tô hover trên toàn ô ngoài;
 không thêm nền/viền riêng cho nút bên trong. Ô số dư chỉ đổi viền ngoài.
 Nhãn tài sản cao 26px, nền cam `--project-action`, chữ `--project-on-action`;
 giữ màu khi hover cả ô. Nút bỏ mã cao 22px, hover chỉ tăng độ rõ của icon,
