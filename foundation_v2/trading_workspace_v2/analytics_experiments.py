@@ -39,15 +39,54 @@ def _initial_position(snapshot, trade):
             return {}
         if not isinstance(position, dict):
             raise AnalyticsValidationError("initial risk checkpoint must be an object")
+        try:
+            entry_matches = Decimal(str(position.get("entry_fill"))) == Decimal(str(detail["fill_price"]))
+        except InvalidOperation as exc:
+            raise AnalyticsValidationError("initial risk checkpoint has an invalid entry price") from exc
         if (position.get("position_id") != detail["position_id"]
                 or position.get("source_operation_id") != detail["operation_id"]
                 or position.get("side") != trade["side"]
-                or Decimal(str(position.get("entry_fill"))) != Decimal(str(detail["fill_price"]))
+                or not entry_matches
                 or position.get("opened_cursor_index") != event["cursor_index"]
                 or position.get("opened_time_utc") != event["virtual_time_utc"]):
             raise AnalyticsValidationError("initial risk checkpoint disagrees with opening fill")
         return position
     return {}
+
+
+def _ideal_week(trade, bars, snapshot, instrument, costs, entry_bid, entry_ask, risk_account):
+    start = trade["open_time_utc"]
+    end = start + 7 * 24 * 60 * 60
+    result = {"status": "unsupported", "reason": "original_stop_unavailable", "value_r": None,
+              "max_net_pnl": None, "could_have_profit_or_breakeven": None,
+              "observed_from_utc": start, "observed_to_utc": None, "window_end_utc": end,
+              "basis": "max_costed_closeable_profit / initial_gross_risk; recorded OHLC; ignores subsequent SL/TP"}
+    if not risk_account:
+        return result
+    timeframe = snapshot.timeframe_seconds
+    observed_end = int(bars[-1]["timestamp"]) + timeframe if bars else start
+    result["observed_to_utc"] = min(end, observed_end)
+    if observed_end < end:
+        return {**result, "status": "partial_week", "reason": "week_not_observed_at_cutoff"}
+    candidates = []
+    for bar in bars[trade["open_cursor_index"]:]:
+        timestamp = int(bar["timestamp"])
+        if timestamp >= end:
+            break
+        validate_ohlc_bar(bar)
+        if timestamp + timeframe > end:
+            return {**result, "status": "partial_week", "reason": "week_boundary_inside_candle"}
+        bid, ask = quote_from_mid(bar["high"] if trade["side"] == "BUY" else bar["low"],
+                                  spread_price=snapshot.spread_price, tick_size=instrument.tick_size)
+        candidates.append(bid if trade["side"] == "BUY" else ask)
+    if not candidates:
+        return {**result, "reason": "week_has_no_complete_candle"}
+    price = max(candidates) if trade["side"] == "BUY" else min(candidates)
+    cost = calculate_round_trip_cost(costs, trade["side"], Decimal(str(trade["quantity"])),
+        instrument.contract_size, entry_bid, entry_ask, price, price)
+    net = Decimal(str(cost["net_account"]))
+    return {**result, "status": "complete_week", "reason": None, "value_r": float(net / risk_account),
+            "max_net_pnl": float(net), "could_have_profit_or_breakeven": net >= 0}
 
 
 def _trade_experiment(trade, bars, snapshot, config, instrument, costs):
@@ -85,7 +124,10 @@ def _trade_experiment(trade, bars, snapshot, config, instrument, costs):
     # the risk that existed at execution; legacy fills without it stay unsupported.
     original = _initial_position(snapshot, trade)
     original_stop = original.get("stop_loss")
-    original_stop = Decimal(str(original_stop)) if original_stop is not None else None
+    try:
+        original_stop = Decimal(str(original_stop)) if original_stop is not None else None
+    except InvalidOperation as exc:
+        raise AnalyticsValidationError("initial stop must be finite and positive") from exc
     if original_stop is not None and (not original_stop.is_finite() or original_stop <= 0):
         raise AnalyticsValidationError("initial stop must be finite and positive")
     original_distance = (entry - original_stop) * direction if original_stop is not None else None
@@ -95,6 +137,7 @@ def _trade_experiment(trade, bars, snapshot, config, instrument, costs):
         instrument.contract_size, entry_bid, entry_ask, original_stop, original_stop) if original_stop is not None else None
     risk_account = abs(Decimal(str(risk["gross_account"]))) if risk else None
     base["realized_r"] = float(Decimal(str(trade["net_pnl"])) / risk_account) if risk_account else None
+    base["ideal"] = _ideal_week(trade, bars, snapshot, instrument, costs, entry_bid, entry_ask, risk_account)
     gap_close = trade["exit_reason"] in {"stop_loss_gap", "take_profit_gap"}
     observations = [entry, close]
     for index, bar in enumerate(path):
@@ -111,7 +154,7 @@ def _trade_experiment(trade, bars, snapshot, config, instrument, costs):
         "mae_r": float(mae / original_distance) if original_distance else None,
         "mfe_r": float(mfe / original_distance) if original_distance else None,
         "configured_mae_r": float(mae / distance), "configured_mfe_r": float(mfe / distance),
-        "r_basis": "initial_stop_distance" if original_distance else "unavailable", "ideal_r": None,
+        "r_basis": "initial_stop_distance" if original_distance else "unavailable", "ideal_r": base["ideal"]["value_r"],
         "original_stop_price": float(original_stop) if original_stop is not None else None,
         "initial_risk_distance": float(original_distance) if original_distance else None,
         "excluded_terminal_bar": not gap_close,
@@ -184,6 +227,7 @@ def build_replay_experiments(record, bars, *, dataset_sha256, filters=None,
                 "bounds": "selected closed trades; original close; no future bars",
                 "risk_basis": "stop_loss: user_configured_distance; risk_reward: initial_stop_distance",
                 "scenario_risk_basis": {"stop_loss": "user_configured_distance", "risk_reward": "initial_stop_distance"},
+                "ideal_bounds": "entry through seven elapsed days; only complete observed candles at or before selected cutoff",
                 "blocked_by_data": analytics.get("blocked_by_data", [])}
     if not analytics["analytics_available"]:
         return response

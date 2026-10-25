@@ -95,6 +95,58 @@ def test_mismatched_entry_checkpoint_fails_instead_of_adopting_foreign_risk():
         evaluate(source, bars)
 
 
+def week_exposure(*, side="BUY", negative=False, boundary=False):
+    from trading_workspace_v2.replay_execution import parse_replay_execution_snapshot
+
+    source, bars = exposure(side=side)
+    if negative:
+        bars = [{**bar, "open":1.1,"high":1.1,"low":1.099,"close":1.1} for bar in bars]
+        bars[1]["low"] = 1.0998
+        snapshot = queue_market_order(initial_state(), operation_id="losing", side="BUY",
+            quantity="0.10", stop_loss="1.0995", take_profit="1.12")
+        for cursor, bar in enumerate(bars[1:],1):
+            snapshot = advance_replay_execution(snapshot,bar=bar,cursor_index=cursor).snapshot
+    else:
+        snapshot=parse_replay_execution_snapshot(source["payload"]["execution"])
+    horizon=bars[1]["timestamp"]+7*24*60*60
+    bar={"timestamp":horizon-(30 if boundary else 60),"open":1.1,"high":1.1 if negative else 1.13,"low":1.1,"close":1.1}
+    if side=="SELL":
+        bar={**bar,"high":1.1,"low":1.07}
+    bars.append(bar)
+    snapshot=advance_replay_execution(snapshot,bar=bar,cursor_index=4).snapshot
+    return record(snapshot),bars
+
+
+@pytest.mark.parametrize("side", ["BUY", "SELL"])
+def test_ideal_rr_uses_complete_observed_week_after_original_close_and_costed_quotes(side):
+    source,bars=week_exposure(side=side)
+    row=evaluate(source,bars)["rows"][0]
+    assert row["ideal"]["status"]=="complete_week"
+    assert row["ideal"]["max_net_pnl"]==pytest.approx(996)
+    # The original exit bar's high is still inside the seven-day ideal window.
+    expected=996/101
+    assert row["ideal"]["value_r"]==pytest.approx(expected)
+    assert row["excursion"]["ideal_r"]==pytest.approx(expected)
+    assert row["ideal"]["could_have_profit_or_breakeven"] is True
+    assert row["excursion"]["mfe_r"] != row["ideal"]["value_r"]
+    future={"timestamp":bars[1]["timestamp"]+7*24*60*60,"open":"future not observed"}
+    assert evaluate(source,[*bars,future])==evaluate(source,bars)
+
+
+def test_partial_week_boundary_and_negative_ideal_are_not_fabricated_as_success():
+    source,bars=exposure()
+    assert evaluate(source,bars)["rows"][0]["ideal"]["status"]=="partial_week"
+    assert evaluate(source,bars)["rows"][0]["excursion"]["ideal_r"] is None
+    source,bars=week_exposure(boundary=True)
+    assert evaluate(source,bars)["rows"][0]["ideal"]["reason"]=="week_boundary_inside_candle"
+    source,bars=week_exposure(negative=True)
+    ideal=evaluate(source,bars)["rows"][0]["ideal"]
+    assert ideal["status"]=="complete_week"
+    assert ideal["max_net_pnl"]==pytest.approx(-4)
+    assert ideal["value_r"]==pytest.approx(-4/6)
+    assert ideal["could_have_profit_or_breakeven"] is False
+
+
 @pytest.mark.parametrize("late_stop", [False, True])
 def test_rr_excludes_missing_or_late_initial_stop(late_stop):
     _, bars = exposure()

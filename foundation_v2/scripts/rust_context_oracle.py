@@ -4,7 +4,7 @@ import sys,json,itertools,random
 from copy import deepcopy
 V2=Path(__file__).resolve().parents[1]
 sys.path[:0]=[str(V2),str(V2/'tests')]
-from test_analytics_experiments import exposure
+from test_analytics_experiments import exposure, week_exposure
 from test_replay_analytics import record
 from trading_workspace_v2.analytics_experiments import build_replay_experiments
 from trading_workspace_v2.journal_context import build_journal_context
@@ -34,6 +34,9 @@ def main():
         except (TypeError,ValueError,KeyError):expected=None;error=True
         cases.append(dict(kind='experiments',record=rr,bars=bb,config=config,sha=sha,error=error,expected=expected))
     cases.append(dict(kind='experiments',record=record(),bars=[],config={},sha='d'*64,expected=build_replay_experiments(record(),[],dataset_sha256='d'*64)))
+    for options in ({},{'side':'SELL'},{'negative':True},{'boundary':True}):
+        r,bars=week_exposure(**options)
+        cases.append(dict(kind='experiments',record=r,bars=bars,config={},sha='d'*64,expected=build_replay_experiments(r,bars,dataset_sha256='d'*64)))
     rng=random.Random(1729)
     for i in range(60):
         records=[]

@@ -416,6 +416,34 @@ fn initial_position<'a>(s: &'a Value, t: &Value) -> R<Option<&'a Value>> {
     Ok(None)
 }
 
+fn ideal_week(t: &Value, bars: &[Value], s: &Value, position: &Value, risk: Option<&BigDecimal>) -> R<Value> {
+    use crate::replay_core::{dec, int, pnl, quote};
+    let start=int(t,"open_time_utc")?;
+    let end=start.checked_add(7*24*60*60).ok_or("invalid ideal window")?;
+    let mut out=json!({"status":"unsupported","reason":"original_stop_unavailable","value_r":null,"max_net_pnl":null,"could_have_profit_or_breakeven":null,"observed_from_utc":start,"observed_to_utc":null,"window_end_utc":end,"basis":"max_costed_closeable_profit / initial_gross_risk; recorded OHLC; ignores subsequent SL/TP"});
+    let Some(risk)=risk.filter(|risk| **risk>BigDecimal::from(0)) else { return Ok(out); };
+    let timeframe=int(s,"timeframe_seconds")?;
+    let observed_end=bars.last().map(|bar| int(bar,"timestamp")).transpose()?.unwrap_or(start)+timeframe;
+    out["observed_to_utc"]=json!(end.min(observed_end));
+    if observed_end<end {out["status"]=json!("partial_week");out["reason"]=json!("week_not_observed_at_cutoff");return Ok(out);}
+    let mut prices=Vec::new();
+    for bar in bars.iter().skip(usize::try_from(int(t,"open_cursor_index")?).map_err(|_|"invalid exposure")?) {
+        let timestamp=int(bar,"timestamp")?;
+        if timestamp>=end {break;}
+        crate::replay_core::bar_valid(bar)?;
+        if timestamp+timeframe>end {out["status"]=json!("partial_week");out["reason"]=json!("week_boundary_inside_candle");return Ok(out);}
+        let (bid,ask)=quote(s,&dec(bar,if t["side"]=="BUY"{"high"}else{"low"})?)?;
+        prices.push(if t["side"]=="BUY"{bid}else{ask});
+    }
+    let Some(price)=(if t["side"]=="BUY"{prices.into_iter().max()}else{prices.into_iter().min()}) else {out["reason"]=json!("week_has_no_complete_candle");return Ok(out);};
+    let (net,_)=pnl(s,position,&price,&price)?;
+    out["status"]=json!("complete_week");out["reason"]=Value::Null;
+    out["value_r"]=number((&net/risk).with_prec(28))?;
+    out["max_net_pnl"]=number(net.clone())?;
+    out["could_have_profit_or_breakeven"]=json!(net>=BigDecimal::from(0));
+    Ok(out)
+}
+
 pub fn build_experiments(
     record: &Value,
     bars: &[Value],
@@ -444,7 +472,7 @@ fn build_experiments_for_basis(record:&Value,bars:&[Value],sha:&str,filters:Opti
         config[k] = json!(n.to_string())
     }
     let a = if activity_basis { crate::analytics::build_replay_activity_view(record,filters,chrono_tz::UTC)? } else { crate::analytics::build_replay_analytics_view(record, filters)? };
-    let mut out = json!({"schema_version":"replay-analytics-experiments-v1","read_only":true,"config":{},"provenance":a["provenance"],"scope":a["scope"],"account_currency":a["account_currency"],"rows":[],"bounds":"selected closed trades; original close; no future bars","risk_basis":"stop_loss: user_configured_distance; risk_reward: initial_stop_distance","scenario_risk_basis":{"stop_loss":"user_configured_distance","risk_reward":"initial_stop_distance"},"blocked_by_data":a["blocked_by_data"]});
+    let mut out = json!({"schema_version":"replay-analytics-experiments-v1","read_only":true,"config":{},"provenance":a["provenance"],"scope":a["scope"],"account_currency":a["account_currency"],"rows":[],"bounds":"selected closed trades; original close; no future bars","risk_basis":"stop_loss: user_configured_distance; risk_reward: initial_stop_distance","scenario_risk_basis":{"stop_loss":"user_configured_distance","risk_reward":"initial_stop_distance"},"ideal_bounds":"entry through seven elapsed days; only complete observed candles at or before selected cutoff","blocked_by_data":a["blocked_by_data"]});
     for k in ["stop_distance_ticks", "stop_multiplier", "target_r"] {
         out["config"][k] = number(d(&config[k])?)?
     }
@@ -545,12 +573,14 @@ fn trade_experiment(t: &Value, bars: &[Value], s: &Value, config: &Value) -> R<V
     let original_distance = original_stop.as_ref().map(|stop| ((&entry - stop) * &direction).with_prec(28))
         .filter(|distance| *distance > BigDecimal::from(0));
     let original_stop = original_stop.filter(|_| original_distance.is_some());
-    base["realized_r"] = if let Some(stop) = &original_stop {
+    let risk_account = if let Some(stop) = &original_stop {
         let (_, cost) = pnl(s, &position, stop, stop)?;
         let risk = d(&cost["gross_account"])?;
         let risk = if risk < BigDecimal::from(0) { -risk } else { risk };
-        if risk > BigDecimal::from(0) { number((dec(t, "net_pnl")? / risk).with_prec(28))? } else { Value::Null }
-    } else { Value::Null };
+        (risk > BigDecimal::from(0)).then_some(risk)
+    } else { None };
+    base["realized_r"] = risk_account.as_ref().map(|risk| number((dec(t,"net_pnl")? / risk).with_prec(28))).transpose()?.unwrap_or(Value::Null);
+    base["ideal"]=ideal_week(t,bars,s,&position,risk_account.as_ref())?;
     let gap = ["stop_loss_gap", "take_profit_gap"]
         .iter()
         .any(|x| t["exit_reason"] == *x);
@@ -572,7 +602,7 @@ fn trade_experiment(t: &Value, bars: &[Value], s: &Value, config: &Value) -> R<V
     let zero = BigDecimal::from(0);
     let mae = zero.clone().max(-changes.iter().min().unwrap().clone());
     let mfe = zero.clone().max(changes.iter().max().unwrap().clone());
-    base["excursion"] = json!({"status":if gap{"observed"}else{"lower_bound"},"basis":"closeable_bid_ask_price; terminal intrabar extrema excluded","mae_price":number(mae.clone())?,"mfe_price":number(mfe.clone())?,"mae_r":original_distance.as_ref().map(|d|number((&mae/d).with_prec(28))).transpose()?,"mfe_r":original_distance.as_ref().map(|d|number((&mfe/d).with_prec(28))).transpose()?,"configured_mae_r":number((&mae/&distance).with_prec(28))?,"configured_mfe_r":number((&mfe/&distance).with_prec(28))?,"r_basis":if original_distance.is_some(){"initial_stop_distance"}else{"unavailable"},"original_stop_price":original_stop.clone().map(number).transpose()?,"initial_risk_distance":original_distance.clone().map(number).transpose()?,"ideal_r":null,"excluded_terminal_bar":!gap});
+    base["excursion"] = json!({"status":if gap{"observed"}else{"lower_bound"},"basis":"closeable_bid_ask_price; terminal intrabar extrema excluded","mae_price":number(mae.clone())?,"mfe_price":number(mfe.clone())?,"mae_r":original_distance.as_ref().map(|d|number((&mae/d).with_prec(28))).transpose()?,"mfe_r":original_distance.as_ref().map(|d|number((&mfe/d).with_prec(28))).transpose()?,"configured_mae_r":number((&mae/&distance).with_prec(28))?,"configured_mfe_r":number((&mfe/&distance).with_prec(28))?,"r_basis":if original_distance.is_some(){"initial_stop_distance"}else{"unavailable"},"original_stop_price":original_stop.clone().map(number).transpose()?,"initial_risk_distance":original_distance.clone().map(number).transpose()?,"ideal_r":base["ideal"]["value_r"],"excluded_terminal_bar":!gap});
     for (name, stop_only) in [("stop_loss", true), ("risk_reward", false)] {
         let scenario_distance = if stop_only { &distance } else if let Some(distance) = &original_distance { distance } else {
             base[name] = unavailable("original_stop_unavailable");
