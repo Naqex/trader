@@ -44,6 +44,3 @@ tr:hover .wm-label-placeholder,.wm-label-cell:focus-visible .wm-label-placeholde
 
 .fx-app .fxa-trades .wm-label-cell:hover:not(:disabled) { background: transparent; }
 .fxa-badge.is-order-type { background: var(--wm-hover); color: var(--wm-content); }
-.fx-app .fxa-trades .wm-time-heading { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; padding-block: 6px; }
-.fx-app .fxa-trades .wm-time-heading small { margin: 0; font-size: 11px; line-height: 1.2; color: var(--wm-content-muted); }
-.wm-ledger-timezone { text-align: right; color: var(--wm-content-muted); font-size: 11px; margin: 0 0 8px; }
