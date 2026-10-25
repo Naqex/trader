@@ -1,0 +1,15 @@
+{
+  "ready": true,
+  "run_id": "a25e5e079f124ca9abd892e1ca2943ec",
+  "health": {
+    "command_worker": "not_required",
+    "contract_version": "foundation-v2.1",
+    "database": "ready",
+    "ok": true
+  },
+  "hashes": {
+    "supervisor": "4d6f5f81a4bca11191c4c7c6b43632694d0a4ce74e068619d8fdc161d469859a",
+    "research": "f056d6192f0bacceb00bb730cacca855920c99ebfa929dee0a6c64b0751c6812",
+    "api": "3acc25d4ad94eaefae5366c4450206e033e129ef4ed4c35e2a028c88f2401ad7"
+  }
+}

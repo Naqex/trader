@@ -137,7 +137,14 @@ pub fn build_replay_analytics_view(view:&Value,filters:Option<&Value>)->R<Value>
                     if entry["details"]["operation_id"]!=d["operation_id"]{return Err("replay closing fill has no matching opening fill".into())}
                     balance+=decimal(&d["net_pnl"])?;let exit=number(&d["fill_price"])?;
                     if exit<=0.0{return Err("replay exit price invalid".into())}
-                    trades.push(json!({"trade_id":if partially_closed.contains(id){format!("{id}:close:{}",i+1)}else{id.to_string()},"session_id":sid,"source_position_id":id,"source_operation_id":d["operation_id"],"source":{"session_id":sid,"revision":view["revision"]},"symbol":s["instrument_spec"]["instrument_id"],"side":entry["details"]["side"],"quantity":number(&json!(quantity.to_string()))? ,"open_time_utc":entry["virtual_time_utc"],"close_time_utc":time,"open_cursor_index":entry["cursor_index"],"close_cursor_index":c,"close_event_sequence":i+1,"close_phase_index":phases+1,"price_open":number(&entry["details"]["fill_price"])? ,"price_close":exit,"net_pnl":number(&d["net_pnl"])? ,"gross_pnl":null,"fees":null,"planned_risk_budget":null,"realized_r":null,"exit_reason":d["reason"]}));
+                    let (gross, fees) = closed_costs(d, &s["instrument_spec"]["account_ccy"])?;
+                    let mut trade=json!({"trade_id":if partially_closed.contains(id){format!("{id}:close:{}",i+1)}else{id.to_string()},"session_id":sid,"source_position_id":id,"source_operation_id":d["operation_id"],"source":{"session_id":sid,"revision":view["revision"]},"symbol":s["instrument_spec"]["instrument_id"],"side":entry["details"]["side"],"quantity":number(&json!(quantity.to_string()))? ,"open_time_utc":entry["virtual_time_utc"],"close_time_utc":time,"open_cursor_index":entry["cursor_index"],"close_cursor_index":c,"close_event_sequence":i+1,"close_phase_index":phases+1,"price_open":number(&entry["details"]["fill_price"])? ,"price_close":exit,"net_pnl":number(&d["net_pnl"])? ,"gross_pnl":gross,"fees":fees,"planned_risk_budget":null,"realized_r":null,"exit_reason":d["reason"]});
+                    if d["closed_position"].is_object() {
+                        for key in ["stop_loss", "take_profit"] {
+                            trade[key]=d["closed_position"][key].clone();
+                        }
+                    }
+                    trades.push(trade);
                 },
                 "order_rejected"=>{let mut reject=json!({"event_sequence":i+1,"cursor_index":c,"virtual_time_utc":time});merge(&mut reject,d);rejects.push(reject)},
                 "phase_transition"=>{
@@ -162,6 +169,19 @@ pub fn build_replay_analytics_view(view:&Value,filters:Option<&Value>)->R<Value>
         if phases>0{let scope=text(&result["scope"]["balance_curve_scope"]).to_string();result["scope"]["balance_curve_scope"]=json!(scope+"; phase balance resets excluded");}result
     };
     merge(&mut result["provenance"],&base);merge(&mut result,&base);Ok(result)
+}
+
+fn closed_costs(details: &Value, currency: &Value) -> R<(Option<f64>, Option<f64>)> {
+    let cost = &details["cost_breakdown"];
+    if cost.is_null() { return Ok((None, None)); }
+    if !cost.is_object() || cost["account_ccy"] != *currency
+        || decimal(&cost["net_account"])? != decimal(&details["net_pnl"])? {
+        return Err("closing cost breakdown differs from account result".into());
+    }
+    let gross = decimal(&cost["gross_account"])?;
+    // Independently rounded cost components need not add up to the rounded debit.
+    let fees = &gross - decimal(&cost["net_account"])?;
+    Ok((Some(number(&json!(gross.to_string()))?), Some(number(&json!(fees.to_string()))?)))
 }
 
 fn build_portfolio_analytics(view:&Value,filters:Option<&Value>)->R<Value>{
@@ -278,6 +298,16 @@ fn dashboard_performance(records:&[Value],workspace:&str,session_id:Option<&str>
 #[cfg(test)]
 mod tests{
     use super::*;
+    #[test]
+    fn closed_cost_projection_preserves_unknown_and_rounded_account_identity() {
+        assert_eq!(closed_costs(&json!({"net_pnl":17}), &json!("USD")).unwrap(), (None,None));
+        let mut details=json!({"net_pnl":"-2.28","cost_breakdown":{"account_ccy":"USD","net_account":"-2.28","gross_account":"-0.28"}});
+        assert_eq!(closed_costs(&details,&json!("USD")).unwrap(),(Some(-0.28),Some(2.0)));
+        details["net_pnl"]=json!("0.99");details["cost_breakdown"]=json!({"account_ccy":"USD","gross_account":"1.01","net_account":"0.99","commission_account":"0.01","slippage_account":"0.00","financing_account":"0.00"});
+        assert_eq!(closed_costs(&details,&json!("USD")).unwrap(),(Some(1.01),Some(0.02)));
+        assert!(closed_costs(&details,&json!("EUR")).is_err());
+        details["net_pnl"]=json!("0.98");assert!(closed_costs(&details,&json!("USD")).is_err());
+    }
     fn assert_parity(a:&Value,b:&Value,path:&str){match(a,b){(Value::Number(a),Value::Number(b))=>{let(a,b)=(a.as_f64().unwrap(),b.as_f64().unwrap());assert!((a-b).abs()<=1e-11*a.abs().max(b.abs()).max(1.0),"{path}: {a} != {b}");},(Value::Array(a),Value::Array(b))=>{assert_eq!(a.len(),b.len(),"{path}");for(i,(a,b))in a.iter().zip(b).enumerate(){assert_parity(a,b,&format!("{path}/{i}"));}},(Value::Object(a),Value::Object(b))=>{assert_eq!(a.keys().collect::<Vec<_>>(),b.keys().collect::<Vec<_>>(),"{path}");for(k,v)in a{assert_parity(v,&b[k],&format!("{path}/{k}"));}},_=>assert_eq!(a,b,"{path}")}}
     #[test]
     fn python_oracle_parity(){let cases:Value=serde_json::from_str(include_str!("analytics/oracle_cases.json")).unwrap();for(i,raw)in cases["cases"].as_array().unwrap().iter().enumerate(){let mut c=raw.clone();c["input"]=cases["inputs"][c["input_ref"].as_u64().unwrap() as usize].clone();if !c["journals_ref"].is_null(){c["journals"]=cases["inputs"][c["journals_ref"].as_u64().unwrap() as usize].clone();}let mut output=match text(&c["kind"]){"prop"=>prop_profile::evaluate_prop_profile(&c["input"]["profile"],&c["input"]["snapshot"]),"summary"=>build_session_summary(&c["input"],"tenant-a"),"trades"=>trades::build_trades_page(&c["input"],c["journals"].as_array().unwrap(),c["args"]["page"].as_u64().unwrap() as usize,c["args"]["page_size"].as_u64().unwrap() as usize,text(&c["args"]["sort_key"]),text(&c["args"]["sort_direction"]),text(&c["args"]["extra_filters"]),None),"replay"=>build_replay_analytics_view(&c["input"],Some(&c["filters"])),"analytics"=>build_analytics_view(&c["input"],Some(&c["filters"])),"dashboard"=>build_dashboard_performance(c["input"].as_array().unwrap(),"tenant-a",None,None,Some(&c["filters"]),true,&[]),_=>unreachable!()}.unwrap_or_else(|e|panic!("case {i}: {e}"));if c["kind"]=="dashboard"{output.as_object_mut().unwrap().remove("as_of_utc");}

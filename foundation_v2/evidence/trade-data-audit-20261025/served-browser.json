@@ -1,0 +1,49 @@
+{
+  "checks": [
+    {
+      "width": 1920,
+      "theme": "dark",
+      "zone": "UTC",
+      "rows": 13,
+      "cellComparisons": 860,
+      "sorts": 3,
+      "detailIdentity": true
+    },
+    {
+      "width": 1920,
+      "fixture": "portfolio replay dataset priority",
+      "status": "PASS"
+    },
+    {
+      "width": 1920,
+      "theme": "light",
+      "zone": "Asia/Ho_Chi_Minh",
+      "rows": 13,
+      "cellComparisons": 860,
+      "sorts": 3,
+      "detailIdentity": true
+    },
+    {
+      "width": 1920,
+      "fixture": "portfolio replay dataset priority",
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "zone": "Asia/Ho_Chi_Minh",
+      "rows": 13,
+      "cellComparisons": 860,
+      "sorts": 3,
+      "detailIdentity": true
+    },
+    {
+      "width": 390,
+      "fixture": "portfolio replay dataset priority",
+      "status": "PASS"
+    }
+  ],
+  "errors": [],
+  "writes": [],
+  "status": "PASS"
+}

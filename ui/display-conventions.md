@@ -103,6 +103,14 @@ Last sync is the last successful data observation, not a connection expiry date.
 - Trade ledger Return columns use **Lợi nhuận** with the account currency, `%`
   and `R`. Money is net after costs; percentage uses explicit starting capital;
   R retains the source risk denominator. Mixed currencies stay identified per row.
+  Net/gross money badges omit currency glyphs; their hover/focus tooltip and
+  accessible name retain the row currency. Fees retain their currency context.
+  Small nonzero returns use significant digits rather than rounding to zero.
+  Gross P/L comes from the closing fill's frozen cost breakdown, with bid/ask
+  spread already embedded in fills. Fee debit is rounded gross minus rounded net,
+  preserving gross - fees = net; do not re-sum independently rounded components.
+  Missing breakdowns stay unknown. SL/TP use the final closing-position snapshot,
+  not an inferred opening level. Planned risk and R require a source denominator.
   Entry/exit headings distinguish **Thực tế / Chart**; one timezone label applies
   to all timestamps using Settings, without repeating UTC in each heading.
   Session selection shows the dataset date range, not session creation date.

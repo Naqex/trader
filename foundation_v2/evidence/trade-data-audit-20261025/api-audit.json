@@ -1,0 +1,121 @@
+{
+  "status": "PASS",
+  "scope": "read-only persisted sources to API",
+  "rows": 13,
+  "sessions": 3,
+  "row_checks": [
+    {
+      "session_id": "6428cf18b3f54a36b2e90207ef12392e",
+      "trade_id": "dataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c:replay-pos-3",
+      "fields": 15,
+      "gross": -0.28,
+      "fees": 2.0,
+      "net": -2.28
+    },
+    {
+      "session_id": "d848723290084cf98e8d03de6cff4dbf",
+      "trade_id": "dataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c:replay-pos-1",
+      "fields": 15,
+      "gross": 0.0,
+      "fees": 0.0,
+      "net": 0.0
+    },
+    {
+      "session_id": "d848723290084cf98e8d03de6cff4dbf",
+      "trade_id": "dataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c:replay-pos-4",
+      "fields": 15,
+      "gross": 0.0,
+      "fees": 0.0,
+      "net": 0.0
+    },
+    {
+      "session_id": "d848723290084cf98e8d03de6cff4dbf",
+      "trade_id": "dataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c:replay-pos-7",
+      "fields": 15,
+      "gross": 0.0,
+      "fees": 0.0,
+      "net": 0.0
+    },
+    {
+      "session_id": "d848723290084cf98e8d03de6cff4dbf",
+      "trade_id": "dataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c:replay-pos-10",
+      "fields": 15,
+      "gross": 0.0,
+      "fees": 0.0,
+      "net": 0.0
+    },
+    {
+      "session_id": "d848723290084cf98e8d03de6cff4dbf",
+      "trade_id": "dataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c:replay-pos-13",
+      "fields": 15,
+      "gross": 0.0,
+      "fees": 0.0,
+      "net": 0.0
+    },
+    {
+      "session_id": "d848723290084cf98e8d03de6cff4dbf",
+      "trade_id": "dataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c:replay-pos-24",
+      "fields": 15,
+      "gross": 0.0,
+      "fees": 0.0,
+      "net": 0.0
+    },
+    {
+      "session_id": "d848723290084cf98e8d03de6cff4dbf",
+      "trade_id": "dataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c:replay-pos-29",
+      "fields": 15,
+      "gross": 0.0,
+      "fees": 0.0,
+      "net": 0.0
+    },
+    {
+      "session_id": "d848723290084cf98e8d03de6cff4dbf",
+      "trade_id": "dataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c:replay-pos-34",
+      "fields": 15,
+      "gross": 0.0,
+      "fees": 0.0,
+      "net": 0.0
+    },
+    {
+      "session_id": "d848723290084cf98e8d03de6cff4dbf",
+      "trade_id": "dataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c:replay-pos-37",
+      "fields": 15,
+      "gross": 0.0,
+      "fees": 0.0,
+      "net": 0.0
+    },
+    {
+      "session_id": "d848723290084cf98e8d03de6cff4dbf",
+      "trade_id": "dataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c:replay-pos-40",
+      "fields": 15,
+      "gross": 0.0,
+      "fees": 0.0,
+      "net": 0.0
+    },
+    {
+      "session_id": "e2bee5a8094547779094630a794cff32",
+      "trade_id": "dataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c:replay-pos-1",
+      "fields": 15,
+      "gross": -0.2,
+      "fees": 2.0,
+      "net": -2.2
+    },
+    {
+      "session_id": "e2bee5a8094547779094630a794cff32",
+      "trade_id": "dataset-cf6f34c36ef44bfb76fe32e7b9d7d01c00bba077154767411ec747777568316c:replay-pos-4",
+      "fields": 15,
+      "gross": -0.2,
+      "fees": 2.0,
+      "net": -2.2
+    }
+  ],
+  "sort_cases": 42,
+  "page_sizes": [
+    5,
+    10,
+    100
+  ],
+  "filter_cases": 4,
+  "gross_known": 13,
+  "protection_known": 8
+}

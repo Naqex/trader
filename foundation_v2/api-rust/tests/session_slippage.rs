@@ -240,6 +240,18 @@ fn partial_close_then_protection_preserves_remaining_costs_and_analytics() {
         assert_eq!(analytics["ledger"][0]["quantity"],0.01);
         assert_eq!(analytics["ledger"][1]["quantity"],0.03);
         assert_ne!(analytics["ledger"][0]["trade_id"],analytics["ledger"][1]["trade_id"]);
+        for (index,event) in view["payload"]["execution"]["ledger"].as_array().unwrap().iter().filter(|e|matches!(e["kind"].as_str(),Some("manual_close"|"protective_fill"))).enumerate() {
+            let row=&analytics["ledger"][index]; let cost=&event["details"]["cost_breakdown"];
+            assert_eq!(row["gross_pnl"],cost["gross_account"]);
+            let gross:BigDecimal=row["gross_pnl"].to_string().parse().unwrap();
+            let net:BigDecimal=row["net_pnl"].to_string().parse().unwrap();
+            let fees:BigDecimal=row["fees"].to_string().parse().unwrap();
+            assert_eq!(gross-fees,net);
+            for key in ["stop_loss","take_profit"] {assert_eq!(row[key],event["details"]["closed_position"][key]);}
+            assert!(row["planned_risk_budget"].is_null());assert!(row["realized_r"].is_null());
+        }
+        assert!(analytics["metrics"]["gross_pnl"].is_number());
+        assert!(analytics["metrics"]["fees"].is_number());
     }
 }
 
