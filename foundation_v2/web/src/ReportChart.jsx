@@ -1,7 +1,7 @@
 import { useId, useLayoutEffect, useRef, useState } from 'react'
 import { displayDate } from './dateFormat.js'
 import { useTestingLocale } from './testingLocale.jsx'
-import { chartDomain, reportCurvePath } from './reportChartModel.js'
+import { chartDomain, chartTicks, reportCurvePath } from './reportChartModel.js'
 import './report-chart.css'
 
 const W = 560, H = 250, left = 88, top = 24, bottom = 208
@@ -61,8 +61,7 @@ export function ReportBars({ title, items, currency, period, scopeLabel, horizon
   const divided = split && items.every(item => finite(item.profit) && item.profit >= 0 && finite(item.loss) && item.loss <= 0)
   const series = item => divided ? [item.loss, item.profit].filter(value => value !== 0) : [item.value]
   const values = items.flatMap(item => divided ? [item.loss, item.profit] : [item.value]), valid = items.length > 0 && values.every(finite)
-  const centered = signed || split || period === 'weekday'
-  const domain = valid ? chartDomain(values, { maximum, symmetric: centered, integer }) : null
+  const domain = valid ? chartDomain(values, { maximum, symmetric: true, integer }) : null
   const weekday = period === 'weekday'
   const angled = weekday
   const minimumHeight = horizontal ? Math.max(H, items.length * 30 + 58) : angled ? bottom + 88 : H
@@ -71,8 +70,9 @@ export function ReportBars({ title, items, currency, period, scopeLabel, horizon
   const left = horizontal ? 88 : Math.max(40, ...[...axis.values()].map(label => label.length * 6.5 + 16))
   const plotRight = right
   const edge = height - (horizontal ? 40 : angled ? 88 : 42)
-  const x = value => left + (value - domain.low) / (domain.high - domain.low) * (plotRight - left)
-  const y = value => edge - (value - domain.low) / (domain.high - domain.low) * (edge - top)
+  const position = value => domain.high === domain.low ? .5 : (value - domain.low) / (domain.high - domain.low)
+  const x = value => left + position(value) * (plotRight - left)
+  const y = value => edge - position(value) * (edge - top)
   const amount = value => valueFormat ? valueFormat(value) : fmt(value, currency ? ` ${currency}` : '')
   const monthKeys = period === 'month' && items.length && items.every(item => /^\d{4}-(0[1-9]|1[0-2])$/.test(item.label))
   const monthOfYear = period === 'month-of-year'
@@ -86,9 +86,10 @@ export function ReportBars({ title, items, currency, period, scopeLabel, horizon
   })
   const description = (item, index) => `${monthKeys ? item.label : labels[index]}${scopeLabel ? ` (${scopeLabel})` : ''}: ${divided ? `${t('Lãi')}: ${amount(item.profit)}; ${t('Lỗ')}: ${amount(item.loss)}; ${t('Net PnL')}: ` : ''}${amount(item.value)}`
   const tickLabel = value => maximum === 100 ? `${fmt(value, '', 0)}%` : axis.get(value) ?? fmt(value, '', 2)
-  const tickCount = domain ? Math.min(domain.ticks.length, Math.max(2, Math.floor((plotRight - left) / Math.max(...domain.ticks.map(value => tickLabel(value).length * 7 + 12))) + 1)) : 0
-  const tickStride = domain ? Array.from({ length: domain.ticks.length - 1 }, (_, index) => index + 1).find(stride => (domain.ticks.length - 1) % stride === 0 && (domain.ticks.length - 1) / stride + 1 <= tickCount) || 1 : 1
-  const ticks = horizontal && domain ? centered ? tickCount < domain.ticks.length ? [domain.low, 0, domain.high] : domain.ticks : domain.ticks.filter((_, index) => index % tickStride === 0) : domain?.ticks
+  const tickCount = domain ? Math.max(2, horizontal
+    ? Math.floor((plotRight - left) / Math.max(...domain.ticks.map(value => tickLabel(value).length * 7 + 12))) + 1
+    : Math.floor((edge - top) / 32) + 1) : 0
+  const ticks = domain ? chartTicks(domain, tickCount) : []
   // Keep every bar; thin category labels only when their text would overlap.
   const labelWidth = Math.max(40, ...labels.map(label => (angled ? 0 : label.length) * 7 + 12))
   const labelStride = Math.ceil(items.length / Math.max(1, Math.floor((right - left) / labelWidth)))

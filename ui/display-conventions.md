@@ -80,9 +80,13 @@ Last sync is the last successful data observation, not a connection expiry date.
   or a last-twelve-month limit. Tooltip includes the merged year range. It shows sums
   of positive/negative net trade P/L, not averages. Daily shows one blue net P/L bar
   per weekday, summing matching weekdays across the same selected scope.
-  Signed performance axes are symmetric about zero with equally spaced nice ticks;
-  mobile may use three symmetric ticks. Other numeric axes expand to round tick
-  multiples; trade counts use whole numbers and win rates stay fixed at 0–100%.
+  Bar axes include zero: positive-only data uses zero to a rounded maximum,
+  negative-only data a rounded minimum to zero, and mixed signs symmetric bounds
+  about zero. Split monthly axes consider each profit/loss segment, never net alone.
+  Keep both bounds and zero visible; thin intermediate ticks in equally spaced
+  intervals to fit the plot. All-zero bars show only a centered zero tick, without
+  inventing nonzero bounds. Other numeric axes expand to round tick multiples;
+  trade counts use whole numbers and win rates stay fixed at 0–100%.
   No-data months stay absent;
   a known zero remains accessible. Category density may thin labels, never bars.
   Equity curves use shape-preserving cubic tangents through each observed point;

@@ -4,7 +4,8 @@ export function chartDomain(values, { zero = true, maximum, symmetric = false, i
     return values.every(value => value >= 0 && value <= 100) ? { low: 0, high: 100, ticks: [0, 20, 40, 60, 80, 100] } : null
   }
   let low = Math.min(...values, ...(zero ? [0] : [])), high = Math.max(...values, ...(zero ? [0] : []))
-  if (symmetric) { high = Math.max(Math.abs(low), Math.abs(high)) || 1; low = -high }
+  if (zero && low === 0 && high === 0) return { low: 0, high: 0, ticks: [0] }
+  if (symmetric && low < 0 && high > 0) { high = Math.max(Math.abs(low), Math.abs(high)); low = -high }
   if (high === low) { const pad = Math.max(Math.abs(high) * .0001, Math.min(1, Math.abs(high) * .1)) || 1; low -= zero && low === 0 ? 0 : pad; high += pad }
   const rawStep = (high - low) / 4, magnitude = 10 ** Math.floor(Math.log10(rawStep))
   // Round the interval, then expand to whole ticks. Keep the data in view without
@@ -16,6 +17,16 @@ export function chartDomain(values, { zero = true, maximum, symmetric = false, i
   low = clean(Math.floor(low / step) * step); high = clean(Math.ceil(high / step) * step)
   const count = Math.round((high - low) / step)
   return { low, high, ticks: Array.from({ length: count + 1 }, (_, index) => clean(low + step * index)) }
+}
+
+export function chartTicks(domain, capacity) {
+  const ticks = domain.ticks
+  if (ticks.length <= capacity) return ticks
+  const last = ticks.length - 1, zero = ticks.indexOf(0)
+  // Preserve both bounds and zero; thinning must keep equal numeric intervals.
+  const stride = Array.from({ length: last }, (_, index) => index + 1).find(step => last % step === 0
+    && (zero < 0 || zero % step === 0) && last / step + 1 <= capacity)
+  return stride ? ticks.filter((_, index) => index % stride === 0) : ticks.filter((_, index) => index === 0 || index === last || index === zero)
 }
 
 // Shape-preserving cubic interpolation: monotone runs share a tangent instead

@@ -1,10 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { chartDomain, reportCurvePath } from '../src/reportChartModel.js'
+import { chartDomain, chartTicks, reportCurvePath } from '../src/reportChartModel.js'
 import { groupPerformanceMonths } from '../src/sessionPerformanceModel.js'
 
-test('signed performance centers zero with equal nice steps, even with one-sided data', () => {
-  for (const values of [[-295, 865], [720], [-310], [0], [-6, 14], [180000]]) {
+test('mixed signs center zero with equal nice steps', () => {
+  for (const values of [[-295, 865], [-6, 14], [-500, 600], [-90, 0, 0, 310]]) {
     const domain = chartDomain(values, { symmetric: true })
     assert.equal(domain.low, -domain.high)
     assert.equal(domain.ticks[Math.floor(domain.ticks.length / 2)], 0)
@@ -16,6 +16,34 @@ test('signed performance centers zero with equal nice steps, even with one-sided
   assert.equal(chartDomain([NaN], { symmetric: true }), null)
   assert.equal(chartDomain([]), null)
   assert.equal(chartDomain([40, 60], { maximum: 100 }).low, 0)
+})
+
+test('one-sided bars anchor at zero regardless of row count or equal values', () => {
+  for (const values of [[310], [90, 310], [310, 310], [0, 310, 20, 100]]) {
+    assert.deepEqual(chartDomain(values, { symmetric: true }), { low: 0, high: 400, ticks: [0, 100, 200, 300, 400] })
+    assert.deepEqual(chartDomain(values.map(value => -value), { symmetric: true }), { low: -400, high: 0, ticks: [-400, -300, -200, -100, 0] })
+  }
+  for (const options of [{}, { symmetric: true }, { integer: true }]) assert.deepEqual(chartDomain([0, 0], options), { low: 0, high: 0, ticks: [0] })
+  assert.equal(chartDomain([null]), null)
+  assert.ok(chartDomain([0], { zero: false }).high > chartDomain([0], { zero: false }).low, 'flat equity retains a drawable scale')
+})
+
+test('responsive ticks retain bounds and zero with equal intervals', () => {
+  for (const values of [[310], [-310], [-310, 1115], [-295, 865], [0], [0, 1]]) {
+    const domain = chartDomain(values, { symmetric: true })
+    for (const capacity of [2, 3, 4, 5, 6]) {
+      const ticks = chartTicks(domain, capacity)
+      assert.equal(ticks[0], domain.low)
+      assert.equal(ticks.at(-1), domain.high)
+      assert.ok(ticks.includes(0))
+      assert.equal(new Set(ticks).size, ticks.length)
+      assert.ok(ticks.length <= Math.max(capacity, domain.low < 0 && domain.high > 0 ? 3 : 2))
+      if (ticks.length > 1) {
+        const step = ticks[1] - ticks[0]
+        assert.ok(ticks.slice(1).every((value, index) => Math.abs(value - ticks[index] - step) < 1e-9))
+      }
+    }
+  }
 })
 
 test('nice axes cover the data with round steps, integer counts and bounded percentages', () => {
