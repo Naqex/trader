@@ -14,6 +14,10 @@ This layer sits below:
 layout in Vietnamese. The living catalog is `?area=testing&ui_reference=1`.
 The app pins `annam-compact@0.1.1`; other products are not migrated implicitly.
 
+[Data tables](data-tables.md) pins the shared grid interaction contract, component
+ownership, full-scope filtering and paging. The living catalog includes a runnable
+35-row table sample.
+
 Project overlay, keyboard, date-field and touch behavior is specified in the
 [portal contract](compact-system.md#portal-dialog-popover-và-ô-ngày).
 Shared time, money, search and report semantics follow

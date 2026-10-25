@@ -1,4 +1,7 @@
 import { displayTimeframe } from './dataDisplay.js'
+import { matchesSearch } from './searchText.js'
+import { compareTableValues } from './tableModel.js'
+import { datasetRange } from './researchDataApi.js'
 
 export const CATEGORIES = [
   ['stock', 'Cổ phiếu'], ['futures', 'Hợp đồng tương lai'], ['fx', 'Forex'],
@@ -88,19 +91,35 @@ export function currentDatasetVersions(datasets) {
   return datasets.filter(item => !superseded.has(item.dataset_id))
 }
 
-export function filterLibrary(rows, { category = 'all', provider = 'all', downloadStatus = 'all', search = '', sort = 'asset-asc' } = {}) {
-  const term = search.trim().toLocaleLowerCase('vi')
+export const LIBRARY_SORT_COLUMNS = [['asset','Sản phẩm'],['category','Danh mục'],['source','Nguồn'],['data','Dữ liệu'],['from','Từ ngày'],['to','Đến ngày'],['count','Số nến'],['size','Dung lượng']]
+
+export function libraryDisplayRange(item, download, now = new Date()) {
+  const availableStart = downloadEngineOf(item) === (download?.download_engine || download?.provider || 'Dukascopy') ? download?.earliest_dates?.[item.instrument_id] : null
+  const range = item.downloaded ? datasetRange(item) : { start:availableStart, end:availableStart ? defaultDownloadDates(now).to_date : null }
+  return { ...range, availableStart }
+}
+
+export function filterLibrary(rows, { category = 'all', provider = 'all', downloadStatus = 'all', search = '', sort = 'asset-asc', download, now } = {}) {
   const filtered = rows.filter(item => (category === 'all' || categoryOf(item) === category)
     && (provider === 'all' || sourceOf(item) === provider)
     && (downloadStatus === 'all'
       || (downloadStatus === 'downloading' && Boolean(item.downloadJob))
       || (downloadStatus === 'downloaded' && item.downloaded)
       || (downloadStatus === 'not-downloaded' && !item.downloaded && !item.downloadJob))
-    && `${item.instrument_id} ${item.name || ''} ${item.timeframe || ''} ${sourceOf(item)} ${categoryLabel(categoryOf(item))}`.toLocaleLowerCase('vi').includes(term))
+    && matchesSearch(`${item.instrument_id} ${item.name || ''} ${item.timeframe || ''} ${sourceOf(item)} ${categoryLabel(categoryOf(item))}`, search))
   const assetCompare = (a, b) => `${a.instrument_id || ''} ${a.timeframe || ''}`.localeCompare(`${b.instrument_id || ''} ${b.timeframe || ''}`, 'en', { numeric:true }) || a.key.localeCompare(b.key)
-  return filtered.sort((a, b) => sort === 'asset-desc' ? assetCompare(b,a)
-    : sort === 'downloaded' ? Number(b.downloaded) - Number(a.downloaded) || assetCompare(a,b)
-    : sort === 'not-downloaded' ? Number(a.downloaded) - Number(b.downloaded) || assetCompare(a,b)
-    : sort === 'newest' ? (Date.parse(b.created_at_utc) || 0) - (Date.parse(a.created_at_utc) || 0) || assetCompare(a,b)
-    : assetCompare(a,b))
+  const [key, direction = 'asc'] = sort === 'newest' ? ['updated','desc'] : sort.split('-')
+  const value = item => {
+    if (key === 'asset') return `${item.instrument_id || ''} ${item.timeframe || ''}`
+    if (key === 'category') return categoryLabel(categoryOf(item))
+    if (key === 'source') return sourceOf(item)
+    if (key === 'data') { const type = libraryDataType(item, libraryDisplayRange(item,download,now).availableStart); return type.timeframe === '—' ? null : `${type.timeframe} ${type.price || ''}` }
+    if (key === 'downloaded' || key === 'not') return item.downloaded ? 1 : 0
+    if (key === 'updated') return Date.parse(item.created_at_utc)
+    if (['from','to'].includes(key)) { const range = libraryDisplayRange(item,download,now); const stamp = key === 'from' ? range.start : range.end; return stamp == null ? null : typeof stamp === 'number' ? Math.abs(stamp) < 1e11 ? stamp * 1000 : stamp : Date.parse(stamp) }
+    if (key === 'count') return item.downloaded ? item.row_count : null
+    if (key === 'size') return item.downloaded ? item.size_bytes : null
+    return null
+  }
+  return filtered.sort((a,b) => compareTableValues(value(a), value(b), sort === 'downloaded' ? 'desc' : sort === 'not-downloaded' ? 'asc' : direction) || assetCompare(a,b))
 }

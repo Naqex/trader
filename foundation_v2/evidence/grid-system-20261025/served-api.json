@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "origin": "http://127.0.0.1:5180",
+  "total": 13,
+  "returned_page1": 10,
+  "returned_page2": 3,
+  "global_sort": true,
+  "filtered_count": 1,
+  "clamped_page": 1,
+  "full_scope_facets": 1,
+  "index_sha256": "0d97c35976e8f9e9df243cfd0d4037120200b60bac0feae00c07f600e68df6f0",
+  "broker_calls": 0,
+  "mutations": 0
+}

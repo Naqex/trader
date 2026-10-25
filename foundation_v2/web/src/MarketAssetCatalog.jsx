@@ -10,6 +10,7 @@ import { buildWorkspaceHref } from './workspaceContext.js'
 import './market-sync.css'
 import FxSelect from './FxSelect.jsx'
 import PaginationFooter from './PaginationFooter.jsx'
+import DataTable from './DataTable.jsx'
 import TestingReadState, { TestingSkeleton } from './TestingReadState.jsx'
 import TestingIcon from './TestingIcon.jsx'
 import { useWorkspaceMetadataQuery } from './WorkspaceQueryProvider.jsx'
@@ -106,15 +107,16 @@ export default function MarketAssetCatalog({ workspace, query, showHeading = tru
       <label><input type="checkbox" checked={all} onChange={event => setAll(event.target.checked)} />{t("Hiện toàn bộ danh mục broker")}</label>
       <button type="button" className="fxr-button fxr-button-primary market-sync-update" onClick={() => update(null)} disabled={Boolean(preview) || pending || !items.length || Boolean(state.queued) || Boolean(state.running)}><TestingIcon kind="download" />{t("Cập nhật dữ liệu")}</button>
     </div>
-    {items.length > 0 && <div className="market-sync-table" tabIndex={0} role="region" aria-label={t("Danh mục lịch sử broker")}><table><thead><tr><th>{t("Asset / sản phẩm")}</th><th>{t("Nguồn")}</th><th>{t("Lịch sử")}</th><th>{t("Trạng thái")}</th><th><span className="sr-only">{t("Thao tác")}</span></th></tr></thead><tbody>{pageItems.map(item => <tr key={item.symbol}>
+    {items.length > 0 && <DataTable className="market-sync-table" label={t("Danh mục lịch sử broker")}><thead><tr><th>{t("Asset / sản phẩm")}</th><th>{t("Nguồn")}</th><th>{t("Lịch sử")}</th><th>{t("Trạng thái")}</th><th><span className="sr-only">{t("Thao tác")}</span></th></tr></thead><tbody>{pageItems.map(item => <tr key={item.symbol}>
       <td><strong>{item.symbol}</strong><small>{item.metadata?.group || '—'}</small></td><td>{state.source}</td>
       <td>{item.dataset_id ? <>{formatUtc(item.first_timestamp)}<small>{t('đến {date} · {count} nến', { date: formatUtc(item.last_timestamp), count: fmt(item.row_count, '', 0) })}</small></> : t("Chưa có dữ liệu")}{item.ticks && <small>{t("Tick Bid/Ask:")} {fmt(item.ticks.row_count, '', 0)} · {formatDataSize(item.ticks.bytes,fmt)} {t("nén ·")} {item.ticks.unavailable_days} {t("ngày broker trả rỗng")}</small>}</td>
       <td><span className={`market-sync-status is-${item.status}`}>{statusLabel('market_asset', item.status)}</span>{item.dataset_id && <small>{item.quality === 'review' ? t("Có khoảng gián đoạn cần kiểm tra") : t("Kiểm tra cơ bản; phí lịch sử chưa xác minh")}</small>}{item.error && <small>{item.error}</small>}</td>
       <td><div className="market-sync-row-actions">{item.dataset_id && !preview && <a className="fxr-button fxr-button-secondary" href={buildWorkspaceHref('replay', workspace, query, { area: 'testing', section: 'sessions', session: null, cursor: null, cutoff: null, dataset: item.dataset_id, select: null, fresh: '1', surface: 'workspace' })}>{t("Luyện tập")}</a>}
         {!preview && item.ticks?.start_index != null && <a className="fxr-button fxr-button-secondary" href={buildWorkspaceHref('replay', workspace, query, { area: 'testing', section: 'sessions', session: null, cursor: null, cutoff: null, dataset: item.dataset_id, start: item.ticks.start_index, select: null, fresh: '1', surface: 'workspace' })}>{t("Luyện tick")}</a>}
         <button type="button" className="fxr-button fxr-button-secondary" disabled={Boolean(preview) || pending || ['queued', 'syncing'].includes(item.status)} onClick={() => update(item.symbol)}><TestingIcon kind="download" />{item.dataset_id ? t("Tải bổ sung") : t("Tải lịch sử")}</button></div></td>
-    </tr>)}</tbody></table>{!visible.length && <p>{t("Không có asset phù hợp bộ lọc.")}</p>}</div>}
-    {items.length > 0 && <PaginationFooter label="Phân trang kho dữ liệu" page={currentPage} pages={pages} onPageChange={setPage} pageSize={pageSize} onPageSizeChange={value => { setPageSize(value); setPage(1) }} />}
+    </tr>)}</tbody></DataTable>}
+    {items.length > 0 && !visible.length && <p>{t("Không có asset phù hợp bộ lọc.")}</p>}
+    {items.length > 0 && <PaginationFooter totalCount={visible.length} label="Phân trang kho dữ liệu" page={currentPage} pages={pages} onPageChange={setPage} pageSize={pageSize} onPageSizeChange={value => { setPageSize(value); setPage(1) }} />}
     {state.status === 'ready' && !items.length && <TestingReadState message="Kho dữ liệu chưa có sản phẩm." />}
     {!preview && <details className="market-sync-note"><summary>{t('Thông tin dữ liệu')}</summary><p>{t("Mặc định tải")} {state.seed_days || 90} {t("ngày; có thể chọn ngày xa hơn trong 5 năm, tùy lịch sử broker. Chỉ số, cổ phiếu và crypto ở nguồn này là CFD. Session cũ giữ nguyên dataset. Dukascopy chưa bật do quyền lưu kho chưa rõ; futures CME chưa cấu hình.")}</p></details>}
   </section>

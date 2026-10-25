@@ -1,3 +1,4 @@
+import DataTable, { SortableColumn } from './DataTable.jsx'
 import SearchInput from './SearchInput.jsx'
 import { previewReadRecovery } from './demoMode.js'
 import { useNotifications } from './Notifications.jsx'
@@ -28,7 +29,7 @@ import DataLibraryActions from './DataLibraryActions.jsx'
 import DataLibraryProgress from './DataLibraryProgress.jsx'
 import { sampleDownloadMetrics, downloadRetrySeconds } from './dataLibraryDownloadMetrics.js'
 import PaginationFooter from './PaginationFooter.jsx'
-import { CATEGORIES, libraryDataType, categoryOf, categoryLabel, filterLibrary, libraryRows, sourceOf, downloadEngineOf, canDownloadAsset, defaultDownloadDates } from './dataLibraryModel.js'
+import { CATEGORIES, LIBRARY_SORT_COLUMNS, libraryDisplayRange, libraryDataType, categoryOf, categoryLabel, filterLibrary, libraryRows, sourceOf, downloadEngineOf, canDownloadAsset, defaultDownloadDates } from './dataLibraryModel.js'
 import './data-library.css'
 import './session-settings.css'
 
@@ -564,7 +565,7 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
   const sourceRows = rows.filter(item => catalogProvider === 'all' || sourceOf(item) === catalogProvider)
   const sourceAssetCount = new Set(sourceRows.map(item => JSON.stringify([sourceOf(item),item.instrument_id]))).size
   const latestSourceSave = sourceRows.map(item => item.created_at_utc || item.source?.retrieved_at_utc).filter(value => Number.isFinite(Date.parse(value))).sort((a,b) => Date.parse(b)-Date.parse(a))[0]
-  const filteredDatasets = useMemo(() => filterLibrary(rows,{category:categoryFilter,provider:providerFilter,downloadStatus:downloadFilter,search,sort}), [categoryFilter,providerFilter,downloadFilter,search,sort,rows])
+  const filteredDatasets = useMemo(() => filterLibrary(rows,{category:categoryFilter,provider:providerFilter,downloadStatus:downloadFilter,search,sort,download:state.download}), [categoryFilter,providerFilter,downloadFilter,search,sort,rows,state.download])
   const selected = state.datasets.find(item => item.dataset_id === selectedId) || null
   const pages = Math.max(1, Math.ceil(filteredDatasets.length / pageSize)), currentPage = Math.min(page, pages)
   const pageItems = filteredDatasets.slice((currentPage - 1) * pageSize, currentPage * pageSize)
@@ -638,7 +639,8 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
           <FxSelect label={t('Danh mục')} value={categoryFilter} onChange={setCategoryFilter} options={[{value:'all',label:'Tất cả danh mục'}, ...CATEGORIES.map(([value,label]) => ({value,label})), ...(rows.some(item => !categoryOf(item)) ? [{value:'',label:'Chưa phân loại'}] : [])]} />
           <FxSelect label={t('Nguồn dữ liệu')} value={providerFilter} onChange={setProviderFilter} options={sourceOptions} />
           <FxSelect className="data-library-status" label={t('Trạng thái tải')} value={downloadFilter} onChange={setDownloadFilter} options={[{value:'downloaded',label:'Đã tải'},{value:'downloading',label:'Đang tải'},{value:'not-downloaded',label:'Chưa tải'},{value:'all',label:'Tất cả trạng thái'}]} />
-          <FxSelect className="data-library-sort" label={t('Sắp xếp dữ liệu')} value={sort} icon="sort" onChange={setSort} options={[{value:'asset-asc',label:'Tên A–Z'},{value:'asset-desc',label:'Tên Z–A'},{value:'newest',label:'Mới cập nhật'}]} />
+          {sort === 'newest' && <span className="data-library-sort-state">{t('Mới cập nhật')}</span>}
+          <FxSelect className="data-library-table-options" label={t('Tuỳ chọn bảng')} value={sort} icon="settings" iconOnly onChange={setSort} options={[{value:'asset-asc',label:'Sắp xếp mặc định'},{value:'newest',label:'Mới cập nhật'}]} />
           <button type="button" className="fxa-clear-filters" disabled={!filtersApplied} onClick={clearFilters}><TestingIcon kind="delete" />{t('Clear filters')}</button>
           {state.catalog && <button type="button" className="data-library-catalog-trigger" onClick={() => setCatalogOpen(true)} aria-haspopup="dialog" aria-expanded={catalogOpen}>{t('Danh mục tài sản')}</button>}
           <button type="button" className="fxa-button is-primary data-library-import" disabled={Boolean(preview)} onClick={() => openCsv()}><TestingIcon kind="upload" />{t('Nhập CSV')}</button>
@@ -675,21 +677,20 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
         <div className={`data-library-grid${!filteredDatasets.length ? ' is-empty' : ''}`}>
           <section className="rd-panel" aria-label="Dataset catalog">
             {!filteredDatasets.length ? <TestingEmptyState kind={rows.length && filtersApplied ? 'filtered-datasets' : 'datasets'} onClear={filtersApplied ? clearFilters : undefined} /> : <>
-              <div className="rd-table-wrap" tabIndex={0} role="region" aria-label={t('Dữ liệu đã có')}>
-                <table className="rd-table" data-testid="data-desk-dataset-table">
+              <DataTable className="rd-table-wrap" tableClassName="rd-table" label={t('Dữ liệu đã có')} tableProps={{'data-testid':'data-desk-dataset-table'}}>
                   <colgroup>{['asset','category','source','data','from','to','count','size','actions'].map(name => <col key={name} className={`data-library-column-${name}`} />)}</colgroup>
-                  <thead><tr>{['Sản phẩm','Danh mục','Nguồn','Dữ liệu','Từ ngày','Đến ngày','Số nến','Dung lượng','Thao tác'].map(label => <th key={label} scope="col" data-tooltip={label === 'Dung lượng' ? t('Dữ liệu replay; không gồm bản nguồn và cache tải.') : undefined}>{t(label)}</th>)}</tr></thead>
+                  <thead><tr>{LIBRARY_SORT_COLUMNS.map(([key,label]) => <SortableColumn key={key} className={['count','size'].includes(key) ? 'is-numeric' : undefined} active={sort.startsWith(`${key}-`)} direction={sort.endsWith('-desc') ? 'desc' : 'asc'} onSort={() => setSort(`${key}-${sort === `${key}-asc` ? 'desc' : 'asc'}`)} data-tooltip={key === 'size' ? t('Dữ liệu replay; không gồm bản nguồn và cache tải.') : undefined}>{t(label)}</SortableColumn>)}<th scope="col">{t('Thao tác')}</th></tr></thead>
                   <tbody>
                     {pageItems.map((dataset) => {
-                      const range = datasetRange(dataset)
+                      const range = libraryDisplayRange(dataset, state.download)
                       const active = Boolean(detailsOpen && dataset.dataset_id && dataset.dataset_id === selected?.dataset_id)
                       const job = jobForAsset(dataset)
                       const downloading = job && ['queued','running','pausing'].includes(job.status)
                       const retrySeconds = job ? downloadRetrySeconds(job,downloads.receivedAt,clockNow) : 0
-                      const availableStart = downloadEngineOf(dataset) === (state.download?.download_engine || state.download?.provider || 'Dukascopy') ? state.download?.earliest_dates?.[dataset.instrument_id] : null
+                      const availableStart = range.availableStart
                       const dataType = libraryDataType(dataset, availableStart)
-                      const fromDate = dataset.downloaded ? range.start : availableStart
-                      const toDate = dataset.downloaded ? range.end : availableStart ? defaultDownloadDates().to_date : null
+                      const fromDate = range.start
+                      const toDate = range.end
                       const dateTitle = value => dataset.downloaded ? value == null ? undefined : displayDate(value, { timeStyle: 'medium' }) : availableStart ? t('Phạm vi có thể tải theo metadata M1; chưa kiểm chứng độ phủ.') : undefined
                       return (
                         <tr key={dataset.key} className={active ? 'is-selected' : ''}>
@@ -699,8 +700,8 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
                           <td><span data-tooltip={dataType.timeframe === 'M1' ? t('M1: mỗi nến tổng hợp giá trong 1 phút.') : undefined}>{dataType.timeframe}</span>{dataType.price && <small data-tooltip={dataType.price === 'Bid' ? t('Bid: giá bên mua chào, chưa bao gồm giá Ask và spread thực tế.') : undefined}>{dataType.price}</small>}</td>
                           <td className="data-library-date" data-tooltip={dateTitle(fromDate)}>{displayDate(fromDate)}</td>
                           <td className="data-library-date" data-tooltip={dateTitle(toDate)}>{displayDate(toDate)}</td>
-                          <td>{dataset.downloaded ? fmt(dataset.row_count, '', 0) : <span className="data-library-muted" data-tooltip={t('Số nến chính xác chỉ xác định sau khi đọc dữ liệu nguồn.')}>—</span>}</td>
-                          <td data-tooltip={!dataset.downloaded ? t('Dung lượng replay chỉ xác định sau khi tải và xử lý.') : undefined}>{dataset.downloaded ? formatDatasetSize(dataset.size_bytes, fmt) : <span className="data-library-muted">—</span>}</td>
+                          <td className="is-numeric">{dataset.downloaded ? fmt(dataset.row_count, '', 0) : <span className="data-library-muted" data-tooltip={t('Số nến chính xác chỉ xác định sau khi đọc dữ liệu nguồn.')}>—</span>}</td>
+                          <td className="is-numeric" data-tooltip={!dataset.downloaded ? t('Dung lượng replay chỉ xác định sau khi tải và xử lý.') : undefined}>{dataset.downloaded ? formatDatasetSize(dataset.size_bytes, fmt) : <span className="data-library-muted">—</span>}</td>
                           <td><div className="data-library-row-actions">{!job && <button type="button" className="rd-button data-library-download" disabled={dataset.downloaded || !eligibleDownload(dataset)} onClick={() => openDownload(dataset)} data-tooltip={t(dataset.downloaded ? 'Dữ liệu đã được lưu trong kho' : activeDownload ? 'Đang có một lượt tải khác.' : eligibleDownload(dataset) ? 'Toàn bộ lịch sử có sẵn đến hết hôm qua (UTC).' : 'Nguồn chưa hỗ trợ tải trực tiếp trong ứng dụng')}><TestingIcon kind="download" />{t(startingAsset === dataset.instrument_id ? 'Đang bắt đầu…' : dataset.downloaded ? 'Đã tải' : 'Tải về')}</button>}{job ? <>
                             <DataLibraryProgress job={job} fmt={fmt} retrySeconds={retrySeconds} onClick={() => setDownloadProgressOpen(true)} />
                             <button type="button" className="fxa-button fxa-icon-button data-library-job-control" aria-label={t(downloading ? 'Tạm dừng' : 'Tiếp tục tải')} data-tooltip={retrySeconds > 0 ? t(downloadErrorMessage(job.error || 'download_cooldown')) : t(downloading ? 'Tạm dừng' : 'Tiếp tục tải')} disabled={Boolean(jobAction) || (downloading ? !downloads.supportsPause || job.status === 'pausing' : activeDownload || !downloads.available || retrySeconds > 0)} onClick={() => changeDownload(job,downloading ? 'pause' : 'resume')}><TestingIcon kind={downloading ? 'pause' : 'play'} /></button>
@@ -710,9 +711,8 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
                       )
                     })}
                   </tbody>
-                </table>
-              </div>
-            <PaginationFooter label="Phân trang kho dữ liệu" page={currentPage} pages={pages} onPageChange={setPage} pageSize={pageSize} onPageSizeChange={value => { setPageSize(value); setPage(1) }} sizes={[10,25,50,100]} />
+                </DataTable>
+            <PaginationFooter totalCount={filteredDatasets.length} label="Phân trang kho dữ liệu" page={currentPage} pages={pages} onPageChange={setPage} pageSize={pageSize} onPageSizeChange={value => { setPageSize(value); setPage(1) }} sizes={[10,25,50,100]} />
             </>}
           </section>
 

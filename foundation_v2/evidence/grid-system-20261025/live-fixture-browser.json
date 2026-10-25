@@ -1,0 +1,174 @@
+{
+  "checks": [
+    {
+      "name": "accounts",
+      "width": 1440,
+      "theme": "dark",
+      "rows": 1,
+      "collapse": "separate",
+      "footerWidth": 852,
+      "docOverflow": false,
+      "pagerOverlap": false,
+      "brokenButtons": false,
+      "headerWidths": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "cashflow",
+      "width": 1440,
+      "theme": "dark",
+      "rows": 10,
+      "collapse": "separate",
+      "footerWidth": 852,
+      "docOverflow": false,
+      "pagerOverlap": false,
+      "brokenButtons": false,
+      "headerWidths": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "broker",
+      "width": 1440,
+      "theme": "dark",
+      "rows": 20,
+      "collapse": "separate",
+      "footerWidth": 811.203125,
+      "docOverflow": false,
+      "pagerOverlap": false,
+      "brokenButtons": false,
+      "headerWidths": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "manual",
+      "width": 1440,
+      "theme": "dark",
+      "rows": 20,
+      "collapse": "separate",
+      "footerWidth": 811.203125,
+      "docOverflow": false,
+      "pagerOverlap": false,
+      "brokenButtons": false,
+      "headerWidths": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "labels",
+      "width": 1440,
+      "theme": "dark",
+      "rows": 20,
+      "collapse": "separate",
+      "footerWidth": 1128,
+      "docOverflow": false,
+      "pagerOverlap": false,
+      "brokenButtons": false,
+      "headerWidths": []
+    },
+    {
+      "name": "accounts",
+      "width": 390,
+      "theme": "light",
+      "rows": 1,
+      "collapse": "separate",
+      "footerWidth": 332,
+      "docOverflow": false,
+      "pagerOverlap": false,
+      "brokenButtons": false,
+      "headerWidths": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "cashflow",
+      "width": 390,
+      "theme": "light",
+      "rows": 10,
+      "collapse": "separate",
+      "footerWidth": 332,
+      "docOverflow": false,
+      "pagerOverlap": false,
+      "brokenButtons": false,
+      "headerWidths": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "broker",
+      "width": 390,
+      "theme": "light",
+      "rows": 20,
+      "collapse": "separate",
+      "footerWidth": 300,
+      "docOverflow": false,
+      "pagerOverlap": false,
+      "brokenButtons": false,
+      "headerWidths": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "manual",
+      "width": 390,
+      "theme": "light",
+      "rows": 20,
+      "collapse": "separate",
+      "footerWidth": 300,
+      "docOverflow": false,
+      "pagerOverlap": false,
+      "brokenButtons": false,
+      "headerWidths": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "labels",
+      "width": 390,
+      "theme": "light",
+      "rows": 20,
+      "collapse": "separate",
+      "footerWidth": 300,
+      "docOverflow": false,
+      "pagerOverlap": false,
+      "brokenButtons": false,
+      "headerWidths": []
+    }
+  ],
+  "errors": [],
+  "writes": [],
+  "scope": "Synthetic Live GET fixtures; no broker connection",
+  "status": "PASS"
+}

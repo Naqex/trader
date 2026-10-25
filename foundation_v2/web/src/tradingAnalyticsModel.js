@@ -1,3 +1,4 @@
+import { matchesSearch } from './searchText.js'
 import { getTimezone } from './timezone.js'
 import { closeTime } from './sessionPerformanceModel.js'
 
@@ -67,7 +68,7 @@ export function calendarParts(value, timezone = getTimezone()) {
 
 export function filterAnalyticsRows(rows, filters = {}) {
   filters = { ...DEFAULT_EXTRA_FILTERS, timezone: getTimezone(), ...filters }
-  const search = filters.search.trim().toLowerCase()
+  const search = filters.search
   const notes = filters.notes.trim().toLowerCase()
   const lists = Object.fromEntries(['assets', 'sides', 'outcomes', 'types', 'notesPresence', 'statuses', 'years', 'months', 'days', 'hours', 'tagInclude', 'tagExclude'].map(key => [key, filterValues(filters[key])]))
   const matches = (key, value) => !lists[key].length || value !== null && value !== undefined && lists[key].includes(String(value))
@@ -105,7 +106,7 @@ export function filterAnalyticsRows(rows, filters = {}) {
       && (!notes || typeof row.notes === 'string' && row.notes.toLowerCase().includes(notes) || typeof row.note === 'string' && row.note.toLowerCase().includes(notes))
       && (!lists.tagInclude.length || tagsMatch(lists.tagInclude, tags, filters.tagIncludeMode))
       && (!lists.tagExclude.length || !tagsMatch(lists.tagExclude, tags, filters.tagExcludeMode))
-      && (!search || [row.tradeId, row.trade_id, row.symbol, row.side, ...(row.tags || [])].join(' ').toLowerCase().includes(search))
+      && (!search || matchesSearch([row.tradeId, row.trade_id, row.symbol, row.side, ...(row.tags || [])].join(' '), search))
   })
 }
 

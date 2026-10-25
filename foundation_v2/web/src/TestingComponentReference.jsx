@@ -7,6 +7,7 @@ import { TestingResourceStatus } from './TestingPageState.jsx'
 import TestingIcon from './TestingIcon.jsx'
 import { Metric } from './FxAnalytics.jsx'
 import TestingReadState, { TestingSkeleton } from './TestingReadState.jsx'
+import ReferenceDataTable from './ReferenceDataTable.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import { useFxReplayContext } from './FxReplayShell.jsx'
 import './component-reference.css'
@@ -113,6 +114,7 @@ export default function TestingComponentReference() {
     <ReferenceOverlays theme={appearance.theme} />
     <section id="tooltips"><h2>Tooltip</h2><p>Gợi ý ngắn khi hover hoặc focus bằng Tab; Escape đóng. Nội dung quan trọng vẫn hiện trong form. Dùng popover nếu cần liên kết hoặc thao tác.</p><div className="wm-reference-controls"><button type="button" className="wm-button" data-tooltip="Gợi ý ngắn">Tooltip ngắn</button><button type="button" className="wm-button" data-tooltip={'Chỉ đọc dữ liệu đã đồng bộ.\nKhông gửi lệnh tới broker.'} data-tooltip-touch>Hướng dẫn mẫu</button><button type="button" className="wm-button" disabled data-tooltip="Chọn tài khoản trước khi đồng bộ.">Chưa thể đồng bộ</button></div></section>
     <ReferenceDataFlow />
+    <ReferenceDataTable />
     <ReferenceReportPatterns />
     <section id="layout"><h2>Vị trí, nhóm và grid</h2><div className="wm-reference-layout-grid"><div><h3>Trang dữ liệu</h3><p>Tìm kiếm trái → filter / sort → hành động phải. Desktop một hàng; hẹp thì cuộn nhóm filter, không đổi vị trí khi thay nhãn.</p><p>Header và dữ liệu chung mép cột. Chữ trái; số tiền/số lượng phải; icon giữa vùng bấm. Ngày dd/mm/yyyy, giờ HH:mm:ss; giữ rõ múi giờ.</p></div><div><h3>Form và dialog</h3><p>Label trên ô, mô tả/lỗi dưới ô. Hai cột khi đủ rộng, một cột trên điện thoại. Header/footer cố định, chỉ giữa cuộn.</p><p>Huỷ bên trái nút chính ở footer phải. X trên phải, hover chỉ đổi màu icon. Không lồng card hay thêm viền để lấp khoảng trống.</p></div><div><h3>KPI và báo cáo</h3><p>Grid 4 → 2 → 1 theo chỗ trống. Gap 24px giữa cụm, 32px giữa khu vực. Biểu đồ giữ trục/đơn vị; bảng rộng cuộn trong vùng riêng.</p></div><div><h3>Lớp nổi</h3><p>Menu bám control, tránh mép màn hình; dialog giữa, drawer phải, tooltip cạnh mục đang chỉ. Escape đóng lớp hiện tại, trả focus về nút mở.</p></div></div></section>
     <section id="audit"><h2>Những điểm đã phát hiện</h2><ul><li>Dashboard áp 44px cho control con, ảnh hưởng dialog: bỏ luật ép.</li><li>Ô nhập/nút Settings, Research, Risk, Prop, Learn khác chiều cao: dùng thang control chung.</li><li>Hover control gần màu hover dòng: tách hai độ sáng trung tính, không phủ nền xanh lên nút.</li><li>Thời gian chuyển màu 140–180ms: gom 120ms; progress 200ms.</li><li>Focus tạo phiên trắng, phần khác xanh: đổi về xanh biển.</li><li>Chuẩn chỉ áp Testing/Live: mở nền tảng cho các khu vực app.</li></ul><p>Toolbar chart có kích thước đặc thù 30–38px; nến và Buy/Sell giữ nghĩa thị trường. Các workflow phụ thuộc dữ liệu thật cần kiểm chứng riêng; đây không phải nghiệm thu toàn sản phẩm.</p></section>
