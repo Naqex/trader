@@ -3,7 +3,7 @@
 ## Time ownership
 
 Persist instants as UTC ISO timestamps or UTC epoch values. Never rewrite bars,
-ledger events or existing records to the owner's display offset. The shared header
+ledger events or existing records to the owner's display offset. The workspace clock
 and Settings use the browser preference `tw-timezone`, an IANA identifier; the default is UTC.
 `timezone.js`, `dateFormat.js` and `useTestingLocale` are the frontend owners.
 
@@ -25,14 +25,18 @@ Settings currently offers zones supported by the installed native chart library.
 The preference is local to the browser, not synchronized to a user profile.
 CSV retains its explicit UTC column contract.
 
-The shared header shows the current wall-clock date/time, updated each minute and
-when returning to the tab. Click it for a searchable timezone menu; selection applies
+The sidebar workspace group shows the current wall-clock date/time including seconds,
+updated each second and when returning to the tab. Click it for a searchable timezone menu; selection applies
 immediately through the same store as Settings and persists locally. Its UTC offset
 is calculated at the current instant, including DST; historical timestamps still use
-the named zone's offset at their own instant. The timezone belongs in the shared
-header rather than individual table footers.
-On narrow screens the zone name may truncate; the menu and accessible description
-retain it. The clock is never the replay cursor or a candle timestamp.
+the named zone's offset at their own instant. Keep the timezone with the workspace
+clock rather than individual table footers. A collapsed sidebar uses a clock icon
+and shows the full date/time in its menu; the mobile navigation drawer shows the
+expanded clock. Chart workspaces without a sidebar retain the clock in their toolbar.
+On narrow chart screens the zone name is hidden; the menu and accessible description
+retain it. Search styling matches other shared FxSelect menus. The clock is never
+the replay cursor or a candle timestamp. Second ticks stay local to the clock;
+timezone option offsets refresh by minute, without a global store update per tick.
 
 ## Selection and trade labels
 
@@ -155,7 +159,7 @@ Last sync is the last successful data observation, not a connection expiry date.
   preserving gross - fees = net; do not re-sum independently rounded components.
   Missing breakdowns stay unknown. SL/TP use the final closing-position snapshot,
   not an inferred opening level. Planned risk and R require a source denominator.
-  Entry/exit headings distinguish **Thực tế / Chart**; the shared header timezone
+  Entry/exit headings distinguish **Thực tế / Chart**; the shared workspace timezone
   applies to timestamps using Settings, without repeating UTC in each heading.
   Session selection shows the dataset date range, not session creation date.
   Practice chart tooltips use elapsed hours/minutes; axes retain compact hours.

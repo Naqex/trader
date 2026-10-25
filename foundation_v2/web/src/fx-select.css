@@ -34,8 +34,8 @@
 .fx-select.is-rich small { display: block; margin-top: 3px; color: var(--wm-content-muted); font-size: 13px; line-height: 1.5; }
 .fx-select.is-rich .fx-select-menu { width: 100%; box-sizing: border-box; max-width: 100%; }
 .fx-select-menu { box-sizing: border-box; }
-.fx-app.fx-shell-story[data-theme] .fx-content :is(.fx-select .fx-select-menu, .fxa-session-menu) > input { background: transparent; color: var(--wm-control-text); min-height: var(--wm-control-height); border: 0; border-bottom: 1px solid var(--wm-control-border); border-radius: 0; box-shadow: none; outline: none; }
-.fx-app.fx-shell-story[data-theme] .fx-content :is(.fx-select .fx-select-menu, .fxa-session-menu) > input:focus-visible { border-bottom: 2px solid var(--wm-focus); outline: none; box-shadow: none; }
+.fx-app.fx-shell-story[data-theme] :is(.fx-select .fx-select-menu, .fxa-session-menu) > input { background: transparent; color: var(--wm-control-text); min-height: var(--wm-control-height); border: 0; border-bottom: 1px solid var(--wm-control-border); border-radius: 0; box-shadow: none; outline: none; }
+.fx-app.fx-shell-story[data-theme] :is(.fx-select .fx-select-menu, .fxa-session-menu) > input:focus-visible { border-bottom: 2px solid var(--wm-focus); outline: none; box-shadow: none; }
 .fx-app.fx-shell-story[data-theme] .fx-content .fx-select .fx-select-trigger:focus-visible,
 .fx-app.fx-shell-story[data-theme] .fx-content .fxa-session-filter .fxa-session-trigger:focus-visible { border-color: transparent; outline: none; box-shadow: none; background:var(--wm-hover); text-decoration:underline; text-underline-offset:3px; }
 .fx-app.fx-shell-story[data-theme] .fx-content .fx-select.is-field :is(.fx-select-trigger, .fx-select-tag-field) { min-height:var(--wm-control-height); border:1px solid var(--wm-control-border); border-radius:var(--ds-radius-field); background:transparent; transition:background-color var(--ds-motion-hover) var(--ds-ease-standard), border-color var(--ds-motion-hover) var(--ds-ease-standard); }

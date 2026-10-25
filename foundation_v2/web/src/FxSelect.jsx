@@ -36,7 +36,7 @@ export default function FxSelect({ label, value, options: inputOptions, onChange
       const menu = root.current?.querySelector('.fx-select-menu')
       if (!menu) return
       // Popups must fit the scrolling content, which also clips the sidebar edge.
-      const container = root.current.closest('dialog, .legacy-modal, .quick-session-body, .fx-content, .fx-main')
+      const container = root.current.closest('dialog, .legacy-modal, .quick-session-body, .fx-content, .fx-main, .is-mobile-nav-open .fx-rail')
       const clip = container?.getBoundingClientRect()
       const left = Math.max(12, (clip?.left || 0) + 12), right = Math.min(window.innerWidth - 12, (clip ? clip.left + container.clientWidth : window.innerWidth) - 12)
       menu.style.maxWidth = `${right - left}px`
@@ -60,7 +60,7 @@ export default function FxSelect({ label, value, options: inputOptions, onChange
     const outside = event => { if (!root.current?.contains(event.target)) setOpen(false) }
     document.addEventListener('pointerdown', outside)
     window.addEventListener('resize', positionMenu)
-    const scroller = root.current.closest('dialog, .legacy-modal, .quick-session-body')
+    const scroller = root.current.closest('dialog, .legacy-modal, .quick-session-body, .fx-rail')
     scroller?.addEventListener('scroll', positionMenu)
     return () => { document.removeEventListener('pointerdown', outside); window.removeEventListener('resize', positionMenu); scroller?.removeEventListener('scroll', positionMenu) }
   }, [open, searchable, visible.length, menuHeader])

@@ -7,6 +7,15 @@
 .wm-shell-clock .fx-select-menu { width:320px; }
 .wm-shell-clock .fx-select-menu .fx-filter-title { margin:4px 8px 8px; font-size:14px; font-weight:500; }
 .wm-shell-clock .fx-select-menu [role=listbox] { max-height:300px; }
+.fx-rail-workspace-group { margin-bottom:16px; min-width:0; }
+.fx-rail-workspace-group .fx-rail-workspace { margin-bottom:0; }
+.fx-rail-workspace-group .wm-shell-clock { width:100%; }
+.fx-rail-workspace-group .wm-shell-clock-content { font-size:11px; }
+.fx-rail-workspace-group .wm-shell-clock .fx-select-trigger { padding-inline:12px; }
+.wm-shell-clock.is-compact .fx-select-trigger { justify-content:center; width:44px; height:44px; margin-inline:auto; padding:0; }
+.wm-shell-clock.is-compact .fx-select-value { display:grid; place-items:center; flex:0 0 auto; }
+.wm-shell-clock.is-compact .fx-select-chevron { display:none; }
+.wm-shell-clock-current { padding:8px 10px; border-bottom:1px solid var(--wm-border); }
 .fx-topbar-data .wm-connection-note:not(:has(.wm-resource-status)) { display:none; }
 @media (min-width:601px) and (max-width:1100px) {
   .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-topbar { display:grid; grid-template-columns:minmax(0,1fr) auto; }
@@ -20,11 +29,9 @@
   .fx-app.is-chart-workspace .fx-chart-topbar-actions { grid-column:1 / -1; flex-wrap:wrap; }
 }
 @media (max-width:600px) {
-  .fx-app.fx-shell-story:not(.is-chart-workspace) .wm-shell-clock { position:absolute; left:16px; right:148px; bottom:8px; width:auto; }
-  .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-topbar-actions > .fx-topbar-data { left:auto; width:120px; }
   .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-topbar-data .wm-demo-action { min-width:0; flex:1; }
-  .fx-app.fx-shell-story:not(.is-chart-workspace) .wm-shell-clock-content { font-size:11px; }
-  .fx-app.is-chart-workspace .wm-shell-clock { flex:1 1 170px; width:auto; }
+  .fx-app.is-chart-workspace .wm-shell-clock { flex:1 1 198px; width:auto; }
   .fx-app.is-chart-workspace .wm-shell-clock-zone-name { display:none; }
   .fx-app.is-chart-workspace .fx-topbar-data .wm-view-state-select { width:120px; }
 }
+.fx-app.is-mobile-nav-open .fx-rail-workspace-group .wm-shell-clock .fx-select-menu { width:100%; min-width:0; }

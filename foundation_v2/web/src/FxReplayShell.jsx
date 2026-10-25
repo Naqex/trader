@@ -309,7 +309,7 @@ function RailIcon({ id }) {
   return <svg {...common}><path d="M4 17V7M10 17V4M16 17V9M22 17V2" /><path d="M3 20h20" /></svg>
 }
 
-function ShellRail({ activeView, workspace, query, copy, railId, drawerOpen, onClose, closeButtonRef, inert }) {
+function ShellRail({ activeView, workspace, query, copy, railId, drawerOpen, compact, onClose, closeButtonRef, inert }) {
   const { t } = useTestingLocale()
   const activeArea = activeSectionId(activeView, query)
   const primary = SIDEBAR_SECTIONS.slice(0, 3)
@@ -342,12 +342,15 @@ function ShellRail({ activeView, workspace, query, copy, railId, drawerOpen, onC
         <span>{copy.product}</span>
         <button className="fx-shell-help-close" type="button" onClick={onClose} aria-label={copy.closeNavigation} ref={closeButtonRef}>×</button>
       </div>}
+      <div className="fx-rail-workspace-group">
       <a className="fx-rail-workspace" href={hrefFor('settings', workspace, query, { area: 'settings', section: null })}
         aria-label={`${t('Workspace')}: ${workspace} · ${t('Settings')}`} data-tooltip={`${workspace} · ${t('Settings')}`} onClick={drawerOpen ? onClose : undefined}>
         <span className="fx-nav-icon" aria-hidden="true"><RailIcon id="accounts" /></span>
         <span className="fx-rail-workspace-copy"><small>{t('Workspace')}</small><strong>{workspace}</strong></span>
         <span className="fx-rail-workspace-settings" aria-hidden="true"><RailIcon id="settings" /></span>
       </a>
+      <ShellClock compact={compact} />
+      </div>
       <div className="fx-rail-primary">
         {primary.map(renderSectionLink)}
       </div>
@@ -464,7 +467,6 @@ function ShellTopbar({ copy, language, setLanguage, theme, setTheme, railCollaps
         </span>
       </div>
       <div className="fx-topbar-actions">
-        <ShellClock />
         <div className="fx-topbar-data">{topbarAction}</div>
         {aiButton}
         <button className="fx-shell-toggle fx-language-toggle" type="button" onClick={() => setLanguage(language === 'vi' ? 'en' : 'vi')} aria-label={copy.switchLanguage} data-tooltip={copy.switchLanguage} data-testid="language-toggle">
@@ -725,7 +727,7 @@ export default function FxReplayShell({ children, workspace, query = currentQuer
       <div className={`fx-app fx-shell-story ${aiOpen && !aiPage ? 'is-ai-open' : ''} ${aiPage ? 'is-ai-page' : ''} ${displayedRailCollapsed ? 'is-rail-collapsed' : ''} ${drawerOpen ? 'is-mobile-nav-open' : ''} ${chartWorkspace ? 'is-chart-workspace' : ''} ${chartRoute ? 'is-chart-route' : ''}`} data-testid="fxreplay-shell" data-theme={theme} data-ui-area={query.get('area') || (['overview', 'replay', 'trade', 'analytics', 'market-data', 'testing', 'prop'].includes(activeView) ? 'testing' : activeView)} lang={language}>
         <ShellTopbar copy={copy} language={language} setLanguage={handleLanguage} theme={theme} setTheme={handleTheme} railCollapsed={displayedRailCollapsed} onToggleRail={handleRail} chartWorkspace={chartWorkspace} query={query} workspace={workspace} helpOpen={helpOpen} onToggleHelp={() => { setHelpOpen((value) => !value); setAiOpen(false) }} helpButtonRef={helpButtonRef} railId="fxreplay-rail" mobileNavigation={mobileNavigation} drawerOpen={drawerOpen} menuButtonRef={menuButtonRef} aiOpen={aiOpen || aiPage} onToggleAi={toggleAi} aiButtonRef={aiButtonRef} aiModal={!aiPage && aiOpen && aiOverlay} topbarAction={topbarAction} />
         {drawerOpen && <div className="fx-mobile-nav-backdrop" aria-hidden="true" onClick={() => setMobileNavigationOpen(false)} />}
-        {!chartWorkspace && <ShellRail activeView={activeView} workspace={workspace} query={query} copy={copy} railId="fxreplay-rail" drawerOpen={drawerOpen} onClose={() => setMobileNavigationOpen(false)} closeButtonRef={navigationCloseRef} inert={!aiPage && aiOpen && aiOverlay} />}
+        {!chartWorkspace && <ShellRail activeView={activeView} workspace={workspace} query={query} copy={copy} railId="fxreplay-rail" drawerOpen={drawerOpen} compact={displayedRailCollapsed} onClose={() => setMobileNavigationOpen(false)} closeButtonRef={navigationCloseRef} inert={!aiPage && aiOpen && aiOverlay} />}
         <section className="fx-main" role={['overview', 'live', 'market-data', 'analytics'].includes(activeView) || aiPage || (activeView === 'trade' && query.get('intent') !== 'order') || (activeView === 'replay' && query.get('surface') !== 'workspace' && (query.get('select') === '1' || query.get('mode') === 'Practice')) ? 'main' : undefined} aria-label={copy.contentAria} inert={drawerOpen}>
           <div className="fx-main-content" inert={!aiPage && aiOpen && aiOverlay}>
           <ShellSubnav activeView={activeView} workspace={workspace} query={query} copy={copy} action={subnavAction} />

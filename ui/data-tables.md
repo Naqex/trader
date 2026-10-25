@@ -15,7 +15,8 @@ Giữ palette `annam-compact@0.1.1`; không thay token pin.
 
 Trades giữ tên cột thời gian một dòng (`Vào lệnh (Realtime)`, `Vào lệnh (Chart)`
 và tương tự cho thoát lệnh). Múi giờ dùng chung với Settings, chọn ở đồng hồ
-header của ứng dụng; không lặp lại trong footer của grid. Giữ tên IANA để tính
+cạnh Không gian làm việc ở sidebar; màn hình chart không có sidebar giữ đồng hồ
+trên toolbar. Không lặp lại trong footer của grid. Giữ tên IANA để tính
 đúng offset tại mỗi mốc lịch sử/DST.
 
 Tên, nhãn và thời gian căn trái; số căn phải; trạng thái/badge, checkbox và
