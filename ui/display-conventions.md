@@ -1,5 +1,22 @@
 # Time, money, search and report presentation
 
+## Page rhythm and visible copy
+
+`page-layout.css` owns the inset from shell navigation to the first component:
+24px on desktop, 16px at widths up to 760px. Page wrappers must not add another
+top margin or padding at that boundary; loading skeletons use the same inset.
+Embedded reports, full-bleed panes with their own toolbar inset and full-screen
+chart workspaces retain their own layout. Use 24px between major related sections,
+16px within groups and 8px between adjacent controls; larger chart/panel gaps
+are deliberate grouping, not accumulated wrapper spacing.
+
+Remove secondary text that does not help an immediate decision or action.
+Healthy reports must not show implementation explanations, generic legacy-data
+notices, or a second sentence repeating the heading/empty state. Preserve honest
+missing values, units, input labels, actionable loading/error/recovery and
+consequential partial/stale/permission states. Diagnostics belong in existing
+details only when useful; do not replace every removed sentence with a tooltip.
+
 ## Time ownership
 
 Persist instants as UTC ISO timestamps or UTC epoch values. Never rewrite bars,
@@ -107,9 +124,10 @@ Last sync is the last successful data observation, not a connection expiry date.
   padding extends into the cell inset so its digits share the numeric text edge.
 - Trades multi-sort adds a new column on ordinary click, toggles its direction
   in place on another click, and exposes a separate remove button. Priorities are
-  explicit numbers; only the first has `aria-sort`. Active headers use a subtle
-  blue background, with full-cell hover and stable indicator/clear slots. The
-  orange clear-all action occupies the left edge of the `#` header. Clearing all
+  explicit numbers; only the first has `aria-sort`. Active headers use a gray
+  background, orange superscript priorities and an inset vertical divider,
+  with full-cell hover and stable indicator/clear slots. The orange clear-all
+  action replaces `#` while sorting. Clearing all
   restores source order. Full-scope filtering and ordered sorting precede paging;
   nulls stay last at each level and source order breaks equal ties.
 - Trade column visibility is stored per workspace/table in browser localStorage,

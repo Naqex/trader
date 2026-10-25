@@ -37,6 +37,8 @@
 @media(prefers-reduced-motion:reduce) { .fx-app .wm-data-table th > .wm-table-sort { transition:none; } }
 
 .fx-app .wm-data-table th[data-sort-active] { background:var(--wm-hover); color:var(--wm-content); }
+.fx-app .wm-data-table th[data-sort-active]::after { content:''; position:absolute; inset-block:10px; right:0; width:1px; background:var(--wm-border-strong); pointer-events:none; }
+.fx-app .wm-data-table th[data-sort-active]:last-child::after { content:none; }
 .fx-app .wm-data-table thead th:has(> .wm-table-sort-control) { padding:0; }
 .wm-table-sort-control { position:relative; display:flex; align-items:stretch; min-height:44px; }
 .fx-app .wm-data-table .wm-table-sort-control > .wm-table-sort { display:flex; align-items:center; gap:4px; flex:1 1 auto; min-width:0; padding:10px 26px 10px var(--wm-table-cell-inset,14px); border:0; border-radius:0; background:transparent; color:inherit; font:inherit; text-align:inherit; cursor:pointer; }

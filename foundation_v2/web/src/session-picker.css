@@ -305,7 +305,7 @@ select.fxr-filter-select { appearance: auto; }
 .fx-app .fxr-integrated-sessions .fxr-session-notice.is-error,
 .fx-app .fxr-integrated-sessions .fxr-session-catalog-status.is-error { color: var(--wm-negative); }
 .fx-app .fxr-integrated-sessions .fxr-ledger-context { margin-block: 16px 0; }
-.fx-app .fxr-integrated-sessions .fxr-session-report { margin-top: 28px; }
+.fx-app .fxr-integrated-sessions .fxr-session-report { margin-top: 24px; }
 .fx-app .fxr-integrated-sessions.fxs-page .fxr-session-actions .fx-select-trigger { min-height: 44px; border: 1px solid var(--wm-control-border); border-radius: 999px; padding-inline: 14px; background: transparent; font-weight: 600; }
 .fx-app .fxr-integrated-sessions.fxs-page .fxr-session-actions .fxr-button { border-color: var(--wm-control-border); }
 .fx-app .fxr-integrated-sessions.fxs-page .fxr-session-actions .fxs-settings { border: 0; border-radius: 0; background: transparent; padding-inline: 0; color: var(--wm-content); font-weight: 500; }

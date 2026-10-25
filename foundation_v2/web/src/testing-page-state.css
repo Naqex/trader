@@ -42,7 +42,7 @@
 .as-page:has(> .wm-trades-empty) { flex:1; display:flex; flex-direction:column; }
 .fx-app.fx-shell-story .fx-content:has(.as-page > .wm-trades-empty) { display:flex; flex-direction:column; padding-bottom:0; }
 .fx-app.fx-shell-story .fx-content .as-page:has(> .wm-trades-empty) { padding-bottom:0; }
-.wm-page-skeleton { display:flex; flex-direction:column; gap:24px; padding-block:24px; }
+.wm-page-skeleton { display:flex; flex-direction:column; gap:24px; padding-block:24px; padding-top:var(--wm-page-start,24px); }
 .wm-skeleton-toolbar { display:flex; gap:16px; }
 .wm-skeleton-toolbar i { height:36px; width:140px; }
 .wm-skeleton-toolbar i:first-child { margin-right:auto; width:240px; }

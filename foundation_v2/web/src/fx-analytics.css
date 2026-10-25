@@ -3,7 +3,7 @@
 .fx-app .fxa-tab:hover{background:var(--fx-shell-nav-hover);color:var(--wm-content)}
 .fx-app .fxa-tab[aria-selected=true]{background:var(--fx-shell-nav-selected);color:var(--fx-shell-nav-selected-content)}
 .fxa-report{max-width:1100px;margin-inline:auto;display:grid;gap:28px}
-.fxa-filters{margin-block:12px 20px;display:grid;gap:14px}
+.fxa-filters{margin:0;display:grid;gap:14px}
 .fxa-filter-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .fxa-search{flex:1;min-width:170px;max-width:320px}
 .fxa-search input{width:100%}

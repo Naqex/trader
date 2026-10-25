@@ -35,6 +35,7 @@ The project may consume shared contracts but should not copy or mutate shared gl
 - Follow owner-approved PATH-2 (`planning/mt5-tradingview-backtester/FOUNDATION-ADR-0001-PATH2.md` in the parent workspace). Reuse clean domain logic/tests; legacy Flask is reference, not a constraint to restore. Do not reopen the chosen stack without the ADR's revisit evidence.
 - Reuse current routes, stores, contracts, and chart capabilities before adding new frontend frameworks.
 - Preserve Vietnamese-first UI and explicit units/scope/state semantics.
+- Apply the spacing and visible-copy rules in `ui/display-conventions.md`; do not add persistent implementation or legacy-data notices to healthy reports.
 - Visual changes require browser/screenshot QA at representative widths and must test error/empty/stale/unknown states where relevant.
 - Generated code must be reviewed against the actual repository; do not paste a generator's preferred framework wholesale.
 

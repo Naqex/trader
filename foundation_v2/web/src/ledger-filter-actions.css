@@ -1,2 +1,5 @@
 .fxa-filter-actions { display:flex; align-items:center; gap:8px; margin-left:auto; }
+.fxa-filter-group { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.fxa-filter-group .fxa-filter-label { margin-inline:0; white-space:nowrap; }
 @media (max-width:760px) { .fxa-filter-actions { margin-left:0; } }
+@media (max-width:600px) { .fxa-filter-actions > .fxa-filter-divider { display:none; } }

@@ -720,7 +720,6 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
       )}
       {catalogOpen && <DataLibraryDialog drawer title="Danh mục tài sản" busy={catalogBusy} onClose={() => setCatalogOpen(false)} blockingStatus={<div className="data-library-update-overlay" role="status"><strong>{t('Đang cập nhật danh mục…')}</strong><progress aria-label={t('Đang cập nhật danh mục…')} /><span aria-live="off">{t('Đã chờ {seconds} giây',{seconds:catalogElapsed})}</span></div>}>
         <div className="data-library-catalog-source"><span>{t('Nguồn dữ liệu')}</span><FxSelect label="Nguồn dữ liệu" value={catalogProvider} onChange={setCatalogProvider} options={sourceOptions} disabled={catalogBusy} /></div>
-        {catalogSourceSelected && state.catalog?.refresh_scope === 'installed_definitions' && <p className="data-library-catalog-status">{t('Đọc danh mục Dukascopy từ bộ cài QDM. Dùng chung cho Backtest và Prop firm.')}</p>}
         <dl className="data-library-catalog-facts">
           {catalogSourceSelected && downloadEngineOf(state.catalog) === 'QuantDataManager' && <div><dt>{t('Công cụ tải')}</dt><dd>QuantDataManager (QDM) · CLI</dd></div>}
           <div><dt>{t('Số tài sản')}</dt><dd>{fmt(sourceAssetCount, '', 0)}</dd></div>

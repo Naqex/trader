@@ -1,6 +1,11 @@
 # Rust-native candidate runtime
 
-Latest UI-only rollout: [25 October analytics filters](../evidence/analytics-filter-polish-20261025/RECEIPT.md)
+Latest UI-only rollout: [25 October page spacing and grid clarity](../evidence/page-rhythm-ledger-20261025/RECEIPT.md)
+records consistent page insets, compact sort separators, removed idle notices and
+read-only API-to-grid checks. The requested local startup retained native/compact
+and existing storage without migration; the separate Prop checkpoint correction
+was still in progress at this UI checkpoint.
+The preceding [25 October analytics filters](../evidence/analytics-filter-polish-20261025/RECEIPT.md)
 records filter/time-picker corrections, shared label definitions and session/library
 navigation checks. Six requested labels were created through the existing metadata
 API; trade assignments, API processes and terminals were unchanged.
