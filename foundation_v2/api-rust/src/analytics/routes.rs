@@ -125,7 +125,8 @@ async fn invoke(State(state):State<Arc<AppState>>,scope:Workspace,request:Reques
             }else{
                 let intervals=activity(&tx,&scope.workspace_id).await?;
                 let metadata=tx.query("SELECT r.record_id,jsonb_build_object('timing',v.payload_json->'timing') FROM workspace_records r JOIN workspace_record_revisions v ON v.workspace_id=r.workspace_id AND v.kind=r.kind AND v.record_id=r.record_id AND v.revision=r.current_revision WHERE r.workspace_id=$1 AND r.kind='replay' AND NOT v.deleted",&[&scope.workspace_id]).await.map_err(|_|ApiError::database())?.iter().map(|r|json!({"record_id":r.get::<_,String>(0),"payload":r.get::<_,Value>(1)})).filter(|r|sid.is_none_or(|id|r["record_id"]==id)&&selected.as_ref().is_none_or(|ids|ids.iter().any(|id|r["record_id"]==*id))).collect::<Vec<_>>();
-                let mut report=report.as_ref().clone();report["as_of_utc"]=json!(iso(Utc::now()));merge(&mut report,&dashboard_timing(&metadata,&intervals).map_err(source)?);report["activity_months"]=presentation::activity_months(&metadata,&intervals,zone).map_err(source)?;report["timing_scope"]["timezone"]=json!(zone.name());
+                let mut report=report.as_ref().clone();report["as_of_utc"]=json!(iso(Utc::now()));
+                if activity_basis{merge(&mut report,&presentation::dashboard_activity(&metadata,&intervals,Some(&filters(&q)),zone).map_err(source)?);}else{merge(&mut report,&dashboard_timing(&metadata,&intervals).map_err(source)?);report["activity_months"]=presentation::activity_months(&metadata,&intervals,zone).map_err(source)?;report["timing_scope"]["timezone"]=json!(zone.name());}
                 if path=="/api/v2/overview"{report["scope"]["dashboard_source"]=json!(dashboard_source);let mut out=overview(&tx,&scope.workspace_id).await?;out["performance"]=report;out}else{report}
             }
         }

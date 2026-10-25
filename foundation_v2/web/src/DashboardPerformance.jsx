@@ -3,7 +3,6 @@ import Metric from './DashboardMetric.jsx'
 import TestingReadState, { TestingSkeleton } from './TestingReadState.jsx'
 import { TestingResourceStatus } from './TestingPageState.jsx'
 import { previewReadRecovery } from './demoMode.js'
-import TestingIcon from './TestingIcon.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import { useEffect, useState } from 'react'
 import useReadRefresh from './useReadRefresh.js'
@@ -17,9 +16,12 @@ function Duration({ seconds }) {
 
 function timingDetail(performance, kind, t) {
   const scope = performance?.timing_scope
-  if (!scope) return t('Thời gian đã ghi nhận')
+  const clock = t(kind === 'practice' ? 'Thời gian thao tác thực tế trong WMReplay' : 'Thời gian lịch sử đã chạy trong Backtest/Prop Firm')
+  if (!scope) return clock
   const measured = scope[`${kind}_measured_session_count`], unknown = scope[`unknown_${kind}_session_count`]
-  return unknown > 0 ? t('{measured}/{total} phiên được ghi nhận', { measured, total: measured + unknown }) : t('Từ khi bật theo dõi · toàn phiên')
+  const coverage = unknown > 0 ? t('{measured}/{total} phiên được ghi nhận', { measured, total: measured + unknown }) : ''
+  const range = t(kind === 'practice' && (scope.from_utc || scope.to_utc) ? 'Trong khoảng thời gian đã chọn' : 'Từ khi bật theo dõi · toàn phiên')
+  return [clock, range, coverage].filter(Boolean).join('\n')
 }
 
 function SideSplit({ counts, total }) {
@@ -39,11 +41,11 @@ function MonthlyChart({ title, items, field, rate = false, accent = 'gold' }) {
   return <ReportBars title={title} period="month" items={items.filter(item => typeof item[field] === 'number' && item[field] >= 0).map(item => ({ label: item.month, value: item[field] }))} accent={accent} maximum={rate ? 100 : undefined} valueFormat={rate ? value => fmt(value, '%', 0) : undefined} />
 }
 function SymbolChart({ items }) {
-  return <ReportBars title="Trades by symbol" items={items.map(item => ({ label: item.symbol, value: item.closed_trade_count }))} horizontal accent="pink" />
+  return <ReportBars title="Trades by symbol" items={items.map(item => ({ label: item.symbol, value: item.closed_trade_count }))} horizontal accent="pink" integer />
 }
 function ActivityChart({ items }) {
   const { t, fmt, locale } = useTestingLocale()
-  return <ReportBars title={t('Thời gian luyện tập theo tháng')} period="month" items={items.map(item => ({ label: item.month, value: item.time_invested_seconds / 3600 }))} accent="gold" valueFormat={(value, compact) => `${compact && Math.abs(value) >= 1000 ? new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(value) : fmt(value, '', 1)} ${t('duration.hour')}`} emptyLabel="Chưa có dữ liệu thời gian luyện tập" />
+  return <ReportBars title={t('Time invested')} period="month" items={items.map(item => ({ label: item.month, value: item.time_invested_seconds / 3600 }))} accent="gold" valueFormat={(value, compact, digits = 2) => `${compact && Math.abs(value) >= 1000 ? new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(value) : fmt(value, '', digits)} ${t('duration.hour')}`} emptyLabel="Chưa có dữ liệu thời gian luyện tập" />
 }
 
 export default function DashboardPerformance({ workspace, filters, reload, controls, dateControls, sourceHeading, previewPayload, previewState }) {
@@ -89,14 +91,14 @@ export default function DashboardPerformance({ workspace, filters, reload, contr
     {sourceHeading && <h3 className="fx-dashboard-source-heading">{sourceHeading}</h3>}
     <div data-testid="dashboard-result-group" data-state={groupState}>
     {loading ? <TestingSkeleton label="Đang tải Performance…" /> : groupMessage ? <TestingReadState message={groupMessage} error={Boolean(filterError || failed)} recovery={!previewPayload && failed && !denied ? recovery : undefined} /> : <><div className={`fx-dashboard-performance-layout${noTrades ? ' has-no-trades' : ''}`} data-testid="dashboard-performance"><div className="fx-dashboard-performance">
-      <Metric title={t("Time invested")} value={<Duration seconds={performance?.time_invested_seconds} />} tooltip={dashboardDurationParts(performance?.time_invested_seconds) ? previewPayload ? t("Thời gian luyện tập mẫu") : timingDetail(performance, 'practice', t) : t("Chưa có dữ liệu thời gian luyện tập")} icon="clock" />
-      <Metric title={t("Historical time replayed")} value={<Duration seconds={performance?.historical_time_replayed_seconds} />} tooltip={dashboardDurationParts(performance?.historical_time_replayed_seconds) ? previewPayload ? t("Thời gian replay mẫu") : timingDetail(performance, 'historical', t) : t("Chưa có dữ liệu thời gian replay")} icon="history" />
-      <Metric title={t("Trades taken")} value={dashboardNumber(metrics?.closed_trade_count)} icon="trades">
+      <Metric title={t("Time invested")} value={<Duration seconds={performance?.time_invested_seconds} />} tooltip={dashboardDurationParts(performance?.time_invested_seconds) ? timingDetail(performance, 'practice', t) : t("Chưa có dữ liệu thời gian luyện tập")} icon="clock" />
+      <Metric title={t("Historical time replayed")} value={<Duration seconds={performance?.historical_time_replayed_seconds} />} tooltip={dashboardDurationParts(performance?.historical_time_replayed_seconds) ? timingDetail(performance, 'historical', t) : t("Chưa có dữ liệu thời gian replay")} icon="history" />
+      <Metric title={t("Trades taken")} value={dashboardNumber(metrics?.closed_trade_count)} tooltip={t('Giao dịch đã đóng trong phạm vi đã chọn')}>
         <SideSplit counts={performance?.side_counts} total={metrics?.closed_trade_count} />
       </Metric>
       <Metric title={t("Overall win rate")} value={dashboardNumber(metrics?.win_rate_pct, '%')} icon="target" />
     </div><ActivityChart items={performance?.activity_months || []} /></div>
-    {noTrades ? <TestingReadState message={filters.from || filters.to ? 'Không có giao dịch đóng trong khoảng ngày đã chọn. Đổi khoảng ngày để xem kết quả.' : 'Chưa có giao dịch đóng. Biểu đồ sẽ xuất hiện sau giao dịch đầu tiên.'} /> : <div className="fx-dashboard-secondary-charts"><MonthlyChart title={t("Win rate by month")} items={performance?.months || []} field="win_rate_pct" rate accent="blue" /><SymbolChart items={performance?.symbols || []} /></div>}</>}
+    {noTrades ? <TestingReadState message={filters.from || filters.to ? 'Không có giao dịch đóng trong khoảng ngày đã chọn. Đổi khoảng ngày để xem kết quả.' : 'Chưa có giao dịch đóng. Biểu đồ sẽ xuất hiện sau giao dịch đầu tiên.'} /> : <div className="fx-dashboard-secondary-charts"><MonthlyChart title={t("Win rate")} items={performance?.months || []} field="win_rate_pct" rate accent="blue" /><SymbolChart items={performance?.symbols || []} /></div>}</>}
     </div>
   </section>
 }

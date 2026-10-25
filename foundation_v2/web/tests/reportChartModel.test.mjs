@@ -7,7 +7,7 @@ test('signed performance centers zero with equal nice steps, even with one-sided
   for (const values of [[-295, 865], [720], [-310], [0], [-6, 14], [180000]]) {
     const domain = chartDomain(values, { symmetric: true })
     assert.equal(domain.low, -domain.high)
-    assert.equal(domain.ticks[2], 0)
+    assert.equal(domain.ticks[Math.floor(domain.ticks.length / 2)], 0)
     assert.ok(values.every(value => value >= domain.low && value <= domain.high))
     const step = domain.ticks[1] - domain.ticks[0]
     assert.ok(domain.ticks.slice(1).every((value, index) => value - domain.ticks[index] === step))
@@ -16,6 +16,19 @@ test('signed performance centers zero with equal nice steps, even with one-sided
   assert.equal(chartDomain([NaN], { symmetric: true }), null)
   assert.equal(chartDomain([]), null)
   assert.equal(chartDomain([40, 60], { maximum: 100 }).low, 0)
+})
+
+test('nice axes cover the data with round steps, integer counts and bounded percentages', () => {
+  assert.deepEqual(chartDomain([9867, 12450], { zero: false }), { low: 9500, high: 12500, ticks: [9500, 10000, 10500, 11000, 11500, 12000, 12500] })
+  assert.deepEqual(chartDomain([-310, 1115], { symmetric: true }).ticks, [-1500, -1000, -500, 0, 500, 1000, 1500])
+  assert.deepEqual(chartDomain([0, 1], { integer: true }).ticks, [0, 1])
+  assert.deepEqual(chartDomain([10.25], { zero: false }).ticks, [9, 9.5, 10, 10.5, 11, 11.5])
+  assert.deepEqual(chartDomain([.001, .008]).ticks, [0, .002, .004, .006, .008])
+  assert.deepEqual(chartDomain([0, 13], { integer: true }).ticks, [0, 3, 6, 9, 12, 15])
+  assert.deepEqual(chartDomain([65], { maximum: 100 }).ticks, [0, 20, 40, 60, 80, 100])
+  assert.equal(chartDomain([101], { maximum: 100 }), null)
+  const tinyFlat = chartDomain([.001], { zero: false })
+  assert.ok(tinyFlat.low >= .0008 && tinyFlat.high <= .0012)
 })
 
 test('calendar month grouping sums both sides over years and keeps missing months absent', () => {
@@ -42,4 +55,14 @@ test('curve passes each observation and its control points cannot overshoot a lo
       assert.ok(py >= Math.min(y0, y1) - 1e-9 && py <= Math.max(y0, y1) + 1e-9)
     }
   })
+})
+
+test('smooth monotone observations share a nonzero tangent instead of staircase plateaus', () => {
+  const commands = reportCurvePath([[0, 100], [30, 80], [90, 50], [120, 20]]).split(' C').slice(1).map(command => command.split(/[ ,]/).map(Number))
+  assert.ok(commands[0][3] > 80 && commands[1][1] < 80)
+  const incoming = (80 - commands[0][3]) / (30 - commands[0][2])
+  const outgoing = (commands[1][1] - 80) / (commands[1][0] - 30)
+  assert.ok(Math.abs(incoming - outgoing) < 1e-10)
+  assert.equal(reportCurvePath([]), '')
+  assert.equal(reportCurvePath([[5, 9]]), 'M5,9')
 })

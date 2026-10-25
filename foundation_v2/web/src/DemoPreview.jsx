@@ -126,12 +126,16 @@ function DemoDashboard({ workspace, query, state }) {
 
   const preview = useMemo(() => ({ state, items: state === 'empty' ? [] : state === 'partial' ? DEMO_SESSIONS.slice(0, 2) : DEMO_SESSIONS, datasets: DEMO_DATASETS, analytics: (item, workspace) => demoDashboardAnalytics(item, workspace, state === 'no-trades' ? [] : undefined, 'market'), replayContext: item => { const record = demoReplayContext(item); if (state === 'no-trades') record.payload.execution.balance = 10000; return record },
     overview: (filters, items) => {
-      const result = demoOverview(state === 'no-trades' ? [] : demoFilterRows(filters.session ? [items.find(item => item.record_id === filters.session)?.source_record_id || filters.session] : [...new Set(items.map(item => item.source_record_id || item.record_id))], filters))
-      result.performance.scope = { session_count: DEMO_SESSIONS.length, readable_session_count: items.length }
-      if (state === 'partial') result.performance.status = 'partial'
+      const ids = [...new Set(items.filter(item => (!filters.session || item.record_id === filters.session) && (filters.source === 'all' || item.session_kind === filters.source)).map(item => item.source_record_id || item.record_id))]
+      const result = demoOverview(state === 'no-trades' ? [] : demoFilterRows(ids, filters), { sessionIds: ids, filters, timezone: filters.timezone })
+      if (state === 'partial') {
+        result.performance.status = 'partial'
+        result.performance.scope.session_count = DEMO_SESSIONS.filter(item => (!filters.session || item.record_id === filters.session) && (filters.source === 'all' || item.session_kind === filters.source)).length
+      }
       if (state === 'unknown') {
         result.performance.time_invested_seconds = null
         result.performance.historical_time_replayed_seconds = null
+        result.performance.activity_months = []
       }
       return result
     },

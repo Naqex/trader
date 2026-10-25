@@ -135,7 +135,7 @@ export default function DashboardSessions({ workspace, query, preview = null }) 
     return () => controller.abort()
   }, [workspace, catalog.status, readKey, preview])
 
-  const previewPayload = useMemo(() => preview?.overview(filters, catalog.items), [preview, filters, catalog.items])
+  const previewPayload = useMemo(() => preview?.overview({ ...filters, source, timezone }, catalog.items), [preview, filters, source, timezone, catalog.items])
   const setPerformanceFilters = next => { setFilters(next); updateQuery({ dashboard_session: next.session, dashboard_from: next.from, dashboard_to: next.to }) }
   const changePeriod = value => { setPeriod(value); if (value !== 'custom') setPerformanceFilters({ ...filters, ...dashboardPeriodRange(value) }) }
   const changeRecent = (key, value, setter) => { setter(value); updateQuery({ ['dashboard_' + key]: value, dashboard_page: '' }) }

@@ -67,8 +67,8 @@ Last sync is the last successful data observation, not a connection expiry date.
   summaries with their displayed/total count rather than hiding the truncation.
   Bar values appear in the shared tooltip on hover, focus or tap, never printed
   over the plot. Keep scale/category labels. Zero has no artificial bar but retains
-  an interactive category target and explicit tooltip value. Single-year/date bucket
-  charts show the year below the month label, never beside the heading. Session
+  an interactive category target and explicit tooltip value. Dated month labels
+  use horizontal `MM/YYYY`, never a detached year beside the heading. Session
   summaries follow backtest time; aggregate performance and Journal follow real activity.
   Monthly P/L uses horizontal rows, at most twelve calendar months, summing matching
   months over every year in the selected scope. There is no year picker/heatmap.
@@ -77,9 +77,12 @@ Last sync is the last successful data observation, not a connection expiry date.
   of positive/negative net trade P/L, not averages. Daily shows one blue net P/L bar
   per weekday, summing matching weekdays across the same selected scope.
   Signed performance axes are symmetric about zero with equally spaced nice ticks;
-  mobile may use three symmetric ticks instead of five. No-data months stay absent;
+  mobile may use three symmetric ticks. Other numeric axes expand to round tick
+  multiples; trade counts use whole numbers and win rates stay fixed at 0–100%.
+  No-data months stay absent;
   a known zero remains accessible. Category density may thin labels, never bars.
-  Equity curves pass each observed point with bounded cubic controls; preserve real
+  Equity curves use shape-preserving cubic tangents through each observed point;
+  monotone runs do not flatten at every point. Bounded controls preserve real
   timestamps, account segments and observed extrema. Interpolation is visual, not
   new market observations or a replacement for the account Equity ledger.
 - Closed-trade balance is **Số dư / Balance**, not Equity. Avg. win/loss is a
@@ -88,6 +91,11 @@ Last sync is the last successful data observation, not a connection expiry date.
 - Practice activity uses measured wall-clock intervals. Historical replay dates
   are a separate metric. Legacy entry recording time/type remains unknown unless
   an exact opening event and its recording metadata prove it.
+  Dashboard source/session filters constrain both clocks. Activity date filters
+  clip measured intervals before union/month grouping in Settings timezone, in
+  both fresh and cached reads. Historical replay time remains a cumulative counter
+  for those sessions, explicitly described as whole-session: it has no dated step
+  breakdown and must not be apportioned from trade durations or wall-clock ratios.
 
 Primary references: [PostgreSQL datetime](https://www.postgresql.org/docs/current/datatype-datetime.html),
 [IANA zones](https://www.iana.org/time-zones),

@@ -14,7 +14,6 @@
 .report-plot { min-width:0; position:relative; flex:1; }
 .report-plot > .report-svg { position:absolute; inset:0; }
 .report-chart h3 { margin-bottom:16px; }
-.report-svg .report-category-year { font-size:10px; }
 .report-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
 .report-chart .report-heading h3 { margin:0; }
 .report-chart{min-width:0;display:flex;flex-direction:column}

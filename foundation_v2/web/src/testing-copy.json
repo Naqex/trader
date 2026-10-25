@@ -1076,8 +1076,8 @@
     "en": "Historical time replayed"
   },
   "Trades taken": {
-    "vi": "Giao dịch đã đóng",
-    "en": "Closed trades"
+    "vi": "Giao dịch đã thực hiện",
+    "en": "Trades taken"
   },
   "Overall win rate": {
     "vi": "Tỷ lệ thắng tổng thể",
@@ -1548,7 +1548,7 @@
     "en": "Total PnL"
   },
   "Win rate": {
-    "vi": "Tỷ lệ thắng",
+    "vi": "Tỉ lệ thắng",
     "en": "Win rate"
   },
   "Net · giao dịch đóng": {
@@ -6814,5 +6814,9 @@
   "Chưa có lịch sử Equity theo thời gian thực.": {"vi": "Chưa có lịch sử Equity theo thời gian thực.", "en": "No recorded account equity history yet."},
   "Một số giao dịch cũ chưa có thời gian ghi nhận.": {"vi": "Một số giao dịch cũ chưa có thời gian ghi nhận.", "en": "Some older trades have no recorded activity time."},
   "Exit Date (Realtime)": {"vi": "Ngày đóng (thực tế)", "en": "Exit Date (Realtime)"},
-  "Exit Date (Chart UTC)": {"vi": "Ngày đóng (biểu đồ UTC)", "en": "Exit Date (Chart UTC)"}
+  "Exit Date (Chart UTC)": {"vi": "Ngày đóng (biểu đồ UTC)", "en": "Exit Date (Chart UTC)"},
+  "Thời gian thao tác thực tế trong WMReplay": {"vi":"Thời gian thao tác thực tế trong WMReplay","en":"Actual active time in WMReplay"},
+  "Thời gian lịch sử đã chạy trong Backtest/Prop Firm": {"vi":"Thời gian lịch sử đã chạy trong Backtest/Prop Firm","en":"Historical time advanced in Backtest/Prop Firm"},
+  "Trong khoảng thời gian đã chọn": {"vi":"Trong khoảng thời gian đã chọn","en":"Within the selected date range"},
+  "Giao dịch đã đóng trong phạm vi đã chọn": {"vi":"Giao dịch đã đóng trong phạm vi đã chọn","en":"Closed trades within the selected scope"}
 }

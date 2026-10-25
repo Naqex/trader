@@ -192,6 +192,36 @@ pub(super) fn activity_months(records: &[Value], intervals: &[Value], zone: Tz) 
     ))
 }
 
+// Activity dates constrain measured wall-clock intervals, not simulated market
+// dates. The cumulative historical counter has no dated step breakdown.
+pub(super) fn dashboard_activity(records: &[Value], intervals: &[Value], filters: Option<&Value>, zone: Tz) -> R<Value> {
+    let filters = normalize_filters(filters)?;
+    let from = timestamp(&filters["from_close_utc"])?;
+    let to = timestamp(&filters["to_close_utc"])?;
+    let mut clipped = Vec::new();
+    for interval in intervals {
+        let start = timestamp(&interval["started_at_utc"])?.ok_or("missing activity start")?;
+        let end = timestamp(&interval["ended_at_utc"])?.ok_or("missing activity end")?;
+        let start = from.map_or(start, |bound| start.max(bound));
+        let end = to.map_or(end, |bound| end.min(bound));
+        if start < end {
+            clipped.push(json!({"session_id":interval["session_id"],"started_at_utc":iso(start),"ended_at_utc":iso(end)}));
+        }
+    }
+    let mut result = dashboard_timing(records, intervals)?;
+    let months = activity_months(records, &clipped, zone)?;
+    if result["time_invested_seconds"].is_number() {
+        result["time_invested_seconds"] = json!(months.as_array().unwrap().iter().map(|m| m["time_invested_seconds"].as_f64().unwrap()).sum::<f64>());
+    }
+    result["activity_months"] = months;
+    result["timing_scope"]["timezone"] = json!(zone.name());
+    result["timing_scope"]["activity_date_filters_apply"] = json!(true);
+    result["timing_scope"]["historical_date_filters_apply"] = json!(false);
+    result["timing_scope"]["from_utc"] = json!(from.map(iso));
+    result["timing_scope"]["to_utc"] = json!(to.map(iso));
+    Ok(result)
+}
+
 // Keep the complete small calendar projection; the compatibility summary above
 // still exposes its last twelve months. No trade ledger is sent with this view.
 pub(super) fn performance_periods(view: &Value, zone: chrono_tz::Tz) -> R<Value> {
@@ -215,6 +245,24 @@ pub(super) fn performance_periods(view: &Value, zone: chrono_tz::Tz) -> R<Value>
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn dashboard_activity_clips_dates_unions_sessions_and_preserves_clock_coverage() {
+        let records = vec![json!({"record_id":"a","payload":{"timing":{"schema_version":"replay-timing-v1","historical_time_replayed_seconds":86400,"legacy_baseline":false}}}), json!({"record_id":"b"})];
+        let interval = |id: &str, start: &str, end: &str| json!({"session_id":id,"started_at_utc":start,"ended_at_utc":end});
+        let intervals = vec![interval("a","2026-01-31T16:59:40Z","2026-01-31T17:00:20Z"), interval("b","2026-01-31T17:00:10Z","2026-01-31T17:00:40Z"), interval("other","2026-01-31T17:00:00Z","2026-01-31T18:00:00Z")];
+        let filter = json!({"from_close_utc":"2026-01-31T17:00:00Z","to_close_utc":"2026-01-31T17:00:30Z"});
+        let result = dashboard_activity(&records,&intervals,Some(&filter),chrono_tz::Asia::Ho_Chi_Minh).unwrap();
+        assert_eq!(result["time_invested_seconds"],30.0);
+        assert_eq!(result["activity_months"],json!([{"month":"2026-02","time_invested_seconds":30.0}]));
+        assert_eq!(result["historical_time_replayed_seconds"],86400.0);
+        assert_eq!(result["timing_scope"]["historical_date_filters_apply"],false);
+        let empty = json!({"from_close_utc":"2027-01-01T00:00:00Z"});
+        let outside = dashboard_activity(&records,&intervals,Some(&empty),chrono_tz::UTC).unwrap();
+        assert_eq!(outside["time_invested_seconds"],0.0);
+        assert_eq!(outside["activity_months"],json!([]));
+        let unknown = dashboard_activity(&[json!({"record_id":"legacy"})],&[],Some(&empty),chrono_tz::UTC).unwrap();
+        assert!(unknown["time_invested_seconds"].is_null());
+    }
     #[test]
     fn full_month_history_splits_net_wins_and_losses_without_merging_years() {
         let mut ledger = Vec::new();

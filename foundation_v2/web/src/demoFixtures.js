@@ -1,9 +1,11 @@
+import { dateRangeBoundary, dayBoundary, getTimezone, zonedDateKey } from './timezone.js'
+
 // Deterministic UI fixtures. Never passed to a broker, replay engine or API.
 export const DEMO_SESSIONS = [
   { record_id: 'demo-london', name: 'London Breakout', instrument_id: 'EURUSD', timeframe: 'M1', status: 'paused', created_at_utc: '2026-07-06T08:00:00Z' },
   { record_id: 'demo-newyork', name: 'New York Reversal', instrument_id: 'GBPUSD', timeframe: 'M1', status: 'paused', created_at_utc: '2026-08-03T13:00:00Z' },
   { record_id: 'demo-gold', name: 'Gold Swing', instrument_id: 'XAUUSD', timeframe: 'M5', status: 'completed', created_at_utc: '2026-09-07T07:00:00Z' },
-].map((item, i) => ({ ...item, dataset_id: `demo-dataset-${item.instrument_id}`, timeframe_seconds: item.timeframe === 'M5' ? 300 : 60, revision: 1, row_count: 30000, cursor_index: item.status === 'completed' ? 29999 : 1400 + i * 500, updated_at_utc: '2026-10-05T08:00:00Z', dataset_available: true, archived: false }))
+].map((item, i) => ({ ...item, session_kind: i === 1 ? 'prop' : 'backtest', dataset_id: `demo-dataset-${item.instrument_id}`, timeframe_seconds: item.timeframe === 'M5' ? 300 : 60, revision: 1, row_count: 30000, cursor_index: item.status === 'completed' ? 29999 : 1400 + i * 500, updated_at_utc: '2026-10-05T08:00:00Z', dataset_available: true, archived: false }))
 
 export function demoSessionItems() { return DEMO_SESSIONS }
 
@@ -43,22 +45,48 @@ export function demoResult(rows = DEMO_LEDGER, session = DEMO_SESSIONS[0], timeB
     profit_factor_after_cost: loss ? profit / loss : null, payoff_ratio_after_cost: wins && losses ? (profit / wins) / (loss / losses) : null, closed_trade_balance_curve: curve } }
 }
 
-export function demoOverview(rows = DEMO_LEDGER) {
+const DEMO_ACTIVITY = [
+  ['demo-london', '2026-07-06T08:00:00Z', '2026-07-06T11:00:00Z'],
+  ['demo-london', '2026-07-31T22:30:00Z', '2026-08-01T01:30:00Z'],
+  ['demo-newyork', '2026-08-03T13:00:00Z', '2026-08-03T17:00:00Z'],
+  ['demo-gold', '2026-09-07T07:00:00Z', '2026-09-07T11:00:00Z'],
+  ['demo-gold', '2026-09-08T08:00:00Z', '2026-09-08T12:40:00Z'],
+]
+
+export function demoOverview(rows = DEMO_LEDGER, { sessionIds = DEMO_SESSIONS.map(s => s.record_id), filters = {}, timezone = getTimezone() } = {}) {
   const metrics = demoResult(rows).metrics
-  const months = [...new Set(rows.map(row => row.report_time_utc.slice(0, 7)))].map(month => {
-    const group = rows.filter(row => row.report_time_utc.startsWith(month))
+  const monthKey = row => zonedDateKey(row.report_time_utc, timezone).slice(0, 7)
+  const months = [...new Set(rows.map(monthKey))].sort().map(month => {
+    const group = rows.filter(row => monthKey(row) === month)
     return { month, closed_trade_count: group.length, win_rate_pct: group.filter(row => row.net_pnl > 0).length / group.length * 100 }
   })
-  return { performance: { schema_version: 'dashboard-replay-performance-v1', status: 'ready', scope: { session_count: 3, readable_session_count: 3 }, metrics, months,
-    time_invested_seconds: 67200, historical_time_replayed_seconds: 3135600,
+  const from = filters.from ? Date.parse(dateRangeBoundary(filters.from, false, timezone)) : -Infinity
+  const to = filters.to ? Date.parse(dateRangeBoundary(filters.to, true, timezone)) : Infinity
+  const activity = new Map()
+  let last = -Infinity
+  for (const [id, a, b] of DEMO_ACTIVITY.filter(([id]) => sessionIds.includes(id)).sort((a, b) => a[1].localeCompare(b[1]))) {
+    let start = Math.max(Date.parse(a), from, last), end = Math.min(Date.parse(b), to)
+    while (start < end) {
+      const month = zonedDateKey(start, timezone).slice(0, 7)
+      const next = new Date(`${month}-01T00:00:00Z`); next.setUTCMonth(next.getUTCMonth() + 1)
+      const stop = Math.min(end, dayBoundary(next.toISOString().slice(0, 10), timezone))
+      activity.set(month, (activity.get(month) || 0) + (stop - start) / 1000)
+      start = stop
+    }
+    last = Math.max(last, end)
+  }
+  const activity_months = [...activity].map(([month, time_invested_seconds]) => ({ month, time_invested_seconds }))
+  return { performance: { schema_version: 'dashboard-replay-performance-v1', status: 'ready', scope: { session_count: sessionIds.length, readable_session_count: sessionIds.length }, metrics, months, activity_months,
+    time_invested_seconds: activity_months.reduce((sum, item) => sum + item.time_invested_seconds, 0), historical_time_replayed_seconds: sessionIds.reduce((sum, id) => sum + ({ 'demo-london': 432000, 'demo-newyork': 864000, 'demo-gold': 1839600 }[id] || 0), 0),
+    timing_scope: { activity_date_filters_apply: true, historical_date_filters_apply: false, from_utc: filters.from || null, to_utc: filters.to || null },
     side_counts: { buy: rows.filter(row => row.side === 'buy').length, sell: rows.filter(row => row.side === 'sell').length },
-    symbols: DEMO_SESSIONS.map(session => ({ symbol: session.instrument_id, closed_trade_count: rows.filter(row => row.symbol === session.instrument_id).length })), sessions: [], sources: [], excluded: [] } }
+    symbols: [...new Set(rows.map(row => row.symbol))].map(symbol => ({ symbol, closed_trade_count: rows.filter(row => row.symbol === symbol).length })), sessions: [], sources: [], excluded: [] } }
 }
 
 export function demoFilterRows(ids, filters = {}, sourceRows = DEMO_LEDGER) {
   return sourceRows.filter(row => (ids === null || ids.includes(row.session_id)) && (!filters.side || filters.side === 'all' || row.side === filters.side)
     && (!filters.outcome || filters.outcome === 'all' || (row.net_pnl > 0 ? 'win' : row.net_pnl < 0 ? 'loss' : 'breakeven') === filters.outcome)
-    && (!filters.from || row.report_time_utc.slice(0, 10) >= filters.from) && (!filters.to || row.report_time_utc.slice(0, 10) <= filters.to))
+    && (!filters.from || zonedDateKey(row.report_time_utc, filters.timezone || getTimezone()) >= filters.from) && (!filters.to || zonedDateKey(row.report_time_utc, filters.timezone || getTimezone()) <= filters.to))
 }
 
 export function demoDashboardAnalytics(item, workspace, sourceRows = demoFilterRows([item.source_record_id || item.record_id]), timeBasis = 'activity') {
