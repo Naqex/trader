@@ -187,6 +187,23 @@ fn closed_costs(details: &Value, currency: &Value) -> R<(Option<f64>, Option<f64
 
 fn build_portfolio_analytics(view:&Value,filters:Option<&Value>)->R<Value>{
     let p=&view["payload"];let states=p["asset_states"].as_object().ok_or("portfolio asset states invalid")?;
+    let account = if p["portfolio_execution"]["schema_version"] == "replay-portfolio-v1"
+        && p["portfolio_execution"]["event_sequence"].as_i64().is_some_and(|n|n>0) {
+        let checked = crate::replay_portfolio::checkpoint_event(p,p["portfolio_execution"]["event_sequence"].as_i64().unwrap())?;
+        for (id,state) in states {
+            let inherited_only = checked["asset_states"][id]["execution"].is_null()
+                && state["execution"]["position"].is_null() && state["execution"]["pending_market_order"].is_null()
+                && state["execution"]["ledger"].as_array().is_some_and(|events|events.iter().all(|e|
+                    e["kind"] == "phase_transition" && checked["portfolio_execution"]["ledger"].as_array().is_some_and(|marks|
+                        marks.iter().any(|mark|mark["kind"] == "phase_transition" && mark["virtual_time_utc"] == e["virtual_time_utc"]
+                            && ["intent_id","intent_fingerprint","from_phase_index","to_phase_index","carry_policy","position_policy","next_phase_initial_balance"]
+                                .iter().all(|key|mark["details"][*key] == e["details"][*key])))));
+            if checked["asset_states"][id]["execution"] != state["execution"] && !inherited_only {
+                return Err("portfolio assets exceed the acknowledged account event".into());
+            }
+        }
+        Some(checked["portfolio_execution"].clone())
+    } else { None };
     let mut trades=vec![];let mut keys=vec![];let mut instruments=vec![];let mut hashes=json!({});let mut initialized=false;
     let(mut balance,mut floating,mut opens,mut pending)=(decimal(&p["starting_balance"])? ,BigDecimal::from(0),0,0);
     for(id,state)in states{let s=&state["execution"];if !truth(s){continue}initialized=true;crate::replay_core::validate(s)?;
@@ -198,10 +215,25 @@ fn build_portfolio_analytics(view:&Value,filters:Option<&Value>)->R<Value>{
         for t in array(&validated["ledger"])?{let mut t=t.clone();t["trade_id"]=json!(format!("{}:{}",id,text(&t["trade_id"])));t["source_position_id"]=t["trade_id"].clone();t["dataset_id"]=json!(id);t["asset_close_event_sequence"]=t["close_event_sequence"].clone();t["asset_close_cursor_index"]=t["close_cursor_index"].clone();t["close_cursor_index"]=view["portfolio_trade_cursors"][format!("{}:{}",id,t["close_event_sequence"])].clone();trades.push(t)}
         balance+=decimal(&s["balance"])?-decimal(&s["starting_balance"])?;floating+=decimal(&s["floating_pl"])?;opens+=usize::from(!s["position"].is_null());pending+=usize::from(!s["pending_market_order"].is_null());
     }
-    keys.sort();let ordinals:HashMap<_,_>=keys.iter().enumerate().map(|(i,(_,d,s))|((d.clone(),*s),i+1)).collect();
-    for t in &mut trades{t["close_event_sequence"]=json!(ordinals[&(text(&t["dataset_id"]).to_string(),t["asset_close_event_sequence"].as_i64().unwrap())]);}
+    keys.sort();let ordinals:HashMap<_,_>=if let Some(account)=&account {
+        array(&account["ledger"])? .iter().flat_map(|event|event["details"]["source_events"].as_array().into_iter().flatten()
+            .map(move |source|((text(&source["dataset_id"]).to_string(),source["sequence"].as_i64().unwrap()),event["sequence"].as_u64().unwrap() as usize))).collect()
+    } else {keys.iter().enumerate().map(|(i,(_,d,s))|((d.clone(),*s),i+1)).collect()};
+    for t in &mut trades{t["close_event_sequence"]=json!(ordinals.get(&(text(&t["dataset_id"]).to_string(),t["asset_close_event_sequence"].as_i64().unwrap())).ok_or("portfolio close was not acknowledged by account history")?);}
     trades.sort_by_key(|t|(t["close_time_utc"].as_i64(),t["close_event_sequence"].as_u64()));
-    let base=json!({"session_id":view["record_id"],"workspace_id":view["workspace_id"],"revision":view["revision"],"dataset_id":p["dataset_id"],"dataset_ids":p["dataset_ids"],"dataset_hashes":hashes,"branch_id":p["branch_id"],"parent_session_id":p["parent_session_id"],"cursor_index":p["cursor_index"],"canonical_cursor_index":view.get("canonical_cursor_index").unwrap_or(&p["cursor_index"]),"historical_view":view.get("historical_view").unwrap_or(&Value::Bool(false)),"cutoff_timestamp":view["cutoff_timestamp"],"mode":"replay","timezone":"UTC","account_currency":p["starting_balance_ccy"],"instrument_id":instruments.iter().map(text).collect::<Vec<_>>().join(" · "),"instrument_ids":instruments,"open_position_count":opens,"pending_order_count":pending,"execution_event_sequence":keys.len(),"data_quality":if initialized{"full_for_declared_model"}else{"insufficient"}});
+    let mut base=json!({"session_id":view["record_id"],"workspace_id":view["workspace_id"],"revision":view["revision"],"dataset_id":p["dataset_id"],"dataset_ids":p["dataset_ids"],"dataset_hashes":hashes,"branch_id":p["branch_id"],"parent_session_id":p["parent_session_id"],"cursor_index":p["cursor_index"],"canonical_cursor_index":view.get("canonical_cursor_index").unwrap_or(&p["cursor_index"]),"historical_view":view.get("historical_view").unwrap_or(&Value::Bool(false)),"cutoff_timestamp":view["cutoff_timestamp"],"mode":"replay","timezone":"UTC","account_currency":p["starting_balance_ccy"],"instrument_id":instruments.iter().map(text).collect::<Vec<_>>().join(" · "),"instrument_ids":instruments,"open_position_count":opens,"pending_order_count":pending,"execution_event_sequence":keys.len(),"data_quality":if initialized{"full_for_declared_model"}else{"insufficient"}});
+    if let Some(account) = &account {
+        for key in ["dataset_id","dataset_sha256","dataset_pins","phase_index","phase_initial_balance","cursor_index"] {
+            base[key] = account[key].clone();
+        }
+        base["execution_event_sequence"] = account["event_sequence"].clone();
+        base["cutoff_timestamp"] = p["replay_clock_utc"].clone();
+        base["canonical_execution_event_sequence"] = view["canonical_execution_event_sequence"].clone();
+        if account["replay_session_id"] != view["record_id"] {
+            return Err("portfolio account session lineage changed".into());
+        }
+        balance=decimal(&account["balance"])?;floating=decimal(&account["floating_pl"])?;
+    }
     let mut source=base.clone();source["protocol"]=json!({"starting_balance":number(&p["starting_balance"])?});source["ledger"]=json!(trades);let mut result=build_analytics_view(&source,filters)?;
     if !initialized{result["analytics_available"]=json!(false);result["blocked_by_data"]=json!(["replay_execution_not_initialized"])}
     merge(&mut result["provenance"],&base);merge(&mut result,&base);

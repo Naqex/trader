@@ -1,10 +1,13 @@
 # Rust-native candidate runtime
 
-Latest UI-only rollout: [25 October page spacing and grid clarity](../evidence/page-rhythm-ledger-20261025/RECEIPT.md)
-records consistent page insets, compact sort separators, removed idle notices and
-read-only API-to-grid checks. The requested local startup retained native/compact
-and existing storage without migration; the separate Prop checkpoint correction
-was still in progress at this UI checkpoint.
+Latest local API rollout: [25 October page spacing and ledger audit](../evidence/page-rhythm-ledger-20261025/RECEIPT.md)
+records exact Prop portfolio account-event checkpoints and provenance, successful
+reads of both bound reports, consistent page insets and read-only API-to-grid checks.
+API binaries are under `E:/BACKUP-TRADINGWORKSPACE/page-rhythm-ledger-20261025/backend-target/release`;
+native/compact and existing storage/capabilities were retained without migration.
+The scientific descriptor remains `E:/BACKUP-TRADINGWORKSPACE/grid-sort-20261025/scientific-candidate.json`,
+with the existing legacy descriptor and AI interpreter. Historical non-checkpoint
+events remain rejected explicitly; see the receipt's limits before broader claims.
 The preceding [25 October analytics filters](../evidence/analytics-filter-polish-20261025/RECEIPT.md)
 records filter/time-picker corrections, shared label definitions and session/library
 navigation checks. Six requested labels were created through the existing metadata

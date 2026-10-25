@@ -680,6 +680,39 @@ pub async fn checkpoint_record(
     cutoff: Option<i64>,
     event: Option<i64>,
 ) -> Result<Value, ApiError> {
+    if record["payload"]["asset_states"].is_object() && let Some(sequence) = event {
+        let original = &record["payload"];
+        let canonical_sequence = integer(&original["portfolio_execution"], "event_sequence")?;
+        let payload = crate::replay_portfolio::checkpoint_event(original, sequence).map_err(bad)?;
+        if payload["portfolio_execution"]["replay_session_id"] != record["record_id"] {
+            return Err(bad("portfolio checkpoint session lineage changed"));
+        }
+        let selected = integer(&payload, "cursor_index")?;
+        if cursor.is_some_and(|cursor| cursor != selected) {
+            return Err(bad("analytics cursor and portfolio event disagree"));
+        }
+        // Validate every immutable pin, including assets not initialized at this event.
+        for pin in payload["portfolio_execution"]["dataset_pins"].as_array().unwrap() {
+            let manifest = snapshot_manifest(tx, workspace, text(pin,"dataset_id")?).await?;
+            if manifest["artifact_sha256"] != pin["dataset_sha256"] {
+                return Err(bad("portfolio checkpoint dataset pin changed"));
+            }
+        }
+        let manifest = snapshot_manifest(tx, workspace, text(&payload,"dataset_id")?).await?;
+        if let Some(cutoff) = cutoff {
+            if integer(&times(state,&manifest,selected,None).await?,"index_utc")? != cutoff {
+                return Err(bad("analytics cutoff and portfolio event disagree"));
+            }
+        }
+        let canonical = original["portfolio_execution"]["cursor_index"].clone();
+        record["payload"] = payload;
+        record["view_cursor_index"] = json!(selected);
+        record["canonical_cursor_index"] = canonical;
+        record["canonical_execution_event_sequence"] = json!(canonical_sequence);
+        record["historical_view"] = json!(sequence < canonical_sequence);
+        record["portfolio_trade_cursors"] = portfolio_trade_cursors(tx,state,workspace,&record["payload"],&manifest).await?;
+        return Ok(record);
+    }
     let canonical = integer(&record["payload"], "cursor_index")?;
     let mut selected = cursor.unwrap_or(canonical);
     let mut p = record["payload"].take();
