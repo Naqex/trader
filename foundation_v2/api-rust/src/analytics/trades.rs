@@ -49,22 +49,67 @@ pub fn python_json(v:&Value,spaces:bool)->String{
     let comma=if spaces{", "}else{","};let colon=if spaces{": "}else{":"};match v{Value::String(s)=>quote(s),Value::Array(a)=>format!("[{}]",a.iter().map(|v|python_json(v,spaces)).collect::<Vec<_>>().join(comma)),Value::Object(o)=>format!("{{{}}}",o.iter().map(|(k,v)|format!("{}{}{}",quote(k),colon,python_json(v,spaces))).collect::<Vec<_>>().join(comma)),_=>v.to_string()}
 }
 pub fn build_trades_page(report:&Value,journals:&[Value],page:usize,page_size:usize,sort_key:&str,sort_direction:&str,extra_filters:&str,facet_report:Option<&Value>)->R<Value>{
-    if page<1||!(1..=100).contains(&page_size)||!SORTS.contains(&sort_key)||!["asc","desc"].contains(&sort_direction){return Err("trade_page_parameters_invalid".into())}
+    build_trades_page_sorted(report,journals,page,page_size,sort_key,sort_direction,extra_filters,facet_report,None)
+}
+fn parse_sorts(raw:Option<&str>,key:&str,direction:&str)->R<Vec<Value>>{
+    let value:Value=if let Some(raw)=raw{serde_json::from_str(raw).map_err(|_|"trade_page_parameters_invalid")?}else{json!([{"key":key,"direction":direction}])};
+    let sorts=value.as_array().ok_or("trade_page_parameters_invalid")?;let mut seen=HashSet::new();
+    if sorts.len()>SORTS.len(){return Err("trade_page_parameters_invalid".into())}
+    for item in sorts{if item.as_object().is_none_or(|o|o.len()!=2)||!SORTS.contains(&text(&item["key"]))||!["asc","desc"].contains(&text(&item["direction"]))||!seen.insert(text(&item["key"])){return Err("trade_page_parameters_invalid".into())}}
+    Ok(sorts.clone())
+}
+pub(super) fn build_trades_page_sorted(report:&Value,journals:&[Value],page:usize,page_size:usize,sort_key:&str,sort_direction:&str,extra_filters:&str,facet_report:Option<&Value>,sort:Option<&str>)->R<Value>{
+    if page<1||!(1..=100).contains(&page_size){return Err("trade_page_parameters_invalid".into())}
+    let sorts=parse_sorts(sort,sort_key,sort_direction)?;
     let(f,zone,empty)=parse(extra_filters)?;let facet=facet_report.unwrap_or(report);let rows=array(&report["ledger"])?;let faceted:Vec<_>=array(&facet["ledger"])?.iter().map(|r|decorate(r,journals)).collect();
     let mut assets=BTreeSet::new();let(mut tags,mut strategies,mut years,mut types)=(BTreeSet::new(),BTreeSet::new(),BTreeSet::new(),BTreeSet::new());let mut dates=vec![];let mut has_notes=false;
     for r in &faceted{if truth(&r["symbol"]){assets.insert(text(&r["symbol"]).to_string());}tags.extend(strings(&r["tags"]));if truth(&r["playbook_id"]){strategies.insert(text(&r["playbook_id"]).to_string());}if truth(&r["entry_type"]){types.insert(text(&r["entry_type"]).to_string());}has_notes|=r["has_notes"]==true;if let Some(d)=ts(row_time(r)){let d=d.with_timezone(&zone);dates.push(d.date_naive().to_string());years.insert(d.year().to_string());}}
     let scope=strings(&facet["scope"]["session_ids"]);if let Some(sessions)=facet["sessions"].as_array(){for s in sessions{if truth(&s["instrument_id"])&&scope.contains(&text(&s["session_id"]).to_string()){assets.insert(text(&s["instrument_id"]).to_string());}}}dates.sort();
-    let mut filtered=vec![];for(i,r)in rows.iter().enumerate(){let r=decorate(r,journals);if matches(&r,&f,zone,empty)?{let val=sort_value(&r,sort_key);filtered.push((i,r,val));}}
-    filtered.sort_by(|a,b|{let(l,r)=(&a.2,&b.2);if l.is_null()||r.is_null(){return if l.is_null()&&r.is_null(){Ordering::Equal}else if l.is_null(){Ordering::Greater}else{Ordering::Less}}let result=if let(Some(l),Some(r))=(l.as_f64(),r.as_f64()){l.partial_cmp(&r).unwrap_or(Ordering::Equal)}else{python_str(l).cmp(&python_str(r))};let result=if sort_direction=="desc"{result.reverse()}else{result};result.then(a.0.cmp(&b.0))});
+    let mut filtered=vec![];for(i,r)in rows.iter().enumerate(){let r=decorate(r,journals);if matches(&r,&f,zone,empty)?{let val:Vec<_>=sorts.iter().map(|s|sort_value(&r,text(&s["key"]))).collect();filtered.push((i,r,val));}}
+    filtered.sort_by(|a,b|{for((l,r),sort)in a.2.iter().zip(&b.2).zip(&sorts){if l.is_null()||r.is_null(){if l.is_null()&&r.is_null(){continue}return if l.is_null(){Ordering::Greater}else{Ordering::Less}}let result=if let(Some(l),Some(r))=(l.as_f64(),r.as_f64()){l.partial_cmp(&r).unwrap_or(Ordering::Equal)}else{python_str(l).cmp(&python_str(r))};if result!=Ordering::Equal{return if sort["direction"]=="desc"{result.reverse()}else{result}}}a.0.cmp(&b.0)});
     let count=if report["metrics"]["closed_trade_count"].is_null(){None}else{Some(filtered.len())};let pages=count.map(|n|n.div_ceil(page_size));let page=page.min(pages.unwrap_or(1).max(1));let visible:Vec<_>=filtered.into_iter().skip((page-1)*page_size).take(page_size).map(|(_,r,_)|r).collect();
-    let snapshot=json!({"scope":report["scope"],"sources":report["sources"],"excluded":report["excluded"],"journals":journals.iter().map(|r|json!([r["record_id"],r["revision"]])).collect::<Vec<_>>(),"filters":f});let mut snapshot=snapshot;if let Some(labels)=report.get("label_revision_key"){snapshot["labels"]=labels.clone();}let hash=format!("{:x}",Sha256::digest(python_json(&snapshot,true)));
+    let snapshot=json!({"scope":report["scope"],"sources":report["sources"],"excluded":report["excluded"],"journals":journals.iter().map(|r|json!([r["record_id"],r["revision"]])).collect::<Vec<_>>(),"filters":f});let mut snapshot=snapshot;if let Some(labels)=report.get("label_revision_key"){snapshot["labels"]=labels.clone();}if sort.is_some(){snapshot["sorts"]=json!(sorts);}let hash=format!("{:x}",Sha256::digest(python_json(&snapshot,true)));
     let mut scope=report["scope"].clone();scope["extra_filters"]=f;
-    Ok(json!({"schema_version":"replay-trades-page-v1","status":report["status"],"scope":scope,"sources":report["sources"],"excluded":report["excluded"],"sessions":report["sessions"],"ledger":visible,"facets":{"assets":assets,"tags":tags,"strategies":strategies,"years":years,"types":types,"has_notes":has_notes,"date_range":{"from":dates.first(),"to":dates.last()}},"sort":{"key":sort_key,"direction":sort_direction},"snapshot_key":hash,"pagination":{"page":page,"page_size":page_size,"returned_count":visible.len(),"filtered_count":count,"page_count":pages,"has_next":pages.is_some_and(|n|page<n)}}))
+    let mut result=json!({"schema_version":"replay-trades-page-v1","status":report["status"],"scope":scope,"sources":report["sources"],"excluded":report["excluded"],"sessions":report["sessions"],"ledger":visible,"facets":{"assets":assets,"tags":tags,"strategies":strategies,"years":years,"types":types,"has_notes":has_notes,"date_range":{"from":dates.first(),"to":dates.last()}},"sort":sorts.first(),"snapshot_key":hash,"pagination":{"page":page,"page_size":page_size,"returned_count":visible.len(),"filtered_count":count,"page_count":pages,"has_next":pages.is_some_and(|n|page<n)}});
+    if sort.is_some(){result["sorts"]=json!(sorts);}Ok(result)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn multi_sort_python_oracle_matches_full_response_and_snapshot() {
+        let fixture:Value=serde_json::from_str(include_str!("trade_multisort_oracle.json")).unwrap();
+        for case in fixture["cases"].as_array().unwrap(){let a=&case["args"];
+            let result=build_trades_page_sorted(&fixture["report"],&[],a["page"].as_u64().unwrap() as usize,a["page_size"].as_u64().unwrap() as usize,text(&a["sort_key"]),text(&a["sort_direction"]),"{}",None,Some(text(&a["sort"]))).unwrap();
+            assert_eq!(result,case["expected"]);
+        }
+    }
+    #[test]
+    fn ordered_multisort_spans_pages_clears_and_preserves_null_last_ties() {
+        let rows:Vec<_>=[("B",4,Some(1)),("A",3,Some(2)),("A",3,Some(1)),("A",5,None),("A",3,Some(1)),("A",3,None)].iter().enumerate().map(|(i,(symbol,net,qty))|json!({"trade_id":format!("trade-{i:03}"),"session_id":"s","symbol":symbol,"side":"BUY","net_pnl":net,"quantity":qty})).collect();
+        let report=json!({"ledger":rows,"metrics":{"closed_trade_count":6},"scope":{"session_ids":["s"]},"sources":[],"excluded":[],"sessions":[],"status":"ready"});
+        let sorts=json!([{"key":"symbol","direction":"asc"},{"key":"net_pnl","direction":"desc"},{"key":"quantity","direction":"asc"}]).to_string();
+        let page=|p,sort:&str|build_trades_page_sorted(&report,&[],p,2,"close_time_utc","desc","{}",None,Some(sort)).unwrap();
+        let pages:Vec<_>=(1..=3).map(|p|page(p,&sorts)).collect();
+        let ids:Vec<_>=pages.iter().flat_map(|p|p["ledger"].as_array().unwrap()).map(|r|text(&r["trade_id"])).collect();
+        assert_eq!(ids,vec!["trade-003","trade-002","trade-004","trade-001","trade-005","trade-000"]);
+        assert_eq!(pages[0]["snapshot_key"],pages[2]["snapshot_key"]);
+        let cleared=page(1,"[]");assert_eq!(cleared["ledger"][0]["trade_id"],"trade-000");assert!(cleared["sort"].is_null());assert_eq!(cleared["sorts"],json!([]));
+        assert_ne!(cleared["snapshot_key"],pages[0]["snapshot_key"]);
+        let removed=page(1,r#"[{"key":"symbol","direction":"asc"}]"#);assert_eq!(removed["ledger"][0]["trade_id"],"trade-001");assert_ne!(removed["snapshot_key"],pages[0]["snapshot_key"]);
+        let descending=page(1,r#"[{"key":"symbol","direction":"asc"},{"key":"net_pnl","direction":"desc"},{"key":"quantity","direction":"desc"}]"#);
+        assert_eq!(descending["ledger"][1]["trade_id"],"trade-001");assert_eq!(page(3,r#"[{"key":"symbol","direction":"asc"},{"key":"net_pnl","direction":"desc"},{"key":"quantity","direction":"desc"}]"#)["ledger"][0]["trade_id"],"trade-005");
+        assert!(build_trades_page(&report,&[],1,2,"net_pnl","asc","{}",None).unwrap().get("sorts").is_none());
+    }
+    #[test]
+    fn malformed_duplicate_or_unknown_multisort_is_rejected() {
+        for raw in ["null","{}","","[null]",r#"[{"key":"missing","direction":"asc"}]"#,r#"[{"key":"symbol","direction":"up"}]"#,r#"[{"key":"symbol","direction":"asc","extra":1}]"#,r#"[{"key":"symbol"}]"#,r#"[{"key":"symbol","direction":"asc"},{"key":"symbol","direction":"desc"}]"#] {
+            assert_eq!(parse_sorts(Some(raw),"net_pnl","asc").unwrap_err(),"trade_page_parameters_invalid");
+        }
+        assert!(parse_sorts(Some(&json!(vec![json!({"key":"symbol","direction":"asc"});SORTS.len()+1]).to_string()),"net_pnl","asc").is_err());
+        assert!(parse_sorts(Some("[]"),"invalid","invalid").unwrap().is_empty());
+    }
     #[test]
     fn filter_search_facets_and_count_cover_rows_beyond_first_page() {
         let rows:Vec<_>=(0..35).map(|i|json!({"trade_id":format!("t-{i:02}"),"session_id":"s","symbol":if i==34{"XAU/USD"}else{"EUR/USD"},"side":if i==34{"BUY"}else{"SELL"},"net_pnl":i,"tags":if i==34{vec!["Kỷ luật tốt"]}else{vec![]},"starting_balance":1000,"entry_type":"market"})).collect();

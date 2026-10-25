@@ -1,4 +1,12 @@
 {
+  "Không lưu được cột hiển thị trong trình duyệt này.": {"vi": "Không lưu được cột hiển thị trong trình duyệt này.", "en": "Could not save column preferences in this browser."},
+  "Số thứ tự": {"vi": "Số thứ tự", "en": "Row number"},
+  "Xóa tất cả sắp xếp": {"vi": "Xóa tất cả sắp xếp", "en": "Clear all sorting"},
+  "Bỏ sắp xếp: {column}": {"vi": "Bỏ sắp xếp: {column}", "en": "Remove sort: {column}"},
+  "Thêm sắp xếp: {column}": {"vi": "Thêm sắp xếp: {column}", "en": "Add sort: {column}"},
+  "{column}, ưu tiên {priority}, {direction}. Nhấn để đổi chiều.": {"vi": "{column}, ưu tiên {priority}, {direction}. Nhấn để đổi chiều.", "en": "{column}, priority {priority}, {direction}. Activate to reverse."},
+  "tăng dần": {"vi": "tăng dần", "en": "ascending"},
+  "giảm dần": {"vi": "giảm dần", "en": "descending"},
   "Đã chọn {selected} trên {total}": {"vi": "Đã chọn {selected} trên {total}", "en": "Selected {selected} of {total}"},
   "{count} kết quả": {"vi": "{count} kết quả", "en": "{count} results"},
   "Đang hiển thị {start}–{end} trong {total} kết quả": {"vi": "Đang hiển thị {start}–{end} trong {total} kết quả", "en": "Showing {start}–{end} of {total} results"},

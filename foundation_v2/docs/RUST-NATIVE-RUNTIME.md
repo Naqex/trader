@@ -1,8 +1,10 @@
 # Rust-native candidate runtime
 
-Latest local rollout: [25 October grid semantics](../evidence/grid-semantics-20261025/RECEIPT.md)
-records native/compact API8010 readiness, Open table projections, UI5180 promotion
-and real-data pagination/browser checks without migration or terminal reconnect.
+Latest local rollout: [25 October grid sorting](../evidence/grid-sort-20261025/RECEIPT.md)
+records native/compact API8010 readiness, full-scope ordered multi-sort, persisted
+column visibility and UI5180 promotion without migration or terminal reconnect.
+The preceding [grid semantics receipt](../evidence/grid-semantics-20261025/RECEIPT.md)
+records Open table projections and real-data pagination checks.
 The earlier [period averages receipt](../evidence/report-period-averages-20261025/RECEIPT.md)
 records active-date denominators and Dashboard checks. Earlier recovery is in the
 [startup receipt](../evidence/runtime-start-20261025/RECEIPT.md).

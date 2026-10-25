@@ -1,4 +1,6 @@
 import DataTable, { SortableColumn } from './DataTable.jsx'
+import { nextTableSorts, sortTableRows } from './tableModel.js'
+import useTableColumns from './useTableColumns.js'
 import TradeLabelCell, { useTradeLabels } from './TradeLabelCell.jsx'
 import { currencyLabel } from './moneyFormat.js'
 import { displayDate } from './dateFormat.js'
@@ -64,29 +66,27 @@ function display(row, key, model, sessionName, { fmt, locale, t, timezone }) {
   if (key === 'tags') return Array.isArray(value) && value.length ? value.join(', ') : '-'
   return key === 'side' ? t(String(value).toLowerCase() === 'buy' ? 'Buy' : String(value).toLowerCase() === 'sell' ? 'Sell' : 'Chưa rõ') : ['status', 'source'].includes(key) ? t(value ?? '-') : value ?? '-'
 }
-export default function FxTradeLedger({ model, extra, selected, onSelect, sessionName, renderFilters, hidden = false, remotePage, emptyScopeKnown = false, readNotice, workspace, onLabelsChanged }) {
+export default function FxTradeLedger({ model, extra, selected, onSelect, sessionName, renderFilters, hidden = false, remotePage, emptyScopeKnown = false, readNotice, workspace, preferenceWorkspace = workspace, onLabelsChanged }) {
   const { t, locale, fmt, timezone } = useTestingLocale()
 
   const labelCatalog = useTradeLabels(workspace)
   const data = useMemo(() => ({ rows: remotePage ? model.ledger : filterAnalyticsRows(model.ledger, extra) }), [model, extra, Boolean(remotePage)])
-  const [localPage, setLocalPage] = useState(0), [localSize, setLocalSize] = useState(10), [localSort, setLocalSort] = useState({ key: 'report_time_utc', direction: 'desc' })
-  const page = remotePage ? remotePage.page - 1 : localPage, size = remotePage?.pageSize || localSize, sort = remotePage?.sort || localSort
+  const [localPage, setLocalPage] = useState(0), [localSize, setLocalSize] = useState(10), [localSorts, setLocalSorts] = useState([])
+  const page = remotePage ? remotePage.page - 1 : localPage, size = remotePage?.pageSize || localSize, sorts = remotePage?.sorts || localSorts
   const setPage = value => { if (remotePage) { if (!remotePage.pending && remotePage.totalCount !== null) remotePage.onChange({ page: value + 1 }) } else setLocalPage(value) }
   const setSize = value => { if (remotePage) remotePage.onChange({ pageSize: value, page: 1 }); else { setLocalSize(value); setLocalPage(0) } }
-  const setSort = value => { if (remotePage) remotePage.onChange({ sort: value, page: 1 }); else { setLocalSort(value); setLocalPage(0) } }
-  const [columns, setColumns] = useState(DEFAULT_COLUMNS), [checked, setChecked] = useState(new Set())
+  const setSorts = value => { if (remotePage) remotePage.onChange({ sorts: value, page: 1 }); else { setLocalSorts(value); setLocalPage(0) } }
+  const [columns, setColumns, columnStorageError] = useTableColumns(preferenceWorkspace, 'trades', DEFAULT_COLUMNS)
+  const [checked, setChecked] = useState(new Set())
   const tableScroll = useRef(null)
-  const rows = useMemo(() => remotePage ? data.rows : [...data.rows].sort((left, right) => {
-    let a = valueOf(left, sort.key, model, sessionName), b = valueOf(right, sort.key, model, sessionName)
-    if (sort.key.endsWith('_time_utc') || sort.key === 'recorded_at_utc') { a = closeTime(a)?.getTime(); b = closeTime(b)?.getTime() }
-    if (a === null || a === undefined) return b === null || b === undefined ? 0 : 1
-    if (b === null || b === undefined) return -1
-    const compared = typeof a === 'number' && typeof b === 'number' ? a - b : String(a).localeCompare(String(b), 'vi')
-    return (sort.direction === 'asc' ? compared : -compared) || left.rowIndex - right.rowIndex
-  }), [data.rows, model, sort, sessionName, Boolean(remotePage)])
+  const rows = useMemo(() => remotePage ? data.rows : sortTableRows(data.rows, sorts, (row, key) => {
+    const value = valueOf(row, key, model, sessionName)
+    if (key.endsWith('_time_utc') || key === 'recorded_at_utc') return closeTime(value)?.getTime()
+    return value
+  }, locale), [data.rows, model, sorts, sessionName, locale, Boolean(remotePage)])
   const total = remotePage ? remotePage.totalCount : rows.length
   const pages = Math.max(1, Math.ceil((total || 0) / size)), current = Math.min(page, pages - 1), visible = remotePage ? rows : rows.slice(current * size, (current + 1) * size)
-  useEffect(() => { if (tableScroll.current) tableScroll.current.scrollTop = 0 }, [current, size, sort, extra, model.result])
+  useEffect(() => { if (tableScroll.current) tableScroll.current.scrollTop = 0 }, [current, size, sorts, extra, model.result])
   useEffect(() => { if (!remotePage) setLocalPage(0) }, [extra, model.result])
   useEffect(() => { setChecked(new Set()) }, [extra, remotePage?.selectionKey, remotePage ? undefined : model.result])
   const toggle = id => setChecked(values => { const next = new Set(values); if (next.has(id)) next.delete(id); else next.add(id); return next })
@@ -103,14 +103,26 @@ export default function FxTradeLedger({ model, extra, selected, onSelect, sessio
     report_time_utc: ['Thoát lệnh', 'Realtime'], close_time_utc: ['Thoát lệnh', 'Chart'],
   }
   const columnLabel = (key, label) => timeColumns[key] ? `${t(timeColumns[key][0])} (${timeColumns[key][1]})` : key === 'net_pnl' ? `${t('Return')}${model.result?.multi_session ? '' : ` (${currencyLabel(model.result?.account_currency) || t('Đơn vị tài khoản')})`}` : t(label)
-  const columnControl = <TableColumnControl columns={columns} onChange={setColumns} options={COLUMNS.map(([key, label]) => [key, columnLabel(key, label)])} />
+  const columnControl = <TableColumnControl columns={columns} onChange={values => { setColumns(values); if (sorts.some(sort => !values.includes(sort.key))) setSorts(sorts.filter(sort => values.includes(sort.key))) }} options={COLUMNS.map(([key, label]) => [key, columnLabel(key, label)])} />
+  const columnHeader = ([key, label]) => {
+    const index = sorts.findIndex(sort => sort.key === key), sort = sorts[index]
+    const heading = columnLabel(key, label)
+    return <SortableColumn key={key} data-column={key} className={columnClass(key)} active={Boolean(sort)}
+      priority={index + 1} direction={sort?.direction} disabled={remotePage?.pending}
+      onSort={() => setSorts(nextTableSorts(sorts, key))} onClear={() => setSorts(sorts.filter(sort => sort.key !== key))}
+      clearLabel={t('Bỏ sắp xếp: {column}', { column: heading })}
+      sortLabel={sort ? t('{column}, ưu tiên {priority}, {direction}. Nhấn để đổi chiều.', { column: heading, priority: index + 1, direction: t(sort.direction === 'asc' ? 'tăng dần' : 'giảm dần') }) : t('Thêm sắp xếp: {column}', { column: heading })}>
+      {heading}
+    </SortableColumn>
+  }
   return <>
     {renderFilters?.(columnControl)}
+    {columnStorageError && <span role="status">{t('Không lưu được cột hiển thị trong trình duyệt này.')}</span>}
     {readNotice}
     <section aria-busy={remotePage?.pending || undefined} hidden={hidden} className="fxa-trades" aria-label={t("Trade ledger")} data-testid="fx-trade-ledger">
     {!renderFilters && <div className="fxa-ledger-tools">{columnControl}</div>}
     {checked.size > 0 && <span className="sr-only" role="status">{checked.size} {t("đã chọn")}</span>}
-    {empty ? <TestingTradesEmpty filtered={!noTrades} incomplete={incomplete} /> : <><DataTable className="fxa-table-scroll" viewportRef={tableScroll} label={t("Giao dịch, cuộn ngang để xem các cột")}><thead><tr><th className="is-center"><input ref={selectPage} disabled={remotePage?.pending} aria-checked={mixedChecked ? "mixed" : allChecked} aria-label={t("Chọn các lệnh trên trang")} type="checkbox" checked={allChecked} onChange={() => setChecked(values => { const next = new Set(values); visible.forEach(row => allChecked ? next.delete(row.tradeId) : next.add(row.tradeId)); return next })} /></th><th className="is-center">{t("Actions")}</th>{shownColumns.map(([key, label]) => <SortableColumn key={key} className={columnClass(key)} active={sort.key === key} direction={sort.direction} disabled={remotePage?.pending} onSort={() => setSort({ key, direction: sort.key === key && sort.direction === 'asc' ? 'desc' : 'asc' })}>{columnLabel(key, label)}</SortableColumn>)}</tr></thead><tbody>{remotePage?.pending ? <tr><td colSpan={shownColumns.length + 2}><TestingSkeleton rows={3} /></td></tr> : visible.map(row => <tr key={row.tradeId} data-checked={checked.has(row.tradeId) || undefined} className={selected === row.tradeId ? 'is-selected' : ''}><td className="is-center"><input type="checkbox" aria-label={t("Chọn lệnh {id}", { id: row.tradeId })} checked={checked.has(row.tradeId)} onChange={() => toggle(row.tradeId)} /></td><td className="is-center"><button className="fxa-detail-button wm-table-row-action" type="button" aria-label={t("Chi tiết {id}", { id: row.tradeId })} aria-pressed={selected === row.tradeId} onClick={() => onSelect(selected === row.tradeId ? '' : row.tradeId)}><TestingIcon kind="journal" size={16} /></button></td>{shownColumns.map(([key]) => <td key={key} data-column={key} className={(columnClass(key) + ' ') + (['net_pnl', 'gross_pnl'].includes(key) ? outcomeOf(row[key]) === 'win' ? 'is-positive' : outcomeOf(row[key]) === 'loss' ? 'is-negative' : '' : '')}>{key === 'tags' ? <TradeLabelCell workspace={workspace} session={row.session_id || model.result?.session_id || model.result?.provenance?.session_id} row={row} catalog={labelCatalog} onChanged={onLabelsChanged}/> : ['net_pnl','gross_pnl'].includes(key) && known(row[key]) ? <span tabIndex={0} aria-label={`${display(row,key,model,sessionName,{fmt,locale,t,timezone})} ${row.account_currency || model.result?.account_currency || t('Đơn vị tài khoản')}`} data-tooltip={row.account_currency || model.result?.account_currency} className={`wm-return-badge ${row[key] > 0 ? 'is-positive' : row[key] < 0 ? 'is-negative' : 'is-flat'}`}><span aria-hidden="true">{row[key] > 0 ? '↗' : row[key] < 0 ? '↙' : '-'}</span>{display(row,key,model,sessionName,{fmt,locale,t,timezone})}</span> : ['status', 'side', 'entry_type'].includes(key) && (key !== 'entry_type' || row.entry_type && !['-', '—'].includes(row.entry_type)) ? <span className={`fxa-badge is-${key === 'status' ? row.status === 'open' ? 'open' : 'closed' : key === 'entry_type' ? 'order-type' : String(row.side).toLowerCase()}`}>{display(row, key, model, sessionName, { fmt, locale, t, timezone })}</span> : key === 'session_id' ? <span data-tooltip={row.trade_id || row.tradeId}>{display(row, key, model, sessionName, { fmt, locale, t, timezone })}</span> : display(row, key, model, sessionName, { fmt, locale, t, timezone })}</td>)}</tr>)}</tbody></DataTable>
-    <PaginationFooter totalCount={total} meta={<span title={`${t('Múi giờ hiển thị trong Settings')}: ${timezone}`}>{t('Múi giờ')}: {tableTimezoneLabel(timezone, visible.flatMap(row => ['recorded_at_utc', 'open_time_utc', 'report_time_utc', 'close_time_utc'].map(key => closeTime(row[key]))))}</span>} label="Trade ledger pagination" data-testid="analytics-ledger-pagination" page={current + 1} pages={pages} onPageChange={value => setPage(value - 1)} pageSize={size} onPageSizeChange={setSize} pending={Boolean(remotePage?.pending)} unknown={total === null} /></>}
+    {empty ? <TestingTradesEmpty filtered={!noTrades} incomplete={incomplete} /> : <><DataTable className="fxa-table-scroll" viewportRef={tableScroll} label={t("Giao dịch, cuộn ngang để xem các cột")}><thead><tr><th scope="col" className="wm-table-row-number" aria-label={t("Số thứ tự")}><span aria-hidden="true">#</span>{sorts.length > 0 && <button type="button" className="wm-table-sort-clear-all" disabled={remotePage?.pending} aria-label={t("Xóa tất cả sắp xếp")} title={t("Xóa tất cả sắp xếp")} onClick={() => setSorts([])}>×</button>}</th><th className="is-center"><input ref={selectPage} disabled={remotePage?.pending} aria-checked={mixedChecked ? "mixed" : allChecked} aria-label={t("Chọn các lệnh trên trang")} type="checkbox" checked={allChecked} onChange={() => setChecked(values => { const next = new Set(values); visible.forEach(row => allChecked ? next.delete(row.tradeId) : next.add(row.tradeId)); return next })} /></th><th className="is-center">{t("Actions")}</th>{shownColumns.map(columnHeader)}</tr></thead><tbody>{remotePage?.pending ? <tr><td colSpan={shownColumns.length + 3}><TestingSkeleton rows={3} /></td></tr> : visible.map((row, index) => <tr key={row.tradeId} data-checked={checked.has(row.tradeId) || undefined} className={selected === row.tradeId ? 'is-selected' : ''}><td className="wm-table-row-number" data-column="row_number">{current * size + index + 1}</td><td className="is-center"><input type="checkbox" aria-label={t("Chọn lệnh {id}", { id: row.tradeId })} checked={checked.has(row.tradeId)} onChange={() => toggle(row.tradeId)} /></td><td className="is-center"><button className="fxa-detail-button wm-table-row-action" type="button" aria-label={t("Chi tiết {id}", { id: row.tradeId })} aria-pressed={selected === row.tradeId} onClick={() => onSelect(selected === row.tradeId ? '' : row.tradeId)}><TestingIcon kind="journal" size={16} /></button></td>{shownColumns.map(([key]) => <td key={key} data-column={key} className={(columnClass(key) + ' ') + (['net_pnl', 'gross_pnl'].includes(key) ? outcomeOf(row[key]) === 'win' ? 'is-positive' : outcomeOf(row[key]) === 'loss' ? 'is-negative' : '' : '')}>{key === 'tags' ? <TradeLabelCell workspace={workspace} session={row.session_id || model.result?.session_id || model.result?.provenance?.session_id} row={row} catalog={labelCatalog} onChanged={onLabelsChanged}/> : ['net_pnl','gross_pnl'].includes(key) && known(row[key]) ? <span tabIndex={0} aria-label={`${display(row,key,model,sessionName,{fmt,locale,t,timezone})} ${row.account_currency || model.result?.account_currency || t('Đơn vị tài khoản')}`} data-tooltip={row.account_currency || model.result?.account_currency} className={`wm-return-badge ${row[key] > 0 ? 'is-positive' : row[key] < 0 ? 'is-negative' : 'is-flat'}`}><span aria-hidden="true">{row[key] > 0 ? '↗' : row[key] < 0 ? '↙' : '-'}</span>{display(row,key,model,sessionName,{fmt,locale,t,timezone})}</span> : ['status', 'side', 'entry_type'].includes(key) && (key !== 'entry_type' || row.entry_type && !['-', '—'].includes(row.entry_type)) ? <span className={`fxa-badge is-${key === 'status' ? row.status === 'open' ? 'open' : 'closed' : key === 'entry_type' ? 'order-type' : String(row.side).toLowerCase()}`}>{display(row, key, model, sessionName, { fmt, locale, t, timezone })}</span> : key === 'session_id' ? <span data-tooltip={row.trade_id || row.tradeId}>{display(row, key, model, sessionName, { fmt, locale, t, timezone })}</span> : display(row, key, model, sessionName, { fmt, locale, t, timezone })}</td>)}</tr>)}</tbody></DataTable>
+    <PaginationFooter showCount={false} totalCount={total} meta={<span title={`${t('Múi giờ hiển thị trong Settings')}: ${timezone}`}>{t('Múi giờ')}: {tableTimezoneLabel(timezone, visible.flatMap(row => ['recorded_at_utc', 'open_time_utc', 'report_time_utc', 'close_time_utc'].map(key => closeTime(row[key]))))}</span>} label="Trade ledger pagination" data-testid="analytics-ledger-pagination" page={current + 1} pages={pages} onPageChange={value => setPage(value - 1)} pageSize={size} onPageSizeChange={setSize} pending={Boolean(remotePage?.pending)} unknown={total === null} /></>}
   </section></>
 }

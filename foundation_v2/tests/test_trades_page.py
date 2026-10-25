@@ -243,12 +243,17 @@ def test_http_opt_in_unpaged_compatibility_auth_and_date_boundaries(monkeypatch,
         paged = client.get(path, headers=headers, params={'page': 1})
         assert paged.status_code == 200
         assert paged.json()['schema_version'] == 'replay-trades-page-v1'
+        cleared = client.get(path, headers=headers, params={'page': 1, 'sort': '[]'})
+        assert cleared.status_code == 200 and cleared.json()['sorts'] == [] and cleared.json()['sort'] is None
+        multi = client.get(path, headers=headers, params={'page': 1, 'sort': '[{"key":"symbol","direction":"asc"},{"key":"net_pnl","direction":"desc"}]'})
+        assert multi.status_code == 200 and len(multi.json()['sorts']) == 2
+        assert multi.json()['snapshot_key'] != cleared.json()['snapshot_key']
         exact = client.get(path, headers=headers, params={'page': 1, 'from_close_utc': '2023-11-14T22:14:20Z', 'to_close_utc': '2023-11-14T22:14:20Z'})
         assert exact.json()['pagination']['filtered_count'] == 1
         later = client.get(path, headers=headers, params={'page': 1, 'from_close_utc': '2026-01-01T00:00:00Z'})
         assert later.json()['pagination']['filtered_count'] == 0
         assert client.get(path, headers={'X-Workspace-Id': 'tenant-b'}, params={'page': 1}).status_code == 403
         assert client.get(path, headers=headers, params={'page': 1, 'sessions': 'missing'}).status_code == 404
-        for params in [{'page': 0}, {'page': 1, 'page_size': 101}, {'page': 1, 'extra_filters': '[]'}, {'page': 1, 'sort_key': 'unknown'}]:
+        for params in [{'page': 0}, {'page': 1, 'page_size': 101}, {'page': 1, 'extra_filters': '[]'}, {'page': 1, 'sort_key': 'unknown'}, {'page': 1, 'sort': 'null'}, {'page': 1, 'sort': '[{"key":"symbol","direction":"asc"},{"key":"symbol","direction":"desc"}]'}]:
             assert client.get(path, headers=headers, params=params).status_code == 422
     assert source == before

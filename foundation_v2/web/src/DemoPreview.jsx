@@ -33,7 +33,7 @@ function Objectives({ model }) {
   return <section className="fxa-prop-objectives" aria-label={t("Challenge objectives")}><div className="fxa-section-heading"><h2>{t("Challenge objectives")}</h2><span>{t("Practice · Phase 1")}</span></div><div className="fxa-metrics"><Metric label={t("Balance")} value={fmt(model.endingBalance, t(" USD"))} /><Metric label={t("Profit target")} value={fmt(1000, ' USD')} /><Metric label={t("Daily loss limit")} value={fmt(500, ' USD')} /><Metric label={t("Overall loss limit")} value={fmt(1000, ' USD')} /></div><table><thead><tr><th>{t("Objective")}</th><th>{t("Kết quả / ngưỡng")}</th><th>{t("Trạng thái")}</th></tr></thead><tbody><tr><td>{t("Profit target")}</td><td>{fmt(model.netPnl, t(" USD"))} / {fmt(1000, ' USD')}</td><td>{model.netPnl >= 1000 ? t("Đạt") : t("Đang thực hiện")}</td></tr><tr><td>{t("Overall drawdown")}</td><td>{fmt(model.maxDrawdown, t(" USD"))} / {fmt(1000, ' USD')}</td><td>{model.maxDrawdown < 1000 ? t("Trong giới hạn") : t("Vi phạm")}</td></tr></tbody></table></section>
 }
 
-function DemoReports({ ledgerOnly, prop = false, query, state = 'demo' }) {
+function DemoReports({ workspace, ledgerOnly, prop = false, query, state = 'demo' }) {
 
 
   const { t, fmt } = useTestingLocale()
@@ -67,7 +67,7 @@ function DemoReports({ ledgerOnly, prop = false, query, state = 'demo' }) {
   const renderFilters = columnControl => <FxAnalyticsFilters statusControl={statusControl} persistInUrl={false} sourceType={prop ? 'Prop firm' : 'Backtesting'} columnControl={columnControl} ledgerOnly={ledgerOnly} filters={filters} onChange={patch => { setFilters(value => ({ ...value, ...patch })); setSelected('') }} extra={extra} onExtra={patch => setExtra(value => ({ ...value, ...patch }))} rows={model.ledger} facets={facets} onExport={exportCsv} sessionControl={<SessionFilter items={sessions} multiple={ledgerOnly} value={ids} onChange={value => { setIds(value); setSelected('') }} />} onClearSessions={() => setIds(ledgerOnly ? null : sessions[0].record_id)} />
   return <section className="wm-page as-page" aria-label={ledgerOnly ? t("Trades") : t("Analytics")}>
     <h1 className="sr-only">{ledgerOnly ? t("Trades") : t("Analytics")}</h1>
-    {ledgerOnly ? <FxTradeLedger hidden={state === 'error'} model={model} extra={extra} selected={selected} onSelect={setSelected} renderFilters={renderFilters} readNotice={readNotice} /> : <>{renderFilters()}{readNotice}</>}
+    {ledgerOnly ? <FxTradeLedger preferenceWorkspace={workspace} hidden={state === 'error'} model={model} extra={extra} selected={selected} onSelect={setSelected} renderFilters={renderFilters} readNotice={readNotice} /> : <>{renderFilters()}{readNotice}</>}
     {prop && state !== 'error' && <Objectives model={model} />}
     {!ledgerOnly && state !== 'error' && <FxAnalyticsReport model={model} extra={extra} experimentStatus="unavailable" config={config} onConfig={setConfig} selected={selected} onSelect={setSelected} />}
     {row && <Inspector onClose={() => setSelected('')} className="fxa-trade-inspector" aria-label={t("Chi tiết giao dịch")}><div className="fxa-section-heading"><h2>{row.session_name} · {row.symbol}</h2><button className="fxa-button" type="button" onClick={() => setSelected('')}>{t("Đóng chi tiết")}</button></div><div className="fxa-metrics"><Metric label={t("Net PnL")} value={fmt(row.net_pnl, t(" USD"))} /><Metric label={t("Return (R)")} value={fmt(row.realized_r, t(" R"))} /><Metric label={t("Entry")} value={fmt(row.price_open, '', 6)} /><Metric label={t("Exit")} value={fmt(row.price_close, '', 6)} /></div></Inspector>}
@@ -163,8 +163,8 @@ export default function DemoPreview({ view, workspace, query, state = 'demo' }) 
   if (state === 'empty' && ['replay', 'trade', 'analytics'].includes(view)) return <TestingEmptyState viewport />
   if (view === 'overview') return <DemoDashboard workspace={workspace} query={query} state={state} />
   if (view === 'replay') return <DemoSessions workspace={workspace} query={query} state={state} />
-  if (view === 'trade') return <DemoReports ledgerOnly query={query} state={state} />
-  if (view === 'analytics' || view === 'testing' || view === 'prop') return <DemoReports query={query} state={state} prop={view !== 'analytics' || query.get('analytics_source') === 'prop'} />
+  if (view === 'trade') return <DemoReports workspace={workspace} ledgerOnly query={query} state={state} />
+  if (view === 'analytics' || view === 'testing' || view === 'prop') return <DemoReports workspace={workspace} query={query} state={state} prop={view !== 'analytics' || query.get('analytics_source') === 'prop'} />
   if (view === 'market-data') return <DataDeskWorkspace workspace={workspace} query={query} preview={{ ...DEMO_DATA_LIBRARY, state, datasets: state === 'empty' ? [] : DEMO_DATASETS }} />
   if (view === 'live') return <LiveWorkspace workspace={workspace} query={query} preview={DEMO_LIVE} />
   if (view === 'playbook') return <DemoStrategies />

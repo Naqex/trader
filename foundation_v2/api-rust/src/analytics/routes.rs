@@ -129,7 +129,7 @@ async fn invoke(State(state):State<Arc<AppState>>,scope:Workspace,request:Reques
                         crate::trade_labels::project(&tx,&scope.workspace_id,rows,None).await?;
                     }
                 }
-                let value=trades::build_trades_page(&report,&journals,page as usize,size as usize,q.get("sort_key").map(String::as_str).unwrap_or(if activity_basis{"report_time_utc"}else{"close_time_utc"}),q.get("sort_direction").map(String::as_str).unwrap_or("desc"),&extra_filters,Some(&facet)).map_err(bad)?;
+                let value=trades::build_trades_page_sorted(&report,&journals,page as usize,size as usize,q.get("sort_key").map(String::as_str).unwrap_or(if activity_basis{"report_time_utc"}else{"close_time_utc"}),q.get("sort_direction").map(String::as_str).unwrap_or("desc"),&extra_filters,Some(&facet),q.get("sort").map(String::as_str)).map_err(bad)?;
                 retain(cache,page_key,value).as_ref().clone()
             }else{
                 let intervals=activity(&tx,&scope.workspace_id).await?;

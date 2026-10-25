@@ -68,9 +68,25 @@ def parse_filters(raw):
         raise AnalyticsValidationError('trade_page_filters_invalid') from exc
 
 
-def prepare_trades_projection(report, journals, *, sort_key, sort_direction, extra_filters='{}', facet_report=None):
-    if sort_key not in SORT_KEYS or sort_direction not in ('asc', 'desc'):
-        raise AnalyticsValidationError('trade_page_parameters_invalid')
+def parse_sorts(raw, sort_key='close_time_utc', sort_direction='desc'):
+    try:
+        sorts = json.loads(raw) if raw is not None else [{'key': sort_key, 'direction': sort_direction}]
+        if not isinstance(sorts, list) or len(sorts) > len(SORT_KEYS):
+            raise ValueError()
+        seen = set()
+        for item in sorts:
+            if (not isinstance(item, dict) or set(item) != {'key', 'direction'}
+                    or not isinstance(item['key'], str) or item['key'] not in SORT_KEYS
+                    or item['direction'] not in ('asc', 'desc') or item['key'] in seen):
+                raise ValueError()
+            seen.add(item['key'])
+        return sorts
+    except (ValueError, TypeError) as exc:
+        raise AnalyticsValidationError('trade_page_parameters_invalid') from exc
+
+
+def prepare_trades_projection(report, journals, *, sort_key, sort_direction, extra_filters='{}', facet_report=None, sort=None):
+    sorts = parse_sorts(sort, sort_key, sort_direction)
     filters, zone = parse_filters(extra_filters)
     journal_tags = {}
     journal_notes = set()
@@ -147,7 +163,7 @@ def prepare_trades_projection(report, journals, *, sort_key, sort_direction, ext
         return not notes or any(notes in str(row.get(key) or '').lower() for key in ('notes', 'note'))
 
     filtered = [row for row in rows if matches(row)]
-    def value(row):
+    def value(row, sort_key):
         if sort_key == 'session_id': return row.get('session_name') or row['session_id']
         if sort_key == 'source': return 'Replay'
         if sort_key == 'status': return 'Open' if row.get('status') == 'open' else 'Closed'
@@ -165,24 +181,30 @@ def prepare_trades_projection(report, journals, *, sort_key, sort_direction, ext
             except (TypeError, ValueError):
                 return None
         return row.get(sort_key)
-    sort_values = {row['_index']: value(row) for row in filtered}
+    sort_values = {row['_index']: [value(row, item['key']) for item in sorts] for row in filtered}
     def compare(a, b):
-        left, right = sort_values[a['_index']], sort_values[b['_index']]
-        if left is None or right is None:
-            return 0 if left is None and right is None else 1 if left is None else -1
-        if isinstance(left, (int, float)) and isinstance(right, (int, float)):
-            result = (left > right) - (left < right)
-        else:
-            result = (str(left) > str(right)) - (str(left) < str(right))
-        return result * (1 if sort_direction == 'asc' else -1) or a['_index'] - b['_index']
+        for item, left, right in zip(sorts, sort_values[a['_index']], sort_values[b['_index']]):
+            if left is None or right is None:
+                if left is None and right is None:
+                    continue
+                return 1 if left is None else -1
+            if isinstance(left, (int, float)) and isinstance(right, (int, float)):
+                result = (left > right) - (left < right)
+            else:
+                result = (str(left) > str(right)) - (str(left) < str(right))
+            if result:
+                return result * (1 if item['direction'] == 'asc' else -1)
+        return a['_index'] - b['_index']
     filtered.sort(key=cmp_to_key(compare))
     count = None if report['metrics']['closed_trade_count'] is None else len(filtered)
     ordered = [{key: value for key, value in row.items() if key != '_index'} for row in filtered]
     snapshot = {key: report.get(key) for key in ('scope', 'sources', 'excluded')}
     snapshot['journals'] = [(record['record_id'], record['revision']) for record in journals]
     snapshot['filters'] = filters
+    if sort is not None:
+        snapshot['sorts'] = sorts
     return {'schema_version': 'replay-trades-page-v1', 'status': report['status'], 'scope': {**report['scope'], 'extra_filters': filters}, 'sources': report['sources'], 'excluded': report['excluded'], 'sessions': report['sessions'], 'ledger': ordered, 'facets': facets, 'filtered_count': count,
-            'sort': {'key': sort_key, 'direction': sort_direction}, 'snapshot_key': hashlib.sha256(json.dumps(snapshot, sort_keys=True, default=str).encode()).hexdigest()}
+            'sort': sorts[0] if sorts else None, **({'sorts': sorts} if sort is not None else {}), 'snapshot_key': hashlib.sha256(json.dumps(snapshot, sort_keys=True, default=str).encode()).hexdigest()}
 
 
 def slice_trades_projection(projection, *, page, page_size):
@@ -197,8 +219,8 @@ def slice_trades_projection(projection, *, page, page_size):
             'pagination': {'page': page, 'page_size': page_size, 'returned_count': len(visible), 'filtered_count': count, 'page_count': pages, 'has_next': pages is not None and page < pages}}
 
 
-def build_trades_page(report, journals, *, page, page_size, sort_key, sort_direction, extra_filters='{}'):
+def build_trades_page(report, journals, *, page, page_size, sort_key, sort_direction, extra_filters='{}', sort=None):
     if isinstance(page, bool) or not isinstance(page, int) or page < 1 or isinstance(page_size, bool) or not isinstance(page_size, int) or not 1 <= page_size <= 100:
         raise AnalyticsValidationError('trade_page_parameters_invalid')
-    projection = prepare_trades_projection(report, journals, sort_key=sort_key, sort_direction=sort_direction, extra_filters=extra_filters)
+    projection = prepare_trades_projection(report, journals, sort_key=sort_key, sort_direction=sort_direction, extra_filters=extra_filters, sort=sort)
     return slice_trades_projection(projection, page=page, page_size=page_size)

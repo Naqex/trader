@@ -63,12 +63,27 @@ Last sync is the last successful data observation, not a connection expiry date.
   This convention never rewrites stored data or CSV null values.
 - Select-all checkbox rows show selected/available counts for the whole available
   set, independent of the search text; disabled and stale IDs do not inflate them.
-  Grid footers show a labeled result total; the displayed range is available on
-  hover. Timezone metadata uses the Settings IANA zone and offsets of the displayed
+  Trades omits the footer total and uses a fixed `#` column numbered across pages
+  in the current filtered/sorted order, not a persistent trade identity. Other
+  footers may show a labeled result total. Timezone metadata uses the Settings
+  IANA zone and offsets of the displayed
   observations, including both offsets when those observations cross DST.
 - Grid sort icons reserve a stable slot. Left/right headings align their visible
   text with cell text; centered categories balance the icon slot. Money badge
   padding extends into the cell inset so its digits share the numeric text edge.
+- Trades multi-sort adds a new column on ordinary click, toggles its direction
+  in place on another click, and exposes a separate remove button. Priorities are
+  explicit numbers; only the first has `aria-sort`. Active headers use a subtle
+  blue background, with full-cell hover and stable indicator/clear slots. The
+  orange clear-all action occupies the left edge of the `#` header. Clearing all
+  restores source order. Full-scope filtering and ordered sorting precede paging;
+  nulls stay last at each level and source order breaks equal ties.
+- Trade column visibility is stored per workspace/table in browser localStorage,
+  shared by aggregate/session/demo views of the same column schema. It survives
+  reload on that browser, without cross-device sync. Validate stored IDs against
+  current columns and recover malformed/stale preferences. Hiding a sorted column
+  removes its criterion; reset restores all columns. Storage denial preserves
+  interaction and displays an explicit persistence error.
 - Trades includes Open exposure from the same validated session snapshot in its
   table projection, before filtering/counting/paging. Closed metrics and analytics
   exports retain their realized-only contract. Open exits stay missing; estimated

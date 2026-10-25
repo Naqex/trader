@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { compareTableValues, nextTableSort } from '../src/tableModel.js'
+import { compareTableValues, nextTableSort, nextTableSorts, sortTableRows, tableColumnsPreference } from '../src/tableModel.js'
 import { filterLibrary } from '../src/dataLibraryModel.js'
 import { filterAnalyticsRows } from '../src/tradingAnalyticsModel.js'
 
@@ -35,4 +35,24 @@ test('local trade search uses the same unaccented unordered tokens as native tra
   const rows=Array.from({length:35},(_,i)=>({trade_id:`t-${i}`,tags:i===34?['Kỷ luật tốt']:[],net_pnl:i}))
   const filtered=filterAnalyticsRows(rows,{search:' TOT  ky LUAT '})
   assert.equal(filtered.length,1);assert.equal(filtered[0].trade_id,'t-34')
+})
+
+test('ordered multi-sort toggles in place and uses later keys only for ties before paging', () => {
+  let sorts = nextTableSorts([], 'group')
+  sorts = nextTableSorts(sorts, 'pnl')
+  assert.deepEqual(nextTableSorts(sorts, 'group'), [{ key: 'group', direction: 'desc' }, { key: 'pnl', direction: 'asc' }])
+  const rows = [{ id: 'a', group: 'B', pnl: -2 }, { id: 'b', group: 'A', pnl: null }, { id: 'c', group: 'A', pnl: 0 }, { id: 'd', group: 'A', pnl: -2 }, { id: 'e', group: 'A', pnl: -2 }]
+  const sorted = sortTableRows(rows, sorts, (row, key) => row[key])
+  assert.deepEqual(sorted.map(row => row.id), ['d', 'e', 'c', 'b', 'a'])
+  assert.deepEqual(sorted.slice(2, 4).map(row => row.id), ['c', 'b'])
+  assert.deepEqual(sortTableRows(rows, nextTableSorts(sorts, 'pnl'), (row, key) => row[key]).map(row => row.id), ['c', 'd', 'e', 'b', 'a'])
+  assert.deepEqual(sortTableRows(rows, [], (row, key) => row[key]), rows)
+  assert.deepEqual(rows.map(row => row.id), ['a', 'b', 'c', 'd', 'e'])
+})
+
+test('column preferences recover malformed/stale storage and retain deliberate empty selection', () => {
+  const available = ['a', 'b', 'c']
+  assert.deepEqual(tableColumnsPreference('["c","a","a","retired"]', available), ['a', 'c'])
+  assert.deepEqual(tableColumnsPreference('[]', available), [])
+  for (const raw of [null, 'oops', '{}', '[2]', '["retired"]']) assert.deepEqual(tableColumnsPreference(raw, available), available)
 })

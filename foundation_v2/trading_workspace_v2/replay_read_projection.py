@@ -102,7 +102,7 @@ class ReplayReadProjectionService:
 
     def trades(self, workspace_id, *, session_ids=None, side='all', outcome='all',
                from_close_utc=None, to_close_utc=None, page=None, page_size=10,
-               sort_key='close_time_utc', sort_direction='desc', extra_filters='{}'):
+               sort_key='close_time_utc', sort_direction='desc', extra_filters='{}', sort=None):
         filters = serialize_filters(normalize_filters({'side': side, 'outcome': outcome,
                     'from_close_utc': from_close_utc, 'to_close_utc': to_close_utc}))
         heads = self.store.list_record_heads(workspace_id, 'replay')
@@ -136,7 +136,7 @@ class ReplayReadProjectionService:
         journal_heads = self.store.list_record_heads(workspace_id, 'journal')
         journal_revisions = [(head['record_id'], head['revision']) for head in journal_heads]
         key = ('replay-trades-ordered-open-v2', workspace_id,
-               _identity([base_key, journal_revisions, sort_key, sort_direction, extra_filters]))
+               _identity([base_key, journal_revisions, sort_key, sort_direction, extra_filters, sort]))
         page_key = ('replay-trades-page-v1', key, page, page_size)
         cached_page = self.cache.get(page_key)
         if cached_page is not None:
@@ -185,7 +185,7 @@ class ReplayReadProjectionService:
                             'ledger': [*report['ledger'], *filter_open_trade_rows(open_rows, filters)]}
             table_facets = {**facet_report, 'ledger': [*facet_report['ledger'], *open_rows]}
             return prepare_trades_projection(table_report, journals, sort_key=sort_key,
-                       sort_direction=sort_direction, extra_filters=extra_filters, facet_report=table_facets)
+                       sort_direction=sort_direction, extra_filters=extra_filters, facet_report=table_facets, sort=sort)
         projection = self.cache.get_or_build(key, build_ordered)
         result = slice_trades_projection(projection, page=page, page_size=page_size)
         if self.cache.get(key) is None:

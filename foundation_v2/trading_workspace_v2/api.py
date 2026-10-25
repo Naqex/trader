@@ -428,7 +428,7 @@ def create_app(
         from_close_utc: str | None = None, to_close_utc: str | None = None,
         page: int | None = None, page_size: int = 10,
         sort_key: str = "close_time_utc", sort_direction: str = "desc",
-        extra_filters: str = "{}",
+        extra_filters: str = "{}", sort: str | None = None,
         workspace: str = Depends(workspace_id),
     ):
         try:
@@ -438,7 +438,7 @@ def create_app(
                 session_ids=selected, side=side, outcome=outcome,
                 from_close_utc=from_close_utc, to_close_utc=to_close_utc,
                 page=page, page_size=page_size, sort_key=sort_key,
-                sort_direction=sort_direction, extra_filters=extra_filters,
+                sort_direction=sort_direction, extra_filters=extra_filters, sort=sort,
             )
         except LookupError as exc:
             raise HTTPException(status_code=404, detail="replay_not_found") from exc

@@ -1,0 +1,404 @@
+{
+  "report": {
+    "ledger": [
+      {
+        "trade_id": "0",
+        "session_id": "s",
+        "symbol": "B",
+        "side": "BUY",
+        "net_pnl": 4,
+        "quantity": 1
+      },
+      {
+        "trade_id": "1",
+        "session_id": "s",
+        "symbol": "A",
+        "side": "BUY",
+        "net_pnl": 3,
+        "quantity": 2
+      },
+      {
+        "trade_id": "2",
+        "session_id": "s",
+        "symbol": "A",
+        "side": "BUY",
+        "net_pnl": 3,
+        "quantity": 1
+      },
+      {
+        "trade_id": "3",
+        "session_id": "s",
+        "symbol": "A",
+        "side": "BUY",
+        "net_pnl": 5,
+        "quantity": null
+      },
+      {
+        "trade_id": "4",
+        "session_id": "s",
+        "symbol": "A",
+        "side": "BUY",
+        "net_pnl": 3,
+        "quantity": 1
+      },
+      {
+        "trade_id": "5",
+        "session_id": "s",
+        "symbol": "A",
+        "side": "BUY",
+        "net_pnl": 3,
+        "quantity": null
+      }
+    ],
+    "metrics": {
+      "closed_trade_count": 6
+    },
+    "scope": {
+      "session_ids": [
+        "s"
+      ]
+    },
+    "sources": [],
+    "excluded": [],
+    "sessions": [],
+    "status": "ready"
+  },
+  "cases": [
+    {
+      "args": {
+        "page": 1,
+        "page_size": 2,
+        "sort_key": "close_time_utc",
+        "sort_direction": "desc",
+        "sort": "[{\"key\": \"symbol\", \"direction\": \"asc\"}, {\"key\": \"net_pnl\", \"direction\": \"desc\"}, {\"key\": \"quantity\", \"direction\": \"asc\"}]"
+      },
+      "expected": {
+        "schema_version": "replay-trades-page-v1",
+        "status": "ready",
+        "scope": {
+          "session_ids": [
+            "s"
+          ],
+          "extra_filters": {}
+        },
+        "sources": [],
+        "excluded": [],
+        "sessions": [],
+        "facets": {
+          "assets": [
+            "A",
+            "B"
+          ],
+          "tags": [],
+          "strategies": [],
+          "years": [],
+          "types": [],
+          "has_notes": false,
+          "date_range": {
+            "from": null,
+            "to": null
+          }
+        },
+        "sort": {
+          "key": "symbol",
+          "direction": "asc"
+        },
+        "sorts": [
+          {
+            "key": "symbol",
+            "direction": "asc"
+          },
+          {
+            "key": "net_pnl",
+            "direction": "desc"
+          },
+          {
+            "key": "quantity",
+            "direction": "asc"
+          }
+        ],
+        "snapshot_key": "51fccc3f3fd3a05ab92501e06ecd75f8bf2e9a06c7c678cc49ed831e2619408b",
+        "ledger": [
+          {
+            "trade_id": "3",
+            "session_id": "s",
+            "symbol": "A",
+            "side": "BUY",
+            "net_pnl": 5,
+            "quantity": null,
+            "report_kind": "app",
+            "tags": [],
+            "has_notes": false
+          },
+          {
+            "trade_id": "2",
+            "session_id": "s",
+            "symbol": "A",
+            "side": "BUY",
+            "net_pnl": 3,
+            "quantity": 1,
+            "report_kind": "app",
+            "tags": [],
+            "has_notes": false
+          }
+        ],
+        "pagination": {
+          "page": 1,
+          "page_size": 2,
+          "returned_count": 2,
+          "filtered_count": 6,
+          "page_count": 3,
+          "has_next": true
+        }
+      }
+    },
+    {
+      "args": {
+        "page": 2,
+        "page_size": 2,
+        "sort_key": "close_time_utc",
+        "sort_direction": "desc",
+        "sort": "[{\"key\": \"symbol\", \"direction\": \"asc\"}, {\"key\": \"net_pnl\", \"direction\": \"desc\"}, {\"key\": \"quantity\", \"direction\": \"asc\"}]"
+      },
+      "expected": {
+        "schema_version": "replay-trades-page-v1",
+        "status": "ready",
+        "scope": {
+          "session_ids": [
+            "s"
+          ],
+          "extra_filters": {}
+        },
+        "sources": [],
+        "excluded": [],
+        "sessions": [],
+        "facets": {
+          "assets": [
+            "A",
+            "B"
+          ],
+          "tags": [],
+          "strategies": [],
+          "years": [],
+          "types": [],
+          "has_notes": false,
+          "date_range": {
+            "from": null,
+            "to": null
+          }
+        },
+        "sort": {
+          "key": "symbol",
+          "direction": "asc"
+        },
+        "sorts": [
+          {
+            "key": "symbol",
+            "direction": "asc"
+          },
+          {
+            "key": "net_pnl",
+            "direction": "desc"
+          },
+          {
+            "key": "quantity",
+            "direction": "asc"
+          }
+        ],
+        "snapshot_key": "51fccc3f3fd3a05ab92501e06ecd75f8bf2e9a06c7c678cc49ed831e2619408b",
+        "ledger": [
+          {
+            "trade_id": "4",
+            "session_id": "s",
+            "symbol": "A",
+            "side": "BUY",
+            "net_pnl": 3,
+            "quantity": 1,
+            "report_kind": "app",
+            "tags": [],
+            "has_notes": false
+          },
+          {
+            "trade_id": "1",
+            "session_id": "s",
+            "symbol": "A",
+            "side": "BUY",
+            "net_pnl": 3,
+            "quantity": 2,
+            "report_kind": "app",
+            "tags": [],
+            "has_notes": false
+          }
+        ],
+        "pagination": {
+          "page": 2,
+          "page_size": 2,
+          "returned_count": 2,
+          "filtered_count": 6,
+          "page_count": 3,
+          "has_next": true
+        }
+      }
+    },
+    {
+      "args": {
+        "page": 3,
+        "page_size": 2,
+        "sort_key": "close_time_utc",
+        "sort_direction": "desc",
+        "sort": "[{\"key\": \"symbol\", \"direction\": \"asc\"}, {\"key\": \"net_pnl\", \"direction\": \"desc\"}, {\"key\": \"quantity\", \"direction\": \"asc\"}]"
+      },
+      "expected": {
+        "schema_version": "replay-trades-page-v1",
+        "status": "ready",
+        "scope": {
+          "session_ids": [
+            "s"
+          ],
+          "extra_filters": {}
+        },
+        "sources": [],
+        "excluded": [],
+        "sessions": [],
+        "facets": {
+          "assets": [
+            "A",
+            "B"
+          ],
+          "tags": [],
+          "strategies": [],
+          "years": [],
+          "types": [],
+          "has_notes": false,
+          "date_range": {
+            "from": null,
+            "to": null
+          }
+        },
+        "sort": {
+          "key": "symbol",
+          "direction": "asc"
+        },
+        "sorts": [
+          {
+            "key": "symbol",
+            "direction": "asc"
+          },
+          {
+            "key": "net_pnl",
+            "direction": "desc"
+          },
+          {
+            "key": "quantity",
+            "direction": "asc"
+          }
+        ],
+        "snapshot_key": "51fccc3f3fd3a05ab92501e06ecd75f8bf2e9a06c7c678cc49ed831e2619408b",
+        "ledger": [
+          {
+            "trade_id": "5",
+            "session_id": "s",
+            "symbol": "A",
+            "side": "BUY",
+            "net_pnl": 3,
+            "quantity": null,
+            "report_kind": "app",
+            "tags": [],
+            "has_notes": false
+          },
+          {
+            "trade_id": "0",
+            "session_id": "s",
+            "symbol": "B",
+            "side": "BUY",
+            "net_pnl": 4,
+            "quantity": 1,
+            "report_kind": "app",
+            "tags": [],
+            "has_notes": false
+          }
+        ],
+        "pagination": {
+          "page": 3,
+          "page_size": 2,
+          "returned_count": 2,
+          "filtered_count": 6,
+          "page_count": 3,
+          "has_next": false
+        }
+      }
+    },
+    {
+      "args": {
+        "page": 1,
+        "page_size": 2,
+        "sort_key": "close_time_utc",
+        "sort_direction": "desc",
+        "sort": "[]"
+      },
+      "expected": {
+        "schema_version": "replay-trades-page-v1",
+        "status": "ready",
+        "scope": {
+          "session_ids": [
+            "s"
+          ],
+          "extra_filters": {}
+        },
+        "sources": [],
+        "excluded": [],
+        "sessions": [],
+        "facets": {
+          "assets": [
+            "A",
+            "B"
+          ],
+          "tags": [],
+          "strategies": [],
+          "years": [],
+          "types": [],
+          "has_notes": false,
+          "date_range": {
+            "from": null,
+            "to": null
+          }
+        },
+        "sort": null,
+        "sorts": [],
+        "snapshot_key": "63dd137956261993d13ada32d90e91861866ad2d127a1abfd7e20caff5e8e983",
+        "ledger": [
+          {
+            "trade_id": "0",
+            "session_id": "s",
+            "symbol": "B",
+            "side": "BUY",
+            "net_pnl": 4,
+            "quantity": 1,
+            "report_kind": "app",
+            "tags": [],
+            "has_notes": false
+          },
+          {
+            "trade_id": "1",
+            "session_id": "s",
+            "symbol": "A",
+            "side": "BUY",
+            "net_pnl": 3,
+            "quantity": 2,
+            "report_kind": "app",
+            "tags": [],
+            "has_notes": false
+          }
+        ],
+        "pagination": {
+          "page": 1,
+          "page_size": 2,
+          "returned_count": 2,
+          "filtered_count": 6,
+          "page_count": 3,
+          "has_next": true
+        }
+      }
+    }
+  ]
+}
