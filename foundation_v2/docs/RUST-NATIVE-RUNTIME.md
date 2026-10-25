@@ -1,5 +1,8 @@
 # Rust-native candidate runtime
 
+Latest local recovery: [25 October startup receipt](../evidence/runtime-start-20261025/RECEIPT.md)
+records native/compact API8010 readiness and the real-data Dashboard check on UI5180.
+
 The 17 October 2026 execution extension in the workspace Product Completion Plan
 expands the earlier API-only migration. The candidate runs interactive domain
 logic directly in Rust. `compatibility` remains the launcher default and rollback
