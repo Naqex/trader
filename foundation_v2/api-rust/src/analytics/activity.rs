@@ -145,6 +145,30 @@ mod tests {
         assert_eq!(curve["points"][0]["equity"],99996.0);
         assert_eq!(curve["scope"],"account");
     }
+
+    #[test]
+    fn equity_phase_capital_reset_starts_a_new_segment_but_carry_and_market_losses_do_not() {
+        let events = json!([
+            {"sequence":1,"virtual_time_utc":1700000000,"kind":"price_mark","equity":100000,"balance":100000},
+            {"sequence":2,"virtual_time_utc":1700000060,"kind":"price_mark","equity":99000,"balance":100000},
+            {"sequence":3,"virtual_time_utc":1700000060,"kind":"phase_transition","equity":50000,"balance":50000,"details":{"carry_policy":"reset"}},
+            {"sequence":4,"virtual_time_utc":1700000120,"kind":"price_mark","equity":49000,"balance":50000},
+            {"sequence":5,"virtual_time_utc":1700000180,"kind":"phase_transition","equity":49000,"balance":50000,"details":{"carry_policy":"carry_all"}},
+            {"sequence":6,"virtual_time_utc":1700000240,"kind":"price_mark","equity":10000,"balance":50000},
+            {"sequence":7,"virtual_time_utc":1700000300,"kind":"phase_transition","equity":10000,"balance":50000,"details":{"carry_policy":"carry_balance"}}
+        ]);
+        for portfolio in [false,true] {
+            let payload = if portfolio {json!({"asset_states":{"a":{}},"portfolio_execution":{"ledger":events}})}
+                else {json!({"execution":{"ledger":events}})};
+            let curve = equity_curve(&payload,None,false).unwrap();
+            let segments:Vec<_> = curve["points"].as_array().unwrap().iter().map(|point|point["segment"].as_u64().unwrap()).collect();
+            assert_eq!(segments,vec![0,0,1,1,1,1,1]);
+            assert_eq!(curve["partial"],false);
+            let filtered=equity_curve(&payload,Some(&json!({"from_close_utc":1700000060})),false).unwrap();
+            assert_eq!(filtered["points"][1]["segment"],1);
+            assert_eq!(filtered["points"][1]["equity"],50000.0);
+        }
+    }
 }
 
 pub(super) fn equity_curve(payload: &Value, filters: Option<&Value>, activity_basis: bool) -> R<Value> {
@@ -156,6 +180,11 @@ pub(super) fn equity_curve(payload: &Value, filters: Option<&Value>, activity_ba
     let mut points = Vec::new();
     let (mut segment, mut missing, mut previous) = (0usize, 0usize, None::<Value>);
     for event in account["ledger"].as_array().into_iter().flatten() {
+        // Reset changes the phase capital contract, not trading performance.
+        // Carry policies and large market moves retain the same equity peak.
+        if event["kind"] == "phase_transition" && event["details"]["carry_policy"] == "reset" {
+            segment += 1;
+        }
         let state = json!([event["equity"], event["balance"]]);
         // Unchanged administrative events do not create holes in a financial curve.
         if previous.as_ref() == Some(&state) && !["market_fill","manual_close","protective_fill","phase_transition"].contains(&text(&event["kind"])) { continue; }
