@@ -14,12 +14,20 @@ Giữ palette `annam-compact@0.1.1`; không thay token pin.
 - Consumer giữ cách lấy dữ liệu, tính tiền, quyền thao tác và trạng thái đọc.
 
 Trades giữ tên cột thời gian một dòng (`Vào lệnh (Realtime)`, `Vào lệnh (Chart)`
-và tương tự cho thoát lệnh). Múi giờ từ Settings nằm trong meta của footer,
-không thêm hàng phía trên header; giữ tên IANA để tránh sai offset lịch sử/DST.
+và tương tự cho thoát lệnh). Múi giờ dùng chung với Settings, chọn ở đồng hồ
+header của ứng dụng; không lặp lại trong footer của grid. Giữ tên IANA để tính
+đúng offset tại mỗi mốc lịch sử/DST.
 
 Tên, nhãn và thời gian căn trái; số căn phải; trạng thái/badge, checkbox và
 thao tác căn giữa. Header và nội dung dùng cùng trục và padding; icon sort nằm
 trước nhãn số, còn nhãn căn giữa có khoảng icon cân xứng hai bên để không lệch tâm.
+
+Trades multi-sort dùng click thường để thêm cột/đổi chiều. Header đang sort có nền
+xám và SVG mũi tên bo nét, số ưu tiên nhỏ màu cam dạng superscript; không dùng màu
+để thay cho thứ tự bằng số. Slot 26px đủ cho ưu tiên hai chữ số. Nút bỏ sort nằm
+trong padding mép header, không thêm một vùng flex riêng hoặc placeholder; chiều
+rộng và trục text không đổi khi bật/tắt sort. Ô `#` chuyển thành nút `×` màu cam
+khi có sort; xóa hết sẽ trở lại `#`. Nhãn truy cập giữ rõ chức năng xóa.
 
 ## Data contract
 

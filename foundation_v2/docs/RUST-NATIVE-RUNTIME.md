@@ -1,6 +1,8 @@
 # Rust-native candidate runtime
 
-Latest UI-only rollout: [25 October shell timezone](../evidence/shell-timezone-20261025/RECEIPT.md)
+Latest UI-only rollout: [25 October compact sort headers](../evidence/grid-sort-compact-20261025/RECEIPT.md)
+records gray active headers, orange superscript priorities and reduced table width.
+The preceding [25 October shell timezone](../evidence/shell-timezone-20261025/RECEIPT.md)
 records the shared wall-clock/timezone menu and responsive UI5180 verification;
 the API and terminals were not restarted.
 The preceding [25 October grid sorting](../evidence/grid-sort-20261025/RECEIPT.md)
