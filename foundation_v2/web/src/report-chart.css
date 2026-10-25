@@ -3,7 +3,7 @@
 .report-chart.is-pink { --report-accent:#e69ac2; }
 .report-svg { display:block; width:100%; overflow:visible; }
 .report-svg text { font-size:12px; fill:var(--wm-content-muted); font-variant-numeric:tabular-nums; }
-.report-grid { stroke:color-mix(in srgb,var(--wm-content-muted) 40%,transparent); stroke-width:1; stroke-dasharray:5 5; }
+.report-grid { stroke:color-mix(in srgb,var(--wm-content-muted) 40%,transparent); stroke-width:1; stroke-dasharray:5 5; shape-rendering:crispEdges; vector-effect:non-scaling-stroke; }
 .report-line { fill:none; stroke:var(--report-accent); stroke-width:2; stroke-linejoin:round; vector-effect:non-scaling-stroke; }
 .report-point,.report-bar rect { fill:var(--report-accent); }
 .report-bar-segment.is-positive rect { fill:var(--report-positive); }
