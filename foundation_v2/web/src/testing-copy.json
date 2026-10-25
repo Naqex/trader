@@ -2605,9 +2605,9 @@
     "vi": "Ngày giao dịch đủ điều kiện",
     "en": "Qualifying trading days"
   },
-  "Report time (UTC)": {
-    "vi": "Thời điểm báo cáo (UTC)",
-    "en": "Report time (UTC)"
+  "Report time": {
+    "vi": "Thời điểm báo cáo",
+    "en": "Report time"
   },
   "Objective": {
     "vi": "Mục tiêu",

@@ -48,3 +48,9 @@ The existing entry metadata contract remains exact: an actual server timestamp b
 - After backend rollout, the21-column/14-row mapping, paging, sort/clear and full-scope loss-filter journeys passed again, without browser errors or writes (`data-review/cells-report.json`). No terminal reconnect or broker action.
 
 Known limits: no new order was submitted on owner data. Exact account event0 remains unavailable, rather than inventing a financial checkpoint. The broader Backtest saved-record audit found an intermediate event2 containing only a market fill without a reconstructable canonical local checkpoint; it remains explicitly rejected. The current Backtest head at sequence3117 passes offline. This does not establish every historical event or broker/product acceptance.
+
+### Prop report presentation follow-through
+
+Removed the remaining persistent profile/terms/model explanation from healthy Prop reports; actual missing/blocked objective branches remain. The report timestamp uses a semantic `time` element retaining its original UTC instant, with scoped16–24px typography so a date/year does not fragment on narrow screens. Removed the misleading fixed UTC label: the value follows Settings, with timezone identified by the shared workspace clock.
+
+Independent review accepted the final three-file UI change at1920/390/320 with Settings `Asia/Ho_Chi_Minh`. Date and time each occupy a single text range; no document overflow, browser errors or writes. Candidate build and guarded atomic promotion preserve branding and old assets. Final UI index SHA256 `cfc64f6c8b92952cfb3225078f3e3e61f583ed5525493dbd408bea8a9d1084e8`; rollback `ui-before-prop-release`. Both actual reports pass all6 deployed responsive journeys (`data-review/prop-browser.json`), including unchanged semantic instant, no UTC suffix, no paragraph and intact date text. The owned preview5196 was stopped after QA; API8010 and UI5180 remain running.
