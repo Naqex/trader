@@ -97,7 +97,8 @@ export function ReportBars({ title, items, currency, period, scopeLabel, horizon
     {ticks.map(value => <g key={value}>{horizontal ? <text x={x(value)} y={height - 14} textAnchor="middle">{tickLabel(value)}</text> : <><line className="report-grid" x1={left} x2={right} y1={y(value)} y2={y(value)}/><text x={left - 12} y={y(value)} dominantBaseline="middle" textAnchor="end">{tickLabel(value)}</text></>}</g>)}
     {items.map((item, index) => {
       const step = (horizontal ? edge - top : right - left) / items.length
-      const center = (horizontal ? top : left) + (index + .5) * step, barWidth = Math.min(36, step * .55)
+      const center = (horizontal ? top : left) + (index + .5) * step
+      const barWidth = horizontal ? step * .6 : Math.min(36, step * .55)
       const points = series(item)
       const rotation = weekday && step < 32 ? -90 : -45
       const showCategory = weekday || index % (angled ? Math.max(1, Math.ceil(30 / step)) : labelStride) === 0

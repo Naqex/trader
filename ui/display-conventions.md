@@ -67,6 +67,8 @@ Last sync is the last successful data observation, not a connection expiry date.
   summaries with their displayed/total count rather than hiding the truncation.
   Grid strokes share one color, dash and 1px width, with pixel-aligned rendering
   so fractional row/tick positions do not alternate between sharp and blurred.
+  Horizontal bars fill 60% of their category row, adapting to the available height
+  and row count rather than leaving a thin fixed-height bar in a mostly empty row.
   Bar values appear in the shared tooltip on hover, focus or tap, never printed
   over the plot. Keep scale/category labels. Zero has no artificial bar but retains
   an interactive category target and explicit tooltip value. Dated month labels
