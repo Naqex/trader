@@ -30,10 +30,10 @@ export function parseDateField(value, type = 'date') {
 
 export function displayTime(value, { seconds = false, timeZone = getTimezone() } = {}) {
   const dateTime = displayDate(value, { timeStyle: seconds ? 'medium' : 'short', timeZone })
-  return dateTime === '—' ? dateTime : dateTime.split(' ')[1]
+  return dateTime === '-' ? dateTime : dateTime.split(' ')[1]
 }
 
-export function displayDate(value, { timeStyle, timeZone = getTimezone(), fallback = '—' } = {}) {
+export function displayDate(value, { timeStyle, timeZone = getTimezone(), fallback = '-' } = {}) {
   if (value == null || value === '' || typeof value === 'boolean') return fallback
   // A date-only value is a civil date, not UTC midnight to shift into another day.
   if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) timeZone = 'UTC'

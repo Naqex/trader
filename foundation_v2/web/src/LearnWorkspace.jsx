@@ -257,8 +257,8 @@ export default function LearnWorkspace({ workspace, query }) {
 
       <section className="learn-summary" aria-label="Tổng quan course">
         <div><span>Course</span><strong>{course?.title || 'Chưa có tên'}</strong></div>
-        <div><span>Version</span><strong>{course?.version || 'N/A'}</strong></div>
-        <div><span>Tiến độ</span><strong>{completedLessons ?? '—'}/{lessonCount ?? '—'} bài</strong></div>
+        <div><span>Version</span><strong>{course?.version || '-'}</strong></div>
+        <div><span>Tiến độ</span><strong>{completedLessons ?? '-'}/{lessonCount ?? '-'} bài</strong></div>
         <div><span>Trạng thái</span><strong>{progress?.status || progress?.phase || 'Chưa rõ'}</strong></div>
       </section>
 
@@ -271,7 +271,7 @@ export default function LearnWorkspace({ workspace, query }) {
         </div>
         <progress max="100" value={completionPercent ?? undefined} aria-label={completionPercent === null ? 'Chưa có số liệu tiến độ course' : `Đã hoàn thành ${completionPercent}% course`} />
         <div className="learn-progress-meta">
-          <span>{completionPercent === null ? '—' : `${completionPercent}%`}</span>
+          <span>{completionPercent === null ? '-' : `${completionPercent}%`}</span>
           <span>Cập nhật {progress?.updated_on || 'chưa rõ'}</span>
         </div>
       </section>
@@ -279,7 +279,7 @@ export default function LearnWorkspace({ workspace, query }) {
       <section className="learn-workspace">
         <aside className="learn-course" aria-label="Nội dung course">
           <div className="learn-pane-heading">
-            <div><span>Course map</span><strong>{moduleCount ?? '—'} module</strong></div>
+            <div><span>Course map</span><strong>{moduleCount ?? '-'} module</strong></div>
           </div>
 
           <nav className="learn-quick-resources" aria-label="Tài liệu course">
@@ -346,7 +346,7 @@ export default function LearnWorkspace({ workspace, query }) {
 
         <aside className="learn-glossary" aria-label="Glossary Anh Việt">
           <div className="learn-pane-heading">
-            <div><span>Glossary Anh–Việt</span><strong>{glossary.payload?.count ?? '—'} thuật ngữ</strong></div>
+            <div><span>Glossary Anh–Việt</span><strong>{glossary.payload?.count ?? '-'} thuật ngữ</strong></div>
           </div>
           <label className="learn-search">
             <span>Tìm thuật ngữ</span>

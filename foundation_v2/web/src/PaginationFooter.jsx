@@ -17,7 +17,7 @@ export default function PaginationFooter({ label, page, pages, onPageChange, pag
   const blocked = pending || unknown
   const changePage = next => { if (!blocked && next !== current && next >= 1 && next <= pages) onPageChange(next) }
   return <nav {...navProps} ref={root} className={`wm-pagination ${className}`} data-compact={width < 620 || undefined} data-stacked={width < 290 || meta && width < 480 || undefined} aria-label={t(label)} aria-busy={pending || undefined}>
-    <span className="wm-pagination-meta">{!unknown && Number.isSafeInteger(totalCount) && <span aria-label={t('Kết quả trong phạm vi đã lọc')}>{fmt(totalCount ? (current - 1) * pageSize + 1 : 0, '', 0)}–{fmt(Math.min(current * pageSize, totalCount), '', 0)} / {fmt(totalCount, '', 0)}</span>}{meta}</span>
+    <span className="wm-pagination-meta">{!unknown && Number.isSafeInteger(totalCount) && <span title={t('Đang hiển thị {start}–{end} trong {total} kết quả', { start: fmt(totalCount ? (current - 1) * pageSize + 1 : 0, '', 0), end: fmt(Math.min(current * pageSize, totalCount), '', 0), total: fmt(totalCount, '', 0) })}>{t('{count} kết quả', { count: fmt(totalCount, '', 0) })}</span>}{meta}</span>
     <div className="wm-pagination-controls">
       <div className="wm-pagination-pages">
         <button type="button" className="wm-pagination-button wm-pagination-boundary" aria-label={t('Trang đầu')} disabled={blocked || current === 1} onClick={() => changePage(1)}><TestingIcon kind="chevrons-left" size={16} /></button>

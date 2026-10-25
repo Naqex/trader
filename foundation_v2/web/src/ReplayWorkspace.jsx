@@ -60,12 +60,12 @@ function formatTimestamp(timestamp, locale = 'vi-VN') {
 }
 
 function formatPrice(value, locale = 'vi-VN') {
-  if (value === null || value === undefined || !Number.isFinite(Number(value))) return 'N/A'
+  if (value === null || value === undefined || !Number.isFinite(Number(value))) return '-'
   return new Intl.NumberFormat(locale, { maximumFractionDigits: 8 }).format(Number(value))
 }
 
 function formatVolume(value) {
-  if (value === null || value === undefined || !Number.isFinite(Number(value))) return 'N/A'
+  if (value === null || value === undefined || !Number.isFinite(Number(value))) return '-'
   return new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 2 }).format(Number(value))
 }
 
@@ -118,10 +118,10 @@ function isEditableTarget(target) {
 
 export default function ReplayWorkspace({ workspace, query }) {
   const { t, locale, fmt } = useTestingLocale()
-  const formatTimestamp = value => value === null || value === undefined || !Number.isFinite(Number(value)) ? '—' : displayDate(new Date(Number(value) * 1000), { timeStyle: 'medium' })
+  const formatTimestamp = value => value === null || value === undefined || !Number.isFinite(Number(value)) ? '-' : displayDate(new Date(Number(value) * 1000), { timeStyle: 'medium' })
   const formatPrice = value => fmt(value, '', 8)
   const money = (value, currency) => {
-    if (value === null || value === undefined || !Number.isFinite(Number(value))) return '—'
+    if (value === null || value === undefined || !Number.isFinite(Number(value))) return '-'
     try { return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'USD', maximumFractionDigits: 2 }).format(Number(value)) } catch { return fmt(value, ' ' + (currency || t('Đơn vị tài khoản'))) }
   }
 
@@ -929,7 +929,7 @@ export default function ReplayWorkspace({ workspace, query }) {
     if (conflict) return 'Session có revision mới; cần tải lại trước khi tiếp tục để giữ đúng lineage.'
     if (historicalView) return `Đây là cutoff lịch sử #${cursor}; phần dữ liệu sau mốc này đang bị ẩn có chủ đích.`
     if (completed) return `Replay đã đi tới nến cuối của dataset; không còn nến tương lai để mở thêm.`
-    return `Đang mở ${visibleRowCount ?? 'N/A'} nến; quyết định chỉ nên dựa trên bằng chứng tới cutoff hiện tại.`
+    return `Đang mở ${visibleRowCount ?? '-'} nến; quyết định chỉ nên dựa trên bằng chứng tới cutoff hiện tại.`
   }, [completed, conflict, cursor, historicalView, visibleRowCount])
   const noDataset = datasetState.status === 'ready' && datasetState.items.length === 0
   const dataDeskHref = routeHref('data')
@@ -1019,7 +1019,7 @@ export default function ReplayWorkspace({ workspace, query }) {
             </div>
             <div><span>{t("Dataset")}</span><code>{replay.payload.dataset_id}</code></div>
             <div><span>{t("Decision cutoff")}</span><strong>#{cursor}</strong><small>{formatTimestamp(replay.cutoff_timestamp)}</small></div>
-            <div><span>{t("Visible rows")}</span><strong>{visibleRowCount ?? t("N/A")} {t("nến")}</strong><small>{t("revision r")}{revision}</small></div>
+            <div><span>{t("Visible rows")}</span><strong>{visibleRowCount ?? t("-")} {t("nến")}</strong><small>{t("revision r")}{revision}</small></div>
             <div className={`replay-state ${completed ? 'is-complete' : ''} ${conflict ? 'is-conflict' : ''}`}>
               {statusLabel}
             </div>
@@ -1215,7 +1215,7 @@ export default function ReplayWorkspace({ workspace, query }) {
                 {datasetState.status === 'error' && <p role="alert">{datasetState.error}</p>}
                 <ul>{datasetState.items.filter(item => !replay.payload.asset_states || replay.payload.dataset_ids.includes(item.dataset_id)).map(item => <li key={item.dataset_id}>
                   {replay.payload.asset_states ? <button type="button" disabled={Boolean(pendingAction) || historicalView || conflict || item.dataset_id === replay.payload.dataset_id} aria-pressed={item.dataset_id === replay.payload.dataset_id} onClick={() => { setIsPlaying(false); mutate('asset', { expected_revision:revision, dataset_id:item.dataset_id }) }}>{item.instrument_id || item.dataset_id} · {displayTimeframe(item)}</button> : <a href={routeHref('replay', { session: null, cursor: null, cutoff: null, dataset: item.dataset_id, surface: 'workspace', fresh: '1' })} aria-current={item.dataset_id === replay?.payload?.dataset_id ? 'true' : undefined}>{item.instrument_id || item.dataset_id} · {displayTimeframe(item)}</a>}
-                  <small>{datasetQualityLabel(item, t)} · {item.row_count ?? t("N/A")} {t("nến")}</small>
+                  <small>{datasetQualityLabel(item, t)} · {item.row_count ?? t("-")} {t("nến")}</small>
                 </li>)}</ul>
               </section>
               </>}
@@ -1241,7 +1241,7 @@ export default function ReplayWorkspace({ workspace, query }) {
                     <div><dt>{t("Timeframe")}</dt><dd>{displayTimeframe(replayContext)}</dd></div>
                     <div><dt>{t("Quality")}</dt><dd>{replayContext.quality}</dd></div>
                     <div><dt>{t("Provider")}</dt><dd>{replayContext.provider}</dd></div>
-                    <div><dt>{t("Rows")}</dt><dd>{replayContext.rowCount ?? t("N/A")}</dd></div>
+                    <div><dt>{t("Rows")}</dt><dd>{replayContext.rowCount ?? t("-")}</dd></div>
                     <div><dt>{t("Dataset hash")}</dt><dd><code>{replayContext.hash ? String(replayContext.hash).slice(0, 14) : t("Chưa có hash")}</code></dd></div>
                   </dl>
                 </div>

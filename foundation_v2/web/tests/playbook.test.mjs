@@ -79,7 +79,7 @@ test('version differences preserve zero, absent and nested values deterministica
   const diff = diffPayloads({ risk: 0, rules: { entry: 'old' } }, { rules: { entry: 'new' }, empty: null })
   assert.deepEqual(diff.map(item => item.path), ['empty', 'risk', 'rules.entry'])
   assert.equal(diff[1].left, 0)
-  assert.equal(diff[1].rightDisplay, '—')
+  assert.equal(diff[1].rightDisplay, '-')
 })
 
 test('strategy surface reuses shared modal/select and fences stale reads without broker execution', () => {

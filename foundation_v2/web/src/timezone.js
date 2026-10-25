@@ -27,6 +27,12 @@ export function subscribeTimezone(listener) {
 export function timezoneLabel(value = zone, at = new Date()) {
   return new Intl.DateTimeFormat('en', { timeZone: value, timeZoneName: 'shortOffset' }).formatToParts(at).find(part => part.type === 'timeZoneName').value.replace('GMT', 'UTC')
 }
+// Offsets describe displayed observations, including historical DST changes.
+export function tableTimezoneLabel(value, instants = []) {
+  const offsets = [...new Set(instants.filter(date => date instanceof Date && Number.isFinite(date.getTime())).map(date => timezoneLabel(value, date)))]
+  const name = value.replaceAll('_', ' ')
+  return offsets.length ? `(${offsets.join(' / ')}) ${name}` : name
+}
 const dateFormatters = new Map()
 export function zonedDateKey(value, timeZone = zone) {
   const date = value instanceof Date ? value : new Date(value)

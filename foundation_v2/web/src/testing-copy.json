@@ -1,4 +1,11 @@
 {
+  "Đã chọn {selected} trên {total}": {"vi": "Đã chọn {selected} trên {total}", "en": "Selected {selected} of {total}"},
+  "{count} kết quả": {"vi": "{count} kết quả", "en": "{count} results"},
+  "Đang hiển thị {start}–{end} trong {total} kết quả": {"vi": "Đang hiển thị {start}–{end} trong {total} kết quả", "en": "Showing {start}–{end} of {total} results"},
+  "Múi giờ hiển thị trong Settings": {"vi": "Múi giờ hiển thị trong Settings", "en": "Display timezone in Settings"},
+  "Chưa áp dụng khi lệnh đang mở": {"vi": "Chưa áp dụng khi lệnh đang mở", "en": "Not applicable while the position is open"},
+  "Không có cơ sở để tính": {"vi": "Không có cơ sở để tính", "en": "No valid basis for calculation"},
+  "- là dữ liệu chưa được cung cấp; N/A là chỉ số chưa áp dụng hoặc chưa có cơ sở để tính. Research/simulation đang broker locked; không có đường nào gửi lệnh.": {"vi": "- là dữ liệu chưa được cung cấp; N/A là chỉ số chưa áp dụng hoặc chưa có cơ sở để tính. Research/simulation đang broker locked; không có đường nào gửi lệnh.", "en": "- means unavailable data; N/A means not applicable or no valid basis for calculation. Research/simulation is broker locked; orders cannot be sent."},
   "Chart": {"vi": "Chart", "en": "Chart"},
   "Thực tế": {"vi": "Thực tế", "en": "Realtime"},
   "Thoát lệnh": {"vi": "Thoát lệnh", "en": "Exit"},
@@ -3884,9 +3891,9 @@
     "vi": "Chưa đủ ngày đóng lệnh và PnL ròng.",
     "en": "Close dates and net PnL are insufficient."
   },
-  "Chỉ dùng ledger đóng tại cutoff đã chọn. Các bộ lọc tạo lại đường số dư từ vốn ban đầu. — là dữ liệu chưa được nguồn cung cấp.": {
-    "vi": "Chỉ dùng giao dịch đã đóng tại mốc đang chọn. Bộ lọc dựng lại đường số dư từ vốn ban đầu. — nghĩa là nguồn chưa cung cấp dữ liệu.",
-    "en": "Only uses trades closed by the selected cutoff. Filters rebuild the balance curve from starting capital. — means the source has not provided the data."
+  "Chỉ dùng ledger đóng tại cutoff đã chọn. Các bộ lọc tạo lại đường số dư từ vốn ban đầu. - là dữ liệu chưa được nguồn cung cấp.": {
+    "vi": "Chỉ dùng giao dịch đã đóng tại mốc đang chọn. Bộ lọc dựng lại đường số dư từ vốn ban đầu. - nghĩa là nguồn chưa cung cấp dữ liệu.",
+    "en": "Only uses trades closed by the selected cutoff. Filters rebuild the balance curve from starting capital. - means the source has not provided the data."
   },
   "Chỉ đọc": {
     "vi": "Chỉ đọc",
@@ -4081,8 +4088,8 @@
     "en": "Open replay #"
   },
   "N/A nghĩa là nguồn chưa cung cấp dữ liệu cần thiết. Research/simulation đang broker locked; không có đường nào gửi lệnh.": {
-    "vi": "— nghĩa là nguồn chưa cung cấp dữ liệu cần thiết. Nghiên cứu và mô phỏng không gửi lệnh tới broker.",
-    "en": "— means the source has not provided the required data. Research and simulation do not send broker orders."
+    "vi": "- nghĩa là nguồn chưa cung cấp dữ liệu cần thiết. Nghiên cứu và mô phỏng không gửi lệnh tới broker.",
+    "en": "- means the source has not provided the required data. Research and simulation do not send broker orders."
   },
   "Net R": {
     "vi": "R ròng",
@@ -4148,9 +4155,9 @@
     "vi": "Replay #",
     "en": "Replay #"
   },
-  "Result chỉ cung cấp trade ID trên balance curve; full ledger record chưa có nên các field còn lại giữ N/A.": {
-    "vi": "Kết quả chỉ cung cấp mã giao dịch trên đường số dư; chưa có bản ghi đầy đủ nên các trường khác để —.",
-    "en": "Results only provide trade IDs on the balance curve; full ledger records are unavailable, so other fields show —."
+  "Result chỉ cung cấp trade ID trên balance curve; full ledger record chưa có nên các field còn lại giữ dấu -.": {
+    "vi": "Kết quả chỉ cung cấp mã giao dịch trên đường số dư; chưa có bản ghi đầy đủ nên các trường khác để -.",
+    "en": "Results only provide trade IDs on the balance curve; full ledger records are unavailable, so other fields show -."
   },
   "Resume chỉ khôi phục state đã persist. Các nút lifecycle gửi lệnh rõ ràng tới backend; UI không tự chạy clock hoặc fill lệnh.": {
     "vi": "Tiếp tục chỉ khôi phục trạng thái đã lưu. Chỉ khi bạn thao tác mới gửi yêu cầu đổi trạng thái; giao diện không tự chạy thời gian hay khớp lệnh.",
@@ -4328,9 +4335,9 @@
     "vi": "· điều khoản",
     "en": "· terms"
   },
-  "· — = không có lệnh trong phạm vi đã chọn": {
-    "vi": "· — = không có giao dịch trong phạm vi đã chọn",
-    "en": "· — = no trades in the selected scope"
+  "· - = không có lệnh trong phạm vi đã chọn": {
+    "vi": "· - = không có giao dịch trong phạm vi đã chọn",
+    "en": "· - = no trades in the selected scope"
   },
   "Đang export…": {
     "vi": "Đang xuất…",
@@ -4405,8 +4412,8 @@
     "en": "/ 1.000 USD"
   },
   "N/A": {
-    "vi": "—",
-    "en": "—"
+    "vi": "N/A",
+    "en": "N/A"
   },
   "ready": {
     "vi": "Sẵn sàng",
@@ -5518,9 +5525,9 @@
     "vi": "Tổng tháng",
     "en": "Month total"
   },
-  "Totals cover synced deals only. — means data is unavailable or the day is not fully covered.": {
-    "vi": "Tổng chỉ tính deal đã đồng bộ. — nghĩa là chưa có dữ liệu hoặc chưa đồng bộ đủ ngày.",
-    "en": "Totals cover synced deals only. — means data is unavailable or the day is not fully covered."
+  "Totals cover synced deals only. - means data is unavailable or the day is not fully covered.": {
+    "vi": "Tổng chỉ tính deal đã đồng bộ. - nghĩa là chưa có dữ liệu hoặc chưa đồng bộ đủ ngày.",
+    "en": "Totals cover synced deals only. - means data is unavailable or the day is not fully covered."
   },
   "No deals recorded for this day.": {
     "vi": "Chưa ghi nhận deal trong ngày này.",
@@ -6349,9 +6356,9 @@
     "vi": "Hiện phần đã biết; đánh dấu phần thiếu.",
     "en": "Show the known part and identify what is missing."
   },
-  "Hiện — cho số chưa biết; không đổi thành 0.": {
-    "vi": "Hiện — cho số chưa biết; không đổi thành 0.",
-    "en": "Show — for unknown values, never zero."
+  "Hiện - cho số chưa biết; không đổi thành 0.": {
+    "vi": "Hiện - cho số chưa biết; không đổi thành 0.",
+    "en": "Show - for unknown values, never zero."
   },
   "Không tải được dữ liệu": {
     "vi": "Không tải được dữ liệu",
@@ -6421,9 +6428,9 @@
     "vi": "Chỉ đọc được một phần số phiên mẫu. Thống kê bên dưới chỉ tính phần đã đọc.",
     "en": "Only some sample sessions were read. Statistics below cover that part only."
   },
-  "Có phiên và giao dịch, nhưng chưa biết thời gian luyện tập và replay. Các số chưa biết hiển thị —.": {
-    "vi": "Có phiên và giao dịch, nhưng chưa biết thời gian luyện tập và replay. Các số chưa biết hiển thị —.",
-    "en": "Sessions and trades exist, but practice and replay durations are unknown. Missing values display —."
+  "Có phiên và giao dịch, nhưng chưa biết thời gian luyện tập và replay. Các số chưa biết hiển thị -.": {
+    "vi": "Có phiên và giao dịch, nhưng chưa biết thời gian luyện tập và replay. Các số chưa biết hiển thị -.",
+    "en": "Sessions and trades exist, but practice and replay durations are unknown. Missing values display -."
   },
   "Nhiều phiên mẫu": {
     "vi": "Nhiều phiên mẫu",

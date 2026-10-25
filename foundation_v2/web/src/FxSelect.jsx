@@ -99,7 +99,7 @@ export default function FxSelect({ label, value, options: inputOptions, onChange
         const locked = value.filter(item => !available.some(option => option.value === item))
         onChange(allSelected ? locked : [...locked, ...available.map(option => option.value)])
         if (closeOnSelect) close()
-      }}><span className={`fx-select-checkbox${allSelected ? ' is-checked' : selectedCount > 0 ? ' is-mixed' : ''}`} aria-hidden="true" /><span className="fx-select-option-label">{t(selectAllLabel)}</span></button>}
+      }}><span className={`fx-select-checkbox${allSelected ? ' is-checked' : selectedCount > 0 ? ' is-mixed' : ''}`} aria-hidden="true" /><span className="fx-select-option-label">{t(selectAllLabel)}</span><span className="wm-selection-count" aria-label={t('Đã chọn {selected} trên {total}', { selected: selectedCount, total: available.length })}>{selectedCount}/{available.length}</span></button>}
       <div role="listbox" tabIndex={-1} aria-label={t(label)} aria-multiselectable={multiple || undefined}>{[...groups].map(([group, entries]) => {
         const content = entries.map(option => <button type="button" role="option" tabIndex={-1} key={option.value} aria-selected={isSelected(option)} disabled={option.disabled} data-tooltip={renderOption || option.disabled ? option.detail : undefined} onClick={() => {
         if (multiple) { onChange(isSelected(option) ? value.filter(item => item !== option.value) : [...value, option.value]); if (closeOnSelect) close() }

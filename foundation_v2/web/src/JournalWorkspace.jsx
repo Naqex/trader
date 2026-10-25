@@ -107,7 +107,7 @@ function recordOutcome(record) {
 
 function sourceLabel(source) {
   if (!source?.kind && !source?.id) return 'Chưa có source'
-  return `${source.kind || 'source'} · ${source.id || 'N/A'}`
+  return `${source.kind || 'source'} · ${source.id || '-'}`
 }
 
 function storyForRecord(record, context) {
@@ -214,10 +214,10 @@ export function JournalRow({ record, selected, onSelect }) {
       <span className="ja-row-main">
         <span className="ja-row-kicker">{labelForType(payload.entry_type)}</span>
         <strong>{payload.note}</strong>
-        <small>{formatDate(record.updated_at_utc || record.created_at_utc)} · r{record.revision ?? 'N/A'} · {sourceLabel(source)}</small>
+        <small>{formatDate(record.updated_at_utc || record.created_at_utc)} · r{record.revision ?? '-'} · {sourceLabel(source)}</small>
       </span>
       <span className="ja-row-meta">
-        <code>{source.id || 'N/A'}</code>
+        <code>{source.id || '-'}</code>
         <span>{[payload.entry_type === 'no-trade' ? 'Không giao dịch' : '', Array.isArray(payload.tags) && payload.tags.length ? payload.tags.join(' · ') : 'Không có tag'].filter(Boolean).join(' · ')}</span>
       </span>
     </button>
@@ -268,17 +268,17 @@ function ProvenancePanel({ record, context }) {
         <span className="ja-readonly-badge">read-only source</span>
       </div>
       <dl>
-        <div><dt>Replay session</dt><dd>{source.session_id || source.replay_session_id || context.sessionId || 'N/A'}</dd></div>
-        <div><dt>Trade</dt><dd>{source.trade_id || context.tradeId || 'N/A'}</dd></div>
-        <div><dt>Dataset</dt><dd><code>{source.dataset_id || context.datasetId || 'N/A'}</code></dd></div>
-        <div><dt>Cutoff nến</dt><dd>{source.cursor_index ?? context.cursor ?? 'N/A'}</dd></div>
-        <div><dt>Cutoff</dt><dd>{source.cutoff_timestamp ? formatContextTimestamp(source.cutoff_timestamp) : context.cutoffTimestamp ? formatContextTimestamp(context.cutoffTimestamp) : 'N/A'}</dd></div>
-        <div><dt>Mode</dt><dd>{source.mode || context.mode || 'N/A'}</dd></div>
-        <div><dt>Setup</dt><dd>{source.playbook_id || context.playbookId || 'N/A'}{(source.playbook_revision || context.playbookRevision) ? ` · r${source.playbook_revision || context.playbookRevision}` : ''}</dd></div>
-        <div><dt>Source ID</dt><dd><code>{source.id || 'N/A'}</code></dd></div>
-        <div><dt>Revision</dt><dd>r{record?.revision ?? 'N/A'}</dd></div>
+        <div><dt>Replay session</dt><dd>{source.session_id || source.replay_session_id || context.sessionId || '-'}</dd></div>
+        <div><dt>Trade</dt><dd>{source.trade_id || context.tradeId || '-'}</dd></div>
+        <div><dt>Dataset</dt><dd><code>{source.dataset_id || context.datasetId || '-'}</code></dd></div>
+        <div><dt>Cutoff nến</dt><dd>{source.cursor_index ?? context.cursor ?? '-'}</dd></div>
+        <div><dt>Cutoff</dt><dd>{source.cutoff_timestamp ? formatContextTimestamp(source.cutoff_timestamp) : context.cutoffTimestamp ? formatContextTimestamp(context.cutoffTimestamp) : '-'}</dd></div>
+        <div><dt>Mode</dt><dd>{source.mode || context.mode || '-'}</dd></div>
+        <div><dt>Setup</dt><dd>{source.playbook_id || context.playbookId || '-'}{(source.playbook_revision || context.playbookRevision) ? ` · r${source.playbook_revision || context.playbookRevision}` : ''}</dd></div>
+        <div><dt>Source ID</dt><dd><code>{source.id || '-'}</code></dd></div>
+        <div><dt>Revision</dt><dd>r{record?.revision ?? '-'}</dd></div>
         <div><dt>Tags</dt><dd>{Array.isArray(payload.tags) && payload.tags.length ? payload.tags.join(' · ') : 'Không có tag'}</dd></div>
-        <div><dt>Overlay</dt><dd>{Array.isArray(payload.overlay_ids) && payload.overlay_ids.length ? payload.overlay_ids.join(' · ') : 'N/A'}</dd></div>
+        <div><dt>Overlay</dt><dd>{Array.isArray(payload.overlay_ids) && payload.overlay_ids.length ? payload.overlay_ids.join(' · ') : '-'}</dd></div>
       </dl>
       <p>Source, cutoff và mode được giữ nguyên qua các revision để bạn luôn biết ghi chú này dựa trên snapshot nào. Actual là nội dung người dùng ghi sau review; app không tự mở nến tương lai.</p>
     </section>
@@ -464,7 +464,7 @@ export default function JournalWorkspace({ workspace = 'tenant-a', query = new U
           {selected && <ProvenancePanel record={selected} context={context} />}
           <form className="ja-editor-panel" onSubmit={submit}>
           <div className="ja-section-head">
-            <div><span className="ja-eyebrow">{selected ? `REVISION ${selected.revision ?? 'N/A'}` : 'NEW ENTRY'}</span><strong>{title}</strong></div>
+            <div><span className="ja-eyebrow">{selected ? `REVISION ${selected.revision ?? '-'}` : 'NEW ENTRY'}</span><strong>{title}</strong></div>
             {selected && !editing && <button type="button" className="ja-button" onClick={() => setEditing(true)}>Sửa</button>}
             {selected && editing && <button type="button" className="ja-button" onClick={() => selectRecord(selected)}>Hủy</button>}
           </div>
@@ -505,7 +505,7 @@ export default function JournalWorkspace({ workspace = 'tenant-a', query = new U
           </label>
           <div className="ja-source-box">
             <span className="ja-eyebrow">IMMUTABLE SOURCE</span>
-            <code>{selectedSource.kind || source?.kind || 'N/A'}:{selectedSource.id || source?.id || 'N/A'}</code>
+            <code>{selectedSource.kind || source?.kind || '-'}:{selectedSource.id || source?.id || '-'}</code>
             <small>Source gắn với session/trade và không đổi khi sửa revision.</small>
           </div>
           {formError && <div className="ja-form-error" role="alert">{formError}</div>}

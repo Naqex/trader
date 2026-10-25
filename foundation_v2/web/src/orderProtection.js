@@ -19,7 +19,7 @@ export function selectOrderDraft(current, replay, instrument, { side = current.s
 }
 
 export function formatProtectionMoney(amount, currency, locale) {
-  if (amount === null || !currency) return '—'
+  if (amount === null || !currency) return '-'
   const parts = new Intl.NumberFormat(locale, { style:'currency', currency, currencyDisplay:'narrowSymbol', minimumFractionDigits:2, maximumFractionDigits:2 }).formatToParts(Math.abs(amount))
   const symbol = parts.find(part => part.type === 'currency')?.value || currency
   return `${symbol}${/^[A-Z]+$/.test(symbol) ? ' ' : ''}${parts.filter(part => !['currency','literal'].includes(part.type)).map(part => part.value).join('')}`

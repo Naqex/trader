@@ -59,7 +59,7 @@ def test_exact_oracle_parity_dedup_partial_filters_facets_and_new_pages():
             for selected_page in (1, 2, 999):
                 options = dict(page=selected_page, page_size=1, sort_key='net_pnl', sort_direction=direction, extra_filters=extra)
                 assert service.trades('tenant-a', **options) == build_trades_page(full, store.journals, **options)
-    assert sum(kind == 'replay' for _, kind, _ in store.reads) == 1
+    assert sum(kind == 'replay' for _, kind, _ in store.reads) == 2  # Closed report, then one cached discovery of current exposure.
     # Each independent filter/sort materializes once, not once per page.
     assert sum(kind == 'journal' for _, kind, _ in store.reads) == 8
 
@@ -139,7 +139,7 @@ def test_analytics_history_key_and_summary_preserve_financial_oracle():
     for item in (earlier, latest):
         item['workspace_id'] = 'tenant-a'
         full = build_replay_analytics_view(item)
-        assert service.analytics(item) == full
+        assert service.analytics(item) == {**full, 'open_rows': []}
         assert service.analytics(item, include_ledger=False) == {k: v for k, v in full.items() if k != 'ledger'}
     assert service.analytics(earlier)['metrics']['net_pnl'] == 17
     assert service.analytics(latest)['metrics']['net_pnl'] == 53
@@ -176,7 +176,7 @@ def test_oversized_full_projection_retains_only_compact_page_and_revisions_inval
     reads = len(store.reads)
     assert service.trades('tenant-a', page=1, page_size=1) == first
     assert len(store.reads) == reads
-    assert service.cache.statistics()['entries'] == 1
+    assert service.cache.statistics()['entries'] == 2  # Compact page plus cached open-exposure discovery.
     assert service.cache.statistics()['retained_bytes'] < 50_000
     store.journals[0]['revision'] += 1
     assert service.trades('tenant-a', page=1, page_size=1)['snapshot_key'] != first['snapshot_key']

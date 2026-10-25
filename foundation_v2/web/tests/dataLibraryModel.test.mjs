@@ -80,7 +80,7 @@ test('source and download engine remain distinct for explicit metadata and older
   assert.equal(canDownloadAsset(newer,{available:true,download_engine:'QuantDataManager',supported_instruments:['EUR/USD']}),true)
   assert.equal(JSON.stringify(old),original)
   assert.equal(sourceOf({source:{provider:'CSV',export_settings:'invalid'}}),'CSV')
-  assert.equal(sourceOf(null),'—')
+  assert.equal(sourceOf(null),'-')
 })
 test('catalog category uses declared metadata, never guesses from the symbol', () => {
   assert.equal(categoryOf(saved[2]),'metal')

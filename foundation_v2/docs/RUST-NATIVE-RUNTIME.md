@@ -1,8 +1,10 @@
 # Rust-native candidate runtime
 
-Latest local rollout: [25 October period averages](../evidence/report-period-averages-20261025/RECEIPT.md)
-records native/compact API8010 readiness, active-date denominators and the real-data
-Dashboard check on UI5180. Earlier recovery is in the
+Latest local rollout: [25 October grid semantics](../evidence/grid-semantics-20261025/RECEIPT.md)
+records native/compact API8010 readiness, Open table projections, UI5180 promotion
+and real-data pagination/browser checks without migration or terminal reconnect.
+The earlier [period averages receipt](../evidence/report-period-averages-20261025/RECEIPT.md)
+records active-date denominators and Dashboard checks. Earlier recovery is in the
 [startup receipt](../evidence/runtime-start-20261025/RECEIPT.md).
 
 The 17 October 2026 execution extension in the workspace Product Completion Plan

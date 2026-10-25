@@ -47,7 +47,7 @@ function UnavailableWorkspace({ title, eyebrow, description, next, href }) {
       <span className="fx-eyebrow">{eyebrow}</span>
       <h1 id="unavailable-title">{title}</h1>
       <p>{description}</p>
-      <div className="fx-unavailable-state"><span className="fx-state-mark">—</span><span><strong>Chưa có dữ liệu để hiển thị</strong><small>{next}</small></span></div>
+      <div className="fx-unavailable-state"><span className="fx-state-mark">-</span><span><strong>Chưa có dữ liệu để hiển thị</strong><small>{next}</small></span></div>
       {href && <a className="fx-secondary-button" href={href}>Mở Practice để tiếp tục</a>}
     </section>
   )

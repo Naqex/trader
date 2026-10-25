@@ -13,7 +13,7 @@ export default function Mt5TradingBar({ workspace, connectionId, scopeId, snapsh
   const history = useQuery({queryKey:['mt5-wallet-history',workspace,connectionId],queryFn:({signal})=>readLiveStatus(workspace,signal,connectionId,false,cache),
     enabled:walletOpen&&Boolean(connectionId)&&snapshot?.status==='ready',staleTime:15000,gcTime:30000,retry:false,refetchInterval:walletOpen?15000:false})
   const money = value => {
-    if (!Number.isFinite(value)) return '—'
+    if (!Number.isFinite(value)) return '-'
     try { return new Intl.NumberFormat('en-US', { style:'currency', currency:snapshot.account.currency }).format(value) }
     catch { return fmt(value, snapshot?.account?.currency ? ` ${snapshot.account.currency}` : '') }
   }

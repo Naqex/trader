@@ -16,7 +16,7 @@ from threading import Lock
 from .analytics_read_model import normalize_filters, serialize_filters
 from .dashboard_read_model import build_dashboard_performance
 from .replay_activity import dashboard_timing
-from .replay_analytics import build_replay_analytics_view
+from .replay_analytics import build_replay_analytics_view, build_open_trade_rows, filter_open_trade_rows
 from .trades_page import prepare_trades_projection, slice_trades_projection
 
 
@@ -113,10 +113,13 @@ class ReplayReadProjectionService:
             raise LookupError('replay session not found')
         # Catalog ordering participates in both lineage selection and sessions.
         base_key = ('replay-performance-v1', workspace_id, _identity([revisions, selected, filters]))
+        source_records = None
         def build_report():
+            nonlocal source_records
             records = self.store.records_at_heads(workspace_id, 'replay', heads)
             if len(records) != len(heads):
                 raise LookupError('replay snapshot unavailable')
+            source_records = records
             return build_dashboard_performance(records, workspace_id, session_ids=selected,
                        include_ledger=True, **filters)
         if page is None:
@@ -132,7 +135,7 @@ class ReplayReadProjectionService:
         slice_trades_projection({'filtered_count': 0, 'ledger': []}, page=page, page_size=page_size)
         journal_heads = self.store.list_record_heads(workspace_id, 'journal')
         journal_revisions = [(head['record_id'], head['revision']) for head in journal_heads]
-        key = ('replay-trades-ordered-v1', workspace_id,
+        key = ('replay-trades-ordered-open-v2', workspace_id,
                _identity([base_key, journal_revisions, sort_key, sort_direction, extra_filters]))
         page_key = ('replay-trades-page-v1', key, page, page_size)
         cached_page = self.cache.get(page_key)
@@ -155,6 +158,22 @@ class ReplayReadProjectionService:
             # Build before taking the ordered-projection stripe: two keys may
             # share a non-reentrant cache lock.
             facet_report = self.cache.get_or_build(facet_key, build_facets)
+        readable = {source['session_id'] for source in report['sources']}
+        def build_open():
+            records = source_records if source_records is not None else self.store.records_at_heads(workspace_id, 'replay', heads)
+            if len(records) != len(heads):
+                raise LookupError('replay snapshot unavailable')
+            rows = []
+            for record in records:
+                if record['record_id'] in readable:
+                    payload = record['payload']
+                    exposed = bool((payload.get('execution') or {}).get('position')) or any(
+                        (state.get('execution') or {}).get('position') for state in (payload.get('asset_states') or {}).values())
+                    if exposed:
+                        rows.extend(build_open_trade_rows({**record, 'workspace_id': workspace_id}))
+            return rows
+        open_key = ('replay-open-table-v1', workspace_id, _identity([revisions, selected, sorted(readable)]))
+        open_rows = self.cache.get_or_build(open_key, build_open)
         def build_ordered():
             ids = report['scope']['session_ids']
             matching = self.store.records_at_heads(workspace_id, 'journal', journal_heads, session_ids=ids)
@@ -162,8 +181,11 @@ class ReplayReadProjectionService:
             # Foreign journals affect the legacy snapshot identity but do not
             # need their text/body transferred or retained for a tag join.
             journals = [by_id.get(head['record_id'], head) for head in journal_heads]
-            return prepare_trades_projection(report, journals, sort_key=sort_key,
-                       sort_direction=sort_direction, extra_filters=extra_filters, facet_report=facet_report)
+            table_report = {**report, 'scope': {**report['scope'], **({'open_positions': 'per_selected_session_snapshot'} if open_rows else {})},
+                            'ledger': [*report['ledger'], *filter_open_trade_rows(open_rows, filters)]}
+            table_facets = {**facet_report, 'ledger': [*facet_report['ledger'], *open_rows]}
+            return prepare_trades_projection(table_report, journals, sort_key=sort_key,
+                       sort_direction=sort_direction, extra_filters=extra_filters, facet_report=table_facets)
         projection = self.cache.get_or_build(key, build_ordered)
         result = slice_trades_projection(projection, page=page, page_size=page_size)
         if self.cache.get(key) is None:
@@ -174,5 +196,9 @@ class ReplayReadProjectionService:
         # Historical/cursor views can share revision yet have different event
         # sequences and marks. Identity covers the complete supplied authority.
         key = ('replay-analytics-v1', record.get('workspace_id'), _identity([record, filters]))
-        view = self.cache.get_or_build(key, lambda: build_replay_analytics_view(record, filters))
-        return deepcopy(view if include_ledger else {key: value for key, value in view.items() if key != 'ledger'})
+        def build_view():
+            view = build_replay_analytics_view(record, filters)
+            return {**view, 'open_rows': filter_open_trade_rows(build_open_trade_rows(record), filters)}
+        view = self.cache.get_or_build(key, build_view)
+        result = deepcopy(view if include_ledger else {key: value for key, value in view.items() if key not in {'ledger', 'open_rows'}})
+        return result

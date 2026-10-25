@@ -8,7 +8,7 @@ function percentage(current, target) {
 }
 
 function percentLabel(value) {
-  return value == null ? '—' : `${Math.round(value * 100) / 100}%`
+  return value == null ? '-' : `${Math.round(value * 100) / 100}%`
 }
 
 export default function PropRulesDialog({ open, rules, error, pendingAction, analyticsHref, retryHref, onClose, onTransition, onRetry, formatMoney, t }) {
@@ -31,7 +31,7 @@ export default function PropRulesDialog({ open, rules, error, pendingAction, ana
     { label: 'Max loss limit', current: rules.overallDrawdown.used, limit: rules.overallDrawdown.limit, breached: rules.overallDrawdown.breached },
     { label: 'Max daily loss limit', current: rules.dailyLoss.used, limit: rules.dailyLoss.limit, breached: rules.dailyLoss.breached },
   ]
-  const policy = { must_be_flat: 'Cần đóng hết lệnh', carry: 'Giữ lệnh', close_by_simulator: 'Tự động đóng lệnh' }[rules.positionPolicy] || '—'
+  const policy = { must_be_flat: 'Cần đóng hết lệnh', carry: 'Giữ lệnh', close_by_simulator: 'Tự động đóng lệnh' }[rules.positionPolicy] || '-'
 
   return <dialog ref={dialog} className="prop-rules-dialog" data-testid="prop-rules-dialog" aria-labelledby={titleId} onCancel={event => { event.preventDefault(); if (!actionBusy) onClose() }} onClick={event => { if (event.target === dialog.current && !actionBusy) onClose() }}>
     <header className="prop-rules-dialog-header">

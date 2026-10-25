@@ -72,7 +72,7 @@ function AggregateTrades({ workspace, ids, query, sessionControl, onClearSession
   const detailModel = useMemo(() => buildAnalyticsModel({ ...row?.source_provenance, ledger: row ? [row] : [], metrics: {} }, 'app', timezone), [row, timezone])
   const link = view => {
     const params = new URLSearchParams({ workspace, view, session: row.session_id, trade: row.trade_id })
-    if (view === 'replay') { params.set('surface', 'workspace'); params.set('cursor', row.close_cursor_index); params.set('event_sequence', row.close_event_sequence); const dataset = row.dataset_id || row.source_provenance.dataset_id; if (dataset) params.set('dataset', dataset) }
+    if (view === 'replay') { params.set('surface', 'workspace'); const cursor = row.status === 'open' ? row.open_cursor_index : row.close_cursor_index; const sequence = row.status === 'open' ? row.open_event_sequence : row.close_event_sequence; if (Number.isInteger(cursor)) params.set('cursor', cursor); if (Number.isInteger(sequence)) params.set('event_sequence', sequence); const dataset = row.dataset_id || row.source_provenance.dataset_id; if (dataset) params.set('dataset', dataset) }
     return `/?${params}`
   }
   // Partial payloads still affect filtering and empty-state semantics, but do

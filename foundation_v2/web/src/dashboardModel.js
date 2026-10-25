@@ -19,12 +19,12 @@ export function dashboardDurationParts(seconds, { days = true } = {}) {
 }
 
 export function dashboardMoney(value, currency) {
-  if (dashboardNumber(value) === '—') return '—'
+  if (dashboardNumber(value) === '-') return '-'
   return formatAmount(value, ` ${currency || 'đơn vị tài khoản'}`, 2)
 }
 
 export function dashboardNumber(value, suffix = '') {
-  if (value === null || value === undefined || value === '' || typeof value === 'boolean' || !Number.isFinite(Number(value))) return '—'
+  if (value === null || value === undefined || value === '' || typeof value === 'boolean' || !Number.isFinite(Number(value))) return '-'
   return `${numberFormatter.format(Number(value))}${suffix}`
 }
 

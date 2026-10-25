@@ -13,9 +13,9 @@ import './PropWorkspace.css'
 const TERMINAL_STATUSES = new Set(['completed_pass', 'failed_breach', 'expired', 'abandoned'])
 
 function formatPropMoney(value, currency = 'USD', locale = 'vi-VN') {
-  if (value === null || value === undefined || value === '' || typeof value === 'boolean') return '—'
+  if (value === null || value === undefined || value === '' || typeof value === 'boolean') return '-'
   const number = Number(value)
-  if (!Number.isFinite(number)) return 'N/A'
+  if (!Number.isFinite(number)) return '-'
   try {
     return new Intl.NumberFormat(locale, {
       style: 'currency',
@@ -29,9 +29,9 @@ function formatPropMoney(value, currency = 'USD', locale = 'vi-VN') {
 }
 
 function formatPropUtc(value, locale = 'vi-VN') {
-  if (!value) return 'N/A'
+  if (!value) return '-'
   const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) return 'N/A'
+  if (Number.isNaN(parsed.getTime())) return '-'
   return displayDate(parsed, { timeStyle: 'short' })
 }
 
@@ -156,7 +156,7 @@ function objectiveStateLabel(value) {
 }
 
 function objectiveNumber(value, currency = 'USD', locale = 'vi-VN') {
-  return value === null || value === undefined ? 'N/A' : formatPropMoney(value, currency, locale)
+  return value === null || value === undefined ? '-' : formatPropMoney(value, currency, locale)
 }
 
 function objectiveSummary(objectives, phase, currency, locale = 'vi-VN') {
@@ -665,7 +665,7 @@ export default function PropWorkspace({ workspace, query }) {
                   <div><span>{t("Attempt")}</span><strong>{attempt.attempt_id}</strong></div>
                   <div><span>{t("Status")}</span><strong className={selectedTerminal ? 'is-terminal' : ''}>{statusLabel('prop_attempt', attempt.status)}</strong></div>
                   <div><span>{t("Revision")}</span><strong>{attempt.revision}</strong></div>
-                  <div><span>{t("Cursor")}</span><strong>{cursor ? `#${cursor.bar_index}` : t("N/A")}</strong></div>
+                  <div><span>{t("Cursor")}</span><strong>{cursor ? `#${cursor.bar_index}` : t("-")}</strong></div>
                 </div>
                 <div className="prop-metrics">
                   <article><span>{t("Balance")}</span><strong>{formatMoney(phase.balance, currency)}</strong></article>
@@ -721,7 +721,7 @@ export default function PropWorkspace({ workspace, query }) {
                       <small>{report.result_source}</small>
                     </div>
                     <div className="prop-report-summary">
-                      <div><span>{t("Technical")}</span><strong>{report.outcome.technical_status || t("N/A")}</strong></div>
+                      <div><span>{t("Technical")}</span><strong>{report.outcome.technical_status || t("-")}</strong></div>
                       <div><span>{t("Terminal")}</span><strong>{report.outcome.terminal ? t("Có") : t("Chưa")}</strong></div>
                       <div><span>{t("Branch")}</span><strong>{report.attempt.branch_kind}</strong></div>
                       <div><span>{t("Quality")}</span><strong>{report.phase.evaluation_quality}</strong></div>

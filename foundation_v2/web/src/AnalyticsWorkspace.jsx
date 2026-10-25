@@ -1,5 +1,4 @@
 import { displayDate } from './dateFormat.js'
-import { timezoneLabel } from './timezone.js'
 import TestingReadState, { TestingSkeleton } from './TestingReadState.jsx'
 import { TestingEmptyState, TestingPageSkeleton, TestingResourceStatus } from './TestingPageState.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
@@ -39,13 +38,13 @@ function StoryMetric({ label, value, detail, source, tone = '' }) {
 function ContextValue({ label, value, code = false }) {
   const { t } = useTestingLocale()
 
-  const displayValue = value === null || value === undefined || value === '' ? 'N/A' : value
+  const displayValue = value === null || value === undefined || value === '' ? '-' : value
   return <div className="as-context-value"><dt>{t(label)}</dt><dd className={code ? 'as-code' : ''}>{displayValue}</dd></div>
 }
 
 export function ProvenanceInspector({ model, selectedTrade, journalCount, links }) {
   const formatNumber = (value, digits = 2, suffix = '') => fmt(value, suffix, digits)
-  const formatDate = value => dateFromValue(value) ? displayDate(dateFromValue(value), { timeStyle: 'short', timeZone: timezone }) : '—'
+  const formatDate = value => dateFromValue(value) ? displayDate(dateFromValue(value), { timeStyle: 'short', timeZone: timezone }) : '-'
 
   const { t, locale, fmt, timezone } = useTestingLocale()
 
@@ -54,15 +53,15 @@ export function ProvenanceInspector({ model, selectedTrade, journalCount, links 
       {selectedTrade && <div className="as-section-head"><h2>{selectedTrade.tradeId}</h2><span className="as-inspector-state">{t("Chỉ đọc")}</span></div>}
       {selectedTrade ? (
         <section className="as-inspector-selection" aria-label={t("Trade detail")}>
-          <div className="as-selection-outcome"><span className={'as-outcome-dot is-' + selectedTrade.outcome} />{selectedTrade.outcome === 'win' ? t("Thắng") : selectedTrade.outcome === 'loss' ? t("Thua") : selectedTrade.outcome === 'breakeven' ? t("Hòa vốn") : t("Chưa xác định")}<strong>{formatNumber(selectedTrade.pnl)}</strong></div>
-          <dl className="as-detail-list"><ContextValue label={t("Đóng (UTC)").replace(/UTC(?:[+-]\d+(?::\d+)?)?/, timezoneLabel(timezone, dateFromValue(selectedTrade.report_time_utc) || new Date()))} value={selectedTrade.closeDate} /><ContextValue label={t("Side")} value={selectedTrade.side} /><ContextValue label={t("Symbol")} value={selectedTrade.symbol} /><ContextValue label={t("Khối lượng")} value={formatNumber(selectedTrade.quantity, 4)} /><ContextValue label={t("Giá mở")} value={formatNumber(selectedTrade.price_open, 6)} /><ContextValue label={t("Giá đóng")} value={formatNumber(selectedTrade.price_close, 6)} /><ContextValue label={t("Net R")} value={formatNumber(selectedTrade.realized_r, 2, 'R')} /><ContextValue label={t("Risk budget")} value={formatNumber(selectedTrade.planned_risk_budget)} /></dl>
-          <p className="as-inspector-note">{selectedTrade.source === 'closed balance curve' ? t("Result chỉ cung cấp trade ID trên balance curve; full ledger record chưa có nên các field còn lại giữ N/A.") : t("Trade được đọc từ ledger đã lưu theo phiên hoặc research job. Chọn Journal để ghi nhận diễn giải riêng; không sửa fill/result trong Analytics.")}</p>
+          <div className="as-selection-outcome"><span className={'as-outcome-dot is-' + selectedTrade.outcome} />{selectedTrade.status === 'open' ? t('Open') : selectedTrade.outcome === 'win' ? t("Thắng") : selectedTrade.outcome === 'loss' ? t("Thua") : selectedTrade.outcome === 'breakeven' ? t("Hòa vốn") : t("Chưa xác định")}<strong>{selectedTrade.status === 'open' ? <span title={t('Chưa áp dụng khi lệnh đang mở')}>N/A</span> : formatNumber(selectedTrade.pnl)}</strong></div>
+          <dl className="as-detail-list"><ContextValue label={`${t("Thoát lệnh")} (Realtime · ${timezone})`} value={selectedTrade.closeDate} /><ContextValue label={t("Side")} value={selectedTrade.side} /><ContextValue label={t("Symbol")} value={selectedTrade.symbol} /><ContextValue label={t("Khối lượng")} value={formatNumber(selectedTrade.quantity, 4)} /><ContextValue label={t("Giá mở")} value={formatNumber(selectedTrade.price_open, 6)} /><ContextValue label={t("Giá đóng")} value={formatNumber(selectedTrade.price_close, 6)} /><ContextValue label={t("Net R")} value={selectedTrade.status === 'open' || selectedTrade.realized_r == null ? 'N/A' : formatNumber(selectedTrade.realized_r, 2, 'R')} /><ContextValue label={t("Risk budget")} value={formatNumber(selectedTrade.planned_risk_budget)} /></dl>
+          <p className="as-inspector-note">{selectedTrade.source === 'closed balance curve' ? t("Result chỉ cung cấp trade ID trên balance curve; full ledger record chưa có nên các field còn lại giữ dấu -.") : t("Trade được đọc từ ledger đã lưu theo phiên hoặc research job. Chọn Journal để ghi nhận diễn giải riêng; không sửa fill/result trong Analytics.")}</p>
           <details className="as-raw-details"><summary>{t("Xem record gốc")}</summary><pre>{JSON.stringify(selectedTrade, null, 2)}</pre></details>
         </section>
       ) : null}
       <details className="as-provenance-details"><summary>{t("Nguồn và giới hạn")}</summary>
-      <dl className="as-provenance-list"><ContextValue label={t("Session revision")} value={model.result?.revision} /><ContextValue label={`${t("Cutoff")} (${timezone})`} value={formatDate(model.result?.cutoff_timestamp)} /><ContextValue label={t("Dataset")} value={model.result?.dataset_id} code /><ContextValue label={t("Dataset SHA")} value={model.result?.dataset_sha256} code /><ContextValue label={t("Protocol SHA")} value={model.result?.protocol_sha256} code /><ContextValue label={t("Artifact SHA")} value={model.sourceHash} code /><ContextValue label={t("Strategy / engine")} value={model.strategy} /><ContextValue label={t("Split")} value={model.result?.split} /><ContextValue label={t("Metric schema")} value={model.result?.metrics_schema_version || model.metrics.metric_schema_version} code /><ContextValue label={t("Observed range")} value={model.observed.start + ' → ' + model.observed.end} /><ContextValue label={t("Journal context")} value={journalCount === null ? 'N/A' : journalCount + ' entries'} /></dl>
-      <p className="as-limit-note">{t("N/A nghĩa là nguồn chưa cung cấp dữ liệu cần thiết. Research/simulation đang broker locked; không có đường nào gửi lệnh.")}</p>
+      <dl className="as-provenance-list"><ContextValue label={t("Session revision")} value={model.result?.revision} /><ContextValue label={`${t("Cutoff")} (${timezone})`} value={formatDate(model.result?.cutoff_timestamp)} /><ContextValue label={t("Dataset")} value={model.result?.dataset_id} code /><ContextValue label={t("Dataset SHA")} value={model.result?.dataset_sha256} code /><ContextValue label={t("Protocol SHA")} value={model.result?.protocol_sha256} code /><ContextValue label={t("Artifact SHA")} value={model.sourceHash} code /><ContextValue label={t("Strategy / engine")} value={model.strategy} /><ContextValue label={t("Split")} value={model.result?.split} /><ContextValue label={t("Metric schema")} value={model.result?.metrics_schema_version || model.metrics.metric_schema_version} code /><ContextValue label={t("Observed range")} value={model.observed.start + ' → ' + model.observed.end} /><ContextValue label={t("Journal context")} value={journalCount === null ? '-' : journalCount + ' entries'} /></dl>
+      <p className="as-limit-note">{t("- là dữ liệu chưa được cung cấp; N/A là chỉ số chưa áp dụng hoặc chưa có cơ sở để tính. Research/simulation đang broker locked; không có đường nào gửi lệnh.")}</p>
       </details>
       <div className="as-inspector-actions"><a href={links.journal}>{t("Mở Journal →")}</a>{links.replay && <a href={links.replay}>{t("Mở Replay →")}</a>}</div>
     </aside>
@@ -230,9 +229,9 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
   }, [result, scopedJournal, propReport, jobId, timezone])
   useEffect(() => {
     if (!selectedTradeId || !result || state.readPath !== analyticsPath || state.workspace !== workspace || state.status === 'loading') return
-    const isKnown = model.ledger.some((trade) => trade.tradeId === selectedTradeId) || model.curve.some((point) => point.tradeId === selectedTradeId)
+    const isKnown = model.ledger.some((trade) => trade.tradeId === selectedTradeId) || ledgerOnly && result.open_rows?.some(trade => trade.trade_id === selectedTradeId) || model.curve.some((point) => point.tradeId === selectedTradeId)
     if (!isKnown) setSelectedTradeId('')
-  }, [model, result, selectedTradeId, setSelectedTradeId, state.readPath, state.workspace, state.status, analyticsPath, workspace])
+  }, [model, result, ledgerOnly, selectedTradeId, setSelectedTradeId, state.readPath, state.workspace, state.status, analyticsPath, workspace])
   const updateFilters = useCallback(patch => {
     if (summaryOnly) { setLocalFilters(current => ({ ...current, ...patch })); return }
     const value = { ...filters, ...patch }
@@ -266,14 +265,20 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
       setExportPending(false)
     }
   }, [exportPending, resourceId, result, model, extra, state.status, filters, sessionId, jobId])
-  const selectedTrade = model.ledger.find((trade) => trade.tradeId === selectedTradeId) || (() => {
+  const tableModel = useMemo(() => {
+    if (!ledgerOnly || !result?.open_rows?.length) return model
+    const open = buildAnalyticsModel({ ...result, ledger: result.open_rows, metrics: {}, paged: true }, model.reportKind, timezone)
+    return { ...model, ledger: [...model.ledger, ...enrichJournalTags(open.ledger, scopedJournal)] }
+  }, [model, result, ledgerOnly, timezone, scopedJournal])
+  const selectedTrade = tableModel.ledger.find((trade) => trade.tradeId === selectedTradeId) || (() => {
     const point = model.curve.find((item) => item.tradeId === selectedTradeId)
-    return point ? { tradeId: point.tradeId, pnl: null, realized_r: null, planned_risk_budget: null, closeDate: 'N/A', source: 'closed balance curve', outcome: 'unknown', balance: point.value } : null
+    return point ? { tradeId: point.tradeId, pnl: null, realized_r: null, planned_risk_budget: null, closeDate: '-', source: 'closed balance curve', outcome: 'unknown', balance: point.value } : null
   })()
   const replayParams = new URLSearchParams({ workspace, view: 'replay', surface: 'workspace' })
   if (sessionId) replayParams.set('session', sessionId)
   if (result?.dataset_id) replayParams.set('dataset', result.dataset_id)
-  if (Number.isInteger(selectedTrade?.close_cursor_index)) replayParams.set('cursor', String(selectedTrade.close_cursor_index))
+  const tradeCursor = selectedTrade?.status === 'open' ? selectedTrade.open_cursor_index : selectedTrade?.close_cursor_index
+  if (Number.isInteger(tradeCursor)) replayParams.set('cursor', String(tradeCursor))
   else if (Number.isInteger(result?.cursor_index)) replayParams.set('cursor', String(result.cursor_index))
   const journalParams = new URLSearchParams({ workspace, view: 'journal' })
   if (sessionId) journalParams.set('session', sessionId)
@@ -293,10 +298,10 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
   const journalBackground = scopedJournal && (journalRead.pending ? 'refreshing' : journalStatus === 'stale' ? 'stale' : undefined)
   const statusControl = <TestingResourceStatus textSummary={ledgerOnly} state={primaryStatus || journalBackground || catalogStatus?.state} resource={primaryStatus ? 'kết quả phân tích' : journalBackground ? 'ghi chú và nhãn giao dịch' : 'danh mục phiên'} recovery={primaryStatus ? recovery : journalBackground ? journalRecovery : catalogStatus?.recovery} />
   const readNotice = <>{journalStatus === 'error' && <TestingReadState error message="Chưa đọc được ghi chú và nhãn giao dịch. Số ghi chú hiện chưa xác minh." recovery={journalRecovery} />}{state.status === 'error' && !state.denied && <TestingReadState error message={t('Không đọc được kết quả:') + ' ' + t(state.error)} recovery={recovery} />}</>
-  const renderFilters = columnControl => <FxAnalyticsFilters statusControl={statusControl} sourceType={propReport ? 'Prop firm' : jobId ? 'Research' : 'Backtesting'} sessionControl={sessionControl} filters={filters} onChange={updateFilters} extra={extra} onExtra={updateExtra} rows={model.ledger} facets={ledgerOnly ? { assets: [...new Set([...model.ledger.map(row => row.symbol).filter(Boolean), ...sessionAssets])] } : undefined} onExport={exportCsv} pending={exportPending || journalFilterPending || !result || !['ready', 'partial', 'stale', 'empty'].includes(state.status)} columnControl={columnControl} ledgerOnly={ledgerOnly} />
+  const renderFilters = columnControl => <FxAnalyticsFilters statusControl={statusControl} sourceType={propReport ? 'Prop firm' : jobId ? 'Research' : 'Backtesting'} sessionControl={sessionControl} filters={filters} onChange={updateFilters} extra={extra} onExtra={updateExtra} rows={tableModel.ledger} facets={ledgerOnly ? { assets: [...new Set([...tableModel.ledger.map(row => row.symbol).filter(Boolean), ...sessionAssets])] } : undefined} onExport={exportCsv} pending={exportPending || journalFilterPending || !result || !['ready', 'partial', 'stale', 'empty'].includes(state.status)} columnControl={columnControl} ledgerOnly={ledgerOnly} />
   return <section className={`as-page fxa-page ${embedded ? 'as-embedded' : 'wm-page'}`} aria-label={ledgerOnly ? t("Trades") : t("Analytics")} data-testid="analytics-workspace">
     {!embedded && <h1 className="sr-only">{ledgerOnly ? t("Trades") : t("Analytics")}</h1>}
-    {(resourceId || sessionControl) && !summaryOnly && (ledgerOnly ? <FxTradeLedger workspace={!jobId && sessionId ? workspace : undefined} onLabelsChanged={()=>setJournalReload(value=>value+1)} model={model} extra={extra} selected={selectedTradeId} onSelect={setSelectedTradeId} sessionName={sessionName} hidden={journalFilterPending || !result || !['ready', 'stale', 'partial', 'empty'].includes(state.status)} renderFilters={renderFilters} readNotice={readNotice} /> : <>{renderFilters()}{readNotice}</>)}
+    {(resourceId || sessionControl) && !summaryOnly && (ledgerOnly ? <FxTradeLedger workspace={!jobId && sessionId ? workspace : undefined} onLabelsChanged={()=>setJournalReload(value=>value+1)} model={tableModel} extra={extra} selected={selectedTradeId} onSelect={setSelectedTradeId} sessionName={sessionName} hidden={journalFilterPending || !result || !['ready', 'stale', 'partial', 'empty'].includes(state.status)} renderFilters={renderFilters} readNotice={readNotice} /> : <>{renderFilters()}{readNotice}</>)}
     {summaryOnly && readNotice}
     {journalFilterPending && journalStatus === 'loading' && <TestingReadState message="Đang đọc nhãn giao dịch…" />}
     {exportError && <p role="alert" className="fxa-error">{t(exportError)}</p>}
@@ -307,7 +312,7 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
     {state.status === 'blocked_by_data' && <section className="as-empty-state" data-testid="analytics-blocked"><h2>{t("Chưa đủ dữ liệu để tính analytics")}</h2><p>{state.payload?.blocked_by_data?.map(reason => t(reason)).join(' · ') || t(state.error) || t("Nguồn chưa có kết quả đã phát hành.")}</p></section>}
     {result && !journalFilterPending && ['ready', 'stale', 'partial', 'empty'].includes(state.status) && <>
       {summaryOnly ? <section className="as-metric-strip" aria-label={t("Metrics chính")}><StoryMetric label={t("Net PnL")} value={formatNumber(model.netPnl)} detail={result.account_currency} /><StoryMetric label={t("Win rate")} value={formatNumber(model.winRate, 1, '%')} /><StoryMetric label={t("Trades")} value={formatNumber(model.tradeCount, 0)} /><StoryMetric label={t("Max DD")} value={formatNumber(model.maxDrawdown)} detail={t("Closed balance")} /></section> : ledgerOnly ? null : <FxAnalyticsReport model={model} extra={extra} experiments={experimentScopeMatches ? experiments.payload : null} experimentStatus={experimentScopeMatches ? experiments.status : experiments.status === 'ready' ? 'error' : experiments.status} experimentError={experiments.error || (experiments.status === 'ready' && !experimentScopeMatches ? 'Đường giá chưa khớp revision/cutoff của báo cáo.' : '')} config={experimentConfig} onConfig={setExperimentConfig} onTabChange={setActiveReportTab} selected={selectedTradeId} onSelect={setSelectedTradeId} />}
-      {!summaryOnly && !ledgerOnly && <details className="as-scope-details"><summary>{t("Phạm vi và nguồn dữ liệu")}</summary><dl className="as-scope-strip"><ContextValue label={t("Session")} value={sessionId || jobId} code /><ContextValue label={t("Revision")} value={result.revision} /><ContextValue label={t("Cutoff")} value={result.cursor_index} /><ContextValue label={t("Dataset SHA")} value={result.dataset_sha256} code /><ContextValue label={t("Balance basis")} value={result.scope?.balance_curve_scope} /><ContextValue label={t("Mode")} value={sourceLabel + ' / simulation'} /></dl><p>{t("Chỉ dùng ledger đóng tại cutoff đã chọn. Các bộ lọc tạo lại đường số dư từ vốn ban đầu. — là dữ liệu chưa được nguồn cung cấp.")}</p></details>}
+      {!summaryOnly && !ledgerOnly && <details className="as-scope-details"><summary>{t("Phạm vi và nguồn dữ liệu")}</summary><dl className="as-scope-strip"><ContextValue label={t("Session")} value={sessionId || jobId} code /><ContextValue label={t("Revision")} value={result.revision} /><ContextValue label={t("Cutoff")} value={result.cursor_index} /><ContextValue label={t("Dataset SHA")} value={result.dataset_sha256} code /><ContextValue label={t("Balance basis")} value={result.scope?.balance_curve_scope} /><ContextValue label={t("Mode")} value={sourceLabel + ' / simulation'} /></dl><p>{t("Chỉ dùng ledger đóng tại cutoff đã chọn. Các bộ lọc tạo lại đường số dư từ vốn ban đầu. - là dữ liệu chưa được nguồn cung cấp.")}</p></details>}
       {!summaryOnly && selectedTrade && <Inspector onClose={() => setSelectedTradeId('')} className="fxa-trade-inspector" aria-label={t("Chi tiết giao dịch")}><div className="fxa-section-heading"><h2>{t("Trade detail")}</h2><button className="fxa-button" type="button" onClick={() => setSelectedTradeId('')}>{t("Đóng chi tiết")}</button></div><ProvenanceInspector model={model} selectedTrade={selectedTrade} journalCount={journalCount} links={links} /></Inspector>}
     </>}
   </section>

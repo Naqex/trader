@@ -11,5 +11,5 @@ export const DATA_STATES = [
   ['reconnecting', 'Mất kết nối cập nhật', 'Giữ dữ liệu đã đọc; tự nối lại luồng cập nhật.'],
   ['offline', 'Đang ngoại tuyến', 'Giữ dữ liệu đã đọc; chờ có mạng để kiểm tra lại.'],
   ['partial', 'Dữ liệu chưa đầy đủ', 'Hiện phần đã biết; đánh dấu phần thiếu.'],
-  ['unknown', 'Chưa đủ dữ liệu để tính', 'Hiện — cho số chưa biết; không đổi thành 0.'],
+  ['unknown', 'Chưa đủ dữ liệu để tính', 'Hiện - cho số chưa biết; không đổi thành 0.'],
 ]

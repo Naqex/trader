@@ -50,12 +50,12 @@ function optionalNumber(value) {
 }
 
 function formatMoney(value, currency = 'USD') {
-  if (value === null || value === undefined || !Number.isFinite(Number(value))) return 'N/A'
+  if (value === null || value === undefined || !Number.isFinite(Number(value))) return '-'
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency, maximumFractionDigits: 2 }).format(Number(value))
 }
 
 function formatPrice(value) {
-  if (value === null || value === undefined || !Number.isFinite(Number(value))) return 'N/A'
+  if (value === null || value === undefined || !Number.isFinite(Number(value))) return '-'
   return new Intl.NumberFormat('vi-VN', { minimumFractionDigits: 4, maximumFractionDigits: 8 }).format(Number(value))
 }
 
@@ -126,7 +126,7 @@ function RiskPreview({ draft, entry, instrument, costModel }) {
     <div className="trade-risk-preview" data-testid="trade-risk-preview">
       <div><span>{t('Risk tới SL')}</span><strong>{formatMoney(netRisk, costModel?.account_ccy || 'USD')}</strong><small>{t('Trước phí {risk} + phí {fees}', { risk: formatMoney(risk, costModel?.account_ccy), fees: formatMoney(fees, costModel?.account_ccy) })}</small></div>
       <div><span>{t('Reward tới TP')}</span><strong>{formatMoney(netReward, costModel?.account_ccy || 'USD')}</strong><small>{t(slippage?.variable ? 'Theo mức trượt tối đa đã chọn' : 'Ước tính theo giá tham chiếu')}</small></div>
-      <div><span>{t('Planned R')}</span><strong>{Number.isFinite(rMultiple) ? fmt(rMultiple, ' R') : '—'}</strong><small>{t('Chưa phải kết quả thực tế')}</small></div>
+      <div><span>{t('Planned R')}</span><strong>{Number.isFinite(rMultiple) ? fmt(rMultiple, ' R') : '-'}</strong><small>{t('Chưa phải kết quả thực tế')}</small></div>
     </div>
   )
 }
@@ -361,7 +361,7 @@ export default function TradeWorkspace({ workspace, query, replay: controlledRep
       {!hasSession && state.status !== 'loading' && <div className="trade-empty"><strong>Mở Practice trước</strong><span>Trade draft cần session, dataset và decision cutoff. Hãy mở một replay session rồi quay lại Trade desk.</span><a className="trade-link" href={`/?workspace=${encodeURIComponent(workspace)}&view=replay`}>Mở Practice →</a></div>}
       {replay && (
         <>
-          <div className="trade-context-strip"><span><b>Instrument</b>{instrument?.instrument_id || 'Chưa xác định'}</span><span><b>Dataset catalog</b>{catalogContextLabel}</span><span><b>Cutoff</b>{replay.cutoff_timestamp ? displayDate(replay.cutoff_timestamp, { timeStyle: 'short' }) : 'N/A'}</span><span><b>Revision</b>r{revision}</span><span><b>Giá tham chiếu</b>{formatPrice(entryReference)}</span></div>
+          <div className="trade-context-strip"><span><b>Instrument</b>{instrument?.instrument_id || 'Chưa xác định'}</span><span><b>Dataset catalog</b>{catalogContextLabel}</span><span><b>Cutoff</b>{replay.cutoff_timestamp ? displayDate(replay.cutoff_timestamp, { timeStyle: 'short' }) : '-'}</span><span><b>Revision</b>r{revision}</span><span><b>Giá tham chiếu</b>{formatPrice(entryReference)}</span></div>
           {!execution && (
             <section className="trade-init-section" aria-labelledby="trade-init-title">
               <div><span className="trade-eyebrow">STEP 01</span><h2 id="trade-init-title">Khởi tạo simulator state</h2><p>Execution state được gắn vào session và giữ cùng provenance. Chi phí dưới đây là fixture/model, chưa phải báo giá broker.</p></div>
@@ -396,7 +396,7 @@ export default function TradeWorkspace({ workspace, query, replay: controlledRep
                   )}
                 </section>
               </div>
-              <aside className="trade-side-column"><section className="trade-context-panel"><div className="trade-section-title"><div><span className="trade-eyebrow">MODEL</span><h2>Execution assumptions</h2></div></div><dl><div><dt>Fill basis</dt><dd>{execution.quote_source === 'broker_bid_ask' ? 'Tick Bid/Ask · đầu phút kế tiếp' : 'Market · next bar open'}</dd></div><div><dt>Spread</dt><dd>{execution.quote_source === 'broker_bid_ask' ? 'Bid/Ask lịch sử' : execution.spread_price ?? 'N/A'}</dd></div><div><dt>Commission</dt><dd>{costModel?.commission_per_side_account ?? 'N/A'} / side</dd></div><div><dt>Contract</dt><dd>{instrument?.contract_size ?? 'N/A'}</dd></div><div><dt>Data suffix</dt><dd>{String(replay.dataset_sha256 || '').slice(0, 12) || 'N/A'}</dd></div></dl></section><section className="trade-safety-note"><strong>Live execution bị khóa</strong><span>Trade draft và queue chỉ thay đổi replay state. Không có route gửi lệnh broker trong màn hình này.</span></section>{notice && <div className={`trade-notice is-${notice.kind}`} role={notice.kind === 'error' ? 'alert' : 'status'}>{notice.text}</div>}</aside>
+              <aside className="trade-side-column"><section className="trade-context-panel"><div className="trade-section-title"><div><span className="trade-eyebrow">MODEL</span><h2>Execution assumptions</h2></div></div><dl><div><dt>Fill basis</dt><dd>{execution.quote_source === 'broker_bid_ask' ? 'Tick Bid/Ask · đầu phút kế tiếp' : 'Market · next bar open'}</dd></div><div><dt>Spread</dt><dd>{execution.quote_source === 'broker_bid_ask' ? 'Bid/Ask lịch sử' : execution.spread_price ?? '-'}</dd></div><div><dt>Commission</dt><dd>{costModel?.commission_per_side_account ?? '-'} / side</dd></div><div><dt>Contract</dt><dd>{instrument?.contract_size ?? '-'}</dd></div><div><dt>Data suffix</dt><dd>{String(replay.dataset_sha256 || '').slice(0, 12) || '-'}</dd></div></dl></section><section className="trade-safety-note"><strong>Live execution bị khóa</strong><span>Trade draft và queue chỉ thay đổi replay state. Không có route gửi lệnh broker trong màn hình này.</span></section>{notice && <div className={`trade-notice is-${notice.kind}`} role={notice.kind === 'error' ? 'alert' : 'status'}>{notice.text}</div>}</aside>
             </section>
           )}
         </>

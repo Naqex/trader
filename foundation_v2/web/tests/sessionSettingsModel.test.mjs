@@ -12,8 +12,8 @@ test('remaining range uses canonical cutoff, preserving weekends and ignoring tr
 })
 
 test('unknown balances and range stay unknown, numeric zero remains visible', () => {
-  assert.equal(sessionDate(null), '—')
-  assert.equal(sessionDate(''), '—')
+  assert.equal(sessionDate(null), '-')
+  assert.equal(sessionDate(''), '-')
   assert.equal(sessionSettingsFacts({ instrument_id: 'EURUSDm' }, {}, {}, null).balance, null)
   assert.equal(sessionSettingsFacts({}, {}, {}, null, { payload: { execution: { balance: 0, starting_balance: 10000 } } }).balance, 0)
   assert.equal(sessionSettingsFacts({}, {}, {}, null, { payload: { execution: { balance: 0, starting_balance: 10000 } } }).startingBalance, 10000)

@@ -21,6 +21,7 @@ def row(index, **patch):
             'session_name': 'Session A', 'symbol': 'EURUSD', 'side': 'BUY',
             'net_pnl': index + 1, 'starting_balance': 10000,
             'close_time_utc': 1700000000 + index * 60,
+            'report_time_utc': patch.get('close_time_utc', 1700000000 + index * 60),
             'source': {'session_id': 'session-a', 'revision': 1},
             'source_provenance': {'session_id': 'session-a', 'revision': 1,
                                   'dataset_sha256': 'a' * 64, 'cutoff_timestamp': 1700000000 + index * 60}, **patch}
@@ -77,7 +78,7 @@ def test_notes_presence_reads_scoped_journals_before_paging_without_exposing_tex
     without = page(rows, journals=annotations, filters={'notesPresence': '["without"]'})
     assert without['pagination']['filtered_count'] == 136
     assert page(rows, journals=annotations, filters={'notesPresence': '["with","without"]'})['pagination']['filtered_count'] == 137
-    for invalid in [{'notesPresence': '["unknown"]'}, {'statuses': '["open"]'}]:
+    for invalid in [{'notesPresence': '["unknown"]'}, {'statuses': '["pending"]'}]:
         with pytest.raises(AnalyticsValidationError):
             page(rows, filters=invalid)
 

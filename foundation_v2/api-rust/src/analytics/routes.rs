@@ -75,6 +75,7 @@ async fn invoke(State(state):State<Arc<AppState>>,scope:Workspace,request:Reques
         let mut view=if activity_basis{activity::view(&record,Some(&f),zone)}else{build_replay_analytics_view(&record,Some(&f))}.map_err(|_|bad("replay_analytics_invalid_source_or_filter"))?;
         if path.ends_with(".csv"){let csv=analytics_csv(&view);tx.commit().await.map_err(|_|ApiError::database())?;return Ok(([(header::CONTENT_TYPE,"text/csv; charset=utf-8"),(header::CONTENT_DISPOSITION,"attachment; filename=\"replay-analytics-v1.csv\"")],csv).into_response())}
         presentation::apply_timezone(&mut view,zone);presentation::entry_metadata(&mut view,&record);
+        view["open_rows"]=json!(open_trades::rows(&record,activity_basis).map_err(source)?.into_iter().filter_map(|row|match open_trades::matches_filters(&row,&f){Ok(true)=>Some(Ok(row)),Ok(false)=>None,Err(e)=>Some(Err(e))}).collect::<R<Vec<_>>>().map_err(source)?);
         if !activity_basis { view["scope"]["time_basis"]=json!("market");view["equity_curve"]=activity::equity_curve(&record["payload"],Some(&f),false).map_err(source)?; }
         view
     }else if path=="/api/v2/dashboard/sessions"{
@@ -97,22 +98,30 @@ async fn invoke(State(state):State<Arc<AppState>>,scope:Workspace,request:Reques
         if paged&&(page<1||!(1..=100).contains(&size)){return Err(bad("trade_page_parameters_invalid"))}
         let mut journal_heads=if paged{record_heads(&tx,&scope.workspace_id,"journal").await?}else{vec![]};
         if paged{journal_heads.extend(record_heads(&tx,&scope.workspace_id,"trade_label").await?);journal_heads.extend(record_heads(&tx,&scope.workspace_id,"trade_label_assignment").await?);}
-        let page_key=json!(["trade-page-v1",scope.workspace_id,heads,journal_heads,q.iter().collect::<BTreeMap<_,_>>()]).to_string();
+        let page_key=json!(["trade-page-open-v2",scope.workspace_id,heads,journal_heads,q.iter().collect::<BTreeMap<_,_>>()]).to_string();
         if let Some(hit)=if paged{cached(cache,&page_key)}else{None}{hit.as_ref().clone()}else{
             let report_key=json!(["performance-v4",scope.workspace_id,heads,dashboard_source,sid,selected,f,path!="/api/v2/overview",zone.name(),activity_basis]).to_string();
-            let (report,source_records)=if let Some(report)=cached(cache,&report_key){(report,None)}else{
+            let (report,mut source_records)=if let Some(report)=cached(cache,&report_key){(report,None)}else{
                 let records=records(&tx,&scope.workspace_id,"replay").await?;
                 let report=if activity_basis{build_activity_dashboard(&records,&scope.workspace_id,sid,selected.as_deref(),Some(&f),path!="/api/v2/overview",&[],zone)}else{build_dashboard_performance_in_timezone(&records,&scope.workspace_id,sid,selected.as_deref(),Some(&f),path!="/api/v2/overview",&[],zone)}.map_err(|e|if e=="replay session not found"{ApiError::detail(StatusCode::NOT_FOUND,"replay_not_found")}else{source("trade_ledger_source_invalid")})?;
                 (retain(cache,report_key,report),Some(records))
             };
             if paged{
+                let open_key=json!(["trade-open-projection-v1",scope.workspace_id,heads,activity_basis]).to_string();
+                let open=if let Some(open)=cached(cache,&open_key){open}else{
+                    if source_records.is_none(){source_records=Some(records(&tx,&scope.workspace_id,"replay").await?);}
+                    retain(cache,open_key,open_trades::project(source_records.as_ref().unwrap(),&scope.workspace_id,activity_basis))
+                };
                 let facet_key=json!(["performance-v4-facets",scope.workspace_id,heads,sid,selected,normalize_filters(None).unwrap(),true,zone.name(),activity_basis]).to_string();
                 let facet=if f==normalize_filters(None).unwrap()||!truth(&f){report.clone()}else if let Some(facet)=cached(cache,&facet_key){facet}else{
-                    let records=if let Some(r)=source_records{r}else{records(&tx,&scope.workspace_id,"replay").await?};
+                    if source_records.is_none(){source_records=Some(records(&tx,&scope.workspace_id,"replay").await?);}
+                    let records=source_records.as_ref().unwrap();
                     retain(cache,facet_key,if activity_basis{build_activity_dashboard(&records,&scope.workspace_id,sid,selected.as_deref(),None,true,&[],zone)}else{build_dashboard_performance_in_timezone(&records,&scope.workspace_id,sid,selected.as_deref(),None,true,&[],zone)}.map_err(source)?)
                 };
                 let journals=records_for_journals(&tx,&scope.workspace_id).await?;
                 let mut report=report.as_ref().clone();let mut facet=facet.as_ref().clone();
+                open_trades::append_projected(&mut report,&open,&f).map_err(source)?;
+                open_trades::append_projected(&mut facet,&open,&json!({})).map_err(source)?;
                 report["label_revision_key"]=json!(journal_heads);
                 for projection in [&mut report,&mut facet]{
                     if let Some(rows)=projection["ledger"].as_array_mut(){

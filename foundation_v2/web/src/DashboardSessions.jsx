@@ -129,7 +129,7 @@ export default function DashboardSessions({ workspace, query, preview = null }) 
       try {
         const payload = preview ? preview.analytics(item, workspace) : await readDashboardAnalytics(workspace, item.record_id, controller.signal)
         const model = payload.analytics_available ? buildAnalyticsModel(analyticsViewResult(payload)) : null
-        return [item.record_id, { revision: item.revision, status: 'ready', payload, model, replayRecord: await recordPromise, strategy: payload.provenance?.playbook_id || (await recordPromise)?.payload?.playbook_id, pnl: payload.analytics_available && dashboardNumber(payload.metrics?.net_pnl) !== '—' ? Number(payload.metrics.net_pnl) : null, currency: payload.metrics?.account_currency || payload.provenance?.account_currency || null }]
+        return [item.record_id, { revision: item.revision, status: 'ready', payload, model, replayRecord: await recordPromise, strategy: payload.provenance?.playbook_id || (await recordPromise)?.payload?.playbook_id, pnl: payload.analytics_available && dashboardNumber(payload.metrics?.net_pnl) !== '-' ? Number(payload.metrics.net_pnl) : null, currency: payload.metrics?.account_currency || payload.provenance?.account_currency || null }]
       } catch { return [item.record_id, { revision: item.revision, status: 'error', unavailable: true, replayRecord: await recordPromise }] }
     })).then(values => { if (!controller.signal.aborted) setDetailState(current => ({ workspace, items: { ...(current.workspace === workspace ? current.items : {}), ...Object.fromEntries(values) } })) })
     return () => controller.abort()

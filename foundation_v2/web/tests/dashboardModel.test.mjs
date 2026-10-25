@@ -18,12 +18,12 @@ test('duration retains unknown, measured zero and whole elapsed days without cal
 })
 
 test('dashboard keeps unknown distinct from measured zero', () => {
-  for (const unknown of [null, undefined, '', false, NaN, Infinity, 'not-a-number']) assert.equal(dashboardNumber(unknown), '—')
+  for (const unknown of [null, undefined, '', false, NaN, Infinity, 'not-a-number']) assert.equal(dashboardNumber(unknown), '-')
   assert.equal(dashboardNumber(0), '0')
   assert.equal(dashboardNumber(50, '%'), '50%')
   assert.equal(dashboardMoney(0.01, 'USD'), '$0,01', 'Do not round measured cents into zero PnL')
   assert.equal(dashboardMoney(0, 'USD'), '$0')
-  assert.equal(dashboardMoney(null, 'USD'), '—')
+  assert.equal(dashboardMoney(null, 'USD'), '-')
 })
 
 test('recent period ranges use inclusive UTC calendar days across month boundaries', () => {

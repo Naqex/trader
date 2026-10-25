@@ -21,7 +21,7 @@ export function dateFromValue(value) {
 }
 
 function formatNumber(value, digits = 2, suffix = '') {
-  if (!finite(value)) return 'N/A'
+  if (!finite(value)) return '-'
   return `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: digits }).format(Number(value))}${suffix}`
 }
 
@@ -62,8 +62,8 @@ export function buildAnalyticsModel(result, reportKind = 'app', timezone = getTi
   const marketScope = result?.scope?.time_basis === 'market'
   const reportTime = trade => marketScope ? trade?.close_time_utc : trade?.report_time_utc
   const ledgerDates = ledger.map(trade => dateFromValue(reportTime(trade))).filter(Boolean).sort((a, b) => a - b)
-  const dateLabel = (value) => { const date = dateFromValue(value); return !date ? 'N/A' : displayDate(date, { timeZone: timezone }) }
-  const rows = ledger.map((trade, index) => { const pnl = finite(trade?.net_pnl) ? Number(trade.net_pnl) : null; const date = dateFromValue(reportTime(trade)); return { ...trade, report_kind: reportKind, rowIndex: index, tradeId: trade?.trade_id || `trade-${index + 1}`, pnl, outcome: outcomeOf(pnl), source: trade?.source?.session_id || trade?.session_id || trade?.source_id || 'research ledger', closeDate: date ? displayDate(date, { timeStyle: 'medium', timeZone: timezone }) : 'N/A' } })
+  const dateLabel = (value) => { const date = dateFromValue(value); return !date ? '-' : displayDate(date, { timeZone: timezone }) }
+  const rows = ledger.map((trade, index) => { const pnl = finite(trade?.net_pnl) ? Number(trade.net_pnl) : null; const date = dateFromValue(reportTime(trade)); return { ...trade, report_kind: reportKind, rowIndex: index, tradeId: trade?.trade_id || `trade-${index + 1}`, pnl, outcome: outcomeOf(pnl), source: trade?.source?.session_id || trade?.session_id || trade?.source_id || 'research ledger', closeDate: date ? displayDate(date, { timeStyle: 'medium', timeZone: timezone }) : '-' } })
   const realizedRValues = (Array.isArray(metrics.realized_r_values) ? metrics.realized_r_values : rows.map((trade) => trade.realized_r)).filter(finite).map(Number)
   const metricDefinitions = metrics.definitions && typeof metrics.definitions === 'object'
     ? Object.entries(metrics.definitions).slice(0, 16).reduce((out, [key, value]) => {
@@ -77,7 +77,7 @@ export function buildAnalyticsModel(result, reportKind = 'app', timezone = getTi
     : {}
   const startBalance = firstKnown(metrics.starting_balance, result?.starting_balance, curve[0]?.value)
   const endingBalance = firstKnown(metrics.ending_closed_trade_balance, metrics.ending_balance, curve[curve.length - 1]?.value)
-  const strategy = result?.strategy_version || result?.playbook_id || result?.engine_version || 'N/A'
+  const strategy = result?.strategy_version || result?.playbook_id || result?.engine_version || '-'
   const activityScope = result?.scope?.time_basis === 'activity'
   const range = { start: dateLabel(activityScope && observedStart || ledgerDates[0]?.toISOString()), end: dateLabel(activityScope && observedEnd || ledgerDates[ledgerDates.length - 1]?.toISOString()) }
   const takeaway = !tradeCount ? 'Chưa có giao dịch đóng.' : !finite(netPnl) ? `${formatNumber(tradeCount, 0)} giao dịch đóng · Net PnL chưa có dữ liệu.` : `${formatNumber(tradeCount, 0)} giao dịch đóng · Net PnL ${formatNumber(netPnl, 2, result?.account_currency || 'account units')}`
@@ -104,7 +104,7 @@ export function buildAnalyticsModel(result, reportKind = 'app', timezone = getTi
     observed: range,
     activityIncomplete: ledgerDates.length !== ledger.length,
     strategy,
-    sourceHash: result?.artifact_sha256 || 'N/A',
+    sourceHash: result?.artifact_sha256 || '-',
     derivedNet: !finite(providedNet) && finite(netPnl),
     derivedWinRate: !finite(providedWinRate) && finite(winRate),
     derivedExpectancy: !finite(providedExpectancy) && finite(expectancy),
@@ -152,10 +152,11 @@ export function analyticsViewResult(view) {
     metrics_schema_version: provenance.metrics_schema_version,
     split: provenance.split,
     playbook_id: provenance.playbook_id,
-    strategy_version: provenance.playbook_id || provenance.playbook_revision || 'N/A',
+    strategy_version: provenance.playbook_id || provenance.playbook_revision || '-',
     observed_range: { start_utc: observed.first_close_utc, end_utc: observed.last_close_utc },
     metrics: view.metrics && typeof view.metrics === 'object' ? view.metrics : {},
     ledger: Array.isArray(view.ledger) ? view.ledger : [],
+    open_rows: Array.isArray(view.open_rows) ? view.open_rows : [],
     analytics_available: view.analytics_available,
     blocked_by_data: Array.isArray(view.blocked_by_data) ? view.blocked_by_data : [],
     filters: view.filters && typeof view.filters === 'object' ? view.filters : {},

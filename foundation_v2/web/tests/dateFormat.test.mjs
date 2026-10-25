@@ -17,7 +17,7 @@ test('24-hour time includes seconds when requested; formatting preserves timezon
   assert.equal(sessionDate(1052006400, true, 'en-US'), '04/05/2003 00:00')
 })
 test('unknown/invalid values are explicit and cannot become epoch zero', () => {
-  for (const value of [null, undefined, '', true, NaN, 'invalid']) assert.equal(displayDate(value), '—')
+  for (const value of [null, undefined, '', true, NaN, 'invalid']) assert.equal(displayDate(value), '-')
   assert.equal(displayDate(null, { fallback: 'N/A' }), 'N/A')
 })
 test('date fields round-trip ISO without timezone conversion, including midnight and seconds', () => {
@@ -39,5 +39,5 @@ test('price type comes from saved provenance, never guessed from provider name',
   assert.deepEqual(libraryDataType({ downloaded: true, timeframe: 'H1', source: { provider: 'Dukascopy', export_settings: 'user CSV' } }), { timeframe: 'H1', price: undefined })
   assert.deepEqual(libraryDataType({ downloaded: true, timeframe: 'M1', source: { export_settings: '{"price":"ask"}' } }), { timeframe: 'M1', price: 'Ask' })
   assert.deepEqual(libraryDataType({ downloaded: false }, '2003-05-04'), { timeframe: 'M1', price: 'Bid' })
-  assert.deepEqual(libraryDataType({ downloaded: false }), { timeframe: '—' })
+  assert.deepEqual(libraryDataType({ downloaded: false }), { timeframe: '-' })
 })

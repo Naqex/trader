@@ -30,7 +30,7 @@ test('DST local days and skipped civil dates do not assume 24 hours', () => {
 test('money uses dollar symbol only for USD and never converts unknown to zero', () => {
   assert.equal(formatAmount(10000,' USD',2,'en-US'),'$10,000')
   assert.equal(formatAmount(-3.5,' EUR',2,'en-US'),'-3.5 EUR')
-  for(const value of [null, undefined, '', NaN, true]) assert.equal(formatAmount(value,' USD'),'—')
+  for(const value of [null, undefined, '', NaN, true]) assert.equal(formatAmount(value,' USD'),'-')
   assert.equal(formatAmount(0,' USD',2,'en-US'),'$0')
 })
 test('search matches Vietnamese accents and every query token', () => {

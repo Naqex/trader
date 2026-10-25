@@ -7,6 +7,7 @@ use std::{collections::{BTreeMap, BTreeSet, HashMap, HashSet}, str::FromStr};
 type R<T> = Result<T, String>;
 #[path="analytics/trades.rs"]
 pub mod trades;
+mod open_trades;
 #[path="analytics/prop_profile.rs"]
 pub mod prop_profile;
 mod presentation;

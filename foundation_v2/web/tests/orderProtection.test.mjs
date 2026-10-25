@@ -88,5 +88,5 @@ test('estimated amounts place the currency symbol first in Vietnamese and Englis
   assert.equal(formatProtectionMoney(4,'USD','vi'),'$4,00')
   assert.equal(formatProtectionMoney(-2,'USD','vi'),'$2,00')
   assert.equal(formatProtectionMoney(1234.5,'USD','en'),'$1,234.50')
-  assert.equal(formatProtectionMoney(null,'USD','vi'),'—')
+  assert.equal(formatProtectionMoney(null,'USD','vi'),'-')
 })

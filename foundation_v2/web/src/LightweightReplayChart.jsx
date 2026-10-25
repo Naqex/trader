@@ -11,11 +11,11 @@ import { orderKinds } from './replayOrderLabels.js'
 
 export default function LightweightReplayChart({ rows, sessionId, chartType, showVolume, showAverage, viewportRequest, drawings, onCrosshair, onAnchorSelect, theme, levels, orderEditable, tickSize, onOrderPriceChange, orderGeneration, onOrderDragStart, onStatusChange }) {
   const { t, locale, fmt, timezone } = useTestingLocale()
-  const formatTimestamp = value => value === null || value === undefined || !Number.isFinite(Number(value)) ? '—' : displayDate(new Date(Number(value) * 1000), { timeStyle: 'medium' })
+  const formatTimestamp = value => value === null || value === undefined || !Number.isFinite(Number(value)) ? '-' : displayDate(new Date(Number(value) * 1000), { timeStyle: 'medium' })
   const formatPrice = value => fmt(value, '', 8)
   useEffect(() => { chartRef.current?.chart.applyOptions({ localization: { locale, timeFormatter: time => displayDate(typeof time === 'object' ? `${time.year}-${String(time.month).padStart(2,'0')}-${String(time.day).padStart(2,'0')}` : time, { timeStyle: typeof time === 'number' ? 'short' : undefined }) } }) }, [timezone, locale])
   const money = (value, currency) => {
-    if (value === null || value === undefined || !Number.isFinite(Number(value))) return '—'
+    if (value === null || value === undefined || !Number.isFinite(Number(value))) return '-'
     try { return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'USD', maximumFractionDigits: 2 }).format(Number(value)) } catch { return fmt(value, ' ' + (currency || t('Đơn vị tài khoản'))) }
   }
 

@@ -85,7 +85,7 @@ function DatasetDetails({ dataset, workspace, query }) {
         <div><dt>Dataset</dt><dd><strong>{dataset.dataset_id}</strong></dd></div>
         <div><dt>{t('Nguồn dữ liệu')}</dt><dd>{sourceOf(dataset)}</dd></div>
         {downloadEngineOf(dataset) === 'QuantDataManager' && <div><dt>{t('Công cụ tải')}</dt><dd>QuantDataManager (QDM) · CLI</dd></div>}
-        <div><dt>Instrument / TF</dt><dd>{dataset.instrument_id || 'N/A'} · {displayTimeframe(dataset, 'N/A')}</dd></div>
+        <div><dt>Instrument / TF</dt><dd>{dataset.instrument_id || '-'} · {displayTimeframe(dataset, '-')}</dd></div>
         <div><dt>{t('Số nến')}</dt><dd>{fmt(dataset.row_count, '', 0)}</dd></div>
         <div><dt>Range</dt><dd>{t(formatUtc(range.start, locale))} → {t(formatUtc(range.end, locale))}</dd></div>
         <div><dt>License</dt><dd>{source.license_use || 'Chưa xác minh'}</dd></div>
@@ -694,14 +694,14 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
                       const dateTitle = value => dataset.downloaded ? value == null ? undefined : displayDate(value, { timeStyle: 'medium' }) : availableStart ? t('Phạm vi có thể tải theo metadata M1; chưa kiểm chứng độ phủ.') : undefined
                       return (
                         <tr key={dataset.key} className={active ? 'is-selected' : ''}>
-                          <td><strong data-testid={dataset.downloaded ? `dataset-row-${dataset.dataset_id}` : undefined}>{dataset.instrument_id || '—'}</strong>{dataset.artifact_available === false && <small>{t('Cần khôi phục')}</small>}{!dataset.downloaded && dataset.name && <small>{dataset.name}</small>}</td>
+                          <td><strong data-testid={dataset.downloaded ? `dataset-row-${dataset.dataset_id}` : undefined}>{dataset.instrument_id || '-'}</strong>{dataset.artifact_available === false && <small>{t('Cần khôi phục')}</small>}{!dataset.downloaded && dataset.name && <small>{dataset.name}</small>}</td>
                           <td className="is-center">{t(categoryLabel(categoryOf(dataset)))}</td>
                           <td className="is-center" data-tooltip={downloadEngineOf(dataset) === 'QuantDataManager' ? `${sourceOf(dataset)} · ${t('Công cụ tải')}: QuantDataManager (QDM) · CLI` : sourceOf(dataset)}>{sourceOf(dataset)}</td>
                           <td className="is-center"><span data-tooltip={dataType.timeframe === 'M1' ? t('M1: mỗi nến tổng hợp giá trong 1 phút.') : undefined}>{dataType.timeframe}</span>{dataType.price && <small data-tooltip={dataType.price === 'Bid' ? t('Bid: giá bên mua chào, chưa bao gồm giá Ask và spread thực tế.') : undefined}>{dataType.price}</small>}</td>
                           <td className="data-library-date" data-tooltip={dateTitle(fromDate)}>{displayDate(fromDate)}</td>
                           <td className="data-library-date" data-tooltip={dateTitle(toDate)}>{displayDate(toDate)}</td>
-                          <td className="is-numeric">{dataset.downloaded ? fmt(dataset.row_count, '', 0) : <span className="data-library-muted" data-tooltip={t('Số nến chính xác chỉ xác định sau khi đọc dữ liệu nguồn.')}>—</span>}</td>
-                          <td className="is-numeric" data-tooltip={!dataset.downloaded ? t('Dung lượng replay chỉ xác định sau khi tải và xử lý.') : undefined}>{dataset.downloaded ? formatDatasetSize(dataset.size_bytes, fmt) : <span className="data-library-muted">—</span>}</td>
+                          <td className="is-numeric">{dataset.downloaded ? fmt(dataset.row_count, '', 0) : <span className="data-library-muted" data-tooltip={t('Số nến chính xác chỉ xác định sau khi đọc dữ liệu nguồn.')}>-</span>}</td>
+                          <td className="is-numeric" data-tooltip={!dataset.downloaded ? t('Dung lượng replay chỉ xác định sau khi tải và xử lý.') : undefined}>{dataset.downloaded ? formatDatasetSize(dataset.size_bytes, fmt) : <span className="data-library-muted">-</span>}</td>
                           <td className="is-center"><div className="data-library-row-actions">{!job && <button type="button" className="rd-button data-library-download" disabled={dataset.downloaded || !eligibleDownload(dataset)} onClick={() => openDownload(dataset)} data-tooltip={t(dataset.downloaded ? 'Dữ liệu đã được lưu trong kho' : activeDownload ? 'Đang có một lượt tải khác.' : eligibleDownload(dataset) ? 'Toàn bộ lịch sử có sẵn đến hết hôm qua (UTC).' : 'Nguồn chưa hỗ trợ tải trực tiếp trong ứng dụng')}><TestingIcon kind="download" />{t(startingAsset === dataset.instrument_id ? 'Đang bắt đầu…' : dataset.downloaded ? 'Đã tải' : 'Tải về')}</button>}{job ? <>
                             <DataLibraryProgress job={job} fmt={fmt} retrySeconds={retrySeconds} onClick={() => setDownloadProgressOpen(true)} />
                             <button type="button" className="fxa-button fxa-icon-button data-library-job-control" aria-label={t(downloading ? 'Tạm dừng' : 'Tiếp tục tải')} data-tooltip={retrySeconds > 0 ? t(downloadErrorMessage(job.error || 'download_cooldown')) : t(downloading ? 'Tạm dừng' : 'Tiếp tục tải')} disabled={Boolean(jobAction) || (downloading ? !downloads.supportsPause || job.status === 'pausing' : activeDownload || !downloads.available || retrySeconds > 0)} onClick={() => changeDownload(job,downloading ? 'pause' : 'resume')}><TestingIcon kind={downloading ? 'pause' : 'play'} /></button>
@@ -724,7 +724,7 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
         <dl className="data-library-catalog-facts">
           {catalogSourceSelected && downloadEngineOf(state.catalog) === 'QuantDataManager' && <div><dt>{t('Công cụ tải')}</dt><dd>QuantDataManager (QDM) · CLI</dd></div>}
           <div><dt>{t('Số tài sản')}</dt><dd>{fmt(sourceAssetCount, '', 0)}</dd></div>
-          <div><dt>{t(catalogSourceSelected ? 'Cập nhật lần cuối' : 'Lần lưu gần nhất')}</dt><dd>{(catalogSourceSelected ? state.catalog?.retrieved_at_utc : latestSourceSave) ? formatUtc(catalogSourceSelected ? state.catalog.retrieved_at_utc : latestSourceSave, locale) : '—'}</dd></div>
+          <div><dt>{t(catalogSourceSelected ? 'Cập nhật lần cuối' : 'Lần lưu gần nhất')}</dt><dd>{(catalogSourceSelected ? state.catalog?.retrieved_at_utc : latestSourceSave) ? formatUtc(catalogSourceSelected ? state.catalog.retrieved_at_utc : latestSourceSave, locale) : '-'}</dd></div>
         </dl>
         {catalogSourceSelected && (catalogMessage ? <p className="data-library-catalog-status" role="status">{t(catalogMessage)}</p> : catalogUpdated && <p className="data-library-catalog-status" role="status">{t('Đã cập nhật danh mục.')}</p>)}
         {catalogSourceSelected && !catalogBusy && state.catalog?.configured && !state.catalog.refresh_available && !catalogMessage && <p className="data-library-catalog-status" role="status">{t('Vui lòng chờ trước khi cập nhật lại.')}</p>}

@@ -56,6 +56,26 @@ Last sync is the last successful data observation, not a connection expiry date.
 
 ## Shared controls and financial semantics
 
+- Missing/unprovided/unset presentation uses the short `-`; known zero stays `0`.
+  Use `N/A` only for a field that does not apply or cannot have a meaningful
+  denominator, such as realized Return on an Open position or R without a risk
+  basis. Explain the reason on hover/accessibility when context is insufficient.
+  This convention never rewrites stored data or CSV null values.
+- Select-all checkbox rows show selected/available counts for the whole available
+  set, independent of the search text; disabled and stale IDs do not inflate them.
+  Grid footers show a labeled result total; the displayed range is available on
+  hover. Timezone metadata uses the Settings IANA zone and offsets of the displayed
+  observations, including both offsets when those observations cross DST.
+- Grid sort icons reserve a stable slot. Left/right headings align their visible
+  text with cell text; centered categories balance the icon slot. Money badge
+  padding extends into the cell inset so its digits share the numeric text edge.
+- Trades includes Open exposure from the same validated session snapshot in its
+  table projection, before filtering/counting/paging. Closed metrics and analytics
+  exports retain their realized-only contract. Open exits stay missing; estimated
+  floating P/L and close costs never substitute for realized Return or known fees.
+  Session history reads Open from its requested checkpoint. Forked Open exposures
+  remain distinct per selected session; closed-fill ancestry dedup stays intact.
+
 - `SearchInput` owns search appearance and Escape clearing; preserve native
   composition and accessibility. `matchesSearch` normalizes Vietnamese accents,
   case and whitespace, matching every query token. Server session search follows

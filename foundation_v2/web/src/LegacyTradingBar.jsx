@@ -14,7 +14,7 @@ export default function LegacyTradingBar({ order, analyticsHref, propRulesAction
   const currency = account?.account_ccy || execution?.cost_model?.account_ccy || order.configuredCurrency || order.costs?.account_ccy
   const money = value => {
     const amount = finiteNumber(value)
-    if (amount === null) return '—'
+    if (amount === null) return '-'
     if (!currency) return fmt(amount)
     try { return new Intl.NumberFormat('en-US', { style:'currency', currency, maximumFractionDigits:2 }).format(amount) }
     catch { return fmt(amount, ' ' + currency) }

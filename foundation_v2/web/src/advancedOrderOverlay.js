@@ -96,7 +96,7 @@ export function createAdvancedOrderOverlay({ getState, getPane, getLine, t }) {
     row.arrow.textContent = parts.length > 1 ? ' → ' : ''
     row.amount.hidden = parts.length < 2
     row.amount.textContent = parts[1] || ''
-    row.quantity.textContent = String(levels.targets?.find(target => `target:${target.id}` === row.kind)?.quantity ?? levels.quantity ?? '—')
+    row.quantity.textContent = String(levels.targets?.find(target => `target:${target.id}` === row.kind)?.quantity ?? levels.quantity ?? '-')
     row.quantity.hidden = label.compact
     if (row.kind === 'entry') {
       row.quantity.disabled = !state.orderEditable || !state.onOrderEdit

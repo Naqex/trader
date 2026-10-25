@@ -102,8 +102,8 @@ export default function AiProviderSettings({ workspace, language }) {
     return value.login_state_present ? say('Đã đăng nhập', 'Signed in') : say('Chưa đăng nhập', 'Signed out')
   }
   function stored(provider, value) {
-    if (provider === 'local-gateway') return Number.isInteger(value?.runtime?.accounts) ? say(`${value.runtime.accounts} tài khoản đã lưu`, `${value.runtime.accounts} saved accounts`) : '—'
-    return value?.login_state_present === true ? say('Có phiên đã lưu', 'Saved session') : value?.login_state_present === false ? say('Chưa có phiên', 'No saved session') : '—'
+    if (provider === 'local-gateway') return Number.isInteger(value?.runtime?.accounts) ? say(`${value.runtime.accounts} tài khoản đã lưu`, `${value.runtime.accounts} saved accounts`) : '-'
+    return value?.login_state_present === true ? say('Có phiên đã lưu', 'Saved session') : value?.login_state_present === false ? say('Chưa có phiên', 'No saved session') : '-'
   }
   function actions(provider, record) {
     const value = record?.value

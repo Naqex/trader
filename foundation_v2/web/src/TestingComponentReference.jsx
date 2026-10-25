@@ -75,7 +75,7 @@ function ReferenceReportPatterns() {
   </section>
 }
 function SpecTable({ rows, tokens, prefix='--ds-' }) {
-  return <div className="wm-reference-table-scroll"><table className="wm-reference-table"><thead><tr><th>Thành phần</th><th>Thông số</th><th>Cách dùng</th></tr></thead><tbody>{rows.map(([label,key,note]) => <tr key={key+label}><td>{label}</td><td>{tokens[prefix+key] || '—'}</td><td>{note}</td></tr>)}</tbody></table></div>
+  return <div className="wm-reference-table-scroll"><table className="wm-reference-table"><thead><tr><th>Thành phần</th><th>Thông số</th><th>Cách dùng</th></tr></thead><tbody>{rows.map(([label,key,note]) => <tr key={key+label}><td>{label}</td><td>{tokens[prefix+key] || '-'}</td><td>{note}</td></tr>)}</tbody></table></div>
 }
 export default function TestingComponentReference() {
   const { t, fmt } = useTestingLocale(), { appearance } = useFxReplayContext()

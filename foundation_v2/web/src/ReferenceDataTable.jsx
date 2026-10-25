@@ -23,7 +23,7 @@ export default function ReferenceDataTable() {
       {state==='stale'&&<TestingReadState message="Dữ liệu minh hoạ có thể đã cũ." />}
       <DataTable label="Bảng dữ liệu minh hoạ" style={{maxHeight:300}} aria-busy={pending}>
         <thead><tr>{[['name','Tên'],['group','Nhóm'],['value','Giá trị']].map(([key,label])=><SortableColumn key={key} className={key==='value'?'is-numeric':undefined} active={sort.key===key} direction={sort.direction} disabled={pending} onSort={()=>{setSort(nextTableSort(sort,key));setPage(1)}}>{label}</SortableColumn>)}</tr></thead>
-        <tbody>{pending?<tr><td colSpan={3}><TestingSkeleton rows={3} /></td></tr>:rows.length?rows.slice((current-1)*size,current*size).map(row=><tr key={row.id}><td>{row.name}</td><td>{row.group}</td><td className="is-numeric">{state==='unknown'||row.value===null?'—':row.value}</td></tr>):<tr><td colSpan={3}>Không có kết quả phù hợp.</td></tr>}</tbody>
+        <tbody>{pending?<tr><td colSpan={3}><TestingSkeleton rows={3} /></td></tr>:rows.length?rows.slice((current-1)*size,current*size).map(row=><tr key={row.id}><td>{row.name}</td><td>{row.group}</td><td className="is-numeric">{state==='unknown'||row.value===null?'-':row.value}</td></tr>):<tr><td colSpan={3}>Không có kết quả phù hợp.</td></tr>}</tbody>
       </DataTable>
       <PaginationFooter label="Trang bảng minh hoạ" page={current} pages={pages} pageSize={size} totalCount={rows.length} pending={pending} unknown={state==='unknown'} onPageChange={setPage} onPageSizeChange={value=>{setSize(value);setPage(1)}} />
     </>}

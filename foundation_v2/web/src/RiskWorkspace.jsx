@@ -10,7 +10,7 @@ function optionalNumber(value) {
 }
 
 function formatMoney(value) {
-  if (value === null || value === undefined || !Number.isFinite(Number(value))) return 'N/A'
+  if (value === null || value === undefined || !Number.isFinite(Number(value))) return '-'
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(Number(value))
 }
 
@@ -57,10 +57,10 @@ function EvaluationResult({ result }) {
     <div className="risk-evaluation-grid">
       <Metric label="Overall floor" value={formatMoney(total?.floor)} sub={`Current ${formatMoney(total?.current)} · còn ${formatMoney(total?.remaining)}`} status={total?.breached ? 'danger' : 'ok'} />
       <Metric label="Daily floor" value={formatMoney(daily?.floor)} sub={`Current ${formatMoney(daily?.current)} · còn ${formatMoney(daily?.remaining)}`} status={daily?.breached ? 'danger' : 'ok'} />
-      <Metric label="Total reference" value={formatMoney(total?.reference)} sub={`${total?.basis || 'N/A'} basis`} />
-      <Metric label="Daily reference" value={formatMoney(daily?.reference)} sub={`${daily?.basis || 'N/A'} basis`} />
+      <Metric label="Total reference" value={formatMoney(total?.reference)} sub={`${total?.basis || '-'} basis`} />
+      <Metric label="Daily reference" value={formatMoney(daily?.reference)} sub={`${daily?.basis || '-'} basis`} />
     </div>
-    <dl className="risk-assumption-list"><div><dt>Cost basis</dt><dd>{result.assumptions?.cost_basis || 'N/A'}</dd></div><div><dt>Cashflow</dt><dd>{result.assumptions?.cashflow_adjustment || 'N/A'}</dd></div><div><dt>Payout estimate</dt><dd>{result.assumptions?.payout_probability || 'N/A'}</dd></div></dl>
+    <dl className="risk-assumption-list"><div><dt>Cost basis</dt><dd>{result.assumptions?.cost_basis || '-'}</dd></div><div><dt>Cashflow</dt><dd>{result.assumptions?.cashflow_adjustment || '-'}</dd></div><div><dt>Payout estimate</dt><dd>{result.assumptions?.payout_probability || '-'}</dd></div></dl>
   </section>
 }
 

@@ -20,12 +20,12 @@ function exportSettingsOf(item) {
   catch { return {} }
 }
 // Keep transport identity for job/update matching, including immutable older QDM imports.
-export const downloadEngineOf = item => item?.download_engine || exportSettingsOf(item).download_engine || item?.source?.provider || item?.provider || item?.provider_id || '—'
+export const downloadEngineOf = item => item?.download_engine || exportSettingsOf(item).download_engine || item?.source?.provider || item?.provider || item?.provider_id || '-'
 export const sourceOf = item => item?.data_source || exportSettingsOf(item).upstream_provider
-  || (downloadEngineOf(item) === 'QuantDataManager' ? 'Dukascopy' : item?.source?.provider || item?.provider || item?.provider_id || '—')
+  || (downloadEngineOf(item) === 'QuantDataManager' ? 'Dukascopy' : item?.source?.provider || item?.provider || item?.provider_id || '-')
 
 export function libraryDataType(item, availableStart) {
-  if (!item.downloaded) return availableStart ? { timeframe: 'M1', ...(downloadEngineOf(item) === 'QuantDataManager' ? {} : { price: 'Bid' }) } : { timeframe: '—' }
+  if (!item.downloaded) return availableStart ? { timeframe: 'M1', ...(downloadEngineOf(item) === 'QuantDataManager' ? {} : { price: 'Bid' }) } : { timeframe: '-' }
   const settings = exportSettingsOf(item)
   const price = { bid: 'Bid', ask: 'Ask', mid: 'Mid' }[settings?.price]
   return { timeframe: displayTimeframe(item), price }
@@ -113,7 +113,7 @@ export function filterLibrary(rows, { category = 'all', provider = 'all', downlo
     if (key === 'asset') return `${item.instrument_id || ''} ${item.timeframe || ''}`
     if (key === 'category') return categoryLabel(categoryOf(item))
     if (key === 'source') return sourceOf(item)
-    if (key === 'data') { const type = libraryDataType(item, libraryDisplayRange(item,download,now).availableStart); return type.timeframe === '—' ? null : `${type.timeframe} ${type.price || ''}` }
+    if (key === 'data') { const type = libraryDataType(item, libraryDisplayRange(item,download,now).availableStart); return type.timeframe === '-' ? null : `${type.timeframe} ${type.price || ''}` }
     if (key === 'downloaded' || key === 'not') return item.downloaded ? 1 : 0
     if (key === 'updated') return Date.parse(item.created_at_utc)
     if (['from','to'].includes(key)) { const range = libraryDisplayRange(item,download,now); const stamp = key === 'from' ? range.start : range.end; return stamp == null ? null : typeof stamp === 'number' ? Math.abs(stamp) < 1e11 ? stamp * 1000 : stamp : Date.parse(stamp) }

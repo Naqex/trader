@@ -17,7 +17,7 @@ import { MANUAL_TRADE_COLUMNS } from './liveTradeColumns.js'
 
 function StrategyReference({ payload, strategies, workspace }) {
   const { t,language } = useTestingLocale()
-  if (!payload.playbook_id) return '—'
+  if (!payload.playbook_id) return '-'
   const current = strategies.find(item => item.record_id === payload.playbook_id && item.revision === payload.playbook_revision)
   return <a href={buildWorkspaceHref('playbook',workspace,new URLSearchParams({lang:language}),{area:'strategies',section:'my-strategies',playbook:payload.playbook_id,playbook_revision:payload.playbook_revision})}>{current?.payload.name || t('Strategy #{id}',{id:payload.playbook_id.slice(0,8)})} · v{payload.playbook_revision}</a>
 }
@@ -36,7 +36,7 @@ export function ManualTrades({ columns = MANUAL_TRADE_COLUMNS.map(([key]) => key
       case 'asset': return deal.symbol
       case 'side': return `${t(deal.type === 0 ? 'Buy' : 'Sell')} · ${fmt(deal.volume,'',5)}`
       case 'strategy': return <StrategyReference payload={deal.record.payload} strategies={strategies} workspace={workspace} />
-      case 'tags': return deal.record.payload.tags.join(', ') || '—'
+      case 'tags': return deal.record.payload.tags.join(', ') || '-'
       case 'net': return fmt(dealNet(deal))
     }
   }

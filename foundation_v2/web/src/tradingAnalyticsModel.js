@@ -39,6 +39,14 @@ export function validateTradesPayload(payload) {
   return payload
 }
 
+export function validTradeTableRow(row) {
+  if (!row || ![undefined, 'closed', 'open'].includes(row.status)) return false
+  if (row.status !== 'open') return known(row.net_pnl)
+  return known(row.quantity) && Number(row.quantity) > 0 && known(row.price_open) && Number(row.price_open) > 0
+    && ['BUY', 'SELL'].includes(row.side?.toUpperCase())
+    && ['net_pnl', 'gross_pnl', 'fees', 'realized_r', 'return_pct', 'price_close', 'report_time_utc', 'close_time_utc'].every(key => row[key] == null)
+}
+
 export function validateTradesPagePayload(payload) {
   const page = payload?.pagination
   const unknown = page?.filtered_count === null
@@ -49,7 +57,7 @@ export function validateTradesPagePayload(payload) {
     || !['ready', 'partial'].includes(payload.status) || typeof payload.snapshot_key !== 'string'
     || unknown && (payload.status !== 'partial' || payload.ledger.length || !payload.excluded.length || page.page_count !== null)
     || !unknown && (!Number.isSafeInteger(page.filtered_count) || page.filtered_count < page.returned_count || page.page_count !== Math.ceil(page.filtered_count / page.page_size) || page.page > Math.max(1, page.page_count))
-    || payload.ledger.some(row => !row?.session_id || !row?.trade_id || !known(row.net_pnl) || !Number.isSafeInteger(row.source_provenance?.revision) || row.source_provenance.revision < 1 || row.source_provenance.session_id !== row.session_id)
+    || payload.ledger.some(row => !row?.session_id || !row?.trade_id || !validTradeTableRow(row) || !Number.isSafeInteger(row.source_provenance?.revision) || row.source_provenance.revision < 1 || row.source_provenance.session_id !== row.session_id)
     || !payload.facets || ['assets', 'tags', 'strategies', 'years', 'types'].some(key => !Array.isArray(payload.facets[key]))) throw new Error('trade_page_read_model_invalid')
   return payload
 }
@@ -83,7 +91,7 @@ export function filterAnalyticsRows(rows, filters = {}) {
   }
   const tagsMatch = (values, tags, mode) => mode === 'OR' ? values.some(value => tags.includes(value)) : values.every(value => tags.includes(value))
   return rows.filter(row => {
-    const time = calendarParts(row.report_time_utc, filters.timezone)
+    const time = calendarParts(row.table_time_utc ?? row.report_time_utc, filters.timezone)
     const tags = [...(Array.isArray(row.tags) ? row.tags : []), ...(row.label_aliases || [])]
     return inTime(time)
       && (filters.reportKinds === '' || reportKinds.includes(row.report_kind || 'app'))
@@ -97,7 +105,7 @@ export function filterAnalyticsRows(rows, filters = {}) {
       && matches('sides', row.side?.toLowerCase())
       && matches('outcomes', outcomeOf(row.net_pnl))
       && matches('types', row.entry_type)
-      && matches('statuses', 'closed')
+      && matches('statuses', row.status || 'closed')
       && matches('notesPresence', hasTradeNotes(row) === null ? null : hasTradeNotes(row) ? 'with' : 'without')
       && matches('years', time?.key.slice(0, 4))
       && matches('months', time ? Number(time.key.slice(5, 7)) : null)

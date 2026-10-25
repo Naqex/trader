@@ -3,7 +3,7 @@
 from decimal import Decimal, InvalidOperation
 from math import isfinite
 
-from .analytics_read_model import AnalyticsValidationError, build_analytics_view
+from .analytics_read_model import AnalyticsValidationError, build_analytics_view, normalize_filters, _timestamp
 from .replay_execution import parse_replay_execution_snapshot, replay_event_for_snapshot
 
 
@@ -22,6 +22,80 @@ def _number(value, name, *, positive=False):
     if not isfinite(result):
         raise AnalyticsValidationError(f"replay {name} is invalid")
     return result
+
+
+def build_open_trade_rows(record: dict, *, activity_basis=False) -> list[dict]:
+    """Project validated current exposure separately from closed performance."""
+    view = build_replay_analytics_view(record)
+    if not view.get('analytics_available'):
+        return []
+    payload = record['payload']
+    portfolio = bool(payload.get('asset_states'))
+    states = [(key, state.get('execution')) for key, state in payload['asset_states'].items()] if portfolio else [(payload['dataset_id'], payload.get('execution'))]
+    rows = []
+    for dataset, snapshot in states:
+        position = (snapshot or {}).get('position')
+        if not position:
+            continue
+        opening = next((event for event in snapshot['ledger'] if event['kind'] == 'market_fill'
+                        and event['details']['position_id'] == position['position_id']
+                        and event['details']['operation_id'] == position['source_operation_id']), None)
+        if opening is None:
+            raise AnalyticsValidationError('open position has no matching entry')
+        position_id = f"{dataset}:{position['position_id']}" if portfolio else position['position_id']
+        recording = payload.get('entry_recording') or {}
+        proof = recording.get('datasets', {}).get(dataset, {}).get(position['position_id'], {})
+        recorded = None
+        if (recording.get('schema_version') == 'replay-entry-recording-v1'
+                and proof.get('source_operation_id') == opening['details']['operation_id']
+                and proof.get('open_event_sequence') == opening['sequence']):
+            try:
+                if _timestamp(proof.get('recorded_at_utc'), 'entry recording') is not None:
+                    recorded = proof['recorded_at_utc']
+            except AnalyticsValidationError:
+                pass
+        details = opening['details']
+        kind = ((details.get('entry_order') or {}).get('order_type')
+                or (details.get('open_position') or {}).get('entry_order_type')
+                or ('market' if details.get('execution_timing') == 'current_quote' else None)
+                or (proof.get('entry_type') if recorded is not None else None))
+        row = {'trade_id': position_id, 'session_id': record['record_id'], 'status': 'open',
+               'source_position_id': position_id, 'source_operation_id': position['source_operation_id'],
+               'source': {'session_id': record['record_id'], 'revision': record['revision']},
+               'session_name': payload.get('name') or record['record_id'],
+               'symbol': snapshot['instrument_spec']['instrument_id'], 'side': position['side'],
+               'quantity': _number(position['quantity'], 'quantity', positive=True),
+               'price_open': _number(position['entry_fill'], 'entry price', positive=True),
+               'stop_loss': position.get('stop_loss'), 'take_profit': position.get('take_profit'),
+               'open_time_utc': opening['virtual_time_utc'],
+               'open_event_sequence': None if portfolio else opening['sequence'],
+               'open_cursor_index': opening['cursor_index'] if not portfolio or dataset == payload['dataset_id'] else None,
+               'close_time_utc': None, 'report_time_utc': None, 'close_recorded_at_utc': None,
+               'close_cursor_index': None, 'close_event_sequence': None, 'price_close': None,
+               'net_pnl': None, 'gross_pnl': None, 'fees': None, 'realized_r': None, 'planned_risk_budget': None,
+               'account_currency': snapshot['instrument_spec']['account_ccy'],
+               'starting_balance': _number(snapshot['starting_balance'], 'starting balance', positive=True),
+               'playbook_id': payload.get('playbook_id'), 'source_provenance': view['provenance'],
+               'entry_type': kind if kind in {'market', 'limit', 'stop'} else None,
+               'recorded_at_utc': recorded,
+               'table_time_utc': recorded if activity_basis else opening['virtual_time_utc']}
+        if portfolio:
+            row.update(dataset_id=dataset, asset_open_cursor_index=opening['cursor_index'], asset_open_event_sequence=opening['sequence'])
+        rows.append(row)
+    return rows
+
+
+def filter_open_trade_rows(rows, filters=None):
+    filters = normalize_filters(filters)
+    def matches(row):
+        if filters['side'] != 'ALL' and row['side'].upper() != filters['side']:
+            return False
+        if filters['outcome'] != 'all':
+            return False
+        time = _timestamp(row['table_time_utc'], 'table time')
+        return ((filters['from_close_utc'] is None or time is not None and time >= filters['from_close_utc'])
+                and (filters['to_close_utc'] is None or time is not None and time <= filters['to_close_utc']))
+    return [row for row in rows if matches(row)]
 
 
 def build_replay_analytics_view(view: dict, filters: dict | None = None) -> dict:

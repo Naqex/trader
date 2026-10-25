@@ -127,7 +127,7 @@ function valueAtPath(value, path) {
 }
 
 function displayValue(value) {
-  if (value === undefined) return '—'
+  if (value === undefined) return '-'
   if (typeof value === 'string') return value
   if (value === null) return 'null'
   return stableStringify(value)

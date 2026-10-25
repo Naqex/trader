@@ -80,7 +80,7 @@ function PnlCurve({ deals, currency, emptyTitle = 'No analytics yet' }) {
   const values = [0, ...known.map(point => point.value)], min = Math.min(...values), max = Math.max(...values), range = max - min || 1
   const x = i => 70 + i / Math.max(1, series.length - 1) * 700, y = value => 240 - (value - min) / range * 180
   const path = series.map((point, i) => point.value === null ? '' : `${i === 0 || series[i - 1].value === null ? 'M' : 'L'}${x(i)},${y(point.value)}`).join(' ')
-  return <section className="live-pnl-curve"><div className="live-section-heading"><h2>{t('Cumulative deal PnL')}</h2><span className="live-muted">{currency || '—'}</span></div>
+  return <section className="live-pnl-curve"><div className="live-section-heading"><h2>{t('Cumulative deal PnL')}</h2><span className="live-muted">{currency || '-'}</span></div>
     {known.length ? <><svg viewBox="0 0 800 290" role="img" aria-label={t('Cumulative deal PnL')} preserveAspectRatio="xMidYMid meet">
       {[0, 1, 2, 3].map(i => { const value = min + range * i / 3; return <g key={i}><line x1="70" x2="770" y1={y(value)} y2={y(value)} /><text x="60" y={y(value)} textAnchor="end" dominantBaseline="middle">{fmt(value)}</text></g> })}
       <path d={path} className="live-pnl-line" />{known.length === 1 && <circle cx={x(0)} cy={y(known[0].value)} r="4" className="live-pnl-point" />}
@@ -99,7 +99,7 @@ function Calendar({ payload, deals, filters, filterBar, reviewScope, canWrite, o
   const total = calendarWeekSummary(weeks.flat(), empty)
   const partialLabel = t('Một phần'), partialDetail = t('Chỉ cộng phần dữ liệu đã ghi nhận; chưa đủ dữ liệu cho toàn bộ phạm vi.')
   const currency = payload?.account?.currency || (empty ? 'USD' : '')
-  const countLabel = count => count === null ? '—' : payload?.aggregate ? t('{count} bản ghi', { count }) : (empty || payload?.manual) ? t('{count} giao dịch', { count }) : t('{count} filled deals', { count })
+  const countLabel = count => count === null ? '-' : payload?.aggregate ? t('{count} bản ghi', { count }) : (empty || payload?.manual) ? t('{count} giao dịch', { count }) : t('{count} filled deals', { count })
   const canPercent = payload?.manual && payload.account.opening_balance > 0
   const amount = value => percent && canPercent ? fmt(value === null ? null : value/payload.account.opening_balance*100,'%') : fmt(value)
   const weekAmount = value => {
@@ -109,7 +109,7 @@ function Calendar({ payload, deals, filters, filterBar, reviewScope, canWrite, o
   }
   const review = () => onPreview('note', {
     title: t('Monthly review {month}',{month}),
-    note: `${t(payload?.manual ? 'PnL đã ghi' : 'PnL deals đã đồng bộ')}: ${fmt(total.net)} ${currency}. ${rows.length} ${t(payload?.manual ? 'giao dịch đã đóng' : 'Filled deals')}.\n${t('Tài khoản')}: ${payload?.account?.name || payload?.account?.account_ref || '—'}. ${t('Timezone')}: ${filters.timezone}.\n${t('Scope')}: ${reviewScope}.\n${Object.entries(filters).filter(([key,value]) => key !== 'timezone' && value !== LIVE_FILTERS[key] && value !== '').map(([key,value]) => `${t(FILTER_LABELS[key])}: ${filterValue(key,value,t)}`).join(' · ')}`.trim(),
+    note: `${t(payload?.manual ? 'PnL đã ghi' : 'PnL deals đã đồng bộ')}: ${fmt(total.net)} ${currency}. ${rows.length} ${t(payload?.manual ? 'giao dịch đã đóng' : 'Filled deals')}.\n${t('Tài khoản')}: ${payload?.account?.name || payload?.account?.account_ref || '-'}. ${t('Timezone')}: ${filters.timezone}.\n${t('Scope')}: ${reviewScope}.\n${Object.entries(filters).filter(([key,value]) => key !== 'timezone' && value !== LIVE_FILTERS[key] && value !== '').map(([key,value]) => `${t(FILTER_LABELS[key])}: ${filterValue(key,value,t)}`).join(' · ')}`.trim(),
   })
   return <div className="live-split"><section className="live-calendar-section">
     {filterBar}<div className="live-calendar-content">

@@ -10,7 +10,7 @@ import LedgerFilterDrawer from './LedgerFilterDrawer.jsx'
 import FxSelect from './FxSelect.jsx'
 import LedgerFilterActions from './LedgerFilterActions.jsx'
 
-export const fmt = (value, suffix = '', digits = 2) => known(value) ? `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: digits }).format(Number(value))}${suffix}` : '—'
+export const fmt = (value, suffix = '', digits = 2) => known(value) ? `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: digits }).format(Number(value))}${suffix}` : '-'
 export function SelectField({ label, value, onChange, options, disabled }) {
   const { t } = useTestingLocale()
 
@@ -96,8 +96,8 @@ function PerformanceCalendar({ items, timezone, currency }) {
   const [year, m] = month.split('-').map(Number), days = new Date(Date.UTC(year, m, 0)).getUTCDate(), offset = (new Date(Date.UTC(year, m - 1, 1)).getUTCDay() + 6) % 7
   return <><SelectField label={t("Tháng trên lịch")} value={month} onChange={setChosen} options={available.map(value => [value, value])} /><div className="fxa-calendar" role="group" aria-label={t("Lịch performance {month}, {timezone}", { month: month, timezone: timezone })}>
     {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(day => <span className="fxa-calendar-weekday" key={day}>{t(day)}</span>)}{Array.from({ length: offset }, (_, index) => <span aria-hidden="true" key={`empty-${index}`} />)}
-    {Array.from({ length: days }, (_, index) => { const day = index + 1, item = items.find(item => item.label === `${month}-${String(day).padStart(2, '0')}`); return <div key={day} className={`fxa-calendar-day ${item?.net > 0 ? 'is-positive' : item?.net < 0 ? 'is-negative' : ''}`}><span>{day}</span>{item ? <><strong>{fmt(item.net)}</strong><small>{t("{count} lệnh", { count: item.count })}</small></> : <small>—</small>}</div> })}
-  </div><small>{currency || t("Đơn vị tài khoản")} {t("· ngày đóng theo")} {timezone} {t("· — = không có lệnh trong phạm vi đã chọn")}</small></>
+    {Array.from({ length: days }, (_, index) => { const day = index + 1, item = items.find(item => item.label === `${month}-${String(day).padStart(2, '0')}`); return <div key={day} className={`fxa-calendar-day ${item?.net > 0 ? 'is-positive' : item?.net < 0 ? 'is-negative' : ''}`}><span>{day}</span>{item ? <><strong>{fmt(item.net)}</strong><small>{t("{count} lệnh", { count: item.count })}</small></> : <small>-</small>}</div> })}
+  </div><small>{currency || t("Đơn vị tài khoản")} {t("· ngày đóng theo")} {timezone} {t("· - = không có lệnh trong phạm vi đã chọn")}</small></>
 }
 
 function OutcomeStats({ data, currency }) {

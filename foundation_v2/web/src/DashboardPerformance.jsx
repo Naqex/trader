@@ -11,7 +11,7 @@ import { dashboardDurationParts, dashboardFilterError, readDashboardOverview } f
 function Duration({ seconds }) {
   const { t, locale } = useTestingLocale()
   const parts = dashboardDurationParts(seconds)
-  return parts ? <span className="fx-dashboard-duration">{parts.map(([value, unit]) => <span key={unit}><span>{value.toLocaleString(locale)}</span><small>{t(`duration.${unit}`)}</small></span>)}</span> : '—'
+  return parts ? <span className="fx-dashboard-duration">{parts.map(([value, unit]) => <span key={unit}><span>{value.toLocaleString(locale)}</span><small>{t(`duration.${unit}`)}</small></span>)}</span> : '-'
 }
 
 function timingDetail(performance, kind, t) {
@@ -45,11 +45,11 @@ function SymbolChart({ items }) {
 }
 function ActivityChart({ items }) {
   const { t, fmt, locale } = useTestingLocale()
-  return <ReportBars title={t('Time invested')} period="month" items={items.map(item => ({ label: item.month, value: item.time_invested_seconds / 3600 }))} accent="gold" valueFormat={(value, compact, digits = 2) => compact ? `${Math.abs(value) >= 1000 ? new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(value) : fmt(value, '', digits)} ${t('duration.hour')}` : dashboardDurationParts(value * 3600, { days: false })?.map(([count, unit]) => `${count.toLocaleString(locale)} ${t(`duration.${unit}`)}`).join(' ') || '—'} emptyLabel="Chưa có dữ liệu thời gian luyện tập" />
+  return <ReportBars title={t('Time invested')} period="month" items={items.map(item => ({ label: item.month, value: item.time_invested_seconds / 3600 }))} accent="gold" valueFormat={(value, compact, digits = 2) => compact ? `${Math.abs(value) >= 1000 ? new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(value) : fmt(value, '', digits)} ${t('duration.hour')}` : dashboardDurationParts(value * 3600, { days: false })?.map(([count, unit]) => `${count.toLocaleString(locale)} ${t(`duration.${unit}`)}`).join(' ') || '-'} emptyLabel="Chưa có dữ liệu thời gian luyện tập" />
 }
 
 export default function DashboardPerformance({ workspace, filters, reload, controls, dateControls, sourceHeading, previewPayload, previewState }) {
-  const dashboardNumber = (value, suffix = '') => value == null || value === '' || typeof value === 'boolean' || !Number.isFinite(Number(value)) ? '—' : `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(Number(value))}${suffix}`
+  const dashboardNumber = (value, suffix = '') => value == null || value === '' || typeof value === 'boolean' || !Number.isFinite(Number(value)) ? '-' : `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(Number(value))}${suffix}`
 
   const { t, locale, timezone } = useTestingLocale()
 

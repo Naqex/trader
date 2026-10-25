@@ -50,7 +50,7 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
     try {
       const success = await submit(endpoint, body)
       if (success) setNotice(endpoint === 'orders/close'
-        ? closeNotice(execution, success.payload.execution, body.operation_id, instrument?.instrument_id || '—')
+        ? closeNotice(execution, success.payload.execution, body.operation_id, instrument?.instrument_id || '-')
         : { kind: 'ok', text: endpoint === 'execution' ? 'Simulator sẵn sàng.' : endpoint.endsWith('protection') ? 'TP/SL đã lưu; áp dụng từ nến tiếp theo.' : execution?.quote_source === 'broker_bid_ask' ? 'Đã queue; fill ở tick đầu tiên của nến kế tiếp.' : 'Đã queue; fill ở giá mở nến kế tiếp.' })
       return success
     } catch (error) { setNotice({ kind: 'error', text: error.message }) }
@@ -196,7 +196,7 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
       if (endpoint === 'orders/quick') {
         const position = nextExecution?.position
         if (!position) throw new Error(nextExecution?.ledger?.at(-2)?.details?.reason === 'insufficient_research_margin' ? 'Không đủ margin để mở vị thế.' : 'Không mở được vị thế.')
-        setNotice({ kind: 'ok', order: { status: 'executed', side, symbol: nextExecution.instrument_spec?.instrument_id || '—', quantity: String(position.quantity), price: String(position.entry_fill) } })
+        setNotice({ kind: 'ok', order: { status: 'executed', side, symbol: nextExecution.instrument_spec?.instrument_id || '-', quantity: String(position.quantity), price: String(position.entry_fill) } })
         return true
       }
       if (nextExecution.position || nextExecution.pending_market_order) throw new Error('Tài sản đã có lệnh đang hoạt động.')
@@ -212,7 +212,7 @@ export function useChartOrder({ workspace, replay, dataset, ready, blocked, clos
       if (result) {
         const position = result.payload.execution.position
         if (!position) throw new Error('Không đủ margin để mở vị thế.')
-        setNotice({ kind: 'ok', order: { status: 'executed', side, symbol: nextExecution.instrument_spec?.instrument_id || '—', quantity: String(position.quantity), price: String(position.entry_fill) } })
+        setNotice({ kind: 'ok', order: { status: 'executed', side, symbol: nextExecution.instrument_spec?.instrument_id || '-', quantity: String(position.quantity), price: String(position.entry_fill) } })
       }
       return Boolean(result)
     } catch (error) { setNotice({ kind: 'error', text: error.message }); return false }
@@ -239,7 +239,7 @@ function ProtectionRiskSizing({ order, entry }) {
   const percent = !manualSize && input.mode === 'percent' ? input.value : balance > 0 && budget !== null ? Number((budget / balance * 100).toFixed(4)) : ''
   const quantity = quantityForRisk(budget, order.draft.stopLoss, entry, order.draft.side, order.instrument, order.costs)
   const currency = order.costs?.account_ccy
-  const symbol = currency ? new Intl.NumberFormat(locale, { style:'currency', currency, currencyDisplay:'narrowSymbol' }).formatToParts(0).find(part => part.type === 'currency')?.value : '—'
+  const symbol = currency ? new Intl.NumberFormat(locale, { style:'currency', currency, currencyDisplay:'narrowSymbol' }).formatToParts(0).find(part => part.type === 'currency')?.value : '-'
   useEffect(() => {
     // The last edited control owns sizing; manual lot edits must remain usable.
     if (!manualSize && !disabled && quantity !== null) setDraft(current => current.quantity === quantity ? current : { ...current, quantity })

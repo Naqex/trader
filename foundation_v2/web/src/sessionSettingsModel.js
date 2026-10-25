@@ -1,6 +1,6 @@
 import { displayDate } from './dateFormat.js'
 export function sessionDate(value, time = false, locale = 'vi-VN') {
-  if (value == null || value === '' || typeof value === 'boolean' || !Number.isFinite(Number(value))) return '—'
+  if (value == null || value === '' || typeof value === 'boolean' || !Number.isFinite(Number(value))) return '-'
   return displayDate(new Date(Number(value) * 1000), { timeStyle: time ? 'short' : undefined })
 }
 
@@ -22,7 +22,7 @@ export function sessionSettingsFacts(item, dataset, payload, model, record) {
     balance: record?.portfolio_account?.balance ?? execution?.balance ?? record?.payload?.starting_balance ?? model?.endingBalance ?? null,
     startingBalance: execution?.starting_balance ?? record?.payload?.starting_balance ?? model?.startBalance ?? null,
     currency: costs?.account_ccy || record?.payload?.starting_balance_ccy || model?.result?.account_currency || payload?.metrics?.account_currency,
-    asset: item?.instrument_ids?.length > 1 ? item.instrument_ids.join(' · ') : item?.instrument_id || dataset?.instrument_id || '—',
+    asset: item?.instrument_ids?.length > 1 ? item.instrument_ids.join(' · ') : item?.instrument_id || dataset?.instrument_id || '-',
     first: dataset?.first_timestamp,
     last: dataset?.last_timestamp,
     costs,

@@ -1,6 +1,6 @@
 .wm-label-cell { display:flex;gap:4px;flex-wrap:wrap;min-height:32px;min-width:115px;max-width:260px;align-items:center;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;padding:3px 0; }
 .wm-label-placeholder { opacity:0;color:var(--fx-muted,#929aa8); }
-tr:hover .wm-label-placeholder,.wm-label-cell:focus-visible .wm-label-placeholder { opacity:1; }
+td:has(> .wm-label-cell):hover .wm-label-placeholder,.wm-label-cell:focus-visible .wm-label-placeholder,.wm-label-cell[aria-expanded=true] .wm-label-placeholder { opacity:1; }
 @media(hover:none){.wm-label-placeholder{opacity:1}}
 .wm-trade-label { display:inline-flex;align-items:center;padding:3px 8px;min-height:23px;border-radius:4px;line-height:1.25;font-size:12px;white-space:normal;overflow-wrap:anywhere;background:color-mix(in srgb,var(--label-color,#929aa8) 17%,transparent);color:var(--label-ink,var(--label-color,#929aa8)); }
 .wm-trade-label[data-color=green]{--label-color:#53b881}.wm-trade-label[data-color=blue]{--label-color:#629be8}.wm-trade-label[data-color=orange]{--label-color:#dca454}.wm-trade-label[data-color=red]{--label-color:#e5787d}.wm-trade-label[data-color=purple]{--label-color:#b68bea}.wm-trade-label[data-color=cyan]{--label-color:#62bfd2}.wm-trade-label[data-color=gray]{--label-color:#949eaf}
@@ -28,6 +28,9 @@ tr:hover .wm-label-placeholder,.wm-label-cell:focus-visible .wm-label-placeholde
 .wm-label-delete p { margin:0 0 8px; }
 .wm-return-badge { display:inline-flex;align-items:center;gap:5px;border-radius:4px;padding:3px 8px;font-variant-numeric:tabular-nums;white-space:nowrap;background:color-mix(in srgb,var(--return-color) 14%,transparent);color:var(--return-color); }
 .wm-return-badge.is-positive{--return-color:#66b98a}.wm-return-badge.is-negative{--return-color:#e5787d}.wm-return-badge.is-flat{--return-color:#d3aa65}
+.fx-app .wm-data-table td.is-numeric > .wm-return-badge { margin-right:-8px; }
+.fxa-badge.is-open { background:var(--wm-hover); color:var(--wm-content-muted); }
+.wm-missing-value { color:var(--wm-content-muted); }
 
 .legacy-popover.wm-label-popup .wm-label-option > button:first-child { flex:1 1 0;min-width:0;width:auto; }
 .legacy-popover.wm-label-popup .wm-label-more { flex:0 0 32px;width:32px;justify-content:center; }

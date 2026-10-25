@@ -119,6 +119,6 @@ export function marketQuotes(replay) {
 
 export function money(value, currency) {
   const amount = finiteNumber(value)
-  if (amount === null || !currency) return 'N/A'
-  try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency, maximumFractionDigits: 2 }).format(amount) } catch { return 'N/A' }
+  if (amount === null || !currency) return '-'
+  try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency, maximumFractionDigits: 2 }).format(amount) } catch { return '-' }
 }

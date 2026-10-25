@@ -42,7 +42,8 @@ def fixtures():
 
 
 @pytest.mark.parametrize('direction', ['asc', 'desc'])
-@pytest.mark.parametrize('sort_key', sorted(SORT_KEYS))
+# The frozen source predates the report-time sort; current contract tests cover it.
+@pytest.mark.parametrize('sort_key', sorted(SORT_KEYS - {'report_time_utc'}))
 def test_every_sort_filter_page_and_snapshot_matches_original(sort_key, direction):
     baseline, _ = projection_baseline()
     source, journals = fixtures()

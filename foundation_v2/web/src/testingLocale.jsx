@@ -40,6 +40,6 @@ export function useTestingLocale() {
   const language = useContext(LocaleContext), locale = language === 'en' ? 'en-US' : 'vi-VN'
   const t = useCallback((text, values) => translateTesting(text, language, values), [language])
   const fmt = useCallback((value, suffix = '', digits = 2) => formatAmount(value, suffix, digits, locale), [locale])
-  const statusLabel = useCallback((family, value) => enums[family]?.[value]?.[language] || value || '—', [language])
+  const statusLabel = useCallback((family, value) => enums[family]?.[value]?.[language] || value || '-', [language])
   return useMemo(() => ({ language, locale, t, fmt, statusLabel, timezone }), [language, locale, t, fmt, statusLabel, timezone])
 }
