@@ -54,7 +54,7 @@ export default function SessionPerformance({ model, payload, item, href, chartsO
     {!chartsOnly && <><section className="fxs-metrics" aria-label={t("Chỉ số phiên")}>
       <Metric title={t("Total PnL")} value={dashboardMoney(model?.netPnl, currency)} detail={t("Net · giao dịch đóng")} />
       <Metric title={t("Win rate")} value={dashboardNumber(model?.winRate, '%')} detail={t('{wins} thắng · {losses} thua', { wins: dashboardNumber(model?.wins), losses: dashboardNumber(model?.losses) })} />
-      <Metric title={t("Lãi/Lỗ TB")} value={dashboardNumber(model?.payoffRatio)} detail={t("Lãi TB / độ lớn lỗ TB · chưa biết nếu thiếu nguồn")} />
+      <Metric title={t("Tỉ số lãi/lỗ trung bình")} value={dashboardNumber(model?.payoffRatio)} detail={t("Lãi trung bình / độ lớn lỗ trung bình · chưa biết nếu thiếu nguồn")} />
       <Metric title={t("Lãi/Lỗ tháng")} value={dashboardMoney(periods.month, currency)} detail={anchor ? `${anchor.slice(0, 7)} · ${timezone}` : t("Chưa có ngày đóng")} />
       <Metric title={t("Lãi/Lỗ tuần")} value={dashboardMoney(periods.week, currency)} detail={anchor ? `${t('Tuần T2–CN chứa {date}', { date: displayDate(anchor) })} · ${timezone}` : t("Chưa có ngày đóng")} />
       <Metric title={t("Lãi/Lỗ ngày")} value={dashboardMoney(periods.day, currency)} detail={anchor ? `${displayDate(anchor)} · ${timezone}` : t("Chưa có ngày đóng")} />

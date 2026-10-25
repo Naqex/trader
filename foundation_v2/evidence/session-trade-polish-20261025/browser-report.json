@@ -1,0 +1,251 @@
+{
+  "checks": [
+    {
+      "screen": "sessions",
+      "width": 1920,
+      "theme": "dark",
+      "zone": "UTC",
+      "demo": false,
+      "lang": "vi",
+      "dates": [
+        "05/05/2003",
+        "07/10/2026"
+      ],
+      "titleSize": 36
+    },
+    {
+      "screen": "trades",
+      "width": 1920,
+      "theme": "dark",
+      "zone": "UTC",
+      "demo": false,
+      "lang": "vi",
+      "headers": [
+        "",
+        "Thao tác",
+        "Phiên",
+        "Loại",
+        "Nguồn",
+        "Vào lệnhThực tế",
+        "Vào lệnhChart",
+        "Tài sản",
+        "Hướng lệnh",
+        "Loại lệnh",
+        "Lợi nhuận",
+        "Lợi nhuận (%)",
+        "Lợi nhuận (R)",
+        "Nhãn",
+        "Giá vào lệnh",
+        "Khối lượng",
+        "Cắt lỗ",
+        "Chốt lời",
+        "Thoát lệnhThực tế ↓",
+        "Thoát lệnhChart",
+        "Giá thoát lệnh",
+        "PnL trước phí",
+        "Phí"
+      ],
+      "clocks": [
+        "Vào lệnhThực tế",
+        "Vào lệnhChart",
+        "Thoát lệnhThực tế",
+        "Thoát lệnhChart"
+      ]
+    },
+    {
+      "screen": "duration",
+      "width": 1920,
+      "theme": "dark",
+      "zone": "UTC",
+      "demo": false,
+      "lang": "vi",
+      "detail": "2026-10: 4 giờ 1 phút"
+    },
+    {
+      "screen": "sessions",
+      "width": 1920,
+      "theme": "light",
+      "zone": "Asia/Ho_Chi_Minh",
+      "demo": false,
+      "lang": "vi",
+      "dates": [
+        "05/05/2003",
+        "08/10/2026"
+      ],
+      "titleSize": 36
+    },
+    {
+      "screen": "trades",
+      "width": 1920,
+      "theme": "light",
+      "zone": "Asia/Ho_Chi_Minh",
+      "demo": false,
+      "lang": "vi",
+      "headers": [
+        "",
+        "Thao tác",
+        "Phiên",
+        "Loại",
+        "Nguồn",
+        "Vào lệnhThực tế",
+        "Vào lệnhChart",
+        "Tài sản",
+        "Hướng lệnh",
+        "Loại lệnh",
+        "Lợi nhuận",
+        "Lợi nhuận (%)",
+        "Lợi nhuận (R)",
+        "Nhãn",
+        "Giá vào lệnh",
+        "Khối lượng",
+        "Cắt lỗ",
+        "Chốt lời",
+        "Thoát lệnhThực tế ↓",
+        "Thoát lệnhChart",
+        "Giá thoát lệnh",
+        "PnL trước phí",
+        "Phí"
+      ],
+      "clocks": [
+        "Vào lệnhThực tế",
+        "Vào lệnhChart",
+        "Thoát lệnhThực tế",
+        "Thoát lệnhChart"
+      ]
+    },
+    {
+      "screen": "duration",
+      "width": 1920,
+      "theme": "light",
+      "zone": "Asia/Ho_Chi_Minh",
+      "demo": false,
+      "lang": "vi",
+      "detail": "2026-10: 4 giờ 1 phút"
+    },
+    {
+      "screen": "sessions",
+      "width": 390,
+      "theme": "dark",
+      "zone": "Asia/Ho_Chi_Minh",
+      "demo": true,
+      "lang": "vi",
+      "dates": [
+        "06/07/2026",
+        "05/10/2026"
+      ],
+      "titleSize": 30
+    },
+    {
+      "screen": "trades",
+      "width": 390,
+      "theme": "dark",
+      "zone": "Asia/Ho_Chi_Minh",
+      "demo": true,
+      "lang": "vi",
+      "headers": [
+        "",
+        "Thao tác",
+        "Phiên",
+        "Loại",
+        "Nguồn",
+        "Vào lệnhThực tế",
+        "Vào lệnhChart",
+        "Tài sản",
+        "Hướng lệnh",
+        "Loại lệnh",
+        "Lợi nhuận",
+        "Lợi nhuận (%)",
+        "Lợi nhuận (R)",
+        "Nhãn",
+        "Giá vào lệnh",
+        "Khối lượng",
+        "Cắt lỗ",
+        "Chốt lời",
+        "Thoát lệnhThực tế ↓",
+        "Thoát lệnhChart",
+        "Giá thoát lệnh",
+        "PnL trước phí",
+        "Phí"
+      ],
+      "clocks": [
+        "Vào lệnhThực tế",
+        "Vào lệnhChart",
+        "Thoát lệnhThực tế",
+        "Thoát lệnhChart"
+      ]
+    },
+    {
+      "screen": "duration",
+      "width": 390,
+      "theme": "dark",
+      "zone": "Asia/Ho_Chi_Minh",
+      "demo": true,
+      "lang": "vi",
+      "detail": "2026-07: 3 giờ"
+    },
+    {
+      "screen": "sessions",
+      "width": 1440,
+      "theme": "light",
+      "zone": "UTC",
+      "demo": true,
+      "lang": "en",
+      "dates": [
+        "06/07/2026",
+        "05/10/2026"
+      ],
+      "titleSize": 36
+    },
+    {
+      "screen": "trades",
+      "width": 1440,
+      "theme": "light",
+      "zone": "UTC",
+      "demo": true,
+      "lang": "en",
+      "headers": [
+        "",
+        "Actions",
+        "Session",
+        "Type",
+        "Source",
+        "EntryRealtime",
+        "EntryChart",
+        "Asset",
+        "Side",
+        "Order type",
+        "Return",
+        "Return (%)",
+        "Return (R)",
+        "Tags",
+        "Entry price",
+        "Size",
+        "Stop loss",
+        "Take profit",
+        "ExitRealtime ↓",
+        "ExitChart",
+        "Exit price",
+        "Gross PnL",
+        "Fees"
+      ],
+      "clocks": [
+        "EntryRealtime",
+        "EntryChart",
+        "ExitRealtime",
+        "ExitChart"
+      ]
+    },
+    {
+      "screen": "duration",
+      "width": 1440,
+      "theme": "light",
+      "zone": "UTC",
+      "demo": true,
+      "lang": "en",
+      "detail": "2026-07: 4 hr 30 min"
+    }
+  ],
+  "errors": [],
+  "writes": [],
+  "status": "PASS"
+}

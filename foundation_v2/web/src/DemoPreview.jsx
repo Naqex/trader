@@ -101,7 +101,7 @@ function DemoSessions({ workspace, query, state }) {
   return <section className="wm-page fx-session-picker fxr-integrated-sessions fxs-page" aria-label={t("Sessions")}>
     <h1 className="sr-only">{t("Sessions")}</h1>
     <div className="fxr-session-toolbar">
-      <SessionSelect selected={id} catalog={{ status: 'ready', items }} onSelect={select} balance={fmt(model?.endingBalance, t(" USD"))} />
+      <SessionSelect selected={id} catalog={{ status: 'ready', items }} onSelect={select} balance={fmt(model?.endingBalance, t(" USD"))} dataset={dataset} />
       <div className="fxr-session-actions">
         <TestingResourceStatus state={state} resource="kết quả phiên" recovery={previewReadRecovery(state)} />
         <button className="fxr-button fxr-button-primary fxs-new-session" disabled type="button"><TestingIcon kind="plus" size={16} />{t("＋ Phiên mới")}</button>

@@ -100,6 +100,13 @@ Last sync is the last successful data observation, not a connection expiry date.
 - Closed-trade balance is **Số dư / Balance**, not Equity. Avg. win/loss is a
   realized payoff ratio, not planned Risk/Reward. Recent trade amounts remain
   net P/L; do not relabel money as ROI without a stated return denominator.
+- Trade ledger Return columns use **Lợi nhuận** with the account currency, `%`
+  and `R`. Money is net after costs; percentage uses explicit starting capital;
+  R retains the source risk denominator. Mixed currencies stay identified per row.
+  Entry/exit headings distinguish **Thực tế / Chart**; one timezone label applies
+  to all timestamps using Settings, without repeating UTC in each heading.
+  Session selection shows the dataset date range, not session creation date.
+  Practice chart tooltips use elapsed hours/minutes; axes retain compact hours.
 - Practice activity uses measured wall-clock intervals. Historical replay dates
   are a separate metric. Legacy entry recording time/type remains unknown unless
   an exact opening event and its recording metadata prove it.

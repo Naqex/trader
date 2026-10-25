@@ -78,6 +78,7 @@
   .fx-app.fx-shell-story { --wm-control-height: var(--ds-touch); --wm-icon-action-size: var(--ds-touch); }
 }
 
-.fx-app.fx-shell-story .fx-content .fxr-integrated-sessions.fxs-page :is(.fxr-session-summary-card, .fxr-description-card) h2 { font-size: var(--wm-text-section); line-height: 1.5; }
+.fx-app.fx-shell-story .fx-content .fxr-integrated-sessions.fxs-page .fxr-description-card h2 { font-size: var(--wm-text-section); line-height: 1.5; }
+.fx-app.fx-shell-story .fx-content .fxr-integrated-sessions.fxs-page .fxr-session-summary-card h2 { font-size: clamp(30px, 2.5vw, 36px); line-height: 1.25; }
 /* Route chunks must not determine whether accessible headings are visible. */
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }

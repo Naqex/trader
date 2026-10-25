@@ -1,4 +1,10 @@
 {
+  "Chart": {"vi": "Chart", "en": "Chart"},
+  "Thực tế": {"vi": "Thực tế", "en": "Realtime"},
+  "Thoát lệnh": {"vi": "Thoát lệnh", "en": "Exit"},
+  "Vào lệnh": {"vi": "Vào lệnh", "en": "Entry"},
+  "Lãi trung bình / độ lớn lỗ trung bình · chưa biết nếu thiếu nguồn": {"vi": "Lãi trung bình / độ lớn lỗ trung bình · chưa biết nếu thiếu nguồn", "en": "Average win / absolute average loss · unknown when source data is missing"},
+  "Tỉ số lãi/lỗ trung bình": {"vi": "Tỉ số lãi/lỗ trung bình", "en": "Average win/loss ratio"},
   "Hiệu suất trung bình theo tháng": {"vi":"Hiệu suất trung bình theo tháng","en":"Average Monthly Performance"},
   "Hiệu suất trung bình theo ngày": {"vi":"Hiệu suất trung bình theo ngày","en":"Average Daily Performance"},
   "Lãi trung bình theo kỳ": {"vi":"Lãi trung bình","en":"Average profit"},
@@ -1926,18 +1932,9 @@
     "vi": "Loại lệnh",
     "en": "Order type"
   },
-  "Return": {
-    "vi": "PnL ròng",
-    "en": "Net PnL"
-  },
-  "Return (%)": {
-    "vi": "Tỷ suất (%)",
-    "en": "Return (%)"
-  },
-  "Return (R)": {
-    "vi": "Kết quả (R)",
-    "en": "Return (R)"
-  },
+  "Return": {"vi": "Lợi nhuận", "en": "Return"},
+  "Return (%)": {"vi": "Lợi nhuận (%)", "en": "Return (%)"},
+  "Return (R)": {"vi": "Lợi nhuận (R)", "en": "Return (R)"},
   "Trade Rating": {
     "vi": "Đánh giá giao dịch",
     "en": "Trade rating"

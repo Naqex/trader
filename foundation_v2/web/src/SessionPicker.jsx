@@ -1,7 +1,6 @@
 import { navigate } from './clientNavigation.js'
-import { displayDate } from './dateFormat.js'
 import { displayTimeframe } from './dataDisplay.js'
-import { sessionSettingsFacts } from './sessionSettingsModel.js'
+import { sessionDate, sessionSettingsFacts } from './sessionSettingsModel.js'
 import TestingReadState, { TestingSkeleton } from './TestingReadState.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
@@ -39,20 +38,14 @@ function sessionOptionLabel(item) {
   return `${item.name || item.record_id} · ${unknownValue(item.instrument_id)} ${timeframeLabel(item)}${item.archived ? ' · Đã lưu trữ' : ''}`
 }
 
-function createdLabel(item) {
-  return Number.isFinite(Date.parse(item?.created_at_utc)) ? displayDate(new Date(item.created_at_utc)) : 'Chưa rõ ngày tạo'
-}
-
-export function SessionSelect({ selected, catalog, onSelect, disabled, balance }) {
-  const createdLabel = item => Number.isFinite(Date.parse(item?.created_at_utc)) ? displayDate(new Date(item.created_at_utc)) : t('Chưa rõ ngày tạo')
-
-  const { t, locale } = useTestingLocale()
+export function SessionSelect({ selected, catalog, onSelect, disabled, balance, dataset }) {
+  const { t } = useTestingLocale()
 
   const options = [...catalog.items].sort((a, b) => Number(Boolean(a.archived)) - Number(Boolean(b.archived)))
   const item = catalog.items.find((entry) => entry.record_id === selected)
   return <div className="fxr-session-control">
     <span className="fxs-select-label">{t("Chọn phiên")}</span>
-    <FxSelect className="is-rich" label={t("Chọn phiên replay")} value={selected} onChange={onSelect} disabled={disabled || catalog.status !== 'ready'} searchable placeholder={t("Tìm phiên, asset…")} triggerContent={item ? <><strong className="session-title-line"><span className="session-title-text">{item.name || item.record_id}</span><SessionKindBadge item={item} /></strong><small>{unknownValue(item.instrument_id)} · {timeframeLabel(item)}</small><small>{t("Account balance")}: {balance}</small><small>{t("Ngày tạo")}: {createdLabel(item)}</small></> : null} options={[
+    <FxSelect className="is-rich" label={t("Chọn phiên replay")} value={selected} onChange={onSelect} disabled={disabled || catalog.status !== 'ready'} searchable placeholder={t("Tìm phiên, asset…")} triggerContent={item ? <><strong className="session-title-line"><span className="session-title-text">{item.name || item.record_id}</span><SessionKindBadge item={item} /></strong><small>{unknownValue(item.instrument_id)} · {timeframeLabel(item)}</small><small>{t("Account balance")}: {balance}</small><small>{sessionDate(dataset?.first_timestamp)} – {sessionDate(dataset?.last_timestamp)}</small></> : null} options={[
       ...(selected && !item ? [{ value: selected, label: selected, disabled: true, detail: 'Không có trong danh mục' }] : []),
       ...options.map(entry => ({ value: entry.record_id, label: entry.name || entry.record_id, localize: false, detail: `${entry.session_kind === 'prop' ? 'Prop Firm' : 'Backtest'} · ${unknownValue(entry.instrument_id)} · ${timeframeLabel(entry)}${entry.archived ? ` · ${t('Đã lưu trữ')}` : ''}` })),
     ]} />
@@ -215,10 +208,10 @@ export default function SessionPicker({ kind = 'replay', workspace = 'tenant-a',
   return <section className={`wm-page fx-session-picker fxr-integrated-sessions fxr-${kind}-picker ${kind === 'replay' ? 'fxs-page' : ''}`} aria-label={kind === 'trade' ? t("Trades theo phiên") : kind === 'analytics' ? t("Analytics theo phiên") : t("Sessions")} data-testid={`${kind}-session-picker`}>
     <h1 className="sr-only">{kind === 'trade' ? t("Trades") : kind === 'analytics' ? t("Analytics") : t("Sessions")}</h1>
     <div className="fxr-session-toolbar">
-      <SessionSelect selected={selected} catalog={catalog} onSelect={selectSession} disabled={Boolean(pending)} balance={dashboardMoney(balanceFacts?.balance, balanceFacts?.currency)} />
+      <SessionSelect selected={selected} catalog={catalog} onSelect={selectSession} disabled={Boolean(pending)} balance={dashboardMoney(balanceFacts?.balance, balanceFacts?.currency)} dataset={dataset} />
       <div className="fxr-session-actions">
         <TestingResourceStatus state={catalog.status === 'stale' ? 'stale' : catalog.refreshing && available ? 'refreshing' : performance.status === 'stale' ? 'stale' : performance.refreshing && performance.payload ? 'refreshing' : undefined} resource={catalog.status === 'stale' || catalog.refreshing ? 'danh mục phiên' : 'kết quả phiên'} recovery={catalog.status === 'stale' ? catalogRecovery : performanceRecovery} />
-        {kind === 'replay' && <><a className="fxr-button fxr-button-primary fxs-new-session" href={newHref}><TestingIcon kind="plus" size={16} />{t("＋ Phiên mới")}</a>{available && <><a className="fxr-button fxr-button-secondary fxs-analytics-button" href={routeHref('analytics')}><TestingIcon kind="performance" size={16}/>{t("Analytics")}</a><button className="fxr-button fxr-button-secondary fxs-settings" type="button" disabled={actionDisabled} onClick={() => { setEditing(true) }}>{t("Cài đặt phiên")}</button><button className="fxr-button fxr-button-secondary" type="button" disabled={actionDisabled || item.archived || !item.dataset_available} onClick={() => { setNotice(null); setActionDialog({ mode: 'duplicate' }) }}>{t("Tạo bản sao")}</button><SessionActions text item={item} disabled={actionDisabled || Boolean(catalog.refreshing)} onAction={action => { setNotice(null); setActionDialog({ mode: action }) }} /></>}</>}
+        {kind === 'replay' && <><a className="fxr-button fxr-button-primary fxs-new-session" href={newHref}><TestingIcon kind="plus" size={16} />{t("＋ Phiên mới")}</a>{available && <><a className="fxr-button fxr-button-secondary fxs-analytics-button" href={routeHref('analytics')}><TestingIcon kind="performance" size={16}/>{t("Analytics")}</a><button className="fxr-button fxr-button-secondary fxs-settings" type="button" disabled={actionDisabled} onClick={() => { setEditing(true) }}>{t("Cài đặt phiên")}</button><SessionActions text item={item} disabled={actionDisabled || Boolean(catalog.refreshing)} onAction={action => { setNotice(null); setActionDialog({ mode: action }) }} /></>}</>}
       </div>
     </div>
     {catalog.status === 'loading' && <TestingPageSkeleton view="replay" label="Đang tải danh mục phiên…" />}

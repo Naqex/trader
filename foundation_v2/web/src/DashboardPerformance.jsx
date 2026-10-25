@@ -45,7 +45,7 @@ function SymbolChart({ items }) {
 }
 function ActivityChart({ items }) {
   const { t, fmt, locale } = useTestingLocale()
-  return <ReportBars title={t('Time invested')} period="month" items={items.map(item => ({ label: item.month, value: item.time_invested_seconds / 3600 }))} accent="gold" valueFormat={(value, compact, digits = 2) => `${compact && Math.abs(value) >= 1000 ? new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(value) : fmt(value, '', digits)} ${t('duration.hour')}`} emptyLabel="Chưa có dữ liệu thời gian luyện tập" />
+  return <ReportBars title={t('Time invested')} period="month" items={items.map(item => ({ label: item.month, value: item.time_invested_seconds / 3600 }))} accent="gold" valueFormat={(value, compact, digits = 2) => compact ? `${Math.abs(value) >= 1000 ? new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(value) : fmt(value, '', digits)} ${t('duration.hour')}` : dashboardDurationParts(value * 3600, { days: false })?.map(([count, unit]) => `${count.toLocaleString(locale)} ${t(`duration.${unit}`)}`).join(' ') || '—'} emptyLabel="Chưa có dữ liệu thời gian luyện tập" />
 }
 
 export default function DashboardPerformance({ workspace, filters, reload, controls, dateControls, sourceHeading, previewPayload, previewState }) {

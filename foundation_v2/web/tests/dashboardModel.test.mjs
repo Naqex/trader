@@ -9,6 +9,12 @@ test('duration retains unknown, measured zero and whole elapsed days without cal
   assert.deepEqual(dashboardDurationParts(67200), [[18, 'hour'], [40, 'minute']])
   assert.deepEqual(dashboardDurationParts(3135600), [[36, 'day'], [7, 'hour']])
   assert.deepEqual(dashboardDurationParts(86460), [[1, 'day'], [1, 'minute']])
+  assert.deepEqual(dashboardDurationParts(2.04 * 3600, { days: false }), [[2, 'hour'], [2, 'minute']])
+  assert.deepEqual(dashboardDurationParts(86460, { days: false }), [[24, 'hour'], [1, 'minute']])
+  assert.deepEqual(dashboardDurationParts(3599, { days: false }), [[59, 'minute']])
+  assert.deepEqual(dashboardDurationParts(3600, { days: false }), [[1, 'hour']])
+  assert.deepEqual(dashboardDurationParts(3900 / 3600 * 3600, { days: false }), [[1, 'hour'], [5, 'minute']])
+  assert.deepEqual(dashboardDurationParts(0, { days: false }), [[0, 'minute']])
 })
 
 test('dashboard keeps unknown distinct from measured zero', () => {
