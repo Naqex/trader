@@ -91,7 +91,7 @@ export function filterAnalyticsRows(rows, filters = {}, classifyOutcome = outcom
   }
   const tagsMatch = (values, tags, mode) => mode === 'OR' ? values.some(value => tags.includes(value)) : values.every(value => tags.includes(value))
   return rows.filter(row => {
-    const time = calendarParts(row.table_time_utc ?? row.report_time_utc, filters.timezone)
+    const time = calendarParts(Object.hasOwn(row, 'analytics_time_utc') ? row.analytics_time_utc : row.table_time_utc ?? row.report_time_utc, filters.timezone)
     const tags = [...(Array.isArray(row.tags) ? row.tags : []), ...(row.label_aliases || [])]
     return inTime(time)
       && (filters.reportKinds === '' || reportKinds.includes(row.report_kind || 'app'))
@@ -179,7 +179,7 @@ function drawdownRecovery(drawdown, rows) {
     const value = number(point.drawdown)
     if (value === null) return { recoveryDays: null, longestRecoveryDays: null, recoveryDaysKnownCount: 0, recoveryEpisodes: [] }
     const row = point.tradeId ? byId.get(point.tradeId) : rows[Number.isSafeInteger(point.index) ? point.index - 1 : index]
-    const at = closeTime(row?.report_time_utc)
+    const at = closeTime(row && Object.hasOwn(row, 'analytics_time_utc') ? row.analytics_time_utc : row?.report_time_utc)
     if (value > 1e-12) {
       if (!episode) episode = { peakTimeUtc: peakTime?.toISOString() ?? null, firstUnderwaterTimeUtc: at?.toISOString() ?? null }
     } else {
@@ -199,12 +199,68 @@ function drawdownRecovery(drawdown, rows) {
     longestRecoveryDays: complete ? Math.max(...knownDays) : null, recoveryDaysKnownCount: knownDays.length, recoveryEpisodes: episodes }
 }
 
+export function accountEquityDrawdown(source, { filtered = false } = {}) {
+  const unavailable = reason => ({ available: false, reason, points: [], maxDrawdown: null, averageDrawdown: null,
+    maxDrawdownPct: null, averageDrawdownPct: null, recoveryDays: null, longestRecoveryDays: null, episodes: null, recoveryEpisodes: [] })
+  if (!source || source.value_basis !== 'account_equity_including_floating_pnl' || source.scope !== 'account'
+    || !['market', 'activity'].includes(source.time_basis) || !Array.isArray(source.points)) return unavailable('account_equity_unavailable')
+  if (filtered && source.trade_filters_apply !== true) return unavailable('trade_filtered_equity_scope')
+  let segment = null, peak = null, peakTime = null, previousTime = null, episode = null, broken = false
+  const points = [], episodes = []
+  const endEpisode = (at, reason) => {
+    if (!episode) return
+    const recovered = reason === 'recovered'
+    episodes.push({ ...episode, recovered, endReason: reason, recoveryTimeUtc: recovered ? at?.toISOString() ?? null : null,
+      elapsedDays: recovered && peakTime && at && at >= peakTime ? (at - peakTime) / 86400000 : null })
+    episode = null
+  }
+  for (const [index, point] of source.points.entries()) {
+    const at = closeTime(point?.time_utc), equity = number(point?.equity)
+    const valid = at && equity !== null && Number.isSafeInteger(point?.segment) && point.segment >= 0
+    if (!valid || previousTime && at < previousTime) {
+      endEpisode(null, 'unknown_gap'); peak = null; peakTime = null; segment = null; previousTime = null; broken = true
+      points.push({ index, timeUtc: at?.toISOString() ?? null, segment: point?.segment ?? null, value: null, equity: null, drawdown: null, drawdownPct: null })
+      continue
+    }
+    if (segment !== point.segment) {
+      endEpisode(null, 'segment_boundary'); peak = null; peakTime = null
+      if (points.length) points.push({ index: `${index}-gap`, timeUtc: at.toISOString(), segment: point.segment, value: null, equity: null, drawdown: null, drawdownPct: null })
+      segment = point.segment
+    }
+    if (peak === null || equity >= peak) {
+      endEpisode(at, 'recovered'); peak = equity; peakTime = at
+    }
+    const magnitude = Math.max(0, peak - equity), pct = peak > 0 ? magnitude / peak * 100 : null
+    if (magnitude > 1e-12 && !episode) episode = { segment, peakTimeUtc: peakTime?.toISOString() ?? null, firstUnderwaterTimeUtc: at.toISOString() }
+    points.push({ index, timeUtc: at.toISOString(), segment, value: -magnitude || 0, equity,
+      drawdown: -magnitude || 0, drawdownPct: pct === null ? null : -pct || 0 })
+    previousTime = at
+  }
+  endEpisode(null, 'unrecovered')
+  const observed = points.filter(point => point.equity !== null)
+  if (!observed.length) return unavailable('account_equity_no_observations')
+  const positive = observed.map(point => -point.drawdown).filter(value => value > 1e-12)
+  const percentages = observed.map(point => point.drawdownPct === null ? null : -point.drawdownPct).filter(known)
+  const positivePct = percentages.filter(value => value > 1e-12)
+  const recoveries = episodes.filter(item => item.recovered), days = recoveries.map(item => item.elapsedDays).filter(known)
+  return { available: true, reason: null, valueBasis: source.value_basis, timeBasis: source.time_basis, scope: source.scope,
+    metricsBasis: 'observed_points', partial: source.partial === true || source.sampled === true || Number(source.unknown_event_count) > 0 || broken,
+    sampled: source.sampled === true, unknownEventCount: number(source.unknown_event_count), totalPoints: number(source.total_points),
+    points, maxDrawdown: Math.max(0, ...positive), averageDrawdown: positive.length ? positive.reduce((sum, value) => sum + value, 0) / positive.length : 0,
+    maxDrawdownPct: percentages.length ? Math.max(...percentages) : null,
+    averageDrawdownPct: positivePct.length ? positivePct.reduce((sum, value) => sum + value, 0) / positivePct.length : percentages.length ? 0 : null,
+    episodes: episodes.length, recoveryEpisodes: episodes, recoveryDays: days.length && days.length === recoveries.length ? days.reduce((sum, value) => sum + value, 0) / days.length : null,
+    longestRecoveryDays: days.length && days.length === recoveries.length ? Math.max(...days) : null }
+}
+
 export function advancedAnalytics(model, filters = {}, options = {}) {
   filters = { ...DEFAULT_EXTRA_FILTERS, timezone: getTimezone(), ...filters }
   if (model.result?.paged) throw new Error('paged_ledger_cannot_compute_full_analytics')
   const breakevenThreshold = known(options.breakevenThreshold) ? Math.max(0, Number(options.breakevenThreshold)) : 0
   const classifyOutcome = value => !known(value) ? 'unknown' : Math.abs(Number(value)) <= Math.max(1e-12, breakevenThreshold) ? 'breakeven' : Number(value) > 0 ? 'win' : 'loss'
-  const rows = filterAnalyticsRows(model.ledger, filters, classifyOutcome).map(row => ({ ...row, outcome: classifyOutcome(row.net_pnl) }))
+  const timeBasis = model.result?.scope?.time_basis === 'market' ? 'market' : 'activity'
+  const timedRows = model.ledger.map(row => ({ ...row, analytics_time_utc: timeBasis === 'market' ? row.close_time_utc ?? null : row.report_time_utc ?? null }))
+  const rows = filterAnalyticsRows(timedRows, filters, classifyOutcome).map(row => ({ ...row, outcome: classifyOutcome(row.net_pnl) }))
   const summary = stats(rows, classifyOutcome)
   const localFiltered = Object.keys(DEFAULT_EXTRA_FILTERS).filter(key => key !== 'timezone').some(key => (filters[key] ?? DEFAULT_EXTRA_FILTERS[key]) !== DEFAULT_EXTRA_FILTERS[key])
   // A filtered balance is a hypothetical sequence from the original starting capital.
@@ -225,7 +281,7 @@ export function advancedAnalytics(model, filters = {}, options = {}) {
     if (value > 1e-12) { if (!current) episodes++; current++; longest = Math.max(longest, current) }
     else if (current) { recoverySum += current; recovered++; current = 0 }
   }
-  const timeParts = new Map(rows.map(row => [row, calendarParts(row.report_time_utc, filters.timezone)]))
+  const timeParts = new Map(rows.map(row => [row, calendarParts(row.analytics_time_utc, filters.timezone)]))
   const parts = row => timeParts.get(row)
   // Unknown observation times still count financially, but cannot enter a date bucket.
   const datedRows = rows.filter(row => parts(row) && known(row.net_pnl))
@@ -254,10 +310,11 @@ export function advancedAnalytics(model, filters = {}, options = {}) {
     episodes: dd.length ? episodes : null, recoveryTrades: recovered ? recoverySum / recovered : null, unrecovered: current, longest,
     side, unknownSide, hours, weekdays, months: monthGroups, calendar, sessions, frequency: frequencyGroups, datesComplete, incomplete: datedRows.length !== rows.length,
     frequencySeries: frequencies, ...recovery,
+    equityDrawdown: accountEquityDrawdown(model.result?.equity_curve, { filtered: localFiltered || model.result?.scope?.active_filters === true }),
     riskReward: { average: summary.averageR, max: summary.maxR, knownCount: summary.rCount, totalCount: rows.length,
       basis: 'net_realized_r', idealAverage: null, idealMax: null },
     excursion: { maeHistogram: [], winningAdverseR: null, knownCount: 0, basis: 'unavailable' },
-    sessionGrouping: { basis: 'fixed_close_hour_bands', timezone: filters.timezone, timeField: 'report_time_utc' },
+    sessionGrouping: { basis: 'fixed_close_hour_bands', timezone: filters.timezone, timeField: timeBasis === 'market' ? 'close_time_utc' : 'report_time_utc' },
     recoveryBasis: 'closed_trade_balance_peak_close_to_recovery_close_elapsed_24h_days',
     classification: { breakevenThreshold, winRateBasis: 'wins_over_all_closed_trades_including_breakeven' },
   }

@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { advancedAnalytics } from '../src/tradingAnalyticsModel.js'
+import { advancedAnalytics, accountEquityDrawdown } from '../src/tradingAnalyticsModel.js'
+import { buildAnalyticsModel } from '../src/analyticsViewModel.js'
 
 function model(values, times = values.map((_, index) => `2024-01-${String(index + 1).padStart(2, '0')}T12:00:00Z`)) {
   let balance = 1000, peak = balance
@@ -122,4 +123,63 @@ test('default threshold preserves epsilon and never classifies missing money as 
   assert.equal(data.breakeven, 2)
   source.ledger[0].net_pnl = null
   assert.equal(advancedAnalytics(source).rows[0].outcome, 'unknown')
+})
+
+const equitySource = points => ({ points, value_basis: 'account_equity_including_floating_pnl', scope: 'account', time_basis: 'market',
+  trade_filters_apply: false, partial: false, sampled: false, total_points: points.length, unknown_event_count: 0 })
+const equityPoint = (equity, day, segment = 0) => ({ equity, time_utc: `2024-01-${String(day).padStart(2, '0')}T12:00:00Z`, segment })
+
+test('declared market analytics time drives filters, calendar, sessions and balance recovery', () => {
+  const ledger = [10, -5, 5].map((net_pnl, index) => ({ trade_id: String(index), net_pnl, report_time_utc: null,
+    close_time_utc: `2003-01-0${index + 1}T12:00:00Z` }))
+  const source = { ledger, scope: { time_basis: 'market' }, metrics: { starting_balance: 1000,
+    closed_trade_balance_curve: [1000, 1010, 1005, 1010].map(closed_trade_balance => ({ closed_trade_balance })) } }
+  const built = buildAnalyticsModel(source)
+  assert.equal(built.ledger[0].analytics_time_utc, ledger[0].close_time_utc)
+  assert.equal(built.ledger[0].report_time_utc, null)
+  const data = advancedAnalytics(built)
+  assert.equal(data.calendar.length, 3); assert.equal(data.frequencySeries.day.length, 3)
+  assert.equal(data.recoveryDays, 2)
+  assert.equal(data.sessionGrouping.timeField, 'close_time_utc')
+  assert.equal(advancedAnalytics(built, { years: '["2003"]' }).count, 3)
+  const activity = advancedAnalytics(buildAnalyticsModel({ ...source, scope: { time_basis: 'activity' } }))
+  assert.deepEqual(activity.calendar, []); assert.equal(activity.recoveryDays, null)
+})
+
+test('true equity drawdown preserves floating losses and measures peak-to-recovery elapsed days', () => {
+  const result = accountEquityDrawdown(equitySource([equityPoint(100, 1), equityPoint(80, 2), equityPoint(90, 3), equityPoint(100, 4)]))
+  assert.equal(result.available, true)
+  assert.deepEqual(result.points.map(point => point.value), [0, -20, -10, 0])
+  assert.equal(result.maxDrawdown, 20); assert.equal(result.averageDrawdown, 15)
+  assert.equal(result.maxDrawdownPct, 20); assert.equal(result.averageDrawdownPct, 15)
+  assert.equal(result.recoveryDays, 3); assert.equal(result.episodes, 1)
+  assert.equal(result.partial, false)
+  const built = buildAnalyticsModel({ ledger: [], equity_curve: equitySource([equityPoint(100, 1), equityPoint(80, 2)]) })
+  assert.equal(advancedAnalytics(built).equityDrawdown.maxDrawdown, 20)
+  assert.deepEqual(built.curve, [], 'true equity never substitutes for closed balance')
+})
+
+test('equity resets peaks at segment boundaries and never bridges missing observations', () => {
+  const source = equitySource([equityPoint(100, 1), equityPoint(80, 2), equityPoint(50, 3, 1), equityPoint(40, 4, 1), equityPoint(50, 5, 1)])
+  const result = accountEquityDrawdown(source)
+  assert.equal(result.maxDrawdown, 20)
+  assert.equal(result.points.filter(point => point.value === null).length, 1)
+  assert.equal(result.recoveryEpisodes[0].endReason, 'segment_boundary')
+  assert.equal(result.recoveryEpisodes[0].recovered, false)
+  assert.equal(result.recoveryDays, 2)
+  const gap = accountEquityDrawdown(equitySource([equityPoint(100, 1), equityPoint(null, 2), equityPoint(50, 3), equityPoint(45, 4)]))
+  assert.equal(gap.maxDrawdown, 5); assert.equal(gap.partial, true)
+  assert.equal(gap.recoveryDays, null)
+  assert.equal(gap.points[1].value, null)
+})
+
+test('sampled equity metrics describe observed points and filtered trade scopes cannot claim equity', () => {
+  const source = { ...equitySource([equityPoint(100, 1), equityPoint(80, 2)]), sampled: true, total_points: 500 }
+  assert.equal(accountEquityDrawdown(source).partial, true)
+  assert.equal(accountEquityDrawdown(source).metricsBasis, 'observed_points')
+  assert.equal(accountEquityDrawdown(source, { filtered: true }).reason, 'trade_filtered_equity_scope')
+  const built = buildAnalyticsModel({ ledger: [], equity_curve: source, scope: { active_filters: true } })
+  assert.equal(advancedAnalytics(built).equityDrawdown.available, false)
+  assert.equal(advancedAnalytics({ ...built, result: { ...built.result, scope: {} } }, { asset: 'EUR/USD' }).equityDrawdown.available, false)
+  assert.equal(accountEquityDrawdown({ ...source, value_basis: 'closed_trade_balance' }).available, false)
 })
