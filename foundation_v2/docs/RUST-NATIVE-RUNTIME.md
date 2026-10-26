@@ -1,6 +1,6 @@
 # Rust-native candidate runtime
 
-Latest UI-only rollout: [26 October Analytics Performance detail](../evidence/analytics-performance-detail-20261026/RECEIPT.md)
+Latest UI-only rollout: [26 October Analytics external headings and scroll containment](../evidence/analytics-heading-scroll-20261026/RECEIPT.md)
 separates winner/loser cards, gives Buy/Sell charts their own help, uses explicit
 UTC market-session windows and percentage returns, and updates hourly/daily,
 monthly and frequency presentation. Source capital/snapshot rules and partial

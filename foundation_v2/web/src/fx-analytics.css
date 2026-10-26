@@ -223,9 +223,10 @@
 
 /* Related reports share a row; plot sizes change without scaling data text. */
 .fxa-visual-report{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px;max-width:none}
-.fxa-visual-report>.fxa-panel,.fxa-visual-report>.fxa-three-columns,.fxa-visual-report>.fxa-drawdown-stats{grid-column:1/-1}
+.fxa-visual-report>.fxa-panel,.fxa-visual-report>.fxa-report-group,.fxa-visual-report>.fxa-three-columns,.fxa-visual-report>.fxa-drawdown-stats{grid-column:1/-1}
 .fxa-panel{padding:16px}
 .fxa-panel .fxa-section-heading{margin-bottom:12px;min-height:30px;gap:8px}
+.fxa-report-group>.fxa-section-heading{margin-bottom:12px;min-height:38px;gap:8px}
 .fxa-panel .fxa-section-heading h2{font-size:16px}
 .fxa-panel-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;min-width:0}
 .fxa-visual-report .fxa-panel .fxa-metrics{gap:12px;margin-bottom:8px}
@@ -335,8 +336,10 @@
 @media(max-width:600px){.fxa-expectancy-panel .fxa-two-columns>div+div{grid-template-columns:minmax(0,1fr) 90px}.fxa-expectancy-panel .fxa-chart-legend{flex:1}.fxa-expectancy-panel .fxa-chart-legend span{white-space:nowrap}}
 
 .fxa-pf-gauge{display:block;width:90px;height:90px;justify-self:end}
-.fxa-outcome-panel{min-width:0}
-.fxa-outcome-panel>.fxa-two-columns{height:100%;gap:16px}
+.fxa-report-group{display:flex;flex-direction:column;min-width:0}
+.fxa-report-group>.fxa-section-body{flex:1;min-width:0}
+.fxa-report-group>.fxa-section-heading h2{font-size:16px}
+.fxa-outcome-panel>.fxa-two-columns{flex:1;gap:16px}
 .fxa-outcome-panel .fxa-outcomes{padding:16px;border:1px solid var(--report-positive);border-radius:8px;background:var(--wm-surface)}
 .fxa-outcome-panel .fxa-outcomes.is-loss{border-color:var(--report-negative)}
 .fxa-outcome-panel .fxa-outcomes h3{color:var(--wm-content)}
@@ -349,15 +352,15 @@
 .fxa-radar-card .fxa-chart-heading{justify-content:center;margin-bottom:0}
 .fxa-hours-panel .fxa-radar text{font-size:15px}
 .fxa-month-controls{display:flex;justify-content:space-between;gap:12px 24px;flex-wrap:wrap}
-.fxa-month-controls fieldset{display:flex;gap:12px 20px;flex-wrap:wrap;border:0;margin:0;padding:0;min-width:0}
+.fxa-month-controls fieldset{position:relative;display:flex;gap:12px 20px;flex-wrap:wrap;border:0;margin:0;padding:0;min-width:0}
 .fxa-month-controls fieldset>div,.fxa-month-controls label{display:flex;align-items:center;gap:6px}
 .fxa-month-controls label{font-size:13px;cursor:pointer}
 .fxa-month-controls label:has(input:disabled){color:var(--wm-content-muted);cursor:default}
 .fxa-month-controls input{accent-color:var(--report-blue);width:14px;height:14px;margin:0}
 .fxa-month-total>*{border-top:1px solid var(--wm-border);font-weight:600}
-.fxa-frequency-panel.fxa-panel{padding:0;border:0;background:transparent}
 .fxa-frequency-panel .fxa-three-columns{grid-template-columns:1fr;gap:16px}
-.fxa-frequency-panel .fxa-three-columns>.fxa-frequency-card{display:block;padding:16px;min-width:0;border:1px solid var(--wm-border);border-radius:8px;background:var(--wm-surface)}
+.fxa-frequency-panel .fxa-three-columns>.fxa-frequency-card{display:block;min-width:0}
+.fxa-frequency-plot{padding:16px;border:1px solid var(--wm-border);border-radius:8px;background:var(--wm-surface)}
 .fxa-frequency-card .fxa-viz{margin-top:0}
 @media(min-width:1001px) and (max-width:1200px){.fxa-outcome-panel>.fxa-two-columns{grid-template-columns:1fr}}
 @media(max-width:1200px) and (min-width:601px){.fxa-frequency-panel .fxa-three-columns{grid-template-columns:repeat(3,minmax(0,1fr))}.fxa-frequency-card .fxa-chart-heading{flex-wrap:wrap;gap:4px}}
@@ -365,7 +368,6 @@
 
 .fxa-time-incomplete{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:400;color:var(--wm-content-muted)}
 .fxa-panel-title:has(.fxa-time-incomplete){flex-wrap:wrap}
-.fxa-frequency-panel>.fxa-time-incomplete{margin-bottom:8px}
 
 @media(max-width:600px){.fxa-calendar-day>span{grid-column:1/-1;white-space:nowrap}}
 

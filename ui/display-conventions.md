@@ -39,8 +39,12 @@ share the next 1:2 row. On screens up to 1200px the side/radar panels each use a
 row, with two radars per row; up to 600px radars stack. Calendar cells put the date
 and trade count on one line, then the result below. On mobile the date spans
 the full cell; amounts never wrap digits, and the calendar scrolls internally
-when the seven columns need more space. Frequency uses three bordered day/week/month cards, each with its title and help
-on the left, average on the right and a compact blue bar plot below. Averages
+when the seven columns need more space. Performance group headings sit above their bordered content, with help and controls
+in the external heading. Expectancy/profit factor, winners/losers and side each
+retain one visible group heading. Session radars have no enclosing surface; only
+the four radar cards are bordered. Frequency has a visible group heading above
+three plots; each day/week/month title and help sit above its bordered plot, with
+the average on the right. Averages
 retain zero calendar periods between the first and last observed period. Drawdown pairs its main plot with four summary metrics, then
 MAE with winning-trade metrics. Prop objectives pair snapshot metrics with their
 existing objectives table on desktop and stack on narrow screens.
@@ -76,8 +80,8 @@ The existing observation-index spacing remains; ticks do not invent daily sample
 RR cards omit duplicate section headings. Each metric owns its info control.
 The opportunity card pairs its count with maximum ideal RR across all eligible
 filtered trades, including winners and losers, as stated in its tooltip.
-Expectancy/profit factor and winner/loser panels omit repeated outer headings,
-retaining accessible region names. Winners and losers each have one count row;
+Expectancy/profit factor and winner/loser groups show their titles outside the
+content surfaces. Winners and losers each have one count row;
 all six metric rows own their help controls. Best and average win/loss are
 percent returns: net PnL after fees divided by the source session's initial
 capital, multiplied by 100, matching the trade ledger. Compute each trade's
@@ -102,8 +106,10 @@ stacked at every width. Average-win and average-loss amounts beneath the bar
 use the positive and negative chart colors respectively. Winners and losers are separate cards with green/red borders, normal foreground
 headings and a 16px gap. They have no combined outer border or central divider.
 The Buy/Sell group remains one card; each ring owns a Total trades or Win rate
-heading and info control, without a repeated outer heading. Buy/Sell win rates
+heading and info control below the external Performance by side group heading. Buy/Sell win rates
 are independent percentages, not two shares of a total.
+Monthly radio fieldsets contain their visually hidden legends within their own
+positioned bounds, so only the shell content scrolls vertically.
 Hourly controls offer net P/L, average RR, return (%) and win rate. Daily
 performance has no metric selector: signed horizontal net P/L bars pair with a
 right-hand win-rate column. Each group retains its explanatory info control. PnL interval controls have a visible
