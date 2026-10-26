@@ -159,4 +159,25 @@ Raw bổ sung: `E:/BACKUP-TRADINGWORKSPACE/fxreplay-reference-20261026/testing-a
 `calendar-interactions.json` lưu text từng state; các ảnh `fx-calendar-*` và full
 AX lưu menu, basis, Year và state cuối. Manifest riêng chứa hash các file.
 Đã trả về **June2025 / Month / Dollar Profit / Initial Balance**, giữ demo mở;
-vị trí cuộn ở các ô ngày có dữ liệu. Chưa sửa calendar local hoặc Live.
+vị trí cuộn ở các ô ngày có dữ liệu. Tại thời điểm research chưa sửa calendar local hoặc Live.
+
+## Triển khai sau khi owner duyệt
+
+Analytics dùng `AnalyticsCalendar` với điều hướng tháng/năm liên tục, Month/Year,
+lưới Monday-first đủ tuần, chi tiết ngày chỉ đọc, (i) VI/EN và tổng kỳ có trọng số.
+Giữ bốn metric net/winRate/count/averageR của local. Không thêm công thức% từ demo.
+Không giả định Risk Reward của FX bằng average R của local.
+
+Calendar giữ dated rows thiếu PnL trong count và chi tiết, đánh dấu partial và
+giữ N/A cho net/win rate chưa biết. Unknown-time hoặc nguồn partial không được
+nhận là tổng đầy đủ; hiển thị số lệnh có ngày đã nhận. Tổng R dùng trọng số rCount,
+không thay R thiếu bằng0. Frequency giữ scope known-PnL cũ; đây là khác biệt có chủ đích.
+
+`CalendarView` chia sẻ navigation/month grid/day presentation cho riêng calendar
+Live. Adapter `calendarWeeks`/`calendarWeekSummary`, broker/manual count, coverage,
+selection, ghi chú/review và sidebar giữ nguyên nghiệp vụ. Live tiếp tục Month view;
+Year overview mới ở Analytics. Màn hình nhỏ cuộn ngang trong lưới tháng; Year xếp dọc.
+
+Receipt, giới hạn và bằng chứng: `foundation_v2/evidence/analytics-calendar-20261026/RECEIPT.md`.
+Đây là hoàn tất lát calendar được giao; các cụm Analytics khác chưa được research
+hoặc triển khai trong lần này. Trang FX không bị refresh/điều hướng trong implementation.

@@ -9,7 +9,7 @@ Live, toolbar, tài khoản, nhật ký hoặc các trang khác.
 
 | Cụm | Nội dung | Trạng thái |
 | --- | --- | --- |
-| Calendar | Ngày/tháng/năm, chỉ số, màu, phạm vi dữ liệu; liên hệ Live | [Research đầu tiên](testing-analytics-calendar.md), chưa triển khai thay đổi calendar |
+| Calendar | Ngày/tháng/năm, chỉ số, màu, phạm vi dữ liệu; liên hệ Live | [Research và triển khai calendar](testing-analytics-calendar.md); receipt `foundation_v2/evidence/analytics-calendar-20261026/RECEIPT.md` |
 | PnL + RR | Curve/bucket, số tổng, win rate/BE, RR thực hiện/ideal | Chưa audit trong lượt này |
 | Expectancy + Profit factor + Winners/Losers | Mẫu số, phí, chuỗi, thời gian giữ, edge cases | Chưa audit trong lượt này |
 | Side + phiên + giờ/ngày/tháng + frequency | Timestamp/timezone, gộp nhóm, return %, số kỳ rỗng | Chưa audit trong lượt này |

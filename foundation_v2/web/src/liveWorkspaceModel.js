@@ -1,4 +1,5 @@
 import { dayBoundary } from './timezone.js'
+import { civilMonthWeeks } from './calendarViewModel.js'
 
 export const LIVE_FILTERS = Object.freeze({ asset: 'all', side: 'all', outcome: 'all', account: 'all', day: 'all', timezone: 'UTC', from: '', to: '' })
 
@@ -32,8 +33,6 @@ export function summarizeDeals(deals, available = true) {
 }
 
 export function calendarWeeks(month, payload, deals, filters = LIVE_FILTERS) {
-  const first = new Date(`${month}-01T00:00:00Z`), days = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate()
-  const offset = (first.getUTCDay() + 6) % 7
   const available = Boolean(payload?.account && Array.isArray(payload.deals))
   const coverage = (payload?.coverage?.length ? payload.coverage : [payload]).map(source => ({ history: Date.parse(source?.history_from_utc), cutoff: Date.parse(source?.captured_at_utc) }))
   const boundaries = new Map()
@@ -43,9 +42,8 @@ export function calendarWeeks(month, payload, deals, filters = LIVE_FILTERS) {
   }
   const buckets = new Map()
   deals.forEach(deal => { const key = dayKey(deal.time_msc, filters.timezone); if (key) buckets.set(key, [...(buckets.get(key) || []), deal]) })
-  return Array.from({ length: Math.ceil((offset + days) / 7) }, (_, week) => Array.from({ length: 7 }, (_, weekday) => {
-    const date = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), week * 7 + weekday - offset + 1)), key = date.toISOString().slice(0, 10)
-    const inMonth = key.startsWith(month), rows = buckets.get(key) || []
+  return civilMonthWeeks(month).map(week => week.map(({ date, key, inMonth }) => {
+    const rows = buckets.get(key) || []
     const eligible = Boolean(inMonth && (filters.account === 'all' || filters.account === payload?.account?.account_ref)
       && (!filters.from || key >= filters.from) && (!filters.to || key <= filters.to)
       && (filters.day === 'all' || date.getUTCDay() === Number(filters.day)))

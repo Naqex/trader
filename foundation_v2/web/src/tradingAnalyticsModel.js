@@ -347,7 +347,13 @@ export function advancedAnalytics(model, filters = {}, options = {}) {
   const unknownSide = rows.filter(row => !['BUY', 'SELL'].includes(String(row.side).toUpperCase())).length
   const hours = hasDates ? group(Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, '0')), row => String(parts(row).hour).padStart(2, '0')) : []
   const weekdays = hasDates ? group(['1', '2', '3', '4', '5', '6', '0'], row => String(parts(row).weekday)).map(item => ({ ...item, label: WEEKDAYS[Number(item.label)] })) : []
-  const calendar = group(days, row => parts(row).key)
+  // Calendar must retain dated rows with unknown PnL instead of hiding their gaps.
+  const calendarRows = rows.filter(row => parts(row))
+  const calendarDays = [...new Set(calendarRows.map(row => parts(row).key))].sort()
+  const calendar = calendarDays.map(label => {
+    const group = calendarRows.filter(row => parts(row).key === label)
+    return { label, ...groupedStats(group), rows: group }
+  })
   const monthGroups = group(months, row => parts(row).month)
   // Published reference convention; overlapping windows deliberately share trades.
   const sessionWindows = [['Out of session', 22, 24], ['Asia', 0, 9], ['New York', 13, 22], ['London', 7, 16]]
@@ -360,14 +366,14 @@ export function advancedAnalytics(model, filters = {}, options = {}) {
     { label: 'Tuần', count: (() => { const weeks = datedRows.map(row => { const date = new Date(`${parts(row).key}T00:00:00Z`); date.setUTCDate(date.getUTCDate() - (date.getUTCDay() + 6) % 7); return date.getTime() }); return datedRows.length / (Math.round((Math.max(...weeks) - Math.min(...weeks)) / 604800000) + 1) })() },
     { label: 'Tháng', count: (() => { const index = key => Number(key.slice(0, 4)) * 12 + Number(key.slice(5, 7)); return datedRows.length / (index(months.at(-1)) - index(months[0]) + 1) })() },
   ] : []
-  const frequencies = frequencySeries(days, new Map(calendar.map(item => [item.label, item.count])))
+  const frequencies = frequencySeries(days, new Map(group(days, row => parts(row).key).map(item => [item.label, item.count])))
   const recovery = drawdownRecovery(drawdown, rows)
   return { ...summary, rows, curve, drawdown, endingBalance: balance, localFiltered, maxDrawdown: dd.length ? Math.max(...dd) : null,
     maxDrawdownPct: drawdown.some(point => known(point.drawdownPct)) ? Math.max(...drawdown.map(point => number(point.drawdownPct) ?? 0)) : null,
     averageDrawdown: positiveDD.length ? positiveDD.reduce((sum, value) => sum + value, 0) / positiveDD.length : dd.length ? 0 : null,
     episodes: dd.length ? episodes : null, recoveryTrades: recovered ? recoverySum / recovered : null, unrecovered: current, longest,
     side, unknownSide, hours, weekdays, months: monthGroups, calendar, sessions, frequency: frequencyGroups, datesComplete, incomplete: datedRows.length !== rows.length,
-    frequencySeries: frequencies, capitalBases, datedCount: datedRows.length, ...recovery,
+    frequencySeries: frequencies, capitalBases, datedCount: datedRows.length, calendarUndatedCount: rows.length - calendarRows.length, ...recovery,
     equityDrawdown: accountEquityDrawdown(model.result?.equity_curve, { filtered: equityFiltered || model.result?.scope?.active_filters === true }),
     riskReward: { average: summary.averageR, max: summary.maxR, knownCount: summary.rCount, totalCount: rows.length,
       basis: 'net_realized_r', idealAverage: null, idealMax: null },

@@ -239,6 +239,7 @@
 .live-workspace .is-gain { color: var(--report-positive); }
 .live-workspace .is-loss { color: var(--report-negative); }
 .live-calendar-toolbar { margin-bottom: 0; flex-wrap: wrap; }
+.live-calendar-toolbar > .wm-calendar-toolbar { flex:1; min-width:0; }
 .live-calendar-action-divider { flex: 0 0 1px; height: 20px; background: var(--wm-border); }
 .live-month-nav { gap: 8px; flex-wrap: wrap; }
 .live-month-step { display: flex; align-items: center; gap: 8px; }
@@ -252,12 +253,8 @@
 .live-calendar-dayname { padding: 8px 0 12px; text-align: center; font-size: 12px; color: var(--wm-content-muted); }
 .live-calendar-dayname.is-total { color:var(--wm-content); }
 .live-calendar-week { display: contents; }
-.fx-app .live-calendar-cell { display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; gap: 8px; height: clamp(128px, 9vw, 140px); padding: 10px; border: 1px solid var(--wm-border); border-radius: 6px; background: transparent; color: var(--wm-content); cursor: pointer; text-align: left; font-variant-numeric: tabular-nums; }
-.fx-app .live-calendar-cell:hover:not(:disabled) { background: var(--wm-hover); }
-.fx-app .live-calendar-cell[aria-pressed='true'] { border-color: var(--wm-highlight); background: var(--project-peach-soft); }
-.fx-app .live-calendar-cell.is-outside { background: var(--wm-surface); color: var(--wm-content-muted); opacity: .4; }
+.fx-app .live-calendar-cell { height: clamp(128px, 9vw, 140px); }
 .live-day-number { align-self: flex-end; font-size: 12px; }
-.live-day-result { display: grid; gap: 4px; max-width: 100%; overflow-wrap: anywhere; }
 .live-calendar-cell strong { font-size: 15px; }
 .live-calendar-cell.is-gain strong { color: var(--report-positive); }
 .live-calendar-cell.is-loss strong { color: var(--report-negative); }

@@ -37,9 +37,20 @@ plots pair; the year/month matrix stays full width; calendar/frequency use 2:1.
 Expectancy and winner/loser statistics share a 1:2 row; side and market-session radars
 share the next 1:2 row. On screens up to 1200px the side/radar panels each use a full
 row, with two radars per row; up to 600px radars stack. Calendar cells put the date
-and trade count on one line, then the result below. On mobile the date spans
-the full cell; amounts never wrap digits, and the calendar scrolls internally
-when the seven columns need more space. Performance group headings sit above their bordered content, with help and controls
+and trade count on one line, then the result below. On mobile the date stays
+on one line; amounts never wrap digits, and the calendar scrolls internally
+when the seven columns need more space.
+Calendar navigation permits empty months and year steps. Analytics adds a compact
+12-month Year view and read-only daily trade details. Both Analytics and Live use
+the same Monday-first grid, navigation and day presentation; each retains its own
+data adapter. Analytics keeps dated rows with unknown PnL in the day count, unlike
+the existing known-PnL frequency scope. Net/win-rate summaries are unavailable for
+incomplete financial data; unknown-time or partial sources also prevent complete
+period totals. Average R weights only known R observations and exposes coverage.
+Empty periods use a dash rather than manufactured zero money. No new percentage
+basis is inferred from FX demo data. Live keeps its weekly totals, full-day
+coverage/partial semantics, account selection and notes/reviews.
+Performance group headings sit above their bordered content, with help and controls
 in the external heading. Expectancy/profit factor, winners/losers and side each
 retain one visible group heading. Session radars have no enclosing surface; only
 the four radar cards are bordered. Frequency has a visible group heading above

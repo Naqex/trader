@@ -14,6 +14,7 @@ import LedgerFilterDrawer from './LedgerFilterDrawer.jsx'
 import FxSelect from './FxSelect.jsx'
 import LedgerFilterActions from './LedgerFilterActions.jsx'
 import TestingIcon from './TestingIcon.jsx'
+import AnalyticsCalendar, { CALENDAR_HELP } from './AnalyticsCalendar.jsx'
 import { DEFAULT_EXTRA_FILTERS } from './tradingAnalyticsModel.js'
 import { LEDGER_BASE_FILTERS, ledgerFilterChips, removeLedgerFilter } from './ledgerFilterModel.js'
 
@@ -155,17 +156,6 @@ function ChartHeading({ title, help, note }) {
   const { t } = useTestingLocale()
   return <div className="fxa-chart-heading"><h3>{t(title)}{help && <Info text={help}/>}</h3>{note && <span>{note}</span>}</div>
 }
-function PerformanceCalendar({ items, timezone, currency }) {
-  const { t, fmt } = useTestingLocale(), [chosen,setChosen] = useState(''), [metric,setMetric] = useState('net')
-  const available = [...new Set(items.map(item => item.label.slice(0,7)))].sort(), month = available.includes(chosen) ? chosen : available.at(-1)
-  if (!month) return <p className="fxa-empty">{t('Chưa có dữ liệu')}</p>
-  const [year,m] = month.split('-').map(Number), days = new Date(Date.UTC(year,m,0)).getUTCDate(), offset = (new Date(Date.UTC(year,m-1,1)).getUTCDay()+6)%7
-  return <><div className="fxa-inline-actions"><FxSelect label="Tháng trên lịch" value={month} onChange={setChosen} options={available.map(value=>({value,label:`${value.slice(5)}/${value.slice(0,4)}`}))}/><FxSelect label="Chỉ số lịch" value={metric} onChange={setMetric} options={[{value:'net',label:`Lợi nhuận (${currency})`},{value:'winRate',label:'Tỉ lệ thắng'},{value:'count',label:'Số giao dịch'},{value:'averageR',label:'R trung bình'}]}/></div><div className="fxa-calendar-scroll" role="region" aria-label={t("Performance calendar")} tabIndex={0}><div className="fxa-calendar" role="group" aria-label={`${t('Performance calendar')} ${month} · ${timezone}`}>
-    {['T2','T3','T4','T5','T6','T7','CN'].map(day=><span className="fxa-calendar-weekday" key={day}>{t(day)}</span>)}{Array.from({length:offset},(_,index)=><span key={`empty-${index}`} aria-hidden="true"/>)}
-    {Array.from({length:days},(_,index)=>{const day=index+1,item=items.find(item=>item.label===`${month}-${String(day).padStart(2,'0')}`),value=item?.[metric],suffix=metric==='winRate'?'%':metric==='averageR'?' R':'';return <div className={`fxa-calendar-day ${item?.net>0?'is-positive':item?.net<0?'is-negative':''}`} key={day} tabIndex={item?0:undefined} data-tooltip={item?`${day}/${m}/${year} · ${fmt(value,suffix)} · ${item.count} ${t('lệnh')}`:undefined}><span>{day}</span><strong>{item?known(value)?fmt(value,suffix,metric==='count'?0:2):'N/A':'-'}</strong>{item&&<small>{item.count} {t('lệnh')}</small>}</div>})}
-  </div></div></>
-}
-
 export function AnalyticsPerformance({ model, data, extra, onSelect, selected, threshold, onThreshold, experiments }) {
   const { t, fmt } = useTestingLocale(), [metric,setMetric] = useState('net'), [interval,setInterval] = useState('all')
   const currency=model.result?.account_currency||t('Đơn vị tài khoản'), suffix=metric==='winRate'||metric==='profitPct'?'%':metric==='averageR'?' R':metric==='net'?` ${currency}`:''
@@ -206,7 +196,7 @@ export function AnalyticsPerformance({ model, data, extra, onSelect, selected, t
     <ReportSection headingOutside timeCoverage={data} className="fxa-half-panel fxa-hour-panel" title="Performance by time" help={"Phân nhóm theo giờ của báo cáo trong múi giờ đã chọn: giờ thị trường cho backtest, giờ ghi nhận cho báo cáo hoạt động. Dùng dropdown để xem lãi/lỗ ròng, RR trung bình, lợi nhuận theo % vốn ban đầu hoặc tỉ lệ thắng.\n\nRR chỉ tính lệnh có dữ liệu rủi ro ban đầu. Lợi nhuận (%) dùng cùng tổng vốn nguồn cho mọi giờ; không phải tỉ trọng lãi của giờ trong tổng lãi."} actions={performanceControls}><AnalyticsBars items={data.hours.map(item=>({...item,label:`${item.label}:00`}))} metric={metric} label={t('Performance by time')} suffix={suffix} height={300} maximum={metric==='winRate'?100:undefined}/></ReportSection>
     <ReportSection headingOutside timeCoverage={data} className="fxa-half-panel fxa-day-panel" title="Performance by day" help={"Lãi/lỗ ròng sau phí theo ngày trong tuần, dựa trên thời điểm của báo cáo trong múi giờ đã chọn: giờ thị trường cho backtest, giờ ghi nhận cho báo cáo hoạt động. Thanh xanh là lãi, thanh đỏ là lỗ.\n\nCột tỉ lệ thắng = số lệnh thắng ÷ tổng lệnh đã đóng trong ngày đó, gồm cả hòa vốn. Ngày không có giao dịch hiển thị N/A."}><AnalyticsDailyBars items={data.weekdays} currency={currency}/></ReportSection>
     <ReportSection headingOutside timeCoverage={data} className="fxa-month-panel" title="Performance by month" help={"Lợi nhuận theo % cho từng tháng và từng năm trong múi giờ đã chọn. YTD là tổng các tháng đã quan sát trong năm; hàng Tổng gộp cùng tháng qua các năm.\n\nCác lựa chọn bên dưới quyết định cách gộp phiên nguồn và cơ sở vốn. Tháng không có giao dịch hiển thị dấu gạch; dữ liệu không đủ để tính % hiển thị N/A."}><MonthMatrix items={data.months} capitalBases={data.capitalBases} incomplete={data.incomplete}/></ReportSection>
-    <ReportSection headingOutside timeCoverage={data} className="fxa-calendar-panel" title="Performance calendar"><PerformanceCalendar items={data.calendar} timezone={extra.timezone} currency={currency}/></ReportSection>
+    <ReportSection headingOutside className="fxa-calendar-panel" title="Performance calendar" help={CALENDAR_HELP}><AnalyticsCalendar items={data.calendar} timezone={extra.timezone} currency={currency} undatedCount={data.calendarUndatedCount} sourcePartial={model.result?.partial || model.result?.status === 'partial'}/></ReportSection>
     <ReportSection headingOutside surface={false} timeCoverage={data} className="fxa-frequency-panel" title="Average trade frequency" help="Số giao dịch trung bình mỗi ngày, tuần và tháng trong khoảng thời gian của bộ lọc, bao gồm các kỳ không có giao dịch."><div className="fxa-three-columns">{[['day','Giao dịch mỗi ngày','Số giao dịch trung bình mỗi ngày lịch từ ngày đầu đến ngày cuối trong bộ lọc, gồm cả ngày không có giao dịch.'],['week','Giao dịch mỗi tuần','Số giao dịch từng tuần, tuần bắt đầu vào thứ Hai. Trung bình tính cả tuần không có giao dịch từ tuần đầu đến tuần cuối.'],['month','Giao dịch mỗi tháng','Số giao dịch từng tháng. Trung bình tính cả tháng không có giao dịch từ tháng đầu đến tháng cuối trong bộ lọc.']].map(([key,label,help],index)=><div className="fxa-frequency-card" key={key}><ChartHeading title={label} help={help} note={<>{t('Trung bình tần suất')} <strong>{fmt(data.frequency[index]?.count)}</strong></>}/><div className="fxa-frequency-plot"><AnalyticsBars items={(data.frequencySeries?.[key]||[]).map(item=>({...item,value:item.count,tooltipLabel:item.label,label:key==='month'?item.label:item.label.slice(5)}))} metric="value" label={t(label)} integer height={124} color="blue"/></div></div>)}</div></ReportSection>
   </div>
 }
