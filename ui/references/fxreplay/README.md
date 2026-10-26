@@ -7,6 +7,7 @@ học theo, điều chỉnh hoặc lược bỏ.
 | Trang | Reference | Phạm vi đã làm |
 | --- | --- | --- |
 | Testing → Dashboard | [Đối chiếu ngày 26/10/2026](testing-dashboard.md), [audit 3 biểu đồ](testing-dashboard-charts.md) | UI, response của FX, tooltip, đối chiếu số học và source WMREPLAY |
+| Testing → Sessions | [Đối chiếu ngày 26/10/2026](testing-sessions.md) | Selector, settings, sáu chỉ số và ba chart; kiểm số học mẫu, khác biệt định nghĩa và đề xuất cụ thể |
 
 Quy trình dùng lại cho các page sau: [verification-workflow.md](verification-workflow.md).
 Bao gồm phạm vi, cách đọc UI/response, kiểm số học, mẫu ghi kết quả, điểm dừng
@@ -29,5 +30,6 @@ hay trạng thái hoàn thành của Product Plan.
 
 Ảnh, DOM snapshot và response thô nằm ngoài Git tại
 `E:/BACKUP-TRADINGWORKSPACE/fxreplay-reference-20261026/testing-dashboard/`.
-Chúng có dữ liệu tài khoản, chỉ dùng local. Manifest trong thư mục này ghi hash
+Sessions giữ raw trong thư mục `testing-sessions/` cùng cấp. Các thư mục raw
+có dữ liệu tài khoản, chỉ dùng local. Manifest trong mỗi thư mục ghi hash
 để đối chiếu; ghi chú trong repo vẫn đọc được khi ổ bằng chứng không gắn.

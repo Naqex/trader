@@ -1,0 +1,224 @@
+{
+  "schema_version": "fxreplay-reference-evidence-v1",
+  "page": "Testing Sessions",
+  "date": "2026-10-26",
+  "audit_version": "2.0.3805-prod",
+  "restored_dashboard_version": "2.0.3811-prod",
+  "wm_head": "8ce890b8b6a644f36a21f4b18458bec27f6cab0c",
+  "raw_root": "E:/BACKUP-TRADINGWORKSPACE/fxreplay-reference-20261026/testing-sessions",
+  "scope": "light read-only UI, response, source and offline arithmetic audit",
+  "arithmetic_status": "PASS",
+  "network_capture": "disabled",
+  "runtime_restarted": false,
+  "files": [
+    {
+      "name": "audit.mjs",
+      "bytes": 5536,
+      "sha256": "0afb0283c83058c25240a96a8cff7442a139a70d8475931b8f77e8903ec41ffb"
+    },
+    {
+      "name": "calculations.json",
+      "bytes": 2834,
+      "sha256": "1e0864a05c085deda824dc0ccd96e5462fb95a2786ba57fab5b20edf84fa8442"
+    },
+    {
+      "name": "context.json",
+      "bytes": 400,
+      "sha256": "67a108c70282ac458a08e1ed591ac9a9c7191264538ddb9abbcfb54cfa91f686"
+    },
+    {
+      "name": "fx-account-state.json",
+      "bytes": 252,
+      "sha256": "71013d46b89813a039cb30a05d3112230b130e7adf6ae89f39914150b30589f4"
+    },
+    {
+      "name": "fx-catalog.json",
+      "bytes": 518,
+      "sha256": "fb23811b832f29b6656e25ef79fe348cfa2d0461b4b4b80191ddac4251d72b3e"
+    },
+    {
+      "name": "fx-charts-dom.json",
+      "bytes": 46202,
+      "sha256": "95821d37b08e673c2dbb33c0d414f99a178279e244ab9b3831079250d5ff660c"
+    },
+    {
+      "name": "fx-help-day-dom.txt",
+      "bytes": 3691,
+      "sha256": "409608653be7a8bb1c93be23f67e850fc2fa8596f6a9ad0dc8aacfb961c810cf"
+    },
+    {
+      "name": "fx-help-month-dom.txt",
+      "bytes": 3693,
+      "sha256": "4dcaa9df0b1eedce100846168ba01cfc792da4ab0ca4490ed4f3f84d5ae945f2"
+    },
+    {
+      "name": "fx-help-rr-dom.txt",
+      "bytes": 3679,
+      "sha256": "e20840fa8734c0f65ccdc6704c950a415cbabd67473c5f131349dba9eb4f7e54"
+    },
+    {
+      "name": "fx-help-totalpnl-dom.txt",
+      "bytes": 3687,
+      "sha256": "1496f44cbfa55dd3d27d8b4924e68dab0d1a2e730bf649832fbe4d33c5cdabb7"
+    },
+    {
+      "name": "fx-help-week-dom.txt",
+      "bytes": 3691,
+      "sha256": "5943e9e62e8c826da29b55110104e2d2e617fc671bb2dca339d8426d3bd64033"
+    },
+    {
+      "name": "fx-help-winrate-dom.txt",
+      "bytes": 3679,
+      "sha256": "947daadce9789d66c1186cc52979a4ac806cb5258f22849176387b3301006198"
+    },
+    {
+      "name": "fx-initial-dom.txt",
+      "bytes": 3608,
+      "sha256": "d9f89578021d8467db8b3ab07c56221e4c2aa5e84c175c5751f5ed738262bd8a"
+    },
+    {
+      "name": "fx-performance.json",
+      "bytes": 1954,
+      "sha256": "759f2ac6ae02c6193bc72273f77816563febdefa8b561181e9913eacc5e0fbc8"
+    },
+    {
+      "name": "fx-positions.json",
+      "bytes": 2784,
+      "sha256": "6e233c689558e9ef44e753b46aa8c54f5e963deff7d8697d5db7d0230b2ab730"
+    },
+    {
+      "name": "fx-restored-dom.txt",
+      "bytes": 3901,
+      "sha256": "2884d8111ec6b25e74929830f9e2919d06621b66de7935c7c782cddd69542ad8"
+    },
+    {
+      "name": "fx-search-empty-dom.txt",
+      "bytes": 3737,
+      "sha256": "96049dd58528a867fa5c8c1bbcb7897735772048e4d9111f84055afd473e6c9f"
+    },
+    {
+      "name": "fx-session.json",
+      "bytes": 1005,
+      "sha256": "3bd7820a8e231bf7b628f79a0f9dcf5ec38e2fa49a1bd309aac3fa6f25018c76"
+    },
+    {
+      "name": "fx-session.png",
+      "bytes": 69871,
+      "sha256": "cf9b8eabad0d7dc46fadb4c7fea0a2f9cd940fc7efd156a37fd91a3ccb6c0ad8"
+    },
+    {
+      "name": "fx-settings-balance-dom.txt",
+      "bytes": 4316,
+      "sha256": "44d4074bd90f4e88b78ccb46ec17c2308b6482bdf9f070af2bf69d42b0b7403b"
+    },
+    {
+      "name": "fx-settings-costs-dom.txt",
+      "bytes": 4401,
+      "sha256": "cb7a525439be5c3f1602c3664ac98b9ec064676cba88fa20c025f2277577a6e0"
+    },
+    {
+      "name": "fx-settings-dates-dom.txt",
+      "bytes": 4325,
+      "sha256": "a17df5a28445f5088b066b77810ab426b21ca396da1414bb97a13e568d3935d1"
+    },
+    {
+      "name": "fx-settings-info-dom.txt",
+      "bytes": 4504,
+      "sha256": "f947a6ed46a2f09505b05c7bfdaf7a0b8a22fb83e129c33c9b1d49ae963944d6"
+    },
+    {
+      "name": "fx-week-help.png",
+      "bytes": 81666,
+      "sha256": "9fadd2619d02208c1c5287fc2a55d34b369f38023c3e87df6f4e5d1307e000d9"
+    },
+    {
+      "name": "RESUME.md",
+      "bytes": 1396,
+      "sha256": "f3dc3b109b698ee447cca7c362efaddff67d64ec4d4552e54e5c02aac0e3cf07"
+    },
+    {
+      "name": "wm-analytics.json",
+      "bytes": 10042,
+      "sha256": "877618a262af0816873b4b8df428aca0a73fb4f5c0f52f6d2c2c1c432e794a71"
+    },
+    {
+      "name": "wm-catalog.json",
+      "bytes": 2595,
+      "sha256": "0c7ddc0e558049ede3611bdbbec8803162161216067f105a44db8b3d0ba33fbf"
+    },
+    {
+      "name": "wm-final-dom.txt",
+      "bytes": 9120,
+      "sha256": "4fb96b8475006322f2926a25089b3a0631b7ef60ad1b3f13c6389b9d1aa81438"
+    },
+    {
+      "name": "wm-metadata.json",
+      "bytes": 1434,
+      "sha256": "4c6b293a4a55b476eaaa372b07d57c49024d114ce5ddc1621ef0fc92f2a6ccd3"
+    },
+    {
+      "name": "wm-picker-dom.txt",
+      "bytes": 9661,
+      "sha256": "f0c7c2b11cbf998db151e9d213f72efdecf85fee9c14d7bafa7f44c45a3359b3"
+    },
+    {
+      "name": "wm-session-dom.txt",
+      "bytes": 9111,
+      "sha256": "bbf342e5e97bd67f84da7a55b376450eaada506827299842bc419327d592c031"
+    },
+    {
+      "name": "wm-session.png",
+      "bytes": 103144,
+      "sha256": "9a90935088af2ac9bc528a448ea323fc4671da9a56290c3e25d1f5b30a0d2f84"
+    },
+    {
+      "name": "wm-settings-balance-dom.txt",
+      "bytes": 9828,
+      "sha256": "39946cfbba8687255f14aee38b002e2057df003c1c202097cbc2c0b2b120a9fc"
+    },
+    {
+      "name": "wm-settings-costs-dom.txt",
+      "bytes": 10144,
+      "sha256": "c76f01abf55448a79d657ff2b25251d95d9c0764821178e5df331a21036b3c11"
+    },
+    {
+      "name": "wm-settings-dates-dom.txt",
+      "bytes": 10191,
+      "sha256": "568e2514dd9957b79429fbf0ad459fb549e457e79e91608a543292175cdc99ae"
+    }
+  ],
+  "source_hashes": [
+    {
+      "path": "foundation_v2/web/src/SessionPicker.jsx",
+      "sha256": "8214e2f7575e1b648020d160d4f6a4074dc5484d88d7540e3867dfb63bae842f"
+    },
+    {
+      "path": "foundation_v2/web/src/SessionPerformance.jsx",
+      "sha256": "003662d07434dcfb4a3c45446086adadd6bbefaa7fc213356e1b0e163a30ba47"
+    },
+    {
+      "path": "foundation_v2/web/src/sessionPerformanceModel.js",
+      "sha256": "f5b4d7f854e3bc050a3cbd80882592c574c3095956b9fc6b1ee1a517dda2e803"
+    },
+    {
+      "path": "foundation_v2/web/src/MonthlyPerformance.jsx",
+      "sha256": "dd9d31abeb99b9ce3b1e6e653022f4e27b14a5435eadc31b3236a828dd57bfe3"
+    },
+    {
+      "path": "foundation_v2/web/src/SessionSettingsDrawer.jsx",
+      "sha256": "fbcc1689715b6e4d624532b6bc345a456a72f4cd818037c12cdf974c50eace07"
+    },
+    {
+      "path": "foundation_v2/web/src/sessionSettingsModel.js",
+      "sha256": "e4704599587b86705b12f97e0277af038d1c51624f641f12b9e0d7f55bbe2aa9"
+    },
+    {
+      "path": "foundation_v2/web/src/dashboardModel.js",
+      "sha256": "e7e0557a2b474ffa9a7e26e5f977d792e04187c3f55cfee61737bbcee9df2834"
+    },
+    {
+      "path": "foundation_v2/web/src/analyticsViewModel.js",
+      "sha256": "e8145c926704d7ad53237f15f8c93ab0f5637f9d35df072ab16149d73c157063"
+    }
+  ]
+}
