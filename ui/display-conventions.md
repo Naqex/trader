@@ -45,8 +45,11 @@ retain one visible group heading. Session radars have no enclosing surface; only
 the four radar cards are bordered. Frequency has a visible group heading above
 three plots; each day/week/month title and help sit above its bordered plot, with
 the average on the right. Averages
-retain zero calendar periods between the first and last observed period. Drawdown pairs its main plot with four summary metrics, then
-MAE with winning-trade metrics. Prop objectives pair snapshot metrics with their
+retain zero calendar periods between the first and last observed period. Drawdown uses one vertical flow: a full-width account drawdown plot, four summary
+metrics in a row, a full-width MAE plot, then three winning-trade metrics in a row.
+Its titles/help/controls sit above the chart surfaces, with no outer surface around
+the summary rows. The four metrics become two columns at 850px and below; winning-trade
+metrics stack at 600px and below. Prop objectives pair snapshot metrics with their
 existing objectives table on desktop and stack on narrow screens.
 
 SL/RR simulations pair, with Monte Carlo below. Monte Carlo configuration uses a

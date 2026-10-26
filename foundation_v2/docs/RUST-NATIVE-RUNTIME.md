@@ -1,10 +1,13 @@
 # Rust-native candidate runtime
 
-Latest UI-only rollout: [26 October Analytics external headings and scroll containment](../evidence/analytics-heading-scroll-20261026/RECEIPT.md)
-separates winner/loser cards, gives Buy/Sell charts their own help, uses explicit
-UTC market-session windows and percentage returns, and updates hourly/daily,
-monthly and frequency presentation. Source capital/snapshot rules and partial
-calendar coverage are explicit. Sample and real reports share the components.
+Latest UI-only rollout: [26 October Drawdown vertical layout](../evidence/analytics-drawdown-layout-20261026/RECEIPT.md)
+stacks the account drawdown chart, four summary metrics, MAE chart and three
+winning-trade metrics. Titles sit above the chart surfaces; metric rows adapt
+on mobile. Calculations and unit/basis state are unchanged.
+
+Previous UI-only rollout: [26 October Analytics external headings and scroll containment](../evidence/analytics-heading-scroll-20261026/RECEIPT.md)
+moves Performance group titles above their cards, removes the outer radar surface
+and contains hidden monthly legends to eliminate the document scrollbar.
 
 Previous UI-only rollout: [26 October Performance PF progress gauge](../evidence/analytics-pf-gauge-20261026/RECEIPT.md)
 uses a blue ring capped visually at PF4 while retaining the actual ratio and

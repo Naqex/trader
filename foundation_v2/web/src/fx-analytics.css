@@ -219,7 +219,7 @@
 @media(max-width:600px){.fxa-visual-report .fxa-radar-grid{grid-template-columns:1fr}.fxa-radar svg{max-width:360px;margin-inline:auto}}
 @media(max-width:1200px){.fxa-three-columns{gap:16px}.fxa-panel{padding:20px}.fxa-radar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-profit-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:850px){.fxa-three-columns{grid-template-columns:1fr}.fxa-drawdown-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:600px){.fxa-panel{padding:16px}.fxa-panel .fxa-section-heading{align-items:flex-start;gap:12px}.fxa-panel .fxa-section-heading h2{font-size:15px}.fxa-profit-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 12px}.fxa-profit-metrics .fxa-metric{min-width:0}.fxa-threshold{grid-column:1/-1;max-width:none}.fxa-threshold input{width:100%}.fxa-visual-report .fxa-two-columns{gap:24px}.fxa-ring-layout{gap:16px}.fxa-radar-grid{gap:16px 8px}.fxa-radar text{font-size:14px}.fxa-calendar-day small{display:none}.fxa-visual-report .fxa-calendar{gap:3px}.fxa-visual-report .fxa-calendar-day{padding:5px;min-height:70px;font-size:11px}.fxa-calendar-day strong{font-size:11px}.fxa-drawdown-stats{gap:12px}.fxa-drawdown-stats>.fxa-metric{padding:12px}.fxa-drawdown-stats .fxa-info{display:none}.fxa-drawdown-stats .fxa-metric strong{font-size:16px}.fxa-segmented button{padding-inline:8px}}
+@media(max-width:600px){.fxa-panel{padding:16px}.fxa-panel .fxa-section-heading{align-items:flex-start;gap:12px}.fxa-panel .fxa-section-heading h2{font-size:15px}.fxa-profit-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 12px}.fxa-profit-metrics .fxa-metric{min-width:0}.fxa-threshold{grid-column:1/-1;max-width:none}.fxa-threshold input{width:100%}.fxa-visual-report .fxa-two-columns{gap:24px}.fxa-ring-layout{gap:16px}.fxa-radar-grid{gap:16px 8px}.fxa-radar text{font-size:14px}.fxa-calendar-day small{display:none}.fxa-visual-report .fxa-calendar{gap:3px}.fxa-visual-report .fxa-calendar-day{padding:5px;min-height:70px;font-size:11px}.fxa-calendar-day strong{font-size:11px}.fxa-drawdown-stats{gap:12px}.fxa-drawdown-stats>.fxa-metric{padding:12px}.fxa-segmented button{padding-inline:8px}}
 
 /* Related reports share a row; plot sizes change without scaling data text. */
 .fxa-visual-report{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px;max-width:none}
@@ -256,8 +256,8 @@
 .fxa-risk-panels .fxa-panel .fxa-metric{min-width:0}
 .fxa-risk-panels .fxa-panel .fxa-viz{margin-top:4px}
 .fxa-risk-panels .fxa-chart-empty{min-height:48px}
-.fxa-visual-report>.fxa-expectancy-panel,.fxa-visual-report>.fxa-side-panel,.fxa-visual-report>.fxa-frequency-panel,.fxa-visual-report>.fxa-winning-mae-panel{grid-column:span 4}
-.fxa-visual-report>.fxa-outcome-panel,.fxa-visual-report>.fxa-hours-panel,.fxa-visual-report>.fxa-calendar-panel,.fxa-visual-report>.fxa-mae-panel{grid-column:span 8}
+.fxa-visual-report>.fxa-expectancy-panel,.fxa-visual-report>.fxa-side-panel,.fxa-visual-report>.fxa-frequency-panel{grid-column:span 4}
+.fxa-visual-report>.fxa-outcome-panel,.fxa-visual-report>.fxa-hours-panel,.fxa-visual-report>.fxa-calendar-panel{grid-column:span 8}
 .fxa-visual-report>.fxa-half-panel,.fxa-visual-report>.fxa-scenario-panel{grid-column:span 6}
 .fxa-expectancy-panel .fxa-two-columns{grid-template-columns:1fr;gap:16px}
 .fxa-expectancy-panel .fxa-two-columns>div{display:grid;grid-template-columns:1fr;align-items:center;gap:12px}
@@ -299,11 +299,12 @@
 .fxa-calendar-day small{grid-column:2;grid-row:1;text-align:right;white-space:nowrap;line-height:16px}
 .fxa-month-scroll{margin-top:8px}
 .fxa-month-matrix :is(th,td){padding:10px 8px}
-.fxa-visual-report>.fxa-drawdown-main{grid-column:span 8}
-.fxa-visual-report>.fxa-drawdown-stats{grid-column:span 4;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-content:start}
+.fxa-visual-report.fxa-drawdown-report{grid-template-columns:minmax(0,1fr);gap:24px}
+.fxa-visual-report>.fxa-drawdown-stats{gap:12px;align-content:start}
 .fxa-drawdown-stats>.fxa-metric{padding:12px;gap:4px}
 .fxa-drawdown-stats .fxa-metric strong{font-size:22px;line-height:1.3}
-.fxa-winning-mae-panel .fxa-metrics{display:grid;grid-template-columns:1fr;gap:12px}
+.fxa-winning-mae-panel .fxa-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:0}
+.fxa-winning-mae-panel .fxa-metric{min-width:0;padding:12px;border-left:2px solid var(--report-negative);background:var(--wm-surface);border-radius:5px}
 .fxa-visual-report .fxa-simulator-config{margin-bottom:12px;gap:8px}
 .fxa-simulator-config input{width:130px}
 .fxa-scenario-panel .fxa-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -328,7 +329,7 @@
 @media(max-width:1500px){.fxa-expectancy-panel .fxa-two-columns>div{grid-template-columns:1fr}.fxa-expectancy-panel .fxa-ring-layout{justify-content:flex-start}.fxa-hours-panel .fxa-radar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:1550px){.fxa-profit-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:1200px){.fxa-visual-report>.fxa-profit-panel,.fxa-visual-report>.fxa-risk-panels{grid-column:1/-1}.fxa-profit-panel>.fxa-viz{flex:none;height:240px}.fxa-visual-report>.fxa-risk-panels{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:none}.fxa-profit-panel .fxa-section-heading{align-items:flex-start;flex-wrap:wrap}.fxa-profit-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.fxa-visual-report>.fxa-expectancy-panel,.fxa-visual-report>.fxa-side-panel{grid-column:span 6}.fxa-visual-report>.fxa-outcome-panel{grid-column:span 6}.fxa-visual-report>.fxa-side-panel,.fxa-visual-report>.fxa-hours-panel{grid-column:1/-1}.fxa-outcome-panel .fxa-two-columns{grid-template-columns:1fr}.fxa-outcomes dl div{padding:4px 0}.fxa-visual-report>.fxa-calendar-panel{grid-column:1/-1}.fxa-visual-report>.fxa-frequency-panel{grid-column:1/-1}.fxa-frequency-panel .fxa-three-columns{grid-template-columns:repeat(3,minmax(0,1fr))}.fxa-frequency-panel .fxa-three-columns>div{grid-template-columns:1fr}.fxa-prop-objectives{grid-template-columns:1fr}.fxa-prop-objectives>.fxa-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}}
-@media(max-width:1000px){.fxa-visual-report>.fxa-expectancy-panel,.fxa-visual-report>.fxa-outcome-panel,.fxa-visual-report>.fxa-hours-panel,.fxa-visual-report>.fxa-side-panel,.fxa-visual-report>.fxa-mae-panel,.fxa-visual-report>.fxa-winning-mae-panel{grid-column:1/-1}.fxa-expectancy-panel .fxa-two-columns{grid-template-columns:1fr}.fxa-outcome-panel .fxa-two-columns{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-hours-panel .fxa-radar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-visual-report>.fxa-drawdown-main,.fxa-visual-report>.fxa-drawdown-stats{grid-column:1/-1}.fxa-visual-report>.fxa-drawdown-stats{grid-template-columns:repeat(4,minmax(0,1fr))}.fxa-monte-body{grid-template-columns:240px minmax(0,1fr);gap:16px}}
+@media(max-width:1000px){.fxa-visual-report>.fxa-expectancy-panel,.fxa-visual-report>.fxa-outcome-panel,.fxa-visual-report>.fxa-hours-panel,.fxa-visual-report>.fxa-side-panel{grid-column:1/-1}.fxa-expectancy-panel .fxa-two-columns{grid-template-columns:1fr}.fxa-outcome-panel .fxa-two-columns{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-hours-panel .fxa-radar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-monte-body{grid-template-columns:240px minmax(0,1fr);gap:16px}}
 @media(max-width:850px){.fxa-visual-report>.fxa-risk-panels{grid-template-columns:1fr}.fxa-visual-report>.fxa-half-panel,.fxa-visual-report>.fxa-scenario-panel{grid-column:1/-1}.fxa-profit-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.fxa-panel .fxa-section-heading{flex-wrap:wrap}.fxa-panel-actions{justify-content:flex-start}.fxa-hours-panel .fxa-radar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-visual-report>.fxa-drawdown-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-monte-body{grid-template-columns:1fr}.fxa-monte-results>.fxa-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-prop-objectives>.fxa-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.fxa-profit-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-profit-panel .fxa-profit-metrics .fxa-metric strong{font-size:22px}.fxa-expectancy-panel .fxa-two-columns,.fxa-outcome-panel .fxa-two-columns,.fxa-frequency-panel .fxa-three-columns{grid-template-columns:1fr}.fxa-frequency-panel .fxa-three-columns>div{grid-template-columns:80px minmax(0,1fr)}.fxa-side-panel .fxa-two-columns{gap:8px}.fxa-side-panel .fxa-ring{width:96px;height:96px}.fxa-hours-panel .fxa-radar-grid{grid-template-columns:1fr}.fxa-panel-actions{gap:6px}.fxa-scenario-panel .fxa-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-prop-objectives>.fxa-metrics{grid-template-columns:1fr}.fxa-prop-objectives .fxa-metric strong{font-size:20px}}
 
@@ -375,3 +376,5 @@
 .fxa-visual-report .fxa-calendar{min-width:280px;grid-template-columns:repeat(7,minmax(max-content,1fr))}
 .fxa-calendar-day strong{white-space:nowrap}
 @media(max-width:600px){.fxa-visual-report .fxa-calendar-day{padding:4px}}
+
+@media(max-width:600px){.fxa-drawdown-stats{--ds-font-value:16px;--wm-text-value:16px}.fxa-drawdown-stats .fxa-metric strong{font-size:16px}.fxa-winning-mae-panel .fxa-metrics{grid-template-columns:1fr}}
