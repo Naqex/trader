@@ -1,6 +1,12 @@
 # Rust-native candidate runtime
 
-Latest UI-only rollout: [26 October Analytics expectancy and outcome details](../evidence/analytics-outcomes-20261026/RECEIPT.md)
+Latest UI-only rollout: [26 October Analytics strip and summary polish](../evidence/analytics-strip-polish-20261026/RECEIPT.md)
+extends report tabs and their muted baseline across the content width, restores
+compact elevated wins/losses with mini help, extends the expectancy divider and
+removes repeated captions/suffix. Sample and real reports share the presentation;
+financial calculations and the native API runtime are unchanged.
+
+Previous UI-only rollout: [26 October Analytics expectancy and outcome details](../evidence/analytics-outcomes-20261026/RECEIPT.md)
 removes repeated headings/counts, adds VI/EN metric help and source-capital
 percentage summaries, outlines intervals and reduces the PnL right inset.
 Sample mode shares the components. UI5180 was updated without API/terminal

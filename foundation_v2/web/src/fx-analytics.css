@@ -1,8 +1,10 @@
 .fxa-report-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:0;margin-block:0 16px}
+.fx-app .fxa-report-tabs{margin-inline:calc(-1 * var(--wm-page-gutter,24px));width:calc(100% + 2 * var(--wm-page-gutter,24px))}
+.fxa-report-tabs::before{content:"";position:absolute;inset-inline:0;bottom:0;height:1px;background:var(--fx-shell-line,var(--wm-border));pointer-events:none;z-index:1}
 .fxa-tab{position:relative;display:flex;align-items:center;justify-content:center;min-width:0;box-sizing:border-box;color:var(--wm-content-muted);padding:12px 14px;border:0;border-radius:0;background:transparent;font:inherit;font-size:13px;font-weight:500;line-height:20px;cursor:pointer;min-height:44px}
 .fx-app .fxa-tab:hover{background:var(--wm-row-hover);color:var(--wm-content)}
 .fx-app .fxa-tab[aria-selected=true]{background:color-mix(in srgb,var(--wm-primary) 8%,transparent);color:var(--wm-primary)}
-.fxa-tab[aria-selected=true]::after{content:"";position:absolute;bottom:0;inset-inline:0;height:2px;background:var(--wm-primary)}
+.fxa-tab[aria-selected=true]::after{content:"";position:absolute;bottom:0;inset-inline:0;height:2px;background:var(--wm-primary);z-index:2}
 .fxa-tab:focus-visible{outline:2px solid var(--wm-primary);outline-offset:-3px}
 @media(max-width:600px){.fxa-tab{padding-inline:6px}}
 @media(max-width:360px){.fxa-tab{padding-inline:0}}
@@ -237,7 +239,9 @@
 .fxa-percent-change svg{width:12px;height:12px;flex:none}
 .fxa-percent-change.is-positive{color:var(--report-positive)}
 .fxa-percent-change.is-negative{color:var(--report-negative)}
-.fxa-trade-split{font-size:12px;font-weight:400;color:var(--wm-content-muted);line-height:18px;white-space:nowrap}
+.fxa-trade-split{display:inline-flex;align-items:center;align-self:flex-start;gap:3px;margin-top:1px;font-size:11px;font-weight:400;color:var(--wm-content-muted);line-height:16px;white-space:nowrap}
+.fx-app .fxa-info.is-mini{width:16px;min-width:16px;height:16px;min-height:16px;max-height:16px}
+.fxa-info.is-mini svg{width:12px;height:12px}
 .fxa-visual-report .fxa-three-columns,.fxa-visual-report .fxa-two-columns{gap:16px}
 .fxa-visual-report .fxa-viz{margin-top:8px}
 .fxa-visual-report>.fxa-profit-panel{grid-column:span 8;display:flex;flex-direction:column}
@@ -256,7 +260,8 @@
 .fxa-visual-report>.fxa-half-panel,.fxa-visual-report>.fxa-scenario-panel{grid-column:span 6}
 .fxa-expectancy-panel .fxa-two-columns{grid-template-columns:1fr;gap:16px}
 .fxa-expectancy-panel .fxa-two-columns>div{display:grid;grid-template-columns:1fr;align-items:center;gap:12px}
-.fxa-expectancy-panel .fxa-two-columns>div+div{grid-template-columns:minmax(0,.6fr) minmax(0,1.4fr);padding-top:16px;border-top:1px solid var(--wm-border)}
+.fxa-expectancy-panel .fxa-two-columns>div+div{grid-template-columns:minmax(0,.6fr) minmax(0,1.4fr);padding-top:16px;position:relative}
+.fxa-expectancy-panel .fxa-two-columns>div+div::before{content:"";position:absolute;top:0;inset-inline:-16px;height:1px;background:var(--wm-border);pointer-events:none}
 .fxa-expectancy-panel .fxa-viz{margin-top:0}
 .fxa-expectancy-panel .fxa-ring{width:90px;height:90px}
 .fxa-expectancy-panel .fxa-ring-layout{flex-wrap:nowrap;gap:8px}
@@ -321,7 +326,7 @@
 @media(max-width:1500px){.fxa-expectancy-panel .fxa-two-columns>div{grid-template-columns:1fr}.fxa-expectancy-panel .fxa-ring-layout{justify-content:flex-start}.fxa-hours-panel .fxa-radar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:1550px){.fxa-profit-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:1200px){.fxa-visual-report>.fxa-profit-panel,.fxa-visual-report>.fxa-risk-panels{grid-column:1/-1}.fxa-profit-panel>.fxa-viz{flex:none;height:240px}.fxa-visual-report>.fxa-risk-panels{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:none}.fxa-profit-panel .fxa-section-heading{align-items:flex-start;flex-wrap:wrap}.fxa-profit-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.fxa-visual-report>.fxa-expectancy-panel,.fxa-visual-report>.fxa-side-panel{grid-column:span 6}.fxa-visual-report>.fxa-outcome-panel{grid-column:span 6}.fxa-visual-report>.fxa-side-panel,.fxa-visual-report>.fxa-hours-panel{grid-column:1/-1}.fxa-outcome-panel .fxa-two-columns{grid-template-columns:1fr}.fxa-outcomes dl div{padding:4px 0}.fxa-visual-report>.fxa-calendar-panel{grid-column:1/-1}.fxa-visual-report>.fxa-frequency-panel{grid-column:1/-1}.fxa-frequency-panel .fxa-three-columns{grid-template-columns:repeat(3,minmax(0,1fr))}.fxa-frequency-panel .fxa-three-columns>div{grid-template-columns:1fr}.fxa-prop-objectives{grid-template-columns:1fr}.fxa-prop-objectives>.fxa-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}}
-@media(max-width:1000px){.fxa-visual-report>.fxa-expectancy-panel,.fxa-visual-report>.fxa-outcome-panel,.fxa-visual-report>.fxa-hours-panel,.fxa-visual-report>.fxa-side-panel,.fxa-visual-report>.fxa-mae-panel,.fxa-visual-report>.fxa-winning-mae-panel{grid-column:1/-1}.fxa-expectancy-panel .fxa-two-columns{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-outcome-panel .fxa-two-columns{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-hours-panel .fxa-radar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-visual-report>.fxa-drawdown-main,.fxa-visual-report>.fxa-drawdown-stats{grid-column:1/-1}.fxa-visual-report>.fxa-drawdown-stats{grid-template-columns:repeat(4,minmax(0,1fr))}.fxa-monte-body{grid-template-columns:240px minmax(0,1fr);gap:16px}}
+@media(max-width:1000px){.fxa-visual-report>.fxa-expectancy-panel,.fxa-visual-report>.fxa-outcome-panel,.fxa-visual-report>.fxa-hours-panel,.fxa-visual-report>.fxa-side-panel,.fxa-visual-report>.fxa-mae-panel,.fxa-visual-report>.fxa-winning-mae-panel{grid-column:1/-1}.fxa-expectancy-panel .fxa-two-columns{grid-template-columns:1fr}.fxa-outcome-panel .fxa-two-columns{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-hours-panel .fxa-radar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-visual-report>.fxa-drawdown-main,.fxa-visual-report>.fxa-drawdown-stats{grid-column:1/-1}.fxa-visual-report>.fxa-drawdown-stats{grid-template-columns:repeat(4,minmax(0,1fr))}.fxa-monte-body{grid-template-columns:240px minmax(0,1fr);gap:16px}}
 @media(max-width:850px){.fxa-visual-report>.fxa-risk-panels{grid-template-columns:1fr}.fxa-visual-report>.fxa-half-panel,.fxa-visual-report>.fxa-scenario-panel{grid-column:1/-1}.fxa-profit-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.fxa-panel .fxa-section-heading{flex-wrap:wrap}.fxa-panel-actions{justify-content:flex-start}.fxa-hours-panel .fxa-radar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-visual-report>.fxa-drawdown-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-monte-body{grid-template-columns:1fr}.fxa-monte-results>.fxa-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-prop-objectives>.fxa-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.fxa-profit-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-profit-panel .fxa-profit-metrics .fxa-metric strong{font-size:22px}.fxa-expectancy-panel .fxa-two-columns,.fxa-outcome-panel .fxa-two-columns,.fxa-frequency-panel .fxa-three-columns{grid-template-columns:1fr}.fxa-frequency-panel .fxa-three-columns>div{grid-template-columns:80px minmax(0,1fr)}.fxa-side-panel .fxa-two-columns{gap:8px}.fxa-side-panel .fxa-ring{width:96px;height:96px}.fxa-hours-panel .fxa-radar-grid{grid-template-columns:1fr}.fxa-panel-actions{gap:6px}.fxa-scenario-panel .fxa-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-prop-objectives>.fxa-metrics{grid-template-columns:1fr}.fxa-prop-objectives .fxa-metric strong{font-size:20px}}
 

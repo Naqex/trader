@@ -50,12 +50,14 @@ data text. RR mini curves are 48px sparklines without axis labels; their points
 retain tooltips and keyboard access. Other compact plots retain their axes.
 Report panels do not show fullscreen controls. PnL shows only the four interval
 controls in its heading, with no standalone currency or balance/PnL toggle.
-Report tabs form a full-width page-level strip with three equal 44px targets.
+Report tabs span the full shell content width, including the page gutters, with
+three equal 44px targets.
 The selected tab uses blue text, a subtle blue surface and a 2px blue indicator;
-there is no extra navigation row or full-width bottom separator. Filter triggers retain their names
+a muted project-line baseline spans the full strip below the blue selected indicator. Filter triggers retain their names
 without selected-count badges; applied values appear in the removable chip row.
 Its six summary groups pair PnL/balance with inline percent changes, win rate,
-trade count with explicitly labeled wins/losses below it, breakeven count and an inline threshold
+trade count with a small elevated wins/losses pair (10/8) and a mini info control
+explaining the order and exclusion of breakeven, breakeven count and an inline threshold
 input with an Apply action. Definitions use the shared SVG info icon, centered
 in a consistent control box. Mobile radars use one column.
 The PnL plot toolbar exposes zoom in/out, rectangle selection, pan and reset.
@@ -84,8 +86,11 @@ use market entry/exit timestamps; streaks follow the filtered trade order and
 breakeven breaks a run. Expectancy remains net money per closed trade (including
 breakeven); profit factor remains the ratio of summed winning net PnL to absolute
 summed losing net PnL under the active threshold, with no loss denominator shown
-as N/A. The expectancy comparison bar shows average win/loss amounts, while the
-ring compares total winning/losing amounts. PnL interval controls have a visible
+as N/A. The expectancy comparison bar shows average win/loss amounts without repeated
+visible labels; its accessible name identifies each amount. The metric value
+omits the per-trade suffix because the label and help define the unit. Its
+divider spans the card interior edge to edge; the two metrics stay vertically
+stacked at every width. The ring compares total winning/losing amounts. PnL interval controls have a visible
 1px border; its plot reserves only 8px at the right edge in addition to the card
 inset, retaining end-aligned tick labels.
 Definitions belong in accessible info controls, with no permanent explanatory

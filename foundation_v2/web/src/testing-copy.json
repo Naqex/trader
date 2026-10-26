@@ -1,5 +1,6 @@
 {
-  "analytics.perTrade": {"vi":"lệnh","en":"trade"},
+  "Thắng / thua": {"vi":"Thắng / thua","en":"Wins / losses"},
+  "Số bên trái là giao dịch thắng; số bên phải là giao dịch thua. Không bao gồm giao dịch hòa vốn.": {"vi":"Số bên trái là giao dịch thắng; số bên phải là giao dịch thua. Không bao gồm giao dịch hòa vốn.","en":"The left number counts winning trades; the right number counts losing trades. Breakeven trades are excluded."},
   "Tổng giao dịch thắng": {"vi":"Tổng giao dịch thắng","en":"Total winning trades"},
   "Tổng giao dịch thua": {"vi":"Tổng giao dịch thua","en":"Total losing trades"},
   "Số giao dịch đã đóng có lãi/lỗ ròng cao hơn ngưỡng hòa vốn đang áp dụng.": {"vi":"Số giao dịch đã đóng có lãi/lỗ ròng cao hơn ngưỡng hòa vốn đang áp dụng.","en":"Closed trades with net PnL above the applied breakeven threshold."},
