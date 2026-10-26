@@ -1,6 +1,12 @@
 # Rust-native candidate runtime
 
-Latest UI-only rollout: [26 October Analytics strip and summary polish](../evidence/analytics-strip-polish-20261026/RECEIPT.md)
+Latest UI-only rollout: [26 October Performance PF progress gauge](../evidence/analytics-pf-gauge-20261026/RECEIPT.md)
+uses a blue ring capped visually at PF4 while retaining the actual ratio and
+explicit zero/infinity/unknown states. Average amounts use positive/negative
+colors; outcomes use a full-height central divider. The receipt records the
+after-fee sign-based calculation, responsive checks and independent review.
+
+Previous UI-only rollout: [26 October Analytics strip and summary polish](../evidence/analytics-strip-polish-20261026/RECEIPT.md)
 extends report tabs and their muted baseline across the content width, restores
 compact elevated wins/losses with mini help, extends the expectancy divider and
 removes repeated captions/suffix. Sample and real reports share the presentation;

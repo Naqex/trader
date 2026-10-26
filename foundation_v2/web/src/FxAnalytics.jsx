@@ -7,7 +7,7 @@ import { advancedAnalytics, known, number } from './tradingAnalyticsModel.js'
 import './fx-analytics.css'
 import { AnalyticsCurve, AnalyticsBars, AnalyticsRing, AnalyticsRadar } from './AnalyticsCharts.jsx'
 export { AnalyticsCurve } from './AnalyticsCharts.jsx'
-import { bucketCurve, excursionSummary, scenarioComparison, realizedRiskSeries, idealRiskSummary } from './analyticsPresentation.js'
+import { profitFactorGauge, bucketCurve, excursionSummary, scenarioComparison, realizedRiskSeries, idealRiskSummary } from './analyticsPresentation.js'
 import { displayDate } from './dateFormat.js'
 import AnalyticsFilterBar from './AnalyticsFilterBar.jsx'
 import LedgerFilterDrawer from './LedgerFilterDrawer.jsx'
@@ -110,6 +110,16 @@ function ExpectancyComparison({ data, currency }) {
   </div>
 }
 
+function ProfitFactor({ rows }) {
+  const { t, fmt } = useTestingLocale(), gauge = profitFactorGauge(rows)
+  const value = gauge.status === 'unbounded' ? '∞' : gauge.status === 'unavailable' ? 'N/A' : fmt(gauge.value)
+  const label = gauge.status === 'unavailable' ? t('Chưa có dữ liệu') : t('Độ đầy vòng PF: {percent}%', { percent: fmt(gauge.fraction * 100) })
+  return <><Stat label="Profit factor" value={value} help="Hệ số lợi nhuận = tổng lãi của các lệnh có lãi ÷ độ lớn tổng lỗ của các lệnh thua, sau phí trong bộ lọc. Không dùng ngưỡng hòa vốn để loại số tiền nhỏ.&#10;&#10;Chưa có lệnh hoặc tất cả hòa vốn: 0. Chỉ có lãi: ∞ và vòng đầy. Chỉ có lỗ: 0. Thiếu lãi/lỗ: N/A.&#10;&#10;Vòng xanh = min(PF ÷ 4, 1). Mốc 4 chỉ là trần hiển thị; số PF không bị chặn và không phải mức đánh giá chất lượng giao dịch."/><svg className="fxa-pf-gauge" viewBox="0 0 100 100" role="img" aria-label={`${t('Profit factor')}: ${value}. ${label}`}>
+    <circle cx="50" cy="50" r="42" fill="none" stroke="var(--wm-border)" strokeWidth="6"/>
+    {gauge.fraction !== null && <circle className="fxa-pf-progress" cx="50" cy="50" r="42" fill="none" stroke="var(--report-blue)" strokeWidth="6" pathLength="100" strokeDasharray={`${gauge.fraction * 100} 100`} transform="rotate(-90 50 50)"/>}
+  </svg></>
+}
+
 function MonthMatrix({ items, currency, startBalance }) {
   const { t, fmt } = useTestingLocale(), [basis,setBasis] = useState('money')
   const years = [...new Set(items.map(item => item.label.slice(0,4)))].sort()
@@ -160,7 +170,7 @@ export function AnalyticsPerformance({ model, data, extra, onSelect, selected, t
       <ReportSection label="RR lý tưởng"><div className="fxa-metrics"><Stat label="RR lý tưởng trung bình" value={known(ideal.average)?fmt(ideal.average):'N/A'} help={idealHelp}/><Stat label="RR lý tưởng lớn nhất" value={known(ideal.max)?fmt(ideal.max):'N/A'} help={maxIdealHelp}/></div><AnalyticsCurve series={[ideal.series]} labels={ideal.series.map((_,index)=>`#${index+1}`)} label={t('RR lý tưởng')} suffix=" R" height={48} sparkline/></ReportSection>
       <ReportSection label="Có thể có lãi / hòa vốn"><div className="fxa-metrics"><Stat label="Có thể có lãi / hòa vốn" value={known(ideal.recoveryCount)?fmt(ideal.recoveryCount,'',0):'N/A'} help="Số giao dịch thua từng có cơ hội đóng với lãi/lỗ ròng không âm trong cửa sổ một tuần đã có đủ dữ liệu.&#10;&#10;Đã tính phí; giá quan sát không bảo đảm khớp lệnh thực tế."/><Stat label="RR lý tưởng lớn nhất" value={known(ideal.max)?fmt(ideal.max):'N/A'} help={maxIdealHelp}/></div></ReportSection>
     </div>
-    <ReportSection className="fxa-expectancy-panel" label="Expectancy & Profit factor"><div className="fxa-two-columns"><div><Stat label="Expectancy" value={fmt(data.expectancy, ` ${currency}`)} help={"Kỳ vọng là số tiền lãi/lỗ ròng trung bình mỗi giao dịch đã đóng trong bộ lọc, gồm cả hòa vốn.\n\nCách tính: tổng lãi/lỗ ròng sau phí ÷ tổng số giao dịch. Đây là trung bình của dữ liệu đã có, không bảo đảm kết quả lệnh tiếp theo."}/><ExpectancyComparison data={data} currency={currency}/></div><div><Stat label="Profit factor" value={known(data.profitFactor)?fmt(data.profitFactor):'N/A'} help={"Hệ số lợi nhuận so sánh tổng lãi với độ lớn tổng lỗ sau phí, theo nhóm thắng/thua của ngưỡng hòa vốn đang áp dụng.\n\nVí dụ: 2 nghĩa là tổng lãi gấp 2 lần tổng lỗ. Không có tổng lỗ thì hiển thị N/A; chỉ số không có đơn vị."}/><AnalyticsRing label={t('Profit factor')} center="" values={[{label:t('Lãi'),value:data.wins===0?0:data.averageWin!==null?data.averageWin*data.wins:null,color:'var(--report-positive)'},{label:t('Lỗ'),value:data.losses===0?0:data.averageLoss!==null?Math.abs(data.averageLoss*data.losses):null,color:'var(--report-negative)'}]}/></div></div></ReportSection>
+    <ReportSection className="fxa-expectancy-panel" label="Expectancy & Profit factor"><div className="fxa-two-columns"><div><Stat label="Expectancy" value={fmt(data.expectancy, ` ${currency}`)} help={"Kỳ vọng là số tiền lãi/lỗ ròng trung bình mỗi giao dịch đã đóng trong bộ lọc, gồm cả hòa vốn.\n\nCách tính: tổng lãi/lỗ ròng sau phí ÷ tổng số giao dịch. Đây là trung bình của dữ liệu đã có, không bảo đảm kết quả lệnh tiếp theo."}/><ExpectancyComparison data={data} currency={currency}/></div><div><ProfitFactor rows={data.rows}/></div></div></ReportSection>
     <ReportSection className="fxa-outcome-panel" label="Winners and losers"><OutcomeStats data={data}/></ReportSection>
     <ReportSection className="fxa-side-panel" title="Performance by side"><div className="fxa-two-columns"><AnalyticsRing label={t('Số giao dịch theo hướng')} center={fmt(data.count,'',0)} sublabel={t('giao dịch')} values={[...data.side.map((item,index)=>({label:item.label==='BUY'?'Buy':'Sell',value:item.count,color:index?'var(--report-negative)':'var(--report-positive)'})),...(data.unknownSide?[{label:t('Chưa rõ'),value:data.unknownSide,color:'var(--wm-content-muted)'}]:[])]}/><AnalyticsRing label={t('Tỉ lệ thắng theo hướng')} center="" concentric values={data.side.map((item,index)=>({label:item.label==='BUY'?'Buy':'Sell',value:item.winRate,color:index?'var(--report-negative)':'var(--report-positive)'}))}/></div></ReportSection>
     <ReportSection className="fxa-hours-panel" title="Hiệu suất theo khung giờ" help="Phân nhóm theo giờ đóng lệnh trong múi giờ đã chọn. Các khung giờ không đại diện cho phiên thị trường London hay New York."><div className="fxa-radar-grid">{[['winRate','Tỉ lệ thắng','%',100],['count','Số giao dịch',''],['averageR','R trung bình',' R'],['net','Lợi nhuận',` ${currency}`]].map(([key,label,unit,max])=><AnalyticsRadar key={key} items={data.sessions.map(item=>({...item,label:item.label.replace(' UTC','')}))} metric={key} label={label} suffix={unit} maximum={max}/>)}</div></ReportSection>

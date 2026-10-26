@@ -84,13 +84,22 @@ in any trade of a group makes that group's percentage summaries N/A; empty
 groups remain N/A. Breakeven classification applies before grouping. Durations
 use market entry/exit timestamps; streaks follow the filtered trade order and
 breakeven breaks a run. Expectancy remains net money per closed trade (including
-breakeven); profit factor remains the ratio of summed winning net PnL to absolute
-summed losing net PnL under the active threshold, with no loss denominator shown
-as N/A. The expectancy comparison bar shows average win/loss amounts without repeated
+breakeven). The Performance profit-factor gauge uses all positive net PnL divided
+by the absolute sum of all negative net PnL in the filtered rows, after fees;
+the local breakeven threshold does not remove small amounts from that ratio.
+No trades or all zero PnL gives 0; profits without losses show infinity; losses
+without profits give 0. Missing PnL remains N/A. The number is uncapped; the blue
+ring fills by min(PF/4, 1), starting at the top. Four is an owner-selected visual
+cap, not a performance grade. There is no PnL legend or split-color donut here.
+Other report/simulation ratio contracts remain unchanged. The expectancy comparison bar shows average win/loss amounts without repeated
 visible labels; its accessible name identifies each amount. The metric value
 omits the per-trade suffix because the label and help define the unit. Its
 divider spans the card interior edge to edge; the two metrics stay vertically
-stacked at every width. The ring compares total winning/losing amounts. PnL interval controls have a visible
+stacked at every width. Average-win and average-loss amounts beneath the bar
+use the positive and negative chart colors respectively. The outcome headings
+have no horizontal separators. A central vertical rule spans the full card
+height when the groups are side by side; stacked groups use one full-width
+horizontal divider between them. PnL interval controls have a visible
 1px border; its plot reserves only 8px at the right edge in addition to the card
 inset, retaining end-aligned tick labels.
 Definitions belong in accessible info controls, with no permanent explanatory

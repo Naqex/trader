@@ -1,5 +1,16 @@
 import { known, number } from './tradingAnalyticsModel.js'
 
+export function profitFactorGauge(rows) {
+  if (!rows.every(row => known(row.net_pnl))) return { status: 'unavailable', value: null, fraction: null }
+  const profit = rows.reduce((sum, row) => sum + Math.max(0, Number(row.net_pnl)), 0)
+  const loss = rows.reduce((sum, row) => sum + Math.max(0, -Number(row.net_pnl)), 0)
+  if (!Number.isFinite(profit) || !Number.isFinite(loss)) return { status: 'unavailable', value: null, fraction: null }
+  if (!loss && profit) return { status: 'unbounded', value: null, fraction: 1 }
+  const value = loss ? profit / loss : 0
+  // Four is an owner-selected display cap, not a performance rating.
+  return { status: 'finite', value, fraction: Math.min(value / 4, 1) }
+}
+
 export function excursionSummary(experiments, trades) {
   const selected = new Map(trades.map(row => [row.tradeId, row]))
   const rows = (experiments?.rows || []).filter(row => selected.has(row.trade_id))

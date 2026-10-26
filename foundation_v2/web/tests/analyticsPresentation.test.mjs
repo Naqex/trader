@@ -40,3 +40,21 @@ test('ideal risk uses complete-week coverage and counts only observed losing tra
   const result=idealRiskSummary({rows},trades)
   assert.equal(result.average,.95);assert.equal(result.max,2);assert.equal(result.lossKnownCount,1);assert.equal(result.recoveryCount,0)
 })
+
+
+test('PF ring uses the uncapped ratio and maps only the ring to a cap of four', async () => {
+  const { profitFactorGauge } = await import('../src/analyticsPresentation.js')
+  const gauge = values => profitFactorGauge(values.map(net_pnl => ({ net_pnl })))
+  for (const [ratio, fraction] of [[0,0],[1,.25],[2,.5],[4,1],[19.47,1]]) {
+    const result = gauge([ratio * 100, -100])
+    assert.equal(result.value, ratio)
+    assert.equal(result.fraction, fraction)
+  }
+  assert.deepEqual(gauge([]), { status: 'finite', value: 0, fraction: 0 })
+  assert.deepEqual(gauge([0,0]), { status: 'finite', value: 0, fraction: 0 })
+  assert.deepEqual(gauge([100,200]), { status: 'unbounded', value: null, fraction: 1 })
+  assert.deepEqual(gauge([-100,-200]), { status: 'finite', value: 0, fraction: 0 })
+  assert.deepEqual(gauge([100,null]), { status: 'unavailable', value: null, fraction: null })
+  assert.deepEqual(gauge([false,-100]), { status: 'unavailable', value: null, fraction: null })
+  assert.equal(gauge([1,-2,0]).value, .5)
+})
