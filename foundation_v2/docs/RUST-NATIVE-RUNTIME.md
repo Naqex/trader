@@ -1,5 +1,9 @@
 # Rust-native candidate runtime
 
+Latest UI-only rollout: [26 October compact Analytics](../evidence/analytics-compact-20261026/RECEIPT.md)
+records paired secondary charts, a compact PnL panel, native fullscreen and removal
+of the report-level scope footer. UI5180 was updated; API8010 and owner data were unchanged.
+
 Latest local API/UI rollout: [25-26 October Analytics redesign](../evidence/analytics-redesign-20261025/RECEIPT.md)
 records the three report tabs, market-time session filters, true-equity drawdown and
 portfolio price experiments with exact per-asset checkpoints. API binaries are under

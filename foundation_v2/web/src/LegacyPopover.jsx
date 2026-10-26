@@ -63,5 +63,5 @@ export default function LegacyPopover({ anchor, theme, label, onClose, onAnchorL
     }
   }, [anchor, offset, maxWidth, role])
   if (!anchor) return null
-  return createPortal(<div ref={ref} id={id} className={`legacy-popover wm-ui-portal ${theme === 'light' ? 'is-light' : ''} ${wide ? 'is-wide' : ''} ${className}`} data-theme={theme} data-side={role==='tooltip'?position.side:undefined} style={position.style} role={role} aria-label={role==='tooltip'?undefined:label} onPointerEnter={onPointerEnter} onPointerLeave={onPointerLeave}>{children}</div>, anchor.closest('dialog,[aria-modal="true"]') || anchor.ownerDocument.body)
+  return createPortal(<div ref={ref} id={id} className={`legacy-popover wm-ui-portal ${theme === 'light' ? 'is-light' : ''} ${wide ? 'is-wide' : ''} ${className}`} data-theme={theme} data-side={role==='tooltip'?position.side:undefined} style={position.style} role={role} aria-label={role==='tooltip'?undefined:label} onPointerEnter={onPointerEnter} onPointerLeave={onPointerLeave}>{children}</div>, anchor.closest('dialog,[aria-modal="true"],:fullscreen') || anchor.ownerDocument.body)
 }

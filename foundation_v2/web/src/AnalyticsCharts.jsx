@@ -3,13 +3,13 @@ import { chartDomain, chartTicks, reportCurvePath } from './reportChartModel.js'
 import { useTestingLocale } from './testingLocale.jsx'
 
 function useSize(height) {
-  const ref = useRef(null), [width, setWidth] = useState(640)
+  const ref = useRef(null), [width, setWidth] = useState(640), [expandedHeight, setExpandedHeight] = useState(null)
   useLayoutEffect(() => {
-    const observer = new ResizeObserver(([entry]) => setWidth(Math.max(220, entry.contentRect.width)))
+    const observer = new ResizeObserver(([entry]) => { setWidth(Math.max(220, entry.contentRect.width)); setExpandedHeight(ref.current?.closest(':fullscreen') ? entry.contentRect.height : null) })
     if (ref.current) observer.observe(ref.current)
     return () => observer.disconnect()
   }, [])
-  return [ref, width, height]
+  return [ref, width, expandedHeight ?? height]
 }
 const finite = value => typeof value === 'number' && Number.isFinite(value)
 function tickText(value, domain, locale, suffix) {
@@ -17,18 +17,24 @@ function tickText(value, domain, locale, suffix) {
   const digits = Math.max(0, Math.min(8, -Math.floor(Math.log10(step))))
   return new Intl.NumberFormat(locale, { maximumFractionDigits: digits + (step / 10 ** Math.floor(Math.log10(step)) === 2.5 ? 1 : 0) }).format(value) + (suffix === '%' ? '%' : '')
 }
-export function AnalyticsCurve({ series, label, suffix = '', onSelect, selected, negative = false, labels = [], height = 280 }) {
+export function AnalyticsCurve({ series, label, suffix = '', onSelect, selected, negative = false, labels = [], height = 200 }) {
   const { t, fmt, locale } = useTestingLocale(), id = useId()
-  const [ref, width] = useSize(height)
+  const [ref, width, measuredHeight] = useSize(height)
+  height = measuredHeight
   const values = series.flat().map(point => point.value).filter(finite)
-  const domain = chartDomain(values, { zero: negative })
+  const domain = chartDomain(values, { zero: negative, symmetric: height <= 120 })
   if (!domain) return <div ref={ref} className="fxa-chart-empty">{t('Chưa có dữ liệu')}</div>
-  const ticks = chartTicks(domain, 6), axis = ticks.map(value => tickText(value, domain, locale, suffix))
+  const ticks = chartTicks(domain, height <= 120 ? 3 : 6), axis = ticks.map(value => tickText(value, domain, locale, suffix))
   const left = Math.max(42, Math.min(width * .35, Math.max(...axis.map(value => value.length)) * 7 + 18)), right = width - 20, top = 20, edge = height - 36
   const count = Math.max(...series.map(path => path.length)), x = index => left + index / Math.max(1, count - 1) * (right - left)
   const y = value => domain.high === domain.low ? (top + edge) / 2 : edge - (value - domain.low) / (domain.high - domain.low) * (edge - top)
   const labelAt = index => labels[index] || (index === 0 ? t('Bắt đầu') : `${index}`)
   const detail = index => `${labelAt(index)} · ${fmt(series[0]?.[index]?.value, suffix)}`
+  const selectPoint = async point => {
+    if (!point.tradeId || !onSelect) return
+    if (document.fullscreenElement) await document.exitFullscreen()
+    onSelect(point.tradeId)
+  }
   const pathGroups = series.flatMap((points, seriesIndex) => {
     const groups = []
     points.forEach((point, index) => {
@@ -43,18 +49,19 @@ export function AnalyticsCurve({ series, label, suffix = '', onSelect, selected,
       <defs><linearGradient id={id} x1="0" x2="0" y1="0" y2="1"><stop stopColor="currentColor" stopOpacity=".2"/><stop offset="1" stopColor="currentColor" stopOpacity=".01"/></linearGradient></defs>
       {ticks.map((value, index) => <g key={value}><line className="fxa-gridline" x1={left} x2={right} y1={y(value)} y2={y(value)}/><text x={left - 10} y={y(value)} dominantBaseline="middle" textAnchor="end">{axis[index]}</text></g>)}
       {pathGroups.map(({ points, d, seriesIndex }, index) => <g key={index} style={{ color: series.length > 1 ? `var(--report-${['blue', 'positive', 'negative'][seriesIndex % 3]})` : undefined }}>{series.length === 1 && <path d={`${d} L${points.at(-1)[0]},${edge} L${points[0][0]},${edge} Z`} fill={`url(#${id})`}/>}<path d={d} fill="none" stroke="currentColor" strokeWidth="2" opacity={series.length > 1 ? .45 : 1}/>{points.length === 1 && <circle cx={points[0][0]} cy={points[0][1]} r="3" fill="currentColor"/>}</g>)}
-      {series.length === 1 && series[0].map((point, index) => finite(point.value) && <circle key={index} className="fxa-viz-point" cx={x(index)} cy={y(point.value)} r={point.tradeId === selected ? 5 : 3} tabIndex={onSelect || count <= 50 ? 0 : undefined} role={onSelect ? 'button' : 'img'} aria-label={detail(index)} data-tooltip={detail(index)} onClick={() => point.tradeId && onSelect?.(point.tradeId)} onKeyDown={event => { if (['Enter', ' '].includes(event.key) && point.tradeId && onSelect) { event.preventDefault(); onSelect(point.tradeId) } }}/>) }
+      {series.length === 1 && series[0].map((point, index) => finite(point.value) && <circle key={index} className="fxa-viz-point" cx={x(index)} cy={y(point.value)} r={point.tradeId === selected ? 5 : 3} tabIndex={onSelect || count <= 50 ? 0 : undefined} role={onSelect ? 'button' : 'img'} aria-label={detail(index)} data-tooltip={detail(index)} onClick={() => selectPoint(point)} onKeyDown={event => { if (['Enter', ' '].includes(event.key) && point.tradeId && onSelect) { event.preventDefault(); selectPoint(point) } }}/>) }
       {[...new Set(width < 480 ? [0, count - 1] : [0, Math.floor((count - 1) / 2), count - 1])].map(index => <text key={index} x={x(index)} y={height - 10} textAnchor={index === 0 ? 'start' : index === count - 1 ? 'end' : 'middle'}>{labelAt(index)}</text>)}
       {series.length === 1 && <rect x={left} y={top} width={Math.max(0, right - left)} height={edge - top} fill="transparent" pointerEvents="none"/>}
     </svg>
   </div>
 }
 
-export function AnalyticsBars({ items, metric = 'net', label, suffix = '', maximum, integer, combo = false, height = 260, color = 'signed' }) {
-  const { t, fmt, locale } = useTestingLocale(), [ref, width] = useSize(height)
+export function AnalyticsBars({ items, metric = 'net', label, suffix = '', maximum, integer, combo = false, height = 180, color = 'signed' }) {
+  const { t, fmt, locale } = useTestingLocale(), [ref, width, measuredHeight] = useSize(height)
+  height = measuredHeight
   const values = items.map(item => item[metric]).filter(finite), domain = chartDomain(values, { maximum, integer, symmetric: true })
   if (!domain || !items.length) return <div ref={ref} className="fxa-chart-empty">{t('Chưa có dữ liệu')}</div>
-  const ticks = chartTicks(domain, 6), axis = ticks.map(value => tickText(value, domain, locale, suffix))
+  const ticks = chartTicks(domain, height <= 120 ? 3 : 6), axis = ticks.map(value => tickText(value, domain, locale, suffix))
   const left = Math.max(42, Math.min(width * .35, Math.max(...axis.map(value => value.length)) * 7 + 18)), right = width - (combo ? 42 : 16), top = 20, edge = height - 40
   const y = value => domain.high === domain.low ? (edge + top) / 2 : edge - (value - domain.low) / (domain.high - domain.low) * (edge - top)
   const step = (right - left) / items.length, barWidth = Math.max(1, Math.min(54, step * .64)), center = index => left + (index + .5) * step

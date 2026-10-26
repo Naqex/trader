@@ -200,3 +200,74 @@
 @media(max-width:1200px){.fxa-three-columns{gap:16px}.fxa-panel{padding:20px}.fxa-radar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-profit-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:850px){.fxa-three-columns{grid-template-columns:1fr}.fxa-drawdown-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.fxa-panel{padding:16px}.fxa-panel .fxa-section-heading{align-items:flex-start;gap:12px}.fxa-panel .fxa-section-heading h2{font-size:15px}.fxa-profit-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 12px}.fxa-profit-metrics .fxa-metric{min-width:0}.fxa-threshold{grid-column:1/-1;max-width:none}.fxa-threshold label{flex:1}.fxa-threshold input{width:100%}.fxa-visual-report .fxa-two-columns{gap:24px}.fxa-ring-layout{gap:16px}.fxa-radar-grid{gap:16px 8px}.fxa-radar text{font-size:14px}.fxa-calendar-day small{display:none}.fxa-visual-report .fxa-calendar{gap:3px}.fxa-visual-report .fxa-calendar-day{padding:5px;min-height:70px;font-size:11px}.fxa-calendar-day strong{font-size:11px}.fxa-drawdown-stats{gap:12px}.fxa-drawdown-stats>.fxa-metric{padding:12px}.fxa-drawdown-stats .fxa-info{display:none}.fxa-drawdown-stats .fxa-metric strong{font-size:16px}.fxa-segmented button{padding-inline:8px}}
+
+/* Compact reports keep the main path wide and pair related secondary views. */
+.fxa-visual-report{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px;max-width:none}
+.fxa-visual-report>.fxa-panel,.fxa-visual-report>.fxa-three-columns,.fxa-visual-report>.fxa-drawdown-stats{grid-column:1/-1}
+.fxa-panel{padding:16px}
+.fxa-panel .fxa-section-heading{margin-bottom:12px;min-height:30px}
+.fxa-panel-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;min-width:0}
+.fxa-chart-unit{font-size:12px;color:var(--wm-content-muted)}
+.fxa-expand{display:inline-grid;place-content:center;flex:none;width:30px;height:30px;min-height:30px;padding:5px;border:0;border-radius:5px;background:transparent;color:var(--wm-content-muted);cursor:pointer}
+.fxa-expand svg{width:18px;height:18px}
+.fxa-expand:hover{color:var(--wm-content);background:var(--wm-row-hover)}
+.fxa-expand:focus-visible{outline:2px solid var(--wm-primary);outline-offset:2px}
+.fxa-visual-report .fxa-panel .fxa-metrics{gap:16px;margin-bottom:8px}
+.fxa-profit-metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr))}
+.fxa-profit-metrics .fxa-metric{min-width:0}
+.fxa-profit-metrics>.fxa-metric>span{min-height:30px}
+.fxa-visual-report .fxa-three-columns{gap:16px}
+.fxa-visual-report .fxa-viz{margin-top:8px}
+.fxa-visual-report>.fxa-half-panel,.fxa-visual-report>.fxa-scenario-panel{grid-column:span 6}
+.fxa-visual-report>.fxa-calendar-panel,.fxa-visual-report>.fxa-mae-panel{grid-column:span 8}
+.fxa-visual-report>.fxa-frequency-panel,.fxa-visual-report>.fxa-winning-mae-panel{grid-column:span 4}
+.fxa-visual-report .fxa-two-columns{gap:24px}
+.fxa-risk-panels .fxa-panel{min-height:180px}
+.fxa-risk-panels .fxa-chart-empty{min-height:90px}
+.fxa-risk-panels .fxa-ring{width:100px;height:100px}
+.fxa-risk-panels .fxa-ring-layout{gap:12px;justify-content:flex-start;flex-wrap:nowrap;margin-top:8px}
+.fxa-risk-panels .fxa-chart-legend{font-size:12px;gap:8px;min-width:0;flex:1}
+.fxa-ring{width:150px;height:150px}
+.fxa-ring-layout{gap:16px}
+.fxa-side-panel .fxa-two-columns{grid-template-columns:1fr;gap:12px}
+.fxa-side-panel .fxa-ring{width:120px;height:120px}
+.fxa-side-panel .fxa-ring-layout{justify-content:flex-start;flex-wrap:nowrap}
+.fxa-hours-panel .fxa-radar-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.fxa-hours-panel .fxa-radar svg{max-width:200px;margin:auto}
+.fxa-frequency-panel .fxa-three-columns{grid-template-columns:1fr;gap:12px}
+.fxa-frequency-panel .fxa-metric strong{font-size:20px}
+.fxa-visual-report .fxa-calendar-day{min-height:64px;padding:6px;gap:4px}
+.fxa-outcomes h3{margin-top:0;padding-bottom:8px}
+.fxa-outcomes dl div{padding:7px 0}
+.fxa-visual-report .fxa-simulator-config{margin-bottom:16px}
+.fxa-scenario-panel .fxa-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.fxa-scenario-panel .fxa-metrics .fxa-metric{min-width:0}
+.fxa-threshold-popover{padding:14px}
+.fxa-threshold-popover .fxa-threshold{max-width:260px}
+.fxa-threshold-popover .fxa-button{border:0;border-radius:6px;background:var(--wm-row-hover);color:var(--wm-content);padding:8px 12px;cursor:pointer}
+.fxa-panel:fullscreen{width:100%;height:100%;overflow:auto;box-sizing:border-box;padding:32px;border:0;border-radius:0;background:var(--wm-canvas)}
+.fxa-panel:fullscreen .fxa-viz{height:clamp(240px,60vh,700px)!important}
+.fxa-panel:fullscreen .fxa-ring{width:240px;height:240px}
+.fxa-panel:fullscreen .fxa-radar svg{max-width:440px}
+.fxa-panel:fullscreen .fxa-calendar-day{min-height:100px}
+@media(max-width:1200px){.fxa-profit-panel .fxa-section-heading{align-items:flex-start;flex-wrap:wrap}.fxa-profit-metrics{grid-template-columns:repeat(5,minmax(0,1fr))}.fxa-visual-report>.fxa-half-panel,.fxa-visual-report>.fxa-calendar-panel,.fxa-visual-report>.fxa-frequency-panel,.fxa-visual-report>.fxa-mae-panel,.fxa-visual-report>.fxa-winning-mae-panel{grid-column:1/-1}.fxa-side-panel .fxa-two-columns{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-hours-panel .fxa-radar-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.fxa-frequency-panel .fxa-three-columns{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:850px){.fxa-visual-report>.fxa-scenario-panel{grid-column:1/-1}.fxa-profit-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.fxa-panel .fxa-section-heading{flex-wrap:wrap}.fxa-panel-actions{justify-content:flex-start}.fxa-hours-panel .fxa-radar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.fxa-profit-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-side-panel .fxa-two-columns,.fxa-frequency-panel .fxa-three-columns,.fxa-hours-panel .fxa-radar-grid{grid-template-columns:1fr}.fxa-risk-panels .fxa-ring-layout{flex-wrap:wrap}.fxa-panel-actions{gap:6px}.fxa-scenario-panel .fxa-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-panel:fullscreen{padding:16px}}
+
+.fxa-profit-panel .fxa-section-heading,.fxa-risk-panels .fxa-section-heading{margin-bottom:8px}
+.fxa-profit-metrics>.fxa-metric>span{min-height:20px}
+.fxa-profit-panel .fxa-metric{gap:2px}
+.fxa-profit-panel .fxa-metric strong{line-height:1.2}
+.fxa-profit-panel .fxa-viz{margin-top:4px}
+.fxa-risk-panels .fxa-metric{gap:2px}
+.fxa-risk-panels .fxa-metric strong{font-size:24px;line-height:1.2}
+.fxa-risk-panels .fxa-chart-empty{min-height:65px}
+.fxa-opportunity-summary{display:flex;align-items:center;gap:16px}
+.fxa-opportunity-summary>.fxa-metric{flex:0 0 auto}
+.fxa-opportunity-summary .fxa-ring-layout{flex:1;min-width:0;margin-top:0;flex-wrap:wrap;justify-content:center}
+.fxa-opportunity-summary .fxa-chart-legend{flex-basis:100%}
+
+.fxa-profit-panel .fxa-section-heading{margin-bottom:4px}
+.fxa-risk-panels .fxa-chart-empty{min-height:90px}
+
+.fxa-threshold-popover .fxa-threshold input{order:1}

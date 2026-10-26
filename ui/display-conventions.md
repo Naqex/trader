@@ -27,8 +27,19 @@ time-window radars, hour/day/month, calendar and frequency. Drawdown groups the
 account path, four summary metrics, MAE distribution and winning-trade MAE.
 Simulation groups configured SL, original-risk RR and Monte Carlo separately.
 Use shared rounded chart domains and shape-preserving curves; interpolation
-does not create price observations. Mobile radars use one column. Definitions
-belong in accessible info controls, with no permanent explanatory paragraphs.
+does not create price observations. Compact desktop reports use 16px panel insets
+and gaps, a 200px main plot and paired secondary panels. The 1920x940 reference
+viewport shows the main PnL panel and full three-panel R row together. Hour/day
+plots pair; the year/month matrix stays full width; calendar/frequency use 2:1.
+SL/RR simulations pair, with Monte Carlo below. Smaller widths collapse the groups
+without shrinking readable data text. Mini curves thin ticks while retaining bounds
+and zero. Native fullscreen preserves controls/state; popovers mount inside the
+fullscreen ancestor and trade selection exits fullscreen before opening details.
+The breakeven threshold is an anchored editor beside its metric, focusing the
+number input and returning focus on dismissal. Mobile radars use one column.
+Definitions belong in accessible info controls, with no permanent explanatory
+paragraphs. Do not render a report-level scope/provenance footer; original fields
+remain available in the selected-trade inspector and exports.
 
 Session Analytics requests market time; the trade ledger and research retain
 activity time. Projection honors its declared `scope.time_basis`: market uses the
