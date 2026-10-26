@@ -55,3 +55,9 @@ bộ lọc**. CSS/copy only, behavior unchanged. Build and independent visual re
 PASS; focused candidate/deployed checks3/3 PASS at1920 VI,320 VI,320 EN, including
 measured centering and no overflow. Served hash verified; owner tab refreshed.
 Evidence/snapshot/rollback: `E:/BACKUP-TRADINGWORKSPACE/trades-clock-centered-20261026/`.
+
+Owner then moved the visible legend into shared ReportInfo (i), beside the radio
+pair. Native fieldset retains a screen-reader legend; VI/EN tooltip explains the
+clock and Apply behavior. Build, independent source/visual review and candidate /
+deployed focused browser3/3 PASS (1920VI,320VI,320EN), including tooltip bounds.
+Behavior unchanged. Evidence/rollback: `E:/BACKUP-TRADINGWORKSPACE/trades-clock-help-20261026/`.

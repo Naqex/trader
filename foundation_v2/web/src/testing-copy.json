@@ -1,4 +1,5 @@
 {
+  "Chọn thời gian dùng cho bộ lọc ngày, năm, tháng và giờ. Chart dùng thời gian trên biểu đồ; Realtime dùng thời gian ghi nhận giao dịch thực tế. Lựa chọn có hiệu lực khi áp dụng bộ lọc.": {"vi": "Chọn thời gian dùng cho bộ lọc ngày, năm, tháng và giờ. Chart dùng thời gian trên biểu đồ; Realtime dùng thời gian ghi nhận giao dịch thực tế. Lựa chọn có hiệu lực khi áp dụng bộ lọc.", "en": "Choose the time basis for date, year, month and hour filters. Chart uses chart time; Realtime uses the recorded activity time. The choice takes effect when you apply filters."},
   "Thời gian lọc": {"vi":"Thời gian áp dụng bộ lọc","en":"Filter time basis"},
   "Đang tải khoảng ngày…": {"vi":"Đang tải khoảng ngày…","en":"Loading date range…"},
   "Không tải được khoảng ngày.": {"vi":"Không tải được khoảng ngày.","en":"Unable to load date range."},
