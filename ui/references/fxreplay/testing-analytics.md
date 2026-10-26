@@ -34,4 +34,3 @@ toàn trang. Calendar là lát research đầu tiên, các dòng khác chỉ đ�
   tài khoản, ghi chú, review hoặc giao dịch. Đã trả FX về Testing Analytics.
 
 Evidence: `E:/BACKUP-TRADINGWORKSPACE/fxreplay-reference-20261026/testing-analytics/`.
-

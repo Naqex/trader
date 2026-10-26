@@ -99,3 +99,8 @@ Testing Analytics; local ở Analytics/net. Chưa thay đổi calendar của bê
 
 Đây là research và đề xuất cho lát calendar, không phải toàn bộ Analytics đã
 kiểm chứng, và chưa là receipt triển khai calendar.
+
+Review độc lập source/reference/raw PASS. Gap ban đầu do AX snapshot chỉ chứa
+no-change đã được sửa bằng full AX và bounded rendered HTML JSON của cả hai FX
+surfaces; script đọc số tiền từ raw thay vì hard-code. Reviewer xác nhận lại tags,
+tổng demo và yêu cầu incomplete marker; các giới hạn phía trên vẫn giữ nguyên.
