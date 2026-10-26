@@ -1,0 +1,226 @@
+{
+  "schema_version": "fxreplay-reference-evidence-v1",
+  "page": "Testing Trades",
+  "date": "2026-10-26",
+  "fx_version": "2.0.3811-prod",
+  "wm_head": "dec2b2aa2a93f02b0edef799aa3543f25a83ee7a",
+  "raw_root": "E:/BACKUP-TRADINGWORKSPACE/fxreplay-reference-20261026/testing-trades",
+  "scope": "read-only UI, observed response, local source and offline arithmetic audit",
+  "arithmetic_status": "PASS",
+  "network_capture": "disabled",
+  "runtime_restarted": false,
+  "files": [
+    {
+      "name": "RESUME.md",
+      "bytes": 1428,
+      "sha256": "714c029f1ec8be2a1889287ca0ea0089d9e09f1c84347ab9af576ea815a749d7"
+    },
+    {
+      "name": "audit.mjs",
+      "bytes": 5699,
+      "sha256": "7500ce33f44d4876bdd7a6fc609eb63903d4df678915c8e45991e6b6a3459e6d"
+    },
+    {
+      "name": "calculations.json",
+      "bytes": 1503,
+      "sha256": "0e523948f6e1f242c826b5e33e293a4491c0ff6ca0c3e09f4cb54b09c60f04cf"
+    },
+    {
+      "name": "context.json",
+      "bytes": 1892,
+      "sha256": "878ae5b944b73d50183f5a53c1d28412049c2c048be591a7f7d794b1550fa9b0"
+    },
+    {
+      "name": "fx-action.txt",
+      "bytes": 10529,
+      "sha256": "399840306cefc631adc441a989ae3d55fb454dd6835c27a7a877670162dedf98"
+    },
+    {
+      "name": "fx-all-response.json",
+      "bytes": 2724,
+      "sha256": "c4080ee4c76c034070baf1afb0f7ef915f8b873bce40d6ee2c1941a7b1a096c6"
+    },
+    {
+      "name": "fx-baseline.png",
+      "bytes": 77884,
+      "sha256": "3cf23ba249c81737a2b4886fd80483974b4dbc03af9b60e6f417017d8382a63f"
+    },
+    {
+      "name": "fx-baseline.txt",
+      "bytes": 263,
+      "sha256": "24ad556afed3a96742699dbdefd0151a9c02f6c5de03fb459503ca0468f24515"
+    },
+    {
+      "name": "fx-closed-response.json",
+      "bytes": 2082,
+      "sha256": "0f2e28aa6702961e2f29322ecd135bf095f5420e4165d95d96809d62399fbbef"
+    },
+    {
+      "name": "fx-closed.txt",
+      "bytes": 6196,
+      "sha256": "9764442e699f07256aba329675f3592fc4e657ae1d5ff4a421e5ea4efcb9581d"
+    },
+    {
+      "name": "fx-detail.png",
+      "bytes": 65677,
+      "sha256": "ba28813873ceaee3ca207bb1fa0d61201f4ae6993423906c69dd6a229554aa0d"
+    },
+    {
+      "name": "fx-detail.txt",
+      "bytes": 10529,
+      "sha256": "399840306cefc631adc441a989ae3d55fb454dd6835c27a7a877670162dedf98"
+    },
+    {
+      "name": "fx-filter-options.txt",
+      "bytes": 9023,
+      "sha256": "235b67627bfa2b75e2ac4970239b6f491ee64a8bcc8edcfadcc457d0ea746097"
+    },
+    {
+      "name": "fx-restored.png",
+      "bytes": 78777,
+      "sha256": "0cc0f0d45fcd28f1e03767d3d98ecf681da82818b35c09bba9dfae483ca4d068"
+    },
+    {
+      "name": "fx-restored.txt",
+      "bytes": 5076,
+      "sha256": "a62832dea00dc54b432f9875134cd12263d11c53ff31d3698846668ce8d9f6f6"
+    },
+    {
+      "name": "fx-short-response.json",
+      "bytes": 63,
+      "sha256": "c764e26eb61872e8db07768c6ee0f73862d0f7eac0ddc4b845d4e28d834e26f5"
+    },
+    {
+      "name": "fx-short.txt",
+      "bytes": 1118,
+      "sha256": "351787882e5eaba8179cfaa81d6007457bad2e78a53c90952f0ed28c185e0650"
+    },
+    {
+      "name": "fx-sort-chart-response.json",
+      "bytes": 2082,
+      "sha256": "20d2c838285836fe577630d303a51576d4f6153f1d5caae2da784480426991d5"
+    },
+    {
+      "name": "fx-sort-chart.txt",
+      "bytes": 3410,
+      "sha256": "9112e0e31ffbd13b2c62b0877702de3833635ffa649fda6549d179771a4618a6"
+    },
+    {
+      "name": "fx-tags-filter.txt",
+      "bytes": 7938,
+      "sha256": "a25d64773b069877e6c47a62b9c8785f5cd778c007adbace77cc3ab7e2c51031"
+    },
+    {
+      "name": "fx-tags-response.json",
+      "bytes": 181,
+      "sha256": "132e48498ccb8b1219c4a721630be0807f3a44a7196fd6705bf27ec8ce2ddafe"
+    },
+    {
+      "name": "own-all-page1-response.json",
+      "bytes": 32596,
+      "sha256": "3a2418571c6a224629e4a6f93cf3fbe53bfe66005e81afd4831e2925b979d9dd"
+    },
+    {
+      "name": "own-all-page2-response.json",
+      "bytes": 14772,
+      "sha256": "ad4357cf1a955ce933c7382d66efa396cfb3a3d2931ca1f6a661f5b94782b8d1"
+    },
+    {
+      "name": "own-baseline.png",
+      "bytes": 130582,
+      "sha256": "227eab1c7896ee3b8cb80213bad8ef4dde5ceb5c16fc244e26a25bd12b19ca9d"
+    },
+    {
+      "name": "own-baseline.txt",
+      "bytes": 556,
+      "sha256": "708bd4ce7e6fd6ba2e3de3699f3a3b60a23f33175c40d2d8b1c64f66e0dc5ca1"
+    },
+    {
+      "name": "own-date-filter.txt",
+      "bytes": 35336,
+      "sha256": "dd480380a1673f8ab87057080736ab73d1e224308275c2c38664997758f015eb"
+    },
+    {
+      "name": "own-detail.txt",
+      "bytes": 414,
+      "sha256": "36b898baff39d289dfefc70a3c85919011f550c22ad3b4600f8041513bd0fbbb"
+    },
+    {
+      "name": "own-page2.txt",
+      "bytes": 8102,
+      "sha256": "43af04133d9db11a54e6e1a9a968a85a4e8254a53c0a8343980ad3254f7fe37b"
+    },
+    {
+      "name": "own-restored.png",
+      "bytes": 130603,
+      "sha256": "b8d84791db6fe4489319c91852f62c00087e0e2f6d915af14a429e186b783bb7"
+    },
+    {
+      "name": "own-restored.txt",
+      "bytes": 24147,
+      "sha256": "5ac4ca59b5958cc58fe9936341d358acff5daf9b717096f21559edaba33189fc"
+    },
+    {
+      "name": "own-sell-response.json",
+      "bytes": 14852,
+      "sha256": "762cdc69591154b88e2e2717ea94731e49a80e745be82df4beec735d0b45b061"
+    },
+    {
+      "name": "own-sell.txt",
+      "bytes": 8221,
+      "sha256": "7f171a4eb2487936e7215fc7217830627debf9b04a88ba33017b8c06cdf1b843"
+    },
+    {
+      "name": "own-sort-pnl-response.json",
+      "bytes": 32648,
+      "sha256": "99d8000dfe78dac77846df28a192018eedf79048f0a2519aab60b30281fdd612"
+    },
+    {
+      "name": "validation.json",
+      "bytes": 596,
+      "sha256": "bd4b9ae400443a0357ddb3bb449003d83acf966addc6710d02d9f4637eb79e0e"
+    }
+  ],
+  "source_files": [
+    {
+      "path": "foundation_v2/web/src/FxTradeLedger.jsx",
+      "sha256": "6aabeb9bb1f8ab7b7667731555827fe44f140690d04c2451430414c42d81a0b3"
+    },
+    {
+      "path": "foundation_v2/web/src/FxAnalytics.jsx",
+      "sha256": "6a931c9f92264519e02ff11446ae6439efb9b41a8f525f8c392a3a4e2ceb3b26"
+    },
+    {
+      "path": "foundation_v2/web/src/SessionReports.jsx",
+      "sha256": "53b2dc353ac52bb9899e1aab5252c4d25203d6f195ab5a49f8e3a1b96e512062"
+    },
+    {
+      "path": "foundation_v2/web/src/LedgerFilterDrawer.jsx",
+      "sha256": "95fa9b96d353190a145210d5105a039c43df58634cf78f805e1212afeacfca4e"
+    },
+    {
+      "path": "foundation_v2/web/src/PaginationFooter.jsx",
+      "sha256": "ad4176df8b5cf3d9ee9df5cff57683b78971fac9866a98e4d7045a0e5af5c32d"
+    },
+    {
+      "path": "foundation_v2/web/src/tradingAnalyticsModel.js",
+      "sha256": "98d64098b36f61e824a3adb81dbd8a302a2c5499b2e85241c2a39816229b0ef8"
+    },
+    {
+      "path": "foundation_v2/api-rust/src/analytics/trades.rs",
+      "sha256": "dda863bb6ab5f32bfcac1e02fb891d0497447d6fc76e65e1571bf6158ce0884a"
+    },
+    {
+      "path": "foundation_v2/api-rust/src/analytics/activity.rs",
+      "sha256": "20c95d375ae8e0d83914323f35a09760f096955c62a10fe6eb09ec4b75e0ade6"
+    },
+    {
+      "path": "foundation_v2/api-rust/src/analytics/open_trades.rs",
+      "sha256": "b0e4f84f79aeec1b15bd0f312f06943539faf5f48df6920dcffa93e483dbe095"
+    },
+    {
+      "path": "foundation_v2/api-rust/src/analytics.rs",
+      "sha256": "ed9296b18894a6adee0dcd949305def02f7188cfe1f13df448539ecb5c145389"
+    }
+  ]
+}
