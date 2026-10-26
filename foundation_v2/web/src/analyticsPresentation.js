@@ -72,7 +72,9 @@ export function bucketCurve(curve, rows, interval, timezone = 'UTC') {
     const ms = numeric ? Number(instant) * (Number(instant) < 1e11 ? 1000 : 1) : Date.parse(instant)
     if (!Number.isFinite(ms)) return { points: [], labels: [] }
     const key = interval === 'day' ? formatter.format(new Date(ms)) : Math.floor(ms / (interval === 'hour' ? 3600000 : 900000))
-    groups.set(key, { ...point, instant })
+    const previous = groups.get(key)
+    groups.set(key, { end: { ...point, instant }, gap: previous?.gap || (!known(point.value) ? { ...point, instant } : null) })
   }
-  return { points: curve.length ? [curve[0], ...groups.values()] : [], labels: ['', ...[...groups.values()].map(point => point.instant)] }
+  const endpoints = [...groups.values()].flatMap(({ end, gap }) => gap && known(end.value) ? [gap, end] : [end])
+  return { points: curve.length ? [curve[0], ...endpoints] : [], labels: ['', ...endpoints.map(point => point.instant)] }
 }

@@ -1,5 +1,10 @@
 # Testing Analytics — đối chiếu theo từng cụm
 
+**Bổ sung cùng ngày:** owner đã mở rộng scope sang toàn bộ Sessions/Prop, Live và
+chart backtest. Xem [audit mở rộng](analytics-live-charting-audit.md) cho trạng thái
+hiện tại. Các dòng “chưa audit trong lượt này” và giới hạn calendar-only dưới đây
+ghi lại checkpoint ban đầu, không còn là phạm vi hiện hành.
+
 Owner giao ngày26/10/2026: research từng phần vì có nhiều biểu đồ, công thức và
 trạng thái. Calendar làm bên Analytics trước, rồi áp dụng phần phù hợp cho **riêng
 khu vực calendar của Live**. Không lấy việc dùng chung lịch làm lý do sửa toàn bộ

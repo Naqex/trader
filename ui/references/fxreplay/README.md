@@ -9,7 +9,9 @@ học theo, điều chỉnh hoặc lược bỏ.
 | Testing → Dashboard | [Đối chiếu ngày 26/10/2026](testing-dashboard.md), [audit 3 biểu đồ](testing-dashboard-charts.md) | UI, response của FX, tooltip, đối chiếu số học và source WMREPLAY |
 | Testing → Sessions | [Đối chiếu ngày 26/10/2026](testing-sessions.md) | Selector, settings, sáu chỉ số và ba chart; kiểm số học mẫu, khác biệt định nghĩa và đề xuất cụ thể |
 | Testing → Trades | [Đối chiếu ngày 26/10/2026](testing-trades.md) | Bảng, net/gross/fees, Return %, R, open/closed, filters/sort/phân trang; khác biệt scope bộ lọc và đồng hồ ngày |
-| Testing → Analytics | [Phạm vi theo cụm](testing-analytics.md), [calendar](testing-analytics-calendar.md) | Research calendar đầu tiên; xác minh thành phần FX dùng chung với Live, source/số học local; Testing FX bị khóa theo gói, chưa audit toàn trang |
+| Testing → Analytics | [Phạm vi theo cụm](testing-analytics.md), [calendar](testing-analytics-calendar.md), [audit mở rộng](analytics-live-charting-audit.md) | Sessions Performance/Drawdown/Simulation và Prop demo; định nghĩa/số học/source local, giới hạn demo và tính năng bị khóa |
+| Live | [Audit Live](analytics-live-charting-audit.md#các-trang-live) | Calendar, Trades/draft, Notes, Tags, Analytics, Accounts/Transactions; phạm vi FX rỗng, semantics custom local |
+| Backtest charting | [Audit chart](analytics-live-charting-audit.md#chart-backtest) | Header/replay/order draft/settings/shortcuts, oracle risk sizing; không đặt lệnh/chạy replay, Prop/Live FX chưa truy cập |
 
 Quy trình dùng lại cho các page sau: [verification-workflow.md](verification-workflow.md).
 Bao gồm phạm vi, cách đọc UI/response, kiểm số học, mẫu ghi kết quả, điểm dừng

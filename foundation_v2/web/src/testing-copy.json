@@ -1,4 +1,5 @@
 {
+  "{known}/{total} giao dịch có thời gian để phân bổ. Số giao dịch và tần suất vẫn tính lệnh thiếu lãi/lỗ; chỉ số tài chính của nhóm đó hiển thị N/A. Lệnh thiếu thời gian không được phân bổ; tổng tháng/năm hiển thị N/A khi chưa đủ dữ liệu.": {"vi":"{known}/{total} giao dịch có thời gian để phân bổ. Số giao dịch và tần suất vẫn tính lệnh thiếu lãi/lỗ; chỉ số tài chính của nhóm đó hiển thị N/A. Lệnh thiếu thời gian không được phân bổ; tổng tháng/năm hiển thị N/A khi chưa đủ dữ liệu.","en":"{known}/{total} trades have timestamps for period grouping. Counts and frequency include trades with missing P/L; financial metrics for those groups show N/A. Undated trades are not allocated; monthly/yearly totals show N/A when data is incomplete."},
   "Chế độ xem lịch": {"vi": "Chế độ xem lịch", "en": "Calendar view"},
   "Tổng năm": {"vi": "Tổng năm", "en": "Year summary"},
   "{known}/{total} lệnh có R": {"vi": "{known}/{total} lệnh có R", "en": "{known}/{total} trades with R"},

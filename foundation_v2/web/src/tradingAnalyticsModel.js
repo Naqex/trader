@@ -325,7 +325,7 @@ export function advancedAnalytics(model, filters = {}, options = {}) {
     }
   }
   if (!localFiltered) { curve = model.curve; drawdown = model.drawdown; balance = model.endingBalance }
-  const dd = drawdown.map(point => number(point.drawdown)).filter(value => value !== null)
+  const dd = drawdown.every(point => known(point.drawdown)) ? drawdown.map(point => Number(point.drawdown)) : []
   const positiveDD = dd.filter(value => value > 1e-12)
   let episodes = 0, current = 0, longest = 0, recoverySum = 0, recovered = 0
   for (const value of dd) {
@@ -335,7 +335,7 @@ export function advancedAnalytics(model, filters = {}, options = {}) {
   const timeParts = new Map(rows.map(row => [row, calendarParts(row.analytics_time_utc, filters.timezone)]))
   const parts = row => timeParts.get(row)
   // Unknown observation times still count financially, but cannot enter a date bucket.
-  const datedRows = rows.filter(row => parts(row) && known(row.net_pnl))
+  const datedRows = rows.filter(row => parts(row))
   const datesComplete = rows.length > 0 && datedRows.length === rows.length
   const hasDates = datedRows.length > 0
   const capitalBases = analyticsCapitalBases(model)
@@ -369,10 +369,10 @@ export function advancedAnalytics(model, filters = {}, options = {}) {
   const frequencies = frequencySeries(days, new Map(group(days, row => parts(row).key).map(item => [item.label, item.count])))
   const recovery = drawdownRecovery(drawdown, rows)
   return { ...summary, rows, curve, drawdown, endingBalance: balance, localFiltered, maxDrawdown: dd.length ? Math.max(...dd) : null,
-    maxDrawdownPct: drawdown.some(point => known(point.drawdownPct)) ? Math.max(...drawdown.map(point => number(point.drawdownPct) ?? 0)) : null,
+    maxDrawdownPct: drawdown.length && drawdown.every(point => known(point.drawdownPct)) ? Math.max(...drawdown.map(point => Number(point.drawdownPct))) : null,
     averageDrawdown: positiveDD.length ? positiveDD.reduce((sum, value) => sum + value, 0) / positiveDD.length : dd.length ? 0 : null,
     episodes: dd.length ? episodes : null, recoveryTrades: recovered ? recoverySum / recovered : null, unrecovered: current, longest,
-    side, unknownSide, hours, weekdays, months: monthGroups, calendar, sessions, frequency: frequencyGroups, datesComplete, incomplete: datedRows.length !== rows.length,
+    side, unknownSide, hours, weekdays, months: monthGroups, calendar, sessions, frequency: frequencyGroups, datesComplete, incomplete: datedRows.length !== rows.length || !summary.complete,
     frequencySeries: frequencies, capitalBases, datedCount: datedRows.length, calendarUndatedCount: rows.length - calendarRows.length, ...recovery,
     equityDrawdown: accountEquityDrawdown(model.result?.equity_curve, { filtered: equityFiltered || model.result?.scope?.active_filters === true }),
     riskReward: { average: summary.averageR, max: summary.maxR, knownCount: summary.rCount, totalCount: rows.length,

@@ -50,12 +50,19 @@ export function buildAnalyticsModel(result, reportKind = 'app', timezone = getTi
   const providedExpectancy = firstKnown(metrics.expectancy, metrics.expectancy_account, metrics.expectancy_net_per_trade)
   const expectancy = providedExpectancy ?? (finite(netPnl) && finite(tradeCount) && Number(tradeCount) > 0 ? Number(netPnl) / Number(tradeCount) : null)
   const rawCurve = Array.isArray(metrics.closed_trade_balance_curve) ? metrics.closed_trade_balance_curve : Array.isArray(metrics.equity_curve) ? metrics.equity_curve : []
-  const curve = rawCurve.map((point, index) => ({ index, value: finite(point?.closed_trade_balance ?? point?.balance ?? point?.value ?? point) ? Number(point?.closed_trade_balance ?? point?.balance ?? point?.value ?? point) : null, tradeId: point?.trade_id || null })).filter((point) => point.value !== null)
+  const curve = rawCurve.map((point, index) => ({ index, value: finite(point?.closed_trade_balance ?? point?.balance ?? point?.value ?? point) ? Number(point?.closed_trade_balance ?? point?.balance ?? point?.value ?? point) : null, tradeId: point?.trade_id || null }))
   const rawDrawdown = Array.isArray(metrics.closed_trade_balance_drawdown_curve) ? metrics.closed_trade_balance_drawdown_curve : []
-  let peak = null
-  const drawdown = rawDrawdown.length ? rawDrawdown.map((point, index) => ({ index: Number.isSafeInteger(point?.sequence) ? point.sequence : index, tradeId: point?.trade_id || null, drawdown: finite(point?.drawdown) ? Number(point.drawdown) : null, drawdownPct: finite(point?.drawdown_pct) ? Number(point.drawdown_pct) : null })) : curve.map((point, index) => { peak = peak === null ? point.value : Math.max(peak, point.value); const value = Math.max(0, peak - point.value); return { index, tradeId: point.tradeId, drawdown: value, drawdownPct: peak ? (value / peak) * 100 : null } })
+  let peak = null, peakUnknown = false
+  const drawdown = rawDrawdown.length ? rawDrawdown.map((point, index) => ({ index: Number.isSafeInteger(point?.sequence) ? point.sequence : index, tradeId: point?.trade_id || null, drawdown: finite(point?.drawdown) ? Number(point.drawdown) : null, drawdownPct: finite(point?.drawdown_pct) ? Number(point.drawdown_pct) : null })) : curve.map((point, index) => {
+    // A later balance cannot establish the peak hidden inside a missing interval.
+    if (!finite(point.value)) peakUnknown = true
+    if (peakUnknown) return { index, tradeId: point.tradeId, drawdown: null, drawdownPct: null }
+    peak = peak === null ? point.value : Math.max(peak, point.value)
+    const value = Math.max(0, peak - point.value)
+    return { index, tradeId: point.tradeId, drawdown: value, drawdownPct: peak ? (value / peak) * 100 : null }
+  })
   const knownDrawdown = drawdown.map((point) => point.drawdown).filter(Number.isFinite)
-  const maxDrawdown = firstKnown(metrics.closed_trade_balance_max_drawdown, metrics.max_drawdown, metrics.max_dd) ?? (knownDrawdown.length ? Math.max(...knownDrawdown) : null)
+  const maxDrawdown = firstKnown(metrics.closed_trade_balance_max_drawdown, metrics.max_drawdown, metrics.max_dd) ?? (knownDrawdown.length && knownDrawdown.length === drawdown.length ? Math.max(...knownDrawdown) : null)
   const observedRange = result?.observed_range || result?.range || {}
   const observedStart = observedRange.start_utc || observedRange.start || observedRange.from_utc || observedRange.from
   const observedEnd = observedRange.end_utc || observedRange.end || observedRange.to_utc || observedRange.to

@@ -111,3 +111,22 @@ Raw evidence path + hashes:
 ```
 
 Lượt mẫu: [Dashboard charts](testing-dashboard-charts.md).
+## Bổ sung sau audit Analytics/Live/charting 26/10/2026
+
+- Lưu UI đang mở trước; không refresh document demo. Dữ liệu demo có thể tự mâu
+  thuẫn giữa headline và chart. Ghi phép tính/định nghĩa, không dùng số demo làm oracle.
+- Với browser QA local, scope selector vào đúng chart/card. `Day` có thể là cả
+  filter toolbar và interval chart; assertion số lượng path không chứng minh đã đổi
+  interval. Xác minh control được chọn và chụp ảnh không có dropdown che nội dung.
+- Theme phải kiểm thuộc tính `data-theme` trên shell. Query `theme=light` không đổi
+  theme của app; dùng toggle UI và kiểm lại trước chụp. Tên file không là bằng chứng.
+- Kiểm riêng time coverage và PnL coverage: dated unknown-PnL vẫn là một trade;
+  không suy ra 0 hoặc nối curve qua null. Kiểm gap nội bộ trong cùng time bucket.
+- Gộp manual/broker: thử cùng fixture trước lọc, sau chọn tag, clear, đổi account;
+  control đang selected không được thành no-op vì flag cấp aggregate.
+- Charting: draft sizing kiểm riêng Initial/Current, SL distance, step rounding và
+  instrument contract/currency. Quan sát ticket không chứng minh fill/slippage hay
+  broker permission. Cancel mọi draft/settings chưa được yêu cầu lưu.
+- Giữ cả attempt QA thất bại; ghi nguyên nhân và attempt thay thế được chấp nhận.
+  Source/model, fixture browser, actual GET runtime, broker acceptance là bốn mức
+  bằng chứng riêng. Raw ở E, sanitized reference và receipt trong repo.
