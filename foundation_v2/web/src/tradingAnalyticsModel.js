@@ -118,12 +118,22 @@ export function filterAnalyticsRows(rows, filters = {}, classifyOutcome = outcom
   })
 }
 
-function stats(rows, classifyOutcome = outcomeOf) {
+function stats(rows, classifyOutcome = outcomeOf, startingBalance = null) {
   const complete = rows.every(row => known(row.net_pnl))
   const pnl = complete ? rows.map(row => Number(row.net_pnl)) : []
   const wins = pnl.filter(value => classifyOutcome(value) === 'win'), losses = pnl.filter(value => classifyOutcome(value) === 'loss')
   const total = values => values.reduce((sum, value) => sum + value, 0)
   const average = values => values.length ? total(values) / values.length : null
+  // Match ledger returns: each source session owns its initial capital.
+  const returns = kind => {
+    const group = rows.filter(row => classifyOutcome(row.net_pnl) === kind)
+    const values = group.map(row => {
+      const capital = number(row.starting_balance ?? startingBalance)
+      return capital > 0 && known(row.net_pnl) ? number(Number(row.net_pnl) / capital * 100) : null
+    })
+    return complete && values.length && values.every(known) ? values : null
+  }
+  const winReturns = returns('win'), lossReturns = returns('loss')
   let winStreak = 0, lossStreak = 0, maxWinStreak = 0, maxLossStreak = 0
   const winRuns = [], lossRuns = []
   for (const value of pnl) {
@@ -147,6 +157,8 @@ function stats(rows, classifyOutcome = outcomeOf) {
     breakeven: complete ? pnl.length - wins.length - losses.length : null, winRate: complete && pnl.length ? wins.length / pnl.length * 100 : null,
     expectancy: average(pnl), profitFactor: losses.length ? total(wins) / Math.abs(total(losses)) : null,
     averageWin: average(wins), averageLoss: average(losses), bestWin: wins.length ? Math.max(...wins) : null, worstLoss: losses.length ? Math.min(...losses) : null,
+    averageWinPct: winReturns ? average(winReturns) : null, averageLossPct: lossReturns ? average(lossReturns) : null,
+    bestWinPct: winReturns ? Math.max(...winReturns) : null, worstLossPct: lossReturns ? Math.min(...lossReturns) : null,
     maxWinStreak: complete ? maxWinStreak : null, maxLossStreak: complete ? maxLossStreak : null, winDuration: durationAverage('win'), lossDuration: durationAverage('loss'),
     averageWinStreak: complete ? average(winRuns) : null, averageLossStreak: complete ? average(lossRuns) : null,
     averageR: average(r), maxR: r.length ? Math.max(...r) : null, rCount: r.length,
@@ -261,7 +273,7 @@ export function advancedAnalytics(model, filters = {}, options = {}) {
   const timeBasis = model.result?.scope?.time_basis === 'market' ? 'market' : 'activity'
   const timedRows = model.ledger.map(row => ({ ...row, analytics_time_utc: timeBasis === 'market' ? row.close_time_utc ?? null : row.report_time_utc ?? null }))
   const rows = filterAnalyticsRows(timedRows, filters, classifyOutcome).map(row => ({ ...row, outcome: classifyOutcome(row.net_pnl) }))
-  const summary = stats(rows, classifyOutcome)
+  const summary = stats(rows, classifyOutcome, model.result?.multi_session ? null : model.startBalance)
   const localFiltered = Object.keys(DEFAULT_EXTRA_FILTERS).filter(key => key !== 'timezone').some(key => (filters[key] ?? DEFAULT_EXTRA_FILTERS[key]) !== DEFAULT_EXTRA_FILTERS[key])
   // Selecting the current report kind is source context, not an account filter.
   // Other filters can hide open exposure even when every closed row survives.

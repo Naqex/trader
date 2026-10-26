@@ -150,7 +150,7 @@
 .fxa-fill-blue{fill:var(--report-blue)}
 .fxa-chart-empty{min-height:150px;display:grid;place-content:center;color:var(--wm-content-muted);font-size:13px;text-align:center}
 .fxa-chart-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;color:var(--wm-content-muted);font-size:12px}
-.fxa-segmented{display:inline-flex;align-items:center;gap:2px;padding:3px;border-radius:7px;background:var(--wm-surface);max-width:100%;flex-wrap:wrap}
+.fxa-segmented{border:1px solid var(--wm-border);display:inline-flex;align-items:center;gap:2px;padding:3px;border-radius:7px;background:var(--wm-surface);max-width:100%;flex-wrap:wrap}
 .fxa-segmented button{font:inherit;font-size:12px;white-space:nowrap;border:0;background:transparent;color:var(--wm-content-muted);min-height:30px;padding:5px 10px;border-radius:5px;cursor:pointer}
 .fxa-segmented button[aria-pressed=true]{background:var(--fx-shell-nav-selected);color:var(--fx-shell-nav-selected-content)}
 .fxa-segmented button:hover{color:var(--wm-content);background:var(--fx-shell-nav-hover)}
@@ -254,8 +254,9 @@
 .fxa-visual-report>.fxa-expectancy-panel,.fxa-visual-report>.fxa-side-panel,.fxa-visual-report>.fxa-frequency-panel,.fxa-visual-report>.fxa-winning-mae-panel{grid-column:span 4}
 .fxa-visual-report>.fxa-outcome-panel,.fxa-visual-report>.fxa-hours-panel,.fxa-visual-report>.fxa-calendar-panel,.fxa-visual-report>.fxa-mae-panel{grid-column:span 8}
 .fxa-visual-report>.fxa-half-panel,.fxa-visual-report>.fxa-scenario-panel{grid-column:span 6}
-.fxa-expectancy-panel .fxa-two-columns{grid-template-columns:1fr;gap:8px}
-.fxa-expectancy-panel .fxa-two-columns>div{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:8px}
+.fxa-expectancy-panel .fxa-two-columns{grid-template-columns:1fr;gap:16px}
+.fxa-expectancy-panel .fxa-two-columns>div{display:grid;grid-template-columns:1fr;align-items:center;gap:12px}
+.fxa-expectancy-panel .fxa-two-columns>div+div{grid-template-columns:minmax(0,.6fr) minmax(0,1.4fr);padding-top:16px;border-top:1px solid var(--wm-border)}
 .fxa-expectancy-panel .fxa-viz{margin-top:0}
 .fxa-expectancy-panel .fxa-ring{width:90px;height:90px}
 .fxa-expectancy-panel .fxa-ring-layout{flex-wrap:nowrap;gap:8px}
@@ -264,6 +265,15 @@
 .fxa-outcomes dl{margin:0}
 .fxa-outcomes dl div{padding:6px 0;gap:12px}
 .fxa-outcomes dt,.fxa-outcomes dd{font-size:13px;line-height:20px}
+.fxa-outcomes dt{display:flex;align-items:center;gap:6px;min-width:0}
+.fxa-outcomes dd{flex-shrink:0}
+.fxa-expectancy-comparison{min-width:0}
+.fxa-average-bar{display:flex;gap:3px;height:12px;background:var(--wm-surface);border-radius:3px;overflow:hidden}
+.fxa-average-bar i:first-child{background:var(--report-positive)}
+.fxa-average-bar i:last-child{background:var(--report-negative)}
+.fxa-average-labels{display:flex;justify-content:space-between;gap:12px;margin-top:8px;font-size:12px;color:var(--wm-content-muted)}
+.fxa-average-labels span:last-child{text-align:right}
+.fxa-average-labels strong{display:block;color:var(--wm-content);font-weight:500;margin-top:2px;font-variant-numeric:tabular-nums}
 .fxa-ring{width:128px;height:128px}
 .fxa-ring-layout{gap:12px}
 .fxa-side-panel .fxa-two-columns{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
@@ -316,3 +326,4 @@
 @media(max-width:600px){.fxa-profit-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-profit-panel .fxa-profit-metrics .fxa-metric strong{font-size:22px}.fxa-expectancy-panel .fxa-two-columns,.fxa-outcome-panel .fxa-two-columns,.fxa-frequency-panel .fxa-three-columns{grid-template-columns:1fr}.fxa-frequency-panel .fxa-three-columns>div{grid-template-columns:80px minmax(0,1fr)}.fxa-side-panel .fxa-two-columns{gap:8px}.fxa-side-panel .fxa-ring{width:96px;height:96px}.fxa-hours-panel .fxa-radar-grid{grid-template-columns:1fr}.fxa-panel-actions{gap:6px}.fxa-scenario-panel .fxa-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-prop-objectives>.fxa-metrics{grid-template-columns:1fr}.fxa-prop-objectives .fxa-metric strong{font-size:20px}}
 
 @media(max-width:360px){.fxa-profit-metrics{grid-template-columns:1fr}}
+@media(max-width:600px){.fxa-expectancy-panel .fxa-two-columns>div+div{grid-template-columns:1fr}.fxa-expectancy-panel .fxa-chart-legend{flex:1}.fxa-expectancy-panel .fxa-chart-legend span{white-space:nowrap}}

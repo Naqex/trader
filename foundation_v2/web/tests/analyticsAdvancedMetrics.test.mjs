@@ -198,3 +198,48 @@ test('current report kind is neutral for equity while actual kind omission and e
   assert.equal(advancedAnalytics(mixed, { reportKinds: '["app"]' }).equityDrawdown.available, false)
   assert.equal(advancedAnalytics({ ...app, result: { ...app.result, scope: { active_filters: true } } }, { reportKinds: '["app"]' }).equityDrawdown.available, false)
 })
+
+test('outcome percentages use each source capital before averaging and choosing extrema', () => {
+  const input = model([100, 50, -100, -50, 0])
+  input.result = { multi_session: true }
+  input.ledger.forEach((row, i) => { row.starting_balance = [10000, 100, 10000, 100, 1000][i] })
+  const data = advancedAnalytics(input)
+  assert.equal(data.bestWinPct, 50)
+  assert.equal(data.averageWinPct, 25.5)
+  assert.equal(data.worstLossPct, -50)
+  assert.equal(data.averageLossPct, -25.5)
+  assert.equal(data.expectancy, 0)
+  assert.equal(data.profitFactor, 1)
+})
+
+test('outcome percentage never hides missing capital or uses aggregate multi-session capital', () => {
+  const input = model([100, 50, -100])
+  input.result = { multi_session: true }
+  input.ledger[0].starting_balance = 10000
+  input.ledger[2].starting_balance = 10000
+  for (const capital of [null, 0, -100, 'invalid']) {
+    input.ledger[1].starting_balance = capital
+    const data = advancedAnalytics(input)
+    assert.equal(data.averageWinPct, null)
+    assert.equal(data.bestWinPct, null)
+    assert.equal(data.worstLossPct, -1)
+  }
+  input.result.multi_session = false
+  delete input.ledger[1].starting_balance
+  assert.equal(advancedAnalytics(input).bestWinPct, 5)
+  assert.equal(advancedAnalytics(input).averageWinPct, 3)
+})
+
+test('outcome percentages follow breakeven threshold and preserve empty groups', () => {
+  const input = model([10, -2, -100, 0])
+  const data = advancedAnalytics(input, {}, { breakevenThreshold: 5 })
+  assert.equal(data.averageWinPct, 1)
+  assert.equal(data.averageLossPct, -10)
+  assert.equal(data.losses, 1)
+  assert.equal(data.breakeven, 2)
+  assert.equal(data.expectancy, -23)
+  assert.equal(data.profitFactor, .1)
+  const empty = advancedAnalytics(model([]))
+  assert.equal(empty.averageWinPct, null)
+  assert.equal(empty.worstLossPct, null)
+})

@@ -33,7 +33,7 @@ export function AnalyticsCurve({ series, label, suffix = '', onSelect, selected,
   const domain = chartDomain(values, { zero: negative, symmetric: height <= 120 })
   if (!domain && !controls) return <div ref={ref} className="fxa-chart-empty">{t('Chưa có dữ liệu')}</div>
   const ticks = domain ? chartTicks(domain, height <= 120 ? 3 : 6) : [], axis = ticks.map(value => tickText(value, domain, locale, suffix))
-  const left = compact ? 4 : Math.max(42, Math.min(width * .35, Math.max(...axis.map(value => value.length)) * 7 + 18)), right = width - (compact ? 4 : 20), top = compact ? 6 : controls ? 56 : 20, edge = height - (compact ? 6 : 36)
+  const left = compact ? 4 : Math.max(42, Math.min(width * .35, Math.max(...axis.map(value => value.length)) * 7 + 18)), right = width - (compact ? 4 : controls ? 8 : 20), top = compact ? 6 : controls ? 56 : 20, edge = height - (compact ? 6 : 36)
   const count = Math.max(...paths.map(path => path.length)), x = index => left + index / Math.max(1, count - 1) * (right - left)
   const y = value => domain.high === domain.low ? (top + edge) / 2 : edge - (value - domain.low) / (domain.high - domain.low) * (edge - top)
   const labelAt = index => labels[index + start] || (index + start === 0 ? t('Bắt đầu') : `${index + start}`)

@@ -71,6 +71,23 @@ The existing observation-index spacing remains; ticks do not invent daily sample
 RR cards omit duplicate section headings. Each metric owns its info control.
 The opportunity card pairs its count with maximum ideal RR across all eligible
 filtered trades, including winners and losers, as stated in its tooltip.
+Expectancy/profit factor and winner/loser panels omit repeated outer headings,
+retaining accessible region names. Winners and losers each have one count row;
+all six metric rows own their help controls. Best and average win/loss are
+percent returns: net PnL after fees divided by the source session's initial
+capital, multiplied by 100, matching the trade ledger. Compute each trade's
+percentage before taking an extreme or arithmetic mean. A multi-session report
+never substitutes an aggregate capital base. A missing/nonpositive denominator
+in any trade of a group makes that group's percentage summaries N/A; empty
+groups remain N/A. Breakeven classification applies before grouping. Durations
+use market entry/exit timestamps; streaks follow the filtered trade order and
+breakeven breaks a run. Expectancy remains net money per closed trade (including
+breakeven); profit factor remains the ratio of summed winning net PnL to absolute
+summed losing net PnL under the active threshold, with no loss denominator shown
+as N/A. The expectancy comparison bar shows average win/loss amounts, while the
+ring compares total winning/losing amounts. PnL interval controls have a visible
+1px border; its plot reserves only 8px at the right edge in addition to the card
+inset, retaining end-aligned tick labels.
 Definitions belong in accessible info controls, with no permanent explanatory
 paragraphs. Do not render a report-level scope/provenance footer; original fields
 remain available in the selected-trade inspector and exports.

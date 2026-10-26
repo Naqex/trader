@@ -1,6 +1,12 @@
 # Rust-native candidate runtime
 
-Latest UI-only rollout: [26 October Analytics page tabs and RR metric details](../evidence/analytics-card-details-20261026/RECEIPT.md)
+Latest UI-only rollout: [26 October Analytics expectancy and outcome details](../evidence/analytics-outcomes-20261026/RECEIPT.md)
+removes repeated headings/counts, adds VI/EN metric help and source-capital
+percentage summaries, outlines intervals and reduces the PnL right inset.
+Sample mode shares the components. UI5180 was updated without API/terminal
+restart; the receipt records focused math, browser and independent review evidence.
+
+Previous UI-only rollout: [26 October Analytics page tabs and RR metric details](../evidence/analytics-card-details-20261026/RECEIPT.md)
 uses equal-width blue page tabs, removes duplicated RR card headings, places help
 beside each metric and adapts compact PnL date ticks to available width. Trade
 win/loss counts are labeled explicitly. UI5180 was updated without an API restart;

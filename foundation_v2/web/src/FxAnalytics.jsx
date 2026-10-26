@@ -67,12 +67,49 @@ function UnitTabs({ value, onChange, options, label }) {
 function durationLabel(value, t) {
   if (!known(value)) return '-'
   const minutes = Math.round(Number(value))
-  return `${Math.floor(minutes / 60)} ${t('giờ')} ${minutes % 60} ${t('phút')}`
+  return `${Math.floor(minutes / 60)} ${t('duration.hour')} ${minutes % 60} ${t('duration.minute')}`
 }
-function OutcomeStats({ data, currency }) {
+const COUNT_WIN = "Số giao dịch đã đóng có lãi/lỗ ròng cao hơn ngưỡng hòa vốn đang áp dụng."
+const COUNT_LOSS = "Số giao dịch đã đóng có lãi/lỗ ròng thấp hơn ngưỡng hòa vốn âm đang áp dụng."
+const BEST_WIN = "Lãi lớn nhất theo % vốn ban đầu của phiên nguồn, sau phí.\n\nMỗi lệnh: lãi/lỗ ròng ÷ vốn ban đầu × 100. Thiếu vốn hợp lệ ở bất kỳ lệnh thắng nào thì hiển thị N/A."
+const WORST_LOSS = "Lỗ lớn nhất theo % vốn ban đầu của phiên nguồn, sau phí; giữ dấu âm.\n\nMỗi lệnh: lãi/lỗ ròng ÷ vốn ban đầu × 100. Thiếu vốn hợp lệ ở bất kỳ lệnh thua nào thì hiển thị N/A."
+const AVERAGE_WIN = "Trung bình % lãi của các giao dịch thắng, sau phí.\n\nTính % từng lệnh trên vốn ban đầu của phiên nguồn, rồi lấy trung bình cộng. Thiếu vốn hợp lệ ở bất kỳ lệnh nào trong nhóm thì hiển thị N/A."
+const AVERAGE_LOSS = "Trung bình % lỗ của các giao dịch thua, sau phí; giữ dấu âm.\n\nTính % từng lệnh trên vốn ban đầu của phiên nguồn, rồi lấy trung bình cộng. Thiếu vốn hợp lệ ở bất kỳ lệnh nào trong nhóm thì hiển thị N/A."
+const DURATION_WIN = "Thời gian trung bình từ lúc mở đến lúc đóng của các lệnh thắng.\n\nDùng thời gian thị trường; hiển thị N/A nếu có lệnh thiếu hoặc sai thời gian."
+const DURATION_LOSS = "Thời gian trung bình từ lúc mở đến lúc đóng của các lệnh thua.\n\nDùng thời gian thị trường; hiển thị N/A nếu có lệnh thiếu hoặc sai thời gian."
+const STREAK_WIN = "Số lệnh thắng liên tiếp dài nhất theo thứ tự giao dịch trong bộ lọc. Lệnh thua hoặc hòa vốn kết thúc chuỗi."
+const STREAK_LOSS = "Số lệnh thua liên tiếp dài nhất theo thứ tự giao dịch trong bộ lọc. Lệnh thắng hoặc hòa vốn kết thúc chuỗi."
+const AVERAGE_STREAK_WIN = "Trung bình độ dài các chuỗi thắng liên tiếp, mỗi chuỗi được tính một lần; bao gồm chuỗi cuối báo cáo. Lệnh thua hoặc hòa vốn kết thúc chuỗi."
+const AVERAGE_STREAK_LOSS = "Trung bình độ dài các chuỗi thua liên tiếp, mỗi chuỗi được tính một lần; bao gồm chuỗi cuối báo cáo. Lệnh thắng hoặc hòa vốn kết thúc chuỗi."
+function OutcomeStats({ data }) {
+  const { t, fmt, locale } = useTestingLocale()
+  const groups = [
+    ['Winners', 'win', data.wins, data.bestWinPct, data.averageWinPct, data.winDuration, data.maxWinStreak, data.averageWinStreak],
+    ['Losers', 'loss', data.losses, data.worstLossPct, data.averageLossPct, data.lossDuration, data.maxLossStreak, data.averageLossStreak],
+  ]
+  const percent = value => !known(value) ? 'N/A' : value !== 0 && Math.abs(value) < .01 ? `${new Intl.NumberFormat(locale, { maximumSignificantDigits: 2 }).format(value)}%` : fmt(value, '%')
+  return <div className="fxa-two-columns">{groups.map(([label, type, count, best, average, duration, streak, averageStreak]) => {
+    const win = type === 'win'
+    const rows = [
+      [win ? 'Tổng giao dịch thắng' : 'Tổng giao dịch thua', fmt(count, '', 0), win ? COUNT_WIN : COUNT_LOSS],
+      [win ? 'Lãi lớn nhất' : 'Lỗ lớn nhất', percent(best), win ? BEST_WIN : WORST_LOSS],
+      [win ? 'Lãi trung bình' : 'Lỗ trung bình', percent(average), win ? AVERAGE_WIN : AVERAGE_LOSS],
+      ['Thời gian giữ trung bình', known(duration) ? durationLabel(duration, t) : 'N/A', win ? DURATION_WIN : DURATION_LOSS],
+      ['Chuỗi dài nhất', fmt(streak, ` ${t('lệnh')}`, 0), win ? STREAK_WIN : STREAK_LOSS],
+      ['Chuỗi trung bình', known(averageStreak) ? fmt(averageStreak, ` ${t('lệnh')}`) : 'N/A', win ? AVERAGE_STREAK_WIN : AVERAGE_STREAK_LOSS],
+    ]
+    return <article className={`fxa-outcomes is-${type}`} key={type}><h3>{t(label)}</h3><dl>{rows.map(([name, value, help]) => <div key={name}><dt>{t(name)}<Info text={help}/></dt><dd>{value}</dd></div>)}</dl></article>
+  })}</div>
+}
+function ExpectancyComparison({ data, currency }) {
   const { t, fmt } = useTestingLocale()
-  return <div className="fxa-two-columns">{[['Winners','win',data.wins,data.averageWin,data.bestWin,data.winDuration,data.maxWinStreak,data.averageWinStreak],['Losers','loss',data.losses,data.averageLoss,data.worstLoss,data.lossDuration,data.maxLossStreak,data.averageLossStreak]].map(([label,type,count,average,best,duration,streak,averageStreak]) => <article className={`fxa-outcomes is-${type}`} key={type}><h3>{t(label)}<span>{fmt(count,'',0)}</span></h3><dl>{[[t('Tổng giao dịch'),fmt(count,'',0)],[t(type === 'win' ? 'Lãi lớn nhất' : 'Lỗ lớn nhất'),fmt(best,` ${currency}`)],[t(type==='win'?'Lãi trung bình':'Lỗ trung bình'),fmt(average,` ${currency}`)],[t('Thời gian giữ trung bình'),durationLabel(duration,t)],[t('Chuỗi dài nhất'),fmt(streak,` ${t('lệnh')}`,0)],[t('Chuỗi trung bình'),fmt(averageStreak,` ${t('lệnh')}`)]].map(([label,value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl></article>)}</div>
+  const total = Math.abs(data.averageWin ?? 0) + Math.abs(data.averageLoss ?? 0)
+  return <div className="fxa-expectancy-comparison" role="img" aria-label={`${t('Lãi/lỗ trung bình')}: ${fmt(data.averageWin, ` ${currency}`)} / ${fmt(data.averageLoss, ` ${currency}`)}`}>
+    <div className="fxa-average-bar" aria-hidden="true">{total > 0 && <><i style={{ flex: Math.abs(data.averageWin ?? 0) }}/><i style={{ flex: Math.abs(data.averageLoss ?? 0) }}/></>}</div>
+    <div className="fxa-average-labels"><span>{t('Lãi trung bình')}<strong>{fmt(data.averageWin, ` ${currency}`)}</strong></span><span>{t('Lỗ trung bình')}<strong>{fmt(data.averageLoss, ` ${currency}`)}</strong></span></div>
+  </div>
 }
+
 function MonthMatrix({ items, currency, startBalance }) {
   const { t, fmt } = useTestingLocale(), [basis,setBasis] = useState('money')
   const years = [...new Set(items.map(item => item.label.slice(0,4)))].sort()
@@ -107,7 +144,7 @@ export function AnalyticsPerformance({ model, data, extra, onSelect, selected, t
   const totalPercent=number(model.startBalance)>0&&known(data.net)?data.net/Number(model.startBalance)*100:null
   const performanceControls=<FxSelect label="Chỉ số hiệu suất" value={metric} onChange={setMetric} options={[{value:'net',label:`Lợi nhuận (${currency})`},{value:'averageR',label:'R trung bình'},{value:'winRate',label:'Tỉ lệ thắng'},{value:'count',label:'Số giao dịch'}]}/>
   return <div className="fxa-report fxa-visual-report" data-testid="analytics-performance">
-    <ReportSection title="Profit and loss" subtitle="Theo thời gian" className="fxa-profit-panel" actions={<UnitTabs label="Độ chi tiết biểu đồ" value={interval} onChange={setInterval} options={[["all",'Tất cả'],['day','Ngày'],['hour','1 giờ'],['quarter','15 phút']]}/>}>
+    <ReportSection title="Profit and loss" className="fxa-profit-panel" actions={<UnitTabs label="Độ chi tiết biểu đồ" value={interval} onChange={setInterval} options={[["all",'Tất cả'],['day','Ngày'],['hour','1 giờ'],['quarter','15 phút']]}/>}>
       <div className="fxa-metrics fxa-profit-metrics">
         <Stat label="Total PnL" value={<>{fmt(data.net,` ${currency}`)}<PercentChange value={totalPercent}/></>} help="Lãi/lỗ cho biết số tiền bạn kiếm được hoặc mất đi. Giá trị hiện tại là lãi/lỗ ròng sau phí trong bộ lọc."/>
         <Stat label="Số dư tài khoản" value={<>{fmt(data.endingBalance,` ${currency}`)}<PercentChange value={totalPercent}/></>} help={data.localFiltered||model.result?.scope?.active_filters?'Số dư dựng lại từ vốn ban đầu và các giao dịch đã lọc.':'Số dư tài khoản sau các giao dịch đã đóng trong phạm vi đang chọn; không bao gồm lãi/lỗ thả nổi.'}/>
@@ -123,8 +160,8 @@ export function AnalyticsPerformance({ model, data, extra, onSelect, selected, t
       <ReportSection label="RR lý tưởng"><div className="fxa-metrics"><Stat label="RR lý tưởng trung bình" value={known(ideal.average)?fmt(ideal.average):'N/A'} help={idealHelp}/><Stat label="RR lý tưởng lớn nhất" value={known(ideal.max)?fmt(ideal.max):'N/A'} help={maxIdealHelp}/></div><AnalyticsCurve series={[ideal.series]} labels={ideal.series.map((_,index)=>`#${index+1}`)} label={t('RR lý tưởng')} suffix=" R" height={48} sparkline/></ReportSection>
       <ReportSection label="Có thể có lãi / hòa vốn"><div className="fxa-metrics"><Stat label="Có thể có lãi / hòa vốn" value={known(ideal.recoveryCount)?fmt(ideal.recoveryCount,'',0):'N/A'} help="Số giao dịch thua từng có cơ hội đóng với lãi/lỗ ròng không âm trong cửa sổ một tuần đã có đủ dữ liệu.&#10;&#10;Đã tính phí; giá quan sát không bảo đảm khớp lệnh thực tế."/><Stat label="RR lý tưởng lớn nhất" value={known(ideal.max)?fmt(ideal.max):'N/A'} help={maxIdealHelp}/></div></ReportSection>
     </div>
-    <ReportSection className="fxa-expectancy-panel" title="Expectancy & Profit factor"><div className="fxa-two-columns"><div><Stat label="Expectancy" value={fmt(data.expectancy,` ${currency} / ${t('lệnh')}`)} help="Tổng lãi/lỗ ròng chia số giao dịch đã đóng."/><AnalyticsBars items={[{label:t('Thắng'),net:data.averageWin},{label:t('Thua'),net:data.averageLoss}]} label={t('Lãi/lỗ trung bình')} suffix={` ${currency}`} height={120}/></div><div><Stat label="Profit factor" value={known(data.profitFactor)?fmt(data.profitFactor):'N/A'} help="Tổng lãi chia độ lớn tổng lỗ, tính sau phí. Không có tổng lỗ thì chưa có mẫu số."/><AnalyticsRing label={t('Profit factor')} center={known(data.profitFactor)?fmt(data.profitFactor):'N/A'} values={[{label:t('Lãi'),value:data.wins===0?0:data.averageWin!==null?data.averageWin*data.wins:null,color:'var(--report-positive)'},{label:t('Lỗ'),value:data.losses===0?0:data.averageLoss!==null?Math.abs(data.averageLoss*data.losses):null,color:'var(--report-negative)'}]}/></div></div></ReportSection>
-    <ReportSection className="fxa-outcome-panel" title="Winners and losers"><OutcomeStats data={data} currency={currency}/></ReportSection>
+    <ReportSection className="fxa-expectancy-panel" label="Expectancy & Profit factor"><div className="fxa-two-columns"><div><Stat label="Expectancy" value={`${fmt(data.expectancy, ` ${currency}`)} / ${t('analytics.perTrade')}`} help={"Kỳ vọng là số tiền lãi/lỗ ròng trung bình mỗi giao dịch đã đóng trong bộ lọc, gồm cả hòa vốn.\n\nCách tính: tổng lãi/lỗ ròng sau phí ÷ tổng số giao dịch. Đây là trung bình của dữ liệu đã có, không bảo đảm kết quả lệnh tiếp theo."}/><ExpectancyComparison data={data} currency={currency}/></div><div><Stat label="Profit factor" value={known(data.profitFactor)?fmt(data.profitFactor):'N/A'} help={"Hệ số lợi nhuận so sánh tổng lãi với độ lớn tổng lỗ sau phí, theo nhóm thắng/thua của ngưỡng hòa vốn đang áp dụng.\n\nVí dụ: 2 nghĩa là tổng lãi gấp 2 lần tổng lỗ. Không có tổng lỗ thì hiển thị N/A; chỉ số không có đơn vị."}/><AnalyticsRing label={t('Profit factor')} center="" values={[{label:t('Lãi'),value:data.wins===0?0:data.averageWin!==null?data.averageWin*data.wins:null,color:'var(--report-positive)'},{label:t('Lỗ'),value:data.losses===0?0:data.averageLoss!==null?Math.abs(data.averageLoss*data.losses):null,color:'var(--report-negative)'}]}/></div></div></ReportSection>
+    <ReportSection className="fxa-outcome-panel" label="Winners and losers"><OutcomeStats data={data}/></ReportSection>
     <ReportSection className="fxa-side-panel" title="Performance by side"><div className="fxa-two-columns"><AnalyticsRing label={t('Số giao dịch theo hướng')} center={fmt(data.count,'',0)} sublabel={t('giao dịch')} values={[...data.side.map((item,index)=>({label:item.label==='BUY'?'Buy':'Sell',value:item.count,color:index?'var(--report-negative)':'var(--report-positive)'})),...(data.unknownSide?[{label:t('Chưa rõ'),value:data.unknownSide,color:'var(--wm-content-muted)'}]:[])]}/><AnalyticsRing label={t('Tỉ lệ thắng theo hướng')} center="" concentric values={data.side.map((item,index)=>({label:item.label==='BUY'?'Buy':'Sell',value:item.winRate,color:index?'var(--report-negative)':'var(--report-positive)'}))}/></div></ReportSection>
     <ReportSection className="fxa-hours-panel" title="Hiệu suất theo khung giờ" help="Phân nhóm theo giờ đóng lệnh trong múi giờ đã chọn. Các khung giờ không đại diện cho phiên thị trường London hay New York."><div className="fxa-radar-grid">{[['winRate','Tỉ lệ thắng','%',100],['count','Số giao dịch',''],['averageR','R trung bình',' R'],['net','Lợi nhuận',` ${currency}`]].map(([key,label,unit,max])=><AnalyticsRadar key={key} items={data.sessions.map(item=>({...item,label:item.label.replace(' UTC','')}))} metric={key} label={label} suffix={unit} maximum={max}/>)}</div></ReportSection>
     <ReportSection className="fxa-half-panel" title="Performance by time" actions={performanceControls}><AnalyticsBars items={data.hours.map(item=>({...item,label:`${item.label}:00`}))} metric={metric} label={t('Performance by time')} suffix={suffix} maximum={metric==='winRate'?100:undefined} integer={metric==='count'}/></ReportSection>
