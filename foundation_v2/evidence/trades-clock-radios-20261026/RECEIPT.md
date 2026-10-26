@@ -47,3 +47,11 @@ snapshot/hashes, logs, `preview-qa/`, `deployed-qa/`, independent `review.json`,
 Current contract: `ui/display-conventions.md`; reference history:
 `ui/references/fxreplay/testing-trades.md` §8. This is scoped Trades UI acceptance,
 not whole-product, broker or FX backend parity acceptance.
+
+## Owner layout follow-up
+
+Centered the legend and radio pair; Vietnamese legend is now **Thời gian áp dụng
+bộ lọc**. CSS/copy only, behavior unchanged. Build and independent visual review
+PASS; focused candidate/deployed checks3/3 PASS at1920 VI,320 VI,320 EN, including
+measured centering and no overflow. Served hash verified; owner tab refreshed.
+Evidence/snapshot/rollback: `E:/BACKUP-TRADINGWORKSPACE/trades-clock-centered-20261026/`.

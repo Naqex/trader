@@ -1,5 +1,5 @@
 {
-  "Thời gian lọc": {"vi":"Thời gian lọc","en":"Filter time basis"},
+  "Thời gian lọc": {"vi":"Thời gian áp dụng bộ lọc","en":"Filter time basis"},
   "Đang tải khoảng ngày…": {"vi":"Đang tải khoảng ngày…","en":"Loading date range…"},
   "Không tải được khoảng ngày.": {"vi":"Không tải được khoảng ngày.","en":"Unable to load date range."},
   "Nguồn hiện tại chưa có ngày Realtime.": {"vi":"Nguồn hiện tại chưa có ngày Realtime.","en":"This source has no Realtime dates."},

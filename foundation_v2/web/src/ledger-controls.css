@@ -14,8 +14,8 @@
 .fxl-filter-drawer input:not([type=checkbox]):not([type=radio]):hover{border-color:var(--wm-border-strong)}
 .fxl-filter-drawer :is(input,button,summary):focus-visible{outline:2px solid var(--wm-focus);outline-offset:-2px}
 .fxl-filter-search{display:block;margin-bottom:16px}
-.fxl-clock-options{border:0;padding:0;margin:0 0 14px;display:flex;gap:24px;min-width:0}
-.fxl-clock-options legend{font-size:13px;margin-bottom:10px}
+.fxl-clock-options{border:0;padding:0;margin:0 0 14px;display:flex;justify-content:center;gap:24px;min-width:0}
+.fxl-clock-options legend{font-size:13px;margin-bottom:10px;width:100%;text-align:center}
 .fxl-clock-options label{display:flex;align-items:center;gap:8px;min-height:32px;font-size:13px;cursor:pointer}
 .fxl-clock-options input{accent-color:var(--wm-action-bg);width:16px;height:16px;margin:0}
 .fxl-filter-drawer details{padding:8px 0}
