@@ -27,6 +27,14 @@ export const DEMO_LEDGER = tradeSlots.map(i => {
     has_notes: i % 3 === 0, net_pnl: net, gross_pnl: net + 3, fees: 3, planned_risk_budget: 100, realized_r: net / 100, account_currency: 'USD', starting_balance: 10000, rating: 1 + i % 5, tags: [i % 2 ? 'reversal' : 'breakout', i % 3 ? 'planned' : 'review'] }
 }).sort((a, b) => a.report_time_utc.localeCompare(b.report_time_utc))
 
+export function demoAnalyticsRisk(rows) {
+  return { preview: true, rows: rows.map(row => {
+    const ordinal = Number(row.tradeId.split('-').at(-1))
+    const value = Math.max(Number(row.realized_r), ordinal % 4 === 0 ? -.2 : .4 + ordinal % 7 * .55)
+    return { trade_id: row.tradeId, ideal: { status: 'complete_week', value_r: value, could_have_profit_or_breakeven: value >= 0 } }
+  }) }
+}
+
 export function demoResult(rows = DEMO_LEDGER, session = DEMO_SESSIONS[0], timeBasis = 'activity') {
   let balance = 10000
   const curve = [{ sequence: 0, closed_trade_balance: balance }]

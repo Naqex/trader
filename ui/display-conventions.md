@@ -46,13 +46,14 @@ SL/RR simulations pair, with Monte Carlo below. Monte Carlo configuration uses a
 left column and its results use the remaining width; they stack up to 850px.
 Per-trade scenario details stay collapsed until requested and scroll within a
 bounded table when opened. Smaller widths collapse groups without scaling down
-data text. R mini curves are 48px sparklines without axis labels; their points
-retain tooltips and keyboard access. Native fullscreen restores axes for these
-curves. Other compact plots retain their axes. Fullscreen preserves controls/state;
-popovers mount inside the
-fullscreen ancestor and trade selection exits fullscreen before opening details.
-The breakeven threshold is an anchored editor beside its metric, focusing the
-number input and returning focus on dismissal. Mobile radars use one column.
+data text. RR mini curves are 48px sparklines without axis labels; their points
+retain tooltips and keyboard access. Other compact plots retain their axes.
+Report panels do not show fullscreen controls. PnL shows only the four interval
+controls in its heading, with no standalone currency or balance/PnL toggle.
+Its six summary groups pair PnL/balance with inline percent changes, win rate,
+trade count with superscript wins/losses, breakeven count and an inline threshold
+input with an Apply action. Definitions use the shared SVG info icon, centered
+in a consistent control box. Mobile radars use one column.
 Definitions belong in accessible info controls, with no permanent explanatory
 paragraphs. Do not render a report-level scope/provenance footer; original fields
 remain available in the selected-trade inspector and exports.
@@ -72,7 +73,12 @@ breakeven threshold is an absolute net amount in account currency; it changes
 classification and streaks without changing money, curves or saved trades.
 RR Simulator win rate excludes breakeven. Undefined denominators show `N/A`.
 Realized R joins verified observations per trade, retaining valid ledger/risk
-samples when experiments cover only part of the set. Show known/total counts.
+samples when experiments cover only part of the set. The three compact RR cards
+omit coverage fractions; unavailable values remain `N/A`. Visible labels use RR,
+while the internal R unit and existing calculation contracts stay unchanged.
+Sample mode uses the same report components, with deterministic synthetic ideal-RR
+and opportunity values scoped to that mode. Add sample sections as they are built;
+do not fabricate ready SL/RR simulation results for unfinished sample sections.
 
 Equity drawdown uses the account equity path including floating P/L, resetting
 peaks at source segment boundaries and preserving unknown gaps. Sampled/partial

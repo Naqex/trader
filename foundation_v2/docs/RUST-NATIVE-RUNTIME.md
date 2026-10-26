@@ -1,6 +1,11 @@
 # Rust-native candidate runtime
 
-Latest UI-only rollout: [26 October Analytics report density](../evidence/analytics-density-20261026/RECEIPT.md)
+Latest UI-only rollout: [26 October PnL and RR reference layout](../evidence/analytics-pnl-reference-20261026/RECEIPT.md)
+aligns the PnL summary and three RR cards with the supplied reference, removes report
+fullscreen controls and extends the same components in sample mode. Formulas retain
+their existing contracts. UI5180 was updated without API or terminal restart.
+
+Previous UI-only rollout: [26 October Analytics report density](../evidence/analytics-density-20261026/RECEIPT.md)
 groups related Performance charts, compacts Drawdown and Simulation, and pairs Prop
 snapshot metrics with objectives. Fixture height comparisons, responsive review,
 read-only real-session checks and one transient experiments503 are recorded there.

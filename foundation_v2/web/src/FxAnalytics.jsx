@@ -2,7 +2,7 @@ import DataTable from './DataTable.jsx'
 import { navigate, navigationSnapshot, subscribeNavigation } from './clientNavigation.js'
 import { TestingTradesEmpty } from './TestingPageState.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useId, useMemo, useState, useSyncExternalStore } from 'react'
 import { advancedAnalytics, known, number } from './tradingAnalyticsModel.js'
 import './fx-analytics.css'
 import { AnalyticsCurve, AnalyticsBars, AnalyticsRing, AnalyticsRadar } from './AnalyticsCharts.jsx'
@@ -13,7 +13,7 @@ import AnalyticsFilterBar from './AnalyticsFilterBar.jsx'
 import LedgerFilterDrawer from './LedgerFilterDrawer.jsx'
 import FxSelect from './FxSelect.jsx'
 import LedgerFilterActions from './LedgerFilterActions.jsx'
-import LegacyPopover from './LegacyPopover.jsx'
+import TestingIcon from './TestingIcon.jsx'
 
 export const fmt = (value, suffix = '', digits = 2) => known(value) ? `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: digits }).format(Number(value))}${suffix}` : '-'
 export function SelectField({ label, value, onChange, options, disabled }) {
@@ -42,23 +42,20 @@ export function Metric({ label, value, note, tone = '' }) {
 }
 function Info({ text }) {
   const { t } = useTestingLocale()
-  return <button type="button" className="fxa-info" aria-label={t(text)} data-tooltip={t(text)} data-tooltip-touch="">i</button>
+  return <button type="button" className="fxa-info" aria-label={t(text)} data-tooltip={t(text)} data-tooltip-touch=""><TestingIcon kind="info" size={14}/></button>
 }
-function ReportSection({ title, help, actions, children, className = '' }) {
-  const { t } = useTestingLocale(), panel = useRef(null), [expanded, setExpanded] = useState(false)
-  useEffect(() => {
-    const update = () => setExpanded(document.fullscreenElement === panel.current)
-    document.addEventListener('fullscreenchange', update)
-    return () => document.removeEventListener('fullscreenchange', update)
-  }, [])
-  return <section ref={panel} className={`fxa-section fxa-panel ${className}`}><div className="fxa-section-heading"><div className="fxa-panel-title"><h2>{t(title)}</h2>{help && <Info text={help}/>}</div><div className="fxa-panel-actions">{actions}{document.fullscreenEnabled && <button type="button" className="fxa-expand" aria-label={`${t(expanded ? 'Thu gọn' : 'Phóng to')}: ${t(title)}`} data-tooltip={t(expanded ? 'Thu gọn' : 'Phóng to')} onClick={() => { const action = expanded ? document.exitFullscreen() : panel.current.requestFullscreen(); action.catch(() => {}) }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{expanded ? <path d="M4 9h5V4m6 0v5h5M4 15h5v5m6 0v-5h5"/> : <path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5"/>}</svg></button>}</div></div>{children}</section>
+function ReportSection({ title, subtitle, help, actions, children, className = '' }) {
+  const { t } = useTestingLocale()
+  return <section className={`fxa-section fxa-panel ${className}`}><div className="fxa-section-heading"><div><div className="fxa-panel-title"><h2>{t(title)}</h2>{help && <Info text={help}/>}</div>{subtitle && <p className="fxa-panel-subtitle">{t(subtitle)}</p>}</div>{actions && <div className="fxa-panel-actions">{actions}</div>}</div>{children}</section>
 }
-function BreakevenStat({ value, threshold, onThreshold }) {
-  const { t, fmt } = useTestingLocale(), [anchor, setAnchor] = useState(null), [draft, setDraft] = useState(String(threshold))
-  const close = () => { setAnchor(null); anchor?.focus({ preventScroll: true }) }
-  return <div className="fxa-metric"><span>{t('Breakeven')}<button type="button" className="fxa-expand" aria-label={t('Ngưỡng hòa vốn')} aria-expanded={Boolean(anchor)} onClick={event => { setDraft(String(threshold)); setAnchor(anchor ? null : event.currentTarget) }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="var(--wm-canvas)"/><circle cx="15" cy="17" r="3" fill="var(--wm-canvas)"/></svg></button></span><strong>{fmt(value,'',0)}</strong>{anchor && <LegacyPopover anchor={anchor} theme={document.documentElement.dataset.theme} label={t('Ngưỡng hòa vốn')} role="dialog" onClose={close} className="fxa-threshold-popover"><form className="fxa-threshold" onSubmit={event => { event.preventDefault(); onThreshold(Number(draft)); close() }}><label>{t('Ngưỡng hòa vốn')}<input aria-label={t('Ngưỡng hòa vốn')} type="number" min="0" step="any" required value={draft} onChange={event => setDraft(event.target.value)}/><Info text="Lệnh có độ lớn lãi/lỗ ròng không vượt ngưỡng được xem là hòa vốn. Đơn vị tiền tài khoản; không thay đổi PnL."/></label><button className="fxa-button" type="submit">{t('Áp dụng')}</button></form></LegacyPopover>}</div>
+function BreakevenThreshold({ threshold, onThreshold }) {
+  const { t } = useTestingLocale(), [draft, setDraft] = useState(String(threshold)), id = useId()
+  return <form className="fxa-threshold" onSubmit={event => { event.preventDefault(); onThreshold(Number(draft)) }}><div className="fxa-threshold-label"><label htmlFor={id}>{t('Ngưỡng hòa vốn')}</label><Info text="Ngưỡng phân loại hòa vốn. Hiện tính theo độ lớn lãi/lỗ ròng trong tiền tài khoản; không thay đổi lợi nhuận hay giao dịch đã lưu."/></div><input id={id} type="number" min="0" step="any" required value={draft} onChange={event => setDraft(event.target.value)}/><button className="fxa-button" type="submit" disabled={Number(draft) === threshold}>{t('Áp dụng')}</button></form>
 }
-
+function PercentChange({ value }) {
+  const { fmt } = useTestingLocale()
+  return known(value) ? <span className={`fxa-percent-change ${value < 0 ? 'is-negative' : 'is-positive'}`}><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d={value < 0 ? 'M8 4v8m-3-3 3 3 3-3' : 'M8 12V4m-3 3 3-3 3 3'} fill="none" stroke="var(--wm-canvas)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>{fmt(value,'%',Math.abs(value)<.01?6:2)}</span> : null
+}
 function Stat({ label, value, help, tone = '', note }) {
   const { t } = useTestingLocale()
   return <div className={`fxa-metric ${tone}`}><span>{t(label)}{help && <Info text={help}/>}</span><strong>{value}</strong>{note && <small>{note}</small>}</div>
@@ -94,20 +91,31 @@ function PerformanceCalendar({ items, timezone, currency }) {
 }
 
 export function AnalyticsPerformance({ model, data, extra, onSelect, selected, threshold, onThreshold, experiments }) {
-  const { t, fmt } = useTestingLocale(), [metric,setMetric] = useState('net'), [basis,setBasis] = useState('profit'), [interval,setInterval] = useState('all')
+  const { t, fmt } = useTestingLocale(), [metric,setMetric] = useState('net'), [interval,setInterval] = useState('all')
   const currency=model.result?.account_currency||t('Đơn vị tài khoản'), suffix=metric==='winRate'?'%':metric==='averageR'?' R':metric==='net'?` ${currency}`:''
-  const actualCurve=basis==='balance'?data.curve:data.curve.map(point=>({...point,value:known(point.value)&&known(model.startBalance)?point.value-Number(model.startBalance):null})), bucket=bucketCurve(actualCurve,data.rows,interval,extra.timezone)
+  const actualCurve=data.curve.map(point=>({...point,value:known(point.value)&&known(model.startBalance)?point.value-Number(model.startBalance):null})), bucket=bucketCurve(actualCurve,data.rows,interval,extra.timezone)
   const curveLabels=bucket.labels.map((value,index)=>value?displayDate(value,{timeStyle:interval==='day'?undefined:'short',timeZone:extra.timezone}):index?`#${index}`:t('Bắt đầu'))
   const riskSeries=realizedRiskSeries(experiments,data.rows),rValues=riskSeries.map(point=>point.value),averageR=rValues.length?rValues.reduce((a,b)=>a+b,0)/rValues.length:null,maxR=rValues.length?Math.max(...rValues):null
   const ideal=idealRiskSummary(experiments,data.rows)
   const totalPercent=number(model.startBalance)>0&&known(data.net)?data.net/Number(model.startBalance)*100:null
   const performanceControls=<FxSelect label="Chỉ số hiệu suất" value={metric} onChange={setMetric} options={[{value:'net',label:`Lợi nhuận (${currency})`},{value:'averageR',label:'R trung bình'},{value:'winRate',label:'Tỉ lệ thắng'},{value:'count',label:'Số giao dịch'}]}/>
   return <div className="fxa-report fxa-visual-report" data-testid="analytics-performance">
-    <ReportSection title="Profit and loss" className="fxa-profit-panel" help={data.localFiltered||model.result?.scope?.active_filters?'Số dư dựng lại từ vốn ban đầu và các giao dịch đã lọc.':'Số dư sau giao dịch đã đóng; không bao gồm lãi/lỗ thả nổi.'} actions={<><UnitTabs label="Giá trị biểu đồ" value={basis} onChange={setBasis} options={[["profit",'Lãi/lỗ'],['balance','Số dư']]}/><UnitTabs label="Độ chi tiết biểu đồ" value={interval} onChange={setInterval} options={[["all",'Tất cả'],['day','Ngày'],['hour','1 giờ'],['quarter','15 phút']]}/><span className="fxa-chart-unit">{currency}</span></>}>
-      <div className="fxa-metrics fxa-profit-metrics"><Stat label="Total PnL" value={fmt(data.net,` ${currency}`)} note={fmt(totalPercent,'%',known(totalPercent)&&Math.abs(totalPercent)<.01?6:2)} tone={data.net<0?'is-negative':'is-positive'} help="Tổng lãi/lỗ ròng sau phí của giao dịch trong bộ lọc."/><Stat label="Closed balance" value={fmt(data.endingBalance,` ${currency}`)}/><Stat label="Win rate" value={fmt(data.winRate,'%')} help="Số lệnh thắng chia tổng lệnh đã đóng, bao gồm hòa vốn."/><Stat label="Total trades" value={fmt(data.count,'',0)} note={`${fmt(data.wins,'',0)} ${t('thắng')} / ${fmt(data.losses,'',0)} ${t('thua')}`}/><BreakevenStat value={data.breakeven} threshold={threshold} onThreshold={onThreshold}/></div>
-      <AnalyticsCurve series={[bucket.points]} label={t(basis==='balance'?'Số dư sau lệnh đóng':'Lãi/lỗ ròng tích lũy')} labels={curveLabels} suffix={` ${currency}`} onSelect={onSelect} selected={selected} height={200} stretch/>
+    <ReportSection title="Profit and loss" subtitle="Theo thời gian" className="fxa-profit-panel" actions={<UnitTabs label="Độ chi tiết biểu đồ" value={interval} onChange={setInterval} options={[["all",'Tất cả'],['day','Ngày'],['hour','1 giờ'],['quarter','15 phút']]}/>}>
+      <div className="fxa-metrics fxa-profit-metrics">
+        <Stat label="Total PnL" value={<>{fmt(data.net,` ${currency}`)}<PercentChange value={totalPercent}/></>} help="Lãi/lỗ cho biết số tiền bạn kiếm được hoặc mất đi. Giá trị hiện tại là lãi/lỗ ròng sau phí trong bộ lọc."/>
+        <Stat label="Số dư tài khoản" value={<>{fmt(data.endingBalance,` ${currency}`)}<PercentChange value={totalPercent}/></>} help={data.localFiltered||model.result?.scope?.active_filters?'Số dư dựng lại từ vốn ban đầu và các giao dịch đã lọc.':'Số dư tài khoản sau các giao dịch đã đóng trong phạm vi đang chọn; không bao gồm lãi/lỗ thả nổi.'}/>
+        <Stat label="Win rate" value={fmt(data.winRate,'%')} help="Tỷ lệ giao dịch kết thúc có lãi trên tổng giao dịch đã đóng."/>
+        <Stat label="Total trades" value={<>{fmt(data.count,'',0)}<sup className="fxa-trade-split" aria-label={`${t('Thắng')}: ${data.wins}; ${t('Thua')}: ${data.losses}`}>{fmt(data.wins,'',0)}/{fmt(data.losses,'',0)}</sup></>} help="Tổng số giao dịch đã đóng. Số nhỏ bên cạnh là số lệnh thắng / thua."/>
+        <Stat label="Giao dịch hòa vốn" value={fmt(data.breakeven,'',0)} help="Tổng số giao dịch hòa vốn theo ngưỡng đang áp dụng."/>
+        <BreakevenThreshold threshold={threshold} onThreshold={onThreshold}/>
+      </div>
+      <AnalyticsCurve series={[bucket.points]} label={t('Lãi/lỗ ròng tích lũy')} labels={curveLabels} suffix={` ${currency}`} onSelect={onSelect} selected={selected} height={200} stretch/>
     </ReportSection>
-    <div className="fxa-three-columns fxa-risk-panels"><ReportSection title="R thực hiện" help="Lãi/lỗ ròng chia rủi ro ban đầu. Chỉ tính lệnh có mức rủi ro được xác minh."><div className="fxa-metrics"><Stat label="R trung bình" value={known(averageR)?fmt(averageR,' R'):'N/A'} note={`${riskSeries.length}/${data.count}`}/><Stat label="R lớn nhất" value={known(maxR)?fmt(maxR,' R'):'N/A'}/></div><AnalyticsCurve series={[riskSeries]} labels={riskSeries.map((_,index)=>`#${index+1}`)} label={t('R thực hiện theo giao dịch')} suffix=" R" height={48} sparkline/></ReportSection><ReportSection title="R lý tưởng" help="Lợi nhuận ròng tối đa có thể đóng trong 7 ngày sau khi vào lệnh, chia rủi ro gốc. Chỉ tính cửa sổ đủ dữ liệu và không vượt cutoff."><div className="fxa-metrics"><Stat label="Trung bình" value={known(ideal.average)?fmt(ideal.average,' R'):'N/A'} note={`${ideal.eligible.length}/${data.count}`}/><Stat label="Lớn nhất" value={known(ideal.max)?fmt(ideal.max,' R'):'N/A'}/></div><AnalyticsCurve series={[ideal.series]} labels={ideal.series.map((_,index)=>`#${index+1}`)} label={t('R lý tưởng')} suffix=" R" height={48} sparkline/></ReportSection><ReportSection title="Có thể có lãi / hòa vốn" help="Trong các lệnh thua có cửa sổ 7 ngày được xác minh, đếm lệnh từng có thể đóng với lãi/lỗ ròng không âm. Đã tính phí; không khẳng định có thể khớp ở mọi tick."><Stat label="Giao dịch" value={known(ideal.recoveryCount)?fmt(ideal.recoveryCount,'',0):'N/A'} note={`${ideal.lossKnownCount}/${data.losses??0}`}/></ReportSection></div>
+    <div className="fxa-three-columns fxa-risk-panels">
+      <ReportSection title="RR trung bình" help="RR trung bình là tỷ lệ lợi nhuận/rủi ro bình quân mỗi giao dịch. Ví dụ RR bằng 2 tương ứng lợi nhuận bằng 2 lần mức rủi ro. Hiện dùng lãi/lỗ ròng chia rủi ro ban đầu của các lệnh có dữ liệu."><div className="fxa-metrics"><Stat label="RR trung bình" value={known(averageR)?fmt(averageR):'N/A'}/><Stat label="RR lớn nhất" value={known(maxR)?fmt(maxR):'N/A'}/></div><AnalyticsCurve series={[riskSeries]} labels={riskSeries.map((_,index)=>`#${index+1}`)} label={t('RR thực hiện theo giao dịch')} suffix=" R" height={48} sparkline/></ReportSection>
+      <ReportSection title="RR lý tưởng trung bình" help="RR lý tưởng là tỷ lệ lợi nhuận/rủi ro tối đa có thể đạt nếu giữ lệnh tới một tuần sau khi mở. Giá trị trung bình dùng các cửa sổ đủ dữ liệu trong phạm vi báo cáo; đỉnh trên biểu đồ giúp nhìn lại cơ hội có thể đã chốt quá sớm."><div className="fxa-metrics"><Stat label="RR lý tưởng trung bình" value={known(ideal.average)?fmt(ideal.average):'N/A'}/><Stat label="RR lý tưởng lớn nhất" value={known(ideal.max)?fmt(ideal.max):'N/A'}/></div><AnalyticsCurve series={[ideal.series]} labels={ideal.series.map((_,index)=>`#${index+1}`)} label={t('RR lý tưởng')} suffix=" R" height={48} sparkline/></ReportSection>
+      <ReportSection title="Có thể có lãi / hòa vốn" help="Số giao dịch thua từng có cơ hội đóng với lãi/lỗ ròng không âm trong cửa sổ một tuần đã có đủ dữ liệu. Đã tính phí; giá quan sát không bảo đảm khớp lệnh thực tế."><Stat label="Số giao dịch" value={known(ideal.recoveryCount)?fmt(ideal.recoveryCount,'',0):'N/A'}/></ReportSection>
+    </div>
     <ReportSection className="fxa-expectancy-panel" title="Expectancy & Profit factor"><div className="fxa-two-columns"><div><Stat label="Expectancy" value={fmt(data.expectancy,` ${currency} / ${t('lệnh')}`)} help="Tổng lãi/lỗ ròng chia số giao dịch đã đóng."/><AnalyticsBars items={[{label:t('Thắng'),net:data.averageWin},{label:t('Thua'),net:data.averageLoss}]} label={t('Lãi/lỗ trung bình')} suffix={` ${currency}`} height={120}/></div><div><Stat label="Profit factor" value={known(data.profitFactor)?fmt(data.profitFactor):'N/A'} help="Tổng lãi chia độ lớn tổng lỗ, tính sau phí. Không có tổng lỗ thì chưa có mẫu số."/><AnalyticsRing label={t('Profit factor')} center={known(data.profitFactor)?fmt(data.profitFactor):'N/A'} values={[{label:t('Lãi'),value:data.wins===0?0:data.averageWin!==null?data.averageWin*data.wins:null,color:'var(--report-positive)'},{label:t('Lỗ'),value:data.losses===0?0:data.averageLoss!==null?Math.abs(data.averageLoss*data.losses):null,color:'var(--report-negative)'}]}/></div></div></ReportSection>
     <ReportSection className="fxa-outcome-panel" title="Winners and losers"><OutcomeStats data={data} currency={currency}/></ReportSection>
     <ReportSection className="fxa-side-panel" title="Performance by side"><div className="fxa-two-columns"><AnalyticsRing label={t('Số giao dịch theo hướng')} center={fmt(data.count,'',0)} sublabel={t('giao dịch')} values={[...data.side.map((item,index)=>({label:item.label==='BUY'?'Buy':'Sell',value:item.count,color:index?'var(--report-negative)':'var(--report-positive)'})),...(data.unknownSide?[{label:t('Chưa rõ'),value:data.unknownSide,color:'var(--wm-content-muted)'}]:[])]}/><AnalyticsRing label={t('Tỉ lệ thắng theo hướng')} center="" concentric values={data.side.map((item,index)=>({label:item.label==='BUY'?'Buy':'Sell',value:item.winRate,color:index?'var(--report-negative)':'var(--report-positive)'}))}/></div></ReportSection>

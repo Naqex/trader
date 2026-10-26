@@ -22,7 +22,7 @@ import { PlaybookList, PlaybookSummary } from './PlaybookWorkspace.jsx'
 import { JournalRow, StoryRail } from './JournalWorkspace.jsx'
 import { DEFAULT_EXTRA_FILTERS, filterAnalyticsRows, tradesCsv } from './tradingAnalyticsModel.js'
 import { buildWorkspaceHref } from './workspaceContext.js'
-import { DEMO_SESSIONS, DEMO_LEDGER, DEMO_LIVE, DEMO_DATASETS, demoSessionItems, demoDashboardAnalytics, demoReplayContext, demoResult, demoOverview, demoFilterRows } from './demoFixtures.js'
+import { DEMO_SESSIONS, DEMO_LEDGER, DEMO_LIVE, DEMO_DATASETS, demoSessionItems, demoDashboardAnalytics, demoReplayContext, demoResult, demoOverview, demoFilterRows, demoAnalyticsRisk } from './demoFixtures.js'
 const DEMO_DATA_LIBRARY = { datasets:DEMO_DATASETS, providers:[] }
 
 function Objectives({ model }) {
@@ -53,6 +53,7 @@ function DemoReports({ workspace, ledgerOnly, prop = false, query, state = 'demo
     const rows = state === 'partial' ? filteredRows.slice(0, Math.ceil(filteredRows.length / 2)) : filteredRows
     return buildAnalyticsModel({ ...demoResult(rows, sessions.find(item => item.record_id === ids) || sessions[0]), scope: { total_trade_count: allRows.length, selected_trade_count: rows.length }, partial: state === 'partial', multi_session: ledgerOnly }, prop ? 'prop' : 'app')
   }, [ids, filters, ledgerOnly, prop, sessions, state])
+  const experiments = useMemo(() => demoAnalyticsRisk(model.ledger), [model])
   const row = model.ledger.find(item => item.tradeId === selected)
   const exportCsv = () => {
     const blob = new Blob([tradesCsv(filterAnalyticsRows(model.ledger, extra), 'USD', { source: 'UI demo' })], { type: 'text/csv;charset=utf-8' })
@@ -69,7 +70,7 @@ function DemoReports({ workspace, ledgerOnly, prop = false, query, state = 'demo
     <h1 className="sr-only">{ledgerOnly ? t("Trades") : t("Analytics")}</h1>
     {ledgerOnly ? <FxTradeLedger preferenceWorkspace={workspace} hidden={state === 'error'} model={model} extra={extra} selected={selected} onSelect={setSelected} renderFilters={renderFilters} readNotice={readNotice} /> : <>{renderFilters()}{readNotice}</>}
     {prop && state !== 'error' && <Objectives model={model} />}
-    {!ledgerOnly && state !== 'error' && <FxAnalyticsReport model={model} extra={extra} experimentStatus="unavailable" config={config} onConfig={setConfig} selected={selected} onSelect={setSelected} />}
+    {!ledgerOnly && state !== 'error' && <FxAnalyticsReport model={model} extra={extra} experiments={experiments} experimentStatus="unavailable" config={config} onConfig={setConfig} selected={selected} onSelect={setSelected} />}
     {row && <Inspector onClose={() => setSelected('')} className="fxa-trade-inspector" aria-label={t("Chi tiết giao dịch")}><div className="fxa-section-heading"><h2>{row.session_name} · {row.symbol}</h2><button className="fxa-button" type="button" onClick={() => setSelected('')}>{t("Đóng chi tiết")}</button></div><div className="fxa-metrics"><Metric label={t("Net PnL")} value={fmt(row.net_pnl, t(" USD"))} /><Metric label={t("Return (R)")} value={fmt(row.realized_r, t(" R"))} /><Metric label={t("Entry")} value={fmt(row.price_open, '', 6)} /><Metric label={t("Exit")} value={fmt(row.price_close, '', 6)} /></div></Inspector>}
   </section>
 }
