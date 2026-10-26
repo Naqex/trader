@@ -1,6 +1,12 @@
 # Rust-native candidate runtime
 
-Latest UI-only rollout: [26 October Analytics side layout](../evidence/analytics-side-layout-20261026/RECEIPT.md)
+Latest UI-only rollout: [26 October Analytics report density](../evidence/analytics-density-20261026/RECEIPT.md)
+groups related Performance charts, compacts Drawdown and Simulation, and pairs Prop
+snapshot metrics with objectives. Fixture height comparisons, responsive review,
+read-only real-session checks and one transient experiments503 are recorded there.
+UI5180 was updated; API8010 and owner data were unchanged.
+
+Previous UI-only rollout: [26 October Analytics side layout](../evidence/analytics-side-layout-20261026/RECEIPT.md)
 places PnL left and the three risk cards right, removing the separator below report
 tabs. UI5180 was updated without restarting API8010 or writing owner data.
 

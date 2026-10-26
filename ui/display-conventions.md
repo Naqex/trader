@@ -34,9 +34,22 @@ available column height, keeping the two sides aligned. Below 1200px these group
 stack, with the main plot returning to a compact height; below 850px the R cards
 also stack. The report tabs have no bottom separator. Hour/day
 plots pair; the year/month matrix stays full width; calendar/frequency use 2:1.
-SL/RR simulations pair, with Monte Carlo below. Smaller widths collapse the groups
-without shrinking readable data text. Mini curves thin ticks while retaining bounds
-and zero. Native fullscreen preserves controls/state; popovers mount inside the
+Expectancy and winner/loser statistics share a 1:2 row; side and time-window radars
+share the next 1:2 row. On screens up to 1200px the side/radar panels each use a full
+row, with two radars per row; up to 600px radars stack. Calendar cells put the date
+and trade count on one line, then the result below. Frequency pairs each summary
+with its small plot. Drawdown pairs its main plot with four summary metrics, then
+MAE with winning-trade metrics. Prop objectives pair snapshot metrics with their
+existing objectives table on desktop and stack on narrow screens.
+
+SL/RR simulations pair, with Monte Carlo below. Monte Carlo configuration uses a
+left column and its results use the remaining width; they stack up to 850px.
+Per-trade scenario details stay collapsed until requested and scroll within a
+bounded table when opened. Smaller widths collapse groups without scaling down
+data text. R mini curves are 48px sparklines without axis labels; their points
+retain tooltips and keyboard access. Native fullscreen restores axes for these
+curves. Other compact plots retain their axes. Fullscreen preserves controls/state;
+popovers mount inside the
 fullscreen ancestor and trade selection exits fullscreen before opening details.
 The breakeven threshold is an anchored editor beside its metric, focusing the
 number input and returning focus on dismissal. Mobile radars use one column.
