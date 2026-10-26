@@ -88,6 +88,10 @@ mod tests {
         assert_eq!(summary["periods"]["months"][0]["label"],"2026-02");
         let d = build_activity_dashboard(&[r.clone()],"tenant-a",None,None,Some(&f),true,&[],zone).unwrap();
         assert_eq!(d["months"][0]["month"],"2026-02");
+        assert_eq!(d["chart_period"],"day");
+        assert_eq!(d["days"][0]["date"],"2026-02-01");
+        assert_eq!(d["days"][0]["closed_trade_count"],d["metrics"]["closed_trade_count"]);
+        assert_eq!(d["days"][0]["win_rate_pct"],d["metrics"]["win_rate_pct"]);
         let page = trades::build_trades_page(&d,&[],1,10,"close_time_utc","desc",r#"{"timezone":"Asia/Ho_Chi_Minh","years":["2026"],"months":["2"]}"#,None).unwrap();
         assert_eq!(page["pagination"]["returned_count"],1);
         assert_eq!(page["facets"]["date_range"]["from"],"2026-02-01");

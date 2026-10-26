@@ -134,10 +134,14 @@ pub(super) fn entry_metadata(view: &mut Value, record: &Value) {
     }
 }
 
-fn next_month(start: DateTime<Utc>, zone: Tz) -> R<DateTime<Utc>> {
+fn next_activity_period(start: DateTime<Utc>, zone: Tz, daily: bool) -> R<DateTime<Utc>> {
     let local = start.with_timezone(&zone);
-    let next = NaiveDate::from_ymd_opt(local.year(), local.month(), 1)
-        .and_then(|d| d.checked_add_months(Months::new(1)))
+    let next = (if daily {
+        local.date_naive().succ_opt()
+    } else {
+        NaiveDate::from_ymd_opt(local.year(), local.month(), 1)
+            .and_then(|d| d.checked_add_months(Months::new(1)))
+    })
         .and_then(|d| d.and_hms_opt(0, 0, 0))
         .ok_or("activity range overflow")?;
     // Some IANA zones move their clocks at midnight. Find the first existing
@@ -153,10 +157,14 @@ fn next_month(start: DateTime<Utc>, zone: Tz) -> R<DateTime<Utc>> {
             }
         }
     }
-    Err("activity month boundary unavailable".into())
+    Err("activity period boundary unavailable".into())
 }
 
 pub(super) fn activity_months(records: &[Value], intervals: &[Value], zone: Tz) -> R<Value> {
+    activity_periods(records, intervals, zone, false)
+}
+
+fn activity_periods(records: &[Value], intervals: &[Value], zone: Tz, daily: bool) -> R<Value> {
     let ids: HashSet<_> = records.iter().map(|r| text(&r["record_id"])).collect();
     let mut pairs = Vec::new();
     for interval in intervals
@@ -173,9 +181,9 @@ pub(super) fn activity_months(records: &[Value], intervals: &[Value], zone: Tz) 
     for (start, end) in pairs {
         let mut start = prior.map_or(start, |last: DateTime<Utc>| last.max(start));
         while start < end {
-            let stop = end.min(next_month(start, zone)?);
+            let stop = end.min(next_activity_period(start, zone, daily)?);
             *months
-                .entry(start.with_timezone(&zone).format("%Y-%m").to_string())
+                .entry(start.with_timezone(&zone).format(if daily { "%Y-%m-%d" } else { "%Y-%m" }).to_string())
                 .or_default() += (stop - start)
                 .num_microseconds()
                 .ok_or("activity range overflow")? as f64
@@ -187,9 +195,31 @@ pub(super) fn activity_months(records: &[Value], intervals: &[Value], zone: Tz) 
     Ok(json!(
         months
             .into_iter()
-            .map(|(month, seconds)| json!({"month": month, "time_invested_seconds": seconds}))
+            .map(|(period, seconds)| if daily { json!({"date":period,"time_invested_seconds":seconds}) } else { json!({"month":period,"time_invested_seconds":seconds}) })
             .collect::<Vec<_>>()
     ))
+}
+
+pub(super) fn dashboard_chart_daily(filters: &Value, zone: Tz) -> R<bool> {
+    let (Some(from), Some(to)) = (timestamp(&filters["from_close_utc"])?, timestamp(&filters["to_close_utc"])?) else { return Ok(false) };
+    let days = (to.with_timezone(&zone).date_naive() - from.with_timezone(&zone).date_naive()).num_days();
+    Ok(to >= from && (0..31).contains(&days))
+}
+
+pub(super) fn dashboard_days(trades: &[Value], zone: Tz) -> R<Value> {
+    let mut days = BTreeMap::<String, Vec<Value>>::new();
+    for trade in trades {
+        if let Some(time) = timestamp(activity::time(trade))? {
+            days.entry(time.with_timezone(&zone).format("%Y-%m-%d").to_string()).or_default().push(trade.clone());
+        }
+    }
+    let mut result = Vec::new();
+    for (date, trades) in days {
+        let mut day = counts(&trades)?;
+        day["date"] = json!(date);
+        result.push(day);
+    }
+    Ok(json!(result))
 }
 
 // Activity filters constrain observed wall clock, never simulated market dates.
@@ -213,6 +243,11 @@ pub(super) fn dashboard_activity(records: &[Value], intervals: &[Value], filters
         result["time_invested_seconds"] = json!(months.as_array().unwrap().iter().map(|m| m["time_invested_seconds"].as_f64().unwrap()).sum::<f64>());
     }
     result["activity_months"] = months;
+    let daily = dashboard_chart_daily(&filters, zone)?;
+    result["chart_period"] = json!(if daily { "day" } else { "month" });
+    if daily {
+        result["activity_days"] = activity_periods(records, &clipped, zone, true)?;
+    }
     result["timing_scope"]["timezone"] = json!(zone.name());
     result["timing_scope"]["activity_date_filters_apply"] = json!(true);
     if from.is_some() || to.is_some() {
@@ -280,6 +315,7 @@ mod tests {
         let result = dashboard_activity(&records,&intervals,Some(&filter),chrono_tz::Asia::Ho_Chi_Minh).unwrap();
         assert_eq!(result["time_invested_seconds"],30.0);
         assert_eq!(result["activity_months"],json!([{"month":"2026-02","time_invested_seconds":30.0}]));
+        assert_eq!(result["activity_days"],json!([{"date":"2026-02-01","time_invested_seconds":30.0}]));
         assert!(result["historical_time_replayed_seconds"].is_null());
         assert_eq!(result["timing_scope"]["historical_date_filters_apply"],true);
         let empty = json!({"from_close_utc":"2027-01-01T00:00:00Z"});
@@ -288,6 +324,27 @@ mod tests {
         assert_eq!(outside["activity_months"],json!([]));
         let unknown = dashboard_activity(&[json!({"record_id":"legacy"})],&[],Some(&empty),chrono_tz::UTC).unwrap();
         assert!(unknown["time_invested_seconds"].is_null());
+    }
+    #[test]
+    fn dashboard_daily_periods_follow_local_dates_dst_and_union() {
+        let records = vec![json!({"record_id":"a"}),json!({"record_id":"b"})];
+        let interval = |id, start, end| json!({"session_id":id,"started_at_utc":start,"ended_at_utc":end});
+        let intervals = vec![interval("a","2026-03-08T04:30:00Z","2026-03-09T05:30:00Z"),interval("b","2026-03-08T05:00:00Z","2026-03-08T06:00:00Z")];
+        assert_eq!(activity_periods(&records,&intervals,chrono_tz::America::New_York,true).unwrap(),json!([
+            {"date":"2026-03-07","time_invested_seconds":1800.0},
+            {"date":"2026-03-08","time_invested_seconds":82800.0},
+            {"date":"2026-03-09","time_invested_seconds":5400.0}
+        ]));
+        let days = dashboard_days(&[json!({"report_time_utc":"2026-01-31T17:00:00Z","net_pnl":10}),json!({"report_time_utc":"2026-02-01T01:00:00Z","net_pnl":0}),json!({"report_time_utc":"2026-02-01T02:00:00Z","net_pnl":-4}),json!({"report_time_utc":null,"net_pnl":99})],chrono_tz::Asia::Ho_Chi_Minh).unwrap();
+        assert_eq!(days[0]["date"],"2026-02-01");
+        assert_eq!(days[0]["closed_trade_count"],3);
+        assert!((days[0]["win_rate_pct"].as_f64().unwrap()-100.0/3.0).abs()<1e-9);
+        let zone = chrono_tz::America::New_York;
+        for (from,to,expected) in [("2026-03-01T00:00:00-05:00","2026-03-31T23:59:59-04:00",true),("2026-10-15T00:00:00-04:00","2026-11-14T23:59:59-05:00",true),("2026-03-01T00:00:00-05:00","2026-04-01T00:00:00-04:00",false)] {
+            assert_eq!(dashboard_chart_daily(&json!({"from_close_utc":from,"to_close_utc":to}),zone).unwrap(),expected);
+        }
+        assert!(!dashboard_chart_daily(&json!({}),zone).unwrap());
+        assert!(!dashboard_chart_daily(&json!({"from_close_utc":"2026-03-01T00:00:00Z"}),zone).unwrap());
     }
     #[test]
     fn full_month_history_splits_net_wins_and_losses_without_merging_years() {

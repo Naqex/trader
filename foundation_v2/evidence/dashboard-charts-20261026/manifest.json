@@ -1,0 +1,87 @@
+{
+  "scope": "Testing Dashboard only",
+  "raw_root": "E:\\BACKUP-TRADINGWORKSPACE\\dashboard-charts-20261026",
+  "status": "PASS",
+  "artifacts": {
+    "build.json": "d1ac9c4962359b3d8bd8d15895761f8094fca00c64b1fedf2ad155f94a08a8b1",
+    "web-tests.log": "2e05de0a2e2717674a3cf8722e1c79e90111f64416bafe183b86275729050425",
+    "native-tests-dashboard.log": "db3521aa5704da16a58c02642287283aa7ca24f9ca426a08383e29e218982310",
+    "native-tests-activity.log": "57dda98c1dd648bd40087f4f5865c2cd493f7195116440e27b4669e75e387de9",
+    "native-tests-presentation.log": "b61e018ffd66371648e7cd7f564e017b50b3ca4bdaa478dd1a11427515766988",
+    "native-build.log": "5f833e4ff72dcd42eb802f962f59370b2a9cc1bc567100e740b000b9e8bd7680",
+    "qa/report.json": "d9dda96d9ed539820b2bc268cdccf16bdac1b31661c93fd6aab12e817813e203",
+    "deployed/report.json": "d9dda96d9ed539820b2bc268cdccf16bdac1b31661c93fd6aab12e817813e203",
+    "integration/report.json": "441d9b7be49164645d826d6440d806596b5e1e15d26842c228e1922dd8ff3d6b",
+    "actual-journey.json": "1ac18d974064a4102276091d9d01aaaf38d2327daad41805c23fcda0eb7cfaa4",
+    "deployed-verification.json": "f3ed7f2a97c614a3876009171a332ff5b1772633b365b0c3ab8d65ed22958018",
+    "rollout.json": "bee3dc1adbbb1fa0a0421304ce19c1a0a15d93c9364d51d0d0779671786c85c2",
+    "backend-ready.json": "79f3ce83f5432f73edc79ef91608bc6d3ed74929d10970d2ac8dc34bdbe2c6d7",
+    "ui-promotion.json": "53331fc7c5c64ca269a493754055a0519bb03c94a57e2df822c9fa7a586fbb76",
+    "reviewer/REVIEW.md": "022d23a3aa23c93fa2eeb1b3188763205414b9af40acb57917c9d352572f609a",
+    "reviewer/source-sha256.json": "29bb3a49998974e22e9d61607a7ff02d636aa76ad268702527e4e2be7e510fc0",
+    "job.py": "bfad1c951d8c48eaca9f5420695f1fd6343485eab7c42f163c52814ac79918cf",
+    "qa.mjs": "0a810ddc4fbf73aea48c7c03004a6d9ba9dbd9d0ac59b9329b4549cbeebff88c",
+    "integration.py": "1ebc510de100f1508f8d22d2093b1b04983bf677b4e659503238cea2d42a9155",
+    "actual_journey.mjs": "d35b5569c9f3aa32cb475a898c03e0c3c9cf87d450587ac1042d71421fd8ae18",
+    "verify_deployed.py": "c8c968a18bb5ddfa9953daac3bedf52af0ceda87c6b8ce63831b0c089eb91075",
+    "promote.py": "ab44ba3bba58541f9529503f440236bf7f6ecbfe022fc4dc5619423cb5f0beb6",
+    "rollout.py": "a37ed4641cff812ea2197d4c348bd142114a7359c36875c7b1dfac5afb0f8cd9",
+    "preview-stopped.json": "ea86991057b2d958b399f1365e6a7b9347462f1c8150ff5b039bf56e4f67eb06"
+  },
+  "source_sha256": {
+    "foundation_v2/api-rust/src/analytics.rs": "ed9296b18894a6adee0dcd949305def02f7188cfe1f13df448539ecb5c145389",
+    "foundation_v2/api-rust/src/analytics/activity.rs": "20c95d375ae8e0d83914323f35a09760f096955c62a10fe6eb09ec4b75e0ade6",
+    "foundation_v2/api-rust/src/analytics/presentation.rs": "acc1d671dfff35f609d5dd5e9e787962ca93fb7f9fd0009cac055c1c15da9029",
+    "foundation_v2/web/src/DashboardPerformance.jsx": "20163d11872a51c1468c731f585f0a6f4433b76f4e832d43da58174a4157ed35",
+    "foundation_v2/web/src/ReportChart.jsx": "a05feac2ae53e25919a4577f1c3dd951c3e99b23cb7dec63c8b1fbfb6fb4fa8b",
+    "foundation_v2/web/src/testing-copy.json": "7d1622710c3c1bb7811291b35f505d8b99f057bbda8c91c2dd70b88e2e5c6ee9",
+    "foundation_v2/web/src/demoFixtures.js": "c88e5a92d236745e880c83f2721a0b0d07893ff388cc413c02e64bbad44ce1b6",
+    "foundation_v2/web/src/DemoPreview.jsx": "df16d787b1e268bcd900220dc9f166b8b8e8ad3b9be6f51f6ef15335528d9e0b",
+    "foundation_v2/web/src/dashboard.css": "ad3d84e29803f2bbc48c705b092bc1b9c0661d691740f079a3892726b1c87c08",
+    "foundation_v2/web/tests/demoMode.test.mjs": "e7fc82aa379c4a74ecca2f513514221ebc61003d837a2e125458e6b5057a706b"
+  },
+  "deployed": {
+    "scope": "read-only actual local runtime",
+    "cases": [
+      {
+        "name": "lifetime",
+        "period": "month",
+        "activity_points": 1,
+        "trade_points": 0,
+        "unknown_close_count": 1,
+        "status": "PASS"
+      },
+      {
+        "name": "last-week",
+        "period": "day",
+        "activity_points": 5,
+        "trade_points": 0,
+        "unknown_close_count": 1,
+        "status": "PASS"
+      },
+      {
+        "name": "last-month",
+        "period": "day",
+        "activity_points": 0,
+        "trade_points": 0,
+        "unknown_close_count": 1,
+        "status": "PASS"
+      },
+      {
+        "name": "long",
+        "period": "month",
+        "activity_points": 0,
+        "trade_points": 0,
+        "unknown_close_count": 1,
+        "status": "PASS"
+      }
+    ],
+    "status": "PASS",
+    "run_id": "7d40eb234219409f8f7d7b833cbbbdaf",
+    "api_sha256": "5b95efc97ecb6d592a41efef701a3ddce07753d367341a55e1b5867aba5481e5",
+    "ui_index_sha256": "5c1aec832ab3963f68241e8ba89f8bafa278e4f47478f99b80947a55518e598d"
+  },
+  "broker_execution": "not invoked",
+  "owner_trade_writes": false,
+  "preview": "stopped by checked PID/path/parent identity"
+}

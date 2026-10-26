@@ -71,6 +71,13 @@ const DEMO_HISTORICAL_ACTIVITY = [
 
 export function demoOverview(rows = DEMO_LEDGER, { sessionIds = DEMO_SESSIONS.map(s => s.record_id), filters = {}, timezone = getTimezone() } = {}) {
   const metrics = demoResult(rows).metrics
+  const span = filters.from && filters.to ? (Date.parse(filters.to) - Date.parse(filters.from)) / 86400000 : Infinity
+  const chart_period = span >= 0 && span < 31 ? 'day' : 'month'
+  const dateKey = row => zonedDateKey(row.report_time_utc, timezone)
+  const days = chart_period === 'day' ? [...new Set(rows.map(dateKey))].sort().map(date => {
+    const group = rows.filter(row => dateKey(row) === date)
+    return { date, closed_trade_count: group.length, win_rate_pct: group.filter(row => row.net_pnl > 0).length / group.length * 100 }
+  }) : []
   const monthKey = row => zonedDateKey(row.report_time_utc, timezone).slice(0, 7)
   const months = [...new Set(rows.map(monthKey))].sort().map(month => {
     const group = rows.filter(row => monthKey(row) === month)
@@ -79,20 +86,23 @@ export function demoOverview(rows = DEMO_LEDGER, { sessionIds = DEMO_SESSIONS.ma
   const from = filters.from ? Date.parse(dateRangeBoundary(filters.from, false, timezone)) : -Infinity
   const to = filters.to ? Date.parse(dateRangeBoundary(filters.to, true, timezone)) : Infinity
   const activity = new Map()
+  const dailyActivity = new Map()
   let last = -Infinity
   for (const [id, a, b] of DEMO_ACTIVITY.filter(([id]) => sessionIds.includes(id)).sort((a, b) => a[1].localeCompare(b[1]))) {
     let start = Math.max(Date.parse(a), from, last), end = Math.min(Date.parse(b), to)
     while (start < end) {
-      const month = zonedDateKey(start, timezone).slice(0, 7)
-      const next = new Date(`${month}-01T00:00:00Z`); next.setUTCMonth(next.getUTCMonth() + 1)
+      const date = zonedDateKey(start, timezone), month = date.slice(0, 7)
+      const next = new Date(`${date}T00:00:00Z`); next.setUTCDate(next.getUTCDate() + 1)
       const stop = Math.min(end, dayBoundary(next.toISOString().slice(0, 10), timezone))
       activity.set(month, (activity.get(month) || 0) + (stop - start) / 1000)
+      dailyActivity.set(date, (dailyActivity.get(date) || 0) + (stop - start) / 1000)
       start = stop
     }
     last = Math.max(last, end)
   }
   const activity_months = [...activity].map(([month, time_invested_seconds]) => ({ month, time_invested_seconds }))
-  return { performance: { schema_version: 'dashboard-replay-performance-v1', status: 'ready', scope: { session_count: sessionIds.length, readable_session_count: sessionIds.length }, metrics, months, activity_months,
+  return { performance: { schema_version: 'dashboard-replay-performance-v1', status: 'ready', scope: { session_count: sessionIds.length, readable_session_count: sessionIds.length }, metrics, months, activity_months, chart_period,
+    ...(chart_period === 'day' ? { days, activity_days: [...dailyActivity].map(([date, time_invested_seconds]) => ({ date, time_invested_seconds })) } : {}),
     time_invested_seconds: activity_months.reduce((sum, item) => sum + item.time_invested_seconds, 0), historical_time_replayed_seconds: DEMO_HISTORICAL_ACTIVITY.filter(([id, stamp]) => sessionIds.includes(id) && Date.parse(stamp) >= from && Date.parse(stamp) <= to).reduce((sum, [, , seconds]) => sum + seconds, 0),
     timing_scope: { activity_date_filters_apply: true, historical_date_filters_apply: true, from_utc: filters.from || null, to_utc: filters.to || null },
     side_counts: { buy: rows.filter(row => row.side === 'buy').length, sell: rows.filter(row => row.side === 'sell').length },

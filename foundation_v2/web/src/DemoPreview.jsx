@@ -137,6 +137,7 @@ function DemoDashboard({ workspace, query, state }) {
         result.performance.time_invested_seconds = null
         result.performance.historical_time_replayed_seconds = null
         result.performance.activity_months = []
+        result.performance.activity_days = []
       }
       return result
     },

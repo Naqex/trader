@@ -381,6 +381,13 @@ Last sync is the last successful data observation, not a connection expiry date.
   applies to timestamps using Settings, without repeating UTC in each heading.
   Session selection shows the dataset date range, not session creation date.
   Practice chart tooltips use elapsed hours/minutes; axes retain compact hours.
+  Dashboard practice/win-rate charts use actual local days when both filter bounds
+  are present and cover at most 31 inclusive calendar dates; Lifetime, longer and
+  one-sided ranges use months. API `chart_period` selects `activity_days`/`days`
+  or the existing monthly projections. Never split monthly totals into invented
+  days. Missing activity dates stay unassigned; absent periods are not 0% wins.
+  Daily axes use locale day/month labels; full ISO dates remain in tooltips.
+  Win-rate tooltips retain one decimal place; the percentage axis stays integral.
 - Practice activity uses measured wall-clock intervals. Historical replay dates
   are a separate metric. Legacy entry recording time/type remains unknown unless
   an exact opening event and its recording metadata prove it.

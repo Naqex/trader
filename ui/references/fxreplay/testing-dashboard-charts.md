@@ -94,6 +94,26 @@ Các đề xuất trên **chưa triển khai trong lượt audit này**. Không 
 buộc thay công thức tài chính của WMREPLAY. Lượt sửa tiếp hợp lý nhất là độ chi
 tiết theo ngày/tháng cùng độ chính xác tooltip; ranh giới kỳ cần được ghi rõ.
 
+### Lượt triển khai tiếp — 26/10/2026
+
+Owner giao tiếp tục sau audit. Đã bổ sung projection theo **ngày thực tế** khi
+khoảng lọc có đủ hai đầu và tối đa 31 ngày lịch trong timezone Settings; Lifetime,
+khoảng dài hơn hoặc thiếu một đầu dùng tháng. `activity_days` nhóm các khoảng
+thực đo sau clipping/union; `days` nhóm đúng closed fills đã lọc và loại trùng
+lịch sử nhánh. Không chia tổng tháng thành ngày giả, không điền 0% cho ngày vắng
+giao dịch. Các trường tháng cũ giữ nguyên để tương thích.
+
+Tooltip win rate hiển thị một chữ số thập phân, trục vẫn 0–100%. Copy trợ giúp
+VI/EN phản ánh ngày/tháng đang xem. Bộ lọc kỳ vẫn là tuần/tháng lịch trước;
+không đổi sang cửa sổ trượt chưa được xác minh của FX.
+
+QA custom range còn phát hiện selector nhãn `label > span` bắt nhầm wrapper
+`ProjectDateInput`, làm ô ngày bị absolute và tràn ngang. Đã giới hạn selector
+vào span nhãn; phạm vi sửa chỉ ở Dashboard.
+
+Receipt và bằng chứng triển khai:
+[Dashboard chart granularity](../../../foundation_v2/evidence/dashboard-charts-20261026/RECEIPT.md).
+
 ## 5. Điểm dừng và dữ liệu lưu
 
 Theo ý owner, dừng ở mức nhẹ. Không thử tạo giao dịch FX, trả phí để mở lịch sử,

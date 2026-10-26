@@ -40,17 +40,18 @@ function SideSplit({ counts, total }) {
   </div>
 }
 
-function MonthlyChart({ title, items, field, rate = false, accent = 'gold', unknownCount = 0 }) {
-  const { t, fmt } = useTestingLocale()
-  const help = [t('Tỷ lệ thắng theo tháng thao tác thực tế trong múi giờ đã chọn. Mỗi tháng: số giao dịch lãi ròng sau phí chia tổng giao dịch đã đóng, gồm cả hòa vốn, nhân 100.'), unknownCount > 0 ? t('Có {count} giao dịch thiếu ngày ghi nhận nên chưa được phân bổ vào tháng.', { count: unknownCount }) : ''].filter(Boolean).join('\n\n')
-  return <ReportBars title={title} help={help} period="month" items={items.filter(item => typeof item[field] === 'number' && item[field] >= 0).map(item => ({ label: item.month, value: item[field] }))} accent={accent} maximum={rate ? 100 : undefined} valueFormat={rate ? value => fmt(value, '%', 0) : undefined} emptyLabel={unknownCount > 0 ? 'Chưa đủ dữ liệu thời gian để thống kê theo tháng' : 'Chưa có dữ liệu để vẽ biểu đồ.'} />
+function WinRateChart({ items, period, unknownCount = 0 }) {
+  const { t, locale } = useTestingLocale()
+  const daily = period === 'day'
+  const help = [t(daily ? 'Tỷ lệ thắng theo ngày thao tác thực tế trong múi giờ đã chọn. Mỗi ngày: số giao dịch lãi ròng sau phí chia tổng giao dịch đã đóng, gồm cả hòa vốn, nhân 100.' : 'Tỷ lệ thắng theo tháng thao tác thực tế trong múi giờ đã chọn. Mỗi tháng: số giao dịch lãi ròng sau phí chia tổng giao dịch đã đóng, gồm cả hòa vốn, nhân 100.'), unknownCount > 0 ? t('Có {count} giao dịch thiếu ngày ghi nhận nên chưa được phân bổ vào biểu đồ.', { count: unknownCount }) : ''].filter(Boolean).join('\n\n')
+  return <ReportBars title="Win rate" help={help} period={period} items={items.filter(item => Number.isFinite(item.win_rate_pct) && item.win_rate_pct >= 0).map(item => ({ label: daily ? item.date : item.month, value: item.win_rate_pct }))} accent="blue" maximum={100} valueFormat={value => `${new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value)}%`} emptyLabel={unknownCount > 0 ? daily ? 'Chưa đủ dữ liệu thời gian để thống kê theo ngày' : 'Chưa đủ dữ liệu thời gian để thống kê theo tháng' : 'Chưa có dữ liệu để vẽ biểu đồ.'} />
 }
 function SymbolChart({ items }) {
   return <ReportBars title="Trades by symbol" help="Số giao dịch đã đóng theo từng mã trong phạm vi đã chọn. Mỗi lần đóng một phần được tính riêng; lịch sử thừa kế chỉ được tính một lần." items={items.map(item => ({ label: item.symbol, value: item.closed_trade_count }))} horizontal accent="pink" integer />
 }
-function ActivityChart({ items }) {
+function ActivityChart({ items, period }) {
   const { t, fmt, locale } = useTestingLocale()
-  return <ReportBars title={t('Time invested')} help="Thời gian luyện tập thực tế theo tháng trong múi giờ và kỳ đã chọn. Các khoảng thao tác trùng nhau giữa các phiên chỉ được tính một lần; trục dọc dùng đơn vị giờ." period="month" items={items.map(item => ({ label: item.month, value: item.time_invested_seconds / 3600 }))} accent="gold" valueFormat={(value, compact, digits = 2) => compact ? `${Math.abs(value) >= 1000 ? new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(value) : fmt(value, '', digits)} ${t('duration.hour')}` : dashboardDurationParts(value * 3600, { days: false })?.map(([count, unit]) => `${count.toLocaleString(locale)} ${t(`duration.${unit}`)}`).join(' ') || '-'} emptyLabel="Chưa có dữ liệu thời gian luyện tập" />
+  return <ReportBars title={t('Time invested')} help={period === 'day' ? 'Thời gian luyện tập thực tế theo ngày trong múi giờ và kỳ đã chọn. Các khoảng thao tác trùng nhau giữa các phiên chỉ được tính một lần; trục dọc dùng đơn vị giờ.' : 'Thời gian luyện tập thực tế theo tháng trong múi giờ và kỳ đã chọn. Các khoảng thao tác trùng nhau giữa các phiên chỉ được tính một lần; trục dọc dùng đơn vị giờ.'} period={period} items={items.map(item => ({ label: period === 'day' ? item.date : item.month, value: item.time_invested_seconds / 3600 }))} accent="gold" valueFormat={(value, compact, digits = 2) => compact ? `${Math.abs(value) >= 1000 ? new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(value) : fmt(value, '', digits)} ${t('duration.hour')}` : dashboardDurationParts(value * 3600, { days: false })?.map(([count, unit]) => `${count.toLocaleString(locale)} ${t(`duration.${unit}`)}`).join(' ') || '-'} emptyLabel="Chưa có dữ liệu thời gian luyện tập" />
 }
 
 export default function DashboardPerformance({ workspace, filters, reload, controls, dateControls, sourceHeading, previewPayload, previewState }) {
@@ -78,6 +79,7 @@ export default function DashboardPerformance({ workspace, filters, reload, contr
   // Hide results immediately when scope changes, before its request completes.
   const performance = !filterError && state.key === key ? state.payload?.performance : null
   const metrics = performance?.metrics
+  const chartPeriod = performance?.chart_period === 'day' ? 'day' : 'month'
   const loading = !filterError && (state.key !== key || state.status === 'loading')
   const partial = performance?.status === 'partial'
   const blocked = performance?.status === 'blocked' || performance?.scope?.readable_session_count === 0 && performance?.scope?.session_count > 0
@@ -101,8 +103,8 @@ export default function DashboardPerformance({ workspace, filters, reload, contr
         <SideSplit counts={performance?.side_counts} total={metrics?.closed_trade_count} />
       </Metric>
       <Metric title={t("Overall win rate")} value={dashboardNumber(metrics?.win_rate_pct, '%')} tooltip={t(winHelp)} icon="target" />
-    </div><ActivityChart items={performance?.activity_months || []} /></div>
-    {noTrades ? <TestingReadState message={filters.from || filters.to ? 'Không có giao dịch đóng trong khoảng ngày đã chọn. Đổi khoảng ngày để xem kết quả.' : 'Chưa có giao dịch đóng. Biểu đồ sẽ xuất hiện sau giao dịch đầu tiên.'} /> : <div className="fx-dashboard-secondary-charts"><MonthlyChart title={t("Win rate")} items={performance?.months || []} field="win_rate_pct" rate accent="blue" unknownCount={performance?.scope?.recording_coverage?.unknown_close_count || 0} /><SymbolChart items={performance?.symbols || []} /></div>}</>}
+    </div><ActivityChart period={chartPeriod} items={(chartPeriod === 'day' ? performance?.activity_days : performance?.activity_months) || []} /></div>
+    {noTrades ? <TestingReadState message={filters.from || filters.to ? 'Không có giao dịch đóng trong khoảng ngày đã chọn. Đổi khoảng ngày để xem kết quả.' : 'Chưa có giao dịch đóng. Biểu đồ sẽ xuất hiện sau giao dịch đầu tiên.'} /> : <div className="fx-dashboard-secondary-charts"><WinRateChart period={chartPeriod} items={(chartPeriod === 'day' ? performance?.days : performance?.months) || []} unknownCount={performance?.scope?.recording_coverage?.unknown_close_count || 0} /><SymbolChart items={performance?.symbols || []} /></div>}</>}
     </div>
   </section>
 }

@@ -78,16 +78,18 @@ export function ReportBars({ title, help, items, currency, period, scopeLabel, a
   const amount = value => valueFormat ? valueFormat(value) : fmt(value, currency ? ` ${currency}` : '')
   const monthKeys = period === 'month' && items.length && items.every(item => /^\d{4}-(0[1-9]|1[0-2])$/.test(item.label))
   const monthOfYear = period === 'month-of-year'
+  const dateKeys = period === 'day' && items.length && items.every(item => /^\d{4}-\d{2}-\d{2}$/.test(item.label))
   const labels = items.map(item => {
     let label = t(item.label)
     if (monthKeys) label = `${item.label.slice(5)}/${item.label.slice(0, 4)}`
+    if (dateKeys) label = new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit', timeZone: 'UTC' }).format(new Date(`${item.label}T00:00:00Z`))
     if (monthOfYear) label = new Intl.DateTimeFormat(locale, { month: 'long', timeZone: 'UTC' }).format(new Date(`2024-${item.label}-01T00:00:00Z`))
     const day = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].indexOf(item.label)
     if (weekday && day >= 0) label = locale.startsWith('vi') ? day === 6 ? 'Chủ nhật' : `Thứ ${day + 2}` : new Intl.DateTimeFormat(locale, { weekday: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2024, 0, 1 + day)))
     return label.charAt(0).toLocaleUpperCase(locale) + label.slice(1)
   })
   const description = (item, index) => {
-    const label = `${monthKeys ? item.label : labels[index]}${scopeLabel ? ` (${scopeLabel})` : ''}`
+    const label = `${monthKeys || dateKeys ? item.label : labels[index]}${scopeLabel ? ` (${scopeLabel})` : ''}`
     if (unobserved(item)) return `${label}: ${t('Chưa có giao dịch')}`
     const value = `${divided ? `${t(averagePeriod ? 'Lãi trung bình theo kỳ' : 'Lãi')}: ${amount(item.profit)}; ${t(averagePeriod ? 'Lỗ trung bình theo kỳ' : 'Lỗ')}: ${amount(item.loss)}; ${t(averagePeriod ? 'PnL ròng trung bình' : 'Net PnL')}: ` : ''}${amount(item.value)}`
     return `${label}: ${value}${averagePeriod ? `; ${t(averagePeriod === 'month' ? 'Trung bình trên {count} tháng có giao dịch' : 'Trung bình trên {count} ngày có giao dịch', { count: item.period_count })}` : ''}`

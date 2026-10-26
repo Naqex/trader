@@ -76,6 +76,22 @@ test('Gold Swing demo has five complete backtest years, separate from real activ
   assert.deepEqual(sessionPeriods(rows, 'UTC', new Date('2026-10-25'), 'activity').months.map(month => month.label), ['2026-09'])
 })
 
+test('short Dashboard preview uses actual local days and conserves practice totals', () => {
+  const filters = { from: '2026-07-31', to: '2026-08-01' }, timezone = 'UTC'
+  const result = demoOverview(demoFilterRows(null, { ...filters, timezone }), { filters, timezone }).performance
+  assert.equal(result.chart_period, 'day')
+  assert.deepEqual(result.activity_days, [{ date: '2026-07-31', time_invested_seconds: 5400 }, { date: '2026-08-01', time_invested_seconds: 5400 }])
+  assert.equal(result.activity_days.reduce((sum, x) => sum + x.time_invested_seconds, 0), result.time_invested_seconds)
+  assert.equal(result.days.reduce((sum, x) => sum + x.closed_trade_count, 0), result.metrics.closed_trade_count)
+  const local = demoOverview([], { filters, timezone: 'Asia/Ho_Chi_Minh' }).performance
+  assert.deepEqual(local.activity_days, [{ date: '2026-08-01', time_invested_seconds: 10800 }])
+  for (const filters of [{}, { from: '2026-07-01' }, { from: '2026-07-01', to: '2026-08-01' }]) {
+    const p = demoOverview([], { filters }).performance
+    assert.equal(p.chart_period, 'month')
+    assert.equal(p.activity_days, undefined)
+  }
+})
+
 test('preview keeps exactly three fixture sessions and rejects the retired many mode', () => {
   assert.equal(demoSessionItems(new URLSearchParams('ui_state=many')).length, 3)
   assert.equal(previewOptions('overview').some(option => option.value === 'many'), false)
