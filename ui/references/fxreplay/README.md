@@ -6,7 +6,11 @@ học theo, điều chỉnh hoặc lược bỏ.
 
 | Trang | Reference | Phạm vi đã làm |
 | --- | --- | --- |
-| Testing → Dashboard | [Đối chiếu ngày 26/10/2026](testing-dashboard.md) | UI đăng nhập thật, đổi kỳ FX, API và source WMREPLAY |
+| Testing → Dashboard | [Đối chiếu ngày 26/10/2026](testing-dashboard.md), [audit 3 biểu đồ](testing-dashboard-charts.md) | UI, response của FX, tooltip, đối chiếu số học và source WMREPLAY |
+
+Quy trình dùng lại cho các page sau: [verification-workflow.md](verification-workflow.md).
+Bao gồm phạm vi, cách đọc UI/response, kiểm số học, mẫu ghi kết quả, điểm dừng
+và khôi phục trạng thái trình duyệt.
 
 ## Cách đọc và tiếp tục
 

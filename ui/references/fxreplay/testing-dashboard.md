@@ -195,3 +195,14 @@ Kết quả kiểm chứng và phiên bản chạy được lưu tại
 [receipt triển khai](../../../foundation_v2/evidence/dashboard-refinement-20261026/RECEIPT.md).
 Raw log, ảnh, nguồn build có phạm vi, tiến trình độc lập Windows và checkpoint:
 `E:/BACKUP-TRADINGWORKSPACE/dashboard-refinement-20261026/`.
+
+## 8. Kiểm tra tiếp logic và hiển thị ba biểu đồ
+
+[Audit biểu đồ ngày 26/10/2026](testing-dashboard-charts.md) đã đối chiếu từng
+response FX với toàn bộ cột ở ba kỳ. Kỳ ngắn dùng cột ngày, Lifetime dùng cột
+tháng; allocation theo mã khớp total. Có chênh lệch tổng giờ ở Last week chưa
+giải thích được, và chưa đủ mẫu số để kết luận công thức win rate của FX.
+Các giới hạn của lượt đầu ở mục 6 được bổ sung bằng bằng chứng mới này.
+
+[Workflow dùng lại](verification-workflow.md) lưu cách thực hiện và mẫu kết quả
+cho các page sau; các đề xuất từ audit biểu đồ chưa phải thay đổi đã triển khai.

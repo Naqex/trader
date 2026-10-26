@@ -1,0 +1,234 @@
+{
+  "date": "2026-10-26",
+  "status": "complete",
+  "artifacts_root": "E:\\BACKUP-TRADINGWORKSPACE\\fxreplay-reference-20261026\\testing-dashboard-charts",
+  "raw_data_local_only": true,
+  "files": [
+    {
+      "name": "analyze.py",
+      "bytes": 3495,
+      "sha256": "da59eb47c3a10c0c036a1286e24e576b67dbfe6b9e1fdd84558371a951eb9036"
+    },
+    {
+      "name": "calculations.json",
+      "bytes": 2810,
+      "sha256": "b0a987a2c9cc493fa6a2bd92f47b5cfcf1a124cd2889e5f91bed2b4f3d50ea55"
+    },
+    {
+      "name": "chart-help.json",
+      "bytes": 353,
+      "sha256": "740ace1e982310150f6b2605889c021d1184e4bb97c98e48bf76cfe2f9b64ffb"
+    },
+    {
+      "name": "context.json",
+      "bytes": 601,
+      "sha256": "a516d448d4230cac0eea0f64d381eac79169b5f54b8f287100c03d06c004b7fc"
+    },
+    {
+      "name": "fx-last-month-charts.json",
+      "bytes": 18751,
+      "sha256": "5d196f979c5dddd5de90b5a4720d531f74ee4cfb1d3a1881ede5f09da9b06b3d"
+    },
+    {
+      "name": "fx-last-month-dom.txt",
+      "bytes": 3685,
+      "sha256": "bd3a0b49c5fdd1ab1fa822980118ec23e97245b693268e7f99cb9ebcc450c59e"
+    },
+    {
+      "name": "fx-last-month-response.json",
+      "bytes": 4985,
+      "sha256": "943a6624dae4d94e4e3f85959174a4894a0e420a9a508203bc6e4865108efc20"
+    },
+    {
+      "name": "fx-last-week-charts.json",
+      "bytes": 6481,
+      "sha256": "96ec689c4b14acdc6c1c9e7eec5464b10a35a1a5014b65be2d7a1c2d474ec1b8"
+    },
+    {
+      "name": "fx-last-week-dom.txt",
+      "bytes": 3649,
+      "sha256": "67cf59073c9a08f00fc88fcab0701bab2a6eee9d1d36ba488b667f414069d6d3"
+    },
+    {
+      "name": "fx-last-week-response.json",
+      "bytes": 1680,
+      "sha256": "99b85a4806f8a5540f9857e59197fcdc50cf7b23074c4b7bc468bed0dff01102"
+    },
+    {
+      "name": "fx-lifetime-charts-final.jpg",
+      "bytes": 33002,
+      "sha256": "54a5e145d0f9fbdc0bece476a7f04abaabf3145738c34a83d919f674c7b569c8"
+    },
+    {
+      "name": "fx-lifetime-response.json",
+      "bytes": 961,
+      "sha256": "9a14c96f1860fa84972bc693ff5f3bdb9f8bc1d9f9d9326d16f59c37bbfbd8b3"
+    },
+    {
+      "name": "fx-lifetime-time-september.jpg",
+      "bytes": 77218,
+      "sha256": "cfa2795054da63190ba8ffd547c10e05f8ac23a099f39a3797b2ee898593488b"
+    },
+    {
+      "name": "fx-lifetime-win-rate-october.jpg",
+      "bytes": 60433,
+      "sha256": "28c5ff3c4e914e1a09bad2c5b7b3ee839c8d8bf580e7990192ee945b56b08a0d"
+    },
+    {
+      "name": "fx-session-summary.txt",
+      "bytes": 3379,
+      "sha256": "8b9b04b0dbc8776f3111340d22b9ac738b6dc7523cebb3977beb181d2295c809"
+    },
+    {
+      "name": "fx-trades-access.txt",
+      "bytes": 8388,
+      "sha256": "8d3160b05a191f055f6219cb655d64790bc6997d606eba373dcab04e5177367d"
+    },
+    {
+      "name": "fx-visible-trades.json",
+      "bytes": 680,
+      "sha256": "914ce305aed93ebed03722ec122d134aee2b9c41b920c5a6fa0494f5579720c8"
+    },
+    {
+      "name": "hover-tooltips.json",
+      "bytes": 1597,
+      "sha256": "3a0f21c4f7421f3e27f133579c6d36943b78224ca34aabd5d957ec9b22cac8a8"
+    },
+    {
+      "name": "lifetime-charts.json",
+      "bytes": 3821,
+      "sha256": "8a8baf76ef822d61878e8a42457d666362b33b7de814ee8b23f95c62706cb705"
+    },
+    {
+      "name": "network-scope.json",
+      "bytes": 748,
+      "sha256": "ba9c49607408299f70bc831bd0a34d600c4881a1b4a38c8dde7ec98771f90dab"
+    },
+    {
+      "name": "restored-state.txt",
+      "bytes": 3690,
+      "sha256": "3ee1cccb6555d57935a6fff5fa2820bcc82764f2711b74ca50afa56a39301686"
+    },
+    {
+      "name": "RESUME.md",
+      "bytes": 1362,
+      "sha256": "d8f5139d6d80a7c1b836420f6c4d2f640c711c603b200f14b67336af28e3831e"
+    },
+    {
+      "name": "save_manifest.py",
+      "bytes": 3123,
+      "sha256": "844cb0b96249d868a3bd17d58bd03850f92277e6e8c6f00588a28f38a97d8250"
+    },
+    {
+      "name": "wm-current-dom.txt",
+      "bytes": 10586,
+      "sha256": "7c96e7807c5865a8477afa128005bbd1b899421ec2c2ce52fb0d760b78ccdc2d"
+    },
+    {
+      "name": "wm-last-month-response.json",
+      "bytes": 4738,
+      "sha256": "7a46c184a8e12eb7c1d9f004bb6d0ff6a74766021ad8545e9c19c6d5ee8e43f7"
+    },
+    {
+      "name": "wm-last-week-response.json",
+      "bytes": 4856,
+      "sha256": "ee01e99f626ab58327500da4dc93289f8e9ab3f995dcc4e78bbb87057a541c47"
+    },
+    {
+      "name": "wm-lifetime-response.json",
+      "bytes": 4935,
+      "sha256": "5b902f9feee6292b9ede250e6d0d7974d2e3915fa0a0c289e961f0f7e5996dfa"
+    }
+  ],
+  "checks": {
+    "date": "2026-10-26",
+    "timezone": "Asia/Ho_Chi_Minh",
+    "wm_head": "e1be2190c663ab1cbd9d78e0661553179fa4ccb9",
+    "fx_endpoint": "/analytics/api/v1/analytics/calc/global",
+    "fx_source": "projectTypes[]=app",
+    "checks": [
+      {
+        "range": "lifetime",
+        "dom_matches_response": true,
+        "time_period": "month",
+        "win_rate_period": "month",
+        "point_count": 2,
+        "first_date": "2026-09-01T00:00:00+07:00",
+        "last_date": "2026-10-01T00:00:00+07:00",
+        "time_total_seconds": 57825,
+        "chart_sum_seconds": 57816.0,
+        "difference_seconds": -9.0,
+        "generous_01h_per_point_tolerance_seconds": 72,
+        "symbol_sum": 76,
+        "trades_taken": 76,
+        "overall_win_rate": 50
+      },
+      {
+        "range": "last-week",
+        "dom_matches_response": true,
+        "time_period": "day",
+        "win_rate_period": "day",
+        "point_count": 8,
+        "first_date": "2026-10-19T00:00:00+07:00",
+        "last_date": "2026-10-26T00:00:00+07:00",
+        "time_total_seconds": 1743,
+        "chart_sum_seconds": 8604.0,
+        "difference_seconds": 6861.0,
+        "generous_01h_per_point_tolerance_seconds": 288,
+        "symbol_sum": 19,
+        "trades_taken": 19,
+        "overall_win_rate": 75
+      },
+      {
+        "range": "last-month",
+        "dom_matches_response": true,
+        "time_period": "day",
+        "win_rate_period": "day",
+        "point_count": 31,
+        "first_date": "2026-09-26T00:00:00+07:00",
+        "last_date": "2026-10-26T00:00:00+07:00",
+        "time_total_seconds": 40500,
+        "chart_sum_seconds": 40428.0,
+        "difference_seconds": -72.0,
+        "generous_01h_per_point_tolerance_seconds": 1116,
+        "symbol_sum": 59,
+        "trades_taken": 59,
+        "overall_win_rate": 80
+      }
+    ],
+    "wm_checks": [
+      {
+        "range": "lifetime",
+        "time_total_seconds": 7351.41900000001,
+        "chart_sum_seconds": 7351.41900000001,
+        "closed_trade_count": 1,
+        "symbol_sum": 1,
+        "monthly_win_rate_points": 0,
+        "scope_from": null,
+        "scope_to": null
+      },
+      {
+        "range": "last-week",
+        "time_total_seconds": 740.1410000000002,
+        "chart_sum_seconds": 740.1410000000002,
+        "closed_trade_count": 0,
+        "symbol_sum": 0,
+        "monthly_win_rate_points": 0,
+        "scope_from": "2026-10-18T17:00:00+00:00",
+        "scope_to": "2026-10-25T16:59:59.999999+00:00"
+      },
+      {
+        "range": "last-month",
+        "time_total_seconds": -0.0,
+        "chart_sum_seconds": 0,
+        "closed_trade_count": 0,
+        "symbol_sum": 0,
+        "monthly_win_rate_points": 0,
+        "scope_from": "2026-08-31T17:00:00+00:00",
+        "scope_to": "2026-09-30T16:59:59.999999+00:00"
+      }
+    ],
+    "fx_request_headers_or_cookies_saved": false,
+    "external_writes": false
+  }
+}
