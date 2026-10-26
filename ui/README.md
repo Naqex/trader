@@ -22,6 +22,9 @@ Project overlay, keyboard, date-field and touch behavior is specified in the
 [portal contract](compact-system.md#portal-dialog-popover-và-ô-ngày).
 Shared time, money, search and report semantics follow
 [display conventions](display-conventions.md).
+Live product comparisons are saved in the
+[FX Replay reference](references/fxreplay/README.md); findings and proposals
+there do not replace approved UI contracts or product acceptance.
 The living catalog includes working nested dialogs, anchored menus, bounded
 date/time, disabled fields and resource-state examples. The
 [20/10 audit receipt](../foundation_v2/evidence/ui-system-audit-20261020/CHECKPOINT.md)

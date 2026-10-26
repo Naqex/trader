@@ -1,0 +1,81 @@
+{
+  "captured_date": "2026-10-26",
+  "timezone": "Asia/Ho_Chi_Minh",
+  "scope": "Testing Dashboard read-only comparison",
+  "external_local_root": "E:/BACKUP-TRADINGWORKSPACE/fxreplay-reference-20261026/testing-dashboard",
+  "fx_version": "2.0.3777-prod",
+  "wmreplay_head": "f37f474f6c0299a94ec18b2782eda597f18eecc5",
+  "dom_viewports": {
+    "fxreplay": [
+      2292,
+      1080
+    ],
+    "wmreplay": [
+      1920,
+      940
+    ]
+  },
+  "limits": [
+    "Different datasets; no numerical parity oracle",
+    "FX backend unavailable",
+    "Screenshots contain account data; keep local",
+    "Viewport capture differs; no pixel parity claim"
+  ],
+  "files": [
+    {
+      "file": "fxreplay-top.jpg",
+      "bytes": 146984,
+      "sha256": "180540de2904354210fe61ab438a83969b8bd608b922fa4c80b555461ecfd305"
+    },
+    {
+      "file": "fxreplay-performance.jpg",
+      "bytes": 139074,
+      "sha256": "063420981c4265cb7319a3118693f45acc5b2e67588cebd69298bc9d08ddec8a"
+    },
+    {
+      "file": "fxreplay-lifetime.txt",
+      "bytes": 3901,
+      "sha256": "2c9c0aa53d80eed7127290fd6df7a06d9d1fb074037075fc9fc462d8bcab23d7"
+    },
+    {
+      "file": "fxreplay-last-week.txt",
+      "bytes": 3869,
+      "sha256": "d05c7eaf63dad304feeaf285d8edb614a6b7b6910bf373f1cddf5dc68ca3c853"
+    },
+    {
+      "file": "fxreplay-last-month.txt",
+      "bytes": 3905,
+      "sha256": "82c5b886f871b15a7c10e8e927cd35c2d34adf4bfcdd63428fe1d9afa8c763f9"
+    },
+    {
+      "file": "fxreplay-tooltips.json",
+      "bytes": 426,
+      "sha256": "4bd95da297f30bbb71d6beff9fbe6d5181dba6af7bb71cae3d984cbc31e02b97"
+    },
+    {
+      "file": "wmreplay-top.jpg",
+      "bytes": 102918,
+      "sha256": "44ef9a115c7975f7e347a19d65740d0828d6d02714baafa6b4ad308c74aa3b16"
+    },
+    {
+      "file": "wmreplay-performance.jpg",
+      "bytes": 81286,
+      "sha256": "7e3e2edffd6c6d3da0ea88e126756177953ff27b6436d65de2317b850758277b"
+    },
+    {
+      "file": "wmreplay-lifetime.txt",
+      "bytes": 11021,
+      "sha256": "9392cde645167067074526194fd7f8a64dd5f5b0f1fcc2a632ff6fde789e1b3e"
+    },
+    {
+      "file": "wmreplay-overview.json",
+      "bytes": 4938,
+      "sha256": "4a8ae8b92fa79388fa69dc5e63389a1c4daca7627a42aa7eb8196f587536243e"
+    },
+    {
+      "file": "wmreplay-last-week.json",
+      "bytes": 3471,
+      "sha256": "8022bec32a0b9577d43d49dcf4544ce99c16b33e09f8c38aa784c04cddc749b2"
+    }
+  ]
+}
