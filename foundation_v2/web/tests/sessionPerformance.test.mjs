@@ -87,3 +87,42 @@ test('weekday average denominators count distinct active local dates, including 
  const shifted=sessionPeriods([{report_time_utc:'2026-10-04T23:30:00Z',net_pnl:10},...ledger],'Asia/Ho_Chi_Minh').performance.weekdays[0]
  assert.equal(shifted.period_count,2);assert.equal(shifted.count,4)
 })
+
+test('session PnL averages use active calendar periods, not trades or elapsed empty periods', () => {
+ const ledger = [
+  {close_time_utc:'2024-01-01T01:00:00Z',net_pnl:10},
+  {close_time_utc:'2024-01-01T02:00:00Z',net_pnl:20},
+  {close_time_utc:'2024-01-08T01:00:00Z',net_pnl:-10},
+  {close_time_utc:'2025-01-06T01:00:00Z',net_pnl:0},
+  {close_time_utc:'2025-03-03T01:00:00Z',net_pnl:40},
+ ]
+ const result = sessionPeriods(ledger,'UTC',new Date('2026-10-26'),'market')
+ assert.deepEqual(result.averages,{month:20,week:15,day:15})
+ assert.equal(result.day,40,'existing latest-period totals remain available to other consumers')
+ assert.deepEqual(sessionPeriods([...ledger].reverse(),'UTC',new Date('2030-01-01'),'market').averages,result.averages)
+})
+
+test('session averages group by the selected zone and Monday across year boundaries', () => {
+ const ledger = [
+  {close_time_utc:'2023-12-31T23:30:00Z',net_pnl:10},
+  {close_time_utc:'2024-01-01T00:30:00Z',net_pnl:20},
+ ]
+ assert.deepEqual(sessionPeriods(ledger,'UTC',new Date(),'market').averages,{month:15,week:15,day:15})
+ assert.deepEqual(sessionPeriods(ledger,'Asia/Ho_Chi_Minh',new Date(),'market').averages,{month:30,week:30,day:30})
+ const sharedWeek = ledger.map((row,i)=>({...row,close_time_utc:i?'2021-01-01T12:00:00Z':'2020-12-31T12:00:00Z'}))
+ assert.deepEqual(sessionPeriods(sharedWeek,'UTC',new Date(),'market').averages,{month:15,week:30,day:15})
+ const repeatedHour = ledger.map((row,i)=>({...row,close_time_utc:i?'2026-11-01T06:30:00Z':'2026-11-01T05:30:00Z'}))
+ assert.equal(sessionPeriods(repeatedHour,'America/New_York',new Date(),'market').averages.day,30)
+})
+
+test('no observations and incomplete observations stay unknown; observed zero remains zero', () => {
+ assert.equal(sessionPeriods([],'UTC',new Date(),'market').averages,null)
+ const known={close_time_utc:'2026-01-01T00:00:00Z',net_pnl:0}
+ assert.deepEqual(sessionPeriods([known],'UTC',new Date(),'market').averages,{month:0,week:0,day:0})
+ for(const unknown of [{...known,close_time_utc:null},{...known,close_time_utc:'invalid'},{...known,net_pnl:null},{...known,net_pnl:Infinity}]){
+  assert.equal(sessionPeriods([known,unknown],'UTC',new Date(),'market').averages,null)
+ }
+ const activity=[{close_time_utc:'2003-01-01',report_time_utc:'2026-01-05T00:00:00Z',net_pnl:10},{close_time_utc:'2004-01-01',report_time_utc:'2026-01-05T01:00:00Z',net_pnl:20}]
+ assert.equal(sessionPeriods(activity,'UTC',new Date(),'activity').averages.day,30)
+ assert.equal(sessionPeriods(activity,'UTC',new Date(),'market').averages.day,15)
+})

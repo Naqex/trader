@@ -2,7 +2,8 @@
 
 **Kết luận:** cấu trúc trang đã gần FX. Khác biệt cần quyết định nằm ở nghĩa của
 chỉ số ngày/tuần/tháng, định nghĩa Risk/Reward và nhãn số dư trong settings.
-Lượt này research và lưu reference; chưa triển khai các đề xuất dưới đây.
+Lượt audit ban đầu research và lưu reference. Sau đó owner đã giao triển khai;
+kết quả follow-up nằm ở cuối tài liệu, giữ nguyên bằng chứng audit ban đầu bên dưới.
 
 ## Baseline và cách kiểm
 
@@ -116,3 +117,14 @@ Nếu sau này cần tổng kỳ hiện tại theo replay cursor, đó là chỉ
 - Tiếp tục: đọc tài liệu này + `calculations.json`; nếu triển khai chỉ sửa các
   mục được giao và kiểm fixture phân biệt active-day average với per-trade average,
   hai tuần, tháng qua nhiều năm, empty/unknown, timezone và VI–EN.
+
+## 7. Follow-up đã triển khai
+
+Owner duyệt các đề xuất sau audit. Đã triển khai ba PnL trung bình trên kỳ có
+giao dịch đóng, sáu `(i)` chỉ số và hai `(i)` chart Việt–Anh, tách số dư ban đầu /
+hiện tại, dịch nhãn ngày settings. Giữ công thức chart, equity thật và closed-only
+Recent Trades. Dữ liệu thiếu làm các PnL trung bình chưa xác định; kỳ hòa vốn vẫn tính.
+
+[Receipt triển khai và kiểm chứng](../../../foundation_v2/evidence/sessions-refinement-20261026/RECEIPT.md):
+14 model tests, 12 candidate + 12 deployed browser cases và review độc lập PASS.
+Receipt cũng ghi lỗi copy test có sẵn ngoài scope và giới hạn parity với FX.

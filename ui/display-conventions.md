@@ -350,6 +350,13 @@ Last sync is the last successful data observation, not a connection expiry date.
   in Settings timezone. Count breakeven periods; exclude absent periods. This is
   a period mean, not a per-trade mean. Tooltips state the denominator. Weekdays
   without observations retain their category/tooltip and no numeric average.
+  Sessions' three period summary cards show whole-session mean net PnL per active
+  day, Monday–Sunday week and dated year-month in Settings timezone. Count each
+  period once, including breakeven; exclude periods without closed fills. Missing
+  closing dates or PnL make these averages unknown. They do not mean the current
+  or latest-trade period totals. The six metric definitions and monthly/weekday
+  chart definitions use shared accessible info controls. Session settings show
+  persisted initial balance separately from current balance; both are read-only.
   Bar axes include zero: positive-only data uses zero to a rounded maximum,
   negative-only data a rounded minimum to zero, and mixed signs symmetric bounds
   about zero. Split monthly axes consider each profit/loss segment, never net alone.

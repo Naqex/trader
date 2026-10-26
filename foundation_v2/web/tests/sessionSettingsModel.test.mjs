@@ -29,3 +29,18 @@ test('saved asset settings keep the correct symbol after server JSON key sorting
   const facts = sessionSettingsFacts(item,{},null,null,record)
   assert.deepEqual(facts.tradingAssets.map(asset=>[asset.dataset_id,asset.instrument_id]),[['a-gold','XAU/USD'],['z-eur','EUR/USD']])
 })
+
+test('initial and current balances keep their independent portfolio facts and zero values', () => {
+ const facts=sessionSettingsFacts({}, {}, {}, {startBalance:100,endingBalance:80}, {
+  portfolio_account:{starting_balance:'100000',balance:'99997.72'},
+  payload:{starting_balance:'50000',execution:{starting_balance:'25000',balance:'24000'}},
+ })
+ assert.equal(facts.startingBalance,'100000')
+ assert.equal(facts.balance,'99997.72')
+ const fallback=sessionSettingsFacts({}, {}, {}, {startBalance:100,endingBalance:80}, {payload:{starting_balance:100}})
+ assert.equal(fallback.balance,80)
+ assert.equal(fallback.startingBalance,100)
+ const zero=sessionSettingsFacts({}, {}, {}, null, {portfolio_account:{starting_balance:0,balance:0}})
+ assert.equal(zero.startingBalance,0)
+ assert.equal(zero.balance,0)
+})
