@@ -13,6 +13,10 @@ FX, tạo giao dịch, đổi runtime hay tự mở rộng Product Plan.
 - Tạo thư mục bằng chứng riêng trên E, lưu checkpoint sau từng kỳ. Browser đang
   đăng nhập cần app còn kết nối; checkpoint giúp tiếp tục khi app restart, không
   cần sao chép profile, cookie hoặc phiên đăng nhập ra một browser khác.
+- Nếu owner mở sẵn trạng thái tạm và yêu cầu không refresh, chỉ bind tab hiện có,
+  lưu screenshot/full AX trước rồi thao tác trong document. Không goto lại cùng
+  URL, reload hoặc chuyển route để tìm trạng thái; chụp ảnh và đối chiếu tab khi
+  tool thấy khác ảnh owner. Không tự bật demo thay trạng thái owner đã chuẩn bị.
 
 ## 2. Đi từ UI đến số liệu đang vẽ
 

@@ -25,7 +25,10 @@ toàn trang. Calendar là lát research đầu tiên, các dòng khác chỉ đ�
 
 - FX: `https://app.fxreplay.com/en-US/auth/testing/analytics-backtesting`,
   version2.0.3828-prod, Free, Sessions/Performance, demo analytics. Calendar
-  Testing có blur/upgrade gate. Không thử gọi control bị khóa hoặc API ẩn.
+  Testing có blur/upgrade gate ở lần đầu. Sau khi owner mở sẵn toàn bộ biểu đồ,
+  đã xác minh menu calendar, Initial/Current và Month/Year bằng UI bình thường;
+  xem phần bổ sung trong reference calendar. Giữ nguyên document, không refresh.
+  Không thử gọi control bị khóa hoặc API ẩn.
 - Local: Testing/Analytics/Sessions/Performance, phiên đang chọn có một giao dịch
   đã đóng; timezone Settings Asia/Ho_Chi_Minh, market clock, USD. Source baseline
   `66c091b`; thay đổi Trades help trong cùng lượt không đổi Analytics.

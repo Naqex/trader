@@ -7,10 +7,12 @@ Analytics và Live: cả hai DOM đều có `fxr-ui-calendar-view` và
 `fxr-ui-calendar-day-cell`, được đặt trong host khác nhau. Đây không phải bằng
 chứng chúng dùng chung backend, công thức tính hoặc mọi control.
 
-Testing calendar của tài khoản Free đang có blur/upgrade gate. Chỉ đọc thông tin
+Ở lần quan sát đầu, Testing calendar của tài khoản Free có blur/upgrade gate. Chỉ đọc thông tin
 trang đã render; không thao tác control nằm dưới gate, không gọi endpoint đoán
 mò, không lấy component state nội bộ. Chưa kiểm được menu metric, Month/Year,
-ngày chi tiết hay % initial/current bằng thao tác thực tế ở Testing.
+ngày chi tiết hay % initial/current bằng thao tác thực tế ở Testing tại thời điểm đó.
+Lần owner mở sẵn trang sau đó đã cho phép kiểm các control bình thường; kết quả
+bổ sung ở cuối tài liệu. Không refresh hoặc điều hướng lại trang của owner.
 
 Nguồn chính thức bổ sung: [Analytic Metrics Defined](https://support.fxreplay.com/articles/analytic-metrics-defined)
 mô tả calendar theo ngày, hỗ trợ tháng/năm cùng % và RR. Tài liệu không xác định
@@ -103,4 +105,58 @@ kiểm chứng, và chưa là receipt triển khai calendar.
 Review độc lập source/reference/raw PASS. Gap ban đầu do AX snapshot chỉ chứa
 no-change đã được sửa bằng full AX và bounded rendered HTML JSON của cả hai FX
 surfaces; script đọc số tiền từ raw thay vì hard-code. Reviewer xác nhận lại tags,
-tổng demo và yêu cầu incomplete marker; các giới hạn phía trên vẫn giữ nguyên.
+tổng demo và yêu cầu incomplete marker. Review này áp dụng cho lượt research đầu;
+lượt bổ sung dưới đây có bằng chứng thao tác riêng.
+
+## Bổ sung khi owner mở sẵn toàn bộ biểu đồ
+
+Owner nhắc lại đây chỉ là **demo data của FX**. Dùng để khảo sát layout/control/
+format và tạo giả thuyết cần kiểm; không dùng nó làm căn cứ xác nhận hoặc đổi
+công thức production/local. Cần dữ liệu thật hoặc định nghĩa đáng tin bổ sung.
+
+Đã đọc lại đúng tab hiện có và thấy `Viewing demo analytics`, toàn bộ các nhóm
+biểu đồ cùng calendar rõ nét. Không reload/goto, không thay style/gate hoặc đọc
+component state. Các lựa chọn sau được thao tác qua control trên trang:
+
+- Menu gồm **Dollar Profit**, **% Profit**, **Risk Reward**. Không phải menu
+  net/win rate/count/average R của local hiện tại.
+- **Month → Year → Month** hoạt động. Year là 12 lịch tháng thu nhỏ, tô màu ngày;
+  số tiền/RR và số giao dịch không hiện trực tiếp trong các ô nhỏ đã quan sát.
+- Initial/Current làm thay đổi % như bảng dưới. Radio vẫn còn hiển thị khi chọn
+  Dollar Profit hoặc Risk Reward; chưa kiểm mọi tổ hợp metric/basis.
+- Click ô ngày9 có2 trades không đổi AX, không mở dialog/detail trong lần thử.
+  Chưa kết luận mọi ngày hoặc dữ liệu thật đều không có hành vi chi tiết.
+- Risk Reward ở các ngày9/11/15/17 lần lượt là **3.65/0.00/0.00/0.00 RR**.
+  Không có raw risk/stop của từng trade để xác minh các0 là giá trị thật hay
+  cách xử lý thiếu dữ liệu của demo; không sao chép cách điền0 này vào local.
+
+### Phần trăm quan sát và kiểm số học
+
+| Ngày tháng6/2025 | Dollar Profit | Initial Balance | Current Balance |
+| --- | ---: | ---: | ---: |
+| 9 | 3652.17 | 3.65% | 3.65% |
+| 11 | 4390.00 | 4.39% | 4.24% |
+| 15 | -460.00 | -0.46% | -0.43% |
+| 17 | 916.00 | 0.92% | 0.85% |
+
+Với vốn đầu100000USD (suy ra từ headline balance108500 trừ PnL8500), cả bốn
+Initial khớp `dailyPnL / initialBalance * 100` sau làm tròn2 chữ số.
+Current khớp `dailyPnL / (initialBalance + tổng PnL các ngày trước) * 100`:
+mẫu số100000,103652.17,108042.17,107582.17. Đây là **suy luận khớp mẫu demo**,
+chưa chứng minh backend dùng đúng công thức này khi nhiều phiên, nạp/rút hoặc
+nhiều lệnh trong ngày. Chênh1.83USD giữa tổng calendar và headline vẫn chưa rõ.
+
+### Điều chỉnh đề xuất
+
+Học cách điều hướng tháng/năm và Year overview, tiêu đề ngoài card, ngày ngoài
+tháng mờ. Có thể bổ sung Dollar/%/R cho Analytics sau khi hợp đồng vốn và R rõ;
+không đổi nghĩa average R hiện tại chỉ vì FX ghi Risk Reward. Chỉ hiện basis
+Initial/Current khi metric% thực sự dùng nó, tránh control không có tác dụng.
+Giữ unknown và coverage của local; không lấy demo làm oracle cho tiền hoặc R.
+Day detail chỉ đọc vẫn là đề xuất riêng cho local, không phải hành vi FX đã chứng minh.
+
+Raw bổ sung: `E:/BACKUP-TRADINGWORKSPACE/fxreplay-reference-20261026/testing-analytics/owner-opened/`.
+`calendar-interactions.json` lưu text từng state; các ảnh `fx-calendar-*` và full
+AX lưu menu, basis, Year và state cuối. Manifest riêng chứa hash các file.
+Đã trả về **June2025 / Month / Dollar Profit / Initial Balance**, giữ demo mở;
+vị trí cuộn ở các ô ngày có dữ liệu. Chưa sửa calendar local hoặc Live.
