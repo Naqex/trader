@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import './LegacyPopover.css'
+import { tooltipPlacement } from './tooltipPlacement.js'
 
 export default function LegacyPopover({ anchor, theme, label, onClose, onAnchorLost, children, wide = false, role = 'group', id, onPointerEnter, onPointerLeave, className = '', offset = 4, maxWidth = Infinity }) {
   const ref = useRef(null), closeRef = useRef(onClose), lostRef = useRef(onAnchorLost), [position, setPosition] = useState({ style: { visibility: 'hidden' } })
@@ -12,15 +13,19 @@ export default function LegacyPopover({ anchor, theme, label, onClose, onAnchorL
     const place = () => {
       if (!anchor.isConnected || !anchor.getBoundingClientRect().width) { (lostRef.current || closeRef.current)(); return }
       const a = anchor.getBoundingClientRect(), p = popup.getBoundingClientRect()
+      if (role === 'tooltip') {
+        const layout = tooltipPlacement(a, p, { width: view.innerWidth, height: view.innerHeight }, { gap: offset, maxWidth })
+        setPosition({ side: layout.side, style: { left: layout.left, top: layout.top, maxWidth: layout.maxWidth, maxHeight: layout.maxHeight,
+          '--wm-tooltip-arrow-x': `${layout.arrowX}px`, '--wm-tooltip-arrow-y': `${layout.arrowY}px`, '--wm-tooltip-max-height': `${layout.maxHeight}px` } })
+        return
+      }
       const height = Math.min(p.height, view.innerHeight - 16), width = Math.min(p.width, view.innerWidth - 16)
       const below = a.bottom + height + offset <= view.innerHeight
-      const preferredLeft = role === 'tooltip' ? a.left + a.width / 2 - width / 2 : a.right - width
+      const preferredLeft = a.right - width
       const left = Math.max(8, Math.min(preferredLeft, view.innerWidth - width - 8))
-      const arrowInset = Math.min(18, width / 2)
       setPosition({ side: below ? 'bottom' : 'top', style: {
         maxWidth: Math.min(maxWidth, view.innerWidth - 16), maxHeight: view.innerHeight - 16,
         left, top: Math.max(8, below ? a.bottom + offset : a.top - height - offset),
-        ...(role === 'tooltip' ? { '--wm-tooltip-arrow-x': `${Math.max(arrowInset, Math.min(a.left + a.width / 2 - left, width - arrowInset))}px` } : {}),
       } })
     }
     place()

@@ -50,10 +50,19 @@ data text. RR mini curves are 48px sparklines without axis labels; their points
 retain tooltips and keyboard access. Other compact plots retain their axes.
 Report panels do not show fullscreen controls. PnL shows only the four interval
 controls in its heading, with no standalone currency or balance/PnL toggle.
+Report tabs use content-width targets aligned left, with a gray active surface;
+small screens distribute three equal targets. Filter triggers retain their names
+without selected-count badges; applied values appear in the removable chip row.
 Its six summary groups pair PnL/balance with inline percent changes, win rate,
 trade count with superscript wins/losses, breakeven count and an inline threshold
 input with an Apply action. Definitions use the shared SVG info icon, centered
 in a consistent control box. Mobile radars use one column.
+The PnL plot toolbar exposes zoom in/out, rectangle selection, pan and reset.
+Zoom changes only the visible sample window, retaining original trade IDs, labels
+and values. Dragging never selects a trade; a plain point click still opens its
+inspector. +/- zoom, arrow keys pan and 0 resets when the plot has keyboard focus.
+Changing the interval resets the visible window. Tooltip geometry and short/long
+reading formats follow the shared project compact-system contract.
 Definitions belong in accessible info controls, with no permanent explanatory
 paragraphs. Do not render a report-level scope/provenance footer; original fields
 remain available in the selected-trade inspector and exports.

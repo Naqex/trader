@@ -1,4 +1,13 @@
 {
+  "RR trung bình là tỷ lệ lợi nhuận/rủi ro bình quân mỗi giao dịch. Ví dụ RR bằng 2 tương ứng lợi nhuận bằng 2 lần mức rủi ro.\n\nHiện dùng lãi/lỗ ròng chia rủi ro ban đầu của các lệnh có dữ liệu.": {"vi":"RR trung bình là tỷ lệ lợi nhuận/rủi ro bình quân mỗi giao dịch. Ví dụ RR bằng 2 tương ứng lợi nhuận bằng 2 lần mức rủi ro.\n\nHiện dùng lãi/lỗ ròng chia rủi ro ban đầu của các lệnh có dữ liệu.","en":"Average RR is the mean reward-to-risk ratio per trade. An RR of 2 means profit equal to twice the risk.\n\nIt uses net PnL divided by initial risk for trades with available data."},
+  "RR lý tưởng là tỷ lệ lợi nhuận/rủi ro tối đa có thể đạt nếu giữ lệnh tới một tuần sau khi mở.\n\nGiá trị trung bình dùng các cửa sổ đủ dữ liệu trong phạm vi báo cáo; đỉnh trên biểu đồ giúp nhìn lại cơ hội có thể đã chốt quá sớm.": {"vi":"RR lý tưởng là tỷ lệ lợi nhuận/rủi ro tối đa có thể đạt nếu giữ lệnh tới một tuần sau khi mở.\n\nGiá trị trung bình dùng các cửa sổ đủ dữ liệu trong phạm vi báo cáo; đỉnh trên biểu đồ giúp nhìn lại cơ hội có thể đã chốt quá sớm.","en":"Ideal RR is the maximum reward-to-risk ratio observed within one week after entry.\n\nThe average uses complete windows in the report scope; chart peaks help review missed exit opportunities."},
+  "Số giao dịch thua từng có cơ hội đóng với lãi/lỗ ròng không âm trong cửa sổ một tuần đã có đủ dữ liệu.\n\nĐã tính phí; giá quan sát không bảo đảm khớp lệnh thực tế.": {"vi":"Số giao dịch thua từng có cơ hội đóng với lãi/lỗ ròng không âm trong cửa sổ một tuần đã có đủ dữ liệu.\n\nĐã tính phí; giá quan sát không bảo đảm khớp lệnh thực tế.","en":"Losing trades with an observed opportunity to close at nonnegative net PnL within a complete one-week window.\n\nFees are included; observed prices do not guarantee execution."},
+  "Công cụ biểu đồ": {"vi":"Công cụ biểu đồ","en":"Chart tools"},
+  "Phóng to biểu đồ": {"vi":"Phóng to biểu đồ","en":"Zoom in"},
+  "Thu nhỏ biểu đồ": {"vi":"Thu nhỏ biểu đồ","en":"Zoom out"},
+  "Chọn vùng phóng to": {"vi":"Chọn vùng phóng to","en":"Zoom selection"},
+  "Kéo biểu đồ": {"vi":"Kéo biểu đồ","en":"Pan chart"},
+  "Đặt lại biểu đồ": {"vi":"Đặt lại biểu đồ","en":"Reset chart"},
   "Theo thời gian": {"vi":"Theo thời gian","en":"Over time"},
   "Số dư tài khoản": {"vi":"Số dư tài khoản","en":"Account balance"},
   "Giao dịch hòa vốn": {"vi":"Giao dịch hòa vốn","en":"Breakeven trades"},

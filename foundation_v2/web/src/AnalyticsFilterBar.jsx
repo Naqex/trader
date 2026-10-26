@@ -54,7 +54,7 @@ export default function AnalyticsFilterBar({ filters, onChange, extra, onExtra, 
   const multi = (label, key, values, legacy, server = false, renderOption) => {
     const chosen = filterValues(draftExtra[key]), old = (server ? draft : draftExtra)[legacy]
     const selected = chosen.length ? chosen : old && old !== 'all' ? [old] : []
-    return <FxSelect key={key} label={label} triggerContent={<>{t(label)}{selected.length > 0 && <span className="fxa-filter-count">{selected.length}</span>}</>} searchable multiple value={selected} options={values} renderOption={renderOption} onChange={next => {
+    return <FxSelect key={key} label={label} triggerContent={t(label)} searchable multiple value={selected} options={values} renderOption={renderOption} onChange={next => {
       changeExtra({ [key]: JSON.stringify(next), ...(!server && legacy ? { [legacy]: 'all' } : {}), ...(key === 'tagInclude' ? { tagIncludeMode: 'OR' } : {}) })
       if (server) change({ [legacy]: 'all' })
     }} />

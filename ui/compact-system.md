@@ -14,7 +14,7 @@ của sản phẩm. Thông số chuẩn và các ngoại lệ bên dưới đư�
 | Tab chọn loại trong dialog | Nút cao28px, cả cụm36px | Nút44px | Gọn hơn nút hành động |
 | Tab báo cáo | 36px | 44px | Không đổi chiều cao khi chọn |
 | Thanh tab chuyển trang | 48px | Giữ cuộn ngang khi cần | Hover chỉ sáng chữ/icon, chọn có gạch dưới |
-| Icon nhỏ / thường / navigation / minh hoạ | 16 / 18 / 20 / 24px | Hình giữ kích thước, vùng bấm tăng | Nét đều1.6, không dùng emoji thay icon |
+| Icon nhỏ / thường / navigation / minh hoạ | 16 / 18 / 20 / 24px | Hình giữ kích thước, vùng bấm tăng | Control dùng nét2 trên grid24; navigation hiện hữu giữ1.8. Không dùng emoji thay icon |
 | Chữ phụ | 12px | 12px | Dòng18px, không thu nhỏ chữ để nhét vừa |
 | Chữ nút / ô nhập / bảng | 13px | 13px | Dòng20px, đậm vừa500 |
 | Nội dung chính | 14px | 14px | Dòng21px, độ đậm400 |
@@ -38,6 +38,13 @@ cầu riêng. Cần ghi rõ ngoại lệ, không đặt một số mới chỉ v
 
 Ngoại lệ màn hẹp dùng chuột: tab chọn loại phiên vẫn cao28px và nút X vẫn32px.
 Khi thiết bị dùng cảm ứng, hai vùng bấm này tăng lên44px; hình icon không phóng to.
+
+Icon trợ giúp dùng SVG16px, không giảm còn14px. `TestingIcon` và filter icon
+dùng nét2 trên viewBox24; chevron dropdown dùng nét2 trên viewBox20.
+Ở icon16px/grid24, nét thực khoảng1.33px, tránh nét dưới1px khi
+hiển thị100% trên màn DPR1. Giữ kích thước CSS nguyên và căn giữa control; không
+scale bitmap, làm mờ bằng opacity hoặc ép `crispEdges` lên icon tròn/chéo.
+Đây là điều chỉnh quang học ở consumer, không đổi version token chung.
 
 ## Màu và hover
 
@@ -139,14 +146,20 @@ lớp nội dung; chưa có cơ sở hứa mọi máy chạy60fps hay giống t�
 
 Tooltip của app dùng `ProjectTooltipLayer` một lần tại root và `data-tooltip`
 trên control, thay cho `title` mặc định. Dùng màu `project-raised/text/border`,
-chữ 12/18px, padding 8/10px, bo field, rộng tối đa 280px, cách control 8px và
-cách mép viewport ít nhất 8px. Chỉ fade theo motion hover; reduced-motion tắt fade.
-Tooltip ưu tiên căn giữa control; mũi tên nhỏ dùng cùng nền/viền và đổi cạnh khi
-chuyển lên trên. Khi bị đẩy vào trong viewport, tâm mũi tên cách mép ít nhất18px
-(hoặc nửa chiều rộng tooltip rất ngắn) để không giao với góc bo.
-Phần chữ dài cuộn bên trong để không cắt mũi tên.
+chữ13/20px và bo field. Nội dung ngắn rộng theo chữ, tối đa320px, padding8/10px.
+Nội dung trên160 ký tự hoặc có nhiều đoạn dùng khổ dọc240px, padding12/14px;
+tác giả ngắt đoạn bằng hai ký tự xuống dòng, không ép mỗi câu thành một dòng.
+Các đoạn cách8px; phần đọc dài tối đa440px và cuộn bên trong khi cần.
+
+Tooltip cách control8px và mép viewport ít nhất8px. Ưu tiên phía trên, rồi dưới;
+nếu hai phía thiếu chỗ thì thử phải/trái. Không cạnh nào chứa đủ thì dùng vùng
+trống lớn nhất, giới hạn kích thước và cho cuộn nội dung. Không che control mở.
+Tọa độ ngoài được làm tròn theo CSS pixel. Mũi tên đổi đúng cạnh, hướng về control
+và cách góc bo ít nhất16px (hoặc nửa chiều tooltip rất ngắn).
+Chỉ fade theo motion hover; reduced-motion tắt fade. Cuộn trong tooltip không đóng
+nó; cuộn trang đóng để tránh gợi ý treo sai vị trí.
 Hover chờ 180ms, focus bàn phím hiện ngay; có 120ms để đi từ control vào tooltip.
-Escape, cuộn, đổi kích thước hoặc mất anchor đóng gợi ý; tooltip không nhận focus.
+Escape, cuộn trang, đổi kích thước hoặc mất anchor đóng gợi ý; tooltip không nhận focus.
 Giữ `aria-label` cho tên nút; lớp chung thêm/xóa `aria-describedby` khi hiện/đóng.
 `data-tooltip-touch` cho nút trợ giúp cần mở bằng chạm. Không đặt action/link trong
 tooltip; dùng popover cho nội dung tương tác. Mẫu thật ở `?ui_reference=1`, mục

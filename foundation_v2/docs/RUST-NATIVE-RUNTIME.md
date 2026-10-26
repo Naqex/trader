@@ -1,6 +1,12 @@
 # Rust-native candidate runtime
 
-Latest UI-only rollout: [26 October PnL and RR reference layout](../evidence/analytics-pnl-reference-20261026/RECEIPT.md)
+Latest UI-only rollout: [26 October Analytics controls and adaptive tooltips](../evidence/analytics-controls-tooltips-20261026/RECEIPT.md)
+compacts report tabs, removes filter count badges, restores PnL chart tools and
+adapts shared tooltip placement and reading width. Control icons use clearer SVG
+strokes. UI5180 was updated without API or terminal restart; financial models and
+owner data are unchanged.
+
+Previous UI-only rollout: [26 October PnL and RR reference layout](../evidence/analytics-pnl-reference-20261026/RECEIPT.md)
 aligns the PnL summary and three RR cards with the supplied reference, removes report
 fullscreen controls and extends the same components in sample mode. Formulas retain
 their existing contracts. UI5180 was updated without API or terminal restart.

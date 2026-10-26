@@ -60,6 +60,7 @@ export default function ProjectTooltipLayer({ targetDocument = document, theme: 
       const anchor = hint(event.target)
       if (anchor?.hasAttribute('data-tooltip-touch')) { dismissed = null; show(anchor, true) }
     }
+    const scroll = event => { if (!inTooltip(event.target)) hide() }
     const key = event => {
       if (event.key === 'Escape' && (current.current || timers.current.anchor)) {
         event.preventDefault(); event.stopPropagation(); dismissed = current.current?.anchor || timers.current.anchor; hide()
@@ -72,7 +73,7 @@ export default function ProjectTooltipLayer({ targetDocument = document, theme: 
     doc.addEventListener('pointerdown', down, true)
     doc.addEventListener('click', click)
     doc.addEventListener('keydown', key, true)
-    doc.addEventListener('scroll', hide, true)
+    doc.addEventListener('scroll', scroll, true)
     view.addEventListener('blur', hide)
     view.addEventListener('resize', hide)
     return () => {
@@ -84,7 +85,7 @@ export default function ProjectTooltipLayer({ targetDocument = document, theme: 
       doc.removeEventListener('pointerdown', down, true)
       doc.removeEventListener('click', click)
       doc.removeEventListener('keydown', key, true)
-      doc.removeEventListener('scroll', hide, true)
+      doc.removeEventListener('scroll', scroll, true)
       view.removeEventListener('blur', hide)
       view.removeEventListener('resize', hide)
       current.current = null; setTip(null)
@@ -112,5 +113,6 @@ export default function ProjectTooltipLayer({ targetDocument = document, theme: 
   }, [tip?.anchor, id, targetDocument])
   if (!tip) return null
   const theme = suppliedTheme || tip.anchor.closest('[data-theme]')?.dataset.theme || document.querySelector('.fx-app')?.dataset.theme || 'dark'
-  return <LegacyPopover anchor={tip.anchor} theme={theme} id={id} role="tooltip" className="wm-tooltip" offset={8} maxWidth={280} onClose={hide} onPointerEnter={keepOpen} onPointerLeave={closeSoon}><span className="wm-tooltip-content">{tip.text}</span></LegacyPopover>
+  const detailed = tip.text.length > 160 || tip.text.includes('\n\n')
+  return <LegacyPopover anchor={tip.anchor} theme={theme} id={id} role="tooltip" className={`wm-tooltip${detailed ? ' is-detail' : ''}`} offset={8} maxWidth={detailed ? 240 : 320} onClose={hide} onPointerEnter={keepOpen} onPointerLeave={closeSoon}><div className="wm-tooltip-content">{tip.text.split(/\n{2,}/).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div></LegacyPopover>
 }
