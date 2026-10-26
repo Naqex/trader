@@ -1,6 +1,12 @@
 # Rust-native candidate runtime
 
-Latest UI-only rollout: [26 October Performance PF progress gauge](../evidence/analytics-pf-gauge-20261026/RECEIPT.md)
+Latest UI-only rollout: [26 October Analytics Performance detail](../evidence/analytics-performance-detail-20261026/RECEIPT.md)
+separates winner/loser cards, gives Buy/Sell charts their own help, uses explicit
+UTC market-session windows and percentage returns, and updates hourly/daily,
+monthly and frequency presentation. Source capital/snapshot rules and partial
+calendar coverage are explicit. Sample and real reports share the components.
+
+Previous UI-only rollout: [26 October Performance PF progress gauge](../evidence/analytics-pf-gauge-20261026/RECEIPT.md)
 uses a blue ring capped visually at PF4 while retaining the actual ratio and
 explicit zero/infinity/unknown states. Average amounts use positive/negative
 colors; outcomes use a full-height central divider. The receipt records the

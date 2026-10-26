@@ -335,6 +335,41 @@
 @media(max-width:600px){.fxa-expectancy-panel .fxa-two-columns>div+div{grid-template-columns:minmax(0,1fr) 90px}.fxa-expectancy-panel .fxa-chart-legend{flex:1}.fxa-expectancy-panel .fxa-chart-legend span{white-space:nowrap}}
 
 .fxa-pf-gauge{display:block;width:90px;height:90px;justify-self:end}
-.fxa-outcome-panel>.fxa-two-columns{position:relative;gap:32px}
-.fxa-outcome-panel>.fxa-two-columns::after{content:"";position:absolute;top:-16px;bottom:-16px;left:50%;width:1px;background:var(--wm-border);pointer-events:none}
-@media(min-width:1001px) and (max-width:1200px),(max-width:600px){.fxa-outcome-panel>.fxa-two-columns>.fxa-outcomes+article{padding-top:16px;position:relative}.fxa-outcome-panel>.fxa-two-columns>.fxa-outcomes+article::before{content:"";position:absolute;top:0;inset-inline:-16px;height:1px;background:var(--wm-border);pointer-events:none}.fxa-outcome-panel>.fxa-two-columns::after{display:none}}
+.fxa-outcome-panel{min-width:0}
+.fxa-outcome-panel>.fxa-two-columns{height:100%;gap:16px}
+.fxa-outcome-panel .fxa-outcomes{padding:16px;border:1px solid var(--report-positive);border-radius:8px;background:var(--wm-surface)}
+.fxa-outcome-panel .fxa-outcomes.is-loss{border-color:var(--report-negative)}
+.fxa-outcome-panel .fxa-outcomes h3{color:var(--wm-content)}
+.fxa-chart-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;min-width:0}
+.fxa-chart-heading h3{display:flex;align-items:center;gap:6px;margin:0;font-size:13px;font-weight:500;color:var(--wm-content);line-height:20px}
+.fxa-chart-heading>span{color:var(--wm-content-muted);font-size:12px;white-space:nowrap;line-height:20px}
+.fxa-chart-heading>span strong{color:var(--wm-content);font-weight:500;margin-left:4px;font-variant-numeric:tabular-nums}
+.fxa-side-panel .fxa-chart-heading{justify-content:center}
+.fxa-radar-card{min-width:0;border:1px solid var(--wm-border);border-radius:8px;padding:12px 8px 4px}
+.fxa-radar-card .fxa-chart-heading{justify-content:center;margin-bottom:0}
+.fxa-hours-panel .fxa-radar text{font-size:15px}
+.fxa-month-controls{display:flex;justify-content:space-between;gap:12px 24px;flex-wrap:wrap}
+.fxa-month-controls fieldset{display:flex;gap:12px 20px;flex-wrap:wrap;border:0;margin:0;padding:0;min-width:0}
+.fxa-month-controls fieldset>div,.fxa-month-controls label{display:flex;align-items:center;gap:6px}
+.fxa-month-controls label{font-size:13px;cursor:pointer}
+.fxa-month-controls label:has(input:disabled){color:var(--wm-content-muted);cursor:default}
+.fxa-month-controls input{accent-color:var(--report-blue);width:14px;height:14px;margin:0}
+.fxa-month-total>*{border-top:1px solid var(--wm-border);font-weight:600}
+.fxa-frequency-panel.fxa-panel{padding:0;border:0;background:transparent}
+.fxa-frequency-panel .fxa-three-columns{grid-template-columns:1fr;gap:16px}
+.fxa-frequency-panel .fxa-three-columns>.fxa-frequency-card{display:block;padding:16px;min-width:0;border:1px solid var(--wm-border);border-radius:8px;background:var(--wm-surface)}
+.fxa-frequency-card .fxa-viz{margin-top:0}
+@media(min-width:1001px) and (max-width:1200px){.fxa-outcome-panel>.fxa-two-columns{grid-template-columns:1fr}}
+@media(max-width:1200px) and (min-width:601px){.fxa-frequency-panel .fxa-three-columns{grid-template-columns:repeat(3,minmax(0,1fr))}.fxa-frequency-card .fxa-chart-heading{flex-wrap:wrap;gap:4px}}
+@media(max-width:600px){.fxa-outcome-panel>.fxa-two-columns{grid-template-columns:1fr}.fxa-month-controls fieldset{flex-direction:column;gap:10px}.fxa-side-panel .fxa-chart-heading h3{font-size:12px}}
+
+.fxa-time-incomplete{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:400;color:var(--wm-content-muted)}
+.fxa-panel-title:has(.fxa-time-incomplete){flex-wrap:wrap}
+.fxa-frequency-panel>.fxa-time-incomplete{margin-bottom:8px}
+
+@media(max-width:600px){.fxa-calendar-day>span{grid-column:1/-1;white-space:nowrap}}
+
+.fxa-calendar-scroll{overflow-x:auto;max-width:100%;scrollbar-width:thin}
+.fxa-visual-report .fxa-calendar{min-width:280px;grid-template-columns:repeat(7,minmax(max-content,1fr))}
+.fxa-calendar-day strong{white-space:nowrap}
+@media(max-width:600px){.fxa-visual-report .fxa-calendar-day{padding:4px}}

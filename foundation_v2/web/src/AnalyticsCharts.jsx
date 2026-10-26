@@ -132,10 +132,26 @@ export function AnalyticsBars({ items, metric = 'net', label, suffix = '', maxim
     {ticks.map((value, index) => <g key={value}><line className="fxa-gridline" x1={left} x2={right} y1={y(value)} y2={y(value)}/><text x={left - 10} y={y(value)} textAnchor="end" dominantBaseline="middle">{axis[index]}</text></g>)}
     {combo && [0, 50, 100].map(value => <text key={value} x={right + 8} y={rate(value)} dominantBaseline="middle">{value}%</text>)}
     {items.map((item, index) => {
-      const value = item[metric], valid = finite(value), detail = `${t(item.label)}: ${valid ? fmt(value, suffix, integer ? 0 : 2) : t('Chưa có dữ liệu')}${combo ? ` · ${t('Tỉ lệ thắng')}: ${fmt(item.winRate, '%')}` : ''}`
+      const value = item[metric], valid = finite(value), detail = `${item.tooltipLabel || t(item.label)}: ${valid ? fmt(value, suffix, integer ? 0 : 2) : t('Chưa có dữ liệu')}${combo ? ` · ${t('Tỉ lệ thắng')}: ${fmt(item.winRate, '%')}` : ''}`
       return <g key={`${item.label}:${index}`} tabIndex={0} role="img" aria-label={detail} data-tooltip={detail} data-tooltip-touch=""><rect className={color === 'signed' ? value < 0 ? 'fxa-fill-negative' : 'fxa-fill-positive' : 'fxa-fill-blue'} x={center(index) - barWidth / 2} y={valid ? Math.min(y(0), y(value)) : edge} width={barWidth} height={valid ? Math.abs(y(0) - y(value)) : 0} rx="2"/>{valid && value === 0 && <circle cx={center(index)} cy={y(0)} r="2" className="fxa-fill-blue"/>}<rect x={left + index * step} y={top} width={step} height={edge - top} fill="transparent"/>{(index % stride === 0 || items.length <= 7) && <text x={center(index)} y={height - 14} textAnchor="middle">{t(item.label)}</text>}</g>
     })}
     {combo && items.map((item, index) => finite(item.winRate) && <circle key={index} cx={center(index)} cy={rate(item.winRate)} r="4" fill="var(--report-blue)"><title>{`${t(item.label)} · ${fmt(item.winRate, '%')}`}</title></circle>)}
+  </svg></div>
+}
+
+export function AnalyticsDailyBars({ items, currency }) {
+  const { t, fmt, locale } = useTestingLocale(), height = 300, [ref, width] = useSize(height)
+  const domain = chartDomain(items.map(item => item.net).filter(finite), { symmetric: true })
+  if (!domain || !items.length) return <div ref={ref} className="fxa-chart-empty">{t('Chưa có dữ liệu')}</div>
+  const left = 32, right = width - 86, top = 42, step = 31, bottom = top + items.length * step
+  const x = value => domain.high === domain.low ? (left + right) / 2 : left + (value - domain.low) / (domain.high - domain.low) * (right - left)
+  return <div ref={ref} className="fxa-viz fxa-daily-bars" style={{height}}><svg viewBox={`0 0 ${width} ${height}`} role="group" aria-label={t('Performance by day')}>
+    <text x={left} y="16">{currency}</text><text x={width-4} y="16" textAnchor="end">{t('Win rate')}</text>
+    {chartTicks(domain, width < 400 ? 3 : 5).map(value=><g key={value}><line className="fxa-gridline" x1={x(value)} x2={x(value)} y1={top-14} y2={bottom}/><text x={x(value)} y={bottom+20} textAnchor="middle">{tickText(value,domain,locale,'')}</text></g>)}
+    {items.map((item,index)=>{
+      const y=top+index*step, valid=finite(item.net), detail=`${t(item.label)}: ${item.count && valid?fmt(item.net,` ${currency}`):'N/A'} · ${t('Win rate')}: ${finite(item.winRate)?fmt(item.winRate,'%'):'N/A'}`
+      return <g key={item.label} tabIndex={0} role="img" aria-label={detail} data-tooltip={detail} data-tooltip-touch=""><rect x="0" y={y-14} width={width} height={step} fill="transparent"/><text x="0" y={y+3}>{t(item.label)}</text>{valid&&<rect x={Math.min(x(0),x(item.net))} y={y-8} width={Math.abs(x(item.net)-x(0))} height="18" rx="2" className={item.net<0?'fxa-fill-negative':'fxa-fill-positive'}/>}<text x={width-4} y={y+4} textAnchor="end">{finite(item.winRate)?fmt(item.winRate,'%'):'N/A'}</text></g>
+    })}
   </svg></div>
 }
 
@@ -155,11 +171,18 @@ export function AnalyticsRadar({ items, metric, label, suffix = '', maximum }) {
   const cx = 150, cy = 120, r = 74, p = (index, fraction) => [cx + Math.sin(index * Math.PI / 2) * r * fraction, cy - Math.cos(index * Math.PI / 2) * r * fraction]
   const polygon = fraction => items.map((_, index) => p(index, fraction).join(',')).join(' ')
   const pointValues = items.map(item => finite(item[metric]) ? item[metric] : null), complete = pointValues.every(finite)
-  if (!items.length) return <div className="fxa-radar"><h3>{t(label)}</h3><div className="fxa-chart-empty">{t('Chưa có dữ liệu')}</div></div>
-  return <div className="fxa-radar"><h3>{t(label)}</h3><svg viewBox="0 0 300 248" role="img" aria-label={`${label}: ${items.map(item => `${item.label}: ${fmt(item[metric], suffix)}`).join('; ')}`}>
+  if (!items.length) return <div className="fxa-radar"><div className="fxa-chart-empty">{t('Chưa có dữ liệu')}</div></div>
+  return <div className="fxa-radar"><svg viewBox="0 0 300 248" role="img" aria-label={`${label}: ${items.map(item => `${t(item.label)}: ${finite(item[metric])?fmt(item[metric], suffix):'N/A'}`).join('; ')}`}>
     {[.25,.5,.75,1].map(f => <polygon key={f} points={polygon(f)} fill="none" className="fxa-gridline"/>)}
-    {items.map((item,index) => { const [x,y] = p(index,1), [tx,ty] = p(index,1.38); return <g key={item.label}><line x1={cx} y1={cy} x2={x} y2={y} className="fxa-gridline"/><text x={tx} y={ty} textAnchor="middle" dominantBaseline="middle">{t(item.label)}</text></g> })}
+    {items.map((item,index) => { const [x,y] = p(index,1), [tx,ty] = p(index,1.38), valid=finite(item[metric]), fraction=valid&&domain&&domain.high!==domain.low?(item[metric]-domain.low)/(domain.high-domain.low):0, [px,py]=p(index,fraction), detail=`${t(item.label)}: ${valid?fmt(item[metric],suffix):'N/A'}`; return <g key={item.label} tabIndex={0} role="img" aria-label={detail} data-tooltip={detail} data-tooltip-touch=""><line x1={cx} y1={cy} x2={x} y2={y} className="fxa-gridline"/><text x={tx} y={ty} textAnchor="middle" dominantBaseline="middle">{t(item.label)}<tspan x={tx} dy="16">{valid?fmt(item[metric],suffix):'N/A'}</tspan></text><circle cx={x} cy={y} r="12" fill="transparent"/>{valid&&<circle cx={px} cy={py} r="3" fill="var(--report-blue)"/>}</g> })}
     {domain && complete && <polygon points={items.map((item,index) => p(index,domain.high === domain.low ? 0 : (item[metric] - domain.low) / (domain.high - domain.low)).join(',')).join(' ')} fill="var(--report-blue)" fillOpacity=".2" stroke="var(--report-blue)" strokeWidth="2"/>}
-    {!complete && <text x={cx} y={cy} textAnchor="middle">N/A</text>}
+    {domain && !complete && items.map((item,index)=>{
+      const next=(index+1)%items.length
+      if(!finite(item[metric])||!finite(items[next][metric]))return null
+      const fraction=value=>domain.high===domain.low?0:(value-domain.low)/(domain.high-domain.low)
+      const [x1,y1]=p(index,fraction(item[metric])),[x2,y2]=p(next,fraction(items[next][metric]))
+      return <line key={index} x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--report-blue)" strokeWidth="2"/>
+    })}
+    {!pointValues.some(finite) && <text x={cx} y={cy} textAnchor="middle">N/A</text>}
   </svg></div>
 }

@@ -87,14 +87,14 @@ test('initial-baseline, unknown-time and unfinished recovery durations stay unav
   assert.equal(ongoing.recoveryEpisodes[0].recoveryTimeUtc, null)
 })
 
-test('session bands own local close hours and provide all four radar dimensions', () => {
-  const source = model([20, -10], ['2024-03-09T12:30:00Z', '2024-03-10T12:30:00Z'])
+test('published UTC sessions overlap and stay independent of display zone and DST', () => {
+  const source = model([20, -10, 30, 5], ['2024-03-09T07:00:00Z', '2024-03-10T13:00:00Z', '2024-03-10T22:00:00Z', '2024-03-10T09:00:00Z'])
   source.ledger.forEach(row => { row.planned_risk_budget = 10 })
   const data = advancedAnalytics(source, { timezone: 'America/New_York' })
-  assert.deepEqual(data.sessionGrouping, { basis: 'fixed_close_hour_bands', timezone: 'America/New_York', timeField: 'report_time_utc' })
-  const before = data.sessions.find(item => item.label === '00–08'), after = data.sessions.find(item => item.label === '08–13')
-  assert.equal(before.count, 1); assert.equal(before.net, 20); assert.equal(before.winRate, 100); assert.equal(before.averageR, 2)
-  assert.equal(after.count, 1); assert.equal(after.net, -10); assert.equal(after.winRate, 0); assert.equal(after.averageR, -1)
+  assert.deepEqual(data.sessionGrouping, { basis: 'fixed_utc_market_windows_overlapping', timezone: 'UTC', timeField: 'report_time_utc' })
+  assert.deepEqual(data.sessions.map(item => [item.label,item.count,item.net]), [['Out of session',1,30],['Asia',1,20],['New York',1,-10],['London',3,15]])
+  assert.equal(data.sessions.find(item => item.label === 'London').profitPct, 1.5)
+  assert.deepEqual(data.sessions, advancedAnalytics(source, { timezone: 'Asia/Ho_Chi_Minh' }).sessions)
 })
 
 test('breakeven threshold reclassifies outcomes and runs consistently without changing money', () => {
@@ -107,7 +107,7 @@ test('breakeven threshold reclassifies outcomes and runs consistently without ch
   assert.equal(data.averageWinStreak, 1); assert.equal(data.averageLossStreak, 2)
   assert.equal(data.maxWinStreak, 1); assert.equal(data.maxLossStreak, 2)
   assert.equal(data.side[0].breakeven, 2); assert.equal(data.side[0].winRate, data.winRate)
-  assert.equal(data.sessions.reduce((sum, item) => sum + item.breakeven, 0), 2)
+  assert.equal(data.sessions.find(item => item.label === 'London').breakeven, 2)
   assert.equal(data.months[0].breakeven, 2)
   assert.deepEqual(data.rows.map(row => row.outcome), ['win', 'breakeven', 'win', 'breakeven', 'loss', 'loss'])
   assert.equal(data.net, original.net); assert.deepEqual(data.curve, original.curve); assert.deepEqual(data.drawdown, original.drawdown)

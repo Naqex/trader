@@ -23,7 +23,7 @@ details only when useful; do not replace every removed sentence with a tooltip.
 
 Analytics groups each chart with its summary and controls. Performance follows
 profit/loss, realized and ideal R, expectancy/profit factor, outcomes, side,
-time-window radars, hour/day/month, calendar and frequency. Drawdown groups the
+market-session radars, hour/day/month, calendar and frequency. Drawdown groups the
 account path, four summary metrics, MAE distribution and winning-trade MAE.
 Simulation groups configured SL, original-risk RR and Monte Carlo separately.
 Use shared rounded chart domains and shape-preserving curves; interpolation
@@ -32,13 +32,16 @@ and gaps. On wide screens PnL occupies the left two thirds; realized R, ideal R
 and profit/breakeven opportunity stack in the right third. The PnL plot fills the
 available column height, keeping the two sides aligned. Below 1200px these groups
 stack, with the main plot returning to a compact height; below 850px the R cards
-also stack. The report tabs have no bottom separator. Hour/day
+also stack. Hour/day
 plots pair; the year/month matrix stays full width; calendar/frequency use 2:1.
-Expectancy and winner/loser statistics share a 1:2 row; side and time-window radars
+Expectancy and winner/loser statistics share a 1:2 row; side and market-session radars
 share the next 1:2 row. On screens up to 1200px the side/radar panels each use a full
 row, with two radars per row; up to 600px radars stack. Calendar cells put the date
-and trade count on one line, then the result below. Frequency pairs each summary
-with its small plot. Drawdown pairs its main plot with four summary metrics, then
+and trade count on one line, then the result below. On mobile the date spans
+the full cell; amounts never wrap digits, and the calendar scrolls internally
+when the seven columns need more space. Frequency uses three bordered day/week/month cards, each with its title and help
+on the left, average on the right and a compact blue bar plot below. Averages
+retain zero calendar periods between the first and last observed period. Drawdown pairs its main plot with four summary metrics, then
 MAE with winning-trade metrics. Prop objectives pair snapshot metrics with their
 existing objectives table on desktop and stack on narrow screens.
 
@@ -96,10 +99,14 @@ visible labels; its accessible name identifies each amount. The metric value
 omits the per-trade suffix because the label and help define the unit. Its
 divider spans the card interior edge to edge; the two metrics stay vertically
 stacked at every width. Average-win and average-loss amounts beneath the bar
-use the positive and negative chart colors respectively. The outcome headings
-have no horizontal separators. A central vertical rule spans the full card
-height when the groups are side by side; stacked groups use one full-width
-horizontal divider between them. PnL interval controls have a visible
+use the positive and negative chart colors respectively. Winners and losers are separate cards with green/red borders, normal foreground
+headings and a 16px gap. They have no combined outer border or central divider.
+The Buy/Sell group remains one card; each ring owns a Total trades or Win rate
+heading and info control, without a repeated outer heading. Buy/Sell win rates
+are independent percentages, not two shares of a total.
+Hourly controls offer net P/L, average RR, return (%) and win rate. Daily
+performance has no metric selector: signed horizontal net P/L bars pair with a
+right-hand win-rate column. Each group retains its explanatory info control. PnL interval controls have a visible
 1px border; its plot reserves only 8px at the right edge in addition to the card
 inset, retaining end-aligned tick labels.
 Definitions belong in accessible info controls, with no permanent explanatory
@@ -112,9 +119,33 @@ recorded chart close instant; activity uses recorded real closing activity.
 `analytics_time_utc` is a view field and must never overwrite raw timestamps or
 fill a missing activity timestamp from chart time. Calendar, time groups,
 frequency and recovery use that declared basis and the selected display zone.
-The current four radar axes are fixed close-hour windows, not named market
-sessions. Monthly Analytics is a year/month matrix of totals; dashboard period
-averages retain their separate contract. Percent of starting capital is explicit.
+The four session radar axes follow the reference's published fixed UTC windows:
+Outside session [22,24), Asia [00,09), New York [13,22), London [07,16).
+The declared report timestamp remains authoritative (market close for backtests,
+activity close for activity reports). Display-zone changes do not change these
+UTC groups. Overlapping trades count in each eligible session; group totals
+must not be added. This convention has no automatic DST or holiday adjustment.
+Each of the four bordered radar cards owns help: win rate, trade count, average
+RR and percentage return. Missing rates/RR stay N/A; known points remain visible.
+Percentage returns use a fixed source capital pool from the input report, not a
+capital sum repeated per trade or a denominator recomputed for each hour/session.
+
+Monthly Analytics is a percentage matrix with localized month names, year YTD
+and a bottom Total row. Accumulated session gains means the sum of each source
+session's period net P/L / source capital * 100, not a running time total.
+Overall gain means period net P/L / combined source capital * 100. Each source
+capital counts once, across assets and months; unknown/conflicting/nonpositive
+capital stays N/A. A money-weighted aggregate never sums different currencies.
+Initial balance uses source starting capital. Current balance requires an explicit
+portfolio account snapshot at the report cutoff, excluding floating P/L;
+filtered initial+net is not an account snapshot. Without a snapshot for every
+source the Current option is disabled, with help explaining the requirement.
+Time-group panels show a compact Partial data state when any selected trade lacks
+a usable report timestamp or P/L. Charts show the known subset; year/Total values
+stay N/A when allocation is incomplete.
+Monthly/year/Total values use the same aggregation and capital basis; empty
+months show a dash. Dashboard period averages retain their separate contract.
+Reference session hours: https://support.fxreplay.com/articles/what-are-the-trading-session-hours-that-fx-replay-takes-into-account-for-analytics
 
 Main win rate retains wins/all closed trades, including breakeven. The local
 breakeven threshold is an absolute net amount in account currency; it changes

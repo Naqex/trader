@@ -48,7 +48,7 @@ export function demoResult(rows = DEMO_LEDGER, session = DEMO_SESSIONS[0], timeB
   })
   const wins = rows.filter(row => row.net_pnl > 0).length, losses = rows.filter(row => row.net_pnl < 0).length
   const profit = rows.reduce((sum, row) => sum + Math.max(0, row.net_pnl), 0), loss = -rows.reduce((sum, row) => sum + Math.min(0, row.net_pnl), 0)
-  return { preview: true, scope: { time_basis: timeBasis }, equity_curve: { points: equityPoints, time_basis: timeBasis, scope: 'account', trade_filters_apply: false, partial: false }, account_currency: 'USD', session_id: session.record_id, ledger: rows, metrics: { starting_balance: 10000, ending_closed_trade_balance: balance,
+  return { preview: true, portfolio_account: { balance: accountBalance, starting_balance: 10000 }, scope: { time_basis: timeBasis }, equity_curve: { points: equityPoints, time_basis: timeBasis, scope: 'account', trade_filters_apply: false, partial: false }, account_currency: 'USD', session_id: session.record_id, ledger: rows, metrics: { starting_balance: 10000, ending_closed_trade_balance: balance,
     closed_trade_count: rows.length, net_pnl: balance - 10000, wins, losses, breakeven: rows.length - wins - losses, win_rate_pct: rows.length ? wins / rows.length * 100 : null,
     profit_factor_after_cost: loss ? profit / loss : null, payoff_ratio_after_cost: wins && losses ? (profit / wins) / (loss / losses) : null, closed_trade_balance_curve: curve } }
 }
@@ -100,7 +100,7 @@ export function demoFilterRows(ids, filters = {}, sourceRows = DEMO_LEDGER) {
 export function demoDashboardAnalytics(item, workspace, sourceRows = demoFilterRows([item.source_record_id || item.record_id]), timeBasis = 'activity') {
   const rows = sourceRows.map(row => ({ ...row, session_id: item.record_id, session_name: item.name }))
   const result = demoResult(rows, item, timeBasis)
-  return { schema_version: 'analytics-read-model-v1', analytics_available: true, equity_curve: result.equity_curve, metrics: result.metrics, ledger: rows,
+  return { schema_version: 'analytics-read-model-v1', analytics_available: true, portfolio_account: result.portfolio_account, equity_curve: result.equity_curve, metrics: result.metrics, ledger: rows,
     scope: { time_basis: timeBasis, selected_trade_count: rows.length, total_trade_count: rows.length },
     provenance: { preview: true, workspace_id: workspace, session_id: item.record_id, account_currency: 'USD', instrument_id: item.instrument_id,
       playbook_id: item.source_record_id || item.record_id, cutoff_timestamp: rows.length ? Date.parse(rows.at(-1).close_time_utc) / 1000 : null } }

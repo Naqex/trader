@@ -118,6 +118,38 @@ export function filterAnalyticsRows(rows, filters = {}, classifyOutcome = outcom
   })
 }
 
+const sourceId = row => row.session_id || row.source?.session_id || 'single'
+
+export function analyticsCapitalBases(model) {
+  const ids = [...new Set([...(model.result?.sources || []).map(item => item.session_id), ...model.ledger.map(sourceId)])]
+  const initial = ids.map(id => {
+    const rows = model.ledger.filter(row => sourceId(row) === id)
+    const values = rows.map(row => number(row.starting_balance ?? (model.result?.multi_session ? null : model.startBalance)))
+    const currencies = [...new Set(rows.map(row => row.account_currency || model.result?.account_currency).filter(Boolean))]
+    return { id, capital: values.length && values.every(value => value > 0 && value === values[0]) ? values[0] : null, ...(currencies.length ? { currency: currencies.length === 1 ? currencies[0] : 'mixed' } : {}) }
+  })
+  const snapshot = model.result?.portfolio_account
+  const current = initial.map(item => ({ ...item, capital: !model.result?.multi_session && initial.length === 1 && number(snapshot?.balance) > 0 ? Number(snapshot.balance) : null }))
+  return { initial, current }
+}
+
+export function periodReturn(items, capitals, aggregation = 'overall') {
+  if (!capitals.length || capitals.some(item => !(item.capital > 0) || item.currency === 'mixed')) return null
+  if (aggregation !== 'sessions' && new Set(capitals.map(item => item.currency).filter(Boolean)).size > 1) return null
+  const net = new Map(capitals.map(item => [item.id, 0]))
+  for (const item of items) {
+    if (!item.complete) return null
+    for (const source of item.sourceNet) {
+      if (!net.has(source.id) || !known(source.net)) return null
+      net.set(source.id, net.get(source.id) + source.net)
+    }
+  }
+  const value = aggregation === 'sessions'
+    ? capitals.reduce((sum, item) => sum + net.get(item.id) / item.capital * 100, 0)
+    : [...net.values()].reduce((sum, value) => sum + value, 0) / capitals.reduce((sum, item) => sum + item.capital, 0) * 100
+  return number(value)
+}
+
 function stats(rows, classifyOutcome = outcomeOf, startingBalance = null) {
   const complete = rows.every(row => known(row.net_pnl))
   const pnl = complete ? rows.map(row => Number(row.net_pnl)) : []
@@ -153,7 +185,8 @@ function stats(rows, classifyOutcome = outcomeOf, startingBalance = null) {
   const r = rows.map(row => known(row.realized_r) ? Number(row.realized_r)
     : known(row.planned_risk_budget) && Number(row.planned_risk_budget) > 0 && known(row.net_pnl)
       ? number(Number(row.net_pnl) / Number(row.planned_risk_budget)) : null).filter(value => value !== null)
-  return { count: rows.length, complete, net: complete ? total(pnl) : null, wins: complete ? wins.length : null, losses: complete ? losses.length : null,
+  const sourceNet = [...new Set(rows.map(sourceId))].map(id => ({ id, net: complete ? total(rows.filter(row => sourceId(row) === id).map(row => Number(row.net_pnl))) : null }))
+  return { count: rows.length, complete, sourceNet, net: complete ? total(pnl) : null, wins: complete ? wins.length : null, losses: complete ? losses.length : null,
     breakeven: complete ? pnl.length - wins.length - losses.length : null, winRate: complete && pnl.length ? wins.length / pnl.length * 100 : null,
     expectancy: average(pnl), profitFactor: losses.length ? total(wins) / Math.abs(total(losses)) : null,
     averageWin: average(wins), averageLoss: average(losses), bestWin: wins.length ? Math.max(...wins) : null, worstLoss: losses.length ? Math.min(...losses) : null,
@@ -305,7 +338,9 @@ export function advancedAnalytics(model, filters = {}, options = {}) {
   const datedRows = rows.filter(row => parts(row) && known(row.net_pnl))
   const datesComplete = rows.length > 0 && datedRows.length === rows.length
   const hasDates = datedRows.length > 0
-  const group = (keys, keyOf) => keys.map(label => ({ label, ...stats(datedRows.filter(row => keyOf(row) === label), classifyOutcome) }))
+  const capitalBases = analyticsCapitalBases(model)
+  const groupedStats = rows => { const value = stats(rows, classifyOutcome); return { ...value, profitPct: periodReturn([value], capitalBases.initial) } }
+  const group = (keys, keyOf) => keys.map(label => ({ label, ...groupedStats(datedRows.filter(row => keyOf(row) === label)) }))
   const months = [...new Set(datedRows.map(row => parts(row).month))].sort()
   const days = [...new Set(datedRows.map(row => parts(row).key))].sort()
   const side = ['BUY', 'SELL'].map(label => ({ label, ...stats(rows.filter(row => String(row.side).toUpperCase() === label), classifyOutcome) }))
@@ -314,7 +349,12 @@ export function advancedAnalytics(model, filters = {}, options = {}) {
   const weekdays = hasDates ? group(['1', '2', '3', '4', '5', '6', '0'], row => String(parts(row).weekday)).map(item => ({ ...item, label: WEEKDAYS[Number(item.label)] })) : []
   const calendar = group(days, row => parts(row).key)
   const monthGroups = group(months, row => parts(row).month)
-  const sessions = hasDates ? group(['00–08', '08–13', '13–21', '21–24'], row => { const h = parts(row).hour; return h < 8 ? '00–08' : h < 13 ? '08–13' : h < 21 ? '13–21' : '21–24' }) : []
+  // Published reference convention; overlapping windows deliberately share trades.
+  const sessionWindows = [['Out of session', 22, 24], ['Asia', 0, 9], ['New York', 13, 22], ['London', 7, 16]]
+  const sessions = hasDates ? sessionWindows.map(([label, start, end]) => ({ label, ...groupedStats(datedRows.filter(row => {
+    const hour = calendarParts(row.analytics_time_utc, 'UTC').hour
+    return hour >= start && hour < end
+  })) })) : []
   const frequencyGroups = hasDates ? [
     { label: 'Ngày', count: datedRows.length / (Math.round((new Date(days.at(-1)) - new Date(days[0])) / 86400000) + 1) },
     { label: 'Tuần', count: (() => { const weeks = datedRows.map(row => { const date = new Date(`${parts(row).key}T00:00:00Z`); date.setUTCDate(date.getUTCDate() - (date.getUTCDay() + 6) % 7); return date.getTime() }); return datedRows.length / (Math.round((Math.max(...weeks) - Math.min(...weeks)) / 604800000) + 1) })() },
@@ -327,12 +367,12 @@ export function advancedAnalytics(model, filters = {}, options = {}) {
     averageDrawdown: positiveDD.length ? positiveDD.reduce((sum, value) => sum + value, 0) / positiveDD.length : dd.length ? 0 : null,
     episodes: dd.length ? episodes : null, recoveryTrades: recovered ? recoverySum / recovered : null, unrecovered: current, longest,
     side, unknownSide, hours, weekdays, months: monthGroups, calendar, sessions, frequency: frequencyGroups, datesComplete, incomplete: datedRows.length !== rows.length,
-    frequencySeries: frequencies, ...recovery,
+    frequencySeries: frequencies, capitalBases, datedCount: datedRows.length, ...recovery,
     equityDrawdown: accountEquityDrawdown(model.result?.equity_curve, { filtered: equityFiltered || model.result?.scope?.active_filters === true }),
     riskReward: { average: summary.averageR, max: summary.maxR, knownCount: summary.rCount, totalCount: rows.length,
       basis: 'net_realized_r', idealAverage: null, idealMax: null },
     excursion: { maeHistogram: [], winningAdverseR: null, knownCount: 0, basis: 'unavailable' },
-    sessionGrouping: { basis: 'fixed_close_hour_bands', timezone: filters.timezone, timeField: timeBasis === 'market' ? 'close_time_utc' : 'report_time_utc' },
+    sessionGrouping: { basis: 'fixed_utc_market_windows_overlapping', timezone: 'UTC', timeField: timeBasis === 'market' ? 'close_time_utc' : 'report_time_utc' },
     recoveryBasis: 'closed_trade_balance_peak_close_to_recovery_close_elapsed_24h_days',
     classification: { breakevenThreshold, winRateBasis: 'wins_over_all_closed_trades_including_breakeven' },
   }

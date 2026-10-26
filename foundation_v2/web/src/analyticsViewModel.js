@@ -162,6 +162,7 @@ export function analyticsViewResult(view) {
     filters: view.filters && typeof view.filters === 'object' ? view.filters : {},
     scope,
     equity_curve: view.equity_curve,
+    portfolio_account: view.portfolio_account,
   }
 }
 
