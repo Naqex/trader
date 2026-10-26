@@ -1,5 +1,9 @@
 # Trades reference follow-up — 26/10/2026
 
+Historical receipt: the clock selector below was subsequently removed at the
+owner's request. Current contract and verification are in
+[toolbar correction](../trades-clock-removal-20261026/RECEIPT.md).
+
 Status: **PASS for the three authorized Trades changes and deployed UI**.
 Scope comes from [Testing Trades](../../../ui/references/fxreplay/testing-trades.md).
 Footer counts and weekday filters remain outside this slice.

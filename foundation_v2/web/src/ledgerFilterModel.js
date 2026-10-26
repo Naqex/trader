@@ -30,9 +30,9 @@ export function removeLedgerFilter(filters, extra, chip) {
 }
 
 // Write a complete scope once: drawer apply and chip removal must not race two navigations.
-export function ledgerFilterUrl(href, filters, extra, timeBasis) {
+export function ledgerFilterUrl(href, filters, extra) {
   const url = new URL(href)
-  for (const key of ['from_close_utc', 'to_close_utc', 'analytics_timezone']) url.searchParams.delete(key)
+  for (const key of ['from_close_utc', 'to_close_utc', 'analytics_timezone', 'trades_time_basis']) url.searchParams.delete(key)
   for (const key of Object.keys(LEDGER_BASE_FILTERS)) filters[key] && filters[key] !== 'all' ? url.searchParams.set(key, filters[key]) : url.searchParams.delete(key)
   for (const [key, fallback] of Object.entries(DEFAULT_EXTRA_FILTERS)) {
     if (key === 'timezone') continue
@@ -40,6 +40,5 @@ export function ledgerFilterUrl(href, filters, extra, timeBasis) {
     const value = extra[key] ?? fallback
     value !== fallback ? url.searchParams.set(param, value) : url.searchParams.delete(param)
   }
-  url.searchParams.set('trades_time_basis', timeBasis === 'activity' ? 'activity' : 'market')
   return url
 }

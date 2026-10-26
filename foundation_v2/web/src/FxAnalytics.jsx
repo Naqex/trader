@@ -14,7 +14,6 @@ import LedgerFilterDrawer from './LedgerFilterDrawer.jsx'
 import FxSelect from './FxSelect.jsx'
 import LedgerFilterActions from './LedgerFilterActions.jsx'
 import TestingIcon from './TestingIcon.jsx'
-import ReportInfo from './ReportInfo.jsx'
 import { DEFAULT_EXTRA_FILTERS } from './tradingAnalyticsModel.js'
 import { LEDGER_BASE_FILTERS, ledgerFilterChips, removeLedgerFilter } from './ledgerFilterModel.js'
 
@@ -24,11 +23,11 @@ export function SelectField({ label, value, onChange, options, disabled }) {
 
   return <label className="fxa-field"><span>{t(label)}</span><FxSelect label={label} value={value} onChange={onChange} disabled={disabled} options={options.map(([value, label]) => ({ value, label }))} /></label>
 }
-export function FxAnalyticsFilters({ filters, onChange, extra, onExtra, onApply, timeBasis, onTimeBasis, rows, labels, onExport, pending, ledgerOnly, sessionControl, onClearSessions, columnControl, facets, persistInUrl, sourceType, statusControl, disabled = false }) {
+export function FxAnalyticsFilters({ filters, onChange, extra, onExtra, onApply, rows, labels, onExport, pending, ledgerOnly, sessionControl, onClearSessions, columnControl, facets, persistInUrl, sourceType, statusControl, disabled = false }) {
   if (!ledgerOnly) return <AnalyticsFilterBar {...{ filters, onChange, extra, onExtra, rows, labels, onExport, pending, sessionControl, persistInUrl, sourceType, statusControl, disabled }} />
-  return <LedgerFilters {...{ filters, onChange, extra, onExtra, onApply, timeBasis, onTimeBasis, rows, onExport, pending, sessionControl, onClearSessions, columnControl, facets, statusControl, disabled }} />
+  return <LedgerFilters {...{ filters, onChange, extra, onExtra, onApply, rows, onExport, pending, sessionControl, onClearSessions, columnControl, facets, statusControl, disabled }} />
 }
-function LedgerFilters({ filters, onChange, extra, onExtra, onApply, timeBasis, onTimeBasis, rows, sessionControl, columnControl, facets, statusControl, disabled }) {
+function LedgerFilters({ filters, onChange, extra, onExtra, onApply, rows, sessionControl, columnControl, facets, statusControl, disabled }) {
   const { t } = useTestingLocale()
 
   const [drawer, setDrawer] = useState('')
@@ -40,9 +39,9 @@ function LedgerFilters({ filters, onChange, extra, onExtra, onApply, timeBasis, 
     : chip.values.map(value => ['sides', 'side', 'outcomes', 'outcome', 'statuses', 'notesPresence', 'reportKinds'].includes(chip.key) ? t(names[value] || value)
       : ['hours', 'hour'].includes(chip.key) ? `${String(value).padStart(2, '0')}:00` : value).join(['tagInclude', 'tagExclude'].includes(chip.key) ? ` ${extra[`${chip.key}Mode`]} ` : ', ')
   return <section className="fxa-filters" inert={disabled || undefined} aria-disabled={disabled || undefined} aria-label={t("Bộ lọc giao dịch")} data-testid="analytics-filters">
-    <div className="fxa-filter-toolbar is-ledger"><div className="fxl-session-scope">{sessionControl}{statusControl}</div>{onTimeBasis && <div className="fxl-time-basis"><FxSelect localizeOptions={false} label="Thời gian lọc" value={timeBasis} triggerContent={t('Thời gian: {basis}', { basis: timeBasis === 'activity' ? 'Realtime' : 'Chart' })} options={[{ value: 'market', label: 'Chart' }, { value: 'activity', label: 'Realtime' }]} onChange={onTimeBasis} /><ReportInfo title="Thời gian lọc" text="Chart dùng thời gian thị trường; Realtime dùng thời gian thao tác thực tế. Lệnh đã đóng lọc theo ngày thoát, lệnh đang mở theo ngày vào, trong múi giờ Settings. Ngày chưa biết không được thay bằng đồng hồ khác và không khớp bộ lọc ngày." /></div>}<LedgerFilterActions columnControl={columnControl} activeTab={drawer} onOpen={setDrawer} /></div>
+    <div className="fxa-filter-toolbar is-ledger"><div className="fxl-session-scope">{sessionControl}{statusControl}</div><LedgerFilterActions columnControl={columnControl} activeTab={drawer} onOpen={setDrawer} /></div>
     {chips.length > 0 && <div className="fxa-filter-chips fxl-applied-filters" aria-label={t('Bộ lọc đã áp dụng')}>{chips.map(chip => <button type="button" key={chip.key} className="fxa-filter-chip" aria-label={t('Bỏ lọc {label}', { label: t(chip.label) })} onClick={() => apply(...removeLedgerFilter(filters, extra, chip))}><span>{t(chip.label)} · {describe(chip)}</span><span aria-hidden="true">×</span></button>)}<button type="button" className="fxa-clear-filters" onClick={() => apply({ ...LEDGER_BASE_FILTERS }, { ...DEFAULT_EXTRA_FILTERS, timezone: extra.timezone })}>{t('Clear filters')}</button></div>}
-    {drawer && <LedgerFilterDrawer initialTab={drawer} {...{ filters, extra, rows, facets, timeBasis }} onApply={apply} onClose={() => setDrawer('')} />}
+    {drawer && <LedgerFilterDrawer initialTab={drawer} {...{ filters, extra, rows, facets }} onApply={apply} onClose={() => setDrawer('')} />}
   </section>
 }
 

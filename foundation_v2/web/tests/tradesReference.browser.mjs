@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { mkdir, writeFile, readFile } from 'node:fs/promises'
 
 const origin=process.argv[2] || 'http://127.0.0.1:5197'
-const out=process.argv[3] || 'E:/BACKUP-TRADINGWORKSPACE/trades-refinement-20261026/preview-qa'
+const out=process.argv[3] || 'E:/BACKUP-TRADINGWORKSPACE/trades-clock-removal-20261026/preview-qa'
 const session='6428cf18b3f54a36b2e90207ef12392e'
 const base='/?workspace=tenant-a&view=trade&area=testing&section=trades&select=1&sessions=all'
 const copy=JSON.parse(await readFile(new URL('../src/testing-copy.json',import.meta.url),'utf8'))
@@ -55,16 +55,9 @@ try{
   assert.equal(await first.locator('[data-column="return_pct"]').innerText(),lang==='vi'?'-0,0023%':'-0.0023%')
   assert.equal(await first.locator('[data-column="realized_r"]').innerText(),'N/A')
   assert.match(await first.locator('[data-column="net_pnl"] [tabindex]').getAttribute('aria-label'),/USD/)
-  const basis=page.getByRole('button',{name:t('Thời gian lọc',lang),exact:true})
-  await basis.click();await page.getByRole('option',{name:t('Realtime',lang),exact:true}).click();await ready(page)
-  assert.equal(requestUrl.searchParams.get('time_basis'),'activity');assert.deepEqual(last.facets.years,[])
-  assert.equal(new URL(page.url()).searchParams.get('trades_time_basis'),'activity')
-  await page.reload();await ready(page);assert.equal(requestUrl.searchParams.get('time_basis'),'activity')
-  await page.getByRole('button',{name:lang==='vi'?'Cơ bản':'Basic',exact:true}).click()
+  assert.equal(await page.locator('.fxl-time-basis').count(),0)
+  assert.equal(await page.locator('.fxa-filter-toolbar .wm-report-info').count(),0)
   const dialog=page.getByRole('dialog',{name:t('Filters',lang),exact:true})
-  await dialog.locator('summary').filter({hasText:lang==='vi'?'Năm':'Year'}).click()
-  await dialog.getByText(t('Nguồn hiện tại chưa có ngày Realtime. Chọn Chart để lọc theo lịch sử thị trường.',lang),{exact:true}).waitFor()
-  await page.keyboard.press('Escape');await basis.click();await page.getByRole('option',{name:t('Chart',lang),exact:true}).click();await ready(page)
   if(width===1920){
    // The drawer is a draft until Apply. Apply commits base and extra filters together.
    await page.getByRole('button',{name:'Cơ bản',exact:true}).click()
@@ -84,28 +77,28 @@ try{
    await page.getByRole('button',{name:t('Clear filters'),exact:true}).click();await ready(page)
    assert.equal(last.pagination.filtered_count,14);assert.equal(new URL(page.url()).searchParams.get('sessions'),'all')
    assert.equal(await page.locator('.fxa-filter-chip').count(),0)
-   // Page reset and scoped sessions survive basis changes.
+   // Old clock URLs use market dates; pagination and scope still work.
    await page.getByTestId('analytics-ledger-pagination').locator('button[data-page="2"],button[aria-label="Trang 2"]').click();await ready(page);assert.equal(last.pagination.page,2)
    const open=page.locator('tbody tr').filter({hasText:'Đang mở'});assert.equal(await open.count(),1)
    assert.equal(await open.locator('[data-column="net_pnl"]').innerText(),'N/A')
-   await basis.click();await page.getByRole('option',{name:t('Realtime'),exact:true}).click();await ready(page);assert.equal(last.pagination.page,1)
    await page.goto(origin+base.replace('sessions=all',`session=${session}`)+'&lang=vi&trades_time_basis=activity');await ready(page)
-   assert.deepEqual(last.scope.session_ids,[session])
-   await basis.click();await page.getByRole('option',{name:t('Chart'),exact:true}).click();await ready(page)
+   assert.equal(requestUrl.searchParams.get('time_basis'),'market')
    assert.deepEqual(last.scope.session_ids,[session]);assert.equal(new URL(page.url()).searchParams.get('session'),session)
    await page.goto(origin+base+'&lang=vi');await ready(page)
    await page.locator('th[data-column="net_pnl"] .wm-table-sort').click();await ready(page)
    assert.equal(JSON.parse(requestUrl.searchParams.get('sort'))[0].key,'net_pnl')
   }
-  // URL-scoped chips wrap at all widths, and Clear retains language, scope and clock.
-  await page.goto(origin+base+`&lang=${lang}&analytics_sides=%5B%22sell%22%5D&analytics_outcomes=%5B%22loss%22%5D`);await ready(page)
+  // Chips wrap; Clear retains language/scope and drops the retired clock key.
+  await page.goto(origin+base+`&lang=${lang}&trades_time_basis=activity&analytics_sides=%5B%22sell%22%5D&analytics_outcomes=%5B%22loss%22%5D`);await ready(page)
   assert.equal(await page.locator('.fxa-filter-chip').count(),2)
   await layout(page);await page.screenshot({path:`${out}/${name}-chips.png`})
   await page.locator('.fxa-clear-filters').click();await ready(page);assert.equal(last.pagination.filtered_count,14)
   assert.equal(new URL(page.url()).searchParams.get('lang'),lang)
+  assert.equal(new URL(page.url()).searchParams.has('trades_time_basis'),false)
+  assert.equal(requestUrl.searchParams.get('time_basis'),'market')
   await page.locator('.fxa-table-scroll').evaluate(e=>e.scrollLeft=0)
   await layout(page);await page.screenshot({path:`${out}/${name}.png`})
-  report.cases.push({name,status:'PASS',clock:'actual market/activity requests, facets, reload',tooltip:'focus/click/touch/Escape',writeCount:0})
+  report.cases.push({name,status:'PASS',clock:'fixed market dates, ignored legacy clock, facets, reload',tooltip:'focus/click/touch/Escape',writeCount:0})
   await context.close()
  }
  for(const mode of ['empty','unknown','partial','denied','error','stale']){

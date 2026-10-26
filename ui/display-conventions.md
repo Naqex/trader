@@ -386,12 +386,11 @@ Last sync is the last successful data observation, not a connection expiry date.
   not an inferred opening level. Planned risk and R require a source denominator.
   Entry/exit headings distinguish **Thực tế / Chart**; the shared workspace timezone
   applies to timestamps using Settings, without repeating UTC in each heading.
-  Testing Trades exposes **Chart / Realtime** as the date-filter basis, defaulting
-  to Chart. Closed rows use exit time; open rows use entry time. Realtime dates
-  remain unknown when recording metadata is absent. Rebuild date facets when the
-  basis changes, reset pagination and detail selection, and retain session scope.
+  Testing Trades date filters use market time: closed rows use exit time, open
+  rows use entry time in Settings timezone. Do not add a Chart/Realtime toolbar
+  selector; the entry/exit columns already distinguish the two timestamps.
   Applied filter groups appear as removable chips; removing one preserves other
-  groups. Clear filters retains the selected clock and sessions. Drawer Apply
+  groups. Clear filters retains the selected sessions. Drawer Apply
   commits base and extra filters in one URL update; closing it discards the draft.
   Return info controls sit beside sort controls, with independent focus/touch
   behavior and VI/EN definitions. A read error must not also show a false empty

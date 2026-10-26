@@ -121,7 +121,7 @@ Source chính: `FxTradeLedger.jsx:44–62`, `FxAnalytics.jsx:24–35`,
 `api-rust/src/analytics/trades.rs`, `activity.rs`, `open_trades.rs` và
 `api-rust/src/analytics.rs`. Manifest pin hash của đúng lần đọc.
 
-## 6. Follow-up được duyệt và triển khai — 26/10/2026
+## 6. Follow-up ban đầu — selector đã bỏ theo §7
 
 Ba đề xuất ưu tiên 1 đã được triển khai và kiểm chứng trên bản UI5180:
 
@@ -148,3 +148,19 @@ Raw, build snapshot, ảnh và rollback:
 
 Tổng số dòng ở footer và lọc thứ trong tuần chưa thuộc lát triển khai này.
 Giới hạn về FX trong §5 vẫn giữ nguyên; không suy ra parity backend từ QA local.
+
+## 7. Owner sửa lại toolbar — 26/10/2026
+
+Owner xác nhận FX không có dropdown **Thời gian lọc** này và yêu cầu bỏ. Đây là
+đề xuất riêng của agent trong §3–4, không phải control đã quan sát được ở FX.
+Không dùng việc API hỗ trợ hai clock làm lý do thêm lựa chọn không cần thiết.
+
+Đã bỏ dropdown và (i) bên cạnh, cùng state/props/copy/CSS chỉ phục vụ nó.
+Testing Trades cố định lọc ngày theo market time: closed theo ngày thoát, open
+theo ngày vào, theo timezone Settings. URL cũ `trades_time_basis` bị bỏ qua và
+được xóa khi áp dụng/xóa filter; không để một clock ẩn thay đổi kết quả.
+Hai loại timestamp (Chart/Realtime) và ba Return info vẫn giữ. Bộ lọc theo ngày trên chart, chips,
+sort, phân trang và scope phiên tiếp tục hoạt động.
+
+Receipt hiện hành: [Trades toolbar correction](../../../foundation_v2/evidence/trades-clock-removal-20261026/RECEIPT.md).
+Giữ §6 và receipt cũ làm lịch sử; chúng không còn là contract của clock selector.
