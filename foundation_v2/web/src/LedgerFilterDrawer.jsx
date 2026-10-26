@@ -17,7 +17,7 @@ function CalendarChoices({ label, options, value, onChange }) {
   const selected = filterValues(value)
   return <FxSelect label={label} multiple searchable localizeOptions={false} value={selected} disabled={!options.length} triggerContent={selected.length ? options.filter(([key]) => selected.includes(String(key))).map(([, name]) => name).join(', ') : t('Chọn {label}', { label: label.toLocaleLowerCase() })} options={options.map(([key, name]) => ({ value: String(key), label: name }))} onChange={next => onChange(next.length ? JSON.stringify(next) : '')} />
 }
-export default function LedgerFilterDrawer({ initialTab, filters, extra, rows, facets, onApply, onClose }) {
+export default function LedgerFilterDrawer({ initialTab, filters, extra, rows, facets, timeBasis, onApply, onClose }) {
   const { t, timezone } = useTestingLocale()
 
   const [draft, setDraft] = useState({ ...baseFilters, ...filters })
@@ -47,7 +47,7 @@ export default function LedgerFilterDrawer({ initialTab, filters, extra, rows, f
     ['Outcome', <Choices label={t("Outcome")} value={draftExtra.outcomes} options={[["win", 'Win'], ["loss", 'Loss'], ["breakeven", 'Breakeven'], ["unknown", 'Unknown']]} onChange={outcomes => change({ outcomes })} />],
     ['Type', <Choices label={t('Type')} value={draftExtra.statuses} options={[["pending", 'Lệnh chờ', true], ["canceled", 'Đã hủy', true], ["open", 'Open'], ["closed", 'Closed']]} onChange={statuses => change({ statuses })} />],
     ['Date range', <div className="fxl-fields"><label className="fxl-field">{t("Từ ngày")}<ProjectDateInput clearable type="date" aria-label={t("Analytics from date")} value={draft.from} min={dateRange.from} max={draft.to || dateRange.to} onChange={event => setDraft(value => ({ ...value, from: event.target.value }))} /></label><label className="fxl-field">{t("Đến ngày")}<ProjectDateInput clearable type="date" aria-label={t("Analytics to date")} value={draft.to} min={draft.from || dateRange.from} max={dateRange.to} onChange={event => setDraft(value => ({ ...value, to: event.target.value }))} /></label></div>],
-    ['Year', <CalendarChoices label={t('Year')} value={draftExtra.years} options={years.map(value => [value, value])} onChange={years => change({ years })} />],
+    ['Year', <><CalendarChoices label={t('Year')} value={draftExtra.years} options={years.map(value => [value, value])} onChange={years => change({ years })} />{timeBasis === 'activity' && rows.length > 0 && !years.length && <small className="fxl-timezone">{t('Nguồn hiện tại chưa có ngày Realtime. Chọn Chart để lọc theo lịch sử thị trường.')}</small>}</>],
     ['Month', <CalendarChoices label={t('Month')} value={draftExtra.months} options={Array.from({ length: 12 }, (_, i) => [i + 1, t('Tháng {month}', { month: i + 1 })])} onChange={months => change({ months })} />],
     ['Hour of the day', <CalendarChoices label={t('Hour of the day')} value={draftExtra.hours} options={Array.from({ length: 24 }, (_, i) => [i, `${String(i).padStart(2, '0')}:00`])} onChange={hours => change({ hours })} />],
   ]

@@ -44,5 +44,9 @@
 .fxl-session-scope > .fxa-session-filter{flex:1;min-width:0}
 .fx-app .fxl-session-scope .fxa-session-trigger{min-width:0;width:100%}
 .fxl-session-scope .wm-resource-status{min-width:0;max-width:100%}
+.fxl-time-basis{display:flex;align-items:center;gap:6px;min-width:0}
+.fxa-trades[hidden]{display:none!important}
+.fxl-applied-filters{margin-top:10px}
+.fxl-applied-filters .fxa-filter-chip>span:first-child{overflow-wrap:anywhere}
 .fxl-session-scope .wm-resource-status-slot.is-text .wm-resource-status > summary{max-width:100%}
 @media(max-width:600px){.fxl-session-scope{flex-basis:100%;width:100%}.fxl-session-scope .wm-resource-status-slot.is-text{flex:0 1 150px}}

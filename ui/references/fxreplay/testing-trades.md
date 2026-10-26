@@ -59,7 +59,7 @@ cộng các thành phần đã làm tròn riêng.
 
 ## 3. Điểm cần làm rõ: thời gian lọc
 
-**Đã xác minh local:** request trang gửi `time_basis=activity`. Closed dùng
+**Đã xác minh local tại thời điểm audit, trước follow-up §6:** request trang gửi `time_basis=activity`. Closed dùng
 `report_time_utc` (thời gian đóng thực tế); Open dùng thời gian vào thực tế qua
 `table_time_utc`. Các cột Chart vẫn hiển thị đồng hồ thị trường tương ứng.
 
@@ -120,3 +120,31 @@ Source chính: `FxTradeLedger.jsx:44–62`, `FxAnalytics.jsx:24–35`,
 `SessionReports.jsx:16–92`, `LedgerFilterDrawer.jsx:23–62`,
 `api-rust/src/analytics/trades.rs`, `activity.rs`, `open_trades.rs` và
 `api-rust/src/analytics.rs`. Manifest pin hash của đúng lần đọc.
+
+## 6. Follow-up được duyệt và triển khai — 26/10/2026
+
+Ba đề xuất ưu tiên 1 đã được triển khai và kiểm chứng trên bản UI5180:
+
+- Chip cho từng nhóm filter, xóa riêng hoặc xóa tất cả. Session và ngôn ngữ được
+  giữ lại; drawer chỉ áp dụng draft khi bấm Apply, cập nhật toàn bộ URL một lần.
+- Chọn Chart/Realtime, mặc định Chart cho bảng Testing Trades gộp. Đổi clock
+  reset trang/chi tiết, thay facets; không backfill ngày Realtime. Đã kiểm request
+  `market`, facets có năm 2003/2024, lọc 05/05/2003 ra đúng một dòng; `activity`
+  vẫn có 14 dòng khi không lọc ngày và `years=[]`. Reload giữ basis và scope.
+- Ba cột Return có (i) VI–EN, giữ rõ net sau phí, % trên vốn ban đầu mỗi phiên
+  và R theo risk gốc của nguồn. Không đổi phép tính tiền, phần trăm hoặc R.
+
+QA cũng sửa hai vấn đề nhỏ: tên Realtime trong menu VI phải thống nhất với cột;
+CSS phải tôn trọng `hidden`, tránh báo lỗi đọc cùng lúc với empty state giả.
+
+**Bằng chứng:** 17 test model/contract PASS; 10 browser cases PASS ở candidate
+và cùng 10 cases PASS ở deployed. Bốn viewport 320–1920, VI/EN, light/dark;
+fixture được ghi nhãn riêng cho empty/unknown/partial/denied/error/stale.
+Review source + ảnh độc lập PASS. Không có page errors hoặc request ghi dữ liệu.
+
+Receipt: [Trades refinement](../../../foundation_v2/evidence/trades-refinement-20261026/RECEIPT.md).
+Raw, build snapshot, ảnh và rollback:
+`E:/BACKUP-TRADINGWORKSPACE/trades-refinement-20261026/`.
+
+Tổng số dòng ở footer và lọc thứ trong tuần chưa thuộc lát triển khai này.
+Giới hạn về FX trong §5 vẫn giữ nguyên; không suy ra parity backend từ QA local.

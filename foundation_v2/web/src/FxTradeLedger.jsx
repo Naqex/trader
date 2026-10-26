@@ -13,6 +13,13 @@ import TableColumnControl from './TableColumnControl.jsx'
 import TestingIcon from './TestingIcon.jsx'
 import { TestingTradesEmpty } from './TestingPageState.jsx'
 import PaginationFooter from './PaginationFooter.jsx'
+import ReportInfo from './ReportInfo.jsx'
+
+const RETURN_HELP = {
+  net_pnl: 'PnL ròng của giao dịch đã đóng, sau phí, theo đơn vị tài khoản của phiên nguồn. Không gồm lãi/lỗ đang mở. Đưa chuột hoặc focus vào số tiền để xem đơn vị.',
+  return_pct: 'PnL ròng sau phí chia vốn ban đầu của phiên nguồn, nhân 100. Không dùng số dư hiện tại. Lệnh đang mở hoặc thiếu vốn hợp lệ hiển thị N/A.',
+  realized_r: 'R thực hiện theo mẫu số rủi ro gốc đã được lưu cùng giao dịch nguồn. Không suy từ SL hiện tại hoặc tỷ số lãi/lỗ trung bình. Lệnh đang mở hoặc chưa có mẫu số hiển thị N/A.',
+}
 
 const COLUMNS = [
   ['session_id', 'Session'], ['status', 'Type'], ['source', 'Source'], ['recorded_at_utc', 'Entry Date (Realtime)'], ['open_time_utc', 'Entry Date (Chart UTC)'],
@@ -107,6 +114,7 @@ export default function FxTradeLedger({ model, extra, selected, onSelect, sessio
     const index = sorts.findIndex(sort => sort.key === key), sort = sorts[index]
     const heading = columnLabel(key, label)
     return <SortableColumn key={key} data-column={key} className={columnClass(key)} active={Boolean(sort)}
+      help={RETURN_HELP[key] && <ReportInfo title={heading} text={RETURN_HELP[key]} />}
       priority={index + 1} direction={sort?.direction} disabled={remotePage?.pending}
       onSort={() => setSorts(nextTableSorts(sorts, key))} onClear={() => setSorts(sorts.filter(sort => sort.key !== key))}
       clearLabel={t('Bỏ sắp xếp: {column}', { column: heading })}

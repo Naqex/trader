@@ -8,7 +8,7 @@ export default function DataTable({ children, label, className = '', tableClassN
   </div>
 }
 
-export function SortableColumn({ children, active = false, direction = 'asc', onSort, onClear, priority, clearLabel, sortLabel, disabled = false, className = '', ...props }) {
+export function SortableColumn({ children, help, active = false, direction = 'asc', onSort, onClear, priority, clearLabel, sortLabel, disabled = false, className = '', ...props }) {
   const multi = Boolean(onClear)
   const button = <button type="button" className="wm-table-sort" onClick={onSort} aria-label={sortLabel} disabled={disabled}>
       <span className="wm-table-heading-label">{children}</span>
@@ -20,6 +20,6 @@ export function SortableColumn({ children, active = false, direction = 'asc', on
       </span>
     </button>
   return <th {...props} scope="col" className={className} data-sort-active={active || undefined} aria-sort={active && (!priority || priority === 1) ? direction === 'asc' ? 'ascending' : 'descending' : undefined}>
-    {multi ? <div className="wm-table-sort-control">{button}{active && <button type="button" className="wm-table-sort-clear" onClick={onClear} aria-label={clearLabel} title={clearLabel} disabled={disabled}>×</button>}</div> : button}
+    {multi || help ? <div className="wm-table-sort-control">{button}{multi && active && <button type="button" className="wm-table-sort-clear" onClick={onClear} aria-label={clearLabel} title={clearLabel} disabled={disabled}>×</button>}{help}</div> : button}
   </th>
 }

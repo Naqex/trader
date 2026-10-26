@@ -61,3 +61,5 @@
 .fx-app .wm-data-table .wm-table-row-number { min-width:52px; width:52px; text-align:center; color:var(--wm-content-muted); }
 .fx-app .wm-data-table .wm-table-sort-clear-all { position:absolute; inset:0; width:100%; height:100%; color:var(--project-highlight); }
 .fx-app .wm-data-table .wm-table-sort-clear-all:hover:not(:disabled) { background:var(--wm-hover); }
+.fx-app .wm-data-table .wm-table-sort-control > .wm-report-info { flex:none; align-self:center; margin:0 10px 0 0; }
+.fx-app .wm-data-table th.is-numeric .wm-table-sort-control:has(> .wm-report-info) > .wm-table-sort { padding-right:4px; }
