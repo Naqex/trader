@@ -386,9 +386,14 @@ Last sync is the last successful data observation, not a connection expiry date.
   not an inferred opening level. Planned risk and R require a source denominator.
   Entry/exit headings distinguish **Thực tế / Chart**; the shared workspace timezone
   applies to timestamps using Settings, without repeating UTC in each heading.
-  Testing Trades date filters use market time: closed rows use exit time, open
-  rows use entry time in Settings timezone. Do not add a Chart/Realtime toolbar
-  selector; the entry/exit columns already distinguish the two timestamps.
+  Testing Trades defaults to Chart (market time): closed rows use exit time, open
+  rows use entry time in Settings timezone. Chart/Realtime are two native radios
+  at the top of the Basic filter drawer, never a toolbar selector. Realtime uses
+  activity timestamps; missing dates remain unknown. Changing the draft clock
+  previews its calendar facets without changing the table or URL. Pending/failed
+  previews block Apply, with Retry for failures. Cancel discards the draft;
+  Apply commits clock and filters atomically and resets page/details. Clear All
+  resets the draft clock to Chart; outside Clear filters resets applied Chart.
   Applied filter groups appear as removable chips; removing one preserves other
   groups. Clear filters retains the selected sessions. Drawer Apply
   commits base and extra filters in one URL update; closing it discards the draft.

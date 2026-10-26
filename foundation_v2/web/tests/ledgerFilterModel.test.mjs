@@ -13,7 +13,7 @@ test('chips retain zero hour, AND/OR tag values with commas and distinct date gr
  assert.equal(next.from,'2024-01-01');assert.equal(nextExtra.tagInclude,'');assert.equal(nextExtra.tagExclude,'["x"]');assert.equal(nextExtra.sides,'["sell"]')
 })
 
-test('one URL update preserves session scope, language and unrelated state and removes the retired clock parameter', () => {
+test('atomic filter scope preserves sessions/language and defaults the clock to Chart', () => {
  const href='http://localhost/?workspace=tenant-a&view=trade&lang=en&sessions=a&sessions=b&from_close_utc=2020-01-01&analytics_timezone=UTC&trades_time_basis=activity&analytics_sides=%5B%22sell%22%5D&analytics_tagExclude=%5B%22x%22%5D'
  const url=ledgerFilterUrl(href,{...LEDGER_BASE_FILTERS,from:'2024-02-01'},{...DEFAULT_EXTRA_FILTERS,tagExclude:'["x"]',sides:'["sell"]'})
  assert.deepEqual(url.searchParams.getAll('sessions'),['a','b']);assert.equal(url.searchParams.get('lang'),'en')
@@ -22,6 +22,9 @@ test('one URL update preserves session scope, language and unrelated state and r
  const cleared=ledgerFilterUrl(url,LEDGER_BASE_FILTERS,DEFAULT_EXTRA_FILTERS)
  assert.equal(cleared.searchParams.has('analytics_sides'),false);assert.equal(cleared.searchParams.has('analytics_tagExclude'),false);assert.equal(cleared.searchParams.has('from'),false)
  assert.equal(cleared.searchParams.has('trades_time_basis'),false);assert.deepEqual(cleared.searchParams.getAll('sessions'),['a','b'])
+ const realtime=ledgerFilterUrl(href,{...LEDGER_BASE_FILTERS,from:'2024-02-01'},{...DEFAULT_EXTRA_FILTERS,sides:'["sell"]'},'activity')
+ assert.equal(realtime.searchParams.get('trades_time_basis'),'activity');assert.equal(realtime.searchParams.get('from'),'2024-02-01')
+ assert.deepEqual(realtime.searchParams.getAll('sessions'),['a','b']);assert.equal(realtime.searchParams.get('analytics_sides'),'["sell"]')
 })
 
 test('removing dates or a legacy side leaves other groups intact and no empty chip remains', () => {

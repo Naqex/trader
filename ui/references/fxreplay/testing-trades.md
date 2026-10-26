@@ -164,3 +164,25 @@ sort, phân trang và scope phiên tiếp tục hoạt động.
 
 Receipt hiện hành: [Trades toolbar correction](../../../foundation_v2/evidence/trades-clock-removal-20261026/RECEIPT.md).
 Giữ §6 và receipt cũ làm lịch sử; chúng không còn là contract của clock selector.
+
+## 8. Owner chuyển lựa chọn clock vào panel — 26/10/2026
+
+Owner yêu cầu hai radio **Chart / Realtime** trong panel bộ lọc. Đặt ở đầu tab
+Basic, mặc định Chart; toolbar không có selector. Phần cố định market-only ở §7
+được thay bằng lựa chọn trong drawer. Đây là quyết định sản phẩm local; chưa xác
+minh FX mặc định dùng clock nào cho bộ lọc ngày.
+
+Đổi radio chỉ thay bản nháp và đọc calendar facets theo clock đó. Apply mới commit
+clock + filters vào URL cùng lúc, reset trang/chi tiết. Escape bỏ nháp; Clear All
+đưa bản nháp về Chart. Thiếu ngày Realtime không được điền bằng ngày Chart.
+Loading/error chặn Apply; Retry đọc lại. Response cũ bị hủy và không thay facets
+của clock mới. Các consumer khác của FilterDrawer giữ nguyên khi không truyền
+basicControls.
+
+Candidate: 17 model/contract tests và 12 browser cases PASS; gồm preview error /
+Retry và đổi radio nhanh với response cũ trả chậm. Source và visual review độc lập
+PASS; deployed evidence nằm trong receipt.
+
+Receipt hiện hành: [Trades clock radios](../../../foundation_v2/evidence/trades-clock-radios-20261026/RECEIPT.md).
+Build snapshot, browser report, ảnh và rollback:
+`E:/BACKUP-TRADINGWORKSPACE/trades-clock-radios-20261026/`.
