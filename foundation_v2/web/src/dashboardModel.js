@@ -38,7 +38,7 @@ export function dashboardRequestUrl(filters) {
   params.set('dashboard_source', filters.source || 'backtest')
   if (filters.session) params.set('session_id', filters.session)
   if (filters.from) params.set('from_close_utc', dateRangeBoundary(filters.from))
-  if (filters.to) params.set('to_close_utc', dateRangeBoundary(filters.to, true))
+  if (filters.to) params.set('to_close_utc', dateRangeBoundary(filters.to, true).replace('.999Z', '.999999999Z'))
   return `/api/v2/overview${params.size ? `?${params}` : ''}`
 }
 

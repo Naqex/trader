@@ -1,0 +1,4 @@
+.fx-app .wm-report-info { display:inline-grid; place-items:center; flex:none; width:20px; min-width:20px; height:20px; min-height:20px; padding:0; border:0; border-radius:50%; background:transparent; color:var(--wm-content-muted); cursor:help; line-height:1; }
+.wm-report-info svg { display:block; width:14px; height:14px; }
+.fx-app .wm-report-info:hover { color:var(--wm-content); background:transparent; }
+.wm-report-info:focus-visible { outline:2px solid var(--wm-primary); outline-offset:2px; }

@@ -1,7 +1,8 @@
 # Testing → Dashboard: FX Replay và WMREPLAY
 
 Ngày kiểm tra: **26/10/2026**, Asia/Ho_Chi_Minh. Đây là lượt đối chiếu đầu tiên
-của trang Tổng quan; chưa triển khai thay đổi từ các đề xuất bên dưới.
+của trang Tổng quan. Các mục 1–6 giữ baseline lúc đối chiếu; mục 7 theo dõi
+những điều chỉnh được chủ sở hữu duyệt sau đó.
 
 ## 1. Môi trường và cách kiểm chứng
 
@@ -167,4 +168,30 @@ Danh sách/hashes: [manifest](testing-dashboard-evidence.json).
 Đã kiểm tra runtime read-only và source liên quan; chưa chạy fixture parity,
 chưa kiểm idle/multi-tab/rewind của FX, cách tính phí/hòa vốn/partial close của
 FX hoặc công thức tiến độ phiên FX. Không đánh dấu product acceptance hoặc sửa
-ledger từ kết quả này. Không triển khai hoặc restart dịch vụ.
+ledger từ kết quả đối chiếu ban đầu này.
+
+## 7. Điều chỉnh được duyệt sau đối chiếu
+
+Chủ sở hữu duyệt năm thay đổi cho Dashboard: nhãn **Giao dịch đã đóng**, mini
+(i) cho bốn chỉ số và ba biểu đồ, historical replay theo kỳ thao tác, trạng thái
+thiếu ngày ở biểu đồ tháng, bỏ badge ngày còn lại bị lặp cạnh tên phiên.
+
+Các bước replay mới lưu phần tăng thời gian thị trường vào `timing.historical_activity`,
+theo phút UTC của thao tác thực tế. Dashboard lọc các phần tăng này theo kỳ được
+chọn; tổng toàn thời gian vẫn dùng bộ đếm tích lũy. Phần cũ thiếu ngày được giữ
+làm baseline chưa xác định ngày. Khi bộ lọc cắt ngang một nhóm chưa thể chia
+chính xác, kết quả là chưa đủ dữ liệu. Không nội suy ngày từ thời gian thị trường.
+
+Nếu chạy bản cũ rồi nâng lại, phần tăng bộ đếm chưa được ghi ngày sẽ bắt đầu
+một epoch mới với baseline tích lũy. Cách này giữ replay tiếp tục hoạt động và
+không gán nhầm ngày cho khoảng chạy bằng bản cũ; phân bổ ngày của epoch cũ bị bỏ.
+
+Nút (i) dùng chung tooltip hỗ trợ bàn phím, chạm và Escape, với nội dung VI/EN.
+Màn hình tới 380 px xếp bốn chỉ số thành một cột để nhãn không bị ngắt giữa từ.
+Recent Sessions vẫn ở trước Performance. Công thức thắng sau phí, hòa vốn,
+partial close và loại lịch sử nhánh trùng vẫn theo source đã kiểm chứng ở mục 4.
+
+Kết quả kiểm chứng và phiên bản chạy được lưu tại
+[receipt triển khai](../../../foundation_v2/evidence/dashboard-refinement-20261026/RECEIPT.md).
+Raw log, ảnh, nguồn build có phạm vi, tiến trình độc lập Windows và checkpoint:
+`E:/BACKUP-TRADINGWORKSPACE/dashboard-refinement-20261026/`.

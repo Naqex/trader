@@ -1,6 +1,13 @@
 # Rust-native candidate runtime
 
-Latest UI-only rollout: [26 October Drawdown vertical layout](../evidence/analytics-drawdown-layout-20261026/RECEIPT.md)
+Latest local API/UI rollout: [26 October Testing Dashboard refinement](../evidence/dashboard-refinement-20261026/RECEIPT.md)
+adds dated historical replay timing, period coverage, accessible VI/EN metric/chart
+help, an explicit missing-date chart state, and removes the repeated session badge.
+Native/compact and existing capabilities are retained. API/UI/build jobs are launched
+independently by Windows and preserve logs/checkpoints across Codex restarts.
+The receipt records isolated native HTTP, independent review and deployed verification.
+
+Previous UI-only rollout: [26 October Drawdown vertical layout](../evidence/analytics-drawdown-layout-20261026/RECEIPT.md)
 stacks the account drawdown chart, four summary metrics, MAE chart and three
 winning-trade metrics. Titles sit above the chart surfaces; metric rows adapt
 on mobile. Calculations and unit/basis state are unchanged.

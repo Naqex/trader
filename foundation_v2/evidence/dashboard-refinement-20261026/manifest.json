@@ -1,0 +1,53 @@
+{
+  "status": "PASS",
+  "artifacts_root": "E:\\BACKUP-TRADINGWORKSPACE\\dashboard-refinement-20261026",
+  "source_sha256": {
+    "foundation_v2/api-rust/src/replay_service.rs": "599557b376b8cd9caa451802e8ae4d7e030b6934eff6eb1fba5ed577d827f778",
+    "foundation_v2/api-rust/src/replay_historical_time.rs": "1421d0699aaf6b4439b8e5698883877797c964c230639e7de38c041600631482",
+    "foundation_v2/api-rust/src/analytics/presentation.rs": "59c7208cc0f88489c90c2ce39ad50293a9d196fd6676b2d8df5feeffebe0b961",
+    "foundation_v2/web/src/DashboardMetric.jsx": "badbbd94fa097981535cf554c7a5f810623e0cb0ca5501cc0b771e93073646b1",
+    "foundation_v2/web/src/DashboardPerformance.jsx": "828f7a4b20a1de709d5d2e936d3de8d854162f36f2c935cf3d9154dad597e121",
+    "foundation_v2/web/src/DashboardSessionCard.jsx": "f61cebde0a1d148e5086a41c0963b6ef0e7db61f4dbb8fec432024ac7bedadb0",
+    "foundation_v2/web/src/ReportChart.jsx": "cb41423663d894474ccca853dcd64464f4753811992a6e636731d98151c97ce2",
+    "foundation_v2/web/src/ReportInfo.jsx": "a444969eac6fb908745d1483571a7b00dfb38ba6340f4f14ae248d89840c5819",
+    "foundation_v2/web/src/report-info.css": "fb93f13f82319550875b9af471a746e96065a80b55b613eb9ea8478055e57edd",
+    "foundation_v2/web/src/dashboard-session.css": "83e743fb2574f4f81bc1a70740cee6b0796fd865147b0fa05b7fcff0ad38ea52",
+    "foundation_v2/web/src/testing-copy.json": "b9ee071ee645feed5fb72a580f3eacbde457a65aab6d108ce5a3a91c6c9afbb3",
+    "foundation_v2/web/src/dashboardModel.js": "e7e0557a2b474ffa9a7e26e5f977d792e04187c3f55cfee61737bbcee9df2834",
+    "foundation_v2/web/src/demoFixtures.js": "157e204d410ca8789ff60c4f54aa33f1c2701d2fe3d0905a17aa10664c3d8936",
+    "foundation_v2/web/tests/dashboardModel.test.mjs": "d018328926b817b4a43f07d46305babee269b9648605030cab52ed2f69637bed",
+    "foundation_v2/web/tests/demoMode.test.mjs": "1881cccb1937a1a0c44c7b6f5649d78812d7b1e5c6e1d1b8e5f619153ee2a7b9",
+    "foundation_v2/web/src/dashboard.css": "7cbba9cbbed774af37493caf75638c0fb94f954254c0326f5a7aae57c7d2d659"
+  },
+  "artifact_sha256": {
+    "outside-build.json": "a11bea4af198f4ca9bcd93e1eaac05e2ec3d69e1f0cfeb6a1cfb166084beb667",
+    "outside-tests.log": "e66a4a5fe7306db002714b3b1a32397c215f9c777ec17d482a45512e87a3089b",
+    "test-clipping.log": "3c4fe757918a2c4b88a708f1dfdbafd855eed0806bd93173d7ef95e3936ddb22",
+    "test-web.log": "fa42f8df22c84a3b9ad1a5d241c10ced9d303740ade632496386d46cf92fe715",
+    "qa/report.json": "e402f27daed2c239e96202f2e23fbf443f1cb232a003cc72886ba41bf1fb2d20",
+    "reviewer/review.md": "3d66fe78f27bb03119c5d8ee267ca7696b4a91abc3bdfb95d5147b779e41a30b",
+    "reviewer/source-hashes.json": "42079a0492a7bbcee4e0550aad798a6dbb57a1690581a29a91e9b7e1ddcd6e32",
+    "reviewer/browser.json": "045f00f924cd473de94d107b91a82276ff438e1d39a7a0f8586fa11e2eeb5ba1",
+    "reviewer/final320/browser.json": "9219af3fa6dc14a94366e983e3657b2a5b34430b3834e10cf77104672758ade0",
+    "integration/report.json": "b0d7c913e93dac77437eb85bfcf9e4e95b0bc0d811be621ca19382c46f71248b",
+    "deployed/report.json": "e402f27daed2c239e96202f2e23fbf443f1cb232a003cc72886ba41bf1fb2d20",
+    "deployed-verification.json": "0378593de466346bdbe9a1da813d69dfe02f96d9a1451995b250c38ff37976f7",
+    "ui-promotion.json": "b52290077ec0b0a2d46281c695bd3c2f4feeedc37f5a0f2f51ab912ab2930624",
+    "backend-ready.json": "3f12c8125b3126acbd3e14e09a958372c0859755113a8e14f5a1d8431c2e1dad",
+    "outside-finish.json": "a624f1ac2383c3d1da16571012c627781955b893a107e1beb31cfee14e5be0ba",
+    "outside-ui.json": "ac73db42d62843731933c78a827a46a2d5f65c5ae17e66f9cf76501112375d54",
+    "windows-owned-api.json": "d9824f7d49d25f0dbc1f1a9d211256ee9fe80f3edfa0df25cc1197fa6af4c9c8"
+  },
+  "api_sha256": "6e05b8e2e5b2c28e20ff0d9c96b488dc12371ffe74f6e1d45538a5e5da429b0e",
+  "ui_sha256": "5ba1d4a6141e3febf8477c1fd5df0a8a7888807898cd05301f13dedf6392496f",
+  "web_tests": 25,
+  "native_tests": 11,
+  "candidate_browser_cases": 11,
+  "deployed_browser_cases": 11,
+  "isolated_http_modes": [
+    "full",
+    "optimized",
+    "multiasset"
+  ],
+  "windows_owned_jobs": true
+}

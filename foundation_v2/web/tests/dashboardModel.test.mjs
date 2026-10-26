@@ -73,7 +73,7 @@ test('dashboard filters encode the selected session and complete UTC close dates
   const url = new URL(dashboardRequestUrl(filters), 'http://localhost')
   assert.equal(url.searchParams.get('session_id'), 's/a')
   assert.equal(url.searchParams.get('from_close_utc'), '2023-11-14T00:00:00.000Z')
-  assert.equal(url.searchParams.get('to_close_utc'), '2023-11-15T23:59:59.999Z')
+  assert.equal(url.searchParams.get('to_close_utc'), '2023-11-15T23:59:59.999999999Z')
   assert.equal(dashboardFilterError(filters), '')
   assert.equal(new URL(dashboardRequestUrl({...filters,source:'prop'}),'http://localhost').searchParams.get('dashboard_source'),'prop')
   assert.equal(new URL(dashboardRequestUrl({...filters,source:'all'}),'http://localhost').searchParams.get('dashboard_source'),'all')

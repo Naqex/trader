@@ -61,6 +61,14 @@ const DEMO_ACTIVITY = [
   ['demo-gold', '2026-09-08T08:00:00Z', '2026-09-08T12:40:00Z'],
 ]
 
+const DEMO_HISTORICAL_ACTIVITY = [
+  ['demo-london', '2026-07-06T10:00:00Z', 216000],
+  ['demo-london', '2026-07-31T23:00:00Z', 216000],
+  ['demo-newyork', '2026-08-03T16:00:00Z', 864000],
+  ['demo-gold', '2026-09-07T10:00:00Z', 864000],
+  ['demo-gold', '2026-09-08T12:00:00Z', 975600],
+]
+
 export function demoOverview(rows = DEMO_LEDGER, { sessionIds = DEMO_SESSIONS.map(s => s.record_id), filters = {}, timezone = getTimezone() } = {}) {
   const metrics = demoResult(rows).metrics
   const monthKey = row => zonedDateKey(row.report_time_utc, timezone).slice(0, 7)
@@ -85,8 +93,8 @@ export function demoOverview(rows = DEMO_LEDGER, { sessionIds = DEMO_SESSIONS.ma
   }
   const activity_months = [...activity].map(([month, time_invested_seconds]) => ({ month, time_invested_seconds }))
   return { performance: { schema_version: 'dashboard-replay-performance-v1', status: 'ready', scope: { session_count: sessionIds.length, readable_session_count: sessionIds.length }, metrics, months, activity_months,
-    time_invested_seconds: activity_months.reduce((sum, item) => sum + item.time_invested_seconds, 0), historical_time_replayed_seconds: sessionIds.reduce((sum, id) => sum + ({ 'demo-london': 432000, 'demo-newyork': 864000, 'demo-gold': 1839600 }[id] || 0), 0),
-    timing_scope: { activity_date_filters_apply: true, historical_date_filters_apply: false, from_utc: filters.from || null, to_utc: filters.to || null },
+    time_invested_seconds: activity_months.reduce((sum, item) => sum + item.time_invested_seconds, 0), historical_time_replayed_seconds: DEMO_HISTORICAL_ACTIVITY.filter(([id, stamp]) => sessionIds.includes(id) && Date.parse(stamp) >= from && Date.parse(stamp) <= to).reduce((sum, [, , seconds]) => sum + seconds, 0),
+    timing_scope: { activity_date_filters_apply: true, historical_date_filters_apply: true, from_utc: filters.from || null, to_utc: filters.to || null },
     side_counts: { buy: rows.filter(row => row.side === 'buy').length, sell: rows.filter(row => row.side === 'sell').length },
     symbols: [...new Set(rows.map(row => row.symbol))].map(symbol => ({ symbol, closed_trade_count: rows.filter(row => row.symbol === symbol).length })), sessions: [], sources: [], excluded: [] } }
 }

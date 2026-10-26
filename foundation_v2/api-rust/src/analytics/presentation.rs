@@ -192,8 +192,7 @@ pub(super) fn activity_months(records: &[Value], intervals: &[Value], zone: Tz) 
     ))
 }
 
-// Activity dates constrain measured wall-clock intervals, not simulated market
-// dates. The cumulative historical counter has no dated step breakdown.
+// Activity filters constrain observed wall clock, never simulated market dates.
 pub(super) fn dashboard_activity(records: &[Value], intervals: &[Value], filters: Option<&Value>, zone: Tz) -> R<Value> {
     let filters = normalize_filters(filters)?;
     let from = timestamp(&filters["from_close_utc"])?;
@@ -216,7 +215,14 @@ pub(super) fn dashboard_activity(records: &[Value], intervals: &[Value], filters
     result["activity_months"] = months;
     result["timing_scope"]["timezone"] = json!(zone.name());
     result["timing_scope"]["activity_date_filters_apply"] = json!(true);
-    result["timing_scope"]["historical_date_filters_apply"] = json!(false);
+    if from.is_some() || to.is_some() {
+        let periods = records.iter().map(|r|crate::replay_service::historical_time::period(&r["payload"]["timing"],from,to)).collect::<Vec<_>>();
+        let known = periods.iter().filter(|v|v.is_some()).count();
+        result["historical_time_replayed_seconds"] = json!(periods.into_iter().try_fold(0_i64,|total,value|total.checked_add(value?)));
+        result["timing_scope"]["historical_measured_session_count"] = json!(known);
+        result["timing_scope"]["unknown_historical_session_count"] = json!(records.len()-known);
+    }
+    result["timing_scope"]["historical_date_filters_apply"] = json!(true);
     result["timing_scope"]["from_utc"] = json!(from.map(iso));
     result["timing_scope"]["to_utc"] = json!(to.map(iso));
     Ok(result)
@@ -249,6 +255,23 @@ pub(super) fn performance_periods(view: &Value, zone: chrono_tz::Tz) -> R<Value>
 mod tests {
     use super::*;
     #[test]
+    fn dashboard_historical_period_sums_only_dated_steps_and_propagates_unknown() {
+        let stamp = "2026-10-25T16:59:59.999999Z";
+        let minute = timestamp(&json!(stamp)).unwrap().unwrap().timestamp().div_euclid(60).to_string();
+        let record = |id, seconds| json!({"record_id":id,"payload":{"timing":{"schema_version":"replay-timing-v1","legacy_baseline":false,"historical_time_replayed_seconds":seconds,"historical_activity":{"schema_version":"replay-historical-activity-v1","started_at_utc":"2026-10-01T00:00:00Z","baseline_seconds":0,"buckets":{minute.clone():{"first_at_utc":stamp,"last_at_utc":stamp,"seconds":seconds}}}}}});
+        let mut records = vec![record("a",60),record("b",120)];
+        let filter = json!({"from_close_utc":"2026-10-24T17:00:00Z","to_close_utc":"2026-10-25T16:59:59.999999999Z"});
+        let result = dashboard_activity(&records,&[],Some(&filter),chrono_tz::Asia::Ho_Chi_Minh).unwrap();
+        assert_eq!(result["historical_time_replayed_seconds"],180);
+        assert_eq!(result["timing_scope"]["historical_measured_session_count"],2);
+        records.push(json!({"record_id":"old","payload":{"timing":{"schema_version":"replay-timing-v1","historical_time_replayed_seconds":86400}}}));
+        let partial = dashboard_activity(&records,&[],Some(&filter),chrono_tz::UTC).unwrap();
+        assert!(partial["historical_time_replayed_seconds"].is_null());
+        assert_eq!(partial["timing_scope"]["unknown_historical_session_count"],1);
+        let lifetime = dashboard_activity(&records,&[],None,chrono_tz::UTC).unwrap();
+        assert_eq!(lifetime["historical_time_replayed_seconds"].as_f64(),Some(86580.0));
+    }
+    #[test]
     fn dashboard_activity_clips_dates_unions_sessions_and_preserves_clock_coverage() {
         let records = vec![json!({"record_id":"a","payload":{"timing":{"schema_version":"replay-timing-v1","historical_time_replayed_seconds":86400,"legacy_baseline":false}}}), json!({"record_id":"b"})];
         let interval = |id: &str, start: &str, end: &str| json!({"session_id":id,"started_at_utc":start,"ended_at_utc":end});
@@ -257,8 +280,8 @@ mod tests {
         let result = dashboard_activity(&records,&intervals,Some(&filter),chrono_tz::Asia::Ho_Chi_Minh).unwrap();
         assert_eq!(result["time_invested_seconds"],30.0);
         assert_eq!(result["activity_months"],json!([{"month":"2026-02","time_invested_seconds":30.0}]));
-        assert_eq!(result["historical_time_replayed_seconds"],86400.0);
-        assert_eq!(result["timing_scope"]["historical_date_filters_apply"],false);
+        assert!(result["historical_time_replayed_seconds"].is_null());
+        assert_eq!(result["timing_scope"]["historical_date_filters_apply"],true);
         let empty = json!({"from_close_utc":"2027-01-01T00:00:00Z"});
         let outside = dashboard_activity(&records,&intervals,Some(&empty),chrono_tz::UTC).unwrap();
         assert_eq!(outside["time_invested_seconds"],0.0);

@@ -216,3 +216,7 @@
 }
 
 .fx-dashboard-recent + .fx-dashboard-results { margin-top:var(--ds-space-8,32px); }
+
+@media (max-width: 380px) {
+  .fx-dashboard-performance { grid-template-columns: minmax(0, 1fr); }
+}

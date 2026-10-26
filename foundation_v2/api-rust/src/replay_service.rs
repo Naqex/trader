@@ -29,6 +29,8 @@ pub mod history;
 mod entry_recording;
 #[path = "replay_activity_recording.rs"]
 pub(crate) mod activity_recording;
+#[path = "replay_historical_time.rs"]
+pub(crate) mod historical_time;
 
 struct ReplayTimings {
     operation: String,
@@ -152,7 +154,8 @@ fn now() -> String {
     Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Micros, true)
 }
 fn timing(legacy: bool) -> Value {
-    json!({"schema_version":"replay-timing-v1","started_at_utc":now(),"legacy_baseline":legacy,"historical_time_replayed_seconds":0})
+    let stamp = now();
+    json!({"schema_version":"replay-timing-v1","started_at_utc":stamp,"legacy_baseline":legacy,"historical_time_replayed_seconds":0,"historical_activity":historical_time::fresh(&stamp)})
 }
 fn engine_snapshot(action: &str, snapshot: &Value, args: Value) -> Result<Value, ApiError> {
     let mut result = crate::replay_core::transform_owned(json!({"action":action,"snapshot":snapshot,"args":args}))
@@ -359,6 +362,7 @@ fn take_mutation_payload(record: &mut Value) -> Value {
     let payload=record["payload"].take();
     record["_entry_recording_baseline"]=entry_recording::baseline(&payload);
     record["_activity_recording_baseline"]=activity_recording::baseline(&payload);
+    record["_historical_timing_baseline"]=payload["timing"].clone();
     payload
 }
 pub async fn save_record(
@@ -382,6 +386,8 @@ async fn save_record_with_events(
     let expected = integer(record, "revision")?;
     let rev = i32::try_from(expected + 1).map_err(|_| bad("record revision overflow"))?;
     let stamp = now();
+    let prior_timing=if record["payload"].is_object(){&record["payload"]["timing"]}else{&record["_historical_timing_baseline"]};
+    historical_time::capture(prior_timing,&mut payload["timing"],&stamp).map_err(internal)?;
     let baseline=if record["payload"].is_object(){entry_recording::baseline(&record["payload"])}else{record["_entry_recording_baseline"].clone()};
     entry_recording::capture(&baseline,&mut payload,events,&stamp);
     let activity_baseline=if record["payload"].is_object(){activity_recording::baseline(&record["payload"])}else{record["_activity_recording_baseline"].clone()};
@@ -2136,6 +2142,29 @@ async fn step_view_response(
 #[cfg(test)]
 mod response_view_tests {
     use super::*;
+
+    #[test]
+    fn historical_save_baseline_survives_full_and_compact_payload_paths() {
+        let mut original = json!({"payload":{"timing":timing(false)}});
+        add_elapsed(&mut original["payload"], 60).unwrap();
+        let prior = original["payload"]["timing"].clone();
+        let stamp = now();
+        // An existing cumulative baseline has no dated history yet.
+        original["payload"]["timing"].as_object_mut().unwrap().remove("historical_activity");
+        let mut full = original["payload"].clone();
+        add_elapsed(&mut full, 120).unwrap();
+        historical_time::capture(&prior, &mut full["timing"], &stamp).unwrap();
+        let mut compact = take_mutation_payload(&mut original);
+        add_elapsed(&mut compact, 120).unwrap();
+        historical_time::capture(&original["_historical_timing_baseline"], &mut compact["timing"], &stamp).unwrap();
+        assert_eq!(compact["timing"], full["timing"]);
+        assert_eq!(compact["timing"]["historical_activity"]["baseline_seconds"], 60);
+        assert_eq!(historical_time::period(&compact["timing"], Some(DateTime::parse_from_rfc3339(&stamp).unwrap().with_timezone(&Utc)), None), Some(120));
+        let saved = compact["timing"].clone();
+        historical_time::capture(&saved, &mut compact["timing"], &stamp).unwrap();
+        assert_eq!(saved, compact["timing"], "non-step saves cannot count a step again");
+        assert_eq!(historical_time::period(&timing(false), None, None), Some(0), "forks start a fresh timing epoch");
+    }
 
     #[test]
     fn response_views_are_explicit_and_route_scoped() {

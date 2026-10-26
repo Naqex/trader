@@ -3,6 +3,7 @@ import { displayDate } from './dateFormat.js'
 import { useTestingLocale } from './testingLocale.jsx'
 import { chartDomain, chartTicks, reportCurvePath } from './reportChartModel.js'
 import './report-chart.css'
+import ReportInfo from './ReportInfo.jsx'
 
 const W = 560, H = 250, left = 88, top = 24, bottom = 208
 const finite = value => typeof value === 'number' && Number.isFinite(value)
@@ -56,7 +57,7 @@ export function ReportLineChart({ title, points, currency, emptyLabel = 'Chưa c
   </svg></div> : <div className="fxs-chart-empty">{t(emptyLabel)}</div>}</section>
 }
 
-export function ReportBars({ title, items, currency, period, scopeLabel, averagePeriod, horizontal = false, accent = 'blue', signed = false, split = false, maximum, integer = false, valueFormat, emptyLabel = 'Chưa có dữ liệu để vẽ biểu đồ.' }) {
+export function ReportBars({ title, help, items, currency, period, scopeLabel, averagePeriod, horizontal = false, accent = 'blue', signed = false, split = false, maximum, integer = false, valueFormat, emptyLabel = 'Chưa có dữ liệu để vẽ biểu đồ.' }) {
   const { t, fmt, locale } = useTestingLocale()
   const divided = split && items.every(item => finite(item.profit) && item.profit >= 0 && finite(item.loss) && item.loss <= 0)
   const unobserved = item => averagePeriod && item.period_count === 0 && item.value === null
@@ -99,7 +100,7 @@ export function ReportBars({ title, items, currency, period, scopeLabel, average
   // Keep every bar; thin category labels only when their text would overlap.
   const labelWidth = Math.max(40, ...labels.map(label => (angled ? 0 : label.length) * 7 + 12))
   const labelStride = Math.ceil(items.length / Math.max(1, Math.floor((right - left) / labelWidth)))
-  return <section className={`fxs-chart-panel report-chart is-${accent}`}><div className="report-heading"><h3>{t(title)}</h3></div>{domain ? <div ref={plotRef} className="report-plot" style={{ minHeight: minimumHeight }} role="group" aria-label={t(title)}><svg className="report-svg" viewBox={`0 0 ${width} ${height}`} style={{ height }} role="group" aria-label={t(title)}>
+  return <section className={`fxs-chart-panel report-chart is-${accent}`}><div className="report-heading"><h3>{t(title)}</h3>{help && <ReportInfo title={title} text={help} />}</div>{domain ? <div ref={plotRef} className="report-plot" style={{ minHeight: minimumHeight }} role="group" aria-label={t(title)}><svg className="report-svg" viewBox={`0 0 ${width} ${height}`} style={{ height }} role="group" aria-label={t(title)}>
     {horizontal && <line className="report-grid" x1={left} x2={right} y1={top} y2={top}/>}
     {ticks.map(value => <g key={value}>{horizontal ? <text x={x(value)} y={height - 14} textAnchor="middle">{tickLabel(value)}</text> : <><line className="report-grid" x1={left} x2={right} y1={y(value)} y2={y(value)}/><text x={left - 12} y={y(value)} dominantBaseline="middle" textAnchor="end">{tickLabel(value)}</text></>}</g>)}
     {items.map((item, index) => {

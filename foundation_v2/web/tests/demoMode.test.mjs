@@ -49,13 +49,15 @@ test('activity time filters measured user intervals, while historical backtest t
   const selected = { sessionIds: ['demo-london'], filters: { from: '2026-08-01', to: '2026-08-01' }, timezone: 'UTC' }
   const august = demoOverview([], selected).performance
   assert.equal(august.time_invested_seconds, 5400)
-  assert.equal(august.historical_time_replayed_seconds, 432000)
+  assert.equal(august.historical_time_replayed_seconds, 0)
   assert.equal(august.scope.session_count, 1)
   assert.equal(august.metrics.closed_trade_count, 0, 'known activity does not depend on closing a trade')
   const local = demoOverview([], { ...selected, timezone: 'Asia/Ho_Chi_Minh' }).performance
   assert.equal(local.time_invested_seconds, 10800)
+  assert.equal(local.historical_time_replayed_seconds, 216000)
   const outside = demoOverview([], { ...selected, filters: { from: '2027-01-01' } }).performance
   assert.equal(outside.time_invested_seconds, 0)
+  assert.equal(outside.historical_time_replayed_seconds, 0)
   assert.deepEqual(outside.activity_months, [])
   const row = { session_id: 'a', report_time_utc: '2026-01-31T23:30:00Z', net_pnl: 1 }
   assert.equal(demoFilterRows(null, { from: '2026-02-01', to: '2026-02-01', timezone: 'Asia/Ho_Chi_Minh' }, [row]).length, 1)
