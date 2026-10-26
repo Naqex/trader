@@ -1,6 +1,12 @@
 # Rust-native candidate runtime
 
-Latest UI-only rollout: [26 October Analytics controls and adaptive tooltips](../evidence/analytics-controls-tooltips-20261026/RECEIPT.md)
+Latest UI-only rollout: [26 October Analytics page tabs and RR metric details](../evidence/analytics-card-details-20261026/RECEIPT.md)
+uses equal-width blue page tabs, removes duplicated RR card headings, places help
+beside each metric and adapts compact PnL date ticks to available width. Trade
+win/loss counts are labeled explicitly. UI5180 was updated without an API restart;
+financial models and source observations remain unchanged.
+
+Previous UI-only rollout: [26 October Analytics controls and adaptive tooltips](../evidence/analytics-controls-tooltips-20261026/RECEIPT.md)
 compacts report tabs, removes filter count badges, restores PnL chart tools and
 adapts shared tooltip placement and reading width. Control icons use clearer SVG
 strokes. UI5180 was updated without API or terminal restart; financial models and

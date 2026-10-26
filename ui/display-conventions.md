@@ -50,11 +50,12 @@ data text. RR mini curves are 48px sparklines without axis labels; their points
 retain tooltips and keyboard access. Other compact plots retain their axes.
 Report panels do not show fullscreen controls. PnL shows only the four interval
 controls in its heading, with no standalone currency or balance/PnL toggle.
-Report tabs use content-width targets aligned left, with a gray active surface;
-small screens distribute three equal targets. Filter triggers retain their names
+Report tabs form a full-width page-level strip with three equal 44px targets.
+The selected tab uses blue text, a subtle blue surface and a 2px blue indicator;
+there is no extra navigation row or full-width bottom separator. Filter triggers retain their names
 without selected-count badges; applied values appear in the removable chip row.
 Its six summary groups pair PnL/balance with inline percent changes, win rate,
-trade count with superscript wins/losses, breakeven count and an inline threshold
+trade count with explicitly labeled wins/losses below it, breakeven count and an inline threshold
 input with an Apply action. Definitions use the shared SVG info icon, centered
 in a consistent control box. Mobile radars use one column.
 The PnL plot toolbar exposes zoom in/out, rectangle selection, pan and reset.
@@ -63,6 +64,13 @@ and values. Dragging never selects a trade; a plain point click still opens its
 inspector. +/- zoom, arrow keys pan and 0 resets when the plot has keyboard focus.
 Changing the interval resets the visible window. Tooltip geometry and short/long
 reading formats follow the shared project compact-system contract.
+PnL axis labels use compact dates, full years across year boundaries and local
+times within a single day. Tick density follows plot width; repeated dates are
+thinned, the baseline has no visible text and point tooltips keep full timestamps.
+The existing observation-index spacing remains; ticks do not invent daily samples.
+RR cards omit duplicate section headings. Each metric owns its info control.
+The opportunity card pairs its count with maximum ideal RR across all eligible
+filtered trades, including winners and losers, as stated in its tooltip.
 Definitions belong in accessible info controls, with no permanent explanatory
 paragraphs. Do not render a report-level scope/provenance footer; original fields
 remain available in the selected-trade inspector and exports.

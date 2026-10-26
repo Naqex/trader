@@ -43,10 +43,9 @@
 .fx-app.fx-shell-story[data-theme] .fx-content input[type=checkbox]:not([role=switch]):focus-visible { outline:2px solid var(--wm-focus); outline-offset:2px; box-shadow:none; }
 .fx-app.fx-shell-story[data-theme] .fx-content .prop-tabs { min-height:var(--ds-nav); }
 .fx-app.fx-shell-story[data-theme] .fx-content :is(.fx-select-check, .dataset-asset-check) { color:var(--project-highlight); }
-.fx-app.fx-shell-story[data-theme] .fx-content :is(.fxa-tab, .prop-tabs button) { min-height:var(--wm-control-height); padding:7px 12px; line-height:20px; font-weight:500; }
-.fx-app.fx-shell-story[data-theme] .fx-content .fxa-tab:hover:not(:disabled) { background:var(--wm-control-hover); color:var(--wm-content); }
+.fx-app.fx-shell-story[data-theme] .fx-content .prop-tabs button { min-height:var(--wm-control-height); padding:7px 12px; line-height:20px; font-weight:500; }
 .fx-app.fx-shell-story[data-theme] .fx-content .prop-tabs button:hover:not(:disabled) { background:transparent; color:var(--wm-content); }
-.fx-app.fx-shell-story[data-theme] .fx-content :is(.fxa-tab, .prop-tabs button)[aria-selected=true] { color:var(--wm-content); }
+.fx-app.fx-shell-story[data-theme] .fx-content .prop-tabs button[aria-selected=true] { color:var(--wm-content); }
 .fx-app.fx-shell-story[data-theme] .fx-content .wm-button.is-text {
   padding-inline:0; border:0; border-radius:0; background:transparent; color:var(--project-primary);
 }

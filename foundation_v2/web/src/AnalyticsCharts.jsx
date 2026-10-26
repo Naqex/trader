@@ -18,7 +18,7 @@ function tickText(value, domain, locale, suffix) {
   const digits = Math.max(0, Math.min(8, -Math.floor(Math.log10(step))))
   return new Intl.NumberFormat(locale, { maximumFractionDigits: digits + (step / 10 ** Math.floor(Math.log10(step)) === 2.5 ? 1 : 0) }).format(value) + (suffix === '%' ? '%' : '')
 }
-export function AnalyticsCurve({ series, label, suffix = '', onSelect, selected, negative = false, labels = [], height = 200, stretch = false, sparkline = false, controls = false }) {
+export function AnalyticsCurve({ series, label, suffix = '', onSelect, selected, negative = false, labels = [], axisLabels, height = 200, stretch = false, sparkline = false, controls = false }) {
   const { t, fmt, locale } = useTestingLocale(), id = useId()
   const [ref, width, measuredHeight] = useSize(height, stretch)
   const [range, setRange] = useState([0, 1]), [tool, setTool] = useState('pan'), [brush, setBrush] = useState(null)
@@ -38,6 +38,17 @@ export function AnalyticsCurve({ series, label, suffix = '', onSelect, selected,
   const y = value => domain.high === domain.low ? (top + edge) / 2 : edge - (value - domain.low) / (domain.high - domain.low) * (edge - top)
   const labelAt = index => labels[index + start] || (index + start === 0 ? t('Bắt đầu') : `${index + start}`)
   const detail = index => `${labelAt(index)} · ${fmt(paths[0]?.[index]?.value, suffix)}`
+  const visibleTicks = []
+  if (axisLabels) {
+    const candidates = Array.from({length:count},(_,index)=>index).filter(index=>axisLabels[index+start] && (index===0 || axisLabels[index+start]!==axisLabels[index+start-1]))
+    const gap = Math.max(56,...candidates.map(index=>axisLabels[index+start].length*7+20))
+    for (const index of candidates) if (!visibleTicks.length || x(index)-x(visibleTicks.at(-1))>=gap) visibleTicks.push(index)
+    const last=candidates.at(-1)
+    if (last!==undefined && visibleTicks.at(-1)!==last) {
+      if (visibleTicks.length>1 && x(last)-x(visibleTicks.at(-1))<gap) visibleTicks.pop()
+      if (!visibleTicks.length || x(last)-x(visibleTicks.at(-1))>=gap) visibleTicks.push(last)
+    }
+  } else if (count > 0) visibleTicks.push(...new Set(width < 480 ? [0, count - 1] : [0, Math.floor((count - 1) / 2), count - 1]))
   const clampRange = (from, span) => { const size = Math.min(1, Math.max(minimumSpan, span)), left = Math.max(0, Math.min(1 - size, from)); return [left, left + size] }
   const zoom = factor => setRange(current => { const span = Math.min(1, Math.max(minimumSpan, (current[1] - current[0]) * factor)); return clampRange((current[0] + current[1] - span) / 2, span) })
   const pointX = event => { const rect = event.currentTarget.getBoundingClientRect(); return Math.max(left, Math.min(right, (event.clientX - rect.left) * width / rect.width)) }
@@ -99,7 +110,7 @@ export function AnalyticsCurve({ series, label, suffix = '', onSelect, selected,
       {!domain && <text x={(left+right)/2} y={(top+edge)/2} textAnchor="middle">{t('Chưa có dữ liệu')}</text>}
       {pathGroups.map(({ points, d, seriesIndex }, index) => <g key={index} style={{ color: series.length > 1 ? `var(--report-${['blue', 'positive', 'negative'][seriesIndex % 3]})` : undefined }}>{series.length === 1 && <path d={`${d} L${points.at(-1)[0]},${edge} L${points[0][0]},${edge} Z`} fill={`url(#${id})`}/>}<path d={d} fill="none" stroke="currentColor" strokeWidth="2" opacity={series.length > 1 ? .45 : 1}/>{points.length === 1 && <circle cx={points[0][0]} cy={points[0][1]} r="3" fill="currentColor"/>}</g>)}
       {series.length === 1 && paths[0].map((point, index) => finite(point.value) && <circle key={index} className="fxa-viz-point" cx={x(index)} cy={y(point.value)} r={point.tradeId === selected ? 5 : 3} tabIndex={onSelect || count <= 50 ? 0 : undefined} role={onSelect ? 'button' : 'img'} aria-label={detail(index)} data-tooltip={detail(index)} onClick={() => selectPoint(point)} onKeyDown={event => { if (['Enter', ' '].includes(event.key) && point.tradeId && onSelect) { event.preventDefault(); selectPoint(point) } }}/>) }
-      {!compact && count > 0 && [...new Set(width < 480 ? [0, count - 1] : [0, Math.floor((count - 1) / 2), count - 1])].map(index => <text key={index} x={x(index)} y={height - 10} textAnchor={index === 0 ? 'start' : index === count - 1 ? 'end' : 'middle'}>{labelAt(index)}</text>)}
+      {!compact && visibleTicks.map(index => <g className="fxa-x-tick" key={index}>{axisLabels && <line className="fxa-gridline" x1={x(index)} x2={x(index)} y1={edge} y2={edge+5}/>}<text x={x(index)} y={height - 10} textAnchor={index === 0 ? 'start' : index === count - 1 ? 'end' : 'middle'}>{axisLabels ? axisLabels[index+start] : labelAt(index)}</text></g>)}
       {series.length === 1 && <rect x={left} y={top} width={Math.max(0, right - left)} height={edge - top} fill="transparent" pointerEvents="none"/>}
       {brush && <rect x={Math.min(...brush)} y={top} width={Math.abs(brush[1]-brush[0])} height={edge-top} className="fxa-chart-brush" pointerEvents="none"/>}
     </svg>
