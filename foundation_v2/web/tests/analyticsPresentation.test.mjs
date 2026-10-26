@@ -4,13 +4,13 @@ import { bucketCurve, excursionSummary, scenarioComparison, realizedRiskSeries, 
 
 test('scenario comparison uses matching observed trades and never substitutes unresolved PnL', () => {
   const trades=[{tradeId:'a',net_pnl:10},{tradeId:'b',net_pnl:-5},{tradeId:'c',net_pnl:30}]
-  const rows=[{trade_id:'a',risk_reward:{net_pnl:20}},{trade_id:'b',risk_reward:{net_pnl:null}},{trade_id:'outside',risk_reward:{net_pnl:1000}}]
+  const rows=[{trade_id:'a',risk_reward:{status:'ready',net_pnl:20}},{trade_id:'b',risk_reward:{status:'ready',net_pnl:null}},{trade_id:'outside',risk_reward:{status:'ready',net_pnl:1000}}]
   const result=scenarioComparison(rows,trades,'risk_reward',100)
   assert.deepEqual(result.baseline.map(point=>point.value),[100,110])
   assert.deepEqual(result.scenario.map(point=>point.value),[100,120])
   assert.equal(result.net,20);assert.equal(result.profitFactor,null)
   assert.equal(scenarioComparison([],trades,'risk_reward',100).net,null)
-  const withBreakeven=[{trade_id:'a',risk_reward:{net_pnl:10}},{trade_id:'b',risk_reward:{net_pnl:0}},{trade_id:'c',risk_reward:{net_pnl:-10}}]
+  const withBreakeven=[{trade_id:'a',risk_reward:{status:'ready',net_pnl:10}},{trade_id:'b',risk_reward:{status:'ready',net_pnl:0}},{trade_id:'c',risk_reward:{status:'ready',net_pnl:-10}}]
   assert.equal(scenarioComparison(withBreakeven,trades,'risk_reward',100).winRate,50)
   assert.equal(scenarioComparison(withBreakeven,trades,'risk_reward',100).averageDrawdown,10)
 })
@@ -31,8 +31,8 @@ test('bucket endpoints keep last balance, baseline and named-zone day including 
 })
 test('realized R joins per trade and never discards valid ledger or original budget samples', () => {
   const trades=[{tradeId:'a',realized_r:2},{tradeId:'b',realized_r:3},{tradeId:'c',net_pnl:40,planned_risk_budget:10},{tradeId:'d',net_pnl:10,planned_risk_budget:0}]
-  assert.deepEqual(realizedRiskSeries({rows:[{trade_id:'b',realized_r:3,excursion:{r_basis:'initial_stop_distance'}}]},trades).map(item=>item.value),[2,3,4])
-  assert.deepEqual(realizedRiskSeries({rows:[{trade_id:'a',realized_r:100,excursion:{r_basis:'configured_stop_distance'}}]},trades).map(item=>item.value),[2,3,4])
+  assert.deepEqual(realizedRiskSeries({rows:[{trade_id:'b',realized_r:3,excursion:{r_basis:'initial_stop_distance'}}]},trades).map(item=>item.value),[2,3,4,null])
+  assert.deepEqual(realizedRiskSeries({rows:[{trade_id:'a',realized_r:100,excursion:{r_basis:'configured_stop_distance'}}]},trades).map(item=>item.value),[2,3,4,null])
 })
 test('ideal risk uses complete-week coverage and counts only observed losing trades', () => {
   const trades=[{tradeId:'a',outcome:'loss'},{tradeId:'b',outcome:'loss'},{tradeId:'c',outcome:'win'}]

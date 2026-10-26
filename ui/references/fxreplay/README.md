@@ -14,6 +14,7 @@ học theo, điều chỉnh hoặc lược bỏ.
 | Backtest charting | [Audit chart](analytics-live-charting-audit.md#chart-backtest) | Header/replay/order draft/settings/shortcuts, oracle risk sizing; không đặt lệnh/chạy replay, Prop/Live FX chưa truy cập |
 
 Quy trình dùng lại cho các page sau: [verification-workflow.md](verification-workflow.md).
+Hợp đồng và phép tính từng biểu đồ: [analytics-chart-calculations.md](analytics-chart-calculations.md).
 Bao gồm phạm vi, cách đọc UI/response, kiểm số học, mẫu ghi kết quả, điểm dừng
 và khôi phục trạng thái trình duyệt.
 

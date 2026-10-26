@@ -43,8 +43,8 @@ when the seven columns need more space.
 Calendar navigation permits empty months and year steps. Analytics adds a compact
 12-month Year view and read-only daily trade details. Both Analytics and Live use
 the same Monday-first grid, navigation and day presentation; each retains its own
-data adapter. Analytics keeps dated rows with unknown PnL in the day count, unlike
-the existing known-PnL frequency scope. Net/win-rate summaries are unavailable for
+data adapter. Analytics keeps dated rows with unknown PnL in both the day count
+and frequency. Net/win-rate summaries are unavailable for
 incomplete financial data; unknown-time or partial sources also prevent complete
 period totals. Average R weights only known R observations and exposes coverage.
 Empty periods use a dash rather than manufactured zero money. No new percentage

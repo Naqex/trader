@@ -130,3 +130,21 @@ Lượt mẫu: [Dashboard charts](testing-dashboard-charts.md).
 - Giữ cả attempt QA thất bại; ghi nguyên nhân và attempt thay thế được chấp nhận.
   Source/model, fixture browser, actual GET runtime, broker acceptance là bốn mức
   bằng chứng riêng. Raw ở E, sanitized reference và receipt trong repo.
+
+## Kiểm từng biểu đồ: bổ sung 27/10/2026
+
+- Lập bảng chart → data owner → công thức/mẫu số → grouping/timezone → renderer
+  → zero/unknown/partial. Chọn oracle tính tay, không lấy demo hoặc chính helper
+  đang kiểm làm kết quả mong đợi. Mẫu: [chart contracts](analytics-chart-calculations.md).
+- RR cần kiểm cùng trade ở headline, hour/session/month/calendar. Giữ thứ tự và
+  null slot trên sparkline; loại missing khỏi mean không có nghĩa xóa slot.
+- Radar phải có fixture aggregate âm, toàn âm và0; một trade âm trong aggregate
+  dương chưa kiểm được thang âm. Xem ảnh thực để bắt nhãn thang chạm tên nhóm.
+- Simulation cần kiểm ready/ambiguous/unsupported, cả sums/curve và table;
+  baseline và alternative dùng cùng mẫu. Monte Carlo kiểm seed, ruin floor,
+  unknown defaults, binary/BE, fractional defaults qua native form validity,
+  overflow, kết quả cũ sau thay config và fence khi đổi nguồn/filter/cutoff.
+- Kiểm toàn bộ Performance/Drawdown/Simulation trên desktop/tablet/mobile,
+  VI/EN, dark/light theo rủi ro; chạy lại Prop fence và Live shared boundaries.
+  Kiểm giá trị và hình học, không chỉ chart tồn tại. Raw runner của lượt này:
+  `E:/BACKUP-TRADINGWORKSPACE/fxreplay-chart-logic-20261027/chart-qa.mjs`.

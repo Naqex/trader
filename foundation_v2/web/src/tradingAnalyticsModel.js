@@ -4,6 +4,11 @@ import { closeTime } from './sessionPerformanceModel.js'
 
 export const known = value => (typeof value === 'number' || typeof value === 'string' && value.trim() !== '') && Number.isFinite(Number(value))
 export const number = value => known(value) ? Number(value) : null
+export function realizedRiskValue(row, observation) {
+  const observed = observation?.excursion?.r_basis === 'initial_stop_distance' ? number(observation.realized_r) : null
+  const budget = number(row.planned_risk_budget)
+  return observed ?? number(row.realized_r) ?? (budget > 0 && known(row.net_pnl) ? number(Number(row.net_pnl) / budget) : null)
+}
 export const outcomeOf = value => !known(value) ? 'unknown' : Number(value) > 1e-12 ? 'win' : Number(value) < -1e-12 ? 'loss' : 'breakeven'
 export const DEFAULT_EXTRA_FILTERS = { asset: 'all', tag: 'all', strategy: 'all', source: 'all', weekday: 'all', hour: 'all', timeStart: '', timeEnd: '', reportKinds: '', timezone: 'UTC', search: '', notes: '', notesPresence: '', statuses: '', assets: '', sides: '', outcomes: '', types: '', years: '', months: '', days: '', hours: '', tagInclude: '', tagExclude: '', tagIncludeMode: 'AND', tagExcludeMode: 'AND' }
 export function hasTradeNotes(row) {
@@ -304,7 +309,9 @@ export function advancedAnalytics(model, filters = {}, options = {}) {
   const breakevenThreshold = known(options.breakevenThreshold) ? Math.max(0, Number(options.breakevenThreshold)) : 0
   const classifyOutcome = value => !known(value) ? 'unknown' : Math.abs(Number(value)) <= Math.max(1e-12, breakevenThreshold) ? 'breakeven' : Number(value) > 0 ? 'win' : 'loss'
   const timeBasis = model.result?.scope?.time_basis === 'market' ? 'market' : 'activity'
-  const timedRows = model.ledger.map(row => ({ ...row, analytics_time_utc: timeBasis === 'market' ? row.close_time_utc ?? null : row.report_time_utc ?? null }))
+  // The caller supplies only experiments fenced to this report revision/cutoff.
+  const riskObservations = new Map((options.experiments?.rows || []).map(row => [row.trade_id, row]))
+  const timedRows = model.ledger.map(row => ({ ...row, realized_r: realizedRiskValue(row, riskObservations.get(row.tradeId)), analytics_time_utc: timeBasis === 'market' ? row.close_time_utc ?? null : row.report_time_utc ?? null }))
   const rows = filterAnalyticsRows(timedRows, filters, classifyOutcome).map(row => ({ ...row, outcome: classifyOutcome(row.net_pnl) }))
   const summary = stats(rows, classifyOutcome, model.result?.multi_session ? null : model.startBalance)
   const localFiltered = Object.keys(DEFAULT_EXTRA_FILTERS).filter(key => key !== 'timezone').some(key => (filters[key] ?? DEFAULT_EXTRA_FILTERS[key]) !== DEFAULT_EXTRA_FILTERS[key])

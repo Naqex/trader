@@ -132,6 +132,12 @@ Source owner: `analyticsViewModel.js`, `analyticsPresentation.js`,
 `tradingAnalyticsModel.js`, `liveWorkspaceModel.js`, `LiveSurfaces.jsx`,
 `FxAnalytics.jsx`. Regression: `analyticsCoverageRegression.test.mjs`.
 
+Owner clarified the full chart logic/display scope on27/10. Follow-up canonicalR,
+sparse RR/Ideal, signed radar, scenario eligibility and Monte Carlo fixes plus
+the all-chart acceptance matrix are recorded in
+[analytics-chart-calculations.md](analytics-chart-calculations.md). The three
+coverage/tag fixes above are not the complete chart audit.
+
 ## Để lại khi có dữ liệu/quyền truy cập
 
 - Charting Prop/Live FX và các tính năng Pro bị khóa; không bypass.

@@ -1,5 +1,12 @@
 # Rust-native candidate runtime
 
+Latest UI chart calculation/display rollout:
+[27 October Analytics chart logic](../evidence/fxreplay-chart-logic-20261027/RECEIPT.md).
+Canonical realizedR, missing-trade chart gaps, signed radar scales, ready-only
+scenarios and Monte Carlo validation/defaults are deployed on5180. The receipt
+separates103 model tests, chart/Prop/Live fixtures and the actual GET-only journey;
+it also records recovery of absent existing native/compact services after interruption.
+
 Latest local API/UI rollout: [26 October Testing Dashboard refinement](../evidence/dashboard-refinement-20261026/RECEIPT.md)
 adds dated historical replay timing, period coverage, accessible VI/EN metric/chart
 help, an explicit missing-date chart state, and removes the repeated session badge.

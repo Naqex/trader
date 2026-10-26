@@ -1,0 +1,39 @@
+{
+  "date": "2026-10-27",
+  "baseline": "c8cd64223bb1c4543f0509acc0bc089a16b00267",
+  "raw_root": "E:\\BACKUP-TRADINGWORKSPACE\\fxreplay-chart-logic-20261027",
+  "source_sha256": {
+    "src/analyticsPresentation.js": "123ae5b071d47bd515249813cb5176a5c17aba09ba83ecf3fe3e71df7f8ffe76",
+    "src/analyticsSimulation.js": "6659480f8564303a94d92b7476336ec8a01c327077fa26d9606c5b2b783775cc",
+    "src/tradingAnalyticsModel.js": "b02c3d886b6663fa27a18b5513fb149b81544aee335bc5dc4f067131fe3b0d72",
+    "src/AnalyticsCharts.jsx": "3c16e6f74a614bbe2e076f9f9d6865016cfcdcae5358264c86a03dfd16ec6982",
+    "src/FxAnalytics.jsx": "90b2159529bcf4c409ef81a7241e6d4f8f70c77d15e749eb24fd8b209c275dfe",
+    "src/testing-copy.json": "8694500868d102c98d6d2bd336cabd13f957534c1aea7a3f9ba94f8256a3d488",
+    "tests/analyticsPresentation.test.mjs": "ab9321e67a6b35b84bcf239a8870fab523d18b9d4c12890a56a9cf4489acb4b9",
+    "tests/calendarViewModel.test.mjs": "b6bab8ad62429042627258622b5d57690758e1573c02071c129ebee357879fae",
+    "tests/analyticsChartLogic.test.mjs": "cd70dcfb6e4560ffcb7d89364f63f8bbf69aacee1e907b4554717c86b070f975"
+  },
+  "ui_index_sha256": "179761028d30e440915c29cc8e03a24406d609f9b8c1ebcbd958d0044be4d562",
+  "tests": {
+    "model": 103,
+    "independent_model": 103,
+    "backend_experiments": 28,
+    "deployed_chart_viewports": 3,
+    "deployed_regression_cases": 6
+  },
+  "evidence_sha256": {
+    "chart-qa-final/report.json": "9184354102e6642774e980b415b5d65fff570bcf0b60c2850c2607273ad88c2d",
+    "regression-preview-final/report.json": "c62218bec0b98e6f56b75ac5f1b5210fd6cc2c8dab99cbdc2d9da62f116b9f47",
+    "real-preview-final/report.json": "b976d21609a681f2e38bb5255eccbc9bb2aa2ca74edede7750be5b949df670f3",
+    "final-review.json": "df6c0862f77fea574bb624a307a94dc08fc99db96e9267a0ae13607c6e3f246c",
+    "visual-review.json": "82192963214e9dab34e2d0730447af3c1eeb14a36a3037326caa46880305408d",
+    "deployed-chart-qa/report.json": "9184354102e6642774e980b415b5d65fff570bcf0b60c2850c2607273ad88c2d",
+    "deployed-regression/report.json": "c62218bec0b98e6f56b75ac5f1b5210fd6cc2c8dab99cbdc2d9da62f116b9f47",
+    "real-deployed/report.json": "b976d21609a681f2e38bb5255eccbc9bb2aa2ca74edede7750be5b949df670f3",
+    "served-hash.json": "f287b1ec047a8ade7e11ac2d4758f3c11daabd3288e4b9d80c0054babe9541c5",
+    "promotion.json": "2ce6b234e07359aa6dd783d667755fac2c61c132599c58a19d5d7c62098bc24a"
+  },
+  "fx_formula_parity": false,
+  "broker_actions": false,
+  "original_fx_refreshed": false
+}

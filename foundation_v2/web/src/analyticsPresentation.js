@@ -1,4 +1,4 @@
-import { known, number } from './tradingAnalyticsModel.js'
+import { known, number, realizedRiskValue } from './tradingAnalyticsModel.js'
 
 export function profitFactorGauge(rows) {
   if (!rows.every(row => known(row.net_pnl))) return { status: 'unavailable', value: null, fraction: null }
@@ -25,12 +25,8 @@ export function excursionSummary(experiments, trades) {
 }
 
 export function realizedRiskSeries(experiments, trades) {
-  const observed = new Map((experiments?.rows || []).filter(row => row.excursion?.r_basis === 'initial_stop_distance').map(row => [row.trade_id, row.realized_r]))
-  return trades.flatMap(row => {
-    const fromRisk = number(row.planned_risk_budget) > 0 && known(row.net_pnl) ? Number(row.net_pnl) / Number(row.planned_risk_budget) : null
-    const value = number(observed.get(row.tradeId)) ?? number(row.realized_r) ?? (Number.isFinite(fromRisk) ? fromRisk : null)
-    return value === null ? [] : [{ value, tradeId: row.tradeId }]
-  })
+  const observed = new Map((experiments?.rows || []).map(row => [row.trade_id, row]))
+  return trades.map(row => ({ value: realizedRiskValue(row, observed.get(row.tradeId)), tradeId: row.tradeId }))
 }
 
 export function idealRiskSummary(experiments, trades) {
@@ -40,7 +36,8 @@ export function idealRiskSummary(experiments, trades) {
     return ideal?.status === 'complete_week' && known(ideal.value_r) ? [{ ...ideal, tradeId: trade.tradeId, outcome: trade.outcome }] : []
   })
   const values = eligible.map(item => Number(item.value_r)), losers = eligible.filter(item => item.outcome === 'loss')
-  return { eligible, series: eligible.map(item => ({ value: Number(item.value_r), tradeId: item.tradeId })), average: values.length ? values.reduce((a,b)=>a+b,0)/values.length : null, max: values.length ? Math.max(...values) : null,
+  const byId = new Map(eligible.map(item => [item.tradeId, item]))
+  return { eligible, series: trades.map(trade => ({ value: number(byId.get(trade.tradeId)?.value_r), tradeId: trade.tradeId })), average: values.length ? values.reduce((a,b)=>a+b,0)/values.length : null, max: values.length ? Math.max(...values) : null,
     recoveryCount: losers.length ? losers.filter(item => item.could_have_profit_or_breakeven === true).length : null, lossKnownCount: losers.length }
 }
 
@@ -48,7 +45,7 @@ export function scenarioComparison(rows, trades, key, startBalance) {
   const byId = new Map(trades.map(row => [row.tradeId, row]))
   const source = new Map(rows.map(row => [row.trade_id, row]))
   // Both curves must use the same eligible trades; unresolved rows never become zero.
-  const eligible = trades.map(trade => source.get(trade.tradeId)).filter(row => row && known(row[key]?.net_pnl) && known(byId.get(row.trade_id)?.net_pnl))
+  const eligible = trades.map(trade => source.get(trade.tradeId)).filter(row => row?.[key]?.status === 'ready' && known(row[key].net_pnl) && known(byId.get(row.trade_id)?.net_pnl))
   const baseline = [{ value: number(startBalance) }], scenario = [{ value: number(startBalance) }]
   let actual = number(startBalance), simulated = number(startBalance)
   eligible.forEach(row => { actual = actual === null ? null : actual + Number(byId.get(row.trade_id).net_pnl); simulated = simulated === null ? null : simulated + Number(row[key].net_pnl); baseline.push({ value: actual }); scenario.push({ value: simulated }) })

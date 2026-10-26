@@ -167,13 +167,17 @@ export function AnalyticsRing({ values, label, center, sublabel, concentric = fa
 }
 
 export function AnalyticsRadar({ items, metric, label, suffix = '', maximum }) {
-  const { t, fmt } = useTestingLocale(), domain = chartDomain(items.map(item => item[metric]).filter(finite), { maximum, symmetric: true })
+  const { t, fmt } = useTestingLocale(), domain = chartDomain(items.map(item => item[metric]).filter(finite), { maximum, symmetric: true, integer: metric === 'count' })
   const cx = 150, cy = 120, r = 74, p = (index, fraction) => [cx + Math.sin(index * Math.PI / 2) * r * fraction, cy - Math.cos(index * Math.PI / 2) * r * fraction]
   const polygon = fraction => items.map((_, index) => p(index, fraction).join(',')).join(' ')
   const pointValues = items.map(item => finite(item[metric]) ? item[metric] : null), complete = pointValues.every(finite)
   if (!items.length) return <div className="fxa-radar"><div className="fxa-chart-empty">{t('Chưa có dữ liệu')}</div></div>
   return <div className="fxa-radar"><svg viewBox="0 0 300 248" role="img" aria-label={`${label}: ${items.map(item => `${t(item.label)}: ${finite(item[metric])?fmt(item[metric], suffix):'N/A'}`).join('; ')}`}>
     {[.25,.5,.75,1].map(f => <polygon key={f} points={polygon(f)} fill="none" className="fxa-gridline"/>)}
+    {domain && domain.high !== domain.low && <g className="fxa-radar-scale" aria-label={`${fmt(domain.low, suffix)} – ${fmt(domain.high, suffix)}`}>
+      {[.25,.5,.75,1].map(f => <text key={f} x={cx+r*f/Math.SQRT2+5} y={cy-r*f/Math.SQRT2-3}>{fmt(domain.low+(domain.high-domain.low)*f,suffix)}</text>)}
+      {domain.low < 0 && <><polygon points={polygon(-domain.low/(domain.high-domain.low))} fill="none" stroke="currentColor" strokeDasharray="4 3"/><text x={cx+5} y={cy+12}>{fmt(domain.low,suffix)}</text></>}
+    </g>}
     {items.map((item,index) => { const [x,y] = p(index,1), [tx,ty] = p(index,1.38), valid=finite(item[metric]), fraction=valid&&domain&&domain.high!==domain.low?(item[metric]-domain.low)/(domain.high-domain.low):0, [px,py]=p(index,fraction), detail=`${t(item.label)}: ${valid?fmt(item[metric],suffix):'N/A'}`; return <g key={item.label} tabIndex={0} role="img" aria-label={detail} data-tooltip={detail} data-tooltip-touch=""><line x1={cx} y1={cy} x2={x} y2={y} className="fxa-gridline"/><text x={tx} y={ty} textAnchor="middle" dominantBaseline="middle">{t(item.label)}<tspan x={tx} dy="16">{valid?fmt(item[metric],suffix):'N/A'}</tspan></text><circle cx={x} cy={y} r="12" fill="transparent"/>{valid&&<circle cx={px} cy={py} r="3" fill="var(--report-blue)"/>}</g> })}
     {domain && complete && <polygon points={items.map((item,index) => p(index,domain.high === domain.low ? 0 : (item[metric] - domain.low) / (domain.high - domain.low)).join(',')).join(' ')} fill="var(--report-blue)" fillOpacity=".2" stroke="var(--report-blue)" strokeWidth="2"/>}
     {domain && !complete && items.map((item,index)=>{
