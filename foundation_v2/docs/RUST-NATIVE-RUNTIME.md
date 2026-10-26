@@ -1,6 +1,10 @@
 # Rust-native candidate runtime
 
-Latest UI-only rollout: [26 October compact Analytics](../evidence/analytics-compact-20261026/RECEIPT.md)
+Latest UI-only rollout: [26 October Analytics side layout](../evidence/analytics-side-layout-20261026/RECEIPT.md)
+places PnL left and the three risk cards right, removing the separator below report
+tabs. UI5180 was updated without restarting API8010 or writing owner data.
+
+Previous UI-only rollout: [26 October compact Analytics](../evidence/analytics-compact-20261026/RECEIPT.md)
 records paired secondary charts, a compact PnL panel, native fullscreen and removal
 of the report-level scope footer. UI5180 was updated; API8010 and owner data were unchanged.
 

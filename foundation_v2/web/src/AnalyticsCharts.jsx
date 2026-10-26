@@ -2,13 +2,13 @@ import { useId, useLayoutEffect, useRef , useState } from 'react'
 import { chartDomain, chartTicks, reportCurvePath } from './reportChartModel.js'
 import { useTestingLocale } from './testingLocale.jsx'
 
-function useSize(height) {
+function useSize(height, stretch = false) {
   const ref = useRef(null), [width, setWidth] = useState(640), [expandedHeight, setExpandedHeight] = useState(null)
   useLayoutEffect(() => {
-    const observer = new ResizeObserver(([entry]) => { setWidth(Math.max(220, entry.contentRect.width)); setExpandedHeight(ref.current?.closest(':fullscreen') ? entry.contentRect.height : null) })
+    const observer = new ResizeObserver(([entry]) => { setWidth(Math.max(220, entry.contentRect.width)); setExpandedHeight(stretch || ref.current?.closest(':fullscreen') ? entry.contentRect.height : null) })
     if (ref.current) observer.observe(ref.current)
     return () => observer.disconnect()
-  }, [])
+  }, [stretch])
   return [ref, width, expandedHeight ?? height]
 }
 const finite = value => typeof value === 'number' && Number.isFinite(value)
@@ -17,9 +17,9 @@ function tickText(value, domain, locale, suffix) {
   const digits = Math.max(0, Math.min(8, -Math.floor(Math.log10(step))))
   return new Intl.NumberFormat(locale, { maximumFractionDigits: digits + (step / 10 ** Math.floor(Math.log10(step)) === 2.5 ? 1 : 0) }).format(value) + (suffix === '%' ? '%' : '')
 }
-export function AnalyticsCurve({ series, label, suffix = '', onSelect, selected, negative = false, labels = [], height = 200 }) {
+export function AnalyticsCurve({ series, label, suffix = '', onSelect, selected, negative = false, labels = [], height = 200, stretch = false }) {
   const { t, fmt, locale } = useTestingLocale(), id = useId()
-  const [ref, width, measuredHeight] = useSize(height)
+  const [ref, width, measuredHeight] = useSize(height, stretch)
   height = measuredHeight
   const values = series.flat().map(point => point.value).filter(finite)
   const domain = chartDomain(values, { zero: negative, symmetric: height <= 120 })
@@ -44,7 +44,7 @@ export function AnalyticsCurve({ series, label, suffix = '', onSelect, selected,
     })
     return groups.map(points => ({ points, seriesIndex, d: reportCurvePath(points) }))
   })
-  return <div ref={ref} className={`fxa-viz fxa-line-viz ${negative ? 'is-negative' : ''}`} style={{ height }}>
+  return <div ref={ref} className={`fxa-viz fxa-line-viz ${negative ? 'is-negative' : ''}`} style={{ height: stretch ? undefined : height }}>
     <svg viewBox={`0 0 ${width} ${height}`} role={series.length === 1 ? 'group' : 'img'} aria-label={label}>
       <defs><linearGradient id={id} x1="0" x2="0" y1="0" y2="1"><stop stopColor="currentColor" stopOpacity=".2"/><stop offset="1" stopColor="currentColor" stopOpacity=".01"/></linearGradient></defs>
       {ticks.map((value, index) => <g key={value}><line className="fxa-gridline" x1={left} x2={right} y1={y(value)} y2={y(value)}/><text x={left - 10} y={y(value)} dominantBaseline="middle" textAnchor="end">{axis[index]}</text></g>)}

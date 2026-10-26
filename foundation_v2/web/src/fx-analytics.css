@@ -201,7 +201,7 @@
 @media(max-width:850px){.fxa-three-columns{grid-template-columns:1fr}.fxa-drawdown-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.fxa-panel{padding:16px}.fxa-panel .fxa-section-heading{align-items:flex-start;gap:12px}.fxa-panel .fxa-section-heading h2{font-size:15px}.fxa-profit-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 12px}.fxa-profit-metrics .fxa-metric{min-width:0}.fxa-threshold{grid-column:1/-1;max-width:none}.fxa-threshold label{flex:1}.fxa-threshold input{width:100%}.fxa-visual-report .fxa-two-columns{gap:24px}.fxa-ring-layout{gap:16px}.fxa-radar-grid{gap:16px 8px}.fxa-radar text{font-size:14px}.fxa-calendar-day small{display:none}.fxa-visual-report .fxa-calendar{gap:3px}.fxa-visual-report .fxa-calendar-day{padding:5px;min-height:70px;font-size:11px}.fxa-calendar-day strong{font-size:11px}.fxa-drawdown-stats{gap:12px}.fxa-drawdown-stats>.fxa-metric{padding:12px}.fxa-drawdown-stats .fxa-info{display:none}.fxa-drawdown-stats .fxa-metric strong{font-size:16px}.fxa-segmented button{padding-inline:8px}}
 
-/* Compact reports keep the main path wide and pair related secondary views. */
+/* The PnL path leads; the three risk summaries share its right-hand column. */
 .fxa-visual-report{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px;max-width:none}
 .fxa-visual-report>.fxa-panel,.fxa-visual-report>.fxa-three-columns,.fxa-visual-report>.fxa-drawdown-stats{grid-column:1/-1}
 .fxa-panel{padding:16px}
@@ -218,11 +218,18 @@
 .fxa-profit-metrics>.fxa-metric>span{min-height:30px}
 .fxa-visual-report .fxa-three-columns{gap:16px}
 .fxa-visual-report .fxa-viz{margin-top:8px}
+.fxa-visual-report>.fxa-profit-panel{grid-column:span 8;display:flex;flex-direction:column}
+.fxa-profit-panel>.fxa-viz{flex:1 1 0;min-height:260px}
+.fxa-visual-report>.fxa-risk-panels{grid-column:span 4;grid-template-columns:1fr;align-content:start}
 .fxa-visual-report>.fxa-half-panel,.fxa-visual-report>.fxa-scenario-panel{grid-column:span 6}
 .fxa-visual-report>.fxa-calendar-panel,.fxa-visual-report>.fxa-mae-panel{grid-column:span 8}
 .fxa-visual-report>.fxa-frequency-panel,.fxa-visual-report>.fxa-winning-mae-panel{grid-column:span 4}
 .fxa-visual-report .fxa-two-columns{gap:24px}
-.fxa-risk-panels .fxa-panel{min-height:180px}
+.fxa-risk-panels .fxa-panel{padding:12px;min-height:0}
+.fxa-risk-panels .fxa-section-heading{min-height:26px;margin-bottom:4px}
+.fxa-risk-panels .fxa-section-heading h2{font-size:15px}
+.fxa-risk-panels .fxa-panel .fxa-metrics{margin-bottom:0}
+.fxa-risk-panels .fxa-panel .fxa-viz{margin-top:4px}
 .fxa-risk-panels .fxa-chart-empty{min-height:90px}
 .fxa-risk-panels .fxa-ring{width:100px;height:100px}
 .fxa-risk-panels .fxa-ring-layout{gap:12px;justify-content:flex-start;flex-wrap:nowrap;margin-top:8px}
@@ -250,24 +257,17 @@
 .fxa-panel:fullscreen .fxa-ring{width:240px;height:240px}
 .fxa-panel:fullscreen .fxa-radar svg{max-width:440px}
 .fxa-panel:fullscreen .fxa-calendar-day{min-height:100px}
-@media(max-width:1200px){.fxa-profit-panel .fxa-section-heading{align-items:flex-start;flex-wrap:wrap}.fxa-profit-metrics{grid-template-columns:repeat(5,minmax(0,1fr))}.fxa-visual-report>.fxa-half-panel,.fxa-visual-report>.fxa-calendar-panel,.fxa-visual-report>.fxa-frequency-panel,.fxa-visual-report>.fxa-mae-panel,.fxa-visual-report>.fxa-winning-mae-panel{grid-column:1/-1}.fxa-side-panel .fxa-two-columns{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-hours-panel .fxa-radar-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.fxa-frequency-panel .fxa-three-columns{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:850px){.fxa-visual-report>.fxa-scenario-panel{grid-column:1/-1}.fxa-profit-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.fxa-panel .fxa-section-heading{flex-wrap:wrap}.fxa-panel-actions{justify-content:flex-start}.fxa-hours-panel .fxa-radar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:1200px){.fxa-visual-report>.fxa-profit-panel,.fxa-visual-report>.fxa-risk-panels{grid-column:1/-1}.fxa-profit-panel>.fxa-viz{flex:none;height:240px}.fxa-visual-report>.fxa-risk-panels{grid-template-columns:repeat(3,minmax(0,1fr))}.fxa-profit-panel .fxa-section-heading{align-items:flex-start;flex-wrap:wrap}.fxa-profit-metrics{grid-template-columns:repeat(5,minmax(0,1fr))}.fxa-visual-report>.fxa-half-panel,.fxa-visual-report>.fxa-calendar-panel,.fxa-visual-report>.fxa-frequency-panel,.fxa-visual-report>.fxa-mae-panel,.fxa-visual-report>.fxa-winning-mae-panel{grid-column:1/-1}.fxa-side-panel .fxa-two-columns{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-hours-panel .fxa-radar-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.fxa-frequency-panel .fxa-three-columns{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:850px){.fxa-visual-report>.fxa-risk-panels{grid-template-columns:1fr}.fxa-visual-report>.fxa-scenario-panel{grid-column:1/-1}.fxa-profit-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.fxa-panel .fxa-section-heading{flex-wrap:wrap}.fxa-panel-actions{justify-content:flex-start}.fxa-hours-panel .fxa-radar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.fxa-profit-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-side-panel .fxa-two-columns,.fxa-frequency-panel .fxa-three-columns,.fxa-hours-panel .fxa-radar-grid{grid-template-columns:1fr}.fxa-risk-panels .fxa-ring-layout{flex-wrap:wrap}.fxa-panel-actions{gap:6px}.fxa-scenario-panel .fxa-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-panel:fullscreen{padding:16px}}
 
-.fxa-profit-panel .fxa-section-heading,.fxa-risk-panels .fxa-section-heading{margin-bottom:8px}
 .fxa-profit-metrics>.fxa-metric>span{min-height:20px}
 .fxa-profit-panel .fxa-metric{gap:2px}
 .fxa-profit-panel .fxa-metric strong{line-height:1.2}
 .fxa-profit-panel .fxa-viz{margin-top:4px}
 .fxa-risk-panels .fxa-metric{gap:2px}
 .fxa-risk-panels .fxa-metric strong{font-size:24px;line-height:1.2}
-.fxa-risk-panels .fxa-chart-empty{min-height:65px}
-.fxa-opportunity-summary{display:flex;align-items:center;gap:16px}
-.fxa-opportunity-summary>.fxa-metric{flex:0 0 auto}
-.fxa-opportunity-summary .fxa-ring-layout{flex:1;min-width:0;margin-top:0;flex-wrap:wrap;justify-content:center}
-.fxa-opportunity-summary .fxa-chart-legend{flex-basis:100%}
 
 .fxa-profit-panel .fxa-section-heading{margin-bottom:4px}
-.fxa-risk-panels .fxa-chart-empty{min-height:90px}
 
 .fxa-threshold-popover .fxa-threshold input{order:1}

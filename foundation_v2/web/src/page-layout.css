@@ -24,7 +24,7 @@
 .fxa-filter-toolbar.is-ledger .fxa-filter-actions { margin-left: auto; }
 .fxa-filter-toolbar.is-ledger .fxa-session-filter { margin-right: 0; }
 .fxa-filters { position: relative; border-bottom: 0; padding-bottom: 20px; }
-.fxa-filters::after, .fxa-report-tabs::after { content: ''; position: absolute; bottom: 0; left: calc(-1 * var(--wm-page-gutter)); right: calc(-1 * var(--wm-page-gutter)); height: 1px; background: var(--fx-shell-line); pointer-events: none; }
+.fxa-filters::after { content: ''; position: absolute; bottom: 0; left: calc(-1 * var(--wm-page-gutter)); right: calc(-1 * var(--wm-page-gutter)); height: 1px; background: var(--fx-shell-line); pointer-events: none; }
 .fxa-report-tabs { position: relative; border-bottom: 0; }
 .fx-app .wm-page > .fxa-trades { margin-inline: calc(-1 * var(--wm-page-gutter)); width: calc(100% + 2 * var(--wm-page-gutter)); }
 /* The ledger owns the remaining viewport; only its rows scroll. */

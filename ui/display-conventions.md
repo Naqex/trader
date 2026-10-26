@@ -28,8 +28,11 @@ account path, four summary metrics, MAE distribution and winning-trade MAE.
 Simulation groups configured SL, original-risk RR and Monte Carlo separately.
 Use shared rounded chart domains and shape-preserving curves; interpolation
 does not create price observations. Compact desktop reports use 16px panel insets
-and gaps, a 200px main plot and paired secondary panels. The 1920x940 reference
-viewport shows the main PnL panel and full three-panel R row together. Hour/day
+and gaps. On wide screens PnL occupies the left two thirds; realized R, ideal R
+and profit/breakeven opportunity stack in the right third. The PnL plot fills the
+available column height, keeping the two sides aligned. Below 1200px these groups
+stack, with the main plot returning to a compact height; below 850px the R cards
+also stack. The report tabs have no bottom separator. Hour/day
 plots pair; the year/month matrix stays full width; calendar/frequency use 2:1.
 SL/RR simulations pair, with Monte Carlo below. Smaller widths collapse the groups
 without shrinking readable data text. Mini curves thin ticks while retaining bounds
