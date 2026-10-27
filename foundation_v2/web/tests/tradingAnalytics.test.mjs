@@ -47,7 +47,7 @@ test('known numeric oracle: metrics, partial risk, closed DD, durations and cale
   assert.equal(data.maxWinStreak, 1); assert.equal(data.maxLossStreak, 1); assert.equal(data.winDuration, 60)
   assert.equal(data.averageR, null); assert.equal(data.rCount, 0)
   assert.equal(data.calendar.reduce((sum, day) => sum + day.net, 0), 100)
-  assert.equal(data.frequency[0].count, 1)
+  assert.equal(data.frequency[0].average, 1)
 })
 test('all winning or losing distributions keep undefined denominators unknown', () => {
   const wins = advancedAnalytics({ ...model, ledger: rows.filter(row => row.pnl > 0) })
@@ -82,7 +82,7 @@ test('timezone and calendar zero periods use actual dates rather than local mach
   assert.equal(utc.key, '2024-01-01'); assert.equal(vn.key, '2024-01-02'); assert.equal(vn.hour, 6)
   assert.equal(calendarParts(null), null)
   const sparse = advancedAnalytics({ ...model, ledger: [rows[0], rows[4]] })
-  almost(sparse.frequency[0].count, .4)
+  almost(sparse.frequency[0].average, 1)
 })
 test('Monte Carlo deterministic bootstrap with a one-value oracle and bounded configuration', () => {
   const config = { method: 'ledger', simulations: 10, trades: 3, capital: 100, seed: 42 }
@@ -154,7 +154,7 @@ test('activity calendar/filter uses real observations and keeps unknown-time fin
   assert.deepEqual(data.months.map(({ label, net }) => ({ label, net })), [{ label: '2026-11', net: 10 }])
   assert.equal(data.calendar[0].label, '2026-11-01')
   assert.equal(data.hours.find(item => item.label === '06').net, 10)
-  assert.equal(data.frequency[0].count, 1, 'unknown times cannot enter the frequency numerator')
+  assert.equal(data.frequency[0].average, 1, 'unknown times cannot enter the frequency numerator')
   assert.deepEqual(filterAnalyticsRows(ledger, { timezone: 'Asia/Ho_Chi_Minh', years: '["2026"]', months: '["11"]', hours: '["6"]' }), [ledger[0]])
   assert.deepEqual(filterAnalyticsRows(ledger, { years: '["2003"]' }), [])
   const unknown = advancedAnalytics({ ...model, ledger: [ledger[1]] })

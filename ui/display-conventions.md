@@ -57,7 +57,7 @@ the four radar cards are bordered. Frequency has a visible group heading above
 three cards; each day/week/month title, help and average sit inside its border,
 with the average on the right. On desktop the three cards share the calendar row
 height and finish at the same bottom; narrow layouts stack without fixed heights. Averages
-retain zero calendar periods between the first and last observed period. Drawdown uses one vertical flow: a full-width account drawdown plot, four summary
+use distinct periods with trades; inactive periods do not enter the denominator. Drawdown uses one vertical flow: a full-width account drawdown plot, four summary
 metrics in a row, a full-width MAE plot, then three winning-trade metrics in a row.
 Its titles/help/controls sit above the chart surfaces, with no outer surface around
 the summary rows. The four metrics become two columns at 850px and below; winning-trade
@@ -144,6 +144,11 @@ Analytics calendar places its metric control above month/year navigation and vie
 toggles, with no period-total footer. Live weekly totals/coverage remain intact.
 Monthly radio fieldsets contain their visually hidden legends within their own
 positioned bounds, so only the shell content scrolls vertically.
+Trade frequency uses active-period means: weekday T2–CN, ISO week numbers and
+calendar months T1–T12. Header average is total trades / distinct active periods,
+not the mean of category bars. Empty categories have no bar, not an observed zero.
+Tooltips distinguish the mean, trade count and active-period denominator; decimal
+means remain visible. See `references/fxreplay/analytics-frequency-and-aggregation.md`.
 Hourly controls offer net P/L, average RR, return (%) and win rate. Daily
 performance has no metric selector: signed horizontal net P/L bars pair with a
 right-hand win-rate column. Each group retains its explanatory info control. PnL interval controls have a visible

@@ -33,7 +33,7 @@ Configured scenario stops cannot become original risk; missing R is unavailable.
 | Weekday bars | Local weekday net and independent WR column | Green/red money; no-trade WR=N/A; no misleading second money/% axis |
 | Month matrix | Source-capital percentage returns; pooled or sum-session mode selected | Empty dash, missing capital N/A, incomplete allocation blocks totals; current snapshot separate from filtered ending balance |
 | Calendar | Monday-first dates, trade-weighted period/R summaries | Shared Live presentation, independent adapters; undated/partial scope blocks complete totals |
-| Frequency | Civil days/Monday-weeks/months between first/last dated trade including intervening empty periods | Count dated trades even if PnL unknown; unused filter endpoints not included; undated rows not allocated |
+| Frequency | Mean trades per active weekday, ISO week number and calendar month; header uses total trades / distinct active periods | Explicit tradeCount/periodCount/average; empty categories unavailable, missing PnL still counts; undated rows not allocated. See [frequency correction](analytics-frequency-and-aggregation.md) |
 | Closed DD | Prior observed peak minus close balance, % of peak | Money/% negative bars; conservative after gap; recovered elapsed24h days distinct from unresolved episode |
 | Equity DD | True equity including floatingPL, separate segments | Never substitute closed balance; trade filters cannot claim account equity; sampled/partial explicit |
 | MAE | Observed adverse closeable price/original SL distance | Knownzero included, bins conserve counts; configured SL rejected; unknown terminal extrema omitted, possible lower bound |
@@ -47,7 +47,7 @@ Configured scenario stops cannot become original risk; missing R is unavailable.
 Capital1000; Jan1/Jan3/Jan3/Feb5 net `[100,-50,0,150]`,
 R `[2,-1,unknown,3]`: net200, expectancy50, WR50% includingBE, PF5;
 meanR4/3, hour08 meanR0.5, hour14 meanR3. January net50/return5%,
-February150/15%; frequency4/36 day,4/6 week,4/2 month. RR keeps source slot#4.
+February150/15%; frequency4/3 active day,4/2 active week,4/2 active month. RR keeps source slot#4.
 Scenario stale999 on non-ready rows is excluded from sums, curves and details.
 Monte Carlo1000capital/100%win/100meanwin/3trades ends1300 on every path;
 fractional mean1.333… remains valid without rounding money for an HTML step.
@@ -61,8 +61,9 @@ Raw oracle scripts, screenshots, failed attempts and manifests remain local:
 
 Main local WR includesBE; FX demo75%=3/(3+1) excludesBE. Binary configured Monte
 Carlo and the RR alternative use their explicitly stated nonBE denominator.
-Local frequency includes intervening civil periods; FX demo appears to divide
-by active weekdays. PF uses net after fees and cap4 only for display. These
+Frequency now uses explicitly defined active periods, with frontend/demo evidence
+and backend limits recorded in [the correction](analytics-frequency-and-aggregation.md).
+PF uses net after fees and cap4 only for display. These
 definitions remain recorded rather than changed to match demo constants.
 
 FX production Ideal/MAE/intrabar/SL/RR/Monte Carlo internals, populated Live

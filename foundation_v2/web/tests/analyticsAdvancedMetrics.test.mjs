@@ -50,14 +50,16 @@ test('price excursions and configured-stop experiments cannot become actual MAE 
   assert.equal(data.riskReward.idealAverage, null)
 })
 
-test('frequency series fills civil days, Monday weeks and months across DST', () => {
+test('frequency averages active civil dates, ISO weeks and months across DST', () => {
   const data = advancedAnalytics(model([1, 2, 3], ['2024-03-09T23:30:00Z', '2024-03-11T03:30:00Z', '2024-03-12T04:30:00Z']), { timezone: 'America/New_York' })
-  assert.deepEqual(data.frequencySeries.day, [{ label: '2024-03-09', count: 1 }, { label: '2024-03-10', count: 1 }, { label: '2024-03-11', count: 0 }, { label: '2024-03-12', count: 1 }])
-  assert.deepEqual(data.frequencySeries.week, [{ label: '2024-03-04', count: 2 }, { label: '2024-03-11', count: 1 }])
-  assert.deepEqual(data.frequencySeries.month, [{ label: '2024-03', count: 3 }])
-  assert.equal(data.frequency[0].count, 0.75)
+  assert.deepEqual(data.frequencySeries.day.filter(row => row.periodCount).map(row => [row.label, row.average]), [['T3', 1], ['T7', 1], ['CN', 1]])
+  assert.deepEqual(data.frequencySeries.week, [{ label: '10', tradeCount: 2, periodCount: 1, average: 2 }, { label: '11', tradeCount: 1, periodCount: 1, average: 1 }])
+  assert.deepEqual(data.frequencySeries.month.find(row => row.label === '03'), { label: '03', tradeCount: 3, periodCount: 1, average: 3 })
+  assert.equal(data.frequency[0].average, 1)
   const sparse = advancedAnalytics(model([1, 2], ['2023-12-31T12:00:00Z', '2024-02-01T12:00:00Z']))
-  assert.deepEqual(sparse.frequencySeries.month, [{ label: '2023-12', count: 1 }, { label: '2024-01', count: 0 }, { label: '2024-02', count: 1 }])
+  assert.deepEqual(sparse.frequencySeries.month.filter(row => row.periodCount).map(row => row.label), ['02', '12'])
+  assert.equal(sparse.frequencySeries.month[0].average, null, 'an inactive month is not an observed zero')
+  assert.equal(sparse.frequency[2].average, 1, 'empty intervening months do not enter the active-period denominator')
 })
 
 test('frequency does not substitute chart or entry time for missing close observations', () => {
@@ -138,7 +140,7 @@ test('declared market analytics time drives filters, calendar, sessions and bala
   assert.equal(built.ledger[0].analytics_time_utc, ledger[0].close_time_utc)
   assert.equal(built.ledger[0].report_time_utc, null)
   const data = advancedAnalytics(built)
-  assert.equal(data.calendar.length, 3); assert.equal(data.frequencySeries.day.length, 3)
+  assert.equal(data.calendar.length, 3); assert.equal(data.frequency[0].periodCount, 3)
   assert.equal(data.recoveryDays, 2)
   assert.equal(data.sessionGrouping.timeField, 'close_time_utc')
   assert.equal(advancedAnalytics(built, { years: '["2003"]' }).count, 3)

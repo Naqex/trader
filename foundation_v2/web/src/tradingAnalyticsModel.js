@@ -208,21 +208,36 @@ function stats(rows, classifyOutcome = outcomeOf, startingBalance = null) {
 }
 
 function frequencySeries(days, dayCounts) {
-  if (!days.length) return { day: [], week: [], month: [] }
-  const first = Date.parse(`${days[0]}T00:00:00Z`), last = Date.parse(`${days.at(-1)}T00:00:00Z`)
-  const weeks = new Map(), months = new Map(), day = []
-  // Iterate civil labels, not elapsed 24-hour steps in the selected timezone.
-  // DST changes observation grouping without losing/repeating a calendar day.
-  for (let value = first; value <= last; value += 86400000) {
-    const date = new Date(value), label = date.toISOString().slice(0, 10), count = dayCounts.get(label) || 0
-    day.push({ label, count })
-    date.setUTCDate(date.getUTCDate() - (date.getUTCDay() + 6) % 7)
-    const week = date.toISOString().slice(0, 10), month = label.slice(0, 7)
-    weeks.set(week, (weeks.get(week) || 0) + count)
-    months.set(month, (months.get(month) || 0) + count)
+  const periods = { day: new Map(), week: new Map(), month: new Map() }
+  const categories = { day: new Map(), week: new Map(), month: new Map() }
+  for (const label of days) {
+    // Work on local civil labels, so DST cannot add or remove an active date.
+    const date = new Date(`${label}T00:00:00Z`), weekday = date.getUTCDay(), count = dayCounts.get(label)
+    date.setUTCDate(date.getUTCDate() + 3 - (weekday + 6) % 7)
+    const isoYear = date.getUTCFullYear(), yearStart = new Date(date)
+    yearStart.setUTCMonth(0, 1)
+    const isoWeek = Math.ceil(((date - yearStart) / 86400000 + 1) / 7)
+    const keys = { day: label, week: `${isoYear}-W${isoWeek}`, month: label.slice(0, 7) }
+    const groups = { day: WEEKDAYS[weekday], week: String(isoWeek), month: label.slice(5, 7) }
+    for (const key of ['day', 'week', 'month']) {
+      periods[key].set(keys[key], (periods[key].get(keys[key]) || 0) + count)
+      categories[key].set(keys[key], groups[key])
+    }
   }
-  return { day, week: [...weeks].map(([label, count]) => ({ label, count })),
-    month: [...months].map(([label, count]) => ({ label, count })) }
+  const series = {}, summary = []
+  for (const key of ['day', 'week', 'month']) {
+    const labels = !days.length ? [] : key === 'day' ? ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
+      : key === 'month' ? Array.from({ length: 12 }, (_, index) => String(index + 1).padStart(2, '0'))
+        : [...new Set(categories.week.values())].sort((a, b) => Number(a) - Number(b))
+    series[key] = labels.map(label => {
+      const values = [...periods[key]].filter(([period]) => categories[key].get(period) === label).map(([, count]) => count)
+      const tradeCount = values.reduce((sum, count) => sum + count, 0), periodCount = values.length
+      return { label, tradeCount, periodCount, average: periodCount ? tradeCount / periodCount : null }
+    })
+    const tradeCount = [...periods[key].values()].reduce((sum, count) => sum + count, 0), periodCount = periods[key].size
+    summary.push({ period: key, tradeCount, periodCount, average: periodCount ? tradeCount / periodCount : null })
+  }
+  return { series, summary }
 }
 
 function drawdownRecovery(drawdown, rows) {
@@ -376,19 +391,14 @@ export function advancedAnalytics(model, filters = {}, options = {}) {
     const hour = calendarParts(row.analytics_time_utc, 'UTC').hour
     return hour >= start && hour < end
   })) })) : []
-  const frequencyGroups = hasDates ? [
-    { label: 'Ngày', count: datedRows.length / (Math.round((new Date(days.at(-1)) - new Date(days[0])) / 86400000) + 1) },
-    { label: 'Tuần', count: (() => { const weeks = datedRows.map(row => { const date = new Date(`${parts(row).key}T00:00:00Z`); date.setUTCDate(date.getUTCDate() - (date.getUTCDay() + 6) % 7); return date.getTime() }); return datedRows.length / (Math.round((Math.max(...weeks) - Math.min(...weeks)) / 604800000) + 1) })() },
-    { label: 'Tháng', count: (() => { const index = key => Number(key.slice(0, 4)) * 12 + Number(key.slice(5, 7)); return datedRows.length / (index(months.at(-1)) - index(months[0]) + 1) })() },
-  ] : []
   const frequencies = frequencySeries(days, new Map(group(days, row => parts(row).key).map(item => [item.label, item.count])))
   const recovery = drawdownRecovery(drawdown, rows)
   return { ...summary, rows, curve, drawdown, endingBalance: balance, localFiltered, maxDrawdown: dd.length ? Math.max(...dd) : null,
     maxDrawdownPct: drawdown.length && drawdown.every(point => known(point.drawdownPct)) ? Math.max(...drawdown.map(point => Number(point.drawdownPct))) : null,
     averageDrawdown: positiveDD.length ? positiveDD.reduce((sum, value) => sum + value, 0) / positiveDD.length : dd.length ? 0 : null,
     episodes: dd.length ? episodes : null, recoveryTrades: recovered ? recoverySum / recovered : null, unrecovered: current, longest,
-    side, unknownSide, hours, weekdays, months: monthGroups, calendar, sessions, frequency: frequencyGroups, datesComplete, incomplete: datedRows.length !== rows.length || !summary.complete,
-    frequencySeries: frequencies, capitalBases, datedCount: datedRows.length, calendarUndatedCount: rows.length - calendarRows.length, ...recovery,
+    side, unknownSide, hours, weekdays, months: monthGroups, calendar, sessions, frequency: frequencies.summary, datesComplete, incomplete: datedRows.length !== rows.length || !summary.complete,
+    frequencySeries: frequencies.series, capitalBases, datedCount: datedRows.length, calendarUndatedCount: rows.length - calendarRows.length, ...recovery,
     equityDrawdown: accountEquityDrawdown(model.result?.equity_curve, { filtered: equityFiltered || model.result?.scope?.active_filters === true }),
     riskReward: { average: summary.averageR, max: summary.maxR, knownCount: summary.rCount, totalCount: rows.length,
       basis: 'net_realized_r', idealAverage: null, idealMax: null },

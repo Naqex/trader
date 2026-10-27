@@ -88,8 +88,9 @@ Shared Live calendar navigation/grid behavior, weekly totals, account selection,
 coverage, notes/reviews and broker/manual counting are unchanged. CSS changes to
 the new metric-toolbar arrangement are scoped to Analytics.
 
-Frequency includes zero civil periods between the first and last dated trade,
-as already documented. Three equal-height bordered cards contain their own
+Frequency was subsequently corrected to active-period averages grouped by weekday,
+ISO week number and month, replacing the original zero-period-inclusive series;
+see [the frequency audit](analytics-frequency-and-aggregation.md). Three equal-height bordered cards contain their own
 title/help/average and stretch the plots to align with the calendar's bottom on
 desktop. On small screens they stack naturally; side rings also stack rather
 than shrinking labels into unreadable text.

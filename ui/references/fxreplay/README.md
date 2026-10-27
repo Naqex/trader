@@ -20,6 +20,8 @@ bundle frontend thành bằng chứng cho công thức backend production.
 
 Quy trình dùng lại cho các page sau: [verification-workflow.md](verification-workflow.md).
 Hợp đồng và phép tính từng biểu đồ: [analytics-chart-calculations.md](analytics-chart-calculations.md).
+Phân biệt số lượng/tổng/tỷ lệ/trung bình và correction frequency theo thứ, số tuần,
+tháng: [frequency and aggregation](analytics-frequency-and-aggregation.md).
 Chỉnh Performance theo các ảnh owner đánh dấu, source công khai và giới hạn công
 thức tháng: [side/month/calendar/frequency](performance-month-side-calendar.md).
 Đối chiếu source công khai cho toàn bộ chart Performance/Drawdown/Simulation và

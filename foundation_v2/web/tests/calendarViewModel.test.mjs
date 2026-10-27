@@ -45,7 +45,7 @@ test('calendar retains missing PnL, and undated rows make period unknown', () =>
   assert.equal(data.calendar[0].net,null)
   assert.equal(data.calendar[0].rows.length,2)
   assert.equal(data.calendarUndatedCount,1)
-  assert.equal(data.frequencySeries.day[0].count,2,'dated trades count even when PnL is unknown')
+  assert.equal(data.frequencySeries.day[0].tradeCount,2,'dated trades count even when PnL is unknown')
   const total = calendarPeriodSummary(data.calendar,data.calendarUndatedCount)
   assert.equal(total.net,null);assert.equal(total.winRate,null)
   assert.equal(total.averageR,null);assert.equal(total.count,null)

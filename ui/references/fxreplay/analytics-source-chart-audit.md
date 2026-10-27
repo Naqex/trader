@@ -101,7 +101,7 @@ Winner/loss percent local tính từng trade net PnL/source starting balance r�
 
 **Public source:** `Qs` pretty1250–1288, `buildFrequencySummary` byte79784 dùng supplied `monthWeekDayAverageTrades` và `totalAverageTrades`; keys weekday/month/week+month. Không có frontend proof mẫu số averages server.
 
-**Local:** `frequencySeries` dựng chuỗi calendar day, Monday week, month từ first đến last observation, giữ empty period0, có DST/civil day handling. Đây không phải việc pool mọi Monday hoặc January của nhiều năm như grouping tham chiếu có thể gợi ý; không tuyên bố parity denominator.
+**Local, sau correction owner:** `frequencySeries` gom trung bình theo thứ, số tuần ISO và tháng qua các năm; tiêu đề là total trades / active periods. Không thêm kỳ trống vào mẫu số. [Audit frequency và phân loại phép tính](analytics-frequency-and-aggregation.md) thay thế định nghĩa chuỗi ngày cụ thể trước đây; vẫn không tuyên bố parity denominator backend FX.
 
 ## 11. Drawdown và MAE
 

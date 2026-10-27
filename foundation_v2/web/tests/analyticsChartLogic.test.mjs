@@ -24,8 +24,8 @@ test('independent four-trade oracle covers profit, sides, hours, sessions, weekd
   assert.deepEqual(data.months.map(row=>[row.net,row.profitPct,row.averageR]),[[50,5,.5],[150,15,3]])
   const calendar=calendarPeriodSummary(data.calendar)
   assert.equal(calendar.count,4);assert.equal(calendar.net,200);near(calendar.averageR,4/3)
-  near(data.frequency[0].count,4/36);near(data.frequency[1].count,4/6);assert.equal(data.frequency[2].count,2)
-  assert.equal(data.frequencySeries.day.length,36);assert.equal(data.frequencySeries.day.reduce((sum,row)=>sum+row.count,0),4)
+  near(data.frequency[0].average,4/3);assert.equal(data.frequency[1].average,2);assert.equal(data.frequency[2].average,2)
+  assert.equal(data.frequencySeries.day.length,7);assert.equal(data.frequencySeries.day.reduce((sum,row)=>sum+row.tradeCount,0),4)
   assert.equal(data.maxDrawdown,50);assert.equal(data.averageDrawdown,50)
 })
 
