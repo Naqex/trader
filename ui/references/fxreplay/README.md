@@ -13,6 +13,11 @@ học theo, điều chỉnh hoặc lược bỏ.
 | Live | [Audit Live](analytics-live-charting-audit.md#các-trang-live) | Calendar, Trades/draft, Notes, Tags, Analytics, Accounts/Transactions; phạm vi FX rỗng, semantics custom local |
 | Backtest charting | [Audit chart](analytics-live-charting-audit.md#chart-backtest) | Header/replay/order draft/settings/shortcuts, oracle risk sizing; không đặt lệnh/chạy replay, Prop/Live FX chưa truy cập |
 
+Bundle public của bản FX đang phục vụ được pin riêng trong [audit bundle ngày
+27/10/2026](fxreplay-bundle-audit-20261027.md). Audit này bổ sung source route,
+filter, chart và Live journal contracts cho các page ngoài Analytics; không biến
+bundle frontend thành bằng chứng cho công thức backend production.
+
 Quy trình dùng lại cho các page sau: [verification-workflow.md](verification-workflow.md).
 Hợp đồng và phép tính từng biểu đồ: [analytics-chart-calculations.md](analytics-chart-calculations.md).
 Chỉnh Performance theo các ảnh owner đánh dấu, source công khai và giới hạn công
