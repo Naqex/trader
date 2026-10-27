@@ -133,7 +133,7 @@ session radar cards. Between 1201px and 1500px, the two side plots stack alongsi
 the two-row radar group. Daily plot gridlines run horizontally between weekdays;
 the currency remains in money tooltips, without a standalone USD label. Monthly
 controls use the compact labels Cộng % phiên / Tổng thể (%), with the full
-definitions in their existing help controls. Vietnamese YTD is Lũy kế. Expectancy
+definitions in their existing help controls. Vietnamese YTD is Tổng năm. Expectancy
 bars omit zero-width segments so a single gain/loss segment fills both rounded ends.
 Monthly results use separated rounded header/value tiles and one bottom-right
 Total, rather than monthly totals across years. Initial/Current selects the capital

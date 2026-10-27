@@ -82,3 +82,28 @@ Replay commands, sanitized result and calendar screenshot are saved alongside th
 other raw evidence as `time-basis-qa.mjs`, `time-basis-qa.json` and
 `calendar-time-basis.png`. This is a confirmed-current check of the selected local
 session, not a blanket assertion about every product surface or FX backend.
+
+## Follow-up: weekday top boundary and clearer year heading
+
+The next owner review identified the missing top horizontal boundary above Monday
+and found the Vietnamese YTD label unclear. Added that boundary so all seven
+weekday rows have eight equally spaced horizontal boundaries. Replaced Lũy kế
+with Tổng năm in Vietnamese; English remains YTD. This means the total of the
+observed months in that year under the active filters. Formulas and data/state
+projections are unchanged.
+
+- Focused Node tests: **54 passed, 0 failed**; production build succeeded.
+- Preview and deployed browser checks: **3 cases each** (1920px Vietnamese,
+  390px Vietnamese, 1920px English), all passed.
+- Verified eight horizontal boundaries, equal spacing, the translated heading,
+  only `.fx-content` owning vertical scroll, and no document horizontal overflow.
+- Reviewed the deployed desktop screenshot. No FX Replay refresh/navigation,
+  API restart or broker operations. The user's existing local tab was not reloaded
+  after this correction.
+
+Evidence and replay scripts:
+`E:/BACKUP-TRADINGWORKSPACE/analytics-day-top-line-20261027/`.
+Current served index SHA-256:
+`70c60a12ff6546bee423875047a38ed8813ec3019fe512dc9bcbbf48d9c43825`.
+Rollback entry: `ui-before-release/index.html` in that directory. Existing hashed
+assets, branding, API and UI processes were retained during UI-only promotion.
