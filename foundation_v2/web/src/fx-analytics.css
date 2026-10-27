@@ -270,6 +270,7 @@
 .fxa-visual-report>.fxa-half-panel,.fxa-visual-report>.fxa-scenario-panel{grid-column:span 6}
 .fxa-expectancy-cards{display:grid;grid-template-columns:1fr;grid-template-rows:repeat(2,minmax(0,1fr));gap:16px;flex:1}
 .fxa-expectancy-card{display:grid;align-content:center;gap:12px;border-radius:8px}
+.fxa-expectancy-card:not(.fxa-factor-card){grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);align-items:center}
 .fxa-factor-card{grid-template-columns:minmax(0,1fr) 90px;align-items:center}
 .fxa-outcomes h3{margin-top:0;padding-bottom:0}
 .fxa-outcomes dl{margin:0}
@@ -405,3 +406,5 @@
 @media(max-width:600px){.fxa-visual-report .fxa-calendar-day{padding:4px}}
 
 @media(max-width:600px){.fxa-drawdown-stats{--ds-font-value:16px;--wm-text-value:16px}.fxa-drawdown-stats .fxa-metric strong{font-size:16px}.fxa-winning-mae-panel .fxa-metrics{grid-template-columns:1fr}}
+
+@media(max-width:420px){.fxa-expectancy-card:not(.fxa-factor-card){grid-template-columns:minmax(0,1fr)}}

@@ -36,7 +36,7 @@ also stack. Hour/day
 plots pair; the year/month matrix stays full width; calendar/frequency use 2:1.
 Expectancy and winner/loser statistics share a 1:2 row. Expectancy and PF each
 have one surface, stacked with a 16px gap under their shared external heading;
-their combined height matches the winner/loser cards. Side and market-session
+their combined height matches the winner/loser cards. Within the expectancy card, the metric sits on the left and the average win/loss bar and values on the right; up to 420px they stack to keep amounts readable. Side and market-session
 radars share the next 1:2 row. Side count and win rate each have one surface,
 with no outer border. Above 1500px the two side cards and four radar cards share
 the same width, top and bottom, with 16px gaps. At 1201–1500px they form three
@@ -71,7 +71,7 @@ with the average on the right. On desktop the three cards share the calendar row
 height and finish at the same bottom; narrow layouts stack without fixed heights. Averages
 use distinct periods with trades; inactive periods do not enter the denominator. Drawdown uses one vertical flow: a full-width account drawdown plot, four summary
 metrics in a row, a full-width MAE plot, then three winning-trade metrics in a row.
-Its titles/help/controls sit above the chart surfaces, with no outer surface around
+The drawdown basis is automatic: declared applicable equity when available, otherwise closed balance, with the source named in the heading; no basis switch. Its titles/help/controls sit above the chart surfaces, with no outer surface around
 the summary rows. The four metrics become two columns at 850px and below; winning-trade
 metrics stack at 600px and below. Prop objectives pair snapshot metrics with their
 existing objectives table on desktop and stack on narrow screens.
