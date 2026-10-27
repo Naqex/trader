@@ -5,6 +5,7 @@
   "SL hiện tại": {"vi":"SL hiện tại","en":"Current SL"},
   "Mức giảm SL": {"vi":"Mức giảm SL","en":"Stop-loss reduction"},
   "Thêm kịch bản": {"vi":"Thêm kịch bản","en":"Add scenario"},
+  "Add new": {"vi":"Add new","en":"Add new"},
   "Kịch bản SL mới": {"vi":"Kịch bản SL mới","en":"New SL scenario"},
   "Kịch bản RR mới": {"vi":"Kịch bản RR mới","en":"New RR scenario"},
   "Kết quả kém tin cậy hơn khi giảm SL trên 60%.": {"vi":"Kết quả kém tin cậy hơn khi giảm SL trên 60%.","en":"Results become less reliable for reductions above 60%."},

@@ -278,6 +278,11 @@ const SCENARIO_COLORS = { blue:'#258bff', violet:'#9a7cff', yellow:'#e5bd00', re
 function AddScenarioDialog({ rr, scenarios, onClose, onAdd }) {
   const { t } = useTestingLocale(), id = useId(), nextId = useRef(1)
   const [rows, setRows] = useState([{ id: 0, value: '' }]), [error, setError] = useState(null)
+  const addRow = () => setRows(current => {
+    if (!current.at(-1)?.value.trim()) return current
+    const rowId = nextId.current++
+    return [...current, { id: rowId, value: '' }]
+  })
   const submit = event => {
     event.preventDefault()
     const values = [], seen = new Set(scenarios)
@@ -306,7 +311,7 @@ function AddScenarioDialog({ rr, scenarios, onClose, onAdd }) {
         </div>)}
       </div>
       {error && <p role="alert" className="fxa-error" id={`${id}-error`}>{error.message}</p>}
-      <button type="button" className="fxa-scenario-add-row" onClick={() => { const rowId = nextId.current++; setRows(current => [...current, { id: rowId, value: '' }]) }}><TestingIcon kind="plus"/>{t(rr ? 'Thêm RR' : 'Thêm SL')}</button>
+      <button type="button" className="fxa-scenario-add-row" onClick={addRow}><TestingIcon kind="plus"/>{t(rr ? 'Thêm RR' : 'Thêm SL')}</button>
       <footer><button type="button" className="fxa-scenario-cancel" onClick={onClose}>{t('Hủy')}</button><button type="submit" className="fxa-scenario-confirm">{t('Confirm')}</button></footer>
     </form>
   </LegacyModal>
@@ -335,6 +340,11 @@ function ScenarioSimulator({ kind, model, data, config, loadExperiment, timezone
   const scenarioColor = value => {
     const index = rr ? (Math.abs(value - currentRR) <= 1e-12 ? 0 : RR_SCENARIOS.includes(value) ? RR_SCENARIOS.indexOf(value) + 1 : Math.round(value) + 1) : STOP_LOSS_SCENARIOS.includes(value) ? STOP_LOSS_SCENARIOS.indexOf(value) : Math.round(value)
     return SCENARIO_COLORS[SCENARIO_TONES[index % SCENARIO_TONES.length]]
+  }
+  const renderBestSummary = (text, value) => {
+    const marker = String(value), index = text.indexOf(marker)
+    if (!marker || index < 0) return text
+    return <>{text.slice(0, index)}<span className="fxa-scenario-best-value">{marker}</span>{text.slice(index + marker.length)}</>
   }
   const comparison = useMemo(() => scenarioResults(runs, scenarios, data.rows, kind), [runs, scenarios, data.rows, kind])
   const smallSample = comparison.sourceWins < 5 || comparison.sourceLosses < 5
@@ -400,7 +410,7 @@ function ScenarioSimulator({ kind, model, data, config, loadExperiment, timezone
     {job.phase === 'idle' && scenarios.length > 0 && !scenarios.some(value => runs[value]) ? <SimulationIntro description={rr ? 'Thử mục tiêu chốt lời khác nhau, giữ nguyên SL gốc và so sánh với giao dịch đã đóng.' : 'Thử khoảng dừng lỗ khác nhau và so sánh với giao dịch đã đóng.'} onRun={() => run()}/> : <>
       <div className="fxa-simulation-scenarios" role="group" aria-label={t(rr ? 'Mục tiêu R' : 'Mức giảm SL')}>
         <div className="fxa-scenario-chips">{scenarios.map(value => <span className="fxa-scenario-chip" style={{'--fxa-chip-color':scenarioColor(value)}} key={value}><button type="button" aria-pressed={selectedScenario === value} disabled={busy} onClick={() => selectScenario(value)}>{rr ? scenarioLabel(value) : <>{value}%{value === 0 && <small> ({t('SL hiện tại')})</small>}</>}</button>{(rr ? Math.abs(value - currentRR) > 1e-12 : value !== 0) && <button type="button" className="fxa-scenario-chip-remove" aria-label={t('Xóa kịch bản {value}', { value: rr ? `${formatRR(value)}R` : `${value}%` })} disabled={busy} onClick={() => removeScenario(value)}>×</button>}</span>)}</div>
-        <button type="button" className="fxa-add-scenario" disabled={busy} onClick={() => setAdding(true)}><TestingIcon kind="plus"/>{t('Thêm kịch bản')}</button>
+        <button type="button" className="fxa-add-scenario" disabled={busy} onClick={() => setAdding(true)}><TestingIcon kind="plus"/>{t(rr ? 'Add new' : 'Thêm kịch bản')}</button>
       </div>
       {adding && <AddScenarioDialog rr={rr} scenarios={scenarios} onClose={() => setAdding(false)} onAdd={addScenarios}/>}
       <div ref={resultsRef} tabIndex={-1} role="region" aria-label={t(title)} aria-busy={busy} className="fxa-simulation-results">
@@ -410,7 +420,7 @@ function ScenarioSimulator({ kind, model, data, config, loadExperiment, timezone
         {riskCurve && <>
           <section className="fxa-scenario-summary" aria-label={t('Kết quả mô phỏng')}>
             <div className="fxa-scenario-summary-heading"><h3>{t('Kết quả')}</h3><p>
-              {comparison.bestValue !== null ? t(rr ? 'Dựa trên phân tích của bạn, RR {value} cho kết quả tổng thể tốt nhất.' : comparison.bestValue === 0 ? 'Dựa trên {known}/{total} giao dịch, SL hiện tại cho kết quả tổng thể tốt nhất.' : 'Dựa trên {known}/{total} giao dịch, giảm SL {value}% cho kết quả tổng thể tốt nhất.', rr ? {value:formatRR(comparison.bestValue)} : {known:comparison.commonCount,total:data.count,value:fmt(comparison.bestValue)})
+              {comparison.bestValue !== null ? renderBestSummary(t(rr ? 'Dựa trên phân tích của bạn, RR {value} cho kết quả tổng thể tốt nhất.' : comparison.bestValue === 0 ? 'Dựa trên {known}/{total} giao dịch, SL hiện tại cho kết quả tổng thể tốt nhất.' : 'Dựa trên {known}/{total} giao dịch, giảm SL {value}% cho kết quả tổng thể tốt nhất.', rr ? {value:formatRR(comparison.bestValue)} : {known:comparison.commonCount,total:data.count,value:fmt(comparison.bestValue)}), rr ? formatRR(comparison.bestValue) : comparison.bestValue === 0 ? '' : `${fmt(comparison.bestValue)}%`)
                 : t('Có {known}/{total} giao dịch chung đủ dữ liệu; chưa đủ kịch bản để chọn kết quả tốt nhất.', {known:comparison.commonCount,total:data.count})}
 
             </p></div>
