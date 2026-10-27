@@ -173,3 +173,43 @@ Served index SHA256:
 Rollback index: `ui-before-scenario/index.html` under the evidence root. Existing
 API/UI processes and prior hashed assets were retained; no backend rebuild,
 terminal restart or broker action was part of this correction.
+
+## Scenario table and axes correction — 2026-10-28
+
+Owner-supplied reference images show dated X ticks and a `Cumulative R` Y axis.
+SL/RR now plot cumulative R by `close_time_utc` (market/chart time), in the selected
+timezone, using the existing temporal chart scale. A sorted copy preserves source
+table order; equal market timestamps retain source order. No fabricated time,
+ordinal labels or `Bắt đầu` anchor are added. The Gốc/Mô phỏng row remains the
+two-curve legend; it is separate from the date axis.
+
+Local R definition: both curves use the same original-risk amount for each trade.
+Canonical realized R follows the existing observed-original-stop/ledger/declared
+budget precedence. For nonzero outcomes, original net/R recovers that denominator;
+for zero/zero a declared positive original risk budget is required. Missing,
+invalid or overflowing denominators and dates remain unavailable. Both curves
+use the same eligible sample with a visible count when incomplete; all source
+trades stay in the table. This preserves the local price-experiment financial
+model and deliberately differs from the FX reduced-stop R normalization described
+above. There is no 1%-capital fallback or claim of identical FX numerical outputs.
+
+The results grid now consumes shared DataTable styles directly. Its row rules
+reach both interior panel edges; only cell contents retain the shared inset.
+Contained horizontal overflow and the page's single vertical scroll owner remain.
+The shared curve gains an optional Y title; other charts retain their prior axis
+behavior. Monetary comparison statistics remain unchanged in their existing helper.
+
+Evidence: `E:/BACKUP-TRADINGWORKSPACE/scenario-axes-20261028/`. Production build and
+16 focused model/adapter tests passed. `preview-r4/report.json` passed 4 responsive
+VI/EN dark/light cases, including measured full-width DS row borders, market date
+ticks, absence of ordinal/Start labels, the baseline endpoint oracle 9.6R and
+the previous chips/dialog regression journey. Independent source/visual review
+passed. Earlier failures in this evidence root are QA selector/SVG extraction
+mistakes; they are retained and superseded by the final report. Model review also
+found out-of-range dates and overflowing inferred risk, which were fixed and tested.
+
+The same four deployed checks passed on port5180, including a separate mobile
+chart capture. Served index SHA256:
+`d84c9af1b0014f5ad3e35d0df4a4ca8fe0be41002166e474b3f2b4fe2419003a`.
+Rollback index: `ui-before-axes/index.html` under the evidence root. UI-only
+promotion retained existing processes/assets; no native rebuild or broker action.

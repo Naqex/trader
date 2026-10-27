@@ -18,7 +18,7 @@ function tickText(value, domain, locale, suffix) {
   const digits = Math.max(0, Math.min(8, -Math.floor(Math.log10(step))))
   return new Intl.NumberFormat(locale, { maximumFractionDigits: digits + (step / 10 ** Math.floor(Math.log10(step)) === 2.5 ? 1 : 0) }).format(value) + (suffix === '%' ? '%' : '')
 }
-export function AnalyticsCurve({ series, label, suffix = '', onSelect, selected, negative = false, labels = [], axisLabels, timestamps, height = 200, stretch = false, sparkline = false, controls = false }) {
+export function AnalyticsCurve({ series, label, suffix = '', onSelect, selected, negative = false, labels = [], axisLabels, timestamps, yTitle, height = 200, stretch = false, sparkline = false, controls = false }) {
   const { t, fmt, locale } = useTestingLocale(), id = useId()
   const [ref, width, measuredHeight] = useSize(height, stretch)
   const [range, setRange] = useState([0, 1]), [tool, setTool] = useState('zoom'), [brush, setBrush] = useState(null)
@@ -36,7 +36,7 @@ export function AnalyticsCurve({ series, label, suffix = '', onSelect, selected,
   const domain = chartDomain(values, { zero: negative, symmetric: height <= 120 })
   if (!domain && !controls) return <div ref={ref} className="fxa-chart-empty">{t('Chưa có dữ liệu')}</div>
   const ticks = domain ? chartTicks(domain, height <= 120 ? 3 : 6) : [], axis = ticks.map(value => tickText(value, domain, locale, suffix))
-  const left = compact ? 4 : Math.max(42, Math.min(width * .35, Math.max(...axis.map(value => value.length)) * 7 + 18)), right = width - (compact ? 4 : controls ? 8 : 20), top = compact ? 6 : controls ? 56 : 20, edge = height - (compact ? 6 : 36)
+  const left = compact ? 4 : Math.max(yTitle ? 64 : 42, Math.min(width * .35, Math.max(...axis.map(value => value.length)) * 7 + (yTitle ? 34 : 18))), right = width - (compact ? 4 : controls ? 8 : 20), top = compact ? 6 : controls ? 56 : 20, edge = height - (compact ? 6 : 36)
   const count = Math.max(0, ...paths.map(path => path.length)), x = index => left + (positions[index + start] - activeRange[0]) / (activeRange[1] - activeRange[0]) * (right - left)
   const inView = index => x(index) >= left - .01 && x(index) <= right + .01
   const canInteract = controls && total > 1 && values.length > 0
@@ -113,6 +113,7 @@ export function AnalyticsCurve({ series, label, suffix = '', onSelect, selected,
       onKeyDown={event=>{if(!canInteract||event.target!==event.currentTarget)return;if(['+','=','-','0','Home','Escape','ArrowLeft','ArrowRight'].includes(event.key)){event.preventDefault();if(event.key==='Escape'){gesture.current=null;suppressClick.current=false;setBrush(null)}else if(event.key==='0'||event.key==='Home')setRange([0,1]);else if(event.key==='ArrowLeft'||event.key==='ArrowRight')setRange(clampRange(range[0]+(event.key==='ArrowLeft'?-.2:.2)*(range[1]-range[0]),range[1]-range[0]));else zoom(event.key==='-'?2:.5)}}}>
       <defs><linearGradient id={id} x1="0" x2="0" y1="0" y2="1"><stop stopColor="currentColor" stopOpacity=".2"/><stop offset="1" stopColor="currentColor" stopOpacity=".01"/></linearGradient><clipPath id={`${id}-plot`}><rect x={left} y={top} width={Math.max(0,right-left)} height={Math.max(0,edge-top)}/></clipPath></defs>
       {!compact && ticks.map((value, index) => <g key={value}><line className="fxa-gridline" x1={left} x2={right} y1={y(value)} y2={y(value)}/><text x={left - 10} y={y(value)} dominantBaseline="middle" textAnchor="end">{axis[index]}</text></g>)}
+      {!compact && yTitle && <text className="fxa-axis-title" transform={`translate(14 ${(top+edge)/2}) rotate(-90)`} textAnchor="middle">{yTitle}</text>}
       {!domain && <text x={(left+right)/2} y={(top+edge)/2} textAnchor="middle">{t('Chưa có dữ liệu')}</text>}
       {pathGroups.map(({ points, d, seriesIndex }, index) => <g key={index} clipPath={`url(#${id}-plot)`} style={{ color: series.length > 1 ? `var(--report-${['blue', 'positive', 'negative'][seriesIndex % 3]})` : undefined }}>{series.length === 1 && <path d={`${d} L${points.at(-1)[0]},${edge} L${points[0][0]},${edge} Z`} fill={`url(#${id})`}/>}<path d={d} fill="none" stroke="currentColor" strokeWidth="2" opacity={series.length > 1 ? .45 : 1}/>{points.length === 1 && <circle cx={points[0][0]} cy={points[0][1]} r="3" fill="currentColor"/>}</g>)}
       {series.length === 1 && paths[0].map((point, index) => finite(point.value) && inView(index) && <circle key={index} className="fxa-viz-point" cx={x(index)} cy={y(point.value)} r={point.tradeId === selected ? 5 : 3} tabIndex={onSelect || count <= 50 ? 0 : undefined} role={onSelect ? 'button' : 'img'} aria-label={detail(index)} data-tooltip={detail(index)} onClick={() => selectPoint(point)} onKeyDown={event => { if (['Enter', ' '].includes(event.key) && point.tradeId && onSelect) { event.preventDefault(); selectPoint(point) } }}/>) }

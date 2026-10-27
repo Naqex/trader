@@ -1,4 +1,5 @@
 import { known, number, realizedRiskValue } from './tradingAnalyticsModel.js'
+import { closeTime } from './sessionPerformanceModel.js'
 
 export function profitFactorGauge(rows) {
   if (!rows.every(row => known(row.net_pnl))) return { status: 'unavailable', value: null, fraction: null }
@@ -62,6 +63,31 @@ export function scenarioComparison(rows, trades, key, startBalance) {
   const drawdowns = peak === null ? [] : scenario.slice(1).map(point => { peak = Math.max(peak, point.value); return peak - point.value }).filter(value => value > 1e-12)
   return { eligible, baseline, scenario, net: eligible.length ? values.reduce((a,b)=>a+b,0) : null, winRate: rateCount ? positive.length / rateCount * 100 : null, profitFactor: negative.length ? positive.reduce((a,b)=>a+b,0) / Math.abs(negative.reduce((a,b)=>a+b,0)) : null,
     averageDrawdown: peak !== null && eligible.length ? drawdowns.length ? drawdowns.reduce((a,b)=>a+b,0)/drawdowns.length : 0 : null }
+}
+
+export function scenarioRiskCurve(rows, trades, key) {
+  const source = new Map(rows.map(row => [row.trade_id, row]))
+  const eligible = trades.flatMap((trade, index) => {
+    const observation = source.get(trade.tradeId), outcome = observation?.[key]
+    const actualR = realizedRiskValue(trade, observation), net = number(trade.net_pnl)
+    // Recover the same original-risk denominator used by canonical R; 0/0
+    // needs a declared original risk budget, never an account-balance fallback.
+    const inferredRisk = net !== null && actualR !== null && actualR !== 0 ? number(net / actualR) : null
+    const risk = inferredRisk > 0 ? inferredRisk : net === 0 && actualR === 0 ? number(trade.planned_risk_budget) : null
+    const ms = closeTime(trade.close_time_utc)?.getTime() ?? NaN
+    const simulatedR = risk > 0 && known(outcome?.net_pnl) ? number(Number(outcome.net_pnl) / risk) : null
+    return outcome?.status === 'ready' && actualR !== null && simulatedR !== null && net !== null && Number.isFinite(ms)
+      ? [{ tradeId: trade.tradeId, actualR, simulatedR, ms, index }] : []
+  }).sort((a, b) => a.ms - b.ms || a.index - b.index)
+  let actual = 0, simulated = 0
+  const baseline = [], scenario = []
+  for (const row of eligible) {
+    actual = actual === null ? null : number(actual + row.actualR)
+    simulated = simulated === null ? null : number(simulated + row.simulatedR)
+    baseline.push({ tradeId: row.tradeId, value: actual })
+    scenario.push({ tradeId: row.tradeId, value: simulated })
+  }
+  return { eligible, baseline, scenario, timestamps: eligible.map(row => row.ms) }
 }
 
 export function bucketCurve(curve, rows, interval, timezone = 'UTC') {

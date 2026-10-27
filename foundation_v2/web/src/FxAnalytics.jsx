@@ -7,7 +7,7 @@ import { advancedAnalytics, known, number, periodReturn } from './tradingAnalyti
 import './fx-analytics.css'
 import { AnalyticsCurve, AnalyticsBars, AnalyticsDailyBars, AnalyticsRing, AnalyticsRadar } from './AnalyticsCharts.jsx'
 export { AnalyticsCurve } from './AnalyticsCharts.jsx'
-import { profitFactorGauge, bucketCurve, excursionSummary, scenarioComparison, realizedRiskSeries, idealRiskSummary } from './analyticsPresentation.js'
+import { profitFactorGauge, bucketCurve, excursionSummary, scenarioRiskCurve, realizedRiskSeries, idealRiskSummary } from './analyticsPresentation.js'
 import { displayDate } from './dateFormat.js'
 import { currencyLabel } from './moneyFormat.js'
 import { simulationMoments } from './analyticsSimulation.js'
@@ -311,14 +311,16 @@ function AddScenarioDialog({ rr, scenarios, onClose, onAdd }) {
   </LegacyModal>
 }
 
-function ScenarioSimulator({ kind, model, data, config, loadExperiment }) {
-  const { t, fmt } = useTestingLocale(), job = useSimulationRun(), rr = kind === 'risk_reward'
+function ScenarioSimulator({ kind, model, data, config, loadExperiment, timezone }) {
+  const { t, fmt, locale } = useTestingLocale(), job = useSimulationRun(), rr = kind === 'risk_reward'
   const [draft, setDraft] = useState(config), [scenarios, setScenarios] = useState(() => rr ? RR_SCENARIOS : STOP_LOSS_SCENARIOS)
   const [adding, setAdding] = useState(false)
   const resultsRef = useRef(null)
   const currency = model.result?.account_currency || t('Đơn vị tài khoản'), busy = job.phase === 'loading'
   const title = rr ? 'RR Simulator' : 'Stop Loss Simulator'
-  const result = job.result ? scenarioComparison(job.result.rows, data.rows, kind, model.startBalance) : null
+  const riskCurve = job.result ? scenarioRiskCurve(job.result.rows, data.rows, kind) : null
+  const chartDateFormat = new Intl.DateTimeFormat(locale, { timeZone: timezone || 'UTC', day: '2-digit', month: 'short', year: '2-digit' })
+  const chartDates = riskCurve?.timestamps.map(time => chartDateFormat.format(new Date(time))) || []
   const byId = useMemo(() => new Map((job.result?.rows || []).map(row => [row.trade_id,row])), [job.result])
   const scenarioOptions = rr ? RR_SCENARIOS : STOP_LOSS_SCENARIOS
   const selectedScenario = rr ? Number(draft.target_r) : Math.round((1 - Number(draft.stop_multiplier)) * 100)
@@ -353,15 +355,15 @@ function ScenarioSimulator({ kind, model, data, config, loadExperiment }) {
       <div ref={resultsRef} tabIndex={-1} role="region" aria-label={t(title)} aria-busy={busy} className="fxa-simulation-results">
         {busy && <p role="status" className="fxa-simulation-progress">{t('Đang mô phỏng từ đường giá…')}</p>}
         {job.phase === 'error' && <p role="alert" className="fxa-error">{t(job.error)}</p>}
-        {result && <>
-          {result.eligible.length < data.count && <p className="fxa-simulation-notice" role="status">{t('Một số giao dịch chưa đủ dữ liệu đường giá nên không được tính vào biểu đồ; vẫn giữ trong bảng.')}</p>}
-          {result.eligible.length ? <><AnalyticsCurve series={[result.baseline,result.scenario]} label={t(title)} suffix={` ${currency}`} height={260} controls/><div className="fxa-inline-legend"><span><i/>{t('Gốc')}</span><span><i/>{t('Mô phỏng')}</span></div></> : <div className="fxa-chart-empty">{t('Chưa đủ dữ liệu mô phỏng')}</div>}
+        {riskCurve && <>
+          {riskCurve.eligible.length < data.count && <p className="fxa-simulation-notice" role="status">{t('Biểu đồ R dùng {known}/{total} giao dịch đủ dữ liệu mô phỏng, rủi ro gốc và ngày trên chart. Các giao dịch còn lại vẫn có trong bảng.', { known: riskCurve.eligible.length, total: data.count })}</p>}
+          {riskCurve.eligible.length ? <><AnalyticsCurve series={[riskCurve.baseline,riskCurve.scenario]} label={t('R lũy kế theo ngày đóng lệnh trên chart')} labels={chartDates} axisLabels={chartDates} timestamps={riskCurve.timestamps} yTitle={t('R lũy kế')} suffix=" R" height={280} controls/><div className="fxa-inline-legend"><span><i/>{t('Gốc')}</span><span><i/>{t('Mô phỏng')}</span><Info text="1R là rủi ro ban đầu của từng lệnh. Mỗi đường cộng R sau phí của cùng các giao dịch đủ dữ liệu; trục ngang là ngày đóng lệnh trên chart theo múi giờ đã chọn. Không phải thời gian thực hay số dư tiền."/></div></> : <div className="fxa-chart-empty">{t('Chưa đủ dữ liệu mô phỏng')}</div>}
           <div className="fxa-scenario-details">
-            <DataTable className="fxa-table-scroll" label={t(title)} contained>
-              <thead><tr>{['#','Trạng thái','Giá thoát','Lợi nhuận gốc','Lợi nhuận mô phỏng'].map(label => <th key={label}>{t(label)}</th>)}</tr></thead>
+            <DataTable className="fxa-scenario-table" label={t(title)} contained>
+              <thead><tr>{['#','Trạng thái','Giá thoát','Lợi nhuận gốc','Lợi nhuận mô phỏng'].map((label, index) => <th scope="col" className={index === 0 ? 'wm-table-row-number' : index >= 2 ? 'is-numeric' : undefined} key={label}>{t(label)}</th>)}</tr></thead>
               <tbody>{data.rows.map((trade,index) => {
                 const outcome = byId.get(trade.tradeId)?.[kind], ready = outcome?.status === 'ready'
-                return <tr key={trade.tradeId}><td data-tooltip={trade.tradeId}>{index+1}</td><td>{t(({ready:'Đã tính',ambiguous:'Không rõ thứ tự intrabar'})[outcome?.status] || 'Không đủ dữ liệu')}<small>{outcome?.reason === 'original_stop_unavailable' ? t('Chưa xác minh được SL gốc') : outcome?.status === 'ambiguous' ? t('SL và TP cùng nến') : null}</small></td><td>{ready ? fmt(outcome.exit_price,'',6) : 'N/A'}</td><td>{fmt(trade.net_pnl,` ${currency}`)}</td><td>{ready ? fmt(outcome.net_pnl,` ${currency}`) : 'N/A'}</td></tr>
+                return <tr key={trade.tradeId}><td className="wm-table-row-number" data-tooltip={trade.tradeId}>{index+1}</td><td>{t(({ready:'Đã tính',ambiguous:'Không rõ thứ tự intrabar'})[outcome?.status] || 'Không đủ dữ liệu')}<small>{outcome?.reason === 'original_stop_unavailable' ? t('Chưa xác minh được SL gốc') : outcome?.status === 'ambiguous' ? t('SL và TP cùng nến') : null}</small></td><td className="is-numeric">{ready ? fmt(outcome.exit_price,'',6) : 'N/A'}</td><td className="is-numeric">{fmt(trade.net_pnl,` ${currency}`)}</td><td className="is-numeric">{ready ? fmt(outcome.net_pnl,` ${currency}`) : 'N/A'}</td></tr>
               })}</tbody>
             </DataTable>
           </div>
@@ -371,7 +373,7 @@ function ScenarioSimulator({ kind, model, data, config, loadExperiment }) {
   </ReportSection>
 }
 
-export function AnalyticsSimulation({ model, data, config, loadExperiment }) {
+export function AnalyticsSimulation({ model, data, config, loadExperiment, timezone }) {
   const { t, fmt } = useTestingLocale(), currency = model.result?.account_currency || t('Đơn vị tài khoản'), job = useSimulationRun()
   const initialConfig = () => ({ method:'ledger', simulations:200, trades:Math.max(1,Math.min(200,data.count)), capital:number(model.startBalance)??'', ...Object.fromEntries(Object.entries(simulationMoments(data.rows) || {}).map(([key,value]) => [key,value??''])), seed:42 })
   const [mc,setMc] = useState(initialConfig), [applied,setApplied] = useState(null), busy = job.phase === 'loading', result = job.result
@@ -381,8 +383,8 @@ export function AnalyticsSimulation({ model, data, config, loadExperiment }) {
     ...(mc.method !== 'ledger' ? [['averageWin','Lãi trung bình',0,undefined,'any'],['averageLoss','Độ lớn lỗ trung bình',0,undefined,'any'],['winRate','Win rate (%)',0,100,'any']] : []),
     ...(mc.method === 'normal' ? [['winStd','Độ lệch chuẩn lãi',0,undefined,'any'],['lossStd','Độ lệch chuẩn lỗ',0,undefined,'any']] : [])]
   return <div className="fxa-report fxa-visual-report fxa-simulation-report" data-testid="analytics-simulation">
-    <ScenarioSimulator kind="stop_loss" {...{model,data,config,loadExperiment}}/>
-    <ScenarioSimulator kind="risk_reward" {...{model,data,config,loadExperiment}}/>
+    <ScenarioSimulator kind="stop_loss" {...{model,data,config,loadExperiment,timezone}}/>
+    <ScenarioSimulator kind="risk_reward" {...{model,data,config,loadExperiment,timezone}}/>
     <ReportSection headingOutside className="fxa-monte-panel" title="Monte Carlo Simulation" help="Lấy mẫu giao dịch giữ các mức lãi/lỗ đã quan sát. Xác suất cấu hình dùng lãi/lỗ cố định. Phân phối chuẩn sinh thêm độ biến động, cắt độ lớn âm về 0 nên kỳ vọng có thể đổi. Hai chế độ xác suất bỏ qua hòa vốn. Độ lệch chuẩn mô tả chia N, không phải ước lượng độ biến động tương lai. Vốn về 0 thì dừng; đây không phải dự báo lợi nhuận.">
       {job.phase === 'idle' ? <SimulationIntro description="Tạo nhiều chuỗi giao dịch ngẫu nhiên để xem số dư, chuỗi thắng/thua và rủi ro cạn vốn." onRun={run}/> : <div className="fxa-monte-body">
         <form onSubmit={event => { event.preventDefault(); run() }} className="fxa-monte-form">
@@ -429,6 +431,6 @@ export function FxAnalyticsReport({ model, extra, experiments, experimentStatus,
   return <><div className="fxa-report-tabs" role="tablist" aria-label={t("Phân tích")}><>{[['performance', 'Performance'], ['drawdown', 'Drawdown'], ['simulation', 'Simulation']].map(([value, label]) => <button className="fxa-tab" id={`fxa-tab-${value}`} role="tab" key={value} aria-selected={tab === value} aria-controls="fxa-report-panel" tabIndex={tab === value ? 0 : -1} onKeyDown={event => { const tabs = ['performance', 'drawdown', 'simulation']; if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) { event.preventDefault(); const index = event.key === 'Home' ? 0 : event.key === 'End' ? 2 : (tabs.indexOf(tab) + (event.key === 'ArrowRight' ? 1 : 2)) % 3; choose(tabs[index]); document.getElementById(`fxa-tab-${tabs[index]}`)?.focus() } }} onClick={() => choose(value)}>{t(label)}</button>)}</></div><div id="fxa-report-panel" role="tabpanel" aria-labelledby={`fxa-tab-${tab}`} tabIndex={0}>
     <div hidden={tab !== 'performance'}><AnalyticsPerformance model={model} data={data} extra={extra} onSelect={onSelect} selected={selected} threshold={threshold} onThreshold={setThreshold} experiments={experiments} /></div>
     <div hidden={tab !== 'drawdown'}><AnalyticsDrawdown model={model} data={data} extra={extra} experiments={experiments} experimentStatus={experimentStatus} experimentError={experimentError} /></div>
-    <div hidden={tab !== 'simulation'}><AnalyticsSimulation key={JSON.stringify([model.result?.session_id, model.result?.revision, model.result?.cursor_index, model.result?.execution_event_sequence, model.result?.filters, extra])} model={model} data={data} experiments={experiments} experimentStatus={experimentStatus} experimentError={experimentError} config={config} loadExperiment={loadExperiment} /></div>
+    <div hidden={tab !== 'simulation'}><AnalyticsSimulation key={JSON.stringify([model.result?.session_id, model.result?.revision, model.result?.cursor_index, model.result?.execution_event_sequence, model.result?.filters, extra])} model={model} data={data} experiments={experiments} experimentStatus={experimentStatus} experimentError={experimentError} config={config} loadExperiment={loadExperiment} timezone={extra?.timezone} /></div>
   </div></>
 }

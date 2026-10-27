@@ -89,8 +89,14 @@ opens the existing centered modal. It accepts multiple unique SL reductions
 (whole numbers 0–99%) or positive RR targets up to 100R. Confirm adds and sorts
 them, then selects/runs the last entered scenario; Cancel/Escape discards edits.
 Default colors stay stable when scenarios are added or removed. These choices
-live with the mounted report, like its simulation result. Only applicable ready API scenarios contribute to paired curves;
-unresolved trades stay in the table. Monte Carlo keeps its configuration, summary,
+live with the mounted report, like its simulation result. SL/RR plot cumulative R
+against market close dates in the selected timezone, sorted without reordering
+the table. There is no ordinal/Start anchor. Both curves use each trade's original
+risk denominator; missing risk/dates or unresolved outcomes are excluded as a pair
+with explicit coverage. No capital-percentage denominator is invented. The table
+uses shared DataTable styling and its horizontal rules reach both panel edges;
+numeric columns align right. Unresolved trades stay in the table.
+Monte Carlo keeps its configuration, summary,
 reset and rerun controls. Tables contain horizontal overflow while vertical
 scroll belongs to the page. Smaller widths collapse groups without scaling down
 data text. RR mini curves are 48px sparklines without axis labels; their points

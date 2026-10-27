@@ -16,6 +16,10 @@
   "Xóa dòng {index}": {"vi":"Xóa dòng {index}","en":"Remove row {index}"},
   "Thêm SL": {"vi":"Thêm SL","en":"Add SL"},
   "Thêm RR": {"vi":"Thêm RR","en":"Add RR"},
+  "R lũy kế": {"vi":"R lũy kế","en":"Cumulative R"},
+  "R lũy kế theo ngày đóng lệnh trên chart": {"vi":"R lũy kế theo ngày đóng lệnh trên chart","en":"Cumulative R by chart close date"},
+  "Biểu đồ R dùng {known}/{total} giao dịch đủ dữ liệu mô phỏng, rủi ro gốc và ngày trên chart. Các giao dịch còn lại vẫn có trong bảng.": {"vi":"Biểu đồ R dùng {known}/{total} giao dịch đủ dữ liệu mô phỏng, rủi ro gốc và ngày trên chart. Các giao dịch còn lại vẫn có trong bảng.","en":"The R chart uses {known}/{total} trades with simulation data, original risk and chart dates. The other trades remain in the table."},
+  "1R là rủi ro ban đầu của từng lệnh. Mỗi đường cộng R sau phí của cùng các giao dịch đủ dữ liệu; trục ngang là ngày đóng lệnh trên chart theo múi giờ đã chọn. Không phải thời gian thực hay số dư tiền.": {"vi":"1R là rủi ro ban đầu của từng lệnh. Mỗi đường cộng R sau phí của cùng các giao dịch đủ dữ liệu; trục ngang là ngày đóng lệnh trên chart theo múi giờ đã chọn. Không phải thời gian thực hay số dư tiền.","en":"1R is each trade's original risk. Both curves sum after-fee R for the same eligible trades; the horizontal axis uses chart close dates in the selected timezone. It is not wall-clock time or a cash balance."},
   "Xóa kịch bản {value}": {"vi":"Xóa kịch bản {value}","en":"Remove scenario {value}"},
   "Một số giao dịch chưa đủ dữ liệu đường giá nên không được tính vào biểu đồ; vẫn giữ trong bảng.": {"vi":"Một số giao dịch chưa đủ dữ liệu đường giá nên không được tính vào biểu đồ; vẫn giữ trong bảng.","en":"Some trades do not have enough price-path data for the chart; they remain in the table."},
   "Chạy lại": {
