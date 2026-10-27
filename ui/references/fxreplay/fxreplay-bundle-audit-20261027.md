@@ -119,6 +119,53 @@ FX's production backend aggregation and populated Live partial-fill/cashflow
 reconciliation. They need a controlled fixture or an official contract before
 they can be applied without guessing.
 
+## Time basis: Analytics, chart replay và Live
+
+Source này không có một cờ thời gian dùng chung cho toàn bộ sản phẩm. Có hai
+khái niệm phải giữ riêng:
+
+1. **Mốc thời gian của dữ liệu**: timestamp của lệnh/sự kiện dùng để lọc và
+   gom báo cáo.
+2. **Đồng hồ và timeframe của chart**: cursor hiện tại của replay/live và độ
+   dài mỗi nến dùng để lấy/render bars.
+
+| Bề mặt | Mốc thời gian chính | Vai trò của chart timeframe | Có dùng realtime wall-clock không? |
+| --- | --- | --- | --- |
+| Testing Analytics / Sessions / Trades / Prop | Timestamp sự kiện backtest/replay; filter request chứa `backtestingDate`, `days`, `time`, `timezone` | Không quyết định bucket báo cáo; chỉ liên quan khi user đi từ chart vào đúng scope | Không |
+| Chart backtest/replay | `currentReplayTimeMs` / `replayClockMs` | Có. Feed tính `fromTimestamp` bằng `timeframeMinutes` và làm tròn theo replay clock (`Math.floor(replayClockMs / timeframeMs)`) | Không; “Go to realtime” chỉ đưa viewport về mép dữ liệu/replay hiện tại |
+| Chart Live | live server clock (`liveServerClock.nowMs()`) và live stream | Có. Timeframe vẫn quyết định aggregation/render bars | Có |
+| Calendar dùng chung | `currentDateMs` của surface, bucket theo `chartTimezone`; ở replay đây là replay clock, ở Live là clock hiện tại | Không gom theo timeframe của nến | Chỉ ở Live |
+
+### Bằng chứng source
+
+- `chunk-PNLM7NI4.js`: default analytics state có `backtestingDateFilters` và
+  `timezoneFilters`; `eo()` chuyển date/day/time/timezone thành request DTO,
+  trong đó `backtestingDate` là khoảng ngày cụ thể, không phải `now`.
+- `chunk-HIXL6TZD.js`: các route gọi `/analytics/calc/session/:id` và
+  `/analytics/calc/prop-firm`; `formatFilterParams()` vẫn gửi
+  `backtestingDate`, `time` và `timezone`.
+- `chunk-XVHG5UTB.js`: chart data request truyền đồng thời `timeframeMinutes`
+  và `replayClockMs`; `ge()` căn `fromTimestamp` theo timeframe và replay
+  clock. Cùng chunk, `footerClockNowMs()` chỉ trả live server clock khi
+  `liveMarketDataMode.isLive()`, còn replay dùng `currentReplayTimeMs`.
+- Cũng trong `chunk-XVHG5UTB.js`, calendar builder nhận `replayClockMs` và
+  `chartTimezone`; event tương lai bị ẩn/countdown theo clock của surface.
+
+### Quy tắc áp dụng cho WMREPLAY
+
+- Giữ **một time-basis contract cho từng surface**, không dùng một biến
+  `realtime` toàn cục để điều khiển cả báo cáo và chart.
+- Analytics backtest/session/prop dùng timestamp market/replay của bản ghi và
+  timezone đang chọn. Không lấy `Date.now()` để phân loại ngày hoặc tính PnL.
+- Chart replay dùng replay cursor để cắt dữ liệu; timeframe chỉ ảnh hưởng nến,
+  viewport và indicator window.
+- Live chart/account dùng server realtime; timeframe vẫn chỉ là resolution của
+  chart.
+- Radio `Chart / Realtime` của WMREPLAY là lựa chọn sản phẩm bổ sung cho dữ liệu
+  có cả `close_time_utc` và `report_time_utc`; nó không phải control được xác
+  nhận là FX có trong Analytics. Nhãn `Chart` nên được hiểu là **market/chart
+  timestamp**, không phải timeframe hiện tại.
+
 ## Verification
 
 - Static bundle scan: 254 chunk references; 244 downloaded; selected route
