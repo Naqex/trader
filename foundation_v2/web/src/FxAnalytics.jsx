@@ -269,15 +269,21 @@ function SimulationIntro({ description, onRun }) {
   return <div className="fxa-simulation-intro"><p>{t(description)}</p><button type="button" className="fxa-button is-primary" onClick={onRun}>{t('Chạy mô phỏng')}</button></div>
 }
 
+const STOP_LOSS_SCENARIOS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]
+const RR_SCENARIOS = [1, 1.5, 2, 2.5, 3, 4, 5]
+
 function ScenarioSimulator({ kind, model, data, config, loadExperiment }) {
   const { t, fmt } = useTestingLocale(), job = useSimulationRun(), rr = kind === 'risk_reward'
-  const [draft, setDraft] = useState(config), [applied, setApplied] = useState(null), [detailsOpen, setDetailsOpen] = useState(false)
+  const [draft, setDraft] = useState(config), [applied, setApplied] = useState(null)
   const currency = model.result?.account_currency || t('Đơn vị tài khoản'), busy = job.phase === 'loading'
   const title = rr ? 'RR Simulator' : 'Stop Loss Simulator'
   const fields = rr ? [['target_r','Mục tiêu R',.1,100,.1]] : [['stop_distance_ticks','Khoảng dừng lỗ (tick)',1,100000,1],['stop_multiplier','Hệ số dừng lỗ',.1,10,.1]]
   const changed = applied && fields.some(([key]) => Number(draft[key]) !== Number(applied[key]))
   const result = job.result ? scenarioComparison(job.result.rows, data.rows, kind, model.startBalance) : null
   const byId = useMemo(() => new Map((job.result?.rows || []).map(row => [row.trade_id,row])), [job.result])
+  const scenarioOptions = rr ? RR_SCENARIOS : STOP_LOSS_SCENARIOS
+  const selectedScenario = rr ? Number(draft.target_r) : Math.round((1 - Number(draft.stop_multiplier)) * 100)
+  const selectScenario = value => setDraft({ ...draft, ...(rr ? { target_r: value } : { stop_multiplier: 1 - value / 100 }) })
   const run = () => {
     const request = Object.fromEntries(Object.entries(draft).map(([key, value]) => [key, Number(value)]))
     setApplied(request)
@@ -290,6 +296,9 @@ function ScenarioSimulator({ kind, model, data, config, loadExperiment }) {
     help={rr ? 'Giữ SL gốc được xác minh lúc vào lệnh, thay TP theo R. Chỉ mô phỏng trong thời gian giữ lệnh gốc tới cutoff; không giả lập đường giá sau khi thoát.' : 'Thử khoảng dừng lỗ cấu hình trong thời gian giữ lệnh gốc. Giữ phí và quy tắc intrabar; không sửa giao dịch đã lưu.'}
     actions={rr ? <a className="fxa-help-link" href="https://fx-replay.notion.site/What-is-the-RR-Simulator-2479db20207480bb883bd263526d24de" target="_blank" rel="noreferrer">{t('Cách tính')} ↗</a> : null}>
     {job.phase === 'idle' ? <SimulationIntro description={rr ? 'Thử mục tiêu chốt lời khác nhau, giữ nguyên SL gốc và so sánh với giao dịch đã đóng.' : 'Thử khoảng dừng lỗ khác nhau và so sánh với giao dịch đã đóng.'} onRun={run}/> : <>
+      <div className="fxa-simulation-scenarios" role="group" aria-label={t(rr ? 'Mục tiêu R' : 'Mức giảm SL')}>
+        {scenarioOptions.map(value => <button key={value} type="button" className={`fxa-scenario-chip${selectedScenario === value ? ' is-selected' : ''}`} aria-pressed={selectedScenario === value} disabled={busy} onClick={() => selectScenario(value)}>{rr ? `${value}R` : `${value}%${value === 0 ? ` (${t('SL hiện tại')})` : ''}`}</button>)}
+      </div>
       <form className="fxa-simulator-config" onSubmit={event => { event.preventDefault(); run() }}>
         {fields.map(([key,label,min,max,step]) => <label className="fxa-field" key={key}><span>{t(label)}</span><input aria-label={t(label)} disabled={busy} type="number" min={min} max={max} step={step} required value={draft[key]} onChange={event => setDraft({ ...draft, [key]: event.target.value })}/></label>)}
         <button type="submit" className="fxa-button is-primary" disabled={busy}>{t(busy ? 'Đang tính…' : 'Chạy lại')}</button>
@@ -307,15 +316,16 @@ function ScenarioSimulator({ kind, model, data, config, loadExperiment }) {
             <Stat label="Profit factor" value={known(result.profitFactor) ? fmt(result.profitFactor) : 'N/A'}/>
             <Stat label="Average drawdown" value={fmt(result.averageDrawdown,` ${currency}`)}/>
           </div>
+          {result.eligible.length < data.count && <p className="fxa-simulation-notice" role="status">{t('Một số giao dịch chưa đủ dữ liệu đường giá nên không được tính vào biểu đồ; vẫn giữ trong bảng.')}</p>}
           {result.eligible.length ? <><AnalyticsCurve series={[result.baseline,result.scenario]} label={t(title)} suffix={` ${currency}`} height={260}/><div className="fxa-inline-legend"><span><i/>{t('Gốc')}</span><span><i/>{t('Mô phỏng')}</span></div></> : <div className="fxa-chart-empty">{t('Chưa đủ dữ liệu mô phỏng')}</div>}
-          <details className="fxa-scenario-details" onToggle={event => setDetailsOpen(event.currentTarget.open)}><summary>{t('Kết quả từng giao dịch')}</summary>
-            {detailsOpen && <DataTable className="fxa-table-scroll" label={t(title)} contained>
+          <details className="fxa-scenario-details" open><summary>{t('Kết quả từng giao dịch')}</summary>
+            <DataTable className="fxa-table-scroll" label={t(title)} contained>
               <thead><tr>{['#','Trạng thái','Giá thoát','Lợi nhuận gốc','Lợi nhuận mô phỏng'].map(label => <th key={label}>{t(label)}</th>)}</tr></thead>
               <tbody>{data.rows.map((trade,index) => {
                 const outcome = byId.get(trade.tradeId)?.[kind], ready = outcome?.status === 'ready'
                 return <tr key={trade.tradeId}><td data-tooltip={trade.tradeId}>{index+1}</td><td>{t(({ready:'Đã tính',ambiguous:'Không rõ thứ tự intrabar'})[outcome?.status] || 'Không đủ dữ liệu')}<small>{outcome?.reason === 'original_stop_unavailable' ? t('Chưa xác minh được SL gốc') : outcome?.status === 'ambiguous' ? t('SL và TP cùng nến') : null}</small></td><td>{ready ? fmt(outcome.exit_price,'',6) : 'N/A'}</td><td>{fmt(trade.net_pnl,` ${currency}`)}</td><td>{ready ? fmt(outcome.net_pnl,` ${currency}`) : 'N/A'}</td></tr>
               })}</tbody>
-            </DataTable>}
+            </DataTable>
           </details>
         </>}
       </div>

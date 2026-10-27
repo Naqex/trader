@@ -68,7 +68,8 @@ More runs reduce simulation noise but cannot repair biased/insufficient source t
 The local Simulation page now uses three full-width sections stacked vertically:
 Stop Loss, Risk/Reward, then Monte Carlo. Each section starts with a short intro
 and `Chạy mô phỏng`; after a run it reveals configuration, loading/error, results,
-reset and rerun states. SL/RR reads the existing read-only experiments endpoint,
+reset and rerun states. Scenario presets appear as compact chips and the trade
+grid is expanded by default, with only horizontal overflow contained. SL/RR reads the existing read-only experiments endpoint,
 including filter, provenance and config fences; unsupported or ambiguous trades
 remain N/A in the lazy details table. Demo mode uses an explicitly synthetic
 fixture only.
