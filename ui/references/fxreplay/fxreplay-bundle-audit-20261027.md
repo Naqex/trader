@@ -166,6 +166,25 @@ khái niệm phải giữ riêng:
   nhận là FX có trong Analytics. Nhãn `Chart` nên được hiểu là **market/chart
   timestamp**, không phải timeframe hiện tại.
 
+### Riêng các biểu đồ Performance trong Analytics
+
+Với các biểu đồ trong tab Performance (Lãi và lỗ, theo giờ/ngày/tháng, equity,
+drawdown), basis cần dùng để đạt parity với FX là **market/chart event time**:
+
+- payload FX trả series `equityPositionAnalytics.pnlGraph` với `dateStart` và
+  `dateEnd`; export `allTrades` cũng chỉ chuyển hai mốc này sang UTC;
+- các nhóm `dailyPositionSummary`, `hourlyPositionSummary` và
+  `timeSessionSummary` được tạo từ cùng analytics result, không có một trường
+  `report_time`/wall-clock riêng;
+- `timezoneFilters`/`timezone` chỉ đổi cách bucket và hiển thị ngày/giờ, không
+  đổi event timestamp thành giờ hiện tại của máy.
+
+Do đó điểm `07:18` trong chart demo là **thời gian của event trong phiên
+backtest** (ví dụ thời điểm đóng lệnh), không phải thời điểm người dùng đang
+ngồi xem. “Realtime” chỉ phù hợp khi WMREPLAY đang phân tích `report_time_utc`
+hoặc dữ liệu Live; không dùng nó làm basis mặc định cho các chart Performance
+backtest.
+
 ## Verification
 
 - Static bundle scan: 254 chunk references; 244 downloaded; selected route
