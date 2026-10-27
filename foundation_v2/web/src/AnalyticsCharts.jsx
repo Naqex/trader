@@ -123,25 +123,28 @@ export function AnalyticsCurve({ series, label, suffix = '', onSelect, selected,
   </div>
 }
 
-export function AnalyticsBars({ items, metric = 'net', label, suffix = '', maximum, integer, combo = false, height = 180, stretch = false, color = 'signed', zeroMarker = false }) {
-  const { t, fmt, locale } = useTestingLocale(), [ref, width, measuredHeight] = useSize(height, stretch)
+export function AnalyticsBars({ items, metric = 'net', label, suffix = '', maximum, integer, combo = false, height = 180, stretch = false, color = 'signed', zeroMarker = false, gradient = false, xTitle, yTitle }) {
+  const { t, fmt, locale } = useTestingLocale(), [ref, width, measuredHeight] = useSize(height, stretch), id = useId()
   height = measuredHeight
   const values = items.map(item => item[metric]).filter(finite), domain = chartDomain(values, { maximum, integer, symmetric: true })
   if (!domain || !items.length) return <div ref={ref} className="fxa-chart-empty">{t('Chưa có dữ liệu')}</div>
   const ticks = chartTicks(domain, height <= 120 ? 3 : 6), axis = ticks.map(value => tickText(value, domain, locale, suffix))
-  const left = Math.max(42, Math.min(width * .35, Math.max(...axis.map(value => value.length)) * 7 + 18)), right = width - (combo ? 42 : 16), top = 20, edge = height - 40
+  const left = Math.max(yTitle ? 64 : 42, Math.min(width * .35, Math.max(...axis.map(value => value.length)) * 7 + (yTitle ? 34 : 18))), right = width - (combo ? 42 : 16), top = 20, edge = height - (xTitle ? 66 : 40)
   const y = value => domain.high === domain.low ? (edge + top) / 2 : edge - (value - domain.low) / (domain.high - domain.low) * (edge - top)
-  const step = (right - left) / items.length, barWidth = Math.max(1, Math.min(54, step * .64)), center = index => left + (index + .5) * step
+  const step = (right - left) / items.length, barWidth = Math.max(1, Math.min(gradient ? Infinity : 54, step * (gradient ? .72 : .64))), center = index => left + (index + .5) * step
   const stride = Math.max(1, Math.ceil(items.length * Math.max(28, ...items.map(item => (item.axisLabel ?? t(item.label)).length * 6 + 10)) / (right - left)))
   const rate = value => edge - value / 100 * (edge - top)
   return <div ref={ref} className="fxa-viz" style={{ height: stretch ? undefined : height }}><svg viewBox={`0 0 ${width} ${height}`} role="group" aria-label={label}>
+    {gradient && <defs><linearGradient id={id} x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="var(--report-negative)" stopOpacity="1"/><stop offset="100%" stopColor="var(--report-negative)" stopOpacity=".25"/></linearGradient></defs>}
     {ticks.map((value, index) => <g key={value}><line className="fxa-gridline" x1={left} x2={right} y1={y(value)} y2={y(value)}/><text x={left - 10} y={y(value)} textAnchor="end" dominantBaseline="middle">{axis[index]}</text></g>)}
     {combo && [0, 50, 100].map(value => <text key={value} x={right + 8} y={rate(value)} dominantBaseline="middle">{value}%</text>)}
     {items.map((item, index) => {
-      const value = item[metric], valid = finite(value) && !(zeroMarker && item.count === 0), detail = item.tooltipText ?? `${item.tooltipLabel || t(item.label)}: ${valid ? fmt(value, suffix, integer ? 0 : 2) : t('Chưa có dữ liệu')}${combo ? ` · ${t('Tỉ lệ thắng')}: ${fmt(item.winRate, '%')}` : ''}`
-      return <g key={`${item.label}:${index}`} tabIndex={0} role="img" aria-label={detail} data-tooltip={detail} data-tooltip-touch=""><rect className={color === 'signed' ? value < 0 ? 'fxa-fill-negative' : 'fxa-fill-positive' : 'fxa-fill-blue'} x={center(index) - barWidth / 2} y={valid ? Math.min(y(0), y(value)) : edge} width={barWidth} height={valid ? Math.abs(y(0) - y(value)) : 0} rx="2"/>{zeroMarker && valid && value === 0 && <line className="fxa-zero-mark" x1={center(index)-barWidth/2} x2={center(index)+barWidth/2} y1={y(0)} y2={y(0)}/>}<rect x={left + index * step} y={top} width={step} height={edge - top} fill="transparent"/>{(index % stride === 0 || items.length <= 7) && <text x={center(index)} y={height - 14} textAnchor="middle">{item.axisLabel ?? t(item.label)}</text>}</g>
+      const value = item[metric], valid = finite(value) && !(zeroMarker && item.count === 0 && item.observed !== true), detail = item.tooltipText ?? `${item.tooltipLabel || t(item.label)}: ${valid ? fmt(value, suffix, integer ? 0 : 2) : t('Chưa có dữ liệu')}${combo ? ` · ${t('Tỉ lệ thắng')}: ${fmt(item.winRate, '%')}` : ''}`
+      return <g key={`${item.label}:${index}`} tabIndex={0} role="img" aria-label={detail} data-tooltip={detail} data-tooltip-touch=""><rect className={gradient ? 'fxa-gradient-bar' : color === 'signed' ? value < 0 ? 'fxa-fill-negative' : 'fxa-fill-positive' : 'fxa-fill-blue'} fill={gradient ? `url(#${id})` : undefined} stroke={gradient ? 'var(--report-negative)' : undefined} strokeWidth={gradient ? .7 : undefined} x={center(index) - barWidth / 2} y={valid ? Math.min(y(0), y(value)) : edge} width={barWidth} height={valid ? Math.abs(y(0) - y(value)) : 0} rx={gradient ? 3 : 2}/>{zeroMarker && valid && value === 0 && <line className="fxa-zero-mark" x1={center(index)-barWidth/2} x2={center(index)+barWidth/2} y1={y(0)} y2={y(0)}/>}<rect x={left + index * step} y={top} width={step} height={edge - top} fill="transparent"/>{(index % stride === 0 || items.length <= 7 && !xTitle) && <text x={center(index)} y={xTitle ? edge + 24 : height - 14} textAnchor="middle">{item.axisLabel ?? t(item.label)}</text>}</g>
     })}
     {combo && items.map((item, index) => finite(item.winRate) && <circle key={index} cx={center(index)} cy={rate(item.winRate)} r="4" fill="var(--report-blue)"><title>{`${t(item.label)} · ${fmt(item.winRate, '%')}`}</title></circle>)}
+    {xTitle && <text className="fxa-axis-title" x={(left + right) / 2} y={height - 8} textAnchor="middle">{t(xTitle)}</text>}
+    {yTitle && <text className="fxa-axis-title" transform={`translate(14 ${(top + edge) / 2}) rotate(-90)`} textAnchor="middle">{t(yTitle)}</text>}
   </svg></div>
 }
 

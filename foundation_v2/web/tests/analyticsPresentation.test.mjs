@@ -18,8 +18,37 @@ test('MAE bins require original risk and retain known zero, not configured or ne
   const trades=[{tradeId:'a',net_pnl:10},{tradeId:'b',net_pnl:20},{tradeId:'c',net_pnl:-5}]
   const rows=[{trade_id:'a',excursion:{mae_r:0,r_basis:'initial_stop_distance'}},{trade_id:'b',excursion:{mae_r:2,r_basis:'configured_stop_distance'}},{trade_id:'c',excursion:{mae_r:1,r_basis:'initial_stop_distance'}},{trade_id:'b',excursion:{mae_r:-1,r_basis:'initial_stop_distance'}}]
   const result=excursionSummary({rows},trades)
-  assert.deepEqual(result.values,[0,1]);assert.equal(result.average,0);assert.equal(result.min,0)
+  assert.deepEqual(result.values,[0,1]);assert.equal(result.average,null);assert.equal(result.min,null)
+  assert.equal(result.winnerCount,2);assert.equal(result.completeWinners,false)
   assert.equal(result.bins.reduce((sum,bin)=>sum+bin.count,0),2)
+})
+
+test('MAE histogram keeps decimal boundaries and a bounded overflow bucket', () => {
+  const values=[0,.1,.3,.999,1,1.1,2.999,3,99]
+  const trades=values.map((_,i)=>({tradeId:String(i),outcome:'win'}))
+  const rows=values.map((mae_r,i)=>({trade_id:String(i),excursion:{r_basis:'initial_stop_distance',mae_r}}))
+  const data=excursionSummary({rows},trades)
+  assert.equal(data.bins.length,16)
+  assert.deepEqual(data.bins.at(-1),{start:3,end:null,count:2})
+  assert.equal(data.bins.find(bin=>bin.start===.2).count,1)
+  assert.equal(data.bins.reduce((sum,bin)=>sum+bin.count,0),values.length)
+  assert.equal(data.min,0);assert.equal(data.max,99)
+  const small=excursionSummary({rows:rows.slice(0,5)},trades.slice(0,5))
+  assert.equal(small.bins.length,11)
+  assert.equal(small.bins.find(bin=>bin.start===.3).count,1)
+  assert.deepEqual(small.bins.at(-1),{start:1,end:null,count:1})
+  assert.deepEqual(excursionSummary({rows:[]},trades).bins,[])
+  assert.equal(excursionSummary({rows:[]},trades).max,null)
+})
+
+test('winning MAE stats require every winning trade and preserve an observed zero', () => {
+  const trades=[{tradeId:'a',outcome:'win'},{tradeId:'b',outcome:'loss'}]
+  const rows=[{trade_id:'a',excursion:{mae_r:0,r_basis:'initial_stop_distance'}}]
+  const data=excursionSummary({rows},trades)
+  assert.equal(data.completeWinners,true)
+  assert.equal(data.average,0);assert.equal(data.min,0);assert.equal(data.max,0)
+  assert.equal(excursionSummary({rows},[...trades,{tradeId:'c',outcome:'win'}]).average,null)
+  assert.equal(excursionSummary({rows},[...trades,{tradeId:'c',outcome:'unknown'}]).max,null)
 })
 test('bucket endpoints keep last balance, baseline and named-zone day including DST', () => {
   const rows=[{tradeId:'a',report_time_utc:'2024-03-10T04:30:00Z'},{tradeId:'b',report_time_utc:'2024-03-10T05:30:00Z'},{tradeId:'c',report_time_utc:'2024-03-10T07:30:00Z'}]

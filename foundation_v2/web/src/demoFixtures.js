@@ -31,7 +31,9 @@ export function demoAnalyticsRisk(rows) {
   return { preview: true, rows: rows.map(row => {
     const ordinal = Number(row.tradeId.split('-').at(-1))
     const value = Math.max(Number(row.realized_r), ordinal % 4 === 0 ? -.2 : .4 + ordinal % 7 * .55)
-    return { trade_id: row.tradeId, ideal: { status: 'complete_week', value_r: value, could_have_profit_or_breakeven: value >= 0 } }
+    // Synthetic price-path observations exist only in the explicitly labeled UI demo.
+    const mae = Math.max(Number(row.net_pnl) < 0 ? Math.max(0, -Number(row.net_pnl) - 3) / 100 : 0, [0, .05, .2, .35, .6, .9, 1.1][ordinal % 7])
+    return { trade_id: row.tradeId, excursion: { r_basis: 'initial_stop_distance', mae_r: mae }, ideal: { status: 'complete_week', value_r: value, could_have_profit_or_breakeven: value >= 0 } }
   }) }
 }
 

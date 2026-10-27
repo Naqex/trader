@@ -16,12 +16,19 @@ export function excursionSummary(experiments, trades) {
   const rows = (experiments?.rows || []).filter(row => selected.has(row.trade_id))
   const observed = rows.filter(row => row.excursion?.r_basis === 'initial_stop_distance' && known(row.excursion.mae_r) && Number(row.excursion.mae_r) >= 0)
   const values = observed.map(row => Number(row.excursion.mae_r)).filter(value => value >= 0)
-  const winners = observed.filter(row => { const trade = selected.get(row.trade_id); return trade.outcome ? trade.outcome === 'win' : Number(trade.net_pnl) > 1e-12 }).map(row => Number(row.excursion.mae_r))
+  const isWinner = trade => trade.outcome ? trade.outcome === 'win' : known(trade.net_pnl) && Number(trade.net_pnl) > 1e-12
+  const winners = observed.filter(row => isWinner(selected.get(row.trade_id))).map(row => Number(row.excursion.mae_r))
+  const winnerCount = trades.filter(isWinner).length
+  const completeWinners = winnerCount > 0 && winners.length === winnerCount && !trades.some(trade => trade.outcome === 'unknown')
   const maximum = values.length ? Math.max(...values) : 0
-  const width = maximum ? 10 ** Math.floor(Math.log10(maximum)) * ([1,2,5,10].find(step => step * 10 ** Math.floor(Math.log10(maximum)) >= maximum / 8) || 10) : .25
-  const bins = Array.from({ length: Math.max(1, Math.ceil(maximum / width)) }, (_, index) => ({ start: index * width, end: (index + 1) * width, count: 0 }))
-  values.forEach(value => bins[Math.min(bins.length - 1, Math.floor(value / width))].count++)
-  return { rows, observed, values, bins: values.length ? bins : [], winners, average: winners.length ? winners.reduce((a,b) => a+b,0) / winners.length : null, min: winners.length ? Math.min(...winners) : null, max: winners.length ? Math.max(...winners) : null }
+  const limit = Math.min(3, Math.max(1, Math.ceil(maximum * 10) / 10)), width = limit > 2.5 ? .2 : .1
+  const bins = Array.from({ length: Math.ceil(limit / width) }, (_, index) => ({ start: Number((index * width).toFixed(1)), end: Math.min(limit, Number(((index + 1) * width).toFixed(1))), count: 0 }))
+  bins.push({ start: limit, end: null, count: 0 })
+  // Exact boundaries belong to the next bucket, including the overflow bucket.
+  values.forEach(value => bins[value >= limit ? bins.length - 1 : Math.min(bins.length - 2, Math.floor(Number((value / width).toFixed(10))))].count++)
+  return { rows, observed, values, bins: values.length ? bins : [], winners, winnerCount, completeWinners,
+    average: completeWinners ? winners.reduce((a,b) => a+b,0) / winners.length : null,
+    min: completeWinners ? Math.min(...winners) : null, max: completeWinners ? Math.max(...winners) : null }
 }
 
 export function realizedRiskSeries(experiments, trades) {
