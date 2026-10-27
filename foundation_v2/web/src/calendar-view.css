@@ -49,3 +49,8 @@
 .wm-calendar-result strong{overflow:hidden;text-overflow:ellipsis}
 @media(max-width:1000px){.wm-calendar-year{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.wm-calendar-year{grid-template-columns:1fr}.wm-calendar-toolbar{align-items:flex-start}.wm-calendar-navigation{gap:0}.wm-calendar-step>span{font-size:16px}.wm-calendar-step:first-child>span{min-width:90px}.wm-calendar-toolbar>.wm-calendar-actions{width:100%;justify-content:space-between}.wm-calendar-period-total{gap:8px}.wm-calendar-detail dl{gap:8px 16px}}
+
+.wm-calendar-metric-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.wm-calendar-metric-toolbar .fx-select-trigger{border-radius:20px}
+.wm-analytics-calendar .wm-calendar-step .fxa-button{border-color:transparent;padding:4px;min-width:28px}
+.wm-analytics-calendar .wm-calendar-step>span{font-size:18px}

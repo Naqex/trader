@@ -117,8 +117,8 @@ export function AnalyticsCurve({ series, label, suffix = '', onSelect, selected,
   </div>
 }
 
-export function AnalyticsBars({ items, metric = 'net', label, suffix = '', maximum, integer, combo = false, height = 180, color = 'signed' }) {
-  const { t, fmt, locale } = useTestingLocale(), [ref, width, measuredHeight] = useSize(height)
+export function AnalyticsBars({ items, metric = 'net', label, suffix = '', maximum, integer, combo = false, height = 180, stretch = false, color = 'signed' }) {
+  const { t, fmt, locale } = useTestingLocale(), [ref, width, measuredHeight] = useSize(height, stretch)
   height = measuredHeight
   const values = items.map(item => item[metric]).filter(finite), domain = chartDomain(values, { maximum, integer, symmetric: true })
   if (!domain || !items.length) return <div ref={ref} className="fxa-chart-empty">{t('Chưa có dữ liệu')}</div>
@@ -128,7 +128,7 @@ export function AnalyticsBars({ items, metric = 'net', label, suffix = '', maxim
   const step = (right - left) / items.length, barWidth = Math.max(1, Math.min(54, step * .64)), center = index => left + (index + .5) * step
   const stride = Math.max(1, Math.ceil(items.length * Math.max(28, ...items.map(item => item.label.length * 6 + 10)) / (right - left)))
   const rate = value => edge - value / 100 * (edge - top)
-  return <div ref={ref} className="fxa-viz" style={{ height }}><svg viewBox={`0 0 ${width} ${height}`} role="group" aria-label={label}>
+  return <div ref={ref} className="fxa-viz" style={{ height: stretch ? undefined : height }}><svg viewBox={`0 0 ${width} ${height}`} role="group" aria-label={label}>
     {ticks.map((value, index) => <g key={value}><line className="fxa-gridline" x1={left} x2={right} y1={y(value)} y2={y(value)}/><text x={left - 10} y={y(value)} textAnchor="end" dominantBaseline="middle">{axis[index]}</text></g>)}
     {combo && [0, 50, 100].map(value => <text key={value} x={right + 8} y={rate(value)} dominantBaseline="middle">{value}%</text>)}
     {items.map((item, index) => {
@@ -155,15 +155,29 @@ export function AnalyticsDailyBars({ items, currency }) {
   </svg></div>
 }
 
-export function AnalyticsRing({ values, label, center, sublabel, concentric = false }) {
+export function AnalyticsRing({ values, label, concentric = false }) {
   const { fmt } = useTestingLocale(), valid = values.some(item => finite(item.value))
   let offset = 0
   const total = values.reduce((sum, item) => sum + (finite(item.value) ? Math.max(0, item.value) : 0), 0)
-  return <div className="fxa-ring-layout"><svg className="fxa-ring" viewBox="0 0 200 200" role="img" aria-label={`${label}: ${values.map(item => `${item.label} ${fmt(item.value, concentric ? '%' : '')}`).join('; ')}`}>
-    <circle cx="100" cy="100" r="76" fill="none" stroke="var(--wm-border)" strokeWidth="17"/>
-    {valid && values.map((item, index) => { const radius = concentric ? 76 - index * 24 : 76, fraction = concentric ? (item.value ?? 0) / 100 : total ? (item.value ?? 0) / total : 0, circumference = Math.PI * 2 * radius; const dashOffset = concentric ? 0 : offset; offset += fraction; return <circle key={item.label} cx="100" cy="100" r={radius} fill="none" stroke={item.color} strokeWidth={concentric ? 14 : 17} strokeDasharray={`${fraction * circumference} ${circumference}`} strokeDashoffset={-dashOffset * circumference} transform="rotate(-90 100 100)"/> })}
-    <text x="100" y="100" textAnchor="middle" className="fxa-ring-value">{center}</text><text x="100" y="121" textAnchor="middle">{sublabel}</text>
-  </svg><div className="fxa-chart-legend">{values.map(item => <span key={item.label}><i style={{ background: item.color }}/>{item.label}<strong>{fmt(item.value, concentric ? '%' : '')}</strong></span>)}</div></div>
+  return <div className="fxa-ring-layout">
+    <div className="fxa-chart-legend">{values.map(item => <span key={item.label}><i style={{ background: item.color }}/>{item.label}<strong>{finite(item.value) ? fmt(item.value, concentric ? '%' : '') : 'N/A'}</strong></span>)}</div>
+    <svg className={`fxa-ring${concentric ? ' is-concentric' : ''}`} viewBox="0 0 200 200" role="img" aria-label={`${label}: ${values.map(item => `${item.label} ${finite(item.value) ? fmt(item.value, concentric ? '%' : '') : 'N/A'}`).join('; ')}`}>
+      {!concentric && <circle cx="100" cy="100" r="76" fill="none" stroke="var(--wm-border)" strokeWidth="30"/>}
+      {values.map((item, index) => {
+        const radius = concentric ? 76 - index * 24 : 76
+        const fraction = finite(item.value) ? Math.min(1, Math.max(0, concentric ? item.value / 100 : total ? item.value / total : 0)) : 0
+        const circumference = Math.PI * 2 * radius, start = concentric ? 0 : offset
+        offset += fraction
+        const angle = (start + fraction / 2) * Math.PI * 2 - Math.PI / 2
+        const detail = `${item.label}: ${finite(item.value) ? fmt(item.value, concentric ? '%' : '') : 'N/A'}`
+        return <g key={item.label} tabIndex={0} role="img" aria-label={detail} data-tooltip={detail} data-tooltip-touch="">
+          {concentric && <circle cx="100" cy="100" r={radius} fill="none" stroke="var(--wm-border)" strokeWidth="15"/>}
+          {valid && fraction > 0 && <circle cx="100" cy="100" r={radius} fill="none" stroke={item.color} strokeWidth={concentric ? 15 : 30} strokeDasharray={`${fraction * circumference} ${circumference}`} strokeDashoffset={-start * circumference} transform="rotate(-90 100 100)"/>}
+          {!concentric && fraction >= .08 && <text className="fxa-ring-share" x={100 + Math.cos(angle) * radius} y={100 + Math.sin(angle) * radius} textAnchor="middle" dominantBaseline="middle">{fmt(fraction * 100, '%')}</text>}
+        </g>
+      })}
+    </svg>
+  </div>
 }
 
 export function AnalyticsRadar({ items, metric, label, suffix = '', maximum }) {

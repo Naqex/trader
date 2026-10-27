@@ -192,14 +192,17 @@
 .fxa-radar{min-width:0;text-align:center}
 .fxa-radar h3{font-size:13px;font-weight:500;color:var(--wm-content-muted);margin:0}
 .fxa-radar svg{display:block;width:100%;height:auto}
-.fxa-month-scroll{overflow:auto;margin-top:16px;scrollbar-width:thin;max-width:100%}
-.fxa-month-matrix{border-collapse:collapse;width:100%;font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums}
-.fxa-month-matrix th{font-weight:500;color:var(--wm-content-muted)}
-.fxa-month-matrix :is(th,td){padding:14px 10px;text-align:right;border-bottom:1px solid var(--wm-border)}
-.fxa-month-matrix :is(th,td):first-child{text-align:left}
-.fxa-month-matrix td.is-positive{color:var(--report-positive);background:color-mix(in srgb,var(--report-positive) 7%,transparent)}
-.fxa-month-matrix td.is-negative{color:var(--report-negative);background:color-mix(in srgb,var(--report-negative) 7%,transparent)}
-.fxa-month-matrix .fxa-year-total{font-weight:600;border-left:1px solid var(--wm-border)}
+.fxa-month-scroll{overflow-x:auto;margin-top:8px;scrollbar-width:thin;max-width:100%}
+.fxa-month-matrix{border-collapse:separate;border-spacing:8px 12px;width:calc(100% + 16px);margin:0 -8px;table-layout:fixed;min-width:1040px;font-size:13px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.fxa-month-matrix :is(th,td){padding:0;text-align:center;border:0}
+.fxa-month-tile{display:flex;align-items:center;justify-content:center;min-height:54px;padding:8px 4px;border:1px solid var(--wm-border);border-radius:14px;background:var(--wm-canvas);font-weight:500;color:var(--wm-content)}
+.fxa-month-matrix thead th:first-child{border:0}
+.fxa-month-matrix td .fxa-month-tile{background:color-mix(in srgb,var(--wm-content-muted) 10%,var(--wm-surface));border-color:transparent;color:var(--wm-content-muted)}
+.fxa-month-matrix .fxa-month-tile.is-positive{color:var(--report-positive);background:color-mix(in srgb,var(--report-positive) 10%,var(--wm-surface))}
+.fxa-month-matrix .fxa-month-tile.is-negative{color:var(--report-negative);background:color-mix(in srgb,var(--report-negative) 10%,var(--wm-surface))}
+.fxa-month-tile:focus-visible{outline:2px solid var(--wm-focus);outline-offset:-2px}
+.fxa-month-matrix .fxa-year-total{font-weight:600}
+
 .fxa-visual-report .fxa-calendar{margin-bottom:0;gap:6px}
 .fxa-visual-report .fxa-calendar-day{min-height:94px;gap:6px;padding:10px}
 .fxa-calendar-day>span{color:var(--wm-content-muted)}
@@ -285,8 +288,12 @@
 .fxa-ring-layout{gap:12px}
 .fxa-side-panel .fxa-two-columns{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .fxa-side-panel .fxa-ring-layout{flex-direction:column;gap:8px}
-.fxa-side-panel .fxa-ring{width:116px;height:116px}
-.fxa-side-panel .fxa-chart-legend{font-size:12px;gap:8px;min-width:0;width:100%}
+.fxa-side-panel .fxa-ring{width:210px;height:210px}
+.fxa-side-panel .fxa-chart-legend{display:flex;justify-content:center;flex-wrap:wrap;font-size:12px;gap:8px 16px;min-width:0;width:100%}
+.fxa-side-panel .fxa-chart-legend span{display:inline-flex;align-items:center;gap:5px}
+.fxa-side-panel .fxa-chart-legend strong{margin-left:0;padding-left:0}
+.fxa-side-panel .fxa-chart-legend i{border-radius:50%;width:8px;height:8px}
+.fxa-side-panel .fxa-ring .fxa-ring-share{fill:#fff;font-size:14px;font-weight:600;paint-order:stroke;stroke:#0004;stroke-width:2px}
 .fxa-hours-panel .fxa-radar-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 .fxa-hours-panel .fxa-radar svg{max-width:240px;margin:auto}
 .fxa-hours-panel .fxa-radar text{font-size:16px}
@@ -297,8 +304,6 @@
 .fxa-calendar-day>span{grid-column:1;grid-row:1;line-height:16px}
 .fxa-calendar-day strong{grid-column:1/-1;grid-row:2;line-height:18px}
 .fxa-calendar-day small{grid-column:2;grid-row:1;text-align:right;white-space:nowrap;line-height:16px}
-.fxa-month-scroll{margin-top:8px}
-.fxa-month-matrix :is(th,td){padding:10px 8px}
 .fxa-visual-report.fxa-drawdown-report{grid-template-columns:minmax(0,1fr);gap:24px}
 .fxa-visual-report>.fxa-drawdown-stats{gap:12px;align-content:start}
 .fxa-drawdown-stats>.fxa-metric{padding:12px;gap:4px}
@@ -331,7 +336,7 @@
 @media(max-width:1200px){.fxa-visual-report>.fxa-profit-panel,.fxa-visual-report>.fxa-risk-panels{grid-column:1/-1}.fxa-profit-panel>.fxa-viz{flex:none;height:240px}.fxa-visual-report>.fxa-risk-panels{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:none}.fxa-profit-panel .fxa-section-heading{align-items:flex-start;flex-wrap:wrap}.fxa-profit-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.fxa-visual-report>.fxa-expectancy-panel,.fxa-visual-report>.fxa-side-panel{grid-column:span 6}.fxa-visual-report>.fxa-outcome-panel{grid-column:span 6}.fxa-visual-report>.fxa-side-panel,.fxa-visual-report>.fxa-hours-panel{grid-column:1/-1}.fxa-outcome-panel .fxa-two-columns{grid-template-columns:1fr}.fxa-outcomes dl div{padding:4px 0}.fxa-visual-report>.fxa-calendar-panel{grid-column:1/-1}.fxa-visual-report>.fxa-frequency-panel{grid-column:1/-1}.fxa-frequency-panel .fxa-three-columns{grid-template-columns:repeat(3,minmax(0,1fr))}.fxa-frequency-panel .fxa-three-columns>div{grid-template-columns:1fr}.fxa-prop-objectives{grid-template-columns:1fr}.fxa-prop-objectives>.fxa-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:1000px){.fxa-visual-report>.fxa-expectancy-panel,.fxa-visual-report>.fxa-outcome-panel,.fxa-visual-report>.fxa-hours-panel,.fxa-visual-report>.fxa-side-panel{grid-column:1/-1}.fxa-expectancy-panel .fxa-two-columns{grid-template-columns:1fr}.fxa-outcome-panel .fxa-two-columns{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-hours-panel .fxa-radar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-monte-body{grid-template-columns:240px minmax(0,1fr);gap:16px}}
 @media(max-width:850px){.fxa-visual-report>.fxa-risk-panels{grid-template-columns:1fr}.fxa-visual-report>.fxa-half-panel,.fxa-visual-report>.fxa-scenario-panel{grid-column:1/-1}.fxa-profit-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.fxa-panel .fxa-section-heading{flex-wrap:wrap}.fxa-panel-actions{justify-content:flex-start}.fxa-hours-panel .fxa-radar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-visual-report>.fxa-drawdown-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-monte-body{grid-template-columns:1fr}.fxa-monte-results>.fxa-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-prop-objectives>.fxa-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:600px){.fxa-profit-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-profit-panel .fxa-profit-metrics .fxa-metric strong{font-size:22px}.fxa-expectancy-panel .fxa-two-columns,.fxa-outcome-panel .fxa-two-columns,.fxa-frequency-panel .fxa-three-columns{grid-template-columns:1fr}.fxa-frequency-panel .fxa-three-columns>div{grid-template-columns:80px minmax(0,1fr)}.fxa-side-panel .fxa-two-columns{gap:8px}.fxa-side-panel .fxa-ring{width:96px;height:96px}.fxa-hours-panel .fxa-radar-grid{grid-template-columns:1fr}.fxa-panel-actions{gap:6px}.fxa-scenario-panel .fxa-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-prop-objectives>.fxa-metrics{grid-template-columns:1fr}.fxa-prop-objectives .fxa-metric strong{font-size:20px}}
+@media(max-width:600px){.fxa-profit-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-profit-panel .fxa-profit-metrics .fxa-metric strong{font-size:22px}.fxa-expectancy-panel .fxa-two-columns,.fxa-outcome-panel .fxa-two-columns,.fxa-frequency-panel .fxa-three-columns{grid-template-columns:1fr}.fxa-frequency-panel .fxa-three-columns>div{grid-template-columns:80px minmax(0,1fr)}.fxa-side-panel .fxa-two-columns{gap:8px}.fxa-side-panel .fxa-ring{width:180px;height:180px}.fxa-hours-panel .fxa-radar-grid{grid-template-columns:1fr}.fxa-panel-actions{gap:6px}.fxa-scenario-panel .fxa-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-prop-objectives>.fxa-metrics{grid-template-columns:1fr}.fxa-prop-objectives .fxa-metric strong{font-size:20px}}
 
 @media(max-width:360px){.fxa-profit-metrics{grid-template-columns:1fr}}
 @media(max-width:600px){.fxa-expectancy-panel .fxa-two-columns>div+div{grid-template-columns:minmax(0,1fr) 90px}.fxa-expectancy-panel .fxa-chart-legend{flex:1}.fxa-expectancy-panel .fxa-chart-legend span{white-space:nowrap}}
@@ -357,15 +362,16 @@
 .fxa-month-controls fieldset>div,.fxa-month-controls label{display:flex;align-items:center;gap:6px}
 .fxa-month-controls label{font-size:13px;cursor:pointer}
 .fxa-month-controls label:has(input:disabled){color:var(--wm-content-muted);cursor:default}
-.fxa-month-controls input{accent-color:var(--report-blue);width:14px;height:14px;margin:0}
-.fxa-month-total>*{border-top:1px solid var(--wm-border);font-weight:600}
-.fxa-frequency-panel .fxa-three-columns{grid-template-columns:1fr;gap:16px}
-.fxa-frequency-panel .fxa-three-columns>.fxa-frequency-card{display:block;min-width:0}
-.fxa-frequency-plot{padding:16px;border:1px solid var(--wm-border);border-radius:8px;background:var(--wm-surface)}
+.fxa-month-controls input{accent-color:var(--report-blue);width:16px;height:16px;margin:0}
+.fxa-month-total th{font-weight:600}
+.fxa-frequency-panel .fxa-three-columns{flex:1;grid-template-columns:1fr;grid-template-rows:repeat(3,minmax(168px,1fr));gap:16px}
+.fxa-frequency-panel .fxa-three-columns>.fxa-frequency-card{display:flex;flex-direction:column;min-width:0;padding:16px;border:1px solid var(--wm-border);border-radius:8px;background:var(--wm-surface)}
+.fxa-frequency-plot{display:flex;flex:1;min-height:124px}
+.fxa-frequency-card .fxa-frequency-plot>.fxa-viz{flex:1;min-height:124px;width:100%}
 .fxa-frequency-card .fxa-viz{margin-top:0}
 @media(min-width:1001px) and (max-width:1200px){.fxa-outcome-panel>.fxa-two-columns{grid-template-columns:1fr}}
-@media(max-width:1200px) and (min-width:601px){.fxa-frequency-panel .fxa-three-columns{grid-template-columns:repeat(3,minmax(0,1fr))}.fxa-frequency-card .fxa-chart-heading{flex-wrap:wrap;gap:4px}}
-@media(max-width:600px){.fxa-outcome-panel>.fxa-two-columns{grid-template-columns:1fr}.fxa-month-controls fieldset{flex-direction:column;gap:10px}.fxa-side-panel .fxa-chart-heading h3{font-size:12px}}
+@media(max-width:1200px) and (min-width:601px){.fxa-frequency-panel .fxa-three-columns{grid-template-columns:repeat(3,minmax(0,1fr))}.fxa-frequency-panel .fxa-three-columns{grid-template-rows:1fr}.fxa-frequency-card .fxa-chart-heading{flex-wrap:wrap;gap:4px}}
+@media(max-width:600px){.fxa-outcome-panel>.fxa-two-columns,.fxa-side-panel .fxa-two-columns{grid-template-columns:1fr}.fxa-side-panel .fxa-two-columns{gap:24px}.fxa-month-controls fieldset{flex-direction:column;gap:10px}.fxa-side-panel .fxa-chart-heading h3{font-size:13px}}
 
 .fxa-time-incomplete{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:400;color:var(--wm-content-muted)}
 .fxa-panel-title:has(.fxa-time-incomplete){flex-wrap:wrap}

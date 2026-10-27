@@ -1,0 +1,36 @@
+{
+  "status": "PASS",
+  "candidate_index_sha256": "6fe306e4f49146b9a42c808b2a58259b9473751f96cc67217221c5d3a8f7ed95",
+  "source_commit_base": "c553577f92084783860354cd296eea46eb5cae9a",
+  "artifact_root": "E:\\BACKUP-TRADINGWORKSPACE\\fxreplay-performance-polish-20261027",
+  "model_tests": 105,
+  "independent_tests": 24,
+  "validation_reports": [
+    "preview-qa-accepted/report.json",
+    "deployed-qa/report.json",
+    "layout-preview-final/report.json",
+    "layout-deployed/report.json",
+    "regression-preview/report.json",
+    "real-preview/report.json",
+    "real-deployed/report.json",
+    "source-review.json",
+    "visual-review.json",
+    "promotion.json",
+    "served-hash.json"
+  ],
+  "files": {
+    "foundation_v2/web/src/AnalyticsCalendar.jsx": "c506cffb6782812cf1311df608ec002bf849ed0443d730d1e51e90ca59d4b2fa",
+    "foundation_v2/web/src/AnalyticsCharts.jsx": "7efe9f13da21b2613646e87415b214bbc71e6591168bf6b17eb05b63e37b8be0",
+    "foundation_v2/web/src/FxAnalytics.jsx": "fa498a87f7585569548958e980b8f4efc64705a32fdcde70b0b429976932fe0e",
+    "foundation_v2/web/src/calendar-view.css": "fd262ffda03cf2a976df8986f720be0f3d113e8671137cc67f736e9b1e4c07e2",
+    "foundation_v2/web/src/fx-analytics.css": "1555c43ba3cdb19c074d391ce8836a0a039c786eb0957c66d097b0dd93369206",
+    "foundation_v2/web/src/testing-copy.json": "bbb93500857441ecdd1ca06fef2ce2ae05ad113d81b3a058b1bfa7766330d67e",
+    "foundation_v2/web/tests/analyticsCapital.test.mjs": "cb24e7862ec1705c33c705782a8ac2e4e5cf18675249cc3979ab6736a2e2efe1",
+    "ui/display-conventions.md": "00832f36a96ebe12f75dffc1bb639033f434935488ebc5744774e5547605499e",
+    "ui/references/fxreplay/README.md": "5772015a736b2d4aa209e1f647fc95313dfca1031bb08a42eae82299ae1a008e",
+    "ui/references/fxreplay/performance-month-side-calendar.md": "7ec6a02f3c3ef9f7eb5300074247421d7b4ddddafb82e72e5775d04d96bec304",
+    "foundation_v2/evidence/fxreplay-performance-polish-20261027/RECEIPT.md": "708a2e160cdf3f602405a916d3e8128d5e6b14a5bc96503b1d8a045d8ecb8132"
+  },
+  "rollout": "UI-only; existing API and Windows-owned UI kept running; no broker writes",
+  "formula_limit": "FX server monthly calculation is unverified; local Current Balance uses report-cutoff account snapshot as documented"
+}

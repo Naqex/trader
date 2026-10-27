@@ -27,6 +27,30 @@ test('current balance requires an explicit account snapshot and does not use fil
  assert.equal(analyticsCapitalBases(source).current[0].capital,1450)
  source.result.multi_session=true;assert.equal(analyticsCapitalBases(source).current[0].capital,null)
 })
+
+test('monthly radio combinations use the chosen capital and preserve additive YTD totals',()=>{
+ const source={ledger:[row('a',100,1000),row('a',-40,1000,'2025-02-01T12:00:00Z')],curve:[],drawdown:[],startBalance:1000,result:{portfolio_account:{balance:1200}}}
+ const data=advancedAnalytics(source,{timezone:'UTC'})
+ for(const aggregation of ['sessions','overall']){
+  assert.equal(periodReturn(data.months,data.capitalBases.initial,aggregation),6)
+  assert.equal(periodReturn(data.months,data.capitalBases.current,aggregation),5)
+  assert.ok(Math.abs(data.months.reduce((sum,item)=>sum+periodReturn([item],data.capitalBases.current,aggregation),0)-5)<1e-12)
+ }
+ const filtered=advancedAnalytics(source,{timezone:'UTC',years:'["2025"]'})
+ assert.deepEqual(filtered.capitalBases,data.capitalBases,'date filters cannot redefine the account snapshot')
+ assert.equal(periodReturn(filtered.months,filtered.capitalBases.current,'overall'),-40/1200*100)
+})
+
+test('unequal source capitals distinguish accumulation from pooled returns in every month',()=>{
+ const source=model([row('a',100,1000),row('b',100,4000),row('a',-50,1000,'2024-02-01T12:00:00Z')])
+ const data=advancedAnalytics(source,{timezone:'UTC'})
+ assert.equal(periodReturn([data.months[0]],data.capitalBases.initial,'sessions'),12.5)
+ assert.equal(periodReturn([data.months[0]],data.capitalBases.initial,'overall'),4)
+ assert.equal(periodReturn(data.months,data.capitalBases.initial,'sessions'),7.5)
+ assert.equal(periodReturn(data.months,data.capitalBases.initial,'overall'),3)
+ assert.equal(periodReturn(data.months,[{id:'a',capital:0},{id:'b',capital:4000}],'overall'),null)
+ assert.equal(periodReturn(data.months,[{id:'a',capital:1000},{id:'b',capital:null}],'sessions'),null)
+})
 test('zero P/L returns stay zero, incomplete financial groups stay unknown',()=>{
  const data=advancedAnalytics(model([row('a',0,1000)]));assert.equal(periodReturn(data.months,data.capitalBases.initial),0)
  assert.equal(periodReturn([{complete:false,sourceNet:[]}],data.capitalBases.initial),null)

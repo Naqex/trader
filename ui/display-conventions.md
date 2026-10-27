@@ -47,15 +47,16 @@ data adapter. Analytics keeps dated rows with unknown PnL in both the day count
 and frequency. Net/win-rate summaries are unavailable for
 incomplete financial data; unknown-time or partial sources also prevent complete
 period totals. Average R weights only known R observations and exposes coverage.
-Empty periods use a dash rather than manufactured zero money. No new percentage
+Empty calendar dates show only the date, with no dash or manufactured zero money. Actual dated data keeps known zero and N/A distinct. No new percentage
 basis is inferred from FX demo data. Live keeps its weekly totals, full-day
 coverage/partial semantics, account selection and notes/reviews.
 Performance group headings sit above their bordered content, with help and controls
 in the external heading. Expectancy/profit factor, winners/losers and side each
 retain one visible group heading. Session radars have no enclosing surface; only
 the four radar cards are bordered. Frequency has a visible group heading above
-three plots; each day/week/month title and help sit above its bordered plot, with
-the average on the right. Averages
+three cards; each day/week/month title, help and average sit inside its border,
+with the average on the right. On desktop the three cards share the calendar row
+height and finish at the same bottom; narrow layouts stack without fixed heights. Averages
 retain zero calendar periods between the first and last observed period. Drawdown uses one vertical flow: a full-width account drawdown plot, four summary
 metrics in a row, a full-width MAE plot, then three winning-trade metrics in a row.
 Its titles/help/controls sit above the chart surfaces, with no outer surface around
@@ -122,6 +123,16 @@ headings and a 16px gap. They have no combined outer border or central divider.
 The Buy/Sell group remains one card; each ring owns a Total trades or Win rate
 heading and info control below the external Performance by side group heading. Buy/Sell win rates
 are independent percentages, not two shares of a total.
+Side counts use a teal Buy / blue Sell donut with percentage labels on sufficiently
+large arcs, legends above and no center count. Side win rates use independent
+concentric tracks with a gray remainder for each side; missing rates remain N/A.
+Monthly results use separated rounded header/value tiles and one bottom-right
+Total, rather than monthly totals across years. Initial/Current selects the capital
+basis and Accum./Overall selects sum of source returns versus pooled return.
+Current requires a valid account snapshot; it never uses filtered ending balance.
+Year and grand totals remain N/A when temporal/financial coverage is incomplete.
+Analytics calendar places its metric control above month/year navigation and view
+toggles, with no period-total footer. Live weekly totals/coverage remain intact.
 Monthly radio fieldsets contain their visually hidden legends within their own
 positioned bounds, so only the shell content scrolls vertically.
 Hourly controls offer net P/L, average RR, return (%) and win rate. Daily
