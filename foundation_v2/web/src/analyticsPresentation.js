@@ -90,6 +90,19 @@ export function scenarioRiskCurve(rows, trades, key) {
   return { eligible, baseline, scenario, timestamps: eligible.map(row => row.ms) }
 }
 
+export function compareScenarioRuns(runs, activeValues) {
+  const curves = activeValues.flatMap(value => runs[value] ? [{ value, curve: runs[value], ids: new Set(runs[value].eligible.map(row => row.tradeId)) }] : [])
+  const common = curves.length ? curves[0].curve.eligible.filter(row => curves.every(item => item.ids.has(row.tradeId))) : []
+  const ids = new Set(common.map(row => row.tradeId))
+  const totals = curves.map(item => ({ value: item.value, total: number(item.curve.eligible.filter(row => ids.has(row.tradeId)).reduce((sum, row) => sum + row.simulatedR, 0)) }))
+  const comparable = curves.length >= 2 && common.length > 0 && totals.every(item => item.total !== null)
+  const bestTotal = comparable ? Math.max(...totals.map(item => item.total)) : null
+  const tieTolerance = Math.max(1e-12, Number.EPSILON * Math.max(1, Math.abs(bestTotal)) * Math.max(8, common.length * 2))
+  return { testedCount: curves.length, commonCount: common.length,
+    decisiveCount: common.filter(row => Math.abs(row.actualR) > 1e-12).length,
+    bestTotal, bestValues: comparable ? totals.filter(item => Math.abs(item.total - bestTotal) <= tieTolerance).map(item => item.value) : [] }
+}
+
 export function bucketCurve(curve, rows, interval, timezone = 'UTC') {
   const observation = row => row?.analytics_time_utc !== undefined ? row.analytics_time_utc : row?.report_time_utc
   const rowMap = new Map(rows.map(row => [row.tradeId,row]))

@@ -213,3 +213,41 @@ chart capture. Served index SHA256:
 `d84c9af1b0014f5ad3e35d0df4a4ca8fe0be41002166e474b3f2b4fe2419003a`.
 Rollback index: `ui-before-axes/index.html` under the evidence root. UI-only
 promotion retained existing processes/assets; no native rebuild or broker action.
+
+## Scroll chaining and Results correction — 2026-10-28
+
+The owner reported that wheel scrolling stopped on the results grid and supplied
+the missing Results row between chart and table. Runtime reproduction confirmed
+that the table had no vertical overflow (`clientHeight=scrollHeight=1014`), but
+shared `overscroll-behavior:contain` trapped vertical input. A fresh wheel gesture
+on its cells left the page at scrollTop 0; changing only vertical overscroll to
+`auto` advanced the page to 400. DataTable now exposes an optional `scrollAxis="x"`
+used by SL/RR tables: horizontal containment remains, vertical input chains
+natively. Bounded/virtual tables keep their existing default. No wheel handler,
+preventDefault or touch-axis restriction is introduced.
+
+Results now sit under the chart/legend and above the grid. Cached compact curve
+observations allow comparison of active, completed scenarios on their common
+eligible trade IDs. Highest means signed cumulative original-risk R, including
+all-negative runs; unrun chips are not evaluated. One run/no common sample shows
+coverage rather than a winner. Ties use floating-point-scale tolerance and report
+the actual tied/tested counts. Conditional notices distinguish fewer than five
+non-breakeven trades, unresolved outcomes and missing original risk/chart dates.
+All source rows remain visible. Removing a selected chip runs the first remaining
+scenario; removing the last RR chip retains Add so the user can recover.
+
+Evidence: `E:/BACKUP-TRADINGWORKSPACE/scenario-scroll-results-20261028/`.
+Scoped production build and 18 focused model/adapter tests passed. Final preview
+QA (`preview-final/report.json`) passed 1920 VI dark, 1366 EN light, 768 VI dark and 390 VI
+dark: wheel down/up over cells, focused PageDown, mobile horizontal scrolling,
+Results placement/scope, selected/last-chip removal and prior chart/dialog checks.
+Isolated component fixtures (`warnings/report.json`) passed three widths/themes
+with explicit 2/4 chart coverage, three applicable notices and all four source
+rows retained. Fixtures are labeled and do not claim real backend parity.
+
+Independent final source/desktop/mobile review passed. The same four journeys
+passed on deployed port 5180 (`deployed/report.json`), with no JS errors or
+attempted writes. Served index SHA256:
+`771972309421952442138d25026c6a81ab7619958524db9b73b0d63f5cf204cf`.
+Rollback index: `ui-before-scroll-results/index.html` under the evidence root.
+UI-only promotion retained existing API/UI processes and old hashed assets.

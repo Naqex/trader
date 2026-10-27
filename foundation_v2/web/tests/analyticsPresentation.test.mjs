@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { bucketCurve, excursionSummary, scenarioComparison, scenarioRiskCurve, realizedRiskSeries, idealRiskSummary } from '../src/analyticsPresentation.js'
+import { bucketCurve, excursionSummary, scenarioComparison, scenarioRiskCurve, compareScenarioRuns, realizedRiskSeries, idealRiskSummary } from '../src/analyticsPresentation.js'
 
 test('scenario comparison uses matching observed trades and never substitutes unresolved PnL', () => {
   const trades=[{tradeId:'a',net_pnl:10},{tradeId:'b',net_pnl:-5},{tradeId:'c',net_pnl:30}]
@@ -55,6 +55,26 @@ test('scenario R rejects out-of-range dates and overflowing risk denominators', 
   const trades=[{tradeId:'date',net_pnl:1,realized_r:1,close_time_utc:1e30},{tradeId:'risk',net_pnl:1e308,realized_r:1e-308,close_time_utc:'2025-06-10T10:00:00Z'}]
   const rows=trades.map(trade=>({trade_id:trade.tradeId,stop_loss:{status:'ready',net_pnl:1}}))
   assert.deepEqual(scenarioRiskCurve(rows,trades,'stop_loss').eligible,[])
+})
+
+test('scenario ranking only compares computed active scenarios on the shared sample', () => {
+  const curve = eligible => ({eligible:eligible.map(([tradeId,actualR,simulatedR])=>({tradeId,actualR,simulatedR}))})
+  const runs={0:curve([['a',1,100],['b',-1,-3]]),5:curve([['b',-1,-2]]),10:curve([['b',-1,999]])}
+  assert.deepEqual(compareScenarioRuns(runs,[0,5,15]),{testedCount:2,commonCount:1,decisiveCount:1,bestTotal:-2,bestValues:[5]})
+  assert.deepEqual(compareScenarioRuns(runs,[0,15]).bestValues,[])
+  assert.equal(compareScenarioRuns(runs,[0,15]).testedCount,1)
+  assert.equal(compareScenarioRuns(runs,[0,5,10]).bestTotal,999)
+})
+
+test('scenario ranking handles ties, disjoint samples and numeric overflow without inventing a winner', () => {
+  const curve = (tradeId,simulatedR)=>({eligible:[{tradeId,actualR:0,simulatedR}]})
+  assert.deepEqual(compareScenarioRuns({0:curve('a',-1),5:curve('a',-1)},[0,5]).bestValues,[0,5])
+  assert.deepEqual(compareScenarioRuns({0:curve('a',-1),5:curve('a',-1),10:curve('a',-5)},[0,5,10]).bestValues,[0,5])
+  assert.deepEqual(compareScenarioRuns({0:curve('a',1e12),5:curve('a',1e12-500)},[0,5]).bestValues,[0])
+  assert.deepEqual(compareScenarioRuns({0:curve('a',-1),5:curve('b',20)},[0,5]).bestValues,[])
+  assert.equal(compareScenarioRuns({0:curve('a',-1),5:curve('b',20)},[0,5]).commonCount,0)
+  const overflow={eligible:[{tradeId:'a',actualR:1,simulatedR:1e308},{tradeId:'b',actualR:1,simulatedR:1e308}]}
+  assert.deepEqual(compareScenarioRuns({0:overflow,5:overflow},[0,5]).bestValues,[])
 })
 test('MAE bins require original risk and retain known zero, not configured or negative R', () => {
   const trades=[{tradeId:'a',net_pnl:10},{tradeId:'b',net_pnl:20},{tradeId:'c',net_pnl:-5}]

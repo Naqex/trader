@@ -457,5 +457,13 @@
 .fxa-scenario-table{scrollbar-gutter:auto;border-radius:0 0 9px 9px}
 .fx-app .fxa-scenario-table .wm-data-table tbody tr:last-child>td{border-bottom:0}
 .fxa-scenario-table small{display:block;margin-top:4px;color:var(--wm-content-muted);font-size:11px}
+.fxa-scenario-summary{margin-block:24px 16px}
+.fxa-scenario-summary-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.fxa-scenario-summary-heading h3{flex:none;margin:0;font-size:18px;font-weight:600}
+.fxa-scenario-summary-heading p{margin:0;max-width:80%;text-align:right;font-size:13px;line-height:1.6}
+.fxa-scenario-result-notice{display:flex;align-items:flex-start;gap:8px;margin:12px 0 0;padding:10px 14px;border:1px solid #a88400;border-radius:999px;background:#e5bd0014;color:#e5bd00;font-size:12px;line-height:1.5}
+.fxa-scenario-result-notice svg{flex:none;width:16px;height:16px;margin-top:1px}
+.fx-app[data-theme=light] .fxa-scenario-result-notice{color:#856300}
+@media(max-width:600px){.fxa-scenario-summary-heading{align-items:flex-start;flex-direction:column;gap:8px}.fxa-scenario-summary-heading p{max-width:100%;text-align:left}.fxa-scenario-result-notice{border-radius:12px}}
 .fxa-simulation-notice{margin:0 0 12px;padding:10px 12px;border:1px solid color-mix(in srgb,var(--project-highlight) 55%,var(--wm-border));border-radius:8px;color:var(--wm-content-muted);font-size:12px}
 @media(max-width:850px){.fxa-simulation-report .fxa-scenario-panel .fxa-metrics,.fxa-simulation-report .fxa-monte-results>.fxa-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-simulation-intro{min-height:180px;padding:16px}}

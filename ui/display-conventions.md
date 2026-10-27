@@ -96,6 +96,16 @@ risk denominator; missing risk/dates or unresolved outcomes are excluded as a pa
 with explicit coverage. No capital-percentage denominator is invented. The table
 uses shared DataTable styling and its horizontal rules reach both panel edges;
 numeric columns align right. Unresolved trades stay in the table.
+Results sit below the chart/legend and above the table. Rank only active scenarios
+that have completed a run, using their shared eligible trades and signed total R;
+one run or no shared sample cannot establish a winner. Ties name their actual
+count. Cache compact curve observations within the mounted report scope, not full
+experiment payloads. Sample-size and missing-outcome/risk/date notices appear only
+when applicable; healthy complete samples do not inherit reference warnings.
+Horizontal-only scenario tables opt into DataTable `scrollAxis="x"`: contain
+horizontal overscroll but allow native vertical chaining to the page, including
+when the table has no vertical overflow. Keep the default containment for bounded
+and virtual tables; do not intercept wheel events to simulate page scrolling.
 Monte Carlo keeps its configuration, summary,
 reset and rerun controls. Tables contain horizontal overflow while vertical
 scroll belongs to the page. Smaller widths collapse groups without scaling down
