@@ -181,3 +181,32 @@ Year overview mới ở Analytics. Màn hình nhỏ cuộn ngang trong lưới t
 Receipt, giới hạn và bằng chứng: `foundation_v2/evidence/analytics-calendar-20261026/RECEIPT.md`.
 Đây là hoàn tất lát calendar được giao; các cụm Analytics khác chưa được research
 hoặc triển khai trong lần này. Trang FX không bị refresh/điều hướng trong implementation.
+
+## Calendar metrics update — 2026-10-27
+
+Supersedes the earlier local four-metric/no-capital-control decision above.
+Owner requested the three FX menu categories and balance basis controls. Fresh
+public `chunk-ZI3BTXB2.js` confirms `Dollar Profit`, `% Profit`, `Risk Reward`,
+and Initial/Current radios. `formatPosition` reads `percentagePnl`,
+`initialBalancePercPnl` and `riskReward` from API-provided daily graphs. It does
+not expose their financial calculation. The UI also combines open cumulative
+PnL; local Analytics remains closed trades only. FX's RR tooltip says only trades
+with SL/TP participate, but daily aggregation is not established by this bundle.
+
+Local menu: net P/L, return (%), return (R). R is explicitly the sum of realized
+original-risk R, not average R; any missing trade R makes the day N/A. Daily
+details retain win rate, count and average R with coverage. Capital radios are
+shown for percentage only. Day-opening balance is initial source capital plus
+prior local-day P/L from full supplied history before local filters. It requires
+explicit unfiltered/full scope and complete times; unknown past P/L taints future
+capital. Different currencies or any invalid source capital prevent a pooled
+return. This does not reuse the monthly Current snapshot contract.
+
+Observed zero hour/day groups get neutral thin marks at exact zero; absent
+categories and unknown values remain blank. Frequency, curves, rings, radars,
+MAE and calendar do not receive invented zero bars. Weekday known win rates,
+including 0%, use green badges; N/A has no badge.
+
+Fresh source/hash, tests, screenshots and rollout evidence:
+`E:/BACKUP-TRADINGWORKSPACE/analytics-calendar-metrics-20261027/`.
+No prepared FX browser tab was refreshed or navigated.

@@ -123,7 +123,7 @@ export function AnalyticsCurve({ series, label, suffix = '', onSelect, selected,
   </div>
 }
 
-export function AnalyticsBars({ items, metric = 'net', label, suffix = '', maximum, integer, combo = false, height = 180, stretch = false, color = 'signed' }) {
+export function AnalyticsBars({ items, metric = 'net', label, suffix = '', maximum, integer, combo = false, height = 180, stretch = false, color = 'signed', zeroMarker = false }) {
   const { t, fmt, locale } = useTestingLocale(), [ref, width, measuredHeight] = useSize(height, stretch)
   height = measuredHeight
   const values = items.map(item => item[metric]).filter(finite), domain = chartDomain(values, { maximum, integer, symmetric: true })
@@ -138,8 +138,8 @@ export function AnalyticsBars({ items, metric = 'net', label, suffix = '', maxim
     {ticks.map((value, index) => <g key={value}><line className="fxa-gridline" x1={left} x2={right} y1={y(value)} y2={y(value)}/><text x={left - 10} y={y(value)} textAnchor="end" dominantBaseline="middle">{axis[index]}</text></g>)}
     {combo && [0, 50, 100].map(value => <text key={value} x={right + 8} y={rate(value)} dominantBaseline="middle">{value}%</text>)}
     {items.map((item, index) => {
-      const value = item[metric], valid = finite(value), detail = item.tooltipText ?? `${item.tooltipLabel || t(item.label)}: ${valid ? fmt(value, suffix, integer ? 0 : 2) : t('Chưa có dữ liệu')}${combo ? ` · ${t('Tỉ lệ thắng')}: ${fmt(item.winRate, '%')}` : ''}`
-      return <g key={`${item.label}:${index}`} tabIndex={0} role="img" aria-label={detail} data-tooltip={detail} data-tooltip-touch=""><rect className={color === 'signed' ? value < 0 ? 'fxa-fill-negative' : 'fxa-fill-positive' : 'fxa-fill-blue'} x={center(index) - barWidth / 2} y={valid ? Math.min(y(0), y(value)) : edge} width={barWidth} height={valid ? Math.abs(y(0) - y(value)) : 0} rx="2"/>{valid && value === 0 && <circle cx={center(index)} cy={y(0)} r="2" className="fxa-fill-blue"/>}<rect x={left + index * step} y={top} width={step} height={edge - top} fill="transparent"/>{(index % stride === 0 || items.length <= 7) && <text x={center(index)} y={height - 14} textAnchor="middle">{item.axisLabel ?? t(item.label)}</text>}</g>
+      const value = item[metric], valid = finite(value) && !(zeroMarker && item.count === 0), detail = item.tooltipText ?? `${item.tooltipLabel || t(item.label)}: ${valid ? fmt(value, suffix, integer ? 0 : 2) : t('Chưa có dữ liệu')}${combo ? ` · ${t('Tỉ lệ thắng')}: ${fmt(item.winRate, '%')}` : ''}`
+      return <g key={`${item.label}:${index}`} tabIndex={0} role="img" aria-label={detail} data-tooltip={detail} data-tooltip-touch=""><rect className={color === 'signed' ? value < 0 ? 'fxa-fill-negative' : 'fxa-fill-positive' : 'fxa-fill-blue'} x={center(index) - barWidth / 2} y={valid ? Math.min(y(0), y(value)) : edge} width={barWidth} height={valid ? Math.abs(y(0) - y(value)) : 0} rx="2"/>{zeroMarker && valid && value === 0 && <line className="fxa-zero-mark" x1={center(index)-barWidth/2} x2={center(index)+barWidth/2} y1={y(0)} y2={y(0)}/>}<rect x={left + index * step} y={top} width={step} height={edge - top} fill="transparent"/>{(index % stride === 0 || items.length <= 7) && <text x={center(index)} y={height - 14} textAnchor="middle">{item.axisLabel ?? t(item.label)}</text>}</g>
     })}
     {combo && items.map((item, index) => finite(item.winRate) && <circle key={index} cx={center(index)} cy={rate(item.winRate)} r="4" fill="var(--report-blue)"><title>{`${t(item.label)} · ${fmt(item.winRate, '%')}`}</title></circle>)}
   </svg></div>
@@ -156,8 +156,8 @@ export function AnalyticsDailyBars({ items, currency }) {
     <line className="fxa-gridline" x1={left} x2={right} y1={top-step/2} y2={top-step/2}/>
     {chartTicks(domain, width < 400 ? 3 : 5).map(value=><text key={value} x={x(value)} y={bottom+20} textAnchor="middle">{tickText(value,domain,locale,'')}</text>)}
     {items.map((item,index)=>{
-      const y=top+index*step, valid=finite(item.net), detail=`${t(item.label)}: ${item.count && valid?fmt(item.net,` ${currency}`):'N/A'} · ${t('Win rate')}: ${finite(item.winRate)?fmt(item.winRate,'%'):'N/A'}`
-      return <g key={item.label} tabIndex={0} role="img" aria-label={detail} data-tooltip={detail} data-tooltip-touch=""><line className="fxa-gridline" x1={left} x2={right} y1={y+step/2} y2={y+step/2}/><rect x="0" y={y-14} width={width} height={step} fill="transparent"/><text x="0" y={y+3}>{t(item.label)}</text>{valid&&<rect x={Math.min(x(0),x(item.net))} y={y-8} width={Math.abs(x(item.net)-x(0))} height="18" rx="2" className={item.net<0?'fxa-fill-negative':'fxa-fill-positive'}/>}<text x={width-4} y={y+4} textAnchor="end">{finite(item.winRate)?fmt(item.winRate,'%'):'N/A'}</text></g>
+      const y=top+index*step, valid=item.count > 0 && finite(item.net), detail=`${t(item.label)}: ${item.count && valid?fmt(item.net,` ${currency}`):'N/A'} · ${t('Win rate')}: ${finite(item.winRate)?fmt(item.winRate,'%'):'N/A'}`
+      return <g key={item.label} tabIndex={0} role="img" aria-label={detail} data-tooltip={detail} data-tooltip-touch=""><line className="fxa-gridline" x1={left} x2={right} y1={y+step/2} y2={y+step/2}/><rect x="0" y={y-14} width={width} height={step} fill="transparent"/><text x="0" y={y+3}>{t(item.label)}</text>{valid&&<rect x={Math.min(x(0),x(item.net))} y={y-8} width={Math.abs(x(item.net)-x(0))} height="18" rx="2" className={item.net<0?'fxa-fill-negative':'fxa-fill-positive'}/>}{valid && item.net === 0 && <line className="fxa-zero-mark" x1={x(0)} x2={x(0)} y1={y-8} y2={y+10}/>}<g className={finite(item.winRate)?'fxa-rate-badge':''}>{finite(item.winRate)&&<rect x={width-70} y={y-11} width="66" height="24" rx="5"/>}<text x={finite(item.winRate)?width-37:width-4} y={y+4} textAnchor={finite(item.winRate)?'middle':'end'}>{finite(item.winRate)?fmt(item.winRate,'%'):'N/A'}</text></g></g>
     })}
   </svg></div>
 }

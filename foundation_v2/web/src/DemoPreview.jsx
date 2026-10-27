@@ -51,7 +51,8 @@ function DemoReports({ workspace, ledgerOnly, prop = false, query, state = 'demo
     const allRows = source
     const filteredRows = demoFilterRows(null, filters, source)
     const rows = state === 'partial' ? filteredRows.slice(0, Math.ceil(filteredRows.length / 2)) : filteredRows
-    return buildAnalyticsModel({ ...demoResult(rows, sessions.find(item => item.record_id === ids) || sessions[0]), scope: { total_trade_count: allRows.length, selected_trade_count: rows.length }, partial: state === 'partial', multi_session: ledgerOnly }, prop ? 'prop' : 'app')
+    const result = demoResult(rows, sessions.find(item => item.record_id === ids) || sessions[0])
+    return buildAnalyticsModel({ ...result, scope: { ...result.scope, total_trade_count: allRows.length, selected_trade_count: rows.length, active_filters: filters.side !== 'all' || filters.outcome !== 'all' || Boolean(filters.from || filters.to) }, partial: state === 'partial', multi_session: ledgerOnly }, prop ? 'prop' : 'app')
   }, [ids, filters, ledgerOnly, prop, sessions, state])
   const experiments = useMemo(() => demoAnalyticsRisk(model.ledger), [model])
   const row = model.ledger.find(item => item.tradeId === selected)

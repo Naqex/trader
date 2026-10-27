@@ -150,6 +150,9 @@
 .fxa-fill-positive{fill:var(--report-positive)}
 .fxa-fill-negative{fill:var(--report-negative)}
 .fxa-fill-blue{fill:var(--report-blue)}
+.fxa-zero-mark{stroke:var(--wm-content-muted);stroke-width:2;opacity:.65;vector-effect:non-scaling-stroke}
+.fxa-rate-badge rect{fill:var(--report-positive)}
+.fxa-viz .fxa-rate-badge text{fill:var(--wm-canvas);font-weight:600}
 .fxa-chart-empty{min-height:150px;display:grid;place-content:center;color:var(--wm-content-muted);font-size:13px;text-align:center}
 .fxa-chart-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;color:var(--wm-content-muted);font-size:12px}
 .fxa-segmented{border:1px solid var(--wm-border);display:inline-flex;align-items:center;gap:2px;padding:3px;border-radius:7px;background:var(--wm-surface);max-width:100%;flex-wrap:wrap}

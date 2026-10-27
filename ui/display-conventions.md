@@ -46,9 +46,16 @@ the same Monday-first grid, navigation and day presentation; each retains its ow
 data adapter. Analytics keeps dated rows with unknown PnL in both the day count
 and frequency. Net/win-rate summaries are unavailable for
 incomplete financial data; unknown-time or partial sources also prevent complete
-period totals. Average R weights only known R observations and exposes coverage.
-Empty calendar dates show only the date, with no dash or manufactured zero money. Actual dated data keeps known zero and N/A distinct. No new percentage
-basis is inferred from FX demo data. Live keeps its weekly totals, full-day
+period totals. Average R in daily details weights only known R observations and exposes coverage.
+The calendar menu contains net P/L, return (%) and return (R). Daily return (R)
+sums each trade's original-risk realized R; any missing R makes it N/A.
+Percentage uses pooled source initial capital or day-opening capital: initial
+capital plus all earlier local days' net P/L before local chart filters.
+Day-opening requires explicit unfiltered full history, complete dates and known
+prior P/L; mixed currencies and nonpositive source capitals remain N/A. This is
+a closed-trade balance path, excluding floating P/L and cashflows.
+Capital radios appear only for percentage, with the precise Day-opening label.
+Empty calendar dates show only the date, with no dash or manufactured zero money. Actual dated data keeps known zero and N/A distinct. The percentage definitions are local contracts, not proof of FX backend parity. Live keeps its weekly totals, full-day
 coverage/partial semantics, account selection and notes/reviews.
 Performance group headings sit above their bordered content, with help and controls
 in the external heading. Expectancy/profit factor, winners/losers and side each
@@ -381,7 +388,10 @@ Last sync is the last successful data observation, not a connection expiry date.
   and row count rather than leaving a thin fixed-height bar in a mostly empty row.
   Bar values appear in the shared tooltip on hover, focus or tap, never printed
   over the plot. Keep scale/category labels. Zero has no artificial bar but retains
-  an interactive category target and explicit tooltip value. Dated month labels
+  an interactive category target and explicit tooltip value. Analytics hour/day
+  plots may use a thin neutral mark at the exact zero coordinate for observed
+  groups with a known zero metric only; absent/unknown groups never get a mark. Weekday win rates
+  use green badges for known percentages (including 0%); N/A remains unbadged. Dated month labels
   use horizontal `MM/YYYY`, never a detached year beside the heading. Session
   summaries follow backtest time; aggregate performance and Journal follow real activity.
   Average Monthly Performance uses horizontal rows, at most twelve calendar months,

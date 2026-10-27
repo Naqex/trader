@@ -7,24 +7,25 @@ import { CalendarNavigation, CalendarMonth, CalendarDay } from './CalendarView.j
 import FxSelect from './FxSelect.jsx'
 import ReportInfo from './ReportInfo.jsx'
 
-export const CALENDAR_HELP = 'Lịch ghi nhận giao dịch đã đóng theo thời gian báo cáo và múi giờ đã chọn. Backtest dùng giờ đóng trên biểu đồ; báo cáo hoạt động dùng giờ ghi nhận. Lãi/lỗ ròng đã trừ phí. Màu ô luôn theo lãi/lỗ ròng, kể cả khi xem chỉ số khác.\n\nTỉ lệ thắng = số lệnh thắng ÷ tổng lệnh đã đóng, gồm hòa vốn. R trung bình chỉ tính lệnh có R hoặc rủi ro ban đầu hợp lệ; không thay R thiếu bằng 0.\n\nÔ trống là chưa có giao dịch trong dữ liệu đã chọn, không chứng minh ngày đó có dữ liệu đầy đủ. N/A là thiếu dữ liệu để tính. Giao dịch thiếu thời gian không thể phân bổ vào ngày.'
+export const CALENDAR_HELP = 'Lịch ghi nhận giao dịch đã đóng theo thời gian báo cáo và múi giờ đã chọn. Backtest dùng giờ đóng trên biểu đồ; báo cáo hoạt động dùng giờ ghi nhận. Lãi/lỗ ròng đã trừ phí. Màu ô luôn theo lãi/lỗ ròng, kể cả khi xem chỉ số khác.\n\nLợi nhuận (%) = lãi/lỗ ròng trong ngày ÷ vốn đã chọn × 100. Vốn ban đầu tính mỗi phiên nguồn một lần. Số dư đầu ngày = vốn ban đầu + lãi/lỗ ròng của các ngày trước, trước bộ lọc cục bộ; không bao gồm lãi/lỗ thả nổi hoặc nạp/rút. Thiếu lịch sử đầy đủ, khác tiền tệ hoặc vốn không dương: N/A.\n\nLợi nhuận (R) là tổng R thực hiện của các lệnh trong ngày, mỗi lệnh dùng rủi ro ban đầu của chính nó. Thiếu R của bất kỳ lệnh nào: N/A, không thay bằng 0. Đây không phải R trung bình.\n\nÔ trống là chưa có giao dịch trong dữ liệu đã chọn, không chứng minh ngày đó có dữ liệu đầy đủ. N/A là thiếu dữ liệu để tính. Giao dịch thiếu thời gian không thể phân bổ vào ngày.'
 
 export default function AnalyticsCalendar({ items, timezone, currency, undatedCount = 0, sourcePartial = false }) {
   const { t, fmt, locale } = useTestingLocale()
-  const [chosen,setChosen] = useState(''), [metric,setMetric] = useState('net'), [view,setView] = useState('month'), [selected,setSelected] = useState('')
+  const [chosen,setChosen] = useState(''), [metric,setMetric] = useState('net'), [basis,setBasis] = useState('initial'), [view,setView] = useState('month'), [selected,setSelected] = useState('')
   const month = chosen || items.at(-1)?.label.slice(0,7) || zonedDateKey(Date.now(), timezone).slice(0,7)
   useEffect(() => { setSelected('') }, [items,timezone])
   const indexed = useMemo(() => new Map(items.map(item => [item.label,item])), [items])
   const changeMonth = next => { setChosen(next); setSelected('') }
   const changeView = next => { setView(next); setSelected('') }
-  const suffix = metric === 'net' ? ` ${currency}` : metric === 'winRate' ? '%' : metric === 'averageR' ? ' R' : ''
-  const result = item => !item ? '' : known(item[metric]) ? fmt(item[metric],suffix,metric === 'count' ? 0 : 2) : 'N/A'
+  const suffix = metric === 'net' ? ` ${currency}` : metric === 'profitPct' ? '%' : ' R'
+  const field = metric === 'profitPct' && basis === 'current' ? 'profitPctCurrent' : metric
+  const result = item => !item ? '' : known(item[field]) ? fmt(item[field],suffix,2) : 'N/A'
   const countLabel = count => t('{count} giao dịch', { count: fmt(count,'',0) })
   const rCoverage = item => t('{known}/{total} lệnh có R', { known: fmt(item.rCount,'',0), total: fmt(item.count ?? item.observedCount,'',0) })
   const label = t('Performance calendar')
   const renderDay = (day,compact) => {
     const item = day.inMonth ? indexed.get(day.key) : null
-    const text = `${displayDate(day.key)}${item ? ` · ${result(item)}` : ''}${item ? ` · ${countLabel(item.count)}${metric === 'averageR' ? ` · ${rCoverage(item)}` : ''}${!item.complete ? ` · ${t('Dữ liệu một phần')}` : ''}` : ''}`
+    const text = `${displayDate(day.key)}${item ? ` · ${result(item)}` : ''}${item ? ` · ${countLabel(item.count)}${metric === 'totalR' ? ` · ${rCoverage(item)}` : ''}${!item.complete ? ` · ${t('Dữ liệu một phần')}` : ''}` : ''}`
     return <CalendarDay key={day.key} day={day} compact={compact} value={day.inMonth ? result(item) : undefined} count={item ? countLabel(item.count) : null} note={item && !item.complete ? t('Dữ liệu một phần') : null} tone={item?.net > 0 ? 'positive' : item?.net < 0 ? 'negative' : ''} label={text} tooltip={text} selected={selected === day.key} onClick={() => setSelected(current => current === day.key ? '' : day.key)}/>
   }
   const period = view === 'year' ? month.slice(0,4) : month
@@ -32,7 +33,8 @@ export default function AnalyticsCalendar({ items, timezone, currency, undatedCo
   const selectedItem = indexed.get(selected)
   return <div className="wm-analytics-calendar" data-testid="analytics-calendar">
     <div className="wm-calendar-metric-toolbar">
-      <FxSelect label="Chỉ số lịch" value={metric} onChange={setMetric} options={[{value:'net',label:t('Lãi/lỗ ròng ({currency})',{currency})},{value:'winRate',label:'Tỉ lệ thắng'},{value:'count',label:'Số giao dịch'},{value:'averageR',label:'R trung bình'}]}/>
+      <FxSelect label="Chỉ số lịch" value={metric} onChange={setMetric} options={[{value:'net',label:t('Lãi/lỗ ròng ({currency})',{currency})},{value:'profitPct',label:'Lợi nhuận (%)'},{value:'totalR',label:'Lợi nhuận (R)'}]}/>
+      {metric === 'profitPct' && <fieldset className="wm-calendar-capital"><legend className="sr-only">{t('Cơ sở vốn')}</legend>{[['initial','Vốn ban đầu'],['current','Số dư đầu ngày']].map(([value,label]) => <label key={value}><input type="radio" name="calendar-capital" value={value} checked={basis === value} onChange={() => setBasis(value)}/>{t(label)}</label>)}</fieldset>}
       {(undatedCount > 0 || sourcePartial || items.some(item => !item.complete)) && <span className="fxa-time-incomplete" role="status">{t('Dữ liệu một phần')}<ReportInfo title="Dữ liệu một phần" text="Nguồn chưa đầy đủ hoặc có giao dịch thiếu lãi/lỗ hay thời gian. Lịch chỉ hiển thị các giao dịch có ngày đã nhận."/></span>}
     </div>
     <CalendarNavigation month={month} onChange={changeMonth} view={view} onViewChange={changeView}/>

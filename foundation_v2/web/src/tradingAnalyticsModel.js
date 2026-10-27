@@ -380,9 +380,31 @@ export function advancedAnalytics(model, filters = {}, options = {}) {
   // Calendar must retain dated rows with unknown PnL instead of hiding their gaps.
   const calendarRows = rows.filter(row => parts(row))
   const calendarDays = [...new Set(calendarRows.map(row => parts(row).key))].sort()
+  // Day-opening capital uses the full supplied history, before local chart filters.
+  // A server-filtered/partial ledger cannot establish balances hidden before it.
+  const historyByDay = new Map()
+  const historyDated = timedRows.every(row => calendarParts(row.analytics_time_utc, filters.timezone))
+  const historyComplete = model.result?.scope?.active_filters === false
+    && model.result?.scope?.total_trade_count === timedRows.length
+    && !model.result?.partial && model.result?.status !== 'partial' && historyDated
+  if (historyComplete) for (const row of timedRows) {
+    const day = calendarParts(row.analytics_time_utc, filters.timezone).key
+    if (!historyByDay.has(day)) historyByDay.set(day, [])
+    historyByDay.get(day).push(row)
+  }
+  const openingByDay = new Map(), running = capitalBases.initial.map(item => ({ ...item, capital: item.capital > 0 ? item.capital : null }))
+  for (const day of [...historyByDay.keys()].sort()) {
+    openingByDay.set(day, running.map(item => ({ ...item })))
+    for (const row of historyByDay.get(day)) {
+      const source = running.find(item => item.id === sourceId(row))
+      if (source) source.capital = known(source.capital) && known(row.net_pnl) ? number(source.capital + Number(row.net_pnl)) : null
+    }
+  }
   const calendar = calendarDays.map(label => {
     const group = calendarRows.filter(row => parts(row).key === label)
-    return { label, ...groupedStats(group), rows: group }
+    const value = groupedStats(group)
+    const totalR = group.every(row => known(row.realized_r)) ? number(group.reduce((sum, row) => sum + Number(row.realized_r), 0)) : null
+    return { label, ...value, totalR, profitPctCurrent: periodReturn([value], openingByDay.get(label) || []), rows: group }
   })
   const monthGroups = group(months, row => parts(row).month)
   // Published reference convention; overlapping windows deliberately share trades.
