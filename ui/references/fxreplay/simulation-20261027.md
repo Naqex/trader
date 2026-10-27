@@ -138,3 +138,38 @@ UI-only rollout served index SHA256:
 Port 5180 was stopped and the UI preview was started again; API and MT5 were
 not restarted. The scoped build uses tracked HEAD plus only `FxAnalytics.jsx`.
 Rollback index: `ui-before-compact/index.html` under the evidence directory.
+
+## Scenario controls correction — 2026-10-28
+
+Owner-provided FX screenshots define compact colored outlined chips, a blue Add
+action and a centered multi-row scenario dialog. The local 0–60% defaults remain;
+0% has no delete action. Other chips collapse the delete action to zero width at
+rest, expand on hover/keyboard focus and collapse after pointer selection/leave.
+Touch users can reveal delete on focus. The existing `LegacyModal` supplies the
+portal, background inertness, focus trap, dismissal and focus return.
+
+Add stays available even when all default chips are present. The dialog accepts
+multiple unique SL reductions (integer 0–99%) or RR targets (positive, at most
+100R); values are sorted without changing default colors. The SL >60% caution
+comes from the supplied reference. Confirm selects/runs the last entered value
+through the existing read-only adapter and focuses its results region; Cancel or
+Escape discards drafts. A filled final input can be cleared with its trash action.
+The original financial model/window is unchanged; a reduction multiplies the
+configured stop distance by `(100 - reduction) / 100`.
+
+Evidence: `E:/BACKUP-TRADINGWORKSPACE/scenario-dialog-20261028/`. Scoped production
+build uses tracked HEAD plus `FxAnalytics.jsx`, `fx-analytics.css` and
+`testing-copy.json`; unrelated WIP is excluded. Preview QA passed four responsive
+VI/EN dark/light cases (1920, 1366, 768, 390px), covering measured hover widths,
+mouse/keyboard focus, dialog center, multiple inputs, duplicate/range validation,
+cancel/dismiss, sorted custom 12%/66%, result changes, tab retention, RR6.5 and
+single vertical scroll/no page horizontal overflow. No attempted writes or JS
+errors were observed. This is UI/demo verification, not financial backend parity.
+
+Independent source/desktop/mobile visual review: PASS. The same four cases passed
+on deployed port 5180. Twelve focused analytics model/adapter tests passed.
+Served index SHA256:
+`08f95644e958cd7782813d94efb39d1593344b50644a69445e3bf1b8971dba1f`.
+Rollback index: `ui-before-scenario/index.html` under the evidence root. Existing
+API/UI processes and prior hashed assets were retained; no backend rebuild,
+terminal restart or broker action was part of this correction.

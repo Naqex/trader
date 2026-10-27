@@ -82,8 +82,14 @@ SL/RR show scenario chips, a chart and an always-open trade table without a
 repeated table heading. Do not insert numeric configuration or summary metrics
 between the chips and chart. Selecting a chip runs its configuration through the
 existing read-only experiment adapter; loading and retry stay within that tool.
-The current-SL 0% chip cannot be removed; other remove buttons appear on hover or
-keyboard focus. Only applicable ready API scenarios contribute to paired curves;
+The current-SL 0% chip cannot be removed. Other chips reserve no remove-button
+width at rest and expand on hover or keyboard focus; touch reveals it on focus.
+The blue Add scenario action stays available beside the wrapped chip list and
+opens the existing centered modal. It accepts multiple unique SL reductions
+(whole numbers 0–99%) or positive RR targets up to 100R. Confirm adds and sorts
+them, then selects/runs the last entered scenario; Cancel/Escape discards edits.
+Default colors stay stable when scenarios are added or removed. These choices
+live with the mounted report, like its simulation result. Only applicable ready API scenarios contribute to paired curves;
 unresolved trades stay in the table. Monte Carlo keeps its configuration, summary,
 reset and rerun controls. Tables contain horizontal overflow while vertical
 scroll belongs to the page. Smaller widths collapse groups without scaling down
