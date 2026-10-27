@@ -3,10 +3,6 @@ import { mkdir, readFile, writeFile, readdir } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import path from 'node:path'
 import { chromium } from 'playwright'
-import { monteCarlo } from '../src/analyticsSimulation.js'
-const apiData = await (await fetch('http://127.0.0.1:8020/api/v2/replay/sessions/39b1d068edd64e75864f692f27237852/analytics', { headers: { 'X-Workspace-Id': 'tenant-a' } })).json()
-const oracle = monteCarlo({ method: 'ledger', simulations: 10, trades: 3, capital: 100000, seed: 42 }, apiData.ledger)
-const oracleAverage = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 }).format(oracle.average) + ' USD'
 const origin = 'http://127.0.0.1:5180', session = '39b1d068edd64e75864f692f27237852'
 const out = path.resolve(process.env.FX_ANALYTICS_EVIDENCE || '../evidence/ui-fx-analytics-20261004/journeys')
 await mkdir(out, { recursive: true })
@@ -47,11 +43,7 @@ try {
     await page.screenshot({ path: path.join(out, `drawdown-${theme}-${width}.png`), fullPage: true })
     await page.getByRole('tab', { name: 'Simulation', exact: true }).click()
     await page.getByTestId('analytics-simulation').waitFor()
-    await page.getByLabel('Số lượt mô phỏng', { exact: true }).fill('10')
-    await page.getByLabel('Lệnh mỗi lượt', { exact: true }).fill('3')
-    await page.getByRole('button', { name: 'Chạy Monte Carlo', exact: true }).click()
-    await page.getByRole('img', { name: /Monte Carlo · 10 lượt · seed 42/ }).waitFor()
-    assert.ok((await page.getByTestId('analytics-simulation').innerText()).includes(oracleAverage))
+    assert.equal(await page.getByText('Monte Carlo Simulation', { exact: true }).count(), 0)
     await page.getByLabel('Stop distance (ticks)', { exact: true }).fill('40')
     await page.getByRole('button', { name: 'Chạy SL / RR', exact: true }).click()
     await page.waitForFunction(() => !document.body.innerText.includes('Đang mô phỏng từ đường giá'))
@@ -79,7 +71,7 @@ try {
     const downloadEvent = page.waitForEvent('download')
     await page.getByRole('button', { name: 'Xuất CSV', exact: true }).click()
     const download = await downloadEvent; await download.saveAs(path.join(out, `analytics-${theme}-${width}.csv`))
-    report.cases.push(`real analytics tabs, filters, MC oracle, SL config, CSV, responsive and axe: ${theme}/${width}`)
+    report.cases.push(`real analytics tabs, filters, SL/RR config, CSV, responsive and axe: ${theme}/${width}`)
     await page.goto(route('trade'), { waitUntil: 'domcontentloaded' })
     await page.getByTestId('fx-trade-ledger').waitFor()
     assert.equal(await page.locator('.fxa-trades tbody tr').count(), 10)
