@@ -104,6 +104,16 @@ try {
       assert.equal(await page.getByTestId('fxreplay-shell').getAttribute('data-theme'), theme)
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)
       assert.ok(overflow <= 1, `${theme} ${width}: overflow ${overflow}`)
+      const scrollOwnership = await page.evaluate(() => ({
+        documentOverflow: [
+          getComputedStyle(document.documentElement).overflowY,
+          getComputedStyle(document.body).overflowY,
+          getComputedStyle(document.getElementById('root')).overflowY,
+        ],
+        contentOverflow: getComputedStyle(document.querySelector('.fx-content')).overflowY,
+      }))
+      assert.deepEqual(scrollOwnership.documentOverflow, ['hidden', 'hidden', 'hidden'])
+      assert.equal(scrollOwnership.contentOverflow, 'auto')
       await page.screenshot({ path: path.join(out, `analytics-${theme}-${width}.png`), fullPage: true })
       report.cases.push(`${theme} ${width} real analytics rendered without page overflow`)
     }

@@ -19,3 +19,16 @@ Status: **PASS** for the owner-reported analytics layout slice on localhost `518
 - Served index SHA256: `7d719f32b15d96bf451087f698aaf926d795a291f9aa034efb39206e444d8b39`.
 
 Promotion was UI-only and atomic. The API/UI process was not restarted and the original FX Replay tab was not refreshed or navigated. Rollback index: `E:/BACKUP-TRADINGWORKSPACE/fxreplay-scroll-fix-20261027/ui-before-release/index.html`.
+
+## Follow-up: document-level vertical scroll lock
+
+The remaining double-scroll case came from the document viewport still being
+scrollable while `.fx-content` owned the route content scroll. The shell now
+locks `html`, `body` and `#root`; `.fx-content` remains the only scroll owner.
+
+- Local demo browser check on `5180`: **PASS** at `1920`, `1440` and `390`.
+- Computed overflow at each viewport: document roots `hidden`, `.fx-content`
+  `auto`; no second scrollable root was present.
+- The existing synthetic acceptance runner could not reach its first fixture
+  assertion because the configured API did not expose its expected `60 trade
+  đóng` seed; this is separate from the scroll check.
