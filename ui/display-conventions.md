@@ -34,8 +34,13 @@ available column height, keeping the two sides aligned. Below 1200px these group
 stack, with the main plot returning to a compact height; below 850px the R cards
 also stack. Hour/day
 plots pair; the year/month matrix stays full width; calendar/frequency use 2:1.
-Expectancy and winner/loser statistics share a 1:2 row; side and market-session radars
-share the next 1:2 row. On screens up to 1200px the side/radar panels each use a full
+Expectancy and winner/loser statistics share a 1:2 row. Expectancy and PF each
+have one surface, stacked with a 16px gap under their shared external heading;
+their combined height matches the winner/loser cards. Side and market-session
+radars share the next 1:2 row. Side count and win rate each have one surface,
+with no outer border. Above 1500px the two side cards and four radar cards share
+the same width, top and bottom, with 16px gaps. At 1201–1500px they form three
+aligned columns over two rows. On screens up to 1200px the side/radar panels each use a full
 row, with two radars per row; up to 600px radars stack. Calendar cells put the date
 and trade count on one line, then the result below. On mobile the date stays
 on one line; amounts never wrap digits, and the calendar scrolls internally
