@@ -18,7 +18,7 @@ function tickText(value, domain, locale, suffix) {
   const digits = Math.max(0, Math.min(8, -Math.floor(Math.log10(step))))
   return new Intl.NumberFormat(locale, { maximumFractionDigits: digits + (step / 10 ** Math.floor(Math.log10(step)) === 2.5 ? 1 : 0) }).format(value) + (suffix === '%' ? '%' : '')
 }
-export function AnalyticsCurve({ series, label, suffix = '', onSelect, selected, negative = false, labels = [], axisLabels, timestamps, yTitle, height = 200, stretch = false, sparkline = false, controls = false }) {
+export function AnalyticsCurve({ series, seriesMeta = [], label, suffix = '', onSelect, selected, negative = false, labels = [], axisLabels, timestamps, yTitle, height = 200, stretch = false, sparkline = false, controls = false }) {
   const { t, fmt, locale } = useTestingLocale(), id = useId()
   const [ref, width, measuredHeight] = useSize(height, stretch)
   const [range, setRange] = useState([0, 1]), [tool, setTool] = useState('zoom'), [brush, setBrush] = useState(null)
@@ -46,12 +46,17 @@ export function AnalyticsCurve({ series, label, suffix = '', onSelect, selected,
   const visibleTicks = []
   if (axisLabels) {
     const candidates = Array.from({length:count},(_,index)=>index).filter(index=>inView(index) && axisLabels[index+start] && (index===0 || axisLabels[index+start]!==axisLabels[index+start-1]))
-    const gap = Math.max(56,...candidates.map(index=>axisLabels[index+start].length*7+20))
-    for (const index of candidates) if (!visibleTicks.length || x(index)-x(visibleTicks.at(-1))>=gap) visibleTicks.push(index)
+    const bounds = index => {
+      const size = axisLabels[index+start].length * 7
+      const left = x(index) - (index === 0 ? 0 : index === count - 1 ? size : size / 2)
+      return {left,right:left+size}
+    }
+    const fits = (previous,next) => bounds(next).left - bounds(previous).right >= 20
+    for (const index of candidates) if (!visibleTicks.length || fits(visibleTicks.at(-1),index)) visibleTicks.push(index)
     const last=candidates.at(-1)
     if (last!==undefined && visibleTicks.at(-1)!==last) {
-      if (visibleTicks.length>1 && x(last)-x(visibleTicks.at(-1))<gap) visibleTicks.pop()
-      if (!visibleTicks.length || x(last)-x(visibleTicks.at(-1))>=gap) visibleTicks.push(last)
+      while (visibleTicks.length>1 && !fits(visibleTicks.at(-1),last)) visibleTicks.pop()
+      if (!visibleTicks.length || fits(visibleTicks.at(-1),last)) visibleTicks.push(last)
     }
   } else if (count > 0) visibleTicks.push(...[...new Set(width < 480 ? [0, count - 1] : [0, Math.floor((count - 1) / 2), count - 1])].filter(inView))
   const clampRange = (from, span) => { const size = Math.min(1, Math.max(minimumSpan, span)), left = Math.max(0, Math.min(1 - size, from)); return [left, left + size] }
@@ -105,7 +110,7 @@ export function AnalyticsCurve({ series, label, suffix = '', onSelect, selected,
     {controls && <div className="fxa-chart-tools" role="group" aria-label={t('Công cụ biểu đồ')}>
       {[["zoom-in",'Phóng to biểu đồ',()=>zoom(.5),range[1]-range[0]<=minimumSpan],['zoom-out','Thu nhỏ biểu đồ',()=>zoom(2),range[1]-range[0]>=1],['zoom-area','Chọn vùng phóng to',()=>setTool('zoom'),false],['hand','Kéo biểu đồ',()=>setTool('pan'),false],['home','Đặt lại biểu đồ',()=>{setRange([0,1]);setBrush(null)},range[0]===0&&range[1]===1]].map(([icon,text,action,disabled])=><button key={icon} type="button" aria-label={t(text)} data-tooltip={t(text)} disabled={!canInteract || disabled} aria-pressed={icon==='zoom-area'?tool==='zoom':icon==='hand'?tool==='pan':undefined} onClick={action}><TestingIcon kind={icon} size={16}/></button>)}
     </div>}
-    <svg viewBox={`0 0 ${width} ${height}`} role={series.length === 1 ? 'group' : 'img'} aria-label={label} tabIndex={controls ? 0 : undefined}
+    <svg viewBox={`0 0 ${width} ${height}`} role={series.length === 1 || seriesMeta.length ? 'group' : 'img'} aria-label={label} tabIndex={controls ? 0 : undefined}
       onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={()=>{gesture.current=null;setBrush(null);suppressClick.current=false}}
       onPointerLeave={event=>{if(!event.currentTarget.hasPointerCapture(event.pointerId)){gesture.current=null;setBrush(null)}}}
       onLostPointerCapture={()=>{gesture.current=null;setBrush(null)}}
@@ -115,8 +120,14 @@ export function AnalyticsCurve({ series, label, suffix = '', onSelect, selected,
       {!compact && ticks.map((value, index) => <g key={value}><line className="fxa-gridline" x1={left} x2={right} y1={y(value)} y2={y(value)}/><text x={left - 10} y={y(value)} dominantBaseline="middle" textAnchor="end">{axis[index]}</text></g>)}
       {!compact && yTitle && <text className="fxa-axis-title" transform={`translate(14 ${(top+edge)/2}) rotate(-90)`} textAnchor="middle">{yTitle}</text>}
       {!domain && <text x={(left+right)/2} y={(top+edge)/2} textAnchor="middle">{t('Chưa có dữ liệu')}</text>}
-      {pathGroups.map(({ points, d, seriesIndex }, index) => <g key={index} clipPath={`url(#${id}-plot)`} style={{ color: series.length > 1 ? `var(--report-${['blue', 'positive', 'negative'][seriesIndex % 3]})` : undefined }}>{series.length === 1 && <path d={`${d} L${points.at(-1)[0]},${edge} L${points[0][0]},${edge} Z`} fill={`url(#${id})`}/>}<path d={d} fill="none" stroke="currentColor" strokeWidth="2" opacity={series.length > 1 ? .45 : 1}/>{points.length === 1 && <circle cx={points[0][0]} cy={points[0][1]} r="3" fill="currentColor"/>}</g>)}
-      {series.length === 1 && paths[0].map((point, index) => finite(point.value) && inView(index) && <circle key={index} className="fxa-viz-point" cx={x(index)} cy={y(point.value)} r={point.tradeId === selected ? 5 : 3} tabIndex={onSelect || count <= 50 ? 0 : undefined} role={onSelect ? 'button' : 'img'} aria-label={detail(index)} data-tooltip={detail(index)} onClick={() => selectPoint(point)} onKeyDown={event => { if (['Enter', ' '].includes(event.key) && point.tradeId && onSelect) { event.preventDefault(); selectPoint(point) } }}/>) }
+      {pathGroups.map(({ points, d, seriesIndex }, index) => <g key={index} data-series={seriesMeta[seriesIndex]?.label} clipPath={`url(#${id}-plot)`} style={{ color: seriesMeta[seriesIndex]?.color || (series.length > 1 ? `var(--report-${['blue', 'positive', 'negative'][seriesIndex % 3]})` : undefined) }}>{series.length === 1 && !seriesMeta.length && <path d={`${d} L${points.at(-1)[0]},${edge} L${points[0][0]},${edge} Z`} fill={`url(#${id})`}/>}<path d={d} fill="none" stroke="currentColor" strokeWidth={seriesMeta[seriesIndex]?.selected ? 2.5 : 2} opacity={seriesMeta.length ? 1 : series.length > 1 ? .45 : 1}/>{points.length === 1 && <circle cx={points[0][0]} cy={points[0][1]} r="3" fill="currentColor"/>}</g>)}
+      {seriesMeta.length > 0 && paths.map((points, seriesIndex) => {
+        const lastVisible = points.findLastIndex((point,index)=>finite(point.value) && inView(index))
+        return <g key={seriesIndex} style={{color:seriesMeta[seriesIndex]?.color}}>{points.map((point,index) => {
+        const detail = `${labelAt(index)} · ${seriesMeta[seriesIndex]?.label}: ${fmt(point.value,suffix)}`
+        return finite(point.value) && inView(index) && <circle key={index} className="fxa-series-point" cx={x(index)} cy={y(point.value)} r="6" tabIndex={index===lastVisible?0:undefined} role="img" aria-label={detail} data-tooltip={detail} data-tooltip-touch=""/>
+      })}</g>})}
+      {series.length === 1 && !seriesMeta.length && paths[0].map((point, index) => finite(point.value) && inView(index) && <circle key={index} className="fxa-viz-point" cx={x(index)} cy={y(point.value)} r={point.tradeId === selected ? 5 : 3} tabIndex={onSelect || count <= 50 ? 0 : undefined} role={onSelect ? 'button' : 'img'} aria-label={detail(index)} data-tooltip={detail(index)} onClick={() => selectPoint(point)} onKeyDown={event => { if (['Enter', ' '].includes(event.key) && point.tradeId && onSelect) { event.preventDefault(); selectPoint(point) } }}/>) }
       {!compact && visibleTicks.map(index => <g className="fxa-x-tick" key={index}>{axisLabels && <line className="fxa-gridline" x1={x(index)} x2={x(index)} y1={edge} y2={edge+5}/>}<text x={x(index)} y={height - 10} textAnchor={index === 0 ? 'start' : index === count - 1 ? 'end' : 'middle'}>{axisLabels ? axisLabels[index+start] : labelAt(index)}</text></g>)}
       {series.length === 1 && <rect x={left} y={top} width={Math.max(0, right - left)} height={edge - top} fill="transparent" pointerEvents="none"/>}
       {brush && <rect x={Math.min(...brush)} y={top} width={Math.abs(brush[1]-brush[0])} height={edge-top} className="fxa-chart-brush" pointerEvents="none"/>}

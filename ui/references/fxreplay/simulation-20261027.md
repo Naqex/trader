@@ -251,3 +251,57 @@ attempted writes. Served index SHA256:
 `771972309421952442138d25026c6a81ab7619958524db9b73b0d63f5cf204cf`.
 Rollback index: `ui-before-scroll-results/index.html` under the evidence root.
 UI-only promotion retained existing API/UI processes and old hashed assets.
+
+## All-scenario curves and numeric dates — 2026-10-28
+
+The owner's additional reference shows one cumulative-R line per SL level,
+not an original-versus-selected pair. Explicit Run now evaluates all configured
+SL/RR scenarios sequentially under one abort controller. The mounted report caches
+compact eligible observations and table outcomes. Selecting cached chips only
+changes the table/highlight; adding computes uncached values, removing excludes
+their lines and ranking. Removing every RR hides prior results; adding a cached
+value back restores the grid without another read. Scope changes abort the batch
+and discard its UI cache. Failed reads identify their scenario values and Retry
+only fills missing results, retaining prior successes.
+
+The chart and ranking share one intersection of eligible trade IDs in market
+close order. A successfully read but empty scenario is not silently removed from
+that intersection. An empty common sample shows an explicit unavailable state,
+never an invented curve or winner. Each line uses its chip's stable palette color;
+the selected line is thicker. Per-point hover/touch and one visible endpoint
+keyboard stop per line expose scenario, chart date and R. Other chart consumers
+retain their default colors/opacity/area behavior. Numeric date axes use shared
+`displayDate` in the chosen timezone (`dd/MM/yyyy`), with anchored text bounds
+preventing crowded labels on mobile. The Gốc/Mô phỏng legend has been removed.
+
+Financial engine semantics are unchanged: local SL reductions still scale the
+configured base tick distance (native report default 20 ticks; demo 10), not a
+newly implemented per-trade original-SL distance. Curves normalize their outcomes
+by original risk. All-line presentation is not evidence of numerical FX parity.
+
+Evidence: `E:/BACKUP-TRADINGWORKSPACE/scenario-multiline-20261028/`. Production
+build and 25 focused chart/model/adapter/date tests passed. Final preview QA
+(`preview-final/report.json`) passed 1920 VI dark, 1366 EN light, 768 VI dark and
+390 VI dark. It checked all 13 SL endpoints against independently summed demo
+outcomes, seven RR lines, chip/path colors, numeric dates and measured tick gaps,
+zoom, keyboard tooltip targets, removed legend, dialog/selection/removal, native
+grid scroll chaining and the single vertical scroll owner. A first QA attempt
+compared line color with neutral chip text instead of its colored border; that
+oracle was corrected. Mobile label spacing was tightened by an explicit bounds
+check before final acceptance.
+
+Six labeled isolated fixture cases (`fixture/report.json`) passed: sequential
+reads with one failure and retry-only-missing, cached grid selection, remove-all
+RR then re-add cached 2R without requests, scope-change abort, empty common sample,
+and warnings at three viewport/theme combinations. Independent review found and
+verified fixes for stale results after deleting the final RR and an Intro trap
+when restoring cached RR. Final source/desktop/mobile review passed. These are
+UI/model fixtures and do not claim real backend or FX formula parity.
+
+The same four responsive journeys passed on deployed port 5180, with no JS errors
+or attempted writes. Separate rendered tooltip checks passed for keyboard focus
+at 1920px and touch at 390px, including scenario/date/R content and Escape dismissal.
+Served index SHA256:
+`6ad1beb2d973b6e702aa32e6cf552bd35fe6774a5c64edc275447ffa772eabb2`.
+Rollback index: `ui-before-multiline/index.html` under the evidence root. UI-only
+promotion retained the existing processes, private branding and prior hashed assets.

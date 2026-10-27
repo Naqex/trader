@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { bucketCurve, excursionSummary, scenarioComparison, scenarioRiskCurve, compareScenarioRuns, realizedRiskSeries, idealRiskSummary } from '../src/analyticsPresentation.js'
+import { bucketCurve, excursionSummary, scenarioComparison, scenarioRiskCurve, scenarioChartSeries, compareScenarioRuns, realizedRiskSeries, idealRiskSummary } from '../src/analyticsPresentation.js'
 
 test('scenario comparison uses matching observed trades and never substitutes unresolved PnL', () => {
   const trades=[{tradeId:'a',net_pnl:10},{tradeId:'b',net_pnl:-5},{tradeId:'c',net_pnl:30}]
@@ -75,6 +75,23 @@ test('scenario ranking handles ties, disjoint samples and numeric overflow witho
   assert.equal(compareScenarioRuns({0:curve('a',-1),5:curve('b',20)},[0,5]).commonCount,0)
   const overflow={eligible:[{tradeId:'a',actualR:1,simulatedR:1e308},{tradeId:'b',actualR:1,simulatedR:1e308}]}
   assert.deepEqual(compareScenarioRuns({0:overflow,5:overflow},[0,5]).bestValues,[])
+})
+
+test('scenario chart aligns all computed active lines to the same sample used by ranking', () => {
+  const runs = {
+    0:{eligible:[{tradeId:'a',ms:1,actualR:1,simulatedR:100},{tradeId:'b',ms:2,actualR:-1,simulatedR:-3},{tradeId:'c',ms:3,actualR:2,simulatedR:5}]},
+    5:{eligible:[{tradeId:'b',ms:2,actualR:-1,simulatedR:-2},{tradeId:'c',ms:3,actualR:2,simulatedR:6}]},
+    10:{eligible:[]},
+  }
+  const chart = scenarioChartSeries(runs,[0,5,15])
+  assert.deepEqual(chart.values,[0,5])
+  assert.deepEqual(chart.timestamps,[2,3])
+  assert.deepEqual(chart.series.map(series=>series.map(point=>point.value)),[[-3,2],[-2,4]])
+  assert.equal(chart.series[1].at(-1).value,compareScenarioRuns(runs,[0,5,15]).bestTotal)
+  assert.deepEqual(scenarioChartSeries(runs,[5]).series[0].map(point=>point.value),[-2,4])
+  assert.deepEqual(scenarioChartSeries(runs,[0,5,10]).timestamps,[])
+  assert.deepEqual(scenarioChartSeries(runs,[0,5,10]).series,[[],[],[]])
+  assert.deepEqual(scenarioChartSeries({},[0,5]),{values:[],timestamps:[],series:[]})
 })
 test('MAE bins require original risk and retain known zero, not configured or negative R', () => {
   const trades=[{tradeId:'a',net_pnl:10},{tradeId:'b',net_pnl:20},{tradeId:'c',net_pnl:-5}]

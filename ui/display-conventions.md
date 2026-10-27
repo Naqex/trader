@@ -80,26 +80,37 @@ Simulation uses three full-width sections stacked in order: SL, RR, Monte Carlo.
 Each starts with a short introduction and an explicit Run action. After running,
 SL/RR show scenario chips, a chart and an always-open trade table without a
 repeated table heading. Do not insert numeric configuration or summary metrics
-between the chips and chart. Selecting a chip runs its configuration through the
-existing read-only experiment adapter; loading and retry stay within that tool.
+between the chips and chart. Run computes all current scenario configurations
+sequentially through the existing read-only experiment adapter, with one abort
+scope for the batch. Failed scenarios retain successful results and can be retried.
+Selecting a cached chip changes the table without another read. Added scenarios
+compute only missing values; loading and retry stay within that tool.
 The current-SL 0% chip cannot be removed. Other chips reserve no remove-button
 width at rest and expand on hover or keyboard focus; touch reveals it on focus.
 The blue Add scenario action stays available beside the wrapped chip list and
 opens the existing centered modal. It accepts multiple unique SL reductions
 (whole numbers 0–99%) or positive RR targets up to 100R. Confirm adds and sorts
-them, then selects/runs the last entered scenario; Cancel/Escape discards edits.
+them, computes uncached values and selects the last entered scenario;
+Cancel/Escape discards edits. Removing the last RR hides its old chart/table;
+adding a cached RR back restores results without trapping the view in Intro.
 Default colors stay stable when scenarios are added or removed. These choices
 live with the mounted report, like its simulation result. SL/RR plot cumulative R
 against market close dates in the selected timezone, sorted without reordering
-the table. There is no ordinal/Start anchor. Both curves use each trade's original
-risk denominator; missing risk/dates or unresolved outcomes are excluded as a pair
-with explicit coverage. No capital-percentage denominator is invented. The table
+the table. Dates use shared `displayDate` (`dd/MM/yyyy`) on axes and tooltips, with
+label density reduced on narrow screens. There is no ordinal/Start anchor.
+Every computed active scenario has a line using the same color as its chip;
+highlight the selected line. The common eligible trade sample aligns all lines
+and the ranking. Missing risk/dates or unresolved outcomes stay outside this
+sample, with explicit coverage. Every line uses each trade's original-risk
+denominator; no capital-percentage denominator is invented. There is no separate
+Gốc/Mô phỏng legend or extra baseline. Hover/touch points and keyboard endpoints
+identify the scenario, date and R. The table
 uses shared DataTable styling and its horizontal rules reach both panel edges;
 numeric columns align right. Unresolved trades stay in the table.
-Results sit below the chart/legend and above the table. Rank only active scenarios
+Results sit below the chart and above the table. Rank only active scenarios
 that have completed a run, using their shared eligible trades and signed total R;
 one run or no shared sample cannot establish a winner. Ties name their actual
-count. Cache compact curve observations within the mounted report scope, not full
+count. Cache compact eligible observations and table outcomes within the mounted report scope, not full
 experiment payloads. Sample-size and missing-outcome/risk/date notices appear only
 when applicable; healthy complete samples do not inherit reference warnings.
 Horizontal-only scenario tables opt into DataTable `scrollAxis="x"`: contain

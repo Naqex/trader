@@ -7,7 +7,7 @@ import { advancedAnalytics, known, number, periodReturn } from './tradingAnalyti
 import './fx-analytics.css'
 import { AnalyticsCurve, AnalyticsBars, AnalyticsDailyBars, AnalyticsRing, AnalyticsRadar } from './AnalyticsCharts.jsx'
 export { AnalyticsCurve } from './AnalyticsCharts.jsx'
-import { profitFactorGauge, bucketCurve, excursionSummary, scenarioRiskCurve, compareScenarioRuns, realizedRiskSeries, idealRiskSummary } from './analyticsPresentation.js'
+import { profitFactorGauge, bucketCurve, excursionSummary, scenarioRiskCurve, scenarioChartSeries, compareScenarioRuns, realizedRiskSeries, idealRiskSummary } from './analyticsPresentation.js'
 import { displayDate } from './dateFormat.js'
 import { currencyLabel } from './moneyFormat.js'
 import { simulationMoments } from './analyticsSimulation.js'
@@ -273,6 +273,7 @@ function SimulationIntro({ description, onRun }) {
 const STOP_LOSS_SCENARIOS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]
 const RR_SCENARIOS = [1, 1.5, 2, 2.5, 3, 4, 5]
 const SCENARIO_TONES = ['blue', 'violet', 'yellow', 'red', 'teal', 'blue', 'orange', 'purple', 'lime', 'orange', 'cyan', 'green', 'teal']
+const SCENARIO_COLORS = { blue:'#258bff', violet:'#9a7cff', yellow:'#e5bd00', red:'#ef5350', teal:'#13c9a5', orange:'#ff8b20', purple:'#a536ff', lime:'#8bcf00', cyan:'#00b8e6', green:'#00b85a' }
 
 function AddScenarioDialog({ rr, scenarios, onClose, onAdd }) {
   const { t } = useTestingLocale(), id = useId(), nextId = useRef(1)
@@ -312,30 +313,34 @@ function AddScenarioDialog({ rr, scenarios, onClose, onAdd }) {
 }
 
 function ScenarioSimulator({ kind, model, data, config, loadExperiment, timezone }) {
-  const { t, fmt, locale } = useTestingLocale(), job = useSimulationRun(), rr = kind === 'risk_reward'
+  const { t, fmt } = useTestingLocale(), job = useSimulationRun(), rr = kind === 'risk_reward'
   const [draft, setDraft] = useState(config), [scenarios, setScenarios] = useState(() => rr ? RR_SCENARIOS : STOP_LOSS_SCENARIOS)
   const [adding, setAdding] = useState(false)
   const [runs, setRuns] = useState({})
+  const [failed, setFailed] = useState([])
   const resultsRef = useRef(null)
   const currency = model.result?.account_currency || t('Đơn vị tài khoản'), busy = job.phase === 'loading'
   const title = rr ? 'RR Simulator' : 'Stop Loss Simulator'
-  const riskCurve = useMemo(() => job.result ? scenarioRiskCurve(job.result.rows, data.rows, kind) : null, [job.result, data.rows, kind])
-  const chartDateFormat = new Intl.DateTimeFormat(locale, { timeZone: timezone || 'UTC', day: '2-digit', month: 'short', year: '2-digit' })
-  const chartDates = riskCurve?.timestamps.map(time => chartDateFormat.format(new Date(time))) || []
-  const byId = useMemo(() => new Map((job.result?.rows || []).map(row => [row.trade_id,row])), [job.result])
   const scenarioOptions = rr ? RR_SCENARIOS : STOP_LOSS_SCENARIOS
   const selectedScenario = rr ? Number(draft.target_r) : Math.round((1 - Number(draft.stop_multiplier)) * 100)
+  const riskCurve = scenarios.includes(selectedScenario) ? runs[selectedScenario] : null
+  const byId = useMemo(() => new Map((riskCurve?.rows || []).map(row => [row.trade_id,row])), [riskCurve])
+  const chart = useMemo(() => scenarioChartSeries(runs, scenarios), [runs, scenarios])
+  const chartDates = chart.timestamps.map(time => displayDate(time, {timeZone:timezone || 'UTC'}))
+  const scenarioLabel = value => rr ? `${value}R` : `${value}%`
+  const scenarioColor = value => SCENARIO_COLORS[SCENARIO_TONES[(scenarioOptions.includes(value) ? scenarioOptions.indexOf(value) : Math.round(value)) % SCENARIO_TONES.length]]
   const comparison = useMemo(() => compareScenarioRuns(runs, scenarios), [runs, scenarios])
   const readyCount = data.rows.filter(trade => byId.get(trade.tradeId)?.[kind]?.status === 'ready' && known(byId.get(trade.tradeId)?.[kind]?.net_pnl) && known(trade.net_pnl)).length
   const smallSample = comparison.bestValues.length ? comparison.decisiveCount < 5 : riskCurve?.eligible.filter(row => Math.abs(row.actualR) > 1e-12).length < 5
-  const selectScenario = value => {
+  const selectScenario = (value, values = [value]) => {
     const next = { ...draft, ...(rr ? { target_r: value } : { stop_multiplier: (100 - value) / 100 }) }
     setDraft(next)
-    run(next)
+    run(next, values)
   }
   const removeScenario = value => {
     const remaining = scenarios.filter(item => item !== value)
     setScenarios(remaining)
+    setFailed(current => current.filter(item => item !== value))
     if (selectedScenario === value) {
       if (remaining.length) selectScenario(remaining[0])
       else job.reset()
@@ -344,42 +349,55 @@ function ScenarioSimulator({ kind, model, data, config, loadExperiment, timezone
   const addScenarios = values => {
     setScenarios(current => [...current, ...values].sort((a, b) => a - b))
     setAdding(false)
-    selectScenario(values.at(-1))
+    selectScenario(values.at(-1), values)
     requestAnimationFrame(() => resultsRef.current?.focus({ preventScroll: true }))
   }
-  const run = (configuration = draft) => {
-    const request = Object.fromEntries(Object.entries(configuration).map(([key, value]) => [key, Number(value)]))
+  const run = (configuration = draft, values = scenarios) => {
+    const selected = rr ? Number(configuration.target_r) : Math.round((1 - Number(configuration.stop_multiplier)) * 100)
+    const pending = [...new Set([selected, ...values])].filter(value => !runs[value])
+    if (!pending.length) return
     job.run(async signal => {
       if (!loadExperiment) throw new Error('Nguồn này chưa hỗ trợ mô phỏng từ đường giá.')
-      const payload = await loadExperiment(request, signal)
-      if (!signal.aborted) {
-        const value = rr ? request.target_r : Math.round((1 - request.stop_multiplier) * 100)
-        const curve = scenarioRiskCurve(payload.rows, data.rows, kind)
-        setRuns(current => ({ ...current, [value]: curve }))
+      const failures = []
+      for (const value of pending) {
+        if (signal.aborted) return
+        const request = Object.fromEntries(Object.entries({ ...configuration, ...(rr ? {target_r:value} : {stop_multiplier:(100-value)/100}) }).map(([key, value]) => [key, Number(value)]))
+        try {
+          const payload = await loadExperiment(request, signal)
+          if (signal.aborted) return
+          const {eligible} = scenarioRiskCurve(payload.rows, data.rows, kind)
+          const rows = payload.rows.map(row => ({trade_id:row.trade_id,[kind]:row[kind]}))
+          setRuns(current => ({ ...current, [value]: {eligible, rows} }))
+        } catch (error) {
+          if (signal.aborted) return
+          failures.push(value)
+        }
       }
-      return payload
+      if (!signal.aborted) setFailed(current => [...current.filter(value => !pending.includes(value)), ...failures])
+      return true
     })
   }
   return <ReportSection headingOutside className="fxa-scenario-panel" title={title}
     help={rr ? 'Giữ SL gốc được xác minh lúc vào lệnh, thay TP theo R. Chỉ mô phỏng trong thời gian giữ lệnh gốc tới cutoff; không giả lập đường giá sau khi thoát.' : 'Thử khoảng dừng lỗ cấu hình trong thời gian giữ lệnh gốc. Giữ phí và quy tắc intrabar; không sửa giao dịch đã lưu.'}
     actions={rr ? <a className="fxa-help-link" href="https://fx-replay.notion.site/What-is-the-RR-Simulator-2479db20207480bb883bd263526d24de" target="_blank" rel="noreferrer">{t('Cách tính')} ↗</a> : null}>
-    {job.phase === 'idle' && scenarios.length ? <SimulationIntro description={rr ? 'Thử mục tiêu chốt lời khác nhau, giữ nguyên SL gốc và so sánh với giao dịch đã đóng.' : 'Thử khoảng dừng lỗ khác nhau và so sánh với giao dịch đã đóng.'} onRun={() => run()}/> : <>
+    {job.phase === 'idle' && scenarios.length > 0 && !scenarios.some(value => runs[value]) ? <SimulationIntro description={rr ? 'Thử mục tiêu chốt lời khác nhau, giữ nguyên SL gốc và so sánh với giao dịch đã đóng.' : 'Thử khoảng dừng lỗ khác nhau và so sánh với giao dịch đã đóng.'} onRun={() => run()}/> : <>
       <div className="fxa-simulation-scenarios" role="group" aria-label={t(rr ? 'Mục tiêu R' : 'Mức giảm SL')}>
-        <div className="fxa-scenario-chips">{scenarios.map(value => <span className={`fxa-scenario-chip tone-${SCENARIO_TONES[(scenarioOptions.includes(value) ? scenarioOptions.indexOf(value) : Math.round(value)) % SCENARIO_TONES.length]}`} key={value}><button type="button" aria-pressed={selectedScenario === value} disabled={busy} onClick={() => selectScenario(value)}>{rr ? `${value}R` : <>{value}%{value === 0 && <small> ({t('SL hiện tại')})</small>}</>}</button>{(rr || value !== 0) && <button type="button" className="fxa-scenario-chip-remove" aria-label={t('Xóa kịch bản {value}', { value: rr ? `${value}R` : `${value}%` })} disabled={busy} onClick={() => removeScenario(value)}>×</button>}</span>)}</div>
+        <div className="fxa-scenario-chips">{scenarios.map(value => <span className="fxa-scenario-chip" style={{'--fxa-chip-color':scenarioColor(value)}} key={value}><button type="button" aria-pressed={selectedScenario === value} disabled={busy} onClick={() => selectScenario(value)}>{rr ? `${value}R` : <>{value}%{value === 0 && <small> ({t('SL hiện tại')})</small>}</>}</button>{(rr || value !== 0) && <button type="button" className="fxa-scenario-chip-remove" aria-label={t('Xóa kịch bản {value}', { value: rr ? `${value}R` : `${value}%` })} disabled={busy} onClick={() => removeScenario(value)}>×</button>}</span>)}</div>
         <button type="button" className="fxa-add-scenario" disabled={busy} onClick={() => setAdding(true)}><TestingIcon kind="plus"/>{t('Thêm kịch bản')}</button>
       </div>
       {adding && <AddScenarioDialog rr={rr} scenarios={scenarios} onClose={() => setAdding(false)} onAdd={addScenarios}/>}
       <div ref={resultsRef} tabIndex={-1} role="region" aria-label={t(title)} aria-busy={busy} className="fxa-simulation-results">
         {busy && <p role="status" className="fxa-simulation-progress">{t('Đang mô phỏng từ đường giá…')}</p>}
-        {job.phase === 'error' && <p role="alert" className="fxa-error">{t(job.error)}</p>}
+        {(job.phase === 'error' || failed.length > 0) && <div role="alert" className="fxa-error">{failed.length ? t('Chưa tính được kịch bản {values}.', {values:failed.map(scenarioLabel).join(', ')}) : t(job.error)} <button type="button" className="fxa-button" disabled={busy} onClick={() => run()}>{t('Thử lại')}</button></div>}
+        {chart.timestamps.length ? <AnalyticsCurve series={chart.series} seriesMeta={chart.values.map(value => ({label:scenarioLabel(value),color:scenarioColor(value),selected:value===selectedScenario}))} label={t('R lũy kế theo ngày đóng lệnh trên chart')} labels={chartDates} axisLabels={chartDates} timestamps={chart.timestamps} yTitle={t('R lũy kế')} suffix=" R" height={280} controls/> : !busy && <div className="fxa-chart-empty">{t('Chưa có tập giao dịch chung đủ dữ liệu cho biểu đồ R.')}</div>}
         {riskCurve && <>
-          {riskCurve.eligible.length ? <><AnalyticsCurve series={[riskCurve.baseline,riskCurve.scenario]} label={t('R lũy kế theo ngày đóng lệnh trên chart')} labels={chartDates} axisLabels={chartDates} timestamps={riskCurve.timestamps} yTitle={t('R lũy kế')} suffix=" R" height={280} controls/><div className="fxa-inline-legend"><span><i/>{t('Gốc')}</span><span><i/>{t('Mô phỏng')}</span><Info text="1R là rủi ro ban đầu của từng lệnh. Mỗi đường cộng R sau phí của cùng các giao dịch đủ dữ liệu; trục ngang là ngày đóng lệnh trên chart theo múi giờ đã chọn. Không phải thời gian thực hay số dư tiền."/></div></> : <div className="fxa-chart-empty">{t('Chưa đủ dữ liệu mô phỏng')}</div>}
           <section className="fxa-scenario-summary" aria-label={t('Kết quả mô phỏng')}>
             <div className="fxa-scenario-summary-heading"><h3>{t('Kết quả')}</h3><p>
               {comparison.bestValues.length === 1 ? t(rr ? 'Trong {tested} kịch bản đã chạy, mục tiêu {value}R cho tổng R cao nhất trên cùng {count} giao dịch ({r}R).' : 'Trong {tested} kịch bản đã chạy, giảm SL {value}% cho tổng R cao nhất trên cùng {count} giao dịch ({r}R).', { tested: comparison.testedCount, value: fmt(comparison.bestValues[0]), count: comparison.commonCount, r: fmt(comparison.bestTotal) })
                 : comparison.bestValues.length > 1 ? t('Có {tied}/{tested} kịch bản đã chạy cùng tổng R cao nhất trên {count} giao dịch chung ({r}R).', { tied: comparison.bestValues.length, tested: comparison.testedCount, count: comparison.commonCount, r: fmt(comparison.bestTotal) })
                 : t('Kịch bản hiện tại dùng {known}/{total} giao dịch đủ dữ liệu cho biểu đồ R.', { known: riskCurve.eligible.length, total: data.count })}
             </p></div>
+            {chart.timestamps.length < riskCurve.eligible.length && <p className="fxa-scenario-result-notice"><TestingIcon/>{t('Biểu đồ so sánh dùng {known}/{total} giao dịch chung đủ dữ liệu.', {known:chart.timestamps.length,total:data.count})}</p>}
             {riskCurve.eligible.length > 0 && smallSample && <p className="fxa-scenario-result-notice"><TestingIcon/>{t('Mẫu có dưới 5 giao dịch không hòa vốn; kết quả có thể kém ổn định.')}</p>}
             {readyCount < data.count && <p className="fxa-scenario-result-notice"><TestingIcon/>{t('Có {count} giao dịch thiếu dữ liệu hoặc chưa xác định được kết quả mô phỏng; vẫn giữ trong bảng.', { count: data.count - readyCount })}</p>}
             {readyCount > riskCurve.eligible.length && <p className="fxa-scenario-result-notice"><TestingIcon/>{t('Có {count} giao dịch đã mô phỏng nhưng thiếu rủi ro gốc hoặc ngày trên chart để tính R.', { count: readyCount - riskCurve.eligible.length })}</p>}

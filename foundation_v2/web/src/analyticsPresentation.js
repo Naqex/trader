@@ -90,9 +90,26 @@ export function scenarioRiskCurve(rows, trades, key) {
   return { eligible, baseline, scenario, timestamps: eligible.map(row => row.ms) }
 }
 
+function scenarioRunSample(runs, activeValues) {
+  const curves = activeValues.flatMap(value => runs[value] ? [{ value, curve: runs[value], byId: new Map(runs[value].eligible.map(row => [row.tradeId, row])) }] : [])
+  const common = curves.length ? curves[0].curve.eligible.filter(row => curves.every(item => item.byId.has(row.tradeId))) : []
+  return { curves, common }
+}
+
+export function scenarioChartSeries(runs, activeValues) {
+  const { curves, common } = scenarioRunSample(runs, activeValues)
+  return { values: curves.map(item => item.value), timestamps: common.map(row => row.ms),
+    series: curves.map(item => {
+      let total = 0
+      return common.map(row => {
+        total = total === null ? null : number(total + item.byId.get(row.tradeId).simulatedR)
+        return { tradeId: row.tradeId, value: total }
+      })
+    }) }
+}
+
 export function compareScenarioRuns(runs, activeValues) {
-  const curves = activeValues.flatMap(value => runs[value] ? [{ value, curve: runs[value], ids: new Set(runs[value].eligible.map(row => row.tradeId)) }] : [])
-  const common = curves.length ? curves[0].curve.eligible.filter(row => curves.every(item => item.ids.has(row.tradeId))) : []
+  const { curves, common } = scenarioRunSample(runs, activeValues)
   const ids = new Set(common.map(row => row.tradeId))
   const totals = curves.map(item => ({ value: item.value, total: number(item.curve.eligible.filter(row => ids.has(row.tradeId)).reduce((sum, row) => sum + row.simulatedR, 0)) }))
   const comparable = curves.length >= 2 && common.length > 0 && totals.every(item => item.total !== null)

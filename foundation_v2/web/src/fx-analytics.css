@@ -423,7 +423,8 @@
 .fxa-scenario-chip:hover .fxa-scenario-chip-remove,.fxa-scenario-chip:has(button:focus-visible) .fxa-scenario-chip-remove{width:28px;opacity:1;pointer-events:auto}
 .fxa-scenario-chip-remove:focus-visible{outline:2px solid var(--wm-focus);outline-offset:-2px}
 .fxa-scenario-chip-remove:hover:not(:disabled){background:color-mix(in srgb,var(--fxa-chip-color) 20%,transparent)}
-.fxa-scenario-chip.tone-blue{--fxa-chip-color:#258bff}.fxa-scenario-chip.tone-violet{--fxa-chip-color:#9a7cff}.fxa-scenario-chip.tone-yellow{--fxa-chip-color:#e5bd00}.fxa-scenario-chip.tone-red{--fxa-chip-color:#ef5350}.fxa-scenario-chip.tone-teal{--fxa-chip-color:#13c9a5}.fxa-scenario-chip.tone-orange{--fxa-chip-color:#ff8b20}.fxa-scenario-chip.tone-purple{--fxa-chip-color:#a536ff}.fxa-scenario-chip.tone-lime{--fxa-chip-color:#8bcf00}.fxa-scenario-chip.tone-cyan{--fxa-chip-color:#00b8e6}.fxa-scenario-chip.tone-green{--fxa-chip-color:#00b85a}
+.fxa-series-point{fill:transparent;stroke:none}
+.fxa-series-point:focus-visible{fill:currentColor;stroke:var(--wm-content);stroke-width:2;outline:none}
 .fxa-add-scenario{display:inline-flex;align-items:center;justify-content:center;gap:8px;flex:none;margin-left:auto;min-height:38px;padding:8px 18px;border:0;border-radius:999px;background:#0566ff;color:#fff;font:inherit;font-size:13px;font-weight:500;cursor:pointer}
 .fxa-add-scenario:hover:not(:disabled){background:#0059e6}
 .fxa-add-scenario:disabled{cursor:default;opacity:.55}
