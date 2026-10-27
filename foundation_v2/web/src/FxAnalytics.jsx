@@ -431,9 +431,9 @@ function ScenarioSimulator({ kind, model, data, config, loadExperiment, timezone
           <div className="fxa-scenario-details">
             <DataTable className="fxa-scenario-table" label={t(title)} contained scrollAxis="x">
               <thead><tr>{columns.map(([metric,label,help]) => <th scope="col" className={metric ? 'is-numeric' : undefined} key={label}><span className="fxa-scenario-column-heading">{t(label)}<Info text={help} mini/></span></th>)}</tr></thead>
-              <tbody>{comparison.entries.map(entry => <tr className={entry.value === comparison.bestValue ? 'is-best' : undefined} key={entry.value}>
+              <tbody>{comparison.entries.map(entry => <tr className={!rr && entry.value === comparison.bestValue ? 'is-best' : undefined} key={entry.value}>
                 <td><span className="fxa-scenario-row-label" style={{'--fxa-chip-color':scenarioColor(entry.value)}}>{scenarioLabel(entry.value)}{entry.value === 0 && <small> ({t('SL hiện tại')})</small>}</span></td>
-                {columns.slice(1).map(([metric]) => <td className="is-numeric" key={metric}>{metricText(entry,metric)}</td>)}
+                {columns.slice(1).map(([metric]) => <td className={`is-numeric${rr && entry[metric] !== null && entry[metric] === comparison.bestCells[metric] ? ' is-best-cell' : ''}`} key={metric}>{metricText(entry,metric)}</td>)}
               </tr>)}</tbody>
 
             </DataTable>
