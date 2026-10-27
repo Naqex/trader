@@ -2,8 +2,8 @@ import './data-table.css'
 
 // Keep one native table inside one viewport so horizontal scrolling cannot
 // separate column headings from the rows they describe.
-export default function DataTable({ children, label, className = '', tableClassName = '', tableProps, viewportRef, ...props }) {
-  return <div {...props} ref={viewportRef} className={`wm-table-scroll ${className}`} role="region" tabIndex={0} aria-label={label}>
+export default function DataTable({ children, label, className = '', tableClassName = '', tableProps, viewportRef, contained = false, ...props }) {
+  return <div {...props} ref={viewportRef} className={`wm-table-scroll ${className}`} data-contained={contained || undefined} role="region" tabIndex={0} aria-label={label}>
     <table {...tableProps} className={`wm-data-table ${tableClassName}`}>{children}</table>
   </div>
 }

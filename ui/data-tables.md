@@ -1,6 +1,6 @@
 # Bảng dữ liệu
 
-Consumer pin: [data-table@0.1.0](../../../UI-Systems/components/data-table/0.1.0/CONTRACT.md).
+Consumer pin: [data-table@0.2.0](../../../UI-Systems/components/data-table/0.2.0/CONTRACT.md).
 Giữ palette `annam-compact@0.1.1`; không thay token pin.
 
 ## Ownership
@@ -12,6 +12,31 @@ Giữ palette `annam-compact@0.1.1`; không thay token pin.
 - `PaginationFooter`: count trong phạm vi lọc, pager, page size; thu gọn theo chiều
   rộng của footer. Popup dùng overlay có sẵn.
 - Consumer giữ cách lấy dữ liệu, tính tiền, quyền thao tác và trạng thái đọc.
+
+## Cuộn và bảng dài
+
+`DataTable` giữ native scroll hai chiều trong cùng viewport, không xử lý wheel
+bằng JavaScript. `contained` là opt-in giới hạn layout/paint; hiện áp dụng cho
+Trades sau kiểm tra sticky header, focus và overlay. Không bật trên mọi bảng.
+Footer là sibling bên ngoài; trang Trades không thêm scrollbar dọc thứ hai.
+
+`VirtualTableBody` là biến thể cho bảng dài có dòng cao cố định, không thay thế
+server paging. Trades hiện vẫn dựng tối đa page_size (10/25/50/100) dòng native.
+Biến thể nhận `rows`, `columns` (key/className/render), `getRowKey`, `viewportRef`,
+`rowHeight` (mặc định 60), `overscan` (6), `headerRows` (1), `getRowProps` tuỳ chọn.
+Consumer khai báo `colgroup`, fixed table layout và `aria-rowcount` gồm header;
+component giữ row index thật, spacer ẩn và tối đa một dòng đang focus ngoài cửa sổ.
+Scroll ngang không cập nhật state cửa sổ dòng. Scope/filter/sort và selection
+vẫn do consumer giữ; không tải cả ledger thật để dùng virtualization.
+
+Chỉ hỗ trợ cell một dòng, clip/ellipsis nội dung dài; control phải nằm trong
+chiều cao đã chọn. Dòng nhiều dòng, mở rộng chi tiết hoặc chiều cao thay đổi vẫn
+dùng bảng native. Tìm trong trang/in/Tab tuần tự chỉ thấy dòng đang dựng; dùng
+native paging khi cần duyệt đầy đủ bằng các cách đó.
+
+Mẫu 10.000 dòng: `?workspace=tenant-a&area=testing&ui_reference=1#virtual-table`.
+Mẫu hỗ trợ cả hai chiều, nhảy đầu/cuối, lọc, sort và giữ chọn bằng ID. Không đọc
+hay ghi giao dịch thật. Contract mới không thay palette/token pin.
 
 Trades giữ tên cột thời gian một dòng (`Vào lệnh (Realtime)`, `Vào lệnh (Chart)`
 và tương tự cho thoát lệnh). Múi giờ dùng chung với Settings, chọn ở đồng hồ
@@ -63,3 +88,4 @@ Dữ liệu minh hoạ có 35 dòng, Nhóm B ở trang cuối, đủ trạng th�
 empty/error/stale/unknown. Không ghi dữ liệu thật.
 
 Bằng chứng task: `foundation_v2/evidence/grid-system-20261025/RECEIPT.md`.
+Cuộn/virtualization: `foundation_v2/evidence/table-scroll-performance-20261027/RECEIPT.md`.
