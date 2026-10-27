@@ -65,7 +65,7 @@ export function ReportBars({ title, help, items, currency, period, scopeLabel, a
   const values = items.flatMap(item => unobserved(item) ? [] : divided ? [item.loss, item.profit] : [item.value]), valid = values.length > 0 && values.every(finite)
   const domain = valid ? chartDomain(values, { maximum, symmetric: true, integer }) : null
   const weekday = period === 'weekday'
-  const angled = weekday
+  const angled = weekday && !locale.startsWith('vi')
   const minimumHeight = horizontal ? Math.max(H, items.length * 30 + 58) : angled ? bottom + 88 : H
   const [plotRef, width, height] = usePlotSize(Boolean(domain), minimumHeight), right = width - 24
   const axis = axisLabels(domain?.ticks || [], valueFormat ? (value, _, digits) => valueFormat(value, true, digits) : fmt, locale)
@@ -85,7 +85,7 @@ export function ReportBars({ title, help, items, currency, period, scopeLabel, a
     if (dateKeys) label = new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit', timeZone: 'UTC' }).format(new Date(`${item.label}T00:00:00Z`))
     if (monthOfYear) label = new Intl.DateTimeFormat(locale, { month: 'long', timeZone: 'UTC' }).format(new Date(`2024-${item.label}-01T00:00:00Z`))
     const day = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].indexOf(item.label)
-    if (weekday && day >= 0) label = locale.startsWith('vi') ? day === 6 ? 'Chủ nhật' : `Thứ ${day + 2}` : new Intl.DateTimeFormat(locale, { weekday: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2024, 0, 1 + day)))
+    if (weekday && day >= 0) label = locale.startsWith('vi') ? item.label : new Intl.DateTimeFormat(locale, { weekday: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2024, 0, 1 + day)))
     return label.charAt(0).toLocaleUpperCase(locale) + label.slice(1)
   })
   const description = (item, index) => {
