@@ -112,3 +112,29 @@ The scoped build contains tracked HEAD plus only `FxAnalytics.jsx` and
 Deployed screenshots and one card proof are in `performance-deployed/`,
 `drawdown-deployed/` and `proof/`. Browser checks block external origins,
 non-GET/HEAD, MT5/Live/events and websockets; no JS errors or attempted writes.
+
+## Compact SL/RR correction — 2026-10-28
+
+This correction supersedes the SL/RR configuration/results layout described above.
+After the initial Run, SL/RR show scenario chips directly above the chart, followed
+by the always-open trade table. The numeric configuration, rerun/reset buttons,
+five summary metrics and `Kết quả từng giao dịch` disclosure heading are removed.
+Selecting a scenario updates its configuration and immediately calls the existing
+read-only experiment adapter. Loading disables scenario actions; errors allow
+retry by selecting a chip. The current-SL 0% chip remains non-removable. Monte
+Carlo keeps its existing controls and calculation model.
+
+Evidence: `E:/BACKUP-TRADINGWORKSPACE/simulation-compact-20261028/`.
+Production build and 12 focused analytics tests passed. Preview and deployed
+demo QA each passed four cases: 1920 VI/dark, 1366 EN/light, 768 VI/dark and
+390 VI/dark. Checks cover the removed block/heading, visible 20-row table,
+scenario-dependent results, tab persistence, chip add/remove, Monte Carlo,
+single vertical scroll owner and no document horizontal overflow. No JS errors
+or attempted writes were observed. This is demo/browser verification, not a
+native backend or broker acceptance result.
+
+UI-only rollout served index SHA256:
+`ce7c95c715d32687782c60def72fcc37c27d4614b4420a3ab4fc5fbfea805c60`.
+Port 5180 was stopped and the UI preview was started again; API and MT5 were
+not restarted. The scoped build uses tracked HEAD plus only `FxAnalytics.jsx`.
+Rollback index: `ui-before-compact/index.html` under the evidence directory.

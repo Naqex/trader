@@ -76,10 +76,17 @@ the summary rows. The four metrics become two columns at 850px and below; winnin
 metrics stack at 600px and below. Prop objectives pair snapshot metrics with their
 existing objectives table on desktop and stack on narrow screens.
 
-Simulation uses three full-width sections stacked in order: SL, RR, Monte Carlo. Each starts with a short introduction and an explicit Run action. Configuration/results appear only after running; loading, cancellation, error/retry, reset and changed-but-not-applied states stay local to each tool. Only applicable ready API scenarios contribute to the paired curves; unresolved trades stay in details. Monte Carlo configuration uses a
-left column and its results use the remaining width; they stack up to 850px.
-Per-trade scenario details stay collapsed until requested and scroll within a
-bounded table when opened. Smaller widths collapse groups without scaling down
+Simulation uses three full-width sections stacked in order: SL, RR, Monte Carlo.
+Each starts with a short introduction and an explicit Run action. After running,
+SL/RR show scenario chips, a chart and an always-open trade table without a
+repeated table heading. Do not insert numeric configuration or summary metrics
+between the chips and chart. Selecting a chip runs its configuration through the
+existing read-only experiment adapter; loading and retry stay within that tool.
+The current-SL 0% chip cannot be removed; other remove buttons appear on hover or
+keyboard focus. Only applicable ready API scenarios contribute to paired curves;
+unresolved trades stay in the table. Monte Carlo keeps its configuration, summary,
+reset and rerun controls. Tables contain horizontal overflow while vertical
+scroll belongs to the page. Smaller widths collapse groups without scaling down
 data text. RR mini curves are 48px sparklines without axis labels; their points
 retain tooltips and keyboard access. Other compact plots retain their axes.
 Report panels do not show fullscreen controls. PnL shows only the four interval

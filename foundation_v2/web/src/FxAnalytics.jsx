@@ -275,21 +275,22 @@ const SCENARIO_TONES = ['blue', 'violet', 'yellow', 'red', 'teal', 'blue', 'oran
 
 function ScenarioSimulator({ kind, model, data, config, loadExperiment }) {
   const { t, fmt } = useTestingLocale(), job = useSimulationRun(), rr = kind === 'risk_reward'
-  const [draft, setDraft] = useState(config), [applied, setApplied] = useState(null), [scenarios, setScenarios] = useState(() => rr ? RR_SCENARIOS : STOP_LOSS_SCENARIOS)
+  const [draft, setDraft] = useState(config), [scenarios, setScenarios] = useState(() => rr ? RR_SCENARIOS : STOP_LOSS_SCENARIOS)
   const currency = model.result?.account_currency || t('Đơn vị tài khoản'), busy = job.phase === 'loading'
   const title = rr ? 'RR Simulator' : 'Stop Loss Simulator'
-  const fields = rr ? [['target_r','Mục tiêu R',.1,100,.1]] : [['stop_distance_ticks','Khoảng dừng lỗ (tick)',1,100000,1],['stop_multiplier','Hệ số dừng lỗ',.1,10,.1]]
-  const changed = applied && fields.some(([key]) => Number(draft[key]) !== Number(applied[key]))
   const result = job.result ? scenarioComparison(job.result.rows, data.rows, kind, model.startBalance) : null
   const byId = useMemo(() => new Map((job.result?.rows || []).map(row => [row.trade_id,row])), [job.result])
   const scenarioOptions = rr ? RR_SCENARIOS : STOP_LOSS_SCENARIOS
   const selectedScenario = rr ? Number(draft.target_r) : Math.round((1 - Number(draft.stop_multiplier)) * 100)
-  const selectScenario = value => setDraft({ ...draft, ...(rr ? { target_r: value } : { stop_multiplier: 1 - value / 100 }) })
+  const selectScenario = value => {
+    const next = { ...draft, ...(rr ? { target_r: value } : { stop_multiplier: 1 - value / 100 }) }
+    setDraft(next)
+    run(next)
+  }
   const removeScenario = value => setScenarios(current => current.filter(item => item !== value))
   const addScenario = () => { const value = scenarioOptions.find(item => !scenarios.includes(item)); if (value !== undefined) { setScenarios(current => [...current, value]); selectScenario(value) } }
-  const run = () => {
-    const request = Object.fromEntries(Object.entries(draft).map(([key, value]) => [key, Number(value)]))
-    setApplied(request)
+  const run = (configuration = draft) => {
+    const request = Object.fromEntries(Object.entries(configuration).map(([key, value]) => [key, Number(value)]))
     job.run(async signal => {
       if (!loadExperiment) throw new Error('Nguồn này chưa hỗ trợ mô phỏng từ đường giá.')
       return loadExperiment(request, signal)
@@ -298,31 +299,18 @@ function ScenarioSimulator({ kind, model, data, config, loadExperiment }) {
   return <ReportSection headingOutside className="fxa-scenario-panel" title={title}
     help={rr ? 'Giữ SL gốc được xác minh lúc vào lệnh, thay TP theo R. Chỉ mô phỏng trong thời gian giữ lệnh gốc tới cutoff; không giả lập đường giá sau khi thoát.' : 'Thử khoảng dừng lỗ cấu hình trong thời gian giữ lệnh gốc. Giữ phí và quy tắc intrabar; không sửa giao dịch đã lưu.'}
     actions={rr ? <a className="fxa-help-link" href="https://fx-replay.notion.site/What-is-the-RR-Simulator-2479db20207480bb883bd263526d24de" target="_blank" rel="noreferrer">{t('Cách tính')} ↗</a> : null}>
-    {job.phase === 'idle' ? <SimulationIntro description={rr ? 'Thử mục tiêu chốt lời khác nhau, giữ nguyên SL gốc và so sánh với giao dịch đã đóng.' : 'Thử khoảng dừng lỗ khác nhau và so sánh với giao dịch đã đóng.'} onRun={run}/> : <>
+    {job.phase === 'idle' ? <SimulationIntro description={rr ? 'Thử mục tiêu chốt lời khác nhau, giữ nguyên SL gốc và so sánh với giao dịch đã đóng.' : 'Thử khoảng dừng lỗ khác nhau và so sánh với giao dịch đã đóng.'} onRun={() => run()}/> : <>
       <div className="fxa-simulation-scenarios" role="group" aria-label={t(rr ? 'Mục tiêu R' : 'Mức giảm SL')}>
         {scenarios.map((value, index) => <span className={`fxa-scenario-chip tone-${SCENARIO_TONES[scenarioOptions.indexOf(value) % SCENARIO_TONES.length]}`} key={value}><button type="button" aria-pressed={selectedScenario === value} disabled={busy} onClick={() => selectScenario(value)}>{rr ? `${value}R` : `${value}%${value === 0 ? ` (${t('SL hiện tại')})` : ''}`}</button>{(rr || value !== 0) && <button type="button" className="fxa-scenario-chip-remove" aria-label={t('Xóa kịch bản {value}', { value: rr ? `${value}R` : `${value}%` })} disabled={busy} onClick={() => removeScenario(value)}>×</button>}</span>)}
         {scenarios.length < scenarioOptions.length && <button type="button" className="fxa-add-scenario" disabled={busy} onClick={addScenario}>＋ {t('Thêm kịch bản')}</button>}
       </div>
-      <form className="fxa-simulator-config" onSubmit={event => { event.preventDefault(); run() }}>
-        {fields.map(([key,label,min,max,step]) => <label className="fxa-field" key={key}><span>{t(label)}</span><input aria-label={t(label)} disabled={busy} type="number" min={min} max={max} step={step} required value={draft[key]} onChange={event => setDraft({ ...draft, [key]: event.target.value })}/></label>)}
-        <button type="submit" className="fxa-button is-primary" disabled={busy}>{t(busy ? 'Đang tính…' : 'Chạy lại')}</button>
-        <button type="button" className="fxa-button" onClick={() => { job.reset(); setDraft(config); setApplied(null); setScenarios(scenarioOptions) }}>{t(busy ? 'Hủy' : 'Đặt lại')}</button>
-        {changed && !busy && <span role="status" className="fxa-pending-state">{t('Cấu hình đã đổi; chạy lại để cập nhật kết quả.')}</span>}
-      </form>
       <div aria-busy={busy} className="fxa-simulation-results">
         {busy && <p role="status" className="fxa-simulation-progress">{t('Đang mô phỏng từ đường giá…')}</p>}
         {job.phase === 'error' && <p role="alert" className="fxa-error">{t(job.error)}</p>}
         {result && <>
-          <div className="fxa-metrics">
-            <Stat label="Mẫu tính được" value={`${result.eligible.length}/${data.count}`} help="Chỉ so sánh các giao dịch tính được ở cả bản gốc và mô phỏng. Lệnh không rõ thứ tự SL/TP hoặc thiếu dữ liệu được giữ trong bảng chi tiết."/>
-            <Stat label="Lãi/lỗ mô phỏng (mẫu)" value={fmt(result.net,` ${currency}`)}/>
-            <Stat label="Win rate" value={fmt(result.winRate,'%')} help={rr ? 'Số lệnh thắng chia tổng lệnh thắng và thua; bỏ qua hòa vốn.' : 'Số lệnh thắng chia tổng lệnh tính được.'}/>
-            <Stat label="Profit factor" value={known(result.profitFactor) ? fmt(result.profitFactor) : 'N/A'}/>
-            <Stat label="Average drawdown" value={fmt(result.averageDrawdown,` ${currency}`)}/>
-          </div>
           {result.eligible.length < data.count && <p className="fxa-simulation-notice" role="status">{t('Một số giao dịch chưa đủ dữ liệu đường giá nên không được tính vào biểu đồ; vẫn giữ trong bảng.')}</p>}
           {result.eligible.length ? <><AnalyticsCurve series={[result.baseline,result.scenario]} label={t(title)} suffix={` ${currency}`} height={260} controls/><div className="fxa-inline-legend"><span><i/>{t('Gốc')}</span><span><i/>{t('Mô phỏng')}</span></div></> : <div className="fxa-chart-empty">{t('Chưa đủ dữ liệu mô phỏng')}</div>}
-          <details className="fxa-scenario-details" open><summary>{t('Kết quả từng giao dịch')}</summary>
+          <div className="fxa-scenario-details">
             <DataTable className="fxa-table-scroll" label={t(title)} contained>
               <thead><tr>{['#','Trạng thái','Giá thoát','Lợi nhuận gốc','Lợi nhuận mô phỏng'].map(label => <th key={label}>{t(label)}</th>)}</tr></thead>
               <tbody>{data.rows.map((trade,index) => {
@@ -330,7 +318,7 @@ function ScenarioSimulator({ kind, model, data, config, loadExperiment }) {
                 return <tr key={trade.tradeId}><td data-tooltip={trade.tradeId}>{index+1}</td><td>{t(({ready:'Đã tính',ambiguous:'Không rõ thứ tự intrabar'})[outcome?.status] || 'Không đủ dữ liệu')}<small>{outcome?.reason === 'original_stop_unavailable' ? t('Chưa xác minh được SL gốc') : outcome?.status === 'ambiguous' ? t('SL và TP cùng nến') : null}</small></td><td>{ready ? fmt(outcome.exit_price,'',6) : 'N/A'}</td><td>{fmt(trade.net_pnl,` ${currency}`)}</td><td>{ready ? fmt(outcome.net_pnl,` ${currency}`) : 'N/A'}</td></tr>
               })}</tbody>
             </DataTable>
-          </details>
+          </div>
         </>}
       </div>
     </>}
