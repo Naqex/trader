@@ -126,3 +126,12 @@ they can be applied without guessing.
 - Local analytics/chart model suite: use the existing receipts for 103/103
   model tests, 66/66 independent source tests and deployed chart/regression QA.
 - No FX tab refresh, no authenticated API call, no write, no broker action.
+
+## Local recheck after audit
+
+- Re-ran the focused Dashboard/Sessions/Trades/Analytics/Calendar/Live model
+  suite on the current checkout: **109 tests passed, 0 failed**.
+- Rebuilt the frontend with `npm run build`: passed; only the existing Vite
+  chunk-size warning remains.
+- This recheck confirms the apply decision above; it did not require a source
+  change because the matching behavior is already in the accepted commits.
