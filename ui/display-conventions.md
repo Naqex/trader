@@ -91,7 +91,9 @@ reading formats follow the shared project compact-system contract.
 PnL axis labels use compact dates, full years across year boundaries and local
 times within a single day. Tick density follows plot width; repeated dates are
 thinned, the baseline has no visible text and point tooltips keep full timestamps.
-The existing observation-index spacing remains; ticks do not invent daily samples.
+PnL uses elapsed-time spacing when report timestamps are complete and ordered;
+its initial-state anchor shares the first observation's time. Missing/reversed
+times retain observation order; no daily samples or earlier timestamps are invented.
 RR cards omit duplicate section headings. Each metric owns its info control.
 The opportunity card pairs its count with maximum ideal RR across all eligible
 filtered trades, including winners and losers, as stated in its tooltip.
@@ -179,8 +181,12 @@ months show a dash. Dashboard period averages retain their separate contract.
 Reference session hours: https://support.fxreplay.com/articles/what-are-the-trading-session-hours-that-fx-replay-takes-into-account-for-analytics
 
 Main win rate retains wins/all closed trades, including breakeven. The local
-breakeven threshold is an absolute net amount in account currency; it changes
+breakeven threshold is absolute realized R on valid original risk; it changes
 classification and streaks without changing money, curves or saved trades.
+At a nonzero threshold, missing R leaves classification unknown. Classification
+totals/rates stay unavailable while financial values and dated frequency survive.
+Zero net PnL remains known breakeven; threshold zero needs no risk denominator.
+Profit factor always uses all positive/negative net amounts, independent of threshold.
 RR Simulator win rate excludes breakeven. Undefined denominators show `N/A`.
 Realized R joins verified observations per trade, retaining valid ledger/risk
 samples when experiments cover only part of the set. The three compact RR cards

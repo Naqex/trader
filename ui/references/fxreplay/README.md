@@ -17,6 +17,8 @@ Quy trình dùng lại cho các page sau: [verification-workflow.md](verificatio
 Hợp đồng và phép tính từng biểu đồ: [analytics-chart-calculations.md](analytics-chart-calculations.md).
 Chỉnh Performance theo các ảnh owner đánh dấu, source công khai và giới hạn công
 thức tháng: [side/month/calendar/frequency](performance-month-side-calendar.md).
+Đối chiếu source công khai cho toàn bộ chart Performance/Drawdown/Simulation và
+toolbar: [source chart audit](analytics-source-chart-audit.md).
 Bao gồm phạm vi, cách đọc UI/response, kiểm số học, mẫu ghi kết quả, điểm dừng
 và khôi phục trạng thái trình duyệt.
 

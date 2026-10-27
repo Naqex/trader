@@ -19,6 +19,17 @@ export function chartDomain(values, { zero = true, maximum, symmetric = false, i
   return { low, high, ticks: Array.from({ length: count + 1 }, (_, index) => clean(low + step * index)) }
 }
 
+export function curveCoordinates(timestamps, count) {
+  const times = timestamps?.length === count ? timestamps.map(value => {
+    if (typeof value === 'number' && Number.isFinite(value) || typeof value === 'string' && /^\d+(\.\d+)?$/.test(value)) return Number(value) < 1e11 ? Number(value) * 1000 : Number(value)
+    return typeof value === 'string' && value.trim() ? Date.parse(value) : NaN
+  }) : []
+  const temporal = times.length > 1 && times.every((time, index) => Number.isFinite(time) && (!index || time >= times[index - 1])) && times.at(-1) > times[0]
+  const positions = temporal ? times.map(time => (time - times[0]) / (times.at(-1) - times[0])) : Array.from({length: count}, (_, index) => index / Math.max(1, count - 1))
+  const gaps = positions.slice(1).map((position,index) => position - positions[index]).filter(gap => gap > 0)
+  return { positions, temporal, minimumSpan: gaps.length ? Math.max(1e-6, Math.min(...gaps) / 2) : 1 }
+}
+
 export function chartTicks(domain, capacity) {
   const ticks = domain.ticks
   if (ticks.length <= capacity) return ticks

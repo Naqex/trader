@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "candidate_index_sha256": "1bcdfe2881b8fedbeadfc0719b7d56898a1c437e4cd96818eefabba121d132bd",
+  "source_commit_base": "7bd7ab48fbbe0b9c1d10a2e40e72d81dd52e185c",
+  "artifact_root": "E:/BACKUP-TRADINGWORKSPACE/fxreplay-all-charts-20261027",
+  "model_tests": 110,
+  "independent_source_tests": 66,
+  "browser_viewports": [1920, 1440, 768, 390],
+  "reports": ["toolbar-deployed/report.json", "charts-deployed/report.json", "polish-deployed/report.json", "layout-deployed/report.json", "source-review.json"],
+  "formula_boundary": "FX public client source confirms presentation and selected simulation code; backend scalar formulas remain unverified",
+  "rollout": "UI-only atomic promotion; existing API/UI ownership retained; no broker writes"
+}

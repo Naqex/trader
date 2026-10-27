@@ -65,9 +65,9 @@ function ReportSection({ title, subtitle, help, actions, children, className = '
   const heading = (title || actions) && <div className="fxa-section-heading"><div><div className="fxa-panel-title">{title && <h2>{t(title)}</h2>}{help && <Info text={help}/>}<TimeCoverage data={timeCoverage}/></div>{subtitle && <p className="fxa-panel-subtitle">{t(subtitle)}</p>}</div>{actions && <div className="fxa-panel-actions">{actions}</div>}</div>
   return <section className={`fxa-section ${headingOutside ? 'fxa-report-group' : 'fxa-panel'} ${className}`} aria-label={label ? t(label) : headingOutside && title ? t(title) : undefined}>{heading}{headingOutside && surface ? <div className="fxa-panel fxa-section-body">{children}</div> : children}</section>
 }
-function BreakevenThreshold({ threshold, onThreshold }) {
+function BreakevenThreshold({ threshold, onThreshold, data }) {
   const { t } = useTestingLocale(), [draft, setDraft] = useState(String(threshold)), id = useId()
-  return <form className="fxa-threshold" onSubmit={event => { event.preventDefault(); onThreshold(Number(draft)) }}><div className="fxa-threshold-label"><label htmlFor={id}>{t('Ngưỡng hòa vốn')}</label><Info text="Ngưỡng phân loại hòa vốn. Hiện tính theo độ lớn lãi/lỗ ròng trong tiền tài khoản; không thay đổi lợi nhuận hay giao dịch đã lưu."/></div><input id={id} type="number" min="0" step="any" required value={draft} onChange={event => setDraft(event.target.value)}/><button className="fxa-button" type="submit" disabled={Number(draft) === threshold}>{t('Áp dụng')}</button></form>
+  return <form className="fxa-threshold" onSubmit={event => { event.preventDefault(); onThreshold(Number(draft)) }}><div className="fxa-threshold-label"><label htmlFor={id}>{t('Ngưỡng hòa vốn (R)')}</label><Info text="Phân loại hòa vốn khi độ lớn R thực hiện không vượt ngưỡng. R dùng rủi ro ban đầu hợp lệ, không dùng SL mô phỏng. Thiếu R thì phân loại chưa xác định; PnL và tổng giao dịch không đổi. Ngưỡng 0 chỉ xét lãi/lỗ ròng bằng 0."/></div><input id={id} type="number" min="0" step="any" required value={draft} onChange={event => setDraft(event.target.value)}/><button className="fxa-button" type="submit" disabled={Number(draft) === threshold}>{t('Áp dụng')}</button>{threshold > 0 && !data.classificationComplete && <span className="fxa-threshold-coverage" role="status">{t('{known}/{total} giao dịch phân loại được', {known:data.classifiedCount,total:data.count})}</span>}</form>
 }
 function PercentChange({ value }) {
   const { fmt } = useTestingLocale()
@@ -86,8 +86,8 @@ function durationLabel(value, t) {
   const minutes = Math.round(Number(value))
   return `${Math.floor(minutes / 60)} ${t('duration.hour')} ${minutes % 60} ${t('duration.minute')}`
 }
-const COUNT_WIN = "Số giao dịch đã đóng có lãi/lỗ ròng cao hơn ngưỡng hòa vốn đang áp dụng."
-const COUNT_LOSS = "Số giao dịch đã đóng có lãi/lỗ ròng thấp hơn ngưỡng hòa vốn âm đang áp dụng."
+const COUNT_WIN = "Số giao dịch đã đóng có lãi và nằm ngoài ngưỡng hòa vốn theo R. Thiếu R khi áp dụng ngưỡng thì chưa xác định được tổng."
+const COUNT_LOSS = "Số giao dịch đã đóng bị lỗ và nằm ngoài ngưỡng hòa vốn theo R. Thiếu R khi áp dụng ngưỡng thì chưa xác định được tổng."
 const BEST_WIN = "Lãi lớn nhất theo % vốn ban đầu của phiên nguồn, sau phí.\n\nMỗi lệnh: lãi/lỗ ròng ÷ vốn ban đầu × 100. Thiếu vốn hợp lệ ở bất kỳ lệnh thắng nào thì hiển thị N/A."
 const WORST_LOSS = "Lỗ lớn nhất theo % vốn ban đầu của phiên nguồn, sau phí; giữ dấu âm.\n\nMỗi lệnh: lãi/lỗ ròng ÷ vốn ban đầu × 100. Thiếu vốn hợp lệ ở bất kỳ lệnh thua nào thì hiển thị N/A."
 const AVERAGE_WIN = "Trung bình % lãi của các giao dịch thắng, sau phí.\n\nTính % từng lệnh trên vốn ban đầu của phiên nguồn, rồi lấy trung bình cộng. Thiếu vốn hợp lệ ở bất kỳ lệnh nào trong nhóm thì hiển thị N/A."
@@ -186,9 +186,9 @@ export function AnalyticsPerformance({ model, data, extra, onSelect, selected, t
         <Stat label="Win rate" value={fmt(data.winRate,'%')} help="Tỷ lệ giao dịch kết thúc có lãi trên tổng giao dịch đã đóng."/>
         <Stat label="Total trades" value={<>{fmt(data.count,'',0)}<sup className="fxa-trade-split"><span aria-label={t('Thắng / thua')}>{fmt(data.wins,'',0)}/{fmt(data.losses,'',0)}</span><Info mini text="Số bên trái là giao dịch thắng; số bên phải là giao dịch thua. Không bao gồm giao dịch hòa vốn."/></sup></>} help="Tổng số giao dịch đã đóng, bao gồm lệnh thắng, thua và hòa vốn."/>
         <Stat label="Giao dịch hòa vốn" value={fmt(data.breakeven,'',0)} help="Tổng số giao dịch hòa vốn theo ngưỡng đang áp dụng."/>
-        <BreakevenThreshold threshold={threshold} onThreshold={onThreshold}/>
+        <BreakevenThreshold threshold={threshold} onThreshold={onThreshold} data={data}/>
       </div>
-      <AnalyticsCurve key={interval} series={[bucket.points]} label={t('Lãi/lỗ ròng tích lũy')} labels={curveLabels} axisLabels={curveAxisLabels} suffix={` ${currency}`} onSelect={onSelect} selected={selected} height={200} stretch controls/>
+      <AnalyticsCurve key={JSON.stringify([interval,data.rows.map(row=>row.tradeId)])} series={[bucket.points]} label={t('Lãi/lỗ ròng tích lũy')} labels={curveLabels} axisLabels={curveAxisLabels} timestamps={bucket.timestamps} suffix={` ${currency}`} onSelect={onSelect} selected={selected} height={200} stretch controls/>
     </ReportSection>
     <div className="fxa-three-columns fxa-risk-panels">
       <ReportSection label="RR thực hiện"><div className="fxa-metrics"><Stat label="RR trung bình" value={known(averageR)?fmt(averageR):'N/A'} help={averageHelp}/><Stat label="RR lớn nhất" value={known(maxR)?fmt(maxR):'N/A'} help={maxHelp}/></div><AnalyticsCurve series={[riskSeries]} labels={riskSeries.map((_,index)=>`#${index+1}`)} label={t('RR thực hiện theo giao dịch')} suffix=" R" height={48} sparkline/></ReportSection>

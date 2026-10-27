@@ -99,7 +99,7 @@ test('published UTC sessions overlap and stay independent of display zone and DS
 
 test('breakeven threshold reclassifies outcomes and runs consistently without changing money', () => {
   const source = model([10, 1, 20, -1, -5, -10])
-  source.ledger.forEach(row => { row.side = 'BUY' })
+  source.ledger.forEach(row => { row.side = 'BUY'; row.planned_risk_budget = 1 })
   const original = advancedAnalytics(source), data = advancedAnalytics(source, {}, { breakevenThreshold: 1 })
   assert.equal(data.wins, 2); assert.equal(data.losses, 2); assert.equal(data.breakeven, 2)
   assert.equal(data.winRate, 2 / 6 * 100)
@@ -112,7 +112,7 @@ test('breakeven threshold reclassifies outcomes and runs consistently without ch
   assert.deepEqual(data.rows.map(row => row.outcome), ['win', 'breakeven', 'win', 'breakeven', 'loss', 'loss'])
   assert.equal(data.net, original.net); assert.deepEqual(data.curve, original.curve); assert.deepEqual(data.drawdown, original.drawdown)
   assert.equal(data.endingBalance, original.endingBalance)
-  assert.deepEqual(data.classification, { breakevenThreshold: 1, winRateBasis: 'wins_over_all_closed_trades_including_breakeven' })
+  assert.deepEqual(data.classification, { breakevenThreshold: 1, thresholdUnit: 'R', winRateBasis: 'wins_over_all_closed_trades_including_breakeven' })
   assert.equal(advancedAnalytics(source, { outcomes: '["breakeven"]' }, { breakevenThreshold: 1 }).count, 2)
   assert.deepEqual(advancedAnalytics(source, {}, { breakevenThreshold: -1 }).classification, original.classification)
 })
@@ -232,13 +232,14 @@ test('outcome percentage never hides missing capital or uses aggregate multi-ses
 
 test('outcome percentages follow breakeven threshold and preserve empty groups', () => {
   const input = model([10, -2, -100, 0])
+  input.ledger.forEach(row => { row.planned_risk_budget = 1 })
   const data = advancedAnalytics(input, {}, { breakevenThreshold: 5 })
   assert.equal(data.averageWinPct, 1)
   assert.equal(data.averageLossPct, -10)
   assert.equal(data.losses, 1)
   assert.equal(data.breakeven, 2)
   assert.equal(data.expectancy, -23)
-  assert.equal(data.profitFactor, .1)
+  assert.equal(data.profitFactor, 10 / 102, 'threshold must not remove small losses from gross loss')
   const empty = advancedAnalytics(model([]))
   assert.equal(empty.averageWinPct, null)
   assert.equal(empty.worstLossPct, null)

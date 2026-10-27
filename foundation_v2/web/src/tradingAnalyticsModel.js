@@ -108,7 +108,7 @@ export function filterAnalyticsRows(rows, filters = {}, classifyOutcome = outcom
       && (filters.hour === 'all' || time?.hour === Number(filters.hour))
       && matches('assets', row.symbol)
       && matches('sides', row.side?.toLowerCase())
-      && matches('outcomes', classifyOutcome(row.net_pnl))
+      && matches('outcomes', classifyOutcome(row.net_pnl, row))
       && matches('types', row.entry_type)
       && matches('statuses', row.status || 'closed')
       && matches('notesPresence', hasTradeNotes(row) === null ? null : hasTradeNotes(row) ? 'with' : 'without')
@@ -158,47 +158,51 @@ export function periodReturn(items, capitals, aggregation = 'overall') {
 function stats(rows, classifyOutcome = outcomeOf, startingBalance = null) {
   const complete = rows.every(row => known(row.net_pnl))
   const pnl = complete ? rows.map(row => Number(row.net_pnl)) : []
-  const wins = pnl.filter(value => classifyOutcome(value) === 'win'), losses = pnl.filter(value => classifyOutcome(value) === 'loss')
+  const outcomes = rows.map(row => classifyOutcome(row.net_pnl, row))
+  const classificationComplete = complete && outcomes.every(value => value !== 'unknown')
+  const wins = complete ? rows.filter((_, index) => outcomes[index] === 'win').map(row => Number(row.net_pnl)) : []
+  const losses = complete ? rows.filter((_, index) => outcomes[index] === 'loss').map(row => Number(row.net_pnl)) : []
   const total = values => values.reduce((sum, value) => sum + value, 0)
   const average = values => values.length ? total(values) / values.length : null
   // Match ledger returns: each source session owns its initial capital.
   const returns = kind => {
-    const group = rows.filter(row => classifyOutcome(row.net_pnl) === kind)
+    const group = rows.filter(row => classifyOutcome(row.net_pnl, row) === kind)
     const values = group.map(row => {
       const capital = number(row.starting_balance ?? startingBalance)
       return capital > 0 && known(row.net_pnl) ? number(Number(row.net_pnl) / capital * 100) : null
     })
-    return complete && values.length && values.every(known) ? values : null
+    return classificationComplete && values.length && values.every(known) ? values : null
   }
   const winReturns = returns('win'), lossReturns = returns('loss')
   let winStreak = 0, lossStreak = 0, maxWinStreak = 0, maxLossStreak = 0
   const winRuns = [], lossRuns = []
-  for (const value of pnl) {
-    if (classifyOutcome(value) !== 'win' && winStreak) winRuns.push(winStreak)
-    if (classifyOutcome(value) !== 'loss' && lossStreak) lossRuns.push(lossStreak)
-    winStreak = classifyOutcome(value) === 'win' ? winStreak + 1 : 0
-    lossStreak = classifyOutcome(value) === 'loss' ? lossStreak + 1 : 0
+  for (const outcome of outcomes) {
+    if (outcome !== 'win' && winStreak) winRuns.push(winStreak)
+    if (outcome !== 'loss' && lossStreak) lossRuns.push(lossStreak)
+    winStreak = outcome === 'win' ? winStreak + 1 : 0
+    lossStreak = outcome === 'loss' ? lossStreak + 1 : 0
     maxWinStreak = Math.max(maxWinStreak, winStreak); maxLossStreak = Math.max(maxLossStreak, lossStreak)
   }
   if (winStreak) winRuns.push(winStreak)
   if (lossStreak) lossRuns.push(lossStreak)
-  const duration = kind => rows.filter(row => classifyOutcome(row.net_pnl) === kind).map(row => {
+  const duration = kind => rows.filter(row => classifyOutcome(row.net_pnl, row) === kind).map(row => {
     const start = closeTime(row.open_time_utc), end = closeTime(row.close_time_utc)
     return start && end && end >= start ? (end - start) / 60000 : null
   })
-  const durationAverage = kind => { const values = duration(kind); return values.length && values.every(known) ? average(values) : null }
+  const durationAverage = kind => { const values = duration(kind); return classificationComplete && values.length && values.every(known) ? average(values) : null }
   const r = rows.map(row => known(row.realized_r) ? Number(row.realized_r)
     : known(row.planned_risk_budget) && Number(row.planned_risk_budget) > 0 && known(row.net_pnl)
       ? number(Number(row.net_pnl) / Number(row.planned_risk_budget)) : null).filter(value => value !== null)
   const sourceNet = [...new Set(rows.map(sourceId))].map(id => ({ id, net: complete ? total(rows.filter(row => sourceId(row) === id).map(row => Number(row.net_pnl))) : null }))
-  return { count: rows.length, complete, sourceNet, net: complete ? total(pnl) : null, wins: complete ? wins.length : null, losses: complete ? losses.length : null,
-    breakeven: complete ? pnl.length - wins.length - losses.length : null, winRate: complete && pnl.length ? wins.length / pnl.length * 100 : null,
-    expectancy: average(pnl), profitFactor: losses.length ? total(wins) / Math.abs(total(losses)) : null,
-    averageWin: average(wins), averageLoss: average(losses), bestWin: wins.length ? Math.max(...wins) : null, worstLoss: losses.length ? Math.min(...losses) : null,
+  const grossProfit = total(pnl.filter(value => value > 0)), grossLoss = Math.abs(total(pnl.filter(value => value < 0)))
+  return { count: rows.length, complete, classificationComplete, classifiedCount: outcomes.filter(value => value !== 'unknown').length, sourceNet, net: complete ? total(pnl) : null, wins: classificationComplete ? wins.length : null, losses: classificationComplete ? losses.length : null,
+    breakeven: classificationComplete ? pnl.length - wins.length - losses.length : null, winRate: classificationComplete && pnl.length ? wins.length / pnl.length * 100 : null,
+    expectancy: average(pnl), profitFactor: complete && grossLoss ? grossProfit / grossLoss : null,
+    averageWin: classificationComplete ? average(wins) : null, averageLoss: classificationComplete ? average(losses) : null, bestWin: classificationComplete && wins.length ? Math.max(...wins) : null, worstLoss: classificationComplete && losses.length ? Math.min(...losses) : null,
     averageWinPct: winReturns ? average(winReturns) : null, averageLossPct: lossReturns ? average(lossReturns) : null,
     bestWinPct: winReturns ? Math.max(...winReturns) : null, worstLossPct: lossReturns ? Math.min(...lossReturns) : null,
-    maxWinStreak: complete ? maxWinStreak : null, maxLossStreak: complete ? maxLossStreak : null, winDuration: durationAverage('win'), lossDuration: durationAverage('loss'),
-    averageWinStreak: complete ? average(winRuns) : null, averageLossStreak: complete ? average(lossRuns) : null,
+    maxWinStreak: classificationComplete ? maxWinStreak : null, maxLossStreak: classificationComplete ? maxLossStreak : null, winDuration: durationAverage('win'), lossDuration: durationAverage('loss'),
+    averageWinStreak: classificationComplete ? average(winRuns) : null, averageLossStreak: classificationComplete ? average(lossRuns) : null,
     averageR: average(r), maxR: r.length ? Math.max(...r) : null, rCount: r.length,
   }
 }
@@ -307,12 +311,16 @@ export function advancedAnalytics(model, filters = {}, options = {}) {
   filters = { ...DEFAULT_EXTRA_FILTERS, timezone: getTimezone(), ...filters }
   if (model.result?.paged) throw new Error('paged_ledger_cannot_compute_full_analytics')
   const breakevenThreshold = known(options.breakevenThreshold) ? Math.max(0, Number(options.breakevenThreshold)) : 0
-  const classifyOutcome = value => !known(value) ? 'unknown' : Math.abs(Number(value)) <= Math.max(1e-12, breakevenThreshold) ? 'breakeven' : Number(value) > 0 ? 'win' : 'loss'
+  const classifyOutcome = (value, row) => {
+    const outcome = outcomeOf(value)
+    if (!breakevenThreshold || outcome === 'unknown' || outcome === 'breakeven') return outcome
+    return !known(row?.realized_r) ? 'unknown' : Math.abs(Number(row.realized_r)) <= breakevenThreshold ? 'breakeven' : outcome
+  }
   const timeBasis = model.result?.scope?.time_basis === 'market' ? 'market' : 'activity'
   // The caller supplies only experiments fenced to this report revision/cutoff.
   const riskObservations = new Map((options.experiments?.rows || []).map(row => [row.trade_id, row]))
   const timedRows = model.ledger.map(row => ({ ...row, realized_r: realizedRiskValue(row, riskObservations.get(row.tradeId)), analytics_time_utc: timeBasis === 'market' ? row.close_time_utc ?? null : row.report_time_utc ?? null }))
-  const rows = filterAnalyticsRows(timedRows, filters, classifyOutcome).map(row => ({ ...row, outcome: classifyOutcome(row.net_pnl) }))
+  const rows = filterAnalyticsRows(timedRows, filters, classifyOutcome).map(row => ({ ...row, outcome: classifyOutcome(row.net_pnl, row) }))
   const summary = stats(rows, classifyOutcome, model.result?.multi_session ? null : model.startBalance)
   const localFiltered = Object.keys(DEFAULT_EXTRA_FILTERS).filter(key => key !== 'timezone').some(key => (filters[key] ?? DEFAULT_EXTRA_FILTERS[key]) !== DEFAULT_EXTRA_FILTERS[key])
   // Selecting the current report kind is source context, not an account filter.
@@ -387,7 +395,7 @@ export function advancedAnalytics(model, filters = {}, options = {}) {
     excursion: { maeHistogram: [], winningAdverseR: null, knownCount: 0, basis: 'unavailable' },
     sessionGrouping: { basis: 'fixed_utc_market_windows_overlapping', timezone: 'UTC', timeField: timeBasis === 'market' ? 'close_time_utc' : 'report_time_utc' },
     recoveryBasis: 'closed_trade_balance_peak_close_to_recovery_close_elapsed_24h_days',
-    classification: { breakevenThreshold, winRateBasis: 'wins_over_all_closed_trades_including_breakeven' },
+    classification: { breakevenThreshold, thresholdUnit: 'R', winRateBasis: 'wins_over_all_closed_trades_including_breakeven' },
   }
 }
 

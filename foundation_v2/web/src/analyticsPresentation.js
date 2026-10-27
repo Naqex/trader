@@ -16,7 +16,7 @@ export function excursionSummary(experiments, trades) {
   const rows = (experiments?.rows || []).filter(row => selected.has(row.trade_id))
   const observed = rows.filter(row => row.excursion?.r_basis === 'initial_stop_distance' && known(row.excursion.mae_r) && Number(row.excursion.mae_r) >= 0)
   const values = observed.map(row => Number(row.excursion.mae_r)).filter(value => value >= 0)
-  const winners = observed.filter(row => Number(selected.get(row.trade_id).net_pnl) > 1e-12).map(row => Number(row.excursion.mae_r))
+  const winners = observed.filter(row => { const trade = selected.get(row.trade_id); return trade.outcome ? trade.outcome === 'win' : Number(trade.net_pnl) > 1e-12 }).map(row => Number(row.excursion.mae_r))
   const maximum = values.length ? Math.max(...values) : 0
   const width = maximum ? 10 ** Math.floor(Math.log10(maximum)) * ([1,2,5,10].find(step => step * 10 ** Math.floor(Math.log10(maximum)) >= maximum / 8) || 10) : .25
   const bins = Array.from({ length: Math.max(1, Math.ceil(maximum / width)) }, (_, index) => ({ start: index * width, end: (index + 1) * width, count: 0 }))
@@ -59,9 +59,14 @@ export function scenarioComparison(rows, trades, key, startBalance) {
 
 export function bucketCurve(curve, rows, interval, timezone = 'UTC') {
   const observation = row => row?.analytics_time_utc !== undefined ? row.analytics_time_utc : row?.report_time_utc
-  if (interval === 'all') return { points: curve, labels: curve.map((point,index) => index === 0 ? '' : observation(rows.find(row => row.tradeId === point.tradeId)) || '') }
+  const rowMap = new Map(rows.map(row => [row.tradeId,row]))
+  const timestamps = curve.map((point,index) => index === 0 ? null : observation(rowMap.get(point.tradeId)) ?? null)
+  // The origin is an initial-state anchor at the first report observation,
+  // not a fabricated timestamp before the known data.
+  timestamps[0] = timestamps[1] ?? null
+  if (interval === 'all') return { points: curve, labels: timestamps.map((time,index) => index ? time || '' : ''), timestamps }
   const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year:'numeric',month:'2-digit',day:'2-digit' })
-  const groups = new Map(), rowMap = new Map(rows.map(row => [row.tradeId,row]))
+  const groups = new Map()
   for (const point of curve.slice(1)) {
     const instant = observation(rowMap.get(point.tradeId))
     if (!instant) return { points: [], labels: [] }
@@ -73,5 +78,5 @@ export function bucketCurve(curve, rows, interval, timezone = 'UTC') {
     groups.set(key, { end: { ...point, instant }, gap: previous?.gap || (!known(point.value) ? { ...point, instant } : null) })
   }
   const endpoints = [...groups.values()].flatMap(({ end, gap }) => gap && known(end.value) ? [gap, end] : [end])
-  return { points: curve.length ? [curve[0], ...endpoints] : [], labels: ['', ...endpoints.map(point => point.instant)] }
+  return { points: curve.length ? [curve[0], ...endpoints] : [], labels: ['', ...endpoints.map(point => point.instant)], timestamps: curve.length ? [timestamps[0], ...endpoints.map(point => point.instant)] : [] }
 }

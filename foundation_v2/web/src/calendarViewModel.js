@@ -21,9 +21,10 @@ export function civilMonthWeeks(month) {
 export function calendarPeriodSummary(items, unassignedCount = 0, sourcePartial = false) {
   const sum = key => items.reduce((total, item) => total + item[key], 0)
   const complete = items.every(item => item.complete) && unassignedCount === 0 && !sourcePartial
+  const classificationComplete = complete && items.every(item => item.classificationComplete !== false && Number.isFinite(item.wins))
   const count = sum('count'), rCount = sum('rCount')
   return { observedCount: count, count: unassignedCount || sourcePartial ? null : count, rCount,
     partial: !complete, net: complete && count ? sum('net') : null,
-    winRate: complete && count ? sum('wins') / count * 100 : null,
+    winRate: classificationComplete && count ? sum('wins') / count * 100 : null,
     averageR: !unassignedCount && !sourcePartial && rCount ? items.reduce((total, item) => total + (item.averageR ?? 0) * item.rCount, 0) / rCount : null }
 }
