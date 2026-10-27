@@ -108,16 +108,54 @@ export function scenarioChartSeries(runs, activeValues) {
     }) }
 }
 
-export function compareScenarioRuns(runs, activeValues) {
+export function scenarioResults(runs, activeValues, trades, key) {
   const { curves, common } = scenarioRunSample(runs, activeValues)
-  const ids = new Set(common.map(row => row.tradeId))
-  const totals = curves.map(item => ({ value: item.value, total: number(item.curve.eligible.filter(row => ids.has(row.tradeId)).reduce((sum, row) => sum + row.simulatedR, 0)) }))
-  const comparable = curves.length >= 2 && common.length > 0 && totals.every(item => item.total !== null)
-  const bestTotal = comparable ? Math.max(...totals.map(item => item.total)) : null
-  const tieTolerance = Math.max(1e-12, Number.EPSILON * Math.max(1, Math.abs(bestTotal)) * Math.max(8, common.length * 2))
-  return { testedCount: curves.length, commonCount: common.length,
-    decisiveCount: common.filter(row => Math.abs(row.actualR) > 1e-12).length,
-    bestTotal, bestValues: comparable ? totals.filter(item => Math.abs(item.total - bestTotal) <= tieTolerance).map(item => item.value) : [] }
+  const source = new Map(trades.map(trade => [trade.tradeId, trade]))
+  const currencies = new Set(common.map(row => source.get(row.tradeId)?.account_currency).filter(Boolean))
+  const currency = currencies.size === 1 && common.every(row => source.get(row.tradeId)?.account_currency) ? [...currencies][0] : null
+  const round = (value, digits = 2) => Number.isFinite(value) ? (Math.abs(value) < Number.MAX_SAFE_INTEGER / 10 ** digits ? Math.round((value + Number.EPSILON) * 10 ** digits) / 10 ** digits : value) : value === Infinity ? Infinity : null
+  const entries = curves.map(item => {
+    let total = 0, peak = 0, depth = 0, grossWin = 0, grossLoss = 0, wins = 0, losses = 0
+    const drawdowns = [], outcomes = new Map((item.curve.rows || []).map(row => [row.trade_id, row[key]]))
+    const profits = []
+    for (const row of common) {
+      const r = item.byId.get(row.tradeId).simulatedR
+      total += r
+      if (r > 0) { wins++; grossWin += r }
+      if (r < 0) { losses++; grossLoss -= r }
+      // A drawdown episode ends at a new high, matching the reference's R path.
+      if (total > peak) { if (depth > 0) drawdowns.push(depth); depth = 0; peak = total }
+      else depth = Math.max(depth, peak - total)
+      profits.push(number(outcomes.get(row.tradeId)?.net_pnl))
+    }
+    if (depth > 0) drawdowns.push(depth)
+    const hasSample = common.length > 0 && Number.isFinite(total) && Number.isFinite(grossWin) && Number.isFinite(grossLoss)
+    return { value: item.value, totalR: hasSample ? round(total) : null,
+      winRate: hasSample && wins + losses ? round(wins / (wins + losses) * 100, 2) : null,
+      profitFactor: hasSample ? round(grossLoss ? grossWin / grossLoss : grossWin ? Infinity : 0) : null,
+      averageDrawdown: hasSample ? round(drawdowns.length ? drawdowns.reduce((sum, value) => sum + value, 0) / drawdowns.length : 0) : null,
+      profit: hasSample && currency && profits.every(value => value !== null) ? round(number(profits.reduce((sum, value) => sum + value, 0))) : null,
+      averageWinR: hasSample ? round(wins ? grossWin / wins : 0) : null }
+  })
+  const ranking = key === 'risk_reward' ? [['profitFactor', -1], ['averageDrawdown', 1], ['profit', -1], ['winRate', -1], ['averageWinR', -1]]
+    : [['profitFactor', -1], ['averageDrawdown', 1], ['totalR', -1], ['winRate', -1]]
+  const candidates = entries.filter(entry => ranking.every(([metric]) => entry[metric] !== null))
+  const belowCutoff = key === 'stop_loss' ? candidates.filter(entry => entry.value < 80) : []
+  const compare = (a, b) => {
+    for (const [metric, direction] of ranking) {
+      if (a[metric] !== b[metric]) return (a[metric] > b[metric] ? 1 : -1) * direction
+    }
+    return 0
+  }
+  const ranked = (belowCutoff.length ? belowCutoff : candidates).sort(compare)
+  const bestValue = candidates.length >= 2 && ranked.length ? ranked[0].value : null
+  const bestCells = Object.fromEntries(['winRate', 'totalR', 'profit', 'profitFactor', 'averageDrawdown'].map(metric => {
+    const values = (belowCutoff.length ? belowCutoff : entries).filter(entry => entry[metric] !== null)
+    const best = values.length ? (metric === 'averageDrawdown' ? Math.min : Math.max)(...values.map(entry => entry[metric])) : null
+    return [metric, best]
+  }))
+  return { entries, currency, commonCount: common.length, bestValue, bestCells,
+    sourceWins: common.filter(row => row.actualR > 0).length, sourceLosses: common.filter(row => row.actualR < 0).length }
 }
 
 export function bucketCurve(curve, rows, interval, timezone = 'UTC') {

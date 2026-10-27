@@ -305,3 +305,44 @@ Served index SHA256:
 `6ad1beb2d973b6e702aa32e6cf552bd35fe6774a5c64edc275447ffa772eabb2`.
 Rollback index: `ui-before-multiline/index.html` under the evidence root. UI-only
 promotion retained the existing processes, private branding and prior hashed assets.
+
+
+## Results table correction — 28 October 2026
+
+Read the owner's prepared FX simulator state without starting another simulation.
+The current UI showed 3/9 eligible trades and a 5% best-overall reduction. Read all
+six rendered table tooltips: SL reduction, win rate, total R, profit, profit factor
+and average drawdown. The source R profit factor and drawdown are independent of
+position size. The live caption is an aggregate recommendation, not a count of
+only trades improved by the winning configuration.
+
+The publicly served current route chunk `chunk-U7RN4OK3.js` imports
+`chunk-VVSM7ZIE.js`; downloaded unauthenticated from the app origin into the evidence
+folder. Its I_/V_/X_ functions confirm the SL ranking: PF descending, positive
+average drawdown ascending, total R descending, win rate descending; eligible
+reductions below 80% take precedence. Entries are rounded before ranking, ties
+retain configuration order. `go` closes a drawdown episode at a new high and
+includes an unfinished episode. `Bs` requires at least five source wins and five
+source losses for reliability; the reference counts zero as a source win.
+Local win rate and source sample counts retain strict positive/negative semantics
+and explain breakeven exclusion in header help.
+
+The source shows warnings conditionally. The owner explicitly asked to keep both
+amber rows, so the local view always keeps two truthful rows: actual low-sample
+or conditional threshold guidance, and actual excluded or complete coverage.
+It does not claim missing price/SL causes that the current adapter cannot prove.
+
+Each completed scenario now has one row with six columns and shared header
+Info controls; best metrics are green and the overall winner has a badge. The
+chart height is 420px. Summary/table/curves share the same eligible observations.
+The recommendation now uses the reference ordering, rather than maximum R alone.
+RR uses its separate reference order: PF, DD, money profit, win rate, average win R.
+Missing or mixed currencies prevent money aggregation and an RR recommendation.
+
+The financial engine remains the existing configured-distance, fixed-position-size
+engine. In contrast, FX's SL profit tooltip describes per-trade original SL and
+constant dollar risk resizing. The local profit tooltip explicitly preserves this
+difference; no 1%-capital risk fallback or new engine was introduced.
+
+Evidence root: `E:/BACKUP-TRADINGWORKSPACE/scenario-results-table-20261028/`.
+Public chunk SHA256: `9a03c6fb16e738324dff43790e6ca0b52b24ff215edf09ca4b70c58739bb90fb`.

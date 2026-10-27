@@ -78,12 +78,12 @@ existing objectives table on desktop and stack on narrow screens.
 
 Simulation uses three full-width sections stacked in order: SL, RR, Monte Carlo.
 Each starts with a short introduction and an explicit Run action. After running,
-SL/RR show scenario chips, a chart and an always-open trade table without a
+SL/RR show scenario chips, a chart and an always-open scenario comparison table without a
 repeated table heading. Do not insert numeric configuration or summary metrics
 between the chips and chart. Run computes all current scenario configurations
 sequentially through the existing read-only experiment adapter, with one abort
 scope for the batch. Failed scenarios retain successful results and can be retried.
-Selecting a cached chip changes the table without another read. Added scenarios
+Selecting a cached chip highlights its curve and table row without another read. Added scenarios
 compute only missing values; loading and retry stay within that tool.
 The current-SL 0% chip cannot be removed. Other chips reserve no remove-button
 width at rest and expand on hover or keyboard focus; touch reveals it on focus.
@@ -106,13 +106,28 @@ denominator; no capital-percentage denominator is invented. There is no separate
 Gốc/Mô phỏng legend or extra baseline. Hover/touch points and keyboard endpoints
 identify the scenario, date and R. The table
 uses shared DataTable styling and its horizontal rules reach both panel edges;
-numeric columns align right. Unresolved trades stay in the table.
-Results sit below the chart and above the table. Rank only active scenarios
-that have completed a run, using their shared eligible trades and signed total R;
-one run or no shared sample cannot establish a winner. Ties name their actual
-count. Cache compact eligible observations and table outcomes within the mounted report scope, not full
-experiment payloads. Sample-size and missing-outcome/risk/date notices appear only
-when applicable; healthy complete samples do not inherit reference warnings.
+numeric columns align right. Each completed active scenario has one row: configuration,
+win rate, total R, profit, profit factor and average drawdown, with accessible
+header help. Unresolved trades stay outside the common sample and its coverage
+count remains visible. Profit is unavailable for missing or mixed currencies.
+Profit factor divides winning R by absolute losing R; positive winnings with
+no losses give infinity. Average drawdown uses peak-to-trough episode depths in
+cumulative R, includes an open episode and ends an episode at a new high; display
+its magnitude as negative R. Win rate excludes known breakevens.
+Results sit below the chart and above the table. Rank completed active SL scenarios
+lexicographically by R profit factor descending, drawdown magnitude ascending,
+total R descending and win rate descending, after rounding displayed metrics.
+When any eligible reduction is below 80%, exclude reductions of 80% or more from
+recommendation and best-cell selection. Exact ties retain active scenario order,
+matching the reference. RR ranking uses profit in place of total R, followed by
+win rate and average winning R. Missing money prevents a complete RR ranking.
+One comparable run or no common sample cannot establish a winner. Cache compact
+eligible observations and table outcomes within the mounted report scope, not
+full experiment payloads. The owner explicitly requested both amber rows to stay
+visible: the first reports insufficient source wins/losses (at least five of each)
+or states that reliability threshold as conditional guidance; the second reports
+actual excluded coverage or confirms complete coverage. Do not invent missing
+price data or initial-stop reasons the adapter cannot distinguish.
 Horizontal-only scenario tables opt into DataTable `scrollAxis="x"`: contain
 horizontal overscroll but allow native vertical chaining to the page, including
 when the table has no vertical overflow. Keep the default containment for bounded

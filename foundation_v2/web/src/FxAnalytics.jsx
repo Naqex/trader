@@ -7,7 +7,7 @@ import { advancedAnalytics, known, number, periodReturn } from './tradingAnalyti
 import './fx-analytics.css'
 import { AnalyticsCurve, AnalyticsBars, AnalyticsDailyBars, AnalyticsRing, AnalyticsRadar } from './AnalyticsCharts.jsx'
 export { AnalyticsCurve } from './AnalyticsCharts.jsx'
-import { profitFactorGauge, bucketCurve, excursionSummary, scenarioRiskCurve, scenarioChartSeries, compareScenarioRuns, realizedRiskSeries, idealRiskSummary } from './analyticsPresentation.js'
+import { profitFactorGauge, bucketCurve, excursionSummary, scenarioRiskCurve, scenarioChartSeries, scenarioResults, realizedRiskSeries, idealRiskSummary } from './analyticsPresentation.js'
 import { displayDate } from './dateFormat.js'
 import { currencyLabel } from './moneyFormat.js'
 import { simulationMoments } from './analyticsSimulation.js'
@@ -319,19 +319,27 @@ function ScenarioSimulator({ kind, model, data, config, loadExperiment, timezone
   const [runs, setRuns] = useState({})
   const [failed, setFailed] = useState([])
   const resultsRef = useRef(null)
-  const currency = model.result?.account_currency || t('Đơn vị tài khoản'), busy = job.phase === 'loading'
+  const busy = job.phase === 'loading'
   const title = rr ? 'RR Simulator' : 'Stop Loss Simulator'
   const scenarioOptions = rr ? RR_SCENARIOS : STOP_LOSS_SCENARIOS
   const selectedScenario = rr ? Number(draft.target_r) : Math.round((1 - Number(draft.stop_multiplier)) * 100)
   const riskCurve = scenarios.includes(selectedScenario) ? runs[selectedScenario] : null
-  const byId = useMemo(() => new Map((riskCurve?.rows || []).map(row => [row.trade_id,row])), [riskCurve])
   const chart = useMemo(() => scenarioChartSeries(runs, scenarios), [runs, scenarios])
   const chartDates = chart.timestamps.map(time => displayDate(time, {timeZone:timezone || 'UTC'}))
   const scenarioLabel = value => rr ? `${value}R` : `${value}%`
   const scenarioColor = value => SCENARIO_COLORS[SCENARIO_TONES[(scenarioOptions.includes(value) ? scenarioOptions.indexOf(value) : Math.round(value)) % SCENARIO_TONES.length]]
-  const comparison = useMemo(() => compareScenarioRuns(runs, scenarios), [runs, scenarios])
-  const readyCount = data.rows.filter(trade => byId.get(trade.tradeId)?.[kind]?.status === 'ready' && known(byId.get(trade.tradeId)?.[kind]?.net_pnl) && known(trade.net_pnl)).length
-  const smallSample = comparison.bestValues.length ? comparison.decisiveCount < 5 : riskCurve?.eligible.filter(row => Math.abs(row.actualR) > 1e-12).length < 5
+  const comparison = useMemo(() => scenarioResults(runs, scenarios, data.rows, kind), [runs, scenarios, data.rows, kind])
+  const smallSample = comparison.sourceWins < 5 || comparison.sourceLosses < 5
+  const excludedCount = Math.max(0, data.count - comparison.commonCount)
+  const columns = [
+    [null, rr ? 'Mục tiêu R' : 'Mức giảm SL', rr ? 'Thử mục tiêu chốt lời khác nhau, giữ nguyên SL gốc và so sánh với giao dịch đã đóng.' : 'Thử khoảng dừng lỗ cấu hình trong thời gian giữ lệnh gốc. Giữ phí và quy tắc intrabar; không sửa giao dịch đã lưu.'],
+    ['winRate', 'Tỉ lệ thắng', 'Số lệnh thắng chia cho tổng lệnh thắng và thua; loại lệnh hòa vốn. Chỉ dùng tập giao dịch chung đủ dữ liệu.'],
+    ['totalR', 'Tổng R', 'Tổng kết quả theo R của từng giao dịch. 1R là rủi ro gốc của chính lệnh đó, không phải phần trăm vốn.'],
+    ['profit', 'Lợi nhuận', 'Tổng lãi/lỗ mô phỏng trên cùng tập giao dịch của biểu đồ. Dùng khối lượng và phí từ bộ mô phỏng hiện tại; không tự đổi khối lượng để giữ rủi ro tiền cố định. Không cộng các đồng tiền khác nhau.'],
+    ['profitFactor', 'Hệ số lợi nhuận', 'Tổng R của lệnh thắng chia cho độ lớn tổng R của lệnh thua. Không dùng tiền để tránh thiên lệch do khối lượng. Không có lệnh thua và có lãi: ∞.'],
+    ['averageDrawdown', 'Sụt giảm TB', 'Trung bình độ sâu từ đỉnh đến đáy của từng đợt sụt giảm trên đường R lũy kế; tính cả đợt chưa phục hồi. Hiển thị bằng R âm.'],
+  ]
+  const metricText = (entry, metric) => entry[metric] === null ? 'N/A' : entry[metric] === Infinity ? '∞' : fmt(metric === 'averageDrawdown' ? -entry[metric] : entry[metric], metric === 'winRate' ? '%' : metric === 'totalR' || metric === 'averageDrawdown' ? ' R' : metric === 'profit' ? ` ${comparison.currency}` : '')
   const selectScenario = (value, values = [value]) => {
     const next = { ...draft, ...(rr ? { target_r: value } : { stop_multiplier: (100 - value) / 100 }) }
     setDraft(next)
@@ -389,26 +397,26 @@ function ScenarioSimulator({ kind, model, data, config, loadExperiment, timezone
       <div ref={resultsRef} tabIndex={-1} role="region" aria-label={t(title)} aria-busy={busy} className="fxa-simulation-results">
         {busy && <p role="status" className="fxa-simulation-progress">{t('Đang mô phỏng từ đường giá…')}</p>}
         {(job.phase === 'error' || failed.length > 0) && <div role="alert" className="fxa-error">{failed.length ? t('Chưa tính được kịch bản {values}.', {values:failed.map(scenarioLabel).join(', ')}) : t(job.error)} <button type="button" className="fxa-button" disabled={busy} onClick={() => run()}>{t('Thử lại')}</button></div>}
-        {chart.timestamps.length ? <AnalyticsCurve series={chart.series} seriesMeta={chart.values.map(value => ({label:scenarioLabel(value),color:scenarioColor(value),selected:value===selectedScenario}))} label={t('R lũy kế theo ngày đóng lệnh trên chart')} labels={chartDates} axisLabels={chartDates} timestamps={chart.timestamps} yTitle={t('R lũy kế')} suffix=" R" height={280} controls/> : !busy && <div className="fxa-chart-empty">{t('Chưa có tập giao dịch chung đủ dữ liệu cho biểu đồ R.')}</div>}
+        {chart.timestamps.length ? <AnalyticsCurve series={chart.series} seriesMeta={chart.values.map(value => ({label:scenarioLabel(value),color:scenarioColor(value),selected:value===selectedScenario}))} label={t('R lũy kế theo ngày đóng lệnh trên chart')} labels={chartDates} axisLabels={chartDates} timestamps={chart.timestamps} yTitle={t('R lũy kế')} suffix=" R" height={420} controls/> : !busy && <div className="fxa-chart-empty">{t('Chưa có tập giao dịch chung đủ dữ liệu cho biểu đồ R.')}</div>}
         {riskCurve && <>
           <section className="fxa-scenario-summary" aria-label={t('Kết quả mô phỏng')}>
             <div className="fxa-scenario-summary-heading"><h3>{t('Kết quả')}</h3><p>
-              {comparison.bestValues.length === 1 ? t(rr ? 'Trong {tested} kịch bản đã chạy, mục tiêu {value}R cho tổng R cao nhất trên cùng {count} giao dịch ({r}R).' : 'Trong {tested} kịch bản đã chạy, giảm SL {value}% cho tổng R cao nhất trên cùng {count} giao dịch ({r}R).', { tested: comparison.testedCount, value: fmt(comparison.bestValues[0]), count: comparison.commonCount, r: fmt(comparison.bestTotal) })
-                : comparison.bestValues.length > 1 ? t('Có {tied}/{tested} kịch bản đã chạy cùng tổng R cao nhất trên {count} giao dịch chung ({r}R).', { tied: comparison.bestValues.length, tested: comparison.testedCount, count: comparison.commonCount, r: fmt(comparison.bestTotal) })
-                : t('Kịch bản hiện tại dùng {known}/{total} giao dịch đủ dữ liệu cho biểu đồ R.', { known: riskCurve.eligible.length, total: data.count })}
+              {comparison.bestValue !== null ? t(rr ? 'Dựa trên {known}/{total} giao dịch, mục tiêu {value}R cho kết quả tổng thể tốt nhất.' : comparison.bestValue === 0 ? 'Dựa trên {known}/{total} giao dịch, SL hiện tại cho kết quả tổng thể tốt nhất.' : 'Dựa trên {known}/{total} giao dịch, giảm SL {value}% cho kết quả tổng thể tốt nhất.', {known:comparison.commonCount,total:data.count,value:fmt(comparison.bestValue)})
+                : t('Có {known}/{total} giao dịch chung đủ dữ liệu; chưa đủ kịch bản để chọn kết quả tốt nhất.', {known:comparison.commonCount,total:data.count})}
+
             </p></div>
-            {chart.timestamps.length < riskCurve.eligible.length && <p className="fxa-scenario-result-notice"><TestingIcon/>{t('Biểu đồ so sánh dùng {known}/{total} giao dịch chung đủ dữ liệu.', {known:chart.timestamps.length,total:data.count})}</p>}
-            {riskCurve.eligible.length > 0 && smallSample && <p className="fxa-scenario-result-notice"><TestingIcon/>{t('Mẫu có dưới 5 giao dịch không hòa vốn; kết quả có thể kém ổn định.')}</p>}
-            {readyCount < data.count && <p className="fxa-scenario-result-notice"><TestingIcon/>{t('Có {count} giao dịch thiếu dữ liệu hoặc chưa xác định được kết quả mô phỏng; vẫn giữ trong bảng.', { count: data.count - readyCount })}</p>}
-            {readyCount > riskCurve.eligible.length && <p className="fxa-scenario-result-notice"><TestingIcon/>{t('Có {count} giao dịch đã mô phỏng nhưng thiếu rủi ro gốc hoặc ngày trên chart để tính R.', { count: readyCount - riskCurve.eligible.length })}</p>}
+            <p className="fxa-scenario-result-notice"><TestingIcon/>{t(smallSample ? 'Mẫu có dưới 5 lệnh thắng hoặc dưới 5 lệnh thua; kết quả kém tin cậy hơn.' : 'Độ tin cậy giảm nếu mẫu có dưới 5 lệnh thắng hoặc dưới 5 lệnh thua.')}</p>
+            <p className="fxa-scenario-result-notice"><TestingIcon/>{excludedCount ? t('Có {count} giao dịch không nằm trong tập so sánh chung vì thiếu đường giá, kết quả mô phỏng, rủi ro gốc hoặc ngày đóng lệnh.', {count:excludedCount}) : t('Đã dùng đủ {count}/{count} giao dịch. Chỉ các lệnh đủ đường giá, kết quả mô phỏng, rủi ro gốc và ngày đóng lệnh mới được đưa vào so sánh.', {count:data.count})}</p>
+
           </section>
           <div className="fxa-scenario-details">
             <DataTable className="fxa-scenario-table" label={t(title)} contained scrollAxis="x">
-              <thead><tr>{['#','Trạng thái','Giá thoát','Lợi nhuận gốc','Lợi nhuận mô phỏng'].map((label, index) => <th scope="col" className={index === 0 ? 'wm-table-row-number' : index >= 2 ? 'is-numeric' : undefined} key={label}>{t(label)}</th>)}</tr></thead>
-              <tbody>{data.rows.map((trade,index) => {
-                const outcome = byId.get(trade.tradeId)?.[kind], ready = outcome?.status === 'ready'
-                return <tr key={trade.tradeId}><td className="wm-table-row-number" data-tooltip={trade.tradeId}>{index+1}</td><td>{t(({ready:'Đã tính',ambiguous:'Không rõ thứ tự intrabar'})[outcome?.status] || 'Không đủ dữ liệu')}<small>{outcome?.reason === 'original_stop_unavailable' ? t('Chưa xác minh được SL gốc') : outcome?.status === 'ambiguous' ? t('SL và TP cùng nến') : null}</small></td><td className="is-numeric">{ready ? fmt(outcome.exit_price,'',6) : 'N/A'}</td><td className="is-numeric">{fmt(trade.net_pnl,` ${currency}`)}</td><td className="is-numeric">{ready ? fmt(outcome.net_pnl,` ${currency}`) : 'N/A'}</td></tr>
-              })}</tbody>
+              <thead><tr>{columns.map(([metric,label,help]) => <th scope="col" className={metric ? 'is-numeric' : undefined} key={label}><span className="fxa-scenario-column-heading">{t(label)}<Info text={help} mini/></span></th>)}</tr></thead>
+              <tbody>{comparison.entries.map(entry => <tr key={entry.value} aria-selected={entry.value === selectedScenario}>
+                <td><span className="fxa-scenario-row-label" style={{'--fxa-chip-color':scenarioColor(entry.value)}}>{scenarioLabel(entry.value)}</span>{entry.value === comparison.bestValue && <span className="fxa-scenario-best">{t('Tốt nhất')}</span>}</td>
+                {columns.slice(1).map(([metric]) => <td className="is-numeric" key={metric}><span className={entry[metric] !== null && entry[metric] === comparison.bestCells[metric] ? 'fxa-scenario-best-value' : undefined}>{metricText(entry,metric)}</span></td>)}
+              </tr>)}</tbody>
+
             </DataTable>
           </div>
         </>}

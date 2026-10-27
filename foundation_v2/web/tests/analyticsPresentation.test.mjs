@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { bucketCurve, excursionSummary, scenarioComparison, scenarioRiskCurve, scenarioChartSeries, compareScenarioRuns, realizedRiskSeries, idealRiskSummary } from '../src/analyticsPresentation.js'
+import { bucketCurve, excursionSummary, scenarioComparison, scenarioRiskCurve, scenarioChartSeries, scenarioResults, realizedRiskSeries, idealRiskSummary } from '../src/analyticsPresentation.js'
 
 test('scenario comparison uses matching observed trades and never substitutes unresolved PnL', () => {
   const trades=[{tradeId:'a',net_pnl:10},{tradeId:'b',net_pnl:-5},{tradeId:'c',net_pnl:30}]
@@ -57,24 +57,42 @@ test('scenario R rejects out-of-range dates and overflowing risk denominators', 
   assert.deepEqual(scenarioRiskCurve(rows,trades,'stop_loss').eligible,[])
 })
 
-test('scenario ranking only compares computed active scenarios on the shared sample', () => {
-  const curve = eligible => ({eligible:eligible.map(([tradeId,actualR,simulatedR])=>({tradeId,actualR,simulatedR}))})
-  const runs={0:curve([['a',1,100],['b',-1,-3]]),5:curve([['b',-1,-2]]),10:curve([['b',-1,999]])}
-  assert.deepEqual(compareScenarioRuns(runs,[0,5,15]),{testedCount:2,commonCount:1,decisiveCount:1,bestTotal:-2,bestValues:[5]})
-  assert.deepEqual(compareScenarioRuns(runs,[0,15]).bestValues,[])
-  assert.equal(compareScenarioRuns(runs,[0,15]).testedCount,1)
-  assert.equal(compareScenarioRuns(runs,[0,5,10]).bestTotal,999)
+const scenarioRun = (values, money = values) => ({eligible:values.map((simulatedR,i)=>({tradeId:String(i),actualR:i%2?-1:1,simulatedR,ms:i})),rows:money.map((net_pnl,i)=>({trade_id:String(i),stop_loss:{net_pnl},risk_reward:{net_pnl}}))})
+const scenarioTrades = n => Array.from({length:n},(_,i)=>({tradeId:String(i),account_currency:'USD'}))
+
+test('scenario results use R profit factor and episode drawdown, not money or point averages', () => {
+  const result=scenarioResults({0:scenarioRun([2,-1,2,-2,3],[20,-1000,20,-2000,30]),5:scenarioRun([1,-1,1,-1,1])},[0,5],scenarioTrades(5),'stop_loss')
+  assert.deepEqual(result.entries[0],{value:0,totalR:4,winRate:60,profitFactor:2.33,averageDrawdown:1.5,profit:-2930,averageWinR:2.33})
+  assert.equal(result.bestValue,0);assert.equal(result.commonCount,5);assert.equal(result.sourceWins,3);assert.equal(result.sourceLosses,2)
+  assert.equal(scenarioResults({0:scenarioRun([1,-2,1,-2])},[0],scenarioTrades(4),'stop_loss').entries[0].averageDrawdown,3)
 })
 
-test('scenario ranking handles ties, disjoint samples and numeric overflow without inventing a winner', () => {
-  const curve = (tradeId,simulatedR)=>({eligible:[{tradeId,actualR:0,simulatedR}]})
-  assert.deepEqual(compareScenarioRuns({0:curve('a',-1),5:curve('a',-1)},[0,5]).bestValues,[0,5])
-  assert.deepEqual(compareScenarioRuns({0:curve('a',-1),5:curve('a',-1),10:curve('a',-5)},[0,5,10]).bestValues,[0,5])
-  assert.deepEqual(compareScenarioRuns({0:curve('a',1e12),5:curve('a',1e12-500)},[0,5]).bestValues,[0])
-  assert.deepEqual(compareScenarioRuns({0:curve('a',-1),5:curve('b',20)},[0,5]).bestValues,[])
-  assert.equal(compareScenarioRuns({0:curve('a',-1),5:curve('b',20)},[0,5]).commonCount,0)
-  const overflow={eligible:[{tradeId:'a',actualR:1,simulatedR:1e308},{tradeId:'b',actualR:1,simulatedR:1e308}]}
-  assert.deepEqual(compareScenarioRuns({0:overflow,5:overflow},[0,5]).bestValues,[])
+test('best overall uses PF, drawdown, total R, win rate and a stable 80 percent cutoff', () => {
+  const calculate=(a,b,values=[0,5])=>scenarioResults({[values[0]]:scenarioRun(a),[values[1]]:scenarioRun(b)},values,scenarioTrades(a.length),'stop_loss')
+  assert.equal(calculate([100,-100],[2,-1]).bestValue,5)
+  assert.equal(calculate([4,-2],[2,-1]).bestValue,5)
+  assert.equal(calculate([2,-1,0],[1,-1,1]).bestValue,5)
+  assert.equal(calculate([1,-1],[5,-1],[0,80]).bestValue,0)
+  assert.equal(calculate([1,-1],[5,-1],[80,90]).bestValue,90)
+  assert.equal(calculate([2,-1],[2,-1]).bestValue,0)
+  assert.equal(scenarioResults({5:scenarioRun([1])},[5],scenarioTrades(1),'stop_loss').bestValue,null)
+})
+
+test('scenario metrics retain Infinity, zero, missing values and currency boundaries', () => {
+  const runs={0:scenarioRun([1,2]),5:scenarioRun([-1,-2])}
+  const result=scenarioResults(runs,[0,5],scenarioTrades(2),'stop_loss')
+  assert.equal(result.entries[0].profitFactor,Infinity);assert.equal(result.entries[1].profitFactor,0)
+  const zero=scenarioResults({0:scenarioRun([0,0])},[0],scenarioTrades(2),'stop_loss').entries[0]
+  assert.equal(zero.totalR,0);assert.equal(zero.profit,0);assert.equal(zero.winRate,null)
+  const mixed=scenarioResults(runs,[0,5],[{tradeId:'0',account_currency:'USD'},{tradeId:'1',account_currency:'EUR'}],'stop_loss')
+  assert.equal(mixed.entries[0].profit,null);assert.equal(mixed.entries[0].totalR,3)
+  const missing=scenarioResults(runs,[0,5],scenarioTrades(2).map(t=>({...t,account_currency:null})),'stop_loss')
+  assert.equal(missing.entries[0].profit,null)
+  const disjoint={0:scenarioRun([1]),5:{eligible:[{tradeId:'other',simulatedR:1,actualR:1,ms:1}]}}
+  assert.equal(scenarioResults(disjoint,[0,5],scenarioTrades(1),'stop_loss').bestValue,null)
+  assert.equal(scenarioResults(disjoint,[0,5],scenarioTrades(1),'stop_loss').entries[0].totalR,null)
+  const overflow={0:scenarioRun([1e308,1e308]),5:scenarioRun([1,1])}
+  assert.equal(scenarioResults(overflow,[0,5],scenarioTrades(2),'stop_loss').entries[0].totalR,null)
 })
 
 test('scenario chart aligns all computed active lines to the same sample used by ranking', () => {
@@ -87,7 +105,7 @@ test('scenario chart aligns all computed active lines to the same sample used by
   assert.deepEqual(chart.values,[0,5])
   assert.deepEqual(chart.timestamps,[2,3])
   assert.deepEqual(chart.series.map(series=>series.map(point=>point.value)),[[-3,2],[-2,4]])
-  assert.equal(chart.series[1].at(-1).value,compareScenarioRuns(runs,[0,5,15]).bestTotal)
+  assert.equal(chart.series[1].at(-1).value,scenarioResults(runs,[0,5,15],scenarioTrades(3),'stop_loss').entries[1].totalR)
   assert.deepEqual(scenarioChartSeries(runs,[5]).series[0].map(point=>point.value),[-2,4])
   assert.deepEqual(scenarioChartSeries(runs,[0,5,10]).timestamps,[])
   assert.deepEqual(scenarioChartSeries(runs,[0,5,10]).series,[[],[],[]])
