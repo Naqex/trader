@@ -271,10 +271,11 @@ function SimulationIntro({ description, onRun }) {
 
 const STOP_LOSS_SCENARIOS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]
 const RR_SCENARIOS = [1, 1.5, 2, 2.5, 3, 4, 5]
+const SCENARIO_TONES = ['blue', 'violet', 'yellow', 'red', 'teal', 'blue', 'orange', 'purple', 'lime', 'orange', 'cyan', 'green', 'teal']
 
 function ScenarioSimulator({ kind, model, data, config, loadExperiment }) {
   const { t, fmt } = useTestingLocale(), job = useSimulationRun(), rr = kind === 'risk_reward'
-  const [draft, setDraft] = useState(config), [applied, setApplied] = useState(null)
+  const [draft, setDraft] = useState(config), [applied, setApplied] = useState(null), [scenarios, setScenarios] = useState(() => rr ? RR_SCENARIOS : STOP_LOSS_SCENARIOS)
   const currency = model.result?.account_currency || t('Đơn vị tài khoản'), busy = job.phase === 'loading'
   const title = rr ? 'RR Simulator' : 'Stop Loss Simulator'
   const fields = rr ? [['target_r','Mục tiêu R',.1,100,.1]] : [['stop_distance_ticks','Khoảng dừng lỗ (tick)',1,100000,1],['stop_multiplier','Hệ số dừng lỗ',.1,10,.1]]
@@ -284,6 +285,8 @@ function ScenarioSimulator({ kind, model, data, config, loadExperiment }) {
   const scenarioOptions = rr ? RR_SCENARIOS : STOP_LOSS_SCENARIOS
   const selectedScenario = rr ? Number(draft.target_r) : Math.round((1 - Number(draft.stop_multiplier)) * 100)
   const selectScenario = value => setDraft({ ...draft, ...(rr ? { target_r: value } : { stop_multiplier: 1 - value / 100 }) })
+  const removeScenario = value => setScenarios(current => current.filter(item => item !== value))
+  const addScenario = () => { const value = scenarioOptions.find(item => !scenarios.includes(item)); if (value !== undefined) { setScenarios(current => [...current, value]); selectScenario(value) } }
   const run = () => {
     const request = Object.fromEntries(Object.entries(draft).map(([key, value]) => [key, Number(value)]))
     setApplied(request)
@@ -297,12 +300,13 @@ function ScenarioSimulator({ kind, model, data, config, loadExperiment }) {
     actions={rr ? <a className="fxa-help-link" href="https://fx-replay.notion.site/What-is-the-RR-Simulator-2479db20207480bb883bd263526d24de" target="_blank" rel="noreferrer">{t('Cách tính')} ↗</a> : null}>
     {job.phase === 'idle' ? <SimulationIntro description={rr ? 'Thử mục tiêu chốt lời khác nhau, giữ nguyên SL gốc và so sánh với giao dịch đã đóng.' : 'Thử khoảng dừng lỗ khác nhau và so sánh với giao dịch đã đóng.'} onRun={run}/> : <>
       <div className="fxa-simulation-scenarios" role="group" aria-label={t(rr ? 'Mục tiêu R' : 'Mức giảm SL')}>
-        {scenarioOptions.map(value => <button key={value} type="button" className={`fxa-scenario-chip${selectedScenario === value ? ' is-selected' : ''}`} aria-pressed={selectedScenario === value} disabled={busy} onClick={() => selectScenario(value)}>{rr ? `${value}R` : `${value}%${value === 0 ? ` (${t('SL hiện tại')})` : ''}`}</button>)}
+        {scenarios.map((value, index) => <span className={`fxa-scenario-chip tone-${SCENARIO_TONES[scenarioOptions.indexOf(value) % SCENARIO_TONES.length]}`} key={value}><button type="button" aria-pressed={selectedScenario === value} disabled={busy} onClick={() => selectScenario(value)}>{rr ? `${value}R` : `${value}%${value === 0 ? ` (${t('SL hiện tại')})` : ''}`}</button><button type="button" className="fxa-scenario-chip-remove" aria-label={t('Xóa kịch bản {value}', { value: rr ? `${value}R` : `${value}%` })} disabled={busy} onClick={() => removeScenario(value)}>×</button></span>)}
+        {scenarios.length < scenarioOptions.length && <button type="button" className="fxa-add-scenario" disabled={busy} onClick={addScenario}>＋ {t('Thêm kịch bản')}</button>}
       </div>
       <form className="fxa-simulator-config" onSubmit={event => { event.preventDefault(); run() }}>
         {fields.map(([key,label,min,max,step]) => <label className="fxa-field" key={key}><span>{t(label)}</span><input aria-label={t(label)} disabled={busy} type="number" min={min} max={max} step={step} required value={draft[key]} onChange={event => setDraft({ ...draft, [key]: event.target.value })}/></label>)}
         <button type="submit" className="fxa-button is-primary" disabled={busy}>{t(busy ? 'Đang tính…' : 'Chạy lại')}</button>
-        <button type="button" className="fxa-button" onClick={() => { job.reset(); setDraft(config); setApplied(null) }}>{t(busy ? 'Hủy' : 'Đặt lại')}</button>
+        <button type="button" className="fxa-button" onClick={() => { job.reset(); setDraft(config); setApplied(null); setScenarios(scenarioOptions) }}>{t(busy ? 'Hủy' : 'Đặt lại')}</button>
         {changed && !busy && <span role="status" className="fxa-pending-state">{t('Cấu hình đã đổi; chạy lại để cập nhật kết quả.')}</span>}
       </form>
       <div aria-busy={busy} className="fxa-simulation-results">
@@ -317,7 +321,7 @@ function ScenarioSimulator({ kind, model, data, config, loadExperiment }) {
             <Stat label="Average drawdown" value={fmt(result.averageDrawdown,` ${currency}`)}/>
           </div>
           {result.eligible.length < data.count && <p className="fxa-simulation-notice" role="status">{t('Một số giao dịch chưa đủ dữ liệu đường giá nên không được tính vào biểu đồ; vẫn giữ trong bảng.')}</p>}
-          {result.eligible.length ? <><AnalyticsCurve series={[result.baseline,result.scenario]} label={t(title)} suffix={` ${currency}`} height={260}/><div className="fxa-inline-legend"><span><i/>{t('Gốc')}</span><span><i/>{t('Mô phỏng')}</span></div></> : <div className="fxa-chart-empty">{t('Chưa đủ dữ liệu mô phỏng')}</div>}
+          {result.eligible.length ? <><AnalyticsCurve series={[result.baseline,result.scenario]} label={t(title)} suffix={` ${currency}`} height={260} controls/><div className="fxa-inline-legend"><span><i/>{t('Gốc')}</span><span><i/>{t('Mô phỏng')}</span></div></> : <div className="fxa-chart-empty">{t('Chưa đủ dữ liệu mô phỏng')}</div>}
           <details className="fxa-scenario-details" open><summary>{t('Kết quả từng giao dịch')}</summary>
             <DataTable className="fxa-table-scroll" label={t(title)} contained>
               <thead><tr>{['#','Trạng thái','Giá thoát','Lợi nhuận gốc','Lợi nhuận mô phỏng'].map(label => <th key={label}>{t(label)}</th>)}</tr></thead>
@@ -381,12 +385,16 @@ export function FxAnalyticsReport({ model, extra, experiments, experimentStatus,
   const data = useMemo(() => advancedAnalytics(model, extra, { breakevenThreshold: threshold, experiments }), [model, extra, threshold, experiments])
   useSyncExternalStore(subscribeNavigation, navigationSnapshot)
   const requestedTab = new URLSearchParams(window.location.search).get('analytics_tab')
-  const [previewTab, setPreviewTab] = useState('performance')
+  const [previewTab, setPreviewTab] = useState(() => ['performance', 'drawdown', 'simulation'].includes(requestedTab) ? requestedTab : 'performance')
   const tab = model.result?.preview ? previewTab : ['performance', 'drawdown', 'simulation'].includes(requestedTab) ? requestedTab : 'performance'
   useEffect(() => { onTabChange?.(tab) }, [tab, onTabChange])
-  const choose = value => { setPreviewTab(value); onTabChange?.(value); if (model.result?.preview) return; const url = new URL(window.location.href); url.searchParams.set('analytics_tab', value); navigate(url, { replace: true }) }
+  const choose = value => { setPreviewTab(value); onTabChange?.(value); const url = new URL(window.location.href); url.searchParams.set('analytics_tab', value); navigate(url, { replace: true }) }
   if (!data.count && (model.result?.partial || model.result?.status === 'partial')) return <TestingTradesEmpty incomplete />
   if (!data.count && model.result?.scope?.total_trade_count === 0) return <TestingTradesEmpty />
   if (!data.count && (model.ledger.length || model.result?.scope?.total_trade_count > 0)) return <TestingTradesEmpty filtered />
-  return <><div className="fxa-report-tabs" role="tablist" aria-label={t("Phân tích")}><>{[['performance', 'Performance'], ['drawdown', 'Drawdown'], ['simulation', 'Simulation']].map(([value, label]) => <button className="fxa-tab" id={`fxa-tab-${value}`} role="tab" key={value} aria-selected={tab === value} aria-controls="fxa-report-panel" tabIndex={tab === value ? 0 : -1} onKeyDown={event => { const tabs = ['performance', 'drawdown', 'simulation']; if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) { event.preventDefault(); const index = event.key === 'Home' ? 0 : event.key === 'End' ? 2 : (tabs.indexOf(tab) + (event.key === 'ArrowRight' ? 1 : 2)) % 3; choose(tabs[index]); document.getElementById(`fxa-tab-${tabs[index]}`)?.focus() } }} onClick={() => choose(value)}>{t(label)}</button>)}</></div><div id="fxa-report-panel" role="tabpanel" aria-labelledby={`fxa-tab-${tab}`} tabIndex={0}>{tab === 'performance' ? <AnalyticsPerformance model={model} data={data} extra={extra} onSelect={onSelect} selected={selected} threshold={threshold} onThreshold={setThreshold} experiments={experiments} /> : tab === 'drawdown' ? <AnalyticsDrawdown model={model} data={data} extra={extra} experiments={experiments} experimentStatus={experimentStatus} experimentError={experimentError} /> : <AnalyticsSimulation key={JSON.stringify([model.result?.session_id, model.result?.revision, model.result?.cursor_index, model.result?.execution_event_sequence, model.result?.filters, extra])} model={model} data={data} experiments={experiments} experimentStatus={experimentStatus} experimentError={experimentError} config={config} loadExperiment={loadExperiment} />}</div></>
+  return <><div className="fxa-report-tabs" role="tablist" aria-label={t("Phân tích")}><>{[['performance', 'Performance'], ['drawdown', 'Drawdown'], ['simulation', 'Simulation']].map(([value, label]) => <button className="fxa-tab" id={`fxa-tab-${value}`} role="tab" key={value} aria-selected={tab === value} aria-controls="fxa-report-panel" tabIndex={tab === value ? 0 : -1} onKeyDown={event => { const tabs = ['performance', 'drawdown', 'simulation']; if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) { event.preventDefault(); const index = event.key === 'Home' ? 0 : event.key === 'End' ? 2 : (tabs.indexOf(tab) + (event.key === 'ArrowRight' ? 1 : 2)) % 3; choose(tabs[index]); document.getElementById(`fxa-tab-${tabs[index]}`)?.focus() } }} onClick={() => choose(value)}>{t(label)}</button>)}</></div><div id="fxa-report-panel" role="tabpanel" aria-labelledby={`fxa-tab-${tab}`} tabIndex={0}>
+    <div hidden={tab !== 'performance'}><AnalyticsPerformance model={model} data={data} extra={extra} onSelect={onSelect} selected={selected} threshold={threshold} onThreshold={setThreshold} experiments={experiments} /></div>
+    <div hidden={tab !== 'drawdown'}><AnalyticsDrawdown model={model} data={data} extra={extra} experiments={experiments} experimentStatus={experimentStatus} experimentError={experimentError} /></div>
+    <div hidden={tab !== 'simulation'}><AnalyticsSimulation key={JSON.stringify([model.result?.session_id, model.result?.revision, model.result?.cursor_index, model.result?.execution_event_sequence, model.result?.filters, extra])} model={model} data={data} experiments={experiments} experimentStatus={experimentStatus} experimentError={experimentError} config={config} loadExperiment={loadExperiment} /></div>
+  </div></>
 }

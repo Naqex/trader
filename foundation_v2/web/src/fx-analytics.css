@@ -413,10 +413,15 @@
 .fxa-simulation-report>.fxa-section{grid-column:1/-1;min-width:0}
 .fxa-simulation-intro{min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:24px;text-align:center}
 .fxa-simulation-scenarios{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:4px 0 16px;border-bottom:1px solid var(--wm-border)}
-.fxa-scenario-chip{min-height:32px;padding:5px 12px;border:1px solid var(--wm-border-strong);border-radius:999px;background:transparent;color:var(--wm-content-muted);font:inherit;font-size:12px;cursor:pointer;white-space:nowrap}
-.fxa-scenario-chip:hover:not(:disabled){border-color:var(--project-highlight);color:var(--wm-content)}
-.fxa-scenario-chip.is-selected{border-color:var(--project-highlight);background:color-mix(in srgb,var(--project-highlight) 14%,transparent);color:var(--wm-content);font-weight:600}
-.fxa-scenario-chip:disabled{cursor:default;opacity:.55}
+.fxa-scenario-chip{display:inline-flex;align-items:center;min-height:32px;border:1px solid var(--fxa-chip-color,var(--wm-border-strong));border-radius:999px;background:transparent;color:var(--fxa-chip-color,var(--wm-content-muted));overflow:hidden;white-space:nowrap}
+.fxa-scenario-chip>button:first-child{min-height:30px;padding:5px 10px;border:0;background:transparent;color:inherit;font:inherit;font-size:12px;cursor:pointer}
+.fxa-scenario-chip:hover,.fxa-scenario-chip:has(button[aria-pressed='true']){background:color-mix(in srgb,var(--fxa-chip-color) 14%,transparent);font-weight:600}
+.fxa-scenario-chip>button:disabled{cursor:default;opacity:.55}
+.fxa-scenario-chip-remove{width:24px;min-height:30px;padding:0;border:0;border-left:1px solid color-mix(in srgb,var(--fxa-chip-color) 45%,transparent);background:transparent;color:inherit;font:inherit;font-size:16px;line-height:1;cursor:pointer}
+.fxa-scenario-chip-remove:hover:not(:disabled){background:color-mix(in srgb,var(--fxa-chip-color) 20%,transparent)}
+.fxa-scenario-chip.tone-blue{--fxa-chip-color:#258bff}.fxa-scenario-chip.tone-violet{--fxa-chip-color:#9a7cff}.fxa-scenario-chip.tone-yellow{--fxa-chip-color:#e5bd00}.fxa-scenario-chip.tone-red{--fxa-chip-color:#ef5350}.fxa-scenario-chip.tone-teal{--fxa-chip-color:#13c9a5}.fxa-scenario-chip.tone-orange{--fxa-chip-color:#ff8b20}.fxa-scenario-chip.tone-purple{--fxa-chip-color:#a536ff}.fxa-scenario-chip.tone-lime{--fxa-chip-color:#8bcf00}.fxa-scenario-chip.tone-cyan{--fxa-chip-color:#00b8e6}.fxa-scenario-chip.tone-green{--fxa-chip-color:#00b85a}
+.fxa-add-scenario{min-height:32px;padding:5px 12px;border:0;border-radius:999px;background:var(--project-highlight);color:var(--fx-shell-bg);font:inherit;font-size:12px;cursor:pointer}
+.fxa-add-scenario:disabled{cursor:default;opacity:.55}
 .fxa-simulation-intro p{margin:0;max-width:660px;color:var(--wm-content-muted);line-height:1.6}
 .fxa-simulation-progress{min-height:160px;display:grid;place-items:center;color:var(--wm-content-muted)}
 .fxa-simulation-report .fxa-metric{min-width:0}

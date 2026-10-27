@@ -71,8 +71,13 @@ and `Chạy mô phỏng`; after a run it reveals configuration, loading/error, r
 reset and rerun states. Scenario presets appear as compact chips and the trade
 grid is expanded by default, with only horizontal overflow contained. SL/RR reads the existing read-only experiments endpoint,
 including filter, provenance and config fences; unsupported or ambiguous trades
-remain N/A in the lazy details table. Demo mode uses an explicitly synthetic
+remain N/A in the trade details table. Demo mode uses an explicitly synthetic
 fixture only.
+
+The selected analytics tab is written to `analytics_tab`, so a refresh returns to
+the same report. The three report views stay mounted while switching tabs, which
+keeps an in-memory simulation result alive for that report scope. Simulation line
+charts reuse the Performance chart toolbar for zoom, pan and reset.
 
 Local SL uses ticks/multiplier rather than FX's reduction grid. Local RR keeps the
 original stop and selected target R inside the source holding window/cutoff. The
