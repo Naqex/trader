@@ -193,10 +193,10 @@
 .fxa-radar{min-width:0;text-align:center}
 .fxa-radar h3{font-size:13px;font-weight:500;color:var(--wm-content-muted);margin:0}
 .fxa-radar svg{display:block;width:100%;height:auto}
-.fxa-month-scroll{overflow-x:auto;margin-top:8px;scrollbar-width:thin;max-width:100%}
-.fxa-month-matrix{border-collapse:separate;border-spacing:8px 12px;width:calc(100% + 16px);margin:0 -8px;table-layout:fixed;min-width:1040px;font-size:13px;white-space:nowrap;font-variant-numeric:tabular-nums}
-.fxa-month-matrix :is(th,td){padding:0;text-align:center;border:0}
-.fxa-month-tile{display:flex;align-items:center;justify-content:center;min-height:54px;padding:8px 4px;border:1px solid var(--wm-border);border-radius:14px;background:var(--wm-canvas);font-weight:500;color:var(--wm-content)}
+.fxa-month-scroll{overflow:visible;margin-top:8px;max-width:100%;min-width:0}
+.fxa-month-matrix{border-collapse:separate;border-spacing:8px 12px;width:100%;max-width:100%;margin:0;table-layout:fixed;min-width:0;font-size:13px;white-space:normal;font-variant-numeric:tabular-nums}
+.fxa-month-matrix :is(th,td){min-width:0;padding:0;text-align:center;border:0;overflow:hidden}
+.fxa-month-tile{display:flex;align-items:center;justify-content:center;min-width:0;min-height:54px;width:100%;padding:8px 4px;border:1px solid var(--wm-border);border-radius:14px;background:var(--wm-canvas);font-weight:500;color:var(--wm-content);overflow-wrap:anywhere;word-break:break-word}
 .fxa-month-matrix thead th:first-child{border:0}
 .fxa-month-matrix td .fxa-month-tile{background:color-mix(in srgb,var(--wm-content-muted) 10%,var(--wm-surface));border-color:transparent;color:var(--wm-content-muted)}
 .fxa-month-matrix .fxa-month-tile.is-positive{color:var(--report-positive);background:color-mix(in srgb,var(--report-positive) 10%,var(--wm-surface))}
@@ -300,6 +300,11 @@
 .fxa-hours-panel .fxa-radar-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 .fxa-hours-panel .fxa-radar svg{max-width:240px;margin:auto}
 .fxa-hours-panel .fxa-radar text{font-size:16px}
+@media(min-width:601px){
+  .fxa-side-panel .fxa-two-columns{height:100%;align-items:stretch}
+  .fxa-side-panel .fxa-two-columns>div{display:flex;flex-direction:column;min-height:0}
+  .fxa-side-panel .fxa-ring-layout{flex:1 1 auto;min-height:0}
+}
 .fxa-frequency-panel .fxa-three-columns{grid-template-columns:1fr;gap:8px}
 .fxa-frequency-panel .fxa-three-columns>div{display:grid;grid-template-columns:100px minmax(0,1fr);align-items:center;gap:8px}
 .fxa-visual-report .fxa-calendar{margin-bottom:0;gap:4px}
@@ -375,6 +380,19 @@
 @media(min-width:1001px) and (max-width:1200px){.fxa-outcome-panel>.fxa-two-columns{grid-template-columns:1fr}}
 @media(max-width:1200px) and (min-width:601px){.fxa-frequency-panel .fxa-three-columns{grid-template-columns:repeat(3,minmax(0,1fr))}.fxa-frequency-panel .fxa-three-columns{grid-template-rows:1fr}.fxa-frequency-card .fxa-chart-heading{flex-wrap:wrap;gap:4px}}
 @media(max-width:600px){.fxa-outcome-panel>.fxa-two-columns,.fxa-side-panel .fxa-two-columns{grid-template-columns:1fr}.fxa-side-panel .fxa-two-columns{gap:24px}.fxa-month-controls fieldset{flex-direction:column;gap:10px}.fxa-side-panel .fxa-chart-heading h3{font-size:13px}}
+
+/* The month matrix becomes a compact three-column grid before it would need
+   an inner horizontal scroller. The table stays readable on narrow screens. */
+@media(max-width:850px){
+  .fxa-month-matrix{display:block;border-spacing:0}
+  .fxa-month-matrix thead,.fxa-month-matrix tbody,.fxa-month-matrix tfoot{display:block}
+  .fxa-month-matrix tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:8px}
+  .fxa-month-matrix :is(th,td){display:block;width:auto}
+  .fxa-month-matrix thead th:first-child{display:none}
+  .fxa-month-matrix tbody th,.fxa-month-matrix tfoot th{grid-column:1/-1}
+  .fxa-month-matrix tfoot td{display:none}
+  .fxa-month-tile{min-height:44px;padding:6px 4px;border-radius:8px;line-height:1.15}
+}
 
 .fxa-time-incomplete{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:400;color:var(--wm-content-muted)}
 @media(max-width:850px){.fxa-visual-report>.fxa-risk-panels{grid-template-rows:repeat(3,minmax(120px,1fr))}}
