@@ -82,6 +82,10 @@ trade count with a small elevated wins/losses pair (10/8) and a mini info contro
 explaining the order and exclusion of breakeven, breakeven count and an inline threshold
 input with an Apply action. Definitions use the shared SVG info icon, centered
 in a consistent control box. Mobile radars use one column.
+Session radars retain session names and grid rings without numeric scale labels
+or persistent per-session values. Hover, keyboard focus and touch expose each
+session's formatted value and unit; unavailable values retain a visible N/A.
+Each radar retains its own metric domain; shapes do not imply a shared scale.
 The PnL plot toolbar exposes zoom in/out, rectangle selection, pan and reset.
 Zoom changes only the visible sample window, retaining original trade IDs, labels
 and values. Dragging never selects a trade; a plain point click still opens its

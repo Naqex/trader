@@ -28,7 +28,7 @@ Configured scenario stops cannot become original risk; missing R is unavailable.
 | Profit factor | Sum positive net / absolute negative net after fees | Uncapped ratio; owner-selected ring cap4 only. Empty/BE/loss0; allwin∞; unknown N/A |
 | Winners/losers | Threshold classification, count/extrema/mean/duration/streaks and source-capital returns | Separate green/red cards, VI/EN help; threshold changes classification, not money |
 | Side count / WR | Counts incl unknownside; wins/all closed trades of each side includingBE | Count pie versus independent WR progress rings; WR need not sum100 |
-| Session radars | Overlapping fixedUTC windows: Asia00–09, London07–16, NewYork13–22, outside22–24 | Count/WR/meanR/net-to-source-capital%; numeric radial scale and signed zero line; overlapping counts not additive |
+| Session radars | Overlapping fixedUTC windows: Asia00–09, London07–16, NewYork13–22, outside22–24 | Count/WR/meanR/net-to-source-capital%; session names and grid without numeric labels, exact values on hover/focus/touch; domain and signed zero contour retained; overlapping counts not additive |
 | Hour bars | Report observation time in selected zone; net/meanR/return%/WR | Signed bars, units; unavailable distinct from0; WR includesBE |
 | Weekday bars | Local weekday net and independent WR column | Green/red money; no-trade WR=N/A; no misleading second money/% axis |
 | Month matrix | Source-capital percentage returns; pooled or sum-session mode selected | Empty dash, missing capital N/A, incomplete allocation blocks totals; current snapshot separate from filtered ending balance |
