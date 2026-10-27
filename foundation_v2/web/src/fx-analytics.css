@@ -476,7 +476,3 @@
 .fxa-scenario-table th,.fxa-scenario-table td{text-align:center!important}
 .fx-app .fxa-scenario-table .wm-data-table tbody td.is-best-cell{background:color-mix(in srgb,#00b85a 18%,transparent);box-shadow:inset 0 1px #00b85a,inset 0 -1px #00b85a,inset 1px 0 #00b85a,inset -1px 0 #00b85a}
 .fx-app[data-theme=light] .fxa-scenario-table .wm-data-table tbody td.is-best-cell{background:color-mix(in srgb,#00b85a 12%,transparent)}
-.fx-app .fxa-scenario-table .wm-data-table tbody tr.is-best>td:not(:first-child){background:color-mix(in srgb,#00b85a 18%,transparent);border-block:1px solid #00b85a;border-inline-end:1px solid #00b85a}
-.fxa-scenario-table tbody tr.is-best>td:nth-child(2){border-inline-start:1px solid #00b85a}
-.fx-app .fxa-scenario-table .wm-data-table tbody tr.is-best:last-child>td:last-child{border-end-end-radius:8px}
-.fx-app[data-theme=light] .fxa-scenario-table tbody tr.is-best>td:not(:first-child){background:color-mix(in srgb,#00b85a 12%,transparent)}
