@@ -2,7 +2,7 @@ import DataTable from './DataTable.jsx'
 import { navigate, navigationSnapshot, subscribeNavigation } from './clientNavigation.js'
 import { TestingTradesEmpty } from './TestingPageState.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
-import { useEffect, useId, useMemo, useState, useSyncExternalStore } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { advancedAnalytics, known, number, periodReturn } from './tradingAnalyticsModel.js'
 import './fx-analytics.css'
 import { AnalyticsCurve, AnalyticsBars, AnalyticsDailyBars, AnalyticsRing, AnalyticsRadar } from './AnalyticsCharts.jsx'
@@ -10,6 +10,7 @@ export { AnalyticsCurve } from './AnalyticsCharts.jsx'
 import { profitFactorGauge, bucketCurve, excursionSummary, scenarioComparison, realizedRiskSeries, idealRiskSummary } from './analyticsPresentation.js'
 import { displayDate } from './dateFormat.js'
 import { currencyLabel } from './moneyFormat.js'
+import { simulationMoments } from './analyticsSimulation.js'
 import AnalyticsFilterBar from './AnalyticsFilterBar.jsx'
 import LedgerFilterDrawer from './LedgerFilterDrawer.jsx'
 import FxSelect from './FxSelect.jsx'
@@ -242,24 +243,128 @@ export function AnalyticsDrawdown({ model, data, extra, experiments, experimentS
     <ReportSection headingOutside surface={false} className="fxa-winning-mae-panel" title="Drawdown on winning trades"><div className="fxa-metrics">{[['Sụt giảm TB (R)',excursion.average,'MAE trung bình của các lệnh thắng. MAE là độ lớn biến động bất lợi chia rủi ro giá ban đầu, luôn không âm.'],['Sụt giảm nhỏ nhất (R)',excursion.min,'MAE nhỏ nhất trong các lệnh thắng, không phải giá trị nhỏ nhất của đường số dư.'],['Sụt giảm lớn nhất (R)',excursion.max,'MAE lớn nhất trong các lệnh thắng. Có thể vượt 1R khi giá đi quá SL; đường giá lấy mẫu có thể bỏ sót đáy.']].map(([label,value,help])=><Stat key={label} label={label} value={known(value)?fmt(value):'N/A'} help={`${t(help)}\n\n${t('Đã đo MAE cho {known}/{total} lệnh thắng. Chỉ tính khi toàn bộ nhóm có rủi ro ban đầu hợp lệ; thiếu dữ liệu hiển thị N/A.',{known:excursion.winners.length,total:excursion.winnerCount})}`}/>)}</div></ReportSection></div>
 }
 
-export function AnalyticsSimulation({ model,data,experiments,experimentStatus,experimentError,config,onConfig }) {
-  const {t,fmt}=useTestingLocale(),currency=model.result?.account_currency||t('Đơn vị tài khoản')
-  const initialConfig=()=>({method:'ledger',simulations:200,trades:Math.max(1,Math.min(200,data.count)),capital:number(model.startBalance)??'',averageWin:data.averageWin??'',averageLoss:known(data.averageLoss)?Math.abs(data.averageLoss):'',winRate:known(data.wins)&&known(data.losses)&&data.wins+data.losses>0?Number((data.wins/(data.wins+data.losses)*100).toFixed(2)):'',seed:42})
-  const [mc,setMc]=useState(initialConfig),[result,setResult]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[draft,setDraft]=useState(config)
-  useEffect(()=>{setDraft(config)},[config])
-  const rows=(experiments?.rows||[]).filter(row=>data.rows.some(trade=>trade.tradeId===row.trade_id))
-  const run=async event=>{event.preventDefault();setError('');setBusy(true);try{const {monteCarlo}=await import('./analyticsSimulation.js');setResult(monteCarlo(mc,data.rows))}catch(err){setError(err.message);setResult(null)}finally{setBusy(false)}}
-  const dirty=result&&JSON.stringify(result.config)!==JSON.stringify(mc)
-  const scenario=(key,title)=>{const result=scenarioComparison(rows,data.rows,key,model.startBalance),rr=key==='risk_reward',changed=rr?String(draft.target_r)!==String(config.target_r):String(draft.stop_distance_ticks)!==String(config.stop_distance_ticks)||String(draft.stop_multiplier)!==String(config.stop_multiplier)
-    return <ReportSection className="fxa-scenario-panel" title={title} help={rr?'Giữ SL gốc được xác minh lúc vào lệnh, thay TP theo R. Chỉ mô phỏng trong thời gian giữ lệnh gốc tới cutoff; không giả lập đường giá sau khi thoát.':'Thử khoảng dừng lỗ cấu hình trong thời gian giữ lệnh gốc. Giữ phí và quy tắc intrabar; không sửa giao dịch đã lưu.'} actions={rr?<a className="fxa-help-link" href="https://support.fxreplay.com/articles/how-to-use-the-rr-simulator" target="_blank" rel="noreferrer">{t('Cách tính')} ↗</a>:null}>
-      <form className="fxa-simulator-config" onSubmit={event=>{event.preventDefault();onConfig({...config,...(rr?{target_r:draft.target_r}:{stop_distance_ticks:draft.stop_distance_ticks,stop_multiplier:draft.stop_multiplier})})}}>{(rr?[['target_r','Mục tiêu R',.1,100,.1]]:[['stop_distance_ticks','Khoảng dừng lỗ (tick)',1,100000,1],['stop_multiplier','Hệ số dừng lỗ',.1,10,.1]]).map(([key,label,min,max,step])=><label className="fxa-field" key={key}><span>{t(label)}</span><input aria-label={t(label)} type="number" min={min} max={max} step={step} required value={draft[key]} onChange={event=>setDraft({...draft,[key]:event.target.value})}/></label>)}<button type="submit" className="fxa-button is-primary" disabled={Boolean(model.result?.preview)}>{t('Mô phỏng')}</button>{changed&&<span className="fxa-pending-state" role="status">{t('Chưa áp dụng')}</span>}</form>
-      {experimentStatus==='loading'?<p role="status">{t('Đang mô phỏng từ đường giá…')}</p>:experimentError?<p role="alert" className="fxa-error">{t(experimentError)}</p>:<><div className="fxa-metrics"><Stat label="Mẫu tính được" value={`${result.eligible.length}/${data.count}`}/><Stat label="Lãi/lỗ mô phỏng" value={fmt(result.net,` ${currency}`)}/><Stat label="Win rate" value={fmt(result.winRate,'%')} help={rr?'Số lệnh thắng chia tổng lệnh thắng và thua; bỏ qua hòa vốn.':'Số lệnh thắng chia tổng lệnh tính được.'}/><Stat label="Profit factor" value={known(result.profitFactor)?fmt(result.profitFactor):'N/A'}/><Stat label="Average drawdown" value={fmt(result.averageDrawdown,` ${currency}`)}/></div>{result.eligible.length?<><AnalyticsCurve series={[result.baseline,result.scenario]} label={t(title)} suffix={` ${currency}`} height={160}/><div className="fxa-inline-legend"><span><i/>{t('Gốc')}</span><span><i/>{t('Mô phỏng')}</span></div></>:<div className="fxa-chart-empty">{t('Chưa đủ dữ liệu mô phỏng')}</div>}<details className="fxa-scenario-details"><summary>{t('Kết quả từng giao dịch')}</summary><DataTable className="fxa-table-scroll" label={t(title)}><thead><tr><th>#</th><th>{t('Trạng thái')}</th><th>{t('Giá thoát')}</th><th>{t('Lợi nhuận')}</th></tr></thead><tbody>{rows.map((row,index)=><tr key={row.trade_id}><td data-tooltip={row.trade_id}>{index+1}</td><td>{t(({ready:'Đã tính',ambiguous:'Không rõ thứ tự intrabar',unsupported:'Không đủ dữ liệu',unavailable:'Không đủ dữ liệu'})[row[key]?.status]||'Không đủ dữ liệu')}<small>{row[key]?.reason==='original_stop_unavailable'?t('Chưa xác minh được SL gốc'):row[key]?.status==='ambiguous'?t('SL và TP cùng nến'):null}</small></td><td>{fmt(row[key]?.status==='ready'?row[key].exit_price:null,'',6)}</td><td>{fmt(row[key]?.status==='ready'?row[key].net_pnl:null)}</td></tr>)}</tbody></DataTable></details></>}
-    </ReportSection>}
-  return <div className="fxa-report fxa-visual-report" data-testid="analytics-simulation">{scenario('stop_loss','Stop Loss Simulator')}{scenario('risk_reward','RR Simulator')}<ReportSection className="fxa-monte-panel" title="Monte Carlo Simulation" help="Lấy mẫu lãi/lỗ ròng hoặc xác suất cấu hình để tạo các chuỗi giao dịch ngẫu nhiên. Vốn về 0 thì dừng; đây không phải dự báo lợi nhuận. Chế độ cấu hình chỉ tạo lệnh thắng/thua, không tạo hòa vốn; win rate khởi tạo bỏ qua hòa vốn. Chỉ điền sẵn số liệu có trong bộ lọc, các ô thiếu cần nhập trước khi chạy."><div className="fxa-monte-body"><form onSubmit={run} className="fxa-monte-form"><SelectField label="Phương pháp" value={mc.method} onChange={value=>setMc({...mc,method:value})} options={[["ledger",'Lấy mẫu giao dịch'],['configured','Xác suất cấu hình']]}/>{[['simulations','Số lượt mô phỏng',1,1000,1],['trades','Lệnh mỗi lượt',1,1000,1],['capital',`Vốn ban đầu (${currency})`,.01,undefined,'any'],...(mc.method==='configured'?[['averageWin','Lãi trung bình',0,undefined,'any'],['averageLoss','Độ lớn lỗ trung bình',0,undefined,'any'],['winRate','Win rate (%)',0,100,.01]]:[])].map(([key,label,min,max,step])=><label className="fxa-field" key={key}><span>{t(label)}</span><input aria-label={t(label)} type="number" min={min} max={max} step={step} required value={mc[key]} onChange={event=>setMc({...mc,[key]:event.target.value})}/></label>)}<button type="submit" className="fxa-button is-primary" disabled={busy}>{t(busy?'Đang tính…':'Chạy mô phỏng')}</button><button type="button" className="fxa-button" onClick={()=>{setMc(initialConfig());setResult(null);setError('')}}>{t('Đặt lại')}</button><details className="fxa-seed-control"><summary>{t('Nâng cao')}</summary><label className="fxa-field"><span>Seed</span><input aria-label="Seed" type="number" min="0" max="4294967295" step="1" value={mc.seed} onChange={event=>setMc({...mc,seed:event.target.value})}/></label></details></form><div className="fxa-monte-results">{error&&<p role="alert" className="fxa-error">{t(error)}</p>}{dirty&&<p role="status">{t('Cấu hình đã đổi; chạy lại để cập nhật kết quả.')}</p>}{result?<><AnalyticsCurve series={result.paths.map(path=>path.map(value=>({value})))} label={t('Monte Carlo Simulation')} suffix={` ${currency}`} height={180}/><div className="fxa-metrics"><Stat label="Average balance" value={fmt(result.average,` ${currency}`)}/><Stat label="Trung vị" value={fmt(result.median,` ${currency}`)}/><Stat label="P05 / P95" value={`${fmt(result.p05)} / ${fmt(result.p95)}`} help="Phân vị 5% và 95% của số dư cuối trên tất cả lượt mô phỏng."/><Stat label="Worst drawdown" value={fmt(result.maxDD,` ${currency}`)}/><Stat label="Xác suất kết thúc có lãi" value={fmt(result.probabilityProfit,'%')}/><Stat label="Tỷ lệ cạn vốn" value={fmt(result.ruinRate,'%')}/></div></>:<div className="fxa-chart-empty">{t('Chạy mô phỏng để xem kết quả')}</div>}</div></div></ReportSection></div>
+function useSimulationRun() {
+  const [state, setState] = useState({ phase: 'idle', result: null, error: '' }), active = useRef(null)
+  useEffect(() => () => active.current?.abort(), [])
+  const reset = () => { active.current?.abort(); setState({ phase: 'idle', result: null, error: '' }) }
+  const run = async operation => {
+    active.current?.abort()
+    const controller = new AbortController(); active.current = controller
+    setState({ phase: 'loading', result: null, error: '' })
+    try {
+      // Let the loading state paint even when the module or read result is cached.
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+      if (controller.signal.aborted) return
+      const result = await operation(controller.signal)
+      if (!controller.signal.aborted) setState({ phase: 'ready', result, error: '' })
+    } catch (error) {
+      if (!controller.signal.aborted) setState({ phase: 'error', result: null, error: error.message })
+    }
+  }
+  return { ...state, run, reset }
+}
+
+function SimulationIntro({ description, onRun }) {
+  const { t } = useTestingLocale()
+  return <div className="fxa-simulation-intro"><p>{t(description)}</p><button type="button" className="fxa-button is-primary" onClick={onRun}>{t('Chạy mô phỏng')}</button></div>
+}
+
+function ScenarioSimulator({ kind, model, data, config, loadExperiment }) {
+  const { t, fmt } = useTestingLocale(), job = useSimulationRun(), rr = kind === 'risk_reward'
+  const [draft, setDraft] = useState(config), [applied, setApplied] = useState(null), [detailsOpen, setDetailsOpen] = useState(false)
+  const currency = model.result?.account_currency || t('Đơn vị tài khoản'), busy = job.phase === 'loading'
+  const title = rr ? 'RR Simulator' : 'Stop Loss Simulator'
+  const fields = rr ? [['target_r','Mục tiêu R',.1,100,.1]] : [['stop_distance_ticks','Khoảng dừng lỗ (tick)',1,100000,1],['stop_multiplier','Hệ số dừng lỗ',.1,10,.1]]
+  const changed = applied && fields.some(([key]) => Number(draft[key]) !== Number(applied[key]))
+  const result = job.result ? scenarioComparison(job.result.rows, data.rows, kind, model.startBalance) : null
+  const byId = useMemo(() => new Map((job.result?.rows || []).map(row => [row.trade_id,row])), [job.result])
+  const run = () => {
+    const request = Object.fromEntries(Object.entries(draft).map(([key, value]) => [key, Number(value)]))
+    setApplied(request)
+    job.run(async signal => {
+      if (!loadExperiment) throw new Error('Nguồn này chưa hỗ trợ mô phỏng từ đường giá.')
+      return loadExperiment(request, signal)
+    })
+  }
+  return <ReportSection headingOutside className="fxa-scenario-panel" title={title}
+    help={rr ? 'Giữ SL gốc được xác minh lúc vào lệnh, thay TP theo R. Chỉ mô phỏng trong thời gian giữ lệnh gốc tới cutoff; không giả lập đường giá sau khi thoát.' : 'Thử khoảng dừng lỗ cấu hình trong thời gian giữ lệnh gốc. Giữ phí và quy tắc intrabar; không sửa giao dịch đã lưu.'}
+    actions={rr ? <a className="fxa-help-link" href="https://fx-replay.notion.site/What-is-the-RR-Simulator-2479db20207480bb883bd263526d24de" target="_blank" rel="noreferrer">{t('Cách tính')} ↗</a> : null}>
+    {job.phase === 'idle' ? <SimulationIntro description={rr ? 'Thử mục tiêu chốt lời khác nhau, giữ nguyên SL gốc và so sánh với giao dịch đã đóng.' : 'Thử khoảng dừng lỗ khác nhau và so sánh với giao dịch đã đóng.'} onRun={run}/> : <>
+      <form className="fxa-simulator-config" onSubmit={event => { event.preventDefault(); run() }}>
+        {fields.map(([key,label,min,max,step]) => <label className="fxa-field" key={key}><span>{t(label)}</span><input aria-label={t(label)} disabled={busy} type="number" min={min} max={max} step={step} required value={draft[key]} onChange={event => setDraft({ ...draft, [key]: event.target.value })}/></label>)}
+        <button type="submit" className="fxa-button is-primary" disabled={busy}>{t(busy ? 'Đang tính…' : 'Chạy lại')}</button>
+        <button type="button" className="fxa-button" onClick={() => { job.reset(); setDraft(config); setApplied(null) }}>{t(busy ? 'Hủy' : 'Đặt lại')}</button>
+        {changed && !busy && <span role="status" className="fxa-pending-state">{t('Cấu hình đã đổi; chạy lại để cập nhật kết quả.')}</span>}
+      </form>
+      <div aria-busy={busy} className="fxa-simulation-results">
+        {busy && <p role="status" className="fxa-simulation-progress">{t('Đang mô phỏng từ đường giá…')}</p>}
+        {job.phase === 'error' && <p role="alert" className="fxa-error">{t(job.error)}</p>}
+        {result && <>
+          <div className="fxa-metrics">
+            <Stat label="Mẫu tính được" value={`${result.eligible.length}/${data.count}`} help="Chỉ so sánh các giao dịch tính được ở cả bản gốc và mô phỏng. Lệnh không rõ thứ tự SL/TP hoặc thiếu dữ liệu được giữ trong bảng chi tiết."/>
+            <Stat label="Lãi/lỗ mô phỏng (mẫu)" value={fmt(result.net,` ${currency}`)}/>
+            <Stat label="Win rate" value={fmt(result.winRate,'%')} help={rr ? 'Số lệnh thắng chia tổng lệnh thắng và thua; bỏ qua hòa vốn.' : 'Số lệnh thắng chia tổng lệnh tính được.'}/>
+            <Stat label="Profit factor" value={known(result.profitFactor) ? fmt(result.profitFactor) : 'N/A'}/>
+            <Stat label="Average drawdown" value={fmt(result.averageDrawdown,` ${currency}`)}/>
+          </div>
+          {result.eligible.length ? <><AnalyticsCurve series={[result.baseline,result.scenario]} label={t(title)} suffix={` ${currency}`} height={260}/><div className="fxa-inline-legend"><span><i/>{t('Gốc')}</span><span><i/>{t('Mô phỏng')}</span></div></> : <div className="fxa-chart-empty">{t('Chưa đủ dữ liệu mô phỏng')}</div>}
+          <details className="fxa-scenario-details" onToggle={event => setDetailsOpen(event.currentTarget.open)}><summary>{t('Kết quả từng giao dịch')}</summary>
+            {detailsOpen && <DataTable className="fxa-table-scroll" label={t(title)} contained>
+              <thead><tr>{['#','Trạng thái','Giá thoát','Lợi nhuận gốc','Lợi nhuận mô phỏng'].map(label => <th key={label}>{t(label)}</th>)}</tr></thead>
+              <tbody>{data.rows.map((trade,index) => {
+                const outcome = byId.get(trade.tradeId)?.[kind], ready = outcome?.status === 'ready'
+                return <tr key={trade.tradeId}><td data-tooltip={trade.tradeId}>{index+1}</td><td>{t(({ready:'Đã tính',ambiguous:'Không rõ thứ tự intrabar'})[outcome?.status] || 'Không đủ dữ liệu')}<small>{outcome?.reason === 'original_stop_unavailable' ? t('Chưa xác minh được SL gốc') : outcome?.status === 'ambiguous' ? t('SL và TP cùng nến') : null}</small></td><td>{ready ? fmt(outcome.exit_price,'',6) : 'N/A'}</td><td>{fmt(trade.net_pnl,` ${currency}`)}</td><td>{ready ? fmt(outcome.net_pnl,` ${currency}`) : 'N/A'}</td></tr>
+              })}</tbody>
+            </DataTable>}
+          </details>
+        </>}
+      </div>
+    </>}
+  </ReportSection>
+}
+
+export function AnalyticsSimulation({ model, data, config, loadExperiment }) {
+  const { t, fmt } = useTestingLocale(), currency = model.result?.account_currency || t('Đơn vị tài khoản'), job = useSimulationRun()
+  const initialConfig = () => ({ method:'ledger', simulations:200, trades:Math.max(1,Math.min(200,data.count)), capital:number(model.startBalance)??'', ...Object.fromEntries(Object.entries(simulationMoments(data.rows) || {}).map(([key,value]) => [key,value??''])), seed:42 })
+  const [mc,setMc] = useState(initialConfig), [applied,setApplied] = useState(null), busy = job.phase === 'loading', result = job.result
+  const run = () => { setApplied({ ...mc }); job.run(async () => { const {monteCarlo} = await import('./analyticsSimulation.js'); return monteCarlo(mc,data.rows) }) }
+  const dirty = applied && JSON.stringify(applied) !== JSON.stringify(mc)
+  const fields = [['simulations','Số lượt mô phỏng',1,1000,1],['trades','Lệnh mỗi lượt',1,1000,1],['capital',`Vốn ban đầu (${currency})`,.01,undefined,'any'],
+    ...(mc.method !== 'ledger' ? [['averageWin','Lãi trung bình',0,undefined,'any'],['averageLoss','Độ lớn lỗ trung bình',0,undefined,'any'],['winRate','Win rate (%)',0,100,'any']] : []),
+    ...(mc.method === 'normal' ? [['winStd','Độ lệch chuẩn lãi',0,undefined,'any'],['lossStd','Độ lệch chuẩn lỗ',0,undefined,'any']] : [])]
+  return <div className="fxa-report fxa-visual-report fxa-simulation-report" data-testid="analytics-simulation">
+    <ScenarioSimulator kind="stop_loss" {...{model,data,config,loadExperiment}}/>
+    <ScenarioSimulator kind="risk_reward" {...{model,data,config,loadExperiment}}/>
+    <ReportSection headingOutside className="fxa-monte-panel" title="Monte Carlo Simulation" help="Lấy mẫu giao dịch giữ các mức lãi/lỗ đã quan sát. Xác suất cấu hình dùng lãi/lỗ cố định. Phân phối chuẩn sinh thêm độ biến động, cắt độ lớn âm về 0 nên kỳ vọng có thể đổi. Hai chế độ xác suất bỏ qua hòa vốn. Độ lệch chuẩn mô tả chia N, không phải ước lượng độ biến động tương lai. Vốn về 0 thì dừng; đây không phải dự báo lợi nhuận.">
+      {job.phase === 'idle' ? <SimulationIntro description="Tạo nhiều chuỗi giao dịch ngẫu nhiên để xem số dư, chuỗi thắng/thua và rủi ro cạn vốn." onRun={run}/> : <div className="fxa-monte-body">
+        <form onSubmit={event => { event.preventDefault(); run() }} className="fxa-monte-form">
+          <SelectField label="Phương pháp" value={mc.method} disabled={busy} onChange={value => setMc({...mc,method:value})} options={[["ledger",'Lấy mẫu giao dịch'],['configured','Xác suất cấu hình'],['normal','Phân phối chuẩn (cắt tại 0)']]}/>
+          {fields.map(([key,label,min,max,step]) => <label className="fxa-field" key={key}><span>{t(label)}</span><input aria-label={t(label)} disabled={busy} type="number" min={min} max={max} step={step} required value={mc[key]??''} onChange={event => setMc({...mc,[key]:event.target.value})}/></label>)}
+          <button type="submit" className="fxa-button is-primary" disabled={busy}>{t(busy ? 'Đang tính…' : 'Chạy lại')}</button>
+          <button type="button" className="fxa-button" onClick={() => { job.reset(); setMc(initialConfig()); setApplied(null) }}>{t(busy ? 'Hủy' : 'Đặt lại')}</button>
+          <details className="fxa-seed-control"><summary>{t('Nâng cao')}</summary><label className="fxa-field"><span>Seed</span><input aria-label="Seed" type="number" min="0" max="4294967295" step="1" disabled={busy} value={mc.seed} onChange={event => setMc({...mc,seed:event.target.value})}/></label></details>
+        </form>
+        <div className="fxa-monte-results" aria-busy={busy}>
+          {busy && <p role="status" className="fxa-simulation-progress">{t('Đang tính…')}</p>}
+          {job.phase === 'error' && <p role="alert" className="fxa-error">{t(job.error)}</p>}
+          {dirty && !busy && <p role="status">{t('Cấu hình đã đổi; chạy lại để cập nhật kết quả.')}</p>}
+          {result && <>
+            <AnalyticsCurve series={result.paths.map(path => path.map(value => ({value})))} label={t('Monte Carlo Simulation')} suffix={` ${currency}`} height={300}/>
+            <div className="fxa-metrics">
+              <Stat label="Average balance" value={fmt(result.average,` ${currency}`)}/><Stat label="Max balance" value={fmt(result.max,` ${currency}`)} help="Số dư cuối lớn nhất trong các lượt đã chạy."/><Stat label="Min balance" value={fmt(result.min,` ${currency}`)} help="Số dư cuối nhỏ nhất trong các lượt đã chạy."/>
+              <Stat label="Hệ số lợi nhuận TB" value={result.averageProfitFactor === Infinity ? '∞' : known(result.averageProfitFactor) ? fmt(result.averageProfitFactor) : 'N/A'} help="Trung bình hệ số lợi nhuận từng lượt. Nếu có lượt không xác định hoặc trộn hữu hạn với vô hạn thì hiển thị N/A."/>
+              <Stat label="Chuỗi thắng dài nhất" value={fmt(result.maxWinStreak,'',0)}/><Stat label="Chuỗi thua dài nhất" value={fmt(result.maxLossStreak,'',0)}/><Stat label="Tổng lệnh thắng" value={fmt(result.totalWins,'',0)} help="Tổng trên mọi lượt mô phỏng; chỉ đếm lệnh đã thực hiện trước khi cạn vốn."/><Stat label="Tổng lệnh thua" value={fmt(result.totalLosses,'',0)}/>
+              <Stat label="Trung vị" value={fmt(result.median,` ${currency}`)}/><Stat label="P05 / P95" value={`${fmt(result.p05)} / ${fmt(result.p95)}`} help="Phân vị 5% và 95% của số dư cuối trên tất cả lượt mô phỏng."/><Stat label="Worst drawdown" value={fmt(result.maxDD,` ${currency}`)}/><Stat label="Tỷ lệ cạn vốn" value={fmt(result.ruinRate,'%')}/>
+            </div>
+          </>}
+        </div>
+      </div>}
+    </ReportSection>
+  </div>
 }
 
 
-export function FxAnalyticsReport({ model, extra, experiments, experimentStatus, experimentError, config, onConfig, selected, onSelect, onTabChange }) {
+export function FxAnalyticsReport({ model, extra, experiments, experimentStatus, experimentError, config, selected, onSelect, onTabChange, loadExperiment }) {
   const { t } = useTestingLocale()
 
   const [threshold, setThreshold] = useState(0)
@@ -273,5 +378,5 @@ export function FxAnalyticsReport({ model, extra, experiments, experimentStatus,
   if (!data.count && (model.result?.partial || model.result?.status === 'partial')) return <TestingTradesEmpty incomplete />
   if (!data.count && model.result?.scope?.total_trade_count === 0) return <TestingTradesEmpty />
   if (!data.count && (model.ledger.length || model.result?.scope?.total_trade_count > 0)) return <TestingTradesEmpty filtered />
-  return <><div className="fxa-report-tabs" role="tablist" aria-label={t("Phân tích")}><>{[['performance', 'Performance'], ['drawdown', 'Drawdown'], ['simulation', 'Simulation']].map(([value, label]) => <button className="fxa-tab" id={`fxa-tab-${value}`} role="tab" key={value} aria-selected={tab === value} aria-controls="fxa-report-panel" tabIndex={tab === value ? 0 : -1} onKeyDown={event => { const tabs = ['performance', 'drawdown', 'simulation']; if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) { event.preventDefault(); const index = event.key === 'Home' ? 0 : event.key === 'End' ? 2 : (tabs.indexOf(tab) + (event.key === 'ArrowRight' ? 1 : 2)) % 3; choose(tabs[index]); document.getElementById(`fxa-tab-${tabs[index]}`)?.focus() } }} onClick={() => choose(value)}>{t(label)}</button>)}</></div><div id="fxa-report-panel" role="tabpanel" aria-labelledby={`fxa-tab-${tab}`} tabIndex={0}>{tab === 'performance' ? <AnalyticsPerformance model={model} data={data} extra={extra} onSelect={onSelect} selected={selected} threshold={threshold} onThreshold={setThreshold} experiments={experiments} /> : tab === 'drawdown' ? <AnalyticsDrawdown model={model} data={data} extra={extra} experiments={experiments} experimentStatus={experimentStatus} experimentError={experimentError} /> : <AnalyticsSimulation key={JSON.stringify([model.result?.session_id, model.result?.revision, model.result?.cursor_index, model.result?.execution_event_sequence, model.result?.filters, extra])} model={model} data={data} experiments={experiments} experimentStatus={experimentStatus} experimentError={experimentError} config={config} onConfig={onConfig} />}</div></>
+  return <><div className="fxa-report-tabs" role="tablist" aria-label={t("Phân tích")}><>{[['performance', 'Performance'], ['drawdown', 'Drawdown'], ['simulation', 'Simulation']].map(([value, label]) => <button className="fxa-tab" id={`fxa-tab-${value}`} role="tab" key={value} aria-selected={tab === value} aria-controls="fxa-report-panel" tabIndex={tab === value ? 0 : -1} onKeyDown={event => { const tabs = ['performance', 'drawdown', 'simulation']; if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) { event.preventDefault(); const index = event.key === 'Home' ? 0 : event.key === 'End' ? 2 : (tabs.indexOf(tab) + (event.key === 'ArrowRight' ? 1 : 2)) % 3; choose(tabs[index]); document.getElementById(`fxa-tab-${tabs[index]}`)?.focus() } }} onClick={() => choose(value)}>{t(label)}</button>)}</></div><div id="fxa-report-panel" role="tabpanel" aria-labelledby={`fxa-tab-${tab}`} tabIndex={0}>{tab === 'performance' ? <AnalyticsPerformance model={model} data={data} extra={extra} onSelect={onSelect} selected={selected} threshold={threshold} onThreshold={setThreshold} experiments={experiments} /> : tab === 'drawdown' ? <AnalyticsDrawdown model={model} data={data} extra={extra} experiments={experiments} experimentStatus={experimentStatus} experimentError={experimentError} /> : <AnalyticsSimulation key={JSON.stringify([model.result?.session_id, model.result?.revision, model.result?.cursor_index, model.result?.execution_event_sequence, model.result?.filters, extra])} model={model} data={data} experiments={experiments} experimentStatus={experimentStatus} experimentError={experimentError} config={config} loadExperiment={loadExperiment} />}</div></>
 }

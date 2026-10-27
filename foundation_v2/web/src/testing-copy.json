@@ -1,4 +1,99 @@
 {
+  "Max balance": {"vi":"Số dư cuối cao nhất","en":"Highest ending balance"},
+  "Min balance": {"vi":"Số dư cuối thấp nhất","en":"Lowest ending balance"},
+  "Đặt lại": {"vi":"Đặt lại","en":"Reset"},
+  "Chạy lại": {
+    "vi": "Chạy lại",
+    "en": "Run again"
+  },
+  "Thử mục tiêu chốt lời khác nhau, giữ nguyên SL gốc và so sánh với giao dịch đã đóng.": {
+    "vi": "Thử mục tiêu chốt lời khác nhau, giữ nguyên SL gốc và so sánh với giao dịch đã đóng.",
+    "en": "Test different take-profit targets with the original stop and compare them with closed trades."
+  },
+  "Thử khoảng dừng lỗ khác nhau và so sánh với giao dịch đã đóng.": {
+    "vi": "Thử khoảng dừng lỗ khác nhau và so sánh với giao dịch đã đóng.",
+    "en": "Test different stop distances and compare them with closed trades."
+  },
+  "Tạo nhiều chuỗi giao dịch ngẫu nhiên để xem số dư, chuỗi thắng/thua và rủi ro cạn vốn.": {
+    "vi": "Tạo nhiều chuỗi giao dịch ngẫu nhiên để xem số dư, chuỗi thắng/thua và rủi ro cạn vốn.",
+    "en": "Generate random trade sequences to inspect balances, streaks and the risk of exhausting capital."
+  },
+  "Chỉ so sánh các giao dịch tính được ở cả bản gốc và mô phỏng. Lệnh không rõ thứ tự SL/TP hoặc thiếu dữ liệu được giữ trong bảng chi tiết.": {
+    "vi": "Chỉ so sánh các giao dịch tính được ở cả bản gốc và mô phỏng. Lệnh không rõ thứ tự SL/TP hoặc thiếu dữ liệu được giữ trong bảng chi tiết.",
+    "en": "Compare only trades supported in both original and simulated results. Trades with ambiguous SL/TP order or missing data remain in the details table."
+  },
+  "Lãi/lỗ mô phỏng (mẫu)": {
+    "vi": "Lãi/lỗ mô phỏng (mẫu)",
+    "en": "Simulated P&L (sample)"
+  },
+  "Lợi nhuận gốc": {
+    "vi": "Lợi nhuận gốc",
+    "en": "Original P&L"
+  },
+  "Lợi nhuận mô phỏng": {
+    "vi": "Lợi nhuận mô phỏng",
+    "en": "Simulated P&L"
+  },
+  "Nguồn này chưa hỗ trợ mô phỏng từ đường giá.": {
+    "vi": "Nguồn này chưa hỗ trợ mô phỏng từ đường giá.",
+    "en": "Price-path simulation is not available for this source."
+  },
+  "Cấu hình mô phỏng chưa khớp yêu cầu.": {
+    "vi": "Cấu hình mô phỏng chưa khớp yêu cầu.",
+    "en": "The simulation configuration does not match the request."
+  },
+  "experiment_read_model_invalid": {
+    "vi": "Phản hồi mô phỏng không hợp lệ.",
+    "en": "Invalid experiment response."
+  },
+  "Phân phối chuẩn (cắt tại 0)": {
+    "vi": "Phân phối chuẩn (cắt tại 0)",
+    "en": "Normal distribution (clipped at 0)"
+  },
+  "Độ lệch chuẩn lãi": {
+    "vi": "Độ lệch chuẩn lãi",
+    "en": "Gain standard deviation"
+  },
+  "Độ lệch chuẩn lỗ": {
+    "vi": "Độ lệch chuẩn lỗ",
+    "en": "Loss standard deviation"
+  },
+  "Độ lệch chuẩn phải là số ≥ 0.": {
+    "vi": "Độ lệch chuẩn phải là số ≥ 0.",
+    "en": "Standard deviations must be numbers greater than or equal to 0."
+  },
+  "Lấy mẫu giao dịch giữ các mức lãi/lỗ đã quan sát. Xác suất cấu hình dùng lãi/lỗ cố định. Phân phối chuẩn sinh thêm độ biến động, cắt độ lớn âm về 0 nên kỳ vọng có thể đổi. Hai chế độ xác suất bỏ qua hòa vốn. Độ lệch chuẩn mô tả chia N, không phải ước lượng độ biến động tương lai. Vốn về 0 thì dừng; đây không phải dự báo lợi nhuận.": {
+    "vi": "Lấy mẫu giao dịch giữ các mức lãi/lỗ đã quan sát. Xác suất cấu hình dùng lãi/lỗ cố định. Phân phối chuẩn sinh thêm độ biến động, cắt độ lớn âm về 0 nên kỳ vọng có thể đổi. Hai chế độ xác suất bỏ qua hòa vốn. Độ lệch chuẩn mô tả chia N, không phải ước lượng độ biến động tương lai. Vốn về 0 thì dừng; đây không phải dự báo lợi nhuận.",
+    "en": "Trade resampling uses observed P&L amounts. Configured probability uses fixed gains/losses. Normal sampling adds dispersion and clips negative magnitudes at 0, which can change the mean. Both probability modes omit breakevens. Descriptive standard deviations divide by N and do not estimate future volatility. Runs stop at zero capital; results are not profit forecasts."
+  },
+  "Số dư cuối lớn nhất trong các lượt đã chạy.": {
+    "vi": "Số dư cuối lớn nhất trong các lượt đã chạy.",
+    "en": "Highest ending balance across the completed simulation runs."
+  },
+  "Số dư cuối nhỏ nhất trong các lượt đã chạy.": {
+    "vi": "Số dư cuối nhỏ nhất trong các lượt đã chạy.",
+    "en": "Lowest ending balance across the completed simulation runs."
+  },
+  "Hệ số lợi nhuận TB": {
+    "vi": "Hệ số lợi nhuận TB",
+    "en": "Average profit factor"
+  },
+  "Trung bình hệ số lợi nhuận từng lượt. Nếu có lượt không xác định hoặc trộn hữu hạn với vô hạn thì hiển thị N/A.": {
+    "vi": "Trung bình hệ số lợi nhuận từng lượt. Nếu có lượt không xác định hoặc trộn hữu hạn với vô hạn thì hiển thị N/A.",
+    "en": "Mean of per-run profit factors. N/A if any run is undefined or finite and infinite values are mixed."
+  },
+  "Tổng lệnh thắng": {
+    "vi": "Tổng lệnh thắng",
+    "en": "Total winning trades"
+  },
+  "Tổng lệnh thua": {
+    "vi": "Tổng lệnh thua",
+    "en": "Total losing trades"
+  },
+  "Tổng trên mọi lượt mô phỏng; chỉ đếm lệnh đã thực hiện trước khi cạn vốn.": {
+    "vi": "Tổng trên mọi lượt mô phỏng; chỉ đếm lệnh đã thực hiện trước khi cạn vốn.",
+    "en": "Total across all runs; counts only trades executed before capital is exhausted."
+  },
   "Thời gian phục hồi (ngày)": {"vi":"Thời gian phục hồi (ngày)","en":"Time to recovery (days)"},
   "Số lần sụt giảm": {"vi":"Số lần sụt giảm","en":"Drawdown frequency"},
   "Ngày giao dịch": {"vi":"Ngày giao dịch","en":"Trade date"},

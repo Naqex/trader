@@ -408,3 +408,15 @@
 @media(max-width:600px){.fxa-drawdown-stats{--ds-font-value:16px;--wm-text-value:16px}.fxa-drawdown-stats .fxa-metric strong{font-size:16px}.fxa-winning-mae-panel .fxa-metrics{grid-template-columns:1fr}}
 
 @media(max-width:420px){.fxa-expectancy-card:not(.fxa-factor-card){grid-template-columns:minmax(0,1fr)}}
+
+.fxa-visual-report.fxa-simulation-report{grid-template-columns:minmax(0,1fr);gap:24px}
+.fxa-simulation-report>.fxa-section{grid-column:1/-1;min-width:0}
+.fxa-simulation-intro{min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:24px;text-align:center}
+.fxa-simulation-intro p{margin:0;max-width:660px;color:var(--wm-content-muted);line-height:1.6}
+.fxa-simulation-progress{min-height:160px;display:grid;place-items:center;color:var(--wm-content-muted)}
+.fxa-simulation-report .fxa-metric{min-width:0}
+.fxa-simulation-report .fxa-scenario-panel .fxa-metrics{grid-template-columns:repeat(5,minmax(0,1fr));gap:16px;margin-bottom:16px}
+.fxa-simulation-report .fxa-monte-results>.fxa-metrics{grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.fxa-simulation-report .fxa-simulator-config .fxa-field{min-width:0}
+.fxa-simulation-report .fxa-scenario-details .wm-data-table{min-width:680px}
+@media(max-width:850px){.fxa-simulation-report .fxa-scenario-panel .fxa-metrics,.fxa-simulation-report .fxa-monte-results>.fxa-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-simulation-intro{min-height:180px;padding:16px}}

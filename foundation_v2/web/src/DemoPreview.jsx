@@ -22,7 +22,7 @@ import { PlaybookList, PlaybookSummary } from './PlaybookWorkspace.jsx'
 import { JournalRow, StoryRail } from './JournalWorkspace.jsx'
 import { DEFAULT_EXTRA_FILTERS, filterAnalyticsRows, tradesCsv } from './tradingAnalyticsModel.js'
 import { buildWorkspaceHref } from './workspaceContext.js'
-import { DEMO_SESSIONS, DEMO_LEDGER, DEMO_LIVE, DEMO_DATASETS, demoSessionItems, demoDashboardAnalytics, demoReplayContext, demoResult, demoOverview, demoFilterRows, demoAnalyticsRisk } from './demoFixtures.js'
+import { DEMO_SESSIONS, DEMO_LEDGER, DEMO_LIVE, DEMO_DATASETS, demoSessionItems, demoDashboardAnalytics, demoReplayContext, demoResult, demoOverview, demoFilterRows, demoAnalyticsRisk, demoAnalyticsExperiment } from './demoFixtures.js'
 const DEMO_DATA_LIBRARY = { datasets:DEMO_DATASETS, providers:[] }
 
 function Objectives({ model }) {
@@ -45,7 +45,8 @@ function DemoReports({ workspace, ledgerOnly, prop = false, query, state = 'demo
   const scopedRows = state === 'no-trades' ? [] : demoFilterRows(ledgerOnly ? ids : [ids]).filter(row => state !== 'new-session' || row.session_id !== sessions[0].record_id)
   const dates = scopedRows.map(row => row.report_time_utc.slice(0, 10)).sort()
   const facets = { assets: [...new Set(sessions.filter(item => ids === null || (Array.isArray(ids) ? ids : [ids]).includes(item.record_id)).map(item => item.instrument_id))], tags: [...new Set(scopedRows.flatMap(row => row.tags || []))], years: [...new Set(dates.map(date => date.slice(0, 4)))], date_range: { from: dates[0], to: dates.at(-1) } }
-  const [selected, setSelected] = useState(''), [config, setConfig] = useState({ stop_distance_ticks: 10, stop_multiplier: 1, target_r: 2 })
+  const [selected, setSelected] = useState('')
+  const config = useMemo(() => ({ stop_distance_ticks: 10, stop_multiplier: 1, target_r: 2 }), [])
   const model = useMemo(() => {
     const source = state === 'no-trades' ? [] : demoFilterRows(ledgerOnly ? ids : [ids]).filter(row => state !== 'new-session' || row.session_id !== sessions[0].record_id)
     const allRows = source
@@ -71,7 +72,7 @@ function DemoReports({ workspace, ledgerOnly, prop = false, query, state = 'demo
     <h1 className="sr-only">{ledgerOnly ? t("Trades") : t("Analytics")}</h1>
     {ledgerOnly ? <FxTradeLedger preferenceWorkspace={workspace} hidden={state === 'error'} model={model} extra={extra} selected={selected} onSelect={setSelected} renderFilters={renderFilters} readNotice={readNotice} /> : <>{renderFilters()}{readNotice}</>}
     {prop && state !== 'error' && <Objectives model={model} />}
-    {!ledgerOnly && state !== 'error' && <FxAnalyticsReport model={model} extra={extra} experiments={experiments} experimentStatus="unavailable" config={config} onConfig={setConfig} selected={selected} onSelect={setSelected} />}
+    {!ledgerOnly && state !== 'error' && <FxAnalyticsReport model={model} extra={extra} experiments={experiments} experimentStatus="unavailable" config={config} loadExperiment={(request) => Promise.resolve(demoAnalyticsExperiment(model.ledger, request))} selected={selected} onSelect={setSelected} />}
     {row && <Inspector onClose={() => setSelected('')} className="fxa-trade-inspector" aria-label={t("Chi tiết giao dịch")}><div className="fxa-section-heading"><h2>{row.session_name} · {row.symbol}</h2><button className="fxa-button" type="button" onClick={() => setSelected('')}>{t("Đóng chi tiết")}</button></div><div className="fxa-metrics"><Metric label={t("Net PnL")} value={fmt(row.net_pnl, t(" USD"))} /><Metric label={t("Return (R)")} value={fmt(row.realized_r, t(" R"))} /><Metric label={t("Entry")} value={fmt(row.price_open, '', 6)} /><Metric label={t("Exit")} value={fmt(row.price_close, '', 6)} /></div></Inspector>}
   </section>
 }

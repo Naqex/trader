@@ -1,0 +1,60 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { monteCarlo, simulationMoments } from '../src/analyticsSimulation.js'
+import { readAnalyticsExperiment } from '../src/analyticsExperimentApi.js'
+
+const base = { method:'configured', simulations:3, trades:4, capital:1000, seed:42, averageWin:20, averageLoss:10, winRate:100 }
+
+test('Monte Carlo counts executed trades/streaks and treats no-loss PF as unbounded', () => {
+  const result = monteCarlo(base)
+  assert.equal(result.average,1080); assert.equal(result.totalWins,12); assert.equal(result.totalLosses,0)
+  assert.equal(result.maxWinStreak,4); assert.equal(result.maxLossStreak,0); assert.equal(result.averageProfitFactor,Infinity)
+  const lost = monteCarlo({...base,capital:25,winRate:0})
+  assert.equal(lost.totalLosses,9); assert.equal(lost.totalWins,0); assert.equal(lost.maxLossStreak,3)
+  assert.equal(lost.min,0); assert.equal(lost.maxDD,25); assert.equal(lost.averageProfitFactor,0)
+  const zero = monteCarlo({...base,averageWin:0})
+  assert.equal(zero.totalWins,0); assert.equal(zero.maxWinStreak,0); assert.equal(zero.averageProfitFactor,null)
+})
+
+test('Gaussian zero variance has an exact oracle and nonzero variance is deterministic', () => {
+  const config = {...base,method:'normal',winStd:0,lossStd:0}
+  assert.equal(monteCarlo(config).average,1080)
+  const varied = {...config,winStd:100,lossStd:20,winRate:50}
+  assert.deepEqual(monteCarlo(varied),monteCarlo(varied))
+  assert.ok(monteCarlo(varied).paths.flat().every(value => Number.isFinite(value) && value>=0))
+  assert.throws(() => monteCarlo({...config,winStd:null}),/chuẩn/)
+  assert.throws(() => monteCarlo({...config,lossStd:-1}),/chuẩn/)
+  assert.throws(() => monteCarlo({...base,capital:1e308,averageWin:1e308}),/giới hạn/)
+})
+
+test('descriptive moments separate winning/losing magnitudes and preserve missing data', () => {
+  const rows = [10,30,-10,-30,0].map(net_pnl=>({net_pnl}))
+  assert.deepEqual(simulationMoments(rows),{averageWin:20,averageLoss:20,winStd:10,lossStd:10,winRate:50})
+  assert.equal(simulationMoments([...rows,{net_pnl:null}]),null)
+  assert.equal(simulationMoments([]),null)
+  assert.deepEqual(simulationMoments([{net_pnl:0}]),{averageWin:null,averageLoss:null,winStd:null,lossStd:null,winRate:null})
+  assert.equal(simulationMoments([{net_pnl:5}]).winStd,0)
+})
+
+test('explicit scenario reads preserve query fences, signal, workspace and configuration', async () => {
+  const previous = globalThis.fetch, controller = new AbortController()
+  const expected={session_id:'s',dataset_id:'d',dataset_sha256:'hash',revision:2,cursor_index:8,execution_event_sequence:17}
+  const config={stop_distance_ticks:20,stop_multiplier:.5,target_r:2}
+  let payload={schema_version:'replay-analytics-experiments-v1',read_only:true,config,provenance:expected,rows:[]}
+  globalThis.fetch=async (url,options) => {
+    const params=new URL(url,'http://localhost').searchParams
+    assert.equal(params.get('cursor'),'8'); assert.equal(params.get('event_sequence'),'17'); assert.equal(params.get('stop_multiplier'),'0.5')
+    assert.equal(options.headers['X-Workspace-Id'],'w'); assert.equal(options.signal,controller.signal)
+    return new Response(JSON.stringify(payload),{status:200,headers:{'Content-Type':'application/json'}})
+  }
+  try {
+    const request={workspace:'w',sessionId:'s',filters:'cursor=8&event_sequence=17',config,signal:controller.signal,expected}
+    assert.deepEqual(await readAnalyticsExperiment(request),payload)
+    payload={...payload,config:{...config,target_r:3}}
+    await assert.rejects(readAnalyticsExperiment(request),/Cấu hình/)
+    payload={...payload,config,provenance:{...expected,execution_event_sequence:18}}
+    await assert.rejects(readAnalyticsExperiment(request),/revision\/cutoff/)
+    payload={...payload,provenance:expected,read_only:false}
+    await assert.rejects(readAnalyticsExperiment(request),/invalid/)
+  } finally { globalThis.fetch=previous }
+})

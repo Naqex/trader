@@ -76,7 +76,7 @@ the summary rows. The four metrics become two columns at 850px and below; winnin
 metrics stack at 600px and below. Prop objectives pair snapshot metrics with their
 existing objectives table on desktop and stack on narrow screens.
 
-SL/RR simulations pair, with Monte Carlo below. Monte Carlo configuration uses a
+Simulation uses three full-width sections stacked in order: SL, RR, Monte Carlo. Each starts with a short introduction and an explicit Run action. Configuration/results appear only after running; loading, cancellation, error/retry, reset and changed-but-not-applied states stay local to each tool. Only applicable ready API scenarios contribute to the paired curves; unresolved trades stay in details. Monte Carlo configuration uses a
 left column and its results use the remaining width; they stack up to 850px.
 Per-trade scenario details stay collapsed until requested and scroll within a
 bounded table when opened. Smaller widths collapse groups without scaling down

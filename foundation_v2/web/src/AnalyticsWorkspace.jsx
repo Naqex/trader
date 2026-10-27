@@ -12,6 +12,7 @@ import { buildPropAnalyticsView } from './propAnalyticsModel.js'
 import { navigate } from './clientNavigation.js'
 import { scopedRead } from './scopedRead.js'
 import { readJson } from './researchDataApi.js'
+import { readAnalyticsExperiment } from './analyticsExperimentApi.js'
 import { enrichJournalTags, readJournalContext } from './journalContext.js'
 import { frontendPerformance } from './frontendPerformance.js'
 import { useContentReadyMetric } from './useContentReadyMetric.js'
@@ -114,7 +115,7 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
     }
     navigate(next.href, { replace: true })
   }, [summaryOnly, extra])
-  const [experimentConfig, setExperimentConfig] = useState({ stop_distance_ticks: 20, stop_multiplier: 1, target_r: 2 })
+  const experimentConfig = useMemo(() => ({ stop_distance_ticks: 20, stop_multiplier: 1, target_r: 2 }), [])
   const [experiments, setExperiments] = useState({ status: 'idle', payload: null, error: '' })
   const [experimentReload, setExperimentReload] = useState(0)
   const requestSequence = useRef(0)
@@ -187,12 +188,9 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
   useEffect(() => {
     if (jobId || !sessionId || summaryOnly || ledgerOnly || !experimentHasTrades) return
     const controller = new AbortController()
-    const params = new URLSearchParams(filterParams)
-    for (const [key, value] of Object.entries(experimentConfig)) params.set(key, value)
     setExperiments({ status: 'loading', payload: null, error: '' })
-    fetch(`/api/v2/replay/sessions/${encodeURIComponent(sessionId)}/analytics/experiments?${params}`, { headers: { 'X-Workspace-Id': workspace }, signal: controller.signal }).then(readJson).then(payload => {
+    readAnalyticsExperiment({ workspace, sessionId, filters: filterParams, config: experimentConfig, signal: controller.signal }).then(payload => {
       if (!controller.signal.aborted) {
-        if (payload.schema_version !== 'replay-analytics-experiments-v1' || payload.read_only !== true || !Array.isArray(payload.rows)) throw new Error('experiment_read_model_invalid')
         setExperiments({ status: 'ready', payload, error: '' })
       }
     }).catch(error => { if (!controller.signal.aborted) setExperiments({ status: 'error', payload: null, error: `Chưa đọc được đường giá: ${error.message}` }) })
@@ -284,6 +282,11 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
   const links = { journal: '/?' + journalParams.toString(), replay: sessionId ? '/?' + replayParams.toString() : '', research: '/?' + researchParams.toString() }
   const experimentScopeMatches = experiments.payload && result && ['session_id', 'dataset_id', 'dataset_sha256', 'revision', 'cursor_index', 'execution_event_sequence'].every(key => experiments.payload.provenance?.[key] === result[key])
 
+  const loadExperiment = useCallback((config, signal) => {
+    if (!sessionId || jobId || !result) return Promise.reject(new Error('Nguồn này chưa hỗ trợ mô phỏng từ đường giá.'))
+    return readAnalyticsExperiment({ workspace, sessionId, filters: filterParams, config, signal, expected: result })
+  }, [workspace, sessionId, jobId, filterParams.toString(), result])
+
   const Inspector = ledgerOnly ? TradeInspector : 'section'
   const journalFilterPending = Boolean(sessionId && !jobId && !summaryOnly && !['ready', 'stale'].includes(journalStatus) && (extra.tag !== 'all' || extra.tagInclude || extra.tagExclude || extra.notesPresence))
   // The trade ledger keeps the partial state in its model and empty-state
@@ -307,7 +310,7 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
     {state.denied && <TestingEmptyState kind="denied" />}
     {state.status === 'blocked_by_data' && <section className="as-empty-state" data-testid="analytics-blocked"><h2>{t("Chưa đủ dữ liệu để tính analytics")}</h2><p>{state.payload?.blocked_by_data?.map(reason => t(reason)).join(' · ') || t(state.error) || t("Nguồn chưa có kết quả đã phát hành.")}</p></section>}
     {result && !journalFilterPending && ['ready', 'stale', 'partial', 'empty'].includes(state.status) && <>
-      {summaryOnly ? <section className="as-metric-strip" aria-label={t("Metrics chính")}><StoryMetric label={t("Net PnL")} value={formatNumber(model.netPnl)} detail={result.account_currency} /><StoryMetric label={t("Win rate")} value={formatNumber(model.winRate, 1, '%')} /><StoryMetric label={t("Trades")} value={formatNumber(model.tradeCount, 0)} /><StoryMetric label={t("Max DD")} value={formatNumber(model.maxDrawdown)} detail={t("Closed balance")} /></section> : ledgerOnly ? null : <FxAnalyticsReport model={model} extra={extra} experiments={experimentScopeMatches ? experiments.payload : null} experimentStatus={experimentScopeMatches ? experiments.status : experiments.status === 'ready' ? 'error' : experiments.status} experimentError={experiments.error || (experiments.status === 'ready' && !experimentScopeMatches ? 'Đường giá chưa khớp revision/cutoff của báo cáo.' : '')} config={experimentConfig} onConfig={setExperimentConfig} selected={selectedTradeId} onSelect={setSelectedTradeId} />}
+      {summaryOnly ? <section className="as-metric-strip" aria-label={t("Metrics chính")}><StoryMetric label={t("Net PnL")} value={formatNumber(model.netPnl)} detail={result.account_currency} /><StoryMetric label={t("Win rate")} value={formatNumber(model.winRate, 1, '%')} /><StoryMetric label={t("Trades")} value={formatNumber(model.tradeCount, 0)} /><StoryMetric label={t("Max DD")} value={formatNumber(model.maxDrawdown)} detail={t("Closed balance")} /></section> : ledgerOnly ? null : <FxAnalyticsReport model={model} extra={extra} experiments={experimentScopeMatches ? experiments.payload : null} experimentStatus={experimentScopeMatches ? experiments.status : experiments.status === 'ready' ? 'error' : experiments.status} experimentError={experiments.error || (experiments.status === 'ready' && !experimentScopeMatches ? 'Đường giá chưa khớp revision/cutoff của báo cáo.' : '')} config={experimentConfig} loadExperiment={loadExperiment} selected={selectedTradeId} onSelect={setSelectedTradeId} />}
       {!summaryOnly && selectedTrade && <Inspector onClose={() => setSelectedTradeId('')} className="fxa-trade-inspector" aria-label={t("Chi tiết giao dịch")}><div className="fxa-section-heading"><h2>{t("Trade detail")}</h2><button className="fxa-button" type="button" onClick={() => setSelectedTradeId('')}>{t("Đóng chi tiết")}</button></div><ProvenanceInspector model={model} selectedTrade={selectedTrade} journalCount={journalCount} links={links} /></Inspector>}
     </>}
   </section>

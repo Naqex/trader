@@ -37,6 +37,25 @@ export function demoAnalyticsRisk(rows) {
   }) }
 }
 
+export function demoAnalyticsExperiment(rows, config) {
+  // Explicit UI fixture: an adverse leg precedes the favorable leg. Real reports use the API engine.
+  const observations = demoAnalyticsRisk(rows)
+  return { schema_version: 'replay-analytics-experiments-v1', read_only: true, preview: true, config, rows: rows.map((row, index) => {
+    const observation = observations.rows[index], direction = String(row.side).toUpperCase() === 'BUY' ? 1 : -1
+    const risk = Number(row.planned_risk_budget), unitPrice = Math.abs(row.price_open - row.stop_loss)
+    const fraction = Number(config.stop_distance_ticks) / 10 * Number(config.stop_multiplier)
+    const net = Number(row.net_pnl), fees = Number(row.fees), mae = observation.excursion.mae_r
+    const mfe = Math.max(0, observation.ideal.value_r, (net + fees) / risk)
+    const result = (stop, target) => {
+      const stopped = mae >= stop, taken = !stopped && target !== null && mfe >= target
+      const gross = stopped ? -risk * stop : taken ? risk * target : net + fees
+      return { status: 'ready', reason: stopped ? 'stop_loss' : taken ? 'take_profit' : 'original_close', net_pnl: gross - fees,
+        exit_price: stopped ? row.price_open - direction * unitPrice * stop : taken ? row.price_open + direction * unitPrice * target : row.price_close }
+    }
+    return { ...observation, stop_loss: result(fraction, null), risk_reward: result(1, Number(config.target_r)) }
+  }) }
+}
+
 export function demoResult(rows = DEMO_LEDGER, session = DEMO_SESSIONS[0], timeBasis = 'activity') {
   let balance = 10000
   const curve = [{ sequence: 0, closed_trade_balance: balance }]

@@ -65,13 +65,21 @@ More runs reduce simulation noise but cannot repair biased/insufficient source t
 
 ## Current local implementation and differences
 
-This turn researches/explains Simulation; its engine is not changed.
-`AnalyticsSimulation` already offers configured SL, original-stop RR and Monte
-Carlo. Local SL uses ticks/multiplier rather than FX's reduction grid. Local RR
-help limits scenarios to the original holding window/cutoff. Its Monte Carlo
-offers either empirical Net PnL resampling with replacement, or fixed configured
-win/loss amounts. It uses a reproducible seed and stops balances at zero.
-Those are deliberate model differences, not claims of FX formula parity.
+The local Simulation page now uses three full-width sections stacked vertically:
+Stop Loss, Risk/Reward, then Monte Carlo. Each section starts with a short intro
+and `Chạy mô phỏng`; after a run it reveals configuration, loading/error, results,
+reset and rerun states. SL/RR reads the existing read-only experiments endpoint,
+including filter, provenance and config fences; unsupported or ambiguous trades
+remain N/A in the lazy details table. Demo mode uses an explicitly synthetic
+fixture only.
+
+Local SL uses ticks/multiplier rather than FX's reduction grid. Local RR keeps the
+original stop and selected target R inside the source holding window/cutoff. The
+Monte Carlo panel supports empirical ledger resampling, fixed configured outcomes,
+and a seeded normal model with separate win/loss standard deviations. Normal
+magnitudes are clipped at zero and balances stop at zero; this is labelled because
+clipping can change the mean. These are deliberate model differences, not claims
+of FX formula parity.
 
 ## Owner's two accompanying UI corrections
 
