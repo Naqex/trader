@@ -473,6 +473,6 @@
 .fxa-scenario-row-label{border:0;background:none;color:inherit;font:inherit;font-weight:600;padding:4px 0}
 .fxa-scenario-row-label small{display:inline;margin:0;color:var(--wm-content-muted);font-size:inherit;font-weight:400}
 .fxa-scenario-table th,.fxa-scenario-table td{text-align:center!important}
-.fxa-scenario-table tbody tr.is-best>td:not(:first-child){background:color-mix(in srgb,#00b85a 18%,transparent);border-block:1px solid #00b85a;border-inline-end:1px solid #00b85a}
+.fx-app .fxa-scenario-table .wm-data-table tbody tr.is-best>td:not(:first-child){background:color-mix(in srgb,#00b85a 18%,transparent);border-block:1px solid #00b85a;border-inline-end:1px solid #00b85a}
 .fxa-scenario-table tbody tr.is-best>td:nth-child(2){border-inline-start:1px solid #00b85a}
 .fx-app[data-theme=light] .fxa-scenario-table tbody tr.is-best>td:not(:first-child){background:color-mix(in srgb,#00b85a 12%,transparent)}
