@@ -152,11 +152,11 @@ export function AnalyticsDailyBars({ items, currency }) {
   const left = 32, right = width - 86, top = 42, step = 31, bottom = top + items.length * step
   const x = value => domain.high === domain.low ? (left + right) / 2 : left + (value - domain.low) / (domain.high - domain.low) * (right - left)
   return <div ref={ref} className="fxa-viz fxa-daily-bars" style={{height}}><svg viewBox={`0 0 ${width} ${height}`} role="group" aria-label={t('Performance by day')}>
-    <text x={left} y="16">{currency}</text><text x={width-4} y="16" textAnchor="end">{t('Win rate')}</text>
-    {chartTicks(domain, width < 400 ? 3 : 5).map(value=><g key={value}><line className="fxa-gridline" x1={x(value)} x2={x(value)} y1={top-14} y2={bottom}/><text x={x(value)} y={bottom+20} textAnchor="middle">{tickText(value,domain,locale,'')}</text></g>)}
+    <text x={width-4} y="16" textAnchor="end">{t('Win rate')}</text>
+    {chartTicks(domain, width < 400 ? 3 : 5).map(value=><text key={value} x={x(value)} y={bottom+20} textAnchor="middle">{tickText(value,domain,locale,'')}</text>)}
     {items.map((item,index)=>{
       const y=top+index*step, valid=finite(item.net), detail=`${t(item.label)}: ${item.count && valid?fmt(item.net,` ${currency}`):'N/A'} · ${t('Win rate')}: ${finite(item.winRate)?fmt(item.winRate,'%'):'N/A'}`
-      return <g key={item.label} tabIndex={0} role="img" aria-label={detail} data-tooltip={detail} data-tooltip-touch=""><rect x="0" y={y-14} width={width} height={step} fill="transparent"/><text x="0" y={y+3}>{t(item.label)}</text>{valid&&<rect x={Math.min(x(0),x(item.net))} y={y-8} width={Math.abs(x(item.net)-x(0))} height="18" rx="2" className={item.net<0?'fxa-fill-negative':'fxa-fill-positive'}/>}<text x={width-4} y={y+4} textAnchor="end">{finite(item.winRate)?fmt(item.winRate,'%'):'N/A'}</text></g>
+      return <g key={item.label} tabIndex={0} role="img" aria-label={detail} data-tooltip={detail} data-tooltip-touch=""><line className="fxa-gridline" x1={left} x2={right} y1={y+step/2} y2={y+step/2}/><rect x="0" y={y-14} width={width} height={step} fill="transparent"/><text x="0" y={y+3}>{t(item.label)}</text>{valid&&<rect x={Math.min(x(0),x(item.net))} y={y-8} width={Math.abs(x(item.net)-x(0))} height="18" rx="2" className={item.net<0?'fxa-fill-negative':'fxa-fill-positive'}/>}<text x={width-4} y={y+4} textAnchor="end">{finite(item.winRate)?fmt(item.winRate,'%'):'N/A'}</text></g>
     })}
   </svg></div>
 }

@@ -280,9 +280,10 @@
 .fxa-outcomes dt{display:flex;align-items:center;gap:6px;min-width:0}
 .fxa-outcomes dd{flex-shrink:0}
 .fxa-expectancy-comparison{min-width:0}
-.fxa-average-bar{display:flex;gap:3px;height:12px;background:var(--wm-surface);border-radius:3px;overflow:hidden}
-.fxa-average-bar i:first-child{background:var(--report-positive)}
-.fxa-average-bar i:last-child{background:var(--report-negative)}
+.fxa-average-bar{display:flex;gap:3px;height:12px;background:var(--wm-surface);border-radius:6px;overflow:hidden}
+.fxa-average-bar i{min-width:0}
+.fxa-average-bar .is-win{background:var(--report-positive)}
+.fxa-average-bar .is-loss{background:var(--report-negative)}
 .fxa-average-labels{display:flex;justify-content:space-between;gap:12px;margin-top:8px;font-size:12px;color:var(--wm-content-muted)}
 .fxa-average-labels span:last-child{text-align:right}
 .fxa-average-labels span:last-child strong{color:var(--report-negative)}
@@ -291,13 +292,13 @@
 .fxa-ring-layout{gap:12px}
 .fxa-side-panel .fxa-two-columns{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .fxa-side-panel .fxa-ring-layout{flex-direction:column;gap:8px}
-.fxa-side-panel .fxa-ring{width:210px;height:210px}
+.fxa-side-panel .fxa-ring{width:150px;height:150px;max-width:100%}
 .fxa-side-panel .fxa-chart-legend{display:flex;justify-content:center;flex-wrap:wrap;font-size:12px;gap:8px 16px;min-width:0;width:100%}
 .fxa-side-panel .fxa-chart-legend span{display:inline-flex;align-items:center;gap:5px}
 .fxa-side-panel .fxa-chart-legend strong{margin-left:0;padding-left:0}
 .fxa-side-panel .fxa-chart-legend i{border-radius:50%;width:8px;height:8px}
 .fxa-side-panel .fxa-ring .fxa-ring-share{fill:#fff;font-size:14px;font-weight:600;paint-order:stroke;stroke:#0004;stroke-width:2px}
-.fxa-hours-panel .fxa-radar-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.fxa-hours-panel .fxa-radar-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;flex:1}
 .fxa-hours-panel .fxa-radar svg{max-width:240px;margin:auto}
 .fxa-hours-panel .fxa-radar text{font-size:16px}
 @media(min-width:601px){
@@ -340,6 +341,7 @@
 .fxa-prop-objectives .fxa-prop-report-time{font-size:16px}
 .fxa-prop-objectives :is(th,td){padding:8px 12px}
 @media(max-width:1500px){.fxa-expectancy-panel .fxa-two-columns>div{grid-template-columns:1fr}.fxa-expectancy-panel .fxa-ring-layout{justify-content:flex-start}.fxa-hours-panel .fxa-radar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:1201px) and (max-width:1500px){.fxa-side-panel .fxa-two-columns{grid-template-columns:1fr;grid-template-rows:repeat(2,minmax(0,1fr))}}
 @media(max-width:1550px){.fxa-profit-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:1200px){.fxa-visual-report>.fxa-profit-panel,.fxa-visual-report>.fxa-risk-panels{grid-column:1/-1}.fxa-profit-panel>.fxa-viz{flex:none;height:240px}.fxa-visual-report>.fxa-risk-panels{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:none}.fxa-profit-panel .fxa-section-heading{align-items:flex-start;flex-wrap:wrap}.fxa-profit-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.fxa-visual-report>.fxa-expectancy-panel,.fxa-visual-report>.fxa-side-panel{grid-column:span 6}.fxa-visual-report>.fxa-outcome-panel{grid-column:span 6}.fxa-visual-report>.fxa-side-panel,.fxa-visual-report>.fxa-hours-panel{grid-column:1/-1}.fxa-outcome-panel .fxa-two-columns{grid-template-columns:1fr}.fxa-outcomes dl div{padding:4px 0}.fxa-visual-report>.fxa-calendar-panel{grid-column:1/-1}.fxa-visual-report>.fxa-frequency-panel{grid-column:1/-1}.fxa-frequency-panel .fxa-three-columns{grid-template-columns:repeat(3,minmax(0,1fr))}.fxa-frequency-panel .fxa-three-columns>div{grid-template-columns:1fr}.fxa-prop-objectives{grid-template-columns:1fr}.fxa-prop-objectives>.fxa-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:1000px){.fxa-visual-report>.fxa-expectancy-panel,.fxa-visual-report>.fxa-outcome-panel,.fxa-visual-report>.fxa-hours-panel,.fxa-visual-report>.fxa-side-panel{grid-column:1/-1}.fxa-expectancy-panel .fxa-two-columns{grid-template-columns:1fr}.fxa-outcome-panel .fxa-two-columns{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-hours-panel .fxa-radar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-monte-body{grid-template-columns:240px minmax(0,1fr);gap:16px}}

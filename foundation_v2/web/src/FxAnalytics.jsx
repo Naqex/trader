@@ -122,7 +122,10 @@ function ExpectancyComparison({ data, currency }) {
   const { t, fmt } = useTestingLocale()
   const total = Math.abs(data.averageWin ?? 0) + Math.abs(data.averageLoss ?? 0)
   return <div className="fxa-expectancy-comparison" role="img" aria-label={`${t('Lãi trung bình')}: ${fmt(data.averageWin, ` ${currency}`)}; ${t('Lỗ trung bình')}: ${fmt(data.averageLoss, ` ${currency}`)}`}>
-    <div className="fxa-average-bar" aria-hidden="true">{total > 0 && <><i style={{ flex: Math.abs(data.averageWin ?? 0) }}/><i style={{ flex: Math.abs(data.averageLoss ?? 0) }}/></>}</div>
+    <div className="fxa-average-bar" aria-hidden="true">{total > 0 && <>
+      {Math.abs(data.averageWin ?? 0) > 0 && <i className="is-win" style={{ flex: Math.abs(data.averageWin) }}/>}
+      {Math.abs(data.averageLoss ?? 0) > 0 && <i className="is-loss" style={{ flex: Math.abs(data.averageLoss) }}/>}
+    </>}</div>
     <div className="fxa-average-labels"><span><strong>{fmt(data.averageWin, ` ${currency}`)}</strong></span><span><strong>{fmt(data.averageLoss, ` ${currency}`)}</strong></span></div>
   </div>
 }
@@ -149,10 +152,10 @@ function MonthMatrix({ items, capitalBases, incomplete }) {
     return <td key={key} className={total ? 'fxa-year-total' : ''}><span className={`fxa-month-tile${value > 0 ? ' is-positive' : value < 0 ? ' is-negative' : ''}`} tabIndex={group.length ? 0 : undefined} data-tooltip={group.length ? `${group.map(item => item.label).join(', ')} · ${t(aggregation === 'sessions' ? 'Tổng % lợi nhuận các phiên' : 'Lợi nhuận tổng thể (%)')} · ${t(selectedBasis === 'initial' ? 'Vốn ban đầu' : 'Số dư hiện tại')}: ${text}` : undefined}>{text}</span></td>
   }
   return <><div className="fxa-month-controls">
-    <fieldset><legend className="sr-only">{t('Cách gộp lợi nhuận')}</legend>{[['sessions','Tổng % lợi nhuận các phiên','Tổng các phần trăm lợi nhuận của từng phiên.'],['overall','Lợi nhuận tổng thể (%)','Tổng lãi/lỗ ròng chia tổng vốn của các phiên nguồn.']].map(([value,label,help])=><div key={value}><label><input type="radio" name={`${id}-aggregation`} checked={aggregation===value} onChange={()=>setAggregation(value)}/>{t(label)}</label><Info text={help}/></div>)}</fieldset>
+    <fieldset><legend className="sr-only">{t('Cách gộp lợi nhuận')}</legend>{[['sessions','Cộng % phiên','Tổng các phần trăm lợi nhuận của từng phiên.'],['overall','Tổng thể (%)','Tổng lãi/lỗ ròng chia tổng vốn của các phiên nguồn.']].map(([value,label,help])=><div key={value}><label><input type="radio" name={`${id}-aggregation`} checked={aggregation===value} onChange={()=>setAggregation(value)}/>{t(label)}</label><Info text={help}/></div>)}</fieldset>
     <fieldset><legend className="sr-only">{t('Cơ sở vốn')}</legend>{[['initial','Vốn ban đầu','Vốn ban đầu của từng phiên nguồn. Cùng một tập vốn được dùng cho mọi tháng và tổng.'],['current','Số dư hiện tại','Số dư tài khoản từ snapshot tại thời điểm báo cáo, không gồm lãi/lỗ thả nổi. Chỉ khả dụng khi có snapshot hợp lệ cho mọi phiên nguồn; không suy ra từ giao dịch đã lọc.']].map(([value,label,help])=><div key={value}><label><input type="radio" name={`${id}-basis`} checked={selectedBasis===value} disabled={value==='current'&&!currentAvailable} onChange={()=>setBasis(value)}/>{t(label)}</label><Info text={help}/></div>)}</fieldset>
   </div>{years.length ? <div className="fxa-month-scroll" tabIndex={0} role="region" aria-label={t('Performance by month')}><table className="fxa-month-matrix">
-    <thead><tr><th scope="col"><span className="sr-only">{t('Năm')}</span></th>{Array.from({length:12},(_,index)=><th scope="col" key={index}><span className="fxa-month-tile">{new Intl.DateTimeFormat(locale,{month:'short',timeZone:'UTC'}).format(new Date(Date.UTC(2000,index,1)))}</span></th>)}<th scope="col"><span className="fxa-month-tile">YTD</span></th></tr></thead>
+    <thead><tr><th scope="col"><span className="sr-only">{t('Năm')}</span></th>{Array.from({length:12},(_,index)=><th scope="col" key={index}><span className="fxa-month-tile">{new Intl.DateTimeFormat(locale,{month:'short',timeZone:'UTC'}).format(new Date(Date.UTC(2000,index,1)))}</span></th>)}<th scope="col"><span className="fxa-month-tile">{t('Lũy kế')}</span></th></tr></thead>
     <tbody>{years.map(year=><tr key={year}><th scope="row"><span className="fxa-month-tile">{year}</span></th>{Array.from({length:12},(_,index)=>cell(items.filter(item=>item.label===`${year}-${String(index+1).padStart(2,'0')}`),false,index))}{cell(items.filter(item=>item.label.startsWith(year)),true)}</tr>)}</tbody>
     <tfoot><tr className="fxa-month-total"><td colSpan="11"/><th scope="row" colSpan="2"><span className="fxa-month-tile">{t('Tổng')}</span></th>{cell(items,true)}</tr></tfoot>
   </table></div>:<p className="fxa-empty">{t('Chưa có dữ liệu')}</p>}</>

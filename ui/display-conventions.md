@@ -128,6 +128,13 @@ are independent percentages, not two shares of a total.
 Side counts use a teal Buy / blue Sell donut with percentage labels on sufficiently
 large arcs, legends above and no center count. Side win rates use independent
 concentric tracks with a gray remainder for each side; missing rates remain N/A.
+Side rings use a compact 150px desktop size so the bordered card aligns with the
+session radar cards. Between 1201px and 1500px, the two side plots stack alongside
+the two-row radar group. Daily plot gridlines run horizontally between weekdays;
+the currency remains in money tooltips, without a standalone USD label. Monthly
+controls use the compact labels Cộng % phiên / Tổng thể (%), with the full
+definitions in their existing help controls. Vietnamese YTD is Lũy kế. Expectancy
+bars omit zero-width segments so a single gain/loss segment fills both rounded ends.
 Monthly results use separated rounded header/value tiles and one bottom-right
 Total, rather than monthly totals across years. Initial/Current selects the capital
 basis and Accum./Overall selects sum of source returns versus pooled return.
