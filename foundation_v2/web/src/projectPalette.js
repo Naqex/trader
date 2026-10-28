@@ -6,8 +6,8 @@ export function readProjectPalette(host) {
 
 export function chartSeriesPalette(palette) {
   return {
-    upColor: palette.positive, downColor: palette.negative,
-    wickUpColor: palette.positive, wickDownColor: palette.negative,
+    upColor: palette.candlePositive || palette.positive, downColor: palette.candleNegative || palette.negative,
+    wickUpColor: palette.candlePositive || palette.positive, wickDownColor: palette.candleNegative || palette.negative,
     color: palette.primary, lineColor: palette.primary,
     topColor: `${palette.primary}33`, bottomColor: `${palette.primary}05`,
     topLineColor: palette.positive, bottomLineColor: palette.negative,

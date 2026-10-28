@@ -53,21 +53,35 @@ Owner đã bỏ phương án hover xanh đục; hover chung dùng hai độ sán
 
 | Vai trò | Dark | Light |
 | --- | --- | --- |
-| Nền trang | `#080808` | `#FFFFFF` |
-| Nút phụ | `#23262A` | `#F3F4F6` |
-| Hover control | `#3D4148` | `#DDE1E7` |
-| Hover dòng | `#17191D` | `#F3F5F7` |
-| Dòng đã chọn | `#1C1C1C` | `#F0F0F0` |
-| Chữ chính | `#FFFFFF` | `#15181C` |
-| Chữ phụ | `#B8C0C9` | `#505965` |
-| Cam nút chính | `#FFAD7C` | `#B85018` |
-| Xanh biển focus/thông tin | `#70B5FF` | `#2466AC` |
-| Xanh lá thành công/lãi | `#72CFA1` | `#24724B` |
-| Đỏ lỗi/lỗ | `#FF828B` | `#B5373C` |
-| Đỏ nền xoá | `#C53E48` | `#B5373C` |
-| Vàng cảnh báo | `#EAC369` | `#80590B` |
-| Tím biểu đồ | `#B49AFF` | `#7154A3` |
-| Vàng biểu đồ | `#F3CE59` | `#876A1E` |
+| Nền trang | `#0C0E12` | `#F6F8FB` |
+| Nền panel | `#14171C` | `#FFFFFF` |
+| Nút phụ | `#222832` | `#E8EDF4` |
+| Hover control | `#343C48` | `#D6DFEA` |
+| Hover dòng | `#1D232C` | `#F0F4F9` |
+| Dòng đã chọn | `#30251C` | `#FFF0E3` |
+| Chữ chính | `#EDF1F7` | `#17202C` |
+| Chữ phụ | `#B4BFCE` | `#465568` |
+| Cam nút chính | `#FF963F` | `#B84D0E` |
+| Xanh biển focus/thông tin | `#4CA6FF` | `#1766C1` |
+| Xanh lá thành công/lãi | `#22C78A` | `#06734F` |
+| Đỏ lỗi/lỗ | `#FF5364` | `#BE2438` |
+| Đỏ nền xoá | `#BD253B` | `#BE2438` |
+| Vàng cảnh báo | `#F4BE3B` | `#8A6200` |
+| Tím biểu đồ | `#AC8CFF` | `#7144B7` |
+| Viền cấu trúc | `#424E5E` | `#BCC6D3` |
+| Viền control thiết yếu | `#68778C` | `#78879A` |
+
+Palette 28/10/2026 được pin ở `annam-compact@0.2.0`; không sửa đè bản0.1.1.
+Status, badge và report dùng cùng semantic family. Lịch pha nền22% ở dark,
+10% ở light để chữ nhỏ giữ tương phản. Tag giữ tên màu người dùng đã chọn,
+nhưng shade và nền đổi theo theme. Nền badge không phụ thuộc màu dòng bên dưới.
+Nhãn chart nền xanh/đỏ đặc dùng `on-positive/on-negative`: chữ tối ở dark,
+trắng ở light. Donut cũng dùng foreground đi cặp; không ép chữ trắng trên mọi lát.
+Nến có shade riêng cho thân/râu; native adapter đồng bộ canvas/text/grid và vẫn
+giữ quy ước SL/TP. Series so sánh dùng token theo theme, legend và kiểu nét.
+Grid trang trí nhẹ hơn đường dữ liệu. Nền selected có sắc cam nhẹ, đi kèm
+check/viền/dấu trạng thái. Focus vẫn xanh biển. Chữ đỏ trên hover control cần
+nền semantic riêng hoặc chữ chính; không hạ tương phản bằng lớp pha xám.
 
 | Loại tương tác | Bình thường | Rê chuột | Đã chọn / đang mở |
 | --- | --- | --- | --- |

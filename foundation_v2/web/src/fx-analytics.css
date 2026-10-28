@@ -138,7 +138,7 @@
 .fxa-viz.is-negative{color:var(--report-negative)}
 .fxa-viz>svg{display:block;width:100%;height:100%;overflow:visible}
 .fxa-viz text,.fxa-radar text,.fxa-ring text{fill:var(--wm-content-muted);font:12px system-ui,sans-serif;font-variant-numeric:tabular-nums}
-.fxa-viz .fxa-gridline,.fxa-radar .fxa-gridline{stroke:color-mix(in srgb,var(--wm-content-muted) 30%,transparent);stroke-dasharray:4 5;stroke-width:1}
+.fxa-viz .fxa-gridline,.fxa-radar .fxa-gridline{stroke:var(--project-grid);stroke-dasharray:4 5;stroke-width:1}
 .fxa-viz-point{fill:currentColor;stroke:var(--wm-canvas);stroke-width:1;cursor:pointer}
 .fxa-viz-point:focus-visible{outline:none;stroke:var(--wm-content);stroke-width:3}
 .fxa-viz g[tabindex]:focus-visible{outline:none}
@@ -171,8 +171,7 @@
 @media(hover:hover) and (pointer:fine){.fxa-line-viz .fxa-chart-tools{opacity:0;pointer-events:none}.fxa-line-viz:is(:hover,:focus-within) .fxa-chart-tools{opacity:1;pointer-events:auto}}
 @media(any-pointer:coarse){.fxa-line-viz .fxa-chart-tools{opacity:1;pointer-events:auto}}
 .fxa-chart-reference-label{fill:currentColor;stroke:currentColor;stroke-width:1}
-.fx-app[data-theme=light] .fxa-chart-reference-label{fill:color-mix(in srgb,currentColor 65%,white);stroke:color-mix(in srgb,currentColor 65%,white)}
-.fxa-chart-reference text{fill:#080808!important;font-size:11px;font-weight:600}
+.fxa-chart-reference text{fill:var(--project-on-positive)!important;font-size:11px;font-weight:600}
 .fxa-chart-reference [tabindex]:focus-visible{outline:none}.fxa-chart-reference [tabindex]:focus-visible .fxa-chart-reference-label{stroke:var(--wm-focus);stroke-width:2}
 .fxa-line-viz[data-chart-tool]>svg{touch-action:pan-y;user-select:none}
 .fxa-line-viz[data-chart-tool=pan]>svg{cursor:grab;touch-action:none}
@@ -257,7 +256,7 @@
 .fxa-visual-report>.fxa-profit-panel{grid-column:span 8;display:flex;flex-direction:column}
 .fxa-profit-panel .fxa-section-heading{margin-bottom:4px}
 .fxa-profit-panel .fxa-profit-metrics .fxa-metric strong{font-size:24px;line-height:1.3}
-.fxa-profit-panel>.fxa-viz{color:#3578f6}
+.fxa-profit-panel>.fxa-viz{color:var(--report-blue)}
 .fxa-profit-panel>.fxa-viz{flex:1 1 0;min-height:240px;margin-top:4px}
 .fxa-visual-report>.fxa-risk-panels{grid-column:span 4;grid-template-columns:1fr;grid-template-rows:repeat(3,minmax(120px,1fr));align-content:stretch;gap:12px}
 .fxa-risk-panels .fxa-panel{display:flex;flex-direction:column;justify-content:space-between;padding:16px;min-height:0}
@@ -299,7 +298,7 @@
 .fxa-side-panel .fxa-chart-legend span{display:inline-flex;align-items:center;gap:5px}
 .fxa-side-panel .fxa-chart-legend strong{margin-left:0;padding-left:0}
 .fxa-side-panel .fxa-chart-legend i{border-radius:50%;width:8px;height:8px}
-.fxa-side-panel .fxa-ring .fxa-ring-share{fill:#fff;font-size:14px;font-weight:600;paint-order:stroke;stroke:#0004;stroke-width:2px}
+.fxa-side-panel .fxa-ring .fxa-ring-share{fill:var(--project-on-positive);font-size:14px;font-weight:600;paint-order:stroke;stroke:transparent;stroke-width:0}
 .fxa-hours-panel .fxa-radar-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;flex:1}
 .fxa-hours-panel .fxa-radar svg{max-width:240px;margin:auto}
 .fxa-hours-panel .fxa-radar text{font-size:16px}
@@ -382,6 +381,7 @@
 .fxa-month-total th{font-weight:600}
 .fxa-frequency-panel .fxa-three-columns{flex:1;grid-template-columns:1fr;grid-template-rows:repeat(3,minmax(168px,1fr));gap:16px}
 .fxa-frequency-panel .fxa-three-columns>.fxa-frequency-card{display:flex;flex-direction:column;min-width:0;padding:16px;border:1px solid var(--wm-border);border-radius:8px;background:var(--wm-surface)}
+.fxa-frequency-card .fxa-chart-heading{align-self:stretch}
 .fxa-frequency-plot{display:flex;flex:1;min-height:124px}
 .fxa-frequency-card .fxa-frequency-plot>.fxa-viz{flex:1;min-height:124px;width:100%}
 .fxa-frequency-card .fxa-viz{margin-top:0}
@@ -433,24 +433,25 @@
 .fxa-scenario-chip-remove:hover:not(:disabled){background:color-mix(in srgb,var(--fxa-chip-color) 20%,transparent)}
 .fxa-series-point{fill:transparent;stroke:none}
 .fxa-series-point:focus-visible{fill:currentColor;stroke:var(--wm-content);stroke-width:2;outline:none}
-.fxa-add-scenario{display:inline-flex;align-items:center;justify-content:center;gap:8px;flex:none;margin-left:auto;min-height:38px;padding:8px 18px;border:0;border-radius:999px;background:#0566ff;color:#fff;font:inherit;font-size:13px;font-weight:500;cursor:pointer}
-.fxa-add-scenario:hover:not(:disabled){background:#0059e6}
+.fxa-add-scenario{display:inline-flex;align-items:center;justify-content:center;gap:8px;flex:none;margin-left:auto;min-height:38px;padding:8px 18px;border:0;border-radius:999px;background:var(--project-primary);color:var(--project-on-primary);font:inherit;font-size:13px;font-weight:500;cursor:pointer}
+.fxa-add-scenario:hover:not(:disabled){background:var(--project-primary-hover)}
 .fxa-add-scenario:disabled{cursor:default;opacity:.55}
 .legacy-modal.fxa-scenario-dialog{width:min(700px,calc(100vw - 32px))}
 .legacy-modal.fxa-scenario-dialog>header{padding:24px 28px 8px;border:0}
 .fxa-scenario-dialog form{padding:0 28px 24px}
-.fxa-scenario-warning{display:flex;align-items:flex-start;gap:8px;margin:0 0 20px;color:#e5bd00;font-size:12px;line-height:1.5}
+.fxa-scenario-warning{display:flex;align-items:flex-start;gap:8px;margin:0 0 20px;color:var(--project-warning);font-size:12px;line-height:1.5}
 .fxa-scenario-warning svg{flex:none;width:16px;height:16px;margin-top:1px}
-.is-light .fxa-scenario-warning{color:#856300}
+
 .fxa-scenario-inputs{display:grid;gap:12px;margin:16px 0}
 .fxa-scenario-input-row{display:flex;align-items:center;gap:10px}
 .fxa-scenario-input-row input{box-sizing:border-box;width:min(380px,100%);min-width:0;min-height:48px;padding:12px 16px;border:1px solid var(--chart-line);border-radius:12px;background:transparent;color:inherit;font:inherit;font-size:16px}
 .fxa-scenario-input-row input[aria-invalid=true]{border-color:var(--project-negative,#ef5350)}
 .fxa-scenario-input-remove{display:grid;place-items:center;flex:0 0 44px;min-height:44px;padding:0;border:1px solid var(--chart-line);border-radius:10px;background:transparent;color:var(--project-negative,#ef5350);cursor:pointer}
+.fxa-scenario-input-remove:hover:not(:disabled){background:var(--project-negative-soft)}
 .fxa-scenario-dialog :is(.fxa-scenario-add-row,.fxa-scenario-cancel,.fxa-scenario-confirm){display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;padding:9px 18px;border:1px solid var(--chart-line);border-radius:999px;background:transparent;color:inherit;font:inherit;cursor:pointer}
 .fxa-scenario-dialog footer{display:flex;justify-content:flex-end;gap:12px;margin-top:32px}
 .fxa-scenario-dialog .fxa-scenario-cancel{border-color:transparent}
-.fxa-scenario-dialog .fxa-scenario-confirm{border-color:transparent;background:#0566ff;color:#fff}
+.fxa-scenario-dialog .fxa-scenario-confirm{border-color:transparent;background:var(--project-primary);color:var(--project-on-primary)}
 .fxa-scenario-dialog button:hover{filter:brightness(1.1)}
 @media(max-width:600px){.fxa-simulation-scenarios{gap:12px}.fxa-scenario-chips{flex-basis:100%}.fxa-add-scenario{margin-left:0}.legacy-modal.fxa-scenario-dialog>header{padding:20px 20px 8px}.fxa-scenario-dialog form{padding:0 20px 20px}}
 @media(prefers-reduced-motion:reduce){.fxa-scenario-chip-remove{transition:none}}
@@ -470,10 +471,10 @@
 .fxa-scenario-summary-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}
 .fxa-scenario-summary-heading h3{flex:none;margin:0;font-size:18px;font-weight:600}
 .fxa-scenario-summary-heading p{margin:0;max-width:80%;text-align:right;font-size:13px;line-height:1.6}
-.fxa-scenario-best-value{color:#258bff;font-weight:600}
-.fxa-scenario-result-notice{display:flex;align-items:flex-start;gap:8px;margin:12px 0 0;padding:10px 14px;border:1px solid #a88400;border-radius:999px;background:#e5bd0014;color:#e5bd00;font-size:12px;line-height:1.5}
+.fxa-scenario-best-value{color:var(--project-primary);font-weight:600}
+.fxa-scenario-result-notice{display:flex;align-items:flex-start;gap:8px;margin:12px 0 0;padding:10px 14px;border:1px solid var(--project-warning);border-radius:999px;background:var(--project-warning-soft);color:var(--project-warning);font-size:12px;line-height:1.5}
 .fxa-scenario-result-notice svg{flex:none;width:16px;height:16px;margin-top:1px}
-.fx-app[data-theme=light] .fxa-scenario-result-notice{color:#856300}
+
 @media(max-width:600px){.fxa-scenario-summary-heading{align-items:flex-start;flex-direction:column;gap:8px}.fxa-scenario-summary-heading p{max-width:100%;text-align:left}.fxa-scenario-result-notice{border-radius:12px}}
 .fxa-simulation-notice{margin:0 0 12px;padding:10px 12px;border:1px solid color-mix(in srgb,var(--project-highlight) 55%,var(--wm-border));border-radius:8px;color:var(--wm-content-muted);font-size:12px}
 @media(max-width:850px){.fxa-simulation-report .fxa-scenario-panel .fxa-metrics,.fxa-simulation-report .fxa-monte-results>.fxa-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-simulation-intro{min-height:180px;padding:16px}}
@@ -482,8 +483,8 @@
 .fxa-scenario-row-label{border:0;background:none;color:inherit;font:inherit;font-weight:600;padding:4px 0}
 .fxa-scenario-row-label small{display:inline;margin:0;color:var(--wm-content-muted);font-size:inherit;font-weight:400}
 .fxa-scenario-table th,.fxa-scenario-table td{text-align:center!important}
-.fx-app .fxa-scenario-table .wm-data-table tbody td.is-best-cell{background:color-mix(in srgb,#00b85a 18%,transparent);box-shadow:inset 0 1px #00b85a,inset 0 -1px #00b85a,inset 1px 0 #00b85a,inset -1px 0 #00b85a}
-.fx-app[data-theme=light] .fxa-scenario-table .wm-data-table tbody td.is-best-cell{background:color-mix(in srgb,#00b85a 12%,transparent)}
+.fx-app .fxa-scenario-table .wm-data-table tbody td.is-best-cell{background:color-mix(in srgb,var(--report-positive) 18%,transparent);box-shadow:inset 0 1px var(--report-positive),inset 0 -1px var(--report-positive),inset 1px 0 var(--report-positive),inset -1px 0 var(--report-positive)}
+.fx-app[data-theme=light] .fxa-scenario-table .wm-data-table tbody td.is-best-cell{background:color-mix(in srgb,var(--report-positive) 12%,transparent)}
 
 .fxa-prop-objectives{grid-column:1/-1;min-width:0;margin:0 0 16px;border:1px solid var(--project-highlight);border-radius:10px;background:var(--wm-canvas);overflow:hidden}
 .fxa-visual-report>.fxa-prop-objectives{margin:0}

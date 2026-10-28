@@ -2,8 +2,8 @@
 .wm-label-placeholder { opacity:0;color:var(--fx-muted,#929aa8); }
 td:has(> .wm-label-cell):hover .wm-label-placeholder,.wm-label-cell:focus-visible .wm-label-placeholder,.wm-label-cell[aria-expanded=true] .wm-label-placeholder { opacity:1; }
 @media(hover:none){.wm-label-placeholder{opacity:1}}
-.wm-trade-label { display:inline-flex;align-items:center;padding:3px 8px;min-height:23px;border-radius:4px;line-height:1.25;font-size:12px;white-space:normal;overflow-wrap:anywhere;background:color-mix(in srgb,var(--label-color,#929aa8) 17%,transparent);color:var(--label-ink,var(--label-color,#929aa8)); }
-.wm-trade-label[data-color=green]{--label-color:#53b881}.wm-trade-label[data-color=blue]{--label-color:#629be8}.wm-trade-label[data-color=orange]{--label-color:#dca454}.wm-trade-label[data-color=red]{--label-color:#e5787d}.wm-trade-label[data-color=purple]{--label-color:#b68bea}.wm-trade-label[data-color=cyan]{--label-color:#62bfd2}.wm-trade-label[data-color=gray]{--label-color:#949eaf}
+.wm-trade-label { display:inline-flex;align-items:center;padding:3px 8px;min-height:23px;border-radius:4px;line-height:1.25;font-size:12px;white-space:normal;overflow-wrap:anywhere;--label-color:var(--project-muted);background:color-mix(in srgb,var(--label-color) 16%,var(--project-canvas));color:var(--label-color); }
+.wm-trade-label[data-color=green]{--label-color:var(--report-positive)}.wm-trade-label[data-color=blue]{--label-color:var(--report-blue)}.wm-trade-label[data-color=orange]{--label-color:var(--report-peach)}.wm-trade-label[data-color=red]{--label-color:var(--report-negative)}.wm-trade-label[data-color=purple]{--label-color:var(--report-violet)}.wm-trade-label[data-color=cyan]{--label-color:var(--report-cyan)}.wm-trade-label[data-color=gray]{--label-color:var(--project-muted)}
 .wm-label-popup { width:300px;padding:10px;display:flex;flex-direction:column;gap:8px;overflow:auto; }
 .wm-label-popup input { box-sizing:border-box;width:100%; }
 .wm-label-options { max-height:250px;overflow:auto; }
@@ -24,10 +24,11 @@ td:has(> .wm-label-cell):hover .wm-label-placeholder,.wm-label-cell:focus-visibl
 .wm-label-colors button { padding:2px;background:none;border:1px solid transparent;cursor:pointer;border-radius:4px; }
 .wm-label-colors button[aria-pressed=true]{border-color:currentColor}
 .wm-label-colors .wm-trade-label { width:24px;justify-content:center;padding:0; }
-.wm-label-delete-trigger { color:var(--wm-danger,#e5787d); }
+.wm-label-delete-trigger { color:var(--project-negative); }
+.wm-label-delete-trigger:hover{background:var(--project-negative-soft);color:var(--project-negative)}
 .wm-label-delete p { margin:0 0 8px; }
-.wm-return-badge { display:inline-flex;align-items:center;gap:5px;border-radius:4px;padding:3px 8px;font-variant-numeric:tabular-nums;white-space:nowrap;background:color-mix(in srgb,var(--return-color) 14%,transparent);color:var(--return-color); }
-.wm-return-badge.is-positive{--return-color:#66b98a}.wm-return-badge.is-negative{--return-color:#e5787d}.wm-return-badge.is-flat{--return-color:#d3aa65}
+.wm-return-badge { display:inline-flex;align-items:center;gap:5px;border-radius:4px;padding:3px 8px;font-variant-numeric:tabular-nums;white-space:nowrap;background:color-mix(in srgb,var(--return-color) 16%,var(--project-canvas));color:var(--return-color); }
+.wm-return-badge.is-positive{--return-color:var(--project-positive)}.wm-return-badge.is-negative{--return-color:var(--project-negative)}.wm-return-badge.is-flat{--return-color:var(--project-warning)}
 .fx-app .wm-data-table td.is-numeric > .wm-return-badge { margin-right:-8px; }
 .fxa-badge.is-open { background:var(--wm-hover); color:var(--wm-content-muted); }
 .wm-missing-value { color:var(--wm-content-muted); }
@@ -37,13 +38,8 @@ td:has(> .wm-label-cell):hover .wm-label-placeholder,.wm-label-cell:focus-visibl
 .legacy-popover.wm-label-popup .wm-label-selected button { flex:0 0 20px;width:20px;min-height:20px;padding:0;justify-content:center; }
 .legacy-popover.wm-label-popup .wm-label-editor-heading button,.legacy-popover.wm-label-popup .wm-label-colors button { width:32px;min-height:32px;padding:2px;justify-content:center; }
 .wm-label-popup button[aria-disabled=true] { opacity:.55;cursor:wait; }
-[data-theme=light] .wm-trade-label[data-color=gray]{--label-ink:#596579}
-[data-theme=light] .wm-trade-label[data-color=green]{--label-ink:#236442}
-[data-theme=light] .wm-trade-label[data-color=blue]{--label-ink:#225ea8}
-[data-theme=light] .wm-trade-label[data-color=orange]{--label-ink:#80501a}
-[data-theme=light] .wm-trade-label[data-color=red]{--label-ink:#a4343c}
-[data-theme=light] .wm-trade-label[data-color=purple]{--label-ink:#7440a6}
-[data-theme=light] .wm-trade-label[data-color=cyan]{--label-ink:#226572}
 
 .fx-app .fxa-trades .wm-label-cell:hover:not(:disabled) { background: transparent; }
 .fxa-badge.is-order-type { background: var(--wm-hover); color: var(--wm-content); }
+
+[data-theme=light] :is(.wm-trade-label,.wm-return-badge){background:color-mix(in srgb,var(--return-color,var(--label-color)) 8%,var(--project-surface))}

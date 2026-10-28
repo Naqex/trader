@@ -45,9 +45,9 @@ try{
     const contrast=await chart().locator('.fxa-chart-reference').evaluateAll(nodes=>{
       const rgb=value=>value.match(/[\d.]+/g).slice(0,3).map(channel=>Number(channel)*(value.startsWith('color(srgb ') ? 255 : 1))
       const luminance=value=>rgb(value).map(channel=>channel/255).map(channel=>channel<=.04045?channel/12.92:((channel+.055)/1.055)**2.4).reduce((sum,value,index)=>sum+value*[.2126,.7152,.0722][index],0)
-      return nodes.map(node=>{const label=getComputedStyle(node.querySelector('.fxa-chart-reference-label')),fill=label.fill,text=getComputedStyle(node.querySelector('text')).fill,a=luminance(fill),b=luminance(text);return {solid:fill===label.stroke,black:text==='rgb(8, 8, 8)',ratio:(Math.max(a,b)+.05)/(Math.min(a,b)+.05)}})
+      return nodes.map(node=>{const label=getComputedStyle(node.querySelector('.fxa-chart-reference-label')),fill=label.fill,text=getComputedStyle(node.querySelector('text')).fill,a=luminance(fill),b=luminance(text),light=node.closest('.fx-app').dataset.theme==='light';return {solid:fill===label.stroke && fill===getComputedStyle(node).color,paired:text===(light?'rgb(255, 255, 255)':'rgb(12, 14, 18)'),ratio:(Math.max(a,b)+.05)/(Math.min(a,b)+.05)}})
     })
-    assert.ok(contrast.every(label=>label.solid && label.black && label.ratio>=4.5),JSON.stringify(contrast))
+    assert.ok(contrast.every(label=>label.solid && label.paired && label.ratio>=4.5),JSON.stringify(contrast))
 
     await page.mouse.move(0,0);await chart().locator(':scope>svg').focus();await page.keyboard.press('Tab')
     assert.equal(await chart().locator('.fxa-chart-tools').evaluate(node=>getComputedStyle(node).opacity),'1')

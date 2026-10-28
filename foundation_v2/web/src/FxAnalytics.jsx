@@ -293,7 +293,7 @@ function SimulationIntro({ description, onRun }) {
 const STOP_LOSS_SCENARIOS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]
 const RR_SCENARIOS = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]
 const SCENARIO_TONES = ['blue', 'violet', 'yellow', 'red', 'teal', 'blue', 'orange', 'purple', 'lime', 'orange', 'cyan', 'green', 'teal']
-const SCENARIO_COLORS = { blue:'#258bff', violet:'#9a7cff', yellow:'#e5bd00', red:'#ef5350', teal:'#13c9a5', orange:'#ff8b20', purple:'#a536ff', lime:'#8bcf00', cyan:'#00b8e6', green:'#00b85a' }
+const SCENARIO_COLORS = { blue:'var(--report-blue)', violet:'var(--report-violet)', yellow:'var(--report-gold)', red:'var(--report-negative)', teal:'var(--report-teal)', orange:'var(--report-peach)', purple:'var(--report-purple)', lime:'var(--report-lime)', cyan:'var(--report-cyan)', green:'var(--report-positive)' }
 
 function AddScenarioDialog({ rr, scenarios, onClose, onAdd }) {
   const { t } = useTestingLocale(), id = useId(), nextId = useRef(1)
@@ -436,7 +436,7 @@ function ScenarioSimulator({ kind, model, data, config, loadExperiment, timezone
       <div ref={resultsRef} tabIndex={-1} role="region" aria-label={t(title)} aria-busy={busy} className="fxa-simulation-results">
         {busy && <p role="status" className="fxa-simulation-progress">{t('Đang mô phỏng từ đường giá…')}</p>}
         {(job.phase === 'error' || failed.length > 0) && <div role="alert" className="fxa-error">{failed.length ? t('Chưa tính được kịch bản {values}.', {values:failed.map(scenarioText).join(', ')}) : t(job.error)} <button type="button" className="fxa-button" disabled={busy} onClick={() => run()}>{t('Thử lại')}</button></div>}
-        {chart.timestamps.length ? <AnalyticsCurve series={chart.series} seriesMeta={chart.values.map(value => ({label:scenarioText(value),color:scenarioColor(value),selected:value===selectedScenario}))} label={t('R lũy kế theo ngày đóng lệnh trên chart')} labels={chartDates} axisLabels={chartDates} timestamps={chart.timestamps} yTitle={t('R lũy kế')} suffix=" R" height={420} controls/> : !busy && <div className="fxa-chart-empty">{t('Chưa có tập giao dịch chung đủ dữ liệu cho biểu đồ R.')}</div>}
+        {chart.timestamps.length ? <AnalyticsCurve series={chart.series} seriesMeta={chart.values.map((value,index) => ({label:scenarioText(value),color:scenarioColor(value),dash:['','6 4','2 3','8 3 2 3'][index % 4],selected:value===selectedScenario}))} label={t('R lũy kế theo ngày đóng lệnh trên chart')} labels={chartDates} axisLabels={chartDates} timestamps={chart.timestamps} yTitle={t('R lũy kế')} suffix=" R" height={420} controls/> : !busy && <div className="fxa-chart-empty">{t('Chưa có tập giao dịch chung đủ dữ liệu cho biểu đồ R.')}</div>}
         {riskCurve && <>
           <section className="fxa-scenario-summary" aria-label={t('Kết quả mô phỏng')}>
             <div className="fxa-scenario-summary-heading"><h3>{t('Kết quả')}</h3><p>

@@ -4,7 +4,7 @@
   --wm-control-height: var(--ds-control);
   --wm-control-text: var(--project-text);
   --wm-control-muted: var(--project-muted);
-  --wm-control-border: var(--project-border);
+  --wm-control-border: var(--project-border-strong);
   --wm-control-hover-border: var(--project-border-strong);
   --wm-control-open: var(--project-control);
   --wm-control-hover: var(--project-hover);

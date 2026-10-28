@@ -51,6 +51,9 @@ Below 1200px these groups
 stack, with the main plot returning to a compact height; below 850px the R cards
 also stack. Hour/day
 plots pair; the year/month matrix stays full width; calendar/frequency use 2:1.
+All three frequency headings stretch across their card: title/help left, average
+right, preserving the panel inset. A narrow card may wrap the average; headings
+must not shrink to a centered content-sized group.
 Expectancy and winner/loser statistics share a 1:2 row. Expectancy and PF each
 have one surface, stacked with a 16px gap under their shared external heading;
 their combined height matches the winner/loser cards. Within the expectancy card, the metric sits on the left and the average win/loss bar and values on the right; up to 420px they stack to keep amounts readable. Side and market-session
