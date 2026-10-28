@@ -218,6 +218,7 @@
 .live-split > section.live-calendar-section:first-child { padding: 0; }
 .live-split > section.live-trades-section:first-child { padding: 0; }
 .live-trades-content { padding: 24px var(--wm-page-gutter); min-width: 0; }
+.is-trades .live-trades-content { padding: 0; }
 .live-calendar-content { padding: 24px var(--wm-page-gutter) 0; }
 .live-calendar-unit-state { margin:8px 0 0; color:var(--wm-content-muted); font-size:12px; }
 .live-analytics-side { border-left: 1px solid var(--wm-border); padding: 0; }
@@ -278,6 +279,10 @@
   .is-trades .live-trades-section { display:flex; flex-direction:column; min-height:0; }
   .is-trades .live-filters { flex-shrink:0; }
   .is-trades .live-trades-content { flex:1; min-height:0; overflow:auto; }
+  .is-trades .live-broker { display:flex; flex-direction:column; min-height:100%; }
+  .is-trades .live-broker .live-deals-toolbar { flex-shrink:0; }
+  .is-trades .live-broker .live-table-scroll { flex:1 1 auto; min-height:0; max-height:none; margin-inline:0; }
+  .is-trades .live-broker .fxa-pagination { flex-shrink:0; margin-inline:0; }
   .is-calendar .live-calendar-section { display:flex; flex-direction:column; min-height:0; }
   .is-calendar .live-filters { flex-shrink:0; }
   .is-calendar .live-calendar-content { display:flex; flex-direction:column; flex:1; min-height:0; overflow:auto; }
@@ -324,6 +329,9 @@
 .live-source-details { margin-top: 0; padding-inline: var(--wm-page-gutter); }
 .live-workspace .live-account-detail { margin-inline: calc(-1 * var(--wm-page-gutter)); padding-inline: var(--wm-page-gutter); }
 .live-workspace .live-table-scroll { margin-inline: calc(-1 * var(--wm-page-gutter)); }
+.is-trades .live-broker .live-deals-toolbar { margin: 0; padding: 16px var(--wm-page-gutter); border-bottom: 1px solid var(--wm-border); }
+.is-trades .live-broker .live-table-scroll { margin-inline: 0; }
+.is-trades .live-broker .fxa-pagination { margin-inline: 0; }
 .live-workspace .live-tag-analysis > .live-table-scroll { margin-inline: 0; }
 .live-workspace .fxa-pagination { margin-inline: calc(-1 * var(--wm-page-gutter)); padding-inline: var(--wm-page-gutter); border-top: 1px solid var(--wm-border); }
 .live-source-details dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
@@ -331,6 +339,7 @@
 .live-broker { min-width: 0; }
 .live-broker .live-section-heading { flex-wrap: wrap; }
 .live-deals-toolbar { flex-wrap: wrap; margin-block: 20px; }
+.live-deals-toolbar.is-search-only { justify-content: flex-end; }
 .live-table-scroll { overflow: auto; max-height: 560px; }
 .live-table-scroll table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .live-table-scroll th, .live-table-scroll td { padding: 12px 16px; white-space: nowrap; border-bottom: 1px solid var(--wm-border); text-align: left; font-variant-numeric: tabular-nums; }

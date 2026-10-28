@@ -9,6 +9,9 @@ Embedded reports, full-bleed panes with their own toolbar inset and full-screen
 chart workspaces retain their own layout. Use 24px between major related sections,
 16px within groups and 8px between adjacent controls; larger chart/panel gaps
 are deliberate grouping, not accumulated wrapper spacing.
+Pane-owned data surfaces may run full-bleed to the pane edges; their toolbar and
+pagination own the horizontal boundary, while search remains an action control
+without repeating a visible row-count heading above the table.
 
 Remove secondary text that does not help an immediate decision or action.
 Healthy reports must not show implementation explanations, generic legacy-data
