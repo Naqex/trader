@@ -1,0 +1,37 @@
+{
+  "scope": "Analytics-only calendar trial; real GET and demo separately labeled; no broker reads/writes",
+  "cases": [
+    {
+      "width": 1920,
+      "theme": "dark",
+      "mode": "real GET",
+      "geometry": true,
+      "outerRadius": "10px",
+      "dayDetails": true,
+      "keyboard": true,
+      "monthAndYear": true
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "mode": "demo",
+      "geometry": true,
+      "outerRadius": "10px",
+      "dayDetails": true,
+      "keyboard": true,
+      "monthAndYear": true
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "mode": "demo",
+      "geometry": true,
+      "outerRadius": "10px",
+      "dayDetails": true,
+      "keyboard": true,
+      "monthAndYear": true
+    }
+  ],
+  "errors": [],
+  "writes": []
+}

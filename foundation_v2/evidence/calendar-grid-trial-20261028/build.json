@@ -1,0 +1,14 @@
+{
+  "head": "38f1d4dab741b6730b7de309f78f850e1a381001",
+  "index_before_sha256": "1eb521ac73ae0d7e8a9de033c0ce9368775772cc7a2a22cf90bd4517cf82f942",
+  "overlays": {
+    "src/calendar-view.css": "f21b64c4d530930f4c089935d809c1157542606b50755c9f694292cff0826bca"
+  },
+  "contracts": {
+    "ui/compact-system.md": "a165891a1e315236a989fcbd9b495571c31f5c1a7907ef5f4e734701870fc684",
+    "ui/display-conventions.md": "d5677ea1c695bc4baa1cf8bb606e23ad52eac5b26c22c53b61fcc4a514f02d85"
+  },
+  "status": "complete",
+  "candidate": "E:\\BACKUP-TRADINGWORKSPACE\\calendar-grid-trial-20261028\\source\\foundation_v2\\web\\dist",
+  "index_sha256": "8413f87ab3f0b5bc9cbe914916766937ff53bba76568fea0b7df866cef3e6e07"
+}

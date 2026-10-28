@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "index_sha256": "8413f87ab3f0b5bc9cbe914916766937ff53bba76568fea0b7df866cef3e6e07",
+  "rollback": "E:\\BACKUP-TRADINGWORKSPACE\\calendar-grid-trial-20261028\\ui-before-calendar-trial\\index.html",
+  "old_assets_retained": true,
+  "preserved": [
+    "brand/wmreplay.svg",
+    "chart-legacy.css"
+  ],
+  "rollout": "UI-only atomic index; existing API/UI processes retained"
+}
