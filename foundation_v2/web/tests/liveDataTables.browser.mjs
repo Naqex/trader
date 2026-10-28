@@ -102,16 +102,18 @@ for(const [width,theme]of[[1440,'dark'],[390,'light']]){
  ['labels',`section=tag-analytics&live_account=${fixtureAccount}`,'.live-journal-tags']]){
  await page.goto(`${origin}/?workspace=fixture&lang=vi&view=live&area=live&${query}`,{waitUntil:'domcontentloaded'})
  const root=page.locator(selector);await root.locator('.wm-data-table tbody tr').first().waitFor();const footer=root.locator('.wm-pagination').first();await footer.waitFor()
+ assert.equal(await footer.locator('.wm-pagination-meta > span').count(),0,'Live pagination hides the redundant result count')
  const initialRow=await root.locator('tbody tr').first().innerText()
  if(name==='accounts')assert.match(initialRow,/ACCOUNT 00/)
  if(name==='cashflow')assert.match(initialRow,/134/)
  if(name==='broker'||name==='manual')assert.match(initialRow,/20\/10\/2026/)
  await checkSort(root)
  if(name==='accounts'){
-  assert.match(await footer.locator('.wm-pagination-meta > span').getAttribute('title'),/1–10.*36/);await footer.getByRole('button',{name:'Trang sau',exact:true}).click()
-  await page.getByRole('button',{name:'Lọc tài khoản',exact:true}).click();await page.getByRole('option',{name:'Đồng bộ',exact:true}).click();await page.keyboard.press('Escape');assert.match(await footer.locator('.wm-pagination-meta > span').getAttribute('title'),/1–1.*1/)
+  await footer.getByRole('button',{name:'Trang sau',exact:true}).click()
+  await page.getByRole('button',{name:'Lọc tài khoản',exact:true}).click();await page.getByRole('option',{name:'Đồng bộ',exact:true}).click();await page.keyboard.press('Escape');assert.equal(await footer.locator('.wm-pagination-meta > span').count(),0)
  }
- if(name==='broker'||name==='manual'){await footer.getByRole('button',{name:'Trang sau',exact:true}).click();assert.match(await footer.locator('.wm-pagination-meta > span').getAttribute('title'),/21–40.*65/)}
+ if(name==='broker'||name==='manual'){await footer.getByRole('button',{name:'Trang sau',exact:true}).click();assert.equal(await footer.locator('.wm-pagination-meta > span').count(),0)}
+ if(name==='manual')assert.equal(await footer.getByRole('button',{name:'Xuất CSV',exact:true}).count(),1,'Manual trades keeps the CSV action')
  const g=await root.evaluate(el=>{const v=el.querySelector('.wm-table-scroll'),f=el.querySelector('.wm-pagination'),r=f.getBoundingClientRect(),c=f.querySelector('.wm-pagination-controls').getBoundingClientRect(),s=f.querySelector('.wm-pagination-size').getBoundingClientRect();return{rows:el.querySelectorAll('tbody tr').length,collapse:getComputedStyle(v.querySelector('table')).borderCollapse,footerWidth:r.width,docOverflow:document.documentElement.scrollWidth>innerWidth+1,pagerOverlap:c.right>s.left+1,brokenButtons:[...f.querySelectorAll('.wm-pagination-meta button')].some(b=>b.scrollWidth>b.clientWidth+1),headerWidths:[...v.querySelectorAll('th:has(>.wm-table-sort)')].map(h=>Math.abs(h.getBoundingClientRect().width-h.querySelector('button').getBoundingClientRect().width))}})
  assert.equal(g.collapse,'separate');assert.equal(g.docOverflow,false);assert.equal(g.pagerOverlap,false);assert.equal(g.brokenButtons,false);assert(g.headerWidths.every(w=>w<1));report.checks.push({name,width,theme,...g});await page.screenshot({path:`${out}/${name}-${width}-${theme}.png`})
  }
