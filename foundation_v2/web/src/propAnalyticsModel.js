@@ -38,6 +38,21 @@ export function propObjectiveRows(report) {
   return rows
 }
 
+export function propChartReferences(report) {
+  const initial = number(report?.phase?.initial_balance)
+  if (!(initial > 0)) return []
+  return propObjectiveRows(report).flatMap(row => {
+    if (!['profit_target','overall_drawdown'].includes(row.key) || row.state === 'unknown') return []
+    const target = row.key === 'profit_target', kind = report.objectives.money.overall_drawdown?.kind
+    if (!target && !['static','trailing'].includes(kind)) return []
+    const value = row.boundary - initial
+    if (!Number.isFinite(value)) return []
+    return [{ key:row.key, value, label:target ? 'Profit Target' : kind === 'trailing' ? 'Max Loss hiện tại' : 'Max Loss',
+      color:target ? 'var(--report-positive)' : 'var(--report-negative)', dashed:!target && kind === 'trailing', asOf:report.phase.virtual_time_utc,
+      details:[target ? 'Mục tiêu lợi nhuận của toàn giai đoạn, tính từ vốn đầu giai đoạn.' : kind === 'trailing' ? 'Sàn lỗ trailing tại thời điểm báo cáo, tính từ vốn đầu giai đoạn; không phải lịch sử thay đổi sàn lỗ.' : 'Giới hạn lỗ tổng của toàn giai đoạn, tính từ vốn đầu giai đoạn.', 'Ngưỡng không đổi theo bộ lọc giao dịch. Đường PnL chỉ gồm lệnh đã đóng; trạng thái challenge lấy từ bảng mục tiêu.'] }]
+  })
+}
+
 
 export function buildPropAnalyticsView(view, report) {
   const binding = report.provenance.replay_binding, provenance = view.provenance || {}

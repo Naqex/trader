@@ -168,6 +168,11 @@
 .fxa-chart-tools>button:disabled{opacity:.35;cursor:default}
 .fxa-chart-tools>button:focus-visible{outline:2px solid var(--wm-primary);outline-offset:1px}
 .fxa-chart-tools svg{display:block;width:16px;height:16px}
+@media(hover:hover) and (pointer:fine){.fxa-line-viz .fxa-chart-tools{opacity:0;pointer-events:none}.fxa-line-viz:is(:hover,:focus-within) .fxa-chart-tools{opacity:1;pointer-events:auto}}
+@media(any-pointer:coarse){.fxa-line-viz .fxa-chart-tools{opacity:1;pointer-events:auto}}
+.fxa-chart-reference rect{fill:var(--wm-canvas);stroke:currentColor;stroke-width:1}
+.fxa-chart-reference text{fill:currentColor!important;font-size:11px;font-weight:500}
+.fxa-chart-reference [tabindex]:focus-visible rect{stroke-width:2}
 .fxa-line-viz[data-chart-tool]>svg{touch-action:pan-y;user-select:none}
 .fxa-line-viz[data-chart-tool=pan]>svg{cursor:grab;touch-action:none}
 .fxa-line-viz[data-chart-tool=zoom]>svg{cursor:crosshair;touch-action:none}

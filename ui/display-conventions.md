@@ -182,6 +182,15 @@ or persistent per-session values. Hover, keyboard focus and touch expose each
 session's formatted value and unit; unavailable values retain a visible N/A.
 Each radar retains its own metric domain; shapes do not imply a shared scale.
 The PnL plot toolbar exposes zoom in/out, rectangle selection, pan and reset.
+Curve toolbars appear on chart hover or keyboard focus for fine pointers and stay
+visible on touch/coarse-pointer devices; the reserved toolbar space does not move.
+Prop PnL adds green Profit Target and red Max Loss references, both projected from
+the evaluator's absolute target/floor minus phase initial capital. They expand the
+Y domain and stay unchanged by trade filters and time zoom. Currency and baseline
+must match the report. Unknown, blocked or wrong-phase evaluator snapshots add no
+references. A trailing floor is a dashed current-cutoff reference, with its time
+and scope in the label tooltip, never a reconstructed historical path. Threshold
+crossings on a closed-trade curve do not determine challenge pass/breach status.
 Zoom changes only the visible sample window, retaining original trade IDs, labels
 and values. Dragging never selects a trade; a plain point click still opens its
 inspector. +/- zoom, arrow keys pan and 0 resets when the plot has keyboard focus.

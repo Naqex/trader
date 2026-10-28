@@ -1,4 +1,11 @@
 {
+  "Ngưỡng không đổi theo bộ lọc giao dịch. Đường PnL chỉ gồm lệnh đã đóng; trạng thái challenge lấy từ bảng mục tiêu.": {"vi":"Ngưỡng không đổi theo bộ lọc giao dịch. Đường PnL chỉ gồm lệnh đã đóng; trạng thái challenge lấy từ bảng mục tiêu.","en":"Thresholds do not change with trade filters. PnL contains closed trades only; challenge status comes from the objectives table."},
+  "Profit Target": {"vi":"Mục tiêu lợi nhuận","en":"Profit Target"},
+  "Max Loss": {"vi":"Giới hạn lỗ","en":"Max Loss"},
+  "Max Loss hiện tại": {"vi":"Giới hạn lỗ hiện tại","en":"Current Max Loss"},
+  "Mục tiêu lợi nhuận của toàn giai đoạn, tính từ vốn đầu giai đoạn.": {"vi":"Mục tiêu lợi nhuận của toàn giai đoạn, tính từ vốn đầu giai đoạn.","en":"Whole-phase profit target measured from the phase starting capital."},
+  "Sàn lỗ trailing tại thời điểm báo cáo, tính từ vốn đầu giai đoạn; không phải lịch sử thay đổi sàn lỗ.": {"vi":"Sàn lỗ trailing tại thời điểm báo cáo, tính từ vốn đầu giai đoạn; không phải lịch sử thay đổi sàn lỗ.","en":"Trailing loss floor at the report cutoff, measured from the phase starting capital; this is not the historical floor path."},
+  "Giới hạn lỗ tổng của toàn giai đoạn, tính từ vốn đầu giai đoạn.": {"vi":"Giới hạn lỗ tổng của toàn giai đoạn, tính từ vốn đầu giai đoạn.","en":"Whole-phase overall loss limit measured from the phase starting capital."},
   "Tổng thời gian kiểm thử": {"vi":"Tổng thời gian kiểm thử","en":"Total time tested"},
   "{days} ngày {hours} giờ": {"vi":"{days} ngày {hours} giờ","en":"{days} days {hours} hours"},
   "Đã kết thúc": {"vi":"Đã kết thúc","en":"Finished"},

@@ -86,7 +86,7 @@ export function demoPropReport(rows) {
     objectives:{schema:'prop-objectives-v1',phase_index:1,technical_status:'ready',money:{
       profit_target:{current:balance,target:11000,hit:balance>=11000},
       daily_loss:{current:balance,reference,floor:reference-500,breached:balance<=reference-500},
-      overall_drawdown:{current:balance,reference:10000,floor:9000,breached:balance<=9000},
+      overall_drawdown:{kind:'static',current:balance,reference:10000,floor:9000,breached:balance<=9000},
     },calendar:{qualifying_days:days,min_qualifying_days_satisfied:days>=1,expired:false}},
   }
 }

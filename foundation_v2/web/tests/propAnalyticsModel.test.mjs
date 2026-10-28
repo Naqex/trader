@@ -1,17 +1,35 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { propObjectiveRows } from '../src/propAnalyticsModel.js'
+import { propObjectiveRows, propChartReferences } from '../src/propAnalyticsModel.js'
 
 const snapshot = () => ({
   phase:{phase_index:1,initial_balance:'100000',evaluation_quality:'full_for_declared_model',virtual_time_utc:'2026-10-11T03:00:00Z'},
   attempt:{virtual_start_utc:'2026-10-01T00:00:00Z'},outcome:{status:'running',terminal:false},
   objectives:{schema:'prop-objectives-v1',phase_index:1,technical_status:'ready',money:{
     daily_loss:{reference:'110500',current:'108500',floor:'108500',breached:true},
-    overall_drawdown:{reference:'113500',current:'108500',floor:'108500',breached:true},
+    overall_drawdown:{kind:'trailing',reference:'113500',current:'108500',floor:'108500',breached:true},
     profit_target:{current:'108500',target:'108000',hit:true},
   },calendar:{qualifying_days:7,min_qualifying_days_satisfied:true,expired:false}},
 })
 const row = (report,key) => propObjectiveRows(report).find(row=>row.key===key)
+
+test('chart thresholds use phase capital, including a positive trailing floor', () => {
+  const report=snapshot(), lines=propChartReferences(report)
+  assert.equal(lines.find(line=>line.key==='profit_target').value,8000)
+  assert.equal(lines.find(line=>line.key==='overall_drawdown').value,8500)
+  assert.equal(lines.find(line=>line.key==='overall_drawdown').dashed,true)
+  report.objectives.money.overall_drawdown={kind:'static',reference:100000,current:100000,floor:90000,breached:false}
+  const loss=propChartReferences(report).find(line=>line.key==='overall_drawdown')
+  assert.equal(loss.value,-10000);assert.equal(loss.dashed,false)
+  report.phase.phase_index=2;assert.deepEqual(propChartReferences(report),[])
+})
+
+test('chart thresholds reject invalid capital, overflow and unknown drawdown kind', () => {
+  for(const initial of [null,0,-1,'']){const report=snapshot();report.phase.initial_balance=initial;assert.deepEqual(propChartReferences(report),[])}
+  const report=snapshot();delete report.objectives.money.overall_drawdown.kind
+  assert.equal(propChartReferences(report).some(line=>line.key==='overall_drawdown'),false)
+  report.objectives.technical_status='blocked_by_data';assert.deepEqual(propChartReferences(report),[])
+})
 
 test('objective amounts use evaluator references, not absolute account balances', () => {
   const report = snapshot()

@@ -20,6 +20,7 @@ import LegacyModal from './LegacyModal.jsx'
 import { FieldError, fieldValidationProps, focusFirstInvalid } from './FormValidation.jsx'
 import AnalyticsCalendar, { CALENDAR_HELP } from './AnalyticsCalendar.jsx'
 import PropChallengeObjectives from './PropChallengeObjectives.jsx'
+import { propChartReferences } from './propAnalyticsModel.js'
 import { DEFAULT_EXTRA_FILTERS } from './tradingAnalyticsModel.js'
 import { LEDGER_BASE_FILTERS, ledgerFilterChips, removeLedgerFilter } from './ledgerFilterModel.js'
 
@@ -174,6 +175,7 @@ export function AnalyticsPerformance({ model, data, extra, onSelect, selected, t
   const { t, fmt, locale } = useTestingLocale(), [metric,setMetric] = useState('net'), [interval,setInterval] = useState('all')
   const currency=model.result?.account_currency||t('Đơn vị tài khoản'), suffix=metric==='winRate'||metric==='profitPct'?'%':metric==='averageR'?' R':metric==='net'?` ${currency}`:''
   const actualCurve=data.curve.map(point=>({...point,value:known(point.value)&&known(model.startBalance)?point.value-Number(model.startBalance):null})), bucket=bucketCurve(actualCurve,data.rows,interval,extra.timezone)
+  const challengeLines=propReport?.phase?.currency && propReport.phase.currency===model.result?.account_currency && number(propReport.phase.initial_balance)===number(model.startBalance) ? propChartReferences(propReport) : []
   const curveLabels=bucket.labels.map((value,index)=>value?displayDate(value,{timeStyle:interval==='day'?undefined:'short',timeZone:extra.timezone}):index?`#${index}`:t('Bắt đầu'))
   const curveDates=bucket.labels.map(value=>value?displayDate(value,{timeStyle:'short',timeZone:extra.timezone,fallback:''}):'')
   const sameDay=new Set(curveDates.filter(Boolean).map(value=>value.slice(0,10))).size===1, sameYear=new Set(curveDates.filter(Boolean).map(value=>value.slice(6,10))).size===1
@@ -196,7 +198,7 @@ export function AnalyticsPerformance({ model, data, extra, onSelect, selected, t
         <Stat label="Giao dịch hòa vốn" value={fmt(data.breakeven,'',0)} help="Tổng số giao dịch hòa vốn theo ngưỡng đang áp dụng."/>
         <BreakevenThreshold threshold={threshold} onThreshold={onThreshold} data={data}/>
       </div>
-      <AnalyticsCurve key={JSON.stringify([interval,data.rows.map(row=>row.tradeId)])} series={[bucket.points]} label={t('Lãi/lỗ ròng tích lũy')} labels={curveLabels} axisLabels={curveAxisLabels} timestamps={bucket.timestamps} suffix={` ${currency}`} onSelect={onSelect} selected={selected} height={200} stretch controls/>
+      <AnalyticsCurve key={JSON.stringify([interval,data.rows.map(row=>row.tradeId)])} series={[bucket.points]} referenceLines={challengeLines} timeZone={extra.timezone} label={t('Lãi/lỗ ròng tích lũy')} labels={curveLabels} axisLabels={curveAxisLabels} timestamps={bucket.timestamps} suffix={` ${currency}`} onSelect={onSelect} selected={selected} height={200} stretch controls/>
     </ReportSection>
     <div className="fxa-three-columns fxa-risk-panels">
       <ReportSection label="RR thực hiện"><div className="fxa-metrics"><Stat label="RR trung bình" value={known(averageR)?fmt(averageR):'N/A'} help={averageHelp}/><Stat label="RR lớn nhất" value={known(maxR)?fmt(maxR):'N/A'} help={maxHelp}/></div><AnalyticsCurve series={[riskSeries]} labels={riskSeries.map((_,index)=>`#${index+1}`)} label={t('RR thực hiện theo giao dịch')} suffix=" R" height={48} sparkline/></ReportSection>
