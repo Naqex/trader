@@ -63,8 +63,10 @@ pha cam và chữ theo theme khi có sort; xóa hết sẽ trở lại `#`. Head
 viền cam vuông phủ toàn ô, kể cả ô reset; button không vẽ thêm viền. Các cạnh
 ngang chạy hết chiều rộng ô, cạnh dọc chung chỉ do ô bên trước vẽ, tránh viền
 đôi hoặc góc khuyết khi ô reset sát header đang sort.
-`SortResetColumn` dùng chung, không làm dịch các cột khi bật/tắt. Nhãn truy cập
-giữ rõ chức năng xóa. Trades tổng hợp tiếp tục gửi toàn bộ thứ tự sort tới server;
+`SortResetColumn` dùng chung, không làm dịch các cột khi bật/tắt.
+Header Giao dịch không thêm icon trợ giúp `(i)` bên cạnh các cột lợi nhuận;
+giữ đơn vị và trạng thái N/A trong dữ liệu của cột.
+Nhãn truy cập giữ rõ chức năng xóa. Trades tổng hợp tiếp tục gửi toàn bộ thứ tự sort tới server;
 grid local lọc và sort toàn bộ phạm vi trước phân trang. Bảng metric/luật Prop
 không có header sort giữ thứ tự nghiệp vụ.
 

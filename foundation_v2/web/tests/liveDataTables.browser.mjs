@@ -51,6 +51,16 @@ async function checkSort(root) {
   assert.equal(await active.count(),1)
   assert.equal(await active.locator('.wm-table-sort-priority').innerText(),'1','Removal renumbers priority')
   await clearAll.click();assert.equal(await active.count(),0)
+  const numeric=root.locator('th.is-numeric .wm-table-sort').first()
+  if(await numeric.count()){
+   await numeric.click()
+   const sameRow=await root.locator('th.is-numeric[data-sort-active]').first().evaluate(h=>{
+    const sort=h.querySelector('.wm-table-sort').getBoundingClientRect(),clear=h.querySelector('.wm-table-sort-clear').getBoundingClientRect()
+    return Math.abs(sort.top-clear.top)<1&&Math.abs(sort.bottom-clear.bottom)<1&&(sort.right<=clear.left+1||clear.right<=sort.left+1)
+   })
+   assert(sameRow,'Numeric sort label and clear control share one row without overlap')
+   await clearAll.click()
+  }
   await button.click();await button.click()
  }
 }
