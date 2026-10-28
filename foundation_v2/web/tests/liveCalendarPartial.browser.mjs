@@ -5,11 +5,11 @@ import { chromium } from 'playwright'
 const origin = process.env.TW_LIVE_UI_ORIGIN || 'http://127.0.0.1:5180'
 const out = process.env.TW_LIVE_UI_EVIDENCE || 'E:/BACKUP-TRADINGWORKSPACE/calendar-partial-ui'
 await mkdir(out, { recursive: true })
-const browser = await chromium.launch()
+const browser = await chromium.launch({executablePath:process.env.TW_UI_QA_CHROMIUM || 'C:/Users/MIIKEY/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe'})
 const a = '11111111-1111-4111-8111-111111111111', b = '22222222-2222-4222-8222-222222222222'
 const report = { scope: 'Labeled multi-account GET fixtures; broker access blocked', cases: [], errors: [], mutations: [] }
 try {
-  for (const width of [1920, 390]) {
+  for (const width of [1920, 1440, 768, 390]) {
     const context = await browser.newContext({ viewport: { width, height: 940 }, reducedMotion: 'reduce' })
     const page = await context.newPage()
     page.on('pageerror', error => report.errors.push(error.message))
@@ -35,13 +35,36 @@ try {
     assert.match(await week.locator('.live-week-total strong').textContent(), /25/)
     assert.equal(await week.locator('.live-week-total').getByText('Một phần', { exact: true }).count(), 1)
     assert.equal(await page.locator('.live-month-total').getByText('Một phần', { exact: true }).count(), 1)
-    const unknown = page.locator('.live-calendar-cell').filter({ has: page.locator('.live-day-number', { hasText: /^30$/ }) }).first()
+    const unknown = page.locator('.live-calendar-cell[data-date="2026-10-30"]')
     assert.equal(await unknown.locator('strong').count(), 0)
+    await partial.focus();assert.equal(await partial.locator('.wm-calendar-add').evaluate(el=>getComputedStyle(el).opacity),'1')
     await partial.click()
-    await page.locator('.live-day-detail').getByText('EURUSD · #1', { exact: true }).waitFor()
+    const drawer=page.getByRole('dialog');await drawer.getByText('EURUSD · #1', { exact: true }).waitFor()
+    const box=await drawer.boundingBox();assert.ok(Math.abs(box.x+box.width-width)<1);assert.ok(box.height>=939)
+    await drawer.getByRole('textbox',{name:'Tiêu đề ghi chú',exact:true}).fill('Nhật ký thử')
+    await drawer.getByRole('textbox',{name:'Nội dung ghi chú',exact:true}).fill('Quan sát EURUSD')
+    await drawer.getByRole('button',{name:'Mở rộng ghi chú'}).click();assert.ok(Math.abs((await drawer.boundingBox()).width-width)<1)
+    await drawer.getByRole('button',{name:'Thu gọn ghi chú'}).click()
+    await page.keyboard.press('Escape');await drawer.waitFor({state:'detached'});assert.equal(await partial.evaluate(el=>el===document.activeElement),true)
+    const empty=page.locator('.live-calendar-cell[data-date="2026-10-21"]');await empty.click();await drawer.getByText('Chưa có giao dịch trong bộ lọc này.',{exact:true}).waitFor()
+    assert.equal(await drawer.getByRole('textbox',{name:'Tiêu đề ghi chú',exact:true}).inputValue(),'')
+    await drawer.getByRole('button',{name:'Đóng ghi chú'}).click()
+    await unknown.click();await drawer.getByText('Chỉ cộng phần dữ liệu đã ghi nhận; chưa đủ dữ liệu cho toàn bộ phạm vi.',{exact:true}).waitFor()
+    assert.equal(await drawer.getByText('Chưa có giao dịch trong bộ lọc này.',{exact:true}).count(),0)
+    await page.keyboard.press('Escape');await partial.click()
+    assert.equal(await drawer.evaluate(el=>el.scrollWidth>el.clientWidth),false)
+    if(width===1440){
+      await page.keyboard.press('Escape');await page.goto(`${origin}/?workspace=fixture&view=live&area=live&section=calendar&lang=en&theme=light`)
+      if(await page.locator('.fx-app').getAttribute('data-theme')!=='light')await page.getByTestId('theme-toggle').click()
+      await page.locator('.live-calendar-cell[data-date="2026-10-12"]').click()
+      await drawer.getByRole('textbox',{name:'Note title',exact:true}).waitFor();await drawer.getByText('Draft',{exact:true}).waitFor();await drawer.getByText('Daily review',{exact:true}).waitFor()
+      assert.equal(await drawer.getByRole('textbox',{name:'Note content',exact:true}).getAttribute('placeholder'),'Write a note…')
+    }
+    const titleStyle=await drawer.locator('.live-day-note-title').evaluate(el=>({font:getComputedStyle(el).fontSize,placeholder:getComputedStyle(el,'::placeholder').fontSize}))
+    assert.equal(titleStyle.font,width===390?'20px':'24px');assert.equal(titleStyle.placeholder,titleStyle.font)
     await page.screenshot({ path: `${out}/partial-${width}.png`, animations: 'disabled' })
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false)
-    report.cases.push({ width, observedSubtotal: 25, dayWeekMonthPartial: true, unknownDayBlank: true, dayDetails: true })
+    report.cases.push({ width, observedSubtotal: 25, dayWeekMonthPartial: true, unknownDayBlank: true, noteDrawer: true, draftOnly:true, focusRestored:true, emptyDay:true })
     await context.close()
   }
   assert.deepEqual(report.errors, [])

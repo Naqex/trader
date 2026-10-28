@@ -186,11 +186,11 @@ function ChartHeading({ title, help, note }) {
 }
 export function AnalyticsPerformance({ model, data, extra, onSelect, selected, threshold, onThreshold, experiments, propReport, active = true, experimentScope, onNeedExperiments }) {
   const riskRef = useVisibleExperiments(active, experimentScope, onNeedExperiments)
-  const { t, fmt, locale } = useTestingLocale(), [metric,setMetric] = useState('net'), [interval,setInterval] = useState('day')
+  const { t, fmt, locale } = useTestingLocale(), [metric,setMetric] = useState('net'), [interval,setInterval] = useState('all')
   const currency=model.result?.account_currency||t('Đơn vị tài khoản'), suffix=metric==='winRate'||metric==='profitPct'?'%':metric==='averageR'?' R':metric==='net'?` ${currency}`:''
-  const actualCurve=data.curve.map(point=>({...point,value:known(point.value)&&known(model.startBalance)?point.value-Number(model.startBalance):null})), bucket=bucketCurve(actualCurve,data.rows,interval,extra.timezone)
+  const actualCurve=data.curve.map(point=>({...point,value:known(point.value)&&known(model.startBalance)?point.value-Number(model.startBalance):null})), bucket=bucketCurve(actualCurve,data.rows,'all',extra.timezone)
   const challengeLines=propReport?.phase?.currency && propReport.phase.currency===model.result?.account_currency && number(propReport.phase.initial_balance)===number(model.startBalance) ? propChartReferences(propReport) : []
-  const curveLabels=bucket.labels.map((value,index)=>value?displayDate(value,{timeStyle:interval==='day'?undefined:'short',timeZone:extra.timezone}):index?`#${index}`:t('Bắt đầu'))
+  const curveLabels=bucket.labels.map((value,index)=>value?displayDate(value,{timeStyle:'medium',timeZone:extra.timezone}):index?`#${index}`:t('Bắt đầu'))
   const curveDates=bucket.labels.map(value=>value?displayDate(value,{timeStyle:'short',timeZone:extra.timezone,fallback:''}):'')
   const sameDay=new Set(curveDates.filter(Boolean).map(value=>value.slice(0,10))).size===1, sameYear=new Set(curveDates.filter(Boolean).map(value=>value.slice(6,10))).size===1
   const curveAxisLabels=curveDates.map(value=>!value?'':interval!=='day'&&sameDay?value.slice(11):value.slice(0,sameYear?5:10))
@@ -203,7 +203,7 @@ export function AnalyticsPerformance({ model, data, extra, onSelect, selected, t
   const totalPercent=number(model.startBalance)>0&&known(data.net)?data.net/Number(model.startBalance)*100:null
   const performanceControls=<FxSelect label="Chỉ số hiệu suất" value={metric} onChange={setMetric} options={[{value:'net',label:`Lãi/lỗ ròng (${currency})`},{value:'averageR',label:'RR trung bình'},{value:'profitPct',label:'Lợi nhuận (%)'},{value:'winRate',label:'Tỉ lệ thắng'}]}/>
   return <div className="fxa-report fxa-visual-report" data-testid="analytics-performance">
-    <ReportSection title="Profit and loss" className="fxa-profit-panel" actions={<UnitTabs label="Độ chi tiết biểu đồ" value={interval} onChange={setInterval} options={[["all",'Tất cả'],['day','Ngày'],['hour','1 giờ'],['quarter','15 phút']]}/>}>
+    <ReportSection title="Profit and loss" className="fxa-profit-panel" actions={<UnitTabs label="Phạm vi biểu đồ" value={interval} onChange={setInterval} options={[["all",'Tất cả'],['day','Ngày'],['hour','1 giờ'],['quarter','15 phút']]}/>}>
       <div className="fxa-metrics fxa-profit-metrics">
         <Stat label="Total PnL" value={<>{fmt(data.net,` ${currency}`)}<PercentChange value={totalPercent}/></>} help="Lãi/lỗ cho biết số tiền bạn kiếm được hoặc mất đi. Giá trị hiện tại là lãi/lỗ ròng sau phí trong bộ lọc."/>
         <Stat label="Số dư tài khoản" value={<>{fmt(data.endingBalance,` ${currency}`)}<PercentChange value={totalPercent}/></>} help={data.localFiltered||model.result?.scope?.active_filters?'Số dư dựng lại từ vốn ban đầu và các giao dịch đã lọc.':'Số dư tài khoản sau các giao dịch đã đóng trong phạm vi đang chọn; không bao gồm lãi/lỗ thả nổi.'}/>
@@ -212,7 +212,7 @@ export function AnalyticsPerformance({ model, data, extra, onSelect, selected, t
         <Stat label="Giao dịch hòa vốn" value={fmt(data.breakeven,'',0)} help="Tổng số giao dịch hòa vốn theo ngưỡng đang áp dụng."/>
         <BreakevenThreshold threshold={threshold} onThreshold={onThreshold} data={data}/>
       </div>
-      <AnalyticsCurve key={JSON.stringify([interval,data.rows.map(row=>row.tradeId)])} series={[bucket.points]} referenceLines={challengeLines} timeZone={extra.timezone} label={t('Lãi/lỗ ròng tích lũy')} labels={curveLabels} axisLabels={curveAxisLabels} timestamps={bucket.timestamps} suffix={` ${currency}`} onSelect={onSelect} selected={selected} height={200} stretch controls/>
+      <AnalyticsCurve key={JSON.stringify(data.rows.map(row=>row.tradeId))} timePreset={interval} onTimePresetChange={setInterval} series={[bucket.points]} referenceLines={challengeLines} timeZone={extra.timezone} label={t('Lãi/lỗ ròng tích lũy')} labels={curveLabels} axisLabels={curveAxisLabels} timestamps={bucket.timestamps} suffix={` ${currency}`} onSelect={onSelect} selected={selected} height={200} stretch controls/>
     </ReportSection>
     <div ref={riskRef} className="fxa-three-columns fxa-risk-panels">
       <ReportSection label="RR thực hiện"><div className="fxa-metrics"><Stat label="RR trung bình" value={known(averageR)?fmt(averageR):'N/A'} help={averageHelp}/><Stat label="RR lớn nhất" value={known(maxR)?fmt(maxR):'N/A'} help={maxHelp}/></div><AnalyticsCurve series={[riskSeries]} labels={riskSeries.map((_,index)=>`#${index+1}`)} label={t('RR thực hiện theo giao dịch')} suffix=" R" height={48} sparkline/></ReportSection>

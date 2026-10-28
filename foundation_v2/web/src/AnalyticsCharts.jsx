@@ -1,6 +1,7 @@
-import { useId, useLayoutEffect, useRef , useState } from 'react'
+import { useEffect, useId, useLayoutEffect, useMemo, useRef , useState } from 'react'
 import { chartDomain, chartTicks, curveCoordinates, reportCurvePath } from './reportChartModel.js'
 import { useTestingLocale } from './testingLocale.jsx'
+import { timeCurveCoordinates, presetTimeRange, timeAxisTicks } from './chartTimeAxis.js'
 import TestingIcon from './TestingIcon.jsx'
 import { displayDate } from './dateFormat.js'
 
@@ -19,7 +20,7 @@ function tickText(value, domain, locale, suffix) {
   const digits = Math.max(0, Math.min(8, -Math.floor(Math.log10(step))))
   return new Intl.NumberFormat(locale, { maximumFractionDigits: digits + (step / 10 ** Math.floor(Math.log10(step)) === 2.5 ? 1 : 0) }).format(value) + (suffix === '%' ? '%' : '')
 }
-export function AnalyticsCurve({ series, seriesMeta = [], referenceLines = [], timeZone, label, suffix = '', onSelect, selected, negative = false, labels = [], axisLabels, timestamps, yTitle, height = 200, stretch = false, sparkline = false, controls = false, interpolation = 'smooth', emptyAxes = false, formatYTick }) {
+export function AnalyticsCurve({ series, seriesMeta = [], referenceLines = [], timeZone, label, suffix = '', onSelect, selected, negative = false, labels = [], axisLabels, timestamps, yTitle, height = 200, stretch = false, sparkline = false, controls = false, interpolation = 'smooth', emptyAxes = false, formatYTick, timePreset, onTimePresetChange }) {
   const { t, fmt, locale } = useTestingLocale(), id = useId()
   const [ref, width, measuredHeight] = useSize(height, stretch)
   const [referenceWidths, setReferenceWidths] = useState({})
@@ -28,11 +29,18 @@ export function AnalyticsCurve({ series, seriesMeta = [], referenceLines = [], t
     setReferenceWidths(current => Object.keys(current).length === Object.keys(widths).length && Object.entries(widths).every(([text, width]) => current[text] === width) ? current : widths)
   }, [referenceLines, locale, emptyAxes, sparkline, measuredHeight])
   const [range, setRange] = useState([0, 1]), [tool, setTool] = useState('zoom'), [brush, setBrush] = useState(null)
+  const measureTimeLabel = useMemo(() => { const context=document.createElement('canvas').getContext('2d');context.font='12px system-ui,sans-serif';return text=>context.measureText(text).width },[])
   const gesture = useRef(null), suppressClick = useRef(false)
   height = measuredHeight
   const compact = sparkline && height <= 120
   const total = Math.max(0, ...series.map(path => path.length))
-  const { positions, temporal, minimumSpan } = curveCoordinates(timestamps, total)
+  const timeCoordinates = onTimePresetChange ? timeCurveCoordinates(timestamps,total) : null
+  const { positions, temporal, minimumSpan } = timeCoordinates || curveCoordinates(timestamps, total)
+  useEffect(() => {
+    if(timePreset !== 'custom')setRange(presetTimeRange(timePreset,timeCoordinates))
+  },[timePreset,timeCoordinates?.min,timeCoordinates?.max,timeCoordinates?.last])
+  const updateRange = (next,preset='custom') => { setRange(next); onTimePresetChange?.(preset) }
+  const resetRange = () => { updateRange([0,1],'all');setBrush(null) }
   const activeRange = controls ? range : [0,1]
   const first = positions.findIndex(position => position >= activeRange[0]), last = positions.findLastIndex(position => position <= activeRange[1])
   const start = controls ? Math.max(0, (first < 0 ? total : first) - 1) : 0
@@ -43,10 +51,11 @@ export function AnalyticsCurve({ series, seriesMeta = [], referenceLines = [], t
   const domain = emptyAxes ? {low:0, high:1, ticks:[0]} : chartDomain([...values,...references.map(line=>line.value)], { zero: negative, symmetric: height <= 120 })
   if (!domain && !controls) return <div ref={ref} className="fxa-chart-empty">{t('Chưa có dữ liệu')}</div>
   const ticks = emptyAxes ? [0] : domain ? chartTicks(domain, height <= 120 ? 3 : 6) : [], axis = ticks.map(value => formatYTick ? formatYTick(value) : tickText(value, domain, locale, suffix))
-  const left = compact ? 4 : Math.max(yTitle ? 64 : 42, Math.min(width * .35, Math.max(...axis.map(value => value.length)) * 7 + (yTitle ? 34 : 18))), right = width - (compact ? 4 : controls ? 8 : 20), top = compact ? 6 : controls ? references.length ? 72 : 56 : 20, edge = height - (compact ? 6 : 36)
+  const left = compact ? 4 : Math.max(yTitle ? 64 : 42, Math.min(width * .35, Math.max(...axis.map(value => value.length)) * 7 + (yTitle ? 34 : 18))), right = width - (compact ? 4 : controls ? 8 : 20), top = compact ? 6 : controls ? references.length ? 72 : 56 : 20, edge = height - (compact ? 6 : timeCoordinates ? 58 : 36)
   const count = Math.max(0, ...paths.map(path => path.length)), x = index => left + (positions[index + start] - activeRange[0]) / (activeRange[1] - activeRange[0]) * (right - left)
   const inView = index => x(index) >= left - .01 && x(index) <= right + .01
   const canInteract = controls && total > 1 && values.length > 0
+  const temporalTicks = timeCoordinates ? timeAxisTicks(timeCoordinates.min+activeRange[0]*(timeCoordinates.max-timeCoordinates.min),timeCoordinates.min+activeRange[1]*(timeCoordinates.max-timeCoordinates.min),right-left,{timeZone:timeZone || 'UTC',measure:measureTimeLabel}) : null
   const y = value => domain.high === domain.low ? (top + edge) / 2 : edge - (value - domain.low) / (domain.high - domain.low) * (edge - top)
   const referenceLabels = references.map(line=>({...line,labelY:Math.max(controls ? 48 : 1,y(line.value)-20)})).sort((a,b)=>a.labelY-b.labelY)
   referenceLabels.forEach((line,index)=>{if(index)line.labelY=Math.max(line.labelY,referenceLabels[index-1].labelY+23)})
@@ -71,7 +80,7 @@ export function AnalyticsCurve({ series, seriesMeta = [], referenceLines = [], t
     }
   } else if (count > 0) visibleTicks.push(...[...new Set(width < 480 ? [0, count - 1] : [0, Math.floor((count - 1) / 2), count - 1])].filter(inView))
   const clampRange = (from, span) => { const size = Math.min(1, Math.max(minimumSpan, span)), left = Math.max(0, Math.min(1 - size, from)); return [left, left + size] }
-  const zoom = factor => setRange(current => { const span = Math.min(1, Math.max(minimumSpan, (current[1] - current[0]) * factor)); return clampRange((current[0] + current[1] - span) / 2, span) })
+  const zoom = factor => { const span = Math.min(1, Math.max(minimumSpan, (range[1] - range[0]) * factor)); updateRange(clampRange((range[0] + range[1] - span) / 2, span)) }
   const pointX = event => { const rect = event.currentTarget.getBoundingClientRect(); return Math.max(left, Math.min(right, (event.clientX - rect.left) * width / rect.width)) }
   const pointerDown = event => {
     if (!canInteract || event.button !== 0) return
@@ -92,13 +101,13 @@ export function AnalyticsCurve({ series, seriesMeta = [], referenceLines = [], t
       if (!event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.setPointerCapture(event.pointerId)
     }
     if (tool === 'zoom') setBrush([drag.x, px])
-    else if (suppressClick.current) setRange(clampRange(drag.range[0] - distance / (right - left) * (drag.range[1] - drag.range[0]), drag.range[1] - drag.range[0]))
+    else if (suppressClick.current) updateRange(clampRange(drag.range[0] - distance / (right - left) * (drag.range[1] - drag.range[0]), drag.range[1] - drag.range[0]))
   }
   const pointerUp = event => {
     const drag = gesture.current
     if (drag && tool === 'zoom' && suppressClick.current) {
       const px = pointX(event), span = drag.range[1] - drag.range[0]
-      setRange(clampRange(drag.range[0] + (Math.min(drag.x, px) - left) / (right - left) * span, Math.abs(px - drag.x) / (right - left) * span))
+      updateRange(clampRange(drag.range[0] + (Math.min(drag.x, px) - left) / (right - left) * span, Math.abs(px - drag.x) / (right - left) * span))
     }
     gesture.current = null; setBrush(null)
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
@@ -117,16 +126,16 @@ export function AnalyticsCurve({ series, seriesMeta = [], referenceLines = [], t
     })
     return groups.map(points => ({ points, seriesIndex, d: interpolation === 'linear' ? points.map(([x,y],index)=>`${index ? 'L' : 'M'}${x},${y}`).join(' ') : reportCurvePath(points) }))
   })
-  return <div ref={ref} className={`fxa-viz fxa-line-viz ${negative ? 'is-negative' : ''}`} data-chart-tool={controls ? tool : undefined} data-chart-scale={temporal ? 'time' : 'sequence'} data-chart-range={controls ? range.join(':') : undefined} style={{ height: stretch ? undefined : height }}>
+  return <div ref={ref} className={`fxa-viz fxa-line-viz ${negative ? 'is-negative' : ''}`} data-chart-tool={controls ? tool : undefined} data-chart-scale={temporal ? 'time' : 'sequence'} data-chart-range={controls ? range.join(':') : undefined} data-time-preset={timePreset} data-time-step={temporalTicks?.step} style={{ height: stretch ? undefined : height }}>
     {controls && <div className="fxa-chart-tools" role="group" aria-label={t('Công cụ biểu đồ')}>
-      {[["zoom-in",'Phóng to biểu đồ',()=>zoom(.5),range[1]-range[0]<=minimumSpan],['zoom-out','Thu nhỏ biểu đồ',()=>zoom(2),range[1]-range[0]>=1],['zoom-area','Chọn vùng phóng to',()=>setTool('zoom'),false],['hand','Kéo biểu đồ',()=>setTool('pan'),false],['home','Đặt lại biểu đồ',()=>{setRange([0,1]);setBrush(null)},range[0]===0&&range[1]===1]].map(([icon,text,action,disabled])=><button key={icon} type="button" aria-label={t(text)} data-tooltip={t(text)} disabled={!canInteract || disabled} aria-pressed={icon==='zoom-area'?tool==='zoom':icon==='hand'?tool==='pan':undefined} onClick={action}><TestingIcon kind={icon} size={16}/></button>)}
+      {[["zoom-in",'Phóng to biểu đồ',()=>zoom(.5),range[1]-range[0]<=minimumSpan],['zoom-out','Thu nhỏ biểu đồ',()=>zoom(2),range[1]-range[0]>=1],['zoom-area','Chọn vùng phóng to',()=>setTool('zoom'),false],['hand','Kéo biểu đồ',()=>setTool('pan'),false],['home','Đặt lại biểu đồ',resetRange,range[0]===0&&range[1]===1]].map(([icon,text,action,disabled])=><button key={icon} type="button" aria-label={t(text)} data-tooltip={t(text)} disabled={!canInteract || disabled} aria-pressed={icon==='zoom-area'?tool==='zoom':icon==='hand'?tool==='pan':undefined} onClick={action}><TestingIcon kind={icon} size={16}/></button>)}
     </div>}
     <svg viewBox={`0 0 ${width} ${height}`} role={series.length === 1 || seriesMeta.length ? 'group' : 'img'} aria-label={label} tabIndex={controls ? 0 : undefined}
       onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={()=>{gesture.current=null;setBrush(null);suppressClick.current=false}}
       onPointerLeave={event=>{if(!event.currentTarget.hasPointerCapture(event.pointerId)){gesture.current=null;setBrush(null)}}}
       onLostPointerCapture={()=>{gesture.current=null;setBrush(null)}}
       onClickCapture={event=>{if(suppressClick.current){event.preventDefault();event.stopPropagation();suppressClick.current=false}}}
-      onKeyDown={event=>{if(!canInteract||event.target!==event.currentTarget)return;if(['+','=','-','0','Home','Escape','ArrowLeft','ArrowRight'].includes(event.key)){event.preventDefault();if(event.key==='Escape'){gesture.current=null;suppressClick.current=false;setBrush(null)}else if(event.key==='0'||event.key==='Home')setRange([0,1]);else if(event.key==='ArrowLeft'||event.key==='ArrowRight')setRange(clampRange(range[0]+(event.key==='ArrowLeft'?-.2:.2)*(range[1]-range[0]),range[1]-range[0]));else zoom(event.key==='-'?2:.5)}}}>
+      onKeyDown={event=>{if(!canInteract||event.target!==event.currentTarget)return;if(['+','=','-','0','Home','Escape','ArrowLeft','ArrowRight'].includes(event.key)){event.preventDefault();if(event.key==='Escape'){gesture.current=null;suppressClick.current=false;setBrush(null)}else if(event.key==='0'||event.key==='Home')resetRange();else if(event.key==='ArrowLeft'||event.key==='ArrowRight')updateRange(clampRange(range[0]+(event.key==='ArrowLeft'?-.2:.2)*(range[1]-range[0]),range[1]-range[0]));else zoom(event.key==='-'?2:.5)}}}>
       <defs><linearGradient id={id} x1="0" x2="0" y1="0" y2="1"><stop stopColor="currentColor" stopOpacity=".2"/><stop offset="1" stopColor="currentColor" stopOpacity=".01"/></linearGradient><clipPath id={`${id}-plot`}><rect x={left} y={top} width={Math.max(0,right-left)} height={Math.max(0,edge-top)}/></clipPath></defs>
       {!compact && ticks.map((value, index) => <g key={value}><line className="fxa-gridline" x1={left} x2={right} y1={y(value)} y2={y(value)}/><text x={left - 10} y={y(value)} dominantBaseline="middle" textAnchor="end">{axis[index]}</text></g>)}
       {!compact && yTitle && <text className="fxa-axis-title" transform={`translate(14 ${(top+edge)/2}) rotate(-90)`} textAnchor="middle">{yTitle}</text>}
@@ -151,7 +160,11 @@ export function AnalyticsCurve({ series, seriesMeta = [], referenceLines = [], t
         </g>
       })}
       {!compact && emptyAxes && <g className="fxa-x-tick"><text x={(left+right)/2} y={height-10} textAnchor="middle">0</text></g>}
-      {!compact && !emptyAxes && visibleTicks.map(index => <g className="fxa-x-tick" key={index}>{axisLabels && <line className="fxa-gridline" x1={x(index)} x2={x(index)} y1={edge} y2={edge+5}/>}<text x={x(index)} y={height - 10} textAnchor={index === 0 ? 'start' : index === count - 1 ? 'end' : 'middle'}>{axisLabels ? axisLabels[index+start] : labelAt(index)}</text></g>)}
+      {!compact && !emptyAxes && temporalTicks && <g className="fxa-time-axis">{temporalTicks.ticks.map(tick=>{
+        const px=left+tick.position*(right-left)
+        return <g className="fxa-x-tick" key={tick.time}><line className="fxa-gridline" x1={px} x2={px} y1={edge} y2={edge+5}/><text x={px} y={height-30} textAnchor={tick.anchor || 'middle'}>{tick.label}</text></g>
+      })}{temporalTicks.context && <text className="fxa-time-axis-context" x={left} y={height-8} data-tooltip={timeZone}>{temporalTicks.context}</text>}</g>}
+      {!compact && !emptyAxes && !temporalTicks && visibleTicks.map(index => <g className="fxa-x-tick" key={index}>{axisLabels && <line className="fxa-gridline" x1={x(index)} x2={x(index)} y1={edge} y2={edge+5}/>}<text x={x(index)} y={height - 10} textAnchor={index === 0 ? 'start' : index === count - 1 ? 'end' : 'middle'}>{axisLabels ? axisLabels[index+start] : labelAt(index)}</text></g>)}
       {series.length === 1 && <rect x={left} y={top} width={Math.max(0, right - left)} height={edge - top} fill="transparent" pointerEvents="none"/>}
       {brush && <rect x={Math.min(...brush)} y={top} width={Math.abs(brush[1]-brush[0])} height={edge-top} className="fxa-chart-brush" pointerEvents="none"/>}
     </svg>

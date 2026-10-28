@@ -1,0 +1,48 @@
+{
+  "scope": "Labeled multi-account GET fixtures; broker access blocked",
+  "cases": [
+    {
+      "width": 1920,
+      "observedSubtotal": 25,
+      "dayWeekMonthPartial": true,
+      "unknownDayBlank": true,
+      "noteDrawer": true,
+      "draftOnly": true,
+      "focusRestored": true,
+      "emptyDay": true
+    },
+    {
+      "width": 1440,
+      "observedSubtotal": 25,
+      "dayWeekMonthPartial": true,
+      "unknownDayBlank": true,
+      "noteDrawer": true,
+      "draftOnly": true,
+      "focusRestored": true,
+      "emptyDay": true
+    },
+    {
+      "width": 768,
+      "observedSubtotal": 25,
+      "dayWeekMonthPartial": true,
+      "unknownDayBlank": true,
+      "noteDrawer": true,
+      "draftOnly": true,
+      "focusRestored": true,
+      "emptyDay": true
+    },
+    {
+      "width": 390,
+      "observedSubtotal": 25,
+      "dayWeekMonthPartial": true,
+      "unknownDayBlank": true,
+      "noteDrawer": true,
+      "draftOnly": true,
+      "focusRestored": true,
+      "emptyDay": true
+    }
+  ],
+  "errors": [],
+  "mutations": [],
+  "passed": true
+}

@@ -52,7 +52,7 @@ try{
     await page.mouse.move(0,0);await chart().locator(':scope>svg').focus();await page.keyboard.press('Tab')
     assert.equal(await chart().locator('.fxa-chart-tools').evaluate(node=>getComputedStyle(node).opacity),'1')
     await page.locator('#fxa-tab-performance').focus();await page.mouse.move(0,0)
-    assert.equal(await chart().locator('.fxa-chart-tools').evaluate(node=>getComputedStyle(node).opacity),'0')
+    assert.equal(await chart().locator('.fxa-chart-tools').evaluate(node=>getComputedStyle(node).opacity),'1')
     await chart().hover()
     assert.equal(await chart().locator('.fxa-chart-tools').evaluate(node=>getComputedStyle(node).opacity),'1')
     await chart().getByRole('button',{name:'Phóng to biểu đồ',exact:true}).click()

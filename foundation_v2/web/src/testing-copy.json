@@ -7239,5 +7239,18 @@
   "Calendar R calculation help": {"vi":"Tổng R thực hiện của các giao dịch trong ngày. Mỗi R = lãi/lỗ ròng sau phí ÷ rủi ro ban đầu của lệnh. Thiếu dữ liệu rủi ro của bất kỳ lệnh nào: N/A; không coi là 0 và không phải R trung bình.","en":"Sum of realized R for the day. Each R is net P/L after fees divided by the trade's original risk. If any trade lacks risk data, the result is N/A, not zero or average R."},
   "Calendar capital basis help": {"vi":"Cơ sở vốn chỉ dùng khi xem Lợi nhuận (%). Số dư hiện tại lấy từ snapshot tài khoản tại thời điểm báo cáo, giống bảng tháng; thiếu snapshot hợp lệ thì không khả dụng.","en":"The capital basis applies only to Return (%). Current balance uses the account snapshot at report time, as in the monthly table; it is unavailable without a valid snapshot."},
   "RR hiện tại": {"vi":"RR hiện tại","en":"Current RR"},
-  "Dựa trên phân tích của bạn, RR {value} cho kết quả tổng thể tốt nhất.": {"vi":"Dựa trên phân tích của bạn, RR {value} cho kết quả tổng thể tốt nhất.","en":"Based on your analytics the RR of {value} gives you the best results overall."}
+  "Dựa trên phân tích của bạn, RR {value} cho kết quả tổng thể tốt nhất.": {"vi":"Dựa trên phân tích của bạn, RR {value} cho kết quả tổng thể tốt nhất.","en":"Based on your analytics the RR of {value} gives you the best results overall."},
+  "Phạm vi biểu đồ": {"vi":"Phạm vi biểu đồ","en":"Chart range"},
+  "Ghi chú ngày {date}": {"vi":"Ghi chú ngày {date}","en":"Daily note · {date}"},
+  "Đóng ghi chú": {"vi":"Đóng ghi chú","en":"Close note"},
+  "Thu gọn ghi chú": {"vi":"Thu gọn ghi chú","en":"Collapse note"},
+  "Mở rộng ghi chú": {"vi":"Mở rộng ghi chú","en":"Expand note"},
+  "Bản nháp": {"vi":"Bản nháp","en":"Draft"},
+  "Tiêu đề ghi chú": {"vi":"Tiêu đề ghi chú","en":"Note title"},
+  "Thông tin ghi chú": {"vi":"Thông tin ghi chú","en":"Note details"},
+  "Loại ghi chú": {"vi":"Loại ghi chú","en":"Note type"},
+  "Đánh giá ngày": {"vi":"Đánh giá ngày","en":"Daily review"},
+  "Chưa có giao dịch trong ngày này.": {"vi":"Chưa có giao dịch trong ngày này.","en":"No trades for this day."},
+  "Nội dung ghi chú": {"vi":"Nội dung ghi chú","en":"Note content"},
+  "Viết ghi chú…": {"vi":"Viết ghi chú…","en":"Write a note…"}
 }

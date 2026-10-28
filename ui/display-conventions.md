@@ -44,9 +44,10 @@ Use shared rounded chart domains and shape-preserving curves; interpolation
 does not create price observations. Compact desktop reports use 16px panel insets
 and gaps. On wide screens PnL occupies the left two thirds; realized R, ideal R
 and profit/breakeven opportunity stack in the right third. The PnL plot fills the
-available column height, keeping the two sides aligned. PnL defaults to daily
-close observations, with civil dates on the axis even for a
-single-day report. Users can select all observations, hourly or 15-minute detail.
+available column height, keeping the two sides aligned. PnL defaults to All, retaining every observation and the original cumulative values.
+Day, 1 hour and 15 minutes select trailing viewing windows anchored to the last
+observation; they do not aggregate trades. Adaptive time ticks use available width
+and measured labels, with civil date context for intraday and fractional-second detail.
 Below 1200px these groups
 stack, with the main plot returning to a compact height; below 850px the R cards
 also stack. Hour/day
@@ -67,15 +68,15 @@ on one line; amounts never wrap digits, and the calendar scrolls internally
 when the seven columns need more space.
 The Analytics month grid uses joined square cells and reaches the panel's side
 and bottom edges. Its week rows share any extra height from the adjacent frequency
-cards; the outer panel owns the bottom border. Year view and expanded day details
-retain their content inset. This reversible visual trial does not change Live.
+cards; the outer panel owns the bottom border. Year view retains its content inset. This reversible visual trial does not change Live.
 Calendar navigation permits empty months and year steps. Analytics adds a compact
-12-month Year view and read-only daily trade details. Both Analytics and Live use
+12-month Year view. Its date cells are display-only: no hover state, tooltip,
+click action or daily-detail panel. Both Analytics and Live use
 the same Monday-first grid, navigation and day presentation; each retains its own
 data adapter. Analytics keeps dated rows with unknown PnL in both the day count
 and frequency. Net/win-rate summaries are unavailable for
 incomplete financial data; unknown-time or partial sources also prevent complete
-period totals. Average R in daily details weights only known R observations and exposes coverage.
+period totals. Accessible R labels retain observation coverage.
 The calendar menu contains net P/L, return (%) and return (R). Daily return (R)
 sums each trade's original-risk realized R; any missing R makes it N/A.
 Percentage uses pooled source initial capital or the current account snapshot,
@@ -87,7 +88,10 @@ on this choice. The R option has an inline info glyph and hover/focus help. No
 interactive control is nested inside its option. Monthly capital radios keep their
 accessible descriptions without separate info buttons.
 Empty calendar dates show only the date, with no dash or manufactured zero money. Actual dated data keeps known zero and N/A distinct. The percentage definitions are local contracts, not proof of FX backend parity. Live keeps its weekly totals, full-day
-coverage/partial semantics, account selection and notes/reviews.
+coverage/partial semantics and account selection. Live date cells show a circled
+plus on hover/focus (always on touch) and open a right-hand daily-note drawer.
+The drawer currently edits a local draft only; closing discards it and restores
+focus to the date. No note API writes or persistence are implied.
 Performance group headings sit above their bordered content, with help and controls
 in the external heading. Expectancy/profit factor, winners/losers and side each
 retain one visible group heading. Session radars have no enclosing surface; only
@@ -194,8 +198,7 @@ or persistent per-session values. Hover, keyboard focus and touch expose each
 session's formatted value and unit; unavailable values retain a visible N/A.
 Each radar retains its own metric domain; shapes do not imply a shared scale.
 The PnL plot toolbar exposes zoom in/out, rectangle selection, pan and reset.
-Curve toolbars appear on chart hover or keyboard focus for fine pointers and stay
-visible on touch/coarse-pointer devices; the reserved toolbar space does not move.
+Curve toolbars remain visible for mouse, keyboard and touch; the reserved toolbar space does not move.
 Prop PnL adds green Profit Target and red Max Loss references, both projected from
 the evaluator's absolute target/floor minus phase initial capital. Their compact labels follow the square threshold-label pattern in compact-system.md: solid matching fill/border, black text, measured text width plus 6px padding on each side, and a bottom edge flush with the reference line (a connector preserves the true value when labels collide). They expand the
 Y domain and stay unchanged by trade filters and time zoom. Currency and baseline
@@ -206,7 +209,9 @@ crossings on a closed-trade curve do not determine challenge pass/breach status.
 Zoom changes only the visible sample window, retaining original trade IDs, labels
 and values. Dragging never selects a trade; a plain point click still opens its
 inspector. +/- zoom, arrow keys pan and 0 resets when the plot has keyboard focus.
-Changing the interval resets the visible window. Tooltip geometry and short/long
+Home or 0 restores All; manual zoom, brush or pan clears the preset highlight.
+Presets change the viewing window only. Zoom stops at a one-second window
+(with half-second ticks) and zoom-out stops at the original data extent. Tooltip geometry and short/long
 reading formats follow the shared project compact-system contract.
 PnL axis labels use compact dates, full years across year boundaries and local
 times within a single day. Tick density follows plot width; repeated dates are

@@ -1,0 +1,65 @@
+{
+  "status": "PASS",
+  "scope": "Independent read-only calendar source and visual review; fixture QA evidence review, no original FX browser or broker interaction",
+  "index_sha256": "ecc3846118a18cbf86624e6ef6781fe997b0e51db58b866943aafe92e0b6fd2d",
+  "source_hashes": [
+    {
+      "path": "src/AnalyticsCalendar.jsx",
+      "sha256": "fd8555cee3d0abca4aaabd331c2f9498c2ef6314b2efc401638803db63f841af"
+    },
+    {
+      "path": "src/CalendarView.jsx",
+      "sha256": "e64cdc3b4a77b985c6fe65e23b162af8c5937d629a4171bb50c60da0a085010f"
+    },
+    {
+      "path": "src/LiveSurfaces.jsx",
+      "sha256": "d7ad2956e89916246a07c3e98008b4afa55f4526f1746352c90b55f22f9caa65"
+    },
+    {
+      "path": "src/LiveDayNote.jsx",
+      "sha256": "cfef8038500e208c02b6e3057738f12139bd174b6f0957fad981ca579d3ad8ab"
+    },
+    {
+      "path": "src/calendar-view.css",
+      "sha256": "4af1e4c03e8cbda2d14d188a03b9e2b964871a83307a755fd458ad5ae450a41e"
+    },
+    {
+      "path": "src/live-day-note.css",
+      "sha256": "b033e47410c09417da3ff42717ec7cf6696b88c2cffc227efd927454e4f9fcc6"
+    },
+    {
+      "path": "src/testing-copy.json",
+      "sha256": "1b3477e8c13b2c8df47ad76460c332fa82cbbacc99406bbd21d06422362b431b"
+    }
+  ],
+  "source_findings_resolved": [
+    "Analytics generic hover applies only to buttons",
+    "New drawer VI/EN translations exist",
+    "Uncovered empty days retain unknown/partial meaning",
+    "Old interactive Analytics loading tests updated",
+    "Drawer title font overrides global input style"
+  ],
+  "reviewed_reports": [
+    "calendar/browser.json: PASS 7 journeys",
+    "loading/browser.json: PASS 9 journeys",
+    "live/report.json: PASS 4 widths"
+  ],
+  "visuals": [
+    "calendar/calendar-1920-dark-vi.png",
+    "calendar/calendar-1440-light-en.png",
+    "calendar/calendar-390-dark-vi.png",
+    "live/partial-1920.png",
+    "live/partial-1440.png",
+    "live/partial-768.png",
+    "live/partial-390.png"
+  ],
+  "nonblocking_notes": [
+    "Live day accessible name could explicitly say it opens a daily note",
+    "English drawer list heading Trading could be Trades"
+  ],
+  "limits": [
+    "No note persistence is implemented by design",
+    "This is calendar acceptance, not all-chart arithmetic or broker acceptance",
+    "Parent ran browser tests; reviewer read scripts/reports and inspected actual screenshots"
+  ]
+}

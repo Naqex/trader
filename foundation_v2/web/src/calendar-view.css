@@ -8,7 +8,7 @@
 .wm-calendar-grid.has-week-totals{grid-template-columns:repeat(8,minmax(0,1fr))}
 .wm-calendar-week{display:contents}
 .wm-calendar-dayname{padding:4px 0 8px;text-align:center;color:var(--wm-content-muted);font-size:12px}
-.fx-app .wm-calendar-day{display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;min-width:0;min-height:90px;gap:12px;padding:8px;border:1px solid var(--wm-border);border-radius:6px;background:transparent;color:var(--wm-content);text-align:left;font-variant-numeric:tabular-nums;cursor:pointer}
+.fx-app .wm-calendar-day{box-sizing:border-box;display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;min-width:0;min-height:90px;gap:12px;padding:8px;border:1px solid var(--wm-border);border-radius:6px;background:transparent;color:var(--wm-content);text-align:left;font-variant-numeric:tabular-nums;cursor:pointer}
 .wm-calendar-cell-top{display:flex;justify-content:space-between;gap:4px;align-items:center;min-width:0}
 .wm-calendar-date{margin-left:auto;font-size:12px;flex-shrink:0;white-space:nowrap}
 .wm-calendar-cell-top small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--wm-content-muted);font-size:11px}
@@ -21,7 +21,7 @@
 .wm-calendar-day:is(.is-negative,.is-loss) strong{color:var(--report-negative)}
 .fx-app .wm-calendar-day.is-outside{background:var(--wm-surface);opacity:.4}
 .fx-app .wm-calendar-day:disabled{cursor:default}
-.fx-app .wm-calendar-day:hover:not(:disabled){border-color:var(--wm-content-muted)}
+.fx-app button.wm-calendar-day:hover:not(:disabled){border-color:var(--wm-content-muted)}
 .fx-app .wm-calendar-day[aria-pressed=true]{outline:2px solid var(--wm-focus);outline-offset:-2px}
 .wm-calendar-scroll:focus-visible,.wm-calendar-day:focus-visible{outline:2px solid var(--wm-focus);outline-offset:2px}
 .wm-calendar-scroll.is-compact{overflow:visible;margin-top:8px}
@@ -35,20 +35,9 @@
 .wm-calendar-period-total{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px solid var(--wm-border);padding-top:16px;margin-top:16px;font-size:13px}
 .wm-calendar-period-total>strong{margin-left:auto;font-variant-numeric:tabular-nums}
 .wm-calendar-period-total>small{color:var(--wm-content-muted)}
-.wm-calendar-detail{margin-top:16px;border-top:1px solid var(--wm-border);padding-top:16px}
-.wm-calendar-detail-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.wm-calendar-detail-heading h3{margin:0;font-size:15px}
-.wm-calendar-detail>p{font-size:13px;color:var(--wm-content-muted)}
-.wm-calendar-detail dl{display:flex;gap:16px;flex-wrap:wrap;font-size:13px}
-.wm-calendar-detail dl>div{display:flex;gap:8px}
-.wm-calendar-detail dd{margin:0;font-weight:600}
-.wm-calendar-detail ul{list-style:none;padding:0;max-height:280px;overflow:auto}
-.wm-calendar-detail li{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--wm-border);font-size:13px}
-.wm-calendar-detail li>span{min-width:0;overflow-wrap:anywhere}
-.wm-calendar-detail li>strong{white-space:nowrap}
 .wm-calendar-result strong{overflow:hidden;text-overflow:ellipsis}
 @media(max-width:1000px){.wm-calendar-year{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:600px){.wm-calendar-year{grid-template-columns:1fr}.wm-calendar-toolbar{align-items:flex-start}.wm-calendar-navigation{gap:0}.wm-calendar-step>span{font-size:16px}.wm-calendar-step:first-child>span{min-width:90px}.wm-calendar-toolbar>.wm-calendar-actions{width:100%;justify-content:space-between}.wm-calendar-period-total{gap:8px}.wm-calendar-detail dl{gap:8px 16px}}
+@media(max-width:600px){.wm-calendar-year{grid-template-columns:1fr}.wm-calendar-toolbar{align-items:flex-start}.wm-calendar-navigation{gap:0}.wm-calendar-step>span{font-size:16px}.wm-calendar-step:first-child>span{min-width:90px}.wm-calendar-toolbar>.wm-calendar-actions{width:100%;justify-content:space-between}.wm-calendar-period-total{gap:8px}}
 
 .wm-calendar-metric-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
 .wm-calendar-metric-toolbar .fx-select-trigger{border-radius:20px}
@@ -66,20 +55,20 @@
 .wm-analytics-calendar .wm-calendar-grid{gap:0}
 .fxa-calendar-panel>.fxa-section-body{display:flex;flex-direction:column}
 .wm-analytics-calendar{flex:1;min-width:0}
-.fxa-calendar-panel>.fxa-section-body:has(>.wm-analytics-calendar.is-month:not(.has-detail)){padding-bottom:0}
-.wm-analytics-calendar.is-month:not(.has-detail){display:flex;flex-direction:column}
-.wm-analytics-calendar.is-month:not(.has-detail)>.wm-calendar-scroll{display:flex;flex:1;border-radius:0 0 9px 9px}
-.wm-analytics-calendar.is-month:not(.has-detail)>.wm-calendar-scroll>.wm-calendar-grid{flex:1;grid-template-rows:max-content repeat(var(--live-calendar-weeks),minmax(90px,1fr))}
+.fxa-calendar-panel>.fxa-section-body:has(>.wm-analytics-calendar.is-month){padding-bottom:0}
+.wm-analytics-calendar.is-month{display:flex;flex-direction:column}
+.wm-analytics-calendar.is-month>.wm-calendar-scroll{display:flex;flex:1;border-radius:0 0 9px 9px}
+.wm-analytics-calendar.is-month>.wm-calendar-scroll>.wm-calendar-grid{flex:1;grid-template-rows:max-content repeat(var(--live-calendar-weeks),minmax(90px,1fr))}
 .wm-analytics-calendar>.wm-calendar-scroll{margin-inline:-16px;max-width:none}
 .fx-app .wm-analytics-calendar .wm-calendar-day{border:0;border-top:1px solid var(--wm-border);border-right:1px solid var(--wm-border);border-radius:0}
 .fx-app .wm-analytics-calendar .wm-calendar-week>.wm-calendar-day:first-child{border-left:1px solid var(--wm-border)}
 .fx-app .wm-analytics-calendar>.wm-calendar-scroll .wm-calendar-week>.wm-calendar-day:first-child{border-left:0}
 .fx-app .wm-analytics-calendar>.wm-calendar-scroll .wm-calendar-week>.wm-calendar-day:last-child{border-right:0}
 .fx-app .wm-analytics-calendar .wm-calendar-week:last-child>.wm-calendar-day{border-bottom:1px solid var(--wm-border)}
-.fx-app .wm-analytics-calendar.is-month:not(.has-detail)>.wm-calendar-scroll .wm-calendar-week:last-child>.wm-calendar-day{border-bottom:0}
+.fx-app .wm-analytics-calendar.is-month>.wm-calendar-scroll .wm-calendar-week:last-child>.wm-calendar-day{border-bottom:0}
 .fx-app .wm-analytics-calendar .wm-calendar-day.is-outside{opacity:1}
 .wm-analytics-calendar .wm-calendar-day.is-outside .wm-calendar-date{opacity:.4}
-.fx-app .wm-analytics-calendar .wm-calendar-day:hover:not(:disabled){border-color:var(--wm-border);box-shadow:inset 0 0 0 1px var(--wm-content-muted)}
+
 .fx-app .wm-analytics-calendar .wm-calendar-day:focus-visible{outline-offset:-2px}
 .fx-app .wm-analytics-calendar .wm-calendar-day:is(.is-positive,.is-negative){position:relative;border-color:var(--wm-calendar-tone);background:color-mix(in srgb,var(--wm-calendar-tone) 22%,var(--wm-canvas))}
 .wm-analytics-calendar .wm-calendar-day.is-positive{--wm-calendar-tone:var(--report-positive)}
@@ -88,7 +77,13 @@
 .wm-analytics-calendar .wm-calendar-day:is(.is-positive,.is-negative)::after{content:"";position:absolute;inset:-1px;border:1px solid var(--wm-calendar-tone);pointer-events:none;z-index:1}
 .wm-analytics-calendar>.wm-calendar-scroll .wm-calendar-week>.wm-calendar-day:first-child::after{left:0}
 .wm-analytics-calendar>.wm-calendar-scroll .wm-calendar-week>.wm-calendar-day:last-child::after{right:0}
-.wm-analytics-calendar.is-month:not(.has-detail)>.wm-calendar-scroll .wm-calendar-week:last-child>.wm-calendar-day::after{bottom:0}
+.wm-analytics-calendar.is-month>.wm-calendar-scroll .wm-calendar-week:last-child>.wm-calendar-day::after{bottom:0}
 .fx-app .wm-analytics-calendar .wm-calendar-day:is(.is-positive,.is-negative):hover{box-shadow:none}
 
 .fx-app[data-theme=light] .wm-analytics-calendar .wm-calendar-day:is(.is-positive,.is-negative){background:color-mix(in srgb,var(--wm-calendar-tone) 10%,var(--wm-canvas))}
+
+.fx-app .wm-analytics-calendar .wm-calendar-day{cursor:default}
+.live-calendar-cell{position:relative}
+.wm-calendar-add{position:absolute;inset:0;display:grid;place-items:center;opacity:0;pointer-events:none;color:var(--wm-content)}
+.live-calendar-cell:is(:hover,:focus-visible) .wm-calendar-add{opacity:1}
+@media(hover:none){.wm-calendar-add{opacity:1}}

@@ -1,0 +1,22 @@
+{
+  "head": "a13c8921a5c9d66ee14adf7af755e5c4fcddd27f",
+  "index_before_sha256": "3387f61796c0dd1e0c5fbf0b05dcbe3782af9f813e7f2870e0260aa826d05d2d",
+  "overlays": {
+    "src/AnalyticsCalendar.jsx": "fd8555cee3d0abca4aaabd331c2f9498c2ef6314b2efc401638803db63f841af",
+    "src/AnalyticsCharts.jsx": "e6df075a2326ea8d84a39b7674166c34a2ee27b8800689dbb5cc2e1431c03210",
+    "src/CalendarView.jsx": "e64cdc3b4a77b985c6fe65e23b162af8c5937d629a4171bb50c60da0a085010f",
+    "src/FxAnalytics.jsx": "3380423e902098e18ad16461c0ffba8af790f56a46757f2a6d95d21bf757f6f3",
+    "src/LiveSurfaces.jsx": "d7ad2956e89916246a07c3e98008b4afa55f4526f1746352c90b55f22f9caa65",
+    "src/calendar-view.css": "4af1e4c03e8cbda2d14d188a03b9e2b964871a83307a755fd458ad5ae450a41e",
+    "src/fx-analytics.css": "9a2e70df830f788b08e1d347662e9840ba34fff709ab6c8b045b14b00754c253",
+    "src/LiveDayNote.jsx": "cfef8038500e208c02b6e3057738f12139bd174b6f0957fad981ca579d3ad8ab",
+    "src/chartTimeAxis.js": "b3d9434cb272fe471df15cd94e0dd6968c73001864a23cc3885ebd02e8aa1db6",
+    "src/live-day-note.css": "b033e47410c09417da3ff42717ec7cf6696b88c2cffc227efd927454e4f9fcc6",
+    "src/testing-copy.json": "1b3477e8c13b2c8df47ad76460c332fa82cbbacc99406bbd21d06422362b431b"
+  },
+  "status": "complete",
+  "candidate": "E:\\BACKUP-TRADINGWORKSPACE\\chart-time-calendar-20261028\\source\\foundation_v2\\web\\dist",
+  "index_sha256": "f92c39d5127840894cce1f0039f908b68cee3c98d39526532acff9dcdb189747",
+  "palette_asset": "assets/project-palette-4ed40c102d752c45.css",
+  "palette_sha256": "4ed40c102d752c454dd384454a142834859571bde1c258a53476655ba98f480e"
+}

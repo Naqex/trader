@@ -1,0 +1,162 @@
+{
+  "scope": "Labeled calendar control/return fixtures, plus real read-only Session page",
+  "cases": [
+    {
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "allDefault": true,
+      "radioMoneyAndRInvariant": true,
+      "snapshotPercent": 10,
+      "initialPercent": 20,
+      "rHelp": true,
+      "geometry": {
+        "horizontal": 0,
+        "vertical": 0,
+        "bottom": 0,
+        "tones": [
+          {
+            "border": "rgb(34, 199, 138)",
+            "outline": "rgb(34, 199, 138)",
+            "background": "color(srgb 0.0660392 0.21451 0.174118)"
+          },
+          {
+            "border": "rgb(255, 83, 100)",
+            "outline": "rgb(255, 83, 100)",
+            "background": "color(srgb 0.256706 0.114431 0.141333)"
+          },
+          {
+            "border": "rgb(34, 199, 138)",
+            "outline": "rgb(34, 199, 138)",
+            "background": "color(srgb 0.0660392 0.21451 0.174118)"
+          },
+          {
+            "border": "rgb(34, 199, 138)",
+            "outline": "rgb(34, 199, 138)",
+            "background": "color(srgb 0.0660392 0.21451 0.174118)"
+          },
+          {
+            "border": "rgb(255, 83, 100)",
+            "outline": "rgb(255, 83, 100)",
+            "background": "color(srgb 0.256706 0.114431 0.141333)"
+          }
+        ]
+      },
+      "year": true
+    },
+    {
+      "width": 1920,
+      "missingSnapshotUnavailable": true,
+      "initialPercentStillValid": true,
+      "missingRiskIsNA": true
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "lang": "en",
+      "allDefault": true,
+      "radioMoneyAndRInvariant": true,
+      "snapshotPercent": 10,
+      "initialPercent": 20,
+      "rHelp": true,
+      "geometry": {
+        "horizontal": 0,
+        "vertical": 0,
+        "bottom": 0,
+        "tones": [
+          {
+            "border": "rgb(6, 115, 79)",
+            "outline": "rgb(6, 115, 79)",
+            "background": "color(srgb 0.870588 0.920392 0.916863)"
+          },
+          {
+            "border": "rgb(190, 36, 56)",
+            "outline": "rgb(190, 36, 56)",
+            "background": "color(srgb 0.942745 0.889412 0.907843)"
+          },
+          {
+            "border": "rgb(6, 115, 79)",
+            "outline": "rgb(6, 115, 79)",
+            "background": "color(srgb 0.870588 0.920392 0.916863)"
+          },
+          {
+            "border": "rgb(6, 115, 79)",
+            "outline": "rgb(6, 115, 79)",
+            "background": "color(srgb 0.870588 0.920392 0.916863)"
+          },
+          {
+            "border": "rgb(190, 36, 56)",
+            "outline": "rgb(190, 36, 56)",
+            "background": "color(srgb 0.942745 0.889412 0.907843)"
+          }
+        ]
+      },
+      "year": true
+    },
+    {
+      "width": 1440,
+      "missingSnapshotUnavailable": true,
+      "initialPercentStillValid": true,
+      "missingRiskIsNA": true
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "lang": "vi",
+      "allDefault": true,
+      "radioMoneyAndRInvariant": true,
+      "snapshotPercent": 10,
+      "initialPercent": 20,
+      "rHelp": true,
+      "geometry": {
+        "horizontal": 192,
+        "vertical": 0,
+        "bottom": 0,
+        "tones": [
+          {
+            "border": "rgb(34, 199, 138)",
+            "outline": "rgb(34, 199, 138)",
+            "background": "color(srgb 0.0660392 0.21451 0.174118)"
+          },
+          {
+            "border": "rgb(255, 83, 100)",
+            "outline": "rgb(255, 83, 100)",
+            "background": "color(srgb 0.256706 0.114431 0.141333)"
+          },
+          {
+            "border": "rgb(34, 199, 138)",
+            "outline": "rgb(34, 199, 138)",
+            "background": "color(srgb 0.0660392 0.21451 0.174118)"
+          },
+          {
+            "border": "rgb(34, 199, 138)",
+            "outline": "rgb(34, 199, 138)",
+            "background": "color(srgb 0.0660392 0.21451 0.174118)"
+          },
+          {
+            "border": "rgb(255, 83, 100)",
+            "outline": "rgb(255, 83, 100)",
+            "background": "color(srgb 0.256706 0.114431 0.141333)"
+          }
+        ]
+      },
+      "year": true
+    },
+    {
+      "width": 390,
+      "missingSnapshotUnavailable": true,
+      "initialPercentStillValid": true,
+      "missingRiskIsNA": true
+    },
+    {
+      "realSession": true,
+      "singleDayAxis": [
+        "04/05/2003",
+        "05/05/2003"
+      ]
+    }
+  ],
+  "errors": [],
+  "writes": [],
+  "status": "PASS"
+}

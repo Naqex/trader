@@ -13,11 +13,13 @@ export function CalendarNavigation({ month, onChange, view = 'month', onViewChan
   </div><div className="wm-calendar-actions">{children}{onViewChange && <div className="fxa-segmented" role="group" aria-label={t('Chế độ xem lịch')}>{[['month','Tháng'],['year','Năm']].map(([key,label]) => <button key={key} type="button" aria-pressed={view === key} onClick={() => onViewChange(key)}>{t(label)}</button>)}</div>}</div></div>
 }
 
-export function CalendarDay({ day, value, count, note, selected, onClick, disabled, label, tooltip, tone = '', compact = false, className = '', numberClassName = '' }) {
-  return <button type="button" className={`wm-calendar-day ${className}${!day.inMonth ? ' is-outside' : ''}${tone ? ` is-${tone}` : ''}${compact ? ' is-compact' : ''}`} data-date={day.key} disabled={disabled || !day.inMonth} aria-pressed={selected} aria-label={label} data-tooltip={tooltip} onClick={onClick}>
+export function CalendarDay({ day, value, count, note, selected, onClick, disabled, label, tooltip, showAdd = false, tone = '', compact = false, className = '', numberClassName = '' }) {
+  const Element = onClick ? 'button' : 'div'
+  return <Element type={onClick ? 'button' : undefined} role={onClick ? undefined : 'group'} className={`wm-calendar-day ${className}${!day.inMonth ? ' is-outside' : ''}${tone ? ` is-${tone}` : ''}${compact ? ' is-compact' : ''}`} data-date={day.key} disabled={onClick ? disabled || !day.inMonth : undefined} aria-pressed={onClick ? selected : undefined} aria-label={label} data-tooltip={tooltip} onClick={onClick}>
     <span className="wm-calendar-cell-top">{!compact && count && <small>{count}</small>}<span className={`wm-calendar-date ${numberClassName}`}>{day.date.getUTCDate()}</span></span>
     {!compact && <span className="wm-calendar-result">{value !== undefined && <strong>{value}</strong>}{note && <small>{note}</small>}</span>}
-  </button>
+    {showAdd && day.inMonth && !disabled && <span className="wm-calendar-add" aria-hidden="true"><TestingIcon kind="zoom-in" size={20}/></span>}
+  </Element>
 }
 
 export function CalendarMonth({ month, weeks = civilMonthWeeks(month), label, renderDay, renderWeekTotal, compact = false, classes = {} }) {

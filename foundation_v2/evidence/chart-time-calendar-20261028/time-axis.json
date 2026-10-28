@@ -1,0 +1,41 @@
+{
+  "scope": "Labeled raw-observation fixture; no broker calls or writes",
+  "cases": [
+    {
+      "width": 1920,
+      "rawCount": 7,
+      "allDefault": true,
+      "viewPresets": true,
+      "pnlInvariant": true,
+      "panBrushHome": true,
+      "halfSecondTicks": true,
+      "noOverlap": true,
+      "alwaysToolbar": true
+    },
+    {
+      "width": 800,
+      "rawCount": 7,
+      "allDefault": true,
+      "viewPresets": true,
+      "pnlInvariant": true,
+      "panBrushHome": true,
+      "halfSecondTicks": true,
+      "noOverlap": true,
+      "alwaysToolbar": true
+    },
+    {
+      "width": 390,
+      "rawCount": 7,
+      "allDefault": true,
+      "viewPresets": true,
+      "pnlInvariant": true,
+      "panBrushHome": true,
+      "halfSecondTicks": true,
+      "noOverlap": true,
+      "alwaysToolbar": true
+    }
+  ],
+  "errors": [],
+  "writes": [],
+  "status": "PASS"
+}
