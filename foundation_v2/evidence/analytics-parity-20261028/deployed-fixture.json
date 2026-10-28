@@ -1,0 +1,88 @@
+{
+  "scope": "Labeled read-only fixtures; no backend/broker writes",
+  "cases": [
+    "Prop: Tags -> Session -> Day; no top selector, Type/Strategy, or hidden filter effect",
+    "Prop draft selection waits for Apply; exact attempt cursor/event scope, URL and Back preserved",
+    "Unbound and missing attempts retain recovery picker; no reports shows honest empty state",
+    "Explicit Session renders before delayed catalog; metadata arrival causes no extra report read",
+    "Default Session waits for authoritative catalog and chooses valid session",
+    "Catalog denial removes already rendered explicit report; no stale data remains",
+    "1920 dark / 390 light: bounded picker, no document overflow, keyboard Escape"
+  ],
+  "errors": [],
+  "writes": [],
+  "reads": [
+    {
+      "session": "qa-one",
+      "cursor": "11",
+      "sequence": "3",
+      "workspace": "tenant-a"
+    },
+    {
+      "session": "qa-two",
+      "cursor": "22",
+      "sequence": "4",
+      "workspace": "tenant-a"
+    },
+    {
+      "session": "qa-one",
+      "cursor": "11",
+      "sequence": "3",
+      "workspace": "tenant-a"
+    },
+    {
+      "session": "qa-two",
+      "cursor": "22",
+      "sequence": "4",
+      "workspace": "tenant-a"
+    },
+    {
+      "session": "qa-one",
+      "cursor": "11",
+      "sequence": "3",
+      "workspace": "tenant-a"
+    },
+    {
+      "session": "qa-two",
+      "cursor": "22",
+      "sequence": "4",
+      "workspace": "tenant-a"
+    },
+    {
+      "session": "qa-one",
+      "cursor": "11",
+      "sequence": "3",
+      "workspace": "tenant-a"
+    },
+    {
+      "session": "qa-one",
+      "cursor": null,
+      "sequence": null,
+      "workspace": "tenant-a"
+    },
+    {
+      "session": "qa-one",
+      "cursor": null,
+      "sequence": null,
+      "workspace": "tenant-a"
+    },
+    {
+      "session": "qa-one",
+      "cursor": null,
+      "sequence": null,
+      "workspace": "tenant-a"
+    },
+    {
+      "session": "qa-one",
+      "cursor": "11",
+      "sequence": "3",
+      "workspace": "tenant-a"
+    },
+    {
+      "session": "qa-one",
+      "cursor": "11",
+      "sequence": "3",
+      "workspace": "tenant-a"
+    }
+  ]
+}

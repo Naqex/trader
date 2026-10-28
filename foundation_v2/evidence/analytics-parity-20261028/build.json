@@ -1,0 +1,14 @@
+{
+  "head": "f968d5672facef3ce139f396637dcdacb0f9c7c6",
+  "index_before_sha256": "7f4667ab676df8fedbf4b780aa1625c408d9c090bed1d96293fbd88f7b4f2564",
+  "overlays": {
+    "src/SessionReports.jsx": "9e1996db1dc90870c8e002370cea8b2ade909c88bd64df38449dd48c2535b120",
+    "src/PropAnalytics.jsx": "4b7abdfb0f303d9437c08c1ac9641300d31664dbf31c6871afa22ce8c57e7e5a",
+    "src/propAnalyticsModel.js": "56f22d5c1be024fe3e2f8fa6f38465aa68179360e4e5ffd4a2f4f0cc32d98c5c",
+    "src/AnalyticsWorkspace.jsx": "dca036c85d7f9eed087215909cf2ca69273c48c362ac3a4e51e3cac33e7ebfb2",
+    "src/AnalyticsFilterBar.jsx": "80999bdfc61238d27f0a82b3151d2087feadd3c74e2469a25bd31e82d5f9d0a5"
+  },
+  "status": "complete",
+  "candidate": "E:\\BACKUP-TRADINGWORKSPACE\\analytics-parity-20261028\\source\\foundation_v2\\web\\dist",
+  "index_sha256": "154638fdba0380d5b86ebc9ba8cf973ef0c99e3f3ef5ecc7cc84570df4721161"
+}

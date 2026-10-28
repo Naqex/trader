@@ -15,6 +15,7 @@ const OUTCOMES = { win: 'Thắng', loss: 'Thua', breakeven: 'Hòa vốn' }
 
 export default function AnalyticsFilterBar({ filters, onChange, extra, onExtra, rows, labels = [], onExport, pending, sessionControl, persistInUrl = true, sourceType = 'Backtesting', statusControl, disabled = false }) {
   const { t, timezone } = useTestingLocale()
+  const fixedPropSource = sourceType === 'Prop firm'
   const [draft, setDraft] = useState({ ...filters }), [draftExtra, setDraftExtra] = useState({ ...extra })
   const [timezoneNotice, setTimezoneNotice] = useState('')
   const sessionProps = sessionControl?.props
@@ -80,13 +81,13 @@ export default function AnalyticsFilterBar({ filters, onChange, extra, onExtra, 
   const invalidDates = draft.from && draft.to && draft.from > draft.to
   return <section className="fxa-filters fxa-analytics-filters" inert={disabled || undefined} aria-disabled={disabled || undefined} aria-label={t('Bộ lọc analytics')} data-testid="analytics-filters">
     <div className="fxa-analytics-filter-row">
-      <FxSelect className="is-filter" label="Type" triggerContent="Type" menuTitle="Type filter" searchable multiple selectAllLabel="All" value={kindValues} options={[{ value: 'app', label: 'Backtesting' }, { value: 'battles', label: 'Battles', disabled: true, detail: 'Chưa có nguồn dữ liệu Battles' }, { value: 'prop', label: 'Prop Firm' }, ...(sourceType === 'Research' ? [{ value: 'research', label: 'Research' }] : [])]} onChange={values => changeExtra({ reportKinds: allKinds.every(kind => values.includes(kind)) ? '' : JSON.stringify(values) })} />
+      {!fixedPropSource && <FxSelect className="is-filter" label="Type" triggerContent="Type" menuTitle="Type filter" searchable multiple selectAllLabel="All" value={kindValues} options={[{ value: 'app', label: 'Backtesting' }, { value: 'battles', label: 'Battles', disabled: true, detail: 'Chưa có nguồn dữ liệu Battles' }, { value: 'prop', label: 'Prop Firm' }, ...(sourceType === 'Research' ? [{ value: 'research', label: 'Research' }] : [])]} onChange={values => changeExtra({ reportKinds: allKinds.every(kind => values.includes(kind)) ? '' : JSON.stringify(values) })} />}
       {multi('Assets', 'assets', choices(unique('symbol')), 'asset')}
       {multi('Side', 'sides', [{ value: 'buy', label: 'Buy' }, { value: 'sell', label: 'Sell' }], 'side', true)}
       {multi('Outcome', 'outcomes', Object.entries(OUTCOMES).map(([value, label]) => ({ value, label })), 'outcome', true)}
       {multi('Tags', 'tagInclude', choices(labelNames), 'tag', false, option => <span className="wm-trade-label" data-color={labels.find(item => item.name === option.value)?.color || 'gray'}>{option.label}</span>)}
       {sessionControl && React.cloneElement(sessionControl, { value: draftSession, onChange: setDraftSession, triggerContent: 'Session', compact: true })}
-      <FxSelect label="Strategy" triggerContent="Strategy" value={draftExtra.strategy} options={[{ value: 'all', label: 'Tất cả strategies' }, ...choices(unique('playbook_id'))]} searchable onChange={value => changeExtra({ strategy: value })} />
+      {!fixedPropSource && <FxSelect label="Strategy" triggerContent="Strategy" value={draftExtra.strategy} options={[{ value: 'all', label: 'Tất cả strategies' }, ...choices(unique('playbook_id'))]} searchable onChange={value => changeExtra({ strategy: value })} />}
       {multi('Ngày', 'days', DAYS, 'weekday')}
       <TimeFilter value={draftExtra} onChange={changeExtra} />
       <FxSelect className="fxa-timezone-filter" label="Múi giờ" triggerContent={`${t('Múi giờ')} (${timezoneLabel(draftExtra.timezone)})`} value={draftExtra.timezone} localizeOptions={false} searchable options={timezoneOptions} onChange={value => changeExtra({ timezone: value })} />

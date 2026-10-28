@@ -1,0 +1,16 @@
+{
+  "scope": "Demo layout/interaction, labeled stale-phase fixture, real service GET. No writes or broker actions.",
+  "boundRead": "ready: real bound analytics renders objectives after risk and before expectancy",
+  "cases": [
+    "demo 1920/vi/dark: placement, orange token, 3 aligned columns, static rows, single separators, tabs, no overflow",
+    "demo 390/vi/dark: placement, orange token, 3 aligned columns, static rows, single separators, tabs, no overflow",
+    "demo 1440/en/light: placement, orange token, 3 aligned columns, static rows, single separators, tabs, no overflow",
+    "demo objectives remain independent of trade filters",
+    "empty demo keeps objectives and all three tabs",
+    "session analytics unchanged: no challenge objectives",
+    "real service: unbound report objectives readable without replay analytics",
+    "ready: real bound analytics renders objectives after risk and before expectancy",
+    "labeled fixture: stale phase success never shown; qualifying rule retained unknown; phase context visible"
+  ],
+  "errors": []
+}

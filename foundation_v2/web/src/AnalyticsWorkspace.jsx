@@ -103,7 +103,7 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
   const [exportPending, setExportPending] = useState(false)
   const [exportError, setExportError] = useState('')
   const [localExtra, setLocalExtra] = useState(() => readAnalyticsExtraFilters(query))
-  const extra = useMemo(() => ({ ...(summaryOnly ? localExtra : readAnalyticsExtraFilters(query)), timezone, ...(ledgerOnly ? { days: '', weekday: 'all', types: '', notes: '' } : {}) }), [summaryOnly, localExtra, query, ledgerOnly, timezone])
+  const extra = useMemo(() => ({ ...(summaryOnly ? localExtra : readAnalyticsExtraFilters(query)), timezone, ...(ledgerOnly ? { days: '', weekday: 'all', types: '', notes: '' } : {}), ...(propReport ? { strategy: 'all', reportKinds: '' } : {}) }), [summaryOnly, localExtra, query, ledgerOnly, timezone, propReport])
   const updateExtra = useCallback(patch => {
     if (summaryOnly) { setLocalExtra(current => ({ ...current, ...patch })); return }
     const next = new URL(window.location.href)

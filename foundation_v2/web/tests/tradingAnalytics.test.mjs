@@ -100,8 +100,10 @@ test('CSV retains unknown blanks, exports exact filtered rows, escapes spreadshe
 })
 test('Prop adapter takes report replay cutoff and clears unrelated route context', () => {
   const report = { schema_version: 'prop-attempt-report-v1', mode: 'simulation', broker_execution_capability: false, provenance: { replay_binding: { replay_session_id: 'challenge-replay', dataset_id: 'original', last_replay_event_sequence: 30 }, replay_cursor: { bar_index: 17 } } }
-  const query = propReplayQuery(report, new URLSearchParams('session=later&job=wrong&cursor=999&cutoff=999&trade=later'))
+  const query = propReplayQuery(report, new URLSearchParams('session=later&job=wrong&cursor=999&cutoff=999&trade=later&analytics_strategy=old&analytics_reportKinds=%5B%22app%22%5D&analytics_assets=%5B%22EURUSD%22%5D'))
   assert.equal(query.get('event_sequence'), '30'); assert.equal(query.get('session'), 'challenge-replay'); assert.equal(query.get('cursor'), '17'); assert.equal(query.get('dataset'), 'original'); assert.equal(query.has('job'), false); assert.equal(query.has('trade'), false)
+  assert.equal(query.has('analytics_strategy'), false); assert.equal(query.has('analytics_reportKinds'), false)
+  assert.equal(query.get('analytics_assets'), '["EURUSD"]')
   assert.equal(propReplayQuery({ ...report, broker_execution_capability: true }), null)
   assert.equal(propReplayQuery({ ...report, provenance: {} }), null)
 })

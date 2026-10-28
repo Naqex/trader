@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "index_sha256": "154638fdba0380d5b86ebc9ba8cf973ef0c99e3f3ef5ecc7cc84570df4721161",
+  "rollback": "E:\\BACKUP-TRADINGWORKSPACE\\analytics-parity-20261028\\ui-before-parity\\index.html",
+  "old_assets_retained": true,
+  "preserved": [
+    "brand/wmreplay.svg",
+    "chart-legacy.css"
+  ],
+  "rollout": "UI-only atomic index; existing API/UI processes retained"
+}

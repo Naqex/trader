@@ -120,12 +120,15 @@ export default function SessionReports({ workspace, query, ledgerOnly = false })
     if (ledgerOnly || !scope || query.get('session') || query.get('replay_session')) return
     const url = new URL(window.location.href); url.searchParams.set('session', scope); navigate(url, { replace: true })
   }, [scope, ledgerOnly])
-  if (catalog.status === 'loading') return <TestingPageSkeleton view={ledgerOnly ? 'trade' : 'analytics'} label="Đang tải danh mục phiên…" />
+  // An explicit report scope is already authorized by its own API read; the
+  // catalog supplies picker metadata and need not serialize that read.
+  const explicitReport = !ledgerOnly && Boolean(queryScope) && scope === queryScope
+  if (catalog.status === 'loading' && !explicitReport) return <TestingPageSkeleton view={ledgerOnly ? 'trade' : 'analytics'} label="Đang tải danh mục phiên…" />
   if (catalog.denied) return <TestingEmptyState kind="denied" viewport />
   if (catalog.status === 'error') return <section className="as-page fxa-page wm-page" aria-label={ledgerOnly ? t('Trades') : t('Analytics')} data-testid="session-catalog-error"><FxAnalyticsFilters ledgerOnly={ledgerOnly} sourceType="Backtesting" disabled pending filters={readAnalyticsFilters(query)} extra={readAnalyticsExtraFilters(query)} rows={[]} onChange={() => {}} onExtra={() => {}} sessionControl={control} statusControl={<TestingResourceStatus />} /><TestingReadState error message={t('Không tải được danh mục phiên:') + ' ' + t(catalog.error)} recovery={recovery} /></section>
   if (!catalog.items.length && !query.get('session') && !query.get('replay_session')) return <TestingEmptyState viewport />
   const sessionAssets = [...new Set(catalog.items.filter(entry => scope === null || (Array.isArray(scope) ? scope : [scope]).includes(entry.record_id)).flatMap(entry => entry.instrument_ids || (entry.instrument_id ? [entry.instrument_id] : [])))]
-  const catalogStatus = { state: catalog.refreshing ? 'refreshing' : catalog.status === 'stale' ? 'stale' : undefined, recovery }
+  const catalogStatus = { state: catalog.refreshing || catalog.status === 'loading' ? 'refreshing' : catalog.status === 'stale' ? 'stale' : undefined, recovery }
   return <>
     {ledgerOnly && !(sessionId && ['cursor', 'cursor_index', 'cutoff', 'decision_cutoff', 'event_sequence', 'trade', 'trade_id'].some(key => new URLSearchParams(window.location.search).has(key))) ? <AggregateTrades sessionAssets={sessionAssets} catalogStatus={catalogStatus} workspace={workspace} ids={scope} query={query} sessionControl={control} onClearSessions={() => change(null)} /> : <AnalyticsWorkspace sessionAssets={sessionAssets} catalogStatus={catalogStatus} key={`${workspace}:${sessionId}`} workspace={workspace} query={scopedQuery} ledgerOnly={ledgerOnly} sessionName={item?.name || ''} sessionControl={control} />}
   </>

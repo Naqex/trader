@@ -3,7 +3,7 @@ export function propReplayQuery(report, source = new URLSearchParams()) {
   const binding = report?.provenance?.replay_binding, cursor = report?.provenance?.replay_cursor
   if (report?.schema_version !== 'prop-attempt-report-v1' || report.mode !== 'simulation' || report.broker_execution_capability !== false || !binding?.replay_session_id || !Number.isSafeInteger(cursor?.bar_index) || cursor.bar_index < 0) return null
   const query = new URLSearchParams(source)
-  for (const key of ['session', 'replay_session', 'job', 'job_id', 'cursor', 'cursor_index', 'cutoff', 'decision_cutoff', 'trade', 'trade_id', 'dataset']) query.delete(key)
+  for (const key of ['session', 'replay_session', 'job', 'job_id', 'cursor', 'cursor_index', 'cutoff', 'decision_cutoff', 'trade', 'trade_id', 'dataset', 'analytics_strategy', 'analytics_reportKinds']) query.delete(key)
   query.set('session', binding.replay_session_id)
   query.set('cursor', String(cursor.bar_index))
   if (!Number.isSafeInteger(binding.last_replay_event_sequence) || binding.last_replay_event_sequence < 0) return null

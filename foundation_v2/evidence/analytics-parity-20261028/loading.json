@@ -1,0 +1,65 @@
+{
+  "scope": "Labeled analytics/path fixtures in the production UI; GET only, no simulations or broker writes",
+  "cases": [
+    "Direct Simulation mounts only its panel and does not request default price experiments",
+    "Visible RR receives path data; keyboard Drawdown reuses it for MAE; Monte Carlo input survives tab revisit",
+    "External query navigation mounts the right tab and filter scope; browser Back has no blank panel",
+    "390px direct Drawdown defers offscreen MAE read until visible; no overflow",
+    "Delayed old filter/revision response cannot replace current RR",
+    "Path error is explicit; source change clears old errors/data and retains workspace authorization",
+    "Nonzero breakeven threshold requests R before viewport demand; win filter recovers instead of staying empty"
+  ],
+  "errors": [],
+  "writes": [],
+  "status": "PASS",
+  "reads": [
+    {
+      "path": "/api/v2/replay/sessions/loading-fixture/analytics/experiments",
+      "side": null,
+      "revision": 1,
+      "workspace": "tenant-a"
+    },
+    {
+      "path": "/api/v2/replay/sessions/loading-fixture/analytics/experiments",
+      "side": "buy",
+      "revision": 1,
+      "workspace": "tenant-a"
+    },
+    {
+      "path": "/api/v2/replay/sessions/loading-fixture/analytics/experiments",
+      "side": null,
+      "revision": 1,
+      "workspace": "tenant-a"
+    },
+    {
+      "path": "/api/v2/replay/sessions/loading-fixture/analytics/experiments",
+      "side": "buy",
+      "revision": 1,
+      "workspace": "tenant-a"
+    },
+    {
+      "path": "/api/v2/replay/sessions/loading-fixture/analytics/experiments",
+      "side": "sell",
+      "revision": 2,
+      "workspace": "tenant-a"
+    },
+    {
+      "path": "/api/v2/replay/sessions/loading-fixture/analytics/experiments",
+      "side": null,
+      "revision": 2,
+      "workspace": "tenant-a"
+    },
+    {
+      "path": "/api/v2/replay/sessions/loading-fixture-next/analytics/experiments",
+      "side": null,
+      "revision": 2,
+      "workspace": "tenant-a"
+    },
+    {
+      "path": "/api/v2/replay/sessions/loading-fixture/analytics/experiments",
+      "side": null,
+      "revision": 2,
+      "workspace": "tenant-a"
+    }
+  ]
+}
