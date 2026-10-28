@@ -119,5 +119,5 @@
 .live-calendar-cell.is-loss{--live-calendar-tone:var(--report-negative)}
 /* The element's reserved top/left edges are the only painter. The next cell
    owns each interior seam and the shell/footer owns the outside frame. */
-.fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-cell:is(.is-gain,.is-loss){border-top-color:var(--live-calendar-tone);border-left-color:var(--live-calendar-tone)}
-.fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-cell:is(.is-gain,.is-loss):hover:not(:disabled){border-top-color:var(--wm-border);border-left-color:var(--wm-border)}
+.fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-cell:is(.is-gain,.is-loss){border-top-color:var(--wm-border);border-left-color:var(--wm-border);box-shadow:inset 0 0 0 1px var(--live-calendar-tone)}
+.fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-cell:is(.is-gain,.is-loss):hover:not(:disabled){border-top-color:var(--wm-border);border-left-color:var(--wm-border);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--wm-content-muted) 78%,var(--wm-canvas))}
