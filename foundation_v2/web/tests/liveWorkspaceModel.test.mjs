@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { LIVE_FILTERS, dealNet, filterLiveDeals, calendarWeeks, calendarWeekSummary, cumulativeDealSeries, summarizeDeals, dayKey } from '../src/liveWorkspaceModel.js'
+import { LIVE_FILTERS, dealNet, filterLiveDeals, calendarWeeks, calendarWeekSummary, liveCalendarBorders, cumulativeDealSeries, summarizeDeals, dayKey } from '../src/liveWorkspaceModel.js'
 const makeDeal = (ticket, time, profit, costs = {}) => ({ ticket, type: 0, symbol: 'EURUSD', time_msc: Date.parse(time), profit, commission: 0, swap: 0, fee: 0, ...costs })
 const payload = { account: { account_ref: 'A', currency: 'USD' }, history_from_utc: '2026-09-30T12:00:00Z', captured_at_utc: '2026-10-06T08:00:00Z', deals: [makeDeal('1', '2026-10-04T23:30:00Z', 100, { commission: -5 }), makeDeal('2', '2026-10-05T09:00:00Z', -50, { fee: -2 }), { ...makeDeal('cash', '2026-10-04T08:00:00Z', 1000), type: 2 }] }
 test('net includes every cost and excludes non-trading cashflows', () => {
@@ -81,4 +81,23 @@ test('outcome filters use the same break-even tolerance as closed-trade statisti
  assert.deepEqual(filterLiveDeals(source,{...LIVE_FILTERS,outcome:'gain'}).map(deal=>deal.profit),[2e-12])
  assert.deepEqual(filterLiveDeals(source,{...LIVE_FILTERS,outcome:'loss'}).map(deal=>deal.profit),[-2e-12])
  assert.equal(source.deals.length,6)
+})
+
+test('calendar seams have one owner, keep adjacent tones and leave the bottom to the footer', () => {
+ const weeks = Array.from({length:2}, (_, row) => Array.from({length:7}, (_, column) => ({key:`${row}:${column}`,inMonth:true,net:0})))
+ weeks[0][0].net = 10
+ weeks[0][1].net = -5
+ weeks[0][6].net = -5
+ weeks[1][6].net = -10
+ const {days, totals} = liveCalendarBorders(weeks)
+ const top = '--live-calendar-edge-top', left = '--live-calendar-edge-left'
+ assert.equal(days.get('0:0')[top], 'var(--report-positive)')
+ assert.equal(days.get('0:1')[left], 'var(--report-negative)', 'right owner resolves competing tones')
+ assert.equal(days.get('0:2')[left], 'var(--report-negative)', 'neutral neighbor preserves the loss edge')
+ assert.equal(days.get('1:0')[top], 'var(--report-positive)', 'lower neighbor owns the colored bottom seam')
+ assert.equal(totals[0][left], 'var(--report-negative)', 'weekly total owns the last day right edge')
+ assert.equal(totals[0][top], 'var(--wm-border)')
+ assert.deepEqual(Object.keys(days.get('1:6')), [top, left], 'last-row cell draws no bottom edge alongside the orange footer')
+ weeks[0][0].inMonth = false
+ assert.equal(liveCalendarBorders(weeks).days.get('0:0')[top], 'var(--wm-border)', 'outside-month data does not create a tone')
 })

@@ -60,6 +60,21 @@ export function calendarWeeks(month, payload, deals, filters = LIVE_FILTERS) {
   }))
 }
 
+export function liveCalendarBorders(weeks) {
+  const tone = day => !day?.inMonth ? null : day.net > 0 ? 'var(--report-positive)' : day.net < 0 ? 'var(--report-negative)' : null
+  // Top/left edges belong to the lower/right cell. Its tone wins a conflict;
+  // a neutral owner retains its neighbor's tone. The footer owns the bottom.
+  const edge = (owner, neighbor) => tone(owner) || tone(neighbor) || 'var(--wm-border)'
+  const style = (row, column) => ({
+    '--live-calendar-edge-top': edge(weeks[row][column], weeks[row - 1]?.[column]),
+    '--live-calendar-edge-left': edge(weeks[row][column], weeks[row][column - 1]),
+  })
+  return {
+    days: new Map(weeks.flatMap((week, row) => week.map((day, column) => [day.key, style(row, column)]))),
+    totals: weeks.map((_, row) => style(row, 7)),
+  }
+}
+
 export function cumulativeDealSeries(deals) {
   let total = 0, unknown = false
   return [...deals].filter(deal => Number.isFinite(deal.time_msc)).sort((a, b) => a.time_msc - b.time_msc).map(deal => {

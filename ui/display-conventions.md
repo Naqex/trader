@@ -117,7 +117,13 @@ internal edges, while the shell or footer owns the outside edges. Hover and tone
 painters reuse those exact edges; they never use a negative inset, box-shadow or a
 second adjacent border. Rounded surfaces keep the radius on the parent and clip
 child fills or strokes at the parent edge. The month strip owns the grid's bottom
-boundary. Weekly totals expose the
+boundary. In Live, use only the reserved top/left cell borders, with no inset
+shadow frame. A neutral edge owner inherits its colored neighbor's tone;
+if two day tones conflict, the lower/right owner chooses the single edge color.
+Hover changes the fill and shows the plus without replacing the edge color.
+The last row paints no bottom stroke: the month strip's orange top border wins
+there, including below a loss cell. Keyboard focus retains its inset focus ring.
+Weekly totals expose the
 same plus and draft drawer, restricted to eligible dates in the current month.
 The calendar count uses trading execution records (manual closed records or MT5
 fills), labeled trades/giao dịch; it is not a reconstructed round-trip position count.

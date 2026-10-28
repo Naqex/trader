@@ -30,10 +30,10 @@ try{
   const rest=await day.evaluate(el=>({bg:getComputedStyle(el).backgroundColor,border:getComputedStyle(el).borderTopColor,height:el.getBoundingClientRect().height}))
   await day.hover();const hover=await day.evaluate(el=>({bg:getComputedStyle(el).backgroundColor,border:getComputedStyle(el).borderTopColor,height:el.getBoundingClientRect().height,edge:getComputedStyle(el,'::after').opacity,add:getComputedStyle(el.querySelector('.wm-calendar-add')).opacity}))
   assert.notEqual(hover.bg,rest.bg);assert.equal(hover.border,rest.border);assert.equal(hover.height,rest.height);assert.equal(hover.edge,'1');assert.equal(hover.add,'1')
-  const stateEdges=await page.locator('.live-calendar-cell.is-gain').first().evaluate(el=>{const s=getComputedStyle(el);return {top:s.borderTopColor,left:s.borderLeftColor,shadow:s.boxShadow,pseudo:getComputedStyle(el,'::after').content}})
+  const stateEdges=await page.locator('[data-date="2026-10-14"]').evaluate(el=>{const s=getComputedStyle(el);return {top:s.borderTopColor,left:s.borderLeftColor,shadow:s.boxShadow,pseudo:getComputedStyle(el,'::after').content}})
   const gainTone=theme==='dark'?'rgb(32, 212, 147)':'rgb(8, 125, 80)'
-  assert.equal(stateEdges.top,rest.border);assert.equal(stateEdges.left,rest.border)
-  assert.ok(stateEdges.shadow.includes(gainTone),`gain inset tone missing: ${stateEdges.shadow}`)
+  assert.equal(stateEdges.top,gainTone);assert.equal(stateEdges.left,gainTone)
+  assert.equal(stateEdges.shadow,'none','State color belongs to the existing border, with no extra inset frame')
   assert.equal(stateEdges.pseudo,'none')
   assert.equal(await grid.locator('.live-week-total').first().locator('strong').textContent(),'$0')
   assert.equal(await grid.locator('.live-week-total').first().locator('span').first().textContent(),'0 giao dịch')
@@ -50,11 +50,24 @@ try{
   assert.deepEqual(border.widths,['1px','1px','1px','1px']);assert.ok(border.colors.every(c=>c==='rgb(255, 154, 31)'));assert.equal(border.radius,'0px')
   const edges=await grid.evaluate(el=>({bottom:el.getBoundingClientRect().bottom,footer:el.closest('.live-calendar-content').querySelector('.live-month-total').getBoundingClientRect().top}))
   assert.ok(Math.abs(edges.bottom-edges.footer)<1,JSON.stringify(edges))
+  const borderPaint=el=>{const s=getComputedStyle(el);return {top:s.borderTopColor,left:s.borderLeftWidth==='0px'?null:s.borderLeftColor,bottom:s.borderBottomWidth,right:s.borderRightWidth,shadow:s.boxShadow}}
   for(const date of ['2026-10-12','2026-10-13','2026-10-31']){
-   const cell=page.locator(`[data-date="${date}"]`);await cell.hover()
-   assert.equal(await cell.evaluate(el=>getComputedStyle(el,'::after').opacity),'1')
+   const cell=page.locator(`[data-date="${date}"]`)
+   await page.mouse.move(0,0);const before=await cell.evaluate(borderPaint)
+   await cell.hover()
+   assert.deepEqual(await cell.evaluate(borderPaint),before,'Hover preserves the state border instead of turning it white')
+   assert.equal(before.shadow,'none')
    assert.equal(await cell.evaluate(el=>getComputedStyle(el).borderTopWidth),'1px')
+   if(date==='2026-10-31'){
+    assert.equal(before.bottom,'0px','The footer owns the bottom; there is no parallel red stroke')
+    assert.equal(before.right,'0px','The next cell owns the right edge')
+    await cell.screenshot({path:`${out}/bottom-loss-hover-${width}-${theme}.png`})
+   }
   }
+  const lossTone=await page.locator('[data-date="2026-10-13"]').evaluate(el=>getComputedStyle(el).borderTopColor)
+  assert.equal(await page.locator('[data-date="2026-10-20"]').evaluate(el=>getComputedStyle(el).borderTopColor),lossTone,'The lower cell owns the shared bottom edge of the loss cell')
+  assert.equal(await outside.evaluate(el=>getComputedStyle(el).borderLeftColor),lossTone,'The neighboring outside cell owns the final loss cell right edge')
+  assert.equal(await page.locator('[data-date="2026-10-14"]').evaluate(el=>getComputedStyle(el).borderLeftColor),gainTone,'The right owner resolves a red/green seam to one color')
   await grid.evaluate(el=>el.closest('.live-calendar-scroll').scrollLeft=10000)
   await page.locator('.live-week-total').last().hover();await page.locator('.live-calendar-scroll').screenshot({path:`${out}/seams-${width}-${theme}.png`})
   await day.focus();await page.keyboard.press('Tab');await page.keyboard.press('Shift+Tab')
