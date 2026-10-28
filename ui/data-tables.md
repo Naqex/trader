@@ -52,12 +52,14 @@ trước nhãn số, còn nhãn căn giữa có khoảng icon cân xứng hai b�
 
 Các grid có header sort dùng click thường để thêm cột/đổi chiều, gồm bảng mẫu
 design system, Kho dữ liệu, Tài khoản/Dòng tiền, broker/manual và giao dịch gần đây.
-Header đang sort có viền cam mảnh riêng, inset 3px để các ô kề nhau không dính;
-nền pha cam nhẹ, chữ theo theme và SVG mũi tên bo nét, số ưu tiên nhỏ màu cam dạng superscript; không dùng màu
-để thay cho thứ tự bằng số. Slot 26px đủ cho ưu tiên hai chữ số. Nút bỏ sort nằm
-trong padding mép header, không thêm một vùng flex riêng hoặc placeholder; chiều
-rộng và trục text không đổi khi bật/tắt sort. Ô `#` chuyển thành nút `×` có viền
-cam, nền pha cam và chữ theo theme khi có sort; xóa hết sẽ trở lại `#`.
+Header đang sort có viền cam mảnh phủ toàn ô với góc vuông; các ô kề nhau dùng
+chung đường phân cách ở giữa, không tạo khe hoặc viền đôi. Nền pha cam nhẹ, chữ
+theo theme và SVG mũi tên bo nét, số ưu tiên nhỏ màu cam dạng superscript; không
+dùng màu để thay cho thứ tự bằng số. Slot điều khiển rộng 28px, còn nhãn giữ
+kích thước tối thiểu theo nội dung để không bị dồn vào icon; bảng cuộn ngang khi
+viewport không đủ chỗ. Nút bỏ sort có slot 28px riêng với đường phân cách, không
+đè lên text hoặc icon. Ô `#` chuyển thành nút `×` có viền cam vuông phủ toàn ô,
+nền pha cam và chữ theo theme khi có sort; xóa hết sẽ trở lại `#`.
 `SortResetColumn` dùng chung, không làm dịch các cột khi bật/tắt. Nhãn truy cập
 giữ rõ chức năng xóa. Trades tổng hợp tiếp tục gửi toàn bộ thứ tự sort tới server;
 grid local lọc và sort toàn bộ phạm vi trước phân trang. Bảng metric/luật Prop
