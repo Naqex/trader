@@ -12,6 +12,11 @@ are deliberate grouping, not accumulated wrapper spacing.
 Pane-owned data surfaces may run full-bleed to the pane edges; their toolbar and
 pagination own the horizontal boundary, while search remains an action control
 without repeating a visible row-count heading above the table.
+Live tables must not reserve an empty scrollbar gutter: separators and row hover
+fills reach the available scroll viewport edge. Full-bleed tables inside an inset
+parent may exceed its content width by the declared gutter; do not cap them back
+to that content width. On desktop, the Trades pane constrains the broker table's
+flex height so only its data viewport scrolls and pagination stays at the pane bottom.
 
 Remove secondary text that does not help an immediate decision or action.
 Healthy reports must not show implementation explanations, generic legacy-data
