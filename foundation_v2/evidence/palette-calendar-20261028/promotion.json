@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "index_sha256": "86eccb94ad821c5b925a4f17241ed3c6d52d085fea712d0167dd53c3e43f2484",
+  "palette_sha256": "a7698775e56d18217b550b9454431e6bc2169acb1ae080b052392438f6aa1b81",
+  "chart_sha256": "428bf8fca5f041079b9b2453de208ebd00388aae65add7196174b5c66e6dc76f",
+  "review_sha256": "46a0714fbc8e59fb5668b46f18a953a5061ce594cf7df8387ba549e12df811a0",
+  "qa_reports": {
+    "calendar/browser.json": "d0c1909e1ab829eef7ce48ea80412d3848d5c17bd4321371486a5e1ccc1e8d69",
+    "palette/browser.json": "df0b640d29a34c217081a641995780504ff24bc242ecebd35e9a7229c018bf11",
+    "corners/browser.json": "842675d6c0470cbd6ed3380ffd50287a61cbbc03f96ad4222a24838377d54276",
+    "behavior/report.json": "f82b062a5dcb5b35b42c07e1d1387e24803159994b196ce52ad7ee46303a0806"
+  },
+  "rollback": "E:\\BACKUP-TRADINGWORKSPACE\\palette-calendar-20261028\\verified-ui-before\\index.html",
+  "old_assets_retained": true,
+  "preserved": [
+    "brand/wmreplay.svg",
+    "chart-legacy.css",
+    "project-palette.css"
+  ],
+  "rollout": "UI-only atomic index; existing API/UI processes retained"
+}

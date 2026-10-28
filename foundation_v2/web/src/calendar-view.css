@@ -99,15 +99,30 @@
 .fx-app .wm-calendar-grid.live-calendar-grid .live-week-total{border-radius:0}
 .fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-cell,
 .fx-app .wm-calendar-grid.live-calendar-grid .live-week-total{border:0;border-top:1px solid var(--wm-border);border-left:1px solid var(--wm-border)}
-.fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-week > :last-child{border-right:1px solid var(--wm-border)}
-.fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-week:last-child > *{border-bottom:1px solid var(--wm-border)}
+.fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-week > :first-child{border-left:0}
+.fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-week > :last-child{border-right:0}
 .fx-app .wm-calendar-grid.live-calendar-grid .live-week-total > div > span:first-child{white-space:nowrap}
 .fx-app .wm-calendar-grid.live-calendar-grid .live-week-total > div{gap:8px}
 .fx-app .wm-calendar-grid.live-calendar-grid .live-week-total > div > span:first-child{font-size:11px}
 .fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-dayname{border-bottom:0}
-.fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-cell:focus-visible,.live-week-total:focus-visible{outline:2px solid var(--wm-focus);outline-offset:-2px}
-.fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-cell:is(.is-gain,.is-loss){border-color:var(--live-calendar-tone);background:color-mix(in srgb,var(--live-calendar-tone) 16%,var(--wm-canvas));opacity:1}
+.fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-cell:focus-visible,.live-week-total:focus-visible{outline:2px solid var(--wm-focus);outline-offset:-2px;z-index:3}
+.fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-cell,
+.fx-app .wm-calendar-grid.live-calendar-grid .live-week-total{opacity:1;box-sizing:border-box}
+.fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-cell.is-outside .wm-calendar-date{color:var(--project-disabled)}
+.fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-cell:hover:not(:disabled),
+.fx-app .wm-calendar-grid.live-calendar-grid .live-week-total:is(:hover,:focus-visible){background:var(--wm-row-hover);border-color:var(--wm-border)}
+.fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-cell:is(.is-gain,.is-loss){background:color-mix(in srgb,var(--live-calendar-tone) 16%,var(--wm-canvas));opacity:1}
+.fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-cell:is(.is-gain,.is-loss):hover:not(:disabled){background:color-mix(in srgb,var(--live-calendar-tone) 22%,var(--wm-canvas))}
+.fx-app[data-theme=light] .wm-calendar-grid.live-calendar-grid .live-calendar-cell:is(.is-gain,.is-loss){background:color-mix(in srgb,var(--live-calendar-tone) 10%,var(--wm-canvas))}
+.fx-app[data-theme=light] .wm-calendar-grid.live-calendar-grid .live-calendar-cell:is(.is-gain,.is-loss):hover:not(:disabled){background:color-mix(in srgb,var(--live-calendar-tone) 16%,var(--wm-canvas))}
 .live-calendar-cell.is-gain{--live-calendar-tone:var(--report-positive)}
 .live-calendar-cell.is-loss{--live-calendar-tone:var(--report-negative)}
-.live-calendar-cell:is(.is-gain,.is-loss)::after{content:"";position:absolute;inset:0 -1px -1px 0;border:1px solid var(--live-calendar-tone);pointer-events:none;z-index:1}
-.live-calendar-week:last-child>.live-calendar-cell::after{bottom:0}
+/* The overlay covers the existing top/left seams, including the next cell's edge. */
+.live-calendar-grid :is(.live-calendar-cell,.live-week-total)::after{content:"";position:absolute;inset:-1px;border:1px solid var(--live-calendar-tone,var(--wm-content-muted));pointer-events:none;opacity:0;z-index:1}
+.live-calendar-grid .live-calendar-cell:is(.is-gain,.is-loss)::after,
+.live-calendar-grid .live-calendar-cell:hover:not(:disabled)::after,
+.live-calendar-grid .live-week-total:hover::after{opacity:1}
+.live-calendar-grid .live-calendar-week>:first-child::after{left:0}
+.live-calendar-grid .live-calendar-week>:last-child::after{right:0}
+/* The orange month strip owns the bottom boundary; never paint a second stroke. */
+.live-calendar-grid .live-calendar-week:last-child>*::after{border-bottom:0;bottom:0}

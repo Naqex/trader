@@ -174,7 +174,7 @@ export default function TradingViewReplayChart(props) {
         container: host.current, library_path: '/charting_library/', datafeed: adapter.datafeed,
         symbol, interval: restoredInterval, locale: locale.slice(0, 2), timezone: chartTimezone(), theme: theme === 'light' ? 'Light' : 'Dark', autosize: true,
         ...(saved ? { saved_data: saved } : {}),
-        custom_css_url: '/chart-legacy.css', favorites: { intervals: adapter.supported, chartTypes: ['Candles'] },
+        custom_css_url: '/chart-legacy.css?v=compact-0.3.0', favorites: { intervals: adapter.supported, chartTypes: ['Candles'] },
         header_widget_buttons_mode: 'adaptive',
         auto_save_delay: 1,
         enabled_features: ['seconds_resolution', 'items_favoriting'],

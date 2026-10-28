@@ -54,8 +54,8 @@
     },
     {
       "system": "annam-compact",
-      "version": "0.2.0",
-      "sourceSha256": "86043801286fcef39be02443c0d2f1c74d73e5f115c4fa14665f5f9c74c829ba",
+      "version": "0.3.0",
+      "sourceSha256": "1d7675bc71a06c14e5d636ce96e78dc596afd94a72abc77d8cf39123c3113a71",
       "snapshot": "foundation_v2/web/public/project-palette.css",
       "scope": [
         "application.palette",

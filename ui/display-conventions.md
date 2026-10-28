@@ -93,7 +93,12 @@ plus on hover/focus (always on touch) and open a right-hand daily-note drawer.
 The drawer currently edits a local draft only; closing discards it and restores
 focus to the date. No note API writes or persistence are implied. Live also uses
 a joined square grid extending to both pane edges, with a square month-total
-strip at the bottom of the desktop calendar viewport. Weekly totals expose the
+strip with a 1px action-color border at the bottom of the desktop calendar viewport.
+All day and week-total cells stretch to the same grid track at every breakpoint;
+row sizing belongs to the grid, not a separate button height. Outside-month dates
+mute their content only, never the whole cell or its shared separators. Each seam
+has one stroke; hover/tone overlays cover that stroke instead of adding an inset
+duplicate. The month strip owns the grid's bottom boundary. Weekly totals expose the
 same plus and draft drawer, restricted to eligible dates in the current month.
 The calendar count uses trading execution records (manual closed records or MT5
 fills), labeled trades/giao dịch; it is not a reconstructed round-trip position count.

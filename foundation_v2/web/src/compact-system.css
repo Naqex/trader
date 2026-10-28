@@ -39,7 +39,19 @@
   mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='m2 6 2.5 2.5L10 3' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;
 }
 .fx-app.fx-shell-story[data-theme] .fx-content :is(input[type=checkbox]:not([role=switch]):indeterminate,.fx-select-checkbox.is-mixed)::after { content:''; position:absolute; inset:6px 3px; background:var(--project-on-action); border-radius:1px; }
-.fx-app.fx-shell-story[data-theme] .fx-content input[type=checkbox]:not([role=switch]):disabled { opacity:var(--ds-disabled-opacity); }
+.fx-app.fx-shell-story[data-theme] .fx-content input[type=checkbox]:not([role=switch]):disabled { opacity:1; background:var(--project-control); border-color:var(--project-disabled); }
+.fx-app.fx-shell-story[data-theme] .fx-content input[type=checkbox]:not([role=switch]):disabled::after { background:var(--project-disabled); }
+/* Disabled content stays legible on near-black surfaces without dimming its box. */
+.fx-app.fx-shell-story[data-theme] .fx-content :is(button,input,select,textarea):disabled,
+.wm-ui-portal :is(button,input,select,textarea):disabled {
+  opacity:1; color:var(--project-disabled); cursor:not-allowed;
+}
+.fx-app.fx-shell-story[data-theme] .fx-content button:disabled:not(.wm-calendar-day),
+.wm-ui-portal button:disabled { background:var(--project-control); }
+.fx-app.fx-shell-story[data-theme] .fx-content :is(input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea):disabled,
+.wm-ui-portal :is(input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea):disabled {
+  background:var(--project-control); -webkit-text-fill-color:var(--project-disabled);
+}
 .fx-app.fx-shell-story[data-theme] .fx-content input[type=checkbox]:not([role=switch]):focus-visible { outline:2px solid var(--wm-focus); outline-offset:2px; box-shadow:none; }
 .fx-app.fx-shell-story[data-theme] .fx-content .prop-tabs { min-height:var(--ds-nav); }
 .fx-app.fx-shell-story[data-theme] .fx-content :is(.fx-select-check, .dataset-asset-check) { color:var(--project-highlight); }

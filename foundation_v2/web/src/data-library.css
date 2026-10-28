@@ -89,6 +89,7 @@
 .data-library-action-menu button:focus-visible { outline:2px solid var(--wm-focus); outline-offset:-2px; }
 .data-library-action-menu button:disabled { opacity:.5; cursor:default; }
 .fx-app .data-library-action-menu button.is-destructive { color:var(--wm-negative); }
+.fx-app .data-library-action-menu button.is-destructive:is(:hover,:focus-visible):not(:disabled) { color:var(--project-negative-hover-text); }
 .data-library .rd-panel { border-top:0; }
 .data-library .rd-import-form { margin:0; padding:0; border:0; min-width:0; }
 .fx-app.fx-shell-story[data-theme] .fx-content .data-library-dialog { width:min(960px,calc(100vw - 32px)); max-width:960px; max-height:calc(100dvh - 48px); margin:auto; padding:0; border:1px solid var(--wm-border); border-radius:var(--ds-radius-dialog); background:var(--wm-canvas); color:var(--wm-content); font:inherit; overflow:hidden; }

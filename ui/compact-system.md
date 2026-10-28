@@ -53,27 +53,31 @@ Owner đã bỏ phương án hover xanh đục; hover chung dùng hai độ sán
 
 | Vai trò | Dark | Light |
 | --- | --- | --- |
-| Nền trang | `#0C0E12` | `#F6F8FB` |
-| Nền panel | `#14171C` | `#FFFFFF` |
-| Nút phụ | `#222832` | `#E8EDF4` |
-| Hover control | `#343C48` | `#D6DFEA` |
-| Hover dòng | `#1D232C` | `#F0F4F9` |
-| Dòng đã chọn | `#30251C` | `#FFF0E3` |
-| Chữ chính | `#EDF1F7` | `#17202C` |
-| Chữ phụ | `#B4BFCE` | `#465568` |
-| Cam nút chính | `#FF963F` | `#B84D0E` |
-| Xanh biển focus/thông tin | `#4CA6FF` | `#1766C1` |
-| Xanh lá thành công/lãi | `#22C78A` | `#06734F` |
-| Đỏ lỗi/lỗ | `#FF5364` | `#BE2438` |
-| Đỏ nền xoá | `#BD253B` | `#BE2438` |
-| Vàng cảnh báo | `#F4BE3B` | `#8A6200` |
-| Tím biểu đồ | `#AC8CFF` | `#7144B7` |
-| Viền cấu trúc | `#424E5E` | `#BCC6D3` |
-| Viền control thiết yếu | `#68778C` | `#78879A` |
+| Nền trang | `#080808` | `#F5F5F5` |
+| Nền panel | `#121212` | `#FFFFFF` |
+| Menu/lớp nổi | `#1C1C1C` | `#F0F0F0` |
+| Nút phụ | `#242424` | `#E9E9E9` |
+| Hover control | `#383838` | `#D9D9D9` |
+| Hover dòng | `#1D1D1D` | `#EFEFEF` |
+| Dòng đã chọn | `#322313` | `#FFF0DD` |
+| Chữ chính | `#F1F1F1` | `#171717` |
+| Chữ phụ | `#BDBDBD` | `#505050` |
+| Chữ disabled | `#909090` | `#6B6B6B` |
+| Cam nút chính, chữ tối | `#FF9A1F` | `#FF9A1F` |
+| Cam chữ/icon | `#FF9A1F` | `#9C4400` |
+| Xanh biển focus/thông tin | `#5AAEFF` | `#1768C4` |
+| Xanh lá thành công/lãi | `#20D493` | `#087D50` |
+| Đỏ lỗi/lỗ | `#FF5C6C` | `#C62F43` |
+| Đỏ chữ trên hover control | `#FF8792` | `#A92235` |
+| Đỏ nền xoá | `#BD253B` | `#C62F43` |
+| Vàng cảnh báo | `#F2C94C` | `#855F00` |
+| Tím biểu đồ | `#B096FF` | `#7850B8` |
+| Viền cấu trúc | `#424242` | `#BDBDBD` |
+| Viền control thiết yếu | `#777777` | `#777777` |
 
-Palette 28/10/2026 được pin ở `annam-compact@0.2.0`; không sửa đè bản0.1.1.
-Status, badge và report dùng cùng semantic family. Lịch pha nền22% ở dark,
-10% ở light để chữ nhỏ giữ tương phản. Tag giữ tên màu người dùng đã chọn,
+Palette 28/10/2026 được pin ở `annam-compact@0.3.0`; không sửa đè các bản cũ.
+Status, badge và report dùng cùng semantic family. Lịch Analytics pha nền22% ở dark,
+10% ở light; lịch Live dùng16%/10%, hover22%/16%. Tag giữ tên màu người dùng đã chọn,
 nhưng shade và nền đổi theo theme. Nền badge không phụ thuộc màu dòng bên dưới.
 Nhãn chart nền xanh/đỏ đặc dùng `on-positive/on-negative`: chữ tối ở dark,
 trắng ở light. Donut cũng dùng foreground đi cặp; không ép chữ trắng trên mọi lát.
@@ -95,7 +99,7 @@ nền semantic riêng hoặc chữ chính; không hạ tương phản bằng l�
 | Switch | Xám khi tắt | Không đổi vai trò | Xanh biển khi bật; xanh lá dành cho kết quả thành công |
 | Option dropdown | Không tô nền lâu dài | Nền hover control | Tích cam phía phải; focus bàn phím dùng nền + gạch chân, không viền |
 | Ô nhập | Viền1px | Viền rõ hơn | Viền/focus xanh; lỗi đỏ bên cạnh ô |
-| Nút không khả dụng | Giữ chỗ, giảm nhấn mạnh | Không hiện hover enabled | Không bấm/submit được |
+| Nút không khả dụng | Nền control, chữ disabled; không giảm opacity cả nút | Không hiện hover enabled | Không bấm/submit được |
 
 Dropdown nằm trong form dùng `FxSelect` với `className="is-field"`: cùng viền
 1px, góc 8px và chiều cao một dòng 36px như textbox. Bình thường viền nhẹ,

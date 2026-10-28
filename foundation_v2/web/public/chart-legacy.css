@@ -5,24 +5,24 @@ body.chart-page { width: calc(100% - var(--legacy-reserved-width, 0px)); overflo
 /* v23's Ctrl+zoom teaching hint; leave dialogs, alerts and errors visible. */
 .container-vZPBcQQO { display: none !important; }
 :root {
-  --tv-color-platform-background: #D2D5DA;
+  --tv-color-platform-background: #BDBDBD;
   --tv-color-pane-background: #FFFFFF;
-  --tv-color-toolbar-button-background-hover: #F3F5F7;
-  --tv-color-toolbar-button-background-active: #E5EFFB;
+  --tv-color-toolbar-button-background-hover: #D9D9D9;
+  --tv-color-toolbar-button-background-active: #E9E9E9;
   --tv-color-toolbar-button-text: #15181C;
   --tv-color-toolbar-button-text-hover: #15181C;
   --tv-color-toolbar-button-text-active: #15181C;
 }
 .theme-dark {
-  --tv-color-platform-background: #3D444C;
+  --tv-color-platform-background: #424242;
   --tv-color-pane-background: #080808;
-  --tv-color-toolbar-button-background-hover: #3D4148;
-  --tv-color-toolbar-button-background-active: #232D38;
+  --tv-color-toolbar-button-background-hover: #383838;
+  --tv-color-toolbar-button-background-active: #242424;
   --tv-color-toolbar-button-text: #FFFFFF;
   --tv-color-toolbar-button-text-hover: #FFFFFF;
   --tv-color-toolbar-button-text-active: #FFFFFF;
 }
-.theme-dark :is(.layout__area--top, .layout__area--left, .layout__area--bottom) { background: #141414; }
+.theme-dark :is(.layout__area--top, .layout__area--left, .layout__area--bottom) { background: #121212; }
 
 /* v23 extension groups only. Native intervals/style/indicator/undo/settings keep their markup. */
 .legacy-market-group { order: 0; }

@@ -3,19 +3,19 @@
 // parent document's --project-* variables at runtime.
 export function nativeChartPalette(theme) {
   return {
-    canvas: theme === 'light' ? '#FFFFFF' : '#0C0E12',
-    surface: theme === 'light' ? '#FFFFFF' : '#14171C',
-    grid: theme === 'light' ? '#DCE3ED' : '#2A3340',
-    border: theme === 'light' ? '#BCC6D3' : '#424E5E',
-    text: theme === 'light' ? '#17202C' : '#EDF1F7',
-    positive: theme === 'light' ? '#06734F' : '#22C78A',
-    negative: theme === 'light' ? '#BE2438' : '#FF5364',
+    canvas: theme === 'light' ? '#FFFFFF' : '#080808',
+    surface: theme === 'light' ? '#FFFFFF' : '#121212',
+    grid: theme === 'light' ? '#DEDEDE' : '#2B2B2B',
+    border: theme === 'light' ? '#BDBDBD' : '#424242',
+    text: theme === 'light' ? '#171717' : '#F1F1F1',
+    positive: theme === 'light' ? '#087D50' : '#20D493',
+    negative: theme === 'light' ? '#C62F43' : '#FF5C6C',
     // Candles need a higher-saturation pair than UI status colors so thin
     // bodies and wicks remain crisp against the chart canvas.
     candlePositive: theme === 'light' ? '#087F6A' : '#089981',
     candleNegative: theme === 'light' ? '#C52F45' : '#F23645',
-    primary: theme === 'light' ? '#1766C1' : '#4CA6FF',
-    highlight: theme === 'light' ? '#B84D0E' : '#FF963F',
+    primary: theme === 'light' ? '#1768C4' : '#5AAEFF',
+    highlight: theme === 'light' ? '#9C4400' : '#FF9A1F',
     // Protection lines follow FXReplay's orange SL / green TP convention;
     // keep this chart-only token distinct from the muted app warning copy.
     warning: theme === 'light' ? '#B56800' : '#F59E0B',
