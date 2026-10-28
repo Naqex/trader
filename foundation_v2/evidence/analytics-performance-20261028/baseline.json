@@ -1,0 +1,1050 @@
+{
+  "cases": [
+    {
+      "name": "prop-real",
+      "ms": 45147.981400000004,
+      "ready": false,
+      "requests": [
+        {
+          "path": "/api/v2/events",
+          "status": 200,
+          "timing": {
+            "startTime": 1793179100329.913,
+            "domainLookupStart": -1,
+            "domainLookupEnd": -1,
+            "connectStart": -1,
+            "secureConnectionStart": -1,
+            "connectEnd": -1,
+            "requestStart": 33.642,
+            "responseStart": 39.239,
+            "responseEnd": -1
+          }
+        },
+        {
+          "path": "/api/v2/prop/reports",
+          "status": 200,
+          "timing": {
+            "startTime": 1793179100563.3772,
+            "domainLookupStart": -1,
+            "domainLookupEnd": -1,
+            "connectStart": -1,
+            "secureConnectionStart": -1,
+            "connectEnd": -1,
+            "requestStart": 0.292,
+            "responseStart": 149.311,
+            "responseEnd": 157.893
+          }
+        },
+        {
+          "path": "/api/v2/prop/reports",
+          "status": 200,
+          "timing": {
+            "startTime": 1793179100787.0332,
+            "domainLookupStart": -1,
+            "domainLookupEnd": -1,
+            "connectStart": -1,
+            "secureConnectionStart": -1,
+            "connectEnd": -1,
+            "requestStart": 0.315,
+            "responseStart": 465.251,
+            "responseEnd": 467.598
+          }
+        },
+        {
+          "path": "/api/v2/journal/context",
+          "status": 200,
+          "timing": {
+            "startTime": 1793179100759.258,
+            "domainLookupStart": -1,
+            "domainLookupEnd": -1,
+            "connectStart": -1,
+            "secureConnectionStart": -1,
+            "connectEnd": -1,
+            "requestStart": 0.272,
+            "responseStart": 520.264,
+            "responseEnd": 536.304
+          }
+        },
+        {
+          "path": "/api/v2/journal/context",
+          "status": 200,
+          "timing": {
+            "startTime": 1793179117856.7122,
+            "domainLookupStart": 0.205,
+            "domainLookupEnd": 0.212,
+            "connectStart": 0.212,
+            "secureConnectionStart": -1,
+            "connectEnd": 0.665,
+            "requestStart": 0.734,
+            "responseStart": 546.575,
+            "responseEnd": 549.746
+          }
+        },
+        {
+          "path": "/api/v2/journal/context",
+          "status": 200,
+          "timing": {
+            "startTime": 1793179137600.9573,
+            "domainLookupStart": 0.188,
+            "domainLookupEnd": 0.195,
+            "connectStart": 0.195,
+            "secureConnectionStart": -1,
+            "connectEnd": 0.668,
+            "requestStart": 0.749,
+            "responseStart": 389.902,
+            "responseEnd": 392.339
+          }
+        }
+      ],
+      "errors": [],
+      "tasks": [
+        {
+          "start": 135.20000000298023,
+          "ms": 106
+        }
+      ],
+      "resources": [
+        {
+          "path": "/project-palette.css",
+          "ms": 13.899999998509884,
+          "start": 34.900000005960464,
+          "bytes": 1394
+        },
+        {
+          "path": "/assets/index-CgWu5jCm.js",
+          "ms": 46,
+          "start": 35.20000000298023,
+          "bytes": 209736
+        },
+        {
+          "path": "/assets/index-CjIkl0c3.css",
+          "ms": 20.5,
+          "start": 35.30000000447035,
+          "bytes": 38846
+        },
+        {
+          "path": "/brand/wmreplay.svg",
+          "ms": 118.69999999552965,
+          "start": 145.90000000596046,
+          "bytes": 571
+        },
+        {
+          "path": "/assets/PropAnalytics-DptWI-He.js",
+          "ms": 90.5,
+          "start": 187.70000000298023,
+          "bytes": 2369
+        },
+        {
+          "path": "/assets/FxAnalytics-Cq91GJrm.js",
+          "ms": 99.19999999552965,
+          "start": 187.90000000596046,
+          "bytes": 38938
+        },
+        {
+          "path": "/assets/DataTable-kFSZrh4d.js",
+          "ms": 90.30000000447035,
+          "start": 188,
+          "bytes": 903
+        },
+        {
+          "path": "/assets/DataTable-Bpbyxpf0.css",
+          "ms": 89.70000000298023,
+          "start": 188.10000000149012,
+          "bytes": 2018
+        },
+        {
+          "path": "/assets/tradingAnalyticsModel-BqtsZDuj.js",
+          "ms": 105.60000000149012,
+          "start": 188.30000000447035,
+          "bytes": 7246
+        },
+        {
+          "path": "/assets/reportChartModel-C2FB2uRK.js",
+          "ms": 106.09999999403954,
+          "start": 188.40000000596046,
+          "bytes": 2254
+        },
+        {
+          "path": "/assets/ProjectDateInput-D-mnktJV.js",
+          "ms": 106.59999999403954,
+          "start": 188.40000000596046,
+          "bytes": 4499
+        },
+        {
+          "path": "/assets/ProjectDateInput-CH6p1VXk.css",
+          "ms": 89.29999999701977,
+          "start": 188.80000000447035,
+          "bytes": 1822
+        },
+        {
+          "path": "/assets/ReportInfo-Bj2mFz06.js",
+          "ms": 106.29999999701977,
+          "start": 189.20000000298023,
+          "bytes": 354
+        },
+        {
+          "path": "/assets/ReportInfo-CXPAvxuT.css",
+          "ms": 88.5,
+          "start": 189.30000000447035,
+          "bytes": 463
+        },
+        {
+          "path": "/assets/CalendarView-BzKM5hM4.js",
+          "ms": 113.70000000298023,
+          "start": 189.5,
+          "bytes": 2211
+        },
+        {
+          "path": "/assets/calendarViewModel-DfbO4Uhl.js",
+          "ms": 113.80000000447035,
+          "start": 189.60000000149012,
+          "bytes": 622
+        },
+        {
+          "path": "/assets/CalendarView-qkCJIuES.css",
+          "ms": 92.79999999701977,
+          "start": 189.70000000298023,
+          "bytes": 2588
+        },
+        {
+          "path": "/assets/LegacyModal-DZGg8vr2.js",
+          "ms": 118.39999999850988,
+          "start": 189.80000000447035,
+          "bytes": 3007
+        },
+        {
+          "path": "/assets/LegacyModal-Bet535Yx.css",
+          "ms": 92.19999999552965,
+          "start": 189.90000000596046,
+          "bytes": 1133
+        },
+        {
+          "path": "/assets/FormValidation-CSw0Xp5L.css",
+          "ms": 93.80000000447035,
+          "start": 190,
+          "bytes": 397
+        },
+        {
+          "path": "/assets/FormValidation-YyLGmkac.js",
+          "ms": 115.70000000298023,
+          "start": 190,
+          "bytes": 598
+        },
+        {
+          "path": "/assets/FxAnalytics-CwbH_SKV.css",
+          "ms": 97.70000000298023,
+          "start": 190.10000000149012,
+          "bytes": 10181
+        },
+        {
+          "path": "/assets/AnalyticsWorkspace-D9RBfORV.js",
+          "ms": 118.39999999850988,
+          "start": 190.20000000298023,
+          "bytes": 7793
+        },
+        {
+          "path": "/assets/FxTradeLedger-UF26mmMF.js",
+          "ms": 119.19999999552965,
+          "start": 190.30000000447035,
+          "bytes": 7136
+        },
+        {
+          "path": "/assets/tableModel-K7pdYJqn.js",
+          "ms": 119.69999999552965,
+          "start": 190.40000000596046,
+          "bytes": 866
+        },
+        {
+          "path": "/assets/useReadRefresh-D44hG5sB.js",
+          "ms": 124.10000000149012,
+          "start": 190.5,
+          "bytes": 1907
+        },
+        {
+          "path": "/assets/TableColumnControl-CToUQHBV.js",
+          "ms": 121,
+          "start": 190.60000000149012,
+          "bytes": 709
+        },
+        {
+          "path": "/assets/PaginationFooter-CDd_OBdQ.js",
+          "ms": 126.39999999850988,
+          "start": 190.60000000149012,
+          "bytes": 1183
+        },
+        {
+          "path": "/assets/PaginationFooter-DWs7EQwj.css",
+          "ms": 92.59999999403954,
+          "start": 190.90000000596046,
+          "bytes": 908
+        },
+        {
+          "path": "/assets/FxTradeLedger-BPaK2S9Z.css",
+          "ms": 102.39999999850988,
+          "start": 191.20000000298023,
+          "bytes": 5889
+        },
+        {
+          "path": "/assets/useContentReadyMetric-B-Qx8bXo.js",
+          "ms": 125,
+          "start": 191.80000000447035,
+          "bytes": 508
+        },
+        {
+          "path": "/assets/analyticsViewModel-SjxVBf94.js",
+          "ms": 125.19999999552965,
+          "start": 191.90000000596046,
+          "bytes": 2660
+        },
+        {
+          "path": "/api/v2/prop/reports",
+          "ms": 157.69999999552965,
+          "start": 502.40000000596046,
+          "bytes": 47991
+        },
+        {
+          "path": "/api/v2/replay/sessions/d848723290084cf98e8d03de6cff4dbf/analytics",
+          "ms": 15004.69999999553,
+          "start": 689.8000000044703,
+          "bytes": 0
+        },
+        {
+          "path": "/api/v2/journal/context",
+          "ms": 536.1999999955297,
+          "start": 690.4000000059605,
+          "bytes": 571
+        },
+        {
+          "path": "/api/v2/prop/reports",
+          "ms": 467.40000000596046,
+          "start": 732,
+          "bytes": 47991
+        },
+        {
+          "path": "/api/v2/replay/sessions/d848723290084cf98e8d03de6cff4dbf/analytics",
+          "ms": 15000.80000000447,
+          "start": 17796,
+          "bytes": 0
+        },
+        {
+          "path": "/api/v2/journal/context",
+          "ms": 549.5,
+          "start": 17800.90000000596,
+          "bytes": 571
+        },
+        {
+          "path": "/api/v2/journal/context",
+          "ms": 392.1000000014901,
+          "start": 37545.80000000447,
+          "bytes": 571
+        }
+      ],
+      "text": " Đang chạy\nQuản lý thử thách\nLoại\nTài sản\nHướng lệnh\nKết quả\nNhãn\nChiến lược\nNgày\nGiờ\nMúi giờ (UTC+0)\nNgày đóng lệnh\nÁp dụng\n\nKhông tải được kết quả: read_timeout\n\nMục tiêu thử thách\tKết quả\tTrạng thái\n\nTổng thời gian kiểm thử\n\t0 ngày 20 giờ\t\nĐang thực hiện\n\nGiới hạn lỗ ngày 500 $\n\t0 $ (0%)\t\nTrong giới hạn\n\nGiới hạn sụt giảm vốn tổng 1.000 $\n\t0 $ (0%)\t\nTrong giới hạn\n\nMục tiêu lợi nhuận 1.000 $\n\t0 $ (0%)\t\nĐang thực hiện\n\nNgày đủ điều kiện\n\t1\t\nĐạt"
+    },
+    {
+      "name": "prop-real-repeat",
+      "ms": 45093.1669,
+      "ready": false,
+      "requests": [
+        {
+          "path": "/api/v2/events",
+          "status": 200,
+          "timing": {
+            "startTime": 1793179145516.413,
+            "domainLookupStart": -1,
+            "domainLookupEnd": -1,
+            "connectStart": -1,
+            "secureConnectionStart": -1,
+            "connectEnd": -1,
+            "requestStart": 31.107,
+            "responseStart": 34.291,
+            "responseEnd": -1
+          }
+        },
+        {
+          "path": "/api/v2/prop/reports",
+          "status": 200,
+          "timing": {
+            "startTime": 1793179145759.377,
+            "domainLookupStart": -1,
+            "domainLookupEnd": -1,
+            "connectStart": -1,
+            "secureConnectionStart": -1,
+            "connectEnd": -1,
+            "requestStart": 0.331,
+            "responseStart": 123.258,
+            "responseEnd": 125.748
+          }
+        },
+        {
+          "path": "/api/v2/journal/context",
+          "status": 200,
+          "timing": {
+            "startTime": 1793179145913.9158,
+            "domainLookupStart": -1,
+            "domainLookupEnd": -1,
+            "connectStart": -1,
+            "secureConnectionStart": -1,
+            "connectEnd": -1,
+            "requestStart": 0.367,
+            "responseStart": 234.678,
+            "responseEnd": 237.611
+          }
+        },
+        {
+          "path": "/api/v2/prop/reports",
+          "status": 200,
+          "timing": {
+            "startTime": 1793179145975.2,
+            "domainLookupStart": -1,
+            "domainLookupEnd": -1,
+            "connectStart": -1,
+            "secureConnectionStart": -1,
+            "connectEnd": -1,
+            "requestStart": 0.281,
+            "responseStart": 226.303,
+            "responseEnd": 229.234
+          }
+        },
+        {
+          "path": "/api/v2/journal/context",
+          "status": 200,
+          "timing": {
+            "startTime": 1793179162904.824,
+            "domainLookupStart": 0.193,
+            "domainLookupEnd": 0.199,
+            "connectStart": 0.199,
+            "secureConnectionStart": -1,
+            "connectEnd": 0.665,
+            "requestStart": 0.73,
+            "responseStart": 398.694,
+            "responseEnd": 401.168
+          }
+        },
+        {
+          "path": "/api/v2/journal/context",
+          "status": 200,
+          "timing": {
+            "startTime": 1793179183345.3728,
+            "domainLookupStart": 0.22,
+            "domainLookupEnd": 0.227,
+            "connectStart": 0.227,
+            "secureConnectionStart": -1,
+            "connectEnd": 0.71,
+            "requestStart": 0.777,
+            "responseStart": 271.63,
+            "responseEnd": 275.675
+          }
+        }
+      ],
+      "errors": [],
+      "tasks": [
+        {
+          "start": 88.39999999850988,
+          "ms": 95
+        }
+      ],
+      "resources": [
+        {
+          "path": "/project-palette.css",
+          "ms": 6.799999997019768,
+          "start": 9.799999997019768,
+          "bytes": 1394
+        },
+        {
+          "path": "/assets/index-CgWu5jCm.js",
+          "ms": 32.399999998509884,
+          "start": 10,
+          "bytes": 209736
+        },
+        {
+          "path": "/assets/index-CjIkl0c3.css",
+          "ms": 14.600000001490116,
+          "start": 10.099999994039536,
+          "bytes": 38846
+        },
+        {
+          "path": "/brand/wmreplay.svg",
+          "ms": 106.60000000149012,
+          "start": 95.39999999850988,
+          "bytes": 571
+        },
+        {
+          "path": "/assets/PropAnalytics-DptWI-He.js",
+          "ms": 74.10000000149012,
+          "start": 134.39999999850988,
+          "bytes": 2369
+        },
+        {
+          "path": "/assets/FxAnalytics-Cq91GJrm.js",
+          "ms": 81.70000000298023,
+          "start": 134.59999999403954,
+          "bytes": 38938
+        },
+        {
+          "path": "/assets/DataTable-kFSZrh4d.js",
+          "ms": 77.70000000298023,
+          "start": 134.69999999552965,
+          "bytes": 903
+        },
+        {
+          "path": "/assets/DataTable-Bpbyxpf0.css",
+          "ms": 77.29999999701977,
+          "start": 134.79999999701977,
+          "bytes": 2018
+        },
+        {
+          "path": "/assets/tradingAnalyticsModel-BqtsZDuj.js",
+          "ms": 78.19999999552965,
+          "start": 134.89999999850988,
+          "bytes": 7246
+        },
+        {
+          "path": "/assets/reportChartModel-C2FB2uRK.js",
+          "ms": 77.59999999403954,
+          "start": 135,
+          "bytes": 2254
+        },
+        {
+          "path": "/assets/ProjectDateInput-D-mnktJV.js",
+          "ms": 91.30000000447035,
+          "start": 135.19999999552965,
+          "bytes": 4499
+        },
+        {
+          "path": "/assets/ProjectDateInput-CH6p1VXk.css",
+          "ms": 77,
+          "start": 135.29999999701977,
+          "bytes": 1822
+        },
+        {
+          "path": "/assets/ReportInfo-Bj2mFz06.js",
+          "ms": 87.70000000298023,
+          "start": 135.59999999403954,
+          "bytes": 354
+        },
+        {
+          "path": "/assets/ReportInfo-CXPAvxuT.css",
+          "ms": 80.5,
+          "start": 135.69999999552965,
+          "bytes": 463
+        },
+        {
+          "path": "/assets/CalendarView-BzKM5hM4.js",
+          "ms": 92.60000000149012,
+          "start": 135.79999999701977,
+          "bytes": 2211
+        },
+        {
+          "path": "/assets/calendarViewModel-DfbO4Uhl.js",
+          "ms": 92.89999999850988,
+          "start": 135.89999999850988,
+          "bytes": 622
+        },
+        {
+          "path": "/assets/CalendarView-qkCJIuES.css",
+          "ms": 81.70000000298023,
+          "start": 136.09999999403954,
+          "bytes": 2588
+        },
+        {
+          "path": "/assets/LegacyModal-DZGg8vr2.js",
+          "ms": 96.60000000149012,
+          "start": 136.19999999552965,
+          "bytes": 3007
+        },
+        {
+          "path": "/assets/LegacyModal-Bet535Yx.css",
+          "ms": 82.79999999701977,
+          "start": 136.39999999850988,
+          "bytes": 1133
+        },
+        {
+          "path": "/assets/FormValidation-YyLGmkac.js",
+          "ms": 94,
+          "start": 136.5,
+          "bytes": 598
+        },
+        {
+          "path": "/assets/FormValidation-CSw0Xp5L.css",
+          "ms": 82.70000000298023,
+          "start": 136.69999999552965,
+          "bytes": 397
+        },
+        {
+          "path": "/assets/FxAnalytics-CwbH_SKV.css",
+          "ms": 85,
+          "start": 136.69999999552965,
+          "bytes": 10181
+        },
+        {
+          "path": "/assets/AnalyticsWorkspace-D9RBfORV.js",
+          "ms": 98.89999999850988,
+          "start": 136.89999999850988,
+          "bytes": 7793
+        },
+        {
+          "path": "/assets/FxTradeLedger-UF26mmMF.js",
+          "ms": 100.10000000149012,
+          "start": 136.89999999850988,
+          "bytes": 7136
+        },
+        {
+          "path": "/assets/tableModel-K7pdYJqn.js",
+          "ms": 97.89999999850988,
+          "start": 137,
+          "bytes": 866
+        },
+        {
+          "path": "/assets/useReadRefresh-D44hG5sB.js",
+          "ms": 100.79999999701977,
+          "start": 137,
+          "bytes": 1907
+        },
+        {
+          "path": "/assets/TableColumnControl-CToUQHBV.js",
+          "ms": 100.5,
+          "start": 137.09999999403954,
+          "bytes": 709
+        },
+        {
+          "path": "/assets/PaginationFooter-CDd_OBdQ.js",
+          "ms": 102.89999999850988,
+          "start": 137.29999999701977,
+          "bytes": 1183
+        },
+        {
+          "path": "/assets/PaginationFooter-DWs7EQwj.css",
+          "ms": 85.19999999552965,
+          "start": 137.39999999850988,
+          "bytes": 908
+        },
+        {
+          "path": "/assets/FxTradeLedger-BPaK2S9Z.css",
+          "ms": 86.19999999552965,
+          "start": 137.5,
+          "bytes": 5889
+        },
+        {
+          "path": "/assets/useContentReadyMetric-B-Qx8bXo.js",
+          "ms": 101.60000000149012,
+          "start": 137.59999999403954,
+          "bytes": 508
+        },
+        {
+          "path": "/assets/analyticsViewModel-SjxVBf94.js",
+          "ms": 103.5,
+          "start": 137.69999999552965,
+          "bytes": 2660
+        },
+        {
+          "path": "/api/v2/prop/reports",
+          "ms": 125.39999999850988,
+          "start": 447.29999999701977,
+          "bytes": 47991
+        },
+        {
+          "path": "/api/v2/replay/sessions/d848723290084cf98e8d03de6cff4dbf/analytics",
+          "ms": 15006.89999999851,
+          "start": 600.8999999985099,
+          "bytes": 0
+        },
+        {
+          "path": "/api/v2/journal/context",
+          "ms": 237.39999999850988,
+          "start": 601.5,
+          "bytes": 571
+        },
+        {
+          "path": "/api/v2/prop/reports",
+          "ms": 229,
+          "start": 662.7999999970198,
+          "bytes": 47991
+        },
+        {
+          "path": "/api/v2/replay/sessions/d848723290084cf98e8d03de6cff4dbf/analytics",
+          "ms": 15005.10000000149,
+          "start": 17587.69999999553,
+          "bytes": 0
+        },
+        {
+          "path": "/api/v2/journal/context",
+          "ms": 400.8999999985099,
+          "start": 17592.69999999553,
+          "bytes": 571
+        },
+        {
+          "path": "/api/v2/journal/context",
+          "ms": 275.3999999985099,
+          "start": 38031.69999999553,
+          "bytes": 571
+        }
+      ],
+      "text": " Đang chạy\nQuản lý thử thách\nLoại\nTài sản\nHướng lệnh\nKết quả\nNhãn\nChiến lược\nNgày\nGiờ\nMúi giờ (UTC+0)\nNgày đóng lệnh\nÁp dụng\n\nKhông tải được kết quả: read_timeout\n\nMục tiêu thử thách\tKết quả\tTrạng thái\n\nTổng thời gian kiểm thử\n\t0 ngày 20 giờ\t\nĐang thực hiện\n\nGiới hạn lỗ ngày 500 $\n\t0 $ (0%)\t\nTrong giới hạn\n\nGiới hạn sụt giảm vốn tổng 1.000 $\n\t0 $ (0%)\t\nTrong giới hạn\n\nMục tiêu lợi nhuận 1.000 $\n\t0 $ (0%)\t\nĐang thực hiện\n\nNgày đủ điều kiện\n\t1\t\nĐạt"
+    },
+    {
+      "name": "prop-demo",
+      "ms": 559.1347000000096,
+      "ready": true,
+      "requests": [],
+      "errors": [],
+      "tasks": [
+        {
+          "start": 85.5,
+          "ms": 96
+        }
+      ],
+      "resources": [
+        {
+          "path": "/project-palette.css",
+          "ms": 6.5,
+          "start": 9.600000001490116,
+          "bytes": 1394
+        },
+        {
+          "path": "/assets/index-CgWu5jCm.js",
+          "ms": 31.19999999552965,
+          "start": 10,
+          "bytes": 209736
+        },
+        {
+          "path": "/assets/index-CjIkl0c3.css",
+          "ms": 13.399999998509884,
+          "start": 10.100000001490116,
+          "bytes": 38846
+        },
+        {
+          "path": "/brand/wmreplay.svg",
+          "ms": 93.30000000447035,
+          "start": 94.29999999701977,
+          "bytes": 571
+        },
+        {
+          "path": "/assets/DemoPreview-CThw2WK-.js",
+          "ms": 85,
+          "start": 131.69999999552965,
+          "bytes": 8570
+        },
+        {
+          "path": "/assets/FxTradeLedger-UF26mmMF.js",
+          "ms": 86.20000000298023,
+          "start": 131.89999999850988,
+          "bytes": 7136
+        },
+        {
+          "path": "/assets/DataTable-kFSZrh4d.js",
+          "ms": 85.79999999701977,
+          "start": 132,
+          "bytes": 903
+        },
+        {
+          "path": "/assets/DataTable-Bpbyxpf0.css",
+          "ms": 94.90000000596046,
+          "start": 132.19999999552965,
+          "bytes": 2018
+        },
+        {
+          "path": "/assets/tableModel-K7pdYJqn.js",
+          "ms": 91,
+          "start": 132.39999999850988,
+          "bytes": 866
+        },
+        {
+          "path": "/assets/useReadRefresh-D44hG5sB.js",
+          "ms": 119.70000000298023,
+          "start": 132.69999999552965,
+          "bytes": 1907
+        },
+        {
+          "path": "/assets/FxAnalytics-Cq91GJrm.js",
+          "ms": 127.89999999850988,
+          "start": 132.89999999850988,
+          "bytes": 38938
+        },
+        {
+          "path": "/assets/tradingAnalyticsModel-BqtsZDuj.js",
+          "ms": 121.29999999701977,
+          "start": 133.10000000149012,
+          "bytes": 7246
+        },
+        {
+          "path": "/assets/reportChartModel-C2FB2uRK.js",
+          "ms": 121,
+          "start": 133.29999999701977,
+          "bytes": 2254
+        },
+        {
+          "path": "/assets/ProjectDateInput-D-mnktJV.js",
+          "ms": 123.5,
+          "start": 133.39999999850988,
+          "bytes": 4499
+        },
+        {
+          "path": "/assets/ProjectDateInput-CH6p1VXk.css",
+          "ms": 93.29999999701977,
+          "start": 133.60000000149012,
+          "bytes": 1822
+        },
+        {
+          "path": "/assets/ReportInfo-Bj2mFz06.js",
+          "ms": 121.10000000149012,
+          "start": 133.79999999701977,
+          "bytes": 354
+        },
+        {
+          "path": "/assets/ReportInfo-CXPAvxuT.css",
+          "ms": 93.79999999701977,
+          "start": 133.89999999850988,
+          "bytes": 463
+        },
+        {
+          "path": "/assets/CalendarView-BzKM5hM4.js",
+          "ms": 132.19999999552965,
+          "start": 134.10000000149012,
+          "bytes": 2211
+        },
+        {
+          "path": "/assets/calendarViewModel-DfbO4Uhl.js",
+          "ms": 128.60000000149012,
+          "start": 134.19999999552965,
+          "bytes": 622
+        },
+        {
+          "path": "/assets/CalendarView-qkCJIuES.css",
+          "ms": 95.30000000447035,
+          "start": 134.29999999701977,
+          "bytes": 2588
+        },
+        {
+          "path": "/assets/LegacyModal-DZGg8vr2.js",
+          "ms": 134.10000000149012,
+          "start": 134.39999999850988,
+          "bytes": 3007
+        },
+        {
+          "path": "/assets/LegacyModal-Bet535Yx.css",
+          "ms": 94.39999999850988,
+          "start": 134.60000000149012,
+          "bytes": 1133
+        },
+        {
+          "path": "/assets/FormValidation-YyLGmkac.js",
+          "ms": 128.60000000149012,
+          "start": 134.69999999552965,
+          "bytes": 598
+        },
+        {
+          "path": "/assets/FormValidation-CSw0Xp5L.css",
+          "ms": 94.89999999850988,
+          "start": 134.79999999701977,
+          "bytes": 397
+        },
+        {
+          "path": "/assets/FxAnalytics-CwbH_SKV.css",
+          "ms": 98.5,
+          "start": 134.89999999850988,
+          "bytes": 10181
+        },
+        {
+          "path": "/assets/TableColumnControl-CToUQHBV.js",
+          "ms": 128.89999999850988,
+          "start": 135.10000000149012,
+          "bytes": 709
+        },
+        {
+          "path": "/assets/PaginationFooter-CDd_OBdQ.js",
+          "ms": 140.40000000596046,
+          "start": 135.19999999552965,
+          "bytes": 1183
+        },
+        {
+          "path": "/assets/PaginationFooter-DWs7EQwj.css",
+          "ms": 96.60000000149012,
+          "start": 135.29999999701977,
+          "bytes": 908
+        },
+        {
+          "path": "/assets/FxTradeLedger-BPaK2S9Z.css",
+          "ms": 106.79999999701977,
+          "start": 135.5,
+          "bytes": 5889
+        },
+        {
+          "path": "/assets/SessionFilter-RqXwjFY6.js",
+          "ms": 140.79999999701977,
+          "start": 135.60000000149012,
+          "bytes": 2104
+        },
+        {
+          "path": "/assets/analyticsViewModel-SjxVBf94.js",
+          "ms": 140.5,
+          "start": 135.60000000149012,
+          "bytes": 2660
+        },
+        {
+          "path": "/assets/SessionFilter-D9TXwmKn.css",
+          "ms": 96.90000000596046,
+          "start": 135.69999999552965,
+          "bytes": 938
+        },
+        {
+          "path": "/assets/useTableSort-BUrPGZsL.js",
+          "ms": 136.89999999850988,
+          "start": 135.79999999701977,
+          "bytes": 725
+        },
+        {
+          "path": "/assets/SessionPerformance-a_A72YuA.js",
+          "ms": 142.39999999850988,
+          "start": 135.79999999701977,
+          "bytes": 7377
+        },
+        {
+          "path": "/assets/sessionSettingsModel-BXQnzrbG.js",
+          "ms": 144.89999999850988,
+          "start": 136,
+          "bytes": 723
+        },
+        {
+          "path": "/assets/SessionPerformance-D__AfaVl.css",
+          "ms": 104.29999999701977,
+          "start": 136.10000000149012,
+          "bytes": 2528
+        },
+        {
+          "path": "/assets/DashboardSessions-C6akRR-D.js",
+          "ms": 147.20000000298023,
+          "start": 136.19999999552965,
+          "bytes": 11106
+        },
+        {
+          "path": "/assets/sessionCatalog-ObKB7D7H.js",
+          "ms": 147.60000000149012,
+          "start": 136.29999999701977,
+          "bytes": 2483
+        },
+        {
+          "path": "/assets/SessionSettingsDrawer-TNwkpW8E.js",
+          "ms": 148.30000000447035,
+          "start": 136.29999999701977,
+          "bytes": 7514
+        },
+        {
+          "path": "/assets/dataLibraryModel-Cm7XSXy_.js",
+          "ms": 149,
+          "start": 136.39999999850988,
+          "bytes": 2404
+        },
+        {
+          "path": "/assets/sessionTradingOptions-peI-XuQH.js",
+          "ms": 154.39999999850988,
+          "start": 136.39999999850988,
+          "bytes": 1947
+        },
+        {
+          "path": "/assets/SessionSettingsDrawer-BfLJ7EbB.css",
+          "ms": 104.19999999552965,
+          "start": 136.5,
+          "bytes": 1409
+        },
+        {
+          "path": "/assets/session-settings-fjfP0f8W.css",
+          "ms": 105.40000000596046,
+          "start": 136.69999999552965,
+          "bytes": 1055
+        },
+        {
+          "path": "/assets/SessionDuplicateDialog-BMQc2All.js",
+          "ms": 155.40000000596046,
+          "start": 136.69999999552965,
+          "bytes": 2046
+        },
+        {
+          "path": "/assets/SessionDuplicateDialog-ZXBZVvNs.css",
+          "ms": 106,
+          "start": 136.89999999850988,
+          "bytes": 2296
+        },
+        {
+          "path": "/assets/SessionPicker-C4-GiCWG.js",
+          "ms": 157.39999999850988,
+          "start": 136.89999999850988,
+          "bytes": 5328
+        },
+        {
+          "path": "/assets/session-picker-MsQjsEFY.css",
+          "ms": 106,
+          "start": 137,
+          "bytes": 5640
+        },
+        {
+          "path": "/assets/DataDeskWorkspace-DmiOrPhg.js",
+          "ms": 159.29999999701977,
+          "start": 137.10000000149012,
+          "bytes": 15546
+        },
+        {
+          "path": "/assets/InstantDateInput-Bos3U4Pu.js",
+          "ms": 158.90000000596046,
+          "start": 137.19999999552965,
+          "bytes": 828
+        },
+        {
+          "path": "/assets/dataDeskApi-BSnak9qB.js",
+          "ms": 159.60000000149012,
+          "start": 137.29999999701977,
+          "bytes": 852
+        },
+        {
+          "path": "/assets/DataDeskWorkspace-buCUSUXF.css",
+          "ms": 108,
+          "start": 137.39999999850988,
+          "bytes": 6146
+        },
+        {
+          "path": "/assets/LiveWorkspace-Cf9KvV0w.js",
+          "ms": 161,
+          "start": 137.5,
+          "bytes": 2616
+        },
+        {
+          "path": "/assets/LiveWorkspace-CW4I-a1j.css",
+          "ms": 108.5,
+          "start": 137.60000000149012,
+          "bytes": 6367
+        },
+        {
+          "path": "/assets/PlaybookWorkspace-BrfZipgc.js",
+          "ms": 165,
+          "start": 137.69999999552965,
+          "bytes": 5269
+        },
+        {
+          "path": "/assets/playbookApi-DeO5RI_7.js",
+          "ms": 168.30000000447035,
+          "start": 137.69999999552965,
+          "bytes": 1684
+        },
+        {
+          "path": "/assets/PlaybookWorkspace-DQUaAwXM.css",
+          "ms": 112,
+          "start": 137.79999999701977,
+          "bytes": 1866
+        },
+        {
+          "path": "/assets/JournalWorkspace-TrDtVyU4.js",
+          "ms": 168.5,
+          "start": 137.89999999850988,
+          "bytes": 6106
+        },
+        {
+          "path": "/assets/JournalWorkspace-TXGcbyk3.css",
+          "ms": 112.60000000149012,
+          "start": 138,
+          "bytes": 5009
+        }
+      ],
+      "text": " dịch\n2\n$220\n3\n4\n5\n6\n1 giao dịch\n7\n$85\n8\n9\n10\n1 giao dịch\n11\n$260\n12\n13\n14\n1 giao dịch\n15\n$-90\n16\n17\n18\n1 giao dịch\n19\n$0\n20\n21\n22\n1 giao dịch\n23\n$140\n24\n25\n26\n27\n28\n29\n30\n1\n2\n3\n4\nTần suất giao dịch trung bình\nGiao dịch mỗi ngày\nTrung bình 1\n0\n0,25\n0,5\n0,75\n1\nT2\nT3\nT4\nT5\nT6\nT7\nCN\nGiao dịch mỗi tuần\nTrung bình 1,67\n0\n0,5\n1\n1,5\n2\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\nGiao dịch mỗi tháng\nTrung bình 6,67\n0\n2\n4\n6\n8\nT1\nT2\nT3\nT4\nT5\nT6\nT7\nT8\nT9\nT10\nT11\nT12"
+    }
+  ]
+}

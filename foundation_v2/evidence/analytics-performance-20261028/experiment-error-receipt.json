@@ -1,0 +1,12 @@
+{
+  "baseline": {
+    "router_ms": 25703.245,
+    "wall_ms": 25833.12560000195,
+    "status": 422
+  },
+  "candidate": {
+    "router_ms": 1777.675,
+    "wall_ms": 2047.2012000027462,
+    "status": 422
+  }
+}

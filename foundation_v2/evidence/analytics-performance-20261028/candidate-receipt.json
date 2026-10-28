@@ -1,0 +1,47 @@
+{
+  "samples": [
+    {
+      "baseline": 762.348,
+      "candidate": 766.097
+    },
+    {
+      "candidate": 89.306,
+      "baseline": 90.963
+    },
+    {
+      "baseline": 96.006,
+      "candidate": 89.13
+    },
+    {
+      "candidate": 91.581,
+      "baseline": 90.641
+    },
+    {
+      "baseline": 89.213,
+      "candidate": 88.51
+    },
+    {
+      "candidate": 87.075,
+      "baseline": 89.238
+    }
+  ],
+  "baseline_ms": [
+    762.348,
+    90.963,
+    96.006,
+    90.641,
+    89.213,
+    89.238
+  ],
+  "candidate_ms": [
+    766.097,
+    89.306,
+    89.13,
+    91.581,
+    88.51,
+    87.075
+  ],
+  "median_baseline": 90.80199999999999,
+  "median_candidate": 89.21799999999999,
+  "reduction_pct": 1.7444549679522514
+}
