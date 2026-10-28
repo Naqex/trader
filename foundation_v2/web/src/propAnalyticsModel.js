@@ -12,7 +12,31 @@ export function propReplayQuery(report, source = new URLSearchParams()) {
   return query
 }
 import { closeTime } from './sessionPerformanceModel.js'
-import { known } from './tradingAnalyticsModel.js'
+import { known, number } from './tradingAnalyticsModel.js'
+
+// Evaluator snapshots may still belong to the previous phase after a transition.
+export function propObjectiveRows(report) {
+  const phase = report?.phase || {}, objectives = report?.objectives
+  const ready = Number.isSafeInteger(phase.phase_index) && phase.phase_index > 0 && objectives?.schema === 'prop-objectives-v1' && objectives.phase_index === phase.phase_index && objectives.technical_status === 'ready' && phase.evaluation_quality === 'full_for_declared_model'
+  const money = ready ? objectives.money : null, calendar = ready ? objectives.calendar : null
+  const start = closeTime(report?.attempt?.virtual_start_utc), end = closeTime(phase.virtual_time_utc)
+  const minutes = start && end && end >= start ? Math.floor((end - start) / 60000) : null
+  const rows = [{ key:'time', label:'Tổng thời gian kiểm thử', minutes, state:minutes === null ? 'unknown' : report?.outcome?.terminal === true ? 'finished' : 'pending', start, end }]
+  for (const [key,label] of [['daily_loss','Daily loss'],['overall_drawdown','Overall drawdown'],['profit_target','Profit target']]) {
+    const value = money?.[key], target = key === 'profit_target'
+    const reference = number(target ? phase.initial_balance : value?.reference), current = number(value?.current), boundary = number(target ? value?.target : value?.floor)
+    const delta = current !== null && reference !== null ? current - reference : null
+    const limit = boundary !== null && reference !== null ? boundary - reference : null
+    const percent = reference > 0 && delta !== null ? delta / reference * 100 : null
+    const flag = target ? value?.hit : value?.breached
+    const valid = Number.isFinite(delta) && Number.isFinite(limit) && Number.isFinite(percent) && reference > 0 && typeof flag === 'boolean'
+    rows.push({ key, label, reference, current, boundary, value:valid ? delta : null, limit:reference > 0 && Number.isFinite(limit) ? limit : null, percent:valid ? percent : null,
+      state:!valid ? 'unknown' : target ? flag ? 'passed' : 'pending' : flag ? 'breached' : 'within', target })
+  }
+  if (objectives?.calendar != null || phase.qualifying_days != null) rows.push({ key:'days', label:'Ngày đủ điều kiện', days:Number.isSafeInteger(calendar?.qualifying_days) && calendar.qualifying_days >= 0 ? calendar.qualifying_days : null,
+    state:!Number.isSafeInteger(calendar?.qualifying_days) || calendar.qualifying_days < 0 ? 'unknown' : calendar.expired === true ? 'expired' : calendar.min_qualifying_days_satisfied === true ? 'passed' : calendar.min_qualifying_days_satisfied === false ? 'pending' : 'unknown' })
+  return rows
+}
 
 
 export function buildPropAnalyticsView(view, report) {

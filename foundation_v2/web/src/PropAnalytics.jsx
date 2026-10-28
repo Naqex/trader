@@ -1,20 +1,19 @@
-import DataTable from './DataTable.jsx'
+import PropChallengeObjectives from './PropChallengeObjectives.jsx'
 import { navigate } from './clientNavigation.js'
 import TestingReadState, { TestingSkeleton } from './TestingReadState.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import { useEffect, useMemo, useState } from 'react'
 import AnalyticsWorkspace from './AnalyticsWorkspace.jsx'
-import { Metric, SelectField } from './FxAnalytics.jsx'
+import { SelectField } from './FxAnalytics.jsx'
 import { propReplayQuery } from './propAnalyticsModel.js'
 import { buildWorkspaceHref } from './workspaceContext.js'
 import useReadRefresh from './useReadRefresh.js'
-import { displayDate } from './dateFormat.js'
 
 const reportKey = report => `${report.session.session_id}:${report.attempt.attempt_id}`
 export default function PropAnalytics({ workspace, query, embedded = false }) {
 
 
-  const { t, fmt, statusLabel } = useTestingLocale()
+  const { t, statusLabel } = useTestingLocale()
 
   const [state, setState] = useState({ status: 'loading', loaded: false, items: [], error: '' }), [reload, setReload] = useState(0)
   const [selected, setSelected] = useState(query.get('prop_session') && query.get('attempt') ? `${query.get('prop_session')}:${query.get('attempt')}` : null)
@@ -40,16 +39,12 @@ export default function PropAnalytics({ workspace, query, embedded = false }) {
   const report = selected === null ? state.items[0] : state.items.find(item => reportKey(item) === selected)
   const boundQuery = useMemo(() => propReplayQuery(report, new URLSearchParams(window.location.search)), [report, query])
   const choose = value => { setSelected(value); const report = state.items.find(item => reportKey(item) === value); const url = new URL(window.location.href); if (report) { url.searchParams.set('prop_session', report.session.session_id); url.searchParams.set('attempt', report.attempt.attempt_id) } else { url.searchParams.delete('prop_session'); url.searchParams.delete('attempt') } url.searchParams.delete('trade'); navigate(url, { replace: true }) }
-  const money = report?.objectives?.money, calendar = report?.objectives?.calendar
   return <section className={`${embedded ? 'fx-dashboard-prop' : 'wm-page'} fxa-prop-page`} aria-label={t("Prop firm Analytics")} data-testid="prop-analytics" data-state={state.status} aria-busy={state.status === 'loading' || Boolean(state.refreshing)}>{!embedded && <h1 className="sr-only">{t("Analytics")}</h1>}
     {state.status === 'loading' && <TestingSkeleton label="Đang đọc báo cáo challenge…" />}{state.loaded && state.refreshing ? <p role="status">{t('Đang cập nhật…')}</p> : ['error', 'stale'].includes(state.status) && <TestingReadState error={state.status === 'error'} message={state.status === 'stale' ? t('Dữ liệu chưa cập nhật.') : t('Không đọc được báo cáo:') + ' ' + t(state.error)} onRetry={() => setReload(value => value + 1)} />}
-    {state.loaded && <div className="fxa-prop-selector"><SelectField label={t("Prop firm attempt")} value={report ? reportKey(report) : ''} onChange={choose} options={[["", 'Chọn challenge'], ...state.items.map(item => [reportKey(item), `${item.profile.profile_id} · attempt ${item.attempt.attempt_id.slice(0, 8)} · ${statusLabel('prop_attempt', item.outcome.status)}`])]} /><a className="fxa-button" href={buildWorkspaceHref('testing', workspace, query)}>{t("Quản lý challenge")}</a></div>}
+    {state.loaded && <div className="fxa-prop-selector"><SelectField label={t("Prop firm attempt")} value={report ? reportKey(report) : ''} onChange={choose} options={[["", 'Chọn challenge'], ...state.items.map(item => [reportKey(item), `${item.profile.profile_id} · ${t('Phase {number}', { number: item.phase.phase_index })} · attempt ${item.attempt.attempt_id.slice(0, 8)} · ${statusLabel('prop_attempt', item.outcome.status)}`])]} /><a className="fxa-button" href={buildWorkspaceHref('testing', workspace, query)}>{t("Quản lý challenge")}</a></div>}
     {state.loaded && !report && <p className="fxa-empty">{state.items.length ? t("Không tìm thấy attempt này. Chọn challenge khác.") : t("Chưa có báo cáo Prop firm. Tạo challenge mô phỏng và gắn replay để có phân tích giao dịch.")}</p>}
     {report && <>
-      <section className="fxa-prop-objectives" aria-label={t("Challenge objectives")} data-testid="prop-analytics-objectives"><div className="fxa-section-heading"><h2>{t("Challenge objectives")}</h2><span>{statusLabel('prop_attempt', report.outcome.status)} {t("· Phase")} {report.phase.phase_index}</span></div><div className="fxa-metrics"><Metric label={t("Balance snapshot")} value={fmt(report.phase.balance, ` ${report.phase.currency || t('Đơn vị tài khoản')}`)} /><Metric label={t("Equity snapshot")} value={fmt(report.phase.equity, ` ${report.phase.currency || t('Đơn vị tài khoản')}`)} note={`Floating PnL ${fmt(report.phase.floating_pl, ` ${report.phase.currency || t('Đơn vị tài khoản')}`)}`} /><Metric label={t("Trading days")} value={fmt(report.phase.qualifying_days, '', 0)} /><Metric label={t("Report time")} value={<time className="fxa-prop-report-time" dateTime={report.phase.virtual_time_utc || undefined}>{displayDate(report.phase.virtual_time_utc, { timeStyle: 'medium' })}</time>} /></div>
-        {money ? <DataTable label={t("Objective")}><thead><tr><th>{t("Objective")}</th><th>{t("Kết quả / ngưỡng")}</th><th>{t("Trạng thái")}</th></tr></thead><tbody>{[['Profit target', money.profit_target, 'target'], ['Daily loss', money.daily_loss, 'floor'], ['Overall drawdown', money.overall_drawdown, 'floor']].map(([label, value, threshold]) => <tr key={label}><td>{t(label)}</td><td>{fmt(value?.current, ` ${report.phase.currency || t('Đơn vị tài khoản')}`)} / {fmt(value?.[threshold], ` ${report.phase.currency || t('Đơn vị tài khoản')}`)}</td><td>{value ? threshold === 'target' ? value.hit ? t("Đạt") : t("Đang thực hiện") : value.breached ? t("Vi phạm") : t("Trong giới hạn") : t("Chưa đủ dữ liệu")}</td></tr>)}<tr><td>{t("Ngày đủ điều kiện")}</td><td>{fmt(calendar?.qualifying_days)}</td><td>{calendar?.expired ? t("Hết hạn") : calendar?.min_qualifying_days_satisfied === true ? t("Đạt") : calendar ? t("Đang thực hiện") : t("Chưa đủ dữ liệu")}</td></tr></tbody></DataTable> : <p className="fxa-empty">{t("Chưa có snapshot evaluator đủ dữ liệu để đánh giá objectives.")}</p>}
-      </section>
-      {boundQuery ? <AnalyticsWorkspace key={`${workspace}:${reportKey(report)}:${report.attempt.revision}:${report.phase.last_event_sequence}`} workspace={workspace} query={boundQuery} sessionName={report.profile.profile_id} propReport={report} embedded /> : <p className="fxa-empty">{t("Attempt chưa có replay binding và cutoff hợp lệ. Objectives vẫn đọc được; gắn replay trong phần quản lý challenge để phân tích giao dịch và mô phỏng.")}</p>}
+      {boundQuery ? <AnalyticsWorkspace key={`${workspace}:${reportKey(report)}:${report.attempt.revision}:${report.phase.last_event_sequence}`} workspace={workspace} query={boundQuery} sessionName={report.profile.profile_id} propReport={report} embedded /> : <><PropChallengeObjectives report={report}/><p className="fxa-empty">{t("Attempt chưa có replay binding và cutoff hợp lệ. Objectives vẫn đọc được; gắn replay trong phần quản lý challenge để phân tích giao dịch và mô phỏng.")}</p></>}
     </>}
   </section>
 }

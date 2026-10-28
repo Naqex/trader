@@ -109,15 +109,11 @@
 .fxa-column-picker label{display:flex;gap:6px;align-items:center}
 .fxa-scenario-details{margin-top:16px}
 .fxa-scenario-details summary{font-size:13px;color:var(--wm-content-muted);cursor:pointer;padding-block:8px}
-.fxa-prop-objectives{max-width:1100px;margin:20px auto 24px}
-.fxa-prop-objectives table{width:100%;border-collapse:collapse;font-size:13px}
-.fxa-prop-objectives :is(th,td){padding:12px;text-align:left;border-bottom:1px solid var(--wm-border);vertical-align:top}
-.fxa-prop-objectives th{font-weight:500;color:var(--wm-content-muted)}
-.fxa-prop-report-time{font-size:clamp(16px,1.4vw,24px);line-height:1.4;font-variant-numeric:tabular-nums;overflow-wrap:normal;word-break:normal}
+
 .fxa-prop-selector{display:flex;gap:14px;flex-wrap:wrap;align-items:end}
 .fxa-trade-inspector{max-width:1100px;margin:24px auto;background:var(--wm-surface);border-radius:8px;padding:20px;min-width:0}
 .fxa-trade-inspector .as-inspector{background:transparent;border:0;padding:0}
-@media(max-width:760px){.fxa-two-columns{grid-template-columns:1fr}.fxa-report{gap:24px}.fxa-field{flex:1;min-width:140px}.fxa-side-grid{gap:24px}.fxa-side-table{min-width:0;width:100%;flex-basis:100%}.fxa-bars{min-height:220px}.fxa-bar-item{min-width:35px}.fxa-curve svg{min-height:150px}.fxa-calendar-day{min-height:75px;padding:5px;font-size:var(--ds-font-meta);gap:5px}.fxa-calendar-day strong{font-size:var(--ds-font-meta)}.fxa-calendar-day small{font-size:var(--ds-font-meta)}.fxa-calendar{gap:2px}.fxa-metric{min-width:120px}.fxa-metric strong{font-size:17px}.fxa-filter-grid{gap:12px}.fxa-prop-objectives{overflow:auto}.fxa-tab{padding:10px 6px}.fxa-chart-drilldown select{width:100%}.fxa-simulator-config input,.fxa-monte-form input{width:100%}}
+@media(max-width:760px){.fxa-two-columns{grid-template-columns:1fr}.fxa-report{gap:24px}.fxa-field{flex:1;min-width:140px}.fxa-side-grid{gap:24px}.fxa-side-table{min-width:0;width:100%;flex-basis:100%}.fxa-bars{min-height:220px}.fxa-bar-item{min-width:35px}.fxa-curve svg{min-height:150px}.fxa-calendar-day{min-height:75px;padding:5px;font-size:var(--ds-font-meta);gap:5px}.fxa-calendar-day strong{font-size:var(--ds-font-meta)}.fxa-calendar-day small{font-size:var(--ds-font-meta)}.fxa-calendar{gap:2px}.fxa-metric{min-width:120px}.fxa-metric strong{font-size:17px}.fxa-filter-grid{gap:12px}.fxa-tab{padding:10px 6px}.fxa-chart-drilldown select{width:100%}.fxa-simulator-config input,.fxa-monte-form input{width:100%}}
 @media(prefers-reduced-motion:reduce){.fxa-curve *{transition:none}}
 
 @media(max-width:900px){.fxa-curve svg text{display:none}.fxa-chart-mobile-scale{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px;font-size:12px;color:var(--wm-content-muted);line-height:1.6}.fxa-chart-mobile-scale span:nth-child(even){text-align:right}}
@@ -344,20 +340,14 @@
 @media(max-width:850px){.fxa-monte-controls>button{margin-top:0}.fxa-monte-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-monte-metrics>.fxa-metric{padding:16px}.fxa-monte-metrics>.fxa-metric:nth-child(2n){border-inline-end:0}.fxa-monte-metrics>.fxa-metric:nth-child(n+3){border-top:1px solid var(--wm-border)}}
 .fxa-monte-results>.fxa-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:12px}
 .fxa-prop-selector{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-.fxa-prop-objectives{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:12px 24px;margin:0 0 16px}
-.fxa-prop-objectives>.fxa-section-heading{grid-column:1/-1;margin-bottom:0}
-.fxa-prop-objectives>.fxa-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:0;align-content:start}
-.fxa-prop-objectives .fxa-metric{min-width:0;gap:4px}
-.fxa-prop-objectives .fxa-metric strong{font-size:22px;line-height:1.3}
-.fxa-prop-objectives .fxa-prop-report-time{font-size:16px}
-.fxa-prop-objectives :is(th,td){padding:8px 12px}
+
 @media(max-width:1500px){.fxa-hours-panel .fxa-radar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(min-width:1201px) and (max-width:1500px){.fxa-side-cards{grid-template-columns:1fr;grid-template-rows:repeat(2,minmax(0,1fr))}}
 @media(max-width:1550px){.fxa-profit-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:1200px){.fxa-visual-report>.fxa-profit-panel,.fxa-visual-report>.fxa-risk-panels{grid-column:1/-1}.fxa-profit-panel>.fxa-viz{flex:none;height:240px}.fxa-visual-report>.fxa-risk-panels{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:none}.fxa-profit-panel .fxa-section-heading{align-items:flex-start;flex-wrap:wrap}.fxa-profit-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.fxa-visual-report>.fxa-expectancy-panel,.fxa-visual-report>.fxa-side-panel{grid-column:span 6}.fxa-visual-report>.fxa-outcome-panel{grid-column:span 6}.fxa-visual-report>.fxa-side-panel,.fxa-visual-report>.fxa-hours-panel{grid-column:1/-1}.fxa-outcome-panel .fxa-two-columns{grid-template-columns:1fr}.fxa-outcomes dl div{padding:4px 0}.fxa-visual-report>.fxa-calendar-panel{grid-column:1/-1}.fxa-visual-report>.fxa-frequency-panel{grid-column:1/-1}.fxa-frequency-panel .fxa-three-columns{grid-template-columns:repeat(3,minmax(0,1fr))}.fxa-frequency-panel .fxa-three-columns>div{grid-template-columns:1fr}.fxa-prop-objectives{grid-template-columns:1fr}.fxa-prop-objectives>.fxa-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:1200px){.fxa-visual-report>.fxa-profit-panel,.fxa-visual-report>.fxa-risk-panels{grid-column:1/-1}.fxa-profit-panel>.fxa-viz{flex:none;height:240px}.fxa-visual-report>.fxa-risk-panels{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:none}.fxa-profit-panel .fxa-section-heading{align-items:flex-start;flex-wrap:wrap}.fxa-profit-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.fxa-visual-report>.fxa-expectancy-panel,.fxa-visual-report>.fxa-side-panel{grid-column:span 6}.fxa-visual-report>.fxa-outcome-panel{grid-column:span 6}.fxa-visual-report>.fxa-side-panel,.fxa-visual-report>.fxa-hours-panel{grid-column:1/-1}.fxa-outcome-panel .fxa-two-columns{grid-template-columns:1fr}.fxa-outcomes dl div{padding:4px 0}.fxa-visual-report>.fxa-calendar-panel{grid-column:1/-1}.fxa-visual-report>.fxa-frequency-panel{grid-column:1/-1}.fxa-frequency-panel .fxa-three-columns{grid-template-columns:repeat(3,minmax(0,1fr))}.fxa-frequency-panel .fxa-three-columns>div{grid-template-columns:1fr}}
 @media(max-width:1000px){.fxa-visual-report>.fxa-expectancy-panel,.fxa-visual-report>.fxa-outcome-panel,.fxa-visual-report>.fxa-hours-panel,.fxa-visual-report>.fxa-side-panel{grid-column:1/-1}.fxa-outcome-panel .fxa-two-columns{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-hours-panel .fxa-radar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-monte-body{grid-template-columns:240px minmax(0,1fr);gap:16px}}
-@media(max-width:850px){.fxa-visual-report>.fxa-risk-panels{grid-template-columns:1fr}.fxa-visual-report>.fxa-half-panel,.fxa-visual-report>.fxa-scenario-panel{grid-column:1/-1}.fxa-profit-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.fxa-panel .fxa-section-heading{flex-wrap:wrap}.fxa-panel-actions{justify-content:flex-start}.fxa-hours-panel .fxa-radar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-visual-report>.fxa-drawdown-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-monte-body{grid-template-columns:1fr}.fxa-monte-controls{grid-template-columns:repeat(3,minmax(0,1fr))}.fxa-monte-results>.fxa-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-prop-objectives>.fxa-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:600px){.fxa-profit-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-profit-panel .fxa-profit-metrics .fxa-metric strong{font-size:22px}.fxa-outcome-panel .fxa-two-columns,.fxa-frequency-panel .fxa-three-columns{grid-template-columns:1fr}.fxa-frequency-panel .fxa-three-columns>div{grid-template-columns:80px minmax(0,1fr)}.fxa-side-panel .fxa-ring{width:180px;height:180px}.fxa-hours-panel .fxa-radar-grid{grid-template-columns:1fr}.fxa-panel-actions{gap:6px}.fxa-monte-controls{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 10px}.fxa-monte-controls>button{width:100%}.fxa-scenario-panel .fxa-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-prop-objectives>.fxa-metrics{grid-template-columns:1fr}.fxa-prop-objectives .fxa-metric strong{font-size:20px}}
+@media(max-width:850px){.fxa-visual-report>.fxa-risk-panels{grid-template-columns:1fr}.fxa-visual-report>.fxa-half-panel,.fxa-visual-report>.fxa-scenario-panel{grid-column:1/-1}.fxa-profit-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.fxa-panel .fxa-section-heading{flex-wrap:wrap}.fxa-panel-actions{justify-content:flex-start}.fxa-hours-panel .fxa-radar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-visual-report>.fxa-drawdown-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-monte-body{grid-template-columns:1fr}.fxa-monte-controls{grid-template-columns:repeat(3,minmax(0,1fr))}.fxa-monte-results>.fxa-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.fxa-profit-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-profit-panel .fxa-profit-metrics .fxa-metric strong{font-size:22px}.fxa-outcome-panel .fxa-two-columns,.fxa-frequency-panel .fxa-three-columns{grid-template-columns:1fr}.fxa-frequency-panel .fxa-three-columns>div{grid-template-columns:80px minmax(0,1fr)}.fxa-side-panel .fxa-ring{width:180px;height:180px}.fxa-hours-panel .fxa-radar-grid{grid-template-columns:1fr}.fxa-panel-actions{gap:6px}.fxa-monte-controls{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 10px}.fxa-monte-controls>button{width:100%}.fxa-scenario-panel .fxa-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 @media(max-width:360px){.fxa-profit-metrics{grid-template-columns:1fr}}
 
@@ -488,3 +478,28 @@
 .fxa-scenario-table th,.fxa-scenario-table td{text-align:center!important}
 .fx-app .fxa-scenario-table .wm-data-table tbody td.is-best-cell{background:color-mix(in srgb,#00b85a 18%,transparent);box-shadow:inset 0 1px #00b85a,inset 0 -1px #00b85a,inset 1px 0 #00b85a,inset -1px 0 #00b85a}
 .fx-app[data-theme=light] .fxa-scenario-table .wm-data-table tbody td.is-best-cell{background:color-mix(in srgb,#00b85a 12%,transparent)}
+
+.fxa-prop-objectives{grid-column:1/-1;min-width:0;margin:0 0 16px;border:1px solid var(--project-highlight);border-radius:10px;background:var(--wm-canvas);overflow:hidden}
+.fxa-visual-report>.fxa-prop-objectives{margin:0}
+.fx-app .fxa-prop-objectives .wm-table-scroll table.wm-data-table{width:100%;min-width:0;table-layout:fixed}
+.fx-app .fxa-prop-objectives .wm-data-table :is(th,td){padding:12px 20px;white-space:normal;overflow-wrap:anywhere;text-align:left;vertical-align:middle}
+.fx-app .fxa-prop-objectives .wm-data-table thead th{position:static;height:auto;box-shadow:none;color:var(--wm-content);font-weight:600}
+.fx-app .fxa-prop-objectives .wm-data-table tbody :is(th,td){height:auto;border:0}
+.fx-app .fxa-prop-objectives .wm-data-table tbody tr:hover>td{background:transparent}
+.fxa-objective-toggle{display:inline-flex;align-items:center;gap:8px;padding:4px 0;border:0;border-radius:6px;background:transparent;color:var(--wm-content);font:inherit;font-weight:400;text-align:left;cursor:pointer}
+.fxa-objective-toggle>svg{flex:none;color:var(--project-highlight)}
+.fxa-objective-toggle[aria-expanded=true]{color:var(--project-highlight)}
+.fxa-objective-toggle:focus-visible{outline:2px solid var(--wm-focus);outline-offset:2px}
+.fxa-objective-state{display:inline-flex;align-items:center;gap:8px}
+.fxa-objective-state>svg{flex:none}
+.fxa-objective-state:is(.is-passed,.is-within){color:var(--report-positive)}
+.fxa-objective-state:is(.is-breached,.is-expired){color:var(--report-negative)}
+.fxa-objective-state.is-pending{color:var(--report-gold)}
+.fxa-objective-state:is(.is-unknown,.is-finished){color:var(--wm-content-muted)}
+.fxa-prop-objectives td.is-positive{color:var(--report-positive)}
+.fxa-prop-objectives td.is-negative{color:var(--report-negative)}
+.fxa-objective-detail{background:var(--wm-surface);color:var(--wm-content-muted)}
+.fxa-objective-detail dl{display:flex;flex-wrap:wrap;gap:12px 32px;margin:12px 0}
+.fxa-objective-detail dl div{display:grid;gap:4px}
+.fxa-objective-detail dd{margin:0;color:var(--wm-content);font-variant-numeric:tabular-nums}
+@media(max-width:600px){.fx-app .fxa-prop-objectives .wm-data-table :is(th,td){padding:12px 8px}.fxa-objective-toggle,.fxa-objective-state{align-items:flex-start;gap:4px}.fxa-objective-toggle{min-height:44px}}

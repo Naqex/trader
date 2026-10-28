@@ -74,6 +74,23 @@ export function demoResult(rows = DEMO_LEDGER, session = DEMO_SESSIONS[0], timeB
     profit_factor_after_cost: loss ? profit / loss : null, payoff_ratio_after_cost: wins && losses ? (profit / wins) / (loss / losses) : null, closed_trade_balance_curve: curve } }
 }
 
+// Synthetic challenge snapshot for the same unfiltered demo ledger; never an evaluator receipt.
+export function demoPropReport(rows) {
+  const ordered = [...rows].sort((a,b)=>a.close_time_utc.localeCompare(b.close_time_utc))
+  const balance = 10000 + ordered.reduce((sum,row)=>sum+row.net_pnl,0), last = ordered.at(-1)?.close_time_utc
+  const reference = 10000 + ordered.filter(row=>row.close_time_utc.slice(0,10)!==last?.slice(0,10)).reduce((sum,row)=>sum+row.net_pnl,0)
+  const days = new Set(ordered.map(row=>row.close_time_utc.slice(0,10))).size
+  return {
+    phase:{phase_index:1,initial_balance:10000,balance,equity:balance,currency:'USD',evaluation_quality:'full_for_declared_model',virtual_time_utc:last || null},
+    attempt:{virtual_start_utc:ordered[0]?.open_time_utc || null},outcome:{status:'running',terminal:false},
+    objectives:{schema:'prop-objectives-v1',phase_index:1,technical_status:'ready',money:{
+      profit_target:{current:balance,target:11000,hit:balance>=11000},
+      daily_loss:{current:balance,reference,floor:reference-500,breached:balance<=reference-500},
+      overall_drawdown:{current:balance,reference:10000,floor:9000,breached:balance<=9000},
+    },calendar:{qualifying_days:days,min_qualifying_days_satisfied:days>=1,expired:false}},
+  }
+}
+
 const DEMO_ACTIVITY = [
   ['demo-london', '2026-07-06T08:00:00Z', '2026-07-06T11:00:00Z'],
   ['demo-london', '2026-07-31T22:30:00Z', '2026-08-01T01:30:00Z'],

@@ -3,6 +3,8 @@ import React from 'react'
 export default function TestingIcon({ kind = 'info', size = 18 }) {
   const svgProps = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true, focusable: false }
   const paths = {
+    minus: <path d="M5 12h14" />,
+    check: <><circle cx="12" cy="12" r="9"/><path d="m7 12 3 3 7-7"/></>,
     'zoom-in': <><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></>,
     'zoom-out': <><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></>,
     'zoom-area': <><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/><circle cx="11" cy="11" r="4"/><path d="m14 14 4 4"/></>,

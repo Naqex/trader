@@ -19,6 +19,7 @@ import TestingIcon from './TestingIcon.jsx'
 import LegacyModal from './LegacyModal.jsx'
 import { FieldError, fieldValidationProps, focusFirstInvalid } from './FormValidation.jsx'
 import AnalyticsCalendar, { CALENDAR_HELP } from './AnalyticsCalendar.jsx'
+import PropChallengeObjectives from './PropChallengeObjectives.jsx'
 import { DEFAULT_EXTRA_FILTERS } from './tradingAnalyticsModel.js'
 import { LEDGER_BASE_FILTERS, ledgerFilterChips, removeLedgerFilter } from './ledgerFilterModel.js'
 
@@ -169,7 +170,7 @@ function ChartHeading({ title, help, note }) {
   const { t } = useTestingLocale()
   return <div className="fxa-chart-heading"><h3>{t(title)}{help && <Info text={help}/>}</h3>{note && <span>{note}</span>}</div>
 }
-export function AnalyticsPerformance({ model, data, extra, onSelect, selected, threshold, onThreshold, experiments }) {
+export function AnalyticsPerformance({ model, data, extra, onSelect, selected, threshold, onThreshold, experiments, propReport }) {
   const { t, fmt, locale } = useTestingLocale(), [metric,setMetric] = useState('net'), [interval,setInterval] = useState('all')
   const currency=model.result?.account_currency||t('Đơn vị tài khoản'), suffix=metric==='winRate'||metric==='profitPct'?'%':metric==='averageR'?' R':metric==='net'?` ${currency}`:''
   const actualCurve=data.curve.map(point=>({...point,value:known(point.value)&&known(model.startBalance)?point.value-Number(model.startBalance):null})), bucket=bucketCurve(actualCurve,data.rows,interval,extra.timezone)
@@ -202,6 +203,7 @@ export function AnalyticsPerformance({ model, data, extra, onSelect, selected, t
       <ReportSection label="RR lý tưởng"><div className="fxa-metrics"><Stat label="RR lý tưởng trung bình" value={known(ideal.average)?fmt(ideal.average):'N/A'} help={idealHelp}/><Stat label="RR lý tưởng lớn nhất" value={known(ideal.max)?fmt(ideal.max):'N/A'} help={maxIdealHelp}/></div><AnalyticsCurve series={[ideal.series]} labels={ideal.series.map((_,index)=>`#${index+1}`)} label={t('RR lý tưởng')} suffix=" R" height={48} sparkline/></ReportSection>
       <ReportSection label="Có thể có lãi / hòa vốn"><div className="fxa-metrics"><Stat label="Có thể có lãi / hòa vốn" value={known(ideal.recoveryCount)?fmt(ideal.recoveryCount,'',0):'N/A'} help="Số giao dịch thua từng có cơ hội đóng với lãi/lỗ ròng không âm trong cửa sổ một tuần đã có đủ dữ liệu.&#10;&#10;Đã tính phí; giá quan sát không bảo đảm khớp lệnh thực tế."/><Stat label="RR lý tưởng lớn nhất" value={known(ideal.max)?fmt(ideal.max):'N/A'} help={maxIdealHelp}/></div></ReportSection>
     </div>
+    {propReport && <PropChallengeObjectives report={propReport}/>}
     <ReportSection headingOutside surface={false} className="fxa-expectancy-panel" title="Expectancy & Profit factor" help="Kỳ vọng cho biết lãi/lỗ ròng trung bình mỗi giao dịch; hệ số lợi nhuận so sánh tổng lãi với độ lớn tổng lỗ. Cả hai được tính sau phí trên các giao dịch trong bộ lọc."><div className="fxa-expectancy-cards"><div className="fxa-panel fxa-expectancy-card"><Stat label="Expectancy" value={fmt(data.expectancy, ` ${currency}`)} help={"Kỳ vọng là số tiền lãi/lỗ ròng trung bình mỗi giao dịch đã đóng trong bộ lọc, gồm cả hòa vốn.\n\nCách tính: tổng lãi/lỗ ròng sau phí ÷ tổng số giao dịch. Đây là trung bình của dữ liệu đã có, không bảo đảm kết quả lệnh tiếp theo."}/><ExpectancyComparison data={data} currency={currency}/></div><div className="fxa-panel fxa-expectancy-card fxa-factor-card"><ProfitFactor rows={data.rows}/></div></div></ReportSection>
     <ReportSection headingOutside surface={false} className="fxa-outcome-panel" title="Winners and losers"><OutcomeStats data={data}/></ReportSection>
     <ReportSection headingOutside surface={false} className="fxa-side-panel" title="Performance by side" help="So sánh số giao dịch và tỉ lệ thắng giữa hướng Buy và Sell trong bộ lọc."><div className="fxa-side-cards"><div className="fxa-side-card"><ChartHeading title="Total trades" help="Số giao dịch Buy và Sell trong bộ lọc, gồm cả hòa vốn. Vòng tròn cho biết tỉ trọng mỗi hướng trong tổng giao dịch; hướng chưa rõ được giữ riêng."/><AnalyticsRing label={t('Số giao dịch theo hướng')} values={[...data.side.map((item,index)=>({label:item.label==='BUY'?'Buy':'Sell',value:item.count,color:index?'var(--report-blue)':'var(--report-positive)'})),...(data.unknownSide?[{label:t('Chưa rõ'),value:data.unknownSide,color:'var(--wm-content-muted)'}]:[])]}/></div><div className="fxa-side-card"><ChartHeading title="Win rate" help="Tỉ lệ thắng riêng cho Buy và Sell: số lệnh thắng ÷ tổng lệnh đã đóng của cùng hướng × 100, gồm cả hòa vốn. Hai tỉ lệ độc lập, không cần cộng thành 100%."/><AnalyticsRing label={t('Tỉ lệ thắng theo hướng')} concentric values={data.side.map((item,index)=>({label:item.label==='BUY'?'Buy':'Sell',value:item.winRate,color:index?'var(--report-blue)':'var(--report-positive)'}))}/></div></div></ReportSection>
@@ -502,7 +504,7 @@ export function AnalyticsSimulation({ model, data, config, loadExperiment, timez
 }
 
 
-export function FxAnalyticsReport({ model, extra, experiments, experimentStatus, experimentError, config, selected, onSelect, onTabChange, loadExperiment }) {
+export function FxAnalyticsReport({ model, extra, experiments, experimentStatus, experimentError, config, selected, onSelect, onTabChange, loadExperiment, propReport }) {
   const { t } = useTestingLocale()
 
   const [threshold, setThreshold] = useState(0)
@@ -513,12 +515,11 @@ export function FxAnalyticsReport({ model, extra, experiments, experimentStatus,
   const tab = model.result?.preview ? previewTab : ['performance', 'drawdown', 'simulation'].includes(requestedTab) ? requestedTab : 'performance'
   useEffect(() => { onTabChange?.(tab) }, [tab, onTabChange])
   const choose = value => { setPreviewTab(value); onTabChange?.(value); const url = new URL(window.location.href); url.searchParams.set('analytics_tab', value); navigate(url, { replace: true }) }
-  if (!data.count && (model.result?.partial || model.result?.status === 'partial')) return <TestingTradesEmpty incomplete />
-  if (!data.count && model.result?.scope?.total_trade_count === 0) return <TestingTradesEmpty />
-  if (!data.count && (model.ledger.length || model.result?.scope?.total_trade_count > 0)) return <TestingTradesEmpty filtered />
+  const empty = !data.count ? model.result?.partial || model.result?.status === 'partial' ? <TestingTradesEmpty incomplete /> : model.result?.scope?.total_trade_count === 0 ? <TestingTradesEmpty /> : model.ledger.length || model.result?.scope?.total_trade_count > 0 ? <TestingTradesEmpty filtered /> : null : null
+  if (empty && !propReport) return empty
   return <><div className="fxa-report-tabs" role="tablist" aria-label={t("Phân tích")}><>{[['performance', 'Performance'], ['drawdown', 'Drawdown'], ['simulation', 'Simulation']].map(([value, label]) => <button className="fxa-tab" id={`fxa-tab-${value}`} role="tab" key={value} aria-selected={tab === value} aria-controls="fxa-report-panel" tabIndex={tab === value ? 0 : -1} onKeyDown={event => { const tabs = ['performance', 'drawdown', 'simulation']; if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) { event.preventDefault(); const index = event.key === 'Home' ? 0 : event.key === 'End' ? 2 : (tabs.indexOf(tab) + (event.key === 'ArrowRight' ? 1 : 2)) % 3; choose(tabs[index]); document.getElementById(`fxa-tab-${tabs[index]}`)?.focus() } }} onClick={() => choose(value)}>{t(label)}</button>)}</></div><div id="fxa-report-panel" role="tabpanel" aria-labelledby={`fxa-tab-${tab}`} tabIndex={0}>
-    <div hidden={tab !== 'performance'}><AnalyticsPerformance model={model} data={data} extra={extra} onSelect={onSelect} selected={selected} threshold={threshold} onThreshold={setThreshold} experiments={experiments} /></div>
-    <div hidden={tab !== 'drawdown'}><AnalyticsDrawdown model={model} data={data} extra={extra} experiments={experiments} experimentStatus={experimentStatus} experimentError={experimentError} /></div>
-    <div hidden={tab !== 'simulation'}><AnalyticsSimulation key={JSON.stringify([model.result?.session_id, model.result?.revision, model.result?.cursor_index, model.result?.execution_event_sequence, model.result?.filters, extra])} model={model} data={data} experiments={experiments} experimentStatus={experimentStatus} experimentError={experimentError} config={config} loadExperiment={loadExperiment} timezone={extra?.timezone} /></div>
+    <div hidden={tab !== 'performance'}>{empty ? <>{propReport && <PropChallengeObjectives report={propReport}/>}{empty}</> : <AnalyticsPerformance model={model} data={data} extra={extra} onSelect={onSelect} selected={selected} threshold={threshold} onThreshold={setThreshold} experiments={experiments} propReport={propReport}/>}</div>
+    <div hidden={tab !== 'drawdown'}>{empty || <AnalyticsDrawdown model={model} data={data} extra={extra} experiments={experiments} experimentStatus={experimentStatus} experimentError={experimentError} />}</div>
+    <div hidden={tab !== 'simulation'}>{empty || <AnalyticsSimulation key={JSON.stringify([model.result?.session_id, model.result?.revision, model.result?.cursor_index, model.result?.execution_event_sequence, model.result?.filters, extra])} model={model} data={data} experiments={experiments} experimentStatus={experimentStatus} experimentError={experimentError} config={config} loadExperiment={loadExperiment} timezone={extra?.timezone} />}</div>
   </div></>
 }

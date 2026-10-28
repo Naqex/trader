@@ -22,16 +22,8 @@ import { PlaybookList, PlaybookSummary } from './PlaybookWorkspace.jsx'
 import { JournalRow, StoryRail } from './JournalWorkspace.jsx'
 import { DEFAULT_EXTRA_FILTERS, filterAnalyticsRows, tradesCsv } from './tradingAnalyticsModel.js'
 import { buildWorkspaceHref } from './workspaceContext.js'
-import { DEMO_SESSIONS, DEMO_LEDGER, DEMO_LIVE, DEMO_DATASETS, demoSessionItems, demoDashboardAnalytics, demoReplayContext, demoResult, demoOverview, demoFilterRows, demoAnalyticsRisk, demoAnalyticsExperiment } from './demoFixtures.js'
+import { DEMO_SESSIONS, DEMO_LEDGER, DEMO_LIVE, DEMO_DATASETS, demoSessionItems, demoDashboardAnalytics, demoReplayContext, demoResult, demoPropReport, demoOverview, demoFilterRows, demoAnalyticsRisk, demoAnalyticsExperiment } from './demoFixtures.js'
 const DEMO_DATA_LIBRARY = { datasets:DEMO_DATASETS, providers:[] }
-
-function Objectives({ model }) {
-
-
-  const { t, fmt } = useTestingLocale()
-
-  return <section className="fxa-prop-objectives" aria-label={t("Challenge objectives")}><div className="fxa-section-heading"><h2>{t("Challenge objectives")}</h2><span>{t("Practice · Phase 1")}</span></div><div className="fxa-metrics"><Metric label={t("Balance")} value={fmt(model.endingBalance, t(" USD"))} /><Metric label={t("Profit target")} value={fmt(1000, ' USD')} /><Metric label={t("Daily loss limit")} value={fmt(500, ' USD')} /><Metric label={t("Overall loss limit")} value={fmt(1000, ' USD')} /></div><table><thead><tr><th>{t("Objective")}</th><th>{t("Kết quả / ngưỡng")}</th><th>{t("Trạng thái")}</th></tr></thead><tbody><tr><td>{t("Profit target")}</td><td>{fmt(model.netPnl, t(" USD"))} / {fmt(1000, ' USD')}</td><td>{model.netPnl >= 1000 ? t("Đạt") : t("Đang thực hiện")}</td></tr><tr><td>{t("Overall drawdown")}</td><td>{fmt(model.maxDrawdown, t(" USD"))} / {fmt(1000, ' USD')}</td><td>{model.maxDrawdown < 1000 ? t("Trong giới hạn") : t("Vi phạm")}</td></tr></tbody></table></section>
-}
 
 function DemoReports({ workspace, ledgerOnly, prop = false, query, state = 'demo' }) {
 
@@ -55,6 +47,7 @@ function DemoReports({ workspace, ledgerOnly, prop = false, query, state = 'demo
     const result = demoResult(rows, sessions.find(item => item.record_id === ids) || sessions[0])
     return buildAnalyticsModel({ ...result, filters, scope: { ...result.scope, total_trade_count: allRows.length, selected_trade_count: rows.length, active_filters: filters.side !== 'all' || filters.outcome !== 'all' || Boolean(filters.from || filters.to) }, partial: state === 'partial', multi_session: ledgerOnly }, prop ? 'prop' : 'app')
   }, [ids, filters, ledgerOnly, prop, sessions, state])
+  const propReport = useMemo(() => prop ? demoPropReport(state === 'no-trades' ? [] : demoFilterRows([ids])) : null, [prop, state, ids])
   const experiments = useMemo(() => demoAnalyticsRisk(model.ledger), [model])
   const row = model.ledger.find(item => item.tradeId === selected)
   const exportCsv = () => {
@@ -71,8 +64,7 @@ function DemoReports({ workspace, ledgerOnly, prop = false, query, state = 'demo
   return <section className="wm-page as-page" aria-label={ledgerOnly ? t("Trades") : t("Analytics")}>
     <h1 className="sr-only">{ledgerOnly ? t("Trades") : t("Analytics")}</h1>
     {ledgerOnly ? <FxTradeLedger preferenceWorkspace={workspace} hidden={state === 'error'} model={model} extra={extra} selected={selected} onSelect={setSelected} renderFilters={renderFilters} readNotice={readNotice} /> : <>{renderFilters()}{readNotice}</>}
-    {prop && state !== 'error' && <Objectives model={model} />}
-    {!ledgerOnly && state !== 'error' && <FxAnalyticsReport model={model} extra={extra} experiments={experiments} experimentStatus="unavailable" config={config} loadExperiment={(request) => Promise.resolve(demoAnalyticsExperiment(model.ledger, request))} selected={selected} onSelect={setSelected} />}
+    {!ledgerOnly && state !== 'error' && <FxAnalyticsReport propReport={propReport} model={model} extra={extra} experiments={experiments} experimentStatus="unavailable" config={config} loadExperiment={(request) => Promise.resolve(demoAnalyticsExperiment(model.ledger, request))} selected={selected} onSelect={setSelected} />}
     {row && <Inspector onClose={() => setSelected('')} className="fxa-trade-inspector" aria-label={t("Chi tiết giao dịch")}><div className="fxa-section-heading"><h2>{row.session_name} · {row.symbol}</h2><button className="fxa-button" type="button" onClick={() => setSelected('')}>{t("Đóng chi tiết")}</button></div><div className="fxa-metrics"><Metric label={t("Net PnL")} value={fmt(row.net_pnl, t(" USD"))} /><Metric label={t("Return (R)")} value={fmt(row.realized_r, t(" R"))} /><Metric label={t("Entry")} value={fmt(row.price_open, '', 6)} /><Metric label={t("Exit")} value={fmt(row.price_close, '', 6)} /></div></Inspector>}
   </section>
 }

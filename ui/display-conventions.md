@@ -87,8 +87,8 @@ use distinct periods with trades; inactive periods do not enter the denominator.
 metrics in a row, a full-width MAE plot, then three winning-trade metrics in a row.
 The drawdown basis is automatic: declared applicable equity when available, otherwise closed balance, with the source named in the heading; no basis switch. Its titles/help/controls sit above the chart surfaces, with no outer surface around
 the summary rows. The four metrics become two columns at 850px and below; winning-trade
-metrics stack at 600px and below. Prop objectives pair snapshot metrics with their
-existing objectives table on desktop and stack on narrow screens.
+metrics stack at 600px and below. Prop keeps the shared Performance, Drawdown and Simulation tabs.
+In Performance, the full-width orange-outlined objectives table follows Profit and loss/RR and precedes Expectancy & Profit factor. Its three columns are objective, result and status; row buttons reveal reference details. Evaluator scope stays independent of chart filters. Amounts and percentages use evaluator references, with unknown states for incomplete or mismatched-phase snapshots.
 
 Simulation uses three full-width sections stacked in order: SL, RR, Monte Carlo.
 Each starts with a short introduction and an explicit Run action. After running,

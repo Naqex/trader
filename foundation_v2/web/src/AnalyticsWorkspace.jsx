@@ -9,6 +9,7 @@ import FxTradeLedger, { TradeInspector } from './FxTradeLedger.jsx'
 import { advancedAnalytics, DEFAULT_EXTRA_FILTERS, readAnalyticsExtraFilters, tradesCsv } from './tradingAnalyticsModel.js'
 import useReadRefresh from './useReadRefresh.js'
 import { buildPropAnalyticsView } from './propAnalyticsModel.js'
+import PropChallengeObjectives from './PropChallengeObjectives.jsx'
 import { navigate } from './clientNavigation.js'
 import { scopedRead } from './scopedRead.js'
 import { readJson } from './researchDataApi.js'
@@ -306,11 +307,12 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
     {exportError && <p role="alert" className="fxa-error">{t(exportError)}</p>}
     {result?.historical_view && <p className="as-message" data-testid="analytics-historical-scope">{t("Kết quả tới nến #")}{result.cursor_index}{t(". Phiên hiện ở nến #")}{result.canonical_cursor_index}{t("; báo cáo không gồm giao dịch sau mốc đang xem.")}</p>}
     {!resourceId && <p className="fxa-empty">{t("Chọn một phiên replay hoặc research job để xem kết quả.")}</p>}
+    {propReport && (!result || !['ready', 'stale', 'partial', 'empty'].includes(state.status)) && <PropChallengeObjectives report={propReport}/>}
     {state.status === 'loading' && <TestingPageSkeleton view={ledgerOnly ? 'trade' : 'analytics'} label="Đang tải kết quả…" />}
     {state.denied && <TestingEmptyState kind="denied" />}
     {state.status === 'blocked_by_data' && <section className="as-empty-state" data-testid="analytics-blocked"><h2>{t("Chưa đủ dữ liệu để tính analytics")}</h2><p>{state.payload?.blocked_by_data?.map(reason => t(reason)).join(' · ') || t(state.error) || t("Nguồn chưa có kết quả đã phát hành.")}</p></section>}
     {result && !journalFilterPending && ['ready', 'stale', 'partial', 'empty'].includes(state.status) && <>
-      {summaryOnly ? <section className="as-metric-strip" aria-label={t("Metrics chính")}><StoryMetric label={t("Net PnL")} value={formatNumber(model.netPnl)} detail={result.account_currency} /><StoryMetric label={t("Win rate")} value={formatNumber(model.winRate, 1, '%')} /><StoryMetric label={t("Trades")} value={formatNumber(model.tradeCount, 0)} /><StoryMetric label={t("Max DD")} value={formatNumber(model.maxDrawdown)} detail={t("Closed balance")} /></section> : ledgerOnly ? null : <FxAnalyticsReport model={model} extra={extra} experiments={experimentScopeMatches ? experiments.payload : null} experimentStatus={experimentScopeMatches ? experiments.status : experiments.status === 'ready' ? 'error' : experiments.status} experimentError={experiments.error || (experiments.status === 'ready' && !experimentScopeMatches ? 'Đường giá chưa khớp revision/cutoff của báo cáo.' : '')} config={experimentConfig} loadExperiment={loadExperiment} selected={selectedTradeId} onSelect={setSelectedTradeId} />}
+      {summaryOnly ? <section className="as-metric-strip" aria-label={t("Metrics chính")}><StoryMetric label={t("Net PnL")} value={formatNumber(model.netPnl)} detail={result.account_currency} /><StoryMetric label={t("Win rate")} value={formatNumber(model.winRate, 1, '%')} /><StoryMetric label={t("Trades")} value={formatNumber(model.tradeCount, 0)} /><StoryMetric label={t("Max DD")} value={formatNumber(model.maxDrawdown)} detail={t("Closed balance")} /></section> : ledgerOnly ? null : <FxAnalyticsReport model={model} extra={extra} experiments={experimentScopeMatches ? experiments.payload : null} experimentStatus={experimentScopeMatches ? experiments.status : experiments.status === 'ready' ? 'error' : experiments.status} experimentError={experiments.error || (experiments.status === 'ready' && !experimentScopeMatches ? 'Đường giá chưa khớp revision/cutoff của báo cáo.' : '')} propReport={propReport} config={experimentConfig} loadExperiment={loadExperiment} selected={selectedTradeId} onSelect={setSelectedTradeId} />}
       {!summaryOnly && selectedTrade && <Inspector onClose={() => setSelectedTradeId('')} className="fxa-trade-inspector" aria-label={t("Chi tiết giao dịch")}><div className="fxa-section-heading"><h2>{t("Trade detail")}</h2><button className="fxa-button" type="button" onClick={() => setSelectedTradeId('')}>{t("Đóng chi tiết")}</button></div><ProvenanceInspector model={model} selectedTrade={selectedTrade} journalCount={journalCount} links={links} /></Inspector>}
     </>}
   </section>
