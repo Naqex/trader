@@ -137,7 +137,7 @@ function OutcomeStats({ data }) {
     return <article className={`fxa-outcomes is-${type}`} key={type}><h3>{t(label)}</h3><dl>{rows.map(([name, value, help]) => <div key={name}><dt>{t(name)}<Info text={help}/></dt><dd>{value}</dd></div>)}</dl></article>
   })}</div>
 }
-function ExpectancyComparison({ data, currency }) {
+export function ExpectancyComparison({ data, currency }) {
   const { t, fmt } = useTestingLocale()
   const total = Math.abs(data.averageWin ?? 0) + Math.abs(data.averageLoss ?? 0)
   return <div className="fxa-expectancy-comparison" role="img" aria-label={`${t('Lãi trung bình')}: ${fmt(data.averageWin, ` ${currency}`)}; ${t('Lỗ trung bình')}: ${fmt(data.averageLoss, ` ${currency}`)}`}>
@@ -180,7 +180,7 @@ function MonthMatrix({ items, capitalBases, incomplete }) {
   </table></div>:<p className="fxa-empty">{t('Chưa có dữ liệu')}</p>}</>
 }
 
-function ChartHeading({ title, help, note }) {
+export function ChartHeading({ title, help, note }) {
   const { t } = useTestingLocale()
   return <div className="fxa-chart-heading"><h3>{t(title)}{help && <Info text={help}/>}</h3>{note && <span>{note}</span>}</div>
 }

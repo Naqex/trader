@@ -242,31 +242,24 @@
 .live-analytics-side .live-empty-art svg { width: 56px; height: 56px; }
 .live-metrics > dl, .live-account-values { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin: 24px 0; }
 .live-analytics-side dl { display: grid; gap: 24px; margin-block: 24px; }
-.live-analytics-lines { display: block; width: 100%; margin: 0; padding: 0; border: 0; border-radius: 0; }
-.live-analytics-line { box-sizing: border-box; width: 100%; margin: 0; padding: 18px 24px; border: 0; border-bottom: 1px solid var(--wm-border); border-radius: 0; background: transparent; }
-.live-analytics-line-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; min-width: 0; }
-.live-analytics-line-heading > span:first-child, .live-analytics-source-line > span { color: var(--wm-content-muted); font-size: 12px; }
-.live-analytics-line-heading strong, .live-analytics-source-line strong { color: var(--wm-content); font-size: 18px; font-variant-numeric: tabular-nums; }
-.live-analytics-line-heading strong.is-gain { color: var(--report-positive); }
-.live-analytics-line-heading strong.is-loss { color: var(--report-negative); }
-.live-analytics-count { margin-left: auto; color: var(--wm-content-muted); font-size: 12px; white-space: nowrap; }
-.live-analytics-count b { color: var(--wm-content); font-size: 18px; font-variant-numeric: tabular-nums; }
-.live-analytics-line-bar, .live-analytics-balance-track { height: 5px; margin-top: 12px; overflow: hidden; background: var(--wm-control-open); }
-.live-analytics-line-bar span, .live-analytics-balance-track i { display: block; height: 100%; min-width: 2px; background: var(--report-blue); }
-.live-analytics-line-bar span.is-gain { background: var(--report-positive); }
-.live-analytics-line-bar span.is-loss { background: var(--report-negative); }
-.live-analytics-balance-track i { background: var(--report-blue); }
-.live-analytics-outcome-bar { display: flex; height: 8px; margin-top: 14px; overflow: hidden; background: var(--wm-control-open); }
-.live-analytics-outcome-bar i { display: block; min-width: 0; }
-.live-analytics-outcome-bar .is-gain { background: var(--report-positive); }
-.live-analytics-outcome-bar .is-loss { background: var(--report-negative); }
-.live-analytics-outcome-bar .is-flat { background: var(--wm-content-muted); }
-.live-analytics-legend { display: flex; flex-wrap: wrap; gap: 8px 12px; margin-top: 8px; color: var(--wm-content-muted); font-size: 11px; }
-.live-analytics-legend .is-gain { color: var(--report-positive); }
-.live-analytics-legend .is-loss { color: var(--report-negative); }
-.live-analytics-legend .is-flat { color: var(--wm-content-muted); }
 .live-analytics-source-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.live-analytics-source-line > span { color: var(--wm-content-muted); font-size: 12px; }
+.live-analytics-source-line strong { color: var(--wm-content); font-size: 13px; font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
 .live-analytics-source-line strong { font-size: 13px; text-align: right; overflow-wrap: anywhere; }
+.live-analytics-charts { display: block; width: 100%; }
+.live-analytics-chart-row { box-sizing: border-box; width: 100%; margin: 0; padding: 18px 24px; border-bottom: 1px solid var(--wm-border); min-width: 0; }
+.live-analytics-chart-row .fxa-chart-heading { margin: 0 0 8px; }
+.live-analytics-chart-row .fxa-chart-heading h3 { font-size: 13px; }
+.live-analytics-chart-value { display: block; color: var(--wm-content); font-size: 20px; line-height: 1.25; font-variant-numeric: tabular-nums; }
+.live-analytics-chart-value small { color: var(--wm-content-muted); font-size: 12px; font-weight: 400; }
+.live-analytics-chart-row .fxa-viz { margin-top: 8px; }
+.live-analytics-balance-row .fxa-viz { color: var(--report-blue); }
+.live-analytics-chart-row .fxa-ring-layout { justify-content: space-between; align-items: center; flex-wrap: nowrap; gap: 12px; }
+.live-analytics-chart-row .fxa-ring { width: 142px; height: 142px; }
+.live-analytics-chart-row .fxa-chart-legend { flex: 1 1 auto; min-width: 0; gap: 9px; font-size: 12px; }
+.live-analytics-chart-row .fxa-chart-legend strong { font-size: 12px; }
+.live-analytics-chart-row .fxa-expectancy-comparison { margin-top: 10px; }
+.live-analytics-charts > .live-analytics-source-line { padding: 14px 24px 18px; }
 .live-metrics dt, .live-analytics-side dt, .live-account-values dt { color: var(--wm-content-muted); font-size: 12px; }
 .live-metrics dd, .live-analytics-side dd { margin: 8px 0 0; font-size: var(--wm-text-value); line-height: 1.2; font-variant-numeric: tabular-nums; }
 .live-account-values dd { margin: 8px 0 0; font-size: 20px; font-variant-numeric: tabular-nums; }
