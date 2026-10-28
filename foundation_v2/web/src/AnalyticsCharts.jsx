@@ -18,7 +18,7 @@ function tickText(value, domain, locale, suffix) {
   const digits = Math.max(0, Math.min(8, -Math.floor(Math.log10(step))))
   return new Intl.NumberFormat(locale, { maximumFractionDigits: digits + (step / 10 ** Math.floor(Math.log10(step)) === 2.5 ? 1 : 0) }).format(value) + (suffix === '%' ? '%' : '')
 }
-export function AnalyticsCurve({ series, seriesMeta = [], label, suffix = '', onSelect, selected, negative = false, labels = [], axisLabels, timestamps, yTitle, height = 200, stretch = false, sparkline = false, controls = false }) {
+export function AnalyticsCurve({ series, seriesMeta = [], label, suffix = '', onSelect, selected, negative = false, labels = [], axisLabels, timestamps, yTitle, height = 200, stretch = false, sparkline = false, controls = false, interpolation = 'smooth' }) {
   const { t, fmt, locale } = useTestingLocale(), id = useId()
   const [ref, width, measuredHeight] = useSize(height, stretch)
   const [range, setRange] = useState([0, 1]), [tool, setTool] = useState('zoom'), [brush, setBrush] = useState(null)
@@ -104,7 +104,7 @@ export function AnalyticsCurve({ series, seriesMeta = [], label, suffix = '', on
       if (!index || !finite(points[index - 1]?.value)) groups.push([])
       groups.at(-1).push([x(index), y(point.value)])
     })
-    return groups.map(points => ({ points, seriesIndex, d: reportCurvePath(points) }))
+    return groups.map(points => ({ points, seriesIndex, d: interpolation === 'linear' ? points.map(([x,y],index)=>`${index ? 'L' : 'M'}${x},${y}`).join(' ') : reportCurvePath(points) }))
   })
   return <div ref={ref} className={`fxa-viz fxa-line-viz ${negative ? 'is-negative' : ''}`} data-chart-tool={controls ? tool : undefined} data-chart-scale={temporal ? 'time' : 'sequence'} data-chart-range={controls ? range.join(':') : undefined} style={{ height: stretch ? undefined : height }}>
     {controls && <div className="fxa-chart-tools" role="group" aria-label={t('Công cụ biểu đồ')}>

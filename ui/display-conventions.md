@@ -26,6 +26,14 @@ profit/loss, realized and ideal R, expectancy/profit factor, outcomes, side,
 market-session radars, hour/day/month, calendar and frequency. Drawdown groups the
 account path, four summary metrics, MAE distribution and winning-trade MAE.
 Simulation groups configured SL, original-risk RR and Monte Carlo separately.
+Monte Carlo is shared by Sessions and Prop attempts using their filtered scope;
+six main inputs configure paths, with method/deviation/seed under Advanced.
+Default normal draws use measured gain/loss deviations (negative magnitudes
+clamped to zero); win rate excludes breakevens. Missing measurements stay blank,
+currencies cannot be mixed, and paths stop at zero balance. The plot connects
+trade indices with straight segments and shows at most 30 paths; eight summary
+metrics use all runs. No-loss Profit Factor is infinity, never profit divided by
+an invented loss of one. It does not evaluate Prop daily limits or pass odds.
 Use shared rounded chart domains and shape-preserving curves; interpolation
 does not create price observations. Compact desktop reports use 16px panel insets
 and gaps. On wide screens PnL occupies the left two thirds; realized R, ideal R
@@ -412,13 +420,13 @@ Last sync is the last successful data observation, not a connection expiry date.
 - Grid sort icons reserve a stable slot. Left/right headings align their visible
   text with cell text; centered categories balance the icon slot. Money badge
   padding extends into the cell inset so its digits share the numeric text edge.
-- Trades multi-sort adds a new column on ordinary click, toggles its direction
+- Sortable grids share multi-sort: add a new column on ordinary click, toggle its direction
   in place on another click, and exposes a separate remove button. Priorities are
-  explicit numbers; only the first has `aria-sort`. Active headers use a gray
-  background, orange superscript priorities and an inset vertical divider,
+  explicit numbers; only the first has `aria-sort`. Active headers use a light orange
+  tint, orange superscript priorities and separate inset orange outlines,
   with full-cell hover and stable indicator/clear slots. The orange clear-all
-  action replaces `#` while sorting. Clearing all
-  restores source order. Full-scope filtering and ordered sorting precede paging;
+  action has its own border and tint and replaces `#` while sorting. Clearing all
+  restores the grid's default order. Full-scope filtering and ordered sorting precede paging;
   nulls stay last at each level and source order breaks equal ties.
 - Trade column visibility is stored per workspace/table in browser localStorage,
   shared by aggregate/session/demo views of the same column schema. It survives

@@ -10,6 +10,7 @@ export { AnalyticsCurve } from './AnalyticsCharts.jsx'
 import { profitFactorGauge, bucketCurve, excursionSummary, scenarioRiskCurve, scenarioChartSeries, scenarioResults, realizedRiskSeries, idealRiskSummary } from './analyticsPresentation.js'
 import { displayDate } from './dateFormat.js'
 import { currencyLabel } from './moneyFormat.js'
+import { monteCarlo, simulationMoments } from './analyticsSimulation.js'
 import AnalyticsFilterBar from './AnalyticsFilterBar.jsx'
 import LedgerFilterDrawer from './LedgerFilterDrawer.jsx'
 import FxSelect from './FxSelect.jsx'
@@ -443,10 +444,58 @@ function ScenarioSimulator({ kind, model, data, config, loadExperiment, timezone
   </ReportSection>
 }
 
+function MonteCarloSimulator({ model, data }) {
+  const { t, fmt } = useTestingLocale(), job = useSimulationRun()
+  const currency = model.result?.account_currency
+  const currencies = new Set(data.rows.map(row => row.account_currency).filter(Boolean))
+  const compatible = Boolean(currency) && !model.result?.multi_currency && (currencies.size === 0 || currencies.size === 1 && currencies.has(currency))
+  const initialConfig = () => ({ method:'normal', simulations:20, trades:Math.max(1,Math.min(300,data.count)), capital:compatible ? number(data.endingBalance) ?? '' : '', ...Object.fromEntries(Object.entries(compatible && simulationMoments(data.rows) || {}).map(([key,value]) => [key,key === 'winRate' && value != null ? Number(value.toFixed(2)) : value ?? ''])), seed:42 })
+  const [mc,setMc] = useState(initialConfig), [applied,setApplied] = useState(null)
+  const busy = job.phase === 'loading', result = job.result
+  const run = () => { const next = {...mc}; setApplied(next); job.run(() => monteCarlo(next,data.rows)) }
+  const reset = () => { job.reset(); setMc(initialConfig()); setApplied(null) }
+  const fields = [['simulations','Số lượt mô phỏng',1,1000,1],['trades','Lệnh mỗi lượt',1,1000,1],['capital',`Vốn bắt đầu (${currencyLabel(currency) || t('Đơn vị tài khoản')})`,.01,undefined,'any'],['averageWin','Lãi trung bình',0,undefined,'any'],['averageLoss','Độ lớn lỗ trung bình',0,undefined,'any'],['winRate','Win rate (%)',0,100,'any']]
+  const input = ([key,label,min,max,step]) => <label className="fxa-field" key={key}><span>{t(label)}</span><input aria-label={t(label)} type="number" min={min} max={max} step={step} required={!['winStd','lossStd'].includes(key)} disabled={busy || !compatible || mc.method === 'ledger' && ['averageWin','averageLoss','winRate'].includes(key)} value={mc[key] ?? ''} onChange={event=>setMc({...mc,[key]:event.target.value})}/></label>
+  const colors = ['blue','positive','negative','peach','violet','gold']
+  return <ReportSection headingOutside className="fxa-monte-panel" title="Monte Carlo Simulation" help="Mô phỏng nhiều chuỗi lệnh độc lập từ các thông số đã chọn. Mặc định dùng phân phối chuẩn với độ lệch chuẩn đo từ giao dịch hiện tại, cắt độ lớn âm về 0; có thể chọn lãi/lỗ cố định hoặc lấy mẫu giao dịch trong Nâng cao. Win rate mặc định tính trên lệnh có PnL khác 0. Vốn bắt đầu lấy số dư sau các lệnh đóng trong phạm vi; thiếu dữ liệu giữ trống. Khi vốn về 0, chuỗi dừng. Biểu đồ hiện tối đa 30 chuỗi; thống kê dùng tất cả lượt. Đây không phải dự báo hay xác suất vượt challenge; chưa áp luật daily loss/Prop firm.">
+    <div data-testid="monte-carlo-simulator">
+      {!compatible && <p role="status">{t('Chọn phạm vi giao dịch cùng một đơn vị tiền để mô phỏng.')}</p>}
+      <form className="fxa-monte-controls" onSubmit={event=>{event.preventDefault();run()}}>
+        {fields.map(input)}
+        <button type="button" className="fxa-button" onClick={reset}>{t(busy ? 'Hủy' : 'Đặt lại')}</button>
+        <button type="submit" className="fxa-button is-primary" disabled={busy || !compatible}>{t(busy ? 'Đang tính…' : result ? 'Chạy lại' : 'Chạy mô phỏng')}</button>
+        <details className="fxa-monte-advanced"><summary>{t('Nâng cao')}</summary><div>
+          <SelectField label="Phương pháp" value={mc.method} disabled={busy} onChange={method=>setMc({...mc,method})} options={[["normal",'Phân phối chuẩn (cắt tại 0)'],['configured','Xác suất cấu hình'],['ledger','Lấy mẫu giao dịch']]}/>
+          {mc.method === 'normal' && [['winStd','Độ lệch chuẩn lãi',0,undefined,'any'],['lossStd','Độ lệch chuẩn lỗ',0,undefined,'any']].map(input)}
+          {input(['seed','Seed',0,4294967295,1])}
+        </div></details>
+      </form>
+      {busy && <p role="status">{t('Đang tính…')}</p>}
+      {job.phase === 'error' && <p role="alert" className="fxa-error">{t(job.error)}</p>}
+      {result && <div className="fxa-monte-output" aria-busy={busy}>
+        {JSON.stringify(applied) !== JSON.stringify(mc) && <p role="status">{t('Cấu hình đã đổi; chạy lại để cập nhật kết quả.')}</p>}
+        <AnalyticsCurve series={result.paths.map(path=>path.map(value=>({value})))} seriesMeta={result.paths.map((_,index)=>({label:t('Lượt {count}',{count:index+1}),color:`var(--report-${colors[index % colors.length]})`}))} labels={Array.from({length:Number(applied.trades)+1},(_,index)=>String(index))} interpolation="linear" label={t('Số dư mô phỏng Monte Carlo')} yTitle={currency} suffix={` ${currencyLabel(currency) || currency}`} height={380}/>
+        <h3>{t('Kết quả mô phỏng')}</h3>
+        <div className="fxa-monte-metrics fxa-metrics">
+          <Stat label="Average balance" value={fmt(result.average,` ${currencyLabel(currency) || currency}`)} help="Trung bình số dư cuối của tất cả lượt mô phỏng."/>
+          <Stat label="Max balance" value={fmt(result.max,` ${currencyLabel(currency) || currency}`)} help="Số dư cuối lớn nhất trong các lượt đã chạy."/>
+          <Stat label="Min balance" value={fmt(result.min,` ${currencyLabel(currency) || currency}`)} help="Số dư cuối nhỏ nhất trong các lượt đã chạy."/>
+          <Stat label="Hệ số lợi nhuận TB" value={result.averageProfitFactor === Infinity ? '∞' : known(result.averageProfitFactor) ? fmt(result.averageProfitFactor) : 'N/A'} help="Trung bình Profit Factor từng lượt. Tất cả lượt có lãi và không lỗ: ∞. Nếu trộn lượt hữu hạn, vô hạn hoặc không xác định: N/A; không thay mẫu số lỗ bằng 1."/>
+          <Stat label="Chuỗi thắng dài nhất" value={fmt(result.maxWinStreak,'',0)} help="Chuỗi thắng liên tiếp dài nhất trong một lượt; không nối giữa các lượt."/>
+          <Stat label="Chuỗi thua dài nhất" value={fmt(result.maxLossStreak,'',0)} help="Chuỗi thua liên tiếp dài nhất trong một lượt; không nối giữa các lượt."/>
+          <Stat label="Tổng lệnh thắng" value={fmt(result.totalWins,'',0)} help="Tổng lệnh có lãi đã thực hiện trên tất cả lượt."/>
+          <Stat label="Tổng lệnh thua" value={fmt(result.totalLosses,'',0)} help="Tổng lệnh lỗ đã thực hiện trên tất cả lượt; không đếm bước sau khi cạn vốn."/>
+        </div>
+      </div>}
+    </div>
+  </ReportSection>
+}
+
 export function AnalyticsSimulation({ model, data, config, loadExperiment, timezone }) {
   return <div className="fxa-report fxa-visual-report fxa-simulation-report" data-testid="analytics-simulation">
     <ScenarioSimulator kind="stop_loss" {...{model,data,config,loadExperiment,timezone}}/>
     <ScenarioSimulator kind="risk_reward" {...{model,data,config,loadExperiment,timezone}}/>
+    <MonteCarloSimulator {...{model,data}}/>
   </div>
 }
 

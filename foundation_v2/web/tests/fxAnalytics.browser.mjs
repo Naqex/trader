@@ -43,7 +43,7 @@ try {
     await page.screenshot({ path: path.join(out, `drawdown-${theme}-${width}.png`), fullPage: true })
     await page.getByRole('tab', { name: 'Simulation', exact: true }).click()
     await page.getByTestId('analytics-simulation').waitFor()
-    assert.equal(await page.getByText('Monte Carlo Simulation', { exact: true }).count(), 0)
+    assert.equal(await page.getByTestId('monte-carlo-simulator').count(), 1)
     await page.getByLabel('Stop distance (ticks)', { exact: true }).fill('40')
     await page.getByRole('button', { name: 'Chạy SL / RR', exact: true }).click()
     await page.waitForFunction(() => !document.body.innerText.includes('Đang mô phỏng từ đường giá'))
