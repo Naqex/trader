@@ -120,17 +120,20 @@
 .live-metatrader-option:hover:not(:disabled) { background:transparent; color:var(--wm-content); }
 .live-metatrader-option:hover:not(:disabled) .live-metatrader-avatar { background:var(--wm-hover); }
 .live-metatrader-option:focus-visible { outline:2px solid var(--wm-focus); outline-offset:2px; }
-.live-cash-summary { display:grid; gap:0; margin:12px 0 0; border-block:1px solid var(--wm-border); }
-.live-cash-summary > div { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); align-items:center; min-width:0; padding:12px 24px; background:transparent; border-bottom:1px solid var(--wm-border); }
-.live-cash-summary > div:last-child { border-bottom:0; }
+.live-cash-account-picker { min-width:0; padding:16px 24px; border-bottom:1px solid var(--wm-border); }
+.live-cash-account-picker > .fx-select { width:100%; min-width:0; }
+.live-cash-account-picker .fx-select-trigger { width:100%; box-sizing:border-box; }
+.live-cash-account-picker .fx-select-value { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.live-cash-summary { display:grid; gap:0; margin:0; }
+.live-cash-summary > div { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); align-items:stretch; min-width:0; padding:0; background:transparent; border-bottom:1px solid var(--wm-border); }
 .live-cash-summary > .live-cash-balance { margin-bottom:0; border:0; border-bottom:1px solid var(--wm-border); border-radius:0; }
-.live-cash-summary dt { display:flex; align-items:center; gap:6px; color:var(--wm-content); font-size:13px; font-weight:600; }
-.live-cash-summary dd { min-width:0; margin:0; padding-left:12px; border-left:1px solid var(--wm-border); font-size:18px; font-weight:600; font-variant-numeric:tabular-nums; text-align:right; }
-.fx-app.fx-shell-story[data-theme] .fx-content .live-cash-info { display:grid; place-items:center; align-self:flex-start; margin-left:auto; width:20px; height:20px; min-height:20px; padding:0; border:0; background:transparent; color:var(--wm-content-muted); cursor:pointer; }
+.live-cash-summary dt { display:flex; align-items:center; gap:8px; min-width:0; padding:16px 12px 16px 24px; color:var(--wm-content); font-size:12px; font-weight:500; }
+.live-cash-summary dt > svg { flex:0 0 14px; }
+.live-cash-summary dd { min-width:0; margin:0; padding:16px 24px 16px 12px; border-left:1px solid var(--wm-border); align-content:center; font-size:16px; font-weight:600; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; text-align:right; }
+.fx-app.fx-shell-story[data-theme] .fx-content .live-cash-info { display:grid; place-items:center; flex:0 0 20px; margin-left:auto; width:20px; height:20px; min-height:20px; padding:0; border:0; background:transparent; color:var(--wm-content-muted); cursor:pointer; }
 .fx-app.fx-shell-story[data-theme] .fx-content .live-cash-info:is(:hover,:active) { background:transparent; color:var(--wm-content); }
-.is-transactions .live-add-account { padding-inline:0; }
-.is-transactions .live-account-sidebar-heading { margin-inline:0; padding-inline:24px; }
-.is-transactions .live-account-picker { margin-inline:24px; }
+.live-accounts-layout.is-transactions .live-add-account { min-width:0; padding:0; background:var(--wm-canvas); }
+.live-accounts-layout.is-transactions .live-account-sidebar-heading { margin:0; padding-inline:24px; }
 .is-transactions .live-cash-summary { margin-inline:0; }
 .live-connect-instructions { display:grid; gap:16px; font-size:14px; line-height:1.6; }
 .live-connect-instructions :is(h3,p,ol) { margin:0; }
@@ -336,6 +339,8 @@
 .live-source-details dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .live-source-details dd { margin: 4px 0 0; color: var(--wm-content); overflow-wrap: anywhere; }
 .live-broker { min-width: 0; }
+.fx-app .live-workspace .live-analytics-report { box-sizing:border-box; width:100%; max-width:none; margin:0; padding:var(--wm-page-start) var(--wm-page-gutter) 0; }
+.fx-app .live-analytics-report > .fxa-analytics-filters { margin-bottom:0; }
 .live-broker .live-section-heading { flex-wrap: wrap; }
 .live-deals-toolbar { flex-wrap: wrap; margin-block: 20px; }
 .live-deals-toolbar.is-search-only { justify-content: flex-end; }

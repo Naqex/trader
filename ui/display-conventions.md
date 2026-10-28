@@ -463,6 +463,20 @@ outside-click dismissal so direct Apply cannot lose the last keystroke.
 Equal applied filter values must preserve the draft across report/route refresh;
 reset it only when the applied values themselves change.
 
+Live Analytics reuses this filter bar with assets, side, outcome, tags, accounts,
+weekday, timezone and date range. Type is fixed by the Live route; strategy,
+hour-range and export controls are omitted. Account choices use the same staged
+Apply behavior as other filters, including after polling refreshes. Aggregate
+accounts through the existing Live account adapter; mixed currencies or missing
+source data remain explicit unavailable states. Keep the controls visible when
+no accounts are selected so the user can recover.
+
+Live Analytics has one page gutter owner. Its report tabs extend to the pane
+edges, while report content retains the normal gutter. Account transaction
+details use a padded picker and joined summary rows: each row owns its bottom
+edge, and the value column owns the full-height vertical seam. Do not add a
+second wrapper frame or inset each row's divider with content padding.
+
 Applied chips show readable filter values with per-filter removal and one clear-all
 action when filters exist. Group the time endpoints and date endpoints separately.
 The current session is report context, not a removable filter. Internal report

@@ -15,16 +15,18 @@ const OUTCOMES = { win: 'Thắng', loss: 'Thua', breakeven: 'Hòa vốn' }
 
 export default function AnalyticsFilterBar({ filters, onChange, extra, onExtra, rows, labels = [], onExport, pending, sessionControl, persistInUrl = true, sourceType = 'Backtesting', statusControl, disabled = false }) {
   const { t, timezone } = useTestingLocale()
-  const fixedPropSource = sourceType === 'Prop firm'
+  const live = sourceType === 'Live'
+  const fixedPropSource = sourceType === 'Prop firm' || live
   const [draft, setDraft] = useState({ ...filters }), [draftExtra, setDraftExtra] = useState({ ...extra })
   const [timezoneNotice, setTimezoneNotice] = useState('')
   const sessionProps = sessionControl?.props
   const [draftSession, setDraftSession] = useState(sessionProps?.value)
   const appliedFilters = JSON.stringify(filters), appliedExtra = JSON.stringify(extra)
+  const appliedSession = JSON.stringify(sessionProps?.value)
   // A refreshed report can recreate equal props while the user is still choosing.
   useEffect(() => setDraft(JSON.parse(appliedFilters)), [appliedFilters])
   useEffect(() => setDraftExtra(JSON.parse(appliedExtra)), [appliedExtra])
-  useEffect(() => setDraftSession(sessionProps?.value), [sessionProps?.value])
+  useEffect(() => setDraftSession(appliedSession === undefined ? undefined : JSON.parse(appliedSession)), [appliedSession])
   const timezoneOptions = useMemo(() => timezoneOptionsAt(new Date(), [...new Set([...chartTimezones, timezone])]), [timezone])
   const unique = key => [...new Set(rows.flatMap(row => key === 'tags' ? row.tags || [] : row[key] ? [row[key]] : []))].sort()
   const change = patch => setDraft(value => ({ ...value, ...patch }))
@@ -77,7 +79,7 @@ export default function AnalyticsFilterBar({ filters, onChange, extra, onExtra, 
   ].filter(([, , value]) => value !== '' && value != null && value !== 'all')
   const hasDates = Boolean(filters.from || filters.to), hasTime = Boolean(extra.timeStart || extra.timeEnd)
   const activeFilters = chips.length > 0 || hasDates || hasTime
-  const sessionName = sessionProps?.items.find(item => item.record_id === sessionProps.value)?.name
+  const sessionName = sessionProps?.items?.find(item => item.record_id === sessionProps.value)?.name
   const invalidDates = draft.from && draft.to && draft.from > draft.to
   return <section className="fxa-filters fxa-analytics-filters" inert={disabled || undefined} aria-disabled={disabled || undefined} aria-label={t('Bộ lọc analytics')} data-testid="analytics-filters">
     <div className="fxa-analytics-filter-row">
@@ -86,15 +88,15 @@ export default function AnalyticsFilterBar({ filters, onChange, extra, onExtra, 
       {multi('Side', 'sides', [{ value: 'buy', label: 'Buy' }, { value: 'sell', label: 'Sell' }], 'side', true)}
       {multi('Outcome', 'outcomes', Object.entries(OUTCOMES).map(([value, label]) => ({ value, label })), 'outcome', true)}
       {multi('Tags', 'tagInclude', choices(labelNames), 'tag', false, option => <span className="wm-trade-label" data-color={labels.find(item => item.name === option.value)?.color || 'gray'}>{option.label}</span>)}
-      {sessionControl && React.cloneElement(sessionControl, { value: draftSession, onChange: setDraftSession, triggerContent: 'Session', compact: true })}
+      {sessionControl && React.cloneElement(sessionControl, { value: draftSession, onChange: setDraftSession, triggerContent: live ? t('Accounts') + (draftSession?.length ? ` · ${draftSession.length}` : '') : 'Session', compact: true })}
       {!fixedPropSource && <FxSelect label="Strategy" triggerContent="Strategy" value={draftExtra.strategy} options={[{ value: 'all', label: 'Tất cả strategies' }, ...choices(unique('playbook_id'))]} searchable onChange={value => changeExtra({ strategy: value })} />}
       {multi('Ngày', 'days', DAYS, 'weekday')}
-      <TimeFilter value={draftExtra} onChange={changeExtra} />
+      {!live && <TimeFilter value={draftExtra} onChange={changeExtra} />}
       <FxSelect className="fxa-timezone-filter" label="Múi giờ" triggerContent={`${t('Múi giờ')} (${timezoneLabel(draftExtra.timezone)})`} value={draftExtra.timezone} localizeOptions={false} searchable options={timezoneOptions} onChange={value => changeExtra({ timezone: value })} />
-      <DateFilter value={draft} onChange={change} label="Ngày đóng lệnh" title="Lọc ngày đóng lệnh" calendarLabel="Chọn khoảng ngày đóng" />
+      <DateFilter value={draft} onChange={change} label={live ? 'Date range' : 'Ngày đóng lệnh'} title="Lọc ngày đóng lệnh" calendarLabel="Chọn khoảng ngày đóng" />
       <button type="button" className="fxa-button fxa-apply-button" disabled={Boolean(invalidDates)} onClick={() => apply()}>{t('Apply')}</button>
       <span className="fxa-analytics-filter-status">{statusControl}</span>
-      <button className="fxa-button fxa-icon-button fxa-export-button" type="button" aria-label={t('Xuất CSV')} disabled={pending} onClick={onExport}><TestingIcon kind="download" size={16} /></button>
+      {onExport && <button className="fxa-button fxa-icon-button fxa-export-button" type="button" aria-label={t('Xuất CSV')} disabled={pending} onClick={onExport}><TestingIcon kind="download" size={16} /></button>}
     </div>
     {invalidDates && <p role="alert" className="fxa-error">{t('Ngày kết thúc phải từ ngày bắt đầu trở đi.')}</p>}
     {timezoneNotice && <p role="status">{timezoneNotice}</p>}

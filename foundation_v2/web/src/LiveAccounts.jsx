@@ -107,7 +107,7 @@ export default function LiveAccounts({ workspace, accounts, records, broker, cho
     </section>
     <aside ref={sidebar} className="live-add-account" aria-label={t(transactions ? 'Chi tiết tài khoản' : 'Thêm tài khoản')}>
       <div className="live-account-sidebar-heading"><h2>{t(transactions ? 'Chi tiết tài khoản' : 'Thêm tài khoản')}</h2>{transactions&&selected&&rowActions(selected)}</div>
-      {transactions ? <>{picker}<dl className="live-cash-summary">
+      {transactions ? <><div className="live-cash-account-picker">{picker}</div><dl className="live-cash-summary">
         {[
           ['Số dư',selected?.snapshot.account.balance,'chart',selected?.record?'Số dư thủ công = số dư ban đầu + PnL ròng đã ghi. Chưa gồm nạp/rút.':'Số dư do MT5 cung cấp tại lần cập nhật gần nhất.'],
           ['Số dư ban đầu',opening?.amount,'chart',selected?.record?'Vốn ban đầu đã lưu của tài khoản thủ công.':'Số dư ghi nhận khi đồng bộ thành công lần đầu; không phải vốn gốc tại broker.'],
