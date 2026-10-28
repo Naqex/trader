@@ -10,13 +10,14 @@ export { AnalyticsCurve } from './AnalyticsCharts.jsx'
 import { profitFactorGauge, bucketCurve, excursionSummary, scenarioRiskCurve, scenarioChartSeries, scenarioResults, realizedRiskSeries, idealRiskSummary } from './analyticsPresentation.js'
 import { displayDate } from './dateFormat.js'
 import { currencyLabel } from './moneyFormat.js'
-import { monteCarlo, simulationMoments } from './analyticsSimulation.js'
+import { monteCarlo, monteCarloDefaults, monteCarloInputErrors } from './analyticsSimulation.js'
 import AnalyticsFilterBar from './AnalyticsFilterBar.jsx'
 import LedgerFilterDrawer from './LedgerFilterDrawer.jsx'
 import FxSelect from './FxSelect.jsx'
 import LedgerFilterActions from './LedgerFilterActions.jsx'
 import TestingIcon from './TestingIcon.jsx'
 import LegacyModal from './LegacyModal.jsx'
+import { FieldError, fieldValidationProps, focusFirstInvalid } from './FormValidation.jsx'
 import AnalyticsCalendar, { CALENDAR_HELP } from './AnalyticsCalendar.jsx'
 import { DEFAULT_EXTRA_FILTERS } from './tradingAnalyticsModel.js'
 import { LEDGER_BASE_FILTERS, ledgerFilterChips, removeLedgerFilter } from './ledgerFilterModel.js'
@@ -445,27 +446,29 @@ function ScenarioSimulator({ kind, model, data, config, loadExperiment, timezone
 }
 
 function MonteCarloSimulator({ model, data }) {
-  const { t, fmt } = useTestingLocale(), job = useSimulationRun()
+  const { t, fmt, locale } = useTestingLocale(), job = useSimulationRun(), formId = useId()
   const currency = model.result?.account_currency
   const currencies = new Set(data.rows.map(row => row.account_currency).filter(Boolean))
   const compatible = Boolean(currency) && !model.result?.multi_currency && (currencies.size === 0 || currencies.size === 1 && currencies.has(currency))
-  const initialConfig = () => ({ method:'normal', simulations:20, trades:Math.max(1,Math.min(300,data.count)), capital:compatible ? number(data.endingBalance) ?? '' : '', ...Object.fromEntries(Object.entries(compatible && simulationMoments(data.rows) || {}).map(([key,value]) => [key,key === 'winRate' && value != null ? Number(value.toFixed(2)) : value ?? ''])), seed:42 })
-  const [mc,setMc] = useState(initialConfig), [applied,setApplied] = useState(null)
+  const initialConfig = () => monteCarloDefaults(compatible ? data.rows : [], compatible ? data.endingBalance : null)
+  const [mc,setMc] = useState(initialConfig), [applied,setApplied] = useState(null), [touched,setTouched] = useState({})
   const busy = job.phase === 'loading', result = job.result
   const run = () => { const next = {...mc}; setApplied(next); job.run(() => monteCarlo(next,data.rows)) }
-  const reset = () => { job.reset(); setMc(initialConfig()); setApplied(null) }
+  const reset = () => { job.reset(); setMc(initialConfig()); setApplied(null); setTouched({}) }
   const fields = [['simulations','Số lượt mô phỏng',1,1000,1],['trades','Lệnh mỗi lượt',1,1000,1],['capital',`Vốn bắt đầu (${currencyLabel(currency) || t('Đơn vị tài khoản')})`,.01,undefined,'any'],['averageWin','Lãi trung bình',0,undefined,'any'],['averageLoss','Độ lớn lỗ trung bình',0,undefined,'any'],['winRate','Win rate (%)',0,100,'any']]
-  const input = ([key,label,min,max,step]) => <label className="fxa-field" key={key}><span>{t(label)}</span><input aria-label={t(label)} type="number" min={min} max={max} step={step} required={!['winStd','lossStd'].includes(key)} disabled={busy || !compatible || mc.method === 'ledger' && ['averageWin','averageLoss','winRate'].includes(key)} value={mc[key] ?? ''} onChange={event=>setMc({...mc,[key]:event.target.value})}/></label>
+  const errors = monteCarloInputErrors(mc)
+  const input = ([key,label,min,max,step]) => {
+    const error = touched[key] && errors[key], errorId = `${formId}-${key}-error`
+    return <label className="fxa-field" key={key}><span>{t(label)}</span><input name={key} aria-label={t(label)} {...fieldValidationProps(error,errorId)} type="number" min={min} max={max} step={step} required disabled={busy || !compatible} value={mc[key] ?? ''} onChange={event=>setMc(current=>({...current,[key]:event.target.value}))}/><FieldError id={errorId} error={error}/></label>
+  }
+  const moneyAxis = value => currency === 'USD' ? `$${new Intl.NumberFormat(locale,{minimumFractionDigits:2,maximumFractionDigits:2}).format(value)}` : /^[A-Z]{3}$/i.test(currency || '') ? new Intl.NumberFormat(locale,{style:'currency',currency,currencyDisplay:'narrowSymbol',minimumFractionDigits:2,maximumFractionDigits:2}).format(value) : fmt(value,currency ? ` ${currency}` : '')
   const colors = ['blue','positive','negative','peach','violet','gold']
-  const placeholderTrades = Math.max(1, Math.min(1000, Number(mc.trades) || 1))
-  const displayResult = result || { paths: [Array.from({length: placeholderTrades + 1}, () => ({value: 0}))], average: 0, max: 0, min: 0, averageProfitFactor: 0, maxWinStreak: 0, maxLossStreak: 0, totalWins: 0, totalLosses: 0 }
-  const displayPaths = result ? result.paths : displayResult.paths
-  const displayTrades = result ? Math.max(1, Math.min(1000, Number(applied?.trades ?? mc.trades) || 1)) : placeholderTrades
-  const displayLabels = Array.from({length: displayTrades + 1}, (_, index) => String(index))
-  return <ReportSection headingOutside className="fxa-monte-panel" title="Monte Carlo Simulation" help="Mô phỏng nhiều chuỗi lệnh độc lập từ sáu thông số đã chọn. Mặc định dùng phân phối chuẩn với độ lệch chuẩn đo từ giao dịch hiện tại và cắt độ lớn âm về 0; win rate tính trên lệnh có PnL khác 0. Vốn bắt đầu lấy số dư sau các lệnh đóng trong phạm vi; thiếu dữ liệu giữ trống. Khi vốn về 0, chuỗi dừng. Biểu đồ hiện tối đa 30 chuỗi; thống kê dùng tất cả lượt. Đây không phải dự báo hay xác suất vượt challenge; chưa áp luật daily loss/Prop firm.">
+  const displayResult = result || { average: 0, max: 0, min: 0, averageProfitFactor: 0, maxWinStreak: 0, maxLossStreak: 0, totalWins: 0, totalLosses: 0 }
+  const displayLabels = result ? Array.from({length:Number(applied.trades)+1}, (_, index) => String(index)) : []
+  return <ReportSection headingOutside className="fxa-monte-panel" title="Monte Carlo Simulation" help="Mặc định 100 lượt × 100 lệnh. Vốn, lãi/lỗ trung bình và win rate lấy từ phạm vi hiện tại, làm tròn đến 2 chữ số; phần thiếu dùng giả định 10.000 vốn, 100 lãi, 100 lỗ và 50% thắng. Win rate tính trên lệnh có PnL khác 0. Phân phối chuẩn dùng độ lệch chuẩn đo từ dữ liệu; nhóm thiếu dữ liệu dùng 0 (độ lớn cố định). Có thể sửa sáu thông số trước khi chạy. Khi vốn về 0, chuỗi dừng. Biểu đồ hiện tối đa 30 chuỗi; thống kê dùng tất cả lượt. Đây không phải dự báo hay xác suất vượt challenge; chưa áp luật daily loss/Prop firm.">
     <div data-testid="monte-carlo-simulator">
       {!compatible && <p role="status">{t('Chọn phạm vi giao dịch cùng một đơn vị tiền để mô phỏng.')}</p>}
-      <form className="fxa-monte-controls" onSubmit={event=>{event.preventDefault();run()}}>
+      <form className="fxa-monte-controls" noValidate onSubmit={event=>{event.preventDefault();if(Object.keys(errors).length){setTouched(Object.fromEntries(fields.map(([key])=>[key,true])));focusFirstInvalid(event.currentTarget);return}run()}}>
         {fields.map(input)}
         <button type="button" className="fxa-button" onClick={reset}>{t(busy ? 'Hủy' : 'Đặt lại')}</button>
         <button type="submit" className="fxa-button is-primary" disabled={busy || !compatible}>{t(busy ? 'Đang tính…' : result ? 'Chạy lại' : 'Chạy mô phỏng')}</button>
@@ -474,7 +477,7 @@ function MonteCarloSimulator({ model, data }) {
       {job.phase === 'error' && <p role="alert" className="fxa-error">{t(job.error)}</p>}
       <div className="fxa-monte-output" aria-busy={busy}>
         {result && JSON.stringify(applied) !== JSON.stringify(mc) && <p role="status">{t('Cấu hình đã đổi; chạy lại để cập nhật kết quả.')}</p>}
-        <AnalyticsCurve series={displayPaths.map(path=>path.map(value=>({value: value.value ?? value})))} seriesMeta={result ? result.paths.map((_,index)=>({label:t('Lượt {count}',{count:index+1}),color:`var(--report-${colors[index % colors.length]})`})) : []} labels={displayLabels} interpolation="linear" label={t('Số dư mô phỏng Monte Carlo')} yTitle={currency} suffix={` ${currencyLabel(currency) || currency}`} height={380}/>
+        <AnalyticsCurve series={result ? result.paths.map(path=>path.map(value=>({value}))) : []} seriesMeta={result ? result.paths.map((_,index)=>({label:t('Lượt {count}',{count:index+1}),color:`var(--report-${colors[index % colors.length]})`})) : []} labels={displayLabels} interpolation="linear" label={t('Số dư mô phỏng Monte Carlo')} formatYTick={moneyAxis} emptyAxes={!result} suffix={` ${currencyLabel(currency) || currency || ''}`} height={380}/>
         <h3>{t('Kết quả mô phỏng')}</h3>
         <div className="fxa-monte-metrics fxa-metrics">
           <Stat label="Average balance" value={fmt(displayResult.average,` ${currencyLabel(currency) || currency}`)} help="Trung bình số dư cuối của tất cả lượt mô phỏng."/>

@@ -144,7 +144,20 @@ and virtual tables; do not intercept wheel events to simulate page scrolling.
 Monte Carlo keeps its configuration, summary,
 reset and rerun controls. Tables contain horizontal overflow while vertical
 scroll belongs to the page. Smaller widths collapse groups without scaling down
-data text. RR mini curves are 48px sparklines without axis labels; their points
+data text. Monte Carlo starts at 100 runs of 100 trades. Its editable capital,
+mean win/loss and win rate use measured scope data rounded to two decimals;
+missing values use explicit assumptions of 10,000 capital, 100 win/loss and 50%
+win rate, described in the section help. Missing group deviations use zero;
+mixed/unknown account units remain disabled. Reset restores these defaults.
+Validate on submit using shared inline field errors, then update errors as the
+draft changes. Keep the engine's 250,000-step cap and focus the first invalid
+field. Do not show the browser's native validation popup.
+Before a successful run, keep the chart frame with only a zero gridline, a
+currency-symbol zero tick (USD uses `$`) and one centered `0` on the horizontal
+axis; do not invent paths, dots or area fills. Result metrics remain zero until
+a run. The eight metrics use a flat four-column/two-row grid (two columns below
+850px), with single full-width/height separators meeting the panel boundary,
+without individual rounded cards or gaps. RR mini curves are 48px sparklines without axis labels; their points
 retain tooltips and keyboard access. Other compact plots retain their axes.
 Report panels do not show fullscreen controls. PnL shows only the four interval
 controls in its heading, with no standalone currency or balance/PnL toggle.

@@ -18,7 +18,7 @@ function tickText(value, domain, locale, suffix) {
   const digits = Math.max(0, Math.min(8, -Math.floor(Math.log10(step))))
   return new Intl.NumberFormat(locale, { maximumFractionDigits: digits + (step / 10 ** Math.floor(Math.log10(step)) === 2.5 ? 1 : 0) }).format(value) + (suffix === '%' ? '%' : '')
 }
-export function AnalyticsCurve({ series, seriesMeta = [], label, suffix = '', onSelect, selected, negative = false, labels = [], axisLabels, timestamps, yTitle, height = 200, stretch = false, sparkline = false, controls = false, interpolation = 'smooth' }) {
+export function AnalyticsCurve({ series, seriesMeta = [], label, suffix = '', onSelect, selected, negative = false, labels = [], axisLabels, timestamps, yTitle, height = 200, stretch = false, sparkline = false, controls = false, interpolation = 'smooth', emptyAxes = false, formatYTick }) {
   const { t, fmt, locale } = useTestingLocale(), id = useId()
   const [ref, width, measuredHeight] = useSize(height, stretch)
   const [range, setRange] = useState([0, 1]), [tool, setTool] = useState('zoom'), [brush, setBrush] = useState(null)
@@ -33,9 +33,9 @@ export function AnalyticsCurve({ series, seriesMeta = [], label, suffix = '', on
   const end = controls ? Math.min(total, last + 2) : total
   const paths = controls ? series.map(path => path.slice(start, end)) : series
   const values = paths.flat().map(point => point.value).filter(finite)
-  const domain = chartDomain(values, { zero: negative, symmetric: height <= 120 })
+  const domain = emptyAxes ? {low:0, high:1, ticks:[0]} : chartDomain(values, { zero: negative, symmetric: height <= 120 })
   if (!domain && !controls) return <div ref={ref} className="fxa-chart-empty">{t('Chưa có dữ liệu')}</div>
-  const ticks = domain ? chartTicks(domain, height <= 120 ? 3 : 6) : [], axis = ticks.map(value => tickText(value, domain, locale, suffix))
+  const ticks = emptyAxes ? [0] : domain ? chartTicks(domain, height <= 120 ? 3 : 6) : [], axis = ticks.map(value => formatYTick ? formatYTick(value) : tickText(value, domain, locale, suffix))
   const left = compact ? 4 : Math.max(yTitle ? 64 : 42, Math.min(width * .35, Math.max(...axis.map(value => value.length)) * 7 + (yTitle ? 34 : 18))), right = width - (compact ? 4 : controls ? 8 : 20), top = compact ? 6 : controls ? 56 : 20, edge = height - (compact ? 6 : 36)
   const count = Math.max(0, ...paths.map(path => path.length)), x = index => left + (positions[index + start] - activeRange[0]) / (activeRange[1] - activeRange[0]) * (right - left)
   const inView = index => x(index) >= left - .01 && x(index) <= right + .01
@@ -128,7 +128,8 @@ export function AnalyticsCurve({ series, seriesMeta = [], label, suffix = '', on
         return finite(point.value) && inView(index) && <circle key={index} className="fxa-series-point" cx={x(index)} cy={y(point.value)} r="6" tabIndex={index===lastVisible?0:undefined} role="img" aria-label={detail} data-tooltip={detail} data-tooltip-touch=""/>
       })}</g>})}
       {series.length === 1 && !seriesMeta.length && paths[0].map((point, index) => finite(point.value) && inView(index) && <circle key={index} className="fxa-viz-point" cx={x(index)} cy={y(point.value)} r={point.tradeId === selected ? 5 : 3} tabIndex={onSelect || count <= 50 ? 0 : undefined} role={onSelect ? 'button' : 'img'} aria-label={detail(index)} data-tooltip={detail(index)} onClick={() => selectPoint(point)} onKeyDown={event => { if (['Enter', ' '].includes(event.key) && point.tradeId && onSelect) { event.preventDefault(); selectPoint(point) } }}/>) }
-      {!compact && visibleTicks.map(index => <g className="fxa-x-tick" key={index}>{axisLabels && <line className="fxa-gridline" x1={x(index)} x2={x(index)} y1={edge} y2={edge+5}/>}<text x={x(index)} y={height - 10} textAnchor={index === 0 ? 'start' : index === count - 1 ? 'end' : 'middle'}>{axisLabels ? axisLabels[index+start] : labelAt(index)}</text></g>)}
+      {!compact && emptyAxes && <g className="fxa-x-tick"><text x={(left+right)/2} y={height-10} textAnchor="middle">0</text></g>}
+      {!compact && !emptyAxes && visibleTicks.map(index => <g className="fxa-x-tick" key={index}>{axisLabels && <line className="fxa-gridline" x1={x(index)} x2={x(index)} y1={edge} y2={edge+5}/>}<text x={x(index)} y={height - 10} textAnchor={index === 0 ? 'start' : index === count - 1 ? 'end' : 'middle'}>{axisLabels ? axisLabels[index+start] : labelAt(index)}</text></g>)}
       {series.length === 1 && <rect x={left} y={top} width={Math.max(0, right - left)} height={edge - top} fill="transparent" pointerEvents="none"/>}
       {brush && <rect x={Math.min(...brush)} y={top} width={Math.abs(brush[1]-brush[0])} height={edge-top} className="fxa-chart-brush" pointerEvents="none"/>}
     </svg>

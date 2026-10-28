@@ -331,15 +331,18 @@
 .fxa-monte-form .fxa-field{min-width:0;flex:none}
 .fxa-monte-results{min-width:0}
 .fxa-monte-controls{display:grid;grid-template-columns:repeat(6,minmax(0,1fr)) auto auto;align-items:end;gap:12px;margin-bottom:20px}
-.fxa-monte-controls>.fxa-field{min-width:0;align-self:stretch}
-.fxa-monte-controls>.fxa-field{grid-template-rows:minmax(32px,auto) auto}
+.fxa-monte-controls>.fxa-field{min-width:0;align-self:start}
+.fxa-monte-controls>.fxa-field{grid-template-rows:36px auto}
 .fxa-monte-controls>.fxa-field>span{display:flex;align-items:flex-start;min-height:36px;line-height:18px}
 .fxa-monte-controls input{width:100%;min-width:0}
-.fxa-monte-controls>button{align-self:end;white-space:nowrap}
+.fxa-monte-controls>button{align-self:start;margin-top:42px;white-space:nowrap}
 .fxa-monte-output>h3{margin:20px 0 16px;font-size:16px;font-weight:500}
-.fxa-monte-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
-.fxa-monte-metrics>.fxa-metric{min-width:0;border:1px solid var(--wm-border);border-radius:var(--wm-panel-radius,12px);padding:20px}
-@media(max-width:850px){.fxa-monte-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-monte-metrics>.fxa-metric{padding:12px}}
+.fxa-monte-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.fxa-visual-report .fxa-panel .fxa-monte-metrics{gap:0;margin:0 -16px -16px;border-top:1px solid var(--wm-border)}
+.fxa-monte-metrics>.fxa-metric{min-width:0;border:0;border-radius:0;padding:20px;border-inline-end:1px solid var(--wm-border)}
+.fxa-monte-metrics>.fxa-metric:nth-child(4n){border-inline-end:0}
+.fxa-monte-metrics>.fxa-metric:nth-child(n+5){border-top:1px solid var(--wm-border)}
+@media(max-width:850px){.fxa-monte-controls>button{margin-top:0}.fxa-monte-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fxa-monte-metrics>.fxa-metric{padding:16px}.fxa-monte-metrics>.fxa-metric:nth-child(2n){border-inline-end:0}.fxa-monte-metrics>.fxa-metric:nth-child(n+3){border-top:1px solid var(--wm-border)}}
 .fxa-monte-results>.fxa-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:12px}
 .fxa-prop-selector{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin-bottom:16px}
 .fxa-prop-objectives{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:12px 24px;margin:0 0 16px}

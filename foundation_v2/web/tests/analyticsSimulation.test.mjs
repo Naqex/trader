@@ -1,9 +1,28 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { monteCarlo, simulationMoments } from '../src/analyticsSimulation.js'
+import { monteCarlo, simulationMoments, monteCarloDefaults, monteCarloInputErrors } from '../src/analyticsSimulation.js'
 import { readAnalyticsExperiment } from '../src/analyticsExperimentApi.js'
 
 const base = { method:'configured', simulations:3, trades:4, capital:1000, seed:42, averageWin:20, averageLoss:10, winRate:100 }
+
+test('Monte Carlo defaults use measured values and explicit assumptions for missing groups', () => {
+  const defaults = monteCarloDefaults([{net_pnl:-2.28}],99997.72)
+  assert.deepEqual({...defaults},{method:'normal',simulations:100,trades:100,capital:99997.72,averageWin:100,averageLoss:2.28,winRate:0,winStd:0,lossStd:0,seed:42})
+  assert.deepEqual(monteCarloInputErrors(defaults),{})
+  assert.equal(monteCarlo(defaults).totalLosses,10000)
+  const empty = monteCarloDefaults([],null)
+  assert.equal(empty.capital,10000);assert.equal(empty.winRate,50);assert.equal(empty.averageLoss,100)
+  assert.equal(monteCarloDefaults([{net_pnl:12.345}],1000.123).averageWin,12.35)
+  assert.equal(monteCarloDefaults([],0).capital,10000)
+})
+
+test('Monte Carlo field validation rejects blanks, bounds and excess work before running', () => {
+  assert.deepEqual(monteCarloInputErrors(base),{})
+  for (const key of ['simulations','trades','capital','averageWin','averageLoss','winRate']) assert(monteCarloInputErrors({...base,[key]:''})[key])
+  for (const [key,value] of [['simulations',1.5],['trades',1001],['capital',0],['averageWin',-1],['averageLoss',-1],['winRate',101]]) assert(monteCarloInputErrors({...base,[key]:value})[key])
+  assert(monteCarloInputErrors({...base,simulations:1000,trades:1000}).trades)
+  assert.deepEqual(monteCarloInputErrors({...base,winRate:0,averageWin:0,averageLoss:0}),{})
+})
 
 test('Monte Carlo counts executed trades/streaks and treats no-loss PF as unbounded', () => {
   const result = monteCarlo(base)

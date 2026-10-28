@@ -1,4 +1,29 @@
 import { known, number } from './tradingAnalyticsModel.js'
+
+export function monteCarloDefaults(rows, balance) {
+  const moments = simulationMoments(rows)
+  const rounded = value => Number(value.toFixed(2))
+  return { method:'normal', simulations:100, trades:100, capital:number(balance) > 0 ? rounded(Number(balance)) || .01 : 10000,
+    averageWin:moments?.averageWin == null ? 100 : rounded(moments.averageWin),
+    averageLoss:moments?.averageLoss == null ? 100 : rounded(moments.averageLoss),
+    winRate:moments?.winRate == null ? 50 : rounded(moments.winRate),
+    winStd:moments?.winStd ?? 0, lossStd:moments?.lossStd ?? 0, seed:42 }
+}
+
+export function monteCarloInputErrors(config) {
+  const errors = {}
+  for (const key of ['simulations','trades','capital','averageWin','averageLoss','winRate']) {
+    const value = number(config[key])
+    if (value === null) errors[key] = 'Nhập một số hợp lệ.'
+    else if (['simulations','trades'].includes(key) && (!Number.isInteger(value) || value < 1 || value > 1000)) errors[key] = 'Nhập số nguyên từ 1 đến 1.000.'
+    else if (key === 'capital' && value <= 0) errors[key] = 'Vốn bắt đầu phải lớn hơn 0.'
+    else if (key === 'winRate' && (value < 0 || value > 100)) errors[key] = 'Nhập tỷ lệ từ 0 đến 100%.'
+    else if (['averageWin','averageLoss'].includes(key) && value < 0) errors[key] = 'Nhập giá trị từ 0 trở lên.'
+  }
+  if (!errors.simulations && !errors.trades && Number(config.simulations) * Number(config.trades) > 250000) errors.trades = 'Giảm số lệnh hoặc số lượt để tổng không quá 250.000 bước.'
+  return errors
+}
+
 export function monteCarlo(config, ledger = []) {
   const simulations = number(config.simulations), trades = number(config.trades), capital = number(config.capital), seed = number(config.seed)
   if (!Number.isInteger(simulations) || simulations < 1 || simulations > 1000 || !Number.isInteger(trades) || trades < 1 || trades > 1000 || simulations * trades > 250000 || !known(capital) || capital <= 0 || !Number.isInteger(seed) || seed < 0 || seed > 4294967295) throw new Error('Giới hạn: 1–1.000 lượt, 1–1.000 lệnh, tối đa 250.000 bước; vốn > 0 và seed 0–4.294.967.295.')
