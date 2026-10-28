@@ -72,8 +72,12 @@ bảng vì khác với ngày kết thúc lịch sử. Sort ngày dùng đúng me
 thị, thống nhất epoch seconds/milliseconds và ISO. Tìm không dấu hoặc nhiều từ
 khác thứ tự dùng chuẩn search chung; server Trades dùng cùng quy tắc.
 
-Giao dịch gần đây giữ thứ tự mặc định mới nhất trước nhưng không tô header như
-sort người dùng đã chọn; bấm header mới hiện trạng thái sort. Kho dữ liệu không
+Các grid giữ thứ tự mặc định phù hợp nhưng không tô header hay hiện mũi tên như
+sort người dùng đã chọn: Kho dữ liệu/Tài khoản theo tên, giao dịch/Dòng tiền mới
+nhất trước. Bấm header lần đầu sort tăng dần, lần tiếp theo đổi chiều; đổi sort
+về trang đầu. Chỉ lúc đó header mới hiện nền và mũi tên (cùng `aria-sort`), không
+thêm đường phân cách dọc. Trades giữ multi-sort và nút xóa sort theo contract trên.
+Mẫu bảng trong design system áp dụng cùng hành vi. Kho dữ liệu không
 tự mở chi tiết khi URL còn dataset từ trang trước. Mở chi tiết qua thao tác của
 người dùng; Tuỳ chọn bảng dùng trigger chữ và chevron tiêu chuẩn.
 

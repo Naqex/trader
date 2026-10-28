@@ -366,7 +366,7 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
   const [selectedId, setSelectedId] = useState(requestedDataset)
   const [providerFilter, setProviderFilter] = useState('all')
   const [catalogProvider, setCatalogProvider] = useState('all')
-  const [categoryFilter, setCategoryFilter] = useState('all'), [sort, setSort] = useState('asset-asc'), [downloadFilter, setDownloadFilter] = useState('downloaded')
+  const [categoryFilter, setCategoryFilter] = useState('all'), [sort, setSort] = useState(''), [downloadFilter, setDownloadFilter] = useState('downloaded')
   const [search, setSearch] = useState(preview?.state === 'filtered' ? 'no-matching-asset' : ''), [page, setPage] = useState(1), [pageSize, setPageSize] = useState(25)
   const [detailsOpen, setDetailsOpen] = useState(false), [importAsset, setImportAsset] = useState(null)
   const [catalogRevision, setCatalogRevision] = useState(0)
@@ -565,7 +565,7 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
   const sourceRows = rows.filter(item => catalogProvider === 'all' || sourceOf(item) === catalogProvider)
   const sourceAssetCount = new Set(sourceRows.map(item => JSON.stringify([sourceOf(item),item.instrument_id]))).size
   const latestSourceSave = sourceRows.map(item => item.created_at_utc || item.source?.retrieved_at_utc).filter(value => Number.isFinite(Date.parse(value))).sort((a,b) => Date.parse(b)-Date.parse(a))[0]
-  const filteredDatasets = useMemo(() => filterLibrary(rows,{category:categoryFilter,provider:providerFilter,downloadStatus:downloadFilter,search,sort,download:state.download}), [categoryFilter,providerFilter,downloadFilter,search,sort,rows,state.download])
+  const filteredDatasets = useMemo(() => filterLibrary(rows,{category:categoryFilter,provider:providerFilter,downloadStatus:downloadFilter,search,sort:sort || 'asset-asc',download:state.download}), [categoryFilter,providerFilter,downloadFilter,search,sort,rows,state.download])
   const selected = state.datasets.find(item => item.dataset_id === selectedId) || null
   const pages = Math.max(1, Math.ceil(filteredDatasets.length / pageSize)), currentPage = Math.min(page, pages)
   const pageItems = filteredDatasets.slice((currentPage - 1) * pageSize, currentPage * pageSize)

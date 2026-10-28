@@ -24,9 +24,9 @@ function StrategyReference({ payload, strategies, workspace }) {
 
 export function ManualTrades({ columns = MANUAL_TRADE_COLUMNS.map(([key]) => key), deals, currency, strategies, workspace, filterKey, writable, onEdit }) {
   const { t,fmt } = useTestingLocale()
-  const [search, setSearch] = useState(''), [page, setPage] = useState(1), [size, setSize] = useState(20), [sort,setSort] = useState({key:'time',direction:'desc'})
+  const [search, setSearch] = useState(''), [page, setPage] = useState(1), [size, setSize] = useState(20), [sort,setSort] = useState({key:'',direction:'desc'})
   useEffect(() => setPage(1),[filterKey])
-  const sortValue = deal => sort.key === 'time' ? deal.time_msc : sort.key === 'asset' ? deal.symbol : sort.key === 'side' ? deal.type : dealNet(deal)
+  const sortValue = deal => !sort.key || sort.key === 'time' ? deal.time_msc : sort.key === 'asset' ? deal.symbol : sort.key === 'side' ? deal.type : dealNet(deal)
   const rows = deals.filter(deal => matchesSearch(`${deal.symbol} ${deal.record.payload.tags.join(' ')} ${deal.record.payload.note}`, search)).sort((a,b) => compareTableValues(sortValue(a),sortValue(b),sort.direction)||String(a.ticket).localeCompare(String(b.ticket)))
   const pages = Math.max(1,Math.ceil(rows.length/size)), current = Math.min(page,pages)
   const shown = MANUAL_TRADE_COLUMNS.filter(([key]) => columns.includes(key))

@@ -11,7 +11,25 @@ await mkdir(out,{recursive:true})
 const records=journalRecords(),account=records.find(r=>r.kind==='account');account.payload.name='ACCOUNT 00'
 for(let i=1;i<35;i++)records.push({...structuredClone(account),record_id:`account-${i}`,payload:{...account.payload,name:`ACCOUNT ${String(i).padStart(2,'0')}`}})
 const broker=brokerSnapshot();broker.cashflows=Array.from({length:35},(_,i)=>({ticket:1000+i,type:2,time_msc:Date.parse('2026-10-01T00:00:00Z')+i*60000,profit:100+i,comment:'Synthetic deposit'}))
-const browser=await chromium.launch(),report={checks:[],errors:[],writes:[],scope:'Synthetic Live GET fixtures; no broker connection'};let page
+const browser=await chromium.launch(),report={checks:[],errors:[],writes:[],scope:'Synthetic Live GET fixtures and demo/reference grids; no broker connection'};let page
+async function checkSort(root) {
+ assert.equal(await root.locator('th[data-sort-active],th[aria-sort]').count(),0,'Default order must not look like a chosen sort')
+ const button=root.locator('.wm-table-sort').first()
+ if(!await button.count())return
+ const footer=root.locator('.wm-pagination').first()
+ const next=footer.getByRole('button',{name:'Trang sau',exact:true})
+ if(await next.count() && await next.isEnabled())await next.click()
+ await button.click()
+ const active=root.locator('th[data-sort-active]')
+ assert.equal(await active.count(),1)
+ assert.equal(await active.getAttribute('aria-sort'),'ascending')
+ if(await footer.count())assert.equal(await footer.locator('[aria-current=page]').innerText(),'1','Changing sort resets pagination')
+ assert.equal(await active.evaluate(el=>getComputedStyle(el,'::after').content),'none','Chosen header has no vertical separator')
+ const ascending=await root.locator('tbody').first().innerText()
+ await button.click()
+ assert.equal(await active.getAttribute('aria-sort'),'descending')
+ assert.notEqual(await root.locator('tbody').first().innerText(),ascending,'Header click actually changes row order')
+}
 try{
 for(const [width,theme]of[[1440,'dark'],[390,'light']]){
  const ctx=await browser.newContext({viewport:{width,height:900},reducedMotion:'reduce'});await ctx.addInitScript(t=>localStorage.setItem('tw-theme',t),theme)
@@ -24,6 +42,22 @@ for(const [width,theme]of[[1440,'dark'],[390,'light']]){
  if(u.pathname.startsWith('/api/v2/mt5'))return route.abort()
  return json({items:[],available:false})})
  page=await ctx.newPage();page.setDefaultTimeout(12000);page.on('pageerror',e=>report.errors.push(e.message))
+ await page.goto(`${origin}/?workspace=fixture&lang=vi&view=market-data&area=testing&section=market-data&demo=1`,{waitUntil:'domcontentloaded'})
+ const library=page.locator('.data-library');await library.locator('tbody tr').first().waitFor()
+ assert.match(await library.locator('tbody tr').first().innerText(),/EURUSD/)
+ await checkSort(library)
+ await library.locator('.wm-table-sort').first().blur();await page.mouse.move(0,0)
+ await page.screenshot({path:`${out}/library-sorted-${width}-${theme}.png`})
+ report.checks.push({name:'library-sort',width,theme,neutralDefault:true,clickOrder:'asc-desc',verticalSeparator:false})
+ await page.goto(`${origin}/?workspace=fixture&lang=vi&area=testing&ui_reference=1`,{waitUntil:'domcontentloaded'})
+ const reference=page.locator('#data-table');await reference.locator('tbody tr').first().waitFor();await checkSort(reference)
+ const virtual=page.locator('#virtual-table');await virtual.locator('tbody tr').first().waitFor();await checkSort(virtual)
+ report.checks.push({name:'reference-sorts',width,theme,neutralDefault:true,clickOrder:'asc-desc'})
+ await page.goto(`${origin}/?workspace=fixture&lang=vi&view=trade&area=testing&section=trades&sessions=all&select=1&demo=1`,{waitUntil:'domcontentloaded'})
+ const trades=page.locator('.fxa-trades');await trades.locator('tbody tr').first().waitFor()
+ await checkSort(trades)
+ await trades.locator('.wm-table-sort-clear-all').click();assert.equal(await trades.locator('th[data-sort-active],th[aria-sort]').count(),0)
+ report.checks.push({name:'trades-sort',width,theme,neutralDefault:true,multiSortClear:true})
  for(const[name,query,selector]of[
  ['accounts','section=trading-accounts','.live-accounts-main'],
  ['cashflow',`section=trading-accounts&account_tab=transactions&live_account=broker:${fixtureConnection}`,'.live-accounts-main'],
@@ -32,11 +66,16 @@ for(const [width,theme]of[[1440,'dark'],[390,'light']]){
  ['labels',`section=tag-analytics&live_account=${fixtureAccount}`,'.live-journal-tags']]){
  await page.goto(`${origin}/?workspace=fixture&lang=vi&view=live&area=live&${query}`,{waitUntil:'domcontentloaded'})
  const root=page.locator(selector);await root.locator('.wm-data-table tbody tr').first().waitFor();const footer=root.locator('.wm-pagination').first();await footer.waitFor()
+ const initialRow=await root.locator('tbody tr').first().innerText()
+ if(name==='accounts')assert.match(initialRow,/ACCOUNT 00/)
+ if(name==='cashflow')assert.match(initialRow,/134/)
+ if(name==='broker'||name==='manual')assert.match(initialRow,/20\/10\/2026/)
+ await checkSort(root)
  if(name==='accounts'){
-  assert.match(await footer.innerText(),/1–10 \/ 36/);await footer.getByRole('button',{name:'Trang sau',exact:true}).click()
-  await page.getByRole('button',{name:'Lọc tài khoản',exact:true}).click();await page.getByRole('option',{name:'Đồng bộ',exact:true}).click();await page.keyboard.press('Escape');assert.match(await footer.innerText(),/1–1 \/ 1/)
+  assert.match(await footer.locator('.wm-pagination-meta > span').getAttribute('title'),/1–10.*36/);await footer.getByRole('button',{name:'Trang sau',exact:true}).click()
+  await page.getByRole('button',{name:'Lọc tài khoản',exact:true}).click();await page.getByRole('option',{name:'Đồng bộ',exact:true}).click();await page.keyboard.press('Escape');assert.match(await footer.locator('.wm-pagination-meta > span').getAttribute('title'),/1–1.*1/)
  }
- if(name==='broker'||name==='manual'){await footer.getByRole('button',{name:'Trang sau',exact:true}).click();assert.match(await footer.innerText(),/21–40 \/ 65/)}
+ if(name==='broker'||name==='manual'){await footer.getByRole('button',{name:'Trang sau',exact:true}).click();assert.match(await footer.locator('.wm-pagination-meta > span').getAttribute('title'),/21–40.*65/)}
  const g=await root.evaluate(el=>{const v=el.querySelector('.wm-table-scroll'),f=el.querySelector('.wm-pagination'),r=f.getBoundingClientRect(),c=f.querySelector('.wm-pagination-controls').getBoundingClientRect(),s=f.querySelector('.wm-pagination-size').getBoundingClientRect();return{rows:el.querySelectorAll('tbody tr').length,collapse:getComputedStyle(v.querySelector('table')).borderCollapse,footerWidth:r.width,docOverflow:document.documentElement.scrollWidth>innerWidth+1,pagerOverlap:c.right>s.left+1,brokenButtons:[...f.querySelectorAll('.wm-pagination-meta button')].some(b=>b.scrollWidth>b.clientWidth+1),headerWidths:[...v.querySelectorAll('th:has(>.wm-table-sort)')].map(h=>Math.abs(h.getBoundingClientRect().width-h.querySelector('button').getBoundingClientRect().width))}})
  assert.equal(g.collapse,'separate');assert.equal(g.docOverflow,false);assert.equal(g.pagerOverlap,false);assert.equal(g.brokenButtons,false);assert(g.headerWidths.every(w=>w<1));report.checks.push({name,width,theme,...g});await page.screenshot({path:`${out}/${name}-${width}-${theme}.png`})
  }

@@ -12,7 +12,7 @@ import { BROKER_DEAL_COLUMNS } from './liveTradeColumns.js'
 
 export default function LiveBrokerSnapshot({ payload, section, deals: filteredDeals, filterKey = '', columns = BROKER_DEAL_COLUMNS.map(([key]) => key) }) {
   const { t, fmt, locale } = useTestingLocale()
-  const [search, setSearch] = useState(''), [page, setPage] = useState(1), [pageSize, setPageSize] = useState(20), [sort,setSort] = useState({key:'time',direction:'desc'})
+  const [search, setSearch] = useState(''), [page, setPage] = useState(1), [pageSize, setPageSize] = useState(20), [sort,setSort] = useState({key:'',direction:'desc'})
   useEffect(() => setPage(1), [search, pageSize, filterKey, payload.connection_id, payload.account?.account_ref])
   const account = payload.account
   if (!account) return null
@@ -20,7 +20,7 @@ export default function LiveBrokerSnapshot({ payload, section, deals: filteredDe
   const time = value => typeof value === 'number' && Number.isFinite(value) ? formatUtc(value / 1000, locale) : '-'
   const side = value => value === 0 ? t('Buy') : value === 1 ? t('Sell') : '-'
   const entries = ['Entry', 'Exit', 'Reversal', 'Close by']
-  const sortValue = deal => sort.key === 'time' ? deal.time_msc : sort.key === 'asset' ? deal.symbol : sort.key === 'side' ? `${side(deal.type)} ${entries[deal.entry] || ''}` : sort.key === 'net' ? dealNet(deal) : deal[sort.key]
+  const sortValue = deal => !sort.key || sort.key === 'time' ? deal.time_msc : sort.key === 'asset' ? deal.symbol : sort.key === 'side' ? `${side(deal.type)} ${entries[deal.entry] || ''}` : sort.key === 'net' ? dealNet(deal) : deal[sort.key]
   const deals = (section === 'transactions' ? payload.cashflows || [] : filteredDeals || payload.deals || []).filter(deal => matchesSearch(`${deal.symbol || ''} ${deal.ticket}`, search)).sort((a,b)=>compareTableValues(sortValue(a),sortValue(b),sort.direction,locale)||String(a.ticket).localeCompare(String(b.ticket)))
   const pages = Math.max(1, Math.ceil(deals.length / pageSize)), current = Math.min(page, pages), visible = deals.slice((current - 1) * pageSize, current * pageSize)
   const shown = BROKER_DEAL_COLUMNS.filter(([key]) => columns.includes(key))

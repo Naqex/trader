@@ -10,8 +10,8 @@ import { compareTableValues, nextTableSort } from './tableModel.js'
 const samples=Array.from({length:35},(_,i)=>({id:i,name:`Mẫu ${String(i+1).padStart(2,'0')}`,group:i===34?'Nhóm B':'Nhóm A',value:i===2?null:(i-10)*20}))
 
 export default function ReferenceDataTable() {
-  const [state,setState]=useState('ready'),[search,setSearch]=useState(''),[groups,setGroups]=useState([]),[sort,setSort]=useState({key:'name',direction:'asc'}),[page,setPage]=useState(1),[size,setSize]=useState(10)
-  const rows=(state==='empty'?[]:samples).filter(row=>(!groups.length||groups.includes(row.group))&&matchesSearch(row.name,search)).sort((a,b)=>compareTableValues(a[sort.key],b[sort.key],sort.direction)||a.id-b.id)
+  const [state,setState]=useState('ready'),[search,setSearch]=useState(''),[groups,setGroups]=useState([]),[sort,setSort]=useState({key:'',direction:'asc'}),[page,setPage]=useState(1),[size,setSize]=useState(10)
+  const rows=(state==='empty'?[]:samples).filter(row=>(!groups.length||groups.includes(row.group))&&matchesSearch(row.name,search)).sort((a,b)=>compareTableValues(a[sort.key || 'name'],b[sort.key || 'name'],sort.direction)||a.id-b.id)
   const pages=Math.max(1,Math.ceil(rows.length/size)),current=Math.min(page,pages),pending=state==='loading'
   return <section id="data-table"><h2>Bảng dữ liệu</h2><p>Dữ liệu minh hoạ · 35 dòng. Nhóm B nằm ở trang cuối khi chưa lọc.</p>
     <div className="wm-reference-control-row">
