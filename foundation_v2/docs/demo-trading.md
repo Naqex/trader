@@ -1,5 +1,9 @@
 # MT5 broker trading
 
+Scoped broker execution evidence: [Exness demo trial, 29 October 2026](../evidence/demo-broker-acceptance-20261029/RECEIPT.md).
+This covers the selected managed Demo connection, not Real account acceptance or
+general trading authorization.
+
 ## Managed account connection
 
 Live uses the selected account connection for both Demo and Real broker accounts.
