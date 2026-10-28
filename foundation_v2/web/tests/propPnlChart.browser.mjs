@@ -19,10 +19,14 @@ const verifyGeometry=async()=>{
   const geometry=await chart().evaluate(node=>{
     const svg=node.querySelector(':scope>svg'), bounds=svg.getBoundingClientRect()
     const labels=[...node.querySelectorAll('.fxa-chart-reference text')].map(text=>text.getBoundingClientRect())
-    const lines=[...node.querySelectorAll('.fxa-chart-reference>line')].map(line=>({y:Number(line.getAttribute('y1')),x1:Number(line.getAttribute('x1')),x2:Number(line.getAttribute('x2'))}))
-    return {fit:labels.every(box=>box.left>=bounds.left && box.right<=bounds.right+1 && box.top>=bounds.top && box.bottom<=bounds.bottom),overlap:labels.length===2 && labels[0].top<labels[1].bottom && labels[1].top<labels[0].bottom,lines,height:svg.viewBox.baseVal.height}
+    const lines=[...node.querySelectorAll('.fxa-chart-reference>line:not(.fxa-chart-reference-connector)')].map(line=>({y:Number(line.getAttribute('y1')),x1:Number(line.getAttribute('x1')),x2:Number(line.getAttribute('x2'))}))
+    const connected=[...node.querySelectorAll('.fxa-chart-reference')].every(group=>{
+      const line=group.querySelector(':scope>line'),label=group.querySelector('.fxa-chart-reference-label').getBBox(),y=Number(line.getAttribute('y1')),connector=group.querySelector('.fxa-chart-reference-connector')
+      return Math.abs(label.y+label.height-y)<.01 || connector && Number(connector.getAttribute('y2'))===y && [label.y,label.y+label.height].some(edge=>Math.abs(edge-Number(connector.getAttribute('y1')))<.01)
+    })
+    return {connected,fit:labels.every(box=>box.left>=bounds.left && box.right<=bounds.right+1 && box.top>=bounds.top && box.bottom<=bounds.bottom),overlap:labels.length===2 && labels[0].top<labels[1].bottom && labels[1].top<labels[0].bottom,lines,height:svg.viewBox.baseVal.height}
   })
-  assert.equal(geometry.fit,true);assert.equal(geometry.overlap,false)
+  assert.equal(geometry.fit,true);assert.equal(geometry.overlap,false);assert.equal(geometry.connected,true)
   for(const line of geometry.lines){assert.ok(line.y>=0 && line.y<geometry.height);assert.ok(line.x2>line.x1)}
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false)
 }
@@ -35,11 +39,11 @@ try{
     assert.deepEqual(await referenceValues(),{overall_drawdown:-1000,profit_target:1000})
     await verifyGeometry()
     const contrast=await chart().locator('.fxa-chart-reference').evaluateAll(nodes=>{
-      const rgb=value=>value.match(/[\d.]+/g).slice(0,3).map(Number)
+      const rgb=value=>value.match(/[\d.]+/g).slice(0,3).map(channel=>Number(channel)*(value.startsWith('color(srgb ') ? 255 : 1))
       const luminance=value=>rgb(value).map(channel=>channel/255).map(channel=>channel<=.04045?channel/12.92:((channel+.055)/1.055)**2.4).reduce((sum,value,index)=>sum+value*[.2126,.7152,.0722][index],0)
-      return nodes.map(node=>{const fill=getComputedStyle(node.querySelector('rect')).fill,text=getComputedStyle(node.querySelector('text')).fill,color=getComputedStyle(node).color,a=luminance(fill),b=luminance(text);return {solid:fill===color,ratio:(Math.max(a,b)+.05)/(Math.min(a,b)+.05)}})
+      return nodes.map(node=>{const label=getComputedStyle(node.querySelector('.fxa-chart-reference-label')),fill=label.fill,text=getComputedStyle(node.querySelector('text')).fill,a=luminance(fill),b=luminance(text);return {solid:fill===label.stroke,black:text==='rgb(8, 8, 8)',ratio:(Math.max(a,b)+.05)/(Math.min(a,b)+.05)}})
     })
-    assert.ok(contrast.every(label=>label.solid && label.ratio>=4.5),JSON.stringify(contrast))
+    assert.ok(contrast.every(label=>label.solid && label.black && label.ratio>=4.5),JSON.stringify(contrast))
 
     await page.mouse.move(0,0);await chart().locator(':scope>svg').focus();await page.keyboard.press('Tab')
     assert.equal(await chart().locator('.fxa-chart-tools').evaluate(node=>getComputedStyle(node).opacity),'1')

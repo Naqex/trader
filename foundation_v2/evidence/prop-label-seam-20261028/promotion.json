@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "index_sha256": "7eb5d7f191f943c07418355a2ebd8890f40f0680f15ce608dead4ebb533b60ab",
+  "rollback": "E:\\BACKUP-TRADINGWORKSPACE\\prop-label-seam-20261028\\ui-before-label-seam\\index.html",
+  "old_assets_retained": true,
+  "preserved": [
+    "brand/wmreplay.svg",
+    "chart-legacy.css"
+  ],
+  "rollout": "UI-only atomic index; existing API/UI processes retained"
+}

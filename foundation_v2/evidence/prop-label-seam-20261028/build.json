@@ -1,0 +1,11 @@
+{
+  "head": "66a397e7e8c7d48b467132dda4bc3cd12b356881",
+  "index_before_sha256": "154638fdba0380d5b86ebc9ba8cf973ef0c99e3f3ef5ecc7cc84570df4721161",
+  "overlays": {
+    "src/AnalyticsCharts.jsx": "878a9d7e3c309fc2c41d1fd2d4b63277bd4717c045c4de3999f9836b13e141f2",
+    "src/fx-analytics.css": "3b24a7962f9f047cdee9aef8af7de130e8fe776fd1c791298a943b5f8511217a"
+  },
+  "status": "complete",
+  "candidate": "E:\\BACKUP-TRADINGWORKSPACE\\prop-label-seam-20261028\\source\\foundation_v2\\web\\dist",
+  "index_sha256": "7eb5d7f191f943c07418355a2ebd8890f40f0680f15ce608dead4ebb533b60ab"
+}

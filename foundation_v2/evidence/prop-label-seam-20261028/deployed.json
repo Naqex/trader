@@ -1,0 +1,14 @@
+{
+  "scope": "Read-only real runtime, demo, labeled trailing/stale fixtures. No broker actions.",
+  "cases": [
+    "demo 1920/dark: threshold values, solid label contrast, geometry, hover/focus, zoom/reset",
+    "demo 390/dark: threshold values, solid label contrast, geometry, hover/focus, zoom/reset",
+    "demo 1440/light: threshold values, solid label contrast, geometry, hover/focus, zoom/reset",
+    "sessions retains shared five-button toolbar and has no challenge lines",
+    "touch: toolbar always visible and zoom tappable",
+    "real service: target/floor projected from current evaluator snapshot onto phase PnL baseline",
+    "labeled fixture: positive trailing floor, current snapshot label, coincident thresholds have distinct labels",
+    "labeled fixture: stale phase evaluator never creates threshold lines"
+  ],
+  "errors": []
+}

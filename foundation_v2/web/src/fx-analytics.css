@@ -170,9 +170,10 @@
 .fxa-chart-tools svg{display:block;width:16px;height:16px}
 @media(hover:hover) and (pointer:fine){.fxa-line-viz .fxa-chart-tools{opacity:0;pointer-events:none}.fxa-line-viz:is(:hover,:focus-within) .fxa-chart-tools{opacity:1;pointer-events:auto}}
 @media(any-pointer:coarse){.fxa-line-viz .fxa-chart-tools{opacity:1;pointer-events:auto}}
-.fxa-chart-reference rect{fill:currentColor;stroke:currentColor;stroke-width:1}
-.fxa-chart-reference text{fill:var(--project-on-primary)!important;font-size:11px;font-weight:600}
-.fxa-chart-reference [tabindex]:focus-visible{outline:none}.fxa-chart-reference [tabindex]:focus-visible rect{stroke:var(--wm-focus);stroke-width:2}
+.fxa-chart-reference-label{fill:currentColor;stroke:currentColor;stroke-width:1}
+.fx-app[data-theme=light] .fxa-chart-reference-label{fill:color-mix(in srgb,currentColor 65%,white);stroke:color-mix(in srgb,currentColor 65%,white)}
+.fxa-chart-reference text{fill:#080808!important;font-size:11px;font-weight:600}
+.fxa-chart-reference [tabindex]:focus-visible{outline:none}.fxa-chart-reference [tabindex]:focus-visible .fxa-chart-reference-label{stroke:var(--wm-focus);stroke-width:2}
 .fxa-line-viz[data-chart-tool]>svg{touch-action:pan-y;user-select:none}
 .fxa-line-viz[data-chart-tool=pan]>svg{cursor:grab;touch-action:none}
 .fxa-line-viz[data-chart-tool=zoom]>svg{cursor:crosshair;touch-action:none}
