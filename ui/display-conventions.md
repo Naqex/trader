@@ -20,6 +20,13 @@ missing values, units, input labels, actionable loading/error/recovery and
 consequential partial/stale/permission states. Diagnostics belong in existing
 details only when useful; do not replace every removed sentence with a tooltip.
 
+Live Notes uses one toolbar for account context, creation and note actions,
+followed by the view selector. Its empty state has a compact decorative
+illustration, one title and one creation action; omit pagination and helper copy
+when there are no results. Edit/group controls remain disabled until their
+behavior is defined. Existing search, tag filtering and write permissions remain
+owned by the journal; the demo never gains write access for visual parity.
+
 ## Time ownership
 
 ### Analytics composition and calculation bases

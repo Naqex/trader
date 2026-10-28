@@ -5871,6 +5871,14 @@
     "vi": "Thêm nhóm ghi chú",
     "en": "Add note group"
   },
+  "Note views": {
+    "vi": "Chế độ xem ghi chú",
+    "en": "Note views"
+  },
+  "Group by": {
+    "vi": "Nhóm theo",
+    "en": "Group by"
+  },
   "No notes yet": {
     "vi": "Chưa có ghi chú",
     "en": "No notes yet"
