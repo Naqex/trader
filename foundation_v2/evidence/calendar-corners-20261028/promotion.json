@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "index_sha256": "d180eaf7d0f842fb6a0a6b3e8c5c9de0948d188d80604c18bb0b9c78b43c05da",
+  "palette_sha256": "4ed40c102d752c454dd384454a142834859571bde1c258a53476655ba98f480e",
+  "rollback": "E:\\BACKUP-TRADINGWORKSPACE\\calendar-corners-20261028\\ui-before\\index.html",
+  "old_assets_retained": true,
+  "preserved": [
+    "brand/wmreplay.svg",
+    "chart-legacy.css",
+    "project-palette.css"
+  ],
+  "rollout": "UI-only atomic index; existing API/UI processes retained"
+}

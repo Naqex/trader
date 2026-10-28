@@ -54,10 +54,10 @@
 
 .wm-analytics-calendar .wm-calendar-grid{gap:0}
 .fxa-calendar-panel>.fxa-section-body{display:flex;flex-direction:column}
-.wm-analytics-calendar{flex:1;min-width:0}
+.wm-analytics-calendar{--wm-calendar-corner:9px;flex:1;min-width:0}
 .fxa-calendar-panel>.fxa-section-body:has(>.wm-analytics-calendar.is-month){padding-bottom:0}
 .wm-analytics-calendar.is-month{display:flex;flex-direction:column}
-.wm-analytics-calendar.is-month>.wm-calendar-scroll{display:flex;flex:1;border-radius:0 0 9px 9px}
+.wm-analytics-calendar.is-month>.wm-calendar-scroll{display:flex;flex:1;border-radius:0 0 var(--wm-calendar-corner) var(--wm-calendar-corner)}
 .wm-analytics-calendar.is-month>.wm-calendar-scroll>.wm-calendar-grid{flex:1;grid-template-rows:max-content repeat(var(--live-calendar-weeks),minmax(90px,1fr))}
 .wm-analytics-calendar>.wm-calendar-scroll{margin-inline:-16px;max-width:none}
 .fx-app .wm-analytics-calendar .wm-calendar-day{border:0;border-top:1px solid var(--wm-border);border-right:1px solid var(--wm-border);border-radius:0}
@@ -66,6 +66,8 @@
 .fx-app .wm-analytics-calendar>.wm-calendar-scroll .wm-calendar-week>.wm-calendar-day:last-child{border-right:0}
 .fx-app .wm-analytics-calendar .wm-calendar-week:last-child>.wm-calendar-day{border-bottom:1px solid var(--wm-border)}
 .fx-app .wm-analytics-calendar.is-month>.wm-calendar-scroll .wm-calendar-week:last-child>.wm-calendar-day{border-bottom:0}
+.fx-app .wm-analytics-calendar.is-month>.wm-calendar-scroll .wm-calendar-week:last-child>.wm-calendar-day:first-child{border-bottom-left-radius:var(--wm-calendar-corner)}
+.fx-app .wm-analytics-calendar.is-month>.wm-calendar-scroll .wm-calendar-week:last-child>.wm-calendar-day:last-child{border-bottom-right-radius:var(--wm-calendar-corner)}
 .fx-app .wm-analytics-calendar .wm-calendar-day.is-outside{opacity:1}
 .wm-analytics-calendar .wm-calendar-day.is-outside .wm-calendar-date{opacity:.4}
 
@@ -74,7 +76,7 @@
 .wm-analytics-calendar .wm-calendar-day.is-positive{--wm-calendar-tone:var(--report-positive)}
 .wm-analytics-calendar .wm-calendar-day.is-negative{--wm-calendar-tone:var(--report-negative)}
 /* Extend onto the existing separators so adjacent tinted cells share one stroke. */
-.wm-analytics-calendar .wm-calendar-day:is(.is-positive,.is-negative)::after{content:"";position:absolute;inset:-1px;border:1px solid var(--wm-calendar-tone);pointer-events:none;z-index:1}
+.wm-analytics-calendar .wm-calendar-day:is(.is-positive,.is-negative)::after{content:"";position:absolute;inset:-1px;border:1px solid var(--wm-calendar-tone);border-radius:inherit;pointer-events:none;z-index:1}
 .wm-analytics-calendar>.wm-calendar-scroll .wm-calendar-week>.wm-calendar-day:first-child::after{left:0}
 .wm-analytics-calendar>.wm-calendar-scroll .wm-calendar-week>.wm-calendar-day:last-child::after{right:0}
 .wm-analytics-calendar.is-month>.wm-calendar-scroll .wm-calendar-week:last-child>.wm-calendar-day::after{bottom:0}

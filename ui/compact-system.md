@@ -138,6 +138,13 @@ lớp nội dung; chưa có cơ sở hứa mọi máy chạy60fps hay giống t�
 
 ## Vị trí, cụm và grid
 
+Grid vuông nằm sát khung bo góc phải dùng chung đường cong ở các góc ngoài.
+Bán kính trong bằng bán kính ngoài trừ độ dày viền (lịch:10px − 1px = 9px).
+Chỉ ô góc ngoài nhận bán kính này;
+các ô giữa giữ vuông. Nền, viền trạng thái, pseudo-element và focus inset phải
+theo cùng hình dạng, không dùng vùng cắt của cha để che một viền con vuông.
+Kiểm tra cả góc trái/phải, hover, selected và focus ở vùng cuộn ngang.
+
 - **Toolbar:** tìm kiếm trái → phạm vi/filter/sort → hành động phải. Gap8px trong
   nhóm,24px giữa nhóm. Desktop một hàng ổn định; đổi nhãn không đẩy xuống hàng.
   Màn hẹp: nhóm filter cuộn hoặc xuống hàng có breakpoint rõ, không tràn cả trang.

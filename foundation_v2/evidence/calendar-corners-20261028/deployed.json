@@ -1,0 +1,80 @@
+{
+  "scope": "Labeled Analytics corner fixtures; external/broker calls and writes blocked",
+  "cases": [
+    {
+      "width": 1440,
+      "theme": "dark",
+      "innerRadius": "9px",
+      "leftBefore": {
+        "left": "9px",
+        "right": "0px",
+        "pseudoLeft": "9px",
+        "pseudoRight": "0px",
+        "border": "rgb(34, 199, 138) rgb(34, 199, 138) rgb(237, 241, 247) rgb(237, 241, 247)",
+        "background": "color(srgb 0.0660392 0.21451 0.174118)",
+        "cursor": "default"
+      },
+      "rightBefore": {
+        "left": "0px",
+        "right": "9px",
+        "pseudoLeft": "0px",
+        "pseudoRight": "9px",
+        "border": "rgb(255, 83, 100) rgb(237, 241, 247) rgb(237, 241, 247) rgb(255, 83, 100)",
+        "background": "color(srgb 0.256706 0.114431 0.141333)",
+        "cursor": "default"
+      },
+      "passiveHover": true
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "innerRadius": "9px",
+      "leftBefore": {
+        "left": "9px",
+        "right": "0px",
+        "pseudoLeft": "9px",
+        "pseudoRight": "0px",
+        "border": "rgb(6, 115, 79) rgb(6, 115, 79) rgb(23, 32, 44) rgb(23, 32, 44)",
+        "background": "color(srgb 0.870588 0.920392 0.916863)",
+        "cursor": "default"
+      },
+      "rightBefore": {
+        "left": "0px",
+        "right": "9px",
+        "pseudoLeft": "0px",
+        "pseudoRight": "9px",
+        "border": "rgb(190, 36, 56) rgb(23, 32, 44) rgb(23, 32, 44) rgb(190, 36, 56)",
+        "background": "color(srgb 0.942745 0.889412 0.907843)",
+        "cursor": "default"
+      },
+      "passiveHover": true
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "innerRadius": "9px",
+      "leftBefore": {
+        "left": "9px",
+        "right": "0px",
+        "pseudoLeft": "9px",
+        "pseudoRight": "0px",
+        "border": "rgb(34, 199, 138) rgb(34, 199, 138) rgb(237, 241, 247) rgb(237, 241, 247)",
+        "background": "color(srgb 0.0660392 0.21451 0.174118)",
+        "cursor": "default"
+      },
+      "rightBefore": {
+        "left": "0px",
+        "right": "9px",
+        "pseudoLeft": "0px",
+        "pseudoRight": "9px",
+        "border": "rgb(255, 83, 100) rgb(237, 241, 247) rgb(237, 241, 247) rgb(255, 83, 100)",
+        "background": "color(srgb 0.256706 0.114431 0.141333)",
+        "cursor": "default"
+      },
+      "passiveHover": true
+    }
+  ],
+  "errors": [],
+  "writes": [],
+  "status": "PASS"
+}
