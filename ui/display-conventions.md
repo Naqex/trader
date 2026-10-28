@@ -28,9 +28,14 @@ account path, four summary metrics, MAE distribution and winning-trade MAE.
 Simulation groups configured SL, original-risk RR and Monte Carlo separately.
 Monte Carlo is shared by Sessions and Prop attempts using their filtered scope;
 six main inputs configure paths. The simulator uses its normal distribution,
-measured gain/loss deviations and fixed seed as internal defaults.
+measured gain/loss deviations as internal defaults. Each user run draws a fresh
+seed; the engine records it in the returned config for reproducibility.
 Default normal draws use measured gain/loss deviations (negative magnitudes
-clamped to zero); win rate excludes breakevens. Missing measurements stay blank,
+clamped to zero); win rate excludes breakevens. The section help exposes the
+measured deviations and states they stay fixed when editing the centers. It also
+explains that clipping shifts the effective mean and zero draws are breakeven,
+so branch win rate is not the realized proportion of positive outcomes. Missing
+measurements use the explicit assumptions described below;
 currencies cannot be mixed, and paths stop at zero balance. The plot connects
 trade indices with straight segments and shows at most 30 paths; eight summary
 metrics use all runs. No-loss Profit Factor is infinity, never profit divided by
@@ -155,7 +160,8 @@ field. Do not show the browser's native validation popup.
 Before a successful run, keep the chart frame with only a zero gridline, a
 currency-symbol zero tick (USD uses `$`) and one centered `0` on the horizontal
 axis; do not invent paths, dots or area fills. Result metrics remain zero until
-a run. The eight metrics use a flat four-column/two-row grid (two columns below
+a run. Results have an accessible group label without a repeated visible
+heading between the plot and metrics. The eight metrics use a flat four-column/two-row grid (two columns below
 850px), with single full-width/height separators meeting the panel boundary,
 without individual rounded cards or gaps. RR mini curves are 48px sparklines without axis labels; their points
 retain tooltips and keyboard access. Other compact plots retain their axes.

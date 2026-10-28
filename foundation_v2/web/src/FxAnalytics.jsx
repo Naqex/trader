@@ -453,7 +453,7 @@ function MonteCarloSimulator({ model, data }) {
   const initialConfig = () => monteCarloDefaults(compatible ? data.rows : [], compatible ? data.endingBalance : null)
   const [mc,setMc] = useState(initialConfig), [applied,setApplied] = useState(null), [touched,setTouched] = useState({})
   const busy = job.phase === 'loading', result = job.result
-  const run = () => { const next = {...mc}; setApplied(next); job.run(() => monteCarlo(next,data.rows)) }
+  const run = () => { const next = {...mc}, seed = crypto.getRandomValues(new Uint32Array(1))[0]; setApplied(next); job.run(() => monteCarlo({...next,seed},data.rows)) }
   const reset = () => { job.reset(); setMc(initialConfig()); setApplied(null); setTouched({}) }
   const fields = [['simulations','Số lượt mô phỏng',1,1000,1],['trades','Lệnh mỗi lượt',1,1000,1],['capital',`Vốn bắt đầu (${currencyLabel(currency) || t('Đơn vị tài khoản')})`,.01,undefined,'any'],['averageWin','Lãi trung bình',0,undefined,'any'],['averageLoss','Độ lớn lỗ trung bình',0,undefined,'any'],['winRate','Win rate (%)',0,100,'any']]
   const errors = monteCarloInputErrors(mc)
@@ -465,7 +465,7 @@ function MonteCarloSimulator({ model, data }) {
   const colors = ['blue','positive','negative','peach','violet','gold']
   const displayResult = result || { average: 0, max: 0, min: 0, averageProfitFactor: 0, maxWinStreak: 0, maxLossStreak: 0, totalWins: 0, totalLosses: 0 }
   const displayLabels = result ? Array.from({length:Number(applied.trades)+1}, (_, index) => String(index)) : []
-  return <ReportSection headingOutside className="fxa-monte-panel" title="Monte Carlo Simulation" help="Mặc định 100 lượt × 100 lệnh. Vốn, lãi/lỗ trung bình và win rate lấy từ phạm vi hiện tại, làm tròn đến 2 chữ số; phần thiếu dùng giả định 10.000 vốn, 100 lãi, 100 lỗ và 50% thắng. Win rate tính trên lệnh có PnL khác 0. Phân phối chuẩn dùng độ lệch chuẩn đo từ dữ liệu; nhóm thiếu dữ liệu dùng 0 (độ lớn cố định). Có thể sửa sáu thông số trước khi chạy. Khi vốn về 0, chuỗi dừng. Biểu đồ hiện tối đa 30 chuỗi; thống kê dùng tất cả lượt. Đây không phải dự báo hay xác suất vượt challenge; chưa áp luật daily loss/Prop firm.">
+  return <ReportSection headingOutside className="fxa-monte-panel" title="Monte Carlo Simulation" help={t('Monte Carlo calculation help',{winStd:fmt(mc.winStd,` ${currencyLabel(currency) || currency || ''}`),lossStd:fmt(mc.lossStd,` ${currencyLabel(currency) || currency || ''}`)})}>
     <div data-testid="monte-carlo-simulator">
       {!compatible && <p role="status">{t('Chọn phạm vi giao dịch cùng một đơn vị tiền để mô phỏng.')}</p>}
       <form className="fxa-monte-controls" noValidate onSubmit={event=>{event.preventDefault();if(Object.keys(errors).length){setTouched(Object.fromEntries(fields.map(([key])=>[key,true])));focusFirstInvalid(event.currentTarget);return}run()}}>
@@ -478,8 +478,7 @@ function MonteCarloSimulator({ model, data }) {
       <div className="fxa-monte-output" aria-busy={busy}>
         {result && JSON.stringify(applied) !== JSON.stringify(mc) && <p role="status">{t('Cấu hình đã đổi; chạy lại để cập nhật kết quả.')}</p>}
         <AnalyticsCurve series={result ? result.paths.map(path=>path.map(value=>({value}))) : []} seriesMeta={result ? result.paths.map((_,index)=>({label:t('Lượt {count}',{count:index+1}),color:`var(--report-${colors[index % colors.length]})`})) : []} labels={displayLabels} interpolation="linear" label={t('Số dư mô phỏng Monte Carlo')} formatYTick={moneyAxis} emptyAxes={!result} suffix={` ${currencyLabel(currency) || currency || ''}`} height={380}/>
-        <h3>{t('Kết quả mô phỏng')}</h3>
-        <div className="fxa-monte-metrics fxa-metrics">
+        <div className="fxa-monte-metrics fxa-metrics" role="group" aria-label={t('Kết quả mô phỏng')}>
           <Stat label="Average balance" value={fmt(displayResult.average,` ${currencyLabel(currency) || currency}`)} help="Trung bình số dư cuối của tất cả lượt mô phỏng."/>
           <Stat label="Max balance" value={fmt(displayResult.max,` ${currencyLabel(currency) || currency}`)} help="Số dư cuối lớn nhất trong các lượt đã chạy."/>
           <Stat label="Min balance" value={fmt(displayResult.min,` ${currencyLabel(currency) || currency}`)} help="Số dư cuối nhỏ nhất trong các lượt đã chạy."/>

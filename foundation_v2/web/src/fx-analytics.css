@@ -336,9 +336,8 @@
 .fxa-monte-controls>.fxa-field>span{display:flex;align-items:flex-start;min-height:36px;line-height:18px}
 .fxa-monte-controls input{width:100%;min-width:0}
 .fxa-monte-controls>button{align-self:start;margin-top:42px;white-space:nowrap}
-.fxa-monte-output>h3{margin:20px 0 16px;font-size:16px;font-weight:500}
 .fxa-monte-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
-.fxa-visual-report .fxa-panel .fxa-monte-metrics{gap:0;margin:0 -16px -16px;border-top:1px solid var(--wm-border)}
+.fxa-visual-report .fxa-panel .fxa-monte-metrics{gap:0;margin:20px -16px -16px;border-top:1px solid var(--wm-border)}
 .fxa-monte-metrics>.fxa-metric{min-width:0;border:0;border-radius:0;padding:20px;border-inline-end:1px solid var(--wm-border)}
 .fxa-monte-metrics>.fxa-metric:nth-child(4n){border-inline-end:0}
 .fxa-monte-metrics>.fxa-metric:nth-child(n+5){border-top:1px solid var(--wm-border)}

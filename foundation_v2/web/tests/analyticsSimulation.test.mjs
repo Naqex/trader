@@ -46,6 +46,25 @@ test('Gaussian zero variance has an exact oracle and nonzero variance is determi
   assert.throws(() => monteCarlo({...base,capital:1e308,averageWin:1e308}),/giới hạn/)
 })
 
+test('screenshot configuration reconciles every summary with actual path changes', () => {
+  const config = { ...base, method:'normal', simulations:2, trades:10, capital:10000, averageWin:100, averageLoss:460, winRate:75, winStd:0, lossStd:0 }
+  const result = monteCarlo(config)
+  assert.deepEqual(result.paths.map(path=>path.at(-1)),[10440,9320])
+  assert.equal(result.average,9880);assert.equal(result.max,10440);assert.equal(result.min,9320)
+  const runs = result.paths.map(path=>{
+    const changes = path.slice(1).map((balance,index)=>balance-path[index])
+    const wins = changes.filter(change=>change>0), losses = changes.filter(change=>change<0)
+    const longest = sign=>changes.reduce((state,change)=>{const current=Math.sign(change)===sign?state.current+1:0;return {current,max:Math.max(state.max,current)}},{current:0,max:0}).max
+    return {wins:wins.length,losses:losses.length,factor:wins.reduce((sum,value)=>sum+value,0)/-losses.reduce((sum,value)=>sum+value,0),winStreak:longest(1),lossStreak:longest(-1)}
+  })
+  assert.equal(result.totalWins,runs.reduce((sum,run)=>sum+run.wins,0))
+  assert.equal(result.totalLosses,runs.reduce((sum,run)=>sum+run.losses,0))
+  assert.equal(result.maxWinStreak,Math.max(...runs.map(run=>run.winStreak)))
+  assert.equal(result.maxLossStreak,Math.max(...runs.map(run=>run.lossStreak)))
+  assert.equal(result.averageProfitFactor,runs.reduce((sum,run)=>sum+run.factor,0)/runs.length)
+  assert.notDeepEqual(monteCarlo({...config,seed:43}).paths,result.paths)
+})
+
 test('descriptive moments separate winning/losing magnitudes and preserve missing data', () => {
   const rows = [10,30,-10,-30,0].map(net_pnl=>({net_pnl}))
   assert.deepEqual(simulationMoments(rows),{averageWin:20,averageLoss:20,winStd:10,lossStd:10,winRate:50})
