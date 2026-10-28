@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "index_sha256": "66fd81ffba86bc52f179b5b123a52b6a7f048d7e338b4977d02450c1abc739fd",
+  "palette_sha256": "a7698775e56d18217b550b9454431e6bc2169acb1ae080b052392438f6aa1b81",
+  "chart_sha256": "428bf8fca5f041079b9b2453de208ebd00388aae65add7196174b5c66e6dc76f",
+  "rollback": "E:\\BACKUP-TRADINGWORKSPACE\\calendar-boundaries-20261029\\verified-ui-before\\index.html",
+  "old_assets_retained": true,
+  "preserved": [
+    "brand/wmreplay.svg",
+    "chart-legacy.css",
+    "project-palette.css"
+  ],
+  "rollout": "UI-only atomic index; existing API/UI processes retained"
+}
