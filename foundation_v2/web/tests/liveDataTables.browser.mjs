@@ -13,6 +13,8 @@ for(let i=1;i<35;i++)records.push({...structuredClone(account),record_id:`accoun
 const broker=brokerSnapshot();broker.cashflows=Array.from({length:35},(_,i)=>({ticket:1000+i,type:2,time_msc:Date.parse('2026-10-01T00:00:00Z')+i*60000,profit:100+i,comment:'Synthetic deposit'}))
 const browser=await chromium.launch(),report={checks:[],errors:[],writes:[],scope:'Synthetic Live GET fixtures and demo/reference grids; no broker connection'};let page
 async function checkSort(root) {
+ const labels=root.locator('.wm-table-heading-label')
+ if(await labels.count())assert.equal(await labels.evaluateAll(nodes=>nodes.every(node=>node.scrollWidth<=node.clientWidth+1)),true,'Header labels must fit their slots')
  assert.equal(await root.locator('th[data-sort-active],th[aria-sort]').count(),0,'Default order must not look like a chosen sort')
  const button=root.locator('.wm-table-sort').first()
  if(!await button.count())return
