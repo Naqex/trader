@@ -59,6 +59,10 @@ row, with two radars per row; up to 600px radars stack. Calendar cells put the d
 and trade count on one line, then the result below. On mobile the date stays
 on one line; amounts never wrap digits, and the calendar scrolls internally
 when the seven columns need more space.
+The Analytics month grid uses joined square cells and reaches the panel's side
+and bottom edges. Its week rows share any extra height from the adjacent frequency
+cards; the outer panel owns the bottom border. Year view and expanded day details
+retain their content inset. This reversible visual trial does not change Live.
 Calendar navigation permits empty months and year steps. Analytics adds a compact
 12-month Year view and read-only daily trade details. Both Analytics and Live use
 the same Monday-first grid, navigation and day presentation; each retains its own

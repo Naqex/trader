@@ -9,11 +9,12 @@ import ReportInfo from './ReportInfo.jsx'
 
 export const CALENDAR_HELP = 'Lịch ghi nhận giao dịch đã đóng theo thời gian báo cáo và múi giờ đã chọn. Backtest dùng giờ đóng trên biểu đồ; báo cáo hoạt động dùng giờ ghi nhận. Lãi/lỗ ròng đã trừ phí. Màu ô luôn theo lãi/lỗ ròng, kể cả khi xem chỉ số khác.\n\nLợi nhuận (%) = lãi/lỗ ròng trong ngày ÷ vốn đã chọn × 100. Vốn ban đầu tính mỗi phiên nguồn một lần. Số dư đầu ngày = vốn ban đầu + lãi/lỗ ròng của các ngày trước, trước bộ lọc cục bộ; không bao gồm lãi/lỗ thả nổi hoặc nạp/rút. Thiếu lịch sử đầy đủ, khác tiền tệ hoặc vốn không dương: N/A.\n\nLợi nhuận (R) là tổng R thực hiện của các lệnh trong ngày, mỗi lệnh dùng rủi ro ban đầu của chính nó. Thiếu R của bất kỳ lệnh nào: N/A, không thay bằng 0. Đây không phải R trung bình.\n\nÔ trống là chưa có giao dịch trong dữ liệu đã chọn, không chứng minh ngày đó có dữ liệu đầy đủ. N/A là thiếu dữ liệu để tính. Giao dịch thiếu thời gian không thể phân bổ vào ngày.'
 
-export default function AnalyticsCalendar({ items, timezone, currency, undatedCount = 0, sourcePartial = false }) {
+export default function AnalyticsCalendar({ items, timezone, currency, undatedCount = 0, sourcePartial = false, selectionScope }) {
   const { t, fmt, locale } = useTestingLocale()
   const [chosen,setChosen] = useState(''), [metric,setMetric] = useState('net'), [basis,setBasis] = useState('initial'), [view,setView] = useState('month'), [selected,setSelected] = useState('')
   const month = chosen || items.at(-1)?.label.slice(0,7) || zonedDateKey(Date.now(), timezone).slice(0,7)
-  useEffect(() => { setSelected('') }, [items,timezone])
+  // Price-path enrichment recreates items without changing the report selection.
+  useEffect(() => { setSelected('') }, [selectionScope,timezone])
   const indexed = useMemo(() => new Map(items.map(item => [item.label,item])), [items])
   const changeMonth = next => { setChosen(next); setSelected('') }
   const changeView = next => { setView(next); setSelected('') }
@@ -31,7 +32,7 @@ export default function AnalyticsCalendar({ items, timezone, currency, undatedCo
   const period = view === 'year' ? month.slice(0,4) : month
 
   const selectedItem = indexed.get(selected)
-  return <div className="wm-analytics-calendar" data-testid="analytics-calendar">
+  return <div className={`wm-analytics-calendar is-${view}${selected ? ' has-detail' : ''}`} data-testid="analytics-calendar">
     <div className="wm-calendar-metric-toolbar">
       <FxSelect label="Chỉ số lịch" value={metric} onChange={setMetric} options={[{value:'net',label:t('Lãi/lỗ ròng ({currency})',{currency})},{value:'profitPct',label:'Lợi nhuận (%)'},{value:'totalR',label:'Lợi nhuận (R)'}]}/>
       {metric === 'profitPct' && <fieldset className="wm-calendar-capital"><legend className="sr-only">{t('Cơ sở vốn')}</legend>{[['initial','Vốn ban đầu'],['current','Số dư đầu ngày']].map(([value,label]) => <label key={value}><input type="radio" name="calendar-capital" value={value} checked={basis === value} onChange={() => setBasis(value)}/>{t(label)}</label>)}</fieldset>}
