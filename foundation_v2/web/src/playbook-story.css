@@ -1,4 +1,21 @@
 .pb-page.wm-page { max-width:1280px; margin:0 auto; padding:32px 32px 48px; color:var(--wm-content); }
+.fx-app:has(.pb-welcome) .fx-subnav { display:none; }
+.pb-welcome { min-height:calc(100dvh - 128px); display:flex; flex-direction:column; align-items:center; padding:0 24px 48px; box-sizing:border-box; }
+.pb-welcome-nav { align-self:stretch; display:flex; align-items:center; gap:20px; min-height:40px; border-bottom:1px solid var(--project-border); color:var(--project-muted); font-size:12px; }
+.pb-welcome-nav span { display:inline-flex; align-items:center; gap:7px; align-self:stretch; padding:0 4px; border-bottom:2px solid transparent; white-space:nowrap; }
+.pb-welcome-nav span.is-active { border-bottom-color:var(--project-text); color:var(--project-text); }
+.pb-welcome-nav svg { flex:none; }
+.pb-welcome-copy { margin-top:28px; text-align:center; }
+.fx-app .pb-page .pb-welcome-copy h2 { margin:0; color:var(--project-text); font-size:clamp(28px,3vw,42px); font-weight:700; letter-spacing:-.035em; line-height:1.1; }
+.fx-app .pb-page .pb-welcome-copy p { margin:10px 0 0; color:var(--project-muted); font-size:15px; }
+.pb-welcome-options { display:grid; grid-template-columns:repeat(2,minmax(0,380px)); gap:16px; width:100%; max-width:776px; margin-top:38px; }
+.pb-welcome-card { min-height:224px; box-sizing:border-box; padding:26px 26px 24px; border:1px solid var(--project-border); border-radius:16px; background:linear-gradient(135deg,color-mix(in srgb,var(--pb-card-accent) 7%,transparent),transparent 62%); color:var(--project-text); }
+.pb-welcome-card.is-blue { --pb-card-accent:#328bff; }
+.pb-welcome-card.is-purple { --pb-card-accent:#9d6bff; }
+.pb-welcome-icon { display:grid; place-items:center; width:34px; height:34px; border:1px solid color-mix(in srgb,var(--pb-card-accent) 40%,var(--project-border)); border-radius:50%; color:var(--pb-card-accent); }
+.fx-app .pb-page .pb-welcome-card h3 { margin:20px 0 6px; font-size:20px; font-weight:600; line-height:1.2; }
+.fx-app .pb-page .pb-welcome-card strong { display:block; color:var(--pb-card-accent); font-size:13px; font-weight:600; line-height:20px; }
+.fx-app .pb-page .pb-welcome-card p { max-width:34ch; margin:7px 0 0; color:var(--project-muted); font-size:13px; line-height:21px; }
 .pb-page .pb-topbar { display:flex; align-items:center; justify-content:space-between; gap:24px; padding:0; border:0; }
 .pb-topbar h1 { margin:0; font-size:22px; font-weight:600; }
 .pb-layout { display:grid; grid-template-columns:260px minmax(0,1fr); gap:32px; margin-top:32px; }
@@ -70,11 +87,19 @@
 .pb-workspace-grid { display:grid; grid-template-columns:260px minmax(0,1fr); gap:32px; margin-top:24px; }
 @media (max-width: 900px) {
   .pb-page.wm-page { padding:24px; }
+  .pb-welcome { padding-inline:0; }
+  .pb-welcome-copy { margin-top:44px; }
   .pb-layout,.pb-workspace-grid { grid-template-columns:1fr; gap:24px; }
   .pb-list { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
 @media (max-width: 560px) {
   .pb-page.wm-page { padding:24px 16px 36px; }
+  .pb-welcome { min-height:calc(100dvh - 96px); padding-bottom:24px; }
+  .pb-welcome-nav { gap:12px; }
+  .pb-welcome-copy { margin-top:44px; }
+  .pb-welcome-copy h2 { max-width:12ch; }
+  .pb-welcome-options { grid-template-columns:1fr; margin-top:30px; }
+  .pb-welcome-card { min-height:0; padding:22px; }
   .pb-page .pb-topbar { align-items:flex-start; flex-wrap:wrap; gap:16px; }
   .pb-list { grid-template-columns:1fr; }
   .pb-editor { padding:16px; }
