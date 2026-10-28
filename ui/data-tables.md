@@ -57,9 +57,12 @@ chung đường phân cách ở giữa, không tạo khe hoặc viền đôi. N�
 theo theme và SVG mũi tên bo nét, số ưu tiên nhỏ màu cam dạng superscript; không
 dùng màu để thay cho thứ tự bằng số. Slot điều khiển rộng 28px, còn nhãn giữ
 kích thước tối thiểu theo nội dung để không bị dồn vào icon; bảng cuộn ngang khi
-viewport không đủ chỗ. Nút bỏ sort có slot 28px riêng với đường phân cách, không
-đè lên text hoặc icon. Ô `#` chuyển thành nút `×` có viền cam vuông phủ toàn ô,
-nền pha cam và chữ theo theme khi có sort; xóa hết sẽ trở lại `#`.
+viewport không đủ chỗ. Nút bỏ sort có slot 28px riêng, không có vạch ngăn bên
+trong header và không đè lên text hoặc icon. Ô `#` chuyển thành nút `×` có nền
+pha cam và chữ theo theme khi có sort; xóa hết sẽ trở lại `#`. Header sở hữu
+viền cam vuông phủ toàn ô, kể cả ô reset; button không vẽ thêm viền. Các cạnh
+ngang chạy hết chiều rộng ô, cạnh dọc chung chỉ do ô bên trước vẽ, tránh viền
+đôi hoặc góc khuyết khi ô reset sát header đang sort.
 `SortResetColumn` dùng chung, không làm dịch các cột khi bật/tắt. Nhãn truy cập
 giữ rõ chức năng xóa. Trades tổng hợp tiếp tục gửi toàn bộ thứ tự sort tới server;
 grid local lọc và sort toàn bộ phạm vi trước phân trang. Bảng metric/luật Prop

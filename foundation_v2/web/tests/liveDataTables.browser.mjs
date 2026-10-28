@@ -27,7 +27,7 @@ async function checkSort(root) {
  assert.equal(await active.getAttribute('aria-sort'),'ascending')
  if(await footer.count())assert.equal(await footer.locator('[aria-current=page]').innerText(),'1','Changing sort resets pagination')
  assert.equal(await active.evaluate(el=>getComputedStyle(el,'::after').content),'none','Chosen header has no vertical separator')
- assert.equal(await active.evaluate(el=>getComputedStyle(el,'::before').borderTopWidth),'1px','Selected column has its own border')
+ assert(await active.evaluate(el=>(getComputedStyle(el,'::before').boxShadow.split('inset').length-1)===(el.previousElementSibling?.matches('th:is([data-sort-active],[data-sort-reset])')?3:4)),'Selected header shares its leading edge only with an outlined neighbour')
  const ascending=await root.locator('tbody').first().innerText()
  await button.click()
  assert.equal(await active.getAttribute('aria-sort'),'descending')
@@ -38,7 +38,15 @@ async function checkSort(root) {
   assert.equal(await active.count(),2,'Plain activation adds a second sort')
   assert.deepEqual(await active.locator('.wm-table-sort-priority').allTextContents(),['1','2'])
   const clearAll=root.locator('.wm-table-sort-clear-all')
-  assert.equal(await clearAll.evaluate(el=>getComputedStyle(el).borderTopWidth),'1px')
+  assert.equal(await clearAll.evaluate(el=>getComputedStyle(el).borderTopWidth),'0px','Reset button delegates its frame to the heading')
+  const borders=await root.locator('th:is([data-sort-active],[data-sort-reset])').evaluateAll(headings=>headings.map(h=>({
+   shared:h.previousElementSibling?.matches('th:is([data-sort-active],[data-sort-reset])')??false,
+   edges:getComputedStyle(h,'::before').boxShadow.split('inset').length-1,
+   inset:getComputedStyle(h,'::before').inset,
+   clearBorders:[...h.querySelectorAll('.wm-table-sort-clear')].map(b=>[getComputedStyle(b).borderLeftWidth,getComputedStyle(b).borderRightWidth])
+  })))
+  assert(borders.every(h=>h.edges===(h.shared?3:4)&&h.inset==='0px'),'Each shared boundary has one owner including reset')
+  assert(borders.every(h=>h.clearBorders.every(b=>b.every(width=>width==='0px'))),'Clear controls have no internal divider')
   await active.nth(0).locator('.wm-table-sort-clear').click()
   assert.equal(await active.count(),1)
   assert.equal(await active.locator('.wm-table-sort-priority').innerText(),'1','Removal renumbers priority')

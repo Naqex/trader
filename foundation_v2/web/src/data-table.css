@@ -45,8 +45,9 @@
 @media(prefers-reduced-motion:reduce) { .fx-app .wm-data-table th > .wm-table-sort { transition:none; } }
 
 .fx-app .wm-data-table th[data-sort-active] { color:var(--wm-content); }
-.fx-app .wm-data-table th[data-sort-active]::before { content:''; position:absolute; inset:0; border:1px solid var(--project-highlight); border-radius:0; background:color-mix(in srgb,var(--project-highlight) 10%,var(--wm-canvas)); pointer-events:none; }
-.fx-app .wm-data-table th[data-sort-active] + th[data-sort-active]::before { border-left-color:transparent; }
+.fx-app .wm-data-table th:is([data-sort-active],[data-sort-reset])::before { content:''; position:absolute; inset:0; border:0; border-radius:0; background:color-mix(in srgb,var(--project-highlight) 10%,var(--wm-canvas)); box-shadow:inset 0 1px var(--project-highlight),inset 0 -1px var(--project-highlight),inset -1px 0 var(--project-highlight),inset 1px 0 var(--project-highlight); pointer-events:none; }
+/* Each group owns its leading edge; shared edges are painted by the preceding cell. */
+.fx-app .wm-data-table th:is([data-sort-active],[data-sort-reset]) + th:is([data-sort-active],[data-sort-reset])::before { box-shadow:inset 0 1px var(--project-highlight),inset 0 -1px var(--project-highlight),inset -1px 0 var(--project-highlight); }
 .fx-app .wm-data-table th[data-sort-active] > :is(.wm-table-sort-control,.wm-table-sort) { position:relative; }
 .fx-app .wm-data-table thead th:has(> .wm-table-sort-control) { padding:0; }
 .wm-table-sort-control { position:relative; display:grid; grid-template-columns:minmax(0,1fr); align-items:stretch; width:100%; min-width:0; min-height:44px; }
@@ -63,7 +64,6 @@
 .fx-app .wm-data-table .wm-table-sort-control > .wm-table-sort:hover:not(:disabled) { background:transparent; }
 .fx-app .wm-data-table :is(.wm-table-sort-clear,.wm-table-sort-clear-all) { width:28px; padding:0; border:0; border-radius:0; background:transparent; color:var(--wm-content-muted); font:inherit; font-size:18px; cursor:pointer; }
 .fx-app .wm-data-table .wm-table-sort-clear { position:static; grid-column:2; align-self:stretch; height:auto; }
-.fx-app .wm-data-table .wm-table-sort-control > .wm-table-sort-clear { border-left:1px solid color-mix(in srgb,var(--project-highlight) 45%,var(--wm-border)); }
 .fx-app .wm-data-table .wm-table-sort-clear:hover:not(:disabled) { color:var(--wm-content); }
 .fx-app .wm-data-table :is(.wm-table-sort-clear,.wm-table-sort-clear-all,.wm-table-sort-control > .wm-table-sort):focus-visible { outline:2px solid var(--wm-focus); outline-offset:-2px; }
 .fx-app .wm-data-table .wm-table-sort-control > button:disabled { cursor:default; }
@@ -74,8 +74,9 @@
 .fx-app .wm-data-table th.is-numeric .wm-table-sort-indicator { order:-1; }
 .fx-app .wm-data-table th.is-center .wm-table-sort-control > .wm-table-sort { justify-content:center; padding-inline:8px; }
 .fx-app .wm-data-table .wm-table-row-number { min-width:52px; width:52px; text-align:center; color:var(--wm-content-muted); }
-.fx-app .wm-data-table .wm-table-sort-clear-all { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; width:100%; height:100%; min-width:28px; min-height:0; line-height:1; border:1px solid var(--project-highlight); border-radius:0; background:color-mix(in srgb,var(--project-highlight) 16%,var(--wm-canvas)); color:var(--wm-content); }
+.fx-app .wm-data-table th[data-sort-reset]::before { background:color-mix(in srgb,var(--project-highlight) 16%,var(--wm-canvas)); }
+.fx-app .wm-data-table .wm-table-sort-clear-all { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; width:100%; height:100%; min-width:28px; min-height:0; line-height:1; border:0; border-radius:0; background:transparent; color:var(--wm-content); }
 .fx-app .data-library .wm-data-table .wm-table-row-number { padding-inline:8px; }
-.fx-app .wm-data-table .wm-table-sort-clear-all:hover:not(:disabled) { background:color-mix(in srgb,var(--project-highlight) 26%,var(--wm-canvas)); }
+.fx-app .wm-data-table th[data-sort-reset]:has(> .wm-table-sort-clear-all:hover:not(:disabled))::before { background:color-mix(in srgb,var(--project-highlight) 26%,var(--wm-canvas)); }
 .fx-app .wm-data-table .wm-table-sort-control > .wm-report-info { flex:none; align-self:center; margin:0 10px 0 0; }
 .fx-app .wm-data-table th.is-numeric .wm-table-sort-control:has(> .wm-report-info) > .wm-table-sort { padding-right:4px; }
