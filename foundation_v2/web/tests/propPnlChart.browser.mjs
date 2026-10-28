@@ -24,9 +24,13 @@ const verifyGeometry=async()=>{
       const line=group.querySelector(':scope>line'),label=group.querySelector('.fxa-chart-reference-label').getBBox(),y=Number(line.getAttribute('y1')),connector=group.querySelector('.fxa-chart-reference-connector')
       return Math.abs(label.y+label.height-y)<.01 || connector && Number(connector.getAttribute('y2'))===y && [label.y,label.y+label.height].some(edge=>Math.abs(edge-Number(connector.getAttribute('y1')))<.01)
     })
-    return {connected,fit:labels.every(box=>box.left>=bounds.left && box.right<=bounds.right+1 && box.top>=bounds.top && box.bottom<=bounds.bottom),overlap:labels.length===2 && labels[0].top<labels[1].bottom && labels[1].top<labels[0].bottom,lines,height:svg.viewBox.baseVal.height}
+    const compact=[...node.querySelectorAll('.fxa-chart-reference')].every(group=>{
+      const label=group.querySelector('.fxa-chart-reference-label'),box=label.getBBox(),text=group.querySelector('text'),textBox=text.getBBox()
+      return label.tagName==='rect' && Number(label.getAttribute('rx') || 0)===0 && Math.abs(box.width-text.getComputedTextLength()-12)<.1 && Math.abs(textBox.x-box.x-6)<1.5 && Math.abs(box.x+box.width-textBox.x-textBox.width-6)<1.5
+    })
+    return {compact,connected,fit:labels.every(box=>box.left>=bounds.left && box.right<=bounds.right+1 && box.top>=bounds.top && box.bottom<=bounds.bottom),overlap:labels.length===2 && labels[0].top<labels[1].bottom && labels[1].top<labels[0].bottom,lines,height:svg.viewBox.baseVal.height}
   })
-  assert.equal(geometry.fit,true);assert.equal(geometry.overlap,false);assert.equal(geometry.connected,true)
+  assert.equal(geometry.fit,true);assert.equal(geometry.overlap,false);assert.equal(geometry.connected,true);assert.equal(geometry.compact,true)
   for(const line of geometry.lines){assert.ok(line.y>=0 && line.y<geometry.height);assert.ok(line.x2>line.x1)}
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false)
 }
@@ -59,6 +63,9 @@ try{
     await page.mouse.move(0,0);await page.locator('#fxa-tab-performance').focus();await chart().screenshot({path:path.join(out,`prop-${width}-${theme}.png`)})
     cases.push(`demo ${width}/${theme}: threshold values, solid label contrast, geometry, hover/focus, zoom/reset`)
   }
+  await page.goto(base.replace('lang=vi','lang=en')+'&demo=1')
+  await chart().waitFor();await verifyGeometry()
+  cases.push('English labels also use measured text width, equal side padding and square corners')
   await page.goto(base.replace('analytics_source=prop','analytics_source=sessions')+'&demo=1')
   await chart().waitFor();assert.equal(await chart().locator('[data-reference]').count(),0)
   await chart().hover();assert.equal(await chart().locator('.fxa-chart-tools').getByRole('button').count(),5)

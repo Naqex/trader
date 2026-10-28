@@ -1,0 +1,15 @@
+{
+  "head": "33ebba37eca179ddbaa05ebccbcf580c0d11382b",
+  "index_before_sha256": "7eb5d7f191f943c07418355a2ebd8890f40f0680f15ce608dead4ebb533b60ab",
+  "overlays": {
+    "src/AnalyticsCharts.jsx": "41ade943f53a2f5f3eea5ddd6c7e196eee449f856de2d1c037b631ec5a5dfdb4",
+    "src/fx-analytics.css": "3b24a7962f9f047cdee9aef8af7de130e8fe776fd1c791298a943b5f8511217a"
+  },
+  "contracts": {
+    "ui/compact-system.md": "a165891a1e315236a989fcbd9b495571c31f5c1a7907ef5f4e734701870fc684",
+    "ui/display-conventions.md": "d5677ea1c695bc4baa1cf8bb606e23ad52eac5b26c22c53b61fcc4a514f02d85"
+  },
+  "status": "complete",
+  "candidate": "E:\\BACKUP-TRADINGWORKSPACE\\prop-label-sizing-20261028\\source\\foundation_v2\\web\\dist",
+  "index_sha256": "1eb521ac73ae0d7e8a9de033c0ce9368775772cc7a2a22cf90bd4517cf82f942"
+}

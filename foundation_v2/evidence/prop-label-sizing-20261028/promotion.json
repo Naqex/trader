@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "index_sha256": "1eb521ac73ae0d7e8a9de033c0ce9368775772cc7a2a22cf90bd4517cf82f942",
+  "rollback": "E:\\BACKUP-TRADINGWORKSPACE\\prop-label-sizing-20261028\\ui-before-label-sizing\\index.html",
+  "old_assets_retained": true,
+  "preserved": [
+    "brand/wmreplay.svg",
+    "chart-legacy.css"
+  ],
+  "rollout": "UI-only atomic index; existing API/UI processes retained"
+}

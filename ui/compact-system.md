@@ -242,6 +242,7 @@ riêng; không coi lỗi metadata là danh sách phiên trống.
 | Card chọn được | Dấu chọn có ý nghĩa và aria-state; nền nhẹ; không thêm vạch dọc đầu trái |
 | Chart báo cáo | Header16px; trục/legend12px; đường2px, grid1px; nền chung; không hiệu ứng phát sáng |
 | Màu chuỗi | Xanh biển chính; cam so sánh; tím/vàng khi cần; xanh/đỏ chỉ theo nghĩa lãi/lỗ |
+| Nhãn ngưỡng trên chart | Bốn góc vuông (radius0), cao20px; chữ11px/đậm600 màu đen; rộng theo chữ thực tế + đệm6px mỗi bên. Nền và viền1px cùng màu xanh/đỏ đặc; theme sáng dùng sắc đủ sáng để chữ đạt contrast4,5:1. Đáy nối sát đường ngưỡng; nếu phải dời nhãn để tránh chồng, có đường nối về đúng mức. Không áp radius0 này cho card hoặc nhãn khác. |
 | Tooltip chart | Ngày dd/mm/yyyy, giờ khi độ chính xác cần; giá trị/đơn vị rõ, cùng rounding với KPI |
 | Trục | Nêu đơn vị; bar số lượng bắt đầu0; line có miền trục rõ; không che/đánh lừa độ biến động |
 | Nhiều chuỗi | Giữ màu/label ổn định giữa trang; legend/text ngoài màu; thiếu dữ liệu là gap, không0 |

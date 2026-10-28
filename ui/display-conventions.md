@@ -185,7 +185,7 @@ The PnL plot toolbar exposes zoom in/out, rectangle selection, pan and reset.
 Curve toolbars appear on chart hover or keyboard focus for fine pointers and stay
 visible on touch/coarse-pointer devices; the reserved toolbar space does not move.
 Prop PnL adds green Profit Target and red Max Loss references, both projected from
-the evaluator's absolute target/floor minus phase initial capital. Their compact labels use solid semantic fills and the shared contrasting foreground. They expand the
+the evaluator's absolute target/floor minus phase initial capital. Their compact labels follow the square threshold-label pattern in compact-system.md: solid matching fill/border, black text, measured text width plus 6px padding on each side, and a bottom edge flush with the reference line (a connector preserves the true value when labels collide). They expand the
 Y domain and stay unchanged by trade filters and time zoom. Currency and baseline
 must match the report. Unknown, blocked or wrong-phase evaluator snapshots add no
 references. A trailing floor is a dashed current-cutoff reference, with its time

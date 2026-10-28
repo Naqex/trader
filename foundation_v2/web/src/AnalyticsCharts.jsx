@@ -22,6 +22,11 @@ function tickText(value, domain, locale, suffix) {
 export function AnalyticsCurve({ series, seriesMeta = [], referenceLines = [], timeZone, label, suffix = '', onSelect, selected, negative = false, labels = [], axisLabels, timestamps, yTitle, height = 200, stretch = false, sparkline = false, controls = false, interpolation = 'smooth', emptyAxes = false, formatYTick }) {
   const { t, fmt, locale } = useTestingLocale(), id = useId()
   const [ref, width, measuredHeight] = useSize(height, stretch)
+  const [referenceWidths, setReferenceWidths] = useState({})
+  useLayoutEffect(() => {
+    const widths = Object.fromEntries([...ref.current?.querySelectorAll('.fxa-chart-reference text') || []].map(text => [text.textContent, text.getComputedTextLength()]))
+    setReferenceWidths(current => Object.keys(current).length === Object.keys(widths).length && Object.entries(widths).every(([text, width]) => current[text] === width) ? current : widths)
+  }, [referenceLines, locale, emptyAxes, sparkline, measuredHeight])
   const [range, setRange] = useState([0, 1]), [tool, setTool] = useState('zoom'), [brush, setBrush] = useState(null)
   const gesture = useRef(null), suppressClick = useRef(false)
   height = measuredHeight
@@ -135,13 +140,13 @@ export function AnalyticsCurve({ series, seriesMeta = [], referenceLines = [], t
       })}</g>})}
       {series.length === 1 && !seriesMeta.length && paths[0].map((point, index) => finite(point.value) && inView(index) && <circle key={index} className="fxa-viz-point" cx={x(index)} cy={y(point.value)} r={point.tradeId === selected ? 5 : 3} tabIndex={onSelect || count <= 50 ? 0 : undefined} role={onSelect ? 'button' : 'img'} aria-label={detail(index)} data-tooltip={detail(index)} onClick={() => selectPoint(point)} onKeyDown={event => { if (['Enter', ' '].includes(event.key) && point.tradeId && onSelect) { event.preventDefault(); selectPoint(point) } }}/>) }
       {referenceLabels.map(line=>{
-        const text=t(line.label), detail=`${text}: ${fmt(line.value,suffix)}${line.asOf ? ` (${displayDate(line.asOf,{timeStyle:'short',timeZone})})` : ''}. ${(line.details || []).map(text=>t(text)).join(' ')}`, labelWidth=Math.min(right-left,text.length*7+16), labelY=line.labelY, labelLeft=right-labelWidth, lineY=y(line.value), labelEdge=lineY<labelY ? labelY : labelY+20
+        const text=t(line.label), detail=`${text}: ${fmt(line.value,suffix)}${line.asOf ? ` (${displayDate(line.asOf,{timeStyle:'short',timeZone})})` : ''}. ${(line.details || []).map(text=>t(text)).join(' ')}`, labelWidth=Math.min(right-left,(referenceWidths[text] ?? text.length*7)+12), labelY=line.labelY, labelLeft=right-labelWidth, lineY=y(line.value), labelEdge=lineY<labelY ? labelY : labelY+20
         return <g key={line.key} className="fxa-chart-reference" data-reference={line.key} data-value={line.value} style={{color:line.color}}>
           <line x1={left} x2={right} y1={y(line.value)} y2={y(line.value)} stroke="currentColor" strokeWidth="1" strokeDasharray={line.dashed?'5 4':undefined} pointerEvents="none"/>
           {Math.abs(labelEdge-lineY)>.01 && <line className="fxa-chart-reference-connector" x1={right} x2={right} y1={labelEdge} y2={lineY} stroke="currentColor" strokeWidth="1" pointerEvents="none"/>}
           <g tabIndex={0} role="img" aria-label={detail} data-tooltip={detail} data-tooltip-touch="">
-            <path className="fxa-chart-reference-label" d={`M${labelLeft},${labelY+20} V${labelY+3} Q${labelLeft},${labelY} ${labelLeft+3},${labelY} H${right-3} Q${right},${labelY} ${right},${labelY+3} V${labelY+20} Z`}/>
-            <text x={right-5} y={labelY+13.5} textAnchor="end">{text}</text>
+            <rect className="fxa-chart-reference-label" x={labelLeft} y={labelY} width={labelWidth} height={20}/>
+            <text x={right-6} y={labelY+13.5} textAnchor="end">{text}</text>
           </g>
         </g>
       })}
