@@ -60,8 +60,11 @@
 .wm-analytics-calendar .wm-calendar-step>span{font-size:18px}
 
 .wm-analytics-calendar .wm-calendar-grid{gap:0}
+.wm-analytics-calendar>.wm-calendar-scroll{margin-inline:-16px;max-width:none}
 .fx-app .wm-analytics-calendar .wm-calendar-day{border:0;border-top:1px solid var(--wm-border);border-right:1px solid var(--wm-border);border-radius:0}
 .fx-app .wm-analytics-calendar .wm-calendar-week>.wm-calendar-day:first-child{border-left:1px solid var(--wm-border)}
+.fx-app .wm-analytics-calendar>.wm-calendar-scroll .wm-calendar-week>.wm-calendar-day:first-child{border-left:0}
+.fx-app .wm-analytics-calendar>.wm-calendar-scroll .wm-calendar-week>.wm-calendar-day:last-child{border-right:0}
 .fx-app .wm-analytics-calendar .wm-calendar-week:last-child>.wm-calendar-day{border-bottom:1px solid var(--wm-border)}
 .fx-app .wm-analytics-calendar .wm-calendar-day.is-outside{opacity:1}
 .wm-analytics-calendar .wm-calendar-day.is-outside .wm-calendar-date{opacity:.4}

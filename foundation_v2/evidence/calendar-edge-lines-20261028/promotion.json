@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "index_sha256": "0408dd3e8c698cf1bac91b3ab1723ecfc2d4b15ef4b7b82aaebfce4c8177c2ed",
+  "rollback": "E:\\BACKUP-TRADINGWORKSPACE\\calendar-edge-lines-20261028\\ui-before-edge-lines\\index.html",
+  "old_assets_retained": true,
+  "preserved": [
+    "brand/wmreplay.svg",
+    "chart-legacy.css"
+  ],
+  "rollout": "UI-only atomic index; existing API/UI processes retained"
+}

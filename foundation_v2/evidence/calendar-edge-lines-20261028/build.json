@@ -1,0 +1,14 @@
+{
+  "head": "66e605d91ee81e46c018f9a4a9ecd7dd46cb93c0",
+  "index_before_sha256": "8413f87ab3f0b5bc9cbe914916766937ff53bba76568fea0b7df866cef3e6e07",
+  "overlays": {
+    "src/calendar-view.css": "ea29593bfe10bcc541c9bc6feaaac864136e91b70452a86c98431dd4b48193af"
+  },
+  "contracts": {
+    "ui/compact-system.md": "a165891a1e315236a989fcbd9b495571c31f5c1a7907ef5f4e734701870fc684",
+    "ui/display-conventions.md": "d5677ea1c695bc4baa1cf8bb606e23ad52eac5b26c22c53b61fcc4a514f02d85"
+  },
+  "status": "complete",
+  "candidate": "E:\\BACKUP-TRADINGWORKSPACE\\calendar-edge-lines-20261028\\source\\foundation_v2\\web\\dist",
+  "index_sha256": "0408dd3e8c698cf1bac91b3ab1723ecfc2d4b15ef4b7b82aaebfce4c8177c2ed"
+}
