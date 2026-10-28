@@ -1,16 +1,17 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { useTestingLocale } from './testingLocale.jsx'
 import { zonedDateKey } from './timezone.js'
 import { displayDate } from './dateFormat.js'
-import { known } from './tradingAnalyticsModel.js'
+import { known, periodReturn } from './tradingAnalyticsModel.js'
 import { CalendarNavigation, CalendarMonth, CalendarDay } from './CalendarView.jsx'
 import FxSelect from './FxSelect.jsx'
 import ReportInfo from './ReportInfo.jsx'
+import TestingIcon from './TestingIcon.jsx'
 
-export const CALENDAR_HELP = 'Lịch ghi nhận giao dịch đã đóng theo thời gian báo cáo và múi giờ đã chọn. Backtest dùng giờ đóng trên biểu đồ; báo cáo hoạt động dùng giờ ghi nhận. Lãi/lỗ ròng đã trừ phí. Màu ô luôn theo lãi/lỗ ròng, kể cả khi xem chỉ số khác.\n\nLợi nhuận (%) = lãi/lỗ ròng trong ngày ÷ vốn đã chọn × 100. Vốn ban đầu tính mỗi phiên nguồn một lần. Số dư đầu ngày = vốn ban đầu + lãi/lỗ ròng của các ngày trước, trước bộ lọc cục bộ; không bao gồm lãi/lỗ thả nổi hoặc nạp/rút. Thiếu lịch sử đầy đủ, khác tiền tệ hoặc vốn không dương: N/A.\n\nLợi nhuận (R) là tổng R thực hiện của các lệnh trong ngày, mỗi lệnh dùng rủi ro ban đầu của chính nó. Thiếu R của bất kỳ lệnh nào: N/A, không thay bằng 0. Đây không phải R trung bình.\n\nÔ trống là chưa có giao dịch trong dữ liệu đã chọn, không chứng minh ngày đó có dữ liệu đầy đủ. N/A là thiếu dữ liệu để tính. Giao dịch thiếu thời gian không thể phân bổ vào ngày.'
+export const CALENDAR_HELP = 'Lịch ghi nhận giao dịch đã đóng theo thời gian báo cáo và múi giờ đã chọn. Backtest dùng giờ đóng trên biểu đồ; báo cáo hoạt động dùng giờ ghi nhận. Lãi/lỗ ròng đã trừ phí. Màu ô luôn theo lãi/lỗ ròng, kể cả khi xem chỉ số khác.\n\nLợi nhuận (%) = lãi/lỗ ròng trong ngày ÷ vốn đã chọn × 100. Vốn ban đầu tính mỗi phiên nguồn một lần. Số dư hiện tại lấy từ snapshot tài khoản tại thời điểm báo cáo, giống bảng tháng; không gồm lãi/lỗ thả nổi và không dựng từ giao dịch đã lọc. Cơ sở vốn không thay đổi số tiền hoặc R. Thiếu snapshot, khác tiền tệ hoặc vốn không dương: N/A.\n\nLợi nhuận (R) là tổng R thực hiện của các lệnh trong ngày, mỗi lệnh dùng rủi ro ban đầu của chính nó. Thiếu R của bất kỳ lệnh nào: N/A, không thay bằng 0. Đây không phải R trung bình.\n\nÔ trống là chưa có giao dịch trong dữ liệu đã chọn, không chứng minh ngày đó có dữ liệu đầy đủ. N/A là thiếu dữ liệu để tính. Giao dịch thiếu thời gian không thể phân bổ vào ngày.'
 
-export default function AnalyticsCalendar({ items, timezone, currency, undatedCount = 0, sourcePartial = false, selectionScope }) {
-  const { t, fmt, locale } = useTestingLocale()
+export default function AnalyticsCalendar({ items, capitalBases, timezone, currency, undatedCount = 0, sourcePartial = false, selectionScope }) {
+  const { t, fmt, locale } = useTestingLocale(), id = useId()
   const [chosen,setChosen] = useState(''), [metric,setMetric] = useState('net'), [basis,setBasis] = useState('initial'), [view,setView] = useState('month'), [selected,setSelected] = useState('')
   const month = chosen || items.at(-1)?.label.slice(0,7) || zonedDateKey(Date.now(), timezone).slice(0,7)
   // Price-path enrichment recreates items without changing the report selection.
@@ -19,8 +20,12 @@ export default function AnalyticsCalendar({ items, timezone, currency, undatedCo
   const changeMonth = next => { setChosen(next); setSelected('') }
   const changeView = next => { setView(next); setSelected('') }
   const suffix = metric === 'net' ? ` ${currency}` : metric === 'profitPct' ? '%' : ' R'
-  const field = metric === 'profitPct' && basis === 'current' ? 'profitPctCurrent' : metric
-  const result = item => !item ? '' : known(item[field]) ? fmt(item[field],suffix,2) : 'N/A'
+  const currentAvailable = capitalBases.current.length > 0 && capitalBases.current.every(item => item.capital > 0)
+  const result = item => {
+    if (!item) return ''
+    const value = metric === 'profitPct' && basis === 'current' ? periodReturn([item], capitalBases.current) : item[metric]
+    return known(value) ? fmt(value,suffix,2) : 'N/A'
+  }
   const countLabel = count => t('{count} giao dịch', { count: fmt(count,'',0) })
   const rCoverage = item => t('{known}/{total} lệnh có R', { known: fmt(item.rCount,'',0), total: fmt(item.count ?? item.observedCount,'',0) })
   const label = t('Performance calendar')
@@ -34,8 +39,8 @@ export default function AnalyticsCalendar({ items, timezone, currency, undatedCo
   const selectedItem = indexed.get(selected)
   return <div className={`wm-analytics-calendar is-${view}${selected ? ' has-detail' : ''}`} data-testid="analytics-calendar">
     <div className="wm-calendar-metric-toolbar">
-      <FxSelect label="Chỉ số lịch" value={metric} onChange={setMetric} options={[{value:'net',label:t('Lãi/lỗ ròng ({currency})',{currency})},{value:'profitPct',label:'Lợi nhuận (%)'},{value:'totalR',label:'Lợi nhuận (R)'}]}/>
-      {metric === 'profitPct' && <fieldset className="wm-calendar-capital"><legend className="sr-only">{t('Cơ sở vốn')}</legend>{[['initial','Vốn ban đầu'],['current','Số dư đầu ngày']].map(([value,label]) => <label key={value}><input type="radio" name="calendar-capital" value={value} checked={basis === value} onChange={() => setBasis(value)}/>{t(label)}</label>)}</fieldset>}
+      <FxSelect label="Chỉ số lịch" value={metric} onChange={setMetric} options={[{value:'net',label:t('Lãi/lỗ ròng ({currency})',{currency})},{value:'profitPct',label:'Lợi nhuận (%)'},{value:'totalR',label:'Lợi nhuận (R)',detail:t('Calendar R calculation help')}]} renderOption={option => <span className="wm-calendar-metric-option">{option.label}{option.value === 'totalR' && <TestingIcon kind="info" size={14}/>}</span>}/>
+      <fieldset className="wm-calendar-capital" data-tooltip={t('Calendar capital basis help')}><legend className="sr-only">{t('Cơ sở vốn')}</legend>{[['initial','Vốn ban đầu'],['current','Số dư hiện tại']].map(([value,label]) => <label key={value}><input type="radio" name={`${id}-calendar-capital`} value={value} checked={basis === value} disabled={value === 'current' && !currentAvailable} onChange={() => setBasis(value)}/>{t(label)}</label>)}</fieldset>
       {(undatedCount > 0 || sourcePartial || items.some(item => !item.complete)) && <span className="fxa-time-incomplete" role="status">{t('Dữ liệu một phần')}<ReportInfo title="Dữ liệu một phần" text="Nguồn chưa đầy đủ hoặc có giao dịch thiếu lãi/lỗ hay thời gian. Lịch chỉ hiển thị các giao dịch có ngày đã nhận."/></span>}
     </div>
     <CalendarNavigation month={month} onChange={changeMonth} view={view} onViewChange={changeView}/>

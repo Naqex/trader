@@ -44,7 +44,10 @@ Use shared rounded chart domains and shape-preserving curves; interpolation
 does not create price observations. Compact desktop reports use 16px panel insets
 and gaps. On wide screens PnL occupies the left two thirds; realized R, ideal R
 and profit/breakeven opportunity stack in the right third. The PnL plot fills the
-available column height, keeping the two sides aligned. Below 1200px these groups
+available column height, keeping the two sides aligned. PnL defaults to daily
+close observations, with civil dates on the axis even for a
+single-day report. Users can select all observations, hourly or 15-minute detail.
+Below 1200px these groups
 stack, with the main plot returning to a compact height; below 850px the R cards
 also stack. Hour/day
 plots pair; the year/month matrix stays full width; calendar/frequency use 2:1.
@@ -72,12 +75,14 @@ incomplete financial data; unknown-time or partial sources also prevent complete
 period totals. Average R in daily details weights only known R observations and exposes coverage.
 The calendar menu contains net P/L, return (%) and return (R). Daily return (R)
 sums each trade's original-risk realized R; any missing R makes it N/A.
-Percentage uses pooled source initial capital or day-opening capital: initial
-capital plus all earlier local days' net P/L before local chart filters.
-Day-opening requires explicit unfiltered full history, complete dates and known
-prior P/L; mixed currencies and nonpositive source capitals remain N/A. This is
-a closed-trade balance path, excluding floating P/L and cashflows.
-Capital radios appear only for percentage, with the precise Day-opening label.
+Percentage uses pooled source initial capital or the current account snapshot,
+through the same capital bases and `periodReturn` as the monthly table. Current
+balance is unavailable without a valid snapshot; never relabel day-opening capital
+as current balance. Mixed currencies and nonpositive capitals remain N/A.
+Capital radios stay visible on the right for all metrics; only percentage depends
+on this choice. The R option has an inline info glyph and hover/focus help. No
+interactive control is nested inside its option. Monthly capital radios keep their
+accessible descriptions without separate info buttons.
 Empty calendar dates show only the date, with no dash or manufactured zero money. Actual dated data keeps known zero and N/A distinct. The percentage definitions are local contracts, not proof of FX backend parity. Live keeps its weekly totals, full-day
 coverage/partial semantics, account selection and notes/reviews.
 Performance group headings sit above their bordered content, with help and controls

@@ -56,6 +56,10 @@
 .wm-calendar-capital{display:flex;flex-wrap:wrap;gap:8px 16px;border:0;padding:0;margin:0;font-size:13px}
 .wm-calendar-capital label{display:flex;align-items:center;gap:6px;cursor:pointer}
 .wm-calendar-capital input{accent-color:var(--wm-primary);margin:0}
+.wm-calendar-capital label:has(input:disabled){color:var(--wm-content-muted);cursor:default}
+.wm-calendar-metric-option{display:inline-flex;align-items:center;gap:8px}
+.wm-calendar-metric-option svg{flex:none;color:var(--wm-content-muted)}
+.wm-analytics-calendar .wm-calendar-capital{margin-left:auto}
 .wm-analytics-calendar .wm-calendar-step .fxa-button{border-color:transparent;padding:4px;min-width:28px}
 .wm-analytics-calendar .wm-calendar-step>span{font-size:18px}
 
@@ -77,3 +81,12 @@
 .wm-analytics-calendar .wm-calendar-day.is-outside .wm-calendar-date{opacity:.4}
 .fx-app .wm-analytics-calendar .wm-calendar-day:hover:not(:disabled){border-color:var(--wm-border);box-shadow:inset 0 0 0 1px var(--wm-content-muted)}
 .fx-app .wm-analytics-calendar .wm-calendar-day:focus-visible{outline-offset:-2px}
+.fx-app .wm-analytics-calendar .wm-calendar-day:is(.is-positive,.is-negative){position:relative;border-color:var(--wm-calendar-tone);background:color-mix(in srgb,var(--wm-calendar-tone) 18%,var(--wm-canvas))}
+.wm-analytics-calendar .wm-calendar-day.is-positive{--wm-calendar-tone:var(--report-positive)}
+.wm-analytics-calendar .wm-calendar-day.is-negative{--wm-calendar-tone:var(--report-negative)}
+/* Extend onto the existing separators so adjacent tinted cells share one stroke. */
+.wm-analytics-calendar .wm-calendar-day:is(.is-positive,.is-negative)::after{content:"";position:absolute;inset:-1px;border:1px solid var(--wm-calendar-tone);pointer-events:none;z-index:1}
+.wm-analytics-calendar>.wm-calendar-scroll .wm-calendar-week>.wm-calendar-day:first-child::after{left:0}
+.wm-analytics-calendar>.wm-calendar-scroll .wm-calendar-week>.wm-calendar-day:last-child::after{right:0}
+.wm-analytics-calendar.is-month:not(.has-detail)>.wm-calendar-scroll .wm-calendar-week:last-child>.wm-calendar-day::after{bottom:0}
+.fx-app .wm-analytics-calendar .wm-calendar-day:is(.is-positive,.is-negative):hover{box-shadow:none}
