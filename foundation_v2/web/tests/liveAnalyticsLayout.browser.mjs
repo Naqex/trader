@@ -11,7 +11,7 @@ await mkdir(out, { recursive: true })
 const browser = await chromium.launch()
 const report = { scope: 'Synthetic Live analytics and transaction layout', cases: [], errors: [], writes: [] }
 try {
-  for (const [width, theme] of [[1920, 'dark'], [1440, 'light'], [390, 'dark']]) {
+  for (const [width, theme] of [[1920, 'dark'], [1440, 'light'], [1280, 'dark'], [390, 'dark']]) {
     const ctx = await browser.newContext({ viewport: { width, height: 940 }, reducedMotion: 'reduce' })
     await ctx.addInitScript(theme => localStorage.setItem('tw-theme', theme), theme)
     const records = journalRecords(), broker = brokerSnapshot()
@@ -38,15 +38,18 @@ try {
     await sidebar.scrollIntoViewIfNeeded()
     assert(await sidebar.evaluate(el => { const r = el.getBoundingClientRect(); return r.top < innerHeight && r.bottom > 0 }), 'Account details remain reachable on narrow screens')
     const geometry = await sidebar.evaluate(el => {
-      const box = el.getBoundingClientRect(), picker = el.querySelector('.fx-select-trigger').getBoundingClientRect()
+      const box = el.getBoundingClientRect(), picker = el.querySelector('.fx-select-trigger').getBoundingClientRect(), style = getComputedStyle(el)
+      const divider = parseFloat(style.borderLeftWidth)
       const rows = [...el.querySelectorAll('.live-cash-summary > div')].map(row => {
-        const bounds = row.getBoundingClientRect(), value = row.querySelector('dd').getBoundingClientRect()
-        return { left: bounds.left - box.left, right: box.right - bounds.right, seamTop: value.top - bounds.top, seamBottom: bounds.bottom - value.bottom }
+        const bounds = row.getBoundingClientRect(), label = row.querySelector('dt').getBoundingClientRect(), value = row.querySelector('dd').getBoundingClientRect(), valueStyle = getComputedStyle(row.querySelector('dd'))
+        return { left: bounds.left - box.left - divider, right: box.right - bounds.right, valueBelowLabel: value.top >= label.bottom, valueAlign: valueStyle.textAlign, valueBorder: valueStyle.borderLeftWidth, separator: getComputedStyle(row).borderBottomWidth }
       })
-      return { pickerLeft: picker.left - box.left, pickerRight: box.right - picker.right, rows }
+      return { divider, topDivider: style.borderTopWidth, pickerLeft: picker.left - box.left, pickerRight: box.right - picker.right, rows }
     })
     assert(geometry.pickerLeft >= 16 && geometry.pickerRight >= 16, 'Picker keeps content gutters')
-    assert(geometry.rows.every(row => Object.values(row).every(n => Math.abs(n) <= 1)), 'Rows reach both edges; vertical seam spans full row')
+    assert.equal(geometry.divider, width > 1000 ? 1 : 0, 'One vertical divider separates desktop panes; stacked panes have no side divider')
+    if (width <= 1000) assert.equal(geometry.topDivider, '1px', 'Stacked sidebar has one top separator')
+    assert(geometry.rows.every(row => Math.abs(row.left) < 1 && Math.abs(row.right) < 1 && row.valueBelowLabel && row.valueAlign === 'left' && row.valueBorder === '0px' && row.separator === '1px'), 'Each full-width row stacks label and value above a single horizontal separator')
     await page.screenshot({ path: `${out}/accounts-${width}-${theme}.png` })
     report.cases.push({ name: 'account-details-boundaries', width, theme, geometry })
     await page.goto(`${url('analytics')}&live_accounts=${fixtureAccount}`)
