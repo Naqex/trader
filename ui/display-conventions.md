@@ -91,7 +91,18 @@ Empty calendar dates show only the date, with no dash or manufactured zero money
 coverage/partial semantics and account selection. Live date cells show a circled
 plus on hover/focus (always on touch) and open a right-hand daily-note drawer.
 The drawer currently edits a local draft only; closing discards it and restores
-focus to the date. No note API writes or persistence are implied.
+focus to the date. No note API writes or persistence are implied. Live also uses
+a joined square grid extending to both pane edges, with a square month-total
+strip at the bottom of the desktop calendar viewport. Weekly totals expose the
+same plus and draft drawer, restricted to eligible dates in the current month.
+The calendar count uses trading execution records (manual closed records or MT5
+fills), labeled trades/giao dịch; it is not a reconstructed round-trip position count.
+USD totals use a dollar prefix. Known empty covered periods display zero; periods
+without coverage retain an unknown value. Coverage details stay in contextual
+help and the drawer rather than repeated Partial badges. The percent switch is
+always available; return uses declared positive initial capital for every selected
+source, pooled once. Missing/invalid capital shows N/A with a concise reason;
+current balance is not substituted for initial capital.
 Performance group headings sit above their bordered content, with help and controls
 in the external heading. Expectancy/profit factor, winners/losers and side each
 retain one visible group heading. Session radars have no enclosing surface; only

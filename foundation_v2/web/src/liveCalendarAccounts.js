@@ -18,7 +18,7 @@ export function combineCalendarAccounts(sources) {
     return times.every(Number.isFinite) ? new Date(operation(...times)).toISOString() : null
   }
   return { payload: {
-    account: { account_ref: sources.map(source => source.id).join(','), currency: [...currencies][0], balance: sum('balance'), opening_balance: sum('opening_balance') },
+    account: { account_ref: sources.map(source => source.id).join(','), currency: [...currencies][0], balance: sum('balance'), opening_balance: sources.every(({ payload }) => payload.account.opening_balance > 0) ? sum('opening_balance') : null },
     manual: sources.every(({ payload }) => payload.manual), aggregate: true,
     stale: sources.some(({ payload }) => payload.stale === true),
     coverage: sources.map(({ id, payload }) => ({ id, history_from_utc: payload.history_from_utc, captured_at_utc: payload.captured_at_utc })),

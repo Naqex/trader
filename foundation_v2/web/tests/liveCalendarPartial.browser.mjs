@@ -10,6 +10,7 @@ const a = '11111111-1111-4111-8111-111111111111', b = '22222222-2222-4222-8222-2
 const report = { scope: 'Labeled multi-account GET fixtures; broker access blocked', cases: [], errors: [], mutations: [] }
 try {
   for (const width of [1920, 1440, 768, 390]) {
+    let capital = null
     const context = await browser.newContext({ viewport: { width, height: 940 }, reducedMotion: 'reduce' })
     const page = await context.newPage()
     page.on('pageerror', error => report.errors.push(error.message))
@@ -20,7 +21,7 @@ try {
       if (url.pathname === '/api/v2/live/records') return route.fulfill({ json: { version: 'live-records-v1', items: [] } })
       if (url.pathname === '/api/v2/live/status') {
         const id = url.searchParams.get('connection_id') || a
-        return route.fulfill({ json: { status: 'ready', connection_id: id, connections, source: 'Fixture', account: { account_ref: id, currency: 'USD', balance: 1000 },
+        return route.fulfill({ json: { status: 'ready', connection_id: id, connections, source: 'Fixture', account: { account_ref: id, currency: 'USD', balance: 1000, opening_balance:capital },
           history_from_utc: id === a ? '2026-10-01T00:00:00Z' : '2026-10-20T00:00:00Z', captured_at_utc: '2026-10-23T00:00:00Z',
           deals: id === a ? [{ ticket: 1, symbol: 'EURUSD', type: 0, time_msc: Date.parse('2026-10-12T12:00:00Z'), profit: 25, commission: 0, swap: 0, fee: 0 }] : [] } })
       }
@@ -31,11 +32,15 @@ try {
     const percentButton = page.locator('.live-toolbar-actions button').filter({ hasText: '%' })
     assert.equal(await percentButton.isDisabled(), false)
     await percentButton.click(); assert.equal(await percentButton.getAttribute('aria-pressed'), 'true')
-    assert.equal(await page.locator('.live-calendar-cell[data-date="2026-10-12"] strong').textContent(), '-')
+    assert.equal(await page.locator('.live-calendar-cell[data-date="2026-10-12"] strong').textContent(), 'N/A')
+    assert.match(await page.locator('.live-calendar-unit-state').innerText(), /vốn ban đầu/)
     await page.locator('.live-toolbar-actions button').filter({ hasText: 'USD' }).click()
     assert.equal(await page.locator('.live-calendar-toolbar .wm-report-info').count(), 0)
     assert.equal(await page.locator('.live-calendar-grid').evaluate(el => getComputedStyle(el).gap), '0px')
     assert.equal(await page.locator('.live-month-total').evaluate(el => getComputedStyle(el).borderRadius), '0px')
+    const edges = await page.locator('.live-calendar-content').evaluate(el => {const grid=el.querySelector('.live-calendar-grid').getBoundingClientRect(),scroll=el.querySelector('.live-calendar-scroll').getBoundingClientRect(),footer=el.querySelector('.live-month-total').getBoundingClientRect();return {scrollLeft:scroll.left,scrollRight:scroll.right,footerLeft:footer.left,footerRight:footer.right,gridWidth:grid.width,footerBottom:footer.bottom}})
+    assert.ok(Math.abs(edges.scrollLeft-edges.footerLeft)<1 && Math.abs(edges.scrollRight-edges.footerRight)<1)
+    if(width>=1241)assert.ok(Math.abs(edges.footerBottom-940)<1)
     const partial = page.locator('.live-calendar-cell').filter({ has: page.locator('.live-day-number', { hasText: /^12$/ }) })
     assert.equal(await partial.locator('strong').textContent(), '25')
     assert.equal(await partial.getByText('Một phần', { exact: true }).count(), 0)
@@ -76,6 +81,15 @@ try {
     const titleStyle=await drawer.locator('.live-day-note-title').evaluate(el=>({font:getComputedStyle(el).fontSize,placeholder:getComputedStyle(el,'::placeholder').fontSize}))
     assert.equal(titleStyle.font,width===390?'20px':'24px');assert.equal(titleStyle.placeholder,titleStyle.font)
     await page.screenshot({ path: `${out}/partial-${width}.png`, animations: 'disabled' })
+    await page.keyboard.press('Escape')
+    await page.screenshot({ path: `${out}/grid-${width}.png`, animations: 'disabled' })
+    if(width===1920){
+      capital=1000;await page.reload();await page.locator('.live-month-total strong').filter({hasText:'25'}).waitFor()
+      await page.locator('.live-toolbar-actions button').filter({hasText:'%'}).click()
+      assert.equal(await page.locator('.live-calendar-cell[data-date="2026-10-12"] strong').innerText(),'1,25%')
+      assert.match(await page.locator('.live-calendar-cell[data-date="2026-10-12"]').getAttribute('aria-label'),/1,25%/)
+      assert.equal(await page.locator('.live-calendar-unit-state').count(),0)
+    }
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false)
     report.cases.push({ width, observedSubtotal: 25, dayWeekMonthPartial: true, unknownDayBlank: true, noteDrawer: true, draftOnly:true, focusRestored:true, emptyDay:true })
     await context.close()

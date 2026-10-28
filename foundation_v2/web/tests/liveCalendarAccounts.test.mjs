@@ -51,3 +51,13 @@ test('missing accounts and mixed currencies never produce partial or converted t
  const source=snapshot('USD',25);source.stale=true
  assert.ok(combineCalendarAccounts([{id:'a',payload:source}]).issue)
 })
+test('pooled percentage capital requires a positive numeric opening balance for every source',()=>{
+ const a=snapshot('USD',25),b=snapshot('USD',0)
+ a.account.opening_balance=1000
+ for(const value of [null,0,-100,NaN,Infinity,'1000']){
+  b.account.opening_balance=value
+  assert.equal(combineCalendarAccounts([{id:'a',payload:a},{id:'b',payload:b}]).payload.account.opening_balance,null)
+ }
+ b.account.opening_balance=2000
+ assert.equal(combineCalendarAccounts([{id:'a',payload:a},{id:'b',payload:b}]).payload.account.opening_balance,3000)
+})

@@ -7243,6 +7243,7 @@
   "Phạm vi biểu đồ": {"vi":"Phạm vi biểu đồ","en":"Chart range"},
   "Ghi chú ngày {date}": {"vi":"Ghi chú ngày {date}","en":"Daily note · {date}"},
   "Ghi chú tuần {date}": {"vi":"Ghi chú tuần · {date}","en":"Weekly note · {date}"},
+  "Chưa có vốn ban đầu hợp lệ cho mọi tài khoản đã chọn; phần trăm hiển thị N/A.": {"vi":"Chưa có vốn ban đầu hợp lệ cho mọi tài khoản đã chọn; phần trăm hiển thị N/A.","en":"Valid initial capital is unavailable for every selected account; percentages show N/A."},
   "Đóng ghi chú": {"vi":"Đóng ghi chú","en":"Close note"},
   "Thu gọn ghi chú": {"vi":"Thu gọn ghi chú","en":"Collapse note"},
   "Mở rộng ghi chú": {"vi":"Mở rộng ghi chú","en":"Expand note"},

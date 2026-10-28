@@ -90,10 +90,10 @@
 .live-calendar-cell:is(:hover,:focus-visible) .wm-calendar-add{opacity:1}
 .live-week-total .live-week-add{opacity:0}
 .live-week-total:is(:hover,:focus-visible) .live-week-add{opacity:1}
-@media(hover:none){.wm-calendar-add{opacity:1}}
+@media(hover:none){.wm-calendar-add,.live-week-total .live-week-add{opacity:1}}
 
 /* Live uses one joined square matrix; keep the generic calendar's inset card treatment for analytics only. */
-.fx-app .wm-calendar-grid.live-calendar-grid{gap:0}
+.fx-app .wm-calendar-grid.live-calendar-grid{gap:0;min-width:760px;grid-template-columns:repeat(7,minmax(0,1fr)) minmax(112px,1fr)}
 .fx-app .wm-calendar-scroll.live-calendar-scroll{max-width:none}
 .fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-cell,
 .fx-app .wm-calendar-grid.live-calendar-grid .live-week-total{border-radius:0}
@@ -103,5 +103,11 @@
 .fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-week:last-child > *{border-bottom:1px solid var(--wm-border)}
 .fx-app .wm-calendar-grid.live-calendar-grid .live-week-total > div > span:first-child{white-space:nowrap}
 .fx-app .wm-calendar-grid.live-calendar-grid .live-week-total > div{gap:8px}
-.fx-app .wm-calendar-grid.live-calendar-grid .live-week-total > div > span:first-child{font-size:10px}
+.fx-app .wm-calendar-grid.live-calendar-grid .live-week-total > div > span:first-child{font-size:11px}
 .fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-dayname{border-bottom:0}
+.fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-cell:focus-visible,.live-week-total:focus-visible{outline:2px solid var(--wm-focus);outline-offset:-2px}
+.fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-cell:is(.is-gain,.is-loss){border-color:var(--live-calendar-tone);background:color-mix(in srgb,var(--live-calendar-tone) 16%,var(--wm-canvas));opacity:1}
+.live-calendar-cell.is-gain{--live-calendar-tone:var(--report-positive)}
+.live-calendar-cell.is-loss{--live-calendar-tone:var(--report-negative)}
+.live-calendar-cell:is(.is-gain,.is-loss)::after{content:"";position:absolute;inset:0 -1px -1px 0;border:1px solid var(--live-calendar-tone);pointer-events:none;z-index:1}
+.live-calendar-week:last-child>.live-calendar-cell::after{bottom:0}
