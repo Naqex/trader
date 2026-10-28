@@ -88,4 +88,20 @@
 .live-calendar-cell{position:relative}
 .wm-calendar-add{position:absolute;inset:0;display:grid;place-items:center;opacity:0;pointer-events:none;color:var(--wm-content)}
 .live-calendar-cell:is(:hover,:focus-visible) .wm-calendar-add{opacity:1}
+.live-week-total .live-week-add{opacity:0}
+.live-week-total:is(:hover,:focus-visible) .live-week-add{opacity:1}
 @media(hover:none){.wm-calendar-add{opacity:1}}
+
+/* Live uses one joined square matrix; keep the generic calendar's inset card treatment for analytics only. */
+.fx-app .wm-calendar-grid.live-calendar-grid{gap:0}
+.fx-app .wm-calendar-scroll.live-calendar-scroll{max-width:none}
+.fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-cell,
+.fx-app .wm-calendar-grid.live-calendar-grid .live-week-total{border-radius:0}
+.fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-cell,
+.fx-app .wm-calendar-grid.live-calendar-grid .live-week-total{border:0;border-top:1px solid var(--wm-border);border-left:1px solid var(--wm-border)}
+.fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-week > :last-child{border-right:1px solid var(--wm-border)}
+.fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-week:last-child > *{border-bottom:1px solid var(--wm-border)}
+.fx-app .wm-calendar-grid.live-calendar-grid .live-week-total > div > span:first-child{white-space:nowrap}
+.fx-app .wm-calendar-grid.live-calendar-grid .live-week-total > div{gap:8px}
+.fx-app .wm-calendar-grid.live-calendar-grid .live-week-total > div > span:first-child{font-size:10px}
+.fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-dayname{border-bottom:0}

@@ -247,9 +247,9 @@
 .fx-app.fx-shell-story .fx-content .live-month-nav :is(h2,strong) { font-size: var(--wm-text-dialog); font-weight: 600; font-variant-numeric: tabular-nums; }
 .fx-app.fx-shell-story[data-theme] .fx-content .live-month-nav .fxa-button:not(:hover) { background: transparent; }
 .live-money-mode { color: var(--project-on-peach-soft); background: var(--project-peach-soft); padding: 8px 12px; border-radius: 999px; font-size: 12px; }
-.live-calendar-scroll { overflow-x: auto; margin-top: 8px; }
+.live-calendar-scroll { overflow-x: auto; margin-top: 8px; margin-inline: calc(-1 * var(--wm-page-gutter)); }
 .is-calendar :is(.live-calendar-scroll, .live-calendar-content, .live-analytics-side) { scrollbar-width:thin; scrollbar-color:var(--wm-control-muted) transparent; }
-.live-calendar-grid { min-width: 640px; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; }
+.live-calendar-grid { min-width: 700px; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 0; }
 .live-calendar-dayname { padding: 8px 0 12px; text-align: center; font-size: 12px; color: var(--wm-content-muted); }
 .live-calendar-dayname.is-total { color:var(--wm-content); }
 .live-calendar-week { display: contents; }
@@ -259,12 +259,17 @@
 .live-calendar-cell.is-gain strong { color: var(--report-positive); }
 .live-calendar-cell.is-loss strong { color: var(--report-negative); }
 .live-calendar-cell small { color: var(--wm-content-muted); }
-.live-week-total { display: flex; flex-direction: column; justify-content: space-between; padding: 8px; border: 1px solid var(--wm-border); border-radius: 6px; font-size: 11px; }
+.live-calendar-grid .live-calendar-cell, .live-calendar-grid .live-week-total { border: 0; border-top: 1px solid var(--wm-border); border-left: 1px solid var(--wm-border); border-radius: 0; }
+.live-calendar-week > :last-child { border-right: 1px solid var(--wm-border); }
+.live-calendar-week:last-child > * { border-bottom: 1px solid var(--wm-border); }
+.live-calendar-dayname { border-bottom: 1px solid var(--wm-border); }
+.live-week-total { position: relative; display: flex; flex-direction: column; justify-content: space-between; padding: 8px; background: transparent; color: var(--wm-content); font: inherit; font-size: 11px; text-align: left; cursor: pointer; }
+.live-week-total:hover, .live-week-total:focus-visible { background: var(--wm-hover); }
 .live-week-total > div { display: flex; justify-content: space-between; align-items:flex-start; gap: 4px; }
 .live-week-total > div > span:first-child { color: var(--wm-content-muted); min-width:0; }
 .live-week-total > div > span:last-child { white-space:nowrap; flex-shrink:0; }
 .live-week-total strong { font-size: 15px; font-variant-numeric: tabular-nums; }
-.live-month-total { display: flex; justify-content: flex-end; align-items: center; gap: 12px; padding: 16px; background: var(--project-peach-soft); color: var(--project-on-peach-soft); border-radius: 6px; margin-top: 16px; font-size: 13px; flex-wrap: wrap; }
+.live-month-total { display: flex; justify-content: flex-end; align-items: center; gap: 12px; padding: 16px var(--wm-page-gutter); background: var(--project-peach-soft); color: var(--project-on-peach-soft); border-radius: 0; margin-top: 0; margin-inline: calc(-1 * var(--wm-page-gutter)); font-size: 13px; flex-wrap: wrap; }
 .live-month-total strong { font-size: 22px; font-variant-numeric: tabular-nums; }
 .live-day-detail { padding: 16px 0; border-top: 1px solid var(--wm-border); }
 .live-day-detail ul { padding: 0; list-style: none; }

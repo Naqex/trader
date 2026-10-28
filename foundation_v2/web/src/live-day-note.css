@@ -13,7 +13,7 @@
 .live-day-note-facts dl{margin:0 0 24px;padding-bottom:16px;border-bottom:1px solid var(--wm-border)}
 .live-day-note-facts dl>div{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;font-size:13px}
 .live-day-note-facts dt{display:flex;align-items:center;gap:8px;color:var(--wm-content-muted)}
-.live-day-note-facts dd{margin:0;white-space:nowrap}
+.live-day-note-facts dd{margin:0;max-width:62%;text-align:right;white-space:normal}
 .live-day-note-type{display:inline-block;padding:8px 12px;background:var(--project-peach-soft);color:var(--project-on-peach-soft);border-radius:var(--ds-radius-small)}
 .live-day-note-trades-heading{display:flex;align-items:center;gap:8px;color:var(--wm-content-muted)}
 .live-day-note-trades-heading h3{font-size:14px;font-weight:500;margin:0}.live-day-note-trades-heading>span{margin-left:auto;font-size:12px}
