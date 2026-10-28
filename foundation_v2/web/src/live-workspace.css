@@ -279,11 +279,10 @@
   :is(.is-calendar,.is-trades) > .live-split { flex:1; min-height:0; }
   .is-trades .live-trades-section { display:flex; flex-direction:column; min-height:0; }
   .is-trades .live-filters { flex-shrink:0; }
-  .is-trades .live-trades-content { flex:1; min-height:0; overflow:auto; }
+  .is-trades .live-trades-content { flex:1; min-height:0; overflow:hidden; }
   .is-trades .live-broker { display:flex; flex-direction:column; min-height:100%; }
-  .is-trades .live-broker .live-deals-toolbar { flex-shrink:0; }
   .is-trades .live-broker .live-table-scroll { flex:1 1 auto; min-height:0; max-height:none; margin-inline:0; }
-  .is-trades .live-broker .fxa-pagination { flex-shrink:0; margin-inline:0; }
+  .is-trades .live-broker .wm-pagination { flex-shrink:0; margin-inline:0; }
   .is-calendar .live-calendar-section { display:flex; flex-direction:column; min-height:0; }
   .is-calendar .live-filters { flex-shrink:0; }
   .is-calendar .live-calendar-content { display:flex; flex-direction:column; flex:1; min-height:0; overflow:auto; }
@@ -330,9 +329,8 @@
 .live-source-details { margin-top: 0; padding-inline: var(--wm-page-gutter); }
 .live-workspace .live-account-detail { margin-inline: calc(-1 * var(--wm-page-gutter)); padding-inline: var(--wm-page-gutter); }
 .live-workspace .live-table-scroll { margin-inline: calc(-1 * var(--wm-page-gutter)); }
-.is-trades .live-broker .live-deals-toolbar { margin: 0; padding: 16px var(--wm-page-gutter); border-bottom: 1px solid var(--wm-border); }
 .is-trades .live-broker .live-table-scroll { margin-inline: 0; }
-.is-trades .live-broker .fxa-pagination { margin-inline: 0; }
+.is-trades .live-broker .wm-pagination { margin-inline: 0; }
 .live-workspace .live-tag-analysis > .live-table-scroll { margin-inline: 0; }
 .live-workspace .fxa-pagination { margin-inline: calc(-1 * var(--wm-page-gutter)); padding-inline: var(--wm-page-gutter); border-top: 1px solid var(--wm-border); }
 .live-source-details dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }

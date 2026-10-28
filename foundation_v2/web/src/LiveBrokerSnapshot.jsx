@@ -1,7 +1,5 @@
 import useTableSort from './useTableSort.js'
 import DataTable, { SortableColumn, SortResetColumn } from './DataTable.jsx'
-import { matchesSearch } from './searchText.js'
-import SearchInput from './SearchInput.jsx'
 import { useEffect, useState } from 'react'
 import { useTestingLocale } from './testingLocale.jsx'
 import { formatUtc } from './researchDataApi.js'
@@ -12,8 +10,8 @@ import { BROKER_DEAL_COLUMNS } from './liveTradeColumns.js'
 
 export default function LiveBrokerSnapshot({ payload, section, deals: filteredDeals, filterKey = '', columns = BROKER_DEAL_COLUMNS.map(([key]) => key) }) {
   const { t, fmt, locale } = useTestingLocale()
-  const [search, setSearch] = useState(''), [page, setPage] = useState(1), [pageSize, setPageSize] = useState(20), sorting = useTableSort(()=>setPage(1))
-  useEffect(() => setPage(1), [search, pageSize, filterKey, payload.connection_id, payload.account?.account_ref])
+  const [page, setPage] = useState(1), [pageSize, setPageSize] = useState(20), sorting = useTableSort(()=>setPage(1))
+  useEffect(() => setPage(1), [pageSize, filterKey, payload.connection_id, payload.account?.account_ref])
   const account = payload.account
   if (!account) return null
   const currency = account.currency || '', money = value => fmt(value, currency ? ` ${currency}` : '')
@@ -21,7 +19,7 @@ export default function LiveBrokerSnapshot({ payload, section, deals: filteredDe
   const side = value => value === 0 ? t('Buy') : value === 1 ? t('Sell') : '-'
   const entries = ['Entry', 'Exit', 'Reversal', 'Close by']
   const sortValue = (deal,key) => key === 'time' ? deal.time_msc : key === 'asset' ? deal.symbol : key === 'side' ? `${side(deal.type)} ${entries[deal.entry] || ''}` : key === 'net' ? dealNet(deal) : deal[key]
-  const deals = sorting.rows((section === 'transactions' ? payload.cashflows || [] : filteredDeals || payload.deals || []).filter(deal => matchesSearch(`${deal.symbol || ''} ${deal.ticket}`, search)),sortValue,[{key:'time',direction:'desc'}])
+  const deals = sorting.rows(section === 'transactions' ? payload.cashflows || [] : filteredDeals || payload.deals || [], sortValue, [{ key: 'time', direction: 'desc' }])
   const pages = Math.max(1, Math.ceil(deals.length / pageSize)), current = Math.min(page, pages), visible = deals.slice((current - 1) * pageSize, current * pageSize)
   const shown = BROKER_DEAL_COLUMNS.filter(([key]) => columns.includes(key))
   const cellValue = (deal, key) => {
@@ -44,7 +42,6 @@ export default function LiveBrokerSnapshot({ payload, section, deals: filteredDe
       <details className="live-account-detail"><summary>{t('Pending orders')} ({Array.isArray(payload.orders) ? payload.orders.length : '-'})</summary>{payload.orders?.length ? table('Pending orders', ['Ticket', 'Asset', 'MT5 type', 'Lot', 'Price'], payload.orders.map(item => <tr key={item.ticket}><td>{item.ticket}</td><td>{item.symbol}</td><td>{item.type}</td><td>{fmt(item.volume_current, '', 5)}</td><td>{fmt(item.price_open, '', 5)}</td></tr>)) : <p>{t(Array.isArray(payload.orders) ? 'No pending orders in this snapshot.' : 'Order data is unavailable.')}</p>}</details>
       <details className="live-account-detail"><summary>{t('Latest broker quotes')}</summary>{payload.quotes?.length ? table('Latest broker quotes', ['Asset', 'Bid', 'Ask', 'Tick time'], payload.quotes.map(quote => <tr key={quote.symbol}><td>{quote.symbol}</td><td>{fmt(quote.bid, '', 5)}</td><td>{fmt(quote.ask, '', 5)}</td><td>{time(quote.time_msc)}{Date.now() - quote.time_msc > 120000 && ` · ${t('Stale quote')}`}</td></tr>)) : <p>{t('No quotes in this snapshot.')}</p>}</details>
     </> : <>
-      <div className="live-deals-toolbar is-search-only" data-tooltip={t(section === 'transactions' ? 'Deposits, withdrawals and other non-trading events are listed separately.' : 'Each row is a filled deal; entries and exits have not been paired into trades.')}><label className="live-search"><TestingIcon kind="search" /><SearchInput type="search" aria-label={t('Search symbol or ticket')} placeholder={t('Search symbol or ticket')} value={search} onChange={event => setSearch(event.target.value)} /></label></div>
       {!deals.length ? <div className="live-empty" data-testid="live-deals-empty"><TestingIcon kind={section === 'transactions' ? 'account' : 'journal'} size={48} /><h3>{t(section === 'transactions' ? 'No transactions yet' : 'No deals in this selection.')}</h3></div> : section === 'transactions' ? table('Transactions', ['Time', 'Ticket', 'MT5 type', 'Amount', 'Comment'], visible.map(deal => <tr key={deal.ticket}><td>{time(deal.time_msc)}</td><td>{deal.ticket}</td><td>{deal.type}</td><td>{money(deal.profit)}</td><td>{deal.comment || '-'}</td></tr>)) : !shown.length ? <div className="live-empty"><h3>{t('Chọn cột hiển thị để xem giao dịch.')}</h3></div> : table('Broker deals', shown.map(([key,label]) => ({key,label})), visible.map((deal,index) => <tr key={deal.ticket}><td className="wm-table-row-number">{(current-1)*pageSize+index+1}</td>{shown.map(([key]) => <td key={key} className={`${['time','asset','side'].includes(key)?'':'is-numeric'} ${key === 'net' ? dealNet(deal) > 0 ? 'is-gain' : dealNet(deal) < 0 ? 'is-loss' : '' : ''}`}>{cellValue(deal,key)}</td>)}</tr>))}
 
       {deals.length > 0 && <PaginationFooter totalCount={deals.length} label="Live data pagination" page={current} pages={pages} onPageChange={setPage} pageSize={pageSize} onPageSizeChange={value => { setPageSize(value); setPage(1) }} sizes={[10,20,50,100]} />}

@@ -155,7 +155,6 @@ function StrategyWorkspace({ workspace, query }) {
     {problem && <div className="pb-message is-error" role="alert">{problem.text}<button className="pb-button" type="button" onClick={refresh} disabled={pending}>Tải lại danh sách</button></div>}
     {viewingHistorical && <p className="pb-message" role="status">{selected ? 'Đang xem phiên bản ' + selected.revision + '. Các thay đổi mới hơn không áp dụng cho phiên bản này.' : history.status === 'ready' ? 'Không tìm thấy phiên bản trong liên kết. Chọn chiến lược để xem bản mới nhất.' : 'Đang đọc phiên bản chiến lược trong liên kết…'}</p>}
     {showWelcome ? <section className="pb-welcome" data-testid="playbook-welcome" aria-labelledby="pb-welcome-title">
-      <div className="pb-welcome-nav" aria-label="Điều hướng chiến lược"><span className="is-active"><ChartIcon name="layers" width="15" height="15"/>Chiến lược của tôi</span><span><ChartIcon name="news" width="15" height="15"/>Gửi phản hồi</span></div>
       <div className="pb-welcome-copy"><h2 id="pb-welcome-title">Xây dựng chiến lược của bạn</h2><p>Bạn bắt đầu từ đâu?</p></div>
       <div className="pb-welcome-options" role="group" aria-label="Chọn cách bắt đầu chiến lược">
         <article className="pb-welcome-card is-blue"><span className="pb-welcome-icon"><TestingIcon kind="search" size={18}/></span><h3>Tôi đã có chiến lược</h3><strong>Làm cho chiến lược rõ ràng hơn</strong><p>Bạn đã có quy tắc? Hãy hệ thống hóa chúng, tìm khoảng trống và biến mọi ý tưởng thành điều kiện rõ ràng, có thể kiểm thử.</p></article>
