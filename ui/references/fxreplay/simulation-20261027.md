@@ -81,8 +81,8 @@ charts reuse the Performance chart toolbar for zoom, pan and reset.
 
 Local SL uses ticks/multiplier rather than FX's reduction grid. Local RR keeps the
 original stop and selected target R inside the source holding window/cutoff. The
-Monte Carlo panel supports empirical ledger resampling, fixed configured outcomes,
-and a seeded normal model with separate win/loss standard deviations. Normal
+Monte Carlo exposes six primary controls; its seeded normal model, measured
+win/loss deviations and sampling defaults stay internal. Normal
 magnitudes are clipped at zero and balances stop at zero; this is labelled because
 clipping can change the mean. These are deliberate model differences, not claims
 of FX formula parity.
@@ -122,7 +122,8 @@ five summary metrics and `Kết quả từng giao dịch` disclosure heading are
 Selecting a scenario updates its configuration and immediately calls the existing
 read-only experiment adapter. Loading disables scenario actions; errors allow
 retry by selecting a chip. The current-SL 0% chip remains non-removable. Monte
-Carlo keeps its existing controls and calculation model.
+Carlo keeps its calculation model while exposing six primary controls; the chart
+and eight result cards stay visible before the first run.
 
 Evidence: `E:/BACKUP-TRADINGWORKSPACE/simulation-compact-20261028/`.
 Production build and 12 focused analytics tests passed. Preview and deployed

@@ -27,7 +27,8 @@ market-session radars, hour/day/month, calendar and frequency. Drawdown groups t
 account path, four summary metrics, MAE distribution and winning-trade MAE.
 Simulation groups configured SL, original-risk RR and Monte Carlo separately.
 Monte Carlo is shared by Sessions and Prop attempts using their filtered scope;
-six main inputs configure paths, with method/deviation/seed under Advanced.
+six main inputs configure paths. The simulator uses its normal distribution,
+measured gain/loss deviations and fixed seed as internal defaults.
 Default normal draws use measured gain/loss deviations (negative magnitudes
 clamped to zero); win rate excludes breakevens. Missing measurements stay blank,
 currencies cannot be mixed, and paths stop at zero balance. The plot connects
