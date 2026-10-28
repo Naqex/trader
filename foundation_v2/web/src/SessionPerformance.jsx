@@ -1,5 +1,5 @@
-import { compareTableValues, nextTableSort } from './tableModel.js'
-import DataTable, { SortableColumn } from './DataTable.jsx'
+import useTableSort from './useTableSort.js'
+import DataTable, { SortableColumn, SortResetColumn } from './DataTable.jsx'
 import { ReportLineChart, ReportBars } from './ReportChart.jsx'
 import { displayDate } from './dateFormat.js'
 import { useTestingLocale } from './testingLocale.jsx'
@@ -31,7 +31,7 @@ export default function SessionPerformance({ model, payload, item, href, chartsO
   const { t, locale, fmt, timezone } = useTestingLocale()
 
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(5), [sort,setSort] = useState({key:'',direction:'desc'})
+  const [pageSize, setPageSize] = useState(5), sorting = useTableSort(()=>setPage(1))
   const timeBasis = model?.summaryPeriods?.time_basis || model?.result?.scope?.time_basis || 'activity'
   const tradeTime = trade => timeBasis === 'market' ? trade.close_time_utc : trade.report_time_utc
   const periods = useMemo(() => model?.summaryPeriods || sessionPeriods(model?.ledger || [], timezone, new Date(), timeBasis), [model?.ledger, model?.summaryPeriods, timezone, timeBasis])
@@ -40,10 +40,8 @@ export default function SessionPerformance({ model, payload, item, href, chartsO
   const equityPoints = (equity?.points || []).flatMap(point => { const date = closeTime(point.time_utc); return date && Number.isFinite(point.equity) ? [{ value: point.equity, time: date.getTime(), segment: point.segment }] : [] })
   const currency = model?.result?.account_currency
   const rows = useMemo(() => {
-    const key = sort.key || 'date', direction = sort.key ? sort.direction : 'desc'
-    const value = trade => key === 'date' ? closeTime(tradeTime(trade))?.getTime() : key === 'symbol' ? trade.symbol : trade.pnl
-    return [...(model?.ledger || [])].sort((a, b) => compareTableValues(value(a), value(b), direction, locale) || a.rowIndex - b.rowIndex)
-  }, [model?.ledger, timeBasis, sort, locale])
+    return sorting.rows(model?.ledger || [],(trade,key)=>key === 'date' ? closeTime(tradeTime(trade))?.getTime() : key === 'symbol' ? trade.symbol : trade.pnl,[{key:'date',direction:'desc'}])
+  }, [model?.ledger, timeBasis, sorting.sorts, locale])
   const pages = Math.max(1, Math.ceil(rows.length / pageSize))
   const current = Math.min(page, pages)
   const visible = rows.slice((current - 1) * pageSize, current * pageSize)
@@ -64,7 +62,7 @@ export default function SessionPerformance({ model, payload, item, href, chartsO
       <Metric title="PnL TB/ngày" value={dashboardMoney(periods.averages?.day, currency)} detail={t("Tổng PnL ròng sau phí chia số ngày có giao dịch đóng trong toàn phiên. Nhiều lệnh cùng ngày chỉ tính một ngày; gồm ngày hòa vốn, bỏ ngày không có giao dịch. Thiếu ngày đóng hoặc PnL thì chưa tính.") + `\n\n${timezone}`} />
     </section>
     <section className="fxs-recent"><div className="fxs-section-heading"><h2>{t("Recent Trades")}</h2>{href && <a className="fxr-button fxr-button-secondary fxs-journal" href={href('trade')}><TestingIcon kind="ledger" size={16} />{t("Journal")}</a>}</div>
-      {rows.length ? <><DataTable className="fxs-table-scroll" label={t("Giao dịch gần đây")}><thead><tr><th>{t("Session")}</th>{[['date','Ngày đóng lệnh'],['symbol','Symbol'],['pnl','Net PnL']].map(([key,label])=><SortableColumn key={key} className={key==='pnl'?'is-numeric':undefined} active={sort.key===key} direction={sort.direction} onSort={()=>{setSort(nextTableSort(sort,key));setPage(1)}}>{t(label)}</SortableColumn>)}</tr></thead><tbody>{visible.map(trade => <tr key={trade.tradeId}><td>{item.name || item.record_id}</td><td>{closeTime(tradeTime(trade)) ? displayDate(closeTime(tradeTime(trade)), { timeStyle: 'short' }) : '-'}</td><td>{trade.symbol || model.result?.instrument_id || '-'}</td><td className={`is-numeric ${trade.pnl > 0 ? 'is-positive' : trade.pnl < 0 ? 'is-negative' : ''}`}>{dashboardMoney(trade.pnl, currency)}</td></tr>)}</tbody></DataTable>
+      {rows.length ? <><DataTable className="fxs-table-scroll" label={t("Giao dịch gần đây")}><thead><tr><SortResetColumn active={sorting.sorts.length > 0} onClear={sorting.clear}/><th>{t("Session")}</th>{[['date','Ngày đóng lệnh'],['symbol','Symbol'],['pnl','Net PnL']].map(([key,label])=><SortableColumn key={key} className={key==='pnl'?'is-numeric':undefined} {...sorting.columnProps(key,t(label))}>{t(label)}</SortableColumn>)}</tr></thead><tbody>{visible.map((trade,index) => <tr key={trade.tradeId}><td className="wm-table-row-number">{(current-1)*pageSize+index+1}</td><td>{item.name || item.record_id}</td><td>{closeTime(tradeTime(trade)) ? displayDate(closeTime(tradeTime(trade)), { timeStyle: 'short' }) : '-'}</td><td>{trade.symbol || model.result?.instrument_id || '-'}</td><td className={`is-numeric ${trade.pnl > 0 ? 'is-positive' : trade.pnl < 0 ? 'is-negative' : ''}`}>{dashboardMoney(trade.pnl, currency)}</td></tr>)}</tbody></DataTable>
       <PaginationFooter totalCount={rows.length} label="Phân trang giao dịch" page={current} pages={pages} onPageChange={setPage} pageSize={pageSize} onPageSizeChange={value => { setPageSize(value); setPage(1) }} sizes={[5,10,20]} /></> : <div className="fxs-trades-empty" data-testid="session-trades-empty"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M10 12h28v24H10ZM10 20h28M16 27h8m-8 5h16" /></svg><h3>{t("Chưa có giao dịch đóng")}</h3><p>{!model ? t("Mở chart để bắt đầu phiên luyện tập.") : t("Giao dịch đã đóng sẽ xuất hiện tại đây.")}</p>{!model?.result?.preview && !item.archived && item.dataset_available && <SessionChartLink href={href('replay', { select: null, surface: 'workspace' })} />}</div>}
     </section></>}
   </section>

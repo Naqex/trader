@@ -1,4 +1,5 @@
-import DataTable, { SortableColumn } from './DataTable.jsx'
+import useTableSort from './useTableSort.js'
+import DataTable, { SortableColumn, SortResetColumn } from './DataTable.jsx'
 import SearchInput from './SearchInput.jsx'
 import { previewReadRecovery } from './demoMode.js'
 import { useNotifications } from './Notifications.jsx'
@@ -366,7 +367,7 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
   const [selectedId, setSelectedId] = useState(requestedDataset)
   const [providerFilter, setProviderFilter] = useState('all')
   const [catalogProvider, setCatalogProvider] = useState('all')
-  const [categoryFilter, setCategoryFilter] = useState('all'), [sort, setSort] = useState(''), [downloadFilter, setDownloadFilter] = useState('downloaded')
+  const [categoryFilter, setCategoryFilter] = useState('all'), sorting = useTableSort(() => setPage(1)), [downloadFilter, setDownloadFilter] = useState('downloaded')
   const [search, setSearch] = useState(preview?.state === 'filtered' ? 'no-matching-asset' : ''), [page, setPage] = useState(1), [pageSize, setPageSize] = useState(25)
   const [detailsOpen, setDetailsOpen] = useState(false), [importAsset, setImportAsset] = useState(null)
   const [catalogRevision, setCatalogRevision] = useState(0)
@@ -565,11 +566,11 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
   const sourceRows = rows.filter(item => catalogProvider === 'all' || sourceOf(item) === catalogProvider)
   const sourceAssetCount = new Set(sourceRows.map(item => JSON.stringify([sourceOf(item),item.instrument_id]))).size
   const latestSourceSave = sourceRows.map(item => item.created_at_utc || item.source?.retrieved_at_utc).filter(value => Number.isFinite(Date.parse(value))).sort((a,b) => Date.parse(b)-Date.parse(a))[0]
-  const filteredDatasets = useMemo(() => filterLibrary(rows,{category:categoryFilter,provider:providerFilter,downloadStatus:downloadFilter,search,sort:sort || 'asset-asc',download:state.download}), [categoryFilter,providerFilter,downloadFilter,search,sort,rows,state.download])
+  const filteredDatasets = useMemo(() => filterLibrary(rows,{category:categoryFilter,provider:providerFilter,downloadStatus:downloadFilter,search,sort:sorting.sorts,download:state.download}), [categoryFilter,providerFilter,downloadFilter,search,sorting.sorts,rows,state.download])
   const selected = state.datasets.find(item => item.dataset_id === selectedId) || null
   const pages = Math.max(1, Math.ceil(filteredDatasets.length / pageSize)), currentPage = Math.min(page, pages)
   const pageItems = filteredDatasets.slice((currentPage - 1) * pageSize, currentPage * pageSize)
-  useEffect(() => setPage(1), [categoryFilter,providerFilter,downloadFilter,search,sort,pageSize])
+  useEffect(() => setPage(1), [categoryFilter,providerFilter,downloadFilter,search,sorting.sorts,pageSize])
   const filtersApplied = categoryFilter !== 'all' || providerFilter !== 'all' || downloadFilter !== 'downloaded' || Boolean(search)
   const clearFilters = () => { setCategoryFilter('all'); setProviderFilter('all'); setDownloadFilter('downloaded'); setSearch(''); setPage(1) }
 
@@ -676,10 +677,10 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
           <section className="rd-panel" aria-label="Dataset catalog">
             {!filteredDatasets.length ? <TestingEmptyState kind={rows.length && filtersApplied ? 'filtered-datasets' : 'datasets'} onClear={filtersApplied ? clearFilters : undefined} /> : <>
               <DataTable className="rd-table-wrap" tableClassName="rd-table" label={t('Dữ liệu đã có')} tableProps={{'data-testid':'data-desk-dataset-table'}}>
-                  <colgroup>{['asset','category','source','data','from','to','count','size','actions'].map(name => <col key={name} className={`data-library-column-${name}`} />)}</colgroup>
-                  <thead><tr>{LIBRARY_SORT_COLUMNS.map(([key,label]) => <SortableColumn key={key} className={['count','size'].includes(key) ? 'is-numeric' : ['category','source','data'].includes(key) ? 'is-center' : undefined} active={sort.startsWith(`${key}-`)} direction={sort.endsWith('-desc') ? 'desc' : 'asc'} onSort={() => setSort(`${key}-${sort === `${key}-asc` ? 'desc' : 'asc'}`)} data-tooltip={key === 'size' ? t('Dữ liệu replay; không gồm bản nguồn và cache tải.') : undefined}>{t(label)}</SortableColumn>)}<th scope="col" className="is-center">{t('Thao tác')}</th></tr></thead>
+                  <colgroup><col style={{width:52}}/>{['asset','category','source','data','from','to','count','size','actions'].map(name => <col key={name} className={`data-library-column-${name}`} />)}</colgroup>
+                  <thead><tr><SortResetColumn active={sorting.sorts.length > 0} onClear={sorting.clear}/>{LIBRARY_SORT_COLUMNS.map(([key,label]) => <SortableColumn key={key} className={['count','size'].includes(key) ? 'is-numeric' : ['category','source','data'].includes(key) ? 'is-center' : undefined} {...sorting.columnProps(key,t(label))} data-tooltip={key === 'size' ? t('Dữ liệu replay; không gồm bản nguồn và cache tải.') : undefined}>{t(label)}</SortableColumn>)}<th scope="col" className="is-center">{t('Thao tác')}</th></tr></thead>
                   <tbody>
-                    {pageItems.map((dataset) => {
+                    {pageItems.map((dataset,index) => {
                       const range = libraryDisplayRange(dataset, state.download)
                       const active = Boolean(detailsOpen && dataset.dataset_id && dataset.dataset_id === selected?.dataset_id)
                       const job = jobForAsset(dataset)
@@ -691,7 +692,7 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
                       const toDate = range.end
                       const dateTitle = value => dataset.downloaded ? value == null ? undefined : displayDate(value, { timeStyle: 'medium' }) : availableStart ? t('Phạm vi có thể tải theo metadata M1; chưa kiểm chứng độ phủ.') : undefined
                       return (
-                        <tr key={dataset.key} className={active ? 'is-selected' : ''}>
+                        <tr key={dataset.key} className={active ? 'is-selected' : ''}><td className="wm-table-row-number">{(currentPage-1)*pageSize+index+1}</td>
                           <td><strong data-testid={dataset.downloaded ? `dataset-row-${dataset.dataset_id}` : undefined}>{dataset.instrument_id || '-'}</strong>{dataset.artifact_available === false && <small>{t('Cần khôi phục')}</small>}{!dataset.downloaded && dataset.name && <small>{dataset.name}</small>}</td>
                           <td className="is-center">{t(categoryLabel(categoryOf(dataset)))}</td>
                           <td className="is-center" data-tooltip={downloadEngineOf(dataset) === 'QuantDataManager' ? `${sourceOf(dataset)} · ${t('Công cụ tải')}: QuantDataManager (QDM) · CLI` : sourceOf(dataset)}>{sourceOf(dataset)}</td>

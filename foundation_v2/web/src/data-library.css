@@ -58,8 +58,8 @@
 .data-library .rd-table td > button { max-width:100%; }
 .data-library .rd-table .rd-badge { max-width:100%; box-sizing:border-box; white-space:normal; }
 .data-library .rd-table .data-library-date { white-space:nowrap; overflow-wrap:normal; }
-.data-library .rd-table td:nth-child(n+5):nth-child(-n+8) { font-variant-numeric:tabular-nums; }
-.data-library .rd-table :is(th,td):is(:nth-child(7),:nth-child(8)) { text-align:right; }
+.data-library .rd-table :is(.data-library-date,.is-numeric) { font-variant-numeric:tabular-nums; }
+.data-library .rd-table :is(th,td).is-numeric { text-align:right; }
 .data-library-row-actions { display:flex; align-items:center; justify-content:flex-start; gap:8px; white-space:nowrap; }
 .fx-app .data-library .rd-table .data-library-row-actions .data-library-download { flex:0 0 116px; width:116px; box-sizing:border-box; justify-content:center; }
 .data-library-job-control { flex:0 0 auto; }

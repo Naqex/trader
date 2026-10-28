@@ -7,8 +7,10 @@ Giữ palette `annam-compact@0.1.1`; không thay token pin.
 
 - `DataTable.jsx` / `data-table.css`: native table, scroll owner, sticky header,
   hover/selected/action và căn số.
-- `SortableColumn`: toàn ô header là nút, icon có slot riêng, `aria-sort` chỉ ở cột
-  đang chọn. `tableModel.js` so sánh giá trị và giữ unknown ở cuối.
+- `SortableColumn`: toàn ô header là nút, icon có slot riêng; multi-sort dùng số
+  ưu tiên và `aria-sort` cho cột ưu tiên đầu. `useTableSort.js` dùng chung state,
+  thêm/đổi chiều/xóa, thông báo truy cập và reset trang cho grid local;
+  `tableModel.js` so sánh giá trị và giữ unknown ở cuối.
 - `PaginationFooter`: count trong phạm vi lọc, pager, page size; thu gọn theo chiều
   rộng của footer. Popup dùng overlay có sẵn.
 - Consumer giữ cách lấy dữ liệu, tính tiền, quyền thao tác và trạng thái đọc.
@@ -48,12 +50,18 @@ Tên, nhãn và thời gian căn trái; số căn phải; trạng thái/badge, c
 thao tác căn giữa. Header và nội dung dùng cùng trục và padding; icon sort nằm
 trước nhãn số, còn nhãn căn giữa có khoảng icon cân xứng hai bên để không lệch tâm.
 
-Trades multi-sort dùng click thường để thêm cột/đổi chiều. Header đang sort có nền
-xám và SVG mũi tên bo nét, số ưu tiên nhỏ màu cam dạng superscript; không dùng màu
+Các grid có header sort dùng click thường để thêm cột/đổi chiều, gồm bảng mẫu
+design system, Kho dữ liệu, Tài khoản/Dòng tiền, broker/manual và giao dịch gần đây.
+Header đang sort có viền cam mảnh riêng, inset 3px để các ô kề nhau không dính;
+nền pha cam nhẹ, chữ theo theme và SVG mũi tên bo nét, số ưu tiên nhỏ màu cam dạng superscript; không dùng màu
 để thay cho thứ tự bằng số. Slot 26px đủ cho ưu tiên hai chữ số. Nút bỏ sort nằm
 trong padding mép header, không thêm một vùng flex riêng hoặc placeholder; chiều
-rộng và trục text không đổi khi bật/tắt sort. Ô `#` chuyển thành nút `×` màu cam
-khi có sort; xóa hết sẽ trở lại `#`. Nhãn truy cập giữ rõ chức năng xóa.
+rộng và trục text không đổi khi bật/tắt sort. Ô `#` chuyển thành nút `×` có viền
+cam, nền pha cam và chữ theo theme khi có sort; xóa hết sẽ trở lại `#`.
+`SortResetColumn` dùng chung, không làm dịch các cột khi bật/tắt. Nhãn truy cập
+giữ rõ chức năng xóa. Trades tổng hợp tiếp tục gửi toàn bộ thứ tự sort tới server;
+grid local lọc và sort toàn bộ phạm vi trước phân trang. Bảng metric/luật Prop
+không có header sort giữ thứ tự nghiệp vụ.
 
 ## Data contract
 
@@ -75,8 +83,7 @@ khác thứ tự dùng chuẩn search chung; server Trades dùng cùng quy tắc
 Các grid giữ thứ tự mặc định phù hợp nhưng không tô header hay hiện mũi tên như
 sort người dùng đã chọn: Kho dữ liệu/Tài khoản theo tên, giao dịch/Dòng tiền mới
 nhất trước. Bấm header lần đầu sort tăng dần, lần tiếp theo đổi chiều; đổi sort
-về trang đầu. Chỉ lúc đó header mới hiện nền và mũi tên (cùng `aria-sort`), không
-thêm đường phân cách dọc. Trades giữ multi-sort và nút xóa sort theo contract trên.
+về trang đầu. Chỉ lúc đó header mới hiện viền, nền và mũi tên (cùng `aria-sort`).
 Mẫu bảng trong design system áp dụng cùng hành vi. Kho dữ liệu không
 tự mở chi tiết khi URL còn dataset từ trang trước. Mở chi tiết qua thao tác của
 người dùng; Tuỳ chọn bảng dùng trigger chữ và chevron tiêu chuẩn.

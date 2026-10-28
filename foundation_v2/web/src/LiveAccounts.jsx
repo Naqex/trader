@@ -1,5 +1,5 @@
-import DataTable, { SortableColumn } from './DataTable.jsx'
-import { compareTableValues } from './tableModel.js'
+import DataTable, { SortableColumn, SortResetColumn } from './DataTable.jsx'
+import useTableSort from './useTableSort.js'
 import AccountActionDialog from './AccountActionDialog.jsx'
 import { matchesSearch } from './searchText.js'
 import SearchInput from './SearchInput.jsx'
@@ -24,13 +24,13 @@ const MetaTraderConnect = lazy(() => import('./MetaTraderConnect.jsx'))
 
 export default function LiveAccounts({ workspace, accounts, records, broker, chosen, onSelect, transactions, writable, canImport, onCreate, onImport, onEdit, onTrade, onNavigate, onArchive, onRefresh }) {
   const { t, locale } = useTestingLocale()
-  const [search,setSearch] = useState(''), [sources,setSources] = useState([]), [searchOpen,setSearchOpen] = useState(false), [tab,setTab] = useState('all'), [page,setPage] = useState(1), [size,setSize] = useState(10), [sort,setSort] = useState({key:'',ascending:true}), [provider,setProvider] = useState(false)
+  const [search,setSearch] = useState(''), [sources,setSources] = useState([]), [searchOpen,setSearchOpen] = useState(false), [tab,setTab] = useState('all'), [page,setPage] = useState(1), [size,setSize] = useState(10), sorting = useTableSort(()=>setPage(1)), [provider,setProvider] = useState(false)
   const [connectionError,setConnectionError]=useState(''), [busy,setBusy]=useState('')
   const [menu,setMenu]=useState(null), [action,setAction]=useState(null)
   const [checked,setChecked]=useState(new Set()), [mutationUncertain,setMutationUncertain]=useState(false)
   const actionLock=useRef(false)
   const sidebar=useRef(null), searchInput=useRef(null), searchTrigger=useRef(null), selectPage=useRef(null), searchId=useId()
-  const [transactionSort,setTransactionSort]=useState({key:'',ascending:false})
+  const transactionSorting=useTableSort(()=>setPage(1))
   useEffect(()=>{if(searchOpen)searchInput.current?.focus()},[searchOpen])
   const closeSearch=()=>{setSearch('');setPage(1);setSearchOpen(false);searchTrigger.current?.focus()}
   useEffect(()=>{sidebar.current?.scrollTo({top:0})},[provider])
@@ -54,13 +54,9 @@ export default function LiveAccounts({ workspace, accounts, records, broker, cho
     } finally {onRefresh();setBusy('');actionLock.current=false}
   }
   const money = (value,currency) => typeof value === 'number' && Number.isFinite(value) ? `${value < 0 ? '−' : ''}${formatProtectionMoney(value,currency,locale)}` : '-'
-  const filtered = rows.filter(row => (!sources.length || sources.includes(row.record ? 'manual' : 'sync')) && matchesSearch(row.name, search)).sort((a,b) => {
-    const value = row => sort.key === 'balance' ? row.snapshot.account.balance : sort.key === 'updated' ? Date.parse(row.updated) : row.name
-    const left = value(a), right = value(b)
-    return compareTableValues(left,right,sort.ascending ? 'asc' : 'desc',locale) || a.id.localeCompare(b.id)
-  })
-  const allTransactions = accountTransactions(selected,{...transactionSort,key:transactionSort.key || 'time'}), cash = accountCashSummary(selected), opening = accountInitialBalance(selected)
-  const entries = (allTransactions || []).filter(item => tab === 'all' || item.kind === tab)
+  const filtered = sorting.rows(rows.filter(row => (!sources.length || sources.includes(row.record ? 'manual' : 'sync')) && matchesSearch(row.name, search)),(row,key)=>key === 'balance' ? row.snapshot.account.balance : key === 'updated' ? Date.parse(row.updated) : row.name,[{key:'name',direction:'asc'}])
+  const allTransactions = accountTransactions(selected), cash = accountCashSummary(selected), opening = accountInitialBalance(selected)
+  const entries = transactionSorting.rows((allTransactions || []).filter(item => tab === 'all' || item.kind === tab),(row,key)=>row[key])
   const listing = transactions ? entries : filtered, pages = Math.max(1,Math.ceil(listing.length/size)), current = Math.min(page,pages)
   const visible = filtered.slice((current-1)*size,current*size), checkedRows=filtered.filter(row=>checked.has(row.id))
   const allChecked=visible.length>0 && visible.every(row=>checked.has(row.id)), mixedChecked=!allChecked && visible.some(row=>checked.has(row.id))
@@ -68,7 +64,6 @@ export default function LiveAccounts({ workspace, accounts, records, broker, cho
   const checkedConnections=checkedRows.flatMap(row=>row.connection && canSyncMt5Connection(row.connection)?[row.connection]:[])
   useEffect(()=>{if(selectPage.current)selectPage.current.indeterminate=mixedChecked},[mixedChecked,transactions])
   const toggleChecked = id => setChecked(current=>{const next=new Set(current);next.has(id)?next.delete(id):next.add(id);return next})
-  const sortBy = key => { setSort(current => ({key,ascending:current.key === key ? !current.ascending : true}));setPage(1) }
   const choose = value => { onSelect(value);setPage(1) }
   const runMenu = callback => {setMenu(null);callback()}
   const rowActions = row => <button type="button" className="fxa-button fxa-icon-button live-account-menu-trigger wm-table-row-action" aria-label={`${t('Thao tác tài khoản')} ${row.name}`} aria-expanded={menu?.row.id===row.id} disabled={!writable || mutationUncertain || Boolean(busy)} onClick={event=>setMenu(menu?.row.id===row.id?null:{row,anchor:event.currentTarget})}><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
@@ -79,7 +74,7 @@ export default function LiveAccounts({ workspace, accounts, records, broker, cho
       {connectionError&&<p role="alert" className="live-connection-error">{t(connectionError)}</p>}
       {transactions ? <>
         <div className="live-transaction-tabs" role="group" aria-label={t("Loại dòng tiền")}>{[['all','Tất cả'],['withdrawal','Rút tiền'],['deposit','Nạp tiền'],['fee','Phí']].map(([value,label]) => <button key={value} type="button" className="fxa-button" aria-pressed={tab === value} onClick={() => {setTab(value);setPage(1)}}>{t(label)}</button>)}</div>
-        <DataTable className="live-table-scroll" label={t("Dòng tiền tài khoản")}><thead><tr><th>{t("Loại giao dịch")}</th>{[['amount','Số tiền'],['time','Thời gian']].map(([key,label])=><SortableColumn key={key} className={key === 'amount' ? 'is-numeric' : undefined} active={transactionSort.key===key} direction={transactionSort.ascending?'asc':'desc'} onSort={()=>{setTransactionSort(current=>({key,ascending:current.key===key?!current.ascending:true}));setPage(1)}}>{t(label)}</SortableColumn>)}</tr></thead><tbody>{entries.slice((current-1)*size,current*size).map(item => <tr key={item.id}><td><span className="live-source-badge" data-tooltip={item.kind==='opening' && !selected?.record?t('Số dư ghi nhận khi đồng bộ thành công lần đầu; không phải vốn gốc tại broker.'):undefined}>{t(item.label)}</span></td><td className="is-numeric">{money(item.amount,item.currency || selected?.snapshot.account.currency)}</td><td>{Number.isFinite(item.time) ? displayDate(new Date(item.time),{timeStyle:'short'}) : '-'}</td></tr>)}</tbody></DataTable>
+        <DataTable className="live-table-scroll" label={t("Dòng tiền tài khoản")}><thead><tr><SortResetColumn active={transactionSorting.sorts.length > 0} onClear={transactionSorting.clear}/><th>{t("Loại giao dịch")}</th>{[['amount','Số tiền'],['time','Thời gian']].map(([key,label])=><SortableColumn key={key} className={key === 'amount' ? 'is-numeric' : undefined} {...transactionSorting.columnProps(key,t(label))}>{t(label)}</SortableColumn>)}</tr></thead><tbody>{entries.slice((current-1)*size,current*size).map((item,index) => <tr key={item.id}><td className="wm-table-row-number">{(current-1)*size+index+1}</td><td><span className="live-source-badge" data-tooltip={item.kind==='opening' && !selected?.record?t('Số dư ghi nhận khi đồng bộ thành công lần đầu; không phải vốn gốc tại broker.'):undefined}>{t(item.label)}</span></td><td className="is-numeric">{money(item.amount,item.currency || selected?.snapshot.account.currency)}</td><td>{Number.isFinite(item.time) ? displayDate(new Date(item.time),{timeStyle:'short'}) : '-'}</td></tr>)}</tbody></DataTable>
         {!entries.length && <div className="live-empty"><h2>{t(!selected ? 'Chọn tài khoản' : allTransactions === null ? 'Chưa có dữ liệu dòng tiền' : 'Chưa có giao dịch trong nhóm này')}</h2>{selected?.record && <p>{t("Tài khoản thủ công hiện chưa hỗ trợ ghi nhận nạp, rút và phí tài khoản.")}</p>}</div>}
       </> : <>
         <div className="live-accounts-toolbar">
@@ -89,7 +84,7 @@ export default function LiveAccounts({ workspace, accounts, records, broker, cho
           </div>
           <FxSelect className={`live-source-filter${sources.length?' has-selection':''}`} label="Lọc tài khoản" icon="filter" iconOnly multiple showSelectAll={false} menuTitle="Filter by" value={sources} onChange={value=>{setSources(value);setPage(1)}} options={[{value:'manual',label:'Thủ công'},{value:'sync',label:'Đồng bộ'}]}/>
         </div>
-        <DataTable className="live-table-scroll" label={t("Danh sách tài khoản")}><thead><tr><th className="live-account-check is-center"><input ref={selectPage} type="checkbox" aria-label={t('Chọn tài khoản trên trang')} aria-checked={mixedChecked?'mixed':allChecked} checked={allChecked} disabled={!writable || Boolean(busy) || !visible.length} onChange={()=>setChecked(current=>{const next=new Set(current);visible.forEach(row=>allChecked?next.delete(row.id):next.add(row.id));return next})}/></th>{[['name','Tài khoản'],['source','Nguồn'],['status','Trạng thái'],['balance','Số dư'],['updated','Dữ liệu cập nhật'],['sync','Đồng bộ'],['edit','']].map(([key,label]) => ['name','balance','updated'].includes(key) ? <SortableColumn key={key} className={key==='balance'?'is-numeric':undefined} active={sort.key===key} direction={sort.ascending?'asc':'desc'} onSort={()=>sortBy(key)}>{t(label)}</SortableColumn> : <th key={key} scope="col" className="is-center" aria-label={key === 'edit' ? t('Thao tác') : undefined}>{key === 'sync' ? <span className="live-sync-heading"><span>{t(label)}</span><button type="button" className="live-sync-all" aria-label={t('Đồng bộ tất cả tài khoản')} data-tooltip={t('Đồng bộ tất cả tài khoản')} disabled={!writable || mutationUncertain || Boolean(busy) || !syncable.length} aria-busy={busy==='all'} onClick={()=>syncConnections(syncable)}><TestingIcon kind="sync" size={16}/></button></span> : t(label)}</th>)}</tr></thead><tbody>{visible.map(row => <tr key={row.id} aria-selected={checked.has(row.id)}>
+        <DataTable className="live-table-scroll" label={t("Danh sách tài khoản")}><thead><tr><SortResetColumn active={sorting.sorts.length > 0} onClear={sorting.clear}/><th className="live-account-check is-center"><input ref={selectPage} type="checkbox" aria-label={t('Chọn tài khoản trên trang')} aria-checked={mixedChecked?'mixed':allChecked} checked={allChecked} disabled={!writable || Boolean(busy) || !visible.length} onChange={()=>setChecked(current=>{const next=new Set(current);visible.forEach(row=>allChecked?next.delete(row.id):next.add(row.id));return next})}/></th>{[['name','Tài khoản'],['source','Nguồn'],['status','Trạng thái'],['balance','Số dư'],['updated','Dữ liệu cập nhật'],['sync','Đồng bộ'],['edit','']].map(([key,label]) => ['name','balance','updated'].includes(key) ? <SortableColumn key={key} className={key==='balance'?'is-numeric':undefined} {...sorting.columnProps(key,t(label))}>{t(label)}</SortableColumn> : <th key={key} scope="col" className="is-center" aria-label={key === 'edit' ? t('Thao tác') : undefined}>{key === 'sync' ? <span className="live-sync-heading"><span>{t(label)}</span><button type="button" className="live-sync-all" aria-label={t('Đồng bộ tất cả tài khoản')} data-tooltip={t('Đồng bộ tất cả tài khoản')} disabled={!writable || mutationUncertain || Boolean(busy) || !syncable.length} aria-busy={busy==='all'} onClick={()=>syncConnections(syncable)}><TestingIcon kind="sync" size={16}/></button></span> : t(label)}</th>)}</tr></thead><tbody>{visible.map((row,index) => <tr key={row.id} aria-selected={checked.has(row.id)}><td className="wm-table-row-number">{(current-1)*size+index+1}</td>
           <td className="live-account-check is-center"><input type="checkbox" aria-label={t('Chọn tài khoản {name}',{name:row.name})} checked={checked.has(row.id)} disabled={!writable || Boolean(busy)} onChange={()=>toggleChecked(row.id)}/></td>
           <td>{row.name}{row.connection?.requested_mode==='read_only' ? ` - ${t('Chỉ xem')}` : ''}</td>
           <td className="is-center"><span className="live-source-badge">{t(row.source)}</span></td>

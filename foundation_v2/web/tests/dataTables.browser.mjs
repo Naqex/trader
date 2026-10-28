@@ -41,7 +41,7 @@ try{
   assert.match(await ref.locator('tbody').innerText(),/Mẫu 35/);assert.match(await nav.innerText(),/1–1 \/ 1/)
   await page.getByRole('button',{name:'Nhóm minh hoạ',exact:true}).click();await page.getByRole('checkbox',{name:'Chọn tất cả',exact:true}).click();await page.keyboard.press('Escape')
   const geometry=await checkGeometry(ref.locator('.wm-table-scroll'));assert.equal(geometry.collapse,'separate');assert(Math.abs(geometry.cellWidth-geometry.buttonWidth)<1)
-  const valueHeading=ref.getByRole('button',{name:'Giá trị',exact:true});await valueHeading.focus();await page.keyboard.press('Enter');assert.equal(await valueHeading.locator('..').getAttribute('aria-sort'),'ascending');await page.keyboard.press('Space');assert.equal(await valueHeading.locator('..').getAttribute('aria-sort'),'descending')
+  const valueHeading=ref.locator('.wm-table-sort').filter({hasText:'Giá trị'});await valueHeading.focus();await page.keyboard.press('Enter');assert.equal(await valueHeading.locator('xpath=ancestor::th').getAttribute('aria-sort'),'ascending');await page.keyboard.press('Space');assert.equal(await valueHeading.locator('xpath=ancestor::th').getAttribute('aria-sort'),'descending')
   await nav.getByRole('button',{name:'Số dòng mỗi trang',exact:true}).click();await page.getByRole('option',{name:'25',exact:true}).click();assert.match(await nav.innerText(),/1–25 \/ 35/)
   const view=ref.locator('.wm-table-scroll');await view.evaluate(el=>{el.scrollTop=150});assert(await view.evaluate(el=>{const r=el.querySelector('th').getBoundingClientRect(),b=el.getBoundingClientRect();return Math.abs(r.top-b.top)<2&&r.bottom<=b.bottom}))
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false)

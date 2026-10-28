@@ -31,6 +31,21 @@ test('date sort matches displayed catalog metadata, epochs and ISO dates', () =>
   assert.equal(filterLibrary([{...rows[0],key:'z',row_count:2},{...rows[0],key:'a',row_count:2}],{sort:'count-desc'})[0].key,'a')
 })
 
+test('library multi-sort respects priority, numeric values and stable default after clearing', () => {
+  const rows=[
+    {key:'b',instrument_id:'B',asset_class:'fx',downloaded:true,row_count:30},
+    {key:'a',instrument_id:'A',asset_class:'fx',downloaded:true,row_count:10},
+    {key:'d',instrument_id:'D',asset_class:'metal',downloaded:true,row_count:null},
+    {key:'c',instrument_id:'C',asset_class:'metal',downloaded:true,row_count:20},
+  ]
+  const before=structuredClone(rows)
+  const sorts=[{key:'category',direction:'asc'},{key:'count',direction:'desc'}]
+  assert.deepEqual(filterLibrary(rows,{sort:sorts}).map(r=>r.key),['b','a','c','d'])
+  assert.deepEqual(filterLibrary(rows,{sort:sorts.toReversed()}).map(r=>r.key),['b','c','a','d'])
+  assert.deepEqual(filterLibrary(rows,{sort:[]}).map(r=>r.key),['a','b','c','d'])
+  assert.deepEqual(rows,before)
+})
+
 test('local trade search uses the same unaccented unordered tokens as native trades', () => {
   const rows=Array.from({length:35},(_,i)=>({trade_id:`t-${i}`,tags:i===34?['Kỷ luật tốt']:[],net_pnl:i}))
   const filtered=filterAnalyticsRows(rows,{search:' TOT  ky LUAT '})

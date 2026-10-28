@@ -1,4 +1,10 @@
 import './data-table.css'
+import { useTestingLocale } from './testingLocale.jsx'
+
+export function SortResetColumn({ active, onClear, disabled = false }) {
+  const { t } = useTestingLocale()
+  return <th scope="col" className="wm-table-row-number">{active ? <button type="button" className="wm-table-sort-clear-all" disabled={disabled} onClick={onClear} aria-label={t('Xóa tất cả sắp xếp')} title={t('Xóa tất cả sắp xếp')}>×</button> : '#'}</th>
+}
 
 // Keep one native table inside one viewport so horizontal scrolling cannot
 // separate column headings from the rows they describe.

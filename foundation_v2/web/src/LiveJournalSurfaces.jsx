@@ -1,5 +1,5 @@
-import { compareTableValues, nextTableSort } from './tableModel.js'
-import DataTable, { SortableColumn } from './DataTable.jsx'
+import useTableSort from './useTableSort.js'
+import DataTable, { SortableColumn, SortResetColumn } from './DataTable.jsx'
 import { matchesSearch } from './searchText.js'
 import SearchInput from './SearchInput.jsx'
 import { useEffect, useMemo, useState } from 'react'
@@ -24,10 +24,10 @@ function StrategyReference({ payload, strategies, workspace }) {
 
 export function ManualTrades({ columns = MANUAL_TRADE_COLUMNS.map(([key]) => key), deals, currency, strategies, workspace, filterKey, writable, onEdit }) {
   const { t,fmt } = useTestingLocale()
-  const [search, setSearch] = useState(''), [page, setPage] = useState(1), [size, setSize] = useState(20), [sort,setSort] = useState({key:'',direction:'desc'})
+  const [search, setSearch] = useState(''), [page, setPage] = useState(1), [size, setSize] = useState(20), sorting = useTableSort(()=>setPage(1))
   useEffect(() => setPage(1),[filterKey])
-  const sortValue = deal => !sort.key || sort.key === 'time' ? deal.time_msc : sort.key === 'asset' ? deal.symbol : sort.key === 'side' ? deal.type : dealNet(deal)
-  const rows = deals.filter(deal => matchesSearch(`${deal.symbol} ${deal.record.payload.tags.join(' ')} ${deal.record.payload.note}`, search)).sort((a,b) => compareTableValues(sortValue(a),sortValue(b),sort.direction)||String(a.ticket).localeCompare(String(b.ticket)))
+  const sortValue = (deal,key) => key === 'time' ? deal.time_msc : key === 'asset' ? deal.symbol : key === 'side' ? deal.type : dealNet(deal)
+  const rows = sorting.rows(deals.filter(deal => matchesSearch(`${deal.symbol} ${deal.record.payload.tags.join(' ')} ${deal.record.payload.note}`, search)),sortValue,[{key:'time',direction:'desc'}])
   const pages = Math.max(1,Math.ceil(rows.length/size)), current = Math.min(page,pages)
   const shown = MANUAL_TRADE_COLUMNS.filter(([key]) => columns.includes(key))
   const cellValue = (deal, key) => {
@@ -41,9 +41,9 @@ export function ManualTrades({ columns = MANUAL_TRADE_COLUMNS.map(([key]) => key
     }
   }
   return <section className="live-broker"><div className="live-deals-toolbar"><h2>{t('Giao dịch đã đóng')} · {rows.length}</h2><label className="live-search"><TestingIcon kind="search" /><SearchInput type="search" placeholder={t('Tìm sản phẩm, nhãn…')} aria-label={t('Tìm giao dịch')} value={search} onChange={event => { setSearch(event.target.value); setPage(1) }} /></label></div>
-    <DataTable className="live-table-scroll" label={t('Giao dịch thủ công')}><thead><tr>{shown.map(([key,label]) => ['time','asset','side','net'].includes(key) ? <SortableColumn key={key} className={key==='net'?'is-numeric':undefined} active={sort.key===key} direction={sort.direction} onSort={()=>{setSort(nextTableSort(sort,key));setPage(1)}}>{t(label)}{key === 'net' && ` (${currency})`}</SortableColumn> : <th key={key} scope="col">{t(label)}</th>)}<th aria-label={t('Thao tác')} /></tr></thead><tbody>
-      {rows.slice((current-1)*size,current*size).map(deal => <tr key={deal.ticket}>{shown.map(([key]) => <td key={key} className={key === 'net' ? `is-numeric ${dealNet(deal) > 0 ? 'is-gain' : dealNet(deal) < 0 ? 'is-loss' : ''}` : ''}>{cellValue(deal,key)}</td>)}<td><button type="button" className="fxa-button" disabled={!writable} onClick={() => onEdit(deal.record)}>{t('Chi tiết')}</button></td></tr>)}
-      {!rows.length && <tr><td colSpan={shown.length + 1}>{t('Chưa có giao dịch trong bộ lọc này.')}</td></tr>}
+    <DataTable className="live-table-scroll" label={t('Giao dịch thủ công')}><thead><tr><SortResetColumn active={sorting.sorts.length > 0} onClear={sorting.clear}/>{shown.map(([key,label]) => ['time','asset','side','net'].includes(key) ? <SortableColumn key={key} className={key==='net'?'is-numeric':undefined} {...sorting.columnProps(key,t(label))}>{t(label)}{key === 'net' && ` (${currency})`}</SortableColumn> : <th key={key} scope="col">{t(label)}</th>)}<th aria-label={t('Thao tác')} /></tr></thead><tbody>
+      {rows.slice((current-1)*size,current*size).map((deal,index) => <tr key={deal.ticket}><td className="wm-table-row-number">{(current-1)*size+index+1}</td>{shown.map(([key]) => <td key={key} className={key === 'net' ? `is-numeric ${dealNet(deal) > 0 ? 'is-gain' : dealNet(deal) < 0 ? 'is-loss' : ''}` : ''}>{cellValue(deal,key)}</td>)}<td><button type="button" className="fxa-button" disabled={!writable} onClick={() => onEdit(deal.record)}>{t('Chi tiết')}</button></td></tr>)}
+      {!rows.length && <tr><td colSpan={shown.length + 2}>{t('Chưa có giao dịch trong bộ lọc này.')}</td></tr>}
     </tbody></DataTable><PaginationFooter totalCount={rows.length} label="Trang giao dịch" page={current} pages={pages} onPageChange={setPage} pageSize={size} onPageSizeChange={value => { setSize(value); setPage(1) }} sizes={[10,20,50,100]} meta={<button type="button" className="fxa-button" disabled={!rows.length} onClick={() => downloadLiveCsv(rows.map(item => item.record))}>{t('Xuất CSV')}</button>} />
   </section>
 }

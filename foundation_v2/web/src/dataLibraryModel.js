@@ -1,6 +1,6 @@
 import { displayTimeframe } from './dataDisplay.js'
 import { matchesSearch } from './searchText.js'
-import { compareTableValues } from './tableModel.js'
+import { sortTableRows } from './tableModel.js'
 import { datasetRange } from './researchDataApi.js'
 
 export const CATEGORIES = [
@@ -108,8 +108,8 @@ export function filterLibrary(rows, { category = 'all', provider = 'all', downlo
       || (downloadStatus === 'not-downloaded' && !item.downloaded && !item.downloadJob))
     && matchesSearch(`${item.instrument_id} ${item.name || ''} ${item.timeframe || ''} ${sourceOf(item)} ${categoryLabel(categoryOf(item))}`, search))
   const assetCompare = (a, b) => `${a.instrument_id || ''} ${a.timeframe || ''}`.localeCompare(`${b.instrument_id || ''} ${b.timeframe || ''}`, 'en', { numeric:true }) || a.key.localeCompare(b.key)
-  const [key, direction = 'asc'] = sort === 'newest' ? ['updated','desc'] : sort.split('-')
-  const value = item => {
+  const [key, direction = 'asc'] = typeof sort === 'string' ? sort === 'newest' ? ['updated','desc'] : sort.split('-') : []
+  const value = (item, key) => {
     if (key === 'asset') return `${item.instrument_id || ''} ${item.timeframe || ''}`
     if (key === 'category') return categoryLabel(categoryOf(item))
     if (key === 'source') return sourceOf(item)
@@ -121,5 +121,6 @@ export function filterLibrary(rows, { category = 'all', provider = 'all', downlo
     if (key === 'size') return item.downloaded ? item.size_bytes : null
     return null
   }
-  return filtered.sort((a,b) => compareTableValues(value(a), value(b), sort === 'downloaded' ? 'desc' : sort === 'not-downloaded' ? 'asc' : direction) || assetCompare(a,b))
+  const sorts = Array.isArray(sort) ? sort : [{key,direction:sort === 'downloaded' ? 'desc' : sort === 'not-downloaded' ? 'asc' : direction}]
+  return sortTableRows(filtered.sort(assetCompare), sorts, value)
 }
