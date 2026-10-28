@@ -120,17 +120,18 @@
 .live-metatrader-option:hover:not(:disabled) { background:transparent; color:var(--wm-content); }
 .live-metatrader-option:hover:not(:disabled) .live-metatrader-avatar { background:var(--wm-hover); }
 .live-metatrader-option:focus-visible { outline:2px solid var(--wm-focus); outline-offset:2px; }
-.live-cash-summary { display:grid; gap:0; margin:12px 0 0; }
-.live-cash-summary > div { padding:12px; background:var(--wm-surface); border-inline:1px solid var(--wm-border); }
-.live-cash-summary > .live-cash-balance { margin-bottom:12px; border:1px solid var(--wm-border); border-radius:var(--ds-radius-field); }
-.live-cash-summary > div:nth-child(2) { border-top:1px solid var(--wm-border); border-radius:var(--ds-radius-field) var(--ds-radius-field) 0 0; }
-.live-cash-summary > div:last-child { border-bottom:1px solid var(--wm-border); border-radius:0 0 var(--ds-radius-field) var(--ds-radius-field); }
+.live-cash-summary { display:grid; gap:0; margin:12px 0 0; border-block:1px solid var(--wm-border); }
+.live-cash-summary > div { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); align-items:center; min-width:0; padding:12px 24px; background:transparent; border-bottom:1px solid var(--wm-border); }
+.live-cash-summary > div:last-child { border-bottom:0; }
+.live-cash-summary > .live-cash-balance { margin-bottom:0; border:0; border-bottom:1px solid var(--wm-border); border-radius:0; }
 .live-cash-summary dt { display:flex; align-items:center; gap:6px; color:var(--wm-content); font-size:13px; font-weight:600; }
-.live-cash-summary dd { margin:6px 0 0; font-size:18px; font-weight:600; font-variant-numeric:tabular-nums; }
+.live-cash-summary dd { min-width:0; margin:0; padding-left:12px; border-left:1px solid var(--wm-border); font-size:18px; font-weight:600; font-variant-numeric:tabular-nums; text-align:right; }
 .fx-app.fx-shell-story[data-theme] .fx-content .live-cash-info { display:grid; place-items:center; align-self:flex-start; margin-left:auto; width:20px; height:20px; min-height:20px; padding:0; border:0; background:transparent; color:var(--wm-content-muted); cursor:pointer; }
 .fx-app.fx-shell-story[data-theme] .fx-content .live-cash-info:is(:hover,:active) { background:transparent; color:var(--wm-content); }
-.is-transactions .live-add-account { padding-inline:12px; }
-.is-transactions .live-account-sidebar-heading { margin-inline:-12px; padding-inline:12px; }
+.is-transactions .live-add-account { padding-inline:0; }
+.is-transactions .live-account-sidebar-heading { margin-inline:0; padding-inline:24px; }
+.is-transactions .live-account-picker { margin-inline:24px; }
+.is-transactions .live-cash-summary { margin-inline:0; }
 .live-connect-instructions { display:grid; gap:16px; font-size:14px; line-height:1.6; }
 .live-connect-instructions :is(h3,p,ol) { margin:0; }
 .live-connect-instructions ol { padding-left:20px; }

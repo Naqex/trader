@@ -19,7 +19,10 @@ import { MANUAL_TRADE_COLUMNS, BROKER_DEAL_COLUMNS } from './liveTradeColumns.js
 import ProjectDateInput from './ProjectDateInput.jsx'
 import { navigate } from './clientNavigation.js'
 import LiveBrokerSnapshot from './LiveBrokerSnapshot.jsx'
-import { LIVE_FILTERS, calendarWeeks, calendarWeekSummary, cumulativeDealSeries, dayKey, dealNet, filterLiveDeals, summarizeDeals } from './liveWorkspaceModel.js'
+import { LIVE_FILTERS, calendarWeeks, calendarWeekSummary, dayKey, dealNet, filterLiveDeals, summarizeDeals } from './liveWorkspaceModel.js'
+import { buildAnalyticsModel } from './analyticsViewModel.js'
+import { DEFAULT_EXTRA_FILTERS } from './tradingAnalyticsModel.js'
+import { FxAnalyticsReport } from './FxAnalytics.jsx'
 
 const LiveAccounts = lazy(() => import('./LiveAccounts.jsx'))
 const LiveDayNote = lazy(() => import('./LiveDayNote.jsx'))
@@ -77,16 +80,73 @@ function Summary({ payload, deals, sidebar = false }) {
   </section>
 }
 
-function PnlCurve({ deals, currency, emptyTitle = 'No analytics yet' }) {
-  const { t, fmt, timezone } = useTestingLocale(), series = cumulativeDealSeries(deals), known = series.filter(point => point.value !== null)
-  const values = [0, ...known.map(point => point.value)], min = Math.min(...values), max = Math.max(...values), range = max - min || 1
-  const x = i => 70 + i / Math.max(1, series.length - 1) * 700, y = value => 240 - (value - min) / range * 180
-  const path = series.map((point, i) => point.value === null ? '' : `${i === 0 || series[i - 1].value === null ? 'M' : 'L'}${x(i)},${y(point.value)}`).join(' ')
-  return <section className="live-pnl-curve"><div className="live-section-heading"><h2>{t('Cumulative deal PnL')}</h2><span className="live-muted">{currency || '-'}</span></div>
-    {known.length ? <><svg viewBox="0 0 800 290" role="img" aria-label={t('Cumulative deal PnL')} preserveAspectRatio="xMidYMid meet">
-      {[0, 1, 2, 3].map(i => { const value = min + range * i / 3; return <g key={i}><line x1="70" x2="770" y1={y(value)} y2={y(value)} /><text x="60" y={y(value)} textAnchor="end" dominantBaseline="middle">{fmt(value)}</text></g> })}
-      <path d={path} className="live-pnl-line" />{known.length === 1 && <circle cx={x(0)} cy={y(known[0].value)} r="4" className="live-pnl-point" />}
-    </svg><div className="live-curve-range"><span>{dayKey(series[0].time, timezone)}</span><span>{dayKey(series.at(-1).time, timezone)}</span></div>{series.some(point => point.value === null) && <p className="live-muted">{t('Curve stops where deal costs are incomplete.')}</p>}</> : <Empty title={emptyTitle} copy="PnL will appear when complete deal data is available." />}
+function LiveAnalyticsReport({ payload, deals }) {
+  const { t, timezone } = useTestingLocale()
+  const model = useMemo(() => {
+    const opening = Number.isFinite(payload?.account?.opening_balance) ? Number(payload.account.opening_balance) : null
+    const ordered = [...deals].sort((a, b) => (a.time_msc || 0) - (b.time_msc || 0))
+    let balance = opening
+    const ledger = ordered.map((deal, index) => {
+      const net = dealNet(deal)
+      if (balance !== null && net !== null) balance += net
+      else balance = null
+      const time = Number.isFinite(deal.time_msc) ? new Date(deal.time_msc).toISOString() : null
+      return {
+        trade_id: String(deal.ticket ?? `live-${index + 1}`),
+        session_id: 'live',
+        source_id: 'live',
+        symbol: deal.symbol,
+        side: deal.type === 0 ? 'BUY' : 'SELL',
+        report_time_utc: time,
+        close_time_utc: time,
+        open_time_utc: time,
+        price_open: deal.price,
+        price_close: deal.price,
+        quantity: deal.volume,
+        net_pnl: net,
+        gross_pnl: deal.profit,
+        fees: [deal.commission, deal.swap, deal.fee].every(Number.isFinite) ? deal.commission + deal.swap + deal.fee : null,
+        realized_r: null,
+        starting_balance: opening,
+        account_currency: payload?.account?.currency,
+        status: 'closed',
+        tags: deal.record?.payload?.tags || [],
+        closed_trade_balance: balance,
+      }
+    })
+    const knownNet = ledger.every(row => Number.isFinite(row.net_pnl))
+    const netPnl = knownNet ? ledger.reduce((sum, row) => sum + row.net_pnl, 0) : null
+    const times = ledger.map(row => row.close_time_utc).filter(Boolean)
+    const result = {
+      schema_version: 'analytics-read-model-v1',
+      preview: true,
+      status: payload?.account ? 'ready' : 'empty',
+      analytics_available: Boolean(payload?.account),
+      account_currency: payload?.account?.currency,
+      ledger,
+      metrics: {
+        net_pnl: netPnl,
+        closed_trade_count: ledger.length,
+        starting_balance: opening,
+        ending_closed_trade_balance: ledger.at(-1)?.closed_trade_balance ?? opening,
+        closed_trade_balance_curve: ledger.map(row => ({ trade_id: row.trade_id, closed_trade_balance: row.closed_trade_balance })),
+      },
+      scope: {
+        selected_trade_count: ledger.length,
+        total_trade_count: Array.isArray(payload?.deals) ? payload.deals.length : ledger.length,
+        active_filters: false,
+        time_basis: 'activity',
+      },
+      observed_range: { start_utc: times[0] || payload?.history_from_utc, end_utc: times.at(-1) || payload?.captured_at_utc },
+      partial: ledger.some(row => !Number.isFinite(row.net_pnl) || !row.close_time_utc),
+      sources: [{ session_id: 'live' }],
+    }
+    return buildAnalyticsModel(result, 'app', timezone)
+  }, [payload, deals, timezone])
+  const extra = useMemo(() => ({ ...DEFAULT_EXTRA_FILTERS, timezone }), [timezone])
+  if (!payload?.account) return <Empty title="No analytics yet" copy="Select a connected account to view analytics." />
+  return <section className="as-page fxa-page live-analytics-report" aria-label={t('Analytics')}>
+    <FxAnalyticsReport model={model} extra={extra} experiments={null} experimentStatus="unavailable" experimentError={t('Live chưa có đường giá để mô phỏng từ dữ liệu broker.')} config={{ stop_distance_ticks: 20, stop_multiplier: 1, target_r: 2 }} selected="" onSelect={() => {}} experimentScope="live" onNeedExperiments={() => {}} />
   </section>
 }
 
@@ -238,7 +298,7 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
     {section === 'trades' && <div className="live-split"><section className="live-trades-section">{filterBar}<div className="live-trades-content">{payload?.manual ? <ManualTrades columns={columns} writable={!preview && ledger.status === 'ready' && strategyReady} filterKey={JSON.stringify([chosen,applied,strategy,tag])} workspace={workspace} deals={deals} currency={payload.account.currency} strategies={strategies} onEdit={record => open('trade',record)} /> : payload?.account ? <LiveBrokerSnapshot columns={columns} payload={payload} section="trades" deals={deals} filterKey={JSON.stringify(applied)} /> : <Empty title="No trades yet" copy="Tạo tài khoản thủ công và thêm giao dịch để bắt đầu." icon="journal" />}</div></section><Summary payload={payload} deals={deals} sidebar /></div>}
     {section === 'notes' && <JournalNotes writable={!preview && ledger.status === 'ready' && strategyReady} key={chosen} records={ledger.items} accountId={chosen || null} strategies={strategies} onEdit={record => open('note',record)} onCreate={() => open('note')} />}
     {section === 'tag-analytics' && <JournalTags filterKey={JSON.stringify([chosen,applied,strategy,tag])} deals={deals} currency={payload?.account?.currency || ''} />}
-    {section === 'analytics' && <><Summary payload={payload} deals={deals} />{deals.length > 0 && <PnlCurve deals={deals} currency={payload?.account?.currency} />}</>}
+    {section === 'analytics' && <LiveAnalyticsReport payload={payload} deals={deals} />}
     {section === 'trading-accounts' && <LiveAccounts key={workspace} workspace={workspace} accounts={accounts} records={ledger.items} broker={broker} chosen={chosen} onSelect={choose} transactions={query.get('account_tab') === 'transactions'} writable={!preview && ledger.status === 'ready'} canImport={!preview && ledger.status === 'ready' && accounts.length > 0} onCreate={seed => {if(!preview && ledger.status==='ready')setAction({kind:'account',seed})}} onImport={record => openAccountAction('import',record?.record_id ? record : null)} onEdit={record => open('account',record)} onTrade={record=>openAccountAction('trade',record)} onNavigate={navigateAccount} onArchive={archiveAccount} onRefresh={onRefresh} />}
 
     </>}
