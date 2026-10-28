@@ -125,14 +125,14 @@
 .live-cash-account-picker .fx-select-trigger { width:100%; box-sizing:border-box; }
 .live-cash-account-picker .fx-select-value { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .live-cash-summary { display:grid; gap:0; margin:0; }
-.live-cash-summary > div { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); align-items:stretch; min-width:0; padding:0; background:transparent; border-bottom:1px solid var(--wm-border); }
+.live-cash-summary > div { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:stretch; min-width:0; padding:0; background:transparent; border-bottom:1px solid var(--wm-border); }
 .live-cash-summary > .live-cash-balance { margin-bottom:0; border:0; border-bottom:1px solid var(--wm-border); border-radius:0; }
 .live-cash-summary dt { display:flex; align-items:center; gap:8px; min-width:0; padding:16px 12px 16px 24px; color:var(--wm-content); font-size:12px; font-weight:500; }
 .live-cash-summary dt > svg { flex:0 0 14px; }
-.live-cash-summary dd { min-width:0; margin:0; padding:16px 24px 16px 12px; border-left:1px solid var(--wm-border); align-content:center; font-size:16px; font-weight:600; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; text-align:right; }
+.live-cash-summary dd { min-width:0; margin:0; padding:16px 24px; border-left:0; align-content:center; font-size:16px; font-weight:600; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; text-align:right; }
 .fx-app.fx-shell-story[data-theme] .fx-content .live-cash-info { display:grid; place-items:center; flex:0 0 20px; margin-left:auto; width:20px; height:20px; min-height:20px; padding:0; border:0; background:transparent; color:var(--wm-content-muted); cursor:pointer; }
 .fx-app.fx-shell-story[data-theme] .fx-content .live-cash-info:is(:hover,:active) { background:transparent; color:var(--wm-content); }
-.live-accounts-layout.is-transactions .live-add-account { min-width:0; padding:0; background:var(--wm-canvas); }
+.live-accounts-layout.is-transactions .live-add-account { min-width:0; padding:0; border-left:0; background:var(--wm-canvas); }
 .live-accounts-layout.is-transactions .live-account-sidebar-heading { margin:0; padding-inline:24px; }
 .is-transactions .live-cash-summary { margin-inline:0; }
 .live-connect-instructions { display:grid; gap:16px; font-size:14px; line-height:1.6; }
@@ -389,7 +389,8 @@
 .live-deals-toolbar.is-search-only { justify-content: flex-end; }
 .live-table-scroll { overflow: auto; max-height: 560px; margin: 0; border: 0; border-radius: 0; }
 .live-table-scroll table { width: 100%; border-collapse: collapse; border-spacing: 0; font-size: 13px; }
-.live-table-scroll th, .live-table-scroll td { padding: 12px 16px; white-space: nowrap; border-bottom: 1px solid var(--wm-border); text-align: left; font-variant-numeric: tabular-nums; }
+.live-table-scroll th, .live-table-scroll td { padding: 12px 16px; white-space: nowrap; text-align: left; font-variant-numeric: tabular-nums; }
+.is-trades .live-broker > .live-table-scroll tbody tr:last-child > td { border-bottom: 0; }
 .live-table-scroll th { position: sticky; top: 0; background: var(--project-canvas); color: var(--wm-content-muted); font-weight: 500; }
 .live-table-scroll small { display: block; color: var(--wm-content-muted); margin-top: 4px; }
 .live-table-scroll tbody tr:hover td { background: var(--wm-row-hover); }
