@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "index_sha256": "7f4667ab676df8fedbf4b780aa1625c408d9c090bed1d96293fbd88f7b4f2564",
+  "rollback": "E:\\BACKUP-TRADINGWORKSPACE\\prop-analytics-polish-20261028\\ui-before-polish\\index.html",
+  "old_assets_retained": true,
+  "preserved": [
+    "brand/wmreplay.svg",
+    "chart-legacy.css"
+  ],
+  "rollout": "UI-only atomic index; existing API/UI processes retained"
+}

@@ -3,7 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { chromium } from 'playwright'
 
-const origin=process.env.TW_UI_ORIGIN || 'http://127.0.0.1:5180', out=path.resolve('../evidence/prop-pnl-chart-20261028')
+const origin=process.env.TW_UI_ORIGIN || 'http://127.0.0.1:5180', out=path.resolve(process.env.TW_UI_EVIDENCE_DIR || '../evidence/prop-pnl-chart-20261028')
 await mkdir(out,{recursive:true})
 const browser=await chromium.launch({headless:true,executablePath:process.env.TW_UI_QA_CHROMIUM || 'C:/Users/MIIKEY/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe'})
 const cases=[],errors=[]
@@ -34,6 +34,13 @@ try{
     if(await page.locator('.fx-app').getAttribute('data-theme')!==theme)await page.getByTestId('theme-toggle').click()
     assert.deepEqual(await referenceValues(),{overall_drawdown:-1000,profit_target:1000})
     await verifyGeometry()
+    const contrast=await chart().locator('.fxa-chart-reference').evaluateAll(nodes=>{
+      const rgb=value=>value.match(/[\d.]+/g).slice(0,3).map(Number)
+      const luminance=value=>rgb(value).map(channel=>channel/255).map(channel=>channel<=.04045?channel/12.92:((channel+.055)/1.055)**2.4).reduce((sum,value,index)=>sum+value*[.2126,.7152,.0722][index],0)
+      return nodes.map(node=>{const fill=getComputedStyle(node.querySelector('rect')).fill,text=getComputedStyle(node.querySelector('text')).fill,color=getComputedStyle(node).color,a=luminance(fill),b=luminance(text);return {solid:fill===color,ratio:(Math.max(a,b)+.05)/(Math.min(a,b)+.05)}})
+    })
+    assert.ok(contrast.every(label=>label.solid && label.ratio>=4.5),JSON.stringify(contrast))
+
     await page.mouse.move(0,0);await chart().locator(':scope>svg').focus();await page.keyboard.press('Tab')
     assert.equal(await chart().locator('.fxa-chart-tools').evaluate(node=>getComputedStyle(node).opacity),'1')
     await page.locator('#fxa-tab-performance').focus();await page.mouse.move(0,0)
@@ -46,7 +53,7 @@ try{
     await chart().getByRole('button',{name:'Đặt lại biểu đồ',exact:true}).click()
     assert.equal(await chart().getAttribute('data-chart-range'),'0:1')
     await page.mouse.move(0,0);await page.locator('#fxa-tab-performance').focus();await chart().screenshot({path:path.join(out,`prop-${width}-${theme}.png`)})
-    cases.push(`demo ${width}/${theme}: threshold values, geometry, hover/focus, zoom/reset`)
+    cases.push(`demo ${width}/${theme}: threshold values, solid label contrast, geometry, hover/focus, zoom/reset`)
   }
   await page.goto(base.replace('analytics_source=prop','analytics_source=sessions')+'&demo=1')
   await chart().waitFor();assert.equal(await chart().locator('[data-reference]').count(),0)

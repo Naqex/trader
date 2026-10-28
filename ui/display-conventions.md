@@ -88,7 +88,7 @@ metrics in a row, a full-width MAE plot, then three winning-trade metrics in a r
 The drawdown basis is automatic: declared applicable equity when available, otherwise closed balance, with the source named in the heading; no basis switch. Its titles/help/controls sit above the chart surfaces, with no outer surface around
 the summary rows. The four metrics become two columns at 850px and below; winning-trade
 metrics stack at 600px and below. Prop keeps the shared Performance, Drawdown and Simulation tabs.
-In Performance, the full-width orange-outlined objectives table follows Profit and loss/RR and precedes Expectancy & Profit factor. Its three columns are objective, result and status; row buttons reveal reference details. Evaluator scope stays independent of chart filters. Amounts and percentages use evaluator references, with unknown states for incomplete or mismatched-phase snapshots.
+In Performance, the full-width orange-outlined objectives table follows Profit and loss/RR and precedes Expectancy & Profit factor. Its three columns are objective, result and status; rows are static, with no expand control. Headers use the shared surface and horizontal separators; objective names align left, results right and statuses center. Evaluator scope stays independent of chart filters. Amounts and percentages use evaluator references, with unknown states for incomplete or mismatched-phase snapshots.
 
 Simulation uses three full-width sections stacked in order: SL, RR, Monte Carlo.
 Each starts with a short introduction and an explicit Run action. After running,
@@ -185,7 +185,7 @@ The PnL plot toolbar exposes zoom in/out, rectangle selection, pan and reset.
 Curve toolbars appear on chart hover or keyboard focus for fine pointers and stay
 visible on touch/coarse-pointer devices; the reserved toolbar space does not move.
 Prop PnL adds green Profit Target and red Max Loss references, both projected from
-the evaluator's absolute target/floor minus phase initial capital. They expand the
+the evaluator's absolute target/floor minus phase initial capital. Their compact labels use solid semantic fills and the shared contrasting foreground. They expand the
 Y domain and stay unchanged by trade filters and time zoom. Currency and baseline
 must match the report. Unknown, blocked or wrong-phase evaluator snapshots add no
 references. A trailing floor is a dashed current-cutoff reference, with its time
