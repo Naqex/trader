@@ -97,8 +97,12 @@ strip with a 1px action-color border at the bottom of the desktop calendar viewp
 All day and week-total cells stretch to the same grid track at every breakpoint;
 row sizing belongs to the grid, not a separate button height. Outside-month dates
 mute their content only, never the whole cell or its shared separators. Each seam
-has one stroke; hover/tone overlays cover that stroke instead of adding an inset
-duplicate. The month strip owns the grid's bottom boundary. Weekly totals expose the
+has one owner and one stroke: joined square matrices use the cell's top/left
+internal edges, while the shell or footer owns the outside edges. Hover and tone
+painters reuse those exact edges; they never use a negative inset, box-shadow or a
+second adjacent border. Rounded surfaces keep the radius on the parent and clip
+child fills or strokes at the parent edge. The month strip owns the grid's bottom
+boundary. Weekly totals expose the
 same plus and draft drawer, restricted to eligible dates in the current month.
 The calendar count uses trading execution records (manual closed records or MT5
 fills), labeled trades/giao dịch; it is not a reconstructed round-trip position count.
@@ -108,6 +112,25 @@ help and the drawer rather than repeated Partial badges. The percent switch is
 always available; return uses declared positive initial capital for every selected
 source, pooled once. Missing/invalid capital shows N/A with a concise reason;
 current balance is not substituted for initial capital.
+
+## Alignment and optical balance
+
+Use a shared 4/8px keyline and text baseline for layout geometry. Center mixed
+icon/text controls on the control axis and keep the icon in a fixed box; align
+numeric values by their value edge with tabular figures, while labels follow the
+reading edge. Keep headings and chart legends aligned by their container edges.
+Use optical correction only inside the stable alignment box: a glyph can move by
+at most 1px when its visible shape appears off-center, but its hit area,
+baseline, border and neighboring keylines do not move. Do not center long
+reading lists or labels just to make a card look symmetric. At narrow widths,
+preserve the same alignment rules and let groups wrap or stack at their layout
+breakpoint.
+
+This follows platform guidance that alignment supports scanning and hierarchy,
+icons share the neighboring text baseline, and layout/type use 8dp/4dp keylines:
+[Apple layout](https://developer.apple.com/design/human-interface-guidelines/layout),
+[Apple symbol baseline](https://developer.apple.com/documentation/uikit/configuring-and-displaying-symbol-images-in-your-ui),
+and [Material metrics and keylines](https://m1.material.io/layout/metrics-keylines.html).
 Performance group headings sit above their bordered content, with help and controls
 in the external heading. Expectancy/profit factor, winners/losers and side each
 retain one visible group heading. Session radars have no enclosing surface; only

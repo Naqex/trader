@@ -117,12 +117,7 @@
 .fx-app[data-theme=light] .wm-calendar-grid.live-calendar-grid .live-calendar-cell:is(.is-gain,.is-loss):hover:not(:disabled){background:color-mix(in srgb,var(--live-calendar-tone) 16%,var(--wm-canvas))}
 .live-calendar-cell.is-gain{--live-calendar-tone:var(--report-positive)}
 .live-calendar-cell.is-loss{--live-calendar-tone:var(--report-negative)}
-/* The overlay covers the existing top/left seams, including the next cell's edge. */
-.live-calendar-grid :is(.live-calendar-cell,.live-week-total)::after{content:"";position:absolute;inset:-1px;border:1px solid var(--live-calendar-tone,var(--wm-content-muted));pointer-events:none;opacity:0;z-index:1}
-.live-calendar-grid .live-calendar-cell:is(.is-gain,.is-loss)::after,
-.live-calendar-grid .live-calendar-cell:hover:not(:disabled)::after,
-.live-calendar-grid .live-week-total:hover::after{opacity:1}
-.live-calendar-grid .live-calendar-week>:first-child::after{left:0}
-.live-calendar-grid .live-calendar-week>:last-child::after{right:0}
-/* The orange month strip owns the bottom boundary; never paint a second stroke. */
-.live-calendar-grid .live-calendar-week:last-child>*::after{border-bottom:0;bottom:0}
+/* The element's reserved top/left edges are the only painter. The next cell
+   owns each interior seam and the shell/footer owns the outside frame. */
+.fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-cell:is(.is-gain,.is-loss){border-top-color:var(--live-calendar-tone);border-left-color:var(--live-calendar-tone)}
+.fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-cell:is(.is-gain,.is-loss):hover:not(:disabled){border-top-color:var(--wm-border);border-left-color:var(--wm-border)}

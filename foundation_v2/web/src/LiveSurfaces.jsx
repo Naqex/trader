@@ -101,13 +101,14 @@ function Calendar({ payload, deals, filters, filterBar, reviewScope, canWrite, o
   const total = calendarWeekSummary(weeks.flat(), empty)
   const partialDetail = t('Chỉ cộng phần dữ liệu đã ghi nhận; chưa đủ dữ liệu cho toàn bộ phạm vi.')
   const currency = payload?.account?.currency || (empty ? 'USD' : '')
-  const countLabel = count => count === null ? '—' : t('{count} giao dịch', { count })
+  // Summary totals use zero for an empty visual summary; day-level unknown
+  // values keep their coverage semantics and are rendered separately below.
+  const countLabel = count => t('{count} giao dịch', { count: Number.isFinite(count) ? count : 0 })
   const opening = payload?.account?.opening_balance
   const percentBasis = typeof opening === 'number' && Number.isFinite(opening) && opening > 0 ? opening : null
   const amount = value => percent ? value === null || percentBasis === null ? 'N/A' : fmt(value/percentBasis*100,'%') : fmt(value)
   const money = value => {
-    if (value === null || value === undefined) return '—'
-    return fmt(value, currency ? ` ${currency}` : '')
+    return fmt(Number.isFinite(value) ? value : 0, currency ? ` ${currency}` : '')
   }
   const weekAmount = value => {
     if (percent) return amount(value)

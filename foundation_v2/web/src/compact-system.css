@@ -67,6 +67,10 @@
 }
 .fx-app.fx-shell-story[data-theme] .fx-content .wm-button > svg { display:block; width:var(--ds-icon); height:var(--ds-icon); flex:0 0 var(--ds-icon); }
 .fx-app.fx-shell-story[data-theme] .fx-content .wm-button.is-icon > svg { width:var(--ds-icon-small); height:var(--ds-icon-small); flex-basis:var(--ds-icon-small); }
+/* Shared icon/text alignment: keep the hit box and text baseline stable, then
+   center the drawable glyph inside its fixed box for optical balance. */
+.fx-app.fx-shell-story[data-theme] .fx-content :is(.fxa-button,.fxr-button,.ja-button,.rs-button,.rd-button,.as-primary-button,.as-secondary-button):has(> svg) { display:inline-flex; align-items:center; }
+.fx-app.fx-shell-story[data-theme] .fx-content :is(.fxa-button,.fxr-button,.ja-button,.rs-button,.rd-button,.as-primary-button,.as-secondary-button) > svg { display:block; flex:0 0 auto; align-self:center; }
 .fx-app.fx-shell-story[data-theme] .fx-content :is(.fxa-metric,.fx-dashboard-metric) > strong { font-size:var(--ds-font-value); line-height:1.2; font-weight:var(--ds-weight-heading); }
 .fx-app.fx-shell-story[data-theme] .fx-content :is(.fxa-metric,.fx-dashboard-metric) > small { font-size:var(--ds-font-meta); line-height:1.5; }
 .fx-app.fx-shell-story[data-theme] .fx-content .fx-dashboard-chart-panel h3 { font-size:var(--ds-font-section); margin-bottom:var(--ds-space-6); }
