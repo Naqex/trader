@@ -312,7 +312,7 @@
   .is-trades .live-filters { flex-shrink:0; }
   .is-trades .live-trades-content { display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
   .is-trades .live-broker { display:flex; flex-direction:column; flex:1; min-height:0; }
-  .is-trades .live-broker .live-table-scroll { flex:1 1 auto; min-height:0; max-height:none; margin-inline:0; }
+  .is-trades .live-broker :is(.live-table-scroll,.fxa-table-scroll) { flex:1 1 auto; min-height:0; max-height:none; margin-inline:0; }
   .is-trades .live-broker .wm-pagination { flex-shrink:0; margin-inline:0; }
   .is-calendar .live-calendar-section { display:flex; flex-direction:column; min-height:0; }
   .is-calendar .live-filters { flex-shrink:0; }
@@ -375,7 +375,7 @@
 .live-workspace .live-account-detail { margin-inline: calc(-1 * var(--wm-page-gutter)); padding-inline: var(--wm-page-gutter); }
 .live-workspace .wm-table-scroll { scrollbar-gutter:auto; }
 .live-workspace .live-table-scroll { max-width:none; margin-inline: calc(-1 * var(--wm-page-gutter)); }
-.is-trades .live-broker .live-table-scroll { margin-inline: 0; }
+.is-trades .live-broker :is(.live-table-scroll,.fxa-table-scroll) { margin-inline: 0; }
 .is-trades .live-broker .wm-pagination { margin-inline: 0; }
 .live-workspace .live-tag-analysis > .live-table-scroll { margin-inline: 0; }
 .live-workspace .fxa-pagination { margin-inline: calc(-1 * var(--wm-page-gutter)); padding-inline: var(--wm-page-gutter); border-top: 1px solid var(--wm-border); }

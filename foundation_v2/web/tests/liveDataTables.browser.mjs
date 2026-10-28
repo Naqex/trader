@@ -11,12 +11,13 @@ await mkdir(out,{recursive:true})
 const records=journalRecords(),account=records.find(r=>r.kind==='account');account.payload.name='ACCOUNT 00'
 for(let i=1;i<35;i++)records.push({...structuredClone(account),record_id:`account-${i}`,payload:{...account.payload,name:`ACCOUNT ${String(i).padStart(2,'0')}`}})
 const broker=brokerSnapshot();broker.cashflows=Array.from({length:35},(_,i)=>({ticket:1000+i,type:2,time_msc:Date.parse('2026-10-01T00:00:00Z')+i*60000,profit:100+i,comment:'Synthetic deposit'}))
-const browser=await chromium.launch(),report={checks:[],errors:[],writes:[],scope:'Synthetic Live GET fixtures and demo/reference grids; no broker connection'};let page
+const browser=await chromium.launch(),report={checks:[],errors:[],writes:[],scope:'Synthetic Live GET fixtures and demo/reference grids; no broker connection'};let page,trainingHeader
 async function checkSort(root) {
  const labels=root.locator('.wm-table-heading-label')
  if(await labels.count())assert.equal(await labels.evaluateAll(nodes=>nodes.every(node=>node.scrollWidth<=node.clientWidth+1)),true,'Header labels must fit their slots')
  assert.equal(await root.locator('th[data-sort-active],th[aria-sort]').count(),0,'Default order must not look like a chosen sort')
- const button=root.locator('.wm-table-sort').first()
+ const buttonIndex=await root.getAttribute('data-testid')==='live-broker-snapshot'?3:0
+ const button=root.locator('.wm-table-sort').nth(buttonIndex)
  if(!await button.count())return
  const footer=root.locator('.wm-pagination').first()
  const next=footer.getByRole('button',{name:'Trang sau',exact:true})
@@ -32,7 +33,7 @@ async function checkSort(root) {
  await button.click()
  assert.equal(await active.getAttribute('aria-sort'),'descending')
  assert.notEqual(await root.locator('tbody').first().innerText(),ascending,'Header click actually changes row order')
- const second=root.locator('.wm-table-sort').nth(1)
+ const second=root.locator('.wm-table-sort').nth(buttonIndex + 1)
  if(await second.count()){
   await second.focus();await second.press('Space')
   assert.equal(await active.count(),2,'Plain activation adds a second sort')
@@ -91,6 +92,7 @@ for(const [width,theme]of[[1440,'dark'],[390,'light']]){
  report.checks.push({name:'reference-sorts',width,theme,neutralDefault:true,clickOrder:'asc-desc'})
  await page.goto(`${origin}/?workspace=fixture&lang=vi&view=trade&area=testing&section=trades&sessions=all&select=1&demo=1`,{waitUntil:'domcontentloaded'})
  const trades=page.locator('.fxa-trades');await trades.locator('tbody tr').first().waitFor()
+ trainingHeader=await trades.locator('thead th').allTextContents()
  await checkSort(trades)
  await trades.locator('.wm-table-sort-clear-all').click();assert.equal(await trades.locator('th[data-sort-active],th[aria-sort]').count(),0)
  report.checks.push({name:'trades-sort',width,theme,neutralDefault:true,multiSortClear:true})
@@ -102,6 +104,7 @@ for(const [width,theme]of[[1440,'dark'],[390,'light']]){
  ['labels',`section=tag-analytics&live_account=${fixtureAccount}`,'.live-journal-tags']]){
  await page.goto(`${origin}/?workspace=fixture&lang=vi&view=live&area=live&${query}`,{waitUntil:'domcontentloaded'})
  const root=page.locator(selector);await root.locator('.wm-data-table tbody tr').first().waitFor();const footer=root.locator('.wm-pagination').first();await footer.waitFor()
+ if(name==='broker')assert.deepEqual(await root.locator('thead th').allTextContents(),trainingHeader.map(label=>label==='Phiên'?'Tài khoản':label),'Live broker grid keeps the training grid header contract; only Session becomes Account')
  assert.equal(await footer.locator('.wm-pagination-meta > span').count(),0,'Live pagination hides the redundant result count')
  const initialRow=await root.locator('tbody tr').first().innerText()
  if(name==='accounts')assert.match(initialRow,/ACCOUNT 00/)

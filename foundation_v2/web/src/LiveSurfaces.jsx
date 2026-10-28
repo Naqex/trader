@@ -15,7 +15,7 @@ import { TestingSkeleton } from './TestingReadState.jsx'
 import FilterDrawer from './FilterDrawer.jsx'
 import LedgerFilterActions from './LedgerFilterActions.jsx'
 import TableColumnControl from './TableColumnControl.jsx'
-import { MANUAL_TRADE_COLUMNS, BROKER_DEAL_COLUMNS } from './liveTradeColumns.js'
+import { MANUAL_TRADE_COLUMNS, LIVE_TRADE_COLUMNS } from './liveTradeColumns.js'
 import ProjectDateInput from './ProjectDateInput.jsx'
 import { navigate } from './clientNavigation.js'
 import LiveBrokerSnapshot from './LiveBrokerSnapshot.jsx'
@@ -310,7 +310,7 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
   const apply = override => { const next = override || draft; if (!next.from || !next.to || next.from <= next.to) setApplied({...next}) }
   const accountPicker = <div className="live-account-picker"><SessionFilter items={pickerItems} value={section === 'calendar' ? calendarSelection : chosen} multiple={section === 'calendar'} onChange={section === 'calendar' ? chooseCalendar : choose} labels={ACCOUNT_PICKER_LABELS} /></div>
   const columnKind = payload?.manual ? 'manual' : 'broker'
-  const columnOptions = payload?.manual ? MANUAL_TRADE_COLUMNS : BROKER_DEAL_COLUMNS
+  const columnOptions = payload?.manual ? MANUAL_TRADE_COLUMNS : LIVE_TRADE_COLUMNS
   const columns = tableColumns[columnKind] || columnOptions.map(([key]) => key)
   const columnControl = section === 'trades' ? <TableColumnControl columns={columns} options={columnOptions} onChange={next => setTableColumns(current => ({...current,[columnKind]:next}))} /> : null
   const filterBar = <FilterBar columnControl={columnControl} tags={tags} tag={tag} onTagChange={setTag} accountPicker={accountPicker} extra={payload?.manual ? <div className="live-journal-filters"><FxSelect label="Chiến lược" value={strategy} onChange={changeStrategy} options={[{value:'all',label:'Tất cả chiến lược'},...(strategyRevision ? [{value:strategy,label:`${strategies.find(item => item.record_id === strategyId)?.payload.name || 'Chiến lược'} · v${strategyRevision}`,localize:false}] : []),...strategies.map(item => ({value:item.record_id,label:item.payload.name,localize:false}))]} /></div> : null} payload={payload} draft={draft} setDraft={setDraft} applied={applied} onApply={apply} onClear={() => { setDraft({...LIVE_FILTERS, timezone});setApplied({...LIVE_FILTERS, timezone});changeStrategy('all');setTag([]) }} />
