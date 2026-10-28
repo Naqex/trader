@@ -226,7 +226,10 @@
 .live-calendar-content { padding: 24px var(--wm-page-gutter) 0; }
 .live-calendar-unit-state { margin:8px 0 0; color:var(--wm-content-muted); font-size:12px; }
 .live-analytics-side { border-left: 1px solid var(--wm-border); padding: 0; }
-.live-analytics-side > h2 { display: flex; align-items: center; gap: 8px; margin: 0; min-height: 69px; box-sizing: border-box; padding: 16px 24px; border-bottom: 1px solid var(--wm-border); }
+.live-analytics-side > h2 { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0; min-height: 69px; box-sizing: border-box; padding: 16px 24px; border-bottom: 1px solid var(--wm-border); }
+.live-analytics-title, .live-analytics-tools { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.live-analytics-tools select { min-height: 32px; max-width: 132px; padding: 5px 28px 5px 10px; border: 1px solid var(--wm-control-border); border-radius: 999px; background: var(--wm-control); color: var(--wm-content); font: inherit; font-size: 12px; }
+.live-analytics-tools .fxa-icon-button { flex: 0 0 32px; width: 32px; height: 32px; min-height: 32px; }
 .live-analytics-side > :is(dl, .live-empty) { padding-inline: 24px; }
 .live-analytics-side > h2 svg { width: 18px; height: 18px; flex: 0 0 18px; }
 .live-empty { min-height: 340px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; padding: 32px 16px; box-sizing: border-box; }
@@ -239,6 +242,31 @@
 .live-analytics-side .live-empty-art svg { width: 56px; height: 56px; }
 .live-metrics > dl, .live-account-values { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin: 24px 0; }
 .live-analytics-side dl { display: grid; gap: 24px; margin-block: 24px; }
+.live-analytics-lines { display: block; width: 100%; margin: 0; padding: 0; border: 0; border-radius: 0; }
+.live-analytics-line { box-sizing: border-box; width: 100%; margin: 0; padding: 18px 24px; border: 0; border-bottom: 1px solid var(--wm-border); border-radius: 0; background: transparent; }
+.live-analytics-line-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; min-width: 0; }
+.live-analytics-line-heading > span:first-child, .live-analytics-source-line > span { color: var(--wm-content-muted); font-size: 12px; }
+.live-analytics-line-heading strong, .live-analytics-source-line strong { color: var(--wm-content); font-size: 18px; font-variant-numeric: tabular-nums; }
+.live-analytics-line-heading strong.is-gain { color: var(--report-positive); }
+.live-analytics-line-heading strong.is-loss { color: var(--report-negative); }
+.live-analytics-count { margin-left: auto; color: var(--wm-content-muted); font-size: 12px; white-space: nowrap; }
+.live-analytics-count b { color: var(--wm-content); font-size: 18px; font-variant-numeric: tabular-nums; }
+.live-analytics-line-bar, .live-analytics-balance-track { height: 5px; margin-top: 12px; overflow: hidden; background: var(--wm-control-open); }
+.live-analytics-line-bar span, .live-analytics-balance-track i { display: block; height: 100%; min-width: 2px; background: var(--report-blue); }
+.live-analytics-line-bar span.is-gain { background: var(--report-positive); }
+.live-analytics-line-bar span.is-loss { background: var(--report-negative); }
+.live-analytics-balance-track i { background: var(--report-blue); }
+.live-analytics-outcome-bar { display: flex; height: 8px; margin-top: 14px; overflow: hidden; background: var(--wm-control-open); }
+.live-analytics-outcome-bar i { display: block; min-width: 0; }
+.live-analytics-outcome-bar .is-gain { background: var(--report-positive); }
+.live-analytics-outcome-bar .is-loss { background: var(--report-negative); }
+.live-analytics-outcome-bar .is-flat { background: var(--wm-content-muted); }
+.live-analytics-legend { display: flex; flex-wrap: wrap; gap: 8px 12px; margin-top: 8px; color: var(--wm-content-muted); font-size: 11px; }
+.live-analytics-legend .is-gain { color: var(--report-positive); }
+.live-analytics-legend .is-loss { color: var(--report-negative); }
+.live-analytics-legend .is-flat { color: var(--wm-content-muted); }
+.live-analytics-source-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.live-analytics-source-line strong { font-size: 13px; text-align: right; overflow-wrap: anywhere; }
 .live-metrics dt, .live-analytics-side dt, .live-account-values dt { color: var(--wm-content-muted); font-size: 12px; }
 .live-metrics dd, .live-analytics-side dd { margin: 8px 0 0; font-size: var(--wm-text-value); line-height: 1.2; font-variant-numeric: tabular-nums; }
 .live-account-values dd { margin: 8px 0 0; font-size: 20px; font-variant-numeric: tabular-nums; }
@@ -359,8 +387,8 @@
 .live-broker .live-section-heading { flex-wrap: wrap; }
 .live-deals-toolbar { flex-wrap: wrap; margin-block: 20px; }
 .live-deals-toolbar.is-search-only { justify-content: flex-end; }
-.live-table-scroll { overflow: auto; max-height: 560px; }
-.live-table-scroll table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.live-table-scroll { overflow: auto; max-height: 560px; margin: 0; border: 0; border-radius: 0; }
+.live-table-scroll table { width: 100%; border-collapse: collapse; border-spacing: 0; font-size: 13px; }
 .live-table-scroll th, .live-table-scroll td { padding: 12px 16px; white-space: nowrap; border-bottom: 1px solid var(--wm-border); text-align: left; font-variant-numeric: tabular-nums; }
 .live-table-scroll th { position: sticky; top: 0; background: var(--project-canvas); color: var(--wm-content-muted); font-weight: 500; }
 .live-table-scroll small { display: block; color: var(--wm-content-muted); margin-top: 4px; }

@@ -7264,5 +7264,13 @@
   "Khoảng thời gian": {"vi":"Khoảng thời gian","en":"Period"},
   "Chưa có giao dịch trong ngày này.": {"vi":"Chưa có giao dịch trong ngày này.","en":"No trades for this day."},
   "Nội dung ghi chú": {"vi":"Nội dung ghi chú","en":"Note content"},
-  "Viết ghi chú…": {"vi":"Viết ghi chú…","en":"Write a note…"}
+  "Viết ghi chú…": {"vi":"Viết ghi chú…","en":"Write a note…"},
+  "Total balance": {"vi":"Tổng số dư","en":"Total balance"},
+  "Expectancy per trade": {"vi":"Kỳ vọng mỗi giao dịch","en":"Expectancy per trade"},
+  "Dollar Profit": {"vi":"Lợi nhuận (USD)","en":"Dollar Profit"},
+  "Percentage": {"vi":"Phần trăm","en":"Percentage"},
+  "Analytics display": {"vi":"Cách hiển thị phân tích","en":"Analytics display"},
+  "Hide values": {"vi":"Ẩn giá trị","en":"Hide values"},
+  "Show values": {"vi":"Hiện giá trị","en":"Show values"},
+  "Net deal PnL": {"vi":"Lãi/lỗ ròng từ deal","en":"Net deal PnL"}
 }

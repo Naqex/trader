@@ -27,6 +27,8 @@ export default function TestingIcon({ kind = 'info', size = 18 }) {
     'chevrons-left': <path d="m11 6-6 6 6 6m8-12-6 6 6 6" />,
     'chevrons-right': <path d="m5 6 6 6-6 6m8-12 6 6-6 6" />,
     settings: <><path d="M4 7h16M4 17h16" /><circle cx="9" cy="7" r="3" /><circle cx="15" cy="17" r="3" /></>,
+    eye: <><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" /><circle cx="12" cy="12" r="2.5" /></>,
+    'eye-off': <><path d="m3 3 18 18M10.6 6.2A10.7 10.7 0 0 1 12 6c6 0 10 6 10 6a17 17 0 0 1-3.1 3.5M6.2 6.8C3.5 8.4 2 12 2 12s4 6 10 6a10.7 10.7 0 0 0 2-.2" /><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" /></>,
     columns: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16m6-16v16" /></>,
     account: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 9h18m-5 5h3" /></>,
     chart: <><path d="M4 4v16h16M7 15l4-5 4 3 5-7" /></>,

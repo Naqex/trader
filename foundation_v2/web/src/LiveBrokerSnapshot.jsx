@@ -15,25 +15,43 @@ export default function LiveBrokerSnapshot({ payload, section, deals: filteredDe
   const account = payload.account
   if (!account) return null
   const currency = account.currency || '', money = value => fmt(value, currency ? ` ${currency}` : '')
+  const capital = Number.isFinite(payload.balance_baseline?.amount) ? payload.balance_baseline.amount : Number.isFinite(account.opening_balance) ? account.opening_balance : null
+  const fees = deal => [deal.commission, deal.swap, deal.fee].every(Number.isFinite) ? deal.commission + deal.swap + deal.fee : null
   const time = value => typeof value === 'number' && Number.isFinite(value) ? formatUtc(value / 1000, locale) : '-'
   const side = value => value === 0 ? t('Buy') : value === 1 ? t('Sell') : '-'
+  const direction = value => value === 0 ? t('Long') : value === 1 ? t('Short') : '-'
   const entries = ['Entry', 'Exit', 'Reversal', 'Close by']
-  const sortValue = (deal,key) => key === 'time' ? deal.time_msc : key === 'asset' ? deal.symbol : key === 'side' ? `${side(deal.type)} ${entries[deal.entry] || ''}` : key === 'net' ? dealNet(deal) : deal[key]
+  const sortValue = (deal,key) => key === 'account' ? account.account_ref : key === 'type' ? side(deal.type) : key === 'source' ? payload.source : key === 'time' ? deal.time_msc : key === 'asset' ? deal.symbol : key === 'side' ? direction(deal.type) : key === 'entry' ? entries[deal.entry] || '' : key === 'net' ? dealNet(deal) : key === 'return_pct' ? capital && Number.isFinite(dealNet(deal)) ? dealNet(deal) / capital * 100 : null : key === 'exit_time' ? deal.entry === 1 ? deal.time_msc : null : key === 'fees' ? fees(deal) : deal[key]
   const deals = sorting.rows(section === 'transactions' ? payload.cashflows || [] : filteredDeals || payload.deals || [], sortValue, [{ key: 'time', direction: 'desc' }])
   const pages = Math.max(1, Math.ceil(deals.length / pageSize)), current = Math.min(page, pages), visible = deals.slice((current - 1) * pageSize, current * pageSize)
   const shown = BROKER_DEAL_COLUMNS.filter(([key]) => columns.includes(key))
+  const percentage = value => {
+    if (!capital || !Number.isFinite(value)) return null
+    const result = value / capital * 100
+    return Math.abs(result) < 0.005 ? 0 : result
+  }
   const cellValue = (deal, key) => {
     switch (key) {
-      case 'time': return <>{time(deal.time_msc)}<small>#{deal.ticket} · {t('Position')} {deal.position_id ?? '-'}</small></>
+      case 'account': return account.account_ref || '-'
+      case 'type': return side(deal.type)
+      case 'source': return payload.source || t('MT5')
+      case 'time': return <>{time(deal.time_msc)}<small>#{deal.ticket} · {t('Order')} {deal.order ?? '-'}</small></>
       case 'asset': return deal.symbol
-      case 'side': return <>{side(deal.type)} · {entries[deal.entry] ? t(entries[deal.entry]) : '-'}</>
+      case 'side': return direction(deal.type)
+      case 'entry': return entries[deal.entry] ? t(entries[deal.entry]) : '-'
+      case 'return_pct': { const value = percentage(dealNet(deal)); return value === null ? '-' : fmt(value, '%') }
+      case 'price': return deal.entry === 1 ? '-' : fmt(deal.price, '', 5)
       case 'volume': return fmt(deal.volume, '', 5)
-      case 'price': return fmt(deal.price, '', 5)
+      case 'exit_time': return deal.entry === 1 ? time(deal.time_msc) : '-'
+      case 'exit_price': return deal.entry === 1 ? fmt(deal.price, '', 5) : '-'
       case 'net': return fmt(dealNet(deal))
+      case 'fees': return fmt(fees(deal))
+      case 'profit': return fmt(deal.profit)
       default: return fmt(deal[key])
     }
   }
-  const table = (label, headers, rows) => <DataTable className="live-table-scroll" label={t(label)}><thead><tr>{headers.some(header=>typeof header !== 'string') && <SortResetColumn active={sorting.sorts.length > 0} onClear={sorting.clear}/ >}{headers.map(header => typeof header === 'string' ? <th key={header} scope="col">{t(header)}</th> : <SortableColumn key={header.key} className={['time','asset','side'].includes(header.key)?undefined:'is-numeric'} {...sorting.columnProps(header.key,t(header.label))}>{t(header.label)}</SortableColumn>)}</tr></thead><tbody>{rows}</tbody></DataTable>
+  const columnLabel = key => key === 'net' ? `${t('Return')} (${currency || '$'})` : BROKER_DEAL_COLUMNS.find(([name]) => name === key)?.[1] || key
+  const table = (label, headers, rows) => <DataTable className="live-table-scroll" label={t(label)}><thead><tr>{headers.some(header=>typeof header !== 'string') && <SortResetColumn active={sorting.sorts.length > 0} onClear={sorting.clear}/ >}{headers.map(header => typeof header === 'string' ? <th key={header} scope="col">{t(header)}</th> : <SortableColumn key={header.key} className={['account','type','source','time','asset','side','entry','exit_time'].includes(header.key)?undefined:'is-numeric'} {...sorting.columnProps(header.key,t(columnLabel(header.key)))}>{t(columnLabel(header.key))}</SortableColumn>)}</tr></thead><tbody>{rows}</tbody></DataTable>
   return <section className="live-broker" aria-label={t('Broker snapshot')} data-testid="live-broker-snapshot">
     {section === 'trading-accounts' ? <>
       <div className="live-section-heading"><h2>{payload.source} · {account.account_ref}</h2></div>
