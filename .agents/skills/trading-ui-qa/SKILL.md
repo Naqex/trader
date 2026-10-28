@@ -28,6 +28,13 @@ to `ui-platform-workflow`; this skill owns their verification.
 - Stable web behavior: reusable Playwright scripts/tests through CLI first. Reuse installed tooling, components and existing tests; no new browser MCP/global config by default.
 - Exploratory web behavior: scoped `qa.mjs cli`, one `tw-<task>-<attempt>` session, explicit local origins. Read `find`/bounded snapshots instead of dumping the entire page. Close only your session.
 - Visual/canvas: screenshots at representative checkpoints plus chart-domain assertions; a DOM pass or nonempty canvas is not visual correctness. Do not auto-accept new golden images.
+- Boundary and alignment regressions: inspect ordinary and hovered states at an
+  interior seam and each outer edge. Assert one visible stroke per seam, no
+  negative-inset or box-shadow painter crossing into a neighbor, equal row
+  tracks and no cropped radius. Check icon/text rows by shared alignment box and
+  text baseline, then allow optical correction only inside that box. Use
+  representative dark/light and narrow widths; save a pixel crop when a seam
+  looks doubled.
 - Native desktop or genuinely inaccessible browser surfaces: computer use only for that gap, with its available skill and granted scope. Figma official tools/resources remain preferred for Figma data; local Playwright capability is not proof of Make automation.
 
 ## Evidence before acceptance
