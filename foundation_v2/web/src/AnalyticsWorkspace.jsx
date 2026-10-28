@@ -119,6 +119,7 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
   const experimentConfig = useMemo(() => ({ stop_distance_ticks: 20, stop_multiplier: 1, target_r: 2 }), [])
   const [experiments, setExperiments] = useState({ status: 'idle', payload: null, error: '' })
   const [experimentReload, setExperimentReload] = useState(0)
+  const [experimentDemand, setExperimentDemand] = useState(null)
   const requestSequence = useRef(0)
   const readController = useRef(null)
 
@@ -186,17 +187,19 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
   const fixedHistoricalScope = !jobId && [replayCursor, replayCutoff, eventSequence].some(value => value !== null && value !== undefined)
   const recovery = useReadRefresh(() => { load({ background: true }); setExperimentReload(value => value + 1); setJournalReload(value => value + 1) }, Boolean(resourceId), { workspace, resources: fixedHistoricalScope ? [] : [jobId ? 'research' : 'sessions'], scopeKey: analyticsPath, error: state.readPath === analyticsPath && state.workspace === workspace ? state.readError : null, pending: state.readPath !== analyticsPath || state.workspace !== workspace || state.status === 'loading' || state.pending })
   const experimentHasTrades = state.readPath === analyticsPath && state.workspace === workspace && ['ready', 'partial', 'stale'].includes(state.status) && state.payload?.ledger?.length > 0
+  const experimentScope = JSON.stringify([workspace, analyticsPath, state.payload?.provenance?.revision, experimentReload])
+  const requestExperiments = useCallback(() => setExperimentDemand(experimentScope), [experimentScope])
   useEffect(() => {
-    if (jobId || !sessionId || summaryOnly || ledgerOnly || !experimentHasTrades) return
+    if (jobId || !sessionId || summaryOnly || ledgerOnly || experimentDemand !== experimentScope || !experimentHasTrades) return
     const controller = new AbortController()
-    setExperiments({ status: 'loading', payload: null, error: '' })
+    setExperiments({ status: 'loading', payload: null, error: '', scope: experimentScope })
     readAnalyticsExperiment({ workspace, sessionId, filters: filterParams, config: experimentConfig, signal: controller.signal }).then(payload => {
       if (!controller.signal.aborted) {
-        setExperiments({ status: 'ready', payload, error: '' })
+        setExperiments({ status: 'ready', payload, error: '', scope: experimentScope })
       }
-    }).catch(error => { if (!controller.signal.aborted) setExperiments({ status: 'error', payload: null, error: `Chưa đọc được đường giá: ${error.message}` }) })
+    }).catch(error => { if (!controller.signal.aborted) setExperiments({ status: 'error', payload: null, error: `Chưa đọc được đường giá: ${error.message}`, scope: experimentScope }) })
     return () => controller.abort()
-  }, [workspace, sessionId, jobId, filterParams.toString(), experimentConfig, experimentReload, summaryOnly, ledgerOnly, experimentHasTrades])
+  }, [workspace, sessionId, jobId, filterParams.toString(), experimentConfig, experimentScope, experimentDemand, summaryOnly, ledgerOnly, experimentHasTrades])
   const journalScope = `${workspace}:${sessionId}`
   const journalRecovery = useReadRefresh(() => setJournalReload(value => value + 1), Boolean(sessionId && !jobId && !summaryOnly), { workspace, resources: ['journal'], scopeKey: journalScope, error: journalRead.scope === journalScope ? journalRead.error : null, pending: journalRead.scope !== journalScope || journalRead.pending })
   useEffect(() => {
@@ -281,7 +284,8 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
   const researchParams = new URLSearchParams({ workspace, view: 'research' })
   if (jobId) researchParams.set('job', jobId)
   const links = { journal: '/?' + journalParams.toString(), replay: sessionId ? '/?' + replayParams.toString() : '', research: '/?' + researchParams.toString() }
-  const experimentScopeMatches = experiments.payload && result && ['session_id', 'dataset_id', 'dataset_sha256', 'revision', 'cursor_index', 'execution_event_sequence'].every(key => experiments.payload.provenance?.[key] === result[key])
+  const currentExperiments = experiments.scope === experimentScope ? experiments : { status: 'idle', payload: null, error: '' }
+  const experimentScopeMatches = currentExperiments.payload && result && ['session_id', 'dataset_id', 'dataset_sha256', 'revision', 'cursor_index', 'execution_event_sequence'].every(key => currentExperiments.payload.provenance?.[key] === result[key])
 
   const loadExperiment = useCallback((config, signal) => {
     if (!sessionId || jobId || !result) return Promise.reject(new Error('Nguồn này chưa hỗ trợ mô phỏng từ đường giá.'))
@@ -312,7 +316,7 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
     {state.denied && <TestingEmptyState kind="denied" />}
     {state.status === 'blocked_by_data' && <section className="as-empty-state" data-testid="analytics-blocked"><h2>{t("Chưa đủ dữ liệu để tính analytics")}</h2><p>{state.payload?.blocked_by_data?.map(reason => t(reason)).join(' · ') || t(state.error) || t("Nguồn chưa có kết quả đã phát hành.")}</p></section>}
     {result && !journalFilterPending && ['ready', 'stale', 'partial', 'empty'].includes(state.status) && <>
-      {summaryOnly ? <section className="as-metric-strip" aria-label={t("Metrics chính")}><StoryMetric label={t("Net PnL")} value={formatNumber(model.netPnl)} detail={result.account_currency} /><StoryMetric label={t("Win rate")} value={formatNumber(model.winRate, 1, '%')} /><StoryMetric label={t("Trades")} value={formatNumber(model.tradeCount, 0)} /><StoryMetric label={t("Max DD")} value={formatNumber(model.maxDrawdown)} detail={t("Closed balance")} /></section> : ledgerOnly ? null : <FxAnalyticsReport model={model} extra={extra} experiments={experimentScopeMatches ? experiments.payload : null} experimentStatus={experimentScopeMatches ? experiments.status : experiments.status === 'ready' ? 'error' : experiments.status} experimentError={experiments.error || (experiments.status === 'ready' && !experimentScopeMatches ? 'Đường giá chưa khớp revision/cutoff của báo cáo.' : '')} propReport={propReport} config={experimentConfig} loadExperiment={loadExperiment} selected={selectedTradeId} onSelect={setSelectedTradeId} />}
+      {summaryOnly ? <section className="as-metric-strip" aria-label={t("Metrics chính")}><StoryMetric label={t("Net PnL")} value={formatNumber(model.netPnl)} detail={result.account_currency} /><StoryMetric label={t("Win rate")} value={formatNumber(model.winRate, 1, '%')} /><StoryMetric label={t("Trades")} value={formatNumber(model.tradeCount, 0)} /><StoryMetric label={t("Max DD")} value={formatNumber(model.maxDrawdown)} detail={t("Closed balance")} /></section> : ledgerOnly ? null : <FxAnalyticsReport model={model} extra={extra} experiments={experimentScopeMatches ? experiments.payload : null} experimentStatus={experimentScopeMatches ? currentExperiments.status : currentExperiments.status === 'ready' ? 'error' : currentExperiments.status} experimentError={currentExperiments.error || (currentExperiments.status === 'ready' && !experimentScopeMatches ? 'Đường giá chưa khớp revision/cutoff của báo cáo.' : '')} propReport={propReport} config={experimentConfig} loadExperiment={loadExperiment} selected={selectedTradeId} onSelect={setSelectedTradeId} experimentScope={experimentScope} onNeedExperiments={requestExperiments} />}
       {!summaryOnly && selectedTrade && <Inspector onClose={() => setSelectedTradeId('')} className="fxa-trade-inspector" aria-label={t("Chi tiết giao dịch")}><div className="fxa-section-heading"><h2>{t("Trade detail")}</h2><button className="fxa-button" type="button" onClick={() => setSelectedTradeId('')}>{t("Đóng chi tiết")}</button></div><ProvenanceInspector model={model} selectedTrade={selectedTrade} journalCount={journalCount} links={links} /></Inspector>}
     </>}
   </section>

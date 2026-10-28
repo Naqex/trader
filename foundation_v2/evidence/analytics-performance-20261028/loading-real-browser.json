@@ -1,0 +1,328 @@
+{
+  "scope": "Real read-only Prop route, identical candidate API, alternating production baseline/candidate UI contexts; diagnostic small sample",
+  "samples": [
+    {
+      "name": "baseline-ui",
+      "tab": "performance",
+      "ready": true,
+      "readyMs": 1623.3232000000003,
+      "performance": 1,
+      "drawdown": 1,
+      "simulation": 1,
+      "overflow": false,
+      "api": [
+        {
+          "path": "/api/v2/events",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/prop/reports",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/journal/context",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/prop/reports",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/replay/sessions/d848723290084cf98e8d03de6cff4dbf/analytics",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/replay/sessions/d848723290084cf98e8d03de6cff4dbf/analytics/experiments",
+          "status": 422
+        }
+      ],
+      "errors": [],
+      "writes": []
+    },
+    {
+      "name": "candidate-ui",
+      "tab": "performance",
+      "ready": true,
+      "readyMs": 1025.1756,
+      "performance": 1,
+      "drawdown": 0,
+      "simulation": 0,
+      "overflow": false,
+      "api": [
+        {
+          "path": "/api/v2/events",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/prop/reports",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/journal/context",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/prop/reports",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/replay/sessions/d848723290084cf98e8d03de6cff4dbf/analytics",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/replay/sessions/d848723290084cf98e8d03de6cff4dbf/analytics/experiments",
+          "status": 422
+        }
+      ],
+      "errors": [],
+      "writes": []
+    },
+    {
+      "name": "candidate-ui",
+      "tab": "performance",
+      "ready": true,
+      "readyMs": 1045.6653000000006,
+      "performance": 1,
+      "drawdown": 0,
+      "simulation": 0,
+      "overflow": false,
+      "api": [
+        {
+          "path": "/api/v2/events",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/prop/reports",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/journal/context",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/replay/sessions/d848723290084cf98e8d03de6cff4dbf/analytics",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/prop/reports",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/replay/sessions/d848723290084cf98e8d03de6cff4dbf/analytics/experiments",
+          "status": 422
+        }
+      ],
+      "errors": [],
+      "writes": []
+    },
+    {
+      "name": "baseline-ui",
+      "tab": "performance",
+      "ready": true,
+      "readyMs": 1074.3492000000006,
+      "performance": 1,
+      "drawdown": 1,
+      "simulation": 1,
+      "overflow": false,
+      "api": [
+        {
+          "path": "/api/v2/events",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/prop/reports",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/journal/context",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/replay/sessions/d848723290084cf98e8d03de6cff4dbf/analytics",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/prop/reports",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/replay/sessions/d848723290084cf98e8d03de6cff4dbf/analytics/experiments",
+          "status": 422
+        }
+      ],
+      "errors": [],
+      "writes": []
+    },
+    {
+      "name": "baseline-ui",
+      "tab": "performance",
+      "ready": true,
+      "readyMs": 1034.5813000000053,
+      "performance": 1,
+      "drawdown": 1,
+      "simulation": 1,
+      "overflow": false,
+      "api": [
+        {
+          "path": "/api/v2/events",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/prop/reports",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/journal/context",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/prop/reports",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/replay/sessions/d848723290084cf98e8d03de6cff4dbf/analytics",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/replay/sessions/d848723290084cf98e8d03de6cff4dbf/analytics/experiments",
+          "status": 422
+        }
+      ],
+      "errors": [],
+      "writes": []
+    },
+    {
+      "name": "candidate-ui",
+      "tab": "performance",
+      "ready": true,
+      "readyMs": 1024.4588000000003,
+      "performance": 1,
+      "drawdown": 0,
+      "simulation": 0,
+      "overflow": false,
+      "api": [
+        {
+          "path": "/api/v2/events",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/prop/reports",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/journal/context",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/prop/reports",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/replay/sessions/d848723290084cf98e8d03de6cff4dbf/analytics",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/replay/sessions/d848723290084cf98e8d03de6cff4dbf/analytics/experiments",
+          "status": 422
+        }
+      ],
+      "errors": [],
+      "writes": []
+    },
+    {
+      "name": "candidate-simulation",
+      "tab": "simulation",
+      "ready": true,
+      "readyMs": 1032.8853999999992,
+      "performance": 0,
+      "drawdown": 0,
+      "simulation": 1,
+      "overflow": false,
+      "api": [
+        {
+          "path": "/api/v2/events",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/prop/reports",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/journal/context",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/prop/reports",
+          "status": 200
+        },
+        {
+          "path": "/api/v2/replay/sessions/d848723290084cf98e8d03de6cff4dbf/analytics",
+          "status": 200
+        }
+      ],
+      "errors": [],
+      "writes": []
+    }
+  ],
+  "limitations": "Readiness measures initial report rendering, not successful path calculations. API phase timings in this early response-event probe were unavailable and removed; raw probe remains under E. Both UIs used the same optimized API; 3 samples per UI are diagnostic only.",
+  "deployed": {
+    "status": "PASS",
+    "scope": "Deployed real Prop route, read-only. Performance existing timestamp mismatch remains422; Simulation idle, no scenario triggered.",
+    "samples": [
+      {
+        "tab": "performance",
+        "readyMs": 1081.0629000000001,
+        "experimentStatus": 422,
+        "requests": [
+          {
+            "path": "/api/v2/prop/reports",
+            "durationMs": 198.029
+          },
+          {
+            "path": "/api/v2/journal/context",
+            "durationMs": 107.887
+          },
+          {
+            "path": "/api/v2/replay/sessions/d848723290084cf98e8d03de6cff4dbf/analytics",
+            "durationMs": 185.011
+          },
+          {
+            "path": "/api/v2/prop/reports",
+            "durationMs": 34.192
+          },
+          {
+            "path": "/api/v2/replay/sessions/d848723290084cf98e8d03de6cff4dbf/analytics/experiments",
+            "durationMs": 144.276
+          }
+        ],
+        "errors": [],
+        "writes": []
+      },
+      {
+        "tab": "simulation",
+        "readyMs": 1046.2987999999998,
+        "experimentStatus": null,
+        "requests": [
+          {
+            "path": "/api/v2/prop/reports",
+            "durationMs": 85.756
+          },
+          {
+            "path": "/api/v2/journal/context",
+            "durationMs": 20.346
+          },
+          {
+            "path": "/api/v2/prop/reports",
+            "durationMs": 11.337
+          },
+          {
+            "path": "/api/v2/replay/sessions/d848723290084cf98e8d03de6cff4dbf/analytics",
+            "durationMs": 186.698
+          }
+        ],
+        "errors": [],
+        "writes": []
+      }
+    ]
+  }
+}

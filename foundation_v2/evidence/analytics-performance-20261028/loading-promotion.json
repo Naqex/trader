@@ -1,0 +1,50 @@
+{
+  "status": "PASS",
+  "api_sha256": "64887cf9230252e2b888b91fdf9736bc8ac5c684d30adfb3435cda3aca70764d",
+  "api_profile": "native",
+  "replay_storage_profile": "compact",
+  "ready": true,
+  "scientific_identity": {
+    "nautilus_trader": "1.231.0",
+    "pyarrow": "25.0.1",
+    "python": "3.12.10"
+  },
+  "descriptor_changed_fields": [
+    "dependency_sha256",
+    "dependency_trees"
+  ],
+  "scientific_verification": "installed versions and full pinned dependency fingerprint validated by guarded launcher; no package installation",
+  "ui": {
+    "status": "PASS",
+    "index_sha256": "d6966893f3f37df008dcb2925d1c1c961791770b24dc6f49cf6a88625c80fe51",
+    "rollback": "E:\\BACKUP-TRADINGWORKSPACE\\analytics-loading-20261028\\ui-before-loading\\index.html",
+    "old_assets_retained": true,
+    "preserved": [
+      "brand/wmreplay.svg",
+      "chart-legacy.css"
+    ],
+    "rollout": "UI-only atomic index; existing API/UI processes retained"
+  },
+  "build": {
+    "head": "79525379f3272325c7496c7c8800de3ef6612bdf",
+    "index_before_sha256": "49d1fde1e3348b13c517f14dbabacc6454d44feef4b61156b3fa4dfb9c38f180",
+    "overlays": {
+      "src/FxAnalytics.jsx": "882931f6f549bd170f5772f38c49c03e272fb44e177f3681c3673d2dece36f30",
+      "src/AnalyticsWorkspace.jsx": "b3807e1c54f35699bc9abab76182eb2cbe9bf07212e0200cd75c6ba9042bc98f"
+    },
+    "status": "complete",
+    "candidate": "E:\\BACKUP-TRADINGWORKSPACE\\analytics-loading-20261028\\source\\foundation_v2\\web\\dist",
+    "index_sha256": "d6966893f3f37df008dcb2925d1c1c961791770b24dc6f49cf6a88625c80fe51"
+  },
+  "validation": {
+    "model_tests": 38,
+    "loading_fixture_journeys": 7,
+    "pnl_chart_journeys": 8,
+    "independent_review": "missing-R breakeven-filter deadlock found, fixed, browser oracle passed; no remaining scoped blocker"
+  },
+  "limitations": [
+    "Real path request still returns existing422 from trade/bar timestamp mismatch.",
+    "API trade-grid paging projects the full ledger before slicing; not SQL-level paging.",
+    "Whole analytics large-ledger scalability was not benchmarked."
+  ]
+}

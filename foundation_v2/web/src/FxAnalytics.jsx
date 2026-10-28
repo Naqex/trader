@@ -66,10 +66,23 @@ function TimeCoverage({ data }) {
   if (!data?.incomplete) return null
   return <span className="fxa-time-incomplete" role="status">{t('Dữ liệu một phần')}<Info text={t('{known}/{total} giao dịch có thời gian để phân bổ. Số giao dịch và tần suất vẫn tính lệnh thiếu lãi/lỗ; chỉ số tài chính của nhóm đó hiển thị N/A. Lệnh thiếu thời gian không được phân bổ; tổng tháng/năm hiển thị N/A khi chưa đủ dữ liệu.', { known: data.datedCount, total: data.count })}/></span>
 }
-function ReportSection({ title, subtitle, help, actions, children, className = '', label, timeCoverage, headingOutside = false, surface = true }) {
+function ReportSection({ title, subtitle, help, actions, children, className = '', label, timeCoverage, headingOutside = false, surface = true, sectionRef }) {
   const { t } = useTestingLocale()
   const heading = (title || actions) && <div className="fxa-section-heading"><div><div className="fxa-panel-title">{title && <h2>{t(title)}</h2>}{help && <Info text={help}/>}<TimeCoverage data={timeCoverage}/></div>{subtitle && <p className="fxa-panel-subtitle">{t(subtitle)}</p>}</div>{actions && <div className="fxa-panel-actions">{actions}</div>}</div>
-  return <section className={`fxa-section ${headingOutside ? 'fxa-report-group' : 'fxa-panel'} ${className}`} aria-label={label ? t(label) : headingOutside && title ? t(title) : undefined}>{heading}{headingOutside && surface ? <div className="fxa-panel fxa-section-body">{children}</div> : children}</section>
+  return <section ref={sectionRef} className={`fxa-section ${headingOutside ? 'fxa-report-group' : 'fxa-panel'} ${className}`} aria-label={label ? t(label) : headingOutside && title ? t(title) : undefined}>{heading}{headingOutside && surface ? <div className="fxa-panel fxa-section-body">{children}</div> : children}</section>
+}
+function useVisibleExperiments(active, scope, request) {
+  const ref = useRef(null)
+  useEffect(() => {
+    if (!active || !request || !ref.current) return
+    if (!window.IntersectionObserver) { request(); return }
+    const observer = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) { request(); observer.disconnect() }
+    }, { rootMargin: '160px' })
+    observer.observe(ref.current)
+    return () => observer.disconnect()
+  }, [active, scope, request])
+  return ref
 }
 function BreakevenThreshold({ threshold, onThreshold, data }) {
   const { t } = useTestingLocale(), [draft, setDraft] = useState(String(threshold)), id = useId()
@@ -171,7 +184,8 @@ function ChartHeading({ title, help, note }) {
   const { t } = useTestingLocale()
   return <div className="fxa-chart-heading"><h3>{t(title)}{help && <Info text={help}/>}</h3>{note && <span>{note}</span>}</div>
 }
-export function AnalyticsPerformance({ model, data, extra, onSelect, selected, threshold, onThreshold, experiments, propReport }) {
+export function AnalyticsPerformance({ model, data, extra, onSelect, selected, threshold, onThreshold, experiments, propReport, active = true, experimentScope, onNeedExperiments }) {
+  const riskRef = useVisibleExperiments(active, experimentScope, onNeedExperiments)
   const { t, fmt, locale } = useTestingLocale(), [metric,setMetric] = useState('net'), [interval,setInterval] = useState('all')
   const currency=model.result?.account_currency||t('Đơn vị tài khoản'), suffix=metric==='winRate'||metric==='profitPct'?'%':metric==='averageR'?' R':metric==='net'?` ${currency}`:''
   const actualCurve=data.curve.map(point=>({...point,value:known(point.value)&&known(model.startBalance)?point.value-Number(model.startBalance):null})), bucket=bucketCurve(actualCurve,data.rows,interval,extra.timezone)
@@ -200,7 +214,7 @@ export function AnalyticsPerformance({ model, data, extra, onSelect, selected, t
       </div>
       <AnalyticsCurve key={JSON.stringify([interval,data.rows.map(row=>row.tradeId)])} series={[bucket.points]} referenceLines={challengeLines} timeZone={extra.timezone} label={t('Lãi/lỗ ròng tích lũy')} labels={curveLabels} axisLabels={curveAxisLabels} timestamps={bucket.timestamps} suffix={` ${currency}`} onSelect={onSelect} selected={selected} height={200} stretch controls/>
     </ReportSection>
-    <div className="fxa-three-columns fxa-risk-panels">
+    <div ref={riskRef} className="fxa-three-columns fxa-risk-panels">
       <ReportSection label="RR thực hiện"><div className="fxa-metrics"><Stat label="RR trung bình" value={known(averageR)?fmt(averageR):'N/A'} help={averageHelp}/><Stat label="RR lớn nhất" value={known(maxR)?fmt(maxR):'N/A'} help={maxHelp}/></div><AnalyticsCurve series={[riskSeries]} labels={riskSeries.map((_,index)=>`#${index+1}`)} label={t('RR thực hiện theo giao dịch')} suffix=" R" height={48} sparkline/></ReportSection>
       <ReportSection label="RR lý tưởng"><div className="fxa-metrics"><Stat label="RR lý tưởng trung bình" value={known(ideal.average)?fmt(ideal.average):'N/A'} help={idealHelp}/><Stat label="RR lý tưởng lớn nhất" value={known(ideal.max)?fmt(ideal.max):'N/A'} help={maxIdealHelp}/></div><AnalyticsCurve series={[ideal.series]} labels={ideal.series.map((_,index)=>`#${index+1}`)} label={t('RR lý tưởng')} suffix=" R" height={48} sparkline/></ReportSection>
       <ReportSection label="Có thể có lãi / hòa vốn"><div className="fxa-metrics"><Stat label="Có thể có lãi / hòa vốn" value={known(ideal.recoveryCount)?fmt(ideal.recoveryCount,'',0):'N/A'} help="Số giao dịch thua từng có cơ hội đóng với lãi/lỗ ròng không âm trong cửa sổ một tuần đã có đủ dữ liệu.&#10;&#10;Đã tính phí; giá quan sát không bảo đảm khớp lệnh thực tế."/><Stat label="RR lý tưởng lớn nhất" value={known(ideal.max)?fmt(ideal.max):'N/A'} help={maxIdealHelp}/></div></ReportSection>
@@ -229,7 +243,8 @@ export function AnalyticsPerformance({ model, data, extra, onSelect, selected, t
   </div>
 }
 
-export function AnalyticsDrawdown({ model, data, extra, experiments, experimentStatus, experimentError }) {
+export function AnalyticsDrawdown({ model, data, extra, experiments, experimentStatus, experimentError, active = true, experimentScope, onNeedExperiments }) {
+  const maeRef = useVisibleExperiments(active, experimentScope, onNeedExperiments)
   const { t,fmt }=useTestingLocale(),[unit,setUnit]=useState('percent')
   const currency=model.result?.account_currency||t('Đơn vị tài khoản'),excursion=excursionSummary(experiments,data.rows),percent=unit==='percent',equity=data.equityDrawdown?.available,source=equity?data.equityDrawdown:data
   const precision=percent&&source.maxDrawdownPct>0&&source.maxDrawdownPct<.01?Math.min(8,1-Math.floor(Math.log10(source.maxDrawdownPct))):2
@@ -245,7 +260,7 @@ export function AnalyticsDrawdown({ model, data, extra, experiments, experimentS
   const drawdownText=value=>known(value)?fmt(-Number(value)||0,percent?'%':` ${currency}`,precision):'N/A'
   return <div className="fxa-report fxa-visual-report fxa-drawdown-report" data-testid="analytics-drawdown"><ReportSection headingOutside className="fxa-drawdown-main" title={equity?'Sụt giảm equity':'Drawdown on closed balance'} help={equity?'Khoảng giảm từ đỉnh equity, bao gồm lãi/lỗ thả nổi được nguồn ghi nhận. Các đoạn vốn được tách riêng; không nối qua dữ liệu thiếu.':'Khoảng giảm từ đỉnh số dư tới điểm thấp hơn sau khi đóng lệnh. Không bao gồm biến động equity trong lúc đang giữ lệnh.'} actions={<div className="fxa-inline-actions"><a className="fxa-help-link" href="https://releases.fxreplay.com/drawdown" target="_blank" rel="noreferrer">{t('Cách tính')} ↗</a><UnitTabs label="Đơn vị sụt giảm" value={unit} onChange={setUnit} options={[["money",currencyLabel(currency)],['percent','%']]}/></div>}>{equity&&source.partial&&<p role="status" className="fxa-observation-state">{t('Mẫu quan sát')} · {raw.length}/{source.totalPoints}</p>}<AnalyticsBars gradient xTitle="Ngày giao dịch" yTitle={percent?'Sụt giảm (% đỉnh)':t('Sụt giảm ({unit})',{unit:currencyLabel(currency)})} items={dd} metric="value" label={t(equity?'Sụt giảm equity':'Drawdown on closed balance')} suffix={percent?'%':` ${currency}`} height={320}/></ReportSection>
     <div className="fxa-drawdown-stats"><Stat label="Max drawdown" value={drawdownText(percent?source.maxDrawdownPct:source.maxDrawdown)} help="Khoảng giảm lớn nhất từ đỉnh trước đó trong cơ sở đã chọn."/><Stat label="Average drawdown" value={drawdownText(percent?averagePct:source.averageDrawdown)} help="Trung bình các điểm quan sát nằm dưới đỉnh trước đó."/><Stat label="Thời gian phục hồi (ngày)" value={fmt(source.recoveryDays,'',1)} help="Thời gian trung bình từ đỉnh trước sụt giảm đến khi trở lại đỉnh, tính trên các chu kỳ đã phục hồi. Chu kỳ thiếu timestamp không được suy đoán."/><Stat label="Số lần sụt giảm" value={fmt(source.episodes,'',0)} help="Số lần giá trị bắt đầu giảm xuống dưới đỉnh trước đó."/></div>
-    <ReportSection headingOutside className="fxa-mae-panel" title="Maximum Adverse Excursion" help="Biên giá bất lợi quan sát trong thời gian giữ lệnh, chia khoảng cách từ giá vào tới SL gốc. Nến thoát không rõ intrabar không được dùng; kết quả có thể là cận dưới.">{experimentStatus==='loading'?<p role="status">{t('Đang đọc đường giá…')}</p>:experimentError?<p role="alert" className="fxa-error">{t(experimentError)}</p>:<><AnalyticsBars gradient zeroMarker xTitle="MAE (R)" yTitle="Số giao dịch" items={excursion.bins.map(bin=>({label:bin.end===null?`≥${fmt(bin.start,'',1)}`:fmt(bin.start,'',1),tooltipText:bin.end===null?`MAE ≥ ${fmt(bin.start)} R: ${fmt(bin.count)} ${t('giao dịch')}`:`MAE [${fmt(bin.start)}; ${fmt(bin.end)}) R: ${fmt(bin.count)} ${t('giao dịch')}`,count:bin.count,observed:true}))} metric="count" label={t('Phân phối MAE theo R')} integer height={320}/>{excursion.values.length>0&&excursion.values.length<data.rows.length&&<p role="status" className="fxa-observation-state">{t('Đã đo MAE: {known}/{total} giao dịch',{known:excursion.values.length,total:data.rows.length})}</p>}</>}</ReportSection>
+    <ReportSection sectionRef={maeRef} headingOutside className="fxa-mae-panel" title="Maximum Adverse Excursion" help="Biên giá bất lợi quan sát trong thời gian giữ lệnh, chia khoảng cách từ giá vào tới SL gốc. Nến thoát không rõ intrabar không được dùng; kết quả có thể là cận dưới.">{experimentStatus==='loading'?<p role="status">{t('Đang đọc đường giá…')}</p>:experimentError?<p role="alert" className="fxa-error">{t(experimentError)}</p>:<><AnalyticsBars gradient zeroMarker xTitle="MAE (R)" yTitle="Số giao dịch" items={excursion.bins.map(bin=>({label:bin.end===null?`≥${fmt(bin.start,'',1)}`:fmt(bin.start,'',1),tooltipText:bin.end===null?`MAE ≥ ${fmt(bin.start)} R: ${fmt(bin.count)} ${t('giao dịch')}`:`MAE [${fmt(bin.start)}; ${fmt(bin.end)}) R: ${fmt(bin.count)} ${t('giao dịch')}`,count:bin.count,observed:true}))} metric="count" label={t('Phân phối MAE theo R')} integer height={320}/>{excursion.values.length>0&&excursion.values.length<data.rows.length&&<p role="status" className="fxa-observation-state">{t('Đã đo MAE: {known}/{total} giao dịch',{known:excursion.values.length,total:data.rows.length})}</p>}</>}</ReportSection>
     <ReportSection headingOutside surface={false} className="fxa-winning-mae-panel" title="Drawdown on winning trades"><div className="fxa-metrics">{[['Sụt giảm TB (R)',excursion.average,'MAE trung bình của các lệnh thắng. MAE là độ lớn biến động bất lợi chia rủi ro giá ban đầu, luôn không âm.'],['Sụt giảm nhỏ nhất (R)',excursion.min,'MAE nhỏ nhất trong các lệnh thắng, không phải giá trị nhỏ nhất của đường số dư.'],['Sụt giảm lớn nhất (R)',excursion.max,'MAE lớn nhất trong các lệnh thắng. Có thể vượt 1R khi giá đi quá SL; đường giá lấy mẫu có thể bỏ sót đáy.']].map(([label,value,help])=><Stat key={label} label={label} value={known(value)?fmt(value):'N/A'} help={`${t(help)}\n\n${t('Đã đo MAE cho {known}/{total} lệnh thắng. Chỉ tính khi toàn bộ nhóm có rủi ro ban đầu hợp lệ; thiếu dữ liệu hiển thị N/A.',{known:excursion.winners.length,total:excursion.winnerCount})}`}/>)}</div></ReportSection></div>
 }
 
@@ -506,22 +521,28 @@ export function AnalyticsSimulation({ model, data, config, loadExperiment, timez
 }
 
 
-export function FxAnalyticsReport({ model, extra, experiments, experimentStatus, experimentError, config, selected, onSelect, onTabChange, loadExperiment, propReport }) {
+export function FxAnalyticsReport({ model, extra, experiments, experimentStatus, experimentError, config, selected, onSelect, onTabChange, loadExperiment, propReport, experimentScope, onNeedExperiments }) {
   const { t } = useTestingLocale()
 
   const [threshold, setThreshold] = useState(0)
+  // R-based classification can filter every row before the risk panel is visible.
+  useEffect(() => { if (threshold > 0) onNeedExperiments?.() }, [threshold, experimentScope, onNeedExperiments])
   const data = useMemo(() => advancedAnalytics(model, extra, { breakevenThreshold: threshold, experiments }), [model, extra, threshold, experiments])
   useSyncExternalStore(subscribeNavigation, navigationSnapshot)
   const requestedTab = new URLSearchParams(window.location.search).get('analytics_tab')
   const [previewTab, setPreviewTab] = useState(() => ['performance', 'drawdown', 'simulation'].includes(requestedTab) ? requestedTab : 'performance')
   const tab = model.result?.preview ? previewTab : ['performance', 'drawdown', 'simulation'].includes(requestedTab) ? requestedTab : 'performance'
-  useEffect(() => { onTabChange?.(tab) }, [tab, onTabChange])
-  const choose = value => { setPreviewTab(value); onTabChange?.(value); const url = new URL(window.location.href); url.searchParams.set('analytics_tab', value); navigate(url, { replace: true }) }
+  const [visitedTabs, setVisitedTabs] = useState(() => new Set([tab]))
+  useEffect(() => {
+    setVisitedTabs(current => current.has(tab) ? current : new Set([...current, tab]))
+    onTabChange?.(tab)
+  }, [tab, onTabChange])
+  const choose = value => { setPreviewTab(value); setVisitedTabs(current => current.has(value) ? current : new Set([...current, value])); onTabChange?.(value); const url = new URL(window.location.href); url.searchParams.set('analytics_tab', value); navigate(url, { replace: true }) }
   const empty = !data.count ? model.result?.partial || model.result?.status === 'partial' ? <TestingTradesEmpty incomplete /> : model.result?.scope?.total_trade_count === 0 ? <TestingTradesEmpty /> : model.ledger.length || model.result?.scope?.total_trade_count > 0 ? <TestingTradesEmpty filtered /> : null : null
   if (empty && !propReport) return empty
   return <><div className="fxa-report-tabs" role="tablist" aria-label={t("Phân tích")}><>{[['performance', 'Performance'], ['drawdown', 'Drawdown'], ['simulation', 'Simulation']].map(([value, label]) => <button className="fxa-tab" id={`fxa-tab-${value}`} role="tab" key={value} aria-selected={tab === value} aria-controls="fxa-report-panel" tabIndex={tab === value ? 0 : -1} onKeyDown={event => { const tabs = ['performance', 'drawdown', 'simulation']; if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) { event.preventDefault(); const index = event.key === 'Home' ? 0 : event.key === 'End' ? 2 : (tabs.indexOf(tab) + (event.key === 'ArrowRight' ? 1 : 2)) % 3; choose(tabs[index]); document.getElementById(`fxa-tab-${tabs[index]}`)?.focus() } }} onClick={() => choose(value)}>{t(label)}</button>)}</></div><div id="fxa-report-panel" role="tabpanel" aria-labelledby={`fxa-tab-${tab}`} tabIndex={0}>
-    <div hidden={tab !== 'performance'}>{empty ? <>{propReport && <PropChallengeObjectives report={propReport}/>}{empty}</> : <AnalyticsPerformance model={model} data={data} extra={extra} onSelect={onSelect} selected={selected} threshold={threshold} onThreshold={setThreshold} experiments={experiments} propReport={propReport}/>}</div>
-    <div hidden={tab !== 'drawdown'}>{empty || <AnalyticsDrawdown model={model} data={data} extra={extra} experiments={experiments} experimentStatus={experimentStatus} experimentError={experimentError} />}</div>
-    <div hidden={tab !== 'simulation'}>{empty || <AnalyticsSimulation key={JSON.stringify([model.result?.session_id, model.result?.revision, model.result?.cursor_index, model.result?.execution_event_sequence, model.result?.filters, extra])} model={model} data={data} experiments={experiments} experimentStatus={experimentStatus} experimentError={experimentError} config={config} loadExperiment={loadExperiment} timezone={extra?.timezone} />}</div>
+    {(tab === 'performance' || visitedTabs.has('performance')) && <div hidden={tab !== 'performance'}>{empty ? <>{propReport && <PropChallengeObjectives report={propReport}/>} {empty}</> : <AnalyticsPerformance model={model} data={data} extra={extra} onSelect={onSelect} selected={selected} threshold={threshold} onThreshold={setThreshold} experiments={experiments} propReport={propReport} active={tab === 'performance'} experimentScope={experimentScope} onNeedExperiments={onNeedExperiments}/>}</div>}
+    {(tab === 'drawdown' || visitedTabs.has('drawdown')) && <div hidden={tab !== 'drawdown'}>{empty || <AnalyticsDrawdown model={model} data={data} extra={extra} experiments={experiments} experimentStatus={experimentStatus} experimentError={experimentError} active={tab === 'drawdown'} experimentScope={experimentScope} onNeedExperiments={onNeedExperiments} />}</div>}
+    {(tab === 'simulation' || visitedTabs.has('simulation')) && <div hidden={tab !== 'simulation'}>{empty || <AnalyticsSimulation key={JSON.stringify([model.result?.session_id, model.result?.revision, model.result?.cursor_index, model.result?.execution_event_sequence, model.result?.filters, extra])} model={model} data={data} experiments={experiments} experimentStatus={experimentStatus} experimentError={experimentError} config={config} loadExperiment={loadExperiment} timezone={extra?.timezone} />}</div>}
   </div></>
 }
