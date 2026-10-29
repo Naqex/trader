@@ -34,20 +34,20 @@ export function useTradeLabels(workspace) {
     setCatalog(current => current.workspace === workspace && current.status === 'ready' ? { ...current, refreshing: true } : { workspace, status: 'loading', items: [] })
     scopedRead('/api/v2/trade-labels', workspace, controller.signal).then(readJson).then(payload => {
       if (!Array.isArray(payload.items) || payload.schema_version !== 'trade-labels-v1') throw new Error('invalid_label_catalog')
-      if (!controller.signal.aborted && request === sequence.current) setCatalog({ workspace, items: payload.items, status: 'ready' })
+      if (!controller.signal.aborted && request === sequence.current) setCatalog({ ...payload, workspace, status: 'ready' })
     }).catch(error => { if (!controller.signal.aborted && request === sequence.current) setCatalog({ workspace, items: [], status: 'error', error }) })
     return () => controller.abort()
   }, [workspace, reload])
   return { ...(catalog.workspace === workspace ? catalog : { status: 'loading', items: [] }),
-    refresh: () => setReload(value => value + 1), accept: payload => { if (activeWorkspace.current !== workspace) return; sequence.current++; setCatalog({ workspace, items: payload.items, status: 'ready' }) } }
+    refresh: () => setReload(value => value + 1), accept: payload => { if (activeWorkspace.current !== workspace) return; sequence.current++; setCatalog({ ...payload, workspace, status: 'ready' }) } }
 }
-function labelError(error, t) {
+export function labelError(error, t) {
   if (error.outcomeKnown === false || error.uncertain) return t('Chưa xác nhận được kết quả. Đọc lại dữ liệu trước khi thao tác tiếp.')
-  if (error.message === 'label_name_exists') return t('Tên nhãn đã được sử dụng. Chọn tên khác.')
+  if (error.message === 'label_name_exists' || error.message === 'label_group_name_exists') return t('Tên đã được sử dụng. Chọn tên khác.')
   if (error.status === 409) return t('Nhãn vừa thay đổi. Đã yêu cầu đọc lại; kiểm tra trước khi lưu tiếp.')
   return t('Không lưu được nhãn. Thử đọc lại dữ liệu.')
 }
-export default function TradeLabelCell({ workspace, session, row, catalog, onChanged }) {
+export default function TradeLabelCell({ workspace, session, row, catalog, onChanged, placeholder = 'Chọn nhãn…' }) {
   const { t } = useTestingLocale()
   const [anchor, setAnchor] = useState(null), [search, setSearch] = useState(''), [editing, setEditing] = useState(null)
   const [name, setName] = useState(''), [color, setColor] = useState('gray'), [confirmDelete, setConfirmDelete] = useState(false)
@@ -95,7 +95,7 @@ export default function TradeLabelCell({ workspace, session, row, catalog, onCha
     setEditing(label); setName(label.name); setColor(label.color); setConfirmDelete(false)
   }
   const disabled = !workspace || !session || pending || uncertain || catalog.status !== 'ready'
-  const title = t('Chọn nhãn…')
+  const title = t(placeholder)
   return <>
     <button type="button" className={`wm-label-cell${tags.length ? ' has-labels' : ''}`} aria-label={t('Nhãn giao dịch {id}', { id: row.trade_id || row.tradeId })} aria-haspopup="dialog" aria-expanded={Boolean(anchor)} disabled={!workspace || !session} onClick={event => { setAnchor(event.currentTarget); setError(''); setSearch('') }}>
       <LabelContents tags={tags} options={options} placeholder={title} />
@@ -113,7 +113,7 @@ export default function TradeLabelCell({ workspace, session, row, catalog, onCha
         <SearchInput ref={searchInput} type="search" aria-label={t('Tìm hoặc tạo nhãn')} placeholder={t('Tìm hoặc tạo nhãn…')} value={search} maxLength={64} onChange={event => setSearch(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); if (!disabled && search.trim() && !options.some(item => item.name.toLocaleLowerCase() === search.trim().toLocaleLowerCase())) createLabel() } }} />
         {tags.length > 0 && <div className="wm-label-selected">{tags.map(tag => <span className="wm-trade-label" data-color={options.find(item => item.name === tag)?.color || 'gray'} key={tag}>{tag}<button type="button" aria-label={t('Bỏ nhãn {name}', { name: tag })} aria-disabled={disabled} onClick={event=>{ searchInput.current?.focus(); if (!disabled) assign(tags.filter(value=>value!==tag)) }}>×</button></span>)}</div>}
         <div className="wm-label-options" aria-label={t('Chọn nhiều nhãn')}>
-          {options.filter(item => matchesSearch(item.name, search)).map(item => <div className="wm-label-option" key={item.id || item.name}>
+          {options.filter(item => !item.archived && matchesSearch(item.name, search)).map(item => <div className="wm-label-option" key={item.id || item.name}>
             <button type="button" role="checkbox" aria-checked={tags.includes(item.name)} aria-disabled={disabled} onClick={() => { if (!disabled) assign(tags.includes(item.name) ? tags.filter(tag => tag !== item.name) : [...tags, item.name]) }}><span className={`fx-select-checkbox${tags.includes(item.name) ? ' is-checked' : ''}`} aria-hidden="true"/><span className="wm-trade-label" data-color={item.color}>{item.name}</span></button>
             <button type="button" className="wm-label-more" aria-label={t('Sửa nhãn {name}', { name: item.name })} aria-disabled={disabled} onClick={() => chooseEdit(item)}>⋯</button>
           </div>)}

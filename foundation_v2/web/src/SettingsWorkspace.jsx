@@ -1,7 +1,8 @@
 import { useTestingLocale } from './testingLocale.jsx'
 import { setTimezone, timezoneOptionsAt } from './timezone.js'
 import FxSelect from './FxSelect.jsx'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { lazy, Suspense, useEffect, useRef, useState } from 'react'
+const TradeLabelSettings = lazy(() => import('./TradeLabelSettings.jsx'))
 import { buildWorkspaceHref } from './workspaceContext.js'
 import { useFxReplayContext } from './FxReplayShell.jsx'
 import './settings.css'
@@ -70,6 +71,7 @@ function StatusBadge({ status, children }) {
 
 export default function SettingsWorkspace({ workspace = 'tenant-a', query }) {
   const { t, timezone } = useTestingLocale()
+  const labelsTab = query?.get('settings_tab') === 'labels'
   const [timezoneDraft, setTimezoneDraft] = useState(timezone), [timezoneStatus, setTimezoneStatus] = useState('')
   useEffect(() => { setTimezoneDraft(timezone) }, [timezone])
   const { appearance, applyAppearance } = useFxReplayContext()
@@ -161,6 +163,11 @@ export default function SettingsWorkspace({ workspace = 'tenant-a', query }) {
         </div>
       </header>
 
+      <nav className="settings-tabs" aria-label={t('Cài đặt')}>
+        <a href={buildWorkspaceHref('settings',workspace,query,{settings_tab:null})} aria-current={!labelsTab ? 'page' : undefined}>{t('Chung')}</a>
+        <a href={buildWorkspaceHref('settings',workspace,query,{settings_tab:'labels'})} aria-current={labelsTab ? 'page' : undefined}>{t('Nhãn giao dịch')}</a>
+      </nav>
+      {labelsTab ? <Suspense fallback={<p role="status">{t('Đang đọc nhãn…')}</p>}><TradeLabelSettings key={workspace} workspace={workspace}/></Suspense> : <>
       {applyAppearance && <section className="settings-appearance" aria-labelledby="settings-appearance-title">
         <div className="settings-heading"><div><h2 id="settings-appearance-title">Giao diện</h2><p className="settings-note">Lưu trên trình duyệt này. Ngôn ngữ áp dụng cho thanh điều hướng; nội dung nghiệp vụ giữ ngôn ngữ hiện có.</p></div></div>
         <form className="settings-appearance-form" onSubmit={saveAppearance}>
@@ -258,6 +265,7 @@ export default function SettingsWorkspace({ workspace = 'tenant-a', query }) {
         </article>
       </section>
 
+      </> }
     </main>
   )
 }

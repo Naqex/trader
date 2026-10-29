@@ -1,5 +1,8 @@
 # Rust-native candidate runtime
 
+Shared label management and Live analytics UI:
+[29 October shared labels receipt](../evidence/shared-trade-labels-20261029/RECEIPT.md).
+
 When source checkouts move, `TW_V2_MT5_ADAPTER_ROOT` can retain an installed MT5
 adapter independently of the compiled API location. It must be an absolute
 `foundation_v2` directory and is validated at startup. MT5 Python, scripts and

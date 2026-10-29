@@ -729,20 +729,27 @@ Primary references: [PostgreSQL datetime](https://www.postgresql.org/docs/curren
 
 Live Trades defaults to ten rows. Sidebar balance and completed-trade count have
 separate labels and values; omit the redundant curve subtitle. Win/loss/breakeven
-legends show category names without repeated counts. Live expectancy comparison
+legends show category names without repeated counts, grouped with the title and
+percentage on the left of the ring chart. Gross and net PnL cells use the same
+signed return badge. Live expectancy comparison
 uses signed contributions (group total net PnL divided by all completed trades),
 whose sum equals expectancy; other analytics retain their average-win/loss basis.
 Weekly calendar summaries share daily gain/loss colors and the same single-owner
 separators. Zero/unknown summaries stay neutral. Live broker tags reuse the shared
-label presentation and hover/focus reveal; assignment remains unavailable until
-broker metadata has a persisted assignment contract, never a replay session ID.
+label picker and hover/focus reveal. Broker assignments are separate workspace
+metadata keyed by connection and position, never a replay session ID; selecting
+multiple accounts retains each trade's source identity. Preserve the current
+empty-label display. Settings > Nhãn giao dịch manages the same catalog used by
+Practice and Live: groups, names, colors and archive. Archive hides choices while
+preserving historical assignments. Revision conflicts require a fresh read and
+reopening the editor; do not silently overwrite another edit.
 
 Live sidebar controls precede the balance row. Profit unit switches the headline
 and curve between account-currency balance / scoped PnL and scoped net return
 against known positive opening capital; missing capital stays N/A. Expectancy
 remains money. The eye button masks only the headline, matching the reference.
 Trades alone adds a flat tag overview using the Practice label catalog and
-closed-trade statistics. Settings is an inert scaffold. Do not invent tag groups
+closed-trade statistics. Its settings icon remains an inert scaffold. Do not invent tag groups
 or assignments absent from the shared catalog; no broker writes from this panel.
 
 UI builds retain previous hashed assets (`emptyOutDir: false`), so tabs opened

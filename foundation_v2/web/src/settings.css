@@ -65,3 +65,7 @@
 .settings-timezone .fx-select-trigger { width:100%; }
 .settings-timezone button[type=submit] { justify-self:start; }
 .settings-timezone-label { font-size:13px; }
+
+.settings-tabs { display:flex; gap:24px; border-bottom:1px solid var(--wm-border); margin-bottom:24px; }
+.settings-tabs a { color:var(--wm-content-muted); text-decoration:none; padding:12px 0; border-bottom:2px solid transparent; }
+.settings-tabs a[aria-current=page] { color:var(--wm-content); border-bottom-color:var(--wm-content); }

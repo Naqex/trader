@@ -6,11 +6,11 @@ import { displayDate } from './dateFormat.js'
 import TestingIcon from './TestingIcon.jsx'
 import { filterBrokerTrades } from './liveBrokerTrades.js'
 import { liveAccountCapital, mt5AccountName } from './liveAccountModel.js'
-import { TradeLabelDisplay } from './TradeLabelCell.jsx'
+import TradeLabelCell, { TradeLabelDisplay } from './TradeLabelCell.jsx'
 import { LIVE_TRADE_COLUMNS } from './liveTradeColumns.js'
 import TradeLedgerGrid from './TradeLedgerGrid.jsx'
 
-export default function LiveBrokerSnapshot({ payload, section, trades, filters, filterKey = '', columns = LIVE_TRADE_COLUMNS.map(([key]) => key) }) {
+export default function LiveBrokerSnapshot({ workspace, catalog, onLabelsChanged, payload, section, trades, filters, filterKey = '', columns = LIVE_TRADE_COLUMNS.map(([key]) => key) }) {
   const { t, fmt, timezone } = useTestingLocale()
   const [page, setPage] = useState(1), [pageSize, setPageSize] = useState(10), sorting = useTableSort(()=>setPage(1))
   const [selected, setSelected] = useState(''), [checked, setChecked] = useState(new Set())
@@ -46,10 +46,11 @@ export default function LiveBrokerSnapshot({ payload, section, trades, filters, 
       case 'symbol': return deal.symbol
       case 'side': return deal.type === null ? '-' : <span className={`fxa-badge is-${deal.type === 0 ? 'buy' : 'sell'}`}>{side(deal.type)}</span>
       case 'entry_type': return deal.entry_type ? <span className="fxa-badge is-order-type">{deal.entry_type.toLowerCase()}</span> : '-'
-      case 'net_pnl': { const value = deal.net_pnl; return Number.isFinite(value) ? <span tabIndex={0} className={`wm-return-badge ${value > 0 ? 'is-positive' : value < 0 ? 'is-negative' : 'is-flat'}`}><span aria-hidden="true">{value > 0 ? '↗' : value < 0 ? '↙' : '-'}</span>{fmt(value)}</span> : '-' }
+      case 'net_pnl':
+      case 'gross_pnl': { const value = deal[key]; return Number.isFinite(value) ? <span tabIndex={0} className={`wm-return-badge ${value > 0 ? 'is-positive' : value < 0 ? 'is-negative' : 'is-flat'}`}><span aria-hidden="true">{value > 0 ? '↗' : value < 0 ? '↙' : '-'}</span>{fmt(value)}</span> : '-' }
       case 'return_pct': { const value = percentage(deal.net_pnl); return value === null ? '-' : fmt(value, '%') }
       case 'realized_r': return Number.isFinite(deal.realized_r) ? <span tabIndex={0} data-tooltip={t('Biến động giá khớp thực tế / khoảng cách đến SL ban đầu, theo chiều lệnh. Không gồm phí; phí đã tính vào PnL ròng.')}>{fmt(deal.realized_r)}</span> : '-'
-      case 'tags': return <TradeLabelDisplay tags={deal.tags || []} />
+      case 'tags': return workspace && payload.connection_id && catalog ? <TradeLabelCell workspace={workspace} session={`live:${payload.connection_id}`} row={{...deal,trade_id:deal.ticket}} catalog={catalog} onChanged={onLabelsChanged} placeholder="Không có nhãn" /> : <TradeLabelDisplay tags={deal.tags || []} options={catalog?.items} />
       case 'price_open': return fmt(deal.price_open, '', 5)
       case 'quantity': return fmt(deal.quantity, '', 5)
       case 'stop_loss': return fmt(deal.stop_loss, '', 5)
@@ -57,7 +58,6 @@ export default function LiveBrokerSnapshot({ payload, section, trades, filters, 
       case 'report_time_utc': return time(deal.report_time_utc)
       case 'close_time_utc': return time(deal.close_time_utc)
       case 'price_close': return fmt(deal.price_close, '', 5)
-      case 'gross_pnl': return fmt(deal.gross_pnl)
       case 'fees': return fmt(deal.fees)
       default: return fmt(deal[key])
     }
