@@ -7322,5 +7322,11 @@
   "Week": {"vi": "Tuần", "en": "Week"},
   "Chưa xác nhận kết quả lưu. Đóng và tải lại thư mục để kiểm tra.": {"vi":"Chưa xác nhận kết quả lưu. Đóng và tải lại thư mục để kiểm tra.","en":"Save outcome is not confirmed. Close and reload folders to check."},
   "No grouping": {"vi":"Không","en":"None"},
-  "Group by day": {"vi":"Ngày","en":"Day"}
+  "Group by day": {"vi":"Ngày","en":"Day"},
+  "General": {"vi": "Chung", "en": "General"},
+  "Select note type": {"vi": "Chọn loại ghi chú", "en": "Select note type"},
+  "Select day": {"vi": "Chọn thứ", "en": "Select day"},
+  "Select month": {"vi": "Chọn tháng", "en": "Select month"},
+  "Select year": {"vi": "Chọn năm", "en": "Select year"},
+  "Chọn khoảng ngày ghi chú": {"vi": "Chọn khoảng ngày ghi chú", "en": "Select note date range"}
 }

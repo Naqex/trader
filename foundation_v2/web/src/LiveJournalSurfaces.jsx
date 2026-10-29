@@ -17,7 +17,7 @@ import LegacyModal from './LegacyModal.jsx'
 import NoteFilterDrawer from './NoteFilterDrawer.jsx'
 import NoteFolderDialog from './NoteFolderDialog.jsx'
 import { fetchNoteFolders } from './liveNoteFoldersApi.js'
-import { EMPTY_NOTE_FILTERS, filterJournalNotes, groupJournalNotes, NOTE_GROUPS } from './liveNoteModel.js'
+import { EMPTY_NOTE_FILTERS, filterJournalNotes, groupJournalNotes, NOTE_GROUPS, NOTE_TYPES } from './liveNoteModel.js'
 import { MANUAL_TRADE_COLUMNS } from './liveTradeColumns.js'
 
 function StrategyReference({ payload, strategies, workspace }) {
@@ -62,7 +62,7 @@ function NotesEmptyArt() {
   </svg>
 }
 
-export function JournalNotes({ workspace, records, accounts, strategies, writable, readable = true, onEdit, onCreate }) {
+export function JournalNotes({ workspace, records, strategies, writable, readable = true, onEdit, onCreate }) {
   const { t,timezone,locale } = useTestingLocale()
   const [group,setGroup] = useState('none'), [folderId,setFolderId] = useState(''), [showFolder,setShowFolder] = useState(false)
   const [folderState,setFolderState] = useState({status:'loading',items:[],error:''}), [folderReload,setFolderReload] = useState(0)
@@ -79,13 +79,12 @@ export function JournalNotes({ workspace, records, accounts, strategies, writabl
   const closeSearch = () => { setSearchOpen(false); searchTrigger.current?.focus() }
   useEffect(() => { if (searchOpen) searchInput.current?.focus() }, [searchOpen])
   const notes = records.filter(record => record.kind === 'note')
-  const tags = [...new Set(notes.flatMap(record => record.payload.tags))]
   const filtered = Object.entries(filters).some(([key,value]) => !key.endsWith('Mode') && (Array.isArray(value) ? value.length : value))
   const folder = folderState.items.find(item => item.id === folderId)
   const folderNotes = folder ? notes.filter(note => folder.note_ids.includes(note.record_id)) : folderId ? [] : notes
   const rows = filterJournalNotes(folderNotes,filters,search,timezone)
   const groups = groupJournalNotes(rows,group,timezone)
-  const groupTitle = key => key === 'general' ? t('Ghi chú chung') : key === 'unknown' ? t('Unknown') : group === 'year' ? key : group === 'month' ? new Intl.DateTimeFormat(locale,{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(`${key}-01T00:00:00Z`)) : group === 'week' ? t('Week of {date}',{date:displayDate(key)}) : displayDate(key)
+  const groupTitle = key => group === 'type' ? t(NOTE_TYPES.find(([value]) => value === key)?.[1] || 'Unknown') : key === 'unknown' ? t('Unknown') : group === 'year' ? key : group === 'month' ? new Intl.DateTimeFormat(locale,{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(`${key}-01T00:00:00Z`)) : group === 'week' ? t('Week of {date}',{date:displayDate(key)}) : displayDate(key)
   const create = () => onCreate(folder?.id)
   const reading = notes.find(record => record.record_id === readId)
   const clearFilters = () => { setSearch(''); setFilters(EMPTY_NOTE_FILTERS) }
@@ -105,7 +104,7 @@ export function JournalNotes({ workspace, records, accounts, strategies, writabl
     {folder && <div className="live-note-folder-summary"><span>{folder.name}</span><small>{t('{count} notes',{count:folderNotes.length})}</small></div>}
     {readable && <div className="live-note-list">{groups.map(({key,rows:groupRows}) => <section className="live-note-section" key={key}>{group !== 'none' && <h3>{groupTitle(key)}<small>{groupRows.length}</small></h3>}{groupRows.map(record => <button type="button" className="live-note-row" key={record.record_id} onClick={() => writable ? onEdit(record) : setReadId(record.record_id)}><strong>{record.payload.title}</strong>{fields.includes('content') && <span>{record.payload.note}</span>}<small>{displayDate(record.updated_at_utc)}{record.payload.playbook_id && ` · ${strategies.find(item => item.record_id === record.payload.playbook_id && item.revision === record.payload.playbook_revision)?.payload.name || t('Strategy #{id}',{id:record.payload.playbook_id.slice(0,8)})} v${record.payload.playbook_revision}`}{record.payload.tags.length > 0 && ` · ${record.payload.tags.join(', ')}`}</small></button>)}</section>)}{!rows.length && <div className="live-notes-empty"><NotesEmptyArt/><h2>{t(search || filtered ? 'Không tìm thấy ghi chú' : 'No notes yet')}</h2>{search || filtered ? <button type="button" className="fxa-button" onClick={clearFilters}>{t('Clear filters')}</button> : <button type="button" className="fxa-button is-primary" disabled={!writable || Boolean(folderId) && folderState.status !== 'ready'} onClick={create}><TestingIcon kind="zoom-in" size={16}/>{t('Add note')}</button>}</div>}</div>}
     {showFolder && <NoteFolderDialog workspace={workspace} notes={notes} folders={folderState.items} onClose={() => {setShowFolder(false);setFolderReload(value => value+1)}} onCreated={result => { setFolderState({status:'ready',items:result.items,error:''});setFolderId(result.created_id);setShowFolder(false) }}/>}
-    {showFilters && <NoteFilterDrawer filters={filters} accounts={accounts} tags={tags} onApply={setFilters} onClose={() => setShowFilters(false)} />}
+    {showFilters && <NoteFilterDrawer filters={filters} notes={notes} onApply={setFilters} onClose={() => setShowFilters(false)} />}
     {reading && <LegacyModal className="live-record-dialog" theme={document.querySelector('.fx-app')?.dataset.theme || 'dark'} label={reading.payload.title} onClose={() => setReadId(null)}><div className="live-record-form"><p className="live-muted">{t('Chỉ đọc · tải lại dữ liệu trước khi chỉnh sửa.')}</p><p className="live-note-content">{reading.payload.note}</p><small className="live-muted">{displayDate(reading.updated_at_utc)} · {reading.payload.tags.join(', ') || t('Không có nhãn')}</small></div></LegacyModal>}
   </section>
 }

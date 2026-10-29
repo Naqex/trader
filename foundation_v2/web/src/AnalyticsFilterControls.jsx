@@ -6,7 +6,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { FilterIcon, SelectChevron } from './FxSelect.jsx'
 import './analytics-filter-controls.css'
 
-function FilterPopover({ label, title, icon, children }) {
+function FilterPopover({ label, title, icon, children, inline = false, triggerContent }) {
   const { t } = useTestingLocale()
 
   const [open, setOpen] = useState(false)
@@ -14,6 +14,7 @@ function FilterPopover({ label, title, icon, children }) {
   useEffect(() => {
     if (!open) return
     const position = () => {
+      if (inline) return
       const menu = root.current?.querySelector('.fx-filter-popover')
       if (!menu) return
       const container = root.current.closest('.fx-content')
@@ -29,15 +30,15 @@ function FilterPopover({ label, title, icon, children }) {
       if (upwards) { menu.style.top = 'auto'; menu.style.bottom = 'calc(100% + 8px)' }
       menu.style.maxHeight = `${Math.max(44, upwards ? above : below)}px`
     }
-    position()
+    if (!inline) position()
     root.current.querySelector('.fx-filter-popover input')?.focus({ preventScroll: true })
     const outside = event => { if (!root.current?.contains(event.target)) setOpen(false) }
     document.addEventListener('pointerdown', outside); window.addEventListener('resize', position)
     return () => { document.removeEventListener('pointerdown', outside); window.removeEventListener('resize', position) }
-  }, [open])
-  return <div className="fx-filter-control" ref={root} onBlur={event => { if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) setOpen(false) }} onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); setOpen(false); trigger.current?.focus() } }}>
-    <button ref={trigger} type="button" className="fxa-button fxa-filter-pill" aria-label={label} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? id : undefined} onClick={() => setOpen(!open)}>{icon && <FilterIcon kind={icon} />}{t(label)}<SelectChevron /></button>
-    {open && <div id={id} role="dialog" tabIndex={-1} aria-label={title} className="fx-filter-popover"><h3 className="fx-filter-title">{t(title)}</h3>{children}</div>}
+  }, [open,inline])
+  return <div className={`fx-filter-control${inline ? ' is-inline' : ''}`} ref={root} onBlur={event => { if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) setOpen(false) }} onKeyDown={event => { if (event.key === 'Escape' && open) { event.preventDefault(); setOpen(false); trigger.current?.focus() } }}>
+    <button ref={trigger} type="button" className="fxa-button fxa-filter-pill" aria-label={label} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? id : undefined} onClick={() => setOpen(!open)}>{inline ? <><span>{triggerContent || '\u00a0'}</span>{icon && <FilterIcon kind={icon}/>}</> : <>{icon && <FilterIcon kind={icon} />}{t(label)}<SelectChevron /></>}</button>
+    {open && <div id={id} role="dialog" tabIndex={-1} aria-label={title} className={`fx-filter-popover${inline ? ' is-inline' : ''}`}>{!inline && <h3 className="fx-filter-title">{t(title)}</h3>}{children}</div>}
   </div>
 }
 
@@ -47,7 +48,7 @@ export function TimeFilter({ value, onChange }) {
   return <FilterPopover label={t("Time")} title={t("Time filter")}><div className="fx-time-range">{[['timeStart', 'Start'], ['timeEnd', 'End']].map(([key, label]) => <label key={key}>{t(label)}<ProjectDateInput type="time" step="60" aria-label={t(`Time ${label}`)} value={value[key] || ''} onChange={event => onChange({ [key]: event.target.value, hour: 'all' })} /></label>)}</div><button type="button" className="fx-filter-clear" onClick={() => onChange({ timeStart: '', timeEnd: '', hour: 'all' })}>{t("Clear")}</button></FilterPopover>
 }
 
-export function DateFilter({ value, onChange, label = 'Backtesting Date', title = 'Backtesting date filter', calendarLabel = 'Chọn khoảng ngày đóng UTC' }) {
+export function DateFilter({ value, onChange, label = 'Backtesting Date', title = 'Backtesting date filter', calendarLabel = 'Chọn khoảng ngày đóng UTC', inline = false }) {
   const { t, locale, timezone } = useTestingLocale()
 
   const [month, setMonth] = useState(() => {
@@ -61,7 +62,7 @@ export function DateFilter({ value, onChange, label = 'Backtesting Date', title 
     if (endpoint === 'from') { onChange({ from: date, to: '' }); setEndpoint('to') }
     else { onChange(date < value.from ? { from: date, to: value.from } : { to: date }); setEndpoint('from') }
   }
-  return <FilterPopover label={t(label)} title={t(title)} icon="calendar">
+  return <FilterPopover label={t(label)} title={t(title)} icon="calendar" inline={inline} triggerContent={[value.from,value.to].filter(Boolean).map(date => displayDate(date)).join(' – ')}>
     <div className="fx-date-range">{[['from', 'Start'], ['to', 'End']].map(([key, label]) => <label key={key}>{t(label)}<ProjectDateInput type="date" aria-label={t(`Analytics ${key} date`)} value={value[key]} onFocus={() => setEndpoint(key)} onChange={event => { onChange({ [key]: event.target.value }); if (event.target.value) setMonth(event.target.value.slice(0, 7)) }} /></label>)}</div>
     <div className="fx-calendar-heading"><button type="button" aria-label={t("Previous month")} onClick={() => shiftMonth(-1)}>‹</button><strong aria-live="polite">{first.toLocaleDateString(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' })}</strong><button type="button" aria-label={t("Next month")} onClick={() => shiftMonth(1)}>›</button></div>
     <div className="fx-calendar" role="group" aria-label={t(calendarLabel).replace(/UTC(?:[+-]\d+(?::\d+)?)?/, timezone)}>{['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => <span key={day}>{t(day)}</span>)}{Array.from({ length: first.getUTCDay() }, (_, i) => <span key={`blank-${i}`} />)}{Array.from({ length: days }, (_, i) => {

@@ -30,3 +30,7 @@
 .fx-app .fx-filter-popover :focus-visible { outline: 2px solid var(--wm-focus); outline-offset: -2px; }
 .fx-app.fx-shell-story[data-theme] .fx-content .fx-filter-popover input:focus-visible { outline: none; box-shadow: none; border-color: var(--wm-focus); }
 .fx-app.fx-shell-story[data-theme] .fx-content .fx-filter-popover .project-date-input > input[type=text] { min-width: 0; padding-inline: 6px; font-size: 12px; }
+
+.fx-filter-popover.is-inline { position:relative; inset:auto; width:100%; max-width:100%; margin-top:8px; padding:0; border:0; background:transparent; box-shadow:none; }
+.fx-app.fx-shell-story[data-theme] .fx-content .fx-filter-control.is-inline > .fxa-filter-pill { width:100%; justify-content:space-between; border:1px solid var(--wm-control-border); border-radius:var(--ds-radius-field); background:transparent; font-weight:400; }
+.fx-filter-control.is-inline > .fxa-filter-pill > span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
