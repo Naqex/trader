@@ -1,7 +1,6 @@
 # Third-party components
 
-Application code retains [MIT](LICENSE), including the original copyright notice.
-Naqex branding does not replace upstream authorship or license conditions.
+Application code is copyright (c) 2026 Naqex and licensed under [MIT](LICENSE).
 Dependencies retain their own licenses; the application license does not relicense them.
 
 | Component | Source/version | Distribution treatment |

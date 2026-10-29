@@ -83,7 +83,7 @@ bỏ đi, cấu hình `TW_PLATFORM_TEST_PG_BIN` khi cần. Xem [đóng góp](CON
 - Plan khi dùng workspace nằm tại `../../planning/trader/`; README không là ledger.
   Source/receipts lịch sử giữ nguyên ngày, tên và giới hạn kiểm chứng của lần chạy đó.
 
-Source được kế thừa từ `wuangnv/mt5-tradingview-backtester`, giữ lịch sử và notices.
+Copyright (c) 2026 Naqex. Lịch sử phát triển được giữ trong Git.
 Mã ứng dụng theo [MIT](LICENSE); xem [third-party notices](THIRD_PARTY_NOTICES.md)
 và [báo cáo bảo mật](SECURITY.md). License của ứng dụng không cấp quyền phân phối
 Advanced Charts, terminal, dataset hoặc dependency bên thứ ba.
