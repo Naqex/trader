@@ -45,7 +45,7 @@ async function openDrawer(page, keyboard = false) {
     await page.locator('.fx-menu-button').focus()
     await page.keyboard.press('Enter')
   } else await page.locator('.fx-menu-button').click()
-  await page.getByRole('dialog', { name: 'Điều hướng chính WMREPLAY' }).waitFor()
+  await page.getByRole('dialog', { name: 'Điều hướng chính Naqex Trader' }).waitFor()
   await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label') === 'Đóng điều hướng')
   assert.equal(await page.locator('.fx-menu-button').getAttribute('aria-expanded'), 'true')
   assert.equal(await page.locator('.fx-rail').getAttribute('aria-modal'), 'true')

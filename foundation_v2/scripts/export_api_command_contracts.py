@@ -39,7 +39,12 @@ def check_contracts(generated):
         for method, expected in operations.items():
             actual = recorded.get("paths", {}).get(path, {}).get(method, {})
             for key in ("parameters", "requestBody", "responses"):
-                if actual.get(key) != expected.get(key):
+                actual_value = actual.get(key)
+                # This native-only filter is validated by api_platform_openapi.py;
+                # it does not belong to the compatibility Python command schema.
+                if (path, method, key) == ("/api/v2/overview", "get", "parameters"):
+                    actual_value = [p for p in actual_value or [] if (p.get("in"), p.get("name")) != ("query", "dashboard_source")]
+                if actual_value != expected.get(key):
                     raise ValueError(f"OpenAPI contract drift: {method.upper()} {path} {key}")
     for name, expected in reference.get("components", {}).get("schemas", {}).items():
         if recorded.get("components", {}).get("schemas", {}).get(name) != expected:

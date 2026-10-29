@@ -1,10 +1,11 @@
+import { fileURLToPath } from 'node:url'
 import assert from 'node:assert/strict'
 import { chromium } from 'playwright'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 const origin = process.env.REPORT_CHART_ORIGIN || 'http://127.0.0.1:5180'
-const out = path.resolve(process.env.REPORT_CHART_EVIDENCE || 'E:/BACKUP-TRADINGWORKSPACE/report-axis-curves-20261025/browser')
+const out = path.resolve(process.env.REPORT_CHART_EVIDENCE || fileURLToPath(new URL('../.artifacts/reportPresentation.browser', import.meta.url)))
 await mkdir(out, { recursive: true })
 const browser = await chromium.launch()
 const report = { scope: 'Actual demo fixtures, no response substitution or mutations', checks: [], errors: [], writes: [] }

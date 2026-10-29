@@ -1,10 +1,11 @@
+import { fileURLToPath } from 'node:url'
 import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { chromium } from 'playwright'
 
 const origin = process.env.TW_AI_UI_ORIGIN || 'http://127.0.0.1:5188'
-const evidence = process.env.TW_AI_UI_EVIDENCE || 'E:/BACKUP-TRADINGWORKSPACE/ai-chat-continuation-20261023/browser'
+const evidence = process.env.TW_AI_UI_EVIDENCE || fileURLToPath(new URL('./.artifacts/run_ai_continuation_acceptance', import.meta.url))
 await mkdir(evidence, { recursive: true })
 const browser = await chromium.launch({ headless: true })
 const report = { scope: 'Production UI with isolated API fixtures; no provider inference or configuration writes', checks: [], errors: [] }

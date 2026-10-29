@@ -50,7 +50,7 @@ export default function AiChatPanel({ workspace, open, modal, standalone = false
   const composer = useRef(null)
   const scroll = useRef(null)
   const restoringScroll = useRef(false)
-  const description = mentor.description || say('Cùng tìm hiểu trading, backtest và WMREPLAY.', 'Explore trading, backtesting and WMREPLAY.')
+  const description = mentor.description || say('Cùng tìm hiểu trading, backtest và Naqex Trader.', 'Explore trading, backtesting and Naqex Trader.')
   function closeDialog() {
     if (savingRef.current) return
     setDialog(null)

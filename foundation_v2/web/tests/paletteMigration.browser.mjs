@@ -3,7 +3,7 @@ import {mkdir,writeFile} from 'node:fs/promises'
 import {chromium} from 'playwright'
 const origin=process.env.TW_UI_ORIGIN||'http://127.0.0.1:5180',out=process.env.TW_UI_EVIDENCE_DIR||'../evidence/palette-migration-20261028'
 await mkdir(out,{recursive:true})
-const browser=await chromium.launch({headless:true,executablePath:process.env.TW_UI_QA_CHROMIUM||'C:/Users/MIIKEY/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe'})
+const browser=await chromium.launch({headless:true,executablePath:process.env.TW_UI_QA_CHROMIUM})
 const report={scope:'Approved palette and real component states; labeled demo and read-only Session',cases:[],errors:[],writes:[]}
 const href=query=>`${origin}/?workspace=tenant-a&area=testing&lang=vi&${query}`
 let page

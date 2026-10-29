@@ -1,7 +1,8 @@
+import { fileURLToPath } from 'node:url'
 import assert from 'node:assert/strict'
 import{mkdir,writeFile}from'node:fs/promises'
 import { chromium } from 'playwright'
-const origin=process.env.TW_LIVE_UI_ORIGIN || 'http://127.0.0.1:5180',out=process.env.TW_LIVE_UI_EVIDENCE || 'E:/BACKUP-TRADINGWORKSPACE/live-calendar-ui'
+const origin=process.env.TW_LIVE_UI_ORIGIN || 'http://127.0.0.1:5180',out=process.env.TW_LIVE_UI_EVIDENCE || fileURLToPath(new URL('./.artifacts/run_live_calendar_acceptance', import.meta.url))
 await mkdir(out,{recursive:true})
 const browser=await chromium.launch(),report={scope:'Labeled multi-account API fixtures; no broker operations',cases:[],errors:[],mutations:[]}
 const a='11111111-1111-4111-8111-111111111111',b='22222222-2222-4222-8222-222222222222'

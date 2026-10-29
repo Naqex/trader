@@ -25,8 +25,20 @@ async fn serve(response: Vec<u8>, delay: Duration) -> (String, tokio::task::Join
     let url = format!("http://{}/instruments", listener.local_addr().unwrap());
     let task = tokio::spawn(async move {
         let (mut stream, _) = listener.accept().await.unwrap();
-        let mut request = [0; 4096];
-        stream.read(&mut request).await.unwrap();
+        let mut request = Vec::new();
+        loop {
+            let mut chunk = [0; 1024];
+            let received = stream.read(&mut chunk).await.unwrap();
+            assert!(received > 0, "request ended before HTTP headers");
+            request.extend_from_slice(&chunk[..received]);
+            assert!(
+                request.len() <= 8192,
+                "fixture request exceeds header budget"
+            );
+            if request.windows(4).any(|value| value == b"\r\n\r\n") {
+                break;
+            }
+        }
         tokio::time::sleep(delay).await;
         let _ = stream.write_all(&response).await;
     });

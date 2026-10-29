@@ -11,6 +11,7 @@ import tempfile
 from contextlib import contextmanager
 from pathlib import Path
 from uuid import uuid4
+from runtime_paths import postgres_bin
 
 import psycopg
 from psycopg import sql
@@ -189,19 +190,7 @@ def main() -> int:
     if args.host not in {"127.0.0.1", "localhost", "::1"}:
         raise SystemExit("restore rehearsal requires an explicitly selected loopback PostgreSQL host")
 
-    if not args.pg_bin:
-        workspace = ROOT.parents[1]
-        candidates = sorted(
-            workspace.glob(
-                "planning/mt5-tradingview-backtester/research/foundation-validation/*/pg-dist/pgsql/bin"
-            ),
-            reverse=True,
-        )
-        args.pg_bin = str(candidates[0]) if candidates else None
-    if not args.pg_bin:
-        raise SystemExit("portable PostgreSQL bin was not found; use --pg-bin or TW_V2_PG_BIN")
-
-    pg_bin = Path(args.pg_bin).resolve()
+    pg_bin = Path(args.pg_bin).expanduser().resolve() if args.pg_bin else postgres_bin("TW_V2_PG_BIN")
     pg_dump = pg_bin / "pg_dump.exe"
     pg_restore = pg_bin / "pg_restore.exe"
     for binary in (pg_dump, pg_restore):

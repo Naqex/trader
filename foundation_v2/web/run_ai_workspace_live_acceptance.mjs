@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -5,7 +6,7 @@ import { chromium } from 'playwright'
 
 // Read-only runtime QA: no mocked reads, OAuth, provider changes, probes or chat submissions.
 const origin = process.env.TW_AI_UI_ORIGIN || 'http://127.0.0.1:5180'
-const evidence = path.resolve(process.env.TW_AI_UI_EVIDENCE || 'E:/BACKUP-TRADINGWORKSPACE/ui-ai-bot-20261023/live')
+const evidence = path.resolve(process.env.TW_AI_UI_EVIDENCE || fileURLToPath(new URL('./.artifacts/run_ai_workspace_live_acceptance', import.meta.url)))
 await mkdir(evidence, { recursive: true })
 const browser = await chromium.launch({ headless: true })
 const report = { scope: 'Actual product UI and API, read-only, no mocked responses or upstream inference', checks: [], writes: [], errors: [] }

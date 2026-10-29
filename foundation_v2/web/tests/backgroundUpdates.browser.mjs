@@ -1,10 +1,11 @@
+import { fileURLToPath } from 'node:url'
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { chromium } from 'playwright'
 
 const origin = process.env.TW_BACKGROUND_UI_ORIGIN || 'http://127.0.0.1:5188'
-const output = process.env.TW_BACKGROUND_UI_EVIDENCE || 'E:/BACKUP-TRADINGWORKSPACE/backtest-prop-sse-ui'
+const output = process.env.TW_BACKGROUND_UI_EVIDENCE || fileURLToPath(new URL('../.artifacts/backgroundUpdates.browser', import.meta.url))
 await mkdir(output, { recursive: true })
 const report = { fixture: true, checks: [], errors: [], mutations: [] }
 const streams = new Set()

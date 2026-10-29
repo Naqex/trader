@@ -395,7 +395,7 @@ mod tests {
     #[test]
     fn python_oracle_differential() {
         let corpus: Vec<Value> = serde_json::from_str(include_str!(
-            "../../../evidence/rust-native-20261017/runtime/engine-integrated/oracle.json"
+            "../../tests/fixtures/research_execution/engine.json"
         ))
         .unwrap();
         assert!(corpus.len() >= 350);
@@ -432,7 +432,7 @@ mod tests {
     #[test]
     fn protocol_identity_pins_the_installed_dependencies() {
         let corpus: Vec<Value> = serde_json::from_str(include_str!(
-            "../../../evidence/rust-native-20261017/runtime/engine-integrated/oracle.json"
+            "../../tests/fixtures/research_execution/engine.json"
         ))
         .unwrap();
         let input = &corpus

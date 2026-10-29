@@ -1,6 +1,6 @@
 # MT5 project UI
 
-Project-specific UI configuration for the PATH-2 React/WMReplay implementation in
+Project-specific UI configuration for the PATH-2 React/Naqex Trader implementation in
 [`foundation_v2/web/`](../foundation_v2/web/).
 
 This layer sits below:

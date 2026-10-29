@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+from runtime_paths import postgres_bin
 import socket
 import statistics
 import subprocess
@@ -23,7 +24,7 @@ from test_replay_execution_core import initial_state
 from test_ps01_prop_persistence import profile
 from trading_workspace_v2.prop_session import PropSessionSnapshot
 
-PG = Path(os.environ.get("TW_PLATFORM_TEST_PG_BIN", "D:/ANNAM/TradingWorkspace/planning/mt5-tradingview-backtester/research/foundation-validation/20260921T115933Z-315e8ddd/pg-dist/pgsql/bin"))
+PG = postgres_bin("TW_PLATFORM_TEST_PG_BIN")
 OUT = V2 / "evidence/api-platform-implementation-20261009/integrated"
 
 

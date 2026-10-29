@@ -1,0 +1,23 @@
+{
+  "kind": "synthetic offline Python oracles; no broker dataset",
+  "files": [
+    {
+      "path": "reference.json",
+      "sha256": "7a7afa530b9effa466fbb6586f251e6b577f500db2812e34a22e78c6baa8df4b",
+      "cases": 230,
+      "origin": "foundation_v2/evidence/rust-native-20261017/runtime/reference/oracle.json"
+    },
+    {
+      "path": "oos.json",
+      "sha256": "bda249d327afd3a9a86e6edad0385a60015da5513de3bec404db1ab8ca9686df",
+      "cases": 80,
+      "origin": "foundation_v2/evidence/rust-native-20261017/runtime/oos-execution/oracle.json"
+    },
+    {
+      "path": "engine.json",
+      "sha256": "815b51ca1eb3baa9eb5502ea138c6aec7d1bba07d1ca2db8d4edd3ee1239ada1",
+      "cases": 350,
+      "origin": "foundation_v2/evidence/rust-native-20261017/runtime/engine-integrated/oracle.json"
+    }
+  ]
+}

@@ -1,12 +1,13 @@
+import { fileURLToPath } from 'node:url'
 import { completedDealFills } from './liveJournal.fixture.mjs'
 import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { chromium } from 'playwright'
 
 const origin = process.env.TW_LIVE_UI_ORIGIN || 'http://127.0.0.1:5180'
-const out = process.env.TW_LIVE_UI_EVIDENCE || 'E:/BACKUP-TRADINGWORKSPACE/calendar-partial-ui'
+const out = process.env.TW_LIVE_UI_EVIDENCE || fileURLToPath(new URL('../.artifacts/liveCalendarPartial.browser', import.meta.url))
 await mkdir(out, { recursive: true })
-const browser = await chromium.launch({executablePath:process.env.TW_UI_QA_CHROMIUM || 'C:/Users/MIIKEY/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe'})
+const browser = await chromium.launch({executablePath:process.env.TW_UI_QA_CHROMIUM})
 const a = '11111111-1111-4111-8111-111111111111', b = '22222222-2222-4222-8222-222222222222'
 const report = { scope: 'Labeled multi-account GET fixtures; broker access blocked', cases: [], errors: [], mutations: [] }
 try {

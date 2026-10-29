@@ -4,7 +4,7 @@ import { chromium } from 'playwright'
 import { mkdir,writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
-const output=process.env.TW_NOTIFICATION_EVIDENCE || 'E:/BACKUP-TRADINGWORKSPACE/notification-timing-20261024/timing'
+const output=process.env.TW_NOTIFICATION_EVIDENCE || fileURLToPath(new URL('../.artifacts/notificationTiming.browser', import.meta.url))
 await mkdir(output,{recursive:true})
 const bundle=await build({stdin:{loader:'jsx',resolveDir:fileURLToPath(new URL('.',import.meta.url)),contents:`
   import {useEffect,useState} from 'react'

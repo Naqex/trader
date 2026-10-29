@@ -207,7 +207,7 @@ select.fxr-filter-select { appearance: auto; }
   .fxr-desktop-only { display: none; }
 }
 
-/* Session metadata and reports share the existing WMREPLAY surfaces. */
+/* Session metadata and reports share the existing Naqex Trader surfaces. */
 .fxr-integrated-sessions { --session-ink: #e6edf0; --session-muted: #b3bdc4; --session-line: #414347; --session-field: #11171b; padding-inline: 24px; box-sizing: border-box; }
 .fxr-integrated-sessions .fxr-session-toolbar { min-height: 112px; align-items: center; }
 .fxr-integrated-sessions .fxr-session-actions { gap: 10px; }

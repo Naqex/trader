@@ -14,7 +14,7 @@ async function fingerprint() {
   return hash.digest('hex')
 }
 const report = { scope: 'Actual GET-only local QA services; spacing and nested Analytics navigation only', sourceBefore: await fingerprint(), cases: [], errors: [], blocked: [] }
-const browser = await chromium.launch({ headless: true, executablePath: 'C:/Users/MIIKEY/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe' })
+const browser = await chromium.launch({ headless: true, executablePath: process.env.TW_UI_QA_CHROMIUM })
 const axe = await readFile('../../../../.artifacts/wm-integration-quality-tools/node_modules/axe-core/axe.min.js', 'utf8')
 const routes = [
   ['overview', '.fx-dashboard-quick-actions', ''],

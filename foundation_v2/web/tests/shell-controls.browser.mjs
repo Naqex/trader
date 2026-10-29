@@ -87,7 +87,7 @@ try {
     assert.equal(await menu.evaluate(element => getComputedStyle(element).outlineStyle), 'solid')
     await page.keyboard.press('Enter')
     if (width <= 760) {
-      await page.getByRole('dialog', { name: 'Điều hướng chính WMREPLAY' }).waitFor()
+      await page.getByRole('dialog', { name: 'Điều hướng chính Naqex Trader' }).waitFor()
       await page.keyboard.press('Escape')
       await page.getByRole('dialog').waitFor({ state: 'detached' })
       assert.equal(await menu.evaluate(element => element === document.activeElement), true)
@@ -118,7 +118,7 @@ try {
     assert.equal(await page.getByTestId('fxreplay-shell').getAttribute('data-theme'), theme === 'dark' ? 'light' : 'dark')
     await page.getByTestId('theme-toggle').click()
     await page.getByTestId('help-toggle').click()
-    await page.getByRole('dialog', { name: 'Phím tắt WMREPLAY' }).waitFor()
+    await page.getByRole('dialog', { name: 'Phím tắt Naqex Trader' }).waitFor()
     await page.keyboard.press('Escape')
     await page.getByRole('dialog').waitFor({ state: 'detached' })
     assert.equal(await page.getByTestId('help-toggle').evaluate(element => element === document.activeElement), true)

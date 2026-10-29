@@ -16,7 +16,7 @@ function Duration({ seconds }) {
 
 function timingDetail(performance, kind, t) {
   const scope = performance?.timing_scope
-  const clock = t(kind === 'practice' ? 'Thời gian thao tác thực tế trong WMReplay' : 'Tổng thời gian thị trường đã chạy qua trong các bước replay thành công; không phải thời gian bạn ngồi luyện tập.')
+  const clock = t(kind === 'practice' ? 'Thời gian thao tác thực tế trong Naqex Trader' : 'Tổng thời gian thị trường đã chạy qua trong các bước replay thành công; không phải thời gian bạn ngồi luyện tập.')
   if (!scope) return clock
   const measured = scope[`${kind}_measured_session_count`], unknown = scope[`unknown_${kind}_session_count`]
   const coverage = unknown > 0 ? t('{measured}/{total} phiên được ghi nhận', { measured, total: measured + unknown }) : ''

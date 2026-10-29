@@ -78,7 +78,7 @@ def main():
     args=parser.parse_args()
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
-    source = FOUNDATION / "evidence/rust-native-20261017/runtime/engine-integrated/oracle.json"
+    source = FOUNDATION / "api-rust/tests/fixtures/research_execution/engine.json"
     corpus = json.loads(source.read_text(encoding="utf-8"))
     descriptor = inspect_adapter()
     code_hash = engine_code_sha256()

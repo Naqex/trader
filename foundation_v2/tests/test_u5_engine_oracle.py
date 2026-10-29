@@ -9,8 +9,7 @@ from unittest.mock import patch
 
 
 HERE = Path(__file__).resolve()
-WORKSPACE = next(parent for parent in HERE.parents if (parent / "projects" / "mt5-tradingview-backtester").is_dir())
-PROJECT = WORKSPACE / "projects" / "mt5-tradingview-backtester"
+PROJECT = HERE.parents[2]
 FOUNDATION = PROJECT / "foundation_v2"
 for entry in (str(PROJECT), str(FOUNDATION)):
     if entry not in sys.path:

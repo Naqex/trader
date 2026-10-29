@@ -1,6 +1,6 @@
 ---
 name: mt5-runtime-operations
-description: Inspect or roll out the local WMREPLAY API/UI runtime and reconnect its owned MT5 terminal. Use for runtime health, guarded updates and recovery; not ordinary UI edits, trading execution or Codex MCP configuration.
+description: Inspect or roll out the local Naqex Trader API/UI runtime and reconnect its owned MT5 terminal. Use for runtime health, guarded updates and recovery; not ordinary UI edits, trading execution or Codex MCP configuration.
 ---
 
 # Local MT5 runtime operations
@@ -33,8 +33,8 @@ replace native/compact with launcher compatibility defaults.
 
 Before a requested cutover, check active jobs/downloads/AI runs and unresolved
 broker submissions; save a concrete rollback. Migration additionally needs the
-matching DB/artifact backup and authorization. Use `E:/BACKUP-TRADINGWORKSPACE/`
-for this owner's backups, temp and build outputs; private configs/secrets stay
+matching DB/artifact backup and authorization. Use the owner-configured backup root outside the source checkout
+for backups, temp and build outputs; private configs/secrets stay
 out of Git and console output. Do not move active data or add junctions casually.
 
 ## Validate and report what actually ran

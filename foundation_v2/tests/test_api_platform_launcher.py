@@ -265,7 +265,7 @@ class LauncherTests(unittest.TestCase):
         with patch.object(launcher,"configuration",return_value={}), patch.object(launcher,"validate_paths"), \
              patch.object(launcher,"native_database_preflight",return_value={"schema_current":True}) as native, \
              patch.object(launcher,"database_preflight") as compatibility, patch.object(launcher,"supervise") as start:
-            self.assertEqual(launcher.main(["--runtime-profile","native","--check-only"]),0)
+            self.assertEqual(launcher.main(["--runtime-profile","native","--download-engine","none","--check-only"]),0)
             native.assert_called_once()
             compatibility.assert_not_called()
             start.assert_not_called()

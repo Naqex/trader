@@ -6,6 +6,7 @@ import hashlib
 import json
 import math
 from pathlib import Path
+from runtime_paths import postgres_bin
 import platform
 import socket
 import statistics
@@ -24,7 +25,7 @@ from trading_workspace_v2.dashboard_read_model import build_dashboard_performanc
 from test_trades_page import row, report, journal
 from test_replay_analytics import two_trade_record, closed_trade_record
 
-PG = Path('D:/ANNAM/TradingWorkspace/planning/mt5-tradingview-backtester/research/foundation-validation/20260921T115933Z-315e8ddd/pg-dist/pgsql/bin')
+PG = postgres_bin("TW_PLATFORM_TEST_PG_BIN")
 
 
 def distribution(samples):

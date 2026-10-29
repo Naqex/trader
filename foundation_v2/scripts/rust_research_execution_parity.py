@@ -6,6 +6,7 @@ import json
 import math
 import os
 from pathlib import Path
+from runtime_paths import postgres_bin
 import random
 import socket
 import subprocess
@@ -23,7 +24,7 @@ from trading_workspace_v2.retained import compute_metrics_v2
 from trading_workspace_v2.store import PostgresStore
 
 OUT = F / 'evidence/rust-native-20261017/research-execution'
-PG = Path(os.environ.get('TW_COMMAND_TEST_PG_BIN','D:/ANNAM/TradingWorkspace/planning/mt5-tradingview-backtester/research/foundation-validation/20260921T115933Z-315e8ddd/pg-dist/pgsql/bin'))
+PG = postgres_bin("TW_COMMAND_TEST_PG_BIN")
 def result(closes,starting=100000.):
     ledger=[]
     for index,(previous,current) in enumerate(zip(closes,closes[1:]),1):
@@ -47,8 +48,8 @@ def oracle():
 
 def engine_fixtures(artifact,store,scientific_oracle=None):
     engine_hash=engine_code_sha256();cases=[]
-    reference=json.loads((F/'evidence/rust-native-20261017/runtime/reference/oracle.json').read_text(encoding='utf-8'))
-    oos=json.loads((F/'evidence/rust-native-20261017/runtime/oos-execution/oracle.json').read_text(encoding='utf-8'))
+    reference=json.loads((F/'api-rust/tests/fixtures/research_execution/reference.json').read_text(encoding='utf-8'))
+    oos=json.loads((F/'api-rust/tests/fixtures/research_execution/oos.json').read_text(encoding='utf-8'))
     # An OOS computation can account for failed trials, but the persisted worker
     # rejects an oversized source range before computing any trial.
     sources=[('reference',c) for c in reference if 'canonical' in c['expected']][:3]+[('oos',c) for c in oos if 'canonical' in c['expected'] and len(c['rows'])<=c['protocol']['budget']['max_bars']][:2]

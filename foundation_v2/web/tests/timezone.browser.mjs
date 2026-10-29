@@ -1,8 +1,9 @@
+import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
 import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 const base = process.env.BASE_URL || 'http://127.0.0.1:5194'
-const out = process.env.EVIDENCE_DIR || 'E:/BACKUP-TRADINGWORKSPACE/dashboard-refine-20261024'
+const out = process.env.EVIDENCE_DIR || fileURLToPath(new URL('../.artifacts/timezone.browser', import.meta.url))
 await mkdir(out, {recursive:true})
 const browser = await chromium.launch(), page = await browser.newPage({viewport:{width:1920,height:940}})
 const evidence = {errors:[], writes:[], checks:[]}

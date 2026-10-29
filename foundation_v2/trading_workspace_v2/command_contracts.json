@@ -398,6 +398,21 @@
             "default": "{}",
             "type": "string"
           }
+        },
+        {
+          "name": "sort",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
         }
       ],
       "body": []

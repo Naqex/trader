@@ -7,7 +7,7 @@ ROOT=Path(__file__).resolve().parents[2];V2=ROOT/'foundation_v2';sys.path[:0]=[s
 from trading_workspace_v2 import research,research_engine
 from trading_workspace_v2.research_oos import summarize_sweep_outcomes
 OUT=V2/'evidence/rust-native-20261017/runtime/oos-execution'
-reference=json.loads((V2/'evidence/rust-native-20261017/runtime/reference/oracle.json').read_text(encoding='utf-8'))
+reference=json.loads((V2/'api-rust/tests/fixtures/research_execution/reference.json').read_text(encoding='utf-8'))
 
 def run(rows,protocol,manifest,run_engine=None):
     run_engine=run_engine or research_engine.execute_breakout
@@ -53,7 +53,7 @@ def main():
                 cases.append(dict(rows=rows,protocol=tampered,manifest=manifest,expected={'error':'research validation protocol changed after job creation'}))
                 blocked=dict(manifest,holdout_policy={'mode':'metadata_only','from_utc':1200})
                 cases.append(dict(rows=rows,protocol=protocol,manifest=blocked,expected={'error':'research validation plan cannot be materialized'}))
-    (OUT/'oracle.json').write_text(json.dumps(cases,ensure_ascii=False,separators=(',',':')),encoding='utf-8')
+    (V2/'api-rust/tests/fixtures/research_execution/oos.json').write_text(json.dumps(cases,ensure_ascii=False,separators=(',',':')),encoding='utf-8')
     completed=subprocess.run(['cargo','test','--locked','--manifest-path',str(V2/'api-rust/Cargo.toml'),'--lib','research_execution::oos_runner::tests::python_oos_oracle','--','--nocapture'],capture_output=True,text=True,encoding='utf-8')
     (OUT/'test.log').write_text(completed.stdout+completed.stderr,encoding='utf-8');receipt={'cases':len(cases),'exit_code':completed.returncode};(OUT/'receipt.json').write_text(json.dumps(receipt),encoding='utf-8');print(json.dumps(receipt))
     if completed.returncode:print((completed.stdout+completed.stderr)[-7000:])

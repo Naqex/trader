@@ -1,3 +1,4 @@
+import { PRODUCT_NAME, wordmarkUrl } from './brand.js'
 import { liveTradingHref } from './liveTradingNavigation.js'
 import React, { createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import './fx-shell-story.css'
@@ -68,13 +69,13 @@ const SHELL_COPY = {
     closeNavigation: 'Đóng điều hướng',
     help: 'Mở phím tắt và trợ giúp',
     closeHelp: 'Đóng trợ giúp',
-    shortcutsTitle: 'Phím tắt WMREPLAY',
+    shortcutsTitle: 'Phím tắt Naqex Trader',
     shortcutHelp: 'Mở trợ giúp',
     shortcutEscape: 'Đóng bảng trợ giúp',
     shortcutsHint: 'Các phím tắt chỉ điều khiển giao diện shell.',
-    product: 'WMREPLAY',
-    workspaceAria: 'Điều hướng chính WMREPLAY',
-    contentAria: 'Nội dung WMREPLAY',
+    product: PRODUCT_NAME,
+    workspaceAria: 'Điều hướng chính Naqex Trader',
+    contentAria: 'Nội dung Naqex Trader',
     primaryNavAria: 'Khu vực chính',
     utilityNavAria: 'Công cụ',
     subnavAria: 'Điều hướng workspace',
@@ -127,13 +128,13 @@ const SHELL_COPY = {
     closeNavigation: 'Close navigation',
     help: 'Open shortcuts and help',
     closeHelp: 'Close help',
-    shortcutsTitle: 'WMREPLAY keyboard shortcuts',
+    shortcutsTitle: 'Naqex Trader keyboard shortcuts',
     shortcutHelp: 'Open help',
     shortcutEscape: 'Close help panel',
     shortcutsHint: 'Shortcuts only control the workspace shell.',
-    product: 'WMREPLAY',
-    workspaceAria: 'WMREPLAY main navigation',
-    contentAria: 'WMREPLAY content',
+    product: PRODUCT_NAME,
+    workspaceAria: 'Naqex Trader main navigation',
+    contentAria: 'Naqex Trader content',
     primaryNavAria: 'Primary workspace',
     utilityNavAria: 'Utilities',
     subnavAria: 'Workspace navigation',
@@ -256,10 +257,10 @@ function isNavItemActive(item, activeView, query, sectionId) {
 
 const FxReplayContext = createContext(null)
 
-function WMReplayWordmark() {
+function NaqexWordmark() {
   return (
-    <svg className="fx-wordmark-svg" viewBox="0 0 242 30" role="img" aria-label="WMREPLAY" focusable="false">
-      <use href="/brand/wmreplay.svg#wordmark" />
+    <svg className="fx-wordmark-svg" viewBox="0 0 242 30" role="img" aria-label={PRODUCT_NAME} focusable="false">
+      <use href={`${wordmarkUrl}#wordmark`} />
     </svg>
   )
 }
@@ -461,9 +462,9 @@ function ShellTopbar({ copy, language, setLanguage, theme, setTheme, railCollaps
             </>}
           </svg>
         </button>
-        <span className="fx-wordmark"><WMReplayWordmark /></span>
+        <span className="fx-wordmark"><NaqexWordmark /></span>
         <span className="fx-wordmark-compact" role="img" aria-label={copy.product}>
-          <svg viewBox="0 0 60 30" aria-hidden="true" focusable="false"><use href="/brand/wmreplay.svg#wm" /></svg>
+          <svg viewBox="0 0 30 30" aria-hidden="true" focusable="false"><use href={`${wordmarkUrl}#mark`} /></svg>
         </span>
       </div>
       <div className="fx-topbar-actions">

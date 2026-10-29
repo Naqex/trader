@@ -13,7 +13,7 @@ def main():
     parser.add_argument('--output',type=Path,required=True)
     parser.add_argument('--real-engine',action='store_true')
     args=parser.parse_args();args.output.mkdir(parents=True,exist_ok=True)
-    reference=json.loads((V2/'evidence/rust-native-20261017/runtime/reference/oracle.json').read_text(encoding='utf-8'))
+    reference=json.loads((V2/'api-rust/tests/fixtures/research_execution/reference.json').read_text(encoding='utf-8'))
     cases=[]
     def add(name,native,protocol,rows=None):
         try:expected=dict(value=normalize_native_result(native,protocol))

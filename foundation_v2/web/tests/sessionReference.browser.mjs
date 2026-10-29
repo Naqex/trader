@@ -1,16 +1,17 @@
+import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
 import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 
 const origin=process.argv[2] || process.env.SESSIONS_ORIGIN || 'http://127.0.0.1:5197'
-const out=process.argv[3] || process.env.SESSIONS_EVIDENCE || 'E:/BACKUP-TRADINGWORKSPACE/sessions-refinement-20261026/preview-qa'
+const out=process.argv[3] || process.env.SESSIONS_EVIDENCE || fileURLToPath(new URL('../.artifacts/sessionReference.browser', import.meta.url))
 const session='6428cf18b3f54a36b2e90207ef12392e', api='http://127.0.0.1:8010'
 const get=async path=>{const r=await fetch(api+path,{headers:{'X-Workspace-Id':'tenant-a'}});assert.equal(r.status,200);return r.json()}
 const baseline=await get(`/api/v2/replay/sessions/${session}/analytics?timezone=Asia%2FHo_Chi_Minh&time_basis=market`)
 const metadata=await get(`/api/v2/replay/sessions/${session}/metadata`)
 await mkdir(out,{recursive:true})
 const report={scope:'Sessions read-only runtime plus labeled browser response fixtures; no saved data mutations',cases:[],errors:[],writes:[]}
-const browser=await chromium.launch({executablePath:process.env.TW_UI_QA_CHROMIUM || 'C:/Users/MIIKEY/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe'})
+const browser=await chromium.launch({executablePath:process.env.TW_UI_QA_CHROMIUM})
 function fixture(mode){
  const payload=structuredClone(baseline),record=structuredClone(metadata)
  const dates=['2024-01-01T01:00:00Z','2024-01-01T02:00:00Z','2024-01-08T01:00:00Z','2025-01-06T01:00:00Z','2025-03-03T01:00:00Z']

@@ -6,7 +6,7 @@ ROOT=Path(__file__).resolve().parents[2];V2=ROOT/'foundation_v2';sys.path[:0]=[s
 from trading_workspace_v2.research_engine import execute_breakout
 from trading_workspace_v2 import research_engine
 OUT=V2/'evidence/rust-native-20261017/runtime/reference';OUT.mkdir(parents=True,exist_ok=True)
-base=json.loads((V2/'evidence/rust-native-20261017/runtime/engine-integrated/oracle.json').read_text(encoding='utf-8'))[0]['expected']['ok']
+base=json.loads((V2/'api-rust/tests/fixtures/research_execution/engine.json').read_text(encoding='utf-8'))[0]['expected']['ok']
 base['range']={'from_utc':1000,'to_utc':1000+120*60};base['budget']['max_runtime_ms']=30000;base['playbook']['rules'].update(quantity=0.1,planned_stop_distance_price=0.001)
 cases=[]
 def add(protocol,rows):
@@ -31,7 +31,7 @@ for seed in range(200):
         bad=copy.deepcopy(protocol);bad['budget']['max_bars']=10;add(bad,rows)
         badrows=copy.deepcopy(rows);badrows[10]['timestamp']=badrows[9]['timestamp'];add(protocol,badrows)
         badrows=copy.deepcopy(rows);badrows[10]['high']=0;add(protocol,badrows)
-(OUT/'oracle.json').write_text(json.dumps(cases,ensure_ascii=False,separators=(',',':')),encoding='utf-8')
+(V2/'api-rust/tests/fixtures/research_execution/reference.json').write_text(json.dumps(cases,ensure_ascii=False,separators=(',',':')),encoding='utf-8')
 completed=subprocess.run(['cargo','test','--locked','--manifest-path',str(V2/'api-rust/Cargo.toml'),'--lib','research_execution::reference::tests::python_execution_oracle','--','--nocapture'],capture_output=True,text=True,encoding='utf-8')
 (OUT/'test.log').write_text(completed.stdout+completed.stderr,encoding='utf-8');receipt={'cases':len(cases),'exit_code':completed.returncode};(OUT/'receipt.json').write_text(json.dumps(receipt),encoding='utf-8');print(json.dumps(receipt))
 if completed.returncode:print((completed.stdout+completed.stderr)[-10000:])

@@ -39,9 +39,14 @@ def configuration(args):
                TW_V2_LOCAL_WORKSPACES="tenant-a", TW_V2_LOCAL_IDENTITY="local-owner",
                TW_V2_AUTH_MODE="local-trusted-identity", TW_V2_RUST_BIND=f"127.0.0.1:{args.port}",
                TW_V2_OPENAPI_PATH=str(FOUNDATION / "contracts/openapi.json"),
-               PYTHONPATH=os.pathsep.join((str(FOUNDATION), str(PROJECT))),
-               TW_V2_LEARN_WORKSPACE_ID="tenant-a",
-               TW_V2_EDUCATION_ROOT=str(PROJECT.parents[1] / "education"))
+               PYTHONPATH=os.pathsep.join((str(FOUNDATION), str(PROJECT))))
+    education_root = os.environ.get("TW_V2_EDUCATION_ROOT")
+    workspace_education = PROJECT.parents[1] / "education"
+    if not education_root and (workspace_education / "course.json").is_file():
+        education_root = str(workspace_education)
+    if education_root:
+        env["TW_V2_EDUCATION_ROOT"] = str(Path(education_root).expanduser().resolve())
+        env.setdefault("TW_V2_LEARN_WORKSPACE_ID", "tenant-a")
     env["TW_V2_RUNTIME_PROFILE"] = args.runtime_profile
     if args.runtime_profile != "native" and args.replay_storage_profile != "full":
         raise PreflightError("Compact replay storage requires the explicit native runtime profile.")

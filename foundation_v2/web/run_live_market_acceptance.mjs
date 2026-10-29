@@ -1,9 +1,10 @@
+import { fileURLToPath } from 'node:url'
 import assert from 'node:assert/strict'
 import {createServer} from 'node:http'
 import {mkdir,writeFile} from 'node:fs/promises'
 import {chromium} from 'playwright'
 import {installBrowserAnnotationFixture,checkBrowserChartAnnotations} from './tests/browserChartAnnotationChecks.mjs'
-const origin=process.env.TW_LIVE_UI_ORIGIN||'http://127.0.0.1:5180',output=process.env.TW_LIVE_UI_EVIDENCE||'E:/BACKUP-TRADINGWORKSPACE/live-market-ui'
+const origin=process.env.TW_LIVE_UI_ORIGIN||'http://127.0.0.1:5180',output=process.env.TW_LIVE_UI_EVIDENCE||fileURLToPath(new URL('./.artifacts/run_live_market_acceptance', import.meta.url))
 await mkdir(output,{recursive:true})
 let phase='ready',connections=0,holdHourly=false
 const sockets=new Set()

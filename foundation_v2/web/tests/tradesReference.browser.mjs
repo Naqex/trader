@@ -1,16 +1,17 @@
+import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
 import assert from 'node:assert/strict'
 import { mkdir, writeFile, readFile } from 'node:fs/promises'
 
 const origin=process.argv[2] || 'http://127.0.0.1:5197'
-const out=process.argv[3] || 'E:/BACKUP-TRADINGWORKSPACE/trades-clock-radios-20261026/preview-qa'
+const out=process.argv[3] || fileURLToPath(new URL('../.artifacts/tradesReference.browser', import.meta.url))
 const session='6428cf18b3f54a36b2e90207ef12392e'
 const base='/?workspace=tenant-a&view=trade&area=testing&section=trades&select=1&sessions=all'
 const copy=JSON.parse(await readFile(new URL('../src/testing-copy.json',import.meta.url),'utf8'))
 const t=(key,lang='vi')=>copy[key]?.[lang]||key
 await mkdir(out,{recursive:true})
 const report={scope:'Trades read-only runtime and explicitly labeled response fixtures',cases:[],errors:[],writes:[]}
-const browser=await chromium.launch({executablePath:process.env.TW_UI_QA_CHROMIUM || 'C:/Users/MIIKEY/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe'})
+const browser=await chromium.launch({executablePath:process.env.TW_UI_QA_CHROMIUM})
 let baseline
 async function ready(page){await page.waitForFunction(()=>{const e=document.querySelector('[data-testid="fx-trade-ledger"]');return e&&!e.hidden&&e.getAttribute('aria-busy')!=='true'})}
 async function layout(page){

@@ -12,7 +12,7 @@ async function fingerprint() {
   return hash.digest('hex')
 }
 const report = { scope: 'Actual GET-only local QA services; fixture cases explicitly labeled', sourceBefore: await fingerprint(), cases: [], errors: [], blocked: [] }
-const browser = await chromium.launch({ headless: true, executablePath: process.env.TW_UI_QA_CHROMIUM || 'C:/Users/MIIKEY/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe' })
+const browser = await chromium.launch({ headless: true, executablePath: process.env.TW_UI_QA_CHROMIUM })
 const axe = await readFile('../../../../.artifacts/wm-integration-quality-tools/node_modules/axe-core/axe.min.js', 'utf8')
 const route = (view, extra = '') => `${origin}/?workspace=tenant-a&view=${view}&session=${session}&select=1${extra}`
 try {
