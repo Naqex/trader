@@ -117,3 +117,10 @@
 .fx-app[data-theme=light] .wm-calendar-grid.live-calendar-grid .live-calendar-cell:is(.is-gain,.is-loss):hover:not(:disabled){background:color-mix(in srgb,var(--live-calendar-tone) 16%,var(--wm-canvas))}
 .live-calendar-cell.is-gain{--live-calendar-tone:var(--report-positive)}
 .live-calendar-cell.is-loss{--live-calendar-tone:var(--report-negative)}
+.live-week-total.is-gain{--live-calendar-tone:var(--report-positive)}
+.live-week-total.is-loss{--live-calendar-tone:var(--report-negative)}
+.fx-app .wm-calendar-grid.live-calendar-grid .live-week-total:is(.is-gain,.is-loss){background:color-mix(in srgb,var(--live-calendar-tone) 16%,var(--wm-canvas))}
+.fx-app .wm-calendar-grid.live-calendar-grid .live-week-total:is(.is-gain,.is-loss):hover{background:color-mix(in srgb,var(--live-calendar-tone) 22%,var(--wm-canvas))}
+.fx-app[data-theme=light] .wm-calendar-grid.live-calendar-grid .live-week-total:is(.is-gain,.is-loss){background:color-mix(in srgb,var(--live-calendar-tone) 10%,var(--wm-canvas))}
+.fx-app[data-theme=light] .wm-calendar-grid.live-calendar-grid .live-week-total:is(.is-gain,.is-loss):hover{background:color-mix(in srgb,var(--live-calendar-tone) 16%,var(--wm-canvas))}
+.live-week-total:is(.is-gain,.is-loss) strong{color:var(--live-calendar-tone)}

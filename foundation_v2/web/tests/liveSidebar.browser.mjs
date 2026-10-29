@@ -35,10 +35,10 @@ try {
     page.setDefaultTimeout(10000)
     page.on('pageerror', error => report.errors.push(error.message))
     for (const section of ['trades', 'calendar']) {
-      broker.deals = section === 'trades' ? sourceDeals.flatMap((deal, i) => [
+      broker.deals = sourceDeals.flatMap((deal, i) => [
         { ...deal, ticket: 100000 + i, type: deal.type === 0 ? 1 : 0, entry: 0, profit: 0, time_msc: deal.time_msc - 3600000 },
         deal,
-      ]) : sourceDeals
+      ])
       await page.goto(`${origin}/?workspace=fixture&view=live&area=live&section=${section}&lang=${lang}&mt5_connection=${fixtureConnection}&live_account=broker:${fixtureConnection}`)
       const side = page.locator('.live-analytics-side'), rows = side.locator('.live-analytics-chart-row')
       await rows.first().waitFor()
@@ -49,18 +49,18 @@ try {
       const text = await side.innerText()
       assert(!/Expectancy comparison|per trade|Trades by direction|Balance curve/.test(lang === 'vi' ? text : ''))
       assert.match(await rows.nth(2).innerText(), /33[,.]33%/)
-      assert.match(await rows.nth(2).locator('.live-win-rate-counts').innerText(), lang === 'vi' ? /Hòa vốn\s+1/ : /Breakeven\s+1/)
+      assert.match(await rows.nth(2).locator('.live-win-rate-counts').innerText(), lang === 'vi' ? /Hòa vốn/ : /Breakeven/)
       // The curve is filtered PnL, not invented balance history.
       const curve = rows.first().locator('.fxa-viz svg')
       await curve.waitFor()
       assert.match(await curve.getAttribute('aria-label'), /PnL/)
-      assert.match(await rows.first().locator('.live-analytics-chart-value').innerText(), /12[.,]345/)
+      assert.match(await rows.first().locator('.live-analytics-chart-value').first().innerText(), /12[.,]345/)
       const curveDetails = await curve.locator('[data-tooltip]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-tooltip')).join(' '))
       assert(!curveDetails.includes('10.100') && !curveDetails.includes('10,100'))
       if (section === 'calendar') assert.equal(await page.locator('.live-toolbar-actions button[aria-label="Amount"], .live-toolbar-actions button[aria-label="Số tiền"]').innerText(), '$')
       const comparison = rows.nth(1).locator('.fxa-expectancy-comparison')
-      assert.match(await comparison.innerText(), /\$100/)
-      assert.match(await comparison.innerText(), /\$-50/)
+      assert.match(await comparison.innerText(), /\$33[,.]33/)
+      assert.match(await comparison.innerText(), /\$-16[,.]67/)
       assert.match(await rows.nth(1).locator('.live-analytics-chart-value').innerText(), /\$16[,.]67/)
       assert.match(await comparison.getAttribute('aria-label'), /\$/)
       const heading = side.locator('h2').first()
@@ -76,18 +76,18 @@ try {
       const side = page.locator('.live-analytics-side'), rows = side.locator('.live-analytics-chart-row')
       await rows.first().waitFor()
       assert.match(await rows.nth(2).locator('.live-win-rate-copy .live-analytics-chart-value').innerText(), /N\/A/)
-      assert.match(await rows.nth(2).locator('.live-win-rate-counts').innerText(), /Chưa rõ\s+1/)
-      assert.equal(await rows.nth(1).locator('.fxa-average-labels').innerText(), 'N/A\nN/A')
+      assert.match(await rows.nth(2).locator('.live-win-rate-counts').innerText(), /Chưa rõ/)
+      assert.equal((await rows.nth(1).locator('.fxa-average-labels').allTextContents()).join('').replace(/\s/g,''), 'N/AN/A')
       broker.account.opening_balance = null
       broker.deals[1].fee = 0
       await page.reload()
       await rows.first().waitFor()
-      assert.match(await rows.nth(1).locator('.fxa-average-labels').innerText(), /\$100/)
+      assert.match(await rows.nth(1).locator('.fxa-average-labels').innerText(), /\$33[,.]33/)
       await page.locator('.live-toolbar-actions button').filter({ hasText: '%' }).click()
       assert.equal(await page.locator('[data-date="2026-10-01"] strong').innerText(), 'N/A', 'Calendar percentage still requires capital')
       broker.balance_baseline = { amount: 10000, currency: 'USD', captured_at_utc: '2026-10-01T00:00:00Z' }
       await page.reload()
-      assert.match(await rows.nth(1).locator('.fxa-average-labels').innerText(), /\$100/)
+      assert.match(await rows.nth(1).locator('.fxa-average-labels').innerText(), /\$33[,.]33/)
       await page.locator('.live-toolbar-actions button').filter({ hasText: '%' }).click()
       assert.equal(await page.locator('[data-date="2026-10-01"] strong').innerText(), '1%')
       const calendarUrl = page.url()
@@ -105,7 +105,7 @@ try {
       broker.account.currency = 'EUR'
       await page.reload()
       await rows.first().waitFor()
-      assert.match(await rows.first().locator('.live-analytics-chart-value').innerText(), /EUR/)
+      assert.match(await rows.first().locator('.live-analytics-chart-value').first().innerText(), /EUR/)
       assert(!/USD/.test(await side.innerText()))
       broker.deals = []
       await page.reload()

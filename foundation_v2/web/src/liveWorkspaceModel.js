@@ -60,14 +60,15 @@ export function calendarWeeks(month, payload, deals, filters = LIVE_FILTERS) {
   }))
 }
 
-export function liveCalendarBorders(weeks) {
+export function liveCalendarBorders(weeks, empty = false) {
   const tone = day => !day?.inMonth ? null : day.net > 0 ? 'var(--report-positive)' : day.net < 0 ? 'var(--report-negative)' : null
   // Top/left edges belong to the lower/right cell. Its tone wins a conflict;
   // a neutral owner retains its neighbor's tone. The footer owns the bottom.
   const edge = (owner, neighbor) => tone(owner) || tone(neighbor) || 'var(--wm-border)'
+  const rows = weeks.map(week => [...week, { ...calendarWeekSummary(week, empty), inMonth: true }])
   const style = (row, column) => ({
-    '--live-calendar-edge-top': edge(weeks[row][column], weeks[row - 1]?.[column]),
-    '--live-calendar-edge-left': edge(weeks[row][column], weeks[row][column - 1]),
+    '--live-calendar-edge-top': edge(rows[row][column], rows[row - 1]?.[column]),
+    '--live-calendar-edge-left': edge(rows[row][column], rows[row][column - 1]),
   })
   return {
     days: new Map(weeks.flatMap((week, row) => week.map((day, column) => [day.key, style(row, column)]))),

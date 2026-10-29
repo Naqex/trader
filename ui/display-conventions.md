@@ -655,13 +655,13 @@ Last sync is the last successful data observation, not a connection expiry date.
   history before side/outcome/date filtering. Opening side, weighted fill prices
   and all known fees belong to one row; missing ancestry, reversals or inventory
   disagreement remain incomplete. Closed outcome charts exclude open/incomplete
-  positions. Calendar deal-based coverage/counts retain their separate contract.
+  positions. Calendar coverage still uses the captured history bounds; its counts and PnL now use the same completed lifecycles, attributed to closing time. Multi-account scopes reconstruct each account separately before combining, so position IDs never merge across accounts. Calendar sidebar analytics cover the selected account history and explicit filters, independently of the displayed calendar month.
   Live price R is the signed actual fill-price move divided by the original stop
   distance; it excludes fees (net money includes them). Use the original placement
   linked to the exact opening deal/order/account, never a preview quote, current
   moved SL or another account's receipt. Missing original SL keeps R unavailable.
   The tooltip states this basis; do not mix it with a net-after-cost risk-budget R.
-  Show the verified account login in full and a compact Sync source badge; keep
+  Show the full MT5 account label (verified login and known environment), a neutral Closed status and a compact blue Sync source badge; keep
   broker/server detail in the tooltip. Market/Limit/Stop describes order type,
   never deal entry/exit. Sidebar PnL curves hide point markers while retaining
   tooltip/focus targets through the shared chart component.
@@ -719,3 +719,20 @@ Last sync is the last successful data observation, not a connection expiry date.
 Primary references: [PostgreSQL datetime](https://www.postgresql.org/docs/current/datatype-datetime.html),
 [IANA zones](https://www.iana.org/time-zones),
 [TradingView time and sessions](https://www.tradingview.com/charting-library-docs/latest/connecting_data/time-and-sessions/).
+
+
+Live Trades defaults to ten rows. Sidebar balance and completed-trade count have
+separate labels and values; omit the redundant curve subtitle. Win/loss/breakeven
+legends show category names without repeated counts. Live expectancy comparison
+uses signed contributions (group total net PnL divided by all completed trades),
+whose sum equals expectancy; other analytics retain their average-win/loss basis.
+Weekly calendar summaries share daily gain/loss colors and the same single-owner
+separators. Zero/unknown summaries stay neutral. Live broker tags reuse the shared
+label presentation and hover/focus reveal; assignment remains unavailable until
+broker metadata has a persisted assignment contract, never a replay session ID.
+
+UI builds retain previous hashed assets (`emptyOutDir: false`), so tabs opened
+before a promotion can still load their lazy pages. Promote the index atomically
+after copying assets. Never run cleanup against assets still referenced by open
+versions. A failed Vite chunk import may reload once per build/tab; offline or
+storage-denied sessions and repeated failures must not enter a reload loop.

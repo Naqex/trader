@@ -271,7 +271,6 @@
 .live-win-rate-counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 12px; margin-top: 12px; color: var(--wm-content-muted); font-size: 12px; }
 .live-win-rate-counts span { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
 .live-win-rate-counts i { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; }
-.live-win-rate-counts strong { margin-left: auto; color: var(--wm-content); font-variant-numeric: tabular-nums; }
 .live-analytics-chart-row .fxa-expectancy-comparison { margin-top: 10px; }
 .live-metrics dt, .live-analytics-side dt, .live-account-values dt { color: var(--wm-content-muted); font-size: 12px; }
 .live-metrics dd, .live-analytics-side dd { margin: 8px 0 0; font-size: var(--wm-text-value); line-height: 1.2; font-variant-numeric: tabular-nums; }
@@ -392,8 +391,14 @@
 .live-source-details dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .live-source-details dd { margin: 4px 0 0; color: var(--wm-content); overflow-wrap: anywhere; }
 .live-broker { min-width: 0; }
-.live-broker [data-column=account] { min-width:112px; white-space:nowrap; font-variant-numeric:tabular-nums; }
+.live-broker [data-column=account] { min-width:180px; white-space:nowrap; font-variant-numeric:tabular-nums; }
 .live-broker .fxa-badge.is-sync { color:var(--report-blue); background:color-mix(in srgb,var(--report-blue) 12%,var(--wm-canvas)); }
+.live-broker .fxa-badge.is-closed { color:var(--wm-content-muted); background:color-mix(in srgb,var(--wm-content-muted) 14%,var(--wm-canvas)); }
+.live-broker span.wm-label-cell { cursor:default; }
+.live-balance-summary { display:flex; justify-content:space-between; gap:16px; }
+.live-balance-summary > div { display:flex; flex-direction:column; gap:8px; }
+.live-balance-summary > div:last-child { text-align:right; }
+.live-balance-summary > div > span { font-size:12px; color:var(--wm-content-muted); }
 .fx-app .live-workspace .live-analytics-report { box-sizing:border-box; width:100%; max-width:none; margin:0; padding:var(--wm-page-start) var(--wm-page-gutter) 0; }
 .fx-app .live-analytics-report > .fxa-analytics-filters { margin-bottom:0; }
 .live-broker .live-section-heading { flex-wrap: wrap; }

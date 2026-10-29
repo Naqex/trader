@@ -1,4 +1,5 @@
 import { liveAccountCapital } from './liveAccountModel.js'
+import { completedLiveTrades } from './liveBrokerTrades.js'
 
 export function calendarAccountSelection(query) {
   const value = query.get('live_accounts')
@@ -28,5 +29,6 @@ export function combineCalendarAccounts(sources) {
     // Only the intersection can prove a day has complete data across accounts.
     history_from_utc: boundary('history_from_utc', Math.max), captured_at_utc: boundary('captured_at_utc', Math.min),
     deals: sources.flatMap(({ id, payload }) => payload.deals.map(deal => ({ ...deal, source_account: id }))),
+    completed_trades: sources.flatMap(({ id, payload }) => completedLiveTrades(payload).map(trade => ({ ...trade, ticket: `${id}:${trade.ticket}`, source_account: id }))),
   }, issue: sources.some(({ payload }) => payload.stale) ? 'Dữ liệu tài khoản đã cũ. Đồng bộ tài khoản để cập nhật.' : '' }
 }

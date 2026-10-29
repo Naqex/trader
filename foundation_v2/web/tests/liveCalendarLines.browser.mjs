@@ -1,3 +1,4 @@
+import { completedDealFills } from './liveJournal.fixture.mjs'
 import assert from 'node:assert/strict'
 import {mkdir,writeFile} from 'node:fs/promises'
 import {chromium} from 'playwright'
@@ -16,7 +17,7 @@ try{
    const q=route.request(),u=new URL(q.url())
    if(!['GET','HEAD','OPTIONS'].includes(q.method())){report.writes.push(u.pathname);return route.abort()}
    if(u.origin!==origin)return route.abort()
-   if(u.pathname==='/api/v2/live/status')return route.fulfill({json:{status:'ready',connection_id:'calendar-fixture',connections:[{id:'calendar-fixture',name:'Calendar fixture',status:'connected',account:{currency:'USD'}}],account:{account_ref:'calendar-fixture',currency:'USD',balance:1000,opening_balance:1000},history_from_utc:'2026-01-01T00:00:00Z',captured_at_utc:'2026-10-31T23:00:00Z',deals:(scenario==='empty'?[]:[['2026-10-12',25],['2026-10-13',scenario==='loss'?-40:scenario==='flat'?-25:-10],['2026-10-14',5],['2026-10-31',-5]]).map(([date,profit],i)=>({ticket:i+1,symbol:'EURUSD',type:0,time_msc:Date.parse(date+'T12:00:00Z'),profit,commission:0,swap:0,fee:scenario==='unknown'&&i===0?null:0}))}})
+   if(u.pathname==='/api/v2/live/status')return route.fulfill({json:{status:'ready',connection_id:'calendar-fixture',connections:[{id:'calendar-fixture',name:'Calendar fixture',status:'connected',account:{currency:'USD'}}],account:{account_ref:'calendar-fixture',currency:'USD',balance:1000,opening_balance:1000},history_from_utc:'2026-01-01T00:00:00Z',captured_at_utc:'2026-10-31T23:00:00Z',positions:[],deals:completedDealFills((scenario==='empty'?[]:[['2026-10-12',25],['2026-10-13',scenario==='loss'?-40:scenario==='flat'?-25:-10],['2026-10-14',5],['2026-10-31',-5]]).map(([date,profit],i)=>({ticket:i+1,symbol:'EURUSD',type:0,time_msc:Date.parse(date+'T12:00:00Z'),profit,commission:0,swap:0,fee:scenario==='unknown'&&i===0?null:0})))}})
    if(u.pathname==='/api/v2/live/records')return route.fulfill({json:{version:'live-records-v1',items:[]}})
    if(u.pathname.startsWith('/api/'))return route.fulfill({status:503,json:{detail:'fixture_unavailable'}})
    return route.continue()

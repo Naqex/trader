@@ -1,11 +1,11 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { brokerTradeRows, filterBrokerTrades } from '../src/liveBrokerTrades.js'
+import { brokerTradeRows, filterBrokerTrades, completedLiveTrades } from '../src/liveBrokerTrades.js'
 
 const entry = { ticket: 1, order: 10, position_id: 10, entry: 0, type: 1, symbol: 'EURUSD', volume: .01, price: 1.11541, profit: 0, commission: -.1, swap: 0, fee: 0, time_msc: Date.parse('2026-10-27T10:00:00Z') }
 const exit = { ...entry, ticket: 2, order: 20, entry: 1, type: 0, price: 1.1139, profit: 1.51, commission: -.1, time_msc: entry.time_msc + 3600000 }
 const placement = { deal: 1, order: 10, symbol: 'EURUSD', side: 'SELL', volume: .01, filled_volume: .01, account_login: '123456789', server: 'Broker', order_type: 'market', stop_loss: 1.1166, take_profit: 1.112, currency: 'USD', planned_risk: 1.19 }
-const snapshot = () => ({ account: { account_ref: '…6789', currency: 'USD' }, account_login: '123456789', account_binding: { server: 'Broker' }, deals: [exit, entry], positions: [], trade_placements: [placement] })
+const snapshot = () => structuredClone({ account: { account_ref: '…6789', currency: 'USD' }, account_login: '123456789', account_binding: { server: 'Broker' }, deals: [exit, entry], positions: [], trade_placements: [placement] })
 
 test('one lifecycle retains original direction, weighted prices and every fee', () => {
   const [row] = brokerTradeRows(snapshot())
@@ -81,4 +81,17 @@ test('R uses actual fills rather than pre-fill preview risk (BTC reference)', ()
   payload.trade_placements = [{ ...placement, side: 'BUY', stop_loss: 81040.33, planned_risk: 1.07 }]
   const [row] = brokerTradeRows(payload)
   assert.equal(row.realized_r.toFixed(2), '1.39')
+})
+
+
+test('completed Live outcomes exclude opening fills, open and incomplete lifecycles', () => {
+  const payload = snapshot()
+  assert.equal(payload.deals.length, 2)
+  assert.equal(completedLiveTrades(payload).length, 1)
+  assert(Math.abs(completedLiveTrades(payload)[0].net_pnl - 1.31) < 1e-12)
+  payload.deals = [entry]
+  payload.positions = [{ identifier: 10, volume: .01 }]
+  assert.deepEqual(completedLiveTrades(payload), [])
+  assert.deepEqual(completedLiveTrades({ ...payload, positions: [] }), [])
+  assert.deepEqual(completedLiveTrades(null), [])
 })

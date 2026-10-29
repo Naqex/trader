@@ -1,6 +1,12 @@
 // Synthetic ledger for production-build UI journeys. No broker, DB or credentials.
 export const fixtureAccount = '00000000-0000-4000-8000-000000000002'
 export const fixtureConnection = '00000000-0000-4000-8000-000000000001'
+export function completedDealFills(rows) {
+  return rows.flatMap((row, index) => {
+    const close = { volume: .01, price: 1.1, ...row, position_id: index + 1, entry: 1 }
+    return [{ ...close, ticket: 100000 + index, entry: 0, type: row.type === 0 ? 1 : 0, time_msc: row.time_msc - 1000, profit: 0, commission: 0, swap: 0, fee: 0 }, close]
+  })
+}
 const stamp = '2026-10-22T12:00:00Z'
 const record = (id,kind,payload) => ({record_id:id,revision:1,kind,payload,created_at_utc:stamp,updated_at_utc:stamp})
 export const fixtureStrategies = [record('fixture-strategy','playbook',{name:'Synthetic breakout',status:'frozen'})]

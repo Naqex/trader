@@ -25,7 +25,7 @@ export default function LiveDayNote({ date, endDate, period = 'day', partial, ti
       <dl><div><dt><TestingIcon kind="clock"/>{t(isWeek ? 'Khoảng thời gian' : 'Ngày')}</dt><dd><time dateTime={date}>{rangeLabel}</time></dd></div><div><dt><TestingIcon kind="tags"/>{t('Loại ghi chú')}</dt><dd><span className="live-day-note-type">{t(isWeek ? 'Đánh giá tuần' : 'Đánh giá ngày')}</span></dd></div></dl>
       <div className="live-day-note-trades-heading"><TestingIcon kind="trades"/><h3>{t('Giao dịch')}</h3><span>{partial && !deals.length ? '—' : deals.length}</span></div>
       {partial && <p className="live-muted">{t('Chỉ cộng phần dữ liệu đã ghi nhận; chưa đủ dữ liệu cho toàn bộ phạm vi.')}</p>}
-      {deals.length ? <ul>{deals.map(deal=><li key={`${deal.source_account || ''}:${deal.ticket}`}><span>{deal.symbol} · #{deal.ticket}</span><strong>{fmt(dealNet(deal),currency ? ` ${currency}` : '')}</strong></li>)}</ul> : !partial && <p className="live-muted">{t('Chưa có giao dịch trong bộ lọc này.')}</p>}
+      {deals.length ? <ul>{deals.map(deal=><li key={`${deal.source_account || ''}:${deal.ticket}`}><span>{deal.symbol} · #{deal.position_id ?? deal.ticket}</span><strong>{fmt(dealNet(deal),currency ? ` ${currency}` : '')}</strong></li>)}</ul> : !partial && <p className="live-muted">{t('Chưa có giao dịch trong bộ lọc này.')}</p>}
       <small className="live-muted">{timezone}</small>
     </section><section className="live-day-note-editor"><label className="sr-only" htmlFor="live-day-note-body">{t('Nội dung ghi chú')}</label><textarea id="live-day-note-body" placeholder={t('Viết ghi chú…')} value={body} onChange={event=>setBody(event.target.value)}/></section></div>
   </dialog>

@@ -80,3 +80,9 @@ export function filterBrokerTrades(payload, filters = LIVE_FILTERS) {
   const ids = new Set(filterLiveDeals({ ...payload, deals: eligible.map(row => ({ ...row, type: row.type ?? 0 })) }, { ...selected, side: 'all' }).map(row => row.ticket))
   return rows.filter(row => ids.has(row.ticket))
 }
+
+export function completedLiveTrades(payload) {
+  if (!payload?.account) return []
+  if (payload.aggregate) return payload.completed_trades || []
+  return payload.manual ? payload.deals || [] : brokerTradeRows(payload).filter(row => row.status === 'Closed')
+}

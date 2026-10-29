@@ -11,6 +11,15 @@ import useReadRefresh from './useReadRefresh.js'
 import './trade-labels.css'
 
 export const LABEL_COLORS = ['green', 'blue', 'orange', 'red', 'purple', 'cyan', 'gray']
+function LabelContents({ tags, options, placeholder }) {
+  return <>{tags.map(tag => <span className="wm-trade-label" data-color={options.find(item => item.name === tag)?.color || 'gray'} key={tag}>{tag}</span>)}{!tags.length && <span className="wm-label-placeholder">{placeholder}</span>}</>
+}
+export function TradeLabelDisplay({ tags, options = [], placeholder = 'Không có nhãn' }) {
+  const { t } = useTestingLocale()
+  return <span className={`wm-label-cell${tags.length ? ' has-labels' : ''}`} tabIndex={0} aria-label={tags.length ? tags.join(', ') : t(placeholder)}>
+    <LabelContents tags={tags} options={options} placeholder={t(placeholder)} />
+  </span>
+}
 export function useTradeLabels(workspace) {
   const [catalog, setCatalog] = useState({ workspace, items: [], status: 'loading' })
   const [reload, setReload] = useState(0)
@@ -89,8 +98,7 @@ export default function TradeLabelCell({ workspace, session, row, catalog, onCha
   const title = t('Chọn nhãn…')
   return <>
     <button type="button" className={`wm-label-cell${tags.length ? ' has-labels' : ''}`} aria-label={t('Nhãn giao dịch {id}', { id: row.trade_id || row.tradeId })} aria-haspopup="dialog" aria-expanded={Boolean(anchor)} disabled={!workspace || !session} onClick={event => { setAnchor(event.currentTarget); setError(''); setSearch('') }}>
-      {tags.map(tag => <span className="wm-trade-label" data-color={options.find(item => item.name === tag)?.color || 'gray'} key={tag}>{tag}</span>)}
-      {!tags.length && <span className="wm-label-placeholder">{title}</span>}
+      <LabelContents tags={tags} options={options} placeholder={title} />
     </button>
     {anchor && <LegacyPopover anchor={anchor} label={t('Nhãn giao dịch')} role="dialog" className="wm-label-popup" maxWidth={360} theme={document.querySelector('.fx-app')?.dataset.theme || 'dark'} onClose={close}>
       {editing ? <div className="wm-label-editor">

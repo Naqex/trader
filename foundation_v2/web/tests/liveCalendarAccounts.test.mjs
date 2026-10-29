@@ -3,7 +3,19 @@ import assert from 'node:assert/strict'
 import { calendarAccountSelection, combineCalendarAccounts } from '../src/liveCalendarAccounts.js'
 import { buildWorkspaceHref } from '../src/workspaceContext.js'
 import { calendarWeeks, calendarWeekSummary, summarizeDeals } from '../src/liveWorkspaceModel.js'
+import { completedLiveTrades } from '../src/liveBrokerTrades.js'
 const snapshot = (currency, profit, start='2026-10-01T00:00:00Z') => ({ account:{currency,balance:1000}, deals:[{ticket:1,symbol:'EURUSD',type:0,time_msc:Date.parse('2026-10-12T12:00:00Z'),profit,commission:0,swap:0,fee:0}],history_from_utc:start,captured_at_utc:'2026-10-23T00:00:00Z' })
+test('identical position IDs in different accounts remain separate completed trades', () => {
+ const source = profit => ({ ...snapshot('USD', profit), positions: [], deals: [
+  { ticket: 1, position_id: 7, entry: 0, type: 0, symbol: 'EURUSD', volume: .01, price: 1, time_msc: 1000, profit: 0, commission: -.1, swap: 0, fee: 0 },
+  { ticket: 2, position_id: 7, entry: 1, type: 1, symbol: 'EURUSD', volume: .01, price: 2, time_msc: 2000, profit, commission: -.1, swap: 0, fee: 0 },
+ ] })
+ const { payload } = combineCalendarAccounts([{id:'a',payload:source(10)},{id:'b',payload:source(-5)}])
+ const trades = completedLiveTrades(payload)
+ assert.equal(trades.length,2)
+ assert.equal(new Set(trades.map(row=>row.ticket)).size,2)
+ assert(Math.abs(summarizeDeals(trades).net - 4.6) < 1e-12)
+})
 test('all, none and explicit selections remain distinct across live navigation',()=>{
  for (const [value,expected] of [['all',null],['none',[]],['broker:a,manual-b',['broker:a','manual-b']]]) {
   const query=new URLSearchParams({live_accounts:value})

@@ -481,6 +481,8 @@
   "Chưa có giao dịch trong bộ lọc này.": {"vi": "Chưa có giao dịch trong bộ lọc này.", "en": "No trades match these filters."},
   "Chỉ đọc · tải lại dữ liệu trước khi chỉnh sửa.": {"vi": "Chỉ đọc · tải lại dữ liệu trước khi chỉnh sửa.", "en": "Read only · reload before editing."},
   "Không có nhãn": {"vi": "Không có nhãn", "en": "No tags"},
+  "Đóng góp từ giao dịch thắng": {"vi": "Đóng góp từ giao dịch thắng", "en": "Winning trade contribution"},
+  "Đóng góp từ giao dịch thua": {"vi": "Đóng góp từ giao dịch thua", "en": "Losing trade contribution"},
   "Một giao dịch có thể có nhiều nhãn; không cộng các nhóm thành tổng PnL.": {"vi": "Một giao dịch có thể có nhiều nhãn; không cộng các nhóm thành tổng PnL.", "en": "A trade can have multiple tags; do not add tag totals together to calculate total PnL."},
   "Nhãn ghi chú": {"vi": "Nhãn ghi chú", "en": "Note tags"},
   "Strategy #{id}": {"vi": "Chiến lược #{id}", "en": "Strategy #{id}"},

@@ -32,12 +32,15 @@ try {
     await page.goto(`${origin}/?workspace=tenant-a&view=live&area=live&section=trades&lang=${lang}&mt5_connection=${fixture.connection_id}`)
     const grid = page.getByTestId('live-trade-grid'), rows = grid.locator('tbody tr')
     await rows.first().waitFor()
+    assert.equal(await rows.count(), 10)
+    await page.getByRole('button', { name: lang === 'vi' ? 'Số dòng mỗi trang' : 'Rows per page' }).click()
+    await page.getByRole('option', { name: '20', exact: true }).click()
     assert.equal(await rows.count(), 14)
     const accounts = grid.locator('[data-column=account]')
-    assert((await accounts.allTextContents()).every(text => text === fixture.account_login))
+    assert((await accounts.allTextContents()).every(text => text === `MT5 ${fixture.account_login} - ${fixture.account_environment}`))
     assert(await accounts.first().evaluate(el => el.clientWidth >= el.scrollWidth))
     assert((await grid.locator('[data-column=source]').allTextContents()).every(text => text === 'Sync'))
-    assert((await grid.locator('[data-column=entry_type]').allTextContents()).every(text => text === 'Market'))
+    assert((await grid.locator('[data-column=entry_type]').allTextContents()).every(text => text === 'market'))
     assert((await grid.locator('[data-column=status]').allTextContents()).every(text => /^(Đã đóng|Closed)$/.test(text)))
     for (const column of ['price_open', 'price_close', 'stop_loss', 'take_profit', 'realized_r']) {
       assert((await grid.locator(`[data-column=${column}]`).allTextContents()).every(text => text && text !== '-'), column)
@@ -64,6 +67,8 @@ try {
     if (width === 1920) {
       payload.trade_placements = []
       await page.reload(); await rows.first().waitFor()
+      await page.getByRole('button', { name: lang === 'vi' ? 'Số dòng mỗi trang' : 'Rows per page' }).click()
+      await page.getByRole('option', { name: '20', exact: true }).click()
       assert((await grid.locator('[data-column=realized_r]').allTextContents()).every(text => text === '-'))
       assert((await grid.locator('[data-column=entry_type]').allTextContents()).every(text => text === '-'))
       assert((await grid.locator('[data-column=price_open]').allTextContents()).every(text => text !== '-'))
@@ -73,9 +78,11 @@ try {
       payload.deals.push({ ...opening, ticket: 999001, order: 999001, position_id: 999001, profit: 0, commission: -5 })
       payload.positions = [{ ticket: 999001, identifier: 999001, volume: opening.volume }]
       await page.reload(); await rows.first().waitFor()
+      await page.getByRole('button', { name: lang === 'vi' ? 'Số dòng mỗi trang' : 'Rows per page' }).click()
+      await page.getByRole('option', { name: '20', exact: true }).click()
       assert.equal(await rows.count(), 15)
       assert.equal(await grid.locator('.fxa-badge.is-open').count(), 1)
-      assert.match(await page.locator('.live-analytics-balance-row .fxa-chart-heading').innerText(), /14/)
+      assert.match(await page.locator('.live-balance-summary').innerText(), /14/)
       assert.match(await page.locator('.live-win-rate-row .live-analytics-chart-value').innerText(), /14[,.]29%/)
       report.cases.push({ state: 'open with entry fee plus closed trades', ledgerRows: 15, completedOutcomes: 14, winRate: '14.29%' })
     }

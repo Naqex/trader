@@ -5,13 +5,14 @@ import { useTestingLocale } from './testingLocale.jsx'
 import { displayDate } from './dateFormat.js'
 import TestingIcon from './TestingIcon.jsx'
 import { filterBrokerTrades } from './liveBrokerTrades.js'
-import { liveAccountCapital } from './liveAccountModel.js'
+import { liveAccountCapital, mt5AccountName } from './liveAccountModel.js'
+import { TradeLabelDisplay } from './TradeLabelCell.jsx'
 import { LIVE_TRADE_COLUMNS } from './liveTradeColumns.js'
 import TradeLedgerGrid from './TradeLedgerGrid.jsx'
 
 export default function LiveBrokerSnapshot({ payload, section, trades, filters, filterKey = '', columns = LIVE_TRADE_COLUMNS.map(([key]) => key) }) {
   const { t, fmt, timezone } = useTestingLocale()
-  const [page, setPage] = useState(1), [pageSize, setPageSize] = useState(20), sorting = useTableSort(()=>setPage(1))
+  const [page, setPage] = useState(1), [pageSize, setPageSize] = useState(10), sorting = useTableSort(()=>setPage(1))
   const [selected, setSelected] = useState(''), [checked, setChecked] = useState(new Set())
   const selectPage = useRef(null)
   useEffect(() => setPage(1), [pageSize, filterKey, payload.connection_id, payload.account?.account_ref])
@@ -20,6 +21,7 @@ export default function LiveBrokerSnapshot({ payload, section, trades, filters, 
   const currency = account.currency || '', money = value => fmt(value, currency ? ` ${currency}` : '')
   const capital = liveAccountCapital(payload)
   const accountLogin = payload.account_login || payload.account_binding?.login || account.account_ref
+  const accountName = mt5AccountName({ account_login: accountLogin, account_environment: payload.account_environment || payload.account_binding?.account_environment })
   const time = value => typeof value === 'number' && Number.isFinite(value) ? displayDate(new Date(value), { timeStyle: 'medium', timeZone: timezone }) : '-'
   const side = value => value === 0 ? t('Buy') : value === 1 ? t('Sell') : '-'
   const sortValue = (deal,key) => key === 'account' ? accountLogin : key === 'source' ? 'Sync' : key === 'side' ? side(deal.type) : key === 'return_pct' ? capital > 0 && Number.isFinite(deal.net_pnl) ? deal.net_pnl / capital * 100 : null : deal[key]
@@ -36,18 +38,18 @@ export default function LiveBrokerSnapshot({ payload, section, trades, filters, 
   }
   const cellValue = (deal, key) => {
     switch (key) {
-      case 'account': return accountLogin || '-'
+      case 'account': return accountName
       case 'status': return <span className={`fxa-badge is-${deal.status.toLowerCase()}`}>{t(deal.status)}</span>
       case 'source': return <span className="fxa-badge is-sync" title={payload.source}>Sync</span>
       case 'recorded_at_utc': return time(deal.recorded_at_utc)
       case 'open_time_utc': return time(deal.open_time_utc)
       case 'symbol': return deal.symbol
       case 'side': return deal.type === null ? '-' : <span className={`fxa-badge is-${deal.type === 0 ? 'buy' : 'sell'}`}>{side(deal.type)}</span>
-      case 'entry_type': return deal.entry_type ? <span className="fxa-badge is-order-type">{t(deal.entry_type)}</span> : '-'
+      case 'entry_type': return deal.entry_type ? <span className="fxa-badge is-order-type">{deal.entry_type.toLowerCase()}</span> : '-'
       case 'net_pnl': { const value = deal.net_pnl; return Number.isFinite(value) ? <span tabIndex={0} className={`wm-return-badge ${value > 0 ? 'is-positive' : value < 0 ? 'is-negative' : 'is-flat'}`}><span aria-hidden="true">{value > 0 ? '↗' : value < 0 ? '↙' : '-'}</span>{fmt(value)}</span> : '-' }
       case 'return_pct': { const value = percentage(deal.net_pnl); return value === null ? '-' : fmt(value, '%') }
       case 'realized_r': return Number.isFinite(deal.realized_r) ? <span tabIndex={0} data-tooltip={t('Biến động giá khớp thực tế / khoảng cách đến SL ban đầu, theo chiều lệnh. Không gồm phí; phí đã tính vào PnL ròng.')}>{fmt(deal.realized_r)}</span> : '-'
-      case 'tags': return '-'
+      case 'tags': return <TradeLabelDisplay tags={deal.tags || []} />
       case 'price_open': return fmt(deal.price_open, '', 5)
       case 'quantity': return fmt(deal.quantity, '', 5)
       case 'stop_loss': return fmt(deal.stop_loss, '', 5)

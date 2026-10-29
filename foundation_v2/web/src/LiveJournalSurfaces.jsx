@@ -25,7 +25,7 @@ function StrategyReference({ payload, strategies, workspace }) {
 
 export function ManualTrades({ columns = MANUAL_TRADE_COLUMNS.map(([key]) => key), deals, currency, strategies, workspace, filterKey, writable, onEdit }) {
   const { t,fmt } = useTestingLocale()
-  const [search, setSearch] = useState(''), [page, setPage] = useState(1), [size, setSize] = useState(20), sorting = useTableSort(()=>setPage(1))
+  const [search, setSearch] = useState(''), [page, setPage] = useState(1), [size, setSize] = useState(10), sorting = useTableSort(()=>setPage(1))
   useEffect(() => setPage(1),[filterKey])
   const sortValue = (deal,key) => key === 'time' ? deal.time_msc : key === 'asset' ? deal.symbol : key === 'side' ? deal.type : dealNet(deal)
   const rows = sorting.rows(deals.filter(deal => matchesSearch(`${deal.symbol} ${deal.record.payload.tags.join(' ')} ${deal.record.payload.note}`, search)),sortValue,[{key:'time',direction:'desc'}])

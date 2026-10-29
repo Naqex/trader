@@ -137,14 +137,14 @@ function OutcomeStats({ data }) {
     return <article className={`fxa-outcomes is-${type}`} key={type}><h3>{t(label)}</h3><dl>{rows.map(([name, value, help]) => <div key={name}><dt>{t(name)}<Info text={help}/></dt><dd>{value}</dd></div>)}</dl></article>
   })}</div>
 }
-export function ExpectancyComparison({ data, currency, suffix = ` ${currency}` }) {
+export function ExpectancyComparison({ data, currency, suffix = ` ${currency}`, winLabel = 'Lãi trung bình', lossLabel = 'Lỗ trung bình' }) {
   const { t, fmt } = useTestingLocale()
   const total = Math.abs(data.averageWin ?? 0) + Math.abs(data.averageLoss ?? 0)
   const format = value => known(value) ? fmt(value, suffix) : 'N/A'
-  return <div className="fxa-expectancy-comparison" role="img" aria-label={`${t('Lãi trung bình')}: ${format(data.averageWin)}; ${t('Lỗ trung bình')}: ${format(data.averageLoss)}`}>
+  return <div className="fxa-expectancy-comparison" role="img" aria-label={`${t(winLabel)}: ${format(data.averageWin)}; ${t(lossLabel)}: ${format(data.averageLoss)}`}>
     <div className="fxa-average-bar" aria-hidden="true">{total > 0 && <>
-      {Math.abs(data.averageWin ?? 0) > 0 && <i className="is-win" style={{ flex: Math.abs(data.averageWin) }}/>}
-      {Math.abs(data.averageLoss ?? 0) > 0 && <i className="is-loss" style={{ flex: Math.abs(data.averageLoss) }}/>}
+      {Math.abs(data.averageWin ?? 0) > 0 && <i className="is-win" style={{ flex: Math.abs(data.averageWin) / total }}/>}
+      {Math.abs(data.averageLoss ?? 0) > 0 && <i className="is-loss" style={{ flex: Math.abs(data.averageLoss) / total }}/>}
     </>}</div>
     <div className="fxa-average-labels"><span><strong>{format(data.averageWin)}</strong></span><span><strong>{format(data.averageLoss)}</strong></span></div>
   </div>

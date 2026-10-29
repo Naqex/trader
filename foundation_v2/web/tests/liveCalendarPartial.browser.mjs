@@ -1,3 +1,4 @@
+import { completedDealFills } from './liveJournal.fixture.mjs'
 import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { chromium } from 'playwright'
@@ -23,7 +24,7 @@ try {
         const id = url.searchParams.get('connection_id') || a
         return route.fulfill({ json: { status: 'ready', connection_id: id, connections, source: 'Fixture', account: { account_ref: id, currency: 'USD', balance: 1000, opening_balance:capital },
           history_from_utc: id === a ? '2026-10-01T00:00:00Z' : '2026-10-20T00:00:00Z', captured_at_utc: '2026-10-23T00:00:00Z',
-          deals: id === a ? [{ ticket: 1, symbol: 'EURUSD', type: 0, time_msc: Date.parse('2026-10-12T12:00:00Z'), profit: 25, commission: 0, swap: 0, fee: 0 }] : [] } })
+          positions: [], deals: id === a ? completedDealFills([{ ticket: 1, symbol: 'EURUSD', type: 0, time_msc: Date.parse('2026-10-12T12:00:00Z'), profit: 25, commission: 0, swap: 0, fee: 0 }]) : [] } })
       }
       return route.fulfill({ status: 503, json: { detail: 'fixture_unavailable' } })
     })
@@ -34,7 +35,7 @@ try {
     await percentButton.click(); assert.equal(await percentButton.getAttribute('aria-pressed'), 'true')
     assert.equal(await page.locator('.live-calendar-cell[data-date="2026-10-12"] strong').textContent(), 'N/A')
     assert.match(await page.locator('.live-calendar-unit-state').innerText(), /vốn ban đầu/)
-    await page.locator('.live-toolbar-actions button').filter({ hasText: 'USD' }).click()
+    await page.locator('.live-toolbar-actions button').filter({ hasText: '$' }).click()
     assert.equal(await page.locator('.live-calendar-toolbar .wm-report-info').count(), 0)
     assert.equal(await page.locator('.live-calendar-grid').evaluate(el => getComputedStyle(el).gap), '0px')
     assert.equal(await page.locator('.live-month-total').evaluate(el => getComputedStyle(el).borderRadius), '0px')
