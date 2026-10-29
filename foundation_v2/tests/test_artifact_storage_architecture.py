@@ -110,6 +110,27 @@ def test_concurrent_publication_has_one_winner_and_no_temp(tmp_path):
     assert not list(tmp_path.rglob("*.tmp"))
 
 
+@pytest.mark.skipif(os.name != "nt", reason="Windows extended path identity")
+def test_extended_resolved_path_keeps_containment_and_rejects_escape(tmp_path):
+    store = ArtifactStore(tmp_path / "source")
+    original = Path.resolve
+
+    def extended(path, *args, **kwargs):
+        resolved = original(path, *args, **kwargs)
+        value = str(resolved)
+        return resolved if value.startswith("\\\\?\\") else Path("\\\\?\\" + value)
+
+    with patch.object(Path, "resolve", extended):
+        relative, checksum = store.write_dataset("w", "d", rows(1))
+        assert store.read_dataset(relative, checksum) == rows(1)
+        assert store.dataset_paths("w", "d", relative) == [store.root / relative]
+
+    outside = Path("\\\\?\\" + str((tmp_path / "outside").resolve()))
+    with patch.object(Path, "resolve", return_value=outside):
+        with pytest.raises(ValueError, match="escapes root"):
+            store._path("w/datasets/d.parquet")
+
+
 def test_failed_publication_does_not_claim_success_or_leave_temp(tmp_path):
     store = ArtifactStore(tmp_path)
     with patch("trading_workspace_v2.artifacts.publish_immutable", side_effect=OSError("disk failure")):
