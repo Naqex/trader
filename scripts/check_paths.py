@@ -1,5 +1,6 @@
 """Check maintained setup links and executable paths; preserve historical evidence."""
 from pathlib import Path
+import json
 import re
 import subprocess
 from urllib.parse import unquote
@@ -21,7 +22,11 @@ def check():
             target = unquote(target.split("#", 1)[0].split("?", 1)[0])
             if target and not (path.parent / target).exists():
                 failures.append(f"Broken link in {path.relative_to(ROOT)}: {target}")
-    tracked = subprocess.check_output(["git", "-C", str(ROOT), "ls-files"], text=True).splitlines()
+    packaged = ROOT / "PACKAGE.json"
+    if packaged.is_file():
+        tracked = [entry["path"] for entry in json.loads(packaged.read_text(encoding="utf8"))["files"]]
+    else:
+        tracked = subprocess.check_output(["git", "-C", str(ROOT), "ls-files"], text=True).splitlines()
     for relative in tracked:
         if relative.startswith(("foundation_v2/evidence/", "foundation_v2/experiments/")):
             continue

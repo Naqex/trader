@@ -49,3 +49,10 @@ run old binaries against migrated data unless compatibility is proven.
 The source package retains the four pinned synthetic compile-time fixtures still
 referenced by Rust under `foundation_v2/evidence/`. Other run receipts, screenshots
 and experiments are excluded. Package tests verify static Rust resource closure.
+
+For a Windows candidate, pass `--rust-binary <candidate>/bin/trading-workspace-api.exe`,
+`--rust-admin-binary <candidate>/bin/rust_runtime_admin.exe` and
+`--rust-research-binary <candidate>/bin/rust_research_worker.exe` to the existing
+launcher together with the documented database/artifact configuration. Serve
+`web/` with the approved API proxy; it is not a `file://` application. The ZIP
+does not start services or migrate data merely by extracting it.
