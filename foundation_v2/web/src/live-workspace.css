@@ -251,7 +251,7 @@
 .live-metrics > dl, .live-account-values { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin: 24px 0; }
 .live-analytics-side dl { display: grid; gap: 24px; margin-block: 24px; }
 .live-analytics-charts { display: block; width: 100%; }
-.live-analytics-controls { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 24px 0; }
+.live-analytics-controls { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 24px; }
 .live-analytics-controls .fx-select { min-width:0; max-width:calc(100% - 44px); }
 .live-analytics-controls .fx-select-trigger { border-radius:999px; min-height:34px; }
 .live-analytics-controls > .fxa-icon-button { border-radius:50%; flex:0 0 34px; width:34px; height:34px; }
@@ -277,6 +277,7 @@
 .live-analytics-curve-label { display: block; margin-top: 8px; color: var(--wm-content-muted); font-size: 12px; }
 .live-analytics-chart-row .fxa-viz { margin-top: 8px; }
 .live-analytics-balance-row .fxa-viz { color: var(--report-blue); }
+.live-analytics-balance-row { border-top:1px solid var(--wm-border); }
 .live-analytics-chart-row .fxa-ring-layout { justify-content: space-between; align-items: center; flex-wrap: nowrap; gap: 12px; }
 .live-analytics-chart-row .fxa-ring { width: 142px; height: 142px; }
 .live-analytics-chart-row .fxa-chart-legend { flex: 1 1 auto; min-width: 0; gap: 9px; font-size: 12px; }

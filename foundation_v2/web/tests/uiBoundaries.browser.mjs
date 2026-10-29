@@ -9,7 +9,12 @@ assert.equal(new URL(origin).hostname,'127.0.0.1')
 await mkdir(out,{recursive:true})
 const browser=await chromium.launch(),report={mode,checks:[],errors:[],writes:[]}
 let page
-const borderless=async menu=>assert.deepEqual(await menu.evaluate(el=>{const s=getComputedStyle(el);return [s.borderTopWidth,s.borderRightWidth,s.borderBottomWidth,s.borderLeftWidth]}),['0px','0px','0px','0px'])
+const borderless=async menu=>{
+ const surface=await menu.evaluate(el=>{const s=getComputedStyle(el);return {borders:[s.borderTopWidth,s.borderRightWidth,s.borderBottomWidth,s.borderLeftWidth],background:s.backgroundColor,shadow:s.boxShadow,light:el.closest('[data-theme]')?.dataset.theme==='light'}})
+ assert.deepEqual(surface.borders,['0px','0px','0px','0px'])
+ assert.equal(surface.background,surface.light?'rgb(250, 250, 250)':'rgb(29, 29, 29)')
+ assert.equal(surface.shadow,'rgba(0, 0, 0, 0.2) 0px 8px 24px 0px')
+}
 try {
  for(const [width,theme] of mode==='runtime'?[[1920,'dark']]:[[1920,'dark'],[1920,'light'],[390,'light']]) {
   const context=await browser.newContext({viewport:{width,height:940},reducedMotion:'reduce'})

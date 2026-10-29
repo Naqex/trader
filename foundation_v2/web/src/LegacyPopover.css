@@ -1,2 +1,2 @@
 @import url('/chart-controls.css');
-.legacy-popover:not(.wm-tooltip) { border:0; }
+.legacy-popover:not(.wm-tooltip) { border:0; --menu-bg:var(--wm-popup); }

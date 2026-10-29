@@ -45,6 +45,8 @@ Các hàng công cụ full-bleed của Live dùng cùng quy tắc, với lề ng
 đường dưới vẫn thẳng khi bộ lọc có chip hoặc controls xuống hàng.
 Một separator có một owner: border1px hoặc pseudo-element1px, không cả hai.
 Lịch sở hữu cạnh phải màu lãi/lỗ, panel bên cạnh không vẽ thêm nét.
+Hàng chọn đơn vị/ẩn số dư có inset16px phía trên và dưới; balance row sở hữu
+line1px phía trên để tách controls khỏi số liệu, không cộng thêm line ở controls.
 
 Trang báo cáo có lề (Live Analytics/Practice Analytics) và trang tổng quan phiên
 dùng nhịp nội dung đã có: bắt đầu sau `--wm-page-start`. Không ép chúng thành
@@ -78,12 +80,16 @@ scale bitmap, làm mờ bằng opacity hoặc ép `crispEdges` lên icon tròn/c
 
 Nền chung vẫn sáng/tối trung tính. Màu có vai trò, không tô mỗi trang một màu.
 Owner đã bỏ phương án hover xanh đục; hover chung dùng hai độ sáng trung tính.
+Dropdown dùng nền menu trước đợt đổi palette qua `--wm-popup`, độc lập với nền
+panel/control. FxSelect, session/account picker và popup nhãn cùng dùng nền này;
+khung ngoài không viền, shadow giữ `0 8px 24px #0003`. Viền của ô tìm và separator
+bên trong vẫn có vai trò riêng. Palette snapshot chung không bị sửa để đổi menu.
 
 | Vai trò | Dark | Light |
 | --- | --- | --- |
 | Nền trang | `#080808` | `#F5F5F5` |
 | Nền panel | `#121212` | `#FFFFFF` |
-| Menu/lớp nổi | `#1C1C1C` | `#F0F0F0` |
+| Menu dropdown (`--wm-popup`) | `#1D1D1D` | `#FAFAFA` |
 | Nút phụ | `#242424` | `#E9E9E9` |
 | Hover control | `#383838` | `#D9D9D9` |
 | Hover dòng | `#1D1D1D` | `#EFEFEF` |

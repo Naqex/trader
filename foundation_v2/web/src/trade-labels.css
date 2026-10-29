@@ -51,7 +51,6 @@ td:has(> .wm-label-cell):hover .wm-label-placeholder,.wm-label-cell:focus-visibl
 .legacy-popover.wm-label-popup > input { min-height:40px; height:40px; background:var(--project-canvas); border:1px solid var(--project-border); border-radius:6px; padding:8px 10px; }
 .legacy-popover.wm-label-popup > input:focus-visible { border-color:var(--project-primary); outline:none; box-shadow:none; }
 .legacy-popover.wm-label-edit-popup { width:300px; padding:12px; }
-.legacy-popover:is(.wm-label-popup,.wm-label-edit-popup) { background:var(--project-surface); }
 .legacy-popover.wm-label-edit-popup .wm-label-editor { gap:12px; }
 .legacy-popover.wm-label-edit-popup form { padding:0; }
 .legacy-popover.wm-label-edit-popup input { min-height:40px; height:40px; border-radius:10px; background:var(--project-canvas); }
