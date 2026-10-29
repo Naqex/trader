@@ -293,7 +293,7 @@ impl Context {
                 fields["requested_mode"] = json!(m.requested_mode);
                 fields["credential"] = json!(m.credential);
                 fields["root"] =
-                    json!(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.runtime/mt5-broker"));
+                    json!(crate::config::mt5_adapter_root().join(".runtime/mt5-broker"));
             }
         }
         fields
@@ -912,8 +912,8 @@ async fn adapter_for(state: &AppState, p: &Context, input: Value) -> Result<Valu
     result
 }
 async fn adapter(input: Value) -> Result<Value, String> {
-    let python = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.venv/Scripts/python.exe");
-    let script = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../scripts/mt5_demo_trading.py");
+    let python = crate::config::mt5_adapter_root().join(".venv/Scripts/python.exe");
+    let script = crate::config::mt5_adapter_root().join("scripts/mt5_demo_trading.py");
     let mut child = crate::owned_process::spawn_with_stdin(
         &python,
         &["-I".into(), script.to_string_lossy().into()],
@@ -1017,10 +1017,8 @@ async fn managed_adapter(managed: &Managed, input: Value) -> Result<Value, Strin
     let mut worker = match worker {
         Some(worker) => worker,
         None => {
-            let python =
-                PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.venv/Scripts/python.exe");
-            let script =
-                PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../scripts/mt5_broker_worker.py");
+            let python = crate::config::mt5_adapter_root().join(".venv/Scripts/python.exe");
+            let script = crate::config::mt5_adapter_root().join("scripts/mt5_broker_worker.py");
             let mut child = crate::owned_process::spawn_with_stdin(
                 &python,
                 &["-I".into(), script.to_string_lossy().into()],

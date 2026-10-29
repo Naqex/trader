@@ -1,5 +1,24 @@
 use std::{env, net::SocketAddr, path::PathBuf, time::Duration};
 
+fn resolve_mt5_adapter_root(value: Option<&std::ffi::OsStr>) -> Result<PathBuf, String> {
+    let root = value.map(PathBuf::from).unwrap_or_else(|| {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .expect("API manifest has a foundation root")
+            .to_path_buf()
+    });
+    if !root.is_absolute() {
+        return Err("TW_V2_MT5_ADAPTER_ROOT must be an absolute foundation_v2 directory".into());
+    }
+    Ok(root)
+}
+
+/// Keep an installed MT5 adapter and its terminal folders together across checkout moves.
+pub fn mt5_adapter_root() -> PathBuf {
+    resolve_mt5_adapter_root(env::var_os("TW_V2_MT5_ADAPTER_ROOT").as_deref())
+        .expect("TW_V2_MT5_ADAPTER_ROOT validated at API startup")
+}
+
 #[derive(Clone)]
 pub struct Config {
     pub bind: SocketAddr,
@@ -21,6 +40,7 @@ pub struct Config {
 
 impl Config {
     pub fn from_environment() -> Result<Self, String> {
+        resolve_mt5_adapter_root(env::var_os("TW_V2_MT5_ADAPTER_ROOT").as_deref())?;
         let bind = env::var("TW_V2_RUST_BIND")
             .unwrap_or_else(|_| "127.0.0.1:8010".into())
             .parse::<SocketAddr>()
@@ -116,5 +136,30 @@ impl Config {
             return Err("command wait + pool budgets must finish before request timeout so command IDs remain recoverable".into());
         }
         Ok(config)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::ffi::OsStr;
+
+    #[test]
+    fn mt5_adapter_root_defaults_to_compiled_foundation() {
+        assert_eq!(
+            resolve_mt5_adapter_root(None).unwrap(),
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).parent().unwrap()
+        );
+    }
+
+    #[test]
+    fn mt5_adapter_root_accepts_absolute_override_and_rejects_relative_paths() {
+        let installed = env::temp_dir().join("installed-mt5-adapter");
+        assert_eq!(
+            resolve_mt5_adapter_root(Some(installed.as_os_str())).unwrap(),
+            installed
+        );
+        assert!(resolve_mt5_adapter_root(Some(OsStr::new("../old-checkout"))).is_err());
+        assert!(resolve_mt5_adapter_root(Some(OsStr::new(""))).is_err());
     }
 }

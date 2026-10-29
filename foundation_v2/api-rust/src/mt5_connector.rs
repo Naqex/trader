@@ -42,10 +42,10 @@ fn error(code: &str) -> ApiError {
     ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY, code)
 }
 fn root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.runtime/mt5-connectors")
+    crate::config::mt5_adapter_root().join(".runtime/mt5-connectors")
 }
 fn python() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.venv/Scripts/python.exe")
+    crate::config::mt5_adapter_root().join(".venv/Scripts/python.exe")
 }
 pub fn available() -> bool {
     cfg!(windows)
@@ -510,8 +510,8 @@ async fn adapter(input: Value, timeout: Duration) -> Result<Value, String> {
         &python(),
         &[
             "-I".into(),
-            PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-                .join("../scripts/mt5_connector.py")
+            crate::config::mt5_adapter_root()
+                .join("scripts/mt5_connector.py")
                 .to_string_lossy()
                 .into(),
         ],

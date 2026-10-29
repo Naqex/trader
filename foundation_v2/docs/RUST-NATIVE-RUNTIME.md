@@ -1,5 +1,13 @@
 # Rust-native candidate runtime
 
+When source checkouts move, `TW_V2_MT5_ADAPTER_ROOT` can retain an installed MT5
+adapter independently of the compiled API location. It must be an absolute
+`foundation_v2` directory and is validated at startup. MT5 Python, scripts and
+owned terminal folders resolve from this same root; other storage/capabilities
+retain their existing configuration. Without an override the compiled foundation
+root remains the default. Set it on the scoped supervisor/API environment, not
+through a workspace request. An API update does not migrate terminal folders.
+
 Latest UI chart calculation/display rollout:
 [27 October Analytics chart logic](../evidence/fxreplay-chart-logic-20261027/RECEIPT.md).
 Canonical realizedR, missing-trade chart gaps, signed radar scales, ready-only
