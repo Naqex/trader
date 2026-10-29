@@ -17,6 +17,12 @@ fills reach the available scroll viewport edge. Full-bleed tables inside an inse
 parent may exceed its content width by the declared gutter; do not cap them back
 to that content width. On desktop, the Trades pane constrains the broker table's
 flex height so only its data viewport scrolls and pagination stays at the pane bottom.
+Dropdown menu shells use background and shadow without an outer border; preserve
+search separators, keyboard focus and tooltip boundaries. Centered sortable
+columns center the header text itself, reserving equal space for sort/clear
+actions from the initial state so sorting does not move the column.
+The Live Calendar owns its right separator: weekly gain/loss edges replace the
+neutral seam on the same pixel, with no second sidebar border beside them.
 
 Remove secondary text that does not help an immediate decision or action.
 Healthy reports must not show implementation explanations, generic legacy-data

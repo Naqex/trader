@@ -100,7 +100,7 @@
 .fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-cell,
 .fx-app .wm-calendar-grid.live-calendar-grid .live-week-total{border:0;border-top:1px solid var(--live-calendar-edge-top,var(--wm-border));border-left:1px solid var(--live-calendar-edge-left,var(--wm-border))}
 .fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-week > :first-child{border-left:0}
-.fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-week > :last-child{border-right:0}
+.fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-week > :last-child{border-right:1px solid var(--live-calendar-tone,var(--wm-border))}
 .fx-app .wm-calendar-grid.live-calendar-grid .live-week-total > div > span:first-child{white-space:nowrap}
 .fx-app .wm-calendar-grid.live-calendar-grid .live-week-total > div{gap:8px}
 .fx-app .wm-calendar-grid.live-calendar-grid .live-week-total > div > span:first-child{font-size:11px}
@@ -110,7 +110,7 @@
 .fx-app .wm-calendar-grid.live-calendar-grid .live-week-total{opacity:1;box-sizing:border-box}
 .fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-cell.is-outside .wm-calendar-date{color:var(--project-disabled)}
 .fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-cell:hover:not(:disabled),
-.fx-app .wm-calendar-grid.live-calendar-grid .live-week-total:is(:hover,:focus-visible){background:var(--wm-row-hover);border-top-color:var(--live-calendar-edge-top,var(--wm-border));border-left-color:var(--live-calendar-edge-left,var(--wm-border))}
+.fx-app .wm-calendar-grid.live-calendar-grid .live-week-total:is(:hover,:focus-visible){background:var(--wm-row-hover);border-top-color:var(--live-calendar-edge-top,var(--wm-border));border-left-color:var(--live-calendar-edge-left,var(--wm-border));border-right-color:var(--live-calendar-tone,var(--wm-border))}
 .fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-cell:is(.is-gain,.is-loss){background:color-mix(in srgb,var(--live-calendar-tone) 16%,var(--wm-canvas));opacity:1}
 .fx-app .wm-calendar-grid.live-calendar-grid .live-calendar-cell:is(.is-gain,.is-loss):hover:not(:disabled){background:color-mix(in srgb,var(--live-calendar-tone) 22%,var(--wm-canvas))}
 .fx-app[data-theme=light] .wm-calendar-grid.live-calendar-grid .live-calendar-cell:is(.is-gain,.is-loss){background:color-mix(in srgb,var(--live-calendar-tone) 10%,var(--wm-canvas))}

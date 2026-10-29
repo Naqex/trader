@@ -224,6 +224,8 @@
 .live-split > section, .live-accounts-layout > section { min-width: 0; }
 .live-split > section:first-child { padding: 24px var(--wm-page-gutter); }
 .live-split > section.live-calendar-section:first-child { padding: 0; }
+.live-calendar-section { box-shadow:inset -1px 0 var(--wm-border); }
+.live-calendar-section + .live-analytics-side { border-left:0; }
 .live-split > section.live-trades-section:first-child { padding: 0; }
 .live-trades-section > .fxa-filters { flex-shrink:0; padding:20px var(--wm-page-gutter); }
 .live-trades-section > .fxa-filters::after { left:0; right:0; }

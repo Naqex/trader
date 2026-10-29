@@ -76,7 +76,7 @@
 .fx-app.fx-shell-story[data-theme] .fx-content .fx-dashboard-chart-panel h3 { font-size:var(--ds-font-section); margin-bottom:var(--ds-space-6); }
 .fx-app.fx-shell-story[data-theme] .fx-content :is(.fx-dashboard-chart-axis,.fx-dashboard-month-label,.fx-dashboard-symbol-axis,.fxa-curve-axis) { font-size:var(--ds-font-meta); color:var(--wm-content-muted); }
 .fx-app.fx-shell-story[data-theme] :is(.fx-select-menu, .fxa-session-menu, .fx-filter-popover, .data-library-action-menu) {
-  border-radius:var(--ds-radius-menu); animation:wm-menu-enter var(--ds-motion-menu) var(--ds-ease-enter);
+  border:0; border-radius:var(--ds-radius-menu); animation:wm-menu-enter var(--ds-motion-menu) var(--ds-ease-enter);
 }
 .fx-app.fx-shell-story[data-theme] :is(.quick-session-dialog, .data-library-dialog, .fxs-action-dialog, .fxa-trade-inspector)[open] {
   animation:wm-overlay-enter var(--ds-motion-dialog) var(--ds-ease-enter);

@@ -72,7 +72,15 @@
 .fx-app .wm-data-table th.is-numeric .wm-table-sort-control:has(> .wm-table-sort-clear) > .wm-table-sort { grid-column:2; }
 .fx-app .wm-data-table th.is-numeric .wm-table-sort-clear { grid-column:1; }
 .fx-app .wm-data-table th.is-numeric .wm-table-sort-indicator { order:-1; }
-.fx-app .wm-data-table th.is-center .wm-table-sort-control > .wm-table-sort { justify-content:center; padding-inline:8px; }
+/* Equal action gutters center the label itself, including when clear-sort appears. */
+.fx-app .wm-data-table th.is-center > .wm-table-sort,
+.fx-app .wm-data-table th.is-center .wm-table-sort-control > .wm-table-sort { display:grid; grid-template-columns:minmax(56px,1fr) max-content minmax(56px,1fr); column-gap:4px; padding-inline:8px; }
+.fx-app .wm-data-table th.is-center > .wm-table-sort::before { content:none; }
+.fx-app .wm-data-table th.is-center .wm-table-heading-label { grid-column:2; grid-row:1; }
+.fx-app .wm-data-table th.is-center .wm-table-sort-indicator { display:inline-flex; grid-column:3; grid-row:1; justify-content:flex-start; }
+.fx-app .wm-data-table th.is-center .wm-table-sort-control:has(> .wm-table-sort-clear) { grid-template-columns:minmax(0,1fr); }
+.fx-app .wm-data-table th.is-center .wm-table-sort-control:has(> .wm-table-sort-clear) > .wm-table-sort { grid-column:1; }
+.fx-app .wm-data-table th.is-center .wm-table-sort-clear { position:absolute; inset-block:0; right:8px; }
 .fx-app .wm-data-table .wm-table-row-number { min-width:52px; width:52px; text-align:center; color:var(--wm-content-muted); }
 .fx-app .wm-data-table th[data-sort-reset]::before { background:color-mix(in srgb,var(--project-highlight) 16%,var(--wm-canvas)); }
 .fx-app .wm-data-table .wm-table-sort-clear-all { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; width:100%; height:100%; min-width:28px; min-height:0; line-height:1; border:0; border-radius:0; background:transparent; color:var(--wm-content); }
