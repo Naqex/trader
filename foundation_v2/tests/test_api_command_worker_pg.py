@@ -24,7 +24,7 @@ from trading_workspace_v2.auth import LocalWorkspaceAuthorization
 from trading_workspace_v2.command_dispatch import CONTRACT_VERSION, CommandResult, DomainCommandDispatcher
 from trading_workspace_v2.contracts import DatasetSource
 
-DEFAULT_PG = Path("D:/ANNAM/TradingWorkspace/planning/mt5-tradingview-backtester/research/foundation-validation/20260921T115933Z-315e8ddd/pg-dist/pgsql/bin")
+DEFAULT_PG = Path(__file__).resolve().parents[2] / ".runtime/postgres/bin"
 PG_BIN = Path(os.environ.get("TW_COMMAND_TEST_PG_BIN", DEFAULT_PG))
 
 

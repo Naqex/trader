@@ -430,13 +430,18 @@ fn repair_files(
         .join(workspace)
         .join("datasets")
         .join(format!("{dataset}.parquet"));
-    let row_stream=staging.join("normalized-rows.ndjson");
+    let row_stream = staging.join("normalized-rows.ndjson");
     let outcome = (|| {
-        super::ingest::stream_parquet_rows(raw,&row_stream).map_err(|_|recovery_io())?;
-        let rows=std::io::BufReader::new(fs::File::open(&row_stream).map_err(|_|recovery_io())?);
-        let rows=serde_json::Deserializer::from_reader(rows).into_iter::<Value>().map(|row|row.map_err(|e|e.to_string()));
-        let native_hash=ArtifactData::new(&staging).map_err(|_|recovery_io())?
-            .write_dataset_iter(workspace,dataset,rows).map_err(|_|recovery_io())?.1;
+        super::ingest::stream_parquet_rows(raw, &row_stream).map_err(|_| recovery_io())?;
+        let rows = std::io::BufReader::new(fs::File::open(&row_stream).map_err(|_| recovery_io())?);
+        let rows = serde_json::Deserializer::from_reader(rows)
+            .into_iter::<Value>()
+            .map(|row| row.map_err(|e| e.to_string()));
+        let native_hash = ArtifactData::new(&staging)
+            .map_err(|_| recovery_io())?
+            .write_dataset_iter(workspace, dataset, rows)
+            .map_err(|_| recovery_io())?
+            .1;
         if native_hash != expected {
             super::legacy_codec::restore(&staging, &candidate, raw)
                 .map_err(|detail| error(StatusCode::SERVICE_UNAVAILABLE, &detail))?;
@@ -462,7 +467,7 @@ fn repair_files(
             let path = safe_path(root, &relative).map_err(|_| recovery_io())?;
             fs::create_dir_all(path.parent().ok_or_else(recovery_io)?)
                 .map_err(|_| recovery_io())?;
-            crate::artifact_data::publish_created_file(target,&path).map_err(|_| recovery_io())?;
+            crate::artifact_data::publish_created_file(target, &path).map_err(|_| recovery_io())?;
             Some(path)
         } else {
             None
@@ -491,24 +496,43 @@ mod streaming_recovery_tests {
     #[test]
     fn native_large_recovery_needs_no_legacy_codec_and_preserves_pinned_hash() {
         use std::io::Write;
-        let root=std::env::temp_dir().join(format!("tw-native-repair-{}",uuid::Uuid::new_v4()));
-        fs::create_dir(&root).unwrap();let input=root.join("input.csv");
-        let count=420003usize;
-        let mut output=std::io::BufWriter::new(File::create(&input).unwrap());
-        output.write_all(b"time,open,high,low,close,volume\n").unwrap();
-        for i in 0..count{writeln!(output,"{},1,2,0,1.23456,{}",i*60,i%17).unwrap();}
-        output.flush().unwrap();drop(output);
-        assert!(fs::metadata(&input).unwrap().len()>10*1024*1024);
-        let writer=ArtifactData::new(&root).unwrap();
-        let (raw_path,raw_sha)=writer.write_raw_source("tenant-a","native-large",File::open(&input).unwrap()).unwrap();
+        let root = std::env::temp_dir().join(format!("tw-native-repair-{}", uuid::Uuid::new_v4()));
+        fs::create_dir(&root).unwrap();
+        let input = root.join("input.csv");
+        let count = 420003usize;
+        let mut output = std::io::BufWriter::new(File::create(&input).unwrap());
+        output
+            .write_all(b"time,open,high,low,close,volume\n")
+            .unwrap();
+        for i in 0..count {
+            writeln!(output, "{},1,2,0,1.23456,{}", i * 60, i % 17).unwrap();
+        }
+        output.flush().unwrap();
+        drop(output);
+        assert!(fs::metadata(&input).unwrap().len() > 10 * 1024 * 1024);
+        let writer = ArtifactData::new(&root).unwrap();
+        let (raw_path, raw_sha) = writer
+            .write_raw_source("tenant-a", "native-large", File::open(&input).unwrap())
+            .unwrap();
         let rows=(0..count).map(|i|Ok(json!({"timestamp":i*60,"open":1.,"high":2.,"low":0.,"close":1.23456,"volume":(i%17)as f64})));
-        let (artifact_path,artifact_sha)=writer.write_dataset_iter("tenant-a","native-large",rows).unwrap();
-        let manifest=json!({"artifact_path":artifact_path,"artifact_sha256":artifact_sha,"raw_artifact_path":raw_path,"raw_sha256":raw_sha,"transform_version":"u2-normalize-v3"});
-        fs::write(root.join(&artifact_path),b"corrupt").unwrap();
-        assert_eq!(repair_files(&root,"tenant-a","native-large",&manifest).unwrap()["status"],"restored");
-        assert_eq!(digest(&root.join(&artifact_path)).unwrap(),artifact_sha);
-        assert_eq!(repair_files(&root,"tenant-a","native-large",&manifest).unwrap()["status"],"verified");
-        assert_eq!(fs::read_dir(root.join("dataset-recovery")).unwrap().count(),0);
+        let (artifact_path, artifact_sha) = writer
+            .write_dataset_iter("tenant-a", "native-large", rows)
+            .unwrap();
+        let manifest = json!({"artifact_path":artifact_path,"artifact_sha256":artifact_sha,"raw_artifact_path":raw_path,"raw_sha256":raw_sha,"transform_version":"u2-normalize-v3"});
+        fs::write(root.join(&artifact_path), b"corrupt").unwrap();
+        assert_eq!(
+            repair_files(&root, "tenant-a", "native-large", &manifest).unwrap()["status"],
+            "restored"
+        );
+        assert_eq!(digest(&root.join(&artifact_path)).unwrap(), artifact_sha);
+        assert_eq!(
+            repair_files(&root, "tenant-a", "native-large", &manifest).unwrap()["status"],
+            "verified"
+        );
+        assert_eq!(
+            fs::read_dir(root.join("dataset-recovery")).unwrap().count(),
+            0
+        );
         fs::remove_dir_all(root).unwrap();
     }
 }

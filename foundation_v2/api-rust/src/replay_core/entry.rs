@@ -400,11 +400,13 @@ mod tests {
         let s = run("advance", s, bar(3, "1.1000", "1.1002", "1.0989"));
         assert!(s["position"].is_null());
         assert!(s["pending_market_order"].is_null());
-        assert!(s["ledger"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .any(|e| e["kind"] == "order_rejected"));
+        assert!(
+            s["ledger"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|e| e["kind"] == "order_rejected")
+        );
         assert_eq!(s["balance"], "100");
     }
     #[test]

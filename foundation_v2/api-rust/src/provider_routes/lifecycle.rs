@@ -213,17 +213,24 @@ pub(crate) fn policy(runtime: &ProviderRuntime) -> Result<Value, ApiError> {
     let path = base(runtime).join("cooldown.json");
     let value = if path.exists() {
         use std::io::Read;
-        let meta = std::fs::symlink_metadata(&path).map_err(|_| unavailable("invalid_source_policy"))?;
+        let meta =
+            std::fs::symlink_metadata(&path).map_err(|_| unavailable("invalid_source_policy"))?;
         if !meta.is_file() || meta.file_type().is_symlink() {
             return Err(unavailable("invalid_source_policy"));
         }
-        #[cfg(windows)] {
+        #[cfg(windows)]
+        {
             use std::os::windows::fs::MetadataExt;
-            if meta.file_attributes() & 0x400 != 0 { return Err(unavailable("invalid_source_policy")); }
+            if meta.file_attributes() & 0x400 != 0 {
+                return Err(unavailable("invalid_source_policy"));
+            }
         }
         let mut bytes = Vec::new();
-        std::fs::File::open(&path).map_err(|_| unavailable("invalid_source_policy"))?
-            .take(4097).read_to_end(&mut bytes).map_err(|_| unavailable("invalid_source_policy"))?;
+        std::fs::File::open(&path)
+            .map_err(|_| unavailable("invalid_source_policy"))?
+            .take(4097)
+            .read_to_end(&mut bytes)
+            .map_err(|_| unavailable("invalid_source_policy"))?;
         if bytes.len() > 4096 {
             return Err(unavailable("invalid_source_policy"));
         }
@@ -487,7 +494,9 @@ pub(crate) async fn execute(
         if old["status"] == json!("paused") {
             let id = old["job_id"].as_str().unwrap();
             let mut job = read(tx, runtime, workspace, id, true).await?;
-            let retry = job["retry_at"].as_f64().unwrap_or(0.)
+            let retry = job["retry_at"]
+                .as_f64()
+                .unwrap_or(0.)
                 .max(policy(runtime)?["until"].as_f64().unwrap_or(0.));
             if retry > Utc::now().timestamp() as f64 {
                 return Err(conflict("download_cooldown"));

@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import assert from 'node:assert/strict'
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { spawn } from 'node:child_process'
@@ -8,7 +9,7 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { chromium } from 'playwright'
 
 // Official panel + real pinned gateway, fresh synthetic credentials; no user account, OAuth or inference.
-const evidence = path.resolve(process.env.TW_AI_ADMIN_EVIDENCE || 'E:/BACKUP-TRADINGWORKSPACE/ai-gateway-admin-20261023')
+const evidence = path.resolve(process.env.TW_AI_ADMIN_EVIDENCE || fileURLToPath(new URL('./.artifacts/run_ai_gateway_admin_acceptance', import.meta.url)))
 const project = path.resolve(import.meta.dirname, '../..')
 const binary = path.join(project, '.runtime/ai-gateway-evaluation/cliproxyapi-v8.0.40/cli-proxy-api.exe')
 const panel = path.join(evidence, 'management.html'), home = path.join(evidence, `panel-fixture-${randomUUID()}`)

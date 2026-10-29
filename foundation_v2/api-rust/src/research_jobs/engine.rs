@@ -130,7 +130,12 @@ pub fn build_protocol_with_runtime(
         engine.insert("adapter_sha256".into(), json!(adapter));
         engine.insert("runtime_identity".into(), identity.clone());
         if let Some(dependencies) = native.get("dependency_sha256") {
-            if !dependencies.as_str().is_some_and(|hash|hash.len()==64 && hash.bytes().all(|b|b.is_ascii_digit() || (b'a'..=b'f').contains(&b))) {
+            if !dependencies.as_str().is_some_and(|hash| {
+                hash.len() == 64
+                    && hash
+                        .bytes()
+                        .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+            }) {
                 return Err("scientific dependency manifest is invalid".into());
             }
             engine.insert("dependency_sha256".into(), dependencies.clone());
@@ -390,7 +395,7 @@ mod tests {
     #[test]
     fn python_oracle_differential() {
         let corpus: Vec<Value> = serde_json::from_str(include_str!(
-            "../../../evidence/rust-native-20261017/runtime/engine-integrated/oracle.json"
+            "../../tests/fixtures/research_execution/engine.json"
         ))
         .unwrap();
         assert!(corpus.len() >= 350);
@@ -426,17 +431,40 @@ mod tests {
     }
     #[test]
     fn protocol_identity_pins_the_installed_dependencies() {
-        let corpus:Vec<Value>=serde_json::from_str(include_str!("../../../evidence/rust-native-20261017/runtime/engine-integrated/oracle.json")).unwrap();
-        let input=&corpus.iter().find(|case|case["expected"]["canonical"].as_str().and_then(|s|serde_json::from_str::<Value>(s).ok()).is_some_and(|v|v["engine"]["backend"]=="nautilus")).unwrap()["input"];
-        let mut descriptor=input["native"].clone();
-        let mut build=|hash:&str| {
-            descriptor["dependency_sha256"]=json!(hash);
-            build_protocol(&input["body"],&input["manifest"],&input["payload"],"engine-fixed-hash",Some(&descriptor))
+        let corpus: Vec<Value> = serde_json::from_str(include_str!(
+            "../../tests/fixtures/research_execution/engine.json"
+        ))
+        .unwrap();
+        let input = &corpus
+            .iter()
+            .find(|case| {
+                case["expected"]["canonical"]
+                    .as_str()
+                    .and_then(|s| serde_json::from_str::<Value>(s).ok())
+                    .is_some_and(|v| v["engine"]["backend"] == "nautilus")
+            })
+            .unwrap()["input"];
+        let mut descriptor = input["native"].clone();
+        let mut build = |hash: &str| {
+            descriptor["dependency_sha256"] = json!(hash);
+            build_protocol(
+                &input["body"],
+                &input["manifest"],
+                &input["payload"],
+                "engine-fixed-hash",
+                Some(&descriptor),
+            )
         };
-        let first=build(&"a".repeat(64)).unwrap();
-        let second=build(&"b".repeat(64)).unwrap();
-        assert_eq!(first["engine"]["dependency_sha256"],"a".repeat(64));
-        assert_ne!(super::super::canonical_py_json(&first).unwrap(),super::super::canonical_py_json(&second).unwrap());
-        assert_eq!(build("invalid").unwrap_err(),"scientific dependency manifest is invalid");
+        let first = build(&"a".repeat(64)).unwrap();
+        let second = build(&"b".repeat(64)).unwrap();
+        assert_eq!(first["engine"]["dependency_sha256"], "a".repeat(64));
+        assert_ne!(
+            super::super::canonical_py_json(&first).unwrap(),
+            super::super::canonical_py_json(&second).unwrap()
+        );
+        assert_eq!(
+            build("invalid").unwrap_err(),
+            "scientific dependency manifest is invalid"
+        );
     }
 }

@@ -3,16 +3,16 @@ use bigdecimal::{BigDecimal, RoundingMode, ToPrimitive, Zero};
 use serde_json::{Value, json};
 use std::str::FromStr;
 
-#[path = "replay_core/tick.rs"]
-mod tick;
-#[path = "replay_core/history.rs"]
-pub mod history;
-#[path = "replay_core/slippage.rs"]
-mod slippage;
 #[path = "replay_core/entry.rs"]
 mod entry;
+#[path = "replay_core/history.rs"]
+pub mod history;
 #[path = "replay_core/partial.rs"]
 mod partial;
+#[path = "replay_core/slippage.rs"]
+mod slippage;
+#[path = "replay_core/tick.rs"]
+mod tick;
 use history::History;
 
 type R<T> = Result<T, String>;
@@ -125,7 +125,12 @@ pub(super) fn quote(s: &Value, mid: &BigDecimal) -> R<(BigDecimal, BigDecimal)> 
     if mid <= &zero() || spread < zero() {
         return Err("mid must be positive and spread nonnegative".into());
     }
-    if spread == zero() && matches!(s["cost_model"]["version"].as_str(),Some("session-cost-v1" | "session-cost-v2")) {
+    if spread == zero()
+        && matches!(
+            s["cost_model"]["version"].as_str(),
+            Some("session-cost-v1" | "session-cost-v2")
+        )
+    {
         return Ok((mid.clone(), mid.clone()));
     }
     let half = div(spread, BigDecimal::from(2));
@@ -164,26 +169,62 @@ pub(super) fn pnl(
     let c = &s["cost_model"];
     let units = py(positive(p, "quantity")? * positive(&s["instrument_spec"], "contract_size")?);
     let (entry, exit, gross) = if side(p)? == "BUY" {
-        let e = positive(p, if slippage::enabled(s) { "entry_fill" } else { "entry_ask" })?;
+        let e = positive(
+            p,
+            if slippage::enabled(s) {
+                "entry_fill"
+            } else {
+                "entry_ask"
+            },
+        )?;
         (e.clone(), bid.clone(), py((bid - &e) * &units))
     } else {
-        let e = positive(p, if slippage::enabled(s) { "entry_fill" } else { "entry_bid" })?;
+        let e = positive(
+            p,
+            if slippage::enabled(s) {
+                "entry_fill"
+            } else {
+                "entry_bid"
+            },
+        )?;
         (e.clone(), ask.clone(), py((&e - ask) * &units))
     };
     let rate = positive(c, "quote_to_account_rate")?;
     let account = py(&gross * &rate);
     let slip = py(py(py(dec(c, "slippage_price_per_side")? * BigDecimal::from(2)) * units) * &rate);
-    let comm = if matches!(c["version"].as_str(),Some("session-cost-v1" | "session-cost-v2")) {
-        let sides = if c["commission_charge"] == "per_side" { 2 } else { 1 };
-        py(py(dec(c, "commission_per_lot_account")? * positive(p, "quantity")?) * BigDecimal::from(sides))
+    let comm = if matches!(
+        c["version"].as_str(),
+        Some("session-cost-v1" | "session-cost-v2")
+    ) {
+        let sides = if c["commission_charge"] == "per_side" {
+            2
+        } else {
+            1
+        };
+        py(
+            py(dec(c, "commission_per_lot_account")? * positive(p, "quantity")?)
+                * BigDecimal::from(sides),
+        )
     } else {
-        std::cmp::max(py(dec(c, "commission_per_side_account")? * BigDecimal::from(2)), dec(c, "minimum_fee_account")?)
+        std::cmp::max(
+            py(dec(c, "commission_per_side_account")? * BigDecimal::from(2)),
+            dec(c, "minimum_fee_account")?,
+        )
     };
     // Legacy fixed fees belong to the original position, not each closing slice.
     let ratio = if p.get("original_quantity").is_some() {
         div(positive(p, "quantity")?, positive(p, "original_quantity")?)
-    } else { BigDecimal::from(1) };
-    let comm = if matches!(c["version"].as_str(),Some("session-cost-v1" | "session-cost-v2")) { comm } else { py(comm * &ratio) };
+    } else {
+        BigDecimal::from(1)
+    };
+    let comm = if matches!(
+        c["version"].as_str(),
+        Some("session-cost-v1" | "session-cost-v2")
+    ) {
+        comm
+    } else {
+        py(comm * &ratio)
+    };
     let finance = py(dec(c, "financing_account")? * ratio);
     let net = py(account.clone() - py(py(&comm + &slip) + &finance));
     let places = int(c, "rounding_decimals")?;
@@ -197,16 +238,17 @@ pub(super) fn cost_matches(actual: &Value, expected: &Value) -> bool {
     let (Some(actual), Some(expected)) = (actual.as_object(), expected.as_object()) else {
         return false;
     };
-    actual.len() == expected.len() && expected.iter().all(|(key, value)| {
-        actual.get(key).is_some_and(|observed| {
-            if observed.is_number() && value.is_number() {
-                // Python treats signed zero and equivalent JSON number spellings equally.
-                matches!((d(observed), d(value)), (Ok(a), Ok(b)) if a == b)
-            } else {
-                observed == value
-            }
+    actual.len() == expected.len()
+        && expected.iter().all(|(key, value)| {
+            actual.get(key).is_some_and(|observed| {
+                if observed.is_number() && value.is_number() {
+                    // Python treats signed zero and equivalent JSON number spellings equally.
+                    matches!((d(observed), d(value)), (Ok(a), Ok(b)) if a == b)
+                } else {
+                    observed == value
+                }
+            })
         })
-    })
 }
 pub(super) fn margin(s: &Value, o: &Value, fill: &BigDecimal) -> R<(Value, bool)> {
     if !v2(s) {
@@ -233,15 +275,34 @@ pub(super) fn position(
     cursor: i64,
     time: i64,
 ) -> R<Value> {
-    let (fill, provenance) = slippage::fill(s,if side(o)? == "BUY" { ask } else { bid },side(o)?,entry::kind(o),txt(o,"operation_id")?,cursor,time)?;
+    let (fill, provenance) = slippage::fill(
+        s,
+        if side(o)? == "BUY" { ask } else { bid },
+        side(o)?,
+        entry::kind(o),
+        txt(o, "operation_id")?,
+        cursor,
+        time,
+    )?;
     let mut p = json!({"position_id":format!("replay-pos-{}",int(s,"event_sequence")?+1),"source_operation_id":o["operation_id"],"side":side(o)?,"quantity":o["quantity"],"entry_bid":sval(bid.clone()),"entry_ask":sval(ask.clone()),"entry_fill":sval(fill),"stop_loss":o["stop_loss"],"take_profit":o["take_profit"],"opened_cursor_index":cursor,"opened_time_utc":time});
-    if let Some(targets) = o.get("take_profits") { p["take_profits"] = targets.clone(); }
-    if slippage::enabled(s) { p["entry_slippage"] = provenance; }
-    if entry::conditional(o) { p["entry_order_type"] = o["order_type"].clone(); }
+    if let Some(targets) = o.get("take_profits") {
+        p["take_profits"] = targets.clone();
+    }
+    if slippage::enabled(s) {
+        p["entry_slippage"] = provenance;
+    }
+    if entry::conditional(o) {
+        p["entry_order_type"] = o["order_type"].clone();
+    }
     Ok(p)
 }
 pub(super) fn emit(
-    s: &mut Value, kind: &str, cursor: i64, time: i64, fp: BigDecimal, details: Value,
+    s: &mut Value,
+    kind: &str,
+    cursor: i64,
+    time: i64,
+    fp: BigDecimal,
+    details: Value,
 ) -> R<()> {
     emit_history(s, &mut History::Full, kind, cursor, time, fp, details)
 }
@@ -294,11 +355,14 @@ fn latest_quote(s: &Value) -> R<Value> {
 fn provenance(s: &Value, window: bool) -> R<Value> {
     // Manual actions retain the quote but omit its tick-window boundaries.
     let prior = if window {
-        s["ledger"].as_array()
-            .and_then(|events| events.iter().rev().find(|event| {
-                event["details"].get("bid").is_some()
-                    && event["details"].get("window_start_msc").is_some()
-            }))
+        s["ledger"]
+            .as_array()
+            .and_then(|events| {
+                events.iter().rev().find(|event| {
+                    event["details"].get("bid").is_some()
+                        && event["details"].get("window_start_msc").is_some()
+                })
+            })
             .map(|event| event["details"].clone())
             .ok_or("current broker quote window is unavailable")?
     } else {
@@ -338,7 +402,10 @@ fn provenance(s: &Value, window: bool) -> R<Value> {
 }
 
 fn validate_session_cost(c: &Value) -> R<()> {
-    if !matches!(c["version"].as_str(),Some("session-cost-v1" | "session-cost-v2")) {
+    if !matches!(
+        c["version"].as_str(),
+        Some("session-cost-v1" | "session-cost-v2")
+    ) {
         if !c["commission_per_lot_account"].is_null() || !c["commission_charge"].is_null() {
             return Err("per-lot commission requires session-cost-v1".into());
         }
@@ -348,8 +415,11 @@ fn validate_session_cost(c: &Value) -> R<()> {
         || dec(c, "commission_per_lot_account")? < zero()
         || dec(c, "commission_per_side_account")? != zero()
         || dec(c, "minimum_fee_account")? != zero()
-        || dec(c, "financing_account")? != zero() {
-        return Err("invalid session commission configuration; legacy fees cannot be combined".into());
+        || dec(c, "financing_account")? != zero()
+    {
+        return Err(
+            "invalid session commission configuration; legacy fees cannot be combined".into(),
+        );
     }
     Ok(())
 }
@@ -479,7 +549,9 @@ fn initialize(a: &Value) -> R<Value> {
         s["research_margin"]["leverage"] = sval(positive(&a["research_margin"], "leverage")?);
     }
     if !a["tick_snapshot_id"].is_null() {
-        if slippage::enabled(&s) { return Err("session fill slippage cannot be mixed with tick execution".into()); }
+        if slippage::enabled(&s) {
+            return Err("session fill slippage cannot be mixed with tick execution".into());
+        }
         if !v2(&s) {
             return Err("tick execution requires research_margin".into());
         }
@@ -506,7 +578,7 @@ fn queue_history(s: &mut Value, a: &Value, history: &mut History<'_>) -> R<()> {
     let q = positive(a, "quantity")?;
     qty(s, &q)?;
     let mut queued = json!({"operation_id":id,"side":side(a)?,"quantity":sval(q),"stop_loss":opt_dec(a,"stop_loss")?.map(sval),"take_profit":opt_dec(a,"take_profit")?.map(sval),"submitted_cursor_index":s["cursor_index"]});
-    partial::assign(s,&mut queued,a)?;
+    partial::assign(s, &mut queued, a)?;
     s["pending_market_order"] = queued;
     Ok(())
 }
@@ -514,7 +586,11 @@ fn fill(s: &mut Value, a: &Value, history: &mut History<'_>) -> R<()> {
     let o = s["pending_market_order"].clone();
     let cursor = int(s, "cursor_index")?;
     let time = int(a, "virtual_time_utc")?;
-    if o.is_null() || entry::conditional(&o) || !s["position"].is_null() || int(&o, "submitted_cursor_index")? != cursor {
+    if o.is_null()
+        || entry::conditional(&o)
+        || !s["position"].is_null()
+        || int(&o, "submitted_cursor_index")? != cursor
+    {
         return Err("current-quote fill requires a newly submitted market order".into());
     }
     canonical_time_history(
@@ -534,10 +610,20 @@ fn fill(s: &mut Value, a: &Value, history: &mut History<'_>) -> R<()> {
     if !brackets(&o, if is_buy { &bid } else { &ask })? {
         return Err("protection must bracket the current closeable quote".into());
     }
-    let (fill, slip) = slippage::fill(s,if is_buy { &ask } else { &bid },side(&o)?,"market",txt(&o,"operation_id")?,cursor,time)?;
+    let (fill, slip) = slippage::fill(
+        s,
+        if is_buy { &ask } else { &bid },
+        side(&o)?,
+        "market",
+        txt(&o, "operation_id")?,
+        cursor,
+        time,
+    )?;
     let (m, rejected) = margin(s, &o, &fill)?;
     let mut details = json!({"operation_id":o["operation_id"],"side":o["side"],"quantity":o["quantity"],"fill_price":sval(fill.clone()),"execution_timing":"current_quote","mid_close":sval(mid),"bid_close":sval(bid.clone()),"ask_close":sval(ask.clone()),"quote_mid_close":sval(div(&bid+&ask,BigDecimal::from(2)))});
-    if slippage::enabled(s) { details["fill_slippage"] = slip; }
+    if slippage::enabled(s) {
+        details["fill_slippage"] = slip;
+    }
     merge(&mut details, m);
     if tick_mode(s) {
         merge(&mut details, provenance(s, true)?);
@@ -612,9 +698,13 @@ fn protect(s: &mut Value, a: &Value, history: &mut History<'_>) -> R<()> {
     let time = int(a, "virtual_time_utc")?;
     let is_position = !s["position"].is_null();
     let reference = if !is_position && entry::conditional(&p) {
-        canonical_time_history(s, history, time,
-            "protection amendment must stay at the current canonical checkpoint")?;
-        positive(&p,"entry_price")?
+        canonical_time_history(
+            s,
+            history,
+            time,
+            "protection amendment must stay at the current canonical checkpoint",
+        )?;
+        positive(&p, "entry_price")?
     } else if tick_mode(s) {
         canonical_time_history(
             s,
@@ -637,7 +727,7 @@ fn protect(s: &mut Value, a: &Value, history: &mut History<'_>) -> R<()> {
     let previous_take = p["take_profit"].clone();
     p["stop_loss"] = opt_dec(a, "stop_loss")?.map(sval).unwrap_or(Value::Null);
     p["take_profit"] = opt_dec(a, "take_profit")?.map(sval).unwrap_or(Value::Null);
-    partial::assign(s,&mut p,a)?;
+    partial::assign(s, &mut p, a)?;
     if !brackets(&p, &reference)? {
         return Err("protection must bracket the current closeable quote".into());
     }
@@ -683,12 +773,23 @@ fn close(s: &mut Value, a: &Value, history: &mut History<'_>) -> R<()> {
     let mut floating = zero();
     let mut remaining = Value::Null;
     if is_position {
-        let original = p.get("original_quantity").cloned().unwrap_or_else(|| p["quantity"].clone());
-        let requested = if a["quantity"].is_null() { positive(&p,"quantity")? } else { positive(a,"quantity")? };
-        let residual = positive(&p,"quantity")? - &requested;
-        qty(s,&requested)?;
-        if residual < zero() { return Err("close quantity exceeds remaining position".into()); }
-        if residual > zero() { qty(s,&residual)?; }
+        let original = p
+            .get("original_quantity")
+            .cloned()
+            .unwrap_or_else(|| p["quantity"].clone());
+        let requested = if a["quantity"].is_null() {
+            positive(&p, "quantity")?
+        } else {
+            positive(a, "quantity")?
+        };
+        let residual = positive(&p, "quantity")? - &requested;
+        qty(s, &requested)?;
+        if residual < zero() {
+            return Err("close quantity exceeds remaining position".into());
+        }
+        if residual > zero() {
+            qty(s, &residual)?;
+        }
         let mut closing = p.clone();
         closing["quantity"] = sval(requested);
         closing.as_object_mut().unwrap().remove("take_profits");
@@ -698,7 +799,8 @@ fn close(s: &mut Value, a: &Value, history: &mut History<'_>) -> R<()> {
         let (bid, ask) = if tick_mode(s) {
             (positive(s, "last_bid")?, positive(s, "last_ask")?)
         } else {
-            let prior = history.last_event(s)
+            let prior = history
+                .last_event(s)
                 .ok_or("manual close requires a canonical checkpoint")?;
             if dec(a, "mid_close")? != dec(&prior["details"], "mid_close")? {
                 return Err("manual close must use the canonical checkpoint mid".into());
@@ -706,9 +808,23 @@ fn close(s: &mut Value, a: &Value, history: &mut History<'_>) -> R<()> {
             quote(s, &positive(a, "mid_close")?)?
         };
         let closing_side = if side(&p)? == "BUY" { "SELL" } else { "BUY" };
-        let (executed, slip) = slippage::fill(s,if closing_side == "SELL" { &bid } else { &ask },closing_side,"market",txt(a,"operation_id")?,int(s,"cursor_index")?,time)?;
-        let (net, cost) = if slippage::enabled(s) { pnl(s,&closing,&executed,&executed)? } else { pnl(s,&closing,&bid,&ask)? };
-        if slippage::enabled(s) { details["fill_slippage"] = slip; }
+        let (executed, slip) = slippage::fill(
+            s,
+            if closing_side == "SELL" { &bid } else { &ask },
+            closing_side,
+            "market",
+            txt(a, "operation_id")?,
+            int(s, "cursor_index")?,
+            time,
+        )?;
+        let (net, cost) = if slippage::enabled(s) {
+            pnl(s, &closing, &executed, &executed)?
+        } else {
+            pnl(s, &closing, &bid, &ask)?
+        };
+        if slippage::enabled(s) {
+            details["fill_slippage"] = slip;
+        }
         realized = net;
         merge(
             &mut details,
@@ -718,14 +834,21 @@ fn close(s: &mut Value, a: &Value, history: &mut History<'_>) -> R<()> {
             remaining = p.clone();
             remaining["quantity"] = sval(residual);
             remaining["original_quantity"] = original;
-            remaining["realized_pnl"] = sval(py(p.get("realized_pnl").map(d).transpose()?.unwrap_or_else(zero) + &realized));
-            partial::resize(s,&mut remaining)?;
-            floating = pnl(s,&remaining,&bid,&ask)?.0;
+            remaining["realized_pnl"] = sval(py(p
+                .get("realized_pnl")
+                .map(d)
+                .transpose()?
+                .unwrap_or_else(zero)
+                + &realized));
+            partial::resize(s, &mut remaining)?;
+            floating = pnl(s, &remaining, &bid, &ask)?.0;
             details["previous_position"] = p;
             details["open_position"] = remaining.clone();
         }
     } else {
-        if !a["quantity"].is_null() { return Err("quantity is only valid for an open position".into()); }
+        if !a["quantity"].is_null() {
+            return Err("quantity is only valid for an open position".into());
+        }
         details["cancelled_order"] = p;
     }
     if tick_mode(s) {
@@ -819,7 +942,7 @@ fn advance(s: &mut Value, a: &Value, history: &mut History<'_>) -> R<()> {
     let (mut opened, mut exposure) = (false, !s["position"].is_null());
     let (open_bid, open_ask) = quote(s, &positive(b, "open")?)?;
     if entry::conditional(&s["pending_market_order"]) {
-        opened = entry::fill_bar(s,b,cursor,history)?;
+        opened = entry::fill_bar(s, b, cursor, history)?;
         exposure |= opened;
     } else if !s["pending_market_order"].is_null() {
         let o = s["pending_market_order"].clone();
@@ -836,12 +959,21 @@ fn advance(s: &mut Value, a: &Value, history: &mut History<'_>) -> R<()> {
             }
             .into());
         }
-        let (fill, slip) = slippage::fill(s,base_fill,side(&o)?,"market",txt(&o,"operation_id")?,cursor,time)?;
+        let (fill, slip) = slippage::fill(
+            s,
+            base_fill,
+            side(&o)?,
+            "market",
+            txt(&o, "operation_id")?,
+            cursor,
+            time,
+        )?;
         let (m, rejected) = margin(s, &o, &fill)?;
         let mut details = json!({"operation_id":o["operation_id"],"side":o["side"],"quantity":o["quantity"],"fill_price":sval(fill.clone())});
         if slippage::enabled(s) {
             details["fill_slippage"] = slip;
-            details["bid_open"] = sval(open_bid.clone()); details["ask_open"] = sval(open_ask.clone());
+            details["bid_open"] = sval(open_bid.clone());
+            details["ask_open"] = sval(open_ask.clone());
         }
         merge(&mut details, m);
         s["pending_market_order"] = Value::Null;
@@ -850,7 +982,9 @@ fn advance(s: &mut Value, a: &Value, history: &mut History<'_>) -> R<()> {
             zero()
         } else {
             s["position"] = position(s, &o, &open_bid, &open_ask, cursor, time)?;
-            if slippage::enabled(s) || partial::has(&s["position"]) { details["open_position"] = s["position"].clone(); }
+            if slippage::enabled(s) || partial::has(&s["position"]) {
+                details["open_position"] = s["position"].clone();
+            }
             details["position_id"] = s["position"]["position_id"].clone();
             opened = true;
             exposure = true;
@@ -875,13 +1009,47 @@ fn advance(s: &mut Value, a: &Value, history: &mut History<'_>) -> R<()> {
             let p = s["position"].clone();
             let exit_time = if at_open { time } else { end };
             let closing_side = if side(&p)? == "BUY" { "SELL" } else { "BUY" };
-            let kind = if reason.starts_with("stop_loss") { "stop" } else { "limit" };
-            let (exit, slip) = slippage::fill(s,&base_exit,closing_side,kind,txt(&p,"source_operation_id")?,cursor,exit_time)?;
+            let kind = if reason.starts_with("stop_loss") {
+                "stop"
+            } else {
+                "limit"
+            };
+            let (exit, slip) = slippage::fill(
+                s,
+                &base_exit,
+                closing_side,
+                kind,
+                txt(&p, "source_operation_id")?,
+                cursor,
+                exit_time,
+            )?;
             if partial::has(&p) {
-                let mut details = partial::settle(s,&p,reason.starts_with("stop_loss"),&exit,&exit,&exit,reason)?;
-                if slippage::enabled(s) { details["fill_slippage"] = slip; }
-                let fp = if s["position"].is_null() { zero() } else { pnl(s,&s["position"],&exit,&exit)?.0 };
-                emit_history(s,history,"protective_fill",cursor,exit_time,fp,details)?;
+                let mut details = partial::settle(
+                    s,
+                    &p,
+                    reason.starts_with("stop_loss"),
+                    &exit,
+                    &exit,
+                    &exit,
+                    reason,
+                )?;
+                if slippage::enabled(s) {
+                    details["fill_slippage"] = slip;
+                }
+                let fp = if s["position"].is_null() {
+                    zero()
+                } else {
+                    pnl(s, &s["position"], &exit, &exit)?.0
+                };
+                emit_history(
+                    s,
+                    history,
+                    "protective_fill",
+                    cursor,
+                    exit_time,
+                    fp,
+                    details,
+                )?;
                 continue;
             }
             let (net, cost) = pnl(s, &p, &exit, &exit)?;
@@ -890,8 +1058,10 @@ fn advance(s: &mut Value, a: &Value, history: &mut History<'_>) -> R<()> {
             s["position"] = Value::Null;
             let mut details = json!({"operation_id":p["source_operation_id"],"position_id":p["position_id"],"reason":reason,"fill_price":sval(exit),"net_pnl":sval(net),"cost_model_version":cost["cost_model_version"]});
             if slippage::enabled(s) {
-                details["fill_slippage"] = slip; details["closed_position"] = p;
-                details["previous_balance"] = previous_balance; details["cost_breakdown"] = cost;
+                details["fill_slippage"] = slip;
+                details["closed_position"] = p;
+                details["previous_balance"] = previous_balance;
+                details["cost_breakdown"] = cost;
             }
             emit_history(
                 s,
@@ -902,7 +1072,9 @@ fn advance(s: &mut Value, a: &Value, history: &mut History<'_>) -> R<()> {
                 zero(),
                 details,
             )?;
-        } else { break; }
+        } else {
+            break;
+        }
     }
     let fp = if s["position"].is_null() {
         zero()
@@ -996,26 +1168,54 @@ pub(crate) fn apply_bar_checkpoint(s: &mut Value, e: &Value, cursor: i64) {
 // Only immutable, fully validated revision-cache snapshots may use this path.
 // Reconstruct still selects the same phase/event cutoff as the full engine.
 pub(crate) fn reconstruct_validated(snapshot: &Value, cursor: i64) -> R<Value> {
-    let mut head = Value::Object(snapshot.as_object().ok_or("invalid execution snapshot")?.iter()
-        .filter(|(key,_)|key.as_str() != "ledger").map(|(k,v)|(k.clone(),v.clone())).collect());
-    if cursor == int(snapshot,"cursor_index")? { return Ok(head); }
-    if cursor > int(snapshot,"cursor_index")? { return Err("checkpoint cursor cannot exceed the replay execution cursor".into()); }
-    let events = snapshot["ledger"].as_array().ok_or("ledger must be array")?;
-    let end = events.partition_point(|e|e["cursor_index"].as_i64().is_some_and(|c|c<=cursor));
+    let mut head = Value::Object(
+        snapshot
+            .as_object()
+            .ok_or("invalid execution snapshot")?
+            .iter()
+            .filter(|(key, _)| key.as_str() != "ledger")
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect(),
+    );
+    if cursor == int(snapshot, "cursor_index")? {
+        return Ok(head);
+    }
+    if cursor > int(snapshot, "cursor_index")? {
+        return Err("checkpoint cursor cannot exceed the replay execution cursor".into());
+    }
+    let events = snapshot["ledger"]
+        .as_array()
+        .ok_or("ledger must be array")?;
+    let end = events.partition_point(|e| e["cursor_index"].as_i64().is_some_and(|c| c <= cursor));
     let prefix = &events[..end];
-    let event = prefix.iter().rev().find(|e|e["cursor_index"] == cursor &&
-        matches!(e["kind"].as_str(),Some("price_mark"|"phase_transition"|"protection_change"|"manual_close"|"order_cancel"|"order_placed")))
+    let event = prefix
+        .iter()
+        .rev()
+        .find(|e| {
+            e["cursor_index"] == cursor
+                && matches!(
+                    e["kind"].as_str(),
+                    Some(
+                        "price_mark"
+                            | "phase_transition"
+                            | "protection_change"
+                            | "manual_close"
+                            | "order_cancel"
+                            | "order_placed"
+                    )
+                )
+        })
         .ok_or("execution branch cursor has no canonical checkpoint")?;
     if event["sequence"].as_i64() != Some(end as i64) {
         return Err("checkpoint has events after its selected canonical mark".into());
     }
     head["phase_index"] = json!(1);
     head["phase_initial_balance"] = snapshot["starting_balance"].clone();
-    for event in prefix.iter().filter(|e|e["kind"] == "phase_transition") {
+    for event in prefix.iter().filter(|e| e["kind"] == "phase_transition") {
         head["phase_index"] = event["details"]["to_phase_index"].clone();
         head["phase_initial_balance"] = event["details"]["next_phase_initial_balance"].clone();
     }
-    apply_bar_checkpoint(&mut head,event,cursor);
+    apply_bar_checkpoint(&mut head, event, cursor);
     Ok(head)
 }
 fn fork(s: &mut Value, a: &Value) -> R<()> {
@@ -1133,15 +1333,21 @@ fn order_valid(p: &Value, position: bool) -> R<()> {
     strict(p, &keys)?;
     side(p)?;
     positive(p, "quantity")?;
-    if p.get("original_quantity").is_some() && positive(p,"original_quantity")? < positive(p,"quantity")? {
+    if p.get("original_quantity").is_some()
+        && positive(p, "original_quantity")? < positive(p, "quantity")?
+    {
         return Err("original quantity is below remaining quantity".into());
     }
-    if p.get("realized_pnl").is_some() { dec(p,"realized_pnl")?; }
+    if p.get("realized_pnl").is_some() {
+        dec(p, "realized_pnl")?;
+    }
     opt_dec(p, "stop_loss")?;
     opt_dec(p, "take_profit")?;
     partial::validate(p)?;
     if position {
-        if p.get("entry_order_type").is_some() && !matches!(p["entry_order_type"].as_str(),Some("limit" | "stop")) {
+        if p.get("entry_order_type").is_some()
+            && !matches!(p["entry_order_type"].as_str(), Some("limit" | "stop"))
+        {
             return Err("unsupported position entry type".into());
         }
         bounded(p, "position_id")?;
@@ -1154,7 +1360,9 @@ fn order_valid(p: &Value, position: bool) -> R<()> {
     } else {
         bounded(p, "operation_id")?;
         int(p, "submitted_cursor_index")?;
-        if p.get("order_type").is_some() || p.get("entry_price").is_some() { entry::validate_order(p)?; }
+        if p.get("order_type").is_some() || p.get("entry_price").is_some() {
+            entry::validate_order(p)?;
+        }
     }
     Ok(())
 }
@@ -1191,7 +1399,9 @@ fn validate_head(s: &Value) -> R<()> {
         "position",
         "evaluation_quality",
     ];
-    if s.get("ledger").is_some() { fields.push("ledger"); }
+    if s.get("ledger").is_some() {
+        fields.push("ledger");
+    }
     if v2(s) {
         fields.push("research_margin");
     }
@@ -1275,10 +1485,14 @@ fn validate_head(s: &Value) -> R<()> {
         return Err("invalid evaluation quality".into());
     }
     order_valid(&s["position"], true)?;
-    if !s["position"].is_null() { partial::grid(s,&s["position"])?; }
-    if !s["pending_market_order"].is_null() { partial::grid(s,&s["pending_market_order"])?; }
+    if !s["position"].is_null() {
+        partial::grid(s, &s["position"])?;
+    }
+    if !s["pending_market_order"].is_null() {
+        partial::grid(s, &s["pending_market_order"])?;
+    }
     slippage::validate_model(s)?;
-    slippage::validate_position(s,&s["position"])?;
+    slippage::validate_position(s, &s["position"])?;
     order_valid(&s["pending_market_order"], false)?;
     if v2(s) {
         let m = &s["research_margin"];
@@ -1338,7 +1552,11 @@ pub fn validate(s: &Value) -> R<()> {
 pub fn validate_event(s: &Value, e: &Value) -> R<()> {
     validate_event_with_previous(s, e, preceding_event(s, e))
 }
-pub(crate) fn validate_event_with_previous(s: &Value, e: &Value, previous: Option<&Value>) -> R<()> {
+pub(crate) fn validate_event_with_previous(
+    s: &Value,
+    e: &Value,
+    previous: Option<&Value>,
+) -> R<()> {
     let mut fields = vec![
         "sequence",
         "kind",
@@ -1380,8 +1598,10 @@ pub(crate) fn validate_event_with_previous(s: &Value, e: &Value, previous: Optio
     }
     let kind = txt(e, "kind")?;
     let d = &e["details"];
-    if kind == "market_fill" && (d["open_position"].get("original_quantity").is_some()
-        || d["open_position"].get("realized_pnl").is_some()) {
+    if kind == "market_fill"
+        && (d["open_position"].get("original_quantity").is_some()
+            || d["open_position"].get("realized_pnl").is_some())
+    {
         return Err("opening fill cannot contain partial-close accounting".into());
     }
     if ![
@@ -1402,11 +1622,12 @@ pub(crate) fn validate_event_with_previous(s: &Value, e: &Value, previous: Optio
     }
     let current = d["execution_timing"] == "current_quote";
     let conditional = !d["entry_order"].is_null();
-    if kind == "order_placed" || conditional { entry::validate_event(s,e,previous)?; }
+    if kind == "order_placed" || conditional {
+        entry::validate_event(s, e, previous)?;
+    }
     if current {
         if kind == "price_mark" {
-            let prev = previous
-                .ok_or("current quote mark lacks immediate fill checkpoint")?;
+            let prev = previous.ok_or("current quote mark lacks immediate fill checkpoint")?;
             if !["market_fill", "order_rejected"].contains(&txt(prev, "kind")?)
                 || prev["details"] != *d
                 || [
@@ -1430,14 +1651,23 @@ pub(crate) fn validate_event_with_previous(s: &Value, e: &Value, previous: Optio
                 quote(s, &positive(d, "mid_close")?)?
             };
             let base = if side(d)? == "BUY" { &ask } else { &bid };
-            let fill = slippage::validate_fill(s,&d["fill_slippage"],base,side(d)?,"market",txt(d,"operation_id")?,int(e,"cursor_index")?,int(e,"virtual_time_utc")?)?;
+            let fill = slippage::validate_fill(
+                s,
+                &d["fill_slippage"],
+                base,
+                side(d)?,
+                "market",
+                txt(d, "operation_id")?,
+                int(e, "cursor_index")?,
+                int(e, "virtual_time_utc")?,
+            )?;
             if positive(d, "fill_price")? != fill {
                 return Err("current fill differs from its cutoff quote".into());
             }
             if kind == "market_fill" {
                 let p = &d["open_position"];
                 order_valid(p, true)?;
-                slippage::validate_position(s,p)?;
+                slippage::validate_position(s, p)?;
                 if positive(p, "entry_bid")? != bid
                     || positive(p, "entry_ask")? != ask
                     || positive(p, "entry_fill")? != fill
@@ -1458,20 +1688,40 @@ pub(crate) fn validate_event_with_previous(s: &Value, e: &Value, previous: Optio
             return Err("unsupported current quote event".into());
         }
     }
-    if slippage::enabled(s) && !current && !conditional && matches!(kind,"market_fill" | "order_rejected") {
-        let bid = positive(d,"bid_open")?;
-        let ask = positive(d,"ask_open")?;
+    if slippage::enabled(s)
+        && !current
+        && !conditional
+        && matches!(kind, "market_fill" | "order_rejected")
+    {
+        let bid = positive(d, "bid_open")?;
+        let ask = positive(d, "ask_open")?;
         let base = if side(d)? == "BUY" { &ask } else { &bid };
-        let expected = slippage::validate_fill(s,&d["fill_slippage"],base,side(d)?,"market",txt(d,"operation_id")?,int(e,"cursor_index")?,int(e,"virtual_time_utc")?)?;
-        if expected != positive(d,"fill_price")? { return Err("next-bar fill differs from declared quote/slippage".into()); }
+        let expected = slippage::validate_fill(
+            s,
+            &d["fill_slippage"],
+            base,
+            side(d)?,
+            "market",
+            txt(d, "operation_id")?,
+            int(e, "cursor_index")?,
+            int(e, "virtual_time_utc")?,
+        )?;
+        if expected != positive(d, "fill_price")? {
+            return Err("next-bar fill differs from declared quote/slippage".into());
+        }
         if kind == "market_fill" {
             let p = &d["open_position"];
-            order_valid(p,true)?;
-            slippage::validate_position(s,p)?;
-            if p["source_operation_id"] != d["operation_id"] || p["position_id"] != d["position_id"]
-                || p["side"] != d["side"] || dec(p,"quantity")? != dec(d,"quantity")?
-                || positive(p,"entry_bid")? != bid || positive(p,"entry_ask")? != ask
-                || positive(p,"entry_fill")? != expected || pnl(s,p,&bid,&ask)?.0 != dec(e,"floating_pl")? {
+            order_valid(p, true)?;
+            slippage::validate_position(s, p)?;
+            if p["source_operation_id"] != d["operation_id"]
+                || p["position_id"] != d["position_id"]
+                || p["side"] != d["side"]
+                || dec(p, "quantity")? != dec(d, "quantity")?
+                || positive(p, "entry_bid")? != bid
+                || positive(p, "entry_ask")? != ask
+                || positive(p, "entry_fill")? != expected
+                || pnl(s, p, &bid, &ask)?.0 != dec(e, "floating_pl")?
+            {
                 return Err("next-bar position differs from executed fill".into());
             }
         }
@@ -1494,9 +1744,13 @@ pub(crate) fn validate_event_with_previous(s: &Value, e: &Value, previous: Optio
         qty(s, &q)?;
         let fill = positive(d, "fill_price")?;
         let cursor = int(e, "cursor_index")?;
-        let submitted = int(m,"submitted_cursor_index")?;
-        if if conditional { submitted >= cursor || m["submitted_cursor_index"] != d["entry_order"]["submitted_cursor_index"] }
-            else { submitted != cursor - if current { 0 } else { 1 } } {
+        let submitted = int(m, "submitted_cursor_index")?;
+        if if conditional {
+            submitted >= cursor
+                || m["submitted_cursor_index"] != d["entry_order"]["submitted_cursor_index"]
+        } else {
+            submitted != cursor - if current { 0 } else { 1 }
+        } {
             return Err("margin outcome lacks a prior closed-bar order".into());
         }
         let o = json!({"quantity":sval(q),"submitted_cursor_index":m["submitted_cursor_index"]});
@@ -1604,41 +1858,63 @@ pub(crate) fn validate_event_with_previous(s: &Value, e: &Value, previous: Optio
             {
                 return Err("closing fill does not match its position".into());
             }
-            let prev =
-                previous.ok_or("manual close lacks canonical position checkpoint")?;
+            let prev = previous.ok_or("manual close lacks canonical position checkpoint")?;
             let prior = &prev["details"]["open_position"];
             if prev["cursor_index"] != e["cursor_index"]
                 || prev["virtual_time_utc"] != e["virtual_time_utc"]
-                || (!partial && { let mut expected = prior.clone(); expected.as_object_mut().ok_or("prior position missing")?.remove("take_profits"); expected != *p })
+                || (!partial && {
+                    let mut expected = prior.clone();
+                    expected
+                        .as_object_mut()
+                        .ok_or("prior position missing")?
+                        .remove("take_profits");
+                    expected != *p
+                })
                 || dec(prev, "balance")? != dec(d, "previous_balance")?
             {
                 return Err("manual close differs from its canonical position checkpoint".into());
             }
             if partial {
-                order_valid(&d["open_position"],true)?;
-                let closed = positive(p,"quantity")?;
-                let residual = positive(prior,"quantity")? - &closed;
-                qty(s,&closed)?;
-                qty(s,&residual)?;
-                let original = prior.get("original_quantity").cloned().unwrap_or_else(||prior["quantity"].clone());
+                order_valid(&d["open_position"], true)?;
+                let closed = positive(p, "quantity")?;
+                let residual = positive(prior, "quantity")? - &closed;
+                qty(s, &closed)?;
+                qty(s, &residual)?;
+                let original = prior
+                    .get("original_quantity")
+                    .cloned()
+                    .unwrap_or_else(|| prior["quantity"].clone());
                 let mut expected_close = prior.clone();
-                expected_close.as_object_mut().unwrap().remove("take_profits");
+                expected_close
+                    .as_object_mut()
+                    .unwrap()
+                    .remove("take_profits");
                 expected_close["quantity"] = p["quantity"].clone();
                 expected_close["original_quantity"] = original.clone();
                 let mut expected_open = prior.clone();
                 expected_open["quantity"] = sval(residual);
                 expected_open["original_quantity"] = original;
-                expected_open["realized_pnl"] = sval(py(prior.get("realized_pnl").map(self::d).transpose()?.unwrap_or_else(zero) + &realized));
-                partial::resize(s,&mut expected_open)?;
-                if d["previous_position"] != *prior || *p != expected_close || d["open_position"] != expected_open {
-                    return Err("partial close differs from its canonical position checkpoint".into());
+                expected_open["realized_pnl"] = sval(py(prior
+                    .get("realized_pnl")
+                    .map(self::d)
+                    .transpose()?
+                    .unwrap_or_else(zero)
+                    + &realized));
+                partial::resize(s, &mut expected_open)?;
+                if d["previous_position"] != *prior
+                    || *p != expected_close
+                    || d["open_position"] != expected_open
+                {
+                    return Err(
+                        "partial close differs from its canonical position checkpoint".into(),
+                    );
                 }
             } else if !d["previous_position"].is_null() {
                 return Err("full close cannot retain a partial position checkpoint".into());
             }
             let bid = positive(d, "bid_close")?;
             let ask = positive(d, "ask_close")?;
-            if partial && dec(e,"floating_pl")? != pnl(s,&d["open_position"],&bid,&ask)?.0 {
+            if partial && dec(e, "floating_pl")? != pnl(s, &d["open_position"], &bid, &ask)?.0 {
                 return Err("partial close floating pnl differs from remaining position".into());
             }
             if !tick_mode(s) {
@@ -1650,10 +1926,23 @@ pub(crate) fn validate_event_with_previous(s: &Value, e: &Value, previous: Optio
                     return Err("manual close quote differs from the declared mid/spread".into());
                 }
             }
-            slippage::validate_position(s,p)?;
+            slippage::validate_position(s, p)?;
             let closing_side = if side(p)? == "BUY" { "SELL" } else { "BUY" };
-            let executed = slippage::validate_fill(s,&d["fill_slippage"],if closing_side == "SELL" { &bid } else { &ask },closing_side,"market",txt(d,"command_operation_id")?,int(e,"cursor_index")?,int(e,"virtual_time_utc")?)?;
-            let (net, cost) = if slippage::enabled(s) { pnl(s,p,&executed,&executed)? } else { pnl(s,p,&bid,&ask)? };
+            let executed = slippage::validate_fill(
+                s,
+                &d["fill_slippage"],
+                if closing_side == "SELL" { &bid } else { &ask },
+                closing_side,
+                "market",
+                txt(d, "command_operation_id")?,
+                int(e, "cursor_index")?,
+                int(e, "virtual_time_utc")?,
+            )?;
+            let (net, cost) = if slippage::enabled(s) {
+                pnl(s, p, &executed, &executed)?
+            } else {
+                pnl(s, p, &bid, &ask)?
+            };
             if realized != net
                 || !cost_matches(&d["cost_breakdown"], &cost)
                 || d["cost_model_version"] != cost["cost_model_version"]
@@ -1664,31 +1953,60 @@ pub(crate) fn validate_event_with_previous(s: &Value, e: &Value, previous: Optio
         }
     }
     let partial_target = kind == "protective_fill" && partial::has(&d["previous_position"]);
-    if partial_target { partial::validate_fill(s,e,previous)?; }
+    if partial_target {
+        partial::validate_fill(s, e, previous)?;
+    }
     if !partial_target && slippage::enabled(s) && kind == "protective_fill" {
         let p = &d["closed_position"];
-        order_valid(p,true)?; slippage::validate_position(s,p)?;
+        order_valid(p, true)?;
+        slippage::validate_position(s, p)?;
         let prior = previous.ok_or("protective execution lacks a canonical position checkpoint")?;
-        if prior["details"]["open_position"] != *p || dec(prior,"balance")? != dec(d,"previous_balance")? {
-            return Err("protective execution differs from its canonical position checkpoint".into());
+        if prior["details"]["open_position"] != *p
+            || dec(prior, "balance")? != dec(d, "previous_balance")?
+        {
+            return Err(
+                "protective execution differs from its canonical position checkpoint".into(),
+            );
         }
-        let reason = txt(d,"reason")?;
-        let base = positive(&d["fill_slippage"],"base_price")?;
+        let reason = txt(d, "reason")?;
+        let base = positive(&d["fill_slippage"], "base_price")?;
         let stop = reason == "stop_loss" || reason == "stop_loss_gap";
-        if !stop && !["take_profit","take_profit_gap"].contains(&reason) { return Err("unsupported protective execution reason".into()); }
-        if (reason == "stop_loss" && base != positive(p,"stop_loss")?)
-            || (!stop && base != positive(p,"take_profit")?)
-            || (reason == "stop_loss_gap" && if side(p)? == "BUY" { base > positive(p,"stop_loss")? } else { base < positive(p,"stop_loss")? }) {
+        if !stop && !["take_profit", "take_profit_gap"].contains(&reason) {
+            return Err("unsupported protective execution reason".into());
+        }
+        if (reason == "stop_loss" && base != positive(p, "stop_loss")?)
+            || (!stop && base != positive(p, "take_profit")?)
+            || (reason == "stop_loss_gap"
+                && if side(p)? == "BUY" {
+                    base > positive(p, "stop_loss")?
+                } else {
+                    base < positive(p, "stop_loss")?
+                })
+        {
             return Err("protective base price differs from stop/limit semantics".into());
         }
         let closing_side = if side(p)? == "BUY" { "SELL" } else { "BUY" };
-        let executed = slippage::validate_fill(s,&d["fill_slippage"],&base,closing_side,if stop { "stop" } else { "limit" },txt(p,"source_operation_id")?,int(e,"cursor_index")?,int(e,"virtual_time_utc")?)?;
-        let (net,cost) = pnl(s,p,&executed,&executed)?;
-        if d["operation_id"] != p["source_operation_id"] || d["position_id"] != p["position_id"]
-            || executed != positive(d,"fill_price")? || net != dec(d,"net_pnl")?
-            || !cost_matches(&d["cost_breakdown"],&cost) || d["cost_model_version"] != cost["cost_model_version"]
-            || dec(e,"balance")? != py(dec(d,"previous_balance")? + net)
-            || int(e,"open_positions")? != 0 || dec(e,"floating_pl")? != zero() {
+        let executed = slippage::validate_fill(
+            s,
+            &d["fill_slippage"],
+            &base,
+            closing_side,
+            if stop { "stop" } else { "limit" },
+            txt(p, "source_operation_id")?,
+            int(e, "cursor_index")?,
+            int(e, "virtual_time_utc")?,
+        )?;
+        let (net, cost) = pnl(s, p, &executed, &executed)?;
+        if d["operation_id"] != p["source_operation_id"]
+            || d["position_id"] != p["position_id"]
+            || executed != positive(d, "fill_price")?
+            || net != dec(d, "net_pnl")?
+            || !cost_matches(&d["cost_breakdown"], &cost)
+            || d["cost_model_version"] != cost["cost_model_version"]
+            || dec(e, "balance")? != py(dec(d, "previous_balance")? + net)
+            || int(e, "open_positions")? != 0
+            || dec(e, "floating_pl")? != zero()
+        {
             return Err("protective execution differs from frozen slippage/cost accounting".into());
         }
     }

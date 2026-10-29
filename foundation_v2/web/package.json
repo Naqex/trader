@@ -1,7 +1,7 @@
 {
-  "name": "trading-workspace-foundation-v2-web",
+  "name": "@naqex/trader-web",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.0-alpha.1",
   "type": "module",
   "scripts": {
     "build": "vite build",
@@ -10,7 +10,8 @@
     "test:settings-ui": "node run_settings_ui_acceptance.mjs",
     "test:prop-ui": "..\\.venv\\Scripts\\python.exe -B ..\\scripts\\prop_workflow_acceptance.py",
     "test:session-validation": "node --test tests/quick-session-validation.test.mjs",
-    "test:trade-risk": "node --test tests/trade-risk-components.test.mjs"
+    "test:trade-risk": "node --test tests/trade-risk-components.test.mjs",
+    "dev": "vite"
   },
   "dependencies": {
     "@tanstack/react-query": "5.104.1",
@@ -22,5 +23,6 @@
     "@vitejs/plugin-react": "^5.0.0",
     "playwright": "^1.55.0",
     "vite": "^7.0.0"
-  }
+  },
+  "license": "MIT"
 }

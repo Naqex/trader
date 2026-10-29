@@ -1,9 +1,10 @@
+import { fileURLToPath } from 'node:url'
 import assert from 'node:assert/strict'
 import {mkdir,writeFile} from 'node:fs/promises'
 import {chromium} from 'playwright'
-const origin=process.env.TW_UI_ORIGIN||'http://127.0.0.1:5191',out=process.env.TW_UI_EVIDENCE_DIR||'E:/BACKUP-TRADINGWORKSPACE/chart-time-calendar-20261028/time-axis'
+const origin=process.env.TW_UI_ORIGIN||'http://127.0.0.1:5191',out=process.env.TW_UI_EVIDENCE_DIR||fileURLToPath(new URL('../.artifacts/chartTimeAxis.browser', import.meta.url))
 await mkdir(out,{recursive:true})
-const browser=await chromium.launch({executablePath:process.env.TW_UI_QA_CHROMIUM||'C:/Users/MIIKEY/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe'})
+const browser=await chromium.launch({executablePath:process.env.TW_UI_QA_CHROMIUM})
 const report={scope:'Labeled raw-observation fixture; no broker calls or writes',cases:[],errors:[],writes:[]}
 let page
 try{

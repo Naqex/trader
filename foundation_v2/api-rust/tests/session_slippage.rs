@@ -221,34 +221,68 @@ fn mark_to_market_does_not_resample_and_manual_close_charges_only_actual_fills()
 
 #[test]
 fn partial_close_then_protection_preserves_remaining_costs_and_analytics() {
-    for side in ["BUY","SELL"] {
-        let mut seed=initial("fixed",false);
-        seed["cost_model"]["commission_per_lot_account"]=json!("8");
-        let opened=apply(seed,"queue_current_quote",json!({"operation_id":"open-partial","side":side,"quantity":"0.04","mid_close":"1.12044","virtual_time_utc":60}));
-        let partial=apply(opened.clone(),"close",json!({"operation_id":"partial","target_id":opened["position"]["position_id"],"quantity":"0.01","mid_close":"1.12044","virtual_time_utc":60}));
-        assert_eq!(partial["position"]["original_quantity"],"0.04");
-        assert_eq!(partial["ledger"].as_array().unwrap().last().unwrap()["details"]["cost_breakdown"]["commission_account"],0.08);
-        let closed=advance(protect(partial,side,true),side,true,false);
-        assert!(closed["position"].is_null()); validate(&closed).unwrap();
-        let protective=closed["ledger"].as_array().unwrap().iter().find(|e|e["kind"]=="protective_fill").unwrap();
-        assert_eq!(protective["details"]["closed_position"]["quantity"],"0.03");
-        assert_eq!(protective["details"]["cost_breakdown"]["commission_account"],0.24);
-        let view=json!({"record_id":closed["replay_session_id"],"workspace_id":"tenant-a","revision":1,"payload":{"dataset_id":closed["dataset_id"],"branch_id":closed["branch_id"],"cursor_index":closed["cursor_index"],"execution":closed}});
-        let analytics=trading_workspace_api::analytics::build_replay_analytics_view(&view,None).unwrap();
-        assert_eq!(analytics["analytics_available"],true);
-        assert_eq!(analytics["ledger"].as_array().unwrap().len(),2);
-        assert_eq!(analytics["ledger"][0]["quantity"],0.01);
-        assert_eq!(analytics["ledger"][1]["quantity"],0.03);
-        assert_ne!(analytics["ledger"][0]["trade_id"],analytics["ledger"][1]["trade_id"]);
-        for (index,event) in view["payload"]["execution"]["ledger"].as_array().unwrap().iter().filter(|e|matches!(e["kind"].as_str(),Some("manual_close"|"protective_fill"))).enumerate() {
-            let row=&analytics["ledger"][index]; let cost=&event["details"]["cost_breakdown"];
-            assert_eq!(row["gross_pnl"],cost["gross_account"]);
-            let gross:BigDecimal=row["gross_pnl"].to_string().parse().unwrap();
-            let net:BigDecimal=row["net_pnl"].to_string().parse().unwrap();
-            let fees:BigDecimal=row["fees"].to_string().parse().unwrap();
-            assert_eq!(gross-fees,net);
-            for key in ["stop_loss","take_profit"] {assert_eq!(row[key],event["details"]["closed_position"][key]);}
-            assert!(row["planned_risk_budget"].is_null());assert!(row["realized_r"].is_null());
+    for side in ["BUY", "SELL"] {
+        let mut seed = initial("fixed", false);
+        seed["cost_model"]["commission_per_lot_account"] = json!("8");
+        let opened = apply(
+            seed,
+            "queue_current_quote",
+            json!({"operation_id":"open-partial","side":side,"quantity":"0.04","mid_close":"1.12044","virtual_time_utc":60}),
+        );
+        let partial = apply(
+            opened.clone(),
+            "close",
+            json!({"operation_id":"partial","target_id":opened["position"]["position_id"],"quantity":"0.01","mid_close":"1.12044","virtual_time_utc":60}),
+        );
+        assert_eq!(partial["position"]["original_quantity"], "0.04");
+        assert_eq!(
+            partial["ledger"].as_array().unwrap().last().unwrap()["details"]["cost_breakdown"]["commission_account"],
+            0.08
+        );
+        let closed = advance(protect(partial, side, true), side, true, false);
+        assert!(closed["position"].is_null());
+        validate(&closed).unwrap();
+        let protective = closed["ledger"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|e| e["kind"] == "protective_fill")
+            .unwrap();
+        assert_eq!(protective["details"]["closed_position"]["quantity"], "0.03");
+        assert_eq!(
+            protective["details"]["cost_breakdown"]["commission_account"],
+            0.24
+        );
+        let view = json!({"record_id":closed["replay_session_id"],"workspace_id":"tenant-a","revision":1,"payload":{"dataset_id":closed["dataset_id"],"branch_id":closed["branch_id"],"cursor_index":closed["cursor_index"],"execution":closed}});
+        let analytics =
+            trading_workspace_api::analytics::build_replay_analytics_view(&view, None).unwrap();
+        assert_eq!(analytics["analytics_available"], true);
+        assert_eq!(analytics["ledger"].as_array().unwrap().len(), 2);
+        assert_eq!(analytics["ledger"][0]["quantity"], 0.01);
+        assert_eq!(analytics["ledger"][1]["quantity"], 0.03);
+        assert_ne!(
+            analytics["ledger"][0]["trade_id"],
+            analytics["ledger"][1]["trade_id"]
+        );
+        for (index, event) in view["payload"]["execution"]["ledger"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|e| matches!(e["kind"].as_str(), Some("manual_close" | "protective_fill")))
+            .enumerate()
+        {
+            let row = &analytics["ledger"][index];
+            let cost = &event["details"]["cost_breakdown"];
+            assert_eq!(row["gross_pnl"], cost["gross_account"]);
+            let gross: BigDecimal = row["gross_pnl"].to_string().parse().unwrap();
+            let net: BigDecimal = row["net_pnl"].to_string().parse().unwrap();
+            let fees: BigDecimal = row["fees"].to_string().parse().unwrap();
+            assert_eq!(gross - fees, net);
+            for key in ["stop_loss", "take_profit"] {
+                assert_eq!(row[key], event["details"]["closed_position"][key]);
+            }
+            assert!(row["planned_risk_budget"].is_null());
+            assert!(row["realized_r"].is_null());
         }
         assert!(analytics["metrics"]["gross_pnl"].is_number());
         assert!(analytics["metrics"]["fees"].is_number());
@@ -276,12 +310,17 @@ fn next_bar_market_fill_preserves_actual_entry_and_provenance() {
 
 #[test]
 fn model_rejects_ambiguous_units_and_double_slippage_costs() {
-    for (field,value) in [("unit",json!("tick")),("fixed_steps",json!(21)),("unit_price",json!("0.000001")),("seed",json!(""))] {
-        let mut seed = initial("fixed",false);
+    for (field, value) in [
+        ("unit", json!("tick")),
+        ("fixed_steps", json!(21)),
+        ("unit_price", json!("0.000001")),
+        ("seed", json!("")),
+    ] {
+        let mut seed = initial("fixed", false);
         seed["cost_model"]["slippage_model"][field] = value;
         assert!(validate(&seed).is_err());
     }
-    let mut seed = initial("fixed",false);
+    let mut seed = initial("fixed", false);
     seed["cost_model"]["slippage_price_per_side"] = json!("0.00001");
     assert!(validate(&seed).is_err());
 }

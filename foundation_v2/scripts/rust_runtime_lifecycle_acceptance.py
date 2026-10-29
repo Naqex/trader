@@ -2,13 +2,14 @@
 from __future__ import annotations
 import argparse, hashlib, json, os, socket, subprocess, sys, tempfile, time
 from pathlib import Path
+from runtime_paths import postgres_bin
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 from uuid import uuid4
 import psycopg
 
 V2 = Path(__file__).resolve().parents[1]
-PG_DEFAULT = V2.parents[2] / 'planning/mt5-tradingview-backtester/research/foundation-validation/20260921T115933Z-315e8ddd/pg-dist/pgsql/bin'
+PG_DEFAULT = postgres_bin("TW_PLATFORM_TEST_PG_BIN")
 
 def port():
     with socket.socket() as sock:

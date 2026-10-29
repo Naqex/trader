@@ -1,8 +1,8 @@
 //! Native close-delta research worker. PostgreSQL leases own every publication.
-pub mod reference;
 pub mod oos_runner;
-mod scientific_normalize;
+pub mod reference;
 mod scientific;
+mod scientific_normalize;
 use crate::{
     artifact_data::{ArtifactData, TimingQuery},
     research_jobs::{
@@ -23,7 +23,7 @@ use std::{
         Arc,
         atomic::{AtomicBool, Ordering},
     },
-    time::{Duration,Instant},
+    time::{Duration, Instant},
 };
 
 fn now() -> String {
@@ -224,8 +224,19 @@ impl ResultCandidates {
                 .exists()
                 .then(|| format!("{}/quarantine/results/{}/{}", parts[0], parts[2], parts[3])));
         }
-        if target.exists()&&crate::artifact_data::same_file(&source,&target){fs::remove_file(&source).map_err(|_|"research_candidate_cleanup_failed")?;sync_directory(source.parent().ok_or("research_artifact_parent_missing")?)?;return Ok(Some(format!("{}/quarantine/results/{}/{}",parts[0],parts[2],parts[3])));}
-        if let Err(error)=move_created(&source,&target){if source.exists()||!target.exists(){return Err(error)}}
+        if target.exists() && crate::artifact_data::same_file(&source, &target) {
+            fs::remove_file(&source).map_err(|_| "research_candidate_cleanup_failed")?;
+            sync_directory(source.parent().ok_or("research_artifact_parent_missing")?)?;
+            return Ok(Some(format!(
+                "{}/quarantine/results/{}/{}",
+                parts[0], parts[2], parts[3]
+            )));
+        }
+        if let Err(error) = move_created(&source, &target) {
+            if source.exists() || !target.exists() {
+                return Err(error);
+            }
+        }
         Ok(Some(format!(
             "{}/quarantine/results/{}/{}",
             parts[0], parts[2], parts[3]
@@ -327,7 +338,7 @@ async fn save_checkpoint_progress(
     job: &ClaimedJob,
     phase: &str,
     fields: Value,
-    progress:Value,
+    progress: Value,
 ) -> Result<bool, String> {
     let mut value =
         json!({"schema":"research-job-checkpoint-v1","phase":phase,"attempt_no":job.attempt_no});
@@ -346,63 +357,221 @@ async fn save_checkpoint_progress(
         .transaction()
         .await
         .map_err(|_| "research_database_unavailable")?;
-    let ok = lifecycle::checkpoint(
-        &tx,
-        job,
-        value,
-        Some(progress),
-    )
-    .await?;
+    let ok = lifecycle::checkpoint(&tx, job, value, Some(progress)).await?;
     tx.commit()
         .await
         .map_err(|_| "research_database_unavailable")?;
     Ok(ok)
 }
-async fn save_checkpoint(state:&AppState,job:&ClaimedJob,phase:&str,fields:Value,index:u32)->Result<bool,String>{save_checkpoint_progress(state,job,phase,fields,json!({"phase_index":index,"phase_count":4})).await}
+async fn save_checkpoint(
+    state: &AppState,
+    job: &ClaimedJob,
+    phase: &str,
+    fields: Value,
+    index: u32,
+) -> Result<bool, String> {
+    save_checkpoint_progress(
+        state,
+        job,
+        phase,
+        fields,
+        json!({"phase_index":index,"phase_count":4}),
+    )
+    .await
+}
 
-fn dataset_snapshot(manifest:&Value)->Value{let mut out=json!({});for key in ["dataset_id","artifact_sha256","normalized_sha256","instrument_spec","timeframe_seconds","transform_version","quality","holdout_policy","source"]{out[key]=manifest[key].clone();}if out["holdout_policy"].is_null(){out["holdout_policy"]=json!({"mode":"none"})}if out["quality"].is_null(){out["quality"]=json!({})}out}
-fn validate_protocol(job:&ClaimedJob,manifest:&Value,engine_hash:&str)->Result<(),String>{
-    let protocol=job.protocol.as_ref().ok_or("research_protocol_missing")?;
-    if job.protocol_sha256.as_deref()!=Some(format!("{:x}",Sha256::digest(research_jobs::canonical_py_json(protocol)?)).as_str()){return Err("queued protocol hash mismatch".into())}
-    if research_jobs::canonical_py_json(&protocol["dataset"])?!=research_jobs::canonical_py_json(&dataset_snapshot(manifest))?{return Err("dataset snapshot changed after job creation".into())}
-    if !matches!(protocol["engine"]["backend"].as_str(),Some("reference"|"nautilus"))||protocol["engine"]["version"]!="bar-breakout-v1"{return Err("unsupported_native_research_job".into())}
-    if protocol["engine"]["code_sha256"]!=engine_hash{return Err("engine code hash no longer matches queued protocol".into())}
-    let from=protocol["range"]["from_utc"].as_i64().ok_or("research_protocol_range_invalid")?;let to=protocol["range"]["to_utc"].as_i64().ok_or("research_protocol_range_invalid")?;
-    if from>=to||from<manifest["first_timestamp"].as_i64().ok_or("research_dataset_time_invalid")?||manifest["last_timestamp"].as_i64().and_then(|last|manifest["timeframe_seconds"].as_i64().and_then(|tf|last.checked_add(tf))).is_none_or(|end|to>end){return Err("research_protocol_range_invalid".into())}
+fn dataset_snapshot(manifest: &Value) -> Value {
+    let mut out = json!({});
+    for key in [
+        "dataset_id",
+        "artifact_sha256",
+        "normalized_sha256",
+        "instrument_spec",
+        "timeframe_seconds",
+        "transform_version",
+        "quality",
+        "holdout_policy",
+        "source",
+    ] {
+        out[key] = manifest[key].clone();
+    }
+    if out["holdout_policy"].is_null() {
+        out["holdout_policy"] = json!({"mode":"none"})
+    }
+    if out["quality"].is_null() {
+        out["quality"] = json!({})
+    }
+    out
+}
+fn validate_protocol(job: &ClaimedJob, manifest: &Value, engine_hash: &str) -> Result<(), String> {
+    let protocol = job.protocol.as_ref().ok_or("research_protocol_missing")?;
+    if job.protocol_sha256.as_deref()
+        != Some(
+            format!(
+                "{:x}",
+                Sha256::digest(research_jobs::canonical_py_json(protocol)?)
+            )
+            .as_str(),
+        )
+    {
+        return Err("queued protocol hash mismatch".into());
+    }
+    if research_jobs::canonical_py_json(&protocol["dataset"])?
+        != research_jobs::canonical_py_json(&dataset_snapshot(manifest))?
+    {
+        return Err("dataset snapshot changed after job creation".into());
+    }
+    if !matches!(
+        protocol["engine"]["backend"].as_str(),
+        Some("reference" | "nautilus")
+    ) || protocol["engine"]["version"] != "bar-breakout-v1"
+    {
+        return Err("unsupported_native_research_job".into());
+    }
+    if protocol["engine"]["code_sha256"] != engine_hash {
+        return Err("engine code hash no longer matches queued protocol".into());
+    }
+    let from = protocol["range"]["from_utc"]
+        .as_i64()
+        .ok_or("research_protocol_range_invalid")?;
+    let to = protocol["range"]["to_utc"]
+        .as_i64()
+        .ok_or("research_protocol_range_invalid")?;
+    if from >= to
+        || from
+            < manifest["first_timestamp"]
+                .as_i64()
+                .ok_or("research_dataset_time_invalid")?
+        || manifest["last_timestamp"]
+            .as_i64()
+            .and_then(|last| {
+                manifest["timeframe_seconds"]
+                    .as_i64()
+                    .and_then(|tf| last.checked_add(tf))
+            })
+            .is_none_or(|end| to > end)
+    {
+        return Err("research_protocol_range_invalid".into());
+    }
     Ok(())
 }
 
-fn engine_result(job:&ClaimedJob,rows:&[Value],manifest:&Value,engine_hash:&str,owned:&AtomicBool,started:Instant,deadline:Instant,scientific_descriptor:&Path,checkpoint:impl FnMut(&[Value])->Result<(),String>)->Result<Value,String>{
-    validate_protocol(job,manifest,engine_hash)?;let protocol=job.protocol.as_ref().unwrap();
-    let check=||{checked(owned)?;if Instant::now()>=deadline{Err("run exceeded budget.max_runtime_ms".into())}else{Ok(())}};
-    let scientific_root=research_jobs::adapter::foundation_root();
-    let scientific=protocol["engine"]["backend"]=="nautilus";
-    if scientific{scientific::verify_installation(&scientific_root,scientific_descriptor,protocol,&check)?;}
-    let mut result=json!({"artifact_schema_version":"research-engine-result-v1","contract_version":crate::CONTRACT_VERSION,"job_id":job.job_id,"workspace_id":job.workspace_id,"dataset_id":job.dataset_id,"dataset_sha256":manifest["artifact_sha256"],"protocol_sha256":job.protocol_sha256,"protocol":protocol,"playbook_id":protocol["playbook"]["record_id"],"playbook_revision":protocol["playbook"]["revision"],"engine_version":"bar-breakout-v1","engine_code_sha256":engine_hash,"split":protocol["split"],"created_at_utc":now(),"regime_partition":null});
-    let partition=oos_runner::materialize_regime(protocol,rows,manifest)?;
-    result["regime_partition"]=partition.clone().unwrap_or(Value::Null);
-    if protocol.get("validation").is_some_and(|v|!v.is_null()){
-        let computed=oos_runner::execute_with_engine(rows,protocol,manifest,deadline,&check,checkpoint,|source,slice,deadline|{
-            if protocol["engine"]["backend"]=="nautilus"{scientific::execute(source,slice,&research_jobs::adapter::foundation_root(),scientific_descriptor,&check,deadline)}
-            else{reference::execute_breakout_until(source,slice,engine_hash,&check,deadline)}
-        })?;let validation=&computed["validation"];
-        result["artifact_schema_version"]=json!("research-oos-result-v1");result["split"]=json!("validation");result["validation_schema"]=json!("research-oos-validation-v1");
-        for key in ["selection","walk_forward","sweep"]{result[key]=validation[key].clone()}
-        result["trials"]=computed["trials"].clone();result["outcome_summary"]=computed["outcome_summary"].clone();result["source_range"]=json!({"from_utc":protocol["range"]["from_utc"],"to_utc":protocol["range"]["to_utc"],"bar_count":rows.len(),"elapsed_ms":round_milliseconds(started.elapsed().as_secs_f64()*1000.0)?});
-    }else{
-        let computed=if protocol["engine"]["backend"]=="nautilus"{scientific::execute(rows,protocol,&research_jobs::adapter::foundation_root(),scientific_descriptor,&check,deadline)?}
-            else{reference::execute_breakout_until(rows,protocol,engine_hash,&check,deadline)?};
-        for key in ["assumptions","signals","ledger","metrics","observed_range"]{result[key]=computed[key].clone()}
-        result["execution"]=computed.get("execution").cloned().unwrap_or(json!({}));
-        if protocol["engine"]["backend"]=="reference"{reference::reconcile_reference(&result,rows,engine_hash,&check)?;}
-        reference::independent::validate(&result,rows,&check)?;
-        if let Some(mut partition)=partition{partition["engine_metrics"]=oos_runner::regime_metrics(&partition,result["ledger"].as_array().ok_or("research_ledger_invalid")?,&json!(job.starting_balance))?;result["regime_partition"]=partition;}
-        result["observed_range"]["elapsed_ms"]=json!(round_milliseconds(started.elapsed().as_secs_f64()*1000.0)?);
+fn engine_result(
+    job: &ClaimedJob,
+    rows: &[Value],
+    manifest: &Value,
+    engine_hash: &str,
+    owned: &AtomicBool,
+    started: Instant,
+    deadline: Instant,
+    scientific_descriptor: &Path,
+    checkpoint: impl FnMut(&[Value]) -> Result<(), String>,
+) -> Result<Value, String> {
+    validate_protocol(job, manifest, engine_hash)?;
+    let protocol = job.protocol.as_ref().unwrap();
+    let check = || {
+        checked(owned)?;
+        if Instant::now() >= deadline {
+            Err("run exceeded budget.max_runtime_ms".into())
+        } else {
+            Ok(())
+        }
+    };
+    let scientific_root = research_jobs::adapter::foundation_root();
+    let scientific = protocol["engine"]["backend"] == "nautilus";
+    if scientific {
+        scientific::verify_installation(&scientific_root, scientific_descriptor, protocol, &check)?;
     }
-    if scientific{scientific::verify_installation(&scientific_root,scientific_descriptor,protocol,&check)?;}
-    check()?;Ok(result)
+    let mut result = json!({"artifact_schema_version":"research-engine-result-v1","contract_version":crate::CONTRACT_VERSION,"job_id":job.job_id,"workspace_id":job.workspace_id,"dataset_id":job.dataset_id,"dataset_sha256":manifest["artifact_sha256"],"protocol_sha256":job.protocol_sha256,"protocol":protocol,"playbook_id":protocol["playbook"]["record_id"],"playbook_revision":protocol["playbook"]["revision"],"engine_version":"bar-breakout-v1","engine_code_sha256":engine_hash,"split":protocol["split"],"created_at_utc":now(),"regime_partition":null});
+    let partition = oos_runner::materialize_regime(protocol, rows, manifest)?;
+    result["regime_partition"] = partition.clone().unwrap_or(Value::Null);
+    if protocol.get("validation").is_some_and(|v| !v.is_null()) {
+        let computed = oos_runner::execute_with_engine(
+            rows,
+            protocol,
+            manifest,
+            deadline,
+            &check,
+            checkpoint,
+            |source, slice, deadline| {
+                if protocol["engine"]["backend"] == "nautilus" {
+                    scientific::execute(
+                        source,
+                        slice,
+                        &research_jobs::adapter::foundation_root(),
+                        scientific_descriptor,
+                        &check,
+                        deadline,
+                    )
+                } else {
+                    reference::execute_breakout_until(source, slice, engine_hash, &check, deadline)
+                }
+            },
+        )?;
+        let validation = &computed["validation"];
+        result["artifact_schema_version"] = json!("research-oos-result-v1");
+        result["split"] = json!("validation");
+        result["validation_schema"] = json!("research-oos-validation-v1");
+        for key in ["selection", "walk_forward", "sweep"] {
+            result[key] = validation[key].clone()
+        }
+        result["trials"] = computed["trials"].clone();
+        result["outcome_summary"] = computed["outcome_summary"].clone();
+        result["source_range"] = json!({"from_utc":protocol["range"]["from_utc"],"to_utc":protocol["range"]["to_utc"],"bar_count":rows.len(),"elapsed_ms":round_milliseconds(started.elapsed().as_secs_f64()*1000.0)?});
+    } else {
+        let computed = if protocol["engine"]["backend"] == "nautilus" {
+            scientific::execute(
+                rows,
+                protocol,
+                &research_jobs::adapter::foundation_root(),
+                scientific_descriptor,
+                &check,
+                deadline,
+            )?
+        } else {
+            reference::execute_breakout_until(rows, protocol, engine_hash, &check, deadline)?
+        };
+        for key in [
+            "assumptions",
+            "signals",
+            "ledger",
+            "metrics",
+            "observed_range",
+        ] {
+            result[key] = computed[key].clone()
+        }
+        result["execution"] = computed.get("execution").cloned().unwrap_or(json!({}));
+        if protocol["engine"]["backend"] == "reference" {
+            reference::reconcile_reference(&result, rows, engine_hash, &check)?;
+        }
+        reference::independent::validate(&result, rows, &check)?;
+        if let Some(mut partition) = partition {
+            partition["engine_metrics"] = oos_runner::regime_metrics(
+                &partition,
+                result["ledger"]
+                    .as_array()
+                    .ok_or("research_ledger_invalid")?,
+                &json!(job.starting_balance),
+            )?;
+            result["regime_partition"] = partition;
+        }
+        result["observed_range"]["elapsed_ms"] = json!(round_milliseconds(
+            started.elapsed().as_secs_f64() * 1000.0
+        )?);
+    }
+    if scientific {
+        scientific::verify_installation(&scientific_root, scientific_descriptor, protocol, &check)?;
+    }
+    check()?;
+    Ok(result)
 }
-fn round_milliseconds(value:f64)->Result<f64,String>{BigDecimal::from_f64(value).ok_or("invalid_elapsed")?.with_scale_round(3,RoundingMode::HalfEven).to_f64().ok_or("invalid_elapsed".into())}
+fn round_milliseconds(value: f64) -> Result<f64, String> {
+    BigDecimal::from_f64(value)
+        .ok_or("invalid_elapsed")?
+        .with_scale_round(3, RoundingMode::HalfEven)
+        .to_f64()
+        .ok_or("invalid_elapsed".into())
+}
 
 fn validate_manifest(job: &ClaimedJob, manifest: &Value, hash: &str) -> Result<(), String> {
     if manifest["workspace_id"] != job.workspace_id
@@ -450,7 +619,11 @@ fn validate_manifest(job: &ClaimedJob, manifest: &Value, hash: &str) -> Result<(
                 .as_i64()
                 .filter(|n| *n > 0)
                 .ok_or("research_dataset_time_invalid")?;
-            let end = job.protocol.as_ref().and_then(|p|p["range"]["to_utc"].as_i64()).or_else(||last.checked_add(interval));
+            let end = job
+                .protocol
+                .as_ref()
+                .and_then(|p| p["range"]["to_utc"].as_i64())
+                .or_else(|| last.checked_add(interval));
             if end.is_none_or(|end| end > boundary) {
                 return Err("research_locked_holdout".into());
             }
@@ -508,23 +681,81 @@ fn load_closes(
     Ok(closes)
 }
 
-fn load_engine_rows(reader:&ArtifactData,manifest:&Value,protocol:&Value,owned:&AtomicBool,deadline:Instant)->Result<Vec<Value>,String>{
-    let check=||{checked(owned)?;if Instant::now()>=deadline{Err("run exceeded budget.max_runtime_ms".to_owned())}else{Ok(())}};
+fn load_engine_rows(
+    reader: &ArtifactData,
+    manifest: &Value,
+    protocol: &Value,
+    owned: &AtomicBool,
+    deadline: Instant,
+) -> Result<Vec<Value>, String> {
+    let check = || {
+        checked(owned)?;
+        if Instant::now() >= deadline {
+            Err("run exceeded budget.max_runtime_ms".to_owned())
+        } else {
+            Ok(())
+        }
+    };
     check()?;
-    let path=manifest["artifact_path"].as_str().ok_or("research_dataset_path_invalid")?;
-    let sha=manifest["artifact_sha256"].as_str().ok_or("research_dataset_hash_invalid")?;
-    let from=protocol["range"]["from_utc"].as_i64().ok_or("research_protocol_range_invalid")?;
-    let to=protocol["range"]["to_utc"].as_i64().ok_or("research_protocol_range_invalid")?;
-    let queries=[TimingQuery{index:0,at_or_before:Some(from.checked_sub(1).ok_or("research_protocol_range_invalid")?)},TimingQuery{index:0,at_or_before:Some(to.checked_sub(1).ok_or("research_protocol_range_invalid")?)}];
-    let timing=reader.timings(path,sha,&queries)?;
-    if timing[0]["row_count"]!=manifest["row_count"]||timing[0]["first_utc"]!=manifest["first_timestamp"]||timing[0]["last_utc"]!=manifest["last_timestamp"]{return Err("research_dataset_metadata_mismatch".into());}
-    let start=usize::try_from(timing[0]["cursor_index"].as_i64().ok_or("research_dataset_time_invalid")?+1).map_err(|_|"research_dataset_time_invalid")?;
-    let end=usize::try_from(timing[1]["cursor_index"].as_i64().ok_or("research_dataset_time_invalid")?+1).map_err(|_|"research_dataset_time_invalid")?;
-    let budget=protocol["budget"]["max_bars"].as_u64().ok_or("research_bar_budget_invalid")?;
-    if end<start||(end-start)as u64>budget{return Err("run exceeded budget.max_bars".into());}
-    let mut rows=Vec::with_capacity((end-start).min(50000));
-    for at in (start..end).step_by(50000){check()?;rows.extend(reader.indices(path,sha,at,(at+50000).min(end))?);}
-    check()?;Ok(rows)
+    let path = manifest["artifact_path"]
+        .as_str()
+        .ok_or("research_dataset_path_invalid")?;
+    let sha = manifest["artifact_sha256"]
+        .as_str()
+        .ok_or("research_dataset_hash_invalid")?;
+    let from = protocol["range"]["from_utc"]
+        .as_i64()
+        .ok_or("research_protocol_range_invalid")?;
+    let to = protocol["range"]["to_utc"]
+        .as_i64()
+        .ok_or("research_protocol_range_invalid")?;
+    let queries = [
+        TimingQuery {
+            index: 0,
+            at_or_before: Some(
+                from.checked_sub(1)
+                    .ok_or("research_protocol_range_invalid")?,
+            ),
+        },
+        TimingQuery {
+            index: 0,
+            at_or_before: Some(to.checked_sub(1).ok_or("research_protocol_range_invalid")?),
+        },
+    ];
+    let timing = reader.timings(path, sha, &queries)?;
+    if timing[0]["row_count"] != manifest["row_count"]
+        || timing[0]["first_utc"] != manifest["first_timestamp"]
+        || timing[0]["last_utc"] != manifest["last_timestamp"]
+    {
+        return Err("research_dataset_metadata_mismatch".into());
+    }
+    let start = usize::try_from(
+        timing[0]["cursor_index"]
+            .as_i64()
+            .ok_or("research_dataset_time_invalid")?
+            + 1,
+    )
+    .map_err(|_| "research_dataset_time_invalid")?;
+    let end = usize::try_from(
+        timing[1]["cursor_index"]
+            .as_i64()
+            .ok_or("research_dataset_time_invalid")?
+            + 1,
+    )
+    .map_err(|_| "research_dataset_time_invalid")?;
+    let budget = protocol["budget"]["max_bars"]
+        .as_u64()
+        .ok_or("research_bar_budget_invalid")?;
+    if end < start || (end - start) as u64 > budget {
+        return Err("run exceeded budget.max_bars".into());
+    }
+    let mut rows = Vec::with_capacity((end - start).min(50000));
+    for at in (start..end).step_by(50000) {
+        check()?;
+        rows.extend(reader.indices(path, sha, at, (at + 50000).min(end))?);
+    }
+    check()?;
+    Ok(rows)
 }
 
 async fn complete_candidate(
@@ -591,14 +822,38 @@ async fn execute(
         validate_manifest(job, &manifest, &row.get::<_, String>(1))?;
         manifest
     };
-    let engine = if let Some(protocol)=&job.protocol{
-        let hash=research_jobs::adapter::engine_code_hash(&research_jobs::adapter::foundation_root())?;
-        validate_protocol(job,&manifest,&hash)?;
-        if !save_checkpoint(&state,job,"protocol-validated",json!({"protocol_sha256":job.protocol_sha256}),1).await?{return Ok(false);}
-        let started=Instant::now();
-        let budget=Duration::from_millis(protocol["budget"]["max_runtime_ms"].as_u64().filter(|v|*v>0).ok_or("research_runtime_budget_invalid")?);
-        Some((hash,started,started.checked_add(budget).ok_or("research_runtime_budget_invalid")?))
-    }else{None};
+    let engine = if let Some(protocol) = &job.protocol {
+        let hash =
+            research_jobs::adapter::engine_code_hash(&research_jobs::adapter::foundation_root())?;
+        validate_protocol(job, &manifest, &hash)?;
+        if !save_checkpoint(
+            &state,
+            job,
+            "protocol-validated",
+            json!({"protocol_sha256":job.protocol_sha256}),
+            1,
+        )
+        .await?
+        {
+            return Ok(false);
+        }
+        let started = Instant::now();
+        let budget = Duration::from_millis(
+            protocol["budget"]["max_runtime_ms"]
+                .as_u64()
+                .filter(|v| *v > 0)
+                .ok_or("research_runtime_budget_invalid")?,
+        );
+        Some((
+            hash,
+            started,
+            started
+                .checked_add(budget)
+                .ok_or("research_runtime_budget_invalid")?,
+        ))
+    } else {
+        None
+    };
     let permit = state
         .artifact_reads
         .clone()
@@ -608,10 +863,22 @@ async fn execute(
     let reader = state.artifact_data.clone();
     let owned = guard.owned.clone();
     let manifest_copy = manifest.clone();
-    let protocol=job.protocol.clone();let engine_deadline=engine.as_ref().map(|v|v.2);
+    let protocol = job.protocol.clone();
+    let engine_deadline = engine.as_ref().map(|v| v.2);
     let rows = tokio::task::spawn_blocking(move || {
         let _permit = permit;
-        if let Some(protocol)=protocol{load_engine_rows(&reader,&manifest_copy,&protocol,&owned,engine_deadline.unwrap()).map(|rows|(rows,Vec::new()))}else{load_closes(&reader, &manifest_copy, &owned).map(|closes|(Vec::new(),closes))}
+        if let Some(protocol) = protocol {
+            load_engine_rows(
+                &reader,
+                &manifest_copy,
+                &protocol,
+                &owned,
+                engine_deadline.unwrap(),
+            )
+            .map(|rows| (rows, Vec::new()))
+        } else {
+            load_closes(&reader, &manifest_copy, &owned).map(|closes| (Vec::new(), closes))
+        }
     })
     .await
     .map_err(|_| "research_compute_task_failed")??;
@@ -626,18 +893,50 @@ async fn execute(
     {
         return Ok(false);
     }
-    let owned=guard.owned.clone();let job_copy=job.clone();let sha=manifest["artifact_sha256"].as_str().ok_or("research_dataset_hash_invalid")?.to_owned();
-    let checkpoint_state=state.clone();let checkpoint_job=job.clone();let handle=tokio::runtime::Handle::current();let manifest_copy=manifest.clone();
-    let result=tokio::task::spawn_blocking(move||{
-        if let Some((hash,started,deadline))=engine{
-            let descriptor=scientific_descriptor(&checkpoint_state);
-            engine_result(&job_copy,&rows.0,&manifest_copy,&hash,&owned,started,deadline,&descriptor,|outcomes|{
-                checked(&owned)?;
-                let ok=handle.block_on(save_checkpoint_progress(&checkpoint_state,&checkpoint_job,"oos-sweep-running",json!({"trial_outcomes":outcomes}),json!({"phase_index":3,"phase_count":5,"trial_index":outcomes.len()})))?;
-                if ok{Ok(())}else{Err("research_execution_interrupted".into())}
-            })
-        }else{close_delta_result(&job_copy,&sha,&rows.1,&now(),||checked(&owned))}
-    }).await.map_err(|_|"research_compute_task_failed")??;
+    let owned = guard.owned.clone();
+    let job_copy = job.clone();
+    let sha = manifest["artifact_sha256"]
+        .as_str()
+        .ok_or("research_dataset_hash_invalid")?
+        .to_owned();
+    let checkpoint_state = state.clone();
+    let checkpoint_job = job.clone();
+    let handle = tokio::runtime::Handle::current();
+    let manifest_copy = manifest.clone();
+    let result = tokio::task::spawn_blocking(move || {
+        if let Some((hash, started, deadline)) = engine {
+            let descriptor = scientific_descriptor(&checkpoint_state);
+            engine_result(
+                &job_copy,
+                &rows.0,
+                &manifest_copy,
+                &hash,
+                &owned,
+                started,
+                deadline,
+                &descriptor,
+                |outcomes| {
+                    checked(&owned)?;
+                    let ok = handle.block_on(save_checkpoint_progress(
+                        &checkpoint_state,
+                        &checkpoint_job,
+                        "oos-sweep-running",
+                        json!({"trial_outcomes":outcomes}),
+                        json!({"phase_index":3,"phase_count":5,"trial_index":outcomes.len()}),
+                    ))?;
+                    if ok {
+                        Ok(())
+                    } else {
+                        Err("research_execution_interrupted".into())
+                    }
+                },
+            )
+        } else {
+            close_delta_result(&job_copy, &sha, &rows.1, &now(), || checked(&owned))
+        }
+    })
+    .await
+    .map_err(|_| "research_compute_task_failed")??;
     if job.protocol.is_some()&&!save_checkpoint(&state,job,"result-validated",json!({"trade_count":result["ledger"].as_array().map(Vec::len),"outcome_summary":result["outcome_summary"]}),3).await?{return Ok(false);}
     checked(&guard.owned)?;
     let (path, sha) = candidates.publish(job, &result)?;
@@ -663,22 +962,43 @@ async fn execute(
     complete_candidate(&state, job, candidates, &path, &sha).await
 }
 
-fn scientific_descriptor(state:&AppState)->PathBuf{
-    std::env::var_os("TW_V2_SCIENTIFIC_ADAPTER_CAPABILITY").map(PathBuf::from).unwrap_or_else(||state.config.artifact_root.join(".runtime/scientific-adapter-capability.json"))
+fn scientific_descriptor(state: &AppState) -> PathBuf {
+    std::env::var_os("TW_V2_SCIENTIFIC_ADAPTER_CAPABILITY")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| {
+            state
+                .config
+                .artifact_root
+                .join(".runtime/scientific-adapter-capability.json")
+        })
 }
 /// Verify optional installed code before advertising worker readiness or taking
 /// a lease. Subsequent job checks reuse only reliable per-file hash receipts.
-pub async fn prepare_scientific(state:&AppState,options:&WorkerOptions)->Result<(),String>{
-    let descriptor=scientific_descriptor(state);
-    if !descriptor.is_file(){return if std::env::var_os("TW_V2_SCIENTIFIC_ADAPTER_CAPABILITY").is_some(){Err("scientific_adapter_capability_missing".into())}else{Ok(())};}
-    let shutdown=options.shutdown_file.clone();
-    tokio::task::spawn_blocking(move||{
-        let check=||if shutdown.as_ref().is_some_and(|p|p.exists()){Err("research_execution_interrupted".into())}else{Ok(())};
-        let root=research_jobs::adapter::foundation_root();
-        let hash=research_jobs::adapter::engine_code_hash(&root)?;
-        research_jobs::adapter::verify_installation_checked(&root,&descriptor,&hash,&check)?;
+pub async fn prepare_scientific(state: &AppState, options: &WorkerOptions) -> Result<(), String> {
+    let descriptor = scientific_descriptor(state);
+    if !descriptor.is_file() {
+        return if std::env::var_os("TW_V2_SCIENTIFIC_ADAPTER_CAPABILITY").is_some() {
+            Err("scientific_adapter_capability_missing".into())
+        } else {
+            Ok(())
+        };
+    }
+    let shutdown = options.shutdown_file.clone();
+    tokio::task::spawn_blocking(move || {
+        let check = || {
+            if shutdown.as_ref().is_some_and(|p| p.exists()) {
+                Err("research_execution_interrupted".into())
+            } else {
+                Ok(())
+            }
+        };
+        let root = research_jobs::adapter::foundation_root();
+        let hash = research_jobs::adapter::engine_code_hash(&root)?;
+        research_jobs::adapter::verify_installation_checked(&root, &descriptor, &hash, &check)?;
         check()
-    }).await.map_err(|_|"research_compute_task_failed")?
+    })
+    .await
+    .map_err(|_| "research_compute_task_failed")?
 }
 pub async fn run_one(state: Arc<AppState>, options: &WorkerOptions) -> Result<RunOutcome, String> {
     options.validate()?;
@@ -686,14 +1006,16 @@ pub async fn run_one(state: Arc<AppState>, options: &WorkerOptions) -> Result<Ru
         return Ok(RunOutcome::Idle);
     }
     let candidates = ResultCandidates::new(&state.config.artifact_root)?;
-    let workspaces=state.authorization.authorized_workspace_ids();
-    if workspaces.is_empty(){return Ok(RunOutcome::Idle);}
-    let descriptor=scientific_descriptor(&state);
-    let scientific_available=descriptor.is_file();
-    if scientific_available{
-        let root=research_jobs::adapter::foundation_root();
-        let hash=research_jobs::adapter::engine_code_hash(&root)?;
-        research_jobs::adapter::descriptor(&root,&descriptor,&hash)?;
+    let workspaces = state.authorization.authorized_workspace_ids();
+    if workspaces.is_empty() {
+        return Ok(RunOutcome::Idle);
+    }
+    let descriptor = scientific_descriptor(&state);
+    let scientific_available = descriptor.is_file();
+    if scientific_available {
+        let root = research_jobs::adapter::foundation_root();
+        let hash = research_jobs::adapter::engine_code_hash(&root)?;
+        research_jobs::adapter::descriptor(&root, &descriptor, &hash)?;
     }
     {
         let mut client = state
@@ -705,7 +1027,7 @@ pub async fn run_one(state: Arc<AppState>, options: &WorkerOptions) -> Result<Ru
             .transaction()
             .await
             .map_err(|_| "research_database_unavailable")?;
-        lifecycle::recover_native_scoped(&tx,&workspaces,scientific_available).await?;
+        lifecycle::recover_native_scoped(&tx, &workspaces, scientific_available).await?;
         tx.commit()
             .await
             .map_err(|_| "research_database_unavailable")?;
@@ -839,8 +1161,37 @@ mod tests {
             &fs::read(std::env::var("TW_RUST_RESEARCH_EXECUTION_ORACLE").unwrap()).unwrap(),
         )
         .unwrap();
-        fn differences(a:&Value,b:&Value,path:&str,out:&mut Vec<String>){match(a,b){(Value::Object(a),Value::Object(b))=>{for(k,a)in a{differences(a,b.get(k).unwrap_or(&Value::Null),&format!("{path}/{k}"),out)}},(Value::Array(a),Value::Array(b))=>{if a.len()!=b.len(){out.push(format!("{path}: array length mismatch"));return}for(i,(a,b))in a.iter().zip(b).enumerate(){differences(a,b,&format!("{path}/{i}"),out)}},_=>if research_jobs::canonical_py_json(a).unwrap()!=research_jobs::canonical_py_json(b).unwrap(){out.push(format!("{path}: {a} != {b}"))}}}
-        let mut mismatches=Vec::new();
+        fn differences(a: &Value, b: &Value, path: &str, out: &mut Vec<String>) {
+            match (a, b) {
+                (Value::Object(a), Value::Object(b)) => {
+                    for (k, a) in a {
+                        differences(
+                            a,
+                            b.get(k).unwrap_or(&Value::Null),
+                            &format!("{path}/{k}"),
+                            out,
+                        )
+                    }
+                }
+                (Value::Array(a), Value::Array(b)) => {
+                    if a.len() != b.len() {
+                        out.push(format!("{path}: array length mismatch"));
+                        return;
+                    }
+                    for (i, (a, b)) in a.iter().zip(b).enumerate() {
+                        differences(a, b, &format!("{path}/{i}"), out)
+                    }
+                }
+                _ => {
+                    if research_jobs::canonical_py_json(a).unwrap()
+                        != research_jobs::canonical_py_json(b).unwrap()
+                    {
+                        out.push(format!("{path}: {a} != {b}"))
+                    }
+                }
+            }
+        }
+        let mut mismatches = Vec::new();
         for (index, case) in fixture["cases"].as_array().unwrap().iter().enumerate() {
             let mut job = job("fixture");
             job.starting_balance = case["starting_balance"].as_f64().unwrap();
@@ -857,14 +1208,32 @@ mod tests {
                 .unwrap();
             let bytes = research_jobs::canonical_py_json(&result).unwrap();
             let expected = research_jobs::canonical_py_json(&case["expected"]).unwrap();
-            if bytes!=expected{differences(&result,&case["expected"],&format!("case-{index}-{}",case["name"]),&mut mismatches);continue}
+            if bytes != expected {
+                differences(
+                    &result,
+                    &case["expected"],
+                    &format!("case-{index}-{}", case["name"]),
+                    &mut mismatches,
+                );
+                continue;
+            }
             assert_eq!(
                 format!("{:x}", Sha256::digest(bytes)),
                 case["sha256"].as_str().unwrap(),
                 "case {index} canonical hash"
             );
         }
-        assert!(mismatches.is_empty(),"{} exact mismatches; first 40:\n{}",mismatches.len(),mismatches.iter().take(40).cloned().collect::<Vec<_>>().join("\n"));
+        assert!(
+            mismatches.is_empty(),
+            "{} exact mismatches; first 40:\n{}",
+            mismatches.len(),
+            mismatches
+                .iter()
+                .take(40)
+                .cloned()
+                .collect::<Vec<_>>()
+                .join("\n")
+        );
         println!(
             "{}",
             json!({"pure_oracle_cases":fixture["cases"].as_array().unwrap().len(),"exact_json_bytes":true})
@@ -898,7 +1267,7 @@ mod tests {
             max_active_jobs: 1,
             shutdown_file: None,
         };
-        prepare_scientific(&state,&options).await.unwrap();
+        prepare_scientific(&state, &options).await.unwrap();
         let candidates = ResultCandidates::new(&state.config.artifact_root).unwrap();
         async fn insert(state: &AppState, id: &str, protocol: Option<Value>) {
             let client = state.pool.get().await.unwrap();
@@ -918,7 +1287,7 @@ mod tests {
         async fn cancel(state: &AppState, id: &str) {
             state.pool.get().await.unwrap().execute("UPDATE research_jobs SET status='canceled',cancel_requested=true,lease_owner=NULL,lease_token=NULL,lease_expires_at_utc=NULL WHERE workspace_id='tenant-a' AND job_id=$1",&[&id]).await.unwrap();
         }
-        let client=state.pool.get().await.unwrap();
+        let client = state.pool.get().await.unwrap();
         client.execute("INSERT INTO workspaces(workspace_id,created_at_utc) VALUES('outside-worker-scope',$1)",&[&now()]).await.unwrap();
         client.execute("INSERT INTO datasets(workspace_id,dataset_id,manifest_json,artifact_sha256,created_at_utc) SELECT 'outside-worker-scope',dataset_id,manifest_json,artifact_sha256,created_at_utc FROM datasets WHERE workspace_id='tenant-a' AND dataset_id='dataset-fixture'",&[]).await.unwrap();
         client.execute("INSERT INTO research_jobs(workspace_id,job_id,dataset_id,strategy_version,starting_balance,status,created_at_utc,updated_at_utc) VALUES('outside-worker-scope','foreign-earliest','dataset-fixture','close-delta-v1',100000,'queued','2000','2000')",&[]).await.unwrap();
@@ -941,10 +1310,18 @@ mod tests {
             research_jobs::canonical_py_json(&actual).unwrap(),
             research_jobs::canonical_py_json(&fixture["expected"]).unwrap()
         );
-        let client=state.pool.get().await.unwrap();
-        let foreign=client.query_one("SELECT status,attempt_no FROM research_jobs WHERE job_id='foreign-earliest'",&[]).await.unwrap();
-        assert_eq!(foreign.get::<_,String>(0),"queued");assert_eq!(foreign.get::<_,i32>(1),0);
-        client.execute("UPDATE research_jobs SET status='canceled',cancel_requested=true WHERE job_id='foreign-earliest'",&[]).await.unwrap();drop(client);
+        let client = state.pool.get().await.unwrap();
+        let foreign = client
+            .query_one(
+                "SELECT status,attempt_no FROM research_jobs WHERE job_id='foreign-earliest'",
+                &[],
+            )
+            .await
+            .unwrap();
+        assert_eq!(foreign.get::<_, String>(0), "queued");
+        assert_eq!(foreign.get::<_, i32>(1), 0);
+        client.execute("UPDATE research_jobs SET status='canceled',cancel_requested=true WHERE job_id='foreign-earliest'",&[]).await.unwrap();
+        drop(client);
         assert_eq!(
             run_one(state.clone(), &options).await.unwrap(),
             RunOutcome::Idle
@@ -1072,41 +1449,106 @@ mod tests {
             1
         );
 
-        let first=&fixture["engine_cases"][0];let mut oversized=first["protocol"].clone();oversized["budget"]["max_bars"]=json!(1);
-        let digest=format!("{:x}",Sha256::digest(research_jobs::canonical_py_json(&oversized).unwrap()));
+        let first = &fixture["engine_cases"][0];
+        let mut oversized = first["protocol"].clone();
+        oversized["budget"]["max_bars"] = json!(1);
+        let digest = format!(
+            "{:x}",
+            Sha256::digest(research_jobs::canonical_py_json(&oversized).unwrap())
+        );
         state.pool.get().await.unwrap().execute("INSERT INTO research_jobs(workspace_id,job_id,dataset_id,strategy_version,starting_balance,status,created_at_utc,updated_at_utc,protocol_json,protocol_sha256) VALUES('tenant-a','source-budget-rejected',$1,'bar-breakout-v1',$2,'queued',$3,$3,$4,$5)",&[&first["manifest"]["dataset_id"].as_str().unwrap(),&oversized["starting_balance"].as_f64().unwrap(),&now(),&oversized,&digest]).await.unwrap();
-        assert_eq!(run_one(state.clone(),&options).await.unwrap_err(),"run exceeded budget.max_bars");
+        assert_eq!(
+            run_one(state.clone(), &options).await.unwrap_err(),
+            "run exceeded budget.max_bars"
+        );
         let rejected=state.pool.get().await.unwrap().query_one("SELECT status,result_path FROM research_jobs WHERE job_id='source-budget-rejected'",&[]).await.unwrap();
-        assert_eq!(rejected.get::<_,String>(0),"failed");assert!(rejected.get::<_,Option<String>>(1).is_none());
+        assert_eq!(rejected.get::<_, String>(0), "failed");
+        assert!(rejected.get::<_, Option<String>>(1).is_none());
 
-        for case in fixture["engine_cases"].as_array().unwrap(){
-            let id=case["job_id"].as_str().unwrap();let dataset=case["manifest"]["dataset_id"].as_str().unwrap();let protocol=&case["protocol"];let digest=case["protocol_sha256"].as_str().unwrap();let starting=protocol["starting_balance"].as_f64().unwrap();
+        for case in fixture["engine_cases"].as_array().unwrap() {
+            let id = case["job_id"].as_str().unwrap();
+            let dataset = case["manifest"]["dataset_id"].as_str().unwrap();
+            let protocol = &case["protocol"];
+            let digest = case["protocol_sha256"].as_str().unwrap();
+            let starting = protocol["starting_balance"].as_f64().unwrap();
             state.pool.get().await.unwrap().execute("INSERT INTO research_jobs(workspace_id,job_id,dataset_id,strategy_version,starting_balance,status,created_at_utc,updated_at_utc,protocol_json,protocol_sha256) VALUES('tenant-a',$1,$2,'bar-breakout-v1',$3,'queued',$4,$4,$5,$6)",&[&id,&dataset,&starting,&now(),&protocol,&digest]).await.unwrap();
-            assert_eq!(run_one(state.clone(),&options).await.unwrap_or_else(|error|panic!("{id}: {error}")),RunOutcome::Completed(id.into()),"{id}");
+            assert_eq!(
+                run_one(state.clone(), &options)
+                    .await
+                    .unwrap_or_else(|error| panic!("{id}: {error}")),
+                RunOutcome::Completed(id.into()),
+                "{id}"
+            );
             let row=state.pool.get().await.unwrap().query_one("SELECT result_path,result_sha256,attempt_no,status FROM research_jobs WHERE job_id=$1",&[&id]).await.unwrap();
-            assert_eq!(row.get::<_,String>(3),"completed");assert_eq!(row.get::<_,i32>(2),1);
-            let bytes=fs::read(state.config.artifact_root.join(row.get::<_,String>(0))).unwrap();assert_eq!(format!("{:x}",Sha256::digest(&bytes)),row.get::<_,String>(1));
-            let mut actual:Value=serde_json::from_slice(&bytes).unwrap();actual["created_at_utc"]=case["expected"]["created_at_utc"].clone();
-            let range=if actual["artifact_schema_version"]=="research-oos-result-v1"{"source_range"}else{"observed_range"};assert!(actual[range]["elapsed_ms"].as_f64().unwrap()>=0.);actual[range]["elapsed_ms"]=json!(0.0);
-            let mut expected=case["expected"].clone();
-            if protocol["engine"]["backend"]=="nautilus"{
-                fn zero_elapsed(value:&mut Value){match value{
-                    Value::Object(fields)=>for(key,value)in fields{if key=="elapsed_ms"{*value=json!(0.0);}else{zero_elapsed(value);}},
-                    Value::Array(items)=>for item in items{zero_elapsed(item);},_=>(),
-                }}
+            assert_eq!(row.get::<_, String>(3), "completed");
+            assert_eq!(row.get::<_, i32>(2), 1);
+            let bytes = fs::read(state.config.artifact_root.join(row.get::<_, String>(0))).unwrap();
+            assert_eq!(
+                format!("{:x}", Sha256::digest(&bytes)),
+                row.get::<_, String>(1)
+            );
+            let mut actual: Value = serde_json::from_slice(&bytes).unwrap();
+            actual["created_at_utc"] = case["expected"]["created_at_utc"].clone();
+            let range = if actual["artifact_schema_version"] == "research-oos-result-v1" {
+                "source_range"
+            } else {
+                "observed_range"
+            };
+            assert!(actual[range]["elapsed_ms"].as_f64().unwrap() >= 0.);
+            actual[range]["elapsed_ms"] = json!(0.0);
+            let mut expected = case["expected"].clone();
+            if protocol["engine"]["backend"] == "nautilus" {
+                fn zero_elapsed(value: &mut Value) {
+                    match value {
+                        Value::Object(fields) => {
+                            for (key, value) in fields {
+                                if key == "elapsed_ms" {
+                                    *value = json!(0.0);
+                                } else {
+                                    zero_elapsed(value);
+                                }
+                            }
+                        }
+                        Value::Array(items) => {
+                            for item in items {
+                                zero_elapsed(item);
+                            }
+                        }
+                        _ => (),
+                    }
+                }
                 // Generated native IDs differ between engine runs; source/fill
                 // links were independently validated before candidate publication.
-                for result in [&mut actual,&mut expected]{
+                for result in [&mut actual, &mut expected] {
                     zero_elapsed(result);
                     result.as_object_mut().unwrap().remove("execution");
-                    if let Some(ledger)=result["ledger"].as_array_mut(){for trade in ledger{trade.as_object_mut().unwrap().remove("execution_link");}}
+                    if let Some(ledger) = result["ledger"].as_array_mut() {
+                        for trade in ledger {
+                            trade.as_object_mut().unwrap().remove("execution_link");
+                        }
+                    }
                 }
             }
-            if research_jobs::canonical_py_json(&actual).unwrap()!=research_jobs::canonical_py_json(&expected).unwrap(){
-                let evidence=PathBuf::from(std::env::var("TW_RUST_EXECUTION_PG_ORACLE").unwrap()).parent().unwrap().to_path_buf();
-                fs::write(evidence.join(format!("{id}-actual.json")),serde_json::to_vec_pretty(&actual).unwrap()).unwrap();
-                fs::write(evidence.join(format!("{id}-expected.json")),serde_json::to_vec_pretty(&expected).unwrap()).unwrap();
-                panic!("{id} durable artifact parity; inspect actual/expected JSON beside PostgreSQL oracle");
+            if research_jobs::canonical_py_json(&actual).unwrap()
+                != research_jobs::canonical_py_json(&expected).unwrap()
+            {
+                let evidence = PathBuf::from(std::env::var("TW_RUST_EXECUTION_PG_ORACLE").unwrap())
+                    .parent()
+                    .unwrap()
+                    .to_path_buf();
+                fs::write(
+                    evidence.join(format!("{id}-actual.json")),
+                    serde_json::to_vec_pretty(&actual).unwrap(),
+                )
+                .unwrap();
+                fs::write(
+                    evidence.join(format!("{id}-expected.json")),
+                    serde_json::to_vec_pretty(&expected).unwrap(),
+                )
+                .unwrap();
+                panic!(
+                    "{id} durable artifact parity; inspect actual/expected JSON beside PostgreSQL oracle"
+                );
             }
         }
 
@@ -1196,7 +1638,10 @@ mod tests {
             )
             .await
             .unwrap();
-        assert!(all.iter().all(|r| r.get::<_, String>(0) == "tenant-a" || (r.get::<_,String>(0)=="outside-worker-scope" && r.get::<_,String>(1)=="canceled" && r.get::<_,Option<String>>(2).is_none())));
+        assert!(all.iter().all(|r| r.get::<_, String>(0) == "tenant-a"
+            || (r.get::<_, String>(0) == "outside-worker-scope"
+                && r.get::<_, String>(1) == "canceled"
+                && r.get::<_, Option<String>>(2).is_none())));
         state.pool.close();
         assert_eq!(
             run_one(state, &options).await.unwrap_err(),

@@ -1,9 +1,10 @@
+import { fileURLToPath } from 'node:url'
 import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { chromium } from 'playwright'
 
 const origin = process.env.TW_LIVE_UI_ORIGIN || 'http://127.0.0.1:5180'
-const output = process.env.TW_LIVE_UI_EVIDENCE || 'E:/BACKUP-TRADINGWORKSPACE/live-chart-chrome-ui'
+const output = process.env.TW_LIVE_UI_EVIDENCE || fileURLToPath(new URL('./.artifacts/run_live_chart_chrome_acceptance', import.meta.url))
 await mkdir(output, { recursive:true })
 const browser = await chromium.launch()
 const fixture = process.env.TW_LIVE_CHART_FIXTURE === '1'

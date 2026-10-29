@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import assert from 'node:assert/strict'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -9,7 +10,7 @@ import { chromium } from 'playwright'
 const origin = process.env.TW_AI_UI_ORIGIN || 'http://127.0.0.1:5188'
 const live = process.env.TW_AI_EMBED_LIVE === '1'
 const adminLogin = live && process.env.TW_AI_EMBED_ADMIN_LOGIN === '1'
-const evidence = path.resolve(process.env.TW_AI_UI_EVIDENCE || 'E:/BACKUP-TRADINGWORKSPACE/ai-gateway-embed-20261023/fixtures')
+const evidence = path.resolve(process.env.TW_AI_UI_EVIDENCE || fileURLToPath(new URL('./.artifacts/run_ai_gateway_embed_acceptance', import.meta.url)))
 const management = 'http://127.0.0.1:17852/management.html'
 await mkdir(evidence, { recursive: true })
 const browser = await chromium.launch({ headless: true })

@@ -17,7 +17,9 @@ mod learn;
 pub mod notion;
 
 pub fn native(method: &str, path: &str) -> bool {
-    if crate::ai_assistant::native(method, path) { return true; }
+    if crate::ai_assistant::native(method, path) {
+        return true;
+    }
     if notion::native(method, path) {
         return true;
     }
@@ -96,12 +98,16 @@ fn decimal(
         return Err(invalid(&format!("{field} must be finite")));
     }
     if s.len() > 512 {
-        return Err(invalid(&format!("{field} exceeds supported decimal bounds")));
+        return Err(invalid(&format!(
+            "{field} exceeds supported decimal bounds"
+        )));
     }
     let n =
         BigDecimal::from_str(s.trim()).map_err(|_| invalid(&format!("{field} must be numeric")))?;
     if n.as_bigint_and_exponent().1.unsigned_abs() > 512 {
-        return Err(invalid(&format!("{field} exceeds supported decimal bounds")));
+        return Err(invalid(&format!(
+            "{field} exceeds supported decimal bounds"
+        )));
     }
     if positive && n <= BigDecimal::zero() {
         return Err(invalid(&format!("{field} must be positive")));
@@ -358,8 +364,10 @@ pub(crate) fn canonical_json(value: &Value, out: &mut String, ensure_ascii: bool
             out.push('}');
         }
         Value::Number(n) if n.is_f64() => {
-            out.push_str(&crate::research_jobs::python_float(n.as_f64().expect("finite float"))
-                .expect("finite JSON number"));
+            out.push_str(
+                &crate::research_jobs::python_float(n.as_f64().expect("finite float"))
+                    .expect("finite JSON number"),
+            );
         }
         Value::Number(n) if n.to_string() == "-0" => out.push('0'),
         _ => out.push_str(&value.to_string()),

@@ -1,5 +1,5 @@
 /* Project patterns adopted from the owner-reviewed Dashboard. Shared UI pins
- * retain their own contracts; these rules apply only inside WMREPLAY. */
+ * retain their own contracts; these rules apply only inside Naqex Trader. */
 .fx-app {
   --wm-canvas: var(--fx-shell-bg, #0a0d10);
   --wm-surface: var(--fx-shell-surface, #0f1317);

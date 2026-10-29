@@ -23,14 +23,14 @@ use std::{
 use tokio_postgres::Transaction;
 use uuid::Uuid;
 
-#[path = "replay_history.rs"]
-pub mod history;
-#[path = "replay_entry_recording.rs"]
-mod entry_recording;
 #[path = "replay_activity_recording.rs"]
 pub(crate) mod activity_recording;
+#[path = "replay_entry_recording.rs"]
+mod entry_recording;
 #[path = "replay_historical_time.rs"]
 pub(crate) mod historical_time;
+#[path = "replay_history.rs"]
+pub mod history;
 
 struct ReplayTimings {
     operation: String,
@@ -39,13 +39,19 @@ struct ReplayTimings {
 }
 impl ReplayTimings {
     fn new() -> Self {
-        Self { operation: String::new(), last: std::env::var("TW_V2_REPLAY_TIMINGS")
-            .is_ok_and(|v|v=="1").then(std::time::Instant::now), phases: Vec::new() }
+        Self {
+            operation: String::new(),
+            last: std::env::var("TW_V2_REPLAY_TIMINGS")
+                .is_ok_and(|v| v == "1")
+                .then(std::time::Instant::now),
+            phases: Vec::new(),
+        }
     }
     fn mark(&mut self, phase: &'static str) {
         if let Some(last) = self.last.as_mut() {
-            self.phases.push(json!({"phase":phase,"us":last.elapsed().as_micros() as u64}));
-            *last=std::time::Instant::now();
+            self.phases
+                .push(json!({"phase":phase,"us":last.elapsed().as_micros() as u64}));
+            *last = std::time::Instant::now();
         }
     }
 }
@@ -158,15 +164,24 @@ fn timing(legacy: bool) -> Value {
     json!({"schema_version":"replay-timing-v1","started_at_utc":stamp,"legacy_baseline":legacy,"historical_time_replayed_seconds":0,"historical_activity":historical_time::fresh(&stamp)})
 }
 fn engine_snapshot(action: &str, snapshot: &Value, args: Value) -> Result<Value, ApiError> {
-    let mut result = crate::replay_core::transform_owned(json!({"action":action,"snapshot":snapshot,"args":args}))
-        .map_err(bad)?;
+    let mut result = crate::replay_core::transform_owned(
+        json!({"action":action,"snapshot":snapshot,"args":args}),
+    )
+    .map_err(bad)?;
     Ok(result["snapshot"].take())
 }
-async fn engine_snapshot_owned(action: &'static str, snapshot: Value, args: Value) -> Result<Value, ApiError> {
+async fn engine_snapshot_owned(
+    action: &'static str,
+    snapshot: Value,
+    args: Value,
+) -> Result<Value, ApiError> {
     let mut request = json!({"action":action,"args":args});
     request["snapshot"] = snapshot;
-    let mut result = tokio::task::spawn_blocking(move || crate::replay_core::transform_owned(request))
-        .await.map_err(|_| internal("execution_task_failed"))?.map_err(bad)?;
+    let mut result =
+        tokio::task::spawn_blocking(move || crate::replay_core::transform_owned(request))
+            .await
+            .map_err(|_| internal("execution_task_failed"))?
+            .map_err(bad)?;
     Ok(result["snapshot"].take())
 }
 fn pairs(raw: Option<&str>) -> HashMap<String, String> {
@@ -186,15 +201,22 @@ fn qint(q: &HashMap<String, String>, key: &str) -> Result<Option<i64>, ApiError>
 fn reader(state: &AppState) -> Result<Arc<ArtifactData>, ApiError> {
     Ok(state.artifact_data.clone())
 }
-fn entry_action(body: &Value, args: &mut Value, bar: &Value, head: &Value, quick: bool) -> Result<&'static str, ApiError> {
+fn entry_action(
+    body: &Value,
+    args: &mut Value,
+    bar: &Value,
+    head: &Value,
+    quick: bool,
+) -> Result<&'static str, ApiError> {
     let kind = body["order_type"].as_str().unwrap_or("market");
     let timing = body["execution_timing"].as_str().unwrap_or("next_bar");
     args["mid_close"] = bar["close"].clone();
-    args["virtual_time_utc"] = json!(integer(bar,"timestamp")? + integer(head,"timeframe_seconds")?);
-    match (kind,timing) {
-        ("market","next_bar") if body["entry_price"].is_null() => Ok("queue"),
-        ("market","current_quote") if body["entry_price"].is_null() => Ok("queue_current_quote"),
-        ("limit" | "stop","pending") if !quick => Ok("queue_entry"),
+    args["virtual_time_utc"] =
+        json!(integer(bar, "timestamp")? + integer(head, "timeframe_seconds")?);
+    match (kind, timing) {
+        ("market", "next_bar") if body["entry_price"].is_null() => Ok("queue"),
+        ("market", "current_quote") if body["entry_price"].is_null() => Ok("queue_current_quote"),
+        ("limit" | "stop", "pending") if !quick => Ok("queue_entry"),
         _ => Err(bad("unsupported order type/execution timing")),
     }
 }
@@ -249,12 +271,16 @@ async fn load_record_inner(
     if version.get::<_, bool>("deleted") {
         return Err(ApiError::detail(StatusCode::NOT_FOUND, "replay_not_found"));
     }
-    let mut payload = tokio::task::spawn_blocking(move || version.try_get::<_, Value>("payload_json"))
-        .await.map_err(|_| internal("replay_decode_failed"))?
-        .map_err(|_| internal("replay_revision_invalid"))?;
+    let mut payload =
+        tokio::task::spawn_blocking(move || version.try_get::<_, Value>("payload_json"))
+            .await
+            .map_err(|_| internal("replay_decode_failed"))?
+            .map_err(|_| internal("replay_revision_invalid"))?;
     if hydrate {
-        payload = crate::replay_storage::hydrate_payload(tx, workspace, id, i64::from(rev), payload)
-            .await.map_err(internal)?;
+        payload =
+            crate::replay_storage::hydrate_payload(tx, workspace, id, i64::from(rev), payload)
+                .await
+                .map_err(internal)?;
     }
     let mut record = json!({"record_id":id,"source_key":head.get::<_,Option<String>>("source_key"),"revision":rev,"deleted":false,"created_at_utc":head.get::<_,String>("created_at_utc"),"updated_at_utc":head.get::<_,String>("updated_at_utc")});
     record["payload"] = payload;
@@ -272,11 +298,19 @@ async fn manifest(tx: &Transaction<'_>, workspace: &str, id: &str) -> Result<Val
 }
 // Read projections use their transaction snapshot; dataset deletion is forbidden
 // while any replay revision pins it. Row locks belong to admission/mutation paths.
-async fn snapshot_manifest(tx: &Transaction<'_>, workspace: &str, id: &str) -> Result<Value, ApiError> {
-    tx.query_opt("SELECT manifest_json FROM datasets WHERE workspace_id=$1 AND dataset_id=$2", &[&workspace, &id])
-        .await.map_err(|_| ApiError::database())?
-        .map(|r| r.get(0))
-        .ok_or_else(|| ApiError::detail(StatusCode::NOT_FOUND, "dataset_not_found"))
+async fn snapshot_manifest(
+    tx: &Transaction<'_>,
+    workspace: &str,
+    id: &str,
+) -> Result<Value, ApiError> {
+    tx.query_opt(
+        "SELECT manifest_json FROM datasets WHERE workspace_id=$1 AND dataset_id=$2",
+        &[&workspace, &id],
+    )
+    .await
+    .map_err(|_| ApiError::database())?
+    .map(|r| r.get(0))
+    .ok_or_else(|| ApiError::detail(StatusCode::NOT_FOUND, "dataset_not_found"))
 }
 async fn slice(state: &AppState, m: &Value, start: i64, end: i64) -> Result<Vec<Value>, ApiError> {
     if start < 0 || end < start {
@@ -359,10 +393,10 @@ async fn lock_datasets(tx: &Transaction<'_>, workspace: &str, p: &Value) -> Resu
     Ok(())
 }
 fn take_mutation_payload(record: &mut Value) -> Value {
-    let payload=record["payload"].take();
-    record["_entry_recording_baseline"]=entry_recording::baseline(&payload);
-    record["_activity_recording_baseline"]=activity_recording::baseline(&payload);
-    record["_historical_timing_baseline"]=payload["timing"].clone();
+    let payload = record["payload"].take();
+    record["_entry_recording_baseline"] = entry_recording::baseline(&payload);
+    record["_activity_recording_baseline"] = activity_recording::baseline(&payload);
+    record["_historical_timing_baseline"] = payload["timing"].clone();
     payload
 }
 pub async fn save_record(
@@ -372,11 +406,15 @@ pub async fn save_record(
     payload: Value,
     deleted: bool,
 ) -> Result<Value, ApiError> {
-    save_record_with_events(tx,workspace,record,payload,deleted,&[]).await
+    save_record_with_events(tx, workspace, record, payload, deleted, &[]).await
 }
 async fn save_record_with_events(
-    tx: &Transaction<'_>, workspace: &str, record: &Value, mut payload: Value,
-    deleted: bool, events: &[Value],
+    tx: &Transaction<'_>,
+    workspace: &str,
+    record: &Value,
+    mut payload: Value,
+    deleted: bool,
+    events: &[Value],
 ) -> Result<Value, ApiError> {
     sync(&mut payload)?;
     lock_datasets(tx, workspace, &payload).await?;
@@ -386,12 +424,24 @@ async fn save_record_with_events(
     let expected = integer(record, "revision")?;
     let rev = i32::try_from(expected + 1).map_err(|_| bad("record revision overflow"))?;
     let stamp = now();
-    let prior_timing=if record["payload"].is_object(){&record["payload"]["timing"]}else{&record["_historical_timing_baseline"]};
-    historical_time::capture(prior_timing,&mut payload["timing"],&stamp).map_err(internal)?;
-    let baseline=if record["payload"].is_object(){entry_recording::baseline(&record["payload"])}else{record["_entry_recording_baseline"].clone()};
-    entry_recording::capture(&baseline,&mut payload,events,&stamp);
-    let activity_baseline=if record["payload"].is_object(){activity_recording::baseline(&record["payload"])}else{record["_activity_recording_baseline"].clone()};
-    activity_recording::capture(&activity_baseline,&mut payload,events,&stamp);
+    let prior_timing = if record["payload"].is_object() {
+        &record["payload"]["timing"]
+    } else {
+        &record["_historical_timing_baseline"]
+    };
+    historical_time::capture(prior_timing, &mut payload["timing"], &stamp).map_err(internal)?;
+    let baseline = if record["payload"].is_object() {
+        entry_recording::baseline(&record["payload"])
+    } else {
+        record["_entry_recording_baseline"].clone()
+    };
+    entry_recording::capture(&baseline, &mut payload, events, &stamp);
+    let activity_baseline = if record["payload"].is_object() {
+        activity_recording::baseline(&record["payload"])
+    } else {
+        record["_activity_recording_baseline"].clone()
+    };
+    activity_recording::capture(&activity_baseline, &mut payload, events, &stamp);
     let n=tx.execute("UPDATE workspace_records SET current_revision=$3,updated_at_utc=$4 WHERE workspace_id=$1 AND kind='replay' AND record_id=$2 AND current_revision=$5",&[&workspace,&id,&rev,&stamp,&(expected as i32)]).await.map_err(|_|ApiError::database())?;
     if n != 1 {
         return Err(conflict("record revision conflict"));
@@ -410,8 +460,8 @@ async fn create_record(
     lock_datasets(tx, workspace, &p).await?;
     ensure_portfolio(tx, workspace, id, &mut p).await?;
     let stamp = now();
-    let activity_baseline=activity_recording::baseline(&p);
-    activity_recording::capture(&activity_baseline,&mut p,&[],&stamp);
+    let activity_baseline = activity_recording::baseline(&p);
+    activity_recording::capture(&activity_baseline, &mut p, &[], &stamp);
     tx.execute("INSERT INTO workspace_records(workspace_id,kind,record_id,current_revision,created_at_utc,updated_at_utc) VALUES($1,'replay',$2,1,$3,$3)",&[&workspace,&id,&stamp]).await.map_err(|_|ApiError::database())?;
     tx.execute("INSERT INTO workspace_record_revisions(workspace_id,kind,record_id,revision,payload_json,deleted,created_at_utc) VALUES($1,'replay',$2,1,$3,false,$4)",&[&workspace,&id,&p,&stamp]).await.map_err(|_|ApiError::database())?;
     let mut record = json!({"record_id":id,"source_key":null,"revision":1,"deleted":false,"created_at_utc":stamp,"updated_at_utc":stamp});
@@ -424,7 +474,7 @@ async fn invoke(
     scope: Workspace,
     request: Request,
 ) -> Result<Response, ApiError> {
-    let mut timings=ReplayTimings::new();
+    let mut timings = ReplayTimings::new();
     let method = request.method().as_str().to_owned();
     let path = request.uri().path().to_owned();
     let query = request.uri().query().map(str::to_owned);
@@ -440,7 +490,11 @@ async fn invoke(
     let parts: Vec<_> = path.split('/').collect();
     let id = parts.get(5).copied().unwrap_or("");
     let tail = parts.get(6..).unwrap_or(&[]).join("/");
-    timings.operation=if tail.is_empty(){method.clone()}else{tail.clone()};
+    timings.operation = if tail.is_empty() {
+        method.clone()
+    } else {
+        tail.clone()
+    };
     let q = pairs(query.as_deref());
     let handler = if tail.starts_with("prop/") {
         if tail.ends_with("/feed") {
@@ -476,7 +530,8 @@ async fn invoke(
     if method == "GET" {
         if tail.is_empty() && q.get("response_view").is_some_and(|v| v == "history-v1") {
             tx.batch_execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
-                .await.map_err(|_|ApiError::database())?;
+                .await
+                .map_err(|_| ApiError::database())?;
             let result = history::read(&tx, &state, &scope.workspace_id, id, &q).await?;
             tx.commit().await.map_err(|_| ApiError::database())?;
             return Ok(Json(result).into_response());
@@ -515,7 +570,20 @@ async fn invoke(
     let result = match crate::native_contracts::validate_body(handler, raw) {
         Ok(body) => match mutation_response(&q, &tail) {
             Ok(_) if id.is_empty() => create(&tx, &state, &scope.workspace_id, &body).await,
-            Ok(response_view) => mutate(&tx, &state, &scope.workspace_id, id, &tail, &method, &body, response_view, &mut timings).await,
+            Ok(response_view) => {
+                mutate(
+                    &tx,
+                    &state,
+                    &scope.workspace_id,
+                    id,
+                    &tail,
+                    &method,
+                    &body,
+                    response_view,
+                    &mut timings,
+                )
+                .await
+            }
             Err(error) => Err(error),
         },
         Err(error) => Err(error),
@@ -543,18 +611,33 @@ async fn invoke(
         crate::native_mutation::finish(&tx, mutation, status, value).await?
     };
     timings.mark("receipt_save_and_response_serialize");
-    let response=crate::native_mutation::commit(tx, response).await;
+    let response = crate::native_mutation::commit(tx, response).await;
     timings.mark("commit");
     response
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum ResponseView { Full, Mutation, Step }
+enum ResponseView {
+    Full,
+    Mutation,
+    Step,
+}
 
 fn mutation_response(q: &HashMap<String, String>, tail: &str) -> Result<ResponseView, ApiError> {
     match q.get("response_view").map(String::as_str) {
         None => Ok(ResponseView::Full),
-        Some("mutation-v1") if matches!(tail, "execution" | "orders/market" | "orders/quick" | "orders/protection" | "orders/close") => Ok(ResponseView::Mutation),
+        Some("mutation-v1")
+            if matches!(
+                tail,
+                "execution"
+                    | "orders/market"
+                    | "orders/quick"
+                    | "orders/protection"
+                    | "orders/close"
+            ) =>
+        {
+            Ok(ResponseView::Mutation)
+        }
         Some("step-v1") if tail == "step" => Ok(ResponseView::Step),
         Some(_) => Err(bad("unsupported replay mutation response view")),
     }
@@ -645,10 +728,12 @@ async fn metadata(
 fn account(p: &Value) -> Result<Value, ApiError> {
     if p["portfolio_execution"]["schema_version"] == "replay-portfolio-v1" {
         let a = &p["portfolio_execution"];
-        return Ok(json!({"starting_balance":a["phase_initial_balance"],"balance":a["balance"],
+        return Ok(
+            json!({"starting_balance":a["phase_initial_balance"],"balance":a["balance"],
             "floating_pl":a["floating_pl"],"equity":a["equity"],"account_ccy":a["account_ccy"],
             "open_position_count":a["positions"].as_array().map(Vec::len).unwrap_or(0),
-            "pending_order_count":a["pending_orders"].as_array().map(Vec::len).unwrap_or(0)}));
+            "pending_order_count":a["pending_orders"].as_array().map(Vec::len).unwrap_or(0)}),
+        );
     }
     let initial = dec(p.get("starting_balance").unwrap_or(&json!("10000")))?;
     let mut balance = initial.clone();
@@ -686,7 +771,9 @@ pub async fn checkpoint_record(
     cutoff: Option<i64>,
     event: Option<i64>,
 ) -> Result<Value, ApiError> {
-    if record["payload"]["asset_states"].is_object() && let Some(sequence) = event {
+    if record["payload"]["asset_states"].is_object()
+        && let Some(sequence) = event
+    {
         let original = &record["payload"];
         let canonical_sequence = integer(&original["portfolio_execution"], "event_sequence")?;
         let payload = crate::replay_portfolio::checkpoint_event(original, sequence).map_err(bad)?;
@@ -698,15 +785,18 @@ pub async fn checkpoint_record(
             return Err(bad("analytics cursor and portfolio event disagree"));
         }
         // Validate every immutable pin, including assets not initialized at this event.
-        for pin in payload["portfolio_execution"]["dataset_pins"].as_array().unwrap() {
-            let manifest = snapshot_manifest(tx, workspace, text(pin,"dataset_id")?).await?;
+        for pin in payload["portfolio_execution"]["dataset_pins"]
+            .as_array()
+            .unwrap()
+        {
+            let manifest = snapshot_manifest(tx, workspace, text(pin, "dataset_id")?).await?;
             if manifest["artifact_sha256"] != pin["dataset_sha256"] {
                 return Err(bad("portfolio checkpoint dataset pin changed"));
             }
         }
-        let manifest = snapshot_manifest(tx, workspace, text(&payload,"dataset_id")?).await?;
+        let manifest = snapshot_manifest(tx, workspace, text(&payload, "dataset_id")?).await?;
         if let Some(cutoff) = cutoff {
-            if integer(&times(state,&manifest,selected,None).await?,"index_utc")? != cutoff {
+            if integer(&times(state, &manifest, selected, None).await?, "index_utc")? != cutoff {
                 return Err(bad("analytics cutoff and portfolio event disagree"));
             }
         }
@@ -716,7 +806,8 @@ pub async fn checkpoint_record(
         record["canonical_cursor_index"] = canonical;
         record["canonical_execution_event_sequence"] = json!(canonical_sequence);
         record["historical_view"] = json!(sequence < canonical_sequence);
-        record["portfolio_trade_cursors"] = portfolio_trade_cursors(tx,state,workspace,&record["payload"],&manifest).await?;
+        record["portfolio_trade_cursors"] =
+            portfolio_trade_cursors(tx, state, workspace, &record["payload"], &manifest).await?;
         return Ok(record);
     }
     let canonical = integer(&record["payload"], "cursor_index")?;
@@ -789,8 +880,15 @@ pub async fn checkpoint_record(
                 p["asset_states"][&key] = json!({"cursor_index":target,"execution":restored});
             }
             p["replay_clock_utc"] = json!(clock);
-            if p["portfolio_execution"].is_object() && p["portfolio_execution"]["event_sequence"].as_i64().unwrap_or(0) > 0 {
-                p["portfolio_execution"] = crate::replay_portfolio::checkpoint(&p["portfolio_execution"], &p, clock).map_err(bad)?;
+            if p["portfolio_execution"].is_object()
+                && p["portfolio_execution"]["event_sequence"]
+                    .as_i64()
+                    .unwrap_or(0)
+                    > 0
+            {
+                p["portfolio_execution"] =
+                    crate::replay_portfolio::checkpoint(&p["portfolio_execution"], &p, clock)
+                        .map_err(bad)?;
             }
         }
         let active = text(&p, "dataset_id")?.to_owned();
@@ -802,7 +900,8 @@ pub async fn checkpoint_record(
         out["canonical_cursor_index"] = json!(canonical);
         out["historical_view"] = json!(selected < canonical);
         out["canonical_execution_event_sequence"] = Value::Null;
-        out["portfolio_trade_cursors"] = portfolio_trade_cursors(tx,state,workspace,&out["payload"],&m).await?;
+        out["portfolio_trade_cursors"] =
+            portfolio_trade_cursors(tx, state, workspace, &out["payload"], &m).await?;
         return Ok(out);
     }
     if let Some(e) = event {
@@ -836,27 +935,31 @@ pub async fn checkpoint_record(
     Ok(out)
 }
 async fn portfolio_trade_cursors(
-    tx: &Transaction<'_>, state: &AppState, workspace: &str, p: &Value, m: &Value,
+    tx: &Transaction<'_>,
+    state: &AppState,
+    workspace: &str,
+    p: &Value,
+    m: &Value,
 ) -> Result<Value, ApiError> {
-        let mut trade_cursors = Map::new();
-        for (key, a) in p["asset_states"].as_object().unwrap() {
-            let am = snapshot_manifest(tx, workspace, key).await?;
-            for e in a["execution"]["ledger"]
-                .as_array()
-                .into_iter()
-                .flatten()
-                .filter(|e| matches!(e["kind"].as_str(), Some("protective_fill" | "manual_close")))
-            {
-                let t = times(state, &am, integer(e, "cursor_index")?, None).await?;
-                let clock = integer(&t, "index_utc")? + integer(&am, "timeframe_seconds")?
-                    - integer(&m, "timeframe_seconds")?;
-                let active_t = times(state, &m, 0, Some(clock)).await?;
-                trade_cursors.insert(
-                    format!("{}:{}", key, integer(e, "sequence")?),
-                    active_t["cursor_index"].clone(),
-                );
-            }
+    let mut trade_cursors = Map::new();
+    for (key, a) in p["asset_states"].as_object().unwrap() {
+        let am = snapshot_manifest(tx, workspace, key).await?;
+        for e in a["execution"]["ledger"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter(|e| matches!(e["kind"].as_str(), Some("protective_fill" | "manual_close")))
+        {
+            let t = times(state, &am, integer(e, "cursor_index")?, None).await?;
+            let clock = integer(&t, "index_utc")? + integer(&am, "timeframe_seconds")?
+                - integer(&m, "timeframe_seconds")?;
+            let active_t = times(state, &m, 0, Some(clock)).await?;
+            trade_cursors.insert(
+                format!("{}:{}", key, integer(e, "sequence")?),
+                active_t["cursor_index"].clone(),
+            );
         }
+    }
     Ok(Value::Object(trade_cursors))
 }
 const LINEAGE: &[&str] = &[
@@ -912,8 +1015,15 @@ async fn restore(
             let rows=tx.query("SELECT revision,payload_json FROM workspace_record_revisions WHERE workspace_id=$1 AND kind='replay' AND record_id=$2 AND NOT deleted ORDER BY revision DESC",&[&workspace,&id]).await.map_err(|_|ApiError::database())?;
             let mut found = None;
             for row in rows {
-                let p = crate::replay_storage::hydrate_payload(tx, workspace, id,
-                    i64::from(row.get::<_, i32>(0)), row.get(1)).await.map_err(internal)?;
+                let p = crate::replay_storage::hydrate_payload(
+                    tx,
+                    workspace,
+                    id,
+                    i64::from(row.get::<_, i32>(0)),
+                    row.get(1),
+                )
+                .await
+                .map_err(internal)?;
                 let p = asset.map(|a| &p["asset_states"][a]).unwrap_or(&p);
                 let candidate = &p["execution"];
                 if p["cursor_index"] == cursor
@@ -928,7 +1038,8 @@ async fn restore(
             match found {
                 Some(candidate) => candidate,
                 None if asset.is_some() => {
-                    let first_cursor = snapshot["ledger"].as_array()
+                    let first_cursor = snapshot["ledger"]
+                        .as_array()
                         .and_then(|events| events.first())
                         .and_then(|event| event["cursor_index"].as_i64());
                     // An asset initialized after this clock has no historical execution yet.
@@ -960,11 +1071,15 @@ pub async fn view(
     view_inner(tx, state, workspace, record, q, false, None).await
 }
 async fn view_inner(
-    tx: &Transaction<'_>, state: &AppState, workspace: &str, mut record: Value,
-    q: &HashMap<String, String>, validated: bool,
+    tx: &Transaction<'_>,
+    state: &AppState,
+    workspace: &str,
+    mut record: Value,
+    q: &HashMap<String, String>,
+    validated: bool,
     projected_canonical: Option<i64>,
 ) -> Result<Value, ApiError> {
-    let record_id = text(&record,"record_id")?.to_owned();
+    let record_id = text(&record, "record_id")?.to_owned();
     if !validated {
         ensure_portfolio(tx, workspace, &record_id, &mut record["payload"]).await?;
         crate::replay_portfolio::update(&mut record["payload"]).map_err(bad)?;
@@ -1010,8 +1125,10 @@ async fn view_inner(
     }
     let start = (cursor - 1999).max(0);
     let visible = slice(state, &m, start, cursor + 1).await?;
-    let mut status = if projected_canonical.is_some() && cursor != canonical
-        && (!original["execution"].is_null() || original["asset_states"].is_object()) {
+    let mut status = if projected_canonical.is_some()
+        && cursor != canonical
+        && (!original["execution"].is_null() || original["asset_states"].is_object())
+    {
         "checkpoint"
     } else if original["execution"].is_null() {
         "not_initialized"
@@ -1021,8 +1138,12 @@ async fn view_inner(
     let future = if original["asset_states"].is_object() {
         integer(original, "replay_clock_utc")? < integer(original, "replay_end_utc")?
     } else {
-        cursor < period.as_ref().map(|b| integer(b, "end_cursor_index"))
-            .transpose()?.unwrap_or(total - 1)
+        cursor
+            < period
+                .as_ref()
+                .map(|b| integer(b, "end_cursor_index"))
+                .transpose()?
+                .unwrap_or(total - 1)
     };
     let multi = original["asset_states"].is_object();
     let session_period = period.as_ref().map(|_| original["session_period"].clone());
@@ -1080,11 +1201,16 @@ async fn view_inner(
     out.insert("canonical_cursor_index".into(), json!(canonical));
     out.insert("historical_view".into(), json!(cursor != canonical));
     out.insert("execution_view_status".into(), json!(status));
-    out.insert("execution_capabilities".into(), json!({"partial_close":true,"conditional_orders":true,"partial_take_profit":true}));
+    out.insert(
+        "execution_capabilities".into(),
+        json!({"partial_close":true,"conditional_orders":true,"partial_take_profit":true}),
+    );
     if state.native_runtime && history::eligible(&out["payload"]) {
         out.insert("history_view_version".into(), json!("replay-history-v1"));
     }
-    if state.native_runtime && !multi && cursor == canonical
+    if state.native_runtime
+        && !multi
+        && cursor == canonical
         && bar_execution(&out["payload"]["execution"])
     {
         out.insert("step_view_version".into(), json!("replay-step-v1"));
@@ -1103,17 +1229,33 @@ async fn view_inner(
     }
     Ok(record)
 }
-pub(crate) async fn ai_snapshot(tx: &Transaction<'_>, state: &AppState, workspace: &str, id: &str) -> Result<Value, ApiError> {
+pub(crate) async fn ai_snapshot(
+    tx: &Transaction<'_>,
+    state: &AppState,
+    workspace: &str,
+    id: &str,
+) -> Result<Value, ApiError> {
     let record = load_record_inner(tx, workspace, id, false, false).await?;
     let p = &record["payload"];
     let m = snapshot_manifest(tx, workspace, text(p, "dataset_id")?).await?;
     let cursor = integer(p, "cursor_index")?;
-    if cursor < 0 { return Err(bad("invalid replay cursor")); }
-    let period = ChartPeriod::parse(&format!("{}S", integer(&m,"timeframe_seconds")?), integer(&m,"timeframe_seconds")?).map_err(bad)?;
-    let path = text(&m,"artifact_path")?.to_owned();
-    let hash = text(&m,"artifact_sha256")?.to_owned();
-    let bars = read(state, move |r| r.chart_window(&path,&hash,cursor as usize,period,None,120)).await?;
-    Ok(json!({"kind":"replay","id":id,"revision":record["revision"],"dataset_id":p["dataset_id"],"dataset_sha256":m["artifact_sha256"],"symbol":m["symbol"],"timeframe_seconds":m["timeframe_seconds"],"cursor_index":cursor,"cutoff_timestamp":bars["cutoff_timestamp"],"bars":bars["bars"]}))
+    if cursor < 0 {
+        return Err(bad("invalid replay cursor"));
+    }
+    let period = ChartPeriod::parse(
+        &format!("{}S", integer(&m, "timeframe_seconds")?),
+        integer(&m, "timeframe_seconds")?,
+    )
+    .map_err(bad)?;
+    let path = text(&m, "artifact_path")?.to_owned();
+    let hash = text(&m, "artifact_sha256")?.to_owned();
+    let bars = read(state, move |r| {
+        r.chart_window(&path, &hash, cursor as usize, period, None, 120)
+    })
+    .await?;
+    Ok(
+        json!({"kind":"replay","id":id,"revision":record["revision"],"dataset_id":p["dataset_id"],"dataset_sha256":m["artifact_sha256"],"symbol":m["symbol"],"timeframe_seconds":m["timeframe_seconds"],"cursor_index":cursor,"cutoff_timestamp":bars["cutoff_timestamp"],"bars":bars["bars"]}),
+    )
 }
 
 async fn chart(
@@ -1344,10 +1486,18 @@ async fn create(
             .unwrap_or(json!("USD"));
     }
     if !b["trading_options"].is_null() {
-        let datasets = b["dataset_ids"].as_array()
-            .map(|ids| ids.iter().filter_map(Value::as_str).map(str::to_owned).collect())
+        let datasets = b["dataset_ids"]
+            .as_array()
+            .map(|ids| {
+                ids.iter()
+                    .filter_map(Value::as_str)
+                    .map(str::to_owned)
+                    .collect()
+            })
             .unwrap_or_else(|| vec![dataset.to_owned()]);
-        p["trading_options"] = crate::session_trading_options::normalize(&b["trading_options"], &datasets).map_err(bad)?;
+        p["trading_options"] =
+            crate::session_trading_options::normalize(&b["trading_options"], &datasets)
+                .map_err(bad)?;
         if p["trading_options"]["version"] == crate::session_trading_options::VERSION_V2 {
             p["trading_options_seed"] = json!(uid());
         }
@@ -1600,8 +1750,12 @@ async fn initialize(
     }
     let mut configured = crate::session_trading_options::initialization(p, m, b).map_err(bad)?;
     if !p["trading_options"].is_null() && !p["starting_balance"].is_null() {
-        if !b["starting_balance"].is_null() && dec(&b["starting_balance"])? != dec(&p["starting_balance"])? {
-            return Err(bad("execution must use the frozen session starting balance"));
+        if !b["starting_balance"].is_null()
+            && dec(&b["starting_balance"])? != dec(&p["starting_balance"])?
+        {
+            return Err(bad(
+                "execution must use the frozen session starting balance",
+            ));
         }
         configured["starting_balance"] = p["starting_balance"].clone();
     }
@@ -1705,13 +1859,17 @@ async fn initialize(
         crate::replay_core::validate(&snapshot).map_err(bad)?;
     }
     if portfolio {
-        for details in p["portfolio_execution"]["phase_transitions"].as_array().into_iter().flatten() {
+        for details in p["portfolio_execution"]["phase_transitions"]
+            .as_array()
+            .into_iter()
+            .flatten()
+        {
             let mut args = details.clone();
             args["virtual_time_utc"] = details["virtual_time_utc"].clone();
             snapshot = engine_snapshot("transition", &snapshot, args)?;
         }
         if snapshot["event_sequence"].as_i64().unwrap_or(0) > 0 {
-            let dataset = text(p,"dataset_id")?.to_owned();
+            let dataset = text(p, "dataset_id")?.to_owned();
             p["portfolio_execution"]["asset_marks"][&dataset] = json!({"sequence":snapshot["event_sequence"],
                 "balance_base":snapshot["balance"],"balance":snapshot["balance"],"floating_pl":"0","position":null,
                 "pending_market_order":null,"evaluation_quality":"full_for_declared_model","intrabar_equity_coverage":"complete",
@@ -1744,14 +1902,25 @@ async fn mutate(
     }
     let compact = response_view == ResponseView::Mutation;
     let step_view = response_view == ResponseView::Step;
-    let bounded_storage = (response_view != ResponseView::Full || tail.starts_with("prop/") && tail.ends_with("/feed")) && state.native_runtime
+    let bounded_storage = (response_view != ResponseView::Full
+        || tail.starts_with("prop/") && tail.ends_with("/feed"))
+        && state.native_runtime
         && std::env::var("TW_V2_REPLAY_STORAGE_PROFILE").is_ok_and(|profile| profile == "compact");
     let mut record = load_record_inner(tx, workspace, id, true, !bounded_storage).await?;
     timings.mark("load_record");
     if tail.starts_with("prop/") {
         let parts: Vec<_> = tail.split('/').collect();
         if parts.len() == 6 && parts[5] == "feed" {
-            return feed_prop(tx, workspace, &record, parts[2], parts[4], b, bounded_storage).await;
+            return feed_prop(
+                tx,
+                workspace,
+                &record,
+                parts[2],
+                parts[4],
+                b,
+                bounded_storage,
+            )
+            .await;
         }
         return Err(bad("native Prop branch route is not implemented"));
     }
@@ -1760,34 +1929,62 @@ async fn mutate(
     }
     let base_revision = integer(&record, "revision")?;
     let mut p = take_mutation_payload(&mut record);
-    ensure_portfolio(tx,workspace,id,&mut p).await?;
+    ensure_portfolio(tx, workspace, id, &mut p).await?;
     crate::replay_portfolio::update(&mut p).map_err(bad)?;
-    if p["asset_states"].is_object() && (tail == "execution" || tail == "step" || tail.starts_with("orders/")) {
-        let identity = identities(tx,workspace,id,&p).await?;
+    if p["asset_states"].is_object()
+        && (tail == "execution" || tail == "step" || tail.starts_with("orders/"))
+    {
+        let identity = identities(tx, workspace, id, &p).await?;
         if identity["session_kind"] == "prop" {
-            let current = crate::prop_service::load_attempt(tx,workspace,text(&identity,"prop_session_id")?,
-                text(&identity,"prop_attempt_id")?,true).await?;
+            let current = crate::prop_service::load_attempt(
+                tx,
+                workspace,
+                text(&identity, "prop_session_id")?,
+                text(&identity, "prop_attempt_id")?,
+                true,
+            )
+            .await?;
             if current["attempt"]["status"] != "running" {
-                return Err(conflict("Prop replay financial actions require a running attempt"));
+                return Err(conflict(
+                    "Prop replay financial actions require a running attempt",
+                ));
             }
-            let sequence = p["portfolio_execution"]["event_sequence"].as_i64().unwrap_or(0);
-            if sequence > current["resume_state"]["replay_binding"]["last_replay_event_sequence"].as_i64().unwrap_or(0) {
-                return Err(conflict("Prop replay has unacknowledged account events; synchronize the challenge first"));
+            let sequence = p["portfolio_execution"]["event_sequence"]
+                .as_i64()
+                .unwrap_or(0);
+            if sequence
+                > current["resume_state"]["replay_binding"]["last_replay_event_sequence"]
+                    .as_i64()
+                    .unwrap_or(0)
+            {
+                return Err(conflict(
+                    "Prop replay has unacknowledged account events; synchronize the challenge first",
+                ));
             }
         }
     }
     if compact && p["asset_states"].is_object() {
         return Err(bad("mutation_view_multi_asset_unsupported"));
     }
-    if step_view && (!state.native_runtime || p["asset_states"].is_object() || !bar_execution(&p["execution"])) {
+    if step_view
+        && (!state.native_runtime
+            || p["asset_states"].is_object()
+            || !bar_execution(&p["execution"]))
+    {
         return Err(bad("step_view_requires_native_single_asset_bar_replay"));
     }
-    let bar_storage = bounded_storage && !p["asset_states"].is_object() && b["tick_snapshot_id"].is_null()
-        && (p["execution"].is_null() || matches!(p["execution"]["schema_version"].as_str(),
-            Some("replay-execution-v1" | "replay-execution-v2")));
+    let bar_storage = bounded_storage
+        && !p["asset_states"].is_object()
+        && b["tick_snapshot_id"].is_null()
+        && (p["execution"].is_null()
+            || matches!(
+                p["execution"]["schema_version"].as_str(),
+                Some("replay-execution-v1" | "replay-execution-v2")
+            ));
     if bounded_storage && !bar_storage {
         p = crate::replay_storage::hydrate_payload(tx, workspace, id, base_revision, p)
-            .await.map_err(internal)?;
+            .await
+            .map_err(internal)?;
     }
     let base_event_sequence = if response_view != ResponseView::Full && !p["execution"].is_null() {
         integer(&p["execution"], "event_sequence")?
@@ -1829,12 +2026,40 @@ async fn mutate(
         return save_record(tx, workspace, &record, p, false).await;
     }
     if step_view {
-        return mutate_step_view(tx, state, workspace, id, b, record, p, &m,
-            base_revision, base_event_sequence, limit, bar_storage, timings).await;
+        return mutate_step_view(
+            tx,
+            state,
+            workspace,
+            id,
+            b,
+            record,
+            p,
+            &m,
+            base_revision,
+            base_event_sequence,
+            limit,
+            bar_storage,
+            timings,
+        )
+        .await;
     }
     if bar_storage {
-        return mutate_compact_bar(tx, state, workspace, id, tail, b, record, p, &m,
-            base_revision, base_event_sequence, limit, timings).await;
+        return mutate_compact_bar(
+            tx,
+            state,
+            workspace,
+            id,
+            tail,
+            b,
+            record,
+            p,
+            &m,
+            base_revision,
+            base_event_sequence,
+            limit,
+            timings,
+        )
+        .await;
     }
     match tail {
         "delete" => {
@@ -1887,7 +2112,7 @@ async fn mutate(
             let bar = slice(state, &m, current, current + 1).await?.remove(0);
             asset_ready(&p, &m, &bar)?;
             let mut args = b.clone();
-            let action = entry_action(b,&mut args,&bar,&snapshot,tail == "orders/quick")?;
+            let action = entry_action(b, &mut args, &bar, &snapshot, tail == "orders/quick")?;
             p["execution"] = engine_snapshot_owned(action, snapshot, args).await?;
         }
         "orders/protection" | "orders/close" => {
@@ -1917,7 +2142,8 @@ async fn mutate(
                 },
                 snapshot,
                 args,
-            ).await?;
+            )
+            .await?;
         }
         "step" => {
             let steps = b["steps"].as_i64().unwrap_or(1);
@@ -1986,7 +2212,17 @@ async fn mutate(
     let saved = save_record(tx, workspace, &record, p, false).await?;
     timings.mark("revision_save");
     let response = if compact {
-        mutation_view(tx, state, workspace, saved, &m, base_revision, base_event_sequence, None).await
+        mutation_view(
+            tx,
+            state,
+            workspace,
+            saved,
+            &m,
+            base_revision,
+            base_event_sequence,
+            None,
+        )
+        .await
     } else {
         view(tx, state, workspace, saved, &HashMap::new()).await
     };
@@ -1995,15 +2231,27 @@ async fn mutate(
 }
 
 fn bar_execution(execution: &Value) -> bool {
-    execution.is_null() || matches!(execution["schema_version"].as_str(),
-        Some("replay-execution-v1" | "replay-execution-v2"))
+    execution.is_null()
+        || matches!(
+            execution["schema_version"].as_str(),
+            Some("replay-execution-v1" | "replay-execution-v2")
+        )
 }
 
 async fn mutate_step_view(
-    tx: &Transaction<'_>, state: &AppState, workspace: &str, id: &str,
-    b: &Value, record: Value, mut p: Value, manifest: &Value,
-    base_revision: i64, base_event_sequence: i64, limit: i64,
-    bounded_storage: bool, timings: &mut ReplayTimings,
+    tx: &Transaction<'_>,
+    state: &AppState,
+    workspace: &str,
+    id: &str,
+    b: &Value,
+    record: Value,
+    mut p: Value,
+    manifest: &Value,
+    base_revision: i64,
+    base_event_sequence: i64,
+    limit: i64,
+    bounded_storage: bool,
+    timings: &mut ReplayTimings,
 ) -> Result<Value, ApiError> {
     let current = integer(&p, "cursor_index")?;
     let total = integer(manifest, "row_count")?;
@@ -2014,11 +2262,23 @@ async fn mutate_step_view(
         if current < integer(&period, "start_cursor_index")? || current > limit || limit >= total {
             return Err(internal("stored replay cursor exceeds its session period"));
         }
-        if current >= limit { return Err(bad("selected replay period is completed")); }
+        if current >= limit {
+            return Err(bad("selected replay period is completed"));
+        }
     }
-    let (rows, cursor) = step_window(state, manifest, current,
-        b["steps"].as_i64().unwrap_or(1), b["replay_interval_seconds"].as_i64(), limit).await?;
-    let base_cutoff = rows.first().ok_or_else(|| internal("visible replay window is empty"))?["timestamp"].clone();
+    let (rows, cursor) = step_window(
+        state,
+        manifest,
+        current,
+        b["steps"].as_i64().unwrap_or(1),
+        b["replay_interval_seconds"].as_i64(),
+        limit,
+    )
+    .await?;
+    let base_cutoff = rows
+        .first()
+        .ok_or_else(|| internal("visible replay window is empty"))?["timestamp"]
+        .clone();
     let elapsed = integer(rows.last().unwrap(), "timestamp")? - integer(&rows[0], "timestamp")?;
     let mut events = Vec::new();
     let mut checked_transition = None;
@@ -2027,32 +2287,69 @@ async fn mutate_step_view(
     }
     if !p["execution"].is_null() {
         if p["execution"]["cursor_index"] != current {
-            return Err(conflict("replay execution cursor is inconsistent with replay state"));
+            return Err(conflict(
+                "replay execution cursor is inconsistent with replay state",
+            ));
         }
         if bounded_storage && rows.len() > 1 {
             let dataset = text(&p, "dataset_id")?.to_owned();
-            let prefix = match crate::replay_storage::load_prefix(tx, workspace, id, base_revision, &dataset)
-                .await.map_err(internal)? {
+            let prefix = match crate::replay_storage::load_prefix(
+                tx,
+                workspace,
+                id,
+                base_revision,
+                &dataset,
+            )
+            .await
+            .map_err(internal)?
+            {
                 Some(prefix) => prefix,
                 None => {
-                    p = crate::replay_storage::import_revision(tx, workspace, id, base_revision, &p)
-                        .await.map_err(internal)?;
+                    p = crate::replay_storage::import_revision(
+                        tx,
+                        workspace,
+                        id,
+                        base_revision,
+                        &p,
+                    )
+                    .await
+                    .map_err(internal)?;
                     crate::replay_storage::load_prefix(tx, workspace, id, base_revision, &dataset)
-                        .await.map_err(internal)?.ok_or_else(|| internal("imported replay prefix is unavailable"))?
+                        .await
+                        .map_err(internal)?
+                        .ok_or_else(|| internal("imported replay prefix is unavailable"))?
                 }
             };
             if !crate::replay_core::history::equivalent_json(&p["execution"], prefix.head()) {
-                return Err(internal("compact replay payload differs from its validated head"));
+                return Err(internal(
+                    "compact replay payload differs from its validated head",
+                ));
             }
-            let admission = crate::replay_storage::OperationAdmission::prepare(tx, workspace, id,
-                base_revision, &prefix, &[]).await.map_err(internal)?;
-            let steps: Vec<Value> = rows.iter().skip(1).enumerate()
-                .map(|(index, bar)| json!({"bar":bar,"cursor_index":current + index as i64 + 1})).collect();
+            let admission = crate::replay_storage::OperationAdmission::prepare(
+                tx,
+                workspace,
+                id,
+                base_revision,
+                &prefix,
+                &[],
+            )
+            .await
+            .map_err(internal)?;
+            let steps: Vec<Value> = rows
+                .iter()
+                .skip(1)
+                .enumerate()
+                .map(|(index, bar)| json!({"bar":bar,"cursor_index":current + index as i64 + 1}))
+                .collect();
             timings.mark("storage_prefix_admission");
             let (prefix, transition) = tokio::task::spawn_blocking(move || {
-                let transition = prefix.transition("advance_many", json!({"steps":steps}), &admission)?;
+                let transition =
+                    prefix.transition("advance_many", json!({"steps":steps}), &admission)?;
                 Ok::<_, String>((prefix, transition))
-            }).await.map_err(|_| internal("execution_task_failed"))?.map_err(bad)?;
+            })
+            .await
+            .map_err(|_| internal("execution_task_failed"))?
+            .map_err(bad)?;
             p["execution"] = transition.next.head().clone();
             events = transition.events.clone();
             checked_transition = Some((prefix, transition));
@@ -2061,62 +2358,115 @@ async fn mutate_step_view(
             // edge on the fully validated cold path instead of fabricating a transition.
             if bounded_storage {
                 p = crate::replay_storage::hydrate_payload(tx, workspace, id, base_revision, p)
-                    .await.map_err(internal)?;
+                    .await
+                    .map_err(internal)?;
             }
             let mut snapshot = p["execution"].take();
             if rows.len() > 1 {
-                let mut advanced = advance_many(state, workspace, snapshot, &rows[1..], current + 1).await?;
+                let mut advanced =
+                    advance_many(state, workspace, snapshot, &rows[1..], current + 1).await?;
                 snapshot = advanced["snapshot"].take();
-                events = advanced["events"].as_array_mut().ok_or_else(|| internal("invalid execution result"))?
-                    .drain(..).collect();
+                events = advanced["events"]
+                    .as_array_mut()
+                    .ok_or_else(|| internal("invalid execution result"))?
+                    .drain(..)
+                    .collect();
             }
             p["execution"] = snapshot;
         }
     }
     add_elapsed(&mut p, elapsed.max(0))?;
     p["cursor_index"] = json!(cursor);
-    p["status"] = json!(if cursor == limit { "completed" } else { "paused" });
+    p["status"] = json!(if cursor == limit {
+        "completed"
+    } else {
+        "paused"
+    });
     if let Some((_, transition)) = &checked_transition {
         p = crate::replay_storage::compact_payload(p, &transition.next).map_err(internal)?;
     }
     timings.mark("domain_transition");
     let mut saved = save_record_with_events(tx, workspace, &record, p, false, &events).await?;
     if let Some((prefix, transition)) = &checked_transition {
-        saved["payload"] = crate::replay_storage::persist_transition(tx, workspace, id,
-            base_revision, integer(&saved, "revision")?, prefix, transition, &saved["payload"])
-            .await.map_err(internal)?;
+        saved["payload"] = crate::replay_storage::persist_transition(
+            tx,
+            workspace,
+            id,
+            base_revision,
+            integer(&saved, "revision")?,
+            prefix,
+            transition,
+            &saved["payload"],
+        )
+        .await
+        .map_err(internal)?;
     }
     timings.mark("revision_save");
-    let response = step_view_response(tx, workspace, saved, manifest, base_revision,
-        base_event_sequence, current, base_cutoff, rows.into_iter().skip(1).collect(), events, limit).await;
+    let response = step_view_response(
+        tx,
+        workspace,
+        saved,
+        manifest,
+        base_revision,
+        base_event_sequence,
+        current,
+        base_cutoff,
+        rows.into_iter().skip(1).collect(),
+        events,
+        limit,
+    )
+    .await;
     timings.mark("view_projection");
     response
 }
 
 async fn step_view_response(
-    tx: &Transaction<'_>, workspace: &str, mut saved: Value, manifest: &Value,
-    base_revision: i64, base_event_sequence: i64, base_cursor: i64,
-    base_cutoff: Value, rows: Vec<Value>, events: Vec<Value>, limit: i64,
+    tx: &Transaction<'_>,
+    workspace: &str,
+    mut saved: Value,
+    manifest: &Value,
+    base_revision: i64,
+    base_event_sequence: i64,
+    base_cursor: i64,
+    base_cutoff: Value,
+    rows: Vec<Value>,
+    events: Vec<Value>,
+    limit: i64,
 ) -> Result<Value, ApiError> {
     let p = &saved["payload"];
     let cursor = integer(p, "cursor_index")?;
     let identity = identities(tx, workspace, text(&saved, "record_id")?, p).await?;
     let mut execution = saved["payload"]["execution"].take();
-    let sequence = if execution.is_null() { 0 } else {
-        execution.as_object_mut().ok_or_else(|| internal("invalid step execution head"))?.remove("ledger");
+    let sequence = if execution.is_null() {
+        0
+    } else {
+        execution
+            .as_object_mut()
+            .ok_or_else(|| internal("invalid step execution head"))?
+            .remove("ledger");
         integer(&execution, "event_sequence")?
     };
     if saved["revision"].as_i64() != base_revision.checked_add(1)
-        || cursor < base_cursor || cursor - base_cursor != rows.len() as i64
-        || rows.len() > 1000 || events.len() > 3000
+        || cursor < base_cursor
+        || cursor - base_cursor != rows.len() as i64
+        || rows.len() > 1000
+        || events.len() > 3000
         || sequence.checked_sub(base_event_sequence) != Some(events.len() as i64)
-        || events.iter().enumerate().any(|(index, event)|
+        || events.iter().enumerate().any(|(index, event)| {
             event["sequence"].as_i64() != Some(base_event_sequence + index as i64 + 1)
-            || event["cursor_index"].as_i64().is_none_or(|event_cursor| event_cursor <= base_cursor || event_cursor > cursor))
+                || event["cursor_index"]
+                    .as_i64()
+                    .is_none_or(|event_cursor| event_cursor <= base_cursor || event_cursor > cursor)
+        })
     {
-        return Err(internal("step response suffix is inconsistent or exceeds its bound"));
+        return Err(internal(
+            "step response suffix is inconsistent or exceeds its bound",
+        ));
     }
-    let cutoff = rows.last().map(|row| row["timestamp"].clone()).unwrap_or_else(|| base_cutoff.clone());
+    let cutoff = rows
+        .last()
+        .map(|row| row["timestamp"].clone())
+        .unwrap_or_else(|| base_cutoff.clone());
     let start = (cursor - 1999).max(0);
     let p = &saved["payload"];
     let mut result = json!({
@@ -2135,7 +2485,10 @@ async fn step_view_response(
         "visible_row_count":cursor-start+1,"total_row_count":manifest["row_count"],
         "payload_patch":{"execution":execution,"cursor_index":cursor,"status":p["status"],"timing":p["timing"]}
     });
-    result.as_object_mut().unwrap().extend(identity.as_object().unwrap().clone());
+    result
+        .as_object_mut()
+        .unwrap()
+        .extend(identity.as_object().unwrap().clone());
     Ok(result)
 }
 
@@ -2150,35 +2503,81 @@ mod response_view_tests {
         let prior = original["payload"]["timing"].clone();
         let stamp = now();
         // An existing cumulative baseline has no dated history yet.
-        original["payload"]["timing"].as_object_mut().unwrap().remove("historical_activity");
+        original["payload"]["timing"]
+            .as_object_mut()
+            .unwrap()
+            .remove("historical_activity");
         let mut full = original["payload"].clone();
         add_elapsed(&mut full, 120).unwrap();
         historical_time::capture(&prior, &mut full["timing"], &stamp).unwrap();
         let mut compact = take_mutation_payload(&mut original);
         add_elapsed(&mut compact, 120).unwrap();
-        historical_time::capture(&original["_historical_timing_baseline"], &mut compact["timing"], &stamp).unwrap();
+        historical_time::capture(
+            &original["_historical_timing_baseline"],
+            &mut compact["timing"],
+            &stamp,
+        )
+        .unwrap();
         assert_eq!(compact["timing"], full["timing"]);
-        assert_eq!(compact["timing"]["historical_activity"]["baseline_seconds"], 60);
-        assert_eq!(historical_time::period(&compact["timing"], Some(DateTime::parse_from_rfc3339(&stamp).unwrap().with_timezone(&Utc)), None), Some(120));
+        assert_eq!(
+            compact["timing"]["historical_activity"]["baseline_seconds"],
+            60
+        );
+        assert_eq!(
+            historical_time::period(
+                &compact["timing"],
+                Some(
+                    DateTime::parse_from_rfc3339(&stamp)
+                        .unwrap()
+                        .with_timezone(&Utc)
+                ),
+                None
+            ),
+            Some(120)
+        );
         let saved = compact["timing"].clone();
         historical_time::capture(&saved, &mut compact["timing"], &stamp).unwrap();
-        assert_eq!(saved, compact["timing"], "non-step saves cannot count a step again");
-        assert_eq!(historical_time::period(&timing(false), None, None), Some(0), "forks start a fresh timing epoch");
+        assert_eq!(
+            saved, compact["timing"],
+            "non-step saves cannot count a step again"
+        );
+        assert_eq!(
+            historical_time::period(&timing(false), None, None),
+            Some(0),
+            "forks start a fresh timing epoch"
+        );
     }
 
     #[test]
     fn response_views_are_explicit_and_route_scoped() {
-        assert!(matches!(mutation_response(&HashMap::new(), "step"), Ok(ResponseView::Full)));
-        for tail in ["execution", "orders/quick", "orders/market", "orders/protection", "orders/close"] {
-            assert!(matches!(mutation_response(&pairs(Some("response_view=mutation-v1")), tail), Ok(ResponseView::Mutation)));
+        assert!(matches!(
+            mutation_response(&HashMap::new(), "step"),
+            Ok(ResponseView::Full)
+        ));
+        for tail in [
+            "execution",
+            "orders/quick",
+            "orders/market",
+            "orders/protection",
+            "orders/close",
+        ] {
+            assert!(matches!(
+                mutation_response(&pairs(Some("response_view=mutation-v1")), tail),
+                Ok(ResponseView::Mutation)
+            ));
             assert!(mutation_response(&pairs(Some("response_view=step-v1")), tail).is_err());
         }
-        assert!(matches!(mutation_response(&pairs(Some("response_view=step-v1")), "step"), Ok(ResponseView::Step)));
+        assert!(matches!(
+            mutation_response(&pairs(Some("response_view=step-v1")), "step"),
+            Ok(ResponseView::Step)
+        ));
         for tail in ["", "step", "branch", "asset"] {
             assert!(mutation_response(&pairs(Some("response_view=mutation-v1")), tail).is_err());
         }
         for value in ["", "unknown", "full"] {
-            assert!(mutation_response(&pairs(Some(&format!("response_view={value}"))), "step").is_err());
+            assert!(
+                mutation_response(&pairs(Some(&format!("response_view={value}"))), "step").is_err()
+            );
         }
     }
 
@@ -2212,17 +2611,30 @@ async fn mutate_compact_bar(
     let mut initialized_events = Vec::new();
     if tail == "execution" || (tail == "orders/quick" && p["execution"].is_null()) {
         initialize(state, workspace, id, &mut p, manifest, b).await?;
-        let events = p["execution"]["ledger"].as_array()
-            .ok_or_else(|| internal("invalid initialized replay ledger"))?.clone();
+        let events = p["execution"]["ledger"]
+            .as_array()
+            .ok_or_else(|| internal("invalid initialized replay ledger"))?
+            .clone();
         record = save_record(tx, workspace, &record, p, false).await?;
         let revision = integer(&record, "revision")?;
-        record["payload"] = crate::replay_storage::import_revision(tx, workspace, id,
-            revision, &record["payload"]).await.map_err(internal)?;
+        record["payload"] =
+            crate::replay_storage::import_revision(tx, workspace, id, revision, &record["payload"])
+                .await
+                .map_err(internal)?;
         if tail == "execution" {
             timings.mark("domain_transition");
             timings.mark("revision_save");
-            let response = mutation_view(tx, state, workspace, record, manifest,
-                base_revision, base_event_sequence, Some(events)).await;
+            let response = mutation_view(
+                tx,
+                state,
+                workspace,
+                record,
+                manifest,
+                base_revision,
+                base_event_sequence,
+                Some(events),
+            )
+            .await;
             timings.mark("view_projection");
             return response;
         }
@@ -2235,23 +2647,31 @@ async fn mutate_compact_bar(
     let revision = integer(&record, "revision")?;
     let dataset = text(&p, "dataset_id")?.to_owned();
     let prefix = match crate::replay_storage::load_prefix(tx, workspace, id, revision, &dataset)
-        .await.map_err(internal)? {
+        .await
+        .map_err(internal)?
+    {
         Some(prefix) => prefix,
         None => {
             p = crate::replay_storage::import_revision(tx, workspace, id, revision, &p)
-                .await.map_err(internal)?;
+                .await
+                .map_err(internal)?;
             crate::replay_storage::load_prefix(tx, workspace, id, revision, &dataset)
-                .await.map_err(internal)?
+                .await
+                .map_err(internal)?
                 .ok_or_else(|| internal("imported replay prefix is unavailable"))?
         }
     };
     let head = prefix.head();
     if p["execution"] != *head {
-        return Err(internal("compact replay payload differs from its validated head"));
+        return Err(internal(
+            "compact replay payload differs from its validated head",
+        ));
     }
     let current = integer(&p, "cursor_index")?;
     if head["cursor_index"] != current {
-        return Err(conflict("replay execution cursor is inconsistent with replay state"));
+        return Err(conflict(
+            "replay execution cursor is inconsistent with replay state",
+        ));
     }
     if matches!(tail, "orders/market" | "orders/quick")
         && (p["status"] == "completed" || current >= limit)
@@ -2261,15 +2681,24 @@ async fn mutate_compact_bar(
     if tail == "orders/protection" && (p["status"] == "completed" || current >= limit) {
         return Err(bad("protection changes require a future replay bar"));
     }
-    let bar = slice(state, manifest, current, current + 1).await?.remove(0);
+    let bar = slice(state, manifest, current, current + 1)
+        .await?
+        .remove(0);
     asset_ready(&p, manifest, &bar)?;
     let mut args = b.clone();
     let action = match tail {
-        "orders/market" | "orders/quick" => entry_action(b,&mut args,&bar,head,tail == "orders/quick")?,
+        "orders/market" | "orders/quick" => {
+            entry_action(b, &mut args, &bar, head, tail == "orders/quick")?
+        }
         "orders/protection" | "orders/close" => {
             args["mid_close"] = bar["close"].clone();
-            args["virtual_time_utc"] = json!(integer(&bar, "timestamp")? + integer(head, "timeframe_seconds")?);
-            if tail == "orders/close" { "close" } else { "protection" }
+            args["virtual_time_utc"] =
+                json!(integer(&bar, "timestamp")? + integer(head, "timeframe_seconds")?);
+            if tail == "orders/close" {
+                "close"
+            } else {
+                "protection"
+            }
         }
         _ => return Err(bad("unsupported compact replay transition")),
     };
@@ -2277,24 +2706,54 @@ async fn mutate_compact_bar(
     if operation.trim().is_empty() || operation.len() > 128 {
         return Err(bad("operation_id must be a bounded nonempty identifier"));
     }
-    let admission = crate::replay_storage::OperationAdmission::prepare(tx, workspace, id,
-        revision, &prefix, &[operation]).await.map_err(internal)?;
+    let admission = crate::replay_storage::OperationAdmission::prepare(
+        tx,
+        workspace,
+        id,
+        revision,
+        &prefix,
+        &[operation],
+    )
+    .await
+    .map_err(internal)?;
     timings.mark("storage_prefix_admission");
     let (prefix, transition) = tokio::task::spawn_blocking(move || {
         let transition = prefix.transition(action, args, &admission)?;
         Ok::<_, String>((prefix, transition))
-    }).await.map_err(|_| internal("execution_task_failed"))?.map_err(bad)?;
+    })
+    .await
+    .map_err(|_| internal("execution_task_failed"))?
+    .map_err(bad)?;
     p["execution"] = transition.next.head().clone();
     let payload = crate::replay_storage::compact_payload(p, &transition.next).map_err(internal)?;
     timings.mark("domain_transition");
-    let mut saved = save_record_with_events(tx, workspace, &record, payload, false, &transition.events).await?;
-    saved["payload"] = crate::replay_storage::persist_transition(tx, workspace, id, revision,
-        integer(&saved, "revision")?, &prefix, &transition, &saved["payload"])
-        .await.map_err(internal)?;
+    let mut saved =
+        save_record_with_events(tx, workspace, &record, payload, false, &transition.events).await?;
+    saved["payload"] = crate::replay_storage::persist_transition(
+        tx,
+        workspace,
+        id,
+        revision,
+        integer(&saved, "revision")?,
+        &prefix,
+        &transition,
+        &saved["payload"],
+    )
+    .await
+    .map_err(internal)?;
     timings.mark("revision_save");
     initialized_events.extend(transition.events);
-    let response = mutation_view(tx, state, workspace, saved, manifest,
-        base_revision, base_event_sequence, Some(initialized_events)).await;
+    let response = mutation_view(
+        tx,
+        state,
+        workspace,
+        saved,
+        manifest,
+        base_revision,
+        base_event_sequence,
+        Some(initialized_events),
+    )
+    .await;
     timings.mark("view_projection");
     response
 }
@@ -2324,10 +2783,17 @@ async fn mutation_view(
             return Err(internal("stored replay cursor exceeds its session period"));
         }
     }
-    let future = cursor < period.as_ref().map(|bound| integer(bound, "end_cursor_index"))
-        .transpose()?.unwrap_or(total - 1);
-    let cutoff = slice(state, manifest, cursor, cursor + 1).await?
-        .pop().ok_or_else(|| internal("visible replay window is empty"))?["timestamp"].clone();
+    let future = cursor
+        < period
+            .as_ref()
+            .map(|bound| integer(bound, "end_cursor_index"))
+            .transpose()?
+            .unwrap_or(total - 1);
+    let cutoff = slice(state, manifest, cursor, cursor + 1)
+        .await?
+        .pop()
+        .ok_or_else(|| internal("visible replay window is empty"))?["timestamp"]
+        .clone();
     let identity = identities(tx, workspace, text(&saved, "record_id")?, p).await?;
     let mut execution = saved["payload"]["execution"].take();
     let sequence = integer(&execution, "event_sequence")?;
@@ -2335,24 +2801,38 @@ async fn mutation_view(
         .map_err(|_| internal("invalid mutation base event sequence"))?;
     let events = if let Some(events) = appended_events {
         if execution.get("ledger").is_some() {
-            return Err(internal("compact mutation head unexpectedly contains a ledger"));
+            return Err(internal(
+                "compact mutation head unexpectedly contains a ledger",
+            ));
         }
         events
     } else {
-        let ledger = execution.as_object_mut()
+        let ledger = execution
+            .as_object_mut()
             .and_then(|head| head.remove("ledger"))
-            .and_then(|ledger| match ledger { Value::Array(events) => Some(events), _ => None })
+            .and_then(|ledger| match ledger {
+                Value::Array(events) => Some(events),
+                _ => None,
+            })
             .ok_or_else(|| internal("invalid execution ledger in mutation response"))?;
         if usize::try_from(sequence).ok() != Some(ledger.len()) || base > ledger.len() {
             return Err(internal("mutation event suffix is inconsistent"));
         }
         ledger.into_iter().skip(base).collect()
     };
-    if sequence.checked_sub(base_event_sequence).and_then(|count| usize::try_from(count).ok()) != Some(events.len())
-        || events.len() > 16 {
-        return Err(internal("mutation event suffix is inconsistent or exceeds its bound"));
+    if sequence
+        .checked_sub(base_event_sequence)
+        .and_then(|count| usize::try_from(count).ok())
+        != Some(events.len())
+        || events.len() > 16
+    {
+        return Err(internal(
+            "mutation event suffix is inconsistent or exceeds its bound",
+        ));
     }
-    if events.iter().enumerate().any(|(index, event)| event["sequence"].as_i64() != Some(base_event_sequence + index as i64 + 1)) {
+    if events.iter().enumerate().any(|(index, event)| {
+        event["sequence"].as_i64() != Some(base_event_sequence + index as i64 + 1)
+    }) {
         return Err(internal("mutation event suffix is not contiguous"));
     }
     let p = &saved["payload"];
@@ -2369,7 +2849,10 @@ async fn mutation_view(
         "execution_capabilities":{"partial_close":true,"conditional_orders":true,"partial_take_profit":true},
         "payload_patch":{"execution":execution, "cursor_index":cursor, "status":p["status"], "timing":p["timing"]}
     });
-    result.as_object_mut().unwrap().extend(identity.as_object().unwrap().clone());
+    result
+        .as_object_mut()
+        .unwrap()
+        .extend(identity.as_object().unwrap().clone());
     Ok(result)
 }
 fn asset_ready(p: &Value, m: &Value, bar: &Value) -> Result<(), ApiError> {
@@ -2596,8 +3079,10 @@ async fn branch(
         }
         p["parent_asset_checkpoint_sequences"] = Value::Object(sequences);
         if p["portfolio_execution"].is_object() {
-            p["parent_checkpoint_event_sequence"] = p["portfolio_execution"]["event_sequence"].clone();
-            crate::replay_portfolio::fork(&mut p["portfolio_execution"],&child,&branch).map_err(bad)?;
+            p["parent_checkpoint_event_sequence"] =
+                p["portfolio_execution"]["event_sequence"].clone();
+            crate::replay_portfolio::fork(&mut p["portfolio_execution"], &child, &branch)
+                .map_err(bad)?;
         }
         let active = text(&p, "dataset_id")?.to_owned();
         p["execution"] = p["asset_states"][&active]["execution"].clone();
@@ -2625,8 +3110,15 @@ async fn branch(
             let rows=tx.query("SELECT revision,payload_json FROM workspace_record_revisions WHERE workspace_id=$1 AND kind='replay' AND record_id=$2 AND revision<=$3 AND NOT deleted ORDER BY revision DESC",&[&workspace,&parent,&(revision as i32)]).await.map_err(|_|ApiError::database())?;
             let mut found = None;
             for row in rows {
-                let prior = crate::replay_storage::hydrate_payload(tx, workspace, &parent,
-                    i64::from(row.get::<_, i32>(0)), row.get(1)).await.map_err(internal)?;
+                let prior = crate::replay_storage::hydrate_payload(
+                    tx,
+                    workspace,
+                    &parent,
+                    i64::from(row.get::<_, i32>(0)),
+                    row.get(1),
+                )
+                .await
+                .map_err(internal)?;
                 let s = &prior["execution"];
                 if prior["cursor_index"] == cursor && !s.is_null() {
                     if s["cursor_index"] != cursor {
@@ -2821,11 +3313,15 @@ async fn feed_prop(
     bounded_storage: bool,
 ) -> Result<Value, ApiError> {
     let mut payload = record["payload"].clone();
-    ensure_portfolio(tx, workspace, text(record,"record_id")?, &mut payload).await?;
+    ensure_portfolio(tx, workspace, text(record, "record_id")?, &mut payload).await?;
     crate::replay_portfolio::update(&mut payload).map_err(bad)?;
     let p = &payload;
     let portfolio = p["asset_states"].is_object();
-    let s = if portfolio { &p["portfolio_execution"] } else { &p["execution"] };
+    let s = if portfolio {
+        &p["portfolio_execution"]
+    } else {
+        &p["execution"]
+    };
     if s.is_null() {
         return Err(bad("replay execution is not initialized"));
     }
@@ -2836,11 +3332,31 @@ async fn feed_prop(
         if !binding.is_object() {
             return Err(bad("prop replay binding is invalid"));
         }
-        let upgrade_initial_binding = portfolio && binding["schema_version"] != "replay-portfolio-binding-v1"
+        let upgrade_initial_binding = portfolio
+            && binding["schema_version"] != "replay-portfolio-binding-v1"
             && binding["last_replay_event_sequence"].as_i64() == Some(0)
             && binding["dataset_sha256"] == s["primary_dataset_sha256"]
-            && p["asset_states"].as_object().unwrap().values().all(|asset|asset["execution"]["ledger"]
-                .as_array().into_iter().flatten().all(|event|!matches!(event["kind"].as_str(),Some("market_fill"|"manual_close"|"protective_fill"|"phase_transition"))));
+            && p["asset_states"]
+                .as_object()
+                .unwrap()
+                .values()
+                .all(|asset| {
+                    asset["execution"]["ledger"]
+                        .as_array()
+                        .into_iter()
+                        .flatten()
+                        .all(|event| {
+                            !matches!(
+                                event["kind"].as_str(),
+                                Some(
+                                    "market_fill"
+                                        | "manual_close"
+                                        | "protective_fill"
+                                        | "phase_transition"
+                                )
+                            )
+                        })
+                });
         for key in [
             "replay_session_id",
             "branch_id",
@@ -2860,36 +3376,73 @@ async fn feed_prop(
     }
     let sequence = integer(b, "replay_event_sequence")?;
     let selected = if bounded_storage && bar_execution(s) {
-        crate::replay_storage::load_prop_marks(tx, workspace, text(record, "record_id")?,
-            integer(record, "revision")?, text(p, "dataset_id")?, sequence, last)
-            .await.map_err(internal)?
-    } else { None };
+        crate::replay_storage::load_prop_marks(
+            tx,
+            workspace,
+            text(record, "record_id")?,
+            integer(record, "revision")?,
+            text(p, "dataset_id")?,
+            sequence,
+            last,
+        )
+        .await
+        .map_err(internal)?
+    } else {
+        None
+    };
     let (event, next_sequence) = if let Some(selected) = selected {
         if !crate::replay_core::history::equivalent_json(s, selected.prefix.head())
-            || p["cursor_index"] != s["cursor_index"] || p["branch_id"] != s["branch_id"] {
-            return Err(internal("compact Prop source differs from its validated head"));
+            || p["cursor_index"] != s["cursor_index"]
+            || p["branch_id"] != s["branch_id"]
+        {
+            return Err(internal(
+                "compact Prop source differs from its validated head",
+            ));
         }
         (selected.requested_event, selected.next_sequence)
     } else {
-        if !portfolio { crate::replay_core::validate(s).map_err(bad)?; }
-        let marks = s["ledger"].as_array().ok_or_else(|| bad("invalid execution ledger"))?
-            .iter().filter(|event| matches!(event["kind"].as_str(),
-                Some("price_mark" | "manual_close" | "order_cancel")));
-        (marks.clone().find(|event| event["sequence"] == sequence).cloned(),
-            marks.filter_map(|event| event["sequence"].as_i64()).filter(|value| *value > last).min())
+        if !portfolio {
+            crate::replay_core::validate(s).map_err(bad)?;
+        }
+        let marks = s["ledger"]
+            .as_array()
+            .ok_or_else(|| bad("invalid execution ledger"))?
+            .iter()
+            .filter(|event| {
+                matches!(
+                    event["kind"].as_str(),
+                    Some("price_mark" | "manual_close" | "order_cancel")
+                )
+            });
+        (
+            marks
+                .clone()
+                .find(|event| event["sequence"] == sequence)
+                .cloned(),
+            marks
+                .filter_map(|event| event["sequence"].as_i64())
+                .filter(|value| *value > last)
+                .min(),
+        )
     };
     crate::prop_core::validate_replay_prop_binding(s, &current["attempt"], &current["phase"])
         .map_err(bad)?;
-    let event = event.ok_or_else(|| ApiError::detail(StatusCode::NOT_FOUND, "replay price_mark event not found"))?;
+    let event = event.ok_or_else(|| {
+        ApiError::detail(StatusCode::NOT_FOUND, "replay price_mark event not found")
+    })?;
     let operation = crate::prop_core::replay_event_operation_id(
-        text(s, "replay_session_id")?, text(s, "branch_id")?, sequence, session, attempt);
+        text(s, "replay_session_id")?,
+        text(s, "branch_id")?,
+        sequence,
+        session,
+        attempt,
+    );
     let prior=tx.query_opt("SELECT v.phase_json,v.resume_json,v.snapshot_json FROM prop_mutation_receipts r JOIN prop_attempt_revisions v ON v.workspace_id=r.workspace_id AND v.session_id=r.session_id AND v.attempt_id=r.attempt_id AND v.revision=r.entity_revision WHERE r.workspace_id=$1 AND r.session_id=$2 AND r.attempt_id=$3 AND r.operation_id=$4",&[&workspace,&session,&attempt,&operation]).await.map_err(|_|ApiError::database())?;
     if prior.is_none() {
         if sequence < last {
             return Err(bad("replay lifecycle events cannot move backwards"));
         }
-        if sequence > last && next_sequence != Some(sequence)
-        {
+        if sequence > last && next_sequence != Some(sequence) {
             return Err(bad(
                 "replay price_mark events must feed prop lifecycle in order",
             ));
@@ -2906,19 +3459,25 @@ async fn feed_prop(
         if let Some(row) = prior {
             let phase: Value = row.get(0);
             let resume: Value = row.get(1);
-            return Ok(json!({"replay_event":event,"attempt":row.get::<_,Value>(2),"phase":phase,
-                "resume_state":resume,"objectives":resume["prop_lifecycle"]["last_objectives"],"duplicate":true}));
+            return Ok(
+                json!({"replay_event":event,"attempt":row.get::<_,Value>(2),"phase":phase,
+                "resume_state":resume,"objectives":resume["prop_lifecycle"]["last_objectives"],"duplicate":true}),
+            );
         }
-        if current["attempt"]["status"] == "expired" && current["resume_state"]["prop_lifecycle"]["last_event_kind"] == "calendar_boundary" {
-            return Ok(json!({"replay_event":event,"attempt":current["attempt"],"phase":current["phase"],
+        if current["attempt"]["status"] == "expired"
+            && current["resume_state"]["prop_lifecycle"]["last_event_kind"] == "calendar_boundary"
+        {
+            return Ok(
+                json!({"replay_event":event,"attempt":current["attempt"],"phase":current["phase"],
                 "resume_state":current["resume_state"],"objectives":current["resume_state"]["prop_lifecycle"]["last_objectives"],"duplicate":true,
                 "terminal_boundary":{"virtual_time_utc":current["phase"]["virtual_time_utc"],"requested_replay_event_sequence":event["sequence"],
-                "acknowledged_replay_event_sequence":current["resume_state"]["replay_binding"]["last_replay_event_sequence"]}}));
+                "acknowledged_replay_event_sequence":current["resume_state"]["replay_binding"]["last_replay_event_sequence"]}}),
+            );
         }
         if current["attempt"]["revision"] != b["expected_prop_revision"] {
             return Err(conflict("prop attempt revision conflict"));
         }
-        return feed_portfolio_prop(tx,workspace,s,&event,session,attempt,current).await;
+        return feed_portfolio_prop(tx, workspace, s, &event, session, attempt, current).await;
     }
     let (phase, resume) = if let Some(row) = prior {
         (row.get::<_, Value>(0), row.get::<_, Value>(1))
@@ -3055,10 +3614,16 @@ pub async fn handle_bound_next_phase(
     let record = load_record(tx, workspace, id, true).await?;
     let mut p = record["payload"].clone();
     let portfolio = p["asset_states"].is_object();
-    let snapshot = if portfolio { p["portfolio_execution"].clone() } else { p["execution"].clone() };
+    let snapshot = if portfolio {
+        p["portfolio_execution"].clone()
+    } else {
+        p["execution"].clone()
+    };
     let s = &snapshot;
-    if !portfolio { crate::replay_core::validate(s)
-        .map_err(|_| conflict("canonical replay execution snapshot is invalid"))?; }
+    if !portfolio {
+        crate::replay_core::validate(s)
+            .map_err(|_| conflict("canonical replay execution snapshot is invalid"))?;
+    }
     let fingerprint = crate::prop_core::intent_fingerprint(intent).map_err(bad)?;
     let operation = text(intent, "intent_id")?;
     let session = text(intent, "session_id")?;
@@ -3101,7 +3666,13 @@ pub async fn handle_bound_next_phase(
         ));
     }
     let m = manifest(tx, workspace, text(s, "dataset_id")?).await?;
-    if m["artifact_sha256"] != if portfolio {s["primary_dataset_sha256"].clone()}else{s["dataset_sha256"].clone()} {
+    if m["artifact_sha256"]
+        != if portfolio {
+            s["primary_dataset_sha256"].clone()
+        } else {
+            s["dataset_sha256"].clone()
+        }
+    {
         return Err(conflict("canonical replay dataset sha256 changed"));
     }
     let ix = integer(&current["phase"], "phase_index")?;
@@ -3135,18 +3706,17 @@ pub async fn handle_bound_next_phase(
     let next = if portfolio {
         for asset in p["asset_states"].as_object_mut().unwrap().values_mut() {
             if !asset["execution"].is_null() {
-                asset["execution"] = engine_snapshot("transition",&asset["execution"],transition_args.clone())?;
+                asset["execution"] =
+                    engine_snapshot("transition", &asset["execution"], transition_args.clone())?;
             }
         }
-        let active = text(&p,"dataset_id")?.to_owned();
+        let active = text(&p, "dataset_id")?.to_owned();
         p["execution"] = p["asset_states"][&active]["execution"].clone();
         crate::replay_portfolio::update(&mut p).map_err(conflict)?;
         p["portfolio_execution"].clone()
-    } else { engine_snapshot(
-        "transition",
-        s,
-        transition_args,
-    )? };
+    } else {
+        engine_snapshot("transition", s, transition_args)?
+    };
     for key in [
         "replay_session_id",
         "branch_id",
@@ -3169,7 +3739,9 @@ pub async fn handle_bound_next_phase(
         &result["resume_state"],
     )
     .map_err(conflict)?;
-    if !portfolio { p["execution"] = next; }
+    if !portfolio {
+        p["execution"] = next;
+    }
     let saved = save_record(tx, workspace, &record, p, false).await?;
     let mut persisted =
         crate::prop_service::persist_result(tx, current, &result, operation, &fingerprint).await?;
@@ -3290,8 +3862,16 @@ async fn branch_prop(
         ));
     }
     let portfolio = cp["asset_states"].is_object();
-    let cs = if portfolio { &cp["portfolio_execution"] } else { &cp["execution"] };
-    let ps = if portfolio { &parent["payload"]["portfolio_execution"] } else { &parent["payload"]["execution"] };
+    let cs = if portfolio {
+        &cp["portfolio_execution"]
+    } else {
+        &cp["execution"]
+    };
+    let ps = if portfolio {
+        &parent["payload"]["portfolio_execution"]
+    } else {
+        &parent["payload"]["execution"]
+    };
     if !portfolio {
         crate::replay_core::validate(cs).map_err(bad)?;
         crate::replay_core::validate(ps).map_err(bad)?;
@@ -3366,7 +3946,7 @@ async fn branch_prop(
     attempt["parent_attempt_id"] = json!(parent_attempt);
     attempt["branch_kind"] = json!("hindsight_exploratory");
     phase["attempt_id"] = json!(child_attempt);
-    resume["replay_binding"] = crate::replay_portfolio::binding(cs,&cs["event_sequence"]);
+    resume["replay_binding"] = crate::replay_portfolio::binding(cs, &cs["event_sequence"]);
     resume["branch_provenance"] = json!({"kind":"replay_prop_hindsight_branch_v1","parent_attempt_id":parent_attempt,"parent_attempt_revision":rev,"parent_replay_session_id":parent_id,"parent_replay_revision":b["expected_parent_replay_revision"],"parent_checkpoint_event_sequence":cs["event_sequence"]});
     crate::prop_core::validate_attempt_snapshot(&attempt).map_err(bad)?;
     crate::prop_core::validate_phase_snapshot(&phase).map_err(bad)?;

@@ -15,24 +15,44 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             return Err("compatibility startup requires materializing every compact replay revision on an isolated restored target, including historical and deleted revisions".into());
         }
     }
-    let domain = trading_workspace_api::runtime_domain_routes(&state).map_err(std::io::Error::other)?;
+    let domain =
+        trading_workspace_api::runtime_domain_routes(&state).map_err(std::io::Error::other)?;
     let listener = tokio::net::TcpListener::bind(state.config.bind).await?;
     let provider = if state.native_runtime {
-        let adapter = trading_workspace_api::provider_routes::execution::Adapter::from_environment(&state.providers)
-            .map_err(std::io::Error::other)?;
-        adapter.map(|adapter| trading_workspace_api::provider_routes::execution::start(state.clone(),state.providers.clone(),adapter))
-            .transpose().map_err(std::io::Error::other)?
-    } else { None };
+        let adapter = trading_workspace_api::provider_routes::execution::Adapter::from_environment(
+            &state.providers,
+        )
+        .map_err(std::io::Error::other)?;
+        adapter
+            .map(|adapter| {
+                trading_workspace_api::provider_routes::execution::start(
+                    state.clone(),
+                    state.providers.clone(),
+                    adapter,
+                )
+            })
+            .transpose()
+            .map_err(std::io::Error::other)?
+    } else {
+        None
+    };
     let app = trading_workspace_api::router(state.clone(), domain);
     state.ai_runs.start().await;
-    let mt5 = if state.native_runtime { Some(trading_workspace_api::mt5_connector::start(state.clone())) } else { None };
+    let mt5 = if state.native_runtime {
+        Some(trading_workspace_api::mt5_connector::start(state.clone()))
+    } else {
+        None
+    };
     tracing::info!(bind=%state.config.bind,contract_version=trading_workspace_api::CONTRACT_VERSION,"API listening");
     let (stop_tx, stop_rx) = tokio::sync::oneshot::channel::<()>();
-    let server = axum::serve(listener, app.into_make_service_with_connect_info::<std::net::SocketAddr>())
-        .with_graceful_shutdown(async move {
-            let _ = stop_rx.await;
-        })
-        .into_future();
+    let server = axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
+    )
+    .with_graceful_shutdown(async move {
+        let _ = stop_rx.await;
+    })
+    .into_future();
     tokio::pin!(server);
     tokio::select! {
         result=&mut server => { result?; },
@@ -48,16 +68,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    if let Some(provider)=provider {
-        if tokio::time::timeout(state.config.drain_timeout,provider.finish()).await.is_err() {
-            tracing::warn!("provider drain deadline reached; owned process tree stopped, interrupted job recovers paused");
+    if let Some(provider) = provider {
+        if tokio::time::timeout(state.config.drain_timeout, provider.finish())
+            .await
+            .is_err()
+        {
+            tracing::warn!(
+                "provider drain deadline reached; owned process tree stopped, interrupted job recovers paused"
+            );
         }
     }
     state.ai_runs.shutdown().await;
     state.ai_assistant.shutdown().await;
     if let Some(mut mt5) = mt5 {
-        if tokio::time::timeout(std::time::Duration::from_secs(20), &mut mt5).await.is_err() {
-            mt5.abort(); let _ = mt5.await;
+        if tokio::time::timeout(std::time::Duration::from_secs(20), &mut mt5)
+            .await
+            .is_err()
+        {
+            mt5.abort();
+            let _ = mt5.await;
         }
     }
     state.pool.close();

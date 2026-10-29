@@ -4,12 +4,13 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+from runtime_paths import postgres_bin
 import socket
 import subprocess
 import tempfile
 
 FOUNDATION = Path(__file__).resolve().parents[1]
-PG_BIN = Path(os.environ.get("TW_COMMAND_TEST_PG_BIN", "D:/ANNAM/TradingWorkspace/planning/mt5-tradingview-backtester/research/foundation-validation/20260921T115933Z-315e8ddd/pg-dist/pgsql/bin"))
+PG_BIN = postgres_bin("TW_COMMAND_TEST_PG_BIN")
 
 
 def main():

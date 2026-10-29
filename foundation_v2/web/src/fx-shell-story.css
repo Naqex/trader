@@ -678,7 +678,7 @@
 
 /* A loaded replay is a chart workspace, not a shell page. Match FXReplay's
  * full-bleed canvas by removing the product rail and giving the chart its own
- * compact header. Dashboard/session-picker routes keep the normal WMREPLAY
+ * compact header. Dashboard/session-picker routes keep the normal Naqex Trader
  * shell and its pinned utilities. */
 .fx-app.fx-shell-story.is-chart-workspace {
   grid-template-columns: minmax(0, 1fr);
@@ -773,7 +773,7 @@
   .fx-app.is-chart-workspace .fx-chart-tool-button { font-size: 10px; padding: 0 4px; }
 }
 
-/* WMREPLAY shell pass: keep the product frame simple while the workspace
+/* Naqex Trader shell pass: keep the product frame simple while the workspace
  * screens are rebuilt. The rail owns only the five top-level areas; each
  * area's children live in the content subheader. */
 .fx-app.fx-shell-story:not(.is-chart-workspace) {

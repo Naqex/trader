@@ -86,15 +86,19 @@ impl AppState {
         let openapi_schema = std::fs::read(&config.openapi_path)
             .ok()
             .and_then(|bytes| serde_json::from_slice(&bytes).ok());
-        let ai_assistant=Arc::new(crate::ai_assistant::AiAssistant::from_environment()?);
-        let ai_runs=crate::ai_runs::Engine::new(pool.clone(),ai_assistant.clone());
+        let ai_assistant = Arc::new(crate::ai_assistant::AiAssistant::from_environment()?);
+        let ai_runs = crate::ai_runs::Engine::new(pool.clone(), ai_assistant.clone());
         Ok(Arc::new(Self {
-            providers: crate::provider_routes::ProviderRuntime::from_environment(&config.artifact_root)?,
+            providers: crate::provider_routes::ProviderRuntime::from_environment(
+                &config.artifact_root,
+            )?,
             notion_oauth: Arc::new(crate::notion_oauth::NotionOAuthService::from_environment()?),
             ai_assistant,
             ai_runs,
             mt5_tools: crate::ai_mt5_tools::Mt5Tools::from_environment()?,
-            artifact_data: Arc::new(crate::artifact_data::ArtifactData::new(&config.artifact_root)?),
+            artifact_data: Arc::new(crate::artifact_data::ArtifactData::new(
+                &config.artifact_root,
+            )?),
             analytics_cache: Default::default(),
             replay_history: Default::default(),
             authorization: LocalAuthorization::new(config.local_identity.clone(), workspaces),

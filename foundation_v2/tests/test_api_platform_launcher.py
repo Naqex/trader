@@ -51,7 +51,7 @@ class LauncherTests(unittest.TestCase):
 
     def test_native_scientific_descriptor_is_explicit_and_verified_before_start(self):
         with tempfile.TemporaryDirectory() as folder:
-            capability=Path(folder)/'scientific.json';capability.write_text('{}')
+            capability=Path(folder).resolve()/'scientific.json';capability.write_text('{}')
             args=launcher.resolve_profile_paths(launcher.parser().parse_args(['--runtime-profile','native',
                 '--scientific-capability',str(capability),'--legacy-codec-capability',str(capability)]))
             with patch.dict('os.environ',{'TW_V2_DATABASE_URL':'host=localhost user=fixture'}):
@@ -265,7 +265,7 @@ class LauncherTests(unittest.TestCase):
         with patch.object(launcher,"configuration",return_value={}), patch.object(launcher,"validate_paths"), \
              patch.object(launcher,"native_database_preflight",return_value={"schema_current":True}) as native, \
              patch.object(launcher,"database_preflight") as compatibility, patch.object(launcher,"supervise") as start:
-            self.assertEqual(launcher.main(["--runtime-profile","native","--check-only"]),0)
+            self.assertEqual(launcher.main(["--runtime-profile","native","--download-engine","none","--check-only"]),0)
             native.assert_called_once()
             compatibility.assert_not_called()
             start.assert_not_called()

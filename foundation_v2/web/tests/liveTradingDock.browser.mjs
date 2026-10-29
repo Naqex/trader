@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
@@ -5,7 +6,7 @@ import { chromium } from 'playwright'
 
 const origin=process.env.TW_LIVE_UI_ORIGIN || 'http://127.0.0.1:5188'
 assert.equal(new URL(origin).hostname,'127.0.0.1')
-const output=process.env.TW_LIVE_UI_EVIDENCE || 'E:/BACKUP-TRADINGWORKSPACE/live-trading-ui-20261024/browser'
+const output=process.env.TW_LIVE_UI_EVIDENCE || fileURLToPath(new URL('../.artifacts/liveTradingDock.browser', import.meta.url))
 await mkdir(output,{recursive:true})
 const copy=JSON.parse(await readFile(new URL('../src/testing-copy.json',import.meta.url))),vi=key=>copy[key]?.vi || key
 const first='492ec8a5-3938-41a3-8a26-8c0f7f59ed43',second='492ec8a5-3938-41a3-8a26-8c0f7f59ed44'

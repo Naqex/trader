@@ -2,7 +2,7 @@
 
 **Status:** candidate under implementation (project scope only)
 **Version:** `0.2.0-dev`
-**Owner:** `projects/mt5-tradingview-backtester/ui/`
+**Owner:** `projects/trader/ui/`
 **Updated:** 2026-10-09
 
 This is the agent-facing UI contract for the MT5 TradingView Backtester. It

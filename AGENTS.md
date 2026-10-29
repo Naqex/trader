@@ -1,20 +1,21 @@
-# MT5 TradingView Backtester
+# Naqex Trader
 
-Parent workspace instructions in `D:\ANNAM\TradingWorkspace\AGENTS.md` apply.
+When this repo is checked out inside the workspace, `../../AGENTS.md` also applies.
+A standalone checkout uses this file and the repository README; workspace planning is optional.
 
 ## Authoritative context
 
 - Start/run instructions: `README.md`; current product source is `foundation_v2/`.
-- Product completion plan: `D:\ANNAM\TradingWorkspace\planning\mt5-tradingview-backtester\PRODUCT-COMPLETION-PLAN.md`
+- Product completion plan: `../../planning/trader/PRODUCT-COMPLETION-PLAN.md`
 - Start/resume and state ownership: `EXECUTION-ENTRYPOINT.md` beside that plan, then its current ledger/receipts. Generated `STATE.json` and narrative `RESUME.md` do not replace the ledger.
-- UI scope/quality: `D:\ANNAM\TradingWorkspace\planning\mt5-tradingview-backtester\WMREPLAY-UI-MASTER-PLAN.md`
+- UI scope/quality: `../../planning/trader/TRADER-UI-MASTER-PLAN.md`
 - Project UI contract/config: `ui/`
 
 U1 checkpoints and old design/exploration prompts are historical references. Open them only for relevant decisions or regressions; do not restart accepted work from an old status snapshot.
 
 ## Current UI gate
 
-The owner delegated UI direction and acceptance to agents. Continue the chosen WMREPLAY direction with independent review + runnable visual/interaction QA; do not wait for owner aesthetic approval or treat implementation/build success as accepted UI. Product Plan owns scope; WMREPLAY owns its UI quality contract. Broker/data/cost/deploy gates remain separate.
+The owner delegated UI direction and acceptance to agents. Continue the chosen Naqex Trader direction with independent review + runnable visual/interaction QA; do not wait for owner aesthetic approval or treat implementation/build success as accepted UI. Product Plan owns scope; Naqex Trader owns its UI quality contract. Broker/data/cost/deploy gates remain separate.
 
 The owner retired `projects/mt5-tradingview-backtester-figma-make` and `projects/mt5-tradingview-backtester-gemini-sketch` on 01/10/2026. Do not use or recreate these checkouts as a prerequisite for product work. New design exploration requires an explicit task; ordinary UI work stays in the main repo.
 
@@ -25,14 +26,14 @@ Use `.agents/skills/trading-ui-qa/SKILL.md` for web UI QA. Playwright scripts/CL
 ## Shared UI layers
 
 - Global foundations: `../../UI-Systems/` (relative to this project root)
-- Trading-domain contracts: `D:\ANNAM\TradingWorkspace\UI`
+- Trading-domain contracts: `../../UI`
 - Project-specific UI: `ui/`
 
 The project may consume shared contracts but should not copy or mutate shared global files as a side effect of an ordinary feature task.
 
 ## Implementation rules
 
-- Follow owner-approved PATH-2 (`planning/mt5-tradingview-backtester/FOUNDATION-ADR-0001-PATH2.md` in the parent workspace). Reuse clean domain logic/tests; legacy Flask is reference, not a constraint to restore. Do not reopen the chosen stack without the ADR's revisit evidence.
+- Follow owner-approved PATH-2 (`planning/trader/FOUNDATION-ADR-0001-PATH2.md` in the parent workspace). Reuse clean domain logic/tests; legacy Flask is reference, not a constraint to restore. Do not reopen the chosen stack without the ADR's revisit evidence.
 - Reuse current routes, stores, contracts, and chart capabilities before adding new frontend frameworks.
 - Preserve Vietnamese-first UI and explicit units/scope/state semantics.
 - Apply the spacing and visible-copy rules in `ui/display-conventions.md`; do not add persistent implementation or legacy-data notices to healthy reports.

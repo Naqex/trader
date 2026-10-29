@@ -137,9 +137,16 @@ fn advance_inner(s: &mut Value, a: &Value) -> Result<(), String> {
             let order = s["pending_market_order"].clone();
             let fill = if order["side"] == "BUY" { &ask } else { &bid };
             let conditional = super::entry::conditional(&order);
-            if conditional && !super::entry::triggered(&order,fill)? { continue; }
-            if if conditional { order["submitted_cursor_index"].as_i64().is_none_or(|c| c > old_cursor) }
-                else { order["submitted_cursor_index"].as_i64() != Some(old_cursor) } {
+            if conditional && !super::entry::triggered(&order, fill)? {
+                continue;
+            }
+            if if conditional {
+                order["submitted_cursor_index"]
+                    .as_i64()
+                    .is_none_or(|c| c > old_cursor)
+            } else {
+                order["submitted_cursor_index"].as_i64() != Some(old_cursor)
+            } {
                 return Err("tick order must be submitted at the previous closed bar".into());
             }
             if !brackets(&order, fill)? {
@@ -149,7 +156,9 @@ fn advance_inner(s: &mut Value, a: &Value) -> Result<(), String> {
             s["pending_market_order"] = Value::Null;
             let mut details = json!({"operation_id": order["operation_id"], "side": order["side"],
                 "quantity": order["quantity"], "fill_price": sval(fill.clone()), "margin_admission": admission["margin_admission"]});
-            if conditional { details["entry_order"] = order.clone(); }
+            if conditional {
+                details["entry_order"] = order.clone();
+            }
             if !rejected {
                 s["position"] = position(s, &order, &bid, &ask, cursor, time / 1000)?;
                 exposure = true;
@@ -202,8 +211,24 @@ fn advance_inner(s: &mut Value, a: &Value) -> Result<(), String> {
             };
             if stop || target {
                 if super::partial::has(&closed) {
-                    let details = super::partial::settle(s,&closed,stop,&bid,&ask,quote,if stop {"stop_loss"} else {"take_profit"})?;
-                    record(s,"protective_fill",cursor,time / 1000,&raw,(start,end),details)?;
+                    let details = super::partial::settle(
+                        s,
+                        &closed,
+                        stop,
+                        &bid,
+                        &ask,
+                        quote,
+                        if stop { "stop_loss" } else { "take_profit" },
+                    )?;
+                    record(
+                        s,
+                        "protective_fill",
+                        cursor,
+                        time / 1000,
+                        &raw,
+                        (start, end),
+                        details,
+                    )?;
                     continue;
                 }
                 let (net, cost) = pnl(s, &closed, &bid, &ask)?;
@@ -222,7 +247,9 @@ fn advance_inner(s: &mut Value, a: &Value) -> Result<(), String> {
                     (start, end),
                     details,
                 )?;
-            } else { break; }
+            } else {
+                break;
+            }
         }
     }
     let last = last.ok_or("tick coverage is empty; OHLC fallback is disabled")?;
@@ -334,8 +361,15 @@ pub(super) fn validate(s: &Value) -> Result<(), String> {
         let kind = event["kind"].as_str().ok_or("invalid event kind")?;
         if kind == "protection_change" {
             let target = if open.is_null() { pending } else { open };
-            let entry = if open.is_null() && super::entry::conditional(target) { Some(decimal(target,"entry_price")?) } else { None };
-            let reference = entry.as_ref().unwrap_or(if target["side"] == "BUY" { &bid } else { &ask });
+            let entry = if open.is_null() && super::entry::conditional(target) {
+                Some(decimal(target, "entry_price")?)
+            } else {
+                None
+            };
+            let reference =
+                entry
+                    .as_ref()
+                    .unwrap_or(if target["side"] == "BUY" { &bid } else { &ask });
             if decimal(details, "closeable_quote")? != *reference {
                 return Err("tick protection must use the observed closeable quote".into());
             }
@@ -349,7 +383,7 @@ pub(super) fn validate(s: &Value) -> Result<(), String> {
             } else {
                 prior_quote
             }
-                .ok_or("close/current fill requires a preceding canonical broker quote")?;
+            .ok_or("close/current fill requires a preceding canonical broker quote")?;
             let keys: &[&str] = if details["execution_timing"] == "current_quote" {
                 if event["cursor_index"] != prior["cursor_index"]
                     || event["virtual_time_utc"] != prior["virtual_time_utc"]
@@ -518,18 +552,39 @@ mod tests {
     }
     #[test]
     fn partial_targets_tick_sequence_preserves_residual_and_final_costs() {
-        for side in ["BUY","SELL"] {
-            let mut s=initial();
-            let prices=if side=="BUY" {["1.1010","1.1020"]} else {["1.0990","1.0980"]};
+        for side in ["BUY", "SELL"] {
+            let mut s = initial();
+            let prices = if side == "BUY" {
+                ["1.1010", "1.1020"]
+            } else {
+                ["1.0990", "1.0980"]
+            };
             super::super::queue(&mut s,&json!({"operation_id":"split","side":side,"quantity":"0.04","take_profits":[
                 {"target_id":"a","price":prices[0],"quantity":"0.02"},{"target_id":"b","price":prices[1],"quantity":"0.02"}]})).unwrap();
-            let ticks=if side=="BUY" {json!([t("1.1000","1.1002",0),t("1.1010","1.1012",1),t("1.1020","1.1022",2)])}
-                else {json!([t("1.1000","1.1002",0),t("1.0988","1.0990",1),t("1.0978","1.0980",2)])};
-            advance(&mut s,&args(ticks)).unwrap();
+            let ticks = if side == "BUY" {
+                json!([
+                    t("1.1000", "1.1002", 0),
+                    t("1.1010", "1.1012", 1),
+                    t("1.1020", "1.1022", 2)
+                ])
+            } else {
+                json!([
+                    t("1.1000", "1.1002", 0),
+                    t("1.0988", "1.0990", 1),
+                    t("1.0978", "1.0980", 2)
+                ])
+            };
+            advance(&mut s, &args(ticks)).unwrap();
             super::super::validate(&s).unwrap();
             assert!(s["position"].is_null());
-            assert_eq!(s["ledger"][1]["details"]["open_position"]["quantity"],"0.02");
-            assert_eq!(decimal(&s,"balance").unwrap(),d(&json!(if side=="BUY" {"100003.2"}else{"100004"})).unwrap());
+            assert_eq!(
+                s["ledger"][1]["details"]["open_position"]["quantity"],
+                "0.02"
+            );
+            assert_eq!(
+                decimal(&s, "balance").unwrap(),
+                d(&json!(if side == "BUY" { "100003.2" } else { "100004" })).unwrap()
+            );
         }
     }
     #[test]

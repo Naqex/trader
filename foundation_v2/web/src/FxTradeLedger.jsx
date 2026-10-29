@@ -42,7 +42,7 @@ export function TradeInspector({ children, onClose }) {
 function valueOf(row, key, model, sessionName) {
   if (key === 'session_id') return sessionName || row.session_name || row.session_id || row.source?.session_id || model.result?.session_id || '-'
   if (key === 'status') return row.status === 'open' ? 'Open' : 'Closed'
-  if (key === 'source') return model.result?.preview ? 'UI demo' : row.session_id || row.source_provenance?.session_id || model.result?.session_id ? 'WMReplay' : row.source === 'research ledger' ? 'Research' : '-'
+  if (key === 'source') return model.result?.preview ? 'UI demo' : row.session_id || row.source_provenance?.session_id || model.result?.session_id ? 'Naqex Trader' : row.source === 'research ledger' ? 'Research' : '-'
   // The return denominator is explicit; missing capital never becomes a 0% return.
   if (key === 'return_pct') { const capital = model.result?.multi_session ? row.starting_balance : model.startBalance; return known(capital) && capital > 0 && known(row.net_pnl) ? row.net_pnl / capital * 100 : null }
   return row[key]

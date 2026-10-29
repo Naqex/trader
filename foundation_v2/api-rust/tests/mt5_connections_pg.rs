@@ -181,13 +181,54 @@ async fn secrets_retries_isolation_and_lifecycle() {
     let snapshot = json!({"status":"ready","source":"Fixture","captured_at_utc":"2026-10-21T00:00:00Z","account":{"balance":1000,"currency":"USD"},"account_binding":{"login":"1234567","server":"Fixture-Demo","generation":2},"account_environment":"demo","deals":(1..=1000).map(|ticket|json!({"ticket":ticket,"profit":1,"time_msc":ticket})).collect::<Vec<_>>(),"cashflows":[]});
     let connection_id = uuid::Uuid::parse_str(id).unwrap();
     let generation: i64 = db.query_one("SELECT generation FROM mt5_connections WHERE workspace_id='tenant-a' AND connection_id=$1", &[&connection_id]).await.unwrap().get(0);
-    assert_eq!(trading_workspace_api::mt5_connector::persist_snapshot(&db, "tenant-a", connection_id, generation - 1, &snapshot).await.unwrap(), 0);
-    assert_eq!(trading_workspace_api::mt5_connector::persist_snapshot(&db, "tenant-b", connection_id, generation, &snapshot).await.unwrap(), 0);
-    assert_eq!(trading_workspace_api::mt5_connector::persist_snapshot(&db, "tenant-a", connection_id, generation, &snapshot).await.unwrap(), 1);
+    assert_eq!(
+        trading_workspace_api::mt5_connector::persist_snapshot(
+            &db,
+            "tenant-a",
+            connection_id,
+            generation - 1,
+            &snapshot
+        )
+        .await
+        .unwrap(),
+        0
+    );
+    assert_eq!(
+        trading_workspace_api::mt5_connector::persist_snapshot(
+            &db,
+            "tenant-b",
+            connection_id,
+            generation,
+            &snapshot
+        )
+        .await
+        .unwrap(),
+        0
+    );
+    assert_eq!(
+        trading_workspace_api::mt5_connector::persist_snapshot(
+            &db,
+            "tenant-a",
+            connection_id,
+            generation,
+            &snapshot
+        )
+        .await
+        .unwrap(),
+        1
+    );
     let mut updated_snapshot = snapshot.clone();
     updated_snapshot["account"]["balance"] = json!(2000);
     updated_snapshot["captured_at_utc"] = json!("2026-10-22T00:00:00Z");
-    trading_workspace_api::mt5_connector::persist_snapshot(&db, "tenant-a", connection_id, generation, &updated_snapshot).await.unwrap();
+    trading_workspace_api::mt5_connector::persist_snapshot(
+        &db,
+        "tenant-a",
+        connection_id,
+        generation,
+        &updated_snapshot,
+    )
+    .await
+    .unwrap();
     let full = request(
         &app,
         "GET",
@@ -216,8 +257,18 @@ async fn secrets_retries_isolation_and_lifecycle() {
     assert!(listed.1["items"][0].get("account_binding").is_none());
     assert!(listed.1["items"][0].get("deals").is_none());
     assert!(!listed.1.to_string().contains("synthetic-private"));
-    assert_eq!(request(&app, "GET", base, "tenant-b", Value::Null).await.1["items"], json!([]));
-    let renamed = request(&app, "POST", &format!("{base}/{id}/rename"), "tenant-a", json!({"name":"Standard"})).await;
+    assert_eq!(
+        request(&app, "GET", base, "tenant-b", Value::Null).await.1["items"],
+        json!([])
+    );
+    let renamed = request(
+        &app,
+        "POST",
+        &format!("{base}/{id}/rename"),
+        "tenant-a",
+        json!({"name":"Standard"}),
+    )
+    .await;
     assert_eq!(renamed.1["account_login"], "1234567");
     assert!(summary.1.get("deals").is_none());
     assert_eq!(full.1["deals"].as_array().unwrap().len(), 1000);
@@ -326,9 +377,31 @@ async fn secrets_retries_isolation_and_lifecycle() {
     assert_eq!(reconfigured.0, 202);
     assert_eq!(reconfigured.1["balance_baseline"], baseline);
     assert!(reconfigured.1["account"].is_null());
-    assert_eq!(trading_workspace_api::mt5_connector::persist_snapshot(&db, "tenant-a", connection_id, generation, &snapshot).await.unwrap(), 0);
-    trading_workspace_api::mt5_connector::persist_snapshot(&db, "tenant-a", connection_id, generation + 1, &updated_snapshot).await.unwrap();
-    assert_eq!(request(&app, "GET", base, "tenant-a", Value::Null).await.1["items"][0]["balance_baseline"], baseline);
+    assert_eq!(
+        trading_workspace_api::mt5_connector::persist_snapshot(
+            &db,
+            "tenant-a",
+            connection_id,
+            generation,
+            &snapshot
+        )
+        .await
+        .unwrap(),
+        0
+    );
+    trading_workspace_api::mt5_connector::persist_snapshot(
+        &db,
+        "tenant-a",
+        connection_id,
+        generation + 1,
+        &updated_snapshot,
+    )
+    .await
+    .unwrap();
+    assert_eq!(
+        request(&app, "GET", base, "tenant-a", Value::Null).await.1["items"][0]["balance_baseline"],
+        baseline
+    );
     assert_eq!(
         request(
             &app,

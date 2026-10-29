@@ -1,21 +1,21 @@
 ---
 name: trading-ui-qa
-description: Verify MT5 WMREPLAY UI interactions and visual regressions with Playwright and scoped evidence. Use for this product's rendered acceptance, not design exploration, broker execution or general desktop control.
+description: Verify MT5 Naqex Trader UI interactions and visual regressions with Playwright and scoped evidence. Use for this product's rendered acceptance, not design exploration, broker execution or general desktop control.
 ---
 
 # Trading UI QA
 
-Use the canonical [Product Plan](../../../../../planning/mt5-tradingview-backtester/PRODUCT-COMPLETION-PLAN.md) and its [entrypoint](../../../../../planning/mt5-tradingview-backtester/EXECUTION-ENTRYPOINT.md) for product scope and task/state routing. [WMREPLAY](../../../../../planning/mt5-tradingview-backtester/WMREPLAY-UI-MASTER-PLAN.md) owns the UI quality contract. A screenshot or this skill never grants broker/data/provider permissions. The owner delegated UI aesthetics to agents: review and choose without asking owner for each screen, but do not claim untested UI accepted.
+Use the canonical [Product Plan](../../../../../planning/trader/PRODUCT-COMPLETION-PLAN.md) and its [entrypoint](../../../../../planning/trader/EXECUTION-ENTRYPOINT.md) for product scope and task/state routing. [Naqex Trader](../../../../../planning/trader/TRADER-UI-MASTER-PLAN.md) owns the UI quality contract. A screenshot or this skill never grants broker/data/provider permissions. The owner delegated UI aesthetics to agents: review and choose without asking owner for each screen, but do not claim untested UI accepted.
 
 ## Start from the existing kit
 
 Read [worker-kit README](../../../../../tooling/ui-qa/README.md). From TradingWorkspace:
 
 ```powershell
-node tooling/ui-qa/qa.mjs doctor --plan D:/ANNAM/TradingWorkspace/planning/mt5-tradingview-backtester/PRODUCT-COMPLETION-PLAN.md
+node tooling/ui-qa/qa.mjs doctor --plan planning/trader/PRODUCT-COMPLETION-PLAN.md
 ```
 
-Doctor is read-only. Load only the assigned U/Y/W packet and operational state/receipts linked by the entrypoint or WMREPLAY; do not rediscover the whole repo or reset accepted work. Verify the main repo's `foundation_v2` UI using its README and closest AGENTS. Old static U1 previews and retired design checkouts are not the default test target. Resolve the kit from this file when working from another cwd.
+Doctor is read-only. Load only the assigned U/Y/W packet and operational state/receipts linked by the entrypoint or Naqex Trader; do not rediscover the whole repo or reset accepted work. Verify the main repo's `foundation_v2` UI using its README and closest AGENTS. Old static U1 previews and retired design checkouts are not the default test target. Resolve the kit from this file when working from another cwd.
 
 For a directly assigned small fix, use the relevant component/contract and focused
 checks; plan routing does not require reading every historical packet. For chat,

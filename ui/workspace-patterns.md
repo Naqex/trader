@@ -1,4 +1,4 @@
-# WMREPLAY page patterns — 03/10/2026
+# Naqex Trader page patterns — 03/10/2026
 
 The owner approved the real Dashboard trial and requested research plus application to the remaining MT5 pages. This extends the project pattern; it does not release a global UI system, change pinned shared contracts or grant broker/provider/data permissions. The Dashboard trial remains the visual reference.
 
@@ -12,7 +12,7 @@ text-only navigation hover are defined by [testing-standard.md](testing-standard
 
 Primary pages were read on03/10/2026; raw public HTML/text and fetch failures are retained under workspace `.artifacts/wm-pattern-migration-20261003/research/`.
 
-| Reference | Useful principle | WMREPLAY application |
+| Reference | Useful principle | Naqex Trader application |
 |---|---|---|
 | [Carbon data table](https://carbondesignsystem.com/components/data-table/usage/) | Table title + toolbar + aligned rows; expansion reveals additional information; pagination handles long datasets. Consistent control sizing preserves alignment. | Sessions, Trades, Data and Live use compact scope/toolbar/list/detail. Keep real sorting/filtering/pagination and selected context. |
 | [Carbon form](https://carbondesignsystem.com/components/form/usage/) | Immediate validation; distinct error, warning, disabled and read-only states; longer forms can use groups/steps; page/panel/dialog follow the task. | Settings, risk, trade draft and Prop use grouped fields with adjacent actions and retained validation. Do not decorate each field group as another card. |
@@ -183,7 +183,7 @@ Its original scoped receipt is foundation_v2/evidence/ui-chart-workbench-2026100
 ## Chart workspace — Advanced Charts default, 04/10/2026
 
 Owner-confirmed Advanced Charts v23.040 supplies the native drawing rail, indicators,
-chart styles, interval selector, settings and object tree. WMReplay retains the session
+chart styles, interval selector, settings and object tree. Naqex Trader retains the session
 navigation, floating replay controls, application dock and simulator/account bar. Native
 tools replace the overlapping custom drawing/type/indicator controls. Replay pauses on
 native mouse-down; its toolbar starts below the symbol/volume legend and retains local

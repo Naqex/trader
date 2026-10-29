@@ -2,7 +2,7 @@
 
 This is the current development foundation approved by PATH-2. It started with
 the F6 reference slice and now contains the Axum/PostgreSQL API, Python domain/research workers,
-engine integration and React WMReplay UI. The legacy Flask runtime remains a
+engine integration and React Naqex Trader UI. The legacy Flask runtime remains a
 reference for capability and semantic comparison, not the development entrypoint.
 See the [root README](../README.md) for setup, current UI gates and the canonical
 workspace plans. The capability notes below do not claim full product acceptance.

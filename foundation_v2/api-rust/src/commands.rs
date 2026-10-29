@@ -27,15 +27,25 @@ pub fn required_worker_manifest_for(native_runtime: bool) -> Value {
         serde_json::from_str::<Vec<Route>>(FROZEN)
             .expect("reviewed route manifest")
             .into_iter()
-            .filter(|r| !native(&r.method, &r.path) && !(native_runtime && crate::provider_routes::native_profile(&r.method, &r.path)))
+            .filter(|r| !native(&r.method, &r.path)
+                && !(native_runtime && crate::provider_routes::native_profile(&r.method, &r.path)))
             .map(|r| json!({"method":r.method,"path":r.path}))
             .collect::<Vec<_>>()
     )
 }
 pub fn allowed_methods(template: &str) -> Vec<String> {
-    let additive: Vec<String> = crate::session_presets::ROUTES.iter().chain(crate::live_ledger::ROUTES.iter()).chain(crate::trade_labels::ROUTES.iter()).chain(crate::mt5_connector::ROUTES.iter()).chain(crate::demo_trading::ROUTES.iter())
-        .filter(|(_, path)| *path == template).map(|(method, _)| (*method).to_owned()).collect();
-    if !additive.is_empty() { return additive; }
+    let additive: Vec<String> = crate::session_presets::ROUTES
+        .iter()
+        .chain(crate::live_ledger::ROUTES.iter())
+        .chain(crate::trade_labels::ROUTES.iter())
+        .chain(crate::mt5_connector::ROUTES.iter())
+        .chain(crate::demo_trading::ROUTES.iter())
+        .filter(|(_, path)| *path == template)
+        .map(|(method, _)| (*method).to_owned())
+        .collect();
+    if !additive.is_empty() {
+        return additive;
+    }
     serde_json::from_str::<Vec<Route>>(FROZEN)
         .expect("reviewed route manifest")
         .into_iter()
@@ -71,7 +81,9 @@ fn native_owner(method: &str, path: &str) -> Option<&'static str> {
         ("provider_routes", crate::provider_routes::native),
     ];
     for (owner, owns) in owners {
-        if owns(method, path) { return Some(owner); }
+        if owns(method, path) {
+            return Some(owner);
+        }
     }
     if method == "POST" && path == "/api/v2/execution/intents" {
         return Some("execution");
@@ -96,27 +108,69 @@ fn native_owner(method: &str, path: &str) -> Option<&'static str> {
                 | "/api/v2/session/status"
                 | "/api/v2/research/jobs/{job_id}"
                 | "/api/v2/research/jobs/{job_id}/checkpoint"
-        )).then_some("catalog")
+        ))
+    .then_some("catalog")
 }
 
 /// Uses the dispatch predicates so the admin inventory cannot silently retain an
 /// obsolete queue/native split after a module is migrated.
 pub fn route_inventory_for(native_runtime: bool) -> Value {
-    json!(serde_json::from_str::<Vec<Route>>(FROZEN)
-        .expect("reviewed route manifest").into_iter()
-        .chain(crate::session_presets::ROUTES.iter().map(|(method,path)| Route { method:(*method).to_owned(), path:(*path).to_owned() }))
-        .chain(crate::live_ledger::ROUTES.iter().map(|(method,path)| Route { method:(*method).to_owned(), path:(*path).to_owned() }))
-        .chain(crate::trade_labels::ROUTES.iter().map(|(method,path)| Route { method:(*method).to_owned(), path:(*path).to_owned() }))
-        .chain(crate::mt5_connector::ROUTES.iter().map(|(method,path)| Route { method:(*method).to_owned(), path:(*path).to_owned() }))
-        .chain(crate::demo_trading::ROUTES.iter().map(|(method,path)| Route { method:(*method).to_owned(), path:(*path).to_owned() }))
-        .map(|route| {
-            let owner = native_owner(&route.method, &route.path).or_else(||
-                (native_runtime && crate::provider_routes::native_profile(&route.method, &route.path))
-                    .then_some("provider_routes"));
-            json!({"method":route.method,"path":route.path,
+    json!(
+        serde_json::from_str::<Vec<Route>>(FROZEN)
+            .expect("reviewed route manifest")
+            .into_iter()
+            .chain(
+                crate::session_presets::ROUTES
+                    .iter()
+                    .map(|(method, path)| Route {
+                        method: (*method).to_owned(),
+                        path: (*path).to_owned()
+                    })
+            )
+            .chain(
+                crate::live_ledger::ROUTES
+                    .iter()
+                    .map(|(method, path)| Route {
+                        method: (*method).to_owned(),
+                        path: (*path).to_owned()
+                    })
+            )
+            .chain(
+                crate::trade_labels::ROUTES
+                    .iter()
+                    .map(|(method, path)| Route {
+                        method: (*method).to_owned(),
+                        path: (*path).to_owned()
+                    })
+            )
+            .chain(
+                crate::mt5_connector::ROUTES
+                    .iter()
+                    .map(|(method, path)| Route {
+                        method: (*method).to_owned(),
+                        path: (*path).to_owned()
+                    })
+            )
+            .chain(
+                crate::demo_trading::ROUTES
+                    .iter()
+                    .map(|(method, path)| Route {
+                        method: (*method).to_owned(),
+                        path: (*path).to_owned()
+                    })
+            )
+            .map(|route| {
+                let owner = native_owner(&route.method, &route.path).or_else(|| {
+                    (native_runtime
+                        && crate::provider_routes::native_profile(&route.method, &route.path))
+                    .then_some("provider_routes")
+                });
+                json!({"method":route.method,"path":route.path,
                 "dispatch":if owner.is_some(){"rust_native"}else{"python_command_queue"},
                 "owner":owner.unwrap_or("commands")})
-        }).collect::<Vec<_>>())
+            })
+            .collect::<Vec<_>>()
+    )
 }
 pub fn routes() -> Router<Arc<AppState>> {
     routes_for(false)
@@ -124,7 +178,10 @@ pub fn routes() -> Router<Arc<AppState>> {
 pub fn routes_for(native_runtime: bool) -> Router<Arc<AppState>> {
     let mut router = Router::new().route("/api/v2/commands/{command_id}", get(command_status));
     for route in serde_json::from_str::<Vec<Route>>(FROZEN).expect("reviewed route manifest") {
-        if native(&route.method, &route.path) || (native_runtime && crate::provider_routes::native_profile(&route.method, &route.path)) {
+        if native(&route.method, &route.path)
+            || (native_runtime
+                && crate::provider_routes::native_profile(&route.method, &route.path))
+        {
             continue;
         }
         let filter = match route.method.as_str() {
@@ -303,8 +360,12 @@ async fn enqueue(
     let mut conn = state.pool.get().await.map_err(|_| ApiError::database())?;
     let tx = conn.transaction().await.map_err(|_| ApiError::database())?;
     if let Some(key) = key {
-        tx.query_one("SELECT pg_advisory_xact_lock($1)", &[&crate::native_mutation::idempotency_lock(scope, key)])
-            .await.map_err(|_| ApiError::database())?;
+        tx.query_one(
+            "SELECT pg_advisory_xact_lock($1)",
+            &[&crate::native_mutation::idempotency_lock(scope, key)],
+        )
+        .await
+        .map_err(|_| ApiError::database())?;
     }
     let lock: i64 = 0x54574143;
     tx.query_one("SELECT pg_advisory_xact_lock($1)", &[&lock])
@@ -342,7 +403,8 @@ async fn enqueue(
     };
     tx.execute("INSERT INTO api_commands(command_id,contract_version,workspace_id,identity_id,method,path,query,body,origin,request_hash,idempotency_key,max_attempts,deadline_at_utc,expires_at_utc) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,CURRENT_TIMESTAMP+make_interval(secs=>$13::integer),CURRENT_TIMESTAMP+interval '24 hours')",&[&id,&CONTRACT,&scope.workspace_id,&scope.subject,&method,&path,&query,&body,&origin,&hash,&key,&attempts,&deadline_seconds]).await.map_err(|_|ApiError::database())?;
     tx.execute("SELECT pg_notify('tw_api_commands', '')", &[])
-        .await.map_err(|_| ApiError::database())?;
+        .await
+        .map_err(|_| ApiError::database())?;
     tx.commit().await.map_err(|_| ApiError(StatusCode::SERVICE_UNAVAILABLE,json!({"detail":"command_commit_outcome_unknown","command_id":id,"status_url":format!("/api/v2/commands/{id}"),"outcome_known":false})))?;
     tracing::info!(command_id=%id,method,route=template,"domain command admitted");
     Ok(id)
@@ -461,34 +523,79 @@ mod tests {
         let mut state = crate::tests::fixture(10);
         Arc::get_mut(&mut state).unwrap().native_runtime = true;
         let _ = crate::runtime_domain_routes(&state).unwrap();
-        assert_eq!(required_worker_manifest_for(true),json!([]),"native readiness must not depend on a compatibility worker");
+        assert_eq!(
+            required_worker_manifest_for(true),
+            json!([]),
+            "native readiness must not depend on a compatibility worker"
+        );
         for native_runtime in [false, true] {
             let inventory = route_inventory_for(native_runtime);
-            assert_eq!(inventory.as_array().unwrap().len(), 105 + crate::session_presets::ROUTES.len() + crate::live_ledger::ROUTES.len() + crate::mt5_connector::ROUTES.len() + crate::demo_trading::ROUTES.len());
-            for (method,path) in crate::session_presets::ROUTES {
-                assert!(inventory.as_array().unwrap().iter().any(|entry|
-                    entry["method"] == *method && entry["path"] == *path && entry["owner"] == "session_presets" && entry["dispatch"] == "rust_native"));
+            assert_eq!(
+                inventory.as_array().unwrap().len(),
+                105 + crate::session_presets::ROUTES.len()
+                    + crate::trade_labels::ROUTES.len()
+                    + crate::live_ledger::ROUTES.len()
+                    + crate::mt5_connector::ROUTES.len()
+                    + crate::demo_trading::ROUTES.len()
+            );
+            for (method, path) in crate::session_presets::ROUTES {
+                assert!(
+                    inventory
+                        .as_array()
+                        .unwrap()
+                        .iter()
+                        .any(|entry| entry["method"] == *method
+                            && entry["path"] == *path
+                            && entry["owner"] == "session_presets"
+                            && entry["dispatch"] == "rust_native")
+                );
                 assert!(allowed_methods(path).contains(&(*method).to_owned()));
             }
-            for (method,path) in crate::live_ledger::ROUTES {
-                assert!(inventory.as_array().unwrap().iter().any(|entry|
-                    entry["method"] == *method && entry["path"] == *path && entry["owner"] == "live_ledger" && entry["dispatch"] == "rust_native"));
+            for (method, path) in crate::live_ledger::ROUTES {
+                assert!(
+                    inventory
+                        .as_array()
+                        .unwrap()
+                        .iter()
+                        .any(|entry| entry["method"] == *method
+                            && entry["path"] == *path
+                            && entry["owner"] == "live_ledger"
+                            && entry["dispatch"] == "rust_native")
+                );
                 assert!(allowed_methods(path).contains(&(*method).to_owned()));
             }
-            for (method,path) in crate::mt5_connector::ROUTES {
-                assert!(inventory.as_array().unwrap().iter().any(|entry|
-                    entry["method"] == *method && entry["path"] == *path && entry["owner"] == "mt5_connector" && entry["dispatch"] == "rust_native"));
+            for (method, path) in crate::mt5_connector::ROUTES {
+                assert!(
+                    inventory
+                        .as_array()
+                        .unwrap()
+                        .iter()
+                        .any(|entry| entry["method"] == *method
+                            && entry["path"] == *path
+                            && entry["owner"] == "mt5_connector"
+                            && entry["dispatch"] == "rust_native")
+                );
                 assert!(allowed_methods(path).contains(&(*method).to_owned()));
             }
-            let queued: Vec<Value> = inventory.as_array().unwrap().iter()
+            let queued: Vec<Value> = inventory
+                .as_array()
+                .unwrap()
+                .iter()
                 .filter(|r| r["dispatch"] == "python_command_queue")
-                .map(|r| json!({"method":r["method"],"path":r["path"]})).collect();
+                .map(|r| json!({"method":r["method"],"path":r["path"]}))
+                .collect();
             assert_eq!(json!(queued), required_worker_manifest_for(native_runtime));
         }
         let delegated = required_worker_manifest();
         for route in delegated.as_array().unwrap() {
-            assert!(!crate::replay_service::native(route["method"].as_str().unwrap(), route["path"].as_str().unwrap()));
-            assert!(!crate::prop_service::native(route["method"].as_str().unwrap(), route["path"].as_str().unwrap()));
+            assert!(!crate::replay_service::native(
+                route["method"].as_str().unwrap(),
+                route["path"].as_str().unwrap()
+            ));
+            assert!(!crate::prop_service::native(
+                route["method"].as_str().unwrap(),
+                route["path"].as_str().unwrap()
+            ));
         }
     }
     #[test]
@@ -538,7 +645,10 @@ mod tests {
     async fn malformed_body_rejected_before_queue_io() {
         use axum::{body::Body, http::Request};
         use tower::ServiceExt;
-        let app = crate::router(crate::tests::fixture(10), Router::new().route("/api/v2/probe-queued-body", axum::routing::post(invoke)));
+        let app = crate::router(
+            crate::tests::fixture(10),
+            Router::new().route("/api/v2/probe-queued-body", axum::routing::post(invoke)),
+        );
         let response = app
             .oneshot(
                 Request::builder()

@@ -4,7 +4,7 @@ import path from 'node:path'
 import { chromium } from 'playwright'
 const origin = 'http://127.0.0.1:5180', out = path.resolve('../evidence/ui-session-scopes-20261004/fixtures')
 await mkdir(out, { recursive: true })
-const browser = await chromium.launch({ headless: true, executablePath: 'C:/Users/MIIKEY/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe' })
+const browser = await chromium.launch({ headless: true, executablePath: process.env.TW_UI_QA_CHROMIUM })
 const report = { scope: 'LABELED browser fixtures only; no persisted data writes', cases: [], errors: [] }
 const baseRow = { trade_id: 'same-position', symbol: 'EURUSD', side: 'BUY', net_pnl: 100, open_time_utc: '2024-01-01T00:00:00Z', close_time_utc: '2024-01-01T01:00:00Z', close_cursor_index: 60, close_event_sequence: 180 }
 const ledger = [['a', 'USD', 10000], ['b', 'EUR', 20000]].map(([id, currency, capital]) => ({ ...baseRow, session_id: id, session_name: `Session ${id}`, starting_balance: capital, account_currency: currency, origin_session_id: id, source_provenance: { session_id: id, revision: 3, dataset_id: `dataset-${id}`, execution_event_sequence: 180 } }))

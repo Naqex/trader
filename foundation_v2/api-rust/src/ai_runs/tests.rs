@@ -287,31 +287,58 @@ async fn postgres_ai_lifecycle() {
     );
     mode.store(4, Ordering::SeqCst);
     let continuation_conversation = Uuid::new_v4();
-    let partial = engine.submit(&scope,body(continuation_conversation,Uuid::new_v4(),"pro"),false).await.unwrap();
+    let partial = engine
+        .submit(
+            &scope,
+            body(continuation_conversation, Uuid::new_v4(), "pro"),
+            false,
+        )
+        .await
+        .unwrap();
     let partial_id = identifier(partial["id"].as_str().unwrap()).unwrap();
-    tokio::time::timeout(Duration::from_secs(5),async {
+    tokio::time::timeout(Duration::from_secs(5), async {
         loop {
-            if engine.read(&scope,partial_id,false).await.unwrap()["text"]=="Đang viết " { break; }
+            if engine.read(&scope, partial_id, false).await.unwrap()["text"] == "Đang viết " {
+                break;
+            }
             tokio::time::sleep(Duration::from_millis(20)).await;
         }
-    }).await.unwrap();
-    engine.read(&scope,partial_id,true).await.unwrap();
-    let stopped=finish(&engine,&scope,partial_id).await;
-    assert_eq!(stopped["text"],"Đang viết ");assert_eq!(stopped["partial"],true);
+    })
+    .await
+    .unwrap();
+    engine.read(&scope, partial_id, true).await.unwrap();
+    let stopped = finish(&engine, &scope, partial_id).await;
+    assert_eq!(stopped["text"], "Đang viết ");
+    assert_eq!(stopped["partial"], true);
     assert!(!stopped.to_string().contains("private reasoning"));
-    let terminal_event=engine.events(&scope,partial_id,0).await.unwrap().pop().unwrap();
-    assert_eq!(terminal_event["text"],"Đang viết ","terminal events retain the full stopped snapshot");
+    let terminal_event = engine
+        .events(&scope, partial_id, 0)
+        .await
+        .unwrap()
+        .pop()
+        .unwrap();
+    assert_eq!(
+        terminal_event["text"], "Đang viết ",
+        "terminal events retain the full stopped snapshot"
+    );
     mode.store(0, Ordering::SeqCst);
-    let mut next=body(continuation_conversation,Uuid::new_v4(),"pro");
-    next["continuation_of"]=json!(partial_id);
-    next["messages"]=json!([{"role":"user","content":"fixture only"},{"role":"assistant","content":"Đang viết "},{"role":"user","content":"Continue without repetition"}]);
-    let continued=engine.submit(&scope,next.clone(),false).await.unwrap();
-    let continued_id=identifier(continued["id"].as_str().unwrap()).unwrap();
-    assert_eq!(continued["continuation_of"],partial["id"]);
-    assert_eq!(engine.submit(&scope,next.clone(),false).await.unwrap()["id"],continued["id"]);
-    finish(&engine,&scope,continued_id).await;
-    next["idempotency_key"]=json!(Uuid::new_v4());
-    assert_eq!(engine.submit(&scope,next,false).await.unwrap_err().1["detail"],"invalid_ai_continuation","a stale Continue cannot target an older reply");
+    let mut next = body(continuation_conversation, Uuid::new_v4(), "pro");
+    next["continuation_of"] = json!(partial_id);
+    next["messages"] = json!([{"role":"user","content":"fixture only"},{"role":"assistant","content":"Đang viết "},{"role":"user","content":"Continue without repetition"}]);
+    let continued = engine.submit(&scope, next.clone(), false).await.unwrap();
+    let continued_id = identifier(continued["id"].as_str().unwrap()).unwrap();
+    assert_eq!(continued["continuation_of"], partial["id"]);
+    assert_eq!(
+        engine.submit(&scope, next.clone(), false).await.unwrap()["id"],
+        continued["id"]
+    );
+    finish(&engine, &scope, continued_id).await;
+    next["idempotency_key"] = json!(Uuid::new_v4());
+    assert_eq!(
+        engine.submit(&scope, next, false).await.unwrap_err().1["detail"],
+        "invalid_ai_continuation",
+        "a stale Continue cannot target an older reply"
+    );
     let payloads = seen.lock().await;
     assert!(
         payloads
@@ -337,8 +364,10 @@ async fn postgres_ai_lifecycle() {
     mutable.ai_runs = Engine::new(pool.clone(), assistant.clone());
     mutable.config.request_timeout = Duration::from_secs(5);
     mutable.config.max_body_bytes = 65536;
-    mutable.config.artifact_root = std::path::PathBuf::from(std::env::var("TW_RUST_RUNTIME_TEST_ARTIFACTS").unwrap());
-    mutable.artifact_data = Arc::new(crate::artifact_data::ArtifactData::new(&mutable.config.artifact_root).unwrap());
+    mutable.config.artifact_root =
+        std::path::PathBuf::from(std::env::var("TW_RUST_RUNTIME_TEST_ARTIFACTS").unwrap());
+    mutable.artifact_data =
+        Arc::new(crate::artifact_data::ArtifactData::new(&mutable.config.artifact_root).unwrap());
     let app = crate::router(state.clone(), crate::ai_assistant::routes());
     let http = |method: &str, path: String, body: Value| {
         let app = app.clone();
@@ -466,12 +495,24 @@ async fn postgres_ai_lifecycle() {
     assert_eq!(response.0, StatusCode::OK);
     let detail: Value = serde_json::from_str(&response.1).unwrap();
     assert_eq!(detail["run"]["text"], "pro result");
-    let continued_detail = http("GET",format!("/api/v2/ai/assistant/conversations/{continuation_conversation}"),Value::Null).await;
-    assert_eq!(continued_detail.0,StatusCode::OK);
-    let continued_detail:Value=serde_json::from_str(&continued_detail.1).unwrap();
-    assert_eq!(continued_detail["messages"].as_array().unwrap().len(),2,"continuation is one visible assistant reply");
-    assert_eq!(continued_detail["messages"][1]["content"],"Đang viết pro result");
-    assert_eq!(continued_detail["messages"][1]["id"],json!(continued_id));
+    let continued_detail = http(
+        "GET",
+        format!("/api/v2/ai/assistant/conversations/{continuation_conversation}"),
+        Value::Null,
+    )
+    .await;
+    assert_eq!(continued_detail.0, StatusCode::OK);
+    let continued_detail: Value = serde_json::from_str(&continued_detail.1).unwrap();
+    assert_eq!(
+        continued_detail["messages"].as_array().unwrap().len(),
+        2,
+        "continuation is one visible assistant reply"
+    );
+    assert_eq!(
+        continued_detail["messages"][1]["content"],
+        "Đang viết pro result"
+    );
+    assert_eq!(continued_detail["messages"][1]["id"], json!(continued_id));
     assert_eq!(
         http(
             "PATCH",
@@ -752,49 +793,171 @@ async fn postgres_ai_lifecycle() {
             "AI_WORKFLOW_PIPE_HTTP_PG_PASS: role snapshots, branch/join, 3 admitted calls, replay, warm reuse, scope, cancel/unknown"
         );
     }
-    foundation::verify(&state,&client).await;
+    foundation::verify(&state, &client).await;
     // Agent configuration survives reads, is tenant scoped and reaches provider input as data.
-    let agent_body=json!({"name":"Breakout","description":"One strategy","instructions":"Explain the setup first","knowledge":[{"name":"rules.md","text":"Risk per trade: 0.5%. No trade during news."}]});
-    let created=http("POST","/api/v2/ai/assistant/agents".into(),agent_body.clone()).await;
-    assert_eq!(created.0,StatusCode::CREATED);
-    let agent:Value=serde_json::from_str(&created.1).unwrap();
-    let agent_uuid=identifier(agent["id"].as_str().unwrap()).unwrap();
-    assert_eq!(http("PATCH","/api/v2/ai/assistant/agents/mentor".into(),agent_body.clone()).await.0,StatusCode::CONFLICT);
-    let roster:Value=serde_json::from_str(&http("GET","/api/v2/ai/assistant/agents".into(),Value::Null).await.1).unwrap();
-    assert_eq!(roster["items"].as_array().unwrap().len(),2);
+    let agent_body = json!({"name":"Breakout","description":"One strategy","instructions":"Explain the setup first","knowledge":[{"name":"rules.md","text":"Risk per trade: 0.5%. No trade during news."}]});
+    let created = http(
+        "POST",
+        "/api/v2/ai/assistant/agents".into(),
+        agent_body.clone(),
+    )
+    .await;
+    assert_eq!(created.0, StatusCode::CREATED);
+    let agent: Value = serde_json::from_str(&created.1).unwrap();
+    let agent_uuid = identifier(agent["id"].as_str().unwrap()).unwrap();
+    assert_eq!(
+        http(
+            "PATCH",
+            "/api/v2/ai/assistant/agents/mentor".into(),
+            agent_body.clone()
+        )
+        .await
+        .0,
+        StatusCode::CONFLICT
+    );
+    let roster: Value = serde_json::from_str(
+        &http("GET", "/api/v2/ai/assistant/agents".into(), Value::Null)
+            .await
+            .1,
+    )
+    .unwrap();
+    assert_eq!(roster["items"].as_array().unwrap().len(), 2);
     assert!(roster["items"][1].get("knowledge").is_none());
-    let mut agent_run=body(Uuid::new_v4(),Uuid::new_v4(),"pro");
-    agent_run["agent"]=json!({"id":agent["id"],"revision":1});
-    assert_eq!(state.ai_runs.submit(&foreign,agent_run.clone(),false).await.unwrap_err().0,StatusCode::NOT_FOUND);
-    let submitted=state.ai_runs.submit(&scope,agent_run.clone(),false).await.unwrap();
-    let agent_run_id=identifier(submitted["id"].as_str().unwrap()).unwrap();
-    let mut edit=agent_body.clone();edit["revision"]=json!(1);edit["instructions"]=json!("Updated instruction");
-    assert_eq!(http("PATCH",format!("/api/v2/ai/assistant/agents/{agent_uuid}"),edit.clone()).await.0,StatusCode::OK);
-    assert_eq!(http("PATCH",format!("/api/v2/ai/assistant/agents/{agent_uuid}"),edit).await.0,StatusCode::CONFLICT);
-    assert_eq!(finish(&state.ai_runs,&scope,agent_run_id).await["status"],"completed");
-    let agent_payload=seen.lock().await.last().unwrap().clone();
-    let packed:Value=serde_json::from_str(agent_payload["input"].as_array().unwrap().last().unwrap()["content"].as_str().unwrap()).unwrap();
-    assert_eq!(packed["agent_configuration"]["instructions"],"Explain the setup first");
-    assert_eq!(packed["agent_configuration"]["knowledge"][0]["name"],"rules.md");
+    let mut agent_run = body(Uuid::new_v4(), Uuid::new_v4(), "pro");
+    agent_run["agent"] = json!({"id":agent["id"],"revision":1});
+    assert_eq!(
+        state
+            .ai_runs
+            .submit(&foreign, agent_run.clone(), false)
+            .await
+            .unwrap_err()
+            .0,
+        StatusCode::NOT_FOUND
+    );
+    let submitted = state
+        .ai_runs
+        .submit(&scope, agent_run.clone(), false)
+        .await
+        .unwrap();
+    let agent_run_id = identifier(submitted["id"].as_str().unwrap()).unwrap();
+    let mut edit = agent_body.clone();
+    edit["revision"] = json!(1);
+    edit["instructions"] = json!("Updated instruction");
+    assert_eq!(
+        http(
+            "PATCH",
+            format!("/api/v2/ai/assistant/agents/{agent_uuid}"),
+            edit.clone()
+        )
+        .await
+        .0,
+        StatusCode::OK
+    );
+    assert_eq!(
+        http(
+            "PATCH",
+            format!("/api/v2/ai/assistant/agents/{agent_uuid}"),
+            edit
+        )
+        .await
+        .0,
+        StatusCode::CONFLICT
+    );
+    assert_eq!(
+        finish(&state.ai_runs, &scope, agent_run_id).await["status"],
+        "completed"
+    );
+    let agent_payload = seen.lock().await.last().unwrap().clone();
+    let packed: Value = serde_json::from_str(
+        agent_payload["input"].as_array().unwrap().last().unwrap()["content"]
+            .as_str()
+            .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        packed["agent_configuration"]["instructions"],
+        "Explain the setup first"
+    );
+    assert_eq!(
+        packed["agent_configuration"]["knowledge"][0]["name"],
+        "rules.md"
+    );
     assert!(agent_payload.get("tools").is_none());
     // Idempotent replay keeps the old immutable snapshot after editing the agent.
-    assert_eq!(state.ai_runs.submit(&scope,agent_run.clone(),false).await.unwrap()["id"],submitted["id"]);
-    agent_run["idempotency_key"]=json!(Uuid::new_v4());
-    assert_eq!(state.ai_runs.submit(&scope,agent_run.clone(),false).await.unwrap_err().1["detail"],"ai_agent_changed");
+    assert_eq!(
+        state
+            .ai_runs
+            .submit(&scope, agent_run.clone(), false)
+            .await
+            .unwrap()["id"],
+        submitted["id"]
+    );
+    agent_run["idempotency_key"] = json!(Uuid::new_v4());
+    assert_eq!(
+        state
+            .ai_runs
+            .submit(&scope, agent_run.clone(), false)
+            .await
+            .unwrap_err()
+            .1["detail"],
+        "ai_agent_changed"
+    );
     // Continue must not re-resolve an edited agent before restoring the pinned configuration.
-    client.execute("UPDATE ai_runs SET status='cancelled' WHERE run_id=$1", &[&agent_run_id]).await.unwrap();
-    let mut agent_continue=agent_run.clone();agent_continue["continuation_of"]=json!(agent_run_id);
-    let resumed=state.ai_runs.submit(&scope,agent_continue,false).await.unwrap();
-    let resumed_id=identifier(resumed["id"].as_str().unwrap()).unwrap();
-    assert_eq!(finish(&state.ai_runs,&scope,resumed_id).await["status"],"completed");
-    let pinned:Value=client.query_one("SELECT config->'agent' FROM ai_runs WHERE run_id=$1", &[&resumed_id]).await.unwrap().get(0);
-    assert_eq!(pinned["instructions"],"Explain the setup first");
-    agent_run["idempotency_key"]=json!(Uuid::new_v4());
-    agent_run["agent"]["revision"]=json!(2);agent_run["agent"]["id"]=json!("mentor");agent_run["agent"]["revision"]=json!(0);
-    assert_eq!(state.ai_runs.submit(&scope,agent_run,false).await.unwrap_err().1["detail"],"ai_agent_mismatch");
-    let custom_history:Value=serde_json::from_str(&http("GET",format!("/api/v2/ai/assistant/conversations?agent_id={agent_uuid}"),Value::Null).await.1).unwrap();
-    assert_eq!(custom_history["items"].as_array().unwrap().len(),1);
-    println!("AI_AGENT_HTTP_PG_PASS: CRUD, scope, immutable snapshot, provider grounding, history separation, idempotency");
+    client
+        .execute(
+            "UPDATE ai_runs SET status='cancelled' WHERE run_id=$1",
+            &[&agent_run_id],
+        )
+        .await
+        .unwrap();
+    let mut agent_continue = agent_run.clone();
+    agent_continue["continuation_of"] = json!(agent_run_id);
+    let resumed = state
+        .ai_runs
+        .submit(&scope, agent_continue, false)
+        .await
+        .unwrap();
+    let resumed_id = identifier(resumed["id"].as_str().unwrap()).unwrap();
+    assert_eq!(
+        finish(&state.ai_runs, &scope, resumed_id).await["status"],
+        "completed"
+    );
+    let pinned: Value = client
+        .query_one(
+            "SELECT config->'agent' FROM ai_runs WHERE run_id=$1",
+            &[&resumed_id],
+        )
+        .await
+        .unwrap()
+        .get(0);
+    assert_eq!(pinned["instructions"], "Explain the setup first");
+    agent_run["idempotency_key"] = json!(Uuid::new_v4());
+    agent_run["agent"]["revision"] = json!(2);
+    agent_run["agent"]["id"] = json!("mentor");
+    agent_run["agent"]["revision"] = json!(0);
+    assert_eq!(
+        state
+            .ai_runs
+            .submit(&scope, agent_run, false)
+            .await
+            .unwrap_err()
+            .1["detail"],
+        "ai_agent_mismatch"
+    );
+    let custom_history: Value = serde_json::from_str(
+        &http(
+            "GET",
+            format!("/api/v2/ai/assistant/conversations?agent_id={agent_uuid}"),
+            Value::Null,
+        )
+        .await
+        .1,
+    )
+    .unwrap();
+    assert_eq!(custom_history["items"].as_array().unwrap().len(), 1);
+    println!(
+        "AI_AGENT_HTTP_PG_PASS: CRUD, scope, immutable snapshot, provider grounding, history separation, idempotency"
+    );
     state.ai_runs.shutdown().await;
     let before = count.load(Ordering::SeqCst);
     let paused = Engine::new(pool.clone(), assistant.clone());

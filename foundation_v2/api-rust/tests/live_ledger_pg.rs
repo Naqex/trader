@@ -383,11 +383,43 @@ async fn live_records_are_scoped_immutable_revisioned_and_idempotent() {
     let connection = uuid::Uuid::new_v4();
     db.execute("INSERT INTO mt5_connections(workspace_id,connection_id,request_id,account_key,name,server,login_hint,start_date,status) VALUES('tenant-a',$1,$1,'note-fixture','Broker note fixture','Fixture','123','2026-10-01','disconnected')", &[&connection]).await.unwrap();
     let broker_note = json!({"kind":"note","payload":{"connection_id":connection,"title":"Broker review","note":"Bound to one broker account"}});
-    let linked = request(&app,"POST",base,"tenant-a",broker_note.clone(),"broker-note").await;
-    assert_eq!(linked.0,201,"{}",linked.1);
-    assert_eq!(linked.1["payload"]["connection_id"],connection.to_string());
-    assert_eq!(request(&app,"POST",base,"tenant-b",broker_note.clone(),"other-workspace-broker-note").await.0,422);
+    let linked = request(
+        &app,
+        "POST",
+        base,
+        "tenant-a",
+        broker_note.clone(),
+        "broker-note",
+    )
+    .await;
+    assert_eq!(linked.0, 201, "{}", linked.1);
+    assert_eq!(linked.1["payload"]["connection_id"], connection.to_string());
+    assert_eq!(
+        request(
+            &app,
+            "POST",
+            base,
+            "tenant-b",
+            broker_note.clone(),
+            "other-workspace-broker-note"
+        )
+        .await
+        .0,
+        422
+    );
     let mut ambiguous = broker_note;
     ambiguous["payload"]["account_id"] = created.1["record_id"].clone();
-    assert_eq!(request(&app,"POST",base,"tenant-a",ambiguous,"two-note-parents").await.0,422);
+    assert_eq!(
+        request(
+            &app,
+            "POST",
+            base,
+            "tenant-a",
+            ambiguous,
+            "two-note-parents"
+        )
+        .await
+        .0,
+        422
+    );
 }

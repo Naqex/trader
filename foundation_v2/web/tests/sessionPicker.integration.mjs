@@ -19,7 +19,7 @@ const api = async (route, body, method = body ? 'POST' : 'GET') => {
 }
 const checks = [], errors = [], created = [], screenshots = []
 await mkdir(output, { recursive: true })
-const browser = await chromium.launch({ headless: true, executablePath: process.env.TW_UI_QA_CHROMIUM || 'C:/Users/MIIKEY/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe' })
+const browser = await chromium.launch({ headless: true, executablePath: process.env.TW_UI_QA_CHROMIUM })
 const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' })
 const page = await context.newPage()
 page.setDefaultTimeout(10000)

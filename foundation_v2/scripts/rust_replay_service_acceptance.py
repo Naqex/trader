@@ -1,5 +1,6 @@
 """Disposable PostgreSQL/native router differential replay acceptance; never owner DB."""
 from pathlib import Path
+from runtime_paths import postgres_bin
 import sys,os,json,tempfile,socket,subprocess,re,time,argparse,hashlib
 from decimal import Decimal,InvalidOperation
 ROOT=Path(__file__).resolve().parents[2]; V2=ROOT/'foundation_v2';sys.path[:0]=[str(ROOT),str(V2),str(V2/'tests')]
@@ -8,7 +9,7 @@ from trading_workspace_v2.replay import ReplayService
 from trading_workspace_v2.artifacts import ArtifactStore
 from trading_workspace_v2.contracts import DatasetManifest,DatasetSource,ReplayActivityRequest
 from test_replay_execution_core import initial_state
-PG=Path(os.environ.get('TW_PLATFORM_TEST_PG_BIN','D:/ANNAM/TradingWorkspace/planning/mt5-tradingview-backtester/research/foundation-validation/20260921T115933Z-315e8ddd/pg-dist/pgsql/bin'))
+PG = postgres_bin("TW_PLATFORM_TEST_PG_BIN")
 OUT=V2/'evidence/rust-native-20261017/replay-service'
 def norm(v):
     if isinstance(v,dict):return {k:norm(x) for k,x in v.items() if k not in {'created_at_utc','updated_at_utc','started_at_utc'}}

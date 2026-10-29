@@ -1,4 +1,7 @@
 # This generated snapshot is verified byte-for-byte against its pinned source.
 foundation_v2/web/public/project-palette.css -text whitespace=-blank-at-eof
+foundation_v2/web/src/ui-system.snapshot.css -text whitespace=-blank-at-eof
+config/dependency-notices/*.txt -text
+foundation_v2/api-rust/tests/fixtures/research_execution/*.json -text
 # Migration checksums must be identical across Windows/Linux checkouts.
 foundation_v2/migrations/*.sql text eol=lf

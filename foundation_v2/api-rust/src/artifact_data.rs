@@ -41,7 +41,10 @@ pub(crate) fn publish_created_file(source: &Path, target: &Path) -> std::io::Res
         let wide = |path: &Path| -> std::io::Result<Vec<u16>> {
             let value: Vec<u16> = path.as_os_str().encode_wide().collect();
             if value.contains(&0) {
-                return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "NUL in publication path"));
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidInput,
+                    "NUL in publication path",
+                ));
             }
             Ok(value.into_iter().chain(Some(0)).collect())
         };
@@ -56,10 +59,22 @@ pub(crate) fn publish_created_file(source: &Path, target: &Path) -> std::io::Res
     {
         fs::hard_link(source, target)?;
         #[cfg(unix)]
-        File::open(target.parent().ok_or_else(|| std::io::Error::new(std::io::ErrorKind::InvalidInput, "publication parent missing"))?)?.sync_all()?;
+        File::open(target.parent().ok_or_else(|| {
+            std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "publication parent missing",
+            )
+        })?)?
+        .sync_all()?;
         fs::remove_file(source)?;
         #[cfg(unix)]
-        File::open(source.parent().ok_or_else(|| std::io::Error::new(std::io::ErrorKind::InvalidInput, "publication parent missing"))?)?.sync_all()?;
+        File::open(source.parent().ok_or_else(|| {
+            std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "publication parent missing",
+            )
+        })?)?
+        .sync_all()?;
     }
     Ok(())
 }
@@ -403,7 +418,9 @@ impl ArtifactData {
             let mut count = 0;
             loop {
                 let batch = rows.by_ref().take(50_000).collect::<DataResult<Vec<_>>>()?;
-                if batch.is_empty() { break; }
+                if batch.is_empty() {
+                    break;
+                }
                 count += batch.len();
                 let mut group = writer.next_row_group().map_err(|e| e.to_string())?;
                 for name in ["timestamp", "open", "high", "low", "close", "volume"] {
@@ -414,7 +431,7 @@ impl ArtifactData {
                     if name == "timestamp" {
                         let values = batch
                             .iter()
-                            .map(|row|row_timestamp(row.borrow()))
+                            .map(|row| row_timestamp(row.borrow()))
                             .collect::<DataResult<Vec<_>>>()?;
                         column
                             .typed::<Int64Type>()
@@ -439,11 +456,11 @@ impl ArtifactData {
                 }
                 group.close().map_err(|e| e.to_string())?;
             }
-            if count == 0 { return Err("dataset requires at least one row".into()); }
+            if count == 0 {
+                return Err("dataset requires at least one row".into());
+            }
             writer.close().map_err(|e| e.to_string())?;
-            durable_output
-                .sync_all()
-                .map_err(|e| e.to_string())?;
+            durable_output.sync_all().map_err(|e| e.to_string())?;
             drop(durable_output);
             let digest = digest_file(&temporary)?;
             self.publish_created(&temporary, &relative)?;
@@ -485,7 +502,9 @@ impl ArtifactData {
             let mut block = [0u8; 64 * 1024];
             loop {
                 let n = source.read(&mut block).map_err(|e| e.to_string())?;
-                if n == 0 { break; }
+                if n == 0 {
+                    break;
+                }
                 output.write_all(&block[..n]).map_err(|e| e.to_string())?;
                 hash.update(&block[..n]);
             }
@@ -820,8 +839,12 @@ impl ArtifactData {
         for group in 0..artifact.reader.num_row_groups() {
             let count = artifact.group_size(group)?;
             if offset < end && offset + count > start {
-                rows.extend(artifact.group_range(group, None,
-                    start.saturating_sub(offset), end.min(offset + count) - offset)?);
+                rows.extend(artifact.group_range(
+                    group,
+                    None,
+                    start.saturating_sub(offset),
+                    end.min(offset + count) - offset,
+                )?);
             }
             offset += count;
             if offset >= end {
@@ -1073,8 +1096,14 @@ impl OpenArtifact {
     }
 
     fn timestamp_group(&mut self, group: usize) -> DataResult<Arc<[i64]>> {
-        if let Some(values) = self.timestamps.lock().map_err(|_| "timestamp cache lock poisoned")?
-            .get(&self.identity, group) { return Ok(values); }
+        if let Some(values) = self
+            .timestamps
+            .lock()
+            .map_err(|_| "timestamp cache lock poisoned")?
+            .get(&self.identity, group)
+        {
+            return Ok(values);
+        }
         let projection = self.projection(&["timestamp"])?;
         let reader = self
             .reader
@@ -1095,7 +1124,9 @@ impl OpenArtifact {
         self.stats.row_groups_decoded += 1;
         self.stats.rows_decoded += values.len();
         let values: Arc<[i64]> = values.into();
-        self.timestamps.lock().map_err(|_| "timestamp cache lock poisoned")?
+        self.timestamps
+            .lock()
+            .map_err(|_| "timestamp cache lock poisoned")?
             .insert(self.identity.clone(), group, values.clone());
         Ok(values)
     }
@@ -1152,7 +1183,13 @@ impl OpenArtifact {
     fn group(&mut self, group: usize, columns: Option<&[&str]>) -> DataResult<Vec<Value>> {
         self.group_range(group, columns, 0, self.group_size(group)?)
     }
-    fn group_range(&mut self, group: usize, columns: Option<&[&str]>, start: usize, end: usize) -> DataResult<Vec<Value>> {
+    fn group_range(
+        &mut self,
+        group: usize,
+        columns: Option<&[&str]>,
+        start: usize,
+        end: usize,
+    ) -> DataResult<Vec<Value>> {
         let schema = self.reader.metadata().file_metadata().schema();
         let projection = columns
             .map(|columns| {
@@ -1173,9 +1210,7 @@ impl OpenArtifact {
             .reader
             .get_row_group(group)
             .map_err(|e| e.to_string())?;
-        let iterator = reader
-            .get_row_iter(projection)
-            .map_err(|e| e.to_string())?;
+        let iterator = reader.get_row_iter(projection).map_err(|e| e.to_string())?;
         let mut rows = Vec::with_capacity(end - start);
         let mut decoded = 0;
         // A Parquet row group can contain 50,000 rows while replay needs only a
@@ -1183,7 +1218,9 @@ impl OpenArtifact {
         for (index, row) in iterator.take(end).enumerate() {
             let row = row.map_err(|e| e.to_string())?;
             decoded += 1;
-            if index >= start { rows.push(row_json(row)?); }
+            if index >= start {
+                rows.push(row_json(row)?);
+            }
         }
         self.stats.row_groups_decoded += 1;
         self.stats.rows_decoded += decoded;
@@ -1202,7 +1239,10 @@ struct TimestampCache {
 struct TimestampGroups(VecDeque<(FileIdentity, usize, Arc<[i64]>)>);
 impl TimestampGroups {
     fn get(&mut self, file: &FileIdentity, group: usize) -> Option<Arc<[i64]>> {
-        let index = self.0.iter().position(|(id, key, _)| id == file && *key == group)?;
+        let index = self
+            .0
+            .iter()
+            .position(|(id, key, _)| id == file && *key == group)?;
         let entry = self.0.remove(index)?;
         let values = entry.2.clone();
         self.0.push_back(entry);
@@ -1211,9 +1251,13 @@ impl TimestampGroups {
     fn insert(&mut self, file: FileIdentity, group: usize, values: Arc<[i64]>) {
         const BUDGET: usize = 16 * 1024 * 1024;
         let bytes = values.len() * std::mem::size_of::<i64>();
-        if bytes > BUDGET { return; }
+        if bytes > BUDGET {
+            return;
+        }
         self.0.retain(|(id, key, _)| id != &file || *key != group);
-        while self.0.len() >= 32 || self.0.iter().map(|(_,_,v)|v.len() * 8).sum::<usize>() + bytes > BUDGET {
+        while self.0.len() >= 32
+            || self.0.iter().map(|(_, _, v)| v.len() * 8).sum::<usize>() + bytes > BUDGET
+        {
             self.0.pop_front();
         }
         self.0.push_back((file, group, values));
@@ -1224,7 +1268,13 @@ impl TimestampGroups {
 mod timestamp_cache_tests {
     use super::*;
     fn file(object: u8, change: i64) -> FileIdentity {
-        FileIdentity { size: 1, modified: None, device: 1, object: [object; 16], change }
+        FileIdentity {
+            size: 1,
+            modified: None,
+            device: 1,
+            object: [object; 16],
+            change,
+        }
     }
     #[test]
     fn timestamps_are_scoped_to_file_object_change_stamp_and_group_with_lru_eviction() {
@@ -1234,7 +1284,9 @@ mod timestamp_cache_tests {
         assert!(cache.get(&file(1, 2), 0).is_none());
         assert!(cache.get(&file(2, 1), 0).is_none());
         assert!(cache.get(&file(1, 1), 1).is_none());
-        for group in 1..32 { cache.insert(file(1, 1), group, Arc::from([30i64])); }
+        for group in 1..32 {
+            cache.insert(file(1, 1), group, Arc::from([30i64]));
+        }
         cache.get(&file(1, 1), 0);
         cache.insert(file(1, 1), 32, Arc::from([40i64]));
         assert!(cache.get(&file(1, 1), 1).is_none());

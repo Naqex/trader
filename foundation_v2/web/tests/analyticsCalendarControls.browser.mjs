@@ -5,7 +5,7 @@ import {chromium} from 'playwright'
 const origin=process.env.TW_UI_ORIGIN || 'http://127.0.0.1:5180'
 const out=process.env.TW_UI_EVIDENCE_DIR || '../evidence/analytics-calendar-controls-20261028'
 await mkdir(out,{recursive:true})
-const browser=await chromium.launch({headless:true,executablePath:process.env.TW_UI_QA_CHROMIUM || 'C:/Users/MIIKEY/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe'})
+const browser=await chromium.launch({headless:true,executablePath:process.env.TW_UI_QA_CHROMIUM})
 const report={scope:'Labeled calendar control/return fixtures, plus real read-only Session page',cases:[],errors:[],writes:[]}
 let page
 const href=(session,lang='vi',prop=false)=>`${origin}/?workspace=tenant-a&view=analytics&area=testing&section=analytics&select=1&session=${session}&lang=${lang}${prop?'&analytics_source=prop&demo=1':''}`

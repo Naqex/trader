@@ -1,203 +1,86 @@
-# MT5 TradingView Backtester
+# Naqex Trader
 
-Workspace local để nghiên cứu, backtest, luyện replay và quản lý bằng chứng giao dịch.
-**Hướng phát triển hiện tại là PATH-2 trong [`foundation_v2/`](foundation_v2/README.md).**
-Flask/EA cũ được giữ để đối chiếu và tái sử dụng logic, xem [tài liệu legacy](docs/legacy-flask-reference.md).
+Workspace giao dịch để backtest, luyện replay, ghi nhật ký và phân tích; có kết nối
+Live MT5 được kiểm soát riêng. Source hiện hành nằm trong `foundation_v2/`.
 
-## Bắt đầu ở đâu
+**Đang phát triển, trước 1.0.** Phiên bản nằm trong [VERSION](VERSION); đây chưa
+phải nghiệm thu toàn bộ sản phẩm. Replay là mô phỏng; kết nối hoặc dựng UI không
+đồng nghĩa được phép gửi lệnh broker.
 
-| Phần | Nơi làm việc hiện tại |
-| --- | --- |
-| Backend | [`foundation_v2/api-rust/`](foundation_v2/api-rust/): Axum/PostgreSQL; runtime local hiện chạy [Rust native/compact](foundation_v2/docs/RUST-NATIVE-RUNTIME.md), compatibility giữ cho đối chiếu và quy trình rollback |
-| UI | [`foundation_v2/web/`](foundation_v2/web/): React, Vite, TradingView Advanced Charts và shell WMReplay; Lightweight Charts giữ làm rollback |
-| Engine research | [`foundation_v2/engine_runtime/`](foundation_v2/engine_runtime/pyproject.toml): runtime Nautilus tách riêng |
-| Test và bằng chứng | [`foundation_v2/tests/`](foundation_v2/tests/), [`foundation_v2/evidence/`](foundation_v2/evidence/) |
-| Kết nối AI | [ChatGPT Web](foundation_v2/docs/CHATGPT-WEB.md): core dùng chung, runtime riêng; đăng nhập/chọn model ở Settings. Luồng chiến lược chưa bật |
-| Provider AI bổ sung | [CLIProxyAPI local](foundation_v2/docs/AI-PROVIDERS.md): adapter và chọn provider/model trong Settings; đăng nhập thủ công, chưa nghiệm thu inference/pool thật |
-| Logic được dùng lại | [`retained.py`](foundation_v2/trading_workspace_v2/retained.py) khai báo các module Python gốc mà PATH-2 vẫn cần |
-| Runtime cũ | `workspace_app.py`, `app.py`, `templates/`, `static/`, launcher Windows/macOS; xem [tham chiếu Flask](docs/legacy-flask-reference.md) |
+## Bắt đầu
 
-Luồng dữ liệu chính: dataset đã kiểm tra → manifest bất biến → research job → worker
-có giới hạn → result bất biến → API theo workspace → UI. Replay chỉ được thấy dữ liệu
-đến vị trí hiện tại; màn hình và kết quả mô phỏng không cấp quyền gửi lệnh broker.
-
-Preset tạo phiên được lưu trong PostgreSQL, tách theo workspace và Backtesting/Prop Firm.
-Các trình duyệt cùng kết nối server/workspace sẽ đọc chung preset. Preset cũ trên trình
-duyệt được chuyển vào database khi mở hộp tạo phiên; chỉ xóa bản local sau khi xác minh
-đã lưu đúng. Sửa hoặc xóa preset không thay đổi các phiên đã tạo.
-
-## Trạng thái hiện tại
-
-Đợt tối ưu Rust/hiệu năng đã được nghiệm thu theo phạm vi ngày **18/10/2026**;
-API local chạy native/compact và UI dùng production preview. Xem
-[bằng chứng và giới hạn kiểm chứng](foundation_v2/evidence/rust-native-20261018/ACCEPTANCE-AUDIT.md).
-Đây chưa phải nghiệm thu toàn bộ sản phẩm. Các gate UI lịch sử, broker demo/live,
-holdout, provider và deploy vẫn thuộc plan tương ứng; các receipt cũ giữ nguyên
-ngày, source và phạm vi của lần chạy đó.
-
-Dùng các tài liệu trong repo **TradingWorkspace** làm nguồn tiến độ; README này
-chỉ là điểm vào, không tạo thêm PLAN:
-
-- [Quyết định PATH-2](https://github.com/Miikey24s/mk-trading-workspace/blob/main/planning/mt5-tradingview-backtester/FOUNDATION-ADR-0001-PATH2.md)
-- [Product Completion Plan](https://github.com/Miikey24s/mk-trading-workspace/blob/main/planning/mt5-tradingview-backtester/PRODUCT-COMPLETION-PLAN.md)
-- [WMReplay UI Master Plan](https://github.com/Miikey24s/mk-trading-workspace/blob/main/planning/mt5-tradingview-backtester/WMREPLAY-UI-MASTER-PLAN.md)
-- [Context workspace](https://github.com/Miikey24s/mk-trading-workspace/blob/main/planning/CURRENT-CONTEXT.md)
-
-Các link trên mở repo workspace trên GitHub và cần quyền truy cập repo đó. Khi làm
-local trong TradingWorkspace, các file tương ứng ở `../../planning/` tính từ repo
-này. Clone riêng repo MT5 không kèm PLAN; đường dẫn tương đối ra ngoài repo không
-được dùng làm link GitHub.
-
-## Chuẩn bị môi trường và kiểm tra UI
-
-Dùng PowerShell tại **gốc repo này**. Cần `uv`, Python 3.12 và Node.js tương thích
-Vite trong lockfile; môi trường local hiện dùng Node 24. Không cần cài MT5 hoặc
-TradingView Advanced Charts để build UI PATH-2. Để chạy chart mặc định, cần bộ Advanced
-Charts được cấp quyền; xem cấu hình asset ở dưới.
-
-Với môi trường local đã chuẩn bị, cách restart native/compact và các descriptor
-cần giữ được mô tả trong [hướng dẫn runtime](foundation_v2/docs/RUST-NATIVE-RUNTIME.md).
-Wrapper không truyền profile vẫn mặc định compatibility/full; không dùng mặc định
-đó để thay runtime native đang chạy. Không xóa `.runtime/exness-market-data` hoặc
-`.runtime/api-platform-backups` bên trong `foundation_v2/`: đây là dữ liệu và backup,
-không phải cache build.
+Cần Git, Python 3.12, [uv](https://docs.astral.sh/uv/), Node.js 22+ và Rust theo
+[rust-toolchain.toml](rust-toolchain.toml). Backend cần
+PostgreSQL và cấu hình riêng; build frontend không cần MT5 hoặc Advanced Charts.
+Các lệnh dưới đây chạy tại gốc repo, không cần checkout toàn bộ Naqex Workspace.
 
 ```powershell
+git clone https://github.com/Naqex/trader.git
+cd trader
 uv sync --locked --project foundation_v2 --python 3.12
-Push-Location .\foundation_v2\web
-npm ci
-node --test tests/*.test.mjs
-npm run build
-Pop-Location
-npm ci --prefix foundation_v2/data_worker --ignore-scripts --no-audit --no-fund
+npm ci --prefix foundation_v2/web --ignore-scripts
+npm ci --prefix foundation_v2/data_worker --ignore-scripts
+npm run build --prefix foundation_v2/web
+uv run --project foundation_v2 python scripts/release.py check
 ```
 
-Dependency Python và web được khóa riêng trong [`foundation_v2/uv.lock`](foundation_v2/uv.lock)
-và [`foundation_v2/web/package-lock.json`](foundation_v2/web/package-lock.json).
-Build output `foundation_v2/web/dist/` là file sinh lại được.
-
-Để dùng engine Nautilus local, cài runtime tách riêng:
+Để mở frontend phát triển:
 
 ```powershell
-uv sync --locked --project foundation_v2/engine_runtime --python 3.12
+npm run dev --prefix foundation_v2/web -- --host 127.0.0.1 --port 5173
 ```
 
-[Clean setup rehearsal](foundation_v2/evidence/wm-all-plan-20261002/clean-setup/CHECKPOINT.md)
-đã kiểm trên Windows từ Git-tracked source, Python 3.12.10, Node 24.19.0 và
-cache dependency local. Đây là warm-cache setup; chưa xác nhận máy mới không có cache.
+`/api` mặc định chuyển tới `http://127.0.0.1:8010`; đặt `TW_V2_API_TARGET` để dùng
+backend khác. Chưa có backend/dữ liệu thì UI hiện trạng thái thiếu/lỗi tương ứng.
 
-Để xem UI bằng dev server, sau khi cài dependency, chạy trong `foundation_v2/web/`:
+## Backend và cấu hình
+
+PATH-2 dùng Rust/Axum + PostgreSQL. Python giữ adapter/research cần thiết; React/Vite
+phục vụ UI. Đọc [runtime guide](foundation_v2/docs/API-PLATFORM-RUNTIME.md) và
+[native profile](foundation_v2/docs/RUST-NATIVE-RUNTIME.md) trước khi khởi động.
+Dùng database phát triển riêng: startup/migration có thể tạo hoặc thay đổi schema.
+
+Launcher guard hiện có:
 
 ```powershell
-.\node_modules\.bin\vite.cmd --host 127.0.0.1 --port 5173
+./restart-offline-api.bat -CheckOnly -RuntimeProfile native -ReplayStorageProfile compact
 ```
 
-Lệnh này chỉ mở UI. Theo [`vite.config.js`](foundation_v2/web/vite.config.js), các
-request `/api` chuyển tới `http://127.0.0.1:8010`, hoặc `TW_V2_API_TARGET` nếu đã đặt.
-API cần PostgreSQL local, `TW_V2_DATABASE_URL`, `TW_V2_ARTIFACT_ROOT` và cấu hình
-workspace phù hợp với [`create_app`](foundation_v2/trading_workspace_v2/api.py) /
-[`authorization`](foundation_v2/trading_workspace_v2/auth.py). Tạo app có thể khởi tạo
-schema database; dùng database phát triển riêng. Khi thiếu API/dữ liệu, UI có thể
-hiển thị trạng thái trống hoặc lỗi; đó không phải một bản demo hoàn chỉnh.
+Lệnh trên chỉ kiểm tra. Các lệnh start/restart phải có cấu hình DB, artifact root,
+đúng profile và descriptor được xác minh; không tự thay một runtime đang hoạt động.
+Flask/EA gốc và `Start-Windows.bat` là [legacy reference](docs/legacy-flask-reference.md).
 
-Advanced Charts mặc định dùng bản local v23.040 đã được owner xác nhận quyền sử dụng
-ngày 04/10/2026. Vite dev/preview phục vụ `static/charting_library/` tại
-`/charting_library/`; có thể đổi thư mục bằng `TW_V2_CHARTING_LIBRARY_DIR` (đường dẫn
-tuyệt đối). Asset phải giữ nguyên cấu trúc bundle/locale của distribution. Không
-commit hoặc copy vendor vào build. Khi phục vụ `dist/` bằng server khác, cần mount
-distribution được cấp quyền tại cùng URL. Thiếu asset sẽ hiện lỗi và link rollback;
-`chart_engine=lightweight` chọn engine cũ rõ ràng.
+| Thành phần | Cài đặt / tài liệu |
+|---|---|
+| Advanced Charts 23.040 | [Cài, xác minh và khôi phục](docs/advanced-charts.md); thư viện được cấp quyền riêng, không kèm repo/package |
+| Lightweight Charts | Chọn rõ `chart_engine=lightweight` khi không dùng Advanced Charts |
+| QDM / Dukascopy | [Setup downloader](docs/quantdatamanager.md); installer và dữ liệu lưu riêng |
+| Nautilus engine | `uv sync --locked --project foundation_v2/engine_runtime --python 3.12`; runtime tùy chọn, không nằm trong candidate ZIP |
+| AI integrations | [ChatGPT Web](foundation_v2/docs/CHATGPT-WEB.md), [providers](foundation_v2/docs/AI-PROVIDERS.md); cần cấu hình/quyền riêng |
 
-Với v23.040, app yêu cầu loader `?iframe=srcdoc` để chạy được trong IAB/webview
-không tải iframe `blob:`. Vite dev/preview dùng
-`foundation_v2/web/advancedChartCompatibility.mjs` chuyển riêng phần iframe khi
-phục vụ; không sửa file vendor. Adapter kiểm tra SHA-256 của distribution trước
-khi chuyển. Server khác phục vụ `dist/` cũng cần áp adapter cho request loader
-này. Khi nâng vendor, cập nhật tích hợp và kiểm thử iframe; không bỏ kiểm tra hash.
-
-Chart dùng `visible_rows` của API, không tải giá từ TradingView. Timeframe lớn hơn
-được gộp từ prefix này; không tạo nến ở timeframe nhỏ hơn dataset. Layout, indicator
-và hình vẽ native lưu trên trình duyệt theo workspace/session/dataset/cutoff;
-ghi chú workspace vẫn thuộc API và được hiển thị riêng trên chart. Xem
-[checkpoint Advanced Charts](foundation_v2/evidence/ui-advanced-chart-20261004/CHECKPOINT.md).
-Chart workspace dùng bố cục Legacy với một header native, thanh replay nổi và
-Buy/Sell phía dưới; xem [checkpoint Legacy](foundation_v2/evidence/ui-legacy-chart-20261005/CHECKPOINT.md).
-
-**Luyện tập → Kho dữ liệu** gom catalog offline và luồng CSV vào một trang:
-nhập → kiểm tra → lưu → tạo phiên. `view=data` là alias của `view=market-data`.
-Trang không đọc giá trực tiếp hay khởi động collector MT5; xem
-[kiểm chứng kho offline](foundation_v2/evidence/offline-library-20261007/REVIEW.md).
-
-Ngày 07/10/2026, theo yêu cầu owner, 44 dataset Exness cũ, 6 phiên replay phụ thuộc
-và file lịch sử/cache của chúng đã được xoá khỏi runtime local tenant-a. Kho trống
-sau lượt xoá; receipt tại [offline data purge](foundation_v2/evidence/offline-data-purge-20261007/RECEIPT.md).
-Ngày 08/10/2026, Kho dữ liệu đã tích hợp catalog Dukascopy không cần key và worker
-`dukascopy-node` 1.50.0 để tải M1/Bid theo khoảng ngày UTC, có tiến độ, hủy và tải
-tiếp. Một ngày EUR/USD đã được tải thực tế; khoảng thiếu nến được giữ và đánh dấu
-cần kiểm tra. Dữ liệu giá không tự gán quy cách broker. MT5/online được để lại sau;
-collector trong API đang chạy không được bật. Các checkpoint Exness/tick/market-sync
-cũ là bằng chứng lịch sử, không mô tả dữ liệu đang có. Replay vẫn chỉ mô phỏng.
-Xem [receipt Dukascopy](foundation_v2/evidence/dukascopy-integration-20261008/RECEIPT.md).
-
-Launcher offline mặc định **QuantDataManager CLI**, M1/UTC, tự tải → xuất CSV →
-kiểm tra → nhập kho. UI ghi nguồn **Dukascopy**, công cụ tải **QuantDataManager
-(QDM) · CLI**. Danh mục Dukascopy đọc từ bộ cài QDM (hiện 725 tài sản),
-dùng chung cho hai mode Backtest và Prop firm; cấu hình/rule của phiên vẫn riêng.
-Bộ cài QDM nằm trong
-`foundation_v2/.runtime/quantdatamanager/` trên máy và không được commit;
-GitHub giữ adapter/test/hướng dẫn. Clone mới cần cài QDM riêng. Xem
-[setup và giới hạn QDM](docs/quantdatamanager.md); `--download-engine dukascopy`
-giữ engine cũ làm rollback. Pilot chưa hỗ trợ pause/cancel an toàn giữa lệnh.
-
-Bộ tải giữ cache để tiếp tục, thử lại lỗi mạng tạm thời có giới hạn và phân biệt
-HTTP 429 với yêu cầu xác minh AWS WAF. Kiểm tra nguồn ngày 08/10/2026 gặp WAF
-challenge; restart/giảm nhịp không bảo đảm nguồn cho phép tải. Xem
-[rà soát luồng download](foundation_v2/evidence/download-workflow-audit-20261008/RECEIPT.md).
-
-Để restart API offline local ở cổng 8010 trên Windows, double-click
-[`restart-offline-api.bat`](restart-offline-api.bat), hoặc chạy từ gốc repo:
+## Phát triển và kiểm tra
 
 ```powershell
-.\restart-offline-api.bat
+uv run --project foundation_v2 python -m unittest discover -s tests -p test_release_workflow.py
+uv run --project foundation_v2 python scripts/check_paths.py
+npm exec --prefix foundation_v2/web -- node --test foundation_v2/web/tests/shellPreferences.test.mjs
+cargo test --locked --manifest-path foundation_v2/api-rust/Cargo.toml
 ```
 
-File dùng Python trong `foundation_v2/.venv`, đọc `TW_V2_DATABASE_URL` từ môi trường
-hiện tại hoặc biến môi trường tài khoản Windows; không lưu mật khẩu vào script.
-Nếu đang tải, tạm dừng và chờ trạng thái đã dừng trước khi chạy. Script kiểm tra
-đúng tiến trình offline rồi mới restart; giữ cache và các lượt tải đã tạm dừng.
-Khi báo `Offline API is ready`, reload trang và bấm tiếp tục tải nếu cần.
-Log khởi động nằm trong `foundation_v2/.runtime/manual-api-*.log`.
-Chạy `.\restart-offline-api.bat -CheckOnly` để chỉ kiểm tra, không stop/start API.
+CI tách hygiene/security, Python contracts, web và Rust. Browser smoke dùng fixture;
+broker/DB thật không thuộc public PR CI. Các test tích hợp PostgreSQL dùng instance
+bỏ đi, cấu hình `TW_PLATFORM_TEST_PG_BIN` khi cần. Xem [đóng góp](CONTRIBUTING.md).
 
-Learn đọc course local khi API được khởi động với cả hai biến sau, bên cạnh cấu
-hình database, artifacts và authorization đã có:
+## Cấu trúc và phát hành
 
-```powershell
-$env:TW_V2_LEARN_WORKSPACE_ID = 'tenant-a'
-$env:TW_V2_EDUCATION_ROOT = 'D:/ANNAM/TradingWorkspace/education'
-```
+- `foundation_v2/api-rust/`: API/native domain; `trading_workspace_v2/`: adapters/oracles.
+- `foundation_v2/web/`: UI; `data_worker/`: downloader; `engine_runtime/`: engine riêng.
+- `ui/`: hợp đồng UI; `docs/`: hướng dẫn; `.agents/skills/`: quy trình agent của repo.
+- [Release policy](docs/releases.md), [changelog](CHANGELOG.md), [đường dẫn và migration](docs/paths-and-migration.md).
+- Plan khi dùng workspace nằm tại `../../planning/trader/`; README không là ledger.
+  Source/receipts lịch sử giữ nguyên ngày, tên và giới hạn kiểm chứng của lần chạy đó.
 
-Thay workspace/root theo môi trường của bạn; thiếu một trong hai biến sẽ bị từ
-chối. Bridge chỉ đọc course/resources/glossary và progress, không mở answer key
-hoặc ghi tiến độ. [Learn ready-flow receipt](foundation_v2/evidence/wm-all-plan-20261002/learn-ready/CHECKPOINT.md)
-kiểm course thật qua một API tạm riêng; API đang mở ở8020 vẫn chưa được đổi binding
-hoặc restart bởi lượt QA này.
-
-Repo chưa có launcher một nút cho toàn bộ PATH-2. `Start-Windows.bat`,
-`Start-macOS.command` và `python workspace_app.py` vẫn chạy **Flask legacy**.
-Chi tiết contract/runtime nằm trong [Foundation README](foundation_v2/README.md).
-
-## Trước khi dọn legacy
-
-Không xóa đồng loạt file Python ở gốc. `foundation_v2` đang tái sử dụng
-`ai_provider.py`, `ai_service.py`, `data_contracts.py`, `data_costs.py`,
-`data_news.py`, `evidence_metrics.py`, `prop_profile.py` và phụ thuộc gián tiếp
-`risk_lab.py`. Runtime, test, launcher và tài liệu legacy cần được rà thành từng nhóm
-trước khi loại bỏ. `foundation_v2/.runtime/exness-market-data/` hiện chứa dữ liệu
-người dùng bền vững; không xóa như artifact kiểm thử.
-
-## License
-
-Mã nguồn ứng dụng theo [MIT License](LICENSE). TradingView Advanced Charts có điều
-kiện cấp phép riêng, dùng distribution local được cấp quyền và không được vendored
-vào repo. Quyền sử dụng local không là quyền công bố vendor assets.
+Source được kế thừa từ `wuangnv/mt5-tradingview-backtester`, giữ lịch sử và notices.
+Mã ứng dụng theo [MIT](LICENSE); xem [third-party notices](THIRD_PARTY_NOTICES.md)
+và [báo cáo bảo mật](SECURITY.md). License của ứng dụng không cấp quyền phân phối
+Advanced Charts, terminal, dataset hoặc dependency bên thứ ba.

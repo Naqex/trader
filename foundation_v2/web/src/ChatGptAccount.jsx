@@ -27,7 +27,7 @@ const english = {
   'Model chưa trả lời thành công. Phiên đăng nhập, model hoặc hạn mức có thể đã thay đổi. Thử model khác hoặc đăng nhập lại.': 'The model did not respond successfully. Your session, model or quota may have changed. Try another model or sign in again.',
   'Workspace này không có quyền quản lý kết nối.': 'This workspace cannot manage the connection.',
   'Không đọc được kết nối ChatGPT. Hãy thử lại.': 'Could not read the ChatGPT connection. Retry.',
-  'Kết nối tài khoản ChatGPT của bạn để dùng AI trong MT5. Phiên đăng nhập riêng cho ứng dụng trên máy này.': 'Connect your ChatGPT account to use AI in WMREPLAY. The sign-in session is separate and stays on this machine.',
+  'Kết nối tài khoản ChatGPT của bạn để dùng AI trong MT5. Phiên đăng nhập riêng cho ứng dụng trên máy này.': 'Connect your ChatGPT account to use AI in Naqex Trader. The sign-in session is separate and stays on this machine.',
   'Đang đọc kết nối…': 'Checking connection…', 'Trạng thái chưa cập nhật': 'Status is out of date', 'Chưa xác định': 'Unknown',
   'Đăng nhập trên trang ChatGPT trong cửa sổ Chrome vừa mở, rồi đóng cửa sổ đó để hoàn tất. Ứng dụng không nhận mật khẩu của bạn.': 'Sign in on ChatGPT in the separate Chrome window, then close it to finish. The app does not receive your password.',
   'Đang kiểm tra phiên đăng nhập và các mức suy luận mà tài khoản hỗ trợ…': 'Checking your session and supported reasoning levels…',

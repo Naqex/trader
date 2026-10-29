@@ -33,9 +33,14 @@ fn decimal(value: &Value) -> R<BigDecimal> {
     } else {
         value.to_string()
     };
-    if text.len()>512{return Err("research decimal exceeds safety budget".into());}
-    let value=BigDecimal::from_str(&text).map_err(|_| "invalid research decimal")?;
-    if value.as_bigint_and_exponent().1.unsigned_abs()>512{return Err("research decimal exceeds safety budget".into());}Ok(value)
+    if text.len() > 512 {
+        return Err("research decimal exceeds safety budget".into());
+    }
+    let value = BigDecimal::from_str(&text).map_err(|_| "invalid research decimal")?;
+    if value.as_bigint_and_exponent().1.unsigned_abs() > 512 {
+        return Err("research decimal exceeds safety budget".into());
+    }
+    Ok(value)
 }
 fn dec_float(value: f64) -> R<BigDecimal> {
     BigDecimal::from_str(&research_jobs::python_float(value)?)
@@ -463,7 +468,7 @@ pub(crate) mod tests {
     #[test]
     fn artifact_reconciliation_rejects_each_tampered_boundary() {
         let path = format!(
-            "{}/../evidence/rust-native-20261017/runtime/reference/oracle.json",
+            "{}/tests/fixtures/research_execution/reference.json",
             env!("CARGO_MANIFEST_DIR")
         );
         let cases: Vec<Value> = serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
@@ -488,7 +493,8 @@ pub(crate) mod tests {
             artifact["engine_code_sha256"] = protocol["engine"]["code_sha256"].clone();
             artifact["split"] = protocol["split"].clone();
             reconcile_reference(&artifact, rows, "engine-fixed-hash", || Ok(())).unwrap();
-            independent::validate(&artifact, rows, || Ok(())).unwrap_or_else(|e| panic!("independent {}: {e}",case["name"]));
+            independent::validate(&artifact, rows, || Ok(()))
+                .unwrap_or_else(|e| panic!("independent {}: {e}", case["name"]));
             for pointer in [
                 "/protocol_sha256",
                 "/dataset_sha256",
@@ -553,7 +559,7 @@ pub(crate) mod tests {
     fn python_execution_oracle() {
         let fixture = std::env::var("TW_REFERENCE_ORACLE").unwrap_or_else(|_| {
             format!(
-                "{}/../evidence/rust-native-20261017/runtime/reference/oracle.json",
+                "{}/tests/fixtures/research_execution/reference.json",
                 env!("CARGO_MANIFEST_DIR")
             )
         });

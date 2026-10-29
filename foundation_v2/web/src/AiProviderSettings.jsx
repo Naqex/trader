@@ -163,7 +163,7 @@ export default function AiProviderSettings({ workspace, language }) {
         </section>
         <details className="ai-detail-section ai-advanced"><summary>{say('Nâng cao', 'Advanced')}</summary><dl className="ai-detail-values">
           {value?.endpoint && <div><dt>Endpoint</dt><dd>{value.endpoint}</dd></div>}
-          <div><dt>{say('Quản lý kết nối', 'Connection management')}</dt><dd>{detail === 'chatgpt-web' || value?.runtime?.managed && !value.runtime.external ? 'WMREPLAY' : say('Bên ngoài ứng dụng', 'External')}</dd></div>
+          <div><dt>{say('Quản lý kết nối', 'Connection management')}</dt><dd>{detail === 'chatgpt-web' || value?.runtime?.managed && !value.runtime.external ? 'Naqex Trader' : say('Bên ngoài ứng dụng', 'External')}</dd></div>
           <div><dt>{say('Phạm vi', 'Scope')}</dt><dd>{say('Dùng chung trên máy này', 'Shared on this machine')}</dd></div>
           {detail === 'local-gateway' && value?.runtime?.management_version && <div><dt>{say('Trang quản trị', 'Management Center')}</dt><dd>{value.runtime.management_version}</dd></div>}
         </dl>{detail === 'local-gateway' && value?.runtime?.management_available && <p className="ai-detail-note">{say('Lần đầu đăng nhập trang quản trị, chạy lệnh này ở thư mục dự án rồi dán khóa:', 'For the first management sign-in, run this in the project folder and paste the key:')}<br /><code>.\scripts\ai_gateway.ps1 -Action CopyManagementKey</code></p>}</details>

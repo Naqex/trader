@@ -339,75 +339,132 @@ pub fn checkpoint_event(payload: &Value, sequence: i64) -> R<Value> {
     if snapshot["schema_version"] != "replay-portfolio-v1" {
         return Err("portfolio event checkpoint requires canonical account history".into());
     }
-    let pins = snapshot["dataset_pins"].as_array().ok_or("portfolio pins are missing")?;
+    let pins = snapshot["dataset_pins"]
+        .as_array()
+        .ok_or("portfolio pins are missing")?;
     let mut sorted = pins.clone();
-    sorted.sort_by(|a,b| a["dataset_id"].as_str().cmp(&b["dataset_id"].as_str()));
-    let digest = format!("{:x}", Sha256::digest(serde_json::to_vec(&sorted).map_err(|e|e.to_string())?));
+    sorted.sort_by(|a, b| a["dataset_id"].as_str().cmp(&b["dataset_id"].as_str()));
+    let digest = format!(
+        "{:x}",
+        Sha256::digest(serde_json::to_vec(&sorted).map_err(|e| e.to_string())?)
+    );
     let mut hashes = BTreeMap::new();
     for pin in pins {
-        let id = pin["dataset_id"].as_str().ok_or("portfolio pin id is invalid")?;
-        let hash = pin["dataset_sha256"].as_str().ok_or("portfolio pin hash is invalid")?;
-        if hashes.insert(id, hash).is_some() { return Err("portfolio pins are duplicated".into()); }
+        let id = pin["dataset_id"]
+            .as_str()
+            .ok_or("portfolio pin id is invalid")?;
+        let hash = pin["dataset_sha256"]
+            .as_str()
+            .ok_or("portfolio pin hash is invalid")?;
+        if hashes.insert(id, hash).is_some() {
+            return Err("portfolio pins are duplicated".into());
+        }
     }
     if snapshot["dataset_sha256"] != digest
-        || hashes.get(snapshot["dataset_id"].as_str().unwrap_or("")) != snapshot["primary_dataset_sha256"].as_str().as_ref()
+        || hashes.get(snapshot["dataset_id"].as_str().unwrap_or(""))
+            != snapshot["primary_dataset_sha256"].as_str().as_ref()
         || snapshot["branch_id"] != payload["branch_id"]
         || snapshot["account_ccy"] != payload["starting_balance_ccy"]
-        || d(&snapshot["starting_balance"])? != d(&payload["starting_balance"])? {
+        || d(&snapshot["starting_balance"])? != d(&payload["starting_balance"])?
+    {
         return Err("portfolio immutable account lineage changed".into());
     }
-    let states = payload["asset_states"].as_object().ok_or("portfolio assets are missing")?;
-    let ids = payload["dataset_ids"].as_array().ok_or("portfolio dataset ids are missing")?;
+    let states = payload["asset_states"]
+        .as_object()
+        .ok_or("portfolio assets are missing")?;
+    let ids = payload["dataset_ids"]
+        .as_array()
+        .ok_or("portfolio dataset ids are missing")?;
     let distinct: std::collections::BTreeSet<_> = ids.iter().filter_map(Value::as_str).collect();
-    if ids.len() != hashes.len() || distinct.len() != ids.len()
-        || ids.iter().any(|id|!hashes.contains_key(id.as_str().unwrap_or("")))
-        || states.keys().any(|id|!hashes.contains_key(id.as_str())) {
+    if ids.len() != hashes.len()
+        || distinct.len() != ids.len()
+        || ids
+            .iter()
+            .any(|id| !hashes.contains_key(id.as_str().unwrap_or("")))
+        || states.keys().any(|id| !hashes.contains_key(id.as_str()))
+    {
         return Err("portfolio dataset collection differs from immutable pins".into());
     }
-    for (id,asset) in states {
+    for (id, asset) in states {
         let local = &asset["execution"];
-        if local.is_null() { continue; }
+        if local.is_null() {
+            continue;
+        }
         crate::replay_core::validate(local)?;
         if hashes.get(id.as_str()) != local["dataset_sha256"].as_str().as_ref()
-            || local["dataset_id"] != *id || local["branch_id"] != snapshot["branch_id"]
+            || local["dataset_id"] != *id
+            || local["branch_id"] != snapshot["branch_id"]
             || local["replay_session_id"] != snapshot["replay_session_id"]
             || local["instrument_spec"]["account_ccy"] != snapshot["account_ccy"]
-            || d(&local["starting_balance"])? != d(&snapshot["starting_balance"])? {
+            || d(&local["starting_balance"])? != d(&snapshot["starting_balance"])?
+        {
             return Err("portfolio immutable execution lineage changed".into());
         }
     }
-    let ledger = snapshot["ledger"].as_array().ok_or("portfolio history is missing")?;
-    if sequence <= 0 || sequence > n(snapshot,"event_sequence")?
-        || ledger.len() as i64 != n(snapshot,"event_sequence")? {
+    let ledger = snapshot["ledger"]
+        .as_array()
+        .ok_or("portfolio history is missing")?;
+    if sequence <= 0
+        || sequence > n(snapshot, "event_sequence")?
+        || ledger.len() as i64 != n(snapshot, "event_sequence")?
+    {
         return Err("portfolio event sequence is outside canonical account history".into());
     }
-    let mut acknowledged = BTreeMap::<String,i64>::new();
+    let mut acknowledged = BTreeMap::<String, i64>::new();
     let mut prior_time = i64::MIN;
     let mut phase = 1;
-    for (index,event) in ledger.iter().take(sequence as usize).enumerate() {
-        if n(event,"sequence")? != index as i64 + 1 || n(event,"virtual_time_utc")? < prior_time {
+    for (index, event) in ledger.iter().take(sequence as usize).enumerate() {
+        if n(event, "sequence")? != index as i64 + 1 || n(event, "virtual_time_utc")? < prior_time {
             return Err("portfolio account history is not contiguous".into());
         }
-        prior_time = n(event,"virtual_time_utc")?;
-        for key in ["replay_session_id","branch_id","dataset_id","dataset_sha256"] {
-            if event[key] != snapshot[key] { return Err("portfolio event lineage changed".into()); }
+        prior_time = n(event, "virtual_time_utc")?;
+        for key in [
+            "replay_session_id",
+            "branch_id",
+            "dataset_id",
+            "dataset_sha256",
+        ] {
+            if event[key] != snapshot[key] {
+                return Err("portfolio event lineage changed".into());
+            }
         }
-        for source in event["details"]["source_events"].as_array().ok_or("portfolio source events are missing")? {
-            let id = source["dataset_id"].as_str().ok_or("portfolio source dataset is invalid")?;
-            let seq = n(source,"sequence")?;
-            if seq <= 0 { return Err("portfolio source sequence is invalid".into()); }
+        for source in event["details"]["source_events"]
+            .as_array()
+            .ok_or("portfolio source events are missing")?
+        {
+            let id = source["dataset_id"]
+                .as_str()
+                .ok_or("portfolio source dataset is invalid")?;
+            let seq = n(source, "sequence")?;
+            if seq <= 0 {
+                return Err("portfolio source sequence is invalid".into());
+            }
             let local = &payload["asset_states"][id]["execution"];
-            let original = local["ledger"].as_array().and_then(|events|events.get((seq-1) as usize))
+            let original = local["ledger"]
+                .as_array()
+                .and_then(|events| events.get((seq - 1) as usize))
                 .ok_or("portfolio source event is unavailable")?;
-            if seq != acknowledged.get(id).copied().unwrap_or(0)+1
-                || original["sequence"] != seq || original["kind"] != source["kind"]
-                || original["virtual_time_utc"] != event["virtual_time_utc"] {
+            if seq != acknowledged.get(id).copied().unwrap_or(0) + 1
+                || original["sequence"] != seq
+                || original["kind"] != source["kind"]
+                || original["virtual_time_utc"] != event["virtual_time_utc"]
+            {
                 return Err("portfolio source event differs from local history".into());
             }
-            acknowledged.insert(id.to_owned(),seq);
+            acknowledged.insert(id.to_owned(), seq);
             if original["kind"] == "phase_transition" {
-                if event["kind"] != "phase_transition" { return Err("portfolio phase transition is missing".into()); }
-                for key in ["intent_id","intent_fingerprint","from_phase_index","to_phase_index","carry_policy","position_policy","next_phase_initial_balance"] {
+                if event["kind"] != "phase_transition" {
+                    return Err("portfolio phase transition is missing".into());
+                }
+                for key in [
+                    "intent_id",
+                    "intent_fingerprint",
+                    "from_phase_index",
+                    "to_phase_index",
+                    "carry_policy",
+                    "position_policy",
+                    "next_phase_initial_balance",
+                ] {
                     if event["details"][key] != original["details"][key] {
                         return Err("portfolio phase transition differs from local history".into());
                     }
@@ -415,79 +472,128 @@ pub fn checkpoint_event(payload: &Value, sequence: i64) -> R<Value> {
             }
         }
         if event["kind"] == "phase_transition" {
-            if n(&event["details"],"from_phase_index")? != phase || n(&event["details"],"to_phase_index")? != phase+1 {
+            if n(&event["details"], "from_phase_index")? != phase
+                || n(&event["details"], "to_phase_index")? != phase + 1
+            {
                 return Err("portfolio phase history is not contiguous".into());
             }
             phase += 1;
             // A lazily initialized asset inherits the already acknowledged phase
             // history before its first financial event (initialize_execution).
-            for (id,asset) in states {
-                let next = acknowledged.get(id).copied().unwrap_or(0)+1;
-                let inherited = asset["execution"]["ledger"].as_array().and_then(|events|events.get((next-1) as usize));
-                if let Some(local) = inherited.filter(|local|local["kind"] == "phase_transition") {
-                    let keys = ["intent_id","intent_fingerprint","from_phase_index","to_phase_index","carry_policy","position_policy","next_phase_initial_balance"];
+            for (id, asset) in states {
+                let next = acknowledged.get(id).copied().unwrap_or(0) + 1;
+                let inherited = asset["execution"]["ledger"]
+                    .as_array()
+                    .and_then(|events| events.get((next - 1) as usize));
+                if let Some(local) = inherited.filter(|local| local["kind"] == "phase_transition") {
+                    let keys = [
+                        "intent_id",
+                        "intent_fingerprint",
+                        "from_phase_index",
+                        "to_phase_index",
+                        "carry_policy",
+                        "position_policy",
+                        "next_phase_initial_balance",
+                    ];
                     if local["virtual_time_utc"] == event["virtual_time_utc"]
-                        && keys.iter().all(|key|local["details"][*key] == event["details"][*key]) {
-                        acknowledged.insert(id.clone(),next);
+                        && keys
+                            .iter()
+                            .all(|key| local["details"][*key] == event["details"][*key])
+                    {
+                        acknowledged.insert(id.clone(), next);
                     }
                 }
             }
         }
     }
-    let tip = &ledger[sequence as usize-1];
+    let tip = &ledger[sequence as usize - 1];
     let mut out = payload.clone();
-    for (id,asset) in states {
+    for (id, asset) in states {
         let raw = &asset["execution"];
-        if raw.is_null() { continue; }
+        if raw.is_null() {
+            continue;
+        }
         let seq = acknowledged.get(id).copied().unwrap_or(0);
         let target = tip["details"]["asset_cursor_indices"][id].as_i64();
         let Some(cursor) = target else {
             out["asset_states"][id]["execution"] = Value::Null;
             continue;
         };
-        let mut local = if seq == n(raw,"event_sequence")? && cursor == n(raw,"cursor_index")? {
+        let mut local = if seq == n(raw, "event_sequence")? && cursor == n(raw, "cursor_index")? {
             raw.clone()
         } else if seq == 0 {
             let mut local = raw.clone();
-            local["ledger"] = json!([]); local["event_sequence"] = json!(0);
-            local["cursor_index"] = json!(cursor); local["phase_index"] = json!(1);
+            local["ledger"] = json!([]);
+            local["event_sequence"] = json!(0);
+            local["cursor_index"] = json!(cursor);
+            local["phase_index"] = json!(1);
             local["phase_initial_balance"] = local["starting_balance"].clone();
             local["balance"] = local["starting_balance"].clone();
-            local["floating_pl"] = json!("0"); local["equity"] = local["balance"].clone();
-            local["position"] = Value::Null; local["pending_market_order"] = Value::Null;
+            local["floating_pl"] = json!("0");
+            local["equity"] = local["balance"].clone();
+            local["position"] = Value::Null;
+            local["pending_market_order"] = Value::Null;
             local
         } else {
             crate::replay_core::transform(&json!({"snapshot":raw,"action":"reconstruct",
-                "args":{"cursor_index":cursor,"event_sequence":seq}}))?["snapshot"].clone()
+                "args":{"cursor_index":cursor,"event_sequence":seq}}))?["snapshot"]
+                .clone()
         };
         // A queued next-bar order can change without appending a local event.
-        local["pending_market_order"] = tip["details"]["pending_orders"].as_array()
-            .ok_or("portfolio pending orders are missing")?.iter()
-            .find(|order|order["dataset_id"] == *id).cloned().map(|mut order| {
+        local["pending_market_order"] = tip["details"]["pending_orders"]
+            .as_array()
+            .ok_or("portfolio pending orders are missing")?
+            .iter()
+            .find(|order| order["dataset_id"] == *id)
+            .cloned()
+            .map(|mut order| {
                 order.as_object_mut().unwrap().remove("dataset_id");
-                order.as_object_mut().unwrap().remove("instrument_id"); order
-            }).unwrap_or(Value::Null);
+                order.as_object_mut().unwrap().remove("instrument_id");
+                order
+            })
+            .unwrap_or(Value::Null);
         crate::replay_core::validate(&local)?;
         out["asset_states"][id] = json!({"cursor_index":cursor,"execution":local});
     }
     let mut bounded = snapshot.clone();
     bounded["ledger"] = json!(&ledger[..sequence as usize]);
-    let account = checkpoint(&bounded,&out,n(tip,"virtual_time_utc")?)?;
-    for key in ["positions","pending_orders"] {
-        if account[key] != tip["details"][if key == "positions" {"open_positions"} else {key}] {
+    let account = checkpoint(&bounded, &out, n(tip, "virtual_time_utc")?)?;
+    for key in ["positions", "pending_orders"] {
+        if account[key]
+            != tip["details"][if key == "positions" {
+                "open_positions"
+            } else {
+                key
+            }]
+        {
             return Err("portfolio checkpoint exposure differs from account event".into());
         }
     }
-    if sequence == n(snapshot,"event_sequence")? {
-        for key in ["balance","floating_pl","equity","phase_index","phase_initial_balance","positions","pending_orders"] {
-            let equal = if ["balance","floating_pl","equity","phase_initial_balance"].contains(&key) {
-                d(&account[key])? == d(&snapshot[key])?
-            } else { account[key] == snapshot[key] };
-            if !equal { return Err("portfolio head differs from canonical account event".into()); }
+    if sequence == n(snapshot, "event_sequence")? {
+        for key in [
+            "balance",
+            "floating_pl",
+            "equity",
+            "phase_index",
+            "phase_initial_balance",
+            "positions",
+            "pending_orders",
+        ] {
+            let equal =
+                if ["balance", "floating_pl", "equity", "phase_initial_balance"].contains(&key) {
+                    d(&account[key])? == d(&snapshot[key])?
+                } else {
+                    account[key] == snapshot[key]
+                };
+            if !equal {
+                return Err("portfolio head differs from canonical account event".into());
+            }
         }
     }
     out["portfolio_execution"] = account;
-    let primary = snapshot["dataset_id"].as_str().ok_or("portfolio primary is missing")?;
+    let primary = snapshot["dataset_id"]
+        .as_str()
+        .ok_or("portfolio primary is missing")?;
     out["dataset_id"] = json!(primary);
     out["cursor_index"] = tip["cursor_index"].clone();
     out["replay_clock_utc"] = tip["virtual_time_utc"].clone();
@@ -496,14 +602,26 @@ pub fn checkpoint_event(payload: &Value, sequence: i64) -> R<Value> {
 }
 
 pub fn checkpoint(snapshot: &Value, payload: &Value, clock: i64) -> R<Value> {
-    checkpoint_inner(snapshot,payload,clock,true)
+    checkpoint_inner(snapshot, payload, clock, true)
 }
 pub(crate) fn checkpoint_head(snapshot: &Value, payload: &Value, clock: i64) -> R<Value> {
-    checkpoint_inner(snapshot,payload,clock,false)
+    checkpoint_inner(snapshot, payload, clock, false)
 }
-fn checkpoint_inner(snapshot: &Value, payload: &Value, clock: i64, retain_ledger: bool) -> R<Value> {
-    let mut out = Value::Object(snapshot.as_object().ok_or("portfolio snapshot is invalid")?.iter()
-        .filter(|(key,_)|key.as_str() != "ledger").map(|(k,v)|(k.clone(),v.clone())).collect());
+fn checkpoint_inner(
+    snapshot: &Value,
+    payload: &Value,
+    clock: i64,
+    retain_ledger: bool,
+) -> R<Value> {
+    let mut out = Value::Object(
+        snapshot
+            .as_object()
+            .ok_or("portfolio snapshot is invalid")?
+            .iter()
+            .filter(|(key, _)| key.as_str() != "ledger")
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect(),
+    );
     let events: Vec<&Value> = snapshot["ledger"]
         .as_array()
         .ok_or("portfolio history is missing")?
@@ -544,7 +662,9 @@ fn checkpoint_inner(snapshot: &Value, payload: &Value, clock: i64, retain_ledger
     }
     out["positions"] = tip["details"]["open_positions"].clone();
     out["pending_orders"] = tip["details"]["pending_orders"].clone();
-    if retain_ledger { out["ledger"] = json!(events); }
+    if retain_ledger {
+        out["ledger"] = json!(events);
+    }
     out["asset_marks"] = json!({});
     out["phase_index"] = json!(1);
     out["phase_initial_balance"] = out["starting_balance"].clone();
@@ -574,7 +694,8 @@ fn checkpoint_inner(snapshot: &Value, payload: &Value, clock: i64, retain_ledger
             "evaluation_quality":local["evaluation_quality"],"intrabar_equity_coverage":local["ledger"].as_array().into_iter().flatten().rev()
                 .find_map(|e|e["details"].get("intrabar_equity_coverage").cloned()).unwrap_or(json!("complete"))});
     }
-    let transitions: Vec<Value> = events.iter()
+    let transitions: Vec<Value> = events
+        .iter()
         .filter(|event| event["kind"] == "phase_transition")
         .map(|event| event["details"].clone())
         .collect();
@@ -781,67 +902,125 @@ mod tests {
     #[test]
     fn event_checkpoint_keeps_same_candle_order_phase_and_portfolio_provenance() {
         let mut p = fixture();
-        open(&mut p,"a");
-        open(&mut p,"b");
-        let opened = n(&p["portfolio_execution"],"event_sequence").unwrap();
-        for id in ["a","b"] {
+        open(&mut p, "a");
+        open(&mut p, "b");
+        let opened = n(&p["portfolio_execution"], "event_sequence").unwrap();
+        for id in ["a", "b"] {
             let target = p["asset_states"][id]["execution"]["position"]["position_id"].clone();
-            p["asset_states"][id]["execution"] = transform(p["asset_states"][id]["execution"].clone(),
-                "close",json!({"operation_id":format!("close-{id}"),"target_id":target,"mid_close":"1.1","virtual_time_utc":60}));
+            p["asset_states"][id]["execution"] = transform(
+                p["asset_states"][id]["execution"].clone(),
+                "close",
+                json!({"operation_id":format!("close-{id}"),"target_id":target,"mid_close":"1.1","virtual_time_utc":60}),
+            );
             update(&mut p).unwrap();
         }
-        let closed = n(&p["portfolio_execution"],"event_sequence").unwrap();
-        let before = checkpoint_event(&p,opened).unwrap();
-        assert_eq!(before["portfolio_execution"]["positions"].as_array().unwrap().len(),2);
-        assert_eq!(before["portfolio_execution"]["event_sequence"],opened);
+        let closed = n(&p["portfolio_execution"], "event_sequence").unwrap();
+        let before = checkpoint_event(&p, opened).unwrap();
+        assert_eq!(
+            before["portfolio_execution"]["positions"]
+                .as_array()
+                .unwrap()
+                .len(),
+            2
+        );
+        assert_eq!(before["portfolio_execution"]["event_sequence"], opened);
         let args = json!({"intent_id":"next","intent_fingerprint":"a".repeat(64),"from_phase_index":1,"to_phase_index":2,
             "carry_policy":"reset","position_policy":"must_be_flat","next_phase_initial_balance":"20000","virtual_time_utc":60});
-        for id in ["a","b"] {
-            p["asset_states"][id]["execution"] = transform(p["asset_states"][id]["execution"].clone(),"transition",args.clone());
+        for id in ["a", "b"] {
+            p["asset_states"][id]["execution"] = transform(
+                p["asset_states"][id]["execution"].clone(),
+                "transition",
+                args.clone(),
+            );
         }
         update(&mut p).unwrap();
-        let previous = checkpoint_event(&p,closed).unwrap();
-        assert_eq!(previous["portfolio_execution"]["phase_index"],1);
-        assert_eq!(d(&previous["portfolio_execution"]["balance"]).unwrap(),BigDecimal::from(10000));
-        let current = checkpoint_event(&p,n(&p["portfolio_execution"],"event_sequence").unwrap()).unwrap();
-        assert_eq!(current["portfolio_execution"]["phase_index"],2);
-        assert_eq!(d(&current["portfolio_execution"]["balance"]).unwrap(),BigDecimal::from(20000));
-        let view = crate::analytics::build_replay_analytics_view(&json!({"record_id":"replay","workspace_id":"tenant-a",
-            "revision":1,"payload":current}),None).unwrap();
-        for key in ["dataset_id","dataset_sha256","dataset_pins","phase_index"] {
-            assert_eq!(view["provenance"][key],p["portfolio_execution"][key]);
+        let previous = checkpoint_event(&p, closed).unwrap();
+        assert_eq!(previous["portfolio_execution"]["phase_index"], 1);
+        assert_eq!(
+            d(&previous["portfolio_execution"]["balance"]).unwrap(),
+            BigDecimal::from(10000)
+        );
+        let current =
+            checkpoint_event(&p, n(&p["portfolio_execution"], "event_sequence").unwrap()).unwrap();
+        assert_eq!(current["portfolio_execution"]["phase_index"], 2);
+        assert_eq!(
+            d(&current["portfolio_execution"]["balance"]).unwrap(),
+            BigDecimal::from(20000)
+        );
+        let view = crate::analytics::build_replay_analytics_view(
+            &json!({"record_id":"replay","workspace_id":"tenant-a",
+            "revision":1,"payload":current}),
+            None,
+        )
+        .unwrap();
+        for key in [
+            "dataset_id",
+            "dataset_sha256",
+            "dataset_pins",
+            "phase_index",
+        ] {
+            assert_eq!(view["provenance"][key], p["portfolio_execution"][key]);
         }
-        assert_eq!(view["provenance"]["execution_event_sequence"],p["portfolio_execution"]["event_sequence"]);
-        assert_eq!(d(&view["portfolio_account"]["balance"]).unwrap(),BigDecimal::from(20000));
-        assert_eq!(view["ledger"].as_array().unwrap().len(),2);
+        assert_eq!(
+            view["provenance"]["execution_event_sequence"],
+            p["portfolio_execution"]["event_sequence"]
+        );
+        assert_eq!(
+            d(&view["portfolio_account"]["balance"]).unwrap(),
+            BigDecimal::from(20000)
+        );
+        assert_eq!(view["ledger"].as_array().unwrap().len(), 2);
     }
 
     #[test]
     fn event_checkpoint_retains_queued_heads_and_rejects_mismatches() {
         let mut p = fixture();
-        p["asset_states"]["a"]["execution"] = transform(p["asset_states"]["a"]["execution"].clone(),
-            "queue",json!({"operation_id":"pending","side":"BUY","quantity":"0.01"}));
+        p["asset_states"]["a"]["execution"] = transform(
+            p["asset_states"]["a"]["execution"].clone(),
+            "queue",
+            json!({"operation_id":"pending","side":"BUY","quantity":"0.01"}),
+        );
         update(&mut p).unwrap();
-        let queued = n(&p["portfolio_execution"],"event_sequence").unwrap();
-        let selected = checkpoint_event(&p,queued).unwrap();
-        assert_eq!(selected["portfolio_execution"]["pending_orders"].as_array().unwrap().len(),1);
-        assert!(checkpoint_event(&p,queued+1).is_err());
-        for path in ["pin","branch","currency","balance","source"] {
+        let queued = n(&p["portfolio_execution"], "event_sequence").unwrap();
+        let selected = checkpoint_event(&p, queued).unwrap();
+        assert_eq!(
+            selected["portfolio_execution"]["pending_orders"]
+                .as_array()
+                .unwrap()
+                .len(),
+            1
+        );
+        assert!(checkpoint_event(&p, queued + 1).is_err());
+        for path in ["pin", "branch", "currency", "balance", "source"] {
             let mut wrong = p.clone();
             match path {
-                "pin" => wrong["portfolio_execution"]["dataset_pins"][0]["dataset_sha256"] = json!("wrong"),
+                "pin" => {
+                    wrong["portfolio_execution"]["dataset_pins"][0]["dataset_sha256"] =
+                        json!("wrong")
+                }
                 "branch" => wrong["portfolio_execution"]["branch_id"] = json!("wrong"),
                 "currency" => wrong["portfolio_execution"]["account_ccy"] = json!("EUR"),
                 "balance" => wrong["portfolio_execution"]["balance"] = json!("1"),
                 _ => wrong["portfolio_execution"]["ledger"][0]["dataset_sha256"] = json!("wrong"),
             }
-            assert!(checkpoint_event(&wrong,queued).is_err(),"{path}");
+            assert!(checkpoint_event(&wrong, queued).is_err(), "{path}");
         }
-        let mut duplicate = p.clone(); duplicate["dataset_ids"] = json!(["a","a"]);
-        assert!(checkpoint_event(&duplicate,queued).is_err());
-        let mut skipped = fixture(); open(&mut skipped,"a");
-        skipped["portfolio_execution"]["ledger"][1]["details"]["source_events"].as_array_mut().unwrap().remove(0);
-        assert!(checkpoint_event(&skipped,n(&skipped["portfolio_execution"],"event_sequence").unwrap()).is_err());
+        let mut duplicate = p.clone();
+        duplicate["dataset_ids"] = json!(["a", "a"]);
+        assert!(checkpoint_event(&duplicate, queued).is_err());
+        let mut skipped = fixture();
+        open(&mut skipped, "a");
+        skipped["portfolio_execution"]["ledger"][1]["details"]["source_events"]
+            .as_array_mut()
+            .unwrap()
+            .remove(0);
+        assert!(
+            checkpoint_event(
+                &skipped,
+                n(&skipped["portfolio_execution"], "event_sequence").unwrap()
+            )
+            .is_err()
+        );
     }
 
     #[test]
@@ -849,42 +1028,66 @@ mod tests {
         let mut p = fixture();
         let b = p["asset_states"]["b"]["execution"].clone();
         p["asset_states"]["b"]["execution"] = Value::Null;
-        initialize(&mut p,"replay",vec![json!({"dataset_id":"a","dataset_sha256":"a".repeat(64)}),
-            json!({"dataset_id":"b","dataset_sha256":"b".repeat(64)})]).unwrap();
+        initialize(
+            &mut p,
+            "replay",
+            vec![
+                json!({"dataset_id":"a","dataset_sha256":"a".repeat(64)}),
+                json!({"dataset_id":"b","dataset_sha256":"b".repeat(64)}),
+            ],
+        )
+        .unwrap();
         update(&mut p).unwrap();
         let args = json!({"intent_id":"late","intent_fingerprint":"a".repeat(64),"from_phase_index":1,"to_phase_index":2,
             "carry_policy":"reset","position_policy":"must_be_flat","next_phase_initial_balance":"20000","virtual_time_utc":60});
-        p["asset_states"]["a"]["execution"] = transform(p["asset_states"]["a"]["execution"].clone(),"transition",args.clone());
+        p["asset_states"]["a"]["execution"] = transform(
+            p["asset_states"]["a"]["execution"].clone(),
+            "transition",
+            args.clone(),
+        );
         update(&mut p).unwrap();
-        p["asset_states"]["b"]["execution"] = transform(b,"transition",args);
+        p["asset_states"]["b"]["execution"] = transform(b, "transition", args);
         let local = &p["asset_states"]["b"]["execution"];
         p["portfolio_execution"]["asset_marks"]["b"] = json!({"sequence":local["event_sequence"],"cursor_index":0,
             "balance_base":local["balance"],"balance":local["balance"],"floating_pl":"0","position":null,
             "pending_market_order":null,"evaluation_quality":"full_for_declared_model","intrabar_equity_coverage":"complete"});
         let record = json!({"record_id":"replay","payload":p});
-        crate::analytics::build_replay_analytics_view(&record,None).unwrap();
-        open(&mut p,"b");
-        checkpoint_event(&p,n(&p["portfolio_execution"],"event_sequence").unwrap()).unwrap();
+        crate::analytics::build_replay_analytics_view(&record, None).unwrap();
+        open(&mut p, "b");
+        checkpoint_event(&p, n(&p["portfolio_execution"], "event_sequence").unwrap()).unwrap();
         let mut wrong = p.clone();
         wrong["portfolio_execution"]["ledger"][1]["details"]["to_phase_index"] = json!(9);
-        assert!(checkpoint_event(&wrong,n(&wrong["portfolio_execution"],"event_sequence").unwrap()).is_err());
+        assert!(
+            checkpoint_event(
+                &wrong,
+                n(&wrong["portfolio_execution"], "event_sequence").unwrap()
+            )
+            .is_err()
+        );
     }
 
     #[test]
     #[ignore = "requires an explicitly supplied, read-only persisted replay record"]
     fn persisted_prop_report_portfolio_checkpoint() {
         let path = std::env::var("TW_REVIEW_REPLAY_RECORD").expect("TW_REVIEW_REPLAY_RECORD");
-        let record:Value = serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
+        let record: Value = serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
         let p = &record["payload"];
-        let sequence = n(&p["portfolio_execution"],"event_sequence").unwrap();
-        let selected = checkpoint_event(p,sequence).unwrap();
-        let mut record = record.clone(); record["payload"] = selected;
-        let view = crate::analytics::build_replay_analytics_view(&record,None).unwrap();
-        assert_eq!(view["provenance"]["dataset_sha256"],p["portfolio_execution"]["dataset_sha256"]);
-        assert_eq!(view["provenance"]["execution_event_sequence"],sequence);
-        assert_eq!(view["provenance"]["phase_index"],p["portfolio_execution"]["phase_index"]);
+        let sequence = n(&p["portfolio_execution"], "event_sequence").unwrap();
+        let selected = checkpoint_event(p, sequence).unwrap();
+        let mut record = record.clone();
+        record["payload"] = selected;
+        let view = crate::analytics::build_replay_analytics_view(&record, None).unwrap();
+        assert_eq!(
+            view["provenance"]["dataset_sha256"],
+            p["portfolio_execution"]["dataset_sha256"]
+        );
+        assert_eq!(view["provenance"]["execution_event_sequence"], sequence);
+        assert_eq!(
+            view["provenance"]["phase_index"],
+            p["portfolio_execution"]["phase_index"]
+        );
         for event in p["portfolio_execution"]["ledger"].as_array().unwrap() {
-            checkpoint_event(p,n(event,"sequence").unwrap()).unwrap();
+            checkpoint_event(p, n(event, "sequence").unwrap()).unwrap();
         }
     }
 }

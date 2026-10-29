@@ -9,7 +9,7 @@ const ledger = Array.from({length:61},(_,i)=>({trade_id:`qa-trade-${i+1}`,sessio
 const checks=[], requests=[], errors=[]
 let conflict=false, deny=false, uncertain=false, external=0, releaseReconcile=null, reconcileBarrier=null
 await mkdir(output,{recursive:true})
-const browser=await chromium.launch({headless:true,executablePath:process.env.TW_UI_QA_CHROMIUM || 'C:/Users/MIIKEY/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe'})
+const browser=await chromium.launch({headless:true,executablePath:process.env.TW_UI_QA_CHROMIUM})
 const context=await browser.newContext({viewport:{width:1440,height:1000},reducedMotion:'reduce'})
 await context.routeWebSocket('**/*',socket=>socket.close())
 const page=await context.newPage()

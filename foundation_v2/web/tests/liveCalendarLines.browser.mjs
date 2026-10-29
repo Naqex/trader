@@ -1,11 +1,12 @@
+import { fileURLToPath } from 'node:url'
 import { completedDealFills } from './liveJournal.fixture.mjs'
 import assert from 'node:assert/strict'
 import {mkdir,writeFile} from 'node:fs/promises'
 import {chromium} from 'playwright'
 
-const origin=process.env.TW_UI_ORIGIN||'http://127.0.0.1:5180',out=process.env.TW_UI_EVIDENCE_DIR||'E:/BACKUP-TRADINGWORKSPACE/palette-calendar-20261028/calendar'
+const origin=process.env.TW_UI_ORIGIN||'http://127.0.0.1:5180',out=process.env.TW_UI_EVIDENCE_DIR||fileURLToPath(new URL('../.artifacts/liveCalendarLines.browser', import.meta.url))
 await mkdir(out,{recursive:true})
-const browser=await chromium.launch({executablePath:process.env.TW_UI_QA_CHROMIUM||'C:/Users/MIIKEY/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe'})
+const browser=await chromium.launch({executablePath:process.env.TW_UI_QA_CHROMIUM})
 const report={scope:'Live calendar GET fixtures; external/broker access and writes blocked',cases:[],errors:[],writes:[]}
 let page
 try{

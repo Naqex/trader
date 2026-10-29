@@ -208,10 +208,11 @@ fn validate(kind: &str, payload: Value) -> Result<Value, ApiError> {
         "note" => {
             let mut note: Note = serde_json::from_value(payload).map_err(|_| error())?;
             note.title = note.title.trim().to_owned();
-            if (note.account_id.is_some() && note.connection_id.is_some()) || note
-                .account_id
-                .as_deref()
-                .is_some_and(|id| Uuid::parse_str(id).is_err())
+            if (note.account_id.is_some() && note.connection_id.is_some())
+                || note
+                    .account_id
+                    .as_deref()
+                    .is_some_and(|id| Uuid::parse_str(id).is_err())
                 || !text(&note.title, 160, true, false)
                 || !text(&note.note, 20000, true, true)
                 || !tags(&note.tags)
@@ -309,9 +310,12 @@ async fn references(
     payload: &Value,
 ) -> Result<(), ApiError> {
     if let Some(connection) = payload["connection_id"].as_str() {
-        let connection = Uuid::parse_str(connection).map_err(|_| invalid("invalid_live_payload"))?;
+        let connection =
+            Uuid::parse_str(connection).map_err(|_| invalid("invalid_live_payload"))?;
         let exists: bool = tx.query_one("SELECT EXISTS(SELECT 1 FROM mt5_connections WHERE workspace_id=$1 AND connection_id=$2)", &[&workspace,&connection]).await.map_err(|_|ApiError::database())?.get(0);
-        if !exists { return Err(invalid("live_account_not_found")); }
+        if !exists {
+            return Err(invalid("live_account_not_found"));
+        }
     }
     if let Some(account) = payload["account_id"].as_str() {
         let exists: bool = tx.query_one("SELECT EXISTS(SELECT 1 FROM live_records a JOIN live_record_revisions v ON v.workspace_id=a.workspace_id AND v.record_id=a.record_id AND v.revision=a.current_revision WHERE a.workspace_id=$1 AND a.record_id=$2 AND a.kind='account' AND NOT COALESCE((v.payload_json->>'archived')::boolean,false))", &[&workspace, &account]).await.map_err(|_| ApiError::database())?.get(0);

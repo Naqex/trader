@@ -53,10 +53,22 @@ pub(super) fn capability(root: &Path, descriptor: &Path, protocol: &Value) -> R<
     Ok(pinned)
 }
 
-pub(super) fn verify_installation(root: &Path, descriptor: &Path, protocol: &Value, check: &impl Fn() -> R<()>) -> R<()> {
+pub(super) fn verify_installation(
+    root: &Path,
+    descriptor: &Path,
+    protocol: &Value,
+    check: &impl Fn() -> R<()>,
+) -> R<()> {
     check()?;
     capability(root, descriptor, protocol)?;
-    research_jobs::adapter::verify_installation_checked(root, descriptor, protocol["engine"]["code_sha256"].as_str().ok_or("invalid scientific engine identity")?, check)?;
+    research_jobs::adapter::verify_installation_checked(
+        root,
+        descriptor,
+        protocol["engine"]["code_sha256"]
+            .as_str()
+            .ok_or("invalid scientific engine identity")?,
+        check,
+    )?;
     check()
 }
 
@@ -371,10 +383,13 @@ mod tests {
         }
         assert!(count >= 2);
         let case = &fixture[0];
-        for wrong in [Value::Null,json!("f".repeat(64))] {
-            let mut stale=case["protocol"].clone();
-            stale["engine"]["dependency_sha256"]=wrong;
-            assert_eq!(capability(&root,&descriptor,&stale).unwrap_err(),"scientific adapter capability differs from queued protocol");
+        for wrong in [Value::Null, json!("f".repeat(64))] {
+            let mut stale = case["protocol"].clone();
+            stale["engine"]["dependency_sha256"] = wrong;
+            assert_eq!(
+                capability(&root, &descriptor, &stale).unwrap_err(),
+                "scientific adapter capability differs from queued protocol"
+            );
         }
         let error = execute_async(
             case["rows"].as_array().unwrap(),

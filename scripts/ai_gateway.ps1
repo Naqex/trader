@@ -89,7 +89,7 @@ if ($Action -eq 'InstallManagement') {
     $taskPanelHash = '8c9c6b7d3fb311e6aad5d06e1993e53a2d28389e640448a1bc6304ed20b057b5'
     $taskStatic = Join-Path $taskHome 'static'
     $taskPanel = Join-Path $taskStatic 'management.html'
-    $taskDownload = 'E:\BACKUP-TRADINGWORKSPACE\ai-gateway-admin-20261023'
+    $taskDownload = Join-Path $taskProject '.runtime/tool-downloads/ai-gateway-management'
     New-Item -ItemType Directory -Path $taskDownload -Force | Out-Null
     $taskDownloadedPanel = Join-Path $taskDownload 'management.html'
     if (-not (Test-Path -LiteralPath $taskDownloadedPanel)) {

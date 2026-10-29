@@ -60,7 +60,14 @@ def test_every_sort_filter_page_and_snapshot_matches_original(sort_key, directio
         for selected_page in [1, 2, 999]:
             options = dict(page=selected_page, page_size=3, sort_key=sort_key,
                            sort_direction=direction, extra_filters=json.dumps(extra))
-            assert build_trades_page(source, journals, **options) == baseline(source, journals, **options)
+            current = build_trades_page(source, journals, **options)
+            # Additive fields introduced after this frozen optimization oracle
+            # have their own contract tests; preserve parity for every old field.
+            legacy_shape = copy.deepcopy(current)
+            for trade in legacy_shape['ledger']:
+                trade.pop('has_notes')
+            legacy_shape['facets'].pop('date_range')
+            assert legacy_shape == baseline(source, journals, **options)
     assert [source, journals] == before
 
 

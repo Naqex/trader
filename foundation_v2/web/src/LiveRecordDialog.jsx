@@ -82,7 +82,7 @@ export default function LiveRecordDialog({ workspace, kind, accounts, connection
         </>}
         {kind === 'note' && field('title','Tiêu đề',{required:true,maxLength:160})}
         {kind !== 'import' ? <><label>{t('Nhãn')}<input value={draft.tags} maxLength={2000} disabled={pending} onChange={event => change('tags',event.target.value)} placeholder={t('Ví dụ: London, phá vỡ')} /></label><label>{t('Ghi chú')}<textarea value={draft.note} required={kind === 'note'} rows={4} maxLength={10000} disabled={pending} onChange={event => change('note',event.target.value)} /></label></> : <>
-          <button type="button" className="fxa-button" onClick={() => downloadLiveCsv([], 'wmreplay-trades-template.csv')}>{t('Tải mẫu CSV')}</button>
+          <button type="button" className="fxa-button" onClick={() => downloadLiveCsv([], 'naqex-trader-trades-template.csv')}>{t('Tải mẫu CSV')}</button>
           <label>{t('Chọn tệp CSV')}<input type="file" accept=".csv,text/csv" disabled={pending || importDone > 0} onChange={async event => {
             const request = ++fileRead.current
             setError(''); setImportRows([])

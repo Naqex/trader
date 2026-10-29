@@ -26,16 +26,29 @@ fn database() -> String {
 pub async fn recover(tx: &Transaction<'_>) -> Result<Vec<Row>, String> {
     recover_filtered(tx, 0, None).await
 }
-pub async fn recover_native_scoped(tx:&Transaction<'_>,workspaces:&[String],scientific:bool)->Result<Vec<Row>,String>{
-    recover_filtered(tx,if scientific{3}else{2},Some(workspaces)).await
+pub async fn recover_native_scoped(
+    tx: &Transaction<'_>,
+    workspaces: &[String],
+    scientific: bool,
+) -> Result<Vec<Row>, String> {
+    recover_filtered(tx, if scientific { 3 } else { 2 }, Some(workspaces)).await
 }
 // Keep recovery and admission under the same ownership boundary: recovering a
 // lease mutates retry, cancellation and failure state even without claiming it.
 const OWNED_JOB: &str = "($3::boolean OR workspace_id=ANY($2)) AND ($1::integer=0 OR (protocol_json IS NULL AND strategy_version='close-delta-v1') OR ($1::integer>=2 AND strategy_version='bar-breakout-v1' AND protocol_json->'engine'->>'version'='bar-breakout-v1' AND (protocol_json->'engine'->>'backend'='reference' OR ($1::integer=3 AND protocol_json->'engine'->>'backend'='nautilus'))))";
-async fn recover_filtered(tx:&Transaction<'_>,supported_mode:i32,workspaces:Option<&[String]>)->Result<Vec<Row>,String>{
-    let unrestricted=workspaces.is_none();let allowed=workspaces.unwrap_or(&[]).to_vec();
-    let sql=format!("UPDATE research_jobs SET status=CASE WHEN cancel_requested THEN 'canceled' WHEN attempt_no>=max_attempts THEN 'failed' ELSE 'queued' END,error_code=CASE WHEN cancel_requested THEN NULL WHEN attempt_no>=max_attempts THEN 'LEASE_RETRY_EXHAUSTED' ELSE 'LEASE_EXPIRED' END,available_at_utc=CURRENT_TIMESTAMP+(LEAST(300.0,retry_base_seconds*power(2.0,LEAST(attempt_no-1,16)))*(0.8+random()*0.4)*INTERVAL '1 second'),lease_owner=NULL,lease_token=NULL,lease_expires_at_utc=NULL,updated_at_utc=$4 WHERE status='running' AND (lease_expires_at_utc IS NULL OR lease_expires_at_utc<=CURRENT_TIMESTAMP) AND {OWNED_JOB} RETURNING workspace_id,job_id,status");
-    tx.query(&sql,&[&supported_mode,&allowed,&unrestricted,&now()]).await.map_err(|_|database())
+async fn recover_filtered(
+    tx: &Transaction<'_>,
+    supported_mode: i32,
+    workspaces: Option<&[String]>,
+) -> Result<Vec<Row>, String> {
+    let unrestricted = workspaces.is_none();
+    let allowed = workspaces.unwrap_or(&[]).to_vec();
+    let sql = format!(
+        "UPDATE research_jobs SET status=CASE WHEN cancel_requested THEN 'canceled' WHEN attempt_no>=max_attempts THEN 'failed' ELSE 'queued' END,error_code=CASE WHEN cancel_requested THEN NULL WHEN attempt_no>=max_attempts THEN 'LEASE_RETRY_EXHAUSTED' ELSE 'LEASE_EXPIRED' END,available_at_utc=CURRENT_TIMESTAMP+(LEAST(300.0,retry_base_seconds*power(2.0,LEAST(attempt_no-1,16)))*(0.8+random()*0.4)*INTERVAL '1 second'),lease_owner=NULL,lease_token=NULL,lease_expires_at_utc=NULL,updated_at_utc=$4 WHERE status='running' AND (lease_expires_at_utc IS NULL OR lease_expires_at_utc<=CURRENT_TIMESTAMP) AND {OWNED_JOB} RETURNING workspace_id,job_id,status"
+    );
+    tx.query(&sql, &[&supported_mode, &allowed, &unrestricted, &now()])
+        .await
+        .map_err(|_| database())
 }
 pub async fn claim(
     tx: &Transaction<'_>,
@@ -55,11 +68,31 @@ pub async fn claim_close_delta(
     claim_filtered(tx, worker, lease_seconds, max_active, 1, None).await
 }
 /// Mixed native workers own only deterministic implementations declared here.
-pub async fn claim_native(tx:&Transaction<'_>,worker:&str,lease_seconds:i32,max_active:i64)->Result<Option<ClaimedJob>,String>{
-    claim_filtered(tx,worker,lease_seconds,max_active,2,None).await
+pub async fn claim_native(
+    tx: &Transaction<'_>,
+    worker: &str,
+    lease_seconds: i32,
+    max_active: i64,
+) -> Result<Option<ClaimedJob>, String> {
+    claim_filtered(tx, worker, lease_seconds, max_active, 2, None).await
 }
-pub async fn claim_native_scoped(tx:&Transaction<'_>,worker:&str,lease_seconds:i32,max_active:i64,workspaces:&[String],scientific:bool)->Result<Option<ClaimedJob>,String>{
-    claim_filtered(tx,worker,lease_seconds,max_active,if scientific{3}else{2},Some(workspaces)).await
+pub async fn claim_native_scoped(
+    tx: &Transaction<'_>,
+    worker: &str,
+    lease_seconds: i32,
+    max_active: i64,
+    workspaces: &[String],
+    scientific: bool,
+) -> Result<Option<ClaimedJob>, String> {
+    claim_filtered(
+        tx,
+        worker,
+        lease_seconds,
+        max_active,
+        if scientific { 3 } else { 2 },
+        Some(workspaces),
+    )
+    .await
 }
 async fn claim_filtered(
     tx: &Transaction<'_>,
@@ -79,14 +112,23 @@ async fn claim_filtered(
     )
     .await
     .map_err(|_| database())?;
-    recover_filtered(tx,supported_mode,workspaces).await?;
+    recover_filtered(tx, supported_mode, workspaces).await?;
     let count:i64=tx.query_one("SELECT count(*) FROM research_jobs WHERE status='running' AND cancel_requested=false AND lease_expires_at_utc>CURRENT_TIMESTAMP",&[]).await.map_err(|_|database())?.get(0);
     if count >= max_active {
         return Ok(None);
     }
-    let unrestricted=workspaces.is_none();let allowed=workspaces.unwrap_or(&[]).to_vec();
-    let sql=format!("SELECT * FROM research_jobs WHERE status='queued' AND cancel_requested=false AND attempt_no<max_attempts AND available_at_utc<=CURRENT_TIMESTAMP AND {OWNED_JOB} ORDER BY created_at_utc,job_id FOR UPDATE SKIP LOCKED LIMIT 1");
-    let Some(row)=tx.query_opt(&sql,&[&supported_mode,&allowed,&unrestricted]).await.map_err(|_|database())? else {return Ok(None)};
+    let unrestricted = workspaces.is_none();
+    let allowed = workspaces.unwrap_or(&[]).to_vec();
+    let sql = format!(
+        "SELECT * FROM research_jobs WHERE status='queued' AND cancel_requested=false AND attempt_no<max_attempts AND available_at_utc<=CURRENT_TIMESTAMP AND {OWNED_JOB} ORDER BY created_at_utc,job_id FOR UPDATE SKIP LOCKED LIMIT 1"
+    );
+    let Some(row) = tx
+        .query_opt(&sql, &[&supported_mode, &allowed, &unrestricted])
+        .await
+        .map_err(|_| database())?
+    else {
+        return Ok(None);
+    };
     let workspace: String = row.get("workspace_id");
     let id: String = row.get("job_id");
     let token = uuid::Uuid::new_v4().simple().to_string();

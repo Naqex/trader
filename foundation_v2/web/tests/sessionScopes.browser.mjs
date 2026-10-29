@@ -6,7 +6,7 @@ import { chromium } from 'playwright'
 const origin = 'http://127.0.0.1:5180', session = '39b1d068edd64e75864f692f27237852'
 const out = path.resolve(process.env.SCOPE_EVIDENCE || '../evidence/ui-session-scopes-20261004')
 await mkdir(out, { recursive: true })
-const browser = await chromium.launch({ headless: true, executablePath: 'C:/Users/MIIKEY/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe' })
+const browser = await chromium.launch({ headless: true, executablePath: process.env.TW_UI_QA_CHROMIUM })
 const report = { scope: 'GET-only actual local QA API, synthetic persisted sessions; labeled browser fixtures separate', cases: [], errors: [] }
 const headers = { 'X-Workspace-Id': 'tenant-a' }
 const json = async url => { const response = await fetch(origin + url, { headers }); assert.equal(response.status, 200); return response.json() }

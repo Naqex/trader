@@ -18,7 +18,7 @@ export default defineConfig({
   outputDir: path.join(outputRoot, 'results'),
   reporter: [['list'], ['json', { outputFile: path.join(outputRoot, 'report.json') }]],
   snapshotPathTemplate: path.join(here, 'baselines', '{projectName}', '{arg}{ext}'),
-  use: { browserName: 'chromium', headless: true, locale: 'vi-VN', timezoneId: 'UTC', deviceScaleFactor: 1, reducedMotion: 'reduce', trace: 'retain-on-failure', screenshot: 'only-on-failure', launchOptions: { executablePath: process.env.TW_UI_QA_CHROMIUM || 'C:/Users/MIIKEY/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe' } },
+  use: { browserName: 'chromium', headless: true, locale: 'vi-VN', timezoneId: 'UTC', deviceScaleFactor: 1, reducedMotion: 'reduce', trace: 'retain-on-failure', screenshot: 'only-on-failure', launchOptions: { executablePath: process.env.TW_UI_QA_CHROMIUM } },
   expect: { timeout: 10000, toHaveScreenshot: { animations: 'disabled', caret: 'hide', scale: 'css', maxDiffPixels: 0 } },
   projects: ['dark', 'light'].flatMap(theme => [[1440,900],[1280,800],[768,1024],[390,844]].map(([width,height]) => ({ name: `${theme}-${width}x${height}`, metadata: { theme }, use: { viewport: { width, height } } }))),
 })

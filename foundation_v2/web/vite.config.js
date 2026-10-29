@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { createReadStream } from 'node:fs'
+import { createReadStream, existsSync } from 'node:fs'
 import { readFile, realpath, stat } from 'node:fs/promises'
 import { compatibleAdvancedCharts } from './advancedChartCompatibility.mjs'
 import path from 'node:path'
@@ -8,7 +8,8 @@ import { fileURLToPath } from 'node:url'
 
 // Authorized vendor distribution stays outside Git and the application bundle.
 function localAdvancedCharts() {
-  const vendorRoot = path.resolve(process.env.TW_V2_CHARTING_LIBRARY_DIR || fileURLToPath(new URL('../../static/charting_library', import.meta.url)))
+  const installed = fileURLToPath(new URL('../../.runtime/vendors/advanced-charts/23.040', import.meta.url))
+  const vendorRoot = path.resolve(process.env.TW_V2_CHARTING_LIBRARY_DIR || (existsSync(installed) ? installed : fileURLToPath(new URL('../../static/charting_library', import.meta.url))))
   const middleware = async (req, res, next) => {
     if (!req.url?.startsWith('/charting_library/')) return next()
     if (!['GET', 'HEAD'].includes(req.method)) { res.statusCode = 405; res.end(); return }

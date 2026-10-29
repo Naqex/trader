@@ -205,7 +205,7 @@
 
 /* W2 foundation contract.  Analytics keeps its page-local story tokens, but
  * aliases them to the shell vocabulary so typography, focus and state cues
- * remain reusable across WMREPLAY surfaces. */
+ * remain reusable across Naqex Trader surfaces. */
 .as-page {
   --wm-radius-control: 4px;
   --wm-radius-panel: 8px;

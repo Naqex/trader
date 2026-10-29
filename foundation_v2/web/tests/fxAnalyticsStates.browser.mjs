@@ -13,7 +13,7 @@ const prop = { schema_version: 'prop-attempt-report-v1', mode: 'simulation', bro
 const unbound = { ...structuredClone(prop), attempt: { ...prop.attempt, attempt_id: 'fixture-unbound' }, provenance: {} }
 const wrong = { ...structuredClone(prop), attempt: { ...prop.attempt, attempt_id: 'fixture-wrong-phase' }, phase: { ...prop.phase, phase_index: 2 } }
 const cases = [], requests = [], errors = []
-const browser = await chromium.launch({ headless: true, executablePath: 'C:/Users/MIIKEY/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe' })
+const browser = await chromium.launch({ headless: true, executablePath: process.env.TW_UI_QA_CHROMIUM })
 const context = await browser.newContext({ viewport: { width: 390, height: 987 }, reducedMotion: 'reduce', acceptDownloads: true })
 await context.routeWebSocket('**/*', socket => socket.close())
 const page = await context.newPage()

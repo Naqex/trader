@@ -186,7 +186,7 @@ export default function TradingViewReplayChart(props) {
       widget.onChartReady(() => {
         if (cancelled) return
         const frame = host.current?.querySelector('iframe')
-        if (frame) { frame.title = marketMode === 'live' ? `MT5 · ${symbol}` : t('Biểu đồ replay {symbol}', { symbol }); if (frame.contentDocument) frame.contentDocument.title = `WMReplay · ${symbol}` }
+        if (frame) { frame.title = marketMode === 'live' ? `MT5 · ${symbol}` : t('Biểu đồ replay {symbol}', { symbol }); if (frame.contentDocument) frame.contentDocument.title = `Naqex Trader · ${symbol}` }
         chart = widget.activeChart()
         chart.getTimezoneApi().setTimezone(chartTimezone())
         layoutSave = createChartSave({
@@ -358,7 +358,7 @@ export default function TradingViewReplayChart(props) {
                 return
               }
               const url = URL.createObjectURL(blob), link = document.createElement('a')
-              link.href = url; link.download = `WMReplay-${symbol}-${resolution}-cutoff-${cutoff}.png`; link.click()
+              link.href = url; link.download = `Naqex Trader-${symbol}-${resolution}-cutoff-${cutoff}.png`; link.click()
               setTimeout(() => URL.revokeObjectURL(url), 1000)
             } catch (error) { if (!cancelled) setMessage(`Không chụp được chart: ${error.message || error}`) }
           },

@@ -1,10 +1,11 @@
+import { fileURLToPath } from 'node:url'
 import assert from 'node:assert/strict'
 import {mkdir,writeFile} from 'node:fs/promises'
 import {chromium} from 'playwright'
 
-const origin=process.env.TW_UI_ORIGIN||'http://127.0.0.1:5180',out=process.env.TW_UI_EVIDENCE_DIR||'E:/BACKUP-TRADINGWORKSPACE/calendar-corners-20261028/baseline',baseline=process.env.TW_CORNER_BASELINE==='1'
+const origin=process.env.TW_UI_ORIGIN||'http://127.0.0.1:5180',out=process.env.TW_UI_EVIDENCE_DIR||fileURLToPath(new URL('../.artifacts/calendarCorners.browser', import.meta.url)),baseline=process.env.TW_CORNER_BASELINE==='1'
 await mkdir(out,{recursive:true})
-const browser=await chromium.launch({executablePath:'C:/Users/MIIKEY/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe'})
+const browser=await chromium.launch({executablePath:process.env.TW_UI_QA_CHROMIUM})
 const report={scope:'Labeled Analytics corner fixtures; external/broker calls and writes blocked',cases:[],errors:[],writes:[]}
 try{
  for(const [width,theme] of [[1440,'dark'],[1440,'light'],[390,'dark']]){

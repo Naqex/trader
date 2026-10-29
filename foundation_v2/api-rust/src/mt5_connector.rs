@@ -576,19 +576,34 @@ async fn adapter(input: Value, timeout: Duration) -> Result<Value, String> {
 }
 
 fn validate_full_history(old: Option<&Value>, next: &Value, full_sync: bool) -> Result<(), String> {
-    let Some(old) = old.filter(|old| full_sync
-        && old["history_from_utc"].is_string()
-        && old["history_from_utc"] == next["history_from_utc"]
-        && old.pointer("/account_binding/login").is_some_and(Value::is_string)
-        && old.pointer("/account_binding/login") == next.pointer("/account_binding/login")
-        && old.pointer("/account_binding/server") == next.pointer("/account_binding/server")) else { return Ok(()) };
+    let Some(old) = old.filter(|old| {
+        full_sync
+            && old["history_from_utc"].is_string()
+            && old["history_from_utc"] == next["history_from_utc"]
+            && old
+                .pointer("/account_binding/login")
+                .is_some_and(Value::is_string)
+            && old.pointer("/account_binding/login") == next.pointer("/account_binding/login")
+            && old.pointer("/account_binding/server") == next.pointer("/account_binding/server")
+    }) else {
+        return Ok(());
+    };
     // Connected does not imply that a cold terminal has loaded its history.
     // A refresh of the same scope must not silently erase known immutable facts.
     for field in ["deals", "cashflows"] {
-        let tickets: std::collections::HashSet<u64> = next[field].as_array().into_iter().flatten()
-            .filter_map(|row| row["ticket"].as_u64()).collect();
-        if old[field].as_array().into_iter().flatten()
-            .filter_map(|row| row["ticket"].as_u64()).any(|ticket| !tickets.contains(&ticket)) {
+        let tickets: std::collections::HashSet<u64> = next[field]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|row| row["ticket"].as_u64())
+            .collect();
+        if old[field]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|row| row["ticket"].as_u64())
+            .any(|ticket| !tickets.contains(&ticket))
+        {
             return Err("mt5_history_warming".into());
         }
     }
@@ -928,7 +943,10 @@ mod tests {
         let mut next = old.clone();
         next["deals"] = json!([]);
         next["cashflows"] = json!([]);
-        assert_eq!(validate_full_history(Some(&old), &next, true), Err("mt5_history_warming".into()));
+        assert_eq!(
+            validate_full_history(Some(&old), &next, true),
+            Err("mt5_history_warming".into())
+        );
         next["deals"] = old["deals"].clone();
         assert!(validate_full_history(Some(&old), &next, true).is_err());
         next["cashflows"] = old["cashflows"].clone();
@@ -941,7 +959,8 @@ mod tests {
     fn history_guard_preserves_new_empty_changed_scope_and_incremental_semantics() {
         let old = json!({"history_from_utc":"2026-10-23T00:00:00Z",
             "account_binding":{"login":"123","server":"Fixture"},"deals":[{"ticket":1}],"cashflows":[]});
-        let mut next = old.clone(); next["deals"] = json!([]);
+        let mut next = old.clone();
+        next["deals"] = json!([]);
         assert!(validate_full_history(None, &next, true).is_ok());
         assert!(validate_full_history(Some(&old), &next, false).is_ok());
         next["history_from_utc"] = json!("2026-10-25T00:00:00Z");

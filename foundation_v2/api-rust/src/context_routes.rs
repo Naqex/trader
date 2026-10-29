@@ -108,7 +108,11 @@ async fn invoke(
         form_urlencoded::parse(request.uri().query().unwrap_or("").as_bytes())
             .map(|(k, v)| (k.into_owned(), v.into_owned()))
             .collect();
-    let activity_basis = match q.get("time_basis").map(String::as_str).unwrap_or("market") { "activity" => true, "market" => false, _ => return Err(bad("analytics_time_basis_invalid")) };
+    let activity_basis = match q.get("time_basis").map(String::as_str).unwrap_or("market") {
+        "activity" => true,
+        "market" => false,
+        _ => return Err(bad("analytics_time_basis_invalid")),
+    };
     let mut client = state.pool.get().await.map_err(|_| ApiError::database())?;
     let tx = client
         .build_transaction()
@@ -129,13 +133,17 @@ async fn invoke(
             .iter()
             .map(|r| json!({"payload":r.get::<_,Value>(0)}))
             .collect::<Vec<_>>();
-        let mut context=journal_context(&records, &scope.workspace_id, id)
-            .map_err(|_| error(StatusCode::SERVICE_UNAVAILABLE,"stored_contract_untrusted"))?;
-        crate::trade_labels::project_context(&tx,&scope.workspace_id,id,&mut context).await?;
+        let mut context = journal_context(&records, &scope.workspace_id, id)
+            .map_err(|_| error(StatusCode::SERVICE_UNAVAILABLE, "stored_contract_untrusted"))?;
+        crate::trade_labels::project_context(&tx, &scope.workspace_id, id, &mut context).await?;
         context
     } else if path.starts_with("/api/v2/research/") {
         let id = path.split('/').nth(5).unwrap_or("");
-        let row=tx.query_opt(crate::jobs::JOB_QUERY,&[&scope.workspace_id,&id]).await.map_err(|_|ApiError::database())?.ok_or_else(||error(StatusCode::NOT_FOUND,"job_not_found"))?;
+        let row = tx
+            .query_opt(crate::jobs::JOB_QUERY, &[&scope.workspace_id, &id])
+            .await
+            .map_err(|_| ApiError::database())?
+            .ok_or_else(|| error(StatusCode::NOT_FOUND, "job_not_found"))?;
         if row.get::<_, String>("status") != "completed" {
             return Err(error(
                 StatusCode::CONFLICT,
@@ -230,29 +238,76 @@ async fn invoke(
             }
         })?;
         record["workspace_id"] = json!(scope.workspace_id);
-        let portfolio = record["payload"]["asset_states"].as_object().is_some_and(|s| !s.is_empty());
+        let portfolio = record["payload"]["asset_states"]
+            .as_object()
+            .is_some_and(|s| !s.is_empty());
         // Validate the account checkpoint before selecting any asset path. Filters
         // operate on the full portfolio ledger, never independently on a page/asset.
-        let portfolio_view = if portfolio { Some(if activity_basis {
-            crate::analytics::build_replay_activity_view(&record,Some(&filters(&q)),chrono_tz::UTC)
-        } else { crate::analytics::build_replay_analytics_view(&record,Some(&filters(&q))) }
-            .map_err(|_|bad("replay_experiment_invalid_source_or_config"))?) } else { None };
-        let single_view = if portfolio { None } else { Some(if activity_basis {
-            crate::analytics::build_replay_activity_view(&record,Some(&filters(&q)),chrono_tz::UTC)
-        } else { crate::analytics::build_replay_analytics_view(&record,Some(&filters(&q))) }
-            .map_err(|_|bad("replay_experiment_invalid_source_or_config"))?) };
+        let portfolio_view = if portfolio {
+            Some(
+                if activity_basis {
+                    crate::analytics::build_replay_activity_view(
+                        &record,
+                        Some(&filters(&q)),
+                        chrono_tz::UTC,
+                    )
+                } else {
+                    crate::analytics::build_replay_analytics_view(&record, Some(&filters(&q)))
+                }
+                .map_err(|_| bad("replay_experiment_invalid_source_or_config"))?,
+            )
+        } else {
+            None
+        };
+        let single_view = if portfolio {
+            None
+        } else {
+            Some(
+                if activity_basis {
+                    crate::analytics::build_replay_activity_view(
+                        &record,
+                        Some(&filters(&q)),
+                        chrono_tz::UTC,
+                    )
+                } else {
+                    crate::analytics::build_replay_analytics_view(&record, Some(&filters(&q)))
+                }
+                .map_err(|_| bad("replay_experiment_invalid_source_or_config"))?,
+            )
+        };
         let selected_view = portfolio_view.as_ref().or(single_view.as_ref()).unwrap();
         let starts = experiment_starts(selected_view, &record["payload"], portfolio)
-            .map_err(|_|bad("replay_experiment_invalid_source_or_config"))?;
-        let mut manifests=Vec::new();
-        for (dataset,start) in starts {
-            let m:Value=tx.query_opt("SELECT manifest_json FROM datasets WHERE workspace_id=$1 AND dataset_id=$2",&[&scope.workspace_id,&dataset]).await
-                .map_err(|_|ApiError::database())?.ok_or_else(||bad("replay_experiment_invalid_source_or_config"))?.get(0);
-            let path=m["artifact_path"].as_str().ok_or_else(||bad("replay_experiment_invalid_source_or_config"))?.to_owned();
-            let sha=m["artifact_sha256"].as_str().ok_or_else(||bad("replay_experiment_invalid_source_or_config"))?.to_owned();
-            let cursor=if portfolio {&record["payload"]["asset_states"][&dataset]["cursor_index"]} else {&record["payload"]["cursor_index"]};
-            let end=cursor.as_u64().and_then(|index|usize::try_from(index).ok()).and_then(|index|index.checked_add(1)).ok_or_else(||bad("replay_experiment_invalid_source_or_config"))?;
-            manifests.push((dataset,path,sha,start,end));
+            .map_err(|_| bad("replay_experiment_invalid_source_or_config"))?;
+        let mut manifests = Vec::new();
+        for (dataset, start) in starts {
+            let m: Value = tx
+                .query_opt(
+                    "SELECT manifest_json FROM datasets WHERE workspace_id=$1 AND dataset_id=$2",
+                    &[&scope.workspace_id, &dataset],
+                )
+                .await
+                .map_err(|_| ApiError::database())?
+                .ok_or_else(|| bad("replay_experiment_invalid_source_or_config"))?
+                .get(0);
+            let path = m["artifact_path"]
+                .as_str()
+                .ok_or_else(|| bad("replay_experiment_invalid_source_or_config"))?
+                .to_owned();
+            let sha = m["artifact_sha256"]
+                .as_str()
+                .ok_or_else(|| bad("replay_experiment_invalid_source_or_config"))?
+                .to_owned();
+            let cursor = if portfolio {
+                &record["payload"]["asset_states"][&dataset]["cursor_index"]
+            } else {
+                &record["payload"]["cursor_index"]
+            };
+            let end = cursor
+                .as_u64()
+                .and_then(|index| usize::try_from(index).ok())
+                .and_then(|index| index.checked_add(1))
+                .ok_or_else(|| bad("replay_experiment_invalid_source_or_config"))?;
+            manifests.push((dataset, path, sha, start, end));
         }
         let reader = state.artifact_data.clone();
         let permit = state
@@ -284,17 +339,37 @@ async fn invoke(
         let f = filters(&q);
         tokio::task::spawn_blocking(move || {
             let _permit = permit;
-            let mut sources=HashMap::new();
-            for (dataset,path,sha,start,end) in manifests {
-                sources.insert(dataset,(reader.indices(&path,&sha,start,end)?,sha,start));
+            let mut sources = HashMap::new();
+            for (dataset, path, sha, start, end) in manifests {
+                sources.insert(
+                    dataset,
+                    (reader.indices(&path, &sha, start, end)?, sha, start),
+                );
             }
-            if let Some(view)=portfolio_view {build_portfolio_experiments(&record,&view,&sources,&config)} else {
+            if let Some(view) = portfolio_view {
+                build_portfolio_experiments(&record, &view, &sources, &config)
+            } else {
                 if sources.is_empty() {
-                    let view=single_view.as_ref().unwrap();
-                    return experiment_output(view, &experiment_config(&config)?, (view["analytics_available"]==true).then(Vec::new));
+                    let view = single_view.as_ref().unwrap();
+                    return experiment_output(
+                        view,
+                        &experiment_config(&config)?,
+                        (view["analytics_available"] == true).then(Vec::new),
+                    );
                 }
-                let (bars,sha,start)=sources.values().next().ok_or("missing experiment dataset")?;
-                build_experiments_for_basis(&record,bars,sha,Some(&f),&config,activity_basis,*start)
+                let (bars, sha, start) = sources
+                    .values()
+                    .next()
+                    .ok_or("missing experiment dataset")?;
+                build_experiments_for_basis(
+                    &record,
+                    bars,
+                    sha,
+                    Some(&f),
+                    &config,
+                    activity_basis,
+                    *start,
+                )
             }
         })
         .await
@@ -403,15 +478,22 @@ fn initial_position<'a>(s: &'a Value, t: &Value) -> R<Option<&'a Value>> {
         // A synchronous bar mark precedes user amendments; later marks do not
         // prove the initial SL, even when they still refer to the same position.
         if p.is_null() {
-            if let Some(following) = ledger.get(index + 1).filter(|next|
-                next["kind"] == "price_mark" && next["cursor_index"] == event["cursor_index"]) {
+            if let Some(following) = ledger.get(index + 1).filter(|next| {
+                next["kind"] == "price_mark" && next["cursor_index"] == event["cursor_index"]
+            }) {
                 p = &following["details"]["open_position"];
             }
         }
-        if p.is_null() { return Ok(None); }
-        if p["position_id"] != detail["position_id"] || p["source_operation_id"] != detail["operation_id"]
-            || p["side"] != t["side"] || dec(p,"entry_fill")? != dec(detail,"fill_price")?
-            || p["opened_cursor_index"] != event["cursor_index"] || p["opened_time_utc"] != event["virtual_time_utc"] {
+        if p.is_null() {
+            return Ok(None);
+        }
+        if p["position_id"] != detail["position_id"]
+            || p["source_operation_id"] != detail["operation_id"]
+            || p["side"] != t["side"]
+            || dec(p, "entry_fill")? != dec(detail, "fill_price")?
+            || p["opened_cursor_index"] != event["cursor_index"]
+            || p["opened_time_utc"] != event["virtual_time_utc"]
+        {
             return Err("initial risk checkpoint disagrees with opening fill".into());
         }
         return Ok(Some(p));
@@ -419,32 +501,72 @@ fn initial_position<'a>(s: &'a Value, t: &Value) -> R<Option<&'a Value>> {
     Ok(None)
 }
 
-fn ideal_week(t: &Value, bars: &[Value], s: &Value, position: &Value, risk: Option<&BigDecimal>, offset: usize) -> R<Value> {
+fn ideal_week(
+    t: &Value,
+    bars: &[Value],
+    s: &Value,
+    position: &Value,
+    risk: Option<&BigDecimal>,
+    offset: usize,
+) -> R<Value> {
     use crate::replay_core::{dec, int, pnl, quote};
-    let start=int(t,"open_time_utc")?;
-    let end=start.checked_add(7*24*60*60).ok_or("invalid ideal window")?;
-    let mut out=json!({"status":"unsupported","reason":"original_stop_unavailable","value_r":null,"max_net_pnl":null,"could_have_profit_or_breakeven":null,"observed_from_utc":start,"observed_to_utc":null,"window_end_utc":end,"basis":"max_costed_closeable_profit / initial_gross_risk; recorded OHLC; ignores subsequent SL/TP"});
-    let Some(risk)=risk.filter(|risk| **risk>BigDecimal::from(0)) else { return Ok(out); };
-    let timeframe=int(s,"timeframe_seconds")?;
-    let observed_end=bars.last().map(|bar| int(bar,"timestamp")).transpose()?.unwrap_or(start)+timeframe;
-    out["observed_to_utc"]=json!(end.min(observed_end));
-    if observed_end<end {out["status"]=json!("partial_week");out["reason"]=json!("week_not_observed_at_cutoff");return Ok(out);}
-    let mut prices=Vec::new();
-    let start_index = usize::try_from(int(t,"open_cursor_index")?).ok().and_then(|index|index.checked_sub(offset)).ok_or("invalid exposure")?;
-    for bar in bars.iter().skip(start_index) {
-        let timestamp=int(bar,"timestamp")?;
-        if timestamp>=end {break;}
-        crate::replay_core::bar_valid(bar)?;
-        if timestamp+timeframe>end {out["status"]=json!("partial_week");out["reason"]=json!("week_boundary_inside_candle");return Ok(out);}
-        let (bid,ask)=quote(s,&dec(bar,if t["side"]=="BUY"{"high"}else{"low"})?)?;
-        prices.push(if t["side"]=="BUY"{bid}else{ask});
+    let start = int(t, "open_time_utc")?;
+    let end = start
+        .checked_add(7 * 24 * 60 * 60)
+        .ok_or("invalid ideal window")?;
+    let mut out = json!({"status":"unsupported","reason":"original_stop_unavailable","value_r":null,"max_net_pnl":null,"could_have_profit_or_breakeven":null,"observed_from_utc":start,"observed_to_utc":null,"window_end_utc":end,"basis":"max_costed_closeable_profit / initial_gross_risk; recorded OHLC; ignores subsequent SL/TP"});
+    let Some(risk) = risk.filter(|risk| **risk > BigDecimal::from(0)) else {
+        return Ok(out);
+    };
+    let timeframe = int(s, "timeframe_seconds")?;
+    let observed_end = bars
+        .last()
+        .map(|bar| int(bar, "timestamp"))
+        .transpose()?
+        .unwrap_or(start)
+        + timeframe;
+    out["observed_to_utc"] = json!(end.min(observed_end));
+    if observed_end < end {
+        out["status"] = json!("partial_week");
+        out["reason"] = json!("week_not_observed_at_cutoff");
+        return Ok(out);
     }
-    let Some(price)=(if t["side"]=="BUY"{prices.into_iter().max()}else{prices.into_iter().min()}) else {out["reason"]=json!("week_has_no_complete_candle");return Ok(out);};
-    let (net,_)=pnl(s,position,&price,&price)?;
-    out["status"]=json!("complete_week");out["reason"]=Value::Null;
-    out["value_r"]=number((&net/risk).with_prec(28))?;
-    out["max_net_pnl"]=number(net.clone())?;
-    out["could_have_profit_or_breakeven"]=json!(net>=BigDecimal::from(0));
+    let mut prices = Vec::new();
+    let start_index = usize::try_from(int(t, "open_cursor_index")?)
+        .ok()
+        .and_then(|index| index.checked_sub(offset))
+        .ok_or("invalid exposure")?;
+    for bar in bars.iter().skip(start_index) {
+        let timestamp = int(bar, "timestamp")?;
+        if timestamp >= end {
+            break;
+        }
+        crate::replay_core::bar_valid(bar)?;
+        if timestamp + timeframe > end {
+            out["status"] = json!("partial_week");
+            out["reason"] = json!("week_boundary_inside_candle");
+            return Ok(out);
+        }
+        let (bid, ask) = quote(
+            s,
+            &dec(bar, if t["side"] == "BUY" { "high" } else { "low" })?,
+        )?;
+        prices.push(if t["side"] == "BUY" { bid } else { ask });
+    }
+    let Some(price) = (if t["side"] == "BUY" {
+        prices.into_iter().max()
+    } else {
+        prices.into_iter().min()
+    }) else {
+        out["reason"] = json!("week_has_no_complete_candle");
+        return Ok(out);
+    };
+    let (net, _) = pnl(s, position, &price, &price)?;
+    out["status"] = json!("complete_week");
+    out["reason"] = Value::Null;
+    out["value_r"] = number((&net / risk).with_prec(28))?;
+    out["max_net_pnl"] = number(net.clone())?;
+    out["could_have_profit_or_breakeven"] = json!(net >= BigDecimal::from(0));
     Ok(out)
 }
 
@@ -455,9 +577,9 @@ pub fn build_experiments(
     filters: Option<&Value>,
     raw: &Value,
 ) -> R<Value> {
-    build_experiments_for_basis(record,bars,sha,filters,raw,false,0)
+    build_experiments_for_basis(record, bars, sha, filters, raw, false, 0)
 }
-fn experiment_config(raw:&Value)->R<Value>{
+fn experiment_config(raw: &Value) -> R<Value> {
     use crate::replay_core::d;
     let mut config = json!({});
     for (k, default, max) in [
@@ -477,40 +599,79 @@ fn experiment_config(raw:&Value)->R<Value>{
     }
     Ok(config)
 }
-fn experiment_output(a:&Value,config:&Value,rows:Option<Vec<Value>>)->R<Value>{
+fn experiment_output(a: &Value, config: &Value, rows: Option<Vec<Value>>) -> R<Value> {
     use crate::replay_core::d;
     let mut out = json!({"schema_version":"replay-analytics-experiments-v1","read_only":true,"config":{},"provenance":a["provenance"],"scope":a["scope"],"account_currency":a["account_currency"],"rows":[],"bounds":"selected closed trades; original close; no future bars","risk_basis":"stop_loss: user_configured_distance; risk_reward: initial_stop_distance","scenario_risk_basis":{"stop_loss":"user_configured_distance","risk_reward":"initial_stop_distance"},"ideal_bounds":"entry through seven elapsed days; only complete observed candles at or before selected cutoff","blocked_by_data":a["blocked_by_data"]});
     for k in ["stop_distance_ticks", "stop_multiplier", "target_r"] {
         out["config"][k] = number(d(&config[k])?)?
     }
-    let Some(rows)=rows else {return Ok(out);};
+    let Some(rows) = rows else {
+        return Ok(out);
+    };
     let mut summary = json!({});
     for name in ["stop_loss", "risk_reward"] {
-        let ready = rows.iter().filter(|r|r[name]["status"]=="ready").collect::<Vec<_>>();
-        let mut sum=crate::analytics::PythonSum::default();
-        for row in &ready {sum.add(row[name]["net_pnl"].as_f64().ok_or("invalid scenario outcome")?);}
-        let sum=sum.value();
-        summary[name]=json!({"selected_trade_count":rows.len(),"supported_trade_count":ready.len(),"ambiguous_trade_count":rows.iter().filter(|r|r[name]["status"]=="ambiguous").count(),"unsupported_trade_count":rows.iter().filter(|r|r[name]["status"]=="unsupported").count(),"net_pnl":if ready.len()==rows.len(){Some(sum)}else{None},"supported_subset_net_pnl":if ready.is_empty(){None}else{Some(sum)}});
+        let ready = rows
+            .iter()
+            .filter(|r| r[name]["status"] == "ready")
+            .collect::<Vec<_>>();
+        let mut sum = crate::analytics::PythonSum::default();
+        for row in &ready {
+            sum.add(
+                row[name]["net_pnl"]
+                    .as_f64()
+                    .ok_or("invalid scenario outcome")?,
+            );
+        }
+        let sum = sum.value();
+        summary[name] = json!({"selected_trade_count":rows.len(),"supported_trade_count":ready.len(),"ambiguous_trade_count":rows.iter().filter(|r|r[name]["status"]=="ambiguous").count(),"unsupported_trade_count":rows.iter().filter(|r|r[name]["status"]=="unsupported").count(),"net_pnl":if ready.len()==rows.len(){Some(sum)}else{None},"supported_subset_net_pnl":if ready.is_empty(){None}else{Some(sum)}});
     }
-    out["rows"]=json!(rows);out["summary"]=summary;Ok(out)
+    out["rows"] = json!(rows);
+    out["summary"] = summary;
+    Ok(out)
 }
 // The prefix before the first selected entry cannot affect a trade's exposure or
 // ideal week. Keep the original cutoff at the end and absolute execution indices.
-fn experiment_starts(view: &Value, payload: &Value, portfolio: bool) -> R<HashMap<String,usize>> {
-    let mut starts = HashMap::<String,usize>::new();
-    for trade in view["ledger"].as_array().ok_or("invalid experiment ledger")? {
-        let dataset = if portfolio { &trade["dataset_id"] } else { &payload["dataset_id"] }
-            .as_str().ok_or("missing experiment dataset")?;
-        let start = usize::try_from(crate::replay_core::int(trade,"open_cursor_index")?).map_err(|_|"invalid exposure")?;
-        starts.entry(dataset.to_owned()).and_modify(|earliest|*earliest=(*earliest).min(start)).or_insert(start);
+fn experiment_starts(view: &Value, payload: &Value, portfolio: bool) -> R<HashMap<String, usize>> {
+    let mut starts = HashMap::<String, usize>::new();
+    for trade in view["ledger"]
+        .as_array()
+        .ok_or("invalid experiment ledger")?
+    {
+        let dataset = if portfolio {
+            &trade["dataset_id"]
+        } else {
+            &payload["dataset_id"]
+        }
+        .as_str()
+        .ok_or("missing experiment dataset")?;
+        let start = usize::try_from(crate::replay_core::int(trade, "open_cursor_index")?)
+            .map_err(|_| "invalid exposure")?;
+        starts
+            .entry(dataset.to_owned())
+            .and_modify(|earliest| *earliest = (*earliest).min(start))
+            .or_insert(start);
     }
     Ok(starts)
 }
 
-fn build_experiments_for_basis(record:&Value,bars:&[Value],sha:&str,filters:Option<&Value>,raw:&Value,activity_basis:bool,offset:usize)->R<Value>{
-    let config=experiment_config(raw)?;
-    let a=if activity_basis {crate::analytics::build_replay_activity_view(record,filters,chrono_tz::UTC)?}else{crate::analytics::build_replay_analytics_view(record,filters)?};
-    if a["analytics_available"]!=true {return experiment_output(&a,&config,None);}
+fn build_experiments_for_basis(
+    record: &Value,
+    bars: &[Value],
+    sha: &str,
+    filters: Option<&Value>,
+    raw: &Value,
+    activity_basis: bool,
+    offset: usize,
+) -> R<Value> {
+    let config = experiment_config(raw)?;
+    let a = if activity_basis {
+        crate::analytics::build_replay_activity_view(record, filters, chrono_tz::UTC)?
+    } else {
+        crate::analytics::build_replay_analytics_view(record, filters)?
+    };
+    if a["analytics_available"] != true {
+        return experiment_output(&a, &config, None);
+    }
     let s = &record["payload"]["execution"];
     crate::replay_core::validate(s)?;
     if s["dataset_sha256"] != sha {
@@ -521,7 +682,9 @@ fn build_experiments_for_basis(record:&Value,bars:&[Value],sha:&str,filters:Opti
     }
     let visible = usize::try_from(crate::replay_core::int(s, "cursor_index")? + 1)
         .map_err(|_| "invalid cursor")?;
-    let visible = visible.checked_sub(offset).ok_or("invalid experiment offset")?;
+    let visible = visible
+        .checked_sub(offset)
+        .ok_or("invalid experiment offset")?;
     let bars = &bars[..bars.len().min(visible)];
     let rows = a["ledger"]
         .as_array()
@@ -529,41 +692,82 @@ fn build_experiments_for_basis(record:&Value,bars:&[Value],sha:&str,filters:Opti
         .iter()
         .map(|t| trade_experiment(t, bars, s, &config, offset))
         .collect::<R<Vec<_>>>()?;
-    experiment_output(&a,&config,Some(rows))
+    experiment_output(&a, &config, Some(rows))
 }
 
-fn build_portfolio_experiments(record:&Value,view:&Value,sources:&HashMap<String,(Vec<Value>,String,usize)>,raw:&Value)->R<Value>{
+fn build_portfolio_experiments(
+    record: &Value,
+    view: &Value,
+    sources: &HashMap<String, (Vec<Value>, String, usize)>,
+    raw: &Value,
+) -> R<Value> {
     use crate::replay_core::int;
-    let config=experiment_config(raw)?;
-    if view["analytics_available"]!=true {return experiment_output(view,&config,None);}
-    let rows=view["ledger"].as_array().ok_or("invalid portfolio ledger")?.iter().map(|trade|{
-        let id=trade["dataset_id"].as_str().ok_or("portfolio trade lacks asset")?;
-        let s=&record["payload"]["asset_states"][id]["execution"];
-        crate::replay_core::validate(s)?;
-        let (bars,sha,offset)=sources.get(id).ok_or("portfolio source path missing")?;
-        if s["dataset_sha256"]!=*sha || s["dataset_id"]!=id || s["replay_session_id"]!=record["record_id"]
-            || s["instrument_spec"]["account_ccy"]!=s["cost_model"]["account_ccy"] {return Err("portfolio experiment source lineage differs".into());}
-        let seq=int(trade,"asset_close_event_sequence")?;
-        let closing=s["ledger"].as_array().and_then(|events|seq.checked_sub(1).and_then(|index|events.get(index as usize))).ok_or("portfolio trade close event missing")?;
-        let mut local=trade.clone();
-        local["source_position_id"]=closing["details"]["position_id"].clone();
-        local["close_cursor_index"]=trade["asset_close_cursor_index"].clone();
-        local["close_event_sequence"]=trade["asset_close_event_sequence"].clone();
-        let visible=usize::try_from(int(s,"cursor_index")?+1).map_err(|_|"invalid portfolio cursor")?;
-        let visible=visible.checked_sub(*offset).ok_or("invalid experiment offset")?;
-        trade_experiment(&local,&bars[..bars.len().min(visible)],s,&config,*offset)
-    }).collect::<R<Vec<_>>>()?;
-    experiment_output(view,&config,Some(rows))
+    let config = experiment_config(raw)?;
+    if view["analytics_available"] != true {
+        return experiment_output(view, &config, None);
+    }
+    let rows = view["ledger"]
+        .as_array()
+        .ok_or("invalid portfolio ledger")?
+        .iter()
+        .map(|trade| {
+            let id = trade["dataset_id"]
+                .as_str()
+                .ok_or("portfolio trade lacks asset")?;
+            let s = &record["payload"]["asset_states"][id]["execution"];
+            crate::replay_core::validate(s)?;
+            let (bars, sha, offset) = sources.get(id).ok_or("portfolio source path missing")?;
+            if s["dataset_sha256"] != *sha
+                || s["dataset_id"] != id
+                || s["replay_session_id"] != record["record_id"]
+                || s["instrument_spec"]["account_ccy"] != s["cost_model"]["account_ccy"]
+            {
+                return Err("portfolio experiment source lineage differs".into());
+            }
+            let seq = int(trade, "asset_close_event_sequence")?;
+            let closing = s["ledger"]
+                .as_array()
+                .and_then(|events| {
+                    seq.checked_sub(1)
+                        .and_then(|index| events.get(index as usize))
+                })
+                .ok_or("portfolio trade close event missing")?;
+            let mut local = trade.clone();
+            local["source_position_id"] = closing["details"]["position_id"].clone();
+            local["close_cursor_index"] = trade["asset_close_cursor_index"].clone();
+            local["close_event_sequence"] = trade["asset_close_event_sequence"].clone();
+            let visible = usize::try_from(int(s, "cursor_index")? + 1)
+                .map_err(|_| "invalid portfolio cursor")?;
+            let visible = visible
+                .checked_sub(*offset)
+                .ok_or("invalid experiment offset")?;
+            trade_experiment(
+                &local,
+                &bars[..bars.len().min(visible)],
+                s,
+                &config,
+                *offset,
+            )
+        })
+        .collect::<R<Vec<_>>>()?;
+    experiment_output(view, &config, Some(rows))
 }
 
-fn trade_experiment(t: &Value, bars: &[Value], s: &Value, config: &Value, offset: usize) -> R<Value> {
+fn trade_experiment(
+    t: &Value,
+    bars: &[Value],
+    s: &Value,
+    config: &Value,
+    offset: usize,
+) -> R<Value> {
     use crate::replay_core::{d, dec, int, pnl, quote};
     let start = usize::try_from(int(t, "open_cursor_index")?).map_err(|_| "invalid exposure")?;
     let end = usize::try_from(int(t, "close_cursor_index")?).map_err(|_| "invalid exposure")?;
-    if start > end || start < offset || end.checked_sub(offset).is_none_or(|end|end >= bars.len()) {
+    if start > end || start < offset || end.checked_sub(offset).is_none_or(|end| end >= bars.len())
+    {
         return Err("trade exposure outside observed dataset".into());
     }
-    let path = &bars[start-offset..=end-offset];
+    let path = &bars[start - offset..=end - offset];
     for b in path {
         crate::replay_core::bar_valid(b)?
     }
@@ -607,22 +811,39 @@ fn trade_experiment(t: &Value, bars: &[Value], s: &Value, config: &Value, offset
     // A final closing snapshot can contain a moved SL. The opening checkpoint is
     // the only evidence of the stop that existed when the trade was executed.
     let original = initial_position(s, t)?;
-    let original_stop = original.filter(|p| !p["stop_loss"].is_null())
-        .map(|p| dec(p, "stop_loss")).transpose()?;
-    if original_stop.as_ref().is_some_and(|stop| *stop <= BigDecimal::from(0)) {
+    let original_stop = original
+        .filter(|p| !p["stop_loss"].is_null())
+        .map(|p| dec(p, "stop_loss"))
+        .transpose()?;
+    if original_stop
+        .as_ref()
+        .is_some_and(|stop| *stop <= BigDecimal::from(0))
+    {
         return Err("initial stop must be finite and positive".into());
     }
-    let original_distance = original_stop.as_ref().map(|stop| ((&entry - stop) * &direction).with_prec(28))
+    let original_distance = original_stop
+        .as_ref()
+        .map(|stop| ((&entry - stop) * &direction).with_prec(28))
         .filter(|distance| *distance > BigDecimal::from(0));
     let original_stop = original_stop.filter(|_| original_distance.is_some());
     let risk_account = if let Some(stop) = &original_stop {
         let (_, cost) = pnl(s, &position, stop, stop)?;
         let risk = d(&cost["gross_account"])?;
-        let risk = if risk < BigDecimal::from(0) { -risk } else { risk };
+        let risk = if risk < BigDecimal::from(0) {
+            -risk
+        } else {
+            risk
+        };
         (risk > BigDecimal::from(0)).then_some(risk)
-    } else { None };
-    base["realized_r"] = risk_account.as_ref().map(|risk| number((dec(t,"net_pnl")? / risk).with_prec(28))).transpose()?.unwrap_or(Value::Null);
-    base["ideal"]=ideal_week(t,bars,s,&position,risk_account.as_ref(),offset)?;
+    } else {
+        None
+    };
+    base["realized_r"] = risk_account
+        .as_ref()
+        .map(|risk| number((dec(t, "net_pnl")? / risk).with_prec(28)))
+        .transpose()?
+        .unwrap_or(Value::Null);
+    base["ideal"] = ideal_week(t, bars, s, &position, risk_account.as_ref(), offset)?;
     let gap = ["stop_loss_gap", "take_profit_gap"]
         .iter()
         .any(|x| t["exit_reason"] == *x);
@@ -646,12 +867,19 @@ fn trade_experiment(t: &Value, bars: &[Value], s: &Value, config: &Value, offset
     let mfe = zero.clone().max(changes.iter().max().unwrap().clone());
     base["excursion"] = json!({"status":if gap{"observed"}else{"lower_bound"},"basis":"closeable_bid_ask_price; terminal intrabar extrema excluded","mae_price":number(mae.clone())?,"mfe_price":number(mfe.clone())?,"mae_r":original_distance.as_ref().map(|d|number((&mae/d).with_prec(28))).transpose()?,"mfe_r":original_distance.as_ref().map(|d|number((&mfe/d).with_prec(28))).transpose()?,"configured_mae_r":number((&mae/&distance).with_prec(28))?,"configured_mfe_r":number((&mfe/&distance).with_prec(28))?,"r_basis":if original_distance.is_some(){"initial_stop_distance"}else{"unavailable"},"original_stop_price":original_stop.clone().map(number).transpose()?,"initial_risk_distance":original_distance.clone().map(number).transpose()?,"ideal_r":base["ideal"]["value_r"],"excluded_terminal_bar":!gap});
     for (name, stop_only) in [("stop_loss", true), ("risk_reward", false)] {
-        let scenario_distance = if stop_only { &distance } else if let Some(distance) = &original_distance { distance } else {
+        let scenario_distance = if stop_only {
+            &distance
+        } else if let Some(distance) = &original_distance {
+            distance
+        } else {
             base[name] = unavailable("original_stop_unavailable");
             continue;
         };
         let stop = (&entry - (&direction * scenario_distance).with_prec(28)).with_prec(28);
-        let take = (&entry + ((&direction * scenario_distance).with_prec(28) * dec(config, "target_r")?).with_prec(28)).with_prec(28);
+        let take = (&entry
+            + ((&direction * scenario_distance).with_prec(28) * dec(config, "target_r")?)
+                .with_prec(28))
+        .with_prec(28);
         if stop <= zero || (!stop_only && take <= zero) {
             base[name] = unavailable("configured_bracket_nonpositive");
             continue;
@@ -728,80 +956,185 @@ mod portfolio_experiment_tests {
     use super::*;
     #[test]
     fn trimmed_experiment_paths_match_full_history() {
-        let cases:Value=serde_json::from_str(include_str!("../tests/rust_context/oracle.json")).unwrap();
-        let mut checked=0;
-        for case in cases.as_array().unwrap().iter().filter(|c|c["kind"]=="experiments" && c["error"]!=true) {
-            for activity in [false,true] {
-                let record=&case["record"];
-                let view=if activity {crate::analytics::build_replay_activity_view(record,case.get("filters"),chrono_tz::UTC)} else {crate::analytics::build_replay_analytics_view(record,case.get("filters"))}.unwrap();
-                let bars=case["bars"].as_array().unwrap();
-                let start=experiment_starts(&view,&record["payload"],false).unwrap().values().copied().min().unwrap_or(bars.len());
-                let run=|bars:&[Value],offset|build_experiments_for_basis(record,bars,case["sha"].as_str().unwrap(),case.get("filters"),&case["config"],activity,offset);
-                assert_eq!(run(&bars[start..],start),run(bars,0));
-                checked+=1;
+        let cases: Value =
+            serde_json::from_str(include_str!("../tests/rust_context/oracle.json")).unwrap();
+        let mut checked = 0;
+        for case in cases
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|c| c["kind"] == "experiments" && c["error"] != true)
+        {
+            for activity in [false, true] {
+                let record = &case["record"];
+                let view = if activity {
+                    crate::analytics::build_replay_activity_view(
+                        record,
+                        case.get("filters"),
+                        chrono_tz::UTC,
+                    )
+                } else {
+                    crate::analytics::build_replay_analytics_view(record, case.get("filters"))
+                }
+                .unwrap();
+                let bars = case["bars"].as_array().unwrap();
+                let start = experiment_starts(&view, &record["payload"], false)
+                    .unwrap()
+                    .values()
+                    .copied()
+                    .min()
+                    .unwrap_or(bars.len());
+                let run = |bars: &[Value], offset| {
+                    build_experiments_for_basis(
+                        record,
+                        bars,
+                        case["sha"].as_str().unwrap(),
+                        case.get("filters"),
+                        &case["config"],
+                        activity,
+                        offset,
+                    )
+                };
+                assert_eq!(run(&bars[start..], start), run(bars, 0));
+                checked += 1;
             }
         }
-        assert!(checked>10);
+        assert!(checked > 10);
     }
     #[test]
     fn trimmed_portfolio_paths_keep_absolute_cursors_and_cutoff() {
-        let (record,sources)=fixture();
-        for filter in [None,Some(json!({"side":"SELL"}))] {
-            let view=crate::analytics::build_replay_analytics_view(&record,filter.as_ref()).unwrap();
-            let starts=experiment_starts(&view,&record["payload"],true).unwrap();
-            let trimmed=sources.iter().filter_map(|(id,(bars,sha,_))|starts.get(id).map(|&start|(id.clone(),(bars[start..].to_vec(),sha.clone(),start)))).collect();
-            assert_eq!(build_portfolio_experiments(&record,&view,&trimmed,&json!({})),build_portfolio_experiments(&record,&view,&sources,&json!({})));
+        let (record, sources) = fixture();
+        for filter in [None, Some(json!({"side":"SELL"}))] {
+            let view =
+                crate::analytics::build_replay_analytics_view(&record, filter.as_ref()).unwrap();
+            let starts = experiment_starts(&view, &record["payload"], true).unwrap();
+            let trimmed = sources
+                .iter()
+                .filter_map(|(id, (bars, sha, _))| {
+                    starts
+                        .get(id)
+                        .map(|&start| (id.clone(), (bars[start..].to_vec(), sha.clone(), start)))
+                })
+                .collect();
+            assert_eq!(
+                build_portfolio_experiments(&record, &view, &trimmed, &json!({})),
+                build_portfolio_experiments(&record, &view, &sources, &json!({}))
+            );
         }
     }
-    fn fixture()->(Value,HashMap<String,(Vec<Value>,String,usize)>){
-        let oracle:Value=serde_json::from_str(include_str!("../tests/rust_context/oracle.json")).unwrap();
-        let source=&oracle[0];
-        let mut record=source["record"].clone();
-        let mut payload=json!({"dataset_id":"a","dataset_ids":["a","b"],"branch_id":"branch-fixture","starting_balance":"100000","starting_balance_ccy":"USD","replay_clock_utc":1700000180,"cursor_index":3,"asset_states":{}});
-        crate::replay_portfolio::initialize(&mut payload,"replay-fixture",vec![json!({"dataset_id":"a","dataset_sha256":"a".repeat(64)}),json!({"dataset_id":"b","dataset_sha256":"b".repeat(64)})]).unwrap();
-        let mut sources=HashMap::new();
-        for id in ["a","b"] {
-            let mut s=source["record"]["payload"]["execution"].clone();s["dataset_id"]=json!(id);s["dataset_sha256"]=json!(id.repeat(64));
-            for event in s["ledger"].as_array_mut().unwrap(){event["dataset_id"]=json!(id);event["dataset_sha256"]=json!(id.repeat(64));}
-            payload["asset_states"][id]=json!({"cursor_index":3,"execution":s});
-            sources.insert(id.to_owned(),(source["bars"].as_array().unwrap().clone(),id.repeat(64),0));
+    fn fixture() -> (Value, HashMap<String, (Vec<Value>, String, usize)>) {
+        let oracle: Value =
+            serde_json::from_str(include_str!("../tests/rust_context/oracle.json")).unwrap();
+        let source = &oracle[0];
+        let mut record = source["record"].clone();
+        let mut payload = json!({"dataset_id":"a","dataset_ids":["a","b"],"branch_id":"branch-fixture","starting_balance":"100000","starting_balance_ccy":"USD","replay_clock_utc":1700000180,"cursor_index":3,"asset_states":{}});
+        crate::replay_portfolio::initialize(
+            &mut payload,
+            "replay-fixture",
+            vec![
+                json!({"dataset_id":"a","dataset_sha256":"a".repeat(64)}),
+                json!({"dataset_id":"b","dataset_sha256":"b".repeat(64)}),
+            ],
+        )
+        .unwrap();
+        let mut sources = HashMap::new();
+        for id in ["a", "b"] {
+            let mut s = source["record"]["payload"]["execution"].clone();
+            s["dataset_id"] = json!(id);
+            s["dataset_sha256"] = json!(id.repeat(64));
+            for event in s["ledger"].as_array_mut().unwrap() {
+                event["dataset_id"] = json!(id);
+                event["dataset_sha256"] = json!(id.repeat(64));
+            }
+            payload["asset_states"][id] = json!({"cursor_index":3,"execution":s});
+            sources.insert(
+                id.to_owned(),
+                (source["bars"].as_array().unwrap().clone(), id.repeat(64), 0),
+            );
         }
-        payload["execution"]=payload["asset_states"]["a"]["execution"].clone();
-        crate::replay_portfolio::update(&mut payload).unwrap();record["payload"]=payload;
-        record["portfolio_trade_cursors"]=json!({"a:4":3,"b:4":3});
-        record["canonical_execution_event_sequence"]=record["payload"]["portfolio_execution"]["event_sequence"].clone();
-        (record,sources)
+        payload["execution"] = payload["asset_states"]["a"]["execution"].clone();
+        crate::replay_portfolio::update(&mut payload).unwrap();
+        record["payload"] = payload;
+        record["portfolio_trade_cursors"] = json!({"a:4":3,"b:4":3});
+        record["canonical_execution_event_sequence"] =
+            record["payload"]["portfolio_execution"]["event_sequence"].clone();
+        (record, sources)
     }
     #[test]
-    fn portfolio_experiments_keep_account_provenance_and_asset_paths(){
-        let (record,sources)=fixture();
-        let view=crate::analytics::build_replay_analytics_view(&record,None).unwrap();
-        let result=build_portfolio_experiments(&record,&view,&sources,&json!({"target_r":0.1})).unwrap();
-        assert_eq!(result["provenance"],view["provenance"]);assert_eq!(result["scope"],view["scope"]);
-        assert_eq!(result["rows"].as_array().unwrap().len(),2);
-        for row in result["rows"].as_array().unwrap(){assert_eq!(row["risk_reward"]["status"],"ready");assert_eq!(row["risk_reward"]["net_pnl"],8.1);assert!(row["trade_id"].as_str().unwrap().starts_with("a:")||row["trade_id"].as_str().unwrap().starts_with("b:"));}
-        let filtered=crate::analytics::build_replay_analytics_view(&record,Some(&json!({"side":"SELL"}))).unwrap();
+    fn portfolio_experiments_keep_account_provenance_and_asset_paths() {
+        let (record, sources) = fixture();
+        let view = crate::analytics::build_replay_analytics_view(&record, None).unwrap();
+        let result =
+            build_portfolio_experiments(&record, &view, &sources, &json!({"target_r":0.1}))
+                .unwrap();
+        assert_eq!(result["provenance"], view["provenance"]);
+        assert_eq!(result["scope"], view["scope"]);
+        assert_eq!(result["rows"].as_array().unwrap().len(), 2);
+        for row in result["rows"].as_array().unwrap() {
+            assert_eq!(row["risk_reward"]["status"], "ready");
+            assert_eq!(row["risk_reward"]["net_pnl"], 8.1);
+            assert!(
+                row["trade_id"].as_str().unwrap().starts_with("a:")
+                    || row["trade_id"].as_str().unwrap().starts_with("b:")
+            );
+        }
+        let filtered =
+            crate::analytics::build_replay_analytics_view(&record, Some(&json!({"side":"SELL"})))
+                .unwrap();
         assert!(build_portfolio_experiments(&record,&filtered,&HashMap::new(),&json!({})).unwrap()["rows"].as_array().unwrap().is_empty());
-        let mut future=sources.clone();for (bars,_,_) in future.values_mut(){bars.push(json!({"timestamp":1800000000,"high":"future secret"}));}
-        assert_eq!(result,build_portfolio_experiments(&record,&view,&future,&json!({"target_r":0.1})).unwrap());
-        let mut foreign=sources;foreign.get_mut("a").unwrap().1="foreign".into();assert!(build_portfolio_experiments(&record,&view,&foreign,&json!({})).is_err());
+        let mut future = sources.clone();
+        for (bars, _, _) in future.values_mut() {
+            bars.push(json!({"timestamp":1800000000,"high":"future secret"}));
+        }
+        assert_eq!(
+            result,
+            build_portfolio_experiments(&record, &view, &future, &json!({"target_r":0.1})).unwrap()
+        );
+        let mut foreign = sources;
+        foreign.get_mut("a").unwrap().1 = "foreign".into();
+        assert!(build_portfolio_experiments(&record, &view, &foreign, &json!({})).is_err());
     }
     #[test]
     #[ignore = "requires explicitly captured read-only owner fixture outside Git"]
-    fn portfolio_owner_readonly_fixture(){
-        let root=std::path::PathBuf::from(std::env::var("TW_ANALYTICS_REAL_FIXTURE").expect("fixture directory required"));
-        let read=|name:&str|serde_json::from_slice::<Value>(&std::fs::read(root.join(name)).unwrap()).unwrap();
-        let mut record=read("record.json");let view=read("view.json");
-        let sources:HashMap<String,(Vec<Value>,String)>=serde_json::from_value(read("sources.json")).unwrap();
-        let sources=sources.into_iter().map(|(id,(bars,sha))|(id,(bars,sha,0))).collect();
-        let sequence=view["provenance"]["execution_event_sequence"].as_i64().unwrap();
-        let exact=crate::replay_portfolio::checkpoint_event(&record["payload"],sequence).unwrap();
-        if record["payload"]["portfolio_execution"]["event_sequence"]==sequence {assert_eq!(exact["asset_states"],record["payload"]["asset_states"]);}
-        record["payload"]=exact;
-        let result=build_portfolio_experiments(&record,&view,&sources,&json!({})).unwrap();
-        assert_eq!(result["rows"].as_array().unwrap().len(),view["ledger"].as_array().unwrap().len());
-        assert_eq!(result["provenance"],view["provenance"]);
-        std::fs::write(root.join("native-result.json"),serde_json::to_vec_pretty(&result).unwrap()).unwrap();
-        println!("read-only owner projection: {} rows at account sequence {}",result["rows"].as_array().unwrap().len(),sequence);
+    fn portfolio_owner_readonly_fixture() {
+        let root = std::path::PathBuf::from(
+            std::env::var("TW_ANALYTICS_REAL_FIXTURE").expect("fixture directory required"),
+        );
+        let read = |name: &str| {
+            serde_json::from_slice::<Value>(&std::fs::read(root.join(name)).unwrap()).unwrap()
+        };
+        let mut record = read("record.json");
+        let view = read("view.json");
+        let sources: HashMap<String, (Vec<Value>, String)> =
+            serde_json::from_value(read("sources.json")).unwrap();
+        let sources = sources
+            .into_iter()
+            .map(|(id, (bars, sha))| (id, (bars, sha, 0)))
+            .collect();
+        let sequence = view["provenance"]["execution_event_sequence"]
+            .as_i64()
+            .unwrap();
+        let exact =
+            crate::replay_portfolio::checkpoint_event(&record["payload"], sequence).unwrap();
+        if record["payload"]["portfolio_execution"]["event_sequence"] == sequence {
+            assert_eq!(exact["asset_states"], record["payload"]["asset_states"]);
+        }
+        record["payload"] = exact;
+        let result = build_portfolio_experiments(&record, &view, &sources, &json!({})).unwrap();
+        assert_eq!(
+            result["rows"].as_array().unwrap().len(),
+            view["ledger"].as_array().unwrap().len()
+        );
+        assert_eq!(result["provenance"], view["provenance"]);
+        std::fs::write(
+            root.join("native-result.json"),
+            serde_json::to_vec_pretty(&result).unwrap(),
+        )
+        .unwrap();
+        println!(
+            "read-only owner projection: {} rows at account sequence {}",
+            result["rows"].as_array().unwrap().len(),
+            sequence
+        );
     }
 }

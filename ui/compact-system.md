@@ -2,7 +2,7 @@
 
 Trang xem và thử: `http://127.0.0.1:5180/?workspace=tenant-a&area=testing&ui_reference=1`.
 Đổi sáng/tối trên header; rê chuột, dùng Tab và mở dialog mẫu để xem trực tiếp.
-Đây là chuẩn chung đang áp dụng cho WMREPLAY, chưa phải chứng nhận mọi workflow
+Đây là chuẩn chung đang áp dụng cho Naqex Trader, chưa phải chứng nhận mọi workflow
 của sản phẩm. Thông số chuẩn và các ngoại lệ bên dưới được phân biệt rõ.
 
 ## Kích thước, chữ và khoảng cách
@@ -321,7 +321,7 @@ vendor nội bộ không được mô tả là đã refactor source.
 
 ## Portal, dialog, popover và ô ngày
 
-Đây là adapter của WMREPLAY, không đổi snapshot `annam-compact@0.1.1`.
+Đây là adapter của Naqex Trader, không đổi snapshot `annam-compact@0.1.1`.
 Mẫu chạy tại `?area=testing&ui_reference=1`, mục **Lớp nổi**.
 
 | Thành phần | Owner và hành vi |
