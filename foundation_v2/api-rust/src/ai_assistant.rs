@@ -898,6 +898,8 @@ mod tests {
         use http_body_util::BodyExt;
         use tower::ServiceExt;
         let mut state = crate::tests::fixture(100);
+        // This tests management state, not the shared fixture's 10ms deadline.
+        Arc::get_mut(&mut state).unwrap().config.request_timeout = Duration::from_secs(30);
         let assistant = AiAssistant::fixture_gateway(
             "http://127.0.0.1:17859/v1",
             std::env::temp_dir().join("wm-missing-ai-ui-test-key"),
