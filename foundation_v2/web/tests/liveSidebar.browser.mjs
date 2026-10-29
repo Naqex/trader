@@ -43,12 +43,13 @@ try {
       const side = page.locator('.live-analytics-side'), rows = side.locator('.live-analytics-chart-row')
       await rows.first().waitFor()
       assert.equal(await rows.count(), 3)
-      assert.equal(await side.locator('select, button, .live-analytics-source-line').count(), 0)
-      assert.equal(await rows.nth(1).locator('svg').count(), 0, 'Expectancy uses one shared horizontal comparison, without another plot')
+      assert.equal(await side.locator('select, button:not(.fxa-info), .live-analytics-source-line').count(), 0)
+      assert.equal(await side.locator('.fxa-info').count(), 2)
+      assert.equal(await rows.nth(1).locator('.fxa-viz').count(), 0, 'Expectancy uses one shared horizontal comparison, without another plot')
       const text = await side.innerText()
       assert(!/Expectancy comparison|per trade|Trades by direction|Balance curve/.test(lang === 'vi' ? text : ''))
       assert.match(await rows.nth(2).innerText(), /33[,.]33%/)
-      assert.match(await rows.nth(2).locator('.fxa-chart-legend').innerText(), lang === 'vi' ? /Hòa vốn\s+1/ : /Breakeven\s+1/)
+      assert.match(await rows.nth(2).locator('.live-win-rate-counts').innerText(), lang === 'vi' ? /Hòa vốn\s+1/ : /Breakeven\s+1/)
       // The curve is filtered PnL, not invented balance history.
       const curve = rows.first().locator('.fxa-viz svg')
       await curve.waitFor()
@@ -74,8 +75,8 @@ try {
       await page.reload()
       const side = page.locator('.live-analytics-side'), rows = side.locator('.live-analytics-chart-row')
       await rows.first().waitFor()
-      assert.match(await rows.nth(2).locator('.fxa-chart-heading').innerText(), /N\/A/)
-      assert.match(await rows.nth(2).locator('.fxa-chart-legend').innerText(), /Chưa rõ\s+1/)
+      assert.match(await rows.nth(2).locator('.live-win-rate-copy .live-analytics-chart-value').innerText(), /N\/A/)
+      assert.match(await rows.nth(2).locator('.live-win-rate-counts').innerText(), /Chưa rõ\s+1/)
       assert.equal(await rows.nth(1).locator('.fxa-average-labels').innerText(), 'N/A\nN/A')
       broker.account.opening_balance = null
       broker.deals[1].fee = 0

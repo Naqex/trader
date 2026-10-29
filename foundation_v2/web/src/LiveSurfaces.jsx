@@ -98,17 +98,30 @@ function Summary({ payload, deals, sidebar = false }) {
         <AnalyticsCurve series={[pnlPoints]} label={t('Cumulative PnL in selection')} suffix={suffix} height={96} sparkline showPoints={false} />
       </article>
       <article className="live-analytics-chart-row">
-        <div className="live-analytics-expectancy-heading"><strong className="live-analytics-chart-value">{format(average)}</strong><ChartHeading title="Expectancy per trade" /></div>
+        <div className="live-analytics-expectancy-heading"><strong className="live-analytics-chart-value">{format(average)}</strong><ChartHeading title="Expectancy per trade" help={'Kỳ vọng là số tiền lãi/lỗ ròng trung bình mỗi giao dịch đã đóng trong bộ lọc, gồm cả hòa vốn.\n\nCách tính: tổng lãi/lỗ ròng sau phí ÷ tổng số giao dịch. Đây là trung bình của dữ liệu đã có, không bảo đảm kết quả lệnh tiếp theo.'} /></div>
         <ExpectancyComparison data={{ averageWin, averageLoss }} currency={currency} suffix={suffix} />
       </article>
-      <article className="live-analytics-chart-row">
-        <ChartHeading title="Win rate" note={<strong>{Number.isFinite(ratio) ? fmt(ratio, '%', 2) : 'N/A'}</strong>} />
-        <AnalyticsRing label={t('Win rate')} values={[
-          { label: t('Win'), value: wins, color: 'var(--report-positive)' },
-          { label: t('Loss'), value: losses, color: 'var(--report-negative)' },
-          { label: t('Breakeven'), value: flat, color: 'var(--wm-content-muted)' },
-          ...(unknown ? [{ label: t('Unknown'), value: unknown, color: 'var(--wm-border-strong)' }] : []),
-        ]} />
+      <article className="live-analytics-chart-row live-win-rate-row">
+        <div className="live-win-rate-summary">
+          <div className="live-win-rate-copy">
+            <ChartHeading title="Win rate" help="Tỷ lệ giao dịch kết thúc có lãi trên tổng giao dịch đã đóng." />
+            <strong className="live-analytics-chart-value">{Number.isFinite(ratio) ? fmt(ratio, '%', 2) : 'N/A'}</strong>
+          </div>
+          <AnalyticsRing label={t('Win rate')} concentric showLegend={false} values={[
+            { label: t('Win'), value: count ? wins / count * 100 : null, color: 'var(--report-positive)' },
+            { label: t('Loss'), value: count ? losses / count * 100 : null, color: 'var(--report-negative)' },
+            { label: t('Breakeven'), value: count ? Math.max(0, flat) / count * 100 : null, color: 'var(--wm-content-muted)' },
+            ...(unknown ? [{ label: t('Unknown'), value: count ? unknown / count * 100 : null, color: 'var(--wm-border-strong)' }] : []),
+          ]} />
+        </div>
+        <div className="live-win-rate-counts" aria-label={t('Win rate')}>
+          {[
+            [t('Win'), wins, 'var(--report-positive)'],
+            [t('Loss'), losses, 'var(--report-negative)'],
+            [t('Breakeven'), Math.max(0, flat), 'var(--wm-content-muted)'],
+            ...(unknown ? [[t('Unknown'), unknown, 'var(--wm-border-strong)']] : []),
+          ].map(([label, value, color]) => <span key={label}><i style={{ background: color }} />{label}<strong>{fmt(value, '', 0)}</strong></span>)}
+        </div>
       </article>
     </div>}
   </section>

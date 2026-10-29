@@ -262,6 +262,16 @@
 .live-analytics-chart-row .fxa-ring { width: 142px; height: 142px; }
 .live-analytics-chart-row .fxa-chart-legend { flex: 1 1 auto; min-width: 0; gap: 9px; font-size: 12px; }
 .live-analytics-chart-row .fxa-chart-legend strong { font-size: 12px; }
+.live-win-rate-summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-width: 0; }
+.live-win-rate-copy { min-width: 0; }
+.live-win-rate-copy .fxa-chart-heading { margin-bottom: 8px; }
+.live-win-rate-copy .live-analytics-chart-value { font-size: 24px; }
+.live-win-rate-summary .fxa-ring-layout { flex: 0 0 auto; }
+.live-win-rate-summary .fxa-ring { width: 132px; height: 132px; }
+.live-win-rate-counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 12px; margin-top: 12px; color: var(--wm-content-muted); font-size: 12px; }
+.live-win-rate-counts span { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.live-win-rate-counts i { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; }
+.live-win-rate-counts strong { margin-left: auto; color: var(--wm-content); font-variant-numeric: tabular-nums; }
 .live-analytics-chart-row .fxa-expectancy-comparison { margin-top: 10px; }
 .live-metrics dt, .live-analytics-side dt, .live-account-values dt { color: var(--wm-content-muted); font-size: 12px; }
 .live-metrics dd, .live-analytics-side dd { margin: 8px 0 0; font-size: var(--wm-text-value); line-height: 1.2; font-variant-numeric: tabular-nums; }
@@ -442,6 +452,9 @@
   .live-metrics > dl, .live-analytics-side dl { grid-template-columns: minmax(0, 1fr); }
   .live-source-details dl { grid-template-columns: minmax(0, 1fr); }
   .live-filter-divider, .live-calendar-action-divider { display: none; }
+  .live-win-rate-summary { align-items: flex-start; }
+  .live-win-rate-summary .fxa-ring { width: 112px; height: 112px; }
+  .live-win-rate-counts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (prefers-reduced-motion: reduce) {
   .live-workspace *, .live-workspace *::before, .live-workspace *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }

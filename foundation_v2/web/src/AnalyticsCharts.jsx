@@ -213,12 +213,12 @@ export function AnalyticsDailyBars({ items, currency }) {
   </svg></div>
 }
 
-export function AnalyticsRing({ values, label, concentric = false }) {
+export function AnalyticsRing({ values, label, concentric = false, showLegend = true }) {
   const { fmt } = useTestingLocale(), valid = values.some(item => finite(item.value))
   let offset = 0
   const total = values.reduce((sum, item) => sum + (finite(item.value) ? Math.max(0, item.value) : 0), 0)
   return <div className="fxa-ring-layout">
-    <div className="fxa-chart-legend">{values.map(item => <span key={item.label}><i style={{ background: item.color }}/>{item.label}<strong>{finite(item.value) ? fmt(item.value, concentric ? '%' : '') : 'N/A'}</strong></span>)}</div>
+    {showLegend && <div className="fxa-chart-legend">{values.map(item => <span key={item.label}><i style={{ background: item.color }}/>{item.label}<strong>{finite(item.value) ? fmt(item.value, concentric ? '%' : '') : 'N/A'}</strong></span>)}</div>}
     <svg className={`fxa-ring${concentric ? ' is-concentric' : ''}`} viewBox="0 0 200 200" role="img" aria-label={`${label}: ${values.map(item => `${item.label} ${finite(item.value) ? fmt(item.value, concentric ? '%' : '') : 'N/A'}`).join('; ')}`}>
       {!concentric && <circle cx="100" cy="100" r="76" fill="none" stroke="var(--wm-border)" strokeWidth="30"/>}
       {values.map((item, index) => {
