@@ -4,7 +4,7 @@ import math
 import re
 from datetime import date
 
-from risk_lab import RiskLabValidationError
+from .risk_lab import RiskLabValidationError
 
 
 class PropProfileValidationError(RiskLabValidationError):

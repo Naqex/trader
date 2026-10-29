@@ -3,7 +3,7 @@
 Định hướng thiết kế ngày 23/10/2026, theo yêu cầu owner: AI là năng lực dùng thường
 xuyên ở nhiều tính năng, không chỉ một hộp chat. Đây là thiết kế đích và tiêu chí
 chuyển đổi, chưa phải bằng chứng triển khai/benchmark hoặc cấp quyền broker.
-[Product Completion Plan](../../../../planning/mt5-tradingview-backtester/PRODUCT-COMPLETION-PLAN.md)
+[Product Completion Plan](../../../../planning/trader/PRODUCT-COMPLETION-PLAN.md)
 vẫn own phạm vi và acceptance toàn sản phẩm; tài liệu này không tạo ledger mới.
 Review liên project và bằng chứng offline: [AI workspace architecture](../../../../planning/research/AI-WORKSPACE-ARCHITECTURE-2026-10-23.md).
 Quyết định sau review: Rust own API/admission/public events; Python/LangGraph own

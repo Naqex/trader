@@ -2,7 +2,7 @@
 
 from decimal import Decimal, ROUND_HALF_UP
 
-from data_contracts import CostModel, DataContractError, require_decimal
+from .data_contracts import CostModel, DataContractError, require_decimal
 
 
 def _money(value, decimals):

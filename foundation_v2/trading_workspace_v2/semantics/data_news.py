@@ -1,6 +1,6 @@
 """Point-in-time visibility rules for economic-calendar events."""
 
-from data_contracts import NewsEvent
+from .data_contracts import NewsEvent
 
 
 def visible_events(events, decision_time_utc, allow_archive_proxy=False):

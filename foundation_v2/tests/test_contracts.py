@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 V2 = ROOT / "foundation_v2"
+SEMANTICS = V2 / "trading_workspace_v2" / "semantics"
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 if str(V2) not in sys.path:
@@ -27,7 +28,7 @@ class ContractTests(unittest.TestCase):
             "risk_lab.py",
             "prop_profile.py",
         ):
-            path = ROOT / name
+            path = SEMANTICS / name
             tree = ast.parse(path.read_text(encoding="utf-8"))
             imports = set()
             for node in ast.walk(tree):
@@ -43,7 +44,7 @@ class ContractTests(unittest.TestCase):
     def test_retained_ai_boundary_has_no_broker_or_execution_imports(self):
         forbidden = {"execution_service", "mt5_data", "demo_broker", "workspace_risk"}
         for name in ("ai_provider.py", "ai_service.py"):
-            path = ROOT / name
+            path = SEMANTICS / name
             tree = ast.parse(path.read_text(encoding="utf-8"))
             imports = set()
             for node in ast.walk(tree):

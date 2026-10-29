@@ -4,7 +4,7 @@ import hashlib
 import json
 from collections import deque
 
-from ai_provider import AIProviderError, AIProviderUnavailable
+from .ai_provider import AIProviderError, AIProviderUnavailable
 
 
 ALLOWED_STATUSES = {"ok", "uncertain", "unavailable", "stale", "invalid_context"}
