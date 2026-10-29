@@ -1,5 +1,7 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useSyncExternalStore } from 'react'
 import { createRoot } from 'react-dom/client'
+import { installChunkRecovery } from './chunkRecovery.js'
+const removeChunkRecovery = installChunkRecovery(import.meta.url)
 const LearnWorkspace = lazy(() => import('./LearnWorkspace.jsx'))
 const PropAnalytics = lazy(() => import('./PropAnalytics.jsx'))
 const ReplayWorkspace = lazy(() => import('./ReplayWorkspace.jsx'))
@@ -168,6 +170,7 @@ appRoot.render(<><App /><ProjectTooltipLayer /></>)
 
 if (import.meta.hot) {
   import.meta.hot.dispose(() => {
+    removeChunkRecovery()
     appRoot.unmount()
     delete rootElement[rootStateKey]
   })

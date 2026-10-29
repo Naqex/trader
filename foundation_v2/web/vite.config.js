@@ -36,6 +36,8 @@ function localAdvancedCharts() {
 
 export default defineConfig(() => ({
   plugins: [react(), localAdvancedCharts()],
+  // Open tabs still import chunks from the build they initially loaded.
+  build: { emptyOutDir: false },
   server: {
     host: '127.0.0.1',
     proxy: {
