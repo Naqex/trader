@@ -36,6 +36,11 @@ Two pane-specific CSS rules provide toolbar inset and a full-width owned seam.
   `15f6338db684f64575eb4f49294a2332d6052e8c4c4b45311e9250aa21e900ab`.
 - Actual GET-only UI/API check PASS:14trades,8Buy trades after Apply, clear restores14,
   full account login and original R available. No page errors or API writes.
+- Native connector regression:10 Rust tests PASS. A same-scope full sync cannot
+  erase known deal/cashflow tickets; it stays in `mt5_history_warming`, keeps the
+  prior snapshot/full-sync scope and retries on the warm worker after 15 seconds.
+  UI maps this to a loading-history message. First-ever imports have no prior
+  ticket set for comparison; broker-side history deletion requires reconciliation.
 
 Local evidence/build/rollback:
 `E:/BACKUP-TRADINGWORKSPACE/live-ledger-filters-20261029/`.

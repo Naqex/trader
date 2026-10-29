@@ -575,6 +575,26 @@ async fn adapter(input: Value, timeout: Duration) -> Result<Value, String> {
     // Dropping child closes the job and kills every terminal/SDK descendant.
 }
 
+fn validate_full_history(old: Option<&Value>, next: &Value, full_sync: bool) -> Result<(), String> {
+    let Some(old) = old.filter(|old| full_sync
+        && old["history_from_utc"].is_string()
+        && old["history_from_utc"] == next["history_from_utc"]
+        && old.pointer("/account_binding/login").is_some_and(Value::is_string)
+        && old.pointer("/account_binding/login") == next.pointer("/account_binding/login")
+        && old.pointer("/account_binding/server") == next.pointer("/account_binding/server")) else { return Ok(()) };
+    // Connected does not imply that a cold terminal has loaded its history.
+    // A refresh of the same scope must not silently erase known immutable facts.
+    for field in ["deals", "cashflows"] {
+        let tickets: std::collections::HashSet<u64> = next[field].as_array().into_iter().flatten()
+            .filter_map(|row| row["ticket"].as_u64()).collect();
+        if old[field].as_array().into_iter().flatten()
+            .filter_map(|row| row["ticket"].as_u64()).any(|ticket| !tickets.contains(&ticket)) {
+            return Err("mt5_history_warming".into());
+        }
+    }
+    Ok(())
+}
+
 fn merge_snapshot(old: Option<Value>, mut next: Value, full_sync: bool) -> Value {
     if full_sync {
         return next;
@@ -717,8 +737,8 @@ async fn run_one(state: &Arc<AppState>) -> Result<(), String> {
         return Ok(());
     }
     // Heartbeats never transfer/decode the journal. Fetch it only when a
-    // successful incremental collection needs the previous revision to merge.
-    let previous = if include_history && result.is_ok() && !row.get::<_, bool>("full_sync") {
+    // successful history collection needs the previous revision to validate or merge.
+    let previous = if include_history && result.is_ok() {
         let previous = conn.query_opt("SELECT snapshot FROM mt5_connections WHERE workspace_id=$1 AND connection_id=$2 AND generation=$3", &[&workspace, &id, &generation]).await.map_err(|_|"mt5_database_unavailable")?;
         let Some(previous) = previous else {
             return Ok(());
@@ -728,6 +748,7 @@ async fn run_one(state: &Arc<AppState>) -> Result<(), String> {
         None
     };
     let result = result.and_then(|next| {
+        validate_full_history(previous.as_ref(), &next, row.get("full_sync"))?;
         let snapshot = merge_snapshot(previous, next, row.get("full_sync"));
         if serde_json::to_vec(&snapshot)
             .map_err(|_| "mt5_snapshot_failed")?
@@ -789,6 +810,7 @@ fn retry_seconds(code: &str) -> f64 {
         | "mt5_operation_timeout"
         | "mt5_startup_timeout"
         | "mt5_terminal_unavailable"
+        | "mt5_history_warming"
         | "mt5_worker_failed" => 15.0,
         _ => 300.0,
     }
@@ -897,5 +919,38 @@ mod tests {
         );
         assert_eq!(result["deals"], json!([]));
         assert_eq!(result["cashflows"], json!([]));
+    }
+    #[test]
+    fn cold_full_sync_cannot_erase_known_history_or_only_the_deposit() {
+        let old = json!({"history_from_utc":"2026-10-23T00:00:00Z",
+            "account_binding":{"login":"123","server":"Fixture"},
+            "deals":[{"ticket":1}],"cashflows":[{"ticket":2}]});
+        let mut next = old.clone();
+        next["deals"] = json!([]);
+        next["cashflows"] = json!([]);
+        assert_eq!(validate_full_history(Some(&old), &next, true), Err("mt5_history_warming".into()));
+        next["deals"] = old["deals"].clone();
+        assert!(validate_full_history(Some(&old), &next, true).is_err());
+        next["cashflows"] = old["cashflows"].clone();
+        assert!(validate_full_history(Some(&old), &next, true).is_ok());
+        next["deals"][0]["profit"] = json!(8);
+        assert!(validate_full_history(Some(&old), &next, true).is_ok());
+        assert_eq!(retry_seconds("mt5_history_warming"), 15.0);
+    }
+    #[test]
+    fn history_guard_preserves_new_empty_changed_scope_and_incremental_semantics() {
+        let old = json!({"history_from_utc":"2026-10-23T00:00:00Z",
+            "account_binding":{"login":"123","server":"Fixture"},"deals":[{"ticket":1}],"cashflows":[]});
+        let mut next = old.clone(); next["deals"] = json!([]);
+        assert!(validate_full_history(None, &next, true).is_ok());
+        assert!(validate_full_history(Some(&old), &next, false).is_ok());
+        next["history_from_utc"] = json!("2026-10-25T00:00:00Z");
+        assert!(validate_full_history(Some(&old), &next, true).is_ok());
+        next["history_from_utc"] = old["history_from_utc"].clone();
+        next["account_binding"]["login"] = json!("456");
+        assert!(validate_full_history(Some(&old), &next, true).is_ok());
+        let empty = json!({"history_from_utc":"2026-10-23T00:00:00Z",
+            "account_binding":{"login":"123","server":"Fixture"},"deals":[],"cashflows":[]});
+        assert!(validate_full_history(Some(&empty), &empty, true).is_ok());
     }
 }

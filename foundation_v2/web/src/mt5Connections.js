@@ -23,6 +23,7 @@ const ERRORS = {
   mt5_secret_unavailable:'Không mở được thông tin đăng nhập đã lưu. Hãy kết nối lại trên máy này.',
   mt5_sync_timeout:'MT5 chưa phản hồi kịp. Kiểm tra kết nối và thử đồng bộ lại.',
   mt5_history_too_large:'Lịch sử quá lớn. Hãy chọn ngày bắt đầu gần hơn rồi kết nối lại.',
+  mt5_history_warming:'MT5 đang nạp lịch sử. Dữ liệu hiện tại được giữ nguyên và ứng dụng sẽ tự thử lại.',
   mt5_request_conflict:'Yêu cầu đã thay đổi. Đóng form rồi thử lại.',
   mt5_connection_limit:'Workspace hỗ trợ tối đa 10 kết nối MetaTrader.',
   mt5_terminal_isolation_failed:'Không xác minh được thư mục terminal riêng. Kết nối đã bị chặn.',
