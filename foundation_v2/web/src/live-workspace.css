@@ -360,10 +360,11 @@
 }
 .live-notes-groups { display: flex; align-items: center; gap: 12px; padding: 16px var(--wm-page-gutter); }
 .live-notes-start { display:flex; align-items:center; flex-wrap:wrap; gap:8px; min-width:0; }
-.live-notes-start > .live-account-picker { width:auto; margin-right:0; }
 .live-notes-actions { flex-wrap:wrap; }
 .live-notes .live-note-create, .live-notes-groups > .fxa-button, .live-notes-empty > .fxa-button { display:inline-flex; align-items:center; justify-content:center; gap:8px; }
-.fx-app.fx-shell-story[data-theme] .fx-content .live-notes-actions .live-note-group { background:transparent; border-color:transparent; }
+.live-note-group { color:var(--wm-content-muted); font-size:13px; line-height:20px; }
+.live-note-fields-hint { padding:4px 10px 8px; max-width:220px; }
+.fx-app.fx-shell-story[data-theme] .fx-content .live-note-fields [role=option]:disabled { background:transparent; }
 .fx-app.fx-shell-story[data-theme] .fx-content .live-notes-groups > .is-active { background:transparent; border:1px solid var(--wm-control-border); color:var(--wm-content); }
 .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-content:has(> .live-workspace.is-notes) { display:flex; flex-direction:column; overflow:hidden; padding-bottom:0; }
 .live-workspace.is-notes { display:flex; flex-direction:column; flex:1; min-height:0; }

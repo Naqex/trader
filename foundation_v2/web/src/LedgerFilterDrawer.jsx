@@ -1,7 +1,8 @@
 import ReportInfo from './ReportInfo.jsx'
 import ProjectDateInput from './ProjectDateInput.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
-import React, { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
+import TagFilterControls from './TagFilterControls.jsx'
 import FxSelect from './FxSelect.jsx'
 import { calendarParts, DEFAULT_EXTRA_FILTERS, filterValues } from './tradingAnalyticsModel.js'
 import FilterDrawer from './FilterDrawer.jsx'
@@ -72,8 +73,5 @@ export default function LedgerFilterDrawer({ initialTab, filters, extra, rows, f
   return <FilterDrawer initialTab={initialTab} sections={sections} onClose={onClose} onClear={clear} onApply={apply} invalid={Boolean(calendar.pending || calendar.error || draft.from && draft.to && draft.from > draft.to)}
     basicControls={timeBasis && <><fieldset className="fxl-clock-options"><legend className="sr-only">{t('Thời gian lọc')}</legend>{[['market', 'Chart'], ['activity', 'Realtime']].map(([value, label]) => <label key={value}><input type="radio" name={clockName} value={value} checked={draftBasis === value} onChange={() => setDraftBasis(value)} />{label}</label>)}<ReportInfo title="Thời gian lọc" text="Chọn thời gian dùng cho bộ lọc ngày, năm, tháng và giờ. Chart dùng thời gian trên biểu đồ; Realtime dùng thời gian ghi nhận giao dịch thực tế. Lựa chọn có hiệu lực khi áp dụng bộ lọc." /></fieldset>{calendar.pending && <p role="status" className="fxl-timezone">{t('Đang tải khoảng ngày…')}</p>}{calendar.error && <p role="alert" className="fxl-timezone">{t('Không tải được khoảng ngày.')} <button type="button" className="fxa-button" onClick={() => setRetry(value => value + 1)}>{t('Thử lại')}</button></p>}{!calendar.pending && !calendar.error && draftBasis === 'activity' && !years.length && rows.length > 0 && <p className="fxl-timezone">{t('Nguồn hiện tại chưa có ngày Realtime.')}</p>}</>}
     note={calendarActive ? <small className="fxl-timezone">{t("Năm, tháng và giờ theo")} {timezone}.</small> : null}
-    tags={<>{['Include', 'Exclude'].map((name, index) => {
-        const key = name === 'Include' ? 'tagInclude' : 'tagExclude', mode = `${key}Mode`
-        return <React.Fragment key={key}>{index > 0 && <div className="fxl-tag-separator">{t("AND")}</div>}<div className="fxl-tag-heading"><span>{t(name)}</span><div role="group" aria-label={t('Cách kết hợp {name}', { name: t(name) })}>{['AND', 'OR'].map(value => <button type="button" key={value} aria-pressed={draftExtra[mode] === value} onClick={() => change({ [mode]: value })}>{value}</button>)}</div></div><FxSelect localizeOptions={false} label={`${t(name)} ${t("Tags")}`} triggerContent={filterValues(draftExtra[key]).length ? filterValues(draftExtra[key]).join(', ') : t("Select tags")} multiple searchable value={filterValues(draftExtra[key])} options={unique('tags').map(value => ({ value, label: value }))} onChange={value => change({ [key]: value.length ? JSON.stringify(value) : '' })} /></React.Fragment>
-      })}</>} />
+    tags={<TagFilterControls values={unique('tags')} draft={draftExtra} onChange={change} />} />
 }

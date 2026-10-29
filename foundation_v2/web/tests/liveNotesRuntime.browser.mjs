@@ -1,0 +1,45 @@
+// Owner runtime read-only smoke after the explicitly authorized QA-note deletion.
+import assert from 'node:assert/strict'
+import { chromium } from 'playwright'
+import { mkdir, writeFile } from 'node:fs/promises'
+const [origin,out] = process.argv.slice(2)
+assert.equal(new URL(origin).hostname,'127.0.0.1')
+await mkdir(out,{recursive:true})
+const report={errors:[],writes:[],scope:'Real local Notes empty state and controls; GET only'}
+const browser=await chromium.launch()
+try {
+  const context=await browser.newContext({viewport:{width:1920,height:940},reducedMotion:'reduce'})
+  await context.routeWebSocket('**/*',socket=>socket.close())
+  await context.route('**/*',route=>{
+    const request=route.request(),url=new URL(request.url())
+    if(url.origin!==origin)return route.abort()
+    if(!['GET','HEAD','OPTIONS'].includes(request.method())) {report.writes.push(url.pathname);return route.abort()}
+    return route.continue()
+  })
+  const page=await context.newPage();page.setDefaultTimeout(12000)
+  page.on('pageerror',error=>report.errors.push(error.message))
+  await page.goto(`${origin}/?workspace=tenant-a&view=live&lang=vi&area=live&section=notes`)
+  const notes=page.locator('.live-notes')
+  await notes.locator('.live-notes-empty-art').waitFor()
+  assert.equal(await notes.locator('.live-account-picker,.live-note-row').count(),0)
+  assert.equal(await notes.locator('.live-note-group').evaluate(el=>getComputedStyle(el).backgroundColor),'rgba(0, 0, 0, 0)')
+  const fields=notes.locator('.live-note-fields')
+  await fields.locator('button').first().click()
+  assert.equal(await fields.getByRole('option').count(),4)
+  assert.equal(await fields.getByRole('option').evaluateAll(items=>items.filter(item=>item.disabled).length),3)
+  await page.keyboard.press('Escape')
+  const filter=notes.getByRole('button',{name:'Bộ lọc ghi chú',exact:true})
+  await filter.click()
+  const drawer=page.locator('.fxl-filter-drawer')
+  await drawer.waitFor()
+  await drawer.getByRole('tab',{name:'Nhãn',exact:true}).click()
+  assert.equal(await drawer.locator('.fxl-tag-heading').count(),2)
+  await page.screenshot({path:`${out}/notes-tags.png`})
+  await page.keyboard.press('Escape')
+  assert(await filter.evaluate(el=>el===document.activeElement))
+  await page.screenshot({path:`${out}/notes.png`})
+  assert.deepEqual(report.errors,[]);assert.deepEqual(report.writes,[])
+  report.status='PASS'
+} catch(error) {report.status='FAIL';report.failure=error.stack;process.exitCode=1}
+finally {await browser.close();await writeFile(`${out}/browser.json`,JSON.stringify(report,null,2))}
+console.log(JSON.stringify(report))

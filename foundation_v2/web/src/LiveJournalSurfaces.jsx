@@ -14,6 +14,8 @@ import { tagResults } from './liveLedgerModel.js'
 import { downloadLiveCsv } from './liveCsvDownload.js'
 import { buildWorkspaceHref } from './workspaceContext.js'
 import LegacyModal from './LegacyModal.jsx'
+import NoteFilterDrawer from './NoteFilterDrawer.jsx'
+import { EMPTY_NOTE_FILTERS, filterJournalNotes } from './liveNoteModel.js'
 import { MANUAL_TRADE_COLUMNS } from './liveTradeColumns.js'
 
 function StrategyReference({ payload, strategies, workspace }) {
@@ -58,36 +60,37 @@ function NotesEmptyArt() {
   </svg>
 }
 
-export function JournalNotes({ records, accountId, accountPicker, strategies, writable, readable = true, onEdit, onCreate }) {
-  const { t } = useTestingLocale()
+export function JournalNotes({ records, accounts, strategies, writable, readable = true, onEdit, onCreate }) {
+  const { t,timezone } = useTestingLocale()
   const [page,setPage] = useState(1), [size,setSize] = useState(20)
-  const [search,setSearch] = useState(''), [group,setGroup] = useState([]), [readId,setReadId] = useState(null)
+  const [search,setSearch] = useState(''), [filters,setFilters] = useState(EMPTY_NOTE_FILTERS), [readId,setReadId] = useState(null)
+  const [showFilters,setShowFilters] = useState(false), [fields,setFields] = useState(['content'])
   const [searchOpen,setSearchOpen] = useState(false), searchInput = useRef(null), searchTrigger = useRef(null)
   const closeSearch = () => { setSearchOpen(false); searchTrigger.current?.focus() }
   useEffect(() => { if (searchOpen) searchInput.current?.focus() }, [searchOpen])
-  const notes = records.filter(record => record.kind === 'note' && (!accountId || (!record.payload.account_id && !record.payload.connection_id) || (record.payload.connection_id ? `broker:${record.payload.connection_id}` : record.payload.account_id) === accountId))
+  const notes = records.filter(record => record.kind === 'note')
   const tags = [...new Set(notes.flatMap(record => record.payload.tags))]
-  const activeGroup = group
-  const rows = notes.filter(record => (!activeGroup.length || activeGroup.some(tag => record.payload.tags.includes(tag)))
-    && matchesSearch(`${record.payload.title} ${record.payload.note} ${record.payload.tags.join(' ')}`, search))
+  const filtered = Object.entries(filters).some(([key,value]) => !key.endsWith('Mode') && (Array.isArray(value) ? value.length : value))
+  const rows = filterJournalNotes(notes,filters,search,timezone)
   const pages = Math.max(1,Math.ceil(rows.length/size)), current = Math.min(page,pages)
-  useEffect(()=>setPage(1),[search,group,accountId])
+  useEffect(()=>setPage(1),[search,filters])
   const reading = notes.find(record => record.record_id === readId)
-  const clearFilters = () => { setSearch(''); setGroup([]); setPage(1) }
+  const clearFilters = () => { setSearch(''); setFilters(EMPTY_NOTE_FILTERS); setPage(1) }
   return <section className="live-notes"><div className="live-toolbar fxa-filter-toolbar is-ledger live-notes-toolbar">
-    <div className="live-notes-start">{accountPicker}<button type="button" className="fxa-button live-note-create" disabled={!writable} onClick={onCreate}><TestingIcon kind="zoom-in" size={16}/>{t('New note')}</button></div>
+    <div className="live-notes-start"><button type="button" className="fxa-button live-note-create" disabled={!writable} onClick={onCreate}><TestingIcon kind="zoom-in" size={16}/>{t('New note')}</button></div>
     <div className="fxa-filter-actions live-notes-actions">
       <button type="button" className="fxa-button fxa-icon-button" aria-label={t('Clear filters')} data-tooltip={t('Clear filters')} onClick={clearFilters}><TestingIcon kind="history" size={16}/></button>
-      <button type="button" className="fxa-button fxa-icon-button" aria-label={t('Edit notes')} data-tooltip={t('Edit notes')} disabled><FilterIcon kind="edit"/></button>
+      <FxSelect className="fxa-columns-control live-note-fields" label="Edit notes" icon="edit" iconOnly multiple multipleStyle="check" showSelectAll={false} value={fields} onChange={setFields} options={[{value:'trades',label:'Trades',disabled:true},{value:'winRate',label:'Win rate',disabled:true},{value:'pnl',label:'PnL',disabled:true},{value:'content',label:'Content'}]} menuHeader={<small className="live-note-fields-hint">{t('Chưa liên kết giao dịch với ghi chú.')}</small>} />
       <span className="fxa-filter-divider" aria-hidden="true"/>
       <div className={`live-account-search${searchOpen || search ? ' is-open' : ''}`}><button ref={searchTrigger} type="button" aria-label={t('Tìm ghi chú')} aria-expanded={Boolean(searchOpen || search)} onClick={() => searchOpen ? closeSearch() : setSearchOpen(true)}><TestingIcon kind="search" size={16}/></button>{(searchOpen || search) && <SearchInput ref={searchInput} type="search" aria-label={t('Tìm ghi chú')} placeholder={t('Tìm ghi chú…')} value={search} onChange={event => setSearch(event.target.value)} onKeyDown={event => { if (event.key === 'Escape' && !search) { event.preventDefault(); closeSearch() } }} />}</div>
-      <button type="button" className="fxa-button live-note-group" disabled>{t('Group by')}</button>
-      <FxSelect label="Note filters" multiple searchable value={activeGroup} triggerContent={t('Filters') + (activeGroup.length ? ` · ${activeGroup.length}` : '')} onChange={setGroup} options={tags.map(value => ({value,label:value,localize:false}))}/>
+      <span className="live-note-group">{t('Group by')}</span>
+      <button type="button" className="fxa-button" aria-label={t('Note filters')} aria-haspopup="dialog" aria-expanded={showFilters} onClick={() => setShowFilters(true)}><FilterIcon kind="filter"/>{t('Filters')}{filtered && <span className="sr-only">{t('Đang áp dụng bộ lọc')}</span>}</button>
     </div>
   </div>
     <div className="live-notes-groups" role="group" aria-label={t('Note views')}><button type="button" className="fxa-button is-active" aria-pressed="true" onClick={clearFilters}><TestingIcon kind="ledger" size={16}/>{t('All')}</button><button type="button" className="fxa-button fxa-icon-button" aria-label={t('Add note group')} disabled><TestingIcon kind="plus" size={18}/></button></div>
-    {readable && <div className="live-note-list">{rows.slice((current-1)*size,current*size).map(record => <button type="button" className="live-note-row" key={record.record_id} onClick={() => writable ? onEdit(record) : setReadId(record.record_id)}><strong>{record.payload.title}</strong><span>{record.payload.note}</span><small>{displayDate(record.updated_at_utc)}{record.payload.playbook_id && ` · ${strategies.find(item => item.record_id === record.payload.playbook_id && item.revision === record.payload.playbook_revision)?.payload.name || t('Strategy #{id}',{id:record.payload.playbook_id.slice(0,8)})} v${record.payload.playbook_revision}`}{record.payload.tags.length > 0 && ` · ${record.payload.tags.join(', ')}`}</small></button>)}{!rows.length && <div className="live-notes-empty"><NotesEmptyArt/><h2>{t(search || activeGroup.length > 0 ? 'Không tìm thấy ghi chú' : 'No notes yet')}</h2>{search || activeGroup.length > 0 ? <button type="button" className="fxa-button" onClick={clearFilters}>{t('Clear filters')}</button> : <button type="button" className="fxa-button is-primary" disabled={!writable} onClick={onCreate}><TestingIcon kind="zoom-in" size={16}/>{t('Add note')}</button>}</div>}</div>}
+    {readable && <div className="live-note-list">{rows.slice((current-1)*size,current*size).map(record => <button type="button" className="live-note-row" key={record.record_id} onClick={() => writable ? onEdit(record) : setReadId(record.record_id)}><strong>{record.payload.title}</strong>{fields.includes('content') && <span>{record.payload.note}</span>}<small>{displayDate(record.updated_at_utc)}{record.payload.playbook_id && ` · ${strategies.find(item => item.record_id === record.payload.playbook_id && item.revision === record.payload.playbook_revision)?.payload.name || t('Strategy #{id}',{id:record.payload.playbook_id.slice(0,8)})} v${record.payload.playbook_revision}`}{record.payload.tags.length > 0 && ` · ${record.payload.tags.join(', ')}`}</small></button>)}{!rows.length && <div className="live-notes-empty"><NotesEmptyArt/><h2>{t(search || filtered ? 'Không tìm thấy ghi chú' : 'No notes yet')}</h2>{search || filtered ? <button type="button" className="fxa-button" onClick={clearFilters}>{t('Clear filters')}</button> : <button type="button" className="fxa-button is-primary" disabled={!writable} onClick={onCreate}><TestingIcon kind="zoom-in" size={16}/>{t('Add note')}</button>}</div>}</div>}
     {rows.length > 0 && <PaginationFooter showCount={false} totalCount={rows.length} label="Trang ghi chú" page={current} pages={pages} pageSize={size} onPageChange={setPage} onPageSizeChange={value=>{setSize(value);setPage(1)}} sizes={[10,20,50,100]} />}
+    {showFilters && <NoteFilterDrawer filters={filters} accounts={accounts} tags={tags} onApply={setFilters} onClose={() => setShowFilters(false)} />}
     {reading && <LegacyModal className="live-record-dialog" theme={document.querySelector('.fx-app')?.dataset.theme || 'dark'} label={reading.payload.title} onClose={() => setReadId(null)}><div className="live-record-form"><p className="live-muted">{t('Chỉ đọc · tải lại dữ liệu trước khi chỉnh sửa.')}</p><p className="live-note-content">{reading.payload.note}</p><small className="live-muted">{displayDate(reading.updated_at_utc)} · {reading.payload.tags.join(', ') || t('Không có nhãn')}</small></div></LegacyModal>}
   </section>
 }

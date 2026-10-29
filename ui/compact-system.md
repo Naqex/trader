@@ -395,6 +395,24 @@ dùng token menu160ms/dialog220ms, reduced motion tắt cả portal bên ngoài 
 Kiểm chứng và giới hạn của lượt rà soát:
 [UI-system audit 20/10/2026](../foundation_v2/evidence/ui-system-audit-20261020/CHECKPOINT.md).
 
+## Live Notes và bộ chọn tài khoản
+
+- `SessionFilter` giữ hành vi chọn phiên/tài khoản riêng, dùng `SelectChevron`
+  từ `FxSelect` và `.fx-select-check` cho dấu tích; màu, nét và trạng thái mở
+  phải giống control chuẩn.
+- Notes không có picker tài khoản trên toolbar. Danh sách mặc định gồm mọi
+  ghi chú trong workspace; note mới mặc định là ghi chú chung. Sửa note giữ
+  tài khoản đã lưu trong record.
+- “Nhóm theo” là chữ phụ không nền. Nút cây bút dùng menu `FxSelect`; Content
+  bật/tắt nội dung xem trước. Trades/Win rate/PnL chưa khả dụng khi schema chưa
+  có liên kết giao dịch, không suy ra thống kê từ nhãn hay tài khoản của note.
+- Bộ lọc mở `FilterDrawer` bên phải. Basic lọc tài khoản/ngày cập nhật theo
+  múi giờ; Tags dùng `TagFilterControls` chung với ledger, Include/Exclude và
+  AND/OR. Facet nhãn lấy từ ghi chú hiện có. Draft chỉ có hiệu lực khi Apply;
+  Escape hủy draft và trả focus về nút mở.
+
+Kiểm chứng: [Notes controls](../foundation_v2/evidence/notes-controls-20261029/RECEIPT.md).
+
 ## Dùng cho tính năng sau này
 
 Đã có contract cho button, text action, icon action, field, select, checkbox/radio,

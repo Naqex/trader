@@ -1,4 +1,8 @@
 {
+  "Content": {"vi":"Nội dung","en":"Content"},
+  "Đang áp dụng bộ lọc": {"vi":"Đang áp dụng bộ lọc","en":"Filters applied"},
+  "Ngày cập nhật": {"vi":"Ngày cập nhật","en":"Updated date"},
+  "Chưa liên kết giao dịch với ghi chú.": {"vi":"Chưa liên kết giao dịch với ghi chú.","en":"No trades linked to notes yet."},
   "Ngưỡng không đổi theo bộ lọc giao dịch. Đường PnL chỉ gồm lệnh đã đóng; trạng thái challenge lấy từ bảng mục tiêu.": {"vi":"Ngưỡng không đổi theo bộ lọc giao dịch. Đường PnL chỉ gồm lệnh đã đóng; trạng thái challenge lấy từ bảng mục tiêu.","en":"Thresholds do not change with trade filters. PnL contains closed trades only; challenge status comes from the objectives table."},
   "Profit Target": {"vi":"Mục tiêu lợi nhuận","en":"Profit Target"},
   "Max Loss": {"vi":"Giới hạn lỗ","en":"Max Loss"},
