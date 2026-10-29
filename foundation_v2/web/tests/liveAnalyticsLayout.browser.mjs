@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import { chromium } from 'playwright'
 import { mkdir, writeFile } from 'node:fs/promises'
-import { journalRecords, brokerSnapshot, fixtureAccount } from './liveJournal.fixture.mjs'
+import { journalRecords, brokerSnapshot, fixtureAccount, completedDealFills } from './liveJournal.fixture.mjs'
 
 const [origin, out] = process.argv.slice(2)
 assert.equal(new URL(origin).hostname, '127.0.0.1')
@@ -15,6 +15,7 @@ try {
     const ctx = await browser.newContext({ viewport: { width, height: 940 }, reducedMotion: 'reduce' })
     await ctx.addInitScript(theme => localStorage.setItem('tw-theme', theme), theme)
     const records = journalRecords(), broker = brokerSnapshot()
+    broker.deals = completedDealFills(broker.deals)
     broker.account.opening_balance = 10000
     await ctx.routeWebSocket('**/*', socket => socket.close())
     await ctx.route('**/*', route => {

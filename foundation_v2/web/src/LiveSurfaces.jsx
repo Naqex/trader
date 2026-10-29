@@ -24,7 +24,7 @@ import { filterLiveLedgerRows, liveLedgerFacets, liveLedgerRows } from './liveLe
 import { completedLiveTrades } from './liveBrokerTrades.js'
 import { LEDGER_BASE_FILTERS } from './ledgerFilterModel.js'
 import { LIVE_FILTERS, calendarWeeks, calendarWeekSummary, liveCalendarBorders, cumulativeDealSeries, dayKey, dealNet, filterLiveDeals } from './liveWorkspaceModel.js'
-import { buildAnalyticsModel } from './analyticsViewModel.js'
+import { buildAnalyticsModel, dateFromValue } from './analyticsViewModel.js'
 import { DEFAULT_EXTRA_FILTERS } from './tradingAnalyticsModel.js'
 import { AnalyticsCurve, AnalyticsRing } from './AnalyticsCharts.jsx'
 import { ChartHeading, ExpectancyComparison, FxAnalyticsFilters, FxAnalyticsReport } from './FxAnalytics.jsx'
@@ -143,6 +143,7 @@ function LiveAnalyticsReport({ payload, deals, sessionControl, issue }) {
     const ordered = [...datedDeals].sort((a, b) => (a.time_msc || 0) - (b.time_msc || 0))
     let balance = opening
     const ledger = ordered.map((deal, index) => {
+      const trade = deal.record?.payload
       const net = dealNet(deal)
       if (balance !== null && net !== null) balance += net
       else balance = null
@@ -155,14 +156,14 @@ function LiveAnalyticsReport({ payload, deals, sessionControl, issue }) {
         side: deal.type === 0 ? 'BUY' : 'SELL',
         report_time_utc: time,
         close_time_utc: time,
-        open_time_utc: time,
-        price_open: deal.price,
-        price_close: deal.price,
-        quantity: deal.volume,
+        open_time_utc: dateFromValue(deal.open_time_utc ?? trade?.opened_at_utc)?.toISOString() ?? null,
+        price_open: deal.price_open ?? (trade ? Number(trade.entry_price) : null),
+        price_close: deal.price_close ?? (trade ? Number(trade.exit_price) : null),
+        quantity: deal.quantity ?? deal.volume,
         net_pnl: net,
         gross_pnl: deal.profit,
         fees: [deal.commission, deal.swap, deal.fee].every(Number.isFinite) ? deal.commission + deal.swap + deal.fee : null,
-        realized_r: null,
+        realized_r: deal.realized_r ?? null,
         starting_balance: opening,
         account_currency: payload?.account?.currency,
         status: 'closed',
@@ -189,7 +190,7 @@ function LiveAnalyticsReport({ payload, deals, sessionControl, issue }) {
       },
       scope: {
         selected_trade_count: ledger.length,
-        total_trade_count: Array.isArray(payload?.deals) ? payload.deals.length : ledger.length,
+        total_trade_count: deals.length,
         active_filters: false,
         time_basis: 'activity',
       },
@@ -312,7 +313,8 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
     else { url.searchParams.set('playbook',id); if (revision) url.searchParams.set('playbook_revision',revision); else url.searchParams.delete('playbook_revision') }
     navigate(url.pathname+url.search,{replace:true})
   }
-  const deals = useMemo(() => filterLiveDeals(section === 'calendar' ? {...payload,deals:completedLiveTrades(payload)} : payload,{...applied,tags:tag}).filter(deal => !payload?.manual || strategy === 'all' || deal.record?.payload.playbook_id === strategyId && (!strategyRevision || deal.record?.payload.playbook_revision === Number(strategyRevision))),[section,payload,applied,strategy,strategyId,strategyRevision,tag])
+  const completed = useMemo(() => completedLiveTrades(payload), [payload])
+  const deals = useMemo(() => filterLiveDeals({...payload,deals:completed},{...applied,tags:tag}).filter(deal => !payload?.manual || strategy === 'all' || deal.record?.payload.playbook_id === strategyId && (!strategyRevision || deal.record?.payload.playbook_revision === Number(strategyRevision))),[completed,payload,applied,strategy,strategyId,strategyRevision,tag])
   const tradeRows = useMemo(() => section === 'trades' ? liveLedgerRows(payload,tradeScope.timeBasis) : [],[section,payload,tradeScope.timeBasis])
   const filteredTrades = useMemo(() => filterLiveLedgerRows(tradeRows,tradeScope.filters,tradeScope.extra).filter(deal => !payload?.manual || strategy === 'all' || deal.record?.payload.playbook_id === strategyId && (!strategyRevision || deal.record?.payload.playbook_revision === Number(strategyRevision))),[tradeRows,tradeScope,payload?.manual,strategy,strategyId,strategyRevision])
   const readTradeTimeFacets = useCallback(async basis => liveLedgerFacets(liveLedgerRows(payload,basis),timezone),[payload,timezone])
@@ -364,7 +366,7 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
     {section === 'trades' && <div className="live-split"><section className="live-trades-section">{filterBar}<div className="live-trades-content">{payload?.manual ? <ManualTrades columns={columns} writable={!preview && ledger.status === 'ready' && strategyReady} filterKey={JSON.stringify([chosen,tradeScope,strategy])} workspace={workspace} deals={filteredTrades} currency={payload.account.currency} strategies={strategies} onEdit={record => open('trade',record)} /> : payload?.account ? <LiveBrokerSnapshot columns={columns} payload={payload} section="trades" trades={filteredTrades} filterKey={JSON.stringify(tradeScope)} /> : <Empty title="No trades yet" copy="Tạo tài khoản thủ công và thêm giao dịch để bắt đầu." icon="journal" />}</div></section><Summary payload={payload} deals={payload?.manual ? filteredTrades : filteredTrades.filter(trade => trade.status === 'Closed')} sidebar /></div>}
     {section === 'notes' && <JournalNotes accountPicker={accountPicker} readable={journalReadable} writable={!preview && ledger.status === 'ready' && strategyReady} key={chosen} records={ledger.items} accountId={chosen || null} strategies={strategies} onEdit={record => open('note',record)} onCreate={() => open('note')} />}
     {section === 'tag-analytics' && <JournalTags readable={journalReadable} filterKey={JSON.stringify([chosen,applied,strategy,tag])} deals={deals} currency={payload?.account?.currency || ''} />}
-    {section === 'analytics' && <LiveAnalyticsReport payload={payload} deals={payload?.deals || []} issue={calendar.issue} sessionControl={<SessionFilter items={pickerItems} value={calendarSelection} multiple onChange={chooseCalendar} labels={ACCOUNT_PICKER_LABELS} />} />}
+    {section === 'analytics' && <LiveAnalyticsReport payload={payload} deals={completed} issue={calendar.issue} sessionControl={<SessionFilter items={pickerItems} value={calendarSelection} multiple onChange={chooseCalendar} labels={ACCOUNT_PICKER_LABELS} />} />}
     {section === 'trading-accounts' && <LiveAccounts key={workspace} workspace={workspace} accounts={accounts} records={ledger.items} broker={broker} chosen={chosen} onSelect={choose} transactions={query.get('account_tab') === 'transactions'} writable={!preview && ledger.status === 'ready'} canImport={!preview && ledger.status === 'ready' && accounts.length > 0} onCreate={seed => {if(!preview && ledger.status==='ready')setAction({kind:'account',seed})}} onImport={record => openAccountAction('import',record?.record_id ? record : null)} onEdit={record => open('account',record)} onTrade={record=>openAccountAction('trade',record)} onNavigate={navigateAccount} onArchive={archiveAccount} onRefresh={onRefresh} />}
 
     </>}

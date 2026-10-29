@@ -154,8 +154,12 @@ The last row paints no bottom stroke: the month strip's state-colored top border
 there, including below a loss cell. Keyboard focus retains its inset focus ring.
 Weekly totals expose the
 same plus and draft drawer, restricted to eligible dates in the current month.
-The calendar count uses trading execution records (manual closed records or MT5
-fills), labeled trades/giao dịch; it is not a reconstructed round-trip position count.
+Calendar, Trades outcomes, tag analytics and the full Analytics report count the
+same completed trades: manual closed records or reconstructed MT5 lifecycles.
+Reconstruct each account before filtering or combining; opening fills are not
+breakeven trades. Preserve the lifecycle's actual opening side, open/close times,
+weighted prices, known fees and original-stop R. The overview's explicitly labeled
+fill history remains an execution-level report.
 USD totals use a dollar prefix. Known empty covered periods display zero; periods
 without coverage retain an unknown value. Coverage details stay in contextual
 help and the drawer rather than repeated Partial badges. The percent switch is
@@ -605,6 +609,8 @@ Last sync is the last successful data observation, not a connection expiry date.
   summaries with their displayed/total count rather than hiding the truncation.
   Grid strokes share one color, dash and 1px width, with pixel-aligned rendering
   so fractional row/tick positions do not alternate between sharp and blurred.
+  Line-chart label candidates must reference existing points. Empty or unavailable
+  series render the chart's empty state without indexing a first/last point.
   Horizontal bars fill 60% of their category row, adapting to the available height
   and row count rather than leaving a thin fixed-height bar in a mostly empty row.
   Bar values appear in the shared tooltip on hover, focus or tap, never printed
