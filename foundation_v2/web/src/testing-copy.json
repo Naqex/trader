@@ -7278,5 +7278,7 @@
   "Trades by direction": {"vi":"Giao dịch theo hướng lệnh","en":"Trades by direction"},
   "Cumulative PnL in selection": {"vi":"PnL lũy kế trong bộ lọc","en":"Cumulative PnL in selection"},
   "Values hidden": {"vi":"Đã ẩn giá trị","en":"Values hidden"},
+  "Incomplete": {"vi":"Chưa đủ lịch sử","en":"Incomplete history"},
+  "Biến động giá khớp thực tế / khoảng cách đến SL ban đầu, theo chiều lệnh. Không gồm phí; phí đã tính vào PnL ròng.": {"vi":"Biến động giá khớp thực tế / khoảng cách đến SL ban đầu, theo chiều lệnh. Không gồm phí; phí đã tính vào PnL ròng.","en":"Actual fill-price move / original stop distance, signed by trade direction. Excludes fees; fees are included in net PnL."},
   "Số dư từ snapshot tài khoản, không gồm lãi/lỗ thả nổi; độc lập với bộ lọc giao dịch.": {"vi":"Số dư từ snapshot tài khoản, không gồm lãi/lỗ thả nổi; độc lập với bộ lọc giao dịch.","en":"Account snapshot balance, excluding floating P/L; independent of trade filters."}
 }

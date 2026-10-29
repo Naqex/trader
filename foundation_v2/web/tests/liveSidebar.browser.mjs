@@ -19,6 +19,7 @@ try {
     // Intentionally differs from the filtered PnL curve's ending value.
     broker.account.balance = 12345
     broker.deals = broker.deals.slice(0, 3).map((deal, i) => ({ ...deal, profit: [100, -50, 1e-13][i], commission: 0 }))
+    const sourceDeals = broker.deals
     await ctx.routeWebSocket('**/*', socket => socket.close())
     await ctx.route('**/*', route => {
       const req = route.request(), url = new URL(req.url())
@@ -34,6 +35,10 @@ try {
     page.setDefaultTimeout(10000)
     page.on('pageerror', error => report.errors.push(error.message))
     for (const section of ['trades', 'calendar']) {
+      broker.deals = section === 'trades' ? sourceDeals.flatMap((deal, i) => [
+        { ...deal, ticket: 100000 + i, type: deal.type === 0 ? 1 : 0, entry: 0, profit: 0, time_msc: deal.time_msc - 3600000 },
+        deal,
+      ]) : sourceDeals
       await page.goto(`${origin}/?workspace=fixture&view=live&area=live&section=${section}&lang=${lang}&mt5_connection=${fixtureConnection}&live_account=broker:${fixtureConnection}`)
       const side = page.locator('.live-analytics-side'), rows = side.locator('.live-analytics-chart-row')
       await rows.first().waitFor()

@@ -4,11 +4,12 @@ import { useEffect, useRef, useState } from 'react'
 import { useTestingLocale } from './testingLocale.jsx'
 import { displayDate } from './dateFormat.js'
 import TestingIcon from './TestingIcon.jsx'
-import { dealNet } from './liveWorkspaceModel.js'
+import { filterBrokerTrades } from './liveBrokerTrades.js'
+import { liveAccountCapital } from './liveAccountModel.js'
 import { LIVE_TRADE_COLUMNS } from './liveTradeColumns.js'
 import TradeLedgerGrid from './TradeLedgerGrid.jsx'
 
-export default function LiveBrokerSnapshot({ payload, section, deals: filteredDeals, filterKey = '', columns = LIVE_TRADE_COLUMNS.map(([key]) => key) }) {
+export default function LiveBrokerSnapshot({ payload, section, trades, filters, filterKey = '', columns = LIVE_TRADE_COLUMNS.map(([key]) => key) }) {
   const { t, fmt, timezone } = useTestingLocale()
   const [page, setPage] = useState(1), [pageSize, setPageSize] = useState(20), sorting = useTableSort(()=>setPage(1))
   const [selected, setSelected] = useState(''), [checked, setChecked] = useState(new Set())
@@ -17,46 +18,45 @@ export default function LiveBrokerSnapshot({ payload, section, deals: filteredDe
   const account = payload.account
   if (!account) return null
   const currency = account.currency || '', money = value => fmt(value, currency ? ` ${currency}` : '')
-  const capital = Number.isFinite(payload.balance_baseline?.amount) ? payload.balance_baseline.amount : Number.isFinite(account.opening_balance) ? account.opening_balance : null
-  const fees = deal => [deal.commission, deal.swap, deal.fee].every(Number.isFinite) ? deal.commission + deal.swap + deal.fee : null
+  const capital = liveAccountCapital(payload)
+  const accountLogin = payload.account_login || payload.account_binding?.login || account.account_ref
   const time = value => typeof value === 'number' && Number.isFinite(value) ? displayDate(new Date(value), { timeStyle: 'medium', timeZone: timezone }) : '-'
   const side = value => value === 0 ? t('Buy') : value === 1 ? t('Sell') : '-'
-  const entries = ['Entry', 'Exit', 'Reversal', 'Close by']
-  const sortValue = (deal,key) => key === 'account' ? account.account_ref : key === 'status' ? deal.entry === 1 ? 'closed' : 'open' : key === 'source' ? payload.source : ['recorded_at_utc','open_time_utc','report_time_utc','close_time_utc'].includes(key) ? deal.time_msc : key === 'symbol' ? deal.symbol : key === 'side' ? side(deal.type) : key === 'entry_type' ? entries[deal.entry] || '' : key === 'net_pnl' ? dealNet(deal) : key === 'return_pct' ? capital && Number.isFinite(dealNet(deal)) ? dealNet(deal) / capital * 100 : null : key === 'fees' ? fees(deal) : key === 'gross_pnl' ? deal.profit : key === 'quantity' ? deal.volume : key === 'price_open' || key === 'price_close' ? deal.price : deal[key]
-  const deals = sorting.rows(section === 'transactions' ? payload.cashflows || [] : filteredDeals || payload.deals || [], sortValue, [{ key: 'recorded_at_utc', direction: 'desc' }])
+  const sortValue = (deal,key) => key === 'account' ? accountLogin : key === 'source' ? 'Sync' : key === 'side' ? side(deal.type) : key === 'return_pct' ? capital > 0 && Number.isFinite(deal.net_pnl) ? deal.net_pnl / capital * 100 : null : deal[key]
+  const deals = sorting.rows(section === 'transactions' ? payload.cashflows || [] : trades || filterBrokerTrades(payload, filters), sortValue, [{ key: 'recorded_at_utc', direction: 'desc' }])
   const pages = Math.max(1, Math.ceil(deals.length / pageSize)), current = Math.min(page, pages), visible = deals.slice((current - 1) * pageSize, current * pageSize)
   const shown = LIVE_TRADE_COLUMNS.filter(([key]) => columns.includes(key))
   const numericColumns = new Set(['net_pnl', 'return_pct', 'realized_r', 'quantity', 'price_open', 'stop_loss', 'take_profit', 'price_close', 'gross_pnl', 'fees'])
   const centerColumns = new Set(['status', 'side', 'entry_type'])
   const columnClass = key => numericColumns.has(key) ? 'is-numeric' : centerColumns.has(key) ? 'is-center' : ''
   const percentage = value => {
-    if (!capital || !Number.isFinite(value)) return null
+    if (!(capital > 0) || !Number.isFinite(value)) return null
     const result = value / capital * 100
     return Math.abs(result) < 0.005 ? 0 : result
   }
   const cellValue = (deal, key) => {
     switch (key) {
-      case 'account': return account.account_ref || '-'
-      case 'status': return <span className={`fxa-badge is-${deal.entry === 1 ? 'closed' : 'open'}`}>{t(deal.entry === 1 ? 'Closed' : 'Open')}</span>
-      case 'source': return payload.source || t('MT5')
-      case 'recorded_at_utc': return time(deal.time_msc)
-      case 'open_time_utc': return deal.entry === 1 ? '-' : time(deal.time_msc)
+      case 'account': return accountLogin || '-'
+      case 'status': return <span className={`fxa-badge is-${deal.status.toLowerCase()}`}>{t(deal.status)}</span>
+      case 'source': return <span className="fxa-badge is-sync" title={payload.source}>Sync</span>
+      case 'recorded_at_utc': return time(deal.recorded_at_utc)
+      case 'open_time_utc': return time(deal.open_time_utc)
       case 'symbol': return deal.symbol
-      case 'side': return <span className={`fxa-badge is-${deal.type === 0 ? 'buy' : 'sell'}`}>{side(deal.type)}</span>
-      case 'entry_type': return <span className="fxa-badge is-order-type">{entries[deal.entry] ? t(entries[deal.entry]) : '-'}</span>
-      case 'net_pnl': { const value = dealNet(deal); return Number.isFinite(value) ? <span tabIndex={0} className={`wm-return-badge ${value > 0 ? 'is-positive' : value < 0 ? 'is-negative' : 'is-flat'}`}><span aria-hidden="true">{value > 0 ? '↗' : value < 0 ? '↙' : '-'}</span>{fmt(value)}</span> : '-' }
-      case 'return_pct': { const value = percentage(dealNet(deal)); return value === null ? '-' : fmt(value, '%') }
-      case 'realized_r': return '-'
+      case 'side': return deal.type === null ? '-' : <span className={`fxa-badge is-${deal.type === 0 ? 'buy' : 'sell'}`}>{side(deal.type)}</span>
+      case 'entry_type': return deal.entry_type ? <span className="fxa-badge is-order-type">{t(deal.entry_type)}</span> : '-'
+      case 'net_pnl': { const value = deal.net_pnl; return Number.isFinite(value) ? <span tabIndex={0} className={`wm-return-badge ${value > 0 ? 'is-positive' : value < 0 ? 'is-negative' : 'is-flat'}`}><span aria-hidden="true">{value > 0 ? '↗' : value < 0 ? '↙' : '-'}</span>{fmt(value)}</span> : '-' }
+      case 'return_pct': { const value = percentage(deal.net_pnl); return value === null ? '-' : fmt(value, '%') }
+      case 'realized_r': return Number.isFinite(deal.realized_r) ? <span tabIndex={0} data-tooltip={t('Biến động giá khớp thực tế / khoảng cách đến SL ban đầu, theo chiều lệnh. Không gồm phí; phí đã tính vào PnL ròng.')}>{fmt(deal.realized_r)}</span> : '-'
       case 'tags': return '-'
-      case 'price_open': return deal.entry === 1 ? '-' : fmt(deal.price, '', 5)
-      case 'quantity': return fmt(deal.volume, '', 5)
-      case 'stop_loss': return '-'
-      case 'take_profit': return '-'
-      case 'report_time_utc': return deal.entry === 1 ? time(deal.time_msc) : '-'
-      case 'close_time_utc': return deal.entry === 1 ? time(deal.time_msc) : '-'
-      case 'price_close': return deal.entry === 1 ? fmt(deal.price, '', 5) : '-'
-      case 'gross_pnl': return fmt(deal.profit)
-      case 'fees': return fmt(fees(deal))
+      case 'price_open': return fmt(deal.price_open, '', 5)
+      case 'quantity': return fmt(deal.quantity, '', 5)
+      case 'stop_loss': return fmt(deal.stop_loss, '', 5)
+      case 'take_profit': return fmt(deal.take_profit, '', 5)
+      case 'report_time_utc': return time(deal.report_time_utc)
+      case 'close_time_utc': return time(deal.close_time_utc)
+      case 'price_close': return fmt(deal.price_close, '', 5)
+      case 'gross_pnl': return fmt(deal.gross_pnl)
+      case 'fees': return fmt(deal.fees)
       default: return fmt(deal[key])
     }
   }

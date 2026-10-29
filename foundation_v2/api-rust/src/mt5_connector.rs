@@ -356,6 +356,28 @@ pub struct LiveQuery {
     #[serde(default)]
     summary: bool,
 }
+
+fn trade_placement(command: &Value, receipt: &Value, login: &str, server: &str) -> Option<Value> {
+    if receipt["status"] != "filled"
+        || receipt["requires_reconciliation"] == true
+        || command["action"] != "place"
+        || command["account_id"] != login
+        || command["server"] != server
+        || receipt.pointer("/scope/account_id").and_then(Value::as_str) != Some(login)
+        || receipt.pointer("/scope/server").and_then(Value::as_str) != Some(server)
+    {
+        return None;
+    }
+    // Expose only placement facts. Credentials, command internals and preview
+    // policy are not part of the journal read model.
+    Some(json!({
+        "request_id": receipt["request_id"], "deal": receipt["deal"], "order": receipt["order"],
+        "account_login": login, "server": server, "symbol": command["symbol"],
+        "side": command["side"], "order_type": command["order_type"],
+        "volume": command["volume"], "filled_volume": receipt["volume"],
+        "stop_loss": command["stop_loss"], "take_profit": command["take_profit"]
+    }))
+}
 pub async fn live_status(
     State(state): State<Arc<AppState>>,
     scope: Workspace,
@@ -394,6 +416,23 @@ pub async fn live_status(
     }
     value["connections"] = json!(rows.iter().map(public).collect::<Vec<_>>());
     value["execution_capability"] = json!(false);
+    let placement_revision: Value = if !query.summary {
+        if let Some(row) = chosen {
+            let id: Uuid = row.get("connection_id");
+            let revision = conn.query_one(
+                "SELECT count(*),max(updated_at)::text FROM mt5_demo_requests WHERE workspace_id=$1 AND terminal_key=$2 AND status='filled' AND command_body->>'action'='place'",
+                &[&scope.workspace_id, &crate::demo_trading::managed_terminal_key(&scope.workspace_id, id)],
+            ).await.map_err(|_|ApiError::database())?;
+            json!([
+                revision.get::<_, i64>(0),
+                revision.get::<_, Option<String>>(1)
+            ])
+        } else {
+            Value::Null
+        }
+    } else {
+        Value::Null
+    };
     let etag = format!(
         "\"{:x}\"",
         Sha256::digest(
@@ -401,7 +440,8 @@ pub async fn live_status(
                 scope.workspace_id,
                 query.connection_id,
                 query.summary,
-                value
+                value,
+                placement_revision
             ]))
             .unwrap()
         )
@@ -430,6 +470,36 @@ pub async fn live_status(
                     }
                 }
             }
+            let login = value
+                .pointer("/account_binding/login")
+                .and_then(Value::as_str)
+                .unwrap_or("");
+            let server = value
+                .pointer("/account_binding/server")
+                .and_then(Value::as_str)
+                .unwrap_or("");
+            let opening_deals: Vec<String> = value["deals"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter(|deal| deal["entry"] == 0)
+                .filter_map(|deal| deal["ticket"].as_u64().map(|id| id.to_string()))
+                .collect();
+            let receipts = conn.query(
+                "SELECT command_body,result FROM mt5_demo_requests WHERE workspace_id=$1 AND terminal_key=$2 AND status='filled' AND command_body->>'action'='place' AND result->>'deal'=ANY($3)",
+                &[&scope.workspace_id, &crate::demo_trading::managed_terminal_key(&scope.workspace_id, id), &opening_deals],
+            ).await.map_err(|_|ApiError::database())?;
+            value["trade_placements"] = json!(
+                receipts
+                    .iter()
+                    .filter_map(|row| trade_placement(
+                        &row.get::<_, Value>(0),
+                        &row.get::<_, Value>(1),
+                        login,
+                        server
+                    ))
+                    .collect::<Vec<_>>()
+            );
         }
     }
     Ok(([("etag", etag)], Json(value)).into_response())
@@ -650,7 +720,9 @@ async fn run_one(state: &Arc<AppState>) -> Result<(), String> {
     // successful incremental collection needs the previous revision to merge.
     let previous = if include_history && result.is_ok() && !row.get::<_, bool>("full_sync") {
         let previous = conn.query_opt("SELECT snapshot FROM mt5_connections WHERE workspace_id=$1 AND connection_id=$2 AND generation=$3", &[&workspace, &id, &generation]).await.map_err(|_|"mt5_database_unavailable")?;
-        let Some(previous) = previous else { return Ok(()) };
+        let Some(previous) = previous else {
+            return Ok(());
+        };
         previous.get::<_, Option<Value>>(0)
     } else {
         None
@@ -669,7 +741,9 @@ async fn run_one(state: &Arc<AppState>) -> Result<(), String> {
     });
     match result {
         Ok(snapshot) => {
-            persist_snapshot(&conn, &workspace, id, generation, &snapshot).await.map_err(|_| "mt5_database_unavailable")?;
+            persist_snapshot(&conn, &workspace, id, generation, &snapshot)
+                .await
+                .map_err(|_| "mt5_database_unavailable")?;
         }
         Err(code) => {
             let retry_seconds = retry_seconds(&code);
@@ -681,7 +755,9 @@ async fn run_one(state: &Arc<AppState>) -> Result<(), String> {
 
 fn balance_baseline(snapshot: &Value) -> Value {
     let amount = snapshot.pointer("/account/balance").and_then(Value::as_f64);
-    let currency = snapshot.pointer("/account/currency").and_then(Value::as_str);
+    let currency = snapshot
+        .pointer("/account/currency")
+        .and_then(Value::as_str);
     let captured = snapshot["captured_at_utc"].as_str();
     if snapshot["status"] != "ready"
         || !amount.is_some_and(f64::is_finite)
@@ -722,11 +798,31 @@ fn retry_seconds(code: &str) -> f64 {
 mod tests {
     use super::*;
     #[test]
+    fn journal_placement_is_account_bound_and_exposes_only_display_facts() {
+        let command = json!({"action":"place","account_id":"12345","server":"Broker-Demo","symbol":"EURUSD","side":"BUY","order_type":"market","volume":0.01,"stop_loss":1.1,"take_profit":1.2,"private_field":"secret"});
+        let receipt = json!({"status":"filled","requires_reconciliation":false,"scope":{"account_id":"12345","server":"Broker-Demo"},"deal":7,"order":9,"volume":0.01,"estimate":{"estimated_stop_risk":12.0,"currency":"USD"}});
+        let facts = trade_placement(&command, &receipt, "12345", "Broker-Demo").unwrap();
+        assert_eq!(facts["stop_loss"], 1.1);
+        assert!(facts.get("planned_risk").is_none());
+        assert!(facts.get("private_field").is_none());
+        assert!(facts.get("estimate").is_none());
+        assert!(trade_placement(&command, &receipt, "67890", "Broker-Demo").is_none());
+        assert!(trade_placement(&command, &receipt, "12345", "Other").is_none());
+        let mut uncertain = receipt.clone();
+        uncertain["requires_reconciliation"] = json!(true);
+        assert!(trade_placement(&command, &uncertain, "12345", "Broker-Demo").is_none());
+    }
+    #[test]
     fn baseline_requires_a_real_balance_currency_and_observation_time() {
         let snapshot = json!({"status":"ready","account":{"balance":0,"currency":"USD"},"captured_at_utc":"2026-10-23T02:00:00Z"});
         assert_eq!(balance_baseline(&snapshot)["amount"], 0);
         assert_eq!(balance_baseline(&snapshot)["source"], "first_sync");
-        for path in ["/account/balance", "/account/currency", "/captured_at_utc", "/status"] {
+        for path in [
+            "/account/balance",
+            "/account/currency",
+            "/captured_at_utc",
+            "/status",
+        ] {
             let mut incomplete = snapshot.clone();
             *incomplete.pointer_mut(path).unwrap() = Value::Null;
             assert!(balance_baseline(&incomplete).is_null());

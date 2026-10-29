@@ -20,6 +20,7 @@ import { MANUAL_TRADE_COLUMNS, LIVE_TRADE_COLUMNS } from './liveTradeColumns.js'
 import ProjectDateInput from './ProjectDateInput.jsx'
 import { navigate } from './clientNavigation.js'
 import LiveBrokerSnapshot from './LiveBrokerSnapshot.jsx'
+import { filterBrokerTrades } from './liveBrokerTrades.js'
 import { LIVE_FILTERS, calendarWeeks, calendarWeekSummary, liveCalendarBorders, cumulativeDealSeries, dayKey, dealNet, filterLiveDeals } from './liveWorkspaceModel.js'
 import { buildAnalyticsModel } from './analyticsViewModel.js'
 import { DEFAULT_EXTRA_FILTERS } from './tradingAnalyticsModel.js'
@@ -93,7 +94,7 @@ function Summary({ payload, deals, sidebar = false }) {
         <ChartHeading title="Total balance" note={<span>{fmt(count, '', 0)} {t('trades')}</span>} />
         <strong className="live-analytics-chart-value">{format(payload?.account?.balance)}</strong>
         <span className="live-analytics-curve-label">{t('Cumulative PnL in selection')}</span>
-        <AnalyticsCurve series={[pnlPoints]} label={t('Cumulative PnL in selection')} suffix={suffix} height={96} sparkline />
+        <AnalyticsCurve series={[pnlPoints]} label={t('Cumulative PnL in selection')} suffix={suffix} height={96} sparkline showPoints={false} />
       </article>
       <article className="live-analytics-chart-row">
         <div className="live-analytics-expectancy-heading"><strong className="live-analytics-chart-value">{format(average)}</strong><ChartHeading title="Expectancy per trade" /></div>
@@ -298,6 +299,7 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
     navigate(url.pathname+url.search,{replace:true})
   }
   const deals = useMemo(() => filterLiveDeals(payload,{...applied,tags:tag}).filter(deal => !payload?.manual || strategy === 'all' || deal.record?.payload.playbook_id === strategyId && (!strategyRevision || deal.record?.payload.playbook_revision === Number(strategyRevision))),[payload,applied,strategy,strategyId,strategyRevision,tag])
+  const brokerTrades = useMemo(() => filterBrokerTrades(payload,{...applied,tags:tag}),[payload,applied,tag])
   const showContent = preview || ledger.status === 'ready' || ledger.items.length > 0 || Boolean(broker?.account || broker?.connections?.length)
   const journalReadable = preview || ledger.status === 'ready' || ledger.items.length > 0
   const tags = [...new Set((payload?.deals || []).flatMap(deal => deal.record?.payload.tags || []))]
@@ -339,7 +341,7 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
     {showContent && !['calendar','trades','notes','trading-accounts','analytics'].includes(section) && filterBar}
     {showContent && <>
     {section === 'calendar' && <Calendar empty={ledger.status === 'ready' && !calendarIds.length && !broker?.stale} filterBar={showContent ? filterBar : null} canWrite={!preview && ledger.status === 'ready' && calendarIds.length === 1} selectionKey={selectionKey} payload={payload} deals={deals} filters={applied} reviewScope={payload?.manual ? `${strategy === 'all' ? t('Tất cả chiến lược') : `${strategies.find(item => item.record_id === strategyId)?.payload.name || strategyId}${strategyRevision ? ` · v${strategyRevision}` : ` · ${t('mọi phiên bản')}`}`} · ${!tag.length ? t('Tất cả nhãn') : tag.join(', ')}` : t('Synced deals')} onPreview={create} />}
-    {section === 'trades' && <div className="live-split"><section className="live-trades-section">{filterBar}<div className="live-trades-content">{payload?.manual ? <ManualTrades columns={columns} writable={!preview && ledger.status === 'ready' && strategyReady} filterKey={JSON.stringify([chosen,applied,strategy,tag])} workspace={workspace} deals={deals} currency={payload.account.currency} strategies={strategies} onEdit={record => open('trade',record)} /> : payload?.account ? <LiveBrokerSnapshot columns={columns} payload={payload} section="trades" deals={deals} filterKey={JSON.stringify(applied)} /> : <Empty title="No trades yet" copy="Tạo tài khoản thủ công và thêm giao dịch để bắt đầu." icon="journal" />}</div></section><Summary payload={payload} deals={deals} sidebar /></div>}
+    {section === 'trades' && <div className="live-split"><section className="live-trades-section">{filterBar}<div className="live-trades-content">{payload?.manual ? <ManualTrades columns={columns} writable={!preview && ledger.status === 'ready' && strategyReady} filterKey={JSON.stringify([chosen,applied,strategy,tag])} workspace={workspace} deals={deals} currency={payload.account.currency} strategies={strategies} onEdit={record => open('trade',record)} /> : payload?.account ? <LiveBrokerSnapshot columns={columns} payload={payload} section="trades" trades={brokerTrades} filterKey={JSON.stringify(applied)} /> : <Empty title="No trades yet" copy="Tạo tài khoản thủ công và thêm giao dịch để bắt đầu." icon="journal" />}</div></section><Summary payload={payload} deals={payload?.manual ? deals : brokerTrades.filter(trade => trade.status === 'Closed')} sidebar /></div>}
     {section === 'notes' && <JournalNotes accountPicker={accountPicker} readable={journalReadable} writable={!preview && ledger.status === 'ready' && strategyReady} key={chosen} records={ledger.items} accountId={chosen || null} strategies={strategies} onEdit={record => open('note',record)} onCreate={() => open('note')} />}
     {section === 'tag-analytics' && <JournalTags readable={journalReadable} filterKey={JSON.stringify([chosen,applied,strategy,tag])} deals={deals} currency={payload?.account?.currency || ''} />}
     {section === 'analytics' && <LiveAnalyticsReport payload={payload} deals={payload?.deals || []} issue={calendar.issue} sessionControl={<SessionFilter items={pickerItems} value={calendarSelection} multiple onChange={chooseCalendar} labels={ACCOUNT_PICKER_LABELS} />} />}

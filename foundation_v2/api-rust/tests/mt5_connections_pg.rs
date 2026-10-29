@@ -257,6 +257,45 @@ async fn secrets_retries_isolation_and_lifecycle() {
             .unwrap()
             .is_empty()
     );
+    // Placement metadata is independent of the snapshot sync revision, but
+    // must invalidate the full-history validator and remain tenant scoped.
+    let terminal_key = format!(
+        "{:x}",
+        Sha256::digest(format!("mt5-managed:tenant-a:{id}").as_bytes())
+    );
+    let command = json!({"action":"place","account_id":"1234567","server":"Fixture-Demo","symbol":"EURUSD","side":"BUY","order_type":"market","volume":0.01,"stop_loss":1.1,"take_profit":1.2});
+    let receipt = json!({"status":"filled","deal":1,"order":10,"volume":0.01,"scope":{"account_id":"1234567","server":"Fixture-Demo"},"estimate":{"estimated_stop_risk":10.0,"currency":"USD"}});
+    db.execute("UPDATE mt5_connections SET snapshot=jsonb_set(snapshot,'{deals,0,entry}','0') WHERE workspace_id='tenant-a' AND connection_id=$1", &[&connection_id]).await.unwrap();
+    db.execute("INSERT INTO mt5_demo_requests(workspace_id,request_id,terminal_key,fingerprint,status,command_body,result) VALUES('tenant-a',$1,$2,'journal-fixture','filled',$3,$4)", &[&uuid::Uuid::new_v4(),&terminal_key,&command,&receipt]).await.unwrap();
+    let changed = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .uri(&path)
+                .header("x-workspace-id", "tenant-a")
+                .header("if-none-match", etag.clone())
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(changed.status(), 200);
+    assert_ne!(changed.headers()["etag"], etag);
+    let enriched: Value =
+        serde_json::from_slice(&to_bytes(changed.into_body(), 1024 * 1024).await.unwrap()).unwrap();
+    assert!(
+        enriched["trade_placements"][0]
+            .get("planned_risk")
+            .is_none()
+    );
+    assert_eq!(enriched["trade_placements"][0]["stop_loss"], 1.1);
+    assert!(
+        enriched["trade_placements"][0]
+            .get("command_body")
+            .is_none()
+    );
+    let isolated = request(&app, "GET", &path, "tenant-b", Value::Null).await;
+    assert!(isolated.1.get("trade_placements").is_none());
     let other = app
         .clone()
         .oneshot(

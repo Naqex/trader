@@ -142,6 +142,8 @@
 .fxa-viz .fxa-gridline,.fxa-radar .fxa-gridline{stroke:var(--project-grid);stroke-dasharray:4 5;stroke-width:1}
 .fxa-viz-point{fill:currentColor;stroke:var(--wm-canvas);stroke-width:1;cursor:pointer}
 .fxa-viz-point:focus-visible{outline:none;stroke:var(--wm-content);stroke-width:3}
+.fxa-line-viz[data-show-points=false] :is(.fxa-viz-point,.fxa-series-point){fill:transparent;stroke:none;r:6px;cursor:default}
+.fxa-line-viz[data-show-points=false] :is(.fxa-viz-point,.fxa-series-point):focus-visible{stroke:var(--wm-focus);stroke-width:2}
 .fxa-viz g[tabindex]:focus-visible{outline:none}
 .fxa-viz g[tabindex]:focus-visible rect[fill=transparent]{stroke:var(--wm-primary);stroke-width:1}
 .fxa-fill-positive{fill:var(--report-positive)}

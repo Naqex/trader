@@ -651,6 +651,20 @@ Last sync is the last successful data observation, not a connection expiry date.
 - Trade ledger Return columns use **Lợi nhuận** with the account currency, `%`
   and `R`. Money is net after costs; percentage uses explicit starting capital;
   R retains the source risk denominator. Mixed currencies stay identified per row.
+  The MT5 Live trade grid reconstructs position lifecycles from the complete deal
+  history before side/outcome/date filtering. Opening side, weighted fill prices
+  and all known fees belong to one row; missing ancestry, reversals or inventory
+  disagreement remain incomplete. Closed outcome charts exclude open/incomplete
+  positions. Calendar deal-based coverage/counts retain their separate contract.
+  Live price R is the signed actual fill-price move divided by the original stop
+  distance; it excludes fees (net money includes them). Use the original placement
+  linked to the exact opening deal/order/account, never a preview quote, current
+  moved SL or another account's receipt. Missing original SL keeps R unavailable.
+  The tooltip states this basis; do not mix it with a net-after-cost risk-budget R.
+  Show the verified account login in full and a compact Sync source badge; keep
+  broker/server detail in the tooltip. Market/Limit/Stop describes order type,
+  never deal entry/exit. Sidebar PnL curves hide point markers while retaining
+  tooltip/focus targets through the shared chart component.
   Net/gross money badges omit currency glyphs; their hover/focus tooltip and
   accessible name retain the row currency. Fees retain their currency context.
   Small nonzero returns use significant digits rather than rounding to zero.

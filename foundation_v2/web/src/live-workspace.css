@@ -380,6 +380,8 @@
 .live-source-details dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .live-source-details dd { margin: 4px 0 0; color: var(--wm-content); overflow-wrap: anywhere; }
 .live-broker { min-width: 0; }
+.live-broker [data-column=account] { min-width:112px; white-space:nowrap; font-variant-numeric:tabular-nums; }
+.live-broker .fxa-badge.is-sync { color:var(--report-blue); background:color-mix(in srgb,var(--report-blue) 12%,var(--wm-canvas)); }
 .fx-app .live-workspace .live-analytics-report { box-sizing:border-box; width:100%; max-width:none; margin:0; padding:var(--wm-page-start) var(--wm-page-gutter) 0; }
 .fx-app .live-analytics-report > .fxa-analytics-filters { margin-bottom:0; }
 .live-broker .live-section-heading { flex-wrap: wrap; }
