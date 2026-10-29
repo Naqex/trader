@@ -33,6 +33,8 @@ try {
     await page.goto(`${origin}/?workspace=fixture&view=live&area=live&section=terminal&lang=vi&mt5_connection=a`)
     const overview=page.getByTestId('mt5-overview'),picker=page.getByRole('button',{name:'Chọn tài khoản MT5',exact:true})
     await overview.getByTestId('mt5-account-balance').getByText('$10.000',{exact:true}).waitFor()
+    await overview.locator('.mt5-report .fxs-chart-empty').first().waitFor()
+    assert.equal(await page.getByRole('alert').filter({hasText:'Không mở được trang này'}).count(),0,'Empty history renders chart empty states without crashing the page')
     assert.match(await picker.innerText(),/MT5 111 - demo/)
     assert.match(await picker.innerText(),/MT5[\s\S]*\$10.000/)
     assert.equal(await picker.getAttribute('aria-haspopup'),'dialog')

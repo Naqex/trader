@@ -58,7 +58,7 @@ export function ReportLineChart({ title, points, currency, emptyLabel = 'Chưa c
   const paths = groups.map(group => ({ group, path: reportCurvePath(group.map(({ point, index }) => [x(point, index), y(point.value)])) }))
   const midpoint = (left + right) / 2
   const midpointIndex = points.reduce((best, point, index) => Math.abs(x(point, index) - midpoint) < Math.abs(x(points[best], best) - midpoint) ? index : best, 0)
-  const candidates = [...new Set(right - left < 180 ? [points.length - 1] : width < 420 ? [0, points.length - 1] : [0, midpointIndex, points.length - 1])].filter(index => index >= 0)
+  const candidates = [...new Set(right - left < 180 ? [points.length - 1] : width < 420 ? [0, points.length - 1] : [0, midpointIndex, points.length - 1])].filter(index => index >= 0 && index < points.length)
   const labels = candidates.reduce((chosen, index) => {
     const gap = Math.max(28, lineLabel(points[index]).length * 6.5 + 10)
     if (!chosen.length || (lineLabel(points[index]) !== lineLabel(points[chosen.at(-1)]) && chosen.every(other => Math.abs(x(points[index], index) - x(points[other], other)) >= gap))) chosen.push(index)
