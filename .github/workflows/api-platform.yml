@@ -52,6 +52,7 @@ jobs:
           $PSNativeCommandUseErrorActionPreference = $true
           python -m pip install uv==0.12.5
           uv sync --locked --project foundation_v2
+          foundation_v2/.venv/Scripts/python.exe -B -m unittest discover -s tests -p test_release_workflow.py -v
           foundation_v2/.venv/Scripts/python.exe -B foundation_v2/scripts/export_api_command_contracts.py --check
           foundation_v2/.venv/Scripts/python.exe -B foundation_v2/scripts/api_platform_openapi.py
           foundation_v2/.venv/Scripts/python.exe -B foundation_v2/api-rust/tests/export_prop_schemas.py --check
