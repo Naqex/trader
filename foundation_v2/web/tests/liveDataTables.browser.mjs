@@ -117,6 +117,13 @@ for(const [width,theme]of[[1440,'dark'],[390,'light']]){
  }
  if(name==='broker'||name==='manual'){await footer.getByRole('button',{name:'Trang sau',exact:true}).click();assert.equal(await footer.locator('.wm-pagination-meta > span').count(),0)}
  if(name==='manual')assert.equal(await footer.getByRole('button',{name:'Xuất CSV',exact:true}).count(),1,'Manual trades keeps the CSV action')
+ if(name==='labels' && width===390){
+  await page.setViewportSize({width:320,height:940})
+  const bars=root.locator('.live-tag-bars')
+  assert(await bars.evaluate(el=>el.scrollWidth<=el.clientWidth),'Tag bars shrink within a 320px viewport')
+  await page.screenshot({path:`${out}/labels-320-${theme}.png`})
+  await page.setViewportSize({width,height:940})
+ }
  const g=await root.evaluate(el=>{const v=el.querySelector('.wm-table-scroll'),f=el.querySelector('.wm-pagination'),r=f.getBoundingClientRect(),c=f.querySelector('.wm-pagination-controls').getBoundingClientRect(),s=f.querySelector('.wm-pagination-size').getBoundingClientRect();return{rows:el.querySelectorAll('tbody tr').length,collapse:getComputedStyle(v.querySelector('table')).borderCollapse,footerWidth:r.width,docOverflow:document.documentElement.scrollWidth>innerWidth+1,pagerOverlap:c.right>s.left+1,brokenButtons:[...f.querySelectorAll('.wm-pagination-meta button')].some(b=>b.scrollWidth>b.clientWidth+1),headerWidths:[...v.querySelectorAll('th:has(>.wm-table-sort)')].map(h=>Math.abs(h.getBoundingClientRect().width-h.querySelector('button').getBoundingClientRect().width))}})
  assert.equal(g.collapse,'separate');assert.equal(g.docOverflow,false);assert.equal(g.pagerOverlap,false);assert.equal(g.brokenButtons,false);assert(g.headerWidths.every(w=>w<1));report.checks.push({name,width,theme,...g});await page.screenshot({path:`${out}/${name}-${width}-${theme}.png`})
  }

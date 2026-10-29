@@ -48,8 +48,8 @@ try{
  for(const width of (process.env.TW_QA_CASE?[]:[1440,390]))for(const theme of ['dark','light']){
   scenario='ready';const {context,page}=await setup(width,theme)
   await page.goto(url())
-  await page.getByTestId('mt5-account-balance').getByText('10.000 USD',{exact:true}).waitFor()
-  await page.locator('.mt5-report .fxs-metric').first().getByText('26 USD',{exact:true}).waitFor()
+  await page.getByTestId('mt5-account-balance').getByText('$10.000',{exact:true}).waitFor()
+  await page.locator('.mt5-report .fxs-metric').first().getByText('$26',{exact:true}).waitFor()
   assert.equal(await page.getByText('10000',{exact:true}).count(),0)
   assert.equal(await page.locator('.mt5-report .fxs-metric').count(),4)
   assert.ok(await page.locator('.mt5-account-card .fxs-go-chart').evaluate(node=>node.clientWidth<300||innerWidth<480))
@@ -63,10 +63,10 @@ try{
   assert.equal(await page.locator('.wm-notification').count(),0)
   await page.screenshot({path:`${output}/chart-${width}-${theme}.png`})
   await page.frameLocator('.advanced-chart-host iframe').getByRole('link',{name:'Trở về tổng quan MT5'}).click()
-  await page.getByRole('region',{name:'Biểu đồ gần đây'}).waitFor()
-  assert.equal(await page.locator('.mt5-recent-list button').count(),1)
-  await page.reload();await page.getByRole('region',{name:'Biểu đồ gần đây'}).waitFor()
-  report.cases.push({width,theme,loadedOverview:true,orangeAI:true,recentAfterBackAndReload:true})
+  await page.getByTestId('mt5-account-balance').getByText('$10.000',{exact:true}).waitFor()
+  assert.notEqual(new URL(page.url()).searchParams.get('surface'),'workspace')
+  await page.reload();await page.getByTestId('mt5-account-balance').getByText('$10.000',{exact:true}).waitFor()
+  report.cases.push({width,theme,loadedOverview:true,orangeAI:true,overviewAfterBackAndReload:true})
   await context.close()
  }
  if(!process.env.TW_QA_CASE){

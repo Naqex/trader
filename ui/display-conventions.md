@@ -31,6 +31,34 @@ illustration, one title and one creation action; omit pagination and helper copy
 when there are no results. Edit/group controls remain disabled until their
 behavior is defined. Existing search, tag filtering and write permissions remain
 owned by the journal; the demo never gains write access for visual parity.
+Closing a transient search with Escape returns focus to its trigger. Journal
+lists and label reports show an empty state only after a successful read; a
+failed first read keeps the existing error/retry state without claiming there
+are no records. Refresh failures may retain the last successfully read records.
+Compact label bars must shrink inside the content width at 320px, independently
+of the table's intentional horizontal scrolling; root clipping is not evidence
+that their grid tracks fit.
+
+Live Calendar and Trades share the same flat analytics sidebar. Each row owns
+one full-width bottom separator; the pane owns its vertical divider. Heading
+labels and icon controls share the vertical center and remain within the pane.
+The money/percentage selector applies to every PnL value, comparison, curve and
+tooltip. Its money option follows the selected account currency. Percentages
+require valid positive source capital; missing capital stays N/A. Source
+capital comes from explicit opening capital or the same dated, currency-matched
+baseline used by account transactions. Calendar, sidebar and Analytics share
+that resolver. A first-sync baseline can seed capital only if it precedes all
+imported trading deals with known timestamps; otherwise it may already contain
+their PnL and remains unavailable as opening capital. Pooled capital requires a
+valid positive amount for every source.
+Do not substitute current balance for an unavailable capital source. Snapshot
+balance remains a monetary account fact, separate from the explicitly labelled
+filtered cumulative PnL sparkline; filtered deals never reconstruct balance.
+Live's shared Analytics report also shows the actual account snapshot balance,
+without a percentage computed from filtered deals beside that balance.
+Missing PnL must not count as breakeven or produce a known win rate/payoff mean.
+Hiding values removes chart labels, legends, tooltips and accessible numeric
+descriptions together; a CSS blur or a masked heading alone is insufficient.
 
 ## Time ownership
 

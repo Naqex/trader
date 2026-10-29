@@ -1,6 +1,17 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { liveAccountRows, accountTransactions, accountCashSummary, accountInitialBalance, accountDraftErrors, duplicateAccountSeed, mt5AccountName } from '../src/liveAccountModel.js'
+import { liveAccountRows, accountTransactions, accountCashSummary, accountInitialBalance, liveAccountCapital, accountDraftErrors, duplicateAccountSeed, mt5AccountName } from '../src/liveAccountModel.js'
+
+test('reports reuse the dated initial account balance without substituting the current snapshot',()=>{
+  const snapshot={account:{currency:'USD',balance:9999},deals:[],balance_baseline:{amount:10000,currency:'USD',captured_at_utc:'2026-10-01T00:00:00Z'}}
+  assert.equal(liveAccountCapital(snapshot),10000)
+  for(const patch of [{currency:'EUR'},{captured_at_utc:null},{amount:'10000'},{amount:NaN}]) assert.equal(liveAccountCapital({...snapshot,balance_baseline:{...snapshot.balance_baseline,...patch}}),null)
+  assert.equal(liveAccountCapital({...snapshot,balance_baseline:null}),null)
+  for(const time_msc of [Date.parse('2026-09-30T12:00:00Z'),Date.parse('2026-10-01T00:00:00Z'),null]) assert.equal(liveAccountCapital({...snapshot,deals:[{type:0,time_msc}]}),null,'A snapshot containing earlier PnL is not opening capital')
+  assert.equal(liveAccountCapital({...snapshot,deals:undefined}),null)
+  for(const value of [0,-1,2000]) assert.equal(liveAccountCapital({...snapshot,account:{...snapshot.account,opening_balance:value}}),value)
+  assert.equal(liveAccountCapital({...snapshot,account:{...snapshot.account,opening_balance:'2000'}}),null)
+})
 
 test('MT5 names use verified login and environment with an optional owner label',()=>{
   const connection={name:'MetaTrader 5',account_login:'464104926',login_hint:'…4926',account_environment:'demo'}

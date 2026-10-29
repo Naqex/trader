@@ -137,15 +137,16 @@ function OutcomeStats({ data }) {
     return <article className={`fxa-outcomes is-${type}`} key={type}><h3>{t(label)}</h3><dl>{rows.map(([name, value, help]) => <div key={name}><dt>{t(name)}<Info text={help}/></dt><dd>{value}</dd></div>)}</dl></article>
   })}</div>
 }
-export function ExpectancyComparison({ data, currency }) {
+export function ExpectancyComparison({ data, currency, suffix = ` ${currency}` }) {
   const { t, fmt } = useTestingLocale()
   const total = Math.abs(data.averageWin ?? 0) + Math.abs(data.averageLoss ?? 0)
-  return <div className="fxa-expectancy-comparison" role="img" aria-label={`${t('Lãi trung bình')}: ${fmt(data.averageWin, ` ${currency}`)}; ${t('Lỗ trung bình')}: ${fmt(data.averageLoss, ` ${currency}`)}`}>
+  const format = value => known(value) ? fmt(value, suffix) : 'N/A'
+  return <div className="fxa-expectancy-comparison" role="img" aria-label={`${t('Lãi trung bình')}: ${format(data.averageWin)}; ${t('Lỗ trung bình')}: ${format(data.averageLoss)}`}>
     <div className="fxa-average-bar" aria-hidden="true">{total > 0 && <>
       {Math.abs(data.averageWin ?? 0) > 0 && <i className="is-win" style={{ flex: Math.abs(data.averageWin) }}/>}
       {Math.abs(data.averageLoss ?? 0) > 0 && <i className="is-loss" style={{ flex: Math.abs(data.averageLoss) }}/>}
     </>}</div>
-    <div className="fxa-average-labels"><span><strong>{fmt(data.averageWin, ` ${currency}`)}</strong></span><span><strong>{fmt(data.averageLoss, ` ${currency}`)}</strong></span></div>
+    <div className="fxa-average-labels"><span><strong>{format(data.averageWin)}</strong></span><span><strong>{format(data.averageLoss)}</strong></span></div>
   </div>
 }
 
@@ -184,7 +185,7 @@ export function ChartHeading({ title, help, note }) {
   const { t } = useTestingLocale()
   return <div className="fxa-chart-heading"><h3>{t(title)}{help && <Info text={help}/>}</h3>{note && <span>{note}</span>}</div>
 }
-export function AnalyticsPerformance({ model, data, extra, onSelect, selected, threshold, onThreshold, experiments, propReport, active = true, experimentScope, onNeedExperiments }) {
+export function AnalyticsPerformance({ model, data, accountBalance, extra, onSelect, selected, threshold, onThreshold, experiments, propReport, active = true, experimentScope, onNeedExperiments }) {
   const riskRef = useVisibleExperiments(active, experimentScope, onNeedExperiments)
   const { t, fmt, locale } = useTestingLocale(), [metric,setMetric] = useState('net'), [interval,setInterval] = useState('all')
   const currency=model.result?.account_currency||t('Đơn vị tài khoản'), suffix=metric==='winRate'||metric==='profitPct'?'%':metric==='averageR'?' R':metric==='net'?` ${currency}`:''
@@ -206,7 +207,7 @@ export function AnalyticsPerformance({ model, data, extra, onSelect, selected, t
     <ReportSection title="Profit and loss" className="fxa-profit-panel" actions={<UnitTabs label="Phạm vi biểu đồ" value={interval} onChange={setInterval} options={[["all",'Tất cả'],['day','Ngày'],['hour','1 giờ'],['quarter','15 phút']]}/>}>
       <div className="fxa-metrics fxa-profit-metrics">
         <Stat label="Total PnL" value={<>{fmt(data.net,` ${currency}`)}<PercentChange value={totalPercent}/></>} help="Lãi/lỗ cho biết số tiền bạn kiếm được hoặc mất đi. Giá trị hiện tại là lãi/lỗ ròng sau phí trong bộ lọc."/>
-        <Stat label="Số dư tài khoản" value={<>{fmt(data.endingBalance,` ${currency}`)}<PercentChange value={totalPercent}/></>} help={data.localFiltered||model.result?.scope?.active_filters?'Số dư dựng lại từ vốn ban đầu và các giao dịch đã lọc.':'Số dư tài khoản sau các giao dịch đã đóng trong phạm vi đang chọn; không bao gồm lãi/lỗ thả nổi.'}/>
+        <Stat label="Số dư tài khoản" value={<>{fmt(accountBalance === undefined ? data.endingBalance : accountBalance,` ${currency}`)}{accountBalance === undefined && <PercentChange value={totalPercent}/>}</>} help={accountBalance !== undefined ? 'Số dư từ snapshot tài khoản, không gồm lãi/lỗ thả nổi; độc lập với bộ lọc giao dịch.' : data.localFiltered||model.result?.scope?.active_filters?'Số dư dựng lại từ vốn ban đầu và các giao dịch đã lọc.':'Số dư tài khoản sau các giao dịch đã đóng trong phạm vi đang chọn; không bao gồm lãi/lỗ thả nổi.'}/>
         <Stat label="Win rate" value={fmt(data.winRate,'%')} help="Tỷ lệ giao dịch kết thúc có lãi trên tổng giao dịch đã đóng."/>
         <Stat label="Total trades" value={<>{fmt(data.count,'',0)}<sup className="fxa-trade-split"><span aria-label={t('Thắng / thua')}>{fmt(data.wins,'',0)}/{fmt(data.losses,'',0)}</span><Info mini text="Số bên trái là giao dịch thắng; số bên phải là giao dịch thua. Không bao gồm giao dịch hòa vốn."/></sup></>} help="Tổng số giao dịch đã đóng, bao gồm lệnh thắng, thua và hòa vốn."/>
         <Stat label="Giao dịch hòa vốn" value={fmt(data.breakeven,'',0)} help="Tổng số giao dịch hòa vốn theo ngưỡng đang áp dụng."/>
@@ -521,7 +522,7 @@ export function AnalyticsSimulation({ model, data, config, loadExperiment, timez
 }
 
 
-export function FxAnalyticsReport({ model, extra, experiments, experimentStatus, experimentError, config, selected, onSelect, onTabChange, loadExperiment, propReport, experimentScope, onNeedExperiments }) {
+export function FxAnalyticsReport({ model, accountBalance, extra, experiments, experimentStatus, experimentError, config, selected, onSelect, onTabChange, loadExperiment, propReport, experimentScope, onNeedExperiments }) {
   const { t } = useTestingLocale()
 
   const [threshold, setThreshold] = useState(0)
@@ -541,7 +542,7 @@ export function FxAnalyticsReport({ model, extra, experiments, experimentStatus,
   const empty = !data.count ? model.result?.partial || model.result?.status === 'partial' ? <TestingTradesEmpty incomplete /> : model.result?.scope?.total_trade_count === 0 ? <TestingTradesEmpty /> : model.ledger.length || model.result?.scope?.total_trade_count > 0 ? <TestingTradesEmpty filtered /> : null : null
   if (empty && !propReport) return empty
   return <><div className="fxa-report-tabs" role="tablist" aria-label={t("Phân tích")}><>{[['performance', 'Performance'], ['drawdown', 'Drawdown'], ['simulation', 'Simulation']].map(([value, label]) => <button className="fxa-tab" id={`fxa-tab-${value}`} role="tab" key={value} aria-selected={tab === value} aria-controls="fxa-report-panel" tabIndex={tab === value ? 0 : -1} onKeyDown={event => { const tabs = ['performance', 'drawdown', 'simulation']; if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) { event.preventDefault(); const index = event.key === 'Home' ? 0 : event.key === 'End' ? 2 : (tabs.indexOf(tab) + (event.key === 'ArrowRight' ? 1 : 2)) % 3; choose(tabs[index]); document.getElementById(`fxa-tab-${tabs[index]}`)?.focus() } }} onClick={() => choose(value)}>{t(label)}</button>)}</></div><div id="fxa-report-panel" role="tabpanel" aria-labelledby={`fxa-tab-${tab}`} tabIndex={0}>
-    {(tab === 'performance' || visitedTabs.has('performance')) && <div hidden={tab !== 'performance'}>{empty ? <>{propReport && <PropChallengeObjectives report={propReport}/>} {empty}</> : <AnalyticsPerformance model={model} data={data} extra={extra} onSelect={onSelect} selected={selected} threshold={threshold} onThreshold={setThreshold} experiments={experiments} propReport={propReport} active={tab === 'performance'} experimentScope={experimentScope} onNeedExperiments={onNeedExperiments}/>}</div>}
+    {(tab === 'performance' || visitedTabs.has('performance')) && <div hidden={tab !== 'performance'}>{empty ? <>{propReport && <PropChallengeObjectives report={propReport}/>} {empty}</> : <AnalyticsPerformance model={model} data={data} accountBalance={accountBalance} extra={extra} onSelect={onSelect} selected={selected} threshold={threshold} onThreshold={setThreshold} experiments={experiments} propReport={propReport} active={tab === 'performance'} experimentScope={experimentScope} onNeedExperiments={onNeedExperiments}/>}</div>}
     {(tab === 'drawdown' || visitedTabs.has('drawdown')) && <div hidden={tab !== 'drawdown'}>{empty || <AnalyticsDrawdown model={model} data={data} extra={extra} experiments={experiments} experimentStatus={experimentStatus} experimentError={experimentError} active={tab === 'drawdown'} experimentScope={experimentScope} onNeedExperiments={onNeedExperiments} />}</div>}
     {(tab === 'simulation' || visitedTabs.has('simulation')) && <div hidden={tab !== 'simulation'}>{empty || <AnalyticsSimulation key={JSON.stringify([model.result?.session_id, model.result?.revision, model.result?.cursor_index, model.result?.execution_event_sequence, model.result?.filters, extra])} model={model} data={data} experiments={experiments} experimentStatus={experimentStatus} experimentError={experimentError} config={config} loadExperiment={loadExperiment} timezone={extra?.timezone} />}</div>}
   </div></>

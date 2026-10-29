@@ -69,6 +69,16 @@ export function accountInitialBalance(row) {
     ? {amount:baseline.amount,currency:baseline.currency,time:Date.parse(baseline.captured_at_utc)} : null
 }
 
+export function liveAccountCapital(snapshot) {
+  const explicit = snapshot?.account?.opening_balance
+  if (explicit != null) return known(explicit) ? explicit : null
+  const initial = snapshot ? accountInitialBalance({ snapshot }) : null
+  // A first-sync snapshot may already include imported historical PnL.
+  // It can seed the report only when it precedes every imported trading deal.
+  if (!initial || !Array.isArray(snapshot.deals) || snapshot.deals.some(deal => [0,1].includes(deal.type) && (!known(deal.time_msc) || deal.time_msc <= initial.time))) return null
+  return initial?.currency === snapshot?.account?.currency ? initial?.amount ?? null : null
+}
+
 export function accountCashSummary(row) {
   const transactions = accountTransactions(row)
   const sum = kind => !row || row.record || !Array.isArray(row.snapshot.cashflows) || transactions.some(item => item.amount === null) ? null : transactions.filter(item => item.kind === kind).reduce((total,item) => total + item.amount,0)

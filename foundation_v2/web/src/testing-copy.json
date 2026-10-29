@@ -7272,5 +7272,11 @@
   "Analytics display": {"vi":"Cách hiển thị phân tích","en":"Analytics display"},
   "Hide values": {"vi":"Ẩn giá trị","en":"Hide values"},
   "Show values": {"vi":"Hiện giá trị","en":"Show values"},
-  "Net deal PnL": {"vi":"Lãi/lỗ ròng từ deal","en":"Net deal PnL"}
+  "Net deal PnL": {"vi":"Lãi/lỗ ròng từ deal","en":"Net deal PnL"},
+  "Expectancy comparison": {"vi":"So sánh kỳ vọng","en":"Expectancy comparison"},
+  "per trade": {"vi":"/ giao dịch","en":"per trade"},
+  "Trades by direction": {"vi":"Giao dịch theo hướng lệnh","en":"Trades by direction"},
+  "Cumulative PnL in selection": {"vi":"PnL lũy kế trong bộ lọc","en":"Cumulative PnL in selection"},
+  "Values hidden": {"vi":"Đã ẩn giá trị","en":"Values hidden"},
+  "Số dư từ snapshot tài khoản, không gồm lãi/lỗ thả nổi; độc lập với bộ lọc giao dịch.": {"vi":"Số dư từ snapshot tài khoản, không gồm lãi/lỗ thả nổi; độc lập với bộ lọc giao dịch.","en":"Account snapshot balance, excluding floating P/L; independent of trade filters."}
 }

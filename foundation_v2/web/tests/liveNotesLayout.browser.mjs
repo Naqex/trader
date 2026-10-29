@@ -14,7 +14,7 @@ try {
   for (const [width, theme, language] of [[1920, 'dark', 'vi'], [1440, 'light', 'en'], [390, 'dark', 'vi']]) {
     const ctx = await browser.newContext({ viewport: { width, height: 940 }, reducedMotion: 'reduce' })
     await ctx.addInitScript(theme => localStorage.setItem('tw-theme', theme), theme)
-    let records = journalRecords().filter(record => record.kind !== 'note')
+    let records = journalRecords().filter(record => record.kind !== 'note'), failRecords = false
     const broker = brokerSnapshot()
     await ctx.routeWebSocket('**/*', socket => socket.close())
     await ctx.route('**/*', route => {
@@ -22,7 +22,7 @@ try {
       if (url.origin !== origin) return route.abort()
       if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method())) { report.writes.push(url.pathname); return route.abort() }
       if (!url.pathname.startsWith('/api/')) return route.continue()
-      if (url.pathname === '/api/v2/live/records') return route.fulfill({ json: { version: 'live-records-v1', items: records } })
+      if (url.pathname === '/api/v2/live/records') return route.fulfill(failRecords ? { status: 503, json: { detail: 'fixture_unavailable' } } : { json: { version: 'live-records-v1', items: records } })
       if (url.pathname === '/api/v2/live/status') return route.fulfill({ json: broker })
       if (url.pathname === '/api/v2/live/connections') return route.fulfill({ json: { items: broker.connections } })
       if (url.pathname.startsWith('/api/v2/mt5')) return route.abort()
@@ -48,6 +48,13 @@ try {
       return { left: toolbar.left - pane.left, right: pane.right - toolbar.right, artCenter: art.left + art.width / 2 - (pane.left + pane.width / 2), overflow: el.scrollWidth - el.clientWidth }
     })
     assert(Object.values(layout).every(n => Math.abs(n) <= 1), 'Full-width toolbar, centered art, no horizontal overflow')
+    const searchTrigger = toolbar.getByRole('button', { name: language === 'vi' ? 'Tìm ghi chú' : 'Search notes', exact: true })
+    await searchTrigger.click()
+    const searchbox = toolbar.getByRole('searchbox')
+    await searchbox.focus()
+    await page.keyboard.press('Escape')
+    assert.equal(await searchbox.count(), 0)
+    assert(await searchTrigger.evaluate(el => el === document.activeElement), 'Closing search restores keyboard focus to its trigger')
     await page.screenshot({ path: `${out}/empty-${width}-${theme}-${language}.png` })
     await notes.locator('.live-notes-groups .is-active').hover()
     await page.screenshot({ path: `${out}/hover-${width}-${theme}.png` })
@@ -84,6 +91,22 @@ try {
       assert.equal(await notes.locator('.live-note-row').count(), 20)
       await page.screenshot({ path: `${out}/populated-${width}-${theme}.png` })
       report.cases.push({ name: 'populated-search-tags-reset-pagination' })
+      failRecords = true
+      await page.reload()
+      await page.locator('.live-status-error').waitFor()
+      assert.equal(await notes.locator('.live-notes-empty, .live-note-row').count(), 0, 'A failed initial read is not an empty journal')
+      failRecords = false
+      await page.getByRole('button', { name: 'Thử lại', exact: true }).click()
+      await notes.locator('.live-note-row').first().waitFor()
+      report.cases.push({ name: 'notes-read-error-retry' })
+      failRecords = true
+      await page.goto(route.replace('section=notes', `section=tag-analytics&live_account=${fixtureAccount}`))
+      await page.locator('.live-status-error').waitFor()
+      assert.equal(await page.locator('.live-journal-tags .live-empty').count(), 0, 'Unavailable journal labels must not become a false empty report')
+      failRecords = false
+      await page.getByRole('button', { name: 'Thử lại', exact: true }).click()
+      await page.locator('.live-tag-bars').waitFor()
+      report.cases.push({ name: 'tags-read-error-retry' })
     }
     await ctx.close()
   }

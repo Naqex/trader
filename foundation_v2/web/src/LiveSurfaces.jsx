@@ -1,4 +1,4 @@
-import { mt5AccountName } from './liveAccountModel.js'
+import { liveAccountCapital, mt5AccountName } from './liveAccountModel.js'
 import { displayDate } from './dateFormat.js'
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { useTestingLocale } from './testingLocale.jsx'
@@ -19,7 +19,7 @@ import { MANUAL_TRADE_COLUMNS, LIVE_TRADE_COLUMNS } from './liveTradeColumns.js'
 import ProjectDateInput from './ProjectDateInput.jsx'
 import { navigate } from './clientNavigation.js'
 import LiveBrokerSnapshot from './LiveBrokerSnapshot.jsx'
-import { LIVE_FILTERS, calendarWeeks, calendarWeekSummary, liveCalendarBorders, dayKey, dealNet, filterLiveDeals, summarizeDeals } from './liveWorkspaceModel.js'
+import { LIVE_FILTERS, calendarWeeks, calendarWeekSummary, liveCalendarBorders, cumulativeDealSeries, dayKey, dealNet, filterLiveDeals } from './liveWorkspaceModel.js'
 import { buildAnalyticsModel } from './analyticsViewModel.js'
 import { DEFAULT_EXTRA_FILTERS } from './tradingAnalyticsModel.js'
 import { AnalyticsBars, AnalyticsCurve, AnalyticsRing } from './AnalyticsCharts.jsx'
@@ -71,63 +71,59 @@ function FilterBar({ accountPicker, extra, columnControl, payload, draft, setDra
 function Summary({ payload, deals, sidebar = false }) {
   const { t, fmt } = useTestingLocale(), available = Boolean(payload?.account && Array.isArray(payload.deals))
   const [basis, setBasis] = useState('amount'), [showValues, setShowValues] = useState(true)
-  const summary = summarizeDeals(deals, available), currency = payload?.account?.currency || ''
-  const stats = payload?.manual ? closedTradeStats(deals, payload?.account?.opening_balance) : null
-  const capital = Number.isFinite(payload?.balance_baseline?.amount) ? payload.balance_baseline.amount : Number.isFinite(payload?.account?.opening_balance) ? payload.account.opening_balance : null
-  const net = payload?.aggregate ? summary.net : payload?.manual ? stats.net : summary.net
-  const count = payload?.aggregate ? summary.count : payload?.manual ? stats.count : summary.count
+  const stats = closedTradeStats(deals), currency = payload?.account?.currency || ''
+  const capital = liveAccountCapital(payload)
+  const { net, count } = stats
   const average = count && Number.isFinite(net) ? net / count : null
-  const wins = deals.filter(deal => dealNet(deal) > 0).length, losses = deals.filter(deal => dealNet(deal) < 0).length, flat = Math.max(0, count - wins - losses)
+  const values = deals.map(dealNet), known = values.every(Number.isFinite)
+  const wins = values.filter(value => value !== null && value > 1e-12).length
+  const losses = values.filter(value => value !== null && value < -1e-12).length
+  const unknown = values.filter(value => value === null).length, flat = count - wins - losses - unknown
   const percent = value => capital > 0 && Number.isFinite(value) ? value / capital * 100 : null
-  const format = (value, digits = 2) => {
-    if (!showValues) return '•••'
-    return basis === 'percent' ? fmt(percent(value), '%', digits) : fmt(value, currency ? ` ${currency}` : '', digits)
-  }
-  const ratio = count ? wins / count * 100 : null
-  const averageWin = wins ? deals.map(dealNet).filter(value => Number.isFinite(value) && value > 0).reduce((sum, value) => sum + value, 0) / wins : null
-  const averageLoss = losses ? deals.map(dealNet).filter(value => Number.isFinite(value) && value < 0).reduce((sum, value) => sum + value, 0) / losses : null
+  const project = value => basis === 'percent' ? percent(value) : value
+  const suffix = basis === 'percent' ? '%' : currency ? ` ${currency}` : ''
+  const format = value => Number.isFinite(value) ? fmt(value, suffix) : 'N/A'
+  const ratio = stats.winRate
+  const averageWin = known && wins ? values.filter(value => value > 1e-12).reduce((sum, value) => sum + value, 0) / wins : null
+  const averageLoss = known && losses ? values.filter(value => value < -1e-12).reduce((sum, value) => sum + value, 0) / losses : null
   const directions = [
     { label: t('Buy'), value: deals.filter(deal => deal.type === 0).length, color: 'var(--report-positive)' },
     { label: t('Sell'), value: deals.filter(deal => deal.type === 1).length, color: 'var(--report-blue)' },
   ]
-  const balancePoints = useMemo(() => {
-    const opening = Number.isFinite(capital) ? capital : null
-    let balance = opening
-    const ordered = [...deals].filter(deal => Number.isFinite(deal.time_msc)).sort((a, b) => a.time_msc - b.time_msc)
-    return [{ value: balance, label: t('Bắt đầu') }, ...ordered.map((deal, index) => {
-      const netValue = dealNet(deal)
-      balance = balance !== null && Number.isFinite(netValue) ? balance + netValue : null
-      return { value: balance, tradeId: String(deal.ticket ?? `live-${index + 1}`), label: `${index + 1}` }
-    })]
-  }, [capital, deals, t])
-  const chartData = { averageWin, averageLoss }
-  const display = value => showValues ? format(value) : '•••'
+  // A filtered deal history cannot reconstruct a broker balance (cashflows and
+  // earlier trades may be absent). The sparkline explicitly shows scoped PnL.
+  const pnlPoints = useMemo(() => deals.every(deal => Number.isFinite(deal.time_msc)) ? [{ value: 0, label: t('Bắt đầu') }, ...cumulativeDealSeries(deals).map((point, index) => ({ ...point, label: `${index + 1}` }))] : [], [deals, t])
+  const chartData = { averageWin: project(averageWin), averageLoss: project(averageLoss) }
+  const display = value => showValues ? format(project(value)) : '•••'
   const displayCount = value => showValues ? fmt(value, '', 0) : '•••'
+  const hiddenChart = <div className="live-hidden-chart" role="img" aria-label={t('Values hidden')}>•••</div>
   return <section className={sidebar ? 'live-analytics-side' : 'live-metrics'} aria-label={t('Analytics')}>
-    {sidebar && <h2><span className="live-analytics-title"><TestingIcon kind="chart" />{t('Analytics')}</span><span className="live-analytics-tools"><select aria-label={t('Analytics display')} value={basis} onChange={event => setBasis(event.target.value)}><option value="amount">{t('Dollar Profit')}</option><option value="percent">{t('Percentage')}</option></select><button type="button" className="fxa-button fxa-icon-button" aria-label={t(showValues ? 'Hide values' : 'Show values')} aria-pressed={!showValues} onClick={() => setShowValues(value => !value)}><TestingIcon kind={showValues ? 'eye' : 'eye-off'} size={16} /></button></span></h2>}
+    {sidebar && <h2><span className="live-analytics-title"><TestingIcon kind="chart" />{t('Analytics')}</span><span className="live-analytics-tools"><select aria-label={t('Analytics display')} value={basis} onChange={event => setBasis(event.target.value)}><option value="amount">{currency || t('Currency')}</option><option value="percent">%</option></select><button type="button" className="fxa-button fxa-icon-button" aria-label={t(showValues ? 'Hide values' : 'Show values')} aria-pressed={!showValues} onClick={() => setShowValues(value => !value)}><TestingIcon kind={showValues ? 'eye' : 'eye-off'} size={16} /></button></span></h2>}
     {!available || !deals.length ? <Empty icon={sidebar ? null : 'chart'} title="No analytics yet" copy={available ? 'No deals in this selection.' : 'Select a connected account to view analytics.'} /> : <div className="live-analytics-charts">
       <article className="live-analytics-chart-row live-analytics-balance-row">
         <ChartHeading title="Total balance" note={<span>{displayCount(count)} {t('trades')}</span>} />
-        <strong className="live-analytics-chart-value">{showValues ? fmt(payload?.account?.balance, currency ? ` ${currency}` : '') : '•••'}</strong>
-        <AnalyticsCurve series={[balancePoints]} label={t('Balance curve')} suffix={currency ? ` ${currency}` : ''} height={96} sparkline />
+        <strong className="live-analytics-chart-value">{showValues ? Number.isFinite(payload?.account?.balance) ? fmt(payload.account.balance, currency ? ` ${currency}` : '') : 'N/A' : '•••'}</strong>
+        <span className="live-analytics-curve-label">{t('Cumulative PnL in selection')}</span>
+        {showValues ? <AnalyticsCurve series={[pnlPoints.map(point => ({ ...point, value: project(point.value) }))]} label={t('Cumulative PnL in selection')} suffix={suffix} height={96} sparkline /> : hiddenChart}
       </article>
       <article className="live-analytics-chart-row">
         <ChartHeading title="Expectancy comparison" />
         <div className="live-analytics-chart-value">{display(average)} <small>{t('per trade')}</small></div>
-        <ExpectancyComparison data={chartData} currency={currency} />
-        <AnalyticsBars items={[{ label: 'Expectancy per trade', value: average }]} metric="value" label={t('Expectancy per trade')} suffix={currency ? ` ${currency}` : ''} height={108} zeroMarker />
+        {showValues ? <><ExpectancyComparison data={chartData} currency={currency} suffix={suffix} />
+        <AnalyticsBars items={[{ label: 'Expectancy per trade', value: project(average) }]} metric="value" label={t('Expectancy per trade')} suffix={suffix} height={108} zeroMarker /></> : hiddenChart}
       </article>
       <article className="live-analytics-chart-row">
-        <ChartHeading title="Win rate" note={<strong>{showValues ? fmt(ratio, '%', 2) : '•••'}</strong>} />
-        <AnalyticsRing label={t('Win rate')} values={[
+        <ChartHeading title="Win rate" note={<strong>{showValues ? Number.isFinite(ratio) ? fmt(ratio, '%', 2) : 'N/A' : '•••'}</strong>} />
+        {showValues ? <AnalyticsRing label={t('Win rate')} values={[
           { label: t('Win'), value: wins, color: 'var(--report-positive)' },
           { label: t('Loss'), value: losses, color: 'var(--report-negative)' },
           { label: t('Breakeven'), value: flat, color: 'var(--wm-content-muted)' },
-        ]} />
+          ...(unknown ? [{ label: t('Unknown'), value: unknown, color: 'var(--wm-border-strong)' }] : []),
+        ]} /> : hiddenChart}
       </article>
       <article className="live-analytics-chart-row">
         <ChartHeading title="Total trades" note={<strong>{displayCount(count)}</strong>} />
-        <AnalyticsRing label={t('Trades by direction')} values={directions} />
+        {showValues ? <AnalyticsRing label={t('Trades by direction')} values={directions} /> : hiddenChart}
       </article>
       <div className="live-analytics-source-line"><span>{t('Source')}</span><strong>{payload.source || t('MT5')}</strong></div>
     </div>}
@@ -146,7 +142,7 @@ function LiveAnalyticsReport({ payload, deals, sessionControl, issue }) {
     trade_id: String(deal.ticket ?? `live-${index + 1}`),
   })), [deals])
   const model = useMemo(() => {
-    const opening = Number.isFinite(payload?.account?.opening_balance) ? Number(payload.account.opening_balance) : null
+    const opening = liveAccountCapital(payload)
     const datedDeals = filterLiveDeals({ ...payload, deals }, { ...LIVE_FILTERS, ...filters, timezone })
     const ordered = [...datedDeals].sort((a, b) => (a.time_msc || 0) - (b.time_msc || 0))
     let balance = opening
@@ -211,7 +207,7 @@ function LiveAnalyticsReport({ payload, deals, sessionControl, issue }) {
   return <section className="as-page fxa-page live-analytics-report" aria-label={t('Analytics')}>
     <FxAnalyticsFilters sourceType="Live" persistInUrl={false} filters={filters} onChange={setFilters} extra={reportExtra} onExtra={setExtra} rows={analyticsRows} labels={[]} sessionControl={sessionControl} pending={false} />
     {issue && <p className="live-status live-status-warning" role="status">{t(issue)}</p>}
-    {payload?.account ? <FxAnalyticsReport model={model} extra={reportExtra} experiments={null} experimentStatus="unavailable" experimentError={t('Live chưa có đường giá để mô phỏng từ dữ liệu broker.')} config={{ stop_distance_ticks: 20, stop_multiplier: 1, target_r: 2 }} selected="" onSelect={() => {}} experimentScope="live" onNeedExperiments={() => {}} /> : <Empty title="No analytics yet" copy={issue ? null : 'Select a connected account to view analytics.'} />}
+    {payload?.account ? <FxAnalyticsReport model={model} accountBalance={Number.isFinite(payload.account.balance) ? payload.account.balance : null} extra={reportExtra} experiments={null} experimentStatus="unavailable" experimentError={t('Live chưa có đường giá để mô phỏng từ dữ liệu broker.')} config={{ stop_distance_ticks: 20, stop_multiplier: 1, target_r: 2 }} selected="" onSelect={() => {}} experimentScope="live" onNeedExperiments={() => {}} /> : <Empty title="No analytics yet" copy={issue ? null : 'Select a connected account to view analytics.'} />}
   </section>
 }
 
@@ -230,7 +226,7 @@ function Calendar({ payload, deals, filters, filterBar, reviewScope, canWrite, o
   // Summary totals use zero for an empty visual summary; day-level unknown
   // values keep their coverage semantics and are rendered separately below.
   const countLabel = count => t('{count} giao dịch', { count: Number.isFinite(count) ? count : 0 })
-  const opening = payload?.account?.opening_balance
+  const opening = liveAccountCapital(payload)
   const percentBasis = typeof opening === 'number' && Number.isFinite(opening) && opening > 0 ? opening : null
   const amount = value => percent ? value === null || percentBasis === null ? 'N/A' : fmt(value/percentBasis*100,'%') : fmt(value)
   const money = value => {
@@ -321,6 +317,7 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
   }
   const deals = useMemo(() => filterLiveDeals(payload,{...applied,tags:tag}).filter(deal => !payload?.manual || strategy === 'all' || deal.record?.payload.playbook_id === strategyId && (!strategyRevision || deal.record?.payload.playbook_revision === Number(strategyRevision))),[payload,applied,strategy,strategyId,strategyRevision,tag])
   const showContent = preview || ledger.status === 'ready' || ledger.items.length > 0 || Boolean(broker?.account || broker?.connections?.length)
+  const journalReadable = preview || ledger.status === 'ready' || ledger.items.length > 0
   const tags = [...new Set((payload?.deals || []).flatMap(deal => deal.record?.payload.tags || []))]
   const strategySeed = payload?.manual && strategy !== 'all' ? {playbook_id:strategyId,playbook_revision:Number(strategyRevision || strategies.find(item => item.record_id === strategyId)?.revision)} : undefined
   const open = (kind,record) => { if (!preview && ledger.status === 'ready') setAction({kind,record,seed: !record ? strategySeed : undefined}) }
@@ -361,8 +358,8 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
     {showContent && <>
     {section === 'calendar' && <Calendar empty={ledger.status === 'ready' && !calendarIds.length && !broker?.stale} filterBar={showContent ? filterBar : null} canWrite={!preview && ledger.status === 'ready' && calendarIds.length === 1} selectionKey={selectionKey} payload={payload} deals={deals} filters={applied} reviewScope={payload?.manual ? `${strategy === 'all' ? t('Tất cả chiến lược') : `${strategies.find(item => item.record_id === strategyId)?.payload.name || strategyId}${strategyRevision ? ` · v${strategyRevision}` : ` · ${t('mọi phiên bản')}`}`} · ${!tag.length ? t('Tất cả nhãn') : tag.join(', ')}` : t('Synced deals')} onPreview={create} />}
     {section === 'trades' && <div className="live-split"><section className="live-trades-section">{filterBar}<div className="live-trades-content">{payload?.manual ? <ManualTrades columns={columns} writable={!preview && ledger.status === 'ready' && strategyReady} filterKey={JSON.stringify([chosen,applied,strategy,tag])} workspace={workspace} deals={deals} currency={payload.account.currency} strategies={strategies} onEdit={record => open('trade',record)} /> : payload?.account ? <LiveBrokerSnapshot columns={columns} payload={payload} section="trades" deals={deals} filterKey={JSON.stringify(applied)} /> : <Empty title="No trades yet" copy="Tạo tài khoản thủ công và thêm giao dịch để bắt đầu." icon="journal" />}</div></section><Summary payload={payload} deals={deals} sidebar /></div>}
-    {section === 'notes' && <JournalNotes accountPicker={accountPicker} writable={!preview && ledger.status === 'ready' && strategyReady} key={chosen} records={ledger.items} accountId={chosen || null} strategies={strategies} onEdit={record => open('note',record)} onCreate={() => open('note')} />}
-    {section === 'tag-analytics' && <JournalTags filterKey={JSON.stringify([chosen,applied,strategy,tag])} deals={deals} currency={payload?.account?.currency || ''} />}
+    {section === 'notes' && <JournalNotes accountPicker={accountPicker} readable={journalReadable} writable={!preview && ledger.status === 'ready' && strategyReady} key={chosen} records={ledger.items} accountId={chosen || null} strategies={strategies} onEdit={record => open('note',record)} onCreate={() => open('note')} />}
+    {section === 'tag-analytics' && <JournalTags readable={journalReadable} filterKey={JSON.stringify([chosen,applied,strategy,tag])} deals={deals} currency={payload?.account?.currency || ''} />}
     {section === 'analytics' && <LiveAnalyticsReport payload={payload} deals={payload?.deals || []} issue={calendar.issue} sessionControl={<SessionFilter items={pickerItems} value={calendarSelection} multiple onChange={chooseCalendar} labels={ACCOUNT_PICKER_LABELS} />} />}
     {section === 'trading-accounts' && <LiveAccounts key={workspace} workspace={workspace} accounts={accounts} records={ledger.items} broker={broker} chosen={chosen} onSelect={choose} transactions={query.get('account_tab') === 'transactions'} writable={!preview && ledger.status === 'ready'} canImport={!preview && ledger.status === 'ready' && accounts.length > 0} onCreate={seed => {if(!preview && ledger.status==='ready')setAction({kind:'account',seed})}} onImport={record => openAccountAction('import',record?.record_id ? record : null)} onEdit={record => open('account',record)} onTrade={record=>openAccountAction('trade',record)} onNavigate={navigateAccount} onArchive={archiveAccount} onRefresh={onRefresh} />}
 

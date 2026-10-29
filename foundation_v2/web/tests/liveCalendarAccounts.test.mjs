@@ -61,3 +61,12 @@ test('pooled percentage capital requires a positive numeric opening balance for 
  b.account.opening_balance=2000
  assert.equal(combineCalendarAccounts([{id:'a',payload:a},{id:'b',payload:b}]).payload.account.opening_balance,3000)
 })
+
+test('pooled capital accepts the same dated broker baseline as account transactions',()=>{
+ const a=snapshot('USD',25),b=snapshot('USD',0)
+ a.account.opening_balance=1000
+ b.balance_baseline={amount:2000,currency:'USD',captured_at_utc:'2026-10-01T00:00:00Z'}
+ assert.equal(combineCalendarAccounts([{id:'a',payload:a},{id:'b',payload:b}]).payload.account.opening_balance,3000)
+ b.balance_baseline.currency='EUR'
+ assert.equal(combineCalendarAccounts([{id:'a',payload:a},{id:'b',payload:b}]).payload.account.opening_balance,null)
+})
