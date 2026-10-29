@@ -75,11 +75,14 @@ jobs:
       - run: npm run build
       - run: npx --no-install playwright install --with-deps chromium
       - run: node tests/brand.browser.mjs
+      - run: node tests/live-analytics.browser.mjs
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: failure()
         with:
           name: web-failure-evidence
-          path: foundation_v2/web/.artifacts/brand
+          path: |
+            foundation_v2/web/.artifacts/brand
+            foundation_v2/web/.artifacts/live-analytics-controls
           retention-days: 7
           if-no-files-found: ignore
   rust:
