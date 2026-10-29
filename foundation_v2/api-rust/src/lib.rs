@@ -1,49 +1,49 @@
+mod ai_agents;
+pub mod ai_assistant;
+mod ai_context;
+mod ai_documents;
+mod ai_gateway;
+mod ai_gateway_runtime;
+pub mod ai_mt5_tools;
+mod ai_profiles;
+mod ai_response;
+pub mod ai_runs;
+mod ai_workflows;
+pub mod analytics;
+pub mod artifact_data;
 pub mod auth;
 pub mod catalog;
 pub mod commands;
 pub mod config;
+pub mod context_routes;
+pub mod control_routes;
+pub mod data_routes;
+pub mod demo_trading;
 pub mod events;
 pub mod jobs;
-pub mod middleware;
-pub mod native_mutation;
-pub mod native_contracts;
-pub mod metadata_mutations;
-pub mod replay_core;
-pub mod replay_service;
-pub mod session_trading_options;
-pub mod session_presets;
 pub mod live_ledger;
-pub mod trade_labels;
+pub mod metadata_mutations;
+pub mod middleware;
 pub mod mt5_connector;
-pub mod demo_trading;
-pub mod replay_portfolio;
-pub mod replay_storage;
+pub mod native_contracts;
+pub mod native_mutation;
+pub mod notion_oauth;
+pub mod owned_process;
 pub mod prop_core;
 pub mod prop_service;
-pub mod artifact_data;
-mod ai_documents;
-mod ai_context;
-pub mod ai_mt5_tools;
-pub mod data_routes;
-pub mod analytics;
-pub mod control_routes;
-pub mod context_routes;
 pub mod provider_routes;
-pub mod notion_oauth;
-pub mod ai_assistant;
-pub mod ai_runs;
-mod ai_profiles;
-mod ai_agents;
-mod ai_response;
-mod ai_workflows;
-mod ai_gateway;
-mod ai_gateway_runtime;
-pub mod research_jobs;
+pub mod replay_core;
+pub mod replay_portfolio;
+pub mod replay_service;
+pub mod replay_storage;
 pub mod research_execution;
+pub mod research_jobs;
 pub mod rust_runtime;
-pub mod owned_process;
+pub mod session_presets;
+pub mod session_trading_options;
 pub mod state;
 pub mod telemetry;
+pub mod trade_labels;
 
 use auth::ApiError;
 use axum::{
@@ -129,21 +129,27 @@ async fn readiness(
         let required = commands::required_worker_manifest_for(state.native_runtime);
         let needs_worker = required.as_array().is_none_or(|routes| !routes.is_empty());
         if state.native_runtime && !state.providers.worker_ready() {
-            return Err(ApiError::detail(StatusCode::SERVICE_UNAVAILABLE, "native_provider_worker_unavailable"));
-        }
-        if needs_worker && state.native_runtime {
-            return Err(ApiError::detail(StatusCode::SERVICE_UNAVAILABLE, "native_route_coverage_incomplete"));
-        }
-        if needs_worker {
-        let worker=conn.query_one("SELECT EXISTS(SELECT 1 FROM api_command_workers WHERE contract_version='api-command-v1' AND heartbeat_at_utc>CURRENT_TIMESTAMP-interval '20 seconds' AND route_manifest @> $1::jsonb)", &[&required])
-            .await
-            .map_err(|_| ApiError::database())?;
-        if !worker.get::<_, bool>(0) {
             return Err(ApiError::detail(
                 StatusCode::SERVICE_UNAVAILABLE,
-                "command_worker_unavailable",
+                "native_provider_worker_unavailable",
             ));
         }
+        if needs_worker && state.native_runtime {
+            return Err(ApiError::detail(
+                StatusCode::SERVICE_UNAVAILABLE,
+                "native_route_coverage_incomplete",
+            ));
+        }
+        if needs_worker {
+            let worker=conn.query_one("SELECT EXISTS(SELECT 1 FROM api_command_workers WHERE contract_version='api-command-v1' AND heartbeat_at_utc>CURRENT_TIMESTAMP-interval '20 seconds' AND route_manifest @> $1::jsonb)", &[&required])
+            .await
+            .map_err(|_| ApiError::database())?;
+            if !worker.get::<_, bool>(0) {
+                return Err(ApiError::detail(
+                    StatusCode::SERVICE_UNAVAILABLE,
+                    "command_worker_unavailable",
+                ));
+            }
         }
         if state.openapi_schema.is_none() {
             return Err(ApiError::detail(
@@ -247,7 +253,11 @@ pub(crate) mod tests {
             analytics_cache: Default::default(),
             replay_history: Default::default(),
             notion_oauth: Arc::new(crate::notion_oauth::NotionOAuthService::new(None).unwrap()),
-            providers: crate::provider_routes::ProviderRuntime::load(std::path::PathBuf::from("."), crate::provider_routes::DownloadEngine::None).unwrap(),
+            providers: crate::provider_routes::ProviderRuntime::load(
+                std::path::PathBuf::from("."),
+                crate::provider_routes::DownloadEngine::None,
+            )
+            .unwrap(),
             event_hub: crate::events::EventHub::default(),
             market_hub: crate::demo_trading::market_stream::MarketHub::default(),
             draining: AtomicBool::new(false),
@@ -386,7 +396,9 @@ pub(crate) mod tests {
     }
     #[tokio::test]
     async fn oauth_callback_is_exact_and_only_the_nonce_handler_selects_scope() {
-        async fn callback(scope: Option<axum::extract::Extension<auth::Workspace>>) -> Json<serde_json::Value> {
+        async fn callback(
+            scope: Option<axum::extract::Extension<auth::Workspace>>,
+        ) -> Json<serde_json::Value> {
             Json(json!({"injected_workspace":scope.map(|s| s.0.workspace_id)}))
         }
         let app = router(

@@ -68,7 +68,14 @@ fn validate(body: &Value) -> Result<Value, ApiError> {
     let mut bytes = 0;
     for file in files {
         if file.get("id").is_some() {
-            if file.as_object().is_none_or(|v|v.len()!=1) || file["id"].as_str().and_then(|id|Uuid::parse_str(id).ok()).is_none() { return Err(invalid()); }
+            if file.as_object().is_none_or(|v| v.len() != 1)
+                || file["id"]
+                    .as_str()
+                    .and_then(|id| Uuid::parse_str(id).ok())
+                    .is_none()
+            {
+                return Err(invalid());
+            }
             continue;
         }
         if file.as_object().is_none_or(|v| v.len() != 2)
@@ -150,7 +157,8 @@ pub async fn create(
     }
     let mut conn = state.pool.get().await.map_err(|_| ApiError::database())?;
     let tx = conn.transaction().await.map_err(|_| ApiError::database())?;
-    config["knowledge"] = crate::ai_documents::references(&tx,&scope,&config["knowledge"]).await?;
+    config["knowledge"] =
+        crate::ai_documents::references(&tx, &scope, &config["knowledge"]).await?;
     tx.query_one(
         "SELECT pg_advisory_xact_lock($1)",
         &[&crate::ai_runs::ADMISSION],
@@ -194,13 +202,14 @@ pub async fn update(
         .filter(|v| *v >= 1)
         .ok_or_else(invalid)?;
     let mut conn = state.pool.get().await.map_err(|_| ApiError::database())?;
-    let tx=conn.transaction().await.map_err(|_|ApiError::database())?;
-    config["knowledge"] = crate::ai_documents::references(&tx,&scope,&config["knowledge"]).await?;
+    let tx = conn.transaction().await.map_err(|_| ApiError::database())?;
+    config["knowledge"] =
+        crate::ai_documents::references(&tx, &scope, &config["knowledge"]).await?;
     let count=tx.execute("UPDATE ai_agents SET config=$4,revision=revision+1,updated_at=clock_timestamp() WHERE workspace_id=$1 AND subject=$2 AND agent_id=$3 AND revision=$5",&[&scope.workspace_id,&scope.subject,&id,&config,&revision]).await.map_err(|_|ApiError::database())?;
     if count == 0 {
         return Err(ApiError::detail(StatusCode::CONFLICT, "ai_agent_changed"));
     }
-    tx.commit().await.map_err(|_|ApiError::database())?;
+    tx.commit().await.map_err(|_| ApiError::database())?;
     Ok(Json(metadata(id, revision + 1, &config)))
 }
 pub(crate) async fn snapshot(
@@ -220,7 +229,8 @@ pub(crate) async fn snapshot(
     let mut value: Value = row.get(1);
     value["id"] = json!(id);
     value["revision"] = json!(revision);
-    value["knowledge"] = crate::ai_documents::ground(tx,scope,&value["knowledge"],prompt).await?;
+    value["knowledge"] =
+        crate::ai_documents::ground(tx, scope, &value["knowledge"], prompt).await?;
     Ok(value)
 }
 

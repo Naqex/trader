@@ -19,8 +19,8 @@ use std::{
 
 pub mod catalog;
 mod catalog_refresh;
-pub mod execution;
 pub mod dependencies;
+pub mod execution;
 pub mod lifecycle;
 
 #[derive(Clone, Debug)]
@@ -46,7 +46,8 @@ pub struct ProviderRuntime {
 
 impl ProviderRuntime {
     pub fn worker_ready(&self) -> bool {
-        matches!(self.engine, DownloadEngine::None) || self.worker.load(std::sync::atomic::Ordering::Acquire)
+        matches!(self.engine, DownloadEngine::None)
+            || self.worker.load(std::sync::atomic::Ordering::Acquire)
     }
     pub fn from_environment(root: &std::path::Path) -> Result<Arc<Self>, String> {
         let engine = match std::env::var("TW_V2_DOWNLOAD_ENGINE")
@@ -64,12 +65,20 @@ impl ProviderRuntime {
                     .map(PathBuf::from)
                     .ok_or("TW_V2_DUKASCOPY_METADATA_PATH required")?;
                 use std::io::Read;
-                let file=std::fs::File::open(path).map_err(|_|"cannot read pinned Dukascopy metadata")?;
-                if file.metadata().map_err(|_|"cannot read pinned Dukascopy metadata")?.len()>4*1024*1024{
+                let file = std::fs::File::open(path)
+                    .map_err(|_| "cannot read pinned Dukascopy metadata")?;
+                if file
+                    .metadata()
+                    .map_err(|_| "cannot read pinned Dukascopy metadata")?
+                    .len()
+                    > 4 * 1024 * 1024
+                {
                     return Err("Dukascopy metadata exceeds bound".into());
                 }
-                let mut bytes=Vec::new();
-                file.take(4*1024*1024+1).read_to_end(&mut bytes).map_err(|_|"cannot read pinned Dukascopy metadata")?;
+                let mut bytes = Vec::new();
+                file.take(4 * 1024 * 1024 + 1)
+                    .read_to_end(&mut bytes)
+                    .map_err(|_| "cannot read pinned Dukascopy metadata")?;
                 if bytes.len() > 4 * 1024 * 1024 {
                     return Err("Dukascopy metadata exceeds bound".into());
                 }
@@ -169,14 +178,21 @@ pub fn native(method: &str, path: &str) -> bool {
 
 /// These routes are owned only by the explicitly selected native runtime.
 pub fn native_profile(method: &str, path: &str) -> bool {
-    native(method, path) || match method {
-        "GET" => matches!(path, "/api/v2/data/market-assets" | "/api/v2/live/status"),
-        "POST" => matches!(path, "/api/v2/data/market-assets/update" | "/api/v2/data/catalog/refresh"
-            | "/api/v2/data/downloads" | "/api/v2/data/downloads/full"
-            | "/api/v2/data/downloads/{job_id}/resume" | "/api/v2/data/downloads/{job_id}/pause"
-            | "/api/v2/data/downloads/{job_id}/cancel"),
-        _ => false,
-    }
+    native(method, path)
+        || match method {
+            "GET" => matches!(path, "/api/v2/data/market-assets" | "/api/v2/live/status"),
+            "POST" => matches!(
+                path,
+                "/api/v2/data/market-assets/update"
+                    | "/api/v2/data/catalog/refresh"
+                    | "/api/v2/data/downloads"
+                    | "/api/v2/data/downloads/full"
+                    | "/api/v2/data/downloads/{job_id}/resume"
+                    | "/api/v2/data/downloads/{job_id}/pause"
+                    | "/api/v2/data/downloads/{job_id}/cancel"
+            ),
+            _ => false,
+        }
 }
 
 pub fn runtime_routes(runtime: Arc<ProviderRuntime>) -> Result<Router<Arc<AppState>>, String> {
@@ -184,7 +200,9 @@ pub fn runtime_routes(runtime: Arc<ProviderRuntime>) -> Result<Router<Arc<AppSta
     if matches!(runtime.engine, DownloadEngine::None) {
         Ok(routes.merge(absent_download_routes(runtime)?))
     } else {
-        Ok(routes.merge(configured_download_routes(runtime.clone())?).merge(catalog_refresh_routes(runtime)?))
+        Ok(routes
+            .merge(configured_download_routes(runtime.clone())?)
+            .merge(catalog_refresh_routes(runtime)?))
     }
 }
 
@@ -203,7 +221,10 @@ pub fn routes_with_runtime(runtime: Arc<ProviderRuntime>) -> Router<Arc<AppState
 pub fn absent_market_routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/api/v2/data/market-assets", get(absent_market))
-        .route("/api/v2/live/status", get(crate::mt5_connector::live_status))
+        .route(
+            "/api/v2/live/status",
+            get(crate::mt5_connector::live_status),
+        )
         .route("/api/v2/data/market-assets/update", post(inactive_write))
 }
 
@@ -238,7 +259,9 @@ pub fn qdm_refresh_routes(runtime: Arc<ProviderRuntime>) -> Result<Router<Arc<Ap
     catalog_refresh_routes(runtime)
 }
 
-pub fn catalog_refresh_routes(runtime: Arc<ProviderRuntime>) -> Result<Router<Arc<AppState>>, String> {
+pub fn catalog_refresh_routes(
+    runtime: Arc<ProviderRuntime>,
+) -> Result<Router<Arc<AppState>>, String> {
     if matches!(runtime.engine, DownloadEngine::None) {
         return Err("instrument_catalog_not_configured".into());
     }
@@ -258,15 +281,24 @@ async fn qdm_refresh(
         .map(|v| v.0)
         .unwrap_or_else(|| state.providers.clone());
     // Wait for bounded refresh capacity before reserving a database connection.
-    let permit = state.artifact_reads.clone().acquire_owned().await.map_err(|_| ApiError::database())?;
+    let permit = state
+        .artifact_reads
+        .clone()
+        .acquire_owned()
+        .await
+        .map_err(|_| ApiError::database())?;
     let mut connection = state.pool.get().await.map_err(|_| ApiError::database())?;
     let tx = connection
         .transaction()
         .await
         .map_err(|_| ApiError::database())?;
     // The bounded network call can outlast the default 15s idle transaction budget.
-    tx.query_one("SELECT set_config('idle_in_transaction_session_timeout',$1,true)",
-        &[&state.config.request_timeout.as_millis().to_string()]).await.map_err(|_|ApiError::database())?;
+    tx.query_one(
+        "SELECT set_config('idle_in_transaction_session_timeout',$1,true)",
+        &[&state.config.request_timeout.as_millis().to_string()],
+    )
+    .await
+    .map_err(|_| ApiError::database())?;
     let receipt = match crate::native_mutation::begin(
         &tx,
         &scope,
@@ -287,7 +319,8 @@ async fn qdm_refresh(
     } else {
         let runtime = runtime.clone();
         tokio::task::spawn_blocking(move || runtime.refresh_local())
-            .await.map_err(|_|ApiError::detail(StatusCode::SERVICE_UNAVAILABLE,"catalog_read_failed"))?
+            .await
+            .map_err(|_| ApiError::detail(StatusCode::SERVICE_UNAVAILABLE, "catalog_read_failed"))?
     };
     let result = refreshed.and_then(|()| {
         let catalog = runtime.catalog.read().map_err(|_|"catalog_state_unavailable".to_owned())?;

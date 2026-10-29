@@ -323,7 +323,11 @@ fn managed_record(row: &tokio_postgres::Row, allow_read: bool) -> Result<Managed
     }
     let snapshot: Option<Value> = row.get("snapshot");
     let snapshot = snapshot.ok_or_else(|| denied("mt5_permissions_unverified"))?;
-    let binding = &snapshot[if read_only { "account_binding" } else { "execution_binding" }];
+    let binding = &snapshot[if read_only {
+        "account_binding"
+    } else {
+        "execution_binding"
+    }];
     let generation: i64 = row.get("generation");
     let server: String = row.get("server");
     let login = binding["login"]
@@ -365,22 +369,51 @@ pub(crate) struct ReadBinding {
     pub login: String,
     pub server: String,
 }
-pub(crate) async fn read_binding(state: &AppState, scope: &Workspace, id: Uuid) -> Result<ReadBinding, ApiError> {
-    if !state.native_runtime { return Err(denied("mt5_native_runtime_required")); }
-    let Context::Managed(m) = context(state, scope, Some(id), true).await? else { unreachable!() };
-    Ok(ReadBinding { generation: m.generation, login: m.login, server: m.server })
+pub(crate) async fn read_binding(
+    state: &AppState,
+    scope: &Workspace,
+    id: Uuid,
+) -> Result<ReadBinding, ApiError> {
+    if !state.native_runtime {
+        return Err(denied("mt5_native_runtime_required"));
+    }
+    let Context::Managed(m) = context(state, scope, Some(id), true).await? else {
+        unreachable!()
+    };
+    Ok(ReadBinding {
+        generation: m.generation,
+        login: m.login,
+        server: m.server,
+    })
 }
-pub(crate) async fn symbol_catalog(state: &AppState, scope: &Workspace, id: Uuid) -> Result<Value, ApiError> {
+pub(crate) async fn symbol_catalog(
+    state: &AppState,
+    scope: &Workspace,
+    id: Uuid,
+) -> Result<Value, ApiError> {
     let ctx = context(state, scope, Some(id), true).await?;
-    let result=adapter_for(state, &ctx, ctx.input("symbols", json!({}))).await
+    let result = adapter_for(state, &ctx, ctx.input("symbols", json!({})))
+        .await
         .map_err(|code| ApiError::detail(StatusCode::SERVICE_UNAVAILABLE, &code))?;
-    if let Some(code)=result["error"].as_str() { return Err(ApiError::detail(StatusCode::SERVICE_UNAVAILABLE,code)); }
+    if let Some(code) = result["error"].as_str() {
+        return Err(ApiError::detail(StatusCode::SERVICE_UNAVAILABLE, code));
+    }
     Ok(result)
 }
 fn read_failure(status: StatusCode, reason: &str) -> Value {
-    let mut value=locked(reason);
-    value["access_denied"]=json!(matches!(status,StatusCode::UNAUTHORIZED|StatusCode::FORBIDDEN)
-        || matches!(reason,"mt5_connection_not_available"|"mt5_connection_revoked"|"mt5_connection_changed"|"mt5_permissions_unverified"|"demo_identity_changed"|"demo_identity_mismatch"));
+    let mut value = locked(reason);
+    value["access_denied"] = json!(
+        matches!(status, StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN)
+            || matches!(
+                reason,
+                "mt5_connection_not_available"
+                    | "mt5_connection_revoked"
+                    | "mt5_connection_changed"
+                    | "mt5_permissions_unverified"
+                    | "demo_identity_changed"
+                    | "demo_identity_mismatch"
+            )
+    );
     value
 }
 async fn control(state: &AppState, p: &Context) -> Result<(bool, bool), ApiError> {
@@ -409,7 +442,12 @@ async fn snapshot(
     read_snapshot(&state, &scope, &query, 300).await.map(Json)
 }
 
-async fn read_snapshot(state: &AppState, scope: &Workspace, query: &HashMap<String, String>, bar_count: usize) -> Result<Value, ApiError> {
+async fn read_snapshot(
+    state: &AppState,
+    scope: &Workspace,
+    query: &HashMap<String, String>,
+    bar_count: usize,
+) -> Result<Value, ApiError> {
     let id = query
         .get("connection_id")
         .map(|v| {
@@ -424,7 +462,8 @@ async fn read_snapshot(state: &AppState, scope: &Workspace, query: &HashMap<Stri
     let p = match context(&state, &scope, id, true).await {
         Ok(p) => p,
         Err(ApiError(status, value)) => {
-            return Ok(read_failure(status,
+            return Ok(read_failure(
+                status,
                 value["detail"]
                     .as_str()
                     .unwrap_or("mt5_connection_not_available"),
@@ -463,13 +502,16 @@ async fn read_snapshot(state: &AppState, scope: &Workspace, query: &HashMap<Stri
     let mut result = adapter_for(
         &state,
         &p,
-        p.input("snapshot", json!({"symbol":symbol,"timeframe":timeframe,"bar_count":bar_count})),
+        p.input(
+            "snapshot",
+            json!({"symbol":symbol,"timeframe":timeframe,"bar_count":bar_count}),
+        ),
     )
     .await
     .unwrap_or_else(|reason| json!({"status":"unavailable","reason":reason}));
     if result["status"] != "ready" {
         let reason = result["reason"].as_str().unwrap_or("demo_unavailable");
-        let mut value = read_failure(StatusCode::LOCKED,reason);
+        let mut value = read_failure(StatusCode::LOCKED, reason);
         value["status"] = json!("unavailable");
         return Ok(value);
     }
@@ -484,14 +526,18 @@ async fn read_snapshot(state: &AppState, scope: &Workspace, query: &HashMap<Stri
         result["connection_id"] = json!(id);
     }
     let can_trade = !matches!(&p, Context::Managed(m) if m.requested_mode == "read_only");
-    result["requested_mode"] = json!(if can_trade {"trading"} else {"read_only"});
+    result["requested_mode"] = json!(if can_trade { "trading" } else { "read_only" });
     result["paused"] = json!(paused);
     if paused || unknown || !can_trade {
         result["execution_enabled"] = json!(false);
         result["reason"] = json!(if unknown {
             "demo_unresolved_request"
         } else {
-            if can_trade { "demo_paused" } else { "mt5_trading_access_required" }
+            if can_trade {
+                "demo_paused"
+            } else {
+                "mt5_trading_access_required"
+            }
         });
     }
     result["capabilities"] = json!({"market":can_trade&&!paused&&!unknown,"limit":false,"stop":false,"close":can_trade&&!unknown,"cancel":can_trade&&!unknown,"protect":can_trade&&!paused&&!unknown});
@@ -845,7 +891,11 @@ async fn adapter_for(state: &AppState, p: &Context, input: Value) -> Result<Valu
                 .as_ref()
                 .ok_or_else(|| "mt5_connection_not_available".to_owned())
                 .and_then(|row| {
-                    managed_record(row, matches!(input["operation"].as_str(), Some("snapshot" | "symbols"))).map_err(|_| "mt5_permissions_unverified".to_owned())
+                    managed_record(
+                        row,
+                        matches!(input["operation"].as_str(), Some("snapshot" | "symbols")),
+                    )
+                    .map_err(|_| "mt5_permissions_unverified".to_owned())
                 })?;
             if current.generation != managed.generation
                 || current.login != managed.login

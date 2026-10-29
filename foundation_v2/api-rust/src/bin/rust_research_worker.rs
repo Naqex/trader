@@ -1,5 +1,10 @@
 //! Offline worker only; no broker/provider/OAuth process can be launched here.
-use std::{path::PathBuf, time::Duration,fs::{self,OpenOptions},io::Write};
+use std::{
+    fs::{self, OpenOptions},
+    io::Write,
+    path::PathBuf,
+    time::Duration,
+};
 use trading_workspace_api::{
     config::Config,
     research_execution::{self, RunOutcome, WorkerOptions},
@@ -48,7 +53,7 @@ async fn run() -> Result<(), String> {
     }
     options.validate()?;
     let state = AppState::connect(Config::from_environment()?).await?;
-    research_execution::prepare_scientific(&state,&options).await?;
+    research_execution::prepare_scientific(&state, &options).await?;
     publish_ready(&options.worker_id)?;
     loop {
         if options.shutdown_file.as_ref().is_some_and(|p| p.exists()) {
@@ -67,8 +72,14 @@ async fn run() -> Result<(), String> {
             }
             // Driver/provider details and configuration values never enter logs.
             Err(_) => {
-                if once {state.pool.close();return Err("native_research_attempt_failed".into());}
-                eprintln!("{}",serde_json::json!({"event":"native_research_attempt_failed"}));
+                if once {
+                    state.pool.close();
+                    return Err("native_research_attempt_failed".into());
+                }
+                eprintln!(
+                    "{}",
+                    serde_json::json!({"event":"native_research_attempt_failed"})
+                );
             }
         }
         if once {
@@ -82,26 +93,48 @@ async fn run() -> Result<(), String> {
     Ok(())
 }
 
-fn publish_ready(worker_id:&str)->Result<(),String>{
-    match(std::env::var_os("TW_V2_WORKER_READY_FILE"),std::env::var("TW_V2_WORKER_STARTUP_TOKEN")){
-        (None,Err(_))=>Ok(()),
-        (Some(path),Ok(token))if token.len()>=32=>{
-            let path=PathBuf::from(path);
-            if path.exists(){return Err("research_worker_ready_file_exists".into());}
-            let parent=path.parent().ok_or("research_worker_ready_parent_missing")?;
-            if !parent.is_dir(){return Err("research_worker_ready_parent_missing".into());}
-            let temporary=parent.join(format!(".research-ready-{}-{}",std::process::id(),uuid::Uuid::new_v4().simple()));
-            let outcome=(||{
-                let mut file=OpenOptions::new().write(true).create_new(true).open(&temporary).map_err(|_|"research_worker_ready_create_failed")?;
+fn publish_ready(worker_id: &str) -> Result<(), String> {
+    match (
+        std::env::var_os("TW_V2_WORKER_READY_FILE"),
+        std::env::var("TW_V2_WORKER_STARTUP_TOKEN"),
+    ) {
+        (None, Err(_)) => Ok(()),
+        (Some(path), Ok(token)) if token.len() >= 32 => {
+            let path = PathBuf::from(path);
+            if path.exists() {
+                return Err("research_worker_ready_file_exists".into());
+            }
+            let parent = path
+                .parent()
+                .ok_or("research_worker_ready_parent_missing")?;
+            if !parent.is_dir() {
+                return Err("research_worker_ready_parent_missing".into());
+            }
+            let temporary = parent.join(format!(
+                ".research-ready-{}-{}",
+                std::process::id(),
+                uuid::Uuid::new_v4().simple()
+            ));
+            let outcome = (|| {
+                let mut file = OpenOptions::new()
+                    .write(true)
+                    .create_new(true)
+                    .open(&temporary)
+                    .map_err(|_| "research_worker_ready_create_failed")?;
                 let bytes=serde_json::to_vec(&serde_json::json!({"schema":"research-worker-ready-v1","worker_id":worker_id,"pid":std::process::id(),"startup_token":token})).map_err(|_|"research_worker_ready_encode_failed")?;
-                file.write_all(&bytes).and_then(|_|file.sync_all()).map_err(|_|"research_worker_ready_write_failed")?;drop(file);
+                file.write_all(&bytes)
+                    .and_then(|_| file.sync_all())
+                    .map_err(|_| "research_worker_ready_write_failed")?;
+                drop(file);
                 // A hard link publishes complete bytes without replacing a stale
                 // ready file from another process, including on Windows.
-                fs::hard_link(&temporary,&path).map_err(|_|"research_worker_ready_publish_failed")?;
+                fs::hard_link(&temporary, &path)
+                    .map_err(|_| "research_worker_ready_publish_failed")?;
                 Ok(())
             })();
-            let _=fs::remove_file(temporary);outcome
+            let _ = fs::remove_file(temporary);
+            outcome
         }
-        _=>Err("research_worker_ready_identity_invalid".into())
+        _ => Err("research_worker_ready_identity_invalid".into()),
     }
 }

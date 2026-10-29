@@ -2,7 +2,9 @@
 use super::*;
 
 pub(super) fn time(trade: &Value) -> &Value {
-    trade.get("report_time_utc").unwrap_or(&trade["close_time_utc"])
+    trade
+        .get("report_time_utc")
+        .unwrap_or(&trade["close_time_utc"])
 }
 
 pub(super) fn view(record: &Value, filters: Option<&Value>, zone: chrono_tz::Tz) -> R<Value> {
@@ -13,42 +15,72 @@ pub(super) fn view(record: &Value, filters: Option<&Value>, zone: chrono_tz::Tz)
     let mut events = HashMap::new();
     if let Some(states) = payload["asset_states"].as_object() {
         for (dataset, state) in states {
-            for event in state["execution"]["ledger"].as_array().into_iter().flatten() {
+            for event in state["execution"]["ledger"]
+                .as_array()
+                .into_iter()
+                .flatten()
+            {
                 events.insert((dataset.as_str(), event["sequence"].as_u64()), event);
             }
         }
     } else {
-        for event in payload["execution"]["ledger"].as_array().into_iter().flatten() {
-            events.insert((text(&payload["dataset_id"]), event["sequence"].as_u64()), event);
+        for event in payload["execution"]["ledger"]
+            .as_array()
+            .into_iter()
+            .flatten()
+        {
+            events.insert(
+                (text(&payload["dataset_id"]), event["sequence"].as_u64()),
+                event,
+            );
         }
     }
     if let Some(rows) = view["ledger"].as_array_mut() {
         for row in rows {
             let dataset = row.get("dataset_id").unwrap_or(&payload["dataset_id"]);
-            let sequence = row.get("asset_close_event_sequence").unwrap_or(&row["close_event_sequence"]);
-            let stamp = events.get(&(text(dataset), sequence.as_u64())).and_then(|event| {
-                crate::replay_service::activity_recording::timestamp(payload, event, false)
-            });
+            let sequence = row
+                .get("asset_close_event_sequence")
+                .unwrap_or(&row["close_event_sequence"]);
+            let stamp = events
+                .get(&(text(dataset), sequence.as_u64()))
+                .and_then(|event| {
+                    crate::replay_service::activity_recording::timestamp(payload, event, false)
+                });
             row["close_recorded_at_utc"] = json!(stamp);
             row["report_time_utc"] = row["close_recorded_at_utc"].clone();
         }
     }
     let all_rows = view["ledger"].as_array().cloned().unwrap_or_default();
-    let all_known = all_rows.iter().filter(|r|!r["report_time_utc"].is_null()).count();
+    let all_known = all_rows
+        .iter()
+        .filter(|r| !r["report_time_utc"].is_null())
+        .count();
     if view["analytics_available"] == true {
         let source = json!({"ledger":view["ledger"],"protocol":{"starting_balance":view["metrics"]["starting_balance"]}});
         let selected = build_analytics_view(&source, filters)?;
-        for key in ["ledger", "metrics", "scope", "filters"] { view[key] = selected[key].clone(); }
+        for key in ["ledger", "metrics", "scope", "filters"] {
+            view[key] = selected[key].clone();
+        }
         let metrics = if let Some(rows) = view["ledger"].as_array_mut() {
             rows.sort_by_key(|r| timestamp(time(r)).ok().flatten());
-            Some(compute_metrics_v2(rows, &source["protocol"]["starting_balance"])?)
-        } else { None };
-        if let Some(metrics) = metrics { view["metrics"] = metrics; }
+            Some(compute_metrics_v2(
+                rows,
+                &source["protocol"]["starting_balance"],
+            )?)
+        } else {
+            None
+        };
+        if let Some(metrics) = metrics {
+            view["metrics"] = metrics;
+        }
     }
     view["scope"]["time_basis"] = json!("activity");
     view["provenance"]["time_basis"] = json!("activity");
     let rows = view["ledger"].as_array().cloned().unwrap_or_default();
-    let known = rows.iter().filter(|r| !r["report_time_utc"].is_null()).count();
+    let known = rows
+        .iter()
+        .filter(|r| !r["report_time_utc"].is_null())
+        .count();
     view["scope"]["recording_coverage"] = json!({"known_close_count":known,"unknown_close_count":all_rows.len()-all_known,"selected_known_close_count":known,"legacy_backfill":false});
     view["equity_curve"] = equity_curve(payload, filters, true)?;
     Ok(view)
@@ -61,14 +93,23 @@ mod tests {
     fn fixture(stamps: &[Option<&str>]) -> Value {
         let cases: Value = serde_json::from_str(include_str!("oracle_cases.json")).unwrap();
         let mut record = cases["inputs"][2].clone();
-        let events = record["payload"]["execution"]["ledger"].as_array().unwrap().clone();
-        let mut proofs = json!({}); let mut batches = vec![];
+        let events = record["payload"]["execution"]["ledger"]
+            .as_array()
+            .unwrap()
+            .clone();
+        let mut proofs = json!({});
+        let mut batches = vec![];
         for (event, stamp) in events.iter().zip(stamps) {
             if let Some(stamp) = stamp {
                 let mut canonical = event.as_object().unwrap().clone();
-                canonical.remove("replay_session_id"); canonical.remove("branch_id");
-                let hash = format!("{:x}", Sha256::digest(serde_json::to_vec(&canonical).unwrap()));
-                proofs[event["sequence"].to_string()] = json!({"event_sha256":hash,"batch_index":batches.len()});
+                canonical.remove("replay_session_id");
+                canonical.remove("branch_id");
+                let hash = format!(
+                    "{:x}",
+                    Sha256::digest(serde_json::to_vec(&canonical).unwrap())
+                );
+                proofs[event["sequence"].to_string()] =
+                    json!({"event_sha256":hash,"batch_index":batches.len()});
                 batches.push(json!({"recorded_at_utc":stamp}));
             }
         }
@@ -77,77 +118,131 @@ mod tests {
     }
     #[test]
     fn real_close_drives_summary_dashboard_filters_and_facets_without_changing_market_clock() {
-        let r = fixture(&[Some("2026-01-31T23:29:00Z"),Some("2026-01-31T23:30:00Z")]);
+        let r = fixture(&[Some("2026-01-31T23:29:00Z"), Some("2026-01-31T23:30:00Z")]);
         let zone = chrono_tz::Asia::Ho_Chi_Minh;
         let f = json!({"from_close_utc":"2026-02-01T00:00:00+07:00","to_close_utc":"2026-02-01T23:59:59+07:00"});
-        let v = view(&r,Some(&f),zone).unwrap();
-        assert_eq!(v["ledger"].as_array().unwrap().len(),1);
-        assert_eq!(v["ledger"][0]["close_time_utc"],1700000060);
-        assert_eq!(v["ledger"][0]["report_time_utc"],"2026-01-31T23:30:00Z");
-        let summary = build_activity_session_summary(&r,"tenant-a",zone).unwrap();
-        assert_eq!(summary["periods"]["months"][0]["label"],"2026-02");
-        let d = build_activity_dashboard(&[r.clone()],"tenant-a",None,None,Some(&f),true,&[],zone).unwrap();
-        assert_eq!(d["months"][0]["month"],"2026-02");
-        assert_eq!(d["chart_period"],"day");
-        assert_eq!(d["days"][0]["date"],"2026-02-01");
-        assert_eq!(d["days"][0]["closed_trade_count"],d["metrics"]["closed_trade_count"]);
-        assert_eq!(d["days"][0]["win_rate_pct"],d["metrics"]["win_rate_pct"]);
-        let page = trades::build_trades_page(&d,&[],1,10,"close_time_utc","desc",r#"{"timezone":"Asia/Ho_Chi_Minh","years":["2026"],"months":["2"]}"#,None).unwrap();
-        assert_eq!(page["pagination"]["returned_count"],1);
-        assert_eq!(page["facets"]["date_range"]["from"],"2026-02-01");
-        assert!(build_replay_analytics_view(&r,Some(&f)).unwrap()["ledger"].as_array().unwrap().is_empty());
+        let v = view(&r, Some(&f), zone).unwrap();
+        assert_eq!(v["ledger"].as_array().unwrap().len(), 1);
+        assert_eq!(v["ledger"][0]["close_time_utc"], 1700000060);
+        assert_eq!(v["ledger"][0]["report_time_utc"], "2026-01-31T23:30:00Z");
+        let summary = build_activity_session_summary(&r, "tenant-a", zone).unwrap();
+        assert_eq!(summary["periods"]["months"][0]["label"], "2026-02");
+        let d = build_activity_dashboard(
+            &[r.clone()],
+            "tenant-a",
+            None,
+            None,
+            Some(&f),
+            true,
+            &[],
+            zone,
+        )
+        .unwrap();
+        assert_eq!(d["months"][0]["month"], "2026-02");
+        assert_eq!(d["chart_period"], "day");
+        assert_eq!(d["days"][0]["date"], "2026-02-01");
+        assert_eq!(
+            d["days"][0]["closed_trade_count"],
+            d["metrics"]["closed_trade_count"]
+        );
+        assert_eq!(d["days"][0]["win_rate_pct"], d["metrics"]["win_rate_pct"]);
+        let page = trades::build_trades_page(
+            &d,
+            &[],
+            1,
+            10,
+            "close_time_utc",
+            "desc",
+            r#"{"timezone":"Asia/Ho_Chi_Minh","years":["2026"],"months":["2"]}"#,
+            None,
+        )
+        .unwrap();
+        assert_eq!(page["pagination"]["returned_count"], 1);
+        assert_eq!(page["facets"]["date_range"]["from"], "2026-02-01");
+        assert!(
+            build_replay_analytics_view(&r, Some(&f)).unwrap()["ledger"]
+                .as_array()
+                .unwrap()
+                .is_empty()
+        );
     }
     #[test]
     fn legacy_missing_close_keeps_alltime_money_but_never_invents_date_or_equity_history() {
-        let r = fixture(&[Some("2026-10-24T10:00:00Z"),None]);
-        let v = view(&r,None,chrono_tz::UTC).unwrap();
-        assert_eq!(v["metrics"]["net_pnl"],17.0);
+        let r = fixture(&[Some("2026-10-24T10:00:00Z"), None]);
+        let v = view(&r, None, chrono_tz::UTC).unwrap();
+        assert_eq!(v["metrics"]["net_pnl"], 17.0);
         assert!(v["ledger"][0]["report_time_utc"].is_null());
-        assert_eq!(v["scope"]["recording_coverage"]["unknown_close_count"],1);
-        let summary = build_activity_session_summary(&r,"tenant-a",chrono_tz::UTC).unwrap();
+        assert_eq!(v["scope"]["recording_coverage"]["unknown_close_count"], 1);
+        let summary = build_activity_session_summary(&r, "tenant-a", chrono_tz::UTC).unwrap();
         assert!(summary["periods"]["months"].as_array().unwrap().is_empty());
-        assert_eq!(summary["periods"]["incomplete"],true);
-        assert_eq!(v["equity_curve"]["points"][0]["equity"],99996.0);
-        assert_ne!(v["equity_curve"]["points"][0]["equity"],v["metrics"]["starting_balance"]);
-        assert_eq!(v["equity_curve"]["partial"],true);
-        let filtered = view(&r,Some(&json!({"from_close_utc":"2026-10-01T00:00:00Z"})),chrono_tz::UTC).unwrap();
-        assert_eq!(filtered["metrics"]["closed_trade_count"],0);
+        assert_eq!(summary["periods"]["incomplete"], true);
+        assert_eq!(v["equity_curve"]["points"][0]["equity"], 99996.0);
+        assert_ne!(
+            v["equity_curve"]["points"][0]["equity"],
+            v["metrics"]["starting_balance"]
+        );
+        assert_eq!(v["equity_curve"]["partial"], true);
+        let filtered = view(
+            &r,
+            Some(&json!({"from_close_utc":"2026-10-01T00:00:00Z"})),
+            chrono_tz::UTC,
+        )
+        .unwrap();
+        assert_eq!(filtered["metrics"]["closed_trade_count"], 0);
     }
     #[test]
     fn true_equity_includes_open_floating_and_cannot_be_reconstructed_from_filtered_wins() {
-        let r = fixture(&[Some("2026-11-01T05:59:00Z"),Some("2026-11-01T06:01:00Z")]);
-        let v = view(&r,Some(&json!({"outcome":"loss"})),chrono_tz::America::New_York).unwrap();
-        assert_eq!(v["metrics"]["closed_trade_count"],0);
-        assert_eq!(v["equity_curve"]["points"][0]["equity"],99996.0);
-        assert_eq!(v["equity_curve"]["points"][1]["equity"],100017.0);
-        assert_eq!(v["equity_curve"]["scope"],"account");
-        assert_eq!(v["equity_curve"]["trade_filters_apply"],false);
+        let r = fixture(&[Some("2026-11-01T05:59:00Z"), Some("2026-11-01T06:01:00Z")]);
+        let v = view(
+            &r,
+            Some(&json!({"outcome":"loss"})),
+            chrono_tz::America::New_York,
+        )
+        .unwrap();
+        assert_eq!(v["metrics"]["closed_trade_count"], 0);
+        assert_eq!(v["equity_curve"]["points"][0]["equity"], 99996.0);
+        assert_eq!(v["equity_curve"]["points"][1]["equity"], 100017.0);
+        assert_eq!(v["equity_curve"]["scope"], "account");
+        assert_eq!(v["equity_curve"]["trade_filters_apply"], false);
     }
 
     #[test]
     fn session_equity_uses_market_clock_without_needing_activity_receipts() {
-        let r = fixture(&[None,None]);
-        let market = equity_curve(&r["payload"],None,false).unwrap();
-        assert_eq!(market["time_basis"],"market");
-        assert_eq!(market["partial"],false);
-        assert_eq!(market["points"][0]["equity"],99996.0);
-        assert_eq!(market["points"][1]["equity"],100017.0);
-        assert_eq!(timestamp(&market["points"][1]["time_utc"]).unwrap(),timestamp(&json!(1700000060)).unwrap());
-        assert!(equity_curve(&r["payload"],None,true).unwrap()["points"].as_array().unwrap().is_empty());
-        let filtered=equity_curve(&r["payload"],Some(&json!({"from_close_utc":1700000060})),false).unwrap();
-        assert_eq!(filtered["points"].as_array().unwrap().len(),1);
+        let r = fixture(&[None, None]);
+        let market = equity_curve(&r["payload"], None, false).unwrap();
+        assert_eq!(market["time_basis"], "market");
+        assert_eq!(market["partial"], false);
+        assert_eq!(market["points"][0]["equity"], 99996.0);
+        assert_eq!(market["points"][1]["equity"], 100017.0);
+        assert_eq!(
+            timestamp(&market["points"][1]["time_utc"]).unwrap(),
+            timestamp(&json!(1700000060)).unwrap()
+        );
+        assert!(
+            equity_curve(&r["payload"], None, true).unwrap()["points"]
+                .as_array()
+                .unwrap()
+                .is_empty()
+        );
+        let filtered = equity_curve(
+            &r["payload"],
+            Some(&json!({"from_close_utc":1700000060})),
+            false,
+        )
+        .unwrap();
+        assert_eq!(filtered["points"].as_array().unwrap().len(), 1);
     }
 
     #[test]
     fn market_portfolio_equity_comes_from_account_ledger() {
-        let payload=json!({"asset_states":{"a":{},"b":{}},"portfolio_execution":{"ledger":[
+        let payload = json!({"asset_states":{"a":{},"b":{}},"portfolio_execution":{"ledger":[
             {"sequence":1,"virtual_time_utc":1700000000,"kind":"market_fill","equity":99996.0,"balance":100000.0},
             {"sequence":2,"virtual_time_utc":1700000060,"kind":"manual_close","equity":100017.0,"balance":100017.0}
         ]}});
-        let curve=equity_curve(&payload,None,false).unwrap();
-        assert_eq!(curve["points"].as_array().unwrap().len(),2);
-        assert_eq!(curve["points"][0]["equity"],99996.0);
-        assert_eq!(curve["scope"],"account");
+        let curve = equity_curve(&payload, None, false).unwrap();
+        assert_eq!(curve["points"].as_array().unwrap().len(), 2);
+        assert_eq!(curve["points"][0]["equity"], 99996.0);
+        assert_eq!(curve["scope"], "account");
     }
 
     #[test]
@@ -161,23 +256,40 @@ mod tests {
             {"sequence":6,"virtual_time_utc":1700000240,"kind":"price_mark","equity":10000,"balance":50000},
             {"sequence":7,"virtual_time_utc":1700000300,"kind":"phase_transition","equity":10000,"balance":50000,"details":{"carry_policy":"carry_balance"}}
         ]);
-        for portfolio in [false,true] {
-            let payload = if portfolio {json!({"asset_states":{"a":{}},"portfolio_execution":{"ledger":events}})}
-                else {json!({"execution":{"ledger":events}})};
-            let curve = equity_curve(&payload,None,false).unwrap();
-            let segments:Vec<_> = curve["points"].as_array().unwrap().iter().map(|point|point["segment"].as_u64().unwrap()).collect();
-            assert_eq!(segments,vec![0,0,1,1,1,1,1]);
-            assert_eq!(curve["partial"],false);
-            let filtered=equity_curve(&payload,Some(&json!({"from_close_utc":1700000060})),false).unwrap();
-            assert_eq!(filtered["points"][1]["segment"],1);
-            assert_eq!(filtered["points"][1]["equity"],50000.0);
+        for portfolio in [false, true] {
+            let payload = if portfolio {
+                json!({"asset_states":{"a":{}},"portfolio_execution":{"ledger":events}})
+            } else {
+                json!({"execution":{"ledger":events}})
+            };
+            let curve = equity_curve(&payload, None, false).unwrap();
+            let segments: Vec<_> = curve["points"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|point| point["segment"].as_u64().unwrap())
+                .collect();
+            assert_eq!(segments, vec![0, 0, 1, 1, 1, 1, 1]);
+            assert_eq!(curve["partial"], false);
+            let filtered =
+                equity_curve(&payload, Some(&json!({"from_close_utc":1700000060})), false).unwrap();
+            assert_eq!(filtered["points"][1]["segment"], 1);
+            assert_eq!(filtered["points"][1]["equity"], 50000.0);
         }
     }
 }
 
-pub(super) fn equity_curve(payload: &Value, filters: Option<&Value>, activity_basis: bool) -> R<Value> {
+pub(super) fn equity_curve(
+    payload: &Value,
+    filters: Option<&Value>,
+    activity_basis: bool,
+) -> R<Value> {
     let portfolio = payload["asset_states"].is_object();
-    let account = if portfolio { &payload["portfolio_execution"] } else { &payload["execution"] };
+    let account = if portfolio {
+        &payload["portfolio_execution"]
+    } else {
+        &payload["execution"]
+    };
     let f = normalize_filters(filters)?;
     let from = timestamp(&f["from_close_utc"])?;
     let to = timestamp(&f["to_close_utc"])?;
@@ -191,22 +303,48 @@ pub(super) fn equity_curve(payload: &Value, filters: Option<&Value>, activity_ba
         }
         let state = json!([event["equity"], event["balance"]]);
         // Unchanged administrative events do not create holes in a financial curve.
-        if previous.as_ref() == Some(&state) && !["market_fill","manual_close","protective_fill","phase_transition"].contains(&text(&event["kind"])) { continue; }
+        if previous.as_ref() == Some(&state)
+            && ![
+                "market_fill",
+                "manual_close",
+                "protective_fill",
+                "phase_transition",
+            ]
+            .contains(&text(&event["kind"]))
+        {
+            continue;
+        }
         previous = Some(state);
         let stamp = if activity_basis {
             crate::replay_service::activity_recording::timestamp(payload, event, portfolio)
         } else {
             timestamp(&event["virtual_time_utc"])?.map(iso)
         };
-        let Some(date) = stamp.as_ref().and_then(|s| timestamp(&json!(s)).ok().flatten()) else { missing += 1; segment += 1; continue; };
-        if from.is_some_and(|f|date<f) || to.is_some_and(|t|date>t) { continue; }
+        let Some(date) = stamp
+            .as_ref()
+            .and_then(|s| timestamp(&json!(s)).ok().flatten())
+        else {
+            missing += 1;
+            segment += 1;
+            continue;
+        };
+        if from.is_some_and(|f| date < f) || to.is_some_and(|t| date > t) {
+            continue;
+        }
         points.push(json!({"time_utc":stamp,"equity":number(&event["equity"])? ,"balance":number(&event["balance"])? ,"sequence":event["sequence"],"segment":segment}));
     }
     // Sample within each segment; never connect across missing observations.
     let total = points.len();
     if total > 128 {
-        let keep: BTreeSet<_> = (0..128).map(|i|i*(total-1)/127).collect();
-        points = points.into_iter().enumerate().filter(|(i,_)|keep.contains(i)).map(|(_,p)|p).collect();
+        let keep: BTreeSet<_> = (0..128).map(|i| i * (total - 1) / 127).collect();
+        points = points
+            .into_iter()
+            .enumerate()
+            .filter(|(i, _)| keep.contains(i))
+            .map(|(_, p)| p)
+            .collect();
     }
-    Ok(json!({"points":points,"total_points":total,"sampled":total>128,"time_basis":if activity_basis {"activity"} else {"market"},"value_basis":"account_equity_including_floating_pnl","scope":"account","trade_filters_apply":false,"unknown_event_count":missing,"partial":missing>0,"legacy_backfill":false}))
+    Ok(
+        json!({"points":points,"total_points":total,"sampled":total>128,"time_basis":if activity_basis {"activity"} else {"market"},"value_basis":"account_equity_including_floating_pnl","scope":"account","trade_filters_apply":false,"unknown_event_count":missing,"partial":missing>0,"legacy_backfill":false}),
+    )
 }

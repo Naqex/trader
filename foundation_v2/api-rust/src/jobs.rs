@@ -79,7 +79,7 @@ async fn job(
                 tokio::task::spawn_blocking(move || {
                     let _permit = permit;
                     read_job_result(root, &path, &hash, &identity).map_err(|_| {
-                        ApiError::detail(StatusCode::SERVICE_UNAVAILABLE,"result_untrusted")
+                        ApiError::detail(StatusCode::SERVICE_UNAVAILABLE, "result_untrusted")
                     })
                 })
                 .await
@@ -87,7 +87,12 @@ async fn job(
                     ApiError::detail(StatusCode::SERVICE_UNAVAILABLE, "result_unavailable")
                 })??
             }
-            _ => return Err(ApiError::detail(StatusCode::SERVICE_UNAVAILABLE,"result_untrusted")),
+            _ => {
+                return Err(ApiError::detail(
+                    StatusCode::SERVICE_UNAVAILABLE,
+                    "result_untrusted",
+                ));
+            }
         };
     }
     Ok(Json(result))
@@ -106,72 +111,147 @@ pub(crate) struct StoredResultIdentity {
 impl StoredResultIdentity {
     pub(crate) fn from_row(row: &tokio_postgres::Row) -> Self {
         Self {
-            workspace: row.get("workspace_id"), job: row.get("job_id"),
-            dataset: row.get("dataset_id"), dataset_sha256: row.get("dataset_sha256"),
-            strategy: row.get("strategy_version"), starting_balance: row.get("starting_balance"),
-            protocol: row.get("protocol_json"), protocol_sha256: row.get("protocol_sha256"),
+            workspace: row.get("workspace_id"),
+            job: row.get("job_id"),
+            dataset: row.get("dataset_id"),
+            dataset_sha256: row.get("dataset_sha256"),
+            strategy: row.get("strategy_version"),
+            starting_balance: row.get("starting_balance"),
+            protocol: row.get("protocol_json"),
+            protocol_sha256: row.get("protocol_sha256"),
         }
     }
 }
 
 // A checksum proves bytes, not ownership. Bind both legacy and leased candidate
 // artifacts to the selected job before returning their data or projections.
-pub(crate) fn read_job_result(root: PathBuf, relative: &str, expected: &str, identity: &StoredResultIdentity) -> Result<Value,ApiError> {
-    let invalid=||ApiError::detail(StatusCode::SERVICE_UNAVAILABLE,"result_untrusted");
-    let normalized=relative.replace('\\',"/");
-    let legacy=format!("{}/results/{}.json",identity.workspace,identity.job);
-    let prefix=format!("{}/results/{}/",identity.workspace,identity.job);
-    let candidate=normalized.strip_prefix(&prefix).is_some_and(|name| {
-        name.strip_prefix("attempt-").and_then(|s|s.strip_suffix(".json")).and_then(|s|s.split_once('-')).is_some_and(|(attempt,token)| {
-            attempt.parse::<u32>().is_ok_and(|n|n>0) && token.len()==16 && token.bytes().all(|b|b.is_ascii_hexdigit())
-        })
+pub(crate) fn read_job_result(
+    root: PathBuf,
+    relative: &str,
+    expected: &str,
+    identity: &StoredResultIdentity,
+) -> Result<Value, ApiError> {
+    let invalid = || ApiError::detail(StatusCode::SERVICE_UNAVAILABLE, "result_untrusted");
+    let normalized = relative.replace('\\', "/");
+    let legacy = format!("{}/results/{}.json", identity.workspace, identity.job);
+    let prefix = format!("{}/results/{}/", identity.workspace, identity.job);
+    let candidate = normalized.strip_prefix(&prefix).is_some_and(|name| {
+        name.strip_prefix("attempt-")
+            .and_then(|s| s.strip_suffix(".json"))
+            .and_then(|s| s.split_once('-'))
+            .is_some_and(|(attempt, token)| {
+                attempt.parse::<u32>().is_ok_and(|n| n > 0)
+                    && token.len() == 16
+                    && token.bytes().all(|b| b.is_ascii_hexdigit())
+            })
     });
-    if normalized!=legacy && !candidate {return Err(invalid());}
-    let result=read_result(root,relative,expected)?;
-    if !result.is_object() || result["contract_version"]!=crate::CONTRACT_VERSION
-        || result["workspace_id"]!=identity.workspace || result["job_id"]!=identity.job
-        || result["dataset_id"]!=identity.dataset || result["dataset_sha256"]!=identity.dataset_sha256
-        || identity.dataset_sha256.len()!=64 || !identity.dataset_sha256.bytes().all(|b|b.is_ascii_hexdigit())
-        || result["created_at_utc"].as_str().is_none_or(|s|s.is_empty())
-        || !identity.starting_balance.is_finite() || identity.starting_balance<=0.0 {
+    if normalized != legacy && !candidate {
         return Err(invalid());
     }
-    if let Some(protocol)=&identity.protocol {
-        let bytes=crate::research_jobs::canonical_py_json(protocol).map_err(|_|invalid())?;
-        let hash=format!("{:x}",Sha256::digest(&bytes));
-        let schema=result["artifact_schema_version"].as_str().ok_or_else(invalid)?;
-        if identity.strategy!="bar-breakout-v1" || !matches!(schema,"research-engine-result-v1"|"research-oos-result-v1")
-            || identity.protocol_sha256.as_deref()!=Some(hash.as_str()) || result["protocol_sha256"]!=hash
-            || crate::research_jobs::canonical_py_json(&result["protocol"]).map_err(|_|invalid())?!=bytes
-            || protocol["starting_balance"].as_f64()!=Some(identity.starting_balance)
-            || protocol["dataset"]["dataset_id"]!=identity.dataset || protocol["dataset"]["artifact_sha256"]!=identity.dataset_sha256
-            || result["engine_version"]!="bar-breakout-v1" || result["engine_code_sha256"]!=protocol["engine"]["code_sha256"]
-            || result["playbook_id"]!=protocol["playbook"]["record_id"] || result["playbook_revision"]!=protocol["playbook"]["revision"] {
+    let result = read_result(root, relative, expected)?;
+    if !result.is_object()
+        || result["contract_version"] != crate::CONTRACT_VERSION
+        || result["workspace_id"] != identity.workspace
+        || result["job_id"] != identity.job
+        || result["dataset_id"] != identity.dataset
+        || result["dataset_sha256"] != identity.dataset_sha256
+        || identity.dataset_sha256.len() != 64
+        || !identity
+            .dataset_sha256
+            .bytes()
+            .all(|b| b.is_ascii_hexdigit())
+        || result["created_at_utc"]
+            .as_str()
+            .is_none_or(|s| s.is_empty())
+        || !identity.starting_balance.is_finite()
+        || identity.starting_balance <= 0.0
+    {
+        return Err(invalid());
+    }
+    if let Some(protocol) = &identity.protocol {
+        let bytes = crate::research_jobs::canonical_py_json(protocol).map_err(|_| invalid())?;
+        let hash = format!("{:x}", Sha256::digest(&bytes));
+        let schema = result["artifact_schema_version"]
+            .as_str()
+            .ok_or_else(invalid)?;
+        if identity.strategy != "bar-breakout-v1"
+            || !matches!(
+                schema,
+                "research-engine-result-v1" | "research-oos-result-v1"
+            )
+            || identity.protocol_sha256.as_deref() != Some(hash.as_str())
+            || result["protocol_sha256"] != hash
+            || crate::research_jobs::canonical_py_json(&result["protocol"])
+                .map_err(|_| invalid())?
+                != bytes
+            || protocol["starting_balance"].as_f64() != Some(identity.starting_balance)
+            || protocol["dataset"]["dataset_id"] != identity.dataset
+            || protocol["dataset"]["artifact_sha256"] != identity.dataset_sha256
+            || result["engine_version"] != "bar-breakout-v1"
+            || result["engine_code_sha256"] != protocol["engine"]["code_sha256"]
+            || result["playbook_id"] != protocol["playbook"]["record_id"]
+            || result["playbook_revision"] != protocol["playbook"]["revision"]
+        {
             return Err(invalid());
         }
-        if schema=="research-engine-result-v1" {
-            if result["split"]!=protocol["split"] || !result["ledger"].is_array() || !result["metrics"].is_object()
-                || !result["signals"].is_object() || !result["assumptions"].is_object() || !result["observed_range"].is_object() {return Err(invalid());}
-        } else if result["split"]!="validation" || result["validation_schema"]!="research-oos-validation-v1"
-            || !result["trials"].is_array() || ["selection","walk_forward","sweep","outcome_summary","source_range"].iter().any(|k|!result[*k].is_object()) {
+        if schema == "research-engine-result-v1" {
+            if result["split"] != protocol["split"]
+                || !result["ledger"].is_array()
+                || !result["metrics"].is_object()
+                || !result["signals"].is_object()
+                || !result["assumptions"].is_object()
+                || !result["observed_range"].is_object()
+            {
+                return Err(invalid());
+            }
+        } else if result["split"] != "validation"
+            || result["validation_schema"] != "research-oos-validation-v1"
+            || !result["trials"].is_array()
+            || [
+                "selection",
+                "walk_forward",
+                "sweep",
+                "outcome_summary",
+                "source_range",
+            ]
+            .iter()
+            .any(|k| !result[*k].is_object())
+        {
             return Err(invalid());
         }
-    } else if identity.strategy!="close-delta-v1" || identity.protocol_sha256.is_some()
-        || !result["artifact_schema_version"].is_null() || !result["protocol"].is_null() || !result["protocol_sha256"].is_null()
-        || result["strategy_version"]!=identity.strategy || !result["metrics"].is_object()
-        || result["metrics_schema_version"]!="metrics-v2" || result["trade_count"].as_u64().is_none()
-        || result["metrics"]["starting_balance"].as_f64()!=Some(identity.starting_balance) {
+    } else if identity.strategy != "close-delta-v1"
+        || identity.protocol_sha256.is_some()
+        || !result["artifact_schema_version"].is_null()
+        || !result["protocol"].is_null()
+        || !result["protocol_sha256"].is_null()
+        || result["strategy_version"] != identity.strategy
+        || !result["metrics"].is_object()
+        || result["metrics_schema_version"] != "metrics-v2"
+        || result["trade_count"].as_u64().is_none()
+        || result["metrics"]["starting_balance"].as_f64() != Some(identity.starting_balance)
+    {
         return Err(invalid());
     }
     Ok(result)
 }
 
 // Completed result reads preserve the immutable worker checksum and never accept a DB path outside artifact_root.
-pub(crate) fn read_result(root: PathBuf, relative: &str, expected: &str) -> Result<Value, ApiError> {
+pub(crate) fn read_result(
+    root: PathBuf,
+    relative: &str,
+    expected: &str,
+) -> Result<Value, ApiError> {
     let invalid = || ApiError::detail(StatusCode::SERVICE_UNAVAILABLE, "result_untrusted");
-    let io_error=|e:std::io::Error|if e.kind()==std::io::ErrorKind::NotFound{
-        ApiError::detail(StatusCode::SERVICE_UNAVAILABLE,"stored_artifact_unavailable")
-    }else{invalid()};
+    let io_error = |e: std::io::Error| {
+        if e.kind() == std::io::ErrorKind::NotFound {
+            ApiError::detail(
+                StatusCode::SERVICE_UNAVAILABLE,
+                "stored_artifact_unavailable",
+            )
+        } else {
+            invalid()
+        }
+    };
     let path = std::path::Path::new(relative);
     if path.is_absolute()
         || path
@@ -433,8 +513,18 @@ mod tests {
         );
         assert!(read_result(root.clone(), "../result.json", &hash).is_err());
         assert!(read_result(root.clone(), "result.json", "wrong").is_err());
-        assert_eq!(read_result(root.clone(), "missing.json", &hash).unwrap_err().1["detail"],"stored_artifact_unavailable");
-        assert_eq!(read_result(root.clone(), "result.json", "wrong").unwrap_err().1["detail"],"result_untrusted");
+        assert_eq!(
+            read_result(root.clone(), "missing.json", &hash)
+                .unwrap_err()
+                .1["detail"],
+            "stored_artifact_unavailable"
+        );
+        assert_eq!(
+            read_result(root.clone(), "result.json", "wrong")
+                .unwrap_err()
+                .1["detail"],
+            "result_untrusted"
+        );
         std::fs::remove_dir_all(root).unwrap();
     }
 }

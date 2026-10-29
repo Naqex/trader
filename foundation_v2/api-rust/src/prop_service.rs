@@ -97,7 +97,10 @@ fn n(v: &Value, k: &str) -> i64 {
     v[k].as_i64().unwrap_or(0)
 }
 fn decimal(v: &Value, k: &str) -> Result<BigDecimal, ApiError> {
-    let raw = v[k].as_str().map(str::to_owned).unwrap_or_else(|| v[k].to_string());
+    let raw = v[k]
+        .as_str()
+        .map(str::to_owned)
+        .unwrap_or_else(|| v[k].to_string());
     if raw.len() > 512 {
         return Err(invalid(&format!("{k} exceeds supported decimal bounds")));
     }
@@ -152,7 +155,8 @@ fn semantic_equal(a: &Value, b: &Value) -> bool {
             if a.len() <= 512 && b.len() <= 512 {
                 if let (Ok(a), Ok(b)) = (BigDecimal::from_str(a), BigDecimal::from_str(b)) {
                     if a.as_bigint_and_exponent().1.unsigned_abs() <= 512
-                        && b.as_bigint_and_exponent().1.unsigned_abs() <= 512 {
+                        && b.as_bigint_and_exponent().1.unsigned_abs() <= 512
+                    {
                         return a == b;
                     }
                 }
@@ -275,7 +279,11 @@ pub async fn load_session(
         .map_err(|_| ApiError::database())?
         .ok_or_else(|| not_found("prop_session_not_found"))?;
     let value = crate::catalog::validated_prop(
-        row.get(0), crate::catalog::PropKind::Session, workspace, id, None,
+        row.get(0),
+        crate::catalog::PropKind::Session,
+        workspace,
+        id,
+        None,
     )?;
     Ok(value)
 }
@@ -297,7 +305,15 @@ pub async fn load_attempt(
         .await
         .map_err(|_| ApiError::database())?
         .ok_or_else(|| not_found("prop_attempt_not_found"))?;
-    stored_attempt_bundle(workspace, session, attempt, session_value, row.get(0), row.get(1), row.get(2))
+    stored_attempt_bundle(
+        workspace,
+        session,
+        attempt,
+        session_value,
+        row.get(0),
+        row.get(1),
+        row.get(2),
+    )
 }
 fn stored_attempt_bundle(
     workspace: &str,
@@ -309,20 +325,37 @@ fn stored_attempt_bundle(
     r: Value,
 ) -> Result<Value, ApiError> {
     let session_value = crate::catalog::validated_prop(
-        session_value, crate::catalog::PropKind::Session, workspace, session, None,
+        session_value,
+        crate::catalog::PropKind::Session,
+        workspace,
+        session,
+        None,
     )?;
     let a = crate::catalog::validated_prop(
-        attempt_value, crate::catalog::PropKind::Attempt, workspace, session, Some(attempt),
+        attempt_value,
+        crate::catalog::PropKind::Attempt,
+        workspace,
+        session,
+        Some(attempt),
     )?;
     let p = crate::catalog::validated_prop(
-        phase_value, crate::catalog::PropKind::Phase, workspace, session, Some(attempt),
+        phase_value,
+        crate::catalog::PropKind::Phase,
+        workspace,
+        session,
+        Some(attempt),
     )?;
     scope_check(workspace, session, &[&a, &p])?;
     if a["attempt_id"] != attempt || p["attempt_id"] != attempt {
         return Err(conflict("stored prop attempt scope mismatch"));
     }
-    if session_value["profile"]["profile_hash"] != a["profile_hash"] || a["profile_hash"] != p["profile_hash"] {
-        return Err(ApiError::detail(StatusCode::SERVICE_UNAVAILABLE, "prop_snapshot_untrusted"));
+    if session_value["profile"]["profile_hash"] != a["profile_hash"]
+        || a["profile_hash"] != p["profile_hash"]
+    {
+        return Err(ApiError::detail(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "prop_snapshot_untrusted",
+        ));
     }
     Ok(json!({"session":session_value,"attempt":a,"phase":p,"resume_state":r}))
 }
@@ -356,27 +389,60 @@ pub async fn lock_dependencies(
         let mut payload: Value = row.get(1);
         if payload["asset_states"].is_object() {
             if payload["portfolio_execution"].is_null() {
-                if payload["asset_states"].as_object().unwrap().values().any(|asset| asset["execution"]["ledger"].as_array()
-                    .into_iter().flatten().any(|event|matches!(event["kind"].as_str(),Some("market_fill"|"manual_close"|"protective_fill"|"phase_transition")))) {
-                    return Err(conflict("Legacy Prop portfolio lacks a canonical account ledger; create a new session. Existing history is preserved."));
+                if payload["asset_states"]
+                    .as_object()
+                    .unwrap()
+                    .values()
+                    .any(|asset| {
+                        asset["execution"]["ledger"]
+                            .as_array()
+                            .into_iter()
+                            .flatten()
+                            .any(|event| {
+                                matches!(
+                                    event["kind"].as_str(),
+                                    Some(
+                                        "market_fill"
+                                            | "manual_close"
+                                            | "protective_fill"
+                                            | "phase_transition"
+                                    )
+                                )
+                            })
+                    })
+                {
+                    return Err(conflict(
+                        "Legacy Prop portfolio lacks a canonical account ledger; create a new session. Existing history is preserved.",
+                    ));
                 }
                 let mut pins = Vec::new();
                 for dataset in payload["asset_states"].as_object().unwrap().keys() {
                     let row=tx.query_opt("SELECT artifact_sha256 FROM datasets WHERE workspace_id=$1 AND dataset_id=$2 FOR KEY SHARE",&[&workspace,&dataset]).await.map_err(|_|ApiError::database())?.ok_or_else(||not_found("dataset_not_found"))?;
-                    pins.push(json!({"dataset_id":dataset,"dataset_sha256":row.get::<_,String>(0)}));
+                    pins.push(
+                        json!({"dataset_id":dataset,"dataset_sha256":row.get::<_,String>(0)}),
+                    );
                 }
-                crate::replay_portfolio::initialize(&mut payload,id,pins).map_err(|e|conflict(&e))?;
-                crate::replay_portfolio::update(&mut payload).map_err(|e|conflict(&e))?;
+                crate::replay_portfolio::initialize(&mut payload, id, pins)
+                    .map_err(|e| conflict(&e))?;
+                crate::replay_portfolio::update(&mut payload).map_err(|e| conflict(&e))?;
             }
             let portfolio = &payload["portfolio_execution"];
             if binding["dataset_pins"] != portfolio["dataset_pins"]
-                || binding["dataset_sha256"] != portfolio["dataset_sha256"] {
-                return Err(conflict("Prop portfolio binding does not match immutable replay pins"));
+                || binding["dataset_sha256"] != portfolio["dataset_sha256"]
+            {
+                return Err(conflict(
+                    "Prop portfolio binding does not match immutable replay pins",
+                ));
             }
-            for pin in portfolio["dataset_pins"].as_array().ok_or_else(||conflict("portfolio dataset pins are missing"))? {
-                let dataset = s(pin,"dataset_id");
+            for pin in portfolio["dataset_pins"]
+                .as_array()
+                .ok_or_else(|| conflict("portfolio dataset pins are missing"))?
+            {
+                let dataset = s(pin, "dataset_id");
                 let row=tx.query_opt("SELECT artifact_sha256 FROM datasets WHERE workspace_id=$1 AND dataset_id=$2 FOR KEY SHARE",&[&workspace,&dataset]).await.map_err(|_|ApiError::database())?.ok_or_else(||not_found("dataset_not_found"))?;
-                if json!(row.get::<_,String>(0)) != pin["dataset_sha256"] { return Err(conflict("portfolio dataset sha256 changed")); }
+                if json!(row.get::<_, String>(0)) != pin["dataset_sha256"] {
+                    return Err(conflict("portfolio dataset sha256 changed"));
+                }
             }
         }
     }
@@ -501,7 +567,9 @@ pub async fn apply_lifecycle_event(
         ));
     }
     let mut resume = if event["evaluation_quality"] == "full_for_declared_model"
-        || supplied.is_some_and(|resume|resume["replay_binding"]["schema_version"] == "replay-portfolio-binding-v1") {
+        || supplied.is_some_and(|resume| {
+            resume["replay_binding"]["schema_version"] == "replay-portfolio-binding-v1"
+        }) {
         supplied.unwrap_or(&current["resume_state"]).clone()
     } else {
         current["resume_state"].clone()
@@ -764,7 +832,9 @@ async fn execute(
             if body["action"] == "next_phase"
                 && current["resume_state"]["replay_binding"].is_object()
             {
-                let out = crate::replay_service::handle_bound_next_phase(tx, workspace, &body, &current).await?;
+                let out =
+                    crate::replay_service::handle_bound_next_phase(tx, workspace, &body, &current)
+                        .await?;
                 return Ok((StatusCode::OK, out));
             }
             if let Some(rev) =
@@ -904,10 +974,13 @@ async fn read(
     path: Option<Path<HashMap<String, String>>>,
 ) -> Result<Response, ApiError> {
     let mut conn = state.pool.get().await.map_err(|_| ApiError::database())?;
-    let tx = conn.build_transaction()
+    let tx = conn
+        .build_transaction()
         .isolation_level(tokio_postgres::IsolationLevel::RepeatableRead)
         .read_only(true)
-        .start().await.map_err(|_| ApiError::database())?;
+        .start()
+        .await
+        .map_err(|_| ApiError::database())?;
     let workspace = scope.workspace_id.as_str();
     let p = path.map(|p| p.0).unwrap_or_default();
     let sid = p.get("session_id").map(String::as_str).unwrap_or("");
@@ -943,7 +1016,15 @@ async fn read(
         let rows=tx.query("SELECT s.snapshot_json,a.snapshot_json,a.phase_json,a.resume_json,s.session_id,a.attempt_id FROM prop_sessions s JOIN prop_attempts a ON a.workspace_id=s.workspace_id AND a.session_id=s.session_id WHERE s.workspace_id=$1 ORDER BY s.updated_at_utc DESC,s.session_id,a.updated_at_utc DESC,a.attempt_id",&[&workspace]).await.map_err(|_|ApiError::database())?;
         let mut reports = vec![];
         for row in rows {
-            let current = stored_attempt_bundle(workspace, row.get::<_, &str>(4), row.get::<_, &str>(5), row.get(0), row.get(1), row.get(2), row.get(3))?;
+            let current = stored_attempt_bundle(
+                workspace,
+                row.get::<_, &str>(4),
+                row.get::<_, &str>(5),
+                row.get(0),
+                row.get(1),
+                row.get(2),
+                row.get(3),
+            )?;
             let a = &current["attempt"];
             if status.is_some_and(|v| a["status"] != v.as_str())
                 || branch.is_some_and(|v| a["branch_kind"] != v.as_str())

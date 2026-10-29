@@ -207,7 +207,12 @@ pub fn verify_installation(root: &Path, path: &Path, engine_hash: &str) -> Resul
     verify_installation_checked(root, path, engine_hash, &|| Ok(()))
 }
 
-pub fn verify_installation_checked(root: &Path, path: &Path, engine_hash: &str, check: &impl Fn() -> Result<(), String>) -> Result<Value, String> {
+pub fn verify_installation_checked(
+    root: &Path,
+    path: &Path,
+    engine_hash: &str,
+    check: &impl Fn() -> Result<(), String>,
+) -> Result<Value, String> {
     check()?;
     let value = descriptor(root, path, engine_hash)?;
     for name in ["engine_runtime", "base_python"] {
@@ -243,26 +248,35 @@ mod tests {
             for name in ["engine_runtime", "base_python"] {
                 let expected = &value["dependency_trees"][name];
                 let (actual, stats) = dependencies::tree_measured(
-                    Path::new(expected["path"].as_str().unwrap()), &|| Ok(())
-                ).unwrap();
+                    Path::new(expected["path"].as_str().unwrap()),
+                    &|| Ok(()),
+                )
+                .unwrap();
                 for field in ["sha256", "file_count", "total_bytes"] {
                     assert_eq!(actual[field], expected[field]);
                 }
-                observations.insert(name.into(), json!({
-                    "read_bytes":stats.read_bytes,"cache_hits":stats.cache_hits,
-                    "cache_misses":stats.cache_misses,
-                    "enumeration_ms":stats.enumeration_time.as_secs_f64()*1000.0,
-                    "file_verification_ms":stats.file_verification_time.as_secs_f64()*1000.0
-                }));
+                observations.insert(
+                    name.into(),
+                    json!({
+                        "read_bytes":stats.read_bytes,"cache_hits":stats.cache_hits,
+                        "cache_misses":stats.cache_misses,
+                        "enumeration_ms":stats.enumeration_time.as_secs_f64()*1000.0,
+                        "file_verification_ms":stats.file_verification_time.as_secs_f64()*1000.0
+                    }),
+                );
             }
-            (value, started.elapsed().as_secs_f64()*1000.0, observations)
+            (
+                value,
+                started.elapsed().as_secs_f64() * 1000.0,
+                observations,
+            )
         };
         let (value, first_ms, first_stats) = measure();
         let (warm, warm_ms, warm_stats) = measure();
         assert_eq!(value["dependency_sha256"], warm["dependency_sha256"]);
         let start = std::time::Instant::now();
         assert_eq!(verify_installation(&root, &path, &hash).unwrap(), value);
-        let production_ms = start.elapsed().as_secs_f64()*1000.0;
+        let production_ms = start.elapsed().as_secs_f64() * 1000.0;
         let start = std::time::Instant::now();
         for _ in 0..10 {
             descriptor(&root, &path, &hash).unwrap();

@@ -215,7 +215,9 @@ async fn call(
     } else {
         "analyst"
     };
-    let selection = config["workflow"]["roles"][node].get("selection").unwrap_or(&config["workflow"]["roles"][role]["selection"]);
+    let selection = config["workflow"]["roles"][node]
+        .get("selection")
+        .unwrap_or(&config["workflow"]["roles"][role]["selection"]);
     let rule = match node {
         "facts" => {
             "Identify claims supported by the supplied evidence. Cite short excerpts. Do not invent market data or calculate financial metrics."
@@ -322,10 +324,13 @@ pub(crate) async fn submit(
     scope: Workspace,
     Json(body): Json<Value>,
 ) -> Result<(StatusCode, Json<Value>), ApiError> {
-    if body.as_object().is_none_or(|v| v.len()<3 || v.keys().any(|k|!["idempotency_key","text","locale","source"].contains(&k.as_str())))
-        || !body["text"]
-            .as_str()
-            .is_some_and(|v| !v.trim().is_empty() && v.len() <= 8192)
+    if body.as_object().is_none_or(|v| {
+        v.len() < 3
+            || v.keys()
+                .any(|k| !["idempotency_key", "text", "locale", "source"].contains(&k.as_str()))
+    }) || !body["text"]
+        .as_str()
+        .is_some_and(|v| !v.trim().is_empty() && v.len() <= 8192)
         || !body["locale"]
             .as_str()
             .is_some_and(|v| ["vi", "en"].contains(&v))
@@ -345,7 +350,9 @@ pub(crate) async fn submit(
             )
         })?;
     let mut request = json!({"conversation_id":key,"idempotency_key":key,"messages":[{"role":"user","content":body["text"]}],"context":{"screen":"journal","locale":body["locale"]}});
-    if let Some(source)=body.get("source") {request["context"]["source"]=source.clone();}
+    if let Some(source) = body.get("source") {
+        request["context"]["source"] = source.clone();
+    }
     state
         .ai_runs
         .submit_with_state(&scope, request, false, true, Some(&state))

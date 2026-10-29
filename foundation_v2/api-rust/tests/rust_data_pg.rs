@@ -376,7 +376,7 @@ async fn import_recovery_and_removal_workflow() {
     let (code, deleted) = request(
         app.clone(),
         "DELETE",
-        &remove.replace("dataset-","dataset%2D"),
+        &remove.replace("dataset-", "dataset%2D"),
         Value::Null,
         Some("data-delete-resume"),
         "tenant-a",
@@ -405,35 +405,74 @@ async fn import_recovery_and_removal_workflow() {
         // A completed receipt belongs to the previous deletion. Reusing the
         // dataset ID must not let that receipt remove a newer pending journal.
         let (code, republished) = request(
-            app.clone(), "POST", "/api/v2/data/csv/import", body.clone(),
-            Some("data-import-generation-2"), "tenant-a",
-        ).await;
+            app.clone(),
+            "POST",
+            "/api/v2/data/csv/import",
+            body.clone(),
+            Some("data-import-generation-2"),
+            "tenant-a",
+        )
+        .await;
         assert_eq!(code, 201, "{republished}");
         assert_eq!(republished["dataset"]["dataset_id"], dataset);
-        let deny_delete = std::fs::OpenOptions::new().read(true).share_mode(1).open(&raw).unwrap();
+        let deny_delete = std::fs::OpenOptions::new()
+            .read(true)
+            .share_mode(1)
+            .open(&raw)
+            .unwrap();
         let (code, pending) = request(
-            app.clone(), "DELETE", &remove, Value::Null,
-            Some("data-delete-generation-2"), "tenant-a",
-        ).await;
+            app.clone(),
+            "DELETE",
+            &remove,
+            Value::Null,
+            Some("data-delete-generation-2"),
+            "tenant-a",
+        )
+        .await;
         assert_eq!(code, 503, "{pending}");
         assert_eq!(pending["detail"], "dataset_cleanup_pending");
-        assert!(conn.query_opt("SELECT 1 FROM datasets WHERE workspace_id='tenant-a' AND dataset_id=$1", &[&dataset]).await.unwrap().is_none());
+        assert!(
+            conn.query_opt(
+                "SELECT 1 FROM datasets WHERE workspace_id='tenant-a' AND dataset_id=$1",
+                &[&dataset]
+            )
+            .await
+            .unwrap()
+            .is_none()
+        );
         let digest = format!("{:x}", Sha256::digest(format!("tenant-a:{dataset}")));
-        let journal = state.config.artifact_root.join("dataset-removals").join(format!("{digest}.json"));
+        let journal = state
+            .config
+            .artifact_root
+            .join("dataset-removals")
+            .join(format!("{digest}.json"));
         let pending_journal = std::fs::read(&journal).unwrap();
         let (code, old_retry) = request(
-            app.clone(), "DELETE", &remove, Value::Null,
-            Some("data-delete"), "tenant-a",
-        ).await;
+            app.clone(),
+            "DELETE",
+            &remove,
+            Value::Null,
+            Some("data-delete"),
+            "tenant-a",
+        )
+        .await;
         assert_eq!(code, 200, "{old_retry}");
         assert_eq!(old_retry, deleted);
-        assert_eq!(std::fs::read(&journal).expect("old receipt removed the newer deletion journal"), pending_journal);
+        assert_eq!(
+            std::fs::read(&journal).expect("old receipt removed the newer deletion journal"),
+            pending_journal
+        );
         assert!(raw.exists());
         drop(deny_delete);
         let (code, completed) = request(
-            app.clone(), "DELETE", &remove, Value::Null,
-            Some("data-delete-generation-2"), "tenant-a",
-        ).await;
+            app.clone(),
+            "DELETE",
+            &remove,
+            Value::Null,
+            Some("data-delete-generation-2"),
+            "tenant-a",
+        )
+        .await;
         assert_eq!(code, 200, "{completed}");
         assert_eq!(completed, deleted);
         assert!(!canonical.exists());

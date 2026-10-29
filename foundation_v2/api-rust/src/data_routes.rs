@@ -139,34 +139,51 @@ pub(crate) fn publish_import(
     rows: &[Value],
 ) -> Result<(String, String, String, String), ApiError> {
     publish_import_with(root, workspace, dataset, |writer| {
-        let (raw_path,raw_sha)=writer.write_raw_source_bytes(workspace,dataset,raw).map_err(|_|io_error())?;
-        let (artifact_path,artifact_sha)=writer.write_dataset(workspace,dataset,rows).map_err(|_|io_error())?;
-        Ok((raw_path,raw_sha,artifact_path,artifact_sha))
+        let (raw_path, raw_sha) = writer
+            .write_raw_source_bytes(workspace, dataset, raw)
+            .map_err(|_| io_error())?;
+        let (artifact_path, artifact_sha) = writer
+            .write_dataset(workspace, dataset, rows)
+            .map_err(|_| io_error())?;
+        Ok((raw_path, raw_sha, artifact_path, artifact_sha))
     })
 }
 
 pub(crate) fn publish_import_files(
-    root: &std::path::Path, workspace: &str, dataset: &str,
-    raw: &std::path::Path, rows: &std::path::Path,
-) -> Result<(String,String,String,String),ApiError> {
-    publish_import_with(root,workspace,dataset,|writer| {
-        let raw=std::fs::File::open(raw).map_err(|_|io_error())?;
-        let (raw_path,raw_sha)=writer.write_raw_source(workspace,dataset,raw).map_err(|_|io_error())?;
-        let rows=std::io::BufReader::new(std::fs::File::open(rows).map_err(|_|io_error())?);
-        let rows=serde_json::Deserializer::from_reader(rows).into_iter::<Value>().map(|row|row.map_err(|e|e.to_string()));
-        let (artifact_path,artifact_sha)=writer.write_dataset_iter(workspace,dataset,rows).map_err(|_|io_error())?;
-        Ok((raw_path,raw_sha,artifact_path,artifact_sha))
+    root: &std::path::Path,
+    workspace: &str,
+    dataset: &str,
+    raw: &std::path::Path,
+    rows: &std::path::Path,
+) -> Result<(String, String, String, String), ApiError> {
+    publish_import_with(root, workspace, dataset, |writer| {
+        let raw = std::fs::File::open(raw).map_err(|_| io_error())?;
+        let (raw_path, raw_sha) = writer
+            .write_raw_source(workspace, dataset, raw)
+            .map_err(|_| io_error())?;
+        let rows = std::io::BufReader::new(std::fs::File::open(rows).map_err(|_| io_error())?);
+        let rows = serde_json::Deserializer::from_reader(rows)
+            .into_iter::<Value>()
+            .map(|row| row.map_err(|e| e.to_string()));
+        let (artifact_path, artifact_sha) = writer
+            .write_dataset_iter(workspace, dataset, rows)
+            .map_err(|_| io_error())?;
+        Ok((raw_path, raw_sha, artifact_path, artifact_sha))
     })
 }
 
 fn publish_import_with(
-    root: &std::path::Path, workspace: &str, dataset: &str,
-    write: impl FnOnce(&crate::artifact_data::ArtifactData)->Result<(String,String,String,String),ApiError>,
-) -> Result<(String,String,String,String),ApiError> {
+    root: &std::path::Path,
+    workspace: &str,
+    dataset: &str,
+    write: impl FnOnce(
+        &crate::artifact_data::ArtifactData,
+    ) -> Result<(String, String, String, String), ApiError>,
+) -> Result<(String, String, String, String), ApiError> {
     let staging = lifecycle::import_staging(root)?;
     let result = (|| {
         let writer = crate::artifact_data::ArtifactData::new(&staging).map_err(|_| io_error())?;
-        let (raw_path,raw_sha,artifact_path,artifact_sha)=write(&writer)?;
+        let (raw_path, raw_sha, artifact_path, artifact_sha) = write(&writer)?;
         // A crash before the DB commit can leave these immutable bytes. A retry may
         // adopt only exact matching hashes, never overwrite another artifact.
         lifecycle::publish_candidate(root, &staging, &raw_path, &raw_sha)?;

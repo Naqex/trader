@@ -1,8 +1,11 @@
-use trading_workspace_api::{config::Config, state::AppState};
-use axum::{body::{Body, to_bytes}, http::Request};
+use axum::{
+    body::{Body, to_bytes},
+    http::Request,
+};
 use serde_json::{Value, json};
-use tower::ServiceExt;
 use std::io::{self, BufRead, Write};
+use tower::ServiceExt;
+use trading_workspace_api::{config::Config, state::AppState};
 
 async fn invoke(router: axum::Router, input: Value) -> Value {
     let mut builder = Request::builder()
@@ -13,12 +16,20 @@ async fn invoke(router: axum::Router, input: Value) -> Value {
     if let Some(key) = input["key"].as_str() {
         builder = builder.header("idempotency-key", key);
     }
-    let req = builder.body(Body::from(input.get("body")
-        .map(|v| serde_json::to_string(v).unwrap()).unwrap_or_default())).unwrap();
+    let req = builder
+        .body(Body::from(
+            input
+                .get("body")
+                .map(|v| serde_json::to_string(v).unwrap())
+                .unwrap_or_default(),
+        ))
+        .unwrap();
     let started = std::time::Instant::now();
     let response = router.oneshot(req).await.unwrap();
     let status = response.status().as_u16();
-    let bytes = to_bytes(response.into_body(), 32 * 1024 * 1024).await.unwrap();
+    let bytes = to_bytes(response.into_body(), 32 * 1024 * 1024)
+        .await
+        .unwrap();
     let router_elapsed_us = started.elapsed().as_micros() as u64;
     let body = serde_json::from_slice::<Value>(&bytes)
         .unwrap_or_else(|_| json!(String::from_utf8_lossy(&bytes).to_string()));
@@ -33,7 +44,10 @@ async fn main() {
     for line in io::stdin().lock().lines() {
         let input: Value = serde_json::from_str(&line.unwrap()).unwrap();
         let result = if let Some(batch) = input.get("batch").and_then(Value::as_array) {
-            assert!(!batch.is_empty() && batch.len() <= 32, "bounded probe batch required");
+            assert!(
+                !batch.is_empty() && batch.len() <= 32,
+                "bounded probe batch required"
+            );
             let mut tasks = tokio::task::JoinSet::new();
             for (index, request) in batch.iter().cloned().enumerate() {
                 let router = router.clone();

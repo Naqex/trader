@@ -142,8 +142,8 @@ fn next_activity_period(start: DateTime<Utc>, zone: Tz, daily: bool) -> R<DateTi
         NaiveDate::from_ymd_opt(local.year(), local.month(), 1)
             .and_then(|d| d.checked_add_months(Months::new(1)))
     })
-        .and_then(|d| d.and_hms_opt(0, 0, 0))
-        .ok_or("activity range overflow")?;
+    .and_then(|d| d.and_hms_opt(0, 0, 0))
+    .ok_or("activity range overflow")?;
     // Some IANA zones move their clocks at midnight. Find the first existing
     // local minute instead of rejecting an otherwise valid measured interval.
     for minutes in 0..=2880 {
@@ -183,7 +183,12 @@ fn activity_periods(records: &[Value], intervals: &[Value], zone: Tz, daily: boo
         while start < end {
             let stop = end.min(next_activity_period(start, zone, daily)?);
             *months
-                .entry(start.with_timezone(&zone).format(if daily { "%Y-%m-%d" } else { "%Y-%m" }).to_string())
+                .entry(
+                    start
+                        .with_timezone(&zone)
+                        .format(if daily { "%Y-%m-%d" } else { "%Y-%m" })
+                        .to_string(),
+                )
                 .or_default() += (stop - start)
                 .num_microseconds()
                 .ok_or("activity range overflow")? as f64
@@ -195,14 +200,24 @@ fn activity_periods(records: &[Value], intervals: &[Value], zone: Tz, daily: boo
     Ok(json!(
         months
             .into_iter()
-            .map(|(period, seconds)| if daily { json!({"date":period,"time_invested_seconds":seconds}) } else { json!({"month":period,"time_invested_seconds":seconds}) })
+            .map(|(period, seconds)| if daily {
+                json!({"date":period,"time_invested_seconds":seconds})
+            } else {
+                json!({"month":period,"time_invested_seconds":seconds})
+            })
             .collect::<Vec<_>>()
     ))
 }
 
 pub(super) fn dashboard_chart_daily(filters: &Value, zone: Tz) -> R<bool> {
-    let (Some(from), Some(to)) = (timestamp(&filters["from_close_utc"])?, timestamp(&filters["to_close_utc"])?) else { return Ok(false) };
-    let days = (to.with_timezone(&zone).date_naive() - from.with_timezone(&zone).date_naive()).num_days();
+    let (Some(from), Some(to)) = (
+        timestamp(&filters["from_close_utc"])?,
+        timestamp(&filters["to_close_utc"])?,
+    ) else {
+        return Ok(false);
+    };
+    let days =
+        (to.with_timezone(&zone).date_naive() - from.with_timezone(&zone).date_naive()).num_days();
     Ok(to >= from && (0..31).contains(&days))
 }
 
@@ -210,7 +225,9 @@ pub(super) fn dashboard_days(trades: &[Value], zone: Tz) -> R<Value> {
     let mut days = BTreeMap::<String, Vec<Value>>::new();
     for trade in trades {
         if let Some(time) = timestamp(activity::time(trade))? {
-            days.entry(time.with_timezone(&zone).format("%Y-%m-%d").to_string()).or_default().push(trade.clone());
+            days.entry(time.with_timezone(&zone).format("%Y-%m-%d").to_string())
+                .or_default()
+                .push(trade.clone());
         }
     }
     let mut result = Vec::new();
@@ -223,7 +240,12 @@ pub(super) fn dashboard_days(trades: &[Value], zone: Tz) -> R<Value> {
 }
 
 // Activity filters constrain observed wall clock, never simulated market dates.
-pub(super) fn dashboard_activity(records: &[Value], intervals: &[Value], filters: Option<&Value>, zone: Tz) -> R<Value> {
+pub(super) fn dashboard_activity(
+    records: &[Value],
+    intervals: &[Value],
+    filters: Option<&Value>,
+    zone: Tz,
+) -> R<Value> {
     let filters = normalize_filters(filters)?;
     let from = timestamp(&filters["from_close_utc"])?;
     let to = timestamp(&filters["to_close_utc"])?;
@@ -240,7 +262,14 @@ pub(super) fn dashboard_activity(records: &[Value], intervals: &[Value], filters
     let mut result = dashboard_timing(records, intervals)?;
     let months = activity_months(records, &clipped, zone)?;
     if result["time_invested_seconds"].is_number() {
-        result["time_invested_seconds"] = json!(months.as_array().unwrap().iter().map(|m| m["time_invested_seconds"].as_f64().unwrap()).sum::<f64>());
+        result["time_invested_seconds"] = json!(
+            months
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|m| m["time_invested_seconds"].as_f64().unwrap())
+                .sum::<f64>()
+        );
     }
     result["activity_months"] = months;
     let daily = dashboard_chart_daily(&filters, zone)?;
@@ -251,11 +280,20 @@ pub(super) fn dashboard_activity(records: &[Value], intervals: &[Value], filters
     result["timing_scope"]["timezone"] = json!(zone.name());
     result["timing_scope"]["activity_date_filters_apply"] = json!(true);
     if from.is_some() || to.is_some() {
-        let periods = records.iter().map(|r|crate::replay_service::historical_time::period(&r["payload"]["timing"],from,to)).collect::<Vec<_>>();
-        let known = periods.iter().filter(|v|v.is_some()).count();
-        result["historical_time_replayed_seconds"] = json!(periods.into_iter().try_fold(0_i64,|total,value|total.checked_add(value?)));
+        let periods = records
+            .iter()
+            .map(|r| {
+                crate::replay_service::historical_time::period(&r["payload"]["timing"], from, to)
+            })
+            .collect::<Vec<_>>();
+        let known = periods.iter().filter(|v| v.is_some()).count();
+        result["historical_time_replayed_seconds"] = json!(
+            periods
+                .into_iter()
+                .try_fold(0_i64, |total, value| total.checked_add(value?))
+        );
         result["timing_scope"]["historical_measured_session_count"] = json!(known);
-        result["timing_scope"]["unknown_historical_session_count"] = json!(records.len()-known);
+        result["timing_scope"]["unknown_historical_session_count"] = json!(records.len() - known);
     }
     result["timing_scope"]["historical_date_filters_apply"] = json!(true);
     result["timing_scope"]["from_utc"] = json!(from.map(iso));
@@ -270,7 +308,9 @@ pub(super) fn performance_periods(view: &Value, zone: chrono_tz::Tz) -> R<Value>
     let mut days = [(0.0f64, 0.0f64, 0usize); 7];
     let mut dates: [HashSet<NaiveDate>; 7] = std::array::from_fn(|_| HashSet::new());
     for trade in array(&view["ledger"])? {
-        let Some(date) = timestamp(activity::time(trade))? else { continue };
+        let Some(date) = timestamp(activity::time(trade))? else {
+            continue;
+        };
         let date = date.with_timezone(&zone);
         let pnl = number(&trade["net_pnl"])?;
         let month = months.entry(date.format("%Y-%m").to_string()).or_default();
@@ -278,12 +318,16 @@ pub(super) fn performance_periods(view: &Value, zone: chrono_tz::Tz) -> R<Value>
         dates[weekday].insert(date.date_naive());
         let day = &mut days[weekday];
         for bucket in [month, day] {
-            bucket.0 += pnl.max(0.0); bucket.1 += pnl.min(0.0); bucket.2 += 1;
+            bucket.0 += pnl.max(0.0);
+            bucket.1 += pnl.min(0.0);
+            bucket.2 += 1;
         }
     }
     let has_dates = !months.is_empty();
     let row = |label: String, (profit, loss, count): (f64, f64, usize)| json!({"label":label,"value":profit+loss,"profit":profit,"loss":loss,"count":count});
-    Ok(json!({"months":months.into_iter().map(|(k,v)|row(k,v)).collect::<Vec<_>>(),"weekdays":if !has_dates {vec![]} else {["T2","T3","T4","T5","T6","T7","CN"].iter().zip(days).enumerate().map(|(i,(k,v))|{let mut item=row(k.to_string(),v);item["period_count"]=json!(dates[i].len());item}).collect::<Vec<_>>()}}))
+    Ok(
+        json!({"months":months.into_iter().map(|(k,v)|row(k,v)).collect::<Vec<_>>(),"weekdays":if !has_dates {vec![]} else {["T2","T3","T4","T5","T6","T7","CN"].iter().zip(days).enumerate().map(|(i,(k,v))|{let mut item=row(k.to_string(),v);item["period_count"]=json!(dates[i].len());item}).collect::<Vec<_>>()}}),
+    )
 }
 
 #[cfg(test)]
@@ -292,59 +336,143 @@ mod tests {
     #[test]
     fn dashboard_historical_period_sums_only_dated_steps_and_propagates_unknown() {
         let stamp = "2026-10-25T16:59:59.999999Z";
-        let minute = timestamp(&json!(stamp)).unwrap().unwrap().timestamp().div_euclid(60).to_string();
+        let minute = timestamp(&json!(stamp))
+            .unwrap()
+            .unwrap()
+            .timestamp()
+            .div_euclid(60)
+            .to_string();
         let record = |id, seconds| json!({"record_id":id,"payload":{"timing":{"schema_version":"replay-timing-v1","legacy_baseline":false,"historical_time_replayed_seconds":seconds,"historical_activity":{"schema_version":"replay-historical-activity-v1","started_at_utc":"2026-10-01T00:00:00Z","baseline_seconds":0,"buckets":{minute.clone():{"first_at_utc":stamp,"last_at_utc":stamp,"seconds":seconds}}}}}});
-        let mut records = vec![record("a",60),record("b",120)];
+        let mut records = vec![record("a", 60), record("b", 120)];
         let filter = json!({"from_close_utc":"2026-10-24T17:00:00Z","to_close_utc":"2026-10-25T16:59:59.999999999Z"});
-        let result = dashboard_activity(&records,&[],Some(&filter),chrono_tz::Asia::Ho_Chi_Minh).unwrap();
-        assert_eq!(result["historical_time_replayed_seconds"],180);
-        assert_eq!(result["timing_scope"]["historical_measured_session_count"],2);
+        let result =
+            dashboard_activity(&records, &[], Some(&filter), chrono_tz::Asia::Ho_Chi_Minh).unwrap();
+        assert_eq!(result["historical_time_replayed_seconds"], 180);
+        assert_eq!(
+            result["timing_scope"]["historical_measured_session_count"],
+            2
+        );
         records.push(json!({"record_id":"old","payload":{"timing":{"schema_version":"replay-timing-v1","historical_time_replayed_seconds":86400}}}));
-        let partial = dashboard_activity(&records,&[],Some(&filter),chrono_tz::UTC).unwrap();
+        let partial = dashboard_activity(&records, &[], Some(&filter), chrono_tz::UTC).unwrap();
         assert!(partial["historical_time_replayed_seconds"].is_null());
-        assert_eq!(partial["timing_scope"]["unknown_historical_session_count"],1);
-        let lifetime = dashboard_activity(&records,&[],None,chrono_tz::UTC).unwrap();
-        assert_eq!(lifetime["historical_time_replayed_seconds"].as_f64(),Some(86580.0));
+        assert_eq!(
+            partial["timing_scope"]["unknown_historical_session_count"],
+            1
+        );
+        let lifetime = dashboard_activity(&records, &[], None, chrono_tz::UTC).unwrap();
+        assert_eq!(
+            lifetime["historical_time_replayed_seconds"].as_f64(),
+            Some(86580.0)
+        );
     }
     #[test]
     fn dashboard_activity_clips_dates_unions_sessions_and_preserves_clock_coverage() {
-        let records = vec![json!({"record_id":"a","payload":{"timing":{"schema_version":"replay-timing-v1","historical_time_replayed_seconds":86400,"legacy_baseline":false}}}), json!({"record_id":"b"})];
+        let records = vec![
+            json!({"record_id":"a","payload":{"timing":{"schema_version":"replay-timing-v1","historical_time_replayed_seconds":86400,"legacy_baseline":false}}}),
+            json!({"record_id":"b"}),
+        ];
         let interval = |id: &str, start: &str, end: &str| json!({"session_id":id,"started_at_utc":start,"ended_at_utc":end});
-        let intervals = vec![interval("a","2026-01-31T16:59:40Z","2026-01-31T17:00:20Z"), interval("b","2026-01-31T17:00:10Z","2026-01-31T17:00:40Z"), interval("other","2026-01-31T17:00:00Z","2026-01-31T18:00:00Z")];
-        let filter = json!({"from_close_utc":"2026-01-31T17:00:00Z","to_close_utc":"2026-01-31T17:00:30Z"});
-        let result = dashboard_activity(&records,&intervals,Some(&filter),chrono_tz::Asia::Ho_Chi_Minh).unwrap();
-        assert_eq!(result["time_invested_seconds"],30.0);
-        assert_eq!(result["activity_months"],json!([{"month":"2026-02","time_invested_seconds":30.0}]));
-        assert_eq!(result["activity_days"],json!([{"date":"2026-02-01","time_invested_seconds":30.0}]));
+        let intervals = vec![
+            interval("a", "2026-01-31T16:59:40Z", "2026-01-31T17:00:20Z"),
+            interval("b", "2026-01-31T17:00:10Z", "2026-01-31T17:00:40Z"),
+            interval("other", "2026-01-31T17:00:00Z", "2026-01-31T18:00:00Z"),
+        ];
+        let filter =
+            json!({"from_close_utc":"2026-01-31T17:00:00Z","to_close_utc":"2026-01-31T17:00:30Z"});
+        let result = dashboard_activity(
+            &records,
+            &intervals,
+            Some(&filter),
+            chrono_tz::Asia::Ho_Chi_Minh,
+        )
+        .unwrap();
+        assert_eq!(result["time_invested_seconds"], 30.0);
+        assert_eq!(
+            result["activity_months"],
+            json!([{"month":"2026-02","time_invested_seconds":30.0}])
+        );
+        assert_eq!(
+            result["activity_days"],
+            json!([{"date":"2026-02-01","time_invested_seconds":30.0}])
+        );
         assert!(result["historical_time_replayed_seconds"].is_null());
-        assert_eq!(result["timing_scope"]["historical_date_filters_apply"],true);
+        assert_eq!(
+            result["timing_scope"]["historical_date_filters_apply"],
+            true
+        );
         let empty = json!({"from_close_utc":"2027-01-01T00:00:00Z"});
-        let outside = dashboard_activity(&records,&intervals,Some(&empty),chrono_tz::UTC).unwrap();
-        assert_eq!(outside["time_invested_seconds"],0.0);
-        assert_eq!(outside["activity_months"],json!([]));
-        let unknown = dashboard_activity(&[json!({"record_id":"legacy"})],&[],Some(&empty),chrono_tz::UTC).unwrap();
+        let outside =
+            dashboard_activity(&records, &intervals, Some(&empty), chrono_tz::UTC).unwrap();
+        assert_eq!(outside["time_invested_seconds"], 0.0);
+        assert_eq!(outside["activity_months"], json!([]));
+        let unknown = dashboard_activity(
+            &[json!({"record_id":"legacy"})],
+            &[],
+            Some(&empty),
+            chrono_tz::UTC,
+        )
+        .unwrap();
         assert!(unknown["time_invested_seconds"].is_null());
     }
     #[test]
     fn dashboard_daily_periods_follow_local_dates_dst_and_union() {
-        let records = vec![json!({"record_id":"a"}),json!({"record_id":"b"})];
-        let interval = |id, start, end| json!({"session_id":id,"started_at_utc":start,"ended_at_utc":end});
-        let intervals = vec![interval("a","2026-03-08T04:30:00Z","2026-03-09T05:30:00Z"),interval("b","2026-03-08T05:00:00Z","2026-03-08T06:00:00Z")];
-        assert_eq!(activity_periods(&records,&intervals,chrono_tz::America::New_York,true).unwrap(),json!([
-            {"date":"2026-03-07","time_invested_seconds":1800.0},
-            {"date":"2026-03-08","time_invested_seconds":82800.0},
-            {"date":"2026-03-09","time_invested_seconds":5400.0}
-        ]));
-        let days = dashboard_days(&[json!({"report_time_utc":"2026-01-31T17:00:00Z","net_pnl":10}),json!({"report_time_utc":"2026-02-01T01:00:00Z","net_pnl":0}),json!({"report_time_utc":"2026-02-01T02:00:00Z","net_pnl":-4}),json!({"report_time_utc":null,"net_pnl":99})],chrono_tz::Asia::Ho_Chi_Minh).unwrap();
-        assert_eq!(days[0]["date"],"2026-02-01");
-        assert_eq!(days[0]["closed_trade_count"],3);
-        assert!((days[0]["win_rate_pct"].as_f64().unwrap()-100.0/3.0).abs()<1e-9);
+        let records = vec![json!({"record_id":"a"}), json!({"record_id":"b"})];
+        let interval =
+            |id, start, end| json!({"session_id":id,"started_at_utc":start,"ended_at_utc":end});
+        let intervals = vec![
+            interval("a", "2026-03-08T04:30:00Z", "2026-03-09T05:30:00Z"),
+            interval("b", "2026-03-08T05:00:00Z", "2026-03-08T06:00:00Z"),
+        ];
+        assert_eq!(
+            activity_periods(&records, &intervals, chrono_tz::America::New_York, true).unwrap(),
+            json!([
+                {"date":"2026-03-07","time_invested_seconds":1800.0},
+                {"date":"2026-03-08","time_invested_seconds":82800.0},
+                {"date":"2026-03-09","time_invested_seconds":5400.0}
+            ])
+        );
+        let days = dashboard_days(
+            &[
+                json!({"report_time_utc":"2026-01-31T17:00:00Z","net_pnl":10}),
+                json!({"report_time_utc":"2026-02-01T01:00:00Z","net_pnl":0}),
+                json!({"report_time_utc":"2026-02-01T02:00:00Z","net_pnl":-4}),
+                json!({"report_time_utc":null,"net_pnl":99}),
+            ],
+            chrono_tz::Asia::Ho_Chi_Minh,
+        )
+        .unwrap();
+        assert_eq!(days[0]["date"], "2026-02-01");
+        assert_eq!(days[0]["closed_trade_count"], 3);
+        assert!((days[0]["win_rate_pct"].as_f64().unwrap() - 100.0 / 3.0).abs() < 1e-9);
         let zone = chrono_tz::America::New_York;
-        for (from,to,expected) in [("2026-03-01T00:00:00-05:00","2026-03-31T23:59:59-04:00",true),("2026-10-15T00:00:00-04:00","2026-11-14T23:59:59-05:00",true),("2026-03-01T00:00:00-05:00","2026-04-01T00:00:00-04:00",false)] {
-            assert_eq!(dashboard_chart_daily(&json!({"from_close_utc":from,"to_close_utc":to}),zone).unwrap(),expected);
+        for (from, to, expected) in [
+            (
+                "2026-03-01T00:00:00-05:00",
+                "2026-03-31T23:59:59-04:00",
+                true,
+            ),
+            (
+                "2026-10-15T00:00:00-04:00",
+                "2026-11-14T23:59:59-05:00",
+                true,
+            ),
+            (
+                "2026-03-01T00:00:00-05:00",
+                "2026-04-01T00:00:00-04:00",
+                false,
+            ),
+        ] {
+            assert_eq!(
+                dashboard_chart_daily(&json!({"from_close_utc":from,"to_close_utc":to}), zone)
+                    .unwrap(),
+                expected
+            );
         }
-        assert!(!dashboard_chart_daily(&json!({}),zone).unwrap());
-        assert!(!dashboard_chart_daily(&json!({"from_close_utc":"2026-03-01T00:00:00Z"}),zone).unwrap());
+        assert!(!dashboard_chart_daily(&json!({}), zone).unwrap());
+        assert!(
+            !dashboard_chart_daily(&json!({"from_close_utc":"2026-03-01T00:00:00Z"}), zone)
+                .unwrap()
+        );
     }
     #[test]
     fn full_month_history_splits_net_wins_and_losses_without_merging_years() {
@@ -357,33 +485,54 @@ mod tests {
             }
         }
         let view = json!({"ledger":ledger});
-        let periods = performance_periods(&view,chrono_tz::UTC).unwrap();
+        let periods = performance_periods(&view, chrono_tz::UTC).unwrap();
         let months = periods["months"].as_array().unwrap();
-        assert_eq!(months.len(),36);
-        assert_eq!(months[0],json!({"label":"2003-01","profit":10.0,"loss":-4.0,"value":6.0,"count":2}));
-        assert_eq!(months[35]["label"],"2005-12");
-        assert_eq!(periods["weekdays"].as_array().unwrap().iter().map(|r|r["value"].as_f64().unwrap()).sum::<f64>(),216.0);
-        let unknown=json!({"ledger":[{"report_time_utc":null,"close_time_utc":1700000060,"net_pnl":9.0}]});
-        assert!(performance_periods(&unknown,chrono_tz::UTC).unwrap()["months"].as_array().unwrap().is_empty());
-        let shifted=performance_periods(&json!({"ledger":[{"close_time_utc":"2026-01-31T23:30:00Z","net_pnl":-3.0}]}),chrono_tz::Asia::Ho_Chi_Minh).unwrap();
-        assert_eq!(shifted["months"][0]["label"],"2026-02");
+        assert_eq!(months.len(), 36);
+        assert_eq!(
+            months[0],
+            json!({"label":"2003-01","profit":10.0,"loss":-4.0,"value":6.0,"count":2})
+        );
+        assert_eq!(months[35]["label"], "2005-12");
+        assert_eq!(
+            periods["weekdays"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|r| r["value"].as_f64().unwrap())
+                .sum::<f64>(),
+            216.0
+        );
+        let unknown =
+            json!({"ledger":[{"report_time_utc":null,"close_time_utc":1700000060,"net_pnl":9.0}]});
+        assert!(
+            performance_periods(&unknown, chrono_tz::UTC).unwrap()["months"]
+                .as_array()
+                .unwrap()
+                .is_empty()
+        );
+        let shifted = performance_periods(
+            &json!({"ledger":[{"close_time_utc":"2026-01-31T23:30:00Z","net_pnl":-3.0}]}),
+            chrono_tz::Asia::Ho_Chi_Minh,
+        )
+        .unwrap();
+        assert_eq!(shifted["months"][0]["label"], "2026-02");
     }
 
     #[test]
     fn weekday_denominators_count_distinct_active_local_dates_not_trades() {
-        let view=json!({"ledger":[
+        let view = json!({"ledger":[
             {"close_time_utc":"2026-10-04T23:30:00Z","net_pnl":10.0},
             {"close_time_utc":"2026-10-05T01:00:00Z","net_pnl":20.0},
             {"close_time_utc":"2026-10-12T01:00:00Z","net_pnl":0.0}
         ]});
-        let utc=performance_periods(&view,chrono_tz::UTC).unwrap();
-        assert_eq!(utc["weekdays"][0]["period_count"],2);
-        assert_eq!(utc["weekdays"][6]["period_count"],1);
-        let vn=performance_periods(&view,chrono_tz::Asia::Ho_Chi_Minh).unwrap();
-        assert_eq!(vn["weekdays"][0]["period_count"],2);
-        assert_eq!(vn["weekdays"][0]["count"],3);
-        assert_eq!(vn["weekdays"][0]["value"],30.0);
-        assert_eq!(vn["weekdays"][6]["period_count"],0);
+        let utc = performance_periods(&view, chrono_tz::UTC).unwrap();
+        assert_eq!(utc["weekdays"][0]["period_count"], 2);
+        assert_eq!(utc["weekdays"][6]["period_count"], 1);
+        let vn = performance_periods(&view, chrono_tz::Asia::Ho_Chi_Minh).unwrap();
+        assert_eq!(vn["weekdays"][0]["period_count"], 2);
+        assert_eq!(vn["weekdays"][0]["count"], 3);
+        assert_eq!(vn["weekdays"][0]["value"], 30.0);
+        assert_eq!(vn["weekdays"][6]["period_count"], 0);
     }
 
     fn fixture() -> Value {

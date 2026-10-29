@@ -278,7 +278,9 @@ pub async fn execute(
     id: Option<&str>,
     body: Value,
 ) -> Result<(StatusCode, Value), ApiError> {
-    if template.starts_with("/api/v2/journal") { crate::trade_labels::lock(tx,&scope.workspace_id).await?; }
+    if template.starts_with("/api/v2/journal") {
+        crate::trade_labels::lock(tx, &scope.workspace_id).await?;
+    }
     let body = validate(template, body)?;
     let kind = if template.starts_with("/api/v2/playbooks") {
         "playbook"
@@ -297,7 +299,9 @@ pub async fn execute(
                 return Err(conflict("new playbooks must start as draft"));
             }
         }
-        if kind == "journal" { crate::trade_labels::journal_created(tx,scope,&payload).await?; }
+        if kind == "journal" {
+            crate::trade_labels::journal_created(tx, scope, &payload).await?;
+        }
         let source_key = if kind == "journal" {
             Some(format!(
                 "{}:{}",
@@ -373,7 +377,9 @@ pub async fn execute(
         if p["source"] != current["payload"]["source"] {
             return Err(conflict("journal source is immutable"));
         }
-        if p["tags"] != current["payload"]["tags"] { crate::trade_labels::journal_changed(tx,scope,&p,&current["payload"]).await?; }
+        if p["tags"] != current["payload"]["tags"] {
+            crate::trade_labels::journal_changed(tx, scope, &p, &current["payload"]).await?;
+        }
         payload = Some(p);
     }
     Ok((

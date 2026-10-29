@@ -91,20 +91,29 @@ fn python_oracle_differential() {
 fn current_quote_batch_matches_two_transitions() {
     let corpus: Value = serde_json::from_str(include_str!(
         "../../evidence/rust-native-20261017/replay-core/oracle.json"
-    )).unwrap();
+    ))
+    .unwrap();
     let mut checked = 0;
     for case in corpus.as_array().unwrap() {
         let request = &case["request"];
         let pending = &request["snapshot"]["pending_market_order"];
-        if request["action"] != "fill_current_quote" || !pending.is_object()
+        if request["action"] != "fill_current_quote"
+            || !pending.is_object()
             || pending["submitted_cursor_index"] != request["snapshot"]["cursor_index"]
-            || !request["snapshot"]["position"].is_null() {
+            || !request["snapshot"]["position"].is_null()
+        {
             continue;
         }
         let mut combined = request.clone();
         combined["action"] = serde_json::json!("queue_current_quote");
         combined["snapshot"]["pending_market_order"] = Value::Null;
-        for key in ["operation_id", "side", "quantity", "stop_loss", "take_profit"] {
+        for key in [
+            "operation_id",
+            "side",
+            "quantity",
+            "stop_loss",
+            "take_profit",
+        ] {
             combined["args"][key] = pending[key].clone();
         }
         let result = transform(&combined);
@@ -113,7 +122,10 @@ fn current_quote_batch_matches_two_transitions() {
         assert_eq!(combined["snapshot"]["pending_market_order"], Value::Null);
         checked += 1;
     }
-    assert!(checked >= 10, "expected valid and invalid oracle coverage, got {checked}");
+    assert!(
+        checked >= 10,
+        "expected valid and invalid oracle coverage, got {checked}"
+    );
 }
 
 #[test]
@@ -163,12 +175,18 @@ fn batched_advancement_matches_individual_transitions_and_fails_atomically() {
 fn tick_current_quote_reopens_after_close_and_rejects_changed_window() {
     let corpus: Value = serde_json::from_str(include_str!(
         "../../evidence/rust-native-20261017/replay-core/oracle.json"
-    )).unwrap();
-    let seed = corpus.as_array().unwrap().iter().find(|case| {
-        case["request"]["action"] == "fill_current_quote"
-            && case["request"]["snapshot"]["schema_version"] == "replay-execution-tick-v1"
-            && case["expected"]["snapshot"]["position"].is_object()
-    }).expect("successful frozen tick current-quote fill");
+    ))
+    .unwrap();
+    let seed = corpus
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|case| {
+            case["request"]["action"] == "fill_current_quote"
+                && case["request"]["snapshot"]["schema_version"] == "replay-execution-tick-v1"
+                && case["expected"]["snapshot"]["position"].is_object()
+        })
+        .expect("successful frozen tick current-quote fill");
     let args = &seed["request"]["args"];
     let mut state = transform(&seed["request"]).unwrap()["snapshot"].take();
     let quantity = state["position"]["quantity"].clone();
@@ -177,35 +195,59 @@ fn tick_current_quote_reopens_after_close_and_rejects_changed_window() {
             "args":{"operation_id":format!("reopen-close-{index}"),
                 "target_id":state["position"]["position_id"],
                 "mid_close":args["mid_close"], "virtual_time_utc":args["virtual_time_utc"]}}))
-            .unwrap()["snapshot"].take();
-        state = transform(&serde_json::json!({"action":"queue_current_quote", "snapshot":state,
+        .unwrap()["snapshot"]
+            .take();
+        state = transform(
+            &serde_json::json!({"action":"queue_current_quote", "snapshot":state,
             "args":{"operation_id":format!("reopen-fill-{index}"), "side":side,
                 "quantity":quantity, "stop_loss":null, "take_profit":null,
-                "mid_close":args["mid_close"], "virtual_time_utc":args["virtual_time_utc"]}}))
-            .unwrap()["snapshot"].take();
+                "mid_close":args["mid_close"], "virtual_time_utc":args["virtual_time_utc"]}}),
+        )
+        .unwrap()["snapshot"]
+            .take();
         assert_eq!(state["position"]["side"], *side);
         let mut damaged = state.clone();
-        let event = damaged["ledger"].as_array_mut().unwrap().iter_mut().rev()
-            .find(|event| event["kind"] == "market_fill").unwrap();
-        event["details"]["window_end_msc"] = serde_json::json!(
-            event["details"]["window_end_msc"].as_i64().unwrap() + 1000);
-        assert!(transform(&serde_json::json!({"action":"validate", "snapshot":damaged, "args":{}})).is_err());
+        let event = damaged["ledger"]
+            .as_array_mut()
+            .unwrap()
+            .iter_mut()
+            .rev()
+            .find(|event| event["kind"] == "market_fill")
+            .unwrap();
+        event["details"]["window_end_msc"] =
+            serde_json::json!(event["details"]["window_end_msc"].as_i64().unwrap() + 1000);
+        assert!(
+            transform(&serde_json::json!({"action":"validate", "snapshot":damaged, "args":{}}))
+                .is_err()
+        );
     }
 }
 
 #[test]
 fn tick_partial_close_retains_observed_quote_and_remaining_volume() {
-    let corpus: Value=serde_json::from_str(include_str!("../../evidence/rust-native-20261017/replay-core/oracle.json")).unwrap();
-    let seed=corpus.as_array().unwrap().iter().find(|c|c["request"]["action"]=="fill_current_quote"&&c["request"]["snapshot"]["schema_version"]=="replay-execution-tick-v1"&&c["expected"]["snapshot"]["position"].is_object()).unwrap();
-    let args=&seed["request"]["args"];
-    let mut state=transform(&seed["request"]).unwrap()["snapshot"].take();
+    let corpus: Value = serde_json::from_str(include_str!(
+        "../../evidence/rust-native-20261017/replay-core/oracle.json"
+    ))
+    .unwrap();
+    let seed = corpus
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|c| {
+            c["request"]["action"] == "fill_current_quote"
+                && c["request"]["snapshot"]["schema_version"] == "replay-execution-tick-v1"
+                && c["expected"]["snapshot"]["position"].is_object()
+        })
+        .unwrap();
+    let args = &seed["request"]["args"];
+    let mut state = transform(&seed["request"]).unwrap()["snapshot"].take();
     state=transform(&serde_json::json!({"action":"close","snapshot":state,"args":{"operation_id":"reset","target_id":state["position"]["position_id"],"mid_close":args["mid_close"],"virtual_time_utc":args["virtual_time_utc"]}})).unwrap()["snapshot"].take();
-    for side in ["BUY","SELL"] {
+    for side in ["BUY", "SELL"] {
         state=transform(&serde_json::json!({"action":"queue_current_quote","snapshot":state,"args":{"operation_id":format!("open-{side}"),"side":side,"quantity":"0.04","mid_close":args["mid_close"],"virtual_time_utc":args["virtual_time_utc"]}})).unwrap()["snapshot"].take();
-        let target=state["position"]["position_id"].clone();
+        let target = state["position"]["position_id"].clone();
         state=transform(&serde_json::json!({"action":"close","snapshot":state,"args":{"operation_id":format!("partial-{side}"),"target_id":target,"quantity":"0.01","mid_close":args["mid_close"],"virtual_time_utc":args["virtual_time_utc"]}})).unwrap()["snapshot"].take();
-        assert_eq!(state["position"]["quantity"],"0.03");
-        assert_eq!(state["position"]["original_quantity"],"0.04");
+        assert_eq!(state["position"]["quantity"], "0.03");
+        assert_eq!(state["position"]["original_quantity"], "0.04");
         transform(&serde_json::json!({"action":"validate","snapshot":state,"args":{}})).unwrap();
         state=transform(&serde_json::json!({"action":"close","snapshot":state,"args":{"operation_id":format!("final-{side}"),"target_id":target,"mid_close":args["mid_close"],"virtual_time_utc":args["virtual_time_utc"]}})).unwrap()["snapshot"].take();
         assert!(state["position"].is_null());

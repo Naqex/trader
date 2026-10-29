@@ -114,7 +114,12 @@ pub async fn boundary(
         // A cold owned MT5 terminal may need the SDK's 60s startup deadline.
         // Other API pages retain their configured request budget.
         let budget = if request.uri().path().starts_with("/api/v2/live/trading")
-            || (request.uri().path().starts_with("/api/v2/ai/assistant/mt5/") && request.uri().path().ends_with("/symbols")) {
+            || (request
+                .uri()
+                .path()
+                .starts_with("/api/v2/ai/assistant/mt5/")
+                && request.uri().path().ends_with("/symbols"))
+        {
             state.config.request_timeout.max(Duration::from_secs(120))
         } else {
             state.config.request_timeout

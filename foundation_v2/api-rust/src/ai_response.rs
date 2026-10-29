@@ -132,7 +132,11 @@ impl Responses {
             .map_err(|_| failure("ai_invalid_response"))?;
         Ok(Some(frame))
     }
-    fn event(&mut self, frame: &str, progress: Option<&watch::Sender<Progress>>) -> Result<(), Value> {
+    fn event(
+        &mut self,
+        frame: &str,
+        progress: Option<&watch::Sender<Progress>>,
+    ) -> Result<(), Value> {
         let data = frame
             .lines()
             .filter_map(|line| {
@@ -170,7 +174,10 @@ impl Responses {
                 }
                 self.text.push_str(delta);
                 if let Some(progress) = progress {
-                    progress.send_modify(|snapshot| { snapshot.text.push_str(delta); snapshot.thinking = false; });
+                    progress.send_modify(|snapshot| {
+                        snapshot.text.push_str(delta);
+                        snapshot.thinking = false;
+                    });
                 }
             }
             Some("response.completed") => {
@@ -186,8 +193,11 @@ impl Responses {
                 // Expose only the phase, never private chain-of-thought text.
                 if let Some(progress) = progress {
                     progress.send_if_modified(|snapshot| {
-                        if snapshot.thinking || !snapshot.text.is_empty() { return false; }
-                        snapshot.thinking = true; true
+                        if snapshot.thinking || !snapshot.text.is_empty() {
+                            return false;
+                        }
+                        snapshot.thinking = true;
+                        true
                     });
                 }
             }
@@ -202,14 +212,29 @@ mod tests {
     use super::*;
     #[test]
     fn short_output_and_thinking_phase_survive_between_checkpoints() {
-        let mut reader=Responses::new();
-        let(tx,rx)=watch::channel(Progress::default());
-        reader.event("data: {\"type\":\"response.reasoning_text.delta\",\"delta\":\"private\"}",Some(&tx)).unwrap();
-        assert!(rx.borrow().thinking);assert!(rx.borrow().text.is_empty());
-        for delta in ["xin ","chào"] {
-            reader.event(&format!("data: {}",json!({"type":"response.output_text.delta","delta":delta})),Some(&tx)).unwrap();
+        let mut reader = Responses::new();
+        let (tx, rx) = watch::channel(Progress::default());
+        reader
+            .event(
+                "data: {\"type\":\"response.reasoning_text.delta\",\"delta\":\"private\"}",
+                Some(&tx),
+            )
+            .unwrap();
+        assert!(rx.borrow().thinking);
+        assert!(rx.borrow().text.is_empty());
+        for delta in ["xin ", "chào"] {
+            reader
+                .event(
+                    &format!(
+                        "data: {}",
+                        json!({"type":"response.output_text.delta","delta":delta})
+                    ),
+                    Some(&tx),
+                )
+                .unwrap();
         }
-        assert_eq!(rx.borrow().text,"xin chào");assert!(!rx.borrow().thinking);
+        assert_eq!(rx.borrow().text, "xin chào");
+        assert!(!rx.borrow().thinking);
     }
     #[tokio::test]
     async fn response_frames_handle_split_utf8_crlf_and_ignore_reasoning() {

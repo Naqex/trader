@@ -372,7 +372,10 @@ impl Catalog {
         self.items.clone()
     }
     pub(super) fn begin_refresh(&mut self) -> bool {
-        if self.next_refresh.is_some_and(|next| next > std::time::Instant::now()) {
+        if self
+            .next_refresh
+            .is_some_and(|next| next > std::time::Instant::now())
+        {
             return false;
         }
         self.next_refresh = Some(std::time::Instant::now() + std::time::Duration::from_secs(60));
@@ -387,7 +390,8 @@ impl Catalog {
     pub(super) fn refresh_error(&mut self, error: &str) {
         self.error = Some(error.into());
         if error == "rate_limited" {
-            self.next_refresh = Some(std::time::Instant::now() + std::time::Duration::from_secs(300));
+            self.next_refresh =
+                Some(std::time::Instant::now() + std::time::Duration::from_secs(300));
         }
     }
     pub(super) fn refreshed(&mut self, snapshot: &Value, items: Vec<Value>) {
@@ -422,9 +426,19 @@ impl Catalog {
                 json!({"provider":"QuantDataManager","data_source":"Dukascopy","download_engine":"QuantDataManager","integration":"cli","status":if self.items.is_empty(){"unavailable"}else{"cached"},"configured":configured,"refresh_available":configured,"stale":self.error.is_some()&&!self.items.is_empty(),"error":self.error,"version":null,"pilot":false,"asset_count":self.items.len(),"upstream_provider":"Dukascopy","refresh_scope":"installed_definitions","source_sha256":self.hash,"retrieved_at_utc":self.retrieved})
             }
             DownloadEngine::Dukascopy { .. } => {
-                let wait = self.next_refresh.map(|next| next.saturating_duration_since(std::time::Instant::now()));
+                let wait = self
+                    .next_refresh
+                    .map(|next| next.saturating_duration_since(std::time::Instant::now()));
                 let available = wait.is_none_or(|wait| wait.is_zero());
-                let retry = wait.map(|wait| if wait.is_zero() { 0 } else { wait.as_secs() + 1 }).unwrap_or(1);
+                let retry = wait
+                    .map(|wait| {
+                        if wait.is_zero() {
+                            0
+                        } else {
+                            wait.as_secs() + 1
+                        }
+                    })
+                    .unwrap_or(1);
                 json!({"provider_id":"dukascopy-catalog","configured":true,"status":if self.items.is_empty(){"empty"}else{"cached"},"retrieved_at_utc":self.retrieved,"item_count":self.items.len(),"stale":self.retrieved.as_ref().and_then(|s|DateTime::parse_from_rfc3339(s).ok()).is_some_and(|d|Utc::now().signed_duration_since(d).num_seconds()>7*86400),"error":self.error,"refresh_available":available,"retry_after_seconds":retry})
             }
         }

@@ -86,7 +86,10 @@ fn text<'a>(v: &'a Value, k: &str) -> &'a str {
 }
 fn num(v: &Value, k: &str) -> Result<BigDecimal, String> {
     let x = &v[k];
-    let raw = x.as_str().map(str::to_owned).unwrap_or_else(|| x.to_string());
+    let raw = x
+        .as_str()
+        .map(str::to_owned)
+        .unwrap_or_else(|| x.to_string());
     if raw.len() > 512 {
         return Err(format!("{k} exceeds supported decimal bounds"));
     }
@@ -99,10 +102,17 @@ fn num(v: &Value, k: &str) -> Result<BigDecimal, String> {
 fn dec(v: &BigDecimal) -> Value {
     let (coefficient, scale) = v.as_bigint_and_exponent();
     let signed = coefficient.to_string();
-    let (sign, digits) = signed.strip_prefix('-').map(|s| ("-", s)).unwrap_or(("", signed.as_str()));
+    let (sign, digits) = signed
+        .strip_prefix('-')
+        .map(|s| ("-", s))
+        .unwrap_or(("", signed.as_str()));
     let adjusted = digits.len() as i64 - scale - 1;
     let text = if scale < 0 || adjusted < -6 {
-        let mantissa = if digits.len() == 1 { digits.to_owned() } else { format!("{}.{}", &digits[..1], &digits[1..]) };
+        let mantissa = if digits.len() == 1 {
+            digits.to_owned()
+        } else {
+            format!("{}.{}", &digits[..1], &digits[1..])
+        };
         format!("{sign}{mantissa}E{adjusted:+}")
     } else {
         v.to_plain_string()
@@ -113,11 +123,21 @@ fn zero() -> BigDecimal {
     BigDecimal::from(0)
 }
 fn rounded(value: BigDecimal) -> BigDecimal {
-    if value.digits() <= 28 { return value; }
-    let value = value.with_precision_round(std::num::NonZeroU64::new(28).unwrap(), RoundingMode::HalfEven);
+    if value.digits() <= 28 {
+        return value;
+    }
+    let value = value.with_precision_round(
+        std::num::NonZeroU64::new(28).unwrap(),
+        RoundingMode::HalfEven,
+    );
     if value.digits() > 28 {
-        value.with_precision_round(std::num::NonZeroU64::new(28).unwrap(), RoundingMode::HalfEven)
-    } else { value }
+        value.with_precision_round(
+            std::num::NonZeroU64::new(28).unwrap(),
+            RoundingMode::HalfEven,
+        )
+    } else {
+        value
+    }
 }
 fn d0(v: &Value, k: &str) -> Result<BigDecimal, String> {
     if v[k].is_null() {
@@ -160,13 +180,18 @@ fn threshold(
     let percent = if percent == zero() { zero() } else { percent };
     let (base_coefficient, base_scale) = base.as_bigint_and_exponent();
     let (percent_coefficient, percent_scale) = percent.as_bigint_and_exponent();
-    let product = rounded(BigDecimal::new(base_coefficient * percent_coefficient, base_scale + percent_scale));
+    let product = rounded(BigDecimal::new(
+        base_coefficient * percent_coefficient,
+        base_scale + percent_scale,
+    ));
     let (mut coefficient, scale) = product.as_bigint_and_exponent();
     let mut quotient_scale = scale + 2;
     // Decimal division prefers the dividend's exponent, retaining its significant
     // zeros; an exact /100 only needs extra fractional places when not divisible.
     for _ in 0..2 {
-        if &coefficient % 10 != num_bigint::BigInt::from(0) { break; }
+        if &coefficient % 10 != num_bigint::BigInt::from(0) {
+            break;
+        }
         coefficient /= 10;
         quotient_scale -= 1;
     }
@@ -562,7 +587,7 @@ pub fn evaluate_prop_lifecycle_event(
     next_attempt["revision"] = json!(integer(attempt, "revision")? + 1);
     let mut next_phase = phase.clone();
     let portfolio = resume["replay_binding"]["schema_version"] == "replay-portfolio-binding-v1";
-    if portfolio && text(event,"evaluation_quality") != "full_for_declared_model" {
+    if portfolio && text(event, "evaluation_quality") != "full_for_declared_model" {
         lifecycle["unresolved_equity_coverage"] = json!(true);
     }
     let portfolio_blocked = portfolio && lifecycle["unresolved_equity_coverage"] == true;
@@ -669,12 +694,15 @@ pub fn evaluate_prop_lifecycle_event(
             || (!last
                 && text(spec, "position_policy") == "carry"
                 && text(spec, "carry_policy") == "carry_all"));
-    let pass = !portfolio_blocked && money["profit_target"]["hit"] == true
+    let pass = !portfolio_blocked
+        && money["profit_target"]["hit"] == true
         && calendar["min_qualifying_days_satisfied"] == true
         && positions;
     let terminal = if portfolio_blocked && calendar["expired"] == true {
         Some(("expire", "expired"))
-    } else if portfolio_blocked { None } else if money["terminal_precedence"] == "failed_breach" {
+    } else if portfolio_blocked {
+        None
+    } else if money["terminal_precedence"] == "failed_breach" {
         Some(("breach", "failed_breach"))
     } else if calendar["expired"] == true {
         Some(("expire", "expired"))
@@ -701,7 +729,9 @@ pub fn evaluate_prop_lifecycle_event(
     for k in ["open_positions", "pending_orders", "evaluation_quality"] {
         next_phase[k] = event[k].clone();
     }
-    if portfolio_blocked { next_phase["evaluation_quality"] = json!("insufficient"); }
+    if portfolio_blocked {
+        next_phase["evaluation_quality"] = json!("insufficient");
+    }
     let objectives = json!({"schema":"prop-objectives-v1","phase_index":index,"money":money,"calendar":calendar,"positions_ready":positions,"pass_ready":pass,"technical_status":if portfolio_blocked {"blocked_by_data"}else{"ready"},"terminal_action":terminal.map(|t|t.0)});
     // Python persists datetime via str(datetime), which uses a space, unlike model JSON.
     let mut persisted = objectives.clone();
@@ -736,16 +766,23 @@ pub fn validate_replay_prop_binding(
     let engine = match text(snapshot, "schema_version") {
         "replay-execution-tick-v1" => "replay-tick-v1",
         "replay-execution-v2" => "replay-v2",
-        "replay-portfolio-v1" => text(snapshot,"engine_version"),
+        "replay-portfolio-v1" => text(snapshot, "engine_version"),
         _ => "replay-v1",
     };
     if text(attempt, "engine_version") != engine {
         return Err(format!("prop attempt engine_version must be {engine}"));
     }
     let version = text(attempt, "data_version").trim().to_lowercase();
-    let sha = text(snapshot, if snapshot["schema_version"] == "replay-portfolio-v1" {
-        "primary_dataset_sha256"
-    } else { "dataset_sha256" }).trim().to_lowercase();
+    let sha = text(
+        snapshot,
+        if snapshot["schema_version"] == "replay-portfolio-v1" {
+            "primary_dataset_sha256"
+        } else {
+            "dataset_sha256"
+        },
+    )
+    .trim()
+    .to_lowercase();
     if version != sha && version != format!("sha256:{sha}") {
         return Err("prop attempt data_version must pin the replay dataset sha256".into());
     }
@@ -880,9 +917,13 @@ pub fn validate_replay_prop_transition_boundary(
             return Err(msg.into());
         }
     }
-    if payload["status"] == "completed" || if portfolio {
-        integer(payload,"replay_clock_utc")? >= integer(payload,"replay_end_utc")?
-    } else { integer(snapshot, "cursor_index")? >= row_count - 1 } {
+    if payload["status"] == "completed"
+        || if portfolio {
+            integer(payload, "replay_clock_utc")? >= integer(payload, "replay_end_utc")?
+        } else {
+            integer(snapshot, "cursor_index")? >= row_count - 1
+        }
+    {
         return Err("next phase requires a future replay bar".into());
     }
     let binding = &resume["replay_binding"];
@@ -1065,7 +1106,9 @@ pub fn validate_replay_prop_branch_checkpoint(
                 .into(),
         );
     }
-    let pending = if portfolio { child["pending_orders"].clone() } else if child["pending_market_order"].is_null() {
+    let pending = if portfolio {
+        child["pending_orders"].clone()
+    } else if child["pending_market_order"].is_null() {
         json!([])
     } else {
         json!([child["pending_market_order"]])

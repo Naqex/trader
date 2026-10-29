@@ -171,8 +171,11 @@ impl NotionOAuthService {
         {
             let mut memory = self.memory.lock().unwrap_or_else(|p| p.into_inner());
             memory.pending.retain(|_, value| value.expires_at > now);
-            let generation = memory.generations.get(&(workspace.into(), identity.into()))
-                .copied().unwrap_or_default();
+            let generation = memory
+                .generations
+                .get(&(workspace.into(), identity.into()))
+                .copied()
+                .unwrap_or_default();
             memory.pending.insert(
                 nonce.clone(),
                 Pending {
@@ -285,17 +288,20 @@ impl NotionOAuthService {
         // Disconnect may happen while the token endpoint is responding. The
         // same lock fences that exchange from recreating a canceled connection.
         if memory.generations.get(&key).copied().unwrap_or_default() != pending.generation {
-            return Err(ApiError::detail(StatusCode::CONFLICT, "notion_oauth_connection_canceled"));
+            return Err(ApiError::detail(
+                StatusCode::CONFLICT,
+                "notion_oauth_connection_canceled",
+            ));
         }
         memory.connections.insert(
-                key,
-                Connection {
-                    id: id.clone(),
-                    _access_token: access.into(),
-                    refresh_token: refresh,
-                    expires_at,
-                },
-            );
+            key,
+            Connection {
+                id: id.clone(),
+                _access_token: access.into(),
+                refresh_token: refresh,
+                expires_at,
+            },
+        );
         Ok(json!({"status":"connected","connection_id":id}))
     }
 
@@ -323,7 +329,9 @@ impl NotionOAuthService {
         let key = (workspace.into(), identity.into());
         memory.connections.remove(&key);
         memory.generations.insert(key, uuid::Uuid::new_v4());
-        memory.pending.retain(|_, pending| pending.workspace != workspace || pending.identity != identity);
+        memory
+            .pending
+            .retain(|_, pending| pending.workspace != workspace || pending.identity != identity);
     }
 }
 
@@ -799,54 +807,90 @@ mod tests {
         let entered = Arc::new(tokio::sync::Notify::new());
         let release = Arc::new(tokio::sync::Notify::new());
         let calls = Arc::new(AtomicUsize::new(0));
-        let server = Router::new().route("/token", post({
-            let entered = entered.clone();
-            let release = release.clone();
-            let calls = calls.clone();
-            move || {
+        let server = Router::new().route(
+            "/token",
+            post({
                 let entered = entered.clone();
                 let release = release.clone();
                 let calls = calls.clone();
-                async move {
-                    if calls.fetch_add(1, Ordering::SeqCst) == 0 {
-                        entered.notify_one();
-                        release.notified().await;
+                move || {
+                    let entered = entered.clone();
+                    let release = release.clone();
+                    let calls = calls.clone();
+                    async move {
+                        if calls.fetch_add(1, Ordering::SeqCst) == 0 {
+                            entered.notify_one();
+                            release.notified().await;
+                        }
+                        Json(json!({"access_token":"fixture-access"}))
                     }
-                    Json(json!({"access_token":"fixture-access"}))
                 }
-            }
-        }));
+            }),
+        );
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
         let server = tokio::spawn(async move { axum::serve(listener, server).await.unwrap() });
         let mut service = NotionOAuthService::new(Some(config())).unwrap();
         service.token_url = format!("http://{address}/token");
-        service.client = reqwest::Client::builder().no_proxy()
-            .timeout(std::time::Duration::from_secs(5)).build().unwrap();
+        service.client = reqwest::Client::builder()
+            .no_proxy()
+            .timeout(std::time::Duration::from_secs(5))
+            .build()
+            .unwrap();
         let service = Arc::new(service);
         let inflight = nonce(&service.begin_at("a", "owner", now()).unwrap());
         let pending = nonce(&service.begin_at("a", "owner", now()).unwrap());
         let other = nonce(&service.begin_at("b", "owner", now()).unwrap());
         let exchange = tokio::spawn({
             let service = service.clone();
-            async move { service.complete_at(&inflight, "fixture-code", &auth(), now()).await }
+            async move {
+                service
+                    .complete_at(&inflight, "fixture-code", &auth(), now())
+                    .await
+            }
         });
-        tokio::time::timeout(std::time::Duration::from_secs(5), entered.notified()).await.unwrap();
+        tokio::time::timeout(std::time::Duration::from_secs(5), entered.notified())
+            .await
+            .unwrap();
         service.disconnect("a", "owner");
-        assert_eq!(service.status_at("a", "owner", now())["status"], "disconnected");
-        assert_eq!(service.complete_at(&pending, "fixture-code", &auth(), now()).await.unwrap_err().1["detail"],
-            "notion_oauth_state_invalid_or_expired");
+        assert_eq!(
+            service.status_at("a", "owner", now())["status"],
+            "disconnected"
+        );
+        assert_eq!(
+            service
+                .complete_at(&pending, "fixture-code", &auth(), now())
+                .await
+                .unwrap_err()
+                .1["detail"],
+            "notion_oauth_state_invalid_or_expired"
+        );
         assert_eq!(calls.load(Ordering::SeqCst), 1);
         release.notify_one();
         let error = exchange.await.unwrap().unwrap_err();
         assert_eq!(error.0, StatusCode::CONFLICT);
         assert_eq!(error.1["detail"], "notion_oauth_connection_canceled");
-        assert_eq!(service.status_at("a", "owner", now())["status"], "disconnected");
-        service.complete_at(&other, "fixture-code", &auth(), now()).await.unwrap();
+        assert_eq!(
+            service.status_at("a", "owner", now())["status"],
+            "disconnected"
+        );
+        service
+            .complete_at(&other, "fixture-code", &auth(), now())
+            .await
+            .unwrap();
         let fresh = nonce(&service.begin_at("a", "owner", now()).unwrap());
-        service.complete_at(&fresh, "fixture-code", &auth(), now()).await.unwrap();
-        assert_eq!(service.status_at("a", "owner", now())["status"], "connected");
-        assert_eq!(service.status_at("b", "owner", now())["status"], "connected");
+        service
+            .complete_at(&fresh, "fixture-code", &auth(), now())
+            .await
+            .unwrap();
+        assert_eq!(
+            service.status_at("a", "owner", now())["status"],
+            "connected"
+        );
+        assert_eq!(
+            service.status_at("b", "owner", now())["status"],
+            "connected"
+        );
         assert_eq!(calls.load(Ordering::SeqCst), 3);
         server.abort();
     }

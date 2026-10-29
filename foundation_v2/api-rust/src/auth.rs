@@ -35,7 +35,9 @@ impl IntoResponse for ApiError {
 }
 impl LocalAuthorization {
     pub(crate) fn authorized_workspace_ids(&self) -> Vec<String> {
-        if self.identity.is_empty() { return vec![]; }
+        if self.identity.is_empty() {
+            return vec![];
+        }
         self.workspaces.iter().cloned().collect()
     }
     pub fn new(identity: String, workspaces: Vec<String>) -> Self {

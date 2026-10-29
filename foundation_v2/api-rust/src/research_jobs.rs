@@ -366,7 +366,11 @@ async fn create_engine_in_tx(
     let record=tx.query_opt("SELECT payload_json,deleted FROM workspace_record_revisions WHERE workspace_id=$1 AND kind='playbook' AND record_id=$2 AND revision=$3",&[&scope.workspace_id,&playbook,&revision]).await.map_err(|_|ApiError::database())?
         .filter(|row|!row.get::<_,bool>("deleted")).ok_or_else(||ApiError::detail(StatusCode::NOT_FOUND,"playbook_revision_not_found"))?;
     let payload: Value = record.get(0);
-    let needs_adapter = body.get("engine_backend").and_then(Value::as_str).unwrap_or("nautilus") == "nautilus";
+    let needs_adapter = body
+        .get("engine_backend")
+        .and_then(Value::as_str)
+        .unwrap_or("nautilus")
+        == "nautilus";
     let descriptor = std::env::var_os("TW_V2_SCIENTIFIC_ADAPTER_CAPABILITY")
         .map(PathBuf::from)
         .unwrap_or_else(|| artifact_root.join(".runtime/scientific-adapter-capability.json"));

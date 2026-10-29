@@ -670,17 +670,28 @@ async fn replay_sessions(
     if !ids.is_empty() {
         for row in client.query("SELECT dataset_id,manifest_json FROM datasets WHERE workspace_id=$1 AND dataset_id=ANY($2)",&[&scope.workspace_id,&ids]).await.map_err(|_|ApiError::database())?{manifests.insert(row.get::<_,String>(0),row.get::<_,Value>(1));}
     }
-    let identities = client.query(crate::catalog::REPLAY_IDENTITIES, &[&scope.workspace_id]).await.map_err(|_|ApiError::database())?;
+    let identities = client
+        .query(crate::catalog::REPLAY_IDENTITIES, &[&scope.workspace_id])
+        .await
+        .map_err(|_| ApiError::database())?;
     let mut bindings = HashMap::new();
     for row in identities {
         let id: String = row.get("record_id");
         let identity = json!({"session_kind":"prop","prop_session_id":row.get::<_,String>("session_id"),"prop_attempt_id":row.get::<_,String>("attempt_id")});
-        if bindings.get(&id).is_some_and(|previous| previous != &identity) { return Err(untrusted()); }
+        if bindings
+            .get(&id)
+            .is_some_and(|previous| previous != &identity)
+        {
+            return Err(untrusted());
+        }
         bindings.insert(id, identity);
     }
     for record in &mut records {
         if let Some(identity) = bindings.get(record["record_id"].as_str().unwrap_or("")) {
-            record["payload"].as_object_mut().ok_or_else(untrusted)?.extend(identity.as_object().unwrap().clone());
+            record["payload"]
+                .as_object_mut()
+                .ok_or_else(untrusted)?
+                .extend(identity.as_object().unwrap().clone());
         }
     }
     let items = records

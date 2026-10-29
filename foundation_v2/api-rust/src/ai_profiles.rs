@@ -14,7 +14,10 @@ fn valid(feature: &str, role: &str) -> bool {
     matches!(
         (feature, role),
         ("system" | "chat" | "journal-summary", "default")
-            | ("evidence-review", "default" | "analyst" | "facts" | "gaps" | "reviewer")
+            | (
+                "evidence-review",
+                "default" | "analyst" | "facts" | "gaps" | "reviewer"
+            )
     )
 }
 pub(crate) async fn resolve(

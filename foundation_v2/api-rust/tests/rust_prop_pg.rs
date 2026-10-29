@@ -294,8 +294,12 @@ async fn canonical_prop_session_workflow() {
     let conn = state.pool.get().await.unwrap();
     conn.execute("UPDATE prop_attempts SET phase_json=jsonb_set(phase_json,'{equity}','\"123456.78\"'::jsonb) WHERE workspace_id='tenant-a' AND session_id=$1", &[&id]).await.unwrap();
     drop(conn);
-    for path in [format!("{base}/report"), "/api/v2/prop/reports?status=completed_pass".to_owned()] {
-        let (status, error) = request(app.clone(), "GET", &path, Value::Null, "tenant-a", None).await;
+    for path in [
+        format!("{base}/report"),
+        "/api/v2/prop/reports?status=completed_pass".to_owned(),
+    ] {
+        let (status, error) =
+            request(app.clone(), "GET", &path, Value::Null, "tenant-a", None).await;
         assert_eq!(status, 503, "{path}: {error}");
         assert_eq!(error["detail"], "stored_contract_untrusted");
     }

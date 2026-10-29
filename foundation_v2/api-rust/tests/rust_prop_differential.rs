@@ -29,8 +29,14 @@ fn python_differential_prop_corpus() {
     .unwrap();
     let decimal_fixtures: Value = serde_json::from_str(include_str!(
         "../../evidence/rust-native-20261017/prop/decimal-scale-fixtures.json"
-    )).unwrap();
-    for case in fixtures.as_array().unwrap().iter().chain(decimal_fixtures.as_array().unwrap()) {
+    ))
+    .unwrap();
+    for case in fixtures
+        .as_array()
+        .unwrap()
+        .iter()
+        .chain(decimal_fixtures.as_array().unwrap())
+    {
         let a = case["args"].as_array().unwrap();
         let actual = match case["op"].as_str().unwrap() {
             "money" => prop_core::money_oracle(&a[0], &a[1]),
@@ -47,13 +53,30 @@ fn python_differential_prop_corpus() {
             "transition" => prop_core::apply_transition_intent(&a[0], &a[1], &a[2]),
             "paper" => prop_core::paper::apply_paper_receipt(&a[0], &a[1], &a[2]),
             "reconcile" => prop_core::paper::reconcile_paper_account(&a[0], &a[1]),
-            "report"=>prop_core::report::build_prop_attempt_report(&a[0],&a[1],&a[2],&a[3]),
-            "csv"=>Ok(json!(prop_core::report::prop_attempt_report_csv(&a[0]))),
-            "binding" => prop_core::validate_replay_prop_binding(&a[0],&a[1],&a[2]).map(|_|Value::Null),
-            "feed" => prop_core::replay_mark_to_prop_event(&a[0],&a[1],&a[2]),
-            "transition_boundary"=>prop_core::validate_replay_prop_transition_boundary(&a[0],&a[1],a[2].as_i64().unwrap(),&a[3],&a[4],&a[5],&a[6]).map(|_|Value::Null),
-            "transition_result"=>prop_core::validate_replay_prop_transition_result(&a[0],&a[1],&a[2],&a[3]).map(|_|Value::Null),
-            "branch_checkpoint"=>prop_core::validate_replay_prop_branch_checkpoint(&a[0],&a[1],&a[2],&a[3],&a[4],&a[5]).map(|_|Value::Null),
+            "report" => prop_core::report::build_prop_attempt_report(&a[0], &a[1], &a[2], &a[3]),
+            "csv" => Ok(json!(prop_core::report::prop_attempt_report_csv(&a[0]))),
+            "binding" => {
+                prop_core::validate_replay_prop_binding(&a[0], &a[1], &a[2]).map(|_| Value::Null)
+            }
+            "feed" => prop_core::replay_mark_to_prop_event(&a[0], &a[1], &a[2]),
+            "transition_boundary" => prop_core::validate_replay_prop_transition_boundary(
+                &a[0],
+                &a[1],
+                a[2].as_i64().unwrap(),
+                &a[3],
+                &a[4],
+                &a[5],
+                &a[6],
+            )
+            .map(|_| Value::Null),
+            "transition_result" => {
+                prop_core::validate_replay_prop_transition_result(&a[0], &a[1], &a[2], &a[3])
+                    .map(|_| Value::Null)
+            }
+            "branch_checkpoint" => prop_core::validate_replay_prop_branch_checkpoint(
+                &a[0], &a[1], &a[2], &a[3], &a[4], &a[5],
+            )
+            .map(|_| Value::Null),
             _ => panic!("unknown fixture op"),
         };
         if let Some(error) = case.get("error") {
@@ -66,9 +89,17 @@ fn python_differential_prop_corpus() {
         } else {
             let actual = actual.unwrap_or_else(|e| panic!("{}: {e}", case["name"]));
             if case["op"] == "money" {
-                assert_eq!(actual, case["expected"], "exact persisted money strings: {}", case["name"]);
+                assert_eq!(
+                    actual, case["expected"],
+                    "exact persisted money strings: {}",
+                    case["name"]
+                );
             } else if case["op"] == "event" && !case["expected"]["objectives"]["money"].is_null() {
-                assert_eq!(actual["objectives"]["money"], case["expected"]["objectives"]["money"], "exact lifecycle money strings: {}", case["name"]);
+                assert_eq!(
+                    actual["objectives"]["money"], case["expected"]["objectives"]["money"],
+                    "exact lifecycle money strings: {}",
+                    case["name"]
+                );
             }
             assert_eq!(
                 canonical(&actual),
