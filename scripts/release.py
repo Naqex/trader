@@ -65,7 +65,7 @@ def prepare(version):
             locked["version"] = target
             locked["packages"][""]["name"] = value["name"]
             locked["packages"][""]["version"] = target
-            locked["packages"][""]["license"] = "MIT"
+            locked["packages"][""]["license"] = value["license"]
             outputs[lock] = json.dumps(locked, indent=2) + "\n"
         else:
             text = path.read_text(encoding="utf8")
@@ -106,6 +106,8 @@ def check():
             locked = manifest(lock)
             if locked["version"] != expected or locked["packages"][""]["version"] != expected or locked["name"] != value["name"]:
                 failures.append(f"Lock mismatch: {lock.relative_to(ROOT)}")
+            if locked["packages"][""].get("license") != value.get("license"):
+                failures.append(f"License mismatch: {lock.relative_to(ROOT)}")
         elif lock.exists():
             matches = [p for p in manifest(lock)["package"] if p["name"] == value["name"]]
             if len(matches) != 1 or matches[0]["version"] != expected:

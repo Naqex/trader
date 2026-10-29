@@ -32,7 +32,7 @@ export function closedTradeStats(deals, openingBalance) {
 
 export function tagResults(deals) {
   const groups = new Map()
-  for (const deal of deals) for (const tag of new Set(deal.record?.payload.tags || [])) {
+  for (const deal of deals) for (const tag of new Set(deal.record?.payload.tags || deal.tags || [])) {
     if (!groups.has(tag)) groups.set(tag,[])
     groups.get(tag).push(deal)
   }

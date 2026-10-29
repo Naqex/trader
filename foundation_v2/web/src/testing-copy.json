@@ -7281,6 +7281,15 @@
   "Cumulative PnL in selection": {"vi":"PnL lũy kế trong bộ lọc","en":"Cumulative PnL in selection"},
   "Values hidden": {"vi":"Đã ẩn giá trị","en":"Values hidden"},
   "Incomplete": {"vi":"Chưa đủ lịch sử","en":"Incomplete history"},
+  "Đơn vị lợi nhuận": {"vi":"Đơn vị lợi nhuận","en":"Profit unit"},
+  "Lợi nhuận ({currency})": {"vi":"Lợi nhuận ({currency})","en":"Profit ({currency})"},
+  "Phần trăm": {"vi":"Phần trăm","en":"Percentage"},
+  "Ẩn số dư": {"vi":"Ẩn số dư","en":"Hide balance"},
+  "Hiện số dư": {"vi":"Hiện số dư","en":"Show balance"},
+  "Đã ẩn số dư": {"vi":"Đã ẩn số dư","en":"Balance hidden"},
+  "Tổng quan nhãn": {"vi":"Tổng quan nhãn","en":"Tag overview"},
+  "Cài đặt tổng quan nhãn": {"vi":"Cài đặt tổng quan nhãn","en":"Tag overview settings"},
+  "Chưa có giao dịch gắn nhãn.": {"vi":"Chưa có giao dịch gắn nhãn.","en":"No tagged trades yet."},
   "Biến động giá khớp thực tế / khoảng cách đến SL ban đầu, theo chiều lệnh. Không gồm phí; phí đã tính vào PnL ròng.": {"vi":"Biến động giá khớp thực tế / khoảng cách đến SL ban đầu, theo chiều lệnh. Không gồm phí; phí đã tính vào PnL ròng.","en":"Actual fill-price move / original stop distance, signed by trade direction. Excludes fees; fees are included in net PnL."},
   "Số dư từ snapshot tài khoản, không gồm lãi/lỗ thả nổi; độc lập với bộ lọc giao dịch.": {"vi":"Số dư từ snapshot tài khoản, không gồm lãi/lỗ thả nổi; độc lập với bộ lọc giao dịch.","en":"Account snapshot balance, excluding floating P/L; independent of trade filters."}
 }

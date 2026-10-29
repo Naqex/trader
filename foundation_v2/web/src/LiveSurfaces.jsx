@@ -8,6 +8,7 @@ import SessionFilter from './SessionFilter.jsx'
 import useLiveCalendarAccounts from './useLiveCalendarAccounts.js'
 import { calendarAccountSelection } from './liveCalendarAccounts.js'
 import TestingIcon from './TestingIcon.jsx'
+import TradeTagOverview from './TradeTagOverview.jsx'
 import { CalendarNavigation, CalendarMonth, CalendarDay } from './CalendarView.jsx'
 import { fetchLiveRecords, saveLiveRecord } from './liveLedgerApi.js'
 import { fetchPlaybooks } from './playbookApi.js'
@@ -72,8 +73,11 @@ function FilterBar({ accountPicker, extra, columnControl, payload, draft, setDra
   </section>
 }
 
-function Summary({ payload, deals, sidebar = false }) {
+function Summary({ payload, deals, sidebar = false, workspace, showTags = false }) {
   const { t, fmt } = useTestingLocale(), available = Boolean(payload?.account && Array.isArray(payload.deals))
+  const [unit, setUnit] = useState('money'), [hideBalance, setHideBalance] = useState(false)
+  const capital = liveAccountCapital(payload), percent = unit === 'percent'
+  const asPercent = value => Number.isFinite(value) && capital > 0 ? value / capital * 100 : null
   const stats = closedTradeStats(deals), currency = payload?.account?.currency || ''
   const { net, count } = stats
   const average = count && Number.isFinite(net) ? net / count : null
@@ -91,10 +95,14 @@ function Summary({ payload, deals, sidebar = false }) {
   const pnlPoints = useMemo(() => deals.every(deal => Number.isFinite(deal.time_msc)) ? [{ value: 0, label: t('Bắt đầu') }, ...cumulativeDealSeries(deals).map((point, index) => ({ ...point, label: `${index + 1}` }))] : [], [deals, t])
   return <section className={sidebar ? 'live-analytics-side' : 'live-metrics'} aria-label={t('Analytics')}>
     {sidebar && <h2><span className="live-analytics-title"><TestingIcon kind="chart" />{t('Analytics')}</span></h2>}
+    <div className="live-analytics-controls">
+      <FxSelect label="Đơn vị lợi nhuận" value={unit} onChange={setUnit} options={[{value:'money',label:currency ? t('Lợi nhuận ({currency})',{currency:currencyLabel(currency)}) : t('Profit')},{value:'percent',label:'Phần trăm'}]} disabled={!available} />
+      <Action compact icon={hideBalance ? 'eye' : 'eye-off'} label={hideBalance ? 'Hiện số dư' : 'Ẩn số dư'} title={hideBalance ? 'Hiện số dư' : 'Ẩn số dư'} aria-pressed={hideBalance} disabled={!available} onClick={() => setHideBalance(value => !value)} />
+    </div>
     {!available || !deals.length ? <Empty icon={sidebar ? null : 'chart'} title="No analytics yet" copy={available ? 'No deals in this selection.' : 'Select a connected account to view analytics.'} /> : <div className="live-analytics-charts">
       <article className="live-analytics-chart-row live-analytics-balance-row">
-        <div className="live-balance-summary"><div><span>{t('Total balance')}</span><strong className="live-analytics-chart-value">{format(payload?.account?.balance)}</strong></div><div><span>{t('Total trades')}</span><strong className="live-analytics-chart-value">{fmt(count, '', 0)}</strong></div></div>
-        <AnalyticsCurve series={[pnlPoints]} label={t('Cumulative PnL in selection')} suffix={suffix} height={96} sparkline showPoints={false} />
+        <div className="live-balance-summary"><div><span>{t(percent ? 'Return' : 'Total balance')}</span><strong className="live-analytics-chart-value" aria-label={hideBalance ? t('Đã ẩn số dư') : undefined}>{hideBalance ? '******' : percent ? Number.isFinite(asPercent(net)) ? fmt(asPercent(net), '%') : 'N/A' : format(payload?.account?.balance)}</strong></div><div><span>{t('Total trades')}</span><strong className="live-analytics-chart-value">{fmt(count, '', 0)}</strong></div></div>
+        <AnalyticsCurve series={[percent ? pnlPoints.map(point => ({...point,value:asPercent(point.value)})) : pnlPoints]} label={t('Cumulative PnL in selection')} suffix={percent ? '%' : suffix} height={96} sparkline showPoints={false} />
       </article>
       <article className="live-analytics-chart-row">
         <div className="live-analytics-expectancy-heading"><strong className="live-analytics-chart-value">{format(average)}</strong><ChartHeading title="Expectancy per trade" help={'Kỳ vọng là số tiền lãi/lỗ ròng trung bình mỗi giao dịch đã đóng trong bộ lọc, gồm cả hòa vốn.\n\nCách tính: tổng lãi/lỗ ròng sau phí ÷ tổng số giao dịch. Đây là trung bình của dữ liệu đã có, không bảo đảm kết quả lệnh tiếp theo.'} /></div>
@@ -123,6 +131,7 @@ function Summary({ payload, deals, sidebar = false }) {
         </div>
       </article>
     </div>}
+    {showTags && <TradeTagOverview workspace={workspace} deals={deals} currency={currency} />}
   </section>
 }
 
@@ -363,7 +372,7 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
     {showContent && !['calendar','trades','notes','trading-accounts','analytics'].includes(section) && filterBar}
     {showContent && <>
     {section === 'calendar' && <Calendar empty={ledger.status === 'ready' && !calendarIds.length && !broker?.stale} filterBar={showContent ? filterBar : null} canWrite={!preview && ledger.status === 'ready' && calendarIds.length === 1} selectionKey={selectionKey} payload={payload} deals={deals} filters={applied} reviewScope={payload?.manual ? `${strategy === 'all' ? t('Tất cả chiến lược') : `${strategies.find(item => item.record_id === strategyId)?.payload.name || strategyId}${strategyRevision ? ` · v${strategyRevision}` : ` · ${t('mọi phiên bản')}`}`} · ${!tag.length ? t('Tất cả nhãn') : tag.join(', ')}` : t('Synced deals')} onPreview={create} />}
-    {section === 'trades' && <div className="live-split"><section className="live-trades-section">{filterBar}<div className="live-trades-content">{payload?.manual ? <ManualTrades columns={columns} writable={!preview && ledger.status === 'ready' && strategyReady} filterKey={JSON.stringify([chosen,tradeScope,strategy])} workspace={workspace} deals={filteredTrades} currency={payload.account.currency} strategies={strategies} onEdit={record => open('trade',record)} /> : payload?.account ? <LiveBrokerSnapshot columns={columns} payload={payload} section="trades" trades={filteredTrades} filterKey={JSON.stringify(tradeScope)} /> : <Empty title="No trades yet" copy="Tạo tài khoản thủ công và thêm giao dịch để bắt đầu." icon="journal" />}</div></section><Summary payload={payload} deals={payload?.manual ? filteredTrades : filteredTrades.filter(trade => trade.status === 'Closed')} sidebar /></div>}
+    {section === 'trades' && <div className="live-split"><section className="live-trades-section">{filterBar}<div className="live-trades-content">{payload?.manual ? <ManualTrades columns={columns} writable={!preview && ledger.status === 'ready' && strategyReady} filterKey={JSON.stringify([chosen,tradeScope,strategy])} workspace={workspace} deals={filteredTrades} currency={payload.account.currency} strategies={strategies} onEdit={record => open('trade',record)} /> : payload?.account ? <LiveBrokerSnapshot columns={columns} payload={payload} section="trades" trades={filteredTrades} filterKey={JSON.stringify(tradeScope)} /> : <Empty title="No trades yet" copy="Tạo tài khoản thủ công và thêm giao dịch để bắt đầu." icon="journal" />}</div></section><Summary payload={payload} deals={payload?.manual ? filteredTrades : filteredTrades.filter(trade => trade.status === 'Closed')} sidebar workspace={preview ? undefined : workspace} showTags /></div>}
     {section === 'notes' && <JournalNotes accountPicker={accountPicker} readable={journalReadable} writable={!preview && ledger.status === 'ready' && strategyReady} key={chosen} records={ledger.items} accountId={chosen || null} strategies={strategies} onEdit={record => open('note',record)} onCreate={() => open('note')} />}
     {section === 'tag-analytics' && <JournalTags readable={journalReadable} filterKey={JSON.stringify([chosen,applied,strategy,tag])} deals={deals} currency={payload?.account?.currency || ''} />}
     {section === 'analytics' && <LiveAnalyticsReport payload={payload} deals={completed} issue={calendar.issue} sessionControl={<SessionFilter items={pickerItems} value={calendarSelection} multiple onChange={chooseCalendar} labels={ACCOUNT_PICKER_LABELS} />} />}

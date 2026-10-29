@@ -1,6 +1,9 @@
 # Third-party components
 
-Application code is copyright (c) 2026 Naqex and licensed under [MIT](LICENSE).
+Application code is copyright (c) 2026 Naqex and licensed under the
+[Naqex Source Available License 1.0.0](LICENSE). See [licensing](docs/licensing.md)
+for the adoption boundary and previous MIT permissions. The preserved original
+MIT notice is in [LICENSES/MIT-previous.txt](LICENSES/MIT-previous.txt).
 Dependencies retain their own licenses; the application license does not relicense them.
 
 | Component | Source/version | Distribution treatment |

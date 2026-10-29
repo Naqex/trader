@@ -49,6 +49,25 @@ class ReleaseWorkflowTests(unittest.TestCase):
         self.assertEqual("0.2.0b3", release.manifest(self.root / release.MANIFESTS[0])["project"]["version"])
         self.assertEqual("0.2.0-beta.3", release.manifest(self.root / release.MANIFESTS[3])["version"])
 
+    def test_prepare_preserves_application_license_without_relicensing_dependencies(self):
+        path = self.root / "foundation_v2/web/package.json"
+        expected = release.manifest(path)["license"]
+        lock_path = path.with_name("package-lock.json")
+        dependencies = {name: value.get("license") for name, value in release.manifest(lock_path)["packages"].items() if name}
+        release.prepare("0.2.0-beta.3")
+        self.assertEqual(expected, release.manifest(path)["license"])
+        locked = release.manifest(lock_path)["packages"]
+        self.assertEqual(expected, locked[""]["license"])
+        self.assertEqual(dependencies, {name: value.get("license") for name, value in locked.items() if name})
+
+    def test_mismatched_lock_license_is_rejected(self):
+        lock = self.root / "foundation_v2/web/package-lock.json"
+        document = release.manifest(lock)
+        document["packages"][""]["license"] = "MIT"
+        lock.write_text(json.dumps(document), encoding="utf8")
+        with self.assertRaisesRegex(ValueError, "License mismatch"):
+            release.check()
+
     def test_invalid_version_does_not_mutate_source(self):
         before = (self.root / "VERSION").read_bytes()
         with self.assertRaises(ValueError):
