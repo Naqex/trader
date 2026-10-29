@@ -279,6 +279,8 @@
 .live-workspace .is-loss { color: var(--report-negative); }
 .live-calendar-toolbar { margin-bottom: 0; flex-wrap: wrap; }
 .live-calendar-toolbar > .wm-calendar-toolbar { flex:1; min-width:0; }
+.fx-app.fx-shell-story[data-theme] .fx-content .live-calendar-toolbar .live-toolbar-actions > .fxa-button[aria-pressed] { background:transparent; border-color:transparent; border-radius:6px; }
+.fx-app.fx-shell-story[data-theme] .fx-content .live-calendar-toolbar .live-toolbar-actions > .fxa-button[aria-pressed=true] { background:var(--wm-control-open); }
 .live-calendar-action-divider { flex: 0 0 1px; height: 20px; background: var(--wm-border); }
 .live-month-nav { gap: 8px; flex-wrap: wrap; }
 .live-month-step { display: flex; align-items: center; gap: 8px; }
