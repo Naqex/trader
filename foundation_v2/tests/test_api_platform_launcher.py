@@ -51,7 +51,7 @@ class LauncherTests(unittest.TestCase):
 
     def test_native_scientific_descriptor_is_explicit_and_verified_before_start(self):
         with tempfile.TemporaryDirectory() as folder:
-            capability=Path(folder)/'scientific.json';capability.write_text('{}')
+            capability=Path(folder).resolve()/'scientific.json';capability.write_text('{}')
             args=launcher.resolve_profile_paths(launcher.parser().parse_args(['--runtime-profile','native',
                 '--scientific-capability',str(capability),'--legacy-codec-capability',str(capability)]))
             with patch.dict('os.environ',{'TW_V2_DATABASE_URL':'host=localhost user=fixture'}):

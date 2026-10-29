@@ -14,7 +14,7 @@ SPEC.loader.exec_module(backup)
 class BackupGuardTests(unittest.TestCase):
     def test_backup_output_is_confined_to_dedicated_root(self):
         with tempfile.TemporaryDirectory() as folder, patch.object(backup, "FOUNDATION", Path(folder)):
-            base = Path(folder)
+            base = Path(folder).resolve()
             artifacts = base / "artifacts"
             expected = base / ".runtime/api-platform-backups/snapshot"
             self.assertEqual(backup.backup_output(None, "snapshot", artifacts), expected.resolve())
@@ -31,7 +31,7 @@ class BackupGuardTests(unittest.TestCase):
     def test_backup_root_can_be_a_junction_without_allowing_child_escape(self):
         import subprocess
         with tempfile.TemporaryDirectory() as folder, patch.object(backup, "FOUNDATION", Path(folder) / "project"):
-            base = Path(folder)
+            base = Path(folder).resolve()
             target = base / "external-backups"
             target.mkdir()
             link = backup.FOUNDATION / ".runtime/api-platform-backups"
