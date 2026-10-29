@@ -292,8 +292,12 @@
 .live-week-total > div > span:first-child { color: var(--wm-content-muted); min-width:0; }
 .live-week-total > div > span:last-child { white-space:nowrap; flex-shrink:0; }
 .live-week-total strong { font-size: 15px; font-variant-numeric: tabular-nums; }
-.live-month-total { display: flex; justify-content: flex-end; align-items: center; gap: 12px; padding: 16px var(--wm-page-gutter); background: var(--project-peach-soft); color: var(--project-on-peach-soft); border:1px solid var(--project-action); border-radius: 0; margin-top: 0; margin-inline: calc(-1 * var(--wm-page-gutter)); font-size: 13px; flex-wrap: wrap; }
-.live-month-total strong { font-size: 22px; font-variant-numeric: tabular-nums; }
+.live-month-total { display: flex; justify-content: flex-end; align-items: center; gap: 12px; padding: 16px var(--wm-page-gutter); background: var(--wm-surface); color: var(--wm-content); border:1px solid var(--live-month-tone, var(--wm-border-strong)); border-radius: 0; margin-top: 0; margin-inline: calc(-1 * var(--wm-page-gutter)); font-size: 13px; flex-wrap: wrap; }
+.live-month-total.is-gain { --live-month-tone: var(--report-positive); }
+.live-month-total.is-loss { --live-month-tone: var(--report-negative); }
+.live-month-total:is(.is-gain, .is-loss) { background: color-mix(in srgb, var(--live-month-tone) 12%, var(--wm-canvas)); }
+.live-month-total strong { color: var(--live-month-tone, var(--wm-content)); font-size: 22px; font-variant-numeric: tabular-nums; }
+.live-month-total > span:last-child { color: var(--wm-content-muted); }
 .live-day-detail { padding: 16px 0; border-top: 1px solid var(--wm-border); }
 .live-day-detail ul { padding: 0; list-style: none; }
 .live-day-detail li { display: flex; justify-content: space-between; gap: 12px; padding-block: 8px; font-size: 13px; }

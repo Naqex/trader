@@ -9,13 +9,14 @@ const report={scope:'Live calendar GET fixtures; external/broker access and writ
 let page
 try{
  for(const [width,theme] of [[1920,'dark'],[1920,'light'],[1240,'dark'],[1241,'dark'],[768,'dark'],[390,'dark'],[390,'light']]){
+  let scenario='gain'
   const context=await browser.newContext({viewport:{width,height:940},reducedMotion:'reduce'})
   await context.addInitScript(theme=>{localStorage.setItem('tw-theme',theme);localStorage.setItem('tw-timezone','UTC')},theme)
   await context.route('**/*',route=>{
    const q=route.request(),u=new URL(q.url())
    if(!['GET','HEAD','OPTIONS'].includes(q.method())){report.writes.push(u.pathname);return route.abort()}
    if(u.origin!==origin)return route.abort()
-   if(u.pathname==='/api/v2/live/status')return route.fulfill({json:{status:'ready',connection_id:'calendar-fixture',connections:[{id:'calendar-fixture',name:'Calendar fixture',status:'connected',account:{currency:'USD'}}],account:{account_ref:'calendar-fixture',currency:'USD',balance:1000,opening_balance:1000},history_from_utc:'2026-01-01T00:00:00Z',captured_at_utc:'2026-10-31T23:00:00Z',deals:[['2026-10-12',25],['2026-10-13',-10],['2026-10-14',5],['2026-10-31',-5]].map(([date,profit],i)=>({ticket:i+1,symbol:'EURUSD',type:0,time_msc:Date.parse(date+'T12:00:00Z'),profit,commission:0,swap:0,fee:0}))}})
+   if(u.pathname==='/api/v2/live/status')return route.fulfill({json:{status:'ready',connection_id:'calendar-fixture',connections:[{id:'calendar-fixture',name:'Calendar fixture',status:'connected',account:{currency:'USD'}}],account:{account_ref:'calendar-fixture',currency:'USD',balance:1000,opening_balance:1000},history_from_utc:'2026-01-01T00:00:00Z',captured_at_utc:'2026-10-31T23:00:00Z',deals:(scenario==='empty'?[]:[['2026-10-12',25],['2026-10-13',scenario==='loss'?-40:scenario==='flat'?-25:-10],['2026-10-14',5],['2026-10-31',-5]]).map(([date,profit],i)=>({ticket:i+1,symbol:'EURUSD',type:0,time_msc:Date.parse(date+'T12:00:00Z'),profit,commission:0,swap:0,fee:scenario==='unknown'&&i===0?null:0}))}})
    if(u.pathname==='/api/v2/live/records')return route.fulfill({json:{version:'live-records-v1',items:[]}})
    if(u.pathname.startsWith('/api/'))return route.fulfill({status:503,json:{detail:'fixture_unavailable'}})
    return route.continue()
@@ -47,7 +48,7 @@ try{
   assert.equal(await outside.isDisabled(),true);assert.equal(await outside.evaluate(el=>getComputedStyle(el).opacity),'1')
   assert.equal(await outside.evaluate(el=>getComputedStyle(el).borderTopColor),rest.border)
   const border=await footer.evaluate(el=>{const s=getComputedStyle(el);return {widths:[s.borderTopWidth,s.borderRightWidth,s.borderBottomWidth,s.borderLeftWidth],colors:[s.borderTopColor,s.borderRightColor,s.borderBottomColor,s.borderLeftColor],radius:s.borderRadius}})
-  assert.deepEqual(border.widths,['1px','1px','1px','1px']);assert.ok(border.colors.every(c=>c==='rgb(255, 154, 31)'));assert.equal(border.radius,'0px')
+  assert.deepEqual(border.widths,['1px','1px','1px','1px']);assert.ok(border.colors.every(c=>c===gainTone));assert.equal(border.radius,'0px')
   const edges=await grid.evaluate(el=>({bottom:el.getBoundingClientRect().bottom,footer:el.closest('.live-calendar-content').querySelector('.live-month-total').getBoundingClientRect().top}))
   assert.ok(Math.abs(edges.bottom-edges.footer)<1,JSON.stringify(edges))
   const borderPaint=el=>{const s=getComputedStyle(el);return {top:s.borderTopColor,left:s.borderLeftWidth==='0px'?null:s.borderLeftColor,bottom:s.borderBottomWidth,right:s.borderRightWidth,shadow:s.boxShadow}}
@@ -74,6 +75,18 @@ try{
   assert.equal(await day.evaluate(el=>getComputedStyle(el).outlineWidth),'2px')
   await day.click();await page.getByRole('dialog').waitFor();await page.keyboard.press('Escape');assert.equal(await day.evaluate(el=>document.activeElement===el),true)
   await page.mouse.move(0,0);await page.screenshot({path:`${out}/grid-${width}-${theme}.png`})
+  for(const state of ['loss','flat','empty','unknown','gain']){
+   scenario=state;await page.reload();await footer.waitFor();await page.locator('.live-calendar-cell[data-date="2026-10-15"]').waitFor()
+   await page.waitForFunction(state=>{const el=document.querySelector('.live-month-total');return el&&(state==='gain'?el.classList.contains('is-gain'):state==='loss'?el.classList.contains('is-loss'):!el.matches('.is-gain,.is-loss'))},state)
+   const colors=await footer.evaluate(el=>{const s=getComputedStyle(el),app=getComputedStyle(el.closest('.fx-app'));return {border:s.borderTopColor,background:s.backgroundColor,value:getComputedStyle(el.querySelector('strong')).color,neutral:app.getPropertyValue('--wm-border-strong').trim(),classes:el.className}})
+   if(state==='gain'||state==='loss'){
+    const expected=state==='gain'?gainTone:theme==='dark'?'rgb(255, 92, 108)':'rgb(198, 47, 67)'
+    assert.equal(colors.border,expected);assert.equal(colors.value,expected)
+   }else assert(!/is-gain|is-loss/.test(colors.classes),'Zero/unknown totals stay neutral')
+   const bottom=page.locator('[data-date="2026-10-31"]');await bottom.hover()
+   assert.equal(await bottom.evaluate(el=>getComputedStyle(el).borderBottomWidth),'0px','Footer owns the seam in every PnL state')
+   await footer.screenshot({path:`${out}/month-${state}-${width}-${theme}.png`})
+  }
   if(width===1920&&theme==='dark'){
    await page.getByRole('button',{name:'Tháng trước',exact:true}).click();await page.getByRole('button',{name:'Tháng trước',exact:true}).click();assert.equal(await assertRows(),6)
    await grid.screenshot({path:`${out}/six-weeks.png`})

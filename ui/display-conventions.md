@@ -134,7 +134,10 @@ plus on hover/focus (always on touch) and open a right-hand daily-note drawer.
 The drawer currently edits a local draft only; closing discards it and restores
 focus to the date. No note API writes or persistence are implied. Live also uses
 a joined square grid extending to both pane edges, with a square month-total
-strip with a 1px action-color border at the bottom of the desktop calendar viewport.
+strip with a 1px border at the bottom of the desktop calendar viewport. Positive
+monthly net PnL uses the shared green tone for its border, tinted background and
+money value; negative uses red. Known zero and unknown totals use neutral tones.
+Color follows monetary PnL, independently of the calendar amount/percentage view.
 All day and week-total cells stretch to the same grid track at every breakpoint;
 row sizing belongs to the grid, not a separate button height. Outside-month dates
 mute their content only, never the whole cell or its shared separators. Each seam
@@ -147,7 +150,7 @@ boundary. In Live, use only the reserved top/left cell borders, with no inset
 shadow frame. A neutral edge owner inherits its colored neighbor's tone;
 if two day tones conflict, the lower/right owner chooses the single edge color.
 Hover changes the fill and shows the plus without replacing the edge color.
-The last row paints no bottom stroke: the month strip's orange top border wins
+The last row paints no bottom stroke: the month strip's state-colored top border wins
 there, including below a loss cell. Keyboard focus retains its inset focus ring.
 Weekly totals expose the
 same plus and draft drawer, restricted to eligible dates in the current month.
