@@ -1,3 +1,4 @@
+import { currencyLabel, formatAmount } from './moneyFormat.js'
 import { createPropChartSession, openPropReplay } from './propSessionCreation.js'
 import { sessionNavigationHref } from './sessionCatalog.js'
 import { scopedMutation } from './scopedMutation.js'
@@ -16,6 +17,7 @@ function formatPropMoney(value, currency = 'USD', locale = 'vi-VN') {
   if (value === null || value === undefined || value === '' || typeof value === 'boolean') return '-'
   const number = Number(value)
   if (!Number.isFinite(number)) return '-'
+  if (currency === 'USD') return formatAmount(number, ' USD', 2, locale)
   try {
     return new Intl.NumberFormat(locale, {
       style: 'currency',
@@ -596,7 +598,7 @@ export default function PropWorkspace({ workspace, query }) {
               </label>
               <label className="prop-field">
                 <span>{t("Currency")}</span>
-                <FxSelect label={t("Currency")} value={draft.currency} onChange={value => updateDraft('currency', value)} localizeOptions={false} options={[({ value: "USD", label: t("USD"), localize: false }), ({ value: "EUR", label: t("EUR"), localize: false })]} />
+                <FxSelect label={t("Currency")} value={draft.currency} onChange={value => updateDraft('currency', value)} localizeOptions={false} options={[({ value: "USD", label: "$", localize: false }), ({ value: "EUR", label: t("EUR"), localize: false })]} />
               </label>
               <label className="prop-field">
                 <span>{t("Profit target")}</span>
@@ -604,11 +606,11 @@ export default function PropWorkspace({ workspace, query }) {
               </label>
               <label className="prop-field">
                 <span>{t("Max daily loss")}</span>
-                <div className="prop-rule-input"><input aria-label={t("Max daily loss") + " " + draft.currency} type="number" min="1" step="0.01" value={draft.dailyLoss} onChange={(event) => updateDraft('dailyLoss', event.target.value)} /><span>{draft.currency}</span></div>
+                <div className="prop-rule-input"><input aria-label={t("Max daily loss") + " " + currencyLabel(draft.currency)} type="number" min="1" step="0.01" value={draft.dailyLoss} onChange={(event) => updateDraft('dailyLoss', event.target.value)} /><span>{currencyLabel(draft.currency)}</span></div>
               </label>
               <label className="prop-field">
                 <span>{t("Max total loss")}</span>
-                <div className="prop-rule-input"><input aria-label={t("Max total loss") + " " + draft.currency} type="number" min="1" step="0.01" value={draft.overallLoss} onChange={(event) => updateDraft('overallLoss', event.target.value)} /><span>{draft.currency}</span></div>
+                <div className="prop-rule-input"><input aria-label={t("Max total loss") + " " + currencyLabel(draft.currency)} type="number" min="1" step="0.01" value={draft.overallLoss} onChange={(event) => updateDraft('overallLoss', event.target.value)} /><span>{currencyLabel(draft.currency)}</span></div>
               </label>
               <label className="prop-field prop-field-wide">
                 <span>{t("Dataset cho chart")}</span>

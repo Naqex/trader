@@ -91,7 +91,8 @@ test('draft prices use declared pip and quantity assumptions without inventing m
   assert.equal(orderLevels(replay, { stopLoss: '', takeProfit: '1.12' }).stop, 1.09, 'Persisted protection wins over a stale form draft')
   assert.equal(money(null, 'USD'), '-')
   assert.equal(money(0, null), '-')
-  assert.notEqual(money(0, 'USD'), '-')
+  assert.equal(money(0, 'USD'), '$0')
+  assert.equal(money(-2, 'USD'), '$-2')
 })
 
 test('chart markers require an accepted order even while Quick Buy/Sell is submitting', () => {

@@ -202,7 +202,7 @@ export function AnalyticsPerformance({ model, data, accountBalance, extra, onSel
   const idealHelp='RR lý tưởng là tỷ lệ lợi nhuận/rủi ro tối đa có thể đạt nếu giữ lệnh tới một tuần sau khi mở.\n\nGiá trị trung bình dùng các cửa sổ đủ dữ liệu trong phạm vi báo cáo; đỉnh trên biểu đồ giúp nhìn lại cơ hội có thể đã chốt quá sớm.'
   const maxIdealHelp='RR lý tưởng lớn nhất trong toàn bộ giao dịch đủ dữ liệu của bộ lọc, gồm cả lệnh thắng và thua.\n\nMỗi lệnh được quan sát tới một tuần sau khi mở để tìm mức lãi/lỗ ròng cao nhất so với rủi ro ban đầu. Giá quan sát không bảo đảm khớp lệnh thực tế.'
   const totalPercent=number(model.startBalance)>0&&known(data.net)?data.net/Number(model.startBalance)*100:null
-  const performanceControls=<FxSelect label="Chỉ số hiệu suất" value={metric} onChange={setMetric} options={[{value:'net',label:`Lãi/lỗ ròng (${currency})`},{value:'averageR',label:'RR trung bình'},{value:'profitPct',label:'Lợi nhuận (%)'},{value:'winRate',label:'Tỉ lệ thắng'}]}/>
+  const performanceControls=<FxSelect label="Chỉ số hiệu suất" value={metric} onChange={setMetric} options={[{value:'net',label:`Lãi/lỗ ròng (${currencyLabel(currency)})`},{value:'averageR',label:'RR trung bình'},{value:'profitPct',label:'Lợi nhuận (%)'},{value:'winRate',label:'Tỉ lệ thắng'}]}/>
   return <div className="fxa-report fxa-visual-report" data-testid="analytics-performance">
     <ReportSection title="Profit and loss" className="fxa-profit-panel" actions={<UnitTabs label="Phạm vi biểu đồ" value={interval} onChange={setInterval} options={[["all",'Tất cả'],['day','Ngày'],['hour','1 giờ'],['quarter','15 phút']]}/>}>
       <div className="fxa-metrics fxa-profit-metrics">

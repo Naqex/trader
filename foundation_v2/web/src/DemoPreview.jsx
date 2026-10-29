@@ -1,3 +1,4 @@
+import { formatAmount } from './moneyFormat.js'
 import { previewReadRecovery } from './demoMode.js'
 import { navigate } from './clientNavigation.js'
 import { useTestingLocale } from './testingLocale.jsx'
@@ -139,7 +140,7 @@ function DemoDashboard({ workspace, query, state }) {
   return <section className="fx-dashboard" aria-label={t("Dashboard")}><div className="fx-dashboard-inner"><DashboardSessions workspace={workspace} query={query} preview={preview} /></div></section>
 }
 const demoPlaybooks = DEMO_SESSIONS.map(item => ({ ...item, payload: { name: item.name, status: 'draft', execution_capability: 'replay_only', rules: { entry: 'breakout', exit: '2R', risk: '1%' } } }))
-const demoNotes = DEMO_LEDGER.slice(0, 6).map(row => ({ record_id: row.trade_id, revision: 1, updated_at_utc: row.close_time_utc, payload: { entry_type: 'decision', note: `${row.session_name} · ${row.symbol}: chờ đóng nến xác nhận`, observation: 'Giá quay về vùng breakout', decision: 'Giữ rủi ro 1% theo kế hoạch', plan: 'SL ngoài vùng, mục tiêu 2R', actual_result: `${row.net_pnl} USD`, next_action: 'Đối chiếu entry với checklist', tags: row.tags, source: { type: 'replay_session', id: row.session_id } } }))
+const demoNotes = DEMO_LEDGER.slice(0, 6).map(row => ({ record_id: row.trade_id, revision: 1, updated_at_utc: row.close_time_utc, payload: { entry_type: 'decision', note: `${row.session_name} · ${row.symbol}: chờ đóng nến xác nhận`, observation: 'Giá quay về vùng breakout', decision: 'Giữ rủi ro 1% theo kế hoạch', plan: 'SL ngoài vùng, mục tiêu 2R', actual_result: formatAmount(row.net_pnl, ' USD'), next_action: 'Đối chiếu entry với checklist', tags: row.tags, source: { type: 'replay_session', id: row.session_id } } }))
 
 function DemoStrategies() {
   const { t } = useTestingLocale()

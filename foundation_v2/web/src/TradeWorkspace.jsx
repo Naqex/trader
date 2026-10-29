@@ -1,3 +1,4 @@
+import { formatAmount } from './moneyFormat.js'
 import { scopedMutation } from './scopedMutation.js'
 import { displayDate } from './dateFormat.js'
 import { useTestingLocale } from './testingLocale.jsx'
@@ -51,7 +52,7 @@ function optionalNumber(value) {
 
 function formatMoney(value, currency = 'USD') {
   if (value === null || value === undefined || !Number.isFinite(Number(value))) return '-'
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency, maximumFractionDigits: 2 }).format(Number(value))
+  return currency === 'USD' ? formatAmount(value, ' USD') : new Intl.NumberFormat('vi-VN', { style: 'currency', currency, maximumFractionDigits: 2 }).format(Number(value))
 }
 
 function formatPrice(value) {

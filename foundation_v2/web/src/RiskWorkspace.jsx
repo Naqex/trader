@@ -1,3 +1,4 @@
+import { formatAmount } from './moneyFormat.js'
 import { scopedMutation } from './scopedMutation.js'
 import ProjectDateInput from './ProjectDateInput.jsx'
 import React, { useMemo, useState } from 'react'
@@ -11,7 +12,7 @@ function optionalNumber(value) {
 
 function formatMoney(value) {
   if (value === null || value === undefined || !Number.isFinite(Number(value))) return '-'
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(Number(value))
+  return formatAmount(value, ' USD')
 }
 
 async function readJson(response) {

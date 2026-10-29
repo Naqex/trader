@@ -1,3 +1,4 @@
+import { currencyLabel } from './moneyFormat.js'
 import { useEffect, useRef, useState } from 'react'
 import { useTestingLocale } from './testingLocale.jsx'
 import { DEFAULT_COST_MODEL, RiskPreview, validateDraft } from './TradeWorkspace.jsx'
@@ -259,7 +260,7 @@ function ProtectionRiskSizing({ order, entry }) {
       <div className="legacy-risk-presets" role="group" aria-label={t('Rủi ro (%)')}>{['0.3','0.5','0.7','1','2','3'].map(value => <button type="button" key={value} aria-pressed={Number(percent) === Number(value)} disabled={order.disabled} onClick={() => changeRisk({ mode:'percent', value })}>{value}%</button>)}</div>
       <div className="legacy-order-grid">
         <label>{t('Rủi ro')}<span className="legacy-risk-input"><span aria-hidden="true">%</span><input aria-label={t('Rủi ro (%)')} type="number" min="0" step="any" required value={percent} disabled={disabled} onChange={event => changeRisk({ mode:'percent', value:event.target.value })} /></span></label>
-        <label>{t('Số tiền rủi ro')}<span className="legacy-risk-input"><span aria-hidden="true">{symbol}</span><input ref={amountInput} aria-label={`${t('Số tiền rủi ro')} ${currency || ''}`} aria-invalid={quantity === null ? true : undefined} type="number" min="0" step="any" required value={!manualSize && input.mode === 'amount' ? input.value : budget === null ? '' : Number(budget.toFixed(2))} disabled={disabled} onChange={event => changeRisk({ mode:'amount', value:event.target.value })} /></span></label>
+        <label>{t('Số tiền rủi ro')}<span className="legacy-risk-input"><span aria-hidden="true">{symbol}</span><input ref={amountInput} aria-label={`${t('Số tiền rủi ro')} ${currencyLabel(currency) || ''}`} aria-invalid={quantity === null ? true : undefined} type="number" min="0" step="any" required value={!manualSize && input.mode === 'amount' ? input.value : budget === null ? '' : Number(budget.toFixed(2))} disabled={disabled} onChange={event => changeRisk({ mode:'amount', value:event.target.value })} /></span></label>
       </div>
     </div>
   </div>
@@ -366,7 +367,7 @@ export default function ChartOrderPanel({ order, blockedReason, legacy = false, 
     {blockedReason && <p role="status">{t(blockedReason)}</p>}
     {!execution ? <form onSubmit={event => { event.preventDefault(); order.initialize() }}>
       <h2>{t("Khởi tạo tài khoản")}</h2><p>{t("Chi phí mô phỏng, không phải báo giá broker.")}</p>
-      <label>{t("Vốn ban đầu (")}{costs?.account_ccy || t("Chưa rõ tiền tệ")})<input type="number" min="1" step="0.01" value={order.startingBalance} onChange={event => order.setStartingBalance(event.target.value)} disabled={disabled || Boolean(order.assetStates) || Boolean(order.executionConfig?.forceBar)} /></label>
+      <label>{t("Vốn ban đầu (")}{currencyLabel(costs?.account_ccy) || t("Chưa rõ tiền tệ")})<input type="number" min="1" step="0.01" value={order.startingBalance} onChange={event => order.setStartingBalance(event.target.value)} disabled={disabled || Boolean(order.assetStates) || Boolean(order.executionConfig?.forceBar)} /></label>
       {!order.executionConfig?.forceBar && <label className="replay-tick-toggle"><input type="checkbox" checked={order.tick.useTicks} disabled={disabled || !order.tick.options?.available} onChange={event => order.tick.setMode(event.target.checked ? 'tick' : 'bar')} />{t("Khớp lệnh bằng tick Bid/Ask")}</label>}
       {!order.executionConfig?.forceBar && <p role="status">{t(order.tick.options?.reason || 'Đang kiểm tra lịch sử tick…')}</p>}
       {order.tick.useTicks && !order.executionConfig?.forceBar ? <label>{t("Đòn bẩy mô phỏng")}<input type="number" min="1" max="1000" step="1" value={order.tick.leverage} onChange={event => order.tick.setLeverage(event.target.value)} disabled={disabled} /></label> : <label>{t("Spread (đơn vị giá)")}<input type="number" min="0" step={instrument?.tick_size || 'any'} value={order.spread} onChange={event => order.setSpread(event.target.value)} disabled={disabled || Boolean(order.executionConfig?.forceBar)} /></label>}

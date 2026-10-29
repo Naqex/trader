@@ -34,7 +34,7 @@ export function orderLabel(levels, kind, price, theme, t) {
   else if (entry && levels.state === 'queued') text += `${['limit','stop'].includes(levels.orderType) ? ` ${levels.orderType.toUpperCase()}` : ''} · ${t('Chờ khớp')}`
   else if (!ghost && profit != null && Number.isFinite(Number(profit)) && levels.currency) {
     const value = Number(profit)
-    text += ` → ${value > 0 ? '+' : value < 0 ? '−' : ''}${amountFormat.format(Math.abs(value))} ${levels.currency}`
+    text += ` → ${value > 0 ? '+' : value < 0 ? '−' : ''}${levels.currency === 'USD' ? '$' : ''}${amountFormat.format(Math.abs(value))}${levels.currency === 'USD' ? '' : ` ${levels.currency}`}`
   }
   // A protection at Entry shares the small handle layout, but remains a real
   // saved protection. Keep its full details available without marking it unset.

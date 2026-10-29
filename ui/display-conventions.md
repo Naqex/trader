@@ -593,8 +593,12 @@ Last sync is the last successful data observation, not a connection expiry date.
   composition and accessibility. `matchesSearch` normalizes Vietnamese accents,
   case and whitespace, matching every query token. Server session search follows
   the same rule. Refreshes retain existing rows and disable stale mutations.
-- `formatAmount` renders USD with `$`; other currencies retain their identity.
-  Missing or malformed amounts stay unknown, never zero.
+- `formatAmount` renders USD amounts with a `$` prefix, including zero and
+  negatives (`$0`, `$-2`). `currencyLabel` renders USD as `$` in unit selectors,
+  headings, tooltips and accessible labels. Other currencies retain their identity.
+  Keep ISO currency codes in data, option values, API and exports; never rewrite
+  instrument symbols or user-authored content. Missing or malformed amounts stay
+  unknown, never zero.
 - `ReportLineChart`/`ReportBars` own report chart layout, dashed grids and color
   accents. Preserve signed losses and readable mobile axes; label bounded period
   summaries with their displayed/total count rather than hiding the truncation.

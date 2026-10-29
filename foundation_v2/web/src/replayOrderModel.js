@@ -1,3 +1,4 @@
+import { formatAmount } from './moneyFormat.js'
 export const finiteNumber = value => value === '' || value === null || value === undefined || !Number.isFinite(Number(value)) ? null : Number(value)
 
 export function replayAtCutoff(replay) {
@@ -120,5 +121,6 @@ export function marketQuotes(replay) {
 export function money(value, currency) {
   const amount = finiteNumber(value)
   if (amount === null || !currency) return '-'
+  if (currency === 'USD') return formatAmount(amount, ' USD')
   try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency, maximumFractionDigits: 2 }).format(amount) } catch { return '-' }
 }

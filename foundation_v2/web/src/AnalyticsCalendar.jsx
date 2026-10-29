@@ -1,3 +1,4 @@
+import { currencyLabel } from './moneyFormat.js'
 import { useId, useMemo, useState } from 'react'
 import { useTestingLocale } from './testingLocale.jsx'
 import { zonedDateKey } from './timezone.js'
@@ -36,7 +37,7 @@ export default function AnalyticsCalendar({ items, capitalBases, timezone, curre
 
   return <div className={`wm-analytics-calendar is-${view}`} data-testid="analytics-calendar">
     <div className="wm-calendar-metric-toolbar">
-      <FxSelect label="Chỉ số lịch" value={metric} onChange={setMetric} options={[{value:'net',label:t('Lãi/lỗ ròng ({currency})',{currency})},{value:'profitPct',label:'Lợi nhuận (%)'},{value:'totalR',label:'Lợi nhuận (R)',detail:t('Calendar R calculation help')}]} renderOption={option => <span className="wm-calendar-metric-option">{option.label}{option.value === 'totalR' && <TestingIcon kind="info" size={14}/>}</span>}/>
+      <FxSelect label="Chỉ số lịch" value={metric} onChange={setMetric} options={[{value:'net',label:t('Lãi/lỗ ròng ({currency})',{currency:currencyLabel(currency)})},{value:'profitPct',label:'Lợi nhuận (%)'},{value:'totalR',label:'Lợi nhuận (R)',detail:t('Calendar R calculation help')}]} renderOption={option => <span className="wm-calendar-metric-option">{option.label}{option.value === 'totalR' && <TestingIcon kind="info" size={14}/>}</span>}/>
       <fieldset className="wm-calendar-capital" data-tooltip={t('Calendar capital basis help')}><legend className="sr-only">{t('Cơ sở vốn')}</legend>{[['initial','Vốn ban đầu'],['current','Số dư hiện tại']].map(([value,label]) => <label key={value}><input type="radio" name={`${id}-calendar-capital`} value={value} checked={basis === value} disabled={value === 'current' && !currentAvailable} onChange={() => setBasis(value)}/>{t(label)}</label>)}</fieldset>
       {(undatedCount > 0 || sourcePartial || items.some(item => !item.complete)) && <span className="fxa-time-incomplete" role="status">{t('Dữ liệu một phần')}<ReportInfo title="Dữ liệu một phần" text="Nguồn chưa đầy đủ hoặc có giao dịch thiếu lãi/lỗ hay thời gian. Lịch chỉ hiển thị các giao dịch có ngày đã nhận."/></span>}
     </div>

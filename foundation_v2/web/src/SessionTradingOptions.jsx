@@ -1,3 +1,4 @@
+import { currencyLabel } from './moneyFormat.js'
 import FxSelect from './FxSelect.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import { categoryLabel, categoryOf } from './dataLibraryModel.js'
@@ -19,9 +20,9 @@ export default function SessionTradingOptions({ assets, value, onChange, disable
       {assets.length > 0 && value.costs_enabled && <div className="session-asset-options session-cost-table">
         <div className="session-cost-columns" aria-hidden="true"><span /><span>Spread</span><span>{t('Hoa hồng')}</span><span>{t('Thu phí')}</span></div>
         {assets.map(asset => <fieldset className="session-cost-grid" key={asset.dataset_id}><legend>{asset.instrument_id}</legend>
-          <div>{assetName(asset)}<small className="session-cost-unit">{t('Đơn vị giá')} · {specFor(asset)?.account_ccy || 'USD'}/{['fx','forex'].includes(specFor(asset)?.asset_class) ? 'lot' : t('đơn vị')}</small></div>
+          <div>{assetName(asset)}<small className="session-cost-unit">{t('Đơn vị giá')} · {currencyLabel(specFor(asset)?.account_ccy || 'USD')}/{['fx','forex'].includes(specFor(asset)?.asset_class) ? 'lot' : t('đơn vị')}</small></div>
           {field(asset,'spread_price','Spread · đơn vị giá')}
-          {field(asset,'commission_per_lot',t('Hoa hồng · {currency}/{unit}', { currency:specFor(asset)?.account_ccy || 'USD', unit:['fx','forex'].includes(specFor(asset)?.asset_class) ? 'lot' : t('đơn vị') }))}
+          {field(asset,'commission_per_lot',t('Hoa hồng · {currency}/{unit}', { currency:currencyLabel(specFor(asset)?.account_ccy || 'USD'), unit:['fx','forex'].includes(specFor(asset)?.asset_class) ? 'lot' : t('đơn vị') }))}
           <div className="session-option-charge"><span>{t('Thu phí')}</span><FxSelect className="is-field" label={`${t('Thu phí')} · ${asset.instrument_id}`} value={settings(asset).commission_charge} disabled={disabled} onChange={next => update(asset,'commission_charge',next)} options={[{value:'round_trip',label:t('Cả lượt mở + đóng')},{value:'per_side',label:t('Mỗi chiều')}]} /></div>
         </fieldset>)}
       </div>}

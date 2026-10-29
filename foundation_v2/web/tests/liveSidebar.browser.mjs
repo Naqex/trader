@@ -49,6 +49,8 @@ try {
       const curveDetails = await curve.locator('[data-tooltip]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-tooltip')).join(' '))
       assert(!curveDetails.includes('10.100') && !curveDetails.includes('10,100'))
       const selector = side.getByRole('combobox')
+      assert.equal(await selector.locator('option[value=amount]').innerText(), '$')
+      if (section === 'calendar') assert.equal(await page.locator('.live-toolbar-actions button[aria-label="Amount"], .live-toolbar-actions button[aria-label="Số tiền"]').innerText(), '$')
       await selector.selectOption('percent')
       const comparison = rows.nth(1).locator('.fxa-expectancy-comparison')
       assert.match(await comparison.innerText(), /1%/)

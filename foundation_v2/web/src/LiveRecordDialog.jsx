@@ -1,3 +1,4 @@
+import { currencyLabel } from './moneyFormat.js'
 import { useRef, useState } from 'react'
 import LegacyModal from './LegacyModal.jsx'
 import FxSelect from './FxSelect.jsx'
@@ -28,7 +29,7 @@ export default function LiveRecordDialog({ workspace, kind, accounts, connection
   const strategyOptions = strategies.map(item => ({ value: `${item.record_id}:${item.revision}`, label: `${item.payload.name} · v${item.revision}`, localize: false }))
   if (draft.strategy && !strategyOptions.some(item => item.value === draft.strategy)) strategyOptions.unshift({ value: draft.strategy, label: t('Saved revision · v{revision}',{revision:initial.playbook_revision}), localize: false })
   const field = (key, label, options = {}) => <label>{t(label)}<input value={draft[key]} onChange={event => change(key,event.target.value)} disabled={pending} {...options} /></label>
-  const selectAccount = <label>{t('Account')}<FxSelect className="is-field" label="Account" localizeOptions={false} disabled={pending || importDone > 0 || Boolean(record && kind === 'trade')} value={draft.account_id} onChange={value => change('account_id',value)} options={[...(kind === 'note' ? [{value:'',label:t('Ghi chú chung'),localize:false}] : []),...accounts.map(item => ({ value:item.record_id,label:`${item.payload.name} · ${item.payload.currency}`,localize:false })),...(kind === 'note' ? connections.map(item => ({value:`broker:${item.id}`,label:mt5AccountName(item),localize:false})) : [])]} /></label>
+  const selectAccount = <label>{t('Account')}<FxSelect className="is-field" label="Account" localizeOptions={false} disabled={pending || importDone > 0 || Boolean(record && kind === 'trade')} value={draft.account_id} onChange={value => change('account_id',value)} options={[...(kind === 'note' ? [{value:'',label:t('Ghi chú chung'),localize:false}] : []),...accounts.map(item => ({ value:item.record_id,label:`${item.payload.name} · ${currencyLabel(item.payload.currency)}`,localize:false })),...(kind === 'note' ? connections.map(item => ({value:`broker:${item.id}`,label:mt5AccountName(item),localize:false})) : [])]} /></label>
   async function submit(event) {
     event.preventDefault()
     if (lock.current || uncertain) return
@@ -64,11 +65,11 @@ export default function LiveRecordDialog({ workspace, kind, accounts, connection
       {kind === 'account' ? <>
         {accountField('name','Tên tài khoản',{required:true,maxLength:160,placeholder:t('Tên tài khoản')})}
         <div className="live-record-grid">
-          <label>{t('Đơn vị tiền tệ')}<FxSelect searchable className="is-field" label="Đơn vị tiền tệ" localizeOptions={false} value={draft.currency} disabled={pending || Boolean(record)} onChange={value=>change('currency',value)} options={[...new Set(['USD','EUR','GBP','JPY','AUD','CAD','CHF','NZD','VND',draft.currency])].filter(Boolean).map(value=>({value,label:value}))}/></label>
+          <label>{t('Đơn vị tiền tệ')}<FxSelect searchable className="is-field" label="Đơn vị tiền tệ" localizeOptions={false} value={draft.currency} disabled={pending || Boolean(record)} onChange={value=>change('currency',value)} options={[...new Set(['USD','EUR','GBP','JPY','AUD','CAD','CHF','NZD','VND',draft.currency])].filter(Boolean).map(value=>({value,label:currencyLabel(value),searchText:value}))}/></label>
           <label>{t('Loại tài khoản')}<FxSelect className="is-field" label="Loại tài khoản" triggerContent={draft.account_type ? undefined : t('Chọn loại tài khoản')} value={draft.account_type} disabled={pending} onChange={value=>change('account_type',value)} options={[{value:'live',label:'Live',localize:false},{value:'demo',label:'Demo',localize:false},{value:'prop',label:'Prop firm',localize:false}]}/>{hint('account_type')}</label>
         </div>
         <fieldset className="live-initial-balance"><legend>{t('Vốn ban đầu')}</legend><div className="live-record-grid">
-          {accountField('opening_balance',`Số tiền (${draft.currency})`,{required:true,inputMode:'decimal',placeholder:'0.00'})}
+          {accountField('opening_balance',`Số tiền (${currencyLabel(draft.currency)})`,{required:true,inputMode:'decimal',placeholder:'0.00'})}
           <label>{`${t('Ngày vốn ban đầu')} · ${timezone}`}<InstantDateInput required disabled={pending} value={draft.opening_at_utc.replace(/Z$/,'')} onChange={event=>change('opening_at_utc',event.target.value)}/>{hint('opening_at_utc')}</label>
         </div></fieldset>
       </> : <>
