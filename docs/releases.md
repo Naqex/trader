@@ -1,5 +1,15 @@
 # Versions and releases
 
+## Current delivery status
+
+The owner deferred packaging on 29/10/2026. Source, CI and release preparation
+remain maintained, but the experimental Windows ZIP is not a supported install.
+Its hosted build and inventory checks passed; relocated end-to-end startup,
+configuration, upgrade and rollback remain open. Some optional Rust adapters
+still resolve resources from `CARGO_MANIFEST_DIR`; replace those build-time paths
+with explicit installation roots before distributing prebuilt binaries. Until
+then, build from the checkout where the application will run.
+
 `VERSION` owns the product version. `python scripts/release.py prepare VERSION`
 updates the five internal manifests and their local lock entries. It does not
 commit, tag, publish or deploy. Review the diff and changelog before the release PR.
