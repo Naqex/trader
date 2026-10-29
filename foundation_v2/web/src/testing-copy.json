@@ -7291,5 +7291,13 @@
   "Cài đặt tổng quan nhãn": {"vi":"Cài đặt tổng quan nhãn","en":"Tag overview settings"},
   "Chưa có giao dịch gắn nhãn.": {"vi":"Chưa có giao dịch gắn nhãn.","en":"No tagged trades yet."},
   "Biến động giá khớp thực tế / khoảng cách đến SL ban đầu, theo chiều lệnh. Không gồm phí; phí đã tính vào PnL ròng.": {"vi":"Biến động giá khớp thực tế / khoảng cách đến SL ban đầu, theo chiều lệnh. Không gồm phí; phí đã tính vào PnL ròng.","en":"Actual fill-price move / original stop distance, signed by trade direction. Excludes fees; fees are included in net PnL."},
-  "Số dư từ snapshot tài khoản, không gồm lãi/lỗ thả nổi; độc lập với bộ lọc giao dịch.": {"vi":"Số dư từ snapshot tài khoản, không gồm lãi/lỗ thả nổi; độc lập với bộ lọc giao dịch.","en":"Account snapshot balance, excluding floating P/L; independent of trade filters."}
+  "Số dư từ snapshot tài khoản, không gồm lãi/lỗ thả nổi; độc lập với bộ lọc giao dịch.": {"vi":"Số dư từ snapshot tài khoản, không gồm lãi/lỗ thả nổi; độc lập với bộ lọc giao dịch.","en":"Account snapshot balance, excluding floating P/L; independent of trade filters."},
+  "Xanh lá": {"vi": "Xanh lá", "en": "Green"},
+  "Xanh dương": {"vi": "Xanh dương", "en": "Blue"},
+  "Cam": {"vi": "Cam", "en": "Orange"},
+  "Đỏ": {"vi": "Đỏ", "en": "Red"},
+  "Tím": {"vi": "Tím", "en": "Purple"},
+  "Xanh nhạt": {"vi": "Xanh nhạt", "en": "Light Blue"},
+  "Xám": {"vi": "Xám", "en": "Grey"},
+  "Chọn hoặc tạo nhãn mới…": {"vi": "Chọn hoặc tạo nhãn mới…", "en": "Select tag or create new one…"}
 }

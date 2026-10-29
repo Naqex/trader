@@ -83,8 +83,8 @@ try {
     await page.locator('.live-balance-summary > div').last().getByText('1',{exact:true}).waitFor()
     await page.goto(`${origin}/?workspace=fixture&view=live&area=live&section=trades&lang=vi&mt5_connection=${fixtureConnection}`)
     await labels.first().click();await dialog().getByRole('button',{name:'Sửa nhãn Breakout'}).click()
-    await dialog().getByLabel('Tên nhãn',{exact:true}).fill('London breakout')
-    await dialog().getByRole('button',{name:'Lưu thay đổi'}).click();await page.keyboard.press('Escape')
+    await page.locator('.wm-label-edit-popup').getByLabel('Tên nhãn',{exact:true}).fill('London breakout')
+    await page.locator('.wm-label-edit-popup').getByLabel('Tên nhãn',{exact:true}).press('Enter');await page.keyboard.press('Escape')
     // Fixture rename projection mirrors the backend; backend tests verify historical reconciliation.
     catalog.assignments.forEach(item=>item.tags=item.tags.map(tag=>tag==='Breakout'?'London breakout':tag))
     await page.goto(settings);await manager.getByRole('button',{name:'Sửa nhãn London breakout'}).click()

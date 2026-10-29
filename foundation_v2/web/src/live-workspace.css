@@ -4,11 +4,11 @@
 .live-accounts-main { display:flex; flex-direction:column; min-width:0; min-height:0; }
 .live-workspace .live-accounts-main > .live-table-scroll { margin-inline:0; }
 .live-accounts-main > .live-empty { flex:1; }
-.live-accounts-main > .wm-pagination { margin-top:auto; padding:20px; }
+.live-accounts-main > .wm-pagination { margin-top:auto; }
 .live-accounts-main .live-table-scroll :is(th,td) { padding:12px 8px; }
 .live-accounts-main .live-table-scroll :is(th,td):first-child { padding-left:16px; }
 .live-accounts-main .live-table-scroll :is(th,td):last-child { padding-right:16px; }
-.live-accounts-toolbar { display:flex; align-items:center; justify-content:flex-end; gap:12px; min-height:var(--live-accounts-heading-height); padding:16px var(--wm-page-gutter); border-bottom:1px solid var(--wm-border); }
+.live-accounts-toolbar { display:flex; align-items:center; justify-content:flex-end; gap:12px; min-height:var(--live-accounts-heading-height); box-sizing:border-box; padding:var(--wm-pane-toolbar-inset) var(--wm-page-gutter); border-bottom:1px solid var(--wm-border); }
 .live-account-search { display:flex; align-items:center; flex:0 1 auto; min-width:0; height:var(--wm-control-height); border:1px solid transparent; border-radius:var(--ds-radius-field); }
 .live-account-search.is-open { width:260px; border-color:var(--wm-border); }
 .live-account-search:focus-within { border-color:var(--wm-focus); }
@@ -208,7 +208,8 @@
 .live-status .live-retry { margin-left: auto; }
 .live-toolbar, .live-toolbar-actions, .live-section-heading, .live-calendar-toolbar, .live-month-nav, .live-deals-toolbar { display: flex; align-items: center; gap: 12px; }
 .live-toolbar, .live-section-heading, .live-calendar-toolbar, .live-deals-toolbar { justify-content: space-between; }
-.live-toolbar { padding: 16px var(--wm-page-gutter); border-bottom: 1px solid var(--wm-border); margin: 0; flex-wrap: wrap; }
+.live-section-heading > h2,.live-deals-toolbar > h2 { margin:0; }
+.live-toolbar { min-height:var(--wm-pane-toolbar-height); box-sizing:border-box; padding:var(--wm-pane-toolbar-inset) var(--wm-page-gutter); border-bottom: 1px solid var(--wm-border); margin: 0; flex-wrap: wrap; }
 .live-toolbar-actions { flex-wrap: wrap; }
 .live-filter-divider { width: 1px; height: 18px; margin-inline: 4px; background: var(--wm-border); }
 .live-toolbar > .fx-select { min-width: 170px; }
@@ -227,14 +228,14 @@
 .live-calendar-section { box-shadow:inset -1px 0 var(--wm-border); }
 .live-calendar-section + .live-analytics-side { border-left:0; }
 .live-split > section.live-trades-section:first-child { padding: 0; }
-.live-trades-section > .fxa-filters { flex-shrink:0; padding:20px var(--wm-page-gutter); }
-.live-trades-section > .fxa-filters::after { left:0; right:0; }
+.live-trades-section > .fxa-filters { flex-shrink:0; min-height:var(--wm-pane-toolbar-height); box-sizing:border-box; padding:var(--wm-pane-toolbar-inset) var(--wm-page-gutter); border-bottom:1px solid var(--wm-border); }
+.live-trades-section > .fxa-filters::after { content:none; }
 .live-trades-content { padding: 24px var(--wm-page-gutter); min-width: 0; }
 .is-trades .live-trades-content { padding: 0; }
 .live-calendar-content { padding: 24px var(--wm-page-gutter) 0; }
 .live-calendar-unit-state { margin:8px 0 0; color:var(--wm-content-muted); font-size:12px; }
 .live-analytics-side { border-left: 1px solid var(--wm-border); padding: 0; }
-.live-analytics-side > h2 { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0; min-height: 69px; box-sizing: border-box; padding: 16px 24px; border-bottom: 1px solid var(--wm-border); }
+.live-analytics-side > h2 { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0; min-height:var(--wm-pane-toolbar-height); box-sizing: border-box; padding:var(--wm-pane-toolbar-inset) 24px; border-bottom: 1px solid var(--wm-border); }
 .live-analytics-title { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
 .live-analytics-title { white-space: nowrap; }
 .live-analytics-side > :is(dl, .live-empty) { padding-inline: 24px; }
@@ -336,14 +337,14 @@
 @media (min-width:1241px) {
   .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-content:has(> .live-workspace:is(.is-calendar,.is-trades)) { display:flex; flex-direction:column; overflow:hidden; padding-bottom:0; }
   .live-workspace:is(.is-calendar,.is-trades) { display:flex; flex-direction:column; flex:1; min-height:0; }
-  :is(.is-calendar,.is-trades) > .live-split { flex:1; min-height:0; }
-  .is-trades .live-trades-section { display:flex; flex-direction:column; min-height:0; }
+  :is(.is-calendar,.is-trades) > .live-split { flex:1; min-height:0; grid-template-rows:auto minmax(0,1fr); }
+  .is-trades .live-trades-section { display:grid; grid-template-rows:subgrid; grid-row:1 / 3; min-height:0; }
   .is-trades .live-filters { flex-shrink:0; }
   .is-trades .live-trades-content { display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
   .is-trades .live-broker { display:flex; flex-direction:column; flex:1; min-height:0; }
   .is-trades .live-broker :is(.live-table-scroll,.fxa-table-scroll) { flex:1 1 auto; min-height:0; max-height:none; margin-inline:0; }
   .is-trades .live-broker .wm-pagination { flex-shrink:0; margin-inline:0; }
-  .is-calendar .live-calendar-section { display:flex; flex-direction:column; min-height:0; }
+  .is-calendar .live-calendar-section { display:grid; grid-template-rows:subgrid; grid-row:1 / 3; min-height:0; }
   .is-calendar .live-filters { flex-shrink:0; }
   .is-calendar .live-calendar-content { display:flex; flex-direction:column; flex:1; min-height:0; overflow:auto; }
   .is-calendar .live-calendar-toolbar, .is-calendar .live-month-total { flex-shrink:0; }
@@ -351,7 +352,8 @@
   .is-calendar .live-calendar-grid { height:100%; grid-template-rows:max-content repeat(var(--live-calendar-weeks), minmax(90px,1fr)); }
   .fx-app .is-calendar .live-calendar-cell { height:auto; min-height:0; box-sizing:border-box; }
   .is-calendar .live-day-detail { flex-shrink:0; }
-  :is(.is-calendar,.is-trades) .live-analytics-side { display:flex; flex-direction:column; min-height:0; overflow:auto; }
+  :is(.is-calendar,.is-trades) .live-analytics-side { display:grid; grid-template-rows:subgrid; grid-row:1 / 3; min-height:0; overflow:hidden; }
+  :is(.is-calendar,.is-trades) .live-analytics-side > .live-analytics-content { min-height:0; overflow:auto; }
   :is(.is-calendar,.is-trades) .live-analytics-side > h2 { flex-shrink:0; }
   :is(.is-calendar,.is-trades) .live-analytics-side > .live-empty { flex:1; min-height:0; }
 }
@@ -384,7 +386,7 @@
 .live-tag-list { border-left: 1px solid var(--wm-border); }
 .live-tag-chart .live-section-heading { flex-wrap: wrap; }
 .live-smart-picks { padding: 20px var(--wm-page-gutter); }
-.live-accounts-layout { --live-accounts-heading-height:72px; display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 0; }
+.live-accounts-layout { --live-accounts-heading-height:var(--wm-pane-toolbar-height); display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 0; }
 .live-accounts-layout > section:first-child > :is(.live-broker, .live-empty) { padding: 24px var(--wm-page-gutter); }
 .live-add-account { border-left: 1px solid var(--wm-border); padding: 0 24px 24px; }
 .live-account-sidebar-heading { display:flex; align-items:center; gap:12px; min-height:var(--live-accounts-heading-height); flex-shrink:0; box-sizing:border-box; margin:0 -24px 20px; padding:16px 24px; border-bottom:1px solid var(--wm-border); }

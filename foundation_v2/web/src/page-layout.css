@@ -1,5 +1,6 @@
 /* One content gutter; outer page wrappers never add a second inset. */
 .fx-app.fx-shell-story { --wm-page-gutter: var(--ds-page-gutter); --wm-page-start: var(--ds-space-6); }
+.fx-app.fx-shell-story { --wm-pane-toolbar-inset:16px; --wm-pane-toolbar-height:calc(max(40px,var(--wm-control-height)) + 2 * var(--wm-pane-toolbar-inset) + 1px); }
 .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-content { padding: 0 var(--wm-page-gutter) 40px; }
 .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-content > :is(.wm-page, .as-page, .pb-page, .ja-page, .rs-shell, .dd-shell, .learn-shell, .prop-shell, .trade-workspace, .risk-workspace, .replay-shell, .fx-dashboard) {
   box-sizing: border-box; width: 100%; max-width: none; margin-inline: 0; padding-inline: 0; padding-top: var(--wm-page-start);

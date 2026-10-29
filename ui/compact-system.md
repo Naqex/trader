@@ -36,6 +36,34 @@ Thang khoảng cách dùng lại: **4 / 8 / 12 / 16 / 20 / 24 / 32px**. Không p
 khối đều cùng chiều cao: ô lịch, hàng nhiều thông tin và lựa chọn tài sản có nhu
 cầu riêng. Cần ghi rõ ngoại lệ, không đặt một số mới chỉ vì “trông vừa”.
 
+### Hàng công cụ và đường phân cách Live
+
+`page-layout.css` sở hữu `--wm-pane-toolbar-inset` (16px mỗi phía dọc) và
+`--wm-pane-toolbar-height` (control lớn nhất, tối thiểu40px + hai inset +1px).
+Các hàng công cụ full-bleed của Live dùng cùng quy tắc, với lề ngang theo
+`--wm-page-gutter`. Tiêu đề panel bên cạnh dùng cùng hàng grid với toolbar:
+đường dưới vẫn thẳng khi bộ lọc có chip hoặc controls xuống hàng.
+Một separator có một owner: border1px hoặc pseudo-element1px, không cả hai.
+Lịch sở hữu cạnh phải màu lãi/lỗ, panel bên cạnh không vẽ thêm nét.
+
+Trang báo cáo có lề (Live Analytics/Practice Analytics) và trang tổng quan phiên
+dùng nhịp nội dung đã có: bắt đầu sau `--wm-page-start`. Không ép chúng thành
+toolbar full-bleed. Bảng Live và Practice dùng `PaginationFooter` chung, không
+thêm padding riêng ở footer Accounts. Wrapper sở hữu khoảng cách của heading;
+heading trong hàng công cụ không cộng thêm margin mặc định.
+
+### Nhãn trong bảng Live và Practice
+
+Hai chế độ dùng chung `TradeLabelCell` và catalog nhãn. Ô nhãn không có nền
+hover riêng; placeholder hiện theo hover/focus như hiện hành. Picker có danh
+sách trước, ô tìm/tạo ở dưới; lựa chọn nhiều nhãn hiển thị trạng thái ngay trên
+hàng. Dấu chấm cạnh badge là chi tiết trình bày, chưa có chức năng đổi thứ tự.
+Nút ba chấm mở editor riêng cạnh hàng đã chọn, không thay cả picker bằng form.
+Editor có tên, danh sách bảy màu với swatch đặc, dấu chọn và xóa có xác nhận.
+Enter lưu tên; chọn màu lưu ngay với tên đang sửa. Escape bỏ draft chưa lưu và
+trả focus về ba chấm; Escape tiếp theo đóng picker và trả về ô bảng. Lỗi revision
+đóng editor, đọc lại catalog và yêu cầu mở lại; không tự ghi đè.
+
 Ngoại lệ màn hẹp dùng chuột: tab chọn loại phiên vẫn cao28px và nút X vẫn32px.
 Khi thiết bị dùng cảm ứng, hai vùng bấm này tăng lên44px; hình icon không phóng to.
 

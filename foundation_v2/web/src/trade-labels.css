@@ -4,9 +4,9 @@ td:has(> .wm-label-cell):hover .wm-label-placeholder,.wm-label-cell:focus-visibl
 @media(hover:none){.wm-label-placeholder{opacity:1}}
 .wm-trade-label { display:inline-flex;align-items:center;padding:3px 8px;min-height:23px;border-radius:4px;line-height:1.25;font-size:12px;white-space:normal;overflow-wrap:anywhere;--label-color:var(--project-muted);background:color-mix(in srgb,var(--label-color) 16%,var(--project-canvas));color:var(--label-color); }
 .wm-trade-label[data-color=green]{--label-color:var(--report-positive)}.wm-trade-label[data-color=blue]{--label-color:var(--report-blue)}.wm-trade-label[data-color=orange]{--label-color:var(--report-peach)}.wm-trade-label[data-color=red]{--label-color:var(--report-negative)}.wm-trade-label[data-color=purple]{--label-color:var(--report-violet)}.wm-trade-label[data-color=cyan]{--label-color:var(--report-cyan)}.wm-trade-label[data-color=gray]{--label-color:var(--project-muted)}
-.wm-label-popup { width:300px;padding:10px;display:flex;flex-direction:column;gap:8px;overflow:auto; }
+.wm-label-popup { width:360px;padding:4px;display:flex;flex-direction:column;gap:4px;overflow:auto; }
 .wm-label-popup input { box-sizing:border-box;width:100%; }
-.wm-label-options { max-height:250px;overflow:auto; }
+.wm-label-options { max-height:280px;overflow:auto; }
 .wm-label-selected { display:flex;gap:4px;flex-wrap:wrap; }
 .wm-label-selected button { background:none;border:0;color:inherit;cursor:pointer;margin-left:4px; }
 .wm-label-option { display:flex;align-items:center;gap:4px; }
@@ -40,6 +40,26 @@ td:has(> .wm-label-cell):hover .wm-label-placeholder,.wm-label-cell:focus-visibl
 .wm-label-popup button[aria-disabled=true] { opacity:.55;cursor:wait; }
 
 .fx-app .fxa-trades .wm-label-cell:hover:not(:disabled) { background: transparent; }
+.fx-app.fx-shell-story[data-theme] .fx-content .wm-label-cell:is(:hover,:active):not(:disabled) { background:transparent; }
+.legacy-popover.wm-label-popup .wm-label-option { gap:4px; min-height:44px; }
+.wm-label-grip { display:flex; flex:0 0 16px; justify-content:center; color:var(--project-muted); }
+.legacy-popover.wm-label-popup .wm-label-option > button[role=checkbox] { min-height:44px; padding:6px 0; }
+.legacy-popover.wm-label-popup .wm-label-option .wm-trade-label { font-size:13px; font-weight:600; padding:6px 8px; }
+.legacy-popover.wm-label-popup .wm-label-more { color:var(--project-muted); min-height:36px; }
+.legacy-popover.wm-label-popup .wm-label-more > svg { width:16px; height:20px; flex:0 0 16px; }
+.wm-label-check { margin-left:auto; color:var(--project-text); padding-inline:4px; }
+.legacy-popover.wm-label-popup > input { min-height:40px; height:40px; background:var(--project-canvas); border:1px solid var(--project-border); border-radius:6px; padding:8px 10px; }
+.legacy-popover.wm-label-popup > input:focus-visible { border-color:var(--project-primary); outline:none; box-shadow:none; }
+.legacy-popover.wm-label-edit-popup { width:300px; padding:12px; }
+.legacy-popover:is(.wm-label-popup,.wm-label-edit-popup) { background:var(--project-surface); }
+.legacy-popover.wm-label-edit-popup .wm-label-editor { gap:12px; }
+.legacy-popover.wm-label-edit-popup form { padding:0; }
+.legacy-popover.wm-label-edit-popup input { min-height:40px; height:40px; border-radius:10px; background:var(--project-canvas); }
+.wm-label-color-list { display:flex; flex-direction:column; }
+.legacy-popover .wm-label-color-list > button { min-height:32px; padding:4px 8px; gap:12px; }
+.legacy-popover .wm-label-color-list .wm-label-swatch { flex:0 0 12px; width:12px; height:12px; min-height:12px; padding:0; border-radius:4px; background:var(--label-color); }
+.legacy-popover.wm-label-edit-popup .wm-label-delete-trigger { border-top:1px solid var(--project-border); border-radius:0; padding-top:16px; margin-top:4px; color:var(--project-negative); }
+.wm-label-edit-popup .wm-label-delete { display:grid; gap:8px; padding-top:12px; border-top:1px solid var(--project-border); }
 .fxa-badge.is-order-type { background: var(--wm-hover); color: var(--wm-content); }
 
 [data-theme=light] :is(.wm-trade-label,.wm-return-badge){background:color-mix(in srgb,var(--return-color,var(--label-color)) 8%,var(--project-surface))}

@@ -96,6 +96,7 @@ function Summary({ payload, deals, sidebar = false, workspace, showTags = false 
   const pnlPoints = useMemo(() => deals.every(deal => Number.isFinite(deal.time_msc)) ? [{ value: 0, label: t('Bắt đầu') }, ...cumulativeDealSeries(deals).map((point, index) => ({ ...point, label: `${index + 1}` }))] : [], [deals, t])
   return <section className={sidebar ? 'live-analytics-side' : 'live-metrics'} aria-label={t('Analytics')}>
     {sidebar && <h2><span className="live-analytics-title"><TestingIcon kind="chart" />{t('Analytics')}</span></h2>}
+    <div className="live-analytics-content">
     <div className="live-analytics-controls">
       <FxSelect label="Đơn vị lợi nhuận" value={unit} onChange={setUnit} options={[{value:'money',label:currency ? t('Lợi nhuận ({currency})',{currency:currencyLabel(currency)}) : t('Profit')},{value:'percent',label:'Phần trăm'}]} disabled={!available} />
       <Action compact icon={hideBalance ? 'eye' : 'eye-off'} label={hideBalance ? 'Hiện số dư' : 'Ẩn số dư'} title={hideBalance ? 'Hiện số dư' : 'Ẩn số dư'} aria-pressed={hideBalance} disabled={!available} onClick={() => setHideBalance(value => !value)} />
@@ -134,6 +135,7 @@ function Summary({ payload, deals, sidebar = false, workspace, showTags = false 
       </article>
     </div>}
     {showTags && <TradeTagOverview workspace={workspace} deals={deals} currency={currency} />}
+    </div>
   </section>
 }
 
