@@ -658,3 +658,9 @@ Source review/unit tests are separate from persisted and production-chart accept
 the execution checkpoint records the measured scope and failed attempts. The owner
 runtime was not switched during those fixture runs; the later owner cutover is
 documented above.
+
+For a binary built from a relocated checkout, set
+`TW_V2_SCIENTIFIC_ADAPTER_ROOT` to the existing absolute `foundation_v2`
+installation used by its capability descriptor. This selects the installation;
+its descriptor root, code, interpreter and dependency hashes are still verified.
+The compile-time checkout remains the default when the variable is absent.
