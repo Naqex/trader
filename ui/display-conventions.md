@@ -42,23 +42,21 @@ that their grid tracks fit.
 Live Calendar and Trades share the same flat analytics sidebar. Each row owns
 one full-width bottom separator; the pane owns its vertical divider. Heading
 labels and icon controls share the vertical center and remain within the pane.
-The money/percentage selector applies to every PnL value, comparison, curve and
-tooltip. Its money option follows the selected account currency. Percentages
-require valid positive source capital; missing capital stays N/A. Source
-capital comes from explicit opening capital or the same dated, currency-matched
-baseline used by account transactions. Calendar, sidebar and Analytics share
-that resolver. A first-sync baseline can seed capital only if it precedes all
-imported trading deals with known timestamps; otherwise it may already contain
-their PnL and remains unavailable as opening capital. Pooled capital requires a
-valid positive amount for every source.
-Do not substitute current balance for an unavailable capital source. Snapshot
-balance remains a monetary account fact, separate from the explicitly labelled
-filtered cumulative PnL sparkline; filtered deals never reconstruct balance.
-Live's shared Analytics report also shows the actual account snapshot balance,
-without a percentage computed from filtered deals beside that balance.
+The sidebar contains exactly three visuals: scoped cumulative PnL beside the
+snapshot balance, average win/loss comparison with expectancy per trade, and
+win/loss/breakeven distribution. Omit unit/privacy controls, the direction ring,
+extra expectancy bar chart and source footer. Monetary values use the account
+currency; the calendar's own amount/percentage control remains independent.
+Snapshot balance remains a monetary account fact, separate from the explicitly
+labelled filtered cumulative PnL sparkline; filtered deals never reconstruct balance.
 Missing PnL must not count as breakeven or produce a known win rate/payoff mean.
-Hiding values removes chart labels, legends, tooltips and accessible numeric
-descriptions together; a CSS blur or a masked heading alone is insufficient.
+
+Source capital comes from explicit opening capital or a dated, currency-matched
+baseline that precedes every imported trading deal with a known timestamp.
+Calendar and Analytics share that resolver; pooled capital requires a valid
+positive amount for every source. Never substitute current balance for missing
+opening capital. Live's shared Analytics report shows the actual account snapshot
+balance, without a percentage computed from filtered deals beside it.
 
 ## Time ownership
 

@@ -23,7 +23,7 @@ import LiveBrokerSnapshot from './LiveBrokerSnapshot.jsx'
 import { LIVE_FILTERS, calendarWeeks, calendarWeekSummary, liveCalendarBorders, cumulativeDealSeries, dayKey, dealNet, filterLiveDeals } from './liveWorkspaceModel.js'
 import { buildAnalyticsModel } from './analyticsViewModel.js'
 import { DEFAULT_EXTRA_FILTERS } from './tradingAnalyticsModel.js'
-import { AnalyticsBars, AnalyticsCurve, AnalyticsRing } from './AnalyticsCharts.jsx'
+import { AnalyticsCurve, AnalyticsRing } from './AnalyticsCharts.jsx'
 import { ChartHeading, ExpectancyComparison, FxAnalyticsFilters, FxAnalyticsReport } from './FxAnalytics.jsx'
 
 const LiveAccounts = lazy(() => import('./LiveAccounts.jsx'))
@@ -71,62 +71,43 @@ function FilterBar({ accountPicker, extra, columnControl, payload, draft, setDra
 
 function Summary({ payload, deals, sidebar = false }) {
   const { t, fmt } = useTestingLocale(), available = Boolean(payload?.account && Array.isArray(payload.deals))
-  const [basis, setBasis] = useState('amount'), [showValues, setShowValues] = useState(true)
   const stats = closedTradeStats(deals), currency = payload?.account?.currency || ''
-  const capital = liveAccountCapital(payload)
   const { net, count } = stats
   const average = count && Number.isFinite(net) ? net / count : null
   const values = deals.map(dealNet), known = values.every(Number.isFinite)
   const wins = values.filter(value => value !== null && value > 1e-12).length
   const losses = values.filter(value => value !== null && value < -1e-12).length
   const unknown = values.filter(value => value === null).length, flat = count - wins - losses - unknown
-  const percent = value => capital > 0 && Number.isFinite(value) ? value / capital * 100 : null
-  const project = value => basis === 'percent' ? percent(value) : value
-  const suffix = basis === 'percent' ? '%' : currency ? ` ${currency}` : ''
+  const suffix = currency ? ` ${currency}` : ''
   const format = value => Number.isFinite(value) ? fmt(value, suffix) : 'N/A'
   const ratio = stats.winRate
   const averageWin = known && wins ? values.filter(value => value > 1e-12).reduce((sum, value) => sum + value, 0) / wins : null
   const averageLoss = known && losses ? values.filter(value => value < -1e-12).reduce((sum, value) => sum + value, 0) / losses : null
-  const directions = [
-    { label: t('Buy'), value: deals.filter(deal => deal.type === 0).length, color: 'var(--report-positive)' },
-    { label: t('Sell'), value: deals.filter(deal => deal.type === 1).length, color: 'var(--report-blue)' },
-  ]
   // A filtered deal history cannot reconstruct a broker balance (cashflows and
   // earlier trades may be absent). The sparkline explicitly shows scoped PnL.
   const pnlPoints = useMemo(() => deals.every(deal => Number.isFinite(deal.time_msc)) ? [{ value: 0, label: t('Bắt đầu') }, ...cumulativeDealSeries(deals).map((point, index) => ({ ...point, label: `${index + 1}` }))] : [], [deals, t])
-  const chartData = { averageWin: project(averageWin), averageLoss: project(averageLoss) }
-  const display = value => showValues ? format(project(value)) : '•••'
-  const displayCount = value => showValues ? fmt(value, '', 0) : '•••'
-  const hiddenChart = <div className="live-hidden-chart" role="img" aria-label={t('Values hidden')}>•••</div>
   return <section className={sidebar ? 'live-analytics-side' : 'live-metrics'} aria-label={t('Analytics')}>
-    {sidebar && <h2><span className="live-analytics-title"><TestingIcon kind="chart" />{t('Analytics')}</span><span className="live-analytics-tools"><select aria-label={t('Analytics display')} value={basis} onChange={event => setBasis(event.target.value)}><option value="amount">{currencyLabel(currency) || t('Currency')}</option><option value="percent">%</option></select><button type="button" className="fxa-button fxa-icon-button" aria-label={t(showValues ? 'Hide values' : 'Show values')} aria-pressed={!showValues} onClick={() => setShowValues(value => !value)}><TestingIcon kind={showValues ? 'eye' : 'eye-off'} size={16} /></button></span></h2>}
+    {sidebar && <h2><span className="live-analytics-title"><TestingIcon kind="chart" />{t('Analytics')}</span></h2>}
     {!available || !deals.length ? <Empty icon={sidebar ? null : 'chart'} title="No analytics yet" copy={available ? 'No deals in this selection.' : 'Select a connected account to view analytics.'} /> : <div className="live-analytics-charts">
       <article className="live-analytics-chart-row live-analytics-balance-row">
-        <ChartHeading title="Total balance" note={<span>{displayCount(count)} {t('trades')}</span>} />
-        <strong className="live-analytics-chart-value">{showValues ? Number.isFinite(payload?.account?.balance) ? fmt(payload.account.balance, currency ? ` ${currency}` : '') : 'N/A' : '•••'}</strong>
+        <ChartHeading title="Total balance" note={<span>{fmt(count, '', 0)} {t('trades')}</span>} />
+        <strong className="live-analytics-chart-value">{format(payload?.account?.balance)}</strong>
         <span className="live-analytics-curve-label">{t('Cumulative PnL in selection')}</span>
-        {showValues ? <AnalyticsCurve series={[pnlPoints.map(point => ({ ...point, value: project(point.value) }))]} label={t('Cumulative PnL in selection')} suffix={suffix} height={96} sparkline /> : hiddenChart}
+        <AnalyticsCurve series={[pnlPoints]} label={t('Cumulative PnL in selection')} suffix={suffix} height={96} sparkline />
       </article>
       <article className="live-analytics-chart-row">
-        <ChartHeading title="Expectancy comparison" />
-        <div className="live-analytics-chart-value">{display(average)} <small>{t('per trade')}</small></div>
-        {showValues ? <><ExpectancyComparison data={chartData} currency={currency} suffix={suffix} />
-        <AnalyticsBars items={[{ label: 'Expectancy per trade', value: project(average) }]} metric="value" label={t('Expectancy per trade')} suffix={suffix} height={108} zeroMarker /></> : hiddenChart}
+        <div className="live-analytics-expectancy-heading"><strong className="live-analytics-chart-value">{format(average)}</strong><ChartHeading title="Expectancy per trade" /></div>
+        <ExpectancyComparison data={{ averageWin, averageLoss }} currency={currency} suffix={suffix} />
       </article>
       <article className="live-analytics-chart-row">
-        <ChartHeading title="Win rate" note={<strong>{showValues ? Number.isFinite(ratio) ? fmt(ratio, '%', 2) : 'N/A' : '•••'}</strong>} />
-        {showValues ? <AnalyticsRing label={t('Win rate')} values={[
+        <ChartHeading title="Win rate" note={<strong>{Number.isFinite(ratio) ? fmt(ratio, '%', 2) : 'N/A'}</strong>} />
+        <AnalyticsRing label={t('Win rate')} values={[
           { label: t('Win'), value: wins, color: 'var(--report-positive)' },
           { label: t('Loss'), value: losses, color: 'var(--report-negative)' },
           { label: t('Breakeven'), value: flat, color: 'var(--wm-content-muted)' },
           ...(unknown ? [{ label: t('Unknown'), value: unknown, color: 'var(--wm-border-strong)' }] : []),
-        ]} /> : hiddenChart}
+        ]} />
       </article>
-      <article className="live-analytics-chart-row">
-        <ChartHeading title="Total trades" note={<strong>{displayCount(count)}</strong>} />
-        {showValues ? <AnalyticsRing label={t('Trades by direction')} values={directions} /> : hiddenChart}
-      </article>
-      <div className="live-analytics-source-line"><span>{t('Source')}</span><strong>{payload.source || t('MT5')}</strong></div>
     </div>}
   </section>
 }
