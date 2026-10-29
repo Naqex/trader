@@ -1,4 +1,7 @@
 {
+  "Đổi thứ tự nhãn {name}": {"vi":"Đổi thứ tự nhãn {name}","en":"Reorder label {name}"},
+  "Kéo để đổi thứ tự · Alt + ↑/↓": {"vi":"Kéo để đổi thứ tự · Alt + ↑/↓","en":"Drag to reorder · Alt + ↑/↓"},
+  "Không lưu được thứ tự vào trình duyệt; thứ tự chỉ giữ trong phiên này.": {"vi":"Không lưu được thứ tự vào trình duyệt; thứ tự chỉ giữ trong phiên này.","en":"Could not save the order in this browser; it only lasts for this session."},
   "Content": {"vi":"Nội dung","en":"Content"},
   "Đang áp dụng bộ lọc": {"vi":"Đang áp dụng bộ lọc","en":"Filters applied"},
   "Ngày cập nhật": {"vi":"Ngày cập nhật","en":"Updated date"},

@@ -50,7 +50,7 @@ export default function LiveBrokerSnapshot({ workspace, catalog, onLabelsChanged
       case 'gross_pnl': { const value = deal[key]; return Number.isFinite(value) ? <span tabIndex={0} className={`wm-return-badge ${value > 0 ? 'is-positive' : value < 0 ? 'is-negative' : 'is-flat'}`}><span aria-hidden="true">{value > 0 ? '↗' : value < 0 ? '↙' : '-'}</span>{fmt(value)}</span> : '-' }
       case 'return_pct': { const value = percentage(deal.net_pnl); return value === null ? '-' : fmt(value, '%') }
       case 'realized_r': return Number.isFinite(deal.realized_r) ? <span tabIndex={0} data-tooltip={t('Biến động giá khớp thực tế / khoảng cách đến SL ban đầu, theo chiều lệnh. Không gồm phí; phí đã tính vào PnL ròng.')}>{fmt(deal.realized_r)}</span> : '-'
-      case 'tags': return workspace && payload.connection_id && catalog ? <TradeLabelCell workspace={workspace} session={`live:${payload.connection_id}`} row={{...deal,trade_id:deal.ticket}} catalog={catalog} onChanged={onLabelsChanged} placeholder="Không có nhãn" /> : <TradeLabelDisplay tags={deal.tags || []} options={catalog?.items} />
+      case 'tags': return workspace && payload.connection_id && catalog ? <TradeLabelCell workspace={workspace} session={`live:${payload.connection_id}`} row={{...deal,trade_id:deal.ticket}} catalog={catalog} onChanged={onLabelsChanged} /> : <TradeLabelDisplay tags={deal.tags || []} options={catalog?.items} />
       case 'price_open': return fmt(deal.price_open, '', 5)
       case 'quantity': return fmt(deal.quantity, '', 5)
       case 'stop_loss': return fmt(deal.stop_loss, '', 5)

@@ -57,14 +57,27 @@ heading trong hàng công cụ không cộng thêm margin mặc định.
 ### Nhãn trong bảng Live và Practice
 
 Hai chế độ dùng chung `TradeLabelCell` và catalog nhãn. Ô nhãn không có nền
-hover riêng; placeholder hiện theo hover/focus như hiện hành. Picker có danh
-sách trước, ô tìm/tạo ở dưới; lựa chọn nhiều nhãn hiển thị trạng thái ngay trên
-hàng. Dấu chấm cạnh badge là chi tiết trình bày, chưa có chức năng đổi thứ tự.
+hover riêng; placeholder “Chọn nhãn…” hiện theo hover/focus như hiện hành.
+Picker có danh sách trước, ô tìm/tạo ở dưới. Chỉ badge nhỏ là nút gắn/gỡ nhãn;
+vùng trống của hàng không hover, không nhận bấm. Dấu chọn dùng `.fx-select-check`
+chung với select chuẩn, không tự đặt màu chữ trắng.
+Grip dùng `ChartIcon` loại `grip` cùng chart toolbar; kéo bằng chuột/cảm ứng
+hoặc Alt + ↑/↓ đổi thứ tự. Escape hủy kéo trước khi đóng popup; tooltip tạm ẩn
+khi kéo để không chiếm Escape. Grip/ba chấm có focus riêng trên hitbox nhỏ.
+Thứ tự là display preference theo workspace trên trình duyệt, dùng chung
+Live/Practice/Settings qua `useTradeLabels`; không sửa catalog/assignment API,
+không đồng bộ thiết bị. Lỗi lưu browser phải báo thứ tự chỉ giữ trong phiên.
+Nhãn mới nối cuối, ID đã xóa được bỏ qua; đổi tên/màu không đổi thứ tự đã lưu.
 Nút ba chấm mở editor riêng cạnh hàng đã chọn, không thay cả picker bằng form.
 Editor có tên, danh sách bảy màu với swatch đặc, dấu chọn và xóa có xác nhận.
 Enter lưu tên; chọn màu lưu ngay với tên đang sửa. Escape bỏ draft chưa lưu và
 trả focus về ba chấm; Escape tiếp theo đóng picker và trả về ô bảng. Lỗi revision
 đóng editor, đọc lại catalog và yêu cầu mở lại; không tự ghi đè.
+Separator của mục Xóa thuộc wrapper riêng; hover của nút chỉ phủ vùng bấm
+bo góc phía dưới, dùng `--wm-hover`, giữ màu chữ nguy hiểm. Không đặt border
+hoặc padding phân nhóm lên chính nút để tránh hover trùm đường phân cách.
+
+Kiểm chứng: [label picker correction](../foundation_v2/evidence/label-picker-20261029/RECEIPT.md).
 
 Ngoại lệ màn hẹp dùng chuột: tab chọn loại phiên vẫn cao28px và nút X vẫn32px.
 Khi thiết bị dùng cảm ứng, hai vùng bấm này tăng lên44px; hình icon không phóng to.
