@@ -1,5 +1,5 @@
 import { useId, useLayoutEffect, useRef, useState } from 'react'
-import { displayDate } from './dateFormat.js'
+import { displayDate, displayTime } from './dateFormat.js'
 import { useTestingLocale } from './testingLocale.jsx'
 import { chartDomain, chartTicks, reportCurvePath } from './reportChartModel.js'
 import './report-chart.css'
@@ -39,6 +39,15 @@ export function ReportLineChart({ title, points, currency, emptyLabel = 'Chưa c
   const [plotRef, width, height] = usePlotSize(Boolean(domain), H), right = width - 24, edge = height - 42
   const axis = axisLabels(domain?.ticks || [], fmt, locale)
   const timed = valid && points.every(point => finite(point.time)) && points.at(-1).time > points[0].time
+  const dateLabels = timed ? points.map(point => displayDate(point.time)) : []
+  const sameDay = timed && dateLabels.every(label => label === dateLabels[0])
+  const sameYear = timed && dateLabels.every(label => label.slice(-4) === dateLabels[0].slice(-4))
+  const lineLabel = point => {
+    if (!finite(point.time)) return point.label || ''
+    if (sameDay) return displayTime(point.time)
+    const date = displayDate(point.time)
+    return sameYear ? date.slice(0, 5) : `${date.slice(0, 5)}/${date.slice(-2)}`
+  }
   const x = (point, index) => left + (timed ? (point.time - points[0].time) / (points.at(-1).time - points[0].time) : index / Math.max(1, points.length - 1)) * (right - left)
   const y = value => edge - (value - domain.low) / (domain.high - domain.low) * (edge - top)
   const groups = []
@@ -47,13 +56,20 @@ export function ReportLineChart({ title, points, currency, emptyLabel = 'Chưa c
     groups.at(-1).push({ point, index })
   })
   const paths = groups.map(group => ({ group, path: reportCurvePath(group.map(({ point, index }) => [x(point, index), y(point.value)])) }))
-  const labels = [...new Set(right - left < 180 ? [points.length - 1] : width < 420 ? [0, points.length - 1] : [0, Math.floor((points.length - 1) / 2), points.length - 1])].filter(index => index >= 0)
+  const midpoint = (left + right) / 2
+  const midpointIndex = points.reduce((best, point, index) => Math.abs(x(point, index) - midpoint) < Math.abs(x(points[best], best) - midpoint) ? index : best, 0)
+  const candidates = [...new Set(right - left < 180 ? [points.length - 1] : width < 420 ? [0, points.length - 1] : [0, midpointIndex, points.length - 1])].filter(index => index >= 0)
+  const labels = candidates.reduce((chosen, index) => {
+    const gap = Math.max(28, lineLabel(points[index]).length * 6.5 + 10)
+    if (!chosen.length || (lineLabel(points[index]) !== lineLabel(points[chosen.at(-1)]) && chosen.every(other => Math.abs(x(points[index], index) - x(points[other], other)) >= gap))) chosen.push(index)
+    return chosen
+  }, [])
   return <section className="fxs-chart-panel report-chart is-blue"><h3>{t(title)}</h3>{domain ? <div ref={plotRef} className="report-plot" style={{ minHeight: H }} role="group" aria-label={t(title)}><svg className="report-svg" viewBox={`0 0 ${width} ${height}`} style={{ height }} role="img" aria-label={`${t(title)}: ${fmt(points[0].value, currency ? ` ${currency}` : '')} → ${fmt(points.at(-1).value, currency ? ` ${currency}` : '')}`}>
     <defs><linearGradient id={id} x1="0" x2="0" y1="0" y2="1"><stop stopColor="var(--report-accent)" stopOpacity=".2"/><stop offset="1" stopColor="var(--report-accent)" stopOpacity=".015"/></linearGradient></defs>
     {domain.ticks.map(value => <g key={value}><line className="report-grid" x1={left} x2={right} y1={y(value)} y2={y(value)}/><text x={left - 12} y={y(value)} dominantBaseline="middle" textAnchor="end">{axis.get(value)}</text></g>)}
     {paths.map(({ path, group }, index) => <g key={index}>{area && <path d={`${path} L${x(group.at(-1).point, group.at(-1).index)},${edge} L${x(group[0].point, group[0].index)},${edge} Z`} fill={`url(#${id})`}/>}<path className="report-line" d={path}/></g>)}
     {points.filter((_, index) => points.length <= 20 || labels.includes(index)).map((point, index) => <circle key={`${point.time}:${index}`} cx={x(point, points.indexOf(point))} cy={y(point.value)} r="3" className="report-point"><title>{`${finite(point.time) ? displayDate(point.time, { timeStyle: 'short' }) : point.label || ''}: ${fmt(point.value, currency ? ` ${currency}` : '')}`}</title></circle>)}
-    {labels.map(index => <text key={index} x={x(points[index], index)} y={height - 14} textAnchor={index === 0 ? 'start' : index === points.length - 1 ? 'end' : 'middle'}>{finite(points[index].time) ? displayDate(points[index].time) : points[index].label || index}</text>)}
+    {labels.map(index => <text key={index} x={x(points[index], index)} y={height - 14} textAnchor={index === 0 ? 'start' : index === points.length - 1 ? 'end' : 'middle'}>{lineLabel(points[index]) || index}</text>)}
   </svg></div> : <div className="fxs-chart-empty">{t(emptyLabel)}</div>}</section>
 }
 

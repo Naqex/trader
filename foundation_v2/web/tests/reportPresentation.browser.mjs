@@ -97,6 +97,12 @@ try {
     const equityHeight = await equity.locator('.report-svg').evaluate(node => node.viewBox.baseVal.height)
     if (width > 1000) { assert.ok(equityHeight >= 410); assert.ok(dayHeight >= 410) }
     else { assert.equal(equityHeight, 250); assert.equal(dayHeight, 296) }
+    const lineLabelBounds = await equity.locator('.report-svg > text').evaluateAll(nodes => nodes.map(node => {
+      const box = node.getBoundingClientRect()
+      return { text: node.textContent, left: box.left, right: box.right }
+    }))
+    assert.ok(lineLabelBounds.length >= 2)
+    assert.ok(lineLabelBounds.every((label, index) => index === 0 || label.left >= lineLabelBounds[index - 1].right - 1), 'line chart time labels must not overlap')
     await equity.screenshot({ path: path.join(out, `equity-${width}-${lang}.png`) })
     const london = page.locator('[data-session-id="demo-london"]')
     await london.locator('.fx-dashboard-card-expand').click()
