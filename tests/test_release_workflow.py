@@ -28,7 +28,7 @@ class ReleaseWorkflowTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(prefix="naqex relocated fixture ")
         self.addCleanup(self.temporary.cleanup)
-        self.root = Path(self.temporary.name) / "source checkout"
+        self.root = (Path(self.temporary.name) / "source checkout").resolve()
         self.root.mkdir()
         paths = ["VERSION", "LICENSE", "THIRD_PARTY_NOTICES.md", "CHANGELOG.md", "docs/releases.md", "docs/advanced-charts.md", *release.MANIFESTS]
         for relative in paths:
