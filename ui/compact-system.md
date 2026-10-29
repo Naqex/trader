@@ -416,7 +416,7 @@ Kiểm chứng và giới hạn của lượt rà soát:
 - Notes không có picker tài khoản trên toolbar. Danh sách mặc định gồm mọi
   ghi chú trong workspace; note mới mặc định là ghi chú chung. Sửa note giữ
   tài khoản đã lưu trong record.
-- “Nhóm theo” là chữ phụ không nền. Nút cây bút dùng menu `FxSelect`; Content
+- “Nhóm theo” là menu `FxSelect`, trigger chữ phụ không nền; None/Note type/Day/Week/Month/Year. Nhóm ngày dùng ngày cập nhật theo múi giờ hiện hành; tuần bắt đầu thứ Hai. Schema hiện chỉ có ghi chú chung, không tự tạo loại từ tài khoản. Nút cây bút dùng menu `FxSelect`; Content
   bật/tắt nội dung xem trước. Trades/Win rate/PnL chưa khả dụng khi schema chưa
   có liên kết giao dịch, không suy ra thống kê từ nhãn hay tài khoản của note.
 - Bộ lọc mở `FilterDrawer` bên phải. Basic lọc tài khoản/ngày cập nhật theo
@@ -424,7 +424,11 @@ Kiểm chứng và giới hạn của lượt rà soát:
   AND/OR. Facet nhãn lấy từ ghi chú hiện có. Draft chỉ có hiệu lực khi Apply;
   Escape hủy draft và trả focus về nút mở.
 
-Kiểm chứng: [Notes controls](../foundation_v2/evidence/notes-controls-20261029/RECEIPT.md).
+- Notes cuộn toàn bộ danh sách, không có phân trang. Màn trống giữ All + nút thêm thư mục, hình minh họa và Add note.
+- Nút thêm thư mục mở `LegacyModal` giữa màn hình: tìm/chọn note → Next (cho phép 0 note) → nhập tên → Confirm. Tên trim, tối đa 80 ký tự, không trùng không phân biệt hoa/thường trong workspace. Thư mục và membership lưu API; tạo note khi chọn thư mục gắn vào thư mục trong cùng transaction. Một note có thể nằm trong nhiều thư mục. Chọn thư mục hiện badge tên và số note trước lọc.
+- Lỗi đọc thư mục không được biến lựa chọn thư mục thành All; lỗi kết quả lưu chưa rõ khóa form đến khi đóng/tải lại catalog.
+
+Kiểm chứng: [Notes folders](../foundation_v2/evidence/notes-folders-20261029/RECEIPT.md), [Notes controls](../foundation_v2/evidence/notes-controls-20261029/RECEIPT.md).
 
 ## Dùng cho tính năng sau này
 

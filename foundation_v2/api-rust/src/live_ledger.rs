@@ -24,6 +24,8 @@ pub const ROUTES: &[(&str, &str)] = &[
     ("GET", "/api/v2/live/records"),
     ("POST", "/api/v2/live/records"),
     ("POST", "/api/v2/live/records/{record_id}/revisions"),
+    ("GET", "/api/v2/live/note-folders"),
+    ("POST", "/api/v2/live/note-folders"),
 ];
 pub fn native(method: &str, path: &str) -> bool {
     ROUTES.contains(&(method, path))
@@ -32,6 +34,10 @@ pub fn routes() -> Router<Arc<AppState>> {
     Router::new()
         .route(ROUTES[0].1, get(list).post(write))
         .route(ROUTES[2].1, post(write))
+        .route(
+            ROUTES[3].1,
+            get(crate::live_note_folders::list).post(crate::live_note_folders::create),
+        )
 }
 fn invalid(detail: &str) -> ApiError {
     ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY, detail)
@@ -48,6 +54,8 @@ fn missing() -> ApiError {
 struct Draft {
     kind: String,
     payload: Value,
+    #[serde(default)]
+    folder_id: Option<String>,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -343,19 +351,27 @@ async fn execute(
     if query.is_some() {
         return Err(invalid("invalid_live_query"));
     }
-    let (expected, kind, payload) = if route == ROUTES[1].1 {
+    let (expected, kind, payload, folder_id) = if route == ROUTES[1].1 {
         let draft: Draft =
             serde_json::from_value(body).map_err(|_| invalid("invalid_live_body"))?;
-        (None, draft.kind, draft.payload)
+        (None, draft.kind, draft.payload, draft.folder_id)
     } else {
         let draft: Revision =
             serde_json::from_value(body).map_err(|_| invalid("invalid_live_body"))?;
         if draft.expected_revision < 1 {
             return Err(invalid("invalid_live_revision"));
         }
-        (Some(draft.expected_revision), draft.kind, draft.payload)
+        (
+            Some(draft.expected_revision),
+            draft.kind,
+            draft.payload,
+            None,
+        )
     };
     let payload = validate(&kind, payload)?;
+    if folder_id.is_some() && kind != "note" {
+        return Err(invalid("invalid_note_folder"));
+    }
     // Serializes admission and parent checks within this small manual ledger.
     let digest = Sha256::digest(
         serde_json::to_vec(&json!(["live-records-v1", scope.workspace_id])).unwrap(),
@@ -431,6 +447,9 @@ async fn execute(
         tx.execute("UPDATE live_records SET current_revision=$3,updated_at_utc=$4 WHERE workspace_id=$1 AND record_id=$2", &[&scope.workspace_id, &id, &revision, &stamp]).await.map_err(|_| ApiError::database())?;
     }
     tx.execute("INSERT INTO live_record_revisions(workspace_id,record_id,revision,payload_json,created_at_utc) VALUES($1,$2,$3,$4,$5)", &[&scope.workspace_id, &id, &revision, &payload, &stamp]).await.map_err(|_| ApiError::database())?;
+    if let Some(folder) = folder_id {
+        crate::live_note_folders::attach(tx, &scope.workspace_id, &folder, &id).await?;
+    }
     Ok((
         if expected.is_none() {
             StatusCode::CREATED

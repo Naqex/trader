@@ -22,6 +22,7 @@ pub mod demo_trading;
 pub mod events;
 pub mod jobs;
 pub mod live_ledger;
+mod live_note_folders;
 pub mod metadata_mutations;
 pub mod middleware;
 pub mod mt5_connector;

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { EMPTY_NOTE_FILTERS, filterJournalNotes } from '../src/liveNoteModel.js'
+import { EMPTY_NOTE_FILTERS, filterJournalNotes, groupJournalNotes } from '../src/liveNoteModel.js'
 
 const note = (id, payload = {}, updated = '2026-10-29T18:00:00Z') => ({record_id:id,updated_at_utc:updated,payload:{title:id,note:'Observation',tags:[],...payload}})
 const records = [note('general'),note('manual',{account_id:'manual',tags:['London','A,B']}),note('broker',{connection_id:'mt5',tags:['London']})]
@@ -30,4 +30,17 @@ test('Search matches title, content and tags alongside applied filters', () => {
   assert.deepEqual(select({},'observation'), ['general','manual','broker'])
   assert.deepEqual(select({accounts:['manual']},'london'), ['manual'])
   assert.deepEqual(select({},'not found'), [])
+})
+
+test('Grouping uses local updated dates and Monday weeks across year/month boundaries', () => {
+  const notes=[note('new',{},'2027-01-01T00:30:00Z'),note('old',{},'2026-12-31T23:00:00Z'),note('unknown',{},null)]
+  const keys=(mode,tz='UTC')=>groupJournalNotes(notes,mode,tz).map(group=>[group.key,group.rows.map(note=>note.record_id)])
+  assert.deepEqual(keys('none'),[['all',['new','old','unknown']]])
+  assert.deepEqual(keys('type'),[['general',['new','old','unknown']]])
+  assert.deepEqual(keys('day'),[['2027-01-01',['new']],['2026-12-31',['old']],['unknown',['unknown']]])
+  assert.deepEqual(keys('day','America/New_York'),[['2026-12-31',['new','old']],['unknown',['unknown']]])
+  assert.deepEqual(keys('week'),[['2026-12-28',['new','old']],['unknown',['unknown']]])
+  assert.deepEqual(keys('month'),[['2027-01',['new']],['2026-12',['old']],['unknown',['unknown']]])
+  assert.deepEqual(keys('year'),[['2027',['new']],['2026',['old']],['unknown',['unknown']]])
+  assert.deepEqual(groupJournalNotes([],'day','UTC'),[])
 })

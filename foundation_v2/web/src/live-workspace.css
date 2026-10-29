@@ -363,6 +363,31 @@
 .live-notes-actions { flex-wrap:wrap; }
 .live-notes .live-note-create, .live-notes-groups > .fxa-button, .live-notes-empty > .fxa-button { display:inline-flex; align-items:center; justify-content:center; gap:8px; }
 .live-note-group { color:var(--wm-content-muted); font-size:13px; line-height:20px; }
+.fx-app.fx-shell-story[data-theme] .fx-content .live-note-group > .fx-select-trigger { border:0; background:transparent; color:var(--wm-content-muted); padding-inline:4px; }
+.fx-app.fx-shell-story[data-theme] .fx-content .live-notes .live-note-group.fx-select > .fx-select-trigger:is(:hover,:active,:focus-visible,[aria-expanded=true]) { background:transparent; color:var(--wm-content-muted); }
+.live-note-group .fx-select-chevron { display:none; }
+.live-notes-groups { overflow-x:auto; }
+.live-notes-groups > button { flex-shrink:0; }
+.live-note-folder-summary { display:flex; align-items:center; gap:12px; padding:8px var(--wm-page-gutter) 16px; }
+.live-note-folder-summary > span { background:var(--wm-control-open); padding:4px 8px; border-radius:4px; font-size:12px; }
+.live-note-folder-summary small { color:var(--wm-content-muted); }
+.live-note-section > h3 { display:flex; align-items:center; gap:8px; padding:12px var(--wm-page-gutter); margin:0; font-size:13px; font-weight:500; color:var(--wm-content-muted); }
+.live-note-section > h3 small { font-size:11px; }
+.legacy-modal.live-folder-dialog { width:min(480px,calc(100vw - 32px)); }
+.live-folder-form { display:flex; flex-direction:column; gap:20px; padding:24px; min-width:0; }
+.live-folder-form > .live-dialog-footer { display:flex; justify-content:flex-end; gap:8px; }
+.live-folder-form > p { margin:0; font-size:13px; }
+.live-folder-search { display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--wm-control-open); border-radius:6px; color:var(--wm-content-muted); }
+.live-folder-search input { flex:1; min-width:0; background:transparent; border:0; color:var(--wm-content); outline:none; }
+.live-folder-search:focus-within { outline:2px solid var(--wm-focus); outline-offset:2px; }
+.live-folder-notes { min-height:160px; max-height:280px; overflow-y:auto; }
+.live-folder-notes > p { padding-top:36px; text-align:center; font-size:13px; }
+.live-folder-note { display:flex; align-items:center; gap:12px; padding:10px 0; font-size:13px; cursor:pointer; }
+.live-folder-note span { min-width:0; overflow-wrap:anywhere; }
+.live-folder-note input { accent-color:var(--wm-content); }
+.live-folder-name { display:flex; flex-direction:column; gap:12px; font-size:13px; }
+.live-folder-name input { border:1px solid var(--wm-control-border); border-radius:6px; padding:10px 12px; background:var(--wm-control-open); color:var(--wm-content); font:inherit; min-width:0; }
+.live-folder-name small { color:var(--report-negative); }
 .live-note-fields-hint { padding:4px 10px 8px; max-width:220px; }
 .fx-app.fx-shell-story[data-theme] .fx-content .live-note-fields [role=option]:disabled { background:transparent; }
 .fx-app.fx-shell-story[data-theme] .fx-content .live-notes-groups > .is-active { background:transparent; border:1px solid var(--wm-control-border); color:var(--wm-content); }

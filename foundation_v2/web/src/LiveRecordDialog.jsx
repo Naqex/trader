@@ -9,7 +9,7 @@ import { downloadLiveCsv } from './liveCsvDownload.js'
 import { useTestingLocale } from './testingLocale.jsx'
 import { accountDraftErrors, mt5AccountName } from './liveAccountModel.js'
 
-export default function LiveRecordDialog({ workspace, kind, accounts, connections = [], strategies, accountId, record, seed, onClose, onSaved }) {
+export default function LiveRecordDialog({ workspace, kind, accounts, connections = [], strategies, accountId, record, seed, folderId, onClose, onSaved }) {
   const { t, timezone } = useTestingLocale()
   const initial = record?.payload || seed || {}
   const [draft, setDraft] = useState({ name: '', currency: 'USD', opening_balance: '', account_type:'', opening_at_utc:new Date().toISOString(), account_id: accountId || (kind === 'note' ? '' : accounts[0]?.record_id) || '',
@@ -54,7 +54,7 @@ export default function LiveRecordDialog({ workspace, kind, accounts, connection
           onSaved(saved, false); setImportDone(index+1)
         }
         onClose()
-      } else onSaved(await saveLiveRecord(workspace,kind,payload,record))
+      } else onSaved(await saveLiveRecord(workspace,kind,payload,record,folderId))
     } catch (problem) {
       setUncertain(problem.outcomeKnown === false)
       setError(problem.outcomeKnown === false ? 'Chưa xác nhận kết quả lưu. Tải lại sổ giao dịch để kiểm tra trước khi thao tác tiếp.' : problem.message || 'Không lưu được bản ghi.')

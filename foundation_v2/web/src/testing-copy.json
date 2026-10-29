@@ -7306,5 +7306,21 @@
   "Tím": {"vi": "Tím", "en": "Purple"},
   "Xanh nhạt": {"vi": "Xanh nhạt", "en": "Light Blue"},
   "Xám": {"vi": "Xám", "en": "Grey"},
-  "Chọn hoặc tạo nhãn mới…": {"vi": "Chọn hoặc tạo nhãn mới…", "en": "Select tag or create new one…"}
+  "Chọn hoặc tạo nhãn mới…": {"vi": "Chọn hoặc tạo nhãn mới…", "en": "Select tag or create new one…"},
+  "Note type": {"vi": "Loại ghi chú", "en": "Note type"},
+  "Create folder": {"vi": "Tạo thư mục", "en": "Create folder"},
+  "Choose the notes you want to add to this folder": {"vi": "Chọn ghi chú bạn muốn thêm vào thư mục này", "en": "Choose the notes you want to add to this folder"},
+  "Folder name": {"vi": "Tên thư mục", "en": "Folder name"},
+  "{count} notes": {"vi": "{count} ghi chú", "en": "{count} notes"},
+  "Week of {date}": {"vi": "Tuần từ {date}", "en": "Week of {date}"},
+  "Tên thư mục đã tồn tại.": {"vi": "Tên thư mục đã tồn tại.", "en": "A folder with this name already exists."},
+  "Không lưu được thư mục. Thử lại sau.": {"vi": "Không lưu được thư mục. Thử lại sau.", "en": "Unable to save the folder. Try again later."},
+  "Không đọc được thư mục. Thử lại sau.": {"vi": "Không đọc được thư mục. Thử lại sau.", "en": "Unable to load folders. Try again later."},
+  "Dữ liệu thư mục không hợp lệ.": {"vi": "Dữ liệu thư mục không hợp lệ.", "en": "Invalid folder data."},
+  "Next": {"vi": "Tiếp", "en": "Next"},
+  "Back": {"vi": "Quay lại", "en": "Back"},
+  "Week": {"vi": "Tuần", "en": "Week"},
+  "Chưa xác nhận kết quả lưu. Đóng và tải lại thư mục để kiểm tra.": {"vi":"Chưa xác nhận kết quả lưu. Đóng và tải lại thư mục để kiểm tra.","en":"Save outcome is not confirmed. Close and reload folders to check."},
+  "No grouping": {"vi":"Không","en":"None"},
+  "Group by day": {"vi":"Ngày","en":"Day"}
 }
