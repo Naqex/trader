@@ -28,7 +28,7 @@ form_urlencoded = "1"
 percent-encoding = "2"
 jsonschema = { version = "=0.58.6", default-features = false }
 bigdecimal = "=0.4.10"
-num-bigint = "0.4"
+num-bigint = "0.5"
 csv = "=1.4.0"
 chrono-tz = "=0.10.4"
 parquet = { version = "=59.3.0", default-features = false, features = ["snap", "zstd", "flate2-rust_backend", "lz4"] }

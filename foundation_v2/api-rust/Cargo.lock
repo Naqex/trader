@@ -2406,7 +2406,7 @@ dependencies = [
  "getrandom 0.4.3",
  "http-body-util",
  "jsonschema",
- "num-bigint 0.4.8",
+ "num-bigint 0.5.1",
  "parquet",
  "percent-encoding",
  "reqwest 0.12.28",
