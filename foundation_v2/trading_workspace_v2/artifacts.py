@@ -19,6 +19,22 @@ class ArtifactConflict(RuntimeError):
     pass
 
 
+def _path_identity(path: Path) -> Path:
+    # During concurrent mkdir, Windows resolve() may retain its extended prefix.
+    # Normalize only the comparison key; keep the original path for long-path I/O.
+    if os.name == "nt":
+        value = str(path)
+        if value.startswith("\\\\?\\UNC\\"):
+            return Path("\\\\" + value[8:])
+        if value.startswith("\\\\?\\") and value[5:7] == ":\\":
+            return Path(value[4:])
+    return path
+
+
+def _inside_root(path: Path, root: Path) -> bool:
+    return _path_identity(root) in _path_identity(path.resolve()).parents
+
+
 def _safe_component(value: str, label: str) -> str:
     """Validate an identifier before using it as one filesystem path component.
 
@@ -150,7 +166,7 @@ class ArtifactStore:
                 break
             if component.is_symlink() or getattr(component, "is_junction", lambda: False)():
                 raise ValueError("artifact path escapes root")
-        if self.root not in path.resolve().parents:
+        if not _inside_root(path, self.root):
             raise ValueError("artifact path escapes root")
         return path
 
@@ -264,7 +280,7 @@ class ArtifactStore:
                     break
                 if component.is_symlink() or getattr(component, 'is_junction', lambda: False)():
                     raise ValueError('invalid_dataset_artifact_path')
-            if self.root not in path.resolve().parents:
+            if not _inside_root(path, self.root):
                 raise ValueError('invalid_dataset_artifact_path')
             if path.exists() and not path.is_file():
                 raise ValueError('invalid_dataset_artifact_path')
@@ -630,8 +646,8 @@ class ArtifactStore:
     def quarantine_job_candidates(self, workspace_id: str, job_id: str) -> list[str]:
         safe_workspace = _safe_component(workspace_id, "workspace_id")
         safe_job = _safe_component(job_id, "job_id")
-        attempt_dir = (self.root / safe_workspace / "results" / safe_job).resolve()
-        if self.root not in attempt_dir.parents or not attempt_dir.exists():
+        attempt_dir = self.root / safe_workspace / "results" / safe_job
+        if not _inside_root(attempt_dir, self.root) or not attempt_dir.exists():
             return []
         quarantined = []
         for candidate in sorted(attempt_dir.glob("attempt-*.json")):

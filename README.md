@@ -7,6 +7,9 @@ Live MT5 được kiểm soát riêng. Source hiện hành nằm trong `foundati
 phải nghiệm thu toàn bộ sản phẩm. Replay là mô phỏng; kết nối hoặc dựng UI không
 đồng nghĩa được phép gửi lệnh broker.
 
+Hiện dùng source và build tại checkout. Đóng gói Windows để phân phối được để
+sang đợt sau; [release status](docs/releases.md) ghi các kiểm tra còn mở.
+
 ## Bắt đầu
 
 Cần Git, Python 3.12, [uv](https://docs.astral.sh/uv/), Node.js 22+ và Rust theo

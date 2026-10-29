@@ -26,6 +26,10 @@ Supported PostgreSQL integration-test discovery: `TW_PLATFORM_TEST_PG_BIN`
 (or the test's documented override), `initdb` on PATH, then the optional local
 `.runtime/postgres/bin` installation. Tests use disposable databases only.
 
+Prebuilt-binary relocation remains a packaging gate: optional Rust adapters still
+use `CARGO_MANIFEST_DIR` for some resources. Source checkouts should build their
+own binaries. Packaging was deferred by the owner; see [release status](releases.md).
+
 ## Compatibility identities
 
 `foundation_v2`, Python import namespaces, Rust executable names, schema IDs,
