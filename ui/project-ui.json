@@ -55,6 +55,10 @@
     {
       "system": "annam-compact",
       "version": "0.3.0",
+      "focusedReceipt": {
+        "path": "workspace:projects/trader/foundation_v2/evidence/palette-calendar-20261028/RECEIPT.md",
+        "checks": ["state", "keyboard", "theme", "contrast"]
+      },
       "sourceSha256": "1d7675bc71a06c14e5d636ce96e78dc596afd94a72abc77d8cf39123c3113a71",
       "snapshot": "foundation_v2/web/public/project-palette.css",
       "scope": [
