@@ -686,6 +686,15 @@ Last sync is the last successful data observation, not a connection expiry date.
   Applied filter groups appear as removable chips; removing one preserves other
   groups. Clear filters retains the selected sessions. Drawer Apply
   commits base and extra filters in one URL update; closing it discards the draft.
+  Live Trades uses the same ledger filter toolbar, Basic/Tags drawer and chips,
+  with the account picker replacing session scope. Adapt full reconstructed
+  broker lifecycles or manual trades to the shared filter model before paging;
+  table and sidebar consume the same applied rows. Live Chart uses close time
+  for closed trades and entry time for open trades. Realtime uses manual record
+  creation time or the actual broker execution time, never snapshot polling time.
+  Missing broker notes remain unknown; do not treat missing metadata as no notes.
+  Apply commits the local clock/filter scope atomically; account/workspace changes
+  reset it, polling retains it, and Clear filters retains account/strategy context.
   Return info controls sit beside sort controls, with independent focus/touch
   behavior and VI/EN definitions. A read error must not also show a false empty
   ledger; native hidden state takes precedence over table layout styles.
