@@ -113,6 +113,25 @@
 .as-provenance-list { margin: 0; padding: 0 17px; }
 .as-limit-note { margin: 14px 17px; padding-top: 12px; border-top: 1px solid var(--as-border-soft); }
 .as-inspector-actions { padding: 0 17px 17px; }
+.fx-trade-detail-tabs { display:flex; gap:4px; margin:0 0 18px; border:1px solid var(--wm-border); border-radius:999px; padding:3px; }
+.fx-trade-detail-tabs button { flex:1; min-height:32px; border:0; border-radius:999px; background:transparent; color:var(--wm-content-muted); font:inherit; cursor:pointer; }
+.fx-trade-detail-tabs button[aria-selected='true'] { background:var(--wm-hover); color:var(--wm-content); }
+.fx-trade-drawer-placeholder,.fx-trade-note-draft { display:grid; gap:14px; padding:4px 0 18px; }
+.fx-trade-note-link { color:var(--wm-content); text-underline-offset:3px; }
+.fx-trade-drawer-placeholder h3 { margin:0; font-size:15px; }
+.fx-trade-drawer-placeholder p,.fx-trade-note-draft p { margin:0; color:var(--wm-content-muted); font-size:12px; line-height:1.5; }
+.fx-trade-note-draft label { display:grid; gap:7px; color:var(--wm-content-muted); font-size:12px; }
+.fx-trade-note-draft :is(input,textarea) { box-sizing:border-box; width:100%; border:1px solid var(--wm-border); border-radius:var(--ds-radius-field); background:var(--wm-control-open); color:var(--wm-content); font:inherit; padding:9px 10px; }
+.fx-live-trade-heading h2 { margin:4px 0; font-size:20px; }
+.fx-live-trade-heading p,.fx-live-trade-heading small { margin:0; color:var(--wm-content-muted); font-size:12px; }
+.fx-live-trade-heading .is-positive { color:var(--wm-positive); }
+.fx-live-trade-heading .is-negative { color:var(--wm-negative); }
+.fx-live-trade-details { display:grid; gap:16px; }
+.fx-live-trade-details dl { display:grid; gap:12px; margin:0; }
+.fx-live-trade-details dl div { display:flex; justify-content:space-between; gap:16px; align-items:baseline; }
+.fx-live-trade-details dt { color:var(--wm-content-muted); font-size:12px; }
+.fx-live-trade-details dd { margin:0; text-align:right; font-size:13px; }
+.fx-live-trade-details hr { width:100%; border:0; border-top:1px solid var(--wm-border); }
 .as-raw-details { margin-top: 13px; }
 .as-raw-details summary { color: #b6c2c9; cursor: pointer; font-size: 11px; }
 .as-raw-details pre { max-height: 220px; overflow: auto; margin: 9px 0 0; padding: 10px; background: #0c1113; color: #9ba8af; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 10px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }

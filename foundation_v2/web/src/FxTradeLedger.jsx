@@ -22,7 +22,7 @@ const DEFAULT_COLUMNS = COLUMNS.map(([key]) => key)
 const CENTER_COLUMNS = new Set(['status', 'side', 'entry_type'])
 const columnClass = key => NUMERIC_COLUMNS.has(key) ? 'is-numeric' : CENTER_COLUMNS.has(key) ? 'is-center' : ''
 const NUMERIC_COLUMNS = new Set(['net_pnl', 'return_pct', 'realized_r', 'rating', 'price_open', 'quantity', 'stop_loss', 'take_profit', 'price_close', 'gross_pnl', 'fees'])
-export function TradeInspector({ children, onClose }) {
+export function TradeInspector({ children, onClose, className = '', ...props }) {
   const { t } = useTestingLocale()
 
   const dialog = useRef(null)
@@ -31,7 +31,7 @@ export function TradeInspector({ children, onClose }) {
     dialog.current.showModal()
     return () => { dialog.current?.close(); if (opener?.isConnected) opener.focus({ preventScroll: true }) }
   }, [])
-  return <dialog className="fxa-trade-inspector" aria-label={t("Chi tiết giao dịch")} ref={dialog} onCancel={event => { event.preventDefault(); onClose() }} onKeyDown={event => {
+  return <dialog {...props} className={`fxa-trade-inspector is-drawer ${className}`} aria-label={props['aria-label'] || t("Chi tiết giao dịch")} ref={dialog} onCancel={event => { event.preventDefault(); onClose() }} onKeyDown={event => {
     if (event.key !== 'Tab') return
     const controls = [...event.currentTarget.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter(element => !element.disabled && element.tabIndex >= 0 && element.getClientRects().length)
     const first = controls[0], last = controls[controls.length - 1]

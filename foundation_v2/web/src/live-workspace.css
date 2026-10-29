@@ -149,6 +149,8 @@
 }
 .live-journal-filters { display: flex; gap: 12px; flex-wrap: wrap; }
 .legacy-modal.live-record-dialog { display: flex; flex-direction: column; overflow: hidden; width: min(640px, calc(100vw - 32px)); }
+.legacy-modal.live-record-dialog.is-drawer { width: min(520px, 100vw); height: 100dvh; max-height: 100dvh; border-radius: 0; margin: 0 0 0 auto; border-right: 0; border-top: 0; border-bottom: 0; }
+.legacy-modal.live-record-dialog.is-drawer .live-record-form { flex: 1; }
 .live-record-dialog { --wm-negative:var(--project-negative); --wm-focus:var(--project-primary); }
 .live-record-dialog > header { flex: 0 0 auto; }
 .live-record-form { display: grid; gap: 20px; padding: 24px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }

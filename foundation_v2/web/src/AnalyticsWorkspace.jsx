@@ -46,6 +46,7 @@ function ContextValue({ label, value, code = false }) {
 }
 
 export function ProvenanceInspector({ model, selectedTrade, journalCount, links }) {
+  const [tab,setTab] = useState('details')
   const formatNumber = (value, digits = 2, suffix = '') => fmt(value, suffix, digits)
   const formatDate = value => dateFromValue(value) ? displayDate(dateFromValue(value), { timeStyle: 'short', timeZone: timezone }) : '-'
 
@@ -54,13 +55,16 @@ export function ProvenanceInspector({ model, selectedTrade, journalCount, links 
   return (
     <aside className="as-inspector" aria-label={t("Provenance và drilldown")}>
       {selectedTrade && <div className="as-section-head"><h2>{selectedTrade.tradeId}</h2><span className="as-inspector-state">{t("Chỉ đọc")}</span></div>}
-      {selectedTrade ? (
+      {selectedTrade ? (<>
+        <nav className="fx-trade-detail-tabs" aria-label={t('Trade detail tabs')}><button type="button" aria-selected={tab === 'details'} onClick={() => setTab('details')}>{t('Details')}</button><button type="button" aria-selected={tab === 'labels'} onClick={() => setTab('labels')}>{t('Tags')}</button><button type="button" aria-selected={tab === 'notes'} onClick={() => setTab('notes')}>{t('Notes')}</button></nav>
+        {tab === 'details' ? <>
         <section className="as-inspector-selection" aria-label={t("Trade detail")}>
           <div className="as-selection-outcome"><span className={'as-outcome-dot is-' + selectedTrade.outcome} />{selectedTrade.status === 'open' ? t('Open') : selectedTrade.outcome === 'win' ? t("Thắng") : selectedTrade.outcome === 'loss' ? t("Thua") : selectedTrade.outcome === 'breakeven' ? t("Hòa vốn") : t("Chưa xác định")}<strong>{selectedTrade.status === 'open' ? <span title={t('Chưa áp dụng khi lệnh đang mở')}>N/A</span> : formatNumber(selectedTrade.pnl)}</strong></div>
           <dl className="as-detail-list"><ContextValue label={`${t("Thoát lệnh")} (${model.result?.scope?.time_basis === 'market' ? 'Chart' : 'Realtime'} · ${timezone})`} value={selectedTrade.closeDate} /><ContextValue label={t("Side")} value={selectedTrade.side} /><ContextValue label={t("Symbol")} value={selectedTrade.symbol} /><ContextValue label={t("Khối lượng")} value={formatNumber(selectedTrade.quantity, 4)} /><ContextValue label={t("Giá mở")} value={formatNumber(selectedTrade.price_open, 6)} /><ContextValue label={t("Giá đóng")} value={formatNumber(selectedTrade.price_close, 6)} /><ContextValue label={t("Net R")} value={selectedTrade.status === 'open' || selectedTrade.realized_r == null ? 'N/A' : formatNumber(selectedTrade.realized_r, 2, 'R')} /><ContextValue label={t("Risk budget")} value={formatNumber(selectedTrade.planned_risk_budget)} /></dl>
           <details className="as-raw-details"><summary>{t("Xem record gốc")}</summary><pre>{JSON.stringify(selectedTrade, null, 2)}</pre></details>
         </section>
-      ) : null}
+        </> : tab === 'labels' ? <section className="fx-trade-drawer-placeholder"><h3>{t('Tags')}</h3><p>{t('Nhãn giao dịch sẽ dùng chung catalog của workspace.')}</p></section> : <section className="fx-trade-note-draft"><h3>{t('Notes')}</h3><p>{t('Mở Journal để tạo note gắn với context này.')}</p>{links.journal && <a className="fx-trade-note-link" href={links.journal}>{t('Mở Journal →')}</a>}</section>}
+      </>) : null}
       <details className="as-provenance-details"><summary>{t("Nguồn và giới hạn")}</summary>
       <dl className="as-provenance-list"><ContextValue label={t("Session revision")} value={model.result?.revision} /><ContextValue label={`${t("Cutoff")} (${timezone})`} value={formatDate(model.result?.cutoff_timestamp)} /><ContextValue label={t("Dataset")} value={model.result?.dataset_id} code /><ContextValue label={t("Dataset SHA")} value={model.result?.dataset_sha256} code /><ContextValue label={t("Protocol SHA")} value={model.result?.protocol_sha256} code /><ContextValue label={t("Artifact SHA")} value={model.sourceHash} code /><ContextValue label={t("Strategy / engine")} value={model.strategy} /><ContextValue label={t("Split")} value={model.result?.split} /><ContextValue label={t("Metric schema")} value={model.result?.metrics_schema_version || model.metrics.metric_schema_version} code /><ContextValue label={t("Observed range")} value={model.observed.start + ' → ' + model.observed.end} /><ContextValue label={t("Journal context")} value={journalCount === null ? '-' : journalCount + ' entries'} /></dl>
       <p className="as-limit-note">{t("- là dữ liệu chưa được cung cấp; N/A là chỉ số chưa áp dụng hoặc chưa có cơ sở để tính. Research/simulation đang broker locked; không có đường nào gửi lệnh.")}</p>

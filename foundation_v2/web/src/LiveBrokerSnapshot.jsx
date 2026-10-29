@@ -9,6 +9,19 @@ import { liveAccountCapital, mt5AccountName } from './liveAccountModel.js'
 import TradeLabelCell, { TradeLabelDisplay } from './TradeLabelCell.jsx'
 import { LIVE_TRADE_COLUMNS } from './liveTradeColumns.js'
 import TradeLedgerGrid from './TradeLedgerGrid.jsx'
+import { TradeInspector } from './FxTradeLedger.jsx'
+
+function LiveTradeInspector({ deal, payload, accountName, time, money, side, workspace, catalog, onLabelsChanged, onClose }) {
+  const { t, fmt } = useTestingLocale(), [tab,setTab] = useState('details')
+  const value = (item, digits = 5) => Number.isFinite(item) ? fmt(item, '', digits) : '-'
+  return <TradeInspector onClose={onClose}>
+    <div className="fx-live-trade-heading"><div><small>{t('Live trade')}</small><h2>{deal.symbol}, {side(deal.type)} <span className={deal.net_pnl > 0 ? 'is-positive' : deal.net_pnl < 0 ? 'is-negative' : ''}>{Number.isFinite(deal.net_pnl) ? fmt(deal.net_pnl) : '-'}</span></h2><p>{time(deal.recorded_at_utc)} · {deal.status}</p></div><button type="button" className="fxa-button fx-trade-drawer-close" onClick={onClose} aria-label={t('Đóng chi tiết')}>×</button></div>
+    <nav className="fx-trade-detail-tabs" aria-label={t('Trade detail tabs')}><button type="button" aria-selected={tab === 'details'} onClick={() => setTab('details')}>{t('Details')}</button><button type="button" aria-selected={tab === 'labels'} onClick={() => setTab('labels')}>{t('Tags')}</button><button type="button" aria-selected={tab === 'notes'} onClick={() => setTab('notes')}>{t('Notes')}</button></nav>
+    {tab === 'details' && <section className="fx-live-trade-details"><dl><div><dt>{t('Account')}</dt><dd>{accountName}</dd></div><div><dt>{t('Asset')}</dt><dd>{deal.symbol || '-'}</dd></div><div><dt>{t('Side')}</dt><dd>{side(deal.type)}</dd></div><div><dt>{t('Entry type')}</dt><dd>{deal.entry_type || '-'}</dd></div><div><dt>{t('Entry date')} · Realtime</dt><dd>{time(deal.recorded_at_utc)}</dd></div><div><dt>{t('Entry price')}</dt><dd>{value(deal.price_open)}</dd></div><div><dt>{t('Total size')}</dt><dd>{value(deal.quantity)}</dd></div><div><dt>{t('Stop loss')}</dt><dd>{value(deal.stop_loss)}</dd></div><div><dt>{t('Take profit')}</dt><dd>{value(deal.take_profit)}</dd></div><div><dt>{t('Exit date')} · Realtime</dt><dd>{time(deal.report_time_utc)}</dd></div><div><dt>{t('Exit price')}</dt><dd>{value(deal.price_close)}</dd></div></dl><hr/><dl><div><dt>{t('Gross PnL')}</dt><dd>{money(deal.gross_pnl)}</dd></div><div><dt>{t('Fees')}</dt><dd>{money(deal.fees)}</dd></div><div><dt>{t('Net PnL')}</dt><dd>{money(deal.net_pnl)}</dd></div></dl></section>}
+    {tab === 'labels' && <section className="fx-trade-drawer-placeholder"><h3>{t('Tags')}</h3>{workspace && payload.connection_id && catalog ? <TradeLabelCell workspace={workspace} session={`live:${payload.connection_id}`} row={{...deal,trade_id:deal.ticket}} catalog={catalog} onChanged={onLabelsChanged} /> : <TradeLabelDisplay tags={deal.tags || []} options={catalog?.items || []} />}</section>}
+    {tab === 'notes' && <section className="fx-trade-note-draft"><h3>{t('Notes')}</h3><p>{t('Mở Ghi chú để tạo note gắn với context này.')}</p><a className="fx-trade-note-link" href={`/?workspace=${encodeURIComponent(workspace || '')}&view=live&area=live&section=notes`}>{t('Mở Ghi chú →')}</a></section>}
+  </TradeInspector>
+}
 
 export default function LiveBrokerSnapshot({ workspace, catalog, onLabelsChanged, payload, section, trades, filters, filterKey = '', columns = LIVE_TRADE_COLUMNS.map(([key]) => key) }) {
   const { t, fmt, timezone } = useTestingLocale()
@@ -27,6 +40,7 @@ export default function LiveBrokerSnapshot({ workspace, catalog, onLabelsChanged
   const sortValue = (deal,key) => key === 'account' ? accountLogin : key === 'source' ? 'Sync' : key === 'side' ? side(deal.type) : key === 'return_pct' ? capital > 0 && Number.isFinite(deal.net_pnl) ? deal.net_pnl / capital * 100 : null : deal[key]
   const deals = sorting.rows(section === 'transactions' ? payload.cashflows || [] : trades || filterBrokerTrades(payload, filters), sortValue, [{ key: 'recorded_at_utc', direction: 'desc' }])
   const pages = Math.max(1, Math.ceil(deals.length / pageSize)), current = Math.min(page, pages), visible = deals.slice((current - 1) * pageSize, current * pageSize)
+  const selectedDeal = deals.find(deal => String(deal.ticket) === String(selected))
   const shown = LIVE_TRADE_COLUMNS.filter(([key]) => columns.includes(key))
   const numericColumns = new Set(['net_pnl', 'return_pct', 'realized_r', 'quantity', 'price_open', 'stop_loss', 'take_profit', 'price_close', 'gross_pnl', 'fees'])
   const centerColumns = new Set(['status', 'side', 'entry_type'])
@@ -79,5 +93,6 @@ export default function LiveBrokerSnapshot({ workspace, catalog, onLabelsChanged
     </> : <>
       {!deals.length ? <div className="live-empty" data-testid="live-deals-empty"><TestingIcon kind={section === 'transactions' ? 'account' : 'journal'} size={48} /><h3>{t(section === 'transactions' ? 'No transactions yet' : 'No deals in this selection.')}</h3></div> : section === 'transactions' ? table('Transactions', ['Time', 'Ticket', 'MT5 type', 'Amount', 'Comment'], visible.map(deal => <tr key={deal.ticket}><td>{time(deal.time_msc)}</td><td>{deal.ticket}</td><td>{deal.type}</td><td>{money(deal.profit)}</td><td>{deal.comment || '-'}</td></tr>)) : !shown.length ? <div className="live-empty"><h3>{t('Chọn cột hiển thị để xem giao dịch.')}</h3></div> : <TradeLedgerGrid rows={visible} current={current - 1} size={pageSize} shownColumns={shown} columnHeader={columnHeader} renderCell={cellValue} cellClass={columnClass} rowKey={deal => String(deal.ticket)} sortResetActive={sorting.sorts.length > 0} onClearSort={sorting.clear} selected={selected} onSelect={setSelected} checked={checked} onToggle={id => setChecked(values => { const next = new Set(values); next.has(id) ? next.delete(id) : next.add(id); return next })} allChecked={visible.length > 0 && visible.every(deal => checked.has(String(deal.ticket)))} mixedChecked={visible.some(deal => checked.has(String(deal.ticket)))} selectPage={selectPage} onTogglePage={() => setChecked(values => { const next = new Set(values); const all = visible.length > 0 && visible.every(deal => values.has(String(deal.ticket))); visible.forEach(deal => all ? next.delete(String(deal.ticket)) : next.add(String(deal.ticket))); return next })} totalCount={deals.length} pages={pages} onPageChange={setPage} onPageSizeChange={value => { setPageSize(value); setPage(1) }} paginationLabel="Live data pagination" dataTestId="live-trade-grid" pageSizeOptions={[10,20,50,100]} rowNumberOffset={(current - 1) * pageSize} />}
     </>}
+    {selectedDeal && section !== 'transactions' && <LiveTradeInspector deal={selectedDeal} payload={payload} accountName={accountName} time={time} money={money} side={side} workspace={workspace} catalog={catalog} onLabelsChanged={onLabelsChanged} onClose={() => setSelected('')} />}
   </section>
 }

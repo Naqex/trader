@@ -60,7 +60,7 @@ export default function LiveRecordDialog({ workspace, kind, accounts, connection
       setError(problem.outcomeKnown === false ? 'Chưa xác nhận kết quả lưu. Tải lại sổ giao dịch để kiểm tra trước khi thao tác tiếp.' : problem.message || 'Không lưu được bản ghi.')
     } finally { lock.current = false; setPending(false) }
   }
-  return <LegacyModal className={`live-record-dialog${kind === 'account' ? ' is-account' : ''}`} theme={document.querySelector('.fx-app')?.dataset.theme || 'dark'} label={kind === 'account' ? t(record ? 'Sửa tài khoản' : 'Tạo tài khoản') : record ? t('Edit {name}',{name:t(titles[kind])}) : t(titles[kind])} onClose={() => { if (!lock.current) onClose() }}>
+  return <LegacyModal overlayClassName={kind === 'note' ? 'is-drawer-overlay' : ''} className={`live-record-dialog${kind === 'account' ? ' is-account' : ''}${kind === 'note' ? ' is-drawer' : ''}`} theme={document.querySelector('.fx-app')?.dataset.theme || 'dark'} label={kind === 'account' ? t(record ? 'Sửa tài khoản' : 'Tạo tài khoản') : record ? t('Edit {name}',{name:t(titles[kind])}) : t(titles[kind])} onClose={() => { if (!lock.current) onClose() }}>
     <form className="live-record-form" onSubmit={submit} aria-busy={pending}>
       {kind === 'account' ? <>
         {accountField('name','Tên tài khoản',{required:true,maxLength:160,placeholder:t('Tên tài khoản')})}
