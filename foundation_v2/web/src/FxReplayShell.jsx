@@ -259,7 +259,7 @@ const FxReplayContext = createContext(null)
 
 function NaqexWordmark() {
   return (
-    <svg className="fx-wordmark-svg" viewBox="0 0 242 30" role="img" aria-label={PRODUCT_NAME} focusable="false">
+    <svg className="fx-wordmark-svg" viewBox="0 0 255 35" role="img" aria-label={PRODUCT_NAME} focusable="false">
       <use href={`${wordmarkUrl}#wordmark`} />
     </svg>
   )
@@ -464,7 +464,7 @@ function ShellTopbar({ copy, language, setLanguage, theme, setTheme, railCollaps
         </button>
         <span className="fx-wordmark"><NaqexWordmark /></span>
         <span className="fx-wordmark-compact" role="img" aria-label={copy.product}>
-          <svg viewBox="0 0 30 30" aria-hidden="true" focusable="false"><use href={`${wordmarkUrl}#mark`} /></svg>
+          <svg viewBox="0 0 33 33" aria-hidden="true" focusable="false"><use href={`${wordmarkUrl}#mark`} /></svg>
         </span>
       </div>
       <div className="fx-topbar-actions">
