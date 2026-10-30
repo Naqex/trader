@@ -141,7 +141,52 @@ impl FileIdentity {
 /// Content caches must opt out when the filesystem cannot supply a reliable
 /// change stamp and object identity; size/mtime alone are insufficient.
 pub(crate) fn reliable_file_identity(file: &File) -> Option<FileIdentity> {
-    identity(file).ok()
+    let identity = identity(file).ok()?;
+    #[cfg(windows)]
+    {
+        // ChangeTime is a wall-clock timestamp, not a content generation: fast
+        // same-size writes can collide when LastWriteTime is restored. A file
+        // USN advances independently of clock resolution. Volumes without this
+        // capability must use the caller's uncached byte verification path.
+        use std::os::windows::io::AsRawHandle;
+        #[link(name = "kernel32")]
+        unsafe extern "system" {
+            fn DeviceIoControl(
+                handle: *mut std::ffi::c_void,
+                code: u32,
+                input: *const std::ffi::c_void,
+                input_size: u32,
+                output: *mut std::ffi::c_void,
+                output_size: u32,
+                returned: *mut u32,
+                overlapped: *mut std::ffi::c_void,
+            ) -> i32;
+        }
+        let mut record = [0u8; 4096];
+        let mut returned = 0;
+        let success = unsafe {
+            DeviceIoControl(
+                file.as_raw_handle(),
+                0x000900eb, // FSCTL_READ_FILE_USN_DATA
+                std::ptr::null(),
+                0,
+                record.as_mut_ptr().cast(),
+                record.len() as u32,
+                &mut returned,
+                std::ptr::null_mut(),
+            )
+        };
+        if success == 0 || returned < 60 || u16::from_le_bytes(record[4..6].try_into().ok()?) != 2 {
+            return None;
+        }
+        let generation = i64::from_le_bytes(record[24..32].try_into().ok()?);
+        (generation > 0).then_some(FileIdentity {
+            change: generation,
+            ..identity
+        })
+    }
+    #[cfg(not(windows))]
+    Some(identity)
 }
 
 #[cfg(windows)]
