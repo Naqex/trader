@@ -1,3 +1,4 @@
+import AppIcon from './AppIcon.jsx'
 import { useEffect, useId, useRef, useState } from 'react'
 import { useTestingLocale } from './testingLocale.jsx'
 import { FilterIcon, SelectChevron } from './FxSelect.jsx'
@@ -29,7 +30,7 @@ export default function SessionPresetMenu({ items, selected, disabled, onApply, 
     <button ref={trigger} type="button" className={`session-preset-trigger fx-select-trigger${active ? ' is-selected' : ''}`} disabled={disabled} aria-label={t('Preset phiên')} aria-expanded={open} aria-haspopup="dialog" aria-controls={id} onClick={() => setOpen(!open)}><span>{active?.name || t(items.length ? 'Preset' : 'Chưa có preset')}</span><SelectChevron /></button>
     {open && <div ref={popup} id={id} className="session-preset-menu fx-select-menu" role="dialog" aria-label={t('Preset phiên')}>
       <div className="session-preset-list">{items.map(item => <div className="session-preset-row" key={item.id}>
-        <button type="button" className="session-preset-apply" aria-pressed={selected === item.id} onClick={() => {onApply(item);close()}}><span>{item.name}</span>{selected === item.id && <span aria-hidden="true">✓</span>}</button>
+        <button type="button" className="session-preset-apply" aria-pressed={selected === item.id} onClick={() => {onApply(item);close()}}><span>{item.name}</span>{selected === item.id && <span aria-hidden="true"><AppIcon name="check" size={16} /></span>}</button>
         <button type="button" className="session-preset-icon" aria-label={t('Sửa preset {name}',{name:item.name})} data-tooltip={t('Sửa preset')} onClick={() => {setOpen(false);onEdit(item)}}><FilterIcon kind="edit" /></button>
         <button type="button" className="session-preset-icon" aria-label={t('Xóa preset {name}',{name:item.name})} data-tooltip={t('Xóa preset')} onClick={event => {opener.current=event.currentTarget;setProblem('');setDeleting(item)}}><TestingIcon kind="delete" size={16} /></button>
       </div>)}</div>

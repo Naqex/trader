@@ -1,3 +1,4 @@
+import AppIcon from './AppIcon.jsx'
 import { navigate } from './clientNavigation.js'
 import { displayDate } from './dateFormat.js'
 import { useTestingLocale } from './testingLocale.jsx'
@@ -102,9 +103,9 @@ export default function AnalyticsFilterBar({ filters, onChange, extra, onExtra, 
     {timezoneNotice && <p role="status">{timezoneNotice}</p>}
     {(sessionName || activeFilters) && <div className="fxa-filter-chips" aria-label={t('Bộ lọc đã áp dụng')}>
       {sessionName && <span className="fxa-filter-chip" data-tooltip={sessionName}>{t('Session')} · {sessionName}</span>}
-      {chips.map(([key, label, value, server]) => <button key={key} type="button" className="fxa-filter-chip" aria-label={t('Bỏ lọc {label}', { label: t(label) })} onClick={() => apply(server ? { ...filters, [key]: 'all' } : filters, server ? extra : { ...extra, [key]: DEFAULT_EXTRA_FILTERS[key] }, sessionProps?.value)}><span>{t(label)} · {describe(key, value)}</span><span aria-hidden="true">×</span></button>)}
-      {hasTime && <button type="button" className="fxa-filter-chip" aria-label={t('Bỏ lọc Giờ')} onClick={() => apply(filters, { ...extra, timeStart: '', timeEnd: '', hour: 'all' }, sessionProps?.value)}>{t('Time')} · {extra.timeStart || '00:00'}–{extra.timeEnd || '23:59'}<span aria-hidden="true">×</span></button>}
-      {hasDates && <button type="button" className="fxa-filter-chip" aria-label={t('Bỏ lọc ngày đóng lệnh')} onClick={() => apply({ ...filters, from: '', to: '' }, extra, sessionProps?.value)}>{filters.from ? displayDate(filters.from) : '…'} → {filters.to ? displayDate(filters.to) : '…'}<span aria-hidden="true">×</span></button>}
+      {chips.map(([key, label, value, server]) => <button key={key} type="button" className="fxa-filter-chip" aria-label={t('Bỏ lọc {label}', { label: t(label) })} onClick={() => apply(server ? { ...filters, [key]: 'all' } : filters, server ? extra : { ...extra, [key]: DEFAULT_EXTRA_FILTERS[key] }, sessionProps?.value)}><span>{t(label)} · {describe(key, value)}</span><span aria-hidden="true"><AppIcon name="close" size={16} /></span></button>)}
+      {hasTime && <button type="button" className="fxa-filter-chip" aria-label={t('Bỏ lọc Giờ')} onClick={() => apply(filters, { ...extra, timeStart: '', timeEnd: '', hour: 'all' }, sessionProps?.value)}>{t('Time')} · {extra.timeStart || '00:00'}–{extra.timeEnd || '23:59'}<span aria-hidden="true"><AppIcon name="close" size={16} /></span></button>}
+      {hasDates && <button type="button" className="fxa-filter-chip" aria-label={t('Bỏ lọc ngày đóng lệnh')} onClick={() => apply({ ...filters, from: '', to: '' }, extra, sessionProps?.value)}>{filters.from ? displayDate(filters.from) : '…'} → {filters.to ? displayDate(filters.to) : '…'}<span aria-hidden="true"><AppIcon name="close" size={16} /></span></button>}
       {activeFilters && <button type="button" className="fxa-clear-filters" onClick={() => apply({ ...filters, side: 'all', outcome: 'all', from: '', to: '' }, { ...DEFAULT_EXTRA_FILTERS, timezone }, sessionProps?.value)}><TestingIcon kind="delete" size={16} />{t('Clear filters')}</button>}
     </div>}
   </section>

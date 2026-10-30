@@ -1,3 +1,4 @@
+import AppIcon from './AppIcon.jsx'
 import { PRODUCT_NAME, wordmarkUrl } from './brand.js'
 import { liveTradingHref } from './liveTradingNavigation.js'
 import React, { createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
@@ -43,7 +44,7 @@ function AiPanelFallback({ open, modal, onClose, language, standalone, error = f
   }, [open, modal, onClose, standalone])
   const en = language === 'en'
   return <aside id="wm-ai-chat" className={`wm-ai-chat ${standalone ? 'is-standalone' : ''}`} hidden={!open} role={modal ? 'dialog' : 'complementary'} aria-modal={modal || undefined} aria-label="Mentor" aria-busy={!error}>
-    <header className="wm-ai-header"><h2>Mentor</h2><span />{!standalone && <button type="button" className="wm-dialog-close" ref={close} onClick={onClose} aria-label={en ? 'Close AI chat' : 'Đóng chat AI'}>×</button>}</header>
+    <header className="wm-ai-header"><h2>Mentor</h2><span />{!standalone && <button type="button" className="wm-dialog-close" ref={close} onClick={onClose} aria-label={en ? 'Close AI chat' : 'Đóng chat AI'}><AppIcon name="close" size={16} /></button>}</header>
     <div className="wm-ai-transcript" role={error ? 'alert' : 'status'}>{error ? en ? 'AI chat could not load. Reload the page to try again.' : 'Không tải được chat AI. Tải lại trang để thử lại.' : en ? 'Loading…' : 'Đang tải…'}</div>
   </aside>
 }
@@ -273,41 +274,9 @@ function hrefFor(id, workspace, query, overrides = {}) {
   return buildWorkspaceHref(id, workspace, query, overrides)
 }
 
-/*
- * The source reference uses small, high-contrast line icons in the rail. Keep
- * them inline so the shell does not depend on an icon font (which would make
- * the first paint and visual QA vary with the host machine's installed fonts).
- */
+const railIcons = { dashboard:'dashboard', sessions:'list', trades:'trades', analytics:'analytics', testing:'analytics', live:'activity', calendar:'calendar', notes:'document', tags:'tags', accounts:'account', strategies:'compass', 'my-strategies':'list-checks', education:'learn', learn:'learn', trade:'candles', playbook:'compass', settings:'settings', ai:'sparkles', connections:'link', automation:'bot' }
 function RailIcon({ id }) {
-  const common = {
-    className: 'fx-nav-icon-svg',
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: '1.8',
-    strokeLinecap: 'round',
-    strokeLinejoin: 'round',
-    focusable: 'false',
-  }
-  if (id === 'dashboard') return <svg {...common}><rect x="4" y="4" width="6" height="6" rx="1" /><rect x="14" y="4" width="6" height="6" rx="1" /><rect x="4" y="14" width="6" height="6" rx="1" /><rect x="14" y="14" width="6" height="6" rx="1" /></svg>
-  if (id === 'sessions') return <svg {...common}><path d="M5 6h14M5 12h14M5 18h14" /><path d="M3 6h.01M3 12h.01M3 18h.01" /></svg>
-  if (id === 'trades') return <svg {...common}><path d="M5 8h12M15 5l3 3-3 3M19 16H7M9 13l-3 3 3 3" /></svg>
-  if (id === 'analytics' || id === 'testing') return <svg {...common}><path d="M4 19V9M10 19V5M16 19v-7M22 19V3" /><path d="M3 21h20" /></svg>
-  if (id === 'live') return <svg {...common}><path d="M3 12h4l2-5 4 10 2-5h6" /><path d="M5 4a10 10 0 0 0 0 16M19 4a10 10 0 0 1 0 16" /></svg>
-  if (id === 'calendar') return <svg {...common}><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M8 3v4M16 3v4M4 10h16M8 14h.01M12 14h.01M16 14h.01M8 17h.01M12 17h.01" /></svg>
-  if (id === 'notes') return <svg {...common}><path d="M6 3h9l3 3v15H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" /><path d="M14 3v4h4M8 11h8M8 15h6" /></svg>
-  if (id === 'tags') return <svg {...common}><path d="m4 5 7-1 9 9-6 6-9-9 1-7Z" /><circle cx="8" cy="8" r="1.2" /></svg>
-  if (id === 'accounts') return <svg {...common}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 9h18M16 14h3" /><circle cx="16" cy="14" r=".7" /></svg>
-  if (id === 'strategies') return <svg {...common}><circle cx="12" cy="12" r="8.5" /><path d="m15.7 8.3-2.2 5.2-5.2 2.2 2.2-5.2 5.2-2.2Z" /></svg>
-  if (id === 'my-strategies') return <svg {...common}><path d="M5 6h14M5 12h14M5 18h9" /><path d="m17 16 2 2 3-4" /></svg>
-  if (id === 'education' || id === 'learn') return <svg {...common}><path d="m3 9 9-4 9 4-9 4-9-4Z" /><path d="M7 11v4c2 2 8 2 10 0v-4M21 9v6" /></svg>
-  if (id === 'trade') return <svg {...common}><rect x="3" y="5" width="18" height="14" rx="3" /><path d="M8 9h.01M12 9h.01M16 9h.01M8 13h.01M12 13h.01M16 13h.01M8 17h8" /></svg>
-  if (id === 'playbook') return <svg {...common}><circle cx="12" cy="12" r="8.5" /><path d="m15.7 8.3-2.2 5.2-5.2 2.2 2.2-5.2 5.2-2.2Z" /></svg>
-  if (id === 'settings') return <svg {...common}><path d="M12 3.5v2M12 18.5v2M3.5 12h2M18.5 12h2M6 6l1.4 1.4M16.6 16.6 18 18M18 6l-1.4 1.4M7.4 16.6 6 18" /><circle cx="12" cy="12" r="3.3" /></svg>
-  if (id === 'ai') return <AiSparkles className="fx-nav-icon-svg" />
-  if (id === 'connections') return <svg {...common}><path d="m8 7 3-3a5 5 0 0 1 7 7l-3 3M16 17l-3 3a5 5 0 0 1-7-7l3-3M8 16l8-8" /></svg>
-  if (id === 'automation') return <svg {...common}><rect x="4" y="7" width="16" height="13" rx="3" /><path d="M12 3v4M1 12v4M23 12v4M9 16h6" /><circle cx="8" cy="12" r=".6" /><circle cx="16" cy="12" r=".6" /></svg>
-  return <svg {...common}><path d="M4 17V7M10 17V4M16 17V9M22 17V2" /><path d="M3 20h20" /></svg>
+  return <AppIcon name={railIcons[id] || 'chart'} size={20} className="fx-nav-icon-svg" />
 }
 
 function ShellRail({ activeView, workspace, query, copy, railId, drawerOpen, compact, onClose, closeButtonRef, inert }) {
@@ -341,7 +310,7 @@ function ShellRail({ activeView, workspace, query, copy, railId, drawerOpen, com
     <aside className="fx-rail" id={railId} inert={inert} aria-label={copy.workspaceAria} role={drawerOpen ? 'dialog' : undefined} aria-modal={drawerOpen ? 'true' : undefined}>
       {drawerOpen && <div className="fx-mobile-nav-header">
         <span>{copy.product}</span>
-        <button className="fx-shell-help-close" type="button" onClick={onClose} aria-label={copy.closeNavigation} ref={closeButtonRef}>×</button>
+        <button className="fx-shell-help-close" type="button" onClick={onClose} aria-label={copy.closeNavigation} ref={closeButtonRef}><AppIcon name="close" size={16} /></button>
       </div>}
       <div className="fx-rail-workspace-group">
       <a className="fx-rail-workspace" href={hrefFor('settings', workspace, query, { area: 'settings', section: null })}
@@ -421,9 +390,7 @@ function ShellSubnav({ activeView, workspace, query, copy, action }) {
 }
 
 function ThemeIcon({ theme }) {
-  return <svg className="fx-theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
-    {theme === 'dark' ? <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5" /></> : <path d="M20.5 13A8.5 8.5 0 0 1 11 3.5 8.5 8.5 0 1 0 20.5 13Z" />}
-  </svg>
+  return <AppIcon name={theme === 'dark' ? 'sun' : 'moon'} className="fx-theme-icon" />
 }
 
 function ShellTopbar({ copy, language, setLanguage, theme, setTheme, railCollapsed, onToggleRail, chartWorkspace, query, workspace, helpOpen, onToggleHelp, helpButtonRef, railId, mobileNavigation, drawerOpen, menuButtonRef, aiOpen, onToggleAi, aiButtonRef, aiModal, topbarAction }) {
@@ -454,13 +421,7 @@ function ShellTopbar({ copy, language, setLanguage, theme, setTheme, railCollaps
     <header className="fx-topbar" inert={drawerOpen || aiModal}>
       <div className="fx-topbar-brand" data-tooltip={copy.product}>
         <button className="fx-menu-button" type="button" onClick={onToggleRail} aria-expanded={!railCollapsed} aria-controls={railId} aria-label={navigationAction} data-tooltip={navigationAction} ref={menuButtonRef}>
-          <svg className="fx-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
-            {mobileNavigation ? <path d="M4 6h16M4 12h16M4 18h16" /> : <>
-              <rect x="3" y="4" width="18" height="16" rx="2" />
-              <path d="M9 4v16" />
-              <path className="fx-menu-chevron" d={railCollapsed ? 'm13 9 3 3-3 3' : 'm16 9-3 3 3 3'} />
-            </>}
-          </svg>
+          <AppIcon name={mobileNavigation ? 'menu' : railCollapsed ? 'panel-left-open' : 'panel-left-close'} className="fx-menu-icon" />
         </button>
         <span className="fx-wordmark"><NaqexWordmark /></span>
         <span className="fx-wordmark-compact" role="img" aria-label={copy.product}>
@@ -488,7 +449,7 @@ function ShellHelp({ copy, helpCloseRef, onClose }) {
       <section className="fx-shell-help" id="fx-shell-help" role="dialog" aria-modal="true" aria-labelledby="fx-shell-help-title" aria-describedby="fx-shell-help-hint" onMouseDown={(event) => event.stopPropagation()}>
         <div className="fx-shell-help-header">
           <h2 id="fx-shell-help-title">{copy.shortcutsTitle}</h2>
-          <button className="fx-shell-help-close wm-dialog-close" type="button" onClick={onClose} aria-label={copy.closeHelp} data-tooltip={copy.closeHelp} data-testid="help-close" ref={helpCloseRef}>×</button>
+          <button className="fx-shell-help-close wm-dialog-close" type="button" onClick={onClose} aria-label={copy.closeHelp} data-tooltip={copy.closeHelp} data-testid="help-close" ref={helpCloseRef}><AppIcon name="close" size={16} /></button>
         </div>
         <dl className="fx-shell-shortcuts">
           <div><dt><kbd>?</kbd></dt><dd>{copy.shortcutHelp}</dd></div>

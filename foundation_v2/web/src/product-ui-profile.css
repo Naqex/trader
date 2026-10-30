@@ -1,0 +1,54 @@
+/* Product density is an explicit adapter; the shared annam-compact pin stays immutable. */
+.fx-app.fx-shell-story[data-theme], .wm-ui-portal[data-theme] {
+  --wm-control-height:32px;
+  --wm-icon-action-size:28px;
+  --wm-control-padding-block:5px;
+  --wm-field-padding-block:5px;
+  --wm-page-gutter:24px;
+  --wm-page-start:20px;
+  --wm-dialog-gutter:20px;
+  --wm-space-group:20px;
+  --wm-space-section:24px;
+  --wm-table-row:44px;
+  --wm-table-padding-block:10px;
+  --wm-pane-toolbar-inset:12px;
+  --wm-pane-toolbar-height:calc(var(--wm-control-height) + 2 * var(--wm-pane-toolbar-inset) + 1px);
+  --wm-info:var(--project-primary);
+  --wm-info-soft:var(--project-blue-soft);
+  --wm-info-solid:var(--project-primary);
+  --wm-on-info:var(--project-on-primary);
+  --wm-success:var(--project-positive);
+  --wm-success-soft:var(--project-green-soft);
+  --wm-success-solid:var(--project-positive);
+  --wm-on-success:var(--project-on-positive);
+  --wm-warning-soft:var(--project-warning-soft);
+  --wm-warning-solid:var(--project-warning);
+  --wm-on-warning:var(--project-on-primary);
+  --wm-danger:var(--project-negative);
+  --wm-danger-soft:var(--project-negative-soft);
+  --wm-danger-solid:var(--project-danger-action);
+  --wm-on-danger:var(--project-on-danger);
+  --wm-accent-soft:var(--project-peach-soft);
+}
+.wm-icon { display:inline-block; flex-shrink:0; vertical-align:middle; }
+.fx-select-check { display:inline-flex; align-items:center; justify-content:center; }
+.fx-select-check:empty { display:none; }
+
+@media (min-width:481px) and (pointer:fine) {
+  .legacy-modal > header { padding:16px var(--wm-dialog-gutter,20px); }
+  .legacy-modal > header .wm-dialog-close { flex-basis:var(--wm-icon-action-size); width:var(--wm-icon-action-size); min-width:var(--wm-icon-action-size); height:var(--wm-icon-action-size); min-height:var(--wm-icon-action-size); }
+}
+@media (max-width:900px) {
+  .fx-app.fx-shell-story[data-theme] { --wm-page-gutter:20px; }
+}
+@media (max-width:480px), (pointer:coarse) {
+  .fx-app.fx-shell-story[data-theme], .wm-ui-portal[data-theme] {
+    --wm-control-height:44px;
+    --wm-icon-action-size:44px;
+    --wm-control-padding-block:11px;
+    --wm-field-padding-block:11px;
+    --wm-dialog-gutter:16px;
+    --wm-table-row:48px;
+  }
+  .fx-app.fx-shell-story[data-theme] { --wm-page-gutter:16px; }
+}

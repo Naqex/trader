@@ -1,3 +1,4 @@
+import AppIcon from './AppIcon.jsx'
 import { useEffect, useId, useRef, useState } from 'react'
 
 import { aiEffortName } from './aiProvider.js'
@@ -70,7 +71,7 @@ export default function AiModelPicker({ models, selection, disabled, saving, act
         </div>
       </> : <>
         {efforts.length > 0 && <button type="button" className="wm-ai-model-back" onClick={() => setView('effort')}>‹ {en ? 'Thinking effort' : 'Mức suy luận'}</button>}
-        <div role="listbox" aria-label={en ? 'AI model' : 'Model AI'} onKeyDown={moveModel}>{models.map(item => <button type="button" role="option" aria-label={modelLabel(item)} tabIndex={selection.model === item.id ? 0 : -1} aria-selected={selection.model === item.id} key={item.id} onClick={() => { popup.current.hidePopover(); trigger.current?.focus(); if (selection.model !== item.id) { restoreFocus.current = true; void onSelect({ model: item.id, effort: !item.efforts.length ? null : item.efforts.includes(selection.effort) ? selection.effort : item.efforts.includes('high') ? 'high' : item.efforts[0] }) } }}><span className="wm-ai-model-label"><span>{item.name}</span>{item.providerLabel && <small>{item.providerLabel}</small>}</span>{selection.model === item.id && <span aria-hidden="true">✓</span>}</button>)}</div>
+        <div role="listbox" aria-label={en ? 'AI model' : 'Model AI'} onKeyDown={moveModel}>{models.map(item => <button type="button" role="option" aria-label={modelLabel(item)} tabIndex={selection.model === item.id ? 0 : -1} aria-selected={selection.model === item.id} key={item.id} onClick={() => { popup.current.hidePopover(); trigger.current?.focus(); if (selection.model !== item.id) { restoreFocus.current = true; void onSelect({ model: item.id, effort: !item.efforts.length ? null : item.efforts.includes(selection.effort) ? selection.effort : item.efforts.includes('high') ? 'high' : item.efforts[0] }) } }}><span className="wm-ai-model-label"><span>{item.name}</span>{item.providerLabel && <small>{item.providerLabel}</small>}</span>{selection.model === item.id && <span aria-hidden="true"><AppIcon name="check" size={16} /></span>}</button>)}</div>
       </>}
     </div>
   </div>

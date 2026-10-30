@@ -1,3 +1,4 @@
+import AppIcon from './AppIcon.jsx'
 import { sessionNavigationHref } from './sessionCatalog.js'
 import { navigate } from './clientNavigation.js'
 import { scopedMutation } from './scopedMutation.js'
@@ -1129,7 +1130,7 @@ export default function ReplayWorkspace({ workspace, query }) {
               </div>}
               <NotificationSlot>
                 {activityWaiting && <div className="wm-notification" role="status"><p>{t('Chưa lưu được thời gian luyện tập. Đang thử lại…')}</p></div>}
-                {chartNotice && <NotificationSurface key={chartNotice} role="status" onDismiss={()=>setChartNotice('')}><p>{t(chartNotice)}</p><button type="button" aria-label={t("Đóng thông báo")} onClick={() => setChartNotice('')}>×</button></NotificationSurface>}
+                {chartNotice && <NotificationSurface key={chartNotice} role="status" onDismiss={()=>setChartNotice('')}><p>{t(chartNotice)}</p><button type="button" aria-label={t("Đóng thông báo")} onClick={() => setChartNotice('')}><AppIcon name="close" size={16} /></button></NotificationSurface>}
               </NotificationSlot>
 
               <div className="replay-evidence-strip" role="group" aria-label={t("Bằng chứng chart")}>

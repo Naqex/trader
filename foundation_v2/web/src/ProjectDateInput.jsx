@@ -1,3 +1,4 @@
+import AppIcon from './AppIcon.jsx'
 import { zonedDateKey } from './timezone.js'
 import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { dateFieldDisplay, parseDateField } from './dateFormat.js'
@@ -23,8 +24,8 @@ function formatPickerValue(date, time, type) { const display = date.split('-').r
 function isDateAllowed(date, min, max) { const lower = datePart(min), upper = datePart(max); return (!lower || date >= lower) && (!upper || date <= upper) }
 function isDateTimeAllowed(value, min, max) { const candidate = stripZone(value), lower = stripZone(min), upper = stripZone(max); return (!lower || candidate >= lower) && (!upper || candidate <= upper) }
 
-function CalendarIcon() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M8 3v4m8-4v4M4 10h16" /></svg> }
-function Chevron({ direction }) { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d={direction === 'prev' ? 'm14.5 5-7 7 7 7' : 'm9.5 5 7 7-7 7'} /></svg> }
+function CalendarIcon() { return <AppIcon name="calendar" size={16} /> }
+function Chevron({ direction }) { return <AppIcon name={direction === 'prev' ? 'chevron-left' : 'chevron-right'} size={16} /> }
 
 function TimeSpinner({ value, onChange }) {
   const { t } = useTestingLocale()
@@ -56,9 +57,9 @@ function TimeSpinner({ value, onChange }) {
   return <div className="project-time-spinner" role="group" aria-label={t('Chọn giờ')}>{parts.map((part, index) => <React.Fragment key={index}>
     {index === 1 && <span aria-hidden="true">:</span>}
     <div className="project-time-spinner-column">
-      <button type="button" aria-label={t(index ? 'Tăng phút' : 'Tăng giờ')} onClick={() => commit(index, 1)}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 12 5-5 5 5" /></svg></button>
+      <button type="button" aria-label={t(index ? 'Tăng phút' : 'Tăng giờ')} onClick={() => commit(index, 1)}><AppIcon name="up" size={16} /></button>
       <input type="text" inputMode="numeric" role="spinbutton" aria-label={t(index ? 'Phút' : 'Giờ')} aria-valuemin={0} aria-valuemax={index ? 59 : 23} aria-valuenow={Number(part) || 0} value={part} maxLength={2} onFocus={event => event.target.select()} onChange={event => edit(index, event.target.value)} onBlur={() => commit(index)} onKeyDown={event => { if (event.key === 'ArrowUp' || event.key === 'ArrowDown') { event.preventDefault(); commit(index, event.key === 'ArrowUp' ? 1 : -1) } }} />
-      <button type="button" aria-label={t(index ? 'Giảm phút' : 'Giảm giờ')} onClick={() => commit(index, -1)}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 8 5 5 5-5" /></svg></button>
+      <button type="button" aria-label={t(index ? 'Giảm phút' : 'Giảm giờ')} onClick={() => commit(index, -1)}><AppIcon name="down" size={16} /></button>
     </div>
   </React.Fragment>)}</div>
 }
@@ -230,7 +231,7 @@ export default function ProjectDateInput({ value = '', onChange, type = 'date', 
       else { const parsed = parseDateField(draft, type); if (parsed) setDraft(dateFieldDisplay(parsed, type)) }
       props.onBlur?.(event)
     }} />
-    {clearable && <button type="button" className="project-date-clear" aria-label={`${t('Xóa ngày')} · ${props['aria-label'] || ''}`} disabled={props.disabled || !draft} onClick={event => { setDraft(''); publish(event, ''); text.current?.focus() }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button>}
+    {clearable && <button type="button" className="project-date-clear" aria-label={`${t('Xóa ngày')} · ${props['aria-label'] || ''}`} disabled={props.disabled || !draft} onClick={event => { setDraft(''); publish(event, ''); text.current?.focus() }}><AppIcon name="close" size={16} /></button>}
     <button ref={trigger} type="button" className="project-date-picker" aria-label={pickerLabel} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? popoverId : undefined} disabled={props.disabled} onClick={openPicker}><CalendarIcon /></button>
     {open && !props.disabled && <div ref={popover} id={popoverId} className="project-date-popover" popover="manual" role="dialog" aria-label={pickerLabel}>
       {type === 'time' ? <TimeSpinner value={draft} onChange={chooseTime} /> : <>

@@ -1,3 +1,4 @@
+import AppIcon from './AppIcon.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import './trade-journal-preview.css'
 
@@ -5,7 +6,7 @@ export default function SelectionToolbar({ label, summary, onClose, onSelectAll,
   const { t } = useTestingLocale()
   return <div className="wm-trade-selection-bar" role="region" aria-label={label} aria-busy={busy}>
     <div className="wm-trade-selection-head">
-      <button type="button" className="wm-trade-selection-close" aria-label={t('Bỏ chọn')} disabled={busy} onClick={onClose}>×</button>
+      <button type="button" className="wm-trade-selection-close" aria-label={t('Bỏ chọn')} disabled={busy} onClick={onClose}><AppIcon name="close" size={16} /></button>
       <strong role="status">{summary}</strong>
       <button type="button" className="wm-trade-selection-all" data-tooltip={selectAllHint} disabled={busy} onClick={onSelectAll}>{t(selectAllLabel)}</button>
     </div>

@@ -1,3 +1,4 @@
+import AppIcon from './AppIcon.jsx'
 import { useEffect, useId, useRef, useState } from 'react'
 
 export default function AiAgentPicker({ agents, agent, active, en, onSelect, onCreate }) {
@@ -27,8 +28,8 @@ export default function AiAgentPicker({ agents, agent, active, en, onSelect, onC
       const items = [...menu.current.querySelectorAll('[role^="menuitem"]')], index = items.indexOf(document.activeElement)
       items[event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus()
     }}>
-      {agents.map(item => <button type="button" role="menuitemradio" aria-checked={item.id === agent.id} key={item.id} onClick={() => { menu.current.hidePopover(); trigger.current.focus(); if (item.id !== agent.id) onSelect(item) }}><span><strong>{item.name}</strong>{item.description && <small>{item.description}</small>}</span>{item.id === agent.id && <span aria-hidden="true">✓</span>}</button>)}
-      <button type="button" role="menuitem" className="wm-ai-agent-add" onClick={() => { menu.current.hidePopover(); onCreate(trigger.current) }}><span aria-hidden="true">＋</span>{en ? 'Create agent' : 'Tạo agent'}</button>
+      {agents.map(item => <button type="button" role="menuitemradio" aria-checked={item.id === agent.id} key={item.id} onClick={() => { menu.current.hidePopover(); trigger.current.focus(); if (item.id !== agent.id) onSelect(item) }}><span><strong>{item.name}</strong>{item.description && <small>{item.description}</small>}</span>{item.id === agent.id && <span aria-hidden="true"><AppIcon name="check" size={16} /></span>}</button>)}
+      <button type="button" role="menuitem" className="wm-ai-agent-add" onClick={() => { menu.current.hidePopover(); onCreate(trigger.current) }}><span aria-hidden="true"><AppIcon name="plus" size={16} /></span>{en ? 'Create agent' : 'Tạo agent'}</button>
     </div>
   </>
 }

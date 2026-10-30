@@ -1,3 +1,4 @@
+import AppIcon from './AppIcon.jsx'
 import useTableSort from './useTableSort.js'
 import DataTable, { SortableColumn, SortResetColumn } from './DataTable.jsx'
 import SearchInput from './SearchInput.jsx'
@@ -178,7 +179,7 @@ function DataLibraryDialog({ title, busy = false, onClose, compact = false, draw
     const bounds = dialog.current.getBoundingClientRect()
     if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) close()
   }}>
-    {drawer ? <><button type="button" className="fxs-drawer-close fx-chart-icon-button wm-dialog-close" aria-label={t('Đóng')} disabled={busy} onClick={close}>×</button><header><h2 id={id}>{t(title)}</h2></header></> : <header className="data-library-dialog-header"><h2 id={id}>{t(title)}</h2><button type="button" className="fx-chart-icon-button wm-dialog-close" aria-label={t('Đóng')} disabled={busy} onClick={close}>×</button></header>}
+    {drawer ? <><button type="button" className="fxs-drawer-close fx-chart-icon-button wm-dialog-close" aria-label={t('Đóng')} disabled={busy} onClick={close}><AppIcon name="close" size={16} /></button><header><h2 id={id}>{t(title)}</h2></header></> : <header className="data-library-dialog-header"><h2 id={id}>{t(title)}</h2><button type="button" className="fx-chart-icon-button wm-dialog-close" aria-label={t('Đóng')} disabled={busy} onClick={close}><AppIcon name="close" size={16} /></button></header>}
     <div className={drawer ? 'fxs-settings-panel' : 'data-library-dialog-body'} inert={drawer && busy}>{children}</div>
     {drawer && busy && blockingStatus}
   </dialog>

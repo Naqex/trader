@@ -1,5 +1,8 @@
 .wm-notifications { position:fixed; inset:16px 16px auto auto; display:grid; gap:8px; width:min(300px,calc(100vw - 32px)); z-index:var(--wm-layer-notification,12000); pointer-events:none; }
-.fx-app .wm-notification { display:flex; align-items:center; gap:12px; padding:10px 12px; border:1px solid var(--wm-border-strong); border-radius:var(--ds-radius-field); background:var(--wm-popup); color:var(--wm-content); pointer-events:auto; box-shadow:0 8px 24px rgb(0 0 0 / 24%); }
+.fx-app .wm-notification { --wm-notice-color:var(--wm-info); --wm-notice-soft:var(--wm-info-soft); display:flex; align-items:center; gap:8px; padding:10px 12px; border:1px solid var(--wm-border); border-radius:var(--ds-radius-field); background:var(--wm-popup); color:var(--wm-content); pointer-events:auto; box-shadow:0 8px 24px rgb(0 0 0 / 24%); }
+.fx-app .wm-notification.is-success { --wm-notice-color:var(--wm-success); --wm-notice-soft:var(--wm-success-soft); }
+.fx-app .wm-notification.is-warning { --wm-notice-color:var(--wm-warning); --wm-notice-soft:var(--wm-warning-soft); }
+.fx-app .wm-notification.is-error { --wm-notice-color:var(--wm-danger); --wm-notice-soft:var(--wm-danger-soft); }
 .wm-notification p { margin:0; flex:1; font-size:13px; line-height:20px; overflow-wrap:anywhere; }
 .wm-notification-content { display:grid; min-width:0; flex:1; gap:2px; font-size:13px; line-height:18px; }
 .wm-notification-content strong { font-weight:600; }
@@ -8,7 +11,7 @@
 .wm-notification-order-line { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .wm-notification-order-line.is-buy b { color:var(--wm-positive); }
 .wm-notification-order-line.is-sell b { color:var(--wm-negative); }
-.wm-notification-mark { display:grid; place-items:center; flex:0 0 22px; width:22px; height:22px; border-radius:50%; font-size:14px; font-weight:700; }
+.wm-notification-mark { display:grid; place-items:center; flex:0 0 24px; width:24px; height:24px; border-radius:50%; background:var(--wm-notice-soft); color:var(--wm-notice-color); }
 .wm-notification-mark.is-buy { background:color-mix(in srgb,var(--wm-positive) 22%,transparent); color:var(--wm-positive); }
 .wm-notification-mark.is-sell { background:color-mix(in srgb,var(--wm-negative) 22%,transparent); color:var(--wm-negative); }
 .wm-notification-mark.is-neutral { background:color-mix(in srgb,var(--wm-content-muted) 18%,transparent); color:var(--wm-content-muted); }

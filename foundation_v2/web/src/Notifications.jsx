@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import AppIcon from './AppIcon.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import './notifications.css'
 
@@ -43,7 +44,7 @@ function Notification({ notice, onDismiss }) {
   const role = notice.tone === 'error' ? 'alert' : 'status'
   return <NotificationSurface tone={notice.tone} persistent={notice.persistent} onDismiss={()=>onDismiss(notice.id)} className={`${order ? 'is-order' : ''}${structured ? ' is-structured' : ''}`} data-order-status={order?.status}>
     {order ? <>
-      <span className={`wm-notification-mark is-${order.side === 'BUY' ? 'buy' : 'sell'}`} aria-hidden="true">✓</span>
+      <span className={`wm-notification-mark is-${order.side === 'BUY' ? 'buy' : 'sell'}`} aria-hidden="true"><AppIcon name="check" size={16} /></span>
       <div className="wm-notification-content" role={role}>
         <strong>{t(orderTitle)}</strong>
         <span className="wm-notification-symbol">{order.symbol}</span>
@@ -51,14 +52,18 @@ function Notification({ notice, onDismiss }) {
         {order.detail && <span className="wm-notification-detail">{t(order.detail, order.values)}</span>}
       </div>
     </> : structured ? <>
-      <span className={`wm-notification-mark ${notice.tone === 'error' ? 'is-error' : 'is-neutral'}`} aria-hidden="true">{notice.tone === 'error' ? '×' : '✓'}</span>
+      <NotificationMark tone={notice.tone} />
       <div className="wm-notification-content" role={role}>
         <strong>{t(notice.title)}</strong>
         <span className="wm-notification-detail">{t(notice.message, notice.values)}</span>
       </div>
-    </> : <p role={role}>{t(notice.message || notice.text)}</p>}
-    <button type="button" aria-label={t('Đóng thông báo')} onClick={() => onDismiss(notice.id)}>×</button>
+    </> : <><NotificationMark tone={notice.tone} /><p role={role}>{t(notice.message || notice.text)}</p></>}
+    <button type="button" aria-label={t('Đóng thông báo')} onClick={() => onDismiss(notice.id)}><AppIcon name="close" size={16} /></button>
   </NotificationSurface>
+}
+
+function NotificationMark({ tone }) {
+  return <span className="wm-notification-mark" aria-hidden="true"><AppIcon name={{ success:'success', warning:'warning', error:'error' }[tone] || 'info'} size={16} /></span>
 }
 
 export function NotificationProvider({ children }) {

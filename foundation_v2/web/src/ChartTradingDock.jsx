@@ -1,3 +1,4 @@
+import AppIcon from './AppIcon.jsx'
 import { useEffect, useRef, useState } from 'react'
 import ChartIcon from './ChartIcon.jsx'
 import LegacyPopover from './LegacyPopover.jsx'
@@ -161,7 +162,7 @@ export default function ChartTradingDock({ workspace, scopeId, instrument, refer
       </div>
     </div>
     <div className="legacy-resizable-positions" hidden={!positionsOpen} style={maximized && !resizing ? undefined : { height: positionsOpen ? height : 0 }}>{typeof children === 'function' ? children(positionsOpen) : children}</div>
-    {error && !scalperAnchor && <p className="legacy-preset-error" role="alert">{t(error)}<button type="button" onClick={() => setError('')} aria-label={t('Đóng thông báo')}>×</button></p>}
+    {error && !scalperAnchor && <p className="legacy-preset-error" role="alert">{t(error)}<button type="button" onClick={() => setError('')} aria-label={t('Đóng thông báo')}><AppIcon name="close" size={16} /></button></p>}
     {balanceAnchor && <LegacyPopover anchor={balanceAnchor} theme={theme} label={t('Thông tin tài khoản')} onPointerEnter={() => clearTimeout(hideBalance.current)} onPointerLeave={dismissBalance} onClose={() => { clearTimeout(hideBalance.current); setBalanceAnchor(null) }}><dl className="legacy-account-details">{accountDetails.map(([label, value]) => <div key={label}><dt>{t(label)}</dt><dd className={['Realized PnL', 'Unrealized PnL'].includes(label) ? pnlTone(value) : ''}>{money(value)}</dd></div>)}</dl>{accountNote && <p className="legacy-account-note">{accountNote}</p>}</LegacyPopover>}
     {scalperAnchor && <LegacyModal theme={theme} label="Scalper mode" className="legacy-scalper-modal" onClose={() => { setScalperAnchor(null); setError('') }}><form className="legacy-scalper-settings" onSubmit={event => {
       event.preventDefault()

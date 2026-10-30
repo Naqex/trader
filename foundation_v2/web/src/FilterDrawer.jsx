@@ -1,3 +1,4 @@
+import AppIcon from './AppIcon.jsx'
 import { matchesSearch } from './searchText.js'
 import SearchInput from './SearchInput.jsx'
 import { useEffect, useId, useRef, useState } from 'react'
@@ -22,7 +23,7 @@ export default function FilterDrawer({ initialTab = 'Basic', showTabs = true, ta
     const rect = event.currentTarget.getBoundingClientRect()
     if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) onClose()
   }}>
-    <header><h2><FilterIcon kind="filter" />{t('Filters')}</h2><button type="button" className="fxl-close wm-dialog-close" onClick={onClose} aria-label={t('Đóng Filters')}>×</button></header>
+    <header><h2><FilterIcon kind="filter" />{t('Filters')}</h2><button type="button" className="fxl-close wm-dialog-close" onClick={onClose} aria-label={t('Đóng Filters')}><AppIcon name="close" size={16} /></button></header>
     {showTabs && <div className="fxl-tabs" role="tablist" aria-label={t('Filter type')}>{tabs.map((name, index) => <button key={name} type="button" role="tab" aria-selected={tab === name} aria-controls={`${id}-${name}`} id={`${id}-tab-${name}`} tabIndex={tab === name ? 0 : -1} onClick={() => setTab(name)} onKeyDown={event => {
       if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return
       event.preventDefault()

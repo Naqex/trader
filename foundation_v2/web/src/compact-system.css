@@ -7,7 +7,7 @@
   --wm-action-bg:var(--project-primary); --wm-action-hover:var(--project-primary-hover); --wm-on-primary:var(--project-on-primary);
 }
 .fx-app.fx-shell-story[data-theme] .fx-content :is(.wm-button.is-success) {
-  --wm-action-bg:var(--project-positive); --wm-action-hover:color-mix(in srgb, var(--project-positive) 85%, var(--project-text)); --wm-on-primary:var(--project-on-primary);
+  --wm-action-bg:var(--wm-success-solid); --wm-action-hover:color-mix(in srgb, var(--project-positive) 85%, var(--project-text)); --wm-on-primary:var(--wm-on-success);
 }
 .fx-app.fx-shell-story[data-theme] .fx-content :is(.rs-field, .rd-field, .prop-field, .risk-form, .trade-init-form, .trade-draft-form, .settings-appearance-form, .quick-session-fields) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]), select, textarea):not(:where(.fx-select-menu > input, .fxa-session-menu > input, .quick-session-balance > input)),
 .fx-app.fx-shell-story[data-theme] .fx-content .wm-field {
@@ -15,7 +15,7 @@
   font-size:var(--wm-text-control); line-height:var(--ds-line-control);
 }
 .fx-app.fx-shell-story[data-theme] .fx-content .wm-field {
-  padding:7px 12px; border:1px solid var(--wm-control-border); background:transparent; color:var(--wm-content); font-family:inherit;
+  padding:var(--wm-field-padding-block,7px) 12px; border:1px solid var(--wm-control-border); background:transparent; color:var(--wm-content); font-family:inherit;
 }
 .fx-app.fx-shell-story[data-theme] .fx-content .wm-field:hover:not(:disabled):not(:focus) { border-color:var(--wm-control-hover-border); }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-balance input { border-radius:0; }
@@ -55,7 +55,7 @@
 .fx-app.fx-shell-story[data-theme] .fx-content input[type=checkbox]:not([role=switch]):focus-visible { outline:2px solid var(--wm-focus); outline-offset:2px; box-shadow:none; }
 .fx-app.fx-shell-story[data-theme] .fx-content .prop-tabs { min-height:var(--ds-nav); }
 .fx-app.fx-shell-story[data-theme] .fx-content :is(.fx-select-check, .dataset-asset-check) { color:var(--project-highlight); }
-.fx-app.fx-shell-story[data-theme] .fx-content .prop-tabs button { min-height:var(--wm-control-height); padding:7px 12px; line-height:20px; font-weight:500; }
+.fx-app.fx-shell-story[data-theme] .fx-content .prop-tabs button { min-height:var(--wm-control-height); padding:var(--wm-field-padding-block,7px) 12px; line-height:20px; font-weight:500; }
 .fx-app.fx-shell-story[data-theme] .fx-content .prop-tabs button:hover:not(:disabled) { background:transparent; color:var(--wm-content); }
 .fx-app.fx-shell-story[data-theme] .fx-content .prop-tabs button[aria-selected=true] { color:var(--wm-content); }
 .fx-app.fx-shell-story[data-theme] .fx-content .wm-button.is-text {
