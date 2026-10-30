@@ -13,7 +13,7 @@ function syncModals() {
   })
 }
 
-export default function LegacyModal({ theme, label, onClose, children, className = '', overlayClassName = '', headerActions, closeLabel = 'Đóng' }) {
+export default function LegacyModal({ theme, label, onClose, children, className = '', overlayClassName = '', headerLeading, headerActions, closeLabel = 'Đóng' }) {
   const { t } = useTestingLocale()
   const panelRef = useRef(null)
   const titleId = useId()
@@ -63,7 +63,7 @@ export default function LegacyModal({ theme, label, onClose, children, className
   return createPortal(
     <div className={`legacy-modal-overlay wm-ui-portal ${overlayClassName} ${theme === 'light' ? 'is-light' : ''}`} data-theme={theme} role="presentation" onPointerDown={event => { if (event.target === event.currentTarget) closeRef.current() }}>
       <section ref={panelRef} className={`legacy-modal ${className}`} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
-        <header><h2 id={titleId}>{label}</h2>{headerActions}<button type="button" className="wm-dialog-close" aria-label={t(closeLabel)} onClick={() => closeRef.current()}><ChartIcon name="close" /></button></header>
+        <header>{headerLeading}<h2 id={titleId}>{label}</h2>{headerActions}<button type="button" className="wm-dialog-close" aria-label={t(closeLabel)} onClick={() => closeRef.current()}><ChartIcon name="close" /></button></header>
         {children}
       </section>
     </div>,

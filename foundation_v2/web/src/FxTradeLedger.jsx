@@ -11,6 +11,7 @@ import { closeTime } from './sessionPerformanceModel.js'
 import TableColumnControl from './TableColumnControl.jsx'
 import { TestingTradesEmpty } from './TestingPageState.jsx'
 import TradeLedgerGrid from './TradeLedgerGrid.jsx'
+import { formatReturnPercent } from './tradeReturnFormat.js'
 
 const COLUMNS = [
   ['session_id', 'Session'], ['status', 'Type'], ['source', 'Source'], ['recorded_at_utc', 'Entry Date (Realtime)'], ['open_time_utc', 'Entry Date (Chart UTC)'],
@@ -56,7 +57,7 @@ function display(row, key, model, sessionName, { fmt, locale, t, timezone }) {
   if (key.endsWith('_time_utc') || key === 'recorded_at_utc') return closeTime(value) ? displayDate(closeTime(value), { timeStyle: 'medium', timeZone: timezone }) : '-'
   if (['net_pnl', 'gross_pnl'].includes(key)) return fmt(value)
   if (key === 'fees') return fmt(value, model.result?.multi_session ? ` ${row.account_currency || t('Đơn vị tài khoản')}` : '')
-  if (key === 'return_pct') return known(value) && value !== 0 && Math.abs(value) < .01 ? `${new Intl.NumberFormat(locale, { maximumSignificantDigits: 2 }).format(value)}%` : fmt(value, '%')
+  if (key === 'return_pct') return formatReturnPercent(value, { fmt, locale })
   if (key === 'realized_r') return fmt(value, ' R')
   if (['price_open', 'price_close', 'stop_loss', 'take_profit'].includes(key)) return fmt(value, '', 6)
   if (key === 'quantity') return fmt(value, '', 4)
@@ -89,7 +90,6 @@ export default function FxTradeLedger({ model, extra, selected, onSelect, sessio
   const allChecked = visible.length > 0 && visible.every(row => checked.has(row.tradeId))
   const mixedChecked = !allChecked && visible.some(row => checked.has(row.tradeId))
   const selectPage = useRef(null)
-  useEffect(() => { if (selectPage.current) selectPage.current.indeterminate = mixedChecked }, [mixedChecked])
   const empty = !remotePage?.pending && (total === 0 || total === null) && !rows.length
   const incomplete = Boolean(model.result?.partial || model.result?.status === 'partial')
   const noTrades = !incomplete && (emptyScopeKnown || model.result?.scope?.total_trade_count === 0)

@@ -3,6 +3,7 @@ import PaginationFooter from './PaginationFooter.jsx'
 import TestingIcon from './TestingIcon.jsx'
 import { TestingSkeleton } from './TestingReadState.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
+import { useEffect } from 'react'
 
 // Training and live trades deliberately share this grid contract. Each surface
 // owns only its row adapter, columns and data actions; borders, states and
@@ -18,6 +19,7 @@ export default function TradeLedgerGrid({
   const { t } = useTestingLocale()
   const selectable = typeof onToggle === 'function'
   const actionable = typeof onSelect === 'function'
+  useEffect(() => { if (selectPage?.current) selectPage.current.indeterminate = mixedChecked }, [selectPage, mixedChecked, pending, rows])
   return <>
     <DataTable contained className="fxa-table-scroll" label={t(tableLabel)} data-testid={dataTestId}>
       <thead><tr>

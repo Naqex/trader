@@ -48,7 +48,15 @@ dialog.fxa-trade-inspector::backdrop { background: #0008; }
 .fx-live-trade-heading p,.fx-live-trade-heading small { margin:0; color:var(--wm-content-muted); font-size:12px; }
 .fx-live-trade-heading .is-positive { color:var(--wm-positive); }
 .fx-live-trade-heading .is-negative { color:var(--wm-negative); }
-.fx-trade-drawer-close { flex:0 0 auto; min-height:32px; padding:4px 10px; }
+.fx-trade-drawer-close { display:inline-flex; align-items:center; justify-content:center; flex:0 0 32px; width:32px; min-height:32px; padding:4px; }
+.fx-trade-drawer-close > svg { width:18px; height:18px; }
+.fx-trade-detail-content { min-width:0; }
+.fx-trade-detail-content [role=tabpanel] { min-height:160px; }
+.fx-trade-detail-content .fx-trade-note-draft { display:grid; gap:12px; padding-top:20px; margin-top:20px; border-top:1px solid var(--wm-border); }
+.fx-trade-note-draft h3 { margin:0; font-size:14px; }
+.fx-trade-note-draft textarea { width:100%; box-sizing:border-box; resize:vertical; padding:12px; border:1px solid var(--wm-border); border-radius:var(--ds-radius-field); background:transparent; color:var(--wm-content); font:inherit; }
+.fx-trade-note-draft footer { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.fx-trade-note-draft small { font-size:12px; color:var(--wm-content-muted); }
 .fx-live-trade-details { display:grid; gap:16px; }
 .fx-live-trade-details dl { display:grid; gap:12px; margin:0; }
 .fx-live-trade-details dl div { display:flex; justify-content:space-between; gap:16px; align-items:baseline; }

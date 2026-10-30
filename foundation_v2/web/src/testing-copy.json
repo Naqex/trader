@@ -7346,5 +7346,8 @@
   "Stop loss": {"vi": "Dừng lỗ", "en": "Stop loss"},
   "Take profit": {"vi": "Chốt lời", "en": "Take profit"},
   "Exit date": {"vi": "Ngày thoát lệnh", "en": "Exit date"},
-  "Exit price": {"vi": "Giá thoát lệnh", "en": "Exit price"}
+  "Exit price": {"vi": "Giá thoát lệnh", "en": "Exit price"},
+  "Tag groups": {"vi": "Nhóm nhãn", "en": "Tag groups"},
+  "Media": {"vi": "Tệp đính kèm", "en": "Media"},
+  "Trade detail tabs": {"vi": "Nội dung chi tiết giao dịch", "en": "Trade detail tabs"}
 }

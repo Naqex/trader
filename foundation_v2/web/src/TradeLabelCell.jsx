@@ -98,6 +98,10 @@ export default function TradeLabelCell({ workspace, session, row, catalog, onCha
   }
   const chooseEdit = async (item, target) => {
     if (disabled) return
+    if (item.id && editing?.id === item.id) {
+      closeEditor()
+      return
+    }
     let label = item
     if (!label.id) { const payload = await mutate({ action: 'create', name: label.name, color: 'gray' }); if (!payload) return; label = payload.items.find(entry => entry.name === item.name) }
     setEditing(label); setEditAnchor(target); setName(label.name); setColor(label.color); setConfirmDelete(false)

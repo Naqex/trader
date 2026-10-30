@@ -7,7 +7,7 @@ const PropAnalytics = lazy(() => import('./PropAnalytics.jsx'))
 const ReplayWorkspace = lazy(() => import('./ReplayWorkspace.jsx'))
 import FxReplayShell from './FxReplayShell.jsx'
 const AnalyticsWorkspace = lazy(() => import('./AnalyticsWorkspace.jsx'))
-const JournalWorkspace = lazy(() => import('./JournalWorkspace.jsx'))
+const TradeNoteRoute = lazy(() => import('./TradeNoteRoute.jsx'))
 const SettingsWorkspace = lazy(() => import('./SettingsWorkspace.jsx'))
 const AiWorkspace = lazy(() => import('./AiWorkspace.jsx'))
 const DataDeskWorkspace = lazy(() => import('./DataDeskWorkspace.jsx'))
@@ -71,7 +71,8 @@ function App() {
     if (requestedView === 'testing' || requestedView === 'prop') navigate(buildWorkspaceHref('overview', workspace, query, { create: 'prop', session: null, dataset: null, cursor: null, cutoff: null }), { replace: true })
   }, [requestedView, workspace])
   // Preserve deep links emitted by the research/learn flows while keeping a bare root on the overview.
-  const activeView = requestedView === 'data' ? 'market-data' : requestedView || (query.has('job') ? 'research' : query.has('session') || query.has('dataset') ? 'replay' : 'overview')
+  const activeView = requestedView === 'journal' ? 'trade' : requestedView === 'data' ? 'market-data' : requestedView || (query.has('job') ? 'research' : query.has('session') || query.has('dataset') ? 'replay' : 'overview')
+  if (requestedView === 'journal') { query.set('area', 'testing'); query.set('section', 'trades') }
   if (activeView === 'ai') {
     query.set('area', 'ai')
     if (!['assistant', 'connections', 'gateway', 'models', 'workflows', 'automation'].includes(query.get('section'))) query.set('section', 'connections')
@@ -111,9 +112,9 @@ function App() {
     mode = 'Data'
   } else if (activeView === 'overview') {
     content = <WorkspaceOverview workspace={workspace} query={query} />
-  } else if (activeView === 'journal') {
-    content = <JournalWorkspace workspace={workspace} query={query} />
-    mode = 'Journal'
+  } else if (requestedView === 'journal') {
+    content = <TradeNoteRoute workspace={workspace} query={query} />
+    mode = 'Practice'
   } else if (activeView === 'analytics') {
     content = query.get('analytics_source') === 'prop' ? <PropAnalytics workspace={workspace} query={query} /> : showSessionAnalytics ? <SessionReports workspace={workspace} query={query} /> : <AnalyticsWorkspace workspace={workspace} query={query} />
     mode = 'Analytics'

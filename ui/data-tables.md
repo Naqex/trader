@@ -15,6 +15,24 @@ Giữ palette `annam-compact@0.1.1`; không thay token pin.
   rộng của footer. Popup dùng overlay có sẵn.
 - Consumer giữ cách lấy dữ liệu, tính tiền, quyền thao tác và trạng thái đọc.
 
+## Ngữ nghĩa grid Luyện tập và Trực tiếp
+
+Hai nơi dùng `TradeLedgerGrid`, nhưng adapter giữ đúng nguồn giao dịch:
+
+- Luyện tập có thể có một hàng cho mỗi lần đóng một phần. MT5 gom các fills
+  cùng position thành một vòng đời; tổng PnL giữ toàn bộ phí của vòng đời đó.
+- Phí Luyện tập là khoản trừ: gross − fees = net. Phí MT5 giữ dấu broker:
+  gross + signed fees = net. Không đổi dấu dữ liệu để làm hai cột trông giống nhau.
+- `%` dùng vốn ban đầu của phiên nguồn hoặc vốn mở đầu tài khoản có đủ bằng
+  chứng. Thiếu cơ sở thì `N/A`; số khác zero dưới 0,01% giữ hai chữ số có nghĩa.
+- Lệnh còn mở không hiển thị phí/PnL đã phát sinh như kết quả đã chốt. Các cột
+  net/gross/fees/%/R hiện `N/A`; vòng đời thiếu lịch sử hiện `-`.
+- R trong replay dùng giá trị đã lưu. R của MT5 dùng biến động giá khớp so với
+  khoảng SL ban đầu đã xác minh, chưa gồm phí; thiếu nguồn risk thì `N/A`.
+- Sort hướng lệnh dùng khóa BUY/SELL, độc lập ngôn ngữ. Cột hiển thị được lưu
+  theo workspace và loại bảng; ẩn cột cũng gỡ sort của cột đó. Checkbox chọn hết
+  dùng native indeterminate chỉ khi trang được chọn một phần.
+
 ## Cuộn và bảng dài
 
 `DataTable` giữ native scroll hai chiều trong cùng viewport, không xử lý wheel

@@ -31,12 +31,17 @@ missing values, units, input labels, actionable loading/error/recovery and
 consequential partial/stale/permission states. Diagnostics belong in existing
 details only when useful; do not replace every removed sentence with a tooltip.
 
-Live Notes uses one toolbar for account context, creation and note actions,
+Live Notes uses one toolbar for creation and note actions,
 followed by the view selector. Its empty state has a compact decorative
 illustration, one title and one creation action; omit pagination and helper copy
 when there are no results. Edit/group controls remain disabled until their
 behavior is defined. Existing search, tag filtering and write permissions remain
 owned by the journal; the demo never gains write access for visual parity.
+Practice and broker trade details share `TradeDetailContent` inside the existing
+right drawer. Details, tag groups and media retain the same tab/focus behavior;
+the note draft stays mounted across tabs. Trade-note saving and attachments are
+unavailable until their persistence contract exists, with no successful-save UI.
+Historical Journal links keep their source session/trade and open this drawer.
 Closing a transient search with Escape returns focus to its trigger. Journal
 lists and label reports show an empty state only after a successful read; a
 failed first read keeps the existing error/retry state without claiming there

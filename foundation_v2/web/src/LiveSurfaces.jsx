@@ -18,6 +18,7 @@ import { TestingSkeleton } from './TestingReadState.jsx'
 import FilterDrawer from './FilterDrawer.jsx'
 import LedgerFilterActions from './LedgerFilterActions.jsx'
 import TableColumnControl from './TableColumnControl.jsx'
+import useTableColumns from './useTableColumns.js'
 import { MANUAL_TRADE_COLUMNS, LIVE_TRADE_COLUMNS } from './liveTradeColumns.js'
 import ProjectDateInput from './ProjectDateInput.jsx'
 import { navigate } from './clientNavigation.js'
@@ -284,7 +285,9 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
   const [strategies,setStrategies] = useState([]), [strategyError,setStrategyError] = useState(''), [strategyReady,setStrategyReady] = useState(false), [action,setAction] = useState(null), [reload,setReload] = useState(0)
   const selected = query.get('live_account') || ''
   const strategy = query.get('playbook') ? `${query.get('playbook')}${query.get('playbook_revision') ? `:${query.get('playbook_revision')}` : ''}` : 'all'
-  const [tagFilter,setTagFilter] = useState({include:[],exclude:[],includeMode:'OR',excludeMode:'OR'}), [tableColumns,setTableColumns] = useState({})
+  const [tagFilter,setTagFilter] = useState({include:[],exclude:[],includeMode:'OR',excludeMode:'OR'})
+  const [brokerColumns,setBrokerColumns,brokerColumnError] = useTableColumns(workspace,'live-trades',LIVE_TRADE_COLUMNS.map(([key])=>key))
+  const [manualColumns,setManualColumns,manualColumnError] = useTableColumns(workspace,'live-manual-trades',MANUAL_TRADE_COLUMNS.map(([key])=>key))
   const [draft,setDraft] = useState({...LIVE_FILTERS, timezone}), [applied,setApplied] = useState({...LIVE_FILTERS, timezone})
   const [tradeScope,setTradeScope] = useState(() => ({filters:{...LEDGER_BASE_FILTERS},extra:{...DEFAULT_EXTRA_FILTERS,timezone},timeBasis:'market'}))
   useEffect(() => {
@@ -374,16 +377,16 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
   }
   const apply = override => { const next = override || draft; if (!next.from || !next.to || next.from <= next.to) setApplied({...next}) }
   const accountPicker = <div className="live-account-picker"><SessionFilter items={pickerItems} value={section === 'calendar' ? calendarSelection : chosen} multiple={section === 'calendar'} onChange={section === 'calendar' ? chooseCalendar : choose} labels={ACCOUNT_PICKER_LABELS} /></div>
-  const columnKind = payload?.manual ? 'manual' : 'broker'
   const columnOptions = payload?.manual ? MANUAL_TRADE_COLUMNS : LIVE_TRADE_COLUMNS
-  const columns = tableColumns[columnKind] || columnOptions.map(([key]) => key)
-  const columnControl = section === 'trades' ? <TableColumnControl columns={columns} options={columnOptions} onChange={next => setTableColumns(current => ({...current,[columnKind]:next}))} /> : null
+  const columns = payload?.manual ? manualColumns : brokerColumns
+  const columnControl = section === 'trades' ? <TableColumnControl columns={columns} options={columnOptions} onChange={payload?.manual ? setManualColumns : setBrokerColumns} /> : null
   const strategyControl = payload?.manual ? <div className="live-journal-filters"><FxSelect label="Chiến lược" value={strategy} onChange={changeStrategy} options={[{value:'all',label:'Tất cả chiến lược'},...(strategyRevision ? [{value:strategy,label:`${strategies.find(item => item.record_id === strategyId)?.payload.name || 'Chiến lược'} · v${strategyRevision}`,localize:false}] : []),...strategies.map(item => ({value:item.record_id,label:item.payload.name,localize:false}))]} /></div> : null
   const settingsHref = buildWorkspaceHref('settings', workspace, query, { area:'settings', section:null, settings_tab:'labels' })
   const filterBar = section === 'trades'
     ? <FxAnalyticsFilters key={`${workspace}:${chosen}`} ledgerOnly filters={tradeScope.filters} extra={tradeScope.extra} timeBasis={tradeScope.timeBasis} readTimeFacets={readTradeTimeFacets} rows={tradeRows} onApply={applyTradeFilters} sessionControl={<>{accountPicker}{strategyControl}</>} columnControl={columnControl} />
     : <FilterBar tags={tags} tagFilter={tagFilter} onTagFilterChange={setTagFilter} settingsHref={section === 'tag-analytics' ? settingsHref : undefined} advanced={section === 'tag-analytics'} accountPicker={accountPicker} extra={strategyControl} payload={payload} draft={draft} setDraft={setDraft} applied={applied} onApply={apply} onClear={() => { setDraft({...LIVE_FILTERS, timezone});setApplied({...LIVE_FILTERS, timezone});changeStrategy('all');setTagFilter({include:[],exclude:[],includeMode:'OR',excludeMode:'OR'}) }} />
   return <Suspense fallback={<TestingSkeleton />}>
+    {section === 'trades' && (payload?.manual ? manualColumnError : brokerColumnError) && <span role="status">{t('Không lưu được cột hiển thị trong trình duyệt này.')}</span>}
     {ledger.error && <div className="live-status live-status-error" role="alert"><span>{t(ledger.error)}</span><Action onClick={() => setReload(value => value+1)}>{t('Thử lại')}</Action></div>}
     {strategyError && <div className="live-status live-status-warning" role="alert"><span>{t(strategyError)}</span><Action onClick={() => setReload(value => value+1)}>{t('Tải lại')}</Action></div>}
     {section === 'calendar' && calendar.issue && <div className="live-status live-status-warning" role="status">{t(calendar.issue)}</div>}
