@@ -16,15 +16,18 @@ export default function TradeLedgerGrid({
   allChecked = false, mixedChecked = false, selectPage, onTogglePage,
   totalCount, pages, onPageChange, onPageSizeChange, paginationLabel,
   tableLabel = 'Giao dịch, cuộn ngang để xem các cột', dataTestId, pageSizeOptions, rowNumberOffset = 0, sourceKind='practice',
+  journalView: controlledJournalView, onJournalView, showJournalToolbar = true, showBulkActions = false,
 }) {
   const { t } = useTestingLocale()
-  const [journalView,setJournalView]=useState('active'),[journalAction,setJournalAction]=useState(null)
+  const [localJournalView,setLocalJournalView]=useState('active'),[journalAction,setJournalAction]=useState(null)
+  const journalView=controlledJournalView ?? localJournalView
+  const changeJournalView=value=>{ (onJournalView || setLocalJournalView)(value); onSelect?.(''); checked.forEach(key=>onToggle?.(key)) }
   const displayRows=rows.filter(row=>journalView==='all' || (journalView==='deleted')===(row.journal_deleted===true))
   const selectable = typeof onToggle === 'function'
   const actionable = typeof onSelect === 'function'
   useEffect(() => { if (selectPage?.current) selectPage.current.indeterminate = mixedChecked }, [selectPage, mixedChecked, pending, rows])
   return <>
-    <TradeJournalToolbar sourceKind={sourceKind} view={journalView} onView={value=>{setJournalView(value);onSelect?.('');checked.forEach(key=>onToggle?.(key))}} checkedCount={checked.size} onAction={(action,count)=>setJournalAction({action,count})}/>
+    {showJournalToolbar && <TradeJournalToolbar sourceKind={sourceKind} view={journalView} onView={changeJournalView} checkedCount={checked.size} showBulkActions={showBulkActions} onAction={(action,count)=>setJournalAction({action,count})}/>}
     <DataTable contained className="fxa-table-scroll" label={t(tableLabel)} data-testid={dataTestId}>
       <thead><tr>
         <SortResetColumn active={sortResetActive} disabled={disabled} onClear={onClearSort} />

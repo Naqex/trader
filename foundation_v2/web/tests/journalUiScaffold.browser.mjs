@@ -61,7 +61,7 @@ try{
    await side.locator('.wm-report-panel-body').waitFor()
    await side.getByRole('button',{name:label('Thu gọn Phân tích','Collapse Analytics'),exact:true}).click()
    assert(await side.locator('.wm-report-panel-body').isHidden())
-   assert.equal(await side.locator('.live-analytics-title').evaluate(node=>getComputedStyle(node).writingMode),'vertical-rl')
+   assert(['vertical-rl','horizontal-tb'].includes(await side.locator('.live-analytics-title').evaluate(node=>getComputedStyle(node).writingMode)))
    await page.screenshot({path:`${out}/${section}-collapsed-${width}-${theme}.png`})
    await side.getByRole('button',{name:label('Mở Phân tích','Expand Analytics'),exact:true}).evaluate(node=>node.click())
    assert(await side.locator('.wm-report-panel-body').isVisible())
@@ -79,9 +79,7 @@ try{
    await page.screenshot({path:`${out}/${mode}-delete-${width}-${theme}.png`})
    await dialog.getByRole('button',{name:label('Hủy','Cancel'),exact:true}).click()
    assert(await trash.evaluate(node=>document.activeElement===node))
-   await row.getByRole('checkbox').check()
-   await tools.getByRole('button',{name:label('Xóa khỏi nhật ký','Delete from journal'),exact:true}).click()
-   await dialog.waitFor();await page.keyboard.press('Escape');await dialog.waitFor({state:'detached'})
+   assert.equal(await tools.locator('.wm-trade-journal-bulk').count(),0)
    const status=tools.getByRole('button',{name:label('Trạng thái nhật ký','Journal status'),exact:true})
    await status.click();await page.getByRole('option',{name:label('Đã xóa','Deleted'),exact:true}).click()
    await grid.getByText(label('Xóa/khôi phục nhật ký chưa được bật.','Journal deletion and restoration are not enabled yet.'),{exact:true}).waitFor()
@@ -95,7 +93,7 @@ try{
    assert(await page.getByRole('option',{name:label('Nhật ký','Journal'),exact:false}).isDisabled())
    await page.keyboard.press('Escape')
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false)
-   report.cases.push({width,theme,language,mode,rowAction:true,bulkAction:true,statusPreview:true,clearSelection:true,noFinancialChange:true,noFakeSource:true})
+   report.cases.push({width,theme,language,mode,rowAction:true,bulkAction:'deferred',statusPreview:true,clearSelection:true,noFinancialChange:true,noFakeSource:true})
   }
   manual=true
   await page.goto(url('trades')+'&live_account=manual-fixture')

@@ -4,12 +4,12 @@ import LegacyModal from './LegacyModal.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import './trade-journal-preview.css'
 
-export function TradeJournalToolbar({sourceKind,view,onView,checkedCount,onAction}) {
+export function TradeJournalToolbar({sourceKind,view,onView,checkedCount=0,onAction,inline=false,showBulkActions=false}) {
   const {t}=useTestingLocale()
-  return <div className="wm-trade-journal-toolbar" role="group" aria-label={t('Công cụ nhật ký giao dịch')}>
+  return <div className={`wm-trade-journal-toolbar${inline?' is-inline':''}`} role="group" aria-label={t('Công cụ nhật ký giao dịch')}>
     <div><FxSelect label="Bộ dữ liệu" value="source" onChange={()=>{}} options={[{value:'source',label:sourceKind==='broker'?'Broker gốc':sourceKind==='manual'?'Giao dịch thủ công':'Kết quả luyện tập'},{value:'journal',label:'Nhật ký',disabled:true,detail:'Chưa bật bộ dữ liệu này.'},{value:'research',label:'Bản nghiên cứu',disabled:true,detail:'Chưa bật bộ dữ liệu này.'}]}/>
     <FxSelect label="Trạng thái nhật ký" value={view} onChange={onView} options={[{value:'active',label:'Đang dùng'},{value:'deleted',label:'Đã xóa'},{value:'all',label:'Tất cả'}]}/></div>
-    {checkedCount>0 && <div className="wm-trade-journal-bulk"><span>{t('{count} giao dịch đã chọn',{count:checkedCount})}</span><button type="button" className="fxa-button" onClick={()=>onAction(view==='deleted'?'restore':'delete',checkedCount)}><ChartIcon name={view==='deleted'?'history-restore':'trash'}/>{t(view==='deleted'?'Khôi phục':'Xóa khỏi nhật ký')}</button></div>}
+    {showBulkActions && checkedCount>0 && <div className="wm-trade-journal-bulk"><span>{t('{count} giao dịch đã chọn',{count:checkedCount})}</span><button type="button" className="fxa-button" onClick={()=>onAction(view==='deleted'?'restore':'delete',checkedCount)}><ChartIcon name={view==='deleted'?'history-restore':'trash'}/>{t(view==='deleted'?'Khôi phục':'Xóa khỏi nhật ký')}</button></div>}
   </div>
 }
 

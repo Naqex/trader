@@ -8,3 +8,9 @@
 - Build: Vite candidate build at `E:/BACKUP-TRADINGWORKSPACE/journal-ui-scaffold-20261030/candidate`.
 - Focused regression: `node --test tests/tagAnalysis.test.mjs` (4 passed); `git diff --check` passed.
 - Runtime/broker: not contacted; local API/MT5 restart not needed for source validation.
+
+## Follow-up UI placement
+
+- Trade journal source/status controls now render in the ledger filter row beside the account selector.
+- Multi-trade delete/restore action UI is intentionally deferred; row action remains available as a disabled confirmation preview.
+- Follow-up browser evidence: `E:/BACKUP-TRADINGWORKSPACE/journal-ui-scaffold-20261030/integration-followup2/receipt.json` and `.../browser/report.json`.
