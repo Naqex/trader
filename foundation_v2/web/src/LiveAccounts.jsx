@@ -18,6 +18,7 @@ import LegacyModal from './LegacyModal.jsx'
 import { MT5_STATUS, mt5Error, mt5Request, canSyncMt5Connection, syncMt5Connections } from './mt5Connections.js'
 import { liveAccountRows, accountTransactions, accountCashSummary, accountInitialBalance, duplicateAccountSeed } from './liveAccountModel.js'
 import { removeLiveAccounts } from './liveAccountActions.js'
+import SelectionToolbar from './SelectionToolbar.jsx'
 
 const MetaTraderConnect = lazy(() => import('./MetaTraderConnect.jsx'))
 
@@ -94,15 +95,10 @@ export default function LiveAccounts({ workspace, accounts, records, broker, cho
         </tr>)}</tbody></DataTable>
         {!filtered.length && <div className="live-empty"><h2>{t(search || sources.length ? 'Không tìm thấy tài khoản' : 'Chưa có tài khoản')}</h2><p>{t(search || sources.length ? 'Thử thay đổi từ khóa hoặc bộ lọc.' : 'Thêm tài khoản ở bảng bên phải để bắt đầu.')}</p></div>}
       </>}
-      {!transactions && checkedRows.length>0 && <div className="live-account-selection" role="region" aria-label={t('Thao tác tài khoản đã chọn')} aria-busy={Boolean(busy)}>
-        <button type="button" className="live-selection-close" aria-label={t('Bỏ chọn tất cả')} data-tooltip={t('Bỏ chọn tất cả')} disabled={Boolean(busy)} onClick={()=>setChecked(new Set())}><TestingIcon kind="close" size={16}/></button>
-        <span role="status">{t('Đã chọn {count} tài khoản',{count:checkedRows.length})}</span>
-        <button type="button" className="live-text-action" disabled={Boolean(busy)} onClick={()=>setChecked(allFilteredChecked?new Set():new Set(filtered.map(row=>row.id)))}>{t(allFilteredChecked?'Bỏ chọn tất cả':'Chọn tất cả')}</button>
-        <div className="live-selection-actions">
-          <button type="button" className="fxa-button live-selection-sync" disabled={!writable || mutationUncertain || Boolean(busy) || !checkedConnections.length} data-tooltip={t('Đồng bộ các kết nối MT5 đã chọn')} onClick={()=>syncConnections(checkedConnections)}><TestingIcon kind="sync" size={16}/>{t('Đồng bộ')}</button>
-          <button type="button" className="fxa-button is-danger" disabled={!writable || mutationUncertain || Boolean(busy)} onClick={()=>setAction({kind:'remove',rows:checkedRows})}><TestingIcon kind="delete" size={16}/>{t('Xoá')}</button>
-        </div>
-      </div>}
+      {!transactions && checkedRows.length>0 && <SelectionToolbar label={t('Thao tác tài khoản đã chọn')} summary={t('Đã chọn {count} tài khoản',{count:checkedRows.length})} busy={Boolean(busy)} onClose={()=>setChecked(new Set())} onSelectAll={()=>setChecked(allFilteredChecked?new Set():new Set(filtered.map(row=>row.id)))} selectAllLabel={allFilteredChecked?'Bỏ chọn tất cả':'Chọn tất cả'} actions={[
+        ...(writable && checkedConnections.length?[{id:'sync',label:t('Đồng bộ'),icon:<TestingIcon kind="sync" size={16}/>,hint:t('Đồng bộ các kết nối MT5 đã chọn'),disabled:mutationUncertain,onClick:()=>syncConnections(checkedConnections)}]:[]),
+        ...(writable?[{id:'delete',label:t('Xoá'),icon:<TestingIcon kind="delete" size={16}/>,danger:true,disabled:mutationUncertain,onClick:()=>setAction({kind:'remove',rows:checkedRows})}]:[]),
+      ]}/>}
       {pagination}
     </section>
     <aside ref={sidebar} className="live-add-account" aria-label={t(transactions ? 'Chi tiết tài khoản' : 'Thêm tài khoản')}>

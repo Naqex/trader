@@ -843,11 +843,14 @@ Journal and Research remain disabled until their data contracts exist. Journal
 status offers Active, Deleted and All as a UI preview; changing it clears checked
 rows. The journal controls share the account/session selector row. Selecting
 trades opens a two-row bottom toolbar; Add/remove tags appears from two selections.
-Templates reuses the note library with the real selection count; bulk apply,
-merge and delete remain disabled until their data contracts are implemented.
-Row delete icons are omitted. The bulk tag preview uses catalog group IDs and
-stable row keys; it never edits the catalog or trade assignments. These controls must not
-change broker state, notes, tags, media, PnL or analytics while disabled.
+Templates reuses the note library. Bulk apply, merge and delete are hidden until
+their data contracts are implemented. The library remains available for managing
+templates. Row delete icons are omitted. The shared selection toolbar also serves
+Trading Accounts, preserving its real sync/delete handlers and permission/uncertain/
+busy gates. The bulk tag preview uses catalog group IDs, stacked group/tag fields,
+a flat add-group divider and stable row keys; it never edits the catalog or trade
+assignments. The unavailable apply action is hidden. These journal previews must
+not change broker state, notes, tags, media, PnL or analytics.
 
 Analytics and Smart Picks side panels share the mirrored collapse control. The
 panel rail is the default for Smart Picks, while Analytics preserves the
