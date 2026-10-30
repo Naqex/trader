@@ -259,7 +259,7 @@ const FxReplayContext = createContext(null)
 
 function NaqexWordmark() {
   return (
-    <svg className="fx-wordmark-svg" viewBox="0 0 255 35" role="img" aria-label={PRODUCT_NAME} focusable="false">
+    <svg className="fx-wordmark-svg" viewBox="0 0 232 35" role="img" aria-label={PRODUCT_NAME} focusable="false">
       <use href={`${wordmarkUrl}#wordmark`} />
     </svg>
   )

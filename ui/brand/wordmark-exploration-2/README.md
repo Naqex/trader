@@ -5,6 +5,10 @@ Twelve owner-requested directions E–P. Open index.html to compare large wordma
 Owner selected **J Matrix** on 2026-10-30. Its native SVG geometry is used by
 `foundation_v2/web/src/assets/naqex.svg` (wordmark and compact mark); the shell
 retains the shared theme color and accessible product name.
+The topbar export uses slightly larger round matrix dots for NAQEX and continuous
+round strokes for the small TRADER suffix, with a tighter viewBox and 144px width.
+This optical-size adjustment preserves J while avoiding subpixel dot noise in
+the suffix at the actual navigation size. The exploration originals stay intact.
 
 E Serif; F Heavy; G Soft; H Orbit; I Badge; J Matrix; K Digital; L Ribbon; M Momentum; N Terminal; O Linked; P Facet.
 
