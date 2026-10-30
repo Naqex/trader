@@ -34,6 +34,7 @@ export default function useAutosave({ identity, adapter, initialValue }) {
     const resource = { adapter, users:0 }
     resource.controller = createAutosave({ key:identity, initialValue, storage, adapter:{
       load:(...args)=>resource.adapter.load(...args), save:(...args)=>resource.adapter.save(...args), validate:(...args)=>resource.adapter.validate?.(...args), reconcile:(...args)=>resource.adapter.reconcile?.(...args),
+      migrateRecovery:recovery=>resource.adapter.migrateRecovery?.(recovery) ?? recovery,
     } })
     resources.set(identity,resource)
     return resource

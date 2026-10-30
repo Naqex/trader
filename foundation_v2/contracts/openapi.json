@@ -7977,6 +7977,16 @@
             "type": "array",
             "maxItems": 16,
             "title": "Overlay Ids"
+          },
+          "note_document": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NoteDocument"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -10742,6 +10752,38 @@
           "quantity"
         ],
         "title": "ReplayTakeProfitTarget"
+      },
+      "NoteDocument": {
+        "properties": {
+          "format": {
+            "type": "string",
+            "const": "blocknote",
+            "title": "Format"
+          },
+          "version": {
+            "type": "integer",
+            "const": 1,
+            "title": "Version"
+          },
+          "blocks": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "maxItems": 256,
+            "minItems": 1,
+            "title": "Blocks"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "format",
+          "version",
+          "blocks"
+        ],
+        "title": "NoteDocument"
       }
     }
   }

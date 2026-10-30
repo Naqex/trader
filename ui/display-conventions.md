@@ -52,7 +52,14 @@ Attachments remain unavailable. Trade headers show opening time and closed holdi
 duration in the correct Chart/Realtime basis; save time is a separate server fact.
 The detail sidebar groups two identity facts, eight execution facts and three PnL
 facts, with one full-width separator between groups. Session/account scope stays
-in the header tooltip and source diagnostics stay in the collapsed provenance section.
+in the header tooltip; omit the provenance accordion from the trade drawer.
+Missing detail values use a normal hyphen. The three PnL values omit currency
+glyphs, retaining currency in their tooltip and icons beside their labels.
+The shared block editor serves both trade drawers: hover/focus exposes block
+insertion and drag controls; slash opens the same block menu. Templates insert
+without replacing existing text unless replacement is explicitly selected.
+The bottom template shortcut opens a centered preview dialog. Template catalog
+management is an unavailable UI scaffold; built-in starter insertion works.
 Historical Journal links keep their source session/trade and open this drawer.
 Closing a transient search with Escape returns focus to its trigger. Journal
 lists and label reports show an empty state only after a successful read; a

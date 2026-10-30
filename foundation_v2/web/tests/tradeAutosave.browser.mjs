@@ -26,7 +26,7 @@ try {
    if(fail==='network'){fail='';return route.abort()}
    const current=path.endsWith('/revisions') ? rows.find(item=>item.record_id===decodeURIComponent(path.split('/').at(-2))) : null
    if(fail==='conflict'){
-    fail='';if(current){current.revision++;current.payload.note='Remote newer note'}
+    fail='';if(current){current.revision++;current.payload.note='Remote newer note';current.payload.note_document=null}
     return json({detail:'revision_conflict'},409)
    }
    if(current && body.expected_revision!==current.revision)return json({detail:'revision_conflict'},409)
@@ -42,14 +42,14 @@ try {
    const row=page.getByTestId(id).locator('tbody tr').first()
    await row.locator('[data-column=symbol]').click();await drawer.waitFor()
    assert.deepEqual(await drawer.locator('.fx-live-trade-details > dl').evaluateAll(groups=>groups.map(group=>group.children.length)),[2,8,3])
-   const textarea=drawer.locator('textarea');await textarea.waitFor();await textarea.fill(`${mode} note ${width}`)
+   const textarea=drawer.locator('.bn-editor');await textarea.waitFor();await textarea.fill(`${mode} note ${width}`)
    await drawer.locator('.wm-autosave-status[data-state=saved]').waitFor()
    assert.equal(await drawer.locator('.wm-autosave-status time').getAttribute('datetime'),'2026-10-30T04:11:58Z')
    const stored=journals.at(-1);assert.equal(stored.payload.note,`${mode} note ${width}`)
    assert(stored.payload.source.session_id);assert(stored.payload.source.trade_id)
    await page.screenshot({path:`${out}/${mode}-${width}-${theme}.png`})
    await drawer.getByRole('button',{name:'Đóng chi tiết',exact:true}).click();await drawer.waitFor({state:'detached'})
-   await row.locator('[data-column=symbol]').click();await drawer.waitFor();assert.equal(await textarea.inputValue(),`${mode} note ${width}`)
+   await row.locator('[data-column=symbol]').click();await drawer.waitFor();assert.equal(await textarea.innerText(),`${mode} note ${width}`)
    if(width===1920 && mode==='practice') {
     hold=250
     await textarea.fill('Closing latest A');await drawer.getByRole('button',{name:'Đóng chi tiết',exact:true}).click()
@@ -57,10 +57,10 @@ try {
     assert.equal(journals.find(item=>item.record_id===stored.record_id).payload.note,'Closing latest B')
     await row.locator('[data-column=symbol]').click();await drawer.waitFor()
     fail='network';await textarea.fill('Network retry draft');await textarea.blur();await drawer.locator('[data-state=error]').waitFor()
-    assert.equal(await textarea.inputValue(),'Network retry draft');await drawer.getByRole('button',{name:'Thử lại',exact:true}).click();await drawer.locator('[data-state=saved]').waitFor()
+    assert.equal(await textarea.innerText(),'Network retry draft');await drawer.getByRole('button',{name:'Thử lại',exact:true}).click();await drawer.locator('[data-state=saved]').waitFor()
     fail='conflict';await textarea.fill('Local conflict draft');await textarea.blur();await drawer.locator('[data-state=conflict]').waitFor()
-    assert.equal(await textarea.inputValue(),'Local conflict draft');await page.screenshot({path:`${out}/conflict.png`})
-    await drawer.getByRole('button',{name:'Tải bản đã lưu',exact:true}).click();await drawer.locator('[data-state=saved]').waitFor();assert.equal(await textarea.inputValue(),'Remote newer note')
+    assert.equal(await textarea.innerText(),'Local conflict draft');await page.screenshot({path:`${out}/conflict.png`})
+    await drawer.getByRole('button',{name:'Tải bản đã lưu',exact:true}).click();await drawer.locator('[data-state=saved]').waitFor();assert.equal(await textarea.innerText(),'Remote newer note')
     await textarea.fill('');await textarea.blur();await drawer.locator('[data-state=invalid]').waitFor();assert.equal(journals.find(item=>item.record_id===stored.record_id).payload.note,'Remote newer note')
     await textarea.fill('Recovered after clear');await textarea.blur();await drawer.locator('[data-state=saved]').waitFor()
    }

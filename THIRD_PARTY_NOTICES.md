@@ -11,6 +11,7 @@ Dependencies retain their own licenses; the application license does not relicen
 | TradingView Advanced Charts | separately acquired 23.040 distribution | Proprietary, separately licensed; excluded from Git and public packages. See [setup/recovery](docs/advanced-charts.md). |
 | TradingView Lightweight Charts | web lockfile | Apache-2.0; preserve the package notices and required attribution when shipped. |
 | React / React DOM | web lockfile | MIT; preserve notices. |
+| BlockNote core / React / Ariakit adapter | 0.55.0, web lockfile; https://github.com/TypeCellOS/BlockNote | MPL-2.0; consumed unmodified. Preserve notices and make the corresponding package source available when distributing the bundle. Application integration and theme overrides remain separate files. |
 | Vite and build dependencies | web lockfile | Build tooling; dependency notices remain applicable to shipped code. |
 | NautilusTrader | optional engine, 1.231.0 | LGPLv3; not bundled in the candidate. A downstream distribution of this engine requires its applicable notices/source/relinking review. |
 | MetaTrader 5 | optional Windows installation / Python integration | Installed separately under the vendor's terms; no terminal installer or account files included. |

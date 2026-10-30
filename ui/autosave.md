@@ -32,6 +32,20 @@ source, tags and structured payload fields and send `expected_revision`.
 Reuse a single matching historical note; ambiguity never silently picks a record.
 Trade notes do not become duplicate `live_records` entries in the standalone list.
 
+Trade drawers edit `{text, document}`: `note` remains the plain-text projection for
+search and existing readers; optional `note_document` stores the versioned
+BlockNote blocks. Old plain notes open as paragraphs without a bulk migration.
+Structured loads reject mismatched plain text instead of overwriting saved data.
+Compare documents semantically: JSON key order may change in native storage and
+must not reset editor selection/history or create another save.
+Legacy tab recovery values are upgraded in memory; an unresolved plain-text
+request retains its original body and idempotency receipt on retry. Standalone
+Live Notes retains its existing editor and persistence contract.
+Roll out the API contract before the block-editor UI. No SQL migration is needed,
+but older API builds reject `note_document` on writes: after rich notes exist,
+rolling back the API requires a compatibility review. A UI rollback can continue
+to use the new API and the retained plain-text projection.
+
 `LiveNoteEditor` reuses `liveLedgerApi.js` and `kind: note`, preserving metadata,
 account/connection choice, strategy revision and folder on creation. Server-trimmed
 titles are reflected in the editor. Both adapters retain existing authorization.
@@ -55,3 +69,5 @@ retry, recovery, expired receipts, conflicts and validation/storage failure.
 `tests/tradeAutosave.browser.mjs` tests production UI with simulated writes.
 `tests/tradeAutosaveNative.browser.mjs` requires a disposable native API/PostgreSQL
 endpoint, and verifies create/reload/revise plus workspace and revision isolation.
+`tests/noteDocument.test.mjs` covers text projection, legacy recovery and semantic
+equality; `tests/noteBlocks.browser.mjs` covers block controls and template insertion.

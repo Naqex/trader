@@ -7738,6 +7738,40 @@
           "name": "body",
           "required": true,
           "schema": {
+            "$defs": {
+              "NoteDocument": {
+                "additionalProperties": false,
+                "properties": {
+                  "format": {
+                    "const": "blocknote",
+                    "title": "Format",
+                    "type": "string"
+                  },
+                  "version": {
+                    "const": 1,
+                    "title": "Version",
+                    "type": "integer"
+                  },
+                  "blocks": {
+                    "items": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    },
+                    "maxItems": 256,
+                    "minItems": 1,
+                    "title": "Blocks",
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "format",
+                  "version",
+                  "blocks"
+                ],
+                "title": "NoteDocument",
+                "type": "object"
+              }
+            },
             "additionalProperties": false,
             "properties": {
               "entry_type": {
@@ -7756,6 +7790,17 @@
                 "minLength": 1,
                 "title": "Note",
                 "type": "string"
+              },
+              "note_document": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/NoteDocument"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
               },
               "source": {
                 "additionalProperties": true,

@@ -1,10 +1,11 @@
-const same = (a, b) => JSON.stringify(a) === JSON.stringify(b)
+import same from 'fast-deep-equal'
 
 // Serializes edits per resource. The adapter owns identity, validation and revisions.
 export function createAutosave({ key, adapter, initialValue, storage, delay = 900, later = setTimeout, cancel = clearTimeout }) {
   const storageKey = `naqex-draft-v1:${key}`
   let recovered
   try { recovered = JSON.parse(storage?.getItem(storageKey) || 'null') } catch { /* Unavailable storage must not prevent editing. */ }
+  if (recovered && adapter.migrateRecovery) recovered = adapter.migrateRecovery(recovered)
   let state = { phase: 'loading', ready: false, value: recovered?.value ?? initialValue, record: null, savedAt: null, error: null, localBackup: Boolean(storage) }
   let base = recovered?.base ?? initialValue, attempt = recovered?.attempt || null
   let loaded = false, timer, loading, writing, disposed = false
@@ -73,7 +74,7 @@ export function createAutosave({ key, adapter, initialValue, storage, delay = 90
         if (retry && adapter.reconcile) {
           try { reconciled = await adapter.reconcile(submitted) } catch (error) { error.outcomeKnown = false; throw error }
         }
-        const result = reconciled || await adapter.save(submitted.value, submitted.record)
+        const result = reconciled || await adapter.save(submitted.value, submitted.record, submitted)
         if (same(state.value,submitted.value)) emit({value:result.value})
         base = result.value; attempt = null
         emit({ record: result.record, savedAt: result.savedAt, phase: dirty() ? 'dirty' : 'saved', error: null })

@@ -1,9 +1,12 @@
-import { useContext, useId, useState } from 'react'
+import { lazy, Suspense, useContext, useId, useState } from 'react'
 import { useTestingLocale } from './testingLocale.jsx'
 import { displayDate } from './dateFormat.js'
 import useAutosave, { AutosaveBoundaryContext, AutosaveStatus } from './useAutosave.jsx'
 import { tradeNoteAdapter } from './tradeNoteApi.js'
 import { dateFromValue } from './analyticsViewModel.js'
+import { emptyNote } from './noteDocument.js'
+
+const NoteBlockEditor = lazy(()=>import('./NoteBlockEditor.jsx'))
 
 const TABS = [['details', 'Details'], ['tags', 'Tag groups'], ['media', 'Media']]
 
@@ -20,9 +23,9 @@ export function TradeDetailHeading({ title, subtitle, net, currency, entryAt, ex
 function SavedTradeNote({ workspace, session, trade }) {
   const { t } = useTestingLocale()
   const boundary = useContext(AutosaveBoundaryContext)
-  const save = useAutosave({ identity:JSON.stringify(['trade-note',workspace,session,trade]), initialValue:'', adapter:tradeNoteAdapter({workspace,session,trade}) })
+  const save = useAutosave({ identity:JSON.stringify(['trade-note',workspace,session,trade]), initialValue:emptyNote(), adapter:tradeNoteAdapter({workspace,session,trade,structured:true}) })
   return <section className="fx-trade-note-draft" aria-label={t('Ghi chú giao dịch')}>
-    <label><span className="sr-only">{t('Nội dung ghi chú giao dịch')}</span><textarea aria-label={t('Nội dung ghi chú giao dịch')} placeholder={t('Viết ghi chú…')} value={save.value} onChange={event=>save.change(event.target.value)} onBlur={()=>void save.flush()} disabled={!save.ready || save.phase === 'conflict'} rows={6} maxLength={10000}/></label>
+    {save.ready ? <Suspense fallback={<span role="status">{t('Đang tải trình soạn thảo…')}</span>}><NoteBlockEditor value={save.value} onChange={save.change} onBlur={()=>void save.flush()} disabled={save.phase === 'conflict'} label={t('Nội dung ghi chú giao dịch')}/></Suspense> : boundary && <AutosaveStatus save={save}/>}
     {!boundary && <AutosaveStatus save={save}/>}
   </section>
 }
@@ -37,7 +40,7 @@ export function TradeNoteDraft({ workspace, session, trade }) {
   </section>
 }
 
-export default function TradeDetailContent({ children, tags, provenance, noteScope }) {
+export default function TradeDetailContent({ children, tags, noteScope }) {
   const { t } = useTestingLocale(), id = useId()
   const [tab, setTab] = useState('details')
   return <div className="fx-trade-detail-content">
@@ -53,7 +56,6 @@ export default function TradeDetailContent({ children, tags, provenance, noteSco
     <section id={`${id}-panel`} role="tabpanel" aria-labelledby={`${id}-${tab}`}>
       {tab === 'details' ? children : tab === 'tags' ? <div className="fx-trade-drawer-placeholder">{tags}</div> : <div className="fx-trade-drawer-placeholder"><h3>{t('Media')}</h3><p>{t('Chưa hỗ trợ tệp đính kèm cho giao dịch này.')}</p></div>}
     </section>
-    {provenance}
     </aside>
     <TradeNoteDraft {...noteScope}/>
   </div>

@@ -57,20 +57,17 @@ export function ProvenanceInspector({ model, selectedTrade, journalCount, links,
   const trade = selectedTrade
   const session = trade?.session_id || model.result?.session_id
   const inapplicable = trade?.status === 'open'
-  const provenance = <details className="as-provenance-details"><summary>{t('Nguồn và giới hạn')}</summary>
-    <dl className="as-provenance-list"><ContextValue label={t('Session revision')} value={model.result?.revision}/><ContextValue label={t('Dataset')} value={model.result?.dataset_id} code/><ContextValue label={t('Artifact SHA')} value={model.sourceHash} code/><ContextValue label={t('Journal context')} value={journalCount == null ? '-' : journalCount}/></dl>
-    {links.replay && <a className="fx-trade-note-link" href={links.replay}>{t('Mở Replay →')}</a>}
-  </details>
   return <aside className="as-inspector" aria-label={t('Trade detail')}>
-    {trade && <TradeDetailContent key={JSON.stringify([workspace,session,trade.trade_id || trade.tradeId])} provenance={provenance} noteScope={{workspace,session,trade:trade.trade_id || trade.tradeId}} tags={workspace && session ? <TradeLabelCell workspace={workspace} session={session} row={trade} catalog={catalog} onChanged={onLabelsChanged}/> : <TradeLabelDisplay tags={trade.tags || []} options={catalog.items}/> }>
+    {trade && <TradeDetailContent key={JSON.stringify([workspace,session,trade.trade_id || trade.tradeId])} noteScope={{workspace,session,trade:trade.trade_id || trade.tradeId}} tags={workspace && session ? <TradeLabelCell workspace={workspace} session={session} row={trade} catalog={catalog} onChanged={onLabelsChanged}/> : <TradeLabelDisplay tags={trade.tags || []} options={catalog.items}/> }>
       <TradeFacts asset={trade.symbol} side={t(String(trade.side).toUpperCase() === 'BUY' ? 'Buy' : String(trade.side).toUpperCase() === 'SELL' ? 'Sell' : '-')}
         entryType={trade.entry_type} entryAt={formatDate(trade.open_time_utc)} exitAt={formatDate(trade.close_time_utc)} timeBasis="Chart"
         alternateEntry={`${t('Entry date')} · Realtime: ${formatDate(trade.recorded_at_utc)}`} alternateExit={`${t('Exit date')} · Realtime: ${formatDate(trade.report_time_utc)}`}
         entryPrice={formatNumber(trade.price_open,6)} exitPrice={formatNumber(trade.price_close,6)} size={formatNumber(trade.quantity,4)}
         stop={formatNumber(trade.stop_loss,6)} target={formatNumber(trade.take_profit,6)}
-        gross={inapplicable ? 'N/A' : formatNumber(trade.gross_pnl,2,trade.account_currency ? ' '+trade.account_currency : '')}
-        fees={inapplicable ? 'N/A' : formatNumber(trade.fees,2,trade.account_currency ? ' '+trade.account_currency : '')}
-        net={inapplicable ? 'N/A' : formatNumber(trade.net_pnl ?? trade.pnl,2,trade.account_currency ? ' '+trade.account_currency : '')}/>
+        currency={trade.account_currency}
+        gross={inapplicable ? 'N/A' : formatNumber(trade.gross_pnl,2)}
+        fees={inapplicable ? 'N/A' : formatNumber(trade.fees,2)}
+        net={inapplicable ? 'N/A' : formatNumber(trade.net_pnl ?? trade.pnl,2)}/>
     </TradeDetailContent>}
   </aside>
 }

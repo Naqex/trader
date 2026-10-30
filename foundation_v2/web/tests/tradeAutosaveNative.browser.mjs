@@ -27,22 +27,33 @@ try {
  const base=origin+'/?workspace=tenant-a&lang=vi',drawer=page.locator('dialog.fxa-trade-inspector')
  for(const [mode,path,id] of [['practice','&view=trade&area=testing&section=trades&select=1&sessions=all','analytics-ledger'],['live','&view=live&area=live&section=trades','live-trade-grid']]) {
   await page.goto(base+path);await page.getByTestId(id).locator('tbody tr').first().locator('[data-column=symbol]').click()
-  const textarea=drawer.locator('textarea');await textarea.fill(`Native ${mode} autosave`);await textarea.blur();await drawer.locator('[data-state=saved]').waitFor()
+  const textarea=drawer.locator('.bn-editor');await textarea.fill(`Native ${mode} autosave`);await textarea.blur();await drawer.locator('[data-state=saved]').waitFor()
   const savedAt=await drawer.locator('.wm-autosave-status time').getAttribute('datetime');assert(Number.isFinite(Date.parse(savedAt)))
   await page.screenshot({path:`${out}/${mode}.png`})
   await page.keyboard.press('Escape');await drawer.waitFor({state:'detached'});await page.reload()
-  await page.getByTestId(id).locator('tbody tr').first().locator('[data-column=symbol]').click();await drawer.locator('[data-state=saved]').waitFor();assert.equal(await textarea.inputValue(),`Native ${mode} autosave`)
+  await page.getByTestId(id).locator('tbody tr').first().locator('[data-column=symbol]').click();await drawer.locator('[data-state=saved]').waitFor();assert.equal(await textarea.innerText(),`Native ${mode} autosave`)
   await textarea.fill(`Native ${mode} revised`);await textarea.blur();await drawer.locator('[data-state=saved]').waitFor()
+  if(mode==='practice') {
+   await drawer.getByRole('button',{name:'♧ /templates',exact:true}).click()
+   const templates=page.locator('dialog.wm-note-templates')
+   await templates.getByRole('button',{name:/Áp dụng vào/}).click();await templates.getByRole('menuitem',{name:'Chèn vào ghi chú',exact:true}).click()
+   await drawer.locator('[data-state=saved]').waitFor()
+   assert((await textarea.innerText()).includes('Native practice revised'));assert.equal(await textarea.locator('h2').count(),2)
+  }
   await page.keyboard.press('Escape');await drawer.waitFor({state:'detached'});report.cases.push(`${mode}-create-reload-revise`)
  }
  await page.goto(base+'&view=live&area=live&section=notes');await page.getByRole('button',{name:'Thêm ghi chú',exact:true}).click()
  const editor=page.locator('.live-record-dialog.is-drawer')
  await editor.locator('input').filter({visible:true}).first().fill('Native standalone note');await editor.locator('textarea').fill('Saved in disposable PostgreSQL');await editor.locator('textarea').blur();await editor.locator('[data-state=saved]').waitFor()
- await page.keyboard.press('Escape');await editor.waitFor({state:'detached'});await page.reload();await page.locator('.live-note-row').filter({hasText:'Native standalone note'}).click();await editor.locator('[data-state=saved]').waitFor();assert.equal(await editor.locator('textarea').inputValue(),'Saved in disposable PostgreSQL')
+ await page.keyboard.press('Escape');await editor.waitFor({state:'detached'});await page.reload()
+ // Notes remain read-only until both the ledger and strategy catalog are ready.
+ await page.getByRole('button',{name:'Ghi chú mới',exact:true}).click({trial:true})
+ await page.locator('.live-note-row').filter({hasText:'Native standalone note'}).click();await editor.locator('[data-state=saved]').waitFor();assert.equal(await editor.locator('textarea').inputValue(),'Saved in disposable PostgreSQL')
  await page.screenshot({path:`${out}/standalone.png`});await page.keyboard.press('Escape');report.cases.push('standalone-create-reload')
  const headers={'X-Workspace-Id':'tenant-a'},list=await (await context.request.get(api+'/api/v2/journal',{headers})).json()
  assert.equal(list.items.length,2)
- for(const record of list.items){assert.equal(record.revision,2);assert(record.payload.note.endsWith(' revised'))}
+ for(const record of list.items){assert(record.revision>=2);assert(record.payload.note.includes(' revised'));assert.equal(record.payload.note_document.format,'blocknote')}
+ const rich=list.items.find(record=>record.payload.note.includes('Native practice revised'));assert(rich.payload.note_document.blocks.some(block=>block.type==='heading'))
  const remote=await (await context.request.get(api+'/api/v2/journal',{headers:{'X-Workspace-Id':'tenant-other'}})).json();assert.equal(remote.items.length,0)
  const first=list.items[0]
  const rejected=await context.request.post(api+`/api/v2/journal/${first.record_id}/revisions`,{headers:{...headers,'Idempotency-Key':crypto.randomUUID(),'Origin':origin},data:{expected_revision:1,payload:{...first.payload,note:'Must not overwrite'}}})
