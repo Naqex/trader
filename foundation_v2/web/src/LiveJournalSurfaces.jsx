@@ -3,14 +3,13 @@ import useTableSort from './useTableSort.js'
 import DataTable, { SortableColumn, SortResetColumn } from './DataTable.jsx'
 import { matchesSearch } from './searchText.js'
 import SearchInput from './SearchInput.jsx'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { displayDate } from './dateFormat.js'
 import { useTestingLocale } from './testingLocale.jsx'
 import FxSelect, { FilterIcon } from './FxSelect.jsx'
 import TestingIcon from './TestingIcon.jsx'
 import PaginationFooter from './PaginationFooter.jsx'
-import { dealNet, cumulativeDealSeries } from './liveWorkspaceModel.js'
-import { tagResults, closedTradeStats } from './liveLedgerModel.js'
+import { dealNet } from './liveWorkspaceModel.js'
 import { downloadLiveCsv } from './liveCsvDownload.js'
 import { buildWorkspaceHref } from './workspaceContext.js'
 import LegacyModal from './LegacyModal.jsx'
@@ -19,8 +18,6 @@ import NoteFolderDialog from './NoteFolderDialog.jsx'
 import { fetchNoteFolders } from './liveNoteFoldersApi.js'
 import { EMPTY_NOTE_FILTERS, filterJournalNotes, groupJournalNotes, NOTE_GROUPS, NOTE_TYPES } from './liveNoteModel.js'
 import { MANUAL_TRADE_COLUMNS } from './liveTradeColumns.js'
-import { AnalyticsCurve } from './AnalyticsCharts.jsx'
-import { useTradeLabels } from './TradeLabelCell.jsx'
 
 function StrategyReference({ payload, strategies, workspace }) {
   const { t,language } = useTestingLocale()
@@ -111,24 +108,4 @@ export function JournalNotes({ workspace, records, strategies, writable, readabl
   </section>
 }
 
-export function JournalTags({ workspace, deals, currency, filterKey, readable = true }) {
-  const { t,fmt,timezone } = useTestingLocale(), catalog = useTradeLabels(workspace), [search,setSearch] = useState(''), [selected,setSelected] = useState([])
-  const [page,setPage] = useState(1), [size,setSize] = useState(20)
-  useEffect(()=>setPage(1),[search,filterKey,selected])
-  const allResults = useMemo(()=>tagResults(deals),[deals])
-  const availableTags = useMemo(() => [...new Set([...(catalog.items || []).filter(item => !item.archived).map(item => item.name), ...allResults.map(row => row.tag)])], [catalog.items, allResults])
-  const rows = allResults.filter(row => matchesSearch(row.tag, search) && (!selected.length || selected.includes(row.tag)))
-  const pages = Math.max(1,Math.ceil(rows.length/size)), current = Math.min(page,pages), visible = rows.slice((current-1)*size,current*size)
-  const curve = useMemo(() => deals.every(deal => Number.isFinite(deal.time_msc)) ? cumulativeDealSeries(deals) : [], [deals])
-  const overall = useMemo(() => closedTradeStats(deals), [deals])
-  const tagColor = tag => catalog.items?.find(item => item.name === tag)?.color || 'gray'
-  const toggle = tag => setSelected(current => current.includes(tag) ? current.filter(value => value !== tag) : [...current,tag])
-  return <section className="live-journal-tags" aria-label={t('Tag analytics')}>
-    {readable && <div className="live-tag-analytics-grid">
-      <article className="live-tag-card live-tag-chart-card"><header><div><h2>{t('Cumulative PnL in selection')}</h2><small>{t('Over time')}</small></div><div className="live-tag-legend"><i />{t('Overall')}<span aria-hidden="true">ⓘ</span></div></header><AnalyticsCurve series={[curve]} label={t('Cumulative PnL in selection')} suffix={currency ? ` ${currency}` : ''} height={300} controls showPoints={false} timeZone={timezone} /></article>
-      <aside className="live-tag-card live-tag-picker-card"><label className="live-tag-search"><span className="sr-only">{t('Tìm nhãn')}</span><TestingIcon kind="search"/><SearchInput type="search" aria-label={t('Tìm nhãn')} placeholder={t('Tìm nhãn…')} value={search} onChange={event=>setSearch(event.target.value)} /></label><div className="live-tag-picker-heading"><strong>{t('Trade Rating')}</strong><button type="button" className="fxa-button" onClick={()=>setSelected(availableTags)}>{t('Select all')}</button></div><div className="live-tag-picker-list">{availableTags.filter(tag=>matchesSearch(tag,search)).map(tag=><label key={tag}><input type="checkbox" checked={selected.includes(tag)} onChange={()=>toggle(tag)}/><span className="wm-trade-label" data-color={tagColor(tag)}>{tag}</span><i style={{background:`var(--label-${tagColor(tag)}, var(--report-blue))`}} /></label>)}{!availableTags.length && <p className="live-muted">{t('Chưa có nhãn')}</p>}</div></aside>
-      <section className="live-tag-card live-tag-table-card"><DataTable className="live-tag-grid-table" label={t('Tag analytics')}><thead><tr><th>{t('Tag group')} ↕</th><th>{t('Trades')} ↕</th><th>{t('Win rate')} ↕</th><th className="is-numeric">{t('Total PnL')} ↕</th></tr></thead><tbody><tr className="is-overall"><td><span className="live-tag-expander" aria-hidden="true">⌄</span>{t('Overall')}</td><td>{overall.count}</td><td><span className="live-tag-badge is-blue">{fmt(overall.winRate,'%')}</span></td><td className={overall.net < 0 ? 'is-loss' : overall.net > 0 ? 'is-gain' : ''}>{fmt(overall.net, currency ? ` ${currency}` : '')}</td></tr>{visible.map(row=><tr className="is-child" key={row.tag}><td><span className="live-tag-expander is-child" aria-hidden="true">⌟</span><span className="wm-trade-label" data-color={tagColor(row.tag)}>{row.tag}</span></td><td>{row.count}</td><td><span className={`live-tag-badge ${row.net < 0 ? 'is-red' : 'is-blue'}`}>{fmt(row.winRate,'%')}</span></td><td className={row.net < 0 ? 'is-loss' : row.net > 0 ? 'is-gain' : ''}>{fmt(row.net, currency ? ` ${currency}` : '')}</td></tr>)}</tbody></DataTable><PaginationFooter showCount={false} totalCount={rows.length} label="Trang phân tích nhãn" page={current} pages={pages} pageSize={size} onPageChange={setPage} onPageSizeChange={value=>{setSize(value);setPage(1)}} sizes={[10,20,50,100]} /></section>
-    </div>}
-    {!readable && <div className="live-empty"><h2>{t('Chưa có phân tích nhãn')}</h2><p>{t('Thêm nhãn vào giao dịch để so sánh kết quả.')}</p></div>}
-  </section>
-}
+export { default as JournalTags } from './LiveTagAnalytics.jsx'

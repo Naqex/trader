@@ -7475,5 +7475,20 @@
   "Giao dịch này được đồng bộ từ MT5. Chưa hỗ trợ xóa khỏi nhật ký; dữ liệu và lệnh tại broker vẫn được giữ.": {"vi": "Giao dịch này được đồng bộ từ MT5. Chưa hỗ trợ xóa khỏi nhật ký; dữ liệu và lệnh tại broker vẫn được giữ.", "en": "This trade is synced from MT5. Removing it from the journal is not supported yet; broker data and orders are retained."},
   "Không đọc được giao dịch kế tiếp hoặc danh sách đã thay đổi. Thử lại hoặc đọc lại bảng.": {"vi": "Không đọc được giao dịch kế tiếp hoặc danh sách đã thay đổi. Thử lại hoặc đọc lại bảng.", "en": "Could not load the next trade, or the list changed. Retry or refresh the table."},
   "Thêm nhãn": {"vi":"Thêm nhãn","en":"Add"},
-  "Price": {"vi":"Giá","en":"Price"}
+  "Price": {"vi":"Giá","en":"Price"},
+  "Danh sách nhãn": {"vi":"Danh sách nhãn","en":"Tag list"},
+  "Tất cả giao dịch gắn nhãn khớp bộ lọc cơ bản.": {"vi":"Tất cả giao dịch gắn nhãn khớp bộ lọc cơ bản.","en":"All tagged trades matching the basic filters."},
+  "Thu gọn nhóm {name}": {"vi":"Thu gọn nhóm {name}","en":"Collapse group {name}"},
+  "Mở rộng nhóm {name}": {"vi":"Mở rộng nhóm {name}","en":"Expand group {name}"},
+  "Không tìm thấy nhãn.": {"vi":"Không tìm thấy nhãn.","en":"No tags found."},
+  "Chỉnh sửa nhật ký chưa được bật.": {"vi":"Chỉnh sửa nhật ký chưa được bật.","en":"Journal editing is not enabled yet."},
+  "Các lần khớp": {"vi":"Các lần khớp","en":"Fills"},
+  "Thêm lần vào": {"vi":"Thêm lần vào","en":"Add entry"},
+  "Thêm lần thoát": {"vi":"Thêm lần thoát","en":"Add exit"},
+  "Giá vào TB": {"vi":"Giá vào TB","en":"Avg. entry"},
+  "Giá thoát TB": {"vi":"Giá thoát TB","en":"Avg. exit"},
+  "Khối lượng còn mở": {"vi":"Khối lượng còn mở","en":"Open quantity"},
+  "Chưa có lần khớp trong mục này.": {"vi":"Chưa có lần khớp trong mục này.","en":"No fills in this section."},
+  "Overall": {"vi": "Tổng thể", "en": "Overall"},
+  "Tag group": {"vi": "Nhóm nhãn", "en": "Tag group"}
 }

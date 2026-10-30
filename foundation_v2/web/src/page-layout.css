@@ -204,14 +204,31 @@ button.fxa-filter-chip:hover { background: var(--fx-shell-nav-selected); color: 
 .wm-trade-action-dialog h2 { margin:0; font-size:18px; }
 .wm-trade-action-dialog p { font-size:13px; line-height:1.6; }
 .wm-trade-action-dialog footer { display:flex; justify-content:flex-end; gap:8px; margin-top:20px; }
-.wm-trade-fill-list { overflow:auto; }
-.wm-trade-fill-list table { width:100%; border-collapse:collapse; white-space:nowrap; font-size:12px; }
-.wm-trade-fill-list th,.wm-trade-fill-list td { padding:12px 8px; text-align:left; border-bottom:1px solid var(--wm-border); }
-.wm-trade-fill-list th { font-weight:500; color:var(--wm-content-muted); }
 .wm-trade-delete-menu { display:flex; align-items:center; gap:12px; border:0; background:transparent; color:var(--wm-negative); padding:10px 14px; font:inherit; font-size:13px; cursor:pointer; }
 .wm-trade-delete-menu:hover { background:var(--wm-hover); }
 .wm-trade-fills-button { display:inline-flex; align-items:center; gap:6px; color:inherit; border:0; background:transparent; padding:0; font:inherit; cursor:pointer; }
 .wm-trade-fills-button:disabled { opacity:.5; cursor:default; }
+.fx-live-trade-details[data-variant=live] dl > div:not(.wm-trade-fills-action) { display:grid; grid-template-columns:minmax(0,42%) minmax(0,1fr); gap:12px; align-items:start; }
+.fx-live-trade-details[data-variant=live] dd { max-width:100%; width:fit-content; text-align:left; }
+.fx-live-trade-details[data-variant=live] .wm-trade-return-parts { justify-content:flex-start; }
+.fx-live-trade-details .wm-trade-fills-action { display:block; }
+.wm-trade-fills-action .wm-trade-fills-button { color:var(--wm-content-muted); gap:6px; min-height:28px; }
+.wm-trade-fills-action .wm-trade-fills-button:hover:not(:disabled) { color:var(--wm-content); }
+.wm-trade-fills-tabs { display:flex; padding:4px; background:var(--wm-canvas); border-radius:var(--ds-radius-medium,8px); margin-bottom:20px; }
+.fx-app.fx-shell-story[data-theme] .fx-content .wm-trade-fills-tabs button { flex:1; border:0; border-radius:var(--ds-radius-medium,8px); padding:10px; font:inherit; color:var(--wm-content-muted); background:transparent; cursor:pointer; }
+.fx-app.fx-shell-story[data-theme] .fx-content .wm-trade-fills-tabs button[aria-selected=true] { background:var(--wm-hover); color:var(--wm-content); }
+.wm-trade-fill-fields { display:grid; gap:16px; max-height:40vh; overflow:auto; padding:6px 0; }
+.wm-trade-fill-row { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.wm-trade-fill-row label { position:relative; min-width:0; }
+.wm-trade-fill-row label > span { position:absolute; left:10px; top:-7px; font-size:11px; padding:0 4px; background:var(--wm-surface); color:var(--wm-content-muted); }
+.wm-trade-fill-row input { width:100%; min-width:0; box-sizing:border-box; border:1px solid var(--wm-border); border-radius:var(--ds-radius-field,8px); background:transparent; padding:12px; color:var(--wm-content); font:inherit; font-size:13px; }
+.fx-app.fx-shell-story[data-theme] .fx-content .wm-trade-add-fill { display:flex; align-items:center; gap:6px; margin:18px auto 24px; border:0; background:transparent; font:inherit; color:var(--report-blue); }
+.wm-trade-add-fill:disabled { opacity:.5; cursor:default; }
+.wm-trade-fills-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; border:1px solid var(--wm-border); border-radius:var(--ds-radius-medium,8px); margin:0; padding:16px; text-align:center; }
+.wm-trade-fills-summary div { min-width:0; }
+.wm-trade-fills-summary dd { margin:0 0 8px; overflow-wrap:anywhere; font-weight:600; }
+.wm-trade-fills-summary dt { font-size:12px; color:var(--wm-content-muted); }
+@media(max-width:600px) { .wm-trade-fills-summary { grid-template-columns:repeat(2,minmax(0,1fr)); } .wm-trade-fill-row { gap:8px; } .wm-trade-fill-row input { padding:10px 7px; } }
 .wm-trade-return-parts { display:flex; align-items:center; flex-wrap:wrap; justify-content:flex-end; gap:6px; }
 .wm-trade-return-parts > span { display:inline-flex; align-items:center; gap:4px; }
 .wm-trade-return-parts > span + span { border-left:1px solid var(--wm-border); padding-left:6px; }

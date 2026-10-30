@@ -818,3 +818,21 @@ before a promotion can still load their lazy pages. Promote the index atomically
 after copying assets. Never run cleanup against assets still referenced by open
 versions. A failed Vite chunk import may reload once per build/tab; offline or
 storage-denied sessions and repeated failures must not enter a reload loop.
+
+Live Tag Analytics places Overall below the chart title on the left, with the
+tag-list visibility action above the chart. The picker uses shared SearchInput,
+real catalog groups and label colors. Its selections add chart series; they do
+not change Overall. Overall includes tagged completed trades matching the basic
+filters. Group totals count each trade once even when it has multiple tags in
+that group. The table has an index, multi-sort and expandable Overall/group/tag
+hierarchy, without pagination; sort applies within each sibling level. Missing
+catalog data must not be presented as Ungrouped, and errors remain visible with
+the picker hidden. Chart axes/tooltips use actual execution dates and Settings
+timezone. Missing amounts/timestamps remain unavailable.
+
+Live detail values share a consistent starting column; Practice retains its
+existing alignment. The fills action opens Entries/Exits with actual fill facts
+and aggregate values. This preview is read-only until the journal edit contract
+is approved: Add/Save remain disabled. Execution and broker data are not mutated
+by this UI. The vertical ellipsis stays visible in both modes, enabled for Live
+and disabled for Practice. The extra R info icon is omitted.

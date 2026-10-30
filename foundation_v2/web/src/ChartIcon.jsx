@@ -64,6 +64,6 @@ const paths = {
 }
 
 export default function ChartIcon({ name, ...props }) {
-  const dots = name === 'grip' ? [[8,6],[16,6],[8,12],[16,12],[8,18],[16,18]] : name === 'grip-horizontal' ? [[6,9],[12,9],[18,9],[6,15],[12,15],[18,15]] : null
+  const dots = name === 'grip' ? [[8,6],[16,6],[8,12],[16,12],[8,18],[16,18]] : name === 'grip-horizontal' ? [[6,9],[12,9],[18,9],[6,15],[12,15],[18,15]] : name === 'more-vertical' ? [[12,5],[12,12],[12,19]] : null
   return <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" {...props}>{dots ? dots.map(([cx,cy]) => <circle key={`${cx}:${cy}`} cx={cx} cy={cy} r="1.5" fill="currentColor" stroke="none" />) : <path d={paths[name] || paths.info} />}</svg>
 }
