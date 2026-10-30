@@ -48,18 +48,40 @@ the note editor stays mounted across tabs, with state isolated by workspace/sess
 Clicking an ordinary ledger cell or pressing Enter/Space on its focused row opens
 the same drawer as the detail icon. Checkbox, label, links and embedded controls
 retain their own action; selecting text does not open a drawer. Trade notes and standalone Live Notes use the shared [autosave contract](autosave.md).
-Attachments remain unavailable. Trade headers show opening time and closed holding
+Attachments support scoped image upload/preview/removal through the shared media API.
+Trade headers show opening time and closed holding
 duration in the correct Chart/Realtime basis; save time is a separate server fact.
 The detail sidebar groups two identity facts, eight execution facts and three PnL
-facts, with one full-width separator between groups. Session/account scope stays
-in the header tooltip; omit the provenance accordion from the trade drawer.
+facts, with one full-width separator between groups. Live adds the account name,
+holding duration and the actual entry/exit fills. Session scope stays in the
+header tooltip; omit the provenance accordion from the trade drawer.
 Missing detail values use a normal hyphen. The three PnL values omit currency
 glyphs, retaining currency in their tooltip and icons beside their labels.
 The shared block editor serves both trade drawers: hover/focus exposes block
 insertion and drag controls; slash opens the same block menu. Templates insert
 without replacing existing text unless replacement is explicitly selected.
 The bottom template shortcut opens a centered preview dialog. Template catalog
-management is an unavailable UI scaffold; built-in starter insertion works.
+management persists private templates, favorites and independent context defaults.
+Favorites appear once, outside All templates. Apply to opens This trade (or This
+note), inserting without silently replacing existing content.
+Previous/next follow the filtered/sorted trades, including aggregate table pages;
+flush the current note and prevent edits during the transition. A failed save or
+changed list retains the current selection with a recovery state. Testing has a
+disabled vertical ellipsis. Live adds comments and a Delete trade popup; broker
+trade removal remains visibly unavailable and must not call broker order APIs.
+Comments are workspace journal records with kind `trade-comment`, unique IDs and
+`parent_session_id`/`parent_trade_id`; they do not enter trade-note matching or note
+presence. Unknown save receipts retry/reconcile the same comment identity.
+Grid note icons distinguish confirmed presence/absence, with unknown preserved on
+read failure. The Live note-presence filter consumes the same journal facts.
+Tag group names open shared catalog management. Renaming Ungrouped captures its
+existing catalog labels in a real group; the fallback itself cannot be deleted.
+Duplication atomically clones group/label definitions with unique names and no
+trade assignments. Delete archives choices while preserving historical assignments.
+Pointer/keyboard reordering is a browser display preference, shared across modes.
+Live return parts reuse the grid's capital and original-stop R semantics; absent
+denominators/stop facts stay N/A. Save/modified times come from server receipts,
+separate from entry time and holding duration.
 Historical Journal links keep their source session/trade and open this drawer.
 Closing a transient search with Escape returns focus to its trigger. Journal
 lists and label reports show an empty state only after a successful read; a

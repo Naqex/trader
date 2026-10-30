@@ -10,6 +10,7 @@ import { calendarAccountSelection } from './liveCalendarAccounts.js'
 import TestingIcon from './TestingIcon.jsx'
 import TradeTagOverview from './TradeTagOverview.jsx'
 import { useTradeLabels } from './TradeLabelCell.jsx'
+import useTradeNotePresence from './useTradeNotePresence.js'
 import { CalendarNavigation, CalendarMonth, CalendarDay } from './CalendarView.jsx'
 import { fetchLiveRecords, saveLiveRecord } from './liveLedgerApi.js'
 import { fetchPlaybooks } from './playbookApi.js'
@@ -281,6 +282,7 @@ function labelLiveRows(rows, payload, catalog) {
 export default function LiveSurfaces({ workspace = 'tenant-a', section, payload: broker, query, preview, onRefresh }) {
   const { t, timezone } = useTestingLocale()
   const labelCatalog = useTradeLabels(preview ? undefined : workspace)
+  const notePresence=useTradeNotePresence(!preview && ['trades','tag-analytics'].includes(section)?workspace:undefined)
   const [ledger,setLedger] = useState({status:preview ? 'ready' : 'loading',items:[],error:''})
   const [strategies,setStrategies] = useState([]), [strategyError,setStrategyError] = useState(''), [strategyReady,setStrategyReady] = useState(false), [action,setAction] = useState(null), [reload,setReload] = useState(0)
   const selected = query.get('live_account') || ''
@@ -356,7 +358,7 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
   }
   const completed = useMemo(() => labelLiveRows(completedLiveTrades(payload), payload, labelCatalog), [payload, labelCatalog.assignments])
   const deals = useMemo(() => filterLiveDeals({...payload,deals:completed},{...applied,tagInclude:tagFilter.include,tagExclude:tagFilter.exclude,tagIncludeMode:tagFilter.includeMode,tagExcludeMode:tagFilter.excludeMode}).filter(deal => !payload?.manual || strategy === 'all' || deal.record?.payload.playbook_id === strategyId && (!strategyRevision || deal.record?.payload.playbook_revision === Number(strategyRevision))),[completed,payload,applied,strategy,strategyId,strategyRevision,tagFilter])
-  const tradeRows = useMemo(() => ['trades','tag-analytics'].includes(section) ? liveLedgerRows(payload,section === 'tag-analytics' ? 'market' : tradeScope.timeBasis).filter(row => section !== 'tag-analytics' || row.status === 'closed').map(row => { const sourceRow = labelLiveRows([row.sourceRow],payload,labelCatalog)[0]; return {...row,sourceRow,tags:sourceRow.tags || row.tags} }) : [],[section,payload,tradeScope.timeBasis,labelCatalog.assignments])
+  const tradeRows = useMemo(() => ['trades','tag-analytics'].includes(section) ? liveLedgerRows(payload,section === 'tag-analytics' ? 'market' : tradeScope.timeBasis).filter(row => section !== 'tag-analytics' || row.status === 'closed').map(row => { const sourceRow = labelLiveRows([row.sourceRow],payload,labelCatalog)[0]; const hasNotes=payload?.manual?row.has_notes:notePresence(`live:${payload.connection_id}`,sourceRow.ticket); return {...row,sourceRow:{...sourceRow,has_notes:hasNotes},has_notes:hasNotes,tags:sourceRow.tags || row.tags} }) : [],[section,payload,tradeScope.timeBasis,labelCatalog.assignments,notePresence])
   const filteredTrades = useMemo(() => filterLiveLedgerRows(tradeRows,tradeScope.filters,tradeScope.extra).filter(deal => !payload?.manual || strategy === 'all' || deal.record?.payload.playbook_id === strategyId && (!strategyRevision || deal.record?.payload.playbook_revision === Number(strategyRevision))),[tradeRows,tradeScope,payload?.manual,strategy,strategyId,strategyRevision])
   const readTradeTimeFacets = useCallback(async basis => liveLedgerFacets(liveLedgerRows(payload,basis),timezone),[payload,timezone])
   const applyTradeFilters = (filters,extra,timeBasis) => (section === 'tag-analytics' ? setTagScope : setTradeScope)(current=>({filters,extra,timeBasis:timeBasis || current.timeBasis}))

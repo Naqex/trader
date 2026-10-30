@@ -1,6 +1,6 @@
 import DataTable, { SortResetColumn } from './DataTable.jsx'
 import PaginationFooter from './PaginationFooter.jsx'
-import TestingIcon from './TestingIcon.jsx'
+import ChartIcon from './ChartIcon.jsx'
 import { TestingSkeleton } from './TestingReadState.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import { useEffect } from 'react'
@@ -43,7 +43,7 @@ export default function TradeLedgerGrid({
           onKeyDown={actionable ? event => { if (event.target === event.currentTarget && ['Enter',' '].includes(event.key)) { event.preventDefault(); activate() } } : undefined}>
           <td className="wm-table-row-number" data-column="row_number">{rowNumberOffset + index + 1}</td>
           {selectable && <td className="is-center"><input type="checkbox" aria-label={t('Chọn lệnh {id}', { id: key })} checked={checked.has(key)} onChange={() => onToggle(key)} /></td>}
-          {actionable && <td className="is-center"><button className="fxa-detail-button wm-table-row-action" type="button" aria-label={t('Chi tiết {id}', { id: key })} aria-pressed={isSelected} onClick={() => onSelect(isSelected ? '' : key)}><TestingIcon kind="journal" size={16} /></button></td>}
+          {actionable && <td className="is-center"><button className="fxa-detail-button wm-table-row-action" type="button" aria-label={t('Chi tiết {id}', { id: key })} data-note-state={row.has_notes===true?'with':row.has_notes===false?'without':'unknown'} title={t(row.has_notes===true?'Có ghi chú':row.has_notes===false?'Chưa có ghi chú':'Chưa xác minh ghi chú')} aria-pressed={isSelected} onClick={() => onSelect(isSelected ? '' : key)}><ChartIcon name={row.has_notes===true?'note-filled':'note-empty'} width={18} height={18}/></button></td>}
           {shownColumns.map(([column]) => <td key={column} data-column={column} className={cellClass?.(column)}>{renderCell(row, column)}</td>)}
         </tr>
       })}</tbody>

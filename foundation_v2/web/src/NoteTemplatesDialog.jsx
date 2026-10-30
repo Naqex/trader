@@ -21,7 +21,7 @@ function EditableTemplate({workspace,template,onSaved}) {
   </article>
 }
 
-export default function NoteTemplatesDialog({workspace,library,onClose,onApply}) {
+export default function NoteTemplatesDialog({workspace,library,onClose,onApply,context='testing-trades'}) {
   const {t,language,timezone}=useTestingLocale(), id=useId(), dialog=useRef(null)
   const [search,setSearch]=useState(''),[selectedId,setSelectedId]=useState('beginner'),[menu,setMenu]=useState(null)
   const {boundary,requestClose,active,closing}=useAutosaveBoundary(onClose)
@@ -68,7 +68,7 @@ export default function NoteTemplatesDialog({workspace,library,onClose,onApply})
       <aside>
         <div className="wm-note-template-list" role="group" aria-label={t('Mẫu ghi chú')}>
           {filtered.some(item=>favorites.includes(item.id)) && <><h3>{t('Yêu thích')}</h3>{filtered.filter(item=>favorites.includes(item.id)).map(row)}</>}
-          <h3>{t('Tất cả mẫu')}</h3>{filtered.map(row)}
+          <h3>{t('Tất cả mẫu')}</h3>{filtered.filter(item=>!favorites.includes(item.id)).map(row)}
           {!filtered.length && <p>{t('Không tìm thấy mẫu.')}</p>}
         </div>
         <button type="button" className="fxa-button wm-note-new-template" disabled={disabled} onClick={()=>void create(false)}><ChartIcon name="order"/>{t('New template')}</button>
@@ -80,7 +80,7 @@ export default function NoteTemplatesDialog({workspace,library,onClose,onApply})
     {(library.status==='loading' || library.error) && <div className="wm-note-library-state" role={library.error?'alert':'status'}>{t(library.error?'Không đọc hoặc lưu được thư viện mẫu. Đọc lại trước khi tiếp tục.':'Đang đọc thư viện mẫu…')}{library.error && <button type="button" className="fxa-button" onClick={async()=>{if(await flush())library.refresh()}}>{t('Đọc lại dữ liệu')}</button>}</div>}
     <footer><div className="wm-note-template-default"><button type="button" className="fxa-button" disabled={disabled} aria-expanded={menu==='default'} aria-haspopup="menu" onClick={()=>setMenu(menu==='default'?null:'default')}>{t('Set as default')}<ChartIcon name="down"/>
       </button>{menu==='default' && <div role="menu" aria-label={t('Mẫu mặc định')}>{TEMPLATE_CONTEXTS.map(context=><button type="button" role="menuitemcheckbox" aria-checked={defaults[context]===selected.id} key={context} disabled={disabled} onClick={()=>{const next={...defaults};if(next[context]===selected.id)delete next[context];else next[context]=selected.id;void preferences({defaults:next})}}><span className="wm-template-checkbox" aria-hidden="true">{defaults[context]===selected.id?'✓':''}</span><span>{t(CONTEXT_LABELS[context])}<small>{items.find(item=>item.id===defaults[context])?.name || t('Chưa đặt mẫu mặc định')}</small></span></button>)}</div>}</div>
-      <div><button type="button" className="fxa-button" disabled={closing} onClick={()=>void requestClose()}>{t('Cancel')}</button><div className="wm-note-template-apply"><button type="button" className="fxa-button is-primary" aria-expanded={menu==='apply'} aria-haspopup="menu" onClick={()=>setMenu(menu==='apply'?null:'apply')}>{t('Apply to')}<ChartIcon name="down"/></button>{menu==='apply' && <div role="menu" aria-label={t('Áp dụng mẫu')}><button type="button" role="menuitem" onClick={()=>void apply(false)}>{t('Chèn vào ghi chú')}</button><button type="button" role="menuitem" onClick={()=>{if(window.confirm(t('Thay toàn bộ nội dung ghi chú bằng mẫu này?')))void apply(true)}}>{t('Thay nội dung ghi chú')}</button></div>}</div></div>
+      <div><button type="button" className="fxa-button" disabled={closing} onClick={()=>void requestClose()}>{t('Cancel')}</button><div className="wm-note-template-apply"><button type="button" className="fxa-button is-primary" disabled={disabled} aria-expanded={menu==='apply'} aria-haspopup="menu" onClick={()=>setMenu(menu==='apply'?null:'apply')}>{t('Apply to')}<ChartIcon name="down"/></button>{menu==='apply' && <div role="menu" aria-label={t('Áp dụng mẫu')}><button type="button" role="menuitem" disabled={disabled} onClick={()=>void apply(false)}><ChartIcon name="note-empty"/>{t(context==='live-notes'?'Ghi chú này':'Giao dịch này')}</button></div>}</div></div>
     </footer>
   </dialog></AutosaveBoundaryContext.Provider>
 }

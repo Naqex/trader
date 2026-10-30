@@ -2,11 +2,11 @@ import TestingIcon from './TestingIcon.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import ChartIcon from './ChartIcon.jsx'
 
-export default function TradeFacts({ asset, side, entryType, entryAt, entryPrice, size, stop, target, exitAt, exitPrice, gross, fees, net, currency, timeBasis, alternateEntry, alternateExit }) {
+export default function TradeFacts({ account, asset, side, entryType, entryAt, entryPrice, size, stop, target, exitAt, exitPrice, gross, fees, net, currency, timeBasis, alternateEntry, alternateExit, duration, fills }) {
   const { t } = useTestingLocale()
   const rows = [
-    [['Asset',asset,'account'],['Side',side,'trades']],
-    [['Entry type',entryType,'info'],['Entry date',entryAt,'clock',alternateEntry],['Entry price',entryPrice,'money'],['Total size',size,'money'],['Stop loss',stop,'money'],['Take profit',target,'money'],['Exit date',exitAt,'clock',alternateExit],['Exit price',exitPrice,'money']],
+    [...(account ? [['Account',account,'account']] : []),['Asset',asset,'account'],['Side',side,'trades']],
+    [['Entry type',entryType,'info'],['Entry date',entryAt,'clock',alternateEntry],['Entry price',entryPrice,'money'],['Total size',size,'money'],['Stop loss',stop,'money'],['Take profit',target,'money'],['Exit date',exitAt,'clock',alternateExit],['Exit price',exitPrice,'money'],...(duration!==undefined?[['Thời gian giữ lệnh',duration,'clock'],['Nhiều lần vào/thoát lệnh',fills,'trades']]:[])],
     [['Gross PnL',gross,'money'],['Fees',fees,'money'],['Net PnL',net,'money']],
   ]
   return <section className="fx-live-trade-details" aria-label={t('Thông tin giao dịch')} data-time-basis={timeBasis}>

@@ -63,6 +63,29 @@ def main():
                 replay('/step',dict(steps=3))
                 replay('/orders/close',dict(target_id=session['payload']['execution']['position']['position_id'],operation_id='fixture-close'))
                 trade=api('GET','/api/v2/replay/trades?page=1&page_size=10')['ledger'][0]['trade_id']
+                for number in range(12):
+                    replay('/orders/market',dict(operation_id=f'nav-buy-{number}',side='BUY',quantity='0.12',stop_loss=None,take_profit=None,execution_timing='current_quote'))
+                    replay('/orders/close',dict(target_id=session['payload']['execution']['position']['position_id'],operation_id=f'nav-close-{number}'))
+                labels='/api/v2/trade-labels'
+                loose=api('POST',labels,dict(action='create',name='Ungrouped fixture',color='green'))
+                captured=api('POST',labels,dict(action='create_group',name='Captured fixture',capture_ungrouped=True))
+                group=next(item for item in captured['groups'] if item['name']=='Captured fixture')
+                assert next(item for item in captured['items'] if item['name']=='Ungrouped fixture')['group_id']==group['id']
+                body=dict(action='duplicate_group',id=group['id'],expected_revision=group['revision'],name='Copied fixture')
+                copied=api('POST',labels,body,key='duplicate-group')
+                assert api('POST',labels,body,key='duplicate-group')==copied
+                copy=next(item for item in copied['groups'] if item['name']=='Copied fixture')
+                assert any(item['group_id']==copy['id'] and item['name']=='Ungrouped fixture (1)' for item in copied['items'])
+                api('POST',labels,{**body,'name':'Wrong revision','expected_revision':999},status=409)
+                api('POST',labels,{**body,'name':'Other tenant'},workspace='tenant-b',status=422)
+                current=api('GET',labels)
+                assert not any(item['name']=='Wrong revision' for item in current['groups'])
+                comment=dict(entry_type='observation',note='Isolated comment',tags=[],source=dict(kind='trade-comment',id='comment-fixture',parent_session_id=sid,parent_trade_id=trade))
+                saved_comment=api('POST','/api/v2/journal',comment,status=201,key='comment-create')
+                assert api('POST','/api/v2/journal',comment,status=201,key='comment-create')==saved_comment
+                context=api('GET','/api/v2/journal/context?'+urlencode(dict(session_id=sid)))
+                assert not any(item.get('has_notes') for item in context['trades'])
+                checks.append('atomic tag-group capture/duplication, duplicate idempotency, stale CAS rollback, tenant isolation, comments do not create trade notes')
                 doc=dict(format='blocknote',version=1,blocks=[dict(type='paragraph',content='Verified note template')])
                 library='/api/v2/note-templates'
                 empty=api('GET',library);assert empty['items']==[] and empty['preferences']['defaults']=={}
@@ -103,7 +126,12 @@ def main():
                 checks.append('real image bytes, 5MiB upload, signature/type/size guards, digest dedup, scoped read/delete, replay revision unchanged')
                 import psycopg
                 with psycopg.connect(dsn) as db:
-                    connection=uuid.uuid4();snapshot={'deals':[{'position_id':123,'type':0}],'positions':[],'account':{'balance':1000}}
+                    connection=uuid.uuid4()
+                    fills=[]
+                    for position in [123,124]:
+                        for offset in [0,1]:
+                            fills.append(dict(ticket=position*10+offset,position_id=position,order=position*10+offset,type=offset,entry=offset,symbol='EURUSD',volume=0.1,price=1.1+offset*0.00015,time_msc=1793347200000+position*10000+offset*3600000,profit=1.51*offset,commission=0,swap=0,fee=0))
+                    snapshot=dict(deals=fills,positions=[],orders=[],quotes=[],cashflows=[],account=dict(balance=1000,equity=1000,account_ref='1234567',currency='USD',opening_balance=10000))
                     db.execute("INSERT INTO mt5_connections(workspace_id,connection_id,request_id,account_key,name,server,login_hint,start_date,status,snapshot) VALUES('tenant-a',%s,%s,'synthetic','Fixture','Fixture-Demo','1234567','2026-01-01','connected',%s)",(connection,uuid.uuid4(),json.dumps(snapshot)))
                     db.commit()
                     live=api('POST',media,{**body,'session_id':f'live:{connection}','trade_id':'position:123'})
@@ -120,7 +148,7 @@ def main():
                     class Handler(BaseHTTPRequestHandler):
                         def log_message(self,*_):pass
                         def handle_api(self):
-                            if self.path=='/fixture':result=dict(status=200,headers={},body=dict(session_id=sid,trade_id=trade))
+                            if self.path=='/fixture':result=dict(status=200,headers={},body=dict(session_id=sid,trade_id=trade,live_payload=dict(snapshot,status='ready',source='MT5',connection_id=str(connection),account_login='1234567',account_environment='demo')))
                             elif self.path=='/api/v2/events':result=dict(status=204,headers={},body={})
                             elif self.path.startswith('/api/v2/'):
                                 body=json.loads(self.rfile.read(int(self.headers.get('Content-Length','0')))) if self.command=='POST' else None

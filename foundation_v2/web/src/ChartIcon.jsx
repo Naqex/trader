@@ -1,6 +1,12 @@
 import React from 'react'
 
 const paths = {
+  'note-empty':'M5 4h14v16H5zM9 8h6',
+  'note-filled':'M5 4h14v16H5zM9 8h6m-6 5 2 2 4-4',
+  comment:'M21 11a9 9 0 0 1-9 9H4l-2 2 2-7a9 9 0 1 1 17-4z',
+  clock:'M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0',
+  'more-vertical':'M12 5h.01M12 12h.01M12 19h.01',
+  up:'m6 15 6-6 6 6',
   templates:'M12 3a9 9 0 1 0 0 18h1a2 2 0 0 0 1.5-3.3 1.3 1.3 0 0 1 1-2.2H18a4 4 0 0 0 4-4c0-5-5-8.5-10-8.5zM7 9h.01M11 6h.01M16 7h.01M6 14h.01',
   star:'m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9z',
   tag:'M3 3h8l10 10-8 8L3 11zM7 7h.01',

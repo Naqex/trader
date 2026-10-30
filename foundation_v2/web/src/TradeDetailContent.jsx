@@ -1,6 +1,5 @@
 import { lazy, Suspense, useContext, useId, useRef, useState } from 'react'
 import { useTestingLocale } from './testingLocale.jsx'
-import { displayDate } from './dateFormat.js'
 import useAutosave, { AutosaveBoundaryContext, AutosaveStatus } from './useAutosave.jsx'
 import { tradeNoteAdapter } from './tradeNoteApi.js'
 import { dateFromValue } from './analyticsViewModel.js'
@@ -12,12 +11,12 @@ const NoteBlockEditor = lazy(()=>import('./NoteBlockEditor.jsx'))
 const TABS = [['details', 'Details'], ['tags', 'Tag groups'], ['media', 'Media']]
 
 export function TradeDetailHeading({ title, subtitle, net, currency, entryAt, exitAt, timeBasis = 'Chart' }) {
-  const { t, fmt, timezone } = useTestingLocale()
+  const { t, fmt, timezone, locale } = useTestingLocale()
   const entryDate = dateFromValue(entryAt), exitDate = dateFromValue(exitAt)
   const entry = entryDate?.getTime(), exit = exitDate?.getTime()
   const minutes = Number.isFinite(entry) && Number.isFinite(exit) && exit >= entry ? Math.floor((exit-entry)/60000) : null
   const duration = minutes == null ? null : `${Math.floor(minutes/60)}h ${minutes%60}m`
-  const time = Number.isFinite(entry) ? displayDate(entryDate,{timeStyle:'medium',timeZone:timezone}).split(' ')[1] : null
+  const time = Number.isFinite(entry) ? new Intl.DateTimeFormat(locale,{hour:'numeric',minute:'2-digit',timeZone:timezone}).format(entryDate) : null
   return <div className="fx-live-trade-heading"><div className="fx-trade-title-line"><h2>{title}</h2>{Number.isFinite(net) && <span className={net > 0 ? 'is-positive' : net < 0 ? 'is-negative' : ''}>{fmt(net,currency ? ` ${currency}` : '')} <small>({t('Net PnL')})</small></span>}</div>{time && <p title={`${t('Entry date')} · ${timeBasis} · ${timezone}${subtitle ? ` · ${subtitle}` : ''}`}><time dateTime={entryDate.toISOString()}>{time}</time>{duration && <> · <span title={t('Thời gian giữ lệnh')}>{duration}</span></>}</p>}</div>
 }
 

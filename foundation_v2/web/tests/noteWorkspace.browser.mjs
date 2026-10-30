@@ -12,14 +12,21 @@ try{
   const context=await browser.newContext({viewport:{width,height:940},deviceScaleFactor:width===1440?1.25:1})
   await context.addInitScript(theme=>localStorage.setItem('tw-theme',theme),theme)
   await context.routeWebSocket('**/*',socket=>socket.close())
-  let failMedia=false
+  let failMedia=false,corruptCommentReceipt=false,failNoteWrites=false
   await context.route('**/*',async route=>{
    const request=route.request(),url=new URL(request.url())
    if(url.origin!==origin)return route.abort()
    if(url.pathname==='/api/v2/events')return route.fulfill({status:204,body:''})
    if(url.pathname.startsWith('/api/')){
     if(failMedia && url.pathname==='/api/v2/trade-media' && request.method()==='GET')return route.fulfill({status:503,json:{detail:'fixture_failure'}})
+    const body=request.method()==='POST'?request.postDataJSON():null
+    if(failNoteWrites && url.pathname.startsWith('/api/v2/journal') && (body?.source || body?.payload?.source)?.kind==='trade-note')return route.fulfill({status:503,json:{detail:'fixture_note_write_failure'}})
     const response=await route.fetch({url:api+url.pathname+url.search})
+    if(corruptCommentReceipt && url.pathname==='/api/v2/journal' && body?.source?.kind==='trade-comment'){
+     corruptCommentReceipt=false
+     const data=await response.json();data.payload.note='Invalid success receipt'
+     return route.fulfill({response,json:data})
+    }
     return route.fulfill({response})
    }
    return route.continue()
@@ -32,6 +39,38 @@ try{
   await row.locator('[data-column=symbol]').click()
   const drawer=page.locator('dialog.fxa-trade-inspector'),editor=drawer.locator('.bn-editor')
   await editor.waitFor()
+  if(width===1920){
+   const original=await row.getAttribute('aria-selected')
+   assert.equal(original,'true')
+   failNoteWrites=true
+   await editor.fill('Retained after failed navigation')
+   await drawer.getByRole('button',{name:'Giao dịch tiếp theo',exact:true}).click()
+   await drawer.locator('[data-state=error]').waitFor()
+   assert.equal((await editor.innerText()).trim(),'Retained after failed navigation')
+   assert.equal(await row.getAttribute('aria-selected'),'true')
+   failNoteWrites=false
+   await drawer.locator('.wm-autosave-status').getByRole('button',{name:'Thử lại',exact:true}).click()
+   await drawer.locator('[data-state=saved]').waitFor()
+   await editor.fill('Saved before navigation')
+   await drawer.getByRole('button',{name:'Giao dịch tiếp theo',exact:true}).click()
+   await page.waitForFunction(()=>document.querySelector('dialog.fxa-trade-inspector .bn-editor')?.innerText.trim()!=='Saved before navigation')
+   await drawer.getByRole('button',{name:'Giao dịch trước',exact:true}).click()
+   await page.waitForFunction(()=>document.querySelector('dialog.fxa-trade-inspector .bn-editor')?.innerText.trim()==='Saved before navigation')
+   assert(await drawer.getByRole('button',{name:'Thêm thao tác giao dịch',exact:true}).isDisabled())
+   for(let index=0;index<10;index++){
+    await drawer.getByRole('button',{name:'Giao dịch tiếp theo',exact:true}).click()
+    await page.waitForFunction(()=>document.querySelector('dialog.fxa-trade-inspector')?.getAttribute('aria-busy')==='false')
+   }
+   assert.equal(await page.getByTestId('analytics-ledger').locator('tbody tr.is-selected .wm-table-row-number').innerText(),'11')
+   await drawer.getByRole('button',{name:'Giao dịch trước',exact:true}).click()
+   await page.waitForFunction(()=>document.querySelector('[data-testid=analytics-ledger] tr.is-selected .wm-table-row-number')?.textContent==='10')
+   for(let index=0;index<9;index++){
+    await drawer.getByRole('button',{name:'Giao dịch trước',exact:true}).click()
+    await page.waitForFunction(()=>document.querySelector('dialog.fxa-trade-inspector')?.getAttribute('aria-busy')==='false')
+   }
+   await page.waitForFunction(()=>document.querySelector('dialog.fxa-trade-inspector .bn-editor')?.innerText.trim()==='Saved before navigation')
+   report.cases.push('dirty-note flush and navigation across page boundary in both directions')
+  }
   if(width===1920){
    const separator=drawer.getByRole('separator',{name:'Độ rộng chi tiết giao dịch'}),before=await drawer.locator('.fx-trade-detail-sidebar').boundingBox()
    const b=await separator.boundingBox()
@@ -59,6 +98,7 @@ try{
   await dialog.locator('[data-state=saved]').waitFor()
   await dialog.getByRole('button',{name:label('Yêu thích mẫu','Favorite template'),exact:true}).click()
   await page.waitForFunction(()=>document.querySelector('.wm-note-template-actions button').getAttribute('aria-pressed')==='true')
+  assert.equal(await dialog.locator('.wm-note-template-list > button').filter({hasText:`QA ${width}`}).count(),1)
   await dialog.getByRole('button',{name:label('Đặt mặc định','Set as default'),exact:true}).click()
   const defaults=dialog.getByRole('menuitemcheckbox')
   assert.equal(await defaults.count(),3)
@@ -69,7 +109,7 @@ try{
   await page.screenshot({path:`${out}/defaults-${width}-${theme}.png`})
   await page.keyboard.press('Escape')
   await dialog.getByRole('button',{name:label('Áp dụng vào','Apply to'),exact:true}).click()
-  await dialog.getByRole('menuitem',{name:label('Chèn vào ghi chú','Insert into this note'),exact:true}).click()
+  await dialog.getByRole('menuitem',{name:label('Giao dịch này','This trade'),exact:true}).click()
   await dialog.waitFor({state:'detached'})
   assert((await editor.innerText()).includes(`Persisted template ${width}`))
   await drawer.locator('[data-state=saved]').waitFor()
@@ -103,6 +143,20 @@ try{
   await labels.getByRole('checkbox',{checked:true}).filter({hasText:`Breakout ${width}`}).waitFor()
   await page.keyboard.press('Escape')
   assert((await groups.innerText()).includes(`Breakout ${width}`))
+  if(width===1920){
+   await groups.getByRole('button',{name:'Sửa nhóm Setup 1920',exact:true}).click()
+   const manage=page.getByRole('dialog',{name:'Quản lý nhóm nhãn',exact:true})
+   await manage.getByRole('textbox').fill('Renamed setup')
+   await manage.getByRole('button',{name:'Lưu',exact:true}).click()
+   await groups.getByRole('button',{name:'Sửa nhóm Renamed setup',exact:true}).click()
+   await manage.getByRole('button',{name:'Nhân bản nhóm',exact:true}).click()
+   await groups.getByRole('button',{name:'Sửa nhóm Renamed setup (1)',exact:true}).waitFor()
+   const copied=groups.locator('.wm-trade-tag-group').filter({has:page.getByRole('button',{name:'Sửa nhóm Renamed setup (1)',exact:true})})
+   assert(!(await copied.innerText()).includes('Breakout 1920'))
+   await groups.getByRole('button',{name:'Di chuyển nhóm Renamed setup (1)',exact:true}).press('ArrowUp')
+   await page.screenshot({path:`${out}/groups-managed-${width}-${theme}.png`})
+   report.cases.push('group rename, atomic duplication without reassignment, keyboard reorder')
+  }
   await drawer.getByRole('tab',{name:label('Tệp đính kèm','Media'),exact:true}).click()
   const media=drawer.locator('.wm-trade-media'),file=media.locator('input[type=file]')
   await media.getByRole('button',{name:label('Tải ảnh lên','Upload'),exact:true}).waitFor()
@@ -123,6 +177,50 @@ try{
   await media.getByRole('button',{name:label('Đọc lại dữ liệu','Reload data'),exact:true}).click()
   await media.getByRole('button',{name:label('Tải ảnh lên','Upload'),exact:true}).waitFor()
   report.cases.push({width,theme,language,alignedSeam:true,templateCRUD:true,favorite:true,independentDefaults:true,apply:true,tagGroupCreateAndAssign:true,mediaBytes:true,invalidImage:true,mediaErrorRecovery:true})
+  const fixture=await (await page.request.get(api+'/fixture')).json()
+  let livePayload=fixture.live_payload
+  await context.route('**/api/v2/live/status?*',route=>route.fulfill({json:livePayload}))
+  await page.goto(`${origin}/?workspace=tenant-a&view=live&area=live&section=trades&lang=${language}`)
+  await page.getByTestId('live-trade-grid').locator('tbody tr').first().locator('[data-column=symbol]').click()
+  await editor.waitFor()
+  assert((await drawer.locator('.fx-live-trade-details dl').first().innerText()).includes('MT5 1234567'))
+  assert((await drawer.locator('.wm-trade-return-parts').innerText()).includes('N/A'))
+  await drawer.getByRole('button',{name:label('Xem các lần khớp','View fills'),exact:true}).click()
+  const fillsDialog=page.getByRole('dialog',{name:label('Nhiều lần vào/thoát lệnh','Multiple entries/exits'),exact:true})
+  assert.equal(await fillsDialog.locator('tbody tr').count(),2)
+  await fillsDialog.getByRole('button',{name:label('Đóng','Close'),exact:true}).click()
+  await drawer.getByRole('button',{name:label('Bình luận','Comments'),exact:true}).click()
+  const comments=drawer.getByRole('complementary',{name:label('Bình luận','Comments'),exact:true})
+  const input=comments.getByRole('textbox',{name:label('Viết bình luận…','Leave a comment…'),exact:true})
+  if(width===1920)corruptCommentReceipt=true
+  await input.fill(`Comment fixture ${width}`)
+  await comments.getByRole('button',{name:label('Bình luận','Comments'),exact:true}).click()
+  if(width===1920){
+   await comments.getByRole('alert').waitFor()
+   assert(await input.getAttribute('readonly')!==null)
+   await comments.getByRole('button',{name:'Thử lại',exact:true}).click()
+  }
+  await comments.locator('article').filter({hasText:`Comment fixture ${width}`}).waitFor()
+  assert.equal(await comments.locator('article').filter({hasText:`Comment fixture ${width}`}).count(),1)
+  await editor.fill(`Live note ${width}`)
+  await drawer.locator('[data-state=saved]').waitFor()
+  await page.screenshot({path:`${out}/live-comments-${width}-${theme}.png`})
+  await drawer.getByRole('button',{name:label('Giao dịch tiếp theo','Next trade'),exact:true}).click()
+  await page.waitForFunction(()=>document.querySelector('dialog.fxa-trade-inspector')?.getAttribute('aria-busy')==='false')
+  await drawer.getByRole('button',{name:label('Giao dịch trước','Previous trade'),exact:true}).click()
+  await page.waitForFunction(text=>document.querySelector('dialog.fxa-trade-inspector .bn-editor')?.innerText.trim()===text,`Live note ${width}`)
+  await comments.locator('article').filter({hasText:`Comment fixture ${width}`}).waitFor()
+  await drawer.getByRole('button',{name:label('Thêm thao tác giao dịch','More trade actions'),exact:true}).click()
+  await page.getByRole('menuitem',{name:label('Xóa giao dịch','Delete trade'),exact:true}).click()
+  const deletion=page.getByRole('dialog',{name:label('Xóa giao dịch','Delete trade'),exact:true})
+  assert(await deletion.getByRole('button',{name:label('Xóa giao dịch','Delete trade'),exact:true}).isDisabled())
+  await deletion.getByRole('button',{name:label('Hủy','Cancel'),exact:true}).click()
+  await drawer.getByRole('button',{name:label('Đóng chi tiết','Close details'),exact:true}).click()
+  await page.reload()
+  const liveGrid=page.getByTestId('live-trade-grid')
+  await liveGrid.locator('[data-note-state=with]').waitFor()
+  await liveGrid.locator('[data-note-state=without]').waitFor()
+  report.cases.push({width,liveAccount:true,realFillHistory:true,commentPersistence:true,commentNoteIsolation:true,navigation:true,distinctNoteIcons:true,brokerDeletionDisabled:true})
   await context.unrouteAll({behavior:'wait'});await context.close()
  }
  assert.deepEqual(report.errors,[]);report.status='PASS'

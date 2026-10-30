@@ -154,6 +154,13 @@ enum Draft {
     },
     CreateGroup {
         name: String,
+        #[serde(default)]
+        capture_ungrouped: bool,
+    },
+    DuplicateGroup {
+        id: Option<String>,
+        expected_revision: Option<i64>,
+        name: String,
     },
     UpdateGroup {
         id: String,
@@ -220,9 +227,12 @@ async fn execute(tx: &Transaction<'_>, scope: &Workspace, body: Value) -> Result
     let defs = definitions(tx, &scope.workspace_id).await?;
     let mut changed_assignment = None;
     match draft {
-        Draft::CreateGroup { name } => {
+        Draft::CreateGroup {
+            name,
+            capture_ungrouped,
+        } => {
             validate_group_name(&defs, None, &name)?;
-            crate::metadata_mutations::create(
+            let group = crate::metadata_mutations::create(
                 tx,
                 scope,
                 "trade_label",
@@ -230,6 +240,74 @@ async fn execute(tx: &Transaction<'_>, scope: &Workspace, body: Value) -> Result
                 None,
             )
             .await?;
+            if capture_ungrouped {
+                for current in defs.iter().filter(|r| {
+                    !is_group(r) && r["payload"]["group_id"].is_null() && !is_archived(r, &defs)
+                }) {
+                    let mut p = current["payload"].clone();
+                    p["group_id"] = group["record_id"].clone();
+                    crate::metadata_mutations::update(
+                        tx,
+                        scope,
+                        "trade_label",
+                        current.clone(),
+                        p,
+                        false,
+                    )
+                    .await?;
+                }
+            }
+        }
+        Draft::DuplicateGroup {
+            id,
+            expected_revision,
+            name,
+        } => {
+            validate_group_name(&defs, None, &name)?;
+            validate_group(&defs, id.as_deref())?;
+            if let Some(id) = &id {
+                let current = crate::metadata_mutations::load(tx, scope, "trade_label", id).await?;
+                if current["revision"].as_i64() != expected_revision {
+                    return Err(conflict());
+                }
+            }
+            let group = crate::metadata_mutations::create(
+                tx,
+                scope,
+                "trade_label",
+                json!({"entity":"group","name":name,"active":true,"archived":false}),
+                None,
+            )
+            .await?;
+            let mut used = defs.clone();
+            for current in defs.iter().filter(|r| {
+                !is_group(r)
+                    && r["payload"]["group_id"].as_str() == id.as_deref()
+                    && !is_archived(r, &defs)
+            }) {
+                let base: String = text(&current["payload"], "name").chars().take(48).collect();
+                let mut number = 1;
+                let next_name = loop {
+                    let candidate = format!("{base} ({number})");
+                    if validate_definition(
+                        &used,
+                        None,
+                        &candidate,
+                        text(&current["payload"], "color"),
+                    )
+                    .is_ok()
+                    {
+                        break candidate;
+                    }
+                    number += 1;
+                    if number > used.len() + 1 {
+                        return Err(invalid("duplicate_group_names_exhausted"));
+                    }
+                };
+                let created = crate::metadata_mutations::create(tx, scope, "trade_label",
+                    json!({"name":next_name,"color":current["payload"]["color"],"aliases":[next_name],"active":true,"group_id":group["record_id"],"archived":false}), None).await?;
+                used.push(created);
+            }
         }
         Draft::UpdateGroup {
             id,

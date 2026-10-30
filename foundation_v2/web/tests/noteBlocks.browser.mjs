@@ -48,7 +48,7 @@ try {
   const before=await editor.innerText()
   await drawer.getByRole('button',{name:'Templates',exact:true}).click()
   const templates=page.locator('dialog.wm-note-templates');await templates.waitFor()
-  await templates.getByRole('searchbox').fill('Daily');assert.equal(await templates.locator('.wm-note-template-list > button').count(),2)
+  await templates.getByRole('searchbox').fill('Daily');assert.equal(await templates.locator('.wm-note-template-list > button').count(),1)
   await page.screenshot({path:`${out}/templates-${width}-${theme}.png`})
   console.log('closing templates');await page.keyboard.press('Escape');await templates.waitFor({state:'detached'});console.log('templates closed');assert.equal(await drawer.count(),1);assert.equal(await editor.innerText(),before)
   const side=drawer.locator('.bn-side-menu')

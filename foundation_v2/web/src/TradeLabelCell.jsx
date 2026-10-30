@@ -135,7 +135,7 @@ export default function TradeLabelCell({ workspace, session, row, catalog, onCha
     drag.current = next; setDragging(next)
   }
   return <>
-    <button type="button" className={`wm-label-cell ${className}${displayed.length ? ' has-labels' : ''}`} aria-label={groupId!==undefined?title:t('Nhãn giao dịch {id}', { id: row.trade_id || row.tradeId })} aria-haspopup="dialog" aria-expanded={Boolean(anchor)} disabled={!workspace || !session} onClick={event => { setAnchor(event.currentTarget); setError(''); setSearch('') }}>
+    <button type="button" className={`wm-label-cell ${className}${displayed.length ? ' has-labels' : ''}`} aria-label={groupId!==undefined?t('Thêm nhãn vào {name}',{name:catalog.groups?.find(group=>group.id===groupId)?.name || t('Chưa phân nhóm')}):t('Nhãn giao dịch {id}', { id: row.trade_id || row.tradeId })} aria-haspopup="dialog" aria-expanded={Boolean(anchor)} disabled={!workspace || !session} onClick={event => { setAnchor(event.currentTarget); setError(''); setSearch('') }}>
       <LabelContents tags={displayed} options={options} placeholder={title} />
     </button>
     {anchor && <LegacyPopover anchor={anchor} label={t('Nhãn giao dịch')} role="dialog" className="wm-label-popup" maxWidth={360} theme={theme} onClose={close}>

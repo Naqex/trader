@@ -15,18 +15,39 @@ import TradeTagGroups from './TradeTagGroups.jsx'
 import TradeFacts from './TradeFacts.jsx'
 import { currencyLabel } from './moneyFormat.js'
 import { formatReturnPercent } from './tradeReturnFormat.js'
+import ChartIcon from './ChartIcon.jsx'
+import LegacyPopover from './LegacyPopover.jsx'
+import TradeComments from './TradeComments.jsx'
 
-function LiveTradeInspector({ deal, payload, accountName, time, money, side, workspace, catalog, onLabelsChanged, onClose }) {
-  const { t, fmt } = useTestingLocale()
+function LiveTradeDialog({kind,deal,time,side,onClose}) {
+  const {t,fmt}=useTestingLocale(),dialog=useRef(null)
+  useEffect(()=>{const node=dialog.current,opener=document.activeElement;node.showModal();return()=>{node.close();if(opener?.isConnected)opener.focus({preventScroll:true})}},[])
+  return <dialog ref={dialog} className="wm-trade-action-dialog" aria-label={t(kind==='fills'?'Nhiều lần vào/thoát lệnh':'Xóa giao dịch')} onCancel={event=>{event.preventDefault();event.stopPropagation();onClose()}} onKeyDown={event=>event.stopPropagation()}>
+    <header><h2>{t(kind==='fills'?'Nhiều lần vào/thoát lệnh':'Xóa giao dịch')}</h2><button type="button" className="wm-button is-icon" aria-label={t('Đóng')} onClick={onClose}><ChartIcon name="close"/></button></header>
+    {kind==='fills'?<div className="wm-trade-fill-list"><table><thead><tr>{['Time','Loại khớp','Side','Size','Price'].map(label=><th key={label}>{t(label)}</th>)}</tr></thead><tbody>{deal.fills.map(fill=><tr key={fill.ticket}><td>{time(fill.time_msc)}</td><td>{t(fill.entry===0?'Vào lệnh':[1,3].includes(fill.entry)?'Thoát lệnh':'Khớp khác')}</td><td>{side(fill.type)}</td><td>{fmt(fill.volume,'',4)}</td><td>{fmt(fill.price,'',6)}</td></tr>)}</tbody></table></div>:<><p>{t('Giao dịch này được đồng bộ từ MT5. Chưa hỗ trợ xóa khỏi nhật ký; dữ liệu và lệnh tại broker vẫn được giữ.')}</p><footer><button type="button" className="fxa-button" onClick={onClose}>{t('Cancel')}</button><button type="button" className="fxa-button is-danger" disabled>{t('Xóa giao dịch')}</button></footer></>}
+  </dialog>
+}
+
+function LiveTradeInspector({ deal, payload, accountName, time, money, side, workspace, catalog, onLabelsChanged, onClose, onPrevious, onNext }) {
+  const { t, fmt, locale } = useTestingLocale()
+  const [comments,setComments]=useState(false),[menu,setMenu]=useState(null),[action,setAction]=useState(null)
   const value = (item, digits = 6) => Number.isFinite(item) ? fmt(item, '', digits) : '-'
   const realizedMoney = item => deal.status === 'Closed' ? fmt(item) : deal.status === 'Open' ? 'N/A' : '-'
-  return <TradeInspector onClose={onClose} heading={<TradeDetailHeading title={`${deal.symbol}, ${side(deal.type)}`} net={deal.status === 'Closed' ? deal.net_pnl : null} currency={payload.account?.currency} entryAt={deal.open_time_utc} exitAt={deal.close_time_utc} timeBasis="Realtime" subtitle={accountName} />}>
+  const closed=deal.status==='Closed',capital=liveAccountCapital(payload)
+  const minutes=closed && Number.isFinite(deal.open_time_utc) && Number.isFinite(deal.close_time_utc) && deal.close_time_utc>=deal.open_time_utc?Math.floor((deal.close_time_utc-deal.open_time_utc)/60000):null
+  const percent=closed && capital>0 && Number.isFinite(deal.net_pnl)?deal.net_pnl/capital*100:null
+  const returns=<span className="wm-trade-return-parts"><span>{realizedMoney(deal.net_pnl)}</span><span>{percent===null?'N/A':formatReturnPercent(percent,{fmt,locale})}</span><span title={t('Biến động giá khớp thực tế / khoảng cách đến SL ban đầu, theo chiều lệnh. Không gồm phí; phí đã tính vào PnL ròng.')}><ChartIcon name="info" width={13} height={13}/>{closed && Number.isFinite(deal.realized_r)?fmt(deal.realized_r,' R'):'N/A'}</span></span>
+  return <TradeInspector onClose={onClose} onPrevious={onPrevious} onNext={onNext} liveActions={{commentButton:<button type="button" className="wm-button is-icon" aria-label={t('Bình luận')} disabled={!workspace || !payload.connection_id} aria-pressed={comments} onClick={()=>setComments(value=>!value)}><ChartIcon name="comment"/></button>,menu:<button type="button" className="wm-button is-icon" aria-label={t('Thêm thao tác giao dịch')} aria-expanded={Boolean(menu)} aria-haspopup="menu" onClick={event=>setMenu(menu?null:event.currentTarget)}><ChartIcon name="more-vertical"/></button>}} heading={<TradeDetailHeading title={`${deal.symbol}, ${side(deal.type)}`} net={closed ? deal.net_pnl : null} currency={payload.account?.currency} entryAt={deal.open_time_utc} exitAt={deal.close_time_utc} timeBasis="Realtime" subtitle={accountName} />}>
     <TradeDetailContent key={JSON.stringify([workspace,payload.connection_id,deal.ticket])} noteScope={{workspace,session:payload.connection_id ? `live:${payload.connection_id}` : null,trade:String(deal.ticket)}} tags={workspace && payload.connection_id && catalog ? <TradeTagGroups workspace={workspace} session={`live:${payload.connection_id}`} row={{...deal,trade_id:deal.ticket}} catalog={catalog} onChanged={onLabelsChanged} /> : <TradeLabelDisplay tags={deal.tags || []} options={catalog?.items || []} />}>
-      <TradeFacts asset={deal.symbol} side={side(deal.type)} entryType={deal.entry_type} timeBasis="Realtime"
+      <TradeFacts account={accountName} asset={deal.symbol} side={side(deal.type)} entryType={deal.entry_type} timeBasis="Realtime"
         entryAt={time(deal.open_time_utc)} exitAt={time(deal.close_time_utc)} entryPrice={value(deal.price_open)} exitPrice={value(deal.price_close)}
         size={value(deal.quantity,4)} stop={value(deal.stop_loss)} target={value(deal.take_profit)}
-        currency={payload.account?.currency} gross={realizedMoney(deal.gross_pnl)} fees={realizedMoney(deal.fees)} net={realizedMoney(deal.net_pnl)}/>
+        duration={minutes===null?'N/A':`${Math.floor(minutes/60)}h ${minutes%60}m`} fills={<button type="button" className="wm-trade-fills-button" disabled={!deal.fills?.length} onClick={()=>setAction('fills')}>{t('Xem các lần khớp')}<ChartIcon name="collapse" width={13} height={13}/></button>}
+        currency={payload.account?.currency} gross={realizedMoney(deal.gross_pnl)} fees={realizedMoney(deal.fees)} net={returns}/>
     </TradeDetailContent>
+    {comments && <TradeComments key={JSON.stringify([workspace,payload.connection_id,deal.ticket])} workspace={workspace} session={`live:${payload.connection_id}`} trade={String(deal.ticket)} onClose={()=>setComments(false)}/>}
+    {menu && <LegacyPopover anchor={menu} role="menu" label={t('Thêm thao tác giao dịch')} theme={document.querySelector('.fx-app')?.dataset.theme || 'dark'} onClose={()=>setMenu(null)}><button type="button" role="menuitem" className="wm-trade-delete-menu" onClick={()=>{setMenu(null);setAction('delete')}}><ChartIcon name="trash"/>{t('Xóa giao dịch')}</button></LegacyPopover>}
+    {action && <LiveTradeDialog kind={action} deal={deal} time={time} side={side} onClose={()=>setAction(null)}/>}
   </TradeInspector>
 }
 
@@ -46,15 +67,17 @@ export default function LiveBrokerSnapshot({ workspace, catalog, onLabelsChanged
   const currency = account.currency || '', money = value => fmt(value, currency ? ` ${currency}` : '')
   const capital = liveAccountCapital(payload)
   const accountLogin = payload.account_login || payload.account_binding?.login || account.account_ref
-  const accountName = mt5AccountName({ account_login: accountLogin, account_environment: payload.account_environment || payload.account_binding?.account_environment })
+  const accountName = mt5AccountName({ ...payload.connections?.find(item=>item.id===payload.connection_id), account_login: accountLogin, account_environment: payload.account_environment || payload.account_binding?.account_environment })
   const time = value => typeof value === 'number' && Number.isFinite(value) ? displayDate(new Date(value), { timeStyle: 'medium', timeZone: timezone }) : '-'
   const side = value => value === 0 ? t('Buy') : value === 1 ? t('Sell') : '-'
   const realizedColumns = ['net_pnl', 'gross_pnl', 'fees', 'return_pct', 'realized_r']
   const sortValue = (deal,key) => realizedColumns.includes(key) && deal.status !== 'Closed' ? null : key === 'account' ? accountLogin : key === 'source' ? 'Sync' : key === 'side' ? deal.type === 0 ? 'BUY' : deal.type === 1 ? 'SELL' : null : key === 'return_pct' ? capital > 0 && Number.isFinite(deal.net_pnl) ? deal.net_pnl / capital * 100 : null : deal[key]
-  const deals = sorting.rows(section === 'transactions' ? payload.cashflows || [] : trades || filterBrokerTrades(payload, filters), sortValue, [{ key: 'recorded_at_utc', direction: 'desc' }])
+  const deals = sorting.rows(section === 'transactions' ? payload.cashflows || [] : (trades || filterBrokerTrades(payload, filters)), sortValue, [{ key: 'recorded_at_utc', direction: 'desc' }])
   const pages = Math.max(1, Math.ceil(deals.length / pageSize)), current = Math.min(page, pages), visible = deals.slice((current - 1) * pageSize, current * pageSize)
   const mixedChecked = !allChecked(visible) && visible.some(deal => checked.has(String(deal.ticket)))
   const selectedDeal = deals.find(deal => String(deal.ticket) === String(selected))
+  const selectedIndex=deals.indexOf(selectedDeal)
+  const moveTrade=offset=>{const index=selectedIndex+offset;setSelected(String(deals[index].ticket));setPage(Math.floor(index/pageSize)+1)}
   const shown = LIVE_TRADE_COLUMNS.filter(([key]) => columns.includes(key))
   const numericColumns = new Set(['net_pnl', 'return_pct', 'realized_r', 'quantity', 'price_open', 'stop_loss', 'take_profit', 'price_close', 'gross_pnl', 'fees'])
   const centerColumns = new Set(['status', 'side', 'entry_type'])
@@ -111,6 +134,6 @@ export default function LiveBrokerSnapshot({ workspace, catalog, onLabelsChanged
     </> : <>
       {!deals.length ? <div className="live-empty" data-testid="live-deals-empty"><TestingIcon kind={section === 'transactions' ? 'account' : 'journal'} size={48} /><h3>{t(section === 'transactions' ? 'No transactions yet' : 'No deals in this selection.')}</h3></div> : section === 'transactions' ? table('Transactions', ['Time', 'Ticket', 'MT5 type', 'Amount', 'Comment'], visible.map(deal => <tr key={deal.ticket}><td>{time(deal.time_msc)}</td><td>{deal.ticket}</td><td>{deal.type}</td><td>{money(deal.profit)}</td><td>{deal.comment || '-'}</td></tr>)) : !shown.length ? <div className="live-empty"><h3>{t('Chọn cột hiển thị để xem giao dịch.')}</h3></div> : <TradeLedgerGrid rows={visible} current={current - 1} size={pageSize} shownColumns={shown} columnHeader={columnHeader} renderCell={cellValue} cellClass={columnClass} rowKey={deal => String(deal.ticket)} sortResetActive={sorting.sorts.length > 0} onClearSort={sorting.clear} selected={selected} onSelect={setSelected} checked={checked} onToggle={id => setChecked(values => { const next = new Set(values); next.has(id) ? next.delete(id) : next.add(id); return next })} allChecked={allChecked(visible)} mixedChecked={mixedChecked} selectPage={selectPage} onTogglePage={() => setChecked(values => { const next = new Set(values); const all = visible.length > 0 && visible.every(deal => values.has(String(deal.ticket))); visible.forEach(deal => all ? next.delete(String(deal.ticket)) : next.add(String(deal.ticket))); return next })} totalCount={deals.length} pages={pages} onPageChange={setPage} onPageSizeChange={value => { setPageSize(value); setPage(1) }} paginationLabel="Live data pagination" dataTestId="live-trade-grid" pageSizeOptions={[10,20,50,100]} rowNumberOffset={(current - 1) * pageSize} />}
     </>}
-    {selectedDeal && section !== 'transactions' && <LiveTradeInspector deal={selectedDeal} payload={payload} accountName={accountName} time={time} money={money} side={side} workspace={workspace} catalog={catalog} onLabelsChanged={onLabelsChanged} onClose={() => setSelected('')} />}
+    {selectedDeal && section !== 'transactions' && <LiveTradeInspector deal={selectedDeal} payload={payload} accountName={accountName} time={time} money={money} side={side} workspace={workspace} catalog={catalog} onLabelsChanged={onLabelsChanged} onClose={() => setSelected('')} onPrevious={selectedIndex>0?()=>moveTrade(-1):undefined} onNext={selectedIndex<deals.length-1?()=>moveTrade(1):undefined} />}
   </section>
 }

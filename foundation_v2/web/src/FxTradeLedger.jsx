@@ -25,9 +25,9 @@ const DEFAULT_COLUMNS = COLUMNS.map(([key]) => key)
 const CENTER_COLUMNS = new Set(['status', 'side', 'entry_type'])
 const columnClass = key => NUMERIC_COLUMNS.has(key) ? 'is-numeric' : CENTER_COLUMNS.has(key) ? 'is-center' : ''
 const NUMERIC_COLUMNS = new Set(['net_pnl', 'return_pct', 'realized_r', 'rating', 'price_open', 'quantity', 'stop_loss', 'take_profit', 'price_close', 'gross_pnl', 'fees'])
-export function TradeInspector({ children, heading, onClose, className = '', ...props }) {
+export function TradeInspector({ children, heading, onClose, onPrevious, onNext, navigationError, liveActions, className = '', ...props }) {
   const { t } = useTestingLocale()
-  const {boundary,requestClose,closing,active} = useAutosaveBoundary(onClose)
+  const {boundary,requestClose,requestTransition,closing,active} = useAutosaveBoundary(onClose)
   const [expanded, setExpanded] = useState(false), [detailsVisible, setDetailsVisible] = useState(true)
   const dialog = useRef(null)
   useEffect(() => {
@@ -46,8 +46,13 @@ export function TradeInspector({ children, heading, onClose, className = '', ...
       <button type="button" className="wm-button is-icon" disabled={closing} onClick={()=>void requestClose()} aria-label={t('Đóng chi tiết')}><ChartIcon name="close"/></button>
       <button type="button" className="wm-button is-icon" onClick={() => setDetailsVisible(value => !value)} aria-label={t('Hiện thông tin giao dịch')} aria-pressed={detailsVisible}><ChartIcon name="layout"/></button>
       <button type="button" className="wm-button is-icon" onClick={() => setExpanded(value => !value)} aria-label={t('Mở rộng chi tiết giao dịch')} aria-pressed={expanded}><ChartIcon name={expanded ? 'contract-corners' : 'expand-corners'}/></button>
-    </div><div className="fx-trade-workspace-heading">{heading || <h2>{t('Trade detail')}</h2>}{active && <AutosaveBoundaryStatus controller={active} forceClose={boundary.forceClose}/>}</div></header>
-    <div className="fx-trade-workspace-body">{children}</div>
+    </div><div className="fx-trade-workspace-heading">{heading || <h2>{t('Trade detail')}</h2>}{active && <AutosaveBoundaryStatus controller={active} forceClose={boundary.forceClose}/>}{navigationError && <p className="wm-trade-navigation-error" role="alert">{navigationError}</p>}</div><div className="fx-trade-navigation" inert={closing}>
+      {liveActions?.commentButton}
+      <button type="button" className="wm-button is-icon" disabled={closing || !onPrevious} aria-label={t('Giao dịch trước')} onClick={()=>void requestTransition(onPrevious)}><ChartIcon name="expand"/></button>
+      <button type="button" className="wm-button is-icon" disabled={closing || !onNext} aria-label={t('Giao dịch tiếp theo')} onClick={()=>void requestTransition(onNext)}><ChartIcon name="collapse"/></button>
+      {liveActions?.menu || <button type="button" className="wm-button is-icon" aria-label={t('Thêm thao tác giao dịch')} disabled><ChartIcon name="more-vertical"/></button>}
+    </div></header>
+    <div className="fx-trade-workspace-body" inert={closing}>{children}</div>
   </dialog></AutosaveBoundaryContext.Provider>
 }
 function valueOf(row, key, model, sessionName) {
@@ -74,7 +79,7 @@ function display(row, key, model, sessionName, { fmt, locale, t, timezone }) {
   if (key === 'tags') return Array.isArray(value) && value.length ? value.join(', ') : '-'
   return key === 'side' ? t(String(value).toLowerCase() === 'buy' ? 'Buy' : String(value).toLowerCase() === 'sell' ? 'Sell' : 'Chưa rõ') : ['status', 'source'].includes(key) ? t(value ?? '-') : value ?? '-'
 }
-export default function FxTradeLedger({ model, extra, selected, onSelect, sessionName, renderFilters, hidden = false, remotePage, emptyScopeKnown = false, readNotice, workspace, preferenceWorkspace = workspace, onLabelsChanged }) {
+export default function FxTradeLedger({ model, extra, selected, onSelect, onRowsChange, sessionName, renderFilters, hidden = false, remotePage, emptyScopeKnown = false, readNotice, workspace, preferenceWorkspace = workspace, onLabelsChanged }) {
   const { t, locale, fmt, timezone } = useTestingLocale()
 
   const labelCatalog = useTradeLabels(workspace)
@@ -92,6 +97,9 @@ export default function FxTradeLedger({ model, extra, selected, onSelect, sessio
     return value
   }, locale), [data.rows, model, sorts, sessionName, locale, Boolean(remotePage)])
   const total = remotePage ? remotePage.totalCount : rows.length
+  const navigationKey=JSON.stringify(rows.map(row=>row.tradeId))
+  const rowsChanged=useRef(onRowsChange);rowsChanged.current=onRowsChange
+  useEffect(()=>{rowsChanged.current?.(JSON.parse(navigationKey))},[navigationKey])
   const pages = Math.max(1, Math.ceil((total || 0) / size)), current = Math.min(page, pages - 1), visible = remotePage ? rows : rows.slice(current * size, (current + 1) * size)
   useEffect(() => { if (!remotePage) setLocalPage(0) }, [extra, model.result])
   useEffect(() => { setChecked(new Set()) }, [extra, remotePage?.selectionKey, remotePage ? undefined : model.result])

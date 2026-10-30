@@ -1,5 +1,11 @@
 # Rust-native candidate runtime
 
+Trade panel navigation, groups and Live journal details:
+[30 October parity receipt](../evidence/trade-panel-parity-20261030/RECEIPT.md).
+Records the no-migration local API/UI rollout, autosave-gated navigation,
+isolated persistence tests and deployed GET-only checks. Synced MT5 Delete trade
+is a disabled UI preview; it never deletes broker data or sends an order.
+
 Trade note template library/media local rollout:
 [30 October note workspace receipt](../evidence/note-workspace-20261030/RECEIPT.md).
 Migration0018 is additive. API, admin and research worker must all understand its

@@ -114,7 +114,7 @@ function RichEditor({ value, onChange, onBlur, disabled=false, label, workspace,
       <SuggestionMenuController triggerCharacter="/" getItems={async query=>filterSuggestionItems(items,query)}/>
     </BlockNoteView>
     {templatesEnabled && <div className="wm-note-template-shortcut"><small>{t('Start with shortcuts')}</small><button type="button" className="fxa-button" aria-label={t('Templates')} disabled={disabled} onClick={()=>setTemplates(true)}><ChartIcon name="templates"/> /templates</button></div>}
-    {templates && <NoteTemplatesDialog workspace={workspace} library={library} onClose={()=>setTemplates(false)} onApply={insertTemplate}/>}
+    {templates && <NoteTemplatesDialog workspace={workspace} library={library} context={context} onClose={()=>setTemplates(false)} onApply={insertTemplate}/>}
   </div>
 }
 

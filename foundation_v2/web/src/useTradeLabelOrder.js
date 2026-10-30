@@ -15,8 +15,8 @@ export function moveLabelIds(items, id, target, before) {
 }
 
 // Display preference only; label definitions/assignments remain API-owned.
-export default function useTradeLabelOrder(workspace, items) {
-  const key = `tw:trade-labels:${encodeURIComponent(workspace || 'default')}:order:v1`
+export default function useTradeLabelOrder(workspace, items, kind='trade-labels') {
+  const key = `tw:${kind}:${encodeURIComponent(workspace || 'default')}:order:v1`
   const read = () => {
     try { const ids = JSON.parse(localStorage.getItem(key) || '[]'); return Array.isArray(ids) ? ids.filter(id => typeof id === 'string') : [] } catch { return [] }
   }
