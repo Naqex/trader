@@ -3,6 +3,16 @@
 When this repo is checked out inside the workspace, `../../AGENTS.md` also applies.
 A standalone checkout uses this file and the repository README; workspace planning is optional.
 
+## GitHub provenance
+
+Tracked issues live in `Naqex/workspace`; name this repo/module and link relevant
+PLAN/evidence. Small immediate edits need no issue. For meaningful AI contributions,
+keep normal commit titles and add `AI-Tool` + `AI-Model-Requested` Git trailers;
+use the raw configured ID or `unknown`, never infer it from a route alias. Human-only
+or purely mechanical commits need no attribution. PRs record implementer/reviewer
+identity and reviewed SHA using the repository template. In the workspace, use
+`../../tooling/github-workflow/README.md` for the full workflow.
+
 ## Authoritative context
 
 - Start/run instructions: `README.md`; current product source is `foundation_v2/`.
