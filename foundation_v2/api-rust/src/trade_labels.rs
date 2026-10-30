@@ -344,33 +344,7 @@ async fn execute(tx: &Transaction<'_>, scope: &Workspace, body: Value) -> Result
             expected_revision,
             tags,
         } => {
-            if session_id.is_empty()
-                || session_id.len() > 128
-                || trade_id.is_empty()
-                || trade_id.len() > 512
-            {
-                return Err(invalid("invalid_label_trade"));
-            }
-            if session_id.starts_with("live:") {
-                verify_live_trade(tx, &scope.workspace_id, &session_id, &trade_id).await?;
-            } else {
-                // Verify the persisted trade at its saved checkpoint; no broker or replay mutation.
-                let mut record =
-                    crate::replay_service::load_record(tx, &scope.workspace_id, &session_id, false)
-                        .await?;
-                record["workspace_id"] = json!(scope.workspace_id);
-                let view = crate::analytics::build_replay_analytics_view(&record, None)
-                    .map_err(|_| invalid("invalid_label_trade"))?;
-                if !view["ledger"]
-                    .as_array()
-                    .is_some_and(|rows| rows.iter().any(|r| r["trade_id"] == trade_id))
-                {
-                    return Err(ApiError::detail(
-                        StatusCode::NOT_FOUND,
-                        "label_trade_not_found",
-                    ));
-                }
-            }
+            verify_trade(tx, &scope.workspace_id, &session_id, &trade_id).await?;
             if tags.len() > 32 || tags.iter().any(|tag| !clean_name(tag)) {
                 return Err(invalid("invalid_trade_labels"));
             }
@@ -447,6 +421,33 @@ fn validate_group_name(defs: &[Value], id: Option<&str>, name: &str) -> Result<(
         return Err(ApiError::detail(
             StatusCode::CONFLICT,
             "label_group_name_exists",
+        ));
+    }
+    Ok(())
+}
+pub(crate) async fn verify_trade(
+    tx: &Transaction<'_>,
+    workspace: &str,
+    session: &str,
+    trade: &str,
+) -> Result<(), ApiError> {
+    if session.is_empty() || session.len() > 128 || trade.is_empty() || trade.len() > 512 {
+        return Err(invalid("invalid_label_trade"));
+    }
+    if session.starts_with("live:") {
+        return verify_live_trade(tx, workspace, session, trade).await;
+    }
+    let mut record = crate::replay_service::load_record(tx, workspace, session, false).await?;
+    record["workspace_id"] = json!(workspace);
+    let view = crate::analytics::build_replay_analytics_view(&record, None)
+        .map_err(|_| invalid("invalid_label_trade"))?;
+    if !view["ledger"]
+        .as_array()
+        .is_some_and(|rows| rows.iter().any(|r| r["trade_id"] == trade))
+    {
+        return Err(ApiError::detail(
+            StatusCode::NOT_FOUND,
+            "label_trade_not_found",
         ));
     }
     Ok(())

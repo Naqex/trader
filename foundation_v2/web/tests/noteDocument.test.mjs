@@ -17,6 +17,11 @@ test('rich note retains structure while producing ordinary searchable text',()=>
   assert.throws(()=>readNoteValue({note:'Different content',note_document:document}),/không khớp/)
   assert(documentError({format:'other',version:1,blocks}))
   assert(documentError(noteDocument([{type:'unsupported'}])))
+  assert(documentError(noteDocument([{type:'table',content:{type:'tableContent'}}])))
+  assert(documentError(noteDocument([{type:'table',content:{type:'tableContent',rows:[{cells:[null]}]}}])))
+  assert(documentError(noteDocument([{type:'paragraph',content:{type:'tableContent'}}])))
+  assert(documentError(noteDocument([{type:'table',content:{type:'tableContent',rows:[{cells:[[{content:{type:'tableContent'}}]]}]}}])))
+  assert.doesNotThrow(()=>documentText([{type:'paragraph',content:{type:'tableContent'}}]))
 })
 
 test('old recovery and in-flight request upgrade without changing original retry body',async()=>{

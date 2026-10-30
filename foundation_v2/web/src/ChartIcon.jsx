@@ -1,6 +1,11 @@
 import React from 'react'
 
 const paths = {
+  templates:'M12 3a9 9 0 1 0 0 18h1a2 2 0 0 0 1.5-3.3 1.3 1.3 0 0 1 1-2.2H18a4 4 0 0 0 4-4c0-5-5-8.5-10-8.5zM7 9h.01M11 6h.01M16 7h.01M6 14h.01',
+  star:'m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9z',
+  tag:'M3 3h8l10 10-8 8L3 11zM7 7h.01',
+  upload:'M12 16V3M7 8l5-5 5 5M4 15v6h16v-6',
+  document:'M5 3h9l5 5v13H5zM14 3v5h5M9 12h6M9 16h6',
   wallet: 'M4 6h14V3H6a3 3 0 0 0-3 3v14h18V7H4M21 11h-6v5h6M17 13.5h.01',
   restore: 'M9 3h12v12M15 9H3v12h12z',
   'contract-corners': 'M9 3v6H3M15 3v6h6M3 15h6v6M21 15h-6v6',

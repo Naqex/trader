@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from export_api_command_contracts import export_contracts
+from note_library_openapi import extend_note_library
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -137,6 +138,7 @@ def platform_contract():
         "name": "dashboard_source", "in": "query", "required": False,
         "schema": {"enum": ["backtest", "prop", "all"], "default": "all"},
         "description": "Native Performance source scope; intersects selected sessions and retains ancestry for fill deduplication."})
+    extend_note_library(schema)
     return schema
 
 

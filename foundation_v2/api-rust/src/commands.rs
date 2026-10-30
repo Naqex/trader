@@ -38,6 +38,7 @@ pub fn allowed_methods(template: &str) -> Vec<String> {
         .iter()
         .chain(crate::live_ledger::ROUTES.iter())
         .chain(crate::trade_labels::ROUTES.iter())
+        .chain(crate::note_library::ROUTES.iter())
         .chain(crate::mt5_connector::ROUTES.iter())
         .chain(crate::demo_trading::ROUTES.iter())
         .filter(|(_, path)| *path == template)
@@ -63,11 +64,12 @@ fn native(method: &str, path: &str) -> bool {
 }
 
 fn native_owner(method: &str, path: &str) -> Option<&'static str> {
-    let owners: [(&str, fn(&str, &str) -> bool); 15] = [
+    let owners: [(&str, fn(&str, &str) -> bool); 16] = [
         ("demo_trading", crate::demo_trading::native),
         ("mt5_connector", crate::mt5_connector::native),
         ("live_ledger", crate::live_ledger::native),
         ("trade_labels", crate::trade_labels::native),
+        ("note_library", crate::note_library::native),
         ("session_presets", crate::session_presets::native),
         ("metadata_mutations", crate::metadata_mutations::native),
         ("replay_service", crate::replay_service::native),
@@ -137,6 +139,14 @@ pub fn route_inventory_for(native_runtime: bool) -> Value {
             )
             .chain(
                 crate::trade_labels::ROUTES
+                    .iter()
+                    .map(|(method, path)| Route {
+                        method: (*method).to_owned(),
+                        path: (*path).to_owned()
+                    })
+            )
+            .chain(
+                crate::note_library::ROUTES
                     .iter()
                     .map(|(method, path)| Route {
                         method: (*method).to_owned(),
@@ -534,6 +544,7 @@ mod tests {
                 inventory.as_array().unwrap().len(),
                 105 + crate::session_presets::ROUTES.len()
                     + crate::trade_labels::ROUTES.len()
+                    + crate::note_library::ROUTES.len()
                     + crate::live_ledger::ROUTES.len()
                     + crate::mt5_connector::ROUTES.len()
                     + crate::demo_trading::ROUTES.len()

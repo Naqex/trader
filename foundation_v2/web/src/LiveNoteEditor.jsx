@@ -1,13 +1,17 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import LegacyModal from './LegacyModal.jsx'
 import FxSelect from './FxSelect.jsx'
 import { fetchLiveRecords, saveLiveRecord } from './liveLedgerApi.js'
 import useAutosave, { AutosaveBoundaryContext, AutosaveStatus, useAutosaveBoundary } from './useAutosave.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import { mt5AccountName } from './liveAccountModel.js'
+import { useNoteTemplateLibrary } from './noteTemplatesApi.js'
+import { builtinNoteTemplates } from './noteTemplates.js'
+import { documentText } from './noteDocument.js'
 
 function NoteFields({ workspace, record, seed, folderId, accountId, accounts, connections, strategies, onSaved }) {
-  const { t } = useTestingLocale()
+  const { t,language } = useTestingLocale()
+  const library=useNoteTemplateLibrary(workspace,!record),defaultChecked=useRef(false)
   const [tagsText,setTagsText] = useState(null)
   const key = useRef(record?.record_id || `new:${folderId || 'all'}`).current
   const notified = useRef(onSaved); notified.current = onSaved
@@ -29,6 +33,12 @@ function NoteFields({ workspace, record, seed, folderId, accountId, accounts, co
     },
   } })
   const draft=save.value, disabled=!save.ready || save.phase === 'conflict'
+  useEffect(()=>{
+    if(record || defaultChecked.current || !save.ready || library.status!=='ready')return
+    defaultChecked.current=true
+    const template=[...builtinNoteTemplates(language),...library.items].find(item=>item.id===library.preferences.defaults['live-notes'])
+    if(template && !save.value.note.trim() && save.phase==='idle')save.change({...save.value,note:documentText(template.document.blocks)})
+  },[record,save.ready,save.phase,save.value,library.status,library.preferences,library.items,language])
   const change=(field,value)=>save.change({...draft,[field]:value})
   const selectedAccount=draft.connection_id ? `broker:${draft.connection_id}` : draft.account_id || ''
   return <div className="live-record-form" onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget))void save.flush()}}>

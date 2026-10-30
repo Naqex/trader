@@ -3,6 +3,7 @@ use axum::{
     body::{Body, to_bytes},
     http::Request,
 };
+use base64::{Engine, engine::general_purpose::STANDARD};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::io::{self, BufRead, Write};
@@ -41,6 +42,18 @@ async fn main() {
         let started = std::time::Instant::now();
         let response = router.clone().oneshot(request).await.unwrap();
         let status = response.status().as_u16();
+        let headers = serde_json::to_value(
+            response
+                .headers()
+                .iter()
+                .filter_map(|(key, value)| value.to_str().ok().map(|value| (key.as_str(), value)))
+                .collect::<std::collections::HashMap<_, _>>(),
+        )
+        .unwrap();
+        let binary = response
+            .headers()
+            .get("content-type")
+            .is_some_and(|v| v.as_bytes().starts_with(b"image/"));
         let command = response
             .headers()
             .get("x-command-id")
@@ -50,7 +63,7 @@ async fn main() {
             .await
             .unwrap();
         let elapsed = started.elapsed().as_micros() as u64;
-        let result = json!({"status":status, "body":serde_json::from_slice::<Value>(&bytes).unwrap(),
+        let result = json!({"status":status, "body":if binary {Value::Null}else{serde_json::from_slice::<Value>(&bytes).unwrap()},"headers":headers,"body_base64":binary.then(||STANDARD.encode(&bytes)),
             "command_id":command, "response_bytes":bytes.len(),
             "response_sha256":format!("{:x}", Sha256::digest(&bytes)), "router_elapsed_us":elapsed});
         println!("{}", result);

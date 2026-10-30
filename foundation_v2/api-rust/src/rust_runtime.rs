@@ -72,6 +72,10 @@ pub const MIGRATIONS: &[(&str, &[u8])] = &[
         "0017_live_note_folders.sql",
         include_bytes!("../../migrations/0017_live_note_folders.sql"),
     ),
+    (
+        "0018_note_library.sql",
+        include_bytes!("../../migrations/0018_note_library.sql"),
+    ),
 ];
 pub const MIGRATION_LOCK_KEY: i64 = 0x54574D47;
 

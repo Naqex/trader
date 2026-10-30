@@ -11,6 +11,7 @@ import { LIVE_TRADE_COLUMNS } from './liveTradeColumns.js'
 import TradeLedgerGrid from './TradeLedgerGrid.jsx'
 import { TradeInspector } from './FxTradeLedger.jsx'
 import TradeDetailContent, { TradeDetailHeading } from './TradeDetailContent.jsx'
+import TradeTagGroups from './TradeTagGroups.jsx'
 import TradeFacts from './TradeFacts.jsx'
 import { currencyLabel } from './moneyFormat.js'
 import { formatReturnPercent } from './tradeReturnFormat.js'
@@ -20,7 +21,7 @@ function LiveTradeInspector({ deal, payload, accountName, time, money, side, wor
   const value = (item, digits = 6) => Number.isFinite(item) ? fmt(item, '', digits) : '-'
   const realizedMoney = item => deal.status === 'Closed' ? fmt(item) : deal.status === 'Open' ? 'N/A' : '-'
   return <TradeInspector onClose={onClose} heading={<TradeDetailHeading title={`${deal.symbol}, ${side(deal.type)}`} net={deal.status === 'Closed' ? deal.net_pnl : null} currency={payload.account?.currency} entryAt={deal.open_time_utc} exitAt={deal.close_time_utc} timeBasis="Realtime" subtitle={accountName} />}>
-    <TradeDetailContent key={JSON.stringify([workspace,payload.connection_id,deal.ticket])} noteScope={{workspace,session:payload.connection_id ? `live:${payload.connection_id}` : null,trade:String(deal.ticket)}} tags={workspace && payload.connection_id && catalog ? <TradeLabelCell workspace={workspace} session={`live:${payload.connection_id}`} row={{...deal,trade_id:deal.ticket}} catalog={catalog} onChanged={onLabelsChanged} /> : <TradeLabelDisplay tags={deal.tags || []} options={catalog?.items || []} />}>
+    <TradeDetailContent key={JSON.stringify([workspace,payload.connection_id,deal.ticket])} noteScope={{workspace,session:payload.connection_id ? `live:${payload.connection_id}` : null,trade:String(deal.ticket)}} tags={workspace && payload.connection_id && catalog ? <TradeTagGroups workspace={workspace} session={`live:${payload.connection_id}`} row={{...deal,trade_id:deal.ticket}} catalog={catalog} onChanged={onLabelsChanged} /> : <TradeLabelDisplay tags={deal.tags || []} options={catalog?.items || []} />}>
       <TradeFacts asset={deal.symbol} side={side(deal.type)} entryType={deal.entry_type} timeBasis="Realtime"
         entryAt={time(deal.open_time_utc)} exitAt={time(deal.close_time_utc)} entryPrice={value(deal.price_open)} exitPrice={value(deal.price_close)}
         size={value(deal.quantity,4)} stop={value(deal.stop_loss)} target={value(deal.take_profit)}

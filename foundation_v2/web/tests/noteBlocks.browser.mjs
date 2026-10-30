@@ -17,6 +17,7 @@ try {
   await context.route('**/*',route=>{
    const request=route.request(),url=new URL(request.url()),path=url.pathname
    if(url.origin!==origin)return route.abort()
+   if(path==='/api/v2/note-templates' && request.method()==='GET')return route.fulfill({json:{version:'note-templates-v1',items:[],preferences:{revision:0,favorites:['beginner','daily-report'],defaults:{}}}})
    if(path==='/api/v2/journal' && request.method()==='GET')return route.fulfill({json:{items:journals}})
    if(request.method()==='POST' && /^\/api\/v2\/journal(?:\/[^/]+\/revisions)?$/.test(path)) {
     const body=request.postDataJSON(),current=path.endsWith('/revisions')?journals.find(item=>item.record_id===path.split('/').at(-2)):null
@@ -45,9 +46,9 @@ try {
   await drawer.locator('[data-state=saved]').waitFor()
   assert(journals[0].payload.note.includes('Original analysis before template'));assert(journals[0].payload.note_document.blocks.some(block=>block.type==='heading'))
   const before=await editor.innerText()
-  await drawer.getByRole('button',{name:'♧ /templates',exact:true}).click()
+  await drawer.getByRole('button',{name:'Templates',exact:true}).click()
   const templates=page.locator('dialog.wm-note-templates');await templates.waitFor()
-  await templates.getByRole('searchbox').fill('Daily');assert.equal(await templates.locator('.wm-note-template-list > button').count(),1)
+  await templates.getByRole('searchbox').fill('Daily');assert.equal(await templates.locator('.wm-note-template-list > button').count(),2)
   await page.screenshot({path:`${out}/templates-${width}-${theme}.png`})
   console.log('closing templates');await page.keyboard.press('Escape');await templates.waitFor({state:'detached'});console.log('templates closed');assert.equal(await drawer.count(),1);assert.equal(await editor.innerText(),before)
   const side=drawer.locator('.bn-side-menu')
@@ -86,12 +87,25 @@ try {
    await page.mouse.move(target.x+target.width/2,target.y+target.height-2);await page.mouse.up()
    await page.waitForFunction(before=>document.querySelector('.bn-editor').innerText!==before,beforeDrag,{timeout:12000});console.log('drag done')
    assert((await editor.innerText()).includes('Original analysis before template'))
+   // Keep the NodeSelection left by drag-and-drop: no click into text first.
+   assert.equal(await editor.evaluate(node=>node.editor.state.selection.toJSON().type),'node')
+   await page.keyboard.press('Enter');await page.keyboard.insertText('After drag Enter')
+   await editor.evaluate(node=>node.editor.state.doc.check())
+   assert((await editor.innerText()).includes('After drag Enter'))
+   assert((await editor.innerText()).includes('Original analysis before template'))
+   const afterEnter=await editor.innerText()
+   await page.keyboard.press('Control+z')
+   await editor.evaluate(node=>node.editor.state.doc.check())
+   assert((await editor.innerText()).includes('Original analysis before template'))
+   await page.keyboard.press('Control+Shift+z')
+   await editor.evaluate(node=>node.editor.state.doc.check())
+   assert.equal(await editor.innerText(),afterEnter)
   }
   // A small scroll can happen without leaving the hovered block. It must update
   // the anchor rather than dismiss the controls and wait for a new mousemove.
   console.log('long content');await editor.locator('.bn-inline-content').last().click();await editor.press('Control+End');await page.keyboard.press('Enter');await page.keyboard.insertText('Long paragraph '.repeat(500))
   const scroller=drawer.locator('.fx-trade-note-draft')
-  const longBlock=editor.locator('.bn-block-content').last()
+  const longBlock=editor.locator('.bn-block-content').filter({hasText:'Long paragraph'}).first()
   await longBlock.hover({position:{x:100,y:80}});await side.waitFor()
   await scroller.evaluate(node=>node.scrollTop=0)
   await editor.locator('.bn-block-content').first().hover();await side.waitFor()
@@ -109,7 +123,7 @@ try {
   await page.screenshot({path:`${out}/editor-${width}-${theme}.png`})
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false)
   assert.equal(await drawer.evaluate(node=>node.scrollWidth>node.clientWidth+1),false)
-  report.cases.push({width,theme,slashAndEscape:true,templatePreservesText:true,templatesEscape:true,structuredReload:true,plus:width===1920,dragReorders:width===1920,sideControlGeometry:true,sameBlockHover:true,sameBlockScroll:true,keyboardDismiss:true})
+  report.cases.push({width,theme,slashAndEscape:true,templatePreservesText:true,templatesEscape:true,structuredReload:true,plus:width===1920,dragReorders:width===1920,dragEnterPreservesContent:width===1920,sideControlGeometry:true,sameBlockHover:true,sameBlockScroll:true,keyboardDismiss:true})
   await context.close()
  }
  assert.deepEqual(report.errors,[]);report.status='PASS'

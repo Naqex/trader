@@ -6990,6 +6990,786 @@
         ],
         "description": "Abort this turn's upstream HTTP request. Already completed results remain completed. Does not disconnect the account."
       }
+    },
+    "/api/v2/note-templates": {
+      "get": {
+        "operationId": "note_templates_read",
+        "parameters": [
+          {
+            "name": "X-Workspace-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace-scoped result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "version",
+                    "items",
+                    "preferences"
+                  ],
+                  "properties": {
+                    "version": {
+                      "const": "note-templates-v1"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "document",
+                          "revision",
+                          "updated_at_utc"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 160
+                          },
+                          "document": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "format",
+                              "version",
+                              "blocks"
+                            ],
+                            "properties": {
+                              "format": {
+                                "const": "blocknote"
+                              },
+                              "version": {
+                                "const": 1
+                              },
+                              "blocks": {
+                                "type": "array",
+                                "minItems": 1,
+                                "maxItems": 256,
+                                "items": {
+                                  "type": "object"
+                                }
+                              }
+                            }
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "updated_at_utc": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    },
+                    "preferences": {
+                      "type": "object",
+                      "required": [
+                        "revision",
+                        "favorites",
+                        "defaults"
+                      ],
+                      "properties": {
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "favorites": {
+                          "type": "array",
+                          "maxItems": 202,
+                          "uniqueItems": true,
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "defaults": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "testing-trades": {
+                              "type": "string"
+                            },
+                            "live-trades": {
+                              "type": "string"
+                            },
+                            "live-notes": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "saved_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Workspace denied"
+          },
+          "404": {
+            "description": "Item not in scope"
+          },
+          "409": {
+            "description": "Revision conflict, duplicate, or quota; read again"
+          },
+          "422": {
+            "description": "Invalid request"
+          },
+          "503": {
+            "description": "Unavailable or unknown commit outcome; reconcile receipt"
+          }
+        }
+      },
+      "post": {
+        "operationId": "note_templates_write",
+        "parameters": [
+          {
+            "name": "X-Workspace-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace-scoped result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "version",
+                    "items",
+                    "preferences"
+                  ],
+                  "properties": {
+                    "version": {
+                      "const": "note-templates-v1"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "document",
+                          "revision",
+                          "updated_at_utc"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 160
+                          },
+                          "document": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "format",
+                              "version",
+                              "blocks"
+                            ],
+                            "properties": {
+                              "format": {
+                                "const": "blocknote"
+                              },
+                              "version": {
+                                "const": 1
+                              },
+                              "blocks": {
+                                "type": "array",
+                                "minItems": 1,
+                                "maxItems": 256,
+                                "items": {
+                                  "type": "object"
+                                }
+                              }
+                            }
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "updated_at_utc": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    },
+                    "preferences": {
+                      "type": "object",
+                      "required": [
+                        "revision",
+                        "favorites",
+                        "defaults"
+                      ],
+                      "properties": {
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "favorites": {
+                          "type": "array",
+                          "maxItems": 202,
+                          "uniqueItems": true,
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "defaults": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "testing-trades": {
+                              "type": "string"
+                            },
+                            "live-trades": {
+                              "type": "string"
+                            },
+                            "live-notes": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "saved_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Workspace denied"
+          },
+          "404": {
+            "description": "Item not in scope"
+          },
+          "409": {
+            "description": "Revision conflict, duplicate, or quota; read again"
+          },
+          "422": {
+            "description": "Invalid request"
+          },
+          "503": {
+            "description": "Unavailable or unknown commit outcome; reconcile receipt"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "action",
+                      "name",
+                      "document"
+                    ],
+                    "properties": {
+                      "action": {
+                        "const": "create"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 160
+                      },
+                      "document": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "format",
+                          "version",
+                          "blocks"
+                        ],
+                        "properties": {
+                          "format": {
+                            "const": "blocknote"
+                          },
+                          "version": {
+                            "const": 1
+                          },
+                          "blocks": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 256,
+                            "items": {
+                              "type": "object"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "action",
+                      "id",
+                      "expected_revision",
+                      "name",
+                      "document"
+                    ],
+                    "properties": {
+                      "action": {
+                        "const": "update"
+                      },
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "expected_revision": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 160
+                      },
+                      "document": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "format",
+                          "version",
+                          "blocks"
+                        ],
+                        "properties": {
+                          "format": {
+                            "const": "blocknote"
+                          },
+                          "version": {
+                            "const": 1
+                          },
+                          "blocks": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 256,
+                            "items": {
+                              "type": "object"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "action",
+                      "id",
+                      "expected_revision"
+                    ],
+                    "properties": {
+                      "action": {
+                        "const": "delete"
+                      },
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "expected_revision": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "action",
+                      "expected_revision",
+                      "favorites",
+                      "defaults"
+                    ],
+                    "properties": {
+                      "action": {
+                        "const": "preferences"
+                      },
+                      "expected_revision": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "favorites": {
+                        "type": "array",
+                        "maxItems": 202,
+                        "uniqueItems": true,
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "defaults": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "testing-trades": {
+                            "type": "string"
+                          },
+                          "live-trades": {
+                            "type": "string"
+                          },
+                          "live-notes": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "description": "Identity-private templates and preferences within a workspace. Built-in IDs beginner/daily-report are immutable. Deletion clears dependent favorites/defaults atomically. Native idempotency and revision guards apply."
+      }
+    },
+    "/api/v2/trade-media": {
+      "get": {
+        "operationId": "trade_media_list",
+        "parameters": [
+          {
+            "name": "X-Workspace-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "trade_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace-scoped result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "items"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "mime_type",
+                          "bytes",
+                          "created_at_utc"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 160
+                          },
+                          "mime_type": {
+                            "type": "string"
+                          },
+                          "bytes": {
+                            "type": "integer"
+                          },
+                          "created_at_utc": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Workspace denied"
+          },
+          "404": {
+            "description": "Item not in scope"
+          },
+          "409": {
+            "description": "Revision conflict, duplicate, or quota; read again"
+          },
+          "422": {
+            "description": "Invalid request"
+          },
+          "503": {
+            "description": "Unavailable or unknown commit outcome; reconcile receipt"
+          }
+        }
+      },
+      "post": {
+        "operationId": "trade_media_write",
+        "parameters": [
+          {
+            "name": "X-Workspace-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace-scoped result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "removed_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Workspace denied"
+          },
+          "404": {
+            "description": "Item not in scope"
+          },
+          "409": {
+            "description": "Revision conflict, duplicate, or quota; read again"
+          },
+          "422": {
+            "description": "Invalid request"
+          },
+          "503": {
+            "description": "Unavailable or unknown commit outcome; reconcile receipt"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "action",
+                      "session_id",
+                      "trade_id",
+                      "name",
+                      "mime_type",
+                      "data"
+                    ],
+                    "properties": {
+                      "action": {
+                        "const": "upload"
+                      },
+                      "session_id": {
+                        "type": "string"
+                      },
+                      "trade_id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 160
+                      },
+                      "mime_type": {
+                        "enum": [
+                          "image/png",
+                          "image/jpeg",
+                          "image/webp",
+                          "image/gif"
+                        ]
+                      },
+                      "data": {
+                        "type": "string",
+                        "contentEncoding": "base64"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "action",
+                      "id"
+                    ],
+                    "properties": {
+                      "action": {
+                        "const": "remove_media"
+                      },
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "description": "Local PostgreSQL images: max 5 MiB each, 50 per persisted trade, 200 MiB per workspace. Signatures checked, SVG/HTML rejected. Same trade+digest deduplicates. No filesystem paths or broker writes."
+      }
+    },
+    "/api/v2/trade-media/{media_id}": {
+      "get": {
+        "operationId": "trade_media_image",
+        "parameters": [
+          {
+            "name": "X-Workspace-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "media_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace-authorized bytes; private no-store and nosniff",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/gif": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Workspace denied"
+          },
+          "404": {
+            "description": "Item not in scope"
+          },
+          "409": {
+            "description": "Revision conflict, duplicate, or quota; read again"
+          },
+          "422": {
+            "description": "Invalid request"
+          },
+          "503": {
+            "description": "Unavailable or unknown commit outcome; reconcile receipt"
+          }
+        }
+      }
     }
   },
   "components": {

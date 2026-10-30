@@ -52,7 +52,7 @@ export function labelError(error, t) {
   if (error.status === 409) return t('Nhãn vừa thay đổi. Đã yêu cầu đọc lại; kiểm tra trước khi lưu tiếp.')
   return t('Không lưu được nhãn. Thử đọc lại dữ liệu.')
 }
-export default function TradeLabelCell({ workspace, session, row, catalog, onChanged, placeholder = 'Chọn nhãn…' }) {
+export default function TradeLabelCell({ workspace, session, row, catalog, onChanged, placeholder = 'Chọn nhãn…', groupId, className='' }) {
   const { t } = useTestingLocale()
   const [anchor, setAnchor] = useState(null), [search, setSearch] = useState(''), [editing, setEditing] = useState(null)
   const [name, setName] = useState(''), [color, setColor] = useState('gray'), [confirmDelete, setConfirmDelete] = useState(false)
@@ -93,8 +93,10 @@ export default function TradeLabelCell({ workspace, session, row, catalog, onCha
   }
   const assign = next => mutate({ action: 'assign', session_id: session, trade_id: row.trade_id || row.tradeId, expected_revision: latest?.revision ?? row.label_revision ?? 0, tags: next })
   const createLabel = async () => {
-    const created = await mutate({ action: 'create', name: search.trim(), color: 'gray' })
-    if (created) { await assign([...tags, search.trim()]); setSearch('') }
+    // Creation disables/removes its button; keep Escape owned by this popup.
+    searchInput.current?.focus({preventScroll:true})
+    const created = await mutate({ action: 'create', name: search.trim(), color: 'gray',...(groupId!==undefined?{group_id:groupId || null}:{}) })
+    if (created) { await assign([...tags, search.trim()]); setSearch(''); searchInput.current?.focus({preventScroll:true}) }
   }
   const chooseEdit = async (item, target) => {
     if (disabled) return
@@ -119,7 +121,9 @@ export default function TradeLabelCell({ workspace, session, row, catalog, onCha
     return true
   }
   const closeEditor = () => { setEditing(null); setConfirmDelete(false) }
-  const visibleOptions = options.filter(item => !item.archived && matchesSearch(item.name,search))
+  const inGroup=item=>groupId===undefined || (item.group_id || '')===groupId
+  const displayed=tags.filter(tag=>inGroup(options.find(item=>item.name===tag) || {}))
+  const visibleOptions = options.filter(item => (!item.archived || tags.includes(item.name)) && inGroup(item) && matchesSearch(item.name,search))
   const cancelDrag = () => { drag.current = null; setDragging(null) }
   const dragTo = event => {
     if (!drag.current) return
@@ -131,8 +135,8 @@ export default function TradeLabelCell({ workspace, session, row, catalog, onCha
     drag.current = next; setDragging(next)
   }
   return <>
-    <button type="button" className={`wm-label-cell${tags.length ? ' has-labels' : ''}`} aria-label={t('Nhãn giao dịch {id}', { id: row.trade_id || row.tradeId })} aria-haspopup="dialog" aria-expanded={Boolean(anchor)} disabled={!workspace || !session} onClick={event => { setAnchor(event.currentTarget); setError(''); setSearch('') }}>
-      <LabelContents tags={tags} options={options} placeholder={title} />
+    <button type="button" className={`wm-label-cell ${className}${displayed.length ? ' has-labels' : ''}`} aria-label={groupId!==undefined?title:t('Nhãn giao dịch {id}', { id: row.trade_id || row.tradeId })} aria-haspopup="dialog" aria-expanded={Boolean(anchor)} disabled={!workspace || !session} onClick={event => { setAnchor(event.currentTarget); setError(''); setSearch('') }}>
+      <LabelContents tags={displayed} options={options} placeholder={title} />
     </button>
     {anchor && <LegacyPopover anchor={anchor} label={t('Nhãn giao dịch')} role="dialog" className="wm-label-popup" maxWidth={360} theme={theme} onClose={close}>
         <div className="wm-label-options" aria-label={t('Chọn nhiều nhãn')}>

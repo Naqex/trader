@@ -8,9 +8,11 @@ import { BlockNoteView } from '@blocknote/ariakit'
 import '@blocknote/ariakit/style.css'
 import { useTestingLocale } from './testingLocale.jsx'
 import { documentText, noteDocument } from './noteDocument.js'
-import { NOTE_TEMPLATES } from './noteTemplates.js'
+import { builtinNoteTemplates } from './noteTemplates.js'
+import { useNoteTemplateLibrary } from './noteTemplatesApi.js'
 import NoteTemplatesDialog from './NoteTemplatesDialog.jsx'
 import ChartIcon from './ChartIcon.jsx'
+import { noteNodeSelectionEnter } from './noteKeyboard.js'
 import './note-editor.css'
 
 const schema = BlockNoteSchema.create({blockSpecs:defaultBlockSpecs})
@@ -50,10 +52,12 @@ function NoteSideMenu() {
   return <SideMenu><components.SideMenu.Button label={dictionary.side_menu.add_block_label} icon={<ChartIcon name="order"/>} onClick={addBlock}/><DragHandleButton/></SideMenu>
 }
 
-function RichEditor({ value, onChange, onBlur, disabled=false, label }) {
+function RichEditor({ value, onChange, onBlur, disabled=false, label, workspace, context, allowDefault=false, templatesEnabled=true }) {
   const {t,language}=useTestingLocale(), [templates,setTemplates]=useState(false), host=useRef(null)
   const snapshot = useRef(value), applying=useRef(false)
-  const editor=useCreateBlockNote({schema,initialContent:value.document?.blocks || paragraphs(value.text),dictionary:{...(language==='en'?en:vi),placeholders:{...(language==='en'?en:vi).placeholders,default:t("Nhập nội dung hoặc gõ '/' để chọn block")}},tabBehavior:'prefer-indent'},[language])
+  const library=useNoteTemplateLibrary(workspace,templatesEnabled), defaultChecked=useRef(false)
+  const templateItems=useMemo(()=>[...builtinNoteTemplates(language),...library.items.map(item=>({...item,blocks:item.document.blocks}))],[language,library.items])
+  const editor=useCreateBlockNote({schema,extensions:[noteNodeSelectionEnter()],initialContent:value.document?.blocks || paragraphs(value.text),dictionary:{...(language==='en'?en:vi),placeholders:{...(language==='en'?en:vi).placeholders,default:t("Nhập nội dung hoặc gõ '/' để chọn block")}},tabBehavior:'prefer-indent'},[language])
   const update = () => {
     if(applying.current)return
     const blocks=editor.document, next={text:documentText(blocks),document:noteDocument(blocks)}
@@ -77,16 +81,26 @@ function RichEditor({ value, onChange, onBlur, disabled=false, label }) {
     else editor.insertBlocks(blocks,editor.document.at(-1),'after')
     editor.focus()
   }
+  useEffect(()=>{
+    if(defaultChecked.current || library.status!=='ready')return
+    defaultChecked.current=true
+    const template=templateItems.find(item=>item.id===library.preferences.defaults[context])
+    if(allowDefault && template && !documentText(editor.document).trim()) {
+      editor.replaceBlocks(editor.document,structuredClone(template.blocks))
+    }
+  },[library.status,library.preferences,templateItems,allowDefault,context,editor])
   const items=useMemo(()=>[
-    ...NOTE_TEMPLATES.map(template=>({title:template.name,subtext:t('Mẫu ghi chú'),group:t('Templates'),aliases:[template.name,'template','mẫu'],icon:<span>♧</span>,onItemClick:()=>{
+    ...(templatesEnabled?templateItems:[]).map(template=>({title:template.name,subtext:t('Mẫu ghi chú'),group:t('Templates'),aliases:[template.name,'template','mẫu'],icon:<ChartIcon name="templates"/>,onItemClick:()=>{
       const block=editor.getTextCursorPosition().block
       if(documentText([block]).trim())editor.insertBlocks(structuredClone(template.blocks),block,'after')
       else editor.replaceBlocks([block],structuredClone(template.blocks))
       editor.focus()
     }})),
     ...getDefaultReactSlashMenuItems(editor).filter(item=>ORDER.includes(item.key)).sort((a,b)=>ORDER.indexOf(a.key)-ORDER.indexOf(b.key)),
-  ],[editor,t])
-  return <div ref={host} className="wm-note-block-editor" onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget))onBlur?.()}} onKeyDownCapture={event=>{
+  ],[editor,t,templateItems,templatesEnabled])
+  return <div ref={host} className="wm-note-block-editor" onDragEnd={()=>editor.focus()} onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget))onBlur?.()}} onKeyDownCapture={event=>{
+    const nestedDialog=event.target.closest('dialog')
+    if(nestedDialog && !nestedDialog.contains(host.current))return
     // Ariakit retains hidden listboxes. Consume Escape only for the open menu,
     // before the editor closes it; hidden listboxes must not swallow later Escape.
     if(event.key==='Escape' && editor.getExtension(SuggestionMenu).shown()){event.stopPropagation();event.preventDefault();editor.getExtension(SuggestionMenu).closeMenu()}
@@ -99,8 +113,8 @@ function RichEditor({ value, onChange, onBlur, disabled=false, label }) {
       <SideMenuController sideMenu={NoteSideMenu} floatingUIOptions={sideMenuOptions}/>
       <SuggestionMenuController triggerCharacter="/" getItems={async query=>filterSuggestionItems(items,query)}/>
     </BlockNoteView>
-    <div className="wm-note-template-shortcut"><small>{t('Start with shortcuts')}</small><button type="button" className="fxa-button" disabled={disabled} onClick={()=>setTemplates(true)}>♧ /templates</button></div>
-    {templates && <NoteTemplatesDialog onClose={()=>setTemplates(false)} onApply={insertTemplate}/>}
+    {templatesEnabled && <div className="wm-note-template-shortcut"><small>{t('Start with shortcuts')}</small><button type="button" className="fxa-button" aria-label={t('Templates')} disabled={disabled} onClick={()=>setTemplates(true)}><ChartIcon name="templates"/> /templates</button></div>}
+    {templates && <NoteTemplatesDialog workspace={workspace} library={library} onClose={()=>setTemplates(false)} onApply={insertTemplate}/>}
   </div>
 }
 

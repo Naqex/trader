@@ -1,16 +1,25 @@
-const paragraph = text => ({ type:'paragraph', content:text })
-const heading = text => ({ type:'heading', props:{level:2}, content:text })
-const bullet = text => ({ type:'bulletListItem', content:text })
+import { noteDocument } from './noteDocument.js'
 
-// Starter content; the template catalog UI does not write a shared library yet.
-export const NOTE_TEMPLATES = [
-  {id:'beginner',name:'Beginner',blocks:[
-    heading('GOAL/FOCUS'),bullet('What is your goal/focus for this week?'),bullet('Write here'),
-    heading('REMINDERS'),bullet('One Good Trade'),bullet('Be Present with Price'),bullet('Process Oriented Thinking'),
-  ]},
-  {id:'daily-report',name:'Daily report card',blocks:[
-    heading('KẾ HOẠCH TRONG NGÀY'),paragraph('Tài sản, phiên giao dịch và điều kiện vào lệnh:'),
-    heading('ĐÁNH GIÁ GIAO DỊCH'),{type:'checkListItem',props:{checked:false},content:'Tuân thủ kế hoạch và mức rủi ro đã đặt'},
-    paragraph('Điều đã làm tốt:'),paragraph('Điều cần cải thiện:'),heading('BÀI HỌC'),paragraph('Một việc sẽ làm khác ở phiên tiếp theo:'),
-  ]},
-]
+const heading = content => ({type:'heading',props:{level:2},content})
+const bullet = content => ({type:'bulletListItem',content})
+export const TEMPLATE_CONTEXTS=['testing-trades','live-trades','live-notes']
+
+export function builtinNoteTemplates(language='en') {
+  const vi=language==='vi', text=(a,b)=>vi?a:b
+  const goal=[heading(text('MỤC TIÊU / TRỌNG TÂM','GOAL/FOCUS')),bullet(text('Mục tiêu / trọng tâm của bạn trong tuần này là gì?','What is your goal/focus for this week?')),bullet(text('Viết tại đây','Write here'))]
+  const reminders=[heading(text('NHẮC NHỞ','REMINDERS')),bullet(text('Một giao dịch tốt','One Good Trade')),bullet(text('Tập trung vào diễn biến giá hiện tại','Be Present with Price')),bullet(text('Tư duy theo quy trình','Process Oriented Thinking'))]
+  const items=[
+    {id:'beginner',name:text('Người mới bắt đầu','Beginner'),blocks:[...goal,...reminders]},
+    {id:'daily-report',name:text('Báo cáo hằng ngày','Daily report card'),blocks:[
+      heading(text('MỤC TIÊU / TRỌNG TÂM','GOAL/FOCUS')),
+      bullet(text('Mục tiêu / trọng tâm của bạn trong tuần này là gì? (tăng khối lượng, chỉ giao dịch thiết lập A+, v.v.)','What is your goal/focus for this week? (increase sizing, A+ only, etc...)')),
+      bullet(text('Viết tại đây','Write here')),...reminders,
+      heading(text('TIN TỨC','NEWS')),bullet(text('Viết tại đây','Write here')),
+      heading(text('CÁC CẶP ĐANG THEO DÕI','IN-PLAY PAIRS')),
+      bullet(text('Cặp nào đang có thiết lập rõ ràng nhất? Chúng ta tập trung vào đâu?','Which pairs are offering the cleanest setups? Where is our focus?')),bullet(text('Viết tại đây','Write here')),
+      heading(text('SAU PHIÊN GIAO DỊCH','POST-SESSION')),
+      bullet(text('Xem lại ghi chú trong ngày và so sánh phân tích của bạn với diễn biến thực tế.','Review intraday notes and compare your analysis with what actually happened')),bullet(text('Viết tại đây','Write here')),
+    ]},
+  ]
+  return items.map(item=>({...item,builtin:true,document:noteDocument(item.blocks)}))
+}

@@ -22,6 +22,7 @@ import ChartIcon from './ChartIcon.jsx'
 import TradeDetailContent, { TradeDetailHeading } from './TradeDetailContent.jsx'
 import TradeFacts from './TradeFacts.jsx'
 import TradeLabelCell, { useTradeLabels, TradeLabelDisplay } from './TradeLabelCell.jsx'
+import TradeTagGroups from './TradeTagGroups.jsx'
 
 import { analyticsQuery, analyticsViewResult, buildAnalyticsModel, dateFromValue, readAnalyticsFilters } from './analyticsViewModel.js'
 export { analyticsQuery, analyticsViewResult, buildAnalyticsModel, readAnalyticsFilters } from './analyticsViewModel.js'
@@ -58,7 +59,7 @@ export function ProvenanceInspector({ model, selectedTrade, journalCount, links,
   const session = trade?.session_id || model.result?.session_id
   const inapplicable = trade?.status === 'open'
   return <aside className="as-inspector" aria-label={t('Trade detail')}>
-    {trade && <TradeDetailContent key={JSON.stringify([workspace,session,trade.trade_id || trade.tradeId])} noteScope={{workspace,session,trade:trade.trade_id || trade.tradeId}} tags={workspace && session ? <TradeLabelCell workspace={workspace} session={session} row={trade} catalog={catalog} onChanged={onLabelsChanged}/> : <TradeLabelDisplay tags={trade.tags || []} options={catalog.items}/> }>
+    {trade && <TradeDetailContent key={JSON.stringify([workspace,session,trade.trade_id || trade.tradeId])} noteScope={{workspace,session,trade:trade.trade_id || trade.tradeId}} tags={workspace && session ? <TradeTagGroups workspace={workspace} session={session} row={trade} catalog={catalog} onChanged={onLabelsChanged}/> : <TradeLabelDisplay tags={trade.tags || []} options={catalog.items}/> }>
       <TradeFacts asset={trade.symbol} side={t(String(trade.side).toUpperCase() === 'BUY' ? 'Buy' : String(trade.side).toUpperCase() === 'SELL' ? 'Sell' : '-')}
         entryType={trade.entry_type} entryAt={formatDate(trade.open_time_utc)} exitAt={formatDate(trade.close_time_utc)} timeBasis="Chart"
         alternateEntry={`${t('Entry date')} · Realtime: ${formatDate(trade.recorded_at_utc)}`} alternateExit={`${t('Exit date')} · Realtime: ${formatDate(trade.report_time_utc)}`}
