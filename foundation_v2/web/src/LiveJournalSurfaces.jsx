@@ -19,6 +19,8 @@ import NoteFolderDialog from './NoteFolderDialog.jsx'
 import { fetchNoteFolders } from './liveNoteFoldersApi.js'
 import { EMPTY_NOTE_FILTERS, filterJournalNotes, groupJournalNotes, NOTE_GROUPS, NOTE_TYPES } from './liveNoteModel.js'
 import { MANUAL_TRADE_COLUMNS } from './liveTradeColumns.js'
+import { AnalyticsCurve } from './AnalyticsCharts.jsx'
+import { useTradeLabels } from './TradeLabelCell.jsx'
 
 function StrategyReference({ payload, strategies, workspace }) {
   const { t,language } = useTestingLocale()
@@ -109,15 +111,24 @@ export function JournalNotes({ workspace, records, strategies, writable, readabl
   </section>
 }
 
-export function JournalTags({ deals, currency, filterKey, readable = true }) {
-  const { t,fmt } = useTestingLocale(), [search,setSearch] = useState('')
+export function JournalTags({ workspace, deals, currency, filterKey, readable = true }) {
+  const { t,fmt } = useTestingLocale(), catalog = useTradeLabels(workspace), [search,setSearch] = useState(''), [selected,setSelected] = useState([])
   const [page,setPage] = useState(1), [size,setSize] = useState(20)
-  useEffect(()=>setPage(1),[search,filterKey])
-  const results = useMemo(()=>tagResults(deals),[deals])
-  const rows = results.filter(row => matchesSearch(row.tag, search))
+  useEffect(()=>setPage(1),[search,filterKey,selected])
+  const allResults = useMemo(()=>tagResults(deals),[deals])
+  const availableTags = useMemo(() => [...new Set([...(catalog.items || []).filter(item => !item.archived).map(item => item.name), ...allResults.map(row => row.tag)])], [catalog.items, allResults])
+  const rows = allResults.filter(row => matchesSearch(row.tag, search) && (!selected.length || selected.includes(row.tag)))
   const pages = Math.max(1,Math.ceil(rows.length/size)), current = Math.min(page,pages), visible = rows.slice((current-1)*size,current*size)
-  const maximum = rows.reduce((max,item) => Math.max(max,Math.abs(item.net || 0)),1)
-  return <section className="live-journal-tags"><div className="live-section-heading"><h2 data-tooltip={t('Một giao dịch có thể có nhiều nhãn; không cộng các nhóm thành tổng PnL.')}>{t('PnL theo nhãn')}</h2><label className="live-search"><TestingIcon kind="search" /><SearchInput type="search" aria-label={t('Tìm nhãn')} placeholder={t('Tìm nhãn…')} value={search} onChange={event => setSearch(event.target.value)} /></label></div>
-    {readable && (rows.length ? <><div className="live-tag-bars">{visible.map(row => <div key={row.tag}><span>{row.tag}</span><div><i className={row.net < 0 ? 'is-loss' : row.net > 0 ? 'is-gain' : ''} style={{width:`${row.net === null ? 0 : Math.abs(row.net)/maximum*100}%`}} /></div><strong className={row.net < 0 ? 'is-loss' : row.net > 0 ? 'is-gain' : ''}>{fmt(row.net)}</strong></div>)}</div><DataTable className="live-table-scroll" label={t('Thống kê nhãn')}><thead><tr><th>{t('Nhãn')}</th><th className="is-numeric">{t('Giao dịch')}</th><th className="is-numeric">{t('Tỷ lệ thắng')}</th><th className="is-numeric">{t('PnL ròng')} ({currencyLabel(currency)})</th></tr></thead><tbody>{visible.map(row => <tr key={row.tag}><td>{row.tag}</td><td className="is-numeric">{row.count}</td><td className="is-numeric">{fmt(row.winRate,'%')}</td><td className="is-numeric">{fmt(row.net)}</td></tr>)}</tbody></DataTable><PaginationFooter showCount={false} totalCount={rows.length} label="Trang phân tích nhãn" page={current} pages={pages} pageSize={size} onPageChange={setPage} onPageSizeChange={value=>{setSize(value);setPage(1)}} sizes={[10,20,50,100]} /></> : <div className="live-empty"><h2>{t(search ? 'Không tìm thấy nhãn' : 'Chưa có phân tích nhãn')}</h2><p>{t(search ? 'Thử từ khóa khác hoặc xóa tìm kiếm.' : 'Thêm nhãn vào giao dịch để so sánh kết quả.')}</p></div>)}
+  const curve = useMemo(() => { let total = 0; return [...deals].filter(deal => Number.isFinite(deal.time_msc)).sort((a,b)=>a.time_msc-b.time_msc).map(deal => { const net = dealNet(deal); total = net === null ? total : total + net; return { time: deal.time_msc, value: net === null ? null : total } }) }, [deals])
+  const overall = useMemo(() => { const count = deals.length, values = deals.map(dealNet), net = values.every(Number.isFinite) ? values.reduce((sum,value)=>sum+value,0) : null, wins = values.filter(value=>value > 1e-12).length; return { count, net, winRate: count ? wins / count * 100 : null } }, [deals])
+  const tagColor = tag => catalog.items?.find(item => item.name === tag)?.color || 'gray'
+  const toggle = tag => setSelected(current => current.includes(tag) ? current.filter(value => value !== tag) : [...current,tag])
+  return <section className="live-journal-tags" aria-label={t('Tag analytics')}>
+    {readable && <div className="live-tag-analytics-grid">
+      <article className="live-tag-card live-tag-chart-card"><header><div><h2>{t('Equity Curve')}</h2><small>{t('Over time')}</small></div><div className="live-tag-legend"><i />{t('Overall')}<span aria-hidden="true">ⓘ</span></div></header><AnalyticsCurve series={[curve]} label={t('Equity Curve')} suffix={currency ? ` ${currency}` : ''} height={300} controls showPoints={false} timeZone="UTC" /></article>
+      <aside className="live-tag-card live-tag-picker-card"><label className="live-tag-search"><span className="sr-only">{t('Tìm nhãn')}</span><TestingIcon kind="search"/><SearchInput type="search" aria-label={t('Tìm nhãn')} placeholder={t('Tìm nhãn…')} value={search} onChange={event=>setSearch(event.target.value)} /></label><div className="live-tag-picker-heading"><strong>{t('Trade Rating')}</strong><button type="button" className="fxa-button" onClick={()=>setSelected(availableTags)}>{t('Select all')}</button></div><div className="live-tag-picker-list">{availableTags.filter(tag=>matchesSearch(tag,search)).map(tag=><label key={tag}><input type="checkbox" checked={selected.includes(tag)} onChange={()=>toggle(tag)}/><span className="wm-trade-label" data-color={tagColor(tag)}>{tag}</span><i style={{background:`var(--label-${tagColor(tag)}, var(--report-blue))`}} /></label>)}{!availableTags.length && <p className="live-muted">{t('Chưa có nhãn')}</p>}</div></aside>
+      <section className="live-tag-card live-tag-table-card"><DataTable className="live-tag-grid-table" label={t('Tag analytics')}><thead><tr><th>{t('Tag group')} ↕</th><th>{t('Trades')} ↕</th><th>{t('Win rate')} ↕</th><th className="is-numeric">{t('Total PnL')} ↕</th></tr></thead><tbody><tr className="is-overall"><td><span className="live-tag-expander" aria-hidden="true">⌄</span>{t('Overall')}</td><td>{overall.count}</td><td><span className="live-tag-badge is-blue">{fmt(overall.winRate,'%')}</span></td><td className={overall.net < 0 ? 'is-loss' : overall.net > 0 ? 'is-gain' : ''}>{fmt(overall.net, currency ? ` ${currency}` : '')}</td></tr>{visible.map(row=><tr className="is-child" key={row.tag}><td><span className="live-tag-expander is-child" aria-hidden="true">⌟</span><span className="wm-trade-label" data-color={tagColor(row.tag)}>{row.tag}</span></td><td>{row.count}</td><td><span className={`live-tag-badge ${row.net < 0 ? 'is-red' : 'is-blue'}`}>{fmt(row.winRate,'%')}</span></td><td className={row.net < 0 ? 'is-loss' : row.net > 0 ? 'is-gain' : ''}>{fmt(row.net, currency ? ` ${currency}` : '')}</td></tr>)}</tbody></DataTable><PaginationFooter showCount={false} totalCount={rows.length} label="Trang phân tích nhãn" page={current} pages={pages} pageSize={size} onPageChange={setPage} onPageSizeChange={value=>{setSize(value);setPage(1)}} sizes={[10,20,50,100]} /></section>
+    </div>}
+    {!readable && <div className="live-empty"><h2>{t('Chưa có phân tích nhãn')}</h2><p>{t('Thêm nhãn vào giao dịch để so sánh kết quả.')}</p></div>}
   </section>
 }

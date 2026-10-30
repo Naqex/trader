@@ -27,7 +27,9 @@ import { completedLiveTrades } from './liveBrokerTrades.js'
 import { LEDGER_BASE_FILTERS } from './ledgerFilterModel.js'
 import { LIVE_FILTERS, calendarWeeks, calendarWeekSummary, liveCalendarBorders, cumulativeDealSeries, dayKey, dealNet, filterLiveDeals } from './liveWorkspaceModel.js'
 import { buildAnalyticsModel, dateFromValue } from './analyticsViewModel.js'
-import { DEFAULT_EXTRA_FILTERS } from './tradingAnalyticsModel.js'
+import { DEFAULT_EXTRA_FILTERS, filterValues } from './tradingAnalyticsModel.js'
+import TagFilterControls from './TagFilterControls.jsx'
+import { buildWorkspaceHref } from './workspaceContext.js'
 import { AnalyticsCurve, AnalyticsRing } from './AnalyticsCharts.jsx'
 import { ChartHeading, ExpectancyComparison, FxAnalyticsFilters, FxAnalyticsReport } from './FxAnalytics.jsx'
 
@@ -53,8 +55,8 @@ function Empty({ title, copy, icon = 'chart', action, onAction }) {
   return <div className="live-empty" data-testid="live-empty">{icon && <div className="live-empty-art" aria-hidden="true"><TestingIcon kind={icon} size={72} /></div>}<h2>{t(title)}</h2>{copy && <p>{t(copy)}</p>}{action && <Action primary icon="plus" onClick={onAction}>{t(action)}</Action>}</div>
 }
 
-function FilterBar({ accountPicker, extra, columnControl, payload, draft, setDraft, applied, onApply, onClear, tags, tag, onTagChange }) {
-  const { t, timezone } = useTestingLocale(), [show, setShow] = useState(''), [draftTag, setDraftTag] = useState(tag)
+function FilterBar({ accountPicker, extra, columnControl, payload, draft, setDraft, applied, onApply, onClear, tags, tagFilter, onTagFilterChange, settingsHref, advanced = false }) {
+  const { t, timezone } = useTestingLocale(), [show, setShow] = useState(''), [draftTags, setDraftTags] = useState({ tagInclude: JSON.stringify(tagFilter.include || []), tagExclude: JSON.stringify(tagFilter.exclude || []), tagIncludeMode: tagFilter.includeMode || 'OR', tagExcludeMode: tagFilter.excludeMode || 'OR' })
   const chips = Object.entries(applied).filter(([key, value]) => key !== 'timezone' && value !== LIVE_FILTERS[key] && value !== '')
   const change = patch => setDraft(current => ({...current,...patch}))
   const assets = [...new Set((payload?.deals || []).map(deal => deal.symbol).filter(Boolean))].sort()
@@ -67,14 +69,14 @@ function FilterBar({ accountPicker, extra, columnControl, payload, draft, setDra
     ['Date range', <div className="fxl-fields">{['from','to'].map(key => <label key={key} className="fxl-field">{t(FILTER_LABELS[key])}<ProjectDateInput clearable type="date" aria-label={t(FILTER_LABELS[key])} value={draft[key]} onChange={event => change({[key]:event.target.value})} /></label>)}</div>],
   ]
   return <section className="live-filters" aria-label={t('Filters')}>
-    <div className="live-toolbar fxa-filter-toolbar is-ledger">{accountPicker}{extra}<LedgerFilterActions columnControl={columnControl} activeTab={show} onOpen={tab => { setDraft({...applied});setDraftTag(tag);setShow(tab) }} /></div>
-    {show && <FilterDrawer initialTab={show} sections={sections} tags={<FxSelect label="Nhãn" multiple searchable value={draftTag} triggerContent={draftTag.length ? draftTag.join(', ') : t('Tất cả nhãn')} onChange={setDraftTag} options={tags.map(value => ({value,label:value,localize:false}))} />} onClose={() => setShow('')} onClear={() => { setDraft({...LIVE_FILTERS, timezone});setDraftTag([]) }} onApply={() => { onApply();onTagChange(draftTag);setShow('') }} invalid={Boolean(draft.from && draft.to && draft.from > draft.to)} />}
+    <div className="live-toolbar fxa-filter-toolbar is-ledger">{accountPicker}{extra}<LedgerFilterActions columnControl={columnControl} secondaryLabel={advanced ? 'Advanced' : 'Tags'} settingsHref={settingsHref} activeTab={show} onOpen={tab => { setDraft({...applied});setDraftTags({ tagInclude: JSON.stringify(tagFilter.include || []), tagExclude: JSON.stringify(tagFilter.exclude || []), tagIncludeMode: tagFilter.includeMode || 'OR', tagExcludeMode: tagFilter.excludeMode || 'OR' });setShow(tab) }} /></div>
+    {show && <FilterDrawer initialTab={show === 'Advanced' ? 'Tags' : show} sections={sections} tags={<TagFilterControls values={tags} draft={draftTags} onChange={patch => setDraftTags(current => ({...current,...patch}))} />} onClose={() => setShow('')} onClear={() => { setDraft({...LIVE_FILTERS, timezone});setDraftTags({tagInclude:'',tagExclude:'',tagIncludeMode:'OR',tagExcludeMode:'OR'}) }} onApply={() => { onApply();onTagFilterChange({ include: filterValues(draftTags.tagInclude), exclude: filterValues(draftTags.tagExclude), includeMode: draftTags.tagIncludeMode, excludeMode: draftTags.tagExcludeMode });setShow('') }} invalid={Boolean(draft.from && draft.to && draft.from > draft.to)} />}
 
-    {(chips.length > 0 || tag.length > 0) && <div className="live-filter-chips">{tag.length > 0 && <span>{t('Tags')}: {tag.join(', ')}</span>}{chips.map(([key,value]) => <span key={key}>{t(FILTER_LABELS[key])}: {filterValue(key,value,t)}</span>)}<button type="button" className="fxa-clear-filters" onClick={onClear}><TestingIcon kind="delete" />{t('Clear filters')}</button></div>}
+    {(chips.length > 0 || tagFilter.include.length > 0 || tagFilter.exclude.length > 0) && <div className="live-filter-chips">{tagFilter.include.length > 0 && <span>{t('Include')}: {tagFilter.include.join(', ')}</span>}{tagFilter.exclude.length > 0 && <span>{t('Exclude')}: {tagFilter.exclude.join(', ')}</span>}{chips.map(([key,value]) => <span key={key}>{t(FILTER_LABELS[key])}: {filterValue(key,value,t)}</span>)}<button type="button" className="fxa-clear-filters" onClick={onClear}><TestingIcon kind="delete" />{t('Clear filters')}</button></div>}
   </section>
 }
 
-function Summary({ payload, deals, sidebar = false, workspace, showTags = false }) {
+function Summary({ payload, deals, sidebar = false, workspace, settingsHref, showTags = false }) {
   const { t, fmt } = useTestingLocale(), available = Boolean(payload?.account && Array.isArray(payload.deals))
   const [unit, setUnit] = useState('money'), [hideBalance, setHideBalance] = useState(false)
   const capital = liveAccountCapital(payload), percent = unit === 'percent'
@@ -134,7 +136,7 @@ function Summary({ payload, deals, sidebar = false, workspace, showTags = false 
 
       </article>
     </div>}
-    {showTags && <TradeTagOverview workspace={workspace} deals={deals} currency={currency} />}
+    {showTags && <TradeTagOverview workspace={workspace} settingsHref={settingsHref} deals={deals} currency={currency} />}
     </div>
   </section>
 }
@@ -282,7 +284,7 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
   const [strategies,setStrategies] = useState([]), [strategyError,setStrategyError] = useState(''), [strategyReady,setStrategyReady] = useState(false), [action,setAction] = useState(null), [reload,setReload] = useState(0)
   const selected = query.get('live_account') || ''
   const strategy = query.get('playbook') ? `${query.get('playbook')}${query.get('playbook_revision') ? `:${query.get('playbook_revision')}` : ''}` : 'all'
-  const [tag,setTag] = useState([]), [tableColumns,setTableColumns] = useState({})
+  const [tagFilter,setTagFilter] = useState({include:[],exclude:[],includeMode:'OR',excludeMode:'OR'}), [tableColumns,setTableColumns] = useState({})
   const [draft,setDraft] = useState({...LIVE_FILTERS, timezone}), [applied,setApplied] = useState({...LIVE_FILTERS, timezone})
   const [tradeScope,setTradeScope] = useState(() => ({filters:{...LEDGER_BASE_FILTERS},extra:{...DEFAULT_EXTRA_FILTERS,timezone},timeBasis:'market'}))
   useEffect(() => {
@@ -315,7 +317,7 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
     }).catch(() => { if (!controller.signal.aborted) setStrategyError('Chưa đọc được chiến lược. Tải lại trước khi tạo hoặc sửa giao dịch.') })
     return () => controller.abort()
   },[workspace,preview,needsStrategies,strategyReady,reload])
-  useEffect(() => { setDraft({...LIVE_FILTERS, timezone}); setApplied({...LIVE_FILTERS, timezone}); setTag([]); setTradeScope({filters:{...LEDGER_BASE_FILTERS},extra:{...DEFAULT_EXTRA_FILTERS,timezone},timeBasis:'market'}) },[selectionKey,workspace])
+  useEffect(() => { setDraft({...LIVE_FILTERS, timezone}); setApplied({...LIVE_FILTERS, timezone}); setTagFilter({include:[],exclude:[],includeMode:'OR',excludeMode:'OR'}); setTradeScope({filters:{...LEDGER_BASE_FILTERS},extra:{...DEFAULT_EXTRA_FILTERS,timezone},timeBasis:'market'}) },[selectionKey,workspace])
   useEffect(() => { setDraft(current=>({...current,timezone}));setApplied(current=>({...current,timezone}));setTradeScope(current=>({...current,extra:{...current.extra,timezone}})) },[timezone])
   const choose = value => {
     const url = new URL(window.location.href); url.searchParams.set('live_account',value);
@@ -339,7 +341,7 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
     navigate(url.pathname+url.search,{replace:true})
   }
   const completed = useMemo(() => labelLiveRows(completedLiveTrades(payload), payload, labelCatalog), [payload, labelCatalog.assignments])
-  const deals = useMemo(() => filterLiveDeals({...payload,deals:completed},{...applied,tags:tag}).filter(deal => !payload?.manual || strategy === 'all' || deal.record?.payload.playbook_id === strategyId && (!strategyRevision || deal.record?.payload.playbook_revision === Number(strategyRevision))),[completed,payload,applied,strategy,strategyId,strategyRevision,tag])
+  const deals = useMemo(() => filterLiveDeals({...payload,deals:completed},{...applied,tagInclude:tagFilter.include,tagExclude:tagFilter.exclude,tagIncludeMode:tagFilter.includeMode,tagExcludeMode:tagFilter.excludeMode}).filter(deal => !payload?.manual || strategy === 'all' || deal.record?.payload.playbook_id === strategyId && (!strategyRevision || deal.record?.payload.playbook_revision === Number(strategyRevision))),[completed,payload,applied,strategy,strategyId,strategyRevision,tagFilter])
   const tradeRows = useMemo(() => section === 'trades' ? liveLedgerRows(payload,tradeScope.timeBasis).map(row => { const sourceRow = labelLiveRows([row.sourceRow],payload,labelCatalog)[0]; return {...row,sourceRow,tags:sourceRow.tags || row.tags} }) : [],[section,payload,tradeScope.timeBasis,labelCatalog.assignments])
   const filteredTrades = useMemo(() => filterLiveLedgerRows(tradeRows,tradeScope.filters,tradeScope.extra).filter(deal => !payload?.manual || strategy === 'all' || deal.record?.payload.playbook_id === strategyId && (!strategyRevision || deal.record?.payload.playbook_revision === Number(strategyRevision))),[tradeRows,tradeScope,payload?.manual,strategy,strategyId,strategyRevision])
   const readTradeTimeFacets = useCallback(async basis => liveLedgerFacets(liveLedgerRows(payload,basis),timezone),[payload,timezone])
@@ -377,9 +379,10 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
   const columns = tableColumns[columnKind] || columnOptions.map(([key]) => key)
   const columnControl = section === 'trades' ? <TableColumnControl columns={columns} options={columnOptions} onChange={next => setTableColumns(current => ({...current,[columnKind]:next}))} /> : null
   const strategyControl = payload?.manual ? <div className="live-journal-filters"><FxSelect label="Chiến lược" value={strategy} onChange={changeStrategy} options={[{value:'all',label:'Tất cả chiến lược'},...(strategyRevision ? [{value:strategy,label:`${strategies.find(item => item.record_id === strategyId)?.payload.name || 'Chiến lược'} · v${strategyRevision}`,localize:false}] : []),...strategies.map(item => ({value:item.record_id,label:item.payload.name,localize:false}))]} /></div> : null
+  const settingsHref = buildWorkspaceHref('settings', workspace, query, { area:'settings', section:null, settings_tab:'labels' })
   const filterBar = section === 'trades'
     ? <FxAnalyticsFilters key={`${workspace}:${chosen}`} ledgerOnly filters={tradeScope.filters} extra={tradeScope.extra} timeBasis={tradeScope.timeBasis} readTimeFacets={readTradeTimeFacets} rows={tradeRows} onApply={applyTradeFilters} sessionControl={<>{accountPicker}{strategyControl}</>} columnControl={columnControl} />
-    : <FilterBar tags={tags} tag={tag} onTagChange={setTag} accountPicker={accountPicker} extra={strategyControl} payload={payload} draft={draft} setDraft={setDraft} applied={applied} onApply={apply} onClear={() => { setDraft({...LIVE_FILTERS, timezone});setApplied({...LIVE_FILTERS, timezone});changeStrategy('all');setTag([]) }} />
+    : <FilterBar tags={tags} tagFilter={tagFilter} onTagFilterChange={setTagFilter} settingsHref={section === 'tag-analytics' ? settingsHref : undefined} advanced={section === 'tag-analytics'} accountPicker={accountPicker} extra={strategyControl} payload={payload} draft={draft} setDraft={setDraft} applied={applied} onApply={apply} onClear={() => { setDraft({...LIVE_FILTERS, timezone});setApplied({...LIVE_FILTERS, timezone});changeStrategy('all');setTagFilter({include:[],exclude:[],includeMode:'OR',excludeMode:'OR'}) }} />
   return <Suspense fallback={<TestingSkeleton />}>
     {ledger.error && <div className="live-status live-status-error" role="alert"><span>{t(ledger.error)}</span><Action onClick={() => setReload(value => value+1)}>{t('Thử lại')}</Action></div>}
     {strategyError && <div className="live-status live-status-warning" role="alert"><span>{t(strategyError)}</span><Action onClick={() => setReload(value => value+1)}>{t('Tải lại')}</Action></div>}
@@ -387,10 +390,10 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
     {ledger.status === 'loading' && <p className="live-status" role="status">{t('Đang đọc sổ giao dịch…')}</p>}
     {showContent && !['calendar','trades','notes','trading-accounts','analytics'].includes(section) && filterBar}
     {showContent && <>
-    {section === 'calendar' && <Calendar empty={ledger.status === 'ready' && !calendarIds.length && !broker?.stale} filterBar={showContent ? filterBar : null} canWrite={!preview && ledger.status === 'ready' && calendarIds.length === 1} selectionKey={selectionKey} payload={payload} deals={deals} filters={applied} reviewScope={payload?.manual ? `${strategy === 'all' ? t('Tất cả chiến lược') : `${strategies.find(item => item.record_id === strategyId)?.payload.name || strategyId}${strategyRevision ? ` · v${strategyRevision}` : ` · ${t('mọi phiên bản')}`}`} · ${!tag.length ? t('Tất cả nhãn') : tag.join(', ')}` : t('Synced deals')} onPreview={create} />}
-    {section === 'trades' && <div className="live-split"><section className="live-trades-section">{filterBar}<div className="live-trades-content">{payload?.manual ? <ManualTrades columns={columns} writable={!preview && ledger.status === 'ready' && strategyReady} filterKey={JSON.stringify([chosen,tradeScope,strategy])} workspace={workspace} deals={filteredTrades} currency={payload.account.currency} strategies={strategies} onEdit={record => open('trade',record)} /> : payload?.account ? <LiveBrokerSnapshot workspace={preview ? undefined : workspace} catalog={labelCatalog} columns={columns} payload={payload} section="trades" trades={filteredTrades} filterKey={JSON.stringify(tradeScope)} /> : <Empty title="No trades yet" copy="Tạo tài khoản thủ công và thêm giao dịch để bắt đầu." icon="journal" />}</div></section><Summary payload={payload} deals={payload?.manual ? filteredTrades : filteredTrades.filter(trade => trade.status === 'Closed')} sidebar workspace={preview ? undefined : workspace} showTags /></div>}
+    {section === 'calendar' && <Calendar empty={ledger.status === 'ready' && !calendarIds.length && !broker?.stale} filterBar={showContent ? filterBar : null} canWrite={!preview && ledger.status === 'ready' && calendarIds.length === 1} selectionKey={selectionKey} payload={payload} deals={deals} filters={applied} reviewScope={payload?.manual ? `${strategy === 'all' ? t('Tất cả chiến lược') : `${strategies.find(item => item.record_id === strategyId)?.payload.name || strategyId}${strategyRevision ? ` · v${strategyRevision}` : ` · ${t('mọi phiên bản')}`}`} · ${!tagFilter.include.length ? t('Tất cả nhãn') : tagFilter.include.join(', ')}` : t('Synced deals')} onPreview={create} />}
+    {section === 'trades' && <div className="live-split"><section className="live-trades-section">{filterBar}<div className="live-trades-content">{payload?.manual ? <ManualTrades columns={columns} writable={!preview && ledger.status === 'ready' && strategyReady} filterKey={JSON.stringify([chosen,tradeScope,strategy])} workspace={workspace} deals={filteredTrades} currency={payload.account.currency} strategies={strategies} onEdit={record => open('trade',record)} /> : payload?.account ? <LiveBrokerSnapshot workspace={preview ? undefined : workspace} catalog={labelCatalog} columns={columns} payload={payload} section="trades" trades={filteredTrades} filterKey={JSON.stringify(tradeScope)} /> : <Empty title="No trades yet" copy="Tạo tài khoản thủ công và thêm giao dịch để bắt đầu." icon="journal" />}</div></section><Summary payload={payload} deals={payload?.manual ? filteredTrades : filteredTrades.filter(trade => trade.status === 'Closed')} sidebar workspace={preview ? undefined : workspace} settingsHref={settingsHref} showTags /></div>}
     {section === 'notes' && <JournalNotes workspace={preview ? undefined : workspace} readable={journalReadable} writable={!preview && ledger.status === 'ready' && strategyReady} records={ledger.items} strategies={strategies} onEdit={record => open('note',record)} onCreate={folderId => { if (!preview && ledger.status === 'ready') setAction({kind:'note',folderId}) }} />}
-    {section === 'tag-analytics' && <JournalTags readable={journalReadable} filterKey={JSON.stringify([chosen,applied,strategy,tag])} deals={deals} currency={payload?.account?.currency || ''} />}
+    {section === 'tag-analytics' && <JournalTags workspace={preview ? undefined : workspace} readable={journalReadable} filterKey={JSON.stringify([chosen,applied,strategy,tagFilter])} deals={deals} currency={payload?.account?.currency || ''} />}
     {section === 'analytics' && <LiveAnalyticsReport payload={payload} deals={completed} issue={calendar.issue} sessionControl={<SessionFilter items={pickerItems} value={calendarSelection} multiple onChange={chooseCalendar} labels={ACCOUNT_PICKER_LABELS} />} />}
     {section === 'trading-accounts' && <LiveAccounts key={workspace} workspace={workspace} accounts={accounts} records={ledger.items} broker={broker} chosen={chosen} onSelect={choose} transactions={query.get('account_tab') === 'transactions'} writable={!preview && ledger.status === 'ready'} canImport={!preview && ledger.status === 'ready' && accounts.length > 0} onCreate={seed => {if(!preview && ledger.status==='ready')setAction({kind:'account',seed})}} onImport={record => openAccountAction('import',record?.record_id ? record : null)} onEdit={record => open('account',record)} onTrade={record=>openAccountAction('trade',record)} onNavigate={navigateAccount} onArchive={archiveAccount} onRefresh={onRefresh} />}
 

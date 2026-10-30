@@ -414,6 +414,42 @@
 .live-tag-chart, .live-tag-list { padding: 24px var(--wm-page-gutter); }
 .live-tag-list { border-left: 1px solid var(--wm-border); }
 .live-tag-chart .live-section-heading { flex-wrap: wrap; }
+.live-tag-analytics-grid { display:grid; grid-template-columns:minmax(0,1fr) 240px; gap:20px; padding:24px var(--wm-page-gutter); }
+.live-tag-card { min-width:0; border:1px solid var(--wm-border); border-radius:10px; background:var(--wm-canvas); overflow:hidden; }
+.live-tag-chart-card { min-height:360px; padding:24px; }
+.live-tag-chart-card header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+.live-tag-chart-card h2 { margin:0; font-size:16px; }
+.live-tag-chart-card header small { display:block; margin-top:4px; color:var(--wm-content-muted); }
+.live-tag-legend { display:flex; align-items:center; gap:7px; color:var(--wm-content-muted); font-size:12px; }
+.live-tag-legend i { width:8px; height:8px; border-radius:50%; background:var(--report-blue); }
+.live-tag-legend span { color:var(--wm-content-muted); }
+.live-tag-picker-card { padding:10px; min-height:360px; }
+.live-tag-search { display:flex; align-items:center; gap:8px; min-height:36px; padding:0 10px; border:1px solid var(--wm-border); border-radius:8px; color:var(--wm-content-muted); }
+.live-tag-search input { min-width:0; flex:1; border:0; outline:0; background:transparent; color:var(--wm-content); font:inherit; }
+.live-tag-picker-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:16px 4px 10px; }
+.live-tag-picker-heading strong { font-size:13px; }
+.live-tag-picker-heading .fxa-button { padding:0; min-height:0; border:0; background:transparent; color:var(--wm-content-muted); font-size:11px; }
+.live-tag-picker-list { display:grid; gap:4px; }
+.live-tag-picker-list label { display:flex; align-items:center; gap:8px; padding:8px 6px; border-radius:5px; font-size:12px; cursor:pointer; }
+.live-tag-picker-list label:hover { background:var(--wm-row-hover); }
+.live-tag-picker-list input { accent-color:var(--report-blue); }
+.live-tag-picker-list label > i { width:7px; height:7px; margin-left:auto; border-radius:50%; background:var(--report-blue); }
+.live-tag-table-card { grid-column:1 / -1; }
+.live-tag-grid-table { margin:0; }
+.live-tag-grid-table table { width:100%; border-collapse:collapse; }
+.live-tag-grid-table th, .live-tag-grid-table td { padding:13px 16px; border-bottom:1px solid var(--wm-border); text-align:left; font-size:13px; }
+.live-tag-grid-table th { color:var(--wm-content); font-weight:600; }
+.live-tag-grid-table td:nth-child(n+2) { font-variant-numeric:tabular-nums; }
+.live-tag-grid-table th:last-child, .live-tag-grid-table td:last-child { text-align:right; }
+.live-tag-grid-table tbody tr:last-child td { border-bottom:0; }
+.live-tag-grid-table tr.is-overall { background:color-mix(in srgb,var(--report-blue) 14%,var(--wm-canvas)); }
+.live-tag-grid-table tr.is-child { background:color-mix(in srgb,var(--report-negative) 12%,var(--wm-canvas)); }
+.live-tag-expander { display:inline-grid; place-items:center; width:20px; height:20px; margin-right:8px; color:var(--wm-content-muted); }
+.live-tag-expander.is-child { transform:rotate(-45deg); }
+.live-tag-badge { display:inline-flex; min-width:34px; justify-content:center; padding:4px 7px; border-radius:4px; font-size:11px; font-variant-numeric:tabular-nums; }
+.live-tag-badge.is-blue { background:color-mix(in srgb,var(--report-blue) 18%,var(--wm-canvas)); color:var(--report-blue); }
+.live-tag-badge.is-red { background:color-mix(in srgb,var(--report-negative) 18%,var(--wm-canvas)); color:var(--report-negative); }
+@media (max-width:900px) { .live-tag-analytics-grid { grid-template-columns:minmax(0,1fr); } .live-tag-table-card { grid-column:auto; } }
 .live-smart-picks { padding: 20px var(--wm-page-gutter); }
 .live-accounts-layout { --live-accounts-heading-height:var(--wm-pane-toolbar-height); display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 0; }
 .live-accounts-layout > section:first-child > :is(.live-broker, .live-empty) { padding: 24px var(--wm-page-gutter); }

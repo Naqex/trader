@@ -82,6 +82,16 @@ test('outcome filters use the same break-even tolerance as closed-trade statisti
  assert.deepEqual(filterLiveDeals(source,{...LIVE_FILTERS,outcome:'loss'}).map(deal=>deal.profit),[-2e-12])
  assert.equal(source.deals.length,6)
 })
+test('tag filters support reusable include/exclude AND and OR semantics', () => {
+ const source = {...payload, deals: [
+  {...makeDeal('a','2026-10-05T09:00:00Z',10), record:{payload:{tags:['Excellent','Trend']}}},
+  {...makeDeal('b','2026-10-05T10:00:00Z',20), record:{payload:{tags:['Excellent']}}},
+  {...makeDeal('c','2026-10-05T11:00:00Z',30), record:{payload:{tags:['Poor','Trend']}}},
+ ]}
+ assert.deepEqual(filterLiveDeals(source,{...LIVE_FILTERS,tagInclude:['Excellent','Trend'],tagIncludeMode:'AND'}).map(deal=>deal.ticket),['a'])
+ assert.deepEqual(filterLiveDeals(source,{...LIVE_FILTERS,tagInclude:['Excellent','Poor'],tagIncludeMode:'OR'}).map(deal=>deal.ticket),['a','b','c'])
+ assert.deepEqual(filterLiveDeals(source,{...LIVE_FILTERS,tagExclude:['Trend'],tagExcludeMode:'OR'}).map(deal=>deal.ticket),['b'])
+})
 
 test('calendar seams have one owner, keep adjacent tones and leave the bottom to the footer', () => {
  const weeks = Array.from({length:2}, (_, row) => Array.from({length:7}, (_, column) => ({key:`${row}:${column}`,inMonth:true,net:0})))
