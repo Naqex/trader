@@ -21,7 +21,7 @@ function EditableTemplate({workspace,template,onSaved}) {
   </article>
 }
 
-export default function NoteTemplatesDialog({workspace,library,onClose,onApply,context='testing-trades'}) {
+export default function NoteTemplatesDialog({workspace,library,onClose,onApply,context='testing-trades',selectedTradeCount=1,accountLabel=''}) {
   const {t,language,timezone}=useTestingLocale(), id=useId(), dialog=useRef(null)
   const [search,setSearch]=useState(''),[selectedId,setSelectedId]=useState('beginner'),[menu,setMenu]=useState(null)
   const {boundary,requestClose,active,closing}=useAutosaveBoundary(onClose)
@@ -51,6 +51,9 @@ export default function NoteTemplatesDialog({workspace,library,onClose,onApply,c
     const blocks=selected.builtin?selected.blocks:active?.getSnapshot().value.document.blocks || selected.blocks
     onApply(structuredClone(blocks),replace);onClose()
   }
+  const tradeContext=context==='live-trades' || context==='testing-trades'
+  const selectedLabel=t('Tất cả giao dịch đã chọn ({count})',{count:Math.max(1,selectedTradeCount)})
+  const accountTargetLabel=accountLabel ? t('Tất cả giao dịch trong tài khoản · {account}',{account:accountLabel}) : t('Tất cả giao dịch trong tài khoản')
   const filtered=items.filter(item=>item.name.toLocaleLowerCase(language).includes(search.toLocaleLowerCase(language)))
   const row=item=><button type="button" key={item.id} className={selected.id===item.id?'is-selected':''} aria-pressed={selected.id===item.id} onClick={()=>void choose(item)}><ChartIcon name={favorites.includes(item.id)?'star':'document'} fill={favorites.includes(item.id)?'currentColor':'none'} className={favorites.includes(item.id)?'is-favorite':''}/><span>{item.name}</span>{item.builtin && <small>N</small>}</button>
   return <AutosaveBoundaryContext.Provider value={boundary}><dialog ref={dialog} className="wm-note-templates" aria-labelledby={id} data-theme={document.querySelector('.fx-app')?.dataset.theme || 'dark'} onCancel={event=>{event.preventDefault();event.stopPropagation();if(menu)setMenu(null);else void requestClose()}} onKeyDown={event=>{
@@ -80,7 +83,13 @@ export default function NoteTemplatesDialog({workspace,library,onClose,onApply,c
     {(library.status==='loading' || library.error) && <div className="wm-note-library-state" role={library.error?'alert':'status'}>{t(library.error?'Không đọc hoặc lưu được thư viện mẫu. Đọc lại trước khi tiếp tục.':'Đang đọc thư viện mẫu…')}{library.error && <button type="button" className="fxa-button" onClick={async()=>{if(await flush())library.refresh()}}>{t('Đọc lại dữ liệu')}</button>}</div>}
     <footer><div className="wm-note-template-default"><button type="button" className="fxa-button" disabled={disabled} aria-expanded={menu==='default'} aria-haspopup="menu" onClick={()=>setMenu(menu==='default'?null:'default')}>{t('Set as default')}<ChartIcon name="down"/>
       </button>{menu==='default' && <div role="menu" aria-label={t('Mẫu mặc định')}>{TEMPLATE_CONTEXTS.map(context=><button type="button" role="menuitemcheckbox" aria-checked={defaults[context]===selected.id} key={context} disabled={disabled} onClick={()=>{const next={...defaults};if(next[context]===selected.id)delete next[context];else next[context]=selected.id;void preferences({defaults:next})}}><span className="wm-template-checkbox" aria-hidden="true">{defaults[context]===selected.id?'✓':''}</span><span>{t(CONTEXT_LABELS[context])}<small>{items.find(item=>item.id===defaults[context])?.name || t('Chưa đặt mẫu mặc định')}</small></span></button>)}</div>}</div>
-      <div><button type="button" className="fxa-button" disabled={closing} onClick={()=>void requestClose()}>{t('Cancel')}</button><div className="wm-note-template-apply"><button type="button" className="fxa-button is-primary" disabled={disabled} aria-expanded={menu==='apply'} aria-haspopup="menu" onClick={()=>setMenu(menu==='apply'?null:'apply')}>{t('Apply to')}<ChartIcon name="down"/></button>{menu==='apply' && <div role="menu" aria-label={t('Áp dụng mẫu')}><button type="button" role="menuitem" disabled={disabled} onClick={()=>void apply(false)}><ChartIcon name="note-empty"/>{t(context==='live-notes'?'Ghi chú này':'Giao dịch này')}</button></div>}</div></div>
+      <div><button type="button" className="fxa-button" disabled={closing} onClick={()=>void requestClose()}>{t('Cancel')}</button><div className="wm-note-template-apply"><button type="button" className="fxa-button is-primary" disabled={disabled} aria-expanded={menu==='apply'} aria-haspopup="menu" onClick={()=>setMenu(menu==='apply'?null:'apply')}>{t('Apply to')}<ChartIcon name="down"/></button>{menu==='apply' && <div role="menu" aria-label={t('Áp dụng mẫu')}>
+        <button type="button" role="menuitem" disabled={disabled} onClick={()=>void apply(false)}><ChartIcon name="note-empty"/>{t(context==='live-notes'?'Ghi chú này':'Giao dịch này')}</button>
+        {tradeContext && <>
+          <button type="button" role="menuitem" disabled aria-disabled="true"><ChartIcon name="tag"/><span>{selectedLabel}<small>{t('Sẽ áp dụng cho các giao dịch đang chọn')}</small></span></button>
+          <button type="button" role="menuitem" disabled aria-disabled="true"><ChartIcon name="wallet"/><span>{accountTargetLabel}<small>{t('Sẽ áp dụng cho các giao dịch của tài khoản này')}</small></span></button>
+        </>}
+      </div>}</div></div>
     </footer>
   </dialog></AutosaveBoundaryContext.Provider>
 }

@@ -55,7 +55,19 @@ function NoteFields({ workspace, record, seed, folderId, accountId, accounts, co
 
 export default function LiveNoteEditor({ onClose, ...props }) {
   const {t}=useTestingLocale(), {boundary,requestClose}=useAutosaveBoundary(onClose)
+  const context=props.record?.payload || props.seed || {}
   return <AutosaveBoundaryContext.Provider value={boundary}><LegacyModal overlayClassName="is-drawer-overlay" className="live-record-dialog is-drawer" theme={document.querySelector('.fx-app')?.dataset.theme || 'dark'} label={t(props.record ? 'Chỉnh sửa ghi chú' : 'Note')} onClose={()=>void requestClose()}>
-    <NoteFields {...props}/>
+    <div className="wm-live-note-editor-layout">
+      <aside className="wm-live-note-context" aria-label={t('Ngữ cảnh ghi chú')}>
+        <span className="wm-live-note-context-kicker">{t('Ngữ cảnh')}</span>
+        <h3>{context.title || t('Ghi chú mới')}</h3>
+        <dl>
+          <div><dt>{t('Account')}</dt><dd>{context.account_id || context.connection_id || t('Ghi chú chung')}</dd></div>
+          <div><dt>{t('Strategy')}</dt><dd>{context.playbook_id || t('Không gắn chiến lược')}</dd></div>
+        </dl>
+        <p>{t('Khu vực này sẽ hiển thị thông tin giao dịch và mốc thời gian liên quan.')}</p>
+      </aside>
+      <main className="wm-live-note-editor-main"><NoteFields {...props}/></main>
+    </div>
   </LegacyModal></AutosaveBoundaryContext.Provider>
 }

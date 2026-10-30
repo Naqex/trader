@@ -52,7 +52,7 @@ function NoteSideMenu() {
   return <SideMenu><components.SideMenu.Button label={dictionary.side_menu.add_block_label} icon={<ChartIcon name="order"/>} onClick={addBlock}/><DragHandleButton/></SideMenu>
 }
 
-function RichEditor({ value, onChange, onBlur, disabled=false, label, workspace, context, allowDefault=false, templatesEnabled=true }) {
+function RichEditor({ value, onChange, onBlur, disabled=false, label, workspace, context, allowDefault=false, templatesEnabled=true, selectedTradeCount=1, accountLabel='' }) {
   const {t,language}=useTestingLocale(), [templates,setTemplates]=useState(false), host=useRef(null)
   const snapshot = useRef(value), applying=useRef(false)
   const library=useNoteTemplateLibrary(workspace,templatesEnabled), defaultChecked=useRef(false)
@@ -114,7 +114,7 @@ function RichEditor({ value, onChange, onBlur, disabled=false, label, workspace,
       <SuggestionMenuController triggerCharacter="/" getItems={async query=>filterSuggestionItems(items,query)}/>
     </BlockNoteView>
     {templatesEnabled && <div className="wm-note-template-shortcut"><small>{t('Start with shortcuts')}</small><button type="button" className="fxa-button" aria-label={t('Templates')} disabled={disabled} onClick={()=>setTemplates(true)}><ChartIcon name="templates"/> /templates</button></div>}
-    {templates && <NoteTemplatesDialog workspace={workspace} library={library} context={context} onClose={()=>setTemplates(false)} onApply={insertTemplate}/>}
+    {templates && <NoteTemplatesDialog workspace={workspace} library={library} context={context} selectedTradeCount={selectedTradeCount} accountLabel={accountLabel} onClose={()=>setTemplates(false)} onApply={insertTemplate}/>}
   </div>
 }
 

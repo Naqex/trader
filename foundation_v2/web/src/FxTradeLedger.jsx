@@ -14,6 +14,7 @@ import TradeLedgerGrid from './TradeLedgerGrid.jsx'
 import { formatReturnPercent } from './tradeReturnFormat.js'
 import ChartIcon from './ChartIcon.jsx'
 import { AutosaveBoundaryContext, AutosaveBoundaryStatus, useAutosaveBoundary } from './useAutosave.jsx'
+import { TradeJournalToolbar } from './TradeJournalPreview.jsx'
 
 const COLUMNS = [
   ['session_id', 'Session'], ['status', 'Type'], ['source', 'Source'], ['recorded_at_utc', 'Entry Date (Realtime)'], ['open_time_utc', 'Entry Date (Chart UTC)'],
@@ -91,6 +92,7 @@ export default function FxTradeLedger({ model, extra, selected, onSelect, onRows
   const setSorts = value => { if (remotePage) remotePage.onChange({ sorts: value, page: 1 }); else { setLocalSorts(value); setLocalPage(0) } }
   const [columns, setColumns, columnStorageError] = useTableColumns(preferenceWorkspace, 'trades', DEFAULT_COLUMNS)
   const [checked, setChecked] = useState(new Set())
+  const [journalView,setJournalView] = useState('active')
   const rows = useMemo(() => remotePage ? data.rows : sortTableRows(data.rows, sorts, (row, key) => {
     const value = valueOf(row, key, model, sessionName)
     if (key.endsWith('_time_utc') || key === 'recorded_at_utc') return closeTime(value)?.getTime()
@@ -130,12 +132,13 @@ export default function FxTradeLedger({ model, extra, selected, onSelect, onRows
   }
   const renderCell = (row, key) => key === 'tags' ? <TradeLabelCell workspace={workspace} session={row.session_id || model.result?.session_id || model.result?.provenance?.session_id} row={row} catalog={labelCatalog} onChanged={onLabelsChanged}/> : ['net_pnl','gross_pnl'].includes(key) && known(row[key]) ? <span tabIndex={0} aria-label={`${display(row,key,model,sessionName,{fmt,locale,t,timezone})} ${currencyLabel(row.account_currency || model.result?.account_currency) || t('Đơn vị tài khoản')}`} data-tooltip={currencyLabel(row.account_currency || model.result?.account_currency)} className={`wm-return-badge ${row[key] > 0 ? 'is-positive' : row[key] < 0 ? 'is-negative' : 'is-flat'}`}><span aria-hidden="true">{row[key] > 0 ? '↗' : row[key] < 0 ? '↙' : '-'}</span>{display(row,key,model,sessionName,{fmt,locale,t,timezone})}</span> : ['status', 'side', 'entry_type'].includes(key) && (key !== 'entry_type' || row.entry_type && !['-', '—'].includes(row.entry_type)) ? <span className={`fxa-badge is-${key === 'status' ? row.status === 'open' ? 'open' : 'closed' : key === 'entry_type' ? 'order-type' : String(row.side).toLowerCase()}`}>{display(row, key, model, sessionName, { fmt, locale, t, timezone })}</span> : key === 'session_id' ? <span data-tooltip={row.trade_id || row.tradeId}>{display(row, key, model, sessionName, { fmt, locale, t, timezone })}</span> : display(row, key, model, sessionName, { fmt, locale, t, timezone })
   return <>
+    <TradeJournalToolbar inline sourceKind="practice" view={journalView} onView={setJournalView} />
     {renderFilters?.(columnControl)}
     {columnStorageError && <span role="status">{t('Không lưu được cột hiển thị trong trình duyệt này.')}</span>}
     {readNotice}
     <section aria-busy={remotePage?.pending || undefined} hidden={hidden} className="fxa-trades" aria-label={t("Trade ledger")} data-testid="fx-trade-ledger">
     {!renderFilters && <div className="fxa-ledger-tools">{columnControl}</div>}
     {checked.size > 0 && <span className="sr-only" role="status">{checked.size} {t("đã chọn")}</span>}
-    {empty ? <TestingTradesEmpty filtered={!noTrades} incomplete={incomplete} /> : <TradeLedgerGrid rows={visible} current={current} size={size} shownColumns={shownColumns} columnHeader={columnHeader} renderCell={renderCell} cellClass={columnClass} rowKey={row => row.tradeId} sortResetActive={sorts.length > 0} onClearSort={() => setSorts([])} disabled={Boolean(remotePage?.pending)} pending={Boolean(remotePage?.pending)} selected={selected} onSelect={value => onSelect(value)} checked={checked} onToggle={toggle} allChecked={allChecked} mixedChecked={mixedChecked} selectPage={selectPage} onTogglePage={() => setChecked(values => { const next = new Set(values); visible.forEach(row => allChecked ? next.delete(row.tradeId) : next.add(row.tradeId)); return next })} totalCount={total} pages={pages} onPageChange={value => setPage(value - 1)} onPageSizeChange={setSize} paginationLabel="Trade ledger pagination" dataTestId="analytics-ledger" rowNumberOffset={current * size} />}
+    {empty ? <TestingTradesEmpty filtered={!noTrades} incomplete={incomplete} /> : <TradeLedgerGrid bulkLabels={labelCatalog.items} journalView={journalView} onJournalView={setJournalView} showJournalToolbar={false} rows={visible} current={current} size={size} shownColumns={shownColumns} columnHeader={columnHeader} renderCell={renderCell} cellClass={columnClass} rowKey={row => row.tradeId} sortResetActive={sorts.length > 0} onClearSort={() => setSorts([])} disabled={Boolean(remotePage?.pending)} pending={Boolean(remotePage?.pending)} selected={selected} onSelect={value => onSelect(value)} checked={checked} onToggle={toggle} allChecked={allChecked} mixedChecked={mixedChecked} selectPage={selectPage} onTogglePage={() => setChecked(values => { const next = new Set(values); visible.forEach(row => allChecked ? next.delete(row.tradeId) : next.add(row.tradeId)); return next })} totalCount={total} pages={pages} onPageChange={value => setPage(value - 1)} onPageSizeChange={setSize} paginationLabel="Trade ledger pagination" dataTestId="analytics-ledger" rowNumberOffset={current * size} />}
   </section></>
 }

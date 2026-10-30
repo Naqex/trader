@@ -25,6 +25,19 @@
 .fx-app .wm-note-template-shortcut .fxa-button { border:1px solid var(--wm-border); border-radius:16px; background:transparent; color:var(--wm-content-muted); padding:4px 12px; font-size:12px; font-weight:400; }
 .fx-trade-detail-content .fx-trade-note-draft { padding:16px 20px; overflow:auto; }
 
+.legacy-modal.live-record-dialog.is-drawer { width:min(980px,100vw); height:100dvh; max-height:none; border-radius:0; border-block:0; }
+.legacy-modal.live-record-dialog.is-drawer > header { flex-shrink:0; }
+.wm-live-note-editor-layout { display:grid; grid-template-columns:minmax(220px,.72fr) minmax(0,1.28fr); min-height:calc(100dvh - 74px); }
+.wm-live-note-context { min-width:0; padding:32px 28px; border-right:1px solid var(--chart-line); background:color-mix(in srgb,var(--chart-bg) 88%,var(--wm-content)); }
+.wm-live-note-context-kicker { display:block; margin-bottom:10px; color:var(--wm-content-muted); font-size:11px; letter-spacing:.06em; text-transform:uppercase; }
+.wm-live-note-context h3 { margin:0 0 24px; font-size:20px; line-height:1.3; }
+.wm-live-note-context dl { display:grid; gap:16px; margin:0; }
+.wm-live-note-context dt { color:var(--wm-content-muted); font-size:12px; }
+.wm-live-note-context dd { margin:4px 0 0; overflow-wrap:anywhere; font-size:13px; }
+.wm-live-note-context p { margin:28px 0 0; color:var(--wm-content-muted); font-size:12px; line-height:1.6; }
+.wm-live-note-editor-main { min-width:0; min-height:0; overflow:auto; padding:20px 28px 28px; }
+.wm-live-note-editor-main .live-record-form { min-height:100%; }
+
 .wm-note-templates { width:min(920px,calc(100vw - 32px)); height:min(760px,calc(100dvh - 32px)); max-width:none; max-height:none; margin:auto; padding:0; border:1px solid var(--wm-border); border-radius:var(--ds-radius-medium,12px); background:var(--wm-surface); color:var(--wm-content); font-family:inherit; }
 .wm-note-templates[open] { display:flex; flex-direction:column; }
 .wm-note-templates::backdrop { background:#0008; }
@@ -74,6 +87,9 @@
 .wm-note-template-default > [role=menu] { left:0; min-width:250px; }
 .wm-note-templates footer > div > button > svg,.wm-note-template-apply > button > svg { width:14px; height:14px; transform:rotate(180deg); }
 .wm-note-templates [role^=menuitem] { display:flex; align-items:center; gap:10px; text-align:left; padding:9px; color:var(--wm-content); background:transparent; border:0; border-radius:4px; font:inherit; font-size:13px; cursor:pointer; }
+.wm-note-templates [role=menuitem] > span { min-width:0; }
+.wm-note-templates [role=menuitem] > span small { display:block; margin-top:3px; color:var(--wm-content-muted); font-size:11px; line-height:1.35; }
+.wm-note-templates [role=menuitem]:disabled { cursor:default; opacity:.62; }
 .wm-note-templates [role^=menuitem]:hover,.wm-note-templates [role^=menuitem]:focus-visible { background:var(--wm-hover); }
 .wm-note-templates [role=menuitemcheckbox] small { display:block; margin-top:3px; color:var(--wm-content-muted); font-size:11px; }
 .wm-template-checkbox { display:grid; place-items:center; width:14px; height:14px; flex:none; border:1px solid var(--wm-border); border-radius:3px; color:var(--wm-content); font-size:10px; }
@@ -92,4 +108,10 @@
   .wm-note-templates > footer { padding:8px; gap:6px; }
   .wm-note-templates > footer > div { gap:6px; }
   .wm-note-templates > footer .fxa-button { padding:6px 9px; font-size:11px; }
+}
+@media(max-width:700px) {
+  .wm-live-note-editor-layout { grid-template-columns:minmax(0,1fr); }
+  .wm-live-note-context { padding:20px; border-right:0; border-bottom:1px solid var(--chart-line); }
+  .wm-live-note-context p { margin-top:16px; }
+  .wm-live-note-editor-main { padding:16px 20px 24px; }
 }

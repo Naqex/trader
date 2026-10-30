@@ -20,19 +20,19 @@ export function TradeDetailHeading({ title, subtitle, net, currency, entryAt, ex
   return <div className="fx-live-trade-heading"><div className="fx-trade-title-line"><h2>{title}</h2>{Number.isFinite(net) && <span className={net > 0 ? 'is-positive' : net < 0 ? 'is-negative' : ''}>{fmt(net,currency ? ` ${currency}` : '')} <small>({t('Net PnL')})</small></span>}</div>{time && <p title={`${t('Entry date')} · ${timeBasis} · ${timezone}${subtitle ? ` · ${subtitle}` : ''}`}><time dateTime={entryDate.toISOString()}>{time}</time>{duration && <> · <span title={t('Thời gian giữ lệnh')}>{duration}</span></>}</p>}</div>
 }
 
-function SavedTradeNote({ workspace, session, trade }) {
+function SavedTradeNote({ workspace, session, trade, accountLabel, selectedTradeCount = 1 }) {
   const { t } = useTestingLocale()
   const boundary = useContext(AutosaveBoundaryContext)
   const save = useAutosave({ identity:JSON.stringify(['trade-note',workspace,session,trade]), initialValue:emptyNote(), adapter:tradeNoteAdapter({workspace,session,trade,structured:true}) })
   return <section className="fx-trade-note-draft" aria-label={t('Ghi chú giao dịch')}>
-    {save.ready ? <Suspense fallback={<span role="status">{t('Đang tải trình soạn thảo…')}</span>}><NoteBlockEditor workspace={workspace} context={session.startsWith('live:')?'live-trades':'testing-trades'} allowDefault={!save.record && save.phase==='idle'} value={save.value} onChange={save.change} onBlur={()=>void save.flush()} disabled={save.phase === 'conflict'} label={t('Nội dung ghi chú giao dịch')}/></Suspense> : boundary && <AutosaveStatus save={save}/>}
+    {save.ready ? <Suspense fallback={<span role="status">{t('Đang tải trình soạn thảo…')}</span>}><NoteBlockEditor workspace={workspace} context={session.startsWith('live:')?'live-trades':'testing-trades'} selectedTradeCount={selectedTradeCount} accountLabel={accountLabel} allowDefault={!save.record && save.phase==='idle'} value={save.value} onChange={save.change} onBlur={()=>void save.flush()} disabled={save.phase === 'conflict'} label={t('Nội dung ghi chú giao dịch')}/></Suspense> : boundary && <AutosaveStatus save={save}/>}
     {!boundary && <AutosaveStatus save={save}/>}
   </section>
 }
 
-export function TradeNoteDraft({ workspace, session, trade }) {
+export function TradeNoteDraft({ workspace, session, trade, accountLabel, selectedTradeCount = 1 }) {
   const { t } = useTestingLocale()
-  if (workspace && session && trade) return <SavedTradeNote workspace={workspace} session={String(session)} trade={String(trade)}/>
+  if (workspace && session && trade) return <SavedTradeNote workspace={workspace} session={String(session)} trade={String(trade)} accountLabel={accountLabel} selectedTradeCount={selectedTradeCount}/>
   return <section className="fx-trade-note-draft" aria-label={t('Ghi chú giao dịch')}>
     <h3 className="sr-only">{t('Notes')}</h3>
     <label><span className="sr-only">{t('Nội dung ghi chú giao dịch')}</span><textarea aria-label={t('Nội dung ghi chú giao dịch')} placeholder={t('Viết ghi chú…')} rows={6} maxLength={10000}/></label>

@@ -4,7 +4,7 @@ import ChartIcon from './ChartIcon.jsx'
 import { TestingSkeleton } from './TestingReadState.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import { useEffect, useState } from 'react'
-import { TradeJournalToolbar, TradeJournalActionDialog } from './TradeJournalPreview.jsx'
+import { TradeJournalToolbar, TradeJournalActionDialog, TradeBulkSelectionBar, TradeBulkTagsDialog } from './TradeJournalPreview.jsx'
 
 // Training and live trades deliberately share this grid contract. Each surface
 // owns only its row adapter, columns and data actions; borders, states and
@@ -16,10 +16,10 @@ export default function TradeLedgerGrid({
   allChecked = false, mixedChecked = false, selectPage, onTogglePage,
   totalCount, pages, onPageChange, onPageSizeChange, paginationLabel,
   tableLabel = 'Giao dịch, cuộn ngang để xem các cột', dataTestId, pageSizeOptions, rowNumberOffset = 0, sourceKind='practice',
-  journalView: controlledJournalView, onJournalView, showJournalToolbar = true, showBulkActions = false,
+  journalView: controlledJournalView, onJournalView, showJournalToolbar = true, showBulkActions = false, bulkLabels = [],
 }) {
   const { t } = useTestingLocale()
-  const [localJournalView,setLocalJournalView]=useState('active'),[journalAction,setJournalAction]=useState(null)
+  const [localJournalView,setLocalJournalView]=useState('active'),[journalAction,setJournalAction]=useState(null),[bulkTagsOpen,setBulkTagsOpen]=useState(false)
   const journalView=controlledJournalView ?? localJournalView
   const changeJournalView=value=>{ (onJournalView || setLocalJournalView)(value); onSelect?.(''); checked.forEach(key=>onToggle?.(key)) }
   const displayRows=rows.filter(row=>journalView==='all' || (journalView==='deleted')===(row.journal_deleted===true))
@@ -50,12 +50,14 @@ export default function TradeLedgerGrid({
           onKeyDown={actionable ? event => { if (event.target === event.currentTarget && ['Enter',' '].includes(event.key)) { event.preventDefault(); activate() } } : undefined}>
           <td className="wm-table-row-number" data-column="row_number">{rowNumberOffset + index + 1}</td>
           {selectable && <td className="is-center"><input type="checkbox" aria-label={t('Chọn lệnh {id}', { id: key })} checked={checked.has(key)} onChange={() => onToggle(key)} /></td>}
-          {actionable && <td className="is-center"><div className="wm-trade-row-actions"><button className="fxa-detail-button wm-table-row-action" type="button" aria-label={t('Chi tiết {id}', { id: key })} data-note-state={row.has_notes===true?'with':row.has_notes===false?'without':'unknown'} title={t(row.has_notes===true?'Có ghi chú':row.has_notes===false?'Chưa có ghi chú':'Chưa xác minh ghi chú')} aria-pressed={isSelected} onClick={() => onSelect(isSelected ? '' : key)}><ChartIcon name={row.has_notes===true?'note-filled':'note-empty'} width={18} height={18}/></button><button type="button" className="wm-table-row-action wm-trade-journal-action" aria-label={t(row.journal_deleted?'Khôi phục giao dịch {id}':'Xóa giao dịch {id}',{id:key})} data-tooltip={t(row.journal_deleted?'Khôi phục':'Xóa khỏi nhật ký')} onClick={()=>setJournalAction({action:row.journal_deleted?'restore':'delete',count:1})}><ChartIcon name={row.journal_deleted?'history-restore':'trash'}/></button></div></td>}
+          {actionable && <td className="is-center"><div className="wm-trade-row-actions"><button className="fxa-detail-button wm-table-row-action" type="button" aria-label={t('Chi tiết {id}', { id: key })} data-note-state={row.has_notes===true?'with':row.has_notes===false?'without':'unknown'} title={t(row.has_notes===true?'Có ghi chú':row.has_notes===false?'Chưa có ghi chú':'Chưa xác minh ghi chú')} aria-pressed={isSelected} onClick={() => onSelect(isSelected ? '' : key)}><ChartIcon name={row.has_notes===true?'note-filled':'note-empty'} width={18} height={18}/></button></div></td>}
           {shownColumns.map(([column]) => <td key={column} data-column={column} className={cellClass?.(column)}>{renderCell(row, column)}</td>)}
         </tr>
       })}</tbody>
     </DataTable>
+    {checked.size > 0 && <TradeBulkSelectionBar count={checked.size} onClose={()=>checked.forEach(key=>onToggle?.(key))} onTags={()=>setBulkTagsOpen(true)}/>}
     {journalView!=='deleted' && <PaginationFooter showCount={false} totalCount={totalCount} label={paginationLabel} data-testid={dataTestId ? `${dataTestId}-pagination` : undefined} page={current + 1} pages={pages} onPageChange={onPageChange} pageSize={size} onPageSizeChange={onPageSizeChange} pending={pending} unknown={totalCount === null} sizes={pageSizeOptions} />}
     {journalAction && <TradeJournalActionDialog {...journalAction} onClose={()=>setJournalAction(null)}/>}
+    {bulkTagsOpen && <TradeBulkTagsDialog count={checked.size} labels={bulkLabels} onClose={()=>setBulkTagsOpen(false)}/>}
   </>
 }
