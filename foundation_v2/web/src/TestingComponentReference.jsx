@@ -13,6 +13,17 @@ import { useTestingLocale } from './testingLocale.jsx'
 import { useFxReplayContext } from './FxReplayShell.jsx'
 import './component-reference.css'
 import { DATA_STATES as dataStates } from './dataStates.js'
+import { TradeBulkSelectionBar, TradeBulkTagsDialog } from './TradeJournalPreview.jsx'
+
+function ReferenceTradeSelection() {
+  const [count,setCount]=useState(0),[tags,setTags]=useState(false)
+  return <section id="trade-selection"><h2>Thanh thao tác khi chọn giao dịch</h2>
+    <p>Dữ liệu minh họa. Thanh nằm dưới viewport; thao tác nhãn xuất hiện khi chọn từ hai giao dịch.</p>
+    <div className="wm-reference-controls"><button type="button" className="wm-button" onClick={()=>setCount(1)}>Chọn 1 giao dịch mẫu</button><button type="button" className="wm-button" onClick={()=>setCount(2)}>Chọn 2 giao dịch mẫu</button></div>
+    {count>0 && <TradeBulkSelectionBar count={count} onClose={()=>setCount(0)} onSelectAll={()=>setCount(2)} onTags={()=>setTags(true)}/>}
+    {tags && <TradeBulkTagsDialog count={count} groups={[{id:'demo-setup',name:'Setup'}]} labels={[{id:'demo-breakout',name:'Breakout',group_id:'demo-setup'}]} onClose={()=>setTags(false)}/>}
+  </section>
+}
 
 const sizes = [
   ['Nút / ô nhập thường','control','Thon gọn trên máy tính'], ['Nút icon','icon-button','Icon nằm giữa vùng bấm'],
@@ -116,6 +127,7 @@ export default function TestingComponentReference() {
     <section id="tooltips"><h2>Tooltip</h2><p>Gợi ý ngắn khi hover hoặc focus bằng Tab; Escape đóng. Nội dung quan trọng vẫn hiện trong form. Dùng popover nếu cần liên kết hoặc thao tác.</p><div className="wm-reference-controls"><button type="button" className="wm-button" data-tooltip="Gợi ý ngắn">Tooltip ngắn</button><button type="button" className="wm-button" data-tooltip={'Chỉ đọc dữ liệu đã đồng bộ.\nKhông gửi lệnh tới broker.'} data-tooltip-touch>Hướng dẫn mẫu</button><button type="button" className="wm-button" data-tooltip={'Số dư tài khoản\n\nSố dư sau các giao dịch đã đóng, không bao gồm lãi/lỗ thả nổi.\n\nKhi lọc giao dịch, số dư được dựng lại từ vốn ban đầu và những lệnh đã chọn; không đại diện cho toàn bộ số dư tài khoản hiện tại.'} data-tooltip-touch>Định nghĩa dài</button><button type="button" className="wm-button" disabled data-tooltip="Chọn tài khoản trước khi đồng bộ.">Chưa thể đồng bộ</button></div></section>
     <ReferenceDataFlow />
     <ReferenceDataTable />
+    <ReferenceTradeSelection />
     <ReferenceVirtualTable />
     <ReferenceReportPatterns />
     <section id="layout"><h2>Vị trí, nhóm và grid</h2><div className="wm-reference-layout-grid"><div><h3>Trang dữ liệu</h3><p>Tìm kiếm trái → filter / sort → hành động phải. Desktop một hàng; hẹp thì cuộn nhóm filter, không đổi vị trí khi thay nhãn.</p><p>Header và dữ liệu chung mép cột. Chữ trái; số tiền/số lượng phải; icon giữa vùng bấm. Ngày dd/mm/yyyy, giờ HH:mm:ss; giữ rõ múi giờ.</p></div><div><h3>Form và dialog</h3><p>Label trên ô, mô tả/lỗi dưới ô. Hai cột khi đủ rộng, một cột trên điện thoại. Header/footer cố định, chỉ giữa cuộn.</p><p>Huỷ bên trái nút chính ở footer phải. X trên phải, hover chỉ đổi màu icon. Không lồng card hay thêm viền để lấp khoảng trống.</p></div><div><h3>KPI và báo cáo</h3><p>Grid 4 → 2 → 1 theo chỗ trống. Gap 24px giữa cụm, 32px giữa khu vực. Biểu đồ giữ trục/đơn vị; bảng rộng cuộn trong vùng riêng.</p></div><div><h3>Lớp nổi</h3><p>Menu bám control, tránh mép màn hình; dialog giữa, drawer phải, tooltip cạnh mục đang chỉ. Escape đóng lớp hiện tại, trả focus về nút mở.</p></div></div></section>

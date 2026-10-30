@@ -840,9 +840,13 @@ and disabled for Practice. The extra R info icon is omitted.
 Trade journal UI uses the same controls in Practice, broker-synced Live and
 manual Live trades. The dataset selector names the source currently rendered;
 Journal and Research remain disabled until their data contracts exist. Journal
-status offers Active, Deleted and All as a UI preview. Row and bulk delete or
-restore actions open a confirmation dialog, but the confirmation is disabled
-until persistent deletion semantics are implemented. These controls must not
+status offers Active, Deleted and All as a UI preview; changing it clears checked
+rows. The journal controls share the account/session selector row. Selecting
+trades opens a two-row bottom toolbar; Add/remove tags appears from two selections.
+Templates reuses the note library with the real selection count; bulk apply,
+merge and delete remain disabled until their data contracts are implemented.
+Row delete icons are omitted. The bulk tag preview uses catalog group IDs and
+stable row keys; it never edits the catalog or trade assignments. These controls must not
 change broker state, notes, tags, media, PnL or analytics while disabled.
 
 Analytics and Smart Picks side panels share the mirrored collapse control. The

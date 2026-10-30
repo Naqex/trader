@@ -8,6 +8,7 @@ import { mt5AccountName } from './liveAccountModel.js'
 import { useNoteTemplateLibrary } from './noteTemplatesApi.js'
 import { builtinNoteTemplates } from './noteTemplates.js'
 import { documentText } from './noteDocument.js'
+import './live-note-editor.css'
 
 function NoteFields({ workspace, record, seed, folderId, accountId, accounts, connections, strategies, onSaved }) {
   const { t,language } = useTestingLocale()
@@ -41,33 +42,24 @@ function NoteFields({ workspace, record, seed, folderId, accountId, accounts, co
   },[record,save.ready,save.phase,save.value,library.status,library.preferences,library.items,language])
   const change=(field,value)=>save.change({...draft,[field]:value})
   const selectedAccount=draft.connection_id ? `broker:${draft.connection_id}` : draft.account_id || ''
-  return <div className="live-record-form" onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget))void save.flush()}}>
+  return <div className="live-record-form wm-live-note-editor-layout" onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget))void save.flush()}}>
+    <aside className="wm-live-note-context" aria-label={t('Ngữ cảnh ghi chú')}>
     <div className="live-record-grid">
       <label>{t('Account')}<FxSelect className="is-field" label="Account" localizeOptions={false} disabled={disabled} value={selectedAccount} onChange={value=>save.change({...draft,account_id:value.startsWith('broker:') ? null : value || null,connection_id:value.startsWith('broker:') ? value.slice(7) : null})} options={[{value:'',label:t('Ghi chú chung'),localize:false},...accounts.map(item=>({value:item.record_id,label:item.payload.name,localize:false})),...connections.map(item=>({value:`broker:${item.id}`,label:mt5AccountName(item),localize:false}))]}/></label>
       <label>{t('Strategy')}<FxSelect className="is-field" label="Strategy" localizeOptions={false} disabled={disabled} value={draft.playbook_id ? `${draft.playbook_id}:${draft.playbook_revision}` : ''} onChange={value=>{const [id,revision]=value.split(':');save.change({...draft,playbook_id:id || null,playbook_revision:id ? Number(revision) : null})}} options={[{value:'',label:t('Không gắn chiến lược'),localize:false},...strategies.map(item=>({value:`${item.record_id}:${item.revision}`,label:`${item.payload.name} · v${item.revision}`,localize:false}))]}/></label>
     </div>
     <label>{t('Tiêu đề')}<input value={draft.title} maxLength={160} disabled={disabled} onChange={event=>change('title',event.target.value)} onBlur={()=>void save.flush()}/></label>
     <label>{t('Nhãn')}<input value={tagsText ?? draft.tags.join(', ')} maxLength={2000} disabled={disabled} onChange={event=>{setTagsText(event.target.value);change('tags',[...new Set(event.target.value.split(',').map(value=>value.trim()).filter(Boolean))])}} onBlur={()=>{setTagsText(null);void save.flush()}}/></label>
+    </aside><main className="wm-live-note-editor-main">
     <label>{t('Ghi chú')}<textarea value={draft.note} rows={12} maxLength={10000} disabled={disabled} onChange={event=>change('note',event.target.value)} onBlur={()=>void save.flush()}/></label>
     <AutosaveStatus save={save}/>
+    </main>
   </div>
 }
 
 export default function LiveNoteEditor({ onClose, ...props }) {
   const {t}=useTestingLocale(), {boundary,requestClose}=useAutosaveBoundary(onClose)
-  const context=props.record?.payload || props.seed || {}
-  return <AutosaveBoundaryContext.Provider value={boundary}><LegacyModal overlayClassName="is-drawer-overlay" className="live-record-dialog is-drawer" theme={document.querySelector('.fx-app')?.dataset.theme || 'dark'} label={t(props.record ? 'Chỉnh sửa ghi chú' : 'Note')} onClose={()=>void requestClose()}>
-    <div className="wm-live-note-editor-layout">
-      <aside className="wm-live-note-context" aria-label={t('Ngữ cảnh ghi chú')}>
-        <span className="wm-live-note-context-kicker">{t('Ngữ cảnh')}</span>
-        <h3>{context.title || t('Ghi chú mới')}</h3>
-        <dl>
-          <div><dt>{t('Account')}</dt><dd>{context.account_id || context.connection_id || t('Ghi chú chung')}</dd></div>
-          <div><dt>{t('Strategy')}</dt><dd>{context.playbook_id || t('Không gắn chiến lược')}</dd></div>
-        </dl>
-        <p>{t('Khu vực này sẽ hiển thị thông tin giao dịch và mốc thời gian liên quan.')}</p>
-      </aside>
-      <main className="wm-live-note-editor-main"><NoteFields {...props}/></main>
-    </div>
+  return <AutosaveBoundaryContext.Provider value={boundary}><LegacyModal overlayClassName="is-drawer-overlay" className="live-record-dialog is-drawer is-note-editor" theme={document.querySelector('.fx-app')?.dataset.theme || 'dark'} label={t(props.record ? 'Chỉnh sửa ghi chú' : 'Note')} onClose={()=>void requestClose()}>
+    <NoteFields {...props}/>
   </LegacyModal></AutosaveBoundaryContext.Provider>
 }

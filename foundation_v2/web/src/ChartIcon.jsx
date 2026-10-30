@@ -1,6 +1,7 @@
 import React from 'react'
 
 const paths = {
+  'note-edit':'M10 3H5v18h8M9 7h3M14 4v4h4m-7 11 1-4 6-6 3 3-6 6-4 1z',
   'panel-close':'M3 4h18v16H3zM15 4v16m-7-12 4 4-4 4',
   'panel-open':'M3 4h18v16H3zM15 4v16m-4-12-4 4 4 4',
   'history-restore':'M4 4v6h6M4 10a8 8 0 1 1 0 5M12 8v5l3 2',

@@ -16,7 +16,7 @@ export default function TradeLedgerGrid({
   allChecked = false, mixedChecked = false, selectPage, onTogglePage,
   totalCount, pages, onPageChange, onPageSizeChange, paginationLabel,
   tableLabel = 'Giao dịch, cuộn ngang để xem các cột', dataTestId, pageSizeOptions, rowNumberOffset = 0, sourceKind='practice',
-  journalView: controlledJournalView, onJournalView, showJournalToolbar = true, showBulkActions = false, bulkLabels = [],
+  journalView: controlledJournalView, onJournalView, showJournalToolbar = true, showBulkActions = false, bulkLabels = [], bulkGroups = [], workspace,
 }) {
   const { t } = useTestingLocale()
   const [localJournalView,setLocalJournalView]=useState('active'),[journalAction,setJournalAction]=useState(null),[bulkTagsOpen,setBulkTagsOpen]=useState(false)
@@ -55,9 +55,9 @@ export default function TradeLedgerGrid({
         </tr>
       })}</tbody>
     </DataTable>
-    {checked.size > 0 && <TradeBulkSelectionBar count={checked.size} onClose={()=>checked.forEach(key=>onToggle?.(key))} onTags={()=>setBulkTagsOpen(true)}/>}
+    {checked.size > 0 && <TradeBulkSelectionBar workspace={workspace} context={sourceKind==='broker'?'live-trades':'testing-trades'} count={checked.size} onClose={()=>checked.forEach(key=>onToggle?.(key))} onSelectAll={()=>displayRows.forEach(row=>{const key=rowKey(row);if(!checked.has(key))onToggle?.(key)})} onTags={()=>setBulkTagsOpen(true)}/>}
     {journalView!=='deleted' && <PaginationFooter showCount={false} totalCount={totalCount} label={paginationLabel} data-testid={dataTestId ? `${dataTestId}-pagination` : undefined} page={current + 1} pages={pages} onPageChange={onPageChange} pageSize={size} onPageSizeChange={onPageSizeChange} pending={pending} unknown={totalCount === null} sizes={pageSizeOptions} />}
     {journalAction && <TradeJournalActionDialog {...journalAction} onClose={()=>setJournalAction(null)}/>}
-    {bulkTagsOpen && <TradeBulkTagsDialog count={checked.size} labels={bulkLabels} onClose={()=>setBulkTagsOpen(false)}/>}
+    {bulkTagsOpen && <TradeBulkTagsDialog count={checked.size} labels={bulkLabels} groups={bulkGroups} onClose={()=>setBulkTagsOpen(false)}/>}
   </>
 }

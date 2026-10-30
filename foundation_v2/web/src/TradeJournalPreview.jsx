@@ -2,8 +2,16 @@ import FxSelect from './FxSelect.jsx'
 import ChartIcon from './ChartIcon.jsx'
 import LegacyModal from './LegacyModal.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
-import { useState } from 'react'
+import { lazy, Suspense, useRef, useState } from 'react'
+import { useNoteTemplateLibrary } from './noteTemplatesApi.js'
 import './trade-journal-preview.css'
+
+const NoteTemplatesDialog = lazy(() => import('./NoteTemplatesDialog.jsx'))
+
+function BulkTemplates({ workspace, count, context, onClose }) {
+  const library = useNoteTemplateLibrary(workspace)
+  return <Suspense fallback={null}><NoteTemplatesDialog workspace={workspace} library={library} context={context} bulkSelectionCount={count} onClose={onClose}/></Suspense>
+}
 
 export function TradeJournalToolbar({sourceKind,view,onView,checkedCount=0,onAction,inline=false,showBulkActions=false}) {
   const {t}=useTestingLocale()
@@ -24,32 +32,40 @@ export function TradeJournalActionDialog({action,count,onClose}) {
   </LegacyModal>
 }
 
-export function TradeBulkSelectionBar({ count, onClose, onTags }) {
+export function TradeBulkSelectionBar({ count, onClose, onSelectAll, onTags, workspace, context='testing-trades' }) {
   const { t } = useTestingLocale()
-  return <div className="wm-trade-selection-bar" role="dialog" aria-label={t('{count} giao dịch đã chọn',{count})}>
-    <button type="button" className="wm-trade-selection-close" aria-label={t('Bỏ chọn')} onClick={onClose}>×</button>
-    <strong>{t('({count}) giao dịch đã chọn',{count})}</strong>
-    <span className="wm-trade-selection-spacer" />
-    <button type="button" className="wm-trade-selection-action" disabled>{t('Mẫu')}</button>
-    <button type="button" className="wm-trade-selection-action" disabled>{t('Gộp')}</button>
-    <button type="button" className="wm-trade-selection-action" onClick={onTags}>{t('Thêm/xóa nhãn')}</button>
-    <button type="button" className="wm-trade-selection-action is-danger" disabled>{t('Xóa')}</button>
-  </div>
+  const [templatesOpen,setTemplatesOpen] = useState(false)
+  return <><div className="wm-trade-selection-bar" role="region" aria-label={t('{count} giao dịch đã chọn',{count})}>
+    <div className="wm-trade-selection-head">
+      <button type="button" className="wm-trade-selection-close" aria-label={t('Bỏ chọn')} onClick={onClose}>×</button>
+      <strong aria-live="polite">({count}) {t('giao dịch đã chọn')}</strong>
+      <button type="button" className="wm-trade-selection-all" data-tooltip={t('Chọn các lệnh trên trang')} onClick={onSelectAll}>{t('Chọn tất cả')}</button>
+    </div>
+    <div className="wm-trade-selection-actions">
+      <button type="button" className="wm-trade-selection-action" disabled={!workspace} onClick={()=>setTemplatesOpen(true)}><ChartIcon name="note-edit"/>{t('Mẫu')}</button>
+      <span aria-hidden="true" />
+      <button type="button" className="wm-trade-selection-action" disabled>{t('Gộp')}</button>
+      {count > 1 && <><span aria-hidden="true" /><button type="button" className="wm-trade-selection-action" onClick={onTags}><ChartIcon name="tag"/>{t('Thêm/xóa nhãn')}</button></>}
+      <span aria-hidden="true" />
+      <button type="button" className="wm-trade-selection-action is-danger" disabled><ChartIcon name="trash"/>{t('Xoá')}</button>
+    </div>
+  </div>{templatesOpen && <BulkTemplates workspace={workspace} count={count} context={context} onClose={()=>setTemplatesOpen(false)}/>}</>
 }
 
-export function TradeBulkTagsDialog({ count, labels = [], onClose }) {
-  const { t } = useTestingLocale(), [rows,setRows] = useState([{group:'',tags:[]}])
-  const groups=[...new Set(labels.map(item=>item.group_name || item.group || 'Nhóm nhãn'))]
-  const updateRow=(index,patch)=>setRows(current=>current.map((row,rowIndex)=>rowIndex===index?{...row,...patch}:row))
-  const visibleFor=group=>labels.filter(item=>(!group || (item.group_name || item.group || 'Nhóm nhãn')===group) && !item.archived)
-  return <LegacyModal label={t('Thêm/xóa nhãn')} onClose={onClose} className="wm-trade-bulk-tags-dialog">
+export function TradeBulkTagsDialog({ count, labels = [], groups = [], onClose }) {
+  const { t } = useTestingLocale(), nextId=useRef(1), [rows,setRows] = useState([{id:0,group:'',tags:[]}]),[operation,setOperation]=useState('add')
+  const groupOptions=[{value:'ungrouped',label:t('Chưa phân nhóm'),localize:false},...groups.filter(item=>!item.archived).map(item=>({value:item.id,label:item.name,localize:false}))]
+  const updateRow=(id,patch)=>setRows(current=>current.map(row=>row.id===id?{...row,...patch}:row))
+  const visibleFor=group=>labels.filter(item=>!item.archived && (group==='ungrouped'?!item.group_id:group && item.group_id===group))
+  return <LegacyModal theme={document.querySelector('.fx-app')?.dataset.theme || 'dark'} label={t('Thêm/xóa nhãn')} onClose={onClose} className="wm-trade-bulk-tags-dialog">
     <div className="wm-trade-bulk-tags-body"><p className="wm-trade-bulk-tags-count">{t('Áp dụng cho {count} giao dịch',{count})}</p>
-      <div className="wm-trade-bulk-tags-rows">{rows.map((row,index)=><div className="wm-trade-bulk-tags-row" key={index}>
-        <label>{t('Nhóm nhãn')}<FxSelect label={t('Nhóm nhãn')} value={row.group} onChange={value=>updateRow(index,{group:value,tags:[]})} options={groups.map(value=>({value,label:value,localize:false}))} emptySelectionLabel={t('Chọn nhóm nhãn')} /></label>
-        <label>{t('Nhãn')}<FxSelect label={t('Nhãn')} multiple searchable value={row.tags} onChange={value=>updateRow(index,{tags:value})} options={visibleFor(row.group).map(item=>({value:item.name,label:item.name,localize:false}))} emptySelectionLabel={t('Chọn nhãn')} /></label>
-        {rows.length>1 && <button type="button" className="wm-trade-bulk-tags-remove" aria-label={t('Xóa nhóm nhãn')} onClick={()=>setRows(current=>current.filter((_,rowIndex)=>rowIndex!==index))}><ChartIcon name="trash"/></button>}
+      <FxSelect label={t('Thao tác nhãn')} value={operation} onChange={setOperation} options={[{value:'add',label:t('Thêm nhãn')},{value:'remove',label:t('Gỡ nhãn')}]}/>
+      <div className="wm-trade-bulk-tags-rows">{rows.map(row=><div className="wm-trade-bulk-tags-row" key={row.id}>
+        <label>{t('Tag group')}<FxSelect label="Tag group" value={row.group} onChange={value=>updateRow(row.id,{group:value,tags:[]})} options={groupOptions} triggerContent={!row.group?t('Chọn nhóm nhãn'):undefined} /></label>
+        <label>{t('Tags')}<FxSelect label="Tags" multiple searchable disabled={!row.group} value={row.tags} onChange={value=>updateRow(row.id,{tags:value})} options={visibleFor(row.group).map(item=>({value:item.id,label:item.name,localize:false}))} triggerContent={row.tags.length?labels.filter(item=>row.tags.includes(item.id)).map(item=>item.name).join(', '):t('Chọn nhãn')} localizeOptions={false}/></label>
+        {rows.length>1 && <button type="button" className="wm-trade-bulk-tags-remove" aria-label={t('Bỏ nhóm nhãn')} onClick={()=>setRows(current=>current.filter(item=>item.id!==row.id))}><ChartIcon name="trash"/></button>}
       </div>)}</div>
-      <button type="button" className="fxa-button wm-trade-bulk-tags-add" onClick={()=>setRows(current=>[...current,{group:'',tags:[]}])}><ChartIcon name="order"/>{t('Thêm nhóm nhãn')}</button>
+      <button type="button" className="fxa-button wm-trade-bulk-tags-add" onClick={()=>{const id=nextId.current++;setRows(current=>[...current,{id,group:'',tags:[]}])}}><ChartIcon name="order"/>{t('Thêm nhóm nhãn')}</button>
       <p className="wm-trade-bulk-tags-note">{t('Bản xem trước giao diện. Chưa áp dụng thay đổi vào giao dịch.')}</p>
       <footer><button type="button" className="fxa-button" onClick={onClose}>{t('Hủy')}</button><button type="button" className="fxa-button is-primary" disabled>{t('Áp dụng cho {count} giao dịch',{count})}</button></footer>
     </div>

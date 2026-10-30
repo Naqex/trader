@@ -48,7 +48,7 @@ export default function TradeTagGroups({workspace,session,row,catalog,onChanged}
   }
   const cancelDrag=()=>{drag.current=null;setDragging(null)}
   return <div className="wm-trade-tag-groups">
-    <header><button type="button" className="fxa-button" disabled={disabled} onClick={event=>open(event.currentTarget,null)}><ChartIcon name="order"/>{t('Nhóm nhãn')}</button><button type="button" className="fxa-button fxa-icon-button" aria-label={t('Tìm nhóm hoặc nhãn')} aria-expanded={search!==null} onClick={()=>setSearch(search===null?'':null)}><ChartIcon name="search"/></button></header>
+    <header><button type="button" className="fxa-button" disabled={disabled} onClick={event=>open(event.currentTarget,null)}><ChartIcon name="order"/>{t('Tag groups')}</button><button type="button" className="fxa-button fxa-icon-button" aria-label={t('Tìm nhóm hoặc nhãn')} aria-expanded={search!==null} onClick={()=>setSearch(search===null?'':null)}><ChartIcon name="search"/></button></header>
     {search!==null && <SearchInput autoFocus type="search" aria-label={t('Tìm nhóm hoặc nhãn')} value={search} onChange={event=>setSearch(event.target.value)}/>}
     {catalog.status==='loading' && <p role="status">{t('Đang đọc nhãn…')}</p>}
     {catalog.status==='error'?<><p role="alert">{t('Không tải được nhãn.')}</p><button className="fxa-button" onClick={catalog.refresh}>{t('Thử lại')}</button></>:order.items.filter(group=>matchesSearch(group.name,search || '') || catalog.items.some(item=>(item.group_id || '')===group.id && matchesSearch(item.name,search || ''))).map(group=><div className="wm-trade-tag-group" data-group-id={group.id} data-dragging={dragging===group.id || undefined} key={group.id}>
