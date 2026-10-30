@@ -58,9 +58,14 @@ function RichEditor({ value, onChange, onBlur, disabled=false, label, workspace,
   const library=useNoteTemplateLibrary(workspace,templatesEnabled), defaultChecked=useRef(false)
   const templateItems=useMemo(()=>[...builtinNoteTemplates(language),...library.items.map(item=>({...item,blocks:item.document.blocks}))],[language,library.items])
   const editor=useCreateBlockNote({schema,extensions:[noteNodeSelectionEnter()],initialContent:value.document?.blocks || paragraphs(value.text),dictionary:{...(language==='en'?en:vi),placeholders:{...(language==='en'?en:vi).placeholders,default:t("Nhập nội dung hoặc gõ '/' để chọn block")}},tabBehavior:'prefer-indent'},[language])
+  const lastDocument=useMemo(()=>({current:editor.document}),[editor])
   const update = () => {
     if(applying.current)return
-    const blocks=editor.document, next={text:documentText(blocks),document:noteDocument(blocks)}
+    const blocks=editor.document
+    // Editor setup/focus can emit change without changing the document.
+    if(same(lastDocument.current,blocks))return
+    lastDocument.current=blocks
+    const next={text:documentText(blocks),document:noteDocument(blocks)}
     snapshot.current=next;onChange(next)
   }
   useEffect(()=>{
@@ -68,7 +73,7 @@ function RichEditor({ value, onChange, onBlur, disabled=false, label, workspace,
     // must not reset the current selection, history or composition.
     if(same(snapshot.current,value))return
     applying.current=true
-    try{editor.replaceBlocks(editor.document,value.document?.blocks || paragraphs(value.text));snapshot.current=value}
+    try{editor.replaceBlocks(editor.document,value.document?.blocks || paragraphs(value.text));lastDocument.current=editor.document;snapshot.current=value}
     finally{applying.current=false}
   },[editor,value])
   useEffect(()=>{

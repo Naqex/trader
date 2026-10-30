@@ -61,7 +61,7 @@ fn name_ok(name: &str) -> bool {
         && name.chars().count() <= 160
         && !name.chars().any(char::is_control)
 }
-fn document_ok(document: &Value) -> bool {
+pub(crate) fn document_ok(document: &Value) -> bool {
     fn inline_ok(content: &Value, depth: usize) -> bool {
         depth <= 12
             && (content.is_string()
@@ -136,6 +136,31 @@ fn document_ok(document: &Value) -> bool {
         && valid_blocks(&document["blocks"])
         && document.to_string().len() <= 200000
         && blocks_ok(&document["blocks"], 0, &mut 0)
+}
+pub(crate) fn document_text(document: &Value) -> String {
+    fn inline(value: &Value) -> String {
+        if let Some(text) = value.as_str() { return text.to_owned(); }
+        if let Some(items) = value.as_array() {
+            return items.iter().map(|item| item.as_str().map(str::to_owned)
+                .or_else(|| item["text"].as_str().map(str::to_owned))
+                .unwrap_or_else(|| inline(&item["content"]))).collect();
+        }
+        if value["type"] == "tableContent" {
+            return value["rows"].as_array().map(|rows| rows.iter().map(|row| {
+                row["cells"].as_array().map(|cells| cells.iter()
+                    .map(|cell| inline(cell.get("content").unwrap_or(cell))).collect::<Vec<_>>().join("\t")).unwrap_or_default()
+            }).collect::<Vec<_>>().join("\n")).unwrap_or_default();
+        }
+        String::new()
+    }
+    fn blocks(value: &Value) -> String {
+        value.as_array().map(|items| items.iter().map(|block| {
+            let content = inline(&block["content"]);
+            let content = if content.is_empty() { block["props"]["url"].as_str().unwrap_or("").to_owned() } else { content };
+            [content, blocks(&block["children"])].into_iter().filter(|s| !s.is_empty()).collect::<Vec<_>>().join("\n")
+        }).collect::<Vec<_>>().join("\n").trim_end().to_owned()).unwrap_or_default()
+    }
+    blocks(&document["blocks"])
 }
 async fn catalog<C: GenericClient + Sync>(db: &C, scope: &Workspace) -> Result<Value, ApiError> {
     let rows=db.query("SELECT template_id,name,document,revision,updated_at_utc FROM note_templates WHERE workspace_id=$1 AND subject=$2 ORDER BY created_at_utc,template_id",&[&scope.workspace_id,&scope.subject]).await.map_err(|_|ApiError::database())?;

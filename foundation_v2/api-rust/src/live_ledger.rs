@@ -110,12 +110,48 @@ struct Note {
     connection_id: Option<Uuid>,
     title: String,
     note: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    note_document: Option<Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    note_type: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    review_from: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    review_to: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    review_timezone: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    linked_trades: Vec<NoteTrade>,
     #[serde(default)]
     tags: Vec<String>,
     #[serde(default)]
     playbook_id: Option<String>,
     #[serde(default)]
     playbook_revision: Option<i32>,
+}
+#[derive(Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+struct NoteTrade {
+    account_id: String,
+    trade_id: String,
+}
+
+fn note_metadata(note: &Note) -> bool {
+    let date = |s: &str| s.len() == 10 && chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").is_ok_and(|date| date.format("%Y-%m-%d").to_string() == s);
+    let range = match (&note.review_from, &note.review_to, &note.review_timezone) {
+        (None, None, None) => true,
+        (Some(from), Some(to), Some(zone)) => date(from) && date(to) && from <= to && zone.parse::<chrono_tz::Tz>().is_ok(),
+        _ => false,
+    };
+    range && note.note_type.as_deref().is_none_or(|s| ["general", "daily_review", "weekly_review", "monthly_review"].contains(&s))
+        && note.note_document.as_ref().is_none_or(|doc| crate::note_library::document_ok(doc) && crate::note_library::document_text(doc) == note.note)
+        && note.linked_trades.len() <= 500
+        && note.linked_trades.iter().all(|link| {
+            if let Some(id) = link.account_id.strip_prefix("broker:") {
+                Uuid::parse_str(id).is_ok_and(|uuid| uuid.to_string() == id) && link.trade_id.strip_prefix("position:").and_then(|id| id.parse::<u64>().ok()).is_some_and(|id| id > 0 && format!("position:{id}") == link.trade_id)
+            } else { Uuid::parse_str(&link.account_id).is_ok() && Uuid::parse_str(&link.trade_id).is_ok() }
+        })
+        && note.linked_trades.iter().map(|l| (&l.account_id, &l.trade_id)).collect::<HashSet<_>>().len() == note.linked_trades.len()
 }
 
 fn text(value: &str, maximum: usize, required: bool, multiline: bool) -> bool {
@@ -223,6 +259,7 @@ fn validate(kind: &str, payload: Value) -> Result<Value, ApiError> {
                     .is_some_and(|id| Uuid::parse_str(id).is_err())
                 || !text(&note.title, 160, true, false)
                 || !text(&note.note, 20000, true, true)
+                || !note_metadata(&note)
                 || !tags(&note.tags)
                 || !strategy(note.playbook_id.as_deref(), note.playbook_revision)
             {
@@ -380,6 +417,7 @@ async fn execute(
     tx.query_one("SELECT pg_advisory_xact_lock($1)", &[&lock])
         .await
         .map_err(|_| ApiError::database())?;
+    let mut previous_links = Vec::new();
     let (id, revision, created) = if let Some(id) = id {
         if Uuid::parse_str(id).is_err() {
             return Err(missing());
@@ -395,6 +433,7 @@ async fn execute(
         let current_kind: String = current.get("kind");
         let revision: i64 = current.get("current_revision");
         let old: Value = current.get("payload_json");
+        previous_links = old["linked_trades"].as_array().cloned().unwrap_or_default();
         if old["archived"] == true {
             return Err(conflict("live_account_archived"));
         }
@@ -440,6 +479,19 @@ async fn execute(
         )
     };
     references(tx, &scope.workspace_id, &payload).await?;
+    if let Some(links) = payload["linked_trades"].as_array() {
+        for link in links.iter().filter(|link| !previous_links.contains(link)) {
+            let account = link["account_id"].as_str().unwrap();
+            let trade = link["trade_id"].as_str().unwrap();
+            if let Some(connection) = account.strip_prefix("broker:") {
+                crate::trade_labels::verify_trade(tx, &scope.workspace_id, &format!("live:{connection}"), trade).await?;
+            } else {
+                references(tx, &scope.workspace_id, &json!({"account_id":account})).await?;
+                let exists: bool = tx.query_one("SELECT EXISTS(SELECT 1 FROM live_records r JOIN live_record_revisions v ON v.workspace_id=r.workspace_id AND v.record_id=r.record_id AND v.revision=r.current_revision WHERE r.workspace_id=$1 AND r.record_id=$2 AND r.kind='trade' AND v.payload_json->>'account_id'=$3)", &[&scope.workspace_id, &trade, &account]).await.map_err(|_| ApiError::database())?.get(0);
+                if !exists { return Err(invalid("live_note_trade_not_found")); }
+            }
+        }
+    }
     let stamp = Utc::now().to_rfc3339_opts(SecondsFormat::Micros, true);
     if expected.is_none() {
         tx.execute("INSERT INTO live_records(workspace_id,record_id,kind,current_revision,created_at_utc,updated_at_utc) VALUES($1,$2,$3,$4,$5,$6)", &[&scope.workspace_id, &id, &kind, &revision, &created, &stamp]).await.map_err(|_| ApiError::database())?;
@@ -487,6 +539,21 @@ mod tests {
             value[field] = wrong;
             assert!(validate("trade", value).is_err(), "{field}");
         }
+    }
+    #[test]
+    fn review_notes_preserve_document_and_validate_metadata() {
+        let doc = json!({"format":"blocknote","version":1,"blocks":[{"type":"heading","content":[{"type":"text","text":"Review","styles":{"bold":true}}]},{"type":"table","content":{"type":"tableContent","rows":[{"cells":[[{"type":"text","text":"a"}],{"type":"tableCell","content":"b"}]}]}},{"type":"paragraph","content":"","children":[{"type":"paragraph","content":"Child"}]}]});
+        let body = json!({"title":"Review","note":"Review\na\tb\nChild","note_document":doc,"note_type":"weekly_review","review_from":"2026-10-01","review_to":"2026-10-30","review_timezone":"Asia/Ho_Chi_Minh"});
+        let valid = validate("note",body.clone()).unwrap();
+        assert_eq!(valid["note_document"],body["note_document"]);
+        for (field,value) in [("note",json!("wrong")),("note_type",json!("made_up")),("review_from",json!("2026-02-30")),("review_to",json!("2026-09-01")),("review_timezone",json!("bad")),("linked_trades",json!([{"account_id":"bad","trade_id":"bad"}]))] {
+            let mut bad=body.clone();bad[field]=value;
+            assert!(validate("note",bad).is_err(),"{field}");
+        }
+        let mut bad=body.clone();bad["note_document"]["blocks"][0]["type"]=json!("script");assert!(validate("note",bad).is_err());
+        let link=json!({"account_id":format!("broker:{}",Uuid::new_v4()),"trade_id":"position:123"});
+        let mut bad=body.clone();bad["linked_trades"]=json!([link.clone(),link.clone()]);assert!(validate("note",bad).is_err());
+        let mut bad=body;bad["linked_trades"]=json!([{ "trade_id":"position:00123", "account_id":link["account_id"] }]);assert!(validate("note",bad).is_err());
     }
     #[test]
     fn accounts_notes_and_strategy_pairs_are_typed() {

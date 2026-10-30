@@ -48,6 +48,17 @@ the note editor stays mounted across tabs, with state isolated by workspace/sess
 Clicking an ordinary ledger cell or pressing Enter/Space on its focused row opens
 the same drawer as the detail icon. Checkbox, label, links and embedded controls
 retain their own action; selecting text does not open a drawer. Trade notes and standalone Live Notes use the shared [autosave contract](autosave.md).
+Standalone Live Notes uses a 70vw drawer (up to 1440px), a full-width title,
+and independent scrolling review/editor panes. The right pane reuses `NoteBlockEditor`
+with the `live-notes` template context. The left pane edits a calendar date range
+with its saved IANA timezone, one of four built-in review types, and explicit trade
+links. The date range filters the trade picker; changing dates does not silently
+remove existing links. Summary and cumulative realized PnL use linked closed trades,
+not fills or the current account balance. Missing/stale rows propagate N/A;
+different currencies are never summed. Empty links have count 0 and N/A financial
+metrics. Rich document, plain-text projection, review metadata and trade links save
+in the same CAS revision; legacy plain-text notes remain editable. Existing account
+and strategy fields are in Additional details. This does not alter broker trades.
 Attachments support scoped image upload/preview/removal through the shared media API.
 Trade headers show opening time and closed holding
 duration in the correct Chart/Realtime basis; save time is a separate server fact.

@@ -10,8 +10,8 @@ import { useTestingLocale } from './testingLocale.jsx'
 import { accountDraftErrors, mt5AccountName } from './liveAccountModel.js'
 import LiveNoteEditor from './LiveNoteEditor.jsx'
 
-export default function LiveRecordDialog({ workspace, kind, accounts, connections = [], strategies, accountId, record, seed, folderId, onClose, onSaved }) {
-  if (kind === 'note') return <LiveNoteEditor {...{workspace,accounts,connections,strategies,accountId,record,seed,folderId,onClose,onSaved}}/>
+export default function LiveRecordDialog({ workspace, kind, accounts, connections = [], strategies, accountId, record, seed, folderId, records, broker, onNavigateNote, onClose, onSaved }) {
+  if (kind === 'note') return <LiveNoteEditor {...{workspace,accounts,connections,strategies,accountId,record,seed,folderId,records,broker,onClose,onSaved}} onNavigate={onNavigateNote}/>
   return <LiveRecordForm {...{workspace,kind,accounts,connections,strategies,accountId,record,seed,folderId,onClose,onSaved}}/>
 }
 
