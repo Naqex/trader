@@ -1,5 +1,13 @@
 # Rust-native candidate runtime
 
+Trade note block editor local rollout:
+[30 October block editor receipt](../evidence/trade-note-blocks-20261030/RECEIPT.md).
+API8010 and UI5180 support versioned note documents with the retained plain-text
+projection and shared autosave. The receipt records disposable persistence,
+independent review, guarded native/compact cutover, deployed read-only browser QA
+and restoration of the existing MT5 connection. API rollback after structured
+writes needs compatibility review even though no SQL migration was needed.
+
 Shared label management and Live analytics UI:
 [29 October shared labels receipt](../evidence/shared-trade-labels-20261029/RECEIPT.md).
 

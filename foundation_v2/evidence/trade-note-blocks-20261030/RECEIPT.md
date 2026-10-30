@@ -1,9 +1,10 @@
 # Trade note block editor — 30 October 2026
 
-Source and scoped candidate accepted; owner API8010/UI5180 have not been replaced.
-The runtime skill/project gate requires approval before a cutover that can
-interrupt the active owned MT5 connector/terminal. No owner note writes, broker
-orders, account changes, schema migrations or terminal restarts were performed.
+Source, scoped candidate and local API8010/UI5180 rollout accepted. The owner
+explicitly approved the local API/UI cutover and restoration of the existing
+MT5 connection in this chat. No owner note writes, broker orders, account/mode
+changes or schema migrations were performed. The existing scheduled connector
+restored the connection; no explicit reconnect/sync request was needed.
 
 ## Behavior and data
 
@@ -39,10 +40,13 @@ Artifacts: `E:/BACKUP-TRADINGWORKSPACE/note-block-editor-20261030/`.
 | Native persistence | `native-final2-browser/report.json` PASS: final Rust candidate with disposable PostgreSQL, create/reload/revise, formatted blocks, conflict and workspace isolation |
 | Independent review | No remaining blocker; `review-final/` records direct interaction checks and screenshot review |
 | Local candidate preflight | PASS: PID/path/hash ownership, native/compact schema and idle checks, no unknown broker submissions; no process changes |
+| Local deployment | PASS: owned API hash/readiness and served UI hash; old hashed assets/branding retained |
+| Deployed browser | `deployed-browser/report.json` PASS: both real trade drawers at 1920/1440/390, template dialog/search/Escape, zero page errors and zero mutation attempts |
+| Existing MT5 connection | `mt5-after.json` PASS: connected, original requested mode retained, fresh sync; no order or explicit sync request |
 | Diff whitespace | PASS |
 
-The native final fixture API and PostgreSQL were stopped. The candidate preview
-on5187 is a review build; it is not promoted owner UI. Failed attempts remain on E:
+The native final fixture API, PostgreSQL and candidate preview5187 were stopped.
+Failed attempts remain on E:
 an old template Escape failure, Playwright locator dragTo hang (coordinate mouse
 drag passes), and standalone reopen before catalog readiness. The latter fixture
 now waits for the actual edit-ready state before reopening.
@@ -55,7 +59,7 @@ backup capture that boundary. Final candidate SHA256:
 Scientific installation verification passed with its explicit installed root;
 the first preflight lacked that root and stopped without changing services.
 
-## Limits and rollout
+## Limits and deployed state
 
 FX browser access failed (`browser.user is unavailable`). Presentation follows
 the supplied screenshots and official BlockNote capabilities; this is not proof
@@ -63,8 +67,21 @@ of every FX interaction or of its implementation/library choice. BlockNote
 0.55.0 is pinned and consumed unmodified under MPL-2.0; attribution is recorded
 in THIRD_PARTY_NOTICES.md. No premium extension is used.
 
-Deploy API support before the editor UI. No SQL migration is needed. Older API
+API support was deployed before the editor UI. API run ID:
+`42c66f08379e4d23baec6f98eba4861e`, using the final candidate hash above.
+UI5180 index SHA256:
+`87fd5044b61b32c9b4be62676d3ff5b24dcc2df45c3e1a2d1aa42d4ab7924bcb`.
+Previous index:
+`32c80a0602ab7cdcd60d4a9c8b54dea248a1f87a29030e51f246e3dc4d0512b1`.
+Guarded cutover, UI promotion and backups live on E in `api-rollout.json`,
+`ui-promotion.json`, `runtime-before/` and `ui-before/`.
+Readiness and connection checks do not establish broker execution or sustained
+stability. Optional AI/engine resource paths/interpreters were retained; no
+inference/provider/research run was submitted for this feature.
+
+No SQL migration is needed. Older API
 versions reject structured documents on writes, so after rich notes are saved
 an API rollback requires compatibility review. A UI rollback may keep the new API
 and plain-text projection. Preserve old hashed UI assets and atomically replace
-the entry index after guarded runtime readiness; test the deployed read journey.
+the entry index when rolling the UI back. Guarded stop must use the current owned
+candidate binary paths/hash before starting the saved compatible runtime.
