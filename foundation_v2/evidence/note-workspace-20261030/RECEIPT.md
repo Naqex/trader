@@ -59,12 +59,43 @@ buffered SSE, awaiting label assignment and draining route callbacks on teardown
 An editor harness assumed its long block was the last block; it now targets the
 actual inserted long text. No assertion was removed for these fixes.
 
-## Runtime boundary
+## Local rollout and recovery
 
-Source/fixture acceptance precedes local deployment. Migration0018 adds template,
-preference and image tables. Runtime rollout must retain native/compact,
-installed adapter/capability roots and the existing account mode. The verified
-database dump and matching artifact inventory are outside the checkout. A
-schema-compatible baseline binary is prepared for rollback without deleting new
-data. Current owner processes and deployed evidence are recorded separately
-after rollout. No trading command is authorized by this work.
+Implementation commit: `02e01170`. Final fixture:
+`native-candidate-final/receipt.json` PASS. Migration0018 adds template,
+preference and image tables. The verified dump and matching artifact inventory
+(4,142 files) are retained outside the checkout. Native/compact, installed
+adapter/scientific/codec roots, QDM and AI workflow interpreter are retained.
+
+The first startup failed because the retained older research worker rejected
+migration18. The schema-compatible API fallback also could not start with that
+same worker. Both failures remain in the logs; neither restored/deleted user
+data. Recovery built the matching research worker from the same scoped source,
+verified the stopped owner, then started API + worker with the existing settings.
+`api-rollout.json` records the successful recovery and exact owned hashes.
+
+Local process run ID: `ff0e0ec8d5cd4bd7b75815f51d1474d3`.
+`recovery-preflight.log` confirms18 migrations, no pending migration and idle
+runtime. Both the new API and schema-compatible baseline API require the new
+schema-compatible worker; an arbitrary old binary is not a rollback option.
+The private `recover-local.py` and retained launch arguments are in the artifact
+root. Review fresh owner identity before any later stop/start.
+
+UI assets were collision checked; old hashed assets and private branding retained;
+the index was replaced atomically and verified against5180. Separate active and
+checkout index backups are retained. `ui-promotion.json` owns deployed hashes.
+
+`deployed-browser/report.json` PASS: real UI5180/API8010, Testing + Live, 1920 dark
+VI /1440 light EN /390 dark VI. Editor, tag groups, media reads, private template
+library, aligned seam, nested Escape and no horizontal overflow; no page errors,
+failed feature API reads or attempted writes. A screenshot caught a grid-only
+hidden placeholder style leaking into the group panel; the panel now explicitly
+keeps its add-tag placeholder visible.
+
+`mt5-status.json`: the existing connection automatically returned to connected,
+with the same requested mode. No explicit reconnect or trading command was sent.
+This verifies current recovery, not long-duration broker stability. CRUD writes
+were verified on disposable PostgreSQL; deployed browser QA is read-only.
+
+Open GitHub issues in `Naqex/workspace` and PRs in `Naqex/trader` were empty at
+the final task check. This task did not merge unrelated branch history.

@@ -103,7 +103,7 @@ dialog.is-details-hidden .wm-trade-details-resize { display:none; }
 .wm-trade-tag-group > span { display:flex; align-items:center; gap:8px; min-width:0; overflow-wrap:anywhere; }
 .wm-trade-tag-group > span > svg { width:16px; height:16px; flex:none; color:var(--wm-content-muted); }
 .wm-trade-tag-group .wm-trade-group-choice { justify-content:flex-end; max-width:60%; width:auto; min-height:24px; }
-.wm-trade-group-choice .wm-label-placeholder { font-style:italic; font-size:11px; }
+.wm-trade-group-choice .wm-label-placeholder { opacity:1; color:var(--wm-content-muted); font-style:italic; font-size:11px; }
 .wm-trade-group-create { display:grid; gap:12px; min-width:220px; padding:8px; }
 .wm-trade-group-create label { display:grid; gap:8px; font-size:12px; }
 .wm-trade-group-create input { width:100%; box-sizing:border-box; padding:8px; background:transparent; color:var(--wm-content); border:1px solid var(--wm-border); border-radius:6px; }

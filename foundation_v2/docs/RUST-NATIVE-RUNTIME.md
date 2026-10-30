@@ -1,5 +1,13 @@
 # Rust-native candidate runtime
 
+Trade note template library/media local rollout:
+[30 October note workspace receipt](../evidence/note-workspace-20261030/RECEIPT.md).
+Migration0018 is additive. API, admin and research worker must all understand its
+migration ledger; reusing the older research worker fails readiness. The receipt
+records that failed startup, recovery with the matching worker, database/artifact
+backup, deployed GET-only checks and preserved connection mode. An older binary
+without migration18 cannot be used directly as rollback.
+
 Trade note block editor local rollout:
 [30 October block editor receipt](../evidence/trade-note-blocks-20261030/RECEIPT.md).
 API8010 and UI5180 support versioned note documents with the retained plain-text
