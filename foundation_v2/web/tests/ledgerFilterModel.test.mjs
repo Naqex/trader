@@ -4,9 +4,10 @@ import { DEFAULT_EXTRA_FILTERS } from '../src/tradingAnalyticsModel.js'
 import { LEDGER_BASE_FILTERS, ledgerFilterChips, removeLedgerFilter, ledgerFilterUrl } from '../src/ledgerFilterModel.js'
 
 test('chips retain zero hour, AND/OR tag values with commas and distinct date groups', () => {
- const filters={...LEDGER_BASE_FILTERS,from:'2024-01-01'},extra={...DEFAULT_EXTRA_FILTERS,sides:'["sell"]',hours:'["0"]',tagInclude:'["a,b","c"]',tagExclude:'["x"]'}
+ const filters={...LEDGER_BASE_FILTERS,from:'2024-01-01'},extra={...DEFAULT_EXTRA_FILTERS,sides:'["sell"]',hours:'["0"]',days:'["0"]',tagInclude:'["a,b","c"]',tagExclude:'["x"]'}
  const chips=ledgerFilterChips(filters,extra)
- assert.deepEqual(chips.map(c=>c.key),['sides','hours','tagInclude','tagExclude','dates'])
+ assert.deepEqual(chips.map(c=>c.key),['sides','hours','days','tagInclude','tagExclude','dates'])
+ assert.deepEqual(chips.find(c=>c.key==='days').values,['0'])
  assert.deepEqual(chips.find(c=>c.key==='tagInclude').values,['a,b','c'])
  assert.deepEqual(chips.find(c=>c.key==='hours').values,['0'])
  const [next,nextExtra]=removeLedgerFilter(filters,extra,chips.find(c=>c.key==='tagInclude'))

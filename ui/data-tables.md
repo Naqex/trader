@@ -25,8 +25,11 @@ Hai nơi dùng `TradeLedgerGrid`, nhưng adapter giữ đúng nguồn giao dịc
   gross + signed fees = net. Không đổi dấu dữ liệu để làm hai cột trông giống nhau.
 - `%` dùng vốn ban đầu của phiên nguồn hoặc vốn mở đầu tài khoản có đủ bằng
   chứng. Thiếu cơ sở thì `N/A`; số khác zero dưới 0,01% giữ hai chữ số có nghĩa.
+  Không suy vốn ban đầu từ điểm đầu của đường balance hoặc số dư hiện tại.
 - Lệnh còn mở không hiển thị phí/PnL đã phát sinh như kết quả đã chốt. Các cột
   net/gross/fees/%/R hiện `N/A`; vòng đời thiếu lịch sử hiện `-`.
+  Bộ lọc kết quả cũng không phân loại lệnh mở/thiếu lịch sử là thắng hoặc thua
+  chỉ từ phí mở lệnh.
 - R trong replay dùng giá trị đã lưu. R của MT5 dùng biến động giá khớp so với
   khoảng SL ban đầu đã xác minh, chưa gồm phí; thiếu nguồn risk thì `N/A`.
 - Sort hướng lệnh dùng khóa BUY/SELL, độc lập ngôn ngữ. Cột hiển thị được lưu

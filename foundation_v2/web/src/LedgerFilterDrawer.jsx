@@ -19,9 +19,10 @@ function CalendarChoices({ label, options, value, onChange }) {
   const selected = filterValues(value)
   return <FxSelect label={label} multiple searchable localizeOptions={false} value={selected} disabled={!options.length} triggerContent={selected.length ? options.filter(([key]) => selected.includes(String(key))).map(([, name]) => name).join(', ') : t('Chọn {label}', { label: label.toLocaleLowerCase() })} options={options.map(([key, name]) => ({ value: String(key), label: name }))} onChange={next => onChange(next.length ? JSON.stringify(next) : '')} />
 }
-export default function LedgerFilterDrawer({ initialTab, filters, extra, rows, facets, timeBasis, readTimeFacets, onApply, onClose }) {
+export default function LedgerFilterDrawer({ initialTab, filters, extra, rows, facets, timeBasis, readTimeFacets, onApply, onClose, variant = 'trades' }) {
   const { t, timezone } = useTestingLocale()
   const clockName = useId()
+  const tagAnalysis = variant === 'tag-analysis'
   const [draftBasis, setDraftBasis] = useState(timeBasis || 'market')
   const [preview, setPreview] = useState(null), [retry, setRetry] = useState(0)
   useEffect(() => {
@@ -44,7 +45,7 @@ export default function LedgerFilterDrawer({ initialTab, filters, extra, rows, f
     sides: extra.sides || (filters.side !== 'all' ? JSON.stringify([filters.side]) : ''),
     outcomes: extra.outcomes || (filters.outcome !== 'all' ? JSON.stringify([filters.outcome]) : ''),
     tagInclude: extra.tagInclude || (extra.tag !== 'all' ? JSON.stringify([extra.tag]) : ''),
-    days: '', weekday: 'all',
+    days: tagAnalysis ? extra.days : '', weekday: 'all',
     hours: extra.hours || (extra.hour !== 'all' ? JSON.stringify([extra.hour]) : ''),
   }))
   useEffect(() => setDraftExtra(value => ({ ...value, timezone })), [timezone])
@@ -55,7 +56,7 @@ export default function LedgerFilterDrawer({ initialTab, filters, extra, rows, f
   const dateRange = calendar.facets?.date_range || { from: dates[0], to: dates.at(-1) }
   const clear = () => { setDraft(baseFilters); setDraftExtra({ ...DEFAULT_EXTRA_FILTERS, timezone }); setDraftBasis('market') }
   const apply = () => {
-    onApply({ ...draft, side: 'all', outcome: 'all' }, { ...draftExtra, timezone, notes: '', types: '', days: '', asset: 'all', tag: 'all', weekday: 'all', hour: 'all' }, draftBasis)
+    onApply({ ...draft, side: 'all', outcome: 'all' }, { ...draftExtra, timezone, notes: '', types: '', days: tagAnalysis ? draftExtra.days : '', asset: 'all', tag: 'all', weekday: 'all', hour: 'all' }, draftBasis)
     onClose()
   }
   const sections = [
@@ -67,11 +68,12 @@ export default function LedgerFilterDrawer({ initialTab, filters, extra, rows, f
     ['Date range', <div className="fxl-fields"><label className="fxl-field">{t("Từ ngày")}<ProjectDateInput clearable type="date" aria-label={t("Analytics from date")} value={draft.from} min={dateRange.from} max={draft.to || dateRange.to} onChange={event => setDraft(value => ({ ...value, from: event.target.value }))} /></label><label className="fxl-field">{t("Đến ngày")}<ProjectDateInput clearable type="date" aria-label={t("Analytics to date")} value={draft.to} min={draft.from || dateRange.from} max={dateRange.to} onChange={event => setDraft(value => ({ ...value, to: event.target.value }))} /></label></div>],
     ['Year', <CalendarChoices label={t('Year')} value={draftExtra.years} options={years.map(value => [value, value])} onChange={years => change({ years })} />],
     ['Month', <CalendarChoices label={t('Month')} value={draftExtra.months} options={Array.from({ length: 12 }, (_, i) => [i + 1, t('Tháng {month}', { month: i + 1 })])} onChange={months => change({ months })} />],
+    ...(tagAnalysis ? [['Day', <CalendarChoices label={t('Day')} value={draftExtra.days} options={['Su','Mo','Tu','We','Th','Fr','Sa'].map((name,index) => [index,t(name)])} onChange={days => change({ days })}/>]] : []),
     ['Hour of the day', <CalendarChoices label={t('Hour of the day')} value={draftExtra.hours} options={Array.from({ length: 24 }, (_, i) => [i, `${String(i).padStart(2, '0')}:00`])} onChange={hours => change({ hours })} />],
   ]
-  const calendarActive = ['years', 'months', 'hours'].some(key => filterValues(draftExtra[key]).length)
-  return <FilterDrawer initialTab={initialTab} sections={sections} onClose={onClose} onClear={clear} onApply={apply} invalid={Boolean(calendar.pending || calendar.error || draft.from && draft.to && draft.from > draft.to)}
+  const calendarActive = ['years', 'months', 'days', 'hours'].some(key => filterValues(draftExtra[key]).length)
+  return <FilterDrawer initialTab={initialTab === 'Advanced' ? 'Tags' : initialTab} tagTabLabel={tagAnalysis ? 'Advanced' : 'Tags'} sections={tagAnalysis ? sections.filter(([name]) => !['Notes','Type'].includes(name)) : sections} onClose={onClose} onClear={clear} onApply={apply} invalid={Boolean(calendar.pending || calendar.error || draft.from && draft.to && draft.from > draft.to)}
     basicControls={timeBasis && <><fieldset className="fxl-clock-options"><legend className="sr-only">{t('Thời gian lọc')}</legend>{[['market', 'Chart'], ['activity', 'Realtime']].map(([value, label]) => <label key={value}><input type="radio" name={clockName} value={value} checked={draftBasis === value} onChange={() => setDraftBasis(value)} />{label}</label>)}<ReportInfo title="Thời gian lọc" text="Chọn thời gian dùng cho bộ lọc ngày, năm, tháng và giờ. Chart dùng thời gian trên biểu đồ; Realtime dùng thời gian ghi nhận giao dịch thực tế. Lựa chọn có hiệu lực khi áp dụng bộ lọc." /></fieldset>{calendar.pending && <p role="status" className="fxl-timezone">{t('Đang tải khoảng ngày…')}</p>}{calendar.error && <p role="alert" className="fxl-timezone">{t('Không tải được khoảng ngày.')} <button type="button" className="fxa-button" onClick={() => setRetry(value => value + 1)}>{t('Thử lại')}</button></p>}{!calendar.pending && !calendar.error && draftBasis === 'activity' && !years.length && rows.length > 0 && <p className="fxl-timezone">{t('Nguồn hiện tại chưa có ngày Realtime.')}</p>}</>}
-    note={calendarActive ? <small className="fxl-timezone">{t("Năm, tháng và giờ theo")} {timezone}.</small> : null}
+    note={calendarActive ? <small className="fxl-timezone">{t('Timezone')}: {timezone}</small> : null}
     tags={<TagFilterControls values={unique('tags')} draft={draftExtra} onChange={change} />} />
 }

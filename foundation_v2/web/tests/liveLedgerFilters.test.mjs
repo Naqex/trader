@@ -68,3 +68,12 @@ test('empty data and unknown time do not gain invented facets or match date rest
   assert.equal(select([row]).length,1)
   assert.equal(select([row],{}, {from:'2026-01-01'}).length,0)
 })
+
+test('incomplete broker history cannot become a realized loss from an opening commission', () => {
+  const payload = {positions:[],deals:[{ticket:1,position_id:1,entry:0,type:0,symbol:'EURUSD',volume:1,price:1,time_msc:1,profit:0,commission:-5,swap:0,fee:0}]}
+  const rows = liveLedgerRows(payload)
+  assert.equal(rows[0].status,'incomplete')
+  assert.equal(rows[0].net_pnl,null)
+  assert.equal(select(rows,{outcomes:'["loss"]'}).length,0)
+  assert.equal(select(rows,{outcomes:'["unknown"]'}).length,1)
+})

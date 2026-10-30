@@ -6,7 +6,7 @@
 .fxl-filter-drawer h2 svg{width:18px;height:18px}
 .fxl-close{border:0;background:none;color:var(--wm-content-muted);font-size:24px;cursor:pointer;padding:0 6px}
 .fxl-tabs{display:flex;gap:10px;padding:12px 12px 0;flex:none}
-.fxl-tabs button{flex:1;border:0;background:none;color:var(--wm-content);font:inherit;padding:9px;border-radius:8px;cursor:pointer}
+.fxl-tabs button{display:inline-flex;align-items:center;justify-content:center;gap:8px;flex:1;border:0;background:none;color:var(--wm-content);font:inherit;padding:9px;border-radius:8px;cursor:pointer}
 .fxl-tabs button[aria-selected=true]{background:var(--fx-shell-nav-selected)}
 .fxl-tabs button:hover,.fxl-close:hover,.fxl-tag-heading button:hover{background:var(--fx-shell-nav-hover)}
 .fxl-drawer-body{flex:1;min-height:0;overflow:auto;padding:12px 18px;overscroll-behavior:contain}

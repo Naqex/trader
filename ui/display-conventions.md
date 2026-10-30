@@ -712,6 +712,15 @@ Last sync is the last successful data observation, not a connection expiry date.
   Missing broker notes remain unknown; do not treat missing metadata as no notes.
   Apply commits the local clock/filter scope atomically; account/workspace changes
   reset it, polling retains it, and Clear filters retains account/strategy context.
+  Live Tag Analytics reuses the ledger filter drawer. Basic has Assets, Side,
+  Outcome, Date range, Year, Month, Weekday and Hour; Advanced reuses shared
+  Include/Exclude with AND/OR. Only completed lifecycles enter reports. Dates use
+  closing execution time (manual trades use their entered close time) in Settings
+  timezone, without a Chart/Realtime toggle. Account/workspace changes reset this
+  scope; timezone changes update it. Missing money propagates unknown; a curve
+  with missing timestamps is unavailable, while totals retain all scoped trades.
+  The chart is cumulative scoped PnL, not account Equity. Menu section titles use
+  13px, weight 500 and secondary text color, including Notes Group by.
   Return info controls sit beside sort controls, with independent focus/touch
   behavior and VI/EN definitions. A read error must not also show a false empty
   ledger; native hidden state takes precedence over table layout styles.

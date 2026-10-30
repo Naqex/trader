@@ -2,11 +2,12 @@ import { matchesSearch } from './searchText.js'
 import SearchInput from './SearchInput.jsx'
 import { useEffect, useId, useRef, useState } from 'react'
 import { FilterIcon } from './FxSelect.jsx'
+import TestingIcon from './TestingIcon.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import './ledger-controls.css'
 
 // Practice and Live share interaction/layout; each owns its filter semantics.
-export default function FilterDrawer({ initialTab = 'Basic', showTabs = true, sections, tags, note, basicControls, onClose, onClear, onApply, invalid = false }) {
+export default function FilterDrawer({ initialTab = 'Basic', showTabs = true, tagTabLabel = 'Tags', sections, tags, note, basicControls, onClose, onClear, onApply, invalid = false }) {
   const { t, locale } = useTestingLocale()
   const dialog = useRef(null), id = useId()
   const tabs = showTabs && tags ? ['Basic', 'Tags'] : ['Basic']
@@ -27,7 +28,7 @@ export default function FilterDrawer({ initialTab = 'Basic', showTabs = true, se
       event.preventDefault()
       const next = event.key === 'Home' ? tabs[0] : event.key === 'End' ? tabs.at(-1) : tabs[(index + (event.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length]
       setTab(next); document.getElementById(`${id}-tab-${next}`)?.focus()
-    }}>{t(name)}</button>)}</div>}
+    }}><TestingIcon kind={name === 'Basic' ? 'settings' : 'tags'} size={16}/>{t(name === 'Tags' ? tagTabLabel : name)}</button>)}</div>}
     <div className="fxl-drawer-body"><section role={showTabs ? "tabpanel" : undefined} id={`${id}-${tab}`} aria-labelledby={showTabs ? `${id}-tab-${tab}` : undefined}>
       {tab === 'Basic' ? <><label className="fxl-filter-search"><span className="sr-only">{t('Search filter')}</span><SearchInput type="search" aria-label={t('Search filter')} placeholder={t('Search filter')} value={search} onChange={event => setSearch(event.target.value)} /></label>{basicControls}{sections.filter(([name]) => matchesSearch(t(name), search)).map(([name, content]) => <details key={name}><summary>{t(name)}</summary>{content}</details>)}{note}</> : tags}
     </section></div>
