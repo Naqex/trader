@@ -59,7 +59,7 @@ function DemoReports({ workspace, ledgerOnly, prop = false, query, state = 'demo
     anchor.href = url; anchor.download = 'demo-trades.csv'; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
   const Inspector = ledgerOnly ? TradeInspector : 'section'
-  const tradeHeading = row && <TradeDetailHeading title={`${row.symbol}, ${t(String(row.side).toLowerCase() === 'buy' ? 'Buy' : 'Sell')}`} subtitle={row.session_name} net={row.status === 'open' ? null : row.net_pnl} currency={row.account_currency || model.result?.account_currency}/>
+  const tradeHeading = row && <TradeDetailHeading title={`${row.symbol}, ${t(String(row.side).toLowerCase() === 'buy' ? 'Buy' : 'Sell')}`} entryAt={row.open_time_utc} exitAt={row.close_time_utc} subtitle={row.session_name} net={row.status === 'open' ? null : row.net_pnl} currency={row.account_currency || model.result?.account_currency}/>
   // Keep partial semantics in the preview model and table empty state, but
   // avoid adding a persistent partial badge to the trade toolbar.
   const statusControl = <TestingResourceStatus textSummary={ledgerOnly} state={ledgerOnly && state === 'partial' ? undefined : state} resource={ledgerOnly ? 'bảng giao dịch' : 'báo cáo phân tích'} recovery={previewReadRecovery(state)} />

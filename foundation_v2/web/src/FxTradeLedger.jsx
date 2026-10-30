@@ -13,6 +13,7 @@ import { TestingTradesEmpty } from './TestingPageState.jsx'
 import TradeLedgerGrid from './TradeLedgerGrid.jsx'
 import { formatReturnPercent } from './tradeReturnFormat.js'
 import ChartIcon from './ChartIcon.jsx'
+import { AutosaveBoundaryContext, AutosaveBoundaryStatus, useAutosaveBoundary } from './useAutosave.jsx'
 
 const COLUMNS = [
   ['session_id', 'Session'], ['status', 'Type'], ['source', 'Source'], ['recorded_at_utc', 'Entry Date (Realtime)'], ['open_time_utc', 'Entry Date (Chart UTC)'],
@@ -26,6 +27,7 @@ const columnClass = key => NUMERIC_COLUMNS.has(key) ? 'is-numeric' : CENTER_COLU
 const NUMERIC_COLUMNS = new Set(['net_pnl', 'return_pct', 'realized_r', 'rating', 'price_open', 'quantity', 'stop_loss', 'take_profit', 'price_close', 'gross_pnl', 'fees'])
 export function TradeInspector({ children, heading, onClose, className = '', ...props }) {
   const { t } = useTestingLocale()
+  const {boundary,requestClose,closing,active} = useAutosaveBoundary(onClose)
   const [expanded, setExpanded] = useState(false), [detailsVisible, setDetailsVisible] = useState(true)
   const dialog = useRef(null)
   useEffect(() => {
@@ -33,20 +35,20 @@ export function TradeInspector({ children, heading, onClose, className = '', ...
     dialog.current.showModal()
     return () => { dialog.current?.close(); if (opener?.isConnected) opener.focus({ preventScroll: true }) }
   }, [])
-  return <dialog {...props} className={`fxa-trade-inspector is-drawer${expanded ? ' is-expanded' : ''}${detailsVisible ? '' : ' is-details-hidden'} ${className}`} aria-label={props['aria-label'] || t("Chi tiết giao dịch")} ref={dialog} onCancel={event => { event.preventDefault(); onClose() }} onKeyDown={event => {
+  return <AutosaveBoundaryContext.Provider value={boundary}><dialog {...props} className={`fxa-trade-inspector is-drawer${expanded ? ' is-expanded' : ''}${detailsVisible ? '' : ' is-details-hidden'} ${className}`} aria-label={props['aria-label'] || t("Chi tiết giao dịch")} aria-busy={closing} ref={dialog} onCancel={event => { event.preventDefault(); void requestClose() }} onKeyDown={event => {
     if (event.key !== 'Tab') return
     const controls = [...event.currentTarget.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter(element => !element.disabled && element.tabIndex >= 0 && element.getClientRects().length)
     const first = controls[0], last = controls[controls.length - 1]
     if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() }
     else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
-  }} onClick={event => { if (event.target === event.currentTarget) { const bounds = event.currentTarget.getBoundingClientRect(); if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) onClose() } }}>
+  }} onClick={event => { if (event.target === event.currentTarget) { const bounds = event.currentTarget.getBoundingClientRect(); if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) void requestClose() } }}>
     <header className="fx-trade-workspace-header"><div className="fx-trade-window-controls">
-      <button type="button" className="wm-button is-icon" onClick={onClose} aria-label={t('Đóng chi tiết')}><ChartIcon name="close"/></button>
+      <button type="button" className="wm-button is-icon" disabled={closing} onClick={()=>void requestClose()} aria-label={t('Đóng chi tiết')}><ChartIcon name="close"/></button>
       <button type="button" className="wm-button is-icon" onClick={() => setDetailsVisible(value => !value)} aria-label={t('Hiện thông tin giao dịch')} aria-pressed={detailsVisible}><ChartIcon name="layout"/></button>
       <button type="button" className="wm-button is-icon" onClick={() => setExpanded(value => !value)} aria-label={t('Mở rộng chi tiết giao dịch')} aria-pressed={expanded}><ChartIcon name={expanded ? 'contract-corners' : 'expand-corners'}/></button>
-    </div>{heading || <h2>{t('Trade detail')}</h2>}</header>
+    </div><div className="fx-trade-workspace-heading">{heading || <h2>{t('Trade detail')}</h2>}{active && <AutosaveBoundaryStatus controller={active} forceClose={boundary.forceClose}/>}</div></header>
     <div className="fx-trade-workspace-body">{children}</div>
-  </dialog>
+  </dialog></AutosaveBoundaryContext.Provider>
 }
 function valueOf(row, key, model, sessionName) {
   if (key === 'session_id') return sessionName || row.session_name || row.session_id || row.source?.session_id || model.result?.session_id || '-'

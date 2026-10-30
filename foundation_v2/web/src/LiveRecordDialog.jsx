@@ -8,8 +8,14 @@ import { parseTradesCsv } from './liveLedgerModel.js'
 import { downloadLiveCsv } from './liveCsvDownload.js'
 import { useTestingLocale } from './testingLocale.jsx'
 import { accountDraftErrors, mt5AccountName } from './liveAccountModel.js'
+import LiveNoteEditor from './LiveNoteEditor.jsx'
 
 export default function LiveRecordDialog({ workspace, kind, accounts, connections = [], strategies, accountId, record, seed, folderId, onClose, onSaved }) {
+  if (kind === 'note') return <LiveNoteEditor {...{workspace,accounts,connections,strategies,accountId,record,seed,folderId,onClose,onSaved}}/>
+  return <LiveRecordForm {...{workspace,kind,accounts,connections,strategies,accountId,record,seed,folderId,onClose,onSaved}}/>
+}
+
+function LiveRecordForm({ workspace, kind, accounts, connections = [], strategies, accountId, record, seed, folderId, onClose, onSaved }) {
   const { t, timezone } = useTestingLocale()
   const initial = record?.payload || seed || {}
   const [draft, setDraft] = useState({ name: '', currency: 'USD', opening_balance: '', account_type:'', opening_at_utc:new Date().toISOString(), account_id: accountId || (kind === 'note' ? '' : accounts[0]?.record_id) || '',

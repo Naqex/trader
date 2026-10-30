@@ -20,6 +20,7 @@ import { frontendPerformance } from './frontendPerformance.js'
 import { useContentReadyMetric } from './useContentReadyMetric.js'
 import ChartIcon from './ChartIcon.jsx'
 import TradeDetailContent, { TradeDetailHeading } from './TradeDetailContent.jsx'
+import TradeFacts from './TradeFacts.jsx'
 import TradeLabelCell, { useTradeLabels, TradeLabelDisplay } from './TradeLabelCell.jsx'
 
 import { analyticsQuery, analyticsViewResult, buildAnalyticsModel, dateFromValue, readAnalyticsFilters } from './analyticsViewModel.js'
@@ -61,23 +62,15 @@ export function ProvenanceInspector({ model, selectedTrade, journalCount, links,
     {links.replay && <a className="fx-trade-note-link" href={links.replay}>{t('Mở Replay →')}</a>}
   </details>
   return <aside className="as-inspector" aria-label={t('Trade detail')}>
-    {trade && <TradeDetailContent key={JSON.stringify([workspace,session,trade.trade_id || trade.tradeId])} provenance={provenance} tags={workspace && session ? <TradeLabelCell workspace={workspace} session={session} row={trade} catalog={catalog} onChanged={onLabelsChanged}/> : <TradeLabelDisplay tags={trade.tags || []} options={catalog.items}/> }>
-      <section className="fx-live-trade-details"><dl>
-        <ContextValue label={t('Session')} value={trade.session_name || model.result?.session_name}/>
-        <ContextValue label={t('Asset')} value={trade.symbol}/><ContextValue label={t('Side')} value={t(String(trade.side).toUpperCase() === 'BUY' ? 'Buy' : String(trade.side).toUpperCase() === 'SELL' ? 'Sell' : '-')}/>
-        <ContextValue label={t('Entry type')} value={trade.entry_type}/>
-        <ContextValue label={t('Entry date') + ' · Chart'} value={formatDate(trade.open_time_utc)}/>
-        <ContextValue label={t('Entry date') + ' · Realtime'} value={formatDate(trade.recorded_at_utc)}/>
-        <ContextValue label={t('Entry price')} value={formatNumber(trade.price_open,6)}/><ContextValue label={t('Total size')} value={formatNumber(trade.quantity,4)}/>
-        <ContextValue label={t('Stop loss')} value={formatNumber(trade.stop_loss,6)}/><ContextValue label={t('Take profit')} value={formatNumber(trade.take_profit,6)}/>
-        <ContextValue label={t('Exit date') + ' · Chart'} value={formatDate(trade.close_time_utc)}/><ContextValue label={t('Exit date') + ' · Realtime'} value={formatDate(trade.report_time_utc)}/>
-        <ContextValue label={t('Exit price')} value={formatNumber(trade.price_close,6)}/>
-      </dl><hr/><dl>
-        <ContextValue label={t('Gross PnL')} value={inapplicable ? 'N/A' : formatNumber(trade.gross_pnl,2,trade.account_currency ? ' '+trade.account_currency : '')}/>
-        <ContextValue label={t('Fees')} value={inapplicable ? 'N/A' : formatNumber(trade.fees,2,trade.account_currency ? ' '+trade.account_currency : '')}/>
-        <ContextValue label={t('Net PnL')} value={inapplicable ? 'N/A' : formatNumber(trade.net_pnl ?? trade.pnl,2,trade.account_currency ? ' '+trade.account_currency : '')}/>
-        <ContextValue label={t('Return (R)')} value={inapplicable || trade.realized_r == null ? 'N/A' : formatNumber(trade.realized_r,2,' R')}/>
-      </dl></section>
+    {trade && <TradeDetailContent key={JSON.stringify([workspace,session,trade.trade_id || trade.tradeId])} provenance={provenance} noteScope={{workspace,session,trade:trade.trade_id || trade.tradeId}} tags={workspace && session ? <TradeLabelCell workspace={workspace} session={session} row={trade} catalog={catalog} onChanged={onLabelsChanged}/> : <TradeLabelDisplay tags={trade.tags || []} options={catalog.items}/> }>
+      <TradeFacts asset={trade.symbol} side={t(String(trade.side).toUpperCase() === 'BUY' ? 'Buy' : String(trade.side).toUpperCase() === 'SELL' ? 'Sell' : '-')}
+        entryType={trade.entry_type} entryAt={formatDate(trade.open_time_utc)} exitAt={formatDate(trade.close_time_utc)} timeBasis="Chart"
+        alternateEntry={`${t('Entry date')} · Realtime: ${formatDate(trade.recorded_at_utc)}`} alternateExit={`${t('Exit date')} · Realtime: ${formatDate(trade.report_time_utc)}`}
+        entryPrice={formatNumber(trade.price_open,6)} exitPrice={formatNumber(trade.price_close,6)} size={formatNumber(trade.quantity,4)}
+        stop={formatNumber(trade.stop_loss,6)} target={formatNumber(trade.take_profit,6)}
+        gross={inapplicable ? 'N/A' : formatNumber(trade.gross_pnl,2,trade.account_currency ? ' '+trade.account_currency : '')}
+        fees={inapplicable ? 'N/A' : formatNumber(trade.fees,2,trade.account_currency ? ' '+trade.account_currency : '')}
+        net={inapplicable ? 'N/A' : formatNumber(trade.net_pnl ?? trade.pnl,2,trade.account_currency ? ' '+trade.account_currency : '')}/>
     </TradeDetailContent>}
   </aside>
 }
@@ -306,7 +299,7 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
   }, [workspace, sessionId, jobId, filterParams.toString(), result])
 
   const Inspector = ledgerOnly ? TradeInspector : 'section'
-  const tradeHeading = selectedTrade && <TradeDetailHeading title={`${selectedTrade.symbol || selectedTrade.tradeId}, ${t(String(selectedTrade.side).toLowerCase() === 'buy' ? 'Buy' : String(selectedTrade.side).toLowerCase() === 'sell' ? 'Sell' : '-')}`} subtitle={selectedTrade.session_name || sessionName} net={selectedTrade.status === 'open' ? null : selectedTrade.net_pnl} currency={selectedTrade.account_currency || model.result?.account_currency}/>
+  const tradeHeading = selectedTrade && <TradeDetailHeading title={`${selectedTrade.symbol || selectedTrade.tradeId}, ${t(String(selectedTrade.side).toLowerCase() === 'buy' ? 'Buy' : String(selectedTrade.side).toLowerCase() === 'sell' ? 'Sell' : '-')}`} entryAt={selectedTrade.open_time_utc} exitAt={selectedTrade.close_time_utc} subtitle={selectedTrade.session_name || sessionName} net={selectedTrade.status === 'open' ? null : selectedTrade.net_pnl} currency={selectedTrade.account_currency || model.result?.account_currency}/>
   const journalFilterPending = Boolean(sessionId && !jobId && !summaryOnly && !['ready', 'stale'].includes(journalStatus) && (extra.tag !== 'all' || extra.tagInclude || extra.tagExclude || extra.notesPresence))
   // The trade ledger keeps the partial state in its model and empty-state
   // logic, but does not add a persistent toolbar badge for it. Analytics

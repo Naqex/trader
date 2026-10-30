@@ -43,10 +43,17 @@ dialog.fxa-trade-inspector.is-drawer[open] { display:flex; flex-direction:column
 dialog.fxa-trade-inspector.is-drawer.is-expanded { width:100vw; }
 dialog.fxa-trade-inspector::backdrop { background: #0008; }
 .fx-trade-workspace-header { display:flex; align-items:center; gap:16px; flex-shrink:0; min-height:90px; padding:12px 20px; box-sizing:border-box; border-bottom:1px solid var(--wm-border); }
+.fx-trade-workspace-heading { flex:1; min-width:0; }
+.wm-autosave-status { display:flex; align-items:center; flex-wrap:wrap; gap:8px; min-height:18px; color:var(--wm-content-muted); font-size:12px; line-height:1.5; }
+.wm-autosave-status[data-state='error'],.wm-autosave-status[data-state='conflict'],.wm-autosave-status[data-state='invalid'] { color:var(--wm-negative); }
+.wm-autosave-status > .fxa-button { font-size:12px; min-height:26px; padding:2px 8px; }
+.fx-trade-workspace-heading .fx-live-trade-heading p { display:inline; margin:0; }
+.fx-trade-workspace-heading .wm-autosave-status { display:inline-flex; margin-left:8px; }
+.fx-trade-workspace-heading .wm-autosave-status:not(:empty)::before { content:'·'; margin-right:0; color:var(--wm-content-muted); }
 .fx-trade-window-controls { display:flex; align-items:center; gap:6px; flex-shrink:0; }
 .fx-app.fx-shell-story[data-theme] .fx-content .fx-trade-window-controls .wm-button.is-icon { display:inline-flex; align-items:center; justify-content:center; border:0; background:transparent; color:var(--wm-content-muted); cursor:pointer; }
 .fx-app.fx-shell-story[data-theme] .fx-content .fx-trade-window-controls .wm-button.is-icon:hover { background:var(--wm-hover); color:var(--wm-content); }
-.fx-trade-workspace-header .fx-live-trade-heading { display:block; min-width:0; margin:0; }
+.fx-trade-workspace-header .fx-live-trade-heading { display:contents; min-width:0; margin:0; }
 .fx-trade-title-line { display:flex; align-items:center; flex-wrap:wrap; gap:12px; }
 .fx-trade-title-line > span { font-size:12px; }
 .fx-trade-workspace-header .fx-live-trade-heading h2 { font-size:24px; line-height:1.3; overflow-wrap:anywhere; }
@@ -73,11 +80,16 @@ dialog.fxa-trade-inspector::backdrop { background: #0008; }
 .fx-trade-note-draft textarea::placeholder { font-style:italic; }
 .fx-trade-note-draft footer { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .fx-trade-note-draft small { font-size:12px; color:var(--wm-content-muted); }
-.fx-live-trade-details { display:grid; gap:16px; }
-.fx-live-trade-details dl { display:grid; gap:10px; margin:0; }
+.fx-live-trade-details { display:grid; gap:0; }
+.fx-live-trade-details dl { display:grid; gap:12px; margin:0; padding:4px 0 24px; }
+.fx-live-trade-details dl + dl { border-top:1px solid var(--wm-border); padding-top:24px; }
+.fx-trade-detail-sidebar .fx-live-trade-details { margin-inline:-20px; }
+.fx-trade-detail-sidebar .fx-live-trade-details dl { padding-inline:20px; }
+.fx-live-trade-details dt { display:flex; align-items:center; gap:8px; }
+.fx-live-trade-details dt > svg,.fx-trade-money-icon { width:14px; flex:0 0 14px; text-align:center; font-size:16px; font-weight:400; }
 .fx-live-trade-details dl div { display:flex; justify-content:space-between; gap:16px; align-items:baseline; }
 .fx-live-trade-details dt,.fx-live-trade-details .as-context-value dt { color:var(--wm-content-muted); font-size:12px; font-weight:400; }
-.fx-live-trade-details dd { margin:0; max-width:65%; padding:3px 6px; border-radius:var(--ds-radius-small); background:var(--project-control); text-align:right; font-size:13px; line-height:18px; overflow-wrap:anywhere; }
+.fx-live-trade-details dd { margin:0; max-width:65%; padding:3px 6px; border-radius:var(--ds-radius-small); background:var(--project-control); text-align:right; font-size:13px; line-height:18px; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
 .fx-live-trade-details hr { width:100%; border:0; border-top:1px solid var(--wm-border); }
 dialog.is-details-hidden .fx-trade-detail-content { grid-template-columns:minmax(0,1fr); }
 dialog.is-details-hidden .fx-trade-detail-sidebar { display:none; }
@@ -92,6 +104,8 @@ dialog.is-details-hidden .fx-trade-detail-sidebar { display:none; }
   .fx-trade-workspace-header .fx-live-trade-heading h2 { font-size:18px; }
   .fx-trade-detail-content { grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,45%) minmax(0,1fr); }
   .fx-trade-detail-sidebar { border-right:0; border-bottom:1px solid var(--wm-border); padding:12px; }
+  .fx-trade-detail-sidebar .fx-live-trade-details { margin-inline:-12px; }
+  .fx-trade-detail-sidebar .fx-live-trade-details dl { padding-inline:12px; }
   .fx-trade-detail-content .fx-trade-note-draft,.fx-trade-workspace-body > .fx-trade-note-draft { padding:16px; }
   .fx-trade-note-draft footer { flex-wrap:wrap; }
   dialog.is-details-hidden .fx-trade-detail-content { grid-template-rows:minmax(0,1fr); }

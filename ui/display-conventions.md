@@ -44,11 +44,15 @@ information/tabs occupy the left third and the note editor the right two thirds.
 Each pane owns its scroll; narrower screens use full width and stack the panes
 below 640px. Header actions close, hide/show details and expand the drawer.
 Details, tag groups and media retain the same tab/focus behavior;
-the note draft stays mounted across tabs and resets when the trade identity changes.
+the note editor stays mounted across tabs, with state isolated by workspace/session/trade identity.
 Clicking an ordinary ledger cell or pressing Enter/Space on its focused row opens
 the same drawer as the detail icon. Checkbox, label, links and embedded controls
-retain their own action; selecting text does not open a drawer. Trade-note saving and attachments are
-unavailable until their persistence contract exists, with no successful-save UI.
+retain their own action; selecting text does not open a drawer. Trade notes and standalone Live Notes use the shared [autosave contract](autosave.md).
+Attachments remain unavailable. Trade headers show opening time and closed holding
+duration in the correct Chart/Realtime basis; save time is a separate server fact.
+The detail sidebar groups two identity facts, eight execution facts and three PnL
+facts, with one full-width separator between groups. Session/account scope stays
+in the header tooltip and source diagnostics stay in the collapsed provenance section.
 Historical Journal links keep their source session/trade and open this drawer.
 Closing a transient search with Escape returns focus to its trigger. Journal
 lists and label reports show an empty state only after a successful read; a

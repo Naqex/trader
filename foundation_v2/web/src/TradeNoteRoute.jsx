@@ -14,7 +14,7 @@ export default function TradeNoteRoute({ workspace, query }) {
   return <>
     <SessionReports ledgerOnly workspace={workspace} query={ledgerQuery}/>
     <TradeInspector onClose={close} heading={<TradeDetailHeading title={t('Notes')}/>} data-session-id={query.get('session')} data-trade-id={query.get('trade') || query.get('trade_id')} aria-label={t('Ghi chú giao dịch')}>
-      <TradeNoteDraft/>
+      <TradeNoteDraft workspace={workspace} session={query.get('session')} trade={query.get('trade') || query.get('trade_id')}/>
     </TradeInspector>
   </>
 }
