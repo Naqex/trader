@@ -433,7 +433,7 @@ Kiểm chứng và giới hạn của lượt rà soát:
 - Ba entry point dùng panel phải cùng nhịp: tạo/sửa note từ Notes, chi tiết giao dịch luyện tập và chi tiết giao dịch Live. Shell drawer dùng chung; adapter dữ liệu và quyền thao tác vẫn tách theo surface.
 - Live note dùng `LiveRecordDialog` và contract `live-records-v1` hiện có, giữ mapping tài khoản/connection, revision và folder khi tạo. Không thêm `trade_id` vào live note vì schema hiện tại chưa hỗ trợ.
 - Luyện tập giữ `TradeInspector`/`ProvenanceInspector` và dữ liệu provenance read-only. Live dựng chi tiết từ position/deal đã reconstruct; thiếu dữ liệu hiển thị `-`/`N/A`, không ghép hoặc suy diễn fill.
-- Tab Nhãn của Live reuse `TradeLabelCell` với session `live:{connection_id}` và ticket. Tab Ghi chú ở hai detail drawer chỉ dẫn sang Notes/Journal cho đến khi contract liên kết note-trade được chốt; không hiển thị editor giả hoặc tự lưu sai loại record.
+- Tab Nhãn của Live reuse `TradeLabelCell` với session `live:{connection_id}` và ticket. Editor ghi chú ở hai detail drawer dùng chung BlockNote và autosave; adapter giữ đúng workspace/session/trade hoặc connection/ticket theo [contract autosave](autosave.md), không tự lưu sang standalone Live Notes.
 
 Kiểm chứng: [Notes filters](../foundation_v2/evidence/notes-filters-20261029/RECEIPT.md), [Notes folders](../foundation_v2/evidence/notes-folders-20261029/RECEIPT.md), [Notes controls](../foundation_v2/evidence/notes-controls-20261029/RECEIPT.md).
 

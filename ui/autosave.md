@@ -64,6 +64,13 @@ separate persistence contract update, not a whitespace placeholder.
 
 ## Verification
 
+Block controls use the shared ChartIcon plus and BlockNote's side-menu/drag APIs.
+Square SVGs and dedicated gutter space keep controls aligned to the first line.
+Hover persists across the same block and small ancestor scrolls; clipped block
+references remain hidden. The entire plus button supports pointer/Enter/Space.
+Menu Escape is consumed only while its suggestion menu is open; ordinary editor
+Escape still follows BlockNote's blur behavior before native dialog dismissal.
+
 `tests/autosave.test.mjs` covers serialization, close draining, unknown-outcome
 retry, recovery, expired receipts, conflicts and validation/storage failure.
 `tests/tradeAutosave.browser.mjs` tests production UI with simulated writes.
