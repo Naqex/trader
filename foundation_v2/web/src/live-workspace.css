@@ -437,7 +437,7 @@
 .live-tag-picker-heading button { padding:4px 0; border:0; background:transparent; color:var(--wm-content-muted); font:inherit; font-size:12px; white-space:nowrap; cursor:pointer; }
 .live-tag-picker-heading button:hover { color:var(--wm-content); }
 .live-tag-picker-heading strong { min-width:0; overflow-wrap:anywhere; }
-.live-tag-picker-card > .wm-search-input { width:100%; box-sizing:border-box; }
+.fx-app.fx-shell-story[data-theme] .fx-content .live-tag-picker-card > .wm-search-input { width:100%; box-sizing:border-box; border:0; border-bottom:1px solid var(--wm-control-border); border-radius:0; background:transparent; padding:8px 10px; }
 .live-tag-visibility,.live-tag-info { display:inline-flex; align-items:center; gap:7px; padding:4px; border:0; background:transparent; color:var(--wm-content-muted); font:inherit; font-size:12px; cursor:pointer; }
 .live-tag-visibility { flex-shrink:0; }
 .live-tag-visibility:hover,.live-tag-info:hover { color:var(--wm-content); }
@@ -460,9 +460,7 @@
 .live-tag-expander:hover { color:var(--wm-content); background:var(--wm-hover); }
 .live-tag-grid-table tr.is-group td:nth-child(2) { padding-left:32px; }
 .live-tag-grid-table tr.is-child td:nth-child(2) { padding-left:64px; }
-.fx-app .live-tag-grid-table :is(tr.is-group,tr.is-child).is-loss > td { background:color-mix(in srgb,var(--report-negative) 12%,var(--wm-canvas)); }
-.fx-app .live-tag-grid-table :is(tr.is-group,tr.is-child).is-gain > td { background:color-mix(in srgb,var(--report-positive) 10%,var(--wm-canvas)); }
-.live-tag-grid-table tr.is-child:not(.is-loss):not(.is-gain) { background:var(--wm-canvas); }
+.fx-app .live-tag-grid-table :is(tr.is-group,tr.is-child) > td { background:color-mix(in srgb,var(--report-negative) 12%,var(--wm-canvas)); }
 .live-tag-grid-table .wm-table-row-number { width:44px; min-width:44px; padding-inline:8px; text-align:center; }
 .live-tag-grid-table .is-group,.live-tag-grid-table .is-child { color:var(--wm-content); }
 .live-tag-grid-table .wm-table-sort-control { justify-content:flex-start; }

@@ -55,7 +55,7 @@ try{
   const colors=await picker.locator('label').filter({hasText:'QA Bad'}).evaluateAll(nodes=>nodes.map(n=>{const probe=document.createElement('i');probe.style.color='var(--report-negative)';n.append(probe);const expected=getComputedStyle(probe).color;probe.remove();return {dot:getComputedStyle(n.querySelector('i')).backgroundColor,expected}}))
   assert.equal(colors.length,1);assert.equal(colors[0].dot,colors[0].expected)
   const geometry=await page.evaluate(()=>{
-   const rect=selector=>document.querySelector(selector).getBoundingClientRect(),legend=rect('.live-tag-legend'),heading=rect('.live-tag-chart-card h2'),toolbar=document.querySelector('.live-workspace > .fxa-filters')
+   const rect=selector=>document.querySelector(selector).getBoundingClientRect(),legend=rect('.live-tag-legend'),heading=rect('.live-tag-chart-card h2'),toolbar=document.querySelector('.live-tag-main > .fxa-filters')
    return {legendX:legend.x,headingX:heading.x,legendY:legend.y,headingBottom:heading.bottom,padding:parseFloat(getComputedStyle(toolbar).paddingLeft),overflow:document.documentElement.scrollWidth>innerWidth+1}
   })
   assert(Math.abs(geometry.legendX-geometry.headingX)<1);assert(geometry.legendY>geometry.headingBottom);assert(geometry.padding>0);assert(!geometry.overflow,JSON.stringify(geometry))

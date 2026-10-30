@@ -8,6 +8,8 @@ import SessionFilter from './SessionFilter.jsx'
 import useLiveCalendarAccounts from './useLiveCalendarAccounts.js'
 import { calendarAccountSelection } from './liveCalendarAccounts.js'
 import TestingIcon from './TestingIcon.jsx'
+import ReportSidePanel from './ReportSidePanel.jsx'
+import SmartPicksPanel from './SmartPicksPanel.jsx'
 import TradeTagOverview from './TradeTagOverview.jsx'
 import { useTradeLabels } from './TradeLabelCell.jsx'
 import useTradeNotePresence from './useTradeNotePresence.js'
@@ -98,8 +100,7 @@ function Summary({ payload, deals, sidebar = false, workspace, settingsHref, sho
   // A filtered deal history cannot reconstruct a broker balance (cashflows and
   // earlier trades may be absent). The sparkline explicitly shows scoped PnL.
   const pnlPoints = useMemo(() => deals.every(deal => Number.isFinite(deal.time_msc)) ? [{ value: 0, label: t('Bắt đầu') }, ...cumulativeDealSeries(deals).map((point, index) => ({ ...point, label: `${index + 1}` }))] : [], [deals, t])
-  return <section className={sidebar ? 'live-analytics-side' : 'live-metrics'} aria-label={t('Analytics')}>
-    {sidebar && <h2><span className="live-analytics-title"><TestingIcon kind="chart" />{t('Analytics')}</span></h2>}
+  return <ReportSidePanel title="Analytics" enabled={sidebar}>
     <div className="live-analytics-content">
     <div className="live-analytics-controls">
       <FxSelect label="Đơn vị lợi nhuận" value={unit} onChange={setUnit} options={[{value:'money',label:currency ? t('Lợi nhuận ({currency})',{currency:currencyLabel(currency)}) : t('Profit')},{value:'percent',label:'Phần trăm'}]} disabled={!available} />
@@ -140,7 +141,7 @@ function Summary({ payload, deals, sidebar = false, workspace, settingsHref, sho
     </div>}
     {showTags && <TradeTagOverview workspace={workspace} settingsHref={settingsHref} deals={deals} currency={currency} />}
     </div>
-  </section>
+  </ReportSidePanel>
 }
 
 function LiveAnalyticsReport({ payload, deals, sessionControl, issue }) {
@@ -404,12 +405,12 @@ export default function LiveSurfaces({ workspace = 'tenant-a', section, payload:
     {strategyError && <div className="live-status live-status-warning" role="alert"><span>{t(strategyError)}</span><Action onClick={() => setReload(value => value+1)}>{t('Tải lại')}</Action></div>}
     {section === 'calendar' && calendar.issue && <div className="live-status live-status-warning" role="status">{t(calendar.issue)}</div>}
     {ledger.status === 'loading' && <p className="live-status" role="status">{t('Đang đọc sổ giao dịch…')}</p>}
-    {showContent && !['calendar','trades','notes','trading-accounts','analytics'].includes(section) && filterBar}
+    {showContent && !['calendar','trades','notes','trading-accounts','analytics','tag-analytics'].includes(section) && filterBar}
     {showContent && <>
     {section === 'calendar' && <Calendar empty={ledger.status === 'ready' && !calendarIds.length && !broker?.stale} filterBar={showContent ? filterBar : null} canWrite={!preview && ledger.status === 'ready' && calendarIds.length === 1} selectionKey={selectionKey} payload={payload} deals={deals} filters={applied} reviewScope={payload?.manual ? `${strategy === 'all' ? t('Tất cả chiến lược') : `${strategies.find(item => item.record_id === strategyId)?.payload.name || strategyId}${strategyRevision ? ` · v${strategyRevision}` : ` · ${t('mọi phiên bản')}`}`} · ${!tagFilter.include.length ? t('Tất cả nhãn') : tagFilter.include.join(', ')}` : t('Synced deals')} onPreview={create} />}
     {section === 'trades' && <div className="live-split"><section className="live-trades-section">{filterBar}<div className="live-trades-content">{payload?.manual ? <ManualTrades columns={columns} writable={!preview && ledger.status === 'ready' && strategyReady} filterKey={JSON.stringify([chosen,tradeScope,strategy])} workspace={workspace} deals={filteredTrades} currency={payload.account.currency} strategies={strategies} onEdit={record => open('trade',record)} /> : payload?.account ? <LiveBrokerSnapshot workspace={preview ? undefined : workspace} catalog={labelCatalog} columns={columns} payload={payload} section="trades" trades={filteredTrades} filterKey={JSON.stringify(tradeScope)} /> : <Empty title="No trades yet" copy="Tạo tài khoản thủ công và thêm giao dịch để bắt đầu." icon="journal" />}</div></section><Summary payload={payload} deals={payload?.manual ? filteredTrades : filteredTrades.filter(trade => trade.status === 'Closed')} sidebar workspace={preview ? undefined : workspace} settingsHref={settingsHref} showTags /></div>}
     {section === 'notes' && <JournalNotes workspace={preview ? undefined : workspace} readable={journalReadable} writable={!preview && ledger.status === 'ready' && strategyReady} records={ledger.items} strategies={strategies} onEdit={record => open('note',record)} onCreate={folderId => { if (!preview && ledger.status === 'ready') setAction({kind:'note',folderId}) }} />}
-    {section === 'tag-analytics' && <JournalTags workspace={preview ? undefined : workspace} readable={journalReadable} filterKey={JSON.stringify([chosen,tradeScope,strategy])} deals={filteredTrades} currency={payload?.account?.currency || ''} />}
+    {section === 'tag-analytics' && <div className="live-split live-tag-split"><section className="live-tag-main">{filterBar}<JournalTags workspace={preview ? undefined : workspace} readable={journalReadable} filterKey={JSON.stringify([chosen,tradeScope,strategy])} deals={filteredTrades} currency={payload?.account?.currency || ''} /></section><SmartPicksPanel workspace={preview ? undefined : workspace}/></div>}
     {section === 'analytics' && <LiveAnalyticsReport payload={payload} deals={completed} issue={calendar.issue} sessionControl={<SessionFilter items={pickerItems} value={calendarSelection} multiple onChange={chooseCalendar} labels={ACCOUNT_PICKER_LABELS} />} />}
     {section === 'trading-accounts' && <LiveAccounts key={workspace} workspace={workspace} accounts={accounts} records={ledger.items} broker={broker} chosen={chosen} onSelect={choose} transactions={query.get('account_tab') === 'transactions'} writable={!preview && ledger.status === 'ready'} canImport={!preview && ledger.status === 'ready' && accounts.length > 0} onCreate={seed => {if(!preview && ledger.status==='ready')setAction({kind:'account',seed})}} onImport={record => openAccountAction('import',record?.record_id ? record : null)} onEdit={record => open('account',record)} onTrade={record=>openAccountAction('trade',record)} onNavigate={navigateAccount} onArchive={archiveAccount} onRefresh={onRefresh} />}
 

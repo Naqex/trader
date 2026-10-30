@@ -836,3 +836,15 @@ and aggregate values. This preview is read-only until the journal edit contract
 is approved: Add/Save remain disabled. Execution and broker data are not mutated
 by this UI. The vertical ellipsis stays visible in both modes, enabled for Live
 and disabled for Practice. The extra R info icon is omitted.
+
+Trade journal UI uses the same controls in Practice, broker-synced Live and
+manual Live trades. The dataset selector names the source currently rendered;
+Journal and Research remain disabled until their data contracts exist. Journal
+status offers Active, Deleted and All as a UI preview. Row and bulk delete or
+restore actions open a confirmation dialog, but the confirmation is disabled
+until persistent deletion semantics are implemented. These controls must not
+change broker state, notes, tags, media, PnL or analytics while disabled.
+
+Analytics and Smart Picks side panels share the mirrored collapse control. The
+panel rail is the default for Smart Picks, while Analytics preserves the
+existing expanded view. At narrow widths the rail stacks below the main view.

@@ -18,6 +18,8 @@ import NoteFolderDialog from './NoteFolderDialog.jsx'
 import { fetchNoteFolders } from './liveNoteFoldersApi.js'
 import { EMPTY_NOTE_FILTERS, filterJournalNotes, groupJournalNotes, NOTE_GROUPS, NOTE_TYPES } from './liveNoteModel.js'
 import { MANUAL_TRADE_COLUMNS } from './liveTradeColumns.js'
+import ChartIcon from './ChartIcon.jsx'
+import { TradeJournalToolbar, TradeJournalActionDialog } from './TradeJournalPreview.jsx'
 
 function StrategyReference({ payload, strategies, workspace }) {
   const { t,language } = useTestingLocale()
@@ -29,9 +31,10 @@ function StrategyReference({ payload, strategies, workspace }) {
 export function ManualTrades({ columns = MANUAL_TRADE_COLUMNS.map(([key]) => key), deals, currency, strategies, workspace, filterKey, writable, onEdit }) {
   const { t,fmt } = useTestingLocale()
   const [search, setSearch] = useState(''), [page, setPage] = useState(1), [size, setSize] = useState(10), sorting = useTableSort(()=>setPage(1))
+  const [journalView,setJournalView]=useState('active'),[journalAction,setJournalAction]=useState(null)
   useEffect(() => setPage(1),[filterKey])
   const sortValue = (deal,key) => key === 'time' ? deal.time_msc : key === 'asset' ? deal.symbol : key === 'side' ? deal.type : dealNet(deal)
-  const rows = sorting.rows(deals.filter(deal => matchesSearch(`${deal.symbol} ${deal.record.payload.tags.join(' ')} ${deal.record.payload.note}`, search)),sortValue,[{key:'time',direction:'desc'}])
+  const rows = sorting.rows(deals.filter(deal => journalView!=='deleted' && matchesSearch(`${deal.symbol} ${deal.record.payload.tags.join(' ')} ${deal.record.payload.note}`, search)),sortValue,[{key:'time',direction:'desc'}])
   const pages = Math.max(1,Math.ceil(rows.length/size)), current = Math.min(page,pages)
   const shown = MANUAL_TRADE_COLUMNS.filter(([key]) => columns.includes(key))
   const cellValue = (deal, key) => {
@@ -45,10 +48,12 @@ export function ManualTrades({ columns = MANUAL_TRADE_COLUMNS.map(([key]) => key
     }
   }
   return <section className="live-broker"><div className="live-deals-toolbar"><h2>{t('Giao dịch đã đóng')} · {rows.length}</h2><label className="live-search"><TestingIcon kind="search" /><SearchInput type="search" placeholder={t('Tìm sản phẩm, nhãn…')} aria-label={t('Tìm giao dịch')} value={search} onChange={event => { setSearch(event.target.value); setPage(1) }} /></label></div>
-    <DataTable className="live-table-scroll" label={t('Giao dịch thủ công')}><thead><tr><SortResetColumn active={sorting.sorts.length > 0} onClear={sorting.clear}/>{shown.map(([key,label]) => ['time','asset','side','net'].includes(key) ? <SortableColumn key={key} className={key==='net'?'is-numeric':undefined} {...sorting.columnProps(key,t(label))}>{t(label)}{key === 'net' && ` (${currencyLabel(currency)})`}</SortableColumn> : <th key={key} scope="col">{t(label)}</th>)}<th aria-label={t('Thao tác')} /></tr></thead><tbody>
-      {rows.slice((current-1)*size,current*size).map((deal,index) => <tr key={deal.ticket}><td className="wm-table-row-number">{(current-1)*size+index+1}</td>{shown.map(([key]) => <td key={key} className={key === 'net' ? `is-numeric ${dealNet(deal) > 0 ? 'is-gain' : dealNet(deal) < 0 ? 'is-loss' : ''}` : ''}>{cellValue(deal,key)}</td>)}<td><button type="button" className="fxa-button" disabled={!writable} onClick={() => onEdit(deal.record)}>{t('Chi tiết')}</button></td></tr>)}
-      {!rows.length && <tr><td colSpan={shown.length + 2}>{t('Chưa có giao dịch trong bộ lọc này.')}</td></tr>}
-    </tbody></DataTable><PaginationFooter showCount={false} totalCount={rows.length} label="Trang giao dịch" page={current} pages={pages} onPageChange={setPage} pageSize={size} onPageSizeChange={value => { setSize(value); setPage(1) }} sizes={[10,20,50,100]} meta={<button type="button" className="fxa-button" disabled={!rows.length} onClick={() => downloadLiveCsv(rows.map(item => item.record))}>{t('Xuất CSV')}</button>} />
+    <TradeJournalToolbar sourceKind="manual" view={journalView} onView={value=>{setJournalView(value);setPage(1)}} checkedCount={0}/>
+    <DataTable className="live-table-scroll" label={t('Giao dịch thủ công')} data-testid="manual-trade-grid"><thead><tr><SortResetColumn active={sorting.sorts.length > 0} onClear={sorting.clear}/>{shown.map(([key,label]) => ['time','asset','side','net'].includes(key) ? <SortableColumn key={key} className={key==='net'?'is-numeric':undefined} {...sorting.columnProps(key,t(label))}>{t(label)}{key === 'net' && ` (${currencyLabel(currency)})`}</SortableColumn> : <th key={key} scope="col">{t(label)}</th>)}<th aria-label={t('Thao tác')} /></tr></thead><tbody>
+      {rows.slice((current-1)*size,current*size).map((deal,index) => <tr key={deal.ticket}><td className="wm-table-row-number">{(current-1)*size+index+1}</td>{shown.map(([key]) => <td key={key} className={key === 'net' ? `is-numeric ${dealNet(deal) > 0 ? 'is-gain' : dealNet(deal) < 0 ? 'is-loss' : ''}` : ''}>{cellValue(deal,key)}</td>)}<td><div className="wm-trade-row-actions"><button type="button" className="fxa-button" disabled={!writable} onClick={() => onEdit(deal.record)}>{t('Chi tiết')}</button><button type="button" className="wm-table-row-action wm-trade-journal-action" aria-label={t('Xóa giao dịch {id}',{id:deal.ticket})} data-tooltip={t('Xóa khỏi nhật ký')} onClick={()=>setJournalAction({action:'delete',count:1})}><ChartIcon name="trash"/></button></div></td></tr>)}
+      {!rows.length && <tr><td colSpan={shown.length + 2}>{journalView==='deleted'?<div className="wm-journal-preview-empty"><p>{t('Xóa/khôi phục nhật ký chưa được bật.')}</p><p>{t('Giao dịch đã xóa sẽ xuất hiện tại đây khi tính năng được bật.')}</p></div>:t('Chưa có giao dịch trong bộ lọc này.')}</td></tr>}
+    </tbody></DataTable>{journalView!=='deleted' && <PaginationFooter showCount={false} totalCount={rows.length} label="Trang giao dịch" page={current} pages={pages} onPageChange={setPage} pageSize={size} onPageSizeChange={value => { setSize(value); setPage(1) }} sizes={[10,20,50,100]} meta={<button type="button" className="fxa-button" disabled={!rows.length} onClick={() => downloadLiveCsv(rows.map(item => item.record))}>{t('Xuất CSV')}</button>} />}
+    {journalAction && <TradeJournalActionDialog {...journalAction} onClose={()=>setJournalAction(null)}/>}
   </section>
 }
 
