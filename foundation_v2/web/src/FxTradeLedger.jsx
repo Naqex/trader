@@ -12,6 +12,7 @@ import TableColumnControl from './TableColumnControl.jsx'
 import { TestingTradesEmpty } from './TestingPageState.jsx'
 import TradeLedgerGrid from './TradeLedgerGrid.jsx'
 import { formatReturnPercent } from './tradeReturnFormat.js'
+import ChartIcon from './ChartIcon.jsx'
 
 const COLUMNS = [
   ['session_id', 'Session'], ['status', 'Type'], ['source', 'Source'], ['recorded_at_utc', 'Entry Date (Realtime)'], ['open_time_utc', 'Entry Date (Chart UTC)'],
@@ -23,22 +24,29 @@ const DEFAULT_COLUMNS = COLUMNS.map(([key]) => key)
 const CENTER_COLUMNS = new Set(['status', 'side', 'entry_type'])
 const columnClass = key => NUMERIC_COLUMNS.has(key) ? 'is-numeric' : CENTER_COLUMNS.has(key) ? 'is-center' : ''
 const NUMERIC_COLUMNS = new Set(['net_pnl', 'return_pct', 'realized_r', 'rating', 'price_open', 'quantity', 'stop_loss', 'take_profit', 'price_close', 'gross_pnl', 'fees'])
-export function TradeInspector({ children, onClose, className = '', ...props }) {
+export function TradeInspector({ children, heading, onClose, className = '', ...props }) {
   const { t } = useTestingLocale()
-
+  const [expanded, setExpanded] = useState(false), [detailsVisible, setDetailsVisible] = useState(true)
   const dialog = useRef(null)
   useEffect(() => {
     const opener = document.activeElement
     dialog.current.showModal()
     return () => { dialog.current?.close(); if (opener?.isConnected) opener.focus({ preventScroll: true }) }
   }, [])
-  return <dialog {...props} className={`fxa-trade-inspector is-drawer ${className}`} aria-label={props['aria-label'] || t("Chi tiết giao dịch")} ref={dialog} onCancel={event => { event.preventDefault(); onClose() }} onKeyDown={event => {
+  return <dialog {...props} className={`fxa-trade-inspector is-drawer${expanded ? ' is-expanded' : ''}${detailsVisible ? '' : ' is-details-hidden'} ${className}`} aria-label={props['aria-label'] || t("Chi tiết giao dịch")} ref={dialog} onCancel={event => { event.preventDefault(); onClose() }} onKeyDown={event => {
     if (event.key !== 'Tab') return
     const controls = [...event.currentTarget.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter(element => !element.disabled && element.tabIndex >= 0 && element.getClientRects().length)
     const first = controls[0], last = controls[controls.length - 1]
     if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() }
     else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
-  }} onClick={event => { if (event.target === event.currentTarget) { const bounds = event.currentTarget.getBoundingClientRect(); if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) onClose() } }}>{children}</dialog>
+  }} onClick={event => { if (event.target === event.currentTarget) { const bounds = event.currentTarget.getBoundingClientRect(); if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) onClose() } }}>
+    <header className="fx-trade-workspace-header"><div className="fx-trade-window-controls">
+      <button type="button" className="wm-button is-icon" onClick={onClose} aria-label={t('Đóng chi tiết')}><ChartIcon name="close"/></button>
+      <button type="button" className="wm-button is-icon" onClick={() => setDetailsVisible(value => !value)} aria-label={t('Hiện thông tin giao dịch')} aria-pressed={detailsVisible}><ChartIcon name="layout"/></button>
+      <button type="button" className="wm-button is-icon" onClick={() => setExpanded(value => !value)} aria-label={t('Mở rộng chi tiết giao dịch')} aria-pressed={expanded}><ChartIcon name={expanded ? 'contract-corners' : 'expand-corners'}/></button>
+    </div>{heading || <h2>{t('Trade detail')}</h2>}</header>
+    <div className="fx-trade-workspace-body">{children}</div>
+  </dialog>
 }
 function valueOf(row, key, model, sessionName) {
   if (key === 'session_id') return sessionName || row.session_name || row.session_id || row.source?.session_id || model.result?.session_id || '-'

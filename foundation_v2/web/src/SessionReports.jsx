@@ -13,7 +13,7 @@ import useReadRefresh from './useReadRefresh.js'
 import { scopedRead } from './scopedRead.js'
 import { readJson } from './researchDataApi.js'
 import { ledgerFilterUrl } from './ledgerFilterModel.js'
-import ChartIcon from './ChartIcon.jsx'
+import { TradeDetailHeading } from './TradeDetailContent.jsx'
 
 function AggregateTrades({ workspace, ids, query, sessionControl, onClearSessions, catalogStatus, sessionAssets }) {
   const { t, timezone } = useTestingLocale()
@@ -85,7 +85,7 @@ function AggregateTrades({ workspace, ids, query, sessionControl, onClearSession
   return <section className="as-page fxa-page wm-page" aria-label={t("Trades")} data-testid="aggregate-trades">
     <FxTradeLedger workspace={workspace} onLabelsChanged={()=>setReload(value=>value+1)} readNotice={readNotice} hidden={state.status === 'error' && !state.payload} emptyScopeKnown={state.payload?.pagination.filtered_count === 0 && state.payload.status !== 'partial' && !Object.values(filters).some(value => value && value !== 'all') && Object.entries(extra).every(([key, value]) => key === 'timezone' || value === DEFAULT_EXTRA_FILTERS[key])} model={model} extra={extra} selected={selected} onSelect={setSelected} remotePage={{ selectionKey: JSON.stringify([workspace, ids, filters, extra]), page: state.payload?.pagination.page || paging.page, pageSize: paging.pageSize, sorts: paging.sorts, totalCount: state.payload?.pagination.filtered_count ?? null, pending: state.status === 'loading', onChange: patch => setPaging(current => ({ ...current, ...patch })) }} renderFilters={columnControl => <FxAnalyticsFilters timeBasis={timeBasis} readTimeFacets={readTimeFacets} onApply={applyFilters} statusControl={statusControl} filters={filters} onChange={changeFilters} extra={extra} onExtra={changeExtra} rows={model.ledger} facets={{ ...(state.payload?.facets || state.facets), assets: [...new Set([...(state.payload?.facets?.assets || state.facets?.assets || []), ...sessionAssets])] }} sessionControl={sessionControl} onClearSessions={onClearSessions} pending={!state.payload} columnControl={columnControl} ledgerOnly />} />
     {state.payload && <>
-      {row && <TradeInspector onClose={() => setSelected('')} className="fxa-trade-inspector" aria-label={t("Chi tiết giao dịch")}><div className="fx-live-trade-heading"><div><small>{t('Trade detail')}</small><h2>{row.symbol || row.session_name}</h2><p>{row.session_name || '-'}</p></div><button type="button" className="fxa-button fx-trade-drawer-close" onClick={() => setSelected('')} aria-label={t('Đóng chi tiết')}><ChartIcon name="close" /></button></div><ProvenanceInspector workspace={workspace} onLabelsChanged={()=>setReload(value=>value+1)} model={detailModel} selectedTrade={{ ...row, tradeId: row.trade_id }} journalCount={null} links={{ replay: link('replay'), journal: link('journal') }} /></TradeInspector>}
+      {row && <TradeInspector onClose={() => setSelected('')} heading={<TradeDetailHeading title={`${row.symbol || row.session_name}, ${t(String(row.side).toLowerCase() === 'buy' ? 'Buy' : String(row.side).toLowerCase() === 'sell' ? 'Sell' : '-')}`} subtitle={row.session_name} net={row.status === 'open' ? null : row.net_pnl} currency={row.account_currency}/>} aria-label={t("Chi tiết giao dịch")}><ProvenanceInspector workspace={workspace} onLabelsChanged={()=>setReload(value=>value+1)} model={detailModel} selectedTrade={{ ...row, tradeId: row.trade_id }} journalCount={null} links={{ replay: link('replay'), journal: link('journal') }} /></TradeInspector>}
     </>}
   </section>
 }

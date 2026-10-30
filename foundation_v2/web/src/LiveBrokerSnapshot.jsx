@@ -10,8 +10,7 @@ import TradeLabelCell, { TradeLabelDisplay } from './TradeLabelCell.jsx'
 import { LIVE_TRADE_COLUMNS } from './liveTradeColumns.js'
 import TradeLedgerGrid from './TradeLedgerGrid.jsx'
 import { TradeInspector } from './FxTradeLedger.jsx'
-import TradeDetailContent from './TradeDetailContent.jsx'
-import ChartIcon from './ChartIcon.jsx'
+import TradeDetailContent, { TradeDetailHeading } from './TradeDetailContent.jsx'
 import { currencyLabel } from './moneyFormat.js'
 import { formatReturnPercent } from './tradeReturnFormat.js'
 
@@ -19,9 +18,8 @@ function LiveTradeInspector({ deal, payload, accountName, time, money, side, wor
   const { t, fmt } = useTestingLocale()
   const value = (item, digits = 6) => Number.isFinite(item) ? fmt(item, '', digits) : '-'
   const realizedMoney = item => deal.status === 'Closed' ? money(item) : deal.status === 'Open' ? 'N/A' : '-'
-  return <TradeInspector onClose={onClose}>
-    <div className="fx-live-trade-heading"><div><small>{t('Live trade')}</small><h2>{deal.symbol}, {side(deal.type)} <span className={deal.status === 'Closed' ? deal.net_pnl > 0 ? 'is-positive' : deal.net_pnl < 0 ? 'is-negative' : '' : ''}>{deal.status === 'Closed' && Number.isFinite(deal.net_pnl) ? money(deal.net_pnl) : t(deal.status)}</span></h2><p>{time(deal.recorded_at_utc)} · {t(deal.status)}</p></div><button type="button" className="fxa-button fx-trade-drawer-close" onClick={onClose} aria-label={t('Đóng chi tiết')}><ChartIcon name="close" /></button></div>
-    <TradeDetailContent tags={workspace && payload.connection_id && catalog ? <TradeLabelCell workspace={workspace} session={`live:${payload.connection_id}`} row={{...deal,trade_id:deal.ticket}} catalog={catalog} onChanged={onLabelsChanged} /> : <TradeLabelDisplay tags={deal.tags || []} options={catalog?.items || []} />}>
+  return <TradeInspector onClose={onClose} heading={<TradeDetailHeading title={`${deal.symbol}, ${side(deal.type)}`} net={deal.status === 'Closed' ? deal.net_pnl : null} currency={payload.account?.currency} subtitle={`${time(deal.recorded_at_utc)} · ${t(deal.status)}`} />}>
+    <TradeDetailContent key={JSON.stringify([workspace,payload.connection_id,deal.ticket])} tags={workspace && payload.connection_id && catalog ? <TradeLabelCell workspace={workspace} session={`live:${payload.connection_id}`} row={{...deal,trade_id:deal.ticket}} catalog={catalog} onChanged={onLabelsChanged} /> : <TradeLabelDisplay tags={deal.tags || []} options={catalog?.items || []} />}>
       <section className="fx-live-trade-details"><dl><div><dt>{t('Account')}</dt><dd>{accountName}</dd></div><div><dt>{t('Asset')}</dt><dd>{deal.symbol || '-'}</dd></div><div><dt>{t('Side')}</dt><dd>{side(deal.type)}</dd></div><div><dt>{t('Entry type')}</dt><dd>{deal.entry_type || '-'}</dd></div><div><dt>{t('Entry date')} · Realtime</dt><dd>{time(deal.recorded_at_utc)}</dd></div><div><dt>{t('Entry price')}</dt><dd>{value(deal.price_open)}</dd></div><div><dt>{t('Total size')}</dt><dd>{value(deal.quantity,4)}</dd></div><div><dt>{t('Stop loss')}</dt><dd>{value(deal.stop_loss)}</dd></div><div><dt>{t('Take profit')}</dt><dd>{value(deal.take_profit)}</dd></div><div><dt>{t('Exit date')} · Realtime</dt><dd>{time(deal.report_time_utc)}</dd></div><div><dt>{t('Exit price')}</dt><dd>{value(deal.price_close)}</dd></div></dl><hr/><dl><div><dt>{t('Gross PnL')}</dt><dd>{realizedMoney(deal.gross_pnl)}</dd></div><div><dt>{t('Fees')}</dt><dd>{realizedMoney(deal.fees)}</dd></div><div><dt>{t('Net PnL')}</dt><dd>{realizedMoney(deal.net_pnl)}</dd></div></dl></section>
     </TradeDetailContent>
   </TradeInspector>

@@ -1,7 +1,6 @@
 import SessionReports from './SessionReports.jsx'
 import { TradeInspector } from './FxTradeLedger.jsx'
-import { TradeNoteDraft } from './TradeDetailContent.jsx'
-import ChartIcon from './ChartIcon.jsx'
+import { TradeNoteDraft, TradeDetailHeading } from './TradeDetailContent.jsx'
 import { navigate } from './clientNavigation.js'
 import { useTestingLocale } from './testingLocale.jsx'
 
@@ -14,8 +13,7 @@ export default function TradeNoteRoute({ workspace, query }) {
   const close = () => navigate(`/?${ledgerQuery}`, { replace:true })
   return <>
     <SessionReports ledgerOnly workspace={workspace} query={ledgerQuery}/>
-    <TradeInspector onClose={close} data-session-id={query.get('session')} data-trade-id={query.get('trade') || query.get('trade_id')} aria-label={t('Ghi chú giao dịch')}>
-      <div className="fx-live-trade-heading"><h2>{t('Notes')}</h2><button type="button" className="wm-dialog-close" aria-label={t('Đóng')} onClick={close}><ChartIcon name="close"/></button></div>
+    <TradeInspector onClose={close} heading={<TradeDetailHeading title={t('Notes')}/>} data-session-id={query.get('session')} data-trade-id={query.get('trade') || query.get('trade_id')} aria-label={t('Ghi chú giao dịch')}>
       <TradeNoteDraft/>
     </TradeInspector>
   </>

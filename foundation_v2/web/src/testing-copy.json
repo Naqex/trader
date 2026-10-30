@@ -7331,6 +7331,8 @@
   "Chọn khoảng ngày ghi chú": {"vi": "Chọn khoảng ngày ghi chú", "en": "Select note date range"},
   "Trade detail tabs": {"vi": "Các mục chi tiết giao dịch", "en": "Trade detail tabs"},
   "Trade detail": {"vi": "Chi tiết giao dịch", "en": "Trade detail"},
+  "Hiện thông tin giao dịch": {"vi":"Hiện thông tin giao dịch","en":"Show trade details"},
+  "Mở rộng chi tiết giao dịch": {"vi":"Mở rộng chi tiết giao dịch","en":"Expand trade details"},
   "Note title": {"vi": "Tiêu đề ghi chú", "en": "Note title"},
   "Name note here": {"vi": "Đặt tên ghi chú", "en": "Name note here"},
   "Enter text or type '/' for commands": {"vi": "Nhập nội dung ghi chú", "en": "Enter text or type '/' for commands"},

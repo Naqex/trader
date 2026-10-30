@@ -3,10 +3,15 @@ import { useTestingLocale } from './testingLocale.jsx'
 
 const TABS = [['details', 'Details'], ['tags', 'Tag groups'], ['media', 'Media']]
 
+export function TradeDetailHeading({ title, subtitle, net, currency }) {
+  const { t, fmt } = useTestingLocale()
+  return <div className="fx-live-trade-heading"><div className="fx-trade-title-line"><h2>{title}</h2>{Number.isFinite(net) && <span className={net > 0 ? 'is-positive' : net < 0 ? 'is-negative' : ''}>{fmt(net,currency ? ` ${currency}` : '')} <small>({t('Net PnL')})</small></span>}</div>{subtitle && <p>{subtitle}</p>}</div>
+}
+
 export function TradeNoteDraft() {
   const { t } = useTestingLocale()
   return <section className="fx-trade-note-draft" aria-label={t('Ghi chú giao dịch')}>
-    <h3>{t('Notes')}</h3>
+    <h3 className="sr-only">{t('Notes')}</h3>
     <label><span className="sr-only">{t('Nội dung ghi chú giao dịch')}</span><textarea aria-label={t('Nội dung ghi chú giao dịch')} placeholder={t('Viết ghi chú…')} rows={6} maxLength={10000}/></label>
     <footer><small>{t('Bản nháp giao diện · chưa hỗ trợ lưu theo giao dịch.')}</small><button type="button" className="fxa-button is-primary" disabled>{t('Lưu')}</button></footer>
   </section>
@@ -16,6 +21,7 @@ export default function TradeDetailContent({ children, tags, provenance }) {
   const { t } = useTestingLocale(), id = useId()
   const [tab, setTab] = useState('details')
   return <div className="fx-trade-detail-content">
+    <aside className="fx-trade-detail-sidebar">
     <nav className="fx-trade-detail-tabs" role="tablist" aria-label={t('Trade detail tabs')}>
       {TABS.map(([key, label], index) => <button key={key} id={`${id}-${key}`} role="tab" type="button" aria-selected={tab === key} aria-controls={`${id}-panel`} tabIndex={tab === key ? 0 : -1} onClick={() => setTab(key)} onKeyDown={event => {
         if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
@@ -28,6 +34,7 @@ export default function TradeDetailContent({ children, tags, provenance }) {
       {tab === 'details' ? children : tab === 'tags' ? <div className="fx-trade-drawer-placeholder">{tags}</div> : <div className="fx-trade-drawer-placeholder"><h3>{t('Media')}</h3><p>{t('Chưa hỗ trợ tệp đính kèm cho giao dịch này.')}</p></div>}
     </section>
     {provenance}
+    </aside>
     <TradeNoteDraft/>
   </div>
 }

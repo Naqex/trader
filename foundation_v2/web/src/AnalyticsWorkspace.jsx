@@ -19,7 +19,7 @@ import { enrichJournalTags, readJournalContext } from './journalContext.js'
 import { frontendPerformance } from './frontendPerformance.js'
 import { useContentReadyMetric } from './useContentReadyMetric.js'
 import ChartIcon from './ChartIcon.jsx'
-import TradeDetailContent from './TradeDetailContent.jsx'
+import TradeDetailContent, { TradeDetailHeading } from './TradeDetailContent.jsx'
 import TradeLabelCell, { useTradeLabels, TradeLabelDisplay } from './TradeLabelCell.jsx'
 
 import { analyticsQuery, analyticsViewResult, buildAnalyticsModel, dateFromValue, readAnalyticsFilters } from './analyticsViewModel.js'
@@ -61,7 +61,7 @@ export function ProvenanceInspector({ model, selectedTrade, journalCount, links,
     {links.replay && <a className="fx-trade-note-link" href={links.replay}>{t('Mở Replay →')}</a>}
   </details>
   return <aside className="as-inspector" aria-label={t('Trade detail')}>
-    {trade && <TradeDetailContent provenance={provenance} tags={workspace && session ? <TradeLabelCell workspace={workspace} session={session} row={trade} catalog={catalog} onChanged={onLabelsChanged}/> : <TradeLabelDisplay tags={trade.tags || []} options={catalog.items}/> }>
+    {trade && <TradeDetailContent key={JSON.stringify([workspace,session,trade.trade_id || trade.tradeId])} provenance={provenance} tags={workspace && session ? <TradeLabelCell workspace={workspace} session={session} row={trade} catalog={catalog} onChanged={onLabelsChanged}/> : <TradeLabelDisplay tags={trade.tags || []} options={catalog.items}/> }>
       <section className="fx-live-trade-details"><dl>
         <ContextValue label={t('Session')} value={trade.session_name || model.result?.session_name}/>
         <ContextValue label={t('Asset')} value={trade.symbol}/><ContextValue label={t('Side')} value={t(String(trade.side).toUpperCase() === 'BUY' ? 'Buy' : String(trade.side).toUpperCase() === 'SELL' ? 'Sell' : '-')}/>
@@ -306,6 +306,7 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
   }, [workspace, sessionId, jobId, filterParams.toString(), result])
 
   const Inspector = ledgerOnly ? TradeInspector : 'section'
+  const tradeHeading = selectedTrade && <TradeDetailHeading title={`${selectedTrade.symbol || selectedTrade.tradeId}, ${t(String(selectedTrade.side).toLowerCase() === 'buy' ? 'Buy' : String(selectedTrade.side).toLowerCase() === 'sell' ? 'Sell' : '-')}`} subtitle={selectedTrade.session_name || sessionName} net={selectedTrade.status === 'open' ? null : selectedTrade.net_pnl} currency={selectedTrade.account_currency || model.result?.account_currency}/>
   const journalFilterPending = Boolean(sessionId && !jobId && !summaryOnly && !['ready', 'stale'].includes(journalStatus) && (extra.tag !== 'all' || extra.tagInclude || extra.tagExclude || extra.notesPresence))
   // The trade ledger keeps the partial state in its model and empty-state
   // logic, but does not add a persistent toolbar badge for it. Analytics
@@ -330,7 +331,7 @@ function AnalyticsStoryWorkspace({ workspace = 'tenant-a', query = new URLSearch
     {state.status === 'blocked_by_data' && <section className="as-empty-state" data-testid="analytics-blocked"><h2>{t("Chưa đủ dữ liệu để tính analytics")}</h2><p>{state.payload?.blocked_by_data?.map(reason => t(reason)).join(' · ') || t(state.error) || t("Nguồn chưa có kết quả đã phát hành.")}</p></section>}
     {result && !journalFilterPending && ['ready', 'stale', 'partial', 'empty'].includes(state.status) && <>
       {summaryOnly ? <section className="as-metric-strip" aria-label={t("Metrics chính")}><StoryMetric label={t("Net PnL")} value={formatNumber(model.netPnl)} detail={currencyLabel(result.account_currency)} /><StoryMetric label={t("Win rate")} value={formatNumber(model.winRate, 1, '%')} /><StoryMetric label={t("Trades")} value={formatNumber(model.tradeCount, 0)} /><StoryMetric label={t("Max DD")} value={formatNumber(model.maxDrawdown)} detail={t("Closed balance")} /></section> : ledgerOnly ? null : <FxAnalyticsReport model={model} extra={extra} experiments={experimentScopeMatches ? experiments.payload : null} experimentStatus={experimentScopeMatches ? currentExperiments.status : currentExperiments.status === 'ready' ? 'error' : currentExperiments.status} experimentError={currentExperiments.error || (currentExperiments.status === 'ready' && !experimentScopeMatches ? 'Đường giá chưa khớp revision/cutoff của báo cáo.' : '')} propReport={propReport} config={experimentConfig} loadExperiment={loadExperiment} selected={selectedTradeId} onSelect={setSelectedTradeId} experimentScope={experimentScope} onNeedExperiments={requestExperiments} />}
-      {!summaryOnly && selectedTrade && <Inspector onClose={() => setSelectedTradeId('')} className="fxa-trade-inspector" aria-label={t("Chi tiết giao dịch")}><div className="fx-live-trade-heading"><div><small>{t('Trade detail')}</small><h2>{selectedTrade.symbol || selectedTrade.tradeId}</h2></div><button type="button" className="fxa-button fx-trade-drawer-close" onClick={() => setSelectedTradeId('')} aria-label={t('Đóng chi tiết')}><ChartIcon name="close" /></button></div><ProvenanceInspector workspace={!jobId ? workspace : undefined} onLabelsChanged={()=>setJournalReload(value=>value+1)} model={model} selectedTrade={selectedTrade} journalCount={journalCount} links={links} /></Inspector>}
+      {!summaryOnly && selectedTrade && <Inspector onClose={() => setSelectedTradeId('')} {...ledgerOnly && {heading:tradeHeading}} className="fxa-trade-inspector" aria-label={t("Chi tiết giao dịch")}>{!ledgerOnly && <>{tradeHeading}<button type="button" className="fxa-button fx-trade-drawer-close" onClick={() => setSelectedTradeId('')} aria-label={t('Đóng chi tiết')}><ChartIcon name="close" /></button></>}<ProvenanceInspector workspace={!jobId ? workspace : undefined} onLabelsChanged={()=>setJournalReload(value=>value+1)} model={model} selectedTrade={selectedTrade} journalCount={journalCount} links={links} /></Inspector>}
     </>}
   </section>
 }

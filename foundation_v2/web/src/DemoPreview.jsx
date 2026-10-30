@@ -9,6 +9,7 @@ import FxTradeLedger, { TradeInspector } from './FxTradeLedger.jsx'
 import FxSelect from './FxSelect.jsx'
 import TestingIcon from './TestingIcon.jsx'
 import ChartIcon from './ChartIcon.jsx'
+import { TradeDetailHeading } from './TradeDetailContent.jsx'
 import SessionFilter from './SessionFilter.jsx'
 import SessionPerformance from './SessionPerformance.jsx'
 import DashboardSessions from './DashboardSessions.jsx'
@@ -58,6 +59,7 @@ function DemoReports({ workspace, ledgerOnly, prop = false, query, state = 'demo
     anchor.href = url; anchor.download = 'demo-trades.csv'; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
   const Inspector = ledgerOnly ? TradeInspector : 'section'
+  const tradeHeading = row && <TradeDetailHeading title={`${row.symbol}, ${t(String(row.side).toLowerCase() === 'buy' ? 'Buy' : 'Sell')}`} subtitle={row.session_name} net={row.status === 'open' ? null : row.net_pnl} currency={row.account_currency || model.result?.account_currency}/>
   // Keep partial semantics in the preview model and table empty state, but
   // avoid adding a persistent partial badge to the trade toolbar.
   const statusControl = <TestingResourceStatus textSummary={ledgerOnly} state={ledgerOnly && state === 'partial' ? undefined : state} resource={ledgerOnly ? 'bảng giao dịch' : 'báo cáo phân tích'} recovery={previewReadRecovery(state)} />
@@ -67,7 +69,7 @@ function DemoReports({ workspace, ledgerOnly, prop = false, query, state = 'demo
     <h1 className="sr-only">{ledgerOnly ? t("Trades") : t("Analytics")}</h1>
     {ledgerOnly ? <FxTradeLedger preferenceWorkspace={workspace} hidden={state === 'error'} model={model} extra={extra} selected={selected} onSelect={setSelected} renderFilters={renderFilters} readNotice={readNotice} /> : <>{renderFilters()}{readNotice}</>}
     {!ledgerOnly && state !== 'error' && <FxAnalyticsReport propReport={propReport} model={model} extra={extra} experiments={experiments} experimentStatus="unavailable" config={config} loadExperiment={(request) => Promise.resolve(demoAnalyticsExperiment(model.ledger, request))} selected={selected} onSelect={setSelected} />}
-    {row && <Inspector onClose={() => setSelected('')} className="fxa-trade-inspector" aria-label={t("Chi tiết giao dịch")}><div className="fx-live-trade-heading"><div><small>{t('Trade detail')}</small><h2>{row.symbol}</h2><p>{row.session_name}</p></div><button type="button" className="fxa-button fx-trade-drawer-close" onClick={() => setSelected('')} aria-label={t('Đóng chi tiết')}><ChartIcon name="close" /></button></div><ProvenanceInspector key={row.tradeId} model={model} selectedTrade={row} journalCount={null} links={{}}/></Inspector>}
+    {row && <Inspector onClose={() => setSelected('')} {...ledgerOnly && {heading:tradeHeading}} className="fxa-trade-inspector" aria-label={t("Chi tiết giao dịch")}>{!ledgerOnly && <>{tradeHeading}<button type="button" className="fxa-button fx-trade-drawer-close" onClick={() => setSelected('')} aria-label={t('Đóng chi tiết')}><ChartIcon name="close" /></button></>}<ProvenanceInspector key={row.tradeId} model={model} selectedTrade={row} journalCount={null} links={{}}/></Inspector>}
   </section>
 }
 

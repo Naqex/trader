@@ -31,7 +31,16 @@ export default function TradeLedgerGrid({
       <tbody>{pending ? <tr><td colSpan={shownColumns.length + 1 + Number(selectable) + Number(actionable)}><TestingSkeleton rows={3} /></td></tr> : rows.map((row, index) => {
         const key = rowKey(row)
         const isSelected = selected === key
-        return <tr key={key} data-checked={selectable && checked.has(key) || undefined} className={isSelected ? 'is-selected' : undefined}>
+        const activate = () => onSelect(isSelected ? '' : key)
+        return <tr key={key} data-checked={selectable && checked.has(key) || undefined} className={[isSelected && 'is-selected', actionable && 'is-actionable'].filter(Boolean).join(' ') || undefined}
+          tabIndex={actionable ? 0 : undefined} aria-selected={actionable ? isSelected : undefined}
+          onClick={actionable ? event => {
+            if (!event.currentTarget.contains(event.target) || event.target.closest('button,a,input,select,textarea,label,[role="button"],[role="checkbox"],[contenteditable="true"]')) return
+            const selection = window.getSelection()
+            if (selection && !selection.isCollapsed && event.currentTarget.contains(selection.anchorNode)) return
+            event.currentTarget.focus({preventScroll:true}); activate()
+          } : undefined}
+          onKeyDown={actionable ? event => { if (event.target === event.currentTarget && ['Enter',' '].includes(event.key)) { event.preventDefault(); activate() } } : undefined}>
           <td className="wm-table-row-number" data-column="row_number">{rowNumberOffset + index + 1}</td>
           {selectable && <td className="is-center"><input type="checkbox" aria-label={t('Chọn lệnh {id}', { id: key })} checked={checked.has(key)} onChange={() => onToggle(key)} /></td>}
           {actionable && <td className="is-center"><button className="fxa-detail-button wm-table-row-action" type="button" aria-label={t('Chi tiết {id}', { id: key })} aria-pressed={isSelected} onClick={() => onSelect(isSelected ? '' : key)}><TestingIcon kind="journal" size={16} /></button></td>}
