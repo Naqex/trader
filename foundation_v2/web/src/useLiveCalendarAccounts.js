@@ -47,5 +47,6 @@ export default function useLiveCalendarAccounts({ workspace, enabled, selection,
   }, [workspace, enabled, preview, remoteKey, scope])
   if (!enabled) return { payload: null, issue: '' }
   const sources = ids.map(id => ({ id, payload: id === primary ? broker : id.startsWith('broker:') ? remote.scope === scope ? remote.values[id] : null : manualSnapshot(accounts.find(item => item.record_id === id), records) }))
-  return {...combineCalendarAccounts(sources),sources}
+  const loading=extra.some(id=>remote.scope!==scope || !Object.hasOwn(remote.values,id))
+  return {...combineCalendarAccounts(sources),sources,loading}
 }

@@ -1,5 +1,5 @@
 .project-date-input { position:relative; display:flex; min-width:0; width:100%; min-height:var(--wm-control-height, 36px); align-items:center; box-sizing:border-box; border:1px solid var(--wm-control-border, var(--project-border)); border-radius:var(--ds-radius-field, 8px); background:transparent; transition:background-color var(--ds-motion-hover, 120ms) var(--ds-ease-standard, ease), border-color var(--ds-motion-hover, 120ms) var(--ds-ease-standard, ease); }
-.project-date-input:hover:not(:has(input:disabled)) { background:var(--wm-hover, var(--project-hover)); border-color:var(--wm-control-hover-border, var(--project-border-strong)); }
+.project-date-input:hover:not(:has(> input:disabled, > .project-date-picker:disabled, > .project-date-trigger:disabled)) { background:var(--wm-hover, var(--project-hover)); border-color:var(--wm-control-hover-border, var(--project-border-strong)); }
 .project-date-input:focus-within { border-color:var(--wm-focus, var(--project-primary)); background:transparent; }
 .project-date-input > input[type=text] { box-sizing:border-box; width:100%; min-width:0; min-height:calc(var(--wm-control-height, 36px) - 2px); padding:var(--wm-field-padding-block,7px) 36px var(--wm-field-padding-block,7px) 12px; line-height:var(--ds-line-control,20px); border:0; border-radius:0; outline:none; background:transparent; color:inherit; font-variant-numeric:tabular-nums; }
 .project-date-input > input[type=text]:hover, .project-date-input > input[type=text]:focus { border-color:transparent; background:transparent; }
@@ -64,6 +64,20 @@
 
 .project-date-range-filter { min-width:0; width:280px; max-width:100%; }
 .project-date-range-filter.is-inline { width:100%; }
+.project-date-range-filter.is-dropdown { width:auto; }
+.project-date-input.is-dropdown { width:auto; border:0; background:transparent; }
+:is(.fx-app,.wm-ui-portal) .project-date-trigger { display:flex; align-items:center; gap:8px; min-width:0; max-width:100%; min-height:var(--wm-control-height); padding:7px 12px; border:1px solid transparent; border-radius:var(--wm-control-radius); background:transparent; color:var(--wm-control-text); font:inherit; font-size:13px; line-height:20px; cursor:pointer; }
+.project-date-trigger > span { min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-variant-numeric:tabular-nums; }
+.project-date-trigger > svg { flex-shrink:0; }
+:is(.fx-app,.wm-ui-portal) .project-date-trigger:hover:not(:disabled) { background:var(--wm-hover); }
+:is(.fx-app,.wm-ui-portal) .project-date-trigger[aria-expanded=true] { background:var(--wm-control-open); }
+:is(.fx-app,.wm-ui-portal) .project-date-trigger:focus-visible { outline:2px solid var(--wm-focus); outline-offset:2px; }
+:is(.fx-app,.wm-ui-portal) .project-date-trigger:disabled { opacity:.4; cursor:not-allowed; }
+:is(.fx-app,.wm-ui-portal) .project-date-trigger[aria-invalid=true] { border-color:var(--project-negative); }
+.project-date-popup-field { margin-bottom:10px; }
+:is(.fx-app,.wm-ui-portal) .project-date-popup-field > input { box-sizing:border-box; width:100%; min-height:var(--wm-control-height); padding:7px 8px; border:1px solid var(--wm-control-border); border-radius:var(--wm-control-radius); background:transparent; color:var(--wm-content); font:inherit; font-size:12px; font-variant-numeric:tabular-nums; }
+.project-date-popup-field .project-date-validation { display:block; }
+@media(max-width:480px),(pointer:coarse) { :is(.fx-app,.wm-ui-portal) .project-date-popup-field > input { min-height:44px; } }
 .project-date-input { flex-wrap:wrap; }
 .project-date-input:has(.project-date-validation) > :is(.project-date-picker,.project-date-clear) { bottom:auto; height:calc(var(--wm-control-height,36px) - 4px); }
 .project-date-input > input[type=text] { font:inherit; font-variant-numeric:tabular-nums; }

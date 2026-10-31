@@ -876,6 +876,11 @@ value. Range selection publishes once after both endpoints are selected; closing
 after the first selection cancels that partial range. Existing seconds survive
 hour/minute changes. Keyboard arrows, Home/End and PageUp/PageDown navigate days;
 Escape closes the picker first. Desktop stays compact, touch targets stay 44px.
+Forms use an editable textbox; filter toolbars use a compact dropdown trigger
+with the same editable field inside its calendar popup. Invalid text remains
+visible as an error on the trigger after closing the popup, and blocks Apply
+until corrected. Analytics receives the actual SessionFilter element so its
+compact presentation and staged selection share the toolbar's Apply boundary.
 
 Notes context uses one date-range field and the shared tag-picker presentation
 for note types. The workspace catalog owns type names/colors and archived state;
@@ -891,3 +896,10 @@ centered picker; account/date/search filters change its candidates, while Apply
 commits the selection and Cancel/Escape keeps existing links unchanged. The picker
 date range is independent of the note's review range. Hidden account/strategy
 metadata is preserved when saving; the extra metadata section is not displayed.
+New notes default to all available completed trades in their review date range,
+up to 500. The initial account reads settle before editing is enabled; incomplete
+sources remain visible as an issue. Displaying these defaults does not dirty an
+untouched blank note. Actual edits materialize the selected IDs into autosave.
+Saved/recovered notes and explicit picker choices, including an empty selection,
+retain their links; polling never reselects them. The review timezone remains in
+the payload but is not repeated as text below the range control.

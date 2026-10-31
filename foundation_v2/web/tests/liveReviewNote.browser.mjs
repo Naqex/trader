@@ -40,12 +40,18 @@ try{
   },recovered)
   await context.routeWebSocket('**/*',socket=>socket.close())
   let failWrites=false,recordWrites=0,manyRows=false
+  let releaseSource
+  const sourceGate=new Promise(resolve=>{releaseSource=resolve})
+  const primary=width===1920 ? {...fixture.live_payload,connection_id:crypto.randomUUID(),connections:[{id:fixture.live_payload.connection_id,name:'Delayed account',server:'Fixture-Demo',account_login:'1234567',account_environment:'demo'}]} : fixture.live_payload
   await context.route('**/*',async route=>{
    try {
    const req=route.request(),url=new URL(req.url())
    if(url.origin!==origin)return await route.abort()
    if(url.pathname==='/api/v2/events')return await route.fulfill({status:204,body:''})
-   if(url.pathname==='/api/v2/live/status')return await route.fulfill({json:fixture.live_payload})
+   if(url.pathname==='/api/v2/live/status'){
+    if(width===1920 && url.searchParams.has('connection_id'))await sourceGate
+    return await route.fulfill({json:url.searchParams.has('connection_id') ? fixture.live_payload : primary})
+   }
    if(url.pathname.startsWith('/api/')){
     if(req.method()==='POST' && url.pathname.startsWith('/api/v2/live/records'))recordWrites++
     if(failWrites && req.method()==='POST' && url.pathname.startsWith('/api/v2/live/records'))return await route.fulfill({status:503,json:{detail:'fixture_failure'}})
@@ -59,10 +65,23 @@ try{
    } catch(error) { if(!closingContexts.has(context)){report.errors.push(error.stack);await route.abort().catch(()=>{})} }
   })
   page=await context.newPage();page.setDefaultTimeout(15000);page.on('pageerror',error=>report.errors.push(error.stack));page.on('console',message=>{if(message.type()==='error')report.lastConsoleError=message.text()})
+  await page.clock.setFixedTime(new Date('2026-10-30T12:00:00Z'))
   await page.goto(`${origin}/?workspace=tenant-a&view=live&area=live&section=notes&lang=${language}`)
   await page.locator('.live-note-create').click()
   const drawer=page.locator('.is-note-editor'),editor=drawer.locator('.bn-editor'),title=drawer.getByRole('textbox',{name:label('Tiêu đề','Title'),exact:true})
-  await editor.waitFor();await page.waitForFunction(()=>!document.querySelector('.wm-live-note-title input').disabled)
+  await editor.waitFor()
+  if(width===1920){
+   assert(await title.isDisabled(),'New-note defaults wait for the secondary account snapshot')
+   assert.equal(recordWrites,0)
+  }
+  releaseSource()
+  await page.waitForFunction(()=>!document.querySelector('.wm-live-note-title input').disabled)
+  await page.waitForFunction(()=>document.querySelectorAll('.wm-review-linked .wm-review-trade-row').length>0)
+  assert.equal(await drawer.locator('.wm-review-fields small').count(),0)
+  await drawer.getByRole('button',{name:label('Tìm giao dịch liên kết','Find linked trades'),exact:true}).click()
+  const defaultPicker=page.locator('.wm-review-trade-picker');await defaultPicker.waitFor()
+  assert.equal(await defaultPicker.locator('.wm-review-picker-row input:not(:checked)').count(),0)
+  await page.keyboard.press('Escape');await defaultPicker.waitFor({state:'detached'})
   assert(Math.abs((await drawer.boundingBox()).width-Math.min(width,width>1000?Math.min(1440,width*.7):width))<=1)
   assert.equal(await drawer.locator('textarea').count(),0)
   assert.equal(await drawer.locator('.wm-live-note-editor-layout').evaluate(node=>getComputedStyle(node).display),width<=680?'flex':'grid')
@@ -80,6 +99,25 @@ try{
   const beforeFreshClose=recordWrites
   await drawer.getByRole('button',{name:label('Đóng','Close'),exact:true}).click();await drawer.waitFor({state:'detached'})
   assert.equal(recordWrites,beforeFreshClose)
+  if(width===1920){
+   await page.locator('.live-note-create').click();await editor.waitFor();await page.waitForFunction(()=>!document.querySelector('.wm-live-note-title input').disabled)
+   await page.waitForFunction(()=>document.querySelectorAll('.wm-review-linked .wm-review-trade-row').length===3)
+   await title.fill('Automatic defaults');await editor.fill('All accounts at first save')
+   await drawer.locator('[data-state=saved]').waitFor()
+   let automatic=(await native('GET','/api/v2/live/records')).items.find(row=>row.payload.title==='Automatic defaults')
+   assert.equal(automatic.payload.linked_trades.length,3)
+   await drawer.getByRole('button',{name:'Tìm giao dịch liên kết',exact:true}).click();await defaultPicker.waitFor()
+   await defaultPicker.locator('.wm-review-picker-count input').uncheck()
+   await defaultPicker.getByRole('button',{name:'Áp dụng',exact:true}).click();await defaultPicker.waitFor({state:'detached'});await drawer.locator('[data-state=saved]').waitFor()
+   await drawer.getByRole('button',{name:'Đóng',exact:true}).click();await drawer.waitFor({state:'detached'})
+   await page.reload();await page.locator('.live-note-row').filter({hasText:'Automatic defaults'}).click();await editor.waitFor();await drawer.locator('[data-state=saved]').waitFor()
+   assert.equal(await drawer.locator('.wm-review-linked .wm-review-trade-row').count(),0)
+   automatic=(await native('GET','/api/v2/live/records')).items.find(row=>row.record_id===automatic.record_id)
+   assert.deepEqual(automatic.payload.linked_trades ?? [],[])
+   await drawer.getByRole('button',{name:'Đóng',exact:true}).click();await drawer.waitFor({state:'detached'})
+   report.cases.push('all defaults include delayed secondary account; untouched close does not save; manual empty selection survives reload')
+  }
+  await page.clock.setFixedTime(new Date())
   await page.locator('.live-note-create').click();await editor.waitFor();await page.waitForFunction(()=>!document.querySelector('.wm-live-note-title input').disabled)
   await title.fill(`Review browser ${width}`);await editor.fill('Retain this paragraph')
   await page.keyboard.press('ControlOrMeta+End');await page.keyboard.press('Enter');await page.keyboard.press('ControlOrMeta+b');await page.keyboard.type('Bold retained');await page.keyboard.press('ControlOrMeta+b')
@@ -176,6 +214,23 @@ try{
    await page.getByTestId('analytics-ledger').locator('tbody tr').first().locator('[data-column=symbol]').click();await tradeEditor.waitFor();assert.equal((await tradeEditor.innerText()).trim(),'Shared editor regression')
    report.cases.push('Testing trade shared-editor save/reload regression')
   }
+  await page.goto(`${origin}/?workspace=tenant-a&view=analytics&area=testing&section=analytics&analytics_source=sessions&session=${fixture.session_id}&lang=${language}`)
+  const filters=page.getByTestId('analytics-filters'),dateTrigger=filters.locator('.project-date-trigger'),apply=filters.locator('.fxa-apply-button')
+  await dateTrigger.waitFor()
+  assert.equal(await filters.locator('.project-date-input > input').count(),0)
+  const session=filters.locator('.fxa-session-trigger')
+  assert((await session.innerText()).startsWith(label('Phiên','Session')))
+  assert((await session.boundingBox()).width<260)
+  await dateTrigger.click()
+  const calendar=page.locator('.project-date-popover:popover-open'),typed=calendar.getByRole('textbox')
+  await typed.fill('31/02/2026 – 30/10/2026');await page.keyboard.press('Escape');await calendar.waitFor({state:'detached'})
+  assert.equal(await dateTrigger.getAttribute('aria-invalid'),'true');assert(await apply.isDisabled())
+  assert(await filters.getByRole('alert').isVisible())
+  await dateTrigger.click();await typed.fill('01/10/2026 – 30/10/2026');await page.keyboard.press('Escape');await calendar.waitFor({state:'detached'})
+  assert(await apply.isEnabled());assert(await dateTrigger.evaluate(node=>node===document.activeElement))
+  await dateTrigger.hover();await page.screenshot({path:`${out}/analytics-dropdown-${width}-${theme}.png`})
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false)
+  report.cases.push(`${width}/${theme}/${language}: compact session/date dropdown; invalid survives close; correct and focus return`)
   report.cases.push(`${width}/${theme}/${language}: shared editor, format/template, save+reload, dates/type, links+summary, legacy, no overflow`)
   closingContexts.add(context);await context.close()
  }

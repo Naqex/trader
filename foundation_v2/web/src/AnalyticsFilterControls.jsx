@@ -48,5 +48,5 @@ export function TimeFilter({ value, onChange }) {
 
 export function DateFilter({ value, onChange, onValidityChange, label = 'Backtesting Date', inline = false, compact = false, disabled = false, clearable = true, timezone }) {
   const { t } = useTestingLocale()
-  return <div className={`fx-filter-control project-date-range-filter${inline ? ' is-inline' : ''}${compact ? ' is-compact' : ''}`}><ProjectDateInput range value={{from:value.from || '',to:value.to || ''}} timezone={timezone} disabled={disabled} clearable={clearable} onValidityChange={onValidityChange} aria-label={t(label)} onChange={event=>onChange(event.target.value)} /></div>
+  return <div className={`fx-filter-control project-date-range-filter${inline ? ' is-inline' : ' is-dropdown'}${compact ? ' is-compact' : ''}`}><ProjectDateInput range presentation={inline ? 'input' : 'dropdown'} value={{from:value.from || '',to:value.to || ''}} timezone={timezone} disabled={disabled} clearable={clearable} onValidityChange={onValidityChange} aria-label={t(label)} onChange={event=>onChange(event.target.value)} /></div>
 }

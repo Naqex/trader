@@ -1,5 +1,50 @@
 # UI system audit · 31/10/2026
 
+## Date picker theo ngữ cảnh và mặc định liên kết Notes
+
+- Form giữ textbox gõ ngày; toolbar dùng dropdown gọn. Cả hai dùng
+  ProjectDateInput, chung calendar, parser, range draft, top layer và timezone.
+  Dropdown vẫn có ô gõ trong popup; nhập sai rồi đóng vẫn hiện lỗi cạnh trigger,
+  không che nguyên nhân nút Apply bị khóa. Hover không bị mất khi Clear disabled.
+- Analytics truyền đúng SessionFilter thay cho Fragment để compact và lựa chọn
+  tạm có hiệu lực. Nhãn có “Phiên”, không lộ record ID lúc catalog chưa về;
+  tên dài được rút gọn trong giới hạn 240px. Demo dùng cùng boundary.
+- Notes mới chọn sẵn các giao dịch đã đóng trong khoảng ngày, giới hạn 500.
+  Đợi các nguồn tài khoản phụ đọc xong trước khi cho sửa note mới; lỗi nguồn
+  được hiển thị. Defaults chỉ là display khi note còn trống, không tạo bản ghi.
+  Khi sửa thật, IDs đi vào autosave. Saved/recovered/manual empty giữ lựa chọn,
+  không tự chọn lại khi polling. Bỏ dòng timezone trong context, giữ payload.
+- Review độc lập đã phát hiện và sửa race nguồn phụ, hover khi Clear disabled
+  và lỗi ngày bị che sau đóng popup. Source review lại: không còn finding.
+- Các lượt thất bại được giữ: lần đầu test cần chuẩn hóa optional empty links
+  (`undefined`/`[]`) theo contract; lần hai preview http.server từ chối kết nối
+  khi tải nhiều chunk; lần ba phát hiện selector còn lộ ID dài trước catalog.
+  Đã sửa cap/copy, đổi preview riêng sang backlog128 và chạy lại acceptance.
+
+Candidate/build, fixture và deployed evidence của lát này nằm dưới
+`E:/BACKUP-TRADINGWORKSPACE/ui-system-20261031/date-presentations-*`.
+
+- Build cuối pass; `projectDateInputModel.test.mjs`: 6/6 pass.
+- `date-presentations-final-qa4/browser/report.json`: **12 nhóm PASS**, 0 page
+  errors; API Rust Router/PostgreSQL tạm, dữ liệu tổng hợp, không ghi dữ liệu owner.
+  Gồm nguồn phụ deferred, default3 links lưu thật, pristine close0 writes,
+  manual empty reload, cap500, rich/template, CAS/recovery và Testing regression.
+  Cả 1920 dark/1440 light/390 dark đi qua dropdown nhập sai→Escape→sửa đúng,
+  session compact, focus return và không overflow.
+- Review độc lập 6 ảnh fixture + report: **PASS**, không còn finding mở.
+  Các response lỗi chủ động trong fixture (422/503/409) không được gọi là
+  “không console error”; kết quả 0 errors là 0 page errors.
+- UI5180 đã promote atomic; hash index
+  `ac327adac24c80e6b93d838089ef77134dafd15998b4a41a4dba1b9f6f72c9c7`.
+  Rollback index và receipt:
+  `date-presentations-release/ui-before-live-review-20261031-103233/` và
+  `date-presentations-release/ui-promotion.json` trong E evidence root trên.
+- `date-presentations-release/deployed-qa/report.json`: **12 case PASS**, 0
+  page errors, 0 HTTP writes. Notes textbox/type/calendar/picker, Live/Testing
+  trades và Analytics compact session/dropdown/hover/Escape/focus; 3 kích thước.
+  Đã xem ảnh calendar mobile của bản triển khai, không crop viewport.
+  API8010 health `ok=true`, `execution_capability=false`; không restart/migrate.
+
 ## Notes drawer theo ảnh owner · cập nhật mới nhất
 
 - Cụm previous/next/menu nằm góc phải, luôn hiện cả khi tạo note mới; arrows

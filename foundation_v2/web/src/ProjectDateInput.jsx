@@ -64,7 +64,7 @@ function TimeSpinner({ value, onChange, seconds = false }) {
 }
 
 // Keep ISO at the form boundary while the editable text is independent of OS locale.
-export default function ProjectDateInput({ value = '', onChange, onValidityChange, type = 'date', min, max, step, utc = false, clearable = false, todayTime = 'preserve', validationError = '', range = false, timezone, ...props }) {
+export default function ProjectDateInput({ value = '', onChange, onValidityChange, type = 'date', min, max, step, utc = false, clearable = false, todayTime = 'preserve', validationError = '', range = false, timezone, presentation = 'input', ...props }) {
   const { t, locale } = useTestingLocale()
   const today = () => zonedDateKey(new Date(), timezone || (utc ? 'UTC' : undefined))
   const display = value => range ? rangeDisplay(value) : dateFieldDisplay(value, type)
@@ -80,6 +80,8 @@ export default function ProjectDateInput({ value = '', onChange, onValidityChang
   const [open, setOpen] = useState(false)
   const emitted = useRef(value), root = useRef(null), text = useRef(null), trigger = useRef(null), popover = useRef(null)
   const popoverId = useId()
+  const dropdown = presentation === 'dropdown'
+  const focusField = () => (dropdown ? trigger : text).current?.focus({preventScroll:true})
   useEffect(() => { onValidityChange?.(!inputError && !validationError) }, [inputError, validationError, onValidityChange])
 
   useEffect(() => { if (props.disabled) setOpen(false) }, [props.disabled])
@@ -180,7 +182,7 @@ export default function ProjectDateInput({ value = '', onChange, onValidityChang
     if (range) {
       if (!pendingStart) { setPendingStart(date); setPickerDate(date); return }
       const next = date < pendingStart ? {from:date,to:pendingStart} : {from:pendingStart,to:date}
-      setDraft(rangeDisplay(next)); publish({type:'change'},rangeDisplay(next)); setPendingStart(null); setOpen(false); text.current?.focus(); return
+      setDraft(rangeDisplay(next)); publish({type:'change'},rangeDisplay(next)); setPendingStart(null); setOpen(false); focusField(); return
     }
     setPickerDate(date)
     setViewMonth(date.slice(0, 7))
@@ -190,7 +192,7 @@ export default function ProjectDateInput({ value = '', onChange, onValidityChang
     if (type === 'datetime-local') setPickerTime(timePart(parseDateField(raw, type)))
     setDraft(raw)
     publish({ type: 'change' }, raw)
-    if (type === 'date') { setOpen(false); text.current?.focus() }
+    if (type === 'date') { setOpen(false); focusField() }
   }
 
   const chooseTime = event => {
@@ -263,16 +265,18 @@ export default function ProjectDateInput({ value = '', onChange, onValidityChang
       ? <button type="button" className="project-date-heading-button" onClick={() => setPickerView('year')}>{parsedMonth.getUTCFullYear()}</button>
       : <><button type="button" className="project-date-heading-button" onClick={() => setPickerView('month')}>{parsedMonth.toLocaleDateString(locale, { month: 'long', timeZone: 'UTC' })}</button><button type="button" className="project-date-heading-button" onClick={() => setPickerView('year')}>{parsedMonth.getUTCFullYear()}</button></>
 
-  return <span className={`project-date-input${range ? ' is-range' : ''}${clearable ? ' is-clearable' : ''}${open ? ' is-open' : ''}`} ref={root}>
-    <input {...props} ref={text} type="text" inputMode="text" value={draft} aria-invalid={Boolean(inputError || validationError || props['aria-invalid']) || undefined} aria-describedby={[props['aria-describedby'],(inputError||validationError)?`${popoverId}-error`:null].filter(Boolean).join(' ') || undefined} placeholder={range ? 'dd/mm/yyyy – dd/mm/yyyy' : type === 'date' ? 'dd/mm/yyyy' : type === 'time' ? 'HH:mm' : 'dd/mm/yyyy HH:mm'} aria-expanded={open} aria-controls={open ? popoverId : undefined} onChange={event => { setDraft(event.target.value); publish(event, event.target.value) }} onBlur={event => {
+  const field = <input {...props} ref={text} type="text" inputMode="text" value={draft} aria-invalid={Boolean(inputError || validationError || props['aria-invalid']) || undefined} aria-describedby={[props['aria-describedby'],(inputError||validationError)?`${popoverId}-error`:null].filter(Boolean).join(' ') || undefined} placeholder={range ? 'dd/mm/yyyy – dd/mm/yyyy' : type === 'date' ? 'dd/mm/yyyy' : type === 'time' ? 'HH:mm' : 'dd/mm/yyyy HH:mm'} aria-expanded={open} aria-controls={open ? popoverId : undefined} onChange={event => { setDraft(event.target.value); publish(event, event.target.value) }} onBlur={event => {
       const parsed = range ? parseRange(draft) : parseDateField(draft, type)
       if (parsed && !inputError) setDraft(display(parsed))
       props.onBlur?.(event)
     }} onKeyDown={event=>{ props.onKeyDown?.(event); if(event.key==='ArrowDown' && event.altKey){event.preventDefault();if(!open)openPicker()} }} />
-    {(inputError || validationError) && <span id={`${popoverId}-error`} className="project-date-validation" role="alert">{inputError || validationError}</span>}
-    {clearable && <button type="button" className="project-date-clear" aria-label={`${t('Xóa ngày')} · ${props['aria-label'] || ''}`} disabled={props.disabled || !draft} onClick={event => { setDraft(''); publish(event, ''); text.current?.focus() }}><AppIcon name="close" size={16} /></button>}
-    <button ref={trigger} type="button" className="project-date-picker" aria-label={pickerLabel} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? popoverId : undefined} disabled={props.disabled} onClick={openPicker}><AppIcon name={type==='time'?'clock':'calendar'} size={16}/></button>
+  const error = (inputError || validationError) && <span id={`${popoverId}-error`} className="project-date-validation" role="alert">{inputError || validationError}</span>
+  return <span className={`project-date-input${dropdown ? ' is-dropdown' : ''}${range ? ' is-range' : ''}${clearable ? ' is-clearable' : ''}${open ? ' is-open' : ''}`} ref={root}>
+    {!dropdown && <>{field}{error}{clearable && <button type="button" className="project-date-clear" aria-label={`${t('Xóa ngày')} · ${props['aria-label'] || ''}`} disabled={props.disabled || !draft} onClick={event => { setDraft(''); publish(event, ''); focusField() }}><AppIcon name="close" size={16} /></button>}</>}
+    <button ref={trigger} type="button" className={dropdown ? 'fxa-button project-date-trigger' : 'project-date-picker'} aria-label={dropdown ? props['aria-label'] || pickerLabel : pickerLabel} aria-invalid={dropdown && Boolean(inputError || validationError) || undefined} aria-describedby={dropdown && (inputError || validationError) ? `${popoverId}-error` : undefined} title={dropdown ? display(value) || undefined : undefined} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? popoverId : undefined} disabled={props.disabled} onClick={openPicker}><AppIcon name={type==='time'?'clock':'calendar'} size={16}/>{dropdown && <><span>{display(value) || props['aria-label'] || pickerLabel}</span><AppIcon name="chevron-down" size={16}/></>}</button>
+    {dropdown && error}
     {open && !props.disabled && <div ref={popover} id={popoverId} className={`project-date-popover${type==='time'?' is-time-only':''}`} popover="manual" role="dialog" aria-label={pickerLabel}>
+      {dropdown && <div className="project-date-popup-field">{field}</div>}
       {type === 'time' ? <TimeSpinner value={parseDateField(draft,'time') || value} seconds={Number(step || 60)<60 || value.split(':').length>2} onChange={chooseTime} /> : <>
         <div className="project-date-popover-heading"><button type="button" aria-label={t(pickerView === 'day' ? 'Previous month' : pickerView === 'month' ? 'Previous year' : 'Previous decade')} disabled={prevDisabled} onClick={movePrevious}><Chevron direction="prev" /></button><div className="project-date-heading-content">{heading}</div><button type="button" aria-label={t(pickerView === 'day' ? 'Next month' : pickerView === 'month' ? 'Next year' : 'Next decade')} disabled={nextDisabled} onClick={moveNext}><Chevron direction="next" /></button></div>
         {pickerView === 'day' && <div className="project-date-calendar" role="grid" aria-label={pickerLabel} onKeyDown={gridKeys}>{WEEKDAYS.map(day => <span key={day} role="columnheader">{t(day)}</span>)}{Array.from({ length: firstWeekday }, (_, index) => <span key={`empty-${index}`} aria-hidden="true" />)}{Array.from({ length: monthDays }, (_, index) => {
@@ -284,7 +288,7 @@ export default function ProjectDateInput({ value = '', onChange, onValidityChang
         {type === 'datetime-local' && <div className="project-date-time-field"><TimeSpinner value={selectedTime} seconds={Number(step || 60)<60 || selectedTime.split(':').length>2} onChange={chooseTime}/></div>}
       </>}
       {range && <p className="project-date-range-hint" role="status">{t(pendingStart?'Chọn ngày kết thúc':'Chọn ngày bắt đầu')}</p>}
-      <footer className="project-date-popover-footer">{type !== 'time' && <button type="button" onClick={() => { if(range){ const raw=rangeDisplay({from:today(),to:today()});setDraft(raw);publish({type:'change'},raw);setPendingStart(null);setOpen(false);text.current?.focus();return } chooseDate(today(), type === 'datetime-local' && todayTime === 'end-of-day' ? '23:59' : null) }} disabled={!isDateAllowed(today(), min, max)}>{t('Hôm nay')}</button>}<span />{clearable && <button type="button" onClick={event => { setDraft(''); publish(event, ''); setOpen(false); text.current?.focus() }}>{t('Clear')}</button>}<button type="button" className="is-primary" onClick={() => { setOpen(false); text.current?.focus() }}>{t('Xong')}</button></footer>
+      <footer className="project-date-popover-footer">{type !== 'time' && <button type="button" onClick={() => { if(range){ const raw=rangeDisplay({from:today(),to:today()});setDraft(raw);publish({type:'change'},raw);setPendingStart(null);setOpen(false);focusField();return } chooseDate(today(), type === 'datetime-local' && todayTime === 'end-of-day' ? '23:59' : null) }} disabled={!isDateAllowed(today(), min, max)}>{t('Hôm nay')}</button>}<span />{clearable && <button type="button" onClick={event => { setDraft(''); publish(event, ''); setOpen(false); focusField() }}>{t('Clear')}</button>}<button type="button" className="is-primary" disabled={Boolean(inputError || validationError)} onClick={() => { setOpen(false); focusField() }}>{t('Xong')}</button></footer>
     </div>}
   </span>
 }

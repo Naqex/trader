@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import same from 'fast-deep-equal'
 import LegacyModal from './LegacyModal.jsx'
 import LegacyPopover from './LegacyPopover.jsx'
@@ -58,8 +58,9 @@ function NoteFields({ workspace, record, seed, folderId, accountId, accounts, co
     playbook_id:null,playbook_revision:null,
   }).current
   const initial=useRef({...defaults,...(record?.payload || seed || {})}).current
+  const explicitLinks=useRef(Boolean(record || Object.hasOwn(seed || {},'linked_trades')))
   const save = useAutosave({ identity:JSON.stringify(['live-note',workspace,key]), initialValue:initial, adapter:{
-    migrateRecovery: recovery=>migrateReviewRecovery(recovery,defaults),
+    migrateRecovery: recovery=>{explicitLinks.current=true;return migrateReviewRecovery(recovery,defaults)},
     validate: value => documentError(value.note_document) || (value.note_document && documentText(value.note_document.blocks)!==value.note ? 'Nội dung chữ và định dạng ghi chú không khớp.' : null)
       || (!value.title.trim() || !value.note.trim() ? 'Điền tiêu đề và nội dung để tự động lưu ghi chú.' : null)
       || (value.note.length>20000 ? 'Ghi chú tối đa 20.000 ký tự.' : null)
@@ -82,12 +83,23 @@ function NoteFields({ workspace, record, seed, folderId, accountId, accounts, co
       return {value:{...value,...result.payload},record:result,savedAt:result.updated_at_utc}
     },
   } })
-  const draft=save.value,disabled=!save.ready || save.phase === 'conflict'
   const items=useMemo(()=>[...accounts.map(item=>({record_id:item.record_id,name:item.payload.name})),...connections.map(item=>({record_id:`broker:${item.id}`,name:mt5AccountName(item)}))],[accounts,connections])
   const sources=useLiveCalendarAccounts({workspace,enabled:save.ready,selection:null,items,broker,accounts,records,preview:false})
   const rows=reviewTradeRows(sources.sources || [],new Map(items.map(item=>[item.record_id,item.name])))
+  const automaticLinks=!record && !save.record && !explicitLinks.current
+  const disabled=!save.ready || save.phase === 'conflict' || automaticLinks && sources.loading
+  const withDefaultLinks=value=>automaticLinks ? {...value,linked_trades:rows.filter(row=>inReviewRange(row,value.review_from,value.review_to,value.review_timezone)).slice(0,500).map(noteTradeLink)} : value
+  const draft=withDefaultLinks(save.value)
+  // Display defaults without dirtying a pristine note. Actual edits persist the
+  // selection; late source reads may fill it until the first save is acknowledged.
+  useEffect(()=>{
+    if(automaticLinks && save.ready && !same(save.value,initial) && !same(save.value.linked_trades,draft.linked_trades)) save.change(draft)
+  },[automaticLinks,save.ready,save.value,JSON.stringify(draft.linked_trades)])
   const summary=reviewSummary(draft.linked_trades,rows)
-  const change=(field,value)=>save.change({...draft,[field]:value})
+  const change=(field,value)=>{
+    if(field==='linked_trades')explicitLinks.current=true
+    save.change(field==='linked_trades' ? {...draft,[field]:value} : withDefaultLinks({...draft,[field]:value}))
+  }
   const selected=summary.rows.map((row,index)=>({row,link:draft.linked_trades[index]}))
   let accumulated=0
   const curve=summary.net!==null ? [{value:0},...summary.rows.slice().sort((a,b)=>a.time_msc-b.time_msc).map(row=>({value:accumulated+=row.net}))] : []
@@ -95,13 +107,14 @@ function NoteFields({ workspace, record, seed, folderId, accountId, accounts, co
     <div className="wm-live-note-title"><input ref={titleInput} aria-label={t('Tiêu đề')} placeholder={t('Đặt tên ghi chú')} value={draft.title} maxLength={160} disabled={disabled} onChange={event=>change('title',event.target.value)} onBlur={()=>void save.flush()}/><AutosaveStatus save={save} timestampOnly/></div>
     <div className="wm-live-note-editor-layout">
       <aside className="wm-live-note-context" aria-label={t('Ngữ cảnh ghi chú')}>
-        <div className="wm-review-fields"><div><div className="wm-review-field-label"><ChartIcon name="calendar"/><span>{t('Khoảng ngày')}</span></div><DateFilter compact inline disabled={disabled} clearable={false} timezone={draft.review_timezone} label="Khoảng ngày" title="Khoảng ngày" calendarLabel="Chọn khoảng ngày ghi chú" value={{from:draft.review_from,to:draft.review_to}} onChange={patch=>save.change({...draft,review_from:patch.from ?? draft.review_from,review_to:patch.to ?? draft.review_to})}/><small>{draft.review_timezone}</small></div>
+        <div className="wm-review-fields"><div><div className="wm-review-field-label"><ChartIcon name="calendar"/><span>{t('Khoảng ngày')}</span></div><DateFilter compact inline disabled={disabled} clearable={false} timezone={draft.review_timezone} label="Khoảng ngày" title="Khoảng ngày" calendarLabel="Chọn khoảng ngày ghi chú" value={{from:draft.review_from,to:draft.review_to}} onChange={patch=>save.change(withDefaultLinks({...draft,review_from:patch.from ?? draft.review_from,review_to:patch.to ?? draft.review_to}))}/></div>
         <div><div className="wm-review-field-label"><ChartIcon name="tag"/><span>{t('Loại ghi chú')}</span></div><NoteTypeSelect workspace={workspace} label="Loại ghi chú" disabled={disabled} value={draft.note_type} onChange={value=>change('note_type',value)}/></div></div>
         <section className="wm-review-summary" aria-label={t('Tổng hợp giao dịch liên kết')}><dl><div className="wm-review-kpi-primary"><dt>{t('PnL ròng')}</dt><dd className={summary.net>0?'is-positive':summary.net<0?'is-negative':''}>{summary.net===null?'N/A':fmt(summary.net,` ${summary.currency}`)}</dd></div><div className="wm-review-kpi"><dt>{t('Tỉ lệ thắng')}</dt><dd>{summary.winRate===null?'N/A':fmt(summary.winRate,'%',1)}</dd></div><div className="wm-review-kpi"><dt>{t('Tổng giao dịch')}</dt><dd>{summary.count}</dd></div></dl>
           {curve.length>1 && <AnalyticsCurve series={[curve]} seriesMeta={[{label:t('PnL ròng'),color:summary.net>=0?'var(--project-positive)':'var(--project-negative)'}]} height={120} sparkline showPoints={false} negative label={t('PnL lũy kế của giao dịch liên kết')}/>}
           {(summary.missing>0 || summary.stale) && <p className="wm-review-issue" role="status">{t(summary.missing ? 'Chưa đọc được một số giao dịch liên kết.' : 'Dữ liệu tài khoản đã cũ. Đồng bộ tài khoản để cập nhật.')}</p>}
         </section>
         <section className="wm-review-linked" aria-label={t('Giao dịch liên kết')}><header><button type="button" className="wm-review-add-trades" aria-label={t('Thêm giao dịch')} disabled={disabled} onClick={()=>setPicker(true)}><ChartIcon name="order"/>{t('Trades')}</button><span>{t('Hiển thị {count}/{total}',{count:selected.length,total:summary.count})}</span><button type="button" className="wm-review-icon" aria-label={t('Tìm giao dịch liên kết')} disabled={disabled} onClick={()=>setPicker(true)}><ChartIcon name="search"/></button></header>
+          {sources.issue && <p className="wm-review-issue" role="status">{t(sources.issue)}</p>}
           <div>{selected.map(({row,link})=><TradeRow compact key={noteTradeKey(link)} row={row} unavailable={link.trade_id} action={<button type="button" className="wm-review-icon" disabled={disabled} aria-label={t('Bỏ liên kết giao dịch {id}',{id:link.trade_id})} onClick={()=>change('linked_trades',draft.linked_trades.filter(item=>noteTradeKey(item)!==noteTradeKey(link)))}><ChartIcon name="close"/></button>}/>)}{!selected.length && <p className="wm-review-empty">{t('Chưa có giao dịch liên kết.')}</p>}</div>
         </section>
       </aside>
