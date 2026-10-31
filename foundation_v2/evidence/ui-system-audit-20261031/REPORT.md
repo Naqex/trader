@@ -7,6 +7,14 @@
 - Smoke browser candidate: Live trades ở 1.440px dark, 1.920px light và 390px dark; không có page error, không tràn ngang ở viewport; thanh chọn giao dịch vẫn mở đúng.
 - Runtime/API/5180 chưa được restart hoặc promote. Candidate dùng dữ liệu fixture hiện có; không ghi broker hay dữ liệu owner.
 
+## Sau khi được cho phép rollout
+
+- API8010 đã cutover sang `trading-workspace-api-live-review-note.exe`, SHA256 `e3156e9186740dcc64a33ccba907a68b7eb28e3d3502343972055af94a7fcdad`.
+- Preflight và readiness đều PASS; database không cần migration, không có broker order hoặc submission chưa reconcile.
+- UI5180 đã promote drawer Notes rồi promote tiếp candidate audit UI bằng thay thế `index.html` atomic. Hash phục vụ cuối: `30503c38361676b76db5164c7762240119b0838847f22a8858f9d3e2e6aacf2e`.
+- Backup trước rollout: `E:/BACKUP-TRADINGWORKSPACE/live-note-review-20261030/ui-before-live-review-20261031-073938` và `E:/BACKUP-TRADINGWORKSPACE/ui-system-20261030/ui-before-live-review-20261031-074108`.
+- Kiểm tra deployed: Notes drawer mở được ở 1.920px và 390px; Live trades và Testing trades mở được ở 1.440px; không có page error hoặc overflow.
+
 ## Đã áp dụng
 
 | Nhóm | Thay đổi | Quyết định |
