@@ -43,19 +43,19 @@ try{
   await context.route('**/*',async route=>{
    try {
    const req=route.request(),url=new URL(req.url())
-   if(url.origin!==origin)return route.abort()
-   if(url.pathname==='/api/v2/events')return route.fulfill({status:204,body:''})
-   if(url.pathname==='/api/v2/live/status')return route.fulfill({json:fixture.live_payload})
+   if(url.origin!==origin)return await route.abort()
+   if(url.pathname==='/api/v2/events')return await route.fulfill({status:204,body:''})
+   if(url.pathname==='/api/v2/live/status')return await route.fulfill({json:fixture.live_payload})
    if(url.pathname.startsWith('/api/')){
     if(req.method()==='POST' && url.pathname.startsWith('/api/v2/live/records'))recordWrites++
-    if(failWrites && req.method()==='POST' && url.pathname.startsWith('/api/v2/live/records'))return route.fulfill({status:503,json:{detail:'fixture_failure'}})
+    if(failWrites && req.method()==='POST' && url.pathname.startsWith('/api/v2/live/records'))return await route.fulfill({status:503,json:{detail:'fixture_failure'}})
     const response=await route.fetch({url:api+url.pathname+url.search})
     if(manyRows && req.method()==='GET' && url.pathname==='/api/v2/live/records'){
-     const body=await response.json();body.items.push(...Array.from({length:501},()=>({...trade,record_id:crypto.randomUUID()})));return route.fulfill({response,json:body})
+     const body=await response.json();body.items.push(...Array.from({length:501},()=>({...trade,record_id:crypto.randomUUID()})));return await route.fulfill({response,json:body})
     }
-    return route.fulfill({response})
+    return await route.fulfill({response})
    }
-   return route.continue()
+   return await route.continue()
    } catch(error) { if(!closingContexts.has(context)){report.errors.push(error.stack);await route.abort().catch(()=>{})} }
   })
   page=await context.newPage();page.setDefaultTimeout(15000);page.on('pageerror',error=>report.errors.push(error.stack));page.on('console',message=>{if(message.type()==='error')report.lastConsoleError=message.text()})
@@ -66,6 +66,16 @@ try{
   assert(Math.abs((await drawer.boundingBox()).width-Math.min(width,width>1000?Math.min(1440,width*.7):width))<=1)
   assert.equal(await drawer.locator('textarea').count(),0)
   assert.equal(await drawer.locator('.wm-live-note-editor-layout').evaluate(node=>getComputedStyle(node).display),width<=680?'flex':'grid')
+  assert.equal(await drawer.locator('.wm-review-extra').count(),0)
+  assert.equal(await drawer.locator('.wm-review-navigation button').count(),3)
+  assert(await drawer.getByRole('button',{name:label('Ghi chú trước','Previous note'),exact:true}).isDisabled())
+  assert(await drawer.getByRole('button',{name:label('Ghi chú tiếp theo','Next note'),exact:true}).isDisabled())
+  const summaryLayout=await drawer.locator('.wm-review-summary').evaluate(node=>({left:node.getBoundingClientRect().left,right:node.getBoundingClientRect().right,parentLeft:node.parentElement.getBoundingClientRect().left,parentRight:node.parentElement.getBoundingClientRect().right,radius:getComputedStyle(node).borderRadius,top:getComputedStyle(node).borderTopWidth,bottom:getComputedStyle(node).borderBottomWidth}))
+  assert.equal(summaryLayout.radius,'0px');assert.equal(summaryLayout.top,'1px');assert.equal(summaryLayout.bottom,'1px')
+  assert(Math.abs(summaryLayout.left-summaryLayout.parentLeft)<=1&&Math.abs(summaryLayout.right-summaryLayout.parentRight)<=1)
+  await drawer.getByRole('button',{name:label('Thêm thao tác ghi chú','More note actions'),exact:true}).click()
+  await page.getByRole('menuitem',{name:label('Đổi tên ghi chú','Rename note'),exact:true}).click()
+  assert(await title.evaluate(node=>node===document.activeElement))
   await page.screenshot({path:`${out}/fresh-${width}-${theme}.png`})
   const beforeFreshClose=recordWrites
   await drawer.getByRole('button',{name:label('Đóng','Close'),exact:true}).click();await drawer.waitFor({state:'detached'})
@@ -74,6 +84,10 @@ try{
   await title.fill(`Review browser ${width}`);await editor.fill('Retain this paragraph')
   await page.keyboard.press('ControlOrMeta+End');await page.keyboard.press('Enter');await page.keyboard.press('ControlOrMeta+b');await page.keyboard.type('Bold retained');await page.keyboard.press('ControlOrMeta+b')
   await drawer.locator('[data-state=saved]').waitFor()
+  if(width>680){
+   const titleBox=await title.boundingBox(),timeBox=await drawer.locator('.wm-live-note-title time').boundingBox()
+   assert(Math.abs(titleBox.y+titleBox.height/2-timeBox.y-timeBox.height/2)<3,'Saved time shares the title row')
+  }
   await drawer.getByRole('button',{name:label('Mẫu ghi chú','Templates'),exact:true}).click()
   const templates=page.locator('dialog.wm-note-templates');await templates.waitFor()
   await templates.getByRole('button',{name:label('Áp dụng vào','Apply to'),exact:true}).click()
@@ -87,6 +101,13 @@ try{
   await page.getByRole('option',{name:label('Đánh giá tuần','Weekly review'),exact:true}).click()
   await drawer.getByRole('button',{name:label('Thêm giao dịch','Add trade'),exact:true}).first().click()
   const picker=page.locator('.wm-review-trade-picker');await picker.waitFor()
+  const pickerBox=await picker.boundingBox();assert(Math.abs(pickerBox.x+pickerBox.width/2-width/2)<2)
+  const pickerRange=picker.getByRole('textbox',{name:label('Khoảng ngày giao dịch','Trade date range'),exact:true})
+  await pickerRange.fill('31/02/2026 – 30/10/2026');await pickerRange.press('Tab')
+  assert(await picker.getByRole('button',{name:label('Áp dụng','Apply'),exact:true}).isDisabled())
+  await pickerRange.fill('01/10/2025 – 30/10/2025');await pickerRange.press('Tab')
+  assert.equal(await picker.locator('.wm-review-picker-row').count(),0)
+  await pickerRange.fill('01/10/2026 – 30/10/2026');await pickerRange.press('Tab')
   await picker.getByRole('searchbox').fill('EURUSD')
   await picker.locator('.wm-review-picker-row').filter({hasText:'Review fixture'}).getByRole('checkbox').check()
   await page.screenshot({path:`${out}/picker-${width}-${theme}.png`})
@@ -102,9 +123,19 @@ try{
   await editor.waitFor();await drawer.locator('[data-state=saved]').waitFor()
   assert((await editor.innerText()).includes('Bold retained'))
   assert.equal(await drawer.locator('.wm-review-linked .wm-review-trade-row').count(),1)
+  const beforeCancel=recordWrites
+  await drawer.getByRole('button',{name:label('Tìm giao dịch liên kết','Find linked trades'),exact:true}).click();await picker.waitFor()
+  await picker.locator('.wm-review-picker-row').filter({hasText:'Review fixture'}).getByRole('checkbox').uncheck()
+  await page.keyboard.press('Escape');await picker.waitFor({state:'detached'})
+  assert(await drawer.isVisible());assert.equal(await drawer.locator('.wm-review-linked .wm-review-trade-row').count(),1);assert.equal(recordWrites,beforeCancel)
   assert.deepEqual((await native('GET','/api/v2/live/records')).items.find(row=>row.record_id===note.record_id).payload.note_document,recorded)
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false)
   if(width===1920){
+   await editor.fill('Flush before navigating');await drawer.getByRole('button',{name:'Ghi chú tiếp theo',exact:true}).click()
+   await page.waitForFunction(()=>document.querySelector('.wm-live-note-title input')?.value!=='Review browser 1920')
+   assert.equal((await native('GET','/api/v2/live/records')).items.find(row=>row.record_id===note.record_id).payload.note,'Flush before navigating')
+   await drawer.getByRole('button',{name:'Đóng',exact:true}).click();await drawer.waitFor({state:'detached'})
+   await page.locator('.live-note-row').filter({hasText:'Review browser 1920'}).click();await editor.waitFor();await drawer.locator('[data-state=saved]').waitFor()
    failWrites=true;await editor.fill('Retained on failed close');await drawer.getByRole('button',{name:'Đóng',exact:true}).click()
    await drawer.locator('[data-state=error]').waitFor();assert(await drawer.isVisible());assert.equal((await editor.innerText()).trim(),'Retained on failed close')
    failWrites=false;await drawer.getByRole('button',{name:'Thử lại',exact:true}).click();await drawer.locator('[data-state=saved]').waitFor()

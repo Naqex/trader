@@ -7578,5 +7578,11 @@
   "Đổi thứ tự {name}": {"vi": "Đổi thứ tự {name}", "en": "Reorder {name}"},
   "Giây": {"vi": "Giây", "en": "Seconds"},
   "Tăng giây": {"vi": "Tăng giây", "en": "Increase second"},
-  "Giảm giây": {"vi": "Giảm giây", "en": "Decrease second"}
+  "Giảm giây": {"vi": "Giảm giây", "en": "Decrease second"},
+  "Thao tác ghi chú": {"vi": "Thao tác ghi chú", "en": "Note actions"},
+  "Thêm thao tác ghi chú": {"vi": "Thêm thao tác ghi chú", "en": "More note actions"},
+  "Đổi tên ghi chú": {"vi": "Đổi tên ghi chú", "en": "Rename note"},
+  "Tìm giao dịch liên kết": {"vi": "Tìm giao dịch liên kết", "en": "Find linked trades"},
+  "Khoảng ngày giao dịch": {"vi": "Khoảng ngày giao dịch", "en": "Trade date range"},
+  "Hiển thị {count}/{total}": {"vi": "Hiển thị {count}/{total}", "en": "Showing {count}/{total}"}
 }

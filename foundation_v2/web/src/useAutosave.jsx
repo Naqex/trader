@@ -58,13 +58,13 @@ export default function useAutosave({ identity, adapter, initialValue }) {
   return { ...state, change: controller.change, flush: controller.flush, retry: controller.retry, discardAndReload: controller.discardAndReload, forceClose: boundary?.forceClose }
 }
 
-export function AutosaveStatus({ save }) {
+export function AutosaveStatus({ save, timestampOnly = false }) {
   const { t, timezone } = useTestingLocale()
   const failed = ['error', 'conflict', 'invalid'].includes(save.phase)
   const message = save.phase === 'loading' ? 'Đang đọc ghi chú…' : save.phase === 'saving' ? 'Đang lưu…' : save.phase === 'dirty' ? 'Chưa lưu' : save.phase === 'saved' ? null : ''
   if(save.phase==='idle' && save.localBackup)return null
   return <div className="wm-autosave-status" data-state={save.phase}>
-    <span role={failed ? 'alert' : 'status'} aria-live="polite">{failed ? t(save.error) : message === null ? <>{t(save.record?.revision>1?'Sửa lần cuối':'Đã lưu lúc')} <time dateTime={save.savedAt}>{displayDate(save.savedAt, { timeStyle: 'medium', timeZone: timezone })}</time></> : t(message)}</span>
+    <span role={failed ? 'alert' : 'status'} aria-live="polite">{failed ? t(save.error) : message === null ? <>{!timestampOnly && `${t(save.record?.revision>1?'Sửa lần cuối':'Đã lưu lúc')} `}<time title={timestampOnly ? t('Sửa lần cuối') : undefined} dateTime={save.savedAt}>{displayDate(save.savedAt, { timeStyle: timestampOnly ? 'short' : 'medium', timeZone: timezone })}</time></> : t(message)}</span>
     {!save.localBackup && <small role="alert">{t('Trình duyệt không giữ được bản nháp. Đợi lưu xong trước khi rời trang.')}</small>}
     {save.phase === 'error' && <button type="button" className="fxa-button" onClick={() => void save.retry()}>{t('Thử lại')}</button>}
     {save.phase === 'conflict' && <button type="button" className="fxa-button" onClick={() => { if (window.confirm(t('Thay bản nháp hiện tại bằng bản đã lưu trên server?'))) void save.discardAndReload() }}>{t('Tải bản đã lưu')}</button>}

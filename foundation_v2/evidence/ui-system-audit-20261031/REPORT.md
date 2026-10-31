@@ -1,6 +1,40 @@
 # UI system audit · 31/10/2026
 
-## Date/time pickers và loại ghi chú · cập nhật mới nhất
+## Notes drawer theo ảnh owner · cập nhật mới nhất
+
+- Cụm previous/next/menu nằm góc phải, luôn hiện cả khi tạo note mới; arrows
+  disable khi chưa có note tương ứng. Chuyển note đi qua autosave drain; note mới
+  dùng ID từ receipt sau lần lưu đầu. Menu có đổi tên và liên kết giao dịch.
+- Tiêu đề nghiêng và thời gian lưu cùng hàng; trạng thái lỗi/conflict và các nút
+  phục hồi vẫn hiện đầy đủ. Chỉ Notes dùng timestamp gọn, các editor khác giữ UI cũ.
+- Summary bỏ card/gradient/card con, dùng line trên/dưới full chiều rộng cột trái;
+  PnL, win rate và chart vẫn tính từ liên kết thật, thiếu dữ liệu giữ N/A.
+- Bỏ UI “Thông tin khác”, vẫn giữ account/strategy metadata trong payload cũ.
+- Danh sách liên kết dạng hàng gọn, vạch và PnL theo màu lời/lỗ. Nút + Giao dịch
+  và search mở cùng dialog giữa viewport, dùng SearchInput/FxSelect/DateFilter.
+  Các bộ lọc chỉ đổi candidates; Apply lưu Map được chọn, Cancel/Escape không
+  đổi liên kết. Date filter trong picker độc lập với review range của note.
+- Build pass. Native Router/PostgreSQL tạm và browser **8 nhóm case pass**:
+  1920 dark/1440 light/390 dark, navigation flush, title/time alignment, summary
+  seams, rename focus, date filtering + invalid-date Apply guard, cancel/Escape,
+  links+summary, cap500, rich/template persistence, CAS/error/recovery và Testing.
+- Review độc lập source + ảnh ba kích thước: PASS. Finding màu PnL sau đổi markup
+  đã sửa trên span, không tô toàn hàng. Lượt QA đầu bị lỗi teardown route.fulfill
+  khi response đã dispose; đã await route operations để giữ được lỗi có ngữ cảnh,
+  rồi hai lượt xác nhận đều pass. Reports cũ được giữ để đối chiếu.
+- UI5180 đã promote atomic; index SHA256:
+  `1cb2d678bd8e84f399f171ed8245d066ab26aa676e390eaba7f216ff6ad3f545`.
+  Giữ private assets và các hashed assets cũ. Không restart API/migration.
+- Browser trên bản triển khai: **9 case pass**, ba kích thước, Notes menu/range/
+  centered trade picker/Escape và Live/Testing Trades; **0 page errors, 0 writes**.
+  API health `ok=true`, `execution_capability=false`.
+
+Fixture/browser evidence:
+`E:/BACKUP-TRADINGWORKSPACE/ui-system-20261031/note-drawer-refinement-final-qa/`.
+Promotion, rollback index và deployed evidence:
+`E:/BACKUP-TRADINGWORKSPACE/ui-system-20261031/note-drawer-refinement-release/`.
+
+## Date/time pickers và loại ghi chú
 
 - DateFilter tái sử dụng ProjectDateInput thay cho calendar riêng. Date, wall
   datetime, time và range dùng chung icon, calendar tháng/năm, top-layer popover,
@@ -59,8 +93,7 @@ gate giữ GET dùng chung khiến chính thao tác cần kiểm tra bị khóa,
 đọc nhãn ngay sau reload trước khi catalog tải xong. Đã bỏ gate không phù hợp,
 chờ đúng nhãn được tải rồi chạy lại; giữ report thất bại để đối chiếu.
 
-Các mục bên dưới giữ lịch sử của những lượt trước; trạng thái triển khai mới nhất
-là mục này.
+Các mục bên dưới giữ lịch sử của những lượt trước.
 
 ## Phạm vi và bằng chứng
 

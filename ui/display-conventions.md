@@ -882,3 +882,12 @@ for note types. The workspace catalog owns type names/colors and archived state;
 its revision and idempotency protect concurrent edits. Four built-in identities
 are permanent. Custom types can be archived; existing notes keep their identity
 and can still be edited and filtered. Reordering is a browser display preference.
+
+The Notes drawer keeps previous/next and the contextual menu at the top right;
+saved time shares the title row. Navigation drains autosave before changing notes.
+Its summary is flat, bounded by full-width horizontal rules in the context pane.
+Linked trades use compact rows with PnL-colored accents. Add/search opens the same
+centered picker; account/date/search filters change its candidates, while Apply
+commits the selection and Cancel/Escape keeps existing links unchanged. The picker
+date range is independent of the note's review range. Hidden account/strategy
+metadata is preserved when saving; the extra metadata section is not displayed.
