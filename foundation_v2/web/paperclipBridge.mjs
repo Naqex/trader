@@ -1,4 +1,6 @@
-export const PAPERCLIP_ORIGIN = 'http://127.0.0.1:3100'
+import services from '../local-services.json' with { type: 'json' }
+
+export const PAPERCLIP_ORIGIN = `http://${services.host}:${services.paperclipPort}`
 export const PAPERCLIP_HEALTH_PATH = '/integrations/paperclip/health'
 
 // A fixed read-only route avoids giving the host a general local HTTP proxy.

@@ -2,11 +2,12 @@ import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { chromium } from 'playwright'
+import { PAPERCLIP_ORIGIN } from '../paperclipBridge.mjs'
 
 const origin = process.argv[2] || 'http://127.0.0.1:5219'
 assert.equal(new URL(origin).hostname, '127.0.0.1')
 assert.ok(!['5180', '8010'].includes(new URL(origin).port))
-const out = path.resolve('../evidence/paperclip-ui-20261031/browser')
+const out = path.resolve('../evidence/paperclip-ui-20261031/ports-sidebar')
 await mkdir(out, { recursive: true })
 const report = { scope: 'Trader production UI with native Paperclip source/API on an isolated database; no trading engine or provider jobs.', cases: [], errors: [], external: [], writes: [] }
 const browser = await chromium.launch({ headless: true })
@@ -20,7 +21,7 @@ try {
     }, { theme, lang })
     await context.route('**/*', route => {
       const req = route.request(), url = new URL(req.url())
-      if (![origin, 'http://127.0.0.1:3100'].includes(url.origin)) { report.external.push(url.origin); return route.abort() }
+      if (![origin, PAPERCLIP_ORIGIN].includes(url.origin)) { report.external.push(url.origin); return route.abort() }
       if (!['GET', 'HEAD'].includes(req.method())) { report.writes.push({ origin: url.origin, path: url.pathname }); return route.abort() }
       return route.continue()
     })
@@ -35,9 +36,9 @@ try {
     await writeFile(path.join(out, `native-${width}.txt`), await frame.locator('body').innerText())
     assert.equal(await page.locator('iframe[title$="Paperclip"]').count(), 1)
     assert.equal(await frame.locator('html').evaluate(node => node.classList.contains('dark')), theme === 'dark', 'Native UI supports the requested system color scheme')
-    assert(await page.getByTestId('fxreplay-shell').evaluate(node => node.classList.contains('is-rail-collapsed')))
+    assert.equal(await page.getByTestId('fxreplay-shell').evaluate(node => node.classList.contains('is-rail-collapsed')), width < 760, 'Paperclip respects the desktop sidebar preference')
     const box = await page.locator('iframe[title$="Paperclip"]').boundingBox()
-    assert(box.height > 650 && box.width > width - (width < 760 ? 15 : 100), JSON.stringify(box))
+    assert(box.height > 650 && box.width > width - (width < 760 ? 15 : 300), JSON.stringify(box))
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false)
     await page.screenshot({ path: path.join(out, `native-${width}-${theme}-${lang}.png`) })
     await frame.getByRole('button', { name: 'Create Task', exact: true }).click()
@@ -64,6 +65,15 @@ try {
       assert.equal(await frame.getByRole('textbox', { name: 'Search tasks', exact: true }).inputValue(), 'owner-ui-review')
       const body = await frame.locator('body').innerText()
       assert.match(body, /Naqex AI/)
+      await page.locator('.fx-menu-button').click()
+      assert.equal(await page.evaluate(() => localStorage.getItem('tw-shell-rail-collapsed')), 'true')
+      await page.locator('.fx-subnav a[href*="section=connections"]').click()
+      assert(await page.getByTestId('fxreplay-shell').evaluate(node => node.classList.contains('is-rail-collapsed')))
+      await page.locator('.fx-subnav a[href*="section=paperclip"]').click()
+      assert(await page.getByTestId('fxreplay-shell').evaluate(node => node.classList.contains('is-rail-collapsed')))
+      assert(await document.evaluate(node => node === window.document.documentElement))
+      await page.locator('.fx-menu-button').click()
+      assert.equal(await page.evaluate(() => localStorage.getItem('tw-shell-rail-collapsed')), 'false')
       report.cases.push({ name: 'native document and navigation preference survive route changes', result: 'pass' })
       await page.route('**/integrations/paperclip/health', route => route.fulfill({ status: 503, json: { status: 'unavailable' } }))
       await page.reload()

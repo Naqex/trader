@@ -22,7 +22,7 @@ test('the bridge only forwards its fixed GET health route and strips runtime int
     assert.equal(calls.length, 0)
     const healthy = response()
     await paperclipHealth({ url: `${PAPERCLIP_HEALTH_PATH}?url=http://other-host/secrets`, method: 'GET' }, healthy, () => assert.fail('unexpected fallthrough'))
-    assert.equal(calls[0].url, 'http://127.0.0.1:3100/api/health')
+    assert.equal(calls[0].url, 'http://127.0.0.1:17860/api/health')
     assert.equal(calls[0].options.redirect, 'error')
     assert.deepEqual(JSON.parse(healthy.body), { status: 'ok', version: '0.3.1', commit: 'pinned-sha' })
     assert.equal(healthy.headers['Cache-Control'], 'no-store')

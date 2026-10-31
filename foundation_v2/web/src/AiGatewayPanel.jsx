@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useFxReplayContext } from './FxReplayShell.jsx'
 import { aiErrorCopy } from './aiProvider.js'
+import services from '../../local-services.json' with { type: 'json' }
 
-const managementUrl = 'http://127.0.0.1:17852/management.html'
+const managementUrl = `http://${services.host}:${services.cliProxyApiPort}/management.html`
 
 export default function AiGatewayPanel({ workspace, language, active, chatOpen }) {
   const { buildHref } = useFxReplayContext()

@@ -4,9 +4,10 @@ import { fileURLToPath } from 'node:url'
 import { stat } from 'node:fs/promises'
 import { createReadStream } from 'node:fs'
 import { paperclipHealth } from './paperclipBridge.mjs'
+import services from '../local-services.json' with { type: 'json' }
 
 const root = fileURLToPath(new URL('../.runtime/ai-workspace-preview/', import.meta.url))
-const port = Number(process.argv[2] || 5218)
+const port = Number(process.argv[2] || services.aiPreviewPort)
 if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Invalid preview port')
 const mime = { '.html':'text/html; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.css':'text/css; charset=utf-8', '.svg':'image/svg+xml', '.png':'image/png', '.jpg':'image/jpeg', '.woff2':'font/woff2', '.json':'application/json' }
 const server = http.createServer(async (req, res) => {
@@ -31,4 +32,4 @@ const server = http.createServer(async (req, res) => {
     } catch { res.writeHead(404); res.end('Not found') }
   })
 })
-server.listen(port, '127.0.0.1', () => console.log(`AI workspace preview: http://127.0.0.1:${port}/?workspace=tenant-a&view=ai&area=ai&section=paperclip&lang=vi`))
+server.listen(port, services.host, () => console.log(`AI workspace preview: http://${services.host}:${port}/?workspace=tenant-a&view=ai&area=ai&section=paperclip&lang=vi`))

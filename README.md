@@ -6,6 +6,9 @@ Live MT5 có kết nối và quyền thực thi được kiểm soát riêng.
 [![CI](https://github.com/Naqex/trader/actions/workflows/api-platform.yml/badge.svg)](https://github.com/Naqex/trader/actions/workflows/api-platform.yml)
 [Version](VERSION) · [Bắt đầu phát triển](docs/development/README.md) · [License](docs/licensing.md)
 
+Cổng riêng cho Paperclip/CLIProxyAPI và UI preview:
+[Local services](foundation_v2/docs/LOCAL-SERVICES.md).
+
 ![Giao dịch Live và bảng phân tích](docs/assets/live-trades.png)
 
 *Ảnh từ fixture kiểm thử synthetic; không phải dữ liệu broker hoặc kết quả đầu tư.*

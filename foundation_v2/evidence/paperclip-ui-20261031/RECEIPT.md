@@ -1,5 +1,10 @@
 # Native Paperclip UI integration — 31/10/2026
 
+Follow-up: owner requested dedicated integration ports and preservation of the
+desktop sidebar preference. Current runtime uses17860/17861/27860; see
+[port/sidebar cutover](PORTS-SIDEBAR.md). The initial3100/54339 receipt below is
+historical evidence, not the current startup configuration.
+
 Scope: owner requested native Paperclip UI inside Trader, outside-in composition
 before custom trading/research engine work. Source is preserved upstream; this
 receipt is scoped UI/local-runtime evidence, not autonomy or trading acceptance.

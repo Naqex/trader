@@ -1,0 +1,8 @@
+{
+  "host": "127.0.0.1",
+  "aiPreviewPort": 5218,
+  "cliProxyApiPort": 17852,
+  "paperclipPort": 17860,
+  "paperclipHmrPort": 27860,
+  "paperclipDatabasePort": 17861
+}

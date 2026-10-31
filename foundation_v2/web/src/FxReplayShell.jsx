@@ -527,11 +527,9 @@ export default function FxReplayShell({ children, workspace, query = currentQuer
   }, [])
   const [mobileNavigation, setMobileNavigation] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 760px)').matches)
   const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false)
-  const [paperclipRailExpanded, setPaperclipRailExpanded] = useState(false)
-  useEffect(() => { if (!paperclipPage) setPaperclipRailExpanded(false) }, [paperclipPage])
   const drawerOpen = mobileNavigation && mobileNavigationOpen && !chartWorkspace
   // Mobile navigation is transient; resizing must not rewrite the desktop preference.
-  const displayedRailCollapsed = mobileNavigation ? !drawerOpen : paperclipPage ? !paperclipRailExpanded : railCollapsed
+  const displayedRailCollapsed = mobileNavigation ? !drawerOpen : railCollapsed
   const menuButtonRef = useRef(null)
   const navigationCloseRef = useRef(null)
   const helpButtonRef = useRef(null)
@@ -589,13 +587,12 @@ export default function FxReplayShell({ children, workspace, query = currentQuer
       setMobileNavigationOpen((value) => !value)
       return
     }
-    if (paperclipPage) { setPaperclipRailExpanded(value => !value); return }
     setRailCollapsed((value) => {
       const next = !value
       try { window.localStorage.setItem(RAIL_COLLAPSED_STORAGE_KEY, String(next)) } catch { /* private browsing */ }
       return next
     })
-  }, [mobileNavigation, paperclipPage])
+  }, [mobileNavigation])
   useEffect(() => {
     const media = window.matchMedia('(max-width: 760px)')
     const onChange = () => {
