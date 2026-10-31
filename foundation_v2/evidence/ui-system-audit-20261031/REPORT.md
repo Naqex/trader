@@ -1,6 +1,6 @@
 # UI system audit · 31/10/2026
 
-## Gộp nhật ký Live/Testing và một nút chọn tất cả · candidate
+## Gộp nhật ký Live/Testing và một nút chọn tất cả
 
 - Scope owner duyệt: Gộp/Tách nhóm cho cả Live và Testing. Chưa triển khai xóa
   giao dịch; hành vi xóa tài khoản vốn có giữ nguyên.
@@ -15,7 +15,7 @@
   Deselect all hoặc X bỏ mọi selection kể cả trang khác.
 - Native GET/POST `/api/v2/trade-groups` dùng catalog theo workspace, CAS và
   receipt idempotent. Broker validation đọc snapshot đã lưu, không gọi terminal.
-  Migration0020 đã đăng ký trong Rust checksum authority; chưa áp dụng owner DB.
+  Migration0020 đăng ký trong Rust checksum authority; trạng thái rollout bên dưới.
 - Source review độc lập không còn finding chặn. Build UI và3 model tests PASS.
   `trade-merge-selection-regression/report.json`:15 case PASS ở1920/1440/390,
   dark/light và touch, zero writes. Đây là regression toolbar/market/picker
@@ -34,8 +34,48 @@
   thanh chọn che pagination Testing. Đã dùng ResizeObserver chung dành khoảng
   trống theo chiều cao toolbar tại3consumer; QA3 click chuyển trang bình thường
   PASS. Các failure log được giữ tại backup root.
-- API8010/UI5180 chưa thay đổi ở lát này. Rollout cần owner duyệt migration0020
-  và cập nhật local sau khi candidate qua native/browser/visual QA.
+- Candidate đã qua native/browser/visual QA trước khi owner duyệt migration0020
+  và cập nhật local. Các bằng chứng candidate ở trên không thay thế deployed QA.
+
+### Rollout đã được owner duyệt · schema20 / API8010 / UI5180
+
+- Source candidate `8837875f`; release build tối ưu của API/admin/research worker
+  PASS. Preflight kiểm tra đúng process identity/hash, native/compact, idle và
+  không có broker submission chưa đối soát. Dừng qua supervisor đang sở hữu.
+- Trước migration, đã kiểm tra backup PostgreSQL18 custom dump bằng
+  `pg_restore --list`, lưu SHA256 và ledger19; đối chiếu hash đủ **4.142 artifacts**.
+  Sau0020, mọi bảng cũ giữ nguyên số dòng, catalog nhóm mới rỗng và ledger20
+  khớp checksum `d2168adefba91abf0557df96f21ab298eb37be4ed26d532ead943f7442cd0ee9`.
+- API `trading-workspace-api-trade-groups.exe`, SHA256
+  `842ef90cd03bf189b904e0772a776cacd410ee5916e45e70c55275a2db9c189a`;
+  worker `rust-research-worker-trade-groups.exe`, SHA256
+  `450ec2f9399f02bba57b65515e2d8dd40b697f57843922135a11c5f7de3e13bf`.
+  Supervisor run `207247e32df1451083315b76c5a42696`; readiness và process
+  identities/hashes đều xác minh lại sau cutover. Giữ capability descriptors,
+  adapter roots, AI interpreter, QDM và database/artifact roots hiện hành.
+- UI atomic promotion giữ private root files/assets cũ; served index và các
+  entry assets khớp candidate. Index SHA256
+  `6c00ad31cbef3f58703d4e14ee728922884d25e471d9cdd7351d7cc5481479fb`.
+- Deployed browser: **15 ca** toolbar Live/Testing/Accounts, Market Data và Notes
+  picker; thêm **6 ca** merge eligibility/confirm/cancel Live/Testing. Cả hai
+  report PASS tại1920dark/1440light/390touch; zero page errors, zero writes.
+  Đã xem screenshot deployed desktop Live và mobile Testing. Không gộp dữ liệu
+  owner để thử; merge/persist/split đã kiểm chứng trên database biệt lập ở trên.
+- Lượt deployed merge QA đầu chọn cố định dòng đầu với các dòng sau, nên không
+  tìm được cặp Testing cùng phiên; các cặp đó bị chặn đúng. Đổi harness tìm cặp
+  hợp lệ trong trang, giữ report thất bại, chạy lại đủ6ca PASS; không sửa product.
+- Health `ok=true`, `execution_capability=false`. Broker sau cutover
+  `connected/ready`, `stale=false`; cùng connection và mode trước đó. Không gọi
+  sync/reconnect, restart terminal hoặc gửi broker order. Đây là kiểm tra tại
+  thời điểm rollout, không phải bằng chứng ổn định dài hạn.
+- Rollback giữ nguyên binary cũ và index cũ. Chỉ hoàn tác0020 khi catalog rỗng,
+  checksum khớp và API đã dừng; nếu có dữ liệu nhóm mới, giữ schema và dùng quy
+  trình recovery từ backup sau khi đánh giá, không xóa dữ liệu để né compatibility.
+
+Receipt/backup riêng tư:
+`E:/BACKUP-TRADINGWORKSPACE/ui-system-20261031/trade-merge-release/`:
+`api-rollout.json`, `ui-promotion.json`, `final-runtime-check.json`,
+`deployed-selection-qa/report.json`, `deployed-merge-qa2/report.json`, `backup/`.
 
 Evidence/candidate: `E:/BACKUP-TRADINGWORKSPACE/ui-system-20261031/trade-merge-*`.
 

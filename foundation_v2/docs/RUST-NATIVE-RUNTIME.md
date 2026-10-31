@@ -1,11 +1,16 @@
 # Rust-native candidate runtime
 
-31 October local update: note type catalog migration0019 and the matching API +
-research worker are deployed on native/compact. Database/artifact backups, exact
-hashes, browser checks and the transient MT5 retry recovery are recorded in the
+31 October latest local update: reversible journal groups migration0020 and the
+matching API + research worker are deployed on native/compact. The owner approved
+this migration and local cutover separately. Existing source trades, notes/tags
+and analytics remain unchanged; trade deletion is deferred. Database/artifact
+backups, exact hashes and deployed GET-only browser checks are recorded in the
 [UI-system receipt](../evidence/ui-system-audit-20261031/REPORT.md).
-The pre0019 binary requires a matching pre0019 schema for rollback; do not launch
-it against schema19. Owner approval covered this migration and local cutover.
+Do not launch the retained schema19 binaries against schema20. The prepared
+rollback removes0020 only while its catalog is empty and its checksum matches;
+otherwise retain the schema and review recovery using the verified backup.
+The earlier0019 note-type rollout and transient MT5 retry recovery remain in
+the same receipt.
 
 Trade panel navigation, groups and Live journal details:
 [30 October parity receipt](../evidence/trade-panel-parity-20261030/RECEIPT.md).
