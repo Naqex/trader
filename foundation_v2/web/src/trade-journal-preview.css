@@ -13,6 +13,7 @@
 .wm-trade-journal-dialog [role=status] { color:var(--wm-content-muted); }
 .wm-trade-journal-dialog footer { display:flex; gap:8px; justify-content:flex-end; margin-top:24px; }
 .wm-trade-selection-bar { position:fixed; z-index:var(--wm-layer-sticky,40); left:50%; bottom:16px; transform:translateX(-50%); width:min(600px,calc(100vw - 32px)); box-sizing:border-box; padding:12px 20px; border:1px solid var(--wm-border); border-radius:12px; background:var(--wm-popup); box-shadow:0 12px 32px #0004; }
+.fx-content :is(.fxa-trades,.live-broker,.live-accounts-main):has(> .wm-trade-selection-bar) { padding-bottom:var(--wm-selection-reserve,180px); }
 .wm-trade-selection-head { display:grid; grid-template-columns:32px minmax(0,1fr) auto; align-items:center; gap:12px; min-height:52px; }
 .wm-trade-selection-bar:has(.wm-trade-selection-actions) .wm-trade-selection-head { border-bottom:1px solid var(--wm-border); }
 .wm-trade-selection-head strong { min-width:0; font-size:13px; font-weight:500; line-height:20px; }
@@ -29,6 +30,22 @@
 .fx-app.fx-shell-story[data-theme] .fx-content .wm-trade-selection-bar button:hover:not(:disabled) { color:var(--wm-content); background:transparent; }
 .fx-app.fx-shell-story[data-theme] .fx-content .wm-trade-selection-bar .wm-trade-selection-action.is-danger { color:var(--report-negative); }
 .wm-trade-bulk-tags-dialog { width:min(450px,calc(100vw - 32px)); }
+.wm-trade-merge-dialog { width:min(520px,calc(100vw - 32px)); }
+.wm-trade-merge-body { display:grid; gap:16px; padding:16px 24px 24px; }
+.wm-trade-merge-body p { margin:0; font-size:13px; }
+.wm-trade-merge-body > p:nth-child(2) { color:var(--wm-content-muted); }
+.wm-trade-merge-body ul { list-style:none; padding:0; margin:0; max-height:40vh; overflow:auto; }
+.wm-trade-merge-body li { display:flex; justify-content:space-between; gap:16px; padding-block:12px; border-bottom:1px solid var(--wm-border); font-size:13px; }
+.wm-trade-merge-body li span { color:var(--wm-content-muted); overflow-wrap:anywhere; min-width:0; }
+.wm-trade-merge-body footer { display:flex; gap:8px; justify-content:flex-end; }
+.wm-trade-merge-body [role=alert],.wm-trade-group-row [role=alert] { color:var(--report-negative); }
+.fxa-table-scroll:has(.wm-trade-group-row) { container-type:inline-size; }
+.wm-trade-group-row td > div { position:sticky; left:12px; width:calc(100cqw - 24px); max-width:100%; display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; min-height:32px; white-space:normal; }
+.wm-trade-group-row td > p { position:sticky; left:12px; width:calc(100cqw - 24px); white-space:normal; font-size:12px; color:var(--wm-content-muted); }
+.wm-trade-group-row strong { font-weight:500; }
+.wm-trade-group-row span { color:var(--wm-content-muted); }
+.wm-trade-group-row button:nth-of-type(2) { margin-left:auto; }
+.wm-trade-group-error { padding:8px var(--wm-page-gutter); font-size:13px; }
 .wm-trade-bulk-tags-body { display:grid; gap:18px; padding:16px 24px 24px; }
 .wm-trade-bulk-tags-rows { display:grid; gap:12px; }
 .wm-trade-bulk-tags-row { position:relative; display:grid; gap:12px; padding:14px; border:1px solid var(--wm-border); border-radius:8px; }

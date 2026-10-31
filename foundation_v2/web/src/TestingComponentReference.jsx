@@ -21,8 +21,8 @@ function ReferenceTradeSelection() {
   return <section id="trade-selection"><h2>Thanh thao tác khi chọn giao dịch</h2>
     <p>Dữ liệu minh họa. Thanh nằm dưới viewport; thao tác nhãn xuất hiện khi chọn từ hai giao dịch.</p>
     <div className="wm-reference-controls"><button type="button" className="wm-button" onClick={()=>{setAccount(false);setCount(1)}}>Chọn 1 giao dịch mẫu</button><button type="button" className="wm-button" onClick={()=>{setAccount(false);setCount(2)}}>Chọn 2 giao dịch mẫu</button><button type="button" className="wm-button" onClick={()=>{setCount(0);setAccount(true)}}>Chọn 1 tài khoản mẫu</button></div>
-    {count>0 && <TradeBulkSelectionBar count={count} onClose={()=>setCount(0)} onSelectAll={()=>setCount(2)} onTags={()=>setTags(true)}/>}
-    {account && <SelectionToolbar label="Thao tác tài khoản minh họa" summary="Đã chọn 1 tài khoản mẫu" onClose={()=>setAccount(false)} onSelectAll={()=>setAccount(true)} actions={[{id:'example',label:'Bỏ chọn tài khoản mẫu',onClick:()=>setAccount(false)}]}/>}
+    {count>0 && <TradeBulkSelectionBar count={count} allSelected={count===2} onClose={()=>setCount(0)} onSelectAll={()=>setCount(2)} onTags={()=>setTags(true)}/>}
+    {account && <SelectionToolbar label="Thao tác tài khoản minh họa" summary="Đã chọn 1 tài khoản mẫu" allSelected onClose={()=>setAccount(false)} onSelectAll={()=>setAccount(true)} actions={[{id:'example',label:'Bỏ chọn tài khoản mẫu',onClick:()=>setAccount(false)}]}/>}
     {tags && <TradeBulkTagsDialog count={count} groups={[{id:'demo-setup',name:'Setup'}]} labels={[{id:'demo-breakout',name:'Breakout',group_id:'demo-setup'}]} onClose={()=>setTags(false)}/>}
   </section>
 }

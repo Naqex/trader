@@ -94,7 +94,7 @@ export default function LiveAccounts({ workspace, accounts, records, broker, cho
         </tr>)}</tbody></DataTable>
         {!filtered.length && <div className="live-empty"><h2>{t(search || sources.length ? 'Không tìm thấy tài khoản' : 'Chưa có tài khoản')}</h2><p>{t(search || sources.length ? 'Thử thay đổi từ khóa hoặc bộ lọc.' : 'Thêm tài khoản ở bảng bên phải để bắt đầu.')}</p></div>}
       </>}
-      {!transactions && checkedRows.length>0 && <SelectionToolbar label={t('Thao tác tài khoản đã chọn')} summary={t('Đã chọn {count} tài khoản',{count:checkedRows.length})} busy={Boolean(busy)} onClose={()=>setChecked(new Set())} onSelectAll={()=>setChecked(new Set(filtered.map(row=>row.id)))} actions={[
+      {!transactions && checkedRows.length>0 && <SelectionToolbar label={t('Thao tác tài khoản đã chọn')} summary={t('Đã chọn {count} tài khoản',{count:checkedRows.length})} busy={Boolean(busy)} allSelected={filtered.length>0 && checkedRows.length===filtered.length} onClose={()=>setChecked(new Set())} onSelectAll={()=>setChecked(new Set(filtered.map(row=>row.id)))} actions={[
         ...(writable && checkedConnections.length?[{id:'sync',label:t('Đồng bộ'),icon:<TestingIcon kind="sync" size={16}/>,hint:t('Đồng bộ các kết nối MT5 đã chọn'),disabled:mutationUncertain,onClick:()=>syncConnections(checkedConnections)}]:[]),
         ...(writable?[{id:'delete',label:t('Xoá'),icon:<TestingIcon kind="delete" size={16}/>,danger:true,disabled:mutationUncertain,onClick:()=>setAction({kind:'remove',rows:checkedRows})}]:[]),
       ]}/>}

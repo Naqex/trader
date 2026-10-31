@@ -7596,5 +7596,29 @@
   "Tối đa 500 giao dịch.": {
     "vi": "Tối đa 500 giao dịch.",
     "en": "Select up to 500 trades."
-  }
+  },
+  "Chọn ít nhất 2 giao dịch.": {"vi": "Chọn ít nhất 2 giao dịch.", "en": "Select at least 2 trades."},
+  "Không đọc đủ giao dịch đã chọn. Chọn lại giao dịch.": {"vi": "Không đọc đủ giao dịch đã chọn. Chọn lại giao dịch.", "en": "Some selected trades are unavailable. Select the trades again."},
+  "Chỉ gộp các giao dịch đã đóng và có đủ lịch sử.": {"vi": "Chỉ gộp các giao dịch đã đóng và có đủ lịch sử.", "en": "Only closed trades with complete history can be merged."},
+  "Các giao dịch phải cùng tài khoản hoặc cùng phiên.": {"vi": "Các giao dịch phải cùng tài khoản hoặc cùng phiên.", "en": "Trades must belong to the same account or session."},
+  "Các giao dịch phải cùng tài sản.": {"vi": "Các giao dịch phải cùng tài sản.", "en": "Trades must have the same symbol."},
+  "Các giao dịch phải cùng hướng lệnh.": {"vi": "Các giao dịch phải cùng hướng lệnh.", "en": "Trades must have the same direction."},
+  "Giao dịch đã thuộc nhóm gộp. Tách nhóm trước khi gộp lại.": {"vi": "Giao dịch đã thuộc nhóm gộp. Tách nhóm trước khi gộp lại.", "en": "A trade already belongs to a group. Split that group first."},
+  "Không đọc được nhóm giao dịch.": {"vi": "Không đọc được nhóm giao dịch.", "en": "Could not load trade groups."},
+  "Không lưu được nhóm giao dịch. Thử lại sau.": {"vi": "Không lưu được nhóm giao dịch. Thử lại sau.", "en": "Could not save trade groups. Try again."},
+  "Dữ liệu nhóm giao dịch không hợp lệ.": {"vi": "Dữ liệu nhóm giao dịch không hợp lệ.", "en": "Invalid trade group data."},
+  "Giao dịch không còn trong dữ liệu nguồn. Tải lại rồi chọn lại.": {"vi": "Giao dịch không còn trong dữ liệu nguồn. Tải lại rồi chọn lại.", "en": "A trade is no longer in the source data. Reload and select again."},
+  "Danh sách nhóm đã thay đổi. Tải lại rồi mở lại thao tác.": {"vi": "Danh sách nhóm đã thay đổi. Tải lại rồi mở lại thao tác.", "en": "Trade groups have changed. Reload and reopen this action."},
+  "Giao dịch đã thuộc nhóm gộp. Tải lại rồi chọn lại.": {"vi": "Giao dịch đã thuộc nhóm gộp. Tải lại rồi chọn lại.", "en": "A trade already belongs to a group. Reload and select again."},
+  "Gộp giao dịch": {"vi": "Gộp giao dịch", "en": "Merge trades"},
+  "Gộp {count} giao dịch thành một nhóm trong nhật ký.": {"vi": "Gộp {count} giao dịch thành một nhóm trong nhật ký.", "en": "Combine {count} trades into one journal group."},
+  "Giữ giao dịch nguồn, ghi chú và nhãn. Có thể tách nhóm sau.": {"vi": "Giữ giao dịch nguồn, ghi chú và nhãn. Có thể tách nhóm sau.", "en": "Keep source trades, notes and tags. You can split the group later."},
+  "Thu gọn nhóm giao dịch": {"vi": "Thu gọn nhóm giao dịch", "en": "Collapse trade group"},
+  "Mở rộng nhóm giao dịch": {"vi": "Mở rộng nhóm giao dịch", "en": "Expand trade group"},
+  "Tách nhóm": {"vi": "Tách nhóm", "en": "Split group"},
+  "Xác nhận tách nhóm": {"vi": "Xác nhận tách nhóm", "en": "Confirm split"},
+  "Nhóm cần kiểm tra": {"vi": "Nhóm cần kiểm tra", "en": "Group needs review"},
+  "Dữ liệu nguồn đã thay đổi. Tách nhóm để gộp lại.": {"vi": "Dữ liệu nguồn đã thay đổi. Tách nhóm để gộp lại.", "en": "Source data has changed. Split the group before merging again."},
+  "Bỏ chọn mọi giao dịch, kể cả ngoài trang này.": {"vi": "Bỏ chọn mọi giao dịch, kể cả ngoài trang này.", "en": "Deselect every trade, including other pages."},
+  "Mỗi nhóm tối đa 500 giao dịch.": {"vi": "Mỗi nhóm tối đa 500 giao dịch.", "en": "A group can contain up to 500 trades."}
 }

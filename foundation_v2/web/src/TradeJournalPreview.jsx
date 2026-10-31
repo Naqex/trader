@@ -33,14 +33,15 @@ export function TradeJournalActionDialog({action,count,onClose}) {
   </LegacyModal>
 }
 
-export function TradeBulkSelectionBar({ count, onClose, onSelectAll, onTags, workspace, context='testing-trades' }) {
+export function TradeBulkSelectionBar({ count, onClose, onSelectAll, allSelected=false, onTags, onMerge, mergeIssue, workspace, context='testing-trades' }) {
   const { t } = useTestingLocale()
   const [templatesOpen,setTemplatesOpen] = useState(false)
   const actions=[
     ...(workspace?[{id:'templates',label:t('Mẫu'),icon:<ChartIcon name="note-edit"/>,onClick:()=>setTemplatesOpen(true)}]:[]),
+    ...(count>1 && onMerge?[{id:'merge',label:t('Gộp'),icon:<ChartIcon name="merge"/>,disabled:Boolean(mergeIssue),hint:mergeIssue?t(mergeIssue):undefined,onClick:onMerge}]:[]),
     ...(count>1 && onTags?[{id:'tags',label:t('Thêm/xóa nhãn'),icon:<ChartIcon name="tag"/>,onClick:onTags}]:[]),
   ]
-  return <><SelectionToolbar label={t('{count} giao dịch đã chọn',{count})} summary={t('Đã chọn {count} giao dịch',{count})} onClose={onClose} onSelectAll={onSelectAll} selectAllHint={t('Chọn các lệnh trên trang')} actions={actions}/>{templatesOpen && <BulkTemplates workspace={workspace} count={count} context={context} onClose={()=>setTemplatesOpen(false)}/>}</>
+  return <><SelectionToolbar label={t('{count} giao dịch đã chọn',{count})} summary={t('Đã chọn {count} giao dịch',{count})} allSelected={allSelected} onClose={onClose} onSelectAll={onSelectAll} selectAllHint={t('Chọn các lệnh trên trang')} clearHint={t('Bỏ chọn mọi giao dịch, kể cả ngoài trang này.')} actions={actions}/>{templatesOpen && <BulkTemplates workspace={workspace} count={count} context={context} onClose={()=>setTemplatesOpen(false)}/>}</>
 }
 
 export function TradeBulkTagsDialog({ count, labels = [], groups = [], onClose }) {

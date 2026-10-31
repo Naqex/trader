@@ -64,12 +64,13 @@ fn native(method: &str, path: &str) -> bool {
 }
 
 fn native_owner(method: &str, path: &str) -> Option<&'static str> {
-    let owners: [(&str, fn(&str, &str) -> bool); 17] = [
+    let owners: [(&str, fn(&str, &str) -> bool); 18] = [
         ("demo_trading", crate::demo_trading::native),
         ("mt5_connector", crate::mt5_connector::native),
         ("live_ledger", crate::live_ledger::native),
         ("note_types", crate::note_types::native),
         ("trade_labels", crate::trade_labels::native),
+        ("trade_groups", crate::trade_groups::native),
         ("note_library", crate::note_library::native),
         ("session_presets", crate::session_presets::native),
         ("metadata_mutations", crate::metadata_mutations::native),

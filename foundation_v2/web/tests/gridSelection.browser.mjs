@@ -32,22 +32,20 @@ try {
    const grid=page.locator(gridSelector),checks=grid.locator('tbody input[type=checkbox]')
    await checks.first().waitFor();await checks.first().check()
    const bar=page.locator('.wm-trade-selection-bar'),all=bar.getByRole('button',{name:'Chọn tất cả',exact:true}),clear=bar.getByRole('button',{name:'Bỏ chọn tất cả',exact:true})
-   await bar.waitFor();assert(await all.isVisible());assert(await clear.isVisible())
+   await bar.waitFor();assert.equal(await bar.locator('.wm-trade-selection-controls > button').count(),1)
    if(await checks.count()>1)await checks.nth(1).check()
    const geometry=await bar.evaluate(node=>{
     const box=selector=>{const r=(selector===':scope'?node:node.querySelector(selector)).getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height,c:r.y+r.height/2}}
-    return {bar:box(':scope'),close:box('.wm-trade-selection-close'),summary:box('strong'),all:box('.wm-trade-selection-all'),clear:box('.wm-trade-selection-clear')}
+    return {bar:box(':scope'),close:box('.wm-trade-selection-close'),summary:box('strong'),toggle:box('.wm-trade-selection-controls > button')}
    })
    assert(Math.abs(geometry.close.c-geometry.summary.c)<1,JSON.stringify(geometry))
-   assert(Math.abs(geometry.all.c-geometry.clear.c)<1)
-   if(width>680)assert(Math.abs(geometry.all.c-geometry.summary.c)<1)
+   if(width>680)assert(Math.abs(geometry.toggle.c-geometry.summary.c)<1)
    assert(geometry.bar.x>=0&&geometry.bar.x+geometry.bar.w<=width+1)
-   assert(geometry.all.x+geometry.all.w<geometry.clear.x)
-   await clear.hover();await page.screenshot({path:`${out}/${name}-selected-${width}-${theme}.png`})
-   await all.click();assert.equal(await checks.locator(':not(:checked)').count(),0)
+   await bar.locator('.wm-trade-selection-controls > button').hover();await page.screenshot({path:`${out}/${name}-selected-${width}-${theme}.png`})
+   if(await all.isVisible())await all.click();assert.equal(await checks.locator(':not(:checked)').count(),0)
    await clear.click();await bar.waitFor({state:'detached'});assert.equal(await grid.locator('tbody input:checked').count(),0)
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false)
-   report.cases.push({name,width,theme,geometry,behavior:'select 1/2, select all, explicit deselect all, hover, no page overflow'})
+   report.cases.push({name,width,theme,geometry,behavior:'select 1/2, select all, conditional toggle + deselect all, hover, no page overflow'})
   }
   await goto('view=market-data&area=testing&section=market-data')
   const table=page.locator('.rd-table'),wrap=page.locator('.rd-table-wrap')

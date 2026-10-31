@@ -80,6 +80,10 @@ pub const MIGRATIONS: &[(&str, &[u8])] = &[
         "0019_note_types.sql",
         include_bytes!("../../migrations/0019_note_types.sql"),
     ),
+    (
+        "0020_trade_groups.sql",
+        include_bytes!("../../migrations/0020_trade_groups.sql"),
+    ),
 ];
 pub const MIGRATION_LOCK_KEY: i64 = 0x54574D47;
 

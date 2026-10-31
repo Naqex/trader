@@ -40,7 +40,7 @@ def main():
             path,sha=artifacts.write_dataset('tenant-a','notes-fixture',rows)
             store.put_dataset(DatasetManifest(dataset_id='notes-fixture',workspace_id='tenant-a',source=DatasetSource(source_id='synthetic',provider='synthetic',instrument_mapping={'EURUSD':'EURUSD'},license_use='fixture',retrieved_at_utc='2026-01-01T00:00:00Z',export_settings='fixture'),instrument_id='EURUSD',timeframe='M1',timeframe_seconds=60,instrument_spec=initial.instrument_spec,row_count=60,first_timestamp=rows[0]['timestamp'],last_timestamp=rows[-1]['timestamp'],artifact_path=path,artifact_sha256=sha,created_at_utc='2026-01-01T00:00:00Z'))
             env={key:value for key,value in os.environ.items() if not key.startswith('TW_V2_')}
-            env.update(TW_V2_DATABASE_URL=dsn,TW_V2_ARTIFACT_ROOT=str(work/'artifacts'),TW_V2_LOCAL_IDENTITY='local-owner',TW_V2_LOCAL_WORKSPACES='tenant-a,tenant-b',TW_V2_RUNTIME_PROFILE='native',TW_V2_RUST_REQUESTS_PER_MINUTE='10000')
+            env.update(TW_V2_DATABASE_URL=dsn,TW_V2_ARTIFACT_ROOT=str(work/'artifacts'),TW_V2_LOCAL_IDENTITY='local-owner',TW_V2_LOCAL_WORKSPACES='tenant-a,tenant-b',TW_V2_RUNTIME_PROFILE='native',TW_V2_RUST_REQUESTS_PER_MINUTE='10000',TW_V2_RUST_POOL_TIMEOUT_MS='10000',TW_V2_RUST_REQUEST_TIMEOUT_MS='60000')
             with (args.output/'probe.log').open('w',encoding='utf-8') as log:
                 process=subprocess.Popen([str(args.probe)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=log,text=True,encoding='utf-8',env=env,creationflags=subprocess.CREATE_NO_WINDOW)
                 lock=threading.Lock()
@@ -158,6 +158,9 @@ def main():
                     snapshot=dict(deals=fills,positions=[],orders=[],quotes=[],cashflows=[],account=dict(balance=1000,equity=1000,account_ref='1234567',currency='USD',opening_balance=10000))
                     db.execute("INSERT INTO mt5_connections(workspace_id,connection_id,request_id,account_key,name,server,login_hint,start_date,status,snapshot) VALUES('tenant-a',%s,%s,'synthetic','Fixture','Fixture-Demo','1234567','2026-01-01','connected',%s)",(connection,uuid.uuid4(),json.dumps(snapshot)))
                     db.commit()
+                    from trade_groups_acceptance import check_groups
+                    group_receipt=check_groups(api,db,connection,snapshot,sid)
+                    (args.output/'trade-groups-native.json').write_text(json.dumps(group_receipt,indent=2),encoding='utf-8')
                     live=api('POST',media,{**body,'session_id':f'live:{connection}','trade_id':'position:123'})
                     api('POST',media,{**body,'session_id':f'live:{connection}','trade_id':'position:999'},status=404)
                     assert json.loads(json.dumps(db.execute('SELECT snapshot FROM mt5_connections WHERE connection_id=%s',(connection,)).fetchone()[0]))==snapshot

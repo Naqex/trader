@@ -1,5 +1,44 @@
 # UI system audit · 31/10/2026
 
+## Gộp nhật ký Live/Testing và một nút chọn tất cả · candidate
+
+- Scope owner duyệt: Gộp/Tách nhóm cho cả Live và Testing. Chưa triển khai xóa
+  giao dịch; hành vi xóa tài khoản vốn có giữ nguyên.
+- Nhóm là metadata nhật ký có thể hoàn tác, gồm2–500 giao dịch đã đóng, cùng
+  tài khoản/phiên, tài sản và hướng. Không tạo execution tổng hợp, không sửa
+  source rows, notes/tags, replay state hoặc analytics. Group header đóng mặc
+  định; expand hiện dòng gốc, partial page/filter hiện visible/total, source
+  đổi facts hiện nhóm cần kiểm tra. Split chỉ xóa quan hệ nhóm sau xác nhận.
+- Dùng chung TradeLedgerGrid cho Testing, broker Live và manual Live; giữ CSV,
+  sort/filter/pagination và màu PnL. Live/Testing/Accounts dùng SelectionToolbar
+  một nút điều kiện. Select all thêm trang hiện tại (accounts: qua bộ lọc);
+  Deselect all hoặc X bỏ mọi selection kể cả trang khác.
+- Native GET/POST `/api/v2/trade-groups` dùng catalog theo workspace, CAS và
+  receipt idempotent. Broker validation đọc snapshot đã lưu, không gọi terminal.
+  Migration0020 đã đăng ký trong Rust checksum authority; chưa áp dụng owner DB.
+- Source review độc lập không còn finding chặn. Build UI và3 model tests PASS.
+  `trade-merge-selection-regression/report.json`:15 case PASS ở1920/1440/390,
+  dark/light và touch, zero writes. Đây là regression toolbar/market/picker
+  đọc API owner cũ; group-read warning dự kiến vì API đó chưa có route mới.
+  `trade-merge-native-qa3/receipt.json` PASS trên PostgreSQL/Router tạm;
+  `trade-groups-native.json` PASS (500 members:0.11s), source records và replay
+  analytics giữ nguyên. Browser report:9 hành trình PASS, errors[], broker Live,
+  manual Live và Testing×1920darkVI/1440lightEN/390touchVI. Gồm merge/reload/
+  expand/split/reload, chặn khác hướng, realCAS refresh, injected503, stale source,
+  chọn/bỏ xuyên trang và Accounts toggle. Không có owner/broker write.
+  Review độc lập source +4ảnh cuối PASS, không còn blocker trong scope này.
+- Lượt native QA1 dừng ở startup schema verification timeout trước domain test.
+  Harness dành10s pool/60s request cho fixture Windows; production defaults giữ
+  nguyên. Build Rust đầu kéo dài, dừng đúng job sở hữu rồi build lại không
+  incremental; dev build cuối PASS. QA2 native PASS nhưng browser phát hiện
+  thanh chọn che pagination Testing. Đã dùng ResizeObserver chung dành khoảng
+  trống theo chiều cao toolbar tại3consumer; QA3 click chuyển trang bình thường
+  PASS. Các failure log được giữ tại backup root.
+- API8010/UI5180 chưa thay đổi ở lát này. Rollout cần owner duyệt migration0020
+  và cập nhật local sau khi candidate qua native/browser/visual QA.
+
+Evidence/candidate: `E:/BACKUP-TRADINGWORKSPACE/ui-system-20261031/trade-merge-*`.
+
 ## Kho dữ liệu, bộ đếm liên kết và thanh chọn dùng chung
 
 - Kho dữ liệu bỏ scrollbar gutter rỗng; đường kẻ chạy hết pane. Cột Danh mục,

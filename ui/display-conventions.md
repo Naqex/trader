@@ -857,18 +857,33 @@ Journal and Research remain disabled until their data contracts exist. Journal
 status offers Active, Deleted and All as a UI preview; changing it clears checked
 rows. The journal controls share the account/session selector row. Selecting
 trades opens a two-row bottom toolbar; Add/remove tags appears from two selections.
-Templates reuses the note library. Bulk apply, merge and delete are hidden until
-their data contracts are implemented. The library remains available for managing
+Templates reuses the note library. Bulk template apply and delete remain hidden
+until their data contracts are implemented. The library remains available for managing
 templates. Row delete icons are omitted. The shared selection toolbar also serves
 Trading Accounts, preserving its real sync/delete handlers and permission/uncertain/
-busy gates. Select all and Deselect all are separate, persistent header actions;
-Select all adds the current trade page or filtered accounts, while Deselect all
-clears the selection. Icon, count and controls share a vertical center on desktop;
+busy gates. One header action switches from Select all to Deselect all once its
+scope is fully selected. Select all adds the current trade page or filtered
+accounts; Deselect all and the close icon clear the entire selection, including
+other pages. Icon, count and controls share a vertical center on desktop;
 small screens move the controls to a second row and retain touch targets.
+The owning ledger/account pane reserves the floating toolbar's measured height
+so its pagination remains clickable while rows are selected.
 The bulk tag preview uses catalog group IDs, stacked group/tag fields,
 a flat add-group divider and stable row keys; it never edits the catalog or trade
 assignments. The unavailable apply action is hidden. These journal previews must
 not change broker state, notes, tags, media, PnL or analytics.
+
+Live and Testing support reversible journal groups of 2–500 completed trades
+from the same source account/session, symbol and direction. The native catalog
+validates authoritative stored source data; its workspace revision and command
+receipt protect concurrent edits and retries. A merge requires confirmation and
+creates a collapsed group header. Expand reveals the original rows; Split
+requires confirmation and removes only the grouping. Filters, pagination, CSV,
+notes, fills and analytics continue to use original trades. A partial group
+shows visible/total membership; changed source facts mark the group for review.
+Group controls stay within the horizontal grid viewport on narrow panes.
+Delete remains deferred in both modes. Group persistence requires migration0020;
+do not expose it through a UI-only promotion against an older API/schema.
 
 Analytics and Smart Picks side panels share the mirrored collapse control. The
 panel rail is the default for Smart Picks, while Analytics preserves the

@@ -47,6 +47,7 @@ pub mod session_trading_options;
 pub mod state;
 pub mod telemetry;
 pub mod trade_labels;
+pub mod trade_groups;
 
 use auth::ApiError;
 use axum::{
@@ -74,6 +75,7 @@ fn domain_routes_for(native_runtime: bool) -> Router<Arc<AppState>> {
         .merge(session_presets::routes())
         .merge(live_ledger::routes())
         .merge(trade_labels::routes())
+        .merge(trade_groups::routes())
         .merge(note_library::routes())
         .merge(note_types::routes())
         .merge(mt5_connector::routes())
