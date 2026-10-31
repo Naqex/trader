@@ -76,7 +76,7 @@ function App() {
   if (requestedView === 'journal') { query.set('area', 'testing'); query.set('section', 'trades') }
   if (activeView === 'ai') {
     query.set('area', 'ai')
-    if (!['assistant', 'connections', 'gateway', 'models', 'workflows', 'automation'].includes(query.get('section'))) query.set('section', 'connections')
+    if (!['assistant', 'connections', 'gateway', 'models', 'workflows', 'research', 'automation'].includes(query.get('section'))) query.set('section', 'connections')
   }
   if (activeView === 'market-data') {
     query.set('area', 'testing')
@@ -156,8 +156,9 @@ function App() {
   // Unmount real data readers during preview; fixtures never reach mutation handlers.
   if (visualMode !== 'real') content = <ViewStatePreview key={`${activeView}:${query.get('analytics_source')}:${query.get('section')}:${visualMode}`} state={visualMode} view={activeView} workspace={workspace} query={query} onChange={changePreview} />
   if (query.get('ui_reference') === '1') content = <TestingComponentReference />
-  const topbarAction = query.get('ui_reference') !== '1' && <><WorkspaceConnectionNote key={workspace} workspace={workspace} enabled={visualMode === 'real'} previewState={visualMode} /><ViewStateSelect value={visualMode} view={activeView} disabled={!demoAvailable} onChange={changePreview} /></>
-  return <FxReplayShell workspace={workspace} query={query} activeView={activeView} mode={mode} topbarAction={topbarAction} gatewayPage={gatewayPage}><WorkspaceQueryProvider key={workspace} workspace={workspace} eventsEnabled={visualMode === 'real' && query.get('ui_reference') !== '1'}><TestingRouteBoundary key={scope} fallback={<TestingEmptyState kind="page-error" viewport />}><Suspense fallback={loadingFallback}>{content}</Suspense></TestingRouteBoundary></WorkspaceQueryProvider></FxReplayShell>
+  const researchPreview = activeView === 'ai' && query.get('section') === 'research'
+  const topbarAction = query.get('ui_reference') !== '1' && (researchPreview ? <span className="air-shell-preview">{query.get('lang') === 'en' ? 'UI preview' : 'Bản mẫu UI'}</span> : <><WorkspaceConnectionNote key={workspace} workspace={workspace} enabled={visualMode === 'real'} previewState={visualMode} /><ViewStateSelect value={visualMode} view={activeView} disabled={!demoAvailable} onChange={changePreview} /></>)
+  return <FxReplayShell workspace={workspace} query={query} activeView={activeView} mode={mode} topbarAction={topbarAction} gatewayPage={gatewayPage}><WorkspaceQueryProvider key={workspace} workspace={workspace} eventsEnabled={visualMode === 'real' && !researchPreview && query.get('ui_reference') !== '1'}><TestingRouteBoundary key={scope} fallback={<TestingEmptyState kind="page-error" viewport />}><Suspense fallback={loadingFallback}>{content}</Suspense></TestingRouteBoundary></WorkspaceQueryProvider></FxReplayShell>
 }
 
 const rootElement = document.getElementById('root')

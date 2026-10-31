@@ -1,0 +1,147 @@
+import assert from 'node:assert/strict'
+import { mkdir, writeFile } from 'node:fs/promises'
+import path from 'node:path'
+import { chromium } from 'playwright'
+
+const origin = process.argv[2] || 'http://127.0.0.1:5218'
+assert.equal(new URL(origin).hostname, '127.0.0.1')
+assert.ok(!['5180', '8010'].includes(new URL(origin).port), 'Use an isolated UI preview')
+const out = path.resolve(process.argv[3] || '../evidence/ai-research-ui-20261031/browser')
+await mkdir(out, { recursive: true })
+const report = { scope: 'UI-only production build. All APIs unavailable; writes and external requests blocked. Local browser fixtures are not engine/provider/broker evidence.', cases: [], errors: [], writes: [], external: [] }
+const browser = await chromium.launch({ headless: true })
+try {
+  for (const [width, theme, lang] of [[1440, 'dark', 'vi'], [1920, 'dark', 'vi'], [1440, 'light', 'en'], [768, 'dark', 'vi'], [390, 'light', 'en']]) {
+    const en = lang === 'en', t = (a, b) => en ? b : a
+    const context = await browser.newContext({ viewport: { width, height: 940 }, reducedMotion: 'reduce' })
+    await context.addInitScript(({ theme, lang }) => { localStorage.setItem('tw-theme', theme); localStorage.setItem('tw-language', lang) }, { theme, lang })
+    await context.routeWebSocket('**/*', socket => socket.close())
+    await context.route('**/*', route => {
+      const req = route.request(), url = new URL(req.url())
+      if (url.origin !== origin) { report.external.push(url.origin); return route.abort() }
+      if (!['GET', 'HEAD'].includes(req.method())) { report.writes.push({ method: req.method(), path: url.pathname }); return route.abort() }
+      if (url.pathname.startsWith('/api/')) return route.fulfill({ status: url.pathname === '/api/v2/events' ? 204 : 503, json: { detail: 'ui_preview_services_not_connected' } })
+      return route.continue()
+    })
+    const page = await context.newPage(); page.setDefaultTimeout(10000)
+    page.on('pageerror', error => report.errors.push({ width, theme, lang, error: error.message }))
+    const url = `${origin}/?workspace=preview-qa&view=ai&area=ai&section=research&lang=${lang}`
+    const openTask = async title => {
+      if (width <= 760 && await page.locator('.air-back').isVisible()) await page.locator('.air-back').click()
+      await page.locator('.air-task').filter({ hasText: title }).click()
+    }
+    try {
+      await page.goto(url, { waitUntil: 'domcontentloaded' })
+      await page.getByTestId('ai-research-preview').waitFor()
+      await page.getByRole('heading', { name: t('Nghiên cứu', 'Research'), exact: true }).waitFor()
+      assert.equal(await page.locator('.air-task').count(), 4)
+      await page.screenshot({ path: path.join(out, `list-${width}-${theme}-${lang}.png`) })
+      await openTask(t('Bộ lọc biến động', 'Volatility filter'))
+      if (width > 760) assert((await page.locator('.air-detail-footer').boundingBox()).y + (await page.locator('.air-detail-footer').boundingBox()).height <= 941, 'Footer should fit the desktop viewport')
+      await page.screenshot({ path: path.join(out, `overview-${width}-${theme}-${lang}.png`) })
+      await page.getByRole('tab', { name: new RegExp(t('Thử nghiệm', 'Experiments')) }).click()
+      assert.equal(await page.locator('.air-trials-table tbody tr').count(), 4)
+      await page.getByText(t('Số liệu minh họa', 'Illustrative values'), { exact: true }).waitFor()
+      await page.screenshot({ path: path.join(out, `experiments-${width}-${theme}-${lang}.png`) })
+      await page.getByRole('tab', { name: t('Tổng quan', 'Overview'), exact: true }).focus()
+      await page.keyboard.press('ArrowRight')
+      assert.equal(await page.getByRole('tab', { name: new RegExp(t('Thử nghiệm', 'Experiments')) }).getAttribute('aria-selected'), 'true')
+      await page.getByRole('button', { name: t('Xét chạy demo', 'Review for demo'), exact: true }).click()
+      await page.getByRole('dialog').waitFor()
+      await page.getByRole('button', { name: t('Ghi nhận lựa chọn', 'Record choice'), exact: true }).click()
+      await page.locator('.air-detail-footer [role=status]').waitFor()
+      assert.match(await page.locator('.air-detail-footer').innerText(), /demo/)
+      await page.reload(); await page.getByTestId('ai-research-preview').waitFor()
+      if (width <= 760) await openTask(t('Bộ lọc biến động', 'Volatility filter'))
+      await page.locator('.air-detail-footer [role=status]').waitFor()
+      await page.getByRole('button', { name: t('Đổi lựa chọn', 'Change choice'), exact: true }).click()
+      await page.getByRole('button', { name: t('Nghiên cứu thêm', 'Research further'), exact: true }).click()
+      await page.getByRole('button', { name: t('Ghi nhận lựa chọn', 'Record choice'), exact: true }).click()
+      await page.getByRole('tab', { name: t('Nhật ký', 'Activity'), exact: true }).click()
+      await page.getByText(t('Đã yêu cầu nghiên cứu thêm trong bản mẫu', 'Further research requested in the preview'), { exact: true }).waitFor()
+      await openTask(t('Xác nhận tín hiệu', 'Confirm price'))
+      const stop = page.getByRole('button', { name: t('Dừng bản mẫu', 'Stop preview'), exact: true })
+      await stop.click(); await page.keyboard.press('Escape')
+      assert.equal(await page.getByRole('dialog').count(), 0)
+      assert(await stop.evaluate(node => node === document.activeElement), 'Escape returns focus to the trigger')
+      await stop.click(); await page.getByRole('dialog').getByRole('button', { name: t('Dừng bản mẫu', 'Stop preview'), exact: true }).click()
+      assert.match(await page.locator('.air-detail-heading').innerText(), new RegExp(t('Đã dừng', 'Stopped')))
+      await openTask(t('Kiểm tra độ bền', 'Check robustness'))
+      await page.getByText(t('Cần thêm dữ liệu trước khi kết luận.', 'More data is needed before drawing a conclusion.'), { exact: true }).waitFor()
+      await openTask(t('Đối chiếu dữ liệu', 'Validate data'))
+      await page.getByText(t('Dữ liệu mẫu bị thiếu. Chưa tạo được kết quả.', 'Sample data is incomplete. No result was produced.'), { exact: true }).waitFor()
+      await page.screenshot({ path: path.join(out, `error-${width}-${theme}-${lang}.png`) })
+      await page.getByRole('button', { name: t('Nghiên cứu mới', 'New research'), exact: true }).click()
+      await page.getByRole('dialog').waitFor()
+      await page.screenshot({ path: path.join(out, `create-${width}-${theme}-${lang}.png`) })
+      await page.getByLabel(t('Tên nghiên cứu', 'Research name'), { exact: true }).fill('My local draft')
+      await page.getByLabel(t('Bạn muốn kiểm tra điều gì?', 'What would you like to test?'), { exact: true }).fill('Compare a sample volatility filter with the baseline.')
+      await page.getByLabel(t('Số lần thử tối đa', 'Maximum trials'), { exact: true }).fill('5')
+      await page.getByRole('dialog').getByRole('button', { name: t('Dữ liệu mẫu', 'Sample data'), exact: true }).click()
+      await page.getByRole('option', { name: 'EUR/USD · H4', exact: true }).click()
+      await page.getByRole('button', { name: t('Tạo bản nháp', 'Create draft'), exact: true }).click()
+      await page.getByRole('heading', { name: 'My local draft', exact: true }).waitFor()
+      assert.match(await page.locator('.air-context').innerText(), /EUR\/USD/)
+      await page.reload(); await page.getByTestId('ai-research-preview').waitFor()
+      if (width <= 760) await openTask('My local draft')
+      await page.getByRole('heading', { name: 'My local draft', exact: true }).waitFor()
+      assert.equal(await page.locator('.air-task').count(), 5)
+      if (width === 1440 && !en) {
+        await page.goto(url.replace('preview-qa', 'other-preview-workspace'))
+        await page.getByTestId('ai-research-preview').waitFor()
+        assert.equal(await page.locator('.air-task').count(), 4, 'Preview records must be isolated by workspace')
+        assert.equal(await page.getByRole('heading', { name: 'My local draft', exact: true }).count(), 0)
+        await page.goto(url); await page.getByRole('heading', { name: 'My local draft', exact: true }).waitFor()
+      }
+      if (width <= 760) await page.locator('.air-back').click()
+      await page.getByRole('searchbox', { name: t('Tìm nghiên cứu', 'Search research') }).fill('does-not-exist')
+      await page.getByText(t('Không tìm thấy nghiên cứu.', 'No research found.'), { exact: true }).waitFor()
+      await page.getByRole('button', { name: t('Xóa bộ lọc', 'Clear filters'), exact: true }).click()
+      await page.getByRole('button', { name: t('Trạng thái nghiên cứu', 'Research status'), exact: true }).click()
+      await page.getByRole('option', { name: t('Bản nháp', 'Draft'), exact: true }).click()
+      assert.equal(await page.locator('.air-task').count(), 1)
+      await openTask('My local draft')
+      await page.getByRole('button', { name: t('Xem luồng mẫu', 'Explore sample flow'), exact: true }).click()
+      await page.getByRole('dialog').getByRole('button', { name: t('Kết quả minh họa', 'Sample outcome'), exact: true }).click()
+      await page.getByRole('option', { name: t('Chưa đủ bằng chứng', 'More evidence needed'), exact: true }).click()
+      await page.getByRole('button', { name: t('Mở tình huống mẫu', 'Open sample scenario'), exact: true }).click()
+      await page.getByRole('button', { name: t('Xem kết quả mẫu', 'View sample result'), exact: true }).click()
+      await page.getByText(t('Cần thêm dữ liệu trước khi kết luận.', 'More data is needed before drawing a conclusion.'), { exact: true }).waitFor()
+      await page.getByRole('heading', { name: 'My local draft', exact: true }).waitFor()
+      await page.getByRole('button', { name: t('Khôi phục mẫu', 'Reset preview'), exact: true }).click()
+      await page.getByRole('dialog').getByRole('button', { name: t('Khôi phục mẫu', 'Reset preview'), exact: true }).click()
+      assert.equal(await page.locator('.air-task').count(), 4)
+      await page.getByRole('button', { name: t('Nghiên cứu mới', 'New research'), exact: true }).click()
+      await page.keyboard.press('Escape')
+      assert.equal(await page.getByRole('dialog').count(), 0)
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)
+      assert(overflow <= 1, `Page overflow: ${overflow}`)
+      report.cases.push({ width, theme, lang, outcome: 'pass', overflow, journeys: ['review/choice/reload', 'stop/Escape/focus', 'insufficient/error', 'create/select/reload', 'search/empty/filter/reset', 'draft/sample-flow/result', 'tabs/keyboard'] })
+    } catch (error) {
+      await page.screenshot({ path: path.join(out, `failure-${width}-${theme}-${lang}.png`) }).catch(() => {})
+      report.cases.push({ width, theme, lang, outcome: 'fail', error: error.message })
+    } finally { await context.close() }
+  }
+  const context = await browser.newContext()
+  await context.addInitScript(() => {
+    const original = Storage.prototype.setItem
+    Storage.prototype.setItem = function (key, value) { if (key.startsWith('naqex:ai-research-preview')) throw new DOMException('Preview storage denied', 'QuotaExceededError'); return original.call(this, key, value) }
+  })
+  const page = await context.newPage()
+  await page.goto(`${origin}/?workspace=storage-check&view=ai&area=ai&section=research&lang=en`)
+  await page.getByRole('alert').filter({ hasText: 'Browser storage could not be read or saved' }).waitFor()
+  report.cases.push({ name: 'storage-write-failure', outcome: 'pass' })
+  await context.close()
+  const corruptContext = await browser.newContext()
+  await corruptContext.addInitScript(() => localStorage.setItem('naqex:ai-research-preview:v1:corrupt-check', '{invalid'))
+  const corruptPage = await corruptContext.newPage()
+  await corruptPage.goto(`${origin}/?workspace=corrupt-check&view=ai&area=ai&section=research&lang=en`)
+  await corruptPage.getByRole('alert').filter({ hasText: 'The saved preview could not be read' }).waitFor()
+  assert.equal(await corruptPage.locator('.air-task').count(), 4)
+  report.cases.push({ name: 'corrupt-storage-recovery', outcome: 'pass' })
+  await corruptContext.close()
+} catch (error) { report.errors.push({ error: error.message }) }
+finally { await browser.close() }
+await writeFile(path.join(out, 'report.json'), JSON.stringify(report, null, 2))
+console.log(JSON.stringify({ cases: report.cases, errors: report.errors, writes: report.writes, external: report.external }))
+if (report.cases.some(item => item.outcome !== 'pass') || report.errors.length || report.writes.length || report.external.length) process.exitCode = 1

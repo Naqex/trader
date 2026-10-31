@@ -99,6 +99,7 @@ const SHELL_COPY = {
       aiGateway: ['CLIProxyAPI', 'Trang quản trị CLIProxyAPI'],
       aiModels: ['Model', 'Model mặc định và theo tính năng'],
       aiWorkflows: ['Luồng AI', 'Phân tích đa model và dữ liệu chỉ đọc'],
+      aiResearch: ['Nghiên cứu', 'Nghiên cứu chiến lược · Bản mẫu'],
       automation: ['Bot', 'Bot giao dịch và AI giao dịch'],
       myStrategies: ['My strategies', 'Chiến lược của tôi'],
       trade: ['Trades', 'Giao dịch trong phiên replay'],
@@ -158,6 +159,7 @@ const SHELL_COPY = {
       aiGateway: ['CLIProxyAPI', 'CLIProxyAPI management'],
       aiModels: ['Models', 'Default and feature models'],
       aiWorkflows: ['Workflows', 'Multi-model analysis and read-only data'],
+      aiResearch: ['Research', 'Strategy research · Preview'],
       automation: ['Bots', 'Trading bots and AI trading'],
       myStrategies: ['My strategies', 'Your strategies'],
       trade: ['Trades', 'Trades in a replay session'],
@@ -223,6 +225,7 @@ const SIDEBAR_SECTIONS = [
       { id: 'ai-gateway', copyKey: 'aiGateway', icon: 'connections', route: 'ai', activeViews: ['ai'], section: 'gateway' },
       { id: 'ai-models', copyKey: 'aiModels', icon: 'settings', route: 'ai', activeViews: ['ai'], section: 'models' },
       { id: 'ai-workflows', copyKey: 'aiWorkflows', icon: 'automation', route: 'ai', activeViews: ['ai'], section: 'workflows' },
+      { id: 'ai-research', copyKey: 'aiResearch', icon: 'research', route: 'ai', activeViews: ['ai'], section: 'research' },
       { id: 'ai-automation', copyKey: 'automation', icon: 'automation', route: 'ai', activeViews: ['ai'], section: 'automation' },
     ],
   },
@@ -274,7 +277,7 @@ function hrefFor(id, workspace, query, overrides = {}) {
   return buildWorkspaceHref(id, workspace, query, overrides)
 }
 
-const railIcons = { dashboard:'dashboard', sessions:'list', trades:'trades', analytics:'analytics', testing:'analytics', live:'activity', calendar:'calendar', notes:'document', tags:'tags', accounts:'account', strategies:'compass', 'my-strategies':'list-checks', education:'learn', learn:'learn', trade:'candles', playbook:'compass', settings:'settings', ai:'sparkles', connections:'link', automation:'bot' }
+const railIcons = { dashboard:'dashboard', sessions:'list', trades:'trades', analytics:'analytics', testing:'analytics', live:'activity', calendar:'calendar', notes:'document', tags:'tags', accounts:'account', strategies:'compass', 'my-strategies':'list-checks', education:'learn', learn:'learn', trade:'candles', playbook:'compass', settings:'settings', ai:'sparkles', connections:'link', automation:'bot', research:'layers' }
 function RailIcon({ id }) {
   return <AppIcon name={railIcons[id] || 'chart'} size={20} className="fx-nav-icon-svg" />
 }

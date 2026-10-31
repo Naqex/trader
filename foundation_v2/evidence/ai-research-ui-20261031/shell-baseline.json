@@ -1,0 +1,7 @@
+{
+  "baselineHead": "884d04f2fbaba890ae98e2af2700bef05482cd68",
+  "baselineExitCode": 1,
+  "sameFailure": true,
+  "expectedPattern": "viewBox=\"0 0 242 30\"",
+  "scope": "Exact existing test executed against HEAD copies of its three source inputs; no source worktree mutation."
+}
