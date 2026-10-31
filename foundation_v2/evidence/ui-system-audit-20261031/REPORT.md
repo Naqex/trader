@@ -11,9 +11,18 @@
 
 - API8010 đã cutover sang `trading-workspace-api-live-review-note.exe`, SHA256 `e3156e9186740dcc64a33ccba907a68b7eb28e3d3502343972055af94a7fcdad`.
 - Preflight và readiness đều PASS; database không cần migration, không có broker order hoặc submission chưa reconcile.
-- UI5180 đã promote drawer Notes rồi promote tiếp candidate audit UI bằng thay thế `index.html` atomic. Hash phục vụ cuối: `30503c38361676b76db5164c7762240119b0838847f22a8858f9d3e2e6aacf2e`.
+- UI5180 đã promote drawer Notes rồi promote tiếp candidate audit UI bằng thay thế `index.html` atomic. Hash phục vụ trước lượt chỉnh drawer cuối: `30503c38361676b76db5164c7762240119b0838847f22a8858f9d3e2e6aacf2e`.
 - Backup trước rollout: `E:/BACKUP-TRADINGWORKSPACE/live-note-review-20261030/ui-before-live-review-20261031-073938` và `E:/BACKUP-TRADINGWORKSPACE/ui-system-20261030/ui-before-live-review-20261031-074108`.
 - Kiểm tra deployed: Notes drawer mở được ở 1.920px và 390px; Live trades và Testing trades mở được ở 1.440px; không có page error hoặc overflow.
+
+## Cập nhật drawer theo reference FXReplay
+
+- Notes drawer: giữ editor ở bên phải, làm gọn context bên trái, đổi ngày thành hai control dạng pill, note type thành semantic pill, và chia summary thành PnL/Return chính cùng win rate và tổng giao dịch. Trạng thái `N/A` và dữ liệu thiếu vẫn giữ nguyên.
+- Trade detail drawer: mặc định sidebar còn khoảng 28% chiều rộng ở desktop để vùng ghi chú rộng hơn; resize thủ công và giá trị đã lưu của người dùng vẫn được tôn trọng.
+- Build cuối: `npm run build -- --outDir E:/BACKUP-TRADINGWORKSPACE/ui-system-20261031/note-context-candidate3` — pass, 2,810 modules transformed.
+- UI5180 đã promote candidate3 bằng thay thế `index.html` atomic; hash phục vụ cuối: `2c01b87d225ee043727573017d867fcc0cf6d1d222d3c5c29d745d6b08b429ad`.
+- Backup ngay trước promote cuối: `E:/BACKUP-TRADINGWORKSPACE/ui-system-20261031/ui-before-live-review-20261031-082704`.
+- Deployed QA: Notes ở 1.920px và 390px; Live/Testing trades ở 1.440px và 390px; không page error, không overflow ngang; API readiness vẫn `ok=true`, `execution_capability=false`. Không restart API trong lượt UI-only này.
 
 ## Đã áp dụng
 

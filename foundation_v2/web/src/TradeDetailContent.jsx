@@ -44,7 +44,7 @@ export default function TradeDetailContent({ children, tags, noteScope }) {
   const { t } = useTestingLocale(), id = useId()
   const [tab, setTab] = useState('details')
   const pane=useRef(null),drag=useRef(null)
-  const [ratio,setRatio]=useState(()=>{try{const stored=Number(localStorage.getItem('tw:trade-details-ratio'));return stored>=.2 && stored<=.65?stored:1/3}catch{return 1/3}})
+  const [ratio,setRatio]=useState(()=>{try{const stored=Number(localStorage.getItem('tw:trade-details-ratio'));return stored>=.2 && stored<=.65?stored:.28}catch{return .28}})
   const resize=value=>{
     const width=pane.current.getBoundingClientRect().width
     const next=Math.max(260/width,Math.min(Math.min(.65,(width-300)/width),value))

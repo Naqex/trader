@@ -70,7 +70,7 @@ dialog.fxa-trade-inspector::backdrop { background: #0008; }
 .fx-live-trade-heading .is-negative { color:var(--wm-negative); }
 .fx-trade-drawer-close { display:inline-flex; align-items:center; justify-content:center; flex:0 0 32px; width:32px; min-height:32px; padding:4px; }
 .fx-trade-drawer-close > svg { width:18px; height:18px; }
-.fx-trade-detail-content { --trade-sidebar-size:clamp(260px,var(--trade-details-ratio,33.333%),calc(100% - 300px)); position:relative; display:grid; grid-template-columns:var(--trade-sidebar-size) minmax(0,1fr); min-width:0; min-height:0; height:100%; }
+.fx-trade-detail-content { --trade-sidebar-size:clamp(260px,var(--trade-details-ratio,28%),calc(100% - 300px)); position:relative; display:grid; grid-template-columns:var(--trade-sidebar-size) minmax(0,1fr); min-width:0; min-height:0; height:100%; }
 .fx-trade-detail-sidebar { display:flex; flex-direction:column; min-width:0; min-height:0; padding:16px 20px; overflow:auto; border-right:1px solid var(--wm-border); }
 .fx-trade-detail-tabs { flex-shrink:0; }
 .fx-trade-detail-content [role=tabpanel] { display:flex; flex-direction:column; flex:1; min-height:160px; }
