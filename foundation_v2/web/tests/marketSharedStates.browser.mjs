@@ -3,7 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { chromium } from 'playwright'
 import { DEMO_DATASETS } from '../src/demoFixtures.js'
 
-const origin = 'http://127.0.0.1:5180'
+const origin = process.env.TW_UI_ORIGIN || 'http://127.0.0.1:5180'
 const output = process.env.TW_UI_EVIDENCE_DIR || '../evidence/testing-realtime-20261012/market'
 await mkdir(output, { recursive:true })
 const report = { scope:'Shared Market Data empty states: preview and labeled intercepted GET fixtures of real component; no mutation', cases:[], errors:[], writes:[] }
@@ -14,9 +14,12 @@ try {
     await context.addInitScript(theme => { localStorage.setItem('tw-theme',theme); localStorage.setItem('tw-language','vi') },theme)
     const page = await context.newPage()
     page.on('pageerror',error => report.errors.push(error.message))
-    await context.route('**/*',route => {
+    await context.route('**/*',async route => {
       if (new URL(route.request().url()).origin !== origin) return route.abort()
       if (!['GET','HEAD','OPTIONS'].includes(route.request().method())) { report.writes.push(route.request().url()); return route.abort() }
+      const url=new URL(route.request().url())
+      if(url.pathname==='/api/v2/events')return route.fulfill({status:204,body:''})
+      if(origin!=='http://127.0.0.1:5180' && url.pathname.startsWith('/api/'))return route.fulfill({response:await route.fetch({url:'http://127.0.0.1:5180'+url.pathname+url.search})})
       return route.continue()
     })
     const href = extra => `${origin}/?workspace=tenant-a&view=market-data&area=testing&section=market-data${extra}`
@@ -41,7 +44,7 @@ try {
           const content = el.closest('.fx-content').getBoundingClientRect(), table = el.querySelector('.rd-table-wrap').getBoundingClientRect()
           return {left:table.left-content.left,right:content.right-table.right,wide:el.querySelector('.rd-table').getBoundingClientRect().width,available:table.width}
         })
-        assert.ok(layout.left >= 15 && layout.right >= 15,'Dataset table shares Testing content gutters')
+        assert.ok(Math.abs(layout.left)<1 && Math.abs(layout.right)<1,'Dataset table spans the full Testing pane')
         assert.ok(layout.wide > layout.available,'Wide populated table retains its own horizontal scrolling')
       }
       report.cases.push({width,theme,mode:'preview',state})

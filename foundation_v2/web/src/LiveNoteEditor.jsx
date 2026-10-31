@@ -38,11 +38,14 @@ function TradePicker({ rows, links, from, to, zone, onApply, onClose, issue }) {
   const toggle=row=>setSelected(current=>{const next=new Map(current),key=noteTradeKey(row);if(next.has(key))next.delete(key);else if(next.size<500)next.set(key,noteTradeLink(row));return next})
   const all=visible.length>0 && visible.every(row=>selected.has(noteTradeKey(row)))
   const some=visible.some(row=>selected.has(noteTradeKey(row)))
+  const selectedVisible=visible.filter(row=>selected.has(noteTradeKey(row))).length
   return <LegacyModal theme={theme()} className="wm-review-trade-picker" label={t('Liên kết giao dịch')} onClose={onClose}>
     <div className="wm-review-picker-search"><SearchInput type="search" aria-label={t('Tìm giao dịch')} value={search} onChange={event=>setSearch(event.target.value)} placeholder={t('Tìm giao dịch')}/></div>
     <div className="wm-review-picker-filters"><FxSelect label="Account" value={account} options={options} onChange={setAccount}/><DateFilter inline value={dates} timezone={zone} onChange={setDates} onValidityChange={setValidDates} label="Khoảng ngày giao dịch"/></div>
     {issue && <p role="status" className="wm-review-issue">{t(issue)}</p>}
-    <div className="wm-review-picker-count"><label><input type="checkbox" checked={all} ref={node=>{if(node)node.indeterminate=some&&!all}} onChange={()=>setSelected(current=>{const next=new Map(current);for(const row of visible){const key=noteTradeKey(row);if(some)next.delete(key);else if(next.size<500)next.set(key,noteTradeLink(row))}return next})}/>{t(some?'Bỏ chọn tất cả':'Chọn tất cả')}</label><span>{t('Đã chọn {count} giao dịch',{count:selected.size})} / 500</span></div>
+    <div className="wm-review-picker-count"><label><input type="checkbox" checked={all} ref={node=>{if(node)node.indeterminate=some&&!all}} onChange={()=>setSelected(current=>{const next=new Map(current);for(const row of visible){const key=noteTradeKey(row);if(some)next.delete(key);else if(next.size<500)next.set(key,noteTradeLink(row))}return next})}/>{t(some?'Bỏ chọn tất cả':'Chọn tất cả')}</label><span>{t('Đã chọn {selected}/{total} giao dịch',{selected:selectedVisible,total:visible.length})}</span></div>
+    {selected.size>selectedVisible && <p className="wm-review-issue" role="status">{t('{count} giao dịch đã chọn ngoài bộ lọc.',{count:selected.size-selectedVisible})}</p>}
+    {selected.size>=500 && <p className="wm-review-issue" role="status">{t('Tối đa 500 giao dịch.')}</p>}
     <div className="wm-review-picker-list">{visible.map(row=><label key={noteTradeKey(row)} className="wm-review-picker-row"><TradeRow row={row}/><input type="checkbox" checked={selected.has(noteTradeKey(row))} disabled={!selected.has(noteTradeKey(row)) && selected.size>=500} onChange={()=>toggle(row)}/></label>)}{!visible.length && <p className="wm-review-empty">{t('Không có giao dịch đã đóng trong khoảng ngày này.')}</p>}</div>
     <footer><button type="button" className="wm-button" onClick={onClose}>{t('Cancel')}</button><button type="button" className="wm-button is-primary" disabled={!validDates} onClick={()=>onApply([...selected.values()])}>{t('Áp dụng')}</button></footer>
   </LegacyModal>

@@ -17,6 +17,9 @@ fills reach the available scroll viewport edge. Full-bleed tables inside an inse
 parent may exceed its content width by the declared gutter; do not cap them back
 to that content width. On desktop, the Trades pane constrains the broker table's
 flex height so only its data viewport scrolls and pagination stays at the pane bottom.
+Market Data uses the same full-width boundary. Its centered sortable columns
+reserve room for label, indicator, priority and clear action; smaller panes scroll
+the table horizontally. The action column also fits the 44px touch menu target.
 Dropdown menu shells use background and shadow without an outer border; preserve
 search separators, keyboard focus and tooltip boundaries. Centered sortable
 columns center the header text itself, reserving equal space for sort/clear
@@ -858,7 +861,11 @@ Templates reuses the note library. Bulk apply, merge and delete are hidden until
 their data contracts are implemented. The library remains available for managing
 templates. Row delete icons are omitted. The shared selection toolbar also serves
 Trading Accounts, preserving its real sync/delete handlers and permission/uncertain/
-busy gates. The bulk tag preview uses catalog group IDs, stacked group/tag fields,
+busy gates. Select all and Deselect all are separate, persistent header actions;
+Select all adds the current trade page or filtered accounts, while Deselect all
+clears the selection. Icon, count and controls share a vertical center on desktop;
+small screens move the controls to a second row and retain touch targets.
+The bulk tag preview uses catalog group IDs, stacked group/tag fields,
 a flat add-group divider and stable row keys; it never edits the catalog or trade
 assignments. The unavailable apply action is hidden. These journal previews must
 not change broker state, notes, tags, media, PnL or analytics.
@@ -894,7 +901,10 @@ Its summary is flat, bounded by full-width horizontal rules in the context pane.
 Linked trades use compact rows with PnL-colored accents. Add/search opens the same
 centered picker; account/date/search filters change its candidates, while Apply
 commits the selection and Cancel/Escape keeps existing links unchanged. The picker
-date range is independent of the note's review range. Hidden account/strategy
+date range is independent of the note's review range. Its count shows selected
+visible candidates / all visible candidates, not the 500-selection limit. Selected
+links outside the filters remain selected and have a separate contextual count;
+the limit appears only when reached. Hidden account/strategy
 metadata is preserved when saving; the extra metadata section is not displayed.
 New notes default to all available completed trades in their review date range,
 up to 500. The initial account reads settle before editing is enabled; incomplete

@@ -61,7 +61,6 @@ export default function LiveAccounts({ workspace, accounts, records, broker, cho
   const listing = transactions ? entries : filtered, pages = Math.max(1,Math.ceil(listing.length/size)), current = Math.min(page,pages)
   const visible = filtered.slice((current-1)*size,current*size), checkedRows=filtered.filter(row=>checked.has(row.id))
   const allChecked=visible.length>0 && visible.every(row=>checked.has(row.id)), mixedChecked=!allChecked && visible.some(row=>checked.has(row.id))
-  const allFilteredChecked=filtered.length>0 && checkedRows.length===filtered.length
   const checkedConnections=checkedRows.flatMap(row=>row.connection && canSyncMt5Connection(row.connection)?[row.connection]:[])
   useEffect(()=>{if(selectPage.current)selectPage.current.indeterminate=mixedChecked},[mixedChecked,transactions])
   const toggleChecked = id => setChecked(current=>{const next=new Set(current);next.has(id)?next.delete(id):next.add(id);return next})
@@ -95,7 +94,7 @@ export default function LiveAccounts({ workspace, accounts, records, broker, cho
         </tr>)}</tbody></DataTable>
         {!filtered.length && <div className="live-empty"><h2>{t(search || sources.length ? 'Không tìm thấy tài khoản' : 'Chưa có tài khoản')}</h2><p>{t(search || sources.length ? 'Thử thay đổi từ khóa hoặc bộ lọc.' : 'Thêm tài khoản ở bảng bên phải để bắt đầu.')}</p></div>}
       </>}
-      {!transactions && checkedRows.length>0 && <SelectionToolbar label={t('Thao tác tài khoản đã chọn')} summary={t('Đã chọn {count} tài khoản',{count:checkedRows.length})} busy={Boolean(busy)} onClose={()=>setChecked(new Set())} onSelectAll={()=>setChecked(allFilteredChecked?new Set():new Set(filtered.map(row=>row.id)))} selectAllLabel={allFilteredChecked?'Bỏ chọn tất cả':'Chọn tất cả'} actions={[
+      {!transactions && checkedRows.length>0 && <SelectionToolbar label={t('Thao tác tài khoản đã chọn')} summary={t('Đã chọn {count} tài khoản',{count:checkedRows.length})} busy={Boolean(busy)} onClose={()=>setChecked(new Set())} onSelectAll={()=>setChecked(new Set(filtered.map(row=>row.id)))} actions={[
         ...(writable && checkedConnections.length?[{id:'sync',label:t('Đồng bộ'),icon:<TestingIcon kind="sync" size={16}/>,hint:t('Đồng bộ các kết nối MT5 đã chọn'),disabled:mutationUncertain,onClick:()=>syncConnections(checkedConnections)}]:[]),
         ...(writable?[{id:'delete',label:t('Xoá'),icon:<TestingIcon kind="delete" size={16}/>,danger:true,disabled:mutationUncertain,onClick:()=>setAction({kind:'remove',rows:checkedRows})}]:[]),
       ]}/>}

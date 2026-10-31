@@ -7584,5 +7584,17 @@
   "Đổi tên ghi chú": {"vi": "Đổi tên ghi chú", "en": "Rename note"},
   "Tìm giao dịch liên kết": {"vi": "Tìm giao dịch liên kết", "en": "Find linked trades"},
   "Khoảng ngày giao dịch": {"vi": "Khoảng ngày giao dịch", "en": "Trade date range"},
-  "Hiển thị {count}/{total}": {"vi": "Hiển thị {count}/{total}", "en": "Showing {count}/{total}"}
+  "Hiển thị {count}/{total}": {"vi": "Hiển thị {count}/{total}", "en": "Showing {count}/{total}"},
+  "Đã chọn {selected}/{total} giao dịch": {
+    "vi": "Đã chọn {selected}/{total} giao dịch",
+    "en": "{selected}/{total} trades selected"
+  },
+  "{count} giao dịch đã chọn ngoài bộ lọc.": {
+    "vi": "{count} giao dịch đã chọn ngoài bộ lọc.",
+    "en": "{count} selected trades outside the filters."
+  },
+  "Tối đa 500 giao dịch.": {
+    "vi": "Tối đa 500 giao dịch.",
+    "en": "Select up to 500 trades."
+  }
 }

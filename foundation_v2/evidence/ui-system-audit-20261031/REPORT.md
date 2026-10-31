@@ -1,5 +1,48 @@
 # UI system audit · 31/10/2026
 
+## Kho dữ liệu, bộ đếm liên kết và thanh chọn dùng chung
+
+- Kho dữ liệu bỏ scrollbar gutter rỗng; đường kẻ chạy hết pane. Cột Danh mục,
+  Nguồn và Dữ liệu có đủ chỗ cho nhãn giữa cột, thứ tự sort và nút clear. Giữ
+  sort dùng chung; pane hẹp cuộn ngang bảng. Cột thao tác 216px đủ nút tải và
+  menu 44px trên touch, không đẩy nút ra khỏi cell.
+- Notes picker đếm số đã chọn trong bộ lọc / tổng giao dịch trong bộ lọc.
+  Lựa chọn ngoài bộ lọc được giữ và báo riêng; 500 vẫn là giới hạn lựa chọn,
+  chỉ hiện khi đạt giới hạn. Cancel không sửa links đã lưu.
+- Thanh chọn Live trades, Testing trades và Trading Accounts dùng chung layout:
+  icon/count/control cùng trục giữa; Chọn tất cả và Bỏ chọn tất cả là hai action
+  riêng. Trades chọn các dòng trên trang, Accounts chọn tài khoản qua bộ lọc;
+  Bỏ chọn tất cả xóa selection. Mobile đưa controls xuống hàng riêng, giữ hitbox.
+  Reference của design system cũng dùng đúng semantics mới. Sync/delete account
+  vẫn giữ handler và permission/busy/uncertain gates.
+- Build cuối PASS (2812 modules). Independent source + visual review PASS;
+  phát hiện và sửa consumer account reference còn toggle-to-clear.
+- `grid-selection-qa6/report.json`: **15 case PASS**, real local API read-only,
+  1920 dark / 1440 light / 390 dark touch; 0 page errors, 0 request ghi.
+  Gồm select 1/2/all/none ở ba trang, đo alignment, sort/clear, right edge,
+  nút touch trong cell, Notes all/partial/none và selection ngoài search filter.
+  Clock của test Notes đặt ngày 28/10 theo lịch sử local; default ngày của app
+  không đổi, không ghi note owner.
+- `grid-selection-market-states-qa1/market-browser.json`: **16 case PASS**;
+  demo + GET fixtures được gắn nhãn, empty/filtered/clear ở hai theme/width.
+- `grid-selection-native-qa1/browser/report.json`: **12 nhóm PASS**;
+  Rust Router/PostgreSQL tạm, synthetic manual/broker trades. Count VI/EN,
+  cap500, lưu/reload links và editor, CAS/recovery qua native API thật của fixture.
+  API owner/broker không bị ghi hoặc restart.
+- UI5180 promote atomic, giữ asset cũ và private files. SHA256 index:
+  `adec3ee1ab6a3264703e861281570b7e8d3c2235c057f877c552360c8d096922`.
+  `grid-selection-deployed-qa1/report.json`: **15 case PASS**, 0 page errors,
+  0 request ghi; kiểm lại ba toolbar, Market và Notes trên UI/API đang phục vụ.
+  API8010 `/health`: `ok=true`, `execution_capability=false`; PID owner giữ nguyên.
+- Các lượt QA thất bại vẫn giữ: route SSE chưa đóng, locator tự đo `:scope`,
+  selector account cũ, ngày review mặc định không có trade. Đây là lỗi harness;
+  đã sửa kiểm thử đúng ngữ cảnh rồi chạy lại. QA6 bổ sung coarse touch và đo
+  action bounds sau khi tăng cột216px. Không thay dữ liệu để đạt PASS.
+
+Evidence/backup của lát này:
+`E:/BACKUP-TRADINGWORKSPACE/ui-system-20261031/grid-selection-*`.
+Đây là acceptance của lát được giao, không chứng nhận toàn bộ product/broker.
+
 ## Date picker theo ngữ cảnh và mặc định liên kết Notes
 
 - Form giữ textbox gõ ngày; toolbar dùng dropdown gọn. Cả hai dùng

@@ -40,7 +40,7 @@ export function TradeBulkSelectionBar({ count, onClose, onSelectAll, onTags, wor
     ...(workspace?[{id:'templates',label:t('Mẫu'),icon:<ChartIcon name="note-edit"/>,onClick:()=>setTemplatesOpen(true)}]:[]),
     ...(count>1 && onTags?[{id:'tags',label:t('Thêm/xóa nhãn'),icon:<ChartIcon name="tag"/>,onClick:onTags}]:[]),
   ]
-  return <><SelectionToolbar label={t('{count} giao dịch đã chọn',{count})} summary={`(${count}) ${t('giao dịch đã chọn')}`} onClose={onClose} onSelectAll={onSelectAll} selectAllHint={t('Chọn các lệnh trên trang')} actions={actions}/>{templatesOpen && <BulkTemplates workspace={workspace} count={count} context={context} onClose={()=>setTemplatesOpen(false)}/>}</>
+  return <><SelectionToolbar label={t('{count} giao dịch đã chọn',{count})} summary={t('Đã chọn {count} giao dịch',{count})} onClose={onClose} onSelectAll={onSelectAll} selectAllHint={t('Chọn các lệnh trên trang')} actions={actions}/>{templatesOpen && <BulkTemplates workspace={workspace} count={count} context={context} onClose={()=>setTemplatesOpen(false)}/>}</>
 }
 
 export function TradeBulkTagsDialog({ count, labels = [], groups = [], onClose }) {
