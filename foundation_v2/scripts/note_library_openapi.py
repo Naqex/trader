@@ -34,3 +34,13 @@ def extend_note_library(schema):
     image["parameters"].append({"name": "media_id", "in": "path", "required": True, "schema": uid})
     image["responses"]["200"] = {"description": "Workspace-authorized bytes; private no-store and nosniff", "content": {kind: {"schema": {"type": "string", "format": "binary"}} for kind in ("image/png", "image/jpeg", "image/webp", "image/gif")}}
     schema["paths"]["/api/v2/trade-media/{media_id}"] = {"get": image}
+
+    note_type = {"type":"object","additionalProperties":False,"required":["id","name","color","archived"],"properties":{"id":{"type":"string"},"name":{"type":"string","minLength":1,"maxLength":64},"color":{"enum":["green","blue","orange","red","purple","cyan","gray"]},"archived":{"type":"boolean"}}}
+    types = {"type":"array","minItems":4,"maxItems":100,"items":note_type}
+    result = {"type":"object","required":["version","revision","items"],"properties":{"version":{"const":"note-types-v1"},"revision":revision,"items":types}}
+    read = operation("note_types_read",result)
+    write = operation("note_types_write",result)
+    write["parameters"].append(idem.copy())
+    write["requestBody"] = {"required":True,"content":{"application/json":{"schema":{"type":"object","additionalProperties":False,"required":["expected_revision","items"],"properties":{"expected_revision":revision,"items":types}}}}}
+    write["description"] = "Workspace note types with optimistic revisions and idempotency. Four built-in identities cannot be archived or removed. Custom types use custom_<UUID>. Deletion archives the type so existing note references remain readable. Names, colors and active type IDs are persisted. Display order is a browser preference."
+    schema["paths"]["/api/v2/note-types"]={"get":read,"post":write}

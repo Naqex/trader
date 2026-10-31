@@ -2,7 +2,7 @@ import AppIcon from './AppIcon.jsx'
 import { zonedDateKey } from './timezone.js'
 import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { dateFieldDisplay, parseDateField } from './dateFormat.js'
-import { boundedDateTimeValue } from './projectDateInputModel.js'
+import { boundedDateTimeValue, rangeDisplay, parseRange, wallTimeAllowed } from './projectDateInputModel.js'
 import { useTestingLocale } from './testingLocale.jsx'
 import './project-date-input.css'
 
@@ -10,8 +10,7 @@ const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 
 function stripZone(value = '') { return String(value).replace(/Z$/, '') }
 function datePart(value = '') { return value ? stripZone(value).split('T')[0] : '' }
-function timePart(value = '') { return stripZone(value).split('T')[1]?.slice(0, 5) || '' }
-function todayIso() { return zonedDateKey(new Date()) }
+function timePart(value = '') { return stripZone(value).split('T')[1]?.split('.')[0] || '' }
 function monthKey(value) { return `${value.getUTCFullYear()}-${String(value.getUTCMonth() + 1).padStart(2, '0')}` }
 function monthDate(month) { return new Date(`${month}-01T00:00:00Z`) }
 function shiftMonth(month, delta) { const date = monthDate(month); date.setUTCMonth(date.getUTCMonth() + delta); return monthKey(date) }
@@ -22,19 +21,19 @@ function monthAllowed(month, min, max) { const first = `${month}-01`, last = `${
 function yearAllowed(year, min, max) { const first = `${year}-01-01`, last = `${year}-12-31`; return (!max || first <= datePart(max)) && (!min || last >= datePart(min)) }
 function formatPickerValue(date, time, type) { const display = date.split('-').reverse().join('/'); return type === 'date' ? display : `${display} ${time || '00:00'}` }
 function isDateAllowed(date, min, max) { const lower = datePart(min), upper = datePart(max); return (!lower || date >= lower) && (!upper || date <= upper) }
-function isDateTimeAllowed(value, min, max) { const candidate = stripZone(value), lower = stripZone(min), upper = stripZone(max); return (!lower || candidate >= lower) && (!upper || candidate <= upper) }
+const isDateTimeAllowed = wallTimeAllowed
 
-function CalendarIcon() { return <AppIcon name="calendar" size={16} /> }
 function Chevron({ direction }) { return <AppIcon name={direction === 'prev' ? 'chevron-left' : 'chevron-right'} size={16} /> }
 
-function TimeSpinner({ value, onChange }) {
+function TimeSpinner({ value, onChange, seconds = false }) {
   const { t } = useTestingLocale()
-  const read = value => /^\d{2}:\d{2}/.test(value || '') ? value.split(':').slice(0, 2) : ['00', '00']
+  const read = value => Array.from({length:seconds?3:2},(_,i)=>String(value || '').split(':')[i] || '00')
   const [parts, setParts] = useState(() => read(value))
   const emitted = useRef(value)
-  useEffect(() => { if (value !== emitted.current) { emitted.current = value; setParts(read(value)) } }, [value])
+  useEffect(() => { emitted.current = value; setParts(read(value)) }, [value, seconds])
   const publish = next => {
-    const time = next.every(part => part !== '') ? next.map(part => String(Number(part)).padStart(2, '0')).join(':') : ''
+    if (next.some(part => part === '')) return
+    const time = next.map(part => String(Number(part)).padStart(2, '0')).join(':')
     emitted.current = time
     onChange({ target: { value: time } })
   }
@@ -55,57 +54,67 @@ function TimeSpinner({ value, onChange }) {
     publish(next)
   }
   return <div className="project-time-spinner" role="group" aria-label={t('Chọn giờ')}>{parts.map((part, index) => <React.Fragment key={index}>
-    {index === 1 && <span aria-hidden="true">:</span>}
+    {index > 0 && <span aria-hidden="true">:</span>}
     <div className="project-time-spinner-column">
-      <button type="button" aria-label={t(index ? 'Tăng phút' : 'Tăng giờ')} onClick={() => commit(index, 1)}><AppIcon name="up" size={16} /></button>
-      <input type="text" inputMode="numeric" role="spinbutton" aria-label={t(index ? 'Phút' : 'Giờ')} aria-valuemin={0} aria-valuemax={index ? 59 : 23} aria-valuenow={Number(part) || 0} value={part} maxLength={2} onFocus={event => event.target.select()} onChange={event => edit(index, event.target.value)} onBlur={() => commit(index)} onKeyDown={event => { if (event.key === 'ArrowUp' || event.key === 'ArrowDown') { event.preventDefault(); commit(index, event.key === 'ArrowUp' ? 1 : -1) } }} />
-      <button type="button" aria-label={t(index ? 'Giảm phút' : 'Giảm giờ')} onClick={() => commit(index, -1)}><AppIcon name="down" size={16} /></button>
+      <button type="button" aria-label={t(index===2?'Tăng giây':index ? 'Tăng phút' : 'Tăng giờ')} onClick={() => commit(index, 1)}><AppIcon name="up" size={16} /></button>
+      <input type="text" inputMode="numeric" role="spinbutton" aria-label={t(index===2?'Giây':index ? 'Phút' : 'Giờ')} aria-valuemin={0} aria-valuemax={index ? 59 : 23} aria-valuenow={Number(part) || 0} value={part} maxLength={2} onFocus={event => event.target.select()} onChange={event => edit(index, event.target.value)} onBlur={() => commit(index)} onKeyDown={event => { if (event.key === 'ArrowUp' || event.key === 'ArrowDown') { event.preventDefault(); commit(index, event.key === 'ArrowUp' ? 1 : -1) } }} />
+      <button type="button" aria-label={t(index===2?'Giảm giây':index ? 'Giảm phút' : 'Giảm giờ')} onClick={() => commit(index, -1)}><AppIcon name="down" size={16} /></button>
     </div>
   </React.Fragment>)}</div>
 }
 
 // Keep ISO at the form boundary while the editable text is independent of OS locale.
-export default function ProjectDateInput({ value = '', onChange, type = 'date', min, max, step, utc = false, clearable = false, todayTime = 'preserve', validationError = '', ...props }) {
+export default function ProjectDateInput({ value = '', onChange, onValidityChange, type = 'date', min, max, step, utc = false, clearable = false, todayTime = 'preserve', validationError = '', range = false, timezone, ...props }) {
   const { t, locale } = useTestingLocale()
-  const [draft, setDraft] = useState(() => dateFieldDisplay(value, type))
-  const initialDate = datePart(value) || todayIso()
+  const today = () => zonedDateKey(new Date(), timezone || (utc ? 'UTC' : undefined))
+  const display = value => range ? rangeDisplay(value) : dateFieldDisplay(value, type)
+  const sourceDate = range ? value.from : datePart(value)
+  const [draft, setDraft] = useState(() => display(value))
+  const [pendingStart, setPendingStart] = useState(null)
+  const [inputError, setInputError] = useState('')
+  const initialDate = sourceDate || today()
   const [viewMonth, setViewMonth] = useState(initialDate.slice(0, 7))
   const [pickerDate, setPickerDate] = useState(initialDate)
-  const [pickerTime, setPickerTime] = useState(timePart(value) || (type === 'datetime-local' ? '00:00' : ''))
+  const [pickerTime, setPickerTime] = useState(timePart(range ? '' : value) || (type === 'datetime-local' ? '00:00' : ''))
   const [pickerView, setPickerView] = useState('day')
   const [open, setOpen] = useState(false)
   const emitted = useRef(value), root = useRef(null), text = useRef(null), trigger = useRef(null), popover = useRef(null)
   const popoverId = useId()
+  useEffect(() => { onValidityChange?.(!inputError && !validationError) }, [inputError, validationError, onValidityChange])
 
   useEffect(() => { if (props.disabled) setOpen(false) }, [props.disabled])
 
   useEffect(() => {
-    if (value !== emitted.current) {
+    if (range ? rangeDisplay(value) !== rangeDisplay(emitted.current) : value !== emitted.current) {
       emitted.current = value
-      setDraft(dateFieldDisplay(value, type))
-      if (datePart(value)) { setPickerDate(datePart(value)); setViewMonth(datePart(value).slice(0, 7)) }
-      if (type === 'datetime-local' || type === 'time') setPickerTime(timePart(value) || (type === 'datetime-local' ? '00:00' : ''))
+      setDraft(display(value))
+      if (sourceDate) { setPickerDate(sourceDate); setViewMonth(sourceDate.slice(0, 7)) }
+      if (type === 'datetime-local' || type === 'time') setPickerTime(timePart(range ? '' : value) || (type === 'datetime-local' ? '00:00' : ''))
+      setInputError('')
       text.current?.setCustomValidity(validationError)
     }
   }, [value, type])
 
   useEffect(() => {
-    const parsed = parseDateField(draft, type)
-    if (parsed) {
-      const valid = type === 'datetime-local' ? isDateTimeAllowed(parsed, min, max) : type === 'date' ? isDateAllowed(parsed, min, max) : true
+    const parsed = range ? parseRange(draft) : parseDateField(draft, type)
+    if (parsed !== null) {
+      const valid = !parsed || (range ? (!parsed.from || isDateAllowed(parsed.from,min,max)) && (!parsed.to || isDateAllowed(parsed.to,min,max)) : type === 'date' ? isDateAllowed(parsed, min, max) : isDateTimeAllowed(parsed,min,max))
       text.current?.setCustomValidity(validationError || (valid ? '' : t('Ngày giờ không hợp lệ')))
+      setInputError(valid ? '' : t('Ngày giờ không hợp lệ'))
     }
-  }, [min, max, draft, type, t, validationError])
+  }, [min, max, draft, type, range, t, validationError])
 
   useEffect(() => {
     if (!open || props.disabled) return undefined
     const closeOnOutside = event => { if (!root.current?.contains(event.target)) { setOpen(false) } }
     const closeOnEscape = event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setOpen(false); trigger.current?.focus({ preventScroll: true }) } }
     document.addEventListener('pointerdown', closeOnOutside)
+    document.addEventListener('focusin', closeOnOutside)
     const field = root.current
     field.addEventListener('keydown', closeOnEscape)
-    popover.current?.querySelector('button:not(:disabled), input:not(:disabled)')?.focus({ preventScroll: true })
-    return () => { document.removeEventListener('pointerdown', closeOnOutside); field.removeEventListener('keydown', closeOnEscape) }
+    const panel=popover.current
+    ;(panel?.querySelector('[role=gridcell][tabindex="0"]:not(:disabled),input:not(:disabled)') || panel?.querySelector('button:not(:disabled)'))?.focus({ preventScroll: true })
+    return () => { document.removeEventListener('pointerdown', closeOnOutside); document.removeEventListener('focusin', closeOnOutside); field.removeEventListener('keydown', closeOnEscape) }
   }, [open, props.disabled])
 
   useLayoutEffect(() => {
@@ -135,28 +144,44 @@ export default function ProjectDateInput({ value = '', onChange, type = 'date', 
   }, [open, props.disabled])
 
   const publish = (event, raw) => {
+    if (range) {
+      const next = parseRange(raw)
+      const valid = next && (!next.from || isDateAllowed(next.from,min,max)) && (!next.to || isDateAllowed(next.to,min,max))
+      text.current?.setCustomValidity(valid ? '' : t('Khoảng ngày không hợp lệ.'))
+      setInputError(valid ? '' : t('Khoảng ngày không hợp lệ.'))
+      if (valid && JSON.stringify(next)!==JSON.stringify(emitted.current)) { emitted.current=next; onChange?.({target:{value:next},currentTarget:{value:next}}) }
+      return
+    }
     const parsed = parseDateField(raw, type)
-    const valid = parsed !== null && (!parsed || (type === 'datetime-local' ? isDateTimeAllowed(parsed, min, max) : type === 'date' ? isDateAllowed(parsed, min, max) : true))
+    const valid = parsed !== null && (!parsed || (type === 'datetime-local' ? isDateTimeAllowed(parsed, min, max) : type === 'date' ? isDateAllowed(parsed, min, max) : isDateTimeAllowed(parsed,min,max)))
     text.current?.setCustomValidity(validationError || (valid ? '' : t('Ngày giờ không hợp lệ')))
-    const next = valid && parsed ? `${parsed}${utc ? 'Z' : ''}` : ''
+    if (!valid) { setInputError(t('Ngày giờ không hợp lệ')); return }
+    setInputError('')
+    const next = parsed ? `${parsed}${utc ? 'Z' : ''}` : ''
     if (next === emitted.current) return
     emitted.current = next
     onChange?.({ ...event, target: { name: props.name, value: next }, currentTarget: { name: props.name, value: next } })
   }
 
   const openPicker = () => {
-    const selected = datePart(value) || datePart(parseDateField(draft, type)) || todayIso()
+    const selected = sourceDate || (!range && datePart(parseDateField(draft, type))) || today()
     const lowerBounded = datePart(min) && selected < datePart(min) ? datePart(min) : selected
     const bounded = datePart(max) && lowerBounded > datePart(max) ? datePart(max) : lowerBounded
     setPickerDate(bounded)
-    setPickerTime(timePart(value) || (type === 'datetime-local' ? '00:00' : ''))
+    setPickerTime(timePart(range ? '' : value) || (type === 'datetime-local' ? '00:00' : ''))
     setViewMonth(bounded.slice(0, 7))
     setPickerView('day')
+    setPendingStart(null)
     setOpen(current => !current)
   }
 
   const chooseDate = (date, timeOverride = null) => {
     if (!isDateAllowed(date, min, max)) return
+    if (range) {
+      if (!pendingStart) { setPendingStart(date); setPickerDate(date); return }
+      const next = date < pendingStart ? {from:date,to:pendingStart} : {from:pendingStart,to:date}
+      setDraft(rangeDisplay(next)); publish({type:'change'},rangeDisplay(next)); setPendingStart(null); setOpen(false); text.current?.focus(); return
+    }
     setPickerDate(date)
     setViewMonth(date.slice(0, 7))
     setPickerView('day')
@@ -187,6 +212,19 @@ export default function ProjectDateInput({ value = '', onChange, type = 'date', 
   const firstTabMonth = Math.max(0, Number((minDate?.startsWith(viewMonth.slice(0,4)) ? minDate : `${viewMonth.slice(0,4)}-01-01`).slice(5,7)) - 1)
   const firstTabYear = Math.max(decadeStart, Number(minDate?.slice(0,4)) || decadeStart)
   const gridKeys = event => {
+    if (pickerView==='day' && event.target.dataset.date && ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','PageUp','PageDown'].includes(event.key)) {
+      event.preventDefault()
+      const date=new Date(`${event.target.dataset.date}T00:00:00Z`), day=date.getUTCDay()
+      if(event.key==='PageUp'||event.key==='PageDown') {
+        const month=shiftMonth(event.target.dataset.date.slice(0,7),event.key==='PageUp'?-1:1)
+        date.setTime(Date.parse(`${month}-${String(Math.min(date.getUTCDate(),lastDayOfMonth(month))).padStart(2,'0')}T00:00:00Z`))
+      } else date.setUTCDate(date.getUTCDate()+({ArrowLeft:-1,ArrowRight:1,ArrowUp:-7,ArrowDown:7,Home:-day,End:6-day})[event.key])
+      const next=date.toISOString().slice(0,10)
+      if(!isDateAllowed(next,min,max))return
+      setPickerDate(next);setViewMonth(next.slice(0,7))
+      requestAnimationFrame(()=>popover.current?.querySelector(`[data-date="${next}"]`)?.focus({preventScroll:true}))
+      return
+    }
     if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key) || event.target.getAttribute('role') !== 'gridcell') return
     event.preventDefault()
     const cells = [...event.currentTarget.querySelectorAll('[role=gridcell]')], index = cells.indexOf(event.target)
@@ -213,7 +251,7 @@ export default function ProjectDateInput({ value = '', onChange, type = 'date', 
       ? Boolean(maxDate && Number(viewMonth.slice(0, 4)) >= Number(maxDate.slice(0, 4)))
       : Boolean(maxDate && decadeStart + 10 > Number(maxDate.slice(0, 4)))
   const selectedTime = pickerTime || (type === 'datetime-local' ? '00:00' : '')
-  const pickerLabel = type === 'time' ? t('Chọn giờ') : t('Chọn ngày')
+  const pickerLabel = range ? t('Chọn khoảng ngày') : type === 'time' ? t('Chọn giờ') : t('Chọn ngày')
   const movePrevious = () => setViewMonth(current => pickerView === 'day' ? shiftMonth(current, -1) : pickerView === 'month' ? shiftYear(current, -1) : shiftYear(current, -10))
   const moveNext = () => setViewMonth(current => pickerView === 'day' ? shiftMonth(current, 1) : pickerView === 'month' ? shiftYear(current, 1) : shiftYear(current, 10))
   const chooseMonth = month => { if (!monthAllowed(month, min, max)) return; setViewMonth(month); setPickerDate(`${month}-${String(Math.min(monthDate(pickerDate).getUTCDate(), lastDayOfMonth(month))).padStart(2, '0')}`); setPickerView('day') }
@@ -225,26 +263,28 @@ export default function ProjectDateInput({ value = '', onChange, type = 'date', 
       ? <button type="button" className="project-date-heading-button" onClick={() => setPickerView('year')}>{parsedMonth.getUTCFullYear()}</button>
       : <><button type="button" className="project-date-heading-button" onClick={() => setPickerView('month')}>{parsedMonth.toLocaleDateString(locale, { month: 'long', timeZone: 'UTC' })}</button><button type="button" className="project-date-heading-button" onClick={() => setPickerView('year')}>{parsedMonth.getUTCFullYear()}</button></>
 
-  return <span className={`project-date-input${clearable ? ' is-clearable' : ''}${open ? ' is-open' : ''}`} ref={root}>
-    <input {...props} ref={text} type="text" inputMode="text" value={draft} placeholder={type === 'date' ? 'dd/mm/yyyy' : type === 'time' ? 'HH:mm' : 'dd/mm/yyyy HH:mm'} aria-expanded={open} aria-controls={open ? popoverId : undefined} onChange={event => { setDraft(event.target.value); publish(event, event.target.value) }} onBlur={event => {
-      if (!text.current.validity.valid && draft) { setDraft(''); publish(event, '') }
-      else { const parsed = parseDateField(draft, type); if (parsed) setDraft(dateFieldDisplay(parsed, type)) }
+  return <span className={`project-date-input${range ? ' is-range' : ''}${clearable ? ' is-clearable' : ''}${open ? ' is-open' : ''}`} ref={root}>
+    <input {...props} ref={text} type="text" inputMode="text" value={draft} aria-invalid={Boolean(inputError || validationError || props['aria-invalid']) || undefined} aria-describedby={[props['aria-describedby'],(inputError||validationError)?`${popoverId}-error`:null].filter(Boolean).join(' ') || undefined} placeholder={range ? 'dd/mm/yyyy – dd/mm/yyyy' : type === 'date' ? 'dd/mm/yyyy' : type === 'time' ? 'HH:mm' : 'dd/mm/yyyy HH:mm'} aria-expanded={open} aria-controls={open ? popoverId : undefined} onChange={event => { setDraft(event.target.value); publish(event, event.target.value) }} onBlur={event => {
+      const parsed = range ? parseRange(draft) : parseDateField(draft, type)
+      if (parsed && !inputError) setDraft(display(parsed))
       props.onBlur?.(event)
-    }} />
+    }} onKeyDown={event=>{ props.onKeyDown?.(event); if(event.key==='ArrowDown' && event.altKey){event.preventDefault();if(!open)openPicker()} }} />
+    {(inputError || validationError) && <span id={`${popoverId}-error`} className="project-date-validation" role="alert">{inputError || validationError}</span>}
     {clearable && <button type="button" className="project-date-clear" aria-label={`${t('Xóa ngày')} · ${props['aria-label'] || ''}`} disabled={props.disabled || !draft} onClick={event => { setDraft(''); publish(event, ''); text.current?.focus() }}><AppIcon name="close" size={16} /></button>}
-    <button ref={trigger} type="button" className="project-date-picker" aria-label={pickerLabel} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? popoverId : undefined} disabled={props.disabled} onClick={openPicker}><CalendarIcon /></button>
-    {open && !props.disabled && <div ref={popover} id={popoverId} className="project-date-popover" popover="manual" role="dialog" aria-label={pickerLabel}>
-      {type === 'time' ? <TimeSpinner value={draft} onChange={chooseTime} /> : <>
+    <button ref={trigger} type="button" className="project-date-picker" aria-label={pickerLabel} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? popoverId : undefined} disabled={props.disabled} onClick={openPicker}><AppIcon name={type==='time'?'clock':'calendar'} size={16}/></button>
+    {open && !props.disabled && <div ref={popover} id={popoverId} className={`project-date-popover${type==='time'?' is-time-only':''}`} popover="manual" role="dialog" aria-label={pickerLabel}>
+      {type === 'time' ? <TimeSpinner value={parseDateField(draft,'time') || value} seconds={Number(step || 60)<60 || value.split(':').length>2} onChange={chooseTime} /> : <>
         <div className="project-date-popover-heading"><button type="button" aria-label={t(pickerView === 'day' ? 'Previous month' : pickerView === 'month' ? 'Previous year' : 'Previous decade')} disabled={prevDisabled} onClick={movePrevious}><Chevron direction="prev" /></button><div className="project-date-heading-content">{heading}</div><button type="button" aria-label={t(pickerView === 'day' ? 'Next month' : pickerView === 'month' ? 'Next year' : 'Next decade')} disabled={nextDisabled} onClick={moveNext}><Chevron direction="next" /></button></div>
         {pickerView === 'day' && <div className="project-date-calendar" role="grid" aria-label={pickerLabel} onKeyDown={gridKeys}>{WEEKDAYS.map(day => <span key={day} role="columnheader">{t(day)}</span>)}{Array.from({ length: firstWeekday }, (_, index) => <span key={`empty-${index}`} aria-hidden="true" />)}{Array.from({ length: monthDays }, (_, index) => {
-          const date = `${viewMonth}-${String(index + 1).padStart(2, '0')}`, disabled = !isDateAllowed(date, min, max), selected = date === datePart(value), current = date === todayIso()
-          return <button key={date} type="button" role="gridcell" tabIndex={date === tabDate ? 0 : -1} aria-label={dateFieldDisplay(date, 'date')} aria-pressed={selected} aria-current={current ? 'date' : undefined} disabled={disabled} className={`${selected ? 'is-selected' : ''}${current ? ' is-today' : ''}`} onClick={() => chooseDate(date)}>{index + 1}</button>
+          const date = `${viewMonth}-${String(index + 1).padStart(2, '0')}`, disabled = !isDateAllowed(date, min, max), selected = range ? date === (pendingStart || value.from) || !pendingStart && date===value.to : date === datePart(value), inRange = range && !pendingStart && date>value.from && date<value.to, current = date === today()
+          return <button key={date} type="button" role="gridcell" data-date={date} tabIndex={date === tabDate ? 0 : -1} aria-label={dateFieldDisplay(date, 'date')} aria-selected={selected} aria-current={current ? 'date' : undefined} disabled={disabled} className={`${selected ? 'is-selected' : ''}${inRange ? ' is-in-range' : ''}${current ? ' is-today' : ''}`} onClick={() => chooseDate(date)}>{index + 1}</button>
         })}</div>}
         {pickerView === 'month' && <div className="project-date-month-grid" onKeyDown={gridKeys} role="grid" aria-label={t('Chọn tháng')}>{Array.from({ length: 12 }, (_, index) => { const month = `${viewMonth.slice(0, 4)}-${String(index + 1).padStart(2, '0')}`, selected = month === selectedMonth; return <button key={month} type="button" role="gridcell" tabIndex={index === firstTabMonth ? 0 : -1} aria-pressed={selected} disabled={!monthAllowed(month, min, max)} className={selected ? 'is-selected' : ''} onClick={() => chooseMonth(month)}>{monthDate(month).toLocaleDateString(locale, { month: 'short', timeZone: 'UTC' })}</button> })}</div>}
         {pickerView === 'year' && <div className="project-date-year-grid" onKeyDown={gridKeys} role="grid" aria-label={t('Chọn năm')}>{Array.from({ length: 10 }, (_, index) => { const year = decadeStart + index, selected = year === selectedYear; return <button key={year} type="button" role="gridcell" tabIndex={year === firstTabYear ? 0 : -1} aria-pressed={selected} disabled={!yearAllowed(year, min, max)} className={selected ? 'is-selected' : ''} onClick={() => chooseYear(year)}>{year}</button> })}</div>}
-        {type === 'datetime-local' && <label className="project-date-time-field"><span className="project-date-visually-hidden">{t('Giờ')}</span><input aria-label={t('Giờ')} type="time" step={step || '60'} value={selectedTime} onInput={chooseTime} onChange={chooseTime} /></label>}
+        {type === 'datetime-local' && <div className="project-date-time-field"><TimeSpinner value={selectedTime} seconds={Number(step || 60)<60 || selectedTime.split(':').length>2} onChange={chooseTime}/></div>}
       </>}
-      <footer className="project-date-popover-footer">{type !== 'time' && <button type="button" onClick={() => chooseDate(todayIso(), type === 'datetime-local' && todayTime === 'end-of-day' ? '23:59' : null)} disabled={!isDateAllowed(todayIso(), min, max)}>{t('Hôm nay')}</button>}<span />{clearable && <button type="button" onClick={event => { setDraft(''); publish(event, ''); setOpen(false); text.current?.focus() }}>{t('Clear')}</button>}<button type="button" className="is-primary" onClick={() => { setOpen(false); text.current?.focus() }}>{t('Xong')}</button></footer>
+      {range && <p className="project-date-range-hint" role="status">{t(pendingStart?'Chọn ngày kết thúc':'Chọn ngày bắt đầu')}</p>}
+      <footer className="project-date-popover-footer">{type !== 'time' && <button type="button" onClick={() => { if(range){ const raw=rangeDisplay({from:today(),to:today()});setDraft(raw);publish({type:'change'},raw);setPendingStart(null);setOpen(false);text.current?.focus();return } chooseDate(today(), type === 'datetime-local' && todayTime === 'end-of-day' ? '23:59' : null) }} disabled={!isDateAllowed(today(), min, max)}>{t('Hôm nay')}</button>}<span />{clearable && <button type="button" onClick={event => { setDraft(''); publish(event, ''); setOpen(false); text.current?.focus() }}>{t('Clear')}</button>}<button type="button" className="is-primary" onClick={() => { setOpen(false); text.current?.focus() }}>{t('Xong')}</button></footer>
     </div>}
   </span>
 }

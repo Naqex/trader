@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { boundedDateTimeValue } from '../src/projectDateInputModel.js'
+import { boundedDateTimeValue, rangeDisplay, parseRange, wallTimeAllowed } from '../src/projectDateInputModel.js'
 import { parseDateField } from '../src/dateFormat.js'
 
 const lower = '2026-10-20T09:00'
@@ -27,4 +27,18 @@ test('calendar bounds preserve UTC wall time and boundary seconds without timezo
 test('unbounded calendar dates retain their time, including midnight', () => {
   assert.equal(boundedDateTimeValue('2026-10-20', '10:30'), '20/10/2026 10:30')
   assert.equal(boundedDateTimeValue('2026-10-20', ''), '20/10/2026 00:00')
+})
+
+test('civil ranges round trip, including open filter boundaries, without timezone conversion', () => {
+  for (const value of [{from:'2026-01-01',to:'2026-01-31'},{from:'2026-01-01',to:''},{from:'',to:'2026-01-31'},{from:'',to:''}]) {
+    assert.deepEqual(parseRange(rangeDisplay(value)),value)
+  }
+  for (const raw of ['31/02/2026 – 03/03/2026','31/10/2026 – 01/10/2026','01/10/2026','arbitrary text']) assert.equal(parseRange(raw),null)
+})
+
+test('wall time bounds compare minute precision and explicit zero seconds equally', () => {
+  assert(wallTimeAllowed('17:00:00','09:00','17:00'))
+  assert(wallTimeAllowed('2026-10-20T17:00:00Z',lower,upper))
+  assert(!wallTimeAllowed('2026-10-20T17:00:01',lower,upper))
+  assert.equal(boundedDateTimeValue('2026-10-20','17:00:00',lower,upper),'20/10/2026 17:00:00')
 })

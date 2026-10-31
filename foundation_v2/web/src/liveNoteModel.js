@@ -2,7 +2,14 @@ import { matchesSearch } from './searchText.js'
 import { calendarParts } from './tradingAnalyticsModel.js'
 
 export const EMPTY_NOTE_FILTERS = {types:[],from:'',to:'',days:[],months:[],years:[]}
-export const NOTE_TYPES = [['daily_review','Đánh giá ngày'],['general','General'],['monthly_review','Monthly review'],['weekly_review','Đánh giá tuần']]
+// Built-in identities stay stable; custom_* identities belong to the server catalog.
+export const NOTE_TYPE_DEFINITIONS = [
+  { value:'general', label:'General', color:'green', builtIn:true },
+  { value:'daily_review', label:'Daily review', color:'orange', builtIn:true },
+  { value:'weekly_review', label:'Weekly review', color:'cyan', builtIn:true },
+  { value:'monthly_review', label:'Monthly review', color:'purple', builtIn:true },
+]
+export const NOTE_TYPES = NOTE_TYPE_DEFINITIONS.map(({value,label}) => [value,label])
 export const noteType = note => note.payload.note_type || 'general'
 export function noteCalendarYears(notes, timezone, now = new Date()) {
   return [...new Set([calendarParts(now,timezone)?.key.slice(0,4),...notes.map(note => calendarParts(note.updated_at_utc,timezone)?.key.slice(0,4))].filter(Boolean))].sort().reverse()

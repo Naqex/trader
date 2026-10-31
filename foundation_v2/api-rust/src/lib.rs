@@ -29,6 +29,7 @@ pub mod mt5_connector;
 pub mod native_contracts;
 pub mod native_mutation;
 pub mod note_library;
+pub mod note_types;
 pub mod notion_oauth;
 pub mod owned_process;
 pub mod prop_core;
@@ -74,6 +75,7 @@ fn domain_routes_for(native_runtime: bool) -> Router<Arc<AppState>> {
         .merge(live_ledger::routes())
         .merge(trade_labels::routes())
         .merge(note_library::routes())
+        .merge(note_types::routes())
         .merge(mt5_connector::routes())
         .merge(demo_trading::routes())
         .merge(replay_service::routes())

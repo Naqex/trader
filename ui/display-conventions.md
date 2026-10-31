@@ -866,3 +866,19 @@ not change broker state, notes, tags, media, PnL or analytics.
 Analytics and Smart Picks side panels share the mirrored collapse control. The
 panel rail is the default for Smart Picks, while Analytics preserves the
 existing expanded view. At narrow widths the rail stacks below the main view.
+
+Date, wall date/time, time and date-range controls share ProjectDateInput.
+DateFilter is an adapter to that control, not a second calendar. The calendar
+uses the top layer so drawers and scrolling forms cannot clip it. Civil date
+ranges stay ISO dates; instant conversion remains in InstantDateInput. Typed
+invalid values remain visible with an error and do not overwrite the last valid
+value. Range selection publishes once after both endpoints are selected; closing
+after the first selection cancels that partial range. Existing seconds survive
+hour/minute changes. Keyboard arrows, Home/End and PageUp/PageDown navigate days;
+Escape closes the picker first. Desktop stays compact, touch targets stay 44px.
+
+Notes context uses one date-range field and the shared tag-picker presentation
+for note types. The workspace catalog owns type names/colors and archived state;
+its revision and idempotency protect concurrent edits. Four built-in identities
+are permanent. Custom types can be archived; existing notes keep their identity
+and can still be edited and filtered. Reordering is a browser display preference.

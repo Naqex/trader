@@ -143,7 +143,7 @@ fn note_metadata(note: &Note) -> bool {
         (Some(from), Some(to), Some(zone)) => date(from) && date(to) && from <= to && zone.parse::<chrono_tz::Tz>().is_ok(),
         _ => false,
     };
-    range && note.note_type.as_deref().is_none_or(|s| ["general", "daily_review", "weekly_review", "monthly_review"].contains(&s))
+    range && note.note_type.as_deref().is_none_or(crate::note_types::valid_id)
         && note.note_document.as_ref().is_none_or(|doc| crate::note_library::document_ok(doc) && crate::note_library::document_text(doc) == note.note)
         && note.linked_trades.len() <= 500
         && note.linked_trades.iter().all(|link| {
@@ -418,6 +418,7 @@ async fn execute(
         .await
         .map_err(|_| ApiError::database())?;
     let mut previous_links = Vec::new();
+    let mut previous_type = None;
     let (id, revision, created) = if let Some(id) = id {
         if Uuid::parse_str(id).is_err() {
             return Err(missing());
@@ -433,6 +434,7 @@ async fn execute(
         let current_kind: String = current.get("kind");
         let revision: i64 = current.get("current_revision");
         let old: Value = current.get("payload_json");
+        previous_type = old["note_type"].as_str().map(str::to_owned);
         previous_links = old["linked_trades"].as_array().cloned().unwrap_or_default();
         if old["archived"] == true {
             return Err(conflict("live_account_archived"));
@@ -479,6 +481,14 @@ async fn execute(
         )
     };
     references(tx, &scope.workspace_id, &payload).await?;
+    if kind == "note" {
+        if let Some(id) = payload["note_type"].as_str().filter(|id| id.starts_with("custom_")) {
+            let types = crate::note_types::catalog(tx, &scope.workspace_id).await?;
+            if !types["items"].as_array().unwrap().iter().any(|item| item["id"] == id && (item["archived"] != true || previous_type.as_deref() == Some(id))) {
+                return Err(invalid("note_type_not_found"));
+            }
+        }
+    }
     if let Some(links) = payload["linked_trades"].as_array() {
         for link in links.iter().filter(|link| !previous_links.contains(link)) {
             let account = link["account_id"].as_str().unwrap();

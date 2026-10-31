@@ -33,6 +33,6 @@ export default function FilterDrawer({ initialTab = 'Basic', showTabs = true, ta
     <div className="fxl-drawer-body"><section role={showTabs ? "tabpanel" : undefined} id={`${id}-${tab}`} aria-labelledby={showTabs ? `${id}-tab-${tab}` : undefined}>
       {tab === 'Basic' ? <><label className="fxl-filter-search"><span className="sr-only">{t('Search filter')}</span><SearchInput type="search" aria-label={t('Search filter')} placeholder={t('Search filter')} value={search} onChange={event => setSearch(event.target.value)} /></label>{basicControls}{sections.filter(([name]) => matchesSearch(t(name), search)).map(([name, content]) => <details key={name}><summary>{t(name)}</summary>{content}</details>)}{note}</> : tags}
     </section></div>
-    <footer><button type="button" className="fxl-clear" onClick={onClear}>{t('Clear All')}</button><button type="button" className="fxa-button is-primary" disabled={invalid} onClick={onApply}>{t('Apply Filters')}</button></footer>
+    <footer><button type="button" className="fxl-clear" onClick={onClear}>{t('Clear All')}</button><button type="button" className="fxa-button is-primary" disabled={invalid} onClick={() => { const field=dialog.current.querySelector('input:invalid'); if(field){field.focus();field.reportValidity();return}onApply() }}>{t('Apply Filters')}</button></footer>
   </dialog>
 }

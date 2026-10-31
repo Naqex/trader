@@ -64,10 +64,14 @@ function ReferenceOverlays({ theme }) {
   const [depth, setDepth] = useState(0), [anchor, setAnchor] = useState(null)
   const [side, setSide] = useState('buy'), [date, setDate] = useState('2026-10-20T10:30')
   const [disabled, setDisabled] = useState(false)
+  const [day,setDay] = useState('2026-10-20'),[time,setTime] = useState('10:30:45'),[range,setRange] = useState({from:'2026-10-20',to:'2026-10-25'})
   const choices = [{ value:'buy', label:'Buy' }, { value:'sell', label:'Sell' }, { value:'locked', label:'Chưa khả dụng', disabled:true }]
   const controls = <div className="wm-reference-overlay-fields">
     <label>Hướng lệnh mẫu<FxSelect className="is-field" label="Hướng lệnh trong dialog" value={side} onChange={setSide} options={choices} disabled={disabled} /></label>
     <label>Thời điểm mẫu<ProjectDateInput clearable aria-label="Thời điểm trong dialog" type="datetime-local" value={date} onChange={event => setDate(event.target.value)} min="2026-10-20T09:00" max="2026-10-20T17:00" disabled={disabled} /></label>
+    <label>Ngày mẫu<ProjectDateInput clearable aria-label="Ngày trong dialog" value={day} onChange={event=>setDay(event.target.value)} disabled={disabled}/></label>
+    <label>Giờ mẫu<ProjectDateInput clearable aria-label="Giờ trong dialog" type="time" step="1" value={time} onChange={event=>setTime(event.target.value)} disabled={disabled}/></label>
+    <label>Khoảng ngày mẫu<ProjectDateInput clearable aria-label="Khoảng ngày trong dialog" range value={range} onChange={event=>setRange(event.target.value)} disabled={disabled}/></label>
     <label><input type="checkbox" checked={disabled} onChange={event => setDisabled(event.target.checked)} />Khoá ô nhập mẫu</label>
     <div className="wm-reference-controls"><button type="button" className="wm-button" onClick={event => setAnchor(event.currentTarget)}>Mở popover mẫu</button><button type="button" className="wm-button" onClick={() => setDepth(2)}>Mở dialog con</button><button type="button" className="wm-button is-icon" aria-label="Trợ giúp trong dialog" data-tooltip="Tooltip vẫn hiển thị phía trên dialog và giữ focus tại nút mở."><TestingIcon kind="info" /></button></div>
   </div>

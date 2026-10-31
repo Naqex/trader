@@ -9,6 +9,7 @@ assert.equal(new URL(origin).hostname,'127.0.0.1')
 await mkdir(out,{recursive:true})
 const report={cases:[],errors:[],writes:[],scope:'Five Notes filters, real timestamp semantics in synthetic data; shared trade drawer regression'}
 const browser=await chromium.launch()
+let activePage
 try {
   for (const [width,theme,lang] of [[1920,'dark','en'],[1440,'light','en'],[390,'dark','vi']]) {
     const context=await browser.newContext({viewport:{width,height:940},reducedMotion:'reduce'})
@@ -27,7 +28,8 @@ try {
       if(url.pathname==='/api/v2/live/connections')return route.fulfill({json:{items:broker.connections}})
       return route.fulfill({json:{items:[],available:false}})
     })
-    const page=await context.newPage();page.setDefaultTimeout(10000)
+    const page=await context.newPage();activePage=page;page.setDefaultTimeout(10000)
+    page.on('console',message=>{if(message.type()==='error')report.lastConsoleError=message.text()})
     page.on('pageerror',error=>report.errors.push(error.message))
     const url=`${origin}/?workspace=fixture&view=live&area=live&section=notes&lang=${lang}&live_account=${fixtureAccount}`
     await page.goto(url)
@@ -56,33 +58,26 @@ try {
       await page.keyboard.press('Escape')
     }
     await expand(1)
-    const date=section(1).locator('.fx-filter-control'),trigger=date.locator('> button')
-    const field=await trigger.evaluate(el=>{const s=getComputedStyle(el);return{background:s.backgroundColor,align:s.justifyContent,radius:s.borderRadius,border:s.borderTopStyle}})
+    const date=section(1).locator('.project-date-input'),range=date.getByRole('textbox'),trigger=date.locator('.project-date-picker')
+    const field=await date.evaluate(el=>{const s=getComputedStyle(el);return{background:s.backgroundColor,radius:s.borderRadius,border:s.borderTopStyle}})
     assert.equal(field.background,'rgba(0, 0, 0, 0)')
-    assert.equal(field.align,'space-between')
     assert.equal(field.border,'solid')
     assert.notEqual(field.radius,'999px','Range uses field shape rather than toolbar pill')
-    await trigger.click()
-    const calendar=date.locator('.fx-filter-popover')
-    await calendar.waitFor()
-    const from=calendar.locator('.project-date-input input').nth(0),to=calendar.locator('.project-date-input input').nth(1)
-    await from.fill('30/10/2026');await to.fill('29/10/2026')
+    await range.fill('30/10/2026 – 29/10/2026')
     assert(await drawer.locator('footer > .is-primary').isDisabled(),'Reversed date range cannot apply')
-    await to.fill('30/10/2026')
+    await range.fill('30/10/2026 – 30/10/2026')
     assert(await drawer.locator('footer > .is-primary').isEnabled())
-    await calendar.locator('.project-date-picker').first().click()
-    await page.locator('.project-date-popover:popover-open').waitFor()
-    await page.keyboard.press('Escape')
-    assert.equal(await page.locator('.project-date-popover').count(),0,'Escape closes nested date input first')
-    assert.equal(await calendar.count(),1)
+    await trigger.click()
+    const calendar=page.locator('.project-date-popover:popover-open')
+    await calendar.waitFor()
     await page.screenshot({path:`${out}/calendar-${width}-${theme}.png`})
     await page.setViewportSize({width:width-10,height:900})
-    assert.equal(await calendar.evaluate(el=>getComputedStyle(el).position),'relative','Resize preserves inline calendar')
+    assert.equal(await calendar.evaluate(el=>getComputedStyle(el).position),'fixed','Shared calendar uses the top layer')
     const bounds=await drawer.evaluate(el=>{const r=el.getBoundingClientRect(),f=el.querySelector('footer').getBoundingClientRect();return{left:r.left,right:r.right,bottom:f.bottom,viewport:innerWidth,height:innerHeight,overflow:el.querySelector('.fxl-drawer-body').scrollWidth-el.querySelector('.fxl-drawer-body').clientWidth}})
     assert(bounds.left>=0&&bounds.right<=bounds.viewport&&bounds.bottom<=bounds.height&&bounds.overflow<=1)
     await page.keyboard.press('Escape')
     assert.equal(await calendar.count(),0)
-    assert.equal(await drawer.count(),1,'Escape closes range before drawer')
+    assert.equal(await drawer.count(),1,'Escape closes calendar before drawer')
     await page.keyboard.press('Escape');assert.equal(await drawer.count(),0)
     report.cases.push({width,theme,lang,name:'five-sections-empty-year-options-calendar-resize-keyboard',bounds})
     if(width===1920) {
@@ -98,10 +93,9 @@ try {
       assert.equal(await surface.locator('.live-note-row').count(),1,'Cancel discards draft reset')
       await open();await drawer.locator('footer > .fxl-clear').click();await drawer.locator('footer > .is-primary').click()
       assert.equal(await surface.locator('.live-note-row').count(),3)
-      await open();await expand(1);await trigger.click()
-      await from.fill('30/10/2026');await to.fill('30/10/2026')
-      await calendar.locator('.fx-calendar').getByRole('button',{name:'30/10/2026',exact:true}).click()
-      await calendar.locator('.fx-calendar').getByRole('button',{name:'30/10/2026',exact:true}).click()
+      await open();await expand(1);await range.fill('30/10/2026 – 30/10/2026');await trigger.click()
+      await calendar.getByRole('gridcell',{name:'30/10/2026',exact:true}).click()
+      await calendar.getByRole('gridcell',{name:'30/10/2026',exact:true}).click()
       await drawer.locator('footer > .is-primary').click()
       assert.equal(await surface.locator('.live-note-row').count(),1)
       assert.match(await surface.locator('.live-note-row').innerText(),/today/)
@@ -118,6 +112,6 @@ try {
   }
   assert.deepEqual(report.errors,[]);assert.deepEqual(report.writes,[])
   report.status='PASS'
-} catch(error) {report.status='FAIL';report.failure=error.stack;process.exitCode=1}
+} catch(error) {report.status='FAIL';report.failure=error.stack;if(activePage){report.snapshot=await activePage.locator('body').innerText().catch(()=>null);await activePage.screenshot({path:`${out}/failure.png`}).catch(()=>{})}process.exitCode=1}
 finally {await browser.close();await writeFile(`${out}/browser.json`,JSON.stringify(report,null,2))}
 console.log(JSON.stringify({status:report.status,cases:report.cases.length,errors:report.errors,writes:report.writes,failure:report.failure}))

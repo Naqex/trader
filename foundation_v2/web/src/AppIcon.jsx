@@ -20,7 +20,7 @@ const icons = {
   activity:Activity, analytics:ChartColumn, 'arrow-left':ArrowLeft, 'arrow-right':ArrowRight,
   trades:ArrowLeftRight, sort:ArrowUpDown, deposit:ArrowDownLeft, withdrawal:ArrowUpRight,
   alert:BellPlus, book:BookOpen, journal:NotebookPen, ledger:ClipboardList, bot:Bot,
-  calendar:CalendarDays, camera:Camera, candles:ChartCandlestick, chart:ChartNoAxesCombined,
+  calendar:CalendarDays, clock:Clock3, camera:Camera, candles:ChartCandlestick, chart:ChartNoAxesCombined,
   check:Check, success:CircleCheck, error:CircleX, warning:TriangleAlert, info:Info, trophy:Target,
   performance:ChartNoAxesCombined,
   down:ChevronDown, up:ChevronUp, collapse:ChevronRight, expand:ChevronLeft,

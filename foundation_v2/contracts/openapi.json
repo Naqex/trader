@@ -7770,6 +7770,265 @@
           }
         }
       }
+    },
+    "/api/v2/note-types": {
+      "get": {
+        "operationId": "note_types_read",
+        "parameters": [
+          {
+            "name": "X-Workspace-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace-scoped result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "version",
+                    "revision",
+                    "items"
+                  ],
+                  "properties": {
+                    "version": {
+                      "const": "note-types-v1"
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "items": {
+                      "type": "array",
+                      "minItems": 4,
+                      "maxItems": 100,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "name",
+                          "color",
+                          "archived"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 64
+                          },
+                          "color": {
+                            "enum": [
+                              "green",
+                              "blue",
+                              "orange",
+                              "red",
+                              "purple",
+                              "cyan",
+                              "gray"
+                            ]
+                          },
+                          "archived": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Workspace denied"
+          },
+          "404": {
+            "description": "Item not in scope"
+          },
+          "409": {
+            "description": "Revision conflict, duplicate, or quota; read again"
+          },
+          "422": {
+            "description": "Invalid request"
+          },
+          "503": {
+            "description": "Unavailable or unknown commit outcome; reconcile receipt"
+          }
+        }
+      },
+      "post": {
+        "operationId": "note_types_write",
+        "parameters": [
+          {
+            "name": "X-Workspace-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace-scoped result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "version",
+                    "revision",
+                    "items"
+                  ],
+                  "properties": {
+                    "version": {
+                      "const": "note-types-v1"
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "items": {
+                      "type": "array",
+                      "minItems": 4,
+                      "maxItems": 100,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "name",
+                          "color",
+                          "archived"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 64
+                          },
+                          "color": {
+                            "enum": [
+                              "green",
+                              "blue",
+                              "orange",
+                              "red",
+                              "purple",
+                              "cyan",
+                              "gray"
+                            ]
+                          },
+                          "archived": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Workspace denied"
+          },
+          "404": {
+            "description": "Item not in scope"
+          },
+          "409": {
+            "description": "Revision conflict, duplicate, or quota; read again"
+          },
+          "422": {
+            "description": "Invalid request"
+          },
+          "503": {
+            "description": "Unavailable or unknown commit outcome; reconcile receipt"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "expected_revision",
+                  "items"
+                ],
+                "properties": {
+                  "expected_revision": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "items": {
+                    "type": "array",
+                    "minItems": 4,
+                    "maxItems": 100,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "name",
+                        "color",
+                        "archived"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64
+                        },
+                        "color": {
+                          "enum": [
+                            "green",
+                            "blue",
+                            "orange",
+                            "red",
+                            "purple",
+                            "cyan",
+                            "gray"
+                          ]
+                        },
+                        "archived": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Workspace note types with optimistic revisions and idempotency. Four built-in identities cannot be archived or removed. Custom types use custom_<UUID>. Deletion archives the type so existing note references remain readable. Names, colors and active type IDs are persisted. Display order is a browser preference."
+      }
     }
   },
   "components": {

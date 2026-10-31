@@ -2,7 +2,8 @@ import { useMemo, useRef, useState } from 'react'
 import same from 'fast-deep-equal'
 import LegacyModal from './LegacyModal.jsx'
 import FxSelect from './FxSelect.jsx'
-import ProjectDateInput from './ProjectDateInput.jsx'
+import { DateFilter } from './AnalyticsFilterControls.jsx'
+import NoteTypeSelect from './NoteTypeSelect.jsx'
 import SearchInput from './SearchInput.jsx'
 import ChartIcon from './ChartIcon.jsx'
 import NoteBlockEditor from './NoteBlockEditor.jsx'
@@ -14,7 +15,6 @@ import { useTestingLocale } from './testingLocale.jsx'
 import { mt5AccountName } from './liveAccountModel.js'
 import { documentError, documentText, readNoteValue } from './noteDocument.js'
 import { dayKey } from './liveWorkspaceModel.js'
-import { NOTE_TYPES } from './liveNoteModel.js'
 import { inReviewRange, migrateReviewRecovery, noteTradeKey, noteTradeLink, reviewSummary, reviewTradeRows } from './liveReviewNoteModel.js'
 import './live-note-editor.css'
 
@@ -94,8 +94,8 @@ function NoteFields({ workspace, record, seed, folderId, accountId, accounts, co
     <div className="wm-live-note-title"><input aria-label={t('Tiêu đề')} placeholder={t('Đặt tên ghi chú')} value={draft.title} maxLength={160} disabled={disabled} onChange={event=>change('title',event.target.value)} onBlur={()=>void save.flush()}/><AutosaveStatus save={save}/></div>
     <div className="wm-live-note-editor-layout">
       <aside className="wm-live-note-context" aria-label={t('Ngữ cảnh ghi chú')}>
-        <div className="wm-review-fields"><div><div className="wm-review-field-label"><ChartIcon name="calendar"/><span>{t('Khoảng ngày')}</span></div><div className="wm-review-date-range"><ProjectDateInput aria-label={t('Từ ngày')} value={draft.review_from} max={draft.review_to} disabled={disabled} onChange={event=>change('review_from',event.target.value)}/><span aria-hidden="true">—</span><ProjectDateInput aria-label={t('Đến ngày')} value={draft.review_to} min={draft.review_from} disabled={disabled} onChange={event=>change('review_to',event.target.value)}/></div><small>{draft.review_timezone}</small></div>
-        <div><div className="wm-review-field-label"><ChartIcon name="tag"/><span>{t('Loại ghi chú')}</span></div><FxSelect className="wm-review-note-type" label="Loại ghi chú" disabled={disabled} value={draft.note_type} onChange={value=>change('note_type',value)} options={NOTE_TYPES.map(([value,label])=>({value,label}))}/></div></div>
+        <div className="wm-review-fields"><div><div className="wm-review-field-label"><ChartIcon name="calendar"/><span>{t('Khoảng ngày')}</span></div><DateFilter compact inline disabled={disabled} clearable={false} timezone={draft.review_timezone} label="Khoảng ngày" title="Khoảng ngày" calendarLabel="Chọn khoảng ngày ghi chú" value={{from:draft.review_from,to:draft.review_to}} onChange={patch=>save.change({...draft,review_from:patch.from ?? draft.review_from,review_to:patch.to ?? draft.review_to})}/><small>{draft.review_timezone}</small></div>
+        <div><div className="wm-review-field-label"><ChartIcon name="tag"/><span>{t('Loại ghi chú')}</span></div><NoteTypeSelect workspace={workspace} label="Loại ghi chú" disabled={disabled} value={draft.note_type} onChange={value=>change('note_type',value)}/></div></div>
         <section className="wm-review-summary" aria-label={t('Tổng hợp giao dịch liên kết')}><dl><div className="wm-review-kpi-primary"><dt>{t('PnL ròng')}</dt><dd className={summary.net>0?'is-positive':summary.net<0?'is-negative':''}>{summary.net===null?'N/A':fmt(summary.net,` ${summary.currency}`)}</dd><small>{t('Return')}</small></div><div className="wm-review-kpi"><dt>{t('Tỉ lệ thắng')}</dt><dd>{summary.winRate===null?'N/A':fmt(summary.winRate,'%',1)}</dd></div><div className="wm-review-kpi"><dt>{t('Tổng giao dịch')}</dt><dd>{summary.count}</dd></div></dl>
           {curve.length>1 && <AnalyticsCurve series={[curve]} seriesMeta={[{label:t('PnL ròng'),color:summary.net>=0?'var(--project-positive)':'var(--project-negative)'}]} height={120} sparkline showPoints={false} negative label={t('PnL lũy kế của giao dịch liên kết')}/>}
           {(summary.missing>0 || summary.stale) && <p className="wm-review-issue" role="status">{t(summary.missing ? 'Chưa đọc được một số giao dịch liên kết.' : 'Dữ liệu tài khoản đã cũ. Đồng bộ tài khoản để cập nhật.')}</p>}

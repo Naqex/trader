@@ -1,6 +1,4 @@
 import ProjectDateInput from './ProjectDateInput.jsx'
-import { displayDate } from './dateFormat.js'
-import { zonedDateKey } from './timezone.js'
 import { useTestingLocale } from './testingLocale.jsx'
 import { useEffect, useId, useRef, useState } from 'react'
 import { FilterIcon, SelectChevron } from './FxSelect.jsx'
@@ -48,26 +46,7 @@ export function TimeFilter({ value, onChange }) {
   return <FilterPopover label={t("Time")} title={t("Time filter")}><div className="fx-time-range">{[['timeStart', 'Start'], ['timeEnd', 'End']].map(([key, label]) => <label key={key}>{t(label)}<ProjectDateInput type="time" step="60" aria-label={t(`Time ${label}`)} value={value[key] || ''} onChange={event => onChange({ [key]: event.target.value, hour: 'all' })} /></label>)}</div><button type="button" className="fx-filter-clear" onClick={() => onChange({ timeStart: '', timeEnd: '', hour: 'all' })}>{t("Clear")}</button></FilterPopover>
 }
 
-export function DateFilter({ value, onChange, label = 'Backtesting Date', title = 'Backtesting date filter', calendarLabel = 'Chọn khoảng ngày đóng UTC', inline = false }) {
-  const { t, locale, timezone } = useTestingLocale()
-
-  const [month, setMonth] = useState(() => {
-    return (value.from || zonedDateKey(new Date(), timezone)).slice(0, 7)
-  })
-  const [endpoint, setEndpoint] = useState('from')
-  const first = new Date(`${month}-01T00:00:00Z`)
-  const days = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate()
-  const shiftMonth = delta => setMonth(new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + delta, 1)).toISOString().slice(0, 7))
-  const choose = date => {
-    if (endpoint === 'from') { onChange({ from: date, to: '' }); setEndpoint('to') }
-    else { onChange(date < value.from ? { from: date, to: value.from } : { to: date }); setEndpoint('from') }
-  }
-  return <FilterPopover label={t(label)} title={t(title)} icon="calendar" inline={inline} triggerContent={[value.from,value.to].filter(Boolean).map(date => displayDate(date)).join(' – ')}>
-    <div className="fx-date-range">{[['from', 'Start'], ['to', 'End']].map(([key, label]) => <label key={key}>{t(label)}<ProjectDateInput type="date" aria-label={t(`Analytics ${key} date`)} value={value[key]} onFocus={() => setEndpoint(key)} onChange={event => { onChange({ [key]: event.target.value }); if (event.target.value) setMonth(event.target.value.slice(0, 7)) }} /></label>)}</div>
-    <div className="fx-calendar-heading"><button type="button" aria-label={t("Previous month")} onClick={() => shiftMonth(-1)}>‹</button><strong aria-live="polite">{first.toLocaleDateString(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' })}</strong><button type="button" aria-label={t("Next month")} onClick={() => shiftMonth(1)}>›</button></div>
-    <div className="fx-calendar" role="group" aria-label={t(calendarLabel).replace(/UTC(?:[+-]\d+(?::\d+)?)?/, timezone)}>{['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => <span key={day}>{t(day)}</span>)}{Array.from({ length: first.getUTCDay() }, (_, i) => <span key={`blank-${i}`} />)}{Array.from({ length: days }, (_, i) => {
-      const date = `${month}-${String(i + 1).padStart(2, '0')}`, selected = date === value.from || date === value.to
-      return <button key={date} type="button" aria-label={displayDate(date)} aria-pressed={selected} className={selected ? 'is-endpoint' : value.from && value.to && date > value.from && date < value.to ? 'is-in-range' : ''} onClick={() => choose(date)}>{i + 1}</button>
-    })}</div><button type="button" className="fx-filter-clear" onClick={() => { onChange({ from: '', to: '' }); setEndpoint('from') }}>{t("Clear")}</button>
-  </FilterPopover>
+export function DateFilter({ value, onChange, onValidityChange, label = 'Backtesting Date', inline = false, compact = false, disabled = false, clearable = true, timezone }) {
+  const { t } = useTestingLocale()
+  return <div className={`fx-filter-control project-date-range-filter${inline ? ' is-inline' : ''}${compact ? ' is-compact' : ''}`}><ProjectDateInput range value={{from:value.from || '',to:value.to || ''}} timezone={timezone} disabled={disabled} clearable={clearable} onValidityChange={onValidityChange} aria-label={t(label)} onChange={event=>onChange(event.target.value)} /></div>
 }

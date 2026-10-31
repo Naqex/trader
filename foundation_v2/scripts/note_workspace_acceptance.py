@@ -19,7 +19,9 @@ def main():
     parser.add_argument('--output',type=Path,required=True)
     parser.add_argument('--browser-test',type=Path)
     parser.add_argument('--ui-origin',default='http://127.0.0.1:5198')
-    args=parser.parse_args();args.output.mkdir(parents=True,exist_ok=True)
+    args=parser.parse_args();args.output=args.output.resolve();args.probe=args.probe.resolve()
+    if args.browser_test:args.browser_test=args.browser_test.resolve()
+    args.output.mkdir(parents=True,exist_ok=True)
     checks=[]
     with tempfile.TemporaryDirectory(prefix='note-library-',dir=args.output) as tmp:
         work=Path(tmp)
@@ -87,6 +89,28 @@ def main():
                 assert not any(item.get('has_notes') for item in context['trades'])
                 checks.append('atomic tag-group capture/duplication, duplicate idempotency, stale CAS rollback, tenant isolation, comments do not create trade notes')
                 doc=dict(format='blocknote',version=1,blocks=[dict(type='paragraph',content='Verified note template')])
+                types='/api/v2/note-types'
+                default_types=api('GET',types)
+                assert default_types['revision']==0 and len(default_types['items'])==4
+                for bad in [default_types['items'][1:],[{**item,'archived':True} if item['id']=='general' else item for item in default_types['items']]]:
+                    api('POST',types,dict(expected_revision=0,items=bad),status=422)
+                custom=dict(id='custom_'+str(uuid.uuid4()),name='Research review',color='cyan',archived=False)
+                draft_types=dict(expected_revision=0,items=[*default_types['items'],custom])
+                saved_types=api('POST',types,draft_types,key='create-note-type')
+                assert saved_types==api('POST',types,draft_types,key='create-note-type') and saved_types['revision']==1
+                assert api('GET',types,workspace='tenant-b')==default_types
+                api('POST',types,draft_types,status=409)
+                typed_note=dict(title='Custom classification',note='Persist custom type',note_type=custom['id'])
+                typed_record=api('POST','/api/v2/live/records',dict(kind='note',payload=typed_note),status=201)
+                api('POST','/api/v2/live/records',dict(kind='note',payload=typed_note),workspace='tenant-b',status=422)
+                for bad in [[*default_types['items'],{**custom,'name':'General'}],default_types['items'],[*default_types['items'],{**custom,'id':'custom_bad'}]]:
+                    api('POST',types,dict(expected_revision=1,items=bad),status=422)
+                archived=api('POST',types,dict(expected_revision=1,items=[*default_types['items'],{**custom,'archived':True}]))
+                assert archived['revision']==2 and archived['items'][-1]['archived']
+                api('POST','/api/v2/live/records',dict(kind='note',payload=typed_note),status=422)
+                retained=api('POST',f"/api/v2/live/records/{typed_record['record_id']}/revisions",dict(kind='note',expected_revision=typed_record['revision'],payload={**typed_note,'title':'Still editable'}))
+                assert retained['payload']['note_type']==custom['id']
+                checks.append('note types: protected defaults, persistent custom identity, idempotency, stale CAS, cross-workspace denial, archive tombstone, old note revision retained')
                 library='/api/v2/note-templates'
                 empty=api('GET',library);assert empty['items']==[] and empty['preferences']['defaults']=={}
                 created=api('POST',library,dict(action='create',name='QA template',document=doc),key='create-template')
