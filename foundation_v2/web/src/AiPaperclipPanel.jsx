@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { PAPERCLIP_HEALTH_PATH, PAPERCLIP_ORIGIN } from '../paperclipBridge.mjs'
 
 export default function AiPaperclipPanel({ active, language }) {
@@ -7,6 +7,17 @@ export default function AiPaperclipPanel({ active, language }) {
   const [mounted, setMounted] = useState(false)
   const [loaded, setLoaded] = useState(false)
   const [state, setState] = useState('loading')
+  const frame = useRef(null)
+  useEffect(() => {
+    const send = () => frame.current?.contentWindow?.postMessage({ type: 'naqex:preferences', version: 1, language: en ? 'en' : 'vi' }, PAPERCLIP_ORIGIN)
+    const receive = event => {
+      if (event.origin === PAPERCLIP_ORIGIN && event.source === frame.current?.contentWindow
+        && event.data?.type === 'paperclip:ready' && event.data.version === 1) send()
+    }
+    send()
+    window.addEventListener('message', receive)
+    return () => window.removeEventListener('message', receive)
+  }, [en, loaded])
   useEffect(() => {
     if (!active) return
     const controller = new AbortController()
@@ -30,7 +41,7 @@ export default function AiPaperclipPanel({ active, language }) {
   }, [active, mounted, loaded, state, attempt])
   const retry = () => { setLoaded(false); setState('loading'); setAttempt(value => value + 1) }
   return <div className="ai-paperclip-panel" data-testid="paperclip-panel">
-    {mounted && <iframe key={attempt} className="ai-gateway-frame" hidden={state !== 'ready'}
+    {mounted && <iframe ref={frame} key={attempt} className="ai-gateway-frame" hidden={state !== 'ready'}
       title={say('Điều hành AI · Paperclip', 'AI operations · Paperclip')} src={`${PAPERCLIP_ORIGIN}/issues`}
       referrerPolicy="no-referrer" allow="clipboard-write"
       sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads"
