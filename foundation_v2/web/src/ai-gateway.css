@@ -5,3 +5,12 @@
 .fx-app .ai-gateway-state h1 { margin:0; font-size:20px; }
 .ai-gateway-state p { margin:0; color:var(--wm-content-muted); font-size:13px; }
 .ai-gateway-state > div { display:flex; gap:8px; margin-top:8px; }
+.ai-paperclip-panel { position:relative; display:flex; flex:1; min-width:0; min-height:0; }
+.ai-paperclip-state { position:absolute; inset:0; background:var(--project-canvas); }
+.fx-app[data-theme='dark'] .ai-paperclip-panel iframe { color-scheme:dark; }
+.fx-app[data-theme='light'] .ai-paperclip-panel iframe { color-scheme:light; }
+@media (max-width:760px) {
+  .fx-app.fx-shell-story.is-paperclip-page:not(.is-chart-workspace) { grid-template-columns:0 minmax(0, 1fr); grid-template-rows:64px minmax(0, 1fr); }
+  .fx-app.fx-shell-story.is-paperclip-page:not(.is-chart-workspace) .fx-topbar { height:64px; min-height:64px; align-items:center; padding-top:0; }
+  .fx-app.is-paperclip-page:not(.is-mobile-nav-open) .fx-rail { visibility:hidden; }
+}

@@ -15,16 +15,17 @@ import './ai-gateway.css'
 import { TestingRouteBoundary } from './TestingReadState.jsx'
 const AiChatPanel = lazy(() => import('./AiChatPanel.jsx'))
 const AiGatewayPanel = lazy(() => import('./AiGatewayPanel.jsx'))
+const AiPaperclipPanel = lazy(() => import('./AiPaperclipPanel.jsx'))
 
-function PersistentGateway({ active, workspace, language, chatOpen }) {
+function PersistentAiPanel({ active, label, language, children }) {
   const [visited, setVisited] = useState(active)
   useEffect(() => { if (active) setVisited(true) }, [active])
   if (!active && !visited) return null
   // Keep the document outside route boundaries; moving an iframe also reloads it.
-  return <section className="ai-gateway-host" hidden={!active} inert={!active} aria-label="CLIProxyAPI">
-    <TestingRouteBoundary fallback={<div className="ai-gateway-state" role="alert">{language === 'en' ? 'CLIProxyAPI could not load. Reload the page to try again.' : 'Không tải được CLIProxyAPI. Tải lại trang để thử lại.'}</div>}>
+  return <section className="ai-gateway-host" hidden={!active} inert={!active} aria-label={label}>
+    <TestingRouteBoundary fallback={<div className="ai-gateway-state" role="alert">{language === 'en' ? `Could not load ${label}. Reload the page to try again.` : `Không tải được ${label}. Tải lại trang để thử lại.`}</div>}>
     <Suspense fallback={null}>
-      <AiGatewayPanel workspace={workspace} language={language} active={active} chatOpen={chatOpen} />
+      {children}
     </Suspense>
     </TestingRouteBoundary>
   </section>
@@ -97,6 +98,7 @@ const SHELL_COPY = {
       ai: ['AI and Bots', 'Trợ lý AI, kết nối model và bot giao dịch'],
       aiConnections: ['Kết nối', 'Tài khoản và dịch vụ AI'],
       aiGateway: ['CLIProxyAPI', 'Trang quản trị CLIProxyAPI'],
+      aiPaperclip: ['Paperclip', 'Điều hành đội AI'],
       aiModels: ['Model', 'Model mặc định và theo tính năng'],
       aiWorkflows: ['Luồng AI', 'Phân tích đa model và dữ liệu chỉ đọc'],
       aiResearch: ['Nghiên cứu', 'Nghiên cứu chiến lược · Bản mẫu'],
@@ -157,6 +159,7 @@ const SHELL_COPY = {
       ai: ['AI and Bots', 'AI assistant, model connections and trading bots'],
       aiConnections: ['Connections', 'AI accounts and services'],
       aiGateway: ['CLIProxyAPI', 'CLIProxyAPI management'],
+      aiPaperclip: ['Paperclip', 'AI team operations'],
       aiModels: ['Models', 'Default and feature models'],
       aiWorkflows: ['Workflows', 'Multi-model analysis and read-only data'],
       aiResearch: ['Research', 'Strategy research · Preview'],
@@ -219,13 +222,13 @@ const SIDEBAR_SECTIONS = [
     ],
   },
   {
-    id: 'ai', copyKey: 'ai', icon: 'ai', defaultRoute: 'ai', defaultSection: 'connections',
+    id: 'ai', copyKey: 'ai', icon: 'ai', defaultRoute: 'ai', defaultSection: 'paperclip',
     items: [
+      { id: 'ai-paperclip', copyKey: 'aiPaperclip', icon: 'ai', route: 'ai', activeViews: ['ai'], section: 'paperclip' },
       { id: 'ai-connections', copyKey: 'aiConnections', icon: 'connections', route: 'ai', activeViews: ['ai'], section: 'connections' },
       { id: 'ai-gateway', copyKey: 'aiGateway', icon: 'connections', route: 'ai', activeViews: ['ai'], section: 'gateway' },
       { id: 'ai-models', copyKey: 'aiModels', icon: 'settings', route: 'ai', activeViews: ['ai'], section: 'models' },
       { id: 'ai-workflows', copyKey: 'aiWorkflows', icon: 'automation', route: 'ai', activeViews: ['ai'], section: 'workflows' },
-      { id: 'ai-research', copyKey: 'aiResearch', icon: 'research', route: 'ai', activeViews: ['ai'], section: 'research' },
       { id: 'ai-automation', copyKey: 'automation', icon: 'automation', route: 'ai', activeViews: ['ai'], section: 'automation' },
     ],
   },
@@ -468,7 +471,7 @@ function currentQuery() {
   return typeof window === 'undefined' ? new URLSearchParams() : new URLSearchParams(window.location.search)
 }
 
-export default function FxReplayShell({ children, workspace, query = currentQuery(), activeView = 'overview', mode = 'Replay', subnavAction, topbarAction, gatewayPage = false }) {
+export default function FxReplayShell({ children, workspace, query = currentQuery(), activeView = 'overview', mode = 'Replay', subnavAction, topbarAction, gatewayPage = false, paperclipPage = false }) {
   const chartWorkspace = (activeView === 'live' && query.get('section') === 'terminal' && query.get('surface') === 'workspace') || (activeView === 'replay' && query.get('select') !== '1' && (query.get('surface') === 'workspace' || Boolean(query.get('session')) || Boolean(query.get('dataset'))))
   const chartRoute = chartWorkspace
   const routeContext = useMemo(() => readWorkspaceContext(query), [query])
@@ -524,9 +527,11 @@ export default function FxReplayShell({ children, workspace, query = currentQuer
   }, [])
   const [mobileNavigation, setMobileNavigation] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 760px)').matches)
   const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false)
+  const [paperclipRailExpanded, setPaperclipRailExpanded] = useState(false)
+  useEffect(() => { if (!paperclipPage) setPaperclipRailExpanded(false) }, [paperclipPage])
   const drawerOpen = mobileNavigation && mobileNavigationOpen && !chartWorkspace
   // Mobile navigation is transient; resizing must not rewrite the desktop preference.
-  const displayedRailCollapsed = mobileNavigation ? !drawerOpen : railCollapsed
+  const displayedRailCollapsed = mobileNavigation ? !drawerOpen : paperclipPage ? !paperclipRailExpanded : railCollapsed
   const menuButtonRef = useRef(null)
   const navigationCloseRef = useRef(null)
   const helpButtonRef = useRef(null)
@@ -584,12 +589,13 @@ export default function FxReplayShell({ children, workspace, query = currentQuer
       setMobileNavigationOpen((value) => !value)
       return
     }
+    if (paperclipPage) { setPaperclipRailExpanded(value => !value); return }
     setRailCollapsed((value) => {
       const next = !value
       try { window.localStorage.setItem(RAIL_COLLAPSED_STORAGE_KEY, String(next)) } catch { /* private browsing */ }
       return next
     })
-  }, [mobileNavigation])
+  }, [mobileNavigation, paperclipPage])
   useEffect(() => {
     const media = window.matchMedia('(max-width: 760px)')
     const onChange = () => {
@@ -689,7 +695,7 @@ export default function FxReplayShell({ children, workspace, query = currentQuer
 
   return (
     <TestingLocaleProvider language={language}><FxReplayContext.Provider value={contextValue}>
-      <div className={`fx-app fx-shell-story ${aiOpen && !aiPage ? 'is-ai-open' : ''} ${aiPage ? 'is-ai-page' : ''} ${displayedRailCollapsed ? 'is-rail-collapsed' : ''} ${drawerOpen ? 'is-mobile-nav-open' : ''} ${chartWorkspace ? 'is-chart-workspace' : ''} ${chartRoute ? 'is-chart-route' : ''}`} data-testid="fxreplay-shell" data-theme={theme} data-ui-area={query.get('area') || (['overview', 'replay', 'trade', 'analytics', 'market-data', 'testing', 'prop'].includes(activeView) ? 'testing' : activeView)} lang={language}>
+      <div className={`fx-app fx-shell-story ${aiOpen && !aiPage ? 'is-ai-open' : ''} ${aiPage ? 'is-ai-page' : ''} ${paperclipPage ? 'is-paperclip-page' : ''} ${displayedRailCollapsed ? 'is-rail-collapsed' : ''} ${drawerOpen ? 'is-mobile-nav-open' : ''} ${chartWorkspace ? 'is-chart-workspace' : ''} ${chartRoute ? 'is-chart-route' : ''}`} data-testid="fxreplay-shell" data-theme={theme} data-ui-area={query.get('area') || (['overview', 'replay', 'trade', 'analytics', 'market-data', 'testing', 'prop'].includes(activeView) ? 'testing' : activeView)} lang={language}>
         <ShellTopbar copy={copy} language={language} setLanguage={handleLanguage} theme={theme} setTheme={handleTheme} railCollapsed={displayedRailCollapsed} onToggleRail={handleRail} chartWorkspace={chartWorkspace} query={query} workspace={workspace} helpOpen={helpOpen} onToggleHelp={() => { setHelpOpen((value) => !value); setAiOpen(false) }} helpButtonRef={helpButtonRef} railId="fxreplay-rail" mobileNavigation={mobileNavigation} drawerOpen={drawerOpen} menuButtonRef={menuButtonRef} aiOpen={aiOpen || aiPage} onToggleAi={toggleAi} aiButtonRef={aiButtonRef} aiModal={!aiPage && aiOpen && aiOverlay} topbarAction={topbarAction} />
         {drawerOpen && <div className="fx-mobile-nav-backdrop" aria-hidden="true" onClick={() => setMobileNavigationOpen(false)} />}
         {!chartWorkspace && <ShellRail activeView={activeView} workspace={workspace} query={query} copy={copy} railId="fxreplay-rail" drawerOpen={drawerOpen} compact={displayedRailCollapsed} onClose={() => setMobileNavigationOpen(false)} closeButtonRef={navigationCloseRef} inert={!aiPage && aiOpen && aiOverlay} />}
@@ -697,10 +703,15 @@ export default function FxReplayShell({ children, workspace, query = currentQuer
           <div className="fx-main-content" inert={!aiPage && aiOpen && aiOverlay}>
           <ShellSubnav activeView={activeView} workspace={workspace} query={query} copy={copy} action={subnavAction} />
           {helpOpen && <ShellHelp copy={copy} helpCloseRef={helpCloseRef} onClose={() => setHelpOpen(false)} />}
-          <NotificationProvider key={workspace}><div className="fx-content" tabIndex={0} hidden={gatewayPage}>
+          <NotificationProvider key={workspace}><div className="fx-content" tabIndex={0} hidden={gatewayPage || paperclipPage}>
             {children}
           </div></NotificationProvider>
-          <PersistentGateway key={`gateway:${workspace}`} active={gatewayPage} workspace={workspace} language={language} chatOpen={aiOpen || aiPage} />
+          <PersistentAiPanel key={`gateway:${workspace}`} active={gatewayPage} label="CLIProxyAPI" language={language}>
+            <AiGatewayPanel workspace={workspace} language={language} active={gatewayPage} chatOpen={aiOpen || aiPage} />
+          </PersistentAiPanel>
+          <PersistentAiPanel active={paperclipPage} label="Paperclip" language={language}>
+            <AiPaperclipPanel active={paperclipPage} language={language} />
+          </PersistentAiPanel>
           </div>
           {(aiMounted || aiPage) && <TestingRouteBoundary key={workspace} fallback={<AiPanelFallback open={aiOpen || aiPage} modal={!aiPage && aiOverlay} standalone={aiPage} onClose={closeAi} language={language} error />}><Suspense fallback={<AiPanelFallback open={aiOpen || aiPage} modal={!aiPage && aiOverlay} standalone={aiPage} onClose={closeAi} language={language} />}><AiChatPanel workspace={workspace} screen={activeView === 'ai' ? 'settings' : activeView} open={aiOpen || aiPage} modal={!aiPage && aiOverlay} standalone={aiPage} onClose={closeAi} settingsHref={buildWorkspaceHref('ai', workspace, query, { area: 'ai', section: 'connections', demo: null })} language={language} /></Suspense></TestingRouteBoundary>}
         </section>
