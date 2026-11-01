@@ -4,6 +4,7 @@ import { scopedRead } from './scopedRead.js'
 import { scopedMutation } from './scopedMutation.js'
 import { readJson } from './researchDataApi.js'
 import { useTestingLocale } from './testingLocale.jsx'
+import ConfirmationDialog from './ConfirmationDialog.jsx'
 
 function MediaPreview({item,url,onClose}) {
   const {t}=useTestingLocale(),dialog=useRef(null),id=useId()
@@ -32,6 +33,7 @@ function MediaImage({workspace,item}) {
 }
 export default function TradeMedia({workspace,session,trade}) {
   const {t}=useTestingLocale(),input=useRef(null),lock=useRef(false),[version,setVersion]=useState(0),[state,setState]=useState({status:'loading',items:[]}),[hover,setHover]=useState(false)
+  const [removing,setRemoving]=useState(null)
   const path=`/api/v2/trade-media?${new URLSearchParams({session_id:session,trade_id:trade})}`
   useEffect(()=>{
     const abort=new AbortController()
@@ -55,15 +57,15 @@ export default function TradeMedia({workspace,session,trade}) {
     finally{lock.current=false;if(input.current)input.current.value=''}
   }
   const remove=async item=>{
-    if(lock.current || state.uncertain || !window.confirm(t('Xóa ảnh đính kèm này?')))return
+    if(lock.current || state.status!=='ready' || state.uncertain)return
     lock.current=true;setState(s=>({...s,pending:true,error:null}))
-    try{await readJson(await scopedMutation('/api/v2/trade-media',workspace,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'remove_media',id:item.id})}));setVersion(v=>v+1)}
+    try{await readJson(await scopedMutation('/api/v2/trade-media',workspace,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'remove_media',id:item.id})}));setRemoving(null);setVersion(v=>v+1)}
     catch(error){setState(s=>({...s,pending:false,error:'Không xóa được ảnh. Đọc lại dữ liệu trước khi thử lại.',uncertain:error.outcomeKnown===false}))}
     finally{lock.current=false}
   }
   return <div className="wm-trade-media" data-dragging={hover || undefined} onDragOver={event=>{if(event.dataTransfer.types.includes('Files')){event.preventDefault();setHover(true)}}} onDragLeave={event=>{if(!event.currentTarget.contains(event.relatedTarget))setHover(false)}} onDrop={event=>{event.preventDefault();setHover(false);void upload([...event.dataTransfer.files])}}>
     <input ref={input} hidden type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple onChange={event=>void upload([...event.target.files])}/>
-    {state.items.length>0 && <div className="wm-trade-media-list">{state.items.map(item=><figure key={item.id}><MediaImage workspace={workspace} item={item}/><figcaption><span>{item.name}</span><button type="button" className="fxa-button fxa-icon-button" aria-label={t('Xóa ảnh {name}',{name:item.name})} disabled={state.pending || state.uncertain} onClick={()=>void remove(item)}><ChartIcon name="trash"/></button></figcaption></figure>)}</div>}
+    {state.items.length>0 && <div className="wm-trade-media-list">{state.items.map(item=><figure key={item.id}><MediaImage workspace={workspace} item={item}/><figcaption><span>{item.name}</span><button type="button" className="fxa-button fxa-icon-button" aria-label={t('Xóa ảnh {name}',{name:item.name})} disabled={state.status!=='ready' || state.pending || state.uncertain} onClick={()=>setRemoving(item)}><ChartIcon name="trash"/></button></figcaption></figure>)}</div>}
     <div className="wm-trade-media-drop">
       {state.status==='ready' && !state.items.length && <h3>{t('Chưa có ảnh đính kèm')}</h3>}
       {state.status==='loading' && <p role="status">{t('Đang đọc tệp đính kèm…')}</p>}
@@ -71,5 +73,6 @@ export default function TradeMedia({workspace,session,trade}) {
       {state.error && <p role="alert">{t(state.error)}</p>}
       {(state.status==='error' || state.error) && <button className="fxa-button" type="button" disabled={state.pending} onClick={()=>setVersion(v=>v+1)}>{t('Đọc lại dữ liệu')}</button>}
     </div>
+    {removing && <ConfirmationDialog title={t('Xóa ảnh {name}',{name:removing.name})} confirmLabel="Xóa" pending={Boolean(state.pending)} blocked={state.status!=='ready' || state.uncertain} error={state.error ? t(state.error) : undefined} onClose={()=>setRemoving(null)} onConfirm={()=>void remove(removing)}><p>{t('Xóa ảnh đính kèm này?')}</p></ConfirmationDialog>}
   </div>
 }

@@ -162,7 +162,7 @@ try {
   await trigger.click()
   if(mode==='backtest' && !en) await dialog.screenshot({animations:'disabled',path:`${out}/selected-menu.png`})
   await menu.getByRole('button',{name:en?'Delete preset RENAMED':'Xóa preset RENAMED',exact:true}).click()
-  const confirmation=page.locator('.session-preset-confirm')
+  const confirmation=page.locator('.wm-confirmation-dialog')
   await confirmation.waitFor()
   if(mode==='backtest' && !en) await page.screenshot({animations:'disabled',path:`${out}/delete-confirm.png`})
   failDelete=true
@@ -171,11 +171,11 @@ try {
   assert.equal(savedPresets.size,1,'failed server deletion cannot remove a preset')
   failDelete=false
   await confirmation.getByRole('button',{name:en?"Don't delete":'Không xóa',exact:true}).click()
-  assert.equal(await menu.locator('.session-preset-row').count(),1)
+  await trigger.click();assert.equal(await menu.locator('.session-preset-row').count(),1)
   await menu.getByRole('button',{name:en?'Delete preset RENAMED':'Xóa preset RENAMED',exact:true}).click()
   await confirmation.getByRole('button',{name:en?'Delete preset':'Xóa preset',exact:true}).click()
   await confirmation.waitFor({state:'detached'})
-  assert.equal(await menu.locator('.session-preset-row').count(),0)
+  await trigger.click();assert.equal(await menu.locator('.session-preset-row').count(),0)
   await page.keyboard.press('Escape');assert.equal(await dialog.count(),1,'menu Escape does not close session setup')
   await dialog.locator('.quick-session-sections button').nth(0).click()
   assert.equal(await dialog.locator('.session-smooth-candles [role=switch]').count(),mode==='backtest'?1:0)
