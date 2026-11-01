@@ -1,0 +1,1099 @@
+{
+  "scope": "Isolated preview sidebar/error-state census. API, integration health and service reads are labeled 503 fixtures; events are 204. Only same-origin static resources reach the preview. No owner data, chart trades, provider, or database accessed. Unavailable/error-only evidence does not establish healthy workflows, loaded-data or whole-product acceptance.",
+  "navigation": {
+    "testing": 5,
+    "live": 7,
+    "strategies": 1,
+    "studio": 4,
+    "learn": 1,
+    "settings": 1
+  },
+  "origin": "http://127.0.0.1:5250",
+  "phase": "candidate",
+  "routes": 19,
+  "expectedCases": 76,
+  "cases": [
+    {
+      "name": "dashboard",
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "settledMs": 1023.6,
+      "overflow": 0,
+      "contentText": "Tổng quan\nPhiên backtest\nKiểm thử trên dữ liệu lịch sử\nThử thách prop firm\nBắt đầu thử thách mô phỏng\nHướng dẫn\nHọc và luyện tập\nPhiên gần đây\nMới nhất\n\nKhông tải được danh sách phiên: owner_audit_labeled_unavailable_fixture\n\nTự thử lại sau 2 giây.\nHiệu suất\nBacktest\nTất cả\n\nChưa tải được hiệu suất.\n\nTự thử lại sau 2 giây.",
+      "alertCount": 2,
+      "skeletonCount": 0,
+      "headings": [
+        "Tổng quan",
+        "Phiên gần đây",
+        "Hiệu suất"
+      ],
+      "screenshot": "dashboard-1920-dark-vi.png"
+    },
+    {
+      "name": "sessions",
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "settledMs": 1406.7,
+      "overflow": 0,
+      "contentText": "Phiên\nChọn phiên\nChọn…\nPhiên mới\n\nKhông tải được danh sách phiên: owner_audit_labeled_unavailable_fixture. Sẽ thử lại khi bạn quay về ứng dụng.\n\nTự thử lại sau 1 giây.",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": [
+        "Phiên"
+      ]
+    },
+    {
+      "name": "testing-trades",
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "settledMs": 936.2,
+      "overflow": 0,
+      "contentText": "Tất cả phiên\nLọc theo\nCơ bản\nNhãn\n\nKhông tải được danh sách phiên: owner_audit_labeled_unavailable_fixture\n\nTự thử lại sau 3 giây.",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "testing-analytics",
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "settledMs": 911.2,
+      "overflow": 0,
+      "contentText": "Loại\nTài sản\nHướng lệnh\nKết quả\nNhãn\nPhiên\nChiến lược\nNgày\nGiờ\nMúi giờ (UTC+0)\nNgày đóng lệnh\nÁp dụng\n\nKhông tải được danh sách phiên: owner_audit_labeled_unavailable_fixture\n\nTự thử lại sau 2 giây.",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "market-data",
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "settledMs": 923.4,
+      "overflow": 0,
+      "contentText": "Tất cả danh mục\nTất cả nguồn\nĐã tải\nXóa bộ lọc\nNhập CSV\n\nKhông đọc được kho dữ liệu: owner_audit_labeled_unavailable_fixture\n\nTự thử lại sau 3 giây.",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "live-terminal",
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "settledMs": 947.6,
+      "overflow": 0,
+      "contentText": "Tổng quan giao dịch MT5\nChọn tài khoản\nTài khoản\nMT5\nSố dư tài khoản: Chưa có dữ liệu\nKhông tải được danh sách tài khoản.\nTài khoản mới\nPhân tích\nCài đặt tài khoản\nXóa tài khoản\n\nKhông tải được danh sách tài khoản.\n\nThử lại",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": [
+        "Tổng quan giao dịch MT5"
+      ]
+    },
+    {
+      "name": "live-calendar",
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "settledMs": 1426,
+      "overflow": 0,
+      "contentText": "Không đọc được dữ liệu tài khoản.\nThử lại\nKhông đọc được sổ giao dịch. Thử lại sau.\nThử lại",
+      "alertCount": 2,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "live-trades",
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "settledMs": 1490.4,
+      "overflow": 0,
+      "contentText": "Không đọc được dữ liệu tài khoản.\nThử lại\nKhông đọc được sổ giao dịch. Thử lại sau.\nThử lại",
+      "alertCount": 2,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "live-notes",
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "settledMs": 1645.5,
+      "overflow": 0,
+      "contentText": "Không đọc được dữ liệu tài khoản.\nThử lại\nKhông đọc được sổ giao dịch. Thử lại sau.\nThử lại\nChưa đọc được chiến lược. Tải lại trước khi tạo hoặc sửa giao dịch.\nTải lại",
+      "alertCount": 3,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "live-tag-analytics",
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "settledMs": 1297,
+      "overflow": 0,
+      "contentText": "Không đọc được dữ liệu tài khoản.\nThử lại\nKhông đọc được sổ giao dịch. Thử lại sau.\nThử lại",
+      "alertCount": 2,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "live-analytics",
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "settledMs": 1615.3,
+      "overflow": 0,
+      "contentText": "Không đọc được dữ liệu tài khoản.\nThử lại\nKhông đọc được sổ giao dịch. Thử lại sau.\nThử lại",
+      "alertCount": 2,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "live-trading-accounts",
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "settledMs": 1623,
+      "overflow": 0,
+      "contentText": "Không đọc được dữ liệu tài khoản.\nThử lại\nKhông đọc được sổ giao dịch. Thử lại sau.\nThử lại",
+      "alertCount": 2,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "strategies",
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "settledMs": 906.8,
+      "overflow": 0,
+      "contentText": "Chiến lược của tôi\nTải lại\nTạo chiến lược\nKhông tải được chiến lược: owner_audit_labeled_unavailable_fixture\nThử lại\nChiến lược\n-",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": [
+        "Chiến lược của tôi",
+        "Chiến lược"
+      ]
+    },
+    {
+      "name": "ai-paperclip",
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "settledMs": 902.2,
+      "overflow": 0,
+      "contentText": "Đội AI\n\nChưa kết nối được Paperclip.\n\nThử lại\nMở riêng",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": [
+        "Đội AI"
+      ]
+    },
+    {
+      "name": "ai-workflows",
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "settledMs": 905.5,
+      "overflow": 0,
+      "contentText": "Đánh giá\n\nHai nhánh AI đọc dữ liệu song song, rồi một bước tổng hợp. Chỉ đọc, không đổi dữ liệu.\n\nChọn model\nBạn muốn đánh giá điều gì?\nKhông đính kèm dữ liệu\n\nKhông đọc được kết nối AI. Hãy thử lại.\n\nChạy đánh giá\n\nKhông đọc được kết nối AI. Hãy thử lại. Kết nối lại\n\nLần chạy gần đây\n\nChưa có lần chạy.\n\nChọn một lần chạy để xem tiến trình và kết quả. Rời trang không dừng việc đang chạy.",
+      "alertCount": 2,
+      "skeletonCount": 0,
+      "headings": [
+        "Đánh giá",
+        "Lần chạy gần đây"
+      ]
+    },
+    {
+      "name": "ai-models",
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "settledMs": 924.7,
+      "overflow": 0,
+      "contentText": "Model\n\nÁp dụng cho việc mới. Trong chat bạn vẫn đổi được model.\n\nKhông đọc được kết nối AI. Hãy thử lại. Tải lại\nMặc định\nModel hệ thống\nDùng khi việc chưa chọn model · Chưa cấu hình\nCấu hình kết nối · Chưa cấu hình\nTheo việc\nTrò chuyện\nChat AI ở mọi trang · Chưa cấu hình\nMặc định · Chưa cấu hình\nĐánh giá\n2 nhánh phân tích, rồi tổng hợp",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": [
+        "Model",
+        "Mặc định",
+        "Theo việc"
+      ]
+    },
+    {
+      "name": "ai-connections",
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "settledMs": 900.2,
+      "overflow": 0,
+      "contentText": "Kết nối\n\nTài khoản và dịch vụ AI trên máy này.\n\nLàm mới\nCLIProxyAPI\nDùng nhiều nhà cung cấp AI qua một cổng\nChưa cập nhật được\n-\nChatGPT Web\nDùng phiên đăng nhập ChatGPT của bạn\nChưa cập nhật được\n-",
+      "alertCount": 0,
+      "skeletonCount": 0,
+      "headings": [
+        "Kết nối"
+      ]
+    },
+    {
+      "name": "education",
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "settledMs": 904.8,
+      "overflow": 0,
+      "contentText": "Học và thuật ngữ\nNghiên cứu\nLuyện tập\nCài đặt\nKhông đọc được Learn: owner_audit_labeled_unavailable_fixture Thử lại",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": [
+        "Học và thuật ngữ"
+      ]
+    },
+    {
+      "name": "settings",
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "settledMs": 922.2,
+      "overflow": 0,
+      "contentText": "Cài đặt\nMở luyện tập\nHọc tập\nChung\nNhãn giao dịch\nGiao diện\n\nLưu tùy chọn trên trình duyệt này.\n\nChế độ màu\nTối\nSáng\nNgôn ngữ\nTiếng Việt\nEnglish\nLưu giao diện\nHủy thay đổi\n\nMúi giờ\n(UTC+0) UTC\nLưu thay đổi\nKết nối AI ↗\nWorkspace\ntenant-a\nChế độ truy cập\nChưa xác minh phiên\nBộ dữ liệu đã chọn\nChưa chọn\nQuyền giao dịch broker\nChưa xác minh · Đã khóa trên giao diện\n\nWorkspace này chưa được cấu hình phiên truy cập.\n\nPhiên workspace\nPhiên truy cập hiện tại\n\nPhiên trên máy này không cấp quyền giao dịch broker.\n\nTrạng thái truy cập\nChỉ đọc\nPhiên workspace\nChưa xác minh\nGửi lệnh broker\nChưa xác minh · Đã khóa trên giao diện\nDữ liệu kiểm định độc lập\n",
+      "alertCount": 0,
+      "skeletonCount": 0,
+      "headings": [
+        "Cài đặt",
+        "Giao diện",
+        "Phiên truy cập hiện tại",
+        "Trạng thái truy cập",
+        "Notion",
+        "Nguồn dữ liệu"
+      ]
+    },
+    {
+      "name": "dashboard",
+      "width": 1440,
+      "theme": "light",
+      "lang": "en",
+      "settledMs": 972.5,
+      "overflow": 0,
+      "contentText": "Dashboard\nBacktesting session\nCreate a backtesting session\nProp firm session\nStart a simulated challenge\nTutorials\nLearn and practice\nRecent sessions\nNewest first\n\nCould not load sessions: owner_audit_labeled_unavailable_fixture\n\nRetrying automatically in 3 seconds.\nPerformance\nBacktesting\nAll time\n\nCould not load performance.\n\nRetrying automatically in 2 seconds.",
+      "alertCount": 2,
+      "skeletonCount": 0,
+      "headings": [
+        "Dashboard",
+        "Recent sessions",
+        "Performance"
+      ]
+    },
+    {
+      "name": "sessions",
+      "width": 1440,
+      "theme": "light",
+      "lang": "en",
+      "settledMs": 919.1,
+      "overflow": 0,
+      "contentText": "Sessions\nSelect a session\nSelect…\nNew session\n\nCould not load sessions: owner_audit_labeled_unavailable_fixture. We will retry when you return to the app.\n\nRetrying automatically in 2 seconds.",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": [
+        "Sessions"
+      ]
+    },
+    {
+      "name": "testing-trades",
+      "width": 1440,
+      "theme": "light",
+      "lang": "en",
+      "settledMs": 921.8,
+      "overflow": 0,
+      "contentText": "All sessions\nFilter by\nBasic\nTags\n\nCould not load sessions: owner_audit_labeled_unavailable_fixture\n\nRetrying automatically in 2 seconds.",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "testing-analytics",
+      "width": 1440,
+      "theme": "light",
+      "lang": "en",
+      "settledMs": 923.6,
+      "overflow": 0,
+      "contentText": "Type\nAssets\nSide\nOutcome\nTags\nSession\nStrategy\nDay\nTime\nTimezone (UTC+0)\nClose date\nApply\n\nCould not load sessions: owner_audit_labeled_unavailable_fixture\n\nRetrying automatically in 2 seconds.",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "market-data",
+      "width": 1440,
+      "theme": "light",
+      "lang": "en",
+      "settledMs": 916.4,
+      "overflow": 0,
+      "contentText": "All categories\nAll sources\nDownloaded\nClear filters\nImport CSV\n\nCould not read the data library: owner_audit_labeled_unavailable_fixture\n\nRetrying automatically in 3 seconds.",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "live-terminal",
+      "width": 1440,
+      "theme": "light",
+      "lang": "en",
+      "settledMs": 961.5,
+      "overflow": 0,
+      "contentText": "MT5 trading overview\nSelect account\nAccount\nMT5\nAccount balance: No data available\nCould not load the account list.\nNew account\nAnalytics\nAccount settings\nDelete account\n\nCould not load the account list.\n\nRetry",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": [
+        "MT5 trading overview"
+      ]
+    },
+    {
+      "name": "live-calendar",
+      "width": 1440,
+      "theme": "light",
+      "lang": "en",
+      "settledMs": 1502,
+      "overflow": 0,
+      "contentText": "Could not read account data.\nRetry\nCould not load the journal. Try again.\nRetry",
+      "alertCount": 2,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "live-trades",
+      "width": 1440,
+      "theme": "light",
+      "lang": "en",
+      "settledMs": 1481.9,
+      "overflow": 0,
+      "contentText": "Could not read account data.\nRetry\nCould not load the journal. Try again.\nRetry",
+      "alertCount": 2,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "live-notes",
+      "width": 1440,
+      "theme": "light",
+      "lang": "en",
+      "settledMs": 1683.4,
+      "overflow": 0,
+      "contentText": "Could not read account data.\nRetry\nCould not load the journal. Try again.\nRetry\nCould not load strategies. Reload before creating or editing a trade.\nReload",
+      "alertCount": 3,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "live-tag-analytics",
+      "width": 1440,
+      "theme": "light",
+      "lang": "en",
+      "settledMs": 1283.8,
+      "overflow": 0,
+      "contentText": "Could not read account data.\nRetry\nCould not load the journal. Try again.\nRetry",
+      "alertCount": 2,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "live-analytics",
+      "width": 1440,
+      "theme": "light",
+      "lang": "en",
+      "settledMs": 1655.5,
+      "overflow": 0,
+      "contentText": "Could not read account data.\nRetry\nCould not load the journal. Try again.\nRetry",
+      "alertCount": 2,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "live-trading-accounts",
+      "width": 1440,
+      "theme": "light",
+      "lang": "en",
+      "settledMs": 1640.4,
+      "overflow": 0,
+      "contentText": "Could not read account data.\nRetry\nCould not load the journal. Try again.\nRetry",
+      "alertCount": 2,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "strategies",
+      "width": 1440,
+      "theme": "light",
+      "lang": "en",
+      "settledMs": 1406.2,
+      "overflow": 0,
+      "contentText": "My strategies\nReload\nCreate strategy\nCould not load strategies: owner_audit_labeled_unavailable_fixture\nRetry\nStrategies\n-",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": [
+        "My strategies",
+        "Strategies"
+      ]
+    },
+    {
+      "name": "ai-paperclip",
+      "width": 1440,
+      "theme": "light",
+      "lang": "en",
+      "settledMs": 898.1,
+      "overflow": 0,
+      "contentText": "AI team\n\nPaperclip is unavailable.\n\nRetry\nOpen separately",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": [
+        "AI team"
+      ]
+    },
+    {
+      "name": "ai-workflows",
+      "width": 1440,
+      "theme": "light",
+      "lang": "en",
+      "settledMs": 1373.4,
+      "overflow": 0,
+      "contentText": "Reviews\n\nTwo AI branches read your data in parallel, then one step sums up. Read-only.\n\nChoose models\nWhat would you like to review?\nNo data attached\n\nCannot read the AI connection. Try again.\n\nRun review\n\nCannot read the AI connection. Try again. Reconnect\n\nRecent runs\n\nNo runs yet.\n\nSelect a run to see its progress and result. Leaving this page does not stop it.",
+      "alertCount": 2,
+      "skeletonCount": 0,
+      "headings": [
+        "Reviews",
+        "Recent runs"
+      ]
+    },
+    {
+      "name": "ai-models",
+      "width": 1440,
+      "theme": "light",
+      "lang": "en",
+      "settledMs": 904.1,
+      "overflow": 0,
+      "contentText": "Models\n\nApplies to new work. You can still switch models in chat.\n\nCannot read the AI connection. Try again. Reload\nDefault\nSystem model\nUsed when a job has no model · Not configured\nConnection setting · Not configured\nBy job\nChat\nAI chat on every page · Not configured\nDefault · Not configured\nReviews\n2 analysis branches, then a summary",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": [
+        "Models",
+        "Default",
+        "By job"
+      ],
+      "screenshot": "ai-models-1440-light-en.png"
+    },
+    {
+      "name": "ai-connections",
+      "width": 1440,
+      "theme": "light",
+      "lang": "en",
+      "settledMs": 905.5,
+      "overflow": 0,
+      "contentText": "Connections\n\nAI accounts and services on this machine.\n\nRefresh\nCLIProxyAPI\nUse several AI providers through one gateway\nUpdate failed\n-\nChatGPT Web\nUse your ChatGPT sign-in\nUpdate failed\n-",
+      "alertCount": 0,
+      "skeletonCount": 0,
+      "headings": [
+        "Connections"
+      ]
+    },
+    {
+      "name": "education",
+      "width": 1440,
+      "theme": "light",
+      "lang": "en",
+      "settledMs": 906.9,
+      "overflow": 0,
+      "contentText": "Learn and glossary\nResearch\nPractice\nSettings\nCould not load Learn: owner_audit_labeled_unavailable_fixture Retry",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": [
+        "Learn and glossary"
+      ]
+    },
+    {
+      "name": "settings",
+      "width": 1440,
+      "theme": "light",
+      "lang": "en",
+      "settledMs": 921.4,
+      "overflow": 0,
+      "contentText": "Settings\nOpen practice\nEducation\nGeneral\nTrade labels\nAppearance\n\nPreferences are saved in this browser.\n\nColor theme\nDark\nLight\nLanguage\nTiếng Việt\nEnglish\nSave appearance\nDiscard changes\n\nTimezone\n(UTC+0) UTC\nSave changes\nAI connections ↗\nWorkspace\ntenant-a\nAccess mode\nSession not verified\nSelected dataset\nNot selected\nBroker trading permissions\nNot verified · Locked in the interface\n\nAn access session is not configured for this workspace.\n\nWorkspace session\nCurrent session\n\nThis local session does not grant broker trading permissions.\n\nAccess status\nRead-only\nWorkspace session\nUnverified\nGửi lệnh broker\nNot verified · Locked in the interfa",
+      "alertCount": 0,
+      "skeletonCount": 0,
+      "headings": [
+        "Settings",
+        "Appearance",
+        "Current session",
+        "Access status",
+        "Notion",
+        "Data source"
+      ]
+    },
+    {
+      "name": "dashboard",
+      "width": 768,
+      "theme": "light",
+      "lang": "vi",
+      "settledMs": 972.8,
+      "overflow": 0,
+      "contentText": "Tổng quan\nPhiên backtest\nKiểm thử trên dữ liệu lịch sử\nThử thách prop firm\nBắt đầu thử thách mô phỏng\nHướng dẫn\nHọc và luyện tập\nPhiên gần đây\nMới nhất\n\nKhông tải được danh sách phiên: owner_audit_labeled_unavailable_fixture\n\nTự thử lại sau 2 giây.\nHiệu suất\nBacktest\nTất cả\n\nChưa tải được hiệu suất.\n\nTự thử lại sau 3 giây.",
+      "alertCount": 2,
+      "skeletonCount": 0,
+      "headings": [
+        "Tổng quan",
+        "Phiên gần đây",
+        "Hiệu suất"
+      ]
+    },
+    {
+      "name": "sessions",
+      "width": 768,
+      "theme": "light",
+      "lang": "vi",
+      "settledMs": 1407.4,
+      "overflow": 0,
+      "contentText": "Phiên\nChọn phiên\nChọn…\nPhiên mới\n\nKhông tải được danh sách phiên: owner_audit_labeled_unavailable_fixture. Sẽ thử lại khi bạn quay về ứng dụng.\n\nTự thử lại sau 2 giây.",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": [
+        "Phiên"
+      ]
+    },
+    {
+      "name": "testing-trades",
+      "width": 768,
+      "theme": "light",
+      "lang": "vi",
+      "settledMs": 935.3,
+      "overflow": 0,
+      "contentText": "Tất cả phiên\nLọc theo\nCơ bản\nNhãn\n\nKhông tải được danh sách phiên: owner_audit_labeled_unavailable_fixture\n\nTự thử lại sau 2 giây.",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "testing-analytics",
+      "width": 768,
+      "theme": "light",
+      "lang": "vi",
+      "settledMs": 897.7,
+      "overflow": 0,
+      "contentText": "Loại\nTài sản\nHướng lệnh\nKết quả\nNhãn\nPhiên\nChiến lược\nNgày\nGiờ\nMúi giờ (UTC+0)\nNgày đóng lệnh\nÁp dụng\n\nKhông tải được danh sách phiên: owner_audit_labeled_unavailable_fixture\n\nTự thử lại sau 3 giây.",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "market-data",
+      "width": 768,
+      "theme": "light",
+      "lang": "vi",
+      "settledMs": 908.3,
+      "overflow": 0,
+      "contentText": "Tất cả danh mục\nTất cả nguồn\nĐã tải\nXóa bộ lọc\nNhập CSV\n\nKhông đọc được kho dữ liệu: owner_audit_labeled_unavailable_fixture\n\nTự thử lại sau 3 giây.",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "live-terminal",
+      "width": 768,
+      "theme": "light",
+      "lang": "vi",
+      "settledMs": 965.5,
+      "overflow": 0,
+      "contentText": "Tổng quan giao dịch MT5\nChọn tài khoản\nTài khoản\nMT5\nSố dư tài khoản: Chưa có dữ liệu\nKhông tải được danh sách tài khoản.\nTài khoản mới\nPhân tích\nCài đặt tài khoản\nXóa tài khoản\n\nKhông tải được danh sách tài khoản.\n\nThử lại",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": [
+        "Tổng quan giao dịch MT5"
+      ]
+    },
+    {
+      "name": "live-calendar",
+      "width": 768,
+      "theme": "light",
+      "lang": "vi",
+      "settledMs": 1694.8,
+      "overflow": 0,
+      "contentText": "Không đọc được dữ liệu tài khoản.\nThử lại\nKhông đọc được sổ giao dịch. Thử lại sau.\nThử lại",
+      "alertCount": 2,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "live-trades",
+      "width": 768,
+      "theme": "light",
+      "lang": "vi",
+      "settledMs": 1316.5,
+      "overflow": 0,
+      "contentText": "Không đọc được dữ liệu tài khoản.\nThử lại\nKhông đọc được sổ giao dịch. Thử lại sau.\nThử lại",
+      "alertCount": 2,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "live-notes",
+      "width": 768,
+      "theme": "light",
+      "lang": "vi",
+      "settledMs": 1770,
+      "overflow": 0,
+      "contentText": "Không đọc được dữ liệu tài khoản.\nThử lại\nKhông đọc được sổ giao dịch. Thử lại sau.\nThử lại\nChưa đọc được chiến lược. Tải lại trước khi tạo hoặc sửa giao dịch.\nTải lại",
+      "alertCount": 3,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "live-tag-analytics",
+      "width": 768,
+      "theme": "light",
+      "lang": "vi",
+      "settledMs": 1567.6,
+      "overflow": 0,
+      "contentText": "Không đọc được dữ liệu tài khoản.\nThử lại\nKhông đọc được sổ giao dịch. Thử lại sau.\nThử lại",
+      "alertCount": 2,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "live-analytics",
+      "width": 768,
+      "theme": "light",
+      "lang": "vi",
+      "settledMs": 1570.1,
+      "overflow": 0,
+      "contentText": "Không đọc được dữ liệu tài khoản.\nThử lại\nKhông đọc được sổ giao dịch. Thử lại sau.\nThử lại",
+      "alertCount": 2,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "live-trading-accounts",
+      "width": 768,
+      "theme": "light",
+      "lang": "vi",
+      "settledMs": 1703,
+      "overflow": 0,
+      "contentText": "Không đọc được dữ liệu tài khoản.\nThử lại\nKhông đọc được sổ giao dịch. Thử lại sau.\nThử lại",
+      "alertCount": 2,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "strategies",
+      "width": 768,
+      "theme": "light",
+      "lang": "vi",
+      "settledMs": 909,
+      "overflow": 0,
+      "contentText": "Chiến lược của tôi\nTải lại\nTạo chiến lược\nKhông tải được chiến lược: owner_audit_labeled_unavailable_fixture\nThử lại\nChiến lược\n-",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": [
+        "Chiến lược của tôi",
+        "Chiến lược"
+      ]
+    },
+    {
+      "name": "ai-paperclip",
+      "width": 768,
+      "theme": "light",
+      "lang": "vi",
+      "settledMs": 900.9,
+      "overflow": 0,
+      "contentText": "Đội AI\n\nChưa kết nối được Paperclip.\n\nThử lại\nMở riêng",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": [
+        "Đội AI"
+      ],
+      "screenshot": "ai-paperclip-768-light-vi.png"
+    },
+    {
+      "name": "ai-workflows",
+      "width": 768,
+      "theme": "light",
+      "lang": "vi",
+      "settledMs": 913.7,
+      "overflow": 0,
+      "contentText": "Đánh giá\n\nHai nhánh AI đọc dữ liệu song song, rồi một bước tổng hợp. Chỉ đọc, không đổi dữ liệu.\n\nChọn model\nBạn muốn đánh giá điều gì?\nKhông đính kèm dữ liệu\n\nKhông đọc được kết nối AI. Hãy thử lại.\n\nChạy đánh giá\n\nKhông đọc được kết nối AI. Hãy thử lại. Kết nối lại\n\nLần chạy gần đây\n\nChưa có lần chạy.\n\nChọn một lần chạy để xem tiến trình và kết quả. Rời trang không dừng việc đang chạy.",
+      "alertCount": 2,
+      "skeletonCount": 0,
+      "headings": [
+        "Đánh giá",
+        "Lần chạy gần đây"
+      ]
+    },
+    {
+      "name": "ai-models",
+      "width": 768,
+      "theme": "light",
+      "lang": "vi",
+      "settledMs": 921.3,
+      "overflow": 0,
+      "contentText": "Model\n\nÁp dụng cho việc mới. Trong chat bạn vẫn đổi được model.\n\nKhông đọc được kết nối AI. Hãy thử lại. Tải lại\nMặc định\nModel hệ thống\nDùng khi việc chưa chọn model · Chưa cấu hình\nCấu hình kết nối · Chưa cấu hình\nTheo việc\nTrò chuyện\nChat AI ở mọi trang · Chưa cấu hình\nMặc định · Chưa cấu hình\nĐánh giá\n2 nhánh phân tích, rồi tổng hợp",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": [
+        "Model",
+        "Mặc định",
+        "Theo việc"
+      ]
+    },
+    {
+      "name": "ai-connections",
+      "width": 768,
+      "theme": "light",
+      "lang": "vi",
+      "settledMs": 907.5,
+      "overflow": 0,
+      "contentText": "Kết nối\n\nTài khoản và dịch vụ AI trên máy này.\n\nLàm mới\nCLIProxyAPI\nDùng nhiều nhà cung cấp AI qua một cổng\nChưa cập nhật được\n-\nChatGPT Web\nDùng phiên đăng nhập ChatGPT của bạn\nChưa cập nhật được\n-",
+      "alertCount": 0,
+      "skeletonCount": 0,
+      "headings": [
+        "Kết nối"
+      ]
+    },
+    {
+      "name": "education",
+      "width": 768,
+      "theme": "light",
+      "lang": "vi",
+      "settledMs": 901.5,
+      "overflow": 0,
+      "contentText": "Học và thuật ngữ\nNghiên cứu\nLuyện tập\nCài đặt\nKhông đọc được Learn: owner_audit_labeled_unavailable_fixture Thử lại",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": [
+        "Học và thuật ngữ"
+      ]
+    },
+    {
+      "name": "settings",
+      "width": 768,
+      "theme": "light",
+      "lang": "vi",
+      "settledMs": 919.4,
+      "overflow": 0,
+      "contentText": "Cài đặt\nMở luyện tập\nHọc tập\nChung\nNhãn giao dịch\nGiao diện\n\nLưu tùy chọn trên trình duyệt này.\n\nChế độ màu\nTối\nSáng\nNgôn ngữ\nTiếng Việt\nEnglish\nLưu giao diện\nHủy thay đổi\n\nMúi giờ\n(UTC+0) UTC\nLưu thay đổi\nKết nối AI ↗\nWorkspace\ntenant-a\nChế độ truy cập\nChưa xác minh phiên\nBộ dữ liệu đã chọn\nChưa chọn\nQuyền giao dịch broker\nChưa xác minh · Đã khóa trên giao diện\n\nWorkspace này chưa được cấu hình phiên truy cập.\n\nPhiên workspace\nPhiên truy cập hiện tại\n\nPhiên trên máy này không cấp quyền giao dịch broker.\n\nTrạng thái truy cập\nChỉ đọc\nPhiên workspace\nChưa xác minh\nGửi lệnh broker\nChưa xác minh · Đã khóa trên giao diện\nDữ liệu kiểm định độc lập\n",
+      "alertCount": 0,
+      "skeletonCount": 0,
+      "headings": [
+        "Cài đặt",
+        "Giao diện",
+        "Phiên truy cập hiện tại",
+        "Trạng thái truy cập",
+        "Notion",
+        "Nguồn dữ liệu"
+      ]
+    },
+    {
+      "name": "dashboard",
+      "width": 360,
+      "theme": "dark",
+      "lang": "en",
+      "settledMs": 978.9,
+      "overflow": 0,
+      "contentText": "Dashboard\nBacktesting session\nCreate a backtesting session\nProp firm session\nStart a simulated challenge\nTutorials\nLearn and practice\nRecent sessions\nNewest first\n\nCould not load sessions: owner_audit_labeled_unavailable_fixture\n\nRetrying automatically in 3 seconds.\nPerformance\nBacktesting\nAll time\n\nCould not load performance.\n\nRetrying automatically in 2 seconds.",
+      "alertCount": 2,
+      "skeletonCount": 0,
+      "headings": [
+        "Dashboard",
+        "Recent sessions",
+        "Performance"
+      ]
+    },
+    {
+      "name": "sessions",
+      "width": 360,
+      "theme": "dark",
+      "lang": "en",
+      "settledMs": 918.4,
+      "overflow": 0,
+      "contentText": "Sessions\nSelect a session\nSelect…\nNew session\n\nCould not load sessions: owner_audit_labeled_unavailable_fixture. We will retry when you return to the app.\n\nRetrying automatically in 3 seconds.",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": [
+        "Sessions"
+      ]
+    },
+    {
+      "name": "testing-trades",
+      "width": 360,
+      "theme": "dark",
+      "lang": "en",
+      "settledMs": 1405.3,
+      "overflow": 0,
+      "contentText": "All sessions\nFilter by\nBasic\nTags\n\nCould not load sessions: owner_audit_labeled_unavailable_fixture\n\nRetrying automatically in 2 seconds.",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "testing-analytics",
+      "width": 360,
+      "theme": "dark",
+      "lang": "en",
+      "settledMs": 903.4,
+      "overflow": 0,
+      "contentText": "Type\nAssets\nSide\nOutcome\nTags\nSession\nStrategy\nDay\nTime\nTimezone (UTC+0)\nClose date\nApply\n\nCould not load sessions: owner_audit_labeled_unavailable_fixture\n\nRetrying automatically in 2 seconds.",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "market-data",
+      "width": 360,
+      "theme": "dark",
+      "lang": "en",
+      "settledMs": 935.4,
+      "overflow": 0,
+      "contentText": "All categories\nAll sources\nDownloaded\nClear filters\nImport CSV\n\nCould not read the data library: owner_audit_labeled_unavailable_fixture\n\nRetrying automatically in 2 seconds.",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "live-terminal",
+      "width": 360,
+      "theme": "dark",
+      "lang": "en",
+      "settledMs": 966.8,
+      "overflow": 0,
+      "contentText": "MT5 trading overview\nSelect account\nAccount\nMT5\nAccount balance: No data available\nCould not load the account list.\nNew account\nAnalytics\nAccount settings\nDelete account\n\nCould not load the account list.\n\nRetry",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": [
+        "MT5 trading overview"
+      ]
+    },
+    {
+      "name": "live-calendar",
+      "width": 360,
+      "theme": "dark",
+      "lang": "en",
+      "settledMs": 1292.4,
+      "overflow": 0,
+      "contentText": "Could not read account data.\nRetry\nCould not load the journal. Try again.\nRetry",
+      "alertCount": 2,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "live-trades",
+      "width": 360,
+      "theme": "dark",
+      "lang": "en",
+      "settledMs": 1461.3,
+      "overflow": 0,
+      "contentText": "Could not read account data.\nRetry\nCould not load the journal. Try again.\nRetry",
+      "alertCount": 2,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "live-notes",
+      "width": 360,
+      "theme": "dark",
+      "lang": "en",
+      "settledMs": 1297,
+      "overflow": 0,
+      "contentText": "Could not read account data.\nRetry\nCould not load the journal. Try again.\nRetry\nCould not load strategies. Reload before creating or editing a trade.\nReload",
+      "alertCount": 3,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "live-tag-analytics",
+      "width": 360,
+      "theme": "dark",
+      "lang": "en",
+      "settledMs": 1406.9,
+      "overflow": 0,
+      "contentText": "Could not read account data.\nRetry\nCould not load the journal. Try again.\nRetry",
+      "alertCount": 2,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "live-analytics",
+      "width": 360,
+      "theme": "dark",
+      "lang": "en",
+      "settledMs": 1783.6,
+      "overflow": 0,
+      "contentText": "Could not read account data.\nRetry\nCould not load the journal. Try again.\nRetry",
+      "alertCount": 2,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "live-trading-accounts",
+      "width": 360,
+      "theme": "dark",
+      "lang": "en",
+      "settledMs": 1517.4,
+      "overflow": 0,
+      "contentText": "Could not read account data.\nRetry\nCould not load the journal. Try again.\nRetry",
+      "alertCount": 2,
+      "skeletonCount": 0,
+      "headings": []
+    },
+    {
+      "name": "strategies",
+      "width": 360,
+      "theme": "dark",
+      "lang": "en",
+      "settledMs": 923.8,
+      "overflow": 0,
+      "contentText": "My strategies\nReload\nCreate strategy\nCould not load strategies: owner_audit_labeled_unavailable_fixture\nRetry\nStrategies\n-",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": [
+        "My strategies",
+        "Strategies"
+      ]
+    },
+    {
+      "name": "ai-paperclip",
+      "width": 360,
+      "theme": "dark",
+      "lang": "en",
+      "settledMs": 902,
+      "overflow": 0,
+      "contentText": "AI team\n\nPaperclip is unavailable.\n\nRetry\nOpen separately",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": [
+        "AI team"
+      ]
+    },
+    {
+      "name": "ai-workflows",
+      "width": 360,
+      "theme": "dark",
+      "lang": "en",
+      "settledMs": 903,
+      "overflow": 0,
+      "contentText": "Reviews\n\nTwo AI branches read your data in parallel, then one step sums up. Read-only.\n\nChoose models\nWhat would you like to review?\nNo data attached\n\nCannot read the AI connection. Try again.\n\nRun review\n\nCannot read the AI connection. Try again. Reconnect\n\nRecent runs\n\nNo runs yet.\n\nSelect a run to see its progress and result. Leaving this page does not stop it.",
+      "alertCount": 2,
+      "skeletonCount": 0,
+      "headings": [
+        "Reviews",
+        "Recent runs"
+      ]
+    },
+    {
+      "name": "ai-models",
+      "width": 360,
+      "theme": "dark",
+      "lang": "en",
+      "settledMs": 913,
+      "overflow": 0,
+      "contentText": "Models\n\nApplies to new work. You can still switch models in chat.\n\nCannot read the AI connection. Try again. Reload\nDefault\nSystem model\nUsed when a job has no model · Not configured\nConnection setting · Not configured\nBy job\nChat\nAI chat on every page · Not configured\nDefault · Not configured\nReviews\n2 analysis branches, then a summary",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": [
+        "Models",
+        "Default",
+        "By job"
+      ]
+    },
+    {
+      "name": "ai-connections",
+      "width": 360,
+      "theme": "dark",
+      "lang": "en",
+      "settledMs": 906.1,
+      "overflow": 0,
+      "contentText": "Connections\n\nAI accounts and services on this machine.\n\nRefresh\nCLIProxyAPI\nUse several AI providers through one gateway\nUpdate failed\n-\nChatGPT Web\nUse your ChatGPT sign-in\nUpdate failed\n-",
+      "alertCount": 0,
+      "skeletonCount": 0,
+      "headings": [
+        "Connections"
+      ]
+    },
+    {
+      "name": "education",
+      "width": 360,
+      "theme": "dark",
+      "lang": "en",
+      "settledMs": 903.4,
+      "overflow": 0,
+      "contentText": "Learn and glossary\nResearch\nPractice\nSettings\nCould not load Learn: owner_audit_labeled_unavailable_fixture Retry",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": [
+        "Learn and glossary"
+      ]
+    },
+    {
+      "name": "settings",
+      "width": 360,
+      "theme": "dark",
+      "lang": "en",
+      "settledMs": 905.1,
+      "overflow": 0,
+      "contentText": "Settings\nOpen practice\nEducation\nGeneral\nTrade labels\nAppearance\n\nPreferences are saved in this browser.\n\nColor theme\nDark\nLight\nLanguage\nTiếng Việt\nEnglish\nSave appearance\nDiscard changes\n\nTimezone\n(UTC+0) UTC\nSave changes\nAI connections ↗\nWorkspace\ntenant-a\nAccess mode\nSession not verified\nSelected dataset\nNot selected\nBroker trading permissions\nNot verified · Locked in the interface\n\nAn access session is not configured for this workspace.\n\nWorkspace session\nCurrent session\n\nThis local session does not grant broker trading permissions.\n\nAccess status\nRead-only\nWorkspace session\nUnverified\nGửi lệnh broker\nNot verified · Locked in the interfa",
+      "alertCount": 0,
+      "skeletonCount": 0,
+      "headings": [
+        "Settings",
+        "Appearance",
+        "Current session",
+        "Access status",
+        "Notion",
+        "Data source"
+      ],
+      "screenshot": "settings-360-dark-en.png"
+    }
+  ],
+  "errors": [],
+  "blockedWrites": [],
+  "blockedExternal": [],
+  "blockedUnexpected": [],
+  "fixtureReads": {
+    "/api/v2/events": 101,
+    "/api/v2/dashboard/sessions": 4,
+    "/api/v2/overview": 4,
+    "/api/v2/data/datasets": 10,
+    "/api/v2/replay/sessions": 12,
+    "/api/v2/trade-groups": 4,
+    "/api/v2/trade-labels": 28,
+    "/api/v2/replay/trades": 4,
+    "/api/v2/data/downloads": 8,
+    "/api/v2/live/connections": 4,
+    "/api/v2/live/status": 24,
+    "/api/v2/live/records": 24,
+    "/api/v2/journal": 8,
+    "/api/v2/playbooks": 8,
+    "/integrations/paperclip/health": 4,
+    "/api/v2/ai/assistant/sources": 4,
+    "/api/v2/ai/assistant/workflows": 4,
+    "/api/v2/ai/assistant/profiles": 4,
+    "/api/v2/ai/assistant/catalog": 4,
+    "/api/v2/ai/assistant/account": 4,
+    "/api/v2/ai/assistant/connections/local-gateway": 4,
+    "/api/v2/ai/assistant/connections/chatgpt-web": 4,
+    "/api/v2/learn/overview": 4,
+    "/api/v2/learn/glossary": 4,
+    "/api/v2/session/status": 4,
+    "/api/v2/connectors/notion/oauth/status": 4,
+    "/api/v2/execution/capabilities": 4
+  },
+  "summary": {
+    "observedCases": 76,
+    "failedCases": 0,
+    "overflowCases": [],
+    "pageErrors": 0,
+    "blockedWrites": 0,
+    "blockedExternal": 0,
+    "blockedUnexpected": 0
+  }
+}

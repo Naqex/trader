@@ -1,0 +1,312 @@
+{
+  "scope": "Isolated preview sidebar/error-state census. API, integration health and service reads are labeled 503 fixtures; events are 204. Only same-origin static resources reach the preview. No owner data, chart trades, provider, or database accessed. Unavailable/error-only evidence does not establish healthy workflows, loaded-data or whole-product acceptance.",
+  "navigation": {
+    "testing": 5,
+    "live": 7,
+    "strategies": 1,
+    "studio": 4,
+    "learn": 1,
+    "settings": 1
+  },
+  "origin": "http://127.0.0.1:5250",
+  "phase": "paperclip-controls",
+  "expectedBundle": "index-C_fM6QLT.js",
+  "routes": 1,
+  "sidebarDestinations": 19,
+  "expectedCases": 4,
+  "cases": [
+    {
+      "name": "ai-paperclip",
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "settledMs": 917,
+      "overflow": 0,
+      "contentText": "Đội AI\n\nChưa kết nối được Paperclip.\n\nThử lại\nMở riêng",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": [
+        "Đội AI"
+      ],
+      "bundleScripts": [
+        "/assets/index-C_fM6QLT.js"
+      ],
+      "controls": {
+        "reference": {
+          "tag": "BUTTON",
+          "height": 32,
+          "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "fontSize": "13px",
+          "fontWeight": "500",
+          "lineHeight": "20px",
+          "minHeight": "32px",
+          "borderRadius": "999px",
+          "display": "inline-flex",
+          "paddingTop": "5px",
+          "paddingLeft": "12px",
+          "textDecorationLine": "none",
+          "backgroundColor": "rgb(36, 36, 36)",
+          "color": "rgb(241, 241, 241)"
+        },
+        "retry": {
+          "tag": "BUTTON",
+          "height": 32,
+          "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "fontSize": "13px",
+          "fontWeight": "500",
+          "lineHeight": "20px",
+          "minHeight": "32px",
+          "borderRadius": "999px",
+          "display": "flex",
+          "paddingTop": "5px",
+          "paddingLeft": "12px",
+          "textDecorationLine": "none",
+          "backgroundColor": "rgb(255, 154, 31)",
+          "color": "rgb(18, 18, 18)"
+        },
+        "open": {
+          "tag": "A",
+          "height": 32,
+          "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "fontSize": "13px",
+          "fontWeight": "500",
+          "lineHeight": "20px",
+          "minHeight": "32px",
+          "borderRadius": "999px",
+          "display": "flex",
+          "paddingTop": "5px",
+          "paddingLeft": "12px",
+          "textDecorationLine": "none",
+          "backgroundColor": "rgb(36, 36, 36)",
+          "color": "rgb(241, 241, 241)"
+        }
+      },
+      "controlDifferences": []
+    },
+    {
+      "name": "ai-paperclip",
+      "width": 1440,
+      "theme": "light",
+      "lang": "en",
+      "settledMs": 927.1,
+      "overflow": 0,
+      "contentText": "AI team\n\nPaperclip is unavailable.\n\nRetry\nOpen separately",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": [
+        "AI team"
+      ],
+      "bundleScripts": [
+        "/assets/index-C_fM6QLT.js"
+      ],
+      "controls": {
+        "reference": {
+          "tag": "BUTTON",
+          "height": 32,
+          "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "fontSize": "13px",
+          "fontWeight": "500",
+          "lineHeight": "20px",
+          "minHeight": "32px",
+          "borderRadius": "999px",
+          "display": "inline-flex",
+          "paddingTop": "5px",
+          "paddingLeft": "12px",
+          "textDecorationLine": "none",
+          "backgroundColor": "rgb(233, 233, 233)",
+          "color": "rgb(23, 23, 23)"
+        },
+        "retry": {
+          "tag": "BUTTON",
+          "height": 32,
+          "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "fontSize": "13px",
+          "fontWeight": "500",
+          "lineHeight": "20px",
+          "minHeight": "32px",
+          "borderRadius": "999px",
+          "display": "flex",
+          "paddingTop": "5px",
+          "paddingLeft": "12px",
+          "textDecorationLine": "none",
+          "backgroundColor": "rgb(255, 154, 31)",
+          "color": "rgb(18, 18, 18)"
+        },
+        "open": {
+          "tag": "A",
+          "height": 32,
+          "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "fontSize": "13px",
+          "fontWeight": "500",
+          "lineHeight": "20px",
+          "minHeight": "32px",
+          "borderRadius": "999px",
+          "display": "flex",
+          "paddingTop": "5px",
+          "paddingLeft": "12px",
+          "textDecorationLine": "none",
+          "backgroundColor": "rgb(233, 233, 233)",
+          "color": "rgb(23, 23, 23)"
+        }
+      },
+      "controlDifferences": []
+    },
+    {
+      "name": "ai-paperclip",
+      "width": 768,
+      "theme": "light",
+      "lang": "vi",
+      "settledMs": 922.4,
+      "overflow": 0,
+      "contentText": "Đội AI\n\nChưa kết nối được Paperclip.\n\nThử lại\nMở riêng",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": [
+        "Đội AI"
+      ],
+      "bundleScripts": [
+        "/assets/index-C_fM6QLT.js"
+      ],
+      "controls": {
+        "reference": {
+          "tag": "BUTTON",
+          "height": 32,
+          "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "fontSize": "13px",
+          "fontWeight": "500",
+          "lineHeight": "20px",
+          "minHeight": "32px",
+          "borderRadius": "999px",
+          "display": "inline-flex",
+          "paddingTop": "5px",
+          "paddingLeft": "12px",
+          "textDecorationLine": "none",
+          "backgroundColor": "rgb(233, 233, 233)",
+          "color": "rgb(23, 23, 23)"
+        },
+        "retry": {
+          "tag": "BUTTON",
+          "height": 32,
+          "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "fontSize": "13px",
+          "fontWeight": "500",
+          "lineHeight": "20px",
+          "minHeight": "32px",
+          "borderRadius": "999px",
+          "display": "flex",
+          "paddingTop": "5px",
+          "paddingLeft": "12px",
+          "textDecorationLine": "none",
+          "backgroundColor": "rgb(255, 154, 31)",
+          "color": "rgb(18, 18, 18)"
+        },
+        "open": {
+          "tag": "A",
+          "height": 32,
+          "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "fontSize": "13px",
+          "fontWeight": "500",
+          "lineHeight": "20px",
+          "minHeight": "32px",
+          "borderRadius": "999px",
+          "display": "flex",
+          "paddingTop": "5px",
+          "paddingLeft": "12px",
+          "textDecorationLine": "none",
+          "backgroundColor": "rgb(233, 233, 233)",
+          "color": "rgb(23, 23, 23)"
+        }
+      },
+      "controlDifferences": [],
+      "screenshot": "ai-paperclip-controls-768-light-vi.png"
+    },
+    {
+      "name": "ai-paperclip",
+      "width": 360,
+      "theme": "dark",
+      "lang": "en",
+      "settledMs": 896.7,
+      "overflow": 0,
+      "contentText": "AI team\n\nPaperclip is unavailable.\n\nRetry\nOpen separately",
+      "alertCount": 1,
+      "skeletonCount": 0,
+      "headings": [
+        "AI team"
+      ],
+      "bundleScripts": [
+        "/assets/index-C_fM6QLT.js"
+      ],
+      "controls": {
+        "reference": {
+          "tag": "BUTTON",
+          "height": 44,
+          "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "fontSize": "13px",
+          "fontWeight": "500",
+          "lineHeight": "20px",
+          "minHeight": "44px",
+          "borderRadius": "999px",
+          "display": "inline-flex",
+          "paddingTop": "11px",
+          "paddingLeft": "12px",
+          "textDecorationLine": "none",
+          "backgroundColor": "rgb(36, 36, 36)",
+          "color": "rgb(241, 241, 241)"
+        },
+        "retry": {
+          "tag": "BUTTON",
+          "height": 44,
+          "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "fontSize": "13px",
+          "fontWeight": "500",
+          "lineHeight": "20px",
+          "minHeight": "44px",
+          "borderRadius": "999px",
+          "display": "flex",
+          "paddingTop": "11px",
+          "paddingLeft": "12px",
+          "textDecorationLine": "none",
+          "backgroundColor": "rgb(255, 154, 31)",
+          "color": "rgb(18, 18, 18)"
+        },
+        "open": {
+          "tag": "A",
+          "height": 44,
+          "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "fontSize": "13px",
+          "fontWeight": "500",
+          "lineHeight": "20px",
+          "minHeight": "44px",
+          "borderRadius": "999px",
+          "display": "flex",
+          "paddingTop": "11px",
+          "paddingLeft": "12px",
+          "textDecorationLine": "none",
+          "backgroundColor": "rgb(36, 36, 36)",
+          "color": "rgb(241, 241, 241)"
+        }
+      },
+      "controlDifferences": []
+    }
+  ],
+  "errors": [],
+  "blockedWrites": [],
+  "blockedExternal": [],
+  "blockedUnexpected": [],
+  "fixtureReads": {
+    "/api/v2/events": 4,
+    "/api/v2/ai/assistant/profiles": 4,
+    "/api/v2/ai/assistant/catalog": 4,
+    "/api/v2/ai/assistant/account": 4,
+    "/integrations/paperclip/health": 4
+  },
+  "summary": {
+    "observedCases": 4,
+    "failedCases": 0,
+    "overflowCases": [],
+    "pageErrors": 0,
+    "blockedWrites": 0,
+    "blockedExternal": 0,
+    "blockedUnexpected": 0
+  }
+}

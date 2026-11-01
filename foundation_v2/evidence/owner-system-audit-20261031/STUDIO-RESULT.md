@@ -45,3 +45,17 @@ Key Opus 5.5 đã hết hạn theo owner: pilot cũ chỉ là lịch sử.
 Hai ảnh chọn lọc ở `studio-visuals/`; output đầy đủ local nằm ở
 `foundation_v2/.runtime/ai-studio-browser` và `studio-embed-fixture`.
 Lát này không đóng owner audit O1–O12 hoặc các gate U/Y/W toàn sản phẩm.
+
+## Delta sau visual census
+
+`candidate-census.md` phát hiện buttons ở persistent host nằm ngoài scope
+`.fx-content`: native border/font/link underline khác control thường. Shared
+button roles trong `testing-standard.css` đã mở scope sang host; `.wm-page` và
+host state dùng cùng font token. Font-size role bao cả anchor `.wm-button`.
+Không đưa host trở vào keyed route tree nên giữ nguyên iframe lifecycle.
+
+Build final `index-C_fM6QLT.js`: independent controls4/4 pass cùng reference
+Models Reload; desktop32px, mobile360px44px, Inter13px, semantic primary/neutral,
+padding/radius đúng role. Root rerun aiStudio và embed fixtures đều PASS; embed
+kiểm thêm primary color, pill/touch height, link font parity và visible focus.
+Các attempt trước sửa được giữ trong candidate receipt, không ghi đè negative.

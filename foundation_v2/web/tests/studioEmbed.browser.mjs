@@ -99,6 +99,22 @@ try {
     unavailable = true
     await page.reload()
     await page.getByRole('button', { name: /Retry|Thử lại/, exact: true }).waitFor()
+    const retry = page.getByRole('button', { name: /Retry|Thử lại/, exact: true })
+    const controls = await retry.evaluate(node => {
+      const style = getComputedStyle(node), token = name => style.getPropertyValue(name).trim()
+      const expected = document.createElement('span')
+      expected.style.color = token('--wm-action-bg'); document.body.append(expected)
+      const primary = getComputedStyle(expected).color; expected.remove()
+      return { radius: parseFloat(style.borderRadius), height: node.getBoundingClientRect().height, background: style.backgroundColor, primary }
+    })
+    assert(controls.radius >= 16, 'persistent host reuses the pill button role')
+    assert(controls.height >= (width <= 480 ? 44 : 32), 'persistent host respects compact/touch targets')
+    assert.equal(controls.background, controls.primary, 'Retry uses the primary semantic role')
+    assert.equal(await page.getByRole('link', { name: /Open separately|Mở riêng/ }).evaluate(node => getComputedStyle(node).textDecorationLine), 'none')
+    assert.equal(await page.getByRole('link', { name: /Open separately|Mở riêng/ }).evaluate(node => getComputedStyle(node).fontSize), await retry.evaluate(node => getComputedStyle(node).fontSize))
+    await retry.focus()
+    assert.equal(await retry.evaluate(node => getComputedStyle(node).outlineStyle), 'solid')
+    await page.screenshot({ path: path.join(out, 'unavailable-' + width + '.png') })
     unavailable = false
     await page.getByRole('button', { name: /Retry|Thử lại/, exact: true }).click()
     await paperclipFrame.getByRole('textbox', { name: 'Draft' }).waitFor()
