@@ -1,6 +1,5 @@
 import { lazy, Suspense } from 'react'
 import { useFxReplayContext } from './FxReplayShell.jsx'
-import AiSparkles from './AiSparkles.jsx'
 import { TestingPageSkeleton } from './TestingPageState.jsx'
 import './settings.css'
 import './ai-workspace.css'
@@ -25,9 +24,6 @@ export default function AiWorkspace({ workspace, query }) {
       <AiWorkflows key={workspace} workspace={workspace} language={appearance?.language} />
     </Suspense> : section === 'research' ? <Suspense fallback={<TestingPageSkeleton label={say('Đang mở nghiên cứu…', 'Opening research…')} />}>
       <AiResearchWorkspace key={workspace} workspace={workspace} language={appearance?.language} theme={appearance?.theme} />
-    </Suspense> : section === 'automation' ? <>
-      <header className="ai-page-heading"><h1>{say('Bot', 'Bots')}</h1></header>
-      <section className="ai-bots-empty"><AiSparkles /><h2>{say('Chưa hỗ trợ chạy bot', 'Bot execution is not available yet')}</h2><p>{say('Bot theo quy tắc và bot dùng AI sẽ được quản lý tại đây.', 'Rule-based bots and AI bots will be managed here.')}</p></section>
-    </> : null}
+    </Suspense> : null}
   </main>
 }

@@ -8,6 +8,36 @@ palette/foundation vẫn pin `annam-compact@0.3.0`, không sửa đè snapshot c
 UI Reference đọc giá trị hiệu lực `--wm-*`, cập nhật khi đổi theme/màn hình;
 không dùng kích thước foundation `--ds-*` thay cho profile sản phẩm.
 
+## Studio — đội AI và đánh giá
+
+Studio có bốn mục: **Đội AI / AI team**, **Đánh giá / Reviews**,
+**Model / Models**, **Kết nối / Connections**. Trang quản trị CLIProxyAPI mở từ
+chi tiết kết nối và giữ mục Kết nối được chọn. Link Bot cũ chuyển về Đội AI.
+
+- Shell sở hữu lề trang; nội dung native Studio căn trái, rộng tối đa960px.
+  Không thêm card bao toàn trang. Header, danh sách và form dùng cùng mép.
+- Header, status và trạng thái panel dùng `AiPageHeader`, `AiStatus`,
+  `AiPanelState`; icon dùng `AppIcon`. Trạng thái có chữ cùng chấm màu,
+  không dùng màu làm tín hiệu duy nhất. Hàng kết nối mở drawer và có mô tả
+  trạng thái cho trình đọc màn hình.
+- Hàng bình thường, hover, selected và selected+hover dùng token riêng;
+  `--wm-row-selected-hover` pha từ selected và hover của theme hiện hành.
+  Dấu focus dùng `--wm-focus`, không đổi kích thước hàng khi tương tác.
+  Composer có một vùng focus cho cả nhóm nhập và controls.
+- Drawer kết nối dùng modal chung, rộng tối đa480px; Escape đóng và trả focus
+  về hàng vừa mở. Trên màn nhỏ, status xuống hàng; model controls và history/
+  kết quả xếp dọc. Vùng bấm theo profile cảm ứng chung.
+- Chuyển động dùng token chung; `prefers-reduced-motion` tắt transition của
+  hàng/disclosure/composer và animation tiến trình.
+- Giữ UI gốc của Paperclip và CLIProxyAPI trong iframe đã mở. Chuyển tab hoặc
+  đổi ngôn ngữ không tự tạo document mới; host ẩn có `hidden` và `inert`.
+  Retry có thể tải document mới khi dịch vụ lỗi. Health chỉ chứng minh dịch vụ
+  phản hồi, không chứng minh tài khoản/model còn quyền hoặc quota.
+
+Fixture `aiStudio.browser.mjs` kiểm layout/states/VI–EN; fixture
+`studioEmbed.browser.mjs` kiểm host với document tổng hợp. Chúng không thay
+nghiệm thu Paperclip/CLIProxyAPI thật hoặc một job AI hoàn chỉnh.
+
 ## Kích thước, chữ và khoảng cách
 
 | Cái nhìn thấy / bấm được | Máy tính | Cảm ứng / màn nhỏ | Cách hiểu |

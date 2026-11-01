@@ -34,7 +34,8 @@ try {
   await page.screenshot({ path: path.join(output, 'gateway-desktop.png') })
   report.cases.push('Preview embeds the registry gateway without the Trader API')
   await page.locator('a[href*="section=connections"]').first().click()
-  await page.locator('a[href*="section=gateway"]').first().click()
+  // CLIProxyAPI left the Studio tabs; return through history like the drawer link does.
+  await page.goBack()
   await page.locator(`iframe[src="${GATEWAY_MANAGEMENT_URL}"]:visible`).waitFor()
   assert.equal(await frame().locator('body').getAttribute('data-embed-qa'), 'retained')
   assert.equal(report.gatewayRefreshes, 0)

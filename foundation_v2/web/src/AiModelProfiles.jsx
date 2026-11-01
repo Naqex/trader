@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import FxSelect from './FxSelect.jsx'
+import AppIcon from './AppIcon.jsx'
+import { AiPageHeader } from './AiStudio.jsx'
 import { useFxReplayContext } from './FxReplayShell.jsx'
 import { aiErrorCopy, aiEffortName } from './aiProvider.js'
 
@@ -60,7 +62,7 @@ export default function AiModelProfiles({ workspace, language }) {
   }
   const find = (feature, role) => profiles.find(profile => profile.feature === feature && profile.role === role)?.selection
   const system = find('system', 'default') || fallback
-  function row(feature, role, label, systemRow = false) {
+  function row(feature, role, label, description, systemRow = false) {
     const selection = find(feature, role), inherited = systemRow ? fallback : (['facts', 'gaps'].includes(role) && find(feature, 'analyst')) || (role !== 'default' && find(feature, 'default')) || system
     const effective = selection || inherited
     const selectedKey = selection ? key(selection.provider, selection.model) : ''
@@ -69,7 +71,7 @@ export default function AiModelProfiles({ workspace, language }) {
     const options = [{ value: '', label: systemRow ? `${say('Cấu hình kết nối', 'Connection setting')} · ${inheritedName}` : `${say('Mặc định', 'Default')} · ${inheritedName}`, localize: false }, ...models.map(item => ({ value: key(item.provider, item.id), label: item.name, detail: providerName(item.provider), localize: false }))]
     if (selection && !model) options.push({ value: selectedKey, label: selection.model, detail: say('Chưa khả dụng', 'Unavailable'), disabled: true, localize: false })
     return <div className="ai-model-profile-row" key={`${feature}:${role}`} data-profile={`${feature}/${role}`}>
-      <div className="ai-profile-name"><span>{label}</span><small>{effective ? providerName(effective.provider) : say('Chưa cấu hình', 'Not configured')}</small></div>
+      <div className="ai-profile-name"><span>{label}</span><small>{description}{description && ' · '}{effective ? providerName(effective.provider) : say('Chưa cấu hình', 'Not configured')}</small></div>
       <div className="ai-profile-controls"><FxSelect label={label} value={selectedKey} options={options} disabled={loading || saving || !!error} searchable
         onChange={value => { const item = models.find(m => key(m.provider, m.id) === value); void save(feature, role, item ? { provider: item.provider, model: item.id, effort: item.efforts.includes('high') ? 'high' : item.efforts[0] || null } : null) }} />
         {model?.efforts.length > 0 && <FxSelect label={`${label} · ${say('Mức suy luận', 'Reasoning effort')}`} value={selection.effort || ''} disabled={loading || saving || !!error}
@@ -78,16 +80,16 @@ export default function AiModelProfiles({ workspace, language }) {
     </div>
   }
   return <section className="ai-model-profiles" aria-labelledby="ai-profiles-title" aria-busy={loading || saving}>
-    <header className="ai-page-heading"><div><h1 id="ai-profiles-title">{say('Model', 'Models')}</h1><p>{say('Áp dụng cho tác vụ mới. Trong chat, bạn vẫn có thể chọn model riêng.', 'Applies to new runs. You can choose a different model in each chat.')}</p></div></header>
+    <AiPageHeader id="ai-profiles-title" title={say('Model', 'Models')} description={say('Áp dụng cho việc mới. Trong chat bạn vẫn đổi được model.', 'Applies to new work. You can still switch models in chat.')} />
     {error && <div className="ai-inline-error" role="alert">{error} <button type="button" className="wm-button" disabled={loading || saving} onClick={() => void load()}>{say('Tải lại', 'Reload')}</button></div>}
     {!loading && !error && !models.length && <p className="ai-detail-note">{say('Chưa có model khả dụng.', 'No models available.')} <a href={buildHref('ai', { area: 'ai', section: 'connections' })}>{say('Mở Kết nối', 'Open Connections')} →</a></p>}
-    <div className="ai-profile-group"><h2>{say('Mặc định', 'Default')}</h2>{row('system', 'default', say('Model hệ thống', 'System model'), true)}</div>
-    <div className="ai-profile-group"><h2>{say('Theo tính năng', 'By feature')}</h2>{row('chat', 'default', say('Trò chuyện', 'Chat'))}
-      <details className="ai-workflow-profiles"><summary><span>{say('Đánh giá dữ liệu', 'Evidence review')}<small>{say('2 nhánh song song + reviewer', '2 parallel branches + reviewer')}</small></span><span aria-hidden="true">⌄</span></summary>
-        {row('evidence-review', 'analyst', say('Phân tích mặc định', 'Default analyst'))}
+    <div className="ai-profile-group"><h2>{say('Mặc định', 'Default')}</h2>{row('system', 'default', say('Model hệ thống', 'System model'), say('Dùng khi việc chưa chọn model', 'Used when a job has no model'), true)}</div>
+    <div className="ai-profile-group"><h2>{say('Theo việc', 'By job')}</h2>{row('chat', 'default', say('Trò chuyện', 'Chat'), say('Chat AI ở mọi trang', 'AI chat on every page'))}
+      <details className="ai-workflow-profiles"><summary><span>{say('Đánh giá', 'Reviews')}<small>{say('2 nhánh phân tích, rồi tổng hợp', '2 analysis branches, then a summary')}</small></span><AppIcon name="chevron-down" size={16} className="ai-summary-chevron" /></summary>
+        {row('evidence-review', 'analyst', say('Phân tích mặc định', 'Default analyst'), say('Cho cả hai nhánh', 'For both branches'))}
         {row('evidence-review', 'facts', say('Phân tích bằng chứng', 'Analyze evidence'))}
         {row('evidence-review', 'gaps', say('Tìm điểm còn thiếu', 'Find gaps'))}
-        {row('evidence-review', 'reviewer', say('Tổng hợp', 'Reviewer'))}
+        {row('evidence-review', 'reviewer', say('Tổng hợp', 'Reviewer'), say('Viết kết luận cuối', 'Writes the final answer'))}
       </details>
     </div>
     {saving && <p className="ai-save-status" role="status">{say('Đang lưu…', 'Saving…')}</p>}

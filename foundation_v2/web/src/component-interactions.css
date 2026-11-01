@@ -10,6 +10,8 @@
   --wm-control-hover: var(--project-hover);
   --wm-row-hover: var(--project-row-hover);
   --wm-row-selected: var(--project-row-selected);
+  /* Selected rows stay recognizably selected while hovered. */
+  --wm-row-selected-hover: color-mix(in srgb, var(--project-row-selected) 78%, var(--project-hover));
   --wm-hover: var(--wm-control-hover);
   --wm-selected: var(--project-control);
   --wm-selected-border: var(--project-border-strong);

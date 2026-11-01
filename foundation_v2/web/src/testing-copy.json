@@ -486,7 +486,7 @@
   "Lệnh đang chờ khớp trên tài khoản MT5 sẽ xuất hiện ở đây.": {"vi":"Lệnh đang chờ khớp trên tài khoản MT5 sẽ xuất hiện ở đây.","en":"Pending orders on the MT5 account will appear here."},
   "Kết quả gửi và đối soát yêu cầu MT5 sẽ xuất hiện ở đây.": {"vi":"Kết quả gửi và đối soát yêu cầu MT5 sẽ xuất hiện ở đây.","en":"MT5 request results and reconciliation will appear here."},
   "Kiểm tra kết nối tài khoản để tải danh sách lệnh.": {"vi":"Kiểm tra kết nối tài khoản để tải danh sách lệnh.","en":"Check the account connection to load orders."},
-  "AI and Bots": {"vi":"AI và Bot","en":"AI and Bots"},
+  "Studio": {"vi":"Studio","en":"Studio"},
   "AI assistant": {"vi":"Trợ lý","en":"Assistant"},
   "AI connections": {"vi":"Kết nối","en":"Connections"},
   "Automation": {"vi":"Tự động hóa","en":"Automation"},

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { PAPERCLIP_HEALTH_PATH, PAPERCLIP_ORIGIN } from '../paperclipBridge.mjs'
+import { AiPanelState } from './AiStudio.jsx'
 
 export default function AiPaperclipPanel({ active, language }) {
   const en = language === 'en', say = (vi, english) => en ? english : vi
@@ -46,13 +47,13 @@ export default function AiPaperclipPanel({ active, language }) {
       referrerPolicy="no-referrer" allow="clipboard-write"
       sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads"
       onLoad={() => setLoaded(true)} onError={() => setState('unavailable')} />}
-    {(state !== 'ready' || !loaded) && <div className="ai-gateway-state ai-paperclip-state" role={state === 'unavailable' ? 'alert' : 'status'}>
-      <h1>Paperclip</h1>
-      <p>{state === 'unavailable' ? say('Chưa kết nối được Paperclip.', 'Paperclip is unavailable.') : say('Đang mở Paperclip…', 'Opening Paperclip…')}</p>
-      {state === 'unavailable' && <div>
-        <button type="button" className="wm-button" onClick={retry}>{say('Thử lại', 'Retry')}</button>
+    {(state !== 'ready' || !loaded) && <AiPanelState className="ai-paperclip-state" icon="sparkles" title={say('Đội AI', 'AI team')}
+      alert={state === 'unavailable'} busy={state !== 'unavailable'}
+      message={state === 'unavailable' ? say('Chưa kết nối được Paperclip.', 'Paperclip is unavailable.') : say('Đang mở Paperclip…', 'Opening Paperclip…')}>
+      {state === 'unavailable' && <>
+        <button type="button" className="wm-button is-primary" onClick={retry}>{say('Thử lại', 'Retry')}</button>
         <a className="wm-button" href={PAPERCLIP_ORIGIN} target="_blank" rel="noopener noreferrer">{say('Mở riêng', 'Open separately')}</a>
-      </div>}
-    </div>}
+      </>}
+    </AiPanelState>}
   </div>
 }

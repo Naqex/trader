@@ -68,15 +68,20 @@ function App() {
   }, [performanceEnabled])
   const workspace = query.get('workspace') || 'tenant-a'
   const requestedView = query.get('view')
+  // Bots left the Studio nav; old links land on the AI team page.
+  const retiredSection = requestedView === 'ai' && query.get('section') === 'automation'
   useLayoutEffect(() => {
     if (requestedView === 'testing' || requestedView === 'prop') navigate(buildWorkspaceHref('overview', workspace, query, { create: 'prop', session: null, dataset: null, cursor: null, cutoff: null }), { replace: true })
   }, [requestedView, workspace])
+  useLayoutEffect(() => {
+    if (retiredSection) navigate(buildWorkspaceHref('ai', workspace, query, { area: 'ai', section: 'paperclip' }), { replace: true })
+  }, [retiredSection, workspace])
   // Preserve deep links emitted by the research/learn flows while keeping a bare root on the overview.
   const activeView = requestedView === 'journal' ? 'trade' : requestedView === 'data' ? 'market-data' : requestedView || (query.has('job') ? 'research' : query.has('session') || query.has('dataset') ? 'replay' : 'overview')
   if (requestedView === 'journal') { query.set('area', 'testing'); query.set('section', 'trades') }
   if (activeView === 'ai') {
     query.set('area', 'ai')
-    if (!['assistant', 'connections', 'gateway', 'paperclip', 'models', 'workflows', 'research', 'automation'].includes(query.get('section'))) query.set('section', 'paperclip')
+    if (!['assistant', 'connections', 'gateway', 'paperclip', 'models', 'workflows', 'research'].includes(query.get('section'))) query.set('section', 'paperclip')
   }
   if (activeView === 'market-data') {
     query.set('area', 'testing')

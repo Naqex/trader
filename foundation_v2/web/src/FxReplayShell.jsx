@@ -95,14 +95,12 @@ const SHELL_COPY = {
       tagAnalytics: ['Tag analytics', 'Phân tích theo tag'],
       tradingAccounts: ['Trading accounts', 'Tài khoản giao dịch'],
       strategies: ['Strategies', 'Quản lý chiến lược'],
-      ai: ['AI and Bots', 'Trợ lý AI, kết nối model và bot giao dịch'],
+      ai: ['Studio', 'Đội AI, đánh giá, model và kết nối'],
+      aiPaperclip: ['Đội AI', 'Giao việc và theo dõi các agent'],
+      aiWorkflows: ['Đánh giá', 'Nhờ AI đánh giá dữ liệu, chỉ đọc'],
+      aiModels: ['Model', 'Chọn model cho từng việc'],
       aiConnections: ['Kết nối', 'Tài khoản và dịch vụ AI'],
-      aiGateway: ['CLIProxyAPI', 'Trang quản trị CLIProxyAPI'],
-      aiPaperclip: ['Paperclip', 'Điều hành đội AI'],
-      aiModels: ['Model', 'Model mặc định và theo tính năng'],
-      aiWorkflows: ['Luồng AI', 'Phân tích đa model và dữ liệu chỉ đọc'],
       aiResearch: ['Nghiên cứu', 'Nghiên cứu chiến lược · Bản mẫu'],
-      automation: ['Bot', 'Bot giao dịch và AI giao dịch'],
       myStrategies: ['My strategies', 'Chiến lược của tôi'],
       trade: ['Trades', 'Giao dịch trong phiên replay'],
       playbook: ['Strategies', 'Strategy và playbook'],
@@ -156,14 +154,12 @@ const SHELL_COPY = {
       tagAnalytics: ['Tag analytics', 'Tag-based analytics'],
       tradingAccounts: ['Trading accounts', 'Trading accounts'],
       strategies: ['Strategies', 'Strategy workspace'],
-      ai: ['AI and Bots', 'AI assistant, model connections and trading bots'],
+      ai: ['Studio', 'AI team, reviews, models and connections'],
+      aiPaperclip: ['AI team', 'Assign and track agent work'],
+      aiWorkflows: ['Reviews', 'Ask AI to review data, read-only'],
+      aiModels: ['Models', 'Choose a model for each job'],
       aiConnections: ['Connections', 'AI accounts and services'],
-      aiGateway: ['CLIProxyAPI', 'CLIProxyAPI management'],
-      aiPaperclip: ['Paperclip', 'AI team operations'],
-      aiModels: ['Models', 'Default and feature models'],
-      aiWorkflows: ['Workflows', 'Multi-model analysis and read-only data'],
       aiResearch: ['Research', 'Strategy research · Preview'],
-      automation: ['Bots', 'Trading bots and AI trading'],
       myStrategies: ['My strategies', 'Your strategies'],
       trade: ['Trades', 'Trades in a replay session'],
       playbook: ['Strategies', 'Strategies and playbooks'],
@@ -225,11 +221,10 @@ const SIDEBAR_SECTIONS = [
     id: 'ai', copyKey: 'ai', icon: 'ai', defaultRoute: 'ai', defaultSection: 'paperclip',
     items: [
       { id: 'ai-paperclip', copyKey: 'aiPaperclip', icon: 'ai', route: 'ai', activeViews: ['ai'], section: 'paperclip' },
-      { id: 'ai-connections', copyKey: 'aiConnections', icon: 'connections', route: 'ai', activeViews: ['ai'], section: 'connections' },
-      { id: 'ai-gateway', copyKey: 'aiGateway', icon: 'connections', route: 'ai', activeViews: ['ai'], section: 'gateway' },
+      { id: 'ai-workflows', copyKey: 'aiWorkflows', icon: 'my-strategies', route: 'ai', activeViews: ['ai'], section: 'workflows' },
       { id: 'ai-models', copyKey: 'aiModels', icon: 'settings', route: 'ai', activeViews: ['ai'], section: 'models' },
-      { id: 'ai-workflows', copyKey: 'aiWorkflows', icon: 'automation', route: 'ai', activeViews: ['ai'], section: 'workflows' },
-      { id: 'ai-automation', copyKey: 'automation', icon: 'automation', route: 'ai', activeViews: ['ai'], section: 'automation' },
+      // CLIProxyAPI management opens from the connection drawer and keeps this item lit.
+      { id: 'ai-connections', copyKey: 'aiConnections', icon: 'connections', route: 'ai', activeViews: ['ai'], section: 'connections', alsoSections: ['gateway'] },
     ],
   },
   { id: 'education', copyKey: 'learn', icon: 'education', defaultRoute: 'learn', items: [] },
@@ -257,7 +252,9 @@ function activeSectionId(activeView, query) {
 
 function isNavItemActive(item, activeView, query, sectionId) {
   if (!item.activeViews?.includes(activeView)) return false
-  if (sectionId !== 'testing' && (query?.get('section') || (sectionId === 'live' ? 'calendar' : sectionId === 'ai' ? 'connections' : '')) !== item.section) return false
+  const current = query?.get('section') || (sectionId === 'live' ? 'calendar' : sectionId === 'ai' ? 'paperclip' : '')
+  if (item.alsoSections?.includes(current)) return true
+  if (sectionId !== 'testing' && current !== item.section) return false
   if (sectionId === 'testing' && query?.get('area') === 'live') return false
   return !query?.get('section') || query.get('section') === item.section || sectionId === 'testing'
 }

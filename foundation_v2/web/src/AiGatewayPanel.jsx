@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useFxReplayContext } from './FxReplayShell.jsx'
 import { aiErrorCopy } from './aiProvider.js'
+import { AiPanelState } from './AiStudio.jsx'
 import { GATEWAY_HEALTH_PATH, GATEWAY_MANAGEMENT_URL as managementUrl } from '../cliProxyBridge.mjs'
 
 export default function AiGatewayPanel({ workspace, language, active, chatOpen }) {
@@ -72,16 +73,15 @@ export default function AiGatewayPanel({ workspace, language, active, chatOpen }
     {documentVersion !== null && <iframe key={documentVersion} className="ai-gateway-frame" hidden={!available} title={say('Trang quản trị CLIProxyAPI', 'CLIProxyAPI management')}
       src={managementUrl} referrerPolicy="no-referrer" allow="clipboard-write"
       sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads" />}
-    {!available && <section className="ai-gateway-state" role={state?.error ? 'alert' : 'status'} aria-busy={!state}>
-    <h1>CLIProxyAPI</h1>
-    <p>{!state ? say('Đang mở trang quản trị…', 'Opening management…')
+    {!available && <AiPanelState icon="layers" title="CLIProxyAPI" alert={!!state?.error} busy={!state}
+      message={!state ? say('Đang mở trang quản trị…', 'Opening management…')
       : state.error ? aiErrorCopy(state.error, en)
         : runtime?.management_available && !runtime.running ? say('Bật kết nối để mở trang quản trị.', 'Start the connection to open management.')
-          : say('Trang quản trị chưa sẵn sàng.', 'Management is not available yet.')}</p>
-    {state && <div>
-      <a className="wm-button" href={buildHref('ai', { area: 'ai', section: 'connections' })}>{say('Kết nối', 'Connections')}</a>
-      <button className="wm-button" type="button" onClick={() => setAttempt(value => value + 1)}>{say('Thử lại', 'Retry')}</button>
-    </div>}
-    </section>}
+          : say('Trang quản trị chưa sẵn sàng.', 'Management is not available yet.')}>
+      {state && <>
+        <button className="wm-button is-primary" type="button" onClick={() => setAttempt(value => value + 1)}>{say('Thử lại', 'Retry')}</button>
+        <a className="wm-button" href={buildHref('ai', { area: 'ai', section: 'connections' })}>{say('Về Kết nối', 'Back to Connections')}</a>
+      </>}
+    </AiPanelState>}
   </>
 }
