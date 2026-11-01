@@ -16,7 +16,7 @@ use chrono::{DateTime, SecondsFormat, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
-use std::{collections::HashSet, str::FromStr, sync::Arc};
+use std::{collections::{HashMap, HashSet}, str::FromStr, sync::Arc};
 use tokio_postgres::{Row, Transaction};
 use uuid::Uuid;
 
@@ -377,6 +377,62 @@ async fn references(
     }
     Ok(())
 }
+async fn linked_trade_references(
+    tx: &Transaction<'_>,
+    workspace: &str,
+    links: &[Value],
+    previous: &[Value],
+) -> Result<(), ApiError> {
+    let added: Vec<_> = links.iter().filter(|link| !previous.contains(link)).collect();
+    let mut connections = HashSet::new();
+    let mut manual_ids = HashSet::new();
+    for link in &added {
+        let account = link["account_id"].as_str().unwrap();
+        if let Some(id) = account.strip_prefix("broker:") {
+            connections.insert(Uuid::parse_str(id).unwrap());
+        } else {
+            manual_ids.insert(account.to_owned());
+            manual_ids.insert(link["trade_id"].as_str().unwrap().to_owned());
+        }
+    }
+    // Read each linked source once; a review can add hundreds of trades from it.
+    let mut broker_positions = HashMap::new();
+    if !connections.is_empty() {
+        let ids: Vec<_> = connections.into_iter().collect();
+        for row in tx.query("SELECT connection_id,snapshot FROM mt5_connections WHERE workspace_id=$1 AND connection_id=ANY($2)", &[&workspace, &ids]).await.map_err(|_| ApiError::database())? {
+            let snapshot: Option<Value> = row.get(1);
+            let positions: HashSet<_> = snapshot.as_ref().map(|p| crate::trade_labels::live_trade_positions(p).collect()).unwrap_or_default();
+            broker_positions.insert(row.get::<_, Uuid>(0), positions);
+        }
+    }
+    let mut manual = HashMap::new();
+    if !manual_ids.is_empty() {
+        let ids: Vec<_> = manual_ids.into_iter().collect();
+        for row in tx.query("SELECT r.record_id,r.kind,v.payload_json->>'account_id' AS account_id FROM live_records r JOIN live_record_revisions v ON v.workspace_id=r.workspace_id AND v.record_id=r.record_id AND v.revision=r.current_revision WHERE r.workspace_id=$1 AND r.record_id=ANY($2) AND (r.kind='trade' OR (r.kind='account' AND NOT COALESCE((v.payload_json->>'archived')::boolean,false)))", &[&workspace, &ids]).await.map_err(|_| ApiError::database())? {
+            manual.insert(row.get::<_, String>(0), (row.get::<_, String>(1), row.get::<_, Option<String>>(2)));
+        }
+    }
+    // Keep the caller's order so mixed invalid links still report the first one.
+    for link in added {
+        let account = link["account_id"].as_str().unwrap();
+        let trade = link["trade_id"].as_str().unwrap();
+        if let Some(id) = account.strip_prefix("broker:") {
+            let connection = Uuid::parse_str(id).unwrap();
+            let position = trade.strip_prefix("position:").unwrap().parse::<u64>().unwrap();
+            if !broker_positions.get(&connection).is_some_and(|ids| ids.contains(&position)) {
+                return Err(ApiError::detail(StatusCode::NOT_FOUND, "label_trade_not_found"));
+            }
+        } else {
+            if !manual.get(account).is_some_and(|(kind, _)| kind == "account") {
+                return Err(invalid("live_account_not_found"));
+            }
+            if !manual.get(trade).is_some_and(|(kind, parent)| kind == "trade" && parent.as_deref() == Some(account)) {
+                return Err(invalid("live_note_trade_not_found"));
+            }
+        }
+    }
+    Ok(())
+}
 async fn execute(
     tx: &Transaction<'_>,
     scope: &Workspace,
@@ -490,17 +546,7 @@ async fn execute(
         }
     }
     if let Some(links) = payload["linked_trades"].as_array() {
-        for link in links.iter().filter(|link| !previous_links.contains(link)) {
-            let account = link["account_id"].as_str().unwrap();
-            let trade = link["trade_id"].as_str().unwrap();
-            if let Some(connection) = account.strip_prefix("broker:") {
-                crate::trade_labels::verify_trade(tx, &scope.workspace_id, &format!("live:{connection}"), trade).await?;
-            } else {
-                references(tx, &scope.workspace_id, &json!({"account_id":account})).await?;
-                let exists: bool = tx.query_one("SELECT EXISTS(SELECT 1 FROM live_records r JOIN live_record_revisions v ON v.workspace_id=r.workspace_id AND v.record_id=r.record_id AND v.revision=r.current_revision WHERE r.workspace_id=$1 AND r.record_id=$2 AND r.kind='trade' AND v.payload_json->>'account_id'=$3)", &[&scope.workspace_id, &trade, &account]).await.map_err(|_| ApiError::database())?.get(0);
-                if !exists { return Err(invalid("live_note_trade_not_found")); }
-            }
-        }
+        linked_trade_references(tx, &scope.workspace_id, links, &previous_links).await?;
     }
     let stamp = Utc::now().to_rfc3339_opts(SecondsFormat::Micros, true);
     if expected.is_none() {

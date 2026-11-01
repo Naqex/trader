@@ -125,9 +125,13 @@ def main():
                     for metrics in [[], [' '], ['net_pnl','net_pnl']]:
                         request('strategy metrics boundary', '/api/v2/playbooks', {**book,'strategy_spec':{**spec,'evaluation':{'required_metrics':metrics}}}, 422)
                     request('strategy OOS boundary', '/api/v2/playbooks', {**book,'strategy_spec':{**spec,'evaluation':{'walk_forward_required':False}}}, 422)
-                with store.connect() as conn:
-                    conn.execute('TRUNCATE workspace_record_revisions,workspace_records,workspaces CASCADE')
-                    conn.commit()
+                # Rust replays the golden cases on an empty schema. Immutable replay prefixes
+                # reject TRUNCATE, so use a second fresh database in this disposable cluster.
+                with psycopg.connect(base, autocommit=True) as conn:
+                    database = 'rust_metadata_' + uuid4().hex
+                    conn.execute(f'CREATE DATABASE {database}')
+                dsn = f'host=127.0.0.1 port={pgport} user=postgres dbname={database}'
+                PostgresStore(dsn).initialize()
                 golden = runtime/'golden.json'
                 golden.write_text(json.dumps(cases), encoding='utf-8')
                 env = {**os.environ, 'TW_V2_DATABASE_URL':dsn, 'TW_V2_ARTIFACT_ROOT':str(runtime/'artifacts'), 'TW_V2_LOCAL_IDENTITY':'local-owner', 'TW_V2_LOCAL_WORKSPACES':'tenant-a,tenant-b', 'TW_METADATA_GOLDEN':str(golden)}

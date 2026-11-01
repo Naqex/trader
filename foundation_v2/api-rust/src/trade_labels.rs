@@ -553,23 +553,28 @@ async fn verify_live_trade(
         .await
         .map_err(|_| ApiError::database())?
         .and_then(|r| r.get::<_, Option<Value>>(0));
-    if !snapshot.is_some_and(|p| {
-        p["deals"].as_array().is_some_and(|deals| {
-            deals.iter().any(|d| {
-                d["position_id"].as_u64() == Some(position)
-                    && matches!(d["type"].as_i64(), Some(0 | 1))
-            })
-        }) || p["positions"].as_array().is_some_and(|rows| {
-            rows.iter()
-                .any(|r| r["identifier"].as_u64().or(r["ticket"].as_u64()) == Some(position))
-        })
-    }) {
+    if !snapshot.is_some_and(|p| live_trade_positions(&p).any(|id| id == position)) {
         return Err(ApiError::detail(
             StatusCode::NOT_FOUND,
             "label_trade_not_found",
         ));
     }
     Ok(())
+}
+pub(crate) fn live_trade_positions(snapshot: &Value) -> impl Iterator<Item = u64> + '_ {
+    snapshot["deals"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter(|d| matches!(d["type"].as_i64(), Some(0 | 1)))
+        .filter_map(|d| d["position_id"].as_u64())
+        .chain(
+            snapshot["positions"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(|r| r["identifier"].as_u64().or(r["ticket"].as_u64())),
+        )
 }
 async fn assignment(
     tx: &Transaction<'_>,
@@ -787,8 +792,12 @@ pub async fn project(
         })
         .collect::<Vec<_>>();
     let assignments=tx.query("SELECT r.source_key,r.current_revision,v.payload_json FROM workspace_records r JOIN workspace_record_revisions v ON v.workspace_id=r.workspace_id AND v.kind=r.kind AND v.record_id=r.record_id AND v.revision=r.current_revision WHERE r.workspace_id=$1 AND r.kind='trade_label_assignment' AND r.source_key=ANY($2) AND NOT v.deleted",&[&workspace,&keys]).await.map_err(|_|ApiError::database())?;
+    let mut by_key = std::collections::HashMap::new();
+    for a in &assignments {
+        by_key.entry(a.get::<_, String>(0)).or_insert(a);
+    }
     for (r, key) in rows.iter_mut().zip(keys) {
-        let assignment = assignments.iter().find(|a| a.get::<_, String>(0) == key);
+        let assignment = by_key.get(&key).copied();
         let raw = assignment
             .map(|a| a.get::<_, Value>(2)["tags"].clone())
             .unwrap_or_else(|| r["tags"].clone());
@@ -839,6 +848,26 @@ pub async fn project_context(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn live_trade_positions_preserves_deal_types_and_position_identifier_precedence() {
+        let snapshot = json!({"deals":[
+            {"type":0,"position_id":1},{"type":1,"position_id":2},
+            {"type":2,"position_id":3},{"type":"0","position_id":4},
+            {"type":0,"position_id":-1},{"type":0,"position_id":1}
+        ],"positions":[
+            {"identifier":5,"ticket":6},{"ticket":7},
+            {"identifier":null,"ticket":8},{"identifier":-1,"ticket":9}
+        ]});
+        assert_eq!(
+            live_trade_positions(&snapshot).collect::<Vec<_>>(),
+            vec![1, 2, 1, 5, 7, 8, 9]
+        );
+        assert_eq!(live_trade_positions(&json!({})).count(), 0);
+        assert_eq!(
+            live_trade_positions(&json!({"deals":null,"positions":{}})).count(),
+            0
+        );
+    }
     #[test]
     fn aliases_and_deletion_do_not_change_execution() {
         let defs = vec![

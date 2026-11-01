@@ -423,3 +423,329 @@ async fn live_records_are_scoped_immutable_revisioned_and_idempotent() {
         422
     );
 }
+
+#[tokio::test]
+#[ignore = "owned disposable PostgreSQL via live_ledger_pg.py only"]
+async fn note_link_validation_batches_sources_and_preserves_admission() {
+    let workspace = format!("note-links-{}", uuid::Uuid::new_v4());
+    let other = format!("note-links-other-{}", uuid::Uuid::new_v4());
+    let mut config = Config::from_environment().unwrap();
+    config.local_workspaces = Some(vec![workspace.clone(), other.clone()]);
+    let state = AppState::connect(config).await.unwrap();
+    let db = state.pool.get().await.unwrap();
+    let row = db
+        .query_one(
+            "SELECT current_database(),current_setting('data_directory')",
+            &[],
+        )
+        .await
+        .unwrap();
+    assert!(
+        row.get::<_, String>(0).starts_with("rust_live_ledger_"),
+        "refuse owner database"
+    );
+    let directory = std::path::PathBuf::from(row.get::<_, String>(1));
+    assert!(
+        directory
+            .parent()
+            .unwrap()
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .starts_with("live-ledger-fixture-")
+    );
+    let app = trading_workspace_api::router(state.clone(), trading_workspace_api::domain_routes());
+    let base = "/api/v2/live/records";
+    let created = request(&app, "POST", base, &workspace, account(), "links-account").await;
+    assert_eq!(created.0, 201, "{}", created.1);
+    let account_id = created.1["record_id"].as_str().unwrap();
+    let ids: Vec<_> = (0..250).map(|_| uuid::Uuid::new_v4().to_string()).collect();
+    let stamp = "2026-10-31T00:00:00Z";
+    let payload = trade(&created.1)["payload"].clone();
+    db.execute("INSERT INTO live_records(workspace_id,record_id,kind,current_revision,created_at_utc,updated_at_utc) SELECT $1,id,'trade',1,$3,$3 FROM unnest($2::text[]) AS items(id)", &[&workspace, &ids, &stamp]).await.unwrap();
+    db.execute("INSERT INTO live_record_revisions(workspace_id,record_id,revision,payload_json,created_at_utc) SELECT $1,id,1,$3,$4 FROM unnest($2::text[]) AS items(id)", &[&workspace, &ids, &payload, &stamp]).await.unwrap();
+    let connection = uuid::Uuid::new_v4();
+    let snapshot = json!({"deals":(1..=250).map(|id| json!({"position_id":id,"type":id % 2})).collect::<Vec<_>>(),"positions":[{"identifier":251,"ticket":999}]});
+    db.execute("INSERT INTO mt5_connections(workspace_id,connection_id,request_id,account_key,name,server,login_hint,start_date,status,snapshot) VALUES($1,$2,$2,'batch-links','Fixture','Fixture','123','2026-10-01','disconnected',$3)", &[&workspace, &connection, &snapshot]).await.unwrap();
+    let mut links: Vec<_> = ids
+        .iter()
+        .map(|id| json!({"account_id":account_id,"trade_id":id}))
+        .collect();
+    links.extend((1..=250).map(|id| json!({"account_id":format!("broker:{connection}"),"trade_id":format!("position:{id}")})));
+    let note = |links: Value| json!({"kind":"note","payload":{"title":"Batch review","note":"Fixture only","linked_trades":links}});
+
+    db.simple_query("SELECT 'note_link_batch_empty_begin'")
+        .await
+        .unwrap();
+    let empty = request(
+        &app,
+        "POST",
+        base,
+        &workspace,
+        note(json!([])),
+        "links-empty",
+    )
+    .await;
+    db.simple_query("SELECT 'note_link_batch_empty_end'")
+        .await
+        .unwrap();
+    assert_eq!(empty.0, 201, "{}", empty.1);
+    db.simple_query("SELECT 'note_link_batch_14_begin'")
+        .await
+        .unwrap();
+    let fourteen = request(
+        &app,
+        "POST",
+        base,
+        &workspace,
+        note(json!(&links[..14])),
+        "links-14",
+    )
+    .await;
+    db.simple_query("SELECT 'note_link_batch_14_end'")
+        .await
+        .unwrap();
+    assert_eq!(fourteen.0, 201, "{}", fourteen.1);
+    db.simple_query("SELECT 'note_link_batch_500_begin'")
+        .await
+        .unwrap();
+    let full = request(
+        &app,
+        "POST",
+        base,
+        &workspace,
+        note(json!(links)),
+        "links-500",
+    )
+    .await;
+    db.simple_query("SELECT 'note_link_batch_500_end'")
+        .await
+        .unwrap();
+    assert_eq!(full.0, 201, "{}", full.1);
+    assert_eq!(full.1["payload"]["linked_trades"], json!(links));
+    assert_eq!(
+        request(
+            &app,
+            "POST",
+            base,
+            &workspace,
+            note(json!(links)),
+            "links-500"
+        )
+        .await,
+        full
+    );
+
+    let open = json!({"account_id":format!("broker:{connection}"),"trade_id":"position:251"});
+    assert_eq!(
+        request(
+            &app,
+            "POST",
+            base,
+            &workspace,
+            note(json!([open])),
+            "links-open"
+        )
+        .await
+        .0,
+        201
+    );
+    let missing_broker =
+        json!({"account_id":format!("broker:{connection}"),"trade_id":"position:999"});
+    let missing_account = json!({"account_id":uuid::Uuid::new_v4().to_string(),"trade_id":ids[0]});
+    let failed = request(
+        &app,
+        "POST",
+        base,
+        &workspace,
+        note(json!([missing_broker, missing_account])),
+        "links-order-broker",
+    )
+    .await;
+    assert_eq!(
+        (failed.0, failed.1["detail"].as_str()),
+        (404, Some("label_trade_not_found"))
+    );
+    let failed = request(
+        &app,
+        "POST",
+        base,
+        &workspace,
+        note(json!([missing_account, missing_broker])),
+        "links-order-manual",
+    )
+    .await;
+    assert_eq!(
+        (failed.0, failed.1["detail"].as_str()),
+        (422, Some("live_account_not_found"))
+    );
+    let missing_trade =
+        json!({"account_id":account_id,"trade_id":uuid::Uuid::new_v4().to_string()});
+    let failed = request(
+        &app,
+        "POST",
+        base,
+        &workspace,
+        note(json!([missing_trade])),
+        "links-missing-trade",
+    )
+    .await;
+    assert_eq!(
+        (failed.0, failed.1["detail"].as_str()),
+        (422, Some("live_note_trade_not_found"))
+    );
+    let second = request(
+        &app,
+        "POST",
+        base,
+        &workspace,
+        account(),
+        "links-second-account",
+    )
+    .await;
+    assert_eq!(second.0, 201);
+    let wrong_account = json!({"account_id":second.1["record_id"],"trade_id":ids[0]});
+    let failed = request(
+        &app,
+        "POST",
+        base,
+        &workspace,
+        note(json!([wrong_account])),
+        "links-wrong-account",
+    )
+    .await;
+    assert_eq!(
+        (failed.0, failed.1["detail"].as_str()),
+        (422, Some("live_note_trade_not_found"))
+    );
+    let cross = request(
+        &app,
+        "POST",
+        base,
+        &other,
+        note(json!([links[0]])),
+        "links-cross-manual",
+    )
+    .await;
+    assert_eq!(
+        (cross.0, cross.1["detail"].as_str()),
+        (422, Some("live_account_not_found"))
+    );
+    let cross = request(
+        &app,
+        "POST",
+        base,
+        &other,
+        note(json!([links[250]])),
+        "links-cross-broker",
+    )
+    .await;
+    assert_eq!(
+        (cross.0, cross.1["detail"].as_str()),
+        (404, Some("label_trade_not_found"))
+    );
+    assert_eq!(
+        request(
+            &app,
+            "POST",
+            base,
+            &workspace,
+            note(json!([links[0], links[0]])),
+            "links-duplicate"
+        )
+        .await
+        .0,
+        422
+    );
+    let mut too_many = links.clone();
+    too_many.push(open);
+    assert_eq!(
+        request(
+            &app,
+            "POST",
+            base,
+            &workspace,
+            note(json!(too_many)),
+            "links-limit"
+        )
+        .await
+        .0,
+        422
+    );
+
+    let account_path = format!("{base}/{account_id}/revisions");
+    let mut archived =
+        json!({"kind":"account","expected_revision":1,"payload":created.1["payload"]});
+    archived["payload"]["archived"] = json!(true);
+    assert_eq!(
+        request(
+            &app,
+            "POST",
+            &account_path,
+            &workspace,
+            archived,
+            "links-archive"
+        )
+        .await
+        .0,
+        200
+    );
+    db.execute(
+        "UPDATE mt5_connections SET snapshot=NULL WHERE workspace_id=$1 AND connection_id=$2",
+        &[&workspace, &connection],
+    )
+    .await
+    .unwrap();
+    let path = format!("{base}/{}/revisions", full.1["record_id"].as_str().unwrap());
+    let mut revision = json!({"kind":"note","expected_revision":1,"payload":full.1["payload"]});
+    revision["payload"]["title"] = json!("Existing links retained");
+    db.simple_query("SELECT 'note_link_batch_unchanged_begin'")
+        .await
+        .unwrap();
+    let revised = request(
+        &app,
+        "POST",
+        &path,
+        &workspace,
+        revision.clone(),
+        "links-unchanged",
+    )
+    .await;
+    db.simple_query("SELECT 'note_link_batch_unchanged_end'")
+        .await
+        .unwrap();
+    assert_eq!(revised.0, 200, "{}", revised.1);
+    assert_eq!(revised.1["payload"]["linked_trades"], json!(links));
+    assert_eq!(
+        request(&app, "POST", &path, &workspace, revision, "links-stale")
+            .await
+            .0,
+        409
+    );
+    let failed = request(
+        &app,
+        "POST",
+        base,
+        &workspace,
+        note(json!([links[0]])),
+        "links-archived-new",
+    )
+    .await;
+    assert_eq!(
+        (failed.0, failed.1["detail"].as_str()),
+        (422, Some("live_account_not_found"))
+    );
+    let failed = request(
+        &app,
+        "POST",
+        base,
+        &workspace,
+        note(json!([links[250]])),
+        "links-snapshot-missing",
+    )
+    .await;
+    assert_eq!(
+        (failed.0, failed.1["detail"].as_str()),
+        (404, Some("label_trade_not_found"))
+    );
+}

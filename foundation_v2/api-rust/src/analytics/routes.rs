@@ -523,10 +523,11 @@ async fn invoke(
                 open_trades::append_projected(&mut report, &open, &f).map_err(source)?;
                 open_trades::append_projected(&mut facet, &open, &json!({})).map_err(source)?;
                 report["label_revision_key"] = json!(journal_heads);
+                let index = trades::JournalIndex::new(&journals);
                 for projection in [&mut report, &mut facet] {
                     if let Some(rows) = projection["ledger"].as_array_mut() {
                         for row in rows.iter_mut() {
-                            *row = trades::decorate(row, &journals);
+                            *row = trades::decorate(row, &index);
                         }
                         crate::trade_labels::project(&tx, &scope.workspace_id, rows, None).await?;
                     }
