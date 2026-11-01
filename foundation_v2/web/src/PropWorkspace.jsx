@@ -483,7 +483,7 @@ export default function PropWorkspace({ workspace, query }) {
       const replay = await openPropReplay(workspace, { ...bundle, session }, datasets.items)
       window.location.assign(sessionNavigationHref('replay', workspace, query, replay, { select: null, surface: 'workspace' }))
     } catch (error) {
-      setConflict(`Không mở được chart challenge: ${error.message}`)
+      setConflict(t("Không mở được chart challenge: {error}", { error: error.message }))
       setPendingAction('')
     }
   }, [datasets.items, selected.bundle, selected.report, selected.session, workspace])
@@ -562,7 +562,7 @@ export default function PropWorkspace({ workspace, query }) {
                   aria-pressed={active}
                   onClick={() => openSession(session)}
                 >
-                  <span>{sessionLabel(session)}</span>
+                  <span>{t(sessionLabel(session))}</span>
                   <strong>{session.session_id}</strong>
                   <small>{statusLabel('session', session.status)} {t("· rev")} {session.revision}</small>
                 </button>
@@ -659,7 +659,7 @@ export default function PropWorkspace({ workspace, query }) {
                   {(selected.session.profile?.phases || []).map((item) => (
                     <li key={item.phase_index} aria-current={item.phase_index === phase.phase_index ? 'step' : undefined}>
                       <strong>{t("Phase")} {item.phase_index}</strong>
-                      <span>{item.phase_index === phase.phase_index ? attempt.status : item.phase_index < phase.phase_index ? t("Phase trước") : t("Chưa mở")}</span>
+                      <span>{item.phase_index === phase.phase_index ? statusLabel('prop_attempt', attempt.status) : item.phase_index < phase.phase_index ? t("Phase trước") : t("Chưa mở")}</span>
                     </li>
                   ))}
                 </ol>
@@ -681,13 +681,13 @@ export default function PropWorkspace({ workspace, query }) {
                   <div><dt>{t("Dataset")}</dt><dd>{attempt.data_version}</dd></div>
                   <div><dt>{t("Cost / engine")}</dt><dd>{attempt.cost_version} · {attempt.engine_version}</dd></div>
                   <div><dt>{t("Open / pending")}</dt><dd>{phase.open_positions} / {phase.pending_orders}</dd></div>
-                  <div><dt>{t("Evaluation quality")}</dt><dd>{phase.evaluation_quality}</dd></div>
+                  <div><dt>{t("Evaluation quality")}</dt><dd>{statusLabel('data_quality', phase.evaluation_quality)}</dd></div>
                 </dl>
                 <div className="prop-resume-note" data-testid="prop-resume-note">{t("Resume chỉ khôi phục state đã persist. Các nút lifecycle gửi lệnh rõ ràng tới backend; UI không tự chạy clock hoặc fill lệnh.")}</div>
 
                 <section className="prop-objectives" data-testid="prop-objectives" aria-label={t("Challenge objectives")}>
                   <div className="prop-section-head">
-                    <div><span>{t("Challenge objectives")}</span><strong>{objectives ? `Phase ${objectives.phaseIndex} · ${statusLabel('data_quality', objectives.technicalStatus)}` : t("Chưa có snapshot evaluator")}</strong></div>
+                    <div><span>{t("Challenge objectives")}</span><strong>{objectives ? t("Phase {phase} · {status}", { phase: objectives.phaseIndex, status: t(objectives.technicalStatus) }) : t("Chưa có snapshot evaluator")}</strong></div>
                     <small>{objectives ? (objectives.passReady ? t("Pass ready") : t("Đang theo dõi")) : t("Chờ event mô phỏng")}</small>
                   </div>
                   {!objectives && <p className="prop-objectives-empty">{t("Chưa có lifecycle event đủ dữ liệu để tính objective. Resume state và provenance vẫn được giữ nguyên.")}</p>}
@@ -695,8 +695,8 @@ export default function PropWorkspace({ workspace, query }) {
                     <div className="prop-objective-grid">
                       {objectives.profitTarget && <article><span>{t("Profit target")}</span><strong>{t(objectives.profitTarget.status)}</strong><small>{objectives.profitTarget.current} / {objectives.profitTarget.target}</small></article>}
                       {objectives.dailyLoss && <article><span>{t("Daily loss")}</span><strong className={objectives.dailyLoss.status === 'Breached' ? 'is-breach' : ''}>{t(objectives.dailyLoss.status)}</strong><small>{objectives.dailyLoss.current} {t("· floor")} {objectives.dailyLoss.floor}</small></article>}
-                      {objectives.overallDrawdown && <article><span>{t("Overall drawdown ·")} {objectives.overallDrawdown.kind}</span><strong className={objectives.overallDrawdown.status === 'Breached' ? 'is-breach' : ''}>{t(objectives.overallDrawdown.status)}</strong><small>{objectives.overallDrawdown.current} {t("· floor")} {objectives.overallDrawdown.floor}</small></article>}
-                      {objectives.calendar && <article><span>{t("Calendar / quality")}</span><strong>{objectives.calendar.minDaysSatisfied ? t("Days ready") : `${objectives.calendar.qualifyingDays ?? 0} qualifying day`}</strong><small>{objectives.calendar.elapsedDays ?? 0} {t("elapsed ·")} {objectives.calendar.expired ? t("expired") : t("within cutoff")} {t("· positions")} {objectives.positionsReady ? t("flat") : t("not ready")}</small></article>}
+                      {objectives.overallDrawdown && <article><span>{t("Overall drawdown ·")} {t(objectives.overallDrawdown.kind)}</span><strong className={objectives.overallDrawdown.status === 'Breached' ? 'is-breach' : ''}>{t(objectives.overallDrawdown.status)}</strong><small>{objectives.overallDrawdown.current} {t("· floor")} {objectives.overallDrawdown.floor}</small></article>}
+                      {objectives.calendar && <article><span>{t("Calendar / quality")}</span><strong>{objectives.calendar.minDaysSatisfied ? t("Days ready") : t("{count} qualifying days", { count: objectives.calendar.qualifyingDays ?? 0 })}</strong><small>{objectives.calendar.elapsedDays ?? 0} {t("elapsed ·")} {objectives.calendar.expired ? t("expired") : t("within cutoff")} {t("· positions")} {objectives.positionsReady ? t("flat") : t("not ready")}</small></article>}
                     </div>
                   )}
                 </section>
@@ -723,10 +723,10 @@ export default function PropWorkspace({ workspace, query }) {
                       <small>{report.result_source}</small>
                     </div>
                     <div className="prop-report-summary">
-                      <div><span>{t("Technical")}</span><strong>{report.outcome.technical_status || t("-")}</strong></div>
+                      <div><span>{t("Technical")}</span><strong>{report.outcome.technical_status ? t(report.outcome.technical_status) : t("-")}</strong></div>
                       <div><span>{t("Terminal")}</span><strong>{report.outcome.terminal ? t("Có") : t("Chưa")}</strong></div>
-                      <div><span>{t("Branch")}</span><strong>{report.attempt.branch_kind}</strong></div>
-                      <div><span>{t("Quality")}</span><strong>{report.phase.evaluation_quality}</strong></div>
+                      <div><span>{t("Branch")}</span><strong>{statusLabel('prop_branch', report.attempt.branch_kind)}</strong></div>
+                      <div><span>{t("Quality")}</span><strong>{statusLabel('data_quality', report.phase.evaluation_quality)}</strong></div>
                     </div>
                     <div className="prop-report-copy">
                       <strong>{t("Giải thích kết quả")}</strong>
@@ -797,7 +797,7 @@ export default function PropWorkspace({ workspace, query }) {
                 <div>
                   <span>{t("Balance / equity")}</span>
                   <strong>{item.phase.balance} / {item.phase.equity}</strong>
-                  <small>{item.phase.evaluation_quality}</small>
+                  <small>{statusLabel('data_quality', item.phase.evaluation_quality)}</small>
                 </div>
                 <div className="prop-report-row-reasons">
                   <span>{t("Reason")}</span>
