@@ -145,13 +145,14 @@ export default function SessionReports({ workspace, query, ledgerOnly = false })
     if (ledgerOnly || !scope || query.get('session') || query.get('replay_session')) return
     const url = new URL(window.location.href); url.searchParams.set('session', scope); navigate(url, { replace: true })
   }, [scope, ledgerOnly])
-  // An explicit report scope is already authorized by its own API read; the
-  // catalog supplies picker metadata and need not serialize that read.
+  // Report endpoints authorize their own scope. The catalog supplies picker
+  // metadata, so independent ledger reads need not wait for that request.
   const explicitReport = !ledgerOnly && Boolean(queryScope) && scope === queryScope
-  if (catalog.status === 'loading' && !explicitReport) return <TestingPageSkeleton view={ledgerOnly ? 'trade' : 'analytics'} label="Đang tải danh mục phiên…" />
+  const directLedger = ledgerOnly && JSON.stringify(scope) === queryScope
+  if (catalog.status === 'loading' && !explicitReport && !directLedger) return <TestingPageSkeleton view={ledgerOnly ? 'trade' : 'analytics'} label="Đang tải danh mục phiên…" />
   if (catalog.denied) return <TestingEmptyState kind="denied" viewport />
   if (catalog.status === 'error') return <section className="as-page fxa-page wm-page" aria-label={ledgerOnly ? t('Trades') : t('Analytics')} data-testid="session-catalog-error"><FxAnalyticsFilters ledgerOnly={ledgerOnly} sourceType="Backtesting" disabled pending filters={readAnalyticsFilters(query)} extra={readAnalyticsExtraFilters(query)} rows={[]} onChange={() => {}} onExtra={() => {}} sessionControl={control} statusControl={<TestingResourceStatus />} /><TestingReadState error message={t('Không tải được danh mục phiên:') + ' ' + t(catalog.error)} recovery={recovery} /></section>
-  if (!catalog.items.length && !query.get('session') && !query.get('replay_session')) return <TestingEmptyState viewport />
+  if (catalog.status !== 'loading' && !catalog.items.length && !query.get('session') && !query.get('replay_session')) return <TestingEmptyState viewport />
   const sessionAssets = [...new Set(catalog.items.filter(entry => scope === null || (Array.isArray(scope) ? scope : [scope]).includes(entry.record_id)).flatMap(entry => entry.instrument_ids || (entry.instrument_id ? [entry.instrument_id] : [])))]
   const catalogStatus = { state: catalog.refreshing || catalog.status === 'loading' ? 'refreshing' : catalog.status === 'stale' ? 'stale' : undefined, recovery }
   return <>

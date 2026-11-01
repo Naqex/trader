@@ -6,7 +6,8 @@ import './live-workspace.css'
 
 import { readLiveStatus } from './liveStatusApi.js'
 const LiveTradingWorkspace = lazy(() => import('./LiveTradingWorkspace.jsx'))
-const LiveSurfaces = lazy(() => import('./LiveSurfaces.jsx'))
+const loadLiveSurfaces = () => import('./LiveSurfaces.jsx')
+const LiveSurfaces = lazy(loadLiveSurfaces)
 const LIVE_SECTIONS = Object.freeze({ terminal:'Giao dịch MT5', calendar: 'Calendar', trades: 'Trades', notes: 'Notes', 'tag-analytics': 'Tag analytics', analytics: 'Analytics', 'trading-accounts': 'Trading accounts' })
 
 
@@ -37,6 +38,8 @@ function LiveJournalWorkspace({ workspace, query, preview }) {
   const state = preview ? { status: 'ready', payload: preview } : snapshot.workspace === scopeKey ? snapshot : { status: 'loading', payload: null }
   useEffect(() => {
     if (preview) return
+    // Code and the account snapshot can load together; the data gate stays below.
+    void loadLiveSurfaces().catch(() => {})
     const controller = new AbortController()
     setState(previous => previous.workspace === scopeKey && previous.status !== 'loading' ? previous : { workspace:scopeKey, status: 'loading', payload: null })
     const readCache = {}

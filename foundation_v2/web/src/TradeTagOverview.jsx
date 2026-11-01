@@ -1,12 +1,10 @@
 import { useMemo } from 'react'
-import { useTradeLabels } from './TradeLabelCell.jsx'
 import { tagResults } from './liveLedgerModel.js'
 import TestingIcon from './TestingIcon.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 
-export default function TradeTagOverview({ workspace, settingsHref, deals, currency }) {
+export default function TradeTagOverview({ catalog, settingsHref, deals, currency }) {
   const { t, fmt } = useTestingLocale()
-  const catalog = useTradeLabels(workspace)
   const rows = useMemo(() => tagResults(deals).sort((a,b) => b.count - a.count || a.tag.localeCompare(b.tag)), [deals])
   return <section className="live-tag-overview" aria-label={t('Tổng quan nhãn')}>
     <div className="live-tag-overview-heading"><h3>{t('Tổng quan nhãn')}</h3>{settingsHref ? <a className="fxa-button fxa-icon-button" href={settingsHref} aria-label={t('Cài đặt tổng quan nhãn')} data-tooltip={t('Cài đặt tổng quan nhãn')}><TestingIcon kind="settings" /></a> : <button type="button" className="fxa-button fxa-icon-button" aria-label={t('Cài đặt tổng quan nhãn')} disabled><TestingIcon kind="settings" /></button>}</div>

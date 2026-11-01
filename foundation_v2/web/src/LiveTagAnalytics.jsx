@@ -2,7 +2,6 @@ import { useId, useMemo, useState } from 'react'
 import { useTestingLocale } from './testingLocale.jsx'
 import { matchesSearch } from './searchText.js'
 import { tagAnalysis, tagCurves, tagColorValue } from './tagAnalysisModel.js'
-import { useTradeLabels } from './TradeLabelCell.jsx'
 import useTableSort from './useTableSort.js'
 import DataTable, { SortableColumn, SortResetColumn } from './DataTable.jsx'
 import SearchInput from './SearchInput.jsx'
@@ -10,8 +9,8 @@ import ChartIcon from './ChartIcon.jsx'
 import { AnalyticsCurve } from './AnalyticsCharts.jsx'
 import { displayDate } from './dateFormat.js'
 
-export default function LiveTagAnalytics({workspace,deals,currency,readable=true}) {
-  const {t,fmt,timezone}=useTestingLocale(),catalog=useTradeLabels(workspace),id=useId()
+export default function LiveTagAnalytics({catalog,deals,currency,readable=true}) {
+  const {t,fmt,timezone}=useTestingLocale(),id=useId()
   const [search,setSearch]=useState(''),[selected,setSelected]=useState([]),[hidden,setHidden]=useState(false)
   const [expanded,setExpanded]=useState(true),[openGroups,setOpenGroups]=useState(new Set()),sorting=useTableSort()
   const model=useMemo(()=>tagAnalysis(deals,catalog),[deals,catalog.items,catalog.groups])

@@ -1,7 +1,22 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { scopedRead } from './scopedRead.js'
 import { readJson } from './researchDataApi.js'
 import useReadRefresh from './useReadRefresh.js'
+
+const unknownPresence = () => null
+
+export function tradeNotePresenceReader(items) {
+  const sessions = new Map()
+  for (const item of items) {
+    const source = item.payload?.source
+    if (item.deleted || !source || source.kind === 'trade-comment' || !(item.payload.note || item.payload.notes)?.trim?.()) continue
+    for (const session of new Set([source.session_id, source.replay_session_id])) {
+      if (!sessions.has(session)) sessions.set(session, new Set())
+      sessions.get(session).add(source.trade_id || source.id)
+    }
+  }
+  return (session, trade) => sessions.get(session)?.has(String(trade)) || false
+}
 
 export default function useTradeNotePresence(workspace) {
   const [token,setToken]=useState(0),[state,setState]=useState({workspace:null,items:null,error:null,pending:false})
@@ -12,12 +27,9 @@ export default function useTradeNotePresence(workspace) {
     setState(current=>({...current,pending:true}))
     scopedRead('/api/v2/journal',workspace,controller.signal).then(readJson).then(data=>{
       if(!Array.isArray(data.items))throw new Error('invalid_note_list')
-      if(!controller.signal.aborted)setState({workspace,items:data.items.filter(item=>!item.deleted && item.payload?.source?.kind!=='trade-comment'),error:null,pending:false})
+      if(!controller.signal.aborted)setState({workspace,items:data.items,error:null,pending:false})
     }).catch(error=>{if(!controller.signal.aborted)setState({workspace,items:null,error,pending:false})})
     return()=>controller.abort()
   },[workspace,token])
-  return (session,trade)=>state.workspace!==workspace || !state.items?null:state.items.some(item=>{
-    const source=item.payload?.source
-    return source && (source.session_id===session || source.replay_session_id===session) && (source.trade_id || source.id)===String(trade) && Boolean((item.payload.note || item.payload.notes)?.trim?.())
-  })
+  return useMemo(() => state.workspace === workspace && state.items ? tradeNotePresenceReader(state.items) : unknownPresence, [workspace, state.workspace, state.items])
 }
