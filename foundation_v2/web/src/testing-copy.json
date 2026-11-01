@@ -476,9 +476,6 @@
   "Chưa có lịch sử giao dịch đã đồng bộ.": {"vi":"Chưa có lịch sử giao dịch đã đồng bộ.","en":"Synced trade history is unavailable."},
   "Chi tiết lệnh": {"vi":"Chi tiết lệnh","en":"Order details"},
   "Lệnh không còn trong ảnh chụp MT5 hiện tại.": {"vi":"Lệnh không còn trong ảnh chụp MT5 hiện tại.","en":"This order is no longer in the current MT5 snapshot."},
-  "Giao dịch MT5": {"vi":"Giao dịch MT5","en":"MT5 trading"},
-  "Quản lý lệnh MT5": {"vi":"Quản lý lệnh MT5","en":"MT5 orders"},
-  "Phiếu lệnh MT5": {"vi":"Phiếu lệnh MT5","en":"MT5 order ticket"},
   "Chuẩn bị lệnh MT5 theo khối lượng và preset đã chọn": {"vi":"Chuẩn bị lệnh MT5 theo khối lượng và preset đã chọn","en":"Prepare an MT5 order with the selected volume and preset"},
   "Chưa có yêu cầu giao dịch": {"vi":"Chưa có yêu cầu giao dịch","en":"No trading requests yet"},
   "Chưa có dữ liệu lệnh MT5": {"vi":"Chưa có dữ liệu lệnh MT5","en":"MT5 order data is unavailable"},
@@ -894,7 +891,6 @@
   "Vui lòng kiểm tra các trường được đánh dấu.": {"vi":"Vui lòng kiểm tra các trường được đánh dấu.","en":"Please check the highlighted fields."},
   "Thông báo thao tác": {"vi":"Thông báo thao tác","en":"Action notifications"},
   "Không giới hạn": {"vi":"Không giới hạn","en":"No limit"},
-  "Đóng thông báo": {"vi":"Đóng thông báo","en":"Dismiss notification"},
   "Đã kiểm tra dữ liệu.": {"vi":"Đã kiểm tra dữ liệu.","en":"Data checked."},
   "Đã khôi phục dữ liệu gốc.": {"vi":"Đã khôi phục dữ liệu gốc.","en":"Original data restored."},
   "Đã xoá phiên bản dữ liệu.": {"vi":"Đã xoá phiên bản dữ liệu.","en":"Dataset version deleted."},
@@ -911,7 +907,6 @@
   "Max loss limit": {"vi":"Giới hạn lỗ tổng","en":"Max loss limit"},
   "Max daily loss limit": {"vi":"Giới hạn lỗ ngày","en":"Max daily loss limit"},
   "Profit and Drawdown": {"vi":"Lợi nhuận & Mức sụt giảm","en":"Profit & Drawdown"},
-  "Ngày đủ điều kiện": {"vi":"Ngày đủ điều kiện","en":"Qualifying days"},
   "Số ngày đã qua": {"vi":"Số ngày đã qua","en":"Days elapsed"},
   "Đặt lại giới hạn ngày": {"vi":"Đặt lại giới hạn ngày","en":"Daily reset"},
   "Cần đóng hết lệnh": {"vi":"Cần đóng hết lệnh","en":"Must be flat"},
@@ -1598,14 +1593,6 @@
     "vi": "90 ngày gần nhất",
     "en": "Last 90 days"
   },
-  "Từ ngày (UTC)": {
-    "vi": "Từ ngày (UTC)",
-    "en": "From date (UTC)"
-  },
-  "Đến ngày (UTC)": {
-    "vi": "Đến ngày (UTC)",
-    "en": "To date (UTC)"
-  },
   "Phiên đang chọn": {
     "vi": "Phiên đang chọn",
     "en": "Selected session"
@@ -1841,10 +1828,6 @@
   "Đang xóa…": {
     "vi": "Đang xóa…",
     "en": "Deleting…"
-  },
-  "Đang lưu…": {
-    "vi": "Đang lưu…",
-    "en": "Saving…"
   },
   "Khôi phục": {
     "vi": "Khôi phục",
@@ -2174,10 +2157,6 @@
     "vi": "Phạm vi bộ dữ liệu cố định",
     "en": "Fixed dataset range"
   },
-  "Smooth candles": {
-    "vi": "Làm mượt nến",
-    "en": "Smooth candles"
-  },
   "Không áp dụng · replay theo dữ liệu nguồn": {
     "vi": "Không áp dụng · replay theo dữ liệu nguồn",
     "en": "Not applied · replay uses source data"
@@ -2330,10 +2309,6 @@
     "vi": "Thời gian vào lệnh (biểu đồ UTC)",
     "en": "Entry time (chart UTC)"
   },
-  "Entry type": {
-    "vi": "Loại lệnh",
-    "en": "Order type"
-  },
   "Return": {"vi": "Lợi nhuận", "en": "Return"},
   "Return (%)": {"vi": "Lợi nhuận (%)", "en": "Return (%)"},
   "Return (R)": {"vi": "Lợi nhuận (R)", "en": "Return (R)"},
@@ -2341,29 +2316,13 @@
     "vi": "Đánh giá giao dịch",
     "en": "Trade rating"
   },
-  "Entry price": {
-    "vi": "Giá vào lệnh",
-    "en": "Entry price"
-  },
   "Size": {
     "vi": "Khối lượng",
     "en": "Size"
   },
-  "Stop loss": {
-    "vi": "Cắt lỗ",
-    "en": "Stop loss"
-  },
-  "Take profit": {
-    "vi": "Chốt lời",
-    "en": "Take profit"
-  },
   "Exit date (UTC)": {
     "vi": "Thời gian thoát lệnh (UTC)",
     "en": "Exit time (UTC)"
-  },
-  "Exit price": {
-    "vi": "Giá thoát lệnh",
-    "en": "Exit price"
   },
   "Gross PnL": {
     "vi": "PnL trước phí",
@@ -2826,10 +2785,6 @@
     "vi": "Đang chờ",
     "en": "Queued"
   },
-  "Đang tải": {
-    "vi": "Đang tải",
-    "en": "Downloading"
-  },
   "Cập nhật lỗi": {
     "vi": "Cập nhật lỗi",
     "en": "Update failed"
@@ -2893,10 +2848,6 @@
   "Lịch sử UTC": {
     "vi": "Lịch sử (UTC)",
     "en": "History range (UTC)"
-  },
-  "Thao tác": {
-    "vi": "Thao tác",
-    "en": "Actions"
   },
   "Chưa có dữ liệu": {
     "vi": "Chưa có dữ liệu",
@@ -3261,10 +3212,6 @@
   "Chờ event mô phỏng": {
     "vi": "Đang chờ sự kiện mô phỏng",
     "en": "Waiting for a simulation event"
-  },
-  "Đang bắt đầu…": {
-    "vi": "Đang bắt đầu…",
-    "en": "Starting…"
   },
   "Bắt đầu mô phỏng": {
     "vi": "Bắt đầu mô phỏng",
@@ -4594,10 +4541,6 @@
   "Tick Bid/Ask:": {
     "vi": "Tick Bid/Ask:",
     "en": "Bid/Ask ticks:"
-  },
-  "Trade detail": {
-    "vi": "Chi tiết giao dịch",
-    "en": "Trade details"
   },
   "Trade detail ·": {
     "vi": "Chi tiết giao dịch ·",
@@ -6268,8 +6211,6 @@
   "Đồng bộ khung replay · chưa hỗ trợ": { "vi": "Đồng bộ khung replay · chưa hỗ trợ", "en": "Sync replay timeframe · not supported yet" },
   "Ẩn thanh thao tác nhanh": { "vi": "Ẩn thanh thao tác nhanh", "en": "Hide quick actions" },
   "Hiện thanh thao tác nhanh": { "vi": "Hiện thanh thao tác nhanh", "en": "Show quick actions" },
-  "Hiện số dư": { "vi": "Hiện số dư", "en": "Show balance" },
-  "Ẩn số dư": { "vi": "Ẩn số dư", "en": "Hide balance" },
   "Thu gọn danh sách lệnh": { "vi": "Thu gọn danh sách lệnh", "en": "Collapse positions" },
   "Mở danh sách lệnh": { "vi": "Mở danh sách lệnh", "en": "Expand positions" },
   "Toàn màn hình chart": { "vi": "Toàn màn hình chart", "en": "Chart fullscreen" },
@@ -6366,10 +6307,6 @@
   "Chưa hỗ trợ preset": {
     "vi": "Chưa hỗ trợ preset",
     "en": "Presets are not available yet"
-  },
-  "Preset": {
-    "vi": "Preset",
-    "en": "Preset"
   },
   "Loại lệnh": {
     "vi": "Loại lệnh",
@@ -7027,8 +6964,6 @@
   "Lệnh demo gửi tới MT5. Không dùng khớp lệnh mô phỏng của replay.": {"vi":"Lệnh demo gửi tới MT5. Không dùng khớp lệnh mô phỏng của replay.","en":"Demo orders are sent to MT5. Replay simulated fills are not used."},
   "Xác nhận lệnh demo": {"vi":"Xác nhận lệnh demo","en":"Confirm demo order"},
   "Giá khớp thực tế có thể thay đổi. MT5 sẽ kiểm tra lại trước khi gửi.": {"vi":"Giá khớp thực tế có thể thay đổi. MT5 sẽ kiểm tra lại trước khi gửi.","en":"Execution price may change. MT5 checks the order again before sending."},
-  "Take profit mới": {"vi":"Take profit mới","en":"New take profit"},
-  "Stop loss mới": {"vi":"Stop loss mới","en":"New stop loss"},
   "Gửi lệnh demo": {"vi":"Gửi lệnh demo","en":"Send demo order"},
   "Sửa SL/TP": {"vi":"Sửa SL/TP","en":"Edit SL/TP"},
   "Đóng vị thế demo": {"vi":"Đóng vị thế demo","en":"Close demo position"},
@@ -7390,7 +7325,6 @@
   "Select month": {"vi": "Chọn tháng", "en": "Select month"},
   "Select year": {"vi": "Chọn năm", "en": "Select year"},
   "Chọn khoảng ngày ghi chú": {"vi": "Chọn khoảng ngày ghi chú", "en": "Select note date range"},
-  "Trade detail tabs": {"vi": "Các mục chi tiết giao dịch", "en": "Trade detail tabs"},
   "Trade detail": {"vi": "Chi tiết giao dịch", "en": "Trade detail"},
   "Hiện thông tin giao dịch": {"vi":"Hiện thông tin giao dịch","en":"Show trade details"},
   "Mở rộng chi tiết giao dịch": {"vi":"Mở rộng chi tiết giao dịch","en":"Expand trade details"},
