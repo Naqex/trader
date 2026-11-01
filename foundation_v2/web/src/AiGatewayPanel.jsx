@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useFxReplayContext } from './FxReplayShell.jsx'
 import { aiErrorCopy } from './aiProvider.js'
-import services from '../../local-services.json' with { type: 'json' }
-
-const managementUrl = `http://${services.host}:${services.cliProxyApiPort}/management.html`
+import { GATEWAY_HEALTH_PATH, GATEWAY_MANAGEMENT_URL as managementUrl } from '../cliProxyBridge.mjs'
 
 export default function AiGatewayPanel({ workspace, language, active, chatOpen }) {
   const { buildHref } = useFxReplayContext()
@@ -16,7 +14,7 @@ export default function AiGatewayPanel({ workspace, language, active, chatOpen }
   useEffect(() => {
     const leaving = previous.current.active && (!active || (chatOpen && !previous.current.chatOpen))
     previous.current = { active, chatOpen }
-    if (!leaving) return
+    if (!leaving || !state?.value || state.preview) return
     refreshRequest.current?.abort()
     const controller = new AbortController()
     refreshRequest.current = controller
@@ -36,23 +34,32 @@ export default function AiGatewayPanel({ workspace, language, active, chatOpen }
       }))
     }
     void refresh()
-  }, [active, chatOpen, workspace])
+  }, [active, chatOpen, workspace, state?.preview])
   useEffect(() => {
     if (!active) return
     const controller = new AbortController()
     async function read() {
+      let preview = false
       try {
         const response = await fetch('/api/v2/ai/assistant/connections/local-gateway', {
           headers: { 'X-Workspace-Id': workspace }, signal: AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]),
         })
-        const value = await response.json()
-        if (!response.ok) throw new Error(typeof value.detail === 'string' ? value.detail : '')
+        let value = await response.json()
+        preview = response.status === 503 && value.detail === 'ui_preview_services_not_connected'
+        if (preview) {
+          const panel = await fetch(GATEWAY_HEALTH_PATH, {
+            signal: AbortSignal.any([controller.signal, AbortSignal.timeout(6000)]), cache: 'no-store',
+          })
+          const health = await panel.json()
+          if (!panel.ok || health.status !== 'ok') throw new Error('ai_gateway_unavailable')
+          value = { runtime: { management_url: managementUrl } }
+        } else if (!response.ok) throw new Error(typeof value.detail === 'string' ? value.detail : '')
         if (!controller.signal.aborted) {
-          setState({ value })
+          setState({ value, preview })
           if (value.runtime?.management_url === managementUrl) setDocumentVersion(attempt)
         }
       } catch (error) {
-        if (!controller.signal.aborted) setState({ error: error.message || 'ai_gateway_unavailable' })
+        if (!controller.signal.aborted) setState({ preview, error: error.message || 'ai_gateway_unavailable' })
       }
     }
     void read()

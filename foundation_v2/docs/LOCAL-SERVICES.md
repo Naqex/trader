@@ -15,7 +15,16 @@ mặc định của app cài riêng trên Windows hoặc tự kết nối vào p
 CLIProxyAPI Windows đang dùng `8317` là instance ngoài workspace. Không sửa
 config, auth, key hoặc lifecycle của nó. Bản Trader giữ home riêng tại
 `projects/trader/.runtime/mt5-ai-gateway/`, không import tài khoản từ Windows.
-Gateway chỉ chạy khi được bật qua API Trader; mở UI preview không tự khởi động nó.
+Trong runtime Trader, gateway được bật qua API Trader; mở UI preview không tự
+khởi động nó. Owner có thể yêu cầu chạy standalone dùng cùng config/auth; PID/log
+được ghi tại `.runtime/paperclip/gateway-owner.json` của workspace. Dừng đúng
+standalone owner trước khi giao quyền quản lý gateway lại cho API Trader.
+
+AI preview kiểm tra trang quản trị qua GET cố định
+`/integrations/cliproxyapi/health`, rồi nhúng trực tiếp origin17852. Bridge không
+đọc khóa, không proxy management API và không giả lập trạng thái kết nối của
+Trader. Khi host trả `ui_preview_services_not_connected`, panel dùng bridge này
+và không gửi refresh tới API Trader khi rời tab; runtime Trader giữ luồng cũ.
 
 ## Khi thêm dịch vụ hoặc đổi cổng
 

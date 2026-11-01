@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { stat } from 'node:fs/promises'
 import { createReadStream } from 'node:fs'
 import { paperclipHealth } from './paperclipBridge.mjs'
+import { cliProxyHealth } from './cliProxyBridge.mjs'
 import services from '../local-services.json' with { type: 'json' }
 
 const root = fileURLToPath(new URL('../.runtime/ai-workspace-preview/', import.meta.url))
@@ -13,7 +14,7 @@ const mime = { '.html':'text/html; charset=utf-8', '.js':'text/javascript; chars
 const server = http.createServer(async (req, res) => {
   res.setHeader('Cache-Control', 'no-store')
   res.setHeader('X-Content-Type-Options', 'nosniff')
-  await paperclipHealth(req, res, async () => {
+  await paperclipHealth(req, res, () => cliProxyHealth(req, res, async () => {
     if (!['GET','HEAD'].includes(req.method)) { res.writeHead(405); res.end('Trader preview: writes are disabled'); return }
     try {
       const url = new URL(req.url, 'http://127.0.0.1')
@@ -30,6 +31,6 @@ const server = http.createServer(async (req, res) => {
       if (req.method === 'HEAD') res.end()
       else createReadStream(target).on('error', () => res.destroy()).pipe(res)
     } catch { res.writeHead(404); res.end('Not found') }
-  })
+  }))
 })
 server.listen(port, services.host, () => console.log(`AI workspace preview: http://${services.host}:${port}/?workspace=tenant-a&view=ai&area=ai&section=paperclip&lang=vi`))
