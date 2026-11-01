@@ -1,6 +1,7 @@
 import SearchInput from './SearchInput.jsx'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { buildWorkspaceHref } from './workspaceContext.js'
+import { useTestingLocale } from './testingLocale.jsx'
 import './learnIntegration.css'
 
 function normalizeError(response, payload) {
@@ -53,13 +54,14 @@ function returnTarget(query, workspace) {
 }
 
 function LearnUtilityLinks({ workspace, query, returnLink }) {
+  const { t } = useTestingLocale()
   const practiceHref = buildWorkspaceHref('replay', workspace, query, { start: query?.get('start') })
   const settingsHref = buildWorkspaceHref('settings', workspace, query, { from: 'learn', return_from: query?.get('from'), job: query?.get('job'), start: query?.get('start') })
   return (
-    <nav className="learn-utility-links" aria-label="Điều hướng workspace">
-      <a className="context-link" href={returnLink.href}>{returnLink.label}</a>
-      <a className="context-link" href={practiceHref}>Practice</a>
-      <a className="context-link" href={settingsHref}>Settings</a>
+    <nav className="learn-utility-links" aria-label={t('Điều hướng workspace')}>
+      <a className="context-link" href={returnLink.href}>{t(returnLink.label)}</a>
+      <a className="context-link" href={practiceHref}>{t('Practice')}</a>
+      <a className="context-link" href={settingsHref}>{t('Settings')}</a>
     </nav>
   )
 }
@@ -78,6 +80,7 @@ function ResourceButton({ resourceId, label, selectedResourceId, onOpen }) {
 }
 
 export default function LearnWorkspace({ workspace, query }) {
+  const { t } = useTestingLocale()
   const [overview, setOverview] = useState({ status: 'loading', payload: null, error: null })
   const [glossary, setGlossary] = useState({ status: 'loading', payload: null, error: null })
   const [resource, setResource] = useState({ status: 'idle', payload: null, error: null, id: '', label: '' })
@@ -191,10 +194,10 @@ export default function LearnWorkspace({ workspace, query }) {
     return (
       <main className="learn-shell wm-page">
         <header className="learn-topbar wm-page-header">
-          <h1>Học & thuật ngữ</h1>
+          <h1>{t('Học & thuật ngữ')}</h1>
           <LearnUtilityLinks workspace={workspace} query={query} returnLink={returnLink} />
         </header>
-        <StateMessage kind="loading" testId="learn-loading">Đang đọc course và tiến độ thật…</StateMessage>
+        <StateMessage kind="loading" testId="learn-loading">{t('Đang đọc course và tiến độ thật…')}</StateMessage>
       </main>
     )
   }
@@ -202,8 +205,8 @@ export default function LearnWorkspace({ workspace, query }) {
   if (overview.status === 'denied') {
     return (
       <main className="learn-shell wm-page">
-        <header className="learn-topbar wm-page-header"><h1>Học & thuật ngữ</h1><LearnUtilityLinks workspace={workspace} query={query} returnLink={returnLink} /></header>
-        <StateMessage kind="denied" testId="learn-denied">Workspace này không có quyền đọc Learn.</StateMessage>
+        <header className="learn-topbar wm-page-header"><h1>{t('Học & thuật ngữ')}</h1><LearnUtilityLinks workspace={workspace} query={query} returnLink={returnLink} /></header>
+        <StateMessage kind="denied" testId="learn-denied">{t('Workspace này không có quyền đọc Learn.')}</StateMessage>
       </main>
     )
   }
@@ -211,8 +214,8 @@ export default function LearnWorkspace({ workspace, query }) {
   if (overview.status === 'unavailable') {
     return (
       <main className="learn-shell wm-page">
-        <header className="learn-topbar wm-page-header"><h1>Học & thuật ngữ</h1><LearnUtilityLinks workspace={workspace} query={query} returnLink={returnLink} /></header>
-        <StateMessage kind="unavailable" testId="learn-unavailable">Learn chưa được cấu hình cho workspace này.</StateMessage>
+        <header className="learn-topbar wm-page-header"><h1>{t('Học & thuật ngữ')}</h1><LearnUtilityLinks workspace={workspace} query={query} returnLink={returnLink} /></header>
+        <StateMessage kind="unavailable" testId="learn-unavailable">{t('Learn chưa được cấu hình cho workspace này.')}</StateMessage>
       </main>
     )
   }
@@ -220,8 +223,8 @@ export default function LearnWorkspace({ workspace, query }) {
   if (overview.status === 'error') {
     return (
       <main className="learn-shell wm-page">
-        <header className="learn-topbar wm-page-header"><h1>Học & thuật ngữ</h1><LearnUtilityLinks workspace={workspace} query={query} returnLink={returnLink} /></header>
-        <StateMessage kind="error" testId="learn-error">Không đọc được Learn: {overview.error} <button type="button" className="learn-resource-button" onClick={() => setReloadToken((value) => value + 1)}>Thử lại</button></StateMessage>
+        <header className="learn-topbar wm-page-header"><h1>{t('Học & thuật ngữ')}</h1><LearnUtilityLinks workspace={workspace} query={query} returnLink={returnLink} /></header>
+        <StateMessage kind="error" testId="learn-error">{t('Không đọc được Learn: {error}', { error: overview.error })} <button type="button" className="learn-resource-button" onClick={() => setReloadToken((value) => value + 1)}>{t('Thử lại')}</button></StateMessage>
       </main>
     )
   }
@@ -229,8 +232,8 @@ export default function LearnWorkspace({ workspace, query }) {
   if (safety?.read_only !== true || safety?.answer_keys_exposed !== false || safety?.auto_completion_enabled !== false) {
     return (
       <main className="learn-shell wm-page">
-        <header className="learn-topbar wm-page-header"><h1>Học & thuật ngữ</h1><LearnUtilityLinks workspace={workspace} query={query} returnLink={returnLink} /></header>
-        <StateMessage kind="error" testId="learn-safety-error">Learn đang trả về safety contract không hợp lệ nên nội dung đã được khóa.</StateMessage>
+        <header className="learn-topbar wm-page-header"><h1>{t('Học & thuật ngữ')}</h1><LearnUtilityLinks workspace={workspace} query={query} returnLink={returnLink} /></header>
+        <StateMessage kind="error" testId="learn-safety-error">{t('Learn đang trả về safety contract không hợp lệ nên nội dung đã được khóa.')}</StateMessage>
       </main>
     )
   }
@@ -238,56 +241,56 @@ export default function LearnWorkspace({ workspace, query }) {
   return (
     <main className="learn-shell wm-page">
       <header className="learn-topbar wm-page-header">
-        <h1>Học & thuật ngữ</h1>
+        <h1>{t('Học & thuật ngữ')}</h1>
         <div className="learn-topbar-actions">
           <LearnUtilityLinks workspace={workspace} query={query} returnLink={returnLink} />
           <div className="learn-readonly" data-testid="learn-readonly">
             <strong>READ ONLY</strong>
-            <span>Không ghi tiến độ · không lộ answer key</span>
+            <span>{t('Không ghi tiến độ · không lộ answer key')}</span>
           </div>
         </div>
       </header>
 
-      <div className="learn-context-strip" data-testid="learn-context-strip" role="group" aria-label="Trạng thái Learn">
-        <span><strong>Local course</strong> · đọc từ workspace</span>
+      <div className="learn-context-strip" data-testid="learn-context-strip" role="group" aria-label={t('Trạng thái Learn')}>
+        <span><strong>Local course</strong> · {t('đọc từ workspace')}</span>
         <span>Progress owner <code>{safety?.progress_owner || 'education/progress.json'}</code></span>
         <span>OAuth <strong className="is-warn">PREP_ONLY</strong></span>
         <span>Broker <strong className="is-warn">Locked</strong></span>
       </div>
 
-      <section className="learn-summary" aria-label="Tổng quan course">
-        <div><span>Course</span><strong>{course?.title || 'Chưa có tên'}</strong></div>
+      <section className="learn-summary" aria-label={t('Tổng quan course')}>
+        <div><span>Course</span><strong>{course?.title || t('Chưa có tên')}</strong></div>
         <div><span>Version</span><strong>{course?.version || '-'}</strong></div>
-        <div><span>Tiến độ</span><strong>{completedLessons ?? '-'}/{lessonCount ?? '-'} bài</strong></div>
-        <div><span>Trạng thái</span><strong>{progress?.status || progress?.phase || 'Chưa rõ'}</strong></div>
+        <div><span>{t('Tiến độ')}</span><strong>{t('{done}/{total} bài', { done: completedLessons ?? '-', total: lessonCount ?? '-' })}</strong></div>
+        <div><span>{t('Trạng thái')}</span><strong>{progress?.status || progress?.phase || t('Chưa rõ')}</strong></div>
       </section>
 
-      <section className="learn-progress" aria-label="Tiến độ hiện tại">
+      <section className="learn-progress" aria-label={t('Tiến độ hiện tại')}>
         <div>
-          <span>Bài hiện tại</span>
-          <strong>{currentLesson?.id || 'Chưa có'}</strong>
-          <small>{currentLesson?.title || currentLesson?.moduleTitle || 'Không có tiêu đề'}</small>
-          {currentLesson?.moduleResourceId && <button type="button" className="learn-open-current" onClick={() => openResource(currentLesson.moduleResourceId, currentLesson.moduleTitle)}>Mở module hiện tại</button>}
+          <span>{t('Bài hiện tại')}</span>
+          <strong>{currentLesson?.id || t('Chưa có')}</strong>
+          <small>{currentLesson?.title || currentLesson?.moduleTitle || t('Không có tiêu đề')}</small>
+          {currentLesson?.moduleResourceId && <button type="button" className="learn-open-current" onClick={() => openResource(currentLesson.moduleResourceId, currentLesson.moduleTitle)}>{t('Mở module hiện tại')}</button>}
         </div>
-        <progress max="100" value={completionPercent ?? undefined} aria-label={completionPercent === null ? 'Chưa có số liệu tiến độ course' : `Đã hoàn thành ${completionPercent}% course`} />
+        <progress max="100" value={completionPercent ?? undefined} aria-label={completionPercent === null ? t('Chưa có số liệu tiến độ course') : t('Đã hoàn thành {percent}% course', { percent: completionPercent })} />
         <div className="learn-progress-meta">
           <span>{completionPercent === null ? '-' : `${completionPercent}%`}</span>
-          <span>Cập nhật {progress?.updated_on || 'chưa rõ'}</span>
+          <span>{t('Cập nhật {date}', { date: progress?.updated_on || t('chưa rõ') })}</span>
         </div>
       </section>
 
       <section className="learn-workspace">
-        <aside className="learn-course" aria-label="Nội dung course">
+        <aside className="learn-course" aria-label={t('Nội dung course')}>
           <div className="learn-pane-heading">
-            <div><span>Course map</span><strong>{moduleCount ?? '-'} module</strong></div>
+            <div><span>Course map</span><strong>{t('{count} module', { count: moduleCount ?? '-' })}</strong></div>
           </div>
 
-          <nav className="learn-quick-resources" aria-label="Tài liệu course">
+          <nav className="learn-quick-resources" aria-label={t('Tài liệu course')}>
             {linkedResources.map((item) => (
               <ResourceButton
                 key={item.id}
                 resourceId={item.id}
-                label={item.label}
+                label={t(item.label)}
                 selectedResourceId={resource.id}
                 onOpen={openResource}
               />
@@ -295,7 +298,7 @@ export default function LearnWorkspace({ workspace, query }) {
           </nav>
 
           {(course?.modules || []).length === 0 && (
-            <StateMessage kind="empty" testId="learn-course-empty">Course chưa có module để hiển thị.</StateMessage>
+            <StateMessage kind="empty" testId="learn-course-empty">{t('Course chưa có module để hiển thị.')}</StateMessage>
           )}
 
           <div className="learn-modules">
@@ -305,10 +308,10 @@ export default function LearnWorkspace({ workspace, query }) {
               return (
                 <section className={`learn-module ${hasCurrentLesson ? 'is-current' : ''}`} key={module.id || module.title}>
                   <div className="learn-module-head">
-                    <div><span>{module.id || 'Module'}</span><strong>{module.title || 'Chưa có tên'}</strong></div>
+                    <div><span>{module.id || 'Module'}</span><strong>{module.title || t('Chưa có tên')}</strong></div>
                     {moduleResourceId && (
                       <button type="button" className="learn-open-module" onClick={() => openResource(moduleResourceId, module.title || module.id)}>
-                        Mở
+                        {t('Mở')}
                       </button>
                     )}
                   </div>
@@ -316,8 +319,8 @@ export default function LearnWorkspace({ workspace, query }) {
                     {(module.lessons || []).map((lesson) => (
                       <li className={lesson.id === progress?.current_lesson_id ? 'is-current' : ''} key={lesson.id || lesson.title}>
                         <span>{lesson.id}</span>
-                        <strong>{lesson.title || 'Chưa có tên'}</strong>
-                        <small className="learn-lesson-state">{lesson.id === progress?.current_lesson_id ? 'Đang học' : completedLessonIds?.includes(lesson.id) ? 'Đã hoàn thành' : ''}</small>
+                        <strong>{lesson.title || t('Chưa có tên')}</strong>
+                        <small className="learn-lesson-state">{lesson.id === progress?.current_lesson_id ? t('Đang học') : completedLessonIds?.includes(lesson.id) ? t('Đã hoàn thành') : ''}</small>
                       </li>
                     ))}
                   </ul>
@@ -327,29 +330,29 @@ export default function LearnWorkspace({ workspace, query }) {
           </div>
         </aside>
 
-        <article className="learn-reader" aria-label="Tài liệu Learn" ref={readerRef} tabIndex={-1}>
+        <article className="learn-reader" aria-label={t('Tài liệu Learn')} ref={readerRef} tabIndex={-1}>
           <div className="learn-pane-heading">
-            <div><span>Tài liệu</span><strong>{resource.label || 'Chưa chọn'}</strong></div>
+            <div><span>{t('Tài liệu')}</span><strong>{resource.label ? t(resource.label) : t('Chưa chọn')}</strong></div>
             {resource.id && <code>{resource.id}</code>}
           </div>
 
-          {resource.status === 'idle' && <StateMessage kind="empty">Chọn course, workbook hoặc một module để đọc.</StateMessage>}
-          {resource.status === 'loading' && <StateMessage kind="loading" testId="learn-resource-loading">Đang tải tài liệu…</StateMessage>}
-          {resource.status === 'empty' && <StateMessage kind="empty" testId="learn-resource-empty">Tài liệu này đang trống.</StateMessage>}
-          {resource.status === 'denied' && <StateMessage kind="denied" testId="learn-resource-denied">Bạn không có quyền đọc tài liệu này.</StateMessage>}
-          {resource.status === 'unavailable' && <StateMessage kind="unavailable" testId="learn-resource-unavailable">Tài liệu này không có trong danh mục Learn được phép.</StateMessage>}
-          {resource.status === 'error' && <StateMessage kind="error" testId="learn-resource-error">Không đọc được tài liệu: {resource.error}</StateMessage>}
+          {resource.status === 'idle' && <StateMessage kind="empty">{t('Chọn course, workbook hoặc một module để đọc.')}</StateMessage>}
+          {resource.status === 'loading' && <StateMessage kind="loading" testId="learn-resource-loading">{t('Đang tải tài liệu…')}</StateMessage>}
+          {resource.status === 'empty' && <StateMessage kind="empty" testId="learn-resource-empty">{t('Tài liệu này đang trống.')}</StateMessage>}
+          {resource.status === 'denied' && <StateMessage kind="denied" testId="learn-resource-denied">{t('Bạn không có quyền đọc tài liệu này.')}</StateMessage>}
+          {resource.status === 'unavailable' && <StateMessage kind="unavailable" testId="learn-resource-unavailable">{t('Tài liệu này không có trong danh mục Learn được phép.')}</StateMessage>}
+          {resource.status === 'error' && <StateMessage kind="error" testId="learn-resource-error">{t('Không đọc được tài liệu: {error}', { error: resource.error })}</StateMessage>}
           {resource.status === 'ready' && (
-            <pre className="learn-resource-copy" data-testid="learn-resource-content" tabIndex={0} role="region" aria-label={resource.label}>{resource.payload?.content}</pre>
+            <pre className="learn-resource-copy" data-testid="learn-resource-content" tabIndex={0} role="region" aria-label={t(resource.label)}>{resource.payload?.content}</pre>
           )}
         </article>
 
-        <aside className="learn-glossary" aria-label="Glossary Anh Việt">
+        <aside className="learn-glossary" aria-label={t('Glossary Anh Việt')}>
           <div className="learn-pane-heading">
-            <div><span>Glossary Anh–Việt</span><strong>{glossary.payload?.count ?? '-'} thuật ngữ</strong></div>
+            <div><span>{t('Glossary Anh–Việt')}</span><strong>{t('{count} thuật ngữ', { count: glossary.payload?.count ?? '-' })}</strong></div>
           </div>
           <label className="learn-search">
-            <span>Tìm thuật ngữ</span>
+            <span>{t('Tìm thuật ngữ')}</span>
             <SearchInput
               type="search"
               value={glossaryQuery}
@@ -358,17 +361,17 @@ export default function LearnWorkspace({ workspace, query }) {
             />
           </label>
 
-          {glossary.status === 'loading' && <StateMessage kind="loading" testId="learn-glossary-loading">Đang đọc glossary…</StateMessage>}
-          {glossary.status === 'denied' && <StateMessage kind="denied" testId="learn-glossary-denied">Không có quyền đọc glossary.</StateMessage>}
-          {glossary.status === 'unavailable' && <StateMessage kind="unavailable">Glossary chưa được cấu hình.</StateMessage>}
-          {glossary.status === 'error' && <StateMessage kind="error">Không đọc được glossary: {glossary.error}</StateMessage>}
+          {glossary.status === 'loading' && <StateMessage kind="loading" testId="learn-glossary-loading">{t('Đang đọc glossary…')}</StateMessage>}
+          {glossary.status === 'denied' && <StateMessage kind="denied" testId="learn-glossary-denied">{t('Không có quyền đọc glossary.')}</StateMessage>}
+          {glossary.status === 'unavailable' && <StateMessage kind="unavailable">{t('Glossary chưa được cấu hình.')}</StateMessage>}
+          {glossary.status === 'error' && <StateMessage kind="error">{t('Không đọc được glossary: {error}', { error: glossary.error })}</StateMessage>}
           {glossary.status === 'ready' && glossaryItems.length === 0 && (
             <StateMessage kind="empty" testId="learn-glossary-empty">
-              {glossaryQuery ? 'Không tìm thấy thuật ngữ phù hợp.' : 'Glossary chưa có mục nào.'}
+              {t(glossaryQuery ? 'Không tìm thấy thuật ngữ phù hợp.' : 'Glossary chưa có mục nào.')}
             </StateMessage>
           )}
           {glossary.status === 'ready' && glossaryItems.length > 0 && (
-            <dl className="learn-glossary-list" data-testid="learn-glossary-list" tabIndex={0} aria-label="Thuật ngữ">
+            <dl className="learn-glossary-list" data-testid="learn-glossary-list" tabIndex={0} aria-label={t('Thuật ngữ')}>
               {glossaryItems.map((item) => (
                 <div key={`${item.term}-${item.meaning_vi}`}>
                   <dt>{item.term}</dt>
@@ -383,7 +386,7 @@ export default function LearnWorkspace({ workspace, query }) {
       <footer className="learn-footnote">
         <span>Workspace <strong>{workspace}</strong></span>
         <span>Progress owner <code>{safety?.progress_owner || 'education/progress.json'}</code></span>
-        <span>Auto completion <strong>{safety?.auto_completion_enabled ? 'Bật' : 'Tắt'}</strong></span>
+        <span>Auto completion <strong>{t(safety?.auto_completion_enabled ? 'Bật' : 'Tắt')}</strong></span>
         <span>Provider sync <strong className="is-warn">PREP_ONLY</strong></span>
       </footer>
     </main>

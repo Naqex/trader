@@ -68,8 +68,8 @@ function display(row, key, model, sessionName, { fmt, locale, t, timezone }) {
   const value = valueOf(row, key, model, sessionName)
   const inapplicable = row.status === 'open' && ['net_pnl', 'return_pct', 'realized_r', 'gross_pnl', 'fees'].includes(key)
     || key === 'realized_r' && !known(value) || key === 'return_pct' && !known(value)
-  if (inapplicable) return <span className="wm-missing-value" aria-label={t(row.status === 'open' ? 'Chưa áp dụng khi lệnh đang mở' : 'Không có cơ sở để tính')} title={t(row.status === 'open' ? 'Chưa áp dụng khi lệnh đang mở' : 'Không có cơ sở để tính')}>N/A</span>
-  if (value === null || value === undefined || value === '' || value === '-' || value === '—') return <span className="wm-missing-value" aria-label={t('Chưa có dữ liệu')} title={t('Chưa có dữ liệu')}>-</span>
+  if (inapplicable) return <span className="wm-missing-value" aria-label={t(row.status === 'open' ? 'Chưa áp dụng khi lệnh đang mở' : 'Không có cơ sở để tính')} data-tooltip={t(row.status === 'open' ? 'Chưa áp dụng khi lệnh đang mở' : 'Không có cơ sở để tính')}>N/A</span>
+  if (value === null || value === undefined || value === '' || value === '-' || value === '—') return <span className="wm-missing-value" aria-label={t('Chưa có dữ liệu')} data-tooltip={t('Chưa có dữ liệu')}>-</span>
   if (key.endsWith('_time_utc') || key === 'recorded_at_utc') return closeTime(value) ? displayDate(closeTime(value), { timeStyle: 'medium', timeZone: timezone }) : '-'
   if (['net_pnl', 'gross_pnl'].includes(key)) return fmt(value)
   if (key === 'fees') return fmt(value, model.result?.multi_session ? ` ${row.account_currency || t('Đơn vị tài khoản')}` : '')
