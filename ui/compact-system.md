@@ -1,16 +1,19 @@
-# Bộ chuẩn giao diện gọn — 09/10/2026
+# Bộ chuẩn giao diện gọn — cập nhật 31/10/2026
 
 Trang xem và thử: `http://127.0.0.1:5180/?workspace=tenant-a&area=testing&ui_reference=1`.
 Đổi sáng/tối trên header; rê chuột, dùng Tab và mở dialog mẫu để xem trực tiếp.
 Đây là chuẩn chung đang áp dụng cho Naqex Trader, chưa phải chứng nhận mọi workflow
-của sản phẩm. Thông số chuẩn và các ngoại lệ bên dưới được phân biệt rõ.
+của sản phẩm. Thông số bên dưới là profile Trader trong `product-ui-profile.css`;
+palette/foundation vẫn pin `annam-compact@0.3.0`, không sửa đè snapshot chung.
+UI Reference đọc giá trị hiệu lực `--wm-*`, cập nhật khi đổi theme/màn hình;
+không dùng kích thước foundation `--ds-*` thay cho profile sản phẩm.
 
 ## Kích thước, chữ và khoảng cách
 
 | Cái nhìn thấy / bấm được | Máy tính | Cảm ứng / màn nhỏ | Cách hiểu |
 | --- | --- | --- | --- |
-| Nút có chữ, dropdown, ô nhập | Cao 36px | Ít nhất 44px | Nút rộng theo nội dung, không cố định mọi chiều rộng |
-| Nút chỉ có icon | Vùng bấm 32×32px | 44×44px | Hình icon bên trong chỉ 16px |
+| Nút có chữ, dropdown, ô nhập | Cao 32px | Ít nhất 44px | Nút rộng theo nội dung, không cố định mọi chiều rộng |
+| Nút chỉ có icon | Vùng bấm 28×28px | 44×44px | Hình icon bên trong chỉ 16px |
 | Tab chọn loại trong dialog | Nút cao28px, cả cụm36px | Nút44px | Gọn hơn nút hành động |
 | Tab báo cáo | 36px | 44px | Không đổi chiều cao khi chọn |
 | Thanh tab chuyển trang | 48px | Giữ cuộn ngang khi cần | Hover chỉ sáng chữ/icon, chọn có gạch dưới |
@@ -25,11 +28,11 @@ của sản phẩm. Thông số chuẩn và các ngoại lệ bên dưới đư�
 | Viền cấu trúc | 1px | 1px | Không mọc thêm viền khi hover |
 | Dấu focus bàn phím | Ring2px cho nút; viền1px xanh cho ô nhập; dropdown dùng nền + gạch chân | Như desktop | Một dấu; không chồng viền/outline/shadow |
 | Khoảng icon–chữ / các nút cùng nhóm | 8px | 8px | Chung đường căn giữa |
-| Khoảng các ô / nhóm | 24px | 16–24px | Khoảng trống phân nhóm trước card/viền |
-| Khoảng khu vực lớn | 32px | 24px | Không thêm wrapper để lấp chỗ trống |
-| Lề trang | 32px | Tablet24px, điện thoại16px | Header, nội dung và footer dùng cùng mép |
-| Lề dialog | 24px | 16px | Nội dung dài cuộn ở phần giữa |
-| Hàng bảng | Tối thiểu48px | Đủ44px cho thao tác | Hàng nhiều dòng được cao hơn |
+| Khoảng các ô / nhóm | 20px | 16–20px | Khoảng trống phân nhóm trước card/viền |
+| Khoảng khu vực lớn | 24px | 24px | Không thêm wrapper để lấp chỗ trống |
+| Lề trang | 24px | Tablet20px, điện thoại16px | Header, nội dung và footer dùng cùng mép |
+| Lề dialog | 20px | 16px | Nội dung dài cuộn ở phần giữa |
+| Hàng bảng | Tối thiểu44px | 48px | Hàng nhiều dòng được cao hơn |
 | Thanh tiến độ | Cao4px | 4px | Không dành cả cột chỉ cho chữ trạng thái |
 
 Thang khoảng cách dùng lại: **4 / 8 / 12 / 16 / 20 / 24 / 32px**. Không phải mọi
@@ -38,14 +41,15 @@ cầu riêng. Cần ghi rõ ngoại lệ, không đặt một số mới chỉ v
 
 ### Hàng công cụ và đường phân cách Live
 
-`page-layout.css` sở hữu `--wm-pane-toolbar-inset` (16px mỗi phía dọc) và
-`--wm-pane-toolbar-height` (control lớn nhất, tối thiểu40px + hai inset +1px).
+`page-layout.css` sở hữu layout; profile sản phẩm đặt
+`--wm-pane-toolbar-inset` (12px mỗi phía dọc) và
+`--wm-pane-toolbar-height` (control32px + hai inset +1px trên desktop).
 Các hàng công cụ full-bleed của Live dùng cùng quy tắc, với lề ngang theo
 `--wm-page-gutter`. Tiêu đề panel bên cạnh dùng cùng hàng grid với toolbar:
 đường dưới vẫn thẳng khi bộ lọc có chip hoặc controls xuống hàng.
 Một separator có một owner: border1px hoặc pseudo-element1px, không cả hai.
 Lịch sở hữu cạnh phải màu lãi/lỗ, panel bên cạnh không vẽ thêm nét.
-Hàng chọn đơn vị/ẩn số dư có inset16px phía trên và dưới; balance row sở hữu
+Hàng chọn đơn vị/ẩn số dư có inset theo toolbar phía trên và dưới; balance row sở hữu
 line1px phía trên để tách controls khỏi số liệu, không cộng thêm line ở controls.
 
 Trang báo cáo có lề (Live Analytics/Practice Analytics) và trang tổng quan phiên
@@ -148,8 +152,16 @@ nền semantic riêng hoặc chữ chính; không hạ tương phản bằng l�
 | Ô nhập | Viền1px | Viền rõ hơn | Viền/focus xanh; lỗi đỏ bên cạnh ô |
 | Nút không khả dụng | Nền control, chữ disabled; không giảm opacity cả nút | Không hiện hover enabled | Không bấm/submit được |
 
+Checkbox thường, checkbox trong dropdown và checkbox trong dialog dùng chung
+dấu chọn16px. Nền đã chọn dùng `--project-highlight`; dấu dùng `--wm-on-check`
+(trắng ở light, `#121212` ở dark) để không mất tương phản khi shade cam đổi theo
+theme. Chọn một phần có dấu ngang; không khả dụng vẫn giữ dấu trạng thái và
+focus bàn phím chỉ hiện trên control có thể thao tác. Dòng dữ liệu đã chọn giữ
+màu chọn khi hover; action bên trong dòng có phản hồi hover riêng, không đổi
+kích thước hoặc che trạng thái chọn.
+
 Dropdown nằm trong form dùng `FxSelect` với `className="is-field"`: cùng viền
-1px, góc 8px và chiều cao một dòng 36px như textbox. Bình thường viền nhẹ,
+1px, góc 8px và chiều cao một dòng 32px như textbox (44px cảm ứng). Bình thường viền nhẹ,
 hover và khi mở dùng nền trung tính `--wm-hover`, không thêm viền sáng.
 Focus bàn phím dùng nền và gạch chân nhãn; lựa chọn vẫn giữ tích/checkbox.
 Ô ghép tài sản tô hover trên toàn ô ngoài;
@@ -239,7 +251,7 @@ Tooltip và dialog. Header cùng order marker do app vẽ trong iframe chart dù
 cùng controller, gắn theo ownerDocument và viewport của iframe. Tooltip dữ liệu
 và control do TradingView tự vẽ giữ lifecycle riêng của renderer.
   Menu chọn checkbox có một lề hàng10px và gap8px; “Chọn tất cả” và lựa chọn
-  dùng cùng bố cục36px desktop/44px touch. Nhãn cùng điểm bắt đầu; mô tả nằm dưới
+  dùng cùng bố cục32px desktop/44px touch. Nhãn cùng điểm bắt đầu; mô tả nằm dưới
   nhãn, không bị space-between đẩy ra mép phải. Số đã chọn chỉ đếm mục có thể chọn;
   chọn tất cả không sửa mục đang bị khóa. Viền bàn phím nằm trong dòng để không
   bị vùng cuộn cắt. Animation dùng translate riêng, không ghi đè transform căn mép.
@@ -445,7 +457,7 @@ drag/drop, modal/drawer, loading/empty/error. Đây là **chuẩn thiết kế**
 một đống component giả trước khi cần. Lấy control đã có, dùng đúng role; chỉ tạo
 component/ngoại lệ mới khi workflow thật yêu cầu.
 
-Nguồn chung: [Compact contract](../../../UI-Systems/core/tokens/compact/0.1.1/CONTRACT.md),
+Nguồn chung: [Compact contract](../../../UI-Systems/core/tokens/compact/0.3.0/CONTRACT.md),
 token JSON có version, CSS được xuất tự động. Quy tắc gắn dữ liệu trading nằm ở
 project/domain; không đổi dữ liệu, model, quyền broker hay logic tải vì refactor UI.
 Kết quả kiểm chứng: [follow-up receipt](../foundation_v2/evidence/compact-states-20261009/RECEIPT.md),

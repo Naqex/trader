@@ -29,7 +29,7 @@
 .wm-trade-selection-action > svg { width:18px; height:18px; flex:none; }
 .fx-app.fx-shell-story[data-theme] .fx-content .wm-trade-selection-bar button:hover:not(:disabled) { color:var(--wm-content); background:transparent; }
 .fx-app.fx-shell-story[data-theme] .fx-content .wm-trade-selection-bar .wm-trade-selection-action.is-danger { color:var(--report-negative); }
-.wm-trade-bulk-tags-dialog { width:min(450px,calc(100vw - 32px)); }
+.wm-trade-bulk-tags-dialog { width:min(520px,calc(100vw - 32px)); }
 .wm-trade-merge-dialog { width:min(520px,calc(100vw - 32px)); }
 .wm-trade-merge-body { display:grid; gap:16px; padding:16px 24px 24px; }
 .wm-trade-merge-body p { margin:0; font-size:13px; }
@@ -46,19 +46,20 @@
 .wm-trade-group-row span { color:var(--wm-content-muted); }
 .wm-trade-group-row button:nth-of-type(2) { margin-left:auto; }
 .wm-trade-group-error { padding:8px var(--wm-page-gutter); font-size:13px; }
-.wm-trade-bulk-tags-body { display:grid; gap:18px; padding:16px 24px 24px; }
-.wm-trade-bulk-tags-rows { display:grid; gap:12px; }
-.wm-trade-bulk-tags-row { position:relative; display:grid; gap:12px; padding:14px; border:1px solid var(--wm-border); border-radius:8px; }
-.wm-trade-bulk-tags-row > label { display:grid; gap:8px; font-size:13px; }
-.wm-trade-bulk-tags-row:has(.wm-trade-bulk-tags-remove) > label:first-child { padding-right:32px; }
-.wm-trade-bulk-tags-choices > .wm-sr-only { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.wm-trade-bulk-tags-body { display:grid; gap:16px; padding:16px 24px 24px; }
+/* Rows share one column grid so group/tag selects line up with the header; the trailing column only exists once a row can be removed. */
+.wm-trade-bulk-tags-rows { --wm-bulk-tag-columns:minmax(0,2fr) minmax(0,3fr); display:grid; gap:8px; }
+.wm-trade-bulk-tags-rows:has(.wm-trade-bulk-tags-remove) { --wm-bulk-tag-columns:minmax(0,2fr) minmax(0,3fr) 32px; }
+.wm-trade-bulk-tags-head,.wm-trade-bulk-tags-row { display:grid; grid-template-columns:var(--wm-bulk-tag-columns); align-items:start; gap:8px; }
+.wm-trade-bulk-tags-head { color:var(--wm-content-muted); font-size:12px; line-height:16px; }
+.wm-trade-bulk-tags-row > .fx-select { min-width:0; }
 .wm-trade-bulk-tag-chips { display:flex; flex-wrap:wrap; gap:4px; white-space:normal; }
 .wm-trade-bulk-tags-choices .fx-select-trigger { height:auto; min-height:36px; }
-.wm-trade-bulk-tags-remove { position:absolute; top:6px; right:8px; display:grid; place-items:center; width:32px; height:32px; min-height:32px; padding:7px; border:0; border-radius:6px; background:transparent; color:var(--wm-content-muted); cursor:pointer; }
-.wm-trade-bulk-tags-remove:hover { color:var(--report-negative); background:var(--wm-hover); }
-.legacy-modal .wm-trade-bulk-tags-add { display:flex; align-items:center; gap:8px; width:100%; padding:0; border:0; border-radius:0; background:transparent; color:var(--wm-content-muted); font:inherit; font-size:13px; cursor:pointer; }
-.wm-trade-bulk-tags-add > svg { width:18px; height:18px; flex:none; }
-.wm-trade-bulk-tags-add::after { content:''; height:1px; flex:1; margin-left:6px; background:var(--wm-border); }
+.legacy-modal .wm-trade-bulk-tags-remove { display:grid; place-items:center; width:32px; height:36px; min-height:36px; padding:0; border:0; border-radius:6px; background:transparent; color:var(--wm-content-muted); cursor:pointer; }
+.wm-trade-bulk-tags-remove > svg { width:16px; height:16px; }
+.legacy-modal .wm-trade-bulk-tags-remove:hover { color:var(--report-negative); background:var(--wm-hover); }
+.legacy-modal .wm-trade-bulk-tags-add { display:inline-flex; align-items:center; justify-self:start; gap:6px; min-height:28px; padding:0; border:0; border-radius:0; background:transparent; color:var(--wm-content-muted); font:inherit; font-size:13px; cursor:pointer; }
+.wm-trade-bulk-tags-add > svg { width:16px; height:16px; flex:none; }
 .legacy-modal .wm-trade-bulk-tags-add:hover { background:transparent; color:var(--wm-content); }
 .wm-trade-bulk-tags-count,.wm-trade-bulk-tags-note { margin:0; color:var(--wm-content-muted); font-size:13px; }
 .wm-trade-bulk-tags-body footer { display:flex; justify-content:flex-end; gap:8px; padding-top:8px; border-top:1px solid var(--wm-border); }

@@ -36,7 +36,7 @@ try {
   if(mode==='practice') {
    await drawer.getByRole('button',{name:'♧ /templates',exact:true}).click()
    const templates=page.locator('dialog.wm-note-templates')
-   await templates.getByRole('button',{name:/Áp dụng vào/}).click();await templates.getByRole('menuitem',{name:'Chèn vào ghi chú',exact:true}).click()
+   await templates.getByRole('button',{name:'Áp dụng',exact:true}).click()
    await drawer.locator('[data-state=saved]').waitFor()
    assert((await textarea.innerText()).includes('Native practice revised'));assert.equal(await textarea.locator('h2').count(),2)
   }

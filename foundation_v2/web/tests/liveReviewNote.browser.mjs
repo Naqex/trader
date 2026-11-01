@@ -132,8 +132,7 @@ try{
   }
   await drawer.getByRole('button',{name:label('Mẫu ghi chú','Templates'),exact:true}).click()
   const templates=page.locator('dialog.wm-note-templates');await templates.waitFor()
-  await templates.getByRole('button',{name:label('Áp dụng vào','Apply to'),exact:true}).click()
-  await templates.getByRole('menuitem',{name:label('Ghi chú này','This note'),exact:true}).click()
+  await templates.getByRole('button',{name:label('Áp dụng','Apply'),exact:true}).click()
   await templates.waitFor({state:'detached'});await drawer.locator('[data-state=saved]').waitFor()
   assert((await editor.innerText()).includes('Bold retained'))
   await drawer.getByRole('button',{name:label('Mẫu ghi chú','Templates'),exact:true}).click();await templates.waitFor();await page.keyboard.press('Escape');await templates.waitFor({state:'detached'});assert(await drawer.isVisible())

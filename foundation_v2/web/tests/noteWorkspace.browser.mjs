@@ -108,9 +108,8 @@ try{
   }
   await page.screenshot({path:`${out}/defaults-${width}-${theme}.png`})
   await page.keyboard.press('Escape')
-  await dialog.getByRole('button',{name:label('Áp dụng vào','Apply to'),exact:true}).click()
-  assert.equal(await dialog.getByRole('menuitem').count(),1)
-  await dialog.getByRole('menuitem',{name:label('Giao dịch này','This trade'),exact:true}).click()
+  assert.equal(await dialog.getByRole('menu').count(),0)
+  await dialog.getByRole('button',{name:label('Áp dụng','Apply'),exact:true}).click()
   await dialog.waitFor({state:'detached'})
   assert((await editor.innerText()).includes(`Persisted template ${width}`))
   await drawer.locator('[data-state=saved]').waitFor()

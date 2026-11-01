@@ -246,7 +246,6 @@ button.fxa-filter-chip:hover { background: var(--fx-shell-nav-selected); color: 
 .wm-group-menu button:first-child { color:var(--wm-negative); }
 .wm-group-menu button:hover:not(:disabled) { background:var(--wm-hover); }
 .wm-group-menu button:disabled { opacity:.4; cursor:default; }
-.wm-note-template-apply [role=menuitem] { display:flex; align-items:center; gap:8px; }
 .fx-app.fx-shell-story[data-theme] .fx-content .fx-trade-navigation .wm-button.is-icon { min-width:30px; min-height:30px; width:30px; height:30px; background:transparent; border:0; border-radius:var(--ds-radius-small); }
 .fx-app.fx-shell-story[data-theme] .fx-content .fx-trade-navigation .wm-button.is-icon:hover:not(:disabled) { background:var(--wm-hover); }
 .fx-app.fx-shell-story[data-theme] .fx-content .wm-trade-tag-group .wm-group-grip.is-icon { min-width:20px; width:20px; min-height:26px; height:26px; flex-basis:20px; background:transparent; border:0; border-radius:var(--ds-radius-small); }
