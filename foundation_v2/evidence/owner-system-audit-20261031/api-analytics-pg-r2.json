@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "cases": 48,
+  "results": [
+    {
+      "target": "rust_metadata_parity",
+      "passed": true,
+      "stdout": "\nrunning 1 test\nMETADATA_PARITY_CASES=48\ntest python_reference_mutation_parity ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.46s\n\n",
+      "stderr": "   Compiling trading-workspace-api v0.1.0-alpha.1 (D:\\ANNAM\\TradingWorkspace\\projects\\trader\\foundation_v2\\api-rust)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 9.45s\n     Running tests\\rust_metadata_parity.rs (E:/BACKUP-TRADINGWORKSPACE/owner-system-audit-20261031/cargo-target\\debug\\deps\\rust_metadata_parity-10db560a07d0b463.exe)\n"
+    },
+    {
+      "target": "rust_analytics_pg",
+      "passed": true,
+      "stdout": "\nrunning 1 test\ntest analytics_cache_does_not_cross_appstate_restore_boundaries ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.34s\n\n",
+      "stderr": "   Compiling trading-workspace-api v0.1.0-alpha.1 (D:\\ANNAM\\TradingWorkspace\\projects\\trader\\foundation_v2\\api-rust)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.49s\n     Running tests\\rust_analytics_pg.rs (E:/BACKUP-TRADINGWORKSPACE/owner-system-audit-20261031/cargo-target\\debug\\deps\\rust_analytics_pg-0f1fa82cf2c4a60c.exe)\n"
+    }
+  ]
+}

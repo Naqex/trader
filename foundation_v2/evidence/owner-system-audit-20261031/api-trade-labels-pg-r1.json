@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "scope": "owned disposable PostgreSQL; real native Router, group/tag revisions, shared replay/live catalog, archiving, tenant isolation; no broker login",
+  "owner_runtime_touched": false,
+  "source_unchanged": true,
+  "source_sha256": {
+    "api-rust\\src\\trade_labels.rs": "73e01fed64f05c4446d9e2e45ace66389af9a6d1aa5b82f10e07812857ecfc71",
+    "api-rust\\tests\\trade_labels_pg.rs": "a8b44a8a58f5abec624e511f50e4020082eaa2d0230083adece55a8f2166d88a",
+    "api-rust\\tests\\trade_labels_pg.py": "50e81bb0d13ff9beef173f25e2b06b50da3604bfc6e5348de6e4db2f5e4ab382",
+    "api-rust\\src\\lib.rs": "e95beeb88ed27181602a32e0294cb3c3de293b2d8bcab114d73fa4e1dd783496",
+    "api-rust\\src\\commands.rs": "20ab654631b7c6d38eb22e70062f4e8ee8c3a008b02d2425eddcd669c0dabe00",
+    "api-rust\\src\\rust_runtime.rs": "71cabdd21705e8f825970c8c5d2af404e934c6284ace0ec827714d55942c5a94",
+    "api-rust\\src\\native_mutation.rs": "861844aa7e616f49c098b4c11ceb3dce9a5074be6a22dd0b6203ab9facfa0366",
+    "migrations\\0009_mt5_connections.sql": "8a7a996f7bbd73aaf54059beff68485d6f4b78274d1dfa5120c61a8af29efa3c"
+  },
+  "stdout": "\nrunning 1 test\ntest groups_shared_catalog_live_labels_revisions_and_isolation ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.29s\n\n",
+  "stderr": "   Compiling trading-workspace-api v0.1.0-alpha.1 (D:\\ANNAM\\TradingWorkspace\\projects\\trader\\foundation_v2\\api-rust)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 10.85s\n     Running tests\\trade_labels_pg.rs (E:/BACKUP-TRADINGWORKSPACE/owner-system-audit-20261031/cargo-target\\debug\\deps\\trade_labels_pg-95599c0181084157.exe)\n"
+}

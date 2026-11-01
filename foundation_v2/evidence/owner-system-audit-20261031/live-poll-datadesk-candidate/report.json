@@ -1,0 +1,38 @@
+{
+  "scope": "Production UI; synthetic GET-only fixtures; writes aborted",
+  "observeSeconds": 31,
+  "poll": [
+    {
+      "section": "notes",
+      "visibility": "visible",
+      "statusGETs": 7,
+      "full200": 1,
+      "notModified304": 6,
+      "writes": []
+    },
+    {
+      "section": "calendar",
+      "visibility": "visible",
+      "statusGETs": 7,
+      "full200": 1,
+      "notModified304": 6,
+      "writes": []
+    },
+    {
+      "section": "trades",
+      "visibility": "visible",
+      "statusGETs": 7,
+      "full200": 1,
+      "notModified304": 6,
+      "writes": []
+    }
+  ],
+  "dataDesk": {
+    "journey": "open Data desk; empty configured catalog; no user action",
+    "writesAttempted": [
+      "POST /api/v2/data/catalog/refresh"
+    ]
+  },
+  "errors": [],
+  "passed": true
+}

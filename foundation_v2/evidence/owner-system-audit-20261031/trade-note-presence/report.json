@@ -1,0 +1,16 @@
+{
+  "fixture": true,
+  "errors": [],
+  "requests": [
+    "a",
+    "b",
+    "c"
+  ],
+  "cases": [
+    "loaded reader is stable across unrelated rerenders; true and known-false preserved",
+    "workspace change hides earlier notes immediately; known empty returns false",
+    "denied read remains unknown rather than known-empty"
+  ],
+  "writes": [],
+  "passed": true
+}

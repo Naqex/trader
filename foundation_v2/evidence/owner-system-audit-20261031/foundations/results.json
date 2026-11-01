@@ -1,0 +1,47 @@
+{
+  "scope": "UI Reference fixture; every API response is a labeled 503 fixture, events 204; no owner runtime or persisted writes",
+  "cases": [
+    {
+      "theme": "dark",
+      "width": 1440,
+      "control": "32px",
+      "icon": "28px",
+      "gutter": "24px",
+      "checkContrast": 8.826255371844308,
+      "portalMatchesShell": true,
+      "selectedHoverRetainsSelection": true
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "control": "44px",
+      "icon": "44px",
+      "gutter": "16px",
+      "checkContrast": 8.826255371844308,
+      "portalMatchesShell": true,
+      "selectedHoverRetainsSelection": true
+    },
+    {
+      "theme": "light",
+      "width": 1440,
+      "control": "32px",
+      "icon": "28px",
+      "gutter": "24px",
+      "checkContrast": 6.480615787229372,
+      "portalMatchesShell": true,
+      "selectedHoverRetainsSelection": true
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "control": "44px",
+      "icon": "44px",
+      "gutter": "16px",
+      "checkContrast": 6.480615787229372,
+      "portalMatchesShell": true,
+      "selectedHoverRetainsSelection": true
+    }
+  ],
+  "errors": [],
+  "blocked": []
+}
