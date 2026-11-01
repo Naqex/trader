@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { createAutosave } from './autosave.js'
+import ConfirmationDialog from './ConfirmationDialog.jsx'
 import { displayDate } from './dateFormat.js'
 import { useTestingLocale } from './testingLocale.jsx'
 
@@ -60,14 +61,17 @@ export default function useAutosave({ identity, adapter, initialValue }) {
 
 export function AutosaveStatus({ save, timestampOnly = false }) {
   const { t, timezone } = useTestingLocale()
+  const [confirmingReload, setConfirmingReload] = useState(false)
   const failed = ['error', 'conflict', 'invalid'].includes(save.phase)
+  useEffect(() => { if (save.phase !== 'conflict') setConfirmingReload(false) }, [save.phase])
   const message = save.phase === 'loading' ? 'Đang đọc ghi chú…' : save.phase === 'saving' ? 'Đang lưu…' : save.phase === 'dirty' ? 'Chưa lưu' : save.phase === 'saved' ? null : ''
   if(save.phase==='idle' && save.localBackup)return null
   return <div className="wm-autosave-status" data-state={save.phase}>
     <span role={failed ? 'alert' : 'status'} aria-live="polite">{failed ? t(save.error) : message === null ? <>{!timestampOnly && `${t(save.record?.revision>1?'Sửa lần cuối':'Đã lưu lúc')} `}<time title={timestampOnly ? t('Sửa lần cuối') : undefined} dateTime={save.savedAt}>{displayDate(save.savedAt, { timeStyle: timestampOnly ? 'short' : 'medium', timeZone: timezone })}</time></> : t(message)}</span>
     {!save.localBackup && <small role="alert">{t('Trình duyệt không giữ được bản nháp. Đợi lưu xong trước khi rời trang.')}</small>}
     {save.phase === 'error' && <button type="button" className="fxa-button" onClick={() => void save.retry()}>{t('Thử lại')}</button>}
-    {save.phase === 'conflict' && <button type="button" className="fxa-button" onClick={() => { if (window.confirm(t('Thay bản nháp hiện tại bằng bản đã lưu trên server?'))) void save.discardAndReload() }}>{t('Tải bản đã lưu')}</button>}
+    {save.phase === 'conflict' && <button type="button" className="fxa-button" onClick={() => setConfirmingReload(true)}>{t('Tải bản đã lưu')}</button>}
+    {save.phase === 'conflict' && confirmingReload && <ConfirmationDialog title={t('Tải bản đã lưu')} confirmLabel="Tải bản đã lưu" onClose={() => setConfirmingReload(false)} onConfirm={() => { setConfirmingReload(false); void save.discardAndReload() }}><p>{t('Thay bản nháp hiện tại bằng bản đã lưu trên server?')}</p></ConfirmationDialog>}
     {failed && save.forceClose && save.localBackup && <button type="button" className="fxa-button" onClick={save.forceClose}>{t('Giữ bản nháp và đóng')}</button>}
   </div>
 }

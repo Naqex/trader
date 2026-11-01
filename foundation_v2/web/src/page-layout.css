@@ -204,8 +204,6 @@ button.fxa-filter-chip:hover { background: var(--fx-shell-nav-selected); color: 
 .wm-trade-action-dialog h2 { margin:0; font-size:18px; }
 .wm-trade-action-dialog p { font-size:13px; line-height:1.6; }
 .wm-trade-action-dialog footer { display:flex; justify-content:flex-end; gap:8px; margin-top:20px; }
-.wm-trade-delete-menu { display:flex; align-items:center; gap:12px; border:0; background:transparent; color:var(--wm-negative); padding:10px 14px; font:inherit; font-size:13px; cursor:pointer; }
-.wm-trade-delete-menu:hover { background:var(--wm-hover); }
 .wm-trade-fills-button { display:inline-flex; align-items:center; gap:6px; color:inherit; border:0; background:transparent; padding:0; font:inherit; cursor:pointer; }
 .wm-trade-fills-button:disabled { opacity:.5; cursor:default; }
 .fx-live-trade-details[data-variant=live] dl > div:not(.wm-trade-fills-action) { display:grid; grid-template-columns:minmax(0,42%) minmax(0,1fr); gap:12px; align-items:start; }
