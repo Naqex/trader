@@ -1,0 +1,341 @@
+{
+  "scope": "Mock API only, including integrations/health. No backend, provider, broker or owner data.",
+  "cases": [
+    {
+      "name": "dataset bookmark and reload are read-only; create button writes once",
+      "result": "PASS",
+      "creates": [
+        {
+          "method": "POST",
+          "path": "/api/v2/replay/sessions",
+          "search": "",
+          "body": {
+            "dataset_id": "fixture-chart-synthetic",
+            "start_index": 0,
+            "starting_balance": "10000",
+            "trading_options": {
+              "version": "session-trading-options-v2",
+              "costs_enabled": false,
+              "assets": {
+                "fixture-chart-synthetic": {
+                  "spread_price": "0",
+                  "commission_per_lot": "0",
+                  "commission_charge": "round_trip",
+                  "slippage": {
+                    "mode": "off"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "posts": [
+        {
+          "method": "POST",
+          "path": "/api/v2/replay/sessions",
+          "search": "",
+          "body": {
+            "dataset_id": "fixture-chart-synthetic",
+            "start_index": 0,
+            "starting_balance": "10000",
+            "trading_options": {
+              "version": "session-trading-options-v2",
+              "costs_enabled": false,
+              "assets": {
+                "fixture-chart-synthetic": {
+                  "spread_price": "0",
+                  "commission_per_lot": "0",
+                  "commission_charge": "round_trip",
+                  "slippage": {
+                    "mode": "off"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/v2/replay/sessions/created-session/activity",
+          "search": "",
+          "body": {
+            "event_id": "fda93d4b-8f1f-427c-ad95-9d026ae4e1e8",
+            "started_at_utc": "2026-11-01T14:55:54.572Z",
+            "ended_at_utc": "2026-11-01T14:55:54.708Z"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/v2/replay/sessions/created-session/activity",
+          "search": "",
+          "body": {
+            "event_id": "0f6329d6-2321-4722-a700-4cbc33ce347a",
+            "started_at_utc": "2026-11-01T14:55:54.708Z",
+            "ended_at_utc": "2026-11-01T14:55:54.709Z"
+          }
+        }
+      ],
+      "reads": [
+        {
+          "method": "GET",
+          "path": "/api/v2/replay/sessions",
+          "search": ""
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/replay/sessions",
+          "search": ""
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/replay/sessions/created-session",
+          "search": "?cursor_index=60"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/replay/sessions/created-session/tick-data",
+          "search": ""
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/replay/sessions/created-session",
+          "search": "?cursor_index=60"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/replay/sessions/created-session/tick-data",
+          "search": ""
+        }
+      ]
+    },
+    {
+      "name": "dataset reuses most recently updated eligible session",
+      "result": "PASS",
+      "creates": [],
+      "posts": [
+        {
+          "method": "POST",
+          "path": "/api/v2/replay/sessions/latest/activity",
+          "search": "",
+          "body": {
+            "event_id": "3cea8027-4acd-4682-a047-a8f54940bd71",
+            "started_at_utc": "2026-11-01T14:55:57.662Z",
+            "ended_at_utc": "2026-11-01T14:55:57.741Z"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/v2/replay/sessions/latest/activity",
+          "search": "",
+          "body": {
+            "event_id": "4f35b208-9626-43a2-8716-f901a8172828",
+            "started_at_utc": "2026-11-01T14:55:57.741Z",
+            "ended_at_utc": "2026-11-01T14:55:57.743Z"
+          }
+        }
+      ],
+      "reads": [
+        {
+          "method": "GET",
+          "path": "/api/v2/replay/sessions",
+          "search": ""
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/replay/sessions/latest",
+          "search": ""
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/replay/sessions/latest",
+          "search": "?cursor_index=60"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/replay/sessions/latest/tick-data",
+          "search": ""
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/replay/sessions/latest",
+          "search": "?cursor_index=60"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/replay/sessions/latest/tick-data",
+          "search": ""
+        }
+      ]
+    },
+    {
+      "name": "fresh launcher retains explicit form and start index",
+      "result": "PASS",
+      "creates": [
+        {
+          "method": "POST",
+          "path": "/api/v2/replay/sessions",
+          "search": "",
+          "body": {
+            "dataset_id": "fixture-chart-synthetic",
+            "start_index": 12,
+            "starting_balance": "10000",
+            "trading_options": {
+              "version": "session-trading-options-v2",
+              "costs_enabled": false,
+              "assets": {
+                "fixture-chart-synthetic": {
+                  "spread_price": "0",
+                  "commission_per_lot": "0",
+                  "commission_charge": "round_trip",
+                  "slippage": {
+                    "mode": "off"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "posts": [
+        {
+          "method": "POST",
+          "path": "/api/v2/replay/sessions",
+          "search": "",
+          "body": {
+            "dataset_id": "fixture-chart-synthetic",
+            "start_index": 12,
+            "starting_balance": "10000",
+            "trading_options": {
+              "version": "session-trading-options-v2",
+              "costs_enabled": false,
+              "assets": {
+                "fixture-chart-synthetic": {
+                  "spread_price": "0",
+                  "commission_per_lot": "0",
+                  "commission_charge": "round_trip",
+                  "slippage": {
+                    "mode": "off"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/v2/replay/sessions/created-session/activity",
+          "search": "",
+          "body": {
+            "event_id": "d364e26b-0433-4c3e-99e1-e923106ff2b1",
+            "started_at_utc": "2026-11-01T14:56:00.803Z",
+            "ended_at_utc": "2026-11-01T14:56:00.885Z"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/v2/replay/sessions/created-session/activity",
+          "search": "",
+          "body": {
+            "event_id": "31e5b205-13ba-4b5d-9f6b-3126cb40e0ec",
+            "started_at_utc": "2026-11-01T14:56:00.885Z",
+            "ended_at_utc": "2026-11-01T14:56:00.886Z"
+          }
+        }
+      ],
+      "reads": [
+        {
+          "method": "GET",
+          "path": "/api/v2/replay/sessions/created-session",
+          "search": "?cursor_index=60"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/replay/sessions/created-session/tick-data",
+          "search": ""
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/replay/sessions/created-session",
+          "search": "?cursor_index=60"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/replay/sessions/created-session/tick-data",
+          "search": ""
+        }
+      ]
+    },
+    {
+      "name": "explicit session/cursor wins over dataset and fresh",
+      "result": "PASS",
+      "creates": [],
+      "posts": [],
+      "reads": [
+        {
+          "method": "GET",
+          "path": "/api/v2/replay/sessions/historical-session",
+          "search": "?cursor_index=5"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/replay/sessions/historical-session/tick-data",
+          "search": ""
+        }
+      ]
+    },
+    {
+      "name": "catalog read failure stays read-only",
+      "result": "PASS",
+      "creates": [],
+      "posts": [],
+      "reads": [
+        {
+          "method": "GET",
+          "path": "/api/v2/replay/sessions",
+          "search": ""
+        }
+      ]
+    },
+    {
+      "name": "blocked browser storage retains URL-based resume",
+      "result": "PASS",
+      "creates": [],
+      "posts": [],
+      "reads": [
+        {
+          "method": "GET",
+          "path": "/api/v2/replay/sessions",
+          "search": ""
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/replay/sessions/latest",
+          "search": ""
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/replay/sessions/latest",
+          "search": "?cursor_index=60"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/replay/sessions/latest/tick-data",
+          "search": ""
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/replay/sessions/latest",
+          "search": "?cursor_index=60"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/replay/sessions/latest/tick-data",
+          "search": ""
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "result": "PASS"
+}

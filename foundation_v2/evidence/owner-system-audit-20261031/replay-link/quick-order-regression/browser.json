@@ -1,0 +1,25 @@
+{
+  "scope": "Synthetic API responses; production chart and real quick BUY/SELL clicks. All API requests intercepted. No owner writes.",
+  "cases": [
+    {
+      "side": "BUY",
+      "costs": false,
+      "result": "PASS",
+      "requestCount": 1
+    },
+    {
+      "side": "SELL",
+      "costs": false,
+      "result": "PASS",
+      "requestCount": 1
+    },
+    {
+      "side": "SELL",
+      "costs": true,
+      "result": "PASS",
+      "requestCount": 1
+    }
+  ],
+  "errors": [],
+  "result": "PASS"
+}

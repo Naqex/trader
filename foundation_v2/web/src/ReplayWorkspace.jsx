@@ -1,5 +1,5 @@
 import AppIcon from './AppIcon.jsx'
-import { sessionNavigationHref } from './sessionCatalog.js'
+import { canResumeSession, fetchReplaySessions, readLastSession, recentSessions, rememberSession as persistSession, sessionNavigationHref } from './sessionCatalog.js'
 import { navigate } from './clientNavigation.js'
 import { scopedMutation } from './scopedMutation.js'
 import { canUseReplayMutationView, mergeReplayMutationView, replayMutationEventsAfter } from './replayMutationView.js'
@@ -128,7 +128,6 @@ export default function ReplayWorkspace({ workspace, query }) {
 
   const { updateMarketContext, appearance, applyAppearance } = useFxReplayContext()
   const theme = appearance?.theme || 'dark'
-  const storageKey = `tw:replay:last:${workspace}`
   const requestedSession = query.get('session') || ''
   const requestedDataset = query.get('dataset') || ''
   const propSessionId = query.get('prop_session') || ''
@@ -259,9 +258,9 @@ export default function ReplayWorkspace({ workspace, query }) {
     const locationCursor = propMode ? null : cursor
     lastResolvedLocation.current = `${nextSessionId}:${locationCursor ?? ''}`
     setSessionId(nextSessionId)
-    window.localStorage.setItem(storageKey, nextSessionId)
+    persistSession(workspace, nextSessionId)
     replaceSessionInUrl(nextSessionId, preserveCursor, locationCursor, dataset)
-  }, [propMode, storageKey])
+  }, [propMode, workspace])
 
   const loadSession = useCallback(async (targetSessionId, targetCursor = null, options = {}) => {
     if (!targetSessionId || actionLock.current) return
@@ -316,11 +315,13 @@ export default function ReplayWorkspace({ workspace, query }) {
   }, [rememberSession, workspace])
 
   const createSession = useCallback(async () => {
+    if (actionLock.current) return
     const datasetId = datasetDraft.trim()
     if (!datasetId) {
       setState({ status: 'error', payload: null, error: 'Cần dataset id để tạo replay.' })
       return
     }
+    actionLock.current = true
     setPendingAction('create')
     setConflict(false)
     try {
@@ -393,15 +394,28 @@ export default function ReplayWorkspace({ workspace, query }) {
       loadDatasets()
       return
     }
-    const persisted = window.localStorage.getItem(storageKey)
+    if (requestedDataset) {
+      loadDatasets()
+      const controller = new AbortController()
+      setState({ status: 'loading', payload: null, error: null })
+      fetchReplaySessions(workspace, controller.signal).then(items => {
+        if (controller.signal.aborted) return
+        const matching = recentSessions(items.filter(item => item.dataset_id === requestedDataset && canResumeSession(item) && !item.prop_attempt_id && item.session_kind !== 'prop'))[0]
+        if (matching) loadSession(matching.record_id)
+        else setState({ status: 'idle', payload: null, error: null })
+      }).catch(error => {
+        if (!controller.signal.aborted) setState({ status: 'error', payload: null, error: String(error.message || error), errorStatus: error.status })
+      })
+      return () => controller.abort()
+    }
+    const persisted = readLastSession(workspace)
     if (persisted) {
       loadDatasets()
       loadSession(persisted)
       return
     }
     loadDatasets()
-    if (requestedDataset) createSession()
-  }, []) // Resolve the initial resume once from URL -> persisted session -> dataset.
+  }, []) // Dataset links read existing sessions; only the create button writes.
 
   useEffect(() => {
     const location = `${requestedSession}:${requestedCursorParam ?? ''}`
