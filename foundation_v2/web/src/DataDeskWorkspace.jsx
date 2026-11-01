@@ -386,7 +386,6 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
   const completedJobs = useRef(new Set())
   const downloadSamples = useRef(new Map())
   const catalogRequestSeq = useRef(0)
-  const catalogBootstrapWorkspace = useRef(null)
   const recovery = useReadRefresh(() => setCatalogRevision(value => value + 1), !preview, {
     workspace, resources: ['datasets'], scopeKey: workspace,
     error: state.workspace === workspace ? state.readError : null,
@@ -499,16 +498,10 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
     setCatalogRefreshError(false)
     setState(current => current.workspace === workspace && (current.status === 'ready' || current.readError) ? { ...current, refreshing:true } : { workspace, status:'loading', datasets:[], instruments:[], error:null })
     fetchOfflineLibrary(workspace, controller.signal)
-      .then(async payload => {
+      .then(payload => {
         if (requestSeq !== catalogRequestSeq.current || controller.signal.aborted) return
-        // Only bootstrap an empty configured catalog. Cached/stale reads never poll the provider.
-        if (catalogBootstrapWorkspace.current !== workspace && payload.catalog?.status === 'empty' && payload.catalog.configured && !payload.catalog.error) {
-          catalogBootstrapWorkspace.current = workspace
-          try { payload = { ...payload, ...await refreshInstrumentCatalog(workspace, controller.signal) } }
-          catch (error) { if (error.name === 'AbortError') return; setCatalogRefreshError(true) }
-        }
+        // Opening the page stays read-only; an empty catalog waits for an explicit refresh.
         const { datasets, instruments, catalog, download } = payload
-        if (requestSeq !== catalogRequestSeq.current) return
         setState({ workspace, status: 'ready', datasets, instruments, catalog, download, error: null })
         setSelectedId((current) => current || datasets[0]?.dataset_id || '')
       })
@@ -676,7 +669,9 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
       {state.status === 'ready' && (
         <div className={`data-library-grid${!filteredDatasets.length ? ' is-empty' : ''}`}>
           <section className="rd-panel" aria-label="Dataset catalog">
-            {!filteredDatasets.length ? <TestingEmptyState kind={rows.length && filtersApplied ? 'filtered-datasets' : 'datasets'} onClear={filtersApplied ? clearFilters : undefined} /> : <>
+            {!filteredDatasets.length ? <TestingEmptyState kind={rows.length && filtersApplied ? 'filtered-datasets' : 'datasets'} onClear={filtersApplied ? clearFilters : undefined}>
+              {!rows.length && catalogSourceSelected && state.catalog?.configured && state.catalog.status === 'empty' && <button type="button" className="fxa-button is-primary" onClick={refreshCatalog} disabled={Boolean(preview) || catalogBusy || !state.catalog.refresh_available}>{t(catalogBusy ? 'Đang cập nhật danh mục…' : 'Cập nhật danh mục')}</button>}
+            </TestingEmptyState> : <>
               <DataTable className="rd-table-wrap" tableClassName="rd-table" label={t('Dữ liệu đã có')} tableProps={{'data-testid':'data-desk-dataset-table'}}>
                   <colgroup><col style={{width:52}}/>{['asset','category','source','data','from','to','count','size','actions'].map(name => <col key={name} className={`data-library-column-${name}`} />)}</colgroup>
                   <thead><tr><SortResetColumn active={sorting.sorts.length > 0} onClear={sorting.clear}/>{LIBRARY_SORT_COLUMNS.map(([key,label]) => <SortableColumn key={key} className={['count','size'].includes(key) ? 'is-numeric' : ['category','source','data'].includes(key) ? 'is-center' : undefined} {...sorting.columnProps(key,t(label))} data-tooltip={key === 'size' ? t('Dữ liệu replay; không gồm bản nguồn và cache tải.') : undefined}>{t(label)}</SortableColumn>)}<th scope="col" className="is-center">{t('Thao tác')}</th></tr></thead>
