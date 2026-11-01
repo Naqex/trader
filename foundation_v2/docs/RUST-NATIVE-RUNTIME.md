@@ -223,6 +223,13 @@ Native MCP remains optional and unconfigured after terminal restart. See
 [read-tools receipt](../evidence/mt5-read-tools-20261024/RECEIPT.md), including the
 transient reconnect error and recovery rather than a lifecycle stability claim.
 
+On 1 November the owner requested startup. UI5218 serves the reviewed Studio
+build and connects to retained schema20 API8010; Paperclip17860 also runs with
+its existing data. Runtime ownership remains in the previous checkout; this
+does not deploy canonical-source audit backend changes. See the
+[startup receipt](../evidence/runtime-start-20261101/RECEIPT.md) for exact scope,
+manifest, read-only readiness and the initial preflight timeout.
+
 The native flow is `React → Axum → native domain → PostgreSQL transaction and
 revision/receipt → HTTP response`. Research and downloads use bounded background
 execution. A successful quick market order is already filled at the current
