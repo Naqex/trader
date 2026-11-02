@@ -16,6 +16,13 @@
 .studio-workflow-steps li > .ai-status { margin-left:12px; }
 .studio-workflow-link { border:0; padding:0; background:transparent; color:var(--project-text); text-align:left; text-decoration:underline; text-underline-offset:3px; font:inherit; cursor:pointer; }
 .studio-workflow-note, .studio-workflow-confirm p { margin:0; color:var(--project-muted); font-size:13px; line-height:1.6; }
+.studio-workflow-observation { margin:8px 0; color:var(--project-muted); font-size:12px; line-height:1.5; }
+.studio-workflow-observation.needs-attention { color:var(--project-warning, var(--project-text)); }
+.studio-workflow-run { margin-top:8px; font-size:12px; color:var(--project-muted); }
+.studio-workflow-run summary { cursor:pointer; width:fit-content; }
+.studio-workflow-run dl { display:grid; grid-template-columns:minmax(100px, 0.7fr) minmax(0, 1.3fr); gap:8px 16px; margin:12px 0 0; }
+.studio-workflow-run dt, .studio-workflow-run dd { margin:0; }
+.studio-workflow-run dd { overflow-wrap:anywhere; color:var(--project-text); font-variant-numeric:tabular-nums; }
 .studio-workflow-confirm { display:grid; gap:16px; border-top:1px solid var(--project-border); padding-top:16px; }
 .studio-workflow-confirm > div, .studio-workflow-footer, .studio-workflow-footer > div { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .studio-workflow-footer { padding:16px 20px; border-top:1px solid var(--project-border); justify-content:space-between; }

@@ -44,6 +44,23 @@ export default function StudioWorkflows({ language, onClose, onNavigate }) {
     in_progress: say('Đang chạy', 'Running'), in_review: say('Chờ bạn xem', 'Awaiting your review'),
     done: say('Hoàn tất', 'Done'), blocked: say('Bị chặn', 'Blocked'), cancelled: say('Đã hủy', 'Cancelled') }
   const status = value => <AiStatus tone={value === 'blocked' ? 'warning' : value === 'done' ? 'positive' : 'muted'}>{labels[value] || value}</AiStatus>
+  const watching = graph?.steps.some(step => ['queued', 'running'].includes(step.observation?.run?.status)
+    || (['todo', 'in_progress'].includes(graph.status) && ['todo', 'in_progress'].includes(step.status)
+      && step.observation?.state === 'not_started')) || false
+  const observations = {
+    not_started: say('Chưa có lượt chạy.', 'No run yet.'),
+    unavailable: say('Chưa đọc được lượt chạy. Kiểm tra lại trước khi thao tác tiếp.', 'Run details are unavailable. Refresh before continuing.'),
+    unknown: say('Chưa đối chiếu được kết quả. Mở công việc để kiểm tra trước khi chạy lại.', 'The outcome is unconfirmed. Inspect the task before rerunning.'),
+    interrupted: say('Lượt chạy đã dừng nhưng worker chưa ghi kết quả cuối. Cần kiểm tra trước khi chạy lại.', 'The run stopped without a final worker receipt. Inspect it before rerunning.'),
+    delivery_pending: say('Kết quả đã lưu. Kiểm tra việc gửi báo cáo trước khi chạy lại AI.', 'Output was saved. Check report delivery before rerunning AI.'),
+    evidence_mismatch: say('Receipt hoặc kết quả không khớp. Cần kiểm tra dữ liệu đã lưu.', 'The receipt or output does not match. Inspect the saved evidence.'),
+    recorded: say('Trạng thái lượt chạy và receipt khớp; kết quả đã gửi.', 'Run and receipt states agree; output was delivered.'),
+    failed: say('Lượt chạy chưa thành công. Mở công việc để xem nguyên nhân.', 'The run failed. Open the task to inspect the cause.'),
+    cancelled: say('Lượt chạy đã hủy. Kết quả cũ được giữ lại.', 'The run was cancelled. Previous output is preserved.'),
+    active: say('Đang theo dõi lượt chạy.', 'Tracking the run.'),
+  }
+  const duration = seconds => seconds == null ? say('Chưa có', 'Unavailable')
+    : seconds < 60 ? `${Math.round(seconds)} s` : `${Math.floor(seconds / 60)} ${say('phút', 'min')} ${Math.floor(seconds % 60)} s`
   async function load(company = catalog?.company || '', project = catalog?.project || '', parent = graph?.id || '') {
     if (lock.current) return
     const current = ++generation.current
@@ -61,6 +78,22 @@ export default function StudioWorkflows({ language, onClose, onNavigate }) {
     finally { if (current === generation.current) setBusy('') }
   }
   useEffect(() => { void load(initial.company, initial.project, initial.parent); return () => { generation.current++ } }, [])
+  useEffect(() => {
+    if (!watching || busy || confirm || uncertain || creating) return
+    let stopped = false, timer
+    const poll = async () => {
+      if (stopped) return
+      if (document.visibilityState === 'visible') {
+        try {
+          const detail = await request({ action: 'get', company: graph.company, parent: graph.id })
+          if (!stopped) setGraph(detail)
+        } catch (problem) { if (!stopped) { fail(problem); return } }
+      }
+      if (!stopped) timer = setTimeout(poll, 5000)
+    }
+    timer = setTimeout(poll, 5000)
+    return () => { stopped = true; clearTimeout(timer) }
+  }, [graph?.id, watching, busy, confirm, uncertain, creating])
   useEffect(() => {
     if (!catalog) return
     try { sessionStorage.setItem(storageKey, JSON.stringify({ company: catalog.company, project: catalog.project, parent: graph?.id, draft })) } catch { /* Native tasks remain recoverable without browser storage. */ }
@@ -129,7 +162,24 @@ export default function StudioWorkflows({ language, onClose, onNavigate }) {
       {graph && !creating && <section>
         <div className="studio-workflow-heading"><h3>{graph.title}<small>{graph.identifier}</small></h3>{status(graph.status)}</div>
         {graph.status === 'cancelled' && graph.can_cancel && <p role="alert" className="studio-workflow-error">{say('Một số bước chưa xác nhận dừng. Bấm Dừng để hoàn tất việc hủy.', 'Some steps have not confirmed stopping. Use Stop to finish cancellation.')}</p>}
-        <ol className="studio-workflow-steps">{graph.steps.map(step => <li key={step.id}><button className="studio-workflow-link" disabled={Boolean(busy)} onClick={() => openTask(step.id)}>{step.title}</button>{status(step.status)}</li>)}</ol>
+        <ol className="studio-workflow-steps">{graph.steps.map(step => {
+          const observation = step.observation, run = observation?.run
+          return <li key={step.id}>
+            <button className="studio-workflow-link" disabled={Boolean(busy)} onClick={() => openTask(step.id)}>{step.title}</button>{status(step.status)}
+            {observation && <p className={`studio-workflow-observation ${['interrupted', 'delivery_pending', 'evidence_mismatch', 'unknown', 'unavailable', 'failed'].includes(observation.state) ? 'needs-attention' : ''}`}>{observations[observation.state]}</p>}
+            {run && <details className="studio-workflow-run"><summary>{say('Thông tin lượt chạy', 'Run details')} · {duration(run.seconds)}</summary>
+              <dl>
+                <dt>{say('Lượt chạy', 'Run')}</dt><dd title={run.id}>{run.id}</dd>
+                <dt>{say('Trạng thái worker', 'Worker status')}</dt><dd>{({ queued: say('Đang chờ', 'Queued'), running: say('Đang chạy', 'Running'), succeeded: say('Đã kết thúc', 'Finished'), failed: say('Lỗi', 'Failed'), timed_out: say('Quá thời gian', 'Timed out'), cancelled: say('Đã hủy', 'Cancelled') })[run.status] || say('Chưa rõ', 'Unknown')}</dd>
+                <dt>{say('Model yêu cầu', 'Requested model')}</dt><dd>{step.role === 'research' && graph.profile === 'forex' ? say('Offline, không gọi AI', 'Offline, no AI calls') : run.requested_models.join(', ') || say('Chưa có thông tin', 'Unavailable')}</dd>
+                <dt>{say('Model phản hồi', 'Reported model')}</dt><dd>{run.reported_model || say('Chưa được báo cáo', 'Not reported')}</dd>
+                <dt>{say('Token vào / ra', 'Input / output tokens')}</dt><dd>{run.input_tokens == null ? '—' : run.input_tokens.toLocaleString()} / {run.output_tokens == null ? '—' : run.output_tokens.toLocaleString()}</dd>
+                <dt>{say('Chi phí (USD)', 'Cost (USD)')}</dt><dd>{run.cost_usd == null ? say('Chưa được báo cáo', 'Not reported') : run.cost_usd.toLocaleString(en ? 'en-US' : 'vi-VN', { maximumFractionDigits: 6 })}{run.accounting_pending && ` · ${say('Chờ ghi nhận', 'Pending accounting')}`}</dd>
+              </dl>
+            </details>}
+          </li>
+        })}</ol>
+        {watching && <p className="studio-workflow-note">{say('Tự cập nhật mỗi 5 giây khi cửa sổ đang hiển thị.', 'Updates every 5 seconds while this window is visible.')}</p>}
         <p className="studio-workflow-note">{say('Báo cáo và lượt chạy được lưu trong Paperclip. Hoàn tất quy trình chưa cấp quyền paper, demo hoặc tiền thật.', 'Reports and runs stay in Paperclip. Workflow completion does not authorize paper, demo or real-money trading.')}</p>
         {confirm && <div className="studio-workflow-confirm" role="group" aria-label={confirm === 'start' ? say('Xác nhận bắt đầu', 'Confirm start') : say('Xác nhận dừng', 'Confirm stop')}>
           <p>{confirm === 'start' ? say('Bắt đầu bài kiểm hệ thống và phản biện bằng model đã cấu hình? Lượt AI có thể dùng quota; chưa có tổng chi phí chính xác.', 'Start the system check and review using the configured model? AI calls may consume quota; the total cost is not yet known.') : say('Dừng các bước còn lại và hủy lượt đang chạy? Kết quả đã hoàn tất sẽ được giữ.', 'Stop remaining steps and cancel active runs? Completed results will be preserved.')}</p>
