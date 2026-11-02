@@ -16,7 +16,7 @@ from trading_workspace_v2.forex_h4 import (
     Candle, FixedH4Candidate, H4Builder, read_qdm_ticks, size_for_stop,
 )
 from trading_workspace_v2.replay_tick_execution import BrokerReplayTick
-from forex_h4_pilot import START, financing_calendar, run_scenario, observed_account_spec, input_contract, write_json
+from forex_h4_pilot import START, financing_calendar, run_scenario, observed_account_spec, input_contract, write_json, main
 
 
 def candle(index, close='1.1000', high='1.1010', low='1.0990'):
@@ -96,6 +96,23 @@ class H4Tests(unittest.TestCase):
 
 
 class AccountScenarioTests(unittest.TestCase):
+    def test_native_progress_cancellation_stops_before_reading_ticks_and_retains_failure(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            output = root / 'run'
+            stages = []
+            def progress(stage):
+                stages.append(stage)
+                if stage == 'validate_warmup':
+                    raise RuntimeError('cancelled by native workflow')
+            with patch('forex_h4_pilot.inspect_qdm') as inspect, self.assertRaisesRegex(RuntimeError, 'cancelled'):
+                main(['--input-dir', str(root), '--output-dir', str(output)], on_progress=progress)
+            inspect.assert_not_called()
+            receipt = json.loads((output / 'receipt.json').read_text())
+            self.assertEqual(receipt['stage'], 'failed')
+            self.assertEqual(receipt['error'], 'cancelled by native workflow')
+            self.assertEqual(stages, ['manifest', 'validate_warmup'])
+
     def test_windows_sharing_lock_retries_but_persistent_failure_is_not_hidden(self):
         locked = PermissionError('reader blocks replacement')
         locked.winerror = 5

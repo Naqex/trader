@@ -248,14 +248,14 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
         snapshot_restart='passed', excluded_h4=builder.excluded)
 
 
-def main():
+def main(argv=None, on_progress=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--input-dir', type=Path, required=True)
     parser.add_argument('--output-dir', type=Path, required=True)
     parser.add_argument('--input-manifest', type=Path)
     parser.add_argument('--account-spec', type=Path)
     parser.add_argument('--account-spec-sha256')
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     if bool(args.account_spec) != bool(args.account_spec_sha256):
         parser.error('--account-spec and --account-spec-sha256 must be supplied together')
     inputs = input_contract(args.input_dir, args.input_manifest)
@@ -270,6 +270,8 @@ def main():
                            cursor_index=state.execution.cursor_index)
         write_json(args.output_dir / 'receipt.json', receipt)
         print(json.dumps(receipt), flush=True)
+        if on_progress is not None and stage != 'failed':
+            on_progress(stage)
     progress('manifest')
     try:
         paths = {name: Path(item['path']) for name, item in inputs.items()}
