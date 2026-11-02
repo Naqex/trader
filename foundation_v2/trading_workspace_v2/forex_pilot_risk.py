@@ -2,14 +2,14 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
-from decimal import Decimal
+from decimal import Decimal, ROUND_FLOOR, ROUND_CEILING
 from typing import Literal
 from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .execution_semantics import protection_brackets
-from .replay_execution import ReplayExecutionError, _liquidation_pnl, queue_market_order
+from .replay_execution import ReplayExecutionError, _decimal, _liquidation_pnl, queue_market_order
 from .replay_tick_execution import (
     BrokerReplayTick, ReplayTickExecutionSnapshot, advance_tick_execution,
 )
@@ -96,6 +96,8 @@ class PilotRiskState(BaseModel):
     minimum_observed_equity: Decimal
     stops: tuple[PilotStopTrigger, ...] = ()
     rejections: tuple[PilotOrderRejection, ...] = ()
+    entry_stop_distance: Decimal | None = Field(default=None, gt=0)
+    entry_decision_time_msc: int | None = Field(default=None, ge=0, strict=True)
 
 
 class ForexPilotSnapshot(BaseModel):
@@ -150,6 +152,9 @@ class ForexPilotSnapshot(BaseModel):
                     or e.pending_market_order is not None):
                 raise ValueError("pilot strategy exit must refer to its open position")
             _validate_exit_source(e, request)
+        if (self.risk.entry_stop_distance is not None or self.risk.entry_decision_time_msc is not None
+                ) and e.pending_market_order is None:
+            raise ValueError("pilot entry timing/distance requires a pending order")
         return self
 
 
@@ -168,7 +173,7 @@ def initialize_forex_pilot(execution: ReplayTickExecutionSnapshot, *, start_time
                             minimum_observed_equity=execution.equity))
 
 
-def queue_forex_pilot_order(snapshot: ForexPilotSnapshot, **order) -> ForexPilotSnapshot:
+def queue_forex_pilot_order(snapshot: ForexPilotSnapshot, *, stop_distance=None, **order) -> ForexPilotSnapshot:
     r = snapshot.risk
     if r.daily_stopped or r.overall_stopped or r.close_pending:
         raise ReplayExecutionError("pilot is stopped; consume new-day quotes before submitting again")
@@ -177,7 +182,16 @@ def queue_forex_pilot_order(snapshot: ForexPilotSnapshot, **order) -> ForexPilot
     if any(x.operation_id == order.get("operation_id") for x in r.rejections):
         raise ReplayExecutionError("pilot operation_id was already rejected")
     execution = queue_market_order(snapshot.execution, **order)
-    return snapshot.model_copy(update={"execution": execution})
+    risk = r.model_copy(update={"entry_stop_distance": _decimal(stop_distance, "stop_distance", positive=True)
+        if stop_distance is not None else None,
+        "entry_decision_time_msc": snapshot.execution.ledger[-1]["virtual_time_utc"] * 1000
+            if snapshot.execution.ledger else None})
+    return ForexPilotSnapshot(execution=execution, limits=snapshot.limits, risk=risk)
+
+
+def _stop_at_fill(side, fill, distance, tick_size):
+    raw = fill - distance if side == "BUY" else fill + distance
+    return (raw / tick_size).to_integral_value(rounding=ROUND_FLOOR if side == "BUY" else ROUND_CEILING) * tick_size
 
 
 def queue_forex_pilot_exit(snapshot: ForexPilotSnapshot, *, operation_id: str) -> ForexPilotSnapshot:
@@ -277,6 +291,24 @@ class _PilotGuard:
             return False
         return True
 
+    def entry_ready(self, tick):
+        decision = self.state.entry_decision_time_msc
+        return decision is None or tick.time_msc > decision
+
+    def prepare_order(self, order, tick, instrument):
+        if self.state.entry_stop_distance is None:
+            return order
+        return order.model_copy(update={"stop_loss": _stop_at_fill(order.side,
+            tick.ask if order.side == "BUY" else tick.bid,
+            self.state.entry_stop_distance, instrument.tick_size)})
+
+    def entry_proof(self):
+        if self.state.entry_stop_distance is None and self.state.entry_decision_time_msc is None:
+            return {}
+        return {"pilot_entry": {"stop_distance": str(self.state.entry_stop_distance)
+                if self.state.entry_stop_distance is not None else None,
+            "decision_time_msc": self.state.entry_decision_time_msc}}
+
     def finish_quote(self, tick, balance, floating, position):
         self._observe(tick, balance, floating, position)
         self.state = self.state.model_copy(update={"last_tick": tick,
@@ -297,6 +329,9 @@ def advance_forex_pilot(snapshot: ForexPilotSnapshot, *, ticks, bar: dict,
     guard = _PilotGuard(snapshot)
     result = advance_tick_execution(snapshot.execution, ticks=ticks, bar=bar,
                                     cursor_index=cursor_index, _pilot_guard=guard)
+    if result.snapshot.pending_market_order is None:
+        guard.state = guard.state.model_copy(update={"entry_stop_distance": None,
+                                                     "entry_decision_time_msc": None})
     return ForexPilotSnapshot(execution=result.snapshot, limits=snapshot.limits, risk=guard.state)
 
 
@@ -320,3 +355,25 @@ def validate_pilot_exit(snapshot, tick, closed, event):
             or request.submitted_cursor_index >= event.cursor_index
             or event.details.get("command_operation_id") != request.operation_id):
         raise ReplayExecutionError("pilot strategy exit must fill strictly after its closed-bar decision")
+
+
+def validate_pilot_entry(snapshot, tick, event):
+    proof = event.details["pilot_entry"]
+    decision = proof.get("decision_time_msc")
+    if decision is not None and (type(decision) is not int or tick.time_msc <= decision):
+        raise ReplayExecutionError("pilot entry must fill strictly after its decision")
+    if decision is not None:
+        source = next((raw for raw in reversed(snapshot.ledger)
+            if raw["sequence"] < event.sequence and raw["cursor_index"] == event.cursor_index - 1
+            and raw["kind"] in {"price_mark", "financing"}), None)
+        if source is None or source["virtual_time_utc"] * 1000 != decision:
+            raise ReplayExecutionError("pilot entry decision must retain its canonical checkpoint")
+    if proof.get("stop_distance") is not None and event.kind == "market_fill":
+        distance = Decimal(proof["stop_distance"])
+        if not distance.is_finite() or distance <= 0:
+            raise ReplayExecutionError("pilot entry stop distance must be finite and positive")
+        position = event.details["open_position"]
+        expected = _stop_at_fill(position["side"], Decimal(position["entry_fill"]), distance,
+                                 InstrumentSpec.from_mapping(snapshot.instrument_spec).tick_size)
+        if Decimal(position["stop_loss"]) != expected:
+            raise ReplayExecutionError("pilot entry stop must retain its declared distance from actual fill")

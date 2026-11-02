@@ -158,6 +158,9 @@ def validate_tick_execution_event(
     if event.virtual_time_utc != expected_time:
         raise ReplayExecutionError("tick event time differs from observed causal time")
     if event.kind in {"market_fill", "order_rejected", "protective_fill"}:
+        if "pilot_entry" in d:
+            from .forex_pilot_risk import validate_pilot_entry
+            validate_pilot_entry(snapshot, tick, event)
         side = d.get("side")
         if side not in {"BUY", "SELL"}:
             raise ReplayExecutionError("tick fill lacks its position side")
@@ -280,14 +283,18 @@ def advance_tick_execution(
                for quote in (tick.bid, tick.ask)):
             raise ReplayExecutionError("broker tick price does not align with instrument tick size")
         last_tick = tick
+        entry_ready = True
         if _pilot_guard is not None:
             trigger = _pilot_guard.begin_quote(tick, balance, floating(tick), position)
             if trigger is not None and position is not None:
                 close_position(tick, "pilot_risk_stop", trigger=trigger)
-            if pending is not None and not _pilot_guard.admit(pending, tick, balance, instrument, costs):
-                # Risk rejections belong to the offline pilot journal, not margin-only events.
-                pending = None
-        if pending is not None:
+            entry_ready = _pilot_guard.entry_ready(tick)
+            if pending is not None and entry_ready:
+                pending = _pilot_guard.prepare_order(pending, tick, instrument)
+                if not _pilot_guard.admit(pending, tick, balance, instrument, costs):
+                    # Risk rejections belong to the offline pilot journal, not margin-only events.
+                    pending = None
+        if pending is not None and entry_ready:
             order = pending
             entry_fill = tick.ask if order.side == "BUY" else tick.bid
             if order.submitted_cursor_index != snapshot.cursor_index:
@@ -303,6 +310,8 @@ def advance_tick_execution(
             detail = {"operation_id": order.operation_id, "side": order.side,
                       "quantity": str(order.quantity), "fill_price": str(entry_fill),
                       "margin_admission": admission.model_dump(mode="json")}
+            if _pilot_guard is not None:
+                detail.update(_pilot_guard.entry_proof())
             if required > snapshot.starting_balance:
                 record("order_rejected", tick, {**detail, "reason": "insufficient_research_margin"})
             else:

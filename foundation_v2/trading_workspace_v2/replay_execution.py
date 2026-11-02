@@ -465,6 +465,8 @@ def _cost_mapping(cost_model: CostModel) -> dict:
         "quote_to_account_rate": str(cost_model.quote_to_account_rate),
         "account_ccy": cost_model.account_ccy,
         "rounding_decimals": cost_model.rounding_decimals,
+        **({"commission_per_side_per_quantity_account": str(cost_model.commission_per_side_per_quantity_account)}
+           if cost_model.commission_per_side_per_quantity_account else {}),
     }
 
 

@@ -99,6 +99,7 @@ class CostModel:
     quote_to_account_rate: Decimal
     account_ccy: str
     rounding_decimals: int
+    commission_per_side_per_quantity_account: Decimal = Decimal("0")
 
     @classmethod
     def from_mapping(cls, value):
@@ -138,6 +139,9 @@ class CostModel:
             ),
             account_ccy=require_text(value.get("account_ccy"), "account_ccy").upper(),
             rounding_decimals=rounding_decimals,
+            commission_per_side_per_quantity_account=require_decimal(
+                value.get("commission_per_side_per_quantity_account", 0),
+                "commission_per_side_per_quantity_account", minimum=0),
         )
 
 

@@ -272,11 +272,11 @@ class ForexPilotRiskTests(unittest.TestCase):
         current = initialize_forex_pilot(execution(), start_time_msc=ms())
         for i in range(4):
             current = advance(queue(current, quantity="0.1", stop="1.09820", operation=f"loss-{i}"), [
-                tick(when=ms() + i * 60000),
-                tick("1.09820", "1.09840", when=ms() + i * 60000 + 1)])
+                tick(when=ms() + i * 60000 + 1),
+                tick("1.09820", "1.09840", when=ms() + i * 60000 + 2)])
         self.assertEqual(current.execution.balance, Decimal("9920"))
         result = advance(queue(current, quantity="0.1", stop="1.09820", operation="too-large"),
-                         [tick(when=ms() + 4 * 60000)])
+                         [tick(when=ms() + 4 * 60000 + 1)])
         self.assertEqual(result.risk.rejections[-1].reason, "remaining_budget")
         self.assertIsNone(result.execution.position)
 

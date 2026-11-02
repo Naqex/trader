@@ -345,6 +345,8 @@ class ResearchService:
         if type(request.cost_model.get("rounding_decimals", 2)) is not int:
             raise ValueError("cost rounding_decimals must be an integer")
         cost_model = CostModel.from_mapping(request.cost_model)
+        if cost_model.commission_per_side_per_quantity_account:
+            raise ValueError("quantity commission is supported only by the offline Python replay pilot")
         if cost_model.account_ccy != instrument.account_ccy:
             raise ValueError("cost model account currency does not match instrument snapshot")
         if request.engine_backend == "nautilus":

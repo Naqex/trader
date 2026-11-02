@@ -50,7 +50,7 @@ def calculate_round_trip_cost(
         model.slippage_price_per_side * Decimal(2) * units * model.quote_to_account_rate
     )
     commission_account = max(
-        model.commission_per_side_account * Decimal(2),
+        (model.commission_per_side_account + model.commission_per_side_per_quantity_account * quantity) * Decimal(2),
         model.minimum_fee_account,
     )
     explicit_cost_account = commission_account + slippage_account + model.financing_account
