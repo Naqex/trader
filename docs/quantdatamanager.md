@@ -126,6 +126,25 @@ khi resume; không chạy lại `run.py` khi worker còn sống, không kill gi�
 Trạng thái hoàn thành/kiểm quote nằm ở receipt AI của workspace, không suy từ
 việc có symbol TICK hoặc một process còn sống.
 
+Export tick đã xác minh trên bản125.2692, ngày03/01/2022 UTC:
+
+```text
+-data action=export symbols=EURUSD_TICK_TW timeframe=TICK timezone=UTC datefrom=2022.01.03 dateto=2022.01.03 outputdir=<new-absolute-directory> format=Generic tick format (comma delimited)
+```
+
+Khi gọi `QdmCli.run`, truyền `format=Generic tick format (comma delimited)` là
+**một phần tử argv**, không thêm `[[...]]` quanh tên format. Bản cài có thể trả
+exit thành công nhưng không tạo CSV với tên format sai; luôn kiểm file thực tế.
+Đây là lệnh export cache, không gọi update lại khi chỉ lỗi bước export.
+
+CSV thực tế có header `DateTime,Bid,Ask,Volume`, timestamp dạng
+`20220103 00:00:00.033`. Giữ UTC và millisecond; dùng thứ tự dòng CSV làm sequence
+khi nối tick execution, không sort/deduplicate làm đổi đường đi quote.
+Lượt kiểm có65.215 dòng,15 phút không có quote: giữ gap để review, không bù giá.
+Bid/Ask này thuộc Dukascopy, chưa là quote broker mục tiêu hoặc xác nhận coverage
+liên tục. Raw CSV và validation script/hash giữ trong job local ở trên, kết quả
+và trạng thái tiếp tục thuộc receipt AI.
+
 Receipt local (CSV không đưa vào Git):
 `E:/BACKUP-TRADINGWORKSPACE/ai-engine-jobs/forex-prop-pilot-20261102/qdm-cache-export-20261102/receipt.json`.
 Contract và kết quả nghiên cứu tiếp tục nằm trong planning/receipt của workspace;
