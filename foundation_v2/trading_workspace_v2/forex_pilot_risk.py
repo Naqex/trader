@@ -39,11 +39,14 @@ class PilotStopTrigger(BaseModel):
     anchor: Decimal
     allowance: Decimal = Field(gt=0)
     position_id: str | None
+    event_time_msc: int | None = Field(default=None, ge=0, strict=True)
 
     @model_validator(mode="after")
     def threshold_was_reached(self):
         if self.equity > self.anchor - self.allowance:
             raise ValueError("pilot stop requires equity at or below its floor")
+        if self.event_time_msc is not None and self.event_time_msc < self.tick.time_msc:
+            raise ValueError("pilot cash stop cannot precede its valuation quote")
         return self
 
 
@@ -118,13 +121,15 @@ class ForexPilotSnapshot(BaseModel):
                 raise ValueError("new pilot requires an unconsumed execution snapshot")
         else:
             tick = self.risk.last_tick
-            last = e.ledger[-1]["details"] if e.ledger else {}
+            last = next((raw["details"] for raw in reversed(e.ledger)
+                         if "bid" in raw.get("details", {})), {})
             if tick is None or (e.last_bid, e.last_ask) != (tick.bid, tick.ask) or (
                     last.get("time_msc"), last.get("sequence")) != (tick.time_msc, tick.sequence):
                 raise ValueError("pilot risk checkpoint must retain the execution's last quote")
         if self.risk.overall_stopped != any(t.reason == "overall_loss" for t in self.risk.stops):
             raise ValueError("pilot overall latch must retain its stop evidence")
-        if self.risk.daily_stopped != any(t.reason == "daily_loss" and _day(t.tick.time_msc)
+        if self.risk.daily_stopped != any(t.reason == "daily_loss" and _day(
+                                         t.event_time_msc if t.event_time_msc is not None else t.tick.time_msc)
                                          == self.risk.day for t in self.risk.stops):
             raise ValueError("pilot daily latch must retain its current-day stop evidence")
         for t in self.risk.stops:
@@ -186,7 +191,7 @@ def queue_forex_pilot_exit(snapshot: ForexPilotSnapshot, *, operation_id: str) -
         raise ReplayExecutionError("pilot exit operation_id was already consumed")
     if any(rejected.operation_id == operation_id for rejected in risk.rejections):
         raise ReplayExecutionError("pilot exit operation_id was already rejected")
-    if not execution.ledger or execution.ledger[-1]["kind"] != "price_mark":
+    if not execution.ledger or execution.ledger[-1]["kind"] not in {"price_mark", "financing"}:
         raise ReplayExecutionError("pilot exit requires a closed-bar checkpoint")
     request = PilotExitRequest(operation_id=operation_id, position_id=execution.position.position_id,
         decision_time_msc=execution.ledger[-1]["virtual_time_utc"] * 1000,
@@ -203,7 +208,7 @@ class _PilotGuard:
         self.limits = snapshot.limits
         self.starting_balance = snapshot.execution.starting_balance
 
-    def _observe(self, tick, balance, floating, position):
+    def _observe(self, tick, balance, floating, position, *, event_time_msc=None):
         equity = balance + floating
         state = self.state
         updates = {"minimum_observed_equity": min(state.minimum_observed_equity, equity)}
@@ -215,7 +220,8 @@ class _PilotGuard:
             if not stopped and equity <= anchor - allowance:
                 trigger = PilotStopTrigger(reason=reason, tick=tick, balance=balance, equity=equity,
                     anchor=anchor, allowance=allowance,
-                    position_id=position.position_id if position else None)
+                    position_id=position.position_id if position else None,
+                    event_time_msc=event_time_msc)
                 stops.append(trigger)
                 updates["overall_stopped" if reason == "overall_loss" else "daily_stopped"] = True
                 if position and state.close_pending is None and "close_pending" not in updates:
@@ -240,6 +246,9 @@ class _PilotGuard:
         prior_close = state.close_pending
         self.state = state
         self._observe(tick, balance, floating, position)
+        if (prior_close is not None and prior_close.event_time_msc is not None
+                and tick.time_msc <= prior_close.event_time_msc):
+            return None
         return prior_close
 
     def admit(self, order, tick, balance, instrument, costs):
@@ -294,7 +303,8 @@ def advance_forex_pilot(snapshot: ForexPilotSnapshot, *, ticks, bar: dict,
 def validate_pilot_close(snapshot, tick, closed, raw_trigger):
     trigger = PilotStopTrigger.model_validate(raw_trigger)
     if ((trigger.tick.time_msc, trigger.tick.sequence) >= (tick.time_msc, tick.sequence)
-            or trigger.position_id != closed.position_id):
+            or trigger.position_id != closed.position_id
+            or (trigger.event_time_msc is not None and tick.time_msc <= trigger.event_time_msc)):
         raise ReplayExecutionError("pilot close must follow its triggering quote and position")
     floating, _ = _liquidation_pnl(closed, exit_bid=trigger.tick.bid, exit_ask=trigger.tick.ask,
         instrument=InstrumentSpec.from_mapping(snapshot.instrument_spec),

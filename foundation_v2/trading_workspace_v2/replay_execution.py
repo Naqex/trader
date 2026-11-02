@@ -200,7 +200,7 @@ class ReplayExecutionEvent(BaseModel):
 class ReplayExecutionEventV2(ReplayExecutionEvent):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
     schema_version: Literal["replay-execution-event-v2"] = "replay-execution-event-v2"
-    kind: Literal["market_fill", "order_rejected", "protective_fill", "price_mark", "phase_transition", "protection_change", "manual_close", "order_cancel"]
+    kind: Literal["market_fill", "order_rejected", "protective_fill", "price_mark", "phase_transition", "protection_change", "manual_close", "order_cancel", "financing"]
 
     @model_validator(mode="after")
     def margin_outcome_is_consistent(self):
@@ -265,6 +265,8 @@ def replay_event_for_snapshot(snapshot: ReplayExecutionSnapshot, raw: dict) -> R
         if raw.get("schema_version") != "replay-execution-event-v2":
             raise ReplayExecutionError("v2 replay requires explicitly versioned v2 events")
         event = ReplayExecutionEventV2.model_validate(raw)
+        if event.kind == "financing" and snapshot.schema_version != "replay-execution-tick-v1":
+            raise ReplayExecutionError("timed Forex financing requires a tick snapshot")
         if event.kind == "manual_close":
             _validate_manual_close(snapshot, event)
         if event.kind in {"market_fill", "order_rejected"}:
@@ -365,7 +367,7 @@ def reconstruct_replay_execution_checkpoint(
             )
         # A phase transition can follow the bar's price mark without advancing
         # the cursor. Preserve that entire checkpoint before the next bar.
-        if (event.kind in {"price_mark", "phase_transition", "protection_change", "manual_close", "order_cancel"} and event.cursor_index == cursor_index
+        if (event.kind in {"price_mark", "phase_transition", "protection_change", "manual_close", "order_cancel", "financing"} and event.cursor_index == cursor_index
                 and (event_sequence is None or event.sequence == event_sequence)):
             selected = event
 

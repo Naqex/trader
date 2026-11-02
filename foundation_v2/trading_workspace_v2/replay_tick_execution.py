@@ -104,6 +104,10 @@ def validate_tick_execution_event(
     # Native closed-checkpoint amendments/transitions retain their V2 contracts.
     if event.kind == "phase_transition":
         return event
+    if event.kind == "financing":
+        from .forex_financing import validate_financing_event
+        validate_financing_event(snapshot, event)
+        return event
     d = event.details
     if (d.get("tick_snapshot_id") != snapshot.tick_snapshot_id
             or d.get("tick_snapshot_sha256") != snapshot.tick_snapshot_sha256
