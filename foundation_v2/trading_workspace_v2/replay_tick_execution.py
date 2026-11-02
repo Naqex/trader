@@ -165,7 +165,12 @@ def validate_tick_execution_event(
             closed = ReplayOpenPosition.model_validate(d.get("closed_position"))
             stop_hit = closed.stop_loss is not None and (quote <= closed.stop_loss if side == "BUY" else quote >= closed.stop_loss)
             target_hit = closed.take_profit is not None and (quote >= closed.take_profit if side == "BUY" else quote <= closed.take_profit)
-            reason = "stop_loss" if stop_hit else "take_profit" if target_hit else None
+            if d.get("reason") == "pilot_risk_stop":
+                from .forex_pilot_risk import validate_pilot_close
+                validate_pilot_close(snapshot, tick, closed, d.get("pilot_trigger"))
+                reason = "pilot_risk_stop"
+            else:
+                reason = "stop_loss" if stop_hit else "take_profit" if target_hit else None
             if (closed.side != side or closed.position_id != d.get("position_id")
                     or closed.source_operation_id != d.get("operation_id") or d.get("reason") != reason
                     or reason is None):
@@ -187,7 +192,7 @@ def validate_tick_execution_event(
 
 def advance_tick_execution(
     snapshot: ReplayTickExecutionSnapshot, *, ticks: Iterable[dict | BrokerReplayTick],
-    bar: dict, cursor_index: int,
+    bar: dict, cursor_index: int, _pilot_guard=None,
 ) -> ReplayTickExecutionAdvance:
     if type(cursor_index) is not int or cursor_index != snapshot.cursor_index + 1:
         raise ReplayExecutionError("execution cursor must advance exactly one bar")
@@ -240,6 +245,21 @@ def advance_tick_execution(
         events.append(event)
         ledger.append(event.model_dump(mode="json"))
 
+    def close_position(tick, reason, *, trigger=None):
+        nonlocal position, balance
+        closed = position
+        realized, cost = _liquidation_pnl(closed, exit_bid=tick.bid, exit_ask=tick.ask,
+                                        instrument=instrument, cost_model=costs)
+        balance += realized
+        position = None
+        record("protective_fill", tick, {"operation_id": closed.source_operation_id,
+            "position_id": closed.position_id, "side": closed.side,
+            "quantity": str(closed.quantity), "reason": reason,
+            "fill_price": str(tick.bid if closed.side == "BUY" else tick.ask),
+            "net_pnl": str(realized), "cost_model_version": cost["cost_model_version"],
+            "cost_breakdown": cost, "closed_position": closed.model_dump(mode="json"),
+            **({"pilot_trigger": trigger.model_dump(mode="json")} if trigger else {})})
+
     for raw in ticks:
         tick = raw if isinstance(raw, BrokerReplayTick) else BrokerReplayTick.model_validate(raw)
         if not start <= tick.time_msc < end:
@@ -250,6 +270,13 @@ def advance_tick_execution(
                for quote in (tick.bid, tick.ask)):
             raise ReplayExecutionError("broker tick price does not align with instrument tick size")
         last_tick = tick
+        if _pilot_guard is not None:
+            trigger = _pilot_guard.begin_quote(tick, balance, floating(tick), position)
+            if trigger is not None and position is not None:
+                close_position(tick, "pilot_risk_stop", trigger=trigger)
+            if pending is not None and not _pilot_guard.admit(pending, tick, balance, instrument, costs):
+                # Risk rejections belong to the offline pilot journal, not margin-only events.
+                pending = None
         if pending is not None:
             order = pending
             entry_fill = tick.ask if order.side == "BUY" else tick.bid
@@ -281,17 +308,9 @@ def advance_tick_execution(
             stop_hit = position.stop_loss is not None and (quote <= position.stop_loss if position.side == "BUY" else quote >= position.stop_loss)
             target_hit = position.take_profit is not None and (quote >= position.take_profit if position.side == "BUY" else quote <= position.take_profit)
             if stop_hit or target_hit:
-                closed = position
-                realized, cost = _liquidation_pnl(closed, exit_bid=tick.bid, exit_ask=tick.ask,
-                                                instrument=instrument, cost_model=costs)
-                balance += realized
-                position = None
-                record("protective_fill", tick, {"operation_id": closed.source_operation_id,
-                    "position_id": closed.position_id, "side": closed.side,
-                    "quantity": str(closed.quantity), "reason": "stop_loss" if stop_hit else "take_profit",
-                    "fill_price": str(quote), "net_pnl": str(realized),
-                    "cost_model_version": cost["cost_model_version"], "cost_breakdown": cost,
-                    "closed_position": closed.model_dump(mode="json")})
+                close_position(tick, "stop_loss" if stop_hit else "take_profit")
+        if _pilot_guard is not None:
+            _pilot_guard.finish_quote(tick, balance, floating(tick), position)
     if last_tick is None:
         raise ReplayExecutionError("tick coverage is empty; OHLC fallback is disabled")
     record("price_mark", last_tick, {
