@@ -57,9 +57,19 @@ use `.agents/skills/mt5-runtime-operations/SKILL.md`. A copy/layout-only fix doe
 not require an API or terminal restart. Runtime skill invocation does not grant
 broker execution or change the authorization gates below.
 
+- Standing owner authorization (02/11/2026): during assigned Trader work, agents
+  may build, update/promote local UI/API/adapters, restart project-owned local
+  services and MT5 terminals, and reconnect existing accounts without asking
+  again. This explicitly overrides earlier per-action approval requirements for
+  those local operations. Preserve account identity/access mode, runtime/data
+  ownership and rollback; reconcile active jobs and unknown broker submissions
+  before interruption. Unrelated terminals/services remain outside this grant.
+- Local maintenance/reconnection does not authorize OrderCheck/OrderSend,
+  strategy execution on broker accounts, new accounts/providers, data migrations,
+  data deletion or remote/production deployment; their separate gates remain.
 - Never enable live broker execution without explicit user permission.
 - Do not open holdout data without the approved protocol/user gate.
-- Do not add paid providers, OAuth integrations, deploy/restart active terminals, delete user data, or public-release the app without the required user approval.
+- Do not add paid providers, OAuth integrations, delete user data, or public-release the app without the required user approval.
 - UI must never imply that a planned/replay order was sent to a broker.
 
 ## Dirty worktree
