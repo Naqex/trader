@@ -47,6 +47,16 @@ class ConnectorTests(unittest.TestCase):
         self.sdk.account_info.side_effect=[self.account,NS(login=7,server='Fixture-Demo')]
         with self.assertRaisesRegex(RuntimeError,'mt5_identity_changed'):self.read()
 
+    def test_broker_account_name_is_preserved_without_inference(self):
+        self.account.name='$10k Fixture Free Trial Swing 2-Step'
+        self.assertEqual(self.read()['account']['name'],self.account.name)
+        self.account.name='Standard'
+        self.assertEqual(self.read()['account']['name'],'Standard')
+        self.account.name=''
+        self.assertEqual(self.read()['account']['name'],'')
+        self.sdk.order_send.assert_not_called()
+        self.sdk.order_check.assert_not_called()
+
     def test_ipc_failure_is_distinct_from_broker_network_disconnection(self):
         self.sdk.terminal_info.return_value=None
         with self.assertRaisesRegex(RuntimeError,'^mt5_terminal_unavailable$'):self.read()

@@ -254,7 +254,7 @@ def snapshot(sdk, secret, start, history_from, requested_mode='read_only', gener
         account_binding=dict(login=str(account.login),server=account.server,account_environment=environment,generation=generation),
         execution_binding=dict(login=str(account.login),server=account.server,account_environment=environment,generation=generation,verified_permissions=permissions) if requested_mode == 'trading' else None,
         captured_at_utc=now.isoformat(), history_from_utc=history_from, history_read_from_utc=start.isoformat(), execution_capability=False,
-        account={**{key:getattr(account,key) for key in ('currency','balance','equity','profit','margin','margin_free','leverage')},'account_ref':f"…{str(account.login)[-4:]}"},
+        account={**{key:getattr(account,key) for key in ('currency','balance','equity','profit','margin','margin_free','leverage')},'name':getattr(account,'name',None),'account_ref':f"…{str(account.login)[-4:]}"},
         positions=[{key:getattr(item,key) for key in ('ticket','symbol','type','volume','price_open','price_current','sl','tp','profit','swap','time')} for item in positions],
         orders=[{key:getattr(item,key) for key in ('ticket','symbol','type','volume_current','price_open','sl','tp','time_setup')} for item in orders],
         deals=[item for item in rows if item['type'] in (0,1)], cashflows=[item for item in rows if item['type'] not in (0,1)], quotes=quotes)

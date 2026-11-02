@@ -265,10 +265,12 @@ class DemoTradingTests(unittest.TestCase):
         self.denied('demo_frozen',action='protect',ticket=77)
 
     def test_snapshot_is_real_sdk_data_and_no_send(self):
+        self.account.name='Standard'
         self.sdk.copy_rates_from_pos.return_value=[dict(time=1700000000,open=1.1,high=1.2,low=1.,close=1.15,tick_volume=10)]
         result=demo.snapshot(self.sdk,self.policy,'EURUSD')
         self.assertEqual(result['status'],'ready')
         self.assertEqual(result['account']['login'],'12345')
+        self.assertEqual(result['account']['name'],'Standard')
         self.assertEqual(result['bars'][0]['volume'],10)
         self.assertEqual(result['quote']['time_msc'],self.tick.time_msc)
         self.assertEqual(result['policy']['max_quote_age_ms'],2000)

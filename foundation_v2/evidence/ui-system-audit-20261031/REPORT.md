@@ -317,3 +317,13 @@ Chưa xóa những mục dưới đây. Cột “khuyến nghị” là đề xu
 - Kiểm tra từng overlay ở light/dark, keyboard/Escape/focus return, empty/error/stale/unknown.
 - Chạy independent UI review và browser regression suite; candidate build chưa phải promotion.
 - Notification có thể giữ trong đợt này vì đã dùng provider chung; các copy/tone domain riêng cần review cùng product behavior.
+
+## 02/11 — MT5 account display name (scoped local rollout)
+
+- Owner selected the FX-style single line: `MT5 <login> - <demo|real|contest> - <account.name>`; no server/company in that label. `account.name` is a broker-supplied string, not an inferred Standard/Swing/Prop classification. Existing connection labels remain a compatibility fallback for snapshots without the new field.
+- Both history collection and chart snapshots now carry the optional SDK account name. The Rust summary already preserves the account JSON, so this slice needs no schema/API binary change. Lists, selectors and trade details share the existing formatter; chart setup now supplies the same account metadata.
+- Source verification: 15 Node account-model tests; 40 Python tests + 33 subtests; production build. Synthetic browser checks at 1440px/dark and 390px/light confirmed exact labels, one-line table cells, missing metadata and no API writes/page errors. These checks are not whole-product acceptance.
+- Owner explicitly approved local UI/adapter update and reconnection of active terminals. UI5180 now serves the candidate from canonical source HEAD `5aafa5a1` plus this slice. Its previous runtime UI was older; this promotion therefore includes the previously committed canonical frontend baseline. No API restart or migration. Old hashed assets remain available to existing tabs.
+- Runtime still lives under `projects/mt5-tradingview-backtester/foundation_v2`; only the two adapter metadata patches were applied there, preserving its unrelated working changes. Canonical source remains `projects/trader`.
+- The two existing demo connections were resynced through the supported connection API. Their requested access modes were preserved. The FTMO connection briefly displayed an error during reconnection, then recovered through the existing retry; both connections were observed connected with broker-supplied names (FTMO Free Trial and Standard). This does not establish long-duration stability. No OrderCheck/OrderSend or strategy execution.
+- Local private artifacts/rollback: `E:/BACKUP-TRADINGWORKSPACE/mt5-account-name-20261102/` (`browser.json`, `promotion.json`, `runtime-before/`, `accounts-live.jpg`). Credentials/full account identifiers are not copied into this receipt. The owner browser was refreshed to the new UI and retained.

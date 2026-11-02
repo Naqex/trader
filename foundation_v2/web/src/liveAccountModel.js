@@ -5,7 +5,7 @@ const known = value => typeof value === 'number' && Number.isFinite(value)
 
 export function mt5AccountName(connection) {
   const login = connection.account_login || connection.login_hint
-  const nickname = connection.name?.trim()
+  const nickname = connection.account?.name?.trim() || connection.name?.trim()
   return [login ? `MT5 ${login}` : 'MT5',
     ['demo','real','contest'].includes(connection.account_environment) ? connection.account_environment : null,
     nickname && nickname !== [login ? `MT5 ${login}` : 'MT5', connection.account_environment].filter(Boolean).join(' - ') && !/^(?:MetaTrader(?:\s*5)?|MT5)$/i.test(nickname) ? nickname : null,

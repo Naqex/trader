@@ -68,7 +68,7 @@ export default function LiveBrokerSnapshot({ workspace, catalog, onLabelsChanged
   const currency = account.currency || '', money = value => fmt(value, currency ? ` ${currency}` : '')
   const capital = liveAccountCapital(payload)
   const accountLogin = payload.account_login || payload.account_binding?.login || account.account_ref
-  const accountName = mt5AccountName({ ...payload.connections?.find(item=>item.id===payload.connection_id), account_login: accountLogin, account_environment: payload.account_environment || payload.account_binding?.account_environment })
+  const accountName = mt5AccountName({ ...payload.connections?.find(item=>item.id===payload.connection_id), account, account_login: accountLogin, account_environment: payload.account_environment || payload.account_binding?.account_environment })
   const time = value => typeof value === 'number' && Number.isFinite(value) ? displayDate(new Date(value), { timeStyle: 'medium', timeZone: timezone }) : '-'
   const side = value => value === 0 ? t('Buy') : value === 1 ? t('Sell') : '-'
   const realizedColumns = ['net_pnl', 'gross_pnl', 'fees', 'return_pct', 'realized_r']
