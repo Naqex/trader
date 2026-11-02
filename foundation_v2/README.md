@@ -116,6 +116,11 @@ Offline rule profiles can set `daily_anchor_basis` independently of
 loss limits in Python and native Rust. It is a synthetic conformance fixture,
 not a complete firm preset, market backtest or deployed runtime change.
 
+For Forex history, reuse the licensed QDM CLI and existing cache first; see
+[QDM setup, current local path and bounded export](../docs/quantdatamanager.md).
+The current adapter imports M1 OHLC, not verified tick Bid/Ask. A direct-source
+access challenge does not establish that QDM is unavailable.
+
 Creating a Prop session persists the session and attempt as `running` together;
 there is no second Start action in the chart. Opening an older `ready` attempt
 uses an idempotent Start intent without moving its virtual clock. Paused and

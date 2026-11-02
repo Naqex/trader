@@ -29,14 +29,82 @@ theo engine. Dataset QDM cũ vẫn hiển thị Dukascopy, không viết lại m
 3. Chuẩn bị Python/PostgreSQL theo README. `restart-offline-api.bat` nạp engine
    QDM mặc định. Không chạy restart khi đang có lượt tải; helper sẽ từ chối.
 
-Bộ cài đang dùng được chuyển từ `D:/ANNAM/Tools/QuantDataManager` vào đường dẫn
-runtime trên. Code adapter, test, launcher và hướng dẫn được quản lý bằng Git.
+Bộ cài trước đây được chuyển từ `D:/ANNAM/Tools/QuantDataManager` vào runtime
+của checkout cũ. Sau đổi tên repo, không mặc định bộ cài đã chuyển theo source;
+đối chiếu đường dẫn local bên dưới trước khi cài lại. Code adapter, test,
+launcher và hướng dẫn được quản lý bằng Git.
 `.runtime/` được ignore: executable, license, cookies, log và dữ liệu giá không
 được upload. Clone repo cần cài QDM riêng, không chứa bản phân phối của hãng.
 Xem [điều khoản license](https://strategyquant.com/wp-content/uploads/2025/11/SQ_License_and_Service_Terms.pdf).
 
 Có thể dùng bộ cài tại vị trí khác qua `--qdm-home <absolute-path>`. Adapter không
 đọc file license, không thay đổi activation, không cần Trading Tools API key.
+
+## Tiếp tục nghiên cứu: QDM trước, export cache trước
+
+Kiểm tra local **02/11/2026**: `qdmcli.exe -h` và `-symbol action=list` chạy
+thành công, phiên bản **125.2692**. Bộ cài đang ở:
+
+```text
+D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/.runtime/quantdatamanager
+```
+
+`projects/trader` là source hiện hành; `.runtime/quantdatamanager` ở source mới
+chưa tồn tại tại lần kiểm tra này. Không clone/copy bộ cài, license hoặc cache
+chỉ vì đổi tên repo. Đây là vị trí local đã quan sát, không phải đường dẫn
+bắt buộc cho máy khác. Launcher API Python nhận `--qdm-home` hoặc
+`TW_V2_QDM_HOME`; không tự restart runtime để sửa đường dẫn trong task nghiên cứu.
+
+Luồng ưu tiên: tìm bộ cài hiện có → kiểm CLI rảnh → đọc help/danh sách symbol
+→ export đúng khoảng ngày từ cache → kiểm CSV/hash/provenance. Chỉ xét tải mới
+khi cache thiếu. Website Dukascopy yêu cầu xác minh không đồng nghĩa QDM hỏng;
+không thêm downloader khác trước khi thử integration này.
+
+Ví dụ chạy từ root **repo Trader**, dùng wrapper hiện có; `-h`/list chỉ đọc
+metadata, export ghi CSV vào thư mục mới, không gọi update hoặc ghi database
+Workspace. Đóng GUI QDM trước. Không in nguyên startup log vì có thông tin máy.
+
+```powershell
+$env:TW_V2_QDM_HOME = 'D:/ANNAM/TradingWorkspace/projects/mt5-tradingview-backtester/foundation_v2/.runtime/quantdatamanager'
+@'
+import os, sys
+from pathlib import Path
+sys.path.insert(0, str(Path('foundation_v2').resolve()))
+from trading_workspace_v2.qdm_cli import QdmCli
+
+cli = QdmCli(os.environ['TW_V2_QDM_HOME'])
+print('QDM', cli.probe())
+print(cli.symbols())  # metadata only; inspect timeframe and cached dates first
+target = Path('foundation_v2/.runtime/qdm-export-20220103')
+target.mkdir(parents=True, exist_ok=False)  # do not overwrite an earlier export
+cli.run([
+    '-data', 'action=export', 'symbols=EURUSD_TW', 'timeframe=M1',
+    'timezone=UTC', 'datefrom=2022.01.03', 'dateto=2022.01.03',
+    f'outputdir={target.resolve().as_posix()}', 'format=Custom',
+    'cIncludeHeader=true', 'cHeader=Date,Time,Open,High,Low,Close,Volume',
+    'cFormat=[Date:yyyy.MM.dd],[Time:HH:mm:ss],[Open],[High],[Low],[Close],[Volume]',
+])
+print('Exported to', target.resolve())
+'@ | .\foundation_v2\.venv\Scripts\python.exe -X utf8 -
+```
+
+Lượt export thật 03/01/2022 UTC đã kiểm: **1.425 nến M1**, timestamp tăng dần,
+OHLC hợp lệ; giờ 12:00–13:00 có60 nến. So với lưới24 giờ thiếu15 phút: giữ
+`review`, không tự bù nến hoặc kết luận lỗi transport. Không tải full history,
+không đọc giá validation/holdout. Cache EURUSD có8.755.235 records M1 theo list;
+chưa có symbol TICK. Metadata ngày cuối cache không đồng nghĩa đã đọc outcome.
+
+Help bản cài hỗ trợ `datatype=TICK` và `timeframe=TICK`, nhưng adapter hiện tại
+chỉ nhập M1 `provider_default`. Chưa xác minh export tick giữ đủ millisecond,
+Bid/Ask gốc và thứ tự cùng timestamp; xuất MT5 với spread cố định không thay
+thế bằng chứng đó. Không chuyển M1 thành tick giả để công nhận Prop compliance.
+`action=update` có thể tải full history dù truyền ngày: chưa chạy tải tick mới
+trong lượt này, cần kiểm khả năng giới hạn phạm vi trước khi mở validation/holdout.
+
+Receipt local (CSV không đưa vào Git):
+`E:/BACKUP-TRADINGWORKSPACE/ai-engine-jobs/forex-prop-pilot-20261102/qdm-cache-export-20261102/receipt.json`.
+Contract và kết quả nghiên cứu tiếp tục nằm trong planning/receipt của workspace;
+docs này giữ cách vận hành, không là ledger đánh giá chiến lược.
 
 ## Luồng tải và cập nhật
 
@@ -98,14 +166,14 @@ Best Day vượt 50% ngăn kết luận pass, không phải breach khiến fail.
 Không lấy cùng một công thức tổng drawdown cho hai gói. Snapshot rule phải pin
 phiên bản/ngày kiểm tra; không tự đổi rule của attempt đang chạy nếu hãng cập nhật.
 
-Đây là cấu hình mục tiêu, **chưa là hai preset FTMO chạy trong evaluator**.
-Review code hiện tại thấy daily reset anchor đi theo basis balance/equity của
-LossRule, trong khi FTMO cần anchor balance và đánh giá equity riêng. Chưa có
-Best Day evaluator. Không đổi tên Generic practice thành FTMO hoặc coi chọn
-Broker Profile QDM là đã đánh giá đủ FTMO. Việc nối rule vào session/evaluator
-cần lát triển khai và kiểm chứng riêng; adapter QDM đã hoàn thành scope tải giá.
-Account Standard/Swing, size/currency và server cụ thể vẫn chưa chọn; chi phí
-và quy cách broker không được lấy mặc định để tuyên bố backtest FTMO chính xác.
+Đây là cấu hình mục tiêu, **chưa là hai preset FTMO đầy đủ chạy trên UI**.
+Source candidate `ac9d2d20` ngày02/11 đã tách `daily_anchor_basis` khỏi basis
+kiểm lỗ trong Python/native Rust; có fixture FTMO2-Step tổng hợp. Chưa rollout
+runtime và chưa có Best Day evaluator. Không đổi tên Generic practice thành
+FTMO hoặc coi chọn Broker Profile QDM là đã đánh giá đủ FTMO.
+Owner đã chọn **FTMO2-Step Swing/MT5** làm chuẩn nghiên cứu;10.000USD/USD là
+giả định offline của agent, chưa là quyết định mua. Server, chi phí và quy cách
+tài khoản mục tiêu chưa xác minh, không lấy mặc định QDM để chứng nhận backtest.
 
 Nút tải → job lưu trên đĩa → CLI quản lý symbol `<code>_TW` → QDM cập nhật lịch sử
 → xuất CSV UTC tự động → chuẩn hoá → kiểm tra → đăng ký dataset bất biến trong

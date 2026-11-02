@@ -26,6 +26,7 @@ flowchart LR
 |---|---|
 | Dựng frontend | Các lệnh bên dưới |
 | Chạy backend Rust/PostgreSQL | [Runtime guide](foundation_v2/docs/RUST-NATIVE-RUNTIME.md) |
+| Tải/xuất lịch sử Forex qua QDM CLI | [QDM: bộ cài, cache và lệnh export](docs/quantdatamanager.md) |
 | Cài hoặc khôi phục Advanced Charts | [Vendor setup](docs/advanced-charts.md) |
 | Sửa code, chạy test, tìm module | [Developer guide](docs/development/README.md) và [AGENTS.md](AGENTS.md) |
 | Tra cứu phần code đã nghỉ | [Legacy archive](archive/legacy/README.md) và [manifest](archive/legacy/MANIFEST.md) |
