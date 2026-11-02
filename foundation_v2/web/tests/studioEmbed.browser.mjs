@@ -118,6 +118,8 @@ try {
     unavailable = false
     await page.getByRole('button', { name: /Retry|Thử lại/, exact: true }).click()
     await paperclipFrame.getByRole('textbox', { name: 'Draft' }).waitFor()
+    assert.equal(await page.getByRole('button', { name: /^(Quy trình|Workflows)$/ }).count(), 0, 'Paperclip owns workflow UI')
+    assert.equal(await page.locator('.studio-workflows').count(), 0, 'no duplicate outer dialog')
     report.cases.push({ width, name: 'Paperclip preference/navigation retention and unavailable/Retry', result: 'pass' })
     await context.close()
   }

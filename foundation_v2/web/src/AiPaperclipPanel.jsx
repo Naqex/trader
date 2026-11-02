@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { PAPERCLIP_HEALTH_PATH, PAPERCLIP_ORIGIN } from '../paperclipBridge.mjs'
 import { AiPanelState } from './AiStudio.jsx'
-import StudioWorkflows from './StudioWorkflows.jsx'
 
 export default function AiPaperclipPanel({ active, language }) {
   const en = language === 'en', say = (vi, english) => en ? english : vi
@@ -9,8 +8,6 @@ export default function AiPaperclipPanel({ active, language }) {
   const [mounted, setMounted] = useState(false)
   const [loaded, setLoaded] = useState(false)
   const [state, setState] = useState('loading')
-  const [workflows, setWorkflows] = useState(false)
-  const [frameUrl, setFrameUrl] = useState(`${PAPERCLIP_ORIGIN}/issues`)
   const frame = useRef(null)
   useEffect(() => {
     const send = () => frame.current?.contentWindow?.postMessage({ type: 'naqex:preferences', version: 1, language: en ? 'en' : 'vi' }, PAPERCLIP_ORIGIN)
@@ -45,9 +42,8 @@ export default function AiPaperclipPanel({ active, language }) {
   }, [active, mounted, loaded, state, attempt])
   const retry = () => { setLoaded(false); setState('loading'); setAttempt(value => value + 1) }
   return <div className="ai-paperclip-panel" data-testid="paperclip-panel">
-    {state === 'ready' && <div className="studio-workflow-toolbar"><button type="button" className="wm-button" onClick={() => setWorkflows(true)}>{say('Quy trình', 'Workflows')}</button></div>}
     {mounted && <iframe ref={frame} key={attempt} className="ai-gateway-frame" hidden={state !== 'ready'}
-      title={say('Điều hành AI · Paperclip', 'AI operations · Paperclip')} src={frameUrl}
+      title={say('Điều hành AI · Paperclip', 'AI operations · Paperclip')} src={`${PAPERCLIP_ORIGIN}/issues`}
       referrerPolicy="no-referrer" allow="clipboard-write"
       sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads"
       onLoad={() => setLoaded(true)} onError={() => setState('unavailable')} />}
@@ -59,9 +55,5 @@ export default function AiPaperclipPanel({ active, language }) {
         <a className="wm-button" href={PAPERCLIP_ORIGIN} target="_blank" rel="noopener noreferrer">{say('Mở riêng', 'Open separately')}</a>
       </>}
     </AiPanelState>}
-    {active && workflows && <StudioWorkflows language={language} onClose={() => setWorkflows(false)} onNavigate={id => {
-      const url = `${PAPERCLIP_ORIGIN}/issues/${id}`
-      if (url !== frameUrl) { setLoaded(false); setFrameUrl(url) }
-    }} />}
   </div>
 }
