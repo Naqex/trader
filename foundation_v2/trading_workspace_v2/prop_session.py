@@ -87,6 +87,9 @@ class PropPhaseSpec(BaseModel):
     currency: str = Field(min_length=3, max_length=12)
     profit_target: ProfitTargetRule
     daily_loss: LossRule
+    # Some firms anchor the day to balance while measuring losses against equity.
+    # None preserves the basis used by existing frozen simulation profiles.
+    daily_anchor_basis: Literal["balance", "equity"] | None = None
     overall_drawdown: OverallDrawdownRule
     reset_timezone: str = Field(min_length=1, max_length=128)
     reset_local_time: time = time(0, 0)
@@ -823,8 +826,9 @@ def evaluate_prop_lifecycle_event(
     next_hwm = phase.high_water_mark if eod_trailing else max(phase.high_water_mark, pre_cost_hwm_value)
 
     daily_anchor = phase.daily_anchor
+    anchor_basis = phase_spec.daily_anchor_basis or phase_spec.daily_loss.basis
     if event.kind == "calendar_boundary" and phase_spec.reset_order == "reset_then_fees":
-        daily_anchor = pre_cost_balance if phase_spec.daily_loss.basis == "balance" else pre_cost_equity
+        daily_anchor = pre_cost_balance if anchor_basis == "balance" else pre_cost_equity
 
     evaluation_money = money_oracle(
         phase_spec,
@@ -856,7 +860,7 @@ def evaluate_prop_lifecycle_event(
     ):
         daily_anchor = (
             evaluation_money["balance"]
-            if phase_spec.daily_loss.basis == "balance"
+            if anchor_basis == "balance"
             else evaluation_money["equity"]
         )
         # Fees/swap were already applied before the reset. Re-evaluate the visible

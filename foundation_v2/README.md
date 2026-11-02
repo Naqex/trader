@@ -110,6 +110,12 @@ their persisted replay binding, with an exact legacy generated-name match only
 for unbound first attempts. Renaming those records preserves the identity.
 Old `view=testing`/`view=prop` setup links open the shared dialog.
 
+Offline rule profiles can set `daily_anchor_basis` independently of
+`daily_loss.basis`; absent/null preserves the existing loss basis. The sourced
+`tests/fixtures/ftmo-swing-offline.json` exercises a balance anchor with equity
+loss limits in Python and native Rust. It is a synthetic conformance fixture,
+not a complete firm preset, market backtest or deployed runtime change.
+
 Creating a Prop session persists the session and attempt as `running` together;
 there is no second Start action in the chart. Opening an older `ready` attempt
 uses an idempotent Start intent without moving its virtual clock. Paused and

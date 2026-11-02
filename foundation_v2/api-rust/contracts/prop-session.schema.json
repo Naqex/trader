@@ -156,6 +156,22 @@
         "daily_loss": {
           "$ref": "#/$defs/LossRule"
         },
+        "daily_anchor_basis": {
+          "anyOf": [
+            {
+              "enum": [
+                "balance",
+                "equity"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Daily Anchor Basis"
+        },
         "overall_drawdown": {
           "$ref": "#/$defs/OverallDrawdownRule"
         },

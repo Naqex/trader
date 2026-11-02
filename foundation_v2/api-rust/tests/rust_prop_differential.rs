@@ -1,6 +1,66 @@
 use serde_json::{Value, json};
 use trading_workspace_api::prop_core;
 
+#[test]
+fn ftmo_daily_balance_anchor_is_independent_of_equity() {
+    let fixture: Value =
+        serde_json::from_str(include_str!("../../tests/fixtures/ftmo-swing-offline.json")).unwrap();
+    for order in ["fees_then_reset", "reset_then_fees"] {
+        for floating in ["-100", "100"] {
+            let mut p = fixture.clone();
+            p["session"]["profile"]["phases"][0]["reset_order"] = json!(order);
+            p["event"]["floating_pl"] = json!(floating);
+            p["event"]["fees"] = json!("2");
+            p["event"]["swap"] = json!("3");
+            let result = prop_core::evaluate_prop_lifecycle_event(
+                &p["session"],
+                &p["attempt"],
+                &p["phase"],
+                &p["event"],
+                &p["resume_state"],
+            )
+            .unwrap();
+            let (anchor, floor) = if order == "fees_then_reset" {
+                ("10195", "9695")
+            } else {
+                ("10200", "9700")
+            };
+            assert_eq!(result["phase"]["daily_anchor"], anchor);
+            assert_eq!(result["phase"]["balance"], "10195");
+            assert_eq!(result["objectives"]["money"]["daily_loss"]["floor"], floor);
+        }
+    }
+    let mut p = fixture.clone();
+    p["session"]["profile"]["phases"][0]
+        .as_object_mut()
+        .unwrap()
+        .remove("daily_anchor_basis");
+    let legacy = prop_core::evaluate_prop_lifecycle_event(
+        &p["session"],
+        &p["attempt"],
+        &p["phase"],
+        &p["event"],
+        &p["resume_state"],
+    )
+    .unwrap();
+    assert_eq!(legacy["phase"]["daily_anchor"], "10100");
+    let mut p = fixture;
+    p["event"]["floating_pl"] = json!("-600");
+    let breached = prop_core::evaluate_prop_lifecycle_event(
+        &p["session"],
+        &p["attempt"],
+        &p["phase"],
+        &p["event"],
+        &p["resume_state"],
+    )
+    .unwrap();
+    assert_eq!(
+        breached["objectives"]["money"]["daily_loss"]["floor"],
+        "9700"
+    );
+    assert_eq!(breached["attempt"]["status"], "failed_breach");
+}
+
 // Money persisted in objectives is compared exactly below. Other model projections
 // accept equivalent Decimal scales and timezone-aware datetime spellings.
 fn canonical(v: &Value) -> Value {

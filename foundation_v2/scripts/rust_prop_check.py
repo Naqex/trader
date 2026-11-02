@@ -26,6 +26,7 @@ test=(API/'tests/rust_prop_differential.rs').read_text(encoding='utf-8')
 fixture=ROOT/'foundation_v2/evidence/rust-native-20261017/prop/fixtures.json'
 test=test.replace('../../evidence/rust-native-20261017/prop/fixtures.json',fixture.as_posix())
 test=test.replace('../../evidence/rust-native-20261017/prop/decimal-scale-fixtures.json',(fixture.parent/'decimal-scale-fixtures.json').as_posix())
+test=test.replace('../../tests/fixtures/ftmo-swing-offline.json',(ROOT/'foundation_v2/tests/fixtures/ftmo-swing-offline.json').as_posix())
 (work/'tests/rust_prop_differential.rs').write_text(test,encoding='utf-8')
 print(f'Pure harness: {work}',flush=True)
 raise SystemExit(subprocess.run(['cargo','test','--offline','--manifest-path',str(work/'Cargo.toml'),'--test','rust_prop_differential','--','--nocapture'],env=os.environ).returncode)
