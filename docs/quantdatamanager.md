@@ -297,3 +297,26 @@ CLI là giao diện chính thức cho script/external program:
 [Introduction](https://strategyquant.com/doc/cli-command-line/introduction-to-cli/),
 [Data commands](https://strategyquant.com/doc/cli-command-line/data-manage-data/).
 Tài liệu dùng `sqcli.exe`; với QDM dùng `qdmcli.exe` và kiểm tra `-h` của bản cài.
+
+## Offline H4 development probe — 02/11/2026
+
+Cache tick EURUSD đã có; không chạy update/tải lại chỉ để lặp probe. Đọc
+`planning/research/FOREX-PROP-PILOT-20261102.md` mục9 và receipt AI ở workspace
+trước mở thêm phạm vi. Owner đã cho phép mọi ngày, nhưng validation/holdout
+vẫn chưa consumed vì chưa cần. Không sửa manifest để gọi dữ liệu đã xem là mới.
+
+Runner `foundation_v2/scripts/forex_h4_pilot.py` pin đúng hai hash CSV đã export,
+kiểm format/order/coverage trước tính P/L, warmup20–31/12/2021 và thử03–14/01/2022.
+Chạy từ repo root bằng Python venv hiện có, với `--input-dir` trỏ folder
+`h4-inputs-20261102` trong local job store, `--output-dir` là folder mới chưa có.
+Job đã hoàn tất tại
+`E:/BACKUP-TRADINGWORKSPACE/ai-engine-jobs/forex-prop-pilot-20261102/h4-development-20261102/`;
+không chạy lại nếu chỉ cần đọc kết quả. `manifest.json` pin code/input trước
+outcome; `quality.json`, `results.json`, decisions và JSON checkpoints giữ
+bằng chứng. `receipt.json` giữ PID/stage; stage completed không cần resume.
+Job dài chạy detached có stdout/stderr và kiểm PID/command trước tác động.
+
+Đây là hai declared cost/swap scenarios của Python offline, chưa broker-spec
+verified hoặc native/UI rollout. Runner không gọi AI/provider/MT5. Hết mẫu
+không fake close; hiện cả hai scenarios đã flat tự nhiên. Không suy ba lệnh
+trong hai tuần thành hiệu quả chiến lược hoặc khả năng vượt challenge.
