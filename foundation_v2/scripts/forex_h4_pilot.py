@@ -8,6 +8,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
@@ -37,7 +38,15 @@ SCENARIOS = [('reference', Decimal('0'), Decimal('10')),
 def write_json(path, value):
     temporary = path.with_suffix(path.suffix + '.tmp')
     temporary.write_text(json.dumps(value, indent=2, ensure_ascii=False, default=str), encoding='utf-8')
-    temporary.replace(path)
+    # Windows readers without FILE_SHARE_DELETE briefly block atomic replacement.
+    for attempt in range(21):
+        try:
+            temporary.replace(path)
+            return
+        except PermissionError as error:
+            if getattr(error, 'winerror', None) not in (5, 32) or attempt == 20:
+                raise
+            time.sleep(0.05)
 
 
 def input_contract(input_dir, manifest_path=None):

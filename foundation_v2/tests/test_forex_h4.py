@@ -16,7 +16,7 @@ from trading_workspace_v2.forex_h4 import (
     Candle, FixedH4Candidate, H4Builder, read_qdm_ticks, size_for_stop,
 )
 from trading_workspace_v2.replay_tick_execution import BrokerReplayTick
-from forex_h4_pilot import START, financing_calendar, run_scenario, observed_account_spec, input_contract
+from forex_h4_pilot import START, financing_calendar, run_scenario, observed_account_spec, input_contract, write_json
 
 
 def candle(index, close='1.1000', high='1.1010', low='1.0990'):
@@ -96,6 +96,28 @@ class H4Tests(unittest.TestCase):
 
 
 class AccountScenarioTests(unittest.TestCase):
+    def test_windows_sharing_lock_retries_but_persistent_failure_is_not_hidden(self):
+        locked = PermissionError('reader blocks replacement')
+        locked.winerror = 5
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'receipt.json'
+            write_json(path, {'stage': 'old'})
+            replace = Path.replace
+            attempts = []
+            def transient(source, target):
+                attempts.append(source)
+                if len(attempts) == 1:
+                    raise locked
+                return replace(source, target)
+            with patch.object(Path, 'replace', transient), patch('forex_h4_pilot.time.sleep'):
+                write_json(path, {'stage': 'new'})
+            self.assertEqual(json.loads(path.read_text()), {'stage': 'new'})
+            with patch.object(Path, 'replace', side_effect=locked) as persist, \
+                    patch('forex_h4_pilot.time.sleep'), self.assertRaises(PermissionError):
+                write_json(path, {'stage': 'must-not-overwrite'})
+            self.assertEqual(persist.call_count, 21)
+            self.assertEqual(json.loads(path.read_text()), {'stage': 'new'})
+
     def spec(self):
         return dict(schema='ftmo-current-mt5-spec-v1',
             qualification='current_observation_not_historical_2022',
