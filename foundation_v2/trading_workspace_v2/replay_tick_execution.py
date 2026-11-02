@@ -169,6 +169,10 @@ def validate_tick_execution_event(
                 from .forex_pilot_risk import validate_pilot_close
                 validate_pilot_close(snapshot, tick, closed, d.get("pilot_trigger"))
                 reason = "pilot_risk_stop"
+            elif d.get("reason") == "pilot_strategy_exit":
+                from .forex_pilot_risk import validate_pilot_exit
+                validate_pilot_exit(snapshot, tick, closed, event)
+                reason = "pilot_strategy_exit"
             else:
                 reason = "stop_loss" if stop_hit else "take_profit" if target_hit else None
             if (closed.side != side or closed.position_id != d.get("position_id")
@@ -245,7 +249,7 @@ def advance_tick_execution(
         events.append(event)
         ledger.append(event.model_dump(mode="json"))
 
-    def close_position(tick, reason, *, trigger=None):
+    def close_position(tick, reason, *, trigger=None, exit_request=None):
         nonlocal position, balance
         closed = position
         realized, cost = _liquidation_pnl(closed, exit_bid=tick.bid, exit_ask=tick.ask,
@@ -258,7 +262,9 @@ def advance_tick_execution(
             "fill_price": str(tick.bid if closed.side == "BUY" else tick.ask),
             "net_pnl": str(realized), "cost_model_version": cost["cost_model_version"],
             "cost_breakdown": cost, "closed_position": closed.model_dump(mode="json"),
-            **({"pilot_trigger": trigger.model_dump(mode="json")} if trigger else {})})
+            **({"pilot_trigger": trigger.model_dump(mode="json")} if trigger else {}),
+            **({"pilot_exit": exit_request.model_dump(mode="json"),
+                "command_operation_id": exit_request.operation_id} if exit_request else {})})
 
     for raw in ticks:
         tick = raw if isinstance(raw, BrokerReplayTick) else BrokerReplayTick.model_validate(raw)
@@ -310,6 +316,9 @@ def advance_tick_execution(
             if stop_hit or target_hit:
                 close_position(tick, "stop_loss" if stop_hit else "take_profit")
         if _pilot_guard is not None:
+            exit_request = _pilot_guard.strategy_exit(tick, position)
+            if exit_request is not None:
+                close_position(tick, "pilot_strategy_exit", exit_request=exit_request)
             _pilot_guard.finish_quote(tick, balance, floating(tick), position)
     if last_tick is None:
         raise ReplayExecutionError("tick coverage is empty; OHLC fallback is disabled")

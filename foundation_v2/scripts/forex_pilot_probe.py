@@ -16,9 +16,10 @@ V2 = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(V2))
 from trading_workspace_v2.forex_pilot_risk import (
     ForexPilotSnapshot, advance_forex_pilot, initialize_forex_pilot, queue_forex_pilot_order,
+    queue_forex_pilot_exit,
 )
 from trading_workspace_v2.replay_tick_execution import (
-    BrokerReplayTick, close_tick_order, initialize_tick_execution,
+    BrokerReplayTick, initialize_tick_execution,
 )
 
 REGISTERED_HASH = 'd994e395d53b4e8c01e18e10ec65f0b5d394a17a0020d025f96de8cd6f72ba49'
@@ -88,31 +89,30 @@ def run_case(before, ticks, *, side, slippage):
     pilot = queue_forex_pilot_order(pilot, operation_id='entry', side=side,
                                     quantity=QUANTITY, stop_loss=stop, take_profit=None)
     for minute, group in groupby(ticks, key=lambda t: t.time_msc // 60000):
+        if minute == END // 60000 - 1 and pilot.execution.position is not None:
+            pilot = queue_forex_pilot_exit(pilot, operation_id='scheduled-exit-1259')
         quotes = list(group)
         mids = [(t.bid + t.ask) / 2 for t in quotes]
         bar = dict(timestamp=minute * 60, open=mids[0], high=max(mids), low=min(mids), close=mids[-1])
         pilot = advance_forex_pilot(pilot, ticks=quotes, bar=bar,
                                     cursor_index=pilot.execution.cursor_index + 1)
-    terminal_valuation = pilot.execution.position is not None
-    if terminal_valuation:
-        if pilot.risk.close_pending is not None:
-            raise ValueError('pending risk liquidation needs a later quote; cannot force terminal valuation')
-        # This is terminal closeable-value accounting, not an executable future fill.
-        closed = close_tick_order(pilot.execution, target_id=pilot.execution.position.position_id,
-            operation_id='terminal-valuation', mid_close=(ticks[-1].bid + ticks[-1].ask) / 2,
-            virtual_time_utc=END // 1000)
-        pilot = ForexPilotSnapshot(execution=closed, limits=pilot.limits, risk=pilot.risk)
+    if pilot.execution.position is not None or pilot.risk.exit_pending is not None:
+        raise ValueError('no executable exit quote inside registered window; no stale terminal valuation')
     pilot = ForexPilotSnapshot.model_validate_json(pilot.model_dump_json())
     ledger = pilot.execution.ledger
     entries = [e for e in ledger if e['kind'] == 'market_fill']
-    exits = [e for e in ledger if e['kind'] in {'manual_close', 'protective_fill'}]
+    exits = [e for e in ledger if e['kind'] == 'protective_fill']
     if len(entries) != 1 or len(exits) != 1 or pilot.risk.rejections:
-        raise ValueError('probe requires exactly one admitted entry and one closing valuation/fill')
+        raise ValueError('probe requires exactly one admitted entry and one closing fill')
     entry, exit_event = entries[0], exits[0]
     entry_tick = next(t for t in ticks if t.sequence == entry['details']['sequence'])
     exit_tick = next(t for t in ticks if t.sequence == exit_event['details']['sequence'])
     if not before.time_msc < START <= entry_tick.time_msc <= exit_tick.time_msc < END:
         raise ValueError('probe causal timestamps or intraday boundary violated')
+    if exit_event['details']['reason'] == 'pilot_strategy_exit':
+        expected_exit = next((t for t in ticks if t.time_msc > END - 60000), None)
+        if exit_tick != expected_exit:
+            raise ValueError('scheduled exit did not use the first quote strictly after its decision')
     entry_price = entry_tick.ask if side == 'BUY' else entry_tick.bid
     exit_price = exit_tick.bid if side == 'BUY' else exit_tick.ask
     direction = Decimal(1) if side == 'BUY' else Decimal(-1)
@@ -138,7 +138,9 @@ def run_case(before, ticks, *, side, slippage):
         entry_time_msc=entry_tick.time_msc, exit_quote_time_msc=exit_tick.time_msc,
         entry_price=str(entry_price), exit_price=str(exit_price), net_account=str(expected),
         balance=str(pilot.execution.balance), tick_count=len(ticks),
-        terminal_close_is_valuation_only=terminal_valuation, independent_oracle='passed',
+        terminal_close_is_valuation_only=False, exit_reason=exit_event['details']['reason'],
+        exit_decision_time_msc=(exit_event['details'].get('pilot_exit') or {}).get('decision_time_msc'),
+        independent_oracle='passed',
         checkpoint=pilot.model_dump(mode='json'))
 
 
@@ -149,10 +151,12 @@ def main():
     args = parser.parse_args()
     before, ticks = load_ticks(args.csv)
     # Register inputs and declared assumptions before calculating any P/L.
-    manifest = dict(schema_version='forex-accounting-probe-v1', purpose='accounting_only',
+    manifest = dict(schema_version='forex-accounting-probe-v2', purpose='causal_accounting_only',
         source_csv=args.csv.resolve().as_posix(), source_sha256=REGISTERED_HASH,
         source='Dukascopy via QDM CLI; not target-broker quotes',
         window_start_msc=START, window_end_exclusive_msc=END,
+        exit_decision_time_msc=END - 60000,
+        exit_model='first supplied quote strictly after 12:59 UTC; existing protection/risk wins',
         reference=before.model_dump(mode='json'), tick_count=len(ticks),
         tick_sha256=canonical_hash([t.model_dump(mode='json') for t in ticks]),
         sequence='original CSV data row ordinal; no sorting or deduplication',
@@ -167,7 +171,7 @@ def main():
         assumptions=['current published commission reference applied to 2022 price scenario',
             'lot min/step 0.01 assumed; price step observed; account limits/rounding unverified',
             'fixed research leverage 30; no broker stop-out/tiered margin certification',
-            'last-quote terminal valuation, not guaranteed executable closing fill',
+            'next-quote simulated fill; no broker latency, depth or execution guarantee',
             'minute presence does not establish continuous tick coverage'],
         sources=['https://ftmo.com/en/symbols/',
                  'https://ftmo.com/en/blog/trading-updates/trading-update-25-sep-2025/',

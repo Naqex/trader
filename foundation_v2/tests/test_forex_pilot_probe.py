@@ -20,7 +20,7 @@ def quotes():
 
 
 class ForexPilotProbeTests(unittest.TestCase):
-    def test_both_sides_reconcile_terminal_valuation_and_cost_sensitivity(self):
+    def test_both_sides_reconcile_causal_exit_and_cost_sensitivity(self):
         before, ticks = quotes()
         for side in ('BUY', 'SELL'):
             with self.subTest(side=side):
@@ -28,10 +28,12 @@ class ForexPilotProbeTests(unittest.TestCase):
                 stress = run_case(before, ticks, side=side, slippage=Decimal('0.00002'))
                 self.assertEqual(baseline['net_account'], '-0.25')
                 self.assertEqual(stress['net_account'], '-0.29')
-                self.assertTrue(baseline['terminal_close_is_valuation_only'])
+                self.assertFalse(baseline['terminal_close_is_valuation_only'])
+                self.assertEqual(baseline['exit_reason'], 'pilot_strategy_exit')
+                self.assertEqual(baseline['exit_quote_time_msc'], START + 59 * 60000 + 1)
                 self.assertEqual(baseline['checkpoint']['risk']['observed_ticks'], 60)
 
-    def test_observed_gap_stop_fills_once_instead_of_terminal_valuation(self):
+    def test_observed_gap_stop_fills_once_instead_of_scheduled_exit(self):
         before, ticks = quotes()
         ticks[30] = ticks[30].model_copy(update={'bid': Decimal('1.09850'), 'ask': Decimal('1.09870')})
         result = run_case(before, ticks, side='BUY', slippage=Decimal(0))
@@ -40,6 +42,12 @@ class ForexPilotProbeTests(unittest.TestCase):
         exits = [e for e in result['checkpoint']['execution']['ledger'] if e['kind'] == 'protective_fill']
         self.assertEqual(len(exits), 1)
         self.assertEqual(exits[0]['details']['reason'], 'stop_loss')
+
+    def test_no_quote_after_scheduled_decision_cannot_fake_a_close(self):
+        before, ticks = quotes()
+        ticks[-1] = ticks[-1].model_copy(update={'time_msc': START + 59 * 60000})
+        with self.assertRaisesRegex(ValueError, 'no executable exit quote'):
+            run_case(before, ticks, side='BUY', slippage=Decimal(0))
 
     def test_parser_preserves_milliseconds_source_ordinal_and_rejects_corruption(self):
         before, ticks = quotes()

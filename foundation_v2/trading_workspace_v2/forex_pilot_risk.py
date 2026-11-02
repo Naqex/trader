@@ -55,6 +55,30 @@ class PilotOrderRejection(BaseModel):
     estimated_loss: Decimal | None = None
 
 
+class PilotExitRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    operation_id: str = Field(min_length=1, max_length=128)
+    position_id: str = Field(min_length=1, max_length=128)
+    decision_time_msc: int = Field(ge=0, strict=True)
+    submitted_cursor_index: int = Field(ge=1, strict=True)
+    observed_tick: BrokerReplayTick
+
+    @model_validator(mode="after")
+    def decision_follows_observed_quote(self):
+        if not self.operation_id.strip() or self.observed_tick.time_msc >= self.decision_time_msc:
+            raise ValueError("pilot exit requires an identifier and a closed-bar decision after its quote")
+        return self
+
+
+def _validate_exit_source(execution, request):
+    source = next((raw for raw in reversed(execution.ledger)
+        if raw["cursor_index"] == request.submitted_cursor_index and raw["kind"] == "price_mark"), None)
+    if (source is None or source["virtual_time_utc"] * 1000 != request.decision_time_msc
+            or (source["details"].get("open_position") or {}).get("position_id") != request.position_id
+            or BrokerReplayTick.model_validate(source["details"]) != request.observed_tick):
+        raise ReplayExecutionError("pilot exit must retain its canonical closed-bar decision and position")
+
+
 class PilotRiskState(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, allow_inf_nan=False)
     day: date
@@ -63,6 +87,7 @@ class PilotRiskState(BaseModel):
     daily_stopped: bool = False
     overall_stopped: bool = False
     close_pending: PilotStopTrigger | None = None
+    exit_pending: PilotExitRequest | None = None
     last_tick: BrokerReplayTick | None = None
     observed_ticks: int = Field(default=0, ge=0, strict=True)
     minimum_observed_equity: Decimal
@@ -114,6 +139,12 @@ class ForexPilotSnapshot(BaseModel):
             raise ValueError("pilot pending close must retain the last quote's stop evidence")
         if self.risk.minimum_observed_equity > e.equity:
             raise ValueError("pilot minimum equity cannot exceed its current equity")
+        if self.risk.exit_pending:
+            request = self.risk.exit_pending
+            if (e.position is None or e.position.position_id != request.position_id
+                    or e.pending_market_order is not None):
+                raise ValueError("pilot strategy exit must refer to its open position")
+            _validate_exit_source(e, request)
         return self
 
 
@@ -142,6 +173,27 @@ def queue_forex_pilot_order(snapshot: ForexPilotSnapshot, **order) -> ForexPilot
         raise ReplayExecutionError("pilot operation_id was already rejected")
     execution = queue_market_order(snapshot.execution, **order)
     return snapshot.model_copy(update={"execution": execution})
+
+
+def queue_forex_pilot_exit(snapshot: ForexPilotSnapshot, *, operation_id: str) -> ForexPilotSnapshot:
+    execution, risk = snapshot.execution, snapshot.risk
+    if execution.position is None or execution.pending_market_order is not None or risk.last_tick is None:
+        raise ReplayExecutionError("pilot exit requires an open position and an observed closed bar")
+    if risk.exit_pending is not None:
+        raise ReplayExecutionError("pilot strategy exit is already queued")
+    if any(operation_id in (raw["details"].get("operation_id"),
+                            raw["details"].get("command_operation_id")) for raw in execution.ledger):
+        raise ReplayExecutionError("pilot exit operation_id was already consumed")
+    if any(rejected.operation_id == operation_id for rejected in risk.rejections):
+        raise ReplayExecutionError("pilot exit operation_id was already rejected")
+    if not execution.ledger or execution.ledger[-1]["kind"] != "price_mark":
+        raise ReplayExecutionError("pilot exit requires a closed-bar checkpoint")
+    request = PilotExitRequest(operation_id=operation_id, position_id=execution.position.position_id,
+        decision_time_msc=execution.ledger[-1]["virtual_time_utc"] * 1000,
+        submitted_cursor_index=execution.cursor_index, observed_tick=risk.last_tick)
+    # A risk stop blocks new exposure, never an owner's or strategy's request to exit.
+    return ForexPilotSnapshot(execution=execution, limits=snapshot.limits,
+                              risk=risk.model_copy(update={"exit_pending": request}))
 
 
 class _PilotGuard:
@@ -220,7 +272,14 @@ class _PilotGuard:
         self._observe(tick, balance, floating, position)
         self.state = self.state.model_copy(update={"last_tick": tick,
             "observed_ticks": self.state.observed_ticks + 1,
-            "close_pending": self.state.close_pending if position else None})
+            "close_pending": self.state.close_pending if position else None,
+            "exit_pending": self.state.exit_pending if position else None})
+
+    def strategy_exit(self, tick, position):
+        request = self.state.exit_pending
+        if request is not None and position is not None and tick.time_msc > request.decision_time_msc:
+            return request
+        return None
 
 
 def advance_forex_pilot(snapshot: ForexPilotSnapshot, *, ticks, bar: dict,
@@ -242,3 +301,12 @@ def validate_pilot_close(snapshot, tick, closed, raw_trigger):
         cost_model=CostModel.from_mapping(snapshot.cost_model))
     if trigger.balance + floating != trigger.equity:
         raise ReplayExecutionError("pilot trigger equity differs from its frozen quote and costs")
+
+
+def validate_pilot_exit(snapshot, tick, closed, event):
+    request = PilotExitRequest.model_validate(event.details.get("pilot_exit"))
+    _validate_exit_source(snapshot, request)
+    if (tick.time_msc <= request.decision_time_msc or request.position_id != closed.position_id
+            or request.submitted_cursor_index >= event.cursor_index
+            or event.details.get("command_operation_id") != request.operation_id):
+        raise ReplayExecutionError("pilot strategy exit must fill strictly after its closed-bar decision")

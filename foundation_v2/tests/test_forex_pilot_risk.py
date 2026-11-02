@@ -11,7 +11,7 @@ from zoneinfo import ZoneInfo
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from trading_workspace_v2.forex_pilot_risk import (
     ForexPilotSnapshot, PilotRiskLimits, PilotRiskState, advance_forex_pilot,
-    initialize_forex_pilot, queue_forex_pilot_order,
+    initialize_forex_pilot, queue_forex_pilot_order, queue_forex_pilot_exit,
 )
 from trading_workspace_v2.replay_execution import ReplayExecutionError, queue_market_order
 from trading_workspace_v2.replay_tick_execution import (
@@ -77,6 +77,97 @@ def carried(*, side="BUY", at=None):
 
 
 class ForexPilotRiskTests(unittest.TestCase):
+    def test_strategy_exit_uses_first_quote_strictly_after_decision_for_both_sides(self):
+        for side, stop, bid, ask in (("BUY", "1.09", "1.09900", "1.09920"),
+                                    ("SELL", "1.11", "1.10100", "1.10120")):
+            with self.subTest(side=side):
+                initial = initialize_forex_pilot(execution(commission="0.025"), start_time_msc=ms())
+                opened = advance(queue(initial, side=side, quantity="0.01", stop=stop), [tick()])
+                requested = queue_forex_pilot_exit(opened, operation_id="strategy-exit")
+                decision = ms() + 60000
+                result = advance(requested, [tick(when=decision),
+                    tick(bid, ask, when=decision, sequence=1),
+                    tick(bid, ask, when=decision + 1)])
+                closes = [e for e in result.execution.ledger if e["kind"] == "protective_fill"]
+                self.assertEqual(len(closes), 1)
+                self.assertEqual(closes[0]["details"]["time_msc"], decision + 1)
+                self.assertEqual(closes[0]["details"]["reason"], "pilot_strategy_exit")
+                self.assertEqual(closes[0]["details"]["command_operation_id"], "strategy-exit")
+                self.assertEqual(result.execution.balance, Decimal("9998.75"))
+                self.assertIsNone(result.risk.exit_pending)
+                ForexPilotSnapshot.model_validate_json(result.model_dump_json())
+                with self.assertRaisesRegex(ReplayExecutionError, "already consumed"):
+                    queue(result, operation="strategy-exit")
+
+    def test_exit_waits_for_later_quote_and_survives_json_restart(self):
+        opened = advance(queue(initialize_forex_pilot(execution(), start_time_msc=ms()),
+                               quantity="0.01", stop="1.09"), [tick()])
+        requested = queue_forex_pilot_exit(opened, operation_id="exit")
+        boundary_only = advance(requested, [tick(when=ms() + 60000)])
+        self.assertIsNotNone(boundary_only.execution.position)
+        self.assertEqual(boundary_only.risk.exit_pending, requested.risk.exit_pending)
+        restored = ForexPilotSnapshot.model_validate_json(boundary_only.model_dump_json())
+        result = advance(restored, [tick("1.09800", "1.09820", when=ms() + 120000)])
+        self.assertIsNone(result.execution.position)
+        self.assertEqual(result.execution.balance, Decimal("9997.80"))
+
+    def test_existing_protection_wins_and_clears_queued_strategy_exit(self):
+        for side, stop, bid, ask in (("BUY", "1.09900", "1.09800", "1.09820"),
+                                    ("SELL", "1.10100", "1.10200", "1.10220")):
+            with self.subTest(side=side):
+                opened = advance(queue(initialize_forex_pilot(execution(), start_time_msc=ms()),
+                    side=side, quantity="0.01", stop=stop), [tick()])
+                requested = queue_forex_pilot_exit(opened, operation_id="exit")
+                result = advance(requested, [tick(bid, ask, when=ms() + 60001)])
+                closes = [e for e in result.execution.ledger if e["kind"] == "protective_fill"]
+                self.assertEqual(len(closes), 1)
+                self.assertEqual(closes[0]["details"]["reason"], "stop_loss")
+                self.assertIsNone(result.risk.exit_pending)
+
+    def test_risk_liquidation_wins_and_preserves_latch(self):
+        pending = advance(carried(), [tick("1.09920", "1.09940", when=ms() + 60000)])
+        self.assertTrue(pending.risk.daily_stopped)
+        requested = queue_forex_pilot_exit(pending, operation_id="exit-while-halted")
+        result = advance(requested, [tick("1.09800", "1.09820", when=ms() + 120001)])
+        closes = [e for e in result.execution.ledger if e["kind"] == "protective_fill"]
+        self.assertEqual(len(closes), 1)
+        self.assertEqual(closes[0]["details"]["reason"], "pilot_risk_stop")
+        self.assertTrue(result.risk.daily_stopped)
+        self.assertIsNone(result.risk.exit_pending)
+        self.assertIsNone(result.risk.close_pending)
+
+    def test_exit_rejects_missing_position_duplicate_and_altered_decision(self):
+        initial = initialize_forex_pilot(execution(), start_time_msc=ms())
+        with self.assertRaisesRegex(ReplayExecutionError, "open position"):
+            queue_forex_pilot_exit(initial, operation_id="exit")
+        opened = advance(queue(initial, quantity="0.01", stop="1.09"), [tick()])
+        for operation in ("entry", " "):
+            with self.subTest(operation=operation), self.assertRaises(ValueError):
+                queue_forex_pilot_exit(opened, operation_id=operation)
+        requested = queue_forex_pilot_exit(opened, operation_id="exit")
+        with self.assertRaisesRegex(ReplayExecutionError, "already queued"):
+            queue_forex_pilot_exit(requested, operation_id="another-exit")
+        raw = requested.model_dump(mode="json")
+        raw["risk"]["exit_pending"]["decision_time_msc"] += 1
+        with self.assertRaisesRegex(ValueError, "canonical closed-bar"):
+            ForexPilotSnapshot.model_validate(raw)
+        result = advance(requested, [tick(when=ms() + 60001)])
+        raw = result.execution.model_dump(mode="json")
+        close = next(e for e in raw["ledger"] if e["details"].get("reason") == "pilot_strategy_exit")
+        close["details"]["pilot_exit"]["decision_time_msc"] += 1
+        with self.assertRaisesRegex(ValueError, "canonical closed-bar"):
+            ReplayTickExecutionSnapshot.model_validate(raw)
+
+    def test_invalid_window_keeps_strategy_exit_queued_without_partial_fill(self):
+        opened = advance(queue(initialize_forex_pilot(execution(), start_time_msc=ms()),
+                               quantity="0.01", stop="1.09"), [tick()])
+        requested = queue_forex_pilot_exit(opened, operation_id="exit")
+        before = requested.model_dump(mode="json")
+        with self.assertRaises(ValueError):
+            advance(requested, [tick(when=ms() + 60001),
+                tick("1.10020", "1.10000", when=ms() + 60002)])
+        self.assertEqual(requested.model_dump(mode="json"), before)
+
     def test_limits_and_account_currency_fail_closed(self):
         for values in ({"per_trade_loss": "NaN"}, {"daily_loss": "10"}, {"overall_loss": "0"}):
             with self.subTest(values=values), self.assertRaises(ValueError):
