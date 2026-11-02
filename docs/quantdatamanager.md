@@ -98,8 +98,33 @@ Help bản cài hỗ trợ `datatype=TICK` và `timeframe=TICK`, nhưng adapter 
 chỉ nhập M1 `provider_default`. Chưa xác minh export tick giữ đủ millisecond,
 Bid/Ask gốc và thứ tự cùng timestamp; xuất MT5 với spread cố định không thay
 thế bằng chứng đó. Không chuyển M1 thành tick giả để công nhận Prop compliance.
-`action=update` có thể tải full history dù truyền ngày: chưa chạy tải tick mới
-trong lượt này, cần kiểm khả năng giới hạn phạm vi trước khi mở validation/holdout.
+`action=update` có thể tải full history dù truyền ngày. Lần export M1 đầu tiên
+chưa tải tick; quyền tải cache bổ sung bên dưới không mở quyền phân tích holdout.
+
+Bổ sung02/11: `-h` bản125.2692 không liệt kê giới hạn ngày cho `-symbol add`;
+help `-data` dùng ngày trong ví dụ export, chưa chứng minh update có giới hạn.
+Owner đã cho phép tải toàn bộ tick EURUSD vào cache để reuse. Đã tạo symbol
+`EURUSD_TICK_TW` riêng, giữ nguyên `EURUSD_TW` M1, và khởi chạy qua wrapper:
+
+```text
+-symbol action=add symbols=EURUSD datasource=dukascopy datatype=TICK postfix=_TICK_TW
+-data action=update symbols=EURUSD_TICK_TW
+```
+
+Các lệnh trên là hai invocation tuần tự, không chạy QDM GUI hoặc CLI khác cùng
+lúc. Update ghi cache trong bộ cài; không đồng nghĩa đã export/kiểm giá toàn
+lịch sử. Ngày được phép export cho bài pilot vẫn chỉ03/01/2022 UTC. Dùng format
+tick riêng khi export, không dùng default bar format; millisecond, Bid/Ask và
+thứ tự CSV phải kiểm thực tế trước khi đưa vào execution. Không bật update tick
+full-history trong adapter M1 của sản phẩm chỉ từ quyền của bài nghiên cứu này.
+
+Job local và resume evidence:
+`E:/BACKUP-TRADINGWORKSPACE/ai-engine-jobs/forex-prop-pilot-20261102/qdm-tick-full-20261102/`.
+`receipt.json` giữ PID thực tế, stage, exact commands và metadata; `progress.log`
+chỉ giữ tiến độ symbol, không startup diagnostics. Kiểm PID/command/stage trước
+khi resume; không chạy lại `run.py` khi worker còn sống, không kill giữa lúc ghi.
+Trạng thái hoàn thành/kiểm quote nằm ở receipt AI của workspace, không suy từ
+việc có symbol TICK hoặc một process còn sống.
 
 Receipt local (CSV không đưa vào Git):
 `E:/BACKUP-TRADINGWORKSPACE/ai-engine-jobs/forex-prop-pilot-20261102/qdm-cache-export-20261102/receipt.json`.
