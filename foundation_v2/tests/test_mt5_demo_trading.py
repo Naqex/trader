@@ -5,7 +5,7 @@ from pathlib import Path
 import tempfile
 import time
 from types import SimpleNamespace as NS
-from datetime import datetime,timezone
+from datetime import datetime,timezone,timedelta
 import unittest
 from unittest.mock import Mock, patch
 
@@ -330,6 +330,166 @@ class DemoTradingTests(unittest.TestCase):
         self.assertTrue(demo.reconcile(self.sdk,self.policy,command,submitted,{})['resolved'])
         order.state=4
         self.assertFalse(demo.reconcile(self.sdk,self.policy,command,submitted,{})['resolved'])
+        self.sdk.order_send.assert_not_called()
+
+    def automation_policy(self, *, owned=(17,), **changes):
+        grant = dict(environment='demo', login=self.policy['login'], server=self.policy['server'],
+            symbols=['EURUSD'], actions=['place','close'], account_currency='USD',
+            expires_at=(datetime.now(timezone.utc)+timedelta(minutes=5)).isoformat(),
+            max_risk_amount='25', max_risk_pct='2', max_aggregate_risk_amount='100',
+            max_volume='0.5', session_equity_floor='9500', free_margin_floor='100',
+            cost_buffer_per_lot='10', max_positions=3, max_attempts=10,
+            max_quote_age_ms=2000, max_spread_points='10', deviation_points=5)
+        grant.update(changes)
+        return demo.AutomationBrokerPolicy._from_authenticated_worker(demo.BrokerPolicy(self.policy),
+            grant, owned_order_ids=owned, risk_reserved=25)
+
+    def test_automation_policy_requires_worker_factory_and_rejects_unknown_costs(self):
+        with self.assertRaisesRegex(demo.Denied,'native_context_required'):
+            demo.AutomationBrokerPolicy(self.policy)
+        for changes in ({'environment':'real'}, {'cost_buffer_per_lot':None},
+                        {'max_risk_amount':'NaN'}, {'max_quote_age_ms':True},
+                        {'actions':['protect']}, {'symbols':['XAUUSD']}):
+            with self.subTest(changes=changes), self.assertRaises(demo.Denied):
+                self.automation_policy(**changes)
+        self.sdk.order_check.assert_not_called()
+        self.sdk.order_send.assert_not_called()
+
+    def test_automation_force_demo_hedging_sl_limits_and_session_equity_floor(self):
+        policy=self.automation_policy()
+        for attribute,value,reason in [('trade_mode',2,'demo_account_required'),
+                ('margin_mode',0,'demo_hedging_required'), ('currency','EUR','currency_mismatch'),
+                ('equity',9500,'equity_floor'), ('margin_free',110,'demo_margin_insufficient')]:
+            with self.subTest(attribute=attribute):
+                prior=getattr(self.account,attribute);setattr(self.account,attribute,value)
+                with self.assertRaisesRegex(demo.Denied,reason):
+                    demo.execute(self.sdk,policy,self.command)
+                setattr(self.account,attribute,prior)
+        for changes,reason in [({'stop_loss':None},'demo_stop_required'),
+                               ({'volume':.6},'demo_volume_step_or_limit'),
+                               ({'stop_loss':1.09},'order_risk_limit')]:
+            with self.subTest(changes=changes),self.assertRaisesRegex(demo.Denied,reason):
+                demo.execute(self.sdk,policy,{**self.command,**changes})
+        self.account.equity=9510
+        with self.assertRaisesRegex(demo.Denied,'demo_risk_limit'):
+            demo.execute(self.sdk,policy,self.command)
+        self.sdk.order_send.assert_not_called()
+
+    def test_automation_aggregate_risk_counts_and_quote_unknowns_deny(self):
+        policy=self.automation_policy(max_risk_amount='25',max_aggregate_risk_amount='25')
+        p=self.position();p.sl=1.098
+        self.sdk.positions_get.return_value=(p,)
+        with self.assertRaisesRegex(demo.Denied,'demo_risk_limit'):
+            demo.execute(self.sdk,policy,self.command)
+        p.sl=0
+        with self.assertRaisesRegex(demo.Denied,'existing_risk_unknown'):
+            demo.execute(self.sdk,policy,self.command)
+        p.sl=1.099
+        self.sdk.positions_get.return_value=(p,p,p)
+        with self.assertRaisesRegex(demo.Denied,'demo_position_limit'):
+            demo.execute(self.sdk,policy,self.command)
+        self.sdk.positions_get.return_value=()
+        self.tick.ask=1.10020
+        with self.assertRaisesRegex(demo.Denied,'spread_limit'):
+            demo.execute(self.sdk,policy,self.command)
+        self.tick.ask=1.10002;self.tick.time_msc-=6000
+        with self.assertRaisesRegex(demo.Denied,'demo_quote_stale'):
+            demo.execute(self.sdk,policy,self.command)
+        self.tick.time_msc=int(time.time()*1000)
+        self.sdk.order_calc_profit.return_value=None;self.sdk.order_calc_profit.side_effect=None
+        with self.assertRaisesRegex(demo.Denied,'demo_risk_unavailable'):
+            demo.execute(self.sdk,policy,self.command)
+        self.sdk.order_send.assert_not_called()
+
+    def test_automation_final_mutable_state_is_rechecked_after_order_check(self):
+        policy=self.automation_policy()
+        mutations=[lambda:setattr(self.account,'equity',9999),
+            lambda:setattr(self.account,'margin_free',9999),
+            lambda:setattr(self.tick,'ask',1.10003),
+            lambda:setattr(self.sdk.positions_get,'return_value',(self.position(),)),
+            lambda:setattr(self.sdk.orders_get,'return_value',None)]
+        for change in mutations:
+            with self.subTest(change=change):
+                self.setUp()
+                policy=self.automation_policy()
+                self.sdk.order_check.side_effect=lambda _,change=change:(change() or NS(retcode=0))
+                with self.assertRaises(demo.Denied):
+                    demo.execute(self.sdk,policy,self.command)
+                self.sdk.order_send.assert_not_called()
+                self.sdk.order_check.assert_called_once()
+        self.setUp()
+        self.sdk.order_calc_margin.side_effect=[20,21]
+        with self.assertRaisesRegex(demo.Denied,'state_changed'):
+            demo.execute(self.sdk,self.automation_policy(),self.command)
+        self.sdk.order_send.assert_not_called()
+
+    def test_automation_final_grant_revocation_expiry_and_unknown_send_never_retry(self):
+        policy=self.automation_policy()
+        with self.assertRaisesRegex(demo.Denied,'grant_revoked'):
+            demo.execute(self.sdk,policy,self.command,lambda:demo.deny('grant_revoked'))
+        self.sdk.order_send.assert_not_called()
+        policy=self.automation_policy()
+        def expire():
+            policy['expires_at']=(datetime.now(timezone.utc)-timedelta(seconds=1)).isoformat()
+        with self.assertRaisesRegex(demo.Denied,'grant_expired'):
+            demo.execute(self.sdk,policy,self.command,expire)
+        self.sdk.order_send.assert_not_called()
+        self.sdk.order_send.return_value=None
+        self.assertEqual(demo.execute(self.sdk,self.automation_policy(),self.command)['status'],'unknown')
+        self.sdk.order_send.assert_called_once()
+
+    def test_automation_close_requires_durable_opening_identifier_not_magic_or_ticket(self):
+        p=self.position();p.magic=999;p.identifier=77
+        self.sdk.positions_get.return_value=(p,)
+        policy=self.automation_policy(owned=(77,))
+        result=demo.execute(self.sdk,policy,{**self.command,'action':'close','ticket':77,'volume':None})
+        self.assertEqual(result['status'],'filled')
+        self.assertEqual(self.sdk.order_send.call_args.args[0]['position'],77)
+        self.sdk.order_send.reset_mock();p.identifier=17
+        with self.assertRaisesRegex(demo.Denied,'demo_ticket_not_managed'):
+            demo.execute(self.sdk,policy,{**self.command,'action':'close','ticket':77,'volume':None})
+        self.sdk.order_send.assert_not_called()
+        p.identifier=77;p.ticket=88
+        with self.assertRaisesRegex(demo.Denied,'position_identity_unsupported'):
+            demo.execute(self.sdk,policy,{**self.command,'action':'close','ticket':88,'volume':None})
+        self.sdk.order_send.assert_not_called()
+
+    def test_automation_connection_pause_during_final_margin_calculation_blocks_send(self):
+        paused=False
+        calculations=0
+        def margin(*args):
+            nonlocal paused,calculations
+            calculations+=1
+            if calculations==2:
+                paused=True
+            return 20
+        def guard():
+            if paused:
+                raise RuntimeError('mt5_connection_revoked')
+        self.sdk.order_calc_margin.side_effect=margin
+        with self.assertRaisesRegex(RuntimeError,'mt5_connection_revoked'):
+            demo.execute(self.sdk,self.automation_policy(),self.command,guard)
+        self.assertEqual(calculations,2)
+        self.sdk.order_check.assert_called_once()
+        self.sdk.order_send.assert_not_called()
+
+    def test_automation_owned_full_close_remains_available_below_entry_floors(self):
+        own=self.position();own.identifier=77
+        other=self.position();other.ticket=88;other.identifier=88;other.sl=1.01
+        self.sdk.positions_get.return_value=(own,other)
+        self.account.equity=9000
+        self.account.margin_free=-25
+        policy=self.automation_policy(owned=(77,))
+        result=demo.execute(self.sdk,policy,{**self.command,'action':'close','ticket':77,'volume':None})
+        self.assertEqual(result['status'],'filled')
+        self.sdk.order_send.assert_called_once()
+        self.sdk.order_calc_margin.assert_not_called()
+        self.sdk.order_calc_profit.assert_not_called()
+        self.sdk.order_send.reset_mock()
+        with self.assertRaisesRegex(demo.Denied,'demo_ticket_not_managed'):
+            demo.execute(self.sdk,policy,{**self.command,'action':'close','ticket':88,'volume':None})
+        with self.assertRaisesRegex(demo.Denied,'demo_partial_close_unsupported'):
+            demo.execute(self.sdk,policy,{**self.command,'action':'close','ticket':77,'volume':.05})
         self.sdk.order_send.assert_not_called()
 
 

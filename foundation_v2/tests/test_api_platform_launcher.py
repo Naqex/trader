@@ -84,7 +84,9 @@ class RuntimeReadinessTests(unittest.TestCase):
             args = launcher.parser().parse_args(['--manifest', str(Path(folder) / 'owner.json')])
             child = MagicMock(pid=42)
             child.poll.return_value = None
-            env, writes = {}, []
+            capability = str(Path(folder) / 'private-capabilities.json')
+            env = {'TW_V2_AUTH_MODE': 'local-capability', 'TW_V2_LOCAL_CAPABILITY_FILE': capability}
+            writes = []
             def probe(_args):
                 Path(env['TW_V2_SHUTDOWN_FILE']).write_text('stop')
                 child.poll.return_value = 0
@@ -105,9 +107,87 @@ class RuntimeReadinessTests(unittest.TestCase):
             self.assertTrue(any(item.get('stopping') for item in writes))
             self.assertTrue(writes[-1]['stopped'])
             self.assertFalse(writes[-1]['stopping'])
+            self.assertTrue(all(item['auth_mode'] == 'local-capability' for item in writes))
+            self.assertTrue(all(item['local_capability_file'] == capability for item in writes))
             child.wait.assert_called_once()
             child.kill.assert_not_called()
             monitor.assert_not_called()
+
+
+class LocalCapabilityLauncherTests(unittest.TestCase):
+    def test_default_profiles_strip_inherited_capability_and_keep_legacy_auth(self):
+        for profile in ('native', 'compatibility'):
+            args = launcher.parser().parse_args(['--runtime-profile', profile])
+            with self.subTest(profile=profile), patch.dict('os.environ', {
+                    'TW_V2_DATABASE_URL': 'host=localhost user=fixture',
+                    'TW_V2_AUTH_MODE': 'local-capability',
+                    'TW_V2_LOCAL_CAPABILITY_FILE': 'stale-private-config.json'}):
+                env = launcher.configuration(args)
+            self.assertEqual(env['TW_V2_AUTH_MODE'], 'local-trusted-identity')
+            self.assertNotIn('TW_V2_LOCAL_CAPABILITY_FILE', env)
+
+    def test_explicit_native_file_selects_capability_mode_without_reading_secret_bytes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory).resolve()
+            config = project / '.runtime/local-owner-access/generation-fixture/capabilities.json'
+            config.parent.mkdir(parents=True)
+            config.write_bytes(b'opaque-private-config-never-printed')
+            args = launcher.parser().parse_args(['--runtime-profile', 'native',
+                '--local-capability-file', str(config)])
+            with patch.object(launcher, 'PROJECT', project), patch.dict('os.environ', {
+                    'TW_V2_DATABASE_URL': 'host=localhost user=fixture',
+                    'TW_V2_LOCAL_CAPABILITY_FILE': 'stale-other-config'}), \
+                 patch.object(Path, 'read_text', side_effect=AssertionError('launcher must not read secrets')):
+                env = launcher.configuration(args)
+            self.assertEqual(env['TW_V2_AUTH_MODE'], 'local-capability')
+            self.assertEqual(env['TW_V2_LOCAL_CAPABILITY_FILE'], str(config))
+            self.assertEqual(config.read_bytes(), b'opaque-private-config-never-printed')
+
+    def test_compatibility_selection_is_rejected_before_build_or_other_actions(self):
+        with patch.object(launcher, 'configuration') as config, \
+             patch.object(launcher, 'build_candidate') as build:
+            with self.assertRaisesRegex(launcher.PreflightError, 'native runtime profile'):
+                launcher.main(['--local-capability-file', 'private.json', '--build-only'])
+            config.assert_not_called()
+            build.assert_not_called()
+
+    def test_private_scope_size_links_and_runtime_output_collisions_fail_closed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory).resolve()
+            private = project / '.runtime/local-owner-access/generation-fixture'
+            private.mkdir(parents=True)
+            capability = private / 'capabilities.json'
+            capability.write_bytes(b'{}')
+            outside = project / 'source.json'
+            outside.write_bytes(b'keep')
+            huge = private / 'large.json'
+            huge.write_bytes(b'x' * (64 * 1024 + 1))
+            empty = private / 'empty.json'
+            empty.touch()
+            for path in (outside, huge, empty, private / 'missing.json', private):
+                args = launcher.parser().parse_args(['--runtime-profile', 'native', '--local-capability-file', str(path)])
+                with self.subTest(path=path), patch.object(launcher, 'PROJECT', project):
+                    with self.assertRaises(launcher.PreflightError):
+                        launcher.local_capability_file(args)
+            for output in (capability, capability.with_name(capability.name + '.bootstrap-spent.json')):
+                args = launcher.parser().parse_args(['--runtime-profile', 'native',
+                    '--local-capability-file', str(capability), '--manifest', str(output)])
+                with self.subTest(output=output), patch.object(launcher, 'PROJECT', project):
+                    with self.assertRaises(launcher.PreflightError):
+                        launcher.local_capability_file(args)
+            args = launcher.parser().parse_args(['--runtime-profile', 'native', '--local-capability-file', str(capability)])
+            with patch('scripts.local_owner_access.require_local_tree', side_effect=ValueError('reparse')):
+                with self.assertRaises(launcher.PreflightError):
+                    launcher.local_capability_file(args)
+            lock_input = private / 'capabilities.lock'
+            lock_input.write_bytes(b'{}')
+            args = launcher.parser().parse_args(['--runtime-profile', 'native',
+                '--local-capability-file', str(lock_input), '--manifest', str(private / 'capabilities.json')])
+            with patch.object(launcher, 'PROJECT', project):
+                with self.assertRaises(launcher.PreflightError):
+                    launcher.local_capability_file(args)
+            self.assertEqual(outside.read_bytes(), b'keep')
+            self.assertEqual(capability.read_bytes(), b'{}')
 
 
 class LauncherTests(unittest.TestCase):

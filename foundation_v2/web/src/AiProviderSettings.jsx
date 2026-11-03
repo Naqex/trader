@@ -1,3 +1,4 @@
+import { ownerFetch } from './ownerSession.js'
 import { displayDate, displayTime } from './dateFormat.js'
 import { useEffect, useRef, useState } from 'react'
 import LegacyModal from './LegacyModal.jsx'
@@ -30,7 +31,7 @@ export default function AiProviderSettings({ workspace, language }) {
     requests.current.set(provider, controller)
     setRecords(previous => ({ ...previous, [provider]: { ...previous[provider], loading: true, error: '' } }))
     try {
-      const response = await fetch(`${endpoint}/${provider}${action ? `/${action}` : ''}`, {
+      const response = await ownerFetch(`${endpoint}/${provider}${action ? `/${action}` : ''}`, {
         method: action ? 'POST' : 'GET', signal: controller.signal,
         headers: { 'X-Workspace-Id': workspace, ...(action ? { 'Content-Type': 'application/json' } : {}) },
         ...(action ? { body: JSON.stringify(body) } : {}),

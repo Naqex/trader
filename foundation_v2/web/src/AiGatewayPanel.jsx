@@ -1,3 +1,4 @@
+import { ownerFetch } from './ownerSession.js'
 import { useEffect, useRef, useState } from 'react'
 import { useFxReplayContext } from './FxReplayShell.jsx'
 import { aiErrorCopy } from './aiProvider.js'
@@ -23,7 +24,7 @@ export default function AiGatewayPanel({ workspace, language, active, chatOpen }
     async function refresh() {
       let error
       try {
-        const response = await fetch('/api/v2/ai/assistant/connections/local-gateway/refresh', {
+        const response = await ownerFetch('/api/v2/ai/assistant/connections/local-gateway/refresh', {
           method: 'POST', headers: { 'X-Workspace-Id': workspace, 'Content-Type': 'application/json' }, body: '{}',
           signal: AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]),
         })

@@ -1,3 +1,4 @@
+import { ownerFetch } from './ownerSession.js'
 import { displayDate } from './dateFormat.js'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useFxReplayContext } from './FxReplayShell.jsx'
@@ -29,7 +30,7 @@ export default function AiWorkflows({ workspace, language }) {
   const statuses = { waiting: say('Chờ đến lượt', 'Pending'), queued: say('Đang chờ', 'Queued'), running: say('Đang chạy', 'Running'), sent: say('Đang xử lý', 'Processing'), cancelling: say('Đang dừng', 'Stopping'), cancelled: say('Đã dừng', 'Stopped'), completed: say('Hoàn tất', 'Completed'), failed: say('Lỗi', 'Failed'), interrupted: say('Gián đoạn', 'Interrupted') }
   const nodes = { facts: say('Phân tích bằng chứng', 'Analyze evidence'), gaps: say('Tìm điểm còn thiếu', 'Find gaps'), reviewer: say('Tổng hợp và kiểm tra', 'Review and synthesize') }
   async function api(path, { body, method = 'GET', signal } = {}) {
-    const response = await fetch(`/api/v2/ai/assistant/workflows${path}`, { method, signal, headers: { 'X-Workspace-Id': workspace, ...(body ? { 'Content-Type': 'application/json' } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) })
+    const response = await ownerFetch(`/api/v2/ai/assistant/workflows${path}`, { method, signal, headers: { 'X-Workspace-Id': workspace, ...(body ? { 'Content-Type': 'application/json' } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) })
     const value = await response.json(); if (!response.ok) throw Object.assign(new Error(value.detail), { status: response.status }); return value
   }
   useEffect(() => {

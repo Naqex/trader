@@ -22,6 +22,7 @@ use std::{
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::sync::Mutex;
 use uuid::Uuid;
+mod automation;
 pub(crate) mod market_stream;
 
 pub const ROUTES: &[(&str, &str)] = &[
@@ -30,6 +31,11 @@ pub const ROUTES: &[(&str, &str)] = &[
     ("POST", "/api/v2/live/trading/commands"),
     ("POST", "/api/v2/live/trading/reconcile"),
     ("GET", "/api/v2/live/trading/events"),
+    ("POST", "/api/v2/automation/grants"),
+    ("POST", "/api/v2/automation/grants/{grant_id}/revoke"),
+    ("POST", "/api/v2/automation/trading/commands"),
+    ("POST", "/api/v2/automation/trading/reconcile"),
+    ("GET", "/api/v2/automation/trading/requests/{request_id}"),
 ];
 pub fn native(method: &str, path: &str) -> bool {
     ROUTES.contains(&(method, path))
@@ -41,6 +47,7 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route(ROUTES[2].1, post(command))
         .route(ROUTES[3].1, post(reconcile))
         .route(ROUTES[4].1, get(market_stream::events))
+        .merge(automation::routes())
 }
 fn error(status: StatusCode, reason: &str) -> ApiError {
     ApiError::detail(status, reason)
@@ -655,6 +662,15 @@ async fn command(
     bytes: Bytes,
 ) -> Result<Json<Value>, ApiError> {
     let d = draft(&headers, &bytes)?;
+    submit(&state, &scope, d, None).await
+}
+
+async fn submit(
+    state: &Arc<AppState>,
+    scope: &Workspace,
+    d: Draft,
+    automation: Option<automation::Submission>,
+) -> Result<Json<Value>, ApiError> {
     let id = d
         .request_id
         .ok_or_else(|| error(StatusCode::UNPROCESSABLE_ENTITY, "demo_request_id_required"))?;
@@ -668,8 +684,11 @@ async fn command(
             "demo_action_unsupported",
         ));
     }
-    let normalized = serde_json::to_value(&d)
+    let mut normalized = serde_json::to_value(&d)
         .map_err(|_| error(StatusCode::UNPROCESSABLE_ENTITY, "demo_request_invalid"))?;
+    if let Some(submission) = &automation {
+        normalized = json!({"command":normalized,"automation":submission.fingerprint_context()});
+    }
     let fingerprint = digest(
         &serde_json::to_vec(&normalized)
             .map_err(|_| error(StatusCode::UNPROCESSABLE_ENTITY, "demo_request_invalid"))?,
@@ -708,6 +727,44 @@ async fn command(
     .map_err(|_| ApiError::database())?;
     let binding = p.binding(&d.symbol);
     let mut result = json!({"request_id":id,"status":"unknown","reason":"demo_submission_in_progress_or_unknown","action":action,"scope":binding});
+    let automation_context = if let Some(submission) = &automation {
+        let Context::Managed(managed) = &p else {
+            return Err(denied("automation_managed_demo_required"));
+        };
+        if managed.environment != "demo" || !matches!(action, "place" | "close") {
+            return Err(denied("automation_scope_denied"));
+        }
+        let reservation = crate::automation_grants::admit_in_transaction(
+            &tx,
+            &submission.identity,
+            &crate::automation_grants::GrantAdmission {
+                request_id: id,
+                fingerprint: fingerprint.clone(),
+                artifact_sha256: submission.artifact_sha256.clone(),
+                symbol: d
+                    .symbol
+                    .clone()
+                    .ok_or_else(|| denied("automation_scope_denied"))?,
+                action: action.into(),
+                volume: d.volume.map(|volume| volume.to_string()),
+                connection_id: managed.connection_id,
+                connection_generation: managed.generation,
+                login: managed.login.clone(),
+                server: managed.server.clone(),
+                environment: managed.environment.clone(),
+            },
+        )
+        .await?;
+        if reservation.duplicate {
+            return Err(error(StatusCode::CONFLICT, "automation_request_conflict"));
+        }
+        let context = json!({"grant_id":submission.identity.grant_id,"credential_id":submission.identity.credential_id,
+            "policy_sha256":reservation.grant.policy_sha256,"artifact_sha256":submission.artifact_sha256});
+        result["automation"] = context.clone();
+        Some(context)
+    } else {
+        None
+    };
     if matches!(action, "pause" | "resume") {
         tx.execute("UPDATE mt5_demo_controls SET paused=$2,updated_at=CURRENT_TIMESTAMP WHERE terminal_key=$1", &[&key,&(action=="pause")]).await.map_err(|_|ApiError::database())?;
         result["status"] = json!("accepted");
@@ -733,7 +790,17 @@ async fn command(
     drop(conn);
     // A committed unknown intent survives process cancellation or broker timeout.
     // No execution path retries this adapter or order_send.
-    let next = adapter_for(&state, &p, p.input("command", json!({"command":d}))).await;
+    let mut input = p.input("command", json!({"command":d}));
+    if let Some(context) = &automation_context {
+        input["automation"] = context.clone();
+    }
+    let next = adapter_for_inner(
+        &state,
+        &p,
+        input,
+        automation.as_ref().map(|value| value.identity.as_ref()),
+    )
+    .await;
     let mut result = match next {
         Ok(value) => value,
         Err(reason) => {
@@ -749,16 +816,24 @@ async fn command(
     result["request_id"] = json!(id);
     result["action"] = json!(action);
     result["scope"] = binding;
-    let conn = state.pool.get().await.map_err(|_| ApiError::database())?;
+    if let Some(context) = automation_context {
+        result["automation"] = context;
+    }
+    let mut conn = state.pool.get().await.map_err(|_| ApiError::database())?;
+    let tx = conn.transaction().await.map_err(|_| ApiError::database())?;
     // If this write fails the original unknown receipt remains, blocking new sends.
-    conn.execute("UPDATE mt5_demo_requests SET status=$3,result=$4,updated_at=CURRENT_TIMESTAMP WHERE workspace_id=$1 AND request_id=$2 AND status='unknown'", &[&scope.workspace_id,&id,&result["status"].as_str().unwrap(),&result]).await.map_err(|_|ApiError::database())?;
-    let stored = conn
+    tx.execute("UPDATE mt5_demo_requests SET status=$3,result=$4,updated_at=CURRENT_TIMESTAMP WHERE workspace_id=$1 AND request_id=$2 AND status='unknown'", &[&scope.workspace_id,&id,&result["status"].as_str().unwrap(),&result]).await.map_err(|_|ApiError::database())?;
+    if automation.is_some() {
+        crate::automation_grants::settle_in_transaction(&tx, &scope.workspace_id, id).await?;
+    }
+    let stored = tx
         .query_one(
             "SELECT result FROM mt5_demo_requests WHERE workspace_id=$1 AND request_id=$2",
             &[&scope.workspace_id, &id],
         )
         .await
         .map_err(|_| ApiError::database())?;
+    tx.commit().await.map_err(|_| ApiError::database())?;
     Ok(Json(stored.get(0)))
 }
 #[derive(Deserialize)]
@@ -835,16 +910,30 @@ async fn reconcile(
     let mut result = proof;
     result["request_id"] = json!(request.request_id);
     result["action"] = body["action"].clone();
-    let conn = state.pool.get().await.map_err(|_| ApiError::database())?;
-    conn.execute("UPDATE mt5_demo_requests SET status=$3,result=$4,updated_at=CURRENT_TIMESTAMP WHERE workspace_id=$1 AND request_id=$2 AND result=$5",&[&scope.workspace_id,&request.request_id,&result["status"].as_str().unwrap(),&result,&previous]).await.map_err(|_|ApiError::database())?;
+    result["scope"] = previous["scope"].clone();
+    if let Some(context) = previous.get("automation") {
+        result["automation"] = context.clone();
+    }
+    let mut conn = state.pool.get().await.map_err(|_| ApiError::database())?;
+    let tx = conn.transaction().await.map_err(|_| ApiError::database())?;
+    tx.execute("UPDATE mt5_demo_requests SET status=$3,result=$4,updated_at=CURRENT_TIMESTAMP WHERE workspace_id=$1 AND request_id=$2 AND result=$5",&[&scope.workspace_id,&request.request_id,&result["status"].as_str().unwrap(),&result,&previous]).await.map_err(|_|ApiError::database())?;
+    if previous.get("automation").is_some() {
+        crate::automation_grants::settle_in_transaction(
+            &tx,
+            &scope.workspace_id,
+            request.request_id,
+        )
+        .await?;
+    }
     // A simultaneous command completion can win; return the persisted authority.
-    let stored = conn
+    let stored = tx
         .query_one(
             "SELECT result FROM mt5_demo_requests WHERE workspace_id=$1 AND request_id=$2",
             &[&scope.workspace_id, &request.request_id],
         )
         .await
         .map_err(|_| ApiError::database())?;
+    tx.commit().await.map_err(|_| ApiError::database())?;
     Ok(Json(stored.get(0)))
 }
 fn reconciliation_binding_matches(p: &Context, previous: &Value, symbol: &Option<String>) -> bool {
@@ -863,6 +952,14 @@ fn reconciliation_binding_matches(p: &Context, previous: &Value, symbol: &Option
     previous == current
 }
 async fn adapter_for(state: &AppState, p: &Context, input: Value) -> Result<Value, String> {
+    adapter_for_inner(state, p, input, None).await
+}
+async fn adapter_for_inner(
+    state: &AppState,
+    p: &Context,
+    input: Value,
+    automation: Option<&crate::auth::AutomationIdentity>,
+) -> Result<Value, String> {
     let mut conn = state
         .pool
         .get()
@@ -883,6 +980,19 @@ async fn adapter_for(state: &AppState, p: &Context, input: Value) -> Result<Valu
     tx.query_one("SELECT pg_advisory_xact_lock($1)", &[&lock])
         .await
         .map_err(|_| "demo_terminal_busy".to_owned())?;
+    if let Some(identity) = automation {
+        // Recheck under the adapter's terminal lock. Revocation takes this same
+        // lock and acknowledges only after a previously admitted send finishes.
+        let grant = match crate::automation_grants::load(&tx, identity).await {
+            Ok(grant) => grant,
+            Err(error) => return Ok(json!({"status":"rejected","reason":error.1["detail"]})),
+        };
+        if input["automation"]["policy_sha256"] != grant.policy_sha256
+            || input["automation"]["artifact_sha256"] != grant.policy.artifact_sha256
+        {
+            return Ok(json!({"status":"rejected","reason":"automation_policy_changed"}));
+        }
+    }
     let result = match p {
         Context::External(_) => adapter(input).await,
         Context::Managed(managed) => {
@@ -1126,7 +1236,10 @@ pub(crate) async fn revoke_managed_worker(workspace: &str, id: Uuid, new_generat
         let mut current = slot.lock().await;
         // Revocation is queued after the DB commit. A new generation can obtain
         // the slot first; a delayed cleanup must not kill its healthy terminal.
-        if current.as_ref().is_some_and(|worker| new_generation.is_none_or(|g| worker.generation < g)) {
+        if current
+            .as_ref()
+            .is_some_and(|worker| new_generation.is_none_or(|g| worker.generation < g))
+        {
             if let Some(mut worker) = current.take() {
                 let _ = worker.child.kill().await;
             }
@@ -1240,12 +1353,23 @@ mod tests {
         let key = format!("{workspace}:{id}");
         let python = crate::config::mt5_adapter_root().join(".venv/Scripts/python.exe");
         let mut child = crate::owned_process::spawn_with_stdin(
-            &python, &["-I".into(), "-c".into(), "import time; time.sleep(60)".into()],
-            None, &[], crate::owned_process::Limits::default(), false,
-        ).unwrap();
+            &python,
+            &[
+                "-I".into(),
+                "-c".into(),
+                "import time; time.sleep(60)".into(),
+            ],
+            None,
+            &[],
+            crate::owned_process::Limits::default(),
+            false,
+        )
+        .unwrap();
         let slot = Arc::new(Mutex::new(Some(BrokerWorker {
             stdin: child.stdin.take().unwrap(),
-            stdout: BufReader::new(child.stdout.take().unwrap()), child, generation: 3,
+            stdout: BufReader::new(child.stdout.take().unwrap()),
+            child,
+            generation: 3,
         })));
         workers().lock().await.insert(key.clone(), slot.clone());
         let in_flight = slot.lock().await;
@@ -1253,7 +1377,16 @@ mod tests {
         tokio::task::yield_now().await;
         drop(in_flight);
         delayed.await.unwrap();
-        assert!(slot.lock().await.as_ref().unwrap().child.try_wait().unwrap().is_none());
+        assert!(
+            slot.lock()
+                .await
+                .as_ref()
+                .unwrap()
+                .child
+                .try_wait()
+                .unwrap()
+                .is_none()
+        );
         revoke_managed_worker(workspace, id, Some(4)).await;
         assert!(slot.lock().await.is_none());
         workers().lock().await.remove(&key);

@@ -1,8 +1,9 @@
+import { ownerFetch } from './ownerSession.js'
 export const maxDocumentBytes = 10 * 1024 * 1024
 export async function uploadDocument(workspace, file, signal) {
   if (!/\.(txt|md)$/i.test(file.name) || !file.size) throw new Error('invalid_ai_document')
   if (file.size > maxDocumentBytes) throw new Error('ai_document_too_large')
-  const response = await fetch(`/api/v2/ai/assistant/documents?${new URLSearchParams({ name: file.name })}`, {
+  const response = await ownerFetch(`/api/v2/ai/assistant/documents?${new URLSearchParams({ name: file.name })}`, {
     method: 'POST', headers: { 'X-Workspace-Id': workspace, 'Content-Type': 'text/plain; charset=utf-8' }, body: file, signal,
   })
   const value = await response.json().catch(() => ({}))

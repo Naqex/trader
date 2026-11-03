@@ -1,4 +1,5 @@
 import { decodeDemoSnapshot } from './liveTradingModel.js'
+import { ownerFetch } from './ownerSession.js'
 
 async function request(workspace, path, { body, signal } = {}) {
   const controller = new AbortController()
@@ -8,7 +9,7 @@ async function request(workspace, path, { body, signal } = {}) {
   const timer = setTimeout(abort,125000)
   try {
     // Commands never retry automatically: an interrupted send needs reconciliation.
-    const response = await fetch(`/api/v2/live/trading${path}`,{ method:body ? 'POST' : 'GET', signal:controller.signal,
+    const response = await ownerFetch(`/api/v2/live/trading${path}`,{ method:body ? 'POST' : 'GET', signal:controller.signal,
       headers:{'X-Workspace-Id':workspace,...(body ? {'Content-Type':'application/json'} : {})}, ...(body ? {body:JSON.stringify(body)} : {}) })
     const payload = await response.json().catch(() => null)
     if (!response.ok) { const error = new Error(typeof payload?.detail === 'string' ? payload.detail : 'demo_response_invalid'); error.status=response.status; throw error }

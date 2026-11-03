@@ -86,6 +86,19 @@ impl AppState {
         let openapi_schema = std::fs::read(&config.openapi_path)
             .ok()
             .and_then(|bytes| serde_json::from_slice(&bytes).ok());
+        let authorization = if std::env::var("TW_V2_AUTH_MODE").as_deref() == Ok("local-capability")
+        {
+            let path = std::env::var_os("TW_V2_LOCAL_CAPABILITY_FILE")
+                .map(std::path::PathBuf::from)
+                .ok_or("local capability file required")?;
+            LocalAuthorization::with_capabilities_from_file(
+                config.local_identity.clone(),
+                workspaces,
+                &path,
+            )?
+        } else {
+            LocalAuthorization::new(config.local_identity.clone(), workspaces)
+        };
         let ai_assistant = Arc::new(crate::ai_assistant::AiAssistant::from_environment()?);
         let ai_runs = crate::ai_runs::Engine::new(pool.clone(), ai_assistant.clone());
         Ok(Arc::new(Self {
@@ -101,7 +114,7 @@ impl AppState {
             )?),
             analytics_cache: Default::default(),
             replay_history: Default::default(),
-            authorization: LocalAuthorization::new(config.local_identity.clone(), workspaces),
+            authorization,
             admission: Arc::new(Semaphore::new(config.max_concurrency)),
             artifact_reads: Arc::new(Semaphore::new(2)),
             event_hub: crate::events::EventHub::default(),

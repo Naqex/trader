@@ -1,3 +1,4 @@
+import { ownerFetch } from './ownerSession.js'
 import { useEffect, useRef, useState } from 'react'
 import FxSelect from './FxSelect.jsx'
 import AppIcon from './AppIcon.jsx'
@@ -51,7 +52,7 @@ export default function AiModelProfiles({ workspace, language }) {
     const version = generation.current
     submitting.current = true; setSaving(true); setError('')
     try {
-      const response = await fetch(`/api/v2/ai/assistant/profiles/${feature}/${role}`, { method: 'PUT', headers: { 'X-Workspace-Id': workspace, 'Content-Type': 'application/json' }, body: JSON.stringify({ revision: profile?.revision || 0, selection }) })
+      const response = await ownerFetch(`/api/v2/ai/assistant/profiles/${feature}/${role}`, { method: 'PUT', headers: { 'X-Workspace-Id': workspace, 'Content-Type': 'application/json' }, body: JSON.stringify({ revision: profile?.revision || 0, selection }) })
       const value = await response.json()
       if (!response.ok) throw new Error(value.detail)
       if (version !== generation.current) return

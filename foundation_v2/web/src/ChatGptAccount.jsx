@@ -1,3 +1,4 @@
+import { ownerFetch } from './ownerSession.js'
 import { displayTime } from './dateFormat.js'
 import { useEffect, useRef, useState } from 'react'
 import FxSelect from './FxSelect.jsx'
@@ -73,7 +74,7 @@ export default function ChatGptAccount({ workspace, language }) {
   }, [account, pending, workspace])
 
   async function read(action, body, signal) {
-    const response = await fetch(`${endpoint}${action ? `/${action}` : ''}`, {
+    const response = await ownerFetch(`${endpoint}${action ? `/${action}` : ''}`, {
       method: action ? 'POST' : 'GET', signal,
       headers: { 'X-Workspace-Id': workspace, ...(action ? { 'Content-Type': 'application/json' } : {}) },
       ...(action ? { body: JSON.stringify(body || {}) } : {}),

@@ -41,6 +41,7 @@ pub fn allowed_methods(template: &str) -> Vec<String> {
         .chain(crate::note_library::ROUTES.iter())
         .chain(crate::mt5_connector::ROUTES.iter())
         .chain(crate::demo_trading::ROUTES.iter())
+        .chain(crate::local_auth::ROUTES.iter())
         .filter(|(_, path)| *path == template)
         .map(|(method, _)| (*method).to_owned())
         .collect();
@@ -64,7 +65,7 @@ fn native(method: &str, path: &str) -> bool {
 }
 
 fn native_owner(method: &str, path: &str) -> Option<&'static str> {
-    let owners: [(&str, fn(&str, &str) -> bool); 18] = [
+    let owners: [(&str, fn(&str, &str) -> bool); 19] = [
         ("demo_trading", crate::demo_trading::native),
         ("mt5_connector", crate::mt5_connector::native),
         ("live_ledger", crate::live_ledger::native),
@@ -83,6 +84,7 @@ fn native_owner(method: &str, path: &str) -> Option<&'static str> {
         ("research_jobs", crate::research_jobs::native),
         ("data_routes", crate::data_routes::native),
         ("provider_routes", crate::provider_routes::native),
+        ("local_auth", crate::local_auth::native),
     ];
     for (owner, owns) in owners {
         if owns(method, path) {
@@ -169,6 +171,14 @@ pub fn route_inventory_for(native_runtime: bool) -> Value {
                     .map(|(method, path)| Route {
                         method: (*method).to_owned(),
                         path: (*path).to_owned()
+                    })
+            )
+            .chain(
+                crate::local_auth::ROUTES
+                    .iter()
+                    .map(|(method, path)| Route {
+                        method: (*method).to_owned(),
+                        path: (*path).to_owned(),
                     })
             )
             .map(|route| {
@@ -550,6 +560,7 @@ mod tests {
                     + crate::live_ledger::ROUTES.len()
                     + crate::mt5_connector::ROUTES.len()
                     + crate::demo_trading::ROUTES.len()
+                    + crate::local_auth::ROUTES.len()
             );
             for (method, path) in crate::session_presets::ROUTES {
                 assert!(
@@ -588,6 +599,12 @@ mod tests {
                             && entry["owner"] == "mt5_connector"
                             && entry["dispatch"] == "rust_native")
                 );
+                assert!(allowed_methods(path).contains(&(*method).to_owned()));
+            }
+            for (method, path) in crate::local_auth::ROUTES {
+                assert!(inventory.as_array().unwrap().iter().any(|entry|
+                    entry["method"] == *method && entry["path"] == *path
+                        && entry["owner"] == "local_auth" && entry["dispatch"] == "rust_native"));
                 assert!(allowed_methods(path).contains(&(*method).to_owned()));
             }
             let queued: Vec<Value> = inventory

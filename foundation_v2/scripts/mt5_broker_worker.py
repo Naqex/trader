@@ -1,12 +1,16 @@
 """One owned terminal per authenticated connection. JSON lines, never retry sends."""
 import base64
+import hashlib
+import hmac
 import importlib
 import json
 import os
 from pathlib import Path
 import subprocess
 import sys
-from datetime import datetime
+import uuid
+from decimal import Decimal
+from datetime import datetime, timezone
 
 # The API launches Python -I; load only sibling code from this checked-in folder.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -30,6 +34,94 @@ def fence(request, operation):
             raise RuntimeError('mt5_connection_revoked')
     except (KeyError, psycopg.Error):
         raise RuntimeError('mt5_connection_revoked') from None
+
+
+def automation_grant(request, secret):
+    """Read native approved authority/reservations; never accept policy in JSON.
+
+    The native caller holds its existing terminal advisory lock through the
+    exchange. Grant revocation takes that same lock before acknowledging it.
+    This reader does not acquire a second lock or mutate grants/counters.
+    """
+    import psycopg
+    from psycopg.rows import dict_row
+    try:
+        context = request['automation']
+        if not isinstance(context, dict) or set(context) != {'grant_id', 'credential_id', 'policy_sha256', 'artifact_sha256'}:
+            raise ValueError()
+        grant_id, credential_id = uuid.UUID(context['grant_id']), uuid.UUID(context['credential_id'])
+        request_id = uuid.UUID(request['command']['request_id'])
+        for key in ('policy_sha256', 'artifact_sha256'):
+            value = context[key]
+            if not isinstance(value, str) or len(value) != 64 or any(c not in '0123456789abcdef' for c in value):
+                raise ValueError()
+        if request['operation'] not in ('command', 'preview', 'reconcile'):
+            raise ValueError()
+        with psycopg.connect(os.environ['TW_V2_DATABASE_URL'], connect_timeout=5, row_factory=dict_row) as db:
+            row = db.execute('''SELECT g.policy_sha256,g.policy,g.status,g.expires_at,g.approved_at,g.approved_by,
+                g.terminal_key,g.credential_id AS grant_credential_id,r.credential_id AS request_credential_id,
+                r.policy_sha256 AS request_policy_sha256,r.risk_reserved,r.fingerprint AS request_fingerprint,
+                d.fingerprint AS receipt_fingerprint,d.terminal_key AS request_terminal_key,d.command_body,d.status AS request_status,
+                (SELECT COUNT(*) FROM automation_grant_requests a WHERE a.workspace_id=g.workspace_id AND a.grant_id=g.grant_id) AS attempts,
+                (SELECT COALESCE(SUM(a.risk_reserved),0) FROM automation_grant_requests a WHERE a.workspace_id=g.workspace_id AND a.grant_id=g.grant_id) AS reserved_total,
+                (SELECT c.paused FROM mt5_demo_controls c WHERE c.terminal_key=g.terminal_key) AS paused,
+                EXISTS(SELECT 1 FROM mt5_demo_requests u WHERE u.terminal_key=g.terminal_key AND u.request_id<>r.request_id
+                    AND (u.status='unknown' OR u.result->>'requires_reconciliation'='true')) AS unresolved
+                FROM automation_grants g JOIN automation_grant_requests r USING(workspace_id,grant_id)
+                JOIN mt5_demo_requests d ON d.workspace_id=r.workspace_id AND d.request_id=r.request_id
+                WHERE g.workspace_id=%s AND g.grant_id=%s AND r.request_id=%s''',
+                (request['workspace'], grant_id, request_id)).fetchone()
+            if row is None:
+                raise ValueError()
+            policy = row['policy']
+            digest = hashlib.sha256(json.dumps(policy, sort_keys=True, separators=(',', ':'), ensure_ascii=False,
+                                               allow_nan=False).encode('utf-8')).hexdigest()
+            expected_terminal = hashlib.sha256(f"mt5-managed:{request['workspace']}:{request['connection_id']}".encode()).hexdigest()
+            if (not hmac.compare_digest(digest, context['policy_sha256']) or
+                    row['policy_sha256'] != digest or row['request_policy_sha256'] != digest or
+                    row['grant_credential_id'] != credential_id or row['request_credential_id'] != credential_id or
+                    row['terminal_key'] != expected_terminal or
+                    row['request_terminal_key'] != expected_terminal or
+                    row['request_fingerprint'] != row['receipt_fingerprint'] or
+                    policy['connection_id'] != request['connection_id'] or
+                    policy['connection_generation'] != request['generation'] or
+                    policy['environment'] != 'demo' or policy['login'] != secret['login'] or
+                    policy['server'] != secret['server'] or policy['artifact_sha256'] != context['artifact_sha256'] or
+                    row['command_body'] != request['command']):
+                raise ValueError()
+            expiry = datetime.fromisoformat(policy['expires_at'].replace('Z', '+00:00'))
+            now = datetime.now(timezone.utc)
+            if (expiry.tzinfo is None or expiry != row['expires_at'] or
+                    not isinstance(row['approved_at'], datetime) or row['approved_at'].tzinfo is None or
+                    row['approved_at'] > now or not row['approved_by'] or row['status'] not in ('active', 'revoked')):
+                raise ValueError()
+            if request['operation'] != 'reconcile':
+                if (row['status'] != 'active' or expiry <= now or row['request_status'] != 'unknown' or
+                        row['paused'] is not False or row['unresolved'] is not False or
+                        type(row['attempts']) is not int or not 1 <= row['attempts'] <= policy['max_attempts']):
+                    raise ValueError()
+                reserved = Decimal(str(row['reserved_total']))
+                current = Decimal(str(row['risk_reserved']))
+                if (not reserved.is_finite() or not current.is_finite() or reserved < current or current < 0 or
+                        reserved > Decimal(policy['max_aggregate_risk_amount']) or
+                        current != (Decimal(policy['max_risk_amount']) if request['command'].get('action') == 'place' else Decimal(0))):
+                    raise ValueError()
+            owned = db.execute('''SELECT d.result->>'order' AS opening_order
+                FROM automation_grant_requests r JOIN mt5_demo_requests d USING(workspace_id,request_id)
+                WHERE r.workspace_id=%s AND r.grant_id=%s AND r.policy_sha256=%s
+                    AND d.terminal_key=%s AND r.fingerprint=d.fingerprint
+                    AND d.status='filled' AND d.command_body->>'action'='place'
+                    AND d.result->>'requires_reconciliation' IS DISTINCT FROM 'true' ''',
+                (request['workspace'], grant_id, digest, expected_terminal)).fetchall()
+        identifiers = []
+        for item in owned:
+            text = item['opening_order']
+            if not isinstance(text, str) or not text.isascii() or not text.isdigit() or int(text) <= 0:
+                raise ValueError()
+            identifiers.append(int(text))
+        return {'policy': policy, 'owned_order_ids': identifiers, 'risk_reserved': row['risk_reserved']}
+    except (KeyError, TypeError, AttributeError, ValueError, ArithmeticError, psycopg.Error):
+        raise trading.Denied('demo_automation_grant_denied') from None
 
 
 class Session:
@@ -76,6 +168,9 @@ class Session:
         if self.context['requested_mode'] == 'read_only' and operation not in ('collect', 'health', 'snapshot', 'symbols'):
             raise RuntimeError('mt5_connection_revoked')
         self.guard(request, operation)
+        automation = None
+        if 'automation' in request:
+            automation = automation_grant(request, self.secret)
         account = self.check_identity()
         if operation == 'health':
             result = {'status':'ready','connected':True}
@@ -95,6 +190,9 @@ class Session:
             read_only = self.context['requested_mode'] == 'read_only'
             policy = trading.BrokerPolicy(mode=mode, read_only=read_only, login=self.secret['login'], server=self.secret['server'], terminal_path=str(self.terminal),
                                           symbols=names, max_quote_age_ms=5000, deviation_points=10, magic=1464685138, cost_buffer_per_lot=0)
+            if automation is not None:
+                policy = trading.AutomationBrokerPolicy._from_authenticated_worker(policy, automation['policy'],
+                    owned_order_ids=automation['owned_order_ids'], risk_reserved=automation['risk_reserved'])
             if operation == 'snapshot':
                 symbol = request.get('symbol') or next((s for s in ('EURUSD','EURUSDm','XAUUSD','XAUUSDm') if s in names), next((s.name for s in symbols if s.visible and s.name in names), names[0]))
                 result = trading.snapshot(self.sdk, policy, symbol, request.get('timeframe','M1'), request.get('bar_count',300))
@@ -106,7 +204,14 @@ class Session:
             elif operation == 'reconcile':
                 result = trading.reconcile(self.sdk, policy, request['command'], request['submitted_at_utc'], request.get('previous',{}))
             else:
-                result = trading.execute(self.sdk, policy, request['command'], lambda: (self.guard(request, 'command'), self.check_identity()))
+                def before_send():
+                    self.guard(request, 'command')
+                    self.check_identity()
+                    if automation is not None:
+                        current = automation_grant(request, self.secret)
+                        if current != automation:
+                            raise trading.Denied('demo_automation_grant_denied')
+                result = trading.execute(self.sdk, policy, request['command'], before_send)
         if operation != 'command':
             self.guard(request, operation)
         return result

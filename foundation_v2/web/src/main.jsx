@@ -1,7 +1,11 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useSyncExternalStore } from 'react'
 import { createRoot } from 'react-dom/client'
 import { installChunkRecovery } from './chunkRecovery.js'
+import { initializeOwnerSession } from './ownerSession.js'
 const removeChunkRecovery = installChunkRecovery(import.meta.url)
+// Reads can render immediately; mutations await discovery and fail closed if
+// owner authentication cannot be established. Nothing retries a submitted action.
+void initializeOwnerSession().catch(() => {})
 const LearnWorkspace = lazy(() => import('./LearnWorkspace.jsx'))
 const PropAnalytics = lazy(() => import('./PropAnalytics.jsx'))
 const ReplayWorkspace = lazy(() => import('./ReplayWorkspace.jsx'))

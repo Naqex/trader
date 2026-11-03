@@ -12,6 +12,7 @@ mod ai_workflows;
 pub mod analytics;
 pub mod artifact_data;
 pub mod auth;
+pub mod automation_grants;
 pub mod catalog;
 pub mod commands;
 pub mod config;
@@ -23,6 +24,7 @@ pub mod events;
 pub mod jobs;
 pub mod live_ledger;
 mod live_note_folders;
+pub mod local_auth;
 pub mod metadata_mutations;
 pub mod middleware;
 pub mod mt5_connector;
@@ -46,8 +48,8 @@ pub mod session_presets;
 pub mod session_trading_options;
 pub mod state;
 pub mod telemetry;
-pub mod trade_labels;
 pub mod trade_groups;
+pub mod trade_labels;
 
 use auth::ApiError;
 use axum::{
@@ -90,6 +92,7 @@ fn domain_routes_for(native_runtime: bool) -> Router<Arc<AppState>> {
         .merge(research_jobs::routes())
         .merge(data_routes::routes())
         .merge(provider_routes::routes())
+        .merge(local_auth::routes())
 }
 
 pub fn runtime_domain_routes(state: &Arc<AppState>) -> Result<Router<Arc<AppState>>, String> {

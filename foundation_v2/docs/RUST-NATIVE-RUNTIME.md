@@ -710,3 +710,7 @@ For a binary built from a relocated checkout, set
 installation used by its capability descriptor. This selects the installation;
 its descriptor root, code, interpreter and dependency hashes are still verified.
 The compile-time checkout remains the default when the variable is absent.
+
+For opt-in local Owner authentication and bounded Demo runner authority, see
+[Local capabilities](LOCAL-CAPABILITIES.md). Preserve the current launch profile;
+the new authentication flag does not authorize migration or broker execution.

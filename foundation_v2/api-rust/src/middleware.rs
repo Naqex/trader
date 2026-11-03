@@ -59,14 +59,67 @@ pub async fn boundary(
         }
         let oauth_callback = request.method() == axum::http::Method::GET
             && request.uri().path() == "/api/v2/connectors/notion/oauth/callback";
-        let scope = if oauth_callback {
+        let local_auth = crate::local_auth::public_route(method.as_str(), &path);
+        let scope = if local_auth {
+            None
+        } else if oauth_callback {
             // A redirect has no workspace header. The native OAuth handler consumes
             // the nonce and reauthorizes its stored workspace against current membership.
             Some("oauth-callback".to_owned())
         } else if request.uri().path().starts_with("/api/v2/") {
-            let authorization = state.authorization.authorize(request.headers());
+            let authorization = if state.authorization.is_capability_mode() {
+                let identity = match state
+                    .authorization
+                    .automation_bearer_digest(request.headers())
+                {
+                    Ok(Some(hash)) => {
+                        let workspace =
+                            match state.authorization.authorize_workspace(request.headers()) {
+                                Ok(workspace) => workspace,
+                                Err(error) => return error.into_response(),
+                            };
+                        match crate::automation_grants::resolve_credential(
+                            &state.pool,
+                            &workspace.workspace_id,
+                            &hash,
+                        )
+                        .await
+                        {
+                            Ok(identity) => Some(identity),
+                            Err(error) => return error.into_response(),
+                        }
+                    }
+                    Ok(None) => None,
+                    Err(error) => return error.into_response(),
+                };
+                let held = identity.as_ref().map(|identity| {
+                    std::sync::Arc::new(crate::auth::AutomationIdentity {
+                        workspace_id: identity.workspace_id.clone(),
+                        grant_id: identity.grant_id,
+                        credential_id: identity.credential_id,
+                        token_sha256: identity.token_sha256.clone(),
+                    })
+                });
+                let result = state.authorization.authorize_request_with_automation(
+                    request.headers(),
+                    method.as_str(),
+                    &path,
+                    identity,
+                );
+                if result.is_ok() {
+                    if let Some(identity) = held {
+                        request.extensions_mut().insert(identity);
+                    }
+                }
+                result
+            } else {
+                state
+                    .authorization
+                    .authorize_request(request.headers(), method.as_str(), &path)
+            };
             match authorization {
-                Ok(workspace) => {
+                Ok((workspace, actor)) => {
+                    request.extensions_mut().insert(actor);
                     request.extensions_mut().insert(workspace.clone());
                     Some(workspace.workspace_id)
                 }
@@ -114,6 +167,10 @@ pub async fn boundary(
         // A cold owned MT5 terminal may need the SDK's 60s startup deadline.
         // Other API pages retain their configured request budget.
         let budget = if request.uri().path().starts_with("/api/v2/live/trading")
+            || request
+                .uri()
+                .path()
+                .starts_with("/api/v2/automation/trading/")
             || (request
                 .uri()
                 .path()

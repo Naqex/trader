@@ -1881,6 +1881,22 @@
                     ],
                     "title": "Position Policy",
                     "type": "string"
+                  },
+                  "daily_anchor_basis": {
+                    "anyOf": [
+                      {
+                        "enum": [
+                          "balance",
+                          "equity"
+                        ],
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "title": "Daily Anchor Basis"
                   }
                 },
                 "required": [
@@ -2638,6 +2654,22 @@
                     ],
                     "title": "Position Policy",
                     "type": "string"
+                  },
+                  "daily_anchor_basis": {
+                    "anyOf": [
+                      {
+                        "enum": [
+                          "balance",
+                          "equity"
+                        ],
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "title": "Daily Anchor Basis"
                   }
                 },
                 "required": [
@@ -3160,6 +3192,22 @@
                     ],
                     "title": "Position Policy",
                     "type": "string"
+                  },
+                  "daily_anchor_basis": {
+                    "anyOf": [
+                      {
+                        "enum": [
+                          "balance",
+                          "equity"
+                        ],
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "title": "Daily Anchor Basis"
                   }
                 },
                 "required": [

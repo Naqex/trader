@@ -26,6 +26,31 @@ class PreflightError(RuntimeError):
     pass
 
 
+def local_capability_file(args):
+    selected = args.local_capability_file
+    if selected is None:
+        return None
+    if args.runtime_profile != "native":
+        raise PreflightError("Local owner capabilities require the explicit native runtime profile.")
+    from scripts.local_owner_access import require_local_tree
+    path = Path(os.path.abspath(selected))
+    try:
+        require_local_tree(path)
+        path = path.resolve(strict=True)
+        scope = PROJECT.resolve() / ".runtime/local-owner-access"
+        if not path.is_relative_to(scope) or not path.is_file() or not 0 < path.stat().st_size <= 64 * 1024:
+            raise ValueError()
+        # The supervisor owns its manifest/lock, never capability or nonce state.
+        if args.manifest is not None:
+            manifest = args.manifest.resolve()
+            protected = {path, path.with_name(path.name + ".bootstrap-spent.json")}
+            if protected & {manifest, args.manifest.with_suffix(".lock").resolve()}:
+                raise ValueError()
+    except (OSError, ValueError):
+        raise PreflightError("Local capability file must be a bounded regular file in the private project scope, without links or runtime-output collisions.") from None
+    return path
+
+
 def configuration(args):
     from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
@@ -40,6 +65,12 @@ def configuration(args):
                TW_V2_AUTH_MODE="local-trusted-identity", TW_V2_RUST_BIND=f"127.0.0.1:{args.port}",
                TW_V2_OPENAPI_PATH=str(FOUNDATION / "contracts/openapi.json"),
                PYTHONPATH=os.pathsep.join((str(FOUNDATION), str(PROJECT))))
+    # Authentication changes require this invocation's explicit selection;
+    # a shell's stale capability path must not silently enable another mode.
+    env.pop("TW_V2_LOCAL_CAPABILITY_FILE", None)
+    capability = local_capability_file(args)
+    if capability is not None:
+        env.update(TW_V2_AUTH_MODE="local-capability", TW_V2_LOCAL_CAPABILITY_FILE=str(capability))
     education_root = os.environ.get("TW_V2_EDUCATION_ROOT")
     workspace_education = PROJECT.parents[1] / "education"
     if not education_root and (workspace_education / "course.json").is_file():
@@ -512,9 +543,12 @@ def supervise(args, env):
                    TW_V2_WORKER_STARTUP_TOKEN=startup_token, TW_V2_WORKER_ID=worker_id)
     state = {"schema": "api-platform-runtime-v2", "runtime_profile": args.runtime_profile,
              "replay_storage_profile": args.replay_storage_profile,
+             "auth_mode": env.get("TW_V2_AUTH_MODE", "local-trusted-identity"),
              "run_id": run_id, "project": str(PROJECT.resolve()), "port": args.port,
              "stop_file": str(stop_file.resolve()), "ready": False,
              "processes": {"supervisor": process_identity(os.getpid())}, "executable_sha256": {}}
+    if env.get("TW_V2_LOCAL_CAPABILITY_FILE"):
+        state["local_capability_file"] = env["TW_V2_LOCAL_CAPABILITY_FILE"]
     state["executable_sha256"]["supervisor"] = binary_digest(Path(state["processes"]["supervisor"]["executable"]))
     commands = child_commands(args, env)
     children, logs, log_threads = {}, [], []
@@ -608,6 +642,8 @@ def parser():
     result.add_argument("--download-engine", choices=("qdm", "dukascopy", "none"), default="qdm")
     result.add_argument("--runtime-profile", choices=("compatibility", "native"), default="compatibility",
                         help="Compatibility remains rollback/default; native uses separate candidate binaries and no Python domain/research service.")
+    result.add_argument("--local-capability-file", type=Path,
+                        help="Opt in to native owner capabilities using an existing private project config; never provision secrets here.")
     result.add_argument("--replay-storage-profile", choices=("full", "compact"), default="full",
                         help="Explicit replay write format; compact requires native. Overrides any inherited storage environment setting.")
     result.add_argument("--scientific-capability", type=Path, help="Existing Nautilus capability; installed bytes verified before worker/API readiness.")
@@ -633,6 +669,8 @@ def main(argv=None):
     args = resolve_profile_paths(parser().parse_args(argv))
     if not 1024 <= args.port <= 65535:
         raise PreflightError("Port must be between 1024 and 65535.")
+    if args.local_capability_file is not None and args.runtime_profile != "native":
+        raise PreflightError("Local owner capabilities require the explicit native runtime profile.")
     if args.runtime_profile != "native" and args.replay_storage_profile != "full":
         raise PreflightError("Compact replay storage requires the explicit native runtime profile.")
     if args.build_only:

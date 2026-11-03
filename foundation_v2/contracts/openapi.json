@@ -3,7 +3,7 @@
   "info": {
     "title": "TradingWorkspace API platform",
     "version": "foundation-v2.1",
-    "description": "Local trusted identity on loopback. HTTP is served by Axum; domain commands execute in Python workers. Hosted identity and TLS are not enabled. Mutations accept Idempotency-Key (1-200 characters, workspace/identity scoped, retained up to 24 hours). A 503 command_commit_outcome_unknown or 504 command_pending returns command_id/status_url: reconcile instead of creating a new command. Unknown mutation outcomes are never automatically replayed."
+    "description": "Local trusted identity on loopback. HTTP is served by Axum; domain commands execute in Python workers. Hosted identity and TLS are not enabled. Mutations accept Idempotency-Key (1-200 characters, workspace/identity scoped, retained up to 24 hours). A 503 command_commit_outcome_unknown or 504 command_pending returns command_id/status_url: reconcile instead of creating a new command. Unknown mutation outcomes are never automatically replayed. Opt-in local-capability mode replaces local trust with owner bearer/HttpOnly cookie authentication; cookie mutations require exact Origin and x-naqex-csrf. Automation has a separate credential and default-deny routes. This remains a local-only trust boundary."
   },
   "paths": {
     "/health": {
@@ -8029,6 +8029,529 @@
         },
         "description": "Workspace note types with optimistic revisions and idempotency. Four built-in identities cannot be archived or removed. Custom types use custom_<UUID>. Deletion archives the type so existing note references remain readable. Names, colors and active type IDs are persisted. Display order is a browser preference."
       }
+    },
+    "/api/v2/automation/grants": {
+      "post": {
+        "operationId": "automation_grant_create",
+        "responses": {
+          "200": {
+            "description": "Authenticated Owner in native capability mode approves one immutable bounded Demo grant. Returns a random bearer credential once; never logged. No order is sent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Unavailable or untrusted state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {}
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Actor, origin, CSRF or scope denied"
+          },
+          "422": {
+            "description": "Workspace header required"
+          },
+          "401": {
+            "description": "Missing, invalid or expired capability"
+          },
+          "409": {
+            "description": "Idempotency or immutable binding conflict"
+          },
+          "423": {
+            "description": "Grant, connection, budget or unknown-outcome gate locked"
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Workspace-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "description": "Authenticated Owner in native capability mode approves one immutable bounded Demo grant. Returns a random bearer credential once; never logged. No order is sent.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AutomationGrantPolicy"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OwnerBearer": []
+          },
+          {
+            "OwnerCookie": []
+          }
+        ]
+      }
+    },
+    "/api/v2/automation/grants/{grant_id}/revoke": {
+      "post": {
+        "operationId": "automation_grant_revoke",
+        "responses": {
+          "200": {
+            "description": "Owner revokes new sends under the same terminal lock. Does not close positions, erase receipts or resend uncertain commands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Unavailable or untrusted state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {}
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Actor, origin, CSRF or scope denied"
+          },
+          "422": {
+            "description": "Workspace header required"
+          },
+          "401": {
+            "description": "Missing, invalid or expired capability"
+          },
+          "409": {
+            "description": "Idempotency or immutable binding conflict"
+          },
+          "423": {
+            "description": "Grant, connection, budget or unknown-outcome gate locked"
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Workspace-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "grant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "description": "Owner revokes new sends under the same terminal lock. Does not close positions, erase receipts or resend uncertain commands.",
+        "security": [
+          {
+            "OwnerBearer": []
+          },
+          {
+            "OwnerCookie": []
+          }
+        ]
+      }
+    },
+    "/api/v2/automation/trading/commands": {
+      "post": {
+        "operationId": "automation_demo_command",
+        "responses": {
+          "200": {
+            "description": "Exactly one native Demo submission after durable request/reservation commit and final fresh SDK risk/grant checks. UUID/fingerprint duplicates return the receipt; unknown outcomes never resend.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Unavailable or untrusted state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {}
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Actor, origin, CSRF or scope denied"
+          },
+          "422": {
+            "description": "Workspace header required"
+          },
+          "401": {
+            "description": "Missing, invalid or expired capability"
+          },
+          "409": {
+            "description": "Idempotency or immutable binding conflict"
+          },
+          "423": {
+            "description": "Grant, connection, budget or unknown-outcome gate locked"
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Workspace-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "description": "Exactly one native Demo submission after durable request/reservation commit and final fresh SDK risk/grant checks. UUID/fingerprint duplicates return the receipt; unknown outcomes never resend.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "artifact_sha256",
+                  "command"
+                ],
+                "properties": {
+                  "artifact_sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "command": {
+                    "$ref": "#/components/schemas/AutomationDemoCommand"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AutomationBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v2/automation/trading/requests/{request_id}": {
+      "get": {
+        "operationId": "automation_demo_receipt",
+        "responses": {
+          "200": {
+            "description": "Only this grant/credential/workspace request receipt; still available after revocation/expiry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Unavailable or untrusted state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {}
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Actor, origin, CSRF or scope denied"
+          },
+          "422": {
+            "description": "Workspace header required"
+          },
+          "401": {
+            "description": "Missing, invalid or expired capability"
+          },
+          "409": {
+            "description": "Idempotency or immutable binding conflict"
+          },
+          "423": {
+            "description": "Grant, connection, budget or unknown-outcome gate locked"
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Workspace-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "description": "Only this grant/credential/workspace request receipt; still available after revocation/expiry.",
+        "security": [
+          {
+            "AutomationBearer": []
+          },
+          {
+            "OwnerBearer": []
+          },
+          {
+            "OwnerCookie": []
+          }
+        ]
+      }
+    },
+    "/api/v2/automation/trading/reconcile": {
+      "post": {
+        "operationId": "automation_demo_reconcile",
+        "responses": {
+          "200": {
+            "description": "Native read-only reconciliation for a request owned by this grant; no order_send. Does not restore send rights after expiry or reconnect.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Unavailable or untrusted state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {}
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Actor, origin, CSRF or scope denied"
+          },
+          "422": {
+            "description": "Workspace header required"
+          },
+          "401": {
+            "description": "Missing, invalid or expired capability"
+          },
+          "409": {
+            "description": "Idempotency or immutable binding conflict"
+          },
+          "423": {
+            "description": "Grant, connection, budget or unknown-outcome gate locked"
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Workspace-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "description": "Native read-only reconciliation for a request owned by this grant; no order_send. Does not restore send rights after expiry or reconnect.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "request_id"
+                ],
+                "properties": {
+                  "request_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "connection_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AutomationBearer": []
+          },
+          {
+            "OwnerBearer": []
+          },
+          {
+            "OwnerCookie": []
+          }
+        ]
+      }
+    },
+    "/api/v2/auth/local/bootstrap": {
+      "post": {
+        "operationId": "local_owner_bootstrap",
+        "responses": {
+          "200": {
+            "description": "Exchange private one-time bootstrap nonce with exact allowed Origin for HttpOnly SameSite=Strict owner cookie and CSRF token. No workspace header required; durable claim prevents restart replay.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Unavailable or untrusted state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {}
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired capability"
+          },
+          "403": {
+            "description": "Actor, origin, CSRF or scope denied"
+          },
+          "409": {
+            "description": "Idempotency or immutable binding conflict"
+          },
+          "423": {
+            "description": "Grant, connection, budget or unknown-outcome gate locked"
+          }
+        },
+        "description": "Exchange private one-time bootstrap nonce with exact allowed Origin for HttpOnly SameSite=Strict owner cookie and CSRF token. No workspace header required; durable claim prevents restart replay.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "nonce"
+                ],
+                "properties": {
+                  "nonce": {
+                    "type": "string",
+                    "minLength": 43,
+                    "maxLength": 256
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/auth/local/session": {
+      "post": {
+        "operationId": "local_owner_session",
+        "responses": {
+          "200": {
+            "description": "Read owner session/CSRF with cookie and exact Origin; POST supplies browser Origin automatically. Legacy mode returns its mode only. No session renewal or grant creation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Unavailable or untrusted state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {}
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired capability"
+          },
+          "403": {
+            "description": "Actor, origin, CSRF or scope denied"
+          },
+          "409": {
+            "description": "Idempotency or immutable binding conflict"
+          },
+          "423": {
+            "description": "Grant, connection, budget or unknown-outcome gate locked"
+          }
+        },
+        "description": "Read owner session/CSRF with cookie and exact Origin; POST supplies browser Origin automatically. Legacy mode returns its mode only. No session renewal or grant creation."
+      }
+    },
+    "/api/v2/auth/local/login": {
+      "get": {
+        "operationId": "local_owner_login",
+        "responses": {
+          "200": {
+            "description": "Local owner sign-in form; no secrets in URL/logs",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -9730,6 +10253,21 @@
             ],
             "title": "Position Policy",
             "default": "must_be_flat"
+          },
+          "daily_anchor_basis": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "balance",
+                  "equity"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daily Anchor Basis"
           }
         },
         "additionalProperties": false,
@@ -11823,6 +12361,240 @@
           "blocks"
         ],
         "title": "NoteDocument"
+      },
+      "AutomationGrantPolicy": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "connection_generation": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "login": {
+            "type": "string"
+          },
+          "server": {
+            "type": "string"
+          },
+          "environment": {
+            "const": "demo"
+          },
+          "account_currency": {
+            "type": "string"
+          },
+          "artifact_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "symbols": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 32,
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "actions": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "place",
+                "close"
+              ]
+            }
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "max_risk_amount": {
+            "type": "string",
+            "maxLength": 48,
+            "pattern": "^[0-9]+(\\.[0-9]+)?$"
+          },
+          "max_risk_pct": {
+            "type": "string",
+            "maxLength": 48,
+            "pattern": "^[0-9]+(\\.[0-9]+)?$"
+          },
+          "max_aggregate_risk_amount": {
+            "type": "string",
+            "maxLength": 48,
+            "pattern": "^[0-9]+(\\.[0-9]+)?$"
+          },
+          "max_volume": {
+            "type": "string",
+            "maxLength": 48,
+            "pattern": "^[0-9]+(\\.[0-9]+)?$"
+          },
+          "session_equity_floor": {
+            "type": "string",
+            "maxLength": 48,
+            "pattern": "^[0-9]+(\\.[0-9]+)?$"
+          },
+          "free_margin_floor": {
+            "type": "string",
+            "maxLength": 48,
+            "pattern": "^[0-9]+(\\.[0-9]+)?$"
+          },
+          "cost_buffer_per_lot": {
+            "type": "string",
+            "maxLength": 48,
+            "pattern": "^[0-9]+(\\.[0-9]+)?$"
+          },
+          "max_spread_points": {
+            "type": "string",
+            "maxLength": 48,
+            "pattern": "^[0-9]+(\\.[0-9]+)?$"
+          },
+          "max_positions": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "max_attempts": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "max_quote_age_ms": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "deviation_points": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "connection_id",
+          "connection_generation",
+          "login",
+          "server",
+          "environment",
+          "account_currency",
+          "artifact_sha256",
+          "symbols",
+          "actions",
+          "expires_at",
+          "max_risk_amount",
+          "max_risk_pct",
+          "max_aggregate_risk_amount",
+          "max_volume",
+          "session_equity_floor",
+          "free_margin_floor",
+          "cost_buffer_per_lot",
+          "max_spread_points",
+          "max_positions",
+          "max_attempts",
+          "max_quote_age_ms",
+          "deviation_points"
+        ]
+      },
+      "AutomationDemoCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "connection_id",
+          "mode",
+          "account_id",
+          "server",
+          "action",
+          "symbol"
+        ],
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "connection_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mode": {
+            "const": "demo"
+          },
+          "account_id": {
+            "type": "string"
+          },
+          "server": {
+            "type": "string"
+          },
+          "action": {
+            "enum": [
+              "place",
+              "close"
+            ]
+          },
+          "symbol": {
+            "type": "string"
+          },
+          "side": {
+            "enum": [
+              "BUY",
+              "SELL",
+              null
+            ]
+          },
+          "order_type": {
+            "enum": [
+              "market",
+              null
+            ]
+          },
+          "volume": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "entry_price": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "stop_loss": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "take_profit": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "ticket": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "OwnerBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      },
+      "OwnerCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "naqex_owner_session"
+      },
+      "AutomationBearer": {
+        "type": "http",
+        "scheme": "bearer"
       }
     }
   }

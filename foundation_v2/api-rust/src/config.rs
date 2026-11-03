@@ -51,7 +51,9 @@ impl Config {
                 "local identity requires a loopback bind; hosted auth is not configured".into(),
             );
         }
-        if env::var("TW_V2_AUTH_MODE").is_ok_and(|v| v != "local-trusted-identity") {
+        if env::var("TW_V2_AUTH_MODE")
+            .is_ok_and(|v| !matches!(v.as_str(), "local-trusted-identity" | "local-capability"))
+        {
             return Err(
                 "unsupported authentication mode; hosted authentication fails closed".into(),
             );

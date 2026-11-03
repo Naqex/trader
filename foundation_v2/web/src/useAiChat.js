@@ -1,3 +1,4 @@
+import { ownerFetch } from './ownerSession.js'
 import { useEffect, useRef, useState } from 'react'
 import { aiErrorCopy } from './aiProvider.js'
 import { readRunEvents, runPending } from './aiRunClient.js'
@@ -36,7 +37,7 @@ export default function useAiChat({ workspace, open, en, screen, source = null }
   const say = (vi, english) => en ? english : vi
   function errorCopy(code) { return aiErrorCopy(code, en) }
   async function request(path, method = 'GET', body, signal) {
-    const response = await fetch(`${base}${path}`, { method, signal, headers: { 'X-Workspace-Id': workspace, ...(body ? { 'Content-Type': 'application/json' } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) })
+    const response = await ownerFetch(`${base}${path}`, { method, signal, headers: { 'X-Workspace-Id': workspace, ...(body ? { 'Content-Type': 'application/json' } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) })
     const value = await response.json().catch(() => ({}))
     if (!response.ok) { const failure = new Error(typeof value.detail === 'string' ? value.detail : 'ai_request_failed'); failure.status = response.status; throw failure }
     return value
