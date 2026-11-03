@@ -1,5 +1,10 @@
 # Rust-native candidate runtime
 
+03 November local API update: [MT5 account lifecycle receipt](../evidence/owner-system-audit-20261031/ACCOUNT-LIFECYCLE-20261103.md)
+records background terminal desktops, refresh without reconnect, generation-bound
+cleanup and verification on the two existing demo accounts. Schema20, storage,
+installed adapter root and research/admin capabilities are retained.
+
 31 October latest local update: reversible journal groups migration0020 and the
 matching API + research worker are deployed on native/compact. The owner approved
 this migration and local cutover separately. Existing source trades, notes/tags

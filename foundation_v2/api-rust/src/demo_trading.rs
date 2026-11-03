@@ -1019,7 +1019,7 @@ async fn managed_adapter(managed: &Managed, input: Value) -> Result<Value, Strin
         None => {
             let python = crate::config::mt5_adapter_root().join(".venv/Scripts/python.exe");
             let script = crate::config::mt5_adapter_root().join("scripts/mt5_broker_worker.py");
-            let mut child = crate::owned_process::spawn_with_stdin(
+            let mut child = crate::owned_process::spawn_background_with_stdin(
                 &python,
                 &["-I".into(), script.to_string_lossy().into()],
                 None,
@@ -1114,7 +1114,7 @@ async fn managed_adapter(managed: &Managed, input: Value) -> Result<Value, Strin
     }
 }
 
-pub(crate) async fn revoke_managed_worker(workspace: &str, id: Uuid) {
+pub(crate) async fn revoke_managed_worker(workspace: &str, id: Uuid, new_generation: Option<i64>) {
     let key = format!("{workspace}:{id}");
     // Retain the shared slot while invalidating it. Removing it before an
     // in-flight operation ends lets the next generation spawn another terminal
@@ -1123,8 +1123,13 @@ pub(crate) async fn revoke_managed_worker(workspace: &str, id: Uuid) {
     if let Some(slot) = slot {
         // If an operation is in flight, its Python DB generation check fails
         // closed before send; cleanup waits for the bounded operation to finish.
-        if let Some(mut worker) = slot.lock().await.take() {
-            let _ = worker.child.kill().await;
+        let mut current = slot.lock().await;
+        // Revocation is queued after the DB commit. A new generation can obtain
+        // the slot first; a delayed cleanup must not kill its healthy terminal.
+        if current.as_ref().is_some_and(|worker| new_generation.is_none_or(|g| worker.generation < g)) {
+            if let Some(mut worker) = current.take() {
+                let _ = worker.child.kill().await;
+            }
         }
     }
 }
@@ -1214,7 +1219,7 @@ mod tests {
         let slot = Arc::new(Mutex::new(None));
         workers().lock().await.insert(key.clone(), slot.clone());
         let in_flight = slot.lock().await;
-        let revocation = tokio::spawn(revoke_managed_worker(workspace, id));
+        let revocation = tokio::spawn(revoke_managed_worker(workspace, id, None));
         tokio::task::yield_now().await;
         assert!(
             workers()
@@ -1225,6 +1230,32 @@ mod tests {
         );
         drop(in_flight);
         revocation.await.unwrap();
+        workers().lock().await.remove(&key);
+    }
+    #[cfg(windows)]
+    #[tokio::test]
+    async fn delayed_revocation_preserves_new_generation_but_stops_older_worker() {
+        let workspace = "generation-revocation-fixture";
+        let id = Uuid::new_v4();
+        let key = format!("{workspace}:{id}");
+        let python = crate::config::mt5_adapter_root().join(".venv/Scripts/python.exe");
+        let mut child = crate::owned_process::spawn_with_stdin(
+            &python, &["-I".into(), "-c".into(), "import time; time.sleep(60)".into()],
+            None, &[], crate::owned_process::Limits::default(), false,
+        ).unwrap();
+        let slot = Arc::new(Mutex::new(Some(BrokerWorker {
+            stdin: child.stdin.take().unwrap(),
+            stdout: BufReader::new(child.stdout.take().unwrap()), child, generation: 3,
+        })));
+        workers().lock().await.insert(key.clone(), slot.clone());
+        let in_flight = slot.lock().await;
+        let delayed = tokio::spawn(revoke_managed_worker(workspace, id, Some(3)));
+        tokio::task::yield_now().await;
+        drop(in_flight);
+        delayed.await.unwrap();
+        assert!(slot.lock().await.as_ref().unwrap().child.try_wait().unwrap().is_none());
+        revoke_managed_worker(workspace, id, Some(4)).await;
+        assert!(slot.lock().await.is_none());
         workers().lock().await.remove(&key);
     }
     #[test]

@@ -254,9 +254,10 @@ async fn connect(
     let row=tx.query_one("INSERT INTO mt5_connections(workspace_id,connection_id,request_id,account_key,name,server,login_hint,start_date,credential,status,requested_mode) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,'queued',$10) ON CONFLICT(workspace_id,account_key) DO UPDATE SET request_id=EXCLUDED.request_id,name=EXCLUDED.name,credential=EXCLUDED.credential,start_date=EXCLUDED.start_date,requested_mode=EXCLUDED.requested_mode,snapshot=CASE WHEN mt5_connections.start_date=EXCLUDED.start_date AND mt5_connections.requested_mode=EXCLUDED.requested_mode THEN mt5_connections.snapshot ELSE CASE WHEN mt5_connections.snapshot->'balance_baseline' IS NULL THEN NULL ELSE jsonb_build_object('status','unavailable','balance_baseline',mt5_connections.snapshot->'balance_baseline') END END,last_synced_at=CASE WHEN mt5_connections.start_date=EXCLUDED.start_date AND mt5_connections.requested_mode=EXCLUDED.requested_mode THEN mt5_connections.last_synced_at ELSE NULL END,generation=mt5_connections.generation+1,full_sync=true,status='queued',error_code=NULL,next_sync_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP RETURNING *",&[&scope.workspace_id,&id,&draft.request_id,&key,&draft.name.trim(),&draft.server,&hint,&date,&credential,&draft.requested_mode]).await.map_err(|_|ApiError::database())?;
     tx.execute("INSERT INTO mt5_connection_requests(workspace_id,request_id,connection_id,fingerprint) VALUES($1,$2,$3,$4)",&[&scope.workspace_id,&draft.request_id,&id,&fingerprint]).await.map_err(|_|ApiError::database())?;
     tx.commit().await.map_err(|_| ApiError::database())?;
+    let generation = row.get::<_, i64>("generation");
     let workspace = scope.workspace_id.clone();
     tokio::spawn(async move {
-        crate::demo_trading::revoke_managed_worker(&workspace, id).await;
+        crate::demo_trading::revoke_managed_worker(&workspace, id, Some(generation)).await;
     });
     Ok((StatusCode::ACCEPTED, Json(public(&row))))
 }
@@ -329,14 +330,21 @@ async fn action(
         tx.commit().await.map_err(|_| ApiError::database())?;
         let workspace = scope.workspace_id.clone();
         tokio::spawn(async move {
-            crate::demo_trading::revoke_managed_worker(&workspace, id).await;
+            crate::demo_trading::revoke_managed_worker(&workspace, id, None).await;
         });
         return Ok(Json(
             json!({"id":id,"removed":true,"execution_capability":false}),
         ));
     }
+    if action == "sync" {
+        let conn = state.pool.get().await.map_err(|_| ApiError::database())?;
+        // Refresh data on the existing authenticated session. Changing generation
+        // here needlessly restarts every terminal on each "Sync all" click.
+        let row = conn.query_opt("UPDATE mt5_connections SET status='queued',full_sync=true,error_code=NULL,next_sync_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE workspace_id=$1 AND connection_id=$2 AND credential IS NOT NULL AND status IN ('queued','syncing','connected','error') RETURNING *", &[&scope.workspace_id,&id]).await.map_err(|_|ApiError::database())?.ok_or_else(||ApiError::detail(StatusCode::NOT_FOUND,"mt5_connection_missing_or_credentials_required"))?;
+        return Ok(Json(public(&row)));
+    }
     let status = match action.as_str() {
-        "sync" | "resume" => "queued",
+        "resume" => "queued",
         "pause" => "paused",
         "disconnect" => "disconnected",
         _ => return Err(error("invalid_mt5_action")),
@@ -344,8 +352,9 @@ async fn action(
     let conn = state.pool.get().await.map_err(|_| ApiError::database())?;
     let row=conn.query_opt("UPDATE mt5_connections SET status=$3,generation=generation+1,error_code=NULL,credential=CASE WHEN $3='disconnected' THEN NULL ELSE credential END,full_sync=CASE WHEN $3='queued' THEN true ELSE full_sync END,next_sync_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE workspace_id=$1 AND connection_id=$2 AND ($3 IN ('paused','disconnected') OR credential IS NOT NULL) RETURNING *",&[&scope.workspace_id,&id,&status]).await.map_err(|_|ApiError::database())?.ok_or_else(||ApiError::detail(StatusCode::NOT_FOUND,"mt5_connection_missing_or_credentials_required"))?;
     let workspace = scope.workspace_id.clone();
+    let generation = row.get::<_, i64>("generation");
     tokio::spawn(async move {
-        crate::demo_trading::revoke_managed_worker(&workspace, id).await;
+        crate::demo_trading::revoke_managed_worker(&workspace, id, Some(generation)).await;
     });
     Ok(Json(public(&row)))
 }

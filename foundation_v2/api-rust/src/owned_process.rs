@@ -3,7 +3,9 @@
 #[cfg(windows)]
 mod windows;
 #[cfg(windows)]
-pub use windows::{Child, Limits, spawn, spawn_isolated_with_stdin, spawn_with_stdin};
+pub use windows::{
+    Child, Limits, spawn, spawn_background_with_stdin, spawn_isolated_with_stdin, spawn_with_stdin,
+};
 
 #[cfg(not(windows))]
 pub type Child = tokio::process::Child;
@@ -32,3 +34,5 @@ pub fn spawn(
 pub use spawn as spawn_with_stdin;
 #[cfg(not(windows))]
 pub use spawn as spawn_isolated_with_stdin;
+#[cfg(not(windows))]
+pub use spawn as spawn_background_with_stdin;

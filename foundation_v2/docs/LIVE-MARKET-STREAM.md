@@ -12,6 +12,23 @@ This is a continuous browser stream with a sampled terminal adapter, **not** a
 broker tick-push feed or a guaranteed sub-500-ms execution path. A slow SDK/lock
 delays the next sample. Quote timestamps remain the broker timestamps.
 
+## Managed account lifetime
+
+Each connected account keeps its own warm terminal/SDK worker. Two accounts can
+therefore have two background `terminal64.exe` processes; sharing one terminal
+would let a login replace the other account. The API starts managed workers on
+an owned, noninteractive Windows desktop, including SDK-launched descendants.
+It never switches the user's desktop; terminal windows stay off the taskbar.
+Job-tree cleanup and per-account generation/identity checks still apply.
+
+**Sync** requests fresh history on the existing session without changing its
+generation. It cannot resume a paused/disconnected account. Credential changes,
+pause/resume and disconnect still revoke older generations; delayed cleanup must
+preserve a worker that already belongs to the new generation. Remove preserves
+the existing unresolved-submission gate. These operations grant no order authority.
+
+## Market subscriptions
+
 - One producer per workspace, subject, connection, symbol and timeframe; up to
   8 feeds, 8 subscribers per feed and 32 stream connections per API process.
   Streams from different scopes never share data. Existing database terminal

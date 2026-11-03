@@ -2,6 +2,11 @@
 
 WORK: ACTIVE/PARTIAL · REVIEW: REVIEWED-PARTIAL · chưa hoàn thành toàn audit.
 
+Lát tài khoản03/11: [MT5 lifecycle](ACCOUNT-LIFECYCLE-20261103.md) sửa cửa sổ helper
+hiện trên desktop, Sync khởi động lại terminal và cleanup nhầm generation mới.
+Đã rollout local theo quyền owner, kiểm hai demo đang có và giữ acceptance của
+lát này tách khỏi trạng thái toàn audit bên dưới.
+
 Owner đã giao tiếp tục sau lần dừng bên dưới. Nguồn đọc tiếp:
 [review owner](OWNER-REVIEW-20261101.md), [overlay matrix](overlay-matrix.md),
 [Studio result](STUDIO-RESULT.md) và [Replay link](replay-link-review.md).

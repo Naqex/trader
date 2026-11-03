@@ -155,6 +155,10 @@ async fn secrets_retries_isolation_and_lifecycle() {
         .1["status"],
         "paused"
     );
+    // Sync is not resume, and repeated refresh must not rotate credentials or
+    // generation (which would restart an already authenticated terminal).
+    let generation_before_sync: i64 = db.query_one("SELECT generation FROM mt5_connections WHERE workspace_id='tenant-a'", &[]).await.unwrap().get(0);
+    assert_eq!(request(&app, "POST", &format!("{base}/{id}/sync"), "tenant-a", Value::Null).await.0, 404);
     assert_eq!(
         request(
             &app,
@@ -167,6 +171,10 @@ async fn secrets_retries_isolation_and_lifecycle() {
         .1["status"],
         "queued"
     );
+    for _ in 0..2 {
+        assert_eq!(request(&app, "POST", &format!("{base}/{id}/sync"), "tenant-a", Value::Null).await.1["status"], "queued");
+    }
+    assert_eq!(db.query_one("SELECT generation FROM mt5_connections WHERE workspace_id='tenant-a'", &[]).await.unwrap().get::<_,i64>(0), generation_before_sync + 1);
     let status = request(
         &app,
         "GET",
