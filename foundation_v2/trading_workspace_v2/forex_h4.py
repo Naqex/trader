@@ -10,6 +10,8 @@ from decimal import Decimal, ROUND_FLOOR
 from itertools import groupby
 from pathlib import Path
 
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
 from .replay_tick_execution import BrokerReplayTick
 
 HOUR = 3600
@@ -24,6 +26,60 @@ class Candle:
     high: Decimal
     low: Decimal
     close: Decimal
+
+
+class CandleState(BaseModel):
+    model_config = ConfigDict(extra='forbid', frozen=True, allow_inf_nan=False)
+    timestamp: int = Field(ge=0, strict=True)
+    open: Decimal = Field(gt=0)
+    high: Decimal = Field(gt=0)
+    low: Decimal = Field(gt=0)
+    close: Decimal = Field(gt=0)
+
+    @model_validator(mode='after')
+    def valid_ohlc(self):
+        if not self.low <= min(self.open, self.close) <= max(self.open, self.close) <= self.high:
+            raise ValueError('invalid candle OHLC')
+        return self
+
+    def candle(self):
+        return Candle(**self.model_dump())
+
+
+class H4BuilderState(BaseModel):
+    model_config = ConfigDict(extra='forbid', frozen=True)
+    parts: tuple[CandleState, ...] = Field(default=(), max_length=3)
+    excluded: tuple[int, ...] = ()
+
+    @model_validator(mode='after')
+    def valid_parts(self):
+        times = [p.timestamp for p in self.parts]
+        if (any(t % HOUR for t in times) or
+                any(b <= a or b // H4 != a // H4 for a, b in zip(times, times[1:])) or
+                any(t < 0 or t % H4 for t in self.excluded) or
+                any(b <= a for a, b in zip(self.excluded, self.excluded[1:]))):
+            raise ValueError('invalid H4 builder state')
+        return self
+
+
+class H4CandidateState(BaseModel):
+    model_config = ConfigDict(extra='forbid', frozen=True, allow_inf_nan=False)
+    history: tuple[CandleState, ...] = Field(default=(), max_length=20)
+    tr_seed: tuple[Decimal, ...] = Field(default=(), max_length=14)
+    atr: Decimal | None = Field(default=None, ge=0)
+    previous_close: Decimal | None = Field(default=None, gt=0)
+
+    @model_validator(mode='after')
+    def valid_indicator_state(self):
+        times = [p.timestamp for p in self.history]
+        if (any(t % H4 for t in times) or any(b <= a for a, b in zip(times, times[1:])) or
+                any(v < 0 for v in self.tr_seed) or
+                len(self.tr_seed) != min(len(self.history), 14) or
+                (self.atr is None) != (len(self.tr_seed) < 14) or
+                (self.previous_close != self.history[-1].close if self.history else
+                 self.previous_close is not None or self.tr_seed or self.atr is not None)):
+            raise ValueError('invalid H4 candidate state')
+        return self
 
 
 def read_qdm_ticks(path: Path, *, sha256: str, first_day: str, last_day: str):
@@ -62,6 +118,18 @@ class H4Builder:
         self.parts = []
         self.excluded = []
 
+    def export_state(self):
+        return H4BuilderState(parts=tuple(CandleState(**vars(p)) for p in self.parts),
+                              excluded=tuple(self.excluded))
+
+    @classmethod
+    def from_state(cls, state: H4BuilderState):
+        state = H4BuilderState.model_validate(state)
+        result = cls()
+        result.parts = [p.candle() for p in state.parts]
+        result.excluded = list(state.excluded)
+        return result
+
     def add(self, hour: Candle):
         if self.parts and hour.timestamp // H4 != self.parts[0].timestamp // H4:
             self.excluded.append(self.parts[0].timestamp // H4 * H4)
@@ -89,6 +157,19 @@ class FixedH4Candidate:
         self.tr_seed = []
         self.atr = None
         self.previous_close = None
+
+    def export_state(self):
+        return H4CandidateState(history=tuple(CandleState(**vars(p)) for p in self.history),
+            tr_seed=tuple(self.tr_seed), atr=self.atr, previous_close=self.previous_close)
+
+    @classmethod
+    def from_state(cls, state: H4CandidateState):
+        state = H4CandidateState.model_validate(state)
+        result = cls()
+        result.history.extend(p.candle() for p in state.history)
+        result.tr_seed = list(state.tr_seed)
+        result.atr, result.previous_close = state.atr, state.previous_close
+        return result
 
     def observe(self, candle: Candle, *, side=None):
         if self.history and candle.timestamp <= self.history[-1].timestamp:

@@ -48,6 +48,11 @@ Managed MT5 charts additionally use a shared SSE market stream with incremental
 bar updates and reconnect; the warm terminal SDK adapter is sampled rather than
 broker tick-pushed. See [market stream contract and limits](docs/LIVE-MARKET-STREAM.md).
 
+The fixed offline Forex candidate also has a
+[restartable QDM quote consumer](docs/FOREX-FORWARD.md), with pinned experiment
+artifacts and checkpointed H4/risk/accounting state. This is historical replay,
+not autonomous broker execution or observed-market forward acceptance.
+
 Connection pools, queue admission, leases/fencing, mutation idempotency receipts,
 checksum migrations and owned-process shutdown are bounded. Browser navigation
 preserves the shell; stale readers cancel and healthy SSE replaces repeated
