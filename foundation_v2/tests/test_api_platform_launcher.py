@@ -1,5 +1,6 @@
 """Restart guards must remain read-only and must reject foreign/recycled processes."""
 import importlib.util
+import io
 import json
 from pathlib import Path
 import sys
@@ -10,6 +11,103 @@ from unittest.mock import MagicMock, patch
 SPEC = importlib.util.spec_from_file_location("platform_launcher", Path(__file__).resolve().parents[1] / "scripts/run_api_platform.py")
 launcher = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(launcher)
+
+
+class RuntimeReadinessTests(unittest.TestCase):
+    def run_monitor(self, probes, *, initially_ready=True, expect_exit=False):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            args = launcher.parser().parse_args(['--runtime-profile', 'native', '--manifest', str(root / 'owner.json')])
+            stop = root / 'owned.stop'
+            state = {'ready': initially_ready, 'run_id': 'owned-run', 'processes': {'api': {'pid': 42}}}
+            child = MagicMock()
+            child.poll.return_value = None
+            values, writes, clock = iter(probes), [], [0.0]
+            def probe(_args):
+                value = next(values)
+                if value == 'stop':
+                    stop.write_text('stop')
+                    return True
+                if value == 'exit':
+                    child.poll.return_value = 1
+                    return True
+                return value
+            def record(path, value):
+                self.assertEqual(path, args.manifest)
+                writes.append(json.loads(json.dumps(value)))
+            with patch.object(launcher, 'api_ready', side_effect=probe), \
+                 patch.object(launcher, 'manifest_write', side_effect=record), \
+                 patch.object(launcher.time, 'monotonic', side_effect=lambda: clock[0]), \
+                 patch.object(launcher.time, 'sleep', side_effect=lambda seconds: clock.__setitem__(0, clock[0] + seconds)):
+                if expect_exit:
+                    with self.assertRaises(launcher.PreflightError):
+                        launcher.monitor_owned_runtime(args, state, {'api': child}, stop)
+                else:
+                    launcher.monitor_owned_runtime(args, state, {'api': child}, stop)
+            return state, writes, child
+
+    def test_hung_live_child_degrades_and_recovers_without_restart_or_repeated_writes(self):
+        state, writes, child = self.run_monitor([False, False, False, False, True, True, 'stop'])
+        self.assertEqual([item['ready'] for item in writes], [False, True])
+        self.assertEqual(writes[0]['readiness_reason'], 'api_readiness_unavailable')
+        self.assertNotIn('readiness_reason', writes[1])
+        self.assertEqual(state['run_id'], 'owned-run')
+        self.assertEqual(state['processes'], {'api': {'pid': 42}})
+        child.kill.assert_not_called()
+        child.terminate.assert_not_called()
+
+    def test_transient_failure_does_not_degrade_and_stop_during_probe_cannot_recover(self):
+        state, writes, _ = self.run_monitor([False, False, True, 'stop'])
+        self.assertTrue(state['ready'])
+        self.assertEqual(writes, [])
+        state, writes, _ = self.run_monitor(['stop'], initially_ready=False)
+        self.assertFalse(state['ready'])
+        self.assertEqual(writes, [])
+
+    def test_child_exit_during_probe_cannot_publish_recovery(self):
+        state, writes, child = self.run_monitor(['exit'], initially_ready=False, expect_exit=True)
+        self.assertFalse(state['ready'])
+        self.assertEqual(writes, [])
+        child.kill.assert_not_called()
+
+    def test_readiness_timeout_or_invalid_profile_response_is_unhealthy(self):
+        args = launcher.parser().parse_args(['--runtime-profile', 'native'])
+        with patch.object(launcher.urllib.request, 'urlopen', side_effect=TimeoutError):
+            self.assertFalse(launcher.api_ready(args))
+        for body, expected in [('[]', False), ('invalid', False), ('{"ok": true}', False),
+                               ('{"ok": true, "command_worker": "not_required"}', True)]:
+            with self.subTest(body=body), patch.object(launcher.urllib.request, 'urlopen', return_value=io.StringIO(body)):
+                self.assertEqual(launcher.api_ready(args), expected)
+
+    def test_supervisor_stop_during_startup_never_publishes_ready(self):
+        with tempfile.TemporaryDirectory() as folder:
+            args = launcher.parser().parse_args(['--manifest', str(Path(folder) / 'owner.json')])
+            child = MagicMock(pid=42)
+            child.poll.return_value = None
+            env, writes = {}, []
+            def probe(_args):
+                Path(env['TW_V2_SHUTDOWN_FILE']).write_text('stop')
+                child.poll.return_value = 0
+                return True
+            with patch.object(launcher, 'port_is_free', return_value=True), \
+                 patch.object(launcher, 'child_commands', return_value={'api': ['fixture']}), \
+                 patch.object(launcher, 'process_identity', side_effect=lambda pid: {'pid': pid, 'executable': 'fixture.exe'}), \
+                 patch.object(launcher, 'binary_digest', return_value='fixture-hash'), \
+                 patch.object(launcher, 'worker_ready', return_value=True), \
+                 patch.object(launcher.subprocess, 'Popen', return_value=child), \
+                 patch.object(launcher.threading, 'Thread'), \
+                 patch.object(launcher, 'api_ready', side_effect=probe), \
+                 patch.object(launcher, 'manifest_write', side_effect=lambda _path, state: writes.append(json.loads(json.dumps(state)))), \
+                 patch.object(launcher, 'monitor_owned_runtime') as monitor:
+                with self.assertRaisesRegex(launcher.PreflightError, 'shutdown requested'):
+                    launcher.supervise(args, env)
+            self.assertTrue(all(item['ready'] is False for item in writes))
+            self.assertTrue(any(item.get('stopping') for item in writes))
+            self.assertTrue(writes[-1]['stopped'])
+            self.assertFalse(writes[-1]['stopping'])
+            child.wait.assert_called_once()
+            child.kill.assert_not_called()
+            monitor.assert_not_called()
 
 
 class LauncherTests(unittest.TestCase):

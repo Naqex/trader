@@ -443,6 +443,51 @@ def worker_ready(env):
                             (env["TW_V2_COMMAND_WORKER_PREFIX"] + "-%",)).fetchone()[0]
 
 
+def api_ready(args):
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{args.port}/health/ready", timeout=2) as response:
+            health = json.load(response)
+        return (isinstance(health, dict) and health.get("ok") is True
+                and (args.runtime_profile != "native" or health.get("command_worker") == "not_required"))
+    except (OSError, ValueError):
+        return False
+
+
+def monitor_owned_runtime(args, state, children, stop_file):
+    # A live process can hang. Observe readiness without restarting it or replaying
+    # broker work; three failed probes tolerate a brief API/DB interruption.
+    next_probe = time.monotonic() + 5
+    failures = 0
+    while not stop_file.exists():
+        if any(child.poll() is not None for child in children.values()):
+            raise PreflightError("A runtime child exited; stopping only this owned runtime.")
+        if time.monotonic() >= next_probe:
+            healthy = api_ready(args)
+            next_probe = time.monotonic() + 5
+            # A stop or child exit during the bounded HTTP read must never publish
+            # a new healthy state after shutdown has already been requested.
+            if stop_file.exists():
+                break
+            if any(child.poll() is not None for child in children.values()):
+                raise PreflightError("A runtime child exited; stopping only this owned runtime.")
+            failures = 0 if healthy else min(failures + 1, 3)
+            ready = state["ready"]
+            if healthy:
+                ready = True
+            elif failures == 3:
+                ready = False
+            if ready != state["ready"]:
+                state["ready"] = ready
+                if ready:
+                    state.pop("readiness_reason", None)
+                else:
+                    state["readiness_reason"] = "api_readiness_unavailable"
+                manifest_write(args.manifest, state)
+                print("Owned runtime readiness recovered." if ready else
+                      "Owned runtime readiness degraded; processes retained, no work retried.", flush=True)
+        time.sleep(0.25)
+
+
 def supervise(args, env):
     if not port_is_free(args.port):
         raise PreflightError("Loopback API port is occupied. Use the guarded restart script; no process was stopped.")
@@ -508,27 +553,32 @@ def supervise(args, env):
             manifest_write(args.manifest, state)
         deadline = time.monotonic() + 30
         while time.monotonic() < deadline:
+            if stop_file.exists():
+                raise PreflightError("Runtime shutdown requested during startup.")
             if any(p.poll() is not None for p in children.values()):
                 raise PreflightError("A runtime child exited during startup; inspect sanitized role logs.")
-            try:
-                with urllib.request.urlopen(f"http://127.0.0.1:{args.port}/health/ready", timeout=2) as response:
-                    health = json.load(response)
-                    if health.get("ok") and (args.runtime_profile != "native" or health.get("command_worker") == "not_required"):
-                        state["ready"] = True
-                        manifest_write(args.manifest, state)
-                        break
-            except (OSError, ValueError):
-                pass
+            if api_ready(args):
+                if stop_file.exists():
+                    raise PreflightError("Runtime shutdown requested during startup.")
+                if any(p.poll() is not None for p in children.values()):
+                    raise PreflightError("A runtime child exited during startup; inspect sanitized role logs.")
+                state["ready"] = True
+                manifest_write(args.manifest, state)
+                break
             time.sleep(0.25)
         if not state["ready"]:
             raise PreflightError("Rust API readiness deadline exceeded.")
         print(f"Rust offline API ready on loopback port {args.port}; {args.runtime_profile} profile supervised.", flush=True)
-        while not stop_file.exists():
-            if any(p.poll() is not None for p in children.values()):
-                raise PreflightError("A runtime child exited; stopping only this owned runtime.")
-            time.sleep(0.25)
+        monitor_owned_runtime(args, state, children, stop_file)
     finally:
         stop_file.write_text("stop\n", encoding="ascii")
+        state["ready"] = False
+        state["stopping"] = True
+        try:
+            manifest_write(args.manifest, state)
+        except OSError:
+            # A diagnostic write failure must not skip owned-process cleanup.
+            print("Could not record stopping state; owned shutdown continues.", flush=True)
         deadline = time.monotonic() + 45
         while any(p.poll() is None for p in children.values()) and time.monotonic() < deadline:
             time.sleep(0.25)
@@ -543,6 +593,7 @@ def supervise(args, env):
         for log in logs:
             log.close()
         state["ready"] = False
+        state["stopping"] = False
         state["stopped"] = True
         manifest_write(args.manifest, state)
         worker_ready_file.unlink(missing_ok=True)
