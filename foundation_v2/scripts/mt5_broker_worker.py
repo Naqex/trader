@@ -269,6 +269,8 @@ def main():
                 response = {'error':code,'status':'rejected','passed':False,'reason':code}
                 if isinstance(error, trading.Denied) and error.data_quality is not None:
                     response['data_quality'] = error.data_quality
+                if isinstance(error, trading.Denied) and error.admission_recheck is not None:
+                    response['admission_recheck'] = error.admission_recheck
             except Exception:
                 # A failure may occur after send. Keep its receipt unresolved.
                 response = {'error':'mt5_worker_failed','status':'unknown','passed':False,'reason':'demo_adapter_failed'}

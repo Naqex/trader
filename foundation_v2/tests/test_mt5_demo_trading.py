@@ -455,6 +455,40 @@ class DemoTradingTests(unittest.TestCase):
         self.assertEqual(demo.execute(self.sdk,self.automation_policy(),self.command)['status'],'unknown')
         self.sdk.order_send.assert_called_once()
 
+    def test_automation_same_prices_with_new_tick_timestamp_passes_but_stale_still_denies(self):
+        original = self.tick.time_msc
+        def next_tick(_):
+            self.tick.time_msc = original + 1
+            return NS(retcode=0)
+        self.sdk.order_check.side_effect = next_tick
+        result = demo.execute(self.sdk, self.automation_policy(), self.command)
+        self.assertEqual(result['status'], 'filled')
+        self.sdk.order_check.assert_called_once()
+        self.sdk.order_send.assert_called_once()
+        self.sdk.order_check.reset_mock();self.sdk.order_send.reset_mock()
+        def stale_tick(_):
+            self.tick.time_msc = original - 10000
+            return NS(retcode=0)
+        self.sdk.order_check.side_effect = stale_tick
+        with self.assertRaisesRegex(demo.Denied, 'demo_quote_stale'):
+            demo.execute(self.sdk, self.automation_policy(), self.command)
+        self.sdk.order_check.assert_called_once()
+        self.sdk.order_send.assert_not_called()
+
+    def test_automation_recheck_rejection_identifies_changed_fields_without_inventory_details(self):
+        def price_change(_):
+            self.tick.bid += .00001
+            self.tick.ask += .00001
+            return NS(retcode=0)
+        self.sdk.order_check.side_effect = price_change
+        with self.assertRaises(demo.Denied) as caught:
+            demo.execute(self.sdk, self.automation_policy(), self.command)
+        self.assertEqual(str(caught.exception), 'demo_automation_state_changed')
+        self.assertFalse(caught.exception.admission_recheck['request_changed'])
+        self.assertIn('admission_state_sha256', caught.exception.admission_recheck['changed_preview_fields'])
+        self.assertNotIn('positions', caught.exception.admission_recheck)
+        self.sdk.order_send.assert_not_called()
+
     def test_automation_close_requires_durable_opening_identifier_not_magic_or_ticket(self):
         p=self.position();p.magic=999;p.identifier=77
         self.sdk.positions_get.return_value=(p,)

@@ -18,9 +18,10 @@ from decimal import Decimal
 
 
 class Denied(Exception):
-    def __init__(self, reason, *, data_quality=None):
+    def __init__(self, reason, *, data_quality=None, admission_recheck=None):
         super().__init__(reason)
         self.data_quality = data_quality
+        self.admission_recheck = admission_recheck
 
 
 class BrokerPolicy(dict):
@@ -102,8 +103,8 @@ BROKER_REASONS = {10017: 'demo_broker_trade_disabled', 10018: 'demo_market_close
                   10043: 'demo_broker_short_only', 10044: 'demo_broker_close_only'}
 
 
-def deny(reason, *, data_quality=None):
-    raise Denied(reason, data_quality=data_quality)
+def deny(reason, **details):
+    raise Denied(reason, **details)
 
 
 def finite(value, positive=False):
@@ -295,8 +296,10 @@ def _automation_current(policy):
 
 def _automation_state(account, positions, orders, quote):
     """Fingerprint mutable SDK inputs without exposing another position's details."""
+    # Each prepare independently checks the current tick's age. A newer tick at
+    # identical prices does not change the checked economics or inventory.
     values = dict(equity=finite(account.equity), margin_free=finite(account.margin_free),
-                  currency=account.currency, quote=[quote.bid, quote.ask, quote.time_msc])
+                  currency=account.currency, quote=[quote.bid, quote.ask])
     values['positions'] = sorted((p.ticket, p.symbol, p.type, finite(p.volume, True), finite(p.price_open, True),
                                   finite(p.sl), finite(p.tp), getattr(p, 'identifier', None)) for p in positions)
     values['orders'] = sorted((p.ticket, p.symbol, p.type, finite(p.volume_current, True), finite(p.price_open, True),
@@ -436,7 +439,11 @@ def execute(sdk, policy, command, before_send=lambda: None):
         before_send()
         final_request, final_preview = prepare(sdk, policy, command, check_broker=False)
         if request != final_request or preview != final_preview:
-            deny('demo_automation_state_changed')
+            deny('demo_automation_state_changed', admission_recheck={
+                'request_changed': request != final_request,
+                'changed_preview_fields': sorted(k for k in preview.keys() | final_preview.keys()
+                    if preview.get(k) != final_preview.get(k)),
+            })
         # Connection pause/disconnect also has its own fence and may arrive while
         # SDK calculations run. Re-read it after those calculations as well.
         before_send()
@@ -630,6 +637,8 @@ def main():
         response = {'status': 'rejected', 'passed': False, 'reason': str(error)}
         if error.data_quality is not None:
             response['data_quality'] = error.data_quality
+        if error.admission_recheck is not None:
+            response['admission_recheck'] = error.admission_recheck
     except Exception:
         # Unexpected failures could follow submission; never classify as safe to retry.
         response = {'status': 'unknown', 'passed': False, 'reason': 'demo_adapter_failed'}

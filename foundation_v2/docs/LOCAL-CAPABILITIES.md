@@ -176,6 +176,10 @@ Console output gives status/reason/attention only. Full private `state.json`
 retains native receipts and HTTP duration; stale SDK rejections also retain
 quote timestamp, SDK observation timestamp, age and policy limit. None of these
 diagnostics relaxes the 5-second quote gate or proves continuous tick coverage.
+The final comparison tolerates only a new tick timestamp at identical prices;
+both ticks must independently pass freshness. Price, inventory, equity, margin,
+grant and connection changes retain their existing guards. A state-change
+rejection reports changed preview field names without exposing other positions.
 Exit codes: 0 = proven open/close completion, 3 = blocked/stopped/attention,
 2 = input/transport/checkpoint error. Paperclip continues to own tasks/reports;
 do not add a second workflow-management UI around the session client.
