@@ -47,6 +47,7 @@ class WorkerTests(unittest.TestCase):
         session.check_identity=Mock(return_value=NS(trade_mode=0))
         session.sdk=Mock()
         session.sdk.symbols_get.return_value=(NS(name='EURUSD',trade_mode=4,visible=True),)
+        session.sdk.symbol_info_tick.return_value=NS(bid=1.1,ask=1.1001)
         session.secret={'login':'123','server':'Fixture','password':'fixture-only'}
         session.terminal=Path('C:/owned/terminal64.exe')
         return session
@@ -108,6 +109,44 @@ class WorkerTests(unittest.TestCase):
         self.assertEqual(result['verified_permissions'],{'read':True,'trade':False})
         session.sdk.order_check.assert_not_called()
         session.sdk.order_send.assert_not_called()
+
+    def test_default_chart_uses_quoted_broker_variant(self):
+        session=self.session()
+        session.sdk.symbols_get.return_value=(NS(name='EURUSD',trade_mode=4,visible=False),NS(name='EURUSDm',trade_mode=4,visible=True))
+        session.sdk.symbol_info_tick.side_effect=lambda symbol: NS(bid=0.0,ask=0.0) if symbol=='EURUSD' else NS(bid=1.1,ask=1.1001)
+        with patch.object(worker.trading,'snapshot',return_value={'account':{}}) as snapshot:
+            session.handle({**self.request,'operation':'snapshot'})
+        self.assertEqual(snapshot.call_args.args[2],'EURUSDm')
+        session.sdk.order_check.assert_not_called()
+        session.sdk.order_send.assert_not_called()
+
+    def test_explicit_chart_symbol_is_not_substituted(self):
+        session=self.session()
+        with patch.object(worker.trading,'snapshot',return_value={'account':{}}) as snapshot:
+            session.handle({**self.request,'operation':'snapshot','symbol':'EURUSD'})
+        self.assertEqual(snapshot.call_args.args[2],'EURUSD')
+        session.sdk.symbol_info_tick.assert_not_called()
+
+    def test_default_chart_without_valid_quotes_is_unavailable(self):
+        for quote in (None,NS(bid=0.0,ask=0.0),NS(bid=float('nan'),ask=1.1),NS(bid=1.2,ask=1.1)):
+            with self.subTest(quote=quote):
+                session=self.session()
+                session.sdk.symbol_info_tick.return_value=quote
+                with patch.object(worker.trading,'snapshot') as snapshot,self.assertRaisesRegex(worker.trading.Denied,'demo_quote_unavailable'):
+                    session.handle({**self.request,'operation':'snapshot'})
+                snapshot.assert_not_called()
+                session.sdk.order_check.assert_not_called()
+                session.sdk.order_send.assert_not_called()
+
+    def test_default_chart_subscribes_preferred_symbols_without_switching_asset(self):
+        session=self.session()
+        session.sdk.symbols_get.return_value=(NS(name='EURUSDm',trade_mode=4,visible=False),NS(name='BTCJPYm',trade_mode=4,visible=True))
+        session.sdk.symbol_info_tick.side_effect=lambda symbol: None if symbol=='EURUSDm' else NS(bid=100.0,ask=101.0)
+        with patch.object(worker.trading,'snapshot') as snapshot,self.assertRaisesRegex(worker.trading.Denied,'demo_quote_unavailable'):
+            session.handle({**self.request,'operation':'snapshot'})
+        session.sdk.symbol_select.assert_called_once_with('EURUSDm',True)
+        session.sdk.symbol_info_tick.assert_called_once_with('EURUSDm')
+        snapshot.assert_not_called()
 
     def test_catalog_is_read_only_preserves_broker_metadata_and_checks_revocation(self):
         session=self.session()

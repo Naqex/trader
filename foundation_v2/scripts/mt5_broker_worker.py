@@ -194,7 +194,28 @@ class Session:
                 policy = trading.AutomationBrokerPolicy._from_authenticated_worker(policy, automation['policy'],
                     owned_order_ids=automation['owned_order_ids'], risk_reserved=automation['risk_reserved'])
             if operation == 'snapshot':
-                symbol = request.get('symbol') or next((s for s in ('EURUSD','EURUSDm','XAUUSD','XAUUSDm') if s in names), next((s.name for s in symbols if s.visible and s.name in names), names[0]))
+                symbol = request.get('symbol')
+                if not symbol:
+                    # A broker may list an unsuffixed instrument with zero quotes
+                    # alongside its quoted account-specific variant (EURUSDm).
+                    preferred = [s for s in ('EURUSD','EURUSDm','XAUUSD','XAUUSDm') if s in names]
+                    candidates = preferred or [s.name for s in symbols if s.visible and s.name in names] or names[:1]
+                    visible = {s.name for s in symbols if s.visible}
+                    for candidate in candidates:
+                        if candidate not in visible and not self.sdk.symbol_select(candidate, True):
+                            continue
+                        quote = self.sdk.symbol_info_tick(candidate)
+                        if quote is None:
+                            continue
+                        try:
+                            bid, ask = trading.finite(quote.bid, True), trading.finite(quote.ask, True)
+                        except trading.Denied:
+                            continue
+                        if ask >= bid:
+                            symbol = candidate
+                            break
+                    if not symbol:
+                        trading.deny('demo_quote_unavailable')
                 result = trading.snapshot(self.sdk, policy, symbol, request.get('timeframe','M1'), request.get('bar_count',300))
                 result['account']['trade_mode'] = mode
                 result['account_environment'] = mode
