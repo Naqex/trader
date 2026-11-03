@@ -107,11 +107,13 @@ financing cursor; resume must produce the same state as uninterrupted playback.
 ## Next execution boundary
 
 Do not connect this output to the manual broker endpoint as automation. The
-current local-trust API does not distinguish Owner from Automation. Activation
-needs an authenticated restricted principal, owner-approved immutable Demo
-grant, durable attempt/risk reservations, final fresh SDK admission, and native
-unknown-outcome reconciliation. An `automation=true` field or a Paperclip report
-is not that boundary. Real/live stays separately gated.
+native `local-capability` API separates Owner from Automation using an
+owner-approved immutable Demo grant, durable attempt/risk reservations, final
+fresh SDK admission and native unknown-outcome reconciliation; see
+[local capabilities and the durable session client](LOCAL-CAPABILITIES.md).
+The historical replay consumer does not issue grants or invoke that client.
+An `automation=true` field or a Paperclip report is not authority. Real/live
+stays separately gated.
 
 Read-only native market SSE is a sampled latest-state chart feed, not a durable
 tick audit stream; see [its contract](LIVE-MARKET-STREAM.md). An actual observed

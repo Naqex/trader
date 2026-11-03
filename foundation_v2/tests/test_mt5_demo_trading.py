@@ -102,6 +102,23 @@ class DemoTradingTests(unittest.TestCase):
         self.sdk.order_send.assert_not_called()
         self.sdk.order_check.assert_not_called()
 
+    def test_quote_rejection_keeps_timing_evidence_without_check_or_send(self):
+        for stamp in (100000, 109001):
+            with self.subTest(stamp=stamp):
+                self.tick.time_msc = stamp
+                with self.assertRaises(demo.Denied) as caught:
+                    demo.instrument(self.sdk, self.policy, 'EURUSD', now=108)
+                self.assertEqual(str(caught.exception), 'demo_quote_stale')
+                self.assertEqual(caught.exception.data_quality, dict(quote_time_msc=stamp,
+                    observed_at_msc=108000, quote_age_ms=108000-stamp,
+                    max_quote_age_ms=2000, clock='host_utc'))
+        for stamp in (None, True, float('nan'), float('inf'), -1):
+            self.tick.time_msc = stamp
+            with self.assertRaisesRegex(demo.Denied, 'demo_quote_unavailable'):
+                demo.instrument(self.sdk, self.policy, 'EURUSD', now=108, allow_stale=True)
+        self.sdk.order_check.assert_not_called()
+        self.sdk.order_send.assert_not_called()
+
     def test_broker_closed_market_and_side_restrictions_are_not_inferred_from_quote_age(self):
         for retcode,reason in demo.BROKER_REASONS.items():
             with self.subTest(retcode=retcode):

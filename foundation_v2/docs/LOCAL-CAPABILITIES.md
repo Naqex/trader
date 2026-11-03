@@ -96,6 +96,90 @@ OrderCheck/send because the initial native receipt does not yet persist its
 stable identifier for crash-safe reconciliation. No magic-number ownership
 inference or automatic fallback to a manual credential is allowed.
 
+### Durable session client
+
+`scripts/mt5_demo_session.py` runs a preapproved immediate open → full close
+pair. It replaces one-off execution harnesses; it never creates a grant, chooses
+a symbol/side/SL/risk budget, retries a command, renews expiry or falls back to an
+Owner endpoint. The native API/SDK remains the authority for every send.
+
+The operator supplies a private JSON manifest with:
+
+```json
+{
+  "schema_version": "mt5-demo-session-v1",
+  "api_origin": "http://127.0.0.1:8010",
+  "workspace_id": "tenant-a",
+  "connection_generation": 11,
+  "artifact_path": "artifact.json",
+  "artifact_sha256": "<approved artifact SHA256>",
+  "expires_at": "<approved timezone-aware expiry>",
+  "entry": {
+    "request_id": "<fixed opening UUID>",
+    "connection_id": "<approved connection UUID>",
+    "mode": "demo",
+    "account_id": "<approved login>",
+    "server": "<approved server>",
+    "action": "place",
+    "symbol": "<approved symbol>",
+    "side": "BUY",
+    "order_type": "market",
+    "volume": 0.01,
+    "stop_loss": 1.10
+  },
+  "close_request_id": "<fixed distinct closing UUID>"
+}
+```
+
+These are placeholders, not approved trade parameters. `artifact_path` resolves
+relative to the manifest. Supply the native one-time grant response as a
+separate credential JSON containing only `grant_id`, `credential_id` and
+`credential`. Keep it private; never use the Owner bearer or put secret values
+in command arguments, task bodies or reports. Start the runner without Owner,
+database or provider credentials in its environment. The client uses no SDK/DB
+and only the three Automation routes above. Plain HTTP is restricted to an exact
+numeric loopback origin; environment proxies and redirects are disabled.
+
+```powershell
+# Choose a NEW session directory under the private evidence root; parent exists.
+python -X utf8 scripts/mt5_demo_session.py start --manifest C:\private\plan.json --credential-file C:\private\grant.json --state-dir C:\private\session
+python -X utf8 scripts/mt5_demo_session.py status --state-dir C:\private\session
+python -X utf8 scripts/mt5_demo_session.py resume --manifest C:\private\plan.json --credential-file C:\private\grant.json --state-dir C:\private\session
+python -X utf8 scripts/mt5_demo_session.py reconcile --manifest C:\private\plan.json --credential-file C:\private\grant.json --state-dir C:\private\session
+```
+
+`start` refuses an existing directory. A private directory, exclusive OS lock,
+checksum, fsync and atomic replacement protect the local orchestration state.
+The manifest/artifact and credential identity are checked again on resume; the
+state stores only a credential digest. The native database remains the broker
+receipt/budget authority; this file records only which client intents were made.
+
+Each command intent is persisted **before** its single POST. After interruption,
+timeout, malformed response or 404, the same intent is only read/reconciled, never
+posted again. This deliberately sacrifices automatic recovery of a request that
+crashed just before POST; absence of a receipt is insufficient evidence to send.
+Full fill/volume, request/account/generation/grant/artifact identity must match
+before proceeding to close. Partial fills or unknown outcomes require attention.
+One invocation performs at most one receipt lookup and one reconciliation per
+uncertain intent; it does not start an unattended retry loop.
+
+`resume` may send a not-yet-attempted close after proving the opening full fill,
+if the original approved session remains valid. `reconcile` never creates new
+intents or sends, including a close. Expiry or a `STOP` file in the session
+directory blocks new commands but permits reconciliation. These do **not** close
+an existing position; `attention_required` means the Owner must inspect the
+account. For immediate revocation use the native Owner revoke route. The native
+fence is authoritative if revocation races an already admitted client request.
+No automatic restart/scheduler or post-expiry liquidation is installed.
+
+Console output gives status/reason/attention only. Full private `state.json`
+retains native receipts and HTTP duration; stale SDK rejections also retain
+quote timestamp, SDK observation timestamp, age and policy limit. None of these
+diagnostics relaxes the 5-second quote gate or proves continuous tick coverage.
+Exit codes: 0 = proven open/close completion, 3 = blocked/stopped/attention,
+2 = input/transport/checkpoint error. Paperclip continues to own tasks/reports;
+do not add a second workflow-management UI around the session client.
+
 ## Migration and rollback
 
 Migration `0021_automation_grants.sql` is additive and preserves native receipts.

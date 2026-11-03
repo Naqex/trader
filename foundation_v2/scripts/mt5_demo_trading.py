@@ -18,7 +18,9 @@ from decimal import Decimal
 
 
 class Denied(Exception):
-    pass
+    def __init__(self, reason, *, data_quality=None):
+        super().__init__(reason)
+        self.data_quality = data_quality
 
 
 class BrokerPolicy(dict):
@@ -100,8 +102,8 @@ BROKER_REASONS = {10017: 'demo_broker_trade_disabled', 10018: 'demo_market_close
                   10043: 'demo_broker_short_only', 10044: 'demo_broker_close_only'}
 
 
-def deny(reason):
-    raise Denied(reason)
+def deny(reason, *, data_quality=None):
+    raise Denied(reason, data_quality=data_quality)
 
 
 def finite(value, positive=False):
@@ -191,9 +193,16 @@ def instrument(sdk, policy, symbol, now=None, allow_stale=False, read=False):
         deny('demo_quote_unavailable')
     for value in (quote.bid, quote.ask, info.trade_tick_size, info.point, info.volume_min, info.volume_max, info.volume_step):
         finite(value, True)
-    age = int((time.time() if now is None else now) * 1000) - quote.time_msc
+    stamp = quote.time_msc
+    if type(stamp) not in (int, float) or not math.isfinite(stamp) or not 0 < stamp <= 8640000000000000:
+        deny('demo_quote_unavailable')
+    observed = int((time.time() if now is None else now) * 1000)
+    age = observed - stamp
     if quote.ask < quote.bid or not allow_stale and (age < -1000 or age > policy['max_quote_age_ms']):
-        deny('demo_quote_stale')
+        deny('demo_quote_stale', data_quality={
+            'quote_time_msc': stamp, 'observed_at_msc': observed, 'quote_age_ms': age,
+            'max_quote_age_ms': policy['max_quote_age_ms'], 'clock': 'host_utc',
+        })
     return info, quote
 
 
@@ -619,6 +628,8 @@ def main():
         response = run(json.loads(raw))
     except Denied as error:
         response = {'status': 'rejected', 'passed': False, 'reason': str(error)}
+        if error.data_quality is not None:
+            response['data_quality'] = error.data_quality
     except Exception:
         # Unexpected failures could follow submission; never classify as safe to retry.
         response = {'status': 'unknown', 'passed': False, 'reason': 'demo_adapter_failed'}

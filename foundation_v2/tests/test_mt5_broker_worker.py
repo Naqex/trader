@@ -2,6 +2,7 @@
 import importlib.util
 import copy
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
@@ -312,6 +313,21 @@ class WorkerTests(unittest.TestCase):
         session.sdk.order_check.assert_not_called()
         with patch.object(worker,'automation_grant',return_value=evidence),patch.object(worker.trading,'execute',side_effect=execute):
             self.assertEqual(session.handle(request),{'status':'filled','order':17})
+
+    def test_worker_preserves_quote_rejection_timestamps_in_native_receipt(self):
+        output = io.StringIO()
+        quality = dict(quote_time_msc=1000, observed_at_msc=9000,
+                       quote_age_ms=8000, max_quote_age_ms=5000, clock='host_utc')
+        with patch.object(worker, 'Session') as session, \
+                patch.object(worker.sys, 'stdin', NS(buffer=io.BytesIO(b'{}\n'))), \
+                patch.object(worker.sys, 'stdout', output):
+            session.return_value.handle.side_effect = worker.trading.Denied('demo_quote_stale', data_quality=quality)
+            worker.main()
+        response = json.loads(output.getvalue())
+        self.assertEqual(response['status'], 'rejected')
+        self.assertEqual(response['reason'], 'demo_quote_stale')
+        self.assertEqual(response['data_quality'], quality)
+        session.return_value.close.assert_called_once()
 
 
 if __name__=='__main__':
