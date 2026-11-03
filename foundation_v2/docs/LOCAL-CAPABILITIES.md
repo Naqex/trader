@@ -176,10 +176,17 @@ Console output gives status/reason/attention only. Full private `state.json`
 retains native receipts and HTTP duration; stale SDK rejections also retain
 quote timestamp, SDK observation timestamp, age and policy limit. None of these
 diagnostics relaxes the 5-second quote gate or proves continuous tick coverage.
-The final comparison tolerates only a new tick timestamp at identical prices;
-both ticks must independently pass freshness. Price, inventory, equity, margin,
-grant and connection changes retain their existing guards. A state-change
-rejection reports changed preview field names without exposing other positions.
+Both quote reads independently pass freshness. For price-free market-execution
+requests, final Bid/Ask movement is bounded by the existing approved
+`deviation_points` (broker points, not pips); risk, spread, SL and margin limits
+are recomputed at that fresh quote. The checked request itself must remain
+unchanged, so a price-bearing request still rejects changed price. Opening
+equity/free margin, inventory, currency, grant and connection retain their change
+guards. A full close may tolerate floating equity/free-margin movement because
+it only reduces proven owned exposure. The retained final quote's age is checked
+again after the last native fence. No added OrderCheck/send or automatic retry.
+A state-change rejection reports changed preview field names and whether quote
+drift exceeded policy, without exposing other positions.
 Exit codes: 0 = proven open/close completion, 3 = blocked/stopped/attention,
 2 = input/transport/checkpoint error. Paperclip continues to own tasks/reports;
 do not add a second workflow-management UI around the session client.

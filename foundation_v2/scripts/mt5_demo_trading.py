@@ -294,12 +294,14 @@ def _automation_current(policy):
         deny('demo_automation_grant_expired')
 
 
-def _automation_state(account, positions, orders, quote):
+def _automation_state(account, positions, orders, *, closing=False):
     """Fingerprint mutable SDK inputs without exposing another position's details."""
-    # Each prepare independently checks the current tick's age. A newer tick at
-    # identical prices does not change the checked economics or inventory.
-    values = dict(equity=finite(account.equity), margin_free=finite(account.margin_free),
-                  currency=account.currency, quote=[quote.bid, quote.ask])
+    # Quote movement is separately bounded by the approved deviation and every
+    # prepare recomputes price risk. Floating equity cannot veto a full close;
+    # opening exposure still requires unchanged account financial inputs.
+    values = dict(currency=account.currency)
+    if not closing:
+        values.update(equity=finite(account.equity), margin_free=finite(account.margin_free))
     values['positions'] = sorted((p.ticket, p.symbol, p.type, finite(p.volume, True), finite(p.price_open, True),
                                   finite(p.sl), finite(p.tp), getattr(p, 'identifier', None)) for p in positions)
     values['orders'] = sorted((p.ticket, p.symbol, p.type, finite(p.volume_current, True), finite(p.price_open, True),
@@ -320,6 +322,7 @@ def prepare(sdk, policy, command, *, check_broker=True):
     account = identity(sdk, policy)
     positions, orders = inventory(sdk)
     admission_state = None
+    admission_quote = None
     if automation:
         if action not in policy['actions']:
             deny('demo_automation_action_denied')
@@ -336,7 +339,8 @@ def prepare(sdk, policy, command, *, check_broker=True):
                 deny('demo_margin_insufficient')
         if (quote.ask - quote.bid) / info.point > policy['max_spread_points'] + 1e-8:
             deny('demo_automation_spread_limit')
-        admission_state = _automation_state(account, positions, orders, quote)
+        admission_state = _automation_state(account, positions, orders, closing=action == 'close')
+        admission_quote = dict(bid=quote.bid, ask=quote.ask, time_msc=quote.time_msc, point=info.point)
     request = {'symbol': symbol, 'magic': policy['magic'], 'comment': request_comment(command['request_id']) if command.get('request_id') else 'wm:preview'}
     estimated, margin, total_risk, limit = None, None, None, None
     if action == 'place':
@@ -427,6 +431,7 @@ def prepare(sdk, policy, command, *, check_broker=True):
     preview = {'passed': True, 'reason': 'demo_preview_passed', 'entry_price': price if action in ('place', 'close') else None, 'estimated_stop_risk': estimated, 'margin_required': margin, 'currency': account.currency, 'total_stop_risk': total_risk, 'risk_limit': limit, 'risk_estimate_excludes': ['slippage', 'gap_risk', *(['commission','swap'] if managed and not automation else [])], 'cost_buffer_per_lot': policy['cost_buffer_per_lot'] if bounded else None}
     if automation:
         preview['admission_state_sha256'] = admission_state
+        preview['admission_quote'] = admission_quote
     return request, preview
 
 
@@ -438,16 +443,34 @@ def execute(sdk, policy, command, before_send=lambda: None):
         # inputs after OrderCheck. Do not run OrderCheck again or retry a send.
         before_send()
         final_request, final_preview = prepare(sdk, policy, command, check_broker=False)
-        if request != final_request or preview != final_preview:
+        first, last = preview['admission_quote'], final_preview['admission_quote']
+        deviation = policy['deviation_points'] * finite(last['point'], True)
+        changed_fields = sorted(k for k in preview.keys() | final_preview.keys()
+            if preview.get(k) != final_preview.get(k))
+        # Market-execution requests contain no price: OrderCheck checked the
+        # same immutable request. Accept only bounded fresh quote changes after
+        # all risk/spread/SL/margin limits have been revalidated. Price-bearing
+        # requests must remain byte-equivalent to the checked request.
+        dynamic = {'admission_quote', 'entry_price', 'estimated_stop_risk', 'total_stop_risk'}
+        quote_drift = (first['point'] != last['point'] or
+            any(abs(last[k] - first[k]) > deviation + last['point'] * 1e-7 for k in ('bid', 'ask')))
+        if request != final_request or quote_drift or any(k not in dynamic for k in changed_fields):
             deny('demo_automation_state_changed', admission_recheck={
                 'request_changed': request != final_request,
-                'changed_preview_fields': sorted(k for k in preview.keys() | final_preview.keys()
-                    if preview.get(k) != final_preview.get(k)),
+                'quote_drift_exceeds_policy': quote_drift,
+                'changed_preview_fields': changed_fields,
             })
+        preview = final_preview
         # Connection pause/disconnect also has its own fence and may arrive while
         # SDK calculations run. Re-read it after those calculations as well.
         before_send()
         _automation_current(policy)
+        observed = int(time.time() * 1000)
+        age = observed - last['time_msc']
+        if age < -1000 or age > policy['max_quote_age_ms']:
+            deny('demo_quote_stale', data_quality=dict(quote_time_msc=last['time_msc'],
+                observed_at_msc=observed, quote_age_ms=age,
+                max_quote_age_ms=policy['max_quote_age_ms'], clock='host_utc'))
     else:
         # No cached preview is trusted. Re-read identity AND quote immediately before send.
         identity(sdk, policy)

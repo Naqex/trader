@@ -420,9 +420,12 @@ class DemoTradingTests(unittest.TestCase):
 
     def test_automation_final_mutable_state_is_rechecked_after_order_check(self):
         policy=self.automation_policy()
+        def beyond_deviation():
+            self.tick.bid += .00006
+            self.tick.ask += .00006
         mutations=[lambda:setattr(self.account,'equity',9999),
             lambda:setattr(self.account,'margin_free',9999),
-            lambda:setattr(self.tick,'ask',1.10003),
+            beyond_deviation,
             lambda:setattr(self.sdk.positions_get,'return_value',(self.position(),)),
             lambda:setattr(self.sdk.orders_get,'return_value',None)]
         for change in mutations:
@@ -477,16 +480,93 @@ class DemoTradingTests(unittest.TestCase):
 
     def test_automation_recheck_rejection_identifies_changed_fields_without_inventory_details(self):
         def price_change(_):
-            self.tick.bid += .00001
-            self.tick.ask += .00001
+            self.tick.bid += .00006
+            self.tick.ask += .00006
             return NS(retcode=0)
         self.sdk.order_check.side_effect = price_change
         with self.assertRaises(demo.Denied) as caught:
             demo.execute(self.sdk, self.automation_policy(), self.command)
         self.assertEqual(str(caught.exception), 'demo_automation_state_changed')
         self.assertFalse(caught.exception.admission_recheck['request_changed'])
-        self.assertIn('admission_state_sha256', caught.exception.admission_recheck['changed_preview_fields'])
+        self.assertTrue(caught.exception.admission_recheck['quote_drift_exceeds_policy'])
+        self.assertIn('admission_quote', caught.exception.admission_recheck['changed_preview_fields'])
         self.assertNotIn('positions', caught.exception.admission_recheck)
+        self.sdk.order_send.assert_not_called()
+
+    def test_automation_price_move_within_approved_deviation_recomputes_risk_before_single_send(self):
+        def price_change(_):
+            self.tick.bid += .00005
+            self.tick.ask += .00005
+            self.tick.time_msc += 1
+            return NS(retcode=0)
+        self.sdk.order_check.side_effect = price_change
+        result = demo.execute(self.sdk, self.automation_policy(), self.command)
+        self.assertEqual(result['status'], 'filled')
+        self.assertEqual(result['estimate']['entry_price'], self.tick.ask)
+        self.sdk.order_check.assert_called_once()
+        self.sdk.order_send.assert_called_once()
+        self.assertEqual(self.sdk.order_calc_profit.call_count, 2)
+
+    def test_automation_price_move_cannot_bypass_risk_spread_sl_or_margin_limit(self):
+        for effect, reason in (('risk', 'order_risk_limit'), ('spread', 'spread_limit'),
+                               ('margin', 'demo_margin_insufficient'), ('stop', 'demo_stop_direction')):
+            with self.subTest(effect=effect):
+                self.setUp()
+                def change(_):
+                    if effect == 'risk':
+                        self.sdk.order_calc_profit.side_effect = None
+                        self.sdk.order_calc_profit.return_value = -30
+                    elif effect == 'spread':
+                        self.tick.ask += .00010
+                    elif effect == 'margin':
+                        self.sdk.order_calc_margin.return_value = 10001
+                    else:
+                        self.command['stop_loss'] = self.tick.bid + .00001
+                    return NS(retcode=0)
+                self.sdk.order_check.side_effect = change
+                with self.assertRaisesRegex(demo.Denied, reason):
+                    demo.execute(self.sdk, self.automation_policy(), self.command)
+                self.sdk.order_send.assert_not_called()
+
+    def test_automation_price_bearing_request_stays_equal_to_checked_request(self):
+        self.info.trade_exemode = 0
+        def price_change(_):
+            self.tick.bid += .00001
+            self.tick.ask += .00001
+            return NS(retcode=0)
+        self.sdk.order_check.side_effect = price_change
+        with self.assertRaisesRegex(demo.Denied, 'state_changed'):
+            demo.execute(self.sdk, self.automation_policy(), self.command)
+        self.sdk.order_send.assert_not_called()
+
+    def test_automation_full_close_can_reduce_exposure_while_floating_equity_moves(self):
+        own = self.position();own.identifier=77
+        self.sdk.positions_get.return_value=(own,)
+        def changed(_):
+            self.account.equity -= 1
+            self.account.margin_free -= 1
+            self.tick.bid += .00001
+            self.tick.ask += .00001
+            return NS(retcode=0)
+        self.sdk.order_check.side_effect=changed
+        result=demo.execute(self.sdk,self.automation_policy(owned=(77,)),
+            {**self.command,'action':'close','ticket':77,'volume':None})
+        self.assertEqual(result['status'],'filled')
+        self.sdk.order_send.assert_called_once()
+
+    def test_automation_clock_age_is_rechecked_after_final_native_fence(self):
+        fences=0
+        def guard():
+            nonlocal fences
+            fences+=1
+            if fences==2:
+                self.tick.time_msc-=10000
+        # Advancing the clock after final preparation must invalidate its retained
+        # quote even if native DB revocation/identity checks themselves succeed.
+        clock=time.time()
+        with patch.object(demo.time,'time',side_effect=[clock,clock,clock+10]):
+            with self.assertRaisesRegex(demo.Denied,'demo_quote_stale'):
+                demo.execute(self.sdk,self.automation_policy(),self.command,guard)
         self.sdk.order_send.assert_not_called()
 
     def test_automation_close_requires_durable_opening_identifier_not_magic_or_ticket(self):
