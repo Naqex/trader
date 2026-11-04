@@ -124,6 +124,32 @@ def automation_grant(request, secret):
         raise trading.Denied('demo_automation_grant_denied') from None
 
 
+def wait_for_terminal(process):
+    """Wait for startup before initialize() can auto-launch a second terminal."""
+    import ctypes
+    from ctypes import wintypes
+    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+    user = ctypes.WinDLL('user32', use_last_error=True)
+    kernel.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+    kernel.OpenProcess.restype = wintypes.HANDLE
+    kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+    user.WaitForInputIdle.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+    user.WaitForInputIdle.restype = wintypes.DWORD
+    handle = kernel.OpenProcess(0x100000 | 0x1000, False, process.pid)
+    if not handle:
+        raise RuntimeError('mt5_terminal_unavailable')
+    try:
+        result = user.WaitForInputIdle(handle, 10000)
+        if result == 258:
+            raise RuntimeError('mt5_sync_timeout')
+        if result != 0:
+            raise RuntimeError('mt5_terminal_unavailable')
+        if process.poll() is not None:
+            raise RuntimeError('mt5_terminal_stopped')
+    finally:
+        kernel.CloseHandle(handle)
+
+
 class Session:
     def __init__(self, request, guard=fence, sdk_loader=None):
         self.context = {key: request[key] for key in ('workspace','connection_id','generation','credential','root','requested_mode')}
@@ -140,6 +166,7 @@ class Session:
             startup.wShowWindow = 0
             self.process = subprocess.Popen([str(self.terminal), '/portable', f'/config:{config}'], cwd=self.terminal.parent,
                                             startupinfo=startup, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            wait_for_terminal(self.process)
             if not self.sdk.initialize(str(self.terminal), login=int(self.secret['login']), password=self.secret['password'], server=self.secret['server'], timeout=60000, portable=True):
                 raise RuntimeError(connector.initialization_error(self.sdk))
             self.check_identity()
@@ -248,7 +275,9 @@ class Session:
             except subprocess.TimeoutExpired:
                 self.process.kill()
                 self.process.wait(timeout=5)
-        connector.clean_terminal(self.context['root'], self.context['connection_id'])
+        # The native job owner stops SDK/WebView descendants too. File cleanup
+        # here races their locks and can mask the original startup failure.
+        # prepare_terminal cleans this owned folder before the next cold start.
 
 
 def main():

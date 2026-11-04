@@ -714,3 +714,30 @@ The compile-time checkout remains the default when the variable is absent.
 For opt-in local Owner authentication and bounded Demo runner authority, see
 [Local capabilities](LOCAL-CAPABILITIES.md). Preserve the current launch profile;
 the new authentication flag does not authorize migration or broker execution.
+
+### Owned MT5 startup and recovery
+
+The persistent broker worker starts its isolated terminal with `/config`, then
+waits up to 10 seconds for Windows `WaitForInputIdle` before calling the SDK.
+The [SDK may launch a terminal itself](https://www.mql5.com/en/docs/python_metatrader5/mt5initialize_py);
+attaching while the explicit launch is still starting can race that launch and
+lose its access settings. The [Windows wait](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-waitforinputidle)
+is only a startup barrier. SDK initialization, account/server, access mode,
+terminal path and generation checks still determine readiness and authority.
+Timeout or a stopped process fails closed; there is no initialization/send retry
+inside the worker.
+
+On failure the worker disconnects its SDK and stops the explicitly launched
+process. Its native job owner stops all descendants. Do not delete terminal files
+from the worker while SDK/WebView descendants may still hold locks: this can
+replace an authentication/permission error with a sharing-violation exception.
+The next `prepare_terminal` cleans the private owned folder before a cold launch;
+it preserves only the approved terminal binaries. Forced native shutdown already
+uses this deferred-cleanup boundary. Never copy a saved account/profile directory
+into the next session.
+
+Cold history can still be incomplete after login. The existing history guard
+retains the previous journal and reports `mt5_history_warming` until the scheduled
+read recovers it; empty history is not proof that previous trades disappeared.
+Bounded reconnect evidence is separate from unattended operation over days and
+does not authorize broker orders or a new execution grant.

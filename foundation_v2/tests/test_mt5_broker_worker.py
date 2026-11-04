@@ -79,7 +79,11 @@ class WorkerTests(unittest.TestCase):
         sdk.account_info.return_value=NS(login=123,server='Fixture',trade_allowed=False,trade_expert=False)
         sdk.terminal_info.return_value=NS(connected=True,path=str(terminal.parent),data_path=str(terminal.parent),trade_allowed=False,tradeapi_disabled=True)
         secret=b'{"login":"123","server":"Fixture","password":"fixture-only"}'
-        with patch.object(worker.connector,'protect',return_value=secret),patch.object(worker.connector,'prepare_terminal',return_value=(terminal,Path('C:/owned/connector.ini'))) as prepare,patch.object(worker.subprocess,'Popen') as process,patch.object(worker.connector,'snapshot',return_value={'verified_permissions':{'read':True,'trade':False}}) as snapshot:
+        with patch.object(worker.connector,'protect',return_value=secret),patch.object(worker.connector,'prepare_terminal',return_value=(terminal,Path('C:/owned/connector.ini'))) as prepare,patch.object(worker.subprocess,'Popen') as process,patch.object(worker,'wait_for_terminal') as wait,patch.object(worker.connector,'snapshot',return_value={'verified_permissions':{'read':True,'trade':False}}) as snapshot:
+            def initialize(*args,**kwargs):
+                wait.assert_called_once_with(process.return_value)
+                return True
+            sdk.initialize.side_effect=initialize
             session=worker.Session(request,guard=Mock(),sdk_loader=lambda:sdk)
             self.assertFalse(session.handle(request)['verified_permissions']['trade'])
             session.handle(request)
@@ -95,6 +99,57 @@ class WorkerTests(unittest.TestCase):
             sdk.order_send.assert_not_called()
             sdk.shutdown.assert_not_called()
             process.return_value.terminate.assert_not_called()
+
+    def test_startup_wait_is_bounded_and_closes_its_handle_on_failure(self):
+        import ctypes
+        process=Mock(pid=123)
+        kernel,user=Mock(),Mock()
+        kernel.OpenProcess.return_value=456
+        for result,exit_code,expected in ((0,None,None),(258,None,'mt5_sync_timeout'),
+                                          (0xffffffff,None,'mt5_terminal_unavailable'),
+                                          (0,0,'mt5_terminal_stopped')):
+            kernel.reset_mock()
+            user.reset_mock()
+            with self.subTest(result=result,exit_code=exit_code),patch.object(ctypes,'WinDLL',side_effect=[kernel,user]):
+                user.WaitForInputIdle.return_value=result
+                process.poll.return_value=exit_code
+                if expected:
+                    with self.assertRaisesRegex(RuntimeError,'^'+expected+'$'):
+                        worker.wait_for_terminal(process)
+                else:
+                    worker.wait_for_terminal(process)
+                user.WaitForInputIdle.assert_called_once_with(456,10000)
+                kernel.CloseHandle.assert_called_once_with(456)
+        kernel.reset_mock()
+        kernel.OpenProcess.return_value=None
+        with patch.object(ctypes,'WinDLL',side_effect=[kernel,user]),self.assertRaisesRegex(RuntimeError,'mt5_terminal_unavailable'):
+            worker.wait_for_terminal(process)
+        kernel.CloseHandle.assert_not_called()
+
+    def test_failed_startup_preserves_reason_without_cleaning_live_descendant_files(self):
+        request={**self.request,'credential':'e30='}
+        terminal=Path('C:/owned/terminal64.exe')
+        secret=b'{"login":"123","server":"Fixture","password":"fixture-only"}'
+        for wait_error,expected in ((RuntimeError('mt5_sync_timeout'),'mt5_sync_timeout'),(None,'mt5_auth_failed')):
+            with self.subTest(expected=expected),patch.object(worker.connector,'protect',return_value=secret), \
+                    patch.object(worker.connector,'prepare_terminal',return_value=(terminal,Path('C:/owned/connector.ini'))), \
+                    patch.object(worker.subprocess,'Popen') as spawn, \
+                    patch.object(worker,'wait_for_terminal',side_effect=wait_error), \
+                    patch.object(worker.connector,'clean_terminal',side_effect=PermissionError('locked descendant fixture')) as clean:
+                sdk=Mock()
+                sdk.initialize.return_value=False
+                sdk.last_error.return_value=(-6,'sensitive broker message')
+                with self.assertRaisesRegex(RuntimeError,'^'+expected+'$'):
+                    worker.Session(request,guard=Mock(),sdk_loader=lambda:sdk)
+                clean.assert_not_called()
+                spawn.return_value.wait.assert_called_once_with(timeout=5)
+                sdk.shutdown.assert_called_once()
+                sdk.order_check.assert_not_called()
+                sdk.order_send.assert_not_called()
+                if wait_error:
+                    sdk.initialize.assert_not_called()
+                else:
+                    sdk.initialize.assert_called_once()
 
     def test_read_only_chart_snapshot_keeps_execution_disabled(self):
         session=self.session()
