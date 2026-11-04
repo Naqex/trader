@@ -271,6 +271,28 @@ It uses only synthetic pages on an ephemeral loopback port and dummy credentials
 it verifies recovery without duplicates, old-prefix revision rejection and STOP
 during recovery. It does not access MT5 or prove live hour-aligned handoff.
 
+### Observe progress and detect interrupted runs
+
+New supervisors persist an independent `heartbeat_at_msc` every five seconds
+during worker calls, polling waits and bounded transport recovery. `phase` records
+`worker`, `poll_wait`, `settling`, `retry_wait` or `terminal`. This is supervisor
+responsiveness, not proof that the worker, broker or market data are healthy.
+`updated_at_msc` remains the last data/progress update; a quiet wait does not
+pretend to have captured more ticks. `status` projects `health` without rewriting
+the lifecycle: a released session lock reports `interrupted`; a held lock with
+heartbeat older than 15 seconds reports `heartbeat_stale`; a held lock past the
+original deadline reports `overdue`. Old sessions report heartbeat unavailable,
+not fabricated freshness. Heartbeats never change registration, pins or deadline.
+
+For workspace runs, use the maintained read-only observer
+`tooling/ai-engines/shadow_watch.py` described in the workspace operations guide.
+It prints progress and optionally publishes a dedicated document on the existing
+native task. Start it after lifecycle initialization, keep its stdout/stderr and
+PID with the invocation, and verify the first native document readback before
+leaving a long run unattended. Do not treat an observer/publisher failure as a
+reason to restart data capture. A completed finite observation is still distinct
+from H1 handoff, data qualification, strategy acceptance and long-term uptime.
+
 ### Choose resume or offline reprocessing
 
 For a process interruption with unchanged code/pins and an unexpired deadline,

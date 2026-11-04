@@ -100,11 +100,39 @@ fn load(directory: &Path) -> Result<Value> {
     }
     Ok(value.clone())
 }
+fn heartbeat(directory: &Path, state: &mut Value, phase: &str) -> Result<()> {
+    state["heartbeat_at_msc"] = json!(now());
+    state["phase"] = json!(phase);
+    save(directory, state)
+}
+
+fn health(state: &Value, locked: bool, clock: i64) -> &'static str {
+    if state["status"] != "running" {
+        return "terminal";
+    }
+    if !locked {
+        return "interrupted";
+    }
+    if state["deadline_msc"]
+        .as_i64()
+        .is_some_and(|end| clock >= end)
+    {
+        return "overdue";
+    }
+    match state["heartbeat_at_msc"].as_i64() {
+        Some(beat) if clock < beat || clock - beat > 15000 => "heartbeat_stale",
+        Some(_) => "responsive",
+        None => "heartbeat_unavailable",
+    }
+}
 fn lock(directory: &Path) -> Result<File> {
+    lock_file(directory, true)
+}
+fn lock_file(directory: &Path, create: bool) -> Result<File> {
     let path = directory.join("session.lock");
     local(&path)?;
     let file = OpenOptions::new()
-        .create(true)
+        .create(create)
         .truncate(false)
         .read(true)
         .write(true)
@@ -208,6 +236,7 @@ impl Worker {
         recover: bool,
         end: i64,
         hard_end: tokio::time::Instant,
+        mut state: Option<&mut Value>,
     ) -> Result<Value> {
         let mut args = vec![
             "-I".into(),
@@ -276,6 +305,7 @@ impl Worker {
             Ok(value)
         };
         let watch = async {
+            let mut beat = tokio::time::Instant::now();
             loop {
                 if let Some(reason) = interruption(
                     &self.directory,
@@ -283,7 +313,15 @@ impl Worker {
                     end,
                     tokio::time::Instant::now() >= hard_end,
                 ) {
-                    return reason;
+                    return reason.to_string();
+                }
+                if beat.elapsed() >= Duration::from_secs(5) {
+                    if let Some(value) = state.as_deref_mut() {
+                        if let Err(reason) = heartbeat(&self.directory, value, "worker") {
+                            return reason;
+                        }
+                    }
+                    beat = tokio::time::Instant::now();
                 }
                 tokio::time::sleep(Duration::from_millis(200)).await;
             }
@@ -318,9 +356,22 @@ async fn run(action: &str, options: HashMap<String, PathBuf>) -> Result<Value> {
             file.write_all(b"operator stop\n")
                 .map_err(|_| "shadow_stop_failed")?;
             file.sync_all().map_err(|_| "shadow_stop_failed")?;
+        }
+        let locked = match lock_file(&directory, false) {
+            Ok(_guard) => {
+                // Completion may commit between the first read and lock release.
+                // Re-read under the lock before declaring an interruption.
+                state = load(&directory)?;
+                false
+            }
+            Err(reason) if reason == "shadow_session_already_running" => true,
+            Err(reason) => return Err(reason),
+        };
+        if action == "stop" {
             state["stop_requested"] = json!(true);
         }
-        if state["status"] == "running" && lock(&directory).is_ok() {
+        state["health"] = json!(health(&state, locked, now()));
+        if state["health"] == "interrupted" {
             state["status"] = json!("interrupted");
         }
         return Ok(state);
@@ -357,7 +408,7 @@ async fn run(action: &str, options: HashMap<String, PathBuf>) -> Result<Value> {
     };
     let hard_end = tokio::time::Instant::now() + Duration::from_millis((end - now()).max(0) as u64);
     if action == "start" {
-        worker.call("init", false, end, hard_end).await?;
+        worker.call("init", false, end, hard_end, None).await?;
     }
     let _guard = lock(&directory)?;
     let mut state = if action == "start" {
@@ -402,7 +453,10 @@ async fn run(action: &str, options: HashMap<String, PathBuf>) -> Result<Value> {
         .ok_or("shadow_lifecycle_corrupt")?
         .remove("ended_at_msc");
     state["pid"] = json!(std::process::id());
-    save(&directory, &state)?;
+    state["capture_from_msc"] = plan["capture"]["from_msc"].clone();
+    state["capture_to_msc"] = plan["capture"]["to_msc"].clone();
+    state["settle_seconds"] = plan["settle_seconds"].clone();
+    heartbeat(&directory, &mut state, "worker")?;
     let mut recover = action == "resume";
     loop {
         if let Some(reason) = interruption(
@@ -414,7 +468,21 @@ async fn run(action: &str, options: HashMap<String, PathBuf>) -> Result<Value> {
             state["status"] = json!(reason);
             break;
         }
-        let outcome = worker.call("step", recover, end, hard_end).await;
+        heartbeat(&directory, &mut state, "worker")?;
+        let outcome = worker
+            .call("step", recover, end, hard_end, Some(&mut state))
+            .await
+            .and_then(|value| {
+                let status = value["status"].as_str().unwrap_or_default();
+                if !["complete", "waiting", "capturing", "expired", "stopped"].contains(&status)
+                    || (["waiting", "capturing"].contains(&status)
+                        && value["next_poll_msc"].as_i64().is_none())
+                {
+                    Err("shadow_worker_protocol_failed".into())
+                } else {
+                    Ok(value)
+                }
+            });
         let next_poll = match outcome {
             Ok(value) => {
                 recover = false;
@@ -463,7 +531,15 @@ async fn run(action: &str, options: HashMap<String, PathBuf>) -> Result<Value> {
                 }
             }
         };
-        save(&directory, &state)?;
+        let phase = if state["transport_retry"].is_object() {
+            "retry_wait"
+        } else if state["observation"]["status"] == "waiting" {
+            "settling"
+        } else {
+            "poll_wait"
+        };
+        heartbeat(&directory, &mut state, phase)?;
+        let mut beat = tokio::time::Instant::now();
         while now() < next_poll
             && interruption(
                 &directory,
@@ -473,14 +549,18 @@ async fn run(action: &str, options: HashMap<String, PathBuf>) -> Result<Value> {
             )
             .is_none()
         {
+            if beat.elapsed() >= Duration::from_secs(5) {
+                heartbeat(&directory, &mut state, phase)?;
+                beat = tokio::time::Instant::now();
+            }
             tokio::select! {
                 _=tokio::time::sleep(Duration::from_millis(200))=>(),
-                _=tokio::signal::ctrl_c()=>{state["status"]=json!("stopped");save(&directory,&state)?;return Ok(state);}
+                _=tokio::signal::ctrl_c()=>{state["status"]=json!("stopped");state["ended_at_msc"]=json!(now());heartbeat(&directory,&mut state,"terminal")?;return Ok(state);}
             }
         }
     }
     state["ended_at_msc"] = json!(now());
-    save(&directory, &state)?;
+    heartbeat(&directory, &mut state, "terminal")?;
     Ok(state)
 }
 
@@ -532,6 +612,39 @@ async fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[tokio::test]
+    async fn status_without_lock_file_fails_without_creating_one() {
+        let dir = std::env::temp_dir().join(format!("shadow-status-{}", uuid::Uuid::new_v4()));
+        fs::create_dir(&dir).unwrap();
+        save(
+            &dir,
+            &json!({"schema_version":"mt5-shadow-lifecycle-v1","status":"running"}),
+        )
+        .unwrap();
+        let before = fs::read(dir.join("lifecycle.json")).unwrap();
+        let result = run(
+            "status",
+            HashMap::from([("--state-dir".into(), dir.clone())]),
+        )
+        .await;
+        assert_eq!(result.unwrap_err(), "shadow_lock_failed");
+        assert!(!dir.join("session.lock").exists());
+        assert_eq!(fs::read(dir.join("lifecycle.json")).unwrap(), before);
+        fs::remove_dir_all(dir).unwrap();
+    }
+    #[test]
+    fn health_separates_quiet_progress_from_dead_or_unresponsive_supervisor() {
+        let mut state = json!({"status":"running", "heartbeat_at_msc":20000,
+            "updated_at_msc":1,"deadline_msc":100000});
+        assert_eq!(health(&state, true, 30000), "responsive");
+        assert_eq!(health(&state, true, 35001), "heartbeat_stale");
+        assert_eq!(health(&state, true, 100000), "overdue");
+        assert_eq!(health(&state, false, 30000), "interrupted");
+        state.as_object_mut().unwrap().remove("heartbeat_at_msc");
+        assert_eq!(health(&state, true, 30000), "heartbeat_unavailable");
+        state["status"] = json!("failed");
+        assert_eq!(health(&state, false, 30000), "terminal");
+    }
     #[test]
     fn transient_read_budget_survives_reload_and_never_extends_deadline() {
         let dir = std::env::temp_dir().join(format!("shadow-retry-{}", uuid::Uuid::new_v4()));

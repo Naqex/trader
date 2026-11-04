@@ -19,7 +19,7 @@ from scripts import mt5_shadow_step as shadow
 @unittest.skipUnless(os.environ.get('TW_MT5_SHADOW_TEST_BINARY'),
                      'Set TW_MT5_SHADOW_TEST_BINARY to the built mt5-shadow executable')
 class ShadowSupervisorTests(unittest.TestCase):
-    def exercise(self, *, revise_prefix=False, stop=False):
+    def exercise(self, *, revise_prefix=False, stop=False, crash=False):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp).resolve()
             session = root/'session'
@@ -83,11 +83,28 @@ class ShadowSupervisorTests(unittest.TestCase):
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                     creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
                 try:
-                    if stop:
+                    if stop or crash:
                         deadline = time.monotonic()+15
                         while time.monotonic() < deadline:
                             path = session/'lifecycle.json'
                             if path.exists() and json.loads(path.read_text())['state'].get('transport_retry'):
+                                if crash:
+                                    before = json.loads(path.read_text())['state']
+                                    time.sleep(5.5)
+                                    alive = json.loads(path.read_text())['state']
+                                    self.assertGreater(alive['heartbeat_at_msc'], before['heartbeat_at_msc'])
+                                    self.assertEqual(alive['updated_at_msc'], before['updated_at_msc'])
+                                    self.assertEqual(alive['phase'], 'retry_wait')
+                                    process.kill()
+                                    process.communicate()
+                                    saved = path.read_bytes()
+                                    result = subprocess.run([os.environ['TW_MT5_SHADOW_TEST_BINARY'],
+                                        'status', '--state-dir', str(session)], capture_output=True, timeout=5)
+                                    visible = json.loads(result.stdout)
+                                    self.assertEqual(visible['status'], 'interrupted')
+                                    self.assertEqual(visible['health'], 'interrupted')
+                                    self.assertEqual(path.read_bytes(), saved)
+                                    return
                                 (session/'STOP').write_text('stop during read recovery')
                                 break
                             time.sleep(0.1)
@@ -135,6 +152,9 @@ class ShadowSupervisorTests(unittest.TestCase):
 
     def test_stop_interrupts_read_recovery(self):
         self.exercise(stop=True)
+
+    def test_heartbeat_during_wait_and_read_only_crash_detection(self):
+        self.exercise(crash=True)
 
 
 if __name__ == '__main__':
