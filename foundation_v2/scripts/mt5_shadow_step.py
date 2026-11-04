@@ -81,10 +81,30 @@ def page_at(directory, state, plan, index):
     return page
 
 
-def audit(page, plan, fetch):
+def audit(page, plan, fetch, evidence_directory):
     reread = capture.validate_page(fetch(page['from_msc'], page['to_msc']), plan,
                                   page['from_msc'], page['to_msc'])
     if capture.economic(page) != capture.economic(reread):
+        # Keep the actual competing observation: a later broker read is not
+        # evidence of exactly what this failed comparison saw.
+        evidence_directory = Path(evidence_directory)
+        capture.require_local_tree(evidence_directory)
+        evidence_directory.mkdir(exist_ok=True)
+        capture.private_directory(evidence_directory)
+        old_hash, new_hash = capture.checksum(page), capture.checksum(reread)
+        key = f'{page["from_msc"]}-{old_hash[:16]}-{new_hash[:16]}'
+        changed = [k for k in capture.economic(page) if page[k] != reread[k]]
+        without_flags = lambda rows: [{k:v for k,v in row.items() if k != 'flags'} for row in rows]
+        flags_only = changed == ['rows'] and without_flags(page['rows']) == without_flags(reread['rows'])
+        capture.store(evidence_directory/f'reread-{key}.json', reread)
+        capture.store(evidence_directory/f'revision-{key}.json', dict(
+            schema_version='mt5-shadow-audit-revision-v1', execution_capability=False,
+            from_msc=page['from_msc'], to_msc=page['to_msc'],
+            original_sha256=old_hash, reread_sha256=new_hash, changed_fields=changed,
+            classification='flags_only' if flags_only else 'rows_or_lineage',
+            original_ticks=len(page['rows']), reread_ticks=len(reread['rows']),
+            flag_xor_masks=sorted({a['flags'] ^ b['flags'] for a,b in zip(page['rows'],reread['rows'])})
+                if flags_only else None))
         raise capture.CaptureError('shadow_observed_window_revised')
     return reread['observed_at_msc']
 
@@ -188,6 +208,7 @@ def reduce_capture(directory, plan, previous, fetch, now_msc, *, recover=False, 
         raise capture.CaptureError('shadow_predecessor_source_changed')
     previous = previous or {'audited_pages': {}, 'hours': [], 'decisions': []}
     audited = dict(previous['audited_pages'])
+    evidence_directory = Path(directory).parent/'audit-failures'
     if len(audited) > len(state['pages']):
         raise capture.CaptureError('shadow_audit_cursor_invalid')
     for key, digest in audited.items():
@@ -195,11 +216,11 @@ def reduce_capture(directory, plan, previous, fetch, now_msc, *, recover=False, 
         if not 0 <= index < len(state['pages']) or state['pages'][index] != digest:
             raise capture.CaptureError('shadow_audit_cursor_invalid')
         if recover:
-            audit(page_at(directory, state, plan.capture, index), plan.capture, fetch)
+            audit(page_at(directory, state, plan.capture, index), plan.capture, fetch, evidence_directory)
     if recover:
         for index in range(len(state['pages'])):
             if str(index) not in audited:
-                audit(page_at(directory, state, plan.capture, index), plan.capture, fetch)
+                audit(page_at(directory, state, plan.capture, index), plan.capture, fetch, evidence_directory)
 
     builder = H4Builder.from_state(seed['builder_state']) if seed else H4Builder()
     candidate = FixedH4Candidate.from_state(seed['candidate_state']) if seed else FixedH4Candidate()
@@ -219,7 +240,7 @@ def reduce_capture(directory, plan, previous, fetch, now_msc, *, recover=False, 
             page = page_at(directory, state, plan.capture, index)
             key = str(index)
             if key not in audited:
-                verified_at = max(verified_at, audit(page, plan.capture, fetch))
+                verified_at = max(verified_at, audit(page, plan.capture, fetch, evidence_directory))
                 audited[key] = state['pages'][index]
             for tick in page['rows']:
                 if hour <= tick['time_msc'] < end:

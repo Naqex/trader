@@ -259,6 +259,13 @@ and deadline handling active. No reconnect, registration, account switch or
 broker-send retry is performed. A changed binding, source or page still fails.
 Other HTTP/timeout/generation, source, checksum or revision failures stop and
 retain evidence; operators must inspect the reason before explicitly resuming.
+When a settled-page audit finds a revision, `audit-failures/` now retains the
+actual reread plus a checksummed comparison: original/reread hashes, range,
+changed fields, tick counts and a `flags_only` classification when applicable.
+This classification is diagnostic only: flags-only changes still fail the same
+strict guard. Do not mask undocumented SDK bits or change historical captures
+to obtain a pass. A diagnostic read made after a failure is a later observation,
+not proof of the exact reread seen by the original failed invocation.
 Preserve each invocation's
 stdout/stderr externally when an incident history is needed; lifecycle stores
 the latest incarnation, not an append-only incident log. `complete` only means

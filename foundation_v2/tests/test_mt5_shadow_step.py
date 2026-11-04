@@ -144,6 +144,27 @@ class ShadowStepTests(unittest.TestCase):
         self.assertEqual(resumed,self.reduce())
         self.assertEqual(self.reduce(resumed,recover=True),resumed)
 
+    def test_flags_only_revision_keeps_both_observations_without_relaxing_guard(self):
+        self.record(through=HOUR)
+        original = (self.directory/'capture/00000.json').read_bytes()
+        def revised(start, end):
+            page = self.page(start, end)
+            for row in page['rows']:
+                row['flags'] ^= 128
+            return page
+        with self.assertRaisesRegex(capture.CaptureError, 'shadow_observed_window_revised'):
+            self.reduce(fetch=revised)
+        evidence = self.directory/'audit-failures'
+        summary = capture.checked(next(evidence.glob('revision-*.json')))
+        reread = capture.checked(next(evidence.glob('reread-*.json')))
+        self.assertEqual(summary['classification'], 'flags_only')
+        self.assertEqual(summary['flag_xor_masks'], [128])
+        self.assertEqual(summary['changed_fields'], ['rows'])
+        self.assertEqual(summary['reread_sha256'], capture.checksum(reread))
+        self.assertEqual(reread['rows'][0]['flags'], 134)
+        self.assertEqual((self.directory/'capture/00000.json').read_bytes(), original)
+        self.assertFalse((self.directory/'shadow.json').exists())
+
     def test_stop_or_expiry_prevents_network_and_failed_read_keeps_report(self):
         fetch=Mock(side_effect=OSError('offline fixture'))
         (self.directory/'STOP').touch()
