@@ -216,6 +216,12 @@ Only exact EURUSD/EURUSDm is admitted for this fixed candidate adapter. Review
 and freeze the eight source/lockfile hashes before starting; a changed source,
 binary, interpreter or registration needs a new session, not edited pins.
 
+The reducer accepts at most one binary-float ULP of representation noise when
+mapping SDK Bid/Ask to the fixed EURUSD tick grid. Genuine sub-tick prices still
+fail. Original capture bytes/hashes are unchanged; normalization applies only
+to the Decimal inputs of the reducer. A failed session stays failed and cannot
+be relabeled as a fresh forward by replaying its stored ticks.
+
 Build with `cargo build --locked --release --bin mt5-shadow` in `api-rust/`.
 The normal `cargo run` still defaults to the API binary. On Windows, using
 absolute paths and the existing locked Python environment:

@@ -81,6 +81,29 @@ class ShadowStepTests(unittest.TestCase):
         self.assertTrue(report['excluded_leading_partial'])
         self.assertTrue(report['open_partial_hour'])
 
+    def test_sdk_float_tail_normalized_without_changing_raw_capture_or_admitting_subticks(self):
+        self.raw['capture']['to_msc'] = HOUR
+        self.raw['deadline_msc'] = HOUR+90000
+        self.plan = shadow.Plan.model_validate(self.raw)
+        original = self.page
+        def noisy(start, end):
+            page = original(start, end)
+            for tick in page['rows']:
+                tick.update(bid=1.1227800000000001, ask=1.12298)
+            return page
+        capture.record(self.plan.capture, self.directory/'capture', resume=False,
+            fetch=noisy, now_msc=HOUR+30000, max_batches=60)
+        raw = (self.directory/'capture'/'00000.json').read_bytes()
+        report = self.reduce(fetch=noisy, now=HOUR+30000)
+        self.assertEqual(report['hours'][0]['ohlc_mid'], ['1.12288']*4)
+        self.assertEqual(report['hours'][0]['ticks'], 120)
+        self.assertFalse(report['execution_capability'])
+        self.assertEqual((self.directory/'capture'/'00000.json').read_bytes(), raw)
+        for value in (1.122781, 1.122785, 1.12278999999):
+            with self.subTest(value=value), self.assertRaisesRegex(
+                    capture.CaptureError, 'shadow_tick_grid_invalid'):
+                shadow._tick_price(value)
+
     def test_missing_or_quiet_hour_blocks_without_publishing_decision(self):
         self.record()
         path=self.directory/'capture'/'00020.json'

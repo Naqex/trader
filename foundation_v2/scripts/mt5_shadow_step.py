@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 from decimal import Decimal
 import hashlib
+import math
 from pathlib import Path
 import sys
 import time
@@ -160,6 +161,19 @@ def warmup(plan, directory, *, verify_pages=False):
         lineage={key:last[key] for key in ('clock', 'source_sha256', 'sdk_version')})
 
 
+def _tick_price(value):
+    price = Decimal(str(value))
+    if not price % TICK:
+        return price
+    nearest = price.quantize(TICK)
+    # SDK/JSON floats can carry a one-ULP representation tail on a valid quote.
+    # A real sub-tick price must still fail; raw capture and hashes stay intact.
+    tolerance = Decimal(str(math.ulp(value)))
+    if tolerance >= TICK/2 or nearest <= 0 or abs(price-nearest) > tolerance:
+        raise capture.CaptureError('shadow_tick_grid_invalid')
+    return nearest.normalize()
+
+
 def reduce_capture(directory, plan, previous, fetch, now_msc, *, recover=False, seed=None,
                    registration_sha256=None):
     """Replay immutable observations; only stable, fully requested hours feed H4.
@@ -209,9 +223,7 @@ def reduce_capture(directory, plan, previous, fetch, now_msc, *, recover=False, 
                 audited[key] = state['pages'][index]
             for tick in page['rows']:
                 if hour <= tick['time_msc'] < end:
-                    bid, ask = Decimal(str(tick['bid'])), Decimal(str(tick['ask']))
-                    if bid % TICK or ask % TICK:
-                        raise capture.CaptureError('shadow_tick_grid_invalid')
+                    bid, ask = (_tick_price(tick[side]) for side in ('bid', 'ask'))
                     mids.append((bid+ask)/2)
                     stamps.append(tick['time_msc'])
         # Includes the leading/trailing silence. Missing/quiet windows block;
