@@ -187,13 +187,26 @@ def instrument(sdk, policy, symbol, now=None, allow_stale=False, read=False):
     info = sdk.symbol_info(symbol)
     if info is None:
         deny('demo_symbol_unavailable')
-    if not info.visible and not sdk.symbol_select(symbol, True):
-        deny('demo_symbol_unavailable')
+    if not info.visible:
+        if not sdk.symbol_select(symbol, True):
+            deny('demo_symbol_unavailable')
+        # Selection can populate broker specifications; the old SDK tuple is immutable.
+        info = sdk.symbol_info(symbol)
+        if info is None:
+            deny('demo_symbol_unavailable')
     quote = sdk.symbol_info_tick(symbol)
     if quote is None:
         deny('demo_quote_unavailable')
-    for value in (quote.bid, quote.ask, info.trade_tick_size, info.point, info.volume_min, info.volume_max, info.volume_step):
-        finite(value, True)
+    for source, item, fields in (('quote', quote, ('bid', 'ask')),
+                                 ('instrument', info, ('trade_tick_size', 'point', 'volume_min', 'volume_max', 'volume_step'))):
+        for field in fields:
+            try:
+                finite(getattr(item, field, None), True)
+            except Denied:
+                deny('demo_invalid_number', data_quality={
+                    'source': 'application', 'invalid_field': source + '.' + field,
+                    'requirement': 'positive_finite_number',
+                })
     stamp = quote.time_msc
     if type(stamp) not in (int, float) or not math.isfinite(stamp) or not 0 < stamp <= 8640000000000000:
         deny('demo_quote_unavailable')

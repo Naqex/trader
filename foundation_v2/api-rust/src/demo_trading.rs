@@ -520,6 +520,9 @@ async fn read_snapshot(
         let reason = result["reason"].as_str().unwrap_or("demo_unavailable");
         let mut value = read_failure(StatusCode::LOCKED, reason);
         value["status"] = json!("unavailable");
+        if let Some(quality) = result.get("data_quality").filter(|v| v.is_object()) {
+            value["data_quality"] = quality.clone();
+        }
         return Ok(value);
     }
     let conn = state.pool.get().await.map_err(|_| ApiError::database())?;

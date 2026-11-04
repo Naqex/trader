@@ -119,6 +119,36 @@ class DemoTradingTests(unittest.TestCase):
         self.sdk.order_check.assert_not_called()
         self.sdk.order_send.assert_not_called()
 
+    def test_cold_subscription_reads_updated_spec_before_validating(self):
+        cold = NS(**{**vars(self.info), 'visible': False, 'trade_tick_size': 0})
+        self.sdk.symbol_info.side_effect = [cold, self.info]
+        self.sdk.symbol_select.return_value = True
+        info, _ = demo.instrument(self.sdk, self.policy, 'EURUSD')
+        self.assertIs(info, self.info)
+        self.sdk.symbol_select.assert_called_once_with('EURUSD', True)
+        self.sdk.order_check.assert_not_called()
+        self.sdk.order_send.assert_not_called()
+
+    def test_invalid_instrument_values_identify_field_without_exposing_raw_data(self):
+        fields = [(self.tick, key, 'quote.' + key) for key in ('bid', 'ask')]
+        fields += [(self.info, key, 'instrument.' + key) for key in
+                   ('trade_tick_size', 'point', 'volume_min', 'volume_max', 'volume_step')]
+        for obj, key, field in fields:
+            original = getattr(obj, key)
+            for value in (0, -1, None, True, float('nan'), float('inf')):
+                with self.subTest(field=field, value=value):
+                    setattr(obj, key, value)
+                    with self.assertRaisesRegex(demo.Denied, '^demo_invalid_number$') as caught:
+                        demo.instrument(self.sdk, self.policy, 'EURUSD', allow_stale=True)
+                    self.assertEqual(caught.exception.data_quality, {
+                        'source': 'application', 'invalid_field': field,
+                        'requirement': 'positive_finite_number',
+                    })
+                    json.dumps(caught.exception.data_quality, allow_nan=False)
+            setattr(obj, key, original)
+        self.sdk.order_check.assert_not_called()
+        self.sdk.order_send.assert_not_called()
+
     def test_broker_closed_market_and_side_restrictions_are_not_inferred_from_quote_age(self):
         for retcode,reason in demo.BROKER_REASONS.items():
             with self.subTest(retcode=retcode):
