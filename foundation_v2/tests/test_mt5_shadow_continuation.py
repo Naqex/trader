@@ -51,6 +51,7 @@ class ShadowContinuationTests(unittest.TestCase):
         output=directory/'capture'
         output.mkdir()
         state=dict(schema_version='mt5-observed-state-v1',plan=plan.capture.model_dump(mode='json'),
+            comparison_policy=plan.stability_policy,
             client_sha256=plan.source_sha256['capture'], pages=[],next_from_msc=plan.capture.from_msc,tick_count=0)
         for index,start in enumerate(range(plan.capture.from_msc,plan.capture.to_msc,60000)):
             end=min(start+60000,plan.capture.to_msc)
@@ -78,6 +79,18 @@ class ShadowContinuationTests(unittest.TestCase):
 
     def link(self,directory,report):
         return dict(state_dir=str(directory),report_sha256=capture.checksum(report))
+
+    def test_quote_policy_cannot_change_across_handoff(self):
+        first = self.plan(hours=1).model_copy(update={'stability_policy':'ordered_quotes_v1'})
+        directory, report = self.finished('first', first)
+        next_plan = self.plan(HOUR, 1, self.link(directory, report))
+        with self.assertRaisesRegex(capture.CaptureError, 'shadow_predecessor_continuity_invalid'):
+            shadow.warmup(next_plan, self.root/'second')
+        next_plan = next_plan.model_copy(update={'stability_policy':'ordered_quotes_v1'})
+        _, successor = self.finished('second', next_plan)
+        self.assertEqual(successor['cumulative_hours'], 2)
+        self.assertEqual(successor['stability_policy'], 'ordered_quotes_v1')
+        self.assertEqual(successor['raw_flags_stability'], 'not_asserted')
 
     def test_92_hours_across_four_sessions_preserve_partial_h4_and_indicator_state(self):
         predecessor=None

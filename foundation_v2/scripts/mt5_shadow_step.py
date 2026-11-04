@@ -61,6 +61,7 @@ class Plan(capture.Frozen):
     deadline_msc: int = Field(ge=0, strict=True)
     settle_seconds: int = Field(default=30, ge=30, le=120, strict=True)
     source_sha256: dict[str, str]
+    stability_policy: capture.ComparisonPolicy = 'raw_ticks_v1'
     continuation: Continuation | None = None
 
     @model_validator(mode='after')
@@ -81,30 +82,10 @@ def page_at(directory, state, plan, index):
     return page
 
 
-def audit(page, plan, fetch, evidence_directory):
+def audit(page, plan, fetch, evidence_directory, policy='raw_ticks_v1'):
     reread = capture.validate_page(fetch(page['from_msc'], page['to_msc']), plan,
                                   page['from_msc'], page['to_msc'])
-    if capture.economic(page) != capture.economic(reread):
-        # Keep the actual competing observation: a later broker read is not
-        # evidence of exactly what this failed comparison saw.
-        evidence_directory = Path(evidence_directory)
-        capture.require_local_tree(evidence_directory)
-        evidence_directory.mkdir(exist_ok=True)
-        capture.private_directory(evidence_directory)
-        old_hash, new_hash = capture.checksum(page), capture.checksum(reread)
-        key = f'{page["from_msc"]}-{old_hash[:16]}-{new_hash[:16]}'
-        changed = [k for k in capture.economic(page) if page[k] != reread[k]]
-        without_flags = lambda rows: [{k:v for k,v in row.items() if k != 'flags'} for row in rows]
-        flags_only = changed == ['rows'] and without_flags(page['rows']) == without_flags(reread['rows'])
-        capture.store(evidence_directory/f'reread-{key}.json', reread)
-        capture.store(evidence_directory/f'revision-{key}.json', dict(
-            schema_version='mt5-shadow-audit-revision-v1', execution_capability=False,
-            from_msc=page['from_msc'], to_msc=page['to_msc'],
-            original_sha256=old_hash, reread_sha256=new_hash, changed_fields=changed,
-            classification='flags_only' if flags_only else 'rows_or_lineage',
-            original_ticks=len(page['rows']), reread_ticks=len(reread['rows']),
-            flag_xor_masks=sorted({a['flags'] ^ b['flags'] for a,b in zip(page['rows'],reread['rows'])})
-                if flags_only else None))
+    if not capture.compare_pages(page, reread, policy, evidence_directory):
         raise capture.CaptureError('shadow_observed_window_revised')
     return reread['observed_at_msc']
 
@@ -143,9 +124,11 @@ def warmup(plan, directory, *, verify_pages=False):
         raise capture.CaptureError('shadow_predecessor_not_complete')
     if (plan.capture.binding != previous_capture.binding or plan.capture.symbol != previous_capture.symbol or
             plan.capture.api_origin != previous_capture.api_origin or plan.settle_seconds != previous_plan.settle_seconds or
+            plan.stability_policy != previous_plan.stability_policy or
             plan.capture.from_msc != previous_capture.to_msc or plan.capture.from_msc % HOUR_MS or
             report['consumed_through_msc'] != plan.capture.from_msc or
             report['python_version'] != sys.version or report['pydantic_version'] != PYDANTIC_VERSION or
+            report.get('stability_policy', 'raw_ticks_v1') != plan.stability_policy or
             report['source_sha256'] != plan.source_sha256 or report['execution_capability'] is not False):
         raise capture.CaptureError('shadow_predecessor_continuity_invalid')
     # Depth zero is the first session; admit at most 32 sessions in one chain.
@@ -162,6 +145,7 @@ def warmup(plan, directory, *, verify_pages=False):
     if (capture.checksum(captured) != report['capture_state_sha256'] or
             captured['plan'] != previous_capture.model_dump(mode='json') or
             captured['next_from_msc'] != previous_capture.to_msc or not captured['pages'] or
+            captured.get('comparison_policy', 'raw_ticks_v1') != plan.stability_policy or
             len(captured['pages']) > 10000 or
             captured['client_sha256'] != plan.source_sha256['capture']):
         raise capture.CaptureError('shadow_predecessor_capture_changed')
@@ -202,13 +186,15 @@ def reduce_capture(directory, plan, previous, fetch, now_msc, *, recover=False, 
     watermark. This adapter deliberately has no fill, sizing, P&L or send path.
     """
     state, captured_plan, last = capture.load(directory, plan.capture)
-    if captured_plan != plan.capture:
+    if (captured_plan != plan.capture or
+            state.get('comparison_policy', 'raw_ticks_v1') != plan.stability_policy):
         raise capture.CaptureError('shadow_capture_changed')
     if seed and last and any(last[key] != value for key, value in seed['lineage'].items()):
         raise capture.CaptureError('shadow_predecessor_source_changed')
     previous = previous or {'audited_pages': {}, 'hours': [], 'decisions': []}
     audited = dict(previous['audited_pages'])
-    evidence_directory = Path(directory).parent/'audit-failures'
+    evidence_directory = Path(directory).parent/('audit-failures' if plan.stability_policy == 'raw_ticks_v1'
+                                               else 'audit-observations')
     if len(audited) > len(state['pages']):
         raise capture.CaptureError('shadow_audit_cursor_invalid')
     for key, digest in audited.items():
@@ -216,11 +202,11 @@ def reduce_capture(directory, plan, previous, fetch, now_msc, *, recover=False, 
         if not 0 <= index < len(state['pages']) or state['pages'][index] != digest:
             raise capture.CaptureError('shadow_audit_cursor_invalid')
         if recover:
-            audit(page_at(directory, state, plan.capture, index), plan.capture, fetch, evidence_directory)
+            audit(page_at(directory, state, plan.capture, index), plan.capture, fetch, evidence_directory, plan.stability_policy)
     if recover:
         for index in range(len(state['pages'])):
             if str(index) not in audited:
-                audit(page_at(directory, state, plan.capture, index), plan.capture, fetch, evidence_directory)
+                audit(page_at(directory, state, plan.capture, index), plan.capture, fetch, evidence_directory, plan.stability_policy)
 
     builder = H4Builder.from_state(seed['builder_state']) if seed else H4Builder()
     candidate = FixedH4Candidate.from_state(seed['candidate_state']) if seed else FixedH4Candidate()
@@ -240,7 +226,7 @@ def reduce_capture(directory, plan, previous, fetch, now_msc, *, recover=False, 
             page = page_at(directory, state, plan.capture, index)
             key = str(index)
             if key not in audited:
-                verified_at = max(verified_at, audit(page, plan.capture, fetch, evidence_directory))
+                verified_at = max(verified_at, audit(page, plan.capture, fetch, evidence_directory, plan.stability_policy))
                 audited[key] = state['pages'][index]
             for tick in page['rows']:
                 if hour <= tick['time_msc'] < end:
@@ -272,6 +258,8 @@ def reduce_capture(directory, plan, previous, fetch, now_msc, *, recover=False, 
         strategy_qualified=False, qualification='observed_market_shadow',
         coverage='broker_history_unverified', bar_policy='stable_observed_sample_max_gap_60s',
         price_basis='bid_ask_mid', candidate='fixed-eurusd-h4-donchian20-10-atr14',
+        stability_policy=plan.stability_policy,
+        raw_flags_stability='required' if plan.stability_policy == 'raw_ticks_v1' else 'not_asserted',
         pnl=None, cost_status='not_modeled', fill_status='not_modeled',
         requested_through_msc=through, ticks=state['tick_count'], pages=len(state['pages']),
         source_sha256=plan.source_sha256, binding=plan.capture.binding.model_dump(mode='json'),
@@ -306,7 +294,8 @@ def step(plan, directory, fetch, now_msc, *, recover=False, registration_sha256=
         return page
     capture_dir = directory/'capture'
     result = capture.record(plan.capture, capture_dir, resume=capture_dir.exists(),
-                            fetch=fetch, max_batches=1, now_msc=now_msc)
+                            fetch=fetch, max_batches=1, now_msc=now_msc,
+                            comparison_policy=plan.stability_policy)
     report_path = directory/'shadow.json'
     previous = capture.checked(report_path) if report_path.exists() else None
     if previous and (previous['source_sha256'] != plan.source_sha256 or

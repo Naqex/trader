@@ -142,6 +142,57 @@ class ObservedCaptureTests(unittest.TestCase):
                     capture.record(self.plan,directory,resume=False,fetch=changed,now_msc=200000)
                 self.assertEqual(capture.load(directory)[0]['next_from_msc'],110000 if change=='source' else 100000)
 
+    def test_quote_policy_is_pinned_and_retains_original_and_reread_on_resume(self):
+        capture.record(self.plan, self.path, resume=False, fetch=self.page,
+            now_msc=200000, max_batches=1, comparison_policy='ordered_quotes_v1')
+        original = (self.path/'00000.json').read_bytes()
+        def revised(start, end):
+            page = self.page(start, end)
+            for row in page['rows']:
+                row['flags'] = 134
+            return page
+        self.fetch.side_effect = revised
+        with self.assertRaisesRegex(capture.CaptureError, 'capture_comparison_policy_changed'):
+            self.run_capture(True)
+        self.fetch.assert_not_called()
+        result = self.run_capture(True, comparison_policy='ordered_quotes_v1')
+        self.assertEqual((result['pages'], result['ticks']), (3, 6))
+        self.assertEqual((self.path/'00000.json').read_bytes(), original)
+        evidence = self.path/'audit-observations'
+        summary = capture.checked(next(evidence.glob('revision-*.json')))
+        self.assertTrue(summary['accepted_for_quotes'])
+        self.assertEqual(summary['flag_xor_masks'], [128])
+        for prefix in ('original', 'reread'):
+            observed = capture.checked(next(evidence.glob(prefix+'-*.json')))
+            self.assertEqual(capture.checksum(observed), summary[prefix+'_sha256'])
+
+    def test_quote_policy_adopts_orphan_once_but_rejects_price_revision(self):
+        original_store = capture.store
+        def fail_commit(path, value):
+            if path.name == 'state.json' and value['next_from_msc'] > 100000:
+                raise OSError('fixture disk failure')
+            original_store(path, value)
+        with patch.object(capture, 'store', side_effect=fail_commit), self.assertRaises(OSError):
+            self.run_capture(comparison_policy='ordered_quotes_v1')
+        raw = (self.path/'00000.json').read_bytes()
+        def revised(start, end):
+            page = self.page(start, end)
+            for row in page['rows']:
+                row['flags'] = 134
+            return page
+        self.fetch.side_effect = revised
+        self.assertEqual(self.run_capture(True, comparison_policy='ordered_quotes_v1')['ticks'], 6)
+        self.assertEqual((self.path/'00000.json').read_bytes(), raw)
+        before = (self.path/'state.json').read_bytes()
+        def price_change(start, end):
+            page = revised(start, end)
+            page['rows'][0]['bid'] = 1.10001
+            return page
+        self.fetch.side_effect = price_change
+        with self.assertRaisesRegex(capture.CaptureError, 'capture_committed_window_changed'):
+            self.run_capture(True, comparison_policy='ordered_quotes_v1')
+        self.assertEqual((self.path/'state.json').read_bytes(), before)
+
 
 if __name__=='__main__':
     unittest.main()

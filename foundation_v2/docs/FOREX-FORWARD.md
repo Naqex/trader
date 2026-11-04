@@ -201,6 +201,7 @@ Prepare an immutable private registration outside the new session directory:
   "schema_version": "mt5-shadow-session-v2",
   "capture": {"schema_version": "mt5-observed-capture-v1", "...": "same capture fields above"},
   "settle_seconds": 30,
+  "stability_policy": "raw_ticks_v1",
   "deadline_msc": 0,
   "source_sha256": {"...": "reviewed mt5_shadow_step.source_pins() values"}
 }
@@ -262,9 +263,31 @@ retain evidence; operators must inspect the reason before explicitly resuming.
 When a settled-page audit finds a revision, `audit-failures/` now retains the
 actual reread plus a checksummed comparison: original/reread hashes, range,
 changed fields, tick counts and a `flags_only` classification when applicable.
-This classification is diagnostic only: flags-only changes still fail the same
-strict guard. Do not mask undocumented SDK bits or change historical captures
-to obtain a pass. A diagnostic read made after a failure is a later observation,
+The default `raw_ticks_v1` policy still rejects flags-only changes. A new
+quote-only registration may explicitly select `ordered_quotes_v1`: ordered
+timestamp/source-timestamp/Bid/Ask snapshots and every lineage field must match,
+but flags are opaque metadata, not inputs to the midpoint/H1/H4 consumer. This
+is not a bit-128 mask or a claim about that undocumented bit. MetaQuotes
+[documents complete price snapshots independently of flags](https://www.mql5.com/en/docs/constants/structures/mqltick)
+and its [Python example includes flags=134](https://www.mql5.com/en/docs/python_metatrader5/mt5copyticksfrom_py);
+neither source establishes bit 128's meaning or raw-tick immutability.
+
+Quote-policy changes retain checksummed original/reread/summary files in
+`audit-observations/` (also under `capture/` for cursor/orphan comparisons), with
+`accepted_for_quotes=true` only for flags-only revisions. Evidence-write failure
+stops processing. All other changes still fail. Raw pages and their hashes are
+never normalized or overwritten; no tick is dropped, reordered or deduplicated.
+The capture cursor pins the comparison policy; resume and predecessor handoff
+cannot change it. Reports expose `stability_policy` and
+`raw_flags_stability=not_asserted` for this quote policy. It must not feed a
+flag-dependent consumer or be presented as verified broker history, fills,
+execution or strategy qualification. Standalone capture CLI remains strict.
+
+Changing the capture implementation invalidates the old client pin; old failed
+sessions stay inspectable, not resumable. The offline reprocessor's existing
+compatibility guard also rejects that changed capture pin; use saved page pairs
+for diagnosis, not rewritten manifests/cursors to manufacture compatibility.
+A diagnostic read made after a failure is a later observation,
 not proof of the exact reread seen by the original failed invocation.
 Preserve each invocation's
 stdout/stderr externally when an incident history is needed; lifecycle stores

@@ -21,6 +21,7 @@ from scripts.local_owner_access import exact_origins, private_directory, require
 from trading_workspace_v2.owner_absence_journal import _exclusive_file_lock
 
 LIMIT = 4*1024*1024
+ComparisonPolicy = Literal['raw_ticks_v1', 'ordered_quotes_v1']
 
 
 class CaptureError(ValueError):
@@ -150,6 +151,38 @@ def economic(page):
     return {k:v for k,v in page.items() if k!='observed_at_msc'}
 
 
+def compare_pages(original, reread, policy: ComparisonPolicy, evidence_directory):
+    if policy not in ('raw_ticks_v1', 'ordered_quotes_v1'):
+        raise CaptureError('capture_comparison_policy_invalid')
+    old, new = economic(original), economic(reread)
+    if old == new:
+        return True
+    changed = [k for k in old if old[k] != new[k]]
+    # Quote snapshots do not infer tick causes. Compare every supplied value and
+    # its ordering/lineage except opaque flags; retain both raw observations.
+    without_flags = lambda rows: [{k:v for k,v in row.items() if k != 'flags'} for row in rows]
+    flags_only = changed == ['rows'] and without_flags(old['rows']) == without_flags(new['rows'])
+    accepted = policy == 'ordered_quotes_v1' and flags_only
+    evidence_directory = Path(evidence_directory)
+    require_local_tree(evidence_directory)
+    evidence_directory.mkdir(exist_ok=True)
+    private_directory(evidence_directory)
+    old_hash, new_hash = checksum(original), checksum(reread)
+    key = f'{original["from_msc"]}-{old_hash[:16]}-{new_hash[:16]}'
+    store(evidence_directory/f'original-{key}.json', original)
+    store(evidence_directory/f'reread-{key}.json', reread)
+    store(evidence_directory/f'revision-{key}.json', dict(
+        schema_version='mt5-observed-revision-v1', execution_capability=False,
+        comparison_policy=policy, accepted_for_quotes=accepted,
+        from_msc=original['from_msc'], to_msc=original['to_msc'],
+        original_sha256=old_hash, reread_sha256=new_hash, changed_fields=changed,
+        classification='flags_only' if flags_only else 'rows_or_lineage',
+        original_ticks=len(original['rows']), reread_ticks=len(reread['rows']),
+        flag_xor_masks=sorted({a['flags'] ^ b['flags'] for a,b in zip(original['rows'],reread['rows'])})
+            if flags_only else None))
+    return accepted
+
+
 def load(directory, plan=None):
     state = checked(directory/'state.json')
     saved_plan = Plan.model_validate(state['plan'])
@@ -170,9 +203,12 @@ def load(directory, plan=None):
     return state, saved_plan, last
 
 
-def record(plan, directory, *, resume, fetch, max_batches=12, now_msc=None):
+def record(plan, directory, *, resume, fetch, max_batches=12, now_msc=None,
+           comparison_policy: ComparisonPolicy = 'raw_ticks_v1'):
     if type(max_batches) is not int or not 1<=max_batches<=360:
         raise CaptureError('capture_batch_limit_invalid')
+    if comparison_policy not in ('raw_ticks_v1', 'ordered_quotes_v1'):
+        raise CaptureError('capture_comparison_policy_invalid')
     directory = Path(directory).absolute()
     require_local_tree(directory)
     if not resume:
@@ -182,8 +218,11 @@ def record(plan, directory, *, resume, fetch, max_batches=12, now_msc=None):
     with _exclusive_file_lock(directory/'writer.lock'):
         if resume:
             state, _, last = load(directory,plan)
+            if state.get('comparison_policy', 'raw_ticks_v1') != comparison_policy:
+                raise CaptureError('capture_comparison_policy_changed')
         else:
             state = dict(schema_version='mt5-observed-state-v1',plan=plan.model_dump(mode='json'),
+                comparison_policy=comparison_policy,
                 client_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                 pages=[],next_from_msc=plan.from_msc,tick_count=0)
             store(directory/'state.json',state)
@@ -194,7 +233,7 @@ def record(plan, directory, *, resume, fetch, max_batches=12, now_msc=None):
         # already consumed prefix. Keep the original and require review.
         if last:
             reread = validate_page(fetch(last['from_msc'],last['to_msc']),plan,last['from_msc'],last['to_msc'])
-            if economic(last)!=economic(reread):
+            if not compare_pages(last, reread, comparison_policy, directory/'audit-observations'):
                 raise CaptureError('capture_committed_window_changed')
         for _ in range(max_batches):
             if (directory/'STOP').exists():
@@ -214,7 +253,7 @@ def record(plan, directory, *, resume, fetch, max_batches=12, now_msc=None):
                 # Crash after page fsync but before cursor commit: re-read and
                 # adopt exactly that durable page, never append its ticks twice.
                 orphan = validate_page(checked(path),plan,start,end)
-                if economic(page)!=economic(orphan):
+                if not compare_pages(orphan, page, comparison_policy, directory/'audit-observations'):
                     raise CaptureError('capture_uncommitted_window_changed')
                 page = orphan
             else:
@@ -228,6 +267,7 @@ def record(plan, directory, *, resume, fetch, max_batches=12, now_msc=None):
 
 def summary(state, plan, status):
     return dict(status=status,pages=len(state['pages']),ticks=state['tick_count'],
+        comparison_policy=state.get('comparison_policy', 'raw_ticks_v1'),
         requested_through_msc=state['next_from_msc'],planned_to_msc=plan.to_msc,
         coverage='broker_history_unverified',execution_capability=False,strategy_qualified=False)
 

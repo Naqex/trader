@@ -165,6 +165,60 @@ class ShadowStepTests(unittest.TestCase):
         self.assertEqual((self.directory/'capture/00000.json').read_bytes(), original)
         self.assertFalse((self.directory/'shadow.json').exists())
 
+    def test_quote_only_shadow_has_identical_bars_after_flags_change_and_recovery(self):
+        self.raw.update(stability_policy='ordered_quotes_v1')
+        self.raw['capture']['to_msc'] = HOUR
+        self.raw['deadline_msc'] = HOUR+90000
+        self.plan = shadow.Plan.model_validate(self.raw)
+        capture.record(self.plan.capture, self.directory/'capture', resume=False,
+            fetch=self.page, now_msc=HOUR+30000, max_batches=60,
+            comparison_policy=self.plan.stability_policy)
+        original = (self.directory/'capture/00000.json').read_bytes()
+        baseline = self.reduce(now=HOUR+30000)
+        def revised(start, end):
+            page = self.page(start, end)
+            for row in page['rows']:
+                row['flags'] ^= 128
+            return page
+        result = self.reduce(fetch=revised, now=HOUR+30000)
+        self.assertEqual(result, baseline)
+        self.assertEqual(self.reduce(result, fetch=revised, now=HOUR+30000, recover=True), baseline)
+        self.assertEqual(len(result['hours']), 1)
+        self.assertEqual(result['raw_flags_stability'], 'not_asserted')
+        self.assertFalse(result['execution_capability'])
+        self.assertFalse(result['strategy_qualified'])
+        self.assertEqual((self.directory/'capture/00000.json').read_bytes(), original)
+        summaries = list((self.directory/'audit-observations').glob('revision-*.json'))
+        self.assertEqual(len(summaries), 60)
+        self.assertTrue(all(capture.checked(p)['accepted_for_quotes'] for p in summaries))
+        capture.store(self.directory/'shadow.json', result)
+        done = shadow.step(self.plan, self.directory, revised, HOUR+30000)
+        self.assertEqual(done['status'], 'complete')
+        self.assertEqual(capture.checked(self.directory/'shadow.json'), baseline)
+
+    def test_quote_comparison_still_rejects_price_timing_order_count_and_lineage_changes(self):
+        original = self.page(0, 60000)
+        changes = {
+            'bid': lambda p: p['rows'][0].update(bid=1.10001),
+            'ask': lambda p: p['rows'][0].update(ask=1.10021),
+            'time': lambda p: p['rows'][0].update(time_msc=2),
+            'source_time': lambda p: p['rows'][0].update(source_time_msc=2),
+            'order': lambda p: p['rows'].reverse(),
+            'count': lambda p: p['rows'].append(copy.deepcopy(p['rows'][-1])),
+            'clock': lambda p: p['clock'].update(profile='changed'),
+            'sdk': lambda p: p.update(sdk_version='changed'),
+            'source': lambda p: p['source_sha256'].update({'mt5_clock.py':'c'*64}),
+            'binding': lambda p: p['binding'].update(generation=2),
+        }
+        for name, mutate in changes.items():
+            with self.subTest(name=name):
+                revised = copy.deepcopy(original)
+                revised['rows'][0]['flags'] ^= 128
+                mutate(revised)
+                with self.assertRaises(ValueError):
+                    shadow.audit(original, self.plan.capture, lambda *_: revised,
+                        self.directory/name, 'ordered_quotes_v1')
+
     def test_stop_or_expiry_prevents_network_and_failed_read_keeps_report(self):
         fetch=Mock(side_effect=OSError('offline fixture'))
         (self.directory/'STOP').touch()
