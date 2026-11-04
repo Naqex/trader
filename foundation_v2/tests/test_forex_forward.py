@@ -124,6 +124,30 @@ class ForexForwardTests(unittest.TestCase):
             for decision, fill in zip(state.decisions, fills):
                 self.assertGreater(fill['details']['time_msc'], decision.time_msc)
 
+    def test_256_hour_replay_with_periodic_restore_matches_continuous_state(self):
+        continuous, _, _ = fixture()
+        interrupted, artifacts, pins = fixture()
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'replay.json'
+            for hour in range(256):
+                bid, ask = ('1.10200', '1.10220') if hour % 16 < 8 else ('1.09850', '1.09870')
+                event = quote(hour, bid, ask)
+                continuous.observe_quote(event)
+                interrupted.observe_quote(event)
+                if hour % 8 == 0:
+                    interrupted.save(path)
+                    interrupted = resume(path, artifacts, pins)
+                    self.assertFalse(interrupted.observe_quote(event))
+                watermark = (START + (hour + 1) * HOUR) * 1000
+                continuous.close_before(watermark)
+                interrupted.close_before(watermark)
+                self.assertEqual(interrupted.snapshot(), continuous.snapshot())
+            interrupted.save(path)
+            self.assertEqual(resume(path, artifacts, pins).snapshot(), continuous.snapshot())
+            self.assertEqual(interrupted.snapshot().committed_hours, 256)
+            self.assertEqual(interrupted.snapshot().received_ticks, 256)
+            self.assertFalse(interrupted.snapshot().execution_capability)
+
     def test_persisted_quote_duplicate_is_noop_and_stale_writer_cannot_clobber(self):
         session, artifacts, pins = fixture(warm=False)
         session.observe_quote(quote(0))

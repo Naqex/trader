@@ -560,6 +560,93 @@ mod tests {
             assert!(policy.validate(Utc::now()).is_err(), "{change}");
         }
     }
+
+    #[test]
+    fn two_calendar_years_preserve_exact_expiry_and_timezone_equivalence() {
+        let mut day = DateTime::parse_from_rfc3339("2027-01-01T00:00:00Z")
+            .unwrap()
+            .with_timezone(&Utc);
+        let end = DateTime::parse_from_rfc3339("2029-01-01T00:00:00Z")
+            .unwrap()
+            .with_timezone(&Utc);
+        while day < end {
+            let mut policy = policy();
+            policy.expires_at = day + chrono::Duration::minutes(15);
+            let mut encoded = serde_json::to_value(&policy).unwrap();
+            // The same instant expressed by a local offset must not extend a grant.
+            encoded["expires_at"] = serde_json::json!(
+                policy
+                    .expires_at
+                    .with_timezone(&chrono::FixedOffset::east_opt(7 * 3600).unwrap())
+                    .to_rfc3339()
+            );
+            let restored: AutomationGrantPolicy = serde_json::from_value(encoded).unwrap();
+            assert_eq!(
+                policy.fingerprint().unwrap(),
+                restored.fingerprint().unwrap()
+            );
+            assert!(
+                restored
+                    .validate(policy.expires_at - chrono::Duration::microseconds(1))
+                    .is_ok()
+            );
+            assert!(restored.validate(policy.expires_at).is_err());
+            assert!(
+                restored
+                    .validate(policy.expires_at + chrono::Duration::days(731))
+                    .is_err()
+            );
+            day += chrono::Duration::days(1);
+        }
+    }
+
+    #[tokio::test]
+    #[ignore = "owned disposable PostgreSQL via scripts/demo_recovery_rehearsal.py only"]
+    async fn postgres_recovered_grants_remain_fenced() {
+        assert_eq!(
+            std::env::var("TW_RUST_RUNTIME_DISPOSABLE").as_deref(),
+            Ok("1")
+        );
+        let dsn = std::env::var("TW_RUST_RUNTIME_TEST_DSN").unwrap();
+        let pool = Pool::builder(deadpool_postgres::Manager::new(
+            dsn.parse().unwrap(),
+            tokio_postgres::NoTls,
+        ))
+        .max_size(2)
+        .runtime(deadpool_postgres::Runtime::Tokio1)
+        .build()
+        .unwrap();
+        let guard = pool.get().await.unwrap();
+        let identity = guard
+            .query_one("SELECT current_user,current_database()", &[])
+            .await
+            .unwrap();
+        assert_eq!(identity.get::<_, String>(0), "rust_runtime_fixture");
+        assert!(
+            ["rust_runtime_fixture", "demo_recovery_restored"]
+                .contains(&identity.get::<_, String>(1).as_str())
+        );
+        drop(guard);
+        for (credential, reason) in [
+            (
+                b"fixture credential intentionally not an actual bearer".as_slice(),
+                "automation_grant_revoked",
+            ),
+            (
+                b"separate expiring fixture credential".as_slice(),
+                "automation_grant_expired",
+            ),
+        ] {
+            let identity = resolve_credential(&pool, "automation-fixture", &sha256(credential))
+                .await
+                .unwrap();
+            let mut client = pool.get().await.unwrap();
+            let tx = client.transaction().await.unwrap();
+            assert_eq!(load(&tx, &identity).await.unwrap_err().1["detail"], reason);
+            tx.rollback().await.unwrap();
+        }
+        pool.close();
+    }
     #[test]
     fn durable_attempt_and_aggregate_reservations_do_not_reset() {
         let policy = policy();

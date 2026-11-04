@@ -217,6 +217,144 @@ class DemoSessionTests(unittest.TestCase):
         redirect = next(h for h in client.opener.handlers if isinstance(h, runner.request.HTTPRedirectHandler))
         self.assertIsNone(redirect.redirect_request(None, None, None, None, None))
 
+    def test_fault_matrix_at_open_and_close_never_reposts_an_intent(self):
+        """The fault location matters: a lost close must not become a new open."""
+        for action in ('place', 'close'):
+            for fault in ('crash_before_post', 'crash_after_fill', 'timeout_after_fill',
+                          'partial', 'wrong_scope', 'reject'):
+                with self.subTest(action=action, fault=fault):
+                    self.folder = self.root / (action + '-' + fault)
+                    self.api = FakeNative(self.api.plan, self.api.credential)
+                    original = self.api.call
+
+                    def call(path, body=None):
+                        self.api.behavior = (fault if body and path.endswith('/commands')
+                            and body['command']['action'] == action else 'filled')
+                        return original(path, body)
+
+                    with patch.object(self.api, 'call', side_effect=call):
+                        if fault.startswith('crash_'):
+                            with self.assertRaises(Crashed):
+                                self.run_session()
+                        else:
+                            self.run_session()
+                    self.api.behavior = 'filled'
+                    for _ in range(3):
+                        result = self.run_session(resume=True)
+                    commands = self.api.sends()
+                    ids = [c['request_id'] for c in commands]
+                    self.assertEqual(len(ids), len(set(ids)))
+                    self.assertEqual(commands[0]['action'], 'place')
+                    self.assertLessEqual(len(commands), 2)
+                    if fault in ('crash_after_fill', 'timeout_after_fill'):
+                        self.assertEqual(result['status'], 'completed')
+                    elif fault == 'reject' and action == 'place':
+                        self.assertEqual(result['status'], 'blocked')
+                    else:
+                        self.assertTrue(result['requires_owner_attention'])
+                    if action == 'place' and fault not in ('crash_after_fill', 'timeout_after_fill'):
+                        self.assertIsNone(result['closing'])
+
+    def test_checkpoint_write_failures_before_and_after_fill_resume_without_repost(self):
+        real_save = runner.save
+        for boundary in ('opening_intent', 'opening_result', 'closing_intent', 'closing_result'):
+            with self.subTest(boundary=boundary):
+                self.folder = self.root / boundary
+                self.api = FakeNative(self.api.plan, self.api.credential)
+                label, phase = boundary.split('_')
+
+                def fail_write(path, state):
+                    attempt = state[label]
+                    if attempt is not None and ('result' in attempt) == (phase == 'result'):
+                        raise OSError('synthetic disk failure')
+                    return real_save(path, state)
+
+                with patch.object(runner, 'save', side_effect=fail_write):
+                    with self.assertRaises(OSError):
+                        self.run_session()
+                expected_before = {'opening_intent': 0, 'opening_result': 1,
+                                   'closing_intent': 1, 'closing_result': 2}[boundary]
+                self.assertEqual(len(self.api.sends()), expected_before)
+                result = self.run_session(resume=True)
+                self.assertEqual(result['status'], 'completed')
+                self.assertEqual([c['action'] for c in self.api.sends()], ['place', 'close'])
+
+    def test_atomic_checkpoint_replace_failure_preserves_previous_bytes(self):
+        self.api.behavior = 'reject'
+        self.run_session()
+        path = self.folder / 'state.json'
+        before = path.read_bytes()
+        changed = runner.load(path)
+        changed['reason'] = 'must_not_be_published'
+        with patch.object(runner.os, 'replace', side_effect=OSError('synthetic disk full')):
+            with self.assertRaises(OSError):
+                runner.save(path, changed)
+        self.assertEqual(path.read_bytes(), before)
+        self.assertEqual(list(self.folder.glob('.session-*')), [])
+        self.assertEqual(runner.load(path)['reason'], 'demo_quote_stale')
+
+    def test_transport_outage_then_two_year_downtime_only_reconciles(self):
+        original = self.api.call
+
+        def outage(path, body=None):
+            if path.endswith('/commands'):
+                self.api.behavior = 'timeout_after_fill'
+                return original(path, body)
+            raise TimeoutError('synthetic receipt outage')
+
+        with patch.object(self.api, 'call', side_effect=outage):
+            result = self.run_session()
+        self.assertTrue(result['requires_owner_attention'])
+        self.assertEqual(len(self.api.sends()), 1)
+        saved = (self.folder / 'state.json').read_bytes()
+        # Restore the actual durable checkpoint into another owned local folder.
+        restored = self.root / 'restored'
+        restored.mkdir()
+        (restored / 'state.json').write_bytes(saved)
+        self.folder = restored
+        self.clock += timedelta(days=731)
+        for _ in range(3):
+            result = self.run_session(resume=True)
+            self.assertTrue(result['requires_owner_attention'])
+            self.assertIsNone(result['closing'])
+        self.assertEqual(len(self.api.sends()), 1)
+
+    def test_two_calendar_years_of_expiry_boundaries_use_virtual_time(self):
+        start = datetime(2027, 1, 1, tzinfo=timezone.utc)
+        end = datetime(2029, 1, 1, tzinfo=timezone.utc)
+        credential = self.api.credential
+        state_path = self.root / 'virtual' / 'state.json'
+        # Persistence faults have their own real-file checks above. This matrix
+        # exercises the production admission branch, not OS or broker clocks.
+        with patch.object(runner, 'save'):
+            day = start
+            while day < end:
+                deadline = day + timedelta(minutes=15)
+                plan = runner.Plan.model_validate({**self.plan, 'expires_at': deadline})
+                for offset in (-1, 0, 1):
+                    observed = deadline + timedelta(microseconds=offset)
+                    for tz in (timezone.utc, timezone(timedelta(hours=7)),
+                               timezone(timedelta(hours=-5))):
+                        api = FakeNative(plan, credential)
+                        state = dict(opening=None, closing=None)
+                        result = runner.advance(plan, credential, state, state_path, api,
+                            reconcile_only=False, now=lambda: observed.astimezone(tz))
+                        self.assertEqual(len(api.sends()), 2 if offset < 0 else 0)
+                        self.assertEqual(result['status'], 'completed' if offset < 0 else 'stopped')
+                day += timedelta(days=1)
+
+    def test_unknown_resume_checkpoint_and_calls_stay_bounded(self):
+        self.api.behavior = 'crash_before_post'
+        with self.assertRaises(Crashed):
+            self.run_session()
+        for _ in range(64):
+            result = self.run_session(resume=True)
+            self.assertTrue(result['requires_owner_attention'])
+            self.assertLessEqual((self.folder / 'state.json').stat().st_size, runner.LIMIT)
+        self.assertEqual(len(self.api.sends()), 1)
+        self.assertEqual(len(self.api.calls), 1 + 64 * 2)
+        self.assertEqual(list(self.folder.glob('.session-*')), [])
+
 
 if __name__ == '__main__':
     unittest.main()

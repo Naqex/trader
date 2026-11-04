@@ -70,6 +70,15 @@ class RuntimeReadinessTests(unittest.TestCase):
         self.assertEqual(writes, [])
         child.kill.assert_not_called()
 
+    def test_repeated_outages_only_publish_transitions_and_never_restart_children(self):
+        cycle = [False] * 12 + [True] * 6
+        state, writes, child = self.run_monitor(cycle * 64 + ['stop'])
+        self.assertEqual([item['ready'] for item in writes], [False, True] * 64)
+        self.assertTrue(state['ready'])
+        self.assertEqual(state['run_id'], 'owned-run')
+        child.kill.assert_not_called()
+        child.terminate.assert_not_called()
+
     def test_readiness_timeout_or_invalid_profile_response_is_unhealthy(self):
         args = launcher.parser().parse_args(['--runtime-profile', 'native'])
         with patch.object(launcher.urllib.request, 'urlopen', side_effect=TimeoutError):

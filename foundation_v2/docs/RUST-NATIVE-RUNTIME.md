@@ -746,3 +746,51 @@ Only PostgreSQL's lock-timeout code uses this path; database failures and genuin
 broker/identity failures remain errors. No execution command is retried.
 Bounded reconnect evidence is separate from unattended operation over days and
 does not authorize broker orders or a new execution grant.
+
+### Demo reliability qualification before unattended operation
+
+Use the existing session, forward reducer, native grant ledger and backup helpers.
+Fast checks exercise production logic with synthetic external boundaries; they
+cannot establish years of uptime or reproduce every Windows/MT5/provider fault.
+Do not tune strategy returns to make a system fixture pass.
+
+| Gate | What it verifies |
+|---|---|
+| Virtual UTC time | Session and native grant expiry boundaries for each day in 2027–2028, including leap day and equivalent offset representations; no OS clock changes or broker calls |
+| Session fault matrix | Failures before/after open/close submission, lost responses, partial/mismatched receipts, disk write/replace failures, repeated reconcile and expired checkpoint recovery; no ambiguous intent repost |
+| Forward replay | 256 synthetic hourly events, 32 intermediate checkpoint restores and duplicate event replay match uninterrupted execution; this is system parity, not historical strategy validation |
+| Bounded repeated failure | 64 unknown-session resumes retain the checkpoint size cap and do not resend; 64 readiness outage/recovery cycles only publish transitions and never restart children |
+| Database crash/restore | Real disposable PostgreSQL immediate stop/restart and checked DB/artifact restore preserve committed rows; the native grant loader still rejects revoked/expired authority |
+
+From `foundation_v2`, run changed/focused tests first. The Python CI job includes
+the offline session/SDK admission/worker/forward contracts; ordinary Rust CI runs
+the native virtual-time test. The owned PostgreSQL rehearsal is explicit:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/test_mt5_demo_session.py tests/test_api_platform_launcher.py tests/test_artifact_storage_architecture.py tests/test_forex_forward.py -q
+cargo test --locked --manifest-path api-rust/Cargo.toml --lib automation_grants::tests::two_calendar_years_preserve_exact_expiry_and_timezone_equivalence -- --exact
+.\.venv\Scripts\python.exe scripts/demo_recovery_rehearsal.py --pg-bin <installed-PostgreSQL-bin> --output-dir <new-private-evidence-directory>
+```
+
+The rehearsal accepts no DSN: it allocates its own loopback cluster and strips
+inherited application/PostgreSQL configuration. It reuses the grant lifecycle
+fixture's exact disposable role/database identity. `receipt.json` and subprocess
+logs retain failure/completion; the cluster is stopped and temporary data removed.
+The checked synthetic backup bundle remains in the output directory. Its measured
+restore time is not an RTO claim for the owner's larger database or a whole machine.
+
+After offline gates, use bounded real Demo observation to validate SDK/Windows,
+reconnection, quote quality and resource behavior. Connection health alone is not
+quote/send readiness. Observing does not grant orders; each sending session still
+needs the registered account/symbol/time/risk authority. Stop new sends and
+reconcile on an unknown outcome. Never turn restore, retry or restart into an
+automatic renewal of trading authority.
+
+Owner chose local-only completion on 04 November. Existing readiness monitoring
+is local; off-machine backup, external alerts and unattended boot/failover are not
+enabled by this qualification. For recovery, use a matching quiesced DB/artifact
+bundle and runtime version, restore into a new owned target, verify hashes and
+native authorization, then reconcile broker inventory before enabling execution.
+Keep owner-data restore separate from disposable rehearsals. Do not restore roles,
+machine-bound credentials or execution capabilities blindly, overwrite the active
+database, or launch a second sender as a shortcut to availability.

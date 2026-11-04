@@ -202,6 +202,30 @@ def test_backup_requires_quiescence(tmp_path):
     assert not (tmp_path / "backup").exists()
 
 
+def test_interrupted_restore_retains_bundle_and_requires_fresh_target(tmp_path):
+    from trading_workspace_v2 import artifact_backup
+    source, manifest = bundle(tmp_path)
+    real_copy = artifact_backup._copy_checked
+    partial = tmp_path / 'partial-restore'
+
+    def disk_failure(origin, destination, checksum):
+        if destination.name != 'metadata.dump':
+            raise OSError('synthetic restore disk full')
+        return real_copy(origin, destination, checksum)
+
+    with patch.object(artifact_backup, '_copy_checked', side_effect=disk_failure):
+        with pytest.raises(OSError):
+            restore_backup_files(source, partial)
+    assert (partial / 'metadata.dump').is_file()
+    assert verify_backup_bundle(source) == manifest
+    with pytest.raises(FileExistsError):
+        restore_backup_files(source, partial)
+    fresh = tmp_path / 'fresh-restore'
+    restore_backup_files(source, fresh)
+    for entry in manifest['files']:
+        assert sha256_file(fresh / entry['path']) == entry['sha256']
+
+
 class MemoryS3:
     def __init__(self):
         self.objects = {}
