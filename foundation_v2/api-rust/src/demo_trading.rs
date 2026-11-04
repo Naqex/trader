@@ -1288,7 +1288,14 @@ pub(crate) async fn managed_read(
     let lock = i64::from_be_bytes(Sha256::digest(key.as_bytes())[..8].try_into().unwrap());
     tx.query_one("SELECT pg_advisory_xact_lock($1)", &[&lock])
         .await
-        .map_err(|_| "mt5_terminal_busy".to_owned())?;
+        .map_err(|error| {
+            if error.code() == Some(&tokio_postgres::error::SqlState::LOCK_NOT_AVAILABLE) {
+                "mt5_terminal_busy"
+            } else {
+                "mt5_database_unavailable"
+            }
+            .to_owned()
+        })?;
     let active=tx.query_opt("SELECT 1 FROM mt5_connections WHERE workspace_id=$1 AND connection_id=$2 AND generation=$3 AND requested_mode=$4 AND credential=$5 AND status IN ('queued','syncing','connected')",&[&workspace,&id,&generation,&managed.requested_mode,&managed.credential]).await.map_err(|_|"mt5_database_unavailable".to_owned())?;
     if active.is_none() {
         return Err("mt5_connection_changed".into());

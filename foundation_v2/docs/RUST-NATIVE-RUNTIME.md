@@ -739,5 +739,10 @@ into the next session.
 Cold history can still be incomplete after login. The existing history guard
 retains the previous journal and reports `mt5_history_warming` until the scheduled
 read recovers it; empty history is not proof that previous trades disappeared.
+If another native reader holds the terminal lock, the collector defers for two
+seconds while preserving status, journal and last successful synchronization time.
+Contention never marks a queued/syncing connection ready or clears a prior error.
+Only PostgreSQL's lock-timeout code uses this path; database failures and genuine
+broker/identity failures remain errors. No execution command is retried.
 Bounded reconnect evidence is separate from unattended operation over days and
 does not authorize broker orders or a new execution grant.

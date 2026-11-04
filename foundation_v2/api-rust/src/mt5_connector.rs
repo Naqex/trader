@@ -791,8 +791,9 @@ async fn run_one(state: &Arc<AppState>) -> Result<(), String> {
                 .map_err(|_| "mt5_database_unavailable")?;
         }
         Err(code) => {
-            let retry_seconds = retry_seconds(&code);
-            conn.execute("UPDATE mt5_connections SET status='error',error_code=$4,next_sync_at=CURRENT_TIMESTAMP+make_interval(secs=>$5),updated_at=CURRENT_TIMESTAMP WHERE workspace_id=$1 AND connection_id=$2 AND generation=$3",&[&workspace,&id,&generation,&code,&retry_seconds]).await.map_err(|_|"mt5_database_unavailable")?;
+            persist_read_failure(&conn, &workspace, id, generation, &code)
+                .await
+                .map_err(|_| "mt5_database_unavailable")?;
         }
     }
     Ok(())
@@ -827,8 +828,22 @@ pub async fn persist_snapshot(
     conn.execute("UPDATE mt5_connections SET status='connected',full_sync=false,snapshot=$4 || jsonb_build_object('balance_baseline',COALESCE(NULLIF(snapshot->'balance_baseline','null'::jsonb),$5)),error_code=NULL,last_synced_at=CURRENT_TIMESTAMP,next_sync_at=CURRENT_TIMESTAMP+interval '10 seconds',updated_at=CURRENT_TIMESTAMP WHERE workspace_id=$1 AND connection_id=$2 AND generation=$3", &[&workspace,&id,&generation,snapshot,&baseline]).await
 }
 
+pub async fn persist_read_failure(
+    conn: &tokio_postgres::Client,
+    workspace: &str,
+    id: Uuid,
+    generation: i64,
+    code: &str,
+) -> Result<u64, tokio_postgres::Error> {
+    // Another native read owns the terminal lock; no broker health check ran.
+    // Defer the collector without replacing its last verified status or journal.
+    conn.execute("UPDATE mt5_connections SET status=CASE WHEN $4='mt5_terminal_busy' THEN status ELSE 'error' END,error_code=CASE WHEN $4='mt5_terminal_busy' THEN error_code ELSE $4 END,next_sync_at=CURRENT_TIMESTAMP+make_interval(secs=>$5),updated_at=CURRENT_TIMESTAMP WHERE workspace_id=$1 AND connection_id=$2 AND generation=$3",
+        &[&workspace, &id, &generation, &code, &retry_seconds(code)]).await
+}
+
 fn retry_seconds(code: &str) -> f64 {
     match code {
+        "mt5_terminal_busy" => 2.0,
         "mt5_disconnected"
         | "mt5_terminal_stopped"
         | "mt5_operation_timeout"
@@ -876,6 +891,7 @@ mod tests {
     }
     #[test]
     fn terminal_or_network_failures_retry_quickly_without_authentication_loop() {
+        assert_eq!(retry_seconds("mt5_terminal_busy"), 2.0);
         assert_eq!(retry_seconds("mt5_terminal_stopped"), 15.0);
         assert_eq!(retry_seconds("mt5_disconnected"), 15.0);
         assert_eq!(retry_seconds("mt5_auth_failed"), 300.0);
