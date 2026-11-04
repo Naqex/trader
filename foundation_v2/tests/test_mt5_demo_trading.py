@@ -129,6 +129,21 @@ class DemoTradingTests(unittest.TestCase):
         self.sdk.order_check.assert_not_called()
         self.sdk.order_send.assert_not_called()
 
+    def test_snapshot_recovers_from_unquoted_feed_without_restarting_or_sending(self):
+        self.account.leverage = 100
+        self.sdk.copy_rates_from_pos.return_value = []
+        self.tick.bid = 0
+        with self.assertRaisesRegex(demo.Denied, '^demo_quote_unavailable$'):
+            demo.snapshot(self.sdk, demo.BrokerPolicy(self.policy), 'EURUSD')
+        self.tick.bid = 1.1
+        result = demo.snapshot(self.sdk, demo.BrokerPolicy(self.policy), 'EURUSD')
+        self.assertEqual(result['status'], 'ready')
+        self.assertEqual(result['quote']['bid'], 1.1)
+        self.sdk.initialize.assert_not_called()
+        self.sdk.shutdown.assert_not_called()
+        self.sdk.order_check.assert_not_called()
+        self.sdk.order_send.assert_not_called()
+
     def test_invalid_instrument_values_identify_field_without_exposing_raw_data(self):
         fields = [(self.tick, key, 'quote.' + key) for key in ('bid', 'ask')]
         fields += [(self.info, key, 'instrument.' + key) for key in
@@ -138,7 +153,8 @@ class DemoTradingTests(unittest.TestCase):
             for value in (0, -1, None, True, float('nan'), float('inf')):
                 with self.subTest(field=field, value=value):
                     setattr(obj, key, value)
-                    with self.assertRaisesRegex(demo.Denied, '^demo_invalid_number$') as caught:
+                    reason = 'demo_quote_unavailable' if field.startswith('quote.') else 'demo_invalid_number'
+                    with self.assertRaisesRegex(demo.Denied, '^' + reason + '$') as caught:
                         demo.instrument(self.sdk, self.policy, 'EURUSD', allow_stale=True)
                     self.assertEqual(caught.exception.data_quality, {
                         'source': 'application', 'invalid_field': field,

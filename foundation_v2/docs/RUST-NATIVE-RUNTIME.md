@@ -749,9 +749,10 @@ does not authorize broker orders or a new execution grant.
 
 The instrument adapter reloads symbol specifications after a cold subscription;
 the tuple obtained before `symbol_select` may still contain uninitialized values.
-Invalid Bid/Ask, tick size, point or lot limits remain fail-closed. Their
-`demo_invalid_number` response includes `data_quality.invalid_field` and the
-positive/finite requirement, without raw SDK values. Native snapshot failures
+Invalid Bid/Ask, tick size, point or lot limits remain fail-closed. Invalid quotes
+return `demo_quote_unavailable`; invalid specifications return `demo_invalid_number`.
+Both include `data_quality.invalid_field` and the positive/finite requirement,
+without raw SDK values. Native snapshot failures
 preserve that diagnostic instead of discarding it. A successful later read alone
 does not explain an earlier failure; capture the field before changing any guard.
 

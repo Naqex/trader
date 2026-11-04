@@ -203,7 +203,7 @@ def instrument(sdk, policy, symbol, now=None, allow_stale=False, read=False):
             try:
                 finite(getattr(item, field, None), True)
             except Denied:
-                deny('demo_invalid_number', data_quality={
+                deny('demo_quote_unavailable' if source == 'quote' else 'demo_invalid_number', data_quality={
                     'source': 'application', 'invalid_field': source + '.' + field,
                     'requirement': 'positive_finite_number',
                 })
