@@ -241,19 +241,35 @@ also limits the current process lifetime if wall time moves backwards. After a
 crash, status uses the lock to distinguish interrupted from running, not PID
 alone. Resume requires the same immutable deadline and pins and explicitly
 clears STOP; expired sessions cannot restart. The existing Job handle kills
-children when the supervisor exits or crashes. No persistent scheduler, auto
-retry, startup entry or API/terminal restart is installed.
+children when the supervisor exits or crashes. No persistent scheduler, startup
+entry or API/terminal restart is installed.
 
 The checksummed `lifecycle.json` is atomically replaced after fsync. Capture
 pages remain durable before their cursor; `shadow.json` is a deterministic
 projection of those pages plus recorded decision observation times. A crash
 between these commits replays the prefix without duplicate bars/decisions.
-Resume rechecks captured pages against the broker. HTTP/timeout/generation,
-source, checksum or revision failures stop and retain evidence; operators must
-inspect the reason before explicitly resuming. Preserve each invocation's
+Resume rechecks captured pages against the broker. For read-only HTTP 423
+`mt5_connection_not_ready` or HTTP 503 `demo_terminal_busy`, the supervisor waits
+10 seconds before retrying the same session/cursor, at most six retries within
+60 seconds per consecutive failure episode and always within the original
+deadline. The checksummed lifecycle retains the episode start/count/reason,
+total retries and last recovery; restarting does not reset an outstanding budget.
+Recovery re-audits the entire durable prefix before consuming it, and keeps STOP
+and deadline handling active. No reconnect, registration, account switch or
+broker-send retry is performed. A changed binding, source or page still fails.
+Other HTTP/timeout/generation, source, checksum or revision failures stop and
+retain evidence; operators must inspect the reason before explicitly resuming.
+Preserve each invocation's
 stdout/stderr externally when an incident history is needed; lifecycle stores
 the latest incarnation, not an append-only incident log. `complete` only means
 the finite observation finished, even if warmup/data evaluation is incomplete.
+
+For a focused supervisor check, build `mt5-shadow`, set
+`TW_MT5_SHADOW_TEST_BINARY` to that executable and run
+`python -m unittest tests.test_mt5_shadow_supervisor -v` from `foundation_v2`.
+It uses only synthetic pages on an ephemeral loopback port and dummy credentials;
+it verifies recovery without duplicates, old-prefix revision rejection and STOP
+during recovery. It does not access MT5 or prove live hour-aligned handoff.
 
 ### Choose resume or offline reprocessing
 

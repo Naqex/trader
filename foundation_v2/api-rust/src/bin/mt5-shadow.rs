@@ -161,6 +161,40 @@ fn interruption(
     }
 }
 
+// Only read-side readiness/lock failures may wait. Identity, permissions,
+// data revisions and worker/protocol failures still require operator review.
+fn transport_retry(state: &mut Value, reason: &str, clock: i64, end: i64) -> Option<i64> {
+    if !matches!(
+        reason,
+        "shadow_native_http_423_mt5_connection_not_ready"
+            | "shadow_native_http_503_demo_terminal_busy"
+    ) || clock >= end
+    {
+        return None;
+    }
+    let prior = &state["transport_retry"];
+    let started = if prior.is_null() {
+        clock
+    } else {
+        prior["started_at_msc"].as_i64()?
+    };
+    let attempts = if prior.is_null() {
+        0
+    } else {
+        prior["attempts"].as_u64()?
+    };
+    if clock < started || clock - started >= 60000 || attempts >= 6 {
+        return None;
+    }
+    let next = (clock + 10000).min(started + 60000).min(end);
+    state["transport_retry"] = json!({"started_at_msc":started,"attempts":attempts+1,
+        "reason":reason,"next_poll_msc":next});
+    state["transport_retries_total"] =
+        json!(state["transport_retries_total"].as_u64().unwrap_or(0) + 1);
+    state["updated_at_msc"] = json!(clock);
+    Some(next)
+}
+
 struct Worker {
     python: PathBuf,
     manifest: PathBuf,
@@ -381,9 +415,9 @@ async fn run(action: &str, options: HashMap<String, PathBuf>) -> Result<Value> {
             break;
         }
         let outcome = worker.call("step", recover, end, hard_end).await;
-        recover = false;
-        match outcome {
+        let next_poll = match outcome {
             Ok(value) => {
+                recover = false;
                 let status = value["status"]
                     .as_str()
                     .ok_or("shadow_worker_protocol_failed")?
@@ -395,41 +429,53 @@ async fn run(action: &str, options: HashMap<String, PathBuf>) -> Result<Value> {
                 }
                 state["observation"] = value;
                 state["updated_at_msc"] = json!(now());
+                if !["expired", "stopped"].contains(&status.as_str()) {
+                    if let Some(mut retry) =
+                        state.as_object_mut().unwrap().remove("transport_retry")
+                    {
+                        retry["recovered_at_msc"] = json!(now());
+                        state["last_transport_retry"] = retry;
+                    }
+                }
                 if ["complete", "expired", "stopped"].contains(&status.as_str()) {
                     state["status"] = json!(status);
                     break;
                 }
-                save(&directory, &state)?;
-                let next_poll = state["observation"]["next_poll_msc"]
+                state["observation"]["next_poll_msc"]
                     .as_i64()
                     .ok_or("shadow_worker_protocol_failed")?
-                    .min(end);
-                loop {
-                    if now() >= next_poll
-                        || interruption(
-                            &directory,
-                            now(),
-                            end,
-                            tokio::time::Instant::now() >= hard_end,
-                        )
-                        .is_some()
-                    {
-                        break;
-                    }
-                    tokio::select! {
-                        _=tokio::time::sleep(Duration::from_millis(200))=>(),
-                        _=tokio::signal::ctrl_c()=>{state["status"]=json!("stopped");save(&directory,&state)?;return Ok(state);}
-                    }
-                }
+                    .min(end)
             }
             Err(reason) => {
-                state["status"] = json!(if ["stopped", "expired"].contains(&reason.as_str()) {
-                    reason.as_str()
+                if let Some(next) = transport_retry(&mut state, &reason, now(), end) {
+                    // A worker may have durably appended a page before its read
+                    // failed. Re-audit the whole prefix on the next attempt.
+                    recover = true;
+                    next
                 } else {
-                    "failed"
-                });
-                state["reason"] = json!(reason);
-                break;
+                    state["status"] = json!(if ["stopped", "expired"].contains(&reason.as_str()) {
+                        reason.as_str()
+                    } else {
+                        "failed"
+                    });
+                    state["reason"] = json!(reason);
+                    break;
+                }
+            }
+        };
+        save(&directory, &state)?;
+        while now() < next_poll
+            && interruption(
+                &directory,
+                now(),
+                end,
+                tokio::time::Instant::now() >= hard_end,
+            )
+            .is_none()
+        {
+            tokio::select! {
+                _=tokio::time::sleep(Duration::from_millis(200))=>(),
+                _=tokio::signal::ctrl_c()=>{state["status"]=json!("stopped");save(&directory,&state)?;return Ok(state);}
             }
         }
     }
@@ -486,6 +532,64 @@ async fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn transient_read_budget_survives_reload_and_never_extends_deadline() {
+        let dir = std::env::temp_dir().join(format!("shadow-retry-{}", uuid::Uuid::new_v4()));
+        fs::create_dir(&dir).unwrap();
+        let mut state = json!({"schema_version":"mt5-shadow-lifecycle-v1"});
+        let reason = "shadow_native_http_423_mt5_connection_not_ready";
+        assert_eq!(
+            transport_retry(&mut state, reason, 1000, 999999),
+            Some(11000)
+        );
+        save(&dir, &state).unwrap();
+        state = load(&dir).unwrap();
+        for index in 1..6 {
+            assert_eq!(
+                transport_retry(&mut state, reason, 1000 + index * 10000, 999999),
+                Some(11000 + index * 10000)
+            );
+        }
+        assert_eq!(state["transport_retry"]["attempts"], 6);
+        assert!(transport_retry(&mut state, reason, 61000, 999999).is_none());
+        let mut fresh = json!({});
+        assert_eq!(transport_retry(&mut fresh, reason, 1000, 5000), Some(5000));
+        assert!(transport_retry(&mut fresh, reason, 5000, 5000).is_none());
+        assert!(transport_retry(&mut fresh, reason, 999, 999999).is_none());
+        let mut late = json!({});
+        transport_retry(&mut late, reason, 1000, 999999).unwrap();
+        assert!(transport_retry(&mut late, reason, 61000, 999999).is_none());
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn retry_allowlist_excludes_identity_data_auth_and_unknown_errors() {
+        for reason in [
+            "shadow_native_http_401_unavailable",
+            "shadow_native_http_423_mt5_permissions_unverified",
+            "shadow_native_http_503_demo_identity_changed",
+            "capture_binding_changed",
+            "shadow_observed_window_revised",
+            "shadow_worker_timeout",
+            "stopped",
+            "expired",
+        ] {
+            let mut state = json!({});
+            assert!(transport_retry(&mut state, reason, 1000, 100000).is_none());
+            assert_eq!(state, json!({}));
+        }
+        let mut state = json!({});
+        assert!(
+            transport_retry(
+                &mut state,
+                "shadow_native_http_503_demo_terminal_busy",
+                1000,
+                100000
+            )
+            .is_some()
+        );
+    }
+
     #[test]
     fn bounded_forward_registration_and_deadline_cannot_be_extended_on_resume() {
         let plan = json!({"capture":{"from_msc":100000,"to_msc":130000},"deadline_msc":170000});
