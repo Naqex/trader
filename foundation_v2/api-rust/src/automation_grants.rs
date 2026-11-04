@@ -206,6 +206,23 @@ pub async fn create_grant(
     }
     let mut conn = pool.get().await.map_err(|_| ApiError::database())?;
     let tx = conn.transaction().await.map_err(|_| ApiError::database())?;
+    // Connection aliases share one execution owner. This lock covers creation,
+    // not the lifetime of independent observation/research sessions.
+    let account_key = serde_json::to_string(&(
+        "automation-account-v1",
+        &scope.workspace_id,
+        &policy.server,
+        &policy.login,
+    ))
+    .map_err(|_| denied("automation_policy_invalid"))?;
+    lock_terminal(&tx, &account_key).await?;
+    let occupied: bool = tx.query_one(
+        "SELECT EXISTS(SELECT 1 FROM automation_grants WHERE workspace_id=$1 AND policy->>'server'=$2 AND policy->>'login'=$3 AND status='active' AND expires_at>clock_timestamp())",
+        &[&scope.workspace_id, &policy.server, &policy.login],
+    ).await.map_err(|_| ApiError::database())?.get(0);
+    if occupied {
+        return Err(denied("automation_execution_session_active"));
+    }
     let terminal_key =
         crate::demo_trading::managed_terminal_key(&scope.workspace_id, policy.connection_id);
     lock_terminal(&tx, &terminal_key).await?;
@@ -868,7 +885,67 @@ mod tests {
                 .await
                 .is_err()
         );
-        let grant = create_grant(&pool, &scope, &Actor::Owner, policy.clone(), &token_hash)
+        let racing_hash = sha256(b"independent racing fixture credential");
+        let (one, two) = tokio::join!(
+            create_grant(&pool, &scope, &Actor::Owner, policy.clone(), &token_hash),
+            create_grant(&pool, &scope, &Actor::Owner, policy.clone(), &racing_hash)
+        );
+        assert_ne!(
+            one.is_ok(),
+            two.is_ok(),
+            "one execution grant per account under race"
+        );
+        let (grant, token_hash) = match one {
+            Ok(grant) => {
+                assert_eq!(
+                    two.unwrap_err().1["detail"],
+                    "automation_execution_session_active"
+                );
+                (grant, token_hash)
+            }
+            Err(error) => {
+                assert_eq!(error.1["detail"], "automation_execution_session_active");
+                (two.unwrap(), racing_hash)
+            }
+        };
+        let mut alias = policy.clone();
+        alias.connection_id = Uuid::new_v4();
+        client.execute("INSERT INTO mt5_connections(workspace_id,connection_id,request_id,account_key,name,server,login_hint,start_date,credential,generation,status,requested_mode,snapshot) VALUES($1,$2,$2,'fixture-alias','alias',$3,$4,'2026-11-03','not-a-broker-credential',$5,'connected','trading',$6)",
+            &[&scope.workspace_id,&alias.connection_id,&alias.server,&alias.login,&alias.connection_generation,&snapshot]).await.unwrap();
+        assert_eq!(
+            create_grant(
+                &pool,
+                &scope,
+                &Actor::Owner,
+                alias.clone(),
+                &sha256(b"alias credential")
+            )
+            .await
+            .unwrap_err()
+            .1["detail"],
+            "automation_execution_session_active"
+        );
+        // A different account is not serialized for the session's lifetime.
+        alias.login = "4321".into();
+        let other_snapshot = json!({"execution_binding":{"generation":alias.connection_generation,"login":alias.login,
+            "server":alias.server,"account_environment":"demo"},"verified_permissions":{"trade":true}});
+        client
+            .execute(
+                "UPDATE mt5_connections SET login_hint=$2,snapshot=$3 WHERE connection_id=$1",
+                &[&alias.connection_id, &alias.login, &other_snapshot],
+            )
+            .await
+            .unwrap();
+        let other = create_grant(
+            &pool,
+            &scope,
+            &Actor::Owner,
+            alias,
+            &sha256(b"other account credential"),
+        )
+        .await
+        .unwrap();
+        revoke(&pool, &scope, &Actor::Owner, other.grant_id)
             .await
             .unwrap();
         let identity = resolve_credential(&pool, &scope.workspace_id, &token_hash)

@@ -57,6 +57,13 @@ actions, expiry, volume, attempts, risk and account floors. The API returns one
 random runner credential once; PostgreSQL stores only its digest. No grant is
 created by installation, migration or a research result.
 
+Only one active, unexpired execution grant may own a workspace/login/server.
+Creation is serialized in PostgreSQL across connection aliases; a second grant
+is denied with `automation_execution_session_active`. Revocation or expiry
+allows a replacement after inventory/unknown outcomes have been reconciled.
+Different accounts and read-only shadow sessions remain independent. This is
+an execution ownership fence, not a global trading risk allocator or AI budget.
+
 The runner may only:
 
 | Method | Path | Effect |
