@@ -5,6 +5,7 @@ FTMO product. The 2026 broker schedule follows US DST (New York plus 7 hours).
 Older FTMO regimes are deliberately unsupported. See MT5-BROKER-CLOCK.md.
 """
 import math
+from numbers import Integral
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -18,6 +19,9 @@ def metadata(server):
 
 
 def utc_msc(value, server):
+    # SDK bar arrays expose numpy integers, unlike namedtuple quote timestamps.
+    if isinstance(value, Integral) and not isinstance(value, bool):
+        value = int(value)
     if type(value) not in (int, float) or not math.isfinite(value) or value < 0:
         raise RuntimeError('mt5_clock_unavailable')
     if server != 'FTMO-Demo' or value == 0:
@@ -41,6 +45,10 @@ def utc_msc(value, server):
 
 
 def utc_seconds(value, server):
+    if isinstance(value, bool):
+        raise RuntimeError('mt5_clock_unavailable')
+    if isinstance(value, Integral) and not isinstance(value, bool):
+        value = int(value)
     return utc_msc(value * 1000, server) / 1000
 
 

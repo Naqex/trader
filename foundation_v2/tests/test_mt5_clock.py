@@ -2,6 +2,7 @@
 import importlib.util
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
+from enum import IntEnum
 import unittest
 
 spec = importlib.util.spec_from_file_location('clock', Path(__file__).parents[1]/'scripts/mt5_clock.py')
@@ -10,6 +11,17 @@ spec.loader.exec_module(clock)
 
 
 class BrokerClockTests(unittest.TestCase):
+    def test_integer_scalars_and_invalid_timestamp_values(self):
+        class Stamp(IntEnum):
+            BAR = 1793756800
+        self.assertEqual(clock.utc_seconds(Stamp.BAR, 'Exness-MT5Trial17'), int(Stamp.BAR))
+        self.assertEqual(clock.utc_seconds(Stamp.BAR, 'FTMO-Demo'), int(Stamp.BAR)-7200)
+        for value in (True, None, '1793756800', -1, float('nan'), float('inf')):
+            with self.subTest(value=value), self.assertRaisesRegex(RuntimeError, 'mt5_clock_unavailable'):
+                clock.utc_msc(value, 'Exness-MT5Trial17')
+        with self.assertRaisesRegex(RuntimeError, 'mt5_clock_unavailable'):
+            clock.utc_seconds(True, 'Exness-MT5Trial17')
+
     def test_verified_winter_summer_and_us_eu_mismatch_weeks(self):
         for text, offset in (('2026-01-05T12:00:00+00:00',2),
                              ('2026-03-09T12:00:00+00:00',3),
